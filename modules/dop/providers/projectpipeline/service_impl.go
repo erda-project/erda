@@ -26,6 +26,7 @@ import (
 	"strings"
 
 	"github.com/sirupsen/logrus"
+	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
@@ -174,6 +175,7 @@ func (p *ProjectPipelineService) CreateNamePreCheck(ctx context.Context, req *pb
 	if err := req.Validate(); err != nil {
 		return nil, apierrors.ErrCreateProjectPipeline.InvalidParameter(err)
 	}
+
 	haveSameNameDefinition, err := p.checkDefinitionRemoteSameName(req.ProjectID, "", req.Name)
 	if err != nil {
 		return nil, apierrors.ErrCreateProjectPipeline.InternalError(err)
@@ -519,7 +521,7 @@ func (p *ProjectPipelineService) UnSetPrimary(ctx context.Context, params deftyp
 	return definition, nil
 }
 
-func (p *ProjectPipelineService) Run(ctx context.Context, params deftype.ProjectPipelineRun) (*deftype.ProjectPipelineRunResult, error) {
+func (p *ProjectPipelineService) Run(ctx context.Context, params *pb.RunProjectPipelineRequest) (*pb.RunProjectPipelineResponse, error) {
 	if params.PipelineDefinitionID == "" {
 		return nil, apierrors.ErrRunProjectPipeline.InvalidParameter(fmt.Errorf("pipelineDefinitionID：%s", params.PipelineDefinitionID))
 	}
@@ -528,19 +530,42 @@ func (p *ProjectPipelineService) Run(ctx context.Context, params deftype.Project
 	if err != nil {
 		return nil, apierrors.ErrRunProjectPipeline.InternalError(err)
 	}
-	err = p.checkDataPermissionByProjectID(params.ProjectID, source)
+	err = p.checkDataPermissionByProjectID(uint64(params.ProjectID), source)
 	if err != nil {
 		return nil, apierrors.ErrRunProjectPipeline.AccessDenied()
 	}
-
-	value, err := p.autoRunPipeline(params.IdentityInfo, definition, source)
+	value, err := p.autoRunPipeline(apistructs.IdentityInfo{UserID: apis.GetUserID(ctx), InternalClient: apis.GetInternalClient(ctx)}, definition, source)
 	if err != nil {
 		return nil, err
 	}
 
-	return &deftype.ProjectPipelineRunResult{
-		Pipeline: value,
+	pipeline, err := pipelineDTOToStructPb(value)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.RunProjectPipelineResponse{
+		Pipeline: pipeline,
 	}, nil
+}
+
+func pipelineDTOToStructPb(value *apistructs.PipelineDTO) (*structpb.Value, error) {
+	valueJson, err := json.Marshal(value)
+	if err != nil {
+		return nil, err
+	}
+
+	var specValue map[string]interface{}
+	err = json.Unmarshal(valueJson, &specValue)
+	if err != nil {
+		return nil, err
+	}
+
+	pipeline, err := structpb.NewValue(specValue)
+	if err != nil {
+		return nil, err
+	}
+	return pipeline, nil
 }
 
 func (p *ProjectPipelineService) StartCron(ctx context.Context, params deftype.ProjectPipelineStartCron) (*deftype.ProjectPipelineStartCronResult, error) {
@@ -697,7 +722,7 @@ func (p *ProjectPipelineService) BatchRun(ctx context.Context, params deftype.Pr
 	}, nil
 }
 
-func (p *ProjectPipelineService) Cancel(ctx context.Context, params deftype.ProjectPipelineCancel) (*deftype.ProjectPipelineCancelResult, error) {
+func (p *ProjectPipelineService) Cancel(ctx context.Context, params *pb.CancelProjectPipelineRequest) (*pb.CancelProjectPipelineResponse, error) {
 	if params.PipelineDefinitionID == "" {
 		return nil, apierrors.ErrCancelProjectPipeline.InvalidParameter(fmt.Errorf("pipelineDefinitionID：%s", params.PipelineDefinitionID))
 	}
@@ -706,7 +731,7 @@ func (p *ProjectPipelineService) Cancel(ctx context.Context, params deftype.Proj
 	if err != nil {
 		return nil, apierrors.ErrCancelProjectPipeline.InternalError(err)
 	}
-	err = p.checkDataPermissionByProjectID(params.ProjectID, source)
+	err = p.checkDataPermissionByProjectID(uint64(params.ProjectID), source)
 	if err != nil {
 		return nil, apierrors.ErrCancelProjectPipeline.AccessDenied()
 	}
@@ -716,7 +741,9 @@ func (p *ProjectPipelineService) Cancel(ctx context.Context, params deftype.Proj
 		return nil, apierrors.ErrCancelProjectPipeline.InternalError(fmt.Errorf("failed unmarshal pipeline extra error %v", err))
 	}
 
-	if err := p.checkRolePermission(params.IdentityInfo, extraValue.CreateRequest, apierrors.ErrCancelProjectPipeline); err != nil {
+	identityInfo := apistructs.IdentityInfo{UserID: apis.GetUserID(ctx), InternalClient: apis.GetInternalClient(ctx)}
+
+	if err := p.checkRolePermission(identityInfo, extraValue.CreateRequest, apierrors.ErrCancelProjectPipeline); err != nil {
 		return nil, err
 	}
 
@@ -725,10 +752,10 @@ func (p *ProjectPipelineService) Cancel(ctx context.Context, params deftype.Proj
 		return nil, apierrors.ErrCancelProjectPipeline.InternalError(err)
 	}
 
-	if pipelineInfo.Status.IsRunningStatus() {
+	if pipelineInfo.Status.CanCancel() {
 		var req apistructs.PipelineCancelRequest
 		req.PipelineID = uint64(definition.PipelineID)
-		req.IdentityInfo = params.IdentityInfo
+		req.IdentityInfo = identityInfo
 		err = p.bundle.CancelPipeline(req)
 		if err != nil {
 			return nil, apierrors.ErrCancelProjectPipeline.InternalError(err)
@@ -739,7 +766,7 @@ func (p *ProjectPipelineService) Cancel(ctx context.Context, params deftype.Proj
 			return nil, apierrors.ErrCancelProjectPipeline.InternalError(err)
 		}
 
-		return &deftype.ProjectPipelineCancelResult{}, nil
+		return &pb.CancelProjectPipelineResponse{}, nil
 	}
 
 	_, err = p.PipelineDefinition.Update(context.Background(), &dpb.PipelineDefinitionUpdateRequest{PipelineDefinitionID: definition.ID, Status: string(pipelineInfo.Status), PipelineID: definition.PipelineID})
@@ -747,31 +774,38 @@ func (p *ProjectPipelineService) Cancel(ctx context.Context, params deftype.Proj
 		return nil, apierrors.ErrCancelProjectPipeline.InternalError(err)
 	}
 
-	return &deftype.ProjectPipelineCancelResult{}, nil
+	return &pb.CancelProjectPipelineResponse{}, nil
 }
 
-func (p *ProjectPipelineService) Rerun(ctx context.Context, params deftype.ProjectPipelineRerun) (*deftype.ProjectPipelineRerunResult, error) {
-	dto, err := p.failRerunOrRerunPipeline(true, params.PipelineDefinitionID, params.ProjectID, params.IdentityInfo, apierrors.ErrRerunProjectPipeline)
+func (p *ProjectPipelineService) Rerun(ctx context.Context, params *pb.RerunProjectPipelineRequest) (*pb.RerunProjectPipelineResponse, error) {
+
+	identityInfo := apistructs.IdentityInfo{UserID: apis.GetUserID(ctx), InternalClient: apis.GetInternalClient(ctx)}
+
+	dto, err := p.failRerunOrRerunPipeline(true, params.PipelineDefinitionID, uint64(params.ProjectID), identityInfo, apierrors.ErrRerunProjectPipeline)
 	if err != nil {
 		return nil, err
 	}
 
-	return &deftype.ProjectPipelineRerunResult{
+	return &pb.RerunProjectPipelineResponse{
 		Pipeline: dto,
 	}, nil
 }
 
-func (p *ProjectPipelineService) FailRerun(ctx context.Context, params deftype.ProjectPipelineFailRerun) (*deftype.ProjectPipelineFailRerunResult, error) {
-	dto, err := p.failRerunOrRerunPipeline(false, params.PipelineDefinitionID, params.ProjectID, params.IdentityInfo, apierrors.ErrFailRerunProjectPipeline)
+func (p *ProjectPipelineService) RerunFailed(ctx context.Context, params *pb.RerunFailedProjectPipelineRequest) (*pb.RerunFailedProjectPipelineResponse, error) {
+
+	identityInfo := apistructs.IdentityInfo{UserID: apis.GetUserID(ctx), InternalClient: apis.GetInternalClient(ctx)}
+
+	dto, err := p.failRerunOrRerunPipeline(false, params.PipelineDefinitionID, uint64(params.ProjectID), identityInfo, apierrors.ErrFailRerunProjectPipeline)
 	if err != nil {
 		return nil, err
 	}
-	return &deftype.ProjectPipelineFailRerunResult{
+
+	return &pb.RerunFailedProjectPipelineResponse{
 		Pipeline: dto,
 	}, nil
 }
 
-func (p *ProjectPipelineService) failRerunOrRerunPipeline(rerun bool, pipelineDefinitionID string, projectID uint64, identityInfo apistructs.IdentityInfo, apiError *errorresp.APIError) (*apistructs.PipelineDTO, error) {
+func (p *ProjectPipelineService) failRerunOrRerunPipeline(rerun bool, pipelineDefinitionID string, projectID uint64, identityInfo apistructs.IdentityInfo, apiError *errorresp.APIError) (*structpb.Value, error) {
 	if pipelineDefinitionID == "" {
 		return nil, apiError.InvalidParameter(fmt.Errorf("pipelineDefinitionID：%s", pipelineDefinitionID))
 	}
@@ -818,7 +852,13 @@ func (p *ProjectPipelineService) failRerunOrRerunPipeline(rerun bool, pipelineDe
 	if err != nil {
 		return nil, apiError.InternalError(err)
 	}
-	return dto, nil
+
+	pbValue, err := pipelineDTOToStructPb(dto)
+	if err != nil {
+		return nil, err
+	}
+
+	return pbValue, nil
 }
 
 func (p *ProjectPipelineService) startOrEndCron(identityInfo apistructs.IdentityInfo, pipelineDefinitionID string, projectID uint64, enable bool, apiError *errorresp.APIError) (*common.Cron, error) {

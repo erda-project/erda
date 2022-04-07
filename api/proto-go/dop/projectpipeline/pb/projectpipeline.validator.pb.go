@@ -21,6 +21,45 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+func (this *RunProjectPipelineRequest) Validate() error {
+	return nil
+}
+func (this *RunProjectPipelineResponse) Validate() error {
+	if this.Pipeline != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Pipeline); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("Pipeline", err)
+		}
+	}
+	return nil
+}
+func (this *RerunProjectPipelineRequest) Validate() error {
+	return nil
+}
+func (this *RerunProjectPipelineResponse) Validate() error {
+	if this.Pipeline != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Pipeline); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("Pipeline", err)
+		}
+	}
+	return nil
+}
+func (this *RerunFailedProjectPipelineRequest) Validate() error {
+	return nil
+}
+func (this *RerunFailedProjectPipelineResponse) Validate() error {
+	if this.Pipeline != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Pipeline); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("Pipeline", err)
+		}
+	}
+	return nil
+}
+func (this *CancelProjectPipelineRequest) Validate() error {
+	return nil
+}
+func (this *CancelProjectPipelineResponse) Validate() error {
+	return nil
+}
 func (this *CreateProjectPipelineSourcePreCheckRequest) Validate() error {
 	if !(this.AppID > 0) {
 		return github_com_mwitkow_go_proto_validators.FieldError("AppID", fmt.Errorf(`value '%v' must be greater than '0'`, this.AppID))

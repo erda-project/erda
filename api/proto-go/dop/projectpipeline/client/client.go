@@ -64,3 +64,19 @@ func (s *projectPipelineServiceWrapper) ListPipelineCategory(ctx context.Context
 func (s *projectPipelineServiceWrapper) Update(ctx context.Context, req *pb.UpdateProjectPipelineRequest) (*pb.UpdateProjectPipelineResponse, error) {
 	return s.client.Update(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }
+
+func (s *projectPipelineServiceWrapper) Run(ctx context.Context, req *pb.RunProjectPipelineRequest) (*pb.RunProjectPipelineResponse, error) {
+	return s.client.Run(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+}
+
+func (s *projectPipelineServiceWrapper) Rerun(ctx context.Context, req *pb.RerunProjectPipelineRequest) (*pb.RerunProjectPipelineResponse, error) {
+	return s.client.Rerun(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+}
+
+func (s *projectPipelineServiceWrapper) RerunFailed(ctx context.Context, req *pb.RerunFailedProjectPipelineRequest) (*pb.RerunFailedProjectPipelineResponse, error) {
+	return s.client.RerunFailed(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+}
+
+func (s *projectPipelineServiceWrapper) Cancel(ctx context.Context, req *pb.CancelProjectPipelineRequest) (*pb.CancelProjectPipelineResponse, error) {
+	return s.client.Cancel(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+}

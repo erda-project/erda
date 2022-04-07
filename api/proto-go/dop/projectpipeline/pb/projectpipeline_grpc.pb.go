@@ -28,6 +28,10 @@ type ProjectPipelineServiceClient interface {
 	CreateSourcePreCheck(ctx context.Context, in *CreateProjectPipelineSourcePreCheckRequest, opts ...grpc.CallOption) (*CreateProjectPipelineSourcePreCheckResponse, error)
 	ListPipelineCategory(ctx context.Context, in *ListPipelineCategoryRequest, opts ...grpc.CallOption) (*ListPipelineCategoryResponse, error)
 	Update(ctx context.Context, in *UpdateProjectPipelineRequest, opts ...grpc.CallOption) (*UpdateProjectPipelineResponse, error)
+	Run(ctx context.Context, in *RunProjectPipelineRequest, opts ...grpc.CallOption) (*RunProjectPipelineResponse, error)
+	Rerun(ctx context.Context, in *RerunProjectPipelineRequest, opts ...grpc.CallOption) (*RerunProjectPipelineResponse, error)
+	RerunFailed(ctx context.Context, in *RerunFailedProjectPipelineRequest, opts ...grpc.CallOption) (*RerunFailedProjectPipelineResponse, error)
+	Cancel(ctx context.Context, in *CancelProjectPipelineRequest, opts ...grpc.CallOption) (*CancelProjectPipelineResponse, error)
 }
 
 type projectPipelineServiceClient struct {
@@ -101,6 +105,42 @@ func (c *projectPipelineServiceClient) Update(ctx context.Context, in *UpdatePro
 	return out, nil
 }
 
+func (c *projectPipelineServiceClient) Run(ctx context.Context, in *RunProjectPipelineRequest, opts ...grpc.CallOption) (*RunProjectPipelineResponse, error) {
+	out := new(RunProjectPipelineResponse)
+	err := c.cc.Invoke(ctx, "/erda.dop.projectpipeline.ProjectPipelineService/Run", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *projectPipelineServiceClient) Rerun(ctx context.Context, in *RerunProjectPipelineRequest, opts ...grpc.CallOption) (*RerunProjectPipelineResponse, error) {
+	out := new(RerunProjectPipelineResponse)
+	err := c.cc.Invoke(ctx, "/erda.dop.projectpipeline.ProjectPipelineService/Rerun", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *projectPipelineServiceClient) RerunFailed(ctx context.Context, in *RerunFailedProjectPipelineRequest, opts ...grpc.CallOption) (*RerunFailedProjectPipelineResponse, error) {
+	out := new(RerunFailedProjectPipelineResponse)
+	err := c.cc.Invoke(ctx, "/erda.dop.projectpipeline.ProjectPipelineService/RerunFailed", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *projectPipelineServiceClient) Cancel(ctx context.Context, in *CancelProjectPipelineRequest, opts ...grpc.CallOption) (*CancelProjectPipelineResponse, error) {
+	out := new(CancelProjectPipelineResponse)
+	err := c.cc.Invoke(ctx, "/erda.dop.projectpipeline.ProjectPipelineService/Cancel", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ProjectPipelineServiceServer is the server API for ProjectPipelineService service.
 // All implementations should embed UnimplementedProjectPipelineServiceServer
 // for forward compatibility
@@ -112,6 +152,10 @@ type ProjectPipelineServiceServer interface {
 	CreateSourcePreCheck(context.Context, *CreateProjectPipelineSourcePreCheckRequest) (*CreateProjectPipelineSourcePreCheckResponse, error)
 	ListPipelineCategory(context.Context, *ListPipelineCategoryRequest) (*ListPipelineCategoryResponse, error)
 	Update(context.Context, *UpdateProjectPipelineRequest) (*UpdateProjectPipelineResponse, error)
+	Run(context.Context, *RunProjectPipelineRequest) (*RunProjectPipelineResponse, error)
+	Rerun(context.Context, *RerunProjectPipelineRequest) (*RerunProjectPipelineResponse, error)
+	RerunFailed(context.Context, *RerunFailedProjectPipelineRequest) (*RerunFailedProjectPipelineResponse, error)
+	Cancel(context.Context, *CancelProjectPipelineRequest) (*CancelProjectPipelineResponse, error)
 }
 
 // UnimplementedProjectPipelineServiceServer should be embedded to have forward compatible implementations.
@@ -138,6 +182,18 @@ func (*UnimplementedProjectPipelineServiceServer) ListPipelineCategory(context.C
 }
 func (*UnimplementedProjectPipelineServiceServer) Update(context.Context, *UpdateProjectPipelineRequest) (*UpdateProjectPipelineResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Update not implemented")
+}
+func (*UnimplementedProjectPipelineServiceServer) Run(context.Context, *RunProjectPipelineRequest) (*RunProjectPipelineResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Run not implemented")
+}
+func (*UnimplementedProjectPipelineServiceServer) Rerun(context.Context, *RerunProjectPipelineRequest) (*RerunProjectPipelineResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Rerun not implemented")
+}
+func (*UnimplementedProjectPipelineServiceServer) RerunFailed(context.Context, *RerunFailedProjectPipelineRequest) (*RerunFailedProjectPipelineResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RerunFailed not implemented")
+}
+func (*UnimplementedProjectPipelineServiceServer) Cancel(context.Context, *CancelProjectPipelineRequest) (*CancelProjectPipelineResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Cancel not implemented")
 }
 
 func RegisterProjectPipelineServiceServer(s grpc1.ServiceRegistrar, srv ProjectPipelineServiceServer, opts ...grpc1.HandleOption) {
@@ -219,6 +275,42 @@ func _get_ProjectPipelineService_serviceDesc(srv ProjectPipelineServiceServer, o
 	if h.Interceptor != nil {
 		_ProjectPipelineService_Update_info = transport.NewServiceInfo("erda.dop.projectpipeline.ProjectPipelineService", "Update", srv)
 		_ProjectPipelineService_Update_Handler = h.Interceptor(_ProjectPipelineService_Update_Handler)
+	}
+
+	_ProjectPipelineService_Run_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.Run(ctx, req.(*RunProjectPipelineRequest))
+	}
+	var _ProjectPipelineService_Run_info transport.ServiceInfo
+	if h.Interceptor != nil {
+		_ProjectPipelineService_Run_info = transport.NewServiceInfo("erda.dop.projectpipeline.ProjectPipelineService", "Run", srv)
+		_ProjectPipelineService_Run_Handler = h.Interceptor(_ProjectPipelineService_Run_Handler)
+	}
+
+	_ProjectPipelineService_Rerun_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.Rerun(ctx, req.(*RerunProjectPipelineRequest))
+	}
+	var _ProjectPipelineService_Rerun_info transport.ServiceInfo
+	if h.Interceptor != nil {
+		_ProjectPipelineService_Rerun_info = transport.NewServiceInfo("erda.dop.projectpipeline.ProjectPipelineService", "Rerun", srv)
+		_ProjectPipelineService_Rerun_Handler = h.Interceptor(_ProjectPipelineService_Rerun_Handler)
+	}
+
+	_ProjectPipelineService_RerunFailed_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.RerunFailed(ctx, req.(*RerunFailedProjectPipelineRequest))
+	}
+	var _ProjectPipelineService_RerunFailed_info transport.ServiceInfo
+	if h.Interceptor != nil {
+		_ProjectPipelineService_RerunFailed_info = transport.NewServiceInfo("erda.dop.projectpipeline.ProjectPipelineService", "RerunFailed", srv)
+		_ProjectPipelineService_RerunFailed_Handler = h.Interceptor(_ProjectPipelineService_RerunFailed_Handler)
+	}
+
+	_ProjectPipelineService_Cancel_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.Cancel(ctx, req.(*CancelProjectPipelineRequest))
+	}
+	var _ProjectPipelineService_Cancel_info transport.ServiceInfo
+	if h.Interceptor != nil {
+		_ProjectPipelineService_Cancel_info = transport.NewServiceInfo("erda.dop.projectpipeline.ProjectPipelineService", "Cancel", srv)
+		_ProjectPipelineService_Cancel_Handler = h.Interceptor(_ProjectPipelineService_Cancel_Handler)
 	}
 
 	var serviceDesc = _ProjectPipelineService_serviceDesc
@@ -382,6 +474,98 @@ func _get_ProjectPipelineService_serviceDesc(srv ProjectPipelineServiceServer, o
 					FullMethod: "/erda.dop.projectpipeline.ProjectPipelineService/Update",
 				}
 				return interceptor(ctx, in, info, _ProjectPipelineService_Update_Handler)
+			},
+		},
+		{
+			MethodName: "Run",
+			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+				in := new(RunProjectPipelineRequest)
+				if err := dec(in); err != nil {
+					return nil, err
+				}
+				if interceptor == nil && h.Interceptor == nil {
+					return srv.(ProjectPipelineServiceServer).Run(ctx, in)
+				}
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _ProjectPipelineService_Run_info)
+				}
+				if interceptor == nil {
+					return _ProjectPipelineService_Run_Handler(ctx, in)
+				}
+				info := &grpc.UnaryServerInfo{
+					Server:     srv,
+					FullMethod: "/erda.dop.projectpipeline.ProjectPipelineService/Run",
+				}
+				return interceptor(ctx, in, info, _ProjectPipelineService_Run_Handler)
+			},
+		},
+		{
+			MethodName: "Rerun",
+			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+				in := new(RerunProjectPipelineRequest)
+				if err := dec(in); err != nil {
+					return nil, err
+				}
+				if interceptor == nil && h.Interceptor == nil {
+					return srv.(ProjectPipelineServiceServer).Rerun(ctx, in)
+				}
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _ProjectPipelineService_Rerun_info)
+				}
+				if interceptor == nil {
+					return _ProjectPipelineService_Rerun_Handler(ctx, in)
+				}
+				info := &grpc.UnaryServerInfo{
+					Server:     srv,
+					FullMethod: "/erda.dop.projectpipeline.ProjectPipelineService/Rerun",
+				}
+				return interceptor(ctx, in, info, _ProjectPipelineService_Rerun_Handler)
+			},
+		},
+		{
+			MethodName: "RerunFailed",
+			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+				in := new(RerunFailedProjectPipelineRequest)
+				if err := dec(in); err != nil {
+					return nil, err
+				}
+				if interceptor == nil && h.Interceptor == nil {
+					return srv.(ProjectPipelineServiceServer).RerunFailed(ctx, in)
+				}
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _ProjectPipelineService_RerunFailed_info)
+				}
+				if interceptor == nil {
+					return _ProjectPipelineService_RerunFailed_Handler(ctx, in)
+				}
+				info := &grpc.UnaryServerInfo{
+					Server:     srv,
+					FullMethod: "/erda.dop.projectpipeline.ProjectPipelineService/RerunFailed",
+				}
+				return interceptor(ctx, in, info, _ProjectPipelineService_RerunFailed_Handler)
+			},
+		},
+		{
+			MethodName: "Cancel",
+			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+				in := new(CancelProjectPipelineRequest)
+				if err := dec(in); err != nil {
+					return nil, err
+				}
+				if interceptor == nil && h.Interceptor == nil {
+					return srv.(ProjectPipelineServiceServer).Cancel(ctx, in)
+				}
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _ProjectPipelineService_Cancel_info)
+				}
+				if interceptor == nil {
+					return _ProjectPipelineService_Cancel_Handler(ctx, in)
+				}
+				info := &grpc.UnaryServerInfo{
+					Server:     srv,
+					FullMethod: "/erda.dop.projectpipeline.ProjectPipelineService/Cancel",
+				}
+				return interceptor(ctx, in, info, _ProjectPipelineService_Cancel_Handler)
 			},
 		},
 	}
