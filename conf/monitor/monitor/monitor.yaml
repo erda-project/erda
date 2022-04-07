@@ -63,6 +63,7 @@ clickhouse:
   addr: "${CLICKHOUSE_ADDR:localhost:9000}"
   username: "${CLICKHOUSE_USERNAME:default}"
   password: "${CLICKHOUSE_PASSWORD:default}"
+  conn_open_strategy: "1"
 
 clickhouse.table.loader@log:
   _enable: ${QUERY_LOG_FROM_CLICKHOUSE_ENABLE:false}

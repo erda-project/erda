@@ -48,6 +48,9 @@ func (p *provider) Aggregate(ctx context.Context, req *storage.Aggregation) (*st
 			Value uint64 `ch:"count"`
 		}
 		sql, _, err := expr.ToSQL()
+		if req.Debug {
+			p.Log.Infof("clickhouse aggregate sql: %s", sql)
+		}
 		err = p.clickhouse.Client().Select(ctx, &results, sql)
 		if err != nil {
 			return nil, fmt.Errorf("failed to execute err: %s \n expression: %s", err, sql)
@@ -75,6 +78,9 @@ func (p *provider) Aggregate(ctx context.Context, req *storage.Aggregation) (*st
 			Value uint64 `ch:"count"`
 		}
 		sql, _, err := expr.ToSQL()
+		if req.Debug {
+			p.Log.Infof("clickhouse aggregate sql: %s", sql)
+		}
 		err = p.clickhouse.Client().Select(ctx, &results, sql)
 		if err != nil {
 			return nil, fmt.Errorf("failed to execute err: %s \n expression: %s", err, sql)

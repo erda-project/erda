@@ -79,7 +79,7 @@ func parseAggregateResult(req *storage.Aggregation, resp *elastic.SearchResult) 
 			linq.From(histogram.Buckets).Select(func(item interface{}) interface{} {
 				it := item.(*elastic.AggregationBucketHistogramItem)
 				return &storage.AggregationBucket{
-					Key:   it.Key,
+					Key:   int64(it.Key),
 					Count: it.DocCount,
 				}
 			}).ToSlice(&buckets)
