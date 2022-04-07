@@ -25,6 +25,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/pkg/errors"
@@ -36,17 +37,132 @@ import (
 	"github.com/erda-project/erda/pkg/discover"
 )
 
-var (
-	connected    = make(chan struct{})
-	disConnected = make(chan struct{})
-)
-
 const (
 	tokenFile  = "/var/run/secrets/kubernetes.io/serviceaccount/token"
 	rootCAFile = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
 )
 
-func getClusterInfo(apiserverAddr string) (map[string]interface{}, error) {
+type Option func(*Client)
+
+type Client struct {
+	sync.Mutex
+	cfg        *config.Config
+	accessKey  string
+	connected  bool
+	disconnect chan struct{}
+}
+
+func New(ops ...Option) *Client {
+	c := Client{
+		disconnect: make(chan struct{}),
+	}
+	for _, op := range ops {
+		op(&c)
+	}
+	return &c
+}
+
+func WithConfig(cfg *config.Config) Option {
+	return func(c *Client) {
+		c.cfg = cfg
+	}
+}
+
+func (c *Client) Start(ctx context.Context) error {
+	headers := http.Header{
+		"X-Erda-Cluster-Key": {c.cfg.ClusterKey},
+	}
+
+	if c.cfg.CollectClusterInfo {
+		clusterInfo, err := getClusterInfo(c.cfg.K8SApiServerAddr)
+		if err != nil {
+			return err
+		}
+		bytes, err := json.Marshal(clusterInfo)
+		if err != nil {
+			return err
+		}
+		headers["X-Erda-Cluster-Info"] = []string{base64.StdEncoding.EncodeToString(bytes)}
+	}
+
+	ep, err := parseDialerEndpoint(c.cfg.ClusterDialEndpoint)
+	if err != nil {
+		logrus.Errorf("failed to parse dial endpoint: %v", err)
+		return err
+	}
+
+	// If specified cluster access key, preferred to use it.
+	if c.cfg.ClusterAccessKey == "" {
+		go func() {
+			if err := c.watchClusterCredential(ctx); err != nil {
+				logrus.Errorf("watch cluster info error: %v", err)
+				return
+			}
+		}()
+	} else {
+		// Set access key values default
+		c.setAccessKey(c.cfg.ClusterAccessKey)
+		logrus.Infof("use specified cluster access key: %v", c.cfg.ClusterAccessKey)
+	}
+
+	for {
+		if c.getAccessKey() == "" {
+			continue
+		}
+
+		headers.Set("Authorization", c.getAccessKey())
+		_ = remotedialer.ClientConnect(ctx, ep, headers, nil, func(proto, address string) bool {
+			switch proto {
+			case "tcp":
+				return true
+			case "unix":
+				return address == "/var/run/docker.sock"
+			case "npipe":
+				return address == "//./pipe/docker_engine"
+			}
+			return false
+		}, c.onConnect)
+
+		select {
+		case <-ctx.Done():
+			return nil
+		case <-time.After(time.Duration(rand.Int()%10) * time.Second):
+			// retry connect after sleep a random time
+		}
+	}
+}
+
+// onConnect
+func (c *Client) onConnect(ctx context.Context, _ *remotedialer.Session) error {
+	defer func() {
+		c.setConnected(false)
+	}()
+
+	c.setConnected(true)
+
+	// Or passThrough cancel() function
+	select {
+	case <-c.disconnect:
+		return fmt.Errorf("cluster credential reload")
+	case <-ctx.Done():
+		return nil
+	}
+}
+
+func (c *Client) setConnected(b bool) {
+	c.Lock()
+	defer c.Unlock()
+	c.connected = b
+}
+
+func (c *Client) IsConnected() bool {
+	// data race
+	c.Lock()
+	defer c.Unlock()
+	return c.connected
+}
+
+func getClusterInfo(apiServerAddr string) (map[string]interface{}, error) {
 	caData, err := ioutil.ReadFile(rootCAFile)
 	if err != nil {
 		return nil, errors.Wrapf(err, "reading %s", rootCAFile)
@@ -57,7 +173,7 @@ func getClusterInfo(apiserverAddr string) (map[string]interface{}, error) {
 		return nil, errors.Wrapf(err, "reading %s", tokenFile)
 	}
 	return map[string]interface{}{
-		"address": apiserverAddr,
+		"address": apiServerAddr,
 		"token":   strings.TrimSpace(string(token)),
 		"caCert":  base64.StdEncoding.EncodeToString(caData),
 	}, nil
@@ -82,83 +198,4 @@ func parseDialerEndpoint(endpoint string) (string, error) {
 	}
 
 	return u.String(), nil
-}
-
-func Start(ctx context.Context, cfg *config.Config) error {
-	headers := http.Header{
-		"X-Erda-Cluster-Key": {cfg.ClusterKey},
-	}
-
-	if cfg.CollectClusterInfo {
-		clusterInfo, err := getClusterInfo(cfg.K8SApiServerAddr)
-		if err != nil {
-			return err
-		}
-		bytes, err := json.Marshal(clusterInfo)
-		if err != nil {
-			return err
-		}
-		headers["X-Erda-Cluster-Info"] = []string{base64.StdEncoding.EncodeToString(bytes)}
-	}
-
-	ep, err := parseDialerEndpoint(cfg.ClusterDialEndpoint)
-	if err != nil {
-		return err
-	}
-
-	// If specified cluster access key, preferred to use it.
-	if cfg.ClusterAccessKey == "" {
-		go func() {
-			if err := WatchClusterCredential(ctx, cfg); err != nil {
-				logrus.Errorf("watch cluster info error: %v", err)
-				return
-			}
-		}()
-	} else {
-		// Set access key values default
-		SetAccessKey(cfg.ClusterAccessKey)
-		logrus.Infof("use specified cluster access key: %v", cfg.ClusterAccessKey)
-	}
-
-	for {
-		if GetAccessKey() != "" {
-			headers.Set("Authorization", GetAccessKey())
-			remotedialer.ClientConnect(ctx, ep, headers, nil, func(proto, address string) bool {
-				switch proto {
-				case "tcp":
-					return true
-				case "unix":
-					return address == "/var/run/docker.sock"
-				case "npipe":
-					return address == "//./pipe/docker_engine"
-				}
-				return false
-			}, onConnect)
-		}
-		select {
-		case <-ctx.Done():
-			return nil
-		case <-time.After(time.Duration(rand.Int()%10) * time.Second):
-			// retry connect after sleep a random time
-		}
-	}
-
-}
-
-func Connected() <-chan struct{} {
-	return connected
-}
-
-func onConnect(ctx context.Context, _ *remotedialer.Session) error {
-	go func() {
-		connected <- struct{}{}
-	}()
-
-	// Or passThrough cancel() function
-	select {
-	case <-disConnected:
-		return fmt.Errorf("cluster credential reload")
-	case <-ctx.Done():
-		return nil
-	}
 }

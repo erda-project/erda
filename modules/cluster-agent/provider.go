@@ -38,7 +38,8 @@ func (p *provider) Init(ctx servicehub.Context) error {
 }
 
 func (p *provider) Run(ctx context.Context) error {
-	return client.Start(ctx, p.Cfg)
+	c := client.New(client.WithConfig(p.Cfg))
+	return c.Start(ctx)
 }
 
 func init() {
