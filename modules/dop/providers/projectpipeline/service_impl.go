@@ -1436,21 +1436,11 @@ func (p *ProjectPipelineService) ListPipelineCategory(ctx context.Context, param
 		return nil, apierrors.ErrListProjectPipelineCategory.InternalError(err)
 	}
 
-	appResp, err := p.bundle.GetMyAppsByProject(apis.GetUserID(ctx), project.OrgID, project.ID, "")
-	if err != nil {
-		return nil, apierrors.ErrListProjectPipelineCategory.InternalError(err)
-	}
-	appNames := make([]string, 0, len(appResp.List))
-	for _, v := range appResp.List {
-		appNames = append(appNames, v.Name)
-	}
-
 	staticsResp, err := p.PipelineDefinition.StatisticsGroupByFilePath(ctx, &dpb.PipelineDefinitionStatisticsRequest{
 		Location: apistructs.MakeLocation(&apistructs.ApplicationDTO{
 			OrgName:     org.Name,
 			ProjectName: project.Name,
 		}, apistructs.PipelineTypeCICD),
-		Remotes: getRemotes(appNames, org.Name, project.Name),
 	})
 	if err != nil {
 		return nil, apierrors.ErrListProjectPipelineCategory.InternalError(err)
