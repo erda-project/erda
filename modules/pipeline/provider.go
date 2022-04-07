@@ -22,6 +22,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	_ "github.com/erda-project/erda-infra/providers/etcd"
 	"github.com/erda-project/erda-infra/providers/httpserver"
+	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	"github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	_ "github.com/erda-project/erda/modules/pipeline/aop/plugins"
@@ -45,6 +46,7 @@ type provider struct {
 	CronService    cronpb.CronServiceServer `autowired:"erda.core.pipeline.cron.CronService" required:"true"`
 	CronDaemon     daemon.Interface
 	CronCompensate compensator.Interface
+	MySQL          mysqlxorm.Interface `autowired:"mysql-xorm"`
 
 	Engine       engine.Interface
 	QueueManager queuemanager.Interface
