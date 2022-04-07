@@ -176,14 +176,6 @@ func (db *ErdaDashboardHistoryDB) ListByPage(pageNum, pageSize int64, scope, sco
 		total   int64
 	)
 
-	// 	var count int
-	//	query := db.Table(TableAlert).Where("alert_scope=?", scope).Where("alert_scope_id=?", scopeID)
-	//	if name != "" {
-	//		query = query.Where("name like ?", "%"+name+"%")
-	//	}
-	//	if err := query.Count(&count).Error; err != nil {
-	//		return 0, err
-	//	}
 	query := db.Table(TableDashboardHistory).Where("`scope`=?", scope).Where("`scope_id`=?", scopeId)
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
