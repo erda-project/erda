@@ -20,12 +20,13 @@ import (
 	"strings"
 	"time"
 
+	structpb "github.com/golang/protobuf/ptypes/struct"
+
 	"github.com/erda-project/erda-proto-go/oap/common/pb"
 	lpb "github.com/erda-project/erda-proto-go/oap/logs/pb"
 	mpb "github.com/erda-project/erda-proto-go/oap/metrics/pb"
 	tpb "github.com/erda-project/erda-proto-go/oap/trace/pb"
 	"github.com/erda-project/erda/modules/oap/collector/common/pbconvert"
-	structpb "github.com/golang/protobuf/ptypes/struct"
 )
 
 type SourceType string

@@ -23,8 +23,9 @@ import (
 	"sync"
 	"time"
 
-	qutils "github.com/erda-project/erda/modules/core/monitor/metric/query/query"
 	"github.com/olivere/elastic"
+
+	qutils "github.com/erda-project/erda/modules/core/monitor/metric/query/query"
 
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/i18n"
