@@ -20,6 +20,7 @@ import (
 
 	"github.com/gorilla/schema"
 
+	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/providers/clusterinfo"
 	"github.com/erda-project/erda/modules/pipeline/providers/cron/daemon"
@@ -56,6 +57,7 @@ type Endpoints struct {
 	engine       engine.Interface
 	queueManager queuemanager.Interface
 	clusterInfo  clusterinfo.Interface
+	MySQL        mysqlxorm.Interface
 }
 
 type Option func(*Endpoints)
@@ -161,6 +163,12 @@ func WithClusterInfo(clusterInfo clusterinfo.Interface) Option {
 	}
 }
 
+func WithMysql(mysql mysqlxorm.Interface) Option {
+	return func(e *Endpoints) {
+		e.MySQL = mysql
+	}
+}
+
 // Routes 返回 endpoints 的所有 endpoint 方法，也就是 route.
 func (e *Endpoints) Routes() []httpserver.Endpoint {
 	return []httpserver.Endpoint{
@@ -168,6 +176,9 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/ping", Method: http.MethodGet, Handler: e.healthCheck},
 		// version
 		{Path: "/version", Method: http.MethodGet, Handler: e.version},
+
+		{Path: "/mysql/stats", Method: http.MethodGet, Handler: e.mysqlStats},
+		{Path: "/mysql/provider/stats", Method: http.MethodGet, Handler: e.providerMysqlStats},
 
 		// pipelines
 		{Path: "/api/v2/pipelines", Method: http.MethodPost, Handler: e.pipelineCreateV2},
