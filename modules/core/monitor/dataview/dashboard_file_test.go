@@ -46,3 +46,28 @@ func Test_dashboardFileName(t *testing.T) {
 		})
 	}
 }
+
+func TestCompileToDest(t *testing.T) {
+	type args struct {
+		scope   string
+		scopeId string
+		data    string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{"case1", args{scope: "micro_service", scopeId: "test", data: `filter__metric_scope_id\":\"xxxx\", this is a test`}, `filter__metric_scope_id\":\"test\", this is a test`},
+		{"case2", args{scope: "micro_service", scopeId: "test", data: `filter__metric_scope_id":"xxxx", this is a test`}, `filter__metric_scope_id":"test", this is a test`},
+		{"case3", args{scope: "micro_service", scopeId: "test", data: `filter_terminus_key\":\"xxxx\", this is a test`}, `filter_terminus_key\":\"test\", this is a test`},
+		{"case4", args{scope: "micro_service", scopeId: "test", data: `filter_terminus_key":"xxxx", this is a test`}, `filter_terminus_key":"test", this is a test`},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := CompileToDest(tt.args.scope, tt.args.scopeId, tt.args.data); got != tt.want {
+				t.Errorf("CompileToDest() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
