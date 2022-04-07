@@ -13,6 +13,22 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the "encoding/json" package it is being compiled against.
+var _ json.Marshaler = (*RunProjectPipelineRequest)(nil)
+var _ json.Unmarshaler = (*RunProjectPipelineRequest)(nil)
+var _ json.Marshaler = (*RunProjectPipelineResponse)(nil)
+var _ json.Unmarshaler = (*RunProjectPipelineResponse)(nil)
+var _ json.Marshaler = (*RerunProjectPipelineRequest)(nil)
+var _ json.Unmarshaler = (*RerunProjectPipelineRequest)(nil)
+var _ json.Marshaler = (*RerunProjectPipelineResponse)(nil)
+var _ json.Unmarshaler = (*RerunProjectPipelineResponse)(nil)
+var _ json.Marshaler = (*RerunFailedProjectPipelineRequest)(nil)
+var _ json.Unmarshaler = (*RerunFailedProjectPipelineRequest)(nil)
+var _ json.Marshaler = (*RerunFailedProjectPipelineResponse)(nil)
+var _ json.Unmarshaler = (*RerunFailedProjectPipelineResponse)(nil)
+var _ json.Marshaler = (*CancelProjectPipelineRequest)(nil)
+var _ json.Unmarshaler = (*CancelProjectPipelineRequest)(nil)
+var _ json.Marshaler = (*CancelProjectPipelineResponse)(nil)
+var _ json.Unmarshaler = (*CancelProjectPipelineResponse)(nil)
 var _ json.Marshaler = (*CreateProjectPipelineSourcePreCheckRequest)(nil)
 var _ json.Unmarshaler = (*CreateProjectPipelineSourcePreCheckRequest)(nil)
 var _ json.Marshaler = (*CreateProjectPipelineSourcePreCheckResponse)(nil)
@@ -49,6 +65,150 @@ var _ json.Marshaler = (*UpdateProjectPipelineRequest)(nil)
 var _ json.Unmarshaler = (*UpdateProjectPipelineRequest)(nil)
 var _ json.Marshaler = (*UpdateProjectPipelineResponse)(nil)
 var _ json.Unmarshaler = (*UpdateProjectPipelineResponse)(nil)
+
+// RunProjectPipelineRequest implement json.Marshaler.
+func (m *RunProjectPipelineRequest) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// RunProjectPipelineRequest implement json.Marshaler.
+func (m *RunProjectPipelineRequest) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// RunProjectPipelineResponse implement json.Marshaler.
+func (m *RunProjectPipelineResponse) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// RunProjectPipelineResponse implement json.Marshaler.
+func (m *RunProjectPipelineResponse) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// RerunProjectPipelineRequest implement json.Marshaler.
+func (m *RerunProjectPipelineRequest) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// RerunProjectPipelineRequest implement json.Marshaler.
+func (m *RerunProjectPipelineRequest) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// RerunProjectPipelineResponse implement json.Marshaler.
+func (m *RerunProjectPipelineResponse) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// RerunProjectPipelineResponse implement json.Marshaler.
+func (m *RerunProjectPipelineResponse) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// RerunFailedProjectPipelineRequest implement json.Marshaler.
+func (m *RerunFailedProjectPipelineRequest) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// RerunFailedProjectPipelineRequest implement json.Marshaler.
+func (m *RerunFailedProjectPipelineRequest) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// RerunFailedProjectPipelineResponse implement json.Marshaler.
+func (m *RerunFailedProjectPipelineResponse) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// RerunFailedProjectPipelineResponse implement json.Marshaler.
+func (m *RerunFailedProjectPipelineResponse) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// CancelProjectPipelineRequest implement json.Marshaler.
+func (m *CancelProjectPipelineRequest) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// CancelProjectPipelineRequest implement json.Marshaler.
+func (m *CancelProjectPipelineRequest) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// CancelProjectPipelineResponse implement json.Marshaler.
+func (m *CancelProjectPipelineResponse) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// CancelProjectPipelineResponse implement json.Marshaler.
+func (m *CancelProjectPipelineResponse) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
 
 // CreateProjectPipelineSourcePreCheckRequest implement json.Marshaler.
 func (m *CreateProjectPipelineSourcePreCheckRequest) MarshalJSON() ([]byte, error) {

@@ -158,3 +158,10 @@ User-ID: 2
 GET  http://localhost:3033/api/autotests/scenes/modal
 Accept: application/json
 User-ID: 2
+
+### run project pipeline
+POST http://localhost:9527/api/erda/project-pipeline/definitions/e0aef36b-95b7-456a-91f7-94994be91ac7/actions/run
+Content-Type: application/json
+User-ID: 2
+
+{"projectID": 5}

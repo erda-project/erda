@@ -86,7 +86,81 @@ service ProjectPipelineService {
       path : "/api/project-pipeline/definitions/{pipelineDefinitionID}",
     };
   }
+
+  rpc Run(RunProjectPipelineRequest)
+          returns(RunProjectPipelineResponse) {
+    option(google.api.http) = {
+      post : "/api/project-pipeline/definitions/{pipelineDefinitionID}/actions/run",
+    };
+    option(erda.common.openapi) = {
+      path : "/api/project-pipeline/definitions/{pipelineDefinitionID}/actions/run",
+    };
+  }
+
+  rpc Rerun(RerunProjectPipelineRequest)
+          returns(RerunProjectPipelineResponse) {
+    option(google.api.http) = {
+      post : "/api/project-pipeline/definitions/{pipelineDefinitionID}/actions/rerun",
+    };
+    option(erda.common.openapi) = {
+      path : "/api/project-pipeline/definitions/{pipelineDefinitionID}/actions/rerun",
+    };
+  }
+
+  rpc RerunFailed(RerunFailedProjectPipelineRequest)
+          returns(RerunFailedProjectPipelineResponse) {
+    option(google.api.http) = {
+      post : "/api/project-pipeline/definitions/{pipelineDefinitionID}/actions/rerun-failed",
+    };
+    option(erda.common.openapi) = {
+      path : "/api/project-pipeline/definitions/{pipelineDefinitionID}/actions/rerun-failed",
+    };
+  }
+
+  rpc Cancel(CancelProjectPipelineRequest)
+          returns(CancelProjectPipelineResponse) {
+    option(google.api.http) = {
+      post : "/api/project-pipeline/definitions/{pipelineDefinitionID}/actions/cancel",
+    };
+    option(erda.common.openapi) = {
+      path : "/api/project-pipeline/definitions/{pipelineDefinitionID}/actions/cancel",
+    };
+  }
 }
+
+message RunProjectPipelineRequest {
+  string pipelineDefinitionID = 1;
+  int64 projectID = 2;
+}
+
+message RunProjectPipelineResponse {
+  google.protobuf.Value pipeline = 1;
+}
+
+message RerunProjectPipelineRequest {
+  string pipelineDefinitionID = 1;
+  int64 projectID = 2;
+}
+
+message RerunProjectPipelineResponse {
+  google.protobuf.Value pipeline = 1;
+}
+
+message RerunFailedProjectPipelineRequest {
+  string pipelineDefinitionID = 1;
+  int64 projectID = 2;
+}
+
+message RerunFailedProjectPipelineResponse {
+  google.protobuf.Value pipeline = 1;
+}
+
+message CancelProjectPipelineRequest {
+  string pipelineDefinitionID = 1;
+  int64 projectID = 2;
+}
+
+message CancelProjectPipelineResponse {}
 
 message CreateProjectPipelineSourcePreCheckRequest {
   uint64 appID = 1 [(validator.field) = {int_gt: 0}];

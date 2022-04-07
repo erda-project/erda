@@ -37,6 +37,7 @@ import (
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	"github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
 	commonpb "github.com/erda-project/erda-proto-go/core/pipeline/pb"
+	projectpipelinepb "github.com/erda-project/erda-proto-go/dop/projectpipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/project-pipeline/common"
@@ -651,37 +652,33 @@ func (p *PipelineTable) RegisterMoreOperationOp(opData OpMoreOperationsItemClick
 	id := string(opData.ClientData.ParentDataRef.ID)
 	switch opData.ClientData.DataRef.ID {
 	case "run":
-		_, err := p.ProjectPipelineSvc.Run(p.sdk.Ctx, deftype.ProjectPipelineRun{
+		_, err := p.ProjectPipelineSvc.Run(p.sdk.Ctx, &projectpipelinepb.RunProjectPipelineRequest{
 			PipelineDefinitionID: id,
-			ProjectID:            p.InParams.ProjectID,
-			IdentityInfo:         apistructs.IdentityInfo{UserID: cputil.GetUserID(p.sdk.Ctx)},
+			ProjectID:            int64(p.InParams.ProjectID),
 		})
 		if err != nil {
 			panic(err)
 		}
 	case "cancelRun":
-		_, err := p.ProjectPipelineSvc.Cancel(p.sdk.Ctx, deftype.ProjectPipelineCancel{
+		_, err := p.ProjectPipelineSvc.Cancel(p.sdk.Ctx, &projectpipelinepb.CancelProjectPipelineRequest{
 			PipelineDefinitionID: id,
-			ProjectID:            p.InParams.ProjectID,
-			IdentityInfo:         apistructs.IdentityInfo{UserID: cputil.GetUserID(p.sdk.Ctx)},
+			ProjectID:            int64(p.InParams.ProjectID),
 		})
 		if err != nil {
 			panic(err)
 		}
 	case "rerun":
-		_, err := p.ProjectPipelineSvc.Rerun(p.sdk.Ctx, deftype.ProjectPipelineRerun{
+		_, err := p.ProjectPipelineSvc.Rerun(p.sdk.Ctx, &projectpipelinepb.RerunProjectPipelineRequest{
 			PipelineDefinitionID: id,
-			ProjectID:            p.InParams.ProjectID,
-			IdentityInfo:         apistructs.IdentityInfo{UserID: cputil.GetUserID(p.sdk.Ctx)},
+			ProjectID:            int64(p.InParams.ProjectID),
 		})
 		if err != nil {
 			panic(err)
 		}
 	case "rerunFromFail":
-		_, err := p.ProjectPipelineSvc.FailRerun(p.sdk.Ctx, deftype.ProjectPipelineFailRerun{
+		_, err := p.ProjectPipelineSvc.RerunFailed(p.sdk.Ctx, &projectpipelinepb.RerunFailedProjectPipelineRequest{
 			PipelineDefinitionID: id,
-			ProjectID:            p.InParams.ProjectID,
-			IdentityInfo:         apistructs.IdentityInfo{UserID: cputil.GetUserID(p.sdk.Ctx)},
+			ProjectID:            int64(p.InParams.ProjectID),
 		})
 		if err != nil {
 			panic(err)
