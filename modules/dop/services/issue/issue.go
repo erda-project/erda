@@ -794,7 +794,7 @@ func (svc *Issue) UpdateIssuePlanTimeByIteration(u *issueUpdated, c *issueValida
 	now := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.Now().Location())
 	adjuster := issueCreateAdjuster{&now}
 	v := issueValidator{}
-	if u.withIteration && u.iterationID > 0 {
+	if u.withIteration && u.iterationID != 0 {
 		if u.iterationID == u.iterationOld {
 			return nil
 		}
@@ -858,16 +858,20 @@ func (svc *Issue) SyncIssueChildrenIteration(issue *apistructs.Issue, iterationI
 	if iterationID == 0 {
 		return nil
 	}
-	iteration, err := svc.db.GetIteration(uint64(iterationID))
-	if err != nil {
-		return err
-	}
 	u := &issueUpdated{
 		id:          uint64(issue.ID),
 		projectID:   issue.ProjectID,
 		iterationID: iterationID,
 	}
-	return svc.UpdateIssueChildrenIteration(u, &issueValidationConfig{iteration: iteration})
+	c := &issueValidationConfig{}
+	if iterationID > 0 {
+		iteration, err := svc.db.GetIteration(uint64(iterationID))
+		if err != nil {
+			return err
+		}
+		c.iteration = iteration
+	}
+	return svc.UpdateIssueChildrenIteration(u, c)
 }
 
 func updateParentCondition(state string, u *issueUpdated) bool {
