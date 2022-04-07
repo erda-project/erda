@@ -44,6 +44,7 @@ type logQueryService struct {
 
 func (s *logQueryService) GetLog(ctx context.Context, req *pb.GetLogRequest) (*pb.GetLogResponse, error) {
 	items, _, err := s.queryLogItems(ctx, req, func(sel *storage.Selector) *storage.Selector {
+		sel.Meta.PreferredReturnFields = storage.OnlyIdContent
 		return s.tryFillQueryMeta(ctx, sel)
 	}, true, false)
 	if err != nil {
@@ -62,6 +63,7 @@ func (s *logQueryService) GetLogByRuntime(ctx context.Context, req *pb.GetLogByR
 			Op:    storage.EQ,
 			Value: req.ApplicationId,
 		})
+		sel.Meta.PreferredReturnFields = storage.OnlyIdContent
 		s.tryFillQueryMeta(ctx, sel)
 		return sel
 	}, true, false)
@@ -81,6 +83,7 @@ func (s *logQueryService) GetLogByOrganization(ctx context.Context, req *pb.GetL
 			Op:    storage.EQ,
 			Value: req.ClusterName,
 		})
+		sel.Meta.PreferredReturnFields = storage.OnlyIdContent
 		s.tryFillQueryMeta(ctx, sel)
 		return sel
 	}, true, false)
@@ -92,6 +95,7 @@ func (s *logQueryService) GetLogByOrganization(ctx context.Context, req *pb.GetL
 
 func (s *logQueryService) GetLogByExpression(ctx context.Context, req *pb.GetLogByExpressionRequest) (*pb.GetLogByExpressionResponse, error) {
 	items, total, err := s.queryLogItems(ctx, req, func(sel *storage.Selector) *storage.Selector {
+		sel.Meta.PreferredReturnFields = storage.AllFields
 		return s.tryFillQueryMeta(ctx, sel)
 	}, false, true)
 	if err != nil {
@@ -251,7 +255,7 @@ func (s *logQueryService) queryLogItems(ctx context.Context, req Request, fn fun
 	if withTotal {
 		it, err = s.getIterator(ctx, sel, req.GetLive())
 	} else {
-		it, err = s.getOrderedIterator(ctx, s.splitSelectors(sel, 24*time.Hour, 10), req.GetLive())
+		it, err = s.getOrderedIterator(ctx, s.splitSelectors(sel, time.Hour, 2, 10), req.GetLive())
 	}
 
 	if err != nil {
@@ -326,13 +330,18 @@ func (s *logQueryService) walkLogItems(ctx context.Context, req Request, fn func
 	return nil
 }
 
-func (s *logQueryService) splitSelectors(sel *storage.Selector, interval time.Duration, maxSlices int) []*storage.Selector {
+func (s *logQueryService) splitSelectors(sel *storage.Selector, initialInterval time.Duration, deltaFactor float64, maxSlices int) []*storage.Selector {
 	var sels []*storage.Selector
 	end := sel.End
 	count := 0
+	interval := float64(initialInterval)
+	if deltaFactor < 1 {
+		deltaFactor = 1
+	}
 
 	for end > sel.Start {
 		start := end - int64(interval)
+		interval = interval * deltaFactor
 		if start < sel.Start || (count+1) >= maxSlices {
 			start = sel.Start
 		}

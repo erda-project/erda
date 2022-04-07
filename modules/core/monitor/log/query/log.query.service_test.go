@@ -207,17 +207,19 @@ func Test_splitSelectors(t *testing.T) {
 	}
 
 	tests := []struct {
-		name      string
-		sel       *storage.Selector
-		interval  time.Duration
-		maxSlices int
-		want      []*storage.Selector
-		wantErr   bool
+		name        string
+		sel         *storage.Selector
+		interval    time.Duration
+		deltaFactor float64
+		maxSlices   int
+		want        []*storage.Selector
+		wantErr     bool
 	}{
 		{
-			sel:       sel,
-			interval:  time.Hour,
-			maxSlices: 0,
+			sel:         sel,
+			interval:    time.Hour,
+			deltaFactor: 1,
+			maxSlices:   0,
 			want: []*storage.Selector{
 				{
 					Start: 0,
@@ -226,9 +228,10 @@ func Test_splitSelectors(t *testing.T) {
 			},
 		},
 		{
-			sel:       sel,
-			interval:  time.Hour,
-			maxSlices: 1,
+			sel:         sel,
+			interval:    time.Hour,
+			deltaFactor: 1,
+			maxSlices:   1,
 			want: []*storage.Selector{
 				{
 					Start: 0,
@@ -237,9 +240,10 @@ func Test_splitSelectors(t *testing.T) {
 			},
 		},
 		{
-			sel:       sel,
-			interval:  time.Hour,
-			maxSlices: 2,
+			sel:         sel,
+			interval:    time.Hour,
+			deltaFactor: 1,
+			maxSlices:   2,
 			want: []*storage.Selector{
 				{
 					Start: 0,
@@ -256,8 +260,9 @@ func Test_splitSelectors(t *testing.T) {
 				Start: end - int64(24*time.Hour),
 				End:   end,
 			},
-			interval:  time.Hour * 24 * 365,
-			maxSlices: 10,
+			interval:    time.Hour * 24 * 365,
+			deltaFactor: 1,
+			maxSlices:   10,
 			want: []*storage.Selector{
 				{
 					Start: end - int64(24*time.Hour),
@@ -270,8 +275,9 @@ func Test_splitSelectors(t *testing.T) {
 				Start: end - int64(24*time.Hour),
 				End:   end,
 			},
-			interval:  time.Hour * 12,
-			maxSlices: 25,
+			interval:    time.Hour * 12,
+			deltaFactor: 1,
+			maxSlices:   25,
 			want: []*storage.Selector{
 				{
 					Start: end - int64(24*time.Hour),
@@ -283,12 +289,39 @@ func Test_splitSelectors(t *testing.T) {
 				},
 			},
 		},
+		{
+			sel: &storage.Selector{
+				Start: end - int64(24*time.Hour),
+				End:   end,
+			},
+			interval:    time.Hour,
+			deltaFactor: 2,
+			maxSlices:   4,
+			want: []*storage.Selector{
+				{
+					Start: end - int64(24*time.Hour),
+					End:   end - int64(7*time.Hour),
+				},
+				{
+					Start: end - int64(7*time.Hour),
+					End:   end - int64(3*time.Hour),
+				},
+				{
+					Start: end - int64(3*time.Hour),
+					End:   end - int64(time.Hour),
+				},
+				{
+					Start: end - int64(time.Hour),
+					End:   end,
+				},
+			},
+		},
 	}
 
 	s := &logQueryService{}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := s.splitSelectors(tt.sel, tt.interval, tt.maxSlices)
+			got := s.splitSelectors(tt.sel, tt.interval, tt.deltaFactor, tt.maxSlices)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("splitSelectors() = %+v, want %+v", got, tt.want)
 			}
