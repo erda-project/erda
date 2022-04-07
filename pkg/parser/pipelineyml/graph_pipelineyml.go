@@ -189,6 +189,16 @@ func ConvertToGraphPipelineYml(data []byte) (*apistructs.PipelineYml, error) {
 		Outputs:     pipelineOutputs,
 		On:          on,
 		Triggers:    pipelineYml.Spec().Triggers,
+		CronCompensator: func() *apistructs.CronCompensator {
+			if pipelineYml.Spec().CronCompensator == nil {
+				return nil
+			}
+			return &apistructs.CronCompensator{
+				Enable:               pipelineYml.Spec().CronCompensator.Enable,
+				LatestFirst:          pipelineYml.Spec().CronCompensator.LatestFirst,
+				StopIfLatterExecuted: pipelineYml.Spec().CronCompensator.StopIfLatterExecuted,
+			}
+		}(),
 	}
 
 	var lifecycle []*apistructs.NetworkHookInfo
