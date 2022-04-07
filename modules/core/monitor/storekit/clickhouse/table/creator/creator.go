@@ -42,8 +42,8 @@ func (p *provider) Ensure(ctx context.Context, tenant, key string) (_ <-chan err
 		return nil, tableName
 	}
 
-	writeTableName = table.NormalizeKey(fmt.Sprintf("%s_%s_%s", p.Cfg.TablePrefix, tenant, key))
-	searchTableName := table.NormalizeKey(fmt.Sprintf("%s_%s", p.Cfg.TablePrefix, tenant))
+	writeTableName = fmt.Sprintf("%s_%s_%s", p.Cfg.TablePrefix, table.NormalizeKey(tenant), table.NormalizeKey(key))
+	searchTableName := fmt.Sprintf("%s_%s", p.Cfg.TablePrefix, table.NormalizeKey(tenant))
 
 	if _, ok := p.created.Load(writeTableName); ok {
 		return nil, fmt.Sprintf("%s.%s", p.Cfg.Database, writeTableName)

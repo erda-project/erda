@@ -23,10 +23,13 @@ import (
 )
 
 func (s *PipelineSvc) List(condition apistructs.PipelinePageListRequest) (*apistructs.PipelinePageListData, error) {
-	pipelines, _, total, currentPageSize, err := s.dbClient.PageListPipelines(condition)
+	pagingResult, err := s.dbClient.PageListPipelines(condition)
 	if err != nil {
 		return nil, apierrors.ErrListPipeline.InternalError(err)
 	}
+	pipelines := pagingResult.Pipelines
+	total := pagingResult.Total
+	currentPageSize := pagingResult.CurrentPageSize
 
 	var result apistructs.PipelinePageListData
 	result.Pipelines = s.BatchConvert2PagePipeline(pipelines)

@@ -179,6 +179,11 @@ type PipelineCreateRequestV2 struct {
 	// +optional
 	DefinitionID string `json:"definitionID"`
 
+	// passed from the invoker, different from config cms
+	// eg: gittar.repo
+	// +optional
+	Secrets map[string]string `json:"secrets"`
+
 	IdentityInfo
 }
 
@@ -550,6 +555,7 @@ type PipelineRunRequest struct {
 	ForceRun               bool              `json:"forceRun"`
 	PipelineRunParams      PipelineRunParams `json:"runParams"`
 	ConfigManageNamespaces []string          `json:"configManageNamespaces"`
+	Secrets                map[string]string `json:"secrets"`
 	IdentityInfo
 }
 
@@ -569,8 +575,9 @@ type PipelineCancelResponse struct {
 
 // pipeline rerun
 type PipelineRerunRequest struct {
-	PipelineID    uint64 `json:"pipelineID"`
-	AutoRunAtOnce bool   `json:"autoRunAtOnce"`
+	PipelineID    uint64            `json:"pipelineID"`
+	AutoRunAtOnce bool              `json:"autoRunAtOnce"`
+	Secrets       map[string]string `json:"secrets"`
 	IdentityInfo
 }
 
@@ -582,8 +589,9 @@ type PipelineRerunResponse struct {
 // pipeline rerun failed
 
 type PipelineRerunFailedRequest struct {
-	PipelineID    uint64 `json:"pipelineID"`
-	AutoRunAtOnce bool   `json:"autoRunAtOnce"`
+	PipelineID    uint64            `json:"pipelineID"`
+	AutoRunAtOnce bool              `json:"autoRunAtOnce"`
+	Secrets       map[string]string `json:"secrets"`
 	IdentityInfo
 }
 

@@ -174,3 +174,6 @@ func (this *DeleteNotifyGroupResponse) Validate() error {
 	}
 	return nil
 }
+func (this *GroupIdAndProjectId) Validate() error {
+	return nil
+}

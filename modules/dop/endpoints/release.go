@@ -76,7 +76,12 @@ func (e *Endpoints) ReleaseCallback(ctx context.Context, r *http.Request, vars m
 	if err != nil {
 		return nil, apierrors.ErrGetApp.InternalError(err)
 	}
-	rules, err := e.branchRule.Query(apistructs.ProjectScope, int64(app.ProjectID))
+	rules, err := e.branchRule.Query(apistructs.AppScope, int64(app.ID))
+	if err != nil {
+		return nil, apierrors.ErrFetchConfigNamespace.InternalError(err)
+	}
+
+	projectRules, err := e.branchRule.Query(apistructs.ProjectScope, int64(app.ProjectID))
 	if err != nil {
 		return nil, apierrors.ErrFetchConfigNamespace.InternalError(err)
 	}
@@ -131,7 +136,7 @@ func (e *Endpoints) ReleaseCallback(ctx context.Context, r *http.Request, vars m
 			logrus.Errorf("error convert to pipelineV2 %s, (%+v)", strPipelineYml, err)
 			continue
 		}
-		validBranch := diceworkspace.GetValidBranchByGitReference(reqPipeline.Branch, rules)
+		validBranch := diceworkspace.GetValidBranchByGitReference(reqPipeline.Branch, projectRules)
 		workspace := validBranch.Workspace
 		v2.ForceRun = true
 		v2.DefinitionID = definitionID

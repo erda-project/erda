@@ -449,14 +449,16 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		environment.WithBundle(bdl.Bdl),
 	)
 
-	issueRelated := issuerelated.New(
-		issuerelated.WithDBClient(db),
-		issuerelated.WithBundle(bdl.Bdl),
-	)
-
 	issueStream := issuestream.New(
 		issuestream.WithDBClient(db),
 		issuestream.WithBundle(bdl.Bdl),
+		issuestream.WithTranslator(p.IssueTran),
+	)
+
+	issueRelated := issuerelated.New(
+		issuerelated.WithDBClient(db),
+		issuerelated.WithBundle(bdl.Bdl),
+		issuerelated.WithIssueStream(issueStream),
 	)
 
 	issueproperty := issueproperty.New(
@@ -469,13 +471,14 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		issue.WithBundle(bdl.Bdl),
 		issue.WithIssueStream(issueStream),
 		issue.WithUCClient(uc),
-		issue.WithTranslator(p.IssueTan),
+		issue.WithTranslator(p.IssueTran),
 		issue.WithIssueRelated(issueRelated),
 		issue.WithIssueProperty(issueproperty),
 	)
 	issue.CreateFileRecord = testCaseSvc.CreateFileRecord
 	issue.UpdateFileRecord = testCaseSvc.UpdateFileRecord
 	p.CommentIssueStreamSvc.WithIssue(issue)
+	p.IssueSyncSvc.WithIssue(issue)
 
 	issueState := issuestate.New(
 		issuestate.WithDBClient(db),

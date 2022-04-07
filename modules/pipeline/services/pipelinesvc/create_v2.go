@@ -58,6 +58,7 @@ func (s *PipelineSvc) CreateV2(req *apistructs.PipelineCreateRequestV2) (*spec.P
 			ForceRun:          req.ForceRun,
 			IdentityInfo:      req.IdentityInfo,
 			PipelineRunParams: req.RunParams,
+			Secrets:           req.Secrets,
 		})
 		if err != nil {
 			logrus.Errorf("failed to run pipeline, pipelineID: %d, err: %v", p.ID, err)
@@ -281,6 +282,9 @@ func (s *PipelineSvc) makePipelineFromRequestV2(req *apistructs.PipelineCreateRe
 	// configManage
 	p.Extra.ConfigManageNamespaces = req.ConfigManageNamespaces
 
+	// secrets
+	p.Extra.IncomingSecrets = req.Secrets
+
 	// cron
 	p.Extra.CronExpr = pipelineYml.Spec().Cron
 	if v, ok := labels[apistructs.LabelPipelineCronID]; ok {
@@ -408,7 +412,9 @@ func constructPipelineCron(p *spec.Pipeline, cronStartFrom *time.Time, configMan
 			Version:                "v2",
 			Compensator:            compensator,
 			LastCompensateAt:       nil,
+			IncomingSecrets:        p.Extra.IncomingSecrets,
 		},
+		PipelineDefinitionID: p.PipelineDefinitionID,
 	}
 
 	return cron

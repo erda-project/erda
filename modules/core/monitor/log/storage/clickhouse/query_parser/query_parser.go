@@ -23,6 +23,7 @@ import (
 	"github.com/antlr/antlr4/runtime/Go/antlr"
 
 	"github.com/erda-project/erda/modules/core/monitor/log/storage/clickhouse/query_parser/parser"
+	"github.com/erda-project/erda/modules/core/monitor/log/storage/clickhouse/utils"
 	"github.com/erda-project/erda/modules/core/monitor/storekit/clickhouse/table/loader"
 )
 
@@ -187,35 +188,12 @@ func (l *esqsListener) push(expr string) {
 	l.stack = append(l.stack, expr)
 }
 
-func (l *esqsListener) convertField(field string) string {
-	_, ok := l.tableMeta.Columns[field]
-	if ok {
-		return field
-	}
-	splits := strings.SplitN(field, ".", 2)
-	if len(splits) != 2 {
-		return field
-	}
-	prefixCol, ok := l.tableMeta.Columns[splits[0]]
-	if !ok {
-		return field
-	}
-	switch prefixCol.Type {
-	case loader.MapStringString:
-		return fmt.Sprintf("%s['%s']", splits[0], splits[1])
-	case loader.String:
-		return fmt.Sprintf("JSONExtractString(%s,'%s')", splits[0], splits[1])
-	default:
-		return field
-	}
-}
-
 func (l *esqsListener) formatExpression(field, value string) string {
 	if l.highlight {
 		l.buildHighlightItems(field, value)
 	}
 
-	field = l.convertField(field)
+	field = utils.ConvertUnknownField(l.tableMeta, field)
 
 	switch field {
 	case l.defaultField:

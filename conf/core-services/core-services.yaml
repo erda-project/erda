@@ -29,7 +29,6 @@ redis:
 
 
 erda.core.services.authentication.credentials.accesskey:
-erda.core.services.notify.channel:
 erda.core.services.errorbox:
 
 http-server@admin:
@@ -40,4 +39,10 @@ erda.core.messenger.notify:
 
 erda.core.messenger.eventbox:
 
+erda.core.messenger.notifygroup:
+
 dingtalk.api:
+
+erda.core.messenger.notifychannel:
+
+audit:

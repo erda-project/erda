@@ -27,3 +27,27 @@ func MakeOrgGittarTokenPipelineCmsNsConfig() string {
 func MakeOrgGittarUsernamePipelineCmsNsConfig() string {
 	return "gittar.username"
 }
+
+func MakeGittarRepoSecret() string {
+	return "gittar.repo"
+}
+
+func MakeGittarBranchSecret() string {
+	return "gittar.branch"
+}
+
+func MakeGittarCommitSecret() string {
+	return "gittar.commit"
+}
+
+func MakeGittarCommitAbbrevSecret() string {
+	return "gittar.commit.abbrev"
+}
+
+func MakeGittarMessageSecret() string {
+	return "gittar.message"
+}
+
+func MakeGittarAuthorSecret() string {
+	return "gittar.message"
+}

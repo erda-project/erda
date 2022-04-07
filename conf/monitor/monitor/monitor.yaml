@@ -348,9 +348,9 @@ monitor-monitoring:
   usage_sync_interval:
     metric: ${MONITOR_MONITORING_METRIC_SYNC_INTERVAL}
 
-grpc-client@erda.core.services.notify.channel:
+grpc-client@erda.core.messenger.notifychannel:
   addr: "${CORE_SERVICES_GRPC_ADDR:core-services:9537}"
-erda.core.services.notify.channel-client:
+erda.core.messenger.notifychannel-client:
 
 erda.core.monitor.expression:
   alert_rules: ${CONFIG_PATH}/alert/rules

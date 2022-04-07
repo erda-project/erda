@@ -22,10 +22,10 @@ import (
 
 	"github.com/jinzhu/gorm"
 
+	notifygroup "github.com/erda-project/erda-proto-go/core/messenger/notifygroup/pb"
 	"github.com/erda-project/erda-proto-go/msp/apm/notifygroup/pb"
 	tenantpb "github.com/erda-project/erda-proto-go/msp/tenant/pb"
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/modules/monitor/utils"
 	"github.com/erda-project/erda/pkg/common/errors"
 	"github.com/erda-project/erda/providers/audit"
 )
@@ -62,8 +62,7 @@ func (n *notifyGroupService) CreateNotifyGroup(ctx context.Context, request *pb.
 	if projectId == "" {
 		return nil, errors.NewInternalServerError(fmt.Errorf("Query project record by scopeid is empty scopeId is %v", request.ScopeId))
 	}
-	userId := apis.GetUserID(ctx)
-	orgId := apis.GetOrgID(ctx)
+
 	label := map[string]string{
 		"member_scopeID":   projectId,
 		"member_scopeType": "project",
@@ -77,25 +76,18 @@ func (n *notifyGroupService) CreateNotifyGroup(ctx context.Context, request *pb.
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	createReq := &apistructs.CreateNotifyGroupRequest{}
+	createReq := &notifygroup.CreateNotifyGroupRequest{}
 	err = json.Unmarshal(data, createReq)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	resp, err := n.p.bdl.CreateNotifyGroup(orgId, userId, createReq)
+	c := utils.NewContextWithHeader(ctx)
+	resp, err := n.p.NotifyGroup.CreateNotifyGroup(c, createReq)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
 	result := &pb.CreateNotifyGroupResponse{
-		Data: &pb.NotifyGroup{},
-	}
-	data, err = json.Marshal(resp)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
-	}
-	err = json.Unmarshal(data, result.Data)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
+		Data: &pb.GroupIdAndProjectId{},
 	}
 	projectName, auditProjectId, err := n.GetProjectInfo(request.ScopeId)
 	if err != nil {
@@ -105,23 +97,27 @@ func (n *notifyGroupService) CreateNotifyGroup(ctx context.Context, request *pb.
 		ScopeId: request.ScopeId,
 	})
 	result.Data.ProjectId = auditProjectId
+	result.Data.GroupID = resp.Data
 	auditContext := auditContextMap(projectName, workResp.Data.Workspace, request.Name)
 	audit.ContextEntryMap(ctx, auditContext)
 	return result, nil
 }
 
-func (n *notifyGroupService) auditContextInfo(groupId int64, orgId string) (string, string, string, uint64, error) {
-	notifyGroup, err := n.p.bdl.GetNotifyGroup(groupId, orgId)
-	if err != nil {
-		return "", "", "", 0, err
-	}
-	resp, err := n.p.Tenant.GetTenantProject(context.Background(), &tenantpb.GetTenantProjectRequest{
-		ScopeId: notifyGroup.Data.ScopeID,
+func (n *notifyGroupService) auditContextInfo(groupId int64, ctx context.Context) (string, string, string, uint64, error) {
+	c := utils.NewContextWithHeader(ctx)
+	notifyGroup, err := n.p.NotifyGroup.GetNotifyGroup(c, &notifygroup.GetNotifyGroupRequest{
+		GroupID: groupId,
 	})
 	if err != nil {
 		return "", "", "", 0, err
 	}
-	projectName, auditProjectId, err := n.GetProjectInfo(notifyGroup.Data.ScopeID)
+	resp, err := n.p.Tenant.GetTenantProject(context.Background(), &tenantpb.GetTenantProjectRequest{
+		ScopeId: notifyGroup.Data.ScopeId,
+	})
+	if err != nil {
+		return "", "", "", 0, err
+	}
+	projectName, auditProjectId, err := n.GetProjectInfo(notifyGroup.Data.ScopeId)
 	if err != nil {
 		return "", "", "", 0, err
 	}
@@ -151,17 +147,17 @@ func (n *notifyGroupService) GetProjectInfo(scopeId string) (string, uint64, err
 }
 
 func (n *notifyGroupService) QueryNotifyGroup(ctx context.Context, request *pb.QueryNotifyGroupRequest) (*pb.QueryNotifyGroupResponse, error) {
-	orgId := apis.GetOrgID(ctx)
-	queryReq := &apistructs.QueryNotifyGroupRequest{
+	queryReq := &notifygroup.QueryNotifyGroupRequest{
 		PageNo:      request.PageNo,
 		PageSize:    request.PageSize,
 		ScopeType:   request.ScopeType,
-		ScopeID:     request.ScopeId,
+		ScopeId:     request.ScopeId,
 		Label:       request.Label,
 		ClusterName: request.ClusterName,
 		Name:        request.Name,
 	}
-	resp, err := n.p.bdl.QueryNotifyGroup(orgId, queryReq)
+	c := utils.NewContextWithHeader(ctx)
+	resp, err := n.p.NotifyGroup.QueryNotifyGroup(c, queryReq)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -172,7 +168,7 @@ func (n *notifyGroupService) QueryNotifyGroup(ctx context.Context, request *pb.Q
 	result := &pb.QueryNotifyGroupResponse{
 		Data: &pb.QueryNotifyGroupData{
 			List:  make([]*pb.NotifyGroup, 0),
-			Total: int64(resp.Data.Total),
+			Total: resp.Data.Total,
 		},
 		UserIDs: resp.UserIDs,
 	}
@@ -184,8 +180,10 @@ func (n *notifyGroupService) QueryNotifyGroup(ctx context.Context, request *pb.Q
 }
 
 func (n *notifyGroupService) GetNotifyGroup(ctx context.Context, request *pb.GetNotifyGroupRequest) (*pb.GetNotifyGroupResponse, error) {
-	orgId := apis.GetOrgID(ctx)
-	resp, err := n.p.bdl.GetNotifyGroup(request.GroupID, orgId)
+	c := utils.NewContextWithHeader(ctx)
+	resp, err := n.p.NotifyGroup.GetNotifyGroup(c, &notifygroup.GetNotifyGroupRequest{
+		GroupID: request.GroupID,
+	})
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -201,57 +199,43 @@ func (n *notifyGroupService) GetNotifyGroup(ctx context.Context, request *pb.Get
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	data, err = json.Marshal(resp.UserInfo)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
-	}
 	return result, nil
 }
 
 func (n *notifyGroupService) UpdateNotifyGroup(ctx context.Context, request *pb.UpdateNotifyGroupRequest) (*pb.UpdateNotifyGroupResponse, error) {
-	orgID := apis.GetOrgID(ctx)
 	data, err := json.Marshal(request)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	updateReq := &apistructs.UpdateNotifyGroupRequest{}
+	updateReq := &notifygroup.UpdateNotifyGroupRequest{}
 	err = json.Unmarshal(data, updateReq)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	resp, err := n.p.bdl.UpdateNotifyGroup(request.GroupID, orgID, updateReq)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
-	}
-	data, err = json.Marshal(resp)
+	c := utils.NewContextWithHeader(ctx)
+	resp, err := n.p.NotifyGroup.UpdateNotifyGroup(c, updateReq)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
 	result := &pb.UpdateNotifyGroupResponse{
-		Data: &pb.NotifyGroup{},
+		Data: &pb.GroupIdAndProjectId{},
 	}
-	err = json.Unmarshal(data, result.Data)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
-	}
-	projectName, workspace, notifyGroupName, auditProjectId, err := n.auditContextInfo(request.GroupID, orgID)
+	projectName, workspace, notifyGroupName, auditProjectId, err := n.auditContextInfo(request.GroupID, ctx)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
 	result.Data.ProjectId = auditProjectId
+	result.Data.GroupID = resp.Data
 	auditContext := auditContextMap(projectName, workspace, notifyGroupName)
 	audit.ContextEntryMap(ctx, auditContext)
 	return result, nil
 }
 
 func (n *notifyGroupService) GetNotifyGroupDetail(ctx context.Context, request *pb.GetNotifyGroupDetailRequest) (*pb.GetNotifyGroupDetailResponse, error) {
-	orgID := apis.GetOrgID(ctx)
-	userID := apis.GetUserID(ctx)
-	orgId, err := strconv.Atoi(orgID)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
-	}
-	resp, err := n.p.bdl.GetNotifyGroupDetail(request.GroupID, int64(orgId), userID)
+	c := utils.NewContextWithHeader(ctx)
+	resp, err := n.p.NotifyGroup.GetNotifyGroupDetail(c, &notifygroup.GetNotifyGroupDetailRequest{
+		GroupID: request.GroupID,
+	})
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -270,27 +254,22 @@ func (n *notifyGroupService) GetNotifyGroupDetail(ctx context.Context, request *
 }
 
 func (n *notifyGroupService) DeleteNotifyGroup(ctx context.Context, request *pb.DeleteNotifyGroupRequest) (*pb.DeleteNotifyGroupResponse, error) {
-	orgID := apis.GetOrgID(ctx)
-	projectName, workspace, notifyGroupName, auditProjectId, err := n.auditContextInfo(request.GroupID, orgID)
+	projectName, workspace, notifyGroupName, auditProjectId, err := n.auditContextInfo(request.GroupID, ctx)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	resp, err := n.p.bdl.DeleteNotifyGroup(request.GroupID, orgID)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
-	}
-	data, err := json.Marshal(resp)
+	c := utils.NewContextWithHeader(ctx)
+	resp, err := n.p.NotifyGroup.DeleteNotifyGroup(c, &notifygroup.DeleteNotifyGroupRequest{
+		GroupID: request.GroupID,
+	})
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
 	result := &pb.DeleteNotifyGroupResponse{
-		Data: &pb.NotifyGroup{},
-	}
-	err = json.Unmarshal(data, result.Data)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
+		Data: &pb.GroupIdAndProjectId{},
 	}
 	result.Data.ProjectId = auditProjectId
+	result.Data.GroupID = resp.Data
 	auditContext := auditContextMap(projectName, workspace, notifyGroupName)
 	audit.ContextEntryMap(ctx, auditContext)
 	return result, nil

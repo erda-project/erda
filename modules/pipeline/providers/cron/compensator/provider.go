@@ -230,7 +230,7 @@ func (p *provider) cronInterruptCompensate(pc spec.PipelineCron) error {
 
 	if len(needTriggerTimes) > 0 {
 		// Pipeline search record created based on createlyname + source
-		existPipelines, _, _, _, err := p.dbClient.PageListPipelines(apistructs.PipelinePageListRequest{
+		result, err := p.dbClient.PageListPipelines(apistructs.PipelinePageListRequest{
 			Sources:          []apistructs.PipelineSource{pc.PipelineSource},
 			YmlNames:         []string{pc.PipelineYmlName},
 			TriggerModes:     []apistructs.PipelineTriggerMode{apistructs.PipelineTriggerModeCron},
@@ -243,6 +243,7 @@ func (p *provider) cronInterruptCompensate(pc spec.PipelineCron) error {
 		if err != nil {
 			return errors.Errorf("[alert] failed to list existPipelines, cronID: %d, err: %v", pc.ID, err)
 		}
+		existPipelines := result.Pipelines
 
 		// Convert to map for query
 		existPipelinesMap := make(map[time.Time]spec.Pipeline, len(existPipelines))
@@ -329,11 +330,11 @@ func (p *provider) cronNonExecuteCompensate(pc spec.PipelineCron) error {
 		request.AscCols = []string{apistructs.PipelinePageListRequestIdColumn}
 	}
 
-	existPipelines, _, _, _, err := p.dbClient.PageListPipelines(request)
+	result, err := p.dbClient.PageListPipelines(request)
 	if err != nil {
 		return errors.Errorf("failed to list notexecute pipelines, cronID: %d, err: %v", pc.ID, err)
 	}
-
+	existPipelines := result.Pipelines
 	return p.doCronCompensate(*pc.Extra.Compensator, existPipelines, pc)
 }
 
@@ -357,26 +358,35 @@ func (p *provider) doCronCompensate(compensator apistructs.CronCompensator, notR
 	// it should be compared with the pipeline in the latest success status. Only the ID greater than the successful ID can be executed
 	if compensator.LatestFirst && compensator.StopIfLatterExecuted {
 		// Get the pipeline successfully executed
-		runSuccessPipeline, _, _, _, err := p.dbClient.PageListPipelines(apistructs.PipelinePageListRequest{
+		result, err := p.dbClient.PageListPipelines(apistructs.PipelinePageListRequest{
 			Sources:  []apistructs.PipelineSource{pipelineCron.PipelineSource},
 			YmlNames: []string{pipelineCron.PipelineYmlName},
-			Statuses: []string{apistructs.PipelineStatusSuccess.String()},
+			Statuses: func() []string {
+				var endStatuses []string
+				for _, endStatus := range apistructs.PipelineEndStatuses {
+					endStatuses = append(endStatuses, endStatus.String())
+				}
+				return endStatuses
+			}(),
 			PageNum:  1,
 			PageSize: 1,
 			DescCols: []string{apistructs.PipelinePageListRequestIdColumn},
 		})
-
 		if err != nil {
 			p.Log.Infof("latestFirst=true, stopIfLatterExecuted=true, get PipelineStatusSuccess pipeline error, cronID: %d", pipelineCron.ID)
 		}
+		var endStatusPipelines []spec.Pipeline
+		if result != nil {
+			endStatusPipelines = result.Pipelines
+		}
 
-		if len(runSuccessPipeline) <= 0 {
+		if len(endStatusPipelines) <= 0 {
 			return nil
 		}
 
 		// If the latest successful ID is greater than the compensated ID, no compensation will be made
-		lastSuccessPipeline := runSuccessPipeline[indexFirst]
-		if lastSuccessPipeline.ID > firstOrLastPipeline.ID {
+		lastEndStatusPipeline := endStatusPipelines[indexFirst]
+		if lastEndStatusPipeline.ID > firstOrLastPipeline.ID {
 			return nil
 		}
 	}
@@ -485,6 +495,7 @@ func (p *provider) createCronCompensatePipeline(pc spec.PipelineCron, triggerTim
 		NormalLabels:           pc.Extra.NormalLabels,
 		Envs:                   pc.Extra.Envs,
 		ConfigManageNamespaces: pc.Extra.ConfigManageNamespaces,
+		Secrets:                pc.Extra.IncomingSecrets,
 		AutoRunAtOnce:          false,
 		AutoStartCron:          false,
 		IdentityInfo: apistructs.IdentityInfo{

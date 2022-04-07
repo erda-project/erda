@@ -1693,6 +1693,9 @@ func fillRuntimeDataWithServiceGroup(data *apistructs.RuntimeInspectDTO, targetS
 
 		for _, v := range sg.Services {
 			statusServiceMap[v.Name] = string(v.StatusDesc.Status)
+			if statusServiceMap[v.Name] == "Ready" || statusServiceMap[v.Name] == "Healthy" {
+				statusServiceMap[v.Name] = apistructs.RuntimeStatusHealthy
+			}
 			replicaMap[v.Name] = v.Scale
 			resourceMap[v.Name] = apistructs.RuntimeServiceResourceDTO{
 				CPU:  v.Resources.Cpu,

@@ -88,7 +88,7 @@ message Target {
 }
 
 message CreateNotifyGroupResponse {
-  NotifyGroup data = 1;
+  GroupIdAndProjectId data = 1;
 }
 message NotifyGroup {
   int64                     id        = 1;
@@ -152,7 +152,7 @@ message UpdateNotifyGroupRequest {
 }
 
 message UpdateNotifyGroupResponse {
-  NotifyGroup data = 1;
+  GroupIdAndProjectId data = 1;
 }
 
 message GetNotifyGroupDetailRequest {
@@ -188,5 +188,10 @@ message DeleteNotifyGroupRequest {
 }
 
 message DeleteNotifyGroupResponse {
-  NotifyGroup data = 1;
+  GroupIdAndProjectId data = 1;
+}
+
+message GroupIdAndProjectId {
+  int64  groupID   = 1;
+  uint64 projectId = 9;
 }
