@@ -119,7 +119,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		}
 	}()
 
-	routes := ctx.Service("http-server", interceptors.Recover(p.Log)).(httpserver.Router)
+	routes := ctx.Service("http-server", interceptors.Recover(p.Log), interceptors.CORS()).(httpserver.Router)
 	return p.initRoutes(routes)
 }
 
