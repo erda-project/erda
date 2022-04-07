@@ -692,7 +692,11 @@ func checkCustomMetric(customMetrics *monitor.CustomizeMetrics, alert *monitor.C
 			rule.Select = make(map[string]string)
 			for _, tag := range metric.Tags {
 				tagsMap[tag.Tag.Key] = tag
-				rule.Select[tag.Tag.Key] = "#" + tag.Tag.Key
+				if tag.Tag.Key == Level {
+					rule.Select[ReplaceLevel] = "#" + tag.Tag.Key
+				} else {
+					rule.Select[tag.Tag.Key] = "#" + tag.Tag.Key
+				}
 			}
 			for _, field := range metric.Fields {
 				fieldsMap[field.Field.Key] = field
