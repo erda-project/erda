@@ -156,6 +156,9 @@ func (s *logService) HistogramAggregationFromLoghub(ctx context.Context, req *pb
 	if err != nil {
 		return nil, err
 	}
+	if loghubResp == nil {
+		return nil, nil
+	}
 
 	var statList []*pb.LogStatisticResult
 	linq.From(loghubResp.Results).Select(func(item interface{}) interface{} {
