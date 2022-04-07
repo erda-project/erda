@@ -40,17 +40,12 @@ import (
 	"github.com/erda-project/erda/modules/openapi/hooks/posthandle"
 )
 
-type Multiple struct {
-	RenderType string        `json:"renderType,omitempty"`
-	Direction  string        `json:"direction,omitempty"`
-	Renders    []interface{} `json:"renders,omitempty"`
-}
-
-type Progress struct {
+type ProgressBlock struct {
 	Value      string `json:"value"`
 	RenderType string `json:"renderType"`
 	HiddenText bool   `json:"hiddenText"`
 }
+
 type Severity struct {
 	Value       string                 `json:"value"`
 	RenderType  string                 `json:"renderType"`
@@ -60,11 +55,12 @@ type Severity struct {
 	DisabledTip string                 `json:"disabledTip"`
 }
 
-type Title TableColumnMultiple
+type Progress TableColumnMultiple
 
 type TableColumnMultiple struct {
-	RenderType string          `json:"renderType,omitempty"`
-	Renders    [][]interface{} `json:"renders,omitempty"`
+	RenderType string        `json:"renderType,omitempty"`
+	Direction  string        `json:"direction,omitempty"`
+	Renders    []interface{} `json:"renders,omitempty"`
 }
 
 type TableColumnTextWithIcon struct {
@@ -125,7 +121,7 @@ type TableItem struct {
 	Id          string     `json:"id"`
 	IterationID int64      `json:"iterationID"`
 	Priority    Priority   `json:"priority"`
-	Progress    Multiple   `json:"progress,omitempty"`
+	Progress    Progress   `json:"progress,omitempty"`
 	Severity    Severity   `json:"severity,omitempty"`
 	Complexity  Complexity `json:"complexity,omitempty"`
 	State       State      `json:"state"`
@@ -567,7 +563,7 @@ func (ca *ComponentAction) buildTableItem(ctx context.Context, data *apistructs.
 		}
 	}
 	nameColumn := ca.getNameColumn(data)
-	progress := Multiple{
+	progress := Progress{
 		RenderType: "multiple",
 		Direction:  "row",
 	}
@@ -576,7 +572,7 @@ func (ca *ComponentAction) buildTableItem(ctx context.Context, data *apistructs.
 			data.IssueSummary = &apistructs.IssueSummary{}
 		}
 		s := data.IssueSummary.DoneCount + data.IssueSummary.ProcessingCount
-		progressPercentage := Progress{
+		progressPercentage := ProgressBlock{
 			RenderType: "progress",
 			Value:      "0",
 			HiddenText: true,
@@ -589,7 +585,7 @@ func (ca *ComponentAction) buildTableItem(ctx context.Context, data *apistructs.
 				progressPercentage,
 			},
 			[]interface{}{
-				Progress{
+				ProgressBlock{
 					RenderType: "text",
 					Value:      fmt.Sprintf("%d/%d", data.IssueSummary.DoneCount, s),
 				},
