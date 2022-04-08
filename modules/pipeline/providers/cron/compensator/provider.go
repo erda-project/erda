@@ -393,6 +393,7 @@ func (p *provider) doCronCompensate(compensator apistructs.CronCompensator, notR
 
 	_, err := p.pipelineFunc.RunPipeline(&apistructs.PipelineRunRequest{
 		PipelineID:   firstOrLastPipeline.ID,
+		Secrets:      firstOrLastPipeline.Extra.IncomingSecrets,
 		IdentityInfo: apistructs.IdentityInfo{InternalClient: firstOrLastPipeline.Extra.InternalClient},
 	})
 
