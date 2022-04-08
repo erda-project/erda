@@ -42,6 +42,6 @@ COPY --from=build "$GOPATH/src/github.com/erda-project/erda/pkg/erda-configs" "/
 COPY --from=build "$GOPATH/src/github.com/erda-project/erda/conf/common" "/app/conf/common"
 
 COPY --from=build "$GOPATH/src/github.com/erda-project/erda/build/scripts/cluster-agent/*" "/usr/bin/"
-RUN chmod 777 /usr/bin/kubectl-shell.sh /usr/bin/shell-setup.sh
+RUN chmod 777 /usr/bin/kubectl-shell.sh /usr/bin/shell-setup.sh /usr/bin/kubectl-node_shell
 
 CMD ["sh", "-c", "/app/${APP_NAME}"]
