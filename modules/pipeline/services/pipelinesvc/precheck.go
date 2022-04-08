@@ -23,7 +23,7 @@ import (
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
-func (s *PipelineSvc) PreCheck(pipelineYml *pipelineyml.PipelineYml, p *spec.Pipeline, stages []spec.PipelineStage, userID string) error {
+func (s *PipelineSvc) PreCheck(pipelineYml *pipelineyml.PipelineYml, p *spec.Pipeline, stages []spec.PipelineStage, userID string, secretCache *apistructs.SecretCache) error {
 	tasks, err := s.MergePipelineYmlTasks(pipelineYml, nil, p, stages, nil)
 	if err != nil {
 		return apierrors.ErrPreCheckPipeline.InternalError(err)
@@ -80,7 +80,7 @@ func (s *PipelineSvc) PreCheck(pipelineYml *pipelineyml.PipelineYml, p *spec.Pip
 	}
 
 	// secrets
-	secrets, _, holdOnKeys, _, err := s.FetchSecrets(p)
+	secrets, cmsDiceFiles, holdOnKeys, encryptSecretKeys, err := s.FetchSecrets(p)
 	if err != nil {
 		return apierrors.ErrPreCheckPipeline.InternalError(err)
 	}
@@ -112,5 +112,12 @@ func (s *PipelineSvc) PreCheck(pipelineYml *pipelineyml.PipelineYml, p *spec.Pip
 		}
 	}
 
+	if secretCache != nil {
+		secretCache.PlatformSecrets = platformSecrets
+		secretCache.Secrets = secrets
+		secretCache.CmsDiceFiles = cmsDiceFiles
+		secretCache.HoldOnKeys = holdOnKeys
+		secretCache.EncryptSecretKeys = encryptSecretKeys
+	}
 	return nil
 }

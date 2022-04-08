@@ -43,7 +43,7 @@ func (s *PipelineSvc) Create(req *apistructs.PipelineCreateRequest) (*spec.Pipel
 	if err != nil {
 		return nil, err
 	}
-	if err := s.CreatePipelineGraph(p); err != nil {
+	if err := s.CreatePipelineGraph(p, nil); err != nil {
 		return nil, err
 	}
 	return p, nil
@@ -339,7 +339,7 @@ func (s *PipelineSvc) OperateTask(p *spec.Pipeline, task *spec.PipelineTask) (*s
 }
 
 // createPipelineGraph recursively create pipeline graph.
-func (s *PipelineSvc) CreatePipelineGraph(p *spec.Pipeline) (err error) {
+func (s *PipelineSvc) CreatePipelineGraph(p *spec.Pipeline, secretCache *apistructs.SecretCache) (err error) {
 	// parse yml
 	pipelineYml, err := pipelineyml.New(
 		[]byte(p.PipelineYml),
@@ -389,7 +389,7 @@ func (s *PipelineSvc) CreatePipelineGraph(p *spec.Pipeline) (err error) {
 		newStages = append(newStages, *stage)
 	}
 
-	_ = s.PreCheck(pipelineYml, p, newStages, p.GetUserID())
+	_ = s.PreCheck(pipelineYml, p, newStages, p.GetUserID(), secretCache)
 
 	// events
 	events.EmitPipelineInstanceEvent(p, p.GetSubmitUserID())

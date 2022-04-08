@@ -36,7 +36,6 @@ import (
 )
 
 func (s *PipelineSvc) RunPipeline(req *apistructs.PipelineRunRequest) (*spec.Pipeline, error) {
-
 	p, err := s.dbClient.GetPipeline(req.PipelineID)
 	if err != nil {
 		return nil, apierrors.ErrGetPipeline.InvalidParameter(err)
@@ -54,23 +53,35 @@ func (s *PipelineSvc) RunPipeline(req *apistructs.PipelineRunRequest) (*spec.Pip
 		return nil, apierrors.ErrRunPipeline.InvalidState(reason)
 	}
 	if req.ForceRun {
-		err := s.stopRunningPipelines(&p, req.IdentityInfo)
+		err = s.stopRunningPipelines(&p, req.IdentityInfo)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	// 校验已运行的 pipeline
-	if err := s.limitParallelRunningPipelines(&p); err != nil {
+	if err = s.limitParallelRunningPipelines(&p); err != nil {
 		return nil, err
 	}
 
 	p.Extra.ConfigManageNamespaces = append(p.Extra.ConfigManageNamespaces, req.ConfigManageNamespaces...)
 
-	// cms
-	secrets, cmsDiceFiles, holdOnKeys, encryptSecretKeys, err := s.FetchSecrets(&p)
-	if err != nil {
-		return nil, apierrors.ErrRunPipeline.InternalError(err)
+	var (
+		secrets, cmsDiceFiles         map[string]string
+		holdOnKeys, encryptSecretKeys []string
+	)
+	if req.SecretCache != nil {
+		secrets = req.SecretCache.Secrets
+		cmsDiceFiles = req.SecretCache.CmsDiceFiles
+		holdOnKeys = req.SecretCache.HoldOnKeys
+		encryptSecretKeys = req.SecretCache.EncryptSecretKeys
+	}
+	if len(secrets) == 0 {
+		// fetch secrets
+		secrets, cmsDiceFiles, holdOnKeys, encryptSecretKeys, err = s.FetchSecrets(&p)
+		if err != nil {
+			return nil, apierrors.ErrRunPipeline.InternalError(err)
+		}
 	}
 
 	for k, v := range req.Secrets {
@@ -96,10 +107,16 @@ func (s *PipelineSvc) RunPipeline(req *apistructs.PipelineRunRequest) (*spec.Pip
 		return nil, apierrors.ErrCheckSecrets.InvalidParameter(strutil.Join(errMsgs, "\n", true))
 	}
 
-	// 获取平台级别配置
-	platformSecrets, err := s.FetchPlatformSecrets(&p, holdOnKeys)
-	if err != nil {
-		return nil, apierrors.ErrRunPipeline.InternalError(err)
+	var platformSecrets map[string]string
+	if req.SecretCache != nil {
+		platformSecrets = req.SecretCache.PlatformSecrets
+	}
+	if len(platformSecrets) == 0 {
+		// fetch platform secrets
+		platformSecrets, err = s.FetchPlatformSecrets(&p, holdOnKeys)
+		if err != nil {
+			return nil, apierrors.ErrRunPipeline.InternalError(err)
+		}
 	}
 
 	// Snapshot 快照用于记录
