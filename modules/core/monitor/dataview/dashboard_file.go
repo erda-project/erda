@@ -292,6 +292,7 @@ func dashboardFilename(scope, scopeId string) string {
 func (p *provider) ExportTask(id string) {
 	history, err := p.history.FindById(id)
 	if err != nil {
+		p.Log.Error(err)
 		return
 	}
 

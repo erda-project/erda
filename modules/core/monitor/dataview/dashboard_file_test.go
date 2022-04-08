@@ -15,6 +15,12 @@
 package dataview
 
 import (
+	"bou.ke/monkey"
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/core/monitor/dataview/db"
+	"github.com/pkg/errors"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -68,6 +74,45 @@ func TestCompileToDest(t *testing.T) {
 			if got := CompileToDest(tt.args.scope, tt.args.scopeId, tt.args.data); got != tt.want {
 				t.Errorf("CompileToDest() = %v, want %v", got, tt.want)
 			}
+		})
+	}
+}
+
+func Test_provider_ExportTask(t *testing.T) {
+	type args struct {
+		id string
+	}
+	tests := []struct {
+		name string
+		args args
+	}{
+		{"case1", args{id: "test"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var erdaDashboardHistoryDB db.ErdaDashboardHistoryDB
+			monkey.PatchInstanceMethod(reflect.TypeOf(&erdaDashboardHistoryDB), "FindById", func(erdaDashboardHistoryDB *db.ErdaDashboardHistoryDB, id string) (*db.ErdaDashboardHistory, error) {
+				if id == "error" {
+					return nil, errors.New("error")
+				}
+				return &db.ErdaDashboardHistory{ID: id, Scope: "test", ScopeId: "test"}, nil
+			})
+
+			monkey.PatchInstanceMethod(reflect.TypeOf(&erdaDashboardHistoryDB), "UpdateStatusAndFileUUID", func(erdaDashboardHistoryDB *db.ErdaDashboardHistoryDB, id, status, fileUUID, errorMessage string) error {
+				if id == "error" {
+					return errors.New("error")
+				}
+				return nil
+			})
+
+			var bdl bundle.Bundle
+			monkey.PatchInstanceMethod(reflect.TypeOf(&bdl), "UploadFile", func(bdl *bundle.Bundle, req apistructs.FileUploadRequest, clientTimeout ...int64) (*apistructs.File, error) {
+				return &apistructs.File{}, nil
+			})
+
+			p := &provider{}
+			p.ExportTask(tt.args.id)
+
 		})
 	}
 }
