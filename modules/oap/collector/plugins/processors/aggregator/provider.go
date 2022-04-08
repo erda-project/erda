@@ -16,7 +16,6 @@ package aggregator
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -32,8 +31,7 @@ type config struct {
 	Keyinclude []string            `file:"keyinclude"`
 	Keyexclude []string            `file:"keyexclude"`
 
-	PushInterval time.Duration `file:"push_interval" default:"60s"`
-	Rules        []RuleConfig  `file:"rules"`
+	Rules []RuleConfig `file:"rules"`
 }
 
 // +provider
