@@ -112,9 +112,6 @@ func (s *apmServiceService) GetServices(ctx context.Context, req *pb.GetServices
 		End:       strconv.FormatInt(end, 10),
 		Statement: statement,
 		Params:    queryParams,
-		Options: map[string]string{
-			"debug": "true",
-		},
 	}
 	response, err := s.p.Metric.QueryWithInfluxFormat(ctx, request)
 	if err != nil {
