@@ -49,5 +49,5 @@ func MakeGittarMessageSecret() string {
 }
 
 func MakeGittarAuthorSecret() string {
-	return "gittar.message"
+	return "gittar.author"
 }
