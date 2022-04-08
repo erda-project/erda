@@ -123,7 +123,7 @@ func (p *provider) do() error {
 	buildCacheSvc := buildcachesvc.New(dbClient)
 	permissionSvc := permissionsvc.New(bdl)
 	actionAgentSvc := actionagentsvc.New(dbClient, bdl, js, etcdctl)
-	extMarketSvc := extmarketsvc.New(bdl)
+	extMarketSvc := extmarketsvc.New(bdl, p.ActionService)
 	reportSvc := reportsvc.New(reportsvc.WithDBClient(dbClient))
 	queueManage := queuemanage.New(queuemanage.WithDBClient(dbClient))
 
@@ -182,6 +182,7 @@ func (p *provider) do() error {
 
 	p.CronDaemon.WithPipelineFunc(pipelineSvc.CreateV2)
 	p.CronCompensate.WithPipelineFunc(compensator.PipelineFunc{CreatePipeline: pipelineSvc.CreateV2, RunPipeline: p.PipelineRun.RunOnePipeline})
+	p.Cache.SetExtMarketSvc(extMarketSvc)
 
 	//server.Router().Path("/metrics").Methods(http.MethodGet).Handler(promxp.Handler("pipeline"))
 	server := httpserver.New(conf.ListenAddr())

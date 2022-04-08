@@ -22,6 +22,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/precheck/prechecktype"
 	"github.com/erda-project/erda/modules/pipeline/providers/cache"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
+	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
@@ -64,7 +65,7 @@ func (s *PipelineSvc) PreCheck(p *spec.Pipeline, stages []spec.PipelineStage, us
 		actionTypeVerMap[typeVersion] = struct{}{}
 		extSearchReq = append(extSearchReq, typeVersion)
 	}
-	_, actionSpecs, err := s.extMarketSvc.SearchActions(extSearchReq)
+	_, actionSpecs, err := s.extMarketSvc.SearchActions(extSearchReq, extmarketsvc.MakeActionLocationsBySource(p.PipelineSource))
 	if err != nil {
 		return apierrors.ErrPreCheckPipeline.InternalError(err)
 	}
