@@ -18,11 +18,12 @@ import (
 	"testing"
 	"time"
 
+	structpb "github.com/golang/protobuf/ptypes/struct"
+	"github.com/stretchr/testify/assert"
+
 	mpb "github.com/erda-project/erda-proto-go/oap/metrics/pb"
 	"github.com/erda-project/erda/modules/oap/collector/common/pbconvert"
 	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
-	structpb "github.com/golang/protobuf/ptypes/struct"
-	"github.com/stretchr/testify/assert"
 )
 
 func Test_provider_Init(t *testing.T) {
