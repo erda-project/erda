@@ -24,6 +24,8 @@ type DataViewServiceClient interface {
 	ListSystemViews(ctx context.Context, in *ListSystemViewsRequest, opts ...grpc.CallOption) (*ListSystemViewsResponse, error)
 	GetSystemView(ctx context.Context, in *GetSystemViewRequest, opts ...grpc.CallOption) (*GetSystemViewResponse, error)
 	ListCustomViews(ctx context.Context, in *ListCustomViewsRequest, opts ...grpc.CallOption) (*ListCustomViewsResponse, error)
+	GetCustomViewsCreator(ctx context.Context, in *GetCustomViewsCreatorRequest, opts ...grpc.CallOption) (*GetCustomViewsCreatorResponse, error)
+	ListCustomDashboardHistory(ctx context.Context, in *ListCustomDashboardHistoryRequest, opts ...grpc.CallOption) (*ListCustomDashboardHistoryResponse, error)
 	GetCustomView(ctx context.Context, in *GetCustomViewRequest, opts ...grpc.CallOption) (*GetCustomViewResponse, error)
 	CreateCustomView(ctx context.Context, in *CreateCustomViewRequest, opts ...grpc.CallOption) (*CreateCustomViewResponse, error)
 	UpdateCustomView(ctx context.Context, in *UpdateCustomViewRequest, opts ...grpc.CallOption) (*UpdateCustomViewResponse, error)
@@ -59,6 +61,24 @@ func (c *dataViewServiceClient) GetSystemView(ctx context.Context, in *GetSystem
 func (c *dataViewServiceClient) ListCustomViews(ctx context.Context, in *ListCustomViewsRequest, opts ...grpc.CallOption) (*ListCustomViewsResponse, error) {
 	out := new(ListCustomViewsResponse)
 	err := c.cc.Invoke(ctx, "/erda.core.monitor.dataview.DataViewService/ListCustomViews", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dataViewServiceClient) GetCustomViewsCreator(ctx context.Context, in *GetCustomViewsCreatorRequest, opts ...grpc.CallOption) (*GetCustomViewsCreatorResponse, error) {
+	out := new(GetCustomViewsCreatorResponse)
+	err := c.cc.Invoke(ctx, "/erda.core.monitor.dataview.DataViewService/GetCustomViewsCreator", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dataViewServiceClient) ListCustomDashboardHistory(ctx context.Context, in *ListCustomDashboardHistoryRequest, opts ...grpc.CallOption) (*ListCustomDashboardHistoryResponse, error) {
+	out := new(ListCustomDashboardHistoryResponse)
+	err := c.cc.Invoke(ctx, "/erda.core.monitor.dataview.DataViewService/ListCustomDashboardHistory", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -108,6 +128,8 @@ type DataViewServiceServer interface {
 	ListSystemViews(context.Context, *ListSystemViewsRequest) (*ListSystemViewsResponse, error)
 	GetSystemView(context.Context, *GetSystemViewRequest) (*GetSystemViewResponse, error)
 	ListCustomViews(context.Context, *ListCustomViewsRequest) (*ListCustomViewsResponse, error)
+	GetCustomViewsCreator(context.Context, *GetCustomViewsCreatorRequest) (*GetCustomViewsCreatorResponse, error)
+	ListCustomDashboardHistory(context.Context, *ListCustomDashboardHistoryRequest) (*ListCustomDashboardHistoryResponse, error)
 	GetCustomView(context.Context, *GetCustomViewRequest) (*GetCustomViewResponse, error)
 	CreateCustomView(context.Context, *CreateCustomViewRequest) (*CreateCustomViewResponse, error)
 	UpdateCustomView(context.Context, *UpdateCustomViewRequest) (*UpdateCustomViewResponse, error)
@@ -126,6 +148,12 @@ func (*UnimplementedDataViewServiceServer) GetSystemView(context.Context, *GetSy
 }
 func (*UnimplementedDataViewServiceServer) ListCustomViews(context.Context, *ListCustomViewsRequest) (*ListCustomViewsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListCustomViews not implemented")
+}
+func (*UnimplementedDataViewServiceServer) GetCustomViewsCreator(context.Context, *GetCustomViewsCreatorRequest) (*GetCustomViewsCreatorResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetCustomViewsCreator not implemented")
+}
+func (*UnimplementedDataViewServiceServer) ListCustomDashboardHistory(context.Context, *ListCustomDashboardHistoryRequest) (*ListCustomDashboardHistoryResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListCustomDashboardHistory not implemented")
 }
 func (*UnimplementedDataViewServiceServer) GetCustomView(context.Context, *GetCustomViewRequest) (*GetCustomViewResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetCustomView not implemented")
@@ -183,6 +211,24 @@ func _get_DataViewService_serviceDesc(srv DataViewServiceServer, opts ...grpc1.H
 	if h.Interceptor != nil {
 		_DataViewService_ListCustomViews_info = transport.NewServiceInfo("erda.core.monitor.dataview.DataViewService", "ListCustomViews", srv)
 		_DataViewService_ListCustomViews_Handler = h.Interceptor(_DataViewService_ListCustomViews_Handler)
+	}
+
+	_DataViewService_GetCustomViewsCreator_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.GetCustomViewsCreator(ctx, req.(*GetCustomViewsCreatorRequest))
+	}
+	var _DataViewService_GetCustomViewsCreator_info transport.ServiceInfo
+	if h.Interceptor != nil {
+		_DataViewService_GetCustomViewsCreator_info = transport.NewServiceInfo("erda.core.monitor.dataview.DataViewService", "GetCustomViewsCreator", srv)
+		_DataViewService_GetCustomViewsCreator_Handler = h.Interceptor(_DataViewService_GetCustomViewsCreator_Handler)
+	}
+
+	_DataViewService_ListCustomDashboardHistory_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.ListCustomDashboardHistory(ctx, req.(*ListCustomDashboardHistoryRequest))
+	}
+	var _DataViewService_ListCustomDashboardHistory_info transport.ServiceInfo
+	if h.Interceptor != nil {
+		_DataViewService_ListCustomDashboardHistory_info = transport.NewServiceInfo("erda.core.monitor.dataview.DataViewService", "ListCustomDashboardHistory", srv)
+		_DataViewService_ListCustomDashboardHistory_Handler = h.Interceptor(_DataViewService_ListCustomDashboardHistory_Handler)
 	}
 
 	_DataViewService_GetCustomView_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
@@ -290,6 +336,52 @@ func _get_DataViewService_serviceDesc(srv DataViewServiceServer, opts ...grpc1.H
 					FullMethod: "/erda.core.monitor.dataview.DataViewService/ListCustomViews",
 				}
 				return interceptor(ctx, in, info, _DataViewService_ListCustomViews_Handler)
+			},
+		},
+		{
+			MethodName: "GetCustomViewsCreator",
+			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+				in := new(GetCustomViewsCreatorRequest)
+				if err := dec(in); err != nil {
+					return nil, err
+				}
+				if interceptor == nil && h.Interceptor == nil {
+					return srv.(DataViewServiceServer).GetCustomViewsCreator(ctx, in)
+				}
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _DataViewService_GetCustomViewsCreator_info)
+				}
+				if interceptor == nil {
+					return _DataViewService_GetCustomViewsCreator_Handler(ctx, in)
+				}
+				info := &grpc.UnaryServerInfo{
+					Server:     srv,
+					FullMethod: "/erda.core.monitor.dataview.DataViewService/GetCustomViewsCreator",
+				}
+				return interceptor(ctx, in, info, _DataViewService_GetCustomViewsCreator_Handler)
+			},
+		},
+		{
+			MethodName: "ListCustomDashboardHistory",
+			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+				in := new(ListCustomDashboardHistoryRequest)
+				if err := dec(in); err != nil {
+					return nil, err
+				}
+				if interceptor == nil && h.Interceptor == nil {
+					return srv.(DataViewServiceServer).ListCustomDashboardHistory(ctx, in)
+				}
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _DataViewService_ListCustomDashboardHistory_info)
+				}
+				if interceptor == nil {
+					return _DataViewService_ListCustomDashboardHistory_Handler(ctx, in)
+				}
+				info := &grpc.UnaryServerInfo{
+					Server:     srv,
+					FullMethod: "/erda.core.monitor.dataview.DataViewService/ListCustomDashboardHistory",
+				}
+				return interceptor(ctx, in, info, _DataViewService_ListCustomDashboardHistory_Handler)
 			},
 		},
 		{

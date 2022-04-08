@@ -27,6 +27,10 @@ type DataViewServiceHandler interface {
 	GetSystemView(context.Context, *GetSystemViewRequest) (*GetSystemViewResponse, error)
 	// GET /api/dashboard/blocks
 	ListCustomViews(context.Context, *ListCustomViewsRequest) (*ListCustomViewsResponse, error)
+	// GET /api/dashboard/blocks/creators
+	GetCustomViewsCreator(context.Context, *GetCustomViewsCreatorRequest) (*GetCustomViewsCreatorResponse, error)
+	// GET /api/dashboard/blocks/operate/history
+	ListCustomDashboardHistory(context.Context, *ListCustomDashboardHistoryRequest) (*ListCustomDashboardHistoryResponse, error)
 	// GET /api/dashboard/blocks/{id}
 	GetCustomView(context.Context, *GetCustomViewRequest) (*GetCustomViewResponse, error)
 	// POST /api/dashboard/blocks
@@ -189,6 +193,82 @@ func RegisterDataViewServiceHandler(r http.Router, srv DataViewServiceHandler, o
 				params := r.URL.Query()
 				if vals := params["scopeId"]; len(vals) > 0 {
 					in.ScopeID = vals[0]
+				}
+				out, err := handler(ctx, &in)
+				if err != nil {
+					return out, err
+				}
+				return out, nil
+			}),
+		)
+	}
+
+	add_GetCustomViewsCreator := func(method, path string, fn func(context.Context, *GetCustomViewsCreatorRequest) (*GetCustomViewsCreatorResponse, error)) {
+		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+			return fn(ctx, req.(*GetCustomViewsCreatorRequest))
+		}
+		var GetCustomViewsCreator_info transport.ServiceInfo
+		if h.Interceptor != nil {
+			GetCustomViewsCreator_info = transport.NewServiceInfo("erda.core.monitor.dataview.DataViewService", "GetCustomViewsCreator", srv)
+			handler = h.Interceptor(handler)
+		}
+		r.Add(method, path, encodeFunc(
+			func(w http1.ResponseWriter, r *http1.Request) (interface{}, error) {
+				ctx := http.WithRequest(r.Context(), r)
+				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, GetCustomViewsCreator_info)
+				}
+				r = r.WithContext(ctx)
+				var in GetCustomViewsCreatorRequest
+				if err := h.Decode(r, &in); err != nil {
+					return nil, err
+				}
+				var input interface{} = &in
+				if u, ok := (input).(urlenc.URLValuesUnmarshaler); ok {
+					if err := u.UnmarshalURLValues("", r.URL.Query()); err != nil {
+						return nil, err
+					}
+				}
+				params := r.URL.Query()
+				if vals := params["scopeId"]; len(vals) > 0 {
+					in.ScopeID = vals[0]
+				}
+				out, err := handler(ctx, &in)
+				if err != nil {
+					return out, err
+				}
+				return out, nil
+			}),
+		)
+	}
+
+	add_ListCustomDashboardHistory := func(method, path string, fn func(context.Context, *ListCustomDashboardHistoryRequest) (*ListCustomDashboardHistoryResponse, error)) {
+		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+			return fn(ctx, req.(*ListCustomDashboardHistoryRequest))
+		}
+		var ListCustomDashboardHistory_info transport.ServiceInfo
+		if h.Interceptor != nil {
+			ListCustomDashboardHistory_info = transport.NewServiceInfo("erda.core.monitor.dataview.DataViewService", "ListCustomDashboardHistory", srv)
+			handler = h.Interceptor(handler)
+		}
+		r.Add(method, path, encodeFunc(
+			func(w http1.ResponseWriter, r *http1.Request) (interface{}, error) {
+				ctx := http.WithRequest(r.Context(), r)
+				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, ListCustomDashboardHistory_info)
+				}
+				r = r.WithContext(ctx)
+				var in ListCustomDashboardHistoryRequest
+				if err := h.Decode(r, &in); err != nil {
+					return nil, err
+				}
+				var input interface{} = &in
+				if u, ok := (input).(urlenc.URLValuesUnmarshaler); ok {
+					if err := u.UnmarshalURLValues("", r.URL.Query()); err != nil {
+						return nil, err
+					}
 				}
 				out, err := handler(ctx, &in)
 				if err != nil {
@@ -415,6 +495,8 @@ func RegisterDataViewServiceHandler(r http.Router, srv DataViewServiceHandler, o
 	add_ListSystemViews("GET", "/api/dashboard/system/blocks", srv.ListSystemViews)
 	add_GetSystemView("GET", "/api/dashboard/system/blocks/{id}", srv.GetSystemView)
 	add_ListCustomViews("GET", "/api/dashboard/blocks", srv.ListCustomViews)
+	add_GetCustomViewsCreator("GET", "/api/dashboard/blocks/creators", srv.GetCustomViewsCreator)
+	add_ListCustomDashboardHistory("GET", "/api/dashboard/blocks/operate/history", srv.ListCustomDashboardHistory)
 	add_GetCustomView("GET", "/api/dashboard/blocks/{id}", srv.GetCustomView)
 	add_CreateCustomView("POST", "/api/dashboard/blocks", srv.CreateCustomView)
 	add_UpdateCustomView("PUT", "/api/dashboard/blocks/{id}", srv.UpdateCustomView)

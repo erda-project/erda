@@ -13,6 +13,14 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the "encoding/json" package it is being compiled against.
+var _ json.Marshaler = (*CustomDashboardHistory)(nil)
+var _ json.Unmarshaler = (*CustomDashboardHistory)(nil)
+var _ json.Marshaler = (*ListCustomDashboardHistoryRequest)(nil)
+var _ json.Unmarshaler = (*ListCustomDashboardHistoryRequest)(nil)
+var _ json.Marshaler = (*ListCustomDashboardHistoryResponse)(nil)
+var _ json.Unmarshaler = (*ListCustomDashboardHistoryResponse)(nil)
+var _ json.Marshaler = (*ExportCustomViewRequest)(nil)
+var _ json.Unmarshaler = (*ExportCustomViewRequest)(nil)
 var _ json.Marshaler = (*ListSystemViewsRequest)(nil)
 var _ json.Unmarshaler = (*ListSystemViewsRequest)(nil)
 var _ json.Marshaler = (*ListSystemViewsResponse)(nil)
@@ -23,8 +31,12 @@ var _ json.Marshaler = (*GetSystemViewResponse)(nil)
 var _ json.Unmarshaler = (*GetSystemViewResponse)(nil)
 var _ json.Marshaler = (*ListCustomViewsRequest)(nil)
 var _ json.Unmarshaler = (*ListCustomViewsRequest)(nil)
+var _ json.Marshaler = (*GetCustomViewsCreatorRequest)(nil)
+var _ json.Unmarshaler = (*GetCustomViewsCreatorRequest)(nil)
 var _ json.Marshaler = (*ListCustomViewsResponse)(nil)
 var _ json.Unmarshaler = (*ListCustomViewsResponse)(nil)
+var _ json.Marshaler = (*GetCustomViewsCreatorResponse)(nil)
+var _ json.Unmarshaler = (*GetCustomViewsCreatorResponse)(nil)
 var _ json.Marshaler = (*GetCustomViewRequest)(nil)
 var _ json.Unmarshaler = (*GetCustomViewRequest)(nil)
 var _ json.Marshaler = (*GetCustomViewResponse)(nil)
@@ -51,6 +63,78 @@ var _ json.Marshaler = (*Chart)(nil)
 var _ json.Unmarshaler = (*Chart)(nil)
 var _ json.Marshaler = (*DataItem)(nil)
 var _ json.Unmarshaler = (*DataItem)(nil)
+
+// CustomDashboardHistory implement json.Marshaler.
+func (m *CustomDashboardHistory) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// CustomDashboardHistory implement json.Marshaler.
+func (m *CustomDashboardHistory) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// ListCustomDashboardHistoryRequest implement json.Marshaler.
+func (m *ListCustomDashboardHistoryRequest) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// ListCustomDashboardHistoryRequest implement json.Marshaler.
+func (m *ListCustomDashboardHistoryRequest) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// ListCustomDashboardHistoryResponse implement json.Marshaler.
+func (m *ListCustomDashboardHistoryResponse) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// ListCustomDashboardHistoryResponse implement json.Marshaler.
+func (m *ListCustomDashboardHistoryResponse) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// ExportCustomViewRequest implement json.Marshaler.
+func (m *ExportCustomViewRequest) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// ExportCustomViewRequest implement json.Marshaler.
+func (m *ExportCustomViewRequest) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
 
 // ListSystemViewsRequest implement json.Marshaler.
 func (m *ListSystemViewsRequest) MarshalJSON() ([]byte, error) {
@@ -142,6 +226,24 @@ func (m *ListCustomViewsRequest) UnmarshalJSON(b []byte) error {
 	}).Unmarshal(b, m)
 }
 
+// GetCustomViewsCreatorRequest implement json.Marshaler.
+func (m *GetCustomViewsCreatorRequest) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// GetCustomViewsCreatorRequest implement json.Marshaler.
+func (m *GetCustomViewsCreatorRequest) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
 // ListCustomViewsResponse implement json.Marshaler.
 func (m *ListCustomViewsResponse) MarshalJSON() ([]byte, error) {
 	buf := &bytes.Buffer{}
@@ -155,6 +257,24 @@ func (m *ListCustomViewsResponse) MarshalJSON() ([]byte, error) {
 
 // ListCustomViewsResponse implement json.Marshaler.
 func (m *ListCustomViewsResponse) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// GetCustomViewsCreatorResponse implement json.Marshaler.
+func (m *GetCustomViewsCreatorResponse) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// GetCustomViewsCreatorResponse implement json.Marshaler.
+func (m *GetCustomViewsCreatorResponse) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)

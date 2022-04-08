@@ -22,6 +22,8 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
+	"github.com/erda-project/erda-infra/providers/httpserver"
+	"github.com/erda-project/erda-infra/providers/httpserver/interceptors"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/core/monitor/dataview/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -30,6 +32,13 @@ import (
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/providers/audit"
 )
+
+func (p *provider) initRoutes(routes httpserver.Router) error {
+	routes.POST("/api/dashboard/blocks/parse", p.ParseDashboardTemplate)
+	routes.POST("/api/dashboard/blocks/export", p.ExportDashboardFile)
+	routes.POST("/api/dashboard/blocks/import", p.ImportDashboardFile)
+	return nil
+}
 
 type config struct {
 	Tables struct {
@@ -48,6 +57,11 @@ type provider struct {
 	Tran            i18n.Translator `translator:"charts"`
 	bdl             *bundle.Bundle
 	audit           audit.Auditor
+	sys             *db.SystemViewDB
+	custom          *db.CustomViewDB
+	history         *db.ErdaDashboardHistoryDB
+
+	ExportChannel chan string
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -59,10 +73,15 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	if len(p.Cfg.Tables.UserBlock) > 0 {
 		db.TableCustomView = p.Cfg.Tables.UserBlock
 	}
+	p.sys = &db.SystemViewDB{DB: p.DB}
+	p.custom = &db.CustomViewDB{DB: p.DB}
+	p.history = &db.ErdaDashboardHistoryDB{DB: p.DB}
+
 	p.dataViewService = &dataViewService{
-		p:      p,
-		sys:    &db.SystemViewDB{DB: p.DB},
-		custom: &db.CustomViewDB{DB: p.DB},
+		p:       p,
+		sys:     p.sys,
+		custom:  p.custom,
+		history: p.history,
 	}
 	if p.Register != nil {
 		type DataViewService = pb.DataViewServiceServer
@@ -86,7 +105,22 @@ func (p *provider) Init(ctx servicehub.Context) error {
 			),
 		)
 	}
-	return nil
+
+	p.ExportChannel = make(chan string, 1)
+
+	// Scheduled polling export task
+	go func() {
+		for {
+			select {
+			case id := <-p.ExportChannel:
+				p.ExportTask(id)
+			default:
+			}
+		}
+	}()
+
+	routes := ctx.Service("http-server", interceptors.Recover(p.Log), interceptors.CORS()).(httpserver.Router)
+	return p.initRoutes(routes)
 }
 
 func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {

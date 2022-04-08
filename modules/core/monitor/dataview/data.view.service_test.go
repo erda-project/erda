@@ -16,11 +16,15 @@ package dataview
 
 import (
 	"context"
+	"errors"
 	"reflect"
 	"testing"
 
+	"bou.ke/monkey"
+
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-proto-go/core/monitor/dataview/pb"
+	"github.com/erda-project/erda/modules/core/monitor/dataview/db"
 )
 
 func Test_dataViewService_ListSystemViews(t *testing.T) {
@@ -189,63 +193,6 @@ func Test_dataViewService_CreateCustomView(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.wantResp) {
 				t.Errorf("dataViewService.CreateCustomView() = %v, want %v", got, tt.wantResp)
-			}
-		})
-	}
-}
-
-func Test_dataViewService_ListCustomViews(t *testing.T) {
-	type args struct {
-		ctx context.Context
-		req *pb.ListCustomViewsRequest
-	}
-	tests := []struct {
-		name     string
-		service  string
-		config   string
-		args     args
-		wantResp *pb.ListCustomViewsResponse
-		wantErr  bool
-	}{
-		// TODO: Add test cases.
-		// 		{
-		// 			"case 1",
-		// 			"erda.core.monitor.dataview.DataViewService",
-		// 			`
-		// erda.core.monitor.dataview:
-		// `,
-		// 			args{
-		// 				context.TODO(),
-		// 				&pb.ListCustomViewsRequest{
-		// 					// TODO: setup fields
-		// 				},
-		// 			},
-		// 			&pb.ListCustomViewsResponse{
-		// 				// TODO: setup fields.
-		// 			},
-		// 			false,
-		// 		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			hub := servicehub.New()
-			events := hub.Events()
-			go func() {
-				hub.RunWithOptions(&servicehub.RunOptions{Content: tt.config})
-			}()
-			err := <-events.Started()
-			if err != nil {
-				t.Error(err)
-				return
-			}
-			srv := hub.Service(tt.service).(pb.DataViewServiceServer)
-			got, err := srv.ListCustomViews(tt.args.ctx, tt.args.req)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("dataViewService.ListCustomViews() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.wantResp) {
-				t.Errorf("dataViewService.ListCustomViews() = %v, want %v", got, tt.wantResp)
 			}
 		})
 	}
@@ -472,25 +419,44 @@ func Test_updateFields(t *testing.T) {
 	}{
 		{
 			req: &pb.UpdateCustomViewRequest{
-				Id:     "test-id",
-				Name:   "test-name",
-				Desc:   "test-desc",
-				Blocks: nil,
-				Data:   nil,
+				Id:         "test-id",
+				Name:       "test-name",
+				Desc:       "test-desc",
+				UpdateType: pb.UpdateType_ViewType.String(),
+				Blocks:     nil,
+				Data:       nil,
+			},
+		},
+		{
+			req: &pb.UpdateCustomViewRequest{
+				Id:         "test-id",
+				Name:       "test-name",
+				Desc:       "test-desc",
+				UpdateType: pb.UpdateType_MetaType.String(),
+				Blocks:     nil,
+				Data:       nil,
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := fieldsForUpdate(tt.req)
-			if _, ok := got["UpdatedAt"]; !ok {
-				t.Errorf("fieldsForUpdate() = %v, must contains UpdatedAt", got)
-			}
-			if _, ok := got["ViewConfig"]; !ok {
-				t.Errorf("fieldsForUpdate() = %v, must contains ViewConfig", got)
-			}
-			if _, ok := got["DataConfig"]; !ok {
-				t.Errorf("fieldsForUpdate() = %v, must contains DataConfig", got)
+			if tt.req.UpdateType == pb.UpdateType_ViewType.String() {
+				if _, ok := got["UpdatedAt"]; !ok {
+					t.Errorf("fieldsForUpdate() = %v, must contains UpdatedAt", got)
+				}
+				if _, ok := got["ViewConfig"]; !ok {
+					t.Errorf("fieldsForUpdate() = %v, must contains ViewConfig", got)
+				}
+				if _, ok := got["DataConfig"]; !ok {
+					t.Errorf("fieldsForUpdate() = %v, must contains DataConfig", got)
+				}
+			} else if tt.req.UpdateType == pb.UpdateType_MetaType.String() {
+				if _, ok := got["Name"]; !ok {
+					t.Errorf("fieldsForUpdate() = %v, must contains Name", got)
+				} else if _, ok := got["Desc"]; !ok {
+					t.Errorf("fieldsForUpdate() = %v, must contains Desc", got)
+				}
 			}
 		})
 	}
@@ -505,12 +471,79 @@ func Test_fieldsForUpdate(t *testing.T) {
 		args args
 		want map[string]interface{}
 	}{
-		// TODO: Add test cases.
+		{
+			name: "case1",
+			args: args{req: &pb.UpdateCustomViewRequest{UpdateType: pb.UpdateType_MetaType.String(), Name: "test", Desc: "test"}},
+			want: map[string]interface{}{"Name": "test", "Desc": "test"},
+		},
+		{
+			name: "case2",
+			args: args{req: &pb.UpdateCustomViewRequest{UpdateType: pb.UpdateType_ViewType.String(), Name: "test", Desc: "test", Blocks: []*pb.Block{{W: 10, H: 10}}}},
+			want: map[string]interface{}{"ViewConfig": []*pb.Block{{W: 10, H: 10}}, "Desc": "test"},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := fieldsForUpdate(tt.args.req); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("fieldsForUpdate() = %v, want %v", got, tt.want)
+			got := fieldsForUpdate(tt.args.req)
+			if tt.args.req.UpdateType == pb.UpdateType_MetaType.String() {
+				if v, ok := got["Name"]; !ok && v != tt.want["Name"] {
+					t.Errorf("fieldsForUpdate() = %v, want %v", got, tt.want)
+				}
+				if v, ok := got["Desc"]; !ok && v != tt.want["Desc"] {
+					t.Errorf("fieldsForUpdate() = %v, want %v", got, tt.want)
+				}
+			} else if tt.args.req.UpdateType == pb.UpdateType_ViewType.String() {
+				if v, ok := got["ViewConfig"]; !ok && v != tt.want["ViewConfig"] {
+					t.Errorf("fieldsForUpdate() = %v, want %v", got, tt.want)
+				}
+				if v, ok := got["DataConfig"]; !ok && v != tt.want["DataConfig"] {
+					t.Errorf("fieldsForUpdate() = %v, want %v", got, tt.want)
+				}
+			}
+		})
+	}
+}
+
+func Test_dataViewService_ListCustomViews(t *testing.T) {
+	type args struct {
+		ctx context.Context
+		req *pb.ListCustomViewsRequest
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{"case1", args{req: &pb.ListCustomViewsRequest{
+			Scope:       "test",
+			ScopeID:     "test",
+			Name:        "error",
+			Description: "test",
+			CreatorId:   []string{"1", "2"},
+		}}, true},
+		{"case2", args{req: &pb.ListCustomViewsRequest{
+			Scope:       "test",
+			ScopeID:     "test",
+			Name:        "test",
+			Description: "test",
+			CreatorId:   []string{"1", "2"},
+		}}, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var cvdb db.CustomViewDB
+			monkey.PatchInstanceMethod(reflect.TypeOf(&cvdb), "ListByFields", func(cvdb *db.CustomViewDB, startTime, endTime int64, creatorId []string, fields map[string]interface{}, likeFields map[string]interface{}) ([]*db.CustomView, error) {
+				if v, ok := likeFields["Name"]; !ok || v == "error" {
+					return nil, errors.New("error")
+				}
+				return []*db.CustomView{{CreatorID: "1", Scope: "test", ScopeID: "test", Name: "test1", Desc: "test1"}, {CreatorID: "2", Scope: "test", ScopeID: "test", Name: "test2", Desc: "test2"}}, nil
+			})
+
+			s := &dataViewService{}
+			_, err := s.ListCustomViews(tt.args.ctx, tt.args.req)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ListCustomViews() error = %v, wantErr %v", err, tt.wantErr)
+				return
 			}
 		})
 	}

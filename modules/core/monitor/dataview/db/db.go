@@ -16,6 +16,7 @@ package db
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/jinzhu/gorm"
 
@@ -80,11 +81,57 @@ func (db *CustomViewDB) GetByFields(fields map[string]interface{}) (*CustomView,
 	return list[0], nil
 }
 
-func (db *CustomViewDB) ListByFields(fields map[string]interface{}) ([]*CustomView, error) {
+func (db *CustomViewDB) GetCreatorsByFields(fields map[string]interface{}) ([]string, error) {
+	query := db.Select("distinct(`creator_id`)")
+	query, err := gormutil.GetQueryFilterByFields(query, customViewFieldColumns, fields)
+	if err != nil {
+		return nil, err
+	}
+	var list []*CustomView
+	if err := query.Where("creator_id != ?", "").Order("created_at DESC").Find(&list).Error; err != nil {
+		return nil, err
+	}
+	var result []string
+	for _, view := range list {
+		result = append(result, view.CreatorID)
+	}
+	return result, nil
+}
+
+func (db *CustomViewDB) ListByFields(startTime, endTime int64, creatorId []string, fields map[string]interface{}, likeFields map[string]interface{}) ([]*CustomView, error) {
 	query, err := gormutil.GetQueryFilterByFields(db.query(), customViewFieldColumns, fields)
 	if err != nil {
 		return nil, err
 	}
+
+	query, err = gormutil.GetQueryLikeFilterByFields(query, customViewFieldColumns, likeFields)
+	if err != nil {
+		return nil, err
+	}
+	startDuration := time.Unix(0, startTime*1e6)
+	start := startDuration.Format("2006-01-02 15:04:05")
+	endDuration := time.Unix(0, endTime*1e6)
+	end := endDuration.Format("2006-01-02 15:04:05")
+	if startTime != 0 {
+		query = query.Where("created_at >= ?", start)
+	}
+	if endTime != 0 {
+		query = query.Where("created_at <= ?", end)
+	}
+	if len(creatorId) > 0 {
+		query = query.Where(`creator_id in (?)`, creatorId)
+	}
+
+	var list []*CustomView
+	if err := query.Order("created_at DESC").Debug().Find(&list).Error; err != nil {
+		return nil, err
+	}
+	return list, nil
+}
+
+func (db *CustomViewDB) ListByIds(ids []string) ([]*CustomView, error) {
+	query := db.query().Where("id in (?)", ids)
+
 	var list []*CustomView
 	if err := query.Order("created_at DESC").Find(&list).Error; err != nil {
 		return nil, err
@@ -102,4 +149,63 @@ func (db *CustomViewDB) UpdateView(id string, fields map[string]interface{}) err
 		updates[col] = value
 	}
 	return db.query().Where("id=?", id).Updates(updates).Error
+}
+
+// ErdaDashboardHistoryDB .
+type ErdaDashboardHistoryDB struct {
+	*gorm.DB
+}
+
+func (db *ErdaDashboardHistoryDB) query() *gorm.DB { return db.Table(TableDashboardHistory) }
+
+func (db *ErdaDashboardHistoryDB) Begin() *ErdaDashboardHistoryDB {
+	return &ErdaDashboardHistoryDB{DB: db.DB.Begin()}
+}
+
+func (db *ErdaDashboardHistoryDB) Save(model *ErdaDashboardHistory) (*ErdaDashboardHistory, error) {
+	err := db.DB.Save(model).Error
+	if err != nil {
+		return nil, err
+	}
+	return model, nil
+}
+
+func (db *ErdaDashboardHistoryDB) ListByPage(pageNum, pageSize int64, scope, scopeId string) ([]*ErdaDashboardHistory, int64, error) {
+	var (
+		history []*ErdaDashboardHistory
+		total   int64
+	)
+
+	query := db.Table(TableDashboardHistory).Where("`scope`=?", scope).Where("`scope_id`=?", scopeId)
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	if err := query.Order("created_at DESC").Limit(pageSize).Offset((pageNum - 1) * pageSize).Find(&history).Error; err != nil {
+		return nil, 0, err
+	}
+	return history, total, nil
+}
+
+func (db *ErdaDashboardHistoryDB) FindById(id string) (*ErdaDashboardHistory, error) {
+	history := &ErdaDashboardHistory{}
+	err := db.query().Where("`id` = ?", id).Find(&history).Error
+	if err != nil {
+		return nil, err
+	}
+	return history, nil
+}
+
+func (db *ErdaDashboardHistoryDB) UpdateStatusAndFileUUID(id, status, fileUUID, errorMessage string) error {
+	byId, err := db.FindById(id)
+	if err != nil {
+		return err
+	}
+	byId.Status = status
+	byId.FileUUID = fileUUID
+	byId.ErrorMessage = errorMessage
+	_, err = db.Save(byId)
+	if err != nil {
+		return err
+	}
+	return nil
 }
