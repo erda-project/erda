@@ -24,17 +24,19 @@ import (
 	"time"
 
 	"bou.ke/monkey"
+	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda/modules/cluster-agent/client"
+	clusteragent "github.com/erda-project/erda/modules/cluster-agent/client"
 	clientconfig "github.com/erda-project/erda/modules/cluster-agent/config"
 	"github.com/erda-project/erda/modules/cluster-dialer/auth"
 	serverconfig "github.com/erda-project/erda/modules/cluster-dialer/config"
 )
 
 const (
-	dialerListenAddr2 = "127.0.0.1:18753"
-	helloListenAddr2  = "127.0.0.1:18754"
-	fakeClusterKey    = "test"
+	dialerListenAddr2    = "127.0.0.1:18753"
+	helloListenAddr2     = "127.0.0.1:18754"
+	fakeClusterKey       = "test"
+	fakeClusterAccessKey = "init"
 )
 
 func Test_netportal(t *testing.T) {
@@ -45,30 +47,30 @@ func Test_netportal(t *testing.T) {
 		return fakeClusterKey, true, nil
 	})
 
-	monkey.Patch(client.WatchClusterCredential, func(ctx context.Context, cfg *clientconfig.Config) error {
-		return nil
-	})
-
-	client.SetAccessKey("init")
+	client := clusteragent.New(clusteragent.WithConfig(&clientconfig.Config{
+		ClusterDialEndpoint: fmt.Sprintf("ws://%s/clusteragent/connect", dialerListenAddr2),
+		ClusterKey:          fakeClusterKey,
+		CollectClusterInfo:  false,
+		ClusterAccessKey:    fakeClusterAccessKey,
+	}))
 
 	go Start(context.Background(), nil, &serverconfig.Config{
 		Listen:          dialerListenAddr2,
 		NeedClusterInfo: false,
-	})
-	go client.Start(context.Background(), &clientconfig.Config{
-		ClusterDialEndpoint: fmt.Sprintf("ws://%s/clusteragent/connect", dialerListenAddr2),
-		ClusterKey:          fakeClusterKey,
-		CollectClusterInfo:  false,
 	})
 	helloHandler := func(w http.ResponseWriter, req *http.Request) {
 		io.WriteString(w, "Hello, world!")
 	}
 	http.HandleFunc("/hello2", helloHandler)
 	go http.ListenAndServe(helloListenAddr2, nil)
-	select {
-	case <-client.Connected():
+
+	go client.Start(context.Background())
+	for {
+		if client.IsConnected() {
+			logrus.Info("client connected")
+			break
+		}
 		time.Sleep(1 * time.Second)
-		fmt.Println("client connected")
 	}
 	hc := &http.Client{}
 	req, _ := http.NewRequest("GET", "http://"+dialerListenAddr2+"/hello2", nil)

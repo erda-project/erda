@@ -23,8 +23,9 @@ import (
 	"time"
 
 	"bou.ke/monkey"
+	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda/modules/cluster-agent/client"
+	clusteragent "github.com/erda-project/erda/modules/cluster-agent/client"
 	clientconfig "github.com/erda-project/erda/modules/cluster-agent/config"
 	"github.com/erda-project/erda/modules/cluster-dialer/auth"
 	serverconfig "github.com/erda-project/erda/modules/cluster-dialer/config"
@@ -57,28 +58,27 @@ func Test_DialerContext(t *testing.T) {
 		return fakeClusterKey, true, nil
 	})
 
-	monkey.Patch(client.WatchClusterCredential, func(ctx context.Context, cfg *clientconfig.Config) error {
-		return nil
-	})
-
-	client.SetAccessKey("init")
-
-	ctx, cancel := startServer()
-	go client.Start(context.Background(), &clientconfig.Config{
+	client := clusteragent.New(clusteragent.WithConfig(&clientconfig.Config{
 		ClusterDialEndpoint: fmt.Sprintf("ws://%s/clusteragent/connect", dialerListenAddr),
 		ClusterKey:          fakeClusterKey,
 		CollectClusterInfo:  false,
-	})
+		ClusterAccessKey:    fakeClusterAccessKey,
+	}))
 
+	ctx, cancel := startServer()
 	helloHandler := func(w http.ResponseWriter, req *http.Request) {
 		io.WriteString(w, "Hello, world!\n")
 	}
 	http.HandleFunc("/hello", helloHandler)
 	go http.ListenAndServe(helloListenAddr, nil)
-	select {
-	case <-client.Connected():
+
+	go client.Start(ctx)
+	for {
+		if client.IsConnected() {
+			logrus.Info("client connected")
+			break
+		}
 		time.Sleep(1 * time.Second)
-		fmt.Println("client connected")
 	}
 	hc := http.Client{
 		Transport: &http.Transport{

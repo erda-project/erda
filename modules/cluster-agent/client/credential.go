@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
-	"sync"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -32,26 +31,9 @@ import (
 	watchtools "k8s.io/client-go/tools/watch"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/cluster-agent/config"
 )
 
-var (
-	accessKey string
-	lock      sync.Mutex
-)
-
-func SetAccessKey(ak string) {
-	lock.Lock()
-	defer lock.Unlock()
-	accessKey = ak
-}
-
-func GetAccessKey() string {
-	return accessKey
-}
-
-func WatchClusterCredential(ctx context.Context, cfg *config.Config) error {
-
+func (c *Client) watchClusterCredential(ctx context.Context) error {
 	var (
 		retryWatcher *watchtools.RetryWatcher
 		err          error
@@ -59,7 +41,7 @@ func WatchClusterCredential(ctx context.Context, cfg *config.Config) error {
 
 	// Wait cluster credential secret ready.
 	for {
-		retryWatcher, err = getInClusterRetryWatcher(cfg.ErdaNamespace)
+		retryWatcher, err = getInClusterRetryWatcher(c.cfg.ErdaNamespace)
 		if err != nil {
 			logrus.Errorf("get retry warcher, %v", err)
 		} else if retryWatcher != nil {
@@ -102,30 +84,38 @@ func WatchClusterCredential(ctx context.Context, cfg *config.Config) error {
 				}
 
 				// Access key values doesn't change, skip reconnect
-				if string(ak) == GetAccessKey() {
-					logrus.Info("cluster access key doesn't change, skip")
+				if string(ak) == c.getAccessKey() {
+					logrus.Debug("cluster access key doesn't change, skip")
 					continue
 				}
 
-				if GetAccessKey() == "" {
+				if c.getAccessKey() == "" {
 					logrus.Infof("get cluster accesskey %s", string(ak))
 				} else {
-					logrus.Infof("cluster accesskey change from %s to %s", GetAccessKey(), string(ak))
+					logrus.Infof("cluster accesskey change from %s to %s", c.getAccessKey(), string(ak))
 				}
 
 				// change value
-				SetAccessKey(string(ak))
-
-				select {
-				case <-Connected():
-					disConnected <- struct{}{}
-				default:
+				c.setAccessKey(string(ak))
+				// if connected, reconnect.
+				if c.IsConnected() {
+					c.disconnect <- struct{}{}
 				}
 			}
 		case <-ctx.Done():
 			return nil
 		}
 	}
+}
+
+func (c *Client) setAccessKey(ac string) {
+	c.Lock()
+	defer c.Unlock()
+	c.accessKey = ac
+}
+
+func (c *Client) getAccessKey() string {
+	return c.accessKey
 }
 
 func getInClusterRetryWatcher(ns string) (*watchtools.RetryWatcher, error) {
