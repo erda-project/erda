@@ -209,7 +209,13 @@ erda.oap.collector.processor.modifier@docker_container_summary:
 erda.oap.collector.processor.aggregator@cpu-usage:
   keypass:
     __kw__name: ["docker_container_summary"]
-  keyinclude: ["__kw__name, __dp__container_cpu_usage_seconds_total, org_name, cluster_name, id, cpu"]
+  keydrop:
+    container: ["POD"]
+  keyinclude:
+    - "__kw__name"
+    - "__dp__container_cpu_usage_seconds_total"
+    - "cluster_name"
+    - "id"
 
   rules:
     - func: "rate"
@@ -222,7 +228,14 @@ erda.oap.collector.processor.aggregator@cpu-usage:
 erda.oap.collector.processor.aggregator@mem-percent:
   keypass:
     __kw__name: ["docker_container_summary"]
-  keyinclude: ["__kw__name, __dp__mem_usage, __dp__mem_limit, org_name, cluster_name, id, cpu"]
+  keydrop:
+    container: ["POD"]
+  keyinclude:
+    - "__kw__name"
+    - "__dp__mem_usage"
+    - "__dp__mem_limit"
+    - "cluster_name"
+    - "id"
 
   rules:
     - func: "/"

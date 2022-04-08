@@ -47,6 +47,38 @@ func TestDataFilter_Selected(t *testing.T) {
 			})},
 			want: true,
 		},
+		{
+			fields: fields{cfg: FilterConfig{
+				Keypass: map[string][]string{"__kw__name": {".*"}},
+			}},
+			args: args{od: odata.NewMetric(&mpb.Metric{
+				TimeUnixNano: 0,
+			})},
+			want: false,
+		},
+		{
+			fields: fields{cfg: FilterConfig{
+				Keyinclude: []string{"__kw_name", "abc"},
+			}},
+			args: args{od: odata.NewMetric(&mpb.Metric{
+				Name:         "abcd",
+				TimeUnixNano: 0,
+			})},
+			want: false,
+		},
+		{
+			fields: fields{cfg: FilterConfig{
+				Keyexclude: []string{"abc"},
+			}},
+			args: args{od: odata.NewMetric(&mpb.Metric{
+				Name:         "abcd",
+				TimeUnixNano: 0,
+				Attributes: map[string]string{
+					"abc": "hello",
+				},
+			})},
+			want: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

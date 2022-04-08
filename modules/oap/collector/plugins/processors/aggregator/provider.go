@@ -20,7 +20,6 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/modules/oap/collector/core/model"
 	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
 	"github.com/erda-project/erda/modules/oap/collector/plugins"
 )
@@ -29,7 +28,9 @@ var providerName = plugins.WithPrefixProcessor("aggregator")
 
 type config struct {
 	Keypass    map[string][]string `file:"keypass"`
+	Keydrop    map[string][]string `file:"keydrop"`
 	Keyinclude []string            `file:"keyinclude"`
+	Keyexclude []string            `file:"keyexclude"`
 
 	PushInterval time.Duration `file:"push_interval" default:"60s"`
 	Rules        []RuleConfig  `file:"rules"`
@@ -40,9 +41,8 @@ type provider struct {
 	Cfg *config
 	Log logs.Logger
 
-	consumer model.ObservableDataConsumerFunc
-	cache    map[uint64]aggregate
-	rulers   []*ruler
+	cache  map[uint64]aggregate
+	rulers []*ruler
 }
 type aggregate struct {
 	data map[string]interface{}
@@ -57,10 +57,6 @@ func (p *provider) Process(in odata.ObservableData) (odata.ObservableData, error
 		return p.add(in), nil
 	}
 	return in, nil
-}
-
-func (p *provider) StartProcessor(consumer model.ObservableDataConsumerFunc) {
-	p.consumer = consumer
 }
 
 func (p *provider) add(in odata.ObservableData) odata.ObservableData {
@@ -102,29 +98,6 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	}
 	return nil
 }
-
-// func (p *provider) Run(ctx context.Context) error {
-// 	ticker := time.NewTicker(p.Cfg.PushInterval)
-// 	defer ticker.Stop()
-// 	for {
-// 		select {
-// 		case <-ctx.Done():
-// 			p.push()
-// 			return nil
-// 		case <-ticker.C:
-// 			p.push()
-// 		}
-// 	}
-// }
-
-// func (p *provider) push() {
-// 	for _, agg := range p.cache {
-// 		p.consumer(&odata.Metric{
-// 			Meta: odata.NewMetadata(),
-// 			Data: agg.data,
-// 		})
-// 	}
-// }
 
 func init() {
 	servicehub.Register(providerName, &servicehub.Spec{
