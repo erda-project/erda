@@ -33,10 +33,9 @@ import (
 )
 
 type ProjectPipelineService struct {
-	logger             logs.Logger
-	db                 *dao.DBClient
-	bundle             *bundle.Bundle
-	pipelineSourceType ProjectSourceType
+	logger logs.Logger
+	db     *dao.DBClient
+	bundle *bundle.Bundle
 
 	pipelineSvc        *pipeline.Pipeline
 	PipelineSource     sourcepb.SourceServiceServer
