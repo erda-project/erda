@@ -54,8 +54,8 @@ func TestTrimPrefix_Operate(t1 *testing.T) {
 			t := &TrimPrefix{
 				cfg: tt.fields.cfg,
 			}
-			if got := t.Operate(tt.args.pairs); !reflect.DeepEqual(got, tt.want) {
-				t1.Errorf("Operate() = %v, want %v", got, tt.want)
+			if got := t.Modify(tt.args.pairs); !reflect.DeepEqual(got, tt.want) {
+				t1.Errorf("Modify() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -96,8 +96,8 @@ func TestAdd_Operate(t *testing.T) {
 			a := &Add{
 				cfg: tt.fields.cfg,
 			}
-			if got := a.Operate(tt.args.pairs); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Operate() = %v, want %v", got, tt.want)
+			if got := a.Modify(tt.args.pairs); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Modify() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -138,8 +138,8 @@ func TestCopy_Operate(t *testing.T) {
 			c := &Copy{
 				cfg: tt.fields.cfg,
 			}
-			if got := c.Operate(tt.args.pairs); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Operate() = %v, want %v", got, tt.want)
+			if got := c.Modify(tt.args.pairs); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Modify() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -178,8 +178,8 @@ func TestDrop_Operate(t *testing.T) {
 			d := &Drop{
 				cfg: tt.fields.cfg,
 			}
-			if got := d.Operate(tt.args.pairs); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Operate() = %v, want %v", got, tt.want)
+			if got := d.Modify(tt.args.pairs); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Modify() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -220,8 +220,8 @@ func TestRename_Operate(t *testing.T) {
 			r := &Rename{
 				cfg: tt.fields.cfg,
 			}
-			if got := r.Operate(tt.args.pairs); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Operate() = %v, want %v", got, tt.want)
+			if got := r.Modify(tt.args.pairs); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Modify() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -262,8 +262,8 @@ func TestSet_Operate(t *testing.T) {
 			s := &Set{
 				cfg: tt.fields.cfg,
 			}
-			if got := s.Operate(tt.args.pairs); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Operate() = %v, want %v", got, tt.want)
+			if got := s.Modify(tt.args.pairs); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Modify() = %v, want %v", got, tt.want)
 			}
 		})
 	}

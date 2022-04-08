@@ -29,11 +29,25 @@ type Log struct {
 	Data map[string]interface{} `json:"data"`
 }
 
+func (l *Log) HashID() uint64 {
+	return Hash(l.Name(), AttributesToLabels(ExtractAttributes(l.Data)))
+}
+
+func (l *Log) HasKey(key string) bool {
+	_, ok := l.Data[key]
+	return ok
+}
+
 func NewLog(item *lpb.Log) *Log {
 	return &Log{
 		Meta: NewMetadata(),
 		Data: logToMap(item),
 	}
+}
+
+func (l *Log) Get(key string) (interface{}, bool) {
+	val, ok := l.Data[key]
+	return val, ok
 }
 
 func (l *Log) HandleKeyValuePair(handler func(pairs map[string]interface{}) map[string]interface{}) {

@@ -22,7 +22,10 @@ const (
 	any       = "*"
 	topHits   = "top_hits"
 
+	// deprecated
 	nameContainerSummary = "container_summary"
+	// in-use
+	nameDockerContainerSummary = "docker_container_summary"
 
 	timestamp       = "timestamp"
 	id              = "id"
@@ -91,31 +94,39 @@ const (
 	fields                = "fields"
 	fieldsPrefix          = fields + "."
 	fieldsLabels          = fieldsPrefix + labels
-	tags                  = "tags"
-	tagsPrefix            = tags + "."
-	tagsClusterName       = tagsPrefix + clusterName
-	tagsLabels            = tagsPrefix + labels
-	tagsHostIP            = tagsPrefix + hostIP
-	tagsCPUs              = tagsPrefix + cpus
-	tagsMem               = tagsPrefix + mem
-	tagsContainerID       = tagsPrefix + containerID
-	tagsInstanceType      = tagsPrefix + instanceType
-	tagsOrgName           = tagsPrefix + orgName
-	tagsProjectID         = tagsPrefix + projectID
-	tagsProjectName       = tagsPrefix + projectName
-	tagsApplicationID     = tagsPrefix + applicationID
-	tagsApplicationName   = tagsPrefix + applicationName
-	tagsWorkspace         = tagsPrefix + workspace
-	tagsRuntimeID         = tagsPrefix + runtimeID
-	tagsRuntimeName       = tagsPrefix + runtimeName
-	tagsServiceID         = tagsPrefix + serviceID
-	tagsServiceName       = tagsPrefix + serviceName
-	tagsAddonID           = tagsPrefix + addonID
-	tagsJobID             = tagsPrefix + jobID
-	tagsComponentName     = tagsPrefix + componentName
-	tagsTerminusVersion   = tagsPrefix + terminusVersion
-	tagsIsDeleted         = tagsPrefix + isDeleted
-	tagsPodName           = tagsPrefix + podName
+	fieldsCPUUsagePercent = fieldsPrefix + cpuUsagePercent
+	fieldsCPURequest      = fieldsPrefix + cpuRequest
+	fieldsCPULimit        = fieldsPrefix + cpuLimit
+	fieldsMemUsage        = fieldsPrefix + memUsage
+	fieldsMemRequest      = fieldsPrefix + memRequest
+	fieldsMemLimit        = fieldsPrefix + memLimit
+	fieldsDiskUsage       = fieldsPrefix + diskUsage
+
+	tags                = "tags"
+	tagsPrefix          = tags + "."
+	tagsClusterName     = tagsPrefix + clusterName
+	tagsLabels          = tagsPrefix + labels
+	tagsHostIP          = tagsPrefix + hostIP
+	tagsCPUs            = tagsPrefix + cpus
+	tagsMem             = tagsPrefix + mem
+	tagsContainerID     = tagsPrefix + containerID
+	tagsInstanceType    = tagsPrefix + instanceType
+	tagsOrgName         = tagsPrefix + orgName
+	tagsProjectID       = tagsPrefix + projectID
+	tagsProjectName     = tagsPrefix + projectName
+	tagsApplicationID   = tagsPrefix + applicationID
+	tagsApplicationName = tagsPrefix + applicationName
+	tagsWorkspace       = tagsPrefix + workspace
+	tagsRuntimeID       = tagsPrefix + runtimeID
+	tagsRuntimeName     = tagsPrefix + runtimeName
+	tagsServiceID       = tagsPrefix + serviceID
+	tagsServiceName     = tagsPrefix + serviceName
+	tagsAddonID         = tagsPrefix + addonID
+	tagsJobID           = tagsPrefix + jobID
+	tagsComponentName   = tagsPrefix + componentName
+	tagsTerminusVersion = tagsPrefix + terminusVersion
+	tagsIsDeleted       = tagsPrefix + isDeleted
+	tagsPodName         = tagsPrefix + podName
 )
 
 var (

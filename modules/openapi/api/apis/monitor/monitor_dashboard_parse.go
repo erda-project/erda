@@ -12,30 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package operator
+package monitor
 
-import (
-	"regexp"
+import "github.com/erda-project/erda/modules/openapi/api/apis"
 
-	"github.com/erda-project/erda/modules/oap/collector/common"
-)
-
-type Regex struct {
-	cfg     ModifierCfg
-	pattern *regexp.Regexp
-}
-
-func (r *Regex) Modify(pairs map[string]interface{}) map[string]interface{} {
-	val, ok := pairs[r.cfg.Key]
-	if !ok {
-		return pairs
-	}
-	for k, v := range common.RegexGroupMap(r.pattern, val.(string)) {
-		pairs[k] = v
-	}
-	return pairs
-}
-
-func NewRegex(cfg ModifierCfg) Modifier {
-	return &Regex{cfg: cfg, pattern: regexp.MustCompile(cfg.Value)}
+var MONITOR_DASHBOARD_PARSE = apis.ApiSpec{
+	Path:        "/api/dashboard/blocks/parse",
+	BackendPath: "/api/dashboard/blocks/parse",
+	Host:        "monitor.marathon.l4lb.thisdcos.directory:7096",
+	Scheme:      "http",
+	Method:      "POST",
+	CheckLogin:  true,
+	CheckToken:  true,
+	Doc:         "summary: 大盘导入校验",
 }

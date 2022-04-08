@@ -148,6 +148,7 @@ func (p *Pipeline) startProcessors(ctx context.Context, in <-chan odata.Observab
 	}
 
 	for {
+	begin:
 		select {
 		case data := <-in:
 			for _, pr := range p.processors {
@@ -158,6 +159,9 @@ func (p *Pipeline) startProcessors(ctx context.Context, in <-chan odata.Observab
 				if err != nil {
 					p.Log.Errorf("Processor<%s> process data error: %s", pr.Name, err)
 					continue
+				}
+				if tmp == nil {
+					goto begin
 				}
 				data = tmp
 			}

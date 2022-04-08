@@ -25,6 +25,7 @@ service DataViewService {
       path: "/api/dashboard/system/blocks",
     };
   }
+
   rpc GetSystemView (GetSystemViewRequest) returns (GetSystemViewResponse)  {
     option (google.api.http)     = {
       get: "/api/dashboard/system/blocks/{id}"
@@ -42,6 +43,25 @@ service DataViewService {
       path: "/api/dashboard/blocks",
     };
   }
+
+  rpc GetCustomViewsCreator (GetCustomViewsCreatorRequest) returns (GetCustomViewsCreatorResponse) {
+    option (google.api.http)     = {
+      get: "/api/dashboard/blocks/creators?scopeId={scopeID}"
+    };
+    option (erda.common.openapi) = {
+      path: "/api/dashboard/blocks/creators",
+    };
+  }
+
+  rpc ListCustomDashboardHistory (ListCustomDashboardHistoryRequest) returns (ListCustomDashboardHistoryResponse) {
+    option (google.api.http)     = {
+      get: "/api/dashboard/blocks/operate/history"
+    };
+    option (erda.common.openapi) = {
+      path: "/api/dashboard/blocks/operate/history",
+    };
+  }
+
   rpc GetCustomView (GetCustomViewRequest) returns (GetCustomViewResponse) {
     option (google.api.http)     = {
       get: "/api/dashboard/blocks/{id}"
@@ -50,6 +70,7 @@ service DataViewService {
       path: "/api/dashboard/blocks/{id}",
     };
   }
+
   rpc CreateCustomView (CreateCustomViewRequest) returns (CreateCustomViewResponse) {
     option (google.api.http)     = {
       post: "/api/dashboard/blocks",
@@ -58,6 +79,7 @@ service DataViewService {
       path: "/api/dashboard/blocks",
     };
   }
+
   rpc UpdateCustomView (UpdateCustomViewRequest) returns (UpdateCustomViewResponse) {
     option (google.api.http)     = {
       put: "/api/dashboard/blocks/{id}",
@@ -66,6 +88,7 @@ service DataViewService {
       path: "/api/dashboard/blocks/{id}",
     };
   }
+
   rpc DeleteCustomView (DeleteCustomViewRequest) returns (DeleteCustomViewResponse) {
     option (google.api.http)     = {
       delete: "/api/dashboard/blocks/{id}"
@@ -74,7 +97,52 @@ service DataViewService {
       path: "/api/dashboard/blocks/{id}",
     };
   }
+}
 
+message CustomDashboardHistory {
+  string id            = 1;
+  string type          = 2;
+  string status        = 3;
+  string scope         = 4;
+  string scopeId       = 5;
+  string operatorId    = 6;
+  string createdAt     = 7;
+  string fileUuid      = 8;
+  string errorMessage  = 9;
+  string targetScope   = 10;
+  string targetScopeId = 11;
+  string orgId         = 12;
+}
+
+message ListCustomDashboardHistoryRequest {
+  int64  pageNo   = 1;
+  int64  pageSize = 2;
+  string scope    = 3;
+  string scopeId  = 4;
+}
+
+message ListCustomDashboardHistoryResponse {
+  repeated CustomDashboardHistory histories = 1;
+  int64                           total     = 2;
+}
+
+message ExportCustomViewRequest {
+  string          scope   = 1 [(validator.field) = {string_not_empty: true}];
+  string          scopeId = 2 [(validator.field) = {string_not_empty: true}];
+  repeated string viewIds = 3;
+}
+
+enum OperatorType {
+  Export     = 0;
+  Import     = 1;
+  ExportFile = 3;
+  ExportEnv  = 4;
+}
+
+enum OperatorStatus {
+  Success    = 0;
+  Failure    = 1;
+  Processing = 2;
 }
 
 // ListSystemViews
@@ -98,6 +166,17 @@ message GetSystemViewResponse {
 
 // ListCustomViews
 message ListCustomViewsRequest {
+  string          scope       = 1 [(validator.field) = {string_not_empty: true}];
+  string          scopeID     = 2 [(validator.field) = {string_not_empty: true}];
+  int64           startTime   = 3;
+  int64           endTime     = 4;
+  string          name        = 5;
+  string          description = 6;
+  repeated string creatorId   = 7;
+}
+
+// GetCustomViewsCreatorRequest
+message GetCustomViewsCreatorRequest {
   string scope   = 1 [(validator.field) = {string_not_empty: true}];
   string scopeID = 2 [(validator.field) = {string_not_empty: true}];
 }
@@ -105,6 +184,10 @@ message ListCustomViewsRequest {
 message ListCustomViewsResponse {
   ViewList        data    = 1;
   repeated string userIDs = 2;
+}
+
+message GetCustomViewsCreatorResponse {
+  repeated string creators = 1;
 }
 
 // GetCustomView
@@ -134,11 +217,17 @@ message CreateCustomViewResponse {
 
 // UpdateCustomView
 message UpdateCustomViewRequest {
-  string            id     = 1 [(validator.field) = {string_not_empty: true}];
-  string            name   = 2;
-  string            desc   = 3;
-  repeated Block    blocks = 4 [json_name = "viewConfig"];
-  repeated DataItem data   = 5 [json_name = "dataConfig"];
+  string            id         = 1 [(validator.field) = {string_not_empty: true}];
+  string            name       = 2;
+  string            desc       = 3;
+  repeated Block    blocks     = 4 [json_name = "viewConfig"];
+  repeated DataItem data       = 5 [json_name = "dataConfig"];
+  string            updateType = 6;
+}
+
+enum UpdateType {
+  MetaType = 0;
+  ViewType = 1;
 }
 
 message UpdateCustomViewResponse {

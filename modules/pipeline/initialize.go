@@ -172,6 +172,7 @@ func (p *provider) do() error {
 		endpoints.WithQueueManager(p.QueueManager),
 		endpoints.WithEngine(p.Engine),
 		endpoints.WithClusterInfo(p.ClusterInfo),
+		endpoints.WithMysql(p.MySQL),
 	)
 
 	p.CronDaemon.WithPipelineFunc(pipelineSvc.CreateV2)

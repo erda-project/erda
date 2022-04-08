@@ -21,6 +21,31 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+func (this *CustomDashboardHistory) Validate() error {
+	return nil
+}
+func (this *ListCustomDashboardHistoryRequest) Validate() error {
+	return nil
+}
+func (this *ListCustomDashboardHistoryResponse) Validate() error {
+	for _, item := range this.Histories {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("Histories", err)
+			}
+		}
+	}
+	return nil
+}
+func (this *ExportCustomViewRequest) Validate() error {
+	if this.Scope == "" {
+		return github_com_mwitkow_go_proto_validators.FieldError("Scope", fmt.Errorf(`value '%v' must not be an empty string`, this.Scope))
+	}
+	if this.ScopeId == "" {
+		return github_com_mwitkow_go_proto_validators.FieldError("ScopeId", fmt.Errorf(`value '%v' must not be an empty string`, this.ScopeId))
+	}
+	return nil
+}
 func (this *ListSystemViewsRequest) Validate() error {
 	if this.Scope == "" {
 		return github_com_mwitkow_go_proto_validators.FieldError("Scope", fmt.Errorf(`value '%v' must not be an empty string`, this.Scope))
@@ -61,12 +86,24 @@ func (this *ListCustomViewsRequest) Validate() error {
 	}
 	return nil
 }
+func (this *GetCustomViewsCreatorRequest) Validate() error {
+	if this.Scope == "" {
+		return github_com_mwitkow_go_proto_validators.FieldError("Scope", fmt.Errorf(`value '%v' must not be an empty string`, this.Scope))
+	}
+	if this.ScopeID == "" {
+		return github_com_mwitkow_go_proto_validators.FieldError("ScopeID", fmt.Errorf(`value '%v' must not be an empty string`, this.ScopeID))
+	}
+	return nil
+}
 func (this *ListCustomViewsResponse) Validate() error {
 	if this.Data != nil {
 		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Data); err != nil {
 			return github_com_mwitkow_go_proto_validators.FieldError("Data", err)
 		}
 	}
+	return nil
+}
+func (this *GetCustomViewsCreatorResponse) Validate() error {
 	return nil
 }
 func (this *GetCustomViewRequest) Validate() error {

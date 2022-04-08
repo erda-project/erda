@@ -12,30 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package operator
+package endpoints
 
 import (
-	"regexp"
+	"context"
+	"net/http"
 
-	"github.com/erda-project/erda/modules/oap/collector/common"
+	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 
-type Regex struct {
-	cfg     ModifierCfg
-	pattern *regexp.Regexp
+func (e *Endpoints) mysqlStats(ctx context.Context, r *http.Request, vars map[string]string) (
+	httpserver.Responser, error) {
+	stats := e.dbClient.DB().Stats()
+	return httpserver.OkResp(stats)
 }
 
-func (r *Regex) Modify(pairs map[string]interface{}) map[string]interface{} {
-	val, ok := pairs[r.cfg.Key]
-	if !ok {
-		return pairs
-	}
-	for k, v := range common.RegexGroupMap(r.pattern, val.(string)) {
-		pairs[k] = v
-	}
-	return pairs
-}
-
-func NewRegex(cfg ModifierCfg) Modifier {
-	return &Regex{cfg: cfg, pattern: regexp.MustCompile(cfg.Value)}
+func (e *Endpoints) providerMysqlStats(ctx context.Context, r *http.Request, vars map[string]string) (
+	httpserver.Responser, error) {
+	stats := e.MySQL.DB().DB().Stats()
+	return httpserver.OkResp(stats)
 }

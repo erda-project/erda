@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package modifier
+package aggregator
 
 import (
 	"fmt"
@@ -21,15 +21,17 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
 	"github.com/erda-project/erda/modules/oap/collector/plugins"
-	"github.com/erda-project/erda/modules/oap/collector/plugins/processors/modifier/operator"
 )
 
-var providerName = plugins.WithPrefixProcessor("modifier")
+var providerName = plugins.WithPrefixProcessor("aggregator")
 
 type config struct {
-	Rules []operator.ModifierCfg `file:"rules"`
+	Keypass    map[string][]string `file:"keypass"`
+	Keydrop    map[string][]string `file:"keydrop"`
+	Keyinclude []string            `file:"keyinclude"`
+	Keyexclude []string            `file:"keyexclude"`
 
-	Keypass map[string][]string `file:"keypass"`
+	Rules []RuleConfig `file:"rules"`
 }
 
 // +provider
@@ -37,7 +39,11 @@ type provider struct {
 	Cfg *config
 	Log logs.Logger
 
-	operators []*operator.Operator
+	cache  map[uint64]aggregate
+	rulers []*ruler
+}
+type aggregate struct {
+	data map[string]interface{}
 }
 
 func (p *provider) ComponentConfig() interface{} {
@@ -45,28 +51,49 @@ func (p *provider) ComponentConfig() interface{} {
 }
 
 func (p *provider) Process(in odata.ObservableData) (odata.ObservableData, error) {
-	for _, op := range p.operators {
-		in.HandleKeyValuePair(func(pairs map[string]interface{}) map[string]interface{} {
-			if !op.Condition.Match(pairs) {
-				return pairs
-			}
-			return op.Modifier.Modify(pairs)
-		})
+	if in.SourceType() == odata.MetricType {
+		return p.add(in), nil
 	}
 	return in, nil
 }
 
+func (p *provider) add(in odata.ObservableData) odata.ObservableData {
+	id := in.HashID()
+	_, ok := p.cache[id]
+	if !ok {
+		agg := aggregate{
+			data: in.Pairs(),
+		}
+		for _, rule := range p.rulers {
+			agg.data = rule.Fn(nil, agg.data)
+		}
+		p.cache[id] = agg
+		return in
+	}
+
+	pre := p.cache[id]
+	for _, rule := range p.rulers {
+		pre.data = rule.Fn(pre.data, in.Pairs())
+	}
+	p.cache[id] = pre
+
+	return &odata.Metric{
+		Meta: odata.NewMetadata(),
+		Data: pre.data,
+	}
+}
+
 // Run this is optional
 func (p *provider) Init(ctx servicehub.Context) error {
-	ops := make([]*operator.Operator, len(p.Cfg.Rules))
-	for idx, cfg := range p.Cfg.Rules {
-		op, err := operator.NewOperator(cfg)
+	p.cache = make(map[uint64]aggregate)
+	p.rulers = make([]*ruler, len(p.Cfg.Rules))
+	for idx, r := range p.Cfg.Rules {
+		rr, err := newRuler(r)
 		if err != nil {
-			return fmt.Errorf("NewOperator: %w", err)
+			return fmt.Errorf("newRuler err: %w", err)
 		}
-		ops[idx] = op
+		p.rulers[idx] = rr
 	}
-	p.operators = ops
 	return nil
 }
 
@@ -75,8 +102,6 @@ func init() {
 		Services: []string{
 			providerName,
 		},
-
-		Description: "here is description of erda.oap.collector.processor.modifier",
 		ConfigFunc: func() interface{} {
 			return &config{}
 		},
