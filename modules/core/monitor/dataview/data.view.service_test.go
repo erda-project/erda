@@ -15,15 +15,16 @@
 package dataview
 
 import (
-	"bou.ke/monkey"
 	"context"
-	"github.com/erda-project/erda/modules/core/monitor/dataview/db"
-	"github.com/pkg/errors"
+	"errors"
 	"reflect"
 	"testing"
 
+	"bou.ke/monkey"
+
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-proto-go/core/monitor/dataview/pb"
+	"github.com/erda-project/erda/modules/core/monitor/dataview/db"
 )
 
 func Test_dataViewService_ListSystemViews(t *testing.T) {
