@@ -25,7 +25,7 @@ type Regex struct {
 	pattern *regexp.Regexp
 }
 
-func (r *Regex) Operate(pairs map[string]interface{}) map[string]interface{} {
+func (r *Regex) Modify(pairs map[string]interface{}) map[string]interface{} {
 	val, ok := pairs[r.cfg.Key]
 	if !ok {
 		return pairs
@@ -36,6 +36,6 @@ func (r *Regex) Operate(pairs map[string]interface{}) map[string]interface{} {
 	return pairs
 }
 
-func NewRegex(cfg ModifierCfg) Operator {
+func NewRegex(cfg ModifierCfg) Modifier {
 	return &Regex{cfg: cfg, pattern: regexp.MustCompile(cfg.Value)}
 }
