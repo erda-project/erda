@@ -30,6 +30,7 @@ ALTER TABLE <database>.<table_name> ON CLUSTER '{cluster}'
 
 // 对常用字段添加索引
 ALTER TABLE <database>.<table_name> ON CLUSTER '{cluster}' ADD INDEX IF NOT EXISTS idx_tace_id(tags.trace_id) TYPE bloom_filter GRANULARITY 1;
+ALTER TABLE <database>.<table_name> ON CLUSTER '{cluster}' ADD INDEX IF NOT EXISTS idx_id(id) TYPE bloom_filter GRANULARITY 1;
 
 // 创建分布式表
 // 注意: 如果对logs表结构新增列, 需要同步修改logs_all

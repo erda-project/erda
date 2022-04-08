@@ -38,12 +38,15 @@ type (
 
 	IterateStyle int32
 
+	ReturnFieldMode int32
+
 	QueryMeta struct {
 		OrgNames              []string
 		MspEnvIds             []string
 		Highlight             bool
 		PreferredBufferSize   int
 		PreferredIterateStyle IterateStyle
+		PreferredReturnFields ReturnFieldMode
 	}
 
 	UniqueId struct {
@@ -119,6 +122,12 @@ type (
 	Aggregator interface {
 		Aggregate(ctx context.Context, req *Aggregation) (*AggregationResponse, error)
 	}
+)
+
+const (
+	AllFields        = ReturnFieldMode(0)
+	ExcludeTagsField = ReturnFieldMode(1)
+	OnlyIdContent    = ReturnFieldMode(2)
 )
 
 const (

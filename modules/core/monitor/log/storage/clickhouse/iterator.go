@@ -77,6 +77,7 @@ func (p *provider) Iterator(ctx context.Context, sel *storage.Selector) (storeki
 		sel.Skip.FromOffset,
 		id,
 		callback,
+		sel.Meta.PreferredReturnFields,
 		sel.Debug,
 	)
 }
@@ -89,17 +90,19 @@ func newClickhouseIterator(
 	fromOffset int,
 	searchAfterID string,
 	callback func(item *pb.LogItem),
+	returnFieldMode storage.ReturnFieldMode,
 	debug bool,
 ) (storekit.Iterator, error) {
 	return &clickhouseIterator{
-		ctx:           ctx,
-		ck:            ck,
-		sqlClause:     sqlClause,
-		pageSize:      pageSize,
-		fromOffset:    fromOffset,
-		searchAfterID: searchAfterID,
-		callback:      callback,
-		debug:         debug,
+		ctx:             ctx,
+		ck:              ck,
+		sqlClause:       sqlClause,
+		pageSize:        pageSize,
+		fromOffset:      fromOffset,
+		searchAfterID:   searchAfterID,
+		callback:        callback,
+		returnFieldMode: returnFieldMode,
+		debug:           debug,
 	}, nil
 }
 
@@ -112,14 +115,15 @@ const (
 )
 
 type clickhouseIterator struct {
-	ctx           context.Context
-	ck            clickhouse.Interface
-	sqlClause     *goqu.SelectDataset
-	pageSize      int
-	fromOffset    int
-	searchAfterID string
-	callback      func(item *pb.LogItem)
-	debug         bool
+	ctx             context.Context
+	ck              clickhouse.Interface
+	sqlClause       *goqu.SelectDataset
+	pageSize        int
+	fromOffset      int
+	searchAfterID   string
+	callback        func(item *pb.LogItem)
+	returnFieldMode storage.ReturnFieldMode
+	debug           bool
 
 	lastResp ckdriver.Rows
 	buffer   []interface{}
@@ -267,6 +271,14 @@ func (it *clickhouseIterator) fetch(dir iteratorDir) {
 			}
 
 			expr = expr.Offset(uint(it.fromOffset)).Limit(uint(it.pageSize))
+
+			switch it.returnFieldMode {
+			case storage.ExcludeTagsField:
+				expr = expr.Select("_id", "timestamp", "id", "content", "stream", "source")
+			case storage.OnlyIdContent:
+				expr = expr.Select("_id", "timestamp", "id", "content")
+			default:
+			}
 
 			sql, _, err := expr.ToSQL()
 			if it.debug {
