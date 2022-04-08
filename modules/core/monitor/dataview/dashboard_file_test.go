@@ -15,14 +15,16 @@
 package dataview
 
 import (
-	"bou.ke/monkey"
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/core/monitor/dataview/db"
-	"github.com/pkg/errors"
+	"errors"
 	"reflect"
 	"strings"
 	"testing"
+
+	"bou.ke/monkey"
+
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/core/monitor/dataview/db"
 )
 
 func Test_dashboardFileName(t *testing.T) {
