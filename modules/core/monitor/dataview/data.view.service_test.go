@@ -15,7 +15,10 @@
 package dataview
 
 import (
+	"bou.ke/monkey"
 	"context"
+	"github.com/erda-project/erda/modules/core/monitor/dataview/db"
+	"github.com/pkg/errors"
 	"reflect"
 	"testing"
 
@@ -189,63 +192,6 @@ func Test_dataViewService_CreateCustomView(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.wantResp) {
 				t.Errorf("dataViewService.CreateCustomView() = %v, want %v", got, tt.wantResp)
-			}
-		})
-	}
-}
-
-func Test_dataViewService_ListCustomViews(t *testing.T) {
-	type args struct {
-		ctx context.Context
-		req *pb.ListCustomViewsRequest
-	}
-	tests := []struct {
-		name     string
-		service  string
-		config   string
-		args     args
-		wantResp *pb.ListCustomViewsResponse
-		wantErr  bool
-	}{
-		// TODO: Add test cases.
-		// 		{
-		// 			"case 1",
-		// 			"erda.core.monitor.dataview.DataViewService",
-		// 			`
-		// erda.core.monitor.dataview:
-		// `,
-		// 			args{
-		// 				context.TODO(),
-		// 				&pb.ListCustomViewsRequest{
-		// 					// TODO: setup fields
-		// 				},
-		// 			},
-		// 			&pb.ListCustomViewsResponse{
-		// 				// TODO: setup fields.
-		// 			},
-		// 			false,
-		// 		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			hub := servicehub.New()
-			events := hub.Events()
-			go func() {
-				hub.RunWithOptions(&servicehub.RunOptions{Content: tt.config})
-			}()
-			err := <-events.Started()
-			if err != nil {
-				t.Error(err)
-				return
-			}
-			srv := hub.Service(tt.service).(pb.DataViewServiceServer)
-			got, err := srv.ListCustomViews(tt.args.ctx, tt.args.req)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("dataViewService.ListCustomViews() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.wantResp) {
-				t.Errorf("dataViewService.ListCustomViews() = %v, want %v", got, tt.wantResp)
 			}
 		})
 	}
@@ -552,6 +498,51 @@ func Test_fieldsForUpdate(t *testing.T) {
 				if v, ok := got["DataConfig"]; !ok && v != tt.want["DataConfig"] {
 					t.Errorf("fieldsForUpdate() = %v, want %v", got, tt.want)
 				}
+			}
+		})
+	}
+}
+
+func Test_dataViewService_ListCustomViews(t *testing.T) {
+	type args struct {
+		ctx context.Context
+		req *pb.ListCustomViewsRequest
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{"case1", args{req: &pb.ListCustomViewsRequest{
+			Scope:       "test",
+			ScopeID:     "test",
+			Name:        "error",
+			Description: "test",
+			CreatorId:   []string{"1", "2"},
+		}}, true},
+		{"case2", args{req: &pb.ListCustomViewsRequest{
+			Scope:       "test",
+			ScopeID:     "test",
+			Name:        "test",
+			Description: "test",
+			CreatorId:   []string{"1", "2"},
+		}}, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var cvdb db.CustomViewDB
+			monkey.PatchInstanceMethod(reflect.TypeOf(&cvdb), "ListByFields", func(cvdb *db.CustomViewDB, startTime, endTime int64, creatorId []string, fields map[string]interface{}, likeFields map[string]interface{}) ([]*db.CustomView, error) {
+				if v, ok := likeFields["Name"]; !ok || v == "error" {
+					return nil, errors.New("error")
+				}
+				return []*db.CustomView{{CreatorID: "1", Scope: "test", ScopeID: "test", Name: "test1", Desc: "test1"}, {CreatorID: "2", Scope: "test", ScopeID: "test", Name: "test2", Desc: "test2"}}, nil
+			})
+
+			s := &dataViewService{}
+			_, err := s.ListCustomViews(tt.args.ctx, tt.args.req)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ListCustomViews() error = %v, wantErr %v", err, tt.wantErr)
+				return
 			}
 		})
 	}
