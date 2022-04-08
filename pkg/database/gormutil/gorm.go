@@ -61,6 +61,19 @@ func GetQueryFilterByFields(db *gorm.DB, fieldColumns map[string]string, fields 
 	return db, nil
 }
 
+// GetQueryLikeFilterByFields .
+func GetQueryLikeFilterByFields(db *gorm.DB, fieldColumns map[string]string, fields map[string]interface{}) (*gorm.DB, error) {
+	for name, value := range fields {
+
+		col, ok := fieldColumns[name]
+		if !ok {
+			return nil, fmt.Errorf("unknown %q", name)
+		}
+		db = db.Where(fmt.Sprintf("`%s` like ?", col), "%"+value.(string)+"%")
+	}
+	return db, nil
+}
+
 // GetQueryFilterByFields .
 func GetQueryFilterByTypeFields(db *gorm.DB, typ interface{}, fields map[string]interface{}) (*gorm.DB, error) {
 	type TableNamer interface {
