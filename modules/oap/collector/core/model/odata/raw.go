@@ -26,6 +26,18 @@ type Raw struct {
 	Meta *Metadata `json:"meta"`
 }
 
+func (r *Raw) HasKey(key string) bool {
+	return true
+}
+
+func (r *Raw) Get(key string) (interface{}, bool) {
+	return "", false
+}
+
+func (r *Raw) HashID() uint64 {
+	return 0
+}
+
 func NewRaw(item []byte) *Raw {
 	return &Raw{Data: item, Meta: NewMetadata()}
 }

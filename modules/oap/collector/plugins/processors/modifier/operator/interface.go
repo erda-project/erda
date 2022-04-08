@@ -14,19 +14,63 @@
 
 package operator
 
-type Operator interface {
-	Operate(pairs map[string]interface{}) map[string]interface{}
+import (
+	"fmt"
+)
+
+type Operator struct {
+	Modifier  Modifier
+	Condition Condition
+}
+
+func NewOperator(cfg ModifierCfg) (*Operator, error) {
+	if cfg.Separator == "" {
+		cfg.Separator = "_"
+	}
+	mcreator, ok := modifiers[cfg.Action]
+	if !ok {
+		return nil, fmt.Errorf("unsupported action: %q", cfg.Action)
+	}
+	ccreator, ok := conditions[cfg.Condition.Op]
+	if !ok {
+		ccreator = NewNoopCondition
+	}
+	return &Operator{
+		Modifier:  mcreator(cfg),
+		Condition: ccreator(cfg.Condition),
+	}, nil
+}
+
+type Modifier interface {
+	Modify(pairs map[string]interface{}) map[string]interface{}
+}
+
+type Condition interface {
+	Match(pairs map[string]interface{}) bool
 }
 
 type ModifierCfg struct {
 	Key    string `file:"key"`
 	Value  string `file:"value"`
 	Action string `file:"action"`
+
+	// TODO. may support prometheus-like relabels?
+	Keys      []string `file:"keys"`
+	Separator string   `file:"separator" default:"_"`
+	TargetKey string   `file:"target_key"`
+
+	Condition ConditionCfg `file:"condition"`
 }
 
-type creator func(cfg ModifierCfg) Operator
+type ConditionCfg struct {
+	Key   string `file:"key"`
+	Value string `file:"value"`
+	Op    string `file:"op"`
+}
 
-var Creators = map[string]creator{
+type creator func(cfg ModifierCfg) Modifier
+
+var modifiers = map[string]creator{
 	"add":         NewAdd,
 	"set":         NewSet,
 	"drop":        NewDrop,
@@ -34,4 +78,12 @@ var Creators = map[string]creator{
 	"copy":        NewCopy,
 	"trim_prefix": NewTrimPrefix,
 	"regex":       NewRegex,
+	"join":        NewJoin,
+}
+
+type condCreator func(cfg ConditionCfg) Condition
+
+var conditions = map[string]condCreator{
+	"key_exist":   NewKeyExist,
+	"value_match": NewValueMatch,
 }

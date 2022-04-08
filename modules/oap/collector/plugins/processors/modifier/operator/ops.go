@@ -22,11 +22,11 @@ type Add struct {
 	cfg ModifierCfg
 }
 
-func NewAdd(cfg ModifierCfg) Operator {
+func NewAdd(cfg ModifierCfg) Modifier {
 	return &Add{cfg: cfg}
 }
 
-func (a *Add) Operate(pairs map[string]interface{}) map[string]interface{} {
+func (a *Add) Modify(pairs map[string]interface{}) map[string]interface{} {
 	if _, ok := pairs[a.cfg.Key]; ok {
 		return pairs
 	}
@@ -41,12 +41,13 @@ type Set struct {
 	cfg ModifierCfg
 }
 
-func (s *Set) Operate(pairs map[string]interface{}) map[string]interface{} {
+func (s *Set) Modify(pairs map[string]interface{}) map[string]interface{} {
+
 	pairs[s.cfg.Key] = s.cfg.Value
 	return pairs
 }
 
-func NewSet(cfg ModifierCfg) Operator {
+func NewSet(cfg ModifierCfg) Modifier {
 	return &Set{cfg: cfg}
 }
 
@@ -54,12 +55,12 @@ type Drop struct {
 	cfg ModifierCfg
 }
 
-func (d *Drop) Operate(pairs map[string]interface{}) map[string]interface{} {
+func (d *Drop) Modify(pairs map[string]interface{}) map[string]interface{} {
 	delete(pairs, d.cfg.Key)
 	return pairs
 }
 
-func NewDrop(cfg ModifierCfg) Operator {
+func NewDrop(cfg ModifierCfg) Modifier {
 	return &Drop{cfg: cfg}
 }
 
@@ -67,7 +68,7 @@ type Rename struct {
 	cfg ModifierCfg
 }
 
-func (r *Rename) Operate(pairs map[string]interface{}) map[string]interface{} {
+func (r *Rename) Modify(pairs map[string]interface{}) map[string]interface{} {
 	// value is the new key
 	if _, ok := pairs[r.cfg.Key]; !ok {
 		return pairs
@@ -77,7 +78,7 @@ func (r *Rename) Operate(pairs map[string]interface{}) map[string]interface{} {
 	return pairs
 }
 
-func NewRename(cfg ModifierCfg) Operator {
+func NewRename(cfg ModifierCfg) Modifier {
 	return &Rename{cfg: cfg}
 }
 
@@ -85,7 +86,7 @@ type Copy struct {
 	cfg ModifierCfg
 }
 
-func (c *Copy) Operate(pairs map[string]interface{}) map[string]interface{} {
+func (c *Copy) Modify(pairs map[string]interface{}) map[string]interface{} {
 	if _, ok := pairs[c.cfg.Key]; !ok {
 		return pairs
 	}
@@ -93,7 +94,7 @@ func (c *Copy) Operate(pairs map[string]interface{}) map[string]interface{} {
 	return pairs
 }
 
-func NewCopy(cfg ModifierCfg) Operator {
+func NewCopy(cfg ModifierCfg) Modifier {
 	return &Copy{cfg: cfg}
 }
 
@@ -101,7 +102,7 @@ type TrimPrefix struct {
 	cfg ModifierCfg
 }
 
-func (t *TrimPrefix) Operate(pairs map[string]interface{}) map[string]interface{} {
+func (t *TrimPrefix) Modify(pairs map[string]interface{}) map[string]interface{} {
 	// key is the prefix
 	tmp := make(map[string]interface{}, len(pairs))
 	for k, v := range pairs {
@@ -114,6 +115,36 @@ func (t *TrimPrefix) Operate(pairs map[string]interface{}) map[string]interface{
 	return tmp
 }
 
-func NewTrimPrefix(cfg ModifierCfg) Operator {
+func NewTrimPrefix(cfg ModifierCfg) Modifier {
 	return &TrimPrefix{cfg: cfg}
+}
+
+type Join struct {
+	cfg ModifierCfg
+}
+
+func NewJoin(cfg ModifierCfg) Modifier {
+	return &Join{cfg: cfg}
+}
+
+func (j *Join) Modify(pairs map[string]interface{}) map[string]interface{} {
+	if j.cfg.TargetKey == "" {
+		return pairs
+	}
+
+	vals := make([]string, len(j.cfg.Keys))
+	for i, k := range j.cfg.Keys {
+		val, ok := pairs[k]
+		if !ok {
+			return pairs
+		}
+
+		valstr, ok := val.(string)
+		if !ok {
+			return pairs
+		}
+		vals[i] = valstr
+	}
+	pairs[j.cfg.TargetKey] = strings.Join(vals, j.cfg.Separator)
+	return pairs
 }

@@ -31,6 +31,20 @@ type Span struct {
 	sync.RWMutex
 }
 
+func (s *Span) HasKey(key string) bool {
+	_, ok := s.Data[key]
+	return ok
+}
+
+func (s *Span) Get(key string) (interface{}, bool) {
+	val, ok := s.Data[key]
+	return val, ok
+}
+
+func (s *Span) HashID() uint64 {
+	return Hash(s.Name(), AttributesToLabels(ExtractAttributes(s.Data)))
+}
+
 func (s *Span) HandleKeyValuePair(handler func(pairs map[string]interface{}) map[string]interface{}) {
 	s.Data = handler(s.Data)
 }

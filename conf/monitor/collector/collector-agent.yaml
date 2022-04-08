@@ -15,6 +15,8 @@ erda.oap.collector.core:
         - "erda.oap.collector.processor.modifier"
         - "erda.oap.collector.processor.modifier@addmeta"
         - "erda.oap.collector.processor.modifier@docker_container_summary"
+        - "erda.oap.collector.processor.aggregator@cpu-usage"
+        - "erda.oap.collector.processor.aggregator@mem-percent"
       exporters:
         #- "erda.oap.collector.exporter.stdout"
         - "erda.oap.collector.exporter.collector"
@@ -22,7 +24,7 @@ erda.oap.collector.core:
 # ************* receivers *************
 #erda.oap.collector.receiver.dummy:
 #  rate: 3s
-#  metric_sample: '{"name":"kubernetes_nodes_cadvisor","timeUnixNano":1640936985459000000,"relations":null,"attributes":{"container":"manager","host_ip":"10.118.177.94","id":"/kubepods/burstable/pod164ec226-8106-4904-9bcb-0218a9b2b793/8367a8b0993ebdf8883a0ad8be9c3978b04883e56a156a8de563afa467d49dec","image":"sha256:6cd7bc0e0855164e7ff495c6ec9a37cf8657f8170fe97055ffba2c63343bcedd","instance":"virtual-kubelet-cn-hangzhou-k","name":"8367a8b0993ebdf8883a0ad8be9c3978b04883e56a156a8de563afa467d49dec","namespace":"default","pod":"elasticsearch-operator-776689d978-mjdzq","pod_name":"elasticsearch-operator-776689d978-mjdzq"},"dataPoints":{"container_cpu_usage_seconds_total":13995.161470334,"container_memory_max_usage_bytes":273977344}}'
+#  metric_sample: '{"name":"kubelet_cadvisor","timeUnixNano":1640936985459000000,"relations":null,"attributes":{"container":"manager","host_ip":"10.118.177.94","id":"/kubepods/burstable/pod164ec226-8106-4904-9bcb-0218a9b2b793/8367a8b0993ebdf8883a0ad8be9c3978b04883e56a156a8de563afa467d49dec","image":"sha256:6cd7bc0e0855164e7ff495c6ec9a37cf8657f8170fe97055ffba2c63343bcedd","instance":"virtual-kubelet-cn-hangzhou-k","name":"8367a8b0993ebdf8883a0ad8be9c3978b04883e56a156a8de563afa467d49dec","namespace":"default","pod":"elasticsearch-operator-776689d978-mjdzq","pod_name":"elasticsearch-operator-776689d978-mjdzq"},"dataPoints":{"container_cpu_usage_seconds_total":13995.161470334,"container_memory_max_usage_bytes":273977344}}'
 
 erda.oap.collector.receiver.prometheus-remote-write:
 # ************* receivers *************
@@ -30,19 +32,25 @@ erda.oap.collector.receiver.prometheus-remote-write:
 # ************* processors *************
 erda.oap.collector.processor.k8s-tagger@prw:
   keypass:
-    __kw__name: ["kubernetes_nodes_cadvisor"]
+    __kw__name: ["kubelet_cadvisor"]
   pod:
     watch_selector:
       namespace: ""
       label_selector: ""
       field_slector: ""
     add_metadata:
-      label_include: []
+      label_include:
+        - "dice/component"
+        - "dice/job"
       annotation_include:
         - "msp.erda.cloud/application_name"
+        - "msp.erda.cloud/application_id"
         - "msp.erda.cloud/org_name"
+        - "msp.erda.cloud/org_id"
         - "msp.erda.cloud/project_name"
+        - "msp.erda.cloud/project_id"
         - "msp.erda.cloud/runtime_name"
+        - "msp.erda.cloud/runtime_id"
         - "msp.erda.cloud/service_name"
         - "msp.erda.cloud/terminus_key"
         - "msp.erda.cloud/workspace"
@@ -52,7 +60,7 @@ erda.oap.collector.processor.k8s-tagger@prw:
 
 erda.oap.collector.processor.modifier:
   keypass:
-    __kw__name: ["kubernetes_nodes_cadvisor"]
+    __kw__name: ["kubelet_cadvisor"]
   rules:
     - action: drop
       key: kubernetes_pod_name
@@ -108,7 +116,7 @@ erda.oap.collector.processor.modifier@addmeta:
 # compatibility to docker_container_summary
 erda.oap.collector.processor.modifier@docker_container_summary:
   keypass:
-    __kw__name: ["kubernetes_nodes_cadvisor"]
+    __kw__name: ["kubelet_cadvisor"]
   rules:
     - action: rename
       key: __dp__container_fs_reads_bytes_total
@@ -122,6 +130,9 @@ erda.oap.collector.processor.modifier@docker_container_summary:
     - action: rename
       key: __dp__container_fs_writes_total
       value: __dp__blk_writes
+    - action: rename
+      key: __dp__container_fs_usage_bytes
+      value: __dp__disk_usage
     - action: rename
       key: __dp__container_memory_max_usage_bytes
       value: __dp__mem_max_usage
@@ -145,21 +156,94 @@ erda.oap.collector.processor.modifier@docker_container_summary:
       value: '^\/kubepods\/\w+\/[\w|\-]+\/(?P<container_id>\w+)'
     - action: rename
       key: __dp__container_resources_memory_request
-      value: __dp__mem_allocation
+      value: __dp__mem_request
     - action: rename
       key: __dp__container_resources_memory_limit
       value: __dp__mem_limit
     - action: rename
       key: __dp__container_resources_cpu_request
-      value: __dp__cpu_allocation
+      value: __dp__cpu_request
     - action: rename
       key: __dp__container_resources_cpu_limit
       value: __dp_cpu_limit
+    # --- instance_type logic block ---
+    - action: set
+      key: instance_type
+      value: job
+      condition:
+        op: key_exist
+        key: pod_labels_dice_job
+    - action: drop
+      key: pod_labels_dice_job
+    - action: set
+      key: instance_type
+      value: component
+      condition:
+        op: key_exist
+        key: pod_labels_dice_component
+    - action: drop
+      key: pod_labels_dice_component
+    - action: set
+      key: instance_type
+      value: addon
+      condition:
+        op: value_match
+        key: pod_namespace
+        value: '.*(addon).*?'
+    - action: set
+      key: instance_type
+      value: service
+      condition:
+        op: key_exist
+        key: service_name
+    # --- instance_type logic block ---
+    - action: join
+      keys: [application_id, runtime_name, service_name]
+      target_key: service_id
     - action: set
       key: __kw__name
       value: docker_container_summary
     - action: drop
       key: name
+
+erda.oap.collector.processor.aggregator@cpu-usage:
+  keypass:
+    __kw__name: ["docker_container_summary"]
+  keydrop:
+    container: ["POD"]
+  keyinclude:
+    - "__kw__name"
+    - "__dp__container_cpu_usage_seconds_total"
+    - "cluster_name"
+    - "id"
+
+  rules:
+    - func: "rate"
+      args: ["__dp__container_cpu_usage_seconds_total"]
+      target_key: "__dp__cpu_usage_percent"
+    - func: "*"
+      args: ["__dp__cpu_usage_percent", 100]
+      target_key: "__dp__cpu_usage_percent"
+
+erda.oap.collector.processor.aggregator@mem-percent:
+  keypass:
+    __kw__name: ["docker_container_summary"]
+  keydrop:
+    container: ["POD"]
+  keyinclude:
+    - "__kw__name"
+    - "__dp__mem_usage"
+    - "__dp__mem_limit"
+    - "cluster_name"
+    - "id"
+
+  rules:
+    - func: "/"
+      args: ["__dp__mem_usage", "__dp__mem_limit"]
+      target_key: "__dp__mem_usage_percent"
+    - func: "*"
+      args: ["__dp__mem_usage_percent", 100]
+      target_key: "__dp__mem_usage_percent"
 
 # ************* processors *************
 

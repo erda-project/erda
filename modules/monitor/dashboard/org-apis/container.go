@@ -16,6 +16,7 @@ package orgapis
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -23,6 +24,8 @@ import (
 	"time"
 
 	"github.com/olivere/elastic"
+
+	qutils "github.com/erda-project/erda/modules/core/monitor/metric/query/query"
 
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/i18n"
@@ -70,8 +73,9 @@ func (p *provider) getContainers(ctx httpserver.Context, r *http.Request, params
 func (p *provider) queryContainers(cluster string, hostIPs []string, instanceType string, filters []*resourceFilter, start, end int64) []*containerData {
 	query := elastic.NewBoolQuery().
 		Filter(elastic.NewTermQuery(tagsClusterName, cluster)).
-		Filter(elastic.NewRangeQuery(timestamp).Gte(start * int64(time.Millisecond)).Lt(end * int64(time.Millisecond))).
-		Filter(elastic.NewTermsQuery(tagsHostIP, utils.ConvertStringArrToInterfaceArr(hostIPs)...))
+		Filter(elastic.NewRangeQuery(timestamp).Gte(start*int64(time.Millisecond)).Lt(end*int64(time.Millisecond))).
+		Filter(elastic.NewTermsQuery(tagsHostIP, utils.ConvertStringArrToInterfaceArr(hostIPs)...)).
+		MustNot(elastic.NewTermQuery("tags.container", "POD"), elastic.NewTermQuery("tags.pause", "true"))
 	if instanceType != instanceTypeAll {
 		query = query.Filter(elastic.NewTermQuery(tagsInstanceType, instanceType))
 	}
@@ -88,13 +92,22 @@ func (p *provider) queryContainers(cluster string, hostIPs []string, instanceTyp
 
 	topHitsAgg := elastic.NewTopHitsAggregation().Size(1).Sort(timestamp, false).
 		FetchSourceContext(elastic.NewFetchSourceContext(true).Include(any))
-	containerIDAgg := elastic.NewTermsAggregation().Field(tagsContainerID).Size(500).
-		SubAggregation(tagsTerminusVersion, elastic.NewTermsAggregation().Field(tagsTerminusVersion).Size(100).
-			SubAggregation(topHits, topHitsAgg)).
-		SubAggregation(topHits, topHitsAgg)
-	searchSource := elastic.NewSearchSource().Query(query).Size(0).Aggregation(tagsContainerID, containerIDAgg)
 
-	indices := p.metricq.Indices([]string{nameContainerSummary}, []string{cluster}, start, end)
+	containerIDAgg := elastic.NewTermsAggregation().Field(tagsContainerID).Size(500).
+		SubAggregation(cpuUsagePercent, elastic.NewMaxAggregation().Field(fieldsCPUUsagePercent)).
+		SubAggregation(cpuLimit, elastic.NewMaxAggregation().Field(fieldsCPULimit)).
+		SubAggregation(cpuRequest, elastic.NewMaxAggregation().Field(fieldsCPURequest)).
+		SubAggregation(memUsage, elastic.NewMaxAggregation().Field(fieldsMemUsage)).
+		SubAggregation(memLimit, elastic.NewMaxAggregation().Field(fieldsMemLimit)).
+		SubAggregation(memRequest, elastic.NewMaxAggregation().Field(fieldsMemRequest)).
+		SubAggregation(diskUsage, elastic.NewMaxAggregation().Field(fieldsDiskUsage)).
+		SubAggregation(tagsTerminusVersion, elastic.NewTermsAggregation().Field(tagsTerminusVersion).Size(100).SubAggregation(topHits, topHitsAgg)).
+		SubAggregation(topHits, topHitsAgg)
+
+	searchSource := elastic.NewSearchSource().Query(query).Size(0).Aggregation(tagsContainerID, containerIDAgg)
+	indices := p.metricq.Indices([]string{nameContainerSummary, nameDockerContainerSummary}, []string{cluster}, start, end)
+	ss, _ := searchSource.Source()
+	fmt.Printf("curl: %s", qutils.ElasticSearchCURL(p.metricq.Client().String(), indices, ss))
 	resp, apiErr := p.metricq.SearchRaw(indices, searchSource)
 	if apiErr != nil {
 		return nil
@@ -113,9 +126,9 @@ func parseQueryContainer(agg elastic.Aggregations) []*containerData {
 		return nil
 	}
 	var containersData []*containerData
-	for _, containerIDItem := range containerIDAgg.Buckets {
-		topHitsAgg, _ := containerIDItem.TopHits(topHits)
-		if versionAgg, ok := containerIDItem.Terms(tagsTerminusVersion); ok {
+	for _, item := range containerIDAgg.Buckets {
+		topHitsAgg, _ := item.TopHits(topHits)
+		if versionAgg, ok := item.Terms(tagsTerminusVersion); ok {
 			var maxVersion int64
 			for _, versionItem := range versionAgg.Buckets {
 				if version, err := versionItem.KeyNumber.Int64(); err != nil {
@@ -129,18 +142,50 @@ func parseQueryContainer(agg elastic.Aggregations) []*containerData {
 				}
 			}
 		}
-		data := wrapContainerData(topHitsAgg)
-		containersData = append(containersData, data...)
+
+		data := &containerData{}
+		data.CpuUsage = rawToFloat64(item.Aggregations[cpuUsage])
+		data.CpuRequest = rawToFloat64(item.Aggregations[cpuRequest])
+		data.CpuLimit = rawToFloat64(item.Aggregations[cpuLimit])
+		data.CpuOrigin = rawToFloat64(item.Aggregations[cpuOrigin])
+		data.MemUsage = rawToFloat64(item.Aggregations[memUsage])
+		data.MemRequest = rawToFloat64(item.Aggregations[memRequest])
+		data.MemLimit = rawToFloat64(item.Aggregations[memLimit])
+		data.MemOrigin = rawToFloat64(item.Aggregations[memOrigin])
+		data.DiskUsage = rawToFloat64(item.Aggregations[diskUsage])
+		data.DiskLimit = rawToFloat64(item.Aggregations[diskLimit])
+		wrapContainerData(data, topHitsAgg)
+		containersData = append(containersData, data)
 	}
 	return containersData
 }
 
-func wrapContainerData(topHits *elastic.AggregationTopHitsMetric) []*containerData {
+func rawToFloat64(raw *json.RawMessage) float64 {
+	if raw == nil || len(*raw) == 0 {
+		return 0
+	}
+	var res struct {
+		Value interface{} `json:"value"`
+	}
+	err := json.Unmarshal(*raw, &res)
+	if err != nil {
+		return 0
+	}
+	switch data := res.Value.(type) {
+	case float64:
+		return data
+	case int64:
+		return float64(data)
+	default:
+		return 0
+	}
+}
+
+func wrapContainerData(src *containerData, topHits *elastic.AggregationTopHitsMetric) {
 	if topHits == nil || topHits.Hits == nil {
-		return nil
+		return
 	}
 
-	var containersData []*containerData
 	for _, hit := range topHits.Hits.Hits {
 		var m map[string]interface{}
 		if err := json.Unmarshal([]byte(*hit.Source), &m); err != nil {
@@ -151,52 +196,44 @@ func wrapContainerData(topHits *elastic.AggregationTopHitsMetric) []*containerDa
 		if !ok {
 			continue
 		}
-		fields, ok := utils.GetMapValueMap(m, fields)
-		if !ok {
-			continue
-		}
+		// fields, ok := utils.GetMapValueMap(m, fields)
+		// if !ok {
+		// 	continue
+		// }
 
 		isDeleted, _ := utils.GetMapValueString(tags, isDeleted)
 		if isDeleted == "true" {
 			continue
 		}
-		if _, ok := utils.GetMapValueString(fields, image); !ok {
+		if _, ok := utils.GetMapValueString(tags, image); !ok {
 			continue
 		}
 
-		containerData := new(containerData)
-		containerData.ClusterName, _ = utils.GetMapValueString(tags, clusterName)
-		containerData.HostIP, _ = utils.GetMapValueString(tags, hostIP)
-		containerData.ContainerID, _ = utils.GetMapValueString(tags, containerID)
-		containerData.InstanceType, _ = utils.GetMapValueString(tags, instanceType)
-		containerData.InstanceID, _ = utils.GetMapValueString(tags, instanceID)
-		containerData.Image, _ = utils.GetMapValueString(fields, image)
-		containerData.OrgID, _ = utils.GetMapValueString(tags, orgID)
-		containerData.OrgName, _ = utils.GetMapValueString(tags, orgName)
-		containerData.ProjectID, _ = utils.GetMapValueString(tags, projectID)
-		containerData.ProjectName, _ = utils.GetMapValueString(tags, projectName)
-		containerData.ApplicationID, _ = utils.GetMapValueString(tags, applicationID)
-		containerData.ApplicationName, _ = utils.GetMapValueString(tags, applicationName)
-		containerData.Workspace, _ = utils.GetMapValueString(tags, workspace)
-		containerData.RuntimeID, _ = utils.GetMapValueString(tags, runtimeID)
-		containerData.RuntimeName, _ = utils.GetMapValueString(tags, runtimeName)
-		containerData.ServiceID, _ = utils.GetMapValueString(tags, serviceID)
-		containerData.ServiceName, _ = utils.GetMapValueString(tags, serviceName)
-		containerData.JobID, _ = utils.GetMapValueString(tags, jobID)
-		containerData.CpuUsage, _ = utils.GetMapValueFloat64(fields, cpuUsage)
-		containerData.CpuRequest, _ = utils.GetMapValueFloat64(fields, cpuRequest)
-		containerData.CpuLimit, _ = utils.GetMapValueFloat64(fields, cpuLimit)
-		containerData.CpuOrigin, _ = utils.GetMapValueFloat64(fields, cpuOrigin)
-		containerData.MemUsage, _ = utils.GetMapValueFloat64(fields, memUsage)
-		containerData.MemRequest, _ = utils.GetMapValueFloat64(fields, memRequest)
-		containerData.MemLimit, _ = utils.GetMapValueFloat64(fields, memLimit)
-		containerData.MemOrigin, _ = utils.GetMapValueFloat64(fields, memOrigin)
-		containerData.DiskUsage, _ = utils.GetMapValueFloat64(fields, diskUsage)
-		containerData.DiskLimit, _ = utils.GetMapValueFloat64(fields, diskLimit)
+		if val, ok := utils.GetMapValueString(tags, image); ok {
+			src.Image = val
+		}
 
-		containersData = append(containersData, containerData)
+		src.ClusterName, _ = utils.GetMapValueString(tags, clusterName)
+		src.HostIP, _ = utils.GetMapValueString(tags, hostIP)
+		src.ContainerID, _ = utils.GetMapValueString(tags, containerID)
+		src.InstanceType, _ = utils.GetMapValueString(tags, instanceType)
+		src.InstanceID, _ = utils.GetMapValueString(tags, instanceID)
+		src.OrgID, _ = utils.GetMapValueString(tags, orgID)
+		src.OrgName, _ = utils.GetMapValueString(tags, orgName)
+		src.ProjectID, _ = utils.GetMapValueString(tags, projectID)
+		src.ProjectName, _ = utils.GetMapValueString(tags, projectName)
+		src.ApplicationID, _ = utils.GetMapValueString(tags, applicationID)
+		src.ApplicationName, _ = utils.GetMapValueString(tags, applicationName)
+		src.Workspace, _ = utils.GetMapValueString(tags, workspace)
+		src.RuntimeID, _ = utils.GetMapValueString(tags, runtimeID)
+		src.RuntimeName, _ = utils.GetMapValueString(tags, runtimeName)
+		src.ServiceID, _ = utils.GetMapValueString(tags, serviceID)
+		src.ServiceName, _ = utils.GetMapValueString(tags, serviceName)
+		src.JobID, _ = utils.GetMapValueString(tags, jobID)
+
+		src.Container, _ = utils.GetMapValueString(tags, "container")
 	}
-	return containersData
+	return
 }
 
 func (p *provider) groupContainerAllocation(ctx httpserver.Context, params struct {

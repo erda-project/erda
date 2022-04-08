@@ -55,6 +55,18 @@ func Test_extractFilterConfig(t *testing.T) {
 				Keypass: map[string][]string{"key": {"val1*", "val2*"}},
 			},
 		},
+		{
+			args: args{cfg: &struct {
+				Keyinclude  []string    `file:"keyinclude"`
+				OtherConfig interface{} `file:"other_config"`
+			}{
+				Keyinclude:  []string{"abc", "edf"},
+				OtherConfig: "nothing",
+			}},
+			want: model.FilterConfig{
+				Keyinclude: []string{"abc", "edf"},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

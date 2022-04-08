@@ -32,8 +32,21 @@ type Metric struct {
 	sync.RWMutex
 }
 
+func (m *Metric) HashID() uint64 {
+	return Hash(m.Name(), AttributesToLabels(ExtractAttributes(m.Data)))
+}
+
 func NewMetric(item *mpb.Metric) *Metric {
 	return &Metric{Data: metricToMap(item), Meta: NewMetadata()}
+}
+
+func (m *Metric) HasKey(key string) bool {
+	_, ok := m.Data[key]
+	return ok
+}
+func (m *Metric) Get(key string) (interface{}, bool) {
+	val, ok := m.Data[key]
+	return val, ok
 }
 
 func (m *Metric) HandleKeyValuePair(handler func(map[string]interface{}) map[string]interface{}) {
@@ -66,11 +79,11 @@ func (m *Metric) Clone() ObservableData {
 }
 
 func (m *Metric) Source() interface{} {
-	return mapToMetric(m.Data)
+	return MapToMetric(m.Data)
 }
 
 func (m *Metric) SourceCompatibility() interface{} {
-	item := mapToMetric(m.Data)
+	item := MapToMetric(m.Data)
 	old := &metric.Metric{}
 	old.Timestamp = int64(item.GetTimeUnixNano())
 	old.Name = item.GetName()

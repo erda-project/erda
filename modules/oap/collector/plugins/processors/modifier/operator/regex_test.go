@@ -51,8 +51,8 @@ func TestRegex_Operate(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			r := NewRegex(tt.fields.cfg)
-			if got := r.Operate(tt.args.pairs); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Operate() = %v, want %v", got, tt.want)
+			if got := r.Modify(tt.args.pairs); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Modify() = %v, want %v", got, tt.want)
 			}
 		})
 	}

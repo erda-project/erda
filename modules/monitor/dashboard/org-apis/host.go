@@ -278,7 +278,7 @@ type containerData struct {
 	DiskUsage       float64 `json:"diskUsage"`
 	DiskLimit       float64 `json:"diskLimit"`
 	Status          string  `json:"status"`
-	Unhealthy       int64   `json:"Unhealthy"`
+	Container       string  `json:"container"`
 }
 
 type resourceChart struct {

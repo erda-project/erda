@@ -49,10 +49,7 @@ func (p *provider) intRoutes(routes httpserver.Router) error {
 		permission.ScopeOrg, checkOrgName,
 		common.ResourceOrgCenter, permission.ActionList,
 	))
-	routes.POST("/api/resources/containers/:instance_type", p.getContainers, permission.Intercepter(
-		permission.ScopeOrg, permission.OrgIDFromHeader(),
-		common.ResourceOrgCenter, permission.ActionList,
-	))
+	routes.POST("/api/resources/containers/:instance_type", p.getContainers)
 	routes.POST("/api/resources/containers/group/allocation/:metric_type", p.groupContainerAllocation, permission.Intercepter(
 		permission.ScopeOrg, checkOrgName,
 		common.ResourceOrgCenter, permission.ActionList,

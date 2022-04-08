@@ -23,6 +23,7 @@ import (
 
 // semantic same as https://github.com/influxdata/telegraf/blob/master/docs/CONFIGURATION.md#metric-filtering
 // key* <=> tag*
+// TODO. infra's config parser don't supported embed config
 type FilterConfig struct {
 	// Selectors
 	Keypass    map[string][]string `file:"keypass"`
@@ -34,8 +35,8 @@ type FilterConfig struct {
 type DataFilter struct {
 	Keypass    map[string]filter.Filter
 	Keydrop    map[string]filter.Filter
-	Keyinclude filter.Filter
-	Keyexclude filter.Filter
+	Keyinclude []string
+	Keyexclude []string
 }
 
 // https://github.com/influxdata/telegraf/blob/master/docs/CONFIGURATION.md#selectors
@@ -72,6 +73,19 @@ func (df *DataFilter) Selected(od odata.ObservableData) bool {
 			}
 		}
 	}
+
+	for _, key := range df.Keyinclude {
+		_, ok := attr[key]
+		if !ok {
+			return false
+		}
+	}
+	for _, key := range df.Keyexclude {
+		_, ok := attr[key]
+		if ok {
+			return false
+		}
+	}
 	return true
 }
 
@@ -92,19 +106,11 @@ func NewDataFilter(cfg FilterConfig) (*DataFilter, error) {
 		}
 		keydrop[k] = tmp
 	}
-	keyinclude, err := filter.Compile(cfg.Keyinclude)
-	if err != nil {
-		return nil, fmt.Errorf("keyinclude: %w", err)
-	}
-	keyexclude, err := filter.Compile(cfg.Keyexclude)
-	if err != nil {
-		return nil, fmt.Errorf("keyexclude: %w", err)
-	}
 
 	return &DataFilter{
 		Keypass:    keypass,
 		Keydrop:    keydrop,
-		Keyinclude: keyinclude,
-		Keyexclude: keyexclude,
+		Keyinclude: cfg.Keyinclude,
+		Keyexclude: cfg.Keyexclude,
 	}, nil
 }
