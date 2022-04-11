@@ -16,6 +16,9 @@ package dataview
 
 import (
 	"errors"
+	api "github.com/erda-project/erda/pkg/common/httpapi"
+	"mime/multipart"
+	"net/http"
 	"reflect"
 	"strings"
 	"testing"
@@ -115,6 +118,42 @@ func Test_provider_ExportTask(t *testing.T) {
 			p := &provider{}
 			p.ExportTask(tt.args.id)
 
+		})
+	}
+}
+
+func Test_provider_ParseDashboardTemplate(t *testing.T) {
+	type args struct {
+		r      *http.Request
+		params struct {
+			Scope   string `json:"scope"`
+			ScopeId string `json:"scopeId"`
+		}
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{"case1", args{
+			params: struct {
+				Scope   string `json:"scope"`
+				ScopeId string `json:"scopeId"`
+			}{},
+		}, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var r http.Request
+			monkey.PatchInstanceMethod(reflect.TypeOf(&r), "FormFile", func(r *http.Request, key string) (multipart.File, *multipart.FileHeader, error) {
+				return nil, nil, errors.New("error")
+			})
+
+			p := &provider{}
+			got := p.ParseDashboardTemplate(tt.args.r, tt.args.params).(*api.Response)
+			if got.Success == tt.wantErr {
+				t.Errorf("ParseDashboardTemplate() = %v, wantErr %v", got.Success, tt.wantErr)
+			}
 		})
 	}
 }
