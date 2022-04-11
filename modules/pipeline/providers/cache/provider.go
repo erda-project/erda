@@ -48,9 +48,9 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 func init() {
 	interfaceType := reflect.TypeOf((*Interface)(nil)).Elem()
-	servicehub.Register("pipeline-cache", &servicehub.Spec{
-		Services:    []string{"pipeline-cache"},
-		Description: "pipeline cache",
+	servicehub.Register("cache", &servicehub.Spec{
+		Services:    []string{"cache"},
+		Description: "cache",
 		Types:       []reflect.Type{interfaceType},
 		ConfigFunc:  func() interface{} { return &config{} },
 		Creator:     func() servicehub.Provider { return &provider{} },
