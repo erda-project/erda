@@ -60,7 +60,6 @@ func TestConvertToListReleaseResponse(t *testing.T) {
 		IsProjectRelease: true,
 		Modes:            "testMode",
 		Labels:           string(labelData),
-		Tags:             "testTags",
 		Version:          "testVersion",
 		OrgID:            1,
 		ProjectID:        1,
@@ -76,7 +75,7 @@ func TestConvertToListReleaseResponse(t *testing.T) {
 		UpdatedAt:        time.Unix(0, 0),
 	}
 
-	respData, err := convertToListReleaseResponse(release)
+	respData, err := convertToListReleaseResponse(release, nil, nil)
 	if err != nil {
 		t.Error(err)
 	}
@@ -84,11 +83,12 @@ func TestConvertToListReleaseResponse(t *testing.T) {
 	if respData.ReleaseID != release.ReleaseID || respData.ReleaseName != release.ReleaseName || respData.Desc != release.Desc ||
 		respData.Diceyml != release.Dice || respData.Addon != release.Addon || respData.Changelog != release.Changelog ||
 		respData.IsStable != release.IsStable || respData.IsFormal != release.IsFormal || respData.IsProjectRelease != release.IsProjectRelease ||
-		respData.Modes != release.Modes || respData.Tags != release.Tags ||
-		respData.Version != release.Version || respData.OrgID != release.OrgID || respData.ProjectID != release.ProjectID ||
-		respData.ApplicationID != release.ApplicationID || respData.ProjectName != release.ProjectName ||
-		respData.ApplicationName != release.ApplicationName || respData.UserID != release.UserID || respData.ClusterName != release.ClusterName ||
-		respData.Reference != release.Reference || respData.CrossCluster != release.CrossCluster || respData.CreatedAt.GetSeconds() != release.CreatedAt.Unix() ||
+		respData.Modes != release.Modes || respData.Version != release.Version || respData.OrgID != release.OrgID ||
+		respData.ProjectID != release.ProjectID || respData.ApplicationID != release.ApplicationID ||
+		respData.ProjectName != release.ProjectName || respData.ApplicationName != release.ApplicationName ||
+		respData.UserID != release.UserID || respData.ClusterName != release.ClusterName ||
+		respData.Reference != release.Reference || respData.CrossCluster != release.CrossCluster ||
+		respData.CreatedAt.GetSeconds() != release.CreatedAt.Unix() ||
 		respData.UpdatedAt.GetSeconds() != release.UpdatedAt.Unix() {
 		t.Errorf("result is not expected")
 	}

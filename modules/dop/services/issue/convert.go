@@ -88,7 +88,7 @@ func (svc *Issue) BatchConvert(models []dao.Issue, issueTypes []apistructs.Issue
 		wait.Add(1)
 		go func() {
 			defer wait.Done()
-			issue := svc.ConvertWithoutButton(model, false, issueLabelIDMap[uint64(model.ID)], false, labelMap)
+			issue := svc.ConvertWithoutButton(model, false, issueLabelIDMap[model.ID], false, labelMap)
 
 			issue.IssueButton = buttons[model.Type][model.State]
 			lock.Lock()
@@ -136,7 +136,7 @@ func (svc *Issue) ConvertWithoutButton(model dao.Issue,
 ) *apistructs.Issue {
 	// 标签
 	if needQueryLabelRef {
-		lrs, _ := svc.db.GetLabelRelationsByRef(apistructs.LabelTypeIssue, model.ID)
+		lrs, _ := svc.db.GetLabelRelationsByRef(apistructs.LabelTypeIssue, strconv.FormatUint(model.ID, 10))
 		labelIDs = make([]uint64, 0, len(lrs))
 		for _, v := range lrs {
 			labelIDs = append(labelIDs, v.LabelID)

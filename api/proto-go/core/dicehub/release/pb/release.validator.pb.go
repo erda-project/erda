@@ -120,6 +120,19 @@ func (this *ReleaseSummaryArray) Validate() error {
 	}
 	return nil
 }
+func (this *Tag) Validate() error {
+	if this.CreatedAt != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.CreatedAt); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("CreatedAt", err)
+		}
+	}
+	if this.UpdatedAt != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.UpdatedAt); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("UpdatedAt", err)
+		}
+	}
+	return nil
+}
 func (this *ReleaseGetResponseData) Validate() error {
 	// Validation of proto3 map<> fields is unsupported.
 	for _, item := range this.Resources {
@@ -137,6 +150,13 @@ func (this *ReleaseGetResponseData) Validate() error {
 		}
 	}
 	// Validation of proto3 map<> fields is unsupported.
+	for _, item := range this.Tags {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("Tags", err)
+			}
+		}
+	}
 	if this.CreatedAt != nil {
 		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.CreatedAt); err != nil {
 			return github_com_mwitkow_go_proto_validators.FieldError("CreatedAt", err)
@@ -201,6 +221,13 @@ func (this *ReleaseData) Validate() error {
 		}
 	}
 	// Validation of proto3 map<> fields is unsupported.
+	for _, item := range this.Tags {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("Tags", err)
+			}
+		}
+	}
 	if this.CreatedAt != nil {
 		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.CreatedAt); err != nil {
 			return github_com_mwitkow_go_proto_validators.FieldError("CreatedAt", err)

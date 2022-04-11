@@ -158,10 +158,6 @@ func (client *ReleaseConfigDB) GetReleasesByParams(
 		db = db.Where("labels LIKE ?", fmt.Sprintf("%%\"gitCommitId\":\"%s\"%%", req.CommitID))
 	}
 
-	if req.Tags != "" {
-		db = db.Where("tags = ?", req.Tags)
-	}
-
 	if req.StartTime > 0 {
 		db = db.Where("created_at > ?", time.Unix(req.StartTime/1000, 0))
 	}

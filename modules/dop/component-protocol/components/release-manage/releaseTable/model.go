@@ -37,25 +37,38 @@ type Data struct {
 }
 
 type Item struct {
-	ID              string          `json:"id,omitempty"`
-	Version         Version         `json:"version,omitempty"`
-	Application     string          `json:"application,omitempty"`
-	Desc            string          `json:"desc,omitempty"`
-	Creator         Creator         `json:"creator,omitempty"`
-	CreatedAt       string          `json:"createdAt,omitempty"`
-	Operations      TableOperations `json:"operations"`
-	BatchOperations []string        `json:"batchOperations,omitempty"`
+	ID              string            `json:"id,omitempty"`
+	Version         DoubleRowWithIcon `json:"version,omitempty"`
+	Formal          *TagsRow          `json:"formal,omitempty"`
+	Application     string            `json:"application,omitempty"`
+	Desc            string            `json:"desc,omitempty"`
+	Creator         Creator           `json:"creator,omitempty"`
+	CreatedAt       string            `json:"createdAt,omitempty"`
+	Operations      TableOperations   `json:"operations"`
+	BatchOperations []string          `json:"batchOperations,omitempty"`
 }
 
-type Version struct {
-	Value      string `json:"value,omitempty"`
-	Tags       []Tag  `json:"tags"`
-	RenderType string `json:"renderType,omitempty"`
+type TagsRow struct {
+	RenderType string   `json:"renderType,omitempty"`
+	Size       string   `json:"size,omitempty"`
+	Value      TagValue `json:"value"`
 }
 
-type Tag struct {
-	Tag   string `json:"tag,omitempty"`
+type TagValue struct {
+	Label string `json:"label,omitempty"`
 	Color string `json:"color,omitempty"`
+}
+
+type DoubleRowWithIcon struct {
+	RenderType   string       `json:"renderType,omitempty"`
+	Value        string       `json:"value,omitempty"`
+	ExtraContent ExtraContent `json:"extraContent"`
+}
+
+type ExtraContent struct {
+	RenderType string     `json:"renderType,omitempty"`
+	ShowCount  int        `json:"showCount,omitempty"`
+	Value      []TagValue `json:"value"`
 }
 
 type Creator struct {
@@ -125,6 +138,7 @@ type FilterValues struct {
 	ApplicationIDs    []string `json:"applicationIDs,omitempty"`
 	Latest            string   `json:"latest,omitempty"`
 	Version           string   `json:"version,omitempty"`
+	Tags              []uint64 `json:"tags,omitempty"`
 }
 
 type Sorter struct {

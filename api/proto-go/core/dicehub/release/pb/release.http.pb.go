@@ -523,7 +523,15 @@ func RegisterReleaseServiceHandler(r http.Router, srv ReleaseServiceHandler, opt
 					in.ReleaseName = vals[0]
 				}
 				if vals := params["tags"]; len(vals) > 0 {
-					in.Tags = vals[0]
+					list := make([]uint64, 0, len(vals))
+					for _, text := range vals {
+						val, err := strconv.ParseUint(text, 10, 64)
+						if err != nil {
+							return nil, err
+						}
+						list = append(list, val)
+					}
+					in.Tags = list
 				}
 				if vals := params["userId"]; len(vals) > 0 {
 					in.UserID = vals

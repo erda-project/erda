@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"strconv"
 	"time"
 
 	"github.com/jinzhu/gorm"
@@ -279,7 +280,12 @@ func (svc *Issue) Paging(req apistructs.IssuePagingRequest) ([]apistructs.Issue,
 			return nil, 0, apierrors.ErrPagingIssues.InternalError(err)
 		}
 		for _, v := range lrs {
-			labelRelationIDs = append(labelRelationIDs, int64(v.RefID))
+			id, err := strconv.ParseInt(v.RefID, 10, 64)
+			if err != nil {
+				logrus.Errorf("failed to parse refID for label relation %d, %v", v.ID, err)
+				continue
+			}
+			labelRelationIDs = append(labelRelationIDs, id)
 		}
 	}
 	if len(req.RelatedIssueIDs) > 0 {
@@ -436,7 +442,12 @@ func (svc *Issue) PagingForWorkbench(req apistructs.IssuePagingRequest) ([]apist
 			return nil, 0, apierrors.ErrPagingIssues.InternalError(err)
 		}
 		for _, v := range lrs {
-			labelRelationIDs = append(labelRelationIDs, int64(v.RefID))
+			id, err := strconv.ParseInt(v.RefID, 10, 64)
+			if err != nil {
+				logrus.Errorf("failed to parse refID for label relation %d, %v", v.ID, err)
+				continue
+			}
+			labelRelationIDs = append(labelRelationIDs, id)
 		}
 	}
 	if len(req.RelatedIssueIDs) > 0 {

@@ -17,6 +17,7 @@ package issue
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 
 	"github.com/sirupsen/logrus"
 
@@ -213,7 +214,7 @@ func (svc *Issue) storeExcel2DB(request apistructs.IssueImportExcelRequest, issu
 				falseReason = append(falseReason, "failed to query labels, err: "+err.Error())
 				continue
 			}
-			lrs, err := svc.db.GetLabelRelationsByRef(apistructs.LabelTypeIssue, issue.ID)
+			lrs, err := svc.db.GetLabelRelationsByRef(apistructs.LabelTypeIssue, strconv.FormatUint(issue.ID, 10))
 			if err != nil {
 				falseIssue = append(falseIssue, excelIndex[index])
 				falseReason = append(falseReason, "failed to query label relations, err: "+err.Error())
@@ -229,7 +230,7 @@ func (svc *Issue) storeExcel2DB(request apistructs.IssueImportExcelRequest, issu
 						LabelID:   uint64(label.ID),
 						BaseModel: dbengine.BaseModel{},
 						RefType:   apistructs.LabelTypeIssue,
-						RefID:     issue.ID,
+						RefID:     strconv.FormatUint(issue.ID, 10),
 					})
 				}
 			}
@@ -294,7 +295,7 @@ func (svc *Issue) storeExcel2DB(request apistructs.IssueImportExcelRequest, issu
 					BaseModel: dbengine.BaseModel{},
 					LabelID:   uint64(v.ID),
 					RefType:   apistructs.LabelTypeIssue,
-					RefID:     create.ID,
+					RefID:     strconv.FormatUint(create.ID, 10),
 				}
 				if err := svc.db.CreateLabelRelation(lr); err != nil {
 					falseIssue = append(falseIssue, excelIndex[index])

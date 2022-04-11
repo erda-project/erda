@@ -36,6 +36,7 @@ import (
 	imagedb "github.com/erda-project/erda/modules/dicehub/image/db"
 	"github.com/erda-project/erda/modules/dicehub/registry"
 	"github.com/erda-project/erda/modules/dicehub/release/db"
+	"github.com/erda-project/erda/modules/dicehub/service/apierrors"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -197,6 +198,25 @@ func (s *ReleaseService) Create(req *pb.ReleaseCreateRequest) (string, error) {
 			return "", err
 		}
 	}
+
+	// create label relations
+	if len(req.Tags) > 0 {
+		tags, err := s.bdl.ListLabelByIDs(req.Tags)
+		if err != nil {
+			return "", apierrors.ErrCreateRelease.InternalError(err)
+		}
+		for _, tag := range tags {
+			labelRelation := &db.LabelRelation{
+				LabelID: uint64(tag.ID),
+				RefType: apistructs.LabelTypeRelease,
+				RefID:   release.ReleaseID,
+			}
+			if err := s.labelRelationDB.CreateLabelRelation(labelRelation); err != nil {
+				logrus.Errorf("failed to create label relation for label %s when create release %s, %v", tag.Name, release.ReleaseID, err)
+				continue
+			}
+		}
+	}
 	return release.ReleaseID, nil
 }
 
@@ -350,7 +370,53 @@ func (s *ReleaseService) Update(orgID int64, releaseID string, req *pb.ReleaseUp
 			return err
 		}
 	}
+
+	s.updateReleaseTags(releaseID, req)
 	return nil
+}
+
+// update tags
+func (s *ReleaseService) updateReleaseTags(releaseID string, req *pb.ReleaseUpdateRequest) {
+	oldLrs, err := s.labelRelationDB.GetLabelRelationsByRef(apistructs.LabelTypeRelease, releaseID)
+	if err != nil {
+		logrus.Errorf("failed to get label relation by release %s, %v", releaseID, err)
+		return
+	}
+
+	var oldTagIDs []uint64
+	for i := range oldLrs {
+		oldTagIDs = append(oldTagIDs, oldLrs[i].LabelID)
+	}
+	sort.Slice(oldTagIDs, func(i, j int) bool {
+		return oldTagIDs[i] < oldTagIDs[j]
+	})
+
+	newTagIDs := req.Tags
+	sort.Slice(newTagIDs, func(i, j int) bool {
+		return newTagIDs[i] < oldTagIDs[j]
+	})
+
+	if reflect.DeepEqual(oldTagIDs, newTagIDs) {
+		return
+	}
+
+	if err := s.labelRelationDB.DeleteLabelRelations(apistructs.LabelTypeRelease, releaseID); err != nil {
+		logrus.Errorf("failed to delete label relations for release %s, %v", releaseID, err)
+		return
+	}
+	logrus.Errorf("failed to delete label relations for release %s, %v", releaseID, err)
+	for _, id := range newTagIDs {
+		lr := &db.LabelRelation{
+			LabelID: id,
+			RefType: apistructs.LabelTypeRelease,
+			RefID:   releaseID,
+		}
+		if err := s.labelRelationDB.CreateLabelRelation(lr); err != nil {
+			logrus.Errorf("failed to create label %d for release %s, %v", id, releaseID, err)
+			continue
+		}
+	}
+	return
 }
 
 func (s *ReleaseService) updateProjectReleaseAndReference(release *db.Release, oldAppReleases, newAppReleases []db.Release) (err error) {
@@ -505,6 +571,11 @@ func (s *ReleaseService) Delete(orgID int64, releaseIDs ...string) error {
 				}
 			}
 		}
+
+		if err := s.labelRelationDB.DeleteLabelRelations(apistructs.LabelTypeRelease, release.ReleaseID); err != nil {
+			logrus.Errorf("failed to delete label relations for release %s, %v", releaseID, err)
+			continue
+		}
 	}
 	if len(failed) != 0 {
 		return errors.New(strings.Join(failed, ", "))
@@ -548,14 +619,74 @@ func (s *ReleaseService) Get(orgID int64, releaseID string) (*pb.ReleaseGetRespo
 
 // List Search based on search parameters
 func (s *ReleaseService) List(orgID int64, req *pb.ReleaseListRequest) (*pb.ReleaseListResponseData, error) {
+	if len(req.Tags) != 0 {
+		lrs, err := s.labelRelationDB.GetLabelRelationsByLabels(apistructs.LabelTypeRelease, req.Tags)
+		if err != nil {
+			return nil, errors.Errorf("failed to get release tags, %v", err)
+		}
+
+		var releaseIDs []string
+		for i := range lrs {
+			releaseIDs = append(releaseIDs, lrs[i].RefID)
+		}
+
+		if req.ReleaseID != "" {
+			requestedIDs := make(map[string]struct{})
+			splits := strings.Split(req.ReleaseID, ",")
+			for _, id := range splits {
+				requestedIDs[strings.TrimSpace(id)] = struct{}{}
+			}
+
+			var targetIDs []string
+			for _, id := range releaseIDs {
+				if _, ok := requestedIDs[id]; !ok {
+					continue
+				}
+				targetIDs = append(targetIDs, id)
+			}
+
+			if len(targetIDs) == 0 {
+				return &pb.ReleaseListResponseData{List: []*pb.ReleaseData{}}, nil
+			}
+			releaseIDs = targetIDs
+		}
+
+		ids := strings.Join(releaseIDs, ",")
+		req.ReleaseID = ids
+	}
+
 	total, releases, err := s.db.GetReleasesByParams(orgID, req)
 	if err != nil {
 		return nil, err
 	}
 
+	resp, err := s.bdl.ListLabel(apistructs.ProjectLabelListRequest{
+		ProjectID: uint64(req.ProjectID),
+		Type:      apistructs.LabelTypeRelease,
+		PageNo:    1,
+		PageSize:  1000,
+	})
+	if err != nil {
+		return nil, errors.Errorf("failed to list labels, %v", err)
+	}
+	tags := resp.List
+	tagMap := make(map[int64]*apistructs.ProjectLabel)
+	for i := range tags {
+		tagMap[tags[i].ID] = &tags[i]
+	}
+
+	var releaseIDs []string
+	for i := range releases {
+		releaseIDs = append(releaseIDs, releases[i].ReleaseID)
+	}
+	releaseTagMap, err := s.labelRelationDB.BatchQueryReleaseTagIDMap(releaseIDs)
+	if err != nil {
+		return nil, errors.Errorf("failed to batcy query release label id map, %v", err)
+	}
+
 	releaseList := make([]*pb.ReleaseData, 0, len(releases))
 	for _, v := range releases {
-		release, err := convertToListReleaseResponse(&v)
+		release, err := convertToListReleaseResponse(&v, releaseTagMap[v.ReleaseID], tagMap)
 		if err != nil {
 			logrus.WithField("func", "*ReleaseList").Errorln("failed to convertToListReleaseResponse")
 			continue
@@ -569,7 +700,7 @@ func (s *ReleaseService) List(orgID int64, req *pb.ReleaseListRequest) (*pb.Rele
 	}, nil
 }
 
-func convertToListReleaseResponse(release *db.Release) (*pb.ReleaseData, error) {
+func convertToListReleaseResponse(release *db.Release, tagIDs []uint64, tagsMap map[int64]*apistructs.ProjectLabel) (*pb.ReleaseData, error) {
 	var labels map[string]string
 	err := json.Unmarshal([]byte(release.Labels), &labels)
 	if err != nil {
@@ -580,6 +711,24 @@ func convertToListReleaseResponse(release *db.Release) (*pb.ReleaseData, error) 
 	err = json.Unmarshal([]byte(release.Resources), &resources)
 	if err != nil {
 		resources = make([]*pb.ReleaseResource, 0)
+	}
+
+	var tags []*pb.Tag
+	for _, id := range tagIDs {
+		tag, ok := tagsMap[int64(id)]
+		if !ok {
+			continue
+		}
+		tags = append(tags, &pb.Tag{
+			CreatedAt: timestamppb.New(tag.CreatedAt),
+			UpdatedAt: timestamppb.New(tag.UpdatedAt),
+			Creator:   tag.Creator,
+			Id:        tag.ID,
+			Color:     tag.Color,
+			Name:      tag.Name,
+			Type:      string(tag.Type),
+			ProjectID: int64(tag.ProjectID),
+		})
 	}
 
 	respData := &pb.ReleaseData{
@@ -595,7 +744,7 @@ func convertToListReleaseResponse(release *db.Release) (*pb.ReleaseData, error) 
 		Modes:            release.Modes,
 		Resources:        resources,
 		Labels:           labels,
-		Tags:             release.Tags,
+		Tags:             tags,
 		Version:          release.Version,
 		CrossCluster:     release.CrossCluster,
 		Reference:        release.Reference,
