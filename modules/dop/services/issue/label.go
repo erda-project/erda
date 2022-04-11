@@ -16,6 +16,7 @@ package issue
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/erda-project/erda-proto-go/dop/issue/sync/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -23,7 +24,7 @@ import (
 )
 
 func (svc *Issue) UpdateLabels(id, projectID uint64, labelNames []string) (err error) {
-	if err = svc.db.DeleteLabelRelations(apistructs.LabelTypeIssue, id, nil); err != nil {
+	if err = svc.db.DeleteLabelRelations(apistructs.LabelTypeIssue, strconv.FormatUint(id, 10), nil); err != nil {
 		return
 	}
 	labels, err := svc.bdl.ListLabelByNameAndProjectID(projectID, labelNames)
@@ -35,7 +36,7 @@ func (svc *Issue) UpdateLabels(id, projectID uint64, labelNames []string) (err e
 		labelRelations = append(labelRelations, dao.LabelRelation{
 			LabelID: uint64(v.ID),
 			RefType: apistructs.LabelTypeIssue,
-			RefID:   id,
+			RefID:   strconv.FormatUint(id, 10),
 		})
 	}
 	return svc.db.BatchCreateLabelRelations(labelRelations)
@@ -63,7 +64,7 @@ func (s *Issue) SyncLabels(value *pb.Value, issueIDs []uint64) error {
 				labelRelations = append(labelRelations, dao.LabelRelation{
 					LabelID: uint64(labelID),
 					RefType: apistructs.LabelTypeIssue,
-					RefID:   id,
+					RefID:   strconv.FormatUint(id, 10),
 				})
 			}
 		}
@@ -81,7 +82,7 @@ func (s *Issue) SyncLabels(value *pb.Value, issueIDs []uint64) error {
 			}
 		}
 		if len(labelIDs) > 0 {
-			if err := s.db.DeleteLabelRelations(apistructs.LabelTypeIssue, id, labelIDs); err != nil {
+			if err := s.db.DeleteLabelRelations(apistructs.LabelTypeIssue, strconv.FormatUint(id, 10), labelIDs); err != nil {
 				return err
 			}
 		}

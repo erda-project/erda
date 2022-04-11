@@ -390,10 +390,10 @@ func (p *provider) doCronCompensate(compensator apistructs.CronCompensator, notR
 			return nil
 		}
 	}
-
 	_, err := p.pipelineFunc.RunPipeline(&apistructs.PipelineRunRequest{
 		PipelineID:   firstOrLastPipeline.ID,
-		IdentityInfo: apistructs.IdentityInfo{InternalClient: firstOrLastPipeline.Extra.InternalClient},
+		Secrets:      firstOrLastPipeline.Extra.IncomingSecrets,
+		IdentityInfo: apistructs.IdentityInfo{InternalClient: firstOrLastPipeline.Extra.InternalClient, UserID: firstOrLastPipeline.GetUserID()},
 	})
 
 	// Print one line of record after successful execution

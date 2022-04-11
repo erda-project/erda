@@ -118,7 +118,7 @@ func (e *Endpoints) CreateIssue(ctx context.Context, r *http.Request, vars map[s
 		lr := &dao.LabelRelation{
 			LabelID: uint64(v.ID),
 			RefType: apistructs.LabelTypeIssue,
-			RefID:   issue.ID,
+			RefID:   strconv.FormatUint(issue.ID, 10),
 		}
 		if err := e.db.CreateLabelRelation(lr); err != nil {
 			return apierrors.ErrCreateIssue.InternalError(err).ToResp(), nil

@@ -37,7 +37,7 @@ type provider struct {
 	Cfg *config
 	Log logs.Logger
 
-	operators []operator.Operator
+	operators []*operator.Operator
 }
 
 func (p *provider) ComponentConfig() interface{} {
@@ -47,7 +47,10 @@ func (p *provider) ComponentConfig() interface{} {
 func (p *provider) Process(in odata.ObservableData) (odata.ObservableData, error) {
 	for _, op := range p.operators {
 		in.HandleKeyValuePair(func(pairs map[string]interface{}) map[string]interface{} {
-			return op.Operate(pairs)
+			if !op.Condition.Match(pairs) {
+				return pairs
+			}
+			return op.Modifier.Modify(pairs)
 		})
 	}
 	return in, nil
@@ -55,13 +58,13 @@ func (p *provider) Process(in odata.ObservableData) (odata.ObservableData, error
 
 // Run this is optional
 func (p *provider) Init(ctx servicehub.Context) error {
-	ops := make([]operator.Operator, len(p.Cfg.Rules))
+	ops := make([]*operator.Operator, len(p.Cfg.Rules))
 	for idx, cfg := range p.Cfg.Rules {
-		creator, ok := operator.Creators[cfg.Action]
-		if !ok {
-			return fmt.Errorf("unsupported action: %q", cfg.Action)
+		op, err := operator.NewOperator(cfg)
+		if err != nil {
+			return fmt.Errorf("NewOperator: %w", err)
 		}
-		ops[idx] = creator(cfg)
+		ops[idx] = op
 	}
 	p.operators = ops
 	return nil
