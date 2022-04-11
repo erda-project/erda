@@ -55,7 +55,7 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.bundle = bundle.New(bundle.WithCoreServices())
+	p.bundle = bundle.New(bundle.WithAllAvailableClients())
 	p.projectPipelineSvc = &ProjectPipelineService{
 		logger: p.Log,
 		db: &dao.DBClient{
