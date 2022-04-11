@@ -737,7 +737,7 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, serviceGroup *ap
 	}
 	k.AddSpotEmptyDir(&deployment.Spec.Template.Spec)
 
-	if err = DereferenceEnvs(deployment); err != nil {
+	if err = DereferenceEnvs(&deployment.Spec.Template); err != nil {
 		return nil, err
 	}
 	logrus.Debugf("show k8s deployment, name: %s, deployment: %+v", deploymentName, deployment)
@@ -1322,12 +1322,12 @@ func (k *Kubernetes) UpdateContainerResourceEnv(originResource apistructs.Resour
 }
 
 // DereferenceEnvs dereferences envs if the placeholder ${env.PLACEHOLDER} in the env.
-func DereferenceEnvs(deployment *appsv1.Deployment) error {
+func DereferenceEnvs(podTempate *apiv1.PodTemplateSpec) error {
 	var (
 		left, right = "${", "}"
 		find        = func(p string) bool { return strings.HasPrefix(p, "env.") }
 	)
-	for i, container := range deployment.Spec.Template.Spec.Containers {
+	for i, container := range podTempate.Spec.Containers {
 		var envMap = make(map[string]string)
 		for _, env := range container.Env {
 			if env.ValueFrom == nil {
@@ -1360,7 +1360,7 @@ func DereferenceEnvs(deployment *appsv1.Deployment) error {
 				}
 				value = strutil.Replace(value, v, indexStart, indexEnd)
 			}
-			deployment.Spec.Template.Spec.Containers[i].Env[j].Value = value
+			podTempate.Spec.Containers[i].Env[j].Value = value
 		}
 	}
 	return nil
