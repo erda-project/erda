@@ -23,6 +23,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/actionagent"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/k8s/elastic/vk"
 )
@@ -113,7 +114,7 @@ func DealJobAndClusterInfo(job *apistructs.JobFromUser, clusterInfo apistructs.C
 			clusterInfo[apistructs.BuildkitEnable] = "true"
 			clusterInfo[apistructs.BuildkitHitRate] = "100"
 			// enabled report log by action agent.
-			job.Env["ACTIONAGENT_ENABLE_PUSH_LOG_TO_COLLECTOR"] = "true"
+			job.Env[actionagent.EnvEnablePushLog2Collector] = "true"
 			// eci environment doesn't support mount host path.
 			job.Binds = make([]apistructs.Bind, 0)
 		default:

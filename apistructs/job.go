@@ -34,6 +34,24 @@ var (
 	Kubernetes  JobKind = "Kubernetes"
 )
 
+type JobEnv string
+
+var (
+	JobEnvIsK8S      JobEnv = "IS_K8S"
+	JobEnvIsDocker   JobEnv = "IS_DOCKER"
+	JobEnvNamespace  JobEnv = "DICE_NAMESPACE"
+	JobEnvOriginCPU  JobEnv = "DICE_CPU_ORIGIN"
+	JobEnvOriginMEM  JobEnv = "DICE_MEM_ORIGIN"
+	JobEnvRequestCPU JobEnv = "DICE_CPU_REQUEST"
+	JobEnvRequestMEM JobEnv = "DICE_MEM_REQUEST"
+	JobEnvLimitCPU   JobEnv = "DICE_CPU_LIMIT"
+	JobENvLimitMEM   JobEnv = "DICE_MEM_LIMIT"
+)
+
+func (j JobEnv) String() string {
+	return string(j)
+}
+
 type JobVolume struct {
 	Namespace string `json:"namespace"`
 	// 用于生成volume id = <namespace>-<name:>

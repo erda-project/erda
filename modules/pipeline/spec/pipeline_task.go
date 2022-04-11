@@ -189,6 +189,7 @@ var (
 	PipelineTaskExecutorKindK8sJob    PipelineTaskExecutorKind = "K8SJOB"
 	PipelineTaskExecutorKindK8sFlink  PipelineTaskExecutorKind = "K8SFLINK"
 	PipelineTaskExecutorKindK8sSpark  PipelineTaskExecutorKind = "K8SSPARK"
+	PipelineTaskExecutorKindDocker    PipelineTaskExecutorKind = "DOCKER"
 	PipelineTaskExecutorKindList                               = []PipelineTaskExecutorKind{PipelineTaskExecutorKindScheduler, PipelineTaskExecutorKindMemory, PipelineTaskExecutorKindAPITest, PipelineTaskExecutorKindWait, PipelineTaskExecutorKindK8sJob}
 )
 
@@ -245,6 +246,7 @@ var (
 	PipelineTaskExecutorNameK8sJobDefault    PipelineTaskExecutorName = "k8s-job"
 	PipelineTaskExecutorNameK8sFlinkDefault  PipelineTaskExecutorName = "k8s-flink"
 	PipelineTaskExecutorNameK8sSparkDefault  PipelineTaskExecutorName = "k8s-spark"
+	PipelineTaskExecutorNameDockerDefault    PipelineTaskExecutorName = "docker"
 	PipelineTaskExecutorNameList                                      = []PipelineTaskExecutorName{PipelineTaskExecutorNameEmpty, PipelineTaskExecutorNameSchedulerDefault, PipelineTaskExecutorNameAPITestDefault, PipelineTaskExecutorNameWaitDefault, PipelineTaskExecutorNameK8sJobDefault}
 )
 
