@@ -19,6 +19,7 @@ import (
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
+	"github.com/erda-project/erda/modules/pipeline/providers/cache"
 	"github.com/erda-project/erda/modules/pipeline/providers/clusterinfo"
 	"github.com/erda-project/erda/modules/pipeline/providers/cron/daemon"
 	"github.com/erda-project/erda/modules/pipeline/providers/engine"
@@ -40,6 +41,7 @@ type PipelineSvc struct {
 	pipelineCronSvc cronpb.CronServiceServer
 	permissionSvc   *permissionsvc.PermissionSvc
 	queueManage     *queuemanage.QueueManage
+	cache           cache.Interface
 
 	dbClient  *dbclient.Client
 	bdl       *bundle.Bundle
@@ -60,7 +62,7 @@ func New(appSvc *appsvc.AppSvc, crondSvc daemon.Interface,
 	pipelineCronSvc cronpb.CronServiceServer, permissionSvc *permissionsvc.PermissionSvc,
 	queueManage *queuemanage.QueueManage,
 	dbClient *dbclient.Client, bdl *bundle.Bundle, publisher *websocket.Publisher,
-	engine engine.Interface, js jsonstore.JsonStore, etcd *etcd.Store, clusterInfo clusterinfo.Interface) *PipelineSvc {
+	engine engine.Interface, js jsonstore.JsonStore, etcd *etcd.Store, clusterInfo clusterinfo.Interface, cache cache.Interface) *PipelineSvc {
 
 	s := PipelineSvc{}
 	s.appSvc = appSvc
@@ -77,6 +79,7 @@ func New(appSvc *appsvc.AppSvc, crondSvc daemon.Interface,
 	s.js = js
 	s.etcdctl = etcd
 	s.clusterInfo = clusterInfo
+	s.cache = cache
 	return &s
 }
 

@@ -41,12 +41,11 @@ func (s *PipelineSvc) BatchCreate(batchReq *apistructs.PipelineBatchCreateReques
 	result := make(map[string]*apistructs.PipelineDTO)
 
 	for _, req := range reqs {
-		secretCache := apistructs.NewSecretCache()
 		p, err := s.makePipelineFromRequest(req)
 		if err != nil {
 			return nil, apierrors.ErrBatchCreatePipeline.InternalError(err)
 		}
-		if err = s.CreatePipelineGraph(p, secretCache); err != nil {
+		if err = s.CreatePipelineGraph(p); err != nil {
 			return nil, apierrors.ErrBatchCreatePipeline.InternalError(err)
 		}
 
@@ -57,8 +56,7 @@ func (s *PipelineSvc) BatchCreate(batchReq *apistructs.PipelineBatchCreateReques
 			if p, err = s.RunPipeline(&apistructs.PipelineRunRequest{
 				PipelineID:   p.ID,
 				IdentityInfo: identityInfo,
-				Secrets:      getSecrets(p),
-				SecretCache:  secretCache},
+				Secrets:      getSecrets(p)},
 			); err != nil {
 				return nil, apierrors.ErrRunPipeline.InternalError(err)
 			}

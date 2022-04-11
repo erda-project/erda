@@ -556,7 +556,6 @@ type PipelineRunRequest struct {
 	PipelineRunParams      PipelineRunParams `json:"runParams"`
 	ConfigManageNamespaces []string          `json:"configManageNamespaces"`
 	Secrets                map[string]string `json:"secrets"`
-	SecretCache            *SecretCache      `json:"-"`
 	IdentityInfo
 }
 
@@ -770,16 +769,4 @@ type PipelineCronGetResponse struct {
 
 type PipelineDefinitionExtraValue struct {
 	CreateRequest *PipelineCreateRequestV2 `json:"createRequest"`
-}
-
-type SecretCache struct {
-	PlatformSecrets   map[string]string
-	Secrets           map[string]string
-	CmsDiceFiles      map[string]string
-	HoldOnKeys        []string
-	EncryptSecretKeys []string
-}
-
-func NewSecretCache() *SecretCache {
-	return &SecretCache{}
 }

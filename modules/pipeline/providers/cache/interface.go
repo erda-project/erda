@@ -26,4 +26,7 @@ type Interface interface {
 	GetOrSetPipelineYmlFromContext(pipelineID uint64) (yml *pipelineyml.PipelineYml, err error)
 	GetOrSetPassedDataWhenCreateFromContext(pipelineYml *pipelineyml.PipelineYml, pipelineID uint64) (passedDataWhenCreate *action_info.PassedDataWhenCreate, err error)
 	ClearPipelineContextCaches(pipelineID uint64)
+	SetPipelineSecretByPipelineID(pipelineID uint64, secret *SecretCache)
+	GetPipelineSecretByPipelineID(pipelineID uint64) (secret *SecretCache)
+	ClearPipelineSecretByPipelineID(pipelineID uint64)
 }

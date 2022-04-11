@@ -46,8 +46,7 @@ func (s *PipelineSvc) CreateV2(req *apistructs.PipelineCreateRequestV2) (*spec.P
 		return nil, err
 	}
 
-	secretCache := apistructs.NewSecretCache()
-	if err = s.CreatePipelineGraph(p, secretCache); err != nil {
+	if err = s.CreatePipelineGraph(p); err != nil {
 		logrus.Errorf("failed to create pipeline graph, pipelineID: %d, err: %v", p.ID, err)
 		return nil, err
 	}
@@ -60,7 +59,6 @@ func (s *PipelineSvc) CreateV2(req *apistructs.PipelineCreateRequestV2) (*spec.P
 			IdentityInfo:      req.IdentityInfo,
 			PipelineRunParams: req.RunParams,
 			Secrets:           req.Secrets,
-			SecretCache:       secretCache,
 		})
 		if err != nil {
 			logrus.Errorf("failed to run pipeline, pipelineID: %d, err: %v", p.ID, err)

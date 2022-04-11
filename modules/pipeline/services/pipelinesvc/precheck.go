@@ -18,12 +18,13 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/precheck"
 	"github.com/erda-project/erda/modules/pipeline/precheck/prechecktype"
+	"github.com/erda-project/erda/modules/pipeline/providers/cache"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
-func (s *PipelineSvc) PreCheck(pipelineYml *pipelineyml.PipelineYml, p *spec.Pipeline, stages []spec.PipelineStage, userID string, secretCache *apistructs.SecretCache) error {
+func (s *PipelineSvc) PreCheck(pipelineYml *pipelineyml.PipelineYml, p *spec.Pipeline, stages []spec.PipelineStage, userID string) error {
 	tasks, err := s.MergePipelineYmlTasks(pipelineYml, nil, p, stages, nil)
 	if err != nil {
 		return apierrors.ErrPreCheckPipeline.InternalError(err)
@@ -112,12 +113,13 @@ func (s *PipelineSvc) PreCheck(pipelineYml *pipelineyml.PipelineYml, p *spec.Pip
 		}
 	}
 
-	if secretCache != nil {
-		secretCache.PlatformSecrets = platformSecrets
-		secretCache.Secrets = secrets
-		secretCache.CmsDiceFiles = cmsDiceFiles
-		secretCache.HoldOnKeys = holdOnKeys
-		secretCache.EncryptSecretKeys = encryptSecretKeys
-	}
+	s.cache.SetPipelineSecretByPipelineID(p.PipelineID, &cache.SecretCache{
+		PlatformSecrets:   platformSecrets,
+		Secrets:           secrets,
+		CmsDiceFiles:      cmsDiceFiles,
+		HoldOnKeys:        holdOnKeys,
+		EncryptSecretKeys: encryptSecretKeys,
+	})
+
 	return nil
 }

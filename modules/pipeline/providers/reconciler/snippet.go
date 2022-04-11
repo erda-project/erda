@@ -64,7 +64,7 @@ func (tr *defaultTaskReconciler) CreateSnippetPipeline(ctx context.Context, p *s
 	if err != nil {
 		return nil, err
 	}
-	if err := tr.pipelineSvcFuncs.CreatePipelineGraph(snippetPipeline, nil); err != nil {
+	if err := tr.pipelineSvcFuncs.CreatePipelineGraph(snippetPipeline); err != nil {
 		return nil, err
 	}
 

@@ -60,8 +60,7 @@ func (s *PipelineSvc) RerunFailed(req *apistructs.PipelineRerunFailedRequest) (*
 	}
 	p.Type = apistructs.PipelineTypeRerunFailed
 
-	secretCache := apistructs.NewSecretCache()
-	if err = s.CreatePipelineGraph(p, secretCache); err != nil {
+	if err = s.CreatePipelineGraph(p); err != nil {
 		return nil, apierrors.ErrRerunFailedPipeline.InternalError(err)
 	}
 
@@ -72,7 +71,6 @@ func (s *PipelineSvc) RerunFailed(req *apistructs.PipelineRerunFailedRequest) (*
 			IdentityInfo:      req.IdentityInfo,
 			PipelineRunParams: origin.Snapshot.RunPipelineParams.ToPipelineRunParams(),
 			Secrets:           req.Secrets,
-			SecretCache:       secretCache,
 		},
 		); err != nil {
 			return nil, err
