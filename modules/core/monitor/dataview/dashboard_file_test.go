@@ -16,7 +16,6 @@ package dataview
 
 import (
 	"errors"
-	api "github.com/erda-project/erda/pkg/common/httpapi"
 	"mime/multipart"
 	"net/http"
 	"reflect"
@@ -28,6 +27,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/core/monitor/dataview/db"
+	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
 
 func Test_dashboardFileName(t *testing.T) {
