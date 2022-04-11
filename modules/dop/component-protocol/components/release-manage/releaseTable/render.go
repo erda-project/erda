@@ -207,6 +207,7 @@ func (r *ComponentReleaseTable) RenderTable(ctx context.Context, gs *cptype.Glob
 		UserID:           r.State.FilterValues.UserIDs,
 		Query:            r.State.FilterValues.Version,
 		CommitID:         r.State.FilterValues.CommitID,
+		Tags:             r.State.FilterValues.Tags,
 		ApplicationID:    r.State.FilterValues.ApplicationIDs,
 		ProjectID:        projectID,
 		StartTime:        startTime,
@@ -304,12 +305,24 @@ func (r *ComponentReleaseTable) RenderTable(ctx context.Context, gs *cptype.Glob
 			userIDs = append(userIDs, release.UserID)
 		}
 
+		var tags []TagValue
+		for i := range release.Tags {
+			tags = append(tags, TagValue{
+				Label: release.Tags[i].Name,
+				Color: release.Tags[i].Color,
+			})
+		}
+
 		item := Item{
 			ID: release.ReleaseID,
-			Version: Version{
+			Version: DoubleRowWithIcon{
+				RenderType: "doubleRowWithIcon",
 				Value:      release.Version,
-				Tags:       []Tag{},
-				RenderType: "textWithTags",
+				ExtraContent: ExtraContent{
+					RenderType: "tags",
+					ShowCount:  4,
+					Value:      tags,
+				},
 			},
 			Application: release.ApplicationName,
 			Creator: Creator{
@@ -324,10 +337,14 @@ func (r *ComponentReleaseTable) RenderTable(ctx context.Context, gs *cptype.Glob
 		}
 
 		if release.IsFormal && r.State.IsFormal == nil {
-			item.Version.Tags = append(item.Version.Tags, Tag{
-				Tag:   r.sdk.I18n("formal"),
-				Color: "blue",
-			})
+			item.Formal = &TagsRow{
+				RenderType: "tagsRow",
+				Size:       "normal",
+				Value: TagValue{
+					Label: r.sdk.I18n("formal"),
+					Color: "blue",
+				},
+			}
 		}
 
 		if release.IsProjectRelease {
@@ -454,6 +471,15 @@ func (r *ComponentReleaseTable) SetComponentValue() {
 		columns = append(columns[:1], columns[2:]...)
 	}
 
+	// 全部页面显示是否为正式版
+	if r.State.IsFormal == nil {
+		columns = append(columns[:1], append([]Column{{
+			DataIndex: "formal",
+			Title:     "",
+		}}, columns[1:]...)...)
+	}
+
+	// 最后一列右对齐
 	columns[len(columns)-1].Align = "right"
 
 	r.Props = Props{

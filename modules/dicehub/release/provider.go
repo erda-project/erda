@@ -67,11 +67,12 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.bdl = bundle.New(bundle.WithScheduler(), bundle.WithCoreServices())
 
 	p.releaseService = &ReleaseService{
-		p:           p,
-		db:          &db.ReleaseConfigDB{DB: p.DB},
-		imageDB:     &imagedb.ImageConfigDB{DB: p.DB},
-		extensionDB: &extensiondb.ExtensionConfigDB{DB: p.DB},
-		bdl:         p.bdl,
+		p:               p,
+		db:              &db.ReleaseConfigDB{DB: p.DB},
+		labelRelationDB: &db.LabelRelationConfigDB{DB: p.DB},
+		imageDB:         &imagedb.ImageConfigDB{DB: p.DB},
+		extensionDB:     &extensiondb.ExtensionConfigDB{DB: p.DB},
+		bdl:             p.bdl,
 		//Etcd:    p.Etcd,
 		Config: &releaseConfig{
 			MaxTimeReserved: p.Cfg.MaxTimeReserved,
