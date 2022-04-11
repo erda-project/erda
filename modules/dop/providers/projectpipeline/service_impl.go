@@ -275,6 +275,12 @@ func (p *ProjectPipelineService) createOne(ctx context.Context, params *pb.Creat
 		return nil, fmt.Errorf("failed to createCronIfNotExist error %v", err)
 	}
 
+	// When creating a definition, a scheduled task is created
+	err = p.createCronIfNotExist(definitionRsp.PipelineDefinition, pipelineSourceType)
+	if err != nil {
+		return nil, fmt.Errorf("failed to createCronIfNotExist error %v", err)
+	}
+
 	_, err = p.GuideSvc.ProcessGuide(ctx, &guidepb.ProcessGuideRequest{AppID: params.AppID, Branch: params.Ref, Kind: "pipeline"})
 	if err != nil {
 		p.logger.Errorf("failed to ProcessGuide, err: %v, appID: %d, branch: %s", err, params.AppID, params.Ref)
@@ -294,6 +300,42 @@ func (p *ProjectPipelineService) createOne(ctx context.Context, params *pb.Creat
 		FileName:         sourceRsp.PipelineSource.Name,
 		PipelineSourceID: sourceRsp.PipelineSource.ID,
 	}, nil
+}
+
+func (p *ProjectPipelineService) createCronIfNotExist(definition *dpb.PipelineDefinition, projectPipelineType ProjectSourceType) error {
+	extraString := projectPipelineType.GetPipelineCreateRequestV2()
+	var extra apistructs.PipelineDefinitionExtraValue
+	err := json.Unmarshal([]byte(extraString), &extra)
+	if err != nil {
+		return err
+	}
+
+	crons, err := p.PipelineCron.CronPaging(context.Background(), &cronpb.CronPagingRequest{
+		AllSources: false,
+		Sources:    []string{extra.CreateRequest.PipelineSource.String()},
+		YmlNames:   []string{extra.CreateRequest.PipelineYmlName},
+		PageSize:   1,
+		PageNo:     1,
+	})
+	if err != nil {
+		return err
+	}
+
+	for _, cron := range crons.Data {
+		if cron.PipelineDefinitionID == definition.ID {
+			continue
+		}
+
+		createV2 := extra.CreateRequest
+		createV2.DefinitionID = definition.ID
+		_, err = p.bundle.CreatePipeline(createV2)
+		if err != nil {
+			return fmt.Errorf("CreatePipeline  error %v req %v", err, createV2)
+		}
+		break
+	}
+
+	return nil
 }
 
 func (p *ProjectPipelineService) createCronIfNotExist(definition *dpb.PipelineDefinition, projectPipelineType ProjectSourceType) error {
