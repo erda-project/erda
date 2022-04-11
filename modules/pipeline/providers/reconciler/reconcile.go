@@ -76,6 +76,7 @@ func (r *provider) generatePipelineReconcilerForEachPipelineID() *defaultPipelin
 		st:                   &schedulabletask.DagImpl{},
 		resourceGC:           r.ResourceGC,
 		cronCompensator:      r.CronCompensator,
+		cache:                r.Cache,
 		r:                    r,
 		dbClient:             r.dbClient,
 		processingTasks:      sync.Map{},
