@@ -532,11 +532,11 @@ func Test_dataViewService_ListCustomViews(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var cvdb db.CustomViewDB
-			monkey.PatchInstanceMethod(reflect.TypeOf(&cvdb), "ListByFields", func(cvdb *db.CustomViewDB, startTime, endTime int64, creatorId []string, fields map[string]interface{}, likeFields map[string]interface{}) ([]*db.CustomView, error) {
+			monkey.PatchInstanceMethod(reflect.TypeOf(&cvdb), "ListByFieldsAndPage", func(cvdb *db.CustomViewDB, pageNo, pageSize int64, startTime, endTime int64, creatorId []string, fields map[string]interface{}, likeFields map[string]interface{}) ([]*db.CustomView, int64, error) {
 				if v, ok := likeFields["Name"]; !ok || v == "error" {
-					return nil, errors.New("error")
+					return nil, 0, errors.New("error")
 				}
-				return []*db.CustomView{{CreatorID: "1", Scope: "test", ScopeID: "test", Name: "test1", Desc: "test1"}, {CreatorID: "2", Scope: "test", ScopeID: "test", Name: "test2", Desc: "test2"}}, nil
+				return []*db.CustomView{{CreatorID: "1", Scope: "test", ScopeID: "test", Name: "test1", Desc: "test1"}, {CreatorID: "2", Scope: "test", ScopeID: "test", Name: "test2", Desc: "test2"}}, 2, nil
 			})
 
 			s := &dataViewService{}
