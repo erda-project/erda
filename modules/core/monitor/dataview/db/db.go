@@ -98,6 +98,42 @@ func (db *CustomViewDB) GetCreatorsByFields(fields map[string]interface{}) ([]st
 	return result, nil
 }
 
+func (db *CustomViewDB) ListByFieldsAndPage(pageNo, pageSize int64, startTime, endTime int64, creatorId []string, fields map[string]interface{}, likeFields map[string]interface{}) ([]*CustomView, int64, error) {
+	query, err := gormutil.GetQueryFilterByFields(db.query(), customViewFieldColumns, fields)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	query, err = gormutil.GetQueryLikeFilterByFields(query, customViewFieldColumns, likeFields)
+	if err != nil {
+		return nil, 0, err
+	}
+	startDuration := time.Unix(0, startTime*1e6)
+	start := startDuration.Format("2006-01-02 15:04:05")
+	endDuration := time.Unix(0, endTime*1e6)
+	end := endDuration.Format("2006-01-02 15:04:05")
+	if startTime != 0 {
+		query = query.Where("created_at >= ?", start)
+	}
+	if endTime != 0 {
+		query = query.Where("created_at <= ?", end)
+	}
+	if len(creatorId) > 0 {
+		query = query.Where(`creator_id in (?)`, creatorId)
+	}
+	var (
+		list  []*CustomView
+		total int64
+	)
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	if err := query.Order("created_at DESC").Limit(pageSize).Offset((pageNo - 1) * pageSize).Find(&list).Error; err != nil {
+		return nil, 0, err
+	}
+	return list, total, nil
+}
+
 func (db *CustomViewDB) ListByFields(startTime, endTime int64, creatorId []string, fields map[string]interface{}, likeFields map[string]interface{}) ([]*CustomView, error) {
 	query, err := gormutil.GetQueryFilterByFields(db.query(), customViewFieldColumns, fields)
 	if err != nil {
@@ -123,7 +159,7 @@ func (db *CustomViewDB) ListByFields(startTime, endTime int64, creatorId []strin
 	}
 
 	var list []*CustomView
-	if err := query.Order("created_at DESC").Debug().Find(&list).Error; err != nil {
+	if err := query.Order("created_at DESC").Find(&list).Error; err != nil {
 		return nil, err
 	}
 	return list, nil
