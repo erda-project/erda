@@ -177,6 +177,10 @@ func (k *Kubernetes) newJob(service *apistructs.Service, serviceGroup *apistruct
 		logrus.Errorf("failed to AddPodMountVolume for job %s/%s: %v", job.Namespace, job.Name, err)
 		return nil, err
 	}
+
+	if err = DereferenceEnvs(&job.Spec.Template); err != nil {
+		return nil, err
+	}
 	k.AddSpotEmptyDir(&job.Spec.Template.Spec)
 
 	job.Spec.Template.Spec.RestartPolicy = apiv1.RestartPolicyNever
