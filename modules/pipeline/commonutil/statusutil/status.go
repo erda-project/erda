@@ -25,15 +25,18 @@ func CalculatePipelineStatusV2(tasks []*spec.PipelineTask) apistructs.PipelineSt
 	var successNum int
 	var failedNum int
 	var pauseNum int
-	var bornNum int
 	var runningNum int
 	var analyzedNum int
+	var stopByUserNum int
 
 	for _, task := range tasks {
-		if task.Status.IsSuccessStatus() ||
-			(task.Status.IsFailedStatus() && task.Extra.AllowFailure) ||
-			task.Status == apistructs.PipelineStatusDisabled {
+		// treat as success
+		if task.Status.IsSuccessStatus() || (task.Status.IsFailedStatus() && task.Extra.AllowFailure) || task.Status == apistructs.PipelineStatusDisabled {
 			successNum++
+			continue
+		}
+		if task.Status == apistructs.PipelineStatusStopByUser {
+			stopByUserNum++
 			continue
 		}
 		if task.Status.IsFailedStatus() {
@@ -44,43 +47,36 @@ func CalculatePipelineStatusV2(tasks []*spec.PipelineTask) apistructs.PipelineSt
 			analyzedNum++
 			continue
 		}
-		if task.Status == apistructs.PipelineStatusBorn {
-			bornNum++
-			continue
-		}
 		if task.Status == apistructs.PipelineStatusPaused {
 			pauseNum++
-			continue
-		}
-		if task.Status == apistructs.PipelineStatusDisabled {
-			successNum++
 			continue
 		}
 		runningNum++
 	}
 
-	switch total {
-	case 0:
-		return apistructs.PipelineStatusSuccess
-	case analyzedNum:
-		return apistructs.PipelineStatusAnalyzed
-	case bornNum + analyzedNum:
-		return apistructs.PipelineStatusRunning
-	case successNum:
-		return apistructs.PipelineStatusSuccess
-	case successNum + pauseNum + bornNum + analyzedNum:
-		if pauseNum > 0 {
-			return apistructs.PipelineStatusPaused
+	allDone := CalculatePipelineTaskAllDone(tasks)
+	if allDone {
+		// success
+		if successNum == total {
+			return apistructs.PipelineStatusSuccess
 		}
-		return apistructs.PipelineStatusRunning
-	case successNum + failedNum + bornNum + analyzedNum:
-		if failedNum == 0 {
-			return apistructs.PipelineStatusRunning
+		// stopByUser
+		if stopByUserNum > 0 {
+			return apistructs.PipelineStatusStopByUser
 		}
+		// not success or stopByUser, means failed
 		return apistructs.PipelineStatusFailed
-	default:
-		return apistructs.PipelineStatusRunning
 	}
+	// analyzed
+	if analyzedNum == total {
+		return apistructs.PipelineStatusAnalyzed
+	}
+	// pause
+	if pauseNum > 0 && runningNum == 0 {
+		return apistructs.PipelineStatusPaused
+	}
+	// running
+	return apistructs.PipelineStatusRunning
 }
 
 // CalculatePipelineTaskAllDone
