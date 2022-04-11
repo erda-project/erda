@@ -278,7 +278,7 @@ func TestDereferenceEnvs(t *testing.T) {
 			{Name: "MYSQL_PORT", Value: "${env.port: 3306}"},
 		}},
 	}
-	if err := DereferenceEnvs(d); err != nil {
+	if err := DereferenceEnvs(&d.Spec.Template); err != nil {
 		t.Fatal(err)
 	}
 	for _, env := range d.Spec.Template.Spec.Containers[0].Env {
@@ -303,7 +303,7 @@ func BenchmarkName(b *testing.B) {
 				{Name: "MYSQL_PORT", Value: "3306"},
 			}},
 		}
-		if err := DereferenceEnvs(d); err != nil {
+		if err := DereferenceEnvs(&d.Spec.Template); err != nil {
 			b.Fatal(err)
 		}
 		for _, env := range d.Spec.Template.Spec.Containers[0].Env {
