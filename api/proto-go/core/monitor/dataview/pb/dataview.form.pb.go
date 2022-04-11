@@ -284,6 +284,18 @@ func (m *ListCustomViewsRequest) UnmarshalURLValues(prefix string, values url.Va
 				m.Description = vals[0]
 			case "creatorId":
 				m.CreatorId = vals
+			case "pageNo":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.PageNo = val
+			case "pageSize":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.PageSize = val
 			}
 		}
 	}

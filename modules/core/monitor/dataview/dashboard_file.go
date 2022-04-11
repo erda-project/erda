@@ -39,7 +39,10 @@ import (
 	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
 
-func (p *provider) ParseDashboardTemplate(r *http.Request) interface{} {
+func (p *provider) ParseDashboardTemplate(r *http.Request, params struct {
+	Scope   string `json:"scope"`
+	ScopeId string `json:"scopeId"`
+}) interface{} {
 	file, _, err := r.FormFile("file")
 	if err != nil {
 		return api.Failure(http.StatusInternalServerError, err)
@@ -60,8 +63,14 @@ func (p *provider) ParseDashboardTemplate(r *http.Request) interface{} {
 	}
 
 	for _, dashboard := range dashboards {
-		if dashboard["Name"] == "" {
+		if v, ok := dashboard["name"]; !ok || v == "" {
 			return api.Failure(http.StatusInternalServerError, "dashboard name not exist")
+		}
+		if v, ok := dashboard["scope"]; !ok || v != params.Scope {
+			return api.Failure(http.StatusInternalServerError, fmt.Sprintf("%s type dashboard can't import %s type dashboard", v, params.Scope))
+		}
+		if v, ok := dashboard["scopeId"]; !ok || v == params.ScopeId {
+			return api.Failure(http.StatusInternalServerError, fmt.Sprintf("can't import the same environment"))
 		}
 	}
 	return api.Success(nil, http.StatusOK)
