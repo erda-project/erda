@@ -32,8 +32,8 @@ const (
 	pipelinePassedDataWhenCreateContextCachesPrefixKey = "reconciler_caches_passed_data_when_create"
 )
 
-// clear context map rwLock by pipelineID
-func (p *provider) clearPipelineContextCaches(pipelineID uint64) {
+// ClearPipelineContextCaches clear context map rwLock by pipelineID
+func (p *provider) ClearPipelineContextCaches(pipelineID uint64) {
 	p.cacheMap.Delete(makeMapKey(pipelineID, pipelineStagesContextCachesPrefixKey))
 	p.cacheMap.Delete(makeMapKey(pipelineID, pipelineYmlContextCachesPrefixKey))
 	p.cacheMap.Delete(makeMapKey(pipelineID, pipelineRerunSuccessTaskContextCachesPrefixKey))
