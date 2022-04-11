@@ -721,7 +721,7 @@ func (k *K8sJob) generateContainerEnvs(job *apistructs.JobFromUser, clusterInfo 
 
 	// add namespace label
 	env = append(env, corev1.EnvVar{
-		Name:  "DICE_NAMESPACE",
+		Name:  apistructs.JobEnvNamespace.String(),
 		Value: job.Namespace,
 	})
 	env = append(env,
@@ -742,27 +742,27 @@ func (k *K8sJob) generateContainerEnvs(job *apistructs.JobFromUser, clusterInfo 
 				},
 			}},
 		corev1.EnvVar{
-			Name:  "DICE_CPU_ORIGIN",
+			Name:  apistructs.JobEnvOriginCPU.String(),
 			Value: fmt.Sprintf("%f", job.CPU),
 		},
 		corev1.EnvVar{
-			Name:  "DICE_MEM_ORIGIN",
+			Name:  apistructs.JobEnvOriginMEM.String(),
 			Value: fmt.Sprintf("%f", job.Memory),
 		},
 		corev1.EnvVar{
-			Name:  "DICE_CPU_REQUEST",
+			Name:  apistructs.JobEnvRequestCPU.String(),
 			Value: fmt.Sprintf("%f", job.CPU),
 		},
 		corev1.EnvVar{
-			Name:  "DICE_MEM_REQUEST",
+			Name:  apistructs.JobEnvRequestMEM.String(),
 			Value: fmt.Sprintf("%f", job.Memory),
 		},
 		corev1.EnvVar{
-			Name:  "DICE_CPU_LIMIT",
+			Name:  apistructs.JobEnvLimitCPU.String(),
 			Value: fmt.Sprintf("%f", job.CPU),
 		},
 		corev1.EnvVar{
-			Name:  "DICE_MEM_LIMIT",
+			Name:  apistructs.JobENvLimitMEM.String(),
 			Value: fmt.Sprintf("%f", job.Memory),
 		},
 	)
