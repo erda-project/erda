@@ -15,6 +15,7 @@
 package dto
 
 import (
+	"net/url"
 	"strings"
 )
 
@@ -63,6 +64,10 @@ type KongRouteReqDto struct {
 	//
 	// See more https://docs.konghq.com/enterprise/2.2.x/admin-api/#path-handling-algorithms
 	PathHandling *string `json:"path_handling,omitempty"`
+
+	Tags []string `json:"tags"`
+
+	tags url.Values
 }
 
 func NewKongRouteReqDto() *KongRouteReqDto {
@@ -84,6 +89,22 @@ func (dto *KongRouteReqDto) Adjust(opts ...Option) {
 	for _, opt := range opts {
 		opt(dto)
 	}
+}
+
+func (dto *KongRouteReqDto) AddTag(key, value string) {
+	dto.tags.Add(key, value)
+	dto.refreshTags()
+}
+
+func (dto *KongRouteReqDto) refreshTags() {
+	var tags []string
+	for k := range dto.tags {
+		vs := dto.tags[k]
+		for _, v := range vs {
+			tags = append(tags, k+"~"+v)
+		}
+	}
+	dto.Tags = tags
 }
 
 type Option func(dto *KongRouteReqDto)
