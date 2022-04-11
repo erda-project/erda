@@ -37,7 +37,7 @@ clusterinfo: {}
 resourcegc: {}
 dbgc: {}
 task-policy: {}
-reconciler-cache: {}
+cache: {}
 
 etcd-election@leader-worker:
   root_path: erda/component-leader/pipeline/leader-worker
