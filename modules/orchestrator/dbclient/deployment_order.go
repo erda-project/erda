@@ -51,6 +51,7 @@ type DeploymentOrder struct {
 	CurrentBatch    uint64
 	BatchSize       uint64
 	DeployList      string
+	Modes           string // release deploy modes, used to make modes env, separated by ","
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
 	StartedAt       time.Time `gorm:"default:'1970-01-01 00:00:00'"`
