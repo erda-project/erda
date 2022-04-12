@@ -78,18 +78,18 @@ func (s *PipelineSvc) RunPipeline(req *apistructs.PipelineRunRequest) (*spec.Pip
 		cmsDiceFiles = secretCache.CmsDiceFiles
 		holdOnKeys = secretCache.HoldOnKeys
 		encryptSecretKeys = secretCache.EncryptSecretKeys
-		platformSecrets = secretCache.PlatformSecrets
 	} else {
 		// fetch secrets
 		secrets, cmsDiceFiles, holdOnKeys, encryptSecretKeys, err = s.FetchSecrets(&p)
 		if err != nil {
 			return nil, apierrors.ErrRunPipeline.InternalError(err)
 		}
-		// fetch platform secrets
-		platformSecrets, err = s.FetchPlatformSecrets(&p, holdOnKeys)
-		if err != nil {
-			return nil, apierrors.ErrRunPipeline.InternalError(err)
-		}
+	}
+	// fetch platform secrets
+	// platformSecrets cannot use cache, some are different from the value of preCheck, eg: dice.operator.id
+	platformSecrets, err = s.FetchPlatformSecrets(&p, holdOnKeys)
+	if err != nil {
+		return nil, apierrors.ErrRunPipeline.InternalError(err)
 	}
 
 	for k, v := range req.Secrets {

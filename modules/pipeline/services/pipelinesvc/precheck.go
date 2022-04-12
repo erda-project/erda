@@ -114,7 +114,6 @@ func (s *PipelineSvc) PreCheck(pipelineYml *pipelineyml.PipelineYml, p *spec.Pip
 	}
 
 	s.cache.SetPipelineSecretByPipelineID(p.PipelineID, &cache.SecretCache{
-		PlatformSecrets:   platformSecrets,
 		Secrets:           secrets,
 		CmsDiceFiles:      cmsDiceFiles,
 		HoldOnKeys:        holdOnKeys,
