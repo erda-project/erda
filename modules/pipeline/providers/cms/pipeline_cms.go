@@ -20,6 +20,7 @@ import (
 	"reflect"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/pkg/errors"
@@ -31,6 +32,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/providers/cms/db"
 	"github.com/erda-project/erda/pkg/crypto/encryption"
+	"github.com/erda-project/erda/pkg/limit_sync_group"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -227,23 +229,33 @@ func (c *pipelineCm) GetConfigs(ctx context.Context, ns string, globalDecrypt bo
 		return nil, err
 	}
 	result := make(map[string]*pb.PipelineCmsConfigValue, len(configs))
+	var lock sync.Mutex
+	wait := limit_sync_group.NewSemaphore(10)
 	for _, config := range configs {
-		vv, err := c.DecryptConfigValue(globalDecrypt, config, reqConfigKeyMap)
-		if err != nil {
-			return nil, err
-		}
-		// 配置项级别的展示配置
-		result[config.Key] = &pb.PipelineCmsConfigValue{
-			Value:       vv,
-			EncryptInDB: *config.Encrypt,
-			Type:        config.Type,
-			Operations:  config.Extra.Operations,
-			Comment:     config.Extra.Comment,
-			From:        config.Extra.From,
-			TimeCreated: getPbTimestamp(config.TimeCreated),
-			TimeUpdated: getPbTimestamp(config.TimeUpdated),
-		}
+		wait.Add(1)
+		go func(config db.PipelineCmsConfig) {
+			defer wait.Done()
+			vv, err := c.DecryptConfigValue(globalDecrypt, config, reqConfigKeyMap)
+			if err != nil {
+				logrus.Errorf("failed to DecryptConfigValue, err: %v", err)
+				return
+			}
+			lock.Lock()
+			defer lock.Unlock()
+			// 配置项级别的展示配置
+			result[config.Key] = &pb.PipelineCmsConfigValue{
+				Value:       vv,
+				EncryptInDB: *config.Encrypt,
+				Type:        config.Type,
+				Operations:  config.Extra.Operations,
+				Comment:     config.Extra.Comment,
+				From:        config.Extra.From,
+				TimeCreated: getPbTimestamp(config.TimeCreated),
+				TimeUpdated: getPbTimestamp(config.TimeUpdated),
+			}
+		}(config)
 	}
+	wait.Wait()
 	return result, nil
 }
 
@@ -279,7 +291,6 @@ func (c *pipelineCm) DecryptConfigValue(globalDecrypt bool, config db.PipelineCm
 }
 
 func (c *pipelineCm) BatchGetConfigs(ctx context.Context, req *pb.CmsNsConfigsBatchGetRequest) ([]*pb.PipelineCmsConfig, error) {
-
 	cmsNsList, err := c.dbClient.BatchGetCmsNamespaces(req.PipelineSource, req.Namespaces)
 	if err != nil {
 		return nil, err
@@ -298,42 +309,49 @@ func (c *pipelineCm) BatchGetConfigs(ctx context.Context, req *pb.CmsNsConfigsBa
 	}
 
 	var newConfigs []*pb.PipelineCmsConfig
+	var lock sync.Mutex
+	wait := limit_sync_group.NewSemaphore(10)
 	for _, config := range configs {
+		wait.Add(1)
+		go func(config db.PipelineCmsConfig) {
+			defer wait.Done()
+			var newConfig = pb.PipelineCmsConfig{
+				Key:         config.Key,
+				Value:       config.Value,
+				EncryptInDB: *config.Encrypt,
+				Type:        config.Type,
+				Operations:  config.Extra.Operations,
+				Comment:     config.Extra.Comment,
+				From:        config.Extra.From,
+				TimeCreated: getPbTimestamp(config.TimeCreated),
+				TimeUpdated: getPbTimestamp(config.TimeUpdated),
+			}
 
-		var newConfig = pb.PipelineCmsConfig{
-			Key:         config.Key,
-			Value:       config.Value,
-			EncryptInDB: *config.Encrypt,
-			Type:        config.Type,
-			Operations:  config.Extra.Operations,
-			Comment:     config.Extra.Comment,
-			From:        config.Extra.From,
-			TimeCreated: getPbTimestamp(config.TimeCreated),
-			TimeUpdated: getPbTimestamp(config.TimeUpdated),
-		}
+			var relationNs, ok = cmsNsIDMap[config.NsID]
+			if !ok {
+				logrus.Errorf("not find config %v cmsNs", config.NsID)
+				return
+			}
 
-		var relationNs, ok = cmsNsIDMap[config.NsID]
-		if !ok {
-			logrus.Errorf("not find config %v cmsNs", config.NsID)
-			continue
-		}
+			newConfig.Ns = &pb.PipelineCmsNs{
+				PipelineSource: relationNs.PipelineSource.String(),
+				Ns:             relationNs.Ns,
+				TimeCreated:    getPbTimestamp(config.TimeCreated),
+				TimeUpdated:    getPbTimestamp(config.TimeUpdated),
+			}
 
-		newConfig.Ns = &pb.PipelineCmsNs{
-			PipelineSource: relationNs.PipelineSource.String(),
-			Ns:             relationNs.Ns,
-			TimeCreated:    getPbTimestamp(config.TimeCreated),
-			TimeUpdated:    getPbTimestamp(config.TimeUpdated),
-		}
-
-		vv, err := c.DecryptConfigValue(req.GlobalDecrypt, config, nil)
-		if err != nil {
-			return nil, err
-		}
-
-		newConfig.Value = vv
-		newConfigs = append(newConfigs, &newConfig)
+			vv, err := c.DecryptConfigValue(req.GlobalDecrypt, config, nil)
+			if err != nil {
+				logrus.Errorf("failed to DecryptConfigValue, err: %v", err)
+				return
+			}
+			newConfig.Value = vv
+			lock.Lock()
+			defer lock.Unlock()
+			newConfigs = append(newConfigs, &newConfig)
+		}(config)
 	}
-
+	wait.Wait()
 	return newConfigs, nil
 }
 
