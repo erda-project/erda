@@ -12,22 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dicehub
+package cache
 
-import (
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/openapi/api/apis"
-)
-
-var EXTENSION_VERSION_GET = apis.ApiSpec{
-	Path:         "/api/extensions/<name>/<version>",
-	BackendPath:  "/api/extensions/<name>/<version>",
-	Host:         "dicehub.marathon.l4lb.thisdcos.directory:10000",
-	Scheme:       "http",
-	Method:       "GET",
-	CheckLogin:   false,
-	CheckToken:   false,
-	RequestType:  apistructs.ExtensionVersionGetRequest{},
-	ResponseType: apistructs.ExtensionVersionGetResponse{},
-	Doc:          "summary: 获取指定版本扩展",
+type SecretCache struct {
+	PlatformSecrets   map[string]string
+	Secrets           map[string]string
+	CmsDiceFiles      map[string]string
+	HoldOnKeys        []string
+	EncryptSecretKeys []string
 }

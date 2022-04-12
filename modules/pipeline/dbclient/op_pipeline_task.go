@@ -56,13 +56,7 @@ func (client *Client) FindCauseFailedPipelineTasks(pipelineID uint64) (spec.Reru
 			//   stage 下有一个 repo 任务，repo 执行成功，此时被 pipeline 被取消，stage 状态为 stopByUser，
 			//   repo 为 success，stage 真实状态应该为 success；
 			// 因此需要根据 task 计算 stage 的真实状态
-			stageStatus, err := statusutil.CalculatePipelineStageStatus(&spec.PipelineStageWithTask{
-				PipelineStage: stage,
-				PipelineTasks: tasks,
-			})
-			if err != nil {
-				return spec.RerunFailedDetail{}, err
-			}
+			stageStatus := statusutil.CalculatePipelineStatusV2(tasks)
 			if stageStatus.IsFailedStatus() {
 				failedStageIndex = si
 				foundFailedStage = true

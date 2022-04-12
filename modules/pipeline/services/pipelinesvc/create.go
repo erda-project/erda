@@ -338,7 +338,7 @@ func (s *PipelineSvc) OperateTask(p *spec.Pipeline, task *spec.PipelineTask) (*s
 	return task, nil
 }
 
-// createPipelineGraph recursively create pipeline graph.
+// CreatePipelineGraph recursively create pipeline graph.
 func (s *PipelineSvc) CreatePipelineGraph(p *spec.Pipeline) (err error) {
 	// parse yml
 	pipelineYml, err := pipelineyml.New(

@@ -143,6 +143,15 @@ func (s *dataViewService) GetCustomViewsCreator(ctx context.Context, req *pb.Get
 }
 
 func (s *dataViewService) ListCustomViews(ctx context.Context, req *pb.ListCustomViewsRequest) (*pb.ListCustomViewsResponse, error) {
+	if req.PageNo < 1 {
+		req.PageNo = 1
+	}
+	if req.PageSize < 0 {
+		req.PageSize = 0
+	}
+	if req.PageSize >= 1000 {
+		req.PageSize = 1000
+	}
 	likeFields := map[string]interface{}{}
 	if req.Name != "" {
 		likeFields["Name"] = req.Name
@@ -156,7 +165,7 @@ func (s *dataViewService) ListCustomViews(ctx context.Context, req *pb.ListCusto
 		"ScopeID": req.ScopeID,
 	}
 
-	list, err := s.custom.ListByFields(req.StartTime, req.EndTime, req.CreatorId, fields, likeFields)
+	list, total, err := s.custom.ListByFieldsAndPage(req.PageNo, req.PageSize, req.StartTime, req.EndTime, req.CreatorId, fields, likeFields)
 	if err != nil {
 		return nil, errors.NewDatabaseError(err)
 	}
@@ -182,7 +191,7 @@ func (s *dataViewService) ListCustomViews(ctx context.Context, req *pb.ListCusto
 			userIDMap[userId] = true
 		}
 	}
-	views.Total = int64(len(views.List))
+	views.Total = total
 	return &pb.ListCustomViewsResponse{Data: views, UserIDs: userIDs}, nil
 }
 

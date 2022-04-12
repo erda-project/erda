@@ -60,6 +60,7 @@ type Values struct {
 	ReleaseID         string   `json:"releaseID,omitempty"`
 	UserIDs           []string `json:"userIDs,omitempty"`
 	Version           string   `json:"version,omitempty"`
+	Tags              []uint64 `json:"tags,omitempty"`
 }
 
 type Condition struct {
@@ -74,8 +75,9 @@ type Condition struct {
 }
 
 type Option struct {
-	Label string `json:"label,omitempty"`
-	Value string `json:"value,omitempty"`
+	Label string      `json:"label,omitempty"`
+	Value interface{} `json:"value,omitempty"`
+	Color string      `json:"color,omitempty"`
 }
 
 func init() {
@@ -215,6 +217,29 @@ func (f *ReleaseFilter) renderFilter() error {
 	}
 	userCondition.Options = userOptions
 	f.StdDataPtr.Conditions = append(f.StdDataPtr.Conditions, userCondition)
+
+	tags, err := f.bdl.ListLabel(apistructs.ProjectLabelListRequest{
+		ProjectID: uint64(f.State.ProjectID),
+		Type:      apistructs.ReleaseTypeProject,
+		PageNo:    1,
+		PageSize:  1000,
+	})
+	var tagOptions []Option
+	for i := range tags.List {
+		tagOptions = append(tagOptions, Option{
+			Label: tags.List[i].Name,
+			Value: tags.List[i].ID,
+			Color: tags.List[i].Color,
+		})
+	}
+	tagCondition := Condition{
+		Key:         "tags",
+		Label:       f.sdk.I18n("tag"),
+		Placeholder: f.sdk.I18n("selectTag"),
+		Type:        "tagSelect",
+		Options:     tagOptions,
+	}
+	f.StdDataPtr.Conditions = append(f.StdDataPtr.Conditions, tagCondition)
 
 	if f.State.IsFormal == nil && !f.State.IsProjectRelease {
 		f.StdDataPtr.Conditions = append(f.StdDataPtr.Conditions, Condition{

@@ -139,13 +139,19 @@ func TestComponentReleaseTable_Transfer(t *testing.T) {
 			List: []Item{
 				{
 					ID: "testID",
-					Version: Version{
-						Value: "testValue",
-						Tags: []Tag{{
-							Tag:   "testTag",
-							Color: "testColor",
-						}},
+					Version: DoubleRowWithIcon{
 						RenderType: "testType",
+						Value:      "testValue",
+						ExtraContent: ExtraContent{
+							RenderType: "testType",
+							ShowCount:  1,
+							Value: []TagValue{
+								{
+									Label: "testLabel",
+									Color: "blue",
+								},
+							},
+						},
 					},
 					Application: "testApplication",
 					Desc:        "testDesc",

@@ -50,14 +50,15 @@ import (
 )
 
 type ReleaseService struct {
-	p           *provider
-	db          *db.ReleaseConfigDB
-	imageDB     *imagedb.ImageConfigDB
-	extensionDB *extensiondb.ExtensionConfigDB
-	bdl         *bundle.Bundle
-	Etcd        *clientv3.Client
-	Config      *releaseConfig
-	ReleaseRule *release_rule.ReleaseRule
+	p               *provider
+	db              *db.ReleaseConfigDB
+	labelRelationDB *db.LabelRelationConfigDB
+	imageDB         *imagedb.ImageConfigDB
+	extensionDB     *extensiondb.ExtensionConfigDB
+	bdl             *bundle.Bundle
+	Etcd            *clientv3.Client
+	Config          *releaseConfig
+	ReleaseRule     *release_rule.ReleaseRule
 }
 
 // CreateRelease POST /api/releases release create release
@@ -1030,6 +1031,9 @@ func (s *ReleaseService) RemoveDeprecatedsReleases(now time.Time) error {
 			if err := s.db.DeleteRelease(release.ReleaseID); err != nil {
 				logrus.Errorf("[alert] delete release: %s fail, err: %v", release.ReleaseID, err)
 			}
+			if err := s.labelRelationDB.DeleteLabelRelations(apistructs.LabelTypeRelease, release.ReleaseID); err != nil {
+				logrus.Errorf("failed to delete label relations for release %s, %v", release.ReleaseID, err)
+			}
 			logrus.Infof("deleted release: %s", release.ReleaseID)
 		}
 	}
@@ -1076,14 +1080,6 @@ func (s *ReleaseService) Convert(releaseRequest *pb.ReleaseCreateRequest, appRel
 		}
 		release.Labels = string(labelBytes)
 		release.GitBranch = releaseRequest.Labels["gitBranch"]
-	}
-
-	if len(releaseRequest.Tags) > 0 {
-		tagBytes, err := json.Marshal(releaseRequest.Tags)
-		if err != nil {
-			return nil, err
-		}
-		release.Tags = string(tagBytes)
 	}
 
 	if len(releaseRequest.Resources) > 0 {
@@ -1227,7 +1223,7 @@ func (s *ReleaseService) convertToReleaseResponse(release *db.Release) (*pb.Rele
 		extensionMap := make(map[string]*extensiondb.Extension)
 		if len(addonSet) > 0 {
 			logrus.Infoln("[DEBUG] start query extensions")
-			extensions, err := s.extensionDB.QueryExtensions("true", "", "")
+			extensions, err := s.extensionDB.QueryExtensions(true, "", "")
 			if err != nil {
 				return nil, errors.Errorf("failed to query extensions, %v", err)
 			}
@@ -1270,6 +1266,11 @@ func (s *ReleaseService) convertToReleaseResponse(release *db.Release) (*pb.Rele
 		addonYaml = string(data)
 	}
 
+	tags, err := s.getReleaseTags(release.ReleaseID)
+	if err != nil {
+		return nil, err
+	}
+
 	respData := &pb.ReleaseGetResponseData{
 		ReleaseID:        release.ReleaseID,
 		ReleaseName:      release.ReleaseName,
@@ -1283,7 +1284,7 @@ func (s *ReleaseService) convertToReleaseResponse(release *db.Release) (*pb.Rele
 		Modes:            summary,
 		Resources:        resources,
 		Labels:           labels,
-		Tags:             release.Tags,
+		Tags:             tags,
 		Version:          release.Version,
 		CrossCluster:     release.CrossCluster,
 		Reference:        release.Reference,
@@ -1307,6 +1308,37 @@ func (s *ReleaseService) convertToReleaseResponse(release *db.Release) (*pb.Rele
 	}
 
 	return respData, nil
+}
+
+func (s *ReleaseService) getReleaseTags(releaseID string) ([]*pb.Tag, error) {
+	lrs, err := s.labelRelationDB.GetLabelRelationsByRef(apistructs.LabelTypeRelease, releaseID)
+	if err != nil {
+		return nil, errors.Errorf("failed to get label relation, %v", err)
+	}
+	var tagIDs []uint64
+	for i := range lrs {
+		tagIDs = append(tagIDs, lrs[i].LabelID)
+	}
+
+	tags, err := s.bdl.ListLabelByIDs(tagIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	var pbTags []*pb.Tag
+	for _, tag := range tags {
+		pbTags = append(pbTags, &pb.Tag{
+			CreatedAt: timestamppb.New(tag.CreatedAt.In(time.Local)),
+			UpdatedAt: timestamppb.New(tag.UpdatedAt.In(time.Local)),
+			Creator:   tag.Creator,
+			Id:        tag.ID,
+			Color:     tag.Color,
+			Name:      tag.Name,
+			Type:      string(tag.Type),
+			ProjectID: int64(tag.ProjectID),
+		})
+	}
+	return pbTags, nil
 }
 
 func respDataReLoadImages(r *pb.ReleaseGetResponseData) error {

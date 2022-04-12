@@ -30,6 +30,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/events"
 	"github.com/erda-project/erda/modules/pipeline/metrics"
+	"github.com/erda-project/erda/modules/pipeline/providers/cache"
 	"github.com/erda-project/erda/modules/pipeline/providers/cron/compensator"
 	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/rutil"
 	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/schedulabletask"
@@ -67,6 +68,7 @@ type defaultPipelineReconciler struct {
 	st              schedulabletask.Interface
 	resourceGC      resourcegc.Interface
 	cronCompensator compensator.Interface
+	cache           cache.Interface
 	r               *provider
 
 	// internal fields
@@ -249,6 +251,8 @@ func (pr *defaultPipelineReconciler) TeardownAfterReconcileDone(ctx context.Cont
 	pr.cronCompensator.PipelineCronCompensate(ctx, p.ID)
 	// resource gc
 	pr.resourceGC.WaitGC(p.Extra.Namespace, p.ID, p.GetResourceGCTTL())
+	// clear pipeline cache
+	pr.cache.ClearReconcilerPipelineContextCaches(p.ID)
 
 	// mark teardown
 	rutil.ContinueWorking(ctx, pr.log, func(ctx context.Context) rutil.WaitDuration {
