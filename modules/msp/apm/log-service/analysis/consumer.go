@@ -43,8 +43,9 @@ func (p *provider) invoke(key []byte, value []byte, topic *string, timestamp tim
 	if log.Tags == nil {
 		return nil
 	}
-
-	log.Timestamp = log.Time.UnixNano() / 1e6
+	if log.Timestamp == 0 && log.Time != nil {
+		log.Timestamp = log.Time.UnixNano() / 1e6
+	}
 
 	// 兼容
 	// todo: use processor-pipeline pattern to simple the code
