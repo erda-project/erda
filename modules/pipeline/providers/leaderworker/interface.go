@@ -47,6 +47,9 @@ type ForLeaderUseInterface interface {
 	// AssignLogicTaskToWorker assign one logic task to one concrete worker.
 	AssignLogicTaskToWorker(ctx context.Context, workerID worker.ID, logicTask worker.LogicTask) error
 
+	// CancelLogicTask cancel logic task.
+	CancelLogicTask(ctx context.Context, logicTaskID worker.LogicTaskID) error
+
 	// IsTaskBeingProcessed check if one task is being processed and the corresponding worker id.
 	IsTaskBeingProcessed(ctx context.Context, logicTaskID worker.LogicTaskID) (bool, worker.ID)
 

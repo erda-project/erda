@@ -61,6 +61,9 @@ type PipelineReconciler interface {
 
 	// TeardownAfterReconcileDone teardown one pipeline after reconcile done.
 	TeardownAfterReconcileDone(ctx context.Context, p *spec.Pipeline)
+
+	// CancelReconcile cancel reconcile the pipeline.
+	CancelReconcile(ctx context.Context, p *spec.Pipeline)
 }
 
 type defaultPipelineReconciler struct {
@@ -72,6 +75,7 @@ type defaultPipelineReconciler struct {
 	r               *provider
 
 	// internal fields
+	lock                                         sync.Mutex
 	dbClient                                     *dbclient.Client
 	processingTasks                              sync.Map
 	defaultRetryInterval                         time.Duration
@@ -81,6 +85,9 @@ type defaultPipelineReconciler struct {
 	chanToTriggerNextLoop chan struct{} // no buffer to ensure trigger one by one
 	schedulableTaskChan   chan *spec.PipelineTask
 	doneChan              chan struct{}
+
+	// canceling
+	flagCanceling bool
 }
 
 func (pr *defaultPipelineReconciler) IsReconcileDone(ctx context.Context, p *spec.Pipeline) bool {
@@ -278,6 +285,22 @@ func (pr *defaultPipelineReconciler) calculatePipelineStatusByAllReconciledTasks
 		t := t
 		tasks = append(tasks, &t)
 	}
+	pr.lock.Lock()
+	defer pr.lock.Unlock()
 	pr.calculatedPipelineStatusByAllReconciledTasks = statusutil.CalculatePipelineStatusV2(tasks)
+	if pr.flagCanceling {
+		pr.calculatedPipelineStatusByAllReconciledTasks = apistructs.PipelineStatusStopByUser
+	}
 	return nil
+}
+
+// CancelReconcile can reconcile one pipeline.
+// 1. set the canceling flag to ensure `calculatedPipelineStatusByAllReconciledTasks` correctly
+// 2. task-reconciler stop reconciling tasks automatically, see: modules/pipeline/providers/reconciler/taskrun/framework.go:143
+// 3. pipeline-reconciler update `calculatedPipelineStatusByAllReconciledTasks` when one task done
+// 4. used at task's `judgeIfExpression`, see: modules/pipeline/providers/reconciler/task_reconciler.go:411
+func (pr *defaultPipelineReconciler) CancelReconcile(ctx context.Context, p *spec.Pipeline) {
+	pr.lock.Lock()
+	pr.flagCanceling = true
+	pr.lock.Unlock()
 }

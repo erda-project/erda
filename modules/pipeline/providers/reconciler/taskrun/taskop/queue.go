@@ -133,6 +133,14 @@ func (q *queue) WhenTimeout() error {
 	return nil
 }
 
+func (q *queue) WhenCancel() error {
+	if err := q.TaskRun().WhenCancel(); err != nil {
+		return err
+	}
+	_, err := q.Executor.Cancel(q.Ctx, q.Task)
+	return err
+}
+
 func (q *queue) TimeoutConfig() (<-chan struct{}, context.CancelFunc, time.Duration) {
 	return nil, nil, -1
 }

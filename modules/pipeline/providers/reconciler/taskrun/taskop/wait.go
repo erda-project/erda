@@ -140,6 +140,14 @@ func (w *wait) WhenTimeout() error {
 	return err
 }
 
+func (w *wait) WhenCancel() error {
+	if err := w.TaskRun().WhenCancel(); err != nil {
+		return err
+	}
+	_, err := w.Executor.Cancel(w.Ctx, w.Task)
+	return err
+}
+
 func (w *wait) TimeoutConfig() (<-chan struct{}, context.CancelFunc, time.Duration) {
 	var timeoutCtx = context.Background()
 	var cancel context.CancelFunc

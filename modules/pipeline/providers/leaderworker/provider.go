@@ -62,7 +62,14 @@ type forWorkerUse struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
+	// leader
 	p.forLeaderUse.allWorkers = make(map[worker.ID]worker.Worker)
+	if len(p.Cfg.Leader.EtcdKeyPrefixWithSlash) == 0 {
+		return fmt.Errorf("failed to find config: leader.etcd_key_prefix_with_slash")
+	}
+	p.Cfg.Leader.EtcdKeyPrefixWithSlash = filepath.Clean(p.Cfg.Leader.EtcdKeyPrefixWithSlash) + "/"
+
+	// worker
 	p.forWorkerUse.myWorkers = make(map[worker.ID]workerWithCancel)
 	if len(p.Cfg.Worker.EtcdKeyPrefixWithSlash) == 0 {
 		return fmt.Errorf("failed to find config: worker.etcd_key_prefix_with_slash")

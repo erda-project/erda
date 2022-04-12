@@ -50,7 +50,16 @@ func (p *provider) AssignLogicTaskToWorker(ctx context.Context, workerID worker.
 		return err
 	}
 	p.addToTaskWorkerAssignMap(task.GetLogicID(), workerID)
-	return err
+	return nil
+}
+
+func (p *provider) CancelLogicTask(ctx context.Context, logicTaskID worker.LogicTaskID) error {
+	p.mustBeLeader()
+	_, err := p.EtcdClient.Put(ctx, p.makeEtcdLeaderLogicTaskCancelKey(logicTaskID), "")
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (p *provider) IsTaskBeingProcessed(ctx context.Context, logicTaskID worker.LogicTaskID) (bool, worker.ID) {
