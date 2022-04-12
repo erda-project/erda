@@ -22,7 +22,6 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dicehub/dbclient"
 	"github.com/erda-project/erda/modules/dicehub/endpoints"
-	extension2 "github.com/erda-project/erda/modules/dicehub/service/extension"
 	"github.com/erda-project/erda/modules/dicehub/service/publish_item"
 	release2 "github.com/erda-project/erda/modules/dicehub/service/release"
 	"github.com/erda-project/erda/modules/dicehub/service/release_rule"
@@ -33,7 +32,6 @@ func TestNew(t *testing.T) {
 		db          = new(dbclient.DBClient)
 		bdl         = new(bundle.Bundle)
 		release     = new(release2.Release)
-		extension   = new(extension2.Extension)
 		publishItem = new(publish_item.PublishItem)
 		rule        = new(release_rule.ReleaseRule)
 		decoder     = new(schema.Decoder)
@@ -42,7 +40,6 @@ func TestNew(t *testing.T) {
 		endpoints.WithDBClient(db),
 		endpoints.WithBundle(bdl),
 		endpoints.WithReleaseRule(rule),
-		endpoints.WithExtension(extension),
 		endpoints.WithPublishItem(publishItem),
 		endpoints.WithRelease(release),
 		endpoints.WithQueryStringDecoder(decoder),

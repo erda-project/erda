@@ -33,6 +33,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dicehub/extension/db"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/i18n"
 )
 
 type config struct {
@@ -62,6 +63,10 @@ func (p *provider) Init(ctx servicehub.Context) error {
 					lang := r.URL.Query().Get("lang")
 					if lang != "" {
 						r.Header.Set("lang", lang)
+					}
+					locale := i18n.GetLocaleNameByRequest(r)
+					if locale != "" {
+						i18n.SetGoroutineBindLang(locale)
 					}
 					return encoding.DecodeRequest(r, data)
 				}),
@@ -108,11 +113,7 @@ func (p *provider) newExtensionService() {
 }
 
 func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
-	switch {
-	case ctx.Service() == "erda.core.dicehub.extension.ExtensionService" || ctx.Type() == pb.ExtensionServiceServerType() || ctx.Type() == pb.ExtensionServiceHandlerType():
-		return p.extensionService
-	}
-	return p
+	return p.extensionService
 }
 
 func init() {

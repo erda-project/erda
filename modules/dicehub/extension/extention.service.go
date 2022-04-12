@@ -17,13 +17,19 @@ package extension
 import (
 	"context"
 	"encoding/json"
+	"io/ioutil"
+	"os"
+	"os/exec"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/Masterminds/semver"
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"gopkg.in/yaml.v3"
 
 	"github.com/erda-project/erda-infra/base/version"
@@ -33,6 +39,8 @@ import (
 	"github.com/erda-project/erda/modules/dicehub/extension/db"
 	"github.com/erda-project/erda/modules/dicehub/service/apierrors"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/i18n"
+	"github.com/erda-project/erda/pkg/limit_sync_group"
 )
 
 type extensionService struct {
@@ -40,31 +48,152 @@ type extensionService struct {
 	db            *db.ExtensionConfigDB
 	bdl           *bundle.Bundle
 	extensionMenu map[string][]string
+
+	cacheExtensionSpecs sync.Map
 }
 
 func (s *extensionService) SearchExtensions(ctx context.Context, req *pb.ExtensionSearchRequest) (*pb.ExtensionSearchResponse, error) {
 	result := map[string]*pb.ExtensionVersion{}
+
+	worker := limit_sync_group.NewWorker(5)
 	for _, fullName := range req.Extensions {
-		splits := strings.Split(fullName, "@")
-		name := splits[0]
-		version := ""
-		if len(splits) > 1 {
-			version = splits[1]
-		}
-		if version == "" {
-			extVersion, _ := s.GetExtensionDefaultVersion(name, req.YamlFormat)
-			result[fullName] = extVersion
-		} else {
-			extensionVersion, err := s.GetExtension(name, version, req.YamlFormat)
-			if err != nil {
-				result[fullName] = nil
-			} else {
-				result[fullName] = extensionVersion
+		worker.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
+			fnm := i[0].(string)
+			splits := strings.SplitN(fnm, "@", 2)
+			name := splits[0]
+			version := ""
+			if len(splits) > 1 {
+				version = splits[1]
 			}
-		}
+			if version == "" {
+				extVersion, _ := s.GetExtensionDefaultVersion(name, req.YamlFormat)
+
+				locker.Lock()
+				result[fnm] = extVersion
+				locker.Unlock()
+			} else if strings.HasPrefix(version, "https://") || strings.HasPrefix(version, "http://") {
+				extensionVersion, err := s.getExtensionByGit(name, version, "spec.yml", "dice.yml", "README.md")
+
+				locker.Lock()
+				if err != nil {
+					result[fnm] = nil
+				} else {
+					result[fnm] = extensionVersion
+				}
+				locker.Unlock()
+			} else {
+				extensionVersion, err := s.GetExtension(name, version, req.YamlFormat)
+
+				locker.Lock()
+				if err != nil {
+					result[fnm] = nil
+				} else {
+					result[fnm] = extensionVersion
+				}
+				locker.Unlock()
+			}
+			return nil
+		}, fullName)
+	}
+
+	err := worker.Do().Error()
+	if err != nil {
+		return nil, err
 	}
 
 	return &pb.ExtensionSearchResponse{Data: result}, nil
+}
+
+func (i *extensionService) getExtensionByGit(name, d string, file ...string) (*pb.ExtensionVersion, error) {
+	files, err := getGitFileContents(d, file...)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.ExtensionVersion{
+		Name:      name,
+		Type:      "action",
+		Version:   "1.0",
+		Spec:      structpb.NewStringValue(files[0]),
+		Dice:      structpb.NewStringValue(files[1]),
+		Swagger:   structpb.NewStringValue(""),
+		Readme:    files[2],
+		CreatedAt: timestamppb.New(time.Now()),
+		UpdatedAt: timestamppb.New(time.Now()),
+		IsDefault: false,
+		Public:    true,
+	}, nil
+}
+
+func getGitFileContents(d string, file ...string) ([]string, error) {
+	var resp []string
+	// dirName is a random string
+	dir, err := ioutil.TempDir(os.TempDir(), "*")
+	if err != nil {
+		return nil, err
+	}
+	defer os.RemoveAll(dir)
+
+	// git init
+	command := exec.Command("sh", "-c", "git init")
+	command.Dir = dir
+	err = command.Run()
+	if err != nil {
+		return nil, err
+	}
+
+	// git remote
+	remoteCmd := "git remote add -f origin " + d
+	command = exec.Command("sh", "-c", remoteCmd)
+	command.Dir = dir
+	err = command.Run()
+	if err != nil {
+		return nil, err
+	}
+
+	// set git config
+	command = exec.Command("sh", "-c", "git config core.sparsecheckout true")
+	command.Dir = dir
+	err = command.Run()
+	if err != nil {
+		return nil, err
+	}
+
+	// set sparse-checkout
+	for _, v := range file {
+		echoCmd := "echo " + v + " >> .git/info/sparse-checkout"
+		command = exec.Command("sh", "-c", echoCmd)
+		command.Dir = dir
+		err = command.Run()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// git pull
+	command = exec.Command("sh", "-c", "git pull origin master")
+	command.Dir = dir
+	err = command.Run()
+	if err != nil {
+		return nil, err
+	}
+
+	// read .yml
+	for _, v := range file {
+		f, err := os.Open(dir + "/" + v)
+		if err != nil {
+			resp = append(resp, "")
+			continue
+		}
+		str, err := ioutil.ReadAll(f)
+		if err != nil {
+			return nil, err
+		}
+		f.Close()
+		resp = append(resp, string(str))
+	}
+
+	return resp, nil
 }
 
 func (s *extensionService) CreateExtension(ctx context.Context, req *pb.ExtensionCreateRequest) (*pb.ExtensionCreateResponse, error) {
@@ -92,8 +221,23 @@ func (s *extensionService) QueryExtensions(ctx context.Context, req *pb.QueryExt
 		return nil, apierrors.ErrQueryExtension.InternalError(err)
 	}
 
+	locale := s.bdl.GetLocale(apis.GetLang(ctx))
+	data, err := s.menuExtWithLocale(result, locale, req.All)
+	if err != nil {
+		return nil, apierrors.ErrQueryExtension.InternalError(err)
+	}
+
+	var newResult []*pb.Extension
+	for _, menu := range data {
+		for _, value := range menu {
+			for _, extension := range value.Items {
+				newResult = append(newResult, extension)
+			}
+		}
+	}
+
 	if req.Menu == "true" {
-		menuExtResult := menuExt(result, s.extensionMenu)
+		menuExtResult := menuExt(newResult, s.extensionMenu)
 		resp, err := ToProtoValue(menuExtResult)
 		if err != nil {
 			logrus.Errorf("fail transform interface to any type")
@@ -102,7 +246,7 @@ func (s *extensionService) QueryExtensions(ctx context.Context, req *pb.QueryExt
 		return &pb.QueryExtensionsResponse{Data: resp}, nil
 	}
 
-	resp, err := ToProtoValue(result)
+	resp, err := ToProtoValue(newResult)
 	if err != nil {
 		logrus.Errorf("fail transform interface to any type")
 		return nil, apierrors.ErrQueryExtension.InternalError(err)
@@ -110,18 +254,156 @@ func (s *extensionService) QueryExtensions(ctx context.Context, req *pb.QueryExt
 	return &pb.QueryExtensionsResponse{Data: resp}, nil
 }
 
+func (i *extensionService) menuExtWithLocale(extensions []*pb.Extension, locale *i18n.LocaleResource, all bool) (map[string][]pb.ExtensionMenu, error) {
+	var result = map[string][]pb.ExtensionMenu{}
+
+	var extensionName []string
+	for _, v := range extensions {
+		extensionName = append(extensionName, v.Name)
+	}
+	extensionVersionMap, err := i.db.ListExtensionVersions(extensionName, all)
+	if err != nil {
+		return nil, apierrors.ErrQueryExtension.InternalError(err)
+	}
+
+	extMap := i.extMap(extensions)
+	// Traverse categories with large categories
+	for categoryType, typeItems := range apistructs.CategoryTypes {
+		// Each category belongs to a map
+		menuList := result[categoryType]
+		// Traverse subcategories in a large category
+		for _, v := range typeItems {
+			// Gets the object data of the extension of this subcategory
+			extensionListWithKeyName, ok := extMap[v]
+			if !ok {
+				continue
+			}
+
+			// extension displayName desc Internationalization settings
+			for _, extension := range extensionListWithKeyName {
+				defaultExtensionVersion := getDefaultExtensionVersion("", extensionVersionMap[extension.Name])
+				if defaultExtensionVersion.ID <= 0 {
+					logrus.Errorf("extension %v not find default extension version", extension.Name)
+					continue
+				}
+
+				// get from caches and set to caches
+				localeDisplayName, localeDesc, err := i.getLocaleDisplayNameAndDesc(defaultExtensionVersion)
+				if err != nil {
+					return nil, err
+				}
+
+				if localeDisplayName != "" {
+					extension.DisplayName = localeDisplayName
+				}
+
+				if localeDesc != "" {
+					extension.Desc = localeDesc
+				}
+			}
+
+			// Whether this subcategory is internationalized or not is the name of the word category
+			var displayName string
+			if locale != nil {
+				displayNameTemplate := locale.GetTemplate(apistructs.DicehubExtensionsMenu + "." + categoryType + "." + v)
+				if displayNameTemplate != nil {
+					displayName = displayNameTemplate.Content()
+				}
+			}
+
+			if displayName == "" {
+				displayName = v
+			}
+			// Assign these word categories to the array
+			menuList = append(menuList, pb.ExtensionMenu{
+				Name:        v,
+				DisplayName: displayName,
+				Items:       extensionListWithKeyName,
+			})
+		}
+		// Set the array back into the map
+		result[categoryType] = menuList
+	}
+
+	return result, nil
+}
+
+func (i *extensionService) extMap(extensions []*pb.Extension) map[string][]*pb.Extension {
+	extMap := map[string][]*pb.Extension{}
+	for _, v := range extensions {
+		extList, exist := extMap[v.Category]
+		if exist {
+			extList = append(extList, v)
+		} else {
+			extList = []*pb.Extension{v}
+		}
+		extMap[v.Category] = extList
+	}
+	return extMap
+}
+
+func getDefaultExtensionVersion(version string, extensionVersions []db.ExtensionVersion) db.ExtensionVersion {
+	var defaultVersion db.ExtensionVersion
+	if version == "" {
+		for _, extensionVersion := range extensionVersions {
+			if extensionVersion.IsDefault {
+				defaultVersion = extensionVersion
+				break
+			}
+		}
+		if defaultVersion.ID <= 0 && len(extensionVersions) > 0 {
+			defaultVersion = extensionVersions[0]
+		}
+	} else {
+		for _, extensionVersion := range extensionVersions {
+			if extensionVersion.Version == version {
+				defaultVersion = extensionVersion
+				break
+			}
+		}
+	}
+	return defaultVersion
+}
+
+func (s *extensionService) getLocaleDisplayNameAndDesc(extensionVersion db.ExtensionVersion) (string, string, error) {
+	value, ok := s.cacheExtensionSpecs.Load(extensionVersion.Spec)
+	var specData apistructs.Spec
+	if !ok {
+		err := yaml.Unmarshal([]byte(extensionVersion.Spec), &specData)
+		if err != nil {
+			return "", "", apierrors.ErrQueryExtension.InternalError(err)
+		}
+		s.cacheExtensionSpecs.Store(extensionVersion.Spec, specData)
+		go func(spec string) {
+			// caches expiration time
+			time.AfterFunc(30*25*time.Hour, func() {
+				s.cacheExtensionSpecs.Delete(spec)
+			})
+		}(extensionVersion.Spec)
+	} else {
+		specData = value.(apistructs.Spec)
+	}
+
+	displayName := specData.GetLocaleDisplayName(i18n.GetGoroutineBindLang())
+	desc := specData.GetLocaleDesc(i18n.GetGoroutineBindLang())
+
+	return displayName, desc, nil
+}
+
 func (s *extensionService) QueryExtensionsMenu(ctx context.Context, req *pb.QueryExtensionsMenuRequest) (*pb.QueryExtensionsMenuResponse, error) {
+	locale := s.bdl.GetLocale(apis.GetLang(ctx))
 	result, err := s.QueryExtensionList(req.All, req.Type, req.Labels)
 	if err != nil {
 		return nil, apierrors.ErrQueryExtension.InternalError(err)
 	}
 
-	locale := s.bdl.GetLocale(apis.GetLang(ctx))
-
-	menu := menuExtWithLocale(result, locale)
+	data, err := s.menuExtWithLocale(result, locale, req.All)
+	if err != nil {
+		return nil, apierrors.ErrQueryExtension.InternalError(err)
+	}
 
 	resp := make(map[string]*structpb.Value)
-	for k, v := range menu {
+	for k, v := range data {
 		val, err := ToProtoValue(v)
 		if err != nil {
 			return nil, apierrors.ErrQueryExtension.InternalError(err)
@@ -131,6 +413,7 @@ func (s *extensionService) QueryExtensionsMenu(ctx context.Context, req *pb.Quer
 
 	return &pb.QueryExtensionsMenuResponse{Data: resp}, nil
 }
+
 func (s *extensionService) CreateExtensionVersion(ctx context.Context, req *pb.ExtensionVersionCreateRequest) (*pb.ExtensionVersionCreateResponse, error) {
 	err := s.checkPushPermission(ctx)
 	if err != nil {
@@ -283,18 +566,19 @@ func (s *extensionService) GetExtensionVersion(ctx context.Context, req *pb.GetE
 
 	return &pb.GetExtensionVersionResponse{Data: result}, nil
 }
+
 func (s *extensionService) QueryExtensionVersions(ctx context.Context, req *pb.ExtensionVersionQueryRequest) (*pb.ExtensionVersionQueryResponse, error) {
 	ext, err := s.db.GetExtension(req.Name)
 	if err != nil {
 		return nil, err
 	}
-	versions, err := s.db.QueryExtensionVersions(req.Name, req.All)
+	versions, err := s.db.QueryExtensionVersions(req.Name, req.All, req.OrderByVersionDesc)
 	if err != nil {
 		return nil, err
 	}
 	result := []*pb.ExtensionVersion{}
 	for _, v := range versions {
-		data, err := v.ToApiData(ext.Type, false)
+		data, err := v.ToApiData(ext.Type, req.YamlFormat)
 		if err != nil {
 			return nil, err
 		}
@@ -329,7 +613,7 @@ func (s *extensionService) Create(req *pb.ExtensionCreateRequest) (*pb.Extension
 }
 
 // QueryExtensionList Get Extension List
-func (s *extensionService) QueryExtensionList(all string, typ string, labels string) ([]*pb.Extension, error) {
+func (s *extensionService) QueryExtensionList(all bool, typ string, labels string) ([]*pb.Extension, error) {
 	extensions, err := s.db.QueryExtensions(all, typ, labels)
 	if err != nil {
 		return nil, err

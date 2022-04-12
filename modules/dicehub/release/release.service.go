@@ -1223,7 +1223,7 @@ func (s *ReleaseService) convertToReleaseResponse(release *db.Release) (*pb.Rele
 		extensionMap := make(map[string]*extensiondb.Extension)
 		if len(addonSet) > 0 {
 			logrus.Infoln("[DEBUG] start query extensions")
-			extensions, err := s.extensionDB.QueryExtensions("true", "", "")
+			extensions, err := s.extensionDB.QueryExtensions(true, "", "")
 			if err != nil {
 				return nil, errors.Errorf("failed to query extensions, %v", err)
 			}

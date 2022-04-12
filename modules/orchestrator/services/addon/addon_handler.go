@@ -53,7 +53,7 @@ func (a *Addon) AttachAndCreate(params *apistructs.AddonHandlerCreateItem) (*api
 
 // GetAddonExtention 获取addon的spec，dice.yml信息
 func (a *Addon) GetAddonExtention(params *apistructs.AddonHandlerCreateItem) (*apistructs.AddonExtension, *diceyml.Object, error) {
-	extentionsList, err := a.bdl.QueryExtensionVersions(apistructs.ExtensionVersionQueryRequest{Name: params.AddonName, All: "true"})
+	extentionsList, err := a.bdl.QueryExtensionVersions(apistructs.ExtensionVersionQueryRequest{Name: params.AddonName, All: true})
 	if err != nil {
 		return nil, nil, errors.New("没有匹配的addon信息")
 	}

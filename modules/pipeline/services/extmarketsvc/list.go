@@ -68,7 +68,7 @@ func (s *ExtMarketSvc) constructAllActions() error {
 func (s *ExtMarketSvc) updateExtension(extension apistructs.Extension) {
 	extensionVersions, err := s.bdl.QueryExtensionVersions(apistructs.ExtensionVersionQueryRequest{
 		Name:               extension.Name,
-		All:                "true",
+		All:                true,
 		YamlFormat:         true,
 		OrderByVersionDesc: true,
 	})
