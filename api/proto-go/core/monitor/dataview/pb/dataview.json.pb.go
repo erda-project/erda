@@ -35,6 +35,8 @@ var _ json.Marshaler = (*GetCustomViewsCreatorRequest)(nil)
 var _ json.Unmarshaler = (*GetCustomViewsCreatorRequest)(nil)
 var _ json.Marshaler = (*ListCustomViewsResponse)(nil)
 var _ json.Unmarshaler = (*ListCustomViewsResponse)(nil)
+var _ json.Marshaler = (*Creator)(nil)
+var _ json.Unmarshaler = (*Creator)(nil)
 var _ json.Marshaler = (*GetCustomViewsCreatorResponse)(nil)
 var _ json.Unmarshaler = (*GetCustomViewsCreatorResponse)(nil)
 var _ json.Marshaler = (*GetCustomViewRequest)(nil)
@@ -257,6 +259,24 @@ func (m *ListCustomViewsResponse) MarshalJSON() ([]byte, error) {
 
 // ListCustomViewsResponse implement json.Marshaler.
 func (m *ListCustomViewsResponse) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// Creator implement json.Marshaler.
+func (m *Creator) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// Creator implement json.Marshaler.
+func (m *Creator) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)
