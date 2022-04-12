@@ -130,7 +130,7 @@ func (p *provider) do() error {
 
 	// init services
 	pipelineSvc := pipelinesvc.New(appSvc, p.CronDaemon, actionAgentSvc, extMarketSvc, p.CronService,
-		permissionSvc, queueManage, dbClient, bdl, publisher, p.Engine, js, etcdctl, p.ClusterInfo)
+		permissionSvc, queueManage, dbClient, bdl, publisher, p.Engine, js, etcdctl, p.ClusterInfo, p.Cache)
 	pipelineSvc.WithCmsService(p.CmsService)
 
 	// todo resolve cycle import here through better module architecture

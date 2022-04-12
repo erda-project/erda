@@ -18,6 +18,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/precheck"
 	"github.com/erda-project/erda/modules/pipeline/precheck/prechecktype"
+	"github.com/erda-project/erda/modules/pipeline/providers/cache"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
@@ -80,7 +81,7 @@ func (s *PipelineSvc) PreCheck(pipelineYml *pipelineyml.PipelineYml, p *spec.Pip
 	}
 
 	// secrets
-	secrets, _, holdOnKeys, _, err := s.FetchSecrets(p)
+	secrets, cmsDiceFiles, holdOnKeys, encryptSecretKeys, err := s.FetchSecrets(p)
 	if err != nil {
 		return apierrors.ErrPreCheckPipeline.InternalError(err)
 	}
@@ -111,6 +112,14 @@ func (s *PipelineSvc) PreCheck(pipelineYml *pipelineyml.PipelineYml, p *spec.Pip
 			return apierrors.ErrPreCheckPipeline.InternalError(err)
 		}
 	}
+
+	s.cache.SetPipelineSecretByPipelineID(p.PipelineID, &cache.SecretCache{
+		PlatformSecrets:   platformSecrets,
+		Secrets:           secrets,
+		CmsDiceFiles:      cmsDiceFiles,
+		HoldOnKeys:        holdOnKeys,
+		EncryptSecretKeys: encryptSecretKeys,
+	})
 
 	return nil
 }
