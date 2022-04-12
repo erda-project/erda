@@ -52,7 +52,7 @@ func (b *Bundle) QueryExtensionVersions(req apistructs.ExtensionVersionQueryRequ
 
 	var getResp apistructs.ExtensionVersionQueryResponse
 	resp, err := hc.Get(host).Path(fmt.Sprintf("/api/extensions/%v", req.Name)).
-		Param("all", req.All).
+		Param("all", strconv.FormatBool(req.All)).
 		Param("yamlFormat", strconv.FormatBool(req.YamlFormat)).
 		Param("orderByVersionDesc", strconv.FormatBool(req.OrderByVersionDesc)).
 		Header("Internal-Client", "bundle").

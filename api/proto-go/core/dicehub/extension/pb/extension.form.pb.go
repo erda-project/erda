@@ -225,7 +225,11 @@ func (m *QueryExtensionsRequest) UnmarshalURLValues(prefix string, values url.Va
 		if len(vals) > 0 {
 			switch prefix + key {
 			case "all":
-				m.All = vals[0]
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.All = val
 			case "type":
 				m.Type = vals[0]
 			case "labels":
@@ -279,7 +283,11 @@ func (m *QueryExtensionsMenuRequest) UnmarshalURLValues(prefix string, values ur
 		if len(vals) > 0 {
 			switch prefix + key {
 			case "all":
-				m.All = vals[0]
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.All = val
 			case "type":
 				m.Type = vals[0]
 			case "labels":
@@ -1772,7 +1780,11 @@ func (m *ExtensionQueryRequest) UnmarshalURLValues(prefix string, values url.Val
 		if len(vals) > 0 {
 			switch prefix + key {
 			case "all":
-				m.All = vals[0]
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.All = val
 			case "type":
 				m.Type = vals[0]
 			case "labels":
@@ -1823,7 +1835,17 @@ func (m *ExtensionVersionQueryRequest) UnmarshalURLValues(prefix string, values 
 				}
 				m.YamlFormat = val
 			case "all":
-				m.All = vals[0]
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.All = val
+			case "orderByVersionDesc":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.OrderByVersionDesc = val
 			}
 		}
 	}

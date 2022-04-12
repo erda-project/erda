@@ -5,27 +5,92 @@ option go_package = "github.com/erda-project/erda-proto-go/core/dicehub/extensio
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/struct.proto";
+import "common/openapi.proto";
 
 service ExtensionService {
+    option (erda.common.openapi_service) = {
+        service: "dicehub",
+    };
+
     rpc SearchExtensions (ExtensionSearchRequest) returns (ExtensionSearchResponse)  {
+        option (google.api.http) = {
+            post: "/api/extensions/actions/search",
+        };
     }
 
     rpc CreateExtension (ExtensionCreateRequest) returns (ExtensionCreateResponse)  {
+        option (google.api.http) = {
+            post: "/api/extensions",
+        };
+        option (erda.common.openapi) = {
+            path: "/api/extensions",
+            auth: {
+                check_login: true
+                check_token: true
+            }
+        };
     }
 
     rpc QueryExtensions (QueryExtensionsRequest) returns (QueryExtensionsResponse)  {
+        option (google.api.http) = {
+            get: "/api/extensions",
+        };
+        option (erda.common.openapi) = {
+            path: "/api/extensions",
+            auth: {
+                no_check: true
+            }
+        };
     }
 
     rpc QueryExtensionsMenu (QueryExtensionsMenuRequest) returns (QueryExtensionsMenuResponse)  {
+        option (google.api.http) = {
+            get: "/api/extensions/actions/query-menu",
+        };
+        option (erda.common.openapi) = {
+            path: "/api/extensions/actions/query-menu",
+            auth: {
+                check_login: true
+                check_token: true
+            }
+        };
     }
 
     rpc CreateExtensionVersion (ExtensionVersionCreateRequest) returns (ExtensionVersionCreateResponse)  {
+        option (google.api.http) = {
+            post: "/api/extensions/{name}",
+        };
+        option (erda.common.openapi) = {
+            path: "/api/extensions/{name}",
+            auth: {
+                check_login: true
+                check_token: true
+            }
+        };
     }
 
     rpc GetExtensionVersion (GetExtensionVersionRequest) returns (GetExtensionVersionResponse)  {
+        option (google.api.http) = {
+            get: "/api/extensions/{name}/{version}",
+        };
+        option (erda.common.openapi) = {
+            path: "/api/extensions/{name}/{version}",
+            auth: {
+                no_check: true
+            }
+        };
     }
 
     rpc QueryExtensionVersions (ExtensionVersionQueryRequest) returns (ExtensionVersionQueryResponse)  {
+        option (google.api.http) = {
+            get: "/api/extensions/{name}",
+        };
+        option (erda.common.openapi) = {
+            path: "/api/extensions/{name}",
+            auth: {
+                no_check: true
+            }
+        };
     }
 }
 
@@ -55,7 +120,7 @@ message ExtensionCreateResponse {
 }
 
 message QueryExtensionsRequest {
-    string all = 1;
+    bool all = 1;
     string type = 2;
     string labels = 3;
     string menu = 4;
@@ -66,7 +131,7 @@ message QueryExtensionsResponse {
 }
 
 message QueryExtensionsMenuRequest {
-    string all = 1;
+    bool all = 1;
     string type = 2;
     string labels = 3;
 }
@@ -117,7 +182,7 @@ message GetExtensionVersionResponse{
 }
 
 message ExtensionQueryRequest {
-    string all = 1;
+    bool all = 1;
     string type = 2;
     string labels = 3;
 }
@@ -135,7 +200,8 @@ message ExtensionVersionGetRequest {
 message ExtensionVersionQueryRequest {
     string name = 1;
     bool yamlFormat = 2;
-    string all = 3;
+    bool all = 3;
+    bool orderByVersionDesc = 4;
 }
 
 message ExtensionVersionGetResponse {
@@ -151,7 +217,6 @@ message ExtensionMenu{
     string displayName = 2;
     repeated Extension items = 3;
 }
-
 
 message Extension {
     uint64 id = 1;
