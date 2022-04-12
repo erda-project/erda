@@ -26,6 +26,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/aop"
 	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/modules/pipeline/pkg/errorsx"
+	"github.com/erda-project/erda/modules/pipeline/providers/leaderworker/lwctx"
 	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/rlog"
 	"github.com/erda-project/erda/pkg/loop"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -65,16 +66,6 @@ func (tr *TaskRun) Do(itr TaskOp) error {
 				handleProcessingResult(nil, err)
 			}
 		}()
-
-		// fetch the latest pipeline status to judge whether to continue to do task
-		_ = loop.New(loop.WithDeclineRatio(2), loop.WithDeclineLimit(time.Minute)).
-			Do(func() (bool, error) { return tr.fetchLatestPipelineStatus() == nil, nil })
-		if tr.QueriedPipelineStatus.IsEndStatus() {
-			rlog.TWarnf(tr.P.ID, tr.Task.ID,
-				"query latest pipeline status is already end status (%s), so stop reconciler task, current op: %s",
-				tr.QueriedPipelineStatus, string(itr.Op()))
-			return
-		}
 
 		// aop: before processing
 		if itr.TuneTriggers().BeforeProcessing != "" {
@@ -148,6 +139,13 @@ func (tr *TaskRun) waitOp(itr TaskOp, o *Elem) (result error) {
 		// 被外部取消
 		rlog.TWarnf(tr.P.ID, tr.Task.ID, "received stop reconcile signal, canceled, reason: %s", tr.Ctx.Err())
 		return
+
+	case <-lwctx.MustGetTaskCancelChanFromCtx(tr.Ctx):
+		tr.LogStep(itr.Op(), "begin do WhenCancel")
+		defer tr.LogStep(itr.Op(), "end do WhenCancel")
+		if err := itr.WhenCancel(); err != nil {
+			errs = append(errs, err.Error())
+		}
 
 	case data := <-o.DoneCh:
 		tr.LogStep(itr.Op(), "begin do WhenDone")

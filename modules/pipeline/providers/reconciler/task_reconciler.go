@@ -202,7 +202,7 @@ func (tr *defaultTaskReconciler) ReconcileNormalTask(ctx context.Context, p *spe
 		}
 
 		// generate framework to run task
-		framework = taskrun.New(ctx, task, executor, p, tr.bdl, tr.dbClient, tr.actionAgentSvc, tr.extMarketSvc, tr.clusterInfo)
+		framework = taskrun.New(ctx, task, executor, p, tr.bdl, tr.dbClient, tr.actionAgentSvc, tr.extMarketSvc, tr.clusterInfo, tr.defaultRetryInterval)
 		return rutil.ContinueWorkingAbort
 	}, rutil.WithContinueWorkingDefaultRetryInterval(tr.defaultRetryInterval))
 
@@ -221,6 +221,11 @@ func (tr *defaultTaskReconciler) ReconcileNormalTask(ctx context.Context, p *spe
 			return rutil.ContinueWorkingWithDefaultInterval
 		}
 
+		return rutil.ContinueWorkingAbort
+
+	}, rutil.WithContinueWorkingDefaultRetryInterval(tr.defaultRetryInterval))
+
+	rutil.ContinueWorking(ctx, tr.log, func(ctx context.Context) rutil.WaitDuration {
 		// judge task op
 		// create -> start -> queue -> wait -> end
 		var taskOp taskrun.TaskOp
@@ -401,18 +406,23 @@ func (tr *defaultTaskReconciler) tryCorrectFromExecutorBeforeReconcile(ctx conte
 
 func (tr *defaultTaskReconciler) judgeIfExpression(ctx context.Context, p *spec.Pipeline, task *spec.PipelineTask) error {
 	// if calculated pipeline status is failed and current task have no if expression(cannot must run), set task no-need-run
-	if tr.pr.calculatedPipelineStatusByAllReconciledTasks.IsFailedStatus() && task.Extra.Action.If == "" {
+	if tr.pr.calculatedPipelineStatusByAllReconciledTasks.IsFailedStatus() {
+		needSetToNoNeedBySystem := false
+		// stopByUser -> force no-need-by-system -> not check if expression
+		if tr.pr.calculatedPipelineStatusByAllReconciledTasks == apistructs.PipelineStatusStopByUser {
+			needSetToNoNeedBySystem = true
+		}
+		// failed but not stopByUser -> check if expression
+		if task.Extra.Action.If == "" {
+			needSetToNoNeedBySystem = true
+		}
+		if !needSetToNoNeedBySystem {
+			return nil
+		}
 		if err := tr.dbClient.UpdatePipelineTaskStatus(task.ID, apistructs.PipelineStatusNoNeedBySystem); err != nil {
 			return err
 		}
 		task.Status = apistructs.PipelineStatusNoNeedBySystem
-
-		extra := task.Extra
-		extra.AllowFailure = true
-		if err := tr.dbClient.UpdatePipelineTaskExtra(task.ID, extra); err != nil {
-			return err
-		}
-		task.Extra.AllowFailure = true
 		tr.log.Infof("set task status to %s (calculatedPipelineStatusByAllReconciledTasks: %s, action if expression is empty), pipelineID: %d, taskID: %d, taskName: %s",
 			apistructs.PipelineStatusNoNeedBySystem, tr.pr.calculatedPipelineStatusByAllReconciledTasks, p.ID, task.ID, task.Name)
 	}

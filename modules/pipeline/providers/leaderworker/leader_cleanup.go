@@ -67,7 +67,7 @@ func (p *provider) intervalCleanupDanglingKeysWithoutRetry(ctx context.Context) 
 	var danglingWorkerTaskDispatchKeys []string
 	p.lock.Lock()
 	for _, kv := range getResp.Kvs {
-		workerID := p.getWorkerIDFromIncomingKey(string(kv.Key))
+		workerID := p.getWorkerIDFromWorkerGeneralDispatchKey(string(kv.Key))
 		if _, ok := p.forLeaderUse.allWorkers[workerID]; !ok {
 			danglingWorkerTaskDispatchKeys = append(danglingWorkerTaskDispatchKeys, string(kv.Key))
 		}

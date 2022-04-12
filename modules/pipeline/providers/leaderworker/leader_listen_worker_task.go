@@ -22,6 +22,7 @@ import (
 	"github.com/coreos/etcd/mvcc/mvccpb"
 
 	"github.com/erda-project/erda/modules/pipeline/providers/leaderworker/worker"
+	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/rutil"
 )
 
 func (p *provider) leaderListenOfficialWorkerChange(ctx context.Context) {
@@ -90,13 +91,13 @@ func (p *provider) leaderListenLogicTaskChange(ctx context.Context) {
 		func(ctx context.Context, event *clientv3.Event) {
 			key := string(event.Kv.Key)
 			workerID := p.getWorkerIDFromIncomingKey(key)
-			logicTaskID := p.getWorkerTaskLogicIDFromIncomingKey(workerID, key)
+			logicTaskID := p.getWorkerLogicTaskIDFromIncomingKey(workerID, key)
 			p.addToTaskWorkerAssignMap(logicTaskID, workerID)
 		},
 		func(ctx context.Context, event *clientv3.Event) {
 			key := string(event.Kv.Key)
 			workerID := p.getWorkerIDFromIncomingKey(key)
-			logicTaskID := p.getWorkerTaskLogicIDFromIncomingKey(workerID, key)
+			logicTaskID := p.getWorkerLogicTaskIDFromIncomingKey(workerID, key)
 			p.removeFromTaskWorkerAssignMap(logicTaskID, workerID)
 		},
 	)
@@ -168,10 +169,64 @@ func (p *provider) listWorkerTasks(ctx context.Context, workerID worker.ID) ([]w
 	}
 	var tasks []worker.LogicTask
 	for _, kv := range resp.Kvs {
-		logicTaskID := p.getWorkerTaskLogicIDFromIncomingKey(workerID, string(kv.Key))
+		logicTaskID := p.getWorkerLogicTaskIDFromIncomingKey(workerID, string(kv.Key))
 		logicTaskData := kv.Value
 		task := worker.NewLogicTask(logicTaskID, logicTaskData)
 		tasks = append(tasks, task)
 	}
 	return tasks, nil
+}
+
+func (p *provider) leaderListenTaskCanceling(ctx context.Context) {
+	prefix := p.makeEtcdLeaderLogicTaskCancelListenPrefix()
+	p.ListenPrefix(ctx, prefix,
+		func(ctx context.Context, event *clientv3.Event) {
+			// concurrent cancel
+			go func() {
+				key := string(event.Kv.Key)
+				logicTaskID := p.getLogicTaskIDFromLeaderCancelKey(key)
+				rutil.ContinueWorking(ctx, p.Log, func(ctx context.Context) rutil.WaitDuration {
+					// check logic task
+					isHandling, workerID := p.IsTaskBeingProcessed(ctx, logicTaskID)
+					if !isHandling {
+						p.Log.Warnf("skip cancel logic task(not being processed), logicTaskID: %s", logicTaskID)
+						return rutil.ContinueWorkingAbort
+					}
+					// do cancel
+					distributedCancelKey := p.makeEtcdWorkerLogicTaskCancelKey(workerID, logicTaskID)
+					_, err := p.EtcdClient.Put(ctx, distributedCancelKey, "")
+					if err != nil {
+						p.Log.Errorf("failed to distributed cancel logic task(auto retry), workerID: %s, logicTaskID: %s, err: %v", workerID, logicTaskID, err)
+						return rutil.ContinueWorkingWithDefaultInterval
+					}
+					return rutil.ContinueWorkingAbort
+				}, rutil.WithContinueWorkingDefaultRetryInterval(p.Cfg.Leader.RetryInterval))
+			}()
+		},
+		nil,
+	)
+}
+
+func (p *provider) loadCancelingTasks(ctx context.Context) {
+	p.Log.Infof("begin load canceling logic tasks")
+	defer p.Log.Infof("end load canceling logic tasks")
+	prefix := p.makeEtcdLeaderLogicTaskCancelListenPrefix()
+	rutil.ContinueWorking(ctx, p.Log, func(ctx context.Context) rutil.WaitDuration {
+		getResp, err := p.EtcdClient.Get(ctx, prefix, clientv3.WithPrefix())
+		if err != nil {
+			p.Log.Errorf("failed to load canceling logic tasks from etcd(auto retry), err: %v", err)
+			return rutil.ContinueWorkingWithDefaultInterval
+		}
+		// put into etcd again to trigger cancel
+		for _, kv := range getResp.Kvs {
+			logicTaskID := p.getLogicTaskIDFromLeaderCancelKey(string(kv.Key))
+			_, err := p.EtcdClient.Put(ctx, string(kv.Key), string(kv.Value))
+			if err != nil {
+				p.Log.Errorf("failed to put into etcd when load canceling logic task, logicTaskID: %s, err: %v", logicTaskID, err)
+				return rutil.ContinueWorkingWithDefaultInterval
+			}
+			p.Log.Infof("load canceling logic task success, logicTaskID: %s", logicTaskID)
+		}
+		return rutil.ContinueWorkingAbort
+	}, rutil.WithContinueWorkingDefaultRetryInterval(p.Cfg.Leader.RetryInterval))
 }

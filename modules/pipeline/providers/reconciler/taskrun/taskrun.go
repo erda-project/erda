@@ -21,6 +21,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/pipeline/aop/aoptypes"
+	"github.com/erda-project/erda/modules/pipeline/commonutil/costtimeutil"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/types"
 	"github.com/erda-project/erda/modules/pipeline/providers/clusterinfo"
@@ -33,10 +34,9 @@ import (
 type TaskRun struct {
 	Task *spec.PipelineTask
 
-	Ctx                   context.Context
-	Executor              types.ActionExecutor
-	P                     *spec.Pipeline
-	QueriedPipelineStatus apistructs.PipelineStatus
+	Ctx      context.Context
+	Executor types.ActionExecutor
+	P        *spec.Pipeline
 
 	ClusterInfo clusterinfo.Interface
 	Bdl         *bundle.Bundle
@@ -56,13 +56,17 @@ type TaskRun struct {
 	// svc
 	ActionAgentSvc *actionagentsvc.ActionAgentSvc
 	ExtMarketSvc   *extmarketsvc.ExtMarketSvc
+
+	RetryInterval time.Duration
 }
 
 // New returns a TaskRun.
+// TODO refactored into task reconciler.
 func New(ctx context.Context, task *spec.PipelineTask,
 	executor types.ActionExecutor, p *spec.Pipeline, bdl *bundle.Bundle, dbClient *dbclient.Client,
 	actionAgentSvc *actionagentsvc.ActionAgentSvc,
 	extMarketSvc *extmarketsvc.ExtMarketSvc, clusterInfo clusterinfo.Interface,
+	retryInterval time.Duration,
 ) *TaskRun {
 	// make executor has buffer, don't block task framework
 	executorCh := make(chan spec.ExecutorDoneChanData, 1)
@@ -86,6 +90,8 @@ func New(ctx context.Context, task *spec.PipelineTask,
 
 		ActionAgentSvc: actionAgentSvc,
 		ExtMarketSvc:   extMarketSvc,
+
+		RetryInterval: retryInterval,
 	}
 }
 
@@ -118,6 +124,9 @@ type TaskOp interface {
 	// WhenTimeout will be invoked if task is timeout.
 	WhenTimeout() error
 
+	// WhenCancel will be invoked if task is canceled.
+	WhenCancel() error
+
 	TimeoutConfig() (<-chan struct{}, context.CancelFunc, time.Duration)
 
 	// TuneTriggers return corresponding triggers at concrete tune point.
@@ -138,4 +147,11 @@ type Elem struct {
 type TaskOpTuneTriggers struct {
 	BeforeProcessing aoptypes.TuneTrigger
 	AfterProcessing  aoptypes.TuneTrigger
+}
+
+func (tr *TaskRun) WhenCancel() error {
+	tr.Task.Status = apistructs.PipelineStatusStopByUser
+	tr.Task.TimeEnd = time.Now()
+	tr.Task.CostTimeSec = costtimeutil.CalculateTaskCostTimeSec(tr.Task)
+	return nil
 }

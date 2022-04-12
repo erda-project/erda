@@ -16,24 +16,23 @@ package pipelinesvc
 
 import (
 	"context"
-	"sync"
 
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/pipeline/events"
-	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor"
-	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/types"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
-	"github.com/erda-project/erda/modules/pipeline/spec"
 )
 
-func (s *PipelineSvc) Cancel(req *apistructs.PipelineCancelRequest) error {
+func (s *PipelineSvc) Cancel(ctx context.Context, req *apistructs.PipelineCancelRequest) error {
 
 	p, err := s.dbClient.GetPipeline(req.PipelineID)
 	if err != nil {
 		return apierrors.ErrGetPipeline.InternalError(err)
+	}
+
+	// support idempotent cancel
+	if p.Status.IsEndStatus() {
+		return nil
 	}
 
 	// pipeline 状态判断
@@ -49,60 +48,5 @@ func (s *PipelineSvc) Cancel(req *apistructs.PipelineCancelRequest) error {
 		}
 	}
 
-	// 执行操作
-	stages, err := s.dbClient.ListPipelineStageByPipelineID(p.ID)
-	if err != nil {
-		return err
-	}
-	for _, stage := range stages {
-		tasks, err := s.dbClient.ListPipelineTasksByStageID(stage.ID)
-		if err != nil {
-			return err
-		}
-		var wait sync.WaitGroup
-		var cancelError error
-		for _, task := range tasks {
-			wait.Add(1)
-			go func(task spec.PipelineTask) {
-				defer wait.Done()
-				// 嵌套任务删除流水线
-				if task.IsSnippet && task.SnippetPipelineID != nil {
-					if err := s.Cancel(&apistructs.PipelineCancelRequest{
-						PipelineID:   *task.SnippetPipelineID,
-						IdentityInfo: req.IdentityInfo,
-					}); err != nil {
-						logrus.Errorf("failed to stop snippet pipeline, taskID: %d, pipelineID: %d, err: %v", task.ID, *task.SnippetPipelineID, err)
-						cancelError = err
-					}
-					return
-				}
-				if !task.Status.CanCancel() {
-					return
-				}
-				executor, err := actionexecutor.GetManager().Get(types.Name(task.GetExecutorName()))
-				if err != nil {
-					cancelError = err
-					return
-				}
-				// cancel
-				if _, err = executor.Cancel(context.Background(), &task); err != nil {
-					cancelError = err
-				}
-			}(*task)
-		}
-		wait.Wait()
-		if cancelError != nil {
-			return cancelError
-		}
-	}
-	// 更新整体状态
-	if err = s.dbClient.UpdateWholeStatusCancel(&p); err != nil {
-		return err
-	}
-
-	// event
-	events.EmitPipelineInstanceEvent(&p, req.UserID)
-
-	return nil
-
+	return s.engine.DistributedStopPipeline(ctx, p.ID)
 }

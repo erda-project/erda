@@ -20,6 +20,7 @@ import (
 
 	"github.com/coreos/etcd/clientv3"
 
+	"github.com/erda-project/erda/modules/pipeline/providers/leaderworker/lwctx"
 	"github.com/erda-project/erda/modules/pipeline/providers/leaderworker/worker"
 )
 
@@ -45,7 +46,7 @@ func (p *provider) RegisterCandidateWorker(ctx context.Context, w worker.Worker)
 
 	p.lock.Lock()
 	wctx, wcancel := context.WithCancel(ctx)
-	p.forWorkerUse.myWorkers[w.GetID()] = workerWithCancel{Worker: w, Ctx: wctx, CancelFunc: wcancel}
+	p.forWorkerUse.myWorkers[w.GetID()] = workerWithCancel{Worker: w, Ctx: wctx, CancelFunc: wcancel, LogicTasks: make(map[worker.LogicTaskID]logicTaskWithCtx)}
 	p.lock.Unlock()
 
 	// promote to official
@@ -53,6 +54,8 @@ func (p *provider) RegisterCandidateWorker(ctx context.Context, w worker.Worker)
 		p.promoteCandidateWorker(wctx, w)
 		// begin listen after promoted
 		go p.workerListenIncomingLogicTask(wctx, w)
+		// handle task cancel
+		go p.workerListenCancelingLogicTask(wctx, w)
 		// handle worker delete
 		go p.workerListenOfficialWorkerSelfDelete(wctx, w)
 	}()
@@ -174,29 +177,79 @@ func (p *provider) workerListenIncomingLogicTask(ctx context.Context, w worker.W
 		go func() {
 			// key added, do logic
 			key := string(event.Kv.Key)
-			taskLogicID := p.getWorkerTaskLogicIDFromIncomingKey(w.GetID(), key)
+			logicTaskID := p.getWorkerLogicTaskIDFromIncomingKey(w.GetID(), key)
 			taskData := event.Kv.Value
-			p.Log.Infof("logic task received and begin handle it, workerID: %s, logicTaskID: %s", w.GetID(), taskLogicID)
+			logicTask := worker.NewLogicTask(logicTaskID, taskData)
+			p.Log.Infof("logic task received and begin handle it, workerID: %s, logicTaskID: %s", w.GetID(), logicTaskID)
+			// add cancel-chan for each logic task's context
+			ctx := lwctx.MakeCtxWithTaskCancelChan(ctx)
+			p.lock.Lock()
+			p.forWorkerUse.myWorkers[w.GetID()].LogicTasks[logicTaskID] = logicTaskWithCtx{LogicTask: logicTask, Ctx: ctx}
+			p.lock.Unlock()
 			taskDoneCh := make(chan struct{})
 			go func() {
-				w.Handle(ctx, worker.NewLogicTask(taskLogicID, taskData))
+				w.Handle(ctx, logicTask)
 				taskDoneCh <- struct{}{}
 			}()
 			select {
 			case <-ctx.Done():
-				p.Log.Warnf("task canceled, workerID: %s, logicTaskID: %s", w.GetID(), taskLogicID)
+				p.Log.Warnf("task canceled, workerID: %s, logicTaskID: %s", w.GetID(), logicTaskID)
 			case <-taskDoneCh:
-				p.Log.Infof("task done, workerID: %s, logicTaskID: %s", w.GetID(), taskLogicID)
+				p.Log.Infof("task done, workerID: %s, logicTaskID: %s", w.GetID(), logicTaskID)
 				// delete task key means task done
 				for {
+					// dispatch key
 					_, err := p.EtcdClient.Delete(context.Background(), key)
-					if err == nil {
-						break
+					if err != nil {
+						p.Log.Warnf("failed to delete incoming logic task key after done(auto retry), key: %s, logicTaskID: %s, err: %v", key, logicTaskID, err)
+						time.Sleep(p.Cfg.Worker.Task.RetryDeleteTaskInterval)
+						continue
 					}
-					p.Log.Warnf("failed to delete incoming logic task key after done(auto retry), key: %s, logicTaskID: %s, err: %v", key, taskLogicID, err)
-					time.Sleep(p.Cfg.Worker.Task.RetryDeleteTaskInterval)
+					// worker cancel key if exists
+					_, err = p.EtcdClient.Delete(context.Background(), p.makeEtcdWorkerLogicTaskCancelKey(w.GetID(), logicTaskID))
+					if err != nil {
+						p.Log.Warnf("failed to delete worker canceling logic task key after done(auto retry), workerID: %s, logicTaskID: %s, err: %v", w.GetID(), logicTaskID, err)
+						time.Sleep(p.Cfg.Worker.Task.RetryDeleteTaskInterval)
+						continue
+					}
+					// leader cancel key if exists; otherwise, leaderworker cannot load canceling tasks at bootstrap
+					_, err = p.EtcdClient.Delete(context.Background(), p.makeEtcdLeaderLogicTaskCancelKey(logicTaskID))
+					if err != nil {
+						p.Log.Warnf("failed to delete leader canceling logic task key after done(auto retry), workerID: %s, logicTaskID: %s, err: %v", w.GetID(), logicTaskID, err)
+						time.Sleep(p.Cfg.Worker.Task.RetryDeleteTaskInterval)
+						continue
+					}
+					break
 				}
 			}
+		}()
+	},
+		nil,
+	)
+}
+
+func (p *provider) workerListenCancelingLogicTask(ctx context.Context, w worker.Worker) {
+	prefix := p.makeEtcdWorkerLogicTaskCancelListenPrefix(w.GetID())
+	p.Log.Infof("worker begin listen canceling logic task, workerID: %s", w.GetID())
+	defer p.Log.Infof("worker stop listen canceling logic task, workerID: %s", w.GetID())
+
+	p.ListenPrefix(ctx, prefix, func(ctx context.Context, event *clientv3.Event) {
+		go func() {
+			// key added
+			key := string(event.Kv.Key)
+			logicTaskID := p.getLogicTaskIDFromWorkerCancelKey(w.GetID(), key)
+			if logicTaskID.String() == "" {
+				return
+			}
+			p.Log.Infof("logic task cancel request received, begin cancel it, workerID: %s, logicTaskID: %s", w.GetID(), logicTaskID)
+			// do cancel
+			p.lock.Lock()
+			tctx := p.forWorkerUse.myWorkers[w.GetID()].LogicTasks[logicTaskID].Ctx
+			lwctx.IdempotentCloseTaskCancelChan(tctx)
+			// set canceling flag to true to prevent duplicate close chan
+			p.lock.Unlock()
+			p.Log.Infof("logic task cancel request received, cancel signal sent, waiting for cancellation done, workerID: %s, logicTaskID: %s", w.GetID(), logicTaskID)
+			return
 		}()
 	},
 		nil,

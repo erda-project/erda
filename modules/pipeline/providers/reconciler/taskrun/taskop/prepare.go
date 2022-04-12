@@ -95,6 +95,10 @@ func (pre *prepare) WhenTimeout() error {
 	return nil
 }
 
+func (pre *prepare) WhenCancel() error {
+	return pre.TaskRun().WhenCancel()
+}
+
 func (pre *prepare) TimeoutConfig() (<-chan struct{}, context.CancelFunc, time.Duration) {
 	return nil, nil, -1
 }
@@ -737,7 +741,6 @@ func condition(task *spec.PipelineTask) bool {
 
 	if sign.Sign == expression.TaskJumpOver {
 		task.Status = apistructs.PipelineStatusNoNeedBySystem
-		task.Extra.AllowFailure = true
 		if sign.Err != nil {
 			task.Inspect.Errors = task.Inspect.AppendError(&apistructs.PipelineTaskErrResponse{
 				Msg: sign.Err.Error(),

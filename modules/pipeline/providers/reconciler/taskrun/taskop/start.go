@@ -79,6 +79,23 @@ func (s *start) WhenTimeout() error {
 	return nil
 }
 
+func (s *start) WhenCancel() error {
+	if err := s.TaskRun().WhenCancel(); err != nil {
+		return err
+	}
+	// check exist first
+	_, started, err := s.Executor.Exist(s.Ctx, s.Task)
+	if err != nil {
+		return err
+	}
+	if !started {
+		return nil
+	}
+	// if exists, then do cancel
+	_, err = s.Executor.Cancel(s.Ctx, s.Task)
+	return err
+}
+
 func (s *start) TimeoutConfig() (<-chan struct{}, context.CancelFunc, time.Duration) {
 	return nil, nil, -1
 }

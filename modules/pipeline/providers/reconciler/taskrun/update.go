@@ -106,28 +106,6 @@ func getEventsFromInspect(inspect string) string {
 	return inspect[eventsIdx:]
 }
 
-func (tr *TaskRun) fetchLatestPipelineStatus() error {
-	status, err := tr.DBClient.GetPipelineStatus(tr.P.ID)
-	if err != nil {
-		return err
-	}
-	tr.QueriedPipelineStatus = status
-	return nil
-}
-
-func (tr *TaskRun) EnsureFetchLatestPipelineStatus() {
-	var latestPStatus apistructs.PipelineStatus
-	_ = loop.New(loop.WithDeclineRatio(2), loop.WithDeclineLimit(time.Second*10)).Do(func() (abort bool, err error) {
-		latestPStatus, err = tr.DBClient.GetPipelineStatus(tr.P.ID)
-		if err != nil {
-			rlog.TWarnf(tr.P.ID, tr.Task.ID, "failed to get latest pipeline status, err: %v, continue fetch", err)
-			return false, err
-		}
-		return true, nil
-	})
-	tr.QueriedPipelineStatus = latestPStatus
-}
-
 func (tr *TaskRun) cleanTaskResult() {
 	tr.Task.Result = nil
 	if err := tr.DBClient.CleanPipelineTaskResult(tr.Task.ID); err != nil {

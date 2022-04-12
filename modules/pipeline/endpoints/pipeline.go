@@ -255,14 +255,12 @@ func (e *Endpoints) pipelineCancel(ctx context.Context, r *http.Request, vars ma
 			strutil.Concat(pathPipelineID, ": ", pipelineIDStr)).ToResp(), nil
 	}
 
-	if err := e.pipelineSvc.Cancel(&apistructs.PipelineCancelRequest{
+	if err := e.pipelineSvc.Cancel(ctx, &apistructs.PipelineCancelRequest{
 		PipelineID:   pipelineID,
 		IdentityInfo: identityInfo,
 	}); err != nil {
 		return errorresp.ErrResp(err)
 	}
-
-	e.engine.DistributedStopPipeline(ctx, pipelineID)
 
 	return httpserver.OkResp(nil)
 }

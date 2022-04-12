@@ -29,10 +29,9 @@ import (
 
 func TestTaskRun_handleTaskLoop(t *testing.T) {
 	type fields struct {
-		Task                            *spec.PipelineTask
-		P                               *spec.Pipeline
-		EnsureFetchLatestPipelineStatus apistructs.PipelineStatus
-		assertStatus                    apistructs.PipelineStatus
+		Task         *spec.PipelineTask
+		P            *spec.Pipeline
+		assertStatus apistructs.PipelineStatus
 	}
 	tests := []struct {
 		name    string
@@ -60,7 +59,6 @@ func TestTaskRun_handleTaskLoop(t *testing.T) {
 						ID: 1,
 					},
 				},
-				EnsureFetchLatestPipelineStatus: apistructs.PipelineStatusFailed,
 			},
 			wantErr: false,
 		},
@@ -76,7 +74,6 @@ func TestTaskRun_handleTaskLoop(t *testing.T) {
 						ID: 1,
 					},
 				},
-				EnsureFetchLatestPipelineStatus: apistructs.PipelineStatusRunning,
 			},
 			wantErr: false,
 		},
@@ -99,8 +96,7 @@ func TestTaskRun_handleTaskLoop(t *testing.T) {
 						ID: 1,
 					},
 				},
-				EnsureFetchLatestPipelineStatus: apistructs.PipelineStatusRunning,
-				assertStatus:                    apistructs.PipelineStatusAnalyzed,
+				assertStatus: apistructs.PipelineStatusAnalyzed,
 			},
 			wantErr: false,
 		},
@@ -125,11 +121,6 @@ func TestTaskRun_handleTaskLoop(t *testing.T) {
 
 			var patch *monkey.PatchGuard
 			var tr = &TaskRun{}
-			if tt.fields.EnsureFetchLatestPipelineStatus != "" {
-				patch = monkey.PatchInstanceMethod(reflect.TypeOf(tr), "EnsureFetchLatestPipelineStatus", func(tr *TaskRun) {
-					tr.QueriedPipelineStatus = tt.fields.EnsureFetchLatestPipelineStatus
-				})
-			}
 
 			tr.Task = tt.fields.Task
 			tr.P = tt.fields.P

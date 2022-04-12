@@ -20,14 +20,17 @@ import (
 
 type Interface interface {
 	DistributedSendPipeline(ctx context.Context, pipelineID uint64)
-	DistributedStopPipeline(ctx context.Context, pipelineID uint64)
+	DistributedStopPipeline(ctx context.Context, pipelineID uint64) error
 }
 
 func (p *provider) DistributedSendPipeline(ctx context.Context, pipelineID uint64) {
 	p.QueueManager.DistributedHandleIncomingPipeline(ctx, pipelineID)
 }
 
-func (p *provider) DistributedStopPipeline(ctx context.Context, pipelineID uint64) {
-	p.QueueManager.DistributedStopPipeline(ctx, pipelineID)
-	// TODO notify concrete worker to stop reconcile this pipeline
+func (p *provider) DistributedStopPipeline(ctx context.Context, pipelineID uint64) error {
+	// dispatcher
+	if err := p.Dispatcher.Cancel(ctx, pipelineID); err != nil {
+		return err
+	}
+	return nil
 }

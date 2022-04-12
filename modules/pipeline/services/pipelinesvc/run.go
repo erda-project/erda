@@ -57,11 +57,11 @@ func (s *PipelineSvc) RunPipeline(req *apistructs.PipelineRunRequest) (*spec.Pip
 		if err != nil {
 			return nil, err
 		}
-	}
-
-	// 校验已运行的 pipeline
-	if err := s.limitParallelRunningPipelines(&p); err != nil {
-		return nil, err
+	} else {
+		// 校验已运行的 pipeline
+		if err := s.limitParallelRunningPipelines(&p); err != nil {
+			return nil, err
+		}
 	}
 
 	p.Extra.ConfigManageNamespaces = append(p.Extra.ConfigManageNamespaces, req.ConfigManageNamespaces...)
@@ -254,7 +254,7 @@ func (s *PipelineSvc) stopRunningPipelines(p *spec.Pipeline, identityInfo apistr
 		return apierrors.ErrParallelRunPipeline.InternalError(err)
 	}
 	for _, runningPipelineID := range runningPipelineIDs {
-		if err := s.Cancel(&apistructs.PipelineCancelRequest{
+		if err := s.Cancel(context.Background(), &apistructs.PipelineCancelRequest{
 			PipelineID:   runningPipelineID,
 			IdentityInfo: identityInfo,
 		}); err != nil {

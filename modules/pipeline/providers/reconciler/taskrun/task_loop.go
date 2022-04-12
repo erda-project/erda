@@ -33,13 +33,6 @@ func (tr *TaskRun) handleTaskLoop() error {
 		return nil
 	}
 
-	// The end state of the pipeline does not loop tasks
-	tr.EnsureFetchLatestPipelineStatus()
-	if tr.QueriedPipelineStatus.IsEndStatus() {
-		rlog.TWarnf(tr.P.ID, tr.Task.ID, "pipeline is already end status (%s), not try to loop task", tr.QueriedPipelineStatus)
-		return nil
-	}
-
 	// No loop configuration skip
 	if tr.Task.Extra.LoopOptions == nil || tr.Task.Extra.LoopOptions.CalculatedLoop == nil {
 		return nil
@@ -104,13 +97,6 @@ func (tr *TaskRun) resetTaskForLoop() {
 	).CalculateInterval(tr.Task.Extra.LoopOptions.LoopedTimes)
 	rlog.TDebugf(tr.P.ID, tr.Task.ID, "sleep %s before loop", interval.String())
 	time.Sleep(interval)
-
-	// sleep time may be very long, after waiting, check the latest status again
-	tr.EnsureFetchLatestPipelineStatus()
-	if tr.QueriedPipelineStatus.IsEndStatus() {
-		rlog.TWarnf(tr.P.ID, tr.Task.ID, "pipeline is already end status (%s), not loop task after sleep", tr.QueriedPipelineStatus)
-		return
-	}
 
 	// reset task status
 	tr.Task.Extra.LoopOptions.LoopedTimes++
