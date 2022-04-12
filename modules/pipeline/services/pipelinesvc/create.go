@@ -43,9 +43,18 @@ func (s *PipelineSvc) Create(req *apistructs.PipelineCreateRequest) (*spec.Pipel
 	if err != nil {
 		return nil, err
 	}
-	if err := s.CreatePipelineGraph(p, req.AutoRun); err != nil {
+	var stages []spec.PipelineStage
+	if stages, err = s.CreatePipelineGraph(p); err != nil {
 		return nil, err
 	}
+	// PreCheck
+	pipelineYml, err := pipelineyml.New(
+		[]byte(p.PipelineYml),
+	)
+	if err != nil {
+		return nil, err
+	}
+	_ = s.PreCheck(pipelineYml, p, stages, p.GetUserID(), req.AutoRun)
 	return p, nil
 }
 
@@ -339,13 +348,13 @@ func (s *PipelineSvc) OperateTask(p *spec.Pipeline, task *spec.PipelineTask) (*s
 }
 
 // CreatePipelineGraph recursively create pipeline graph.
-func (s *PipelineSvc) CreatePipelineGraph(p *spec.Pipeline, needSecretCache bool) (err error) {
+func (s *PipelineSvc) CreatePipelineGraph(p *spec.Pipeline) (newStages []spec.PipelineStage, err error) {
 	// parse yml
 	pipelineYml, err := pipelineyml.New(
 		[]byte(p.PipelineYml),
 	)
 	if err != nil {
-		return apierrors.ErrParsePipelineYml.InternalError(err)
+		return nil, apierrors.ErrParsePipelineYml.InternalError(err)
 	}
 
 	// init pipeline gc setting
@@ -380,20 +389,17 @@ func (s *PipelineSvc) CreatePipelineGraph(p *spec.Pipeline, needSecretCache bool
 		return nil, nil
 	})
 	if err != nil {
-		return apierrors.ErrCreatePipelineGraph.InternalError(err)
+		return nil, apierrors.ErrCreatePipelineGraph.InternalError(err)
 	}
 
 	// cover stages
-	var newStages []spec.PipelineStage
 	for _, stage := range stages {
 		newStages = append(newStages, *stage)
 	}
 
-	_ = s.PreCheck(pipelineYml, p, newStages, p.GetUserID(), needSecretCache)
-
 	// events
 	events.EmitPipelineInstanceEvent(p, p.GetSubmitUserID())
-	return nil
+	return newStages, nil
 }
 
 func (s *PipelineSvc) createPipelineAndCheckNotEndStatus(p *spec.Pipeline, session *xorm.Session) error {

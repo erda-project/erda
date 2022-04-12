@@ -139,6 +139,7 @@ func (p *provider) do() error {
 		HandleQueryPipelineYamlBySnippetConfigs: pipelineSvc.HandleQueryPipelineYamlBySnippetConfigs,
 		MakeSnippetPipeline4Create:              pipelineSvc.MakeSnippetPipeline4Create,
 		CreatePipelineGraph:                     pipelineSvc.CreatePipelineGraph,
+		PreCheck:                                pipelineSvc.PreCheck,
 	}
 	// init CallbackActionFunc
 	pipelinefunc.CallbackActionFunc = pipelineSvc.DealPipelineCallbackOfAction

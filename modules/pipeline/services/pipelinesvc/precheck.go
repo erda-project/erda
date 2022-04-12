@@ -24,7 +24,7 @@ import (
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
-func (s *PipelineSvc) PreCheck(pipelineYml *pipelineyml.PipelineYml, p *spec.Pipeline, stages []spec.PipelineStage, userID string, needSecretCache bool) error {
+func (s *PipelineSvc) PreCheck(pipelineYml *pipelineyml.PipelineYml, p *spec.Pipeline, stages []spec.PipelineStage, userID string, autoRun bool) error {
 	tasks, err := s.MergePipelineYmlTasks(pipelineYml, nil, p, stages, nil)
 	if err != nil {
 		return apierrors.ErrPreCheckPipeline.InternalError(err)
@@ -113,7 +113,7 @@ func (s *PipelineSvc) PreCheck(pipelineYml *pipelineyml.PipelineYml, p *spec.Pip
 		}
 	}
 
-	if needSecretCache {
+	if autoRun {
 		s.cache.SetPipelineSecretByPipelineID(p.PipelineID, &cache.SecretCache{
 			Secrets:           secrets,
 			CmsDiceFiles:      cmsDiceFiles,

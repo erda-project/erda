@@ -18,6 +18,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
 func (s *PipelineSvc) BatchCreate(batchReq *apistructs.PipelineBatchCreateRequest) (
@@ -45,9 +46,19 @@ func (s *PipelineSvc) BatchCreate(batchReq *apistructs.PipelineBatchCreateReques
 		if err != nil {
 			return nil, apierrors.ErrBatchCreatePipeline.InternalError(err)
 		}
-		if err = s.CreatePipelineGraph(p, batchReq.AutoRun); err != nil {
+		var stages []spec.PipelineStage
+		if stages, err = s.CreatePipelineGraph(p); err != nil {
 			return nil, apierrors.ErrBatchCreatePipeline.InternalError(err)
 		}
+
+		// PreCheck
+		pipelineYml, err := pipelineyml.New(
+			[]byte(p.PipelineYml),
+		)
+		if err != nil {
+			return nil, err
+		}
+		_ = s.PreCheck(pipelineYml, p, stages, p.GetUserID(), batchReq.AutoRun)
 
 		identityInfo := apistructs.IdentityInfo{UserID: req.UserID}
 

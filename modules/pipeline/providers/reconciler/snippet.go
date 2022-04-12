@@ -26,6 +26,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/commonutil/statusutil"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -64,9 +65,18 @@ func (tr *defaultTaskReconciler) CreateSnippetPipeline(ctx context.Context, p *s
 	if err != nil {
 		return nil, err
 	}
-	if err := tr.pipelineSvcFuncs.CreatePipelineGraph(snippetPipeline, false); err != nil {
+	var stages []spec.PipelineStage
+	if stages, err = tr.pipelineSvcFuncs.CreatePipelineGraph(snippetPipeline); err != nil {
 		return nil, err
 	}
+	// PreCheck
+	pipelineYml, err := pipelineyml.New(
+		[]byte(snippetPipeline.PipelineYml),
+	)
+	if err != nil {
+		return nil, err
+	}
+	_ = tr.pipelineSvcFuncs.PreCheck(pipelineYml, snippetPipeline, stages, snippetPipeline.GetUserID(), false)
 
 	task.SnippetPipelineID = &snippetPipeline.ID
 	task.Extra.AppliedResources = snippetPipeline.Snapshot.AppliedResources
