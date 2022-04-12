@@ -348,6 +348,8 @@ func (m *GetCustomViewsCreatorResponse) UnmarshalURLValues(prefix string, values
 	for key, vals := range values {
 		if len(vals) > 0 {
 			switch prefix + key {
+			case "creators":
+				m.Creators = vals
 			case "userIDs":
 				m.UserIDs = vals
 			}
