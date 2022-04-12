@@ -339,7 +339,7 @@ func (r *Runtime) Create(operator user.ID, req *apistructs.RuntimeCreateRequest)
 	// prepare runtime
 	// TODO: we do not need RepoAbbrev
 	runtime, created, err := r.db.FindRuntimeOrCreate(uniqueID, req.Operator, req.Source, req.ClusterName,
-		uint64(cluster.ID), app.GitRepoAbbrev, req.Extra.ProjectID, app.OrgID, req.DeploymentOrderId, req.ReleaseVersion)
+		uint64(cluster.ID), app.GitRepoAbbrev, req.Extra.ProjectID, app.OrgID, req.DeploymentOrderId, req.ReleaseVersion, req.ExtraParams)
 	if err != nil {
 		return nil, apierrors.ErrCreateRuntime.InternalError(err)
 	}

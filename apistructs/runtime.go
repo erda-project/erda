@@ -80,6 +80,7 @@ type RuntimeCreateRequest struct {
 	Param             string                    `json:"param"`
 	DeploymentOrderId string                    `json:"deploymentOrderId,omitempty"`
 	ReleaseVersion    string                    `json:"releaseVersion,omitempty"`
+	ExtraParams       string                    `json:"extraParams,omitempty"`
 }
 
 type RuntimeKillPodRequest struct {

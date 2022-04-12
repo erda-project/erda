@@ -1181,8 +1181,17 @@ func (fsm *DeployFSMContext) generateDeployServiceRequest(group *apistructs.Serv
 	obj.Meta = groupLabels
 	usedAddonInsMap := map[string]dbclient.AddonInstanceRouting{}
 	usedAddonTenantMap := map[string]dbclient.AddonInstanceTenant{}
+
+	extraParams := make(map[string]string)
+	if fsm.Runtime != nil && fsm.Runtime.ExtraParams != "" {
+		err := json.Unmarshal([]byte(fsm.Runtime.ExtraParams), &extraParams)
+		if err != nil {
+			return nil, nil, errors.Errorf("failed to unmarshal extraParams, %v", err)
+		}
+	}
+
 	for name, serv := range obj.Services {
-		usedAddonInsMap_, usedAddonTenantMap_, err := fsm.convertService(name, serv, obj.Meta, env, groupEnv, groupFileconfigs,
+		usedAddonInsMap_, usedAddonTenantMap_, err := fsm.convertService(name, serv, extraParams, obj.Meta, env, groupEnv, groupFileconfigs,
 			runtime, projectAddons, projectAddonTenants, projectECI)
 		if err != nil {
 			return nil, nil, err
@@ -1197,7 +1206,7 @@ func (fsm *DeployFSMContext) generateDeployServiceRequest(group *apistructs.Serv
 	}
 
 	for name, job := range obj.Jobs {
-		usedAddonInsMap_, usedAddonTenantMap_, err := fsm.convertJob(name, job, obj.Meta, env, groupEnv, groupFileconfigs,
+		usedAddonInsMap_, usedAddonTenantMap_, err := fsm.convertJob(name, job, extraParams, obj.Meta, env, groupEnv, groupFileconfigs,
 			runtime, projectAddons, projectAddonTenants, projectECI)
 		if err != nil {
 			return nil, nil, err
@@ -1594,7 +1603,7 @@ func BuildVolumeRootDir(runtime *dbclient.Runtime) string {
 }
 
 func (fsm *DeployFSMContext) convertService(serviceName string, service *diceyml.Service,
-	groupLabels map[string]string, addonEnv map[string]string, groupEnv, groupFileconfigs map[string]string,
+	extraEnv, groupLabels map[string]string, addonEnv map[string]string, groupEnv, groupFileconfigs map[string]string,
 	runtime *dbclient.Runtime, projectAddons []dbclient.AddonInstanceRouting,
 	projectAddonTenants []dbclient.AddonInstanceTenant, projectECI bool) (map[string]dbclient.AddonInstanceRouting, map[string]dbclient.AddonInstanceTenant, error) {
 
@@ -1650,6 +1659,9 @@ func (fsm *DeployFSMContext) convertService(serviceName string, service *diceyml
 		if strings.HasPrefix(k, "DICE_") {
 			envs[k] = v
 		}
+	}
+	for k, v := range extraEnv {
+		envs[k] = v
 	}
 	replaced_envs, usedAddonInsMap, usedAddonTenantMap, err := fsm.evalTemplate(projectAddons, projectAddonTenants, envs)
 	if err != nil {
@@ -1740,7 +1752,7 @@ func (fsm *DeployFSMContext) generateRuntimeFileToken() error {
 }
 
 func (fsm *DeployFSMContext) convertJob(jobName string, job *diceyml.Job,
-	groupLabels map[string]string, addonEnv map[string]string, groupEnv, groupFileconfigs map[string]string,
+	extraEnv, groupLabels map[string]string, addonEnv map[string]string, groupEnv, groupFileconfigs map[string]string,
 	runtime *dbclient.Runtime, projectAddons []dbclient.AddonInstanceRouting,
 	projectAddonTenants []dbclient.AddonInstanceTenant, projectECI bool) (map[string]dbclient.AddonInstanceRouting, map[string]dbclient.AddonInstanceTenant, error) {
 
@@ -1796,6 +1808,9 @@ func (fsm *DeployFSMContext) convertJob(jobName string, job *diceyml.Job,
 		if strings.HasPrefix(k, "DICE_") {
 			envs[k] = v
 		}
+	}
+	for k, v := range extraEnv {
+		envs[k] = v
 	}
 	replaced_envs, usedAddonInsMap, usedAddonTenantMap, err := fsm.evalTemplate(projectAddons, projectAddonTenants, envs)
 	if err != nil {
