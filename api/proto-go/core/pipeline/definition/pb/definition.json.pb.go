@@ -13,6 +13,10 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the "encoding/json" package it is being compiled against.
+var _ json.Marshaler = (*PipelineDefinitionExtraUpdateRequest)(nil)
+var _ json.Unmarshaler = (*PipelineDefinitionExtraUpdateRequest)(nil)
+var _ json.Marshaler = (*PipelineDefinitionExtraUpdateResponse)(nil)
+var _ json.Unmarshaler = (*PipelineDefinitionExtraUpdateResponse)(nil)
 var _ json.Marshaler = (*PipelineDefinition)(nil)
 var _ json.Unmarshaler = (*PipelineDefinition)(nil)
 var _ json.Marshaler = (*PipelineDefinitionExtra)(nil)
@@ -47,6 +51,42 @@ var _ json.Marshaler = (*PipelineDefinitionUsedRefListRequest)(nil)
 var _ json.Unmarshaler = (*PipelineDefinitionUsedRefListRequest)(nil)
 var _ json.Marshaler = (*PipelineDefinitionUsedRefListResponse)(nil)
 var _ json.Unmarshaler = (*PipelineDefinitionUsedRefListResponse)(nil)
+
+// PipelineDefinitionExtraUpdateRequest implement json.Marshaler.
+func (m *PipelineDefinitionExtraUpdateRequest) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// PipelineDefinitionExtraUpdateRequest implement json.Marshaler.
+func (m *PipelineDefinitionExtraUpdateRequest) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// PipelineDefinitionExtraUpdateResponse implement json.Marshaler.
+func (m *PipelineDefinitionExtraUpdateResponse) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// PipelineDefinitionExtraUpdateResponse implement json.Marshaler.
+func (m *PipelineDefinitionExtraUpdateResponse) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
 
 // PipelineDefinition implement json.Marshaler.
 func (m *PipelineDefinition) MarshalJSON() ([]byte, error) {

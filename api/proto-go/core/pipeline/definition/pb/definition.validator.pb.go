@@ -21,6 +21,17 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+func (this *PipelineDefinitionExtraUpdateRequest) Validate() error {
+	return nil
+}
+func (this *PipelineDefinitionExtraUpdateResponse) Validate() error {
+	if this.Extra != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Extra); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("Extra", err)
+		}
+	}
+	return nil
+}
 func (this *PipelineDefinition) Validate() error {
 	if this.Extra != nil {
 		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Extra); err != nil {
