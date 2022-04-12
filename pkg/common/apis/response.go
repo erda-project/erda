@@ -159,7 +159,7 @@ func wrapResponse(h interceptor.Handler) interceptor.Handler {
 				case 1:
 					if field := val.FieldByName("Data"); field.IsValid() {
 						resp = field.Interface()
-					} else if field := val.FieldByName("UserIDs"); field.IsValid() && field.Kind() == reflect.Slice && field.Elem().Kind() == reflect.String {
+					} else if field := val.FieldByName("UserIDs"); field.IsValid() && field.Kind() == reflect.Slice && field.Type().Elem().Kind() == reflect.String {
 						resp = nil
 						userIDs = field.Interface().([]string)
 					}
