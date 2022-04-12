@@ -38,7 +38,8 @@ import (
 )
 
 const (
-	FirstBatch = iota + 1
+	FirstBatch        = iota + 1
+	DeployModeEnvName = "ERDA_DEPLOY_MODES"
 )
 
 func (d *DeploymentOrder) Create(ctx context.Context, req *apistructs.DeploymentOrderCreateRequest) (*apistructs.DeploymentOrderCreateResponse, error) {
@@ -272,7 +273,9 @@ func (d *DeploymentOrder) composeDeploymentOrder(release *pb.ReleaseGetResponseD
 		err            error
 	)
 
+	modes := ""
 	if orderType == apistructs.TypeProjectRelease {
+		modes = strings.Join(req.Modes, ",")
 		for i, l := range deployList {
 			for _, summary := range l {
 				list[i] = append(list[i], summary.ReleaseID)
@@ -283,6 +286,7 @@ func (d *DeploymentOrder) composeDeploymentOrder(release *pb.ReleaseGetResponseD
 			return nil, "", errors.Errorf("failed to marshal deploy list for release %s, %v", release.ReleaseID, err)
 		}
 	}
+
 	order := &dbclient.DeploymentOrder{
 		ID:          orderId,
 		Type:        orderType,
@@ -293,6 +297,7 @@ func (d *DeploymentOrder) composeDeploymentOrder(release *pb.ReleaseGetResponseD
 		ProjectName: release.ProjectName,
 		BatchSize:   uint64(len(deployList)),
 		DeployList:  deployListData,
+		Modes:       modes,
 	}
 
 	params, err := d.fetchApplicationsParams(release, deployList, workspace)
@@ -456,6 +461,18 @@ func (d *DeploymentOrder) composeRuntimeCreateRequests(order *dbclient.Deploymen
 			id2release[r.ReleaseId] = r
 		}
 
+		extraParamsStr := ""
+		if order.Modes != "" {
+			extraParams := map[string]string{
+				DeployModeEnvName: order.Modes,
+			}
+			data, err := json.Marshal(extraParams)
+			if err != nil {
+				return nil, errors.Errorf("failed to marshal extraParams, %v", err)
+			}
+			extraParamsStr = string(data)
+		}
+
 		for _, id := range deployList[order.CurrentBatch-1] {
 			rl, ok := id2release[id]
 			if !ok {
@@ -479,6 +496,7 @@ func (d *DeploymentOrder) composeRuntimeCreateRequests(order *dbclient.Deploymen
 					BuildID:         0, // Deprecated
 				},
 				SkipPushByOrch: false,
+				ExtraParams:    extraParamsStr,
 			}
 
 			paramJson, err := json.Marshal(orderParams[rl.ApplicationName])
