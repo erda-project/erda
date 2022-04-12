@@ -393,7 +393,7 @@ func (s *ReleaseService) updateReleaseTags(releaseID string, req *pb.ReleaseUpda
 
 	newTagIDs := req.Tags
 	sort.Slice(newTagIDs, func(i, j int) bool {
-		return newTagIDs[i] < oldTagIDs[j]
+		return newTagIDs[i] < newTagIDs[j]
 	})
 
 	if reflect.DeepEqual(oldTagIDs, newTagIDs) {
