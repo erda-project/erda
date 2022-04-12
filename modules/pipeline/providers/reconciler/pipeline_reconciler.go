@@ -252,7 +252,7 @@ func (pr *defaultPipelineReconciler) TeardownAfterReconcileDone(ctx context.Cont
 	// resource gc
 	pr.resourceGC.WaitGC(p.Extra.Namespace, p.ID, p.GetResourceGCTTL())
 	// clear pipeline cache
-	pr.cache.ClearPipelineContextCaches(p.ID)
+	pr.cache.ClearReconcilerPipelineContextCaches(p.ID)
 
 	// mark teardown
 	rutil.ContinueWorking(ctx, pr.log, func(ctx context.Context) rutil.WaitDuration {

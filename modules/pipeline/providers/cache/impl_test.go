@@ -75,7 +75,7 @@ func Test_getOrSetStagesFromContext(t *testing.T) {
 				t.Errorf("getOrSetStagesFromContext() gotStages = %v, want %v", gotStages, tt.wantStages)
 			}
 
-			p.ClearPipelineContextCaches(1)
+			p.ClearReconcilerPipelineContextCaches(1)
 			patch.Unpatch()
 		})
 	}
@@ -138,7 +138,7 @@ func Test_getOrSetPipelineRerunSuccessTasksFromContext(t *testing.T) {
 
 			patch.Unpatch()
 			patch1.Unpatch()
-			p.ClearPipelineContextCaches(1)
+			p.ClearReconcilerPipelineContextCaches(1)
 		})
 	}
 }
@@ -196,7 +196,7 @@ func Test_getOrSetPipelineYmlFromContext(t *testing.T) {
 			}
 
 			patch.Unpatch()
-			p.ClearPipelineContextCaches(1)
+			p.ClearReconcilerPipelineContextCaches(1)
 		})
 	}
 }

@@ -183,26 +183,25 @@ func (s *PipelineSvc) FetchSecrets(p *spec.Pipeline) (secrets, cmsDiceFiles map[
 		}
 	}
 
-	for _, ns := range namespaces {
-		configs, err := s.cmsService.GetCmsNsConfigs(apis.WithInternalClientContext(context.Background(), "pipeline"),
-			&pb.CmsNsConfigsGetRequest{
-				Ns:             ns,
-				PipelineSource: p.PipelineSource.String(),
-				GlobalDecrypt:  true,
-			})
-		if err != nil {
-			return nil, nil, nil, nil, err
-		}
-		for _, c := range configs.Data {
-			if c.EncryptInDB && c.Type == cms.ConfigTypeKV {
-				encryptSecretKeys = append(encryptSecretKeys, c.Key)
-			}
-			secrets[c.Key] = c.Value
+	batchConfigs, err := s.cmsService.BatchGetCmsNsConfigs(apis.WithInternalClientContext(context.Background(), "pipeline"),
+		&pb.CmsNsConfigsBatchGetRequest{
+			PipelineSource: p.PipelineSource.String(),
+			Namespaces:     namespaces,
+			GlobalDecrypt:  true,
+		})
+	if err != nil {
+		return nil, nil, nil, nil, err
+	}
 
-			// DiceFile 类型，value 为 diceFileUUID
-			if c.Type == cms.ConfigTypeDiceFile {
-				cmsDiceFiles[c.Key] = c.Value
-			}
+	for _, c := range batchConfigs.Configs {
+		if c.EncryptInDB && c.Type == cms.ConfigTypeKV {
+			encryptSecretKeys = append(encryptSecretKeys, c.Key)
+		}
+		secrets[c.Key] = c.Value
+
+		// DiceFile 类型，value 为 diceFileUUID
+		if c.Type == cms.ConfigTypeDiceFile {
+			cmsDiceFiles[c.Key] = c.Value
 		}
 	}
 

@@ -30,10 +30,11 @@ const (
 	pipelineYmlContextCachesPrefixKey                  = "reconciler_caches_yml"
 	pipelineRerunSuccessTaskContextCachesPrefixKey     = "reconciler_caches_rerun_success_tasks"
 	pipelinePassedDataWhenCreateContextCachesPrefixKey = "reconciler_caches_passed_data_when_create"
+	pipelineSecretCacheKey                             = "pipeline_secret"
 )
 
-// ClearPipelineContextCaches clear context map rwLock by pipelineID
-func (p *provider) ClearPipelineContextCaches(pipelineID uint64) {
+// ClearReconcilerPipelineContextCaches clear context map rwLock by pipelineID
+func (p *provider) ClearReconcilerPipelineContextCaches(pipelineID uint64) {
 	p.cacheMap.Delete(makeMapKey(pipelineID, pipelineStagesContextCachesPrefixKey))
 	p.cacheMap.Delete(makeMapKey(pipelineID, pipelineYmlContextCachesPrefixKey))
 	p.cacheMap.Delete(makeMapKey(pipelineID, pipelineRerunSuccessTaskContextCachesPrefixKey))
@@ -209,4 +210,24 @@ func (p *provider) getPassedDataWhenCreateFromContextByPipelineID(pipelineID uin
 
 func (p *provider) setPassedDataWhenCreateToContextByPipelineID(passedDataWhenCreate *action_info.PassedDataWhenCreate, pipelineID uint64) {
 	p.cacheMap.Store(makeMapKey(pipelineID, pipelinePassedDataWhenCreateContextCachesPrefixKey), passedDataWhenCreate)
+}
+
+func (p *provider) SetPipelineSecretByPipelineID(pipelineID uint64, secret *SecretCache) {
+	p.cacheMap.Store(makeMapKey(pipelineID, pipelineSecretCacheKey), secret)
+}
+
+func (p *provider) GetPipelineSecretByPipelineID(pipelineID uint64) (secret *SecretCache) {
+	value := p.getInterfaceValueByKey(pipelineID, pipelineSecretCacheKey)
+	if value == nil {
+		return nil
+	}
+	secret, ok := value.(*SecretCache)
+	if !ok {
+		return nil
+	}
+	return secret
+}
+
+func (p *provider) ClearPipelineSecretByPipelineID(pipelineID uint64) {
+	p.cacheMap.Delete(makeMapKey(pipelineID, pipelineSecretCacheKey))
 }
