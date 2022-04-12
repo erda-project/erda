@@ -187,7 +187,7 @@ message ListCustomViewsResponse {
 }
 
 message GetCustomViewsCreatorResponse {
-  repeated string creators = 1;
+  repeated string userIDs = 1;
 }
 
 // GetCustomView
