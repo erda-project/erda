@@ -15,6 +15,7 @@
 package cache
 
 type SecretCache struct {
+	PlatformSecrets   map[string]string
 	Secrets           map[string]string
 	CmsDiceFiles      map[string]string
 	HoldOnKeys        []string

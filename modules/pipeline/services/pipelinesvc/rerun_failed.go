@@ -20,7 +20,6 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/modules/pipeline/spec"
-	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
 func (s *PipelineSvc) RerunFailed(req *apistructs.PipelineRerunFailedRequest) (*spec.Pipeline, error) {
@@ -66,13 +65,7 @@ func (s *PipelineSvc) RerunFailed(req *apistructs.PipelineRerunFailedRequest) (*
 		return nil, apierrors.ErrRerunFailedPipeline.InternalError(err)
 	}
 	// PreCheck
-	pipelineYml, err := pipelineyml.New(
-		[]byte(p.PipelineYml),
-	)
-	if err != nil {
-		return nil, err
-	}
-	_ = s.PreCheck(pipelineYml, p, stages, p.GetUserID(), req.AutoRunAtOnce)
+	_ = s.PreCheck(p, stages, p.GetUserID(), req.AutoRunAtOnce)
 
 	// 立即执行一次
 	if req.AutoRunAtOnce {

@@ -38,7 +38,7 @@ type PipelineSvcFuncs struct {
 	HandleQueryPipelineYamlBySnippetConfigs func(sourceSnippetConfigs []apistructs.SnippetConfig) (map[string]string, error)
 	MakeSnippetPipeline4Create              func(p *spec.Pipeline, snippetTask *spec.PipelineTask, yamlContent string) (*spec.Pipeline, error)
 	CreatePipelineGraph                     func(p *spec.Pipeline) (stages []spec.PipelineStage, err error)
-	PreCheck                                func(pipelineYml *pipelineyml.PipelineYml, p *spec.Pipeline, stages []spec.PipelineStage, userID string, autoRun bool) error
+	PreCheck                                func(p *spec.Pipeline, stages []spec.PipelineStage, userID string, autoRun bool) error
 }
 
 func (r *provider) InjectLegacyFields(f *PipelineSvcFuncs, actionAgentSvc *actionagentsvc.ActionAgentSvc, extMarketSvc *extmarketsvc.ExtMarketSvc) {

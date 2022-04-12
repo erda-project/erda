@@ -53,13 +53,7 @@ func (s *PipelineSvc) CreateV2(req *apistructs.PipelineCreateRequestV2) (*spec.P
 	}
 
 	// PreCheck
-	pipelineYml, err := pipelineyml.New(
-		[]byte(p.PipelineYml),
-	)
-	if err != nil {
-		return nil, err
-	}
-	_ = s.PreCheck(pipelineYml, p, stages, p.GetUserID(), req.AutoRunAtOnce)
+	_ = s.PreCheck(p, stages, p.GetUserID(), req.AutoRunAtOnce)
 
 	// 立即执行一次
 	if req.AutoRunAtOnce {

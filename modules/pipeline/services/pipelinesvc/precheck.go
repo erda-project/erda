@@ -24,7 +24,14 @@ import (
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
-func (s *PipelineSvc) PreCheck(pipelineYml *pipelineyml.PipelineYml, p *spec.Pipeline, stages []spec.PipelineStage, userID string, autoRun bool) error {
+func (s *PipelineSvc) PreCheck(p *spec.Pipeline, stages []spec.PipelineStage, userID string, autoRun bool) error {
+	pipelineYml, err := pipelineyml.New(
+		[]byte(p.PipelineYml),
+	)
+	if err != nil {
+		return err
+	}
+
 	tasks, err := s.MergePipelineYmlTasks(pipelineYml, nil, p, stages, nil)
 	if err != nil {
 		return apierrors.ErrPreCheckPipeline.InternalError(err)
@@ -119,6 +126,7 @@ func (s *PipelineSvc) PreCheck(pipelineYml *pipelineyml.PipelineYml, p *spec.Pip
 			CmsDiceFiles:      cmsDiceFiles,
 			HoldOnKeys:        holdOnKeys,
 			EncryptSecretKeys: encryptSecretKeys,
+			PlatformSecrets:   platformSecrets,
 		})
 	}
 
