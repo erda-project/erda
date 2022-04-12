@@ -46,7 +46,7 @@ func (s *PipelineSvc) CreateV2(req *apistructs.PipelineCreateRequestV2) (*spec.P
 		return nil, err
 	}
 
-	if err := s.CreatePipelineGraph(p); err != nil {
+	if err := s.CreatePipelineGraph(p, req.AutoRunAtOnce); err != nil {
 		logrus.Errorf("failed to create pipeline graph, pipelineID: %d, err: %v", p.ID, err)
 		return nil, err
 	}
