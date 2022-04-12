@@ -53,14 +53,14 @@ func (s *PipelineSvc) RunPipeline(req *apistructs.PipelineRunRequest) (*spec.Pip
 		return nil, apierrors.ErrRunPipeline.InvalidState(reason)
 	}
 	if req.ForceRun {
-		err = s.stopRunningPipelines(&p, req.IdentityInfo)
+		err := s.stopRunningPipelines(&p, req.IdentityInfo)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	// 校验已运行的 pipeline
-	if err = s.limitParallelRunningPipelines(&p); err != nil {
+	if err := s.limitParallelRunningPipelines(&p); err != nil {
 		return nil, err
 	}
 

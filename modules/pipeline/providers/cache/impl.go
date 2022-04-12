@@ -33,8 +33,8 @@ const (
 	pipelineSecretCacheKey                             = "pipeline_secret"
 )
 
-// ClearPipelineContextCaches clear context map rwLock by pipelineID
-func (p *provider) ClearPipelineContextCaches(pipelineID uint64) {
+// ClearReconcilerPipelineContextCaches clear context map rwLock by pipelineID
+func (p *provider) ClearReconcilerPipelineContextCaches(pipelineID uint64) {
 	p.cacheMap.Delete(makeMapKey(pipelineID, pipelineStagesContextCachesPrefixKey))
 	p.cacheMap.Delete(makeMapKey(pipelineID, pipelineYmlContextCachesPrefixKey))
 	p.cacheMap.Delete(makeMapKey(pipelineID, pipelineRerunSuccessTaskContextCachesPrefixKey))
