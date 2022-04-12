@@ -44,6 +44,8 @@ func (p *provider) invoke(key []byte, value []byte, topic *string, timestamp tim
 		return nil
 	}
 
+	log.Timestamp = log.Time.UnixNano() / 1e6
+
 	// 兼容
 	// todo: use processor-pipeline pattern to simple the code
 	tagVal, ok := log.Tags["monitor_log_key"]
