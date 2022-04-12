@@ -35,7 +35,7 @@ func TestCalculatePipelineStatusV2(t *testing.T) {
 				},
 			},
 			expectStatus: apistructs.PipelineStatusAnalyzed,
-			desc:         "展示分析完成",
+			desc:         "all analyzed -> analyzed",
 		},
 		{
 			tasks: []*spec.PipelineTask{
@@ -47,7 +47,7 @@ func TestCalculatePipelineStatusV2(t *testing.T) {
 				},
 			},
 			expectStatus: apistructs.PipelineStatusRunning,
-			desc:         "展示运行中",
+			desc:         "at least one running -> running",
 		},
 		{
 			tasks: []*spec.PipelineTask{
@@ -58,8 +58,8 @@ func TestCalculatePipelineStatusV2(t *testing.T) {
 					Status: apistructs.PipelineStatusAnalyzeFailed,
 				},
 			},
-			expectStatus: apistructs.PipelineStatusFailed,
-			desc:         "有一个失败的状态，应该展示失败",
+			expectStatus: apistructs.PipelineStatusRunning,
+			desc:         "analyzed + analyzedFailed -> running",
 		},
 		{
 			tasks: []*spec.PipelineTask{
@@ -74,12 +74,12 @@ func TestCalculatePipelineStatusV2(t *testing.T) {
 				},
 			},
 			expectStatus: apistructs.PipelineStatusRunning,
-			desc:         "有成功有运行中，应该展示运行中",
+			desc:         "not all done -> running",
 		},
 		{
 			tasks: []*spec.PipelineTask{
 				{
-					Status: apistructs.PipelineStatusBorn,
+					Status: apistructs.PipelineStatusAnalyzed,
 				},
 				{
 					Status: apistructs.PipelineStatusPaused,
@@ -87,9 +87,12 @@ func TestCalculatePipelineStatusV2(t *testing.T) {
 				{
 					Status: apistructs.PipelineStatusSuccess,
 				},
+				{
+					Status: apistructs.PipelineStatusFailed,
+				},
 			},
 			expectStatus: apistructs.PipelineStatusPaused,
-			desc:         "有暂停有准备中，展示暂停",
+			desc:         "paused + analyzed + endStatus -> running",
 		},
 		{
 			tasks: []*spec.PipelineTask{
@@ -104,7 +107,22 @@ func TestCalculatePipelineStatusV2(t *testing.T) {
 				},
 			},
 			expectStatus: apistructs.PipelineStatusRunning,
-			desc:         "有排队有等待有准备中，展示运行中",
+			desc:         "queue -> running",
+		},
+		{
+			tasks: []*spec.PipelineTask{
+				{
+					Status: apistructs.PipelineStatusFailed,
+				},
+				{
+					Status: apistructs.PipelineStatusStopByUser,
+				},
+				{
+					Status: apistructs.PipelineStatusSuccess,
+				},
+			},
+			expectStatus: apistructs.PipelineStatusStopByUser,
+			desc:         "all done, at least one stopByUser -> stopByUser",
 		},
 	}
 

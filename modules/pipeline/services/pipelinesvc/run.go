@@ -36,7 +36,6 @@ import (
 )
 
 func (s *PipelineSvc) RunPipeline(req *apistructs.PipelineRunRequest) (*spec.Pipeline, error) {
-
 	p, err := s.dbClient.GetPipeline(req.PipelineID)
 	if err != nil {
 		return nil, apierrors.ErrGetPipeline.InvalidParameter(err)
@@ -67,10 +66,30 @@ func (s *PipelineSvc) RunPipeline(req *apistructs.PipelineRunRequest) (*spec.Pip
 
 	p.Extra.ConfigManageNamespaces = append(p.Extra.ConfigManageNamespaces, req.ConfigManageNamespaces...)
 
-	// cms
-	secrets, cmsDiceFiles, holdOnKeys, encryptSecretKeys, err := s.FetchSecrets(&p)
-	if err != nil {
-		return nil, apierrors.ErrRunPipeline.InternalError(err)
+	var (
+		secrets, cmsDiceFiles         map[string]string
+		holdOnKeys, encryptSecretKeys []string
+		platformSecrets               map[string]string
+	)
+	secretCache := s.cache.GetPipelineSecretByPipelineID(p.PipelineID)
+	defer s.cache.ClearPipelineSecretByPipelineID(p.PipelineID)
+	if secretCache != nil {
+		secrets = secretCache.Secrets
+		cmsDiceFiles = secretCache.CmsDiceFiles
+		holdOnKeys = secretCache.HoldOnKeys
+		encryptSecretKeys = secretCache.EncryptSecretKeys
+		platformSecrets = secretCache.PlatformSecrets
+	} else {
+		// fetch secrets
+		secrets, cmsDiceFiles, holdOnKeys, encryptSecretKeys, err = s.FetchSecrets(&p)
+		if err != nil {
+			return nil, apierrors.ErrRunPipeline.InternalError(err)
+		}
+		// fetch platform secrets
+		platformSecrets, err = s.FetchPlatformSecrets(&p, holdOnKeys)
+		if err != nil {
+			return nil, apierrors.ErrRunPipeline.InternalError(err)
+		}
 	}
 
 	for k, v := range req.Secrets {
@@ -94,12 +113,6 @@ func (s *PipelineSvc) RunPipeline(req *apistructs.PipelineRunRequest) (*spec.Pip
 			errMsgs = append(errMsgs, checkErr.Error())
 		}
 		return nil, apierrors.ErrCheckSecrets.InvalidParameter(strutil.Join(errMsgs, "\n", true))
-	}
-
-	// 获取平台级别配置
-	platformSecrets, err := s.FetchPlatformSecrets(&p, holdOnKeys)
-	if err != nil {
-		return nil, apierrors.ErrRunPipeline.InternalError(err)
 	}
 
 	// Snapshot 快照用于记录

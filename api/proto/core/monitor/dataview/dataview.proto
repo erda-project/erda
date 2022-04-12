@@ -173,6 +173,8 @@ message ListCustomViewsRequest {
   string          name        = 5;
   string          description = 6;
   repeated string creatorId   = 7;
+  int64           pageNo      = 8;
+  int64           pageSize    = 9;
 }
 
 // GetCustomViewsCreatorRequest

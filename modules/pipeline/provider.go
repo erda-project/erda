@@ -26,6 +26,7 @@ import (
 	"github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	_ "github.com/erda-project/erda/modules/pipeline/aop/plugins"
+	"github.com/erda-project/erda/modules/pipeline/providers/cache"
 	"github.com/erda-project/erda/modules/pipeline/providers/clusterinfo"
 	"github.com/erda-project/erda/modules/pipeline/providers/cron/compensator"
 	"github.com/erda-project/erda/modules/pipeline/providers/cron/daemon"
@@ -55,6 +56,7 @@ type provider struct {
 	ClusterInfo  clusterinfo.Interface
 	DBGC         dbgc.Interface
 	ResourceGC   resourcegc.Interface
+	Cache        cache.Interface
 }
 
 func (p *provider) Run(ctx context.Context) error {

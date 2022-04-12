@@ -32,6 +32,9 @@ zh:
   aggregateByBranch: 只显示版本最新制品
   formalReleaseCanNotBeModified: 正式制品不可修改
   formal: 正式
+  tag: 标签
+  selectTag: 请选择标签
+  formalOrNot: 是否为正式
 en:
   searchByVersionOrID: Search by version or releaseID
   application: Application
@@ -66,3 +69,6 @@ en:
   true: "true"
   false: "false"
   formal: Formal
+  tag: Tag
+  selectTag: Select tag
+  formalOrNot: Formal or not

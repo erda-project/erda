@@ -20,6 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/actionagent"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 )
 
@@ -94,5 +95,5 @@ func TestDealJobAndClusterInfo(t *testing.T) {
 	DealJobAndClusterInfo(job, clusterInfo)
 	assert.Equal(t, "true", clusterInfo[apistructs.BuildkitEnable])
 	assert.Equal(t, "100", clusterInfo[apistructs.BuildkitHitRate])
-	assert.Equal(t, "true", job.Env["ACTIONAGENT_ENABLE_PUSH_LOG_TO_COLLECTOR"])
+	assert.Equal(t, "true", job.Env[actionagent.EnvEnablePushLog2Collector])
 }

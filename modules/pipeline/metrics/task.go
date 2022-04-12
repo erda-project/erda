@@ -117,14 +117,6 @@ func generateActionEventTags(task spec.PipelineTask, p *spec.Pipeline) map[strin
 		labelPipelineSource:  labelPipelineSource,
 		labelPipelineYmlName: p.PipelineYmlName,
 	}
-	envs := task.Extra.PrivateEnvs
-	if envs == nil {
-		return tags
-	}
-
-	for k, v := range envs {
-		tags[k] = v
-	}
 	return tags
 }
 
