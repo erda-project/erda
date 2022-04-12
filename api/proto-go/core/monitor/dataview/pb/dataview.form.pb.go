@@ -26,6 +26,7 @@ var _ urlenc.URLValuesUnmarshaler = (*GetSystemViewResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ListCustomViewsRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetCustomViewsCreatorRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ListCustomViewsResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*Creator)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetCustomViewsCreatorResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetCustomViewRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetCustomViewResponse)(nil)
@@ -343,13 +344,33 @@ func (m *ListCustomViewsResponse) UnmarshalURLValues(prefix string, values url.V
 	return nil
 }
 
-// GetCustomViewsCreatorResponse implement urlenc.URLValuesUnmarshaler.
-func (m *GetCustomViewsCreatorResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+// Creator implement urlenc.URLValuesUnmarshaler.
+func (m *Creator) UnmarshalURLValues(prefix string, values url.Values) error {
 	for key, vals := range values {
 		if len(vals) > 0 {
 			switch prefix + key {
 			case "creators":
 				m.Creators = vals
+			}
+		}
+	}
+	return nil
+}
+
+// GetCustomViewsCreatorResponse implement urlenc.URLValuesUnmarshaler.
+func (m *GetCustomViewsCreatorResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "data":
+				if m.Data == nil {
+					m.Data = &Creator{}
+				}
+			case "data.creators":
+				if m.Data == nil {
+					m.Data = &Creator{}
+				}
+				m.Data.Creators = vals
 			case "userIDs":
 				m.UserIDs = vals
 			}

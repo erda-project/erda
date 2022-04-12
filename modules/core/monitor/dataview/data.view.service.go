@@ -139,7 +139,7 @@ func (s *dataViewService) GetCustomViewsCreator(ctx context.Context, req *pb.Get
 	if err != nil {
 		return nil, errors.NewDatabaseError(err)
 	}
-	return &pb.GetCustomViewsCreatorResponse{Creators: creatorIds, UserIDs: creatorIds}, nil
+	return &pb.GetCustomViewsCreatorResponse{Data: &pb.Creator{Creators: creatorIds}, UserIDs: creatorIds}, nil
 }
 
 func (s *dataViewService) ListCustomViews(ctx context.Context, req *pb.ListCustomViewsRequest) (*pb.ListCustomViewsResponse, error) {
