@@ -18,7 +18,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -646,31 +645,29 @@ func (a *Addon) strategyAddon(params *apistructs.AddonHandlerCreateItem,
 
 // getTagInstance 根据tag获取addon实例信息
 func (a *Addon) getTagInstance(addonSpec *apistructs.AddonExtension, params *apistructs.AddonHandlerCreateItem) (*dbclient.AddonInstanceRouting, error) {
+	l := logrus.WithField("func", "*Addon.getTagInstance")
 	if params.ShareScope == "" {
 		params.ShareScope = addonSpec.ShareScopes[0]
 	}
 	if len(addonSpec.Similar) == 0 {
 		addonSpec.Similar = []string{addonSpec.Name}
 	}
+	l.Debugf("addonSpec.Similar: %v", addonSpec.Similar)
 	routingList, err := a.db.GetRoutingInstancesBySimilar(addonSpec.Similar, params)
 	if err != nil {
 		return nil, err
 	}
-	list := *routingList
-	sort.Slice(list, func(i, j int) bool {
-		if strings.EqualFold(list[i].Category, apistructs.CUSTOM_TYPE_CUSTOM) && !strings.EqualFold(list[j].Category, apistructs.CUSTOM_TYPE_CUSTOM) {
-			return true
-		}
-		if !strings.EqualFold(list[i].Category, apistructs.CUSTOM_TYPE_CUSTOM) && strings.EqualFold(list[j].Category, apistructs.CUSTOM_TYPE_CUSTOM) {
-			return false
-		}
-		return list[i].Name < list[j].Name
-	})
-	for _, routingIns := range *routingList {
-		if routingIns.Name == params.InstanceName {
-			return &routingIns, nil
-		}
+	list := dbclient.AddonInstanceRoutingList(*routingList)
+	if item, ok := list.GetByName(params.InstanceName); ok {
+		l.Debugf("find routingInstance by name, name: %s, routingInstance: %+v", item.Name, item)
+		return item, nil
 	}
+	if item, ok := list.GetByTag(params.Tag); ok {
+		l.Infof("find routingInstance by tag, tag: %s, routingInstance: %+v", item.Tag, item)
+		return item, nil
+	}
+
+	l.Infoln("routingInstance not found")
 	return nil, nil
 }
 
