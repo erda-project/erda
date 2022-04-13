@@ -21,6 +21,7 @@ import (
 
 	"github.com/recallsong/go-utils/reflectx"
 
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/msp/apm/log-service/rules/db"
 )
 
@@ -50,6 +51,11 @@ type Tag struct {
 type ProcessorConfig struct {
 	Type   string                 `json:"type"`
 	Config map[string]interface{} `json:"config"`
+}
+
+type ListRulesResponse struct {
+	LogData  []*LogMetricConfigSimple         `json:"logData"`
+	UserInfo *apistructs.UserListResponseData `json:"userInfo"`
 }
 
 // FromModel .
