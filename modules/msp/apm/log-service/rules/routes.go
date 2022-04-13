@@ -21,7 +21,9 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/erda-project/erda-infra/pkg/strutil"
 	"github.com/erda-project/erda-infra/providers/httpserver"
+	"github.com/erda-project/erda/apistructs"
 	metrics "github.com/erda-project/erda/modules/core/monitor/metric"
 	"github.com/erda-project/erda/modules/msp/apm/log-service/analysis/processors"
 	_ "github.com/erda-project/erda/modules/msp/apm/log-service/analysis/processors/regex" //
@@ -87,19 +89,27 @@ func (p *provider) listRules(r *http.Request, params struct {
 		params.ScopeID = name
 	}
 	var userIDs []string
-	userIDMap := make(map[string]bool)
 	list, err := p.ListLogMetricConfig(params.Scope, params.ScopeID)
 	if err != nil {
 		return api.Errors.Internal(err)
 	}
 	for _, v := range list {
-		userId := v.Creator
-		if userId != "" && !userIDMap[userId] {
-			userIDs = append(userIDs, userId)
-			userIDMap[userId] = true
+		if v.Creator != "" {
+			userIDs = append(userIDs, v.Creator)
 		}
 	}
-	return api.Success(list)
+	userIDs = strutil.DedupSlice(userIDs, true)
+	userInfo, err := p.bdl.ListUsers(apistructs.UserListRequest{
+		UserIDs: userIDs,
+	})
+	if err != nil {
+		return api.Errors.Internal(err)
+	}
+	resp := ListRulesResponse{
+		LogData:  list,
+		UserInfo: userInfo,
+	}
+	return api.Success(resp)
 }
 
 func (p *provider) getRule(r *http.Request, params struct {

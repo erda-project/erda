@@ -51,7 +51,7 @@ type LogMetricConfigDB struct {
 func (db *LogMetricConfigDB) QueryByScope(scope, scopeID string) ([]*LogMetricConfig, error) {
 	var list []*LogMetricConfig
 	if err := db.Table(LogMetricConfigTable).
-		Select("`id`,`org_id`,`name`,`metric`,`processors`,`enable`,`create_time`,`update_time`").
+		Select("`id`,`org_id`,`name`,`metric`,`processors`,`enable`,`create_time`,`update_time`,`creator_id`").
 		Where("`scope`=? AND `scope_id`=?", scope, scopeID).
 		Find(&list).Error; err != nil {
 		return nil, err
