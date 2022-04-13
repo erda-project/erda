@@ -21,23 +21,25 @@ import (
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/requirement-task-overview/common"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/services/issue"
+	"github.com/erda-project/erda/modules/dop/services/issuestate"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/filter"
 )
 
 type ComponentFilter struct {
 	filter.CommonFilter
 
-	sdk      *cptype.SDK
-	bdl      *bundle.Bundle
-	issueSvc *issue.Issue
-	State    State    `json:"state,omitempty"`
-	InParams InParams `json:"-"`
+	sdk           *cptype.SDK
+	bdl           *bundle.Bundle
+	issueSvc      *issue.Issue
+	issueStateSvc *issuestate.IssueState
+	State         State    `json:"state,omitempty"`
+	InParams      InParams `json:"-"`
 
 	// local vars
 	Iterations     []apistructs.Iteration  `json:"-"`
 	Members        []apistructs.Member     `json:"-"`
 	IssueList      []dao.IssueItem         `json:"-"`
-	IssueStateList []dao.IssueState        `json:"-"`
+	IssueStateList []uint64                `json:"-"`
 	Stages         []apistructs.IssueStage `json:"-"`
 }
 

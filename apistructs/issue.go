@@ -824,9 +824,7 @@ func (ipr *IssuePagingRequest) UrlQueryString() map[string][]string {
 		query["iterationID"] = []string{strconv.FormatInt(ipr.IterationID, 10)}
 	}
 	for _, v := range ipr.IterationIDs {
-		if v > 0 {
-			query["iterationIDs"] = append(query["iterationIDs"], strconv.FormatInt(v, 10))
-		}
+		query["iterationIDs"] = append(query["iterationIDs"], strconv.FormatInt(v, 10))
 	}
 	if ipr.AppID != nil {
 		query["appID"] = []string{strconv.FormatInt(int64(*ipr.AppID), 10)}
