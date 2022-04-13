@@ -15,6 +15,7 @@
 package projectpipeline
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
@@ -167,7 +168,7 @@ func (p *ProjectPipelineService) CreateSourcePreCheck(ctx context.Context, param
 
 	return &pb.CreateProjectPipelineSourcePreCheckResponse{
 		Pass:    false,
-		Message: fmt.Sprintf(p.trans.Text(apis.Language(ctx), CreateProjectPipelineSourcePreCheckLocaleKey), definitionName),
+		Message: fmt.Sprintf("%s %s", p.trans.Text(apis.Language(ctx), CreateProjectPipelineSourcePreCheckLocaleKey), definitionName),
 	}, nil
 }
 
@@ -208,18 +209,14 @@ func (p *ProjectPipelineService) Create(ctx context.Context, params *pb.CreatePr
 	if err != nil {
 		return nil, err
 	}
-
-	nameCheckResult, err := p.CreateNamePreCheck(ctx, &pb.CreateProjectPipelineNamePreCheckRequest{
-		ProjectID: params.ProjectID,
-		Name:      params.Name,
-	})
+	pipeline, err := p.createOne(ctx, params)
 	if err != nil {
-		return nil, err
+		return nil, apierrors.ErrCreateProjectPipeline.InternalError(err)
 	}
-	if !nameCheckResult.Pass {
-		return nil, apierrors.ErrCreateProjectPipeline.InternalError(fmt.Errorf(nameCheckResult.Message))
-	}
+	return &pb.CreateProjectPipelineResponse{ProjectPipeline: pipeline}, nil
+}
 
+func (p *ProjectPipelineService) createOne(ctx context.Context, params *pb.CreateProjectPipelineRequest) (*pb.ProjectPipeline, error) {
 	sourceCheckResult, err := p.CreateSourcePreCheck(ctx, &pb.CreateProjectPipelineSourcePreCheckRequest{
 		SourceType: params.SourceType,
 		Ref:        params.Ref,
@@ -231,23 +228,23 @@ func (p *ProjectPipelineService) Create(ctx context.Context, params *pb.CreatePr
 		return nil, err
 	}
 	if !sourceCheckResult.Pass {
-		return nil, apierrors.ErrCreateProjectPipeline.InternalError(fmt.Errorf(sourceCheckResult.Message))
+		return nil, fmt.Errorf(sourceCheckResult.Message)
 	}
 
 	pipelineSourceType := NewProjectSourceType(params.SourceType)
 	sourceReq, err := pipelineSourceType.GenerateReq(ctx, p, params)
 	if err != nil {
-		return nil, apierrors.ErrCreateProjectPipeline.InternalError(err)
+		return nil, err
 	}
 
 	sourceRsp, err := p.PipelineSource.Create(ctx, sourceReq)
 	if err != nil {
-		return nil, apierrors.ErrCreateProjectPipeline.InternalError(err)
+		return nil, err
 	}
 
 	location, err := p.makeLocationByAppID(params.AppID)
 	if err != nil {
-		return nil, apierrors.ErrCreateProjectPipeline.InternalError(err)
+		return nil, err
 	}
 
 	definitionRsp, err := p.PipelineDefinition.Create(ctx, &dpb.PipelineDefinitionCreateRequest{
@@ -262,7 +259,7 @@ func (p *ProjectPipelineService) Create(ctx context.Context, params *pb.CreatePr
 		Ref: sourceRsp.PipelineSource.Ref,
 	})
 	if err != nil {
-		return nil, apierrors.ErrCreateProjectPipeline.InternalError(err)
+		return nil, err
 	}
 
 	// When creating a definition, a scheduled task is created
@@ -276,7 +273,7 @@ func (p *ProjectPipelineService) Create(ctx context.Context, params *pb.CreatePr
 		p.logger.Errorf("failed to ProcessGuide, err: %v, appID: %d, branch: %s", err, params.AppID, params.Ref)
 	}
 
-	return &pb.CreateProjectPipelineResponse{ProjectPipeline: &pb.ProjectPipeline{
+	return &pb.ProjectPipeline{
 		ID:               definitionRsp.PipelineDefinition.ID,
 		Name:             definitionRsp.PipelineDefinition.Name,
 		Creator:          definitionRsp.PipelineDefinition.Creator,
@@ -289,7 +286,7 @@ func (p *ProjectPipelineService) Create(ctx context.Context, params *pb.CreatePr
 		Path:             sourceRsp.PipelineSource.Path,
 		FileName:         sourceRsp.PipelineSource.Name,
 		PipelineSourceID: sourceRsp.PipelineSource.ID,
-	}}, nil
+	}, nil
 }
 
 func (p *ProjectPipelineService) createCronIfNotExist(definition *dpb.PipelineDefinition, projectPipelineType ProjectSourceType) error {
@@ -1438,27 +1435,27 @@ func (p *ProjectPipelineService) ListPipelineStatisticsByCategory(ctx context.Co
 	return []PipelineStatisticsByCategory{
 		{
 			Key:      apistructs.CategoryBuildDeploy,
-			Category: p.trans.Text(apis.Language(ctx), "BuildDeploy"),
+			Category: p.trans.Text(apis.Language(ctx), apistructs.CategoryBuildDeploy.String()),
 			Rules:    apistructs.CategoryKeyRuleMap[apistructs.CategoryBuildDeploy],
 		},
 		{
 			Key:      apistructs.CategoryBuildArtifact,
-			Category: p.trans.Text(apis.Language(ctx), "BuildArtifact"),
+			Category: p.trans.Text(apis.Language(ctx), apistructs.CategoryBuildArtifact.String()),
 			Rules:    apistructs.CategoryKeyRuleMap[apistructs.CategoryBuildArtifact],
 		},
 		{
 			Key:      apistructs.CategoryBuildCombineArtifact,
-			Category: p.trans.Text(apis.Language(ctx), "BuildCombineArtifact"),
+			Category: p.trans.Text(apis.Language(ctx), apistructs.CategoryBuildCombineArtifact.String()),
 			Rules:    apistructs.CategoryKeyRuleMap[apistructs.CategoryBuildCombineArtifact],
 		},
 		{
 			Key:      apistructs.CategoryBuildIntegration,
-			Category: p.trans.Text(apis.Language(ctx), "BuildIntegration"),
+			Category: p.trans.Text(apis.Language(ctx), apistructs.CategoryBuildIntegration.String()),
 			Rules:    apistructs.CategoryKeyRuleMap[apistructs.CategoryBuildIntegration],
 		},
 		{
 			Key:      apistructs.CategoryOthers,
-			Category: p.trans.Text(apis.Language(ctx), "Uncategorized"),
+			Category: p.trans.Text(apis.Language(ctx), apistructs.CategoryOthers.String()),
 			Rules:    nil,
 		},
 	}
@@ -1534,4 +1531,84 @@ func getRemotes(appNames []string, orgName, projectName string) []string {
 		}))
 	}
 	return remotes
+}
+
+func (p *ProjectPipelineService) OneClickCreate(ctx context.Context, params *pb.OneClickCreateProjectPipelineRequest) (*pb.OneClickCreateProjectPipelineResponse, error) {
+	if err := params.Validate(); err != nil {
+		return nil, apierrors.ErrOneClickCreateProjectPipeline.InvalidParameter(err)
+	}
+	if len(params.PipelineYmls) == 0 {
+		return nil, apierrors.ErrOneClickCreateProjectPipeline.InvalidParameter(fmt.Errorf("the pipelineYmls is empty"))
+	}
+
+	// permission check
+	err := p.checkRolePermission(apistructs.IdentityInfo{
+		UserID: apis.GetUserID(ctx),
+	}, &apistructs.PipelineCreateRequestV2{
+		Labels: map[string]string{
+			apistructs.LabelAppID:  strconv.FormatUint(params.AppID, 10),
+			apistructs.LabelBranch: params.Ref,
+		},
+	}, apierrors.ErrOneClickCreateProjectPipeline)
+	if err != nil {
+		return nil, err
+	}
+
+	createReq := make([]*pb.CreateProjectPipelineRequest, 0, len(params.PipelineYmls))
+	for _, v := range params.PipelineYmls {
+		createReq = append(createReq, &pb.CreateProjectPipelineRequest{
+			ProjectID:  params.ProjectID,
+			Name:       p.generatePipelineName(ctx, v),
+			AppID:      params.AppID,
+			SourceType: params.SourceType,
+			Ref:        params.Ref,
+			Path:       getFilePath(v),
+			FileName:   filepath.Base(v),
+		})
+	}
+
+	pipelines := make([]*pb.ProjectPipeline, 0, len(params.PipelineYmls))
+	var (
+		message bytes.Buffer
+		errMsg  []string
+	)
+	message.WriteString(fmt.Sprintf("Create %d pipelines,", len(params.PipelineYmls)))
+	wait := limit_sync_group.NewSemaphore(10)
+	for _, v := range createReq {
+		wait.Add(1)
+		go func(params *pb.CreateProjectPipelineRequest) {
+			defer wait.Done()
+			pipeline, err := p.createOne(ctx, params)
+			if err != nil {
+				errMsg = append(errMsg, fmt.Sprintf("failed to create %s, err: %s", filepath.Join(params.Path, params.FileName), err.Error()))
+			} else {
+				pipelines = append(pipelines, pipeline)
+			}
+		}(v)
+	}
+	wait.Wait()
+	message.WriteString(fmt.Sprintf("%d Success, %d Failed\n", len(pipelines), len(errMsg)))
+	for _, v := range errMsg {
+		message.WriteString(v + "\n")
+	}
+
+	return &pb.OneClickCreateProjectPipelineResponse{
+		ProjectPipelines: pipelines,
+		Message:          message.String(),
+	}, nil
+}
+
+func (p *ProjectPipelineService) generatePipelineName(ctx context.Context, pipelineYml string) string {
+	if v, ok := apistructs.GetRuleCategoryKeyMap()[pipelineYml]; ok {
+		return p.trans.Text(apis.Language(ctx), v.String())
+	}
+	return filepath.Base(pipelineYml)
+}
+
+func getFilePath(path string) string {
+	dir := filepath.Dir(path)
+	if dir == "." {
+		return ""
+	}
+	return dir
 }
