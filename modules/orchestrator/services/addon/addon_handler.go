@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -645,24 +646,29 @@ func (a *Addon) strategyAddon(params *apistructs.AddonHandlerCreateItem,
 
 // getTagInstance 根据tag获取addon实例信息
 func (a *Addon) getTagInstance(addonSpec *apistructs.AddonExtension, params *apistructs.AddonHandlerCreateItem) (*dbclient.AddonInstanceRouting, error) {
-	if params.Tag == "" {
-		return nil, nil
-	}
+	l := logrus.WithField("func", "*Addon.getTagInstance")
 	if params.ShareScope == "" {
 		params.ShareScope = addonSpec.ShareScopes[0]
 	}
 	if len(addonSpec.Similar) == 0 {
 		addonSpec.Similar = []string{addonSpec.Name}
 	}
+	l.Debugf("addonSpec.Similar: %v", addonSpec.Similar)
 	routingList, err := a.db.GetRoutingInstancesBySimilar(addonSpec.Similar, params)
 	if err != nil {
 		return nil, err
 	}
-	for _, routingIns := range *routingList {
-		if routingIns.Tag == params.Tag {
-			return &routingIns, nil
-		}
+	list := addonInstanceRoutingList(*routingList)
+	if item, ok := list.GetByName(params.InstanceName); ok {
+		l.Debugf("find routingInstance by name, name: %s, routingInstance: %+v", item.Name, item)
+		return item, nil
 	}
+	if item, ok := list.GetByTag(params.Tag); ok {
+		l.Infof("find routingInstance by tag, tag: %s, routingInstance: %+v", item.Tag, item)
+		return item, nil
+	}
+
+	l.Infoln("routingInstance not found")
 	return nil, nil
 }
 
@@ -1329,4 +1335,41 @@ func (a *Addon) pushLogCore(content string, params map[string]string) {
 		tags[log.TAG_ORG_NAME] = orgName
 	}
 	logHelper.Log(content, tags)
+}
+
+type addonInstanceRoutingList []dbclient.AddonInstanceRouting
+
+func (l addonInstanceRoutingList) sort() {
+	f := func(i, j int) bool {
+		if strings.EqualFold(l[i].Category, apistructs.CUSTOM_TYPE_CUSTOM) && !strings.EqualFold(l[j].Category, apistructs.CUSTOM_TYPE_CUSTOM) {
+			return true
+		}
+		if !strings.EqualFold(l[i].Category, apistructs.CUSTOM_TYPE_CUSTOM) && strings.EqualFold(l[j].Category, apistructs.CUSTOM_TYPE_CUSTOM) {
+			return false
+		}
+		return l[i].Name < l[j].Name
+	}
+	if ok := sort.SliceIsSorted(l, f); !ok {
+		sort.Slice(l, f)
+	}
+}
+
+func (l addonInstanceRoutingList) GetByName(name string) (*dbclient.AddonInstanceRouting, bool) {
+	l.sort()
+	for i := range l {
+		if l[i].Name == name {
+			return &l[i], true
+		}
+	}
+	return nil, false
+}
+
+func (l addonInstanceRoutingList) GetByTag(tag string) (*dbclient.AddonInstanceRouting, bool) {
+	l.sort()
+	for i := range l {
+		if l[i].Tag == tag {
+			return &l[i], true
+		}
+	}
+	return nil, false
 }

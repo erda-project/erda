@@ -413,3 +413,45 @@ func TestAddon_basicAddonDeploy(t *testing.T) {
 		})
 	}
 }
+
+func TestAddonInstanceRoutingList_GetByName(t *testing.T) {
+	var name = "dspo-mysql"
+	var list = []dbclient.AddonInstanceRouting{
+		{Name: name, Category: "database"},
+		{Name: name, Category: apistructs.CUSTOM_TYPE_CUSTOM},
+		{Name: name, Category: apistructs.CUSTOM_TYPE_CLOUD},
+	}
+	l := addonInstanceRoutingList(list)
+	item, ok := l.GetByName(name)
+	if !ok {
+		t.Errorf("not ok, name: %s", name)
+	}
+	if item.Name != name {
+		t.Errorf("name error, expected: %s, actual: %s", name, item.Name)
+	}
+	if item.Category != apistructs.CUSTOM_TYPE_CUSTOM {
+		t.Errorf("category error, expected: %s, actual: %s", apistructs.CUSTOM_TYPE_CUSTOM, item.Category)
+	}
+}
+
+func TestAddonInstanceRoutingList_GetByTag(t *testing.T) {
+	var (
+		name = "dspo-mysql"
+		tag  = "basic"
+	)
+	var list = []dbclient.AddonInstanceRouting{
+		{Name: name, Category: "database", Tag: tag},
+		{Name: name, Category: apistructs.CUSTOM_TYPE_CUSTOM, Tag: tag},
+	}
+	l := addonInstanceRoutingList(list)
+	item, ok := l.GetByTag(tag)
+	if !ok {
+		t.Errorf("not ok, name: %s", tag)
+	}
+	if item.Tag != tag {
+		t.Errorf("name error, expected: %s, actual: %s", tag, item.Tag)
+	}
+	if item.Category != apistructs.CUSTOM_TYPE_CUSTOM {
+		t.Errorf("category error, expected: %s, actual: %s", apistructs.CUSTOM_TYPE_CUSTOM, item.Category)
+	}
+}
