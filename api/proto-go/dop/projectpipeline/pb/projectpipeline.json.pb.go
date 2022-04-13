@@ -67,6 +67,10 @@ var _ json.Marshaler = (*UpdateProjectPipelineRequest)(nil)
 var _ json.Unmarshaler = (*UpdateProjectPipelineRequest)(nil)
 var _ json.Marshaler = (*UpdateProjectPipelineResponse)(nil)
 var _ json.Unmarshaler = (*UpdateProjectPipelineResponse)(nil)
+var _ json.Marshaler = (*UpdateProjectPipelineSourceRequest)(nil)
+var _ json.Unmarshaler = (*UpdateProjectPipelineSourceRequest)(nil)
+var _ json.Marshaler = (*UpdateProjectPipelineSourceResponse)(nil)
+var _ json.Unmarshaler = (*UpdateProjectPipelineSourceResponse)(nil)
 
 // PipelineRunParam implement json.Marshaler.
 func (m *PipelineRunParam) MarshalJSON() ([]byte, error) {
@@ -549,6 +553,42 @@ func (m *UpdateProjectPipelineResponse) MarshalJSON() ([]byte, error) {
 
 // UpdateProjectPipelineResponse implement json.Marshaler.
 func (m *UpdateProjectPipelineResponse) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// UpdateProjectPipelineSourceRequest implement json.Marshaler.
+func (m *UpdateProjectPipelineSourceRequest) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// UpdateProjectPipelineSourceRequest implement json.Marshaler.
+func (m *UpdateProjectPipelineSourceRequest) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// UpdateProjectPipelineSourceResponse implement json.Marshaler.
+func (m *UpdateProjectPipelineSourceResponse) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// UpdateProjectPipelineSourceResponse implement json.Marshaler.
+func (m *UpdateProjectPipelineSourceResponse) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)

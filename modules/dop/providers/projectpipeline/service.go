@@ -67,6 +67,7 @@ type Service interface {
 	ListPipelineYml(ctx context.Context, req *pb.ListAppPipelineYmlRequest) (*pb.ListAppPipelineYmlResponse, error)
 	CreateNamePreCheck(ctx context.Context, req *pb.CreateProjectPipelineNamePreCheckRequest) (*pb.CreateProjectPipelineNamePreCheckResponse, error)
 	CreateSourcePreCheck(ctx context.Context, req *pb.CreateProjectPipelineSourcePreCheckRequest) (*pb.CreateProjectPipelineSourcePreCheckResponse, error)
+	UpdateProjectPipelineSource(ctx context.Context, params *pb.UpdateProjectPipelineSourceRequest) (*pb.UpdateProjectPipelineSourceResponse, error)
 
 	Run(ctx context.Context, params *pb.RunProjectPipelineRequest) (*pb.RunProjectPipelineResponse, error)
 	Cancel(ctx context.Context, params *pb.CancelProjectPipelineRequest) (*pb.CancelProjectPipelineResponse, error)

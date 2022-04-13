@@ -80,3 +80,7 @@ func (s *projectPipelineServiceWrapper) RerunFailed(ctx context.Context, req *pb
 func (s *projectPipelineServiceWrapper) Cancel(ctx context.Context, req *pb.CancelProjectPipelineRequest) (*pb.CancelProjectPipelineResponse, error) {
 	return s.client.Cancel(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }
+
+func (s *projectPipelineServiceWrapper) UpdateProjectPipelineSource(ctx context.Context, req *pb.UpdateProjectPipelineSourceRequest) (*pb.UpdateProjectPipelineSourceResponse, error) {
+	return s.client.UpdateProjectPipelineSource(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+}

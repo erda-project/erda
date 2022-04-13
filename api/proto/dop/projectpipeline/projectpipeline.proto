@@ -77,6 +77,7 @@ service ProjectPipelineService {
 
     };
   }
+
   rpc Update(UpdateProjectPipelineRequest)
       returns(UpdateProjectPipelineResponse) {
     option(google.api.http) = {
@@ -88,7 +89,7 @@ service ProjectPipelineService {
   }
 
   rpc Run(RunProjectPipelineRequest)
-          returns(RunProjectPipelineResponse) {
+      returns(RunProjectPipelineResponse) {
     option(google.api.http) = {
       post : "/api/project-pipeline/definitions/{pipelineDefinitionID}/actions/run",
     };
@@ -98,7 +99,7 @@ service ProjectPipelineService {
   }
 
   rpc Rerun(RerunProjectPipelineRequest)
-          returns(RerunProjectPipelineResponse) {
+      returns(RerunProjectPipelineResponse) {
     option(google.api.http) = {
       post : "/api/project-pipeline/definitions/{pipelineDefinitionID}/actions/rerun",
     };
@@ -108,7 +109,7 @@ service ProjectPipelineService {
   }
 
   rpc RerunFailed(RerunFailedProjectPipelineRequest)
-          returns(RerunFailedProjectPipelineResponse) {
+      returns(RerunFailedProjectPipelineResponse) {
     option(google.api.http) = {
       post : "/api/project-pipeline/definitions/{pipelineDefinitionID}/actions/rerun-failed",
     };
@@ -118,12 +119,22 @@ service ProjectPipelineService {
   }
 
   rpc Cancel(CancelProjectPipelineRequest)
-          returns(CancelProjectPipelineResponse) {
+      returns(CancelProjectPipelineResponse) {
     option(google.api.http) = {
       post : "/api/project-pipeline/definitions/{pipelineDefinitionID}/actions/cancel",
     };
     option(erda.common.openapi) = {
       path : "/api/project-pipeline/definitions/{pipelineDefinitionID}/actions/cancel",
+    };
+  }
+
+  rpc UpdateProjectPipelineSource(UpdateProjectPipelineSourceRequest)
+      returns(UpdateProjectPipelineSourceResponse) {
+    option(google.api.http) = {
+      put : "/api/project-pipeline/definitions/{pipelineDefinitionID}/actions/update-source",
+    };
+    option(erda.common.openapi) = {
+      path : "/api/project-pipeline/definitions/{pipelineDefinitionID}/actions/update-source",
     };
   }
 }
@@ -136,7 +147,7 @@ message PipelineRunParam {
 message RunProjectPipelineRequest {
   string pipelineDefinitionID = 1;
   int64 projectID = 2;
-  repeated PipelineRunParam runParams  = 3;
+  repeated PipelineRunParam runParams = 3;
 }
 
 message RunProjectPipelineResponse {
@@ -290,5 +301,20 @@ message UpdateProjectPipelineRequest {
 }
 
 message UpdateProjectPipelineResponse {
+  ProjectPipeline ProjectPipeline = 1;
+}
+
+message UpdateProjectPipelineSourceRequest {
+  string pipelineDefinitionID = 1 [(validator.field) = {string_not_empty: true}];
+  uint64 projectID = 2 [(validator.field) = {int_gt: 0}];
+  uint64 appID = 3 [(validator.field) = {int_gt: 0}];
+  string sourceType = 4 [(validator.field) = {string_not_empty: true}];
+  string ref = 5 [(validator.field) = {string_not_empty: true}];
+  string path = 6;
+  string fileName = 7 [(validator.field) = {string_not_empty: true}];
+
+}
+
+message UpdateProjectPipelineSourceResponse {
   ProjectPipeline ProjectPipeline = 1;
 }

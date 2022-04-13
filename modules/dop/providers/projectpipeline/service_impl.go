@@ -1583,3 +1583,68 @@ func getRemotes(appNames []string, orgName, projectName string) []string {
 	}
 	return remotes
 }
+
+func (p *ProjectPipelineService) UpdateProjectPipelineSource(ctx context.Context, params *pb.UpdateProjectPipelineSourceRequest) (*pb.UpdateProjectPipelineSourceResponse, error) {
+	if err := params.Validate(); err != nil {
+		return nil, apierrors.ErrUpdateProjectPipelineSource.InvalidParameter(err)
+	}
+
+	_, source, err := p.getPipelineDefinitionAndSource(params.PipelineDefinitionID)
+	if err != nil {
+		return nil, apierrors.ErrUpdateProjectPipelineSource.InvalidParameter(err)
+	}
+
+	err = p.checkDataPermissionByProjectID(params.ProjectID, source)
+	if err != nil {
+		return nil, apierrors.ErrUpdateProjectPipelineSource.AccessDenied()
+	}
+
+	app, err := p.bundle.GetApp(params.AppID)
+	if err != nil {
+		return nil, apierrors.ErrUpdateProjectPipelineSource.InvalidParameter(err)
+	}
+	if app.Name != getNameByRemote(source.Remote).AppName {
+		return nil, apierrors.ErrUpdateProjectPipelineSource.InvalidParameter(fmt.Errorf("the app can not be updated"))
+	}
+
+	pipelineSourceType := NewProjectSourceType(params.SourceType)
+	sourceReq, err := pipelineSourceType.GenerateReq(ctx, p, &pb.CreateProjectPipelineRequest{
+		ProjectID:  params.ProjectID,
+		AppID:      params.AppID,
+		SourceType: params.SourceType,
+		Ref:        params.Ref,
+		Path:       params.Path,
+		FileName:   params.FileName,
+	})
+	if err != nil {
+		return nil, apierrors.ErrUpdateProjectPipelineSource.InternalError(err)
+	}
+
+	sourceRsp, err := p.PipelineSource.Create(ctx, sourceReq)
+	if err != nil {
+		return nil, apierrors.ErrUpdateProjectPipelineSource.InternalError(err)
+	}
+
+	updateResp, err := p.PipelineDefinition.Update(ctx, &dpb.PipelineDefinitionUpdateRequest{
+		PipelineDefinitionID: params.PipelineDefinitionID,
+		PipelineSourceID:     sourceRsp.PipelineSource.ID,
+	})
+	if err != nil {
+		return nil, apierrors.ErrUpdateProjectPipelineSource.InternalError(err)
+	}
+
+	return &pb.UpdateProjectPipelineSourceResponse{ProjectPipeline: &pb.ProjectPipeline{
+		ID:               updateResp.PipelineDefinition.ID,
+		Name:             updateResp.PipelineDefinition.Name,
+		Creator:          updateResp.PipelineDefinition.Creator,
+		Category:         updateResp.PipelineDefinition.Category,
+		TimeCreated:      updateResp.PipelineDefinition.TimeCreated,
+		TimeUpdated:      updateResp.PipelineDefinition.TimeUpdated,
+		SourceType:       sourceRsp.PipelineSource.SourceType,
+		Remote:           sourceRsp.PipelineSource.Remote,
+		Ref:              sourceRsp.PipelineSource.Ref,
+		Path:             sourceRsp.PipelineSource.Path,
+		FileName:         sourceRsp.PipelineSource.Name,
+		PipelineSourceID: sourceRsp.PipelineSource.ID,
+	}}, nil
+}
