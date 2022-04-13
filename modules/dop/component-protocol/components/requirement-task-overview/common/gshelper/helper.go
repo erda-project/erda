@@ -22,6 +22,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/dao"
+	"github.com/erda-project/erda/providers/component-protocol/issueFilter"
 )
 
 type GSHelper struct {
@@ -94,19 +95,19 @@ func (h *GSHelper) GetIssueList() []dao.IssueItem {
 	return res
 }
 
-func (h *GSHelper) SetIssueStateList(l []dao.IssueState) {
+func (h *GSHelper) SetIssueConditions(l issueFilter.FrontendConditions) {
 	if h.gs == nil {
 		return
 	}
-	(*h.gs)["IssueStateList"] = l
+	(*h.gs)["IssueCondtions"] = l
 }
 
-func (h *GSHelper) GetIssueStateList() []dao.IssueState {
+func (h *GSHelper) GetIssueCondtions() issueFilter.FrontendConditions {
 	if h.gs == nil {
-		return nil
+		return issueFilter.FrontendConditions{}
 	}
-	res := make([]dao.IssueState, 0)
-	_ = assign((*h.gs)["IssueStateList"], &res)
+	var res issueFilter.FrontendConditions
+	_ = assign((*h.gs)["IssueCondtions"], &res)
 	return res
 }
 
