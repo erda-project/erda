@@ -181,7 +181,7 @@ func (k *Kubernetes) newJob(service *apistructs.Service, serviceGroup *apistruct
 	if err = DereferenceEnvs(&job.Spec.Template); err != nil {
 		return nil, err
 	}
-	k.AddSpotEmptyDir(&job.Spec.Template.Spec)
+	k.AddSpotEmptyDir(&job.Spec.Template.Spec, service.Resources.EmptyDirCapacity)
 
 	job.Spec.Template.Spec.RestartPolicy = apiv1.RestartPolicyNever
 	return job, nil

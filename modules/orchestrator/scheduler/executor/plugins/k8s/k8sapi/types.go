@@ -20,6 +20,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const (
+	// storage
+	PodEmptyDirSizeLimit10Gi    = "10Gi"
+	EphemeralStorageSizeRequest = "1Gi"
+	EphemeralStorageSizeLimit   = "20Gi"
+)
+
 // NamespacePhase describes phase of a namespace
 type NamespacePhase string
 
