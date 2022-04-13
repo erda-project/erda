@@ -15,9 +15,7 @@
 package dbclient
 
 import (
-	"sort"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/jinzhu/gorm"
@@ -53,43 +51,6 @@ type AddonInstanceRouting struct {
 	PlatformServiceType int       `gorm:"type:int(1)"` // 服务类型，0：基础addon,1:微服务,2:通用能力
 	CreatedAt           time.Time `gorm:"column:create_time"`
 	UpdatedAt           time.Time `gorm:"column:update_time"`
-}
-
-type AddonInstanceRoutingList []AddonInstanceRouting
-
-func (l AddonInstanceRoutingList) sort() {
-	f := func(i, j int) bool {
-		if strings.EqualFold(l[i].Category, apistructs.CUSTOM_TYPE_CUSTOM) && !strings.EqualFold(l[j].Category, apistructs.CUSTOM_TYPE_CUSTOM) {
-			return true
-		}
-		if !strings.EqualFold(l[i].Category, apistructs.CUSTOM_TYPE_CUSTOM) && strings.EqualFold(l[j].Category, apistructs.CUSTOM_TYPE_CUSTOM) {
-			return false
-		}
-		return l[i].Name < l[j].Name
-	}
-	if ok := sort.SliceIsSorted(l, f); !ok {
-		sort.Slice(l, f)
-	}
-}
-
-func (l AddonInstanceRoutingList) GetByName(name string) (*AddonInstanceRouting, bool) {
-	l.sort()
-	for i := range l {
-		if l[i].Name == name {
-			return &l[i], true
-		}
-	}
-	return nil, false
-}
-
-func (l AddonInstanceRoutingList) GetByTag(tag string) (*AddonInstanceRouting, bool) {
-	l.sort()
-	for i := range l {
-		if l[i].Tag == tag {
-			return &l[i], true
-		}
-	}
-	return nil, false
 }
 
 // TableName 数据库表名
