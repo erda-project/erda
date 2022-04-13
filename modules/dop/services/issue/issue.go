@@ -637,26 +637,24 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 		issueStreamFields[field] = []interface{}{canUpdateFields[field], v}
 	}
 
-	if issueModel.Type == apistructs.IssueTypeBug || issueModel.Type == apistructs.IssueTypeTask {
-		c := &issueValidationConfig{}
-		if req.IterationID != nil {
-			iteration, err := cache.TryGetIteration(*req.IterationID)
-			if err != nil {
-				return err
-			}
-			c.iteration = iteration
-		}
-		if req.State != nil {
-			state, err := cache.TryGetState(*req.State)
-			if err != nil {
-				return err
-			}
-			c.state = state
-		}
-		v := issueValidator{}
-		if err = v.validateChangedFields(&req, c, changedFields); err != nil {
+	c := &issueValidationConfig{}
+	if req.IterationID != nil {
+		iteration, err := cache.TryGetIteration(*req.IterationID)
+		if err != nil {
 			return err
 		}
+		c.iteration = iteration
+	}
+	if req.State != nil {
+		state, err := cache.TryGetState(*req.State)
+		if err != nil {
+			return err
+		}
+		c.state = state
+	}
+	v := issueValidator{}
+	if err = v.validateChangedFields(&req, c, changedFields); err != nil {
+		return err
 	}
 
 	// 校验实际需要更新的字段
