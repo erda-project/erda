@@ -45,9 +45,13 @@ func (s *PipelineSvc) BatchCreate(batchReq *apistructs.PipelineBatchCreateReques
 		if err != nil {
 			return nil, apierrors.ErrBatchCreatePipeline.InternalError(err)
 		}
-		if err = s.CreatePipelineGraph(p); err != nil {
+		var stages []spec.PipelineStage
+		if stages, err = s.CreatePipelineGraph(p); err != nil {
 			return nil, apierrors.ErrBatchCreatePipeline.InternalError(err)
 		}
+
+		// PreCheck
+		_ = s.PreCheck(p, stages, p.GetUserID(), batchReq.AutoRun)
 
 		identityInfo := apistructs.IdentityInfo{UserID: req.UserID}
 
