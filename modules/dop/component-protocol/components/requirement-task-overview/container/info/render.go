@@ -67,10 +67,11 @@ func (i *Info) Render(ctx context.Context, c *cptype.Component, scenario cptype.
 	stats := getStats(i.Issues)
 
 	timeMilli := cpcommon.TimeMilliInDays{
-		Today:      cpcommon.MilliFromTime(common.DateTime(time.Now())),
-		Tomorrow:   cpcommon.MilliFromTime(common.DateTime(time.Now().AddDate(0, 0, 1))),
-		SevenDays:  cpcommon.MilliFromTime(common.DateTime(time.Now().AddDate(0, 0, 7))),
-		ThirtyDays: cpcommon.MilliFromTime(common.DateTime(time.Now().AddDate(0, 0, 30))),
+		Today:               cpcommon.MilliFromTime(common.DateTime(time.Now())),
+		Tomorrow:            cpcommon.MilliFromTime(common.DateTime(time.Now().AddDate(0, 0, 1))),
+		TheDayAfterTomorrow: cpcommon.MilliFromTime(common.DateTime(time.Now().AddDate(0, 0, 2))),
+		SevenDays:           cpcommon.MilliFromTime(common.DateTime(time.Now().AddDate(0, 0, 7))),
+		ThirtyDays:          cpcommon.MilliFromTime(common.DateTime(time.Now().AddDate(0, 0, 30))),
 	}
 	req := ConditionsLinkRequest{
 		Conditions: conditions,
@@ -95,17 +96,22 @@ func (i *Info) Render(ctx context.Context, c *cptype.Component, scenario cptype.
 				MainLink: buildLink(req, dao.ExpireTypeExpireIn1Day),
 			},
 			{
+				Main:     strconv.Itoa(stats.Tomorrow),
+				Sub:      cputil.I18n(ctx, "dueTomorrow"),
+				MainLink: buildLink(req, dao.ExpireTypeExpireIn2Days),
+			},
+		},
+		{
+			{
 				Main:     strconv.Itoa(stats.Week),
 				Sub:      cputil.I18n(ctx, "dueThisWeek"),
 				Tip:      cputil.I18n(ctx, "notIncludeDueToday"),
 				MainLink: buildLink(req, dao.ExpireTypeExpireIn7Days),
 			},
-		},
-		{
 			{
 				Main:     strconv.Itoa(stats.Month),
 				Sub:      cputil.I18n(ctx, "dueThisMonth"),
-				Tip:      "不包含本日、本周截止数据",
+				Tip:      cputil.I18n(ctx, "notIncludeDueTodayTomorrow"),
 				MainLink: buildLink(req, dao.ExpireTypeExpireIn30Days),
 			},
 			{
@@ -134,9 +140,12 @@ func buildLink(req ConditionsLinkRequest, expiryType dao.ExpireType) simpleChart
 	case dao.ExpireTypeExpireIn1Day:
 		todayStartAt, todayEndAt := req.TimeMilli.Today, req.TimeMilli.Tomorrow-1
 		conditions.FinishedAtStartEnd = []*int64{&todayStartAt, &todayEndAt}
+	case dao.ExpireTypeExpireIn2Days:
+		tomorrowEndAt := req.TimeMilli.TheDayAfterTomorrow - 1
+		conditions.FinishedAtStartEnd = []*int64{&req.TimeMilli.Tomorrow, &tomorrowEndAt}
 	case dao.ExpireTypeExpireIn7Days:
 		sevenDaysEndAt := req.TimeMilli.SevenDays - 1
-		conditions.FinishedAtStartEnd = []*int64{&req.TimeMilli.Tomorrow, &sevenDaysEndAt}
+		conditions.FinishedAtStartEnd = []*int64{&req.TimeMilli.TheDayAfterTomorrow, &sevenDaysEndAt}
 	case dao.ExpireTypeExpireIn30Days:
 		thirtyDaysEndAt := req.TimeMilli.ThirtyDays - 1
 		conditions.FinishedAtStartEnd = []*int64{&req.TimeMilli.SevenDays, &thirtyDaysEndAt}
@@ -162,6 +171,7 @@ type Stats struct {
 	Unclose   int `json:"unclose,omitempty"`
 	Expire    int `json:"expire,omitempty"`
 	Today     int `json:"today,omitempty"`
+	Tomorrow  int `json:"tomorrow,omitempty"`
 	Week      int `json:"week,omitempty"`
 	Month     int `json:"month,omitempty"`
 	Undefined int `json:"undefined,omitempty"`
@@ -178,6 +188,8 @@ func getStats(issues []dao.IssueItem) (s Stats) {
 			s.Expire++
 		case dao.ExpireTypeExpireIn1Day:
 			s.Today++
+		case dao.ExpireTypeExpireIn2Days:
+			s.Tomorrow++
 		case dao.ExpireTypeExpireIn7Days:
 			s.Week++
 		case dao.ExpireTypeExpireIn30Days:

@@ -54,8 +54,9 @@ func MilliFromTime(t time.Time) int64 {
 }
 
 type TimeMilliInDays struct {
-	Today      int64
-	Tomorrow   int64
-	SevenDays  int64
-	ThirtyDays int64
+	Today               int64
+	Tomorrow            int64
+	TheDayAfterTomorrow int64
+	SevenDays           int64
+	ThirtyDays          int64
 }
