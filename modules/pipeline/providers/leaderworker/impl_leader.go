@@ -54,7 +54,6 @@ func (p *provider) AssignLogicTaskToWorker(ctx context.Context, workerID worker.
 }
 
 func (p *provider) CancelLogicTask(ctx context.Context, logicTaskID worker.LogicTaskID) error {
-	p.mustBeLeader()
 	_, err := p.EtcdClient.Put(ctx, p.makeEtcdLeaderLogicTaskCancelKey(logicTaskID), "")
 	if err != nil {
 		return err
