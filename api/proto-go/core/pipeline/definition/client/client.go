@@ -68,3 +68,7 @@ func (s *definitionServiceWrapper) ListUsedRefs(ctx context.Context, req *pb.Pip
 func (s *definitionServiceWrapper) StatisticsGroupByFilePath(ctx context.Context, req *pb.PipelineDefinitionStatisticsRequest) (*pb.PipelineDefinitionStatisticsResponse, error) {
 	return s.client.StatisticsGroupByFilePath(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }
+
+func (s *definitionServiceWrapper) UpdateExtra(ctx context.Context, req *pb.PipelineDefinitionExtraUpdateRequest) (*pb.PipelineDefinitionExtraUpdateResponse, error) {
+	return s.client.UpdateExtra(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+}

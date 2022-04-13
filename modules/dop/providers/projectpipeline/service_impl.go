@@ -42,6 +42,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/utils"
 	def "github.com/erda-project/erda/modules/pipeline/providers/definition"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/encoding/jsonparse"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/limit_sync_group"
 )
@@ -55,6 +56,12 @@ const (
 	CreateProjectPipelineNamePreCheckLocaleKey   string = "ProjectPipelineCreateNamePreCheckNotPass"
 	CreateProjectPipelineSourcePreCheckLocaleKey string = "ProjectPipelineCreateSourcePreCheckNotPass"
 )
+
+type AutoRunParams struct {
+	definition *dpb.PipelineDefinition
+	source     *spb.PipelineSource
+	runParams  []*pb.PipelineRunParam
+}
 
 func (c CategoryType) String() string {
 	return string(c)
@@ -576,7 +583,11 @@ func (p *ProjectPipelineService) Run(ctx context.Context, params *pb.RunProjectP
 	if err != nil {
 		return nil, apierrors.ErrRunProjectPipeline.AccessDenied()
 	}
-	value, err := p.autoRunPipeline(apistructs.IdentityInfo{UserID: apis.GetUserID(ctx), InternalClient: apis.GetInternalClient(ctx)}, definition, source)
+	value, err := p.autoRunPipeline(apistructs.IdentityInfo{UserID: apis.GetUserID(ctx), InternalClient: apis.GetInternalClient(ctx)}, AutoRunParams{
+		definition: definition,
+		source:     source,
+		runParams:  params.RunParams,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -744,7 +755,10 @@ func (p *ProjectPipelineService) BatchRun(ctx context.Context, params deftype.Pr
 			var definitionID = i[0].(string)
 			var sourceID = i[1].(string)
 
-			value, err := p.autoRunPipeline(params.IdentityInfo, definitionMap[definitionID], sourceMap[sourceID])
+			value, err := p.autoRunPipeline(params.IdentityInfo, AutoRunParams{
+				definition: definitionMap[definitionID],
+				source:     sourceMap[sourceID],
+			})
 			if err != nil {
 				return err
 			}
@@ -1114,8 +1128,11 @@ func (p *ProjectPipelineService) batchGetPipelineSources(pipelineSourceIDArray [
 	return pipelineSourceMap, nil
 }
 
-func (p *ProjectPipelineService) autoRunPipeline(identityInfo apistructs.IdentityInfo, definition *dpb.PipelineDefinition, source *spb.PipelineSource) (*apistructs.PipelineDTO, error) {
-	extraValue, err := def.GetExtraValue(definition)
+func (p *ProjectPipelineService) autoRunPipeline(identityInfo apistructs.IdentityInfo, params AutoRunParams) (*apistructs.PipelineDTO, error) {
+	source := params.source
+	definition := params.definition
+
+	extraValue, err := def.GetExtraValue(params.definition)
 	if err != nil {
 		return nil, apierrors.ErrRunProjectPipeline.InternalError(fmt.Errorf("failed unmarshal pipeline extra error %v", err))
 	}
@@ -1137,7 +1154,7 @@ func (p *ProjectPipelineService) autoRunPipeline(identityInfo apistructs.Identit
 	}
 
 	// If source type is erda，should sync pipelineYml file
-	pipelineYml := source.PipelineYml
+	pipelineYml := params.source.PipelineYml
 	if source.SourceType == deftype.ErdaProjectPipelineType.String() {
 		pipelineYml, err = p.fetchRemotePipeline(source, orgStr, identityInfo.UserID)
 		if err != nil {
@@ -1157,7 +1174,7 @@ func (p *ProjectPipelineService) autoRunPipeline(identityInfo apistructs.Identit
 	}
 
 	// update user gittar token
-	var worker = limit_sync_group.NewWorker(2)
+	var worker = limit_sync_group.NewWorker(3)
 	worker.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
 		// update CmsNsConfigs
 		if err = p.UpdateCmsNsConfigs(identityInfo.UserID, orgID); err != nil {
@@ -1165,6 +1182,27 @@ func (p *ProjectPipelineService) autoRunPipeline(identityInfo apistructs.Identit
 		}
 		return nil
 	})
+
+	// runParams
+	var extra apistructs.PipelineDefinitionExtraValue
+	err = json.Unmarshal([]byte(definition.Extra.Extra), &extra)
+	if err != nil {
+		return nil, err
+	}
+	if params.runParams == nil {
+		// Get the value of the last run
+		params.runParams = extra.RunParams
+	} else {
+		// upload run params in definition extra
+		worker.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
+			extra.RunParams = params.runParams
+			_, err := p.PipelineDefinition.UpdateExtra(context.Background(), &dpb.PipelineDefinitionExtraUpdateRequest{
+				Extra:                jsonparse.JsonOneLine(extra),
+				PipelineDefinitionID: definition.ID,
+			})
+			return err
+		})
+	}
 
 	worker.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
 		createV2, err = p.pipelineSvc.ConvertPipelineToV2(&apistructs.PipelineCreateRequest{
@@ -1190,6 +1228,16 @@ func (p *ProjectPipelineService) autoRunPipeline(identityInfo apistructs.Identit
 	// add run,create userID label for history list search
 	createV2.Labels[apistructs.LabelRunUserID] = identityInfo.UserID
 	createV2.Labels[apistructs.LabelCreateUserID] = identityInfo.UserID
+
+	// run params
+	var pipelineRunParams apistructs.PipelineRunParams
+	for _, runParams := range params.runParams {
+		pipelineRunParams = append(pipelineRunParams, apistructs.PipelineRunParam{
+			Name:  runParams.Name,
+			Value: runParams.Value.AsInterface(),
+		})
+	}
+	createV2.RunParams = pipelineRunParams
 
 	value, err := p.bundle.CreatePipeline(createV2)
 	if err != nil {

@@ -13,6 +13,8 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the "github.com/erda-project/erda-infra/pkg/urlenc" package it is being compiled against.
+var _ urlenc.URLValuesUnmarshaler = (*PipelineDefinitionExtraUpdateRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*PipelineDefinitionExtraUpdateResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*PipelineDefinition)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*PipelineDefinitionExtra)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*PipelineDefinitionCreateRequest)(nil)
@@ -30,6 +32,113 @@ var _ urlenc.URLValuesUnmarshaler = (*PipelineDefinitionStatistics)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*PipelineDefinitionListResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*PipelineDefinitionUsedRefListRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*PipelineDefinitionUsedRefListResponse)(nil)
+
+// PipelineDefinitionExtraUpdateRequest implement urlenc.URLValuesUnmarshaler.
+func (m *PipelineDefinitionExtraUpdateRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "pipelineDefinitionID":
+				m.PipelineDefinitionID = vals[0]
+			case "extra":
+				m.Extra = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// PipelineDefinitionExtraUpdateResponse implement urlenc.URLValuesUnmarshaler.
+func (m *PipelineDefinitionExtraUpdateResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "extra":
+				if m.Extra == nil {
+					m.Extra = &PipelineDefinitionExtra{}
+				}
+			case "extra.ID":
+				if m.Extra == nil {
+					m.Extra = &PipelineDefinitionExtra{}
+				}
+				m.Extra.ID = vals[0]
+			case "extra.extra":
+				if m.Extra == nil {
+					m.Extra = &PipelineDefinitionExtra{}
+				}
+				m.Extra.Extra = vals[0]
+			case "extra.timeCreated":
+				if m.Extra == nil {
+					m.Extra = &PipelineDefinitionExtra{}
+				}
+				if m.Extra.TimeCreated == nil {
+					m.Extra.TimeCreated = &timestamppb.Timestamp{}
+				}
+			case "extra.timeCreated.seconds":
+				if m.Extra == nil {
+					m.Extra = &PipelineDefinitionExtra{}
+				}
+				if m.Extra.TimeCreated == nil {
+					m.Extra.TimeCreated = &timestamppb.Timestamp{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Extra.TimeCreated.Seconds = val
+			case "extra.timeCreated.nanos":
+				if m.Extra == nil {
+					m.Extra = &PipelineDefinitionExtra{}
+				}
+				if m.Extra.TimeCreated == nil {
+					m.Extra.TimeCreated = &timestamppb.Timestamp{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 32)
+				if err != nil {
+					return err
+				}
+				m.Extra.TimeCreated.Nanos = int32(val)
+			case "extra.timeUpdated":
+				if m.Extra == nil {
+					m.Extra = &PipelineDefinitionExtra{}
+				}
+				if m.Extra.TimeUpdated == nil {
+					m.Extra.TimeUpdated = &timestamppb.Timestamp{}
+				}
+			case "extra.timeUpdated.seconds":
+				if m.Extra == nil {
+					m.Extra = &PipelineDefinitionExtra{}
+				}
+				if m.Extra.TimeUpdated == nil {
+					m.Extra.TimeUpdated = &timestamppb.Timestamp{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Extra.TimeUpdated.Seconds = val
+			case "extra.timeUpdated.nanos":
+				if m.Extra == nil {
+					m.Extra = &PipelineDefinitionExtra{}
+				}
+				if m.Extra.TimeUpdated == nil {
+					m.Extra.TimeUpdated = &timestamppb.Timestamp{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 32)
+				if err != nil {
+					return err
+				}
+				m.Extra.TimeUpdated.Nanos = int32(val)
+			case "extra.pipelineDefinition":
+				if m.Extra == nil {
+					m.Extra = &PipelineDefinitionExtra{}
+				}
+				m.Extra.PipelineDefinition = vals[0]
+			}
+		}
+	}
+	return nil
+}
 
 // PipelineDefinition implement urlenc.URLValuesUnmarshaler.
 func (m *PipelineDefinition) UnmarshalURLValues(prefix string, values url.Values) error {
