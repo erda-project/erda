@@ -60,9 +60,12 @@ func (s *PipelineSvc) RerunFailed(req *apistructs.PipelineRerunFailedRequest) (*
 	}
 	p.Type = apistructs.PipelineTypeRerunFailed
 
-	if err = s.CreatePipelineGraph(p); err != nil {
+	var stages []spec.PipelineStage
+	if stages, err = s.CreatePipelineGraph(p); err != nil {
 		return nil, apierrors.ErrRerunFailedPipeline.InternalError(err)
 	}
+	// PreCheck
+	_ = s.PreCheck(p, stages, p.GetUserID(), req.AutoRunAtOnce)
 
 	// 立即执行一次
 	if req.AutoRunAtOnce {

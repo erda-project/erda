@@ -64,9 +64,12 @@ func (tr *defaultTaskReconciler) CreateSnippetPipeline(ctx context.Context, p *s
 	if err != nil {
 		return nil, err
 	}
-	if err := tr.pipelineSvcFuncs.CreatePipelineGraph(snippetPipeline); err != nil {
+	var stages []spec.PipelineStage
+	if stages, err = tr.pipelineSvcFuncs.CreatePipelineGraph(snippetPipeline); err != nil {
 		return nil, err
 	}
+	// PreCheck
+	_ = tr.pipelineSvcFuncs.PreCheck(snippetPipeline, stages, snippetPipeline.GetUserID(), false)
 
 	task.SnippetPipelineID = &snippetPipeline.ID
 	task.Extra.AppliedResources = snippetPipeline.Snapshot.AppliedResources

@@ -73,6 +73,7 @@ func (s *PipelineSvc) RunPipeline(req *apistructs.PipelineRunRequest) (*spec.Pip
 	)
 	secretCache := s.cache.GetPipelineSecretByPipelineID(p.PipelineID)
 	defer s.cache.ClearPipelineSecretByPipelineID(p.PipelineID)
+	// only autoRun can use cache
 	if secretCache != nil {
 		secrets = secretCache.Secrets
 		cmsDiceFiles = secretCache.CmsDiceFiles
