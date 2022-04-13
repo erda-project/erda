@@ -592,6 +592,7 @@ message ReleaseUploadRequest{
   int64 orgID = 4 [json_name = "orgId"];
   string userID = 5 [json_name = "userId"];
   string clusterName = 6;
+  repeated uint64 tags = 7;
 }
 
 message ReleaseUploadResponse{
