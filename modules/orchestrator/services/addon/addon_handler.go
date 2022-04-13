@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -645,9 +646,6 @@ func (a *Addon) strategyAddon(params *apistructs.AddonHandlerCreateItem,
 
 // getTagInstance 根据tag获取addon实例信息
 func (a *Addon) getTagInstance(addonSpec *apistructs.AddonExtension, params *apistructs.AddonHandlerCreateItem) (*dbclient.AddonInstanceRouting, error) {
-	if params.Tag == "" {
-		return nil, nil
-	}
 	if params.ShareScope == "" {
 		params.ShareScope = addonSpec.ShareScopes[0]
 	}
@@ -658,8 +656,18 @@ func (a *Addon) getTagInstance(addonSpec *apistructs.AddonExtension, params *api
 	if err != nil {
 		return nil, err
 	}
+	list := *routingList
+	sort.Slice(list, func(i, j int) bool {
+		if strings.EqualFold(list[i].Category, apistructs.CUSTOM_TYPE_CUSTOM) && !strings.EqualFold(list[j].Category, apistructs.CUSTOM_TYPE_CUSTOM) {
+			return true
+		}
+		if !strings.EqualFold(list[i].Category, apistructs.CUSTOM_TYPE_CUSTOM) && strings.EqualFold(list[j].Category, apistructs.CUSTOM_TYPE_CUSTOM) {
+			return false
+		}
+		return list[i].Name < list[j].Name
+	})
 	for _, routingIns := range *routingList {
-		if routingIns.Tag == params.Tag {
+		if routingIns.Name == params.InstanceName {
 			return &routingIns, nil
 		}
 	}
