@@ -15,10 +15,14 @@
 package db
 
 import (
+	"database/sql/driver"
+	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/jinzhu/gorm"
+	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/erda-project/erda-proto-go/dop/guide/pb"
@@ -67,6 +71,7 @@ type Guide struct {
 	Branch        string
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
+	Content       JSON
 	SoftDeletedAt uint64
 }
 
@@ -76,6 +81,45 @@ func NotDeleted(db *gorm.DB) *gorm.DB {
 
 func (Guide) TableName() string {
 	return "erda_guide"
+}
+
+type JSON json.RawMessage
+
+func (j JSON) Value() (driver.Value, error) {
+	if len(j) == 0 {
+		return nil, nil
+	}
+	return string(j), nil
+}
+
+func (j *JSON) Scan(value interface{}) error {
+	if value == nil {
+		*j = JSON("null")
+		return nil
+	}
+	var bytes []byte
+	switch v := value.(type) {
+	case []byte:
+		bytes = v
+	case string:
+		bytes = []byte(v)
+	default:
+		return errors.New(fmt.Sprint("failed to unmarshal JSON value:", value))
+	}
+
+	result := json.RawMessage{}
+	err := json.Unmarshal(bytes, &result)
+	*j = JSON(result)
+	return err
+}
+
+func (j JSON) String() string {
+	return string(j)
+}
+
+type PipelineContent struct {
+	Branch       string   `json:"branch"`
+	PipelineYmls []string `json:"pipelineYmls"`
 }
 
 func (g *Guide) Convert() *pb.Guide {
@@ -92,6 +136,7 @@ func (g *Guide) Convert() *pb.Guide {
 		Branch:      g.Branch,
 		TimeCreated: timestamppb.New(g.CreatedAt),
 		TimeUpdated: timestamppb.New(g.UpdatedAt),
+		Content:     g.Content.String(),
 	}
 }
 

@@ -90,6 +90,7 @@ message Guide {
   string appName = 10;
   google.protobuf.Timestamp timeCreated = 11;
   google.protobuf.Timestamp timeUpdated = 12;
+  string content = 13;
 }
 
 message GittarPushPayloadEvent {
