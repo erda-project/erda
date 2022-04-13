@@ -131,6 +131,8 @@ func (m *Guide) UnmarshalURLValues(prefix string, values url.Values) error {
 					return err
 				}
 				m.TimeUpdated.Nanos = int32(val)
+			case "content":
+				m.Content = vals[0]
 			}
 		}
 	}
@@ -413,6 +415,11 @@ func (m *CreateGuideResponse) UnmarshalURLValues(prefix string, values url.Value
 					return err
 				}
 				m.Data.TimeUpdated.Nanos = int32(val)
+			case "data.content":
+				if m.Data == nil {
+					m.Data = &Guide{}
+				}
+				m.Data.Content = vals[0]
 			}
 		}
 	}
