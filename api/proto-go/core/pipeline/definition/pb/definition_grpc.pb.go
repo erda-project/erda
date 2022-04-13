@@ -29,6 +29,7 @@ type DefinitionServiceClient interface {
 	StatisticsGroupByRemote(ctx context.Context, in *PipelineDefinitionStatisticsRequest, opts ...grpc.CallOption) (*PipelineDefinitionStatisticsResponse, error)
 	ListUsedRefs(ctx context.Context, in *PipelineDefinitionUsedRefListRequest, opts ...grpc.CallOption) (*PipelineDefinitionUsedRefListResponse, error)
 	StatisticsGroupByFilePath(ctx context.Context, in *PipelineDefinitionStatisticsRequest, opts ...grpc.CallOption) (*PipelineDefinitionStatisticsResponse, error)
+	UpdateExtra(ctx context.Context, in *PipelineDefinitionExtraUpdateRequest, opts ...grpc.CallOption) (*PipelineDefinitionExtraUpdateResponse, error)
 }
 
 type definitionServiceClient struct {
@@ -111,6 +112,15 @@ func (c *definitionServiceClient) StatisticsGroupByFilePath(ctx context.Context,
 	return out, nil
 }
 
+func (c *definitionServiceClient) UpdateExtra(ctx context.Context, in *PipelineDefinitionExtraUpdateRequest, opts ...grpc.CallOption) (*PipelineDefinitionExtraUpdateResponse, error) {
+	out := new(PipelineDefinitionExtraUpdateResponse)
+	err := c.cc.Invoke(ctx, "/erda.core.pipeline.definition.DefinitionService/UpdateExtra", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // DefinitionServiceServer is the server API for DefinitionService service.
 // All implementations should embed UnimplementedDefinitionServiceServer
 // for forward compatibility
@@ -123,6 +133,7 @@ type DefinitionServiceServer interface {
 	StatisticsGroupByRemote(context.Context, *PipelineDefinitionStatisticsRequest) (*PipelineDefinitionStatisticsResponse, error)
 	ListUsedRefs(context.Context, *PipelineDefinitionUsedRefListRequest) (*PipelineDefinitionUsedRefListResponse, error)
 	StatisticsGroupByFilePath(context.Context, *PipelineDefinitionStatisticsRequest) (*PipelineDefinitionStatisticsResponse, error)
+	UpdateExtra(context.Context, *PipelineDefinitionExtraUpdateRequest) (*PipelineDefinitionExtraUpdateResponse, error)
 }
 
 // UnimplementedDefinitionServiceServer should be embedded to have forward compatible implementations.
@@ -152,6 +163,9 @@ func (*UnimplementedDefinitionServiceServer) ListUsedRefs(context.Context, *Pipe
 }
 func (*UnimplementedDefinitionServiceServer) StatisticsGroupByFilePath(context.Context, *PipelineDefinitionStatisticsRequest) (*PipelineDefinitionStatisticsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method StatisticsGroupByFilePath not implemented")
+}
+func (*UnimplementedDefinitionServiceServer) UpdateExtra(context.Context, *PipelineDefinitionExtraUpdateRequest) (*PipelineDefinitionExtraUpdateResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateExtra not implemented")
 }
 
 func RegisterDefinitionServiceServer(s grpc1.ServiceRegistrar, srv DefinitionServiceServer, opts ...grpc1.HandleOption) {
@@ -242,6 +256,15 @@ func _get_DefinitionService_serviceDesc(srv DefinitionServiceServer, opts ...grp
 	if h.Interceptor != nil {
 		_DefinitionService_StatisticsGroupByFilePath_info = transport.NewServiceInfo("erda.core.pipeline.definition.DefinitionService", "StatisticsGroupByFilePath", srv)
 		_DefinitionService_StatisticsGroupByFilePath_Handler = h.Interceptor(_DefinitionService_StatisticsGroupByFilePath_Handler)
+	}
+
+	_DefinitionService_UpdateExtra_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.UpdateExtra(ctx, req.(*PipelineDefinitionExtraUpdateRequest))
+	}
+	var _DefinitionService_UpdateExtra_info transport.ServiceInfo
+	if h.Interceptor != nil {
+		_DefinitionService_UpdateExtra_info = transport.NewServiceInfo("erda.core.pipeline.definition.DefinitionService", "UpdateExtra", srv)
+		_DefinitionService_UpdateExtra_Handler = h.Interceptor(_DefinitionService_UpdateExtra_Handler)
 	}
 
 	var serviceDesc = _DefinitionService_serviceDesc
@@ -428,6 +451,29 @@ func _get_DefinitionService_serviceDesc(srv DefinitionServiceServer, opts ...grp
 					FullMethod: "/erda.core.pipeline.definition.DefinitionService/StatisticsGroupByFilePath",
 				}
 				return interceptor(ctx, in, info, _DefinitionService_StatisticsGroupByFilePath_Handler)
+			},
+		},
+		{
+			MethodName: "UpdateExtra",
+			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+				in := new(PipelineDefinitionExtraUpdateRequest)
+				if err := dec(in); err != nil {
+					return nil, err
+				}
+				if interceptor == nil && h.Interceptor == nil {
+					return srv.(DefinitionServiceServer).UpdateExtra(ctx, in)
+				}
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _DefinitionService_UpdateExtra_info)
+				}
+				if interceptor == nil {
+					return _DefinitionService_UpdateExtra_Handler(ctx, in)
+				}
+				info := &grpc.UnaryServerInfo{
+					Server:     srv,
+					FullMethod: "/erda.core.pipeline.definition.DefinitionService/UpdateExtra",
+				}
+				return interceptor(ctx, in, info, _DefinitionService_UpdateExtra_Handler)
 			},
 		},
 	}

@@ -16,6 +16,7 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the "github.com/erda-project/erda-infra/pkg/urlenc" package it is being compiled against.
+var _ urlenc.URLValuesUnmarshaler = (*PipelineRunParam)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*RunProjectPipelineRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*RunProjectPipelineResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*RerunProjectPipelineRequest)(nil)
@@ -42,6 +43,43 @@ var _ urlenc.URLValuesUnmarshaler = (*ListPipelineCategoryResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*PipelineCategory)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*UpdateProjectPipelineRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*UpdateProjectPipelineResponse)(nil)
+
+// PipelineRunParam implement urlenc.URLValuesUnmarshaler.
+func (m *PipelineRunParam) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "name":
+				m.Name = vals[0]
+			case "value":
+				if len(vals) > 1 {
+					var list []interface{}
+					for _, text := range vals {
+						var v interface{}
+						err := json.NewDecoder(strings.NewReader(text)).Decode(&v)
+						if err != nil {
+							list = append(list, v)
+						} else {
+							list = append(list, text)
+						}
+					}
+					val, _ := structpb.NewList(list)
+					m.Value = structpb.NewListValue(val)
+				} else {
+					var v interface{}
+					err := json.NewDecoder(strings.NewReader(vals[0])).Decode(&v)
+					if err != nil {
+						val, _ := structpb.NewValue(v)
+						m.Value = val
+					} else {
+						m.Value = structpb.NewStringValue(vals[0])
+					}
+				}
+			}
+		}
+	}
+	return nil
+}
 
 // RunProjectPipelineRequest implement urlenc.URLValuesUnmarshaler.
 func (m *RunProjectPipelineRequest) UnmarshalURLValues(prefix string, values url.Values) error {

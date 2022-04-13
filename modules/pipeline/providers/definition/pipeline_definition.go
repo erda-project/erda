@@ -308,3 +308,27 @@ func (p pipelineDefinition) StatisticsGroupByFilePath(ctx context.Context, reque
 	}
 	return &pb.PipelineDefinitionStatisticsResponse{PipelineDefinitionStatistics: pipelineDefinitionStatistics}, nil
 }
+
+func (p pipelineDefinition) UpdateExtra(ctx context.Context, request *pb.PipelineDefinitionExtraUpdateRequest) (*pb.PipelineDefinitionExtraUpdateResponse, error) {
+
+	dbExtra, err := p.dbClient.GetPipelineDefinitionExtraByDefinitionID(request.PipelineDefinitionID)
+	if err != nil {
+		return nil, err
+	}
+
+	var extra apistructs.PipelineDefinitionExtraValue
+	err = json.Unmarshal([]byte(request.Extra), &extra)
+	if err != nil {
+		return nil, err
+	}
+	dbExtra.Extra = extra
+
+	err = p.dbClient.UpdatePipelineDefinitionExtra(dbExtra.ID, dbExtra)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.PipelineDefinitionExtraUpdateResponse{
+		Extra: PipelineDefinitionExtraToPb(dbExtra),
+	}, nil
+}

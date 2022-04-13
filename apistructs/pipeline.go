@@ -23,6 +23,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/erda-project/erda-proto-go/dop/projectpipeline/pb"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -769,4 +770,5 @@ type PipelineCronGetResponse struct {
 
 type PipelineDefinitionExtraValue struct {
 	CreateRequest *PipelineCreateRequestV2 `json:"createRequest"`
+	RunParams     []*pb.PipelineRunParam   `json:"runParams"`
 }
