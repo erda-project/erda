@@ -23,6 +23,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	cpcommon "github.com/erda-project/erda/modules/dop/component-protocol/components/common"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/requirement-task-overview/common"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/requirement-task-overview/common/gshelper"
 	"github.com/erda-project/erda/modules/dop/dao"
@@ -43,6 +44,17 @@ func (s *SimpleChart) Render(ctx context.Context, c *cptype.Component, scenario 
 
 	s.Issues = h.GetIssueList()
 	s.Type = "SimpleChart"
+	conditions := h.GetIssueCondtions()
+	totalIssueUrlQuery, err := cpcommon.GenerateUrlQueryParams(conditions)
+	if err != nil {
+		return err
+	}
+	start, end := cpcommon.MilliFromTime(common.DateTime(time.Now())), cpcommon.MilliFromTime(common.DateTime(time.Now().AddDate(0, 0, 1)))-1
+	conditions.CreatedAtStartEnd = []*int64{&start, &end}
+	todayIssueUrlQuery, err := cpcommon.GenerateUrlQueryParams(conditions)
+	if err != nil {
+		return err
+	}
 	s.Data = Data{
 		Main:        strconv.Itoa(len(s.Issues)),
 		Sub:         cputil.I18n(ctx, "total"),
@@ -56,6 +68,18 @@ func (s *SimpleChart) Render(ctx context.Context, c *cptype.Component, scenario 
 			}
 			return strconv.Itoa(count)
 		}(),
+		MainLink: Link{
+			Target: common.IssueTarget,
+			Params: map[string]interface{}{
+				"issueFilter__urlQuery": totalIssueUrlQuery,
+			},
+		},
+		CompareValueLink: Link{
+			Target: common.IssueTarget,
+			Params: map[string]interface{}{
+				"issueFilter__urlQuery": todayIssueUrlQuery,
+			},
+		},
 	}
 
 	dates := make([]time.Time, 0)

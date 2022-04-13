@@ -212,6 +212,18 @@ func (is *IssueState) GetIssuesStatesByID(id int64) (*apistructs.IssueStatus, er
 	return status, nil
 }
 
+func (is *IssueState) GetIssueStateIDsByTypes(req *apistructs.IssueStatesRequest) ([]int64, error) {
+	st, err := is.db.GetIssuesStatesByTypes(req)
+	if err != nil {
+		return nil, err
+	}
+	res := make([]int64, 0)
+	for _, v := range st {
+		res = append(res, int64(v.ID))
+	}
+	return res, nil
+}
+
 func (is *IssueState) GetIssueStatesBelong(req *apistructs.IssueStateRelationGetRequest) ([]apistructs.IssueStateState, error) {
 	var states []apistructs.IssueStateState
 	st, err := is.db.GetIssuesStatesByProjectID(req.ProjectID, req.IssueType)
@@ -315,6 +327,7 @@ type IssueStater interface {
 	GetIssueStateByIDs(ID []int64) ([]dao.IssueState, error)
 	GetIssueStateByID(ID int64) (*dao.IssueState, error)
 	GetIssuesStates(req *apistructs.IssueStatesGetRequest) ([]dao.IssueState, error)
+	GetIssuesStatesByTypes(req *apistructs.IssueStatesRequest) ([]dao.IssueState, error)
 	GetIssueByState(state int64) (*dao.Issue, error)
 	DeleteIssuesStateRelationByStartID(id int64) error
 	DeleteIssuesState(id int64) error

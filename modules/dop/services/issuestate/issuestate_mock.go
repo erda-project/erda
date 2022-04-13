@@ -146,6 +146,15 @@ func (m *MockIssueStater) GetIssuesStates(req *apistructs.IssueStatesGetRequest)
 	return ret0, ret1
 }
 
+func (m *MockIssueStater) GetIssuesStatesByTypes(req *apistructs.IssueStatesRequest) ([]dao.IssueState, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetIssuesStatesByTypes", req)
+	ret0, _ := ret[0].([]dao.IssueState)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+
 // GetIssuesStates indicates an expected call of GetIssuesStates.
 func (mr *MockIssueStaterMockRecorder) GetIssuesStates(req interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()

@@ -29,11 +29,13 @@ type SimpleChart struct {
 }
 
 type Data struct {
-	Main         string `json:"main"`
-	Sub          string `json:"sub"`
-	CompareText  string `json:"compareText"`
-	CompareValue string `json:"compareValue"`
-	Chart        Chart  `json:"chart"`
+	Main             string `json:"main"`
+	Sub              string `json:"sub"`
+	CompareText      string `json:"compareText"`
+	CompareValue     string `json:"compareValue"`
+	Chart            Chart  `json:"chart"`
+	CompareValueLink Link   `json:"compareValueLink,omitempty"`
+	MainLink         Link   `json:"mainLink,omitempty"`
 }
 
 type Chart struct {
@@ -44,6 +46,11 @@ type Chart struct {
 type SeriesData struct {
 	Name string `json:"name"`
 	Data []int  `json:"data"`
+}
+
+type Link struct {
+	Target string                 `json:"target,omitempty"`
+	Params map[string]interface{} `json:"params,omitempty"`
 }
 
 func (s *SimpleChart) SetToProtocolComponent(c *cptype.Component) error {

@@ -152,3 +152,9 @@ type IssueStateData struct {
 	Name             string `json:"name"`
 	IssueStateBelong `json:"belong"`
 }
+
+type IssueStatesRequest struct {
+	ProjectID    uint64             `json:"projectID"`
+	IssueType    []IssueType        `json:"issueTypes"`
+	StateBelongs []IssueStateBelong `json:"stateBelongs"`
+}

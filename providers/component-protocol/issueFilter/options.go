@@ -25,6 +25,10 @@ func (f *IssueFilter) getPropIterationsOptions() ([]model.SelectOption, error) {
 	if err != nil {
 		return nil, err
 	}
+	iterations = append(iterations, apistructs.Iteration{
+		ID:    -1,
+		Title: f.sdk.I18n("iterationUnassigned"),
+	})
 	var options []model.SelectOption
 	for _, iteration := range iterations {
 		options = append(options, *model.NewSelectOption(iteration.Title, iteration.ID))
