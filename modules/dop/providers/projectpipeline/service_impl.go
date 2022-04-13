@@ -479,13 +479,6 @@ func (p *ProjectPipelineService) Update(ctx context.Context, params *pb.UpdatePr
 		return nil, apierrors.ErrUpdateProjectPipeline.AccessDenied()
 	}
 
-	has, err := p.checkDefinitionRemoteSameName(params.ProjectID, params.PipelineDefinitionID, params.Name)
-	if err != nil {
-		return nil, apierrors.ErrUpdateProjectPipeline.InternalError(err)
-	}
-	if has {
-		return nil, apierrors.ErrUpdateProjectPipeline.InternalError(fmt.Errorf("the same pipeline name exists in the project"))
-	}
 	definitionRsp, err := p.PipelineDefinition.Update(ctx, &dpb.PipelineDefinitionUpdateRequest{
 		PipelineDefinitionID: params.PipelineDefinitionID,
 		Name:                 params.Name,
@@ -1570,9 +1563,8 @@ func (p *ProjectPipelineService) OneClickCreate(ctx context.Context, params *pb.
 	pipelines := make([]*pb.ProjectPipeline, 0, len(params.PipelineYmls))
 	var (
 		message bytes.Buffer
-		errMsg  []string
+		errMsgs []string
 	)
-	message.WriteString(fmt.Sprintf("Create %d pipelines,", len(params.PipelineYmls)))
 	wait := limit_sync_group.NewSemaphore(10)
 	for _, v := range createReq {
 		wait.Add(1)
@@ -1580,21 +1572,23 @@ func (p *ProjectPipelineService) OneClickCreate(ctx context.Context, params *pb.
 			defer wait.Done()
 			pipeline, err := p.createOne(ctx, params)
 			if err != nil {
-				errMsg = append(errMsg, fmt.Sprintf("failed to create %s, err: %s", filepath.Join(params.Path, params.FileName), err.Error()))
+				errMsgs = append(errMsgs, fmt.Sprintf("failed to create %s, err: %s", filepath.Join(params.Path, params.FileName), err.Error()))
 			} else {
 				pipelines = append(pipelines, pipeline)
 			}
 		}(v)
 	}
 	wait.Wait()
-	message.WriteString(fmt.Sprintf("%d Success, %d Failed\n", len(pipelines), len(errMsg)))
-	for _, v := range errMsg {
-		message.WriteString(v + "\n")
+	if len(errMsgs) > 0 {
+		message.WriteString(fmt.Sprintf("Create %d pipelines, %d Success, %d Failed", len(params.PipelineYmls), len(pipelines), len(errMsgs)))
+		for _, v := range errMsgs {
+			message.WriteString("\n" + v)
+		}
 	}
 
 	return &pb.OneClickCreateProjectPipelineResponse{
 		ProjectPipelines: pipelines,
-		Message:          message.String(),
+		ErrMsg:           message.String(),
 	}, nil
 }
 

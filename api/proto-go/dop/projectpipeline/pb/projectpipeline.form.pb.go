@@ -971,8 +971,8 @@ func (m *OneClickCreateProjectPipelineResponse) UnmarshalURLValues(prefix string
 	for key, vals := range values {
 		if len(vals) > 0 {
 			switch prefix + key {
-			case "message":
-				m.Message = vals[0]
+			case "errMsg":
+				m.ErrMsg = vals[0]
 			}
 		}
 	}
