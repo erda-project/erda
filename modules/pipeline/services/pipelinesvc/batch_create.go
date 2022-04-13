@@ -15,12 +15,14 @@
 package pipelinesvc
 
 import (
+	"context"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 )
 
-func (s *PipelineSvc) BatchCreate(batchReq *apistructs.PipelineBatchCreateRequest) (
+func (s *PipelineSvc) BatchCreate(ctx context.Context, batchReq *apistructs.PipelineBatchCreateRequest) (
 	map[string]*apistructs.PipelineDTO, error) {
 
 	// convert pipelineBatchCreateRequest to []pipelineCreateRequest
@@ -57,7 +59,7 @@ func (s *PipelineSvc) BatchCreate(batchReq *apistructs.PipelineBatchCreateReques
 
 		// 是否自动执行
 		if batchReq.AutoRun {
-			if p, err = s.RunPipeline(&apistructs.PipelineRunRequest{
+			if p, err = s.RunPipeline(ctx, &apistructs.PipelineRunRequest{
 				PipelineID:   p.ID,
 				IdentityInfo: identityInfo,
 				Secrets:      getSecrets(p)},

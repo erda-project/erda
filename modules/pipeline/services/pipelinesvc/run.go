@@ -35,7 +35,7 @@ import (
 	"github.com/erda-project/erda/pkg/time/mysql_time"
 )
 
-func (s *PipelineSvc) RunPipeline(req *apistructs.PipelineRunRequest) (*spec.Pipeline, error) {
+func (s *PipelineSvc) RunPipeline(ctx context.Context, req *apistructs.PipelineRunRequest) (*spec.Pipeline, error) {
 	p, err := s.dbClient.GetPipeline(req.PipelineID)
 	if err != nil {
 		return nil, apierrors.ErrGetPipeline.InvalidParameter(err)

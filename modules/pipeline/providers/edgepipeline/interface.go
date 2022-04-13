@@ -12,26 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package compensator
+package edgepipeline
 
 import (
 	"context"
-
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/pipeline/spec"
 )
 
-type PipelineFunc struct {
-	RunPipeline    RunPipelineFunc
-	CreatePipeline CreatePipelineFunc
+type Interface interface {
+	CreatePipelineRecord(ctx context.Context) error
+	RunPipelineRecord(ctx context.Context) error
 }
 
-type RunPipelineFunc func(ctx context.Context, req *apistructs.PipelineRunRequest) (*spec.Pipeline, error)
-type CreatePipelineFunc func(ctx context.Context, req *apistructs.PipelineCreateRequestV2) (*spec.Pipeline, error)
+func (p *provider) CreatePipelineRecord(ctx context.Context) error {
+	return nil
+}
 
-type Interface interface {
-	PipelineCronCompensate(ctx context.Context, pipelineID uint64)
-
-	// todo Can be removed after all objects are provider
-	WithPipelineFunc(pipelineFunc PipelineFunc)
+func (p *provider) RunPipelineRecord(ctx context.Context) error {
+	return nil
 }

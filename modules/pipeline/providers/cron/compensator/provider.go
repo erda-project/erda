@@ -107,7 +107,7 @@ func (p *provider) PipelineCronCompensate(ctx context.Context, pipelineID uint64
 		p.Log.Infof("ready to Compensate, cronID: %d", *pipelineWithTasks.Pipeline.CronID)
 
 		// perform the compensation operation
-		if err := p.doNonExecuteCompensateByCronID(*pipelineWithTasks.Pipeline.CronID); err != nil {
+		if err := p.doNonExecuteCompensateByCronID(ctx, *pipelineWithTasks.Pipeline.CronID); err != nil {
 			p.Log.Infof("to Compensate error, cronID: %d, err : %v",
 				*pipelineWithTasks.Pipeline.CronID, err)
 		}
@@ -136,7 +136,7 @@ func (p *provider) ContinueCompensate(ctx context.Context) {
 	interruptTicker := time.NewTicker(getCronInterruptCompensateInterval(conf.CronCompensateTimeMinute()))
 
 	// Execute an interruption compensation first when the project starts
-	p.traverseDoCompensate(p.doInterruptCompensate, true)
+	p.traverseDoCompensate(ctx, p.doInterruptCompensate, true)
 
 	for {
 		select {
@@ -150,31 +150,31 @@ func (p *provider) ContinueCompensate(ctx context.Context) {
 			// Why synchronization is used for interrupt compensation here,
 			// because data will be added here,
 			// and it is not yet confirmed whether there is idempotent, so synchronize first
-			p.traverseDoCompensate(p.doInterruptCompensate, true)
+			p.traverseDoCompensate(ctx, p.doInterruptCompensate, true)
 		case <-ticker.C:
 			// Because the compensation (strategy) is not executed,
 			// the pipeline used to execute the pipeline is idempotent internally,
 			// that is, only one pipeline is executing at the same time
-			p.traverseDoCompensate(p.doStrategyCompensate, false)
+			p.traverseDoCompensate(ctx, p.doStrategyCompensate, false)
 		}
 	}
 }
 
-func (p *provider) doInterruptCompensate(pc spec.PipelineCron) {
-	err := p.cronInterruptCompensate(pc)
+func (p *provider) doInterruptCompensate(ctx context.Context, pc spec.PipelineCron) {
+	err := p.cronInterruptCompensate(ctx, pc)
 	if err != nil {
 		p.Log.Errorf("failed to do interrupt-compensate, cronID: %d, err: %v", pc.ID, err)
 	}
 }
 
-func (p *provider) doStrategyCompensate(pc spec.PipelineCron) {
-	err := p.cronNonExecuteCompensate(pc)
+func (p *provider) doStrategyCompensate(ctx context.Context, pc spec.PipelineCron) {
+	err := p.cronNonExecuteCompensate(ctx, pc)
 	if err != nil {
 		p.Log.Errorf("failed to do notexecute-compensate, cronID: %d, err: %v", pc.ID, err)
 	}
 }
 
-func (p *provider) traverseDoCompensate(doCompensate func(cron spec.PipelineCron), sync bool) {
+func (p *provider) traverseDoCompensate(ctx context.Context, doCompensate func(ctx context.Context, cron spec.PipelineCron), sync bool) {
 
 	if doCompensate == nil {
 		return
@@ -197,12 +197,12 @@ func (p *provider) traverseDoCompensate(doCompensate func(cron spec.PipelineCron
 			continue
 		}
 		if sync {
-			doCompensate(pc)
+			doCompensate(ctx, pc)
 		} else {
 			group.Add(1)
 			go func(pc spec.PipelineCron) {
 				defer group.Done()
-				doCompensate(pc)
+				doCompensate(ctx, pc)
 			}(pc)
 		}
 	}
@@ -210,7 +210,7 @@ func (p *provider) traverseDoCompensate(doCompensate func(cron spec.PipelineCron
 }
 
 // cronInterruptCompensate Timing interrupt compensation
-func (p *provider) cronInterruptCompensate(pc spec.PipelineCron) error {
+func (p *provider) cronInterruptCompensate(ctx context.Context, pc spec.PipelineCron) error {
 
 	// Calculate interrupt compensation start time
 	beforeCompensateFromTime := getCompensateFromTime(pc)
@@ -260,7 +260,7 @@ func (p *provider) cronInterruptCompensate(pc spec.PipelineCron) error {
 			}
 			p.Log.Infof("need do interrupt-compensate, cronID: %d, triggerTime: %v", pc.ID, ntt)
 			// create
-			created, err := p.createCronCompensatePipeline(pc, ntt)
+			created, err := p.createCronCompensatePipeline(ctx, pc, ntt)
 			if err != nil {
 				p.Log.Errorf("failed to do interrupt-compensate, cronID: %d, triggerTime: %v, err: %v", pc.ID, ntt, err)
 				continue
@@ -286,18 +286,18 @@ func (p *provider) cronInterruptCompensate(pc spec.PipelineCron) error {
 	return nil
 }
 
-func (p *provider) doNonExecuteCompensateByCronID(id uint64) error {
+func (p *provider) doNonExecuteCompensateByCronID(ctx context.Context, id uint64) error {
 	cron, err := p.dbClient.GetPipelineCron(id)
 	if err != nil {
 		return err
 	}
 
-	return p.cronNonExecuteCompensate(cron)
+	return p.cronNonExecuteCompensate(ctx, cron)
 }
 
 // cronNonExecuteCompensate timing compensation not performed
 // Only within one day
-func (p *provider) cronNonExecuteCompensate(pc spec.PipelineCron) error {
+func (p *provider) cronNonExecuteCompensate(ctx context.Context, pc spec.PipelineCron) error {
 
 	// Notexecute compensate is not enabled, exit
 	if pc.Enable == nil || *pc.Enable == false || pc.Extra.Compensator == nil || pc.Extra.Compensator.Enable == false {
@@ -335,10 +335,10 @@ func (p *provider) cronNonExecuteCompensate(pc spec.PipelineCron) error {
 		return errors.Errorf("failed to list notexecute pipelines, cronID: %d, err: %v", pc.ID, err)
 	}
 	existPipelines := result.Pipelines
-	return p.doCronCompensate(*pc.Extra.Compensator, existPipelines, pc)
+	return p.doCronCompensate(ctx, *pc.Extra.Compensator, existPipelines, pc)
 }
 
-func (p *provider) doCronCompensate(compensator apistructs.CronCompensator, notRunPipelines []spec.Pipeline, pipelineCron spec.PipelineCron) error {
+func (p *provider) doCronCompensate(ctx context.Context, compensator apistructs.CronCompensator, notRunPipelines []spec.Pipeline, pipelineCron spec.PipelineCron) error {
 	var order string
 
 	if len(notRunPipelines) <= 0 {
@@ -390,7 +390,7 @@ func (p *provider) doCronCompensate(compensator apistructs.CronCompensator, notR
 			return nil
 		}
 	}
-	_, err := p.pipelineFunc.RunPipeline(&apistructs.PipelineRunRequest{
+	_, err := p.pipelineFunc.RunPipeline(ctx, &apistructs.PipelineRunRequest{
 		PipelineID:   firstOrLastPipeline.ID,
 		Secrets:      firstOrLastPipeline.Extra.IncomingSecrets,
 		IdentityInfo: apistructs.IdentityInfo{InternalClient: firstOrLastPipeline.Extra.InternalClient, UserID: firstOrLastPipeline.GetUserID()},
@@ -481,12 +481,12 @@ func getTriggeredTime(p spec.Pipeline) time.Time {
 	return time.Unix(p.TimeCreated.Unix(), 0)
 }
 
-func (p *provider) createCronCompensatePipeline(pc spec.PipelineCron, triggerTime time.Time) (*spec.Pipeline, error) {
+func (p *provider) createCronCompensatePipeline(ctx context.Context, pc spec.PipelineCron, triggerTime time.Time) (*spec.Pipeline, error) {
 	// generate new label map avoid concurrent map problem
 	pc.Extra.NormalLabels = pc.GenCompensateCreatePipelineReqNormalLabels(triggerTime)
 	pc.Extra.FilterLabels = pc.GenCompensateCreatePipelineReqFilterLabels()
 
-	return p.pipelineFunc.CreatePipeline(&apistructs.PipelineCreateRequestV2{
+	return p.pipelineFunc.CreatePipeline(ctx, &apistructs.PipelineCreateRequestV2{
 		PipelineYml:            pc.Extra.PipelineYml,
 		ClusterName:            pc.Extra.ClusterName,
 		PipelineYmlName:        pc.PipelineYmlName,

@@ -33,7 +33,7 @@ import (
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
-func (s *PipelineSvc) CreateV2(req *apistructs.PipelineCreateRequestV2) (*spec.Pipeline, error) {
+func (s *PipelineSvc) CreateV2(ctx context.Context, req *apistructs.PipelineCreateRequestV2) (*spec.Pipeline, error) {
 	// validate
 	if err := s.validateCreateRequest(req); err != nil {
 		return nil, err
@@ -57,7 +57,7 @@ func (s *PipelineSvc) CreateV2(req *apistructs.PipelineCreateRequestV2) (*spec.P
 
 	// 立即执行一次
 	if req.AutoRunAtOnce {
-		_p, err := s.RunPipeline(&apistructs.PipelineRunRequest{
+		_p, err := s.RunPipeline(ctx, &apistructs.PipelineRunRequest{
 			PipelineID:        p.ID,
 			ForceRun:          req.ForceRun,
 			IdentityInfo:      req.IdentityInfo,
