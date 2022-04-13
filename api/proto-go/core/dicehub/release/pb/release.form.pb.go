@@ -1411,6 +1411,16 @@ func (m *ReleaseUploadRequest) UnmarshalURLValues(prefix string, values url.Valu
 				m.UserID = vals[0]
 			case "clusterName":
 				m.ClusterName = vals[0]
+			case "tags":
+				list := make([]uint64, 0, len(vals))
+				for _, text := range vals {
+					val, err := strconv.ParseUint(text, 10, 64)
+					if err != nil {
+						return err
+					}
+					list = append(list, val)
+				}
+				m.Tags = list
 			}
 		}
 	}
