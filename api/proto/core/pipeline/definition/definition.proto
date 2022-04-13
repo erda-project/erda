@@ -52,6 +52,21 @@ service DefinitionService {
       get: "/api/pipeline-definitions/actions/statistics-group-by-filePath",
     };
   }
+  rpc UpdateExtra (PipelineDefinitionExtraUpdateRequest) returns (PipelineDefinitionExtraUpdateResponse) {
+    option (google.api.http) = {
+      put: "/api/pipeline-definitions/{pipelineDefinitionID}/actions/update-extra",
+    };
+  }
+}
+
+// update extra
+message PipelineDefinitionExtraUpdateRequest {
+  string pipelineDefinitionID = 1;
+  string extra = 2;
+}
+
+message PipelineDefinitionExtraUpdateResponse {
+  PipelineDefinitionExtra extra = 1;
 }
 
 message PipelineDefinition {

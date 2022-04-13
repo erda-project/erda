@@ -16,7 +16,9 @@ package guide
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -88,14 +90,27 @@ func (g *GuideService) CreateGuideByGittarPushHook(ctx context.Context, req *pb.
 		return &pb.CreateGuideResponse{}, nil
 	}
 
-	// Check if pipeline yml exists
-	ok, err = g.checkPipelineYml(appDto, getBranchFromRef(req.Content.Ref), req.Content.Pusher.ID)
+	// Find if pipeline yml list
+	ymls, err := g.ListPipelineYml(appDto, getBranchFromRef(req.Content.Ref), req.Content.Pusher.ID)
 	if err != nil {
-		return nil, apierrors.ErrCreateGuide.InvalidParameter(err)
+		return nil, apierrors.ErrCreateGuide.InternalError(err)
 	}
-	if !ok {
+	if len(ymls) == 0 {
 		return &pb.CreateGuideResponse{}, nil
 	}
+	pipelineYmls := make([]string, 0, len(ymls))
+	for i := range ymls {
+		pipelineYmls = append(pipelineYmls, filepath.Join(ymls[i].YmlPath, ymls[i].YmlName))
+	}
+
+	b, err := json.Marshal(&db.PipelineContent{
+		Branch:       req.Content.Ref[len(BranchPrefix):],
+		PipelineYmls: pipelineYmls,
+	})
+	if err != nil {
+		return nil, apierrors.ErrCreateGuide.InternalError(err)
+	}
+
 	guide := db.Guide{
 		Status:        db.InitStatus.String(),
 		Kind:          db.PipelineGuide.String(),
@@ -106,6 +121,7 @@ func (g *GuideService) CreateGuideByGittarPushHook(ctx context.Context, req *pb.
 		AppID:         appID,
 		AppName:       appDto.Name,
 		Branch:        req.Content.Ref[len(BranchPrefix):],
+		Content:       db.JSON(b),
 		SoftDeletedAt: 0,
 	}
 	// Check uniqueness
@@ -164,7 +180,7 @@ type PipelineYml struct {
 func (g *GuideService) ListPipelineYml(app *apistructs.ApplicationDTO, branch, userID string) ([]PipelineYml, error) {
 	work := limit_sync_group.NewWorker(3)
 	var list []PipelineYml
-	var pathList = []string{"", DicePipelinePath, ErdaPipelinePath}
+	var pathList = []string{"", ErdaPipelinePath}
 	for _, path := range pathList {
 		work.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
 			result, err := g.getPipelineYml(app, userID, branch, i[0].(string))

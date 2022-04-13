@@ -138,9 +138,15 @@ service ProjectPipelineService {
   }
 }
 
+message PipelineRunParam {
+  string name = 1;
+  google.protobuf.Value value = 2;
+}
+
 message RunProjectPipelineRequest {
   string pipelineDefinitionID = 1;
   int64 projectID = 2;
+  repeated PipelineRunParam runParams  = 3;
 }
 
 message RunProjectPipelineResponse {

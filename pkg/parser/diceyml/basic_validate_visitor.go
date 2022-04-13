@@ -175,6 +175,14 @@ func (o *BasicValidateVisitor) VisitResources(v DiceYmlVisitor, obj *Resources) 
 			o.collectErrors[yamlHeaderRegexWithUpperHeader([]string{o.currentService, "resources", "network"}, "mode")] = errors.Wrap(invalidNetworkMode, o.currentService)
 		}
 	}
+
+	if obj.EmptyDirCapacity < 0 {
+		o.collectErrors[yamlHeaderRegexWithUpperHeader([]string{o.currentService, "resources"}, "emptydir_size")] = errors.Wrap(invalidEmptyDir, o.currentService)
+	}
+
+	if obj.EphemeralStorageCapacity < 0 {
+		o.collectErrors[yamlHeaderRegexWithUpperHeader([]string{o.currentService, "resources"}, "ephemeral_storage_size")] = errors.Wrap(invalidEphemeralStorage, o.currentService)
+	}
 }
 
 func (o *BasicValidateVisitor) VisitDeployments(v DiceYmlVisitor, obj *Deployments) {

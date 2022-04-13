@@ -131,6 +131,8 @@ func applyOverlay__(services *diceyml.Services, name string, serviceOverlay *dic
 		r.Mem = int(serviceOverlay.Resources.Mem)
 		r.MaxMem = serviceOverlay.Resources.MaxMem
 		r.Disk = int(serviceOverlay.Resources.Disk)
+		r.EmptyDirCapacity = int(serviceOverlay.Resources.EmptyDirCapacity)
+		r.EphemeralStorageCapacity = int(serviceOverlay.Resources.EmptyDirCapacity)
 		service.Resources = r
 	}
 }
@@ -151,6 +153,8 @@ func applyOverlayJobs__(jobs *diceyml.Jobs, name string, serviceOverlay *spec.Se
 			r.Mem = int(serviceOverlay.Resources.Mem)
 			r.MaxMem = int(serviceOverlay.Resources.MaxMem)
 			r.Disk = int(serviceOverlay.Resources.Disk)
+			r.EmptyDirCapacity = int(serviceOverlay.Resources.EmptyDirCapacity)
+			r.EphemeralStorageCapacity = int(serviceOverlay.Resources.EmptyDirCapacity)
 			service.Resources = r
 		}
 	}

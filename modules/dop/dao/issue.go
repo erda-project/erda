@@ -74,6 +74,7 @@ const (
 	ExpireTypeExpireIn7Days  ExpireType = "ExpireIn7Days"
 	ExpireTypeExpireIn30Days ExpireType = "ExpireIn30Days"
 	ExpireTypeExpireInFuture ExpireType = "ExpireInFuture"
+	ExpireTypeUnfinished     ExpireType = "Unfinished"
 )
 
 var ExpireTypes = []ExpireType{ExpireTypeUndefined, ExpireTypeExpired, ExpireTypeExpireIn1Day, ExpireTypeExpireIn2Days, ExpireTypeExpireIn7Days, ExpireTypeExpireIn30Days, ExpireTypeExpireInFuture}

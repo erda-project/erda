@@ -77,13 +77,6 @@ func ReplacePipelineParams(pipeline string, params map[string]interface{}) strin
 
 		// 替换新的语法
 		pipeline = strings.ReplaceAll(pipeline, fmt.Sprintf("%s %s.%s %s", expression.LeftPlaceholder, expression.Params, k, expression.RightPlaceholder), replaceStr)
-		//placeholderParams := map[string]string{}
-		//placeholderParams[fmt.Sprintf("%s.%s", expression.Params, k)] = replaceStr
-		//result, err := expression.MatchEval(pipeline, placeholderParams, expression.Params)
-		//if err != nil {
-		//	continue
-		//}
-		//pipeline = result
 	}
 	return pipeline
 }

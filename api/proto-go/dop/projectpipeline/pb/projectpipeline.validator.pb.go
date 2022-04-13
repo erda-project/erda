@@ -21,7 +21,22 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+func (this *PipelineRunParam) Validate() error {
+	if this.Value != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Value); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("Value", err)
+		}
+	}
+	return nil
+}
 func (this *RunProjectPipelineRequest) Validate() error {
+	for _, item := range this.RunParams {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("RunParams", err)
+			}
+		}
+	}
 	return nil
 }
 func (this *RunProjectPipelineResponse) Validate() error {

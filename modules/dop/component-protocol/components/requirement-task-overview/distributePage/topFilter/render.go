@@ -32,7 +32,9 @@ import (
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/requirement-task-overview/common/gshelper"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/dop/services/issue"
+	"github.com/erda-project/erda/modules/dop/services/issuestate"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/filter"
+	"github.com/erda-project/erda/providers/component-protocol/issueFilter"
 )
 
 func init() {
@@ -54,6 +56,7 @@ func (f *ComponentFilter) InitFromProtocol(ctx context.Context, c *cptype.Compon
 	f.sdk = cputil.SDK(ctx)
 	f.bdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 	f.issueSvc = ctx.Value(types.IssueService).(*issue.Issue)
+	f.issueStateSvc = ctx.Value(types.IssueStateService).(*issuestate.IssueState)
 	return f.setInParams(ctx)
 }
 
@@ -164,12 +167,19 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 	}
 
 	f.IssueList = data
-	states, err := f.issueSvc.GetIssuesStatesByProjectID(f.InParams.ProjectID, apistructs.IssueTypeBug)
+	stateIDs, err := f.issueStateSvc.GetIssueStateIDsByTypes(&apistructs.IssueStatesRequest{
+		ProjectID: f.InParams.ProjectID,
+		IssueType: []apistructs.IssueType{apistructs.IssueTypeTask, apistructs.IssueTypeRequirement},
+	})
 	if err != nil {
 		return err
 	}
-	f.IssueStateList = states
-
+	conditions := issueFilter.FrontendConditions{
+		IterationIDs: []int64{f.State.Values.IterationID},
+		AssigneeIDs:  f.State.Values.AssigneeIDs,
+		LabelIDs:     f.State.Values.LabelIDs,
+		States:       stateIDs,
+	}
 	orgID, err := strconv.Atoi(f.sdk.Identity.OrgID)
 	if err != nil {
 		return err
@@ -188,7 +198,7 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 	helper.SetIteration(iterations[f.State.Values.IterationID])
 	helper.SetMembers(f.Members)
 	helper.SetIssueList(f.IssueList)
-	helper.SetIssueStateList(f.IssueStateList)
+	helper.SetIssueConditions(conditions)
 	helper.SetIssueStageList(f.Stages)
 
 	urlParam, err := f.generateUrlQueryParams()
