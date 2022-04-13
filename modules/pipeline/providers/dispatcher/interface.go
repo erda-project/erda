@@ -16,18 +16,21 @@ package dispatcher
 
 import (
 	"context"
+
+	"github.com/erda-project/erda-infra/pkg/strutil"
+	"github.com/erda-project/erda/modules/pipeline/providers/leaderworker/worker"
 )
 
 // Interface .
 type Interface interface {
 	Dispatch(ctx context.Context, pipelineID uint64)
-	Cancel(ctx context.Context, pipelineID uint64) error
+	MakeLogicTaskID(pipelineID uint64) worker.LogicTaskID
 }
 
 func (p *provider) Dispatch(ctx context.Context, pipelineID uint64) {
 	p.pipelineIDsChan <- pipelineID
 }
 
-func (p *provider) Cancel(ctx context.Context, pipelineID uint64) error {
-	return p.LW.CancelLogicTask(ctx, p.makeLogicTaskID(pipelineID))
+func (p *provider) MakeLogicTaskID(pipelineID uint64) worker.LogicTaskID {
+	return worker.LogicTaskID(strutil.String(pipelineID))
 }
