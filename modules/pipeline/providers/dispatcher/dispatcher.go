@@ -36,7 +36,7 @@ func (p *provider) continueDispatcher(ctx context.Context) {
 }
 
 func (p *provider) dispatchOnePipelineUntilSuccess(ctx context.Context, pipelineID uint64) {
-	isTaskHandling, handlingWorkerID := p.LW.IsTaskBeingProcessed(ctx, p.makeLogicTaskID(pipelineID))
+	isTaskHandling, handlingWorkerID := p.LW.IsTaskBeingProcessed(ctx, p.MakeLogicTaskID(pipelineID))
 	if isTaskHandling {
 		p.Log.Warnf("skip dispatch, pipeline is already in handling, pipelineID: %d, workerID: %s", pipelineID, handlingWorkerID)
 		return
@@ -60,8 +60,4 @@ func (p *provider) dispatchOnePipelineUntilSuccess(ctx context.Context, pipeline
 	}
 
 	p.Log.Infof("dispatch pipeline to worker success, pipelineID: %d, workerID: %s", pipelineID, workerID)
-}
-
-func (p *provider) makeLogicTaskID(pipelineID uint64) worker.LogicTaskID {
-	return worker.LogicTaskID(strutil.String(pipelineID))
 }

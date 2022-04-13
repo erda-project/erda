@@ -29,7 +29,7 @@ func (p *provider) DistributedSendPipeline(ctx context.Context, pipelineID uint6
 
 func (p *provider) DistributedStopPipeline(ctx context.Context, pipelineID uint64) error {
 	// dispatcher
-	if err := p.Dispatcher.Cancel(ctx, pipelineID); err != nil {
+	if err := p.LW.CancelLogicTask(ctx, p.Dispatcher.MakeLogicTaskID(pipelineID)); err != nil {
 		return err
 	}
 	return nil
