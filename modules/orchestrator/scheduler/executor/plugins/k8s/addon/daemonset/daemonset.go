@@ -25,6 +25,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/orchestrator/scheduler/executor/plugins/k8s/addon"
+	"github.com/erda-project/erda/modules/orchestrator/scheduler/executor/plugins/k8s/k8sapi"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -79,20 +80,26 @@ func (d *DaemonsetOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
 		Image: service.Image,
 		Resources: corev1.ResourceRequirements{
 			Limits: corev1.ResourceList{
-				corev1.ResourceCPU:    resource.MustParse(fmt.Sprintf("%.fm", service.Resources.Cpu*1000)),
-				corev1.ResourceMemory: resource.MustParse(fmt.Sprintf("%.fMi", service.Resources.Mem)),
+				corev1.ResourceCPU:              resource.MustParse(fmt.Sprintf("%.fm", service.Resources.Cpu*1000)),
+				corev1.ResourceMemory:           resource.MustParse(fmt.Sprintf("%.fMi", service.Resources.Mem)),
+				corev1.ResourceEphemeralStorage: resource.MustParse(k8sapi.EphemeralStorageSizeLimit),
 			},
 			Requests: corev1.ResourceList{
 				corev1.ResourceCPU: resource.MustParse(
 					fmt.Sprintf("%.fm", d.overcommit.CPUOvercommit(service.Resources.Cpu*1000))),
 				corev1.ResourceMemory: resource.MustParse(
 					fmt.Sprintf("%.dMi", d.overcommit.MemoryOvercommit(int(service.Resources.Mem)))),
+				corev1.ResourceEphemeralStorage: resource.MustParse(k8sapi.EphemeralStorageSizeRequest),
 			},
 		},
 		Command:        []string{"sh", "-c", service.Cmd},
 		Env:            envs(service.Env),
 		LivenessProbe:  probe,
 		ReadinessProbe: probe,
+	}
+	if service.Resources.EphemeralStorageCapacity > 1 {
+		maxEphemeral := fmt.Sprintf("%dGi", service.Resources.EphemeralStorageCapacity)
+		container.Resources.Limits[corev1.ResourceEphemeralStorage] = resource.MustParse(maxEphemeral)
 	}
 
 	// daemonset pod should not deployed on ECI

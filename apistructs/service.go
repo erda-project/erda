@@ -373,7 +373,9 @@ type Resources struct {
 	MaxCPU float64 `json:"max_cpu,omitempty"`
 	MaxMem float64 `json:"max_mem,omitempty"`
 	// disk usage
-	Disk float64 `json:"disk,omitempty"`
+	Disk                     float64 `json:"disk,omitempty"`
+	EmptyDirCapacity         int     `json:"emptydir_size"`
+	EphemeralStorageCapacity int     `json:"ephemeral_storage_size"`
 }
 
 // health check to check container healthy

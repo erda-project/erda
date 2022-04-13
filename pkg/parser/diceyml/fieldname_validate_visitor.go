@@ -122,8 +122,8 @@ func (o *FieldnameValidateVisitor) VisitResources(v DiceYmlVisitor, obj *Resourc
 	for k := range res {
 		switch i := k.(type) {
 		case string:
-			if !contain(i, []string{"cpu", "max_cpu", "mem", "max_mem", "disk", "network"}) {
-				o.collectErrors[yamlHeaderRegexWithUpperHeader([]string{o.currentServiceName, "resources"}, i)] = fmt.Errorf("[%s]/[resources] field '%s' not one of [cpu, max_cpu, mem, max_mem,  disk, network]", o.currentServiceName, i)
+			if !contain(i, []string{"cpu", "max_cpu", "mem", "max_mem", "disk", "network", "emptydir_size", "ephemeral_storage_size"}) {
+				o.collectErrors[yamlHeaderRegexWithUpperHeader([]string{o.currentServiceName, "resources"}, i)] = fmt.Errorf("[%s]/[resources] field '%s' not one of [cpu, max_cpu, mem, max_mem, disk, network, emptydir_size, ephemeral_storage_size]", o.currentServiceName, i)
 			}
 		default:
 			o.collectErrors[yamlHeaderRegex("_"+strconv.Itoa(len(o.collectErrors)))] = fmt.Errorf("[%s]/[resources] %v not string type", o.currentServiceName, k)

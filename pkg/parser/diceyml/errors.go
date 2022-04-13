@@ -40,6 +40,8 @@ var (
 	emptyEndpointDomain        = errortype("empty domain in endpoints")
 	invalidEndpointDomain      = errortype("invalid domain in endpoints")
 	invalidEndpointPath        = errortype("invalid path in endpoints, must start with '/'")
+	invalidEmptyDir            = errortype("invalid emptydir_size defined in yaml")
+	invalidEphemeralStorage    = errortype("invalid ephemeral_storage_size defined in yaml, at least set 1")
 )
 
 type errortype string

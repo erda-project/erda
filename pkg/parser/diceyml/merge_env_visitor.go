@@ -85,6 +85,8 @@ func (o *MergeEnvVisitor) VisitResources(v DiceYmlVisitor, obj *Resources) {
 	overrideIfNotZero(o.envObj.Services[o.currentService].Resources.MaxMem, &obj.MaxMem)
 	overrideIfNotZero(o.envObj.Services[o.currentService].Resources.Disk, &obj.Disk)
 	overrideIfNotZero(o.envObj.Services[o.currentService].Resources.Network, &obj.Network)
+	overrideIfNotZero(o.envObj.Services[o.currentService].Resources.EmptyDirCapacity, &obj.EmptyDirCapacity)
+	overrideIfNotZero(o.envObj.Services[o.currentService].Resources.EphemeralStorageCapacity, &obj.EphemeralStorageCapacity)
 }
 
 func (o *MergeEnvVisitor) VisitDeployments(v DiceYmlVisitor, obj *Deployments) {

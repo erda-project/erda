@@ -32,6 +32,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/orchestrator/scheduler/executor/plugins/k8s/k8sapi"
 	"github.com/erda-project/erda/modules/orchestrator/scheduler/executor/plugins/k8s/toleration"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders"
@@ -140,14 +141,20 @@ func (k *Kubernetes) createStatefulSet(ctx context.Context, info StatefulsetInfo
 		Image: service.Image,
 		Resources: apiv1.ResourceRequirements{
 			Requests: apiv1.ResourceList{
-				apiv1.ResourceCPU:    resource.MustParse(cpu),
-				apiv1.ResourceMemory: resource.MustParse(memory),
+				apiv1.ResourceCPU:              resource.MustParse(cpu),
+				apiv1.ResourceMemory:           resource.MustParse(memory),
+				apiv1.ResourceEphemeralStorage: resource.MustParse(k8sapi.EphemeralStorageSizeRequest),
 			},
 			Limits: apiv1.ResourceList{
-				apiv1.ResourceCPU:    resource.MustParse(maxCpu),
-				apiv1.ResourceMemory: resource.MustParse(maxMem),
+				apiv1.ResourceCPU:              resource.MustParse(maxCpu),
+				apiv1.ResourceMemory:           resource.MustParse(maxMem),
+				apiv1.ResourceEphemeralStorage: resource.MustParse(k8sapi.EphemeralStorageSizeLimit),
 			},
 		},
+	}
+	if service.Resources.EphemeralStorageCapacity > 1 {
+		maxEphemeral := fmt.Sprintf("%dGi", service.Resources.EphemeralStorageCapacity)
+		container.Resources.Limits[corev1.ResourceEphemeralStorage] = resource.MustParse(maxEphemeral)
 	}
 	// Forced to pull the image
 	//container.ImagePullPolicy = apiv1.PullAlways

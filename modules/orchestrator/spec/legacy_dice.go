@@ -61,8 +61,10 @@ type Resources struct {
 	Mem  float64 `json:"mem"`
 	Disk float64 `json:"disk"`
 
-	MaxMem float64 `json:"max_mem"`
-	MaxCPU float64 `json:"max_cpu"`
+	MaxMem                   float64 `json:"max_mem"`
+	MaxCPU                   float64 `json:"max_cpu"`
+	EmptyDirCapacity         float64 `json:"emptydir_size"`
+	EphemeralStorageCapacity float64 `json:"ephemeral_storage_size"`
 }
 
 type Addon struct {

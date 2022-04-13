@@ -26,6 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/orchestrator/scheduler/executor/plugins/k8s/k8sapi"
 	"github.com/erda-project/erda/modules/orchestrator/scheduler/executor/plugins/k8s/toleration"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders/constraints"
@@ -167,14 +168,21 @@ func (k *Kubernetes) newDaemonSet(service *apistructs.Service, sg *apistructs.Se
 		Image: service.Image,
 		Resources: corev1.ResourceRequirements{
 			Requests: corev1.ResourceList{
-				corev1.ResourceCPU:    resource.MustParse(cpu),
-				corev1.ResourceMemory: resource.MustParse(memory),
+				corev1.ResourceCPU:              resource.MustParse(cpu),
+				corev1.ResourceMemory:           resource.MustParse(memory),
+				corev1.ResourceEphemeralStorage: resource.MustParse(k8sapi.EphemeralStorageSizeRequest),
 			},
 			Limits: corev1.ResourceList{
-				corev1.ResourceCPU:    resource.MustParse(maxCpu),
-				corev1.ResourceMemory: resource.MustParse(maxMem),
+				corev1.ResourceCPU:              resource.MustParse(maxCpu),
+				corev1.ResourceMemory:           resource.MustParse(maxMem),
+				corev1.ResourceEphemeralStorage: resource.MustParse(k8sapi.EphemeralStorageSizeLimit),
 			},
 		},
+	}
+
+	if service.Resources.EphemeralStorageCapacity > 1 {
+		maxEphemeral := fmt.Sprintf("%dGi", service.Resources.EphemeralStorageCapacity)
+		container.Resources.Limits[corev1.ResourceEphemeralStorage] = resource.MustParse(maxEphemeral)
 	}
 
 	//Set the over-score ratio according to the environment
@@ -288,7 +296,7 @@ func (k *Kubernetes) newDaemonSet(service *apistructs.Service, sg *apistructs.Se
 		logrus.Errorf("failed to AddPodMountVolume for daemonset %s/%s: %v", daemonset.Namespace, daemonset.Name, err)
 		return nil, err
 	}
-	k.AddSpotEmptyDir(&daemonset.Spec.Template.Spec)
+	k.AddSpotEmptyDir(&daemonset.Spec.Template.Spec, service.Resources.EmptyDirCapacity)
 
 	logrus.Debugf("show k8s daemonset, name: %s, daemonset: %+v", deployName, daemonset)
 
