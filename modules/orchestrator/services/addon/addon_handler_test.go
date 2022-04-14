@@ -444,6 +444,9 @@ func TestAddonInstanceRoutingList_GetByTag(t *testing.T) {
 		{Name: name, Category: apistructs.CUSTOM_TYPE_CUSTOM, Tag: tag},
 	}
 	l := addonInstanceRoutingList(list)
+	if _, ok := l.GetByTag(""); ok {
+		t.Errorf("it should not be ture")
+	}
 	item, ok := l.GetByTag(tag)
 	if !ok {
 		t.Errorf("not ok, name: %s", tag)
