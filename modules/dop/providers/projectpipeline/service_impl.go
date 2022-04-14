@@ -1582,6 +1582,18 @@ func (p *ProjectPipelineService) OneClickCreate(ctx context.Context, params *pb.
 		return nil, apierrors.ErrOneClickCreateProjectPipeline.InvalidParameter(fmt.Errorf("the pipelineYmls is empty"))
 	}
 
+	uncategorizedPipelineYmls := pipelineYmlsFilterIn(params.PipelineYmls, func(yml string) bool {
+		for k := range apistructs.GetRuleCategoryKeyMap() {
+			if k == yml {
+				return false
+			}
+		}
+		return true
+	})
+	if len(uncategorizedPipelineYmls) > 10 {
+		return nil, apierrors.ErrOneClickCreateProjectPipeline.InvalidParameter(fmt.Errorf("the uncategorized pipelineYmls s greater than 10"))
+	}
+
 	// permission check
 	err := p.checkRolePermission(apistructs.IdentityInfo{
 		UserID: apis.GetUserID(ctx),
@@ -1653,4 +1665,13 @@ func getFilePath(path string) string {
 		return ""
 	}
 	return dir
+}
+
+func pipelineYmlsFilterIn(ymls []string, fn func(yml string) bool) (newYmls []string) {
+	for i := range ymls {
+		if fn(ymls[i]) {
+			newYmls = append(newYmls, ymls[i])
+		}
+	}
+	return
 }
