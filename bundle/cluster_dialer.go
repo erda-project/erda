@@ -16,7 +16,9 @@ package bundle
 
 import (
 	"encoding/json"
+	"fmt"
 
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
 )
 
@@ -39,6 +41,27 @@ func (b *Bundle) IsClusterDialerClientRegistered(clientType string, clusterKey s
 	}
 	if err := json.Unmarshal(resp.Body(), &getResp); err != nil {
 		return false, err
+	}
+	return getResp, nil
+}
+
+func (b *Bundle) GetClusterDialerClientData(clientType string, clusterKey string) (apistructs.ClusterDialerClientDetail, error) {
+	host, err := b.urls.ClusterDialer()
+	if err != nil {
+		return apistructs.ClusterDialerClientDetail{}, err
+	}
+	hc := b.hc
+
+	var getResp apistructs.ClusterDialerClientDetail
+	resp, err := hc.Get(host).
+		Path(fmt.Sprintf("/clusteragent/client-detail/%s/%s", clientType, clusterKey)).
+		Do().
+		JSON(&getResp)
+	if err != nil {
+		return apistructs.ClusterDialerClientDetail{}, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() {
+		return apistructs.ClusterDialerClientDetail{}, apierrors.ErrInvoke.InternalError(fmt.Errorf("%s", resp.Body()))
 	}
 	return getResp, nil
 }
