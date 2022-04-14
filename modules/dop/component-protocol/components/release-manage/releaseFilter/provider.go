@@ -220,7 +220,7 @@ func (f *ReleaseFilter) renderFilter() error {
 
 	tags, err := f.bdl.ListLabel(apistructs.ProjectLabelListRequest{
 		ProjectID: uint64(f.State.ProjectID),
-		Type:      apistructs.ReleaseTypeProject,
+		Type:      apistructs.LabelTypeRelease,
 		PageNo:    1,
 		PageSize:  1000,
 	})
@@ -236,7 +236,7 @@ func (f *ReleaseFilter) renderFilter() error {
 		Key:         "tags",
 		Label:       f.sdk.I18n("tag"),
 		Placeholder: f.sdk.I18n("selectTag"),
-		Type:        "tagSelect",
+		Type:        "tagsSelect",
 		Options:     tagOptions,
 	}
 	f.StdDataPtr.Conditions = append(f.StdDataPtr.Conditions, tagCondition)
