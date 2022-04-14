@@ -489,35 +489,67 @@ func (p *ProjectPipelineService) Update(ctx context.Context, params *pb.UpdatePr
 		return nil, apierrors.ErrUpdateProjectPipeline.AccessDenied()
 	}
 
-	has, err := p.checkDefinitionRemoteSameName(params.ProjectID, params.PipelineDefinitionID, params.Name)
+	app, err := p.bundle.GetApp(params.AppID)
 	if err != nil {
-		return nil, apierrors.ErrUpdateProjectPipeline.InternalError(err)
+		return nil, apierrors.ErrUpdateProjectPipeline.InvalidParameter(err)
 	}
-	if has {
-		return nil, apierrors.ErrUpdateProjectPipeline.InternalError(fmt.Errorf("the same pipeline name exists in the project"))
-	}
-	definitionRsp, err := p.PipelineDefinition.Update(ctx, &dpb.PipelineDefinitionUpdateRequest{
-		PipelineDefinitionID: params.PipelineDefinitionID,
-		Name:                 params.Name,
-	})
-	if err != nil {
-		return nil, apierrors.ErrUpdateProjectPipeline.InternalError(err)
+	if app.Name != getNameByRemote(source.Remote).AppName {
+		return nil, apierrors.ErrUpdateProjectPipeline.InvalidParameter(fmt.Errorf("the application can not be updated"))
 	}
 
-	return &pb.UpdateProjectPipelineResponse{ProjectPipeline: &pb.ProjectPipeline{
-		ID:               definitionRsp.PipelineDefinition.ID,
-		Name:             definitionRsp.PipelineDefinition.Name,
-		Creator:          definitionRsp.PipelineDefinition.Creator,
-		Category:         definitionRsp.PipelineDefinition.Category,
-		TimeCreated:      definitionRsp.PipelineDefinition.TimeCreated,
-		TimeUpdated:      definitionRsp.PipelineDefinition.TimeUpdated,
+	definitionUpdateReq := dpb.PipelineDefinitionUpdateRequest{
+		PipelineDefinitionID: params.PipelineDefinitionID,
+		Name:                 params.Name,
+	}
+
+	pipeline := pb.ProjectPipeline{
 		SourceType:       source.SourceType,
 		Remote:           source.Remote,
 		Ref:              source.Ref,
 		Path:             source.Path,
 		FileName:         source.Name,
 		PipelineSourceID: source.ID,
-	}}, nil
+	}
+
+	// update source
+	if source.Ref != params.Ref || source.Path != params.Path || source.Name != params.FileName {
+		pipelineSourceType := NewProjectSourceType(params.SourceType)
+		sourceCreateReq, err := pipelineSourceType.GenerateReq(ctx, p, &pb.CreateProjectPipelineRequest{
+			ProjectID:  params.ProjectID,
+			AppID:      params.AppID,
+			SourceType: params.SourceType,
+			Ref:        params.Ref,
+			Path:       params.Path,
+			FileName:   params.FileName,
+		})
+		if err != nil {
+			return nil, apierrors.ErrUpdateProjectPipeline.InternalError(err)
+		}
+		sourceRsp, err := p.PipelineSource.Create(ctx, sourceCreateReq)
+		if err != nil {
+			return nil, apierrors.ErrUpdateProjectPipeline.InternalError(err)
+		}
+		definitionUpdateReq.PipelineSourceID = sourceRsp.PipelineSource.ID
+		pipeline.SourceType = sourceRsp.PipelineSource.SourceType
+		pipeline.Remote = sourceRsp.PipelineSource.Remote
+		pipeline.Ref = sourceRsp.PipelineSource.Ref
+		pipeline.Path = sourceRsp.PipelineSource.Path
+		pipeline.FileName = sourceRsp.PipelineSource.Name
+		pipeline.PipelineSourceID = sourceRsp.PipelineSource.ID
+	}
+
+	definitionRsp, err := p.PipelineDefinition.Update(ctx, &definitionUpdateReq)
+	if err != nil {
+		return nil, apierrors.ErrUpdateProjectPipeline.InternalError(err)
+	}
+	pipeline.ID = definitionRsp.PipelineDefinition.ID
+	pipeline.Name = definitionRsp.PipelineDefinition.Name
+	pipeline.Creator = definitionRsp.PipelineDefinition.Creator
+	pipeline.Category = definitionRsp.PipelineDefinition.Category
+	pipeline.TimeCreated = definitionRsp.PipelineDefinition.TimeCreated
+	pipeline.TimeUpdated = definitionRsp.PipelineDefinition.TimeUpdated
+
+	return &pb.UpdateProjectPipelineResponse{ProjectPipeline: &pipeline}, nil
 }
 
 func (p *ProjectPipelineService) SetPrimary(ctx context.Context, params deftype.ProjectPipelineCategory) (*dpb.PipelineDefinitionUpdateResponse, error) {
@@ -1582,69 +1614,4 @@ func getRemotes(appNames []string, orgName, projectName string) []string {
 		}))
 	}
 	return remotes
-}
-
-func (p *ProjectPipelineService) UpdateProjectPipelineSource(ctx context.Context, params *pb.UpdateProjectPipelineSourceRequest) (*pb.UpdateProjectPipelineSourceResponse, error) {
-	if err := params.Validate(); err != nil {
-		return nil, apierrors.ErrUpdateProjectPipelineSource.InvalidParameter(err)
-	}
-
-	_, source, err := p.getPipelineDefinitionAndSource(params.PipelineDefinitionID)
-	if err != nil {
-		return nil, apierrors.ErrUpdateProjectPipelineSource.InvalidParameter(err)
-	}
-
-	err = p.checkDataPermissionByProjectID(params.ProjectID, source)
-	if err != nil {
-		return nil, apierrors.ErrUpdateProjectPipelineSource.AccessDenied()
-	}
-
-	app, err := p.bundle.GetApp(params.AppID)
-	if err != nil {
-		return nil, apierrors.ErrUpdateProjectPipelineSource.InvalidParameter(err)
-	}
-	if app.Name != getNameByRemote(source.Remote).AppName {
-		return nil, apierrors.ErrUpdateProjectPipelineSource.InvalidParameter(fmt.Errorf("the app can not be updated"))
-	}
-
-	pipelineSourceType := NewProjectSourceType(params.SourceType)
-	sourceReq, err := pipelineSourceType.GenerateReq(ctx, p, &pb.CreateProjectPipelineRequest{
-		ProjectID:  params.ProjectID,
-		AppID:      params.AppID,
-		SourceType: params.SourceType,
-		Ref:        params.Ref,
-		Path:       params.Path,
-		FileName:   params.FileName,
-	})
-	if err != nil {
-		return nil, apierrors.ErrUpdateProjectPipelineSource.InternalError(err)
-	}
-
-	sourceRsp, err := p.PipelineSource.Create(ctx, sourceReq)
-	if err != nil {
-		return nil, apierrors.ErrUpdateProjectPipelineSource.InternalError(err)
-	}
-
-	updateResp, err := p.PipelineDefinition.Update(ctx, &dpb.PipelineDefinitionUpdateRequest{
-		PipelineDefinitionID: params.PipelineDefinitionID,
-		PipelineSourceID:     sourceRsp.PipelineSource.ID,
-	})
-	if err != nil {
-		return nil, apierrors.ErrUpdateProjectPipelineSource.InternalError(err)
-	}
-
-	return &pb.UpdateProjectPipelineSourceResponse{ProjectPipeline: &pb.ProjectPipeline{
-		ID:               updateResp.PipelineDefinition.ID,
-		Name:             updateResp.PipelineDefinition.Name,
-		Creator:          updateResp.PipelineDefinition.Creator,
-		Category:         updateResp.PipelineDefinition.Category,
-		TimeCreated:      updateResp.PipelineDefinition.TimeCreated,
-		TimeUpdated:      updateResp.PipelineDefinition.TimeUpdated,
-		SourceType:       sourceRsp.PipelineSource.SourceType,
-		Remote:           sourceRsp.PipelineSource.Remote,
-		Ref:              sourceRsp.PipelineSource.Ref,
-		Path:             sourceRsp.PipelineSource.Path,
-		FileName:         sourceRsp.PipelineSource.Name,
-		PipelineSourceID: sourceRsp.PipelineSource.ID,
-	}}, nil
 }

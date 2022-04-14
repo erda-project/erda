@@ -43,8 +43,6 @@ type ProjectPipelineServiceHandler interface {
 	RerunFailed(context.Context, *RerunFailedProjectPipelineRequest) (*RerunFailedProjectPipelineResponse, error)
 	// POST /api/project-pipeline/definitions/{pipelineDefinitionID}/actions/cancel
 	Cancel(context.Context, *CancelProjectPipelineRequest) (*CancelProjectPipelineResponse, error)
-	// PUT /api/project-pipeline/definitions/{pipelineDefinitionID}/actions/update-source
-	UpdateProjectPipelineSource(context.Context, *UpdateProjectPipelineSourceRequest) (*UpdateProjectPipelineSourceResponse, error)
 }
 
 // RegisterProjectPipelineServiceHandler register ProjectPipelineServiceHandler to http.Router.
@@ -581,65 +579,6 @@ func RegisterProjectPipelineServiceHandler(r http.Router, srv ProjectPipelineSer
 		)
 	}
 
-	add_UpdateProjectPipelineSource := func(method, path string, fn func(context.Context, *UpdateProjectPipelineSourceRequest) (*UpdateProjectPipelineSourceResponse, error)) {
-		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-			return fn(ctx, req.(*UpdateProjectPipelineSourceRequest))
-		}
-		var UpdateProjectPipelineSource_info transport.ServiceInfo
-		if h.Interceptor != nil {
-			UpdateProjectPipelineSource_info = transport.NewServiceInfo("erda.dop.projectpipeline.ProjectPipelineService", "UpdateProjectPipelineSource", srv)
-			handler = h.Interceptor(handler)
-		}
-		compiler, _ := httprule.Parse(path)
-		temp := compiler.Compile()
-		pattern, _ := runtime.NewPattern(httprule.SupportPackageIsVersion1, temp.OpCodes, temp.Pool, temp.Verb)
-		r.Add(method, path, encodeFunc(
-			func(w http1.ResponseWriter, r *http1.Request) (interface{}, error) {
-				ctx := http.WithRequest(r.Context(), r)
-				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
-				if h.Interceptor != nil {
-					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, UpdateProjectPipelineSource_info)
-				}
-				r = r.WithContext(ctx)
-				var in UpdateProjectPipelineSourceRequest
-				if err := h.Decode(r, &in); err != nil {
-					return nil, err
-				}
-				var input interface{} = &in
-				if u, ok := (input).(urlenc.URLValuesUnmarshaler); ok {
-					if err := u.UnmarshalURLValues("", r.URL.Query()); err != nil {
-						return nil, err
-					}
-				}
-				path := r.URL.Path
-				if len(path) > 0 {
-					components := strings.Split(path[1:], "/")
-					last := len(components) - 1
-					var verb string
-					if idx := strings.LastIndex(components[last], ":"); idx >= 0 {
-						c := components[last]
-						components[last], verb = c[:idx], c[idx+1:]
-					}
-					vars, err := pattern.Match(components, verb)
-					if err != nil {
-						return nil, err
-					}
-					for k, val := range vars {
-						switch k {
-						case "pipelineDefinitionID":
-							in.PipelineDefinitionID = val
-						}
-					}
-				}
-				out, err := handler(ctx, &in)
-				if err != nil {
-					return out, err
-				}
-				return out, nil
-			}),
-		)
-	}
-
 	add_Create("POST", "/api/project-pipeline", srv.Create)
 	add_ListApp("GET", "/api/project-pipeline/actions/get-my-apps", srv.ListApp)
 	add_ListPipelineYml("GET", "/api/project-pipeline/actions/get-pipeline-yml-list", srv.ListPipelineYml)
@@ -651,5 +590,4 @@ func RegisterProjectPipelineServiceHandler(r http.Router, srv ProjectPipelineSer
 	add_Rerun("POST", "/api/project-pipeline/definitions/{pipelineDefinitionID}/actions/rerun", srv.Rerun)
 	add_RerunFailed("POST", "/api/project-pipeline/definitions/{pipelineDefinitionID}/actions/rerun-failed", srv.RerunFailed)
 	add_Cancel("POST", "/api/project-pipeline/definitions/{pipelineDefinitionID}/actions/cancel", srv.Cancel)
-	add_UpdateProjectPipelineSource("PUT", "/api/project-pipeline/definitions/{pipelineDefinitionID}/actions/update-source", srv.UpdateProjectPipelineSource)
 }

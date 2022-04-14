@@ -322,7 +322,7 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 							!apistructs.PipelineStatus(v.Status).IsEndStatus() {
 							return -1
 						}
-						return int64(v.CostTime)
+						return v.CostTime
 					}(),
 					Tip: func() string {
 						if !apistructs.PipelineStatus(v.Status).IsRunningStatus() &&
@@ -557,16 +557,35 @@ func (p *PipelineTable) SetTableMoreOpItem(definition *pb.PipelineDefinition, de
 		})
 	}
 
-	updateNameBuild := build
-	updateNameBuild.SkipRender = true
 	items = append(items, commodel.MoreOpItem{
-		ID:   "updateName",
-		Text: cputil.I18n(p.sdk.Ctx, "updateName"),
-		Operations: map[cptype.OperationKey]cptype.Operation{
-			commodel.OpMoreOperationsItemClick{}.OpKey(): updateNameBuild,
-		},
+		ID:   "update",
+		Text: cputil.I18n(p.sdk.Ctx, "update"),
 		Icon: &commodel.Icon{
 			Type: "edit1",
+		},
+		Operations: map[cptype.OperationKey]cptype.Operation{
+			commodel.OpMoreOperationsItemClick{}.OpKey(): func() cptype.Operation {
+				build := cputil.NewOpBuilder().Build()
+				build.SkipRender = true
+
+				var inode string
+				appName := getApplicationNameFromDefinitionRemote(definition.Remote)
+				if appName != "" && appNameIDMap != nil {
+					if definition.Path == "" {
+						inode = fmt.Sprintf("%v/%v/tree/%v/%v", p.InParams.ProjectID, appNameIDMap.AppNameToID[appName], definition.Ref, definition.FileName)
+					} else {
+						inode = fmt.Sprintf("%v/%v/tree/%v/%v/%v", p.InParams.ProjectID, appNameIDMap.AppNameToID[appName], definition.Ref, definition.Path, definition.FileName)
+					}
+				}
+				build.ServerData = &cptype.OpServerData{
+					"inode":        base64.URLEncoding.EncodeToString([]byte(inode)),
+					"appName":      appName,
+					"pipelineID":   definition.PipelineID,
+					"pipelineName": definition.Name,
+					"appID":        appNameIDMap.AppNameToID[appName],
+				}
+				return build
+			}(),
 		},
 	})
 	return items

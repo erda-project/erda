@@ -127,16 +127,6 @@ service ProjectPipelineService {
       path : "/api/project-pipeline/definitions/{pipelineDefinitionID}/actions/cancel",
     };
   }
-
-  rpc UpdateProjectPipelineSource(UpdateProjectPipelineSourceRequest)
-      returns(UpdateProjectPipelineSourceResponse) {
-    option(google.api.http) = {
-      put : "/api/project-pipeline/definitions/{pipelineDefinitionID}/actions/update-source",
-    };
-    option(erda.common.openapi) = {
-      path : "/api/project-pipeline/definitions/{pipelineDefinitionID}/actions/update-source",
-    };
-  }
 }
 
 message PipelineRunParam {
@@ -247,7 +237,6 @@ message Application {
   uint64 totalNum = 19;
 }
 
-
 message CreateProjectPipelineRequest {
   uint64 projectID = 1 [(validator.field) = {int_gt: 0}];
   string name = 2 [(validator.field) = {string_not_empty: true}];
@@ -298,23 +287,13 @@ message UpdateProjectPipelineRequest {
   string pipelineDefinitionID = 1 [(validator.field) = {string_not_empty: true}];
   uint64 projectID = 2 [(validator.field) = {int_gt: 0}];
   string name = 3 [(validator.field) = {string_not_empty: true}];
+  uint64 appID = 4 [(validator.field) = {int_gt: 0}];
+  string sourceType = 5 [(validator.field) = {string_not_empty: true}];
+  string ref = 6 [(validator.field) = {string_not_empty: true}];
+  string path = 7;
+  string fileName = 8 [(validator.field) = {string_not_empty: true}];
 }
 
 message UpdateProjectPipelineResponse {
-  ProjectPipeline ProjectPipeline = 1;
-}
-
-message UpdateProjectPipelineSourceRequest {
-  string pipelineDefinitionID = 1 [(validator.field) = {string_not_empty: true}];
-  uint64 projectID = 2 [(validator.field) = {int_gt: 0}];
-  uint64 appID = 3 [(validator.field) = {int_gt: 0}];
-  string sourceType = 4 [(validator.field) = {string_not_empty: true}];
-  string ref = 5 [(validator.field) = {string_not_empty: true}];
-  string path = 6;
-  string fileName = 7 [(validator.field) = {string_not_empty: true}];
-
-}
-
-message UpdateProjectPipelineSourceResponse {
   ProjectPipeline ProjectPipeline = 1;
 }

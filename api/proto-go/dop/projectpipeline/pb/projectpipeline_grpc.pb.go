@@ -32,7 +32,6 @@ type ProjectPipelineServiceClient interface {
 	Rerun(ctx context.Context, in *RerunProjectPipelineRequest, opts ...grpc.CallOption) (*RerunProjectPipelineResponse, error)
 	RerunFailed(ctx context.Context, in *RerunFailedProjectPipelineRequest, opts ...grpc.CallOption) (*RerunFailedProjectPipelineResponse, error)
 	Cancel(ctx context.Context, in *CancelProjectPipelineRequest, opts ...grpc.CallOption) (*CancelProjectPipelineResponse, error)
-	UpdateProjectPipelineSource(ctx context.Context, in *UpdateProjectPipelineSourceRequest, opts ...grpc.CallOption) (*UpdateProjectPipelineSourceResponse, error)
 }
 
 type projectPipelineServiceClient struct {
@@ -142,15 +141,6 @@ func (c *projectPipelineServiceClient) Cancel(ctx context.Context, in *CancelPro
 	return out, nil
 }
 
-func (c *projectPipelineServiceClient) UpdateProjectPipelineSource(ctx context.Context, in *UpdateProjectPipelineSourceRequest, opts ...grpc.CallOption) (*UpdateProjectPipelineSourceResponse, error) {
-	out := new(UpdateProjectPipelineSourceResponse)
-	err := c.cc.Invoke(ctx, "/erda.dop.projectpipeline.ProjectPipelineService/UpdateProjectPipelineSource", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // ProjectPipelineServiceServer is the server API for ProjectPipelineService service.
 // All implementations should embed UnimplementedProjectPipelineServiceServer
 // for forward compatibility
@@ -166,7 +156,6 @@ type ProjectPipelineServiceServer interface {
 	Rerun(context.Context, *RerunProjectPipelineRequest) (*RerunProjectPipelineResponse, error)
 	RerunFailed(context.Context, *RerunFailedProjectPipelineRequest) (*RerunFailedProjectPipelineResponse, error)
 	Cancel(context.Context, *CancelProjectPipelineRequest) (*CancelProjectPipelineResponse, error)
-	UpdateProjectPipelineSource(context.Context, *UpdateProjectPipelineSourceRequest) (*UpdateProjectPipelineSourceResponse, error)
 }
 
 // UnimplementedProjectPipelineServiceServer should be embedded to have forward compatible implementations.
@@ -205,9 +194,6 @@ func (*UnimplementedProjectPipelineServiceServer) RerunFailed(context.Context, *
 }
 func (*UnimplementedProjectPipelineServiceServer) Cancel(context.Context, *CancelProjectPipelineRequest) (*CancelProjectPipelineResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Cancel not implemented")
-}
-func (*UnimplementedProjectPipelineServiceServer) UpdateProjectPipelineSource(context.Context, *UpdateProjectPipelineSourceRequest) (*UpdateProjectPipelineSourceResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UpdateProjectPipelineSource not implemented")
 }
 
 func RegisterProjectPipelineServiceServer(s grpc1.ServiceRegistrar, srv ProjectPipelineServiceServer, opts ...grpc1.HandleOption) {
@@ -325,15 +311,6 @@ func _get_ProjectPipelineService_serviceDesc(srv ProjectPipelineServiceServer, o
 	if h.Interceptor != nil {
 		_ProjectPipelineService_Cancel_info = transport.NewServiceInfo("erda.dop.projectpipeline.ProjectPipelineService", "Cancel", srv)
 		_ProjectPipelineService_Cancel_Handler = h.Interceptor(_ProjectPipelineService_Cancel_Handler)
-	}
-
-	_ProjectPipelineService_UpdateProjectPipelineSource_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.UpdateProjectPipelineSource(ctx, req.(*UpdateProjectPipelineSourceRequest))
-	}
-	var _ProjectPipelineService_UpdateProjectPipelineSource_info transport.ServiceInfo
-	if h.Interceptor != nil {
-		_ProjectPipelineService_UpdateProjectPipelineSource_info = transport.NewServiceInfo("erda.dop.projectpipeline.ProjectPipelineService", "UpdateProjectPipelineSource", srv)
-		_ProjectPipelineService_UpdateProjectPipelineSource_Handler = h.Interceptor(_ProjectPipelineService_UpdateProjectPipelineSource_Handler)
 	}
 
 	var serviceDesc = _ProjectPipelineService_serviceDesc
@@ -589,29 +566,6 @@ func _get_ProjectPipelineService_serviceDesc(srv ProjectPipelineServiceServer, o
 					FullMethod: "/erda.dop.projectpipeline.ProjectPipelineService/Cancel",
 				}
 				return interceptor(ctx, in, info, _ProjectPipelineService_Cancel_Handler)
-			},
-		},
-		{
-			MethodName: "UpdateProjectPipelineSource",
-			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-				in := new(UpdateProjectPipelineSourceRequest)
-				if err := dec(in); err != nil {
-					return nil, err
-				}
-				if interceptor == nil && h.Interceptor == nil {
-					return srv.(ProjectPipelineServiceServer).UpdateProjectPipelineSource(ctx, in)
-				}
-				if h.Interceptor != nil {
-					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _ProjectPipelineService_UpdateProjectPipelineSource_info)
-				}
-				if interceptor == nil {
-					return _ProjectPipelineService_UpdateProjectPipelineSource_Handler(ctx, in)
-				}
-				info := &grpc.UnaryServerInfo{
-					Server:     srv,
-					FullMethod: "/erda.dop.projectpipeline.ProjectPipelineService/UpdateProjectPipelineSource",
-				}
-				return interceptor(ctx, in, info, _ProjectPipelineService_UpdateProjectPipelineSource_Handler)
 			},
 		},
 	}
