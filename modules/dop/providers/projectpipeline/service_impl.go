@@ -175,7 +175,7 @@ func (p *ProjectPipelineService) CreateSourcePreCheck(ctx context.Context, param
 
 	return &pb.CreateProjectPipelineSourcePreCheckResponse{
 		Pass:    false,
-		Message: fmt.Sprintf("%s %s", p.trans.Text(apis.Language(ctx), CreateProjectPipelineSourcePreCheckLocaleKey), definitionName),
+		Message: fmt.Sprintf(p.trans.Text(apis.Language(ctx), CreateProjectPipelineSourcePreCheckLocaleKey), definitionName),
 	}, nil
 }
 
@@ -1476,27 +1476,27 @@ func (p *ProjectPipelineService) ListPipelineStatisticsByCategory(ctx context.Co
 	return []PipelineStatisticsByCategory{
 		{
 			Key:      apistructs.CategoryBuildDeploy,
-			Category: p.trans.Text(apis.Language(ctx), apistructs.CategoryBuildDeploy.String()),
+			Category: p.trans.Text(apis.Language(ctx), apistructs.CategoryKeyI18NameMap[apistructs.CategoryBuildDeploy]),
 			Rules:    apistructs.CategoryKeyRuleMap[apistructs.CategoryBuildDeploy],
 		},
 		{
 			Key:      apistructs.CategoryBuildArtifact,
-			Category: p.trans.Text(apis.Language(ctx), apistructs.CategoryBuildArtifact.String()),
+			Category: p.trans.Text(apis.Language(ctx), apistructs.CategoryKeyI18NameMap[apistructs.CategoryBuildArtifact]),
 			Rules:    apistructs.CategoryKeyRuleMap[apistructs.CategoryBuildArtifact],
 		},
 		{
 			Key:      apistructs.CategoryBuildCombineArtifact,
-			Category: p.trans.Text(apis.Language(ctx), apistructs.CategoryBuildCombineArtifact.String()),
+			Category: p.trans.Text(apis.Language(ctx), apistructs.CategoryKeyI18NameMap[apistructs.CategoryBuildCombineArtifact]),
 			Rules:    apistructs.CategoryKeyRuleMap[apistructs.CategoryBuildCombineArtifact],
 		},
 		{
 			Key:      apistructs.CategoryBuildIntegration,
-			Category: p.trans.Text(apis.Language(ctx), apistructs.CategoryBuildIntegration.String()),
+			Category: p.trans.Text(apis.Language(ctx), apistructs.CategoryKeyI18NameMap[apistructs.CategoryBuildIntegration]),
 			Rules:    apistructs.CategoryKeyRuleMap[apistructs.CategoryBuildIntegration],
 		},
 		{
 			Key:      apistructs.CategoryOthers,
-			Category: p.trans.Text(apis.Language(ctx), apistructs.CategoryOthers.String()),
+			Category: p.trans.Text(apis.Language(ctx), apistructs.CategoryKeyI18NameMap[apistructs.CategoryOthers]),
 			Rules:    nil,
 		},
 	}
@@ -1642,7 +1642,7 @@ func (p *ProjectPipelineService) OneClickCreate(ctx context.Context, params *pb.
 
 func (p *ProjectPipelineService) generatePipelineName(ctx context.Context, pipelineYml string) string {
 	if v, ok := apistructs.GetRuleCategoryKeyMap()[pipelineYml]; ok {
-		return p.trans.Text(apis.Language(ctx), v.String())
+		return p.trans.Text(apis.Language(ctx), apistructs.CategoryKeyI18NameMap[v])
 	}
 	return filepath.Base(pipelineYml)
 }

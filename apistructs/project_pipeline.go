@@ -21,11 +21,11 @@ type PipelineCategory string
 type ProjectPipelineType string
 
 const (
-	CategoryBuildDeploy          PipelineCategory = "BuildDeploy"
-	CategoryBuildArtifact        PipelineCategory = "BuildArtifact"
-	CategoryBuildCombineArtifact PipelineCategory = "BuildCombineArtifact"
-	CategoryBuildIntegration     PipelineCategory = "BuildIntegration"
-	CategoryOthers               PipelineCategory = "Uncategorized"
+	CategoryBuildDeploy          PipelineCategory = "build-deploy"
+	CategoryBuildArtifact        PipelineCategory = "build-artifact"
+	CategoryBuildCombineArtifact PipelineCategory = "build-combine-artifact"
+	CategoryBuildIntegration     PipelineCategory = "build-integration"
+	CategoryOthers               PipelineCategory = "others"
 )
 
 const (
@@ -53,6 +53,14 @@ var CategoryKeyRuleMap = map[PipelineCategory][]string{
 	CategoryBuildArtifact:        {".erda/pipelines/ci-artifact.yml"},
 	CategoryBuildCombineArtifact: {".erda/pipelines/combine-artifact.yml"},
 	CategoryBuildIntegration:     {".erda/pipelines/integration.yml"},
+}
+
+var CategoryKeyI18NameMap = map[PipelineCategory]string{
+	CategoryBuildDeploy:          "BuildDeploy",
+	CategoryBuildArtifact:        "BuildArtifact",
+	CategoryBuildCombineArtifact: "BuildCombineArtifact",
+	CategoryBuildIntegration:     "BuildIntegration",
+	CategoryOthers:               "Uncategorized",
 }
 
 func GetRuleCategoryKeyMap() map[string]PipelineCategory {
