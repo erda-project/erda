@@ -664,11 +664,11 @@ func (a *Addon) getTagInstance(addonSpec *apistructs.AddonExtension, params *api
 		return item, nil
 	}
 	if item, ok := list.GetByTag(params.Tag); ok {
-		l.Infof("find routingInstance by tag, tag: %s, routingInstance: %+v", item.Tag, item)
+		l.Debugf("find routingInstance by tag, tag: %s, routingInstance: %+v", item.Tag, item)
 		return item, nil
 	}
 
-	l.Infoln("routingInstance not found")
+	l.WithField("name", params.InstanceName).WithField("tag", params.Tag).Debugln("routingInstance not found")
 	return nil, nil
 }
 
@@ -1365,6 +1365,9 @@ func (l addonInstanceRoutingList) GetByName(name string) (*dbclient.AddonInstanc
 }
 
 func (l addonInstanceRoutingList) GetByTag(tag string) (*dbclient.AddonInstanceRouting, bool) {
+	if tag == "" {
+		return nil, false
+	}
 	l.sort()
 	for i := range l {
 		if l[i].Tag == tag {
