@@ -55,6 +55,14 @@ var CategoryKeyRuleMap = map[PipelineCategory][]string{
 	CategoryBuildIntegration:     {".erda/pipelines/integration.yml"},
 }
 
+var CategoryKeyI18NameMap = map[PipelineCategory]string{
+	CategoryBuildDeploy:          "BuildDeploy",
+	CategoryBuildArtifact:        "BuildArtifact",
+	CategoryBuildCombineArtifact: "BuildCombineArtifact",
+	CategoryBuildIntegration:     "BuildIntegration",
+	CategoryOthers:               "Uncategorized",
+}
+
 func GetRuleCategoryKeyMap() map[string]PipelineCategory {
 	m := make(map[string]PipelineCategory, 0)
 	for k, rules := range CategoryKeyRuleMap {

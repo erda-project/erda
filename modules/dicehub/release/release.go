@@ -847,6 +847,24 @@ func (s *ReleaseService) CreateByFile(req *pb.ReleaseUploadRequest, file io.Read
 	if err != nil {
 		return "", "", err
 	}
+
+	if len(req.Tags) > 0 {
+		tags, err := s.bdl.ListLabelByIDs(req.Tags)
+		if err != nil {
+			return "", "", errors.Errorf("failed to list tags, %v", err)
+		}
+		for _, tag := range tags {
+			labelRelation := &db.LabelRelation{
+				LabelID: uint64(tag.ID),
+				RefType: apistructs.LabelTypeRelease,
+				RefID:   projectRelease.ReleaseID,
+			}
+			if err := s.labelRelationDB.CreateLabelRelation(labelRelation); err != nil {
+				logrus.Errorf("failed to create label relation for label %s when create release %s, %v", tag.Name, projectRelease.ReleaseID, err)
+				continue
+			}
+		}
+	}
 	return projectRelease.Version, projectRelease.ReleaseID, nil
 }
 

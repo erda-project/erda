@@ -43,6 +43,8 @@ var _ urlenc.URLValuesUnmarshaler = (*ListPipelineCategoryResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*PipelineCategory)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*UpdateProjectPipelineRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*UpdateProjectPipelineResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*OneClickCreateProjectPipelineRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*OneClickCreateProjectPipelineResponse)(nil)
 
 // PipelineRunParam implement urlenc.URLValuesUnmarshaler.
 func (m *PipelineRunParam) UnmarshalURLValues(prefix string, values url.Values) error {
@@ -981,6 +983,48 @@ func (m *UpdateProjectPipelineResponse) UnmarshalURLValues(prefix string, values
 					m.ProjectPipeline = &ProjectPipeline{}
 				}
 				m.ProjectPipeline.PipelineSourceID = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// OneClickCreateProjectPipelineRequest implement urlenc.URLValuesUnmarshaler.
+func (m *OneClickCreateProjectPipelineRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "projectID":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.ProjectID = val
+			case "appID":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.AppID = val
+			case "sourceType":
+				m.SourceType = vals[0]
+			case "ref":
+				m.Ref = vals[0]
+			case "pipelineYmls":
+				m.PipelineYmls = vals
+			}
+		}
+	}
+	return nil
+}
+
+// OneClickCreateProjectPipelineResponse implement urlenc.URLValuesUnmarshaler.
+func (m *OneClickCreateProjectPipelineResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "errMsg":
+				m.ErrMsg = vals[0]
 			}
 		}
 	}

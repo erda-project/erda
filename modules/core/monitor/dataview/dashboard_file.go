@@ -261,6 +261,7 @@ func (p *provider) ExportDashboardFile(r *http.Request, params struct {
 			view.DataConfig = CompileToDest(view.Scope, view.ScopeID, view.DataConfig)
 			view.CreatedAt = time.Now()
 			view.UpdatedAt = time.Now()
+			view.CreatorID = userID
 			err = tx.Save(view).Error
 			if err != nil {
 				tx.Rollback()

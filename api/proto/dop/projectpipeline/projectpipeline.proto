@@ -127,6 +127,16 @@ service ProjectPipelineService {
       path : "/api/project-pipeline/definitions/{pipelineDefinitionID}/actions/cancel",
     };
   }
+
+  rpc OneClickCreate(OneClickCreateProjectPipelineRequest)
+      returns(OneClickCreateProjectPipelineResponse) {
+    option(google.api.http) = {
+      post : "/api/project-pipeline/actions/one-click-create",
+    };
+    option(erda.common.openapi) = {
+      path : "/api/project-pipeline/actions/one-click-create",
+    };
+  }
 }
 
 message PipelineRunParam {
@@ -296,4 +306,17 @@ message UpdateProjectPipelineRequest {
 
 message UpdateProjectPipelineResponse {
   ProjectPipeline ProjectPipeline = 1;
+}
+
+message OneClickCreateProjectPipelineRequest {
+  uint64 projectID = 1 [(validator.field) = {int_gt: 0}];
+  uint64 appID = 2;
+  string sourceType = 3 [(validator.field) = {string_not_empty: true}];
+  string ref = 4 [(validator.field) = {string_not_empty: true}];
+  repeated string pipelineYmls = 5;
+}
+
+message OneClickCreateProjectPipelineResponse {
+  repeated ProjectPipeline projectPipelines = 1;
+  string errMsg = 2;
 }

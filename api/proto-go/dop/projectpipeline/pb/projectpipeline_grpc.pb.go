@@ -32,6 +32,7 @@ type ProjectPipelineServiceClient interface {
 	Rerun(ctx context.Context, in *RerunProjectPipelineRequest, opts ...grpc.CallOption) (*RerunProjectPipelineResponse, error)
 	RerunFailed(ctx context.Context, in *RerunFailedProjectPipelineRequest, opts ...grpc.CallOption) (*RerunFailedProjectPipelineResponse, error)
 	Cancel(ctx context.Context, in *CancelProjectPipelineRequest, opts ...grpc.CallOption) (*CancelProjectPipelineResponse, error)
+	OneClickCreate(ctx context.Context, in *OneClickCreateProjectPipelineRequest, opts ...grpc.CallOption) (*OneClickCreateProjectPipelineResponse, error)
 }
 
 type projectPipelineServiceClient struct {
@@ -141,6 +142,15 @@ func (c *projectPipelineServiceClient) Cancel(ctx context.Context, in *CancelPro
 	return out, nil
 }
 
+func (c *projectPipelineServiceClient) OneClickCreate(ctx context.Context, in *OneClickCreateProjectPipelineRequest, opts ...grpc.CallOption) (*OneClickCreateProjectPipelineResponse, error) {
+	out := new(OneClickCreateProjectPipelineResponse)
+	err := c.cc.Invoke(ctx, "/erda.dop.projectpipeline.ProjectPipelineService/OneClickCreate", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ProjectPipelineServiceServer is the server API for ProjectPipelineService service.
 // All implementations should embed UnimplementedProjectPipelineServiceServer
 // for forward compatibility
@@ -156,6 +166,7 @@ type ProjectPipelineServiceServer interface {
 	Rerun(context.Context, *RerunProjectPipelineRequest) (*RerunProjectPipelineResponse, error)
 	RerunFailed(context.Context, *RerunFailedProjectPipelineRequest) (*RerunFailedProjectPipelineResponse, error)
 	Cancel(context.Context, *CancelProjectPipelineRequest) (*CancelProjectPipelineResponse, error)
+	OneClickCreate(context.Context, *OneClickCreateProjectPipelineRequest) (*OneClickCreateProjectPipelineResponse, error)
 }
 
 // UnimplementedProjectPipelineServiceServer should be embedded to have forward compatible implementations.
@@ -194,6 +205,9 @@ func (*UnimplementedProjectPipelineServiceServer) RerunFailed(context.Context, *
 }
 func (*UnimplementedProjectPipelineServiceServer) Cancel(context.Context, *CancelProjectPipelineRequest) (*CancelProjectPipelineResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Cancel not implemented")
+}
+func (*UnimplementedProjectPipelineServiceServer) OneClickCreate(context.Context, *OneClickCreateProjectPipelineRequest) (*OneClickCreateProjectPipelineResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method OneClickCreate not implemented")
 }
 
 func RegisterProjectPipelineServiceServer(s grpc1.ServiceRegistrar, srv ProjectPipelineServiceServer, opts ...grpc1.HandleOption) {
@@ -311,6 +325,15 @@ func _get_ProjectPipelineService_serviceDesc(srv ProjectPipelineServiceServer, o
 	if h.Interceptor != nil {
 		_ProjectPipelineService_Cancel_info = transport.NewServiceInfo("erda.dop.projectpipeline.ProjectPipelineService", "Cancel", srv)
 		_ProjectPipelineService_Cancel_Handler = h.Interceptor(_ProjectPipelineService_Cancel_Handler)
+	}
+
+	_ProjectPipelineService_OneClickCreate_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.OneClickCreate(ctx, req.(*OneClickCreateProjectPipelineRequest))
+	}
+	var _ProjectPipelineService_OneClickCreate_info transport.ServiceInfo
+	if h.Interceptor != nil {
+		_ProjectPipelineService_OneClickCreate_info = transport.NewServiceInfo("erda.dop.projectpipeline.ProjectPipelineService", "OneClickCreate", srv)
+		_ProjectPipelineService_OneClickCreate_Handler = h.Interceptor(_ProjectPipelineService_OneClickCreate_Handler)
 	}
 
 	var serviceDesc = _ProjectPipelineService_serviceDesc
@@ -566,6 +589,29 @@ func _get_ProjectPipelineService_serviceDesc(srv ProjectPipelineServiceServer, o
 					FullMethod: "/erda.dop.projectpipeline.ProjectPipelineService/Cancel",
 				}
 				return interceptor(ctx, in, info, _ProjectPipelineService_Cancel_Handler)
+			},
+		},
+		{
+			MethodName: "OneClickCreate",
+			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+				in := new(OneClickCreateProjectPipelineRequest)
+				if err := dec(in); err != nil {
+					return nil, err
+				}
+				if interceptor == nil && h.Interceptor == nil {
+					return srv.(ProjectPipelineServiceServer).OneClickCreate(ctx, in)
+				}
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _ProjectPipelineService_OneClickCreate_info)
+				}
+				if interceptor == nil {
+					return _ProjectPipelineService_OneClickCreate_Handler(ctx, in)
+				}
+				info := &grpc.UnaryServerInfo{
+					Server:     srv,
+					FullMethod: "/erda.dop.projectpipeline.ProjectPipelineService/OneClickCreate",
+				}
+				return interceptor(ctx, in, info, _ProjectPipelineService_OneClickCreate_Handler)
 			},
 		},
 	}
