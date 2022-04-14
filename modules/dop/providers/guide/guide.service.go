@@ -120,6 +120,7 @@ func (g *GuideService) CreateGuideByGittarPushHook(ctx context.Context, req *pb.
 		ProjectID:     projectID,
 		AppID:         appID,
 		AppName:       appDto.Name,
+		Branch:        req.Content.Ref[len(BranchPrefix):],
 		Content:       db.JSON(b),
 		SoftDeletedAt: 0,
 	}

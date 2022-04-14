@@ -40,3 +40,18 @@ func TestGetRulesByCategoryKey(t *testing.T) {
 		}
 	}
 }
+
+func TestPipelineYmlsFilterIn(t *testing.T) {
+	pipelineYmls := []string{"pipeline.yml", ".erda/pipelines/ci-artifact.yml", "a.yml", "b.yml"}
+	uncategorizedPipelineYmls := pipelineYmlsFilterIn(pipelineYmls, func(yml string) bool {
+		for k := range apistructs.GetRuleCategoryKeyMap() {
+			if k == yml {
+				return false
+			}
+		}
+		return true
+	})
+	if len(uncategorizedPipelineYmls) != 2 {
+		t.Errorf("fail")
+	}
+}
