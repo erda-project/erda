@@ -126,7 +126,6 @@ func (s *PipelineSvc) PreCheck(p *spec.Pipeline, stages []spec.PipelineStage, us
 			CmsDiceFiles:      cmsDiceFiles,
 			HoldOnKeys:        holdOnKeys,
 			EncryptSecretKeys: encryptSecretKeys,
-			PlatformSecrets:   platformSecrets,
 		})
 	}
 
