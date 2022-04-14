@@ -123,51 +123,58 @@ func clusterRegister(server *remotedialer.Server, rw http.ResponseWriter, req *h
 		}
 	}
 
-	if needClusterInfo {
-		// Get cluster info from agent request
-		clusterKey := req.Header.Get("X-Erda-Cluster-Key")
-		if clusterKey == "" {
-			remotedialer.DefaultErrorWriter(rw, req, 400, errors.New("missing header:X-Erda-Cluster-Key"))
-			return
-		}
-		info := req.Header.Get("X-Erda-Cluster-Info")
-		if info == "" {
-			remotedialer.DefaultErrorWriter(rw, req, 400, errors.New("missing header:X-Erda-Cluster-Info"))
-			return
-		}
+	clientType := apistructs.ClusterDialerClientType(req.Header.Get(apistructs.ClusterDialerHeaderKeyClientType.String()))
+	clusterKey := req.Header.Get(apistructs.ClusterDialerHeaderKeyClusterKey.String())
+	clusterKey = clientType.MakeClientKey(clusterKey)
+	if clusterKey == "" {
+		remotedialer.DefaultErrorWriter(rw, req, 400, errors.New("missing header:X-Erda-Cluster-Key"))
+		return
+	}
+	switch clientType {
+	case apistructs.ClusterDialerClientTypeDefault, apistructs.ClusterDialerClientTypeCluster:
+		if needClusterInfo {
+			// Get cluster info from agent request
+			info := req.Header.Get(apistructs.ClusterDialerHeaderKeyClusterInfo.String())
+			if info == "" {
+				remotedialer.DefaultErrorWriter(rw, req, 400, errors.New("missing header:X-Erda-Cluster-Info"))
+				return
+			}
 
-		if req.Header.Get("Authorization") == "" {
-			remotedialer.DefaultErrorWriter(rw, req, 400, errors.New("missing header:Authorization"))
-			return
-		}
+			if req.Header.Get(apistructs.ClusterDialerHeaderKeyAuthorization.String()) == "" {
+				remotedialer.DefaultErrorWriter(rw, req, 400, errors.New("missing header:Authorization"))
+				return
+			}
 
-		var clusterInfo cluster
-		bytes, err := base64.StdEncoding.DecodeString(info)
-		if err != nil {
-			remotedialer.DefaultErrorWriter(rw, req, 400, err)
-			return
+			var clusterInfo cluster
+			bytes, err := base64.StdEncoding.DecodeString(info)
+			if err != nil {
+				remotedialer.DefaultErrorWriter(rw, req, 400, err)
+				return
+			}
+			if err := json.Unmarshal(bytes, &clusterInfo); err != nil {
+				remotedialer.DefaultErrorWriter(rw, req, 400, err)
+				return
+			}
+			if clusterInfo.Address == "" {
+				err = errors.New("invalid cluster info, address empty")
+				remotedialer.DefaultErrorWriter(rw, req, 400, err)
+				return
+			}
+			if clusterInfo.Token == "" {
+				err = errors.New("invalid cluster info, token empty")
+				remotedialer.DefaultErrorWriter(rw, req, 400, err)
+				return
+			}
+			if clusterInfo.CACert == "" {
+				err = errors.New("invalid cluster info, caCert empty")
+				remotedialer.DefaultErrorWriter(rw, req, 400, err)
+				return
+			}
+			// TODO: register action after authed better.
+			go registerFunc(clusterKey, clusterInfo)
 		}
-		if err := json.Unmarshal(bytes, &clusterInfo); err != nil {
-			remotedialer.DefaultErrorWriter(rw, req, 400, err)
-			return
-		}
-		if clusterInfo.Address == "" {
-			err = errors.New("invalid cluster info, address empty")
-			remotedialer.DefaultErrorWriter(rw, req, 400, err)
-			return
-		}
-		if clusterInfo.Token == "" {
-			err = errors.New("invalid cluster info, token empty")
-			remotedialer.DefaultErrorWriter(rw, req, 400, err)
-			return
-		}
-		if clusterInfo.CACert == "" {
-			err = errors.New("invalid cluster info, caCert empty")
-			remotedialer.DefaultErrorWriter(rw, req, 400, err)
-			return
-		}
-		// TODO: register action after authed better.
-		go registerFunc(clusterKey, clusterInfo)
+	default:
+		logrus.Infof("client type [%s]", clientType)
 	}
 
 	server.ServeHTTP(rw, req)
@@ -223,6 +230,14 @@ func netportal(server *remotedialer.Server, rw http.ResponseWriter, req *http.Re
 	logrus.Infof("[%d] REQ DONE cluster=%s latency=%dms %s", id, clusterKey, time.Since(start).Milliseconds(), url)
 }
 
+func checkClusterIsExisted(server *remotedialer.Server, rw http.ResponseWriter, req *http.Request) {
+	clusterKey := req.URL.Query().Get("clusterKey")
+	clientType := apistructs.ClusterDialerClientType(req.URL.Query().Get("clientType"))
+	clusterKey = clientType.MakeClientKey(clusterKey)
+	isExisted := server.HasSession(clusterKey)
+	rw.Write([]byte(strconv.FormatBool(isExisted)))
+}
+
 func getClusterClient(server *remotedialer.Server, clusterKey string, timeout time.Duration) *http.Client {
 	l.Lock()
 	defer l.Unlock()
@@ -273,6 +288,10 @@ func Start(ctx context.Context, credential credentialpb.AccessKeyServiceServer, 
 	router.HandleFunc("/clusteragent/connect", func(rw http.ResponseWriter,
 		req *http.Request) {
 		clusterRegister(handler, rw, req, cfg.NeedClusterInfo)
+	})
+	router.HandleFunc("/clusteragent/check", func(rw http.ResponseWriter,
+		req *http.Request) {
+		checkClusterIsExisted(handler, rw, req)
 	})
 	router.PathPrefix("/").HandlerFunc(func(rw http.ResponseWriter,
 		req *http.Request) {

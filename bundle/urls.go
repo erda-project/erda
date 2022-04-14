@@ -138,6 +138,10 @@ func (u urls) ClusterManager() (string, error) {
 	return u.getURL(discover.EnvClusterManager, discover.SvcClusterManager)
 }
 
+func (u urls) ClusterDialer() (string, error) {
+	return u.getURL(discover.EnvClusterDialer, discover.SvcClusterDialer)
+}
+
 func (u urls) ECP() (string, error) {
 	return u.getURL(discover.EnvECP, discover.SvcECP)
 }

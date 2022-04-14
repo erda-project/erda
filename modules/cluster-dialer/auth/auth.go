@@ -70,8 +70,9 @@ func (a *Authorizer) Authorizer(req *http.Request) (string, bool, error) {
 		return "proxy", true, nil
 	}
 
-	clusterKey := req.Header.Get("X-Erda-Cluster-Key")
-	authInfo := req.Header.Get("Authorization")
+	clusterKey := req.Header.Get(apistructs.ClusterDialerHeaderKeyClusterKey.String())
+	authInfo := req.Header.Get(apistructs.ClusterDialerHeaderKeyAuthorization.String())
+	clientType := apistructs.ClusterDialerClientType(req.Header.Get(apistructs.ClusterDialerHeaderKeyClientType.String()))
 
 	// Check header param
 	if clusterKey == "" || authInfo == "" {
@@ -107,7 +108,7 @@ func (a *Authorizer) Authorizer(req *http.Request) (string, bool, error) {
 
 	logrus.Infof("auth success, resp info: %+v", akSkResp)
 
-	return clusterKey, true, nil
+	return clientType.MakeClientKey(clusterKey), true, nil
 }
 
 // CheckNeedAuth check auth
