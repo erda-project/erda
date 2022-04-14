@@ -14,11 +14,13 @@
 
 package apistructs
 
+import "fmt"
+
 type ClusterDialerHeaderKey string
 
 var (
 	ClusterDialerHeaderKeyClusterKey    ClusterDialerHeaderKey = "X-Erda-Cluster-Key"
-	ClusterDialerHeaderKeyClusterType   ClusterDialerHeaderKey = "X-Erda-Cluster-Type"
+	ClusterDialerHeaderKeyClientType    ClusterDialerHeaderKey = "X-Erda-Client-Type"
 	ClusterDialerHeaderKeyClusterInfo   ClusterDialerHeaderKey = "X-Erda-Cluster-Info"
 	ClusterDialerHeaderKeyAuthorization ClusterDialerHeaderKey = "Authorization"
 )
@@ -27,12 +29,21 @@ func (c ClusterDialerHeaderKey) String() string {
 	return string(c)
 }
 
-type ClusterDialerClusterType string
+type ClusterDialerClientType string
 
 var (
-	ClusterDialerClusterTypePipeline ClusterDialerClusterType = "pipeline"
+	ClusterDialerClientTypeDefault  ClusterDialerClientType = ""         // cluster
+	ClusterDialerClientTypeCluster  ClusterDialerClientType = "cluster"  // cluster
+	ClusterDialerClientTypePipeline ClusterDialerClientType = "pipeline" // pipeline
 )
 
-func (c ClusterDialerClusterType) String() string {
+func (c ClusterDialerClientType) String() string {
 	return string(c)
+}
+
+func (c ClusterDialerClientType) MakeClientKey(clusterKey string) string {
+	if c == "" {
+		return clusterKey
+	}
+	return fmt.Sprintf("%s-client-type-%s", clusterKey, c)
 }
