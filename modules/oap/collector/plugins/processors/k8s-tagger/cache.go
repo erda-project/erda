@@ -18,11 +18,8 @@ import (
 	"context"
 	"fmt"
 
-	apiv1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/watch"
-
 	"github.com/erda-project/erda/modules/oap/collector/plugins/processors/k8s-tagger/metadata/pod"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func (p *provider) initCache(ctx context.Context) error {
@@ -34,34 +31,12 @@ func (p *provider) initCache(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("list pod err: %w", err)
 	}
-	p.podCache = pod.NewCache(pList.Items, p.Cfg.Pod.AddMetadata.AnnotationInclude, p.Cfg.Pod.AddMetadata.LabelInclude)
+
+	cache, err := pod.NewCache(pList.Items, p.Cfg.Pod.AddMetadata.AnnotationInclude, p.Cfg.Pod.AddMetadata.LabelInclude)
+	if err != nil {
+		return fmt.Errorf("pod cache: %w", err)
+	}
+	p.podCache = cache
 
 	return nil
-}
-
-func (p *provider) watchChange(ctx context.Context, ch <-chan watch.Event) {
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case event, ok := <-ch:
-			if !ok {
-				return
-			}
-			switch event.Type {
-			case watch.Added, watch.Modified:
-				switch event.Object.(type) {
-				case *apiv1.Pod:
-					p.podCache.AddOrUpdate(event.Object.(*apiv1.Pod))
-				}
-			case watch.Deleted:
-				// TODO may need delay
-				switch event.Object.(type) {
-				case *apiv1.Pod:
-					p.podCache.Delete(event.Object.(*apiv1.Pod))
-				}
-			default:
-			}
-		}
-	}
 }

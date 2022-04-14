@@ -72,6 +72,5 @@ func main() {
 	common.RegisterInitializer(loghub.Init)
 	common.Run(&servicehub.RunOptions{
 		ConfigFile: conf.MonitorConfigFilePath,
-		Content:    conf.MonitorDefaultConfig,
 	})
 }

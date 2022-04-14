@@ -66,19 +66,11 @@ erda.oap.collector.processor.k8s-tagger@prw:
       label_selector: ""
       field_slector: ""
     add_metadata:
-      label_include: []
+      label_include:
+        - "dice/component"
+        - "dice/job"
       annotation_include:
-        - "msp.erda.cloud/application_name"
-        - "msp.erda.cloud/application_id"
-        - "msp.erda.cloud/org_name"
-        - "msp.erda.cloud/org_id"
-        - "msp.erda.cloud/project_name"
-        - "msp.erda.cloud/project_id"
-        - "msp.erda.cloud/runtime_name"
-        - "msp.erda.cloud/runtime_id"
-        - "msp.erda.cloud/service_name"
-        - "msp.erda.cloud/terminus_key"
-        - "msp.erda.cloud/workspace"
+        - "msp.erda.cloud/*"
       finder:
         indexer: pod_name_container
         matcher: "%{namespace}/%{pod}/%{container}"
@@ -193,6 +185,9 @@ erda.oap.collector.processor.modifier@docker_container_summary:
     - action: rename
       key: __dp__container_resources_cpu_limit
       value: __dp_cpu_limit
+    - action: rename
+      key: terminus_define_tag
+      value: job_id
     # --- instance_type logic block ---
     - action: set
       key: instance_type
@@ -273,6 +268,7 @@ erda.oap.collector.processor.aggregator@mem-percent:
       target_key: "__dp__mem_usage_percent"
 
 # ************* processors *************
+
 # ************* exporters *************
 erda.oap.collector.exporter.stdout:
 
