@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pipelinesvc
+package secret
 
 import (
 	"reflect"
@@ -21,7 +21,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 )
 
-func TestAddRegistryLabel(t *testing.T) {
+func Test_addRegistryLabel(t *testing.T) {
 	type args struct {
 		r           map[string]string
 		clusterInfo apistructs.ClusterInfoData
@@ -52,7 +52,7 @@ func TestAddRegistryLabel(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := AddRegistryLabel(tt.args.r, tt.args.clusterInfo)
+			got := addRegistryLabel(tt.args.r, tt.args.clusterInfo)
 			flag := true
 			for k, v := range got {
 				wantVal, ok := tt.want[k]
@@ -67,13 +67,13 @@ func TestAddRegistryLabel(t *testing.T) {
 				}
 			}
 			if !flag {
-				t.Errorf("AddRegistryLabel() = %v, want %v", got, tt.want)
+				t.Errorf("addRegistryLabel() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func TestReplaceProjectApplication(t *testing.T) {
+func Test_replaceProjectApplication(t *testing.T) {
 	type args struct {
 		r map[string]string
 	}
@@ -122,8 +122,8 @@ func TestReplaceProjectApplication(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := ReplaceProjectApplication(tt.args.r); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("ReplaceProjectApplication() = %v, want %v", got, tt.want)
+			if got := replaceProjectApplication(tt.args.r); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("replaceProjectApplication() = %v, want %v", got, tt.want)
 			}
 		})
 	}
