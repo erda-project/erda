@@ -270,7 +270,7 @@ type ReleaseGetResponseData struct {
 	Images           []string                            `json:"images,omitempty"`
 	ServiceImages    []*ServiceImagePair                 `json:"serviceImages"`
 	Labels           map[string]string                   `json:"labels,omitempty"`
-	Tags             string                              `json:"tags,omitempty"`
+	Tags             []ReleaseTag                        `json:"tags,omitempty"`
 	Version          string                              `json:"version,omitempty"`
 
 	// CrossCluster 是否可以跨集群
@@ -543,6 +543,17 @@ type ReleaseListResponseData struct {
 	Releases []ReleaseData `json:"list"`
 }
 
+type ReleaseTag struct {
+	CreatedAt time.Time `json:"createdAt,omitempty"`
+	UpdatedAt time.Time `json:"updatedAt,omitempty"`
+	Creator   string    `json:"creator,omitempty"`
+	Id        int64     `json:"id,omitempty"`
+	Color     string    `json:"color,omitempty"`
+	Name      string    `json:"name,omitempty"`
+	Type      string    `json:"type,omitempty"`
+	ProjectID int64     `json:"projectID,omitempty"`
+}
+
 // ReleaseData release 列表API实际返回数据
 type ReleaseData struct {
 	ReleaseID              string              `json:"releaseId"`
@@ -559,7 +570,7 @@ type ReleaseData struct {
 	Images                 []string            `json:"images,omitempty"`
 	ServiceImages          []*ServiceImagePair `json:"serviceImages"`
 	Labels                 map[string]string   `json:"labels,omitempty"`
-	Tags                   string              `json:"tags,omitempty"`
+	Tags                   []ReleaseTag        `json:"tags,omitempty"`
 	Version                string              `json:"version,omitempty"`
 
 	// CrossCluster 是否可以跨集群
