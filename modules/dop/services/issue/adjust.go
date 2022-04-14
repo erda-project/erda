@@ -40,7 +40,7 @@ func (i *issueCreateAdjuster) planFinished(match condition, iteration *dao.Itera
 	if inIterationInterval(iteration, i.curTime) {
 		return i.curTime
 	}
-	return iteration.FinishedAt
+	return iteration.StartedAt
 }
 
 func (i *issueCreateAdjuster) planStarted(match condition, finished *time.Time) *time.Time {
