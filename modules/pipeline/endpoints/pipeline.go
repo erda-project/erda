@@ -57,7 +57,7 @@ func (e *Endpoints) pipelineCreate(ctx context.Context, r *http.Request, vars ma
 
 	// 是否自动执行
 	if createReq.AutoRun {
-		if p, err = e.pipelineSvc.RunPipeline(&apistructs.PipelineRunRequest{
+		if p, err = e.run.RunOnePipeline(ctx, &apistructs.PipelineRunRequest{
 			PipelineID:   p.ID,
 			IdentityInfo: identityInfo,
 		}); err != nil {
@@ -83,7 +83,7 @@ func (e *Endpoints) pipelineBatchCreate(ctx context.Context, r *http.Request, va
 	}
 	batchReq.UserID = userID.String()
 
-	pipelines, err := e.pipelineSvc.BatchCreate(&batchReq)
+	pipelines, err := e.pipelineSvc.BatchCreate(ctx, &batchReq)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
@@ -226,7 +226,7 @@ func (e *Endpoints) pipelineRun(ctx context.Context, r *http.Request, vars map[s
 		}
 	}
 
-	if p, err = e.pipelineSvc.RunPipeline(&apistructs.PipelineRunRequest{
+	if p, err = e.run.RunOnePipeline(ctx, &apistructs.PipelineRunRequest{
 		PipelineID:             p.ID,
 		IdentityInfo:           identityInfo,
 		PipelineRunParams:      runRequest.PipelineRunParams,
@@ -255,7 +255,7 @@ func (e *Endpoints) pipelineCancel(ctx context.Context, r *http.Request, vars ma
 			strutil.Concat(pathPipelineID, ": ", pipelineIDStr)).ToResp(), nil
 	}
 
-	if err := e.pipelineSvc.Cancel(ctx, &apistructs.PipelineCancelRequest{
+	if err := e.cancel.CancelOnePipeline(ctx, &apistructs.PipelineCancelRequest{
 		PipelineID:   pipelineID,
 		IdentityInfo: identityInfo,
 	}); err != nil {
@@ -297,7 +297,7 @@ func (e *Endpoints) pipelineRerunFailed(ctx context.Context, r *http.Request, va
 	rerunFailedReq.PipelineID = pipelineID
 	rerunFailedReq.IdentityInfo = identityInfo
 
-	p, err := e.pipelineSvc.RerunFailed(&rerunFailedReq)
+	p, err := e.pipelineSvc.RerunFailed(ctx, &rerunFailedReq)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
@@ -337,7 +337,7 @@ func (e *Endpoints) pipelineRerun(ctx context.Context, r *http.Request, vars map
 	rerunReq.PipelineID = pipelineID
 	rerunReq.IdentityInfo = identityInfo
 
-	p, err := e.pipelineSvc.Rerun(&rerunReq)
+	p, err := e.pipelineSvc.Rerun(ctx, &rerunReq)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}

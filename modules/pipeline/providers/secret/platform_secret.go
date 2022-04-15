@@ -12,31 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pipelinesvc
+package secret
 
 import (
 	"context"
 	"fmt"
 	"net/url"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
-
 	"github.com/erda-project/erda-infra/base/version"
-	"github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/conf"
-	"github.com/erda-project/erda/modules/pipeline/providers/cms"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/modules/pipeline/spec"
-	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpclientutil"
-	"github.com/erda-project/erda/pkg/nexus"
-	"github.com/erda-project/erda/pkg/strutil"
 )
 
 const (
@@ -51,7 +43,7 @@ const (
 
 // FetchPlatformSecrets 获取平台级别 secrets
 // ignoreKeys: 平台只生成不在 ignoreKeys 列表中的 secrets
-func (s *PipelineSvc) FetchPlatformSecrets(p *spec.Pipeline, ignoreKeys []string) (map[string]string, error) {
+func (s *provider) FetchPlatformSecrets(ctx context.Context, p *spec.Pipeline, ignoreKeys []string) (map[string]string, error) {
 	r := make(map[string]string)
 
 	var operatorID string
@@ -67,20 +59,20 @@ func (s *PipelineSvc) FetchPlatformSecrets(p *spec.Pipeline, ignoreKeys []string
 		cronTriggerTime = p.Extra.CronTriggerTime.Format(time.RFC3339)
 	}
 
-	clusterInfo, err := s.retryQueryClusterInfo(p.ClusterName, p.ID)
+	clusterInfo, err := s.ClusterInfo.GetClusterInfoByName(p.ClusterName)
 	if err != nil {
 		return nil, apierrors.ErrGetCluster.InternalError(err)
 	}
-	mountPoint := clusterInfo.Get(apistructs.DICE_STORAGE_MOUNTPOINT)
+	mountPoint := clusterInfo.CM.Get(apistructs.DICE_STORAGE_MOUNTPOINT)
 	if mountPoint == "" {
-		return nil, errors.Errorf("failed to get necessary cluster info parameter: %s", apistructs.DICE_STORAGE_MOUNTPOINT)
+		return nil, fmt.Errorf("failed to get necessary cluster info parameter: %s", apistructs.DICE_STORAGE_MOUNTPOINT)
 	}
 
 	// if url scheme is file, insert mount point
 	storageURL := conf.StorageURL()
 	convertURL, err := url.Parse(storageURL)
 	if err != nil {
-		return nil, errors.Errorf("failed to parse url, url: %s, (%+v)", storageURL, err)
+		return nil, fmt.Errorf("failed to parse url, url: %s, (%+v)", storageURL, err)
 	}
 
 	if convertURL.Scheme == "file" {
@@ -120,10 +112,10 @@ func (s *PipelineSvc) FetchPlatformSecrets(p *spec.Pipeline, ignoreKeys []string
 		// buildpack
 		"bp.repo.prefix":           "", // Compatible with ((bp.repo.prefix)) written in user pipeline.yml
 		"bp.repo.default.version":  "", // Compatible with ((bp.repo.default.version)) written in user pipeline.yml
-		"bp.nexus.url":             httpclientutil.WrapProto(clusterInfo.Get(apistructs.NEXUS_ADDR)),
-		"bp.nexus.username":        clusterInfo.Get(apistructs.NEXUS_USERNAME),
-		"bp.nexus.password":        clusterInfo.Get(apistructs.NEXUS_PASSWORD),
-		"bp.docker.cache.registry": httpclientutil.RmProto(clusterInfo.Get(apistructs.REGISTRY_ADDR)),
+		"bp.nexus.url":             httpclientutil.WrapProto(clusterInfo.CM.Get(apistructs.NEXUS_ADDR)),
+		"bp.nexus.username":        clusterInfo.CM.Get(apistructs.NEXUS_USERNAME),
+		"bp.nexus.password":        clusterInfo.CM.Get(apistructs.NEXUS_PASSWORD),
+		"bp.docker.cache.registry": httpclientutil.RmProto(clusterInfo.CM.Get(apistructs.REGISTRY_ADDR)),
 
 		// storage
 		"pipeline.storage.url": storageURL,
@@ -135,9 +127,9 @@ func (s *PipelineSvc) FetchPlatformSecrets(p *spec.Pipeline, ignoreKeys []string
 		// others
 		"date.YYYYMMDD": time.Now().Format("20060102"),
 	}
-	r = AddRegistryLabel(r, clusterInfo)
+	r = addRegistryLabel(r, clusterInfo.CM)
 
-	r = ReplaceProjectApplication(r)
+	r = replaceProjectApplication(r)
 
 	// 额外加载 labels，项目级别的流水线，对应的项目名称和企业名称是传递过来的
 	if r["dice.org.name"] == "" {
@@ -154,82 +146,16 @@ func (s *PipelineSvc) FetchPlatformSecrets(p *spec.Pipeline, ignoreKeys []string
 	return r, nil
 }
 
-// FetchSecrets return secrets, cmsDiceFiles and error.
-// holdOnKeys: 声明 key 需要持有，不能被平台 secrets 覆盖，与 ignoreKeys 配合使用
-func (s *PipelineSvc) FetchSecrets(p *spec.Pipeline) (secrets, cmsDiceFiles map[string]string, holdOnKeys, encryptSecretKeys []string, err error) {
-	secrets = make(map[string]string)
-	cmsDiceFiles = make(map[string]string)
-
-	namespaces := p.GetConfigManageNamespaces()
-
-	// 制品是否需要跨集群
-	needCrossCluster := false
-	if p.Snapshot.AnalyzedCrossCluster != nil && *p.Snapshot.AnalyzedCrossCluster {
-		// 企业级 nexus 配置，包含 platform docker registry
-		if orgIDStr := p.Labels[apistructs.LabelOrgID]; orgIDStr != "" {
-			orgID, err := strconv.ParseUint(orgIDStr, 10, 64)
-			if err != nil {
-				return nil, nil, nil, nil, errors.Errorf("invalid org id from label %q, err: %v", apistructs.LabelOrgID, err)
-			}
-			org, err := s.bdl.GetOrg(orgID)
-			if err != nil {
-				return nil, nil, nil, nil, err
-			}
-			if org.EnableReleaseCrossCluster {
-				namespaces = append(namespaces, nexus.MakeOrgPipelineCmsNs(orgID))
-			}
-			namespaces = strutil.DedupSlice(namespaces, true)
-			needCrossCluster = true
-		}
-	}
-
-	batchConfigs, err := s.cmsService.BatchGetCmsNsConfigs(apis.WithInternalClientContext(context.Background(), "pipeline"),
-		&pb.CmsNsConfigsBatchGetRequest{
-			PipelineSource: p.PipelineSource.String(),
-			Namespaces:     namespaces,
-			GlobalDecrypt:  true,
-		})
-	if err != nil {
-		return nil, nil, nil, nil, err
-	}
-
-	for _, c := range batchConfigs.Configs {
-		if c.EncryptInDB && c.Type == cms.ConfigTypeKV {
-			encryptSecretKeys = append(encryptSecretKeys, c.Key)
-		}
-		secrets[c.Key] = c.Value
-
-		// DiceFile 类型，value 为 diceFileUUID
-		if c.Type == cms.ConfigTypeDiceFile {
-			cmsDiceFiles[c.Key] = c.Value
-		}
-	}
-
-	// docker artifact registry
-	if needCrossCluster {
-		secrets[secretKeyDockerArtifactRegistry] = httpclientutil.RmProto(secrets[secretKeyOrgDockerUrl])
-		secrets[secretKeyDockerArtifactRegistryUsername] = secrets[secretKeyOrgDockerPushUsername]
-		secrets[secretKeyDockerArtifactRegistryPassword] = secrets[secretKeyOrgDockerPushPassword]
-		holdOnKeys = append(holdOnKeys,
-			secretKeyDockerArtifactRegistry,
-			secretKeyDockerArtifactRegistryUsername,
-			secretKeyDockerArtifactRegistryPassword,
-		)
-	}
-
-	return secrets, cmsDiceFiles, holdOnKeys, encryptSecretKeys, nil
-}
-
-// AddRegistryLabel Support third-party docker registry
-func AddRegistryLabel(r map[string]string, clusterInfo apistructs.ClusterInfoData) map[string]string {
+// addRegistryLabel Support third-party docker registry
+func addRegistryLabel(r map[string]string, clusterInfo apistructs.ClusterInfoData) map[string]string {
 	r[secretKeyDockerArtifactRegistry] = httpclientutil.RmProto(clusterInfo.Get(apistructs.REGISTRY_ADDR))
 	r[secretKeyDockerArtifactRegistryUsername] = httpclientutil.RmProto(clusterInfo.Get(apistructs.REGISTRY_USERNAME))
 	r[secretKeyDockerArtifactRegistryPassword] = httpclientutil.RmProto(clusterInfo.Get(apistructs.REGISTRY_PASSWORD))
 	return r
 }
 
-// ReplaceProjectApplication Determine the splicing result according to the given registry addresses of different types
-func ReplaceProjectApplication(r map[string]string) map[string]string {
+// replaceProjectApplication Determine the splicing result according to the given registry addresses of different types
+func replaceProjectApplication(r map[string]string) map[string]string {
 	ss := strings.SplitN(r[secretKeyDockerArtifactRegistry], "/", 4)
 	if len(ss) <= 1 {
 		return r

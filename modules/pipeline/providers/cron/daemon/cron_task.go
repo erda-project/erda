@@ -40,7 +40,7 @@ const (
 	etcdCronPrefixAddKey    = etcdCronWatchPrefix + "add-"
 )
 
-func (d *provider) runCronPipelineFunc(id uint64) {
+func (d *provider) runCronPipelineFunc(ctx context.Context, id uint64) {
 	var err error
 	defer func() {
 		if r := recover(); r != nil {
@@ -93,7 +93,7 @@ func (d *provider) runCronPipelineFunc(id uint64) {
 	pc.Extra.NormalLabels[apistructs.LabelPipelineCronTriggerTime] = strconv.FormatInt(cronTriggerTime.UnixNano(), 10)
 	pc.Extra.NormalLabels[apistructs.LabelPipelineCronID] = strconv.FormatUint(pc.ID, 10)
 
-	_, err = d.createPipelineFunc(&apistructs.PipelineCreateRequestV2{
+	_, err = d.createPipelineFunc(ctx, &apistructs.PipelineCreateRequestV2{
 		PipelineYml:            pc.Extra.PipelineYml,
 		ClusterName:            pc.Extra.ClusterName,
 		PipelineYmlName:        pc.PipelineYmlName,
@@ -218,7 +218,7 @@ func (s *provider) listenCrond(ctx context.Context) {
 			// determine whether there is a scheduled task
 			if pc.Enable != nil && *pc.Enable && pc.CronExpr != "" {
 				err = s.crond.AddFunc(pc.CronExpr, func() {
-					s.runCronPipelineFunc(pc.ID)
+					s.runCronPipelineFunc(ctx, pc.ID)
 				}, makePipelineCronName(pc.ID))
 				if err != nil {
 					s.Log.Errorf("crond: failed to update cron cronID: %v cronExpr: %v  error: %v", cronID, pc.CronExpr, err)
@@ -268,7 +268,7 @@ func (s *provider) reloadCrond(ctx context.Context) ([]string, error) {
 	for i := range pcs {
 		pc := pcs[i]
 		if pc.Enable != nil && *pc.Enable && pc.CronExpr != "" {
-			if err = s.crond.AddFunc(pc.CronExpr, func() { s.runCronPipelineFunc(pc.ID) }, makePipelineCronName(pc.ID)); err != nil {
+			if err = s.crond.AddFunc(pc.CronExpr, func() { s.runCronPipelineFunc(ctx, pc.ID) }, makePipelineCronName(pc.ID)); err != nil {
 				l := fmt.Sprintf("failed to load pipeline cron item: %s, cronExpr: %v, err: %v", makePipelineCronName(pc.ID), pc.CronExpr, err)
 				logs = append(logs, l)
 				logrus.Errorln("[alert]", l)

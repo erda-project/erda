@@ -40,6 +40,10 @@ resourcegc: {}
 dbgc: {}
 task-policy: {}
 cache: {}
+secret: {}
+run: {}
+user: {}
+cancel: {}
 
 etcd-election@leader-worker:
   root_path: erda/component-leader/pipeline/leader-worker
