@@ -12,26 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package compensator
+package secret
 
 import (
 	"context"
 
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 )
 
-type PipelineFunc struct {
-	RunPipeline    RunPipelineFunc
-	CreatePipeline CreatePipelineFunc
-}
-
-type RunPipelineFunc func(ctx context.Context, req *apistructs.PipelineRunRequest) (*spec.Pipeline, error)
-type CreatePipelineFunc func(ctx context.Context, req *apistructs.PipelineCreateRequestV2) (*spec.Pipeline, error)
-
 type Interface interface {
-	PipelineCronCompensate(ctx context.Context, pipelineID uint64)
-
-	// todo Can be removed after all objects are provider
-	WithPipelineFunc(pipelineFunc PipelineFunc)
+	FetchSecrets(ctx context.Context, p *spec.Pipeline) (secrets, cmsDiceFiles map[string]string, holdOnKeys, encryptSecretKeys []string, err error)
+	FetchPlatformSecrets(ctx context.Context, p *spec.Pipeline, ignoreKeys []string) (map[string]string, error)
 }

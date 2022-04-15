@@ -53,7 +53,6 @@ import (
 	"github.com/erda-project/erda/pkg/jsonstore/etcd"
 	"github.com/erda-project/erda/pkg/pipeline_network_hook_client"
 	"github.com/erda-project/erda/pkg/pipeline_snippet_client"
-	// "terminus.io/dice/telemetry/promxp"
 )
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -132,6 +131,9 @@ func (p *provider) do() error {
 	pipelineSvc := pipelinesvc.New(appSvc, p.CronDaemon, actionAgentSvc, extMarketSvc, p.CronService,
 		permissionSvc, queueManage, dbClient, bdl, publisher, p.Engine, js, etcdctl, p.ClusterInfo, p.Cache)
 	pipelineSvc.WithCmsService(p.CmsService)
+	pipelineSvc.WithSecret(p.Secret)
+	pipelineSvc.WithUser(p.User)
+	pipelineSvc.WithRun(p.PipelineRun)
 
 	// todo resolve cycle import here through better module architecture
 	pipelineFuncs := reconciler.PipelineSvcFuncs{
@@ -174,10 +176,12 @@ func (p *provider) do() error {
 		endpoints.WithEngine(p.Engine),
 		endpoints.WithClusterInfo(p.ClusterInfo),
 		endpoints.WithMysql(p.MySQL),
+		endpoints.WithRun(p.PipelineRun),
+		endpoints.WithCancel(p.Cancel),
 	)
 
 	p.CronDaemon.WithPipelineFunc(pipelineSvc.CreateV2)
-	p.CronCompensate.WithPipelineFunc(compensator.PipelineFunc{CreatePipeline: pipelineSvc.CreateV2, RunPipeline: pipelineSvc.RunPipeline})
+	p.CronCompensate.WithPipelineFunc(compensator.PipelineFunc{CreatePipeline: pipelineSvc.CreateV2, RunPipeline: p.PipelineRun.RunOnePipeline})
 
 	//server.Router().Path("/metrics").Methods(http.MethodGet).Handler(promxp.Handler("pipeline"))
 	server := httpserver.New(conf.ListenAddr())

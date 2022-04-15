@@ -15,6 +15,7 @@
 package pipelinesvc
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/erda-project/erda/apistructs"
@@ -22,7 +23,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/spec"
 )
 
-func (s *PipelineSvc) RerunFailed(req *apistructs.PipelineRerunFailedRequest) (*spec.Pipeline, error) {
+func (s *PipelineSvc) RerunFailed(ctx context.Context, req *apistructs.PipelineRerunFailedRequest) (*spec.Pipeline, error) {
 	// base pipeline
 	origin, err := s.dbClient.GetPipeline(req.PipelineID)
 	if err != nil {
@@ -56,7 +57,7 @@ func (s *PipelineSvc) RerunFailed(req *apistructs.PipelineRerunFailedRequest) (*
 
 	p.Extra.RerunFailedDetail = &rerunFailedDetail
 	if req.UserID != "" {
-		p.Extra.SubmitUser = s.tryGetUser(req.UserID)
+		p.Extra.SubmitUser = s.user.TryGetUser(ctx, req.UserID)
 	}
 	p.Type = apistructs.PipelineTypeRerunFailed
 
@@ -69,7 +70,7 @@ func (s *PipelineSvc) RerunFailed(req *apistructs.PipelineRerunFailedRequest) (*
 
 	// 立即执行一次
 	if req.AutoRunAtOnce {
-		if p, err = s.RunPipeline(&apistructs.PipelineRunRequest{
+		if p, err = s.run.RunOnePipeline(ctx, &apistructs.PipelineRunRequest{
 			PipelineID:        p.ID,
 			IdentityInfo:      req.IdentityInfo,
 			PipelineRunParams: origin.Snapshot.RunPipelineParams.ToPipelineRunParams(),

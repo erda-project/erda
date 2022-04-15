@@ -21,7 +21,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/spec"
 )
 
-type CreatePipelineFunc func(req *apistructs.PipelineCreateRequestV2) (*spec.Pipeline, error)
+type CreatePipelineFunc func(ctx context.Context, req *apistructs.PipelineCreateRequestV2) (*spec.Pipeline, error)
 
 type Interface interface {
 	AddIntoPipelineCrond(cronID uint64) error

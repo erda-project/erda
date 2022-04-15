@@ -29,6 +29,6 @@ func (e *Endpoints) mysqlStats(ctx context.Context, r *http.Request, vars map[st
 
 func (e *Endpoints) providerMysqlStats(ctx context.Context, r *http.Request, vars map[string]string) (
 	httpserver.Responser, error) {
-	stats := e.MySQL.DB().DB().Stats()
+	stats := e.mySQL.DB().DB().Stats()
 	return httpserver.OkResp(stats)
 }

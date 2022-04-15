@@ -27,6 +27,7 @@ import (
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	_ "github.com/erda-project/erda/modules/pipeline/aop/plugins"
 	"github.com/erda-project/erda/modules/pipeline/providers/cache"
+	"github.com/erda-project/erda/modules/pipeline/providers/cancel"
 	"github.com/erda-project/erda/modules/pipeline/providers/clusterinfo"
 	"github.com/erda-project/erda/modules/pipeline/providers/cron/compensator"
 	"github.com/erda-project/erda/modules/pipeline/providers/cron/daemon"
@@ -37,6 +38,9 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/providers/queuemanager"
 	"github.com/erda-project/erda/modules/pipeline/providers/reconciler"
 	"github.com/erda-project/erda/modules/pipeline/providers/resourcegc"
+	"github.com/erda-project/erda/modules/pipeline/providers/run"
+	"github.com/erda-project/erda/modules/pipeline/providers/secret"
+	"github.com/erda-project/erda/modules/pipeline/providers/user"
 	"github.com/erda-project/erda/providers/metrics/report"
 )
 
@@ -57,6 +61,10 @@ type provider struct {
 	DBGC         dbgc.Interface
 	ResourceGC   resourcegc.Interface
 	Cache        cache.Interface
+	PipelineRun  run.Interface
+	Cancel       cancel.Interface
+	User         user.Interface
+	Secret       secret.Interface
 }
 
 func (p *provider) Run(ctx context.Context) error {

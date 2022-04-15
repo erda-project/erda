@@ -12,27 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pipelinesvc
+package user
 
 import (
+	"context"
 	"fmt"
-
-	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
 )
 
-// tryGetUser try to get user info from cmdb. If failed, return a basic user just with id.
-// TODO later add cache here if need.
-func (s *PipelineSvc) tryGetUser(userID string) *apistructs.PipelineUser {
-	user, err := s.bdl.GetCurrentUser(userID)
+type Interface interface {
+	TryGetUser(ctx context.Context, userID string) *apistructs.PipelineUser
+}
+
+func (p *provider) TryGetUser(ctx context.Context, userID string) *apistructs.PipelineUser {
+	user, err := p.bdl.GetCurrentUser(userID)
 	if err != nil {
-		logrus.Warnf("failed to get user info, userID: %s, err: %v", userID, err)
+		p.Log.Warnf("failed to get user info, userID: %s, err: %v", userID, err)
 		// return basic user just with id
 		return &apistructs.PipelineUser{ID: userID}
 	}
 	if user == nil {
-		logrus.Warnf("failed to get user info, userID: %s, err: %v", userID, fmt.Errorf("get empty user info"))
+		p.Log.Warnf("failed to get user info, userID: %s, err: %v", userID, fmt.Errorf("get empty user info"))
 		// return basic user just with id
 		return &apistructs.PipelineUser{ID: userID}
 	}

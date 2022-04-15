@@ -15,6 +15,8 @@
 package pipelinesvc
 
 import (
+	"context"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/precheck"
 	"github.com/erda-project/erda/modules/pipeline/precheck/prechecktype"
@@ -88,11 +90,11 @@ func (s *PipelineSvc) PreCheck(p *spec.Pipeline, stages []spec.PipelineStage, us
 	}
 
 	// secrets
-	secrets, cmsDiceFiles, holdOnKeys, encryptSecretKeys, err := s.FetchSecrets(p)
+	secrets, cmsDiceFiles, holdOnKeys, encryptSecretKeys, err := s.secret.FetchSecrets(context.Background(), p)
 	if err != nil {
 		return apierrors.ErrPreCheckPipeline.InternalError(err)
 	}
-	platformSecrets, err := s.FetchPlatformSecrets(p, holdOnKeys)
+	platformSecrets, err := s.secret.FetchPlatformSecrets(context.Background(), p, holdOnKeys)
 	if err != nil {
 		return apierrors.ErrPreCheckPipeline.InternalError(err)
 	}
