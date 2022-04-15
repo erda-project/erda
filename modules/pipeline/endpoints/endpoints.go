@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/providers/cancel"
 	"github.com/erda-project/erda/modules/pipeline/providers/clusterinfo"
 	"github.com/erda-project/erda/modules/pipeline/providers/cron/daemon"
+	"github.com/erda-project/erda/modules/pipeline/providers/edgepipeline"
 	"github.com/erda-project/erda/modules/pipeline/providers/engine"
 	"github.com/erda-project/erda/modules/pipeline/providers/queuemanager"
 	"github.com/erda-project/erda/modules/pipeline/providers/run"
@@ -59,6 +60,7 @@ type Endpoints struct {
 	engine       engine.Interface
 	queueManager queuemanager.Interface
 	clusterInfo  clusterinfo.Interface
+	edgePipeline edgepipeline.Interface
 	mySQL        mysqlxorm.Interface
 	run          run.Interface
 	cancel       cancel.Interface
@@ -164,6 +166,12 @@ func WithQueueManager(qm queuemanager.Interface) Option {
 func WithClusterInfo(clusterInfo clusterinfo.Interface) Option {
 	return func(e *Endpoints) {
 		e.clusterInfo = clusterInfo
+	}
+}
+
+func WithEdgePipeline(edgePipeline edgepipeline.Interface) Option {
+	return func(e *Endpoints) {
+		e.edgePipeline = edgePipeline
 	}
 }
 
