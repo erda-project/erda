@@ -19,8 +19,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/erda-project/erda/modules/oap/collector/common/filter"
 	apiv1 "k8s.io/api/core/v1"
+
+	"github.com/erda-project/erda/modules/oap/collector/common/filter"
 
 	"github.com/erda-project/erda/modules/oap/collector/common"
 	"github.com/erda-project/erda/modules/oap/collector/plugins/processors/k8s-tagger/metadata"
