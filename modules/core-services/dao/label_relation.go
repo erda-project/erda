@@ -14,14 +14,18 @@
 
 package dao
 
-import "github.com/erda-project/erda/apistructs"
+import (
+	"strconv"
+
+	"github.com/erda-project/erda/apistructs"
+)
 
 // LabelRelation 标签关联关系
 type LabelRelation struct {
 	BaseModel
 	LabelID uint64                      `json:"label_id"` // 标签 id
 	RefType apistructs.ProjectLabelType `json:"ref_type"` // 标签作用类型, eg: issue
-	RefID   uint64                      `json:"ref_id"`   // 标签关联目标 id
+	RefID   string                      `json:"ref_id"`   // 标签关联目标 id
 }
 
 // TableName 表名
@@ -35,7 +39,7 @@ func (client *DBClient) CreateLabelRelation(lr *LabelRelation) error {
 }
 
 // DeleteLabelRelations 删除标签关联关系
-func (client *DBClient) DeleteLabelRelations(refType apistructs.ProjectLabelType, refID uint64) error {
+func (client *DBClient) DeleteLabelRelations(refType apistructs.ProjectLabelType, refID string) error {
 	return client.Where("ref_type = ?", refType).Where("ref_id = ?", refID).
 		Delete(LabelRelation{}).Error
 }
@@ -46,7 +50,7 @@ func (client *DBClient) DeleteLabelRelationsByLabel(labelID uint64) error {
 }
 
 // GetLabelRelationsByRef 获取标签关联关系列表
-func (client *DBClient) GetLabelRelationsByRef(refType apistructs.ProjectLabelType, refID uint64) ([]LabelRelation, error) {
+func (client *DBClient) GetLabelRelationsByRef(refType apistructs.ProjectLabelType, refID string) ([]LabelRelation, error) {
 	var lrs []LabelRelation
 	if err := client.Where("ref_type = ?", refType).Where("ref_id = ?", refID).
 		Find(&lrs).Error; err != nil {
@@ -83,7 +87,11 @@ func (client *DBClient) BatchQueryIssueLabelIDMap(issueIDs []int64) (map[uint64]
 	// key: issueID, value: labelIDs
 	m := make(map[uint64][]uint64, len(issueIDs))
 	for _, ref := range refs {
-		m[ref.RefID] = append(m[ref.RefID], ref.LabelID)
+		id, err := strconv.ParseUint(ref.RefID, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+		m[id] = append(m[id], ref.LabelID)
 	}
 	return m, nil
 }

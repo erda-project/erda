@@ -246,6 +246,10 @@ func (status PipelineStatus) IsDisabledStatus() bool {
 	return status == PipelineStatusDisabled
 }
 
+func (status PipelineStatus) IsStopByUser() bool {
+	return status == PipelineStatusStopByUser
+}
+
 func (status PipelineStatus) IsFailedStatus() bool {
 	return status.IsNormalFailedStatus() || status.IsAbnormalFailedStatus()
 }
@@ -265,4 +269,8 @@ func (status PipelineStatus) ChangeStateForManualReview() PipelineStatus {
 
 func (status PipelineStatus) AfterPipelineQueue() bool {
 	return status == PipelineStatusRunning || status.IsEndStatus()
+}
+
+func (status PipelineStatus) IsShouldSkipLoop() bool {
+	return !status.IsEndStatus() || status.IsStopByUser()
 }

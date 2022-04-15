@@ -278,6 +278,14 @@ func WithClusterManager() Option {
 	}
 }
 
+func WithClusterDialer() Option {
+	return func(b *Bundle) {
+		k := discover.ClusterDialer()
+		v := os.Getenv(k)
+		b.urls.Put(k, v)
+	}
+}
+
 // WithECP create ecp client with CLUSTER_MANAGER
 func WithECP() Option {
 	return func(b *Bundle) {

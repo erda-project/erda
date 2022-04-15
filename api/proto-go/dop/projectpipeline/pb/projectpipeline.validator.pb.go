@@ -228,3 +228,25 @@ func (this *UpdateProjectPipelineResponse) Validate() error {
 	}
 	return nil
 }
+func (this *OneClickCreateProjectPipelineRequest) Validate() error {
+	if !(this.ProjectID > 0) {
+		return github_com_mwitkow_go_proto_validators.FieldError("ProjectID", fmt.Errorf(`value '%v' must be greater than '0'`, this.ProjectID))
+	}
+	if this.SourceType == "" {
+		return github_com_mwitkow_go_proto_validators.FieldError("SourceType", fmt.Errorf(`value '%v' must not be an empty string`, this.SourceType))
+	}
+	if this.Ref == "" {
+		return github_com_mwitkow_go_proto_validators.FieldError("Ref", fmt.Errorf(`value '%v' must not be an empty string`, this.Ref))
+	}
+	return nil
+}
+func (this *OneClickCreateProjectPipelineResponse) Validate() error {
+	for _, item := range this.ProjectPipelines {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("ProjectPipelines", err)
+			}
+		}
+	}
+	return nil
+}

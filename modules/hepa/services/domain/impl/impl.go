@@ -1339,6 +1339,9 @@ func (impl GatewayDomainServiceImpl) GetOrgDomainInfo(reqDto *gw.ManageDomainReq
 			link.RuntimeID = runtimeService.RuntimeId
 			link.ServiceName = runtimeService.ServiceName
 			dto.Link = link
+			dto.Access = dto.Link != nil &&
+				orgCache.UserCanAccessTheProject(reqDto.UserID, dto.Link.ProjectID) &&
+				orgCache.UserCanAccessTheApp(reqDto.UserID, dto.Link.AppID)
 		case orm.DT_PACKAGE:
 			dto.Type = gw.GatewayDomain
 			link.TenantGroup, err = (*impl.globalBiz).GenTenantGroup(dao.ProjectId, dao.Workspace, dao.ClusterName)
@@ -1346,10 +1349,11 @@ func (impl GatewayDomainServiceImpl) GetOrgDomainInfo(reqDto *gw.ManageDomainReq
 				return
 			}
 			dto.Link = link
+			dto.Access = dto.Link != nil &&
+				orgCache.UserCanAccessTheProject(reqDto.UserID, dto.Link.ProjectID)
 		default:
 			dto.Type = gw.OtherDomain
 		}
-		dto.Access = dto.Link != nil && orgCache.CanAccess(orgCache.UserCanAccessTheScope(orgCache.UserCanAccessTheScopeReq(reqDto.UserID, dto.Link.ProjectID, dto.Link.AppID)))
 		list = append(list, dto)
 	}
 	res = common.NewPages(list, pageInfo.TotalNum)
