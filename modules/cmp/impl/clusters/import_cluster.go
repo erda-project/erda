@@ -647,7 +647,7 @@ func (c *Clusters) renderCommonDeployConfig(orgName, clusterName string) (*Rende
 			{Name: "ERDA_CHART_VERSION", Value: conf.ErdaVersion()},
 			{Name: "HELM_NAMESPACE", Value: getWorkerNamespace()},
 			{Name: "NODE_LABELS", Value: fmt.Sprintf(ErdaOrgLabel+"=true", orgName)},
-			{Name: "ERDA_CHART_VALUES", Value: generateSetValues(ci, ak.AccessKey)},
+			{Name: "ERDA_CHART_VALUES", Value: generateSetValues(ci, ak.Access)},
 			{Name: "HELM_REPO_URL", Value: conf.HelmRepoURL()},
 			{Name: "HELM_REPO_USERNAME", Value: conf.HelmRepoUsername()},
 			{Name: "HELM_REPO_PASSWORD", Value: conf.HelmRepoPassword()},

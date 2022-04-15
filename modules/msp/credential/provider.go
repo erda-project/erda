@@ -22,7 +22,7 @@ import (
 	"github.com/erda-project/erda-infra/pkg/transport"
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 	"github.com/erda-project/erda-infra/pkg/transport/http/encoding"
-	akpb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
+	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda-proto-go/msp/credential/pb"
 	tenantpb "github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -38,7 +38,7 @@ type provider struct {
 	Cfg                  *config
 	Register             transport.Register `autowired:"service-register"`
 	credentialKeyService *accessKeyService
-	AccessKeyService     akpb.AccessKeyServiceServer `autowired:erda.core.services.authentication.credentials.accesskey.AccessKeyService"`
+	TokenService         tokenpb.TokenServiceServer `autowired:erda.core.token.TokenService"`
 	bdl                  *bundle.Bundle
 	audit                audit.Auditor
 	Tenant               tenantpb.TenantServiceServer `autowired:"erda.msp.tenant.TenantService"`
@@ -92,7 +92,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
 	switch {
 	case ctx.Service() == "erda.msp.credential.AccessKeyService" || ctx.Type() == pb.AccessKeyServiceServerType() || ctx.Type() == pb.AccessKeyServiceHandlerType():
-		return p.AccessKeyService
+		return p.TokenService
 	}
 	return p
 }

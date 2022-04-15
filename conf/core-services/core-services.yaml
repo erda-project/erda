@@ -46,3 +46,5 @@ dingtalk.api:
 erda.core.messenger.notifychannel:
 
 audit:
+
+erda.core.token:

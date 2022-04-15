@@ -24,10 +24,9 @@ grpc-client@erda.core.monitor.alert:
 erda.core.monitor.alert-client:
 
 # core service credential
-grpc-client@erda.core.services.authentication.credentials.accesskey:
+grpc-client@erda.core.token:
   addr: "${CORE_SERVICES_GRPC_ADDR:core-services:9537}"
-  block: false
-erda.core.services.authentication.credentials.accesskey-client:
+erda.core.token-client:
 
 grpc-client@erda.core.pipeline.cron:
   addr: "${PIPELINE_GRPC_ADDR:pipeline:30810}"

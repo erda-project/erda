@@ -70,7 +70,7 @@ func (e *Endpoints) GetAccessKey(ctx context.Context, r *http.Request, vars map[
 	if res.Total == 0 {
 		respData = nil
 	} else {
-		respData = &apistructs.ClusterAk{Id: res.Data[0].Id, AccessKey: res.Data[0].AccessKey}
+		respData = &apistructs.ClusterAk{Id: res.Data[0].Id, AccessKey: res.Data[0].Access}
 	}
 
 	return mkResponse(&apistructs.ClusterGetAkResponse{
@@ -115,7 +115,7 @@ func (e *Endpoints) CreateAccessKey(ctx context.Context, r *http.Request, vars m
 		Header: apistructs.Header{
 			Success: true,
 		},
-		Data: res.AccessKey,
+		Data: res.Access,
 	})
 }
 
@@ -153,6 +153,6 @@ func (e *Endpoints) ResetAccessKey(ctx context.Context, r *http.Request, vars ma
 		Header: apistructs.Header{
 			Success: true,
 		},
-		Data: res.AccessKey,
+		Data: res.Access,
 	})
 }

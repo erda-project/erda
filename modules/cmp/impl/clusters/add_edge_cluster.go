@@ -122,7 +122,7 @@ func (c *Clusters) AddClusters(req apistructs.CloudClusterRequest, userid string
 		logrus.Errorf("get cluster access key failed, cluster: %s, error: %v", req.ClusterName, err)
 		return recordID, err
 	}
-	req.ClusterAccessKey = cak.AccessKey
+	req.ClusterAccessKey = cak.Access
 
 	logrus.Debugf("cloud request: %v", req)
 

@@ -23,7 +23,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	credentialpb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
+	"github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cluster-dialer/config"
 )
@@ -35,7 +35,7 @@ const (
 type Option func(authorizer *Authorizer)
 
 type Authorizer struct {
-	Credential credentialpb.AccessKeyServiceServer
+	Credential pb.TokenServiceServer
 	cfg        *config.Config
 }
 
@@ -50,7 +50,7 @@ func New(opts ...Option) *Authorizer {
 }
 
 // WithCredentialClient with core-services credential client
-func WithCredentialClient(credential credentialpb.AccessKeyServiceServer) Option {
+func WithCredentialClient(credential pb.TokenServiceServer) Option {
 	return func(a *Authorizer) {
 		a.Credential = credential
 	}
@@ -88,11 +88,10 @@ func (a *Authorizer) Authorizer(req *http.Request) (string, bool, error) {
 	logrus.Debugf("get auth info: %s", authInfo)
 
 	// Doesn't need cache now
-	akSkResp, err := a.Credential.QueryAccessKeys(context.Background(), &credentialpb.QueryAccessKeysRequest{
-		AccessKey: authInfo,
-		Scope:     apistructs.CMPClusterScope,
-		ScopeId:   clusterKey,
-		Status:    credentialpb.StatusEnum_ACTIVATE,
+	akSkResp, err := a.Credential.QueryTokens(context.Background(), &pb.QueryTokensRequest{
+		Access:  authInfo,
+		Scope:   apistructs.CMPClusterScope,
+		ScopeId: clusterKey,
 	})
 	if err != nil {
 		logrus.Errorf("get key pair error: %v", err)

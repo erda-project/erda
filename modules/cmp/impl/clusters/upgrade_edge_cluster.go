@@ -27,7 +27,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 
-	credentialpb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
+	"github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/dbclient"
@@ -36,10 +36,10 @@ import (
 type Clusters struct {
 	db         *dbclient.DBClient
 	bdl        *bundle.Bundle
-	credential credentialpb.AccessKeyServiceServer
+	credential pb.TokenServiceServer
 }
 
-func New(db *dbclient.DBClient, bdl *bundle.Bundle, c credentialpb.AccessKeyServiceServer) *Clusters {
+func New(db *dbclient.DBClient, bdl *bundle.Bundle, c pb.TokenServiceServer) *Clusters {
 	return &Clusters{db: db, bdl: bdl, credential: c}
 }
 
@@ -110,7 +110,7 @@ func (c *Clusters) UpgradeEdgeCluster(req apistructs.UpgradeEdgeClusterRequest, 
 		return
 	}
 
-	if cak.AccessKey == "" {
+	if cak.Access == "" {
 		err = fmt.Errorf("empty cluster access key, cluster: %s", req.ClusterName)
 		logrus.Errorf(err.Error())
 		return
@@ -123,7 +123,7 @@ func (c *Clusters) UpgradeEdgeCluster(req apistructs.UpgradeEdgeClusterRequest, 
 			Version: "1.0",
 			Params: map[string]interface{}{
 				"dice_version":       centralClusterInfo.Get(apistructs.DICE_VERSION),
-				"cluster_access_key": cak.AccessKey,
+				"cluster_access_key": cak.Access,
 			},
 		}}},
 	}

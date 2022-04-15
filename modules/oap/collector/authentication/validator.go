@@ -18,10 +18,10 @@ import (
 	"context"
 	"sync"
 
-	akpb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
+	"github.com/erda-project/erda-proto-go/core/token/pb"
 )
 
-type AccessItemCollection map[string]*akpb.AccessKeysItem
+type AccessItemCollection map[string]*pb.Token
 
 type Validator interface {
 	// Validate +Validate
@@ -30,8 +30,8 @@ type Validator interface {
 
 type accessKeyValidator struct {
 	sync.RWMutex
-	collection       AccessItemCollection
-	AccessKeyService akpb.AccessKeyServiceServer
+	collection   AccessItemCollection
+	TokenService pb.TokenServiceServer
 }
 
 func (v *accessKeyValidator) syncFullAccessKeys(ctx context.Context) error {
@@ -39,9 +39,9 @@ func (v *accessKeyValidator) syncFullAccessKeys(ctx context.Context) error {
 		pageNumber int64 = 1
 		pageSize   int64 = 100
 	)
-	results := make([]*akpb.AccessKeysItem, 0)
+	results := make([]*pb.Token, 0)
 	for {
-		resp, err := v.AccessKeyService.QueryAccessKeys(ctx, &akpb.QueryAccessKeysRequest{
+		resp, err := v.TokenService.QueryTokens(ctx, &pb.QueryTokensRequest{
 			PageNo:   pageNumber,
 			PageSize: pageSize,
 		})
@@ -62,7 +62,7 @@ func (v *accessKeyValidator) syncFullAccessKeys(ctx context.Context) error {
 		delete(v.collection, k)
 	}
 	for _, item := range results {
-		v.collection[item.AccessKey] = item
+		v.collection[item.Access] = item
 	}
 	return nil
 }
@@ -71,6 +71,5 @@ func (v *accessKeyValidator) Validate(scope string, scopeId string, token string
 	v.RLock()
 	defer v.RUnlock()
 	item, ok := v.collection[token]
-	return ok && item.AccessKey == token && item.ScopeId == scopeId && item.Scope == scope &&
-		item.Status == akpb.StatusEnum_ACTIVATE
+	return ok && item.Access == token && item.ScopeId == scopeId && item.Scope == scope
 }

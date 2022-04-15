@@ -21,10 +21,12 @@ import (
 	"strconv"
 
 	akpb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
+	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda-proto-go/msp/credential/pb"
 	tenantpb "github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
+	"github.com/erda-project/erda/pkg/oauth2/tokenstore/mysqltokenstore"
 	"github.com/erda-project/erda/providers/audit"
 )
 
@@ -35,17 +37,14 @@ type accessKeyService struct {
 const MSP_SCOPE = "msp_env"
 
 func (a *accessKeyService) QueryAccessKeys(ctx context.Context, request *pb.QueryAccessKeysRequest) (*pb.QueryAccessKeysResponse, error) {
-	req := &akpb.QueryAccessKeysRequest{
-		Status:      request.Status,
-		SubjectType: request.SubjectType,
-		Subject:     request.Subject,
-		AccessKey:   request.AccessKey,
-		PageNo:      request.PageNo,
-		PageSize:    request.PageSize,
-		Scope:       MSP_SCOPE,
-		ScopeId:     request.ScopeId,
+	req := &tokenpb.QueryTokensRequest{
+		Access:   request.AccessKey,
+		PageNo:   request.PageNo,
+		PageSize: request.PageSize,
+		Scope:    MSP_SCOPE,
+		ScopeId:  request.ScopeId,
 	}
-	accessKeyList, err := a.p.AccessKeyService.QueryAccessKeys(ctx, req)
+	accessKeyList, err := a.p.TokenService.QueryTokens(ctx, req)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -55,7 +54,7 @@ func (a *accessKeyService) QueryAccessKeys(ctx context.Context, request *pb.Quer
 	for _, v := range accessKeyList.Data {
 		ak := &pb.QueryAccessKeys{
 			Id:        v.Id,
-			Token:     v.AccessKey,
+			Token:     v.Access,
 			CreatedAt: v.CreatedAt,
 			Creator:   v.CreatorId,
 		}
@@ -79,16 +78,16 @@ func (a *accessKeyService) QueryAccessKeys(ctx context.Context, request *pb.Quer
 func (a *accessKeyService) DownloadAccessKeyFile(ctx context.Context, request *pb.DownloadAccessKeyFileRequest) (*pb.DownloadAccessKeyFileResponse, error) {
 	buf := &bytes.Buffer{}
 	w := csv.NewWriter(buf)
-	akRequest := &akpb.GetAccessKeyRequest{
+	akRequest := &tokenpb.GetTokenRequest{
 		Id: request.Id,
 	}
-	accessKey, err := a.p.AccessKeyService.GetAccessKey(ctx, akRequest)
+	accessKey, err := a.p.TokenService.GetToken(ctx, akRequest)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
 	fileData := [][]string{
 		{"secretKey", accessKey.Data.SecretKey},
-		{"accessKey", accessKey.Data.AccessKey},
+		{"accessKey", accessKey.Data.Access},
 	}
 	err = w.WriteAll(fileData)
 	if err != nil {
@@ -102,25 +101,24 @@ func (a *accessKeyService) DownloadAccessKeyFile(ctx context.Context, request *p
 
 func (a *accessKeyService) CreateAccessKey(ctx context.Context, request *pb.CreateAccessKeyRequest) (*pb.CreateAccessKeyResponse, error) {
 	userIdStr := apis.GetUserID(ctx)
-	req := &akpb.CreateAccessKeyRequest{
-		SubjectType: request.SubjectType,
-		Subject:     request.Subject,
+	req := &tokenpb.CreateTokenRequest{
+		Type:        mysqltokenstore.AccessKey.String(),
 		Description: request.Description,
 		Scope:       MSP_SCOPE,
 		ScopeId:     request.ScopeId,
 		CreatorId:   userIdStr,
 	}
-	accessKey, err := a.p.AccessKeyService.CreateAccessKey(ctx, req)
+	accessKey, err := a.p.TokenService.CreateToken(ctx, req)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	projectId, err := a.auditContextInfo(ctx, request.ScopeId, accessKey.Data.AccessKey)
+	projectId, err := a.auditContextInfo(ctx, request.ScopeId, accessKey.Data.Access)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
 	result := &pb.CreateAccessKeyResponse{
 		Data: &pb.CreateAccessKeyData{
-			Id:        accessKey.Data.AccessKey,
+			Id:        accessKey.Data.Access,
 			ProjectId: projectId,
 		},
 	}
@@ -151,18 +149,18 @@ func (a *accessKeyService) auditContextInfo(ctx context.Context, scopeId, token 
 }
 
 func (a *accessKeyService) DeleteAccessKey(ctx context.Context, request *pb.DeleteAccessKeyRequest) (*pb.DeleteAccessKeyResponse, error) {
-	accessKey, err := a.GetAccessKeyItem(ctx, request.Id)
+	token, err := a.GetAccessKeyItem(ctx, request.Id)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	akRequest := &akpb.DeleteAccessKeyRequest{
+	akRequest := &tokenpb.DeleteTokenRequest{
 		Id: request.Id,
 	}
-	_, err = a.p.AccessKeyService.DeleteAccessKey(ctx, akRequest)
+	_, err = a.p.TokenService.DeleteToken(ctx, akRequest)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	projectId, err := a.auditContextInfo(ctx, accessKey.Data.ScopeId, accessKey.Data.AccessKey)
+	projectId, err := a.auditContextInfo(ctx, token.ScopeId, token.Access)
 	return &pb.DeleteAccessKeyResponse{
 		Data: projectId,
 	}, nil
@@ -173,23 +171,32 @@ func (a *accessKeyService) GetAccessKey(ctx context.Context, request *pb.GetAcce
 	//	Id: request.Id,
 	//}
 	//accessKey, err := a.p.AccessKeyService.GetAccessKey(ctx, akRequest)
-	accessKey, err := a.GetAccessKeyItem(ctx, request.Id)
+	token, err := a.GetAccessKeyItem(ctx, request.Id)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
 	result := &pb.GetAccessKeyResponse{
-		Data: accessKey.Data,
+		Data: &akpb.AccessKeysItem{
+			Id:          token.Id,
+			AccessKey:   token.Access,
+			SecretKey:   token.SecretKey,
+			Description: token.Description,
+			CreatedAt:   token.CreatedAt,
+			Scope:       token.Scope,
+			ScopeId:     token.ScopeId,
+			CreatorId:   token.CreatorId,
+		},
 	}
 	return result, nil
 }
 
-func (a *accessKeyService) GetAccessKeyItem(ctx context.Context, Id string) (*akpb.GetAccessKeyResponse, error) {
-	akRequest := &akpb.GetAccessKeyRequest{
+func (a *accessKeyService) GetAccessKeyItem(ctx context.Context, Id string) (*tokenpb.Token, error) {
+	akRequest := &tokenpb.GetTokenRequest{
 		Id: Id,
 	}
-	accessKey, err := a.p.AccessKeyService.GetAccessKey(ctx, akRequest)
+	accessKey, err := a.p.TokenService.GetToken(ctx, akRequest)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	return accessKey, nil
+	return accessKey.Data, nil
 }

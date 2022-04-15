@@ -24,6 +24,7 @@ import (
 	_ "github.com/erda-project/erda-infra/providers/redis"
 	_ "github.com/erda-project/erda-proto-go/core/pipeline/cms/client"
 	_ "github.com/erda-project/erda/modules/core-services"
+	_ "github.com/erda-project/erda/modules/core-services/providers/token"
 	_ "github.com/erda-project/erda/modules/core-services/services/dingtalk/api"
 	_ "github.com/erda-project/erda/modules/core/services/authentication/credentials/accesskey"
 	_ "github.com/erda-project/erda/modules/messenger/eventbox"
