@@ -20,6 +20,7 @@ import (
 	"strconv"
 
 	"github.com/go-echarts/go-echarts/v2/opts"
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
@@ -87,7 +88,12 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 	var labelList []interface{}
 	for i := range labels {
 		l := &labels[i]
-		bug, ok := bugMap[l.RefID]
+		refID, err := strconv.ParseUint(l.RefID, 10, 64)
+		if err != nil {
+			logrus.Errorf("failed to parse refID for label %s(ID: %d), %v", l.Name, l.ID, err)
+			continue
+		}
+		bug, ok := bugMap[refID]
 		if !ok {
 			continue
 		}
