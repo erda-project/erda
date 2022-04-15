@@ -625,6 +625,10 @@ func (s *ReleaseService) List(orgID int64, req *pb.ReleaseListRequest) (*pb.Rele
 			return nil, errors.Errorf("failed to get release tags, %v", err)
 		}
 
+		if len(lrs) == 0 {
+			return &pb.ReleaseListResponseData{}, nil
+		}
+
 		var releaseIDs []string
 		for i := range lrs {
 			releaseIDs = append(releaseIDs, lrs[i].RefID)
