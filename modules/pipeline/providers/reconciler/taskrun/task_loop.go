@@ -28,8 +28,8 @@ import (
 
 // handleTaskLoop Determine whether the task needs to be looped; if necessary, adjust the task state and wait for the thinking time
 func (tr *TaskRun) handleTaskLoop() error {
-	// not end state, skip
-	if !tr.Task.Status.IsEndStatus() {
+	// if the task status is non-end or stopByUser, skip the loop
+	if tr.Task.Status.IsShouldSkipLoop() {
 		return nil
 	}
 

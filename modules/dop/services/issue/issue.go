@@ -202,9 +202,6 @@ func (svc *Issue) Create(req *apistructs.IssueCreateRequest) (*dao.Issue, error)
 		planStartedAt:  planStartedAt,
 		planFinishedAt: planFinishedAt,
 	}
-	if err := svc.AfterIssueUpdate(u); err != nil {
-		return nil, fmt.Errorf("update issue parent after issue children %v update failed: %v", create.ID, err)
-	}
 	// 生成活动记录
 	users, err := svc.uc.FindUsers([]string{req.UserID})
 	if err != nil {
@@ -233,6 +230,10 @@ func (svc *Issue) Create(req *apistructs.IssueCreateRequest) (*dao.Issue, error)
 		Creator:   create.Creator,
 	}); err != nil {
 		return nil, err
+	}
+
+	if err := svc.AfterIssueUpdate(u); err != nil {
+		return nil, fmt.Errorf("after issue update failed when issue id: %v create, err: %v", issueID, err)
 	}
 
 	go func() {
@@ -717,7 +718,7 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 		u.stateNew = newBelong.Belong
 	}
 	if err := svc.AfterIssueUpdate(u); err != nil {
-		return fmt.Errorf("update issue parent after issue children %v update failed: %v", issueModel.ID, err)
+		return fmt.Errorf("after issue update failed when issue id: %v update, err: %v", issueModel.ID, err)
 	}
 
 	go monitor.MetricsIssueById(int(req.ID), svc.db, svc.uc, svc.bdl)

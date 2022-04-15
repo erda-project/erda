@@ -852,7 +852,7 @@ type IssueLabel struct {
 	dbengine.BaseModel
 	LabelID uint64                      // 标签 id
 	RefType apistructs.ProjectLabelType // 标签作用类型, eg: issue
-	RefID   uint64                      // 标签关联目标 id
+	RefID   string                      // 标签关联目标 id
 	Name    string                      // 标签名称
 	Type    apistructs.ProjectLabelType // 标签作用类型
 }
