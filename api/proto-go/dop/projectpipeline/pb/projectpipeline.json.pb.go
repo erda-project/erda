@@ -71,6 +71,8 @@ var _ json.Marshaler = (*OneClickCreateProjectPipelineRequest)(nil)
 var _ json.Unmarshaler = (*OneClickCreateProjectPipelineRequest)(nil)
 var _ json.Marshaler = (*OneClickCreateProjectPipelineResponse)(nil)
 var _ json.Unmarshaler = (*OneClickCreateProjectPipelineResponse)(nil)
+var _ json.Marshaler = (*ProjectPipelineSource)(nil)
+var _ json.Unmarshaler = (*ProjectPipelineSource)(nil)
 
 // PipelineRunParam implement json.Marshaler.
 func (m *PipelineRunParam) MarshalJSON() ([]byte, error) {
@@ -589,6 +591,24 @@ func (m *OneClickCreateProjectPipelineResponse) MarshalJSON() ([]byte, error) {
 
 // OneClickCreateProjectPipelineResponse implement json.Marshaler.
 func (m *OneClickCreateProjectPipelineResponse) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// ProjectPipelineSource implement json.Marshaler.
+func (m *ProjectPipelineSource) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// ProjectPipelineSource implement json.Marshaler.
+func (m *ProjectPipelineSource) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)

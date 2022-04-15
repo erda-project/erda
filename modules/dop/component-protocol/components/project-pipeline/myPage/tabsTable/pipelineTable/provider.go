@@ -461,15 +461,8 @@ func (p *PipelineTable) SetTableMoreOpItem(definition *pb.PipelineDefinition, de
 				build := cputil.NewOpBuilder().Build()
 				build.SkipRender = true
 
-				var inode = ""
 				appName := getApplicationNameFromDefinitionRemote(definition.Remote)
-				if appName != "" && appNameIDMap != nil {
-					if definition.Path == "" {
-						inode = fmt.Sprintf("%v/%v/tree/%v/%v", p.InParams.ProjectID, appNameIDMap.AppNameToID[appName], definition.Ref, definition.FileName)
-					} else {
-						inode = fmt.Sprintf("%v/%v/tree/%v/%v/%v", p.InParams.ProjectID, appNameIDMap.AppNameToID[appName], definition.Ref, definition.Path, definition.FileName)
-					}
-				}
+				inode := p.makeInode(appName, definition, appNameIDMap)
 				build.ServerData = &cptype.OpServerData{
 					"inode":        base64.URLEncoding.EncodeToString([]byte(inode)),
 					"appName":      appName,
@@ -568,15 +561,8 @@ func (p *PipelineTable) SetTableMoreOpItem(definition *pb.PipelineDefinition, de
 				build := cputil.NewOpBuilder().Build()
 				build.SkipRender = true
 
-				var inode string
 				appName := getApplicationNameFromDefinitionRemote(definition.Remote)
-				if appName != "" && appNameIDMap != nil {
-					if definition.Path == "" {
-						inode = fmt.Sprintf("%v/%v/tree/%v/%v", p.InParams.ProjectID, appNameIDMap.AppNameToID[appName], definition.Ref, definition.FileName)
-					} else {
-						inode = fmt.Sprintf("%v/%v/tree/%v/%v/%v", p.InParams.ProjectID, appNameIDMap.AppNameToID[appName], definition.Ref, definition.Path, definition.FileName)
-					}
-				}
+				inode := p.makeInode(appName, definition, appNameIDMap)
 				build.ServerData = &cptype.OpServerData{
 					"inode":        base64.URLEncoding.EncodeToString([]byte(inode)),
 					"appName":      appName,
@@ -799,4 +785,16 @@ func getStatus(status apistructs.PipelineStatus) commodel.UnifiedStatus {
 		return commodel.SuccessStatus
 	}
 	return commodel.DefaultStatus
+}
+
+func (p *PipelineTable) makeInode(appName string, definition *pb.PipelineDefinition, appNameIDMap *apistructs.GetAppIDByNamesResponseData) string {
+	var inode string
+	if appName != "" && appNameIDMap != nil {
+		if definition.Path == "" {
+			inode = fmt.Sprintf("%v/%v/tree/%v/%v", p.InParams.ProjectID, appNameIDMap.AppNameToID[appName], definition.Ref, definition.FileName)
+		} else {
+			inode = fmt.Sprintf("%v/%v/tree/%v/%v/%v", p.InParams.ProjectID, appNameIDMap.AppNameToID[appName], definition.Ref, definition.Path, definition.FileName)
+		}
+	}
+	return inode
 }

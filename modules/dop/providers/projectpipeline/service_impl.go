@@ -486,7 +486,7 @@ func (p *ProjectPipelineService) Update(ctx context.Context, params *pb.UpdatePr
 		return nil, apierrors.ErrUpdateProjectPipeline.AccessDenied()
 	}
 
-	app, err := p.bundle.GetApp(params.AppID)
+	app, err := p.bundle.GetApp(params.ProjectPipelineSource.AppID)
 	if err != nil {
 		return nil, apierrors.ErrUpdateProjectPipeline.InvalidParameter(err)
 	}
@@ -509,15 +509,15 @@ func (p *ProjectPipelineService) Update(ctx context.Context, params *pb.UpdatePr
 	}
 
 	// update source
-	if source.Ref != params.Ref || source.Path != params.Path || source.Name != params.FileName {
-		pipelineSourceType := NewProjectSourceType(params.SourceType)
+	if !isSameSourceInApp(source, params) {
+		pipelineSourceType := NewProjectSourceType(params.ProjectPipelineSource.SourceType)
 		sourceCreateReq, err := pipelineSourceType.GenerateReq(ctx, p, &pb.CreateProjectPipelineRequest{
 			ProjectID:  params.ProjectID,
-			AppID:      params.AppID,
-			SourceType: params.SourceType,
-			Ref:        params.Ref,
-			Path:       params.Path,
-			FileName:   params.FileName,
+			AppID:      params.ProjectPipelineSource.AppID,
+			SourceType: params.ProjectPipelineSource.SourceType,
+			Ref:        params.ProjectPipelineSource.Ref,
+			Path:       params.ProjectPipelineSource.Path,
+			FileName:   params.ProjectPipelineSource.FileName,
 		})
 		if err != nil {
 			return nil, apierrors.ErrUpdateProjectPipeline.InternalError(err)
@@ -547,6 +547,14 @@ func (p *ProjectPipelineService) Update(ctx context.Context, params *pb.UpdatePr
 	pipeline.TimeUpdated = definitionRsp.PipelineDefinition.TimeUpdated
 
 	return &pb.UpdateProjectPipelineResponse{ProjectPipeline: &pipeline}, nil
+}
+
+func isSameSourceInApp(source *spb.PipelineSource, params *pb.UpdateProjectPipelineRequest) bool {
+	if source.Ref != params.ProjectPipelineSource.Ref || source.Path != params.ProjectPipelineSource.Path ||
+		source.Name != params.ProjectPipelineSource.FileName {
+		return false
+	}
+	return true
 }
 
 func (p *ProjectPipelineService) SetPrimary(ctx context.Context, params deftype.ProjectPipelineCategory) (*dpb.PipelineDefinitionUpdateResponse, error) {

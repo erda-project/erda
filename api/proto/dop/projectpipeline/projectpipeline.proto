@@ -297,11 +297,7 @@ message UpdateProjectPipelineRequest {
   string pipelineDefinitionID = 1 [(validator.field) = {string_not_empty: true}];
   uint64 projectID = 2 [(validator.field) = {int_gt: 0}];
   string name = 3 [(validator.field) = {string_not_empty: true}];
-  uint64 appID = 4 [(validator.field) = {int_gt: 0}];
-  string sourceType = 5 [(validator.field) = {string_not_empty: true}];
-  string ref = 6 [(validator.field) = {string_not_empty: true}];
-  string path = 7;
-  string fileName = 8 [(validator.field) = {string_not_empty: true}];
+  ProjectPipelineSource projectPipelineSource = 4;
 }
 
 message UpdateProjectPipelineResponse {
@@ -319,4 +315,12 @@ message OneClickCreateProjectPipelineRequest {
 message OneClickCreateProjectPipelineResponse {
   repeated ProjectPipeline projectPipelines = 1;
   string errMsg = 2;
+}
+
+message ProjectPipelineSource {
+  uint64 appID = 1 [(validator.field) = {int_gt: 0}];
+  string sourceType = 2 [(validator.field) = {string_not_empty: true}];
+  string ref = 3 [(validator.field) = {string_not_empty: true}];
+  string path = 4;
+  string fileName = 5 [(validator.field) = {string_not_empty: true}];
 }
