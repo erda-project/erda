@@ -14,7 +14,10 @@
 
 package apistructs
 
-import "fmt"
+import (
+	"encoding/json"
+	"fmt"
+)
 
 type ClusterDialerHeaderKey string
 
@@ -23,6 +26,7 @@ var (
 	ClusterDialerHeaderKeyClientType    ClusterDialerHeaderKey = "X-Erda-Client-Type"
 	ClusterDialerHeaderKeyClusterInfo   ClusterDialerHeaderKey = "X-Erda-Cluster-Info"
 	ClusterDialerHeaderKeyAuthorization ClusterDialerHeaderKey = "Authorization"
+	ClusterDialerHeaderKeyClientDetail  ClusterDialerHeaderKey = "X-Erda-Client-Detail"
 )
 
 func (c ClusterDialerHeaderKey) String() string {
@@ -46,4 +50,22 @@ func (c ClusterDialerClientType) MakeClientKey(clusterKey string) string {
 		return clusterKey
 	}
 	return fmt.Sprintf("%s-client-type-%s", clusterKey, c)
+}
+
+type ClusterDialerClientDetailKey string
+
+type ClusterDialerClientDetail map[ClusterDialerClientDetailKey]string
+
+type ClusterDialerClientMap map[string]ClusterDialerClientDetail
+
+func (detail ClusterDialerClientDetail) Get(key ClusterDialerClientDetailKey) string {
+	return detail[key]
+}
+
+func (detail ClusterDialerClientDetail) Marshal() ([]byte, error) {
+	return json.Marshal(detail)
+}
+
+func (m ClusterDialerClientMap) GetClientDetail(clientKey string) ClusterDialerClientDetail {
+	return m[clientKey]
 }

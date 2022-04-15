@@ -174,9 +174,20 @@ func clusterRegister(server *remotedialer.Server, rw http.ResponseWriter, req *h
 			go registerFunc(clusterKey, clusterInfo)
 		}
 	default:
+		clientDataStr := req.Header.Get(apistructs.ClusterDialerHeaderKeyClientDetail.String())
+		if clientDataStr != "" {
+			var clientData apistructs.ClusterDialerClientDetail
+			if err := json.Unmarshal([]byte(clientDataStr), &clientData); err != nil {
+				logrus.Errorf("failed to unmarshal client data(skip clients update), clientType: %s, clusterKey: %s, err: %v",
+					clientType, clusterKey, err)
+				goto register
+			}
+			updateClientDetail(clientType, clusterKey, clientData)
+		}
 		logrus.Infof("client type [%s]", clientType)
 	}
 
+register:
 	server.ServeHTTP(rw, req)
 }
 
@@ -238,6 +249,29 @@ func checkClusterIsExisted(server *remotedialer.Server, rw http.ResponseWriter, 
 	rw.Write([]byte(strconv.FormatBool(isExisted)))
 }
 
+func getClusterClientData(server *remotedialer.Server, rw http.ResponseWriter, req *http.Request) {
+	clusterKey := mux.Vars(req)["clusterKey"]
+	clientType := apistructs.ClusterDialerClientType(mux.Vars(req)["clientType"])
+	clusterKey = clientType.MakeClientKey(clusterKey)
+	isExisted := server.HasSession(clusterKey)
+	if !isExisted {
+		remotedialer.DefaultErrorWriter(rw, req, 404, errors.New("cluster not found"))
+		return
+	}
+	clientData, ok := getClientDetail(clientType, clusterKey)
+	if !ok {
+		remotedialer.DefaultErrorWriter(rw, req, 404, errors.New("client data not found"))
+		return
+	}
+	clientByteData, err := clientData.Marshal()
+	if err != nil {
+		remotedialer.DefaultErrorWriter(rw, req, 500, err)
+		return
+	}
+	rw.Header().Set("Content-Type", "application/json")
+	rw.Write(clientByteData)
+}
+
 func getClusterClient(server *remotedialer.Server, clusterKey string, timeout time.Duration) *http.Client {
 	l.Lock()
 	defer l.Unlock()
@@ -292,6 +326,10 @@ func Start(ctx context.Context, credential credentialpb.AccessKeyServiceServer, 
 	router.HandleFunc("/clusteragent/check", func(rw http.ResponseWriter,
 		req *http.Request) {
 		checkClusterIsExisted(handler, rw, req)
+	})
+	router.HandleFunc("/clusteragent/client-detail/{clientType}/{clusterKey}", func(rw http.ResponseWriter,
+		req *http.Request) {
+		getClusterClientData(handler, rw, req)
 	})
 	router.PathPrefix("/").HandlerFunc(func(rw http.ResponseWriter,
 		req *http.Request) {
