@@ -284,6 +284,8 @@ func (m *CreateNotifyHistoryRequest) UnmarshalURLValues(prefix string, values ur
 				m.Label = vals[0]
 			case "clusterName":
 				m.ClusterName = vals[0]
+			case "respMessage":
+				m.RespMessage = vals[0]
 			}
 		}
 	}

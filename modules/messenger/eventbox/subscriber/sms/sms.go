@@ -145,6 +145,7 @@ func (d *MobileSubscriber) Publish(dest string, content string, time int64, msg 
 		}
 	}
 	if msg.CreateHistory != nil {
+		msg.CreateHistory.RespMessage = response.GetHttpContentString()
 		subscriber.SaveNotifyHistories(msg.CreateHistory, d.messenger)
 	}
 	logrus.Infof("sms send success %s", response.GetHttpContentString())

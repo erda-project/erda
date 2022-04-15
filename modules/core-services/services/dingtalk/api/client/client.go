@@ -39,15 +39,15 @@ func New(appKey, appSecret string, agentId int64,
 	}
 }
 
-func (dc *dingtalkApiClient) SendWorkNotice(phones []string, title, content string) error {
+func (dc *dingtalkApiClient) SendWorkNotice(phones []string, title, content string) (string, error) {
 	accessToken, err := dc.accessTokenManager.GetAccessToken(dc.appKey)
 	if err != nil {
-		return err
+		return "", err
 	}
 	userIds, err := dc.userInfoManager.GetUserIdsByPhones(accessToken, dc.agentId, phones)
 	if err != nil {
-		return err
+		return "", err
 	}
-	err = native.SendCorpConversationMarkdownMessage(accessToken, dc.agentId, userIds, title, content)
-	return err
+	respMessage, err := native.SendCorpConversationMarkdownMessage(accessToken, dc.agentId, userIds, title, content)
+	return respMessage, err
 }

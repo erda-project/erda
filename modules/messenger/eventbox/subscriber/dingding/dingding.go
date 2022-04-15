@@ -20,6 +20,7 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -145,13 +146,13 @@ func (d *DDSubscriber) Publish(dest string, content string, time int64, msg *typ
 	if err != nil {
 		return []error{errors.New("illegal urls")}
 	}
-
+	respMessage := make([]string, 0)
 	for _, urllist := range urls {
 		length := len(urllist)
 		idx := rand.Intn(length)
-		var err error
 		for i := 0; i < length; i++ {
-			if err = d.DINGDINGSend(urllist[(idx+i)%length], &m); err == nil {
+			if message, err := d.DINGDINGSend(urllist[(idx+i)%length], &m); err == nil {
+				respMessage = append(respMessage, message)
 				break // succ
 			}
 			// if fail, use next dingding url
@@ -167,6 +168,7 @@ func (d *DDSubscriber) Publish(dest string, content string, time int64, msg *typ
 		}
 	}
 	if msg.CreateHistory != nil {
+		msg.CreateHistory.RespMessage = strings.Join(respMessage, ",")
 		subscriber.SaveNotifyHistories(msg.CreateHistory, d.messenger)
 	}
 	return errs
@@ -192,21 +194,21 @@ func (d *DDSubscriber) Name() string {
 	return "DINGDING"
 }
 
-func (d *DDSubscriber) DINGDINGSend(u string, m *DDMessage) error {
+func (d *DDSubscriber) DINGDINGSend(u string, m *DDMessage) (string, error) {
 	parsed, err := url.Parse(u)
 	if err != nil {
-		return errors.Wrap(DINGDINGBadURLErr, err.Error())
+		return "", errors.Wrap(DINGDINGBadURLErr, err.Error())
 	}
 	tokenQuery, ok := parsed.Query()["access_token"]
 	if !ok {
 		err = errors.Errorf("DingDing publish: %v, not provide access_token", u)
 		logrus.Error(err)
-		return errors.Wrap(DINGDINGBadURLErr, err.Error())
+		return err.Error(), errors.Wrap(DINGDINGBadURLErr, err.Error())
 	}
 	if len(tokenQuery) == 0 {
 		err = errors.Errorf("DingDing publish: %v, not provide access_token", u)
 		logrus.Error(err)
-		return errors.Wrap(DINGDINGBadURLErr, err.Error())
+		return err.Error(), errors.Wrap(DINGDINGBadURLErr, err.Error())
 	}
 	var buf bytes.Buffer
 	resp, err := httpclient.New(httpclient.WithHTTPS(), httpclient.WithProxy(d.proxy), httpclient.WithDialerKeepAlive(30*time.Second)).
@@ -219,42 +221,42 @@ func (d *DDSubscriber) DINGDINGSend(u string, m *DDMessage) error {
 	if err != nil {
 		err = errors.Errorf("DingDing publish: %v , err:%v", u, err)
 		logrus.Error(err)
-		return errors.Wrap(DINGDINGSendErr, err.Error())
+		return err.Error(), errors.Wrap(DINGDINGSendErr, err.Error())
 	}
 	if !resp.IsOK() {
 		err = errors.Errorf("DingDing publish: %v, httpcode:%d", u, resp.StatusCode())
 		logrus.Error(err)
-		return errors.Wrap(DINGDINGSendErr, err.Error())
+		return string(resp.Body()), errors.Wrap(DINGDINGSendErr, err.Error())
 	}
 	body, err := ioutil.ReadAll(&buf)
 	if err != nil {
 		err = errors.Errorf("DingDing publish: %v, err: %v", u, err)
 		logrus.Error(err)
-		return errors.Wrap(DINGDINGSendErr, err.Error())
+		return string(resp.Body()), errors.Wrap(DINGDINGSendErr, err.Error())
 	}
 	var v map[string]interface{}
 	if err := json.Unmarshal(body, &v); err != nil {
 		err = errors.Errorf("DingDing publish: %v, err: %v, body: %v", u, err, string(body))
 		logrus.Error(err)
-		return errors.Wrap(DINGDINGSendErr, err.Error())
+		return string(resp.Body()), errors.Wrap(DINGDINGSendErr, err.Error())
 	}
 	errcode, ok := v["errcode"]
 	if !ok {
 		logrus.Warningf("DingDing publish: %v, no errcode in response body: %v", u, string(body))
-		return nil
+		return string(resp.Body()), nil
 	}
 	errmsg, ok := v["errmsg"]
 	if !ok {
 		logrus.Warningf("DingDing publish: %v, no errmsg in response body: %v", u, string(body))
-		return nil
+		return string(resp.Body()), nil
 	}
 	errcodeNum := int(errcode.(float64))
 	if errcodeNum != 0 {
 		err = errors.Errorf("DingDing publish: %v, DingDing errcode: %d, errmsg: %s", u, errcodeNum, errmsg.(string))
 		logrus.Error(err)
-		return errors.Wrap(DINGDINGSendErr, err.Error())
+		return string(resp.Body()), errors.Wrap(DINGDINGSendErr, err.Error())
 	}
-	return nil
+	return string(resp.Body()), nil
 }
 
 func indentJSON(content interface{}) (string, error) {

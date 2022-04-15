@@ -17,6 +17,7 @@ package vms
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/dyvmsapi"
@@ -119,6 +120,7 @@ func (d *VoiceSubscriber) Publish(dest string, content string, time int64, msg *
 	}
 
 	wg := sync.WaitGroup{}
+	respMessage := make([]string, 0)
 	for i := range mobiles {
 		wg.Add(1)
 		go func(mobile string) {
@@ -135,11 +137,13 @@ func (d *VoiceSubscriber) Publish(dest string, content string, time int64, msg *
 				msg.CreateHistory.Status = "failed"
 				logrus.Errorf("failed to send voice to %s: %s", mobile, err)
 				errs = append(errs, fmt.Errorf("failed to send voice to %s: %s", mobile, err))
+				respMessage = append(respMessage, response.Message)
 			}
 			if !response.IsSuccess() {
 				msg.CreateHistory.Status = "failed"
 				logrus.Errorf("failed to send voice to %s: %s", mobile, response.GetHttpContentString())
 				errs = append(errs, fmt.Errorf("failed to send voice to %s: %s", mobile, err))
+				respMessage = append(respMessage, response.Message)
 			}
 		}(mobiles[i])
 	}
@@ -154,6 +158,7 @@ func (d *VoiceSubscriber) Publish(dest string, content string, time int64, msg *
 		}
 	}
 	if msg.CreateHistory != nil {
+		msg.CreateHistory.RespMessage = strings.Join(respMessage, ",")
 		subscriber.SaveNotifyHistories(msg.CreateHistory, d.messenger)
 	}
 

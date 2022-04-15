@@ -25,7 +25,7 @@ type DingtalkUserInfoManager interface {
 }
 
 type DingtalkApiClient interface {
-	SendWorkNotice(phones []string, title, content string) error
+	SendWorkNotice(phones []string, title, content string) (string, error)
 }
 
 type DingTalkApiClientFactory interface {

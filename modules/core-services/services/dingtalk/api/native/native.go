@@ -81,7 +81,7 @@ func GetUserIdByMobile(accessToken string, mobile string) (userId string, err er
 	return result.Result.UserId, nil
 }
 
-func SendCorpConversationMarkdownMessage(accessToken string, agentId int64, userIds []string, title, content string) error {
+func SendCorpConversationMarkdownMessage(accessToken string, agentId int64, userIds []string, title, content string) (string, error) {
 	request := SendCorpConversationMarkdownMessageRequest{
 		UseridList: strings.Join(userIds, ","),
 		AgentId:    agentId,
@@ -105,10 +105,10 @@ func SendCorpConversationMarkdownMessage(accessToken string, agentId int64, user
 		JSON(&result)
 
 	if err != nil {
-		return err
+		return err.Error(), err
 	}
 	if resp.StatusCode() != 200 || result.ErrCode != 0 {
-		return fmt.Errorf("response error: %s", string(resp.Body()))
+		return string(resp.Body()), fmt.Errorf("response error: %s", string(resp.Body()))
 	}
-	return nil
+	return string(resp.Body()), nil
 }

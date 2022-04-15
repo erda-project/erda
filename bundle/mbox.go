@@ -23,10 +23,10 @@ import (
 )
 
 // CreateMBox 创建站内信记录
-func (b *Bundle) CreateMBox(request *apistructs.CreateMBoxRequest) error {
+func (b *Bundle) CreateMBox(request *apistructs.CreateMBoxRequest) (string, error) {
 	host, err := b.urls.CoreServices()
 	if err != nil {
-		return err
+		return "", err
 	}
 	hc := b.hc
 
@@ -34,12 +34,12 @@ func (b *Bundle) CreateMBox(request *apistructs.CreateMBoxRequest) error {
 	resp, err := hc.Post(host).Path("/api/mboxs").JSONBody(request).
 		Do().JSON(&getResp)
 	if err != nil {
-		return apierrors.ErrInvoke.InternalError(err)
+		return "", apierrors.ErrInvoke.InternalError(err)
 	}
 	if !resp.IsOK() || !getResp.Success {
-		return toAPIError(resp.StatusCode(), getResp.Error)
+		return string(resp.Body()), toAPIError(resp.StatusCode(), getResp.Error)
 	}
-	return nil
+	return string(resp.Body()), nil
 }
 
 func (b *Bundle) GetMboxStats(identity apistructs.Identity) (int64, error) {

@@ -87,6 +87,7 @@ func ToDBNotifyHistory(request *pb.CreateNotifyHistoryRequest) (*db.NotifyHistor
 		SourceType:            request.NotifySource.SourceType,
 		SourceID:              request.NotifySource.SourceID,
 		ErrorMsg:              request.ErrorMsg,
+		RespMessage:           request.RespMessage,
 	}
 	return history, nil
 }

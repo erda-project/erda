@@ -89,7 +89,7 @@ func (d DingWorkNoticeSubscriber) Publish(dest string, content string, time int6
 		appSecret = notifyChannel.Config.AppSecret
 	}
 	dingClient := d.dingTalkApi.GetClient(appKey, appSecret, agentId)
-	err = dingClient.SendWorkNotice(mobiles, paramMap["title"], workNotifyData.Template)
+	respMessage, err := dingClient.SendWorkNotice(mobiles, paramMap["title"], workNotifyData.Template)
 	if err != nil {
 		errs = append(errs, err)
 	}
@@ -99,6 +99,7 @@ func (d DingWorkNoticeSubscriber) Publish(dest string, content string, time int6
 		}
 	}
 	if m.CreateHistory != nil {
+		m.CreateHistory.RespMessage = respMessage
 		subscriber.SaveNotifyHistories(m.CreateHistory, d.messenger)
 	}
 	return errs

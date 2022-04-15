@@ -69,6 +69,7 @@ type CreateNotifyHistoryRequest struct {
 	NotifyTags            map[string]interface{} `json:"notifyTags"`
 	Label                 string                 `json:"label"`
 	ClusterName           string                 `json:"clusterName" query:"clusterName"`
+	RespMessage           string                 `json:"respMessage"`
 }
 
 // CreateNotifyHistoryResponse 创建通知发送记录响应

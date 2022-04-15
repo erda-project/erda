@@ -47,6 +47,7 @@ type NotifyHistory struct {
 	// 模块类型 cdp/workbench/monitor
 	Label       string `gorm:"size:150;index:idx_module"`
 	ClusterName string
+	RespMessage string `gorm:"type:text" column:resp_message`
 }
 
 // TableName 设置模型对应数据库表名称

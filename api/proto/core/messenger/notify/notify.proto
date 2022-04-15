@@ -57,6 +57,7 @@ message CreateNotifyHistoryRequest {
   map<string, google.protobuf.Value> notifyTags            = 9 [json_name = "notifyTags"];
   string                             label                 = 10;
   string                             clusterName           = 11 [json_name = "clusterName"];
+  string                             respMessage           = 12 [json_name = "respMessage"];
 }
 
 message NotifyTarget {

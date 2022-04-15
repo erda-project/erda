@@ -63,7 +63,7 @@ func (d *MBoxSubscriber) Publish(dest string, content string, time int64, msg *t
 	if !ok {
 		title = "站内信通知"
 	}
-	err = d.bundle.CreateMBox(&apistructs.CreateMBoxRequest{
+	respMessage, err := d.bundle.CreateMBox(&apistructs.CreateMBoxRequest{
 		Title:         template.Render(title, mboxData.Params),
 		Content:       template.Render(mboxData.Template, mboxData.Params),
 		OrgID:         mboxData.OrgID,
@@ -80,6 +80,7 @@ func (d *MBoxSubscriber) Publish(dest string, content string, time int64, msg *t
 		}
 	}
 	if msg.CreateHistory != nil {
+		msg.CreateHistory.RespMessage = respMessage
 		subscriber.SaveNotifyHistories(msg.CreateHistory, d.messenger)
 	}
 	return errs
