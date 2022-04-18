@@ -54,6 +54,11 @@ func (c ClusterDialerClientType) MakeClientKey(clusterKey string) string {
 
 type ClusterDialerClientDetailKey string
 
+var (
+	ClusterDialerDataKeyPipelineHost ClusterDialerClientDetailKey = "pipelineHost"
+	ClusterDialerDataKeyPipelineAddr ClusterDialerClientDetailKey = "pipelineAddr"
+)
+
 type ClusterDialerClientDetail map[ClusterDialerClientDetailKey]string
 
 type ClusterDialerClientMap map[string]ClusterDialerClientDetail

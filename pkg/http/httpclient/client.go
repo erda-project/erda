@@ -67,6 +67,7 @@ type Option struct {
 	acceptEncoding  string
 
 	dialTimeout   time.Duration
+	dialContext   func(ctx context.Context, network, addr string) (net.Conn, error)
 	clientTimeout time.Duration
 
 	enableAutoRetry bool
@@ -183,6 +184,12 @@ func WithTimeout(dialTimeout, clientTimeout time.Duration) OpOption {
 	}
 }
 
+func WithDialContext(dialContext func(ctx context.Context, network, addr string) (net.Conn, error)) OpOption {
+	return func(r *Option) {
+		r.dialContext = dialContext
+	}
+}
+
 func WithCookieJar(jar http.CookieJar) OpOption {
 	return func(r *Option) {
 		r.cookieJar = jar
@@ -278,8 +285,11 @@ func New(ops ...OpOption) *HTTPClient {
 
 	var tr = defaultTransport
 	if option.clusterDialKey != "" || option.dnscache != nil || option.dialTimeout != 0 || option.clientTimeout != 0 ||
-		option.proxy != "" || option.dialerKeepalive != 0 || option.ca != nil {
+		option.proxy != "" || option.dialerKeepalive != 0 || option.ca != nil || option.dialContext != nil {
 		tr = newdefaultTransport(mkDialContext(option.clusterDialKey, option.dnscache, option.dialTimeout, option.clientTimeout))
+		if option.dialContext != nil {
+			tr.DialContext = option.dialContext
+		}
 		tr.MaxIdleConns = -1 // disable connection pool
 		if option.proxy != "" {
 			tr.Proxy = func(request *http.Request) (u *url.URL, err error) {

@@ -147,6 +147,7 @@ func (p *provider) do() error {
 	pipelinefunc.CallbackActionFunc = pipelineSvc.DealPipelineCallbackOfAction
 
 	p.Reconciler.InjectLegacyFields(&pipelineFuncs, actionAgentSvc, extMarketSvc)
+	p.EdgePipeline.InjectLegacyFields(pipelineSvc)
 
 	if err := registerSnippetClient(dbClient); err != nil {
 		return err
@@ -175,6 +176,7 @@ func (p *provider) do() error {
 		endpoints.WithQueueManager(p.QueueManager),
 		endpoints.WithEngine(p.Engine),
 		endpoints.WithClusterInfo(p.ClusterInfo),
+		endpoints.WithEdgePipeline(p.EdgePipeline),
 		endpoints.WithMysql(p.MySQL),
 		endpoints.WithRun(p.PipelineRun),
 		endpoints.WithCancel(p.Cancel),
