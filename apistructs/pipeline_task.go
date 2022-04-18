@@ -26,6 +26,8 @@ const (
 	TerminusDefineTag = "TERMINUS_DEFINE_TAG"
 	// MSPTerminusDefineTag after version 2.0, msp use annotation to collecting logs
 	MSPTerminusDefineTag         = "msp.erda.cloud/terminus_define_tag"
+	MSPTerminusOrgIDTag          = "msp.erda.cloud/org_id"
+	MSPTerminusOrgNameTag        = "msp.erda.cloud/org_name"
 	PipelineTaskMaxRetryLimit    = 144
 	PipelineTaskMaxRetryDuration = 24 * time.Hour
 )

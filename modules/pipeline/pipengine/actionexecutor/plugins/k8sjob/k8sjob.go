@@ -556,7 +556,9 @@ func (k *K8sJob) generateKubeJob(specObj interface{}, clusterInfo apistructs.Clu
 	// k8sjob only has one container, multi-container is for compatibility with flink, spark
 	if len(job.TaskContainers) > 0 {
 		kubeJob.Spec.Template.Annotations = map[string]string{
-			apistructs.MSPTerminusDefineTag: job.TaskContainers[0].ContainerID,
+			apistructs.MSPTerminusDefineTag:  job.TaskContainers[0].ContainerID,
+			apistructs.MSPTerminusOrgIDTag:   job.GetOrgID(),
+			apistructs.MSPTerminusOrgNameTag: job.GetOrgName(),
 		}
 	}
 
