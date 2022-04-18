@@ -22,10 +22,12 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"github.com/xormplus/xorm"
 
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/conf"
+	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/pkg/container_provider"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
@@ -359,34 +361,39 @@ func (s *PipelineSvc) UpdatePipelineCron(p *spec.Pipeline, cronStartFrom *time.T
 	var cron *spec.PipelineCron
 	var cronID uint64
 
-	//是定时类型的流水线，切定时的表达式不为空，更新cron的配置
-	if p.TriggerMode != apistructs.PipelineTriggerModeCron && p.Extra.CronExpr != "" {
+	_, err := s.dbClient.Transaction(func(session *xorm.Session) (interface{}, error) {
+		sessionOpt := dbclient.WithTxSession(session)
 
-		cron = constructPipelineCron(p, cronStartFrom, configManageNamespaces, cronCompensator)
+		//是定时类型的流水线，切定时的表达式不为空，更新cron的配置
+		if p.TriggerMode != apistructs.PipelineTriggerModeCron && p.Extra.CronExpr != "" {
 
-		if err := s.dbClient.InsertOrUpdatePipelineCron(cron); err != nil {
-			return apierrors.ErrUpdatePipelineCron.InternalError(err)
+			cron = constructPipelineCron(p, cronStartFrom, configManageNamespaces, cronCompensator)
+
+			if err := s.dbClient.InsertOrUpdatePipelineCron(cron, sessionOpt); err != nil {
+				return nil, apierrors.ErrUpdatePipelineCron.InternalError(err)
+			}
+			p.CronID = &cron.ID
+			cronID = cron.ID
 		}
-		p.CronID = &cron.ID
-		cronID = cron.ID
-	}
 
-	//cron表达式为空，就需要关闭定时
-	if p.Extra.CronExpr == "" {
-		var err error
+		//cron表达式为空，就需要关闭定时
+		if p.Extra.CronExpr == "" {
+			var err error
 
-		cron = constructPipelineCron(p, cronStartFrom, configManageNamespaces, cronCompensator)
-		if cronID, err = s.dbClient.DisablePipelineCron(cron); err != nil {
-			return apierrors.ErrUpdatePipelineCron.InternalError(err)
+			cron = constructPipelineCron(p, cronStartFrom, configManageNamespaces, cronCompensator)
+			if cronID, err = s.dbClient.DisablePipelineCron(cron, sessionOpt); err != nil {
+				return nil, apierrors.ErrUpdatePipelineCron.InternalError(err)
+			}
+			p.CronID = nil
 		}
-		p.CronID = nil
-	}
 
-	if err := s.crondSvc.AddIntoPipelineCrond(cronID); err != nil {
-		logrus.Errorf("[alert] add crond failed, err: %v", err)
-	}
+		if err := s.crondSvc.AddIntoPipelineCrond(cronID); err != nil {
+			logrus.Errorf("[alert] add crond failed, err: %v", err)
+		}
+		return nil, nil
+	})
 
-	return nil
+	return err
 }
 
 func constructPipelineCron(p *spec.Pipeline, cronStartFrom *time.Time, configManageNamespaces []string, cronCompensator *pipelineyml.CronCompensator) *spec.PipelineCron {

@@ -30,6 +30,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
+	"github.com/erda-project/erda/modules/pipeline/providers/cron/db"
 	"github.com/erda-project/erda/modules/pipeline/providers/leaderworker"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/jsonstore"
@@ -57,6 +58,7 @@ type provider struct {
 
 	jsonStore jsonstore.JsonStore
 	dbClient  *dbclient.Client
+	client    *db.Client
 
 	// TODO remove
 	pipelineFunc PipelineFunc
@@ -68,6 +70,7 @@ func (p *provider) WithPipelineFunc(pipelineFunc PipelineFunc) {
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.dbClient = &dbclient.Client{Engine: p.MySQL.DB()}
+	p.client = &db.Client{Interface: p.MySQL}
 	jsonStore, err := jsonstore.New()
 	if err != nil {
 		return err
@@ -160,28 +163,28 @@ func (p *provider) ContinueCompensate(ctx context.Context) {
 	}
 }
 
-func (p *provider) doInterruptCompensate(ctx context.Context, pc spec.PipelineCron) {
+func (p *provider) doInterruptCompensate(ctx context.Context, pc db.PipelineCron) {
 	err := p.cronInterruptCompensate(ctx, pc)
 	if err != nil {
 		p.Log.Errorf("failed to do interrupt-compensate, cronID: %d, err: %v", pc.ID, err)
 	}
 }
 
-func (p *provider) doStrategyCompensate(ctx context.Context, pc spec.PipelineCron) {
+func (p *provider) doStrategyCompensate(ctx context.Context, pc db.PipelineCron) {
 	err := p.cronNonExecuteCompensate(ctx, pc)
 	if err != nil {
 		p.Log.Errorf("failed to do notexecute-compensate, cronID: %d, err: %v", pc.ID, err)
 	}
 }
 
-func (p *provider) traverseDoCompensate(ctx context.Context, doCompensate func(ctx context.Context, cron spec.PipelineCron), sync bool) {
+func (p *provider) traverseDoCompensate(ctx context.Context, doCompensate func(ctx context.Context, cron db.PipelineCron), sync bool) {
 
 	if doCompensate == nil {
 		return
 	}
 
 	// get all enabled crons
-	enabledCrons, err := p.dbClient.ListPipelineCrons(&[]bool{true}[0])
+	enabledCrons, err := p.client.ListPipelineCrons(&[]bool{true}[0])
 	if err != nil {
 		p.Log.Errorf("failed to list enabled pipeline crons from db, try again later, err: %v", err)
 		time.Sleep(waitTimeIfQueryDBError)
@@ -200,7 +203,7 @@ func (p *provider) traverseDoCompensate(ctx context.Context, doCompensate func(c
 			doCompensate(ctx, pc)
 		} else {
 			group.Add(1)
-			go func(pc spec.PipelineCron) {
+			go func(pc db.PipelineCron) {
 				defer group.Done()
 				doCompensate(ctx, pc)
 			}(pc)
@@ -210,7 +213,7 @@ func (p *provider) traverseDoCompensate(ctx context.Context, doCompensate func(c
 }
 
 // cronInterruptCompensate Timing interrupt compensation
-func (p *provider) cronInterruptCompensate(ctx context.Context, pc spec.PipelineCron) error {
+func (p *provider) cronInterruptCompensate(ctx context.Context, pc db.PipelineCron) error {
 
 	// Calculate interrupt compensation start time
 	beforeCompensateFromTime := getCompensateFromTime(pc)
@@ -279,7 +282,7 @@ func (p *provider) cronInterruptCompensate(ctx context.Context, pc spec.Pipeline
 			StopIfLatterExecuted: pipelineyml.DefaultCronCompensator.StopIfLatterExecuted,
 		}
 	}
-	if err := p.dbClient.UpdatePipelineCron(pc.ID, &pc); err != nil {
+	if err := p.client.UpdatePipelineCron(pc.ID, &pc); err != nil {
 		return errors.Errorf("failed to update pipelineCron for lastCompensateAt field, err: %v", err)
 	}
 
@@ -287,7 +290,7 @@ func (p *provider) cronInterruptCompensate(ctx context.Context, pc spec.Pipeline
 }
 
 func (p *provider) doNonExecuteCompensateByCronID(ctx context.Context, id uint64) error {
-	cron, err := p.dbClient.GetPipelineCron(id)
+	cron, err := p.client.GetPipelineCron(id)
 	if err != nil {
 		return err
 	}
@@ -297,7 +300,7 @@ func (p *provider) doNonExecuteCompensateByCronID(ctx context.Context, id uint64
 
 // cronNonExecuteCompensate timing compensation not performed
 // Only within one day
-func (p *provider) cronNonExecuteCompensate(ctx context.Context, pc spec.PipelineCron) error {
+func (p *provider) cronNonExecuteCompensate(ctx context.Context, pc db.PipelineCron) error {
 
 	// Notexecute compensate is not enabled, exit
 	if pc.Enable == nil || *pc.Enable == false || pc.Extra.Compensator == nil || pc.Extra.Compensator.Enable == false {
@@ -338,7 +341,7 @@ func (p *provider) cronNonExecuteCompensate(ctx context.Context, pc spec.Pipelin
 	return p.doCronCompensate(ctx, *pc.Extra.Compensator, existPipelines, pc)
 }
 
-func (p *provider) doCronCompensate(ctx context.Context, compensator apistructs.CronCompensator, notRunPipelines []spec.Pipeline, pipelineCron spec.PipelineCron) error {
+func (p *provider) doCronCompensate(ctx context.Context, compensator apistructs.CronCompensator, notRunPipelines []spec.Pipeline, pipelineCron db.PipelineCron) error {
 	var order string
 
 	if len(notRunPipelines) <= 0 {
@@ -459,7 +462,7 @@ func orderByCronTriggerTime(inputs []spec.Pipeline, order string) []spec.Pipelin
 // 2.  Do some operations that need to temporarily stop cron, such as database migration, cluster adjustment, etc
 // 3.  Manually modify enable = 1, restart the pipeline to make cron effective, and interrupt compensation is required
 // During the process, the LastCompensateAt field is not updated, and cron is temporarily stopped. In this case, the cron update time is also used as the compensation start time
-func getCompensateFromTime(pc spec.PipelineCron) (t time.Time) {
+func getCompensateFromTime(pc db.PipelineCron) (t time.Time) {
 	now := time.Unix(time.Now().Unix(), 0)
 	defer func() {
 		if now.Sub(t) > time.Hour*24 {
@@ -481,7 +484,7 @@ func getTriggeredTime(p spec.Pipeline) time.Time {
 	return time.Unix(p.TimeCreated.Unix(), 0)
 }
 
-func (p *provider) createCronCompensatePipeline(ctx context.Context, pc spec.PipelineCron, triggerTime time.Time) (*spec.Pipeline, error) {
+func (p *provider) createCronCompensatePipeline(ctx context.Context, pc db.PipelineCron, triggerTime time.Time) (*spec.Pipeline, error) {
 	// generate new label map avoid concurrent map problem
 	pc.Extra.NormalLabels = pc.GenCompensateCreatePipelineReqNormalLabels(triggerTime)
 	pc.Extra.FilterLabels = pc.GenCompensateCreatePipelineReqFilterLabels()
@@ -506,7 +509,7 @@ func (p *provider) createCronCompensatePipeline(ctx context.Context, pc spec.Pip
 }
 
 // isCronShouldIgnore if trigger time before cron start from time, should ignore cron at this trigger time
-func (p *provider) isCronShouldBeIgnored(pc spec.PipelineCron) bool {
+func (p *provider) isCronShouldBeIgnored(pc db.PipelineCron) bool {
 	if pc.Extra.CronStartFrom == nil {
 		return false
 	}

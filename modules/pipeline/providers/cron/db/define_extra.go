@@ -21,6 +21,18 @@ import (
 	"github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 )
 
+func (client *Client) ListPipelineCrons(enable *bool, ops ...mysqlxorm.SessionOption) ([]PipelineCron, error) {
+	session := client.NewSession(ops...)
+	defer session.Close()
+
+	if enable != nil {
+		session.Where("enable=?", *enable)
+	}
+	var crons []PipelineCron
+	err := session.Find(&crons)
+	return crons, err
+}
+
 // return: result, total, nil
 func (client *Client) PagingPipelineCron(req *pb.CronPagingRequest, ops ...mysqlxorm.SessionOption) ([]PipelineCron, int64, error) {
 	session := client.NewSession(ops...)

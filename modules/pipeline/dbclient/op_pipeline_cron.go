@@ -86,32 +86,6 @@ func (client *Client) PagingPipelineCron(req apistructs.PipelineCronPagingReques
 	return result, total, nil
 }
 
-func (client *Client) ListPipelineCronsByApplicationID(applicationID uint64) (crons []spec.PipelineCron, err error) {
-	if err = client.Find(&crons, spec.PipelineCron{ApplicationID: applicationID}); err != nil {
-		return nil, err
-	}
-	return crons, nil
-}
-
-func (client *Client) ListAllPipelineCrons() (crons []spec.PipelineCron, err error) {
-	if err = client.Find(&crons); err != nil {
-		return nil, err
-	}
-	return crons, nil
-}
-
-func (client *Client) ListPipelineCrons(enable *bool, ops ...SessionOption) ([]spec.PipelineCron, error) {
-	session := client.NewSession(ops...)
-	defer session.Close()
-
-	if enable != nil {
-		session.Where("enable=?", *enable)
-	}
-	var crons []spec.PipelineCron
-	err := session.Find(&crons)
-	return crons, err
-}
-
 func (client *Client) GetPipelineCron(id interface{}) (cron spec.PipelineCron, err error) {
 	defer func() {
 		err = errors.Wrapf(err, "failed to get pipeline cron by id [%v]", id)
@@ -126,33 +100,16 @@ func (client *Client) GetPipelineCron(id interface{}) (cron spec.PipelineCron, e
 	return cron, nil
 }
 
-func (client *Client) CheckExistPipelineCronByApplicationBranchYmlName(applicationID uint64, branch string, pipelineYmlName string) (bool, spec.PipelineCron, error) {
-	var result = spec.PipelineCron{
-		ApplicationID:   applicationID,
-		Branch:          branch,
-		PipelineYmlName: pipelineYmlName,
-	}
-	exist, err := client.Get(&result)
-	if err != nil {
-		return false, spec.PipelineCron{}, err
-	}
-	return exist, result, nil
-}
+func (client *Client) CreatePipelineCron(cron *spec.PipelineCron, ops ...SessionOption) error {
+	session := client.NewSession(ops...)
+	defer session.Close()
 
-func (client *Client) CreatePipelineCron(cron *spec.PipelineCron) error {
-	_, err := client.InsertOne(cron)
+	_, err := session.InsertOne(cron)
 	return errors.Wrapf(err, "failed to create pipeline cron, applicationID [%d], branch [%s], expr [%s], enable [%v]", cron.ApplicationID, cron.Branch, cron.CronExpr, cron.Enable)
 }
 
-func (client *Client) DeletePipelineCron(id interface{}) error {
-	if _, err := client.ID(id).Delete(&spec.PipelineCron{}); err != nil {
-		return errors.Errorf("failed to delete pipeline cron, id: %d, err: %v", id, err)
-	}
-	return nil
-}
-
 //更新cron的enable = false，cronExpr = new_.CronExpr
-func (client *Client) DisablePipelineCron(new_ *spec.PipelineCron) (cronID uint64, err error) {
+func (client *Client) DisablePipelineCron(new_ *spec.PipelineCron, ops ...SessionOption) (cronID uint64, err error) {
 
 	var disable = false
 	var updateCron = &spec.PipelineCron{}
@@ -175,7 +132,7 @@ func (client *Client) DisablePipelineCron(new_ *spec.PipelineCron) (cronID uint6
 		updateCron.Enable = &disable
 		updateCron.ID = queryV1.ID
 		updateCron.CronExpr = new_.CronExpr
-		return updateCron.ID, client.UpdatePipelineCronWillUseDefault(updateCron.ID, updateCron, columns)
+		return updateCron.ID, client.UpdatePipelineCronWillUseDefault(updateCron.ID, updateCron, columns, ops...)
 	}
 
 	//------------------------ v2
@@ -194,24 +151,30 @@ func (client *Client) DisablePipelineCron(new_ *spec.PipelineCron) (cronID uint6
 		updateCron.Enable = &disable
 		updateCron.ID = queryV2.ID
 		updateCron.CronExpr = new_.CronExpr
-		return updateCron.ID, client.UpdatePipelineCronWillUseDefault(updateCron.ID, updateCron, columns)
+		return updateCron.ID, client.UpdatePipelineCronWillUseDefault(updateCron.ID, updateCron, columns, ops...)
 	}
 
 	return 0, nil
 }
 
-func (client *Client) UpdatePipelineCron(id interface{}, cron *spec.PipelineCron) error {
-	_, err := client.ID(id).Update(cron)
+func (client *Client) UpdatePipelineCron(id interface{}, cron *spec.PipelineCron, ops ...SessionOption) error {
+	session := client.NewSession(ops...)
+	defer session.Close()
+
+	_, err := session.ID(id).Update(cron)
 	return errors.Wrapf(err, "failed to update pipeline cron, id [%v]", id)
 }
 
 //更新cron，但是假如传入的cron有默认值，那么数据库会被更新成默认值
-func (client *Client) UpdatePipelineCronWillUseDefault(id interface{}, cron *spec.PipelineCron, columns []string) error {
-	_, err := client.ID(id).Cols(columns...).Update(cron)
+func (client *Client) UpdatePipelineCronWillUseDefault(id interface{}, cron *spec.PipelineCron, columns []string, ops ...SessionOption) error {
+	session := client.NewSession(ops...)
+	defer session.Close()
+
+	_, err := session.ID(id).Cols(columns...).Update(cron)
 	return errors.Wrapf(err, "failed to update pipeline cron, id [%v]", id)
 }
 
-func (client *Client) InsertOrUpdatePipelineCron(new_ *spec.PipelineCron) error {
+func (client *Client) InsertOrUpdatePipelineCron(new_ *spec.PipelineCron, ops ...SessionOption) error {
 
 	// 寻找 v1
 	queryV1 := &spec.PipelineCron{
@@ -229,7 +192,7 @@ func (client *Client) InsertOrUpdatePipelineCron(new_ *spec.PipelineCron) error 
 	if v1Exist {
 		new_.ID = queryV1.ID
 		new_.Enable = queryV1.Enable
-		return client.UpdatePipelineCron(new_.ID, new_)
+		return client.UpdatePipelineCron(new_.ID, new_, ops...)
 	}
 
 	// 寻找 v2
@@ -244,7 +207,7 @@ func (client *Client) InsertOrUpdatePipelineCron(new_ *spec.PipelineCron) error 
 	if v2Exist {
 		new_.ID = queryV2.ID
 		new_.Enable = queryV2.Enable
-		return client.UpdatePipelineCron(new_.ID, new_)
+		return client.UpdatePipelineCron(new_.ID, new_, ops...)
 	}
-	return client.CreatePipelineCron(new_)
+	return client.CreatePipelineCron(new_, ops...)
 }
