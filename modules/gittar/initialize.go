@@ -197,6 +197,7 @@ func addApiRoutes(g *echo.Group) {
 	g.GET("/merge-templates", webcontext.WrapHandler(api.GetMergeTemplates))
 	g.GET("/merge-requests/:id", webcontext.WrapHandler(api.GetMergeRequestDetail))
 	g.GET("/merge-requests", webcontext.WrapHandler(api.GetMergeRequests))
+	g.GET("/merge-request-stats", webcontext.WrapHandler(api.GetMergeRequestsStats))
 	g.POST("/merge-requests", webcontext.WrapHandler(api.CreateMergeRequest))
 	g.POST("/merge-requests/:id/edit", webcontext.WrapHandler(api.UpdateMergeRequest))
 	g.POST("/merge-requests/:id/merge", webcontext.WrapHandler(api.Merge))
