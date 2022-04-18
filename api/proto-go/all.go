@@ -40,6 +40,7 @@ import (
 	_ "github.com/erda-project/erda-proto-go/core/monitor/log/query/pb"
 	_ "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	_ "github.com/erda-project/erda-proto-go/core/monitor/settings/pb"
+	_ "github.com/erda-project/erda-proto-go/core/pipeline/action/pb"
 	_ "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 	_ "github.com/erda-project/erda-proto-go/core/pipeline/build/pb"
 	_ "github.com/erda-project/erda-proto-go/core/pipeline/cluster/pb"

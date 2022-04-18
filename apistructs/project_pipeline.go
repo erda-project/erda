@@ -29,7 +29,9 @@ const (
 )
 
 const (
-	PipelineTypeCICD ProjectPipelineType = "cicd"
+	PipelineTypeDefault ProjectPipelineType = "default"
+	PipelineTypeCICD    ProjectPipelineType = "cicd"
+	PipelineTypeFDP     ProjectPipelineType = "fdp"
 )
 
 const (

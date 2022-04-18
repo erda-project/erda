@@ -249,7 +249,7 @@ func (s *PipelineSvc) makePipelineFromRequestV2(req *apistructs.PipelineCreateRe
 			}
 		}
 	}
-	_, extensions, err := s.extMarketSvc.SearchActions(extensionItems)
+	_, extensions, err := s.extMarketSvc.SearchActions(extensionItems, extmarketsvc.MakeActionLocationsBySource(p.PipelineSource))
 	if err != nil {
 		return nil, apierrors.ErrCreatePipeline.InternalError(err)
 	}

@@ -18,20 +18,21 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/pkg/action_info"
 	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
+	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/numeral"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
 // calculatePipelineResources calculate pipeline resources according to all tasks grouped by stages.
-func (s *PipelineSvc) calculatePipelineResources(pipelineYml *pipelineyml.PipelineYml) (*apistructs.PipelineAppliedResources, error) {
+func (s *PipelineSvc) calculatePipelineResources(pipelineYml *pipelineyml.PipelineYml, p *spec.Pipeline) (*apistructs.PipelineAppliedResources, error) {
 	if pipelineYml.Spec() == nil || len(pipelineYml.Spec().Stages) <= 0 {
 		return nil, nil
 	}
 
 	// load pipelineYml all action define and spec
 	var passedDataWhenCreate action_info.PassedDataWhenCreate
-	passedDataWhenCreate.InitData(s.bdl)
-	if err := passedDataWhenCreate.PutPassedDataByPipelineYml(pipelineYml); err != nil {
+	passedDataWhenCreate.InitData(s.bdl, s.extMarketSvc)
+	if err := passedDataWhenCreate.PutPassedDataByPipelineYml(pipelineYml, p); err != nil {
 		return nil, err
 	}
 

@@ -14,7 +14,12 @@
 
 package extmarketsvc
 
-import "github.com/erda-project/erda/pkg/parser/pipelineyml"
+import (
+	"strings"
+
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/pkg/parser/pipelineyml"
+)
 
 // MakeActionTypeVersion return ext item.
 // Example: git, git@1.0, git@1.1
@@ -24,4 +29,27 @@ func MakeActionTypeVersion(action *pipelineyml.Action) string {
 		r = r + "@" + action.Version
 	}
 	return r
+}
+
+func MakeActionLocationsBySource(source apistructs.PipelineSource) []string {
+	var locations []string
+	switch source {
+	case apistructs.PipelineSourceCDPDev, apistructs.PipelineSourceCDPTest, apistructs.PipelineSourceCDPStaging, apistructs.PipelineSourceCDPProd, apistructs.PipelineSourceBigData:
+		locations = append(locations, apistructs.PipelineTypeFDP.String()+"/")
+	case apistructs.PipelineSourceDice, apistructs.PipelineSourceProject, apistructs.PipelineSourceProjectLocal, apistructs.PipelineSourceOps, apistructs.PipelineSourceQA:
+		locations = append(locations, apistructs.PipelineTypeCICD.String()+"/")
+	default:
+		locations = append(locations, apistructs.PipelineTypeDefault.String()+"/")
+	}
+	return locations
+}
+
+func getActionTypeVersion(nameVersion string) (string, string) {
+	splits := strings.SplitN(nameVersion, "@", 2)
+	name := splits[0]
+	version := ""
+	if len(splits) > 1 {
+		version = splits[1]
+	}
+	return name, version
 }

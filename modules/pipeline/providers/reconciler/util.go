@@ -65,7 +65,7 @@ func (r *provider) ymlTaskMergeDBTasks(pipeline *spec.Pipeline) ([]*spec.Pipelin
 		return nil, err
 	}
 
-	passedDataWhenCreate, err := r.Cache.GetOrSetPassedDataWhenCreateFromContext(pipelineYml, pipeline.ID)
+	passedDataWhenCreate, err := r.Cache.GetOrSetPassedDataWhenCreateFromContext(pipelineYml, pipeline)
 	if err != nil {
 		return nil, err
 	}

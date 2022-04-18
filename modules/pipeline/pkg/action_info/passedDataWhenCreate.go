@@ -28,6 +28,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
+	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -38,6 +39,7 @@ type PassedDataWhenCreate struct {
 	bdl              *bundle.Bundle
 	actionJobDefines *sync.Map
 	actionJobSpecs   *sync.Map
+	extMarketSvc     *extmarketsvc.ExtMarketSvc
 }
 
 func (that *PassedDataWhenCreate) GetActionJobDefine(actionTypeVersion string) *diceyml.Job {
@@ -73,7 +75,7 @@ func (that *PassedDataWhenCreate) GetActionJobSpecs(actionTypeVersion string) *a
 	return nil
 }
 
-func (that *PassedDataWhenCreate) InitData(bdl *bundle.Bundle) {
+func (that *PassedDataWhenCreate) InitData(bdl *bundle.Bundle, extMarketSvc *extmarketsvc.ExtMarketSvc) {
 	if that == nil {
 		return
 	}
@@ -84,10 +86,11 @@ func (that *PassedDataWhenCreate) InitData(bdl *bundle.Bundle) {
 	if that.actionJobSpecs == nil {
 		that.actionJobSpecs = &sync.Map{}
 	}
+	that.extMarketSvc = extMarketSvc
 	that.bdl = bdl
 }
 
-func (that *PassedDataWhenCreate) PutPassedDataByPipelineYml(pipelineYml *pipelineyml.PipelineYml) error {
+func (that *PassedDataWhenCreate) PutPassedDataByPipelineYml(pipelineYml *pipelineyml.PipelineYml, p *spec.Pipeline) error {
 	if that == nil {
 		return nil
 	}
@@ -110,7 +113,7 @@ func (that *PassedDataWhenCreate) PutPassedDataByPipelineYml(pipelineYml *pipeli
 	}
 
 	extItems = strutil.DedupSlice(extItems, true)
-	actionJobDefines, actionJobSpecs, err := searchActions(that.bdl, extItems)
+	actionJobDefines, actionJobSpecs, err := that.extMarketSvc.SearchActions(extItems, extmarketsvc.MakeActionLocationsBySource(p.PipelineSource))
 	if err != nil {
 		return apierrors.ErrCreatePipelineGraph.InternalError(err)
 	}

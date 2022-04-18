@@ -99,7 +99,7 @@ stages:
 		return nil
 	})
 	defer pm.Unpatch()
-	pm1 := monkey.PatchInstanceMethod(reflect.TypeOf(extSvc), "SearchActions", func(s *extmarketsvc.ExtMarketSvc, items []string, ops ...extmarketsvc.OpOption) (map[string]*diceyml.Job, map[string]*apistructs.ActionSpec, error) {
+	pm1 := monkey.PatchInstanceMethod(reflect.TypeOf(extSvc), "SearchActions", func(s *extmarketsvc.ExtMarketSvc, items []string, locations []string, ops ...extmarketsvc.OpOption) (map[string]*diceyml.Job, map[string]*apistructs.ActionSpec, error) {
 		return nil, nil, nil
 	})
 	defer pm1.Unpatch()
