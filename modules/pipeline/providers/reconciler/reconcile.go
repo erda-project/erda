@@ -20,7 +20,6 @@ import (
 	"sync"
 
 	"github.com/erda-project/erda-infra/pkg/safe"
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/providers/leaderworker/lwctx"
 	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/rutil"
 	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/schedulabletask"
@@ -45,13 +44,6 @@ func (r *provider) ReconcileOnePipeline(ctx context.Context, pipelineID uint64) 
 
 	// fetch pipeline detail
 	p := r.mustFetchPipelineDetail(ctx, pipelineID)
-
-	// TODO handle outer stop at reconciler side later
-	if p.Status == apistructs.PipelineStatusStopByUser {
-		// teardown
-		pr.TeardownAfterReconcileDone(ctx, p)
-		return
-	}
 
 	// check need reconcile
 	if !pr.NeedReconcile(ctx, p) {
