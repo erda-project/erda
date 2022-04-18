@@ -362,3 +362,175 @@ func Test_provider_disable(t *testing.T) {
 		})
 	}
 }
+
+func Test_provider_operate(t *testing.T) {
+	type args struct {
+		cronID uint64
+		enable bool
+	}
+
+	type result struct {
+		cron db.PipelineCron
+		bool bool
+		err  error
+	}
+
+	tests := []struct {
+		result  result
+		name    string
+		args    args
+		want    *Cron
+		wantErr bool
+	}{
+		{
+			name: "cron not find",
+			result: result{
+				bool: false,
+			},
+			args: args{
+				cronID: 1,
+				enable: true,
+			},
+			want:    nil,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &provider{}
+
+			var dbClient db.Client
+			patch2 := monkey.PatchInstanceMethod(reflect.TypeOf(&dbClient), "GetPipelineCron", func(dbClient *db.Client, id interface{}, ops ...mysqlxorm.SessionOption) (cron db.PipelineCron, bool bool, err error) {
+				assert.Equal(t, id, tt.args.cronID)
+				return tt.result.cron, tt.result.bool, tt.result.err
+			})
+			defer patch2.Unpatch()
+			s.dbClient = &dbClient
+
+			got, err := s.operate(tt.args.cronID, tt.args.enable)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("operate() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("operate() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_provider_CronGet(t *testing.T) {
+	type args struct {
+		ctx context.Context
+		req *pb.CronGetRequest
+	}
+
+	type result struct {
+		cron db.PipelineCron
+		bool bool
+		err  error
+	}
+
+	tests := []struct {
+		name    string
+		result  result
+		args    args
+		want    *pb.CronGetResponse
+		wantErr bool
+	}{
+		{
+			name: "cron not find",
+			result: result{
+				bool: false,
+			},
+			args: args{
+				ctx: nil,
+				req: &pb.CronGetRequest{
+					CronID: 1,
+				},
+			},
+			want:    &pb.CronGetResponse{},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &provider{}
+
+			var dbClient db.Client
+			patch2 := monkey.PatchInstanceMethod(reflect.TypeOf(&dbClient), "GetPipelineCron", func(dbClient *db.Client, id interface{}, ops ...mysqlxorm.SessionOption) (cron db.PipelineCron, bool bool, err error) {
+				assert.Equal(t, id, tt.args.req.CronID)
+				return tt.result.cron, tt.result.bool, tt.result.err
+			})
+			defer patch2.Unpatch()
+			s.dbClient = &dbClient
+
+			got, err := s.CronGet(tt.args.ctx, tt.args.req)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("CronGet() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("CronGet() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_provider_CronUpdate(t *testing.T) {
+	type args struct {
+		ctx context.Context
+		req *pb.CronUpdateRequest
+	}
+
+	type result struct {
+		cron db.PipelineCron
+		bool bool
+		err  error
+	}
+
+	tests := []struct {
+		name    string
+		result  result
+		args    args
+		want    *pb.CronUpdateResponse
+		wantErr bool
+	}{
+		{
+			name: "cron not find",
+			result: result{
+				bool: false,
+			},
+			args: args{
+				ctx: nil,
+				req: &pb.CronUpdateRequest{
+					CronID: 1,
+				},
+			},
+			want:    nil,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &provider{}
+
+			var dbClient db.Client
+			patch2 := monkey.PatchInstanceMethod(reflect.TypeOf(&dbClient), "GetPipelineCron", func(dbClient *db.Client, id interface{}, ops ...mysqlxorm.SessionOption) (cron db.PipelineCron, bool bool, err error) {
+				assert.Equal(t, id, tt.args.req.CronID)
+				return tt.result.cron, tt.result.bool, tt.result.err
+			})
+			defer patch2.Unpatch()
+			s.dbClient = &dbClient
+
+			got, err := s.CronUpdate(tt.args.ctx, tt.args.req)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("CronUpdate() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("CronUpdate() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
