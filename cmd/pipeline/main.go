@@ -32,6 +32,8 @@ import (
 	_ "github.com/erda-project/erda/modules/pipeline/providers/cron/daemon"
 	_ "github.com/erda-project/erda/modules/pipeline/providers/dbgc"
 	_ "github.com/erda-project/erda/modules/pipeline/providers/definition"
+	_ "github.com/erda-project/erda/modules/pipeline/providers/edgepipeline"
+	_ "github.com/erda-project/erda/modules/pipeline/providers/edgepipeline_register"
 	_ "github.com/erda-project/erda/modules/pipeline/providers/resourcegc"
 	_ "github.com/erda-project/erda/modules/pipeline/providers/source"
 )

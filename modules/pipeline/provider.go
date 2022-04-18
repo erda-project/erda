@@ -33,6 +33,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/providers/cron/daemon"
 	"github.com/erda-project/erda/modules/pipeline/providers/dbgc"
 	_ "github.com/erda-project/erda/modules/pipeline/providers/dispatcher"
+	"github.com/erda-project/erda/modules/pipeline/providers/edgepipeline"
 	"github.com/erda-project/erda/modules/pipeline/providers/engine"
 	"github.com/erda-project/erda/modules/pipeline/providers/leaderworker"
 	"github.com/erda-project/erda/modules/pipeline/providers/queuemanager"
@@ -56,6 +57,7 @@ type provider struct {
 	Engine       engine.Interface
 	QueueManager queuemanager.Interface
 	Reconciler   reconciler.Interface
+	EdgePipeline edgepipeline.Interface
 	LeaderWorker leaderworker.Interface
 	ClusterInfo  clusterinfo.Interface
 	DBGC         dbgc.Interface
