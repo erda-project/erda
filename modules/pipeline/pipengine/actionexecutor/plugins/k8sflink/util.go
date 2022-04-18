@@ -152,7 +152,9 @@ func (k *K8sFlink) ComposeFlinkCluster(job apistructs.JobFromUser, data apistruc
 				Replicas:  getInt32Points(data.Spec.FlinkConf.JobManagerResource.Replica),
 				Resources: composeResources(data.Spec.FlinkConf.JobManagerResource),
 				PodLabels: map[string]string{
-					apistructs.TerminusDefineTag: containers.MakeFlinkJobManagerID(data.Name),
+					apistructs.TerminusDefineTag:     containers.MakeFlinkJobManagerID(data.Name),
+					apistructs.MSPTerminusOrgIDTag:   job.GetOrgID(),
+					apistructs.MSPTerminusOrgNameTag: job.GetOrgName(),
 				},
 				Volumes:        nil,
 				VolumeMounts:   nil,
@@ -162,14 +164,18 @@ func (k *K8sFlink) ComposeFlinkCluster(job apistructs.JobFromUser, data apistruc
 				Tolerations:    nil,
 				Sidecars:       nil,
 				PodAnnotations: map[string]string{
-					apistructs.MSPTerminusDefineTag: containers.MakeFlinkJobManagerID(data.Name),
+					apistructs.MSPTerminusDefineTag:  containers.MakeFlinkJobManagerID(data.Name),
+					apistructs.MSPTerminusOrgIDTag:   job.GetOrgID(),
+					apistructs.MSPTerminusOrgNameTag: job.GetOrgName(),
 				},
 			},
 			TaskManager: flinkoperatorv1beta1.TaskManagerSpec{
 				Replicas:  data.Spec.FlinkConf.TaskManagerResource.Replica,
 				Resources: composeResources(data.Spec.FlinkConf.TaskManagerResource),
 				PodLabels: map[string]string{
-					apistructs.TerminusDefineTag: containers.MakeFlinkTaskManagerID(data.Name),
+					apistructs.TerminusDefineTag:     containers.MakeFlinkTaskManagerID(data.Name),
+					apistructs.MSPTerminusOrgIDTag:   job.GetOrgID(),
+					apistructs.MSPTerminusOrgNameTag: job.GetOrgName(),
 				},
 				Volumes:        nil,
 				VolumeMounts:   nil,
@@ -179,7 +185,9 @@ func (k *K8sFlink) ComposeFlinkCluster(job apistructs.JobFromUser, data apistruc
 				Tolerations:    nil,
 				Sidecars:       nil,
 				PodAnnotations: map[string]string{
-					apistructs.MSPTerminusDefineTag: containers.MakeFlinkTaskManagerID(data.Name),
+					apistructs.MSPTerminusDefineTag:  containers.MakeFlinkTaskManagerID(data.Name),
+					apistructs.MSPTerminusOrgIDTag:   job.GetOrgID(),
+					apistructs.MSPTerminusOrgNameTag: job.GetOrgName(),
 				},
 			},
 			EnvVars:         data.Spec.Envs,
