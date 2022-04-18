@@ -55,6 +55,5 @@ import (
 func main() {
 	common.Run(&servicehub.RunOptions{
 		ConfigFile: conf.MonitorStreamingConfigFilePath,
-		Content:    conf.MonitorStreamingDefaultConfig,
 	})
 }

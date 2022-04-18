@@ -27,6 +27,7 @@ import (
 	_ "github.com/erda-project/erda/modules/oap/collector/plugins/processors/aggregator"
 	_ "github.com/erda-project/erda/modules/oap/collector/plugins/processors/k8s-tagger"
 	_ "github.com/erda-project/erda/modules/oap/collector/plugins/processors/modifier"
+	_ "github.com/erda-project/erda/modules/oap/collector/plugins/processors/stdout"
 
 	// exporters
 	_ "github.com/erda-project/erda/modules/oap/collector/plugins/exporters/collector"
