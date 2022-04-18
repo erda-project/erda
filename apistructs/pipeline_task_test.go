@@ -18,8 +18,6 @@ import (
 	"fmt"
 	"testing"
 	"time"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestPipelineTaskLoop_Duplicate(t *testing.T) {
@@ -100,19 +98,44 @@ func TestPipelineTaskLoop_IsEmpty(t *testing.T) {
 }
 
 func TestIsErrorsExceed(t *testing.T) {
-	now := time.Now()
-	timeExceedInspect := &PipelineTaskInspect{}
-	timeExceedInspect.Errors = timeExceedInspect.AppendError(&PipelineTaskErrResponse{Msg: "xxx", Ctx: PipelineTaskErrCtx{StartTime: now.Add(-25 * time.Hour)}})
-	isExceed, _ := timeExceedInspect.IsErrorsExceed()
-	assert.Equal(t, true, isExceed)
-
-	countExceedInspect := &PipelineTaskInspect{}
-	for i := 0; i < 143; i++ {
-		countExceedInspect.Errors = countExceedInspect.AppendError(&PipelineTaskErrResponse{Msg: "xxx"})
-		isExceed, _ = countExceedInspect.IsErrorsExceed()
-		assert.Equal(t, false, isExceed)
+	tests := []struct {
+		name    string
+		inspect *PipelineTaskInspect
+		want    bool
+	}{
+		{
+			name: "less than one hour and count less than 180",
+			inspect: &PipelineTaskInspect{
+				Errors: []*PipelineTaskErrResponse{&PipelineTaskErrResponse{Msg: "xxx", Ctx: PipelineTaskErrCtx{StartTime: time.Now().Add(-59 * time.Minute), Count: 179, EndTime: time.Now()}}},
+			},
+			want: false,
+		},
+		{
+			name: "less than one hour but count more than 180",
+			inspect: &PipelineTaskInspect{
+				Errors: []*PipelineTaskErrResponse{&PipelineTaskErrResponse{Msg: "xxx", Ctx: PipelineTaskErrCtx{StartTime: time.Now().Add(-59 * time.Minute), Count: 181, EndTime: time.Now()}}},
+			},
+			want: true,
+		},
+		{
+			name: "more than one hour ans count less than 180 per hour",
+			inspect: &PipelineTaskInspect{
+				Errors: []*PipelineTaskErrResponse{&PipelineTaskErrResponse{Msg: "xxx", Ctx: PipelineTaskErrCtx{StartTime: time.Now().Add(-61 * time.Minute), Count: 180, EndTime: time.Now()}}},
+			},
+			want: false,
+		},
+		{
+			name: "more than one hour ans count more than 180 per hour",
+			inspect: &PipelineTaskInspect{
+				Errors: []*PipelineTaskErrResponse{&PipelineTaskErrResponse{Msg: "xxx", Ctx: PipelineTaskErrCtx{StartTime: time.Now().Add(-61 * time.Minute), Count: 185, EndTime: time.Now()}}},
+			},
+			want: true,
+		},
 	}
-	countExceedInspect.Errors = countExceedInspect.AppendError(&PipelineTaskErrResponse{Msg: "xxx"})
-	isExceed, _ = countExceedInspect.IsErrorsExceed()
-	assert.Equal(t, true, isExceed)
+	for _, tt := range tests {
+		got, _ := tt.inspect.IsErrorsExceed()
+		if got != tt.want {
+			t.Errorf("%s want: %v, but got: %v", tt.name, tt.want, got)
+		}
+	}
 }
