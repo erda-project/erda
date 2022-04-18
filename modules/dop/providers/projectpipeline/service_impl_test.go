@@ -17,6 +17,10 @@ package projectpipeline
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
+	spb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
+	"github.com/erda-project/erda-proto-go/dop/projectpipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -54,4 +58,97 @@ func TestPipelineYmlsFilterIn(t *testing.T) {
 	if len(uncategorizedPipelineYmls) != 2 {
 		t.Errorf("fail")
 	}
+}
+
+func TestGetFilePath(t *testing.T) {
+	tt := []struct {
+		path string
+		want string
+	}{
+		{
+			path: "pipeline.yml",
+			want: "",
+		},
+		{
+			path: ".erda/pipelines/pipeline.yml",
+			want: ".erda/pipelines",
+		},
+	}
+	for _, v := range tt {
+		assert.Equal(t, v.want, getFilePath(v.path))
+	}
+}
+
+func TestIsSameSourceInApp(t *testing.T) {
+	tt := []struct {
+		source *spb.PipelineSource
+		params *pb.UpdateProjectPipelineRequest
+		want   bool
+	}{
+		{
+			source: &spb.PipelineSource{
+				Ref:  "master",
+				Path: "",
+				Name: "pipeline.yml",
+			},
+			params: &pb.UpdateProjectPipelineRequest{
+				ProjectPipelineSource: &pb.ProjectPipelineSource{
+					Ref:      "master",
+					Path:     "",
+					FileName: "pipeline.yml",
+				},
+			},
+			want: true,
+		},
+		{
+			source: &spb.PipelineSource{
+				Ref:  "master",
+				Path: "",
+				Name: "pipeline.yml",
+			},
+			params: &pb.UpdateProjectPipelineRequest{
+				ProjectPipelineSource: &pb.ProjectPipelineSource{
+					Ref:      "master",
+					Path:     ".erda/pipelines",
+					FileName: "pipeline.yml",
+				},
+			},
+			want: false,
+		},
+		{
+			source: &spb.PipelineSource{
+				Ref:  "master",
+				Path: "",
+				Name: "pipeline.yml",
+			},
+			params: &pb.UpdateProjectPipelineRequest{
+				ProjectPipelineSource: &pb.ProjectPipelineSource{
+					Ref:      "develop",
+					Path:     "",
+					FileName: "pipeline.yml",
+				},
+			},
+			want: false,
+		},
+		{
+			source: &spb.PipelineSource{
+				Ref:  "master",
+				Path: "",
+				Name: "pipeline.yml",
+			},
+			params: &pb.UpdateProjectPipelineRequest{
+				ProjectPipelineSource: &pb.ProjectPipelineSource{
+					Ref:      "master",
+					Path:     "",
+					FileName: "ci.yml",
+				},
+			},
+			want: false,
+		},
+	}
+
+	for _, v := range tt {
+		assert.Equal(t, v.want, isSameSourceInApp(v.source, v.params))
+	}
+
 }

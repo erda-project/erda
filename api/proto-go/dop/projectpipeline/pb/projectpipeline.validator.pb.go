@@ -218,6 +218,11 @@ func (this *UpdateProjectPipelineRequest) Validate() error {
 	if this.Name == "" {
 		return github_com_mwitkow_go_proto_validators.FieldError("Name", fmt.Errorf(`value '%v' must not be an empty string`, this.Name))
 	}
+	if this.ProjectPipelineSource != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.ProjectPipelineSource); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("ProjectPipelineSource", err)
+		}
+	}
 	return nil
 }
 func (this *UpdateProjectPipelineResponse) Validate() error {
@@ -247,6 +252,21 @@ func (this *OneClickCreateProjectPipelineResponse) Validate() error {
 				return github_com_mwitkow_go_proto_validators.FieldError("ProjectPipelines", err)
 			}
 		}
+	}
+	return nil
+}
+func (this *ProjectPipelineSource) Validate() error {
+	if !(this.AppID > 0) {
+		return github_com_mwitkow_go_proto_validators.FieldError("AppID", fmt.Errorf(`value '%v' must be greater than '0'`, this.AppID))
+	}
+	if this.SourceType == "" {
+		return github_com_mwitkow_go_proto_validators.FieldError("SourceType", fmt.Errorf(`value '%v' must not be an empty string`, this.SourceType))
+	}
+	if this.Ref == "" {
+		return github_com_mwitkow_go_proto_validators.FieldError("Ref", fmt.Errorf(`value '%v' must not be an empty string`, this.Ref))
+	}
+	if this.FileName == "" {
+		return github_com_mwitkow_go_proto_validators.FieldError("FileName", fmt.Errorf(`value '%v' must not be an empty string`, this.FileName))
 	}
 	return nil
 }
