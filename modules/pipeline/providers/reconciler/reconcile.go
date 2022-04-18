@@ -87,6 +87,7 @@ func (r *provider) generatePipelineReconcilerForEachPipelineID() *defaultPipelin
 		schedulableTaskChan:                          make(chan *spec.PipelineTask),
 		doneChan:                                     make(chan struct{}),
 		flagCanceling:                                false,
+		flagHaveTask:                                 nil,
 	}
 	return pr
 }
