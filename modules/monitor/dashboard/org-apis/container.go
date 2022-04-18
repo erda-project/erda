@@ -16,7 +16,6 @@ package orgapis
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -24,8 +23,6 @@ import (
 	"time"
 
 	"github.com/olivere/elastic"
-
-	qutils "github.com/erda-project/erda/modules/core/monitor/metric/query/query"
 
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/i18n"
@@ -106,8 +103,9 @@ func (p *provider) queryContainers(cluster string, hostIPs []string, instanceTyp
 
 	searchSource := elastic.NewSearchSource().Query(query).Size(0).Aggregation(tagsContainerID, containerIDAgg)
 	indices := p.metricq.Indices([]string{nameContainerSummary, nameDockerContainerSummary}, []string{cluster}, start, end)
-	ss, _ := searchSource.Source()
-	fmt.Printf("curl: %s", qutils.ElasticSearchCURL(p.metricq.Client().String(), indices, ss))
+	// TODO. debug
+	// ss, _ := searchSource.Source()
+	// fmt.Printf("curl: %s", qutils.ElasticSearchCURL(p.metricq.Client().String(), indices, ss))
 	resp, apiErr := p.metricq.SearchRaw(indices, searchSource)
 	if apiErr != nil {
 		return nil
@@ -205,11 +203,11 @@ func wrapContainerData(src *containerData, topHits *elastic.AggregationTopHitsMe
 		if isDeleted == "true" {
 			continue
 		}
-		if _, ok := utils.GetMapValueString(tags, image); !ok {
+		if _, ok := utils.GetMapValueString(tags, image, "container_image"); !ok {
 			continue
 		}
 
-		if val, ok := utils.GetMapValueString(tags, image); ok {
+		if val, ok := utils.GetMapValueString(tags, image, "container_image"); ok {
 			src.Image = val
 		}
 
