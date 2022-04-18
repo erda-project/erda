@@ -43,8 +43,10 @@ func TransferTaskStatus(status apistructs.PipelineStatus, i18nLocale *i18n.Local
 		return i18nLocale.Get(I18nKeyStatusStartFailed)
 	case apistructs.PipelineStatusTimeout:
 		return i18nLocale.Get(I18nKeyStatusTimeout)
-	case apistructs.PipelineStatusStopByUser, apistructs.PipelineStatusNoNeedBySystem, apistructs.PipelineStatusCancelByRemote:
+	case apistructs.PipelineStatusStopByUser, apistructs.PipelineStatusCancelByRemote:
 		return i18nLocale.Get(I18nKeyStatusCanceled)
+	case apistructs.PipelineStatusNoNeedBySystem:
+		return i18nLocale.Get(I18nKeyStatusNoNeedBySystem)
 	case apistructs.PipelineStatusInitializing:
 		return i18nLocale.Get(I18nKeyStatusInitializing)
 	case apistructs.PipelineStatusError, apistructs.PipelineStatusUnknown, apistructs.PipelineStatusDBError, apistructs.PipelineStatusLostConn:

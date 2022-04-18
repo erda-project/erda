@@ -121,6 +121,10 @@ func (s *PipelineSvc) Detail(pipelineID uint64) (*apistructs.PipelineDetailDTO, 
 					Value: task.Inspect.Events,
 				})
 			}
+			// set analyzed yaml task to NoNeedBySystem to simulate db task's behaviour
+			if p.Status.IsStopByUser() && task.Status == apistructs.PipelineStatusAnalyzed {
+				task.Status = apistructs.PipelineStatusNoNeedBySystem
+			}
 			taskDTOs = append(taskDTOs, *task.Convert2DTO())
 		}
 		stageDetailDTO = append(stageDetailDTO,

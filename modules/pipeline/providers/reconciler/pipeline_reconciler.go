@@ -88,6 +88,9 @@ type defaultPipelineReconciler struct {
 
 	// canceling
 	flagCanceling bool
+
+	// flag have task
+	flagHaveTask *bool
 }
 
 func (pr *defaultPipelineReconciler) IsReconcileDone(ctx context.Context, p *spec.Pipeline) bool {
@@ -111,7 +114,7 @@ func (pr *defaultPipelineReconciler) PrepareBeforeReconcile(ctx context.Context,
 	// update status
 	for {
 		if err := pr.dbClient.UpdatePipelineBaseStatus(p.ID, apistructs.PipelineStatusRunning); err != nil {
-			pr.log.Errorf("failed to update pipeline status before reoncile(auto retry), pipelineID: %d, err: %v", p.ID, err)
+			pr.log.Errorf("failed to update pipeline status before reconcile(auto retry), pipelineID: %d, err: %v", p.ID, err)
 			time.Sleep(pr.defaultRetryInterval)
 			continue
 		}
@@ -132,6 +135,10 @@ func (pr *defaultPipelineReconciler) GetTasksCanBeConcurrentlyScheduled(ctx cont
 	allTasks, err := pr.r.ymlTaskMergeDBTasks(p)
 	if err != nil {
 		return nil, err
+	}
+
+	if pr.getFlagCanceling() {
+		return nil, nil
 	}
 
 	schedulableTasks, err := pr.st.GetSchedulableTasks(ctx, p, allTasks)
@@ -177,27 +184,27 @@ func (pr *defaultPipelineReconciler) ReconcileOneSchedulableTask(ctx context.Con
 }
 
 func (pr *defaultPipelineReconciler) UpdateCurrentReconcileStatusIfNecessary(ctx context.Context, p *spec.Pipeline) error {
-	// fetch the latest pipeline after reconciled batch tasks for condition like StopByUser bypass reconciler.
-	// TODO can remove after stop at reconciler side
-	*p = *pr.r.mustFetchPipelineDetail(ctx, p.ID)
-	if p.Status.IsEndStatus() {
-		return nil
+	var calculatedPipelineStatus apistructs.PipelineStatus
+	calculatedStatusByAllReconciledTasks := pr.getCalculatedStatusByAllReconciledTasks()
+	if calculatedStatusByAllReconciledTasks.IsEndStatus() {
+		calculatedPipelineStatus = calculatedStatusByAllReconciledTasks
+	} else {
+		// get all tasks
+		allTasks, err := pr.r.ymlTaskMergeDBTasks(p)
+		if err != nil {
+			return err
+		}
+
+		// all tasks need to be end status, and then update pipeline status
+		allTasksDone := statusutil.CalculatePipelineTaskAllDone(allTasks)
+		if !allTasksDone {
+			return nil
+		}
+
+		// calculate pipeline status
+		calculatedPipelineStatus = statusutil.CalculatePipelineStatusV2(allTasks)
 	}
 
-	// get all tasks
-	allTasks, err := pr.r.ymlTaskMergeDBTasks(p)
-	if err != nil {
-		return err
-	}
-
-	// all tasks need to be end status, and then update pipeline status
-	allTasksDone := statusutil.CalculatePipelineTaskAllDone(allTasks)
-	if !allTasksDone {
-		return nil
-	}
-
-	// calculate pipeline status
-	calculatedPipelineStatus := statusutil.CalculatePipelineStatusV2(allTasks)
 	// no change, exit
 	if p.Status == calculatedPipelineStatus {
 		return nil
@@ -276,6 +283,16 @@ func (pr *defaultPipelineReconciler) TeardownAfterReconcileDone(ctx context.Cont
 }
 
 func (pr *defaultPipelineReconciler) calculatePipelineStatusByAllReconciledTasks(ctx context.Context, p *spec.Pipeline) error {
+	// set flagHaveTask if not set
+	if pr.getFlagHaveTask() == nil {
+		allTasks, err := pr.r.ymlTaskMergeDBTasks(p) // only invoke once
+		if err != nil {
+			return err
+		}
+		pr.setFlagHaveTask(len(allTasks) > 0)
+	}
+
+	// get all reconciledTasks
 	reconciledTasks, err := pr.dbClient.ListPipelineTasksByPipelineID(p.ID)
 	if err != nil {
 		return err
@@ -285,12 +302,25 @@ func (pr *defaultPipelineReconciler) calculatePipelineStatusByAllReconciledTasks
 		t := t
 		tasks = append(tasks, &t)
 	}
+
+	// get lock for status updating
 	pr.lock.Lock()
 	defer pr.lock.Unlock()
-	pr.calculatedPipelineStatusByAllReconciledTasks = statusutil.CalculatePipelineStatusV2(tasks)
-	if pr.flagCanceling {
-		pr.calculatedPipelineStatusByAllReconciledTasks = apistructs.PipelineStatusStopByUser
+
+	// calculate new pipeline status
+	calculatedPipelineStatusByAllReconciledTasks := statusutil.CalculatePipelineStatusV2(tasks)
+	// consider some special cases:
+	// - no reconciled tasks but pipeline actually have tasks
+	if calculatedPipelineStatusByAllReconciledTasks.IsSuccessStatus() && len(tasks) == 0 && *pr.flagHaveTask {
+		calculatedPipelineStatusByAllReconciledTasks = apistructs.PipelineStatusRunning
 	}
+	// - canceling
+	if pr.flagCanceling {
+		calculatedPipelineStatusByAllReconciledTasks = apistructs.PipelineStatusStopByUser
+	}
+
+	// update status
+	pr.calculatedPipelineStatusByAllReconciledTasks = calculatedPipelineStatusByAllReconciledTasks
 	return nil
 }
 
@@ -303,4 +333,28 @@ func (pr *defaultPipelineReconciler) CancelReconcile(ctx context.Context, p *spe
 	pr.lock.Lock()
 	pr.flagCanceling = true
 	pr.lock.Unlock()
+}
+
+func (pr *defaultPipelineReconciler) getCalculatedStatusByAllReconciledTasks() apistructs.PipelineStatus {
+	pr.lock.Lock()
+	defer pr.lock.Unlock()
+	return pr.calculatedPipelineStatusByAllReconciledTasks
+}
+
+func (pr *defaultPipelineReconciler) getFlagCanceling() bool {
+	pr.lock.Lock()
+	defer pr.lock.Unlock()
+	return pr.flagCanceling
+}
+
+func (pr *defaultPipelineReconciler) getFlagHaveTask() *bool {
+	pr.lock.Lock()
+	defer pr.lock.Unlock()
+	return pr.flagHaveTask
+}
+
+func (pr *defaultPipelineReconciler) setFlagHaveTask(haveTask bool) {
+	pr.lock.Lock()
+	defer pr.lock.Unlock()
+	pr.flagHaveTask = &haveTask
 }

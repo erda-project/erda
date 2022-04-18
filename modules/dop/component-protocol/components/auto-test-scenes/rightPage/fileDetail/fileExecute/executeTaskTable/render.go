@@ -276,7 +276,7 @@ func (a *ExecuteTaskTable) getStatus(req apistructs.PipelineStatus) map[string]i
 	if req.IsReconcilerRunningStatus() {
 		res["status"] = "processing"
 	}
-	if req.IsBeforePressRunButton() {
+	if req.IsBeforePressRunButton() || req.IsNoNeedBySystem() {
 		res["status"] = "default"
 	}
 	return res

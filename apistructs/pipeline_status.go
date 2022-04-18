@@ -194,6 +194,10 @@ func (status PipelineStatus) CanUnpause() bool {
 	return status == PipelineStatusPaused
 }
 
+func (status PipelineStatus) IsEmpty() bool {
+	return status == PipelineEmptyStatus
+}
+
 func (status PipelineStatus) IsEndStatus() bool {
 	return status.IsSuccessStatus() || status.IsFailedStatus()
 }
@@ -248,6 +252,10 @@ func (status PipelineStatus) IsDisabledStatus() bool {
 
 func (status PipelineStatus) IsStopByUser() bool {
 	return status == PipelineStatusStopByUser
+}
+
+func (status PipelineStatus) IsNoNeedBySystem() bool {
+	return status == PipelineStatusNoNeedBySystem
 }
 
 func (status PipelineStatus) IsFailedStatus() bool {
