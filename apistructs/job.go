@@ -115,6 +115,26 @@ type JobFromUser struct {
 	ContainerInstanceProvider *ContainerInstanceProvider `json:"containerInstanceProvider,omitempty"` // ContainerInstanceProvider pointer type if not hitted of specified, it will be nil
 }
 
+func (job *JobFromUser) GetOrgName() string {
+	if job.Labels != nil {
+		orgName, ok := job.Labels[EnvDiceOrgName]
+		if ok {
+			return orgName
+		}
+	}
+	return ""
+}
+
+func (job *JobFromUser) GetOrgID() string {
+	if job.Labels != nil {
+		orgID, ok := job.Labels[EnvDiceOrgID]
+		if ok {
+			return orgID
+		}
+	}
+	return ""
+}
+
 // PreFetcher 用于 job 下载功能
 type PreFetcher struct {
 	FileFromImage string `json:"fileFromImage,omitempty"` // 通过 k8s initcontainer 实现, fetch 的工作需要在 镜像 entrypoint 中做掉

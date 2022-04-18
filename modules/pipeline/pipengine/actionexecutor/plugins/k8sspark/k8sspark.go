@@ -530,13 +530,17 @@ func (k *K8sSpark) composePodSpec(job *apistructs.JobFromUser, conf *apistructs.
 	switch podType {
 	case sparkDriverType:
 		podSpec.Annotations = map[string]string{
-			apistructs.MSPTerminusDefineTag: containers.MakeSparkTaskDriverID(conf.Name),
+			apistructs.MSPTerminusDefineTag:  containers.MakeSparkTaskDriverID(conf.Name),
+			apistructs.MSPTerminusOrgIDTag:   job.GetOrgID(),
+			apistructs.MSPTerminusOrgNameTag: job.GetOrgName(),
 		}
 		resource = conf.Spec.SparkConf.DriverResource
 	case sparkExecutorType:
 		resource = conf.Spec.SparkConf.ExecutorResource
 		podSpec.Annotations = map[string]string{
-			apistructs.MSPTerminusDefineTag: containers.MakeSparkTaskExecutorID(conf.Name),
+			apistructs.MSPTerminusDefineTag:  containers.MakeSparkTaskExecutorID(conf.Name),
+			apistructs.MSPTerminusOrgIDTag:   job.GetOrgID(),
+			apistructs.MSPTerminusOrgNameTag: job.GetOrgName(),
 		}
 	}
 
