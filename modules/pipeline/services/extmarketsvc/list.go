@@ -15,6 +15,7 @@
 package extmarketsvc
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -23,8 +24,11 @@ import (
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 
+	actionpb "github.com/erda-project/erda-proto-go/core/pipeline/action/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/conf"
+	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/limit_sync_group"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
@@ -163,7 +167,7 @@ func (s *ExtMarketSvc) continuousRefreshAction() {
 
 // each search item: ActionType 或 ActionType@version
 // output: map[item]Image
-func (s *ExtMarketSvc) SearchActions(items []string, ops ...OpOption) (map[string]*diceyml.Job, map[string]*apistructs.ActionSpec, error) {
+func (s *ExtMarketSvc) SearchActions(items []string, locations []string, ops ...OpOption) (map[string]*diceyml.Job, map[string]*apistructs.ActionSpec, error) {
 	so := SearchOption{
 		NeedRender:   false,
 		Placeholders: nil,
@@ -172,13 +176,53 @@ func (s *ExtMarketSvc) SearchActions(items []string, ops ...OpOption) (map[strin
 		op(&so)
 	}
 
+	// search from pipeline action
+	pipelineActionMap, err := s.SearchPipelineActions(items, locations)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var notFindNameVersion []string
+	for _, nameVersion := range items {
+		_, find := pipelineActionMap[nameVersion]
+		if !find {
+			notFindNameVersion = append(notFindNameVersion, nameVersion)
+		}
+	}
+
+	// search from dicehub
+	notFindActionMap := make(map[string]apistructs.ExtensionVersion)
+	worker := limit_sync_group.NewWorker(5)
+	for _, nameVersion := range notFindNameVersion {
+		worker.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
+			nameVersion := i[0].(string)
+			action, ok := s.getOrUpdateExtension(nameVersion)
+
+			locker.Lock()
+			defer locker.Unlock()
+
+			if ok {
+				notFindActionMap[nameVersion] = action
+			}
+			return nil
+		}, nameVersion)
+	}
+	worker.Do()
+
+	for key, notFindAction := range notFindActionMap {
+		pipelineActionMap[key] = notFindAction
+	}
+
 	actionDiceYmlJobMap := make(map[string]*diceyml.Job)
 	actionSpecMap := make(map[string]*apistructs.ActionSpec)
 	for _, nameVersion := range items {
-		action, ok := s.getOrUpdateExtension(nameVersion)
+		action, ok := pipelineActionMap[nameVersion]
 		if !ok {
-			return nil, nil, errors.Errorf("failed to find action: %s", nameVersion)
+			if len(locations) == 0 {
+				return nil, nil, errors.Errorf("failed to find action: %s", nameVersion)
+			}
 		}
+
 		diceYmlStr, ok := action.Dice.(string)
 		if !ok {
 			errMsg := fmt.Sprintf("failed to search action from extension market, action: %s, err: %s", nameVersion, "action's dice.yml is not string")
@@ -221,4 +265,76 @@ func (s *ExtMarketSvc) SearchActions(items []string, ops ...OpOption) (map[strin
 	}
 
 	return actionDiceYmlJobMap, actionSpecMap, nil
+}
+
+func (s *ExtMarketSvc) SearchPipelineActions(items []string, locations []string) (map[string]apistructs.ExtensionVersion, error) {
+	if len(items) == 0 {
+		return map[string]apistructs.ExtensionVersion{}, nil
+	}
+
+	if len(locations) == 0 {
+		return map[string]apistructs.ExtensionVersion{}, nil
+	}
+
+	var pipelineActionListRequest actionpb.PipelineActionListRequest
+	pipelineActionListRequest.IsPublic = true
+	pipelineActionListRequest.YamlFormat = true
+	pipelineActionListRequest.Locations = locations
+	for _, nameVersion := range items {
+		name, version := getActionTypeVersion(nameVersion)
+		query := &actionpb.ActionNameWithVersionQuery{
+			Name:    name,
+			Version: version,
+		}
+		if query.Version == "" {
+			query.IsDefault = true
+		}
+
+		pipelineActionListRequest.ActionNameWithVersionQuery = append(pipelineActionListRequest.ActionNameWithVersionQuery, query)
+	}
+
+	resp, err := s.actionService.List(apis.WithInternalClientContext(context.Background(), "pipeline"), &pipelineActionListRequest)
+	if err != nil {
+		return nil, err
+	}
+
+	var result = map[string]apistructs.ExtensionVersion{}
+	for _, nameVersion := range items {
+		name, version := getActionTypeVersion(nameVersion)
+
+		var findAction *actionpb.Action
+		for _, action := range resp.Data {
+			if action.Name != name {
+				continue
+			}
+			if version == "" {
+				// get first default action
+				if action.IsDefault {
+					findAction = action
+					break
+				}
+			} else {
+				if action.Version == version {
+					findAction = action
+					break
+				}
+			}
+		}
+		if findAction == nil {
+			continue
+		}
+		result[nameVersion] = apistructs.ExtensionVersion{
+			Name:      findAction.Name,
+			Version:   findAction.Version,
+			Type:      "action",
+			Spec:      findAction.Spec.GetStringValue(),
+			Dice:      findAction.Dice.GetStringValue(),
+			Readme:    findAction.Readme,
+			CreatedAt: findAction.TimeCreated.AsTime(),
+			UpdatedAt: findAction.TimeUpdated.AsTime(),
+			IsDefault: findAction.IsDefault,
+			Public:    findAction.IsPublic,
+		}
+	}
+	return result, nil
 }

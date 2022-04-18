@@ -122,6 +122,11 @@ var (
 	ErrDeletePipelineSource = err("ErrDeletePipelineSource", "删除流水线来源失败")
 	ErrGetPipelineSource    = err("ErrGetPipelineSource", "获取流水线来源失败")
 	ErrListPipelineSource   = err("ErrListPipelineSource", "列出流水线来源失败")
+
+	ErrSavePipelineAction   = err("ErrCreatePipelineAction", "保存流水线任务定义失败")
+	ErrDeletePipelineAction = err("ErrDeletePipelineAction", "删除流水线任务定义失败")
+	ErrGetPipelineAction    = err("ErrGetPipelineAction", "获取流水线任务定义失败")
+	ErrListPipelineAction   = err("ErrListPipelineAction", "列出流水线任务定义失败")
 )
 
 func err(template, defaultValue string) *errorresp.APIError {
