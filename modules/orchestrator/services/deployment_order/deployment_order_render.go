@@ -135,7 +135,7 @@ func (d *DeploymentOrder) renderAppsPreCheckResult(langCodes infrai18n.LanguageC
 				failReasons, err := d.staticPreCheck(langCodes, userId, workspace, projectId, app.Id, []byte(app.DiceYaml))
 				if err != nil {
 					logrus.Errorf("failed to static pre check app %s, %v", app.Name, err)
-					return
+					failReasons = append(failReasons, err.Error())
 				}
 				mux.Lock()
 				isDeploying, ok := appStatus[app.Id]
