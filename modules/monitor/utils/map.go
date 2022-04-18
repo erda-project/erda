@@ -16,12 +16,15 @@ package utils
 
 import "strings"
 
-func GetMapValueString(m map[string]interface{}, key string) (string, bool) {
-	value, ok := m[key]
-	if !ok {
-		return "", false
+func GetMapValueString(m map[string]interface{}, key ...string) (string, bool) {
+	for _, item := range key {
+		value, ok := m[item]
+		if ok {
+			return ConvertString(value)
+		}
 	}
-	return ConvertString(value)
+
+	return "", false
 }
 
 func GetMapValueBool(m map[string]interface{}, key string) (bool, bool) {

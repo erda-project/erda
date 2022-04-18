@@ -44,13 +44,13 @@ import (
 func TestAdapt_newTicketAlertNotify(t *testing.T) {
 	type fields struct {
 		l logs.Logger
-		//metricq                Queryer
+		// metricq                Queryer
 		t    i18n.Translator
 		db   *db.DB
 		cql  *cql.Cql
 		bdl  *bundle.Bundle
 		cmdb *cmdb.Cmdb
-		//dashboardAPI           DashboardAPI
+		// dashboardAPI           DashboardAPI
 		orgFilterTags          map[string]bool
 		microServiceFilterTags map[string]bool
 		silencePolicies        map[string]bool
@@ -65,7 +65,7 @@ func TestAdapt_newTicketAlertNotify(t *testing.T) {
 		args   args
 		want   *db.AlertNotify
 	}{
-		//{
+		// {
 		//	name: "test_newTicketAlertNotify",
 		//	fields: fields{
 		//		silencePolicies: map[string]bool{
@@ -81,19 +81,19 @@ func TestAdapt_newTicketAlertNotify(t *testing.T) {
 		//		},
 		//	},
 		//	want: nil,
-		//},
+		// },
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			a := &Adapt{
 				l: tt.fields.l,
-				//metricq:                tt.fields.metricq,
+				// metricq:                tt.fields.metricq,
 				t:    tt.fields.t,
 				db:   tt.fields.db,
 				cql:  tt.fields.cql,
 				bdl:  tt.fields.bdl,
 				cmdb: tt.fields.cmdb,
-				//dashboardAPI:           tt.fields.dashboardAPI,
+				// dashboardAPI:           tt.fields.dashboardAPI,
 				orgFilterTags:          tt.fields.orgFilterTags,
 				microServiceFilterTags: tt.fields.microServiceFilterTags,
 				silencePolicies:        tt.fields.silencePolicies,
@@ -108,13 +108,13 @@ func TestAdapt_newTicketAlertNotify(t *testing.T) {
 func TestAdapt_compareNotify(t *testing.T) {
 	type fields struct {
 		l logs.Logger
-		//metricq                Queryer
+		// metricq                Queryer
 		t    i18n.Translator
 		db   *db.DB
 		cql  *cql.Cql
 		bdl  *bundle.Bundle
 		cmdb *cmdb.Cmdb
-		//dashboardAPI           DashboardAPI
+		// dashboardAPI           DashboardAPI
 		orgFilterTags          map[string]bool
 		microServiceFilterTags map[string]bool
 		silencePolicies        map[string]bool
@@ -147,13 +147,13 @@ func TestAdapt_compareNotify(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ad := &Adapt{
 				l: tt.fields.l,
-				//metricq:                tt.fields.metricq,
+				// metricq:                tt.fields.metricq,
 				t:    tt.fields.t,
 				db:   tt.fields.db,
 				cql:  tt.fields.cql,
 				bdl:  tt.fields.bdl,
 				cmdb: tt.fields.cmdb,
-				//dashboardAPI:           tt.fields.dashboardAPI,
+				// dashboardAPI:           tt.fields.dashboardAPI,
 				orgFilterTags:          tt.fields.orgFilterTags,
 				microServiceFilterTags: tt.fields.microServiceFilterTags,
 				silencePolicies:        tt.fields.silencePolicies,
@@ -165,9 +165,9 @@ func TestAdapt_compareNotify(t *testing.T) {
 	}
 }
 
-////go:generate mockgen -destination=./alert_logs_test.go -package adapt github.com/erda-project/erda-infra/base/logs Logger
-////go:generate mockgen -destination=./alert_metricq_test.go -package adapt github.com/erda-project/erda/modules/core/monitor/metric/query/metricq Queryer
-////go:generate mockgen -destination=./alert_t_test.go -package adapt github.com/erda-project/erda-infra/providers/i18n Translator
+// //go:generate mockgen -destination=./alert_logs_test.go -package adapt github.com/erda-project/erda-infra/base/logs Logger
+// //go:generate mockgen -destination=./alert_metricq_test.go -package adapt github.com/erda-project/erda/modules/core/monitor/metric/query/metricq Queryer
+// //go:generate mockgen -destination=./alert_t_test.go -package adapt github.com/erda-project/erda-infra/providers/i18n Translator
 
 type pLog struct {
 }
@@ -622,7 +622,7 @@ func TestAdapt_GetOrgAlertDetail2(t *testing.T) {
 	monkey.Patch(utils.GetMapValueArr, func(m map[string]interface{}, key string) ([]interface{}, bool) {
 		return nil, false
 	})
-	monkey.Patch(utils.GetMapValueString, func(m map[string]interface{}, key string) (string, bool) {
+	monkey.Patch(utils.GetMapValueString, func(m map[string]interface{}, key ...string) (string, bool) {
 		return "erda-dev", true
 	})
 	monkey.Patch((*Adapt).ValueMapToInterfaceMap, func(_ *Adapt, input map[string]*structpb.Value) map[string]interface{} {
