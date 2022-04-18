@@ -628,16 +628,16 @@ func (svc *Service) QueryMergeRequestsStats(repo *gitmodule.Repository, queryCon
 	}
 
 	stats := make([]MergeRequestsStats, 0, len(MergeRequestStates))
-	for _, v := range MergeRequestStates {
+	for _, state := range MergeRequestStates {
 		total := 0
-		for _, v2 := range results {
-			if v == v2.State {
-				total = v2.Total
+		for _, result := range results {
+			if state == result.State {
+				total = result.Total
 				break
 			}
 		}
 		stats = append(stats, MergeRequestsStats{
-			State: v,
+			State: state,
 			Total: total,
 		})
 	}
