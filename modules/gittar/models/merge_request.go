@@ -580,3 +580,67 @@ func getMrUserRole(mergeRequest MergeRequest, userID string) []string {
 	}
 	return roleList
 }
+
+type MergeRequestState string
+
+const (
+	OpenState   MergeRequestState = "open"
+	ClosedState MergeRequestState = "closed"
+	MergedState MergeRequestState = "merged"
+)
+
+var MergeRequestStates = []MergeRequestState{"open", "closed", "merged"}
+
+func (s MergeRequestState) String() string {
+	return string(s)
+}
+
+type QueryMergeRequestsStatsResult struct {
+	Stats []MergeRequestsStats `json:"stats"`
+}
+
+type MergeRequestsStats struct {
+	State MergeRequestState `json:"state"`
+	Total int               `json:"total"`
+}
+
+func (svc *Service) QueryMergeRequestsStats(repo *gitmodule.Repository, queryCondition *apistructs.GittarQueryMrRequest) (*QueryMergeRequestsStatsResult, error) {
+	var results []MergeRequestsStats
+	query := svc.db.Table("dice_repo_merge_requests").Select("state,count(*) AS total").
+		Where("repo_id =? ", repo.ID)
+	if queryCondition.Query != "" {
+		mergeID, err := strconv.ParseInt(queryCondition.Query, 10, 64)
+		if err == nil {
+			query = query.Where("title like ? or repo_merge_id = ?", "%"+queryCondition.Query+"%", mergeID)
+		} else {
+			query = query.Where("title like ?", "%"+queryCondition.Query+"%")
+		}
+	}
+	if queryCondition.AuthorId != "" {
+		query = query.Where("author_id = ?", queryCondition.AuthorId)
+	}
+
+	if queryCondition.AssigneeId != "" {
+		query = query.Where("assignee_id = ?", queryCondition.AssigneeId)
+	}
+	if err := query.Group("state").Find(&results).Error; err != nil {
+		return nil, err
+	}
+
+	stats := make([]MergeRequestsStats, 0, len(MergeRequestStates))
+	for _, v := range MergeRequestStates {
+		total := 0
+		for _, v2 := range results {
+			if v == v2.State {
+				total = v2.Total
+				break
+			}
+		}
+		stats = append(stats, MergeRequestsStats{
+			State: v,
+			Total: total,
+		})
+	}
+
+	return &QueryMergeRequestsStatsResult{Stats: stats}, nil
+}
