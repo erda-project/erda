@@ -126,21 +126,22 @@ func (d *DeploymentOrder) renderAppsPreCheckResult(langCodes infrai18n.LanguageC
 
 	wg := sync.WaitGroup{}
 	mux := sync.Mutex{}
-	for _, apps := range *asi {
-		for i := range apps {
+	for i := range *asi {
+		for j := range (*asi)[i] {
 			wg.Add(1)
-			go func(i int) {
+			go func(i, j int) {
 				defer wg.Done()
-				failReasons, err := d.staticPreCheck(langCodes, userId, workspace, projectId, apps[i].Id, []byte(apps[i].DiceYaml))
+				app := (*asi)[i][j]
+				failReasons, err := d.staticPreCheck(langCodes, userId, workspace, projectId, app.Id, []byte(app.DiceYaml))
 				if err != nil {
-					logrus.Errorf("failed to static pre check app %s, %v", apps[i].Name, err)
+					logrus.Errorf("failed to static pre check app %s, %v", app.Name, err)
 					return
 				}
 				mux.Lock()
-				isDeploying, ok := appStatus[apps[i].Id]
+				isDeploying, ok := appStatus[app.Id]
 				mux.Unlock()
 				if ok && isDeploying {
-					failReasons = append(failReasons, i18n.LangCodesSprintf(langCodes, I18nApplicationDeploying, apps[i].Name))
+					failReasons = append(failReasons, i18n.LangCodesSprintf(langCodes, I18nApplicationDeploying, app.Name))
 				}
 
 				checkResult := &apistructs.PreCheckResult{
@@ -152,8 +153,8 @@ func (d *DeploymentOrder) renderAppsPreCheckResult(langCodes infrai18n.LanguageC
 					checkResult.FailReasons = failReasons
 				}
 
-				apps[i].PreCheckResult = checkResult
-			}(i)
+				app.PreCheckResult = checkResult
+			}(i, j)
 		}
 	}
 	wg.Wait()
