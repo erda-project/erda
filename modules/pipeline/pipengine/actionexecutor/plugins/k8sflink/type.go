@@ -34,13 +34,13 @@ type K8sFlink struct {
 }
 
 func New(name types.Name, clusterName string, cluster apistructs.ClusterInfo) (*K8sFlink, error) {
-	k, err := k8sclient.NewWithTimeOut(clusterName, time.Duration(conf.K8SExecutorMaxInitializationSec())*time.Second)
+	client, err := k8sclient.New(clusterName, k8sclient.WithTimeout(time.Duration(conf.K8SExecutorMaxInitializationSec())*time.Second))
 	if err != nil {
 		return nil, err
 	}
 	k8sFlink := &K8sFlink{
 		name:        name,
-		client:      k,
+		client:      client,
 		clusterName: clusterName,
 		cluster:     cluster,
 		errWrapper:  logic.NewErrorWrapper(name.String()),

@@ -15,6 +15,7 @@
 package k8sclient
 
 import (
+	"os"
 	"time"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -22,6 +23,7 @@ import (
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/pkg/k8sclient/config"
 	"github.com/erda-project/erda/pkg/k8sclient/scheme"
@@ -33,10 +35,23 @@ type K8sClient struct {
 }
 
 // New new K8sClient with clusterName.
-func New(clusterName string) (*K8sClient, error) {
-	rc, err := GetRestConfig(clusterName)
+func New(clusterName string, ops ...Option) (*K8sClient, error) {
+	var rc *rest.Config
+	var err error
+
+	inClusterName := os.Getenv(string(apistructs.DICE_CLUSTER_NAME))
+	if inClusterName == clusterName {
+		rc, err = config.GetInClusterRestConfig()
+	} else {
+		rc, err = GetRestConfig(clusterName)
+	}
+
 	if err != nil {
 		return nil, err
+	}
+
+	for _, op := range ops {
+		op(rc)
 	}
 
 	return NewForRestConfig(rc, scheme.LocalSchemeBuilder...)
@@ -44,7 +59,16 @@ func New(clusterName string) (*K8sClient, error) {
 
 // NewWithTimeOut new k8sClient with timeout
 func NewWithTimeOut(clusterName string, timeout time.Duration) (*K8sClient, error) {
-	rc, err := GetRestConfig(clusterName)
+	var rc *rest.Config
+	var err error
+
+	inClusterName := os.Getenv(string(apistructs.DICE_CLUSTER_NAME))
+	if inClusterName == clusterName {
+		rc, err = config.GetInClusterRestConfig()
+	} else {
+		rc, err = GetRestConfig(clusterName)
+	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -81,11 +105,22 @@ func NewForRestConfig(c *rest.Config, schemes ...func(scheme *runtime.Scheme) er
 	return &kc, nil
 }
 
+type Option func(*rest.Config)
+
+func WithTimeout(timeout time.Duration) Option {
+	return func(rc *rest.Config) {
+		rc.Timeout = timeout
+	}
+}
+
 // NewForInCluster New client for in cluster
-func NewForInCluster() (*K8sClient, error) {
+func NewForInCluster(ops ...Option) (*K8sClient, error) {
 	rc, err := config.GetInClusterRestConfig()
 	if err != nil {
 		return nil, err
+	}
+	for _, op := range ops {
+		op(rc)
 	}
 	return NewForRestConfig(rc, scheme.LocalSchemeBuilder...)
 }

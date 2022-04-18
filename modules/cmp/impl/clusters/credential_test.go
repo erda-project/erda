@@ -133,7 +133,7 @@ func Test_ResetAccessKey_InCluster_Error(t *testing.T) {
 		return nil, csErr
 	})
 
-	monkey.Patch(k8sclient.NewForInCluster, func() (*k8sclient.K8sClient, error) {
+	monkey.Patch(k8sclient.NewForInCluster, func(ops ...k8sclient.Option) (*k8sclient.K8sClient, error) {
 		return nil, csErr
 	})
 

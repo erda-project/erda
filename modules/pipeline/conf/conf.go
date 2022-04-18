@@ -24,9 +24,9 @@ import (
 
 // Conf 定义配置对象.
 type Conf struct {
-	ListenAddr  string `env:"LISTEN_ADDR" default:":3081"`
-	Debug       bool   `env:"DEBUG" default:"false"`
-	DiceCluster string `env:"DICE_CLUSTER" default:"local"` // 服务所在集群
+	ListenAddr      string `env:"LISTEN_ADDR" default:":3081"`
+	Debug           bool   `env:"DEBUG" default:"false"`
+	DiceClusterName string `env:"DICE_CLUSTER_NAME" default:"local"` // 服务所在集群
 
 	// task level
 	TaskDefaultCPU             float64       `env:"TASK_DEFAULT_CPU" default:"0.5"`
@@ -139,9 +139,9 @@ func Debug() bool {
 	return cfg.Debug
 }
 
-// DiceCluster 返回 pipeline 服务所在集群，用于判断 task 运行在 中心 or SaaS 集群.
-func DiceCluster() string {
-	return cfg.DiceCluster
+// DiceClusterName return the cluster where pipeline belong to
+func DiceClusterName() string {
+	return cfg.DiceClusterName
 }
 
 // TaskDefaultCPU 返回 task 默认的 cpu 限制.

@@ -93,13 +93,13 @@ type K8sJob struct {
 }
 
 func New(name types.Name, clusterName string, cluster apistructs.ClusterInfo) (*K8sJob, error) {
-	k, err := k8sclient.NewWithTimeOut(clusterName, time.Duration(conf.K8SExecutorMaxInitializationSec())*time.Second)
+	client, err := k8sclient.New(clusterName, k8sclient.WithTimeout(time.Duration(conf.K8SExecutorMaxInitializationSec())*time.Second))
 	if err != nil {
 		return nil, err
 	}
 	k8sJob := &K8sJob{
 		name:        name,
-		client:      k,
+		client:      client,
 		clusterName: clusterName,
 		cluster:     cluster,
 		errWrapper:  logic.NewErrorWrapper(name.String()),
