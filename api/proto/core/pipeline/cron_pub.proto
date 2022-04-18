@@ -26,4 +26,26 @@ message Cron {
     string pipelineDefinitionID = 15;
     string pipelineSource = 16;
     map<string,string> secrets = 17;
+    CronExtra cronExtra = 18;
+    google.protobuf.BoolValue IsEdge = 19;
+}
+
+message CronExtra {
+    string pipelineYml = 1;
+    string clusterName = 2;
+    map<string,string> filterLabels = 3;
+    map<string,string> normalLabels = 4;
+    map<string,string> envs = 5;
+    repeated string configManageNamespaces = 6;
+    map<string,string> incomingSecrets = 7;
+    google.protobuf.Timestamp cronStartFrom = 8;
+    string version = 9;
+    CronCompensator compensator = 10;
+    google.protobuf.Timestamp lastCompensateAt =11;
+}
+
+message CronCompensator {
+    google.protobuf.BoolValue enable = 1;
+    google.protobuf.BoolValue LatestFirst = 2;
+    google.protobuf.BoolValue StopIfLatterExecuted = 3;
 }

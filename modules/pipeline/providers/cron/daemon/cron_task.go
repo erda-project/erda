@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -25,6 +26,7 @@ import (
 	"github.com/coreos/etcd/clientv3"
 	"github.com/sirupsen/logrus"
 
+	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/modules/pipeline/providers/cron/db"
@@ -55,8 +57,11 @@ func (d *provider) runCronPipelineFunc(ctx context.Context, id uint64) {
 	cronTriggerTime := time.Now()
 
 	// Query cron details
-	pc, err := d.dbClient.GetPipelineCron(id)
+	pc, found, err := d.dbClient.GetPipelineCron(id)
 	if err != nil {
+		return
+	}
+	if !found {
 		return
 	}
 
@@ -203,9 +208,13 @@ func (s *provider) listenCrond(ctx context.Context) {
 		}
 
 		if strings.HasPrefix(key, etcdCronPrefixAddKey) {
-			pc, err := s.dbClient.GetPipelineCron(cronID)
+			pc, found, err := s.dbClient.GetPipelineCron(cronID)
 			if err != nil {
 				s.Log.Errorf("crond: failed to get cron cronID: %v error: %v", cronID, err)
+				return
+			}
+			if !found {
+				s.Log.Errorf("crond: failed to get cron cronID: %v error: %v", cronID, fmt.Errorf("not found"))
 				return
 			}
 			// why delete it first, because crond.AddFunc cannot add a scheduled task with the same name
@@ -268,6 +277,19 @@ func (s *provider) reloadCrond(ctx context.Context) ([]string, error) {
 	for i := range pcs {
 		pc := pcs[i]
 		if pc.Enable != nil && *pc.Enable && pc.CronExpr != "" {
+
+			ok := s.EdgePipelineRegister.ShouldDispatchToEdge(pc.PipelineSource.String(), pc.Extra.ClusterName)
+			if ok {
+				err := s.syncCronToEdge(pc)
+				if err != nil {
+					logrus.Errorf("failed to syncCronToEdge error %v", err)
+				}
+				continue
+			}
+			if strconv.FormatBool(pc.IsEdge) != os.Getenv("DICE_IS_EDGE") {
+				continue
+			}
+
 			if err = s.crond.AddFunc(pc.CronExpr, func() { s.runCronPipelineFunc(ctx, pc.ID) }, makePipelineCronName(pc.ID)); err != nil {
 				l := fmt.Sprintf("failed to load pipeline cron item: %s, cronExpr: %v, err: %v", makePipelineCronName(pc.ID), pc.CronExpr, err)
 				logs = append(logs, l)
@@ -292,6 +314,29 @@ func (s *provider) reloadCrond(ctx context.Context) ([]string, error) {
 	logs = append(logs, s.crondSnapshot()...)
 
 	return logs, nil
+}
+
+func (s *provider) syncCronToEdge(dbCron db.PipelineCron) error {
+	pc := dbCron
+	bdl, err := s.EdgePipelineRegister.GetEdgeBundleByClusterName(dbCron.Extra.ClusterName)
+	if err != nil {
+		return fmt.Errorf("failed to GetEdgeBundleByClusterName error %v", err)
+	}
+
+	edgeCron, err := bdl.GetCron(pc.ID)
+	if err != nil {
+		return fmt.Errorf("failed to GetCron error %v", err)
+	}
+
+	if edgeCron == nil {
+		_, err := bdl.EdgeCronCreate(&cronpb.EdgeCronCreateRequest{
+			Cron: pc.Convert2DTO(),
+		})
+		if err != nil {
+			return fmt.Errorf("failed to CreateCron error %v", err)
+		}
+	}
+	return nil
 }
 
 func (s *provider) cleanBuildCacheImages() {

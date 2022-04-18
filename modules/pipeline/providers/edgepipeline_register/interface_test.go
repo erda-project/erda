@@ -14,7 +14,16 @@
 
 package edgepipeline_register
 
-import "testing"
+import (
+	"reflect"
+	"testing"
+
+	"bou.ke/monkey"
+	"github.com/bmizerany/assert"
+
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
+)
 
 func Test_parseDialerEndpoint(t *testing.T) {
 	tests := []struct {
@@ -57,5 +66,107 @@ func Test_parseDialerEndpoint(t *testing.T) {
 		if got != tt.want {
 			t.Errorf("%q. provider.parseDialerEndpoint() = %v, want %v", tt.name, got, tt.want)
 		}
+	}
+}
+
+func TestSourceWhiteList(t *testing.T) {
+	p := &provider{
+		Cfg: &Config{
+			AllowedSources: []string{"cdp-", "recommend-"},
+		},
+	}
+	tests := []struct {
+		name string
+		src  string
+		want bool
+	}{
+		{
+			name: "cdp source",
+			src:  "cdp-123",
+			want: true,
+		},
+		{
+			name: "default source",
+			src:  "default",
+			want: false,
+		},
+		{
+			name: "dice source",
+			src:  "dice",
+			want: false,
+		},
+		{
+			name: "valid source with prefix",
+			src:  "recommend-123",
+			want: true,
+		},
+		{
+			name: "invalid source with prefix",
+			src:  "invalid-123",
+			want: false,
+		},
+	}
+	patch := monkey.PatchInstanceMethod(reflect.TypeOf(p.bdl), "IsClusterDialerClientRegistered", func(_ *bundle.Bundle, _ string, _ string) (bool, error) {
+		return true, nil
+	})
+	defer patch.Unpatch()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := p.ShouldDispatchToEdge(tt.src, "dev"); got != tt.want {
+				t.Errorf("sourceWhiteList() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_provider_GetEdgeBundleByClusterName(t *testing.T) {
+	type fields struct {
+	}
+	type args struct {
+		clusterName string
+	}
+	tests := []struct {
+		name            string
+		fields          fields
+		args            args
+		wantOpenApiAddr string
+		wantErr         bool
+	}{
+		{
+			name:   "test pipeline addr",
+			fields: fields{},
+			args: args{
+				clusterName: "test",
+			},
+			wantOpenApiAddr: "test",
+			wantErr:         false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &provider{}
+
+			var detail = apistructs.ClusterDialerClientDetail{
+				apistructs.ClusterDialerDataKeyPipelineAddr: tt.wantOpenApiAddr,
+			}
+			patch1 := monkey.PatchInstanceMethod(reflect.TypeOf(detail), "Get", func(detail apistructs.ClusterDialerClientDetail, key apistructs.ClusterDialerClientDetailKey) string {
+				assert.Equal(t, detail[key], tt.wantOpenApiAddr)
+				return detail[key]
+			})
+			defer patch1.Unpatch()
+
+			var bdl = &bundle.Bundle{}
+			patch := monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetClusterDialerClientData", func(bdl *bundle.Bundle, clientType string, clusterKey string) (apistructs.ClusterDialerClientDetail, error) {
+				return detail, nil
+			})
+			p.bdl = bdl
+			defer patch.Unpatch()
+
+			_, err := p.GetEdgeBundleByClusterName(tt.args.clusterName)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetEdgeBundleByClusterName() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+		})
 	}
 }

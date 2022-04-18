@@ -40,5 +40,55 @@ func (this *Cron) Validate() error {
 		}
 	}
 	// Validation of proto3 map<> fields is unsupported.
+	if this.CronExtra != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.CronExtra); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("CronExtra", err)
+		}
+	}
+	if this.IsEdge != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.IsEdge); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("IsEdge", err)
+		}
+	}
+	return nil
+}
+func (this *CronExtra) Validate() error {
+	// Validation of proto3 map<> fields is unsupported.
+	// Validation of proto3 map<> fields is unsupported.
+	// Validation of proto3 map<> fields is unsupported.
+	// Validation of proto3 map<> fields is unsupported.
+	if this.CronStartFrom != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.CronStartFrom); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("CronStartFrom", err)
+		}
+	}
+	if this.Compensator != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Compensator); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("Compensator", err)
+		}
+	}
+	if this.LastCompensateAt != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.LastCompensateAt); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("LastCompensateAt", err)
+		}
+	}
+	return nil
+}
+func (this *CronCompensator) Validate() error {
+	if this.Enable != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Enable); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("Enable", err)
+		}
+	}
+	if this.LatestFirst != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.LatestFirst); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("LatestFirst", err)
+		}
+	}
+	if this.StopIfLatterExecuted != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.StopIfLatterExecuted); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("StopIfLatterExecuted", err)
+		}
+	}
 	return nil
 }

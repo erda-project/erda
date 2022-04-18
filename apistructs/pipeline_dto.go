@@ -16,6 +16,8 @@ package apistructs
 
 import (
 	"time"
+
+	common "github.com/erda-project/erda-proto-go/core/pipeline/pb"
 )
 
 type PipelineDTO struct {
@@ -121,7 +123,7 @@ type PipelineDetailDTO struct {
 	PipelineDTO
 	PipelineStages        []PipelineStageDetailDTO `json:"pipelineStages"`
 	PipelineSnippetStages []PipelineStageDetailDTO `json:"pipelineSnippetStages"`
-	PipelineCron          *PipelineCronDTO         `json:"pipelineCron"`
+	PipelineCron          *common.Cron             `json:"pipelineCron"`
 
 	// 按钮
 	PipelineButton PipelineButton `json:"pipelineButton"`

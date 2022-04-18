@@ -13,6 +13,14 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the "encoding/json" package it is being compiled against.
+var _ json.Marshaler = (*CronDisableRequest)(nil)
+var _ json.Unmarshaler = (*CronDisableRequest)(nil)
+var _ json.Marshaler = (*CronDisableResponse)(nil)
+var _ json.Unmarshaler = (*CronDisableResponse)(nil)
+var _ json.Marshaler = (*CronSaveRequest)(nil)
+var _ json.Unmarshaler = (*CronSaveRequest)(nil)
+var _ json.Marshaler = (*CronSaveResponse)(nil)
+var _ json.Unmarshaler = (*CronSaveResponse)(nil)
 var _ json.Marshaler = (*CronPagingRequest)(nil)
 var _ json.Unmarshaler = (*CronPagingRequest)(nil)
 var _ json.Marshaler = (*CronPagingResponse)(nil)
@@ -27,6 +35,8 @@ var _ json.Marshaler = (*CronStopResponse)(nil)
 var _ json.Unmarshaler = (*CronStopResponse)(nil)
 var _ json.Marshaler = (*CronCreateRequest)(nil)
 var _ json.Unmarshaler = (*CronCreateRequest)(nil)
+var _ json.Marshaler = (*EdgeCronCreateRequest)(nil)
+var _ json.Unmarshaler = (*EdgeCronCreateRequest)(nil)
 var _ json.Marshaler = (*CronCreateResponse)(nil)
 var _ json.Unmarshaler = (*CronCreateResponse)(nil)
 var _ json.Marshaler = (*CronDeleteRequest)(nil)
@@ -39,8 +49,82 @@ var _ json.Marshaler = (*CronGetResponse)(nil)
 var _ json.Unmarshaler = (*CronGetResponse)(nil)
 var _ json.Marshaler = (*CronUpdateRequest)(nil)
 var _ json.Unmarshaler = (*CronUpdateRequest)(nil)
+var _ json.Marshaler = (*EdgeCronUpdateRequest)(nil)
+var _ json.Unmarshaler = (*EdgeCronUpdateRequest)(nil)
 var _ json.Marshaler = (*CronUpdateResponse)(nil)
 var _ json.Unmarshaler = (*CronUpdateResponse)(nil)
+
+// CronDisableRequest implement json.Marshaler.
+func (m *CronDisableRequest) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// CronDisableRequest implement json.Marshaler.
+func (m *CronDisableRequest) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// CronDisableResponse implement json.Marshaler.
+func (m *CronDisableResponse) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// CronDisableResponse implement json.Marshaler.
+func (m *CronDisableResponse) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// CronSaveRequest implement json.Marshaler.
+func (m *CronSaveRequest) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// CronSaveRequest implement json.Marshaler.
+func (m *CronSaveRequest) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// CronSaveResponse implement json.Marshaler.
+func (m *CronSaveResponse) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// CronSaveResponse implement json.Marshaler.
+func (m *CronSaveResponse) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
 
 // CronPagingRequest implement json.Marshaler.
 func (m *CronPagingRequest) MarshalJSON() ([]byte, error) {
@@ -168,6 +252,24 @@ func (m *CronCreateRequest) UnmarshalJSON(b []byte) error {
 	}).Unmarshal(b, m)
 }
 
+// EdgeCronCreateRequest implement json.Marshaler.
+func (m *EdgeCronCreateRequest) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// EdgeCronCreateRequest implement json.Marshaler.
+func (m *EdgeCronCreateRequest) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
 // CronCreateResponse implement json.Marshaler.
 func (m *CronCreateResponse) MarshalJSON() ([]byte, error) {
 	buf := &bytes.Buffer{}
@@ -271,6 +373,24 @@ func (m *CronUpdateRequest) MarshalJSON() ([]byte, error) {
 
 // CronUpdateRequest implement json.Marshaler.
 func (m *CronUpdateRequest) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// EdgeCronUpdateRequest implement json.Marshaler.
+func (m *EdgeCronUpdateRequest) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// EdgeCronUpdateRequest implement json.Marshaler.
+func (m *EdgeCronUpdateRequest) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)

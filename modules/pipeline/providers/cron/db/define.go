@@ -46,6 +46,7 @@ type PipelineCron struct {
 	BasePipelineID uint64 `json:"basePipelineID"` // 用于记录最开始创建出这条 cron 记录的 pipeline id
 	// definition id
 	PipelineDefinitionID string `json:"pipeline_definition_id"`
+	IsEdge               bool   `json:"is_edge"`
 }
 
 // PipelineCronExtra cron 扩展信息, 不参与过滤
@@ -68,6 +69,31 @@ type PipelineCronExtra struct {
 	LastCompensateAt *time.Time `json:"lastCompensateAt,omitempty"`
 }
 
+func (pc *PipelineCron) GenCompensateCreatePipelineReqNormalLabels(triggerTime time.Time) map[string]string {
+	normalLabels := make(map[string]string)
+	for k, v := range pc.Extra.NormalLabels {
+		normalLabels[k] = v
+	}
+	normalLabels[apistructs.LabelPipelineTriggerMode] = apistructs.PipelineTriggerModeCron.String()
+	normalLabels[apistructs.LabelPipelineType] = apistructs.PipelineTypeNormal.String()
+	normalLabels[apistructs.LabelPipelineYmlSource] = apistructs.PipelineYmlSourceContent.String()
+	normalLabels[apistructs.LabelPipelineCronTriggerTime] = strconv.FormatInt(triggerTime.UnixNano(), 10)
+	normalLabels[apistructs.LabelPipelineCronID] = strconv.FormatUint(pc.ID, 10)
+	return normalLabels
+}
+
+func (pc *PipelineCron) GenCompensateCreatePipelineReqFilterLabels() map[string]string {
+	filterLabels := make(map[string]string)
+	for k, v := range pc.Extra.FilterLabels {
+		filterLabels[k] = v
+	}
+	if _, ok := filterLabels[apistructs.LabelPipelineTriggerMode]; ok {
+		filterLabels[apistructs.LabelPipelineTriggerMode] = apistructs.PipelineTriggerModeCron.String()
+	}
+	filterLabels[apistructs.LabelPipelineCronCompensated] = "true"
+	return filterLabels
+}
+
 func (pc *PipelineCron) Convert2DTO() *pb.Cron {
 	if pc == nil {
 		return nil
@@ -88,7 +114,43 @@ func (pc *PipelineCron) Convert2DTO() *pb.Cron {
 		OrgID:                  pc.GetOrgID(),
 		PipelineDefinitionID:   pc.PipelineDefinitionID,
 		PipelineSource:         pc.PipelineSource.String(),
+		IsEdge:                 wrapperspb.Bool(pc.IsEdge),
 	}
+
+	extra := &pb.CronExtra{
+		PipelineYml:            pc.Extra.PipelineYml,
+		ClusterName:            pc.Extra.ClusterName,
+		FilterLabels:           pc.Extra.FilterLabels,
+		NormalLabels:           pc.Extra.NormalLabels,
+		Envs:                   pc.Extra.Envs,
+		ConfigManageNamespaces: pc.Extra.ConfigManageNamespaces,
+		IncomingSecrets:        pc.Extra.IncomingSecrets,
+		CronStartFrom: func() *timestamppb.Timestamp {
+			if pc.Extra.CronStartFrom == nil {
+				return nil
+			}
+			return timestamppb.New(*pc.Extra.CronStartFrom)
+		}(),
+		Version: pc.Extra.Version,
+		Compensator: func() *pb.CronCompensator {
+			if pc.Extra.Compensator == nil {
+				return nil
+			}
+			return &pb.CronCompensator{
+				Enable:               wrapperspb.Bool(pc.Extra.Compensator.Enable),
+				LatestFirst:          wrapperspb.Bool(pc.Extra.Compensator.LatestFirst),
+				StopIfLatterExecuted: wrapperspb.Bool(pc.Extra.Compensator.StopIfLatterExecuted),
+			}
+		}(),
+		LastCompensateAt: func() *timestamppb.Timestamp {
+			if pc.Extra.LastCompensateAt == nil {
+				return nil
+			}
+			return timestamppb.New(*pc.Extra.LastCompensateAt)
+		}(),
+	}
+	result.CronExtra = extra
+
 	if pc.Extra.CronStartFrom != nil {
 		result.CronStartTime = timestamppb.New(*pc.Extra.CronStartFrom)
 	}
