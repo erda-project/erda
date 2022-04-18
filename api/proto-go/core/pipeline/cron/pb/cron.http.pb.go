@@ -36,6 +36,15 @@ type CronServiceHandler interface {
 	CronGet(context.Context, *CronGetRequest) (*CronGetResponse, error)
 	// PUT /api/pipeline-crons/{cronID}
 	CronUpdate(context.Context, *CronUpdateRequest) (*CronUpdateResponse, error)
+	// POST /api/pipeline-crons/action/save
+	CronSave(context.Context, *CronSaveRequest) (*CronSaveResponse, error)
+	// POST /api/pipeline-crons/action/disable
+	CronDisable(context.Context, *CronDisableRequest) (*CronDisableResponse, error)
+	// edge
+	// POST /api/pipeline-crons/actions/edge-create
+	EdgeCronCreate(context.Context, *EdgeCronCreateRequest) (*CronCreateResponse, error)
+	// PUT /api/pipeline-crons/actions/edge-update
+	EdgeCronUpdate(context.Context, *EdgeCronUpdateRequest) (*CronUpdateResponse, error)
 }
 
 // RegisterCronServiceHandler register CronServiceHandler to http.Router.
@@ -455,6 +464,150 @@ func RegisterCronServiceHandler(r http.Router, srv CronServiceHandler, opts ...h
 		)
 	}
 
+	add_CronSave := func(method, path string, fn func(context.Context, *CronSaveRequest) (*CronSaveResponse, error)) {
+		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+			return fn(ctx, req.(*CronSaveRequest))
+		}
+		var CronSave_info transport.ServiceInfo
+		if h.Interceptor != nil {
+			CronSave_info = transport.NewServiceInfo("erda.core.pipeline.cron.CronService", "CronSave", srv)
+			handler = h.Interceptor(handler)
+		}
+		r.Add(method, path, encodeFunc(
+			func(w http1.ResponseWriter, r *http1.Request) (interface{}, error) {
+				ctx := http.WithRequest(r.Context(), r)
+				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, CronSave_info)
+				}
+				r = r.WithContext(ctx)
+				var in CronSaveRequest
+				if err := h.Decode(r, &in); err != nil {
+					return nil, err
+				}
+				var input interface{} = &in
+				if u, ok := (input).(urlenc.URLValuesUnmarshaler); ok {
+					if err := u.UnmarshalURLValues("", r.URL.Query()); err != nil {
+						return nil, err
+					}
+				}
+				out, err := handler(ctx, &in)
+				if err != nil {
+					return out, err
+				}
+				return out, nil
+			}),
+		)
+	}
+
+	add_CronDisable := func(method, path string, fn func(context.Context, *CronDisableRequest) (*CronDisableResponse, error)) {
+		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+			return fn(ctx, req.(*CronDisableRequest))
+		}
+		var CronDisable_info transport.ServiceInfo
+		if h.Interceptor != nil {
+			CronDisable_info = transport.NewServiceInfo("erda.core.pipeline.cron.CronService", "CronDisable", srv)
+			handler = h.Interceptor(handler)
+		}
+		r.Add(method, path, encodeFunc(
+			func(w http1.ResponseWriter, r *http1.Request) (interface{}, error) {
+				ctx := http.WithRequest(r.Context(), r)
+				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, CronDisable_info)
+				}
+				r = r.WithContext(ctx)
+				var in CronDisableRequest
+				if err := h.Decode(r, &in); err != nil {
+					return nil, err
+				}
+				var input interface{} = &in
+				if u, ok := (input).(urlenc.URLValuesUnmarshaler); ok {
+					if err := u.UnmarshalURLValues("", r.URL.Query()); err != nil {
+						return nil, err
+					}
+				}
+				out, err := handler(ctx, &in)
+				if err != nil {
+					return out, err
+				}
+				return out, nil
+			}),
+		)
+	}
+
+	add_EdgeCronCreate := func(method, path string, fn func(context.Context, *EdgeCronCreateRequest) (*CronCreateResponse, error)) {
+		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+			return fn(ctx, req.(*EdgeCronCreateRequest))
+		}
+		var EdgeCronCreate_info transport.ServiceInfo
+		if h.Interceptor != nil {
+			EdgeCronCreate_info = transport.NewServiceInfo("erda.core.pipeline.cron.CronService", "EdgeCronCreate", srv)
+			handler = h.Interceptor(handler)
+		}
+		r.Add(method, path, encodeFunc(
+			func(w http1.ResponseWriter, r *http1.Request) (interface{}, error) {
+				ctx := http.WithRequest(r.Context(), r)
+				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, EdgeCronCreate_info)
+				}
+				r = r.WithContext(ctx)
+				var in EdgeCronCreateRequest
+				if err := h.Decode(r, &in); err != nil {
+					return nil, err
+				}
+				var input interface{} = &in
+				if u, ok := (input).(urlenc.URLValuesUnmarshaler); ok {
+					if err := u.UnmarshalURLValues("", r.URL.Query()); err != nil {
+						return nil, err
+					}
+				}
+				out, err := handler(ctx, &in)
+				if err != nil {
+					return out, err
+				}
+				return out, nil
+			}),
+		)
+	}
+
+	add_EdgeCronUpdate := func(method, path string, fn func(context.Context, *EdgeCronUpdateRequest) (*CronUpdateResponse, error)) {
+		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+			return fn(ctx, req.(*EdgeCronUpdateRequest))
+		}
+		var EdgeCronUpdate_info transport.ServiceInfo
+		if h.Interceptor != nil {
+			EdgeCronUpdate_info = transport.NewServiceInfo("erda.core.pipeline.cron.CronService", "EdgeCronUpdate", srv)
+			handler = h.Interceptor(handler)
+		}
+		r.Add(method, path, encodeFunc(
+			func(w http1.ResponseWriter, r *http1.Request) (interface{}, error) {
+				ctx := http.WithRequest(r.Context(), r)
+				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, EdgeCronUpdate_info)
+				}
+				r = r.WithContext(ctx)
+				var in EdgeCronUpdateRequest
+				if err := h.Decode(r, &in); err != nil {
+					return nil, err
+				}
+				var input interface{} = &in
+				if u, ok := (input).(urlenc.URLValuesUnmarshaler); ok {
+					if err := u.UnmarshalURLValues("", r.URL.Query()); err != nil {
+						return nil, err
+					}
+				}
+				out, err := handler(ctx, &in)
+				if err != nil {
+					return out, err
+				}
+				return out, nil
+			}),
+		)
+	}
+
 	add_CronCreate("POST", "/api/pipeline-crons", srv.CronCreate)
 	add_CronPaging("GET", "/api/pipeline-crons", srv.CronPaging)
 	add_CronStart("PUT", "/api/pipeline-crons/{cronID}/actions/start", srv.CronStart)
@@ -462,4 +615,8 @@ func RegisterCronServiceHandler(r http.Router, srv CronServiceHandler, opts ...h
 	add_CronDelete("DELETE", "/api/pipeline-crons/{cronID}", srv.CronDelete)
 	add_CronGet("GET", "/api/pipeline-crons/{cronID}", srv.CronGet)
 	add_CronUpdate("PUT", "/api/pipeline-crons/{cronID}", srv.CronUpdate)
+	add_CronSave("POST", "/api/pipeline-crons/action/save", srv.CronSave)
+	add_CronDisable("POST", "/api/pipeline-crons/action/disable", srv.CronDisable)
+	add_EdgeCronCreate("POST", "/api/pipeline-crons/actions/edge-create", srv.EdgeCronCreate)
+	add_EdgeCronUpdate("PUT", "/api/pipeline-crons/actions/edge-update", srv.EdgeCronUpdate)
 }

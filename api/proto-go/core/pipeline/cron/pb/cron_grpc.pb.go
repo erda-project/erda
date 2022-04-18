@@ -28,6 +28,11 @@ type CronServiceClient interface {
 	CronDelete(ctx context.Context, in *CronDeleteRequest, opts ...grpc.CallOption) (*CronDeleteResponse, error)
 	CronGet(ctx context.Context, in *CronGetRequest, opts ...grpc.CallOption) (*CronGetResponse, error)
 	CronUpdate(ctx context.Context, in *CronUpdateRequest, opts ...grpc.CallOption) (*CronUpdateResponse, error)
+	CronSave(ctx context.Context, in *CronSaveRequest, opts ...grpc.CallOption) (*CronSaveResponse, error)
+	CronDisable(ctx context.Context, in *CronDisableRequest, opts ...grpc.CallOption) (*CronDisableResponse, error)
+	// edge
+	EdgeCronCreate(ctx context.Context, in *EdgeCronCreateRequest, opts ...grpc.CallOption) (*CronCreateResponse, error)
+	EdgeCronUpdate(ctx context.Context, in *EdgeCronUpdateRequest, opts ...grpc.CallOption) (*CronUpdateResponse, error)
 }
 
 type cronServiceClient struct {
@@ -101,6 +106,42 @@ func (c *cronServiceClient) CronUpdate(ctx context.Context, in *CronUpdateReques
 	return out, nil
 }
 
+func (c *cronServiceClient) CronSave(ctx context.Context, in *CronSaveRequest, opts ...grpc.CallOption) (*CronSaveResponse, error) {
+	out := new(CronSaveResponse)
+	err := c.cc.Invoke(ctx, "/erda.core.pipeline.cron.CronService/CronSave", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *cronServiceClient) CronDisable(ctx context.Context, in *CronDisableRequest, opts ...grpc.CallOption) (*CronDisableResponse, error) {
+	out := new(CronDisableResponse)
+	err := c.cc.Invoke(ctx, "/erda.core.pipeline.cron.CronService/CronDisable", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *cronServiceClient) EdgeCronCreate(ctx context.Context, in *EdgeCronCreateRequest, opts ...grpc.CallOption) (*CronCreateResponse, error) {
+	out := new(CronCreateResponse)
+	err := c.cc.Invoke(ctx, "/erda.core.pipeline.cron.CronService/EdgeCronCreate", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *cronServiceClient) EdgeCronUpdate(ctx context.Context, in *EdgeCronUpdateRequest, opts ...grpc.CallOption) (*CronUpdateResponse, error) {
+	out := new(CronUpdateResponse)
+	err := c.cc.Invoke(ctx, "/erda.core.pipeline.cron.CronService/EdgeCronUpdate", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // CronServiceServer is the server API for CronService service.
 // All implementations should embed UnimplementedCronServiceServer
 // for forward compatibility
@@ -112,6 +153,11 @@ type CronServiceServer interface {
 	CronDelete(context.Context, *CronDeleteRequest) (*CronDeleteResponse, error)
 	CronGet(context.Context, *CronGetRequest) (*CronGetResponse, error)
 	CronUpdate(context.Context, *CronUpdateRequest) (*CronUpdateResponse, error)
+	CronSave(context.Context, *CronSaveRequest) (*CronSaveResponse, error)
+	CronDisable(context.Context, *CronDisableRequest) (*CronDisableResponse, error)
+	// edge
+	EdgeCronCreate(context.Context, *EdgeCronCreateRequest) (*CronCreateResponse, error)
+	EdgeCronUpdate(context.Context, *EdgeCronUpdateRequest) (*CronUpdateResponse, error)
 }
 
 // UnimplementedCronServiceServer should be embedded to have forward compatible implementations.
@@ -138,6 +184,18 @@ func (*UnimplementedCronServiceServer) CronGet(context.Context, *CronGetRequest)
 }
 func (*UnimplementedCronServiceServer) CronUpdate(context.Context, *CronUpdateRequest) (*CronUpdateResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CronUpdate not implemented")
+}
+func (*UnimplementedCronServiceServer) CronSave(context.Context, *CronSaveRequest) (*CronSaveResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CronSave not implemented")
+}
+func (*UnimplementedCronServiceServer) CronDisable(context.Context, *CronDisableRequest) (*CronDisableResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CronDisable not implemented")
+}
+func (*UnimplementedCronServiceServer) EdgeCronCreate(context.Context, *EdgeCronCreateRequest) (*CronCreateResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method EdgeCronCreate not implemented")
+}
+func (*UnimplementedCronServiceServer) EdgeCronUpdate(context.Context, *EdgeCronUpdateRequest) (*CronUpdateResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method EdgeCronUpdate not implemented")
 }
 
 func RegisterCronServiceServer(s grpc1.ServiceRegistrar, srv CronServiceServer, opts ...grpc1.HandleOption) {
@@ -219,6 +277,42 @@ func _get_CronService_serviceDesc(srv CronServiceServer, opts ...grpc1.HandleOpt
 	if h.Interceptor != nil {
 		_CronService_CronUpdate_info = transport.NewServiceInfo("erda.core.pipeline.cron.CronService", "CronUpdate", srv)
 		_CronService_CronUpdate_Handler = h.Interceptor(_CronService_CronUpdate_Handler)
+	}
+
+	_CronService_CronSave_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.CronSave(ctx, req.(*CronSaveRequest))
+	}
+	var _CronService_CronSave_info transport.ServiceInfo
+	if h.Interceptor != nil {
+		_CronService_CronSave_info = transport.NewServiceInfo("erda.core.pipeline.cron.CronService", "CronSave", srv)
+		_CronService_CronSave_Handler = h.Interceptor(_CronService_CronSave_Handler)
+	}
+
+	_CronService_CronDisable_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.CronDisable(ctx, req.(*CronDisableRequest))
+	}
+	var _CronService_CronDisable_info transport.ServiceInfo
+	if h.Interceptor != nil {
+		_CronService_CronDisable_info = transport.NewServiceInfo("erda.core.pipeline.cron.CronService", "CronDisable", srv)
+		_CronService_CronDisable_Handler = h.Interceptor(_CronService_CronDisable_Handler)
+	}
+
+	_CronService_EdgeCronCreate_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.EdgeCronCreate(ctx, req.(*EdgeCronCreateRequest))
+	}
+	var _CronService_EdgeCronCreate_info transport.ServiceInfo
+	if h.Interceptor != nil {
+		_CronService_EdgeCronCreate_info = transport.NewServiceInfo("erda.core.pipeline.cron.CronService", "EdgeCronCreate", srv)
+		_CronService_EdgeCronCreate_Handler = h.Interceptor(_CronService_EdgeCronCreate_Handler)
+	}
+
+	_CronService_EdgeCronUpdate_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.EdgeCronUpdate(ctx, req.(*EdgeCronUpdateRequest))
+	}
+	var _CronService_EdgeCronUpdate_info transport.ServiceInfo
+	if h.Interceptor != nil {
+		_CronService_EdgeCronUpdate_info = transport.NewServiceInfo("erda.core.pipeline.cron.CronService", "EdgeCronUpdate", srv)
+		_CronService_EdgeCronUpdate_Handler = h.Interceptor(_CronService_EdgeCronUpdate_Handler)
 	}
 
 	var serviceDesc = _CronService_serviceDesc
@@ -382,6 +476,98 @@ func _get_CronService_serviceDesc(srv CronServiceServer, opts ...grpc1.HandleOpt
 					FullMethod: "/erda.core.pipeline.cron.CronService/CronUpdate",
 				}
 				return interceptor(ctx, in, info, _CronService_CronUpdate_Handler)
+			},
+		},
+		{
+			MethodName: "CronSave",
+			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+				in := new(CronSaveRequest)
+				if err := dec(in); err != nil {
+					return nil, err
+				}
+				if interceptor == nil && h.Interceptor == nil {
+					return srv.(CronServiceServer).CronSave(ctx, in)
+				}
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _CronService_CronSave_info)
+				}
+				if interceptor == nil {
+					return _CronService_CronSave_Handler(ctx, in)
+				}
+				info := &grpc.UnaryServerInfo{
+					Server:     srv,
+					FullMethod: "/erda.core.pipeline.cron.CronService/CronSave",
+				}
+				return interceptor(ctx, in, info, _CronService_CronSave_Handler)
+			},
+		},
+		{
+			MethodName: "CronDisable",
+			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+				in := new(CronDisableRequest)
+				if err := dec(in); err != nil {
+					return nil, err
+				}
+				if interceptor == nil && h.Interceptor == nil {
+					return srv.(CronServiceServer).CronDisable(ctx, in)
+				}
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _CronService_CronDisable_info)
+				}
+				if interceptor == nil {
+					return _CronService_CronDisable_Handler(ctx, in)
+				}
+				info := &grpc.UnaryServerInfo{
+					Server:     srv,
+					FullMethod: "/erda.core.pipeline.cron.CronService/CronDisable",
+				}
+				return interceptor(ctx, in, info, _CronService_CronDisable_Handler)
+			},
+		},
+		{
+			MethodName: "EdgeCronCreate",
+			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+				in := new(EdgeCronCreateRequest)
+				if err := dec(in); err != nil {
+					return nil, err
+				}
+				if interceptor == nil && h.Interceptor == nil {
+					return srv.(CronServiceServer).EdgeCronCreate(ctx, in)
+				}
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _CronService_EdgeCronCreate_info)
+				}
+				if interceptor == nil {
+					return _CronService_EdgeCronCreate_Handler(ctx, in)
+				}
+				info := &grpc.UnaryServerInfo{
+					Server:     srv,
+					FullMethod: "/erda.core.pipeline.cron.CronService/EdgeCronCreate",
+				}
+				return interceptor(ctx, in, info, _CronService_EdgeCronCreate_Handler)
+			},
+		},
+		{
+			MethodName: "EdgeCronUpdate",
+			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+				in := new(EdgeCronUpdateRequest)
+				if err := dec(in); err != nil {
+					return nil, err
+				}
+				if interceptor == nil && h.Interceptor == nil {
+					return srv.(CronServiceServer).EdgeCronUpdate(ctx, in)
+				}
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _CronService_EdgeCronUpdate_info)
+				}
+				if interceptor == nil {
+					return _CronService_EdgeCronUpdate_Handler(ctx, in)
+				}
+				info := &grpc.UnaryServerInfo{
+					Server:     srv,
+					FullMethod: "/erda.core.pipeline.cron.CronService/EdgeCronUpdate",
+				}
+				return interceptor(ctx, in, info, _CronService_EdgeCronUpdate_Handler)
 			},
 		},
 	}
