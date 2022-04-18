@@ -106,6 +106,7 @@ var (
 	I18nKeyStatusStartFailed             = "autotest.plan.status.start.failed"
 	I18nKeyStatusTimeout                 = "autotest.plan.status.timeout"
 	I18nKeyStatusCanceled                = "autotest.plan.status.canceled"
+	I18nKeyStatusNoNeedBySystem          = "autotest.plan.status.noneedbysystem"
 	I18nKeyStatusInitializing            = "autotest.plan.status.initializing"
 	I18nKeyStatusAbnormal                = "autotest.plan.status.abnormal"
 	I18nKeyStatusDisable                 = "autotest.plan.status.disable"
