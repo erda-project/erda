@@ -94,7 +94,7 @@ func Test_SendCorpConversationMessage_Should_Success(t *testing.T) {
 		return &httpclient.Response{}, nil
 	})
 
-	err := SendCorpConversationMarkdownMessage("mock_accesstoken", 123, []string{"mock_userid"}, "测试消息标题", "## 测试消息标题 \n 测试消息内容，[链接](https://erda.cloud)")
+	_, err := SendCorpConversationMarkdownMessage("mock_accesstoken", 123, []string{"mock_userid"}, "测试消息标题", "## 测试消息标题 \n 测试消息内容，[链接](https://erda.cloud)")
 	if err != nil {
 		t.Errorf("should not error")
 	}
