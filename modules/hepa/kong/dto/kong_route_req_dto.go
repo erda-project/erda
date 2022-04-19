@@ -76,6 +76,7 @@ func NewKongRouteReqDto() *KongRouteReqDto {
 	return &KongRouteReqDto{
 		StripPath:    &stripPath,
 		PathHandling: &pathHandling,
+		tags:         make(url.Values),
 	}
 }
 
@@ -92,6 +93,9 @@ func (dto *KongRouteReqDto) Adjust(opts ...Option) {
 }
 
 func (dto *KongRouteReqDto) AddTag(key, value string) {
+	if dto.tags == nil {
+		dto.tags = make(url.Values)
+	}
 	dto.tags.Add(key, value)
 	dto.refreshTags()
 }
