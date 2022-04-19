@@ -1172,6 +1172,9 @@ func (s *ReleaseService) convertToReleaseResponse(release *db.Release) (*pb.Rele
 			wg.Add(1)
 			go func(i int) {
 				defer wg.Done()
+				if len(appReleases[i].Dice) == 0 {
+					return
+				}
 				dice, err := diceyml.New([]byte(appReleases[i].Dice), true)
 				if err != nil {
 					logrus.Errorf("failed to parse diceyml for release %s, %v", appReleases[i].ReleaseID, err)
