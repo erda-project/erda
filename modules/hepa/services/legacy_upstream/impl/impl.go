@@ -561,7 +561,7 @@ func (impl GatewayUpstreamServiceImpl) upstreamRegister(dto *gw.UpstreamRegister
 	} else {
 		az = dto.Az
 	}
-	// upstream db transcation: get register, return if no need update
+	// upstream db transaction: get register, return if no need update
 	dao := &orm.GatewayUpstream{
 		OrgId:          dto.OrgId,
 		ProjectId:      dto.ProjectId,

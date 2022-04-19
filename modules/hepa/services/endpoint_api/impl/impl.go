@@ -554,6 +554,7 @@ func (impl GatewayOpenapiServiceImpl) updatePackageApiHost(pack *orm.GatewayPack
 		req := kongDto.NewKongRouteReqDto()
 		req.RouteId = route.RouteId
 		req.Hosts = hosts
+		req.AddTag("package_api_id", api.Id)
 		resp, err := kongAdapter.UpdateRoute(req)
 		if err != nil {
 			return err
@@ -1107,6 +1108,7 @@ func (impl GatewayOpenapiServiceImpl) touchKongRoute(adapter kong.KongAdapter, d
 	} else {
 		req = impl.createKongRouteReq(dto, dto.ServiceId, route.RouteId)
 	}
+	req.AddTag("package_api_id", apiId)
 	resp, err := adapter.CreateOrUpdateRoute(req)
 	if err != nil {
 		return "", err

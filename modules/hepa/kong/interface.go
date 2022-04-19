@@ -47,4 +47,5 @@ type KongAdapter interface {
 	DeleteUpstreamTarget(string, string) error
 	TouchRouteOAuthMethod(string) error
 	GetRoutes() ([]KongRouteRespDto, error)
+	GetRoutesWithTag(tag string) ([]KongRouteRespDto, error)
 }

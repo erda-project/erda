@@ -156,7 +156,7 @@ func (impl GatewayApiServiceImpl) acquirePolicies(apiPolices []string) map[strin
 	return res
 }
 
-func (impl GatewayApiServiceImpl) CreateUnitiyPackageShadowApi(apiId, projectId, env, az string) error {
+func (impl GatewayApiServiceImpl) CreateUnityPackageShadowApi(apiId, projectId, env, az string) error {
 	api, err := impl.apiDb.GetById(apiId)
 	if err != nil {
 		return err
@@ -237,7 +237,7 @@ func (impl GatewayApiServiceImpl) CreateUpstreamBindApi(consumer *orm.GatewayCon
 		if err != nil {
 			return apiId, err
 		}
-		err = impl.CreateUnitiyPackageShadowApi(apiId, consumer.ProjectId, consumer.Env, consumer.Az)
+		err = impl.CreateUnityPackageShadowApi(apiId, consumer.ProjectId, consumer.Env, consumer.Az)
 		if err != nil {
 			return apiId, err
 		}
@@ -555,6 +555,7 @@ func (impl GatewayApiServiceImpl) CreateRuntimeApi(dto *gw.ApiDto, session ...*d
 	serviceDb := impl.serviceDb
 	pluginDb := impl.pluginDb
 	runtimeDb := impl.runtimeDb
+	packageAPIDb := impl.packageApiDb
 	if len(session) > 0 {
 		apiDb, err = impl.apiDb.NewSession(session[0])
 		if err != nil {
@@ -573,6 +574,10 @@ func (impl GatewayApiServiceImpl) CreateRuntimeApi(dto *gw.ApiDto, session ...*d
 			return "", PARAMS_IS_NULL, err
 		}
 		runtimeDb, err = impl.runtimeDb.NewSession(session[0])
+		if err != nil {
+			return "", PARAMS_IS_NULL, err
+		}
+		packageAPIDb, err = impl.packageApiDb.NewSession(session[0])
 		if err != nil {
 			return "", PARAMS_IS_NULL, err
 		}
@@ -693,6 +698,16 @@ func (impl GatewayApiServiceImpl) CreateRuntimeApi(dto *gw.ApiDto, session ...*d
 		routeReq, err = impl.kongAssembler.BuildKongRouteReq("", dto, serviceResp.Id, isRegexPath)
 		if err != nil {
 			goto errorHappened
+		}
+		packageApi, err := packageAPIDb.GetByAny(&orm.GatewayPackageApi{DiceApiId: gatewayApi.Id})
+		if err != nil {
+			log.WithError(err).Warnf("failed to packageAPIDb.GetByAny(&orm.GatewayPackageApi{DiceApiId: %s})", gatewayApi.Id)
+		}
+		if packageApi == nil {
+			log.WithError(errors.New("not found")).Warnf("failed to packageAPIDb.GetByAny(&orm.GatewayPackageApi{DiceApiId: %s})", gatewayApi.Id)
+		}
+		if packageApi != nil {
+			routeReq.AddTag("package_api_id", packageApi.Id)
 		}
 		routeResp, err = kongAdapter.CreateOrUpdateRoute(routeReq)
 		if err != nil {
@@ -870,6 +885,9 @@ func (impl GatewayApiServiceImpl) createApi(consumer *orm.GatewayConsumer, dto *
 		if err != nil {
 			ret = CREATE_API_ROUTE_FAIL
 			goto errorHappened
+		}
+		for _, id := range upstreamApiId {
+			routeReq.AddTag("upstream_api_id", id)
 		}
 		routeResp, err = kongAdapter.CreateOrUpdateRoute(routeReq)
 		if err != nil {

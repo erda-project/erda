@@ -15,12 +15,12 @@
 package legacy_upstream
 
 import (
-	context "context"
+	"context"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	pb "github.com/erda-project/erda-proto-go/core/hepa/legacy_upstream/pb"
+	"github.com/erda-project/erda-proto-go/core/hepa/legacy_upstream/pb"
 	"github.com/erda-project/erda/modules/hepa/common/vars"
 	"github.com/erda-project/erda/modules/hepa/gateway/dto"
 	"github.com/erda-project/erda/modules/hepa/services/legacy_upstream"
@@ -62,6 +62,8 @@ func (s *upstreamService) Register(ctx context.Context, req *pb.RegisterRequest)
 	return
 
 }
+
+// AsyncRegister PUT /api/gateway/register_async
 func (s *upstreamService) AsyncRegister(ctx context.Context, req *pb.AsyncRegisterRequest) (resp *pb.AsyncRegisterResponse, err error) {
 	service := legacy_upstream.Service.Clone(ctx)
 	if req.Upstream == nil {

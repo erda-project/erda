@@ -706,3 +706,22 @@ func (impl *KongAdapterImpl) GetRoutes() ([]KongRouteRespDto, error) {
 	}
 	return nil, errors.Errorf("get routes failed: code[%d] msg[%s]", code, body)
 }
+
+func (impl *KongAdapterImpl) GetRoutesWithTag(tag string) ([]KongRouteRespDto, error) {
+	if impl == nil {
+		return nil, errors.New("kong can't be attached")
+	}
+	code, body, err := util.DoCommonRequest(impl.Client, "GET", impl.KongAddr+RouteRoot+"?tags="+tag, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "request failed")
+	}
+	if code == 200 {
+		respDto := &KongRoutesRespDto{}
+		err = json.Unmarshal(body, respDto)
+		if err != nil {
+			return nil, errors.Wrap(err, ERR_JSON_FAIL)
+		}
+		return respDto.Routes, nil
+	}
+	return nil, errors.Errorf("get routes failed: code[%d] msg[%s]", code, body)
+}

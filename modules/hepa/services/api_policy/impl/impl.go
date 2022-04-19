@@ -578,27 +578,6 @@ func (impl GatewayApiPolicyServiceImpl) SetZonePolicyConfig(zone *orm.GatewayZon
 		apipolicy.CTX_ZONE:         zone,
 	}
 
-	if strings.EqualFold(category, "safety-csrf") {
-		routes := make(map[string]struct{})
-		apis, err := impl.packageApiDb.SelectByAny(&orm.GatewayPackageApi{ZoneId: zone.Id})
-		if err != nil {
-			log.WithError(err).Errorf("failed to impl.packageApiDb.SelectByAny(%s)", zone.Id)
-			return nil, fmt.Sprintf("执行 CSRF 策略失败, 失败原因:\n%s", errors.Cause(err)), err
-		}
-		for _, api := range apis {
-			route, err := impl.routeDB.GetByApiId(api.Id)
-			if err != nil {
-				log.WithError(err).Errorf("failed to impl.routeDB.GetByApiId(%s)", api.Id)
-				return nil, fmt.Sprintf("执行 CSRF 策略失败, 失败原因:\n%s", errors.Cause(err)), err
-			}
-			if route == nil {
-				log.Errorf("failed to impl.routeDB.GetByApiId(%s): not found", api.Id)
-				continue
-			}
-			routes[route.RouteId] = struct{}{}
-		}
-		ctx["routes"] = routes
-	}
 	err = impl.executePolicyEngine(zone, category, policyEngine, config, dto, ctx, policyService, k8sAdapter, helper, needDeployTag...)
 	if err != nil {
 		return nil, fmt.Sprintf("执行策略失败, 失败原因:\n%s", errors.Cause(err)), err
