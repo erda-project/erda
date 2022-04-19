@@ -23,7 +23,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda-proto-go/core/token/pb"
+	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cluster-dialer/config"
 )
@@ -35,7 +35,7 @@ const (
 type Option func(authorizer *Authorizer)
 
 type Authorizer struct {
-	Credential pb.TokenServiceServer
+	Credential tokenpb.TokenServiceServer
 	cfg        *config.Config
 }
 
@@ -50,7 +50,7 @@ func New(opts ...Option) *Authorizer {
 }
 
 // WithCredentialClient with core-services credential client
-func WithCredentialClient(credential pb.TokenServiceServer) Option {
+func WithCredentialClient(credential tokenpb.TokenServiceServer) Option {
 	return func(a *Authorizer) {
 		a.Credential = credential
 	}
@@ -88,7 +88,7 @@ func (a *Authorizer) Authorizer(req *http.Request) (string, bool, error) {
 	logrus.Debugf("get auth info: %s", authInfo)
 
 	// Doesn't need cache now
-	akSkResp, err := a.Credential.QueryTokens(context.Background(), &pb.QueryTokensRequest{
+	akSkResp, err := a.Credential.QueryTokens(context.Background(), &tokenpb.QueryTokensRequest{
 		Access:  authInfo,
 		Scope:   apistructs.CMPClusterScope,
 		ScopeId: clusterKey,

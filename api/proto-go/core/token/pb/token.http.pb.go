@@ -23,7 +23,7 @@ const _ = http.SupportPackageIsVersion1
 type TokenServiceHandler interface {
 	// GET /api/tokens/{id}
 	GetToken(context.Context, *GetTokenRequest) (*GetTokenResponse, error)
-	// GET /api/tokens/actions/query
+	// GET /api/tokens
 	QueryTokens(context.Context, *QueryTokensRequest) (*QueryTokensResponse, error)
 	// POST /api/tokens
 	CreateToken(context.Context, *CreateTokenRequest) (*CreateTokenResponse, error)
@@ -306,7 +306,7 @@ func RegisterTokenServiceHandler(r http.Router, srv TokenServiceHandler, opts ..
 	}
 
 	add_GetToken("GET", "/api/tokens/{id}", srv.GetToken)
-	add_QueryTokens("GET", "/api/tokens/actions/query", srv.QueryTokens)
+	add_QueryTokens("GET", "/api/tokens", srv.QueryTokens)
 	add_CreateToken("POST", "/api/tokens", srv.CreateToken)
 	add_UpdateToken("PUT", "/api/tokens/{id}", srv.UpdateToken)
 	add_DeleteToken("DELETE", "/api/tokens/{id}", srv.DeleteToken)

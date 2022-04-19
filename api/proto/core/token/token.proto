@@ -27,10 +27,10 @@ service TokenService {
 
   rpc QueryTokens(QueryTokensRequest) returns (QueryTokensResponse) {
     option (google.api.http) = {
-      get: "/api/tokens/actions/query",
+      get: "/api/tokens",
     };
     option (erda.common.openapi) = {
-      path: "/api/tokens/actions/query",
+      path: "/api/tokens",
       auth: {
         check_login: true,
         check_token: true,
