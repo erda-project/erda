@@ -30,6 +30,7 @@ const (
 	MSPTerminusOrgNameTag        = "msp.erda.cloud/org_name"
 	PipelineTaskMaxRetryLimit    = 144
 	PipelineTaskMaxRetryDuration = 24 * time.Hour
+	PipelineTaskMaxErrorPerHour  = 180
 )
 
 type PipelineTaskDTO struct {
@@ -203,6 +204,13 @@ type PipelineTaskErrCtx struct {
 	Count     uint64    `json:"count"`
 }
 
+func (c *PipelineTaskErrCtx) CalculateFrequencyPerHour() uint64 {
+	if c.StartTime.IsZero() || c.EndTime.IsZero() || c.EndTime.Sub(c.StartTime) <= time.Hour {
+		return c.Count
+	}
+	return uint64(float64(c.Count) / c.EndTime.Sub(c.StartTime).Hours())
+}
+
 type orderedResponses []*PipelineTaskErrResponse
 
 func (o orderedResponses) Len() int           { return len(o) }
@@ -274,10 +282,8 @@ func (t *PipelineTaskInspect) ConvertErrors() {
 }
 
 func (t *PipelineTaskInspect) IsErrorsExceed() (bool, *PipelineTaskErrResponse) {
-	now := time.Now()
 	for _, g := range t.Errors {
-		if (!g.Ctx.StartTime.IsZero() && g.Ctx.StartTime.Add(PipelineTaskMaxRetryDuration).Before(now)) ||
-			g.Ctx.Count >= PipelineTaskMaxRetryLimit {
+		if g.Ctx.CalculateFrequencyPerHour() > PipelineTaskMaxErrorPerHour {
 			return true, g
 		}
 	}
