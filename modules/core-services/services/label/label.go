@@ -15,6 +15,7 @@
 package label
 
 import (
+	"strconv"
 	"unicode/utf8"
 
 	"github.com/jinzhu/gorm"
@@ -166,7 +167,7 @@ func (l *Label) CreateRelation(lr *dao.LabelRelation) error {
 }
 
 func (l *Label) DeleteRelations(refType apistructs.ProjectLabelType, refID uint64) error {
-	return l.db.DeleteLabelRelations(refType, refID)
+	return l.db.DeleteLabelRelations(refType, strconv.FormatUint(refID, 10))
 }
 
 func (l *Label) checkCreateParam(req *apistructs.ProjectLabelCreateRequest) error {

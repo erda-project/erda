@@ -15,6 +15,7 @@
 package pipelinesvc
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"time"
@@ -165,7 +166,7 @@ func (s *PipelineSvc) makePipelineFromRequest(req *apistructs.PipelineCreateRequ
 	}
 	p.Extra.ConfigManageNamespaceOfSecrets = ns
 	if req.UserID != "" {
-		p.Extra.SubmitUser = s.tryGetUser(req.UserID)
+		p.Extra.SubmitUser = s.user.TryGetUser(context.Background(), req.UserID)
 	}
 	p.Extra.IsAutoRun = req.AutoRun
 	p.Extra.CallbackURLs = req.CallbackURLs
@@ -368,7 +369,7 @@ func (s *PipelineSvc) CreatePipelineGraph(p *spec.Pipeline) (newStages []spec.Pi
 		}
 
 		// calculate pipeline applied resource after all snippetTask created
-		pipelineAppliedResources, err := s.calculatePipelineResources(pipelineYml)
+		pipelineAppliedResources, err := s.calculatePipelineResources(pipelineYml, p)
 		if err != nil {
 			return nil, apierrors.ErrCreatePipelineGraph.InternalError(
 				fmt.Errorf("failed to search pipeline action resrouces, err: %v", err))

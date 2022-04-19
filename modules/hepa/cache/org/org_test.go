@@ -12,16 +12,34 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org_test
+package org
 
 import (
 	"testing"
+	"time"
 
-	"github.com/erda-project/erda/modules/hepa/cache/org"
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/pkg/cache"
 )
 
-func TestUserCanAccessTheScopeReq(t *testing.T) {
-	org.UserCanAccessTheScopeReq("", "100", "")
-	org.UserCanAccessTheScopeReq("", "100", "100")
-	org.CanAccess(nil, false)
+func TestUserCanAccessTheApp(t *testing.T) {
+	scopeAccess = cache.New(scopeAccessName, time.Minute, func(i interface{}) (interface{}, bool) {
+		us := i.(userScope)
+		time.Sleep(time.Second * 10)
+		return &apistructs.ScopeRole{
+			Scope: apistructs.Scope{
+				Type: us.Scope,
+				ID:   us.UserID,
+			},
+			Access: us.Scope == apistructs.AppScope,
+			Roles:  nil,
+		}, true
+	})
+
+	if ok := UserCanAccessTheApp("100001", "1000"); !ok {
+		t.Error("it should not be false")
+	}
+	if ok := UserCanAccessTheProject("100001", "1000"); ok {
+		t.Error("it should not be true")
+	}
 }

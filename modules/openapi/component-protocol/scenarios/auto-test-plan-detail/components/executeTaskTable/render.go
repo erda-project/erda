@@ -283,6 +283,9 @@ func getStatus(req apistructs.PipelineStatus, i18nLocale *i18n.LocaleResource) m
 	if req.IsDisabledStatus() {
 		res["status"] = "default"
 	}
+	if req.IsNoNeedBySystem() {
+		res["status"] = "default"
+	}
 	return res
 }
 

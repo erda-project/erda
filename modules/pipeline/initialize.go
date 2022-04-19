@@ -53,7 +53,6 @@ import (
 	"github.com/erda-project/erda/pkg/jsonstore/etcd"
 	"github.com/erda-project/erda/pkg/pipeline_network_hook_client"
 	"github.com/erda-project/erda/pkg/pipeline_snippet_client"
-	// "terminus.io/dice/telemetry/promxp"
 )
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -124,7 +123,7 @@ func (p *provider) do() error {
 	buildCacheSvc := buildcachesvc.New(dbClient)
 	permissionSvc := permissionsvc.New(bdl)
 	actionAgentSvc := actionagentsvc.New(dbClient, bdl, js, etcdctl)
-	extMarketSvc := extmarketsvc.New(bdl)
+	extMarketSvc := extmarketsvc.New(bdl, p.ActionService)
 	reportSvc := reportsvc.New(reportsvc.WithDBClient(dbClient))
 	queueManage := queuemanage.New(queuemanage.WithDBClient(dbClient))
 
@@ -132,6 +131,9 @@ func (p *provider) do() error {
 	pipelineSvc := pipelinesvc.New(appSvc, p.CronDaemon, actionAgentSvc, extMarketSvc, p.CronService,
 		permissionSvc, queueManage, dbClient, bdl, publisher, p.Engine, js, etcdctl, p.ClusterInfo, p.Cache)
 	pipelineSvc.WithCmsService(p.CmsService)
+	pipelineSvc.WithSecret(p.Secret)
+	pipelineSvc.WithUser(p.User)
+	pipelineSvc.WithRun(p.PipelineRun)
 
 	// todo resolve cycle import here through better module architecture
 	pipelineFuncs := reconciler.PipelineSvcFuncs{
@@ -145,6 +147,7 @@ func (p *provider) do() error {
 	pipelinefunc.CallbackActionFunc = pipelineSvc.DealPipelineCallbackOfAction
 
 	p.Reconciler.InjectLegacyFields(&pipelineFuncs, actionAgentSvc, extMarketSvc)
+	p.EdgePipeline.InjectLegacyFields(pipelineSvc)
 
 	if err := registerSnippetClient(dbClient); err != nil {
 		return err
@@ -173,11 +176,15 @@ func (p *provider) do() error {
 		endpoints.WithQueueManager(p.QueueManager),
 		endpoints.WithEngine(p.Engine),
 		endpoints.WithClusterInfo(p.ClusterInfo),
+		endpoints.WithEdgePipeline(p.EdgePipeline),
 		endpoints.WithMysql(p.MySQL),
+		endpoints.WithRun(p.PipelineRun),
+		endpoints.WithCancel(p.Cancel),
 	)
 
 	p.CronDaemon.WithPipelineFunc(pipelineSvc.CreateV2)
-	p.CronCompensate.WithPipelineFunc(compensator.PipelineFunc{CreatePipeline: pipelineSvc.CreateV2, RunPipeline: pipelineSvc.RunPipeline})
+	p.CronCompensate.WithPipelineFunc(compensator.PipelineFunc{CreatePipeline: pipelineSvc.CreateV2, RunPipeline: p.PipelineRun.RunOnePipeline})
+	p.Cache.SetExtMarketSvc(extMarketSvc)
 
 	//server.Router().Path("/metrics").Methods(http.MethodGet).Handler(promxp.Handler("pipeline"))
 	server := httpserver.New(conf.ListenAddr())

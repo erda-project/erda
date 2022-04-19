@@ -37,14 +37,14 @@ type K8sSpark struct {
 }
 
 func New(name types.Name, clusterName string, cluster apistructs.ClusterInfo) (*K8sSpark, error) {
-	kc, err := k8sclient.NewWithTimeOut(clusterName, time.Duration(conf.K8SExecutorMaxInitializationSec())*time.Second)
+	client, err := k8sclient.New(clusterName, k8sclient.WithTimeout(time.Duration(conf.K8SExecutorMaxInitializationSec())*time.Second))
 	if err != nil {
 		return nil, err
 	}
 	k8sSpark := &K8sSpark{
 		name:        name,
 		clusterName: clusterName,
-		client:      kc,
+		client:      client,
 		cluster:     cluster,
 		errWrapper:  logic.NewErrorWrapper(name.String()),
 	}

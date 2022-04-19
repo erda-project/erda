@@ -68,7 +68,7 @@ func (q *queue) Processing() (interface{}, error) {
 	}
 	alerted := false
 
-	err := loop.New(loop.WithDeclineRatio(1.5), loop.WithDeclineLimit(time.Second*10)).Do(func() (abort bool, err error) {
+	err := loop.New(loop.WithContext(q.Ctx), loop.WithDeclineRatio(1.5), loop.WithDeclineLimit(time.Second*10)).Do(func() (abort bool, err error) {
 		// 排队超时钉钉告警
 		if !alerted && time.Now().Sub(beginQueue) > conf.TaskQueueAlertTime() {
 			logrus.Errorf("[pipeline] task queue exceed %v, beginTime: %s, now: %s, cluster: %s, pipelineID: %d, taskID: %d, taskName: %s, reason: %s",

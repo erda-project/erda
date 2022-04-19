@@ -15,6 +15,7 @@
 package pipelinesvc
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -119,6 +120,10 @@ func (s *PipelineSvc) Detail(pipelineID uint64) (*apistructs.PipelineDetailDTO, 
 					Name:  "task-events",
 					Value: task.Inspect.Events,
 				})
+			}
+			// set analyzed yaml task to NoNeedBySystem to simulate db task's behaviour
+			if p.Status.IsStopByUser() && task.Status == apistructs.PipelineStatusAnalyzed {
+				task.Status = apistructs.PipelineStatusNoNeedBySystem
 			}
 			taskDTOs = append(taskDTOs, *task.Convert2DTO())
 		}
@@ -333,7 +338,7 @@ func (s *PipelineSvc) setPipelineButtons(p spec.Pipeline, pc *spec.PipelineCron)
 	}()
 
 	button = apistructs.PipelineButton{
-		CanManualRun:   func() bool { _, can := s.canManualRun(p); return can }(),
+		CanManualRun:   func() bool { _, can := s.run.CanManualRun(context.Background(), &p); return can }(),
 		CanCancel:      canCancel(p),
 		CanForceCancel: canForceCancel(p),
 		CanRerun:       canRerun(p),
@@ -346,36 +351,6 @@ func (s *PipelineSvc) setPipelineButtons(p spec.Pipeline, pc *spec.PipelineCron)
 	}
 
 	return
-}
-
-func (s *PipelineSvc) canManualRun(p spec.Pipeline) (reason string, can bool) {
-	can = false
-
-	if p.Status != apistructs.PipelineStatusAnalyzed {
-		reason = fmt.Sprintf("pipeline already begin run")
-		return
-	}
-	if p.Extra.ShowMessage != nil && p.Extra.ShowMessage.AbortRun {
-		reason = "abort run, please check PreCheck result"
-		return
-	}
-	if p.Type == apistructs.PipelineTypeRerunFailed && p.Extra.RerunFailedDetail != nil {
-		rerunPipelineID := p.Extra.RerunFailedDetail.RerunPipelineID
-		if rerunPipelineID > 0 {
-			origin, err := s.dbClient.GetPipeline(rerunPipelineID)
-			if err != nil {
-				reason = fmt.Sprintf("failed to get origin pipeline when set canManualRun, rerunPipelineID: %d, err: %v", rerunPipelineID, err)
-				return
-			}
-			if origin.Extra.CompleteReconcilerGC {
-				reason = fmt.Sprintf("dependent rerun pipeline already been cleaned, rerunPipelineID: %d", rerunPipelineID)
-				return
-			}
-		}
-	}
-
-	// default
-	return "", true
 }
 
 func canCancel(p spec.Pipeline) bool {

@@ -33,7 +33,7 @@ import (
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
-func (s *PipelineSvc) CreateV2(req *apistructs.PipelineCreateRequestV2) (*spec.Pipeline, error) {
+func (s *PipelineSvc) CreateV2(ctx context.Context, req *apistructs.PipelineCreateRequestV2) (*spec.Pipeline, error) {
 	// validate
 	if err := s.validateCreateRequest(req); err != nil {
 		return nil, err
@@ -57,7 +57,7 @@ func (s *PipelineSvc) CreateV2(req *apistructs.PipelineCreateRequestV2) (*spec.P
 
 	// 立即执行一次
 	if req.AutoRunAtOnce {
-		_p, err := s.RunPipeline(&apistructs.PipelineRunRequest{
+		_p, err := s.run.RunOnePipeline(ctx, &apistructs.PipelineRunRequest{
 			PipelineID:        p.ID,
 			ForceRun:          req.ForceRun,
 			IdentityInfo:      req.IdentityInfo,
@@ -183,7 +183,7 @@ func (s *PipelineSvc) makePipelineFromRequestV2(req *apistructs.PipelineCreateRe
 
 	// identity
 	if req.UserID != "" {
-		p.Extra.SubmitUser = s.tryGetUser(req.UserID)
+		p.Extra.SubmitUser = s.user.TryGetUser(context.Background(), req.UserID)
 	}
 	p.Extra.InternalClient = req.InternalClient
 	p.Snapshot.IdentityInfo = req.IdentityInfo
@@ -249,7 +249,7 @@ func (s *PipelineSvc) makePipelineFromRequestV2(req *apistructs.PipelineCreateRe
 			}
 		}
 	}
-	_, extensions, err := s.extMarketSvc.SearchActions(extensionItems)
+	_, extensions, err := s.extMarketSvc.SearchActions(extensionItems, extmarketsvc.MakeActionLocationsBySource(p.PipelineSource))
 	if err != nil {
 		return nil, apierrors.ErrCreatePipeline.InternalError(err)
 	}

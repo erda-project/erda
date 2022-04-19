@@ -15,13 +15,15 @@
 package pipelinesvc
 
 import (
+	"context"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 )
 
 // Rerun commit 不变
-func (s *PipelineSvc) Rerun(req *apistructs.PipelineRerunRequest) (*spec.Pipeline, error) {
+func (s *PipelineSvc) Rerun(ctx context.Context, req *apistructs.PipelineRerunRequest) (*spec.Pipeline, error) {
 
 	origin, err := s.dbClient.GetPipeline(req.PipelineID)
 	if err != nil {
@@ -42,7 +44,7 @@ func (s *PipelineSvc) Rerun(req *apistructs.PipelineRerunRequest) (*spec.Pipelin
 	}
 	origin.Labels[apistructs.LabelPipelineType] = apistructs.PipelineTypeRerun.String()
 
-	p, err := s.CreateV2(&apistructs.PipelineCreateRequestV2{
+	p, err := s.CreateV2(ctx, &apistructs.PipelineCreateRequestV2{
 		PipelineYml:            origin.PipelineYml,
 		ClusterName:            origin.ClusterName,
 		PipelineYmlName:        origin.PipelineYmlName,

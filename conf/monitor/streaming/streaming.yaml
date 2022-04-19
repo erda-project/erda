@@ -180,9 +180,10 @@ log-persist-v1:
       writer_config:
         parallelism: ${CASSANDRA_PARALLELISM:3}
         batch:
+          size_bytse: ${CASSANDRA_BATCH_SIZE_BYTES:307200}
           size: ${CASSANDRA_BATCH_SIZE:50}
           timeout: ${CASSANDRA_BATCH_TIMEOUT:10s}
-        retry: -1  # block forever. kafka will handle the issue of stream block
+        retry: ${CASSANDRA_WRITE_RETRY:-1}  # -1 means block forever. kafka will handle the issue of stream block
       session_config:
         keyspace:
           name: "spot_prod"

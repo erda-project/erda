@@ -23,6 +23,9 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/providers/clusterinfo"
 	"github.com/erda-project/erda/modules/pipeline/providers/cron/daemon"
 	"github.com/erda-project/erda/modules/pipeline/providers/engine"
+	"github.com/erda-project/erda/modules/pipeline/providers/run"
+	"github.com/erda-project/erda/modules/pipeline/providers/secret"
+	"github.com/erda-project/erda/modules/pipeline/providers/user"
 	"github.com/erda-project/erda/modules/pipeline/services/actionagentsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/appsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
@@ -55,6 +58,9 @@ type PipelineSvc struct {
 	// providers
 	cmsService  pb.CmsServiceServer
 	clusterInfo clusterinfo.Interface
+	secret      secret.Interface
+	user        user.Interface
+	run         run.Interface
 }
 
 func New(appSvc *appsvc.AppSvc, crondSvc daemon.Interface,
@@ -85,4 +91,16 @@ func New(appSvc *appsvc.AppSvc, crondSvc daemon.Interface,
 
 func (s *PipelineSvc) WithCmsService(cmsService pb.CmsServiceServer) {
 	s.cmsService = cmsService
+}
+
+func (s *PipelineSvc) WithSecret(secret secret.Interface) {
+	s.secret = secret
+}
+
+func (s *PipelineSvc) WithUser(user user.Interface) {
+	s.user = user
+}
+
+func (s *PipelineSvc) WithRun(run run.Interface) {
+	s.run = run
 }

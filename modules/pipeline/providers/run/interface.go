@@ -12,30 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pipelinesvc
+package run
 
 import (
-	"fmt"
-	"reflect"
-	"testing"
-
-	"bou.ke/monkey"
-	"github.com/stretchr/testify/assert"
+	"context"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/pipeline/spec"
 )
 
-func TestPipelineSvc_tryGetUser(t *testing.T) {
-	bdl := &bundle.Bundle{}
-	m := monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetCurrentUser",
-		func(bdl *bundle.Bundle, userID string) (*apistructs.UserInfo, error) {
-			return nil, fmt.Errorf("fake error")
-		})
-	defer m.Unpatch()
-	s := &PipelineSvc{bdl: bdl}
-	invalidUserID := "invalid user id"
-	user := s.tryGetUser(invalidUserID)
-	assert.Equal(t, invalidUserID, user.ID)
-	assert.Empty(t, user.Name)
+type Interface interface {
+	RunOnePipeline(ctx context.Context, req *apistructs.PipelineRunRequest) (*spec.Pipeline, error)
+	CanManualRun(ctx context.Context, p *spec.Pipeline) (reason string, can bool)
 }
