@@ -24,6 +24,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/commonutil/statusutil"
 	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/retry"
 )
 
@@ -31,6 +32,7 @@ func (client *Client) CreatePipelineTask(pt *spec.PipelineTask, ops ...SessionOp
 	session := client.NewSession(ops...)
 	defer session.Close()
 
+	pt.ID = uuid.SnowFlakeIDUint64()
 	_, err = session.InsertOne(pt)
 	return err
 }

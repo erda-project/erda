@@ -24,6 +24,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -51,6 +52,7 @@ func (client *Client) CreatePipelineQueue(req apistructs.PipelineQueueCreateRequ
 		PipelineSource: req.PipelineSource,
 		Key:            queueLabelKeyID,
 		Value:          "see db id",
+		ID:             uuid.SnowFlakeIDUint64(),
 	}
 	_, err := session.InsertOne(&queueIDLabel)
 	if err != nil {

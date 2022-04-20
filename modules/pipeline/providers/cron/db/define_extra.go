@@ -19,6 +19,7 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	"github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
+	"github.com/erda-project/erda/pkg/crypto/uuid"
 )
 
 // return: result, total, nil
@@ -157,6 +158,7 @@ func (client *Client) InsertOrUpdatePipelineCron(new_ *PipelineCron, ops ...mysq
 func (client *Client) CreatePipelineCron(cron *PipelineCron, ops ...mysqlxorm.SessionOption) error {
 	session := client.NewSession(ops...)
 	defer session.Close()
+	cron.ID = uuid.SnowFlakeIDUint64()
 
 	_, err := session.InsertOne(cron)
 	return errors.Wrapf(err, "failed to create pipeline cron, applicationID [%d], branch [%s], expr [%s], enable [%v]", cron.ApplicationID, cron.Branch, cron.CronExpr, cron.Enable)
