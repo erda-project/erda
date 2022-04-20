@@ -21,14 +21,14 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda-proto-go/core/token/pb"
+	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/modules/cluster-dialer/config"
 	"github.com/erda-project/erda/modules/cluster-dialer/server"
 )
 
 type provider struct {
-	Cfg        *config.Config        // auto inject this field
-	Credential pb.TokenServiceServer `autowired:"erda.core.token.TokenService" optional:"true"`
+	Cfg        *config.Config             // auto inject this field
+	Credential tokenpb.TokenServiceServer `autowired:"erda.core.token.TokenService" optional:"true"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {

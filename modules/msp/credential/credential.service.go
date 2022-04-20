@@ -19,8 +19,8 @@ import (
 	"context"
 	"encoding/csv"
 	"strconv"
+	"strings"
 
-	akpb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda-proto-go/msp/credential/pb"
 	tenantpb "github.com/erda-project/erda-proto-go/msp/tenant/pb"
@@ -34,14 +34,12 @@ type accessKeyService struct {
 	p *provider
 }
 
-const MSP_SCOPE = "msp_env"
-
 func (a *accessKeyService) QueryAccessKeys(ctx context.Context, request *pb.QueryAccessKeysRequest) (*pb.QueryAccessKeysResponse, error) {
 	req := &tokenpb.QueryTokensRequest{
 		Access:   request.AccessKey,
 		PageNo:   request.PageNo,
 		PageSize: request.PageSize,
-		Scope:    MSP_SCOPE,
+		Scope:    strings.ToLower(tokenpb.ScopeEnum_MSP_ENV.String()),
 		ScopeId:  request.ScopeId,
 	}
 	accessKeyList, err := a.p.TokenService.QueryTokens(ctx, req)
@@ -104,7 +102,7 @@ func (a *accessKeyService) CreateAccessKey(ctx context.Context, request *pb.Crea
 	req := &tokenpb.CreateTokenRequest{
 		Type:        mysqltokenstore.AccessKey.String(),
 		Description: request.Description,
-		Scope:       MSP_SCOPE,
+		Scope:       strings.ToLower(tokenpb.ScopeEnum_MSP_ENV.String()),
 		ScopeId:     request.ScopeId,
 		CreatorId:   userIdStr,
 	}
@@ -176,7 +174,7 @@ func (a *accessKeyService) GetAccessKey(ctx context.Context, request *pb.GetAcce
 		return nil, errors.NewInternalServerError(err)
 	}
 	result := &pb.GetAccessKeyResponse{
-		Data: &akpb.AccessKeysItem{
+		Data: &pb.AccessKeysItem{
 			Id:          token.Id,
 			AccessKey:   token.Access,
 			SecretKey:   token.SecretKey,

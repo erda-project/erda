@@ -90,7 +90,7 @@ func (a *Authorizer) Authorizer(req *http.Request) (string, bool, error) {
 	// Doesn't need cache now
 	akSkResp, err := a.Credential.QueryTokens(context.Background(), &tokenpb.QueryTokensRequest{
 		Access:  authInfo,
-		Scope:   apistructs.CMPClusterScope,
+		Scope:   strings.ToLower(tokenpb.ScopeEnum_CMP_CLUSTER.String()),
 		ScopeId: clusterKey,
 	})
 	if err != nil {

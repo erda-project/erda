@@ -122,7 +122,7 @@ func (d *dao) DeleteToken(ctx context.Context, req *pb.DeleteTokenRequest) error
 func toModel(req *pb.CreateTokenRequest) tokenstore.TokenStoreItem {
 	pair := secret.CreateAkSkPair()
 	return tokenstore.TokenStoreItem{
-		Access:      pair.AccessKeyID,
+		AccessKey:   pair.AccessKeyID,
 		SecretKey:   pair.SecretKey,
 		Description: req.Description,
 		Scope:       req.Scope,

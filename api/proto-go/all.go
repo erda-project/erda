@@ -53,8 +53,6 @@ import (
 	_ "github.com/erda-project/erda-proto-go/core/pipeline/report/pb"
 	_ "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
 	_ "github.com/erda-project/erda-proto-go/core/pipeline/trigger/pb"
-	_ "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
-	_ "github.com/erda-project/erda-proto-go/core/services/authentication/pb"
 	_ "github.com/erda-project/erda-proto-go/core/services/errorbox/pb"
 	_ "github.com/erda-project/erda-proto-go/core/services/filemanager/pb"
 	_ "github.com/erda-project/erda-proto-go/core/services/notify/pb"

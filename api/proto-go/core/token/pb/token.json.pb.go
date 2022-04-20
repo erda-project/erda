@@ -35,6 +35,8 @@ var _ json.Marshaler = (*DeleteTokenRequest)(nil)
 var _ json.Unmarshaler = (*DeleteTokenRequest)(nil)
 var _ json.Marshaler = (*DeleteTokenResponse)(nil)
 var _ json.Unmarshaler = (*DeleteTokenResponse)(nil)
+var _ json.Marshaler = (*ScopeEnum)(nil)
+var _ json.Unmarshaler = (*ScopeEnum)(nil)
 
 // GetTokenRequest implement json.Marshaler.
 func (m *GetTokenRequest) MarshalJSON() ([]byte, error) {
@@ -229,6 +231,24 @@ func (m *DeleteTokenResponse) MarshalJSON() ([]byte, error) {
 
 // DeleteTokenResponse implement json.Marshaler.
 func (m *DeleteTokenResponse) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// ScopeEnum implement json.Marshaler.
+func (m *ScopeEnum) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// ScopeEnum implement json.Marshaler.
+func (m *ScopeEnum) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)

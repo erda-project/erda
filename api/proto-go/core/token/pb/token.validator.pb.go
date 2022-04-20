@@ -80,3 +80,6 @@ func (this *DeleteTokenRequest) Validate() error {
 func (this *DeleteTokenResponse) Validate() error {
 	return nil
 }
+func (this *ScopeEnum) Validate() error {
+	return nil
+}

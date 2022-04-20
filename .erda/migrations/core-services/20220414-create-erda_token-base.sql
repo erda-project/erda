@@ -2,7 +2,7 @@ CREATE TABLE `erda_token` (
   `id` varchar(36) NOT NULL COMMENT 'primary key',
   `secret_key` char(32) NOT NULL DEFAULT '' COMMENT 'secret key',
   `code` varchar(191) NOT NULL DEFAULT '' COMMENT 'code',
-  `access` varchar(4096) NOT NULL DEFAULT '' COMMENT 'access',
+  `access_key` varchar(4096) NOT NULL DEFAULT '' COMMENT 'access key',
   `status` varchar(4096) NOT NULL DEFAULT '' COMMENT 'status',
   `description` varchar(255) NOT NULL DEFAULT '' COMMENT 'description',
   `data` text NOT NULL COMMENT 'data',
@@ -21,6 +21,6 @@ CREATE TABLE `erda_token` (
   KEY `idx_scope` (`scope`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='erda token';
 
-INSERT INTO `erda_token` (id, secret_key, access, data, description, scope, scope_id, type, creator_id, created_at, updated_at)
+INSERT INTO `erda_token` (id, secret_key, access_key, data, description, scope, scope_id, type, creator_id, created_at, updated_at)
 SELECT UUID(), secret_key, access_key, '', description, scope, scope_id, 'AccessKey', creator_id, created_at, updated_at
 FROM `erda_access_key`;

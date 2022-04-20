@@ -17,6 +17,7 @@ package clusters
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
@@ -25,6 +26,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/erda-project/erda-proto-go/core/token/pb"
+	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cmp/conf"
 	"github.com/erda-project/erda/modules/cmp/dbclient"
@@ -33,15 +35,15 @@ import (
 )
 
 // GetAccessKey get access key with cluster name.
-func (c *Clusters) GetAccessKey(clusterName string) (*pb.QueryTokensResponse, error) {
-	return c.credential.QueryTokens(context.Background(), &pb.QueryTokensRequest{
-		Scope:   apistructs.CMPClusterScope,
+func (c *Clusters) GetAccessKey(clusterName string) (*tokenpb.QueryTokensResponse, error) {
+	return c.credential.QueryTokens(context.Background(), &tokenpb.QueryTokensRequest{
+		Scope:   strings.ToLower(tokenpb.ScopeEnum_CMP_CLUSTER.String()),
 		ScopeId: clusterName,
 	})
 }
 
 // GetOrCreateAccessKey get or create access key
-func (c *Clusters) GetOrCreateAccessKey(clusterName string) (*pb.Token, error) {
+func (c *Clusters) GetOrCreateAccessKey(clusterName string) (*tokenpb.Token, error) {
 	ak, err := c.GetAccessKey(clusterName)
 	if err != nil {
 		logrus.Errorf("get access key error when create precheck: %v", err)
@@ -60,7 +62,7 @@ func (c *Clusters) GetOrCreateAccessKey(clusterName string) (*pb.Token, error) {
 
 	// Create accessKey
 	res, err := c.credential.CreateToken(context.Background(), &pb.CreateTokenRequest{
-		Scope:   apistructs.CMPClusterScope,
+		Scope:   strings.ToLower(tokenpb.ScopeEnum_CMP_CLUSTER.String()),
 		ScopeId: clusterName,
 		Type:    mysqltokenstore.AccessKey.String(),
 	})

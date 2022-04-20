@@ -27,6 +27,7 @@ var _ urlenc.URLValuesUnmarshaler = (*UpdateTokenRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*UpdateTokenResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*DeleteTokenRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*DeleteTokenResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*ScopeEnum)(nil)
 
 // GetTokenRequest implement urlenc.URLValuesUnmarshaler.
 func (m *GetTokenRequest) UnmarshalURLValues(prefix string, values url.Values) error {
@@ -808,5 +809,10 @@ func (m *DeleteTokenRequest) UnmarshalURLValues(prefix string, values url.Values
 
 // DeleteTokenResponse implement urlenc.URLValuesUnmarshaler.
 func (m *DeleteTokenResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	return nil
+}
+
+// ScopeEnum implement urlenc.URLValuesUnmarshaler.
+func (m *ScopeEnum) UnmarshalURLValues(prefix string, values url.Values) error {
 	return nil
 }

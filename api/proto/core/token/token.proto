@@ -119,9 +119,9 @@ message QueryTokensResponse {
 message CreateTokenRequest {
   string type = 1;
   string description = 2;
-  string scope = 4;
-  string scopeId = 5;
-  string creatorId = 6;
+  string scope = 3;
+  string scopeId = 4;
+  string creatorId = 5;
 }
 
 message CreateTokenResponse {
@@ -131,7 +131,7 @@ message CreateTokenResponse {
 message UpdateTokenRequest {
   string id = 1;
   string status = 2;
-  string description = 6;
+  string description = 3;
 }
 
 message UpdateTokenResponse {}
@@ -141,3 +141,10 @@ message DeleteTokenRequest {
 }
 
 message DeleteTokenResponse {}
+
+message ScopeEnum {
+  enum Scope {
+    MSP_ENV       = 0;
+    CMP_CLUSTER   = 1;
+  }
+}
