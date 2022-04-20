@@ -16,4 +16,5 @@ package common
 
 const (
 	ScenarioKey = "requirement-task-overview"
+	IssueTarget = "projectAllIssue"
 )

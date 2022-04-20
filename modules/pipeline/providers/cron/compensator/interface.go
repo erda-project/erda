@@ -26,8 +26,8 @@ type PipelineFunc struct {
 	CreatePipeline CreatePipelineFunc
 }
 
-type RunPipelineFunc func(req *apistructs.PipelineRunRequest) (*spec.Pipeline, error)
-type CreatePipelineFunc func(req *apistructs.PipelineCreateRequestV2) (*spec.Pipeline, error)
+type RunPipelineFunc func(ctx context.Context, req *apistructs.PipelineRunRequest) (*spec.Pipeline, error)
+type CreatePipelineFunc func(ctx context.Context, req *apistructs.PipelineCreateRequestV2) (*spec.Pipeline, error)
 
 type Interface interface {
 	PipelineCronCompensate(ctx context.Context, pipelineID uint64)

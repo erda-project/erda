@@ -29,7 +29,9 @@ const (
 )
 
 const (
-	PipelineTypeCICD ProjectPipelineType = "cicd"
+	PipelineTypeDefault ProjectPipelineType = "default"
+	PipelineTypeCICD    ProjectPipelineType = "cicd"
+	PipelineTypeFDP     ProjectPipelineType = "fdp"
 )
 
 const (
@@ -53,6 +55,14 @@ var CategoryKeyRuleMap = map[PipelineCategory][]string{
 	CategoryBuildArtifact:        {".erda/pipelines/ci-artifact.yml"},
 	CategoryBuildCombineArtifact: {".erda/pipelines/combine-artifact.yml"},
 	CategoryBuildIntegration:     {".erda/pipelines/integration.yml"},
+}
+
+var CategoryKeyI18NameMap = map[PipelineCategory]string{
+	CategoryBuildDeploy:          "BuildDeploy",
+	CategoryBuildArtifact:        "BuildArtifact",
+	CategoryBuildCombineArtifact: "BuildCombineArtifact",
+	CategoryBuildIntegration:     "BuildIntegration",
+	CategoryOthers:               "Uncategorized",
 }
 
 func GetRuleCategoryKeyMap() map[string]PipelineCategory {

@@ -23,6 +23,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
+	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
 )
 
 type config struct {
@@ -36,7 +37,8 @@ type provider struct {
 	dbClient *dbclient.Client
 	bdl      *bundle.Bundle
 
-	cacheMap sync.Map
+	cacheMap     sync.Map
+	extMarketSvc *extmarketsvc.ExtMarketSvc
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {

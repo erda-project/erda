@@ -15,6 +15,7 @@
 package pipelinesvc
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"time"
@@ -43,9 +44,12 @@ func (s *PipelineSvc) Create(req *apistructs.PipelineCreateRequest) (*spec.Pipel
 	if err != nil {
 		return nil, err
 	}
-	if err := s.CreatePipelineGraph(p); err != nil {
+	var stages []spec.PipelineStage
+	if stages, err = s.CreatePipelineGraph(p); err != nil {
 		return nil, err
 	}
+	// PreCheck
+	_ = s.PreCheck(p, stages, p.GetUserID(), req.AutoRun)
 	return p, nil
 }
 
@@ -162,7 +166,7 @@ func (s *PipelineSvc) makePipelineFromRequest(req *apistructs.PipelineCreateRequ
 	}
 	p.Extra.ConfigManageNamespaceOfSecrets = ns
 	if req.UserID != "" {
-		p.Extra.SubmitUser = s.tryGetUser(req.UserID)
+		p.Extra.SubmitUser = s.user.TryGetUser(context.Background(), req.UserID)
 	}
 	p.Extra.IsAutoRun = req.AutoRun
 	p.Extra.CallbackURLs = req.CallbackURLs
@@ -339,13 +343,13 @@ func (s *PipelineSvc) OperateTask(p *spec.Pipeline, task *spec.PipelineTask) (*s
 }
 
 // CreatePipelineGraph recursively create pipeline graph.
-func (s *PipelineSvc) CreatePipelineGraph(p *spec.Pipeline) (err error) {
+func (s *PipelineSvc) CreatePipelineGraph(p *spec.Pipeline) (newStages []spec.PipelineStage, err error) {
 	// parse yml
 	pipelineYml, err := pipelineyml.New(
 		[]byte(p.PipelineYml),
 	)
 	if err != nil {
-		return apierrors.ErrParsePipelineYml.InternalError(err)
+		return nil, apierrors.ErrParsePipelineYml.InternalError(err)
 	}
 
 	// init pipeline gc setting
@@ -365,7 +369,7 @@ func (s *PipelineSvc) CreatePipelineGraph(p *spec.Pipeline) (err error) {
 		}
 
 		// calculate pipeline applied resource after all snippetTask created
-		pipelineAppliedResources, err := s.calculatePipelineResources(pipelineYml)
+		pipelineAppliedResources, err := s.calculatePipelineResources(pipelineYml, p)
 		if err != nil {
 			return nil, apierrors.ErrCreatePipelineGraph.InternalError(
 				fmt.Errorf("failed to search pipeline action resrouces, err: %v", err))
@@ -380,20 +384,17 @@ func (s *PipelineSvc) CreatePipelineGraph(p *spec.Pipeline) (err error) {
 		return nil, nil
 	})
 	if err != nil {
-		return apierrors.ErrCreatePipelineGraph.InternalError(err)
+		return nil, apierrors.ErrCreatePipelineGraph.InternalError(err)
 	}
 
 	// cover stages
-	var newStages []spec.PipelineStage
 	for _, stage := range stages {
 		newStages = append(newStages, *stage)
 	}
 
-	_ = s.PreCheck(pipelineYml, p, newStages, p.GetUserID())
-
 	// events
 	events.EmitPipelineInstanceEvent(p, p.GetSubmitUserID())
-	return nil
+	return newStages, nil
 }
 
 func (s *PipelineSvc) createPipelineAndCheckNotEndStatus(p *spec.Pipeline, session *xorm.Session) error {

@@ -322,7 +322,7 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 							!apistructs.PipelineStatus(v.Status).IsEndStatus() {
 							return -1
 						}
-						return int64(v.CostTime)
+						return v.CostTime
 					}(),
 					Tip: func() string {
 						if !apistructs.PipelineStatus(v.Status).IsRunningStatus() &&
@@ -374,7 +374,7 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 				ColumnStartTime:  table.NewTextCell(formatTimeToStr(v.StartedAt.AsTime())).Build(),
 				ColumnCreateTime: table.NewTextCell(formatTimeToStr(v.TimeCreated.AsTime())).Build(),
 				ColumnMoreOperations: table.NewMoreOperationsCell(commodel.MoreOperations{
-					Ops: p.SetTableMoreOpItem(v, definitionYmlSourceMap, ymlSourceMapCronMap),
+					Ops: p.SetTableMoreOpItem(v, definitionYmlSourceMap, ymlSourceMapCronMap, appNameIDMap),
 				}).Build(),
 				ColumnSourceFile: table.NewTextCell(func() string {
 					return v.FileName
@@ -425,9 +425,10 @@ func formatTimeToStr(t time.Time) string {
 	return t.In(time.FixedZone("UTC+8", int((8 * time.Hour).Seconds()))).Format("2006-01-02 15:04:05")
 }
 
-func (p *PipelineTable) SetTableMoreOpItem(definition *pb.PipelineDefinition, definitionYmlSourceMap map[string]string, ymlSourceMapCronMap map[string]*commonpb.Cron) []commodel.MoreOpItem {
+func (p *PipelineTable) SetTableMoreOpItem(definition *pb.PipelineDefinition, definitionYmlSourceMap map[string]string, ymlSourceMapCronMap map[string]*commonpb.Cron, appNameIDMap *apistructs.GetAppIDByNamesResponseData) []commodel.MoreOpItem {
 	items := make([]commodel.MoreOpItem, 0)
 	build := cputil.NewOpBuilder().Build()
+
 	items = append(items, commodel.MoreOpItem{
 		ID: func() string {
 			if apistructs.PipelineStatus(definition.Status).IsRunningStatus() {
@@ -442,10 +443,34 @@ func (p *PipelineTable) SetTableMoreOpItem(definition *pb.PipelineDefinition, de
 			return "run"
 		}()),
 		Icon: &commodel.Icon{
-			Type: "play",
+			Type: func() string {
+				if apistructs.PipelineStatus(definition.Status).IsRunningStatus() {
+					return "pause"
+				}
+				return "play"
+			}(),
 		},
+
 		Operations: map[cptype.OperationKey]cptype.Operation{
-			commodel.OpMoreOperationsItemClick{}.OpKey(): build,
+			commodel.OpMoreOperationsItemClick{}.OpKey(): func() cptype.Operation {
+
+				if apistructs.PipelineStatus(definition.Status).IsRunningStatus() {
+					return build
+				}
+
+				build := cputil.NewOpBuilder().Build()
+				build.SkipRender = true
+
+				appName := getApplicationNameFromDefinitionRemote(definition.Remote)
+				inode := p.makeInode(appName, definition, appNameIDMap)
+				build.ServerData = &cptype.OpServerData{
+					"inode":        base64.URLEncoding.EncodeToString([]byte(inode)),
+					"appName":      appName,
+					"pipelineID":   definition.PipelineID,
+					"pipelineName": definition.Name,
+				}
+				return build
+			}(),
 		},
 	})
 	if apistructs.PipelineStatus(definition.Status).IsFailedStatus() {
@@ -525,16 +550,28 @@ func (p *PipelineTable) SetTableMoreOpItem(definition *pb.PipelineDefinition, de
 		})
 	}
 
-	updateNameBuild := build
-	updateNameBuild.SkipRender = true
 	items = append(items, commodel.MoreOpItem{
-		ID:   "updateName",
-		Text: cputil.I18n(p.sdk.Ctx, "updateName"),
-		Operations: map[cptype.OperationKey]cptype.Operation{
-			commodel.OpMoreOperationsItemClick{}.OpKey(): updateNameBuild,
-		},
+		ID:   "update",
+		Text: cputil.I18n(p.sdk.Ctx, "update"),
 		Icon: &commodel.Icon{
 			Type: "edit1",
+		},
+		Operations: map[cptype.OperationKey]cptype.Operation{
+			commodel.OpMoreOperationsItemClick{}.OpKey(): func() cptype.Operation {
+				build := cputil.NewOpBuilder().Build()
+				build.SkipRender = true
+
+				appName := getApplicationNameFromDefinitionRemote(definition.Remote)
+				inode := p.makeInode(appName, definition, appNameIDMap)
+				build.ServerData = &cptype.OpServerData{
+					"inode":        base64.URLEncoding.EncodeToString([]byte(inode)),
+					"appName":      appName,
+					"pipelineID":   definition.PipelineID,
+					"pipelineName": definition.Name,
+					"appID":        appNameIDMap.AppNameToID[appName],
+				}
+				return build
+			}(),
 		},
 	})
 	return items
@@ -748,4 +785,16 @@ func getStatus(status apistructs.PipelineStatus) commodel.UnifiedStatus {
 		return commodel.SuccessStatus
 	}
 	return commodel.DefaultStatus
+}
+
+func (p *PipelineTable) makeInode(appName string, definition *pb.PipelineDefinition, appNameIDMap *apistructs.GetAppIDByNamesResponseData) string {
+	var inode string
+	if appName != "" && appNameIDMap != nil {
+		if definition.Path == "" {
+			inode = fmt.Sprintf("%v/%v/tree/%v/%v", p.InParams.ProjectID, appNameIDMap.AppNameToID[appName], definition.Ref, definition.FileName)
+		} else {
+			inode = fmt.Sprintf("%v/%v/tree/%v/%v/%v", p.InParams.ProjectID, appNameIDMap.AppNameToID[appName], definition.Ref, definition.Path, definition.FileName)
+		}
+	}
+	return inode
 }

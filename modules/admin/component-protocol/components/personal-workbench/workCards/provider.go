@@ -181,7 +181,7 @@ func (wc *WorkCards) getProjTextMeta(sdk *cptype.SDK, project apistructs.Workben
 		metas = []cardlist.TextMeta{
 			{
 				MainText: float64(project.IssueInfo.ExpiredIssueNum),
-				SubText:  sdk.I18n("expired"),
+				SubText:  sdk.I18n(i18n.I18nKeyIssueExpired),
 				Operations: map[cptype.OperationKey]cptype.Operation{
 					"clickGoto": {
 						ServerData: &expireData,
@@ -190,7 +190,7 @@ func (wc *WorkCards) getProjTextMeta(sdk *cptype.SDK, project apistructs.Workben
 			},
 			{
 				MainText: float64(project.IssueInfo.ExpiredOneDayNum),
-				SubText:  sdk.I18n("today expire"),
+				SubText:  sdk.I18n(i18n.I18nKeyIssueExpireToday),
 				Operations: map[cptype.OperationKey]cptype.Operation{
 					"clickGoto": {
 						ServerData: &todayData,
@@ -240,7 +240,7 @@ func (wc *WorkCards) getProjTextMeta(sdk *cptype.SDK, project apistructs.Workben
 		metas = []cardlist.TextMeta{
 			{
 				MainText: float64(project.StatisticInfo.ServiceCount),
-				SubText:  sdk.I18n("service count"),
+				SubText:  sdk.I18n(i18n.I18nKeyMspServiceCount),
 				Operations: map[cptype.OperationKey]cptype.Operation{
 					"clickGoto": {
 						ServerData: &serviceCnt,
@@ -249,7 +249,7 @@ func (wc *WorkCards) getProjTextMeta(sdk *cptype.SDK, project apistructs.Workben
 			},
 			{
 				MainText: float64(project.StatisticInfo.Last24HAlertCount),
-				SubText:  sdk.I18n("last 24 hour alarm count"),
+				SubText:  sdk.I18n(i18n.I18nKeyMspLast24HAlertCount),
 				Operations: map[cptype.OperationKey]cptype.Operation{
 					"clickGoto": {
 						ServerData: &lastDayWarning,
@@ -340,13 +340,13 @@ func (wc *WorkCards) getAppIconOps(sdk *cptype.SDK, app apistructs.AppWorkBenchI
 	ops = []cardlist.IconOperations{
 		{
 			Icon: "daimacangku",
-			Tip:  sdk.I18n("code repository"),
+			Tip:  sdk.I18n(i18n.I18nKeyGitRepo),
 			Operations: map[cptype.OperationKey]cptype.Operation{
 				"clickGoto": {ServerData: &repositoryServerData},
 			}},
 		{
 			Icon: "liushuixian",
-			Tip:  sdk.I18n("pipeline"),
+			Tip:  sdk.I18n(i18n.I18nKeyPipeline),
 			Operations: map[cptype.OperationKey]cptype.Operation{
 				"clickGoto": {ServerData: &pipelineServerData},
 			}},
@@ -358,7 +358,7 @@ func (wc *WorkCards) getAppIconOps(sdk *cptype.SDK, app apistructs.AppWorkBenchI
 		//	}},
 		{
 			Icon: "bushuzhongxin",
-			Tip:  sdk.I18n("deploy center"),
+			Tip:  sdk.I18n(i18n.I18nKeyAppDeployCenter),
 			Operations: map[cptype.OperationKey]cptype.Operation{
 				"clickGoto": {ServerData: &deployData},
 			}},
@@ -449,28 +449,28 @@ func (wc *WorkCards) getProjIconOps(sdk *cptype.SDK, project apistructs.Workbenc
 		ios := []cardlist.IconOperations{
 			{
 				Icon: "xiangmuguanli",
-				Tip:  sdk.I18n("project manage"),
+				Tip:  sdk.I18n(i18n.I18nKeyProjManagement),
 				Operations: map[cptype.OperationKey]cptype.Operation{
 					"clickGoto": {ServerData: &projectManageServerData},
 				},
 			},
 			{
 				Icon: "yingyongkaifa",
-				Tip:  sdk.I18n("app develop"),
+				Tip:  sdk.I18n(i18n.I18nKeyAppDevelop),
 				Operations: map[cptype.OperationKey]cptype.Operation{
 					"clickGoto": {ServerData: &appDevelopServerData},
 				},
 			},
 			{
 				Icon: "ceshiguanli",
-				Tip:  sdk.I18n("test manage"),
+				Tip:  sdk.I18n(i18n.I18nKeyTestManagement),
 				Operations: map[cptype.OperationKey]cptype.Operation{
 					"clickGoto": {ServerData: &testManageServerData},
 				},
 			},
 			{
 				Icon: "xiangmushezhi",
-				Tip:  sdk.I18n("project setting"),
+				Tip:  sdk.I18n(i18n.I18nKeyProjSetting),
 				Operations: map[cptype.OperationKey]cptype.Operation{
 					"clickGoto": {ServerData: &projectSettingServerData},
 				},
@@ -479,7 +479,7 @@ func (wc *WorkCards) getProjIconOps(sdk *cptype.SDK, project apistructs.Workbenc
 		if params.TerminusKey != "" {
 			ios = append(ios, cardlist.IconOperations{
 				Icon: "fuwuguance",
-				Tip:  sdk.I18n("service monitor"),
+				Tip:  sdk.I18n(i18n.I18nKeyServiceObservation),
 				Operations: map[cptype.OperationKey]cptype.Operation{
 					"clickGoto": {ServerData: &serviceMonitorServerData},
 				},

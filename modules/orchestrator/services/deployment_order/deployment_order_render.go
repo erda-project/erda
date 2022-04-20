@@ -18,9 +18,11 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/metadata"
 
 	"github.com/erda-project/erda-infra/pkg/transport"
@@ -122,30 +124,40 @@ func (d *DeploymentOrder) renderAppsPreCheckResult(langCodes infrai18n.LanguageC
 		return err
 	}
 
-	for _, apps := range *asi {
-		for _, info := range apps {
-			failReasons, err := d.staticPreCheck(langCodes, userId, workspace, projectId, info.Id, []byte(info.DiceYaml))
-			if err != nil {
-				return err
-			}
-			isDeploying, ok := appStatus[info.Id]
-			if ok && isDeploying {
-				failReasons = append(failReasons, i18n.LangCodesSprintf(langCodes, I18nApplicationDeploying, info.Name))
-			}
+	wg := sync.WaitGroup{}
+	mux := sync.Mutex{}
+	for i := range *asi {
+		for j := range (*asi)[i] {
+			wg.Add(1)
+			go func(i, j int) {
+				defer wg.Done()
+				app := (*asi)[i][j]
+				failReasons, err := d.staticPreCheck(langCodes, userId, workspace, projectId, app.Id, []byte(app.DiceYaml))
+				if err != nil {
+					logrus.Errorf("failed to static pre check app %s, %v", app.Name, err)
+					failReasons = append(failReasons, err.Error())
+				}
+				mux.Lock()
+				isDeploying, ok := appStatus[app.Id]
+				mux.Unlock()
+				if ok && isDeploying {
+					failReasons = append(failReasons, i18n.LangCodesSprintf(langCodes, I18nApplicationDeploying, app.Name))
+				}
 
-			checkResult := &apistructs.PreCheckResult{
-				Success: true,
-			}
+				checkResult := &apistructs.PreCheckResult{
+					Success: true,
+				}
 
-			if len(failReasons) != 0 {
-				checkResult.Success = false
-				checkResult.FailReasons = failReasons
-			}
+				if len(failReasons) != 0 {
+					checkResult.Success = false
+					checkResult.FailReasons = failReasons
+				}
 
-			info.PreCheckResult = checkResult
+				app.PreCheckResult = checkResult
+			}(i, j)
 		}
 	}
-
+	wg.Wait()
 	return nil
 }
 

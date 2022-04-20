@@ -15,12 +15,14 @@
 package pipelinesvc
 
 import (
+	"context"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 )
 
-func (s *PipelineSvc) BatchCreate(batchReq *apistructs.PipelineBatchCreateRequest) (
+func (s *PipelineSvc) BatchCreate(ctx context.Context, batchReq *apistructs.PipelineBatchCreateRequest) (
 	map[string]*apistructs.PipelineDTO, error) {
 
 	// convert pipelineBatchCreateRequest to []pipelineCreateRequest
@@ -45,15 +47,19 @@ func (s *PipelineSvc) BatchCreate(batchReq *apistructs.PipelineBatchCreateReques
 		if err != nil {
 			return nil, apierrors.ErrBatchCreatePipeline.InternalError(err)
 		}
-		if err = s.CreatePipelineGraph(p); err != nil {
+		var stages []spec.PipelineStage
+		if stages, err = s.CreatePipelineGraph(p); err != nil {
 			return nil, apierrors.ErrBatchCreatePipeline.InternalError(err)
 		}
+
+		// PreCheck
+		_ = s.PreCheck(p, stages, p.GetUserID(), batchReq.AutoRun)
 
 		identityInfo := apistructs.IdentityInfo{UserID: req.UserID}
 
 		// 是否自动执行
 		if batchReq.AutoRun {
-			if p, err = s.RunPipeline(&apistructs.PipelineRunRequest{
+			if p, err = s.run.RunOnePipeline(ctx, &apistructs.PipelineRunRequest{
 				PipelineID:   p.ID,
 				IdentityInfo: identityInfo,
 				Secrets:      getSecrets(p)},

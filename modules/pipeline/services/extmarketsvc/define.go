@@ -17,6 +17,7 @@ package extmarketsvc
 import (
 	"sync"
 
+	actionpb "github.com/erda-project/erda-proto-go/core/pipeline/action/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/pkg/goroutinepool"
@@ -32,11 +33,14 @@ type ExtMarketSvc struct {
 	actions        map[string]apistructs.ExtensionVersion
 	defaultActions map[string]apistructs.ExtensionVersion
 	pools          *goroutinepool.GoroutinePool
+
+	actionService actionpb.ActionServiceServer
 }
 
-func New(bdl *bundle.Bundle) *ExtMarketSvc {
+func New(bdl *bundle.Bundle, actionService actionpb.ActionServiceServer) *ExtMarketSvc {
 	s := ExtMarketSvc{}
 	s.bdl = bdl
+	s.actionService = actionService
 	s.actions = make(map[string]apistructs.ExtensionVersion)
 	s.defaultActions = make(map[string]apistructs.ExtensionVersion)
 	s.pools = goroutinepool.New(PoolSize)

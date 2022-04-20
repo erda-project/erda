@@ -74,4 +74,7 @@ type GeneralInterface interface {
 
 	// Start means all hooks registered. You can't register any hooks after started.
 	Start()
+
+	// CancelLogicTask cancel logic task.
+	CancelLogicTask(ctx context.Context, logicTaskID worker.LogicTaskID) error
 }

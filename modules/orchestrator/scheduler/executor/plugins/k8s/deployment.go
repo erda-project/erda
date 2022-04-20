@@ -735,7 +735,7 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, serviceGroup *ap
 		logrus.Errorf("failed to AddPodMountVolume for deployment %s/%s: %v", deployment.Namespace, deployment.Name, err)
 		return nil, err
 	}
-	k.AddSpotEmptyDir(&deployment.Spec.Template.Spec)
+	k.AddSpotEmptyDir(&deployment.Spec.Template.Spec, service.Resources.EmptyDirCapacity)
 
 	if err = DereferenceEnvs(&deployment.Spec.Template); err != nil {
 		return nil, err
@@ -759,15 +759,21 @@ func (k *Kubernetes) generateInitContainer(initcontainers map[string]diceyml.Ini
 			Image: initcontainer.Image,
 			Resources: apiv1.ResourceRequirements{
 				Requests: apiv1.ResourceList{
-					apiv1.ResourceCPU:    resource.MustParse(reqCPU),
-					apiv1.ResourceMemory: resource.MustParse(memory),
+					apiv1.ResourceCPU:              resource.MustParse(reqCPU),
+					apiv1.ResourceMemory:           resource.MustParse(memory),
+					apiv1.ResourceEphemeralStorage: resource.MustParse(k8sapi.EphemeralStorageSizeRequest),
 				},
 				Limits: apiv1.ResourceList{
-					apiv1.ResourceCPU:    resource.MustParse(limitCPU),
-					apiv1.ResourceMemory: resource.MustParse(memory),
+					apiv1.ResourceCPU:              resource.MustParse(limitCPU),
+					apiv1.ResourceMemory:           resource.MustParse(memory),
+					apiv1.ResourceEphemeralStorage: resource.MustParse(k8sapi.EphemeralStorageSizeLimit),
 				},
 			},
 			Command: []string{"sh", "-c", initcontainer.Cmd},
+		}
+		if initcontainer.Resources.EphemeralStorageCapacity > 1 {
+			maxEphemeral := fmt.Sprintf("%dGi", initcontainer.Resources.EphemeralStorageCapacity)
+			sc.Resources.Limits[apiv1.ResourceEphemeralStorage] = resource.MustParse(maxEphemeral)
 		}
 		for i, dir := range initcontainer.SharedDirs {
 			emptyDirVolumeName := fmt.Sprintf("%s-%d", name, i)
@@ -801,14 +807,20 @@ func (k *Kubernetes) generateSidecarContainers(sidecars map[string]*diceyml.Side
 			Image: sidecar.Image,
 			Resources: apiv1.ResourceRequirements{
 				Requests: apiv1.ResourceList{
-					apiv1.ResourceCPU:    resource.MustParse(reqCPU),
-					apiv1.ResourceMemory: resource.MustParse(memory),
+					apiv1.ResourceCPU:              resource.MustParse(reqCPU),
+					apiv1.ResourceMemory:           resource.MustParse(memory),
+					apiv1.ResourceEphemeralStorage: resource.MustParse(k8sapi.EphemeralStorageSizeRequest),
 				},
 				Limits: apiv1.ResourceList{
-					apiv1.ResourceCPU:    resource.MustParse(limitCPU),
-					apiv1.ResourceMemory: resource.MustParse(memory),
+					apiv1.ResourceCPU:              resource.MustParse(limitCPU),
+					apiv1.ResourceMemory:           resource.MustParse(memory),
+					apiv1.ResourceEphemeralStorage: resource.MustParse(k8sapi.EphemeralStorageSizeLimit),
 				},
 			},
+		}
+		if sidecar.Resources.EphemeralStorageCapacity > 1 {
+			maxEphemeral := fmt.Sprintf("%dGi", sidecar.Resources.EphemeralStorageCapacity)
+			sc.Resources.Limits[apiv1.ResourceEphemeralStorage] = resource.MustParse(maxEphemeral)
 		}
 
 		//Do not insert platform environment variables (DICE_*) to prevent the instance list from being collected
@@ -943,6 +955,12 @@ func (k *Kubernetes) AddPodMountVolume(service *apistructs.Service, podSpec *api
 		for _, dir := range sidecar.SharedDirs {
 			emptyDirVolumeName := strutil.Concat(name, shardDirSuffix)
 
+			quantitySize := resource.MustParse(k8sapi.PodEmptyDirSizeLimit10Gi)
+			if sidecar.Resources.EmptyDirCapacity > 0 {
+				maxEmptyDir := fmt.Sprintf("%dGi", sidecar.Resources.EmptyDirCapacity)
+				quantitySize = resource.MustParse(maxEmptyDir)
+			}
+
 			srcMount := apiv1.VolumeMount{
 				Name:      emptyDirVolumeName,
 				MountPath: dir.Main,
@@ -954,7 +972,9 @@ func (k *Kubernetes) AddPodMountVolume(service *apistructs.Service, podSpec *api
 			podSpec.Volumes = append(podSpec.Volumes, apiv1.Volume{
 				Name: emptyDirVolumeName,
 				VolumeSource: apiv1.VolumeSource{
-					EmptyDir: &apiv1.EmptyDirVolumeSource{},
+					EmptyDir: &apiv1.EmptyDirVolumeSource{
+						SizeLimit: &quantitySize,
+					},
 				},
 			})
 		}
@@ -968,11 +988,18 @@ func (k *Kubernetes) AddPodMountVolume(service *apistructs.Service, podSpec *api
 					MountPath: dir.Main,
 					ReadOnly:  false,
 				}
+				quantitySize := resource.MustParse(k8sapi.PodEmptyDirSizeLimit10Gi)
+				if initc.Resources.EmptyDirCapacity > 0 {
+					maxEmptyDir := fmt.Sprintf("%dGi", initc.Resources.EmptyDirCapacity)
+					quantitySize = resource.MustParse(maxEmptyDir)
+				}
 				podSpec.Containers[0].VolumeMounts = append(podSpec.Containers[0].VolumeMounts, srcMount)
 				podSpec.Volumes = append(podSpec.Volumes, apiv1.Volume{
 					Name: name,
 					VolumeSource: apiv1.VolumeSource{
-						EmptyDir: &apiv1.EmptyDirVolumeSource{},
+						EmptyDir: &apiv1.EmptyDirVolumeSource{
+							SizeLimit: &quantitySize,
+						},
 					},
 				})
 			}
@@ -1114,10 +1141,16 @@ func (k *Kubernetes) setStatelessServiceVolumes(service *apistructs.Service, pod
 	return nil
 }
 
-func (k *Kubernetes) AddSpotEmptyDir(podSpec *apiv1.PodSpec) {
+func (k *Kubernetes) AddSpotEmptyDir(podSpec *apiv1.PodSpec, emptySize int) {
+	quantitySize := resource.MustParse(k8sapi.PodEmptyDirSizeLimit10Gi)
+	if emptySize > 0 {
+		quantitySize = resource.MustParse(fmt.Sprintf("%dGi", emptySize))
+	}
 	podSpec.Volumes = append(podSpec.Volumes, apiv1.Volume{
-		Name:         "spot-emptydir",
-		VolumeSource: apiv1.VolumeSource{EmptyDir: &apiv1.EmptyDirVolumeSource{}},
+		Name: "spot-emptydir",
+		VolumeSource: apiv1.VolumeSource{EmptyDir: &apiv1.EmptyDirVolumeSource{
+			SizeLimit: &quantitySize,
+		}},
 	})
 
 	podSpec.Containers[0].VolumeMounts = append(podSpec.Containers[0].VolumeMounts, apiv1.VolumeMount{
@@ -1268,13 +1301,20 @@ func (k *Kubernetes) setContainerResources(service apistructs.Service, container
 
 	container.Resources = apiv1.ResourceRequirements{
 		Requests: apiv1.ResourceList{
-			apiv1.ResourceCPU:    resource.MustParse(cpu),
-			apiv1.ResourceMemory: resource.MustParse(memory),
+			apiv1.ResourceCPU:              resource.MustParse(cpu),
+			apiv1.ResourceMemory:           resource.MustParse(memory),
+			apiv1.ResourceEphemeralStorage: resource.MustParse(k8sapi.EphemeralStorageSizeRequest),
 		},
 		Limits: apiv1.ResourceList{
-			apiv1.ResourceCPU:    resource.MustParse(maxCpu),
-			apiv1.ResourceMemory: resource.MustParse(maxMem),
+			apiv1.ResourceCPU:              resource.MustParse(maxCpu),
+			apiv1.ResourceMemory:           resource.MustParse(maxMem),
+			apiv1.ResourceEphemeralStorage: resource.MustParse(k8sapi.EphemeralStorageSizeLimit),
 		},
+	}
+
+	if service.Resources.EphemeralStorageCapacity > 1 {
+		maxEphemeral := fmt.Sprintf("%dGi", service.Resources.EphemeralStorageCapacity)
+		container.Resources.Limits[apiv1.ResourceEphemeralStorage] = resource.MustParse(maxEphemeral)
 	}
 
 	if err := k.SetFineGrainedCPU(container, map[string]string{}, cpuSubscribeRatio); err != nil {

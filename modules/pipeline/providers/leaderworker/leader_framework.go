@@ -81,12 +81,14 @@ func (p *provider) mergeWithInternalLeaderListeners() []Listener {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 	listeners := p.forLeaderUse.listeners
-	listeners = append([]Listener{
+	listeners = append([]Listener{ // in order
 		&DefaultListener{BeforeExecOnLeaderFunc: p.leaderInitTaskWorkerAssignMap},
 		&DefaultListener{BeforeExecOnLeaderFunc: asyncWrapper(p.leaderSideContinueCleanup)},
 		&DefaultListener{BeforeExecOnLeaderFunc: asyncWrapper(p.leaderSideWorkerLivenessProber)},
 		&DefaultListener{BeforeExecOnLeaderFunc: asyncWrapper(p.leaderListenOfficialWorkerChange)},
 		&DefaultListener{BeforeExecOnLeaderFunc: asyncWrapper(p.leaderListenLogicTaskChange)},
+		&DefaultListener{BeforeExecOnLeaderFunc: asyncWrapper(p.leaderListenTaskCanceling)},
+		&DefaultListener{BeforeExecOnLeaderFunc: asyncWrapper(p.loadCancelingTasks)},
 	}, listeners...)
 	return listeners
 }

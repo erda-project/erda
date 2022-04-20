@@ -60,6 +60,10 @@ func (c *create) WhenTimeout() error {
 	return nil
 }
 
+func (c *create) WhenCancel() error {
+	return c.TaskRun().WhenCancel()
+}
+
 func (c *create) TimeoutConfig() (<-chan struct{}, context.CancelFunc, time.Duration) {
 	return nil, nil, -1
 }

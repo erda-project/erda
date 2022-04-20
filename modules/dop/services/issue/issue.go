@@ -202,9 +202,6 @@ func (svc *Issue) Create(req *apistructs.IssueCreateRequest) (*dao.Issue, error)
 		planStartedAt:  planStartedAt,
 		planFinishedAt: planFinishedAt,
 	}
-	if err := svc.AfterIssueUpdate(u); err != nil {
-		return nil, fmt.Errorf("update issue parent after issue children %v update failed: %v", create.ID, err)
-	}
 	// 生成活动记录
 	users, err := svc.uc.FindUsers([]string{req.UserID})
 	if err != nil {
@@ -233,6 +230,10 @@ func (svc *Issue) Create(req *apistructs.IssueCreateRequest) (*dao.Issue, error)
 		Creator:   create.Creator,
 	}); err != nil {
 		return nil, err
+	}
+
+	if err := svc.AfterIssueUpdate(u); err != nil {
+		return nil, fmt.Errorf("after issue update failed when issue id: %v create, err: %v", issueID, err)
 	}
 
 	go func() {
@@ -637,26 +638,24 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 		issueStreamFields[field] = []interface{}{canUpdateFields[field], v}
 	}
 
-	if issueModel.Type == apistructs.IssueTypeBug || issueModel.Type == apistructs.IssueTypeTask {
-		c := &issueValidationConfig{}
-		if req.IterationID != nil {
-			iteration, err := cache.TryGetIteration(*req.IterationID)
-			if err != nil {
-				return err
-			}
-			c.iteration = iteration
-		}
-		if req.State != nil {
-			state, err := cache.TryGetState(*req.State)
-			if err != nil {
-				return err
-			}
-			c.state = state
-		}
-		v := issueValidator{}
-		if err = v.validateChangedFields(&req, c, changedFields); err != nil {
+	c := &issueValidationConfig{}
+	if req.IterationID != nil {
+		iteration, err := cache.TryGetIteration(*req.IterationID)
+		if err != nil {
 			return err
 		}
+		c.iteration = iteration
+	}
+	if req.State != nil {
+		state, err := cache.TryGetState(*req.State)
+		if err != nil {
+			return err
+		}
+		c.state = state
+	}
+	v := issueValidator{}
+	if err = v.validateChangedFields(&req, c, changedFields); err != nil {
+		return err
 	}
 
 	// 校验实际需要更新的字段
@@ -719,7 +718,7 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 		u.stateNew = newBelong.Belong
 	}
 	if err := svc.AfterIssueUpdate(u); err != nil {
-		return fmt.Errorf("update issue parent after issue children %v update failed: %v", issueModel.ID, err)
+		return fmt.Errorf("after issue update failed when issue id: %v update, err: %v", issueModel.ID, err)
 	}
 
 	go monitor.MetricsIssueById(int(req.ID), svc.db, svc.uc, svc.bdl)

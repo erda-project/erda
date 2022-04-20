@@ -58,6 +58,30 @@ func (p *provider) makeEtcdWorkerTaskDispatchKey(workerID worker.ID, logicTaskID
 	return filepath.Join(prefix, logicTaskID.String())
 }
 
+func (p *provider) makeEtcdLeaderLogicTaskCancelKey(logicTaskID worker.LogicTaskID) string {
+	return filepath.Join(p.makeEtcdLeaderLogicTaskCancelListenPrefix(), logicTaskID.String())
+}
+func (p *provider) makeEtcdLeaderLogicTaskCancelListenPrefix() string {
+	return filepath.Join(p.Cfg.Leader.EtcdKeyPrefixWithSlash, "dispatch/cancel-task") + "/"
+}
+func (p *provider) getLogicTaskIDFromLeaderCancelKey(key string) worker.LogicTaskID {
+	return worker.LogicTaskID(strutil.TrimPrefixes(key, p.makeEtcdLeaderLogicTaskCancelListenPrefix()))
+}
+
+func (p *provider) makeEtcdWorkerLogicTaskCancelListenPrefix(workerID worker.ID) string {
+	return filepath.Join(p.makeEtcdWorkerGeneralDispatchPrefix(), workerID.String(), "cancel-task") + "/"
+}
+func (p *provider) makeEtcdWorkerLogicTaskCancelKey(workerID worker.ID, logicTaskID worker.LogicTaskID) string {
+	return filepath.Join(p.makeEtcdWorkerLogicTaskCancelListenPrefix(workerID), logicTaskID.String())
+}
+func (p *provider) getLogicTaskIDFromWorkerCancelKey(workerID worker.ID, key string) worker.LogicTaskID {
+	prefix := p.makeEtcdWorkerLogicTaskCancelListenPrefix(workerID)
+	if !strutil.HasPrefixes(key, prefix) {
+		return ""
+	}
+	return worker.LogicTaskID(strutil.TrimPrefixes(key, prefix))
+}
+
 func (p *provider) makeEtcdWorkerHeartbeatKeyPrefix() string {
 	return filepath.Clean(filepath.Join(p.Cfg.Worker.EtcdKeyPrefixWithSlash, "heartbeat")) + "/"
 }
@@ -85,8 +109,35 @@ func (p *provider) getWorkerIDFromIncomingKey(key string) worker.ID {
 	}
 	return worker.ID(workerIDAndLogicTaskID[0])
 }
+func (p *provider) getWorkerIDFromWorkerLogicTaskCancelKey(key string) worker.ID {
+	prefix := p.makeEtcdWorkerGeneralDispatchPrefix()
+	if !strutil.HasPrefixes(key, prefix) {
+		return ""
+	}
+	workerIDAndSuffix := strutil.TrimPrefixes(key, prefix)
+	workerIDAndLogicTaskID := strutil.Split(workerIDAndSuffix, "/cancel-task/")
+	if len(workerIDAndLogicTaskID) != 2 {
+		return ""
+	}
+	return worker.ID(workerIDAndLogicTaskID[0])
+}
 
-func (p *provider) getWorkerTaskLogicIDFromIncomingKey(workerID worker.ID, key string) worker.LogicTaskID {
+// see: makeEtcdWorkerTaskDispatchKey
+func (p *provider) getWorkerIDFromWorkerGeneralDispatchKey(key string) worker.ID {
+	// '/task/'
+	workerID := p.getWorkerIDFromIncomingKey(key)
+	if workerID != "" {
+		return workerID
+	}
+	// '/cancel-task/'
+	workerID = p.getWorkerIDFromWorkerLogicTaskCancelKey(key)
+	if workerID != "" {
+		return workerID
+	}
+	return ""
+}
+
+func (p *provider) getWorkerLogicTaskIDFromIncomingKey(workerID worker.ID, key string) worker.LogicTaskID {
 	prefix := p.makeEtcdWorkerLogicTaskListenPrefix(workerID)
 	return worker.LogicTaskID(strutil.TrimPrefixes(key, prefix))
 }

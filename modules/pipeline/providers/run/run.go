@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pipelinesvc
+package run
 
 import (
 	"context"
@@ -35,33 +35,33 @@ import (
 	"github.com/erda-project/erda/pkg/time/mysql_time"
 )
 
-func (s *PipelineSvc) RunPipeline(req *apistructs.PipelineRunRequest) (*spec.Pipeline, error) {
+func (s *provider) RunOnePipeline(ctx context.Context, req *apistructs.PipelineRunRequest) (*spec.Pipeline, error) {
 	p, err := s.dbClient.GetPipeline(req.PipelineID)
 	if err != nil {
 		return nil, apierrors.ErrGetPipeline.InvalidParameter(err)
 	}
 
 	if req.UserID != "" {
-		p.Extra.RunUser = s.tryGetUser(req.UserID)
+		p.Extra.RunUser = s.User.TryGetUser(ctx, req.UserID)
 	}
 	if req.InternalClient != "" {
 		p.Extra.InternalClient = req.InternalClient
 	}
 
-	reason, canManualRun := s.canManualRun(p)
+	reason, canManualRun := s.CanManualRun(ctx, &p)
 	if !canManualRun {
 		return nil, apierrors.ErrRunPipeline.InvalidState(reason)
 	}
 	if req.ForceRun {
-		err := s.stopRunningPipelines(&p, req.IdentityInfo)
+		err := s.Cancel.StopRelatedRunningPipelinesOfOnePipeline(ctx, &p, req.IdentityInfo)
 		if err != nil {
 			return nil, err
 		}
-	}
-
-	// 校验已运行的 pipeline
-	if err := s.limitParallelRunningPipelines(&p); err != nil {
-		return nil, err
+	} else {
+		// 校验已运行的 pipeline
+		if err := s.limitParallelRunningPipelines(&p); err != nil {
+			return nil, err
+		}
 	}
 
 	p.Extra.ConfigManageNamespaces = append(p.Extra.ConfigManageNamespaces, req.ConfigManageNamespaces...)
@@ -71,25 +71,26 @@ func (s *PipelineSvc) RunPipeline(req *apistructs.PipelineRunRequest) (*spec.Pip
 		holdOnKeys, encryptSecretKeys []string
 		platformSecrets               map[string]string
 	)
-	secretCache := s.cache.GetPipelineSecretByPipelineID(p.PipelineID)
-	defer s.cache.ClearPipelineSecretByPipelineID(p.PipelineID)
+	secretCache := s.Cache.GetPipelineSecretByPipelineID(p.PipelineID)
+	defer s.Cache.ClearPipelineSecretByPipelineID(p.PipelineID)
+	// only autoRun can use cache
 	if secretCache != nil {
 		secrets = secretCache.Secrets
 		cmsDiceFiles = secretCache.CmsDiceFiles
 		holdOnKeys = secretCache.HoldOnKeys
 		encryptSecretKeys = secretCache.EncryptSecretKeys
-		platformSecrets = secretCache.PlatformSecrets
 	} else {
 		// fetch secrets
-		secrets, cmsDiceFiles, holdOnKeys, encryptSecretKeys, err = s.FetchSecrets(&p)
+		secrets, cmsDiceFiles, holdOnKeys, encryptSecretKeys, err = s.Secret.FetchSecrets(ctx, &p)
 		if err != nil {
 			return nil, apierrors.ErrRunPipeline.InternalError(err)
 		}
-		// fetch platform secrets
-		platformSecrets, err = s.FetchPlatformSecrets(&p, holdOnKeys)
-		if err != nil {
-			return nil, apierrors.ErrRunPipeline.InternalError(err)
-		}
+	}
+
+	// fetch platform secrets
+	platformSecrets, err = s.Secret.FetchPlatformSecrets(ctx, &p, holdOnKeys)
+	if err != nil {
+		return nil, apierrors.ErrRunPipeline.InternalError(err)
 	}
 
 	for k, v := range req.Secrets {
@@ -131,7 +132,7 @@ func (s *PipelineSvc) RunPipeline(req *apistructs.PipelineRunRequest) (*spec.Pip
 	now := time.Now()
 	p.TimeBegin = &now
 
-	cluster, err := s.clusterInfo.GetClusterInfoByName(p.ClusterName)
+	cluster, err := s.ClusterInfo.GetClusterInfoByName(p.ClusterName)
 	if err != nil {
 		return nil, apierrors.ErrRunPipeline.InternalError(err)
 	}
@@ -150,17 +151,17 @@ func (s *PipelineSvc) RunPipeline(req *apistructs.PipelineRunRequest) (*spec.Pip
 	_ = aop.Handle(aop.NewContextForPipeline(p, aoptypes.TuneTriggerPipelineBeforeExec))
 
 	// send to pipengine reconciler
-	s.engine.DistributedSendPipeline(context.Background(), p.ID)
+	s.Engine.DistributedSendPipeline(context.Background(), p.ID)
 
 	// update pipeline definition
 	if err = s.updatePipelineDefinition(p); err != nil {
-		logrus.Errorf("failed to updatePipelineDefinition, pipelineID: %d, definitionID: %s, err: %s", p.PipelineID, p.PipelineDefinitionID, err.Error())
+		s.Log.Errorf("failed to updatePipelineDefinition, pipelineID: %d, definitionID: %s, err: %s", p.PipelineID, p.PipelineDefinitionID, err.Error())
 	}
 
 	return &p, nil
 }
 
-func (s *PipelineSvc) updatePipelineDefinition(p spec.Pipeline) error {
+func (s *provider) updatePipelineDefinition(p spec.Pipeline) error {
 	if p.PipelineDefinitionID == "" {
 		return nil
 	}
@@ -241,32 +242,9 @@ func getRealRunParams(runParams []apistructs.PipelineRunParam, yml string) (resu
 	return result, nil
 }
 
-func (s *PipelineSvc) stopRunningPipelines(p *spec.Pipeline, identityInfo apistructs.IdentityInfo) error {
-	var runningPipelineIDs []uint64
-	err := s.dbClient.Table(&spec.PipelineBase{}).
-		Select("id").In("status", apistructs.ReconcilerRunningStatuses()).
-		Where("is_snippet = ?", false).
-		Find(&runningPipelineIDs, &spec.PipelineBase{
-			PipelineSource:  p.PipelineSource,
-			PipelineYmlName: p.PipelineYmlName,
-		})
-	if err != nil {
-		return apierrors.ErrParallelRunPipeline.InternalError(err)
-	}
-	for _, runningPipelineID := range runningPipelineIDs {
-		if err := s.Cancel(&apistructs.PipelineCancelRequest{
-			PipelineID:   runningPipelineID,
-			IdentityInfo: identityInfo,
-		}); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // limitParallelRunningPipelines 判断在 pipelineSource + pipelineYmlName 下只能有一个在运行
 // 被嵌套的流水线跳过校验
-func (s *PipelineSvc) limitParallelRunningPipelines(p *spec.Pipeline) error {
+func (s *provider) limitParallelRunningPipelines(p *spec.Pipeline) error {
 	if p.CanSkipRunningCheck() {
 		logrus.Infof("pipeline: %d skiped limit parallel running, enqueue condition: %s",
 			p.ID, p.GetLabel(apistructs.LabelBindPipelineQueueEnqueueCondition))
@@ -294,8 +272,4 @@ func (s *PipelineSvc) limitParallelRunningPipelines(p *spec.Pipeline) error {
 		return apierrors.ErrParallelRunPipeline.InvalidState("ErrParallelRunPipeline").SetCtx(ctxMap)
 	}
 	return nil
-}
-
-func makeCmsDiceFileEnvKey(diceFileUUID string) string {
-	return fmt.Sprintf("PIPELINE_CMS_DICE_FILE_UUID_%s", diceFileUUID)
 }

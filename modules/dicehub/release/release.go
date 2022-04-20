@@ -393,7 +393,7 @@ func (s *ReleaseService) updateReleaseTags(releaseID string, req *pb.ReleaseUpda
 
 	newTagIDs := req.Tags
 	sort.Slice(newTagIDs, func(i, j int) bool {
-		return newTagIDs[i] < oldTagIDs[j]
+		return newTagIDs[i] < newTagIDs[j]
 	})
 
 	if reflect.DeepEqual(oldTagIDs, newTagIDs) {
@@ -625,6 +625,10 @@ func (s *ReleaseService) List(orgID int64, req *pb.ReleaseListRequest) (*pb.Rele
 			return nil, errors.Errorf("failed to get release tags, %v", err)
 		}
 
+		if len(lrs) == 0 {
+			return &pb.ReleaseListResponseData{}, nil
+		}
+
 		var releaseIDs []string
 		for i := range lrs {
 			releaseIDs = append(releaseIDs, lrs[i].RefID)
@@ -847,6 +851,24 @@ func (s *ReleaseService) CreateByFile(req *pb.ReleaseUploadRequest, file io.Read
 	if err != nil {
 		return "", "", err
 	}
+
+	if len(req.Tags) > 0 {
+		tags, err := s.bdl.ListLabelByIDs(req.Tags)
+		if err != nil {
+			return "", "", errors.Errorf("failed to list tags, %v", err)
+		}
+		for _, tag := range tags {
+			labelRelation := &db.LabelRelation{
+				LabelID: uint64(tag.ID),
+				RefType: apistructs.LabelTypeRelease,
+				RefID:   projectRelease.ReleaseID,
+			}
+			if err := s.labelRelationDB.CreateLabelRelation(labelRelation); err != nil {
+				logrus.Errorf("failed to create label relation for label %s when create release %s, %v", tag.Name, projectRelease.ReleaseID, err)
+				continue
+			}
+		}
+	}
 	return projectRelease.Version, projectRelease.ReleaseID, nil
 }
 
@@ -934,9 +956,15 @@ func (s *ReleaseService) parseReleaseFile(req *pb.ReleaseUploadRequest, file io.
 					return nil, nil, errors.Errorf("failed to get releases by app and version, %v", err)
 				}
 				if len(existedReleases) > 0 {
-					oldDice, err := diceyml.New([]byte(existedReleases[0].Dice), true)
-					if err != nil {
-						return nil, nil, errors.Errorf("dice yml for release %s is invalid, %v", existedReleases[0].ReleaseID, err)
+					var oldDice *diceyml.DiceYaml
+					if len(existedReleases[0].Dice) != 0 {
+						oldDice, err = diceyml.New([]byte(existedReleases[0].Dice), true)
+						if err != nil {
+							return nil, nil, errors.Errorf("dice yml for release %s is invalid, %v", existedReleases[0].ReleaseID, err)
+						}
+					}
+					if dices[appName] == "" {
+						return nil, nil, errors.Errorf("dice yml for app %s release is empty", appName)
 					}
 					newDice, err := diceyml.New([]byte(dices[appName]), true)
 					if err != nil {

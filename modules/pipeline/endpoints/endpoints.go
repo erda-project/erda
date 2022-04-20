@@ -22,10 +22,13 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
+	"github.com/erda-project/erda/modules/pipeline/providers/cancel"
 	"github.com/erda-project/erda/modules/pipeline/providers/clusterinfo"
 	"github.com/erda-project/erda/modules/pipeline/providers/cron/daemon"
+	"github.com/erda-project/erda/modules/pipeline/providers/edgepipeline"
 	"github.com/erda-project/erda/modules/pipeline/providers/engine"
 	"github.com/erda-project/erda/modules/pipeline/providers/queuemanager"
+	"github.com/erda-project/erda/modules/pipeline/providers/run"
 	"github.com/erda-project/erda/modules/pipeline/services/actionagentsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/appsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/buildartifactsvc"
@@ -57,7 +60,10 @@ type Endpoints struct {
 	engine       engine.Interface
 	queueManager queuemanager.Interface
 	clusterInfo  clusterinfo.Interface
-	MySQL        mysqlxorm.Interface
+	edgePipeline edgepipeline.Interface
+	mySQL        mysqlxorm.Interface
+	run          run.Interface
+	cancel       cancel.Interface
 }
 
 type Option func(*Endpoints)
@@ -163,9 +169,27 @@ func WithClusterInfo(clusterInfo clusterinfo.Interface) Option {
 	}
 }
 
+func WithEdgePipeline(edgePipeline edgepipeline.Interface) Option {
+	return func(e *Endpoints) {
+		e.edgePipeline = edgePipeline
+	}
+}
+
 func WithMysql(mysql mysqlxorm.Interface) Option {
 	return func(e *Endpoints) {
-		e.MySQL = mysql
+		e.mySQL = mysql
+	}
+}
+
+func WithRun(run run.Interface) Option {
+	return func(e *Endpoints) {
+		e.run = run
+	}
+}
+
+func WithCancel(cancel cancel.Interface) Option {
+	return func(e *Endpoints) {
+		e.cancel = cancel
 	}
 }
 

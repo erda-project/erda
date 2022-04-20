@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/requirement-task-overview/container/simpleChart"
 	"github.com/erda-project/erda/modules/dop/dao"
 )
 
@@ -33,9 +34,10 @@ type DataDetail struct {
 }
 
 type Data struct {
-	Main string `json:"main"`
-	Sub  string `json:"sub"`
-	Tip  string `json:"tip"`
+	Main     string           `json:"main"`
+	Sub      string           `json:"sub"`
+	Tip      string           `json:"tip"`
+	MainLink simpleChart.Link `json:"mainLink,omitempty"`
 }
 
 func (i *Info) SetToProtocolComponent(c *cptype.Component) error {

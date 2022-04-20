@@ -16,6 +16,7 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the "github.com/erda-project/erda-infra/pkg/urlenc" package it is being compiled against.
+var _ urlenc.URLValuesUnmarshaler = (*PipelineRunParam)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*RunProjectPipelineRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*RunProjectPipelineResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*RerunProjectPipelineRequest)(nil)
@@ -42,6 +43,46 @@ var _ urlenc.URLValuesUnmarshaler = (*ListPipelineCategoryResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*PipelineCategory)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*UpdateProjectPipelineRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*UpdateProjectPipelineResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*OneClickCreateProjectPipelineRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*OneClickCreateProjectPipelineResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*ProjectPipelineSource)(nil)
+
+// PipelineRunParam implement urlenc.URLValuesUnmarshaler.
+func (m *PipelineRunParam) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "name":
+				m.Name = vals[0]
+			case "value":
+				if len(vals) > 1 {
+					var list []interface{}
+					for _, text := range vals {
+						var v interface{}
+						err := json.NewDecoder(strings.NewReader(text)).Decode(&v)
+						if err != nil {
+							list = append(list, v)
+						} else {
+							list = append(list, text)
+						}
+					}
+					val, _ := structpb.NewList(list)
+					m.Value = structpb.NewListValue(val)
+				} else {
+					var v interface{}
+					err := json.NewDecoder(strings.NewReader(vals[0])).Decode(&v)
+					if err != nil {
+						val, _ := structpb.NewValue(v)
+						m.Value = val
+					} else {
+						m.Value = structpb.NewStringValue(vals[0])
+					}
+				}
+			}
+		}
+	}
+	return nil
+}
 
 // RunProjectPipelineRequest implement urlenc.URLValuesUnmarshaler.
 func (m *RunProjectPipelineRequest) UnmarshalURLValues(prefix string, values url.Values) error {
@@ -802,6 +843,39 @@ func (m *UpdateProjectPipelineRequest) UnmarshalURLValues(prefix string, values 
 				m.ProjectID = val
 			case "name":
 				m.Name = vals[0]
+			case "projectPipelineSource":
+				if m.ProjectPipelineSource == nil {
+					m.ProjectPipelineSource = &ProjectPipelineSource{}
+				}
+			case "projectPipelineSource.appID":
+				if m.ProjectPipelineSource == nil {
+					m.ProjectPipelineSource = &ProjectPipelineSource{}
+				}
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.ProjectPipelineSource.AppID = val
+			case "projectPipelineSource.sourceType":
+				if m.ProjectPipelineSource == nil {
+					m.ProjectPipelineSource = &ProjectPipelineSource{}
+				}
+				m.ProjectPipelineSource.SourceType = vals[0]
+			case "projectPipelineSource.ref":
+				if m.ProjectPipelineSource == nil {
+					m.ProjectPipelineSource = &ProjectPipelineSource{}
+				}
+				m.ProjectPipelineSource.Ref = vals[0]
+			case "projectPipelineSource.path":
+				if m.ProjectPipelineSource == nil {
+					m.ProjectPipelineSource = &ProjectPipelineSource{}
+				}
+				m.ProjectPipelineSource.Path = vals[0]
+			case "projectPipelineSource.fileName":
+				if m.ProjectPipelineSource == nil {
+					m.ProjectPipelineSource = &ProjectPipelineSource{}
+				}
+				m.ProjectPipelineSource.FileName = vals[0]
 			}
 		}
 	}
@@ -929,6 +1003,73 @@ func (m *UpdateProjectPipelineResponse) UnmarshalURLValues(prefix string, values
 					m.ProjectPipeline = &ProjectPipeline{}
 				}
 				m.ProjectPipeline.PipelineSourceID = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// OneClickCreateProjectPipelineRequest implement urlenc.URLValuesUnmarshaler.
+func (m *OneClickCreateProjectPipelineRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "projectID":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.ProjectID = val
+			case "appID":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.AppID = val
+			case "sourceType":
+				m.SourceType = vals[0]
+			case "ref":
+				m.Ref = vals[0]
+			case "pipelineYmls":
+				m.PipelineYmls = vals
+			}
+		}
+	}
+	return nil
+}
+
+// OneClickCreateProjectPipelineResponse implement urlenc.URLValuesUnmarshaler.
+func (m *OneClickCreateProjectPipelineResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "errMsg":
+				m.ErrMsg = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// ProjectPipelineSource implement urlenc.URLValuesUnmarshaler.
+func (m *ProjectPipelineSource) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "appID":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.AppID = val
+			case "sourceType":
+				m.SourceType = vals[0]
+			case "ref":
+				m.Ref = vals[0]
+			case "path":
+				m.Path = vals[0]
+			case "fileName":
+				m.FileName = vals[0]
 			}
 		}
 	}

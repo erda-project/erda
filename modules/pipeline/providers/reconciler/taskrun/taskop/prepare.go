@@ -95,6 +95,10 @@ func (pre *prepare) WhenTimeout() error {
 	return nil
 }
 
+func (pre *prepare) WhenCancel() error {
+	return pre.TaskRun().WhenCancel()
+}
+
 func (pre *prepare) TimeoutConfig() (<-chan struct{}, context.CancelFunc, time.Duration) {
 	return nil, nil, -1
 }
@@ -183,7 +187,7 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 	extSearchReq := make([]string, 0)
 	extSearchReq = append(extSearchReq, getActionAgentTypeVersion())
 	extSearchReq = append(extSearchReq, extmarketsvc.MakeActionTypeVersion(&task.Extra.Action))
-	actionDiceYmlJobMap, actionSpecYmlJobMap, err := pre.ExtMarketSvc.SearchActions(extSearchReq,
+	actionDiceYmlJobMap, actionSpecYmlJobMap, err := pre.ExtMarketSvc.SearchActions(extSearchReq, extmarketsvc.MakeActionLocationsBySource(p.PipelineSource),
 		extmarketsvc.SearchActionWithRender(map[string]string{"storageMountPoint": mountPoint}))
 	if err != nil {
 		return true, err
@@ -306,9 +310,9 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 	}
 
 	// 调度相关标签
-	task.Extra.Labels["DICE_WORKSPACE"] = string(p.Extra.DiceWorkspace)
-	task.Extra.Labels["DICE_ORG_NAME"] = p.GetOrgName()
-	task.Extra.Labels["DICE_ORG_ID"] = p.MergeLabels()[apistructs.LabelOrgID]
+	task.Extra.Labels[apistructs.EnvDiceWorkspace] = string(p.Extra.DiceWorkspace)
+	task.Extra.Labels[apistructs.EnvDiceOrgName] = p.GetOrgName()
+	task.Extra.Labels[apistructs.EnvDiceOrgID] = p.MergeLabels()[apistructs.LabelOrgID]
 	// 若 action 未声明 dice.yml labels，则由平台根据 source 按照默认规则分配调度标签
 	if len(diceYmlJob.Labels) == 0 {
 		// 大数据任务加上 JOB_KIND = bigdata，调度到有大数据标签的机器上
@@ -737,7 +741,6 @@ func condition(task *spec.PipelineTask) bool {
 
 	if sign.Sign == expression.TaskJumpOver {
 		task.Status = apistructs.PipelineStatusNoNeedBySystem
-		task.Extra.AllowFailure = true
 		if sign.Err != nil {
 			task.Inspect.Errors = task.Inspect.AppendError(&apistructs.PipelineTaskErrResponse{
 				Msg: sign.Err.Error(),

@@ -17,6 +17,7 @@ package dicehub
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/gorilla/schema"
 	"github.com/sirupsen/logrus"
@@ -43,6 +44,9 @@ func Initialize(p *provider) error {
 	if conf.Debug() {
 		logrus.SetLevel(logrus.DebugLevel)
 	}
+	logrus.SetFormatter(&logrus.TextFormatter{
+		TimestampFormat: time.RFC3339Nano,
+	})
 
 	// init endpoints
 	ep, err := initEndpoints(p)

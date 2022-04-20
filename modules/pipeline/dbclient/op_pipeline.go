@@ -18,12 +18,10 @@ import (
 	"fmt"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/pipeline/commonutil/costtimeutil"
 	definitiondb "github.com/erda-project/erda/modules/pipeline/providers/definition/db"
 	sourcedb "github.com/erda-project/erda/modules/pipeline/providers/source/db"
 	"github.com/erda-project/erda/modules/pipeline/spec"
@@ -213,62 +211,6 @@ func (client *Client) UpdateWholeStatusBorn(pipelineID uint64, ops ...SessionOpt
 
 	if base.Status == apistructs.PipelineStatusAnalyzed {
 		if err = client.UpdatePipelineTaskStatus(base.ID, apistructs.PipelineStatusBorn); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-// UpdateWholeStatusCancel 状态更新顺序：task -> stage -> pipeline
-func (client *Client) UpdateWholeStatusCancel(p *spec.Pipeline, ops ...SessionOption) (err error) {
-	defer func() {
-		err = errors.Wrap(err, "failed to update whole pipeline status to stopByUser")
-	}()
-
-	session := client.NewSession(ops...)
-	defer session.Close()
-
-	cancelTime := time.Now()
-
-	stages, err := client.ListPipelineStageByPipelineID(p.ID)
-	if err != nil {
-		return err
-	}
-	for _, stage := range stages {
-		tasks, err := client.ListPipelineTasksByStageID(stage.ID)
-		if err != nil {
-			return err
-		}
-		for _, task := range tasks {
-			if task.Status.IsEndStatus() {
-				continue
-			}
-			if task.Status == apistructs.PipelineStatusDisabled {
-				continue
-			}
-			task.Status = apistructs.PipelineStatusStopByUser
-			task.TimeEnd = cancelTime
-			if task.TimeBegin.IsZero() {
-				task.Status = apistructs.PipelineStatusNoNeedBySystem
-				task.TimeBegin = cancelTime
-			}
-			task.CostTimeSec = costtimeutil.CalculateTaskCostTimeSec(task)
-			if err = client.UpdatePipelineTask(task.ID, task); err != nil {
-				return err
-			}
-		}
-	}
-
-	if !p.Status.IsEndStatus() {
-		p.Status = apistructs.PipelineStatusStopByUser
-		p.TimeEnd = &cancelTime
-		if p.IsSnippet && (p.TimeBegin == nil || p.TimeBegin.IsZero()) {
-			p.Status = apistructs.PipelineStatusNoNeedBySystem
-			p.TimeBegin = &cancelTime
-		}
-		p.CostTimeSec = costtimeutil.CalculatePipelineCostTimeSec(p)
-		if err = client.UpdatePipelineBase(p.ID, &p.PipelineBase, ops...); err != nil {
 			return err
 		}
 	}

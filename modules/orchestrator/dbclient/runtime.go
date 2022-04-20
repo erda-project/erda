@@ -67,6 +67,7 @@ type Runtime struct {
 	// Deprecated
 	GitRepoAbbrev string
 	OrgID         uint64 `gorm:"not null"`
+	ExtraParams   string
 }
 
 const (
@@ -297,7 +298,7 @@ func (db *DBClient) FindRuntimesInApps(appIDs []uint64, env string) (map[uint64]
 
 func (db *DBClient) FindRuntimeOrCreate(uniqueId spec.RuntimeUniqueId, operator string, source apistructs.RuntimeSource,
 	clusterName string, clusterId uint64, gitRepoAbbrev string, projectID, orgID uint64, deploymentOrderId,
-	releaseVersion string) (*Runtime, bool, error) {
+	releaseVersion, extraParams string) (*Runtime, bool, error) {
 
 	runtime, err := db.FindRuntime(uniqueId)
 	if err != nil {
@@ -332,6 +333,7 @@ func (db *DBClient) FindRuntimeOrCreate(uniqueId spec.RuntimeUniqueId, operator 
 			OrgID:             orgID,
 			DeploymentOrderId: deploymentOrderId,
 			ReleaseVersion:    releaseVersion,
+			ExtraParams:       extraParams,
 		}
 		err = db.CreateRuntime(runtime)
 		if err != nil {
@@ -340,9 +342,10 @@ func (db *DBClient) FindRuntimeOrCreate(uniqueId spec.RuntimeUniqueId, operator 
 		}
 	} else {
 		// update deployment order name
-		if runtime.DeploymentOrderId != deploymentOrderId || runtime.ReleaseVersion != releaseVersion {
+		if runtime.DeploymentOrderId != deploymentOrderId || runtime.ReleaseVersion != releaseVersion || runtime.ExtraParams != extraParams {
 			runtime.DeploymentOrderId = deploymentOrderId
 			runtime.ReleaseVersion = releaseVersion
+			runtime.ExtraParams = extraParams
 			if err := db.UpdateRuntime(runtime); err != nil {
 				return nil, false, errors.Wrapf(err, "failed to update runtime deployment order or release info, err: %v", err)
 			}

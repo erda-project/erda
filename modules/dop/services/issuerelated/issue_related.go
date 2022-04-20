@@ -160,11 +160,11 @@ func (ir *IssueRelated) AfterIssueInclusionRelationChange(id uint64) error {
 	if err != nil {
 		return err
 	}
-	if start != nil && !start.Equal(*issue.PlanStartedAt) {
+	if start != nil && issue.PlanStartedAt != nil && !start.Equal(*issue.PlanStartedAt) {
 		fields["plan_started_at"] = start
 		streamFields["plan_started_at"] = []interface{}{issue.PlanStartedAt, start, apistructs.ChildrenPlanUpdated}
 	}
-	if end != nil && !end.Equal(*issue.PlanFinishedAt) {
+	if end != nil && issue.PlanFinishedAt != nil && !end.Equal(*issue.PlanFinishedAt) {
 		now := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.Now().Location())
 		fields["expiry_status"] = dao.GetExpiryStatus(end, now)
 		fields["plan_finished_at"] = end

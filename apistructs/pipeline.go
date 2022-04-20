@@ -23,6 +23,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/erda-project/erda-proto-go/dop/projectpipeline/pb"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -47,8 +48,9 @@ const (
 )
 
 const (
-	EnvDiceOrgName = "DICE_ORG_NAME"
-	EnvDiceOrgID   = "DICE_ORG_ID"
+	EnvDiceOrgName   = "DICE_ORG_NAME"
+	EnvDiceOrgID     = "DICE_ORG_ID"
+	EnvDiceWorkspace = "DICE_WORKSPACE"
 )
 
 // pipeline reconcileTask context key
@@ -769,4 +771,5 @@ type PipelineCronGetResponse struct {
 
 type PipelineDefinitionExtraValue struct {
 	CreateRequest *PipelineCreateRequestV2 `json:"createRequest"`
+	RunParams     []*pb.PipelineRunParam   `json:"runParams"`
 }

@@ -25,5 +25,5 @@ var REPO_GET = apis.ApiSpec{
 	CheckLogin:  true,
 	IsOpenAPI:   true,
 	CheckToken:  true,
-	Doc:         `summary: repo delete api proxy`,
+	Doc:         `summary: repo get api proxy`,
 }

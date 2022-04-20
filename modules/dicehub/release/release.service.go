@@ -24,6 +24,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/coreos/etcd/clientv3"
@@ -1162,29 +1163,42 @@ func (s *ReleaseService) convertToReleaseResponse(release *db.Release) (*pb.Rele
 
 		id2Release := make(map[string]*db.Release)
 		logrus.Infoln("start parse dice yaml")
+
+		wg := sync.WaitGroup{}
+		mux := sync.Mutex{}
 		for i := 0; i < len(appReleases); i++ {
 			id2Release[appReleases[i].ReleaseID] = &appReleases[i]
 
-			dice, err := diceyml.New([]byte(appReleases[i].Dice), true)
-			if err != nil {
-				logrus.Errorf("failed to parse diceyml for release %s, %v", appReleases[i].ReleaseID, err)
-				continue
-			}
-			obj := dice.Obj()
-			if obj == nil || obj.AddOns == nil {
-				continue
-			}
-
-			for name, addon := range obj.AddOns {
-				version := addon.Options["version"]
-				splits := strings.Split(addon.Plan, ":")
-				if len(splits) != 2 {
-					logrus.Errorf("plan field of addon %s for release %s is invalid", name, appReleases[i].ReleaseID)
-					continue
+			wg.Add(1)
+			go func(i int) {
+				defer wg.Done()
+				if len(appReleases[i].Dice) == 0 {
+					return
 				}
-				addonSet[strings.Join([]string{splits[0], version, splits[1]}, "_")] = addon
-			}
+				dice, err := diceyml.New([]byte(appReleases[i].Dice), true)
+				if err != nil {
+					logrus.Errorf("failed to parse diceyml for release %s, %v", appReleases[i].ReleaseID, err)
+					return
+				}
+				obj := dice.Obj()
+				if obj == nil || obj.AddOns == nil {
+					return
+				}
+
+				for name, addon := range obj.AddOns {
+					version := addon.Options["version"]
+					splits := strings.Split(addon.Plan, ":")
+					if len(splits) != 2 {
+						logrus.Errorf("plan field of addon %s for release %s is invalid", name, appReleases[i].ReleaseID)
+						return
+					}
+					mux.Lock()
+					addonSet[strings.Join([]string{splits[0], version, splits[1]}, "_")] = addon
+					mux.Unlock()
+				}
+			}(i)
 		}
+		wg.Wait()
 		logrus.Infoln("[DEBUG] end parse dice yaml")
 
 		summary = make(map[string]*pb.ModeSummary)

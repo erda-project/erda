@@ -15,6 +15,8 @@
 package common
 
 import (
+	"time"
+
 	"github.com/erda-project/erda/apistructs"
 )
 
@@ -45,4 +47,16 @@ func GetUIIssueState(stateBelong apistructs.IssueStateBelong) string {
 	default:
 		return UIStatusDefault
 	}
+}
+
+func MilliFromTime(t time.Time) int64 {
+	return t.UnixNano() / int64(time.Millisecond)
+}
+
+type TimeMilliInDays struct {
+	Today               int64
+	Tomorrow            int64
+	TheDayAfterTomorrow int64
+	SevenDays           int64
+	ThirtyDays          int64
 }
