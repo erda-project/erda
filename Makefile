@@ -164,16 +164,16 @@ full-test:
 
 # docker image
 build-image: prepare
-	./build/scripts/docker_image.sh ${MODULE_PATH} build ${EXTENSION_ZIP_ADDRS}
+	./build/scripts/docker_image.sh ${MODULE_PATH} build
 push-image:
 	./build/scripts/docker_image.sh ${MODULE_PATH} push
 build-push-image: prepare
-	./build/scripts/docker_image.sh ${MODULE_PATH} build-push ${EXTENSION_ZIP_ADDRS}
+	./build/scripts/docker_image.sh ${MODULE_PATH} build-push
 build-image-all:
-	MAKE_BUILD_CMD=build-all ./build/scripts/docker_image.sh build ${EXTENSION_ZIP_ADDRS}
+	MAKE_BUILD_CMD=build-all ./build/scripts/docker_image.sh build
 
 build-push-all:
-	MAKE_BUILD_CMD=build-all ./build/scripts/docker_image.sh / build-push ${EXTENSION_ZIP_ADDRS}
+	MAKE_BUILD_CMD=build-all ./build/scripts/docker_image.sh / build-push
 build-push-base-image:
 	./build/scripts/base_image.sh build-push
 
