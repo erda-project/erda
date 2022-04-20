@@ -55,7 +55,7 @@ func (q *provider) loadNeedHandledPipelinesWhenBecomeLeader(ctx context.Context)
 		isTaskHandling, handlingWorkerID := q.LW.IsTaskBeingProcessed(ctx, worker.LogicTaskID(strutil.String(pipelineID)))
 		if isTaskHandling {
 			q.Log.Warnf("skip load need-handled pipeline(being handled), pipelineID: %d, workerID: %s", pipelineID, handlingWorkerID)
-			return
+			continue
 		}
 		// add into queue again
 		q.DistributedHandleIncomingPipeline(ctx, pipelineID)
