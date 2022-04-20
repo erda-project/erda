@@ -74,7 +74,7 @@ func (w *Workbench) ListProjWbOverviewData(identity apistructs.Identity, project
 	}
 
 	wg := sync.WaitGroup{}
-	wg.Add(2)
+	wg.Add(1)
 
 	// get project issue related info
 	go func() {
@@ -100,23 +100,23 @@ func (w *Workbench) ListProjWbOverviewData(identity apistructs.Identity, project
 	}()
 
 	// get project msp statistic related info
-	go func() {
-		defer func() {
-			if err := recover(); err != nil {
-				logrus.Errorf("")
-				logrus.Errorf("%s", debug.Stack())
-			}
-			// release
-			wg.Done()
-		}()
+	// go func() {
+	// 	defer func() {
+	// 		if err := recover(); err != nil {
+	// 			logrus.Errorf("")
+	// 			logrus.Errorf("%s", debug.Stack())
+	// 		}
+	// 		// release
+	// 		wg.Done()
+	// 	}()
 
-		res, err := w.bdl.GetMSPTenantProjects(identity.UserID, identity.OrgID, true, pidList)
-		if err != nil {
-			logrus.Warnf("get project workbench statistic info failed, request: %+v, error: %v", pidList, err)
-			return
-		}
-		statisticInfo = res
-	}()
+	// 	res, err := w.bdl.GetMSPTenantProjects(identity.UserID, identity.OrgID, true, pidList)
+	// 	if err != nil {
+	// 		logrus.Warnf("get project workbench statistic info failed, request: %+v, error: %v", pidList, err)
+	// 		return
+	// 	}
+	// 	statisticInfo = res
+	// }()
 
 	// wait complete
 	wg.Wait()
@@ -278,11 +278,12 @@ func (w *Workbench) GetUrlCommonParams(userID, orgID string, projectIDs []uint64
 // GetMspUrlParamsMap get url params used by icon
 func (w *Workbench) GetMspUrlParamsMap(identity apistructs.Identity, projectIDs []uint64, limit int) (urlParams map[string]UrlParams, err error) {
 	urlParams = make(map[string]UrlParams)
-	projectDTO, err := w.bdl.GetMSPTenantProjects(identity.UserID, identity.OrgID, false, projectIDs)
-	if err != nil {
-		logrus.Errorf("failed to get msp tenant project , err: %v", err)
-		return
-	}
+	var projectDTO []*projpb.Project
+	// projectDTO, err := w.bdl.GetMSPTenantProjects(identity.UserID, identity.OrgID, false, projectIDs)
+	// if err != nil {
+	// 	logrus.Errorf("failed to get msp tenant project , err: %v", err)
+	// 	return
+	// }
 
 	if limit <= 0 {
 		limit = 5

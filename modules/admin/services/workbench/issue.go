@@ -41,18 +41,18 @@ type Query struct {
 
 func (w *Workbench) GetProjIssueQueries(userID string, projIDs []uint64, limit int) (data map[uint64]IssueUrlQueries, err error) {
 	data = make(map[uint64]IssueUrlQueries)
+	res, err := w.GetIssueQueries(userID)
+	if err != nil {
+		logrus.Errorf("get issue queries failed, error: %v", err)
+		return data, err
+	}
 	for _, v := range projIDs {
-		res, err := w.GetIssueQueries(userID, v)
-		if err != nil {
-			logrus.Errorf("get issue queries failed, id: %v, error: %v", v, err)
-			return data, err
-		}
 		data[v] = res
 	}
 	return
 }
 
-func (w *Workbench) GetIssueQueries(userID string, projID uint64) (IssueUrlQueries, error) {
+func (w *Workbench) GetIssueQueries(userID string) (IssueUrlQueries, error) {
 	var data IssueUrlQueries
 	expiredStartEndTime := genExpiredStartEndTime()
 	todayExpireStartEndTime := genTodayExpireStartEndTime()

@@ -141,7 +141,18 @@ func (l *WorkList) GenProjDopKvInfo(proj apistructs.WorkbenchProjOverviewItem, q
 
 func (l *WorkList) GenProjMspKvInfo(proj apistructs.WorkbenchProjOverviewItem, q wb.IssueUrlQueries, mspParams map[string]interface{}) (kvs []list.KvInfo) {
 	if proj.StatisticInfo == nil {
-		return
+		return []list.KvInfo{
+			{
+				ID:    strconv.FormatUint(proj.ProjectDTO.ID, 10),
+				Key:   l.sdk.I18n(i18n.I18nKeyMspServiceCount),
+				Value: "0",
+			},
+			{
+				ID:    strconv.FormatUint(proj.ProjectDTO.ID, 10),
+				Key:   l.sdk.I18n(i18n.I18nKeyMspLast24HAlertCount),
+				Value: "0",
+			},
+		}
 	}
 	kvs = []list.KvInfo{
 		// msp service info
