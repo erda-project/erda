@@ -35,7 +35,7 @@ func (list SortByTypeList) Len() int      { return len(list) }
 func (list SortByTypeList) Swap(i, j int) { list[i], list[j] = list[j], list[i] }
 func (list SortByTypeList) Less(i, j int) bool {
 	if list[i].DomainType == list[j].DomainType {
-		return list.lesByDomain(i, j)
+		return strutil.ReverseString(list[i].Domain) < strutil.ReverseString(list[j].Domain)
 	}
 	if list[i].DomainType == EDT_DEFAULT {
 		return true
@@ -50,14 +50,6 @@ func (list SortByTypeList) Less(i, j int) bool {
 		return false
 	}
 	return true
-}
-
-func (list SortByTypeList) lesByDomain(i, j int) bool {
-	domainI := list[i].Domain
-	domainJ := list[j].Domain
-	strutil.ReverseSlice(domainI)
-	strutil.ReverseSlice(domainJ)
-	return domainI < domainJ
 }
 
 type RuntimeDomainsDto map[string][]RuntimeDomain

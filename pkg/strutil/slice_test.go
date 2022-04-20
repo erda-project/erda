@@ -84,3 +84,16 @@ func TestDedupAnySlice(t *testing.T) {
 	t.Log(b)
 	t.Log(c)
 }
+
+func TestReverseString(t *testing.T) {
+	var (
+		s1 = "desrever si siht"
+		s2 = "a"
+	)
+	if reversed := strutil.ReverseString(s1); reversed != "this is reversed" {
+		t.Error("error")
+	}
+	if reversed := strutil.ReverseString(s2); reversed != s2 {
+		t.Error("error")
+	}
+}

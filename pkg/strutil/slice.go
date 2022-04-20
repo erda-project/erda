@@ -30,6 +30,18 @@ func ReverseSlice(s interface{}) {
 	}
 }
 
+func ReverseString(s string) string {
+	var n = len(s)
+	if n <= 1 {
+		return s
+	}
+	var b = make([]byte, n)
+	for i, j := 0, n-1; i < j; i, j = i+1, j-1 {
+		b[i], b[j] = s[j], s[i]
+	}
+	return string(b)
+}
+
 func DedupAnySlice(s interface{}, uniq func(i int) interface{}) interface{} {
 	in := reflect.ValueOf(s)
 	if in.Kind() != reflect.Slice && in.Kind() != reflect.Array {
