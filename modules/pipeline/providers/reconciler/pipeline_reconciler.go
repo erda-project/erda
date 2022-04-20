@@ -186,7 +186,7 @@ func (pr *defaultPipelineReconciler) ReconcileOneSchedulableTask(ctx context.Con
 func (pr *defaultPipelineReconciler) UpdateCurrentReconcileStatusIfNecessary(ctx context.Context, p *spec.Pipeline) error {
 	var calculatedPipelineStatus apistructs.PipelineStatus
 	calculatedStatusByAllReconciledTasks := pr.getCalculatedStatusByAllReconciledTasks()
-	if calculatedStatusByAllReconciledTasks.IsEndStatus() {
+	if calculatedStatusByAllReconciledTasks.IsStopByUser() {
 		calculatedPipelineStatus = calculatedStatusByAllReconciledTasks
 	} else {
 		// get all tasks
