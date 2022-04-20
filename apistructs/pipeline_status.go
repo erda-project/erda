@@ -210,6 +210,10 @@ func (status PipelineStatus) IsRunningStatus() bool {
 	return status == PipelineStatusRunning
 }
 
+func (status PipelineStatus) InQueue() bool {
+	return status == PipelineStatusQueue
+}
+
 func (status PipelineStatus) CanDelete() bool {
 	// 未开始可删除
 	if status == PipelineStatusAnalyzed {
