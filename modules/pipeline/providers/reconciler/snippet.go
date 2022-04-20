@@ -23,7 +23,6 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/pipeline/commonutil/statusutil"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -90,6 +89,10 @@ func (tr *defaultTaskReconciler) fulfillParentSnippetTask(p *spec.Pipeline) erro
 	}
 	p = pWithTasks.Pipeline
 	tasks := pWithTasks.Tasks
+	// only fulfillment when snippet pipeline is end status
+	if !p.Status.IsEndStatus() {
+		return nil
+	}
 	// outputs
 	outputValues, err := tr.calculateAndUpdatePipelineOutputValues(p, tasks)
 	if err != nil {
@@ -99,11 +102,9 @@ func (tr *defaultTaskReconciler) fulfillParentSnippetTask(p *spec.Pipeline) erro
 	if err := tr.handleParentSnippetTaskOutputs(p, outputValues); err != nil {
 		return fmt.Errorf("failed to handler parent snippet task outputs, pipelineID: %d, err: %v", p.ID, err)
 	}
-	// 根据 tasks 拿到 snippet task 的状态
-	calcStatus := statusutil.CalculatePipelineStatusV2(tasks)
-	logrus.Infof("snippt pipeline %d calculated pipeline status: %s", p.ID, calcStatus)
-	// 更新 snippet task 状态
-	if err := tr.dbClient.UpdatePipelineTaskStatus(*p.ParentTaskID, calcStatus); err != nil {
+	// update parent snippet task's status by snippet pipeline's status
+	logrus.Infof("snippt pipeline %d calculated pipeline status: %s", p.ID, p.Status)
+	if err := tr.dbClient.UpdatePipelineTaskStatus(*p.ParentTaskID, p.Status); err != nil {
 		return err
 	}
 	// update the costTime,timeBegin,timeEnd of pipeline task
