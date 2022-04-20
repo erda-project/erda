@@ -145,7 +145,6 @@ require (
 	github.com/shogo82148/androidbinary v1.0.2
 	github.com/shopspring/decimal v1.3.1
 	github.com/sirupsen/logrus v1.8.1
-	github.com/sony/sonyflake v1.0.0
 	github.com/spf13/afero v1.6.0
 	github.com/spf13/cast v1.3.1
 	github.com/spf13/cobra v1.4.0
