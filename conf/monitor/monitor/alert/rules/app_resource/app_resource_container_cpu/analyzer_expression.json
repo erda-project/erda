@@ -17,7 +17,7 @@
       {
         "aggregator":"avg",
         "field":"cpu_usage_percent",
-        "field_script":"function invoke(fields,tags){return fields.cpu_limit===0?fields.cpu_usage_percent:fields.cpu_usage_percent/fields.cpu_limit}",
+        "field_script":"function invoke(fields,tags){return !fields.cpu_limit?fields.cpu_usage_percent:fields.cpu_usage_percent/fields.cpu_limit}",
         "operator":"gte",
         "value":90
       },
