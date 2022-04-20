@@ -15,6 +15,7 @@
 package customhttp
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -22,6 +23,7 @@ import (
 	"sync"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/pkg/discover"
 )
@@ -38,19 +40,12 @@ func (e Error) Error() string {
 	return e.msg
 }
 
-var inetAddr string
 var mtx sync.Mutex
 
 const (
 	portalHostHeader = "X-Portal-Host"
 	portalDestHeader = "X-Portal-Dest"
 )
-
-func SetInetAddr(addr string) {
-	mtx.Lock()
-	defer mtx.Unlock()
-	inetAddr = addr
-}
 
 func parseInetUrl(url string) (portalHost string, portalDest string, portalUrl string, portalArgs map[string]string, err error) {
 	url = strings.TrimPrefix(url, "inet://")
@@ -91,17 +86,18 @@ func NewRequest(method, url string, body io.Reader) (*http.Request, error) {
 	if !strings.HasPrefix(url, "inet://") {
 		return http.NewRequest(method, url, body)
 	}
-	mtx.Lock()
-	if inetAddr == "" {
-		inetAddr = discover.ClusterDialer()
-	}
-	mtx.Unlock()
-	inetAddr = strings.TrimPrefix(inetAddr, "http://")
 	portalHost, portalDest, portalUrl, _, err := parseInetUrl(url)
 	if err != nil {
 		return nil, err
 	}
-	url = fmt.Sprintf("http://%s/%s", inetAddr, portalUrl)
+
+	clusterDialerEndpoint, err := queryClusterDialerIP(portalHost)
+	if err != nil {
+		return nil, err
+	}
+	logrus.Infof("[DEBUG] get cluster dialer endpoint succeeded, IP: %s", clusterDialerEndpoint)
+
+	url = fmt.Sprintf("http://%s/%s", clusterDialerEndpoint, portalUrl)
 	request, err := http.NewRequest(method, url, body)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -109,4 +105,32 @@ func NewRequest(method, url string, body io.Reader) (*http.Request, error) {
 	request.Header.Set(portalHostHeader, portalHost)
 	request.Header.Set(portalDestHeader, portalDest)
 	return request, nil
+}
+
+func queryClusterDialerIP(clusterKey string) (string, error) {
+	host := "http://" + discover.ClusterDialer()
+	resp, err := http.Get(host + fmt.Sprintf("/clusterdialer/ip?clusterKey=%s", clusterKey))
+	if err != nil {
+		return "", err
+	}
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", errors.Errorf("failed to read from resp, %v", err)
+	}
+	r := make(map[string]interface{})
+	if err = json.Unmarshal(data, &r); err != nil {
+		return "", errors.Errorf("failed to unmarshal resp, %v", err)
+	}
+
+	succeeded, _ := r["succeeded"].(bool)
+	if !succeeded {
+		errStr, _ := r["error"].(string)
+		return "", errors.Errorf(errStr)
+	}
+
+	ip, _ := r["IP"].(string)
+	if ip == "" {
+		return "", errors.Errorf("clusterKey %s not found", clusterKey)
+	}
+	return ip, nil
 }

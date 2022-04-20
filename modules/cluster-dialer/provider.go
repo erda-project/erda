@@ -17,6 +17,7 @@ package cluster_dialer
 import (
 	"context"
 
+	"github.com/coreos/etcd/clientv3"
 	"github.com/rancher/remotedialer"
 	"github.com/sirupsen/logrus"
 
@@ -29,6 +30,7 @@ import (
 type provider struct {
 	Cfg        *config.Config             // auto inject this field
 	Credential tokenpb.TokenServiceServer `autowired:"erda.core.token.TokenService" optional:"true"`
+	Etcd       *clientv3.Client           `autowired:"etcd"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -40,7 +42,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 }
 
 func (p *provider) Run(ctx context.Context) error {
-	return server.Start(ctx, p.Credential, p.Cfg)
+	return server.Start(ctx, p.Credential, p.Cfg, p.Etcd)
 }
 
 func init() {
