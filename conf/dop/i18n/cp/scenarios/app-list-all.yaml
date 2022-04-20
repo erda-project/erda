@@ -23,8 +23,8 @@ zh:
   openMrCount: 进行中的合并请求数
 en:
   searchByName: Search by name
-  publicApp: Public application
-  privateApp: Private application
+  publicApp: Public
+  privateApp: Private
   projectInfo: Project
   runtime: Number of application instances
   updatedAt: Updated time
@@ -42,5 +42,5 @@ en:
   minuteAgo: minute(s) ago
   secondAgo: second(s) ago
   defaultAppDescription: Edit description in application setting
-  myApp: My application
+  myApp: My apps
   openMrCount: Number of merge requests in progress

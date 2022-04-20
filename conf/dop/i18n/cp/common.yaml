@@ -537,7 +537,7 @@ en:
   noDeadlineSpecified: No deadline specified
   total: Total
   dimension: Dimension
-  moreOperations: More operations
+  moreOperations: Operations
   sort: Sort
   timeOrder: Time order
   timeReverse: Reverse order
@@ -631,7 +631,7 @@ en:
   iterationUnassigned: Unassigned
   processTip: Successful actions/Total actions
   appNotAuthorized: No application permission
-  publicProperty: Public property
+  publicProperty: Property
   exit: Exit
   exitProjectConfirm: After exiting the current project, you will no longer have project collaboration permission. If you want to join again, you need to be invited by the project administrator. Are you sure you want to exit?
   searchAppName: Search app name
