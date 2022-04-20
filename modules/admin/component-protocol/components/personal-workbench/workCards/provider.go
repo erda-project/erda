@@ -237,6 +237,19 @@ func (wc *WorkCards) getProjTextMeta(sdk *cptype.SDK, project apistructs.Workben
 			logrus.Error(err)
 			return
 		}
+		if project.StatisticInfo == nil {
+			metas = []cardlist.TextMeta{
+				{
+					MainText: 0,
+					SubText:  sdk.I18n(i18n.I18nKeyMspServiceCount),
+				},
+				{
+					MainText: 0,
+					SubText:  sdk.I18n(i18n.I18nKeyMspLast24HAlertCount),
+				},
+			}
+			return
+		}
 		metas = []cardlist.TextMeta{
 			{
 				MainText: float64(project.StatisticInfo.ServiceCount),
