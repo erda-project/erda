@@ -28,6 +28,7 @@ import (
 type Config struct {
 	IsEdge                     bool          `env:"DICE_IS_EDGE" default:"false"`
 	ClusterName                string        `env:"DICE_CLUSTER_NAME"`
+	AllowedSources             []string      `env:"EDGE_ALLOW_SOURCES"`
 	PipelineAddr               string        `env:"PIPELINE_ADDR"`
 	PipelineHost               string        `env:"PIPELINE_HOST"`
 	ClusterDialEndpoint        string        `file:"cluster_dialer_endpoint" desc:"cluster dialer endpoint"`
@@ -44,6 +45,7 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
+	p.bdl = bundle.New(bundle.WithClusterDialer())
 	return nil
 }
 

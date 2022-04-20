@@ -47,6 +47,48 @@ service CronService {
       put: "/api/pipeline-crons/{cronID}",
     };
   }
+
+  rpc CronSave (CronSaveRequest) returns (CronSaveResponse) {
+    option (google.api.http) = {
+      post: "/api/pipeline-crons/action/save",
+    };
+  }
+
+  rpc CronDisable (CronDisableRequest) returns (CronDisableResponse) {
+    option (google.api.http) = {
+      post: "/api/pipeline-crons/action/disable",
+    };
+  }
+
+  // edge
+  rpc EdgeCronCreate (EdgeCronCreateRequest) returns (CronCreateResponse) {
+    option (google.api.http) = {
+      post: "/api/pipeline-crons/actions/edge-create",
+    };
+  }
+  rpc EdgeCronUpdate (EdgeCronUpdateRequest) returns (CronUpdateResponse) {
+    option (google.api.http) = {
+      put: "/api/pipeline-crons/actions/edge-update",
+    };
+  }
+}
+
+// disable
+message CronDisableRequest {
+  core.pipeline.Cron cron = 1;
+}
+
+message CronDisableResponse {
+  core.pipeline.Cron data = 1;
+}
+
+// save
+message CronSaveRequest {
+  core.pipeline.Cron cron = 1;
+}
+
+message CronSaveResponse {
+  core.pipeline.Cron data = 1;
 }
 
 // paging
@@ -85,6 +127,11 @@ message CronStopResponse {
 message CronCreateRequest {
   core.pipeline.base.PipelineCreateRequest pipelineCreateRequest = 1;
 }
+
+message EdgeCronCreateRequest {
+  core.pipeline.Cron cron = 1;
+}
+
 message CronCreateResponse {
   uint64 data = 1;
 }
@@ -112,6 +159,10 @@ message CronUpdateRequest {
   repeated string configManageNamespaces = 4;
   string pipelineDefinitionID = 5;
   map<string, string> secrets = 6;
+}
+
+message EdgeCronUpdateRequest {
+  core.pipeline.Cron cron = 1;
 }
 
 message CronUpdateResponse {

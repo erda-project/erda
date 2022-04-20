@@ -22,6 +22,38 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+func (this *CronDisableRequest) Validate() error {
+	if this.Cron != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Cron); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("Cron", err)
+		}
+	}
+	return nil
+}
+func (this *CronDisableResponse) Validate() error {
+	if this.Data != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Data); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("Data", err)
+		}
+	}
+	return nil
+}
+func (this *CronSaveRequest) Validate() error {
+	if this.Cron != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Cron); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("Cron", err)
+		}
+	}
+	return nil
+}
+func (this *CronSaveResponse) Validate() error {
+	if this.Data != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Data); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("Data", err)
+		}
+	}
+	return nil
+}
 func (this *CronPagingRequest) Validate() error {
 	if this.Enable != nil {
 		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Enable); err != nil {
@@ -70,6 +102,14 @@ func (this *CronCreateRequest) Validate() error {
 	}
 	return nil
 }
+func (this *EdgeCronCreateRequest) Validate() error {
+	if this.Cron != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Cron); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("Cron", err)
+		}
+	}
+	return nil
+}
 func (this *CronCreateResponse) Validate() error {
 	return nil
 }
@@ -92,6 +132,14 @@ func (this *CronGetResponse) Validate() error {
 }
 func (this *CronUpdateRequest) Validate() error {
 	// Validation of proto3 map<> fields is unsupported.
+	return nil
+}
+func (this *EdgeCronUpdateRequest) Validate() error {
+	if this.Cron != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Cron); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("Cron", err)
+		}
+	}
 	return nil
 }
 func (this *CronUpdateResponse) Validate() error {

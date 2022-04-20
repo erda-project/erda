@@ -25,6 +25,7 @@ const (
 	//pipelineCron表的字段名
 	PipelineCronCronExpr = "cron_expr"
 	PipelineDefinitionID = "pipeline_definition_id"
+	PipelineCronIsEdge   = "is_edge"
 	PipelineCronEnable   = "enable"
 	Extra                = "extra"
 )

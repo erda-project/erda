@@ -16,7 +16,10 @@ package pipelinesvc
 
 import (
 	"context"
+	"time"
 
+	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
+	common "github.com/erda-project/erda-proto-go/core/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/modules/pipeline/spec"
@@ -30,13 +33,15 @@ func (s *PipelineSvc) Rerun(ctx context.Context, req *apistructs.PipelineRerunRe
 		return nil, apierrors.ErrRerunPipeline.InternalError(err)
 	}
 
-	var originCron spec.PipelineCron
+	var originCron *common.Cron
 	if origin.CronID != nil {
-		cron, err := s.dbClient.GetPipelineCron(*origin.CronID)
+		result, err := s.pipelineCronSvc.CronGet(ctx, &cronpb.CronGetRequest{
+			CronID: *origin.CronID,
+		})
 		if err != nil {
 			return nil, apierrors.ErrRerunPipeline.InternalError(err)
 		}
-		originCron = cron
+		originCron = result.Data
 	}
 
 	if origin.Labels == nil {
@@ -56,10 +61,16 @@ func (s *PipelineSvc) Rerun(ctx context.Context, req *apistructs.PipelineRerunRe
 		ConfigManageNamespaces: origin.GetConfigManageNamespaces(),
 		AutoRunAtOnce:          req.AutoRunAtOnce,
 		AutoStartCron:          false,
-		CronStartFrom:          originCron.Extra.CronStartFrom,
-		IdentityInfo:           req.IdentityInfo,
-		DefinitionID:           origin.PipelineDefinitionID,
-		Secrets:                req.Secrets,
+		CronStartFrom: func() *time.Time {
+			if originCron == nil {
+				return nil
+			}
+			time := originCron.CronExtra.CronStartFrom.AsTime()
+			return &time
+		}(),
+		IdentityInfo: req.IdentityInfo,
+		DefinitionID: origin.PipelineDefinitionID,
+		Secrets:      req.Secrets,
 	})
 	if err != nil {
 		return nil, err

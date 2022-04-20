@@ -21,13 +21,11 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/pipeline/providers/edgepipeline_register"
 	"github.com/erda-project/erda/modules/pipeline/services/pipelinesvc"
 )
 
 type config struct {
-	IsEdge         bool     `env:"DICE_IS_EDGE" default:"false"`
-	ClusterName    string   `env:"DICE_CLUSTER_NAME"`
-	AllowedSources []string `env:"EDGE_ALLOW_SOURCES"`
 }
 
 type provider struct {
@@ -36,6 +34,8 @@ type provider struct {
 
 	bdl         *bundle.Bundle
 	pipelineSvc *pipelinesvc.PipelineSvc
+
+	EdgePipelineRegister edgepipeline_register.Interface
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {

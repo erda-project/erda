@@ -22,12 +22,13 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"github.com/xormplus/xorm"
+	"google.golang.org/protobuf/types/known/timestamppb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
+	pb "github.com/erda-project/erda-proto-go/core/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/conf"
-	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/pkg/container_provider"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
@@ -298,12 +299,14 @@ func (s *PipelineSvc) makePipelineFromRequestV2(req *apistructs.PipelineCreateRe
 		if err != nil {
 			return nil, apierrors.ErrCreatePipeline.InvalidParameter(err)
 		}
-		pc, err := s.dbClient.GetPipelineCron(cronID)
+		pc, err := s.pipelineCronSvc.CronGet(context.Background(), &cronpb.CronGetRequest{
+			CronID: cronID,
+		})
 		if err != nil {
 			return nil, apierrors.ErrGetPipelineCron.InvalidParameter(err)
 		}
-		p.CronID = &pc.ID
-		p.Extra.CronExpr = pc.CronExpr
+		p.CronID = &pc.Data.ID
+		p.Extra.CronExpr = pc.Data.CronExpr
 	}
 
 	// triggerMode
@@ -358,75 +361,70 @@ func (s *PipelineSvc) makePipelineFromRequestV2(req *apistructs.PipelineCreateRe
 // 不管是定时还是非定时，只要定时配置是空的，就将pipeline_crons disable
 func (s *PipelineSvc) UpdatePipelineCron(p *spec.Pipeline, cronStartFrom *time.Time, configManageNamespaces []string, cronCompensator *pipelineyml.CronCompensator) error {
 
-	var cron *spec.PipelineCron
-	var cronID uint64
+	var cron *pb.Cron
+	// 是定时类型的流水线，切定时的表达式不为空，更新cron的配置
+	if p.TriggerMode != apistructs.PipelineTriggerModeCron && p.Extra.CronExpr != "" {
 
-	_, err := s.dbClient.Transaction(func(session *xorm.Session) (interface{}, error) {
-		sessionOpt := dbclient.WithTxSession(session)
-
-		//是定时类型的流水线，切定时的表达式不为空，更新cron的配置
-		if p.TriggerMode != apistructs.PipelineTriggerModeCron && p.Extra.CronExpr != "" {
-
-			cron = constructPipelineCron(p, cronStartFrom, configManageNamespaces, cronCompensator)
-
-			if err := s.dbClient.InsertOrUpdatePipelineCron(cron, sessionOpt); err != nil {
-				return nil, apierrors.ErrUpdatePipelineCron.InternalError(err)
-			}
-			p.CronID = &cron.ID
-			cronID = cron.ID
+		cron = constructPipelineCron(p, cronStartFrom, configManageNamespaces, cronCompensator)
+		result, err := s.pipelineCronSvc.CronSave(context.Background(), &cronpb.CronSaveRequest{
+			Cron: cron,
+		})
+		if err != nil {
+			return apierrors.ErrUpdatePipelineCron.InternalError(err)
 		}
+		p.CronID = &result.Data.ID
+	}
 
-		//cron表达式为空，就需要关闭定时
-		if p.Extra.CronExpr == "" {
-			var err error
-
-			cron = constructPipelineCron(p, cronStartFrom, configManageNamespaces, cronCompensator)
-			if cronID, err = s.dbClient.DisablePipelineCron(cron, sessionOpt); err != nil {
-				return nil, apierrors.ErrUpdatePipelineCron.InternalError(err)
-			}
-			p.CronID = nil
+	// cron表达式为空，就需要关闭定时
+	if p.Extra.CronExpr == "" {
+		var err error
+		cron = constructPipelineCron(p, cronStartFrom, configManageNamespaces, cronCompensator)
+		_, err = s.pipelineCronSvc.CronDisable(context.Background(), &cronpb.CronDisableRequest{
+			Cron: cron,
+		})
+		if err != nil {
+			return apierrors.ErrUpdatePipelineCron.InternalError(err)
 		}
-
-		if err := s.crondSvc.AddIntoPipelineCrond(cronID); err != nil {
-			logrus.Errorf("[alert] add crond failed, err: %v", err)
-		}
-		return nil, nil
-	})
-
-	return err
+		p.CronID = nil
+	}
+	return nil
 }
 
-func constructPipelineCron(p *spec.Pipeline, cronStartFrom *time.Time, configManageNamespaces []string, cronCompensator *pipelineyml.CronCompensator) *spec.PipelineCron {
+func constructPipelineCron(p *spec.Pipeline, cronStartFrom *time.Time, configManageNamespaces []string, cronCompensator *pipelineyml.CronCompensator) *pb.Cron {
 	appID, _ := strconv.ParseUint(p.Labels[apistructs.LabelAppID], 10, 64)
-	var compensator *apistructs.CronCompensator
+	var compensator *pb.CronCompensator
 	if cronCompensator != nil {
-		compensator = &apistructs.CronCompensator{}
-		compensator.Enable = cronCompensator.Enable
-		compensator.LatestFirst = cronCompensator.LatestFirst
-		compensator.StopIfLatterExecuted = cronCompensator.StopIfLatterExecuted
+		compensator = &pb.CronCompensator{}
+		compensator.Enable = wrapperspb.Bool(cronCompensator.Enable)
+		compensator.LatestFirst = wrapperspb.Bool(cronCompensator.LatestFirst)
+		compensator.StopIfLatterExecuted = wrapperspb.Bool(cronCompensator.StopIfLatterExecuted)
 	}
-	cron := &spec.PipelineCron{
+	cron := &pb.Cron{
 		ApplicationID:   appID,
 		Branch:          p.Labels[apistructs.LabelBranch],
-		PipelineSource:  p.PipelineSource,
+		PipelineSource:  p.PipelineSource.String(),
 		PipelineYmlName: p.PipelineYmlName,
 		CronExpr:        p.Extra.CronExpr,
-		Enable:          &[]bool{false}[0],
-		Extra: spec.PipelineCronExtra{
+		Enable:          wrapperspb.Bool(false),
+		CronExtra: &pb.CronExtra{
 			PipelineYml:            p.PipelineYml,
 			ClusterName:            p.ClusterName,
 			FilterLabels:           p.Labels,
 			NormalLabels:           p.GenerateNormalLabelsForCreateV2(),
 			Envs:                   p.Snapshot.Envs,
 			ConfigManageNamespaces: configManageNamespaces,
-			CronStartFrom:          cronStartFrom,
-			Version:                "v2",
-			Compensator:            compensator,
-			LastCompensateAt:       nil,
-			IncomingSecrets:        p.Extra.IncomingSecrets,
+			CronStartFrom: func() *timestamppb.Timestamp {
+				if cronStartFrom == nil {
+					return nil
+				}
+				return timestamppb.New(*cronStartFrom)
+			}(),
+			Version:          "v2",
+			Compensator:      compensator,
+			LastCompensateAt: nil,
+			IncomingSecrets:  p.Extra.IncomingSecrets,
 		},
 		PipelineDefinitionID: p.PipelineDefinitionID,
 	}
-
 	return cron
 }

@@ -101,21 +101,22 @@ func (client *Client) PagingPipelineCron(req *pb.CronPagingRequest, ops ...mysql
 	return result, total, nil
 }
 
-func (client *Client) GetPipelineCron(id interface{}, ops ...mysqlxorm.SessionOption) (cron PipelineCron, err error) {
+func (client *Client) GetPipelineCron(id interface{}, ops ...mysqlxorm.SessionOption) (cron PipelineCron, bool bool, err error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
 	defer func() {
 		err = errors.Wrapf(err, "failed to get pipeline cron by id [%v]", id)
 	}()
+
 	found, err := session.ID(id).Get(&cron)
 	if err != nil {
-		return PipelineCron{}, err
+		return PipelineCron{}, false, err
 	}
 	if !found {
-		return PipelineCron{}, errors.New("not found")
+		return PipelineCron{}, false, nil
 	}
-	return cron, nil
+	return cron, true, nil
 }
 
 func (client *Client) UpdatePipelineCron(id interface{}, cron *PipelineCron, ops ...mysqlxorm.SessionOption) error {

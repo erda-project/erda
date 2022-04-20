@@ -31,6 +31,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/providers/cron/db"
+	"github.com/erda-project/erda/modules/pipeline/providers/edgepipeline_register"
 	"github.com/erda-project/erda/modules/pipeline/providers/leaderworker"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/jsonstore"
@@ -61,7 +62,8 @@ type provider struct {
 	client    *db.Client
 
 	// TODO remove
-	pipelineFunc PipelineFunc
+	pipelineFunc         PipelineFunc
+	EdgePipelineRegister edgepipeline_register.Interface
 }
 
 func (p *provider) WithPipelineFunc(pipelineFunc PipelineFunc) {
@@ -290,9 +292,12 @@ func (p *provider) cronInterruptCompensate(ctx context.Context, pc db.PipelineCr
 }
 
 func (p *provider) doNonExecuteCompensateByCronID(ctx context.Context, id uint64) error {
-	cron, err := p.client.GetPipelineCron(id)
+	cron, found, err := p.client.GetPipelineCron(id)
 	if err != nil {
 		return err
+	}
+	if !found {
+		return fmt.Errorf("not found")
 	}
 
 	return p.cronNonExecuteCompensate(ctx, cron)
@@ -510,6 +515,11 @@ func (p *provider) createCronCompensatePipeline(ctx context.Context, pc db.Pipel
 
 // isCronShouldIgnore if trigger time before cron start from time, should ignore cron at this trigger time
 func (p *provider) isCronShouldBeIgnored(pc db.PipelineCron) bool {
+	ok := p.EdgePipelineRegister.ShouldDispatchToEdge(pc.PipelineSource.String(), pc.Extra.ClusterName)
+	if ok {
+		return true
+	}
+
 	if pc.Extra.CronStartFrom == nil {
 		return false
 	}
