@@ -30,7 +30,6 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/envconf"
-	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/retry"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -76,6 +75,28 @@ func (agent *Agent) Callback() {
 	}
 }
 
+func (agent *Agent) SetCallbackReporter() {
+	tokenForBootstrap := os.Getenv(apistructs.EnvOpenapiTokenForActionBootstrap)
+	if tokenForBootstrap == "" {
+		agent.AppendError(errors.Errorf("missing env %s", apistructs.EnvOpenapiTokenForActionBootstrap))
+		return
+	}
+	agent.EasyUse.TokenForBootstrap = tokenForBootstrap
+	if agent.EasyUse.IsEdgePipeline {
+		agent.CallbackReporter = &EdgeCallbackReporter{
+			PipelineAddr:      agent.EasyUse.PipelineAddr,
+			TokenForBootstrap: tokenForBootstrap,
+			OpenAPIToken:      agent.EasyUse.OpenAPIToken,
+		}
+		return
+	}
+	agent.CallbackReporter = &CenterCallbackReporter{
+		OpenAPIAddr:       agent.EasyUse.OpenAPIAddr,
+		OpenAPIToken:      agent.EasyUse.OpenAPIToken,
+		TokenForBootstrap: agent.EasyUse.TokenForBootstrap,
+	}
+}
+
 func (agent *Agent) callbackToPipelinePlatform(cb *Callback) (err error) {
 	agent.LockPushedMetaFileMap.Lock()
 	defer agent.LockPushedMetaFileMap.Unlock()
@@ -89,8 +110,11 @@ func (agent *Agent) callbackToPipelinePlatform(cb *Callback) (err error) {
 		}
 	}()
 
-	if agent.EasyUse.OpenAPIAddr == "" {
+	if agent.EasyUse.OpenAPIAddr == "" && !agent.EasyUse.IsEdgePipeline {
 		return errors.New("unknown openapi addr, cannot callback")
+	}
+	if agent.EasyUse.PipelineAddr == "" && agent.EasyUse.IsEdgePipeline {
+		return errors.New("unknown pipeline addr, cannot callback")
 	}
 
 	// 如果全部为空，则不需要回调
@@ -140,20 +164,8 @@ func (agent *Agent) callbackToPipelinePlatform(cb *Callback) (err error) {
 	cbReq.Data = b
 
 	return retry.DoWithInterval(func() error {
-		var resp apistructs.PipelineCallbackResponse
-
-		r, err := httpclient.New(httpclient.WithCompleteRedirect()).
-			Post(agent.EasyUse.OpenAPIAddr).
-			Path("/api/pipelines/actions/callback").
-			Header("Authorization", cfg.OpenAPIToken).
-			JSONBody(&cbReq).
-			Do().
-			JSON(&resp)
-		if err != nil {
+		if err := agent.CallbackReporter.CallbackToPipelinePlatform(cbReq); err != nil {
 			return err
-		}
-		if !r.IsOK() || !resp.Success {
-			return errors.Errorf("status-code %d, resp %#v", r.StatusCode(), resp)
 		}
 		return nil
 	}, 5, time.Second*5)

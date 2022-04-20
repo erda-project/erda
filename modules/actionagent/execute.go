@@ -38,6 +38,11 @@ func (agent *Agent) Execute(r io.Reader) {
 		return
 	}
 
+	agent.SetCallbackReporter()
+	if len(agent.Errs) > 0 {
+		return
+	}
+
 	agent.parseArg(r)
 	if len(agent.Errs) > 0 {
 		return

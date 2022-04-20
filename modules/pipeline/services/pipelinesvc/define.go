@@ -22,6 +22,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/providers/cache"
 	"github.com/erda-project/erda/modules/pipeline/providers/clusterinfo"
 	"github.com/erda-project/erda/modules/pipeline/providers/cron/daemon"
+	"github.com/erda-project/erda/modules/pipeline/providers/edgepipeline_register"
 	"github.com/erda-project/erda/modules/pipeline/providers/engine"
 	"github.com/erda-project/erda/modules/pipeline/providers/run"
 	"github.com/erda-project/erda/modules/pipeline/providers/secret"
@@ -56,11 +57,12 @@ type PipelineSvc struct {
 	etcdctl *etcd.Store
 
 	// providers
-	cmsService  pb.CmsServiceServer
-	clusterInfo clusterinfo.Interface
-	secret      secret.Interface
-	user        user.Interface
-	run         run.Interface
+	cmsService   pb.CmsServiceServer
+	clusterInfo  clusterinfo.Interface
+	edgeRegister edgepipeline_register.Interface
+	secret       secret.Interface
+	user         user.Interface
+	run          run.Interface
 }
 
 func New(appSvc *appsvc.AppSvc, crondSvc daemon.Interface,
@@ -68,7 +70,7 @@ func New(appSvc *appsvc.AppSvc, crondSvc daemon.Interface,
 	pipelineCronSvc cronpb.CronServiceServer, permissionSvc *permissionsvc.PermissionSvc,
 	queueManage *queuemanage.QueueManage,
 	dbClient *dbclient.Client, bdl *bundle.Bundle, publisher *websocket.Publisher,
-	engine engine.Interface, js jsonstore.JsonStore, etcd *etcd.Store, clusterInfo clusterinfo.Interface, cache cache.Interface) *PipelineSvc {
+	engine engine.Interface, js jsonstore.JsonStore, etcd *etcd.Store, clusterInfo clusterinfo.Interface, edgeRegister edgepipeline_register.Interface, cache cache.Interface) *PipelineSvc {
 
 	s := PipelineSvc{}
 	s.appSvc = appSvc
@@ -85,6 +87,7 @@ func New(appSvc *appsvc.AppSvc, crondSvc daemon.Interface,
 	s.js = js
 	s.etcdctl = etcd
 	s.clusterInfo = clusterInfo
+	s.edgeRegister = edgeRegister
 	s.cache = cache
 	return &s
 }

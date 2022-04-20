@@ -20,6 +20,7 @@ import (
 	"net/http"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/http/httpserver"
@@ -42,6 +43,13 @@ func (e *Endpoints) pipelineCallback(ctx context.Context, r *http.Request, vars 
 	}
 	if err := e.permissionSvc.CheckInternalClient(identityInfo); err != nil {
 		return errorresp.ErrResp(err)
+	}
+
+	if conf.DiceIsEdge() {
+		token := r.Header.Get("Authorization")
+		if err := e.edgeRegister.CheckAccessToken(token); err != nil {
+			return errorresp.ErrResp(apierrors.ErrCheckPermission.AccessDenied())
+		}
 	}
 
 	switch req.Type {

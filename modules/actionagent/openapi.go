@@ -20,6 +20,8 @@ import (
 	"sync"
 
 	"github.com/pkg/errors"
+
+	"github.com/erda-project/erda/apistructs"
 )
 
 const (
@@ -36,21 +38,30 @@ func (agent *Agent) getOpenAPIInfo() {
 			diceIsEdge := os.Getenv(EnvDiceIsEdge)
 			openapiPublicURL := os.Getenv(EnvDiceOpenapiPublicUrl)
 			openapiAddr := os.Getenv(EnvDiceOpenapiAddr)
+			pipelineAddr := os.Getenv(apistructs.EnvPipelineAddr)
 
 			// 判断是否是边缘集群
 			agent.isEdgeCluster()
+			agent.isEdgePipeline()
 
 			// 根据是否是边缘集群对 openapi 环境变量进行转换
 			agent.convertEnvsByClusterLocation()
 			openAPIAddr := os.Getenv(EnvDiceOpenapiAddr)
-			if openAPIAddr == "" {
+			if openAPIAddr == "" && !agent.EasyUse.IsEdgePipeline {
 				agent.AppendError(errors.Errorf("failed to get openapi addr, %s: %s, %s: %s, %s: %s",
 					EnvDiceIsEdge, diceIsEdge,
 					EnvDiceOpenapiPublicUrl, openapiPublicURL,
 					EnvDiceOpenapiAddr, openapiAddr))
 				return
 			}
+			if pipelineAddr == "" && agent.EasyUse.IsEdgePipeline {
+				agent.AppendError(errors.Errorf("failed to get pipeline addr, %s: %v, %s: %s",
+					apistructs.EnvIsEdgePipeline, agent.EasyUse.IsEdgePipeline,
+					apistructs.EnvPipelineAddr, pipelineAddr))
+				return
+			}
 			agent.EasyUse.OpenAPIAddr = openAPIAddr
+			agent.EasyUse.PipelineAddr = pipelineAddr
 		})
 }
 
@@ -58,4 +69,9 @@ func (agent *Agent) getOpenAPIInfo() {
 func (agent *Agent) isEdgeCluster() {
 	isEdgeCluster, _ := strconv.ParseBool(os.Getenv(EnvDiceIsEdge))
 	agent.EasyUse.IsEdgeCluster = isEdgeCluster
+}
+
+func (agent *Agent) isEdgePipeline() {
+	isEdgePipeline, _ := strconv.ParseBool(os.Getenv(apistructs.EnvIsEdgePipeline))
+	agent.EasyUse.IsEdgePipeline = isEdgePipeline
 }

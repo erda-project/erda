@@ -58,6 +58,8 @@ type Agent struct {
 	StdErrRegexpList   []*regexp.Regexp
 	MaxCacheFileSizeMB datasize.ByteSize
 
+	CallbackReporter
+
 	TextBlackList []string // enciphered data will Replaced by '******' when log output
 }
 
@@ -83,7 +85,8 @@ type EasyUse struct {
 	ContainerUploadDir        string // uploadDir，该目录下的文件在执行结束后会自动上传，并提供下载
 	ContainerTempTarUploadDir string // temp tar dir，需要 prepare 时预先创建，用于存放 upload 生成的 tar
 
-	IsEdgeCluster bool // 是否是边缘集群
+	IsEdgeCluster  bool // is edge cluster
+	IsEdgePipeline bool // is running on edge pipeline
 
 	RunScript              string // run 文件
 	RunProcess             *os.Process
@@ -96,6 +99,7 @@ type EasyUse struct {
 	OpenAPIAddr       string
 	OpenAPIToken      string
 	TokenForBootstrap string
+	PipelineAddr      string
 
 	EnablePushLog2Collector bool   // 是否推送日志到 collector
 	CollectorAddr           string // collector 地址
