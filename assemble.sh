@@ -27,7 +27,7 @@ function do_merge() {
   fi
 
   # merge all follow branch
-  NEW_REFS_FILE=$(mktemp /tmp/erdamerge-XXXXX)
+  NEW_REFS_FILE=$(mktemp /tmp/erdamerge.XXXXXX)
   while IFS= read -r line
   do
     if [ "$line" == "---" ]; then
