@@ -755,5 +755,5 @@ addons:
     plan: "custom:basic"
     options:
       version: "1.0.0"
-  rds:
-    plan: "alicloud-rds:basic"
+  mysql:
+    plan: "mysql:basic"
