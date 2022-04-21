@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// maintainer: 陈忠润
-
 package bundle
 
 import (
@@ -35,15 +33,15 @@ type GittarFileTree struct {
 	url.Values
 }
 
-func NewGittarFileTree(inode string) (*GittarFileTree, error) {
-	if inode == "" {
-		return &GittarFileTree{Values: make(url.Values, 0)}, nil
+func NewGittarFileTree(node string) (*GittarFileTree, error) {
+	if node == "" {
+		return &GittarFileTree{Values: make(url.Values)}, nil
 	}
-	inodeRaw, err := base64.StdEncoding.DecodeString(inode)
+	raw, err := base64.StdEncoding.DecodeString(node)
 	if err != nil {
 		return nil, err
 	}
-	values, err := url.ParseQuery(string(inodeRaw))
+	values, err := url.ParseQuery(string(raw))
 	if err != nil {
 		return nil, err
 	}
