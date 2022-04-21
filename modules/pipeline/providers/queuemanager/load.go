@@ -62,6 +62,10 @@ func (q *provider) loadNeedHandledPipelinesWhenBecomeLeader(ctx context.Context)
 		q.Log.Infof("load need-handled pipeline success, pipelineID: %d", pipelineID)
 	}
 	q.Log.Info("load need-handled pipelines success")
+
+	// canceling tasks after load need-handled.
+	// otherwise, canceling will meet "logic task not being processed" issue.
+	q.LW.LoadCancelingTasks(ctx)
 }
 
 func (q *provider) loadNeedHandledPipelinesFromDBUntilSuccess(ctx context.Context) []uint64 {
