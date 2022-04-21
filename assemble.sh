@@ -6,6 +6,10 @@ function do_merge() {
   need_push=${3}
 
   current_branch=$(git branch --show-current)
+  if ! git diff-index --quiet HEAD --; then
+    echo "You have uncommitted changes in your current branch. Please commit or stash them before continuing."
+    exit 1
+  fi
 
   # first line is base_ref
   base_ref=$(head -n 1 "$dir/$env_branch" | cut -d' ' -f1)
@@ -59,8 +63,10 @@ function do_merge() {
 
     echo "🚀 Commit & Pushing config_info"
     pushd "$dir"
-    git commit -a -m "Update deploy-info"
-    git push upstream deploy-info:deploy-info -f
+    if ! git diff-index --quiet HEAD --; then
+      git commit -a -m "Update deploy-info" && \
+      git push upstream deploy-info:deploy-info
+    fi
     popd
   fi
 
@@ -106,4 +112,3 @@ case ${instruction} in
   do_clear "$env_branch"
   ;;
 esac
-
