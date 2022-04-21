@@ -19,10 +19,11 @@ function do_merge() {
   fi
 
   # checkout to env_branch or create it
-  if git rev-parse --quiet --verify "$env_branch"; then
-    git checkout "$env_branch"
-  else
+  fetch_branch "$env_branch"
+  if ! git rev-parse --quiet --verify "$env_branch"; then
     git checkout -b "$env_branch" "$base_ref"
+  else
+    git checkout "$env_branch"
   fi
 
   # merge all follow branch
