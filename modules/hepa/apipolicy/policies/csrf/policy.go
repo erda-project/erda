@@ -194,6 +194,10 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 				l.WithError(err).Warnf("failed to adapter.GetPlugin(%+v)", routeReq)
 				continue
 			}
+			if plugin == nil {
+				l.Warnf("failed to adapter.GetPlugin(%+v): not found", routeReq)
+				continue
+			}
 			if err = adapter.RemovePlugin(plugin.Id); err != nil {
 				l.WithError(err).Warnf("failed to adapter.RemovePlugin(%s)", plugin.Id)
 			}
