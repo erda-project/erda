@@ -88,7 +88,7 @@ func (p *provider) mergeWithInternalLeaderListeners() []Listener {
 		&DefaultListener{BeforeExecOnLeaderFunc: asyncWrapper(p.leaderListenOfficialWorkerChange)},
 		&DefaultListener{BeforeExecOnLeaderFunc: asyncWrapper(p.leaderListenLogicTaskChange)},
 		&DefaultListener{BeforeExecOnLeaderFunc: asyncWrapper(p.leaderListenTaskCanceling)},
-		&DefaultListener{BeforeExecOnLeaderFunc: asyncWrapper(p.loadCancelingTasks)},
+		//&DefaultListener{AfterExecOnLeaderFunc: asyncWrapper(p.LoadCancelingTasks)},
 	}, listeners...)
 	return listeners
 }

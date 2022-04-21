@@ -183,13 +183,19 @@ func (p *provider) leaderListenTaskCanceling(ctx context.Context) {
 		func(ctx context.Context, event *clientv3.Event) {
 			// concurrent cancel
 			go func() {
-				key := string(event.Kv.Key)
+				key := string(event.Kv.Key) // key will be deleted when logic task done
 				logicTaskID := p.getLogicTaskIDFromLeaderCancelKey(key)
 				rutil.ContinueWorking(ctx, p.Log, func(ctx context.Context) rutil.WaitDuration {
 					// check logic task
 					isHandling, workerID := p.IsTaskBeingProcessed(ctx, logicTaskID)
 					if !isHandling {
 						p.Log.Warnf("skip cancel logic task(not being processed), logicTaskID: %s", logicTaskID)
+						// skip cancel, so delete canceling key directly
+						_, err := p.EtcdClient.Delete(ctx, key)
+						if err != nil {
+							p.Log.Errorf("failed to delete canceling key of logic task(not being processed, auto retry), logicTaskID: %s, err: %v", logicTaskID, err)
+							return rutil.ContinueWorkingWithDefaultInterval
+						}
 						return rutil.ContinueWorkingAbort
 					}
 					// do cancel
@@ -207,7 +213,7 @@ func (p *provider) leaderListenTaskCanceling(ctx context.Context) {
 	)
 }
 
-func (p *provider) loadCancelingTasks(ctx context.Context) {
+func (p *provider) LoadCancelingTasks(ctx context.Context) {
 	p.Log.Infof("begin load canceling logic tasks")
 	defer p.Log.Infof("end load canceling logic tasks")
 	prefix := p.makeEtcdLeaderLogicTaskCancelListenPrefix()
