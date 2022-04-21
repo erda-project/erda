@@ -53,6 +53,10 @@ type ForLeaderUseInterface interface {
 	// RegisterLeaderListener provide more hook ability to customize leader behaviours.
 	// See DefaultListener to simply your code.
 	RegisterLeaderListener(l Listener)
+
+	// LoadCancelingTasks load canceling tasks.
+	// TODO use AfterExecOnLeaderFunc on lw side, but OnLeaderHandler should could select async or not.
+	LoadCancelingTasks(ctx context.Context)
 }
 
 type ForWorkerUseInterface interface {
