@@ -30,6 +30,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/pkg/errorsx"
 	"github.com/erda-project/erda/modules/pipeline/providers/cache"
 	"github.com/erda-project/erda/modules/pipeline/providers/clusterinfo"
+	"github.com/erda-project/erda/modules/pipeline/providers/edgereporter"
 	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/rutil"
 	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/taskpolicy"
 	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/taskrun"
@@ -56,12 +57,13 @@ type TaskReconciler interface {
 }
 
 type defaultTaskReconciler struct {
-	log         logs.Logger
-	policy      taskpolicy.Interface
-	cache       cache.Interface
-	clusterInfo clusterinfo.Interface
-	r           *provider
-	pr          *defaultPipelineReconciler
+	log          logs.Logger
+	policy       taskpolicy.Interface
+	cache        cache.Interface
+	clusterInfo  clusterinfo.Interface
+	r            *provider
+	pr           *defaultPipelineReconciler
+	edgeReporter edgereporter.Interface
 
 	// internal fields
 	dbClient             *dbclient.Client
@@ -309,6 +311,9 @@ func (tr *defaultTaskReconciler) TeardownAfterReconcileDone(ctx context.Context,
 
 	// handle aop synchronously, then do subsequent tasks
 	_ = aop.Handle(aop.NewContextForTask(*task, *p, aoptypes.TuneTriggerTaskAfterExec))
+
+	// report task
+	tr.edgeReporter.AddOneTaskReporter(task.ID)
 
 	// invalidate openapi oauth2 token
 	tokens := strutil.DedupSlice([]string{

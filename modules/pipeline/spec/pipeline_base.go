@@ -55,7 +55,8 @@ type PipelineBase struct {
 	TimeCreated *time.Time `json:"timeCreated,omitempty" xorm:"created"`
 	TimeUpdated *time.Time `json:"timeUpdated,omitempty" xorm:"updated"`
 
-	PipelineDefinitionID string `json:"pipelineDefinitionID"`
+	PipelineDefinitionID string                      `json:"pipelineDefinitionID"`
+	EdgeReportStatus     apistructs.EdgeReportStatus `json:"edgeReportStatus"`
 }
 
 func (*PipelineBase) TableName() string {

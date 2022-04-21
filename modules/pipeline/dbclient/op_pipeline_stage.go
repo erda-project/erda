@@ -104,3 +104,11 @@ func (client *Client) DeletePipelineStagesByPipelineID(pipelineID uint64, ops ..
 		return err
 	}, 3, time.Second)
 }
+
+func (client *Client) MultiCreatePipelineStages(stages []spec.PipelineStage, ops ...SessionOption) (err error) {
+	session := client.NewSession(ops...)
+	defer session.Close()
+
+	_, err = session.Table("pipeline_stages").InsertMulti(stages)
+	return err
+}

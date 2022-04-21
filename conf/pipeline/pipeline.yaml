@@ -44,6 +44,7 @@ secret: {}
 run: {}
 user: {}
 cancel: {}
+edge-reporter: {}
 
 etcd-election@leader-worker:
   root_path: erda/component-leader/pipeline/leader-worker

@@ -78,6 +78,7 @@ func (r *provider) generatePipelineReconcilerForEachPipelineID() *defaultPipelin
 		resourceGC:           r.ResourceGC,
 		cronCompensator:      r.CronCompensator,
 		cache:                r.Cache,
+		edgeReporter:         r.EdgeReporter,
 		r:                    r,
 		dbClient:             r.dbClient,
 		processingTasks:      sync.Map{},
