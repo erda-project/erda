@@ -1,10 +1,14 @@
 #!/bin/bash
 
 function do_merge() {
-  env_branch=${1}
+  dir=${1}
+  env_branch=${2}
+  need_push=${3}
+
+  current_branch=$(git branch --show-current)
 
   # first line is base_ref
-  base_ref=$(head -n 1 $dir/"$env_branch" | cut -d' ' -f1)
+  base_ref=$(head -n 1 "$dir/$env_branch" | cut -d' ' -f1)
   if [ -z "$base_ref" ]; then
     echo "✨ No base ref found in $env_branch"
     exit 1
@@ -48,7 +52,19 @@ function do_merge() {
 
   mv "$NEW_REFS_FILE" "$dir/$env_branch"
 
-  git checkout master
+
+  if $need_push; then
+    echo "🚀 Pushing $env_branch"
+    git push upstream "$env_branch:$env_branch" -f
+
+    echo "🚀 Commit & Pushing config_info"
+    pushd "$dir"
+    git commit -a -m "Update config_info"
+    git push upstream config_info:config_info -f
+    popd
+  fi
+
+  git checkout "$current_branch"
 
 }
 
@@ -75,23 +91,19 @@ if [ -z "${env_branch}" ]; then
   echo "Usage: $0 [ merge | clear ] <branch>"
   exit 1
 fi
-
-case ${instruction} in
-"merge")
-  do_merge "$env_branch"
-  ;;
-"clear")
-  do_clear "$env_branch"
-  ;;
-esac
-
 need_push=false
 if [ "${3}" == "push" ]; then
   need_push=true
 fi
 echo "🪐 NEED PUSH: $need_push"
 
-if $need_push; then
-  echo "🚀 Pushing $env_branch"
-  git push upstream "$env_branch:$env_branch" -f
-fi
+
+case ${instruction} in
+"merge")
+  do_merge $dir "$env_branch" $need_push
+  ;;
+"clear")
+  do_clear "$env_branch"
+  ;;
+esac
+
