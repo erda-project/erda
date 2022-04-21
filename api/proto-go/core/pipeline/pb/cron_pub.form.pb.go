@@ -142,174 +142,174 @@ func (m *Cron) UnmarshalURLValues(prefix string, values url.Values) error {
 				m.PipelineDefinitionID = vals[0]
 			case "pipelineSource":
 				m.PipelineSource = vals[0]
-			case "cronExtra":
-				if m.CronExtra == nil {
-					m.CronExtra = &CronExtra{}
+			case "extra":
+				if m.Extra == nil {
+					m.Extra = &CronExtra{}
 				}
-			case "cronExtra.pipelineYml":
-				if m.CronExtra == nil {
-					m.CronExtra = &CronExtra{}
+			case "extra.pipelineYml":
+				if m.Extra == nil {
+					m.Extra = &CronExtra{}
 				}
-				m.CronExtra.PipelineYml = vals[0]
-			case "cronExtra.clusterName":
-				if m.CronExtra == nil {
-					m.CronExtra = &CronExtra{}
+				m.Extra.PipelineYml = vals[0]
+			case "extra.clusterName":
+				if m.Extra == nil {
+					m.Extra = &CronExtra{}
 				}
-				m.CronExtra.ClusterName = vals[0]
-			case "cronExtra.configManageNamespaces":
-				if m.CronExtra == nil {
-					m.CronExtra = &CronExtra{}
+				m.Extra.ClusterName = vals[0]
+			case "extra.configManageNamespaces":
+				if m.Extra == nil {
+					m.Extra = &CronExtra{}
 				}
-				m.CronExtra.ConfigManageNamespaces = vals
-			case "cronExtra.cronStartFrom":
-				if m.CronExtra == nil {
-					m.CronExtra = &CronExtra{}
+				m.Extra.ConfigManageNamespaces = vals
+			case "extra.cronStartFrom":
+				if m.Extra == nil {
+					m.Extra = &CronExtra{}
 				}
-				if m.CronExtra.CronStartFrom == nil {
-					m.CronExtra.CronStartFrom = &timestamppb.Timestamp{}
+				if m.Extra.CronStartFrom == nil {
+					m.Extra.CronStartFrom = &timestamppb.Timestamp{}
 				}
-			case "cronExtra.cronStartFrom.seconds":
-				if m.CronExtra == nil {
-					m.CronExtra = &CronExtra{}
+			case "extra.cronStartFrom.seconds":
+				if m.Extra == nil {
+					m.Extra = &CronExtra{}
 				}
-				if m.CronExtra.CronStartFrom == nil {
-					m.CronExtra.CronStartFrom = &timestamppb.Timestamp{}
-				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
-				if err != nil {
-					return err
-				}
-				m.CronExtra.CronStartFrom.Seconds = val
-			case "cronExtra.cronStartFrom.nanos":
-				if m.CronExtra == nil {
-					m.CronExtra = &CronExtra{}
-				}
-				if m.CronExtra.CronStartFrom == nil {
-					m.CronExtra.CronStartFrom = &timestamppb.Timestamp{}
-				}
-				val, err := strconv.ParseInt(vals[0], 10, 32)
-				if err != nil {
-					return err
-				}
-				m.CronExtra.CronStartFrom.Nanos = int32(val)
-			case "cronExtra.version":
-				if m.CronExtra == nil {
-					m.CronExtra = &CronExtra{}
-				}
-				m.CronExtra.Version = vals[0]
-			case "cronExtra.compensator":
-				if m.CronExtra == nil {
-					m.CronExtra = &CronExtra{}
-				}
-				if m.CronExtra.Compensator == nil {
-					m.CronExtra.Compensator = &CronCompensator{}
-				}
-			case "cronExtra.compensator.enable":
-				if m.CronExtra == nil {
-					m.CronExtra = &CronExtra{}
-				}
-				if m.CronExtra.Compensator == nil {
-					m.CronExtra.Compensator = &CronCompensator{}
-				}
-				if m.CronExtra.Compensator.Enable == nil {
-					m.CronExtra.Compensator.Enable = &wrapperspb.BoolValue{}
-				}
-			case "cronExtra.compensator.enable.value":
-				if m.CronExtra == nil {
-					m.CronExtra = &CronExtra{}
-				}
-				if m.CronExtra.Compensator == nil {
-					m.CronExtra.Compensator = &CronCompensator{}
-				}
-				if m.CronExtra.Compensator.Enable == nil {
-					m.CronExtra.Compensator.Enable = &wrapperspb.BoolValue{}
-				}
-				val, err := strconv.ParseBool(vals[0])
-				if err != nil {
-					return err
-				}
-				m.CronExtra.Compensator.Enable.Value = val
-			case "cronExtra.compensator.LatestFirst":
-				if m.CronExtra == nil {
-					m.CronExtra = &CronExtra{}
-				}
-				if m.CronExtra.Compensator == nil {
-					m.CronExtra.Compensator = &CronCompensator{}
-				}
-				if m.CronExtra.Compensator.LatestFirst == nil {
-					m.CronExtra.Compensator.LatestFirst = &wrapperspb.BoolValue{}
-				}
-			case "cronExtra.compensator.LatestFirst.value":
-				if m.CronExtra == nil {
-					m.CronExtra = &CronExtra{}
-				}
-				if m.CronExtra.Compensator == nil {
-					m.CronExtra.Compensator = &CronCompensator{}
-				}
-				if m.CronExtra.Compensator.LatestFirst == nil {
-					m.CronExtra.Compensator.LatestFirst = &wrapperspb.BoolValue{}
-				}
-				val, err := strconv.ParseBool(vals[0])
-				if err != nil {
-					return err
-				}
-				m.CronExtra.Compensator.LatestFirst.Value = val
-			case "cronExtra.compensator.StopIfLatterExecuted":
-				if m.CronExtra == nil {
-					m.CronExtra = &CronExtra{}
-				}
-				if m.CronExtra.Compensator == nil {
-					m.CronExtra.Compensator = &CronCompensator{}
-				}
-				if m.CronExtra.Compensator.StopIfLatterExecuted == nil {
-					m.CronExtra.Compensator.StopIfLatterExecuted = &wrapperspb.BoolValue{}
-				}
-			case "cronExtra.compensator.StopIfLatterExecuted.value":
-				if m.CronExtra == nil {
-					m.CronExtra = &CronExtra{}
-				}
-				if m.CronExtra.Compensator == nil {
-					m.CronExtra.Compensator = &CronCompensator{}
-				}
-				if m.CronExtra.Compensator.StopIfLatterExecuted == nil {
-					m.CronExtra.Compensator.StopIfLatterExecuted = &wrapperspb.BoolValue{}
-				}
-				val, err := strconv.ParseBool(vals[0])
-				if err != nil {
-					return err
-				}
-				m.CronExtra.Compensator.StopIfLatterExecuted.Value = val
-			case "cronExtra.lastCompensateAt":
-				if m.CronExtra == nil {
-					m.CronExtra = &CronExtra{}
-				}
-				if m.CronExtra.LastCompensateAt == nil {
-					m.CronExtra.LastCompensateAt = &timestamppb.Timestamp{}
-				}
-			case "cronExtra.lastCompensateAt.seconds":
-				if m.CronExtra == nil {
-					m.CronExtra = &CronExtra{}
-				}
-				if m.CronExtra.LastCompensateAt == nil {
-					m.CronExtra.LastCompensateAt = &timestamppb.Timestamp{}
+				if m.Extra.CronStartFrom == nil {
+					m.Extra.CronStartFrom = &timestamppb.Timestamp{}
 				}
 				val, err := strconv.ParseInt(vals[0], 10, 64)
 				if err != nil {
 					return err
 				}
-				m.CronExtra.LastCompensateAt.Seconds = val
-			case "cronExtra.lastCompensateAt.nanos":
-				if m.CronExtra == nil {
-					m.CronExtra = &CronExtra{}
+				m.Extra.CronStartFrom.Seconds = val
+			case "extra.cronStartFrom.nanos":
+				if m.Extra == nil {
+					m.Extra = &CronExtra{}
 				}
-				if m.CronExtra.LastCompensateAt == nil {
-					m.CronExtra.LastCompensateAt = &timestamppb.Timestamp{}
+				if m.Extra.CronStartFrom == nil {
+					m.Extra.CronStartFrom = &timestamppb.Timestamp{}
 				}
 				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.CronExtra.LastCompensateAt.Nanos = int32(val)
+				m.Extra.CronStartFrom.Nanos = int32(val)
+			case "extra.version":
+				if m.Extra == nil {
+					m.Extra = &CronExtra{}
+				}
+				m.Extra.Version = vals[0]
+			case "extra.compensator":
+				if m.Extra == nil {
+					m.Extra = &CronExtra{}
+				}
+				if m.Extra.Compensator == nil {
+					m.Extra.Compensator = &CronCompensator{}
+				}
+			case "extra.compensator.enable":
+				if m.Extra == nil {
+					m.Extra = &CronExtra{}
+				}
+				if m.Extra.Compensator == nil {
+					m.Extra.Compensator = &CronCompensator{}
+				}
+				if m.Extra.Compensator.Enable == nil {
+					m.Extra.Compensator.Enable = &wrapperspb.BoolValue{}
+				}
+			case "extra.compensator.enable.value":
+				if m.Extra == nil {
+					m.Extra = &CronExtra{}
+				}
+				if m.Extra.Compensator == nil {
+					m.Extra.Compensator = &CronCompensator{}
+				}
+				if m.Extra.Compensator.Enable == nil {
+					m.Extra.Compensator.Enable = &wrapperspb.BoolValue{}
+				}
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Extra.Compensator.Enable.Value = val
+			case "extra.compensator.LatestFirst":
+				if m.Extra == nil {
+					m.Extra = &CronExtra{}
+				}
+				if m.Extra.Compensator == nil {
+					m.Extra.Compensator = &CronCompensator{}
+				}
+				if m.Extra.Compensator.LatestFirst == nil {
+					m.Extra.Compensator.LatestFirst = &wrapperspb.BoolValue{}
+				}
+			case "extra.compensator.LatestFirst.value":
+				if m.Extra == nil {
+					m.Extra = &CronExtra{}
+				}
+				if m.Extra.Compensator == nil {
+					m.Extra.Compensator = &CronCompensator{}
+				}
+				if m.Extra.Compensator.LatestFirst == nil {
+					m.Extra.Compensator.LatestFirst = &wrapperspb.BoolValue{}
+				}
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Extra.Compensator.LatestFirst.Value = val
+			case "extra.compensator.StopIfLatterExecuted":
+				if m.Extra == nil {
+					m.Extra = &CronExtra{}
+				}
+				if m.Extra.Compensator == nil {
+					m.Extra.Compensator = &CronCompensator{}
+				}
+				if m.Extra.Compensator.StopIfLatterExecuted == nil {
+					m.Extra.Compensator.StopIfLatterExecuted = &wrapperspb.BoolValue{}
+				}
+			case "extra.compensator.StopIfLatterExecuted.value":
+				if m.Extra == nil {
+					m.Extra = &CronExtra{}
+				}
+				if m.Extra.Compensator == nil {
+					m.Extra.Compensator = &CronCompensator{}
+				}
+				if m.Extra.Compensator.StopIfLatterExecuted == nil {
+					m.Extra.Compensator.StopIfLatterExecuted = &wrapperspb.BoolValue{}
+				}
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Extra.Compensator.StopIfLatterExecuted.Value = val
+			case "extra.lastCompensateAt":
+				if m.Extra == nil {
+					m.Extra = &CronExtra{}
+				}
+				if m.Extra.LastCompensateAt == nil {
+					m.Extra.LastCompensateAt = &timestamppb.Timestamp{}
+				}
+			case "extra.lastCompensateAt.seconds":
+				if m.Extra == nil {
+					m.Extra = &CronExtra{}
+				}
+				if m.Extra.LastCompensateAt == nil {
+					m.Extra.LastCompensateAt = &timestamppb.Timestamp{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Extra.LastCompensateAt.Seconds = val
+			case "extra.lastCompensateAt.nanos":
+				if m.Extra == nil {
+					m.Extra = &CronExtra{}
+				}
+				if m.Extra.LastCompensateAt == nil {
+					m.Extra.LastCompensateAt = &timestamppb.Timestamp{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 32)
+				if err != nil {
+					return err
+				}
+				m.Extra.LastCompensateAt.Nanos = int32(val)
 			case "IsEdge":
 				if m.IsEdge == nil {
 					m.IsEdge = &wrapperspb.BoolValue{}

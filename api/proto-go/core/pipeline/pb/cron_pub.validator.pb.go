@@ -40,9 +40,9 @@ func (this *Cron) Validate() error {
 		}
 	}
 	// Validation of proto3 map<> fields is unsupported.
-	if this.CronExtra != nil {
-		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.CronExtra); err != nil {
-			return github_com_mwitkow_go_proto_validators.FieldError("CronExtra", err)
+	if this.Extra != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Extra); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("Extra", err)
 		}
 	}
 	if this.IsEdge != nil {

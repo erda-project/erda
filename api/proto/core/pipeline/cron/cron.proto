@@ -47,48 +47,6 @@ service CronService {
       put: "/api/pipeline-crons/{cronID}",
     };
   }
-
-  rpc CronSave (CronSaveRequest) returns (CronSaveResponse) {
-    option (google.api.http) = {
-      post: "/api/pipeline-crons/action/save",
-    };
-  }
-
-  rpc CronDisable (CronDisableRequest) returns (CronDisableResponse) {
-    option (google.api.http) = {
-      post: "/api/pipeline-crons/action/disable",
-    };
-  }
-
-  // edge
-  rpc EdgeCronCreate (EdgeCronCreateRequest) returns (CronCreateResponse) {
-    option (google.api.http) = {
-      post: "/api/pipeline-crons/actions/edge-create",
-    };
-  }
-  rpc EdgeCronUpdate (EdgeCronUpdateRequest) returns (CronUpdateResponse) {
-    option (google.api.http) = {
-      put: "/api/pipeline-crons/actions/edge-update",
-    };
-  }
-}
-
-// disable
-message CronDisableRequest {
-  core.pipeline.Cron cron = 1;
-}
-
-message CronDisableResponse {
-  core.pipeline.Cron data = 1;
-}
-
-// save
-message CronSaveRequest {
-  core.pipeline.Cron cron = 1;
-}
-
-message CronSaveResponse {
-  core.pipeline.Cron data = 1;
 }
 
 // paging
@@ -125,15 +83,24 @@ message CronStopResponse {
 
 // cron create
 message CronCreateRequest {
-  core.pipeline.base.PipelineCreateRequest pipelineCreateRequest = 1;
-}
-
-message EdgeCronCreateRequest {
-  core.pipeline.Cron cron = 1;
+  uint64 ID = 1;
+  string cronExpr = 2;
+  string pipelineYmlName = 3;
+  string pipelineSource = 4;
+  google.protobuf.BoolValue enable = 5;
+  string pipelineYml = 6;
+  string clusterName = 7;
+  map<string,string> filterLabels = 8;
+  map<string,string> normalLabels = 9;
+  map<string,string> envs = 10;
+  repeated string configManageNamespaces = 11;
+  google.protobuf.Timestamp cronStartFrom = 12;
+  map<string,string> incomingSecrets = 13;
+  string pipelineDefinitionID = 14;
 }
 
 message CronCreateResponse {
-  uint64 data = 1;
+  core.pipeline.Cron data = 1;
 }
 
 // cron delete
@@ -159,10 +126,6 @@ message CronUpdateRequest {
   repeated string configManageNamespaces = 4;
   string pipelineDefinitionID = 5;
   map<string, string> secrets = 6;
-}
-
-message EdgeCronUpdateRequest {
-  core.pipeline.Cron cron = 1;
 }
 
 message CronUpdateResponse {

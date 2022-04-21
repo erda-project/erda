@@ -64,19 +64,3 @@ func (s *cronServiceWrapper) CronGet(ctx context.Context, req *pb.CronGetRequest
 func (s *cronServiceWrapper) CronUpdate(ctx context.Context, req *pb.CronUpdateRequest) (*pb.CronUpdateResponse, error) {
 	return s.client.CronUpdate(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }
-
-func (s *cronServiceWrapper) CronSave(ctx context.Context, req *pb.CronSaveRequest) (*pb.CronSaveResponse, error) {
-	return s.client.CronSave(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
-}
-
-func (s *cronServiceWrapper) CronDisable(ctx context.Context, req *pb.CronDisableRequest) (*pb.CronDisableResponse, error) {
-	return s.client.CronDisable(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
-}
-
-func (s *cronServiceWrapper) EdgeCronCreate(ctx context.Context, req *pb.EdgeCronCreateRequest) (*pb.CronCreateResponse, error) {
-	return s.client.EdgeCronCreate(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
-}
-
-func (s *cronServiceWrapper) EdgeCronUpdate(ctx context.Context, req *pb.EdgeCronUpdateRequest) (*pb.CronUpdateResponse, error) {
-	return s.client.EdgeCronUpdate(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
-}

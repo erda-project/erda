@@ -26,14 +26,14 @@ message Cron {
     string pipelineDefinitionID = 15;
     string pipelineSource = 16;
     map<string,string> secrets = 17;
-    CronExtra cronExtra = 18;
+    CronExtra extra = 18;
     google.protobuf.BoolValue IsEdge = 19;
 }
 
 message CronExtra {
     string pipelineYml = 1;
     string clusterName = 2;
-    map<string,string> filterLabels = 3;
+    map<string,string> labels = 3;
     map<string,string> normalLabels = 4;
     map<string,string> envs = 5;
     repeated string configManageNamespaces = 6;
