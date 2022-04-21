@@ -59,8 +59,8 @@ function do_merge() {
 
     echo "🚀 Commit & Pushing config_info"
     pushd "$dir"
-    git commit -a -m "Update config_info"
-    git push upstream config_info:config_info -f
+    git commit -a -m "Update deploy_info"
+    git push upstream deploy_info:deploy_info -f
     popd
   fi
 
