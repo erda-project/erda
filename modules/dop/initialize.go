@@ -64,7 +64,6 @@ import (
 	"github.com/erda-project/erda/modules/dop/services/iteration"
 	"github.com/erda-project/erda/modules/dop/services/libreference"
 	"github.com/erda-project/erda/modules/dop/services/migrate"
-	"github.com/erda-project/erda/modules/dop/services/monitor"
 	"github.com/erda-project/erda/modules/dop/services/namespace"
 	"github.com/erda-project/erda/modules/dop/services/nexussvc"
 	"github.com/erda-project/erda/modules/dop/services/org"
@@ -120,10 +119,6 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 	if err != nil {
 		return err
 	}
-
-	//定时上报issue
-	go monitor.TimedTaskMetricsAddAndRepairBug(ep.DBClient(), bdl.Bdl)
-	go monitor.TimedTaskMetricsIssue(ep.DBClient(), ep.UCClient(), bdl.Bdl)
 
 	registerWebHook(bdl.Bdl)
 

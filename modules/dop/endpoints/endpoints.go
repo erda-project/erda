@@ -548,9 +548,6 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		// issue stage
 		{Path: "/api/issues/action/update-stage", Method: http.MethodPut, Handler: e.CreateIssueStage},
 		{Path: "/api/issues/action/get-stage", Method: http.MethodGet, Handler: e.GetIssueStage},
-		//执行issue的历史数据推送到监控平台
-		{Path: "/api/issues/monitor/history", Method: http.MethodGet, Handler: e.RunIssueHistory},
-		{Path: "/api/issues/monitor/addOrRepairHistory", Method: http.MethodGet, Handler: e.RunIssueAddOrRepairHistory},
 
 		{Path: "/api/iterations", Method: http.MethodPost, Handler: e.CreateIteration},
 		{Path: "/api/iterations/{id}", Method: http.MethodPut, Handler: e.UpdateIteration},
