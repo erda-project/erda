@@ -370,6 +370,7 @@ func (svc *Service) listServices(orgID uint64, userID, pinode, pathFromRepoRoot 
 	treeData, err := bdl.Bdl.GetGittarTreeNode(ft.TreePath(), orgIDStr, true, userID)
 	if err != nil {
 		logrus.Errorf("failed to GetGittarTreeNode, err: %v", err)
+		return nil, apierrors.ListChildrenNodes.NotFound()
 	}
 	if len(treeData.Entries) == 0 {
 		return nil, nil
