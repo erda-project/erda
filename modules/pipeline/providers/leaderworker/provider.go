@@ -97,7 +97,9 @@ func (p *provider) removeFromTaskWorkerAssignMap(logicTaskID worker.LogicTaskID,
 	p.lock.Lock()
 	defer p.lock.Unlock()
 	// findWorkerByTask
-	delete(p.forLeaderUse.findWorkerByTask, logicTaskID)
+	if currentWorkerID := p.forLeaderUse.findWorkerByTask[logicTaskID]; currentWorkerID == workerID {
+		delete(p.forLeaderUse.findWorkerByTask, logicTaskID)
+	}
 	// findTaskByWorker
 	workerTasks, ok := p.forLeaderUse.findTaskByWorker[workerID]
 	if ok {
