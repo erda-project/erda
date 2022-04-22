@@ -19,11 +19,12 @@ import (
 	"testing"
 
 	"bou.ke/monkey"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/core-services/dao"
 	"github.com/erda-project/erda/modules/core-services/model"
 	"github.com/erda-project/erda/pkg/ucauth"
-	"github.com/stretchr/testify/assert"
 )
 
 func Test_checkCreateParam(t *testing.T) {
