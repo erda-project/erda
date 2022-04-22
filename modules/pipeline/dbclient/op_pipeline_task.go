@@ -32,7 +32,9 @@ func (client *Client) CreatePipelineTask(pt *spec.PipelineTask, ops ...SessionOp
 	session := client.NewSession(ops...)
 	defer session.Close()
 
-	pt.ID = uuid.SnowFlakeIDUint64()
+	if pt.ID == 0 {
+		pt.ID = uuid.SnowFlakeIDUint64()
+	}
 	_, err = session.InsertOne(pt)
 	return err
 }

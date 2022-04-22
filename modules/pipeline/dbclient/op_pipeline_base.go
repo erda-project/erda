@@ -60,8 +60,10 @@ func (client *Client) ListPipelineBaseWithDefinitionByIDs(pipelineIDs []uint64, 
 func (client *Client) CreatePipelineBase(base *spec.PipelineBase, ops ...SessionOption) error {
 	session := client.NewSession(ops...)
 	defer session.Close()
-	base.ID = uuid.SnowFlakeIDUint64()
 
+	if base.ID == 0 {
+		base.ID = uuid.SnowFlakeIDUint64()
+	}
 	_, err := session.InsertOne(base)
 	return err
 }

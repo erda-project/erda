@@ -29,7 +29,9 @@ func (client *Client) CreatePipelineStage(ps *spec.PipelineStage, ops ...Session
 	session := client.NewSession(ops...)
 	defer session.Close()
 
-	ps.ID = uuid.SnowFlakeIDUint64()
+	if ps.ID == 0 {
+		ps.ID = uuid.SnowFlakeIDUint64()
+	}
 	_, err = session.InsertOne(ps)
 	return err
 }
