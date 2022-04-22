@@ -19,11 +19,11 @@ import (
 	"testing"
 
 	"bou.ke/monkey"
-	"github.com/stretchr/testify/assert"
-
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/core-services/dao"
+	"github.com/erda-project/erda/modules/core-services/model"
 	"github.com/erda-project/erda/pkg/ucauth"
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_checkCreateParam(t *testing.T) {
@@ -59,4 +59,69 @@ func Test_checkUCUserInfo(t *testing.T) {
 	m := New()
 	err := m.checkUCUserInfo(emptyUsers)
 	assert.Equal(t, "failed to get user info", err.Error())
+}
+
+func TestMember_UpdateMemberUserInfo(t *testing.T) {
+	users := []model.Member{
+		{
+			BaseModel: model.BaseModel{
+				ID: 1,
+			},
+			UserID: "1",
+		},
+		{
+			BaseModel: model.BaseModel{
+				ID: 2,
+			},
+			UserID: "2",
+		},
+	}
+	var db *dao.DBClient
+	monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetMemberByUserID",
+		func(_ *dao.DBClient, userID string) ([]model.Member, error) {
+			return users, nil
+		})
+	monkey.PatchInstanceMethod(reflect.TypeOf(db), "UpdateMemberUserInfo",
+		func(_ *dao.DBClient, ids []int64, fields map[string]interface{}) error {
+			return nil
+		})
+	defer monkey.UnpatchAll()
+	type fields struct {
+		db *dao.DBClient
+	}
+	type args struct {
+		req apistructs.MemberUserInfoUpdateRequest
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			fields: fields{
+				db: db,
+			},
+			args: args{
+				req: apistructs.MemberUserInfoUpdateRequest{
+					Members: []apistructs.Member{
+						{
+							UserID: "1",
+							Avatar: "1.png",
+						},
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &Member{
+				db: tt.fields.db,
+			}
+			if err := m.UpdateMemberUserInfo(tt.args.req); (err != nil) != tt.wantErr {
+				t.Errorf("Member.UpdateMemberUserInfo() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
 }
