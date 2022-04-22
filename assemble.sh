@@ -85,6 +85,7 @@ function do_clear() {
   echo "✨ Clearing $env_branch"
   git checkout master
   git branch -D "$env_branch" || true
+  git push upstream --delete "$env_branch" || true
 }
 
 dir=./deploy/auto-heads
