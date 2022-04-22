@@ -354,12 +354,12 @@ func (b *Bundle) ListOrgClusterRelation(userID, clusterName string) ([]apistruct
 }
 
 // DereferenceCluster delete the relation of org and cluster
-func (b *Bundle) DereferenceCluster(orgID uint64, clusterName, userID string) (string, error) {
+func (b *Bundle) DereferenceCluster(orgID uint64, clusterName, userID string, force bool) (string, error) {
 	referenceResp, err := b.FindClusterResource(clusterName, strconv.FormatUint(orgID, 10))
 	if err != nil {
 		return "", err
 	}
-	if referenceResp.AddonReference > 0 || referenceResp.ServiceReference > 0 {
+	if (referenceResp.AddonReference > 0 || referenceResp.ServiceReference > 0) && !force {
 		return "", errors.Errorf("集群中存在未清理的Addon或Service，请清理后再执行.")
 	}
 
