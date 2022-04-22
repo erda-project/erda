@@ -16,6 +16,7 @@ package jsonparse
 
 import (
 	"math"
+	"reflect"
 	"testing"
 )
 
@@ -45,6 +46,45 @@ func TestJsonOneLine(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := JsonOneLine(tt.i); got != tt.want {
 				t.Errorf("JsonOneLine() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestFilterJson(t *testing.T) {
+	type args struct {
+		jsonValue   []byte
+		express     string
+		expressType string
+	}
+	tests := []struct {
+		name string
+		args args
+		want interface{}
+	}{
+		{
+			name: "test . and not result json",
+			args: args{
+				jsonValue:   []byte("test"),
+				express:     ".",
+				expressType: "",
+			},
+			want: "test",
+		},
+		{
+			name: "test '' and not result json",
+			args: args{
+				jsonValue:   []byte("test"),
+				express:     ".",
+				expressType: "",
+			},
+			want: "test",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := FilterJson(tt.args.jsonValue, tt.args.express, tt.args.expressType); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("FilterJson() = %v, want %v", got, tt.want)
 			}
 		})
 	}
