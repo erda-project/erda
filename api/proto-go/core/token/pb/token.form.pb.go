@@ -61,11 +61,11 @@ func (m *GetTokenResponse) UnmarshalURLValues(prefix string, values url.Values) 
 					m.Data = &Token{}
 				}
 				m.Data.SecretKey = vals[0]
-			case "data.access":
+			case "data.accessKey":
 				if m.Data == nil {
 					m.Data = &Token{}
 				}
-				m.Data.Access = vals[0]
+				m.Data.AccessKey = vals[0]
 			case "data.data":
 				if m.Data == nil {
 					m.Data = &Token{}
@@ -340,8 +340,8 @@ func (m *Token) UnmarshalURLValues(prefix string, values url.Values) error {
 				m.Id = vals[0]
 			case "secretKey":
 				m.SecretKey = vals[0]
-			case "access":
-				m.Access = vals[0]
+			case "accessKey":
+				m.AccessKey = vals[0]
 			case "data":
 				if len(vals) > 1 {
 					var list []interface{}
@@ -502,11 +502,11 @@ func (m *CreateTokenResponse) UnmarshalURLValues(prefix string, values url.Value
 					m.Data = &Token{}
 				}
 				m.Data.SecretKey = vals[0]
-			case "data.access":
+			case "data.accessKey":
 				if m.Data == nil {
 					m.Data = &Token{}
 				}
-				m.Data.Access = vals[0]
+				m.Data.AccessKey = vals[0]
 			case "data.data":
 				if m.Data == nil {
 					m.Data = &Token{}

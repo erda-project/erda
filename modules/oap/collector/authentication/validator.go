@@ -62,7 +62,7 @@ func (v *accessKeyValidator) syncFullAccessKeys(ctx context.Context) error {
 		delete(v.collection, k)
 	}
 	for _, item := range results {
-		v.collection[item.Access] = item
+		v.collection[item.AccessKey] = item
 	}
 	return nil
 }
@@ -71,5 +71,5 @@ func (v *accessKeyValidator) Validate(scope string, scopeId string, token string
 	v.RLock()
 	defer v.RUnlock()
 	item, ok := v.collection[token]
-	return ok && item.Access == token && item.ScopeId == scopeId && item.Scope == scope
+	return ok && item.AccessKey == token && item.ScopeId == scopeId && item.Scope == scope
 }

@@ -52,7 +52,7 @@ func (a *accessKeyService) QueryAccessKeys(ctx context.Context, request *pb.Quer
 	for _, v := range accessKeyList.Data {
 		ak := &pb.QueryAccessKeys{
 			Id:        v.Id,
-			Token:     v.Access,
+			Token:     v.AccessKey,
 			CreatedAt: v.CreatedAt,
 			Creator:   v.CreatorId,
 		}
@@ -85,7 +85,7 @@ func (a *accessKeyService) DownloadAccessKeyFile(ctx context.Context, request *p
 	}
 	fileData := [][]string{
 		{"secretKey", accessKey.Data.SecretKey},
-		{"accessKey", accessKey.Data.Access},
+		{"accessKey", accessKey.Data.AccessKey},
 	}
 	err = w.WriteAll(fileData)
 	if err != nil {
@@ -110,13 +110,13 @@ func (a *accessKeyService) CreateAccessKey(ctx context.Context, request *pb.Crea
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	projectId, err := a.auditContextInfo(ctx, request.ScopeId, accessKey.Data.Access)
+	projectId, err := a.auditContextInfo(ctx, request.ScopeId, accessKey.Data.AccessKey)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
 	result := &pb.CreateAccessKeyResponse{
 		Data: &pb.CreateAccessKeyData{
-			Id:        accessKey.Data.Access,
+			Id:        accessKey.Data.AccessKey,
 			ProjectId: projectId,
 		},
 	}
@@ -158,7 +158,7 @@ func (a *accessKeyService) DeleteAccessKey(ctx context.Context, request *pb.Dele
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	projectId, err := a.auditContextInfo(ctx, token.ScopeId, token.Access)
+	projectId, err := a.auditContextInfo(ctx, token.ScopeId, token.AccessKey)
 	return &pb.DeleteAccessKeyResponse{
 		Data: projectId,
 	}, nil
@@ -176,7 +176,7 @@ func (a *accessKeyService) GetAccessKey(ctx context.Context, request *pb.GetAcce
 	result := &pb.GetAccessKeyResponse{
 		Data: &pb.AccessKeysItem{
 			Id:          token.Id,
-			AccessKey:   token.Access,
+			AccessKey:   token.AccessKey,
 			SecretKey:   token.SecretKey,
 			Description: token.Description,
 			CreatedAt:   token.CreatedAt,

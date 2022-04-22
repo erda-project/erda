@@ -73,7 +73,7 @@ func (t *TokenStoreItem) ToPbToken() *pb.Token {
 	return &pb.Token{
 		Id:          t.ID,
 		SecretKey:   t.SecretKey,
-		Access:      t.AccessKey,
+		AccessKey:   t.AccessKey,
 		Status:      t.Status,
 		Description: t.Description,
 		Scope:       t.Scope,
@@ -87,7 +87,7 @@ func (t *TokenStoreItem) ToPbToken() *pb.Token {
 type TokenType string
 
 const (
-	Oauth2    TokenType = "Oauth2"
+	OAuth2    TokenType = "OAuth2"
 	AccessKey TokenType = "AccessKey"
 )
 
@@ -96,7 +96,7 @@ func (s TokenType) String() string {
 }
 
 func Oauth2Type(db *gorm.DB) *gorm.DB {
-	return db.Where("`type` = ?", Oauth2)
+	return db.Where("`type` = ?", OAuth2)
 }
 
 type TokenStoreItemData struct {
@@ -211,7 +211,7 @@ func (s *TokenStore) Create(info oauth2.TokenInfo) error {
 		AccessKey: item.AccessKey,
 		Refresh:   item.Refresh,
 		Data:      item.Data,
-		Type:      string(Oauth2),
+		Type:      string(OAuth2),
 	}).Error
 }
 

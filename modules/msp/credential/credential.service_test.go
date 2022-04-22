@@ -143,7 +143,7 @@ func Test_accessKeyService_DeleteAccessKey(t *testing.T) {
 	akService.EXPECT().GetToken(gomock.Any(), gomock.Any()).AnyTimes().Return(&tokenpb.GetTokenResponse{
 		Data: &tokenpb.Token{
 			Id:          "2",
-			Access:      "sfdfgfg",
+			AccessKey:   "sfdfgfg",
 			SecretKey:   "sdgds",
 			Description: "ss",
 			CreatedAt:   nil,
@@ -231,7 +231,7 @@ func Test_accessKeyService_DownloadAccessKeyFile(t *testing.T) {
 	akService.EXPECT().GetToken(gomock.Any(), gomock.Any()).AnyTimes().Return(&tokenpb.GetTokenResponse{
 		Data: &tokenpb.Token{
 			Id:          "ssss",
-			Access:      "dddd",
+			AccessKey:   "dddd",
 			SecretKey:   "dddd",
 			Description: "aaa",
 			CreatedAt:   &timestamppb.Timestamp{},
@@ -275,7 +275,7 @@ func Test_Init(t *testing.T) {
 	akService.EXPECT().GetToken(gomock.Any(), gomock.Any()).AnyTimes().Return(&tokenpb.GetTokenResponse{
 		Data: &tokenpb.Token{
 			Id:          "ssss",
-			Access:      "dddd",
+			AccessKey:   "dddd",
 			SecretKey:   "dddd",
 			Description: "aaa",
 			CreatedAt:   &timestamppb.Timestamp{},

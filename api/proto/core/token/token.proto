@@ -89,7 +89,7 @@ message GetTokenResponse {
 message Token {
   string id = 1;
   string secretKey = 2;
-  string access = 3;
+  string accessKey = 3;
   google.protobuf.Value data = 4;
   string status = 5;
   string description = 6;

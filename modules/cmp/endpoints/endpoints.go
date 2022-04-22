@@ -19,7 +19,7 @@ import (
 	"net/http"
 
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
-	"github.com/erda-project/erda-proto-go/core/token/pb"
+	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/dbclient"
 	"github.com/erda-project/erda/modules/cmp/impl/addons"
@@ -54,7 +54,7 @@ type Endpoints struct {
 	CachedJS        jsonstore.JsonStore
 	SteveAggregator *steve.Aggregator
 	Resource        *resource.Resource
-	Credential      pb.TokenServiceServer
+	Credential      tokenpb.TokenServiceServer
 
 	reportTable *resource.ReportTable
 	CronService cronpb.CronServiceServer
@@ -102,7 +102,7 @@ func WithOrgResource(o *org_resource.OrgResource) Option {
 }
 
 // WithCredential with accessKey credential
-func WithCredential(c pb.TokenServiceServer) Option {
+func WithCredential(c tokenpb.TokenServiceServer) Option {
 	return func(e *Endpoints) {
 		e.Credential = c
 	}

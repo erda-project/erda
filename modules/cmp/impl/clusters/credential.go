@@ -25,7 +25,6 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/erda-project/erda-proto-go/core/token/pb"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cmp/conf"
@@ -61,7 +60,7 @@ func (c *Clusters) GetOrCreateAccessKey(clusterName string) (*tokenpb.Token, err
 	}
 
 	// Create accessKey
-	res, err := c.credential.CreateToken(context.Background(), &pb.CreateTokenRequest{
+	res, err := c.credential.CreateToken(context.Background(), &tokenpb.CreateTokenRequest{
 		Scope:   strings.ToLower(tokenpb.ScopeEnum_CMP_CLUSTER.String()),
 		ScopeId: clusterName,
 		Type:    mysqltokenstore.AccessKey.String(),
@@ -76,11 +75,11 @@ func (c *Clusters) GetOrCreateAccessKey(clusterName string) (*tokenpb.Token, err
 }
 
 // GetOrCreateAccessKeyWithRecord get or create access key with record
-func (c *Clusters) GetOrCreateAccessKeyWithRecord(clusterName, userID, orgID string) (*pb.Token, error) {
+func (c *Clusters) GetOrCreateAccessKeyWithRecord(clusterName, userID, orgID string) (*tokenpb.Token, error) {
 	var (
 		detailInfo string
 		err        error
-		res        = &pb.Token{}
+		res        = &tokenpb.Token{}
 		status     = dbclient.StatusTypeSuccess
 	)
 
@@ -134,7 +133,7 @@ func (c *Clusters) DeleteAccessKey(clusterName string) error {
 
 	// Clear all access key about clusterName
 	for _, item := range res.Data {
-		_, err = c.credential.DeleteToken(context.Background(), &pb.DeleteTokenRequest{
+		_, err = c.credential.DeleteToken(context.Background(), &tokenpb.DeleteTokenRequest{
 			Id: item.Id,
 		})
 		if err != nil {
@@ -151,7 +150,7 @@ func (c *Clusters) DeleteAccessKey(clusterName string) error {
 }
 
 // ResetAccessKey reset access key
-func (c *Clusters) ResetAccessKey(clusterName string) (*pb.Token, error) {
+func (c *Clusters) ResetAccessKey(clusterName string) (*tokenpb.Token, error) {
 	// In cluster use Inner clientSet priority.
 	if clusterName == conf.ErdaClusterName() {
 		kc, err := k8sclient.NewForInCluster()
@@ -178,7 +177,7 @@ func (c *Clusters) ResetAccessKey(clusterName string) (*pb.Token, error) {
 }
 
 // ResetAccessKeyWithClientSet reset access key with specified clientSet
-func (c *Clusters) ResetAccessKeyWithClientSet(clusterName string, cs *kubernetes.Clientset) (*pb.Token, error) {
+func (c *Clusters) ResetAccessKeyWithClientSet(clusterName string, cs *kubernetes.Clientset) (*tokenpb.Token, error) {
 	// Get worker namespace
 	workerNs := getWorkerNamespace()
 
@@ -220,7 +219,7 @@ func (c *Clusters) ResetAccessKeyWithClientSet(clusterName string, cs *kubernete
 	}
 
 	// Update secret
-	sec.Data[apistructs.ClusterAccessKey] = []byte(newAk.Access)
+	sec.Data[apistructs.ClusterAccessKey] = []byte(newAk.AccessKey)
 
 	_, err = cs.CoreV1().Secrets(workerNs).Update(context.Background(), sec, v1.UpdateOptions{})
 	if err != nil {
@@ -232,7 +231,7 @@ func (c *Clusters) ResetAccessKeyWithClientSet(clusterName string, cs *kubernete
 }
 
 // ResetAccessKeyWithRecord reset ak with record
-func (c *Clusters) ResetAccessKeyWithRecord(clusterName, userID, orgID string) (*pb.Token, error) {
+func (c *Clusters) ResetAccessKeyWithRecord(clusterName, userID, orgID string) (*tokenpb.Token, error) {
 	var (
 		detailInfo string
 		status     = dbclient.StatusTypeSuccess

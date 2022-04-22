@@ -38,10 +38,10 @@ var (
 	db          *dbclient.DBClient
 	fakeCluster = "fake-cluster"
 	fakeAkItem  = &tokenpb.Token{
-		Id:      "5e34b95b-cd06-464c-8ee9-3aef696586c6",
-		Access:  "Q9x5k4MJ89h327yqoc9zvvoP",
-		Scope:   "cmp_cluster",
-		ScopeId: fakeCluster,
+		Id:        "5e34b95b-cd06-464c-8ee9-3aef696586c6",
+		AccessKey: "Q9x5k4MJ89h327yqoc9zvvoP",
+		Scope:     "cmp_cluster",
+		ScopeId:   fakeCluster,
 	}
 )
 

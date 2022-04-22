@@ -73,7 +73,7 @@ func patch(bdl *bundle.Bundle, c *Clusters) {
 		if strings.Contains(cluster, "without-access-key") {
 			return nil, fmt.Errorf("get or create access key failed")
 		}
-		return &tokenpb.Token{Access: "clusterAccessKey"}, nil
+		return &tokenpb.Token{AccessKey: "clusterAccessKey"}, nil
 	})
 }
 
