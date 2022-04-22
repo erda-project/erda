@@ -19,6 +19,7 @@ import (
 	"net/http"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/erda-project/erda/apistructs"
@@ -96,19 +97,20 @@ func (e *Endpoints) ListServiceInstance(ctx context.Context, r *http.Request, va
 	instances := make(apistructs.Containers, 0, len(instanceList))
 	for _, v := range instanceList {
 		instance := apistructs.Container{
-			ID:          v.TaskID,
-			ContainerID: v.ContainerID,
-			IPAddress:   v.ContainerIP,
-			Host:        v.HostIP,
-			Image:       v.Image,
-			CPU:         v.CpuRequest,
-			Memory:      int64(v.MemRequest),
-			Status:      v.Phase,
-			ExitCode:    v.ExitCode,
-			Message:     v.Message,
-			StartedAt:   v.StartedAt.Format(time.RFC3339Nano),
-			Service:     v.ServiceName,
-			ClusterName: v.Cluster,
+			K8sInstanceMetaInfo: parseInstanceMeta(v.Meta),
+			ID:                  v.TaskID,
+			ContainerID:         v.ContainerID,
+			IPAddress:           v.ContainerIP,
+			Host:                v.HostIP,
+			Image:               v.Image,
+			CPU:                 v.CpuRequest,
+			Memory:              int64(v.MemRequest),
+			Status:              v.Phase,
+			ExitCode:            v.ExitCode,
+			Message:             v.Message,
+			StartedAt:           v.StartedAt.Format(time.RFC3339Nano),
+			Service:             v.ServiceName,
+			ClusterName:         v.Cluster,
 		}
 		instances = append(instances, instance)
 	}
@@ -327,4 +329,35 @@ func (e *Endpoints) isInstanceRunning(status string) bool {
 	default:
 		return false
 	}
+}
+
+func parseInstanceMeta(meta string) apistructs.K8sInstanceMetaInfo {
+	ret := apistructs.K8sInstanceMetaInfo{}
+
+	kvs := strings.Split(meta, ",")
+	if len(kvs) == 0 {
+		return ret
+	}
+
+	for _, kv := range kvs {
+		rs := strings.Split(kv, "=")
+		if len(rs) != 2 {
+			continue
+		}
+		k := rs[0]
+		v := rs[1]
+
+		switch k {
+		case apistructs.K8sNamespace:
+			ret.PodNamespace = v
+		case apistructs.K8sPodName:
+			ret.PodName = v
+		case apistructs.K8sContainerName:
+			ret.ContainerName = v
+		case apistructs.K8sPodUid:
+			ret.PodUid = v
+		}
+	}
+
+	return ret
 }

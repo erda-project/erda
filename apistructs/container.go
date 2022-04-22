@@ -14,6 +14,20 @@
 
 package apistructs
 
+const (
+	K8sNamespace     = "k8snamespace"
+	K8sPodName       = "k8spodname"
+	K8sPodUid        = "k8spoduid"
+	K8sContainerName = "k8scontainername"
+)
+
+type K8sInstanceMetaInfo struct {
+	PodUid        string `json:"podUid"`
+	PodName       string `json:"podName"`
+	PodNamespace  string `json:"podNamespace"`
+	ContainerName string `json:"containerName"`
+}
+
 type CmContainersFetchResponse struct {
 	Header
 	Data []ContainerFetchResponseData `json:"data"`
@@ -99,6 +113,8 @@ func (c Containers) Less(i, j int) bool { return c[i].StartedAt < c[j].StartedAt
 
 // Container 容器信息
 type Container struct {
+	K8sInstanceMetaInfo
+
 	ID          string  `json:"id,omitempty"`          // Task Id
 	ContainerID string  `json:"containerId,omitempty"` // Container Id
 	IPAddress   string  `json:"ipAddress,omitempty"`
