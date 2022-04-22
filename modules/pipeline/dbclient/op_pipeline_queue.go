@@ -112,6 +112,7 @@ func (client *Client) createPipelineQueueFields(req apistructs.PipelineQueueCrea
 
 var genMetaLabelFunc = func(queueID uint64, source apistructs.PipelineSource, key, value string) spec.PipelineLabel {
 	return spec.PipelineLabel{
+		ID:             uuid.SnowFlakeIDUint64(),
 		Type:           apistructs.PipelineLabelTypeQueue,
 		TargetID:       queueID,
 		PipelineSource: source,
