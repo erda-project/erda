@@ -136,7 +136,7 @@ func (am *AdminManager) DereferenceCluster(ctx context.Context, r *http.Request,
 		return apierrors.ErrDereferenceCluster.MissingParameter("clusterName").ToResp(), nil
 	}
 
-	resp, err := am.bundle.DereferenceCluster(orgID, clusterName, userID.String())
+	resp, err := am.bundle.DereferenceCluster(orgID, clusterName, userID.String(), false)
 	if err != nil {
 		return apierrors.ErrDereferenceCluster.InternalError(err).ToResp(), nil
 	}

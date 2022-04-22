@@ -41,7 +41,7 @@ func TestOfflineEdgeCluster(t *testing.T) {
 	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "QueryClusterInfo", func(_ *bundle.Bundle, _ string) (apistructs.ClusterInfoData, error) {
 		return apistructs.ClusterInfoData{apistructs.DICE_IS_EDGE: "true"}, nil
 	})
-	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "DereferenceCluster", func(_ *bundle.Bundle, _ uint64, _, _ string) (string, error) {
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "DereferenceCluster", func(_ *bundle.Bundle, _ uint64, _, _ string, _ bool) (string, error) {
 		return "", nil
 	})
 	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "DeleteCluster", func(_ *bundle.Bundle, _ string, _ ...http.Header) error {
@@ -81,7 +81,7 @@ func TestOfflineWithDeleteClusterFailed(t *testing.T) {
 	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "QueryClusterInfo", func(_ *bundle.Bundle, _ string) (apistructs.ClusterInfoData, error) {
 		return apistructs.ClusterInfoData{apistructs.DICE_IS_EDGE: "true"}, nil
 	})
-	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "DereferenceCluster", func(_ *bundle.Bundle, _ uint64, _, _ string) (string, error) {
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "DereferenceCluster", func(_ *bundle.Bundle, _ uint64, _, _ string, _ bool) (string, error) {
 		return "", nil
 	})
 	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "DeleteCluster", func(_ *bundle.Bundle, _ string, _ ...http.Header) error {
@@ -121,7 +121,7 @@ func TestOfflineWithDeleteAKFailed(t *testing.T) {
 	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "QueryClusterInfo", func(_ *bundle.Bundle, _ string) (apistructs.ClusterInfoData, error) {
 		return apistructs.ClusterInfoData{apistructs.DICE_IS_EDGE: "true"}, nil
 	})
-	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "DereferenceCluster", func(_ *bundle.Bundle, _ uint64, _, _ string) (string, error) {
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "DereferenceCluster", func(_ *bundle.Bundle, _ uint64, _, _ string, _ bool) (string, error) {
 		return "", nil
 	})
 	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "DeleteCluster", func(_ *bundle.Bundle, _ string, _ ...http.Header) error {
@@ -161,7 +161,7 @@ func TestBatchOfflineEdgeCluster(t *testing.T) {
 	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "QueryClusterInfo", func(_ *bundle.Bundle, _ string) (apistructs.ClusterInfoData, error) {
 		return apistructs.ClusterInfoData{apistructs.DICE_IS_EDGE: "true"}, nil
 	})
-	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "DereferenceCluster", func(_ *bundle.Bundle, _ uint64, _, _ string) (string, error) {
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "DereferenceCluster", func(_ *bundle.Bundle, _ uint64, _, _ string, _ bool) (string, error) {
 		return "", nil
 	})
 	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "DeleteCluster", func(_ *bundle.Bundle, _ string, _ ...http.Header) error {
