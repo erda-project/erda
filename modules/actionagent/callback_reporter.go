@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/filehelper"
@@ -41,12 +42,15 @@ type CallbackReporter interface {
 	GetBootstrapInfo(pipelineID, taskID uint64) (apistructs.PipelineTaskGetBootstrapInfoResponse, error)
 	GetCmsFile(uuid string, absPath string) error
 	SetOpenApiToken(token string)
+	SetCollectorAddress(address string)
+	PushCollectorLog(logLines *[]apistructs.LogPushLine) error
 }
 
 type CenterCallbackReporter struct {
 	OpenAPIAddr       string
 	OpenAPIToken      string
 	TokenForBootstrap string
+	CollectorAddr     string
 }
 
 func (cr *CenterCallbackReporter) CallbackToPipelinePlatform(cbReq apistructs.PipelineCallbackRequest) error {
@@ -115,6 +119,30 @@ func (cr *CenterCallbackReporter) SetOpenApiToken(token string) {
 	cr.OpenAPIToken = token
 }
 
+func (cr *CenterCallbackReporter) SetCollectorAddress(address string) {
+	cr.CollectorAddr = address
+}
+
+func (cr *CenterCallbackReporter) PushCollectorLog(logLines *[]apistructs.LogPushLine) error {
+	var respBody bytes.Buffer
+	b, _ := json.Marshal(logLines)
+	logrus.Debugf("push collector log data: %s", string(b))
+	resp, err := httpclient.New(httpclient.WithCompleteRedirect(), httpclient.WithTimeout(defaultClientTimeout, defaultClientTimeout)).
+		Post(cr.CollectorAddr).
+		Path("/collect/logs/job").
+		JSONBody(logLines).
+		Header("Content-Type", "application/json").
+		Do().
+		Body(&respBody)
+	if err != nil {
+		return fmt.Errorf("failed to push log to collector, err: %v", err)
+	}
+	if !resp.IsOK() {
+		return fmt.Errorf("failed to push log to collector, resp body: %s", respBody.String())
+	}
+	return nil
+}
+
 func (cr *CenterCallbackReporter) GetCmsFile(uuid string, absPath string) error {
 	respBody, resp, err := httpclient.New(httpclient.WithCompleteRedirect(), httpclient.WithTimeout(defaultClientTimeout, defaultClientTimeout)).
 		Get(cr.OpenAPIAddr).
@@ -141,6 +169,7 @@ type EdgeCallbackReporter struct {
 	PipelineAddr      string
 	OpenAPIToken      string
 	TokenForBootstrap string
+	CollectorAddr     string
 }
 
 func (er *EdgeCallbackReporter) CallbackToPipelinePlatform(cbReq apistructs.PipelineCallbackRequest) error {
@@ -189,10 +218,18 @@ func (er *EdgeCallbackReporter) GetBootstrapInfo(pipelineID, taskID uint64) (api
 	return getResp, nil
 }
 
+func (er *EdgeCallbackReporter) PushCollectorLog(logLines *[]apistructs.LogPushLine) error {
+	return fmt.Errorf("edge pipeline doesn't support push collector log")
+}
+
 func (er *EdgeCallbackReporter) GetCmsFile(uuid string, absPath string) error {
 	return fmt.Errorf("edge pipeline doesn't support get cms file")
 }
 
 func (er *EdgeCallbackReporter) SetOpenApiToken(token string) {
 	er.OpenAPIToken = token
+}
+
+func (er *EdgeCallbackReporter) SetCollectorAddress(address string) {
+	er.CollectorAddr = address
 }

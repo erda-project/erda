@@ -39,7 +39,7 @@ func (s *PipelineSvc) GetOpenapiOAuth2TokenForActionInvokeOpenapi(task *spec.Pip
 		ClientSecret: conf.OpenapiOAuth2TokenClientSecret(),
 		Payload:      task.Extra.OpenapiOAuth2TokenPayload,
 	}
-	if conf.DiceIsEdge() {
+	if s.edgeRegister.IsEdge() {
 		tokenInfo, err = s.edgeRegister.GetOAuth2Token(req)
 	} else {
 		tokenInfo, err = s.bdl.GetOAuth2Token(req)

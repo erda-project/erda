@@ -356,7 +356,7 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 
 	// edge pipeline envs
 	edgePipelineEnvs := pre.EdgeRegister.GetEdgePipelineEnvs()
-	task.Extra.PublicEnvs[apistructs.EnvIsEdgePipeline] = strconv.FormatBool(conf.DiceIsEdge())
+	task.Extra.PublicEnvs[apistructs.EnvIsEdgePipeline] = strconv.FormatBool(pre.EdgeRegister.IsEdge())
 	task.Extra.PublicEnvs[apistructs.EnvPipelineAddr] = edgePipelineEnvs.Get(apistructs.ClusterDialerDataKeyPipelineAddr)
 
 	// 条件表达式存在
@@ -663,7 +663,7 @@ func (pre *prepare) generateOpenapiTokenForPullBootstrapInfo(task *spec.Pipeline
 			},
 		},
 	}
-	if conf.DiceIsEdge() {
+	if pre.EdgeRegister.IsEdge() {
 		tokenInfo, err = pre.EdgeRegister.GetAccessToken(req)
 	} else {
 		tokenInfo, err = pre.Bdl.GetOAuth2Token(req)

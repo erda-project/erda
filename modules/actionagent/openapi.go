@@ -35,9 +35,6 @@ var getOpenAPILock sync.Once
 func (agent *Agent) getOpenAPIInfo() {
 	getOpenAPILock.Do(
 		func() {
-			diceIsEdge := os.Getenv(EnvDiceIsEdge)
-			openapiPublicURL := os.Getenv(EnvDiceOpenapiPublicUrl)
-			openapiAddr := os.Getenv(EnvDiceOpenapiAddr)
 			pipelineAddr := os.Getenv(apistructs.EnvPipelineAddr)
 
 			// 判断是否是边缘集群
@@ -47,22 +44,27 @@ func (agent *Agent) getOpenAPIInfo() {
 			// 根据是否是边缘集群对 openapi 环境变量进行转换
 			agent.convertEnvsByClusterLocation()
 			openAPIAddr := os.Getenv(EnvDiceOpenapiAddr)
-			if openAPIAddr == "" && !agent.EasyUse.IsEdgePipeline {
-				agent.AppendError(errors.Errorf("failed to get openapi addr, %s: %s, %s: %s, %s: %s",
-					EnvDiceIsEdge, diceIsEdge,
-					EnvDiceOpenapiPublicUrl, openapiPublicURL,
-					EnvDiceOpenapiAddr, openapiAddr))
-				return
-			}
-			if pipelineAddr == "" && agent.EasyUse.IsEdgePipeline {
-				agent.AppendError(errors.Errorf("failed to get pipeline addr, %s: %v, %s: %s",
-					apistructs.EnvIsEdgePipeline, agent.EasyUse.IsEdgePipeline,
-					apistructs.EnvPipelineAddr, pipelineAddr))
-				return
-			}
 			agent.EasyUse.OpenAPIAddr = openAPIAddr
 			agent.EasyUse.PipelineAddr = pipelineAddr
+			if err := agent.checkCallbackAddr(); err != nil {
+				agent.AppendError(err)
+				return
+			}
 		})
+}
+
+func (agent *Agent) checkCallbackAddr() error {
+	if agent.EasyUse.OpenAPIAddr == "" && !agent.EasyUse.IsEdgePipeline {
+		return errors.Errorf("failed to get openapi addr, %s: %v, %s: %s",
+			EnvDiceIsEdge, agent.EasyUse.IsEdgePipeline,
+			EnvDiceOpenapiAddr, agent.EasyUse.OpenAPIAddr)
+	}
+	if agent.EasyUse.PipelineAddr == "" && agent.EasyUse.IsEdgePipeline {
+		return errors.Errorf("failed to get pipeline addr, %s: %v, %s: %s",
+			apistructs.EnvIsEdgePipeline, agent.EasyUse.IsEdgePipeline,
+			apistructs.EnvPipelineAddr, agent.EasyUse.PipelineAddr)
+	}
+	return nil
 }
 
 // isEdgeCluster 是否是边缘集群

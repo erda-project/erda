@@ -34,7 +34,7 @@ type Config struct {
 	ClusterDialEndpoint        string        `file:"cluster_dialer_endpoint" desc:"cluster dialer endpoint"`
 	ClusterAccessKey           string        `file:"cluster_access_key" desc:"cluster access key, if specified will doesn't start watcher"`
 	RetryConnectDialerInterval time.Duration `file:"retry_cluster_hook_interval" default:"1s"`
-	AccessTokenFile            string        `file:"access_token_file" default:"/var/run/secrets/kubernetes.io/serviceaccount/token"`
+	AccessTokenFile            string        `env:"ACCESS_TOKEN_FILE" default:"/var/run/secrets/kubernetes.io/serviceaccount/token"`
 	accessToken                string
 }
 

@@ -32,6 +32,8 @@ type Interface interface {
 	GetOAuth2Token(req apistructs.OAuth2TokenGetRequest) (*apistructs.OAuth2Token, error)
 	GetEdgePipelineEnvs() apistructs.ClusterDialerClientDetail
 	CheckAccessToken(token string) error
+	CheckAccessTokenFromHttpRequest(req *http.Request) error
+	IsEdge() bool
 	//RegisterEdgeToDialer(ctx context.Context)
 }
 
@@ -49,6 +51,14 @@ func (p *provider) GetOAuth2Token(req apistructs.OAuth2TokenGetRequest) (*apistr
 		ExpiresIn:   0,
 		TokenType:   "Bearer",
 	}, nil
+}
+
+func (p *provider) CheckAccessTokenFromHttpRequest(req *http.Request) error {
+	if p.Cfg.IsEdge {
+		token := req.Header.Get("Authorization")
+		return p.CheckAccessToken(token)
+	}
+	return nil
 }
 
 func (p *provider) CheckAccessToken(token string) error {
@@ -95,6 +105,10 @@ func (p *provider) RegisterEdgeToDialer(ctx context.Context) {
 			// retry connect dialer
 		}
 	}
+}
+
+func (p *provider) IsEdge() bool {
+	return p.Cfg.IsEdge
 }
 
 func (p *provider) ConnectAuthorizer(proto string, address string) bool {

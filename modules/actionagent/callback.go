@@ -76,16 +76,14 @@ func (agent *Agent) Callback() {
 }
 
 func (agent *Agent) SetCallbackReporter() {
-	tokenForBootstrap := os.Getenv(apistructs.EnvOpenapiTokenForActionBootstrap)
-	if tokenForBootstrap == "" {
-		agent.AppendError(errors.Errorf("missing env %s", apistructs.EnvOpenapiTokenForActionBootstrap))
+	if err := agent.SetTokenForBootstrap(); err != nil {
+		agent.AppendError(err)
 		return
 	}
-	agent.EasyUse.TokenForBootstrap = tokenForBootstrap
 	if agent.EasyUse.IsEdgePipeline {
 		agent.CallbackReporter = &EdgeCallbackReporter{
 			PipelineAddr:      agent.EasyUse.PipelineAddr,
-			TokenForBootstrap: tokenForBootstrap,
+			TokenForBootstrap: agent.EasyUse.TokenForBootstrap,
 			OpenAPIToken:      agent.EasyUse.OpenAPIToken,
 		}
 		return
@@ -95,6 +93,29 @@ func (agent *Agent) SetCallbackReporter() {
 		OpenAPIToken:      agent.EasyUse.OpenAPIToken,
 		TokenForBootstrap: agent.EasyUse.TokenForBootstrap,
 	}
+}
+
+func (agent *Agent) SetTokenForBootstrap() error {
+	tokenForBootstrap := os.Getenv(apistructs.EnvOpenapiTokenForActionBootstrap)
+	if tokenForBootstrap == "" {
+		return errors.Errorf("missing env %s", apistructs.EnvOpenapiTokenForActionBootstrap)
+	}
+	agent.EasyUse.TokenForBootstrap = tokenForBootstrap
+	return nil
+}
+
+func (agent *Agent) canDoEdgeCallback() error {
+	if agent.EasyUse.PipelineAddr == "" && agent.EasyUse.IsEdgePipeline {
+		return errors.New("unknown pipeline addr, cannot callback")
+	}
+	return nil
+}
+
+func (agent *Agent) canDoNormalCallback() error {
+	if agent.EasyUse.OpenAPIAddr == "" && !agent.EasyUse.IsEdgePipeline {
+		return errors.New("unknown openapi addr, cannot callback")
+	}
+	return nil
 }
 
 func (agent *Agent) callbackToPipelinePlatform(cb *Callback) (err error) {
@@ -110,11 +131,11 @@ func (agent *Agent) callbackToPipelinePlatform(cb *Callback) (err error) {
 		}
 	}()
 
-	if agent.EasyUse.OpenAPIAddr == "" && !agent.EasyUse.IsEdgePipeline {
-		return errors.New("unknown openapi addr, cannot callback")
+	if err := agent.canDoNormalCallback(); err != nil {
+		return err
 	}
-	if agent.EasyUse.PipelineAddr == "" && agent.EasyUse.IsEdgePipeline {
-		return errors.New("unknown pipeline addr, cannot callback")
+	if err := agent.canDoEdgeCallback(); err != nil {
+		return err
 	}
 
 	// 如果全部为空，则不需要回调
