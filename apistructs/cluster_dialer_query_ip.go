@@ -12,24 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package clusterdialer
+package apistructs
 
-import (
-	"context"
-	"testing"
-	"time"
-)
-
-func TestTunnelSession_getClusterDialer_timeout(t *testing.T) {
-	sessionCtx, cancel := context.WithCancel(context.Background())
-	session := TunnelSession{
-		expired: sessionCtx,
-		cancel:  cancel,
-	}
-	go session.initialize("ws://127.0.0.1")
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
-	dialer := session.getClusterDialer(ctx, "test")
-	if dialer != nil {
-		t.Error("dialer is not nil")
-	}
+type QueryClusterDialerIPResponse struct {
+	Succeeded bool   `json:"succeeded"`
+	Error     string `json:"error"`
+	IP        string `json:"IP"`
 }
