@@ -66,10 +66,7 @@ func (client *Client) CreatePipelineLabels(p *spec.Pipeline, ops ...SessionOptio
 			TargetID:        p.ID,
 			Key:             k,
 			Value:           v,
-			ID:              p.ID,
-		}
-		if label.ID == 0 {
-			label.ID = uuid.SnowFlakeIDUint64()
+			ID:              uuid.SnowFlakeIDUint64(),
 		}
 		labels = append(labels, label)
 	}
