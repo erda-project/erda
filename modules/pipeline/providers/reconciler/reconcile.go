@@ -65,29 +65,28 @@ func (r *provider) ReconcileOnePipeline(ctx context.Context, pipelineID uint64) 
 
 func (r *provider) generatePipelineReconcilerForEachPipelineID() *defaultPipelineReconciler {
 	pr := &defaultPipelineReconciler{
-		log:                  r.Log.Sub("pipeline"),
-		st:                   &schedulabletask.DagImpl{},
-		resourceGC:           r.ResourceGC,
-		cronCompensator:      r.CronCompensator,
-		cache:                r.Cache,
-		r:                    r,
-		dbClient:             r.dbClient,
-		processingTasks:      sync.Map{},
-		defaultRetryInterval: r.Cfg.RetryInterval,
-		calculatedPipelineStatusByAllReconciledTasks: "",
-		chanToTriggerNextLoop:                        make(chan struct{}),
-		schedulableTaskChan:                          make(chan *spec.PipelineTask),
-		doneChan:                                     make(chan struct{}),
-		flagCanceling:                                false,
-		flagHaveTask:                                 nil,
+		log:                        r.Log.Sub("pipeline"),
+		st:                         &schedulabletask.DagImpl{},
+		resourceGC:                 r.ResourceGC,
+		cronCompensator:            r.CronCompensator,
+		cache:                      r.Cache,
+		r:                          r,
+		dbClient:                   r.dbClient,
+		processingTasks:            sync.Map{},
+		defaultRetryInterval:       r.Cfg.RetryInterval,
+		calculatedStatusForTaskUse: "",
+		chanToTriggerNextLoop:      make(chan struct{}),
+		schedulableTaskChan:        make(chan *spec.PipelineTask),
+		doneChan:                   make(chan struct{}),
+		flagCanceling:              false,
+		totalTaskNumber:            nil,
 	}
 	return pr
 }
 
-func (pr *defaultPipelineReconciler) releaseTasksCanBeConcurrentlyScheduled(ctx context.Context, p *spec.Pipeline, tasks []*spec.PipelineTask) {
-	for _, task := range tasks {
-		pr.processingTasks.Delete(task.NodeName())
-	}
+func (pr *defaultPipelineReconciler) releaseTaskAfterReconciled(ctx context.Context, p *spec.Pipeline, task *spec.PipelineTask) {
+	pr.processingTasks.Delete(task.NodeName())
+	pr.processedTasks.Store(task.Name, struct{}{})
 }
 
 func (pr *defaultPipelineReconciler) waitPipelineDoneAndDoTeardown(ctx context.Context, p *spec.Pipeline) {
@@ -117,39 +116,7 @@ func (pr *defaultPipelineReconciler) continuePushSchedulableTasks(ctx context.Co
 		case <-ctx.Done():
 			return
 		case <-pr.chanToTriggerNextLoop:
-			rutil.ContinueWorking(ctx, pr.log, func(ctx context.Context) rutil.WaitDuration {
-				// set calculated pipeline status by all reconciled tasks from db
-				if err := pr.calculatePipelineStatusByAllReconciledTasks(ctx, p); err != nil {
-					pr.log.Errorf("failed to calculate pipeline status by all reconciled tasks(auto retry), pipelineID: %d, err: %v", p.ID, err)
-					return rutil.ContinueWorkingWithDefaultInterval
-				}
-				schedulableTasks, err := pr.GetTasksCanBeConcurrentlyScheduled(ctx, p)
-				if err != nil {
-					pr.log.Errorf("failed to get tasks can be concurrently scheduled(auto retry), pipelineID: %d, err: %v", p.ID, err)
-					return rutil.ContinueWorkingWithDefaultInterval
-				}
-				for _, task := range schedulableTasks {
-					pr.schedulableTaskChan <- task
-				}
-				// calculate if all done
-				if len(schedulableTasks) == 0 {
-					// calculate and update current reconcile status
-					if err := pr.UpdateCurrentReconcileStatusIfNecessary(ctx, p); err != nil {
-						pr.log.Errorf("failed to calculate pipeline status(auto retry), pipelineID: %d, err: %v", p.ID, err)
-						return rutil.ContinueWorkingWithDefaultInterval
-					}
-
-					// check pipeline reconcile done
-					done := pr.IsReconcileDone(ctx, p)
-					if done && pr.doneChan != nil {
-						pr.doneChan <- struct{}{}
-						close(pr.doneChan)
-						pr.doneChan = nil // set doneChan to nil to guarantee only teardown once
-						return rutil.ContinueWorkingAbort
-					}
-				}
-				return rutil.ContinueWorkingAbort
-			}, rutil.WithContinueWorkingDefaultRetryInterval(pr.defaultRetryInterval))
+			pr.doNextLoop(ctx, p)
 		}
 	}
 }
@@ -166,4 +133,52 @@ func (pr *defaultPipelineReconciler) continueScheduleTasks(ctx context.Context, 
 			safe.Go(func() { pr.ReconcileOneSchedulableTask(ctx, p, task) })
 		}
 	}
+}
+
+func (pr *defaultPipelineReconciler) doNextLoop(ctx context.Context, p *spec.Pipeline) {
+	rutil.ContinueWorking(ctx, pr.log, func(ctx context.Context) rutil.WaitDuration {
+		if err := pr.internalNextLoopLogic(ctx, p); err != nil {
+			return rutil.ContinueWorkingWithDefaultInterval
+		}
+		return rutil.ContinueWorkingAbort
+	}, rutil.WithContinueWorkingDefaultRetryInterval(pr.defaultRetryInterval))
+}
+
+func (pr *defaultPipelineReconciler) internalNextLoopLogic(ctx context.Context, p *spec.Pipeline) error {
+	pr.lock.Lock()
+	defer pr.lock.Unlock()
+
+	// update current pipeline status at beginning
+	if err := pr.updateCalculatedPipelineStatusForTaskUseField(ctx, p); err != nil {
+		pr.log.Errorf("failed to update calculatedPipelineStatusForTaskUse field(auto retry), pipelineID: %d, err: %v", p.ID, err)
+		return err
+	}
+
+	// get schedulable tasks
+	schedulableTasks, err := pr.GetTasksCanBeConcurrentlyScheduled(ctx, p)
+	if err != nil {
+		pr.log.Errorf("failed to get tasks can be concurrently scheduled(auto retry), pipelineID: %d, err: %v", p.ID, err)
+		return err
+	}
+	// put into handle channel
+	for _, task := range schedulableTasks {
+		pr.schedulableTaskChan <- task
+	}
+
+	// if no task can be scheduled
+	if len(schedulableTasks) == 0 && pr.IsReconcileDone(ctx, p) {
+		if err := pr.UpdateCurrentReconcileStatusIfNecessary(ctx, p); err != nil {
+			pr.log.Errorf("failed to update current reconcile status(auto retry), pipelineID: %d, err: %v", p.ID, err)
+			return err
+		}
+		// check pipeline reconcile done
+		if pr.doneChan != nil {
+			pr.doneChan <- struct{}{}
+			close(pr.doneChan)
+			pr.doneChan = nil // set doneChan to nil to guarantee only teardown once
+			return nil
+		}
+	}
+
+	return nil
 }
