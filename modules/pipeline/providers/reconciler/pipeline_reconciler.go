@@ -170,6 +170,7 @@ func (pr *defaultPipelineReconciler) ReconcileOneSchedulableTask(ctx context.Con
 		policy:               pr.r.TaskPolicy,
 		cache:                pr.r.Cache,
 		clusterInfo:          pr.r.ClusterInfo,
+		edgeRegister:         pr.r.EdgeRegister,
 		r:                    pr.r,
 		pr:                   pr,
 		dbClient:             pr.dbClient,

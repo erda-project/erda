@@ -15,7 +15,6 @@
 package actionagent
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -27,7 +26,6 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/actionagent/agenttool"
 	"github.com/erda-project/erda/pkg/filehelper"
-	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/retry"
 )
 
@@ -145,22 +143,10 @@ func (agent *Agent) uploadFile(file *os.File) (*apistructs.File, error) {
 	var uploadResp apistructs.FileUploadResponse
 
 	err := retry.DoWithInterval(func() error {
-		resp, err := httpclient.New(httpclient.WithCompleteRedirect()).
-			Post(agent.EasyUse.OpenAPIAddr).
-			Path("/api/files").
-			Param("fileFrom", fmt.Sprintf("action-upload-%d-%d", agent.Arg.PipelineID, agent.Arg.PipelineTaskID)).
-			Param("expiredIn", "168h").
-			Header("Authorization", agent.EasyUse.TokenForBootstrap).
-			MultipartFormDataBody(map[string]httpclient.MultipartItem{
-				"file": {Reader: file},
-			}).
-			Do().
-			JSON(&uploadResp)
+		var err error
+		uploadResp, err = agent.CallbackReporter.UploadFile(agent.Arg.PipelineID, agent.Arg.PipelineTaskID, file)
 		if err != nil {
 			return err
-		}
-		if !resp.IsOK() || !uploadResp.Success {
-			return fmt.Errorf("statusCode: %d, respError: %s", resp.StatusCode(), uploadResp.Error)
 		}
 		return nil
 	}, 5, time.Second*5)

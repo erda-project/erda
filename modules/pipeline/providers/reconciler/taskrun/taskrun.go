@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/types"
 	"github.com/erda-project/erda/modules/pipeline/providers/clusterinfo"
+	"github.com/erda-project/erda/modules/pipeline/providers/edgepipeline_register"
 	"github.com/erda-project/erda/modules/pipeline/services/actionagentsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
 	"github.com/erda-project/erda/modules/pipeline/spec"
@@ -38,9 +39,10 @@ type TaskRun struct {
 	Executor types.ActionExecutor
 	P        *spec.Pipeline
 
-	ClusterInfo clusterinfo.Interface
-	Bdl         *bundle.Bundle
-	DBClient    *dbclient.Client
+	ClusterInfo  clusterinfo.Interface
+	EdgeRegister edgepipeline_register.Interface
+	Bdl          *bundle.Bundle
+	DBClient     *dbclient.Client
 
 	QuitQueueTimeout bool
 	QuitWaitTimeout  bool
@@ -65,7 +67,7 @@ type TaskRun struct {
 func New(ctx context.Context, task *spec.PipelineTask,
 	executor types.ActionExecutor, p *spec.Pipeline, bdl *bundle.Bundle, dbClient *dbclient.Client,
 	actionAgentSvc *actionagentsvc.ActionAgentSvc,
-	extMarketSvc *extmarketsvc.ExtMarketSvc, clusterInfo clusterinfo.Interface,
+	extMarketSvc *extmarketsvc.ExtMarketSvc, clusterInfo clusterinfo.Interface, edgeRegister edgepipeline_register.Interface,
 	retryInterval time.Duration,
 ) *TaskRun {
 	// make executor has buffer, don't block task framework
@@ -76,9 +78,10 @@ func New(ctx context.Context, task *spec.PipelineTask,
 		Executor: executor,
 		P:        p,
 
-		Bdl:         bdl,
-		DBClient:    dbClient,
-		ClusterInfo: clusterInfo,
+		Bdl:          bdl,
+		DBClient:     dbClient,
+		ClusterInfo:  clusterInfo,
+		EdgeRegister: edgeRegister,
 
 		QuitQueueTimeout: false,
 		QuitWaitTimeout:  false,

@@ -97,3 +97,21 @@ func TestAgentCentralClusterConvertEnvsByClusterLocation2(t *testing.T) {
 	assert.Equal(t, "yyy public url", os.Getenv("YYY_ADDR"))
 	assert.Equal(t, "yyy public url", os.Getenv("YYY_PUBLIC_URL"))
 }
+
+func TestSetOpenApiToken(t *testing.T) {
+	reporter := &CenterCallbackReporter{}
+	agent := &Agent{
+		CallbackReporter: reporter,
+	}
+	agent.CallbackReporter.SetOpenApiToken("token")
+	assert.Equal(t, "token", reporter.OpenAPIToken)
+}
+
+func TestSetCollectorAddress(t *testing.T) {
+	reporter := &CenterCallbackReporter{}
+	agent := &Agent{
+		CallbackReporter: reporter,
+	}
+	agent.CallbackReporter.SetCollectorAddress("addr")
+	assert.Equal(t, "addr", reporter.CollectorAddr)
+}

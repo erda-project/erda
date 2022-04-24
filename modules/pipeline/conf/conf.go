@@ -27,6 +27,7 @@ type Conf struct {
 	ListenAddr      string `env:"LISTEN_ADDR" default:":3081"`
 	Debug           bool   `env:"DEBUG" default:"false"`
 	DiceClusterName string `env:"DICE_CLUSTER_NAME" default:"local"` // 服务所在集群
+	DiceIsEdge      bool   `env:"DICE_IS_EDGE" default:"false"`      // is edge cluster
 
 	// task level
 	TaskDefaultCPU             float64       `env:"TASK_DEFAULT_CPU" default:"0.5"`
@@ -142,6 +143,11 @@ func Debug() bool {
 // DiceClusterName return the cluster where pipeline belong to
 func DiceClusterName() string {
 	return cfg.DiceClusterName
+}
+
+// DiceIsEdge return if the cluster is edge
+func DiceIsEdge() bool {
+	return cfg.DiceIsEdge
 }
 
 // TaskDefaultCPU 返回 task 默认的 cpu 限制.

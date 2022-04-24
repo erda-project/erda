@@ -354,6 +354,11 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 	task.Extra.PublicEnvs["PIPELINE_REQUESTED_MEM"] = fmt.Sprintf("%g", task.Extra.RuntimeResource.Memory)
 	task.Extra.PublicEnvs["PIPELINE_REQUESTED_DISK"] = fmt.Sprintf("%g", task.Extra.RuntimeResource.Disk)
 
+	// edge pipeline envs
+	edgePipelineEnvs := pre.EdgeRegister.GetEdgePipelineEnvs()
+	task.Extra.PublicEnvs[apistructs.EnvIsEdgePipeline] = strconv.FormatBool(pre.EdgeRegister.IsEdge())
+	task.Extra.PublicEnvs[apistructs.EnvPipelineAddr] = edgePipelineEnvs.Get(apistructs.ClusterDialerDataKeyPipelineAddr)
+
 	// 条件表达式存在
 	if jump := condition(task); jump {
 		return false, nil
@@ -620,12 +625,14 @@ func (pre *prepare) generateOpenapiTokenForPullBootstrapInfo(task *spec.Pipeline
 		return nil
 	}
 
-	// 申请到的 token 只能请求 get-bootstrap-info api，并且保证 pipelineID 和 taskID 必须匹配
-	tokenInfo, err := pre.Bdl.GetOAuth2Token(apistructs.OAuth2TokenGetRequest{
+	var tokenInfo *apistructs.OAuth2Token
+	var err error
+	// the applied token can only request the get-bootstrap-info api, and ensure that pipelineID and taskID must match
+	req := apistructs.OAuth2TokenGetRequest{
 		ClientID:     "pipeline",
 		ClientSecret: "devops/pipeline",
 		Payload: apistructs.OAuth2TokenPayload{
-			AccessTokenExpiredIn: "0", // 该 token 申请后至 agent 运行这段时间目前无超时时间，所以设置 0 表示不过期
+			AccessTokenExpiredIn: "0", // there is currently no timeout period from the time the token is applied until the agent runs, so setting 0 means it will not expire
 			AllowAccessAllAPIs:   false,
 			AccessibleAPIs: []apistructs.AccessibleAPI{
 				// PIPELINE_TASK_GET_BOOTSTRAP_INFO
@@ -655,7 +662,12 @@ func (pre *prepare) generateOpenapiTokenForPullBootstrapInfo(task *spec.Pipeline
 				httputil.OrgHeader:      pre.P.Labels[apistructs.LabelOrgID],
 			},
 		},
-	})
+	}
+	if pre.EdgeRegister.IsEdge() {
+		tokenInfo, err = pre.EdgeRegister.GetAccessToken(req)
+	} else {
+		tokenInfo, err = pre.Bdl.GetOAuth2Token(req)
+	}
 	if err != nil {
 		return err
 	}

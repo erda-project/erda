@@ -129,7 +129,7 @@ func (p *provider) do() error {
 
 	// init services
 	pipelineSvc := pipelinesvc.New(appSvc, p.CronDaemon, actionAgentSvc, extMarketSvc, p.CronService,
-		permissionSvc, queueManage, dbClient, bdl, publisher, p.Engine, js, etcdctl, p.ClusterInfo, p.Cache)
+		permissionSvc, queueManage, dbClient, bdl, publisher, p.Engine, js, etcdctl, p.ClusterInfo, p.EdgeRegister, p.Cache)
 	pipelineSvc.WithCmsService(p.CmsService)
 	pipelineSvc.WithSecret(p.Secret)
 	pipelineSvc.WithUser(p.User)
@@ -177,6 +177,7 @@ func (p *provider) do() error {
 		endpoints.WithEngine(p.Engine),
 		endpoints.WithClusterInfo(p.ClusterInfo),
 		endpoints.WithEdgePipeline(p.EdgePipeline),
+		endpoints.WithEdgeRegister(p.EdgeRegister),
 		endpoints.WithMysql(p.MySQL),
 		endpoints.WithRun(p.PipelineRun),
 		endpoints.WithCancel(p.Cancel),

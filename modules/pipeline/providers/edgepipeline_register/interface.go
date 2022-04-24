@@ -16,6 +16,7 @@ package edgepipeline_register
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/url"
 	"time"
@@ -27,7 +28,51 @@ import (
 )
 
 type Interface interface {
+	GetAccessToken(req apistructs.OAuth2TokenGetRequest) (*apistructs.OAuth2Token, error)
+	GetOAuth2Token(req apistructs.OAuth2TokenGetRequest) (*apistructs.OAuth2Token, error)
+	GetEdgePipelineEnvs() apistructs.ClusterDialerClientDetail
+	CheckAccessToken(token string) error
+	CheckAccessTokenFromHttpRequest(req *http.Request) error
+	IsEdge() bool
 	//RegisterEdgeToDialer(ctx context.Context)
+}
+
+func (p *provider) GetAccessToken(req apistructs.OAuth2TokenGetRequest) (*apistructs.OAuth2Token, error) {
+	return &apistructs.OAuth2Token{
+		AccessToken: p.Cfg.accessToken,
+		ExpiresIn:   0,
+		TokenType:   "Bearer",
+	}, nil
+}
+
+func (p *provider) GetOAuth2Token(req apistructs.OAuth2TokenGetRequest) (*apistructs.OAuth2Token, error) {
+	return &apistructs.OAuth2Token{
+		AccessToken: p.Cfg.accessToken,
+		ExpiresIn:   0,
+		TokenType:   "Bearer",
+	}, nil
+}
+
+func (p *provider) CheckAccessTokenFromHttpRequest(req *http.Request) error {
+	if p.Cfg.IsEdge {
+		token := req.Header.Get("Authorization")
+		return p.CheckAccessToken(token)
+	}
+	return nil
+}
+
+func (p *provider) CheckAccessToken(token string) error {
+	if token != p.Cfg.accessToken {
+		return fmt.Errorf("invalid access token")
+	}
+	return nil
+}
+
+func (p *provider) GetEdgePipelineEnvs() apistructs.ClusterDialerClientDetail {
+	return apistructs.ClusterDialerClientDetail{
+		apistructs.ClusterDialerDataKeyPipelineAddr: p.Cfg.PipelineAddr,
+		apistructs.ClusterDialerDataKeyPipelineHost: p.Cfg.PipelineHost,
+	}
 }
 
 // RegisterEdgeToDialer only registers the edge to the dialer
@@ -60,6 +105,10 @@ func (p *provider) RegisterEdgeToDialer(ctx context.Context) {
 			// retry connect dialer
 		}
 	}
+}
+
+func (p *provider) IsEdge() bool {
+	return p.Cfg.IsEdge
 }
 
 func (p *provider) ConnectAuthorizer(proto string, address string) bool {
