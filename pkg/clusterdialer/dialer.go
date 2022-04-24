@@ -74,28 +74,30 @@ func DialContextTCP(clusterKey string) DialContextProtoFunc {
 }
 
 func queryClusterDialerIP(clusterKey interface{}) (interface{}, bool) {
-	logrus.Debugf("start querying clusterDialer IP...")
+	log := logrus.WithField("func", "DialContext")
+
+	log.Debugf("start querying clusterDialer IP in dialContext...")
 	host := "http://" + discover.ClusterDialer()
 	resp, err := http.Get(host + fmt.Sprintf("/clusterdialer/ip?clusterKey=%s", clusterKey))
 	if err != nil {
-		logrus.Errorf("failed to request clsuterdialer in cache updating, %v", err)
+		log.Errorf("failed to request clsuterdialer in cache updating in dialContext, %v", err)
 		return "", false
 	}
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
-		logrus.Errorf("failed to read from resp in cache updating, %v", err)
+		log.Errorf("failed to read from resp in cache updating, %v", err)
 		return "", false
 	}
 	r := make(map[string]interface{})
 	if err = json.Unmarshal(data, &r); err != nil {
-		logrus.Errorf("failed to unmarshal resp in cache updating, %v", err)
+		log.Errorf("failed to unmarshal resp in cache updating, %v", err)
 		return "", false
 	}
 
 	succeeded, _ := r["succeeded"].(bool)
 	if !succeeded {
 		errStr, _ := r["error"].(string)
-		logrus.Errorf("return error from clusterdialer in cache updating, %s", errStr)
+		log.Errorf("return error from clusterdialer in cache updating, %s", errStr)
 		return "", false
 	}
 

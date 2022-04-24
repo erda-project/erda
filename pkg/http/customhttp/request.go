@@ -21,15 +21,18 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda/pkg/cache"
 	"github.com/erda-project/erda/pkg/discover"
 )
 
 var (
 	ErrInvalidAddr = Error{"customhttp: invalid inetaddr"}
+	ipCache        = cache.New("clusterDialerEndpoint", time.Second*30, queryClusterDialerIP)
 )
 
 type Error struct {
@@ -91,9 +94,10 @@ func NewRequest(method, url string, body io.Reader) (*http.Request, error) {
 		return nil, err
 	}
 
-	clusterDialerEndpoint, err := queryClusterDialerIP(portalHost)
-	if err != nil {
-		return nil, err
+	clusterDialerEndpoint, ok := ipCache.LoadWithUpdate(portalHost)
+	if !ok {
+		logrus.Errorf("failed to get clusterDialer endpoint for portal host %s", portalHost)
+		return nil, errors.Errorf("failed to get clusterDialer endpoint for portal host %s", portalHost)
 	}
 	logrus.Infof("[DEBUG] get cluster dialer endpoint succeeded, IP: %s", clusterDialerEndpoint)
 
@@ -107,30 +111,34 @@ func NewRequest(method, url string, body io.Reader) (*http.Request, error) {
 	return request, nil
 }
 
-func queryClusterDialerIP(clusterKey string) (string, error) {
+func queryClusterDialerIP(clusterKey interface{}) (interface{}, bool) {
+	log := logrus.WithField("func", "NetPortal NewRequest")
+
+	log.Debug("start querying clusterDialer IP in netPortal NewRequest...")
 	host := "http://" + discover.ClusterDialer()
 	resp, err := http.Get(host + fmt.Sprintf("/clusterdialer/ip?clusterKey=%s", clusterKey))
 	if err != nil {
-		return "", err
+		log.Errorf("failed to request clsuterdialer in cache updating in netPortal NewRequest, %v", err)
+		return "", false
 	}
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", errors.Errorf("failed to read from resp, %v", err)
+		log.Errorf("failed to read from resp in cache updating , %v", err)
+		return "", false
 	}
 	r := make(map[string]interface{})
 	if err = json.Unmarshal(data, &r); err != nil {
-		return "", errors.Errorf("failed to unmarshal resp, %v", err)
+		log.Errorf("failed to unmarshal resp, %v", err)
+		return "", false
 	}
 
 	succeeded, _ := r["succeeded"].(bool)
 	if !succeeded {
 		errStr, _ := r["error"].(string)
-		return "", errors.Errorf(errStr)
+		log.Errorf("reutrn error from clusterdialer in cache updating, %s", errStr)
+		return "", false
 	}
 
 	ip, _ := r["IP"].(string)
-	if ip == "" {
-		return "", errors.Errorf("clusterKey %s not found", clusterKey)
-	}
-	return ip, nil
+	return ip, true
 }
