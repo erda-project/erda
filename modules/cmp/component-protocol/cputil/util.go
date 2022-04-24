@@ -263,7 +263,7 @@ func GetImpersonateClient(steveServer cmp.SteveServer, userID, orgID, clusterNam
 	config.Impersonate.Groups = user.GetGroups()
 	config.Impersonate.Extra = user.GetExtra()
 
-	client, err := k8sclient.NewForRestConfig(config, scheme.LocalSchemeBuilder...)
+	client, err := k8sclient.NewForRestConfig(config, k8sclient.WithSchemes(scheme.LocalSchemeBuilder...))
 	if err != nil {
 		return nil, errors.Errorf("failed to get k8s client, %v", err)
 	}

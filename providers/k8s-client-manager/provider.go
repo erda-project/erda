@@ -59,7 +59,7 @@ func (p *provider) Init(ctx servicehub.Context) (err error) {
 		if err != nil {
 			return nil, err
 		}
-		client, err := k8sclient.NewForRestConfig(rc, scheme.LocalSchemeBuilder...)
+		client, err := k8sclient.NewForRestConfig(rc, k8sclient.WithSchemes(scheme.LocalSchemeBuilder...))
 		if err != nil {
 			return nil, err
 		}

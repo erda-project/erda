@@ -304,7 +304,7 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 
 	rc.Timeout = conf.ExecutorClientTimeout()
 
-	k8sClient, err := k8sclient.NewForRestConfig(rc, scheme.LocalSchemeBuilder...)
+	k8sClient, err := k8sclient.NewForRestConfig(rc, k8sclient.WithSchemes(scheme.LocalSchemeBuilder...))
 	if err != nil {
 		return nil, errors.Errorf("failed to get k8s client for cluster %s, %v", clusterName, err)
 	}
