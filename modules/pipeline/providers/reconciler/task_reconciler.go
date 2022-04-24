@@ -346,7 +346,7 @@ func (tr *defaultTaskReconciler) PrepareBeforeReconcileSnippetPipeline(ctx conte
 
 	// set snippetDetail for snippetTask
 	var snippetPipelineTasks []*spec.PipelineTask
-	snippetPipelineTasks, err := tr.r.ymlTaskMergeDBTasks(sp)
+	snippetPipelineTasks, err := tr.r.YmlTaskMergeDBTasks(sp)
 	if err != nil {
 		return err
 	}
@@ -406,10 +406,10 @@ func (tr *defaultTaskReconciler) tryCorrectFromExecutorBeforeReconcile(ctx conte
 
 func (tr *defaultTaskReconciler) judgeIfExpression(ctx context.Context, p *spec.Pipeline, task *spec.PipelineTask) error {
 	// if calculated pipeline status is failed and current task have no if expression(cannot must run), set task no-need-run
-	if tr.pr.calculatedPipelineStatusByAllReconciledTasks.IsFailedStatus() {
+	if tr.pr.calculatedStatusForTaskUse.IsFailedStatus() {
 		needSetToNoNeedBySystem := false
 		// stopByUser -> force no-need-by-system -> not check if expression
-		if tr.pr.calculatedPipelineStatusByAllReconciledTasks == apistructs.PipelineStatusStopByUser {
+		if tr.pr.calculatedStatusForTaskUse == apistructs.PipelineStatusStopByUser {
 			needSetToNoNeedBySystem = true
 		}
 		// failed but not stopByUser -> check if expression
@@ -423,8 +423,8 @@ func (tr *defaultTaskReconciler) judgeIfExpression(ctx context.Context, p *spec.
 			return err
 		}
 		task.Status = apistructs.PipelineStatusNoNeedBySystem
-		tr.log.Infof("set task status to %s (calculatedPipelineStatusByAllReconciledTasks: %s, action if expression is empty), pipelineID: %d, taskID: %d, taskName: %s",
-			apistructs.PipelineStatusNoNeedBySystem, tr.pr.calculatedPipelineStatusByAllReconciledTasks, p.ID, task.ID, task.Name)
+		tr.log.Infof("set task status to %s (calculatedStatusForTaskUse: %s, action if expression is empty), pipelineID: %d, taskID: %d, taskName: %s",
+			apistructs.PipelineStatusNoNeedBySystem, tr.pr.calculatedStatusForTaskUse, p.ID, task.ID, task.Name)
 	}
 	return nil
 }
