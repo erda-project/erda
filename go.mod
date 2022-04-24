@@ -79,6 +79,7 @@ require (
 	github.com/gogap/stack v0.0.0-20150131034635-fef68dddd4f8 // indirect
 	github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3
 	github.com/golang-jwt/jwt v3.2.1+incompatible
+	github.com/golang/glog v1.0.0 // indirect
 	github.com/golang/mock v1.6.0
 	github.com/golang/protobuf v1.5.2
 	github.com/golang/snappy v0.0.4
@@ -88,6 +89,7 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/schema v1.1.0
 	github.com/gorilla/websocket v1.4.2
+	github.com/grpc-ecosystem/grpc-gateway v1.16.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.0
 	github.com/hpcloud/tail v1.0.0
 	github.com/igm/sockjs-go v3.0.0+incompatible // indirect
@@ -173,9 +175,9 @@ require (
 	golang.org/x/text v0.3.7
 	golang.org/x/time v0.0.0-20210611083556-38a9dc6acbc6
 	google.golang.org/api v0.68.0 // indirect
-	google.golang.org/genproto v0.0.0-20220204002441-d6cc3cc0770e
-	google.golang.org/grpc v1.42.0
-	google.golang.org/protobuf v1.27.1
+	google.golang.org/genproto v0.0.0-20220420195807-44278fea765b
+	google.golang.org/grpc v1.45.0
+	google.golang.org/protobuf v1.28.0
 	gopkg.in/Knetic/govaluate.v3 v3.0.0
 	gopkg.in/flosch/pongo2.v3 v3.0.0-20141028000813-5e81b817a0c4
 	gopkg.in/igm/sockjs-go.v2 v2.0.0
