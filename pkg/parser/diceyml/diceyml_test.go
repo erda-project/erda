@@ -294,9 +294,6 @@ services:
       port: 9095
       protocol: TCP
     - l4_protocol: TCP
-      port: 9096
-      protocol: TCP
-    - l4_protocol: TCP
       port: 8096
       protocol: TCP
     resources:
