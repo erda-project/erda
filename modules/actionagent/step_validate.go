@@ -244,6 +244,7 @@ func (agent *Agent) configCollector() {
 		return
 	}
 	agent.EasyUse.CollectorAddr = collectorAddr
+	agent.CallbackReporter.SetCollectorAddress(collectorAddr)
 
 	// task log id
 	taskLogID := os.Getenv(EnvTaskLogID)

@@ -30,6 +30,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/pkg/errorsx"
 	"github.com/erda-project/erda/modules/pipeline/providers/cache"
 	"github.com/erda-project/erda/modules/pipeline/providers/clusterinfo"
+	"github.com/erda-project/erda/modules/pipeline/providers/edgepipeline_register"
 	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/rutil"
 	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/taskpolicy"
 	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/taskrun"
@@ -56,12 +57,13 @@ type TaskReconciler interface {
 }
 
 type defaultTaskReconciler struct {
-	log         logs.Logger
-	policy      taskpolicy.Interface
-	cache       cache.Interface
-	clusterInfo clusterinfo.Interface
-	r           *provider
-	pr          *defaultPipelineReconciler
+	log          logs.Logger
+	policy       taskpolicy.Interface
+	cache        cache.Interface
+	clusterInfo  clusterinfo.Interface
+	edgeRegister edgepipeline_register.Interface
+	r            *provider
+	pr           *defaultPipelineReconciler
 
 	// internal fields
 	dbClient             *dbclient.Client
@@ -202,7 +204,7 @@ func (tr *defaultTaskReconciler) ReconcileNormalTask(ctx context.Context, p *spe
 		}
 
 		// generate framework to run task
-		framework = taskrun.New(ctx, task, executor, p, tr.bdl, tr.dbClient, tr.actionAgentSvc, tr.extMarketSvc, tr.clusterInfo, tr.defaultRetryInterval)
+		framework = taskrun.New(ctx, task, executor, p, tr.bdl, tr.dbClient, tr.actionAgentSvc, tr.extMarketSvc, tr.clusterInfo, tr.edgeRegister, tr.defaultRetryInterval)
 		return rutil.ContinueWorkingAbort
 	}, rutil.WithContinueWorkingDefaultRetryInterval(tr.defaultRetryInterval))
 

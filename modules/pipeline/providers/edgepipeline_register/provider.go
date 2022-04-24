@@ -16,6 +16,7 @@ package edgepipeline_register
 
 import (
 	"context"
+	"os"
 	"reflect"
 	"time"
 
@@ -33,6 +34,8 @@ type Config struct {
 	ClusterDialEndpoint        string        `file:"cluster_dialer_endpoint" desc:"cluster dialer endpoint"`
 	ClusterAccessKey           string        `file:"cluster_access_key" desc:"cluster access key, if specified will doesn't start watcher"`
 	RetryConnectDialerInterval time.Duration `file:"retry_cluster_hook_interval" default:"1s"`
+	AccessTokenFile            string        `env:"ACCESS_TOKEN_FILE" default:"/var/run/secrets/kubernetes.io/serviceaccount/token"`
+	accessToken                string
 }
 
 type provider struct {
@@ -44,6 +47,13 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
+	if p.Cfg.IsEdge {
+		accessToken, err := os.ReadFile(p.Cfg.AccessTokenFile)
+		if err != nil {
+			p.Log.Panicf("failed to read access token file: %s, err: %v", p.Cfg.AccessTokenFile, err)
+		}
+		p.Cfg.accessToken = string(accessToken)
+	}
 	return nil
 }
 

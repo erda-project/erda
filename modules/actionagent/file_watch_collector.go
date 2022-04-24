@@ -15,9 +15,6 @@
 package actionagent
 
 import (
-	"bytes"
-	"encoding/json"
-	"fmt"
 	"os"
 	"sync"
 	"time"
@@ -25,7 +22,6 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
 var stdoutLogs = &[]apistructs.LogPushLine{}
@@ -115,21 +111,5 @@ func (agent *Agent) asyncPushCollectorLog() {
 }
 
 func (agent *Agent) pushCollectorLog(logLines *[]apistructs.LogPushLine) error {
-	var respBody bytes.Buffer
-	b, _ := json.Marshal(logLines)
-	logrus.Debugf("push collector log data: %s", string(b))
-	resp, err := httpclient.New(httpclient.WithCompleteRedirect()).
-		Post(agent.EasyUse.CollectorAddr).
-		Path("/collect/logs/job").
-		JSONBody(logLines).
-		Header("Content-Type", "application/json").
-		Do().
-		Body(&respBody)
-	if err != nil {
-		return fmt.Errorf("failed to push log to collector, err: %v", err)
-	}
-	if !resp.IsOK() {
-		return fmt.Errorf("failed to push log to collector, resp body: %s", respBody.String())
-	}
-	return nil
+	return agent.CallbackReporter.PushCollectorLog(logLines)
 }

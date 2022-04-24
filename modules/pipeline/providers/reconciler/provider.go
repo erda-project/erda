@@ -27,6 +27,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/providers/cache"
 	"github.com/erda-project/erda/modules/pipeline/providers/clusterinfo"
 	"github.com/erda-project/erda/modules/pipeline/providers/cron/compensator"
+	"github.com/erda-project/erda/modules/pipeline/providers/edgepipeline_register"
 	"github.com/erda-project/erda/modules/pipeline/providers/leaderworker"
 	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/taskpolicy"
 	"github.com/erda-project/erda/modules/pipeline/providers/resourcegc"
@@ -43,6 +44,7 @@ type provider struct {
 	Cache           cache.Interface
 	TaskPolicy      taskpolicy.Interface
 	ClusterInfo     clusterinfo.Interface
+	EdgeRegister    edgepipeline_register.Interface
 	ResourceGC      resourcegc.Interface
 	CronCompensator compensator.Interface
 
