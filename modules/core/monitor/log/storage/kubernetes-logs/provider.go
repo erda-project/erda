@@ -42,14 +42,12 @@ type (
 		Loader  loader.Interface    `autowired:"elasticsearch.index.loader@log"`
 		Clients k8sclient.Interface `autowired:"k8s-client-manager"`
 
-		ctx  servicehub.Context
-		pods PodInfoQueryer
+		ctx servicehub.Context
 	}
 )
 
 func (p *provider) Init(ctx servicehub.Context) (err error) {
 	p.ctx = ctx
-	p.pods = newPodInfoQueryer(p)
 	return nil
 }
 
@@ -68,7 +66,6 @@ func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}
 				return client.CoreV1().Pods(it.podNamespace).GetLogs(it.podName, opts).Stream(it.ctx)
 			}, nil
 		},
-		pods:        p.pods,
 		bufferLines: int64(p.Cfg.BufferLines),
 		timeSpan:    int64(p.Cfg.TimeSpan),
 	}

@@ -5,7 +5,6 @@ package client
 
 import (
 	context "context"
-
 	grpc "github.com/erda-project/erda-infra/pkg/transport/grpc"
 	pb "github.com/erda-project/erda-proto-go/core/monitor/log/query/pb"
 	grpc1 "google.golang.org/grpc"
@@ -43,6 +42,10 @@ func (s *logQueryServiceWrapper) GetLog(ctx context.Context, req *pb.GetLogReque
 
 func (s *logQueryServiceWrapper) GetLogByRuntime(ctx context.Context, req *pb.GetLogByRuntimeRequest) (*pb.GetLogByRuntimeResponse, error) {
 	return s.client.GetLogByRuntime(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+}
+
+func (s *logQueryServiceWrapper) GetLogByRealtime(ctx context.Context, req *pb.GetLogByRuntimeRequest) (*pb.GetLogByRuntimeResponse, error) {
+	return s.client.GetLogByRealtime(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }
 
 func (s *logQueryServiceWrapper) GetLogByOrganization(ctx context.Context, req *pb.GetLogByOrganizationRequest) (*pb.GetLogByOrganizationResponse, error) {

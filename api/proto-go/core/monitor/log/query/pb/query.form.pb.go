@@ -6,13 +6,12 @@ package pb
 import (
 	base64 "encoding/base64"
 	json "encoding/json"
-	url "net/url"
-	strconv "strconv"
-	strings "strings"
-
 	urlenc "github.com/erda-project/erda-infra/pkg/urlenc"
 	anypb "google.golang.org/protobuf/types/known/anypb"
 	structpb "google.golang.org/protobuf/types/known/structpb"
+	url "net/url"
+	strconv "strconv"
+	strings "strings"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -186,6 +185,14 @@ func (m *GetLogByRuntimeRequest) UnmarshalURLValues(prefix string, values url.Va
 					return err
 				}
 				m.Debug = val
+			case "podName":
+				m.PodName = vals[0]
+			case "podNamespace":
+				m.PodNamespace = vals[0]
+			case "containerName":
+				m.ContainerName = vals[0]
+			case "clusterName":
+				m.ClusterName = vals[0]
 			}
 		}
 	}
