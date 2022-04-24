@@ -21,12 +21,16 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/pkg/crypto/uuid"
 )
 
 func (client *Client) CreatePipelineReport(report *spec.PipelineReport, ops ...SessionOption) error {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
+	if report.ID == 0 {
+		report.ID = uuid.SnowFlakeIDUint64()
+	}
 	_, err := session.InsertOne(report)
 	return err
 }

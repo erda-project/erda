@@ -23,6 +23,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/retry"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -65,6 +66,10 @@ func (client *Client) CreatePipelineLabels(p *spec.Pipeline, ops ...SessionOptio
 			TargetID:        p.ID,
 			Key:             k,
 			Value:           v,
+			ID:              p.ID,
+		}
+		if label.ID == 0 {
+			label.ID = uuid.SnowFlakeIDUint64()
 		}
 		labels = append(labels, label)
 	}

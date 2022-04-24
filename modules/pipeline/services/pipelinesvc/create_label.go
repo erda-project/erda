@@ -20,6 +20,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/pkg/crypto/uuid"
 )
 
 func (s *PipelineSvc) BatchCreateLabels(createReq *apistructs.PipelineLabelBatchInsertRequest) error {
@@ -34,6 +35,7 @@ func (s *PipelineSvc) BatchCreateLabels(createReq *apistructs.PipelineLabelBatch
 			PipelineSource:  label.PipelineSource,
 			TimeCreated:     time.Now(),
 			TimeUpdated:     time.Now(),
+			ID:              uuid.SnowFlakeIDUint64(),
 		})
 	}
 	err := s.dbClient.BatchInsertLabels(insertLabels)

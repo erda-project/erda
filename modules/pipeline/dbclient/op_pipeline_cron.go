@@ -19,6 +19,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/pkg/crypto/uuid"
 )
 
 // return: result, total, nil
@@ -140,6 +141,9 @@ func (client *Client) CheckExistPipelineCronByApplicationBranchYmlName(applicati
 }
 
 func (client *Client) CreatePipelineCron(cron *spec.PipelineCron) error {
+	if cron.ID == 0 {
+		cron.ID = uuid.SnowFlakeIDUint64()
+	}
 	_, err := client.InsertOne(cron)
 	return errors.Wrapf(err, "failed to create pipeline cron, applicationID [%d], branch [%s], expr [%s], enable [%v]", cron.ApplicationID, cron.Branch, cron.CronExpr, cron.Enable)
 }
