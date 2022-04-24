@@ -125,6 +125,7 @@ kubernetes-logs-storage:
   pod_info_cache_size: 256
   pod_info_cache_expiration: "3h"
   buffer_lines: 200
+  time_span: "3m"
 log-storage-cassandra:
   _enable: ${QUERY_LOG_FROM_CASSANDRA_ENABLE:false}
   read_page_size: 201

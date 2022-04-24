@@ -73,6 +73,17 @@ func (s *logQueryService) GetLogByRuntime(ctx context.Context, req *pb.GetLogByR
 	return &pb.GetLogByRuntimeResponse{Lines: items}, nil
 }
 
+func (s *logQueryService) GetLogByRealtime(ctx context.Context, req *pb.GetLogByRuntimeRequest) (*pb.GetLogByRuntimeResponse, error) {
+	items, err := s.queryRealLogItems(ctx, req, func(sel *storage.Selector) *storage.Selector {
+		s.tryFillQueryMeta(ctx, sel)
+		return sel
+	}, true)
+	if err != nil {
+		return nil, err
+	}
+	return &pb.GetLogByRuntimeResponse{Lines: items}, nil
+}
+
 func (s *logQueryService) GetLogByOrganization(ctx context.Context, req *pb.GetLogByOrganizationRequest) (*pb.GetLogByOrganizationResponse, error) {
 	if len(req.ClusterName) <= 0 {
 		return nil, errors.NewMissingParameterError("clusterName")
@@ -241,6 +252,34 @@ func (s *logQueryService) toAggregation(req *pb.LogAggregationRequest) (*storage
 	}
 
 	return agg, nil
+}
+
+func (s *logQueryService) queryRealLogItems(ctx context.Context, req Request, fn func(sel *storage.Selector) *storage.Selector, ascendingResult bool) ([]*pb.LogItem, error) {
+	sel, err := toQuerySelector(req)
+	if err != nil {
+		return nil, err
+	}
+	if fn != nil {
+		sel = fn(sel)
+	}
+
+	if req.GetLive() != true {
+		return nil, fmt.Errorf("no supported to stop container of real log")
+	}
+	if sel.Scheme != "container" {
+		return nil, fmt.Errorf("no supported query %s of real log", sel.Scheme)
+	}
+	it, err := s.tryGetIterator(ctx, sel, s.k8sReader)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	defer it.Close()
+
+	items, err := toLogItems(ctx, it, req.GetCount() >= 0, getLimit(req.GetCount()), ascendingResult)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	return items, nil
 }
 
 func (s *logQueryService) queryLogItems(ctx context.Context, req Request, fn func(sel *storage.Selector) *storage.Selector, ascendingResult bool, withTotal bool) ([]*pb.LogItem, int64, error) {
@@ -433,6 +472,13 @@ type Request interface {
 	GetDebug() bool
 }
 
+type ByContainerMetaRequest interface {
+	Request
+	GetPodName() string
+	GetPodNamespace() string
+	GetContainerName() string
+	GetClusterName() string
+}
 type ByContainerIdRequest interface {
 	Request
 	GetOffset() int64
@@ -570,6 +616,41 @@ func toQuerySelector(req Request) (*storage.Selector, error) {
 				PreferredIterateStyle: storage.IterateStyle(meta.PreferredIterateStyle),
 			}
 		}
+	}
+
+	if byContainerMetaRequest, ok := req.(ByContainerMetaRequest); ok {
+		if len(byContainerMetaRequest.GetContainerName()) > 0 {
+			sel.Filters = append(sel.Filters, &storage.Filter{
+				Key:   "container_name",
+				Op:    storage.EQ,
+				Value: byContainerMetaRequest.GetContainerName(),
+			})
+		}
+
+		if len(byContainerMetaRequest.GetPodName()) > 0 {
+			sel.Filters = append(sel.Filters, &storage.Filter{
+				Key:   "pod_name",
+				Op:    storage.EQ,
+				Value: byContainerMetaRequest.GetPodName(),
+			})
+		}
+
+		if len(byContainerMetaRequest.GetPodNamespace()) > 0 {
+			sel.Filters = append(sel.Filters, &storage.Filter{
+				Key:   "pod_namespace",
+				Op:    storage.EQ,
+				Value: byContainerMetaRequest.GetPodNamespace(),
+			})
+		}
+
+		if len(byContainerMetaRequest.GetClusterName()) > 0 {
+			sel.Filters = append(sel.Filters, &storage.Filter{
+				Key:   "cluster_name",
+				Op:    storage.EQ,
+				Value: byContainerMetaRequest.GetClusterName(),
+			})
+		}
+
 	}
 
 	return sel, nil

@@ -5,7 +5,6 @@ package pb
 
 import (
 	context "context"
-
 	transport "github.com/erda-project/erda-infra/pkg/transport"
 	grpc1 "github.com/erda-project/erda-infra/pkg/transport/grpc"
 	grpc "google.golang.org/grpc"
@@ -25,6 +24,8 @@ type LogQueryServiceClient interface {
 	GetLog(ctx context.Context, in *GetLogRequest, opts ...grpc.CallOption) (*GetLogResponse, error)
 	// for runtime log
 	GetLogByRuntime(ctx context.Context, in *GetLogByRuntimeRequest, opts ...grpc.CallOption) (*GetLogByRuntimeResponse, error)
+	// for runtime log
+	GetLogByRealtime(ctx context.Context, in *GetLogByRuntimeRequest, opts ...grpc.CallOption) (*GetLogByRuntimeResponse, error)
 	// for organization log
 	GetLogByOrganization(ctx context.Context, in *GetLogByOrganizationRequest, opts ...grpc.CallOption) (*GetLogByOrganizationResponse, error)
 	GetLogByExpression(ctx context.Context, in *GetLogByExpressionRequest, opts ...grpc.CallOption) (*GetLogByExpressionResponse, error)
@@ -52,6 +53,15 @@ func (c *logQueryServiceClient) GetLog(ctx context.Context, in *GetLogRequest, o
 func (c *logQueryServiceClient) GetLogByRuntime(ctx context.Context, in *GetLogByRuntimeRequest, opts ...grpc.CallOption) (*GetLogByRuntimeResponse, error) {
 	out := new(GetLogByRuntimeResponse)
 	err := c.cc.Invoke(ctx, "/erda.core.monitor.log.query.LogQueryService/GetLogByRuntime", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *logQueryServiceClient) GetLogByRealtime(ctx context.Context, in *GetLogByRuntimeRequest, opts ...grpc.CallOption) (*GetLogByRuntimeResponse, error) {
+	out := new(GetLogByRuntimeResponse)
+	err := c.cc.Invoke(ctx, "/erda.core.monitor.log.query.LogQueryService/GetLogByRealtime", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -125,6 +135,8 @@ type LogQueryServiceServer interface {
 	GetLog(context.Context, *GetLogRequest) (*GetLogResponse, error)
 	// for runtime log
 	GetLogByRuntime(context.Context, *GetLogByRuntimeRequest) (*GetLogByRuntimeResponse, error)
+	// for runtime log
+	GetLogByRealtime(context.Context, *GetLogByRuntimeRequest) (*GetLogByRuntimeResponse, error)
 	// for organization log
 	GetLogByOrganization(context.Context, *GetLogByOrganizationRequest) (*GetLogByOrganizationResponse, error)
 	GetLogByExpression(context.Context, *GetLogByExpressionRequest) (*GetLogByExpressionResponse, error)
@@ -141,6 +153,9 @@ func (*UnimplementedLogQueryServiceServer) GetLog(context.Context, *GetLogReques
 }
 func (*UnimplementedLogQueryServiceServer) GetLogByRuntime(context.Context, *GetLogByRuntimeRequest) (*GetLogByRuntimeResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetLogByRuntime not implemented")
+}
+func (*UnimplementedLogQueryServiceServer) GetLogByRealtime(context.Context, *GetLogByRuntimeRequest) (*GetLogByRuntimeResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetLogByRealtime not implemented")
 }
 func (*UnimplementedLogQueryServiceServer) GetLogByOrganization(context.Context, *GetLogByOrganizationRequest) (*GetLogByOrganizationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetLogByOrganization not implemented")
@@ -191,6 +206,24 @@ func _LogQueryService_GetLogByRuntime_Handler(srv interface{}, ctx context.Conte
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(LogQueryServiceServer).GetLogByRuntime(ctx, req.(*GetLogByRuntimeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LogQueryService_GetLogByRealtime_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetLogByRuntimeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LogQueryServiceServer).GetLogByRealtime(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/erda.core.monitor.log.query.LogQueryService/GetLogByRealtime",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LogQueryServiceServer).GetLogByRealtime(ctx, req.(*GetLogByRuntimeRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -283,6 +316,10 @@ var _LogQueryService_serviceDesc = grpc.ServiceDesc{
 			Handler:    _LogQueryService_GetLogByRuntime_Handler,
 		},
 		{
+			MethodName: "GetLogByRealtime",
+			Handler:    _LogQueryService_GetLogByRealtime_Handler,
+		},
+		{
 			MethodName: "GetLogByOrganization",
 			Handler:    _LogQueryService_GetLogByOrganization_Handler,
 		},
@@ -327,6 +364,15 @@ func _get_LogQueryService_serviceDesc(srv LogQueryServiceServer, opts ...grpc1.H
 	if h.Interceptor != nil {
 		_LogQueryService_GetLogByRuntime_info = transport.NewServiceInfo("erda.core.monitor.log.query.LogQueryService", "GetLogByRuntime", srv)
 		_LogQueryService_GetLogByRuntime_Handler = h.Interceptor(_LogQueryService_GetLogByRuntime_Handler)
+	}
+
+	_LogQueryService_GetLogByRealtime_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.GetLogByRealtime(ctx, req.(*GetLogByRuntimeRequest))
+	}
+	var _LogQueryService_GetLogByRealtime_info transport.ServiceInfo
+	if h.Interceptor != nil {
+		_LogQueryService_GetLogByRealtime_info = transport.NewServiceInfo("erda.core.monitor.log.query.LogQueryService", "GetLogByRealtime", srv)
+		_LogQueryService_GetLogByRealtime_Handler = h.Interceptor(_LogQueryService_GetLogByRealtime_Handler)
 	}
 
 	_LogQueryService_GetLogByOrganization_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
@@ -402,6 +448,29 @@ func _get_LogQueryService_serviceDesc(srv LogQueryServiceServer, opts ...grpc1.H
 					FullMethod: "/erda.core.monitor.log.query.LogQueryService/GetLogByRuntime",
 				}
 				return interceptor(ctx, in, info, _LogQueryService_GetLogByRuntime_Handler)
+			},
+		},
+		{
+			MethodName: "GetLogByRealtime",
+			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+				in := new(GetLogByRuntimeRequest)
+				if err := dec(in); err != nil {
+					return nil, err
+				}
+				if interceptor == nil && h.Interceptor == nil {
+					return srv.(LogQueryServiceServer).GetLogByRealtime(ctx, in)
+				}
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _LogQueryService_GetLogByRealtime_info)
+				}
+				if interceptor == nil {
+					return _LogQueryService_GetLogByRealtime_Handler(ctx, in)
+				}
+				info := &grpc.UnaryServerInfo{
+					Server:     srv,
+					FullMethod: "/erda.core.monitor.log.query.LogQueryService/GetLogByRealtime",
+				}
+				return interceptor(ctx, in, info, _LogQueryService_GetLogByRealtime_Handler)
 			},
 		},
 		{
