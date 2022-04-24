@@ -28,7 +28,7 @@ import (
 	"k8s.io/klog/v2"
 
 	"github.com/erda-project/erda-infra/base/version"
-	"github.com/erda-project/erda-proto-go/core/token/pb"
+	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/conf"
@@ -204,7 +204,7 @@ func (p *provider) do(ctx context.Context) (*httpserver.Server, error) {
 }
 
 func (p *provider) initEndpoints(ctx context.Context, db *dbclient.DBClient, js, cachedJS jsonstore.JsonStore, bdl *bundle.Bundle,
-	o *org_resource.OrgResource, c pb.TokenServiceServer, rt *resource.ReportTable) (*endpoints.Endpoints, error) {
+	o *org_resource.OrgResource, c tokenpb.TokenServiceServer, rt *resource.ReportTable) (*endpoints.Endpoints, error) {
 
 	// compose endpoints
 	ep := endpoints.New(

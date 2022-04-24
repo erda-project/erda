@@ -20,7 +20,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda-proto-go/core/token/pb"
+	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 )
 
 type config struct {
@@ -32,7 +32,7 @@ type config struct {
 type provider struct {
 	Cfg          *config
 	Log          logs.Logger
-	TokenService pb.TokenServiceServer `autowired:"erda.core.token.TokenService"`
+	TokenService tokenpb.TokenServiceServer `autowired:"erda.core.token.TokenService"`
 
 	accessKeyValidator *accessKeyValidator
 }

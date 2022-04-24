@@ -18,10 +18,10 @@ import (
 	"context"
 	"sync"
 
-	"github.com/erda-project/erda-proto-go/core/token/pb"
+	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 )
 
-type AccessItemCollection map[string]*pb.Token
+type AccessItemCollection map[string]*tokenpb.Token
 
 type Validator interface {
 	// Validate +Validate
@@ -31,7 +31,7 @@ type Validator interface {
 type accessKeyValidator struct {
 	sync.RWMutex
 	collection   AccessItemCollection
-	TokenService pb.TokenServiceServer
+	TokenService tokenpb.TokenServiceServer
 }
 
 func (v *accessKeyValidator) syncFullAccessKeys(ctx context.Context) error {
@@ -39,9 +39,9 @@ func (v *accessKeyValidator) syncFullAccessKeys(ctx context.Context) error {
 		pageNumber int64 = 1
 		pageSize   int64 = 100
 	)
-	results := make([]*pb.Token, 0)
+	results := make([]*tokenpb.Token, 0)
 	for {
-		resp, err := v.TokenService.QueryTokens(ctx, &pb.QueryTokensRequest{
+		resp, err := v.TokenService.QueryTokens(ctx, &tokenpb.QueryTokensRequest{
 			PageNo:   pageNumber,
 			PageSize: pageSize,
 		})
