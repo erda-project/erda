@@ -26,7 +26,6 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/aop"
 	"github.com/erda-project/erda/modules/pipeline/aop/aoptypes"
 	"github.com/erda-project/erda/modules/pipeline/commonutil/costtimeutil"
-	"github.com/erda-project/erda/modules/pipeline/commonutil/statusutil"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/events"
 	"github.com/erda-project/erda/modules/pipeline/metrics"
@@ -140,19 +139,10 @@ func (pr *defaultPipelineReconciler) PrepareBeforeReconcile(ctx context.Context,
 
 	// set totalTaskNum before reconcile
 	rutil.ContinueWorking(ctx, pr.log, func(ctx context.Context) rutil.WaitDuration {
-		allTasks, err := pr.r.ymlTaskMergeDBTasks(p)
-		if err != nil {
-			pr.log.Errorf("failed to set flagHaveTask(auto retry), pipelineID: %d, err: %v", p.ID, err)
+		if err := pr.setTotalTaskNumberBeforeReconcilePipeline(ctx, p); err != nil {
+			pr.log.Errorf("failed to set totalTaskNumber before reconcile pipeline(auto retry), pipelineID: %d, err: %v", p.ID, err)
 			return rutil.ContinueWorkingWithDefaultInterval
 		}
-		// set processed tasks
-		for _, task := range allTasks {
-			task := task
-			if task.ID > 0 && (task.Status.IsEndStatus() || task.Status.IsDisabledStatus()) {
-				pr.processedTasks.Store(task.NodeName(), struct{}{})
-			}
-		}
-		pr.setTotalTaskNumber(len(allTasks))
 		return rutil.ContinueWorkingAbort
 	}, rutil.WithContinueWorkingDefaultRetryInterval(pr.defaultRetryInterval))
 }
@@ -161,7 +151,7 @@ func (pr *defaultPipelineReconciler) PrepareBeforeReconcile(ctx context.Context,
 // TODO using cache to store schedulable result after first calculated if could.
 func (pr *defaultPipelineReconciler) GetTasksCanBeConcurrentlyScheduled(ctx context.Context, p *spec.Pipeline) ([]*spec.PipelineTask, error) {
 	// get all tasks
-	allTasks, err := pr.r.ymlTaskMergeDBTasks(p)
+	allTasks, err := pr.r.YmlTaskMergeDBTasks(p)
 	if err != nil {
 		return nil, err
 	}
@@ -293,60 +283,6 @@ func (pr *defaultPipelineReconciler) TeardownAfterReconcileDone(ctx context.Cont
 	})
 }
 
-// updateCalculatedPipelineStatusForTaskUseField by:
-// 1. other flags (higher priority)
-// 2. all reconciled tasks
-func (pr *defaultPipelineReconciler) updateCalculatedPipelineStatusForTaskUseField(ctx context.Context, p *spec.Pipeline) error {
-	newStatus := p.Status
-	defer func() {
-		pr.calculatedStatusForTaskUse = newStatus
-	}()
-
-	// check if done
-	if newStatus.IsEndStatus() {
-		return nil
-	}
-
-	// check flags
-	if pr.flagCanceling {
-		newStatus = apistructs.PipelineStatusStopByUser
-		return nil
-	}
-
-	// calculate new status
-	calculatedStatus, err := pr.calculateNewStatusByReconciledTasks(ctx, p)
-	if err != nil {
-		pr.log.Errorf("failed to calculate new status by reconciled tasks(auto retry), pipelineID: %d, err: %v", p.ID, err)
-		return err
-	}
-	newStatus = calculatedStatus
-	return nil
-}
-
-func (pr *defaultPipelineReconciler) calculateNewStatusByReconciledTasks(ctx context.Context, p *spec.Pipeline) (apistructs.PipelineStatus, error) {
-	// get all reconciled tasks
-	reconciledDBTasks, err := pr.dbClient.ListPipelineTasksByPipelineID(p.ID)
-	if err != nil {
-		return "", err
-	}
-	var reconciledTasks []*spec.PipelineTask
-	for _, t := range reconciledDBTasks {
-		t := t
-		reconciledTasks = append(reconciledTasks, &t)
-	}
-
-	// calculate new pipeline status
-	calculatedPipelineStatusByAllReconciledTasks := statusutil.CalculatePipelineStatusV2(reconciledTasks)
-	// consider some special cases:
-	// - no reconciled tasks but pipeline actually have tasks (to resolve first time of loop)
-	if calculatedPipelineStatusByAllReconciledTasks.IsSuccessStatus() && len(reconciledTasks) == 0 && *pr.totalTaskNumber > 0 {
-		calculatedPipelineStatusByAllReconciledTasks = apistructs.PipelineStatusRunning
-	}
-
-	// update status
-	return calculatedPipelineStatusByAllReconciledTasks, nil
-}
-
 // CancelReconcile can reconcile one pipeline.
 // 1. set the canceling flag to ensure `calculatedStatusForTaskUse` correctly
 // 2. task-reconciler stop reconciling tasks automatically, see: modules/pipeline/providers/reconciler/taskrun/framework.go:143
@@ -356,22 +292,4 @@ func (pr *defaultPipelineReconciler) CancelReconcile(ctx context.Context, p *spe
 	pr.lock.Lock()
 	pr.flagCanceling = true
 	pr.lock.Unlock()
-}
-
-func (pr *defaultPipelineReconciler) getCalculatedStatusByAllReconciledTasks() apistructs.PipelineStatus {
-	pr.lock.Lock()
-	defer pr.lock.Unlock()
-	return pr.calculatedStatusForTaskUse
-}
-
-func (pr *defaultPipelineReconciler) getFlagCanceling() bool {
-	pr.lock.Lock()
-	defer pr.lock.Unlock()
-	return pr.flagCanceling
-}
-
-func (pr *defaultPipelineReconciler) setTotalTaskNumber(num int) {
-	pr.lock.Lock()
-	defer pr.lock.Unlock()
-	pr.totalTaskNumber = &num
 }

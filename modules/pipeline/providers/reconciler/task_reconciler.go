@@ -348,7 +348,7 @@ func (tr *defaultTaskReconciler) PrepareBeforeReconcileSnippetPipeline(ctx conte
 
 	// set snippetDetail for snippetTask
 	var snippetPipelineTasks []*spec.PipelineTask
-	snippetPipelineTasks, err := tr.r.ymlTaskMergeDBTasks(sp)
+	snippetPipelineTasks, err := tr.r.YmlTaskMergeDBTasks(sp)
 	if err != nil {
 		return err
 	}
