@@ -23,7 +23,7 @@ import (
 var ADMIN_DINGTALK_TEST = apis.ApiSpec{
 	Path:        "/api/admin/notify/dingtalk-test",
 	BackendPath: "/api/admin/notify/dingtalk-test",
-	Host:        "admin.marathon.l4lb.thisdcos.directory:9096",
+	Host:        "admin.marathon.l4lb.thisdcos.directory:9095",
 	Scheme:      "http",
 	Method:      http.MethodPost,
 	CheckLogin:  true,

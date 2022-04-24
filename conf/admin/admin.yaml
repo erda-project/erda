@@ -2,7 +2,7 @@ admin:
   debug: ${DEBUG:false}
 
 http-server:
-  addr: ":9096"
+  addr: ":9095"
   allow_cors: true
 
 
