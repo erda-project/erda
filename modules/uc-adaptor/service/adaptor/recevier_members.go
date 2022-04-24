@@ -53,6 +53,7 @@ func (mr *MemberReceiver) SendAudits(ucaudits *apistructs.UCAuditsListResponse) 
 				Mobile: audit.UserInfo.Mobile,
 				Name:   audit.UserInfo.UserName,
 				Nick:   audit.UserInfo.Nick,
+				Avatar: audit.UserInfo.Avatar,
 			}
 		}
 		if audit.EventType == "DESTROY" {

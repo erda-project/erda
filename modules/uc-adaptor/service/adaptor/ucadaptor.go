@@ -109,7 +109,7 @@ func (a *Adaptor) syncUcAudit() {
 	if err != nil {
 		logrus.Error(err)
 	}
-	if len(audits.Result) == 0 {
+	if audits == nil || len(audits.Result) == 0 {
 		return
 	}
 	// 执行每个receiver对审计的执行逻辑
