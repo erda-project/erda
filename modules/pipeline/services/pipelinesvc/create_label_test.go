@@ -15,25 +15,22 @@
 package pipelinesvc
 
 import (
-	"reflect"
 	"testing"
 
-	"bou.ke/monkey"
+	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/xormplus/xorm"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
-	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/pkg/crypto/uuid"
 )
 
 func TestPipelineSvc_BatchCreateLabels(t *testing.T) {
-	var dbClient *dbclient.Client
-
-	m := monkey.PatchInstanceMethod(reflect.TypeOf(dbClient), "BatchInsertLabels",
-		func(d *dbclient.Client, labels []spec.PipelineLabel, ops ...dbclient.SessionOption) error {
-			return nil
-		},
-	)
-	defer m.Unpatch()
+	db, mock, err := getEngine()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
 
 	type fields struct {
 		dbClient *dbclient.Client
@@ -42,14 +39,15 @@ func TestPipelineSvc_BatchCreateLabels(t *testing.T) {
 		createReq *apistructs.PipelineLabelBatchInsertRequest
 	}
 	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
+		name      string
+		fields    fields
+		args      args
+		wantErr   bool
+		wantValue uint64
 	}{
 		{
 			name:   "test batch create labels",
-			fields: fields{dbClient: dbClient},
+			fields: fields{dbClient: &dbclient.Client{Engine: db}},
 			args: args{createReq: &apistructs.PipelineLabelBatchInsertRequest{
 				Labels: []apistructs.PipelineLabel{
 					{
@@ -62,7 +60,8 @@ func TestPipelineSvc_BatchCreateLabels(t *testing.T) {
 					},
 				},
 			}},
-			wantErr: false,
+			wantErr:   false,
+			wantValue: uuid.SnowFlakeIDUint64(),
 		},
 	}
 
@@ -71,9 +70,33 @@ func TestPipelineSvc_BatchCreateLabels(t *testing.T) {
 			s := &PipelineSvc{
 				dbClient: tt.fields.dbClient,
 			}
-			if err := s.BatchCreateLabels(tt.args.createReq); (err != nil) != tt.wantErr {
+
+			mock.ExpectExec("INSERT INTO `pipeline_labels`").
+				WillReturnResult(sqlmock.NewResult(1, 1))
+			if err = s.BatchCreateLabels(tt.args.createReq); (err != nil) != tt.wantErr {
 				t.Errorf("BatchCreateLabels() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			// we make sure that all expectations were met
+			if err := mock.ExpectationsWereMet(); err != nil {
+				t.Errorf("there were unfulfilled expectations: %s", err)
 			}
 		})
 	}
+}
+
+func getEngine() (*xorm.Engine, sqlmock.Sqlmock, error) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	engine, err := xorm.NewEngine("mysql", "root:123@/test?charset=utf8")
+	if err != nil {
+		return nil, nil, err
+	}
+
+	engine.DB().DB = db
+	engine.ShowSQL(true)
+
+	return engine, mock, nil
 }
