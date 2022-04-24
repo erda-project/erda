@@ -16,12 +16,65 @@ package edgepipeline_register
 
 import (
 	"net/http"
+	"reflect"
 	"testing"
 
+	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 )
+
+func TestSourceWhiteList(t *testing.T) {
+	p := &provider{
+		Cfg: &Config{
+			AllowedSources: []string{"cdp-", "recommend-"},
+		},
+	}
+	tests := []struct {
+		name string
+		src  string
+		want bool
+	}{
+		{
+			name: "cdp source",
+			src:  "cdp-123",
+			want: true,
+		},
+		{
+			name: "default source",
+			src:  "default",
+			want: false,
+		},
+		{
+			name: "dice source",
+			src:  "dice",
+			want: false,
+		},
+		{
+			name: "valid source with prefix",
+			src:  "recommend-123",
+			want: true,
+		},
+		{
+			name: "invalid source with prefix",
+			src:  "invalid-123",
+			want: false,
+		},
+	}
+	patch := monkey.PatchInstanceMethod(reflect.TypeOf(p.bdl), "IsClusterDialerClientRegistered", func(_ *bundle.Bundle, _ string, _ string) (bool, error) {
+		return true, nil
+	})
+	defer patch.Unpatch()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := p.ShouldDispatchToEdge(tt.src, "dev"); got != tt.want {
+				t.Errorf("sourceWhiteList() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
 
 func Test_parseDialerEndpoint(t *testing.T) {
 	tests := []struct {
