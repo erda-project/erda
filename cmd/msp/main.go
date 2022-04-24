@@ -35,7 +35,7 @@ import (
 
 	_ "github.com/erda-project/erda-infra/providers/grpcclient"
 	_ "github.com/erda-project/erda-proto-go/core/monitor/diagnotor/client"
-	_ "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/client"
+	_ "github.com/erda-project/erda-proto-go/core/token/client"
 	_ "github.com/erda-project/erda/modules/core/monitor/settings"
 	_ "github.com/erda-project/erda/modules/core/monitor/settings/retention-strategy"
 	_ "github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/cleaner"

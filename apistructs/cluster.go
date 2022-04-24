@@ -54,7 +54,6 @@ const (
 const (
 	ErdaClusterCredential = "erda-cluster-credential"
 	ClusterAccessKey      = "CLUSTER_ACCESS_KEY"
-	CMPClusterScope       = "cmp_cluster"
 )
 
 // ClusterCreateRequest 集群创建请求

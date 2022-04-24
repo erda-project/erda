@@ -15,12 +15,15 @@
 package collector
 
 import (
+	"strings"
+
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/httpserver"
+	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/oap/collector/authentication"
 	"github.com/erda-project/erda/modules/oap/collector/core/model"
@@ -62,7 +65,7 @@ func (p *provider) tokenAuth() interface{} {
 				return false, nil
 			}
 
-			if p.Validator.Validate(apistructs.CMPClusterScope, clusterName, s) {
+			if p.Validator.Validate(strings.ToLower(tokenpb.ScopeEnum_CMP_CLUSTER.String()), clusterName, s) {
 				return true, nil
 			}
 

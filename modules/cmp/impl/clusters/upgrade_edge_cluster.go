@@ -27,7 +27,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 
-	credentialpb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
+	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/dbclient"
@@ -36,10 +36,10 @@ import (
 type Clusters struct {
 	db         *dbclient.DBClient
 	bdl        *bundle.Bundle
-	credential credentialpb.AccessKeyServiceServer
+	credential tokenpb.TokenServiceServer
 }
 
-func New(db *dbclient.DBClient, bdl *bundle.Bundle, c credentialpb.AccessKeyServiceServer) *Clusters {
+func New(db *dbclient.DBClient, bdl *bundle.Bundle, c tokenpb.TokenServiceServer) *Clusters {
 	return &Clusters{db: db, bdl: bdl, credential: c}
 }
 

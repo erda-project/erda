@@ -6,9 +6,9 @@ health:
 
 service-register:
 
-grpc-client@erda.core.services.authentication.credentials.accesskey.accessKeyService:
+grpc-client@erda.core.token:
   addr: "${CORE_SERVICES_GRPC_ADDR:core-services:9537}"
-erda.core.services.authentication.credentials.accesskey-client:
+erda.core.token-client:
 
 erda.oap.collector.interceptor:
 erda.oap.collector.authentication:

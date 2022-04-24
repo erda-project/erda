@@ -20,7 +20,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
-	akpb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
+	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 )
 
 type config struct {
@@ -30,9 +30,9 @@ type config struct {
 
 // +provider
 type provider struct {
-	Cfg              *config
-	Log              logs.Logger
-	AccessKeyService akpb.AccessKeyServiceServer `autowired:"erda.core.services.authentication.credentials.accesskey.AccessKeyService"`
+	Cfg          *config
+	Log          logs.Logger
+	TokenService tokenpb.TokenServiceServer `autowired:"erda.core.token.TokenService"`
 
 	accessKeyValidator *accessKeyValidator
 }
@@ -40,8 +40,8 @@ type provider struct {
 // Run this is optional
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.accessKeyValidator = &accessKeyValidator{
-		AccessKeyService: p.AccessKeyService,
-		collection:       AccessItemCollection{},
+		TokenService: p.TokenService,
+		collection:   AccessItemCollection{},
 	}
 	ctx.AddTask(p.InitAKItemTask)
 	ctx.AddTask(p.SyncAKItemTask)

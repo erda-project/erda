@@ -35,7 +35,7 @@ import (
 	"github.com/rancher/remotedialer"
 	"github.com/sirupsen/logrus"
 
-	credentialpb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
+	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cluster-dialer/auth"
@@ -297,7 +297,7 @@ func getClusterClient(server *remotedialer.Server, clusterKey string, timeout ti
 	return client
 }
 
-func Start(ctx context.Context, credential credentialpb.AccessKeyServiceServer, cfg *config.Config) error {
+func Start(ctx context.Context, credential tokenpb.TokenServiceServer, cfg *config.Config) error {
 	authorizer := auth.New(
 		auth.WithCredentialClient(credential),
 		auth.WithConfig(cfg),

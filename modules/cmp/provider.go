@@ -33,7 +33,7 @@ import (
 	monitor "github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
-	credentialpb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
+	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/cmp/metrics"
@@ -47,10 +47,10 @@ import (
 var scenarioFS embed.FS
 
 type provider struct {
-	Server      pb.MetricServiceServer              `autowired:"erda.core.monitor.metric.MetricService"`
-	Credential  credentialpb.AccessKeyServiceServer `autowired:"erda.core.services.authentication.credentials.accesskey.AccessKeyService" optional:"true"`
-	Register    transport.Register                  `autowired:"service-register" optional:"true"`
-	CronService cronpb.CronServiceServer            `autowired:"erda.core.pipeline.cron.CronService" required:"true"`
+	Server      pb.MetricServiceServer     `autowired:"erda.core.monitor.metric.MetricService"`
+	Credential  tokenpb.TokenServiceServer `autowired:"erda.core.token.TokenService" optional:"true"`
+	Register    transport.Register         `autowired:"service-register" optional:"true"`
+	CronService cronpb.CronServiceServer   `autowired:"erda.core.pipeline.cron.CronService" required:"true"`
 
 	Metrics         *metrics.Metric
 	Monitor         monitor.AlertServiceServer `autowired:"erda.core.monitor.alert.AlertService" optional:"true"`
