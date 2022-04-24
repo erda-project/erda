@@ -15,7 +15,6 @@
 package admin
 
 import (
-	"context"
 	"os"
 	"time"
 
@@ -27,6 +26,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	componentprotocol "github.com/erda-project/erda-infra/providers/component-protocol"
 	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
+	hs "github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/admin/dao"
@@ -50,6 +50,7 @@ type provider struct {
 	Config Config
 
 	Log      logs.Logger
+	Router   hs.Router `autowired:"http-router"`
 	Protocol componentprotocol.Interface
 	CPTran   i18n.I18n       `autowired:"i18n@cp"`
 	Tran     i18n.Translator `translator:"common"`
@@ -57,8 +58,9 @@ type provider struct {
 
 func init() {
 	servicehub.Register("admin", &servicehub.Spec{
-		Services:    []string{"admin"},
-		Description: "erda platform admin",
+		Services:     []string{"admin"},
+		Dependencies: []string{"http-server"},
+		Description:  "erda platform admin",
 		Creator: func() servicehub.Provider {
 			return &provider{}
 		},
@@ -110,10 +112,6 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		logrus.SetLevel(logrus.InfoLevel)
 	}
 
-	return nil
-}
-
-func (p *provider) Run(ctx context.Context) error {
 	var (
 		dbClient *dao.DBClient
 		err      error
@@ -127,26 +125,14 @@ func (p *provider) Run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-
-	return p.RunServer(dbClient, etcdStore)
-}
-
-func (p *provider) RunServer(dbClient *dao.DBClient, etcdStore *etcd.Store) error {
 	admin := manager.NewAdminManager(
 		manager.WithDB(dbClient),
 		manager.WithBundle(manager.NewBundle()),
 		manager.WithETCDStore(etcdStore),
 	)
-	server, err := p.NewServer(admin.Routers())
-	if err != nil {
-		logrus.Fatal(err)
-	}
-	return server.ListenAndServe()
-}
-
-func (p *provider) NewServer(endpoints []httpserver.Endpoint) (*httpserver.Server, error) {
-	server := httpserver.New(":9095")
+	server := httpserver.New(conf.ListenAddr())
 	server.Router().UseEncodedPath()
-	server.RegisterEndpoint(endpoints)
-	return server, nil
+	server.RegisterEndpoint(admin.Routers())
+	p.Router.Any("/**", server.Router())
+	return nil
 }

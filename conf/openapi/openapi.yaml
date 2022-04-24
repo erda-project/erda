@@ -104,7 +104,7 @@ openapi-v1-routes:
           - cmp-dashboard-pods
           - cmp-dashboard-podDetail
           - cmp-cluster-list
-      - addr: admin:9096
+      - addr: admin:9095
         scenarios:
           - personal-workbench
       - addr: msp:8080
