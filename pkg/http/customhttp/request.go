@@ -15,19 +15,24 @@
 package customhttp
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda/pkg/cache"
 	"github.com/erda-project/erda/pkg/discover"
 )
 
 var (
 	ErrInvalidAddr = Error{"customhttp: invalid inetaddr"}
+	ipCache        = cache.New("clusterDialerEndpoint", time.Second*30, queryClusterDialerIP)
 )
 
 type Error struct {
@@ -38,19 +43,12 @@ func (e Error) Error() string {
 	return e.msg
 }
 
-var inetAddr string
 var mtx sync.Mutex
 
 const (
 	portalHostHeader = "X-Portal-Host"
 	portalDestHeader = "X-Portal-Dest"
 )
-
-func SetInetAddr(addr string) {
-	mtx.Lock()
-	defer mtx.Unlock()
-	inetAddr = addr
-}
 
 func parseInetUrl(url string) (portalHost string, portalDest string, portalUrl string, portalArgs map[string]string, err error) {
 	url = strings.TrimPrefix(url, "inet://")
@@ -91,17 +89,19 @@ func NewRequest(method, url string, body io.Reader) (*http.Request, error) {
 	if !strings.HasPrefix(url, "inet://") {
 		return http.NewRequest(method, url, body)
 	}
-	mtx.Lock()
-	if inetAddr == "" {
-		inetAddr = discover.ClusterDialer()
-	}
-	mtx.Unlock()
-	inetAddr = strings.TrimPrefix(inetAddr, "http://")
 	portalHost, portalDest, portalUrl, _, err := parseInetUrl(url)
 	if err != nil {
 		return nil, err
 	}
-	url = fmt.Sprintf("http://%s/%s", inetAddr, portalUrl)
+
+	clusterDialerEndpoint, ok := ipCache.LoadWithUpdate(portalHost)
+	if !ok {
+		logrus.Errorf("failed to get clusterDialer endpoint for portal host %s", portalHost)
+		return nil, errors.Errorf("failed to get clusterDialer endpoint for portal host %s", portalHost)
+	}
+	logrus.Infof("[DEBUG] get cluster dialer endpoint succeeded, IP: %s", clusterDialerEndpoint)
+
+	url = fmt.Sprintf("http://%s/%s", clusterDialerEndpoint, portalUrl)
 	request, err := http.NewRequest(method, url, body)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -109,4 +109,36 @@ func NewRequest(method, url string, body io.Reader) (*http.Request, error) {
 	request.Header.Set(portalHostHeader, portalHost)
 	request.Header.Set(portalDestHeader, portalDest)
 	return request, nil
+}
+
+func queryClusterDialerIP(clusterKey interface{}) (interface{}, bool) {
+	log := logrus.WithField("func", "NetPortal NewRequest")
+
+	log.Debug("start querying clusterDialer IP in netPortal NewRequest...")
+	host := "http://" + discover.ClusterDialer()
+	resp, err := http.Get(host + fmt.Sprintf("/clusterdialer/ip?clusterKey=%s", clusterKey))
+	if err != nil {
+		log.Errorf("failed to request clsuterdialer in cache updating in netPortal NewRequest, %v", err)
+		return "", false
+	}
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Errorf("failed to read from resp in cache updating , %v", err)
+		return "", false
+	}
+	r := make(map[string]interface{})
+	if err = json.Unmarshal(data, &r); err != nil {
+		log.Errorf("failed to unmarshal resp, %v", err)
+		return "", false
+	}
+
+	succeeded, _ := r["succeeded"].(bool)
+	if !succeeded {
+		errStr, _ := r["error"].(string)
+		log.Errorf("reutrn error from clusterdialer in cache updating, %s", errStr)
+		return "", false
+	}
+
+	ip, _ := r["IP"].(string)
+	return ip, true
 }

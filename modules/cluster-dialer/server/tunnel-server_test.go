@@ -16,6 +16,7 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -24,6 +25,8 @@ import (
 	"time"
 
 	"bou.ke/monkey"
+	"github.com/coreos/etcd/clientv3"
+	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 
 	clusteragent "github.com/erda-project/erda/modules/cluster-agent/client"
@@ -57,12 +60,14 @@ func Test_netportal(t *testing.T) {
 	go Start(context.Background(), nil, &serverconfig.Config{
 		Listen:          dialerListenAddr2,
 		NeedClusterInfo: false,
-	})
+	}, &clientv3.Client{KV: &fakeKV{}})
 	helloHandler := func(w http.ResponseWriter, req *http.Request) {
 		io.WriteString(w, "Hello, world!")
 	}
-	http.HandleFunc("/hello2", helloHandler)
-	go http.ListenAndServe(helloListenAddr2, nil)
+	mx := mux.NewRouter()
+	mx.HandleFunc("/hello2", helloHandler)
+	mx.HandleFunc("/clusterdialer/ip", queryIPFunc2)
+	go http.ListenAndServe(helloListenAddr2, mx)
 
 	go client.Start(context.Background())
 	for {
@@ -95,4 +100,13 @@ func Test_netportal(t *testing.T) {
 		t.Errorf("respBody:%s, expect:Hello, world!", respBody)
 		return
 	}
+}
+
+func queryIPFunc2(w http.ResponseWriter, req *http.Request) {
+	res := map[string]interface{}{
+		"succeeded": true,
+		"IP":        dialerListenAddr2,
+	}
+	data, _ := json.Marshal(res)
+	io.WriteString(w, string(data))
 }
