@@ -21,6 +21,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/base/version"
+	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/conf"
 )
@@ -30,14 +31,15 @@ type config struct {
 }
 
 type provider struct {
-	Cfg *config
+	Cfg          *config
+	TokenService tokenpb.TokenServiceServer `autowired:"erda.core.token.TokenService"`
 }
 
 func (p *provider) Run(ctx context.Context) error {
 	logrus.Infof(version.String())
 	logrus.Errorf("[alert] openapi instance start")
 	conf.Load()
-	srv, err := NewServer()
+	srv, err := NewServer(p.TokenService)
 	if err != nil {
 		return err
 	}

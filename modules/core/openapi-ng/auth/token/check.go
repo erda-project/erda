@@ -64,12 +64,19 @@ func (p *provider) checkToken(opts openapiauth.Options, req *http.Request, token
 	}
 	// 2. openapi oauth2 token
 	oauthToken, err := auth.VerifyOpenapiOAuth2Token(p.oauth2server, &OAuth2APISpec{opts}, req)
+	if err == nil {
+		return clientToken{
+			ClientID:   oauthToken.ClientID,
+			ClientName: oauthToken.ClientName,
+		}, nil
+	}
+	accesskey, err := auth.VerifyAccessKey(p.TokenService, req)
 	if err != nil {
 		return clientToken{}, err
 	}
 	return clientToken{
-		ClientID:   oauthToken.ClientID,
-		ClientName: oauthToken.ClientName,
+		ClientID:   accesskey.ClientID,
+		ClientName: accesskey.ClientName,
 	}, nil
 }
 

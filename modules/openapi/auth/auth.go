@@ -24,6 +24,7 @@ import (
 	"github.com/go-redis/redis"
 	"github.com/pkg/errors"
 
+	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/modules/openapi/api/spec"
 	"github.com/erda-project/erda/modules/openapi/conf"
 	"github.com/erda-project/erda/modules/openapi/monitor"
@@ -56,9 +57,10 @@ const (
 type Auth struct {
 	RedisCli     *redis.Client
 	OAuth2Server *oauth2.OAuth2Server
+	TokenService tokenpb.TokenServiceServer
 }
 
-func NewAuth(oauth2server *oauth2.OAuth2Server) (*Auth, error) {
+func NewAuth(oauth2server *oauth2.OAuth2Server, token tokenpb.TokenServiceServer) (*Auth, error) {
 	sentinelAddrs := strings.Split(conf.RedisSentinelAddrs(), ",")
 	RedisCli := redis.NewFailoverClient(&redis.FailoverOptions{
 		MasterName:    conf.RedisMasterName(),
@@ -68,7 +70,7 @@ func NewAuth(oauth2server *oauth2.OAuth2Server) (*Auth, error) {
 	if _, err := RedisCli.Ping().Result(); err != nil {
 		return nil, err
 	}
-	return &Auth{RedisCli: RedisCli, OAuth2Server: oauth2server}, nil
+	return &Auth{RedisCli: RedisCli, OAuth2Server: oauth2server, TokenService: token}, nil
 }
 
 func (a *Auth) Auth(spec *spec.Spec, req *http.Request) AuthResult {
@@ -191,6 +193,7 @@ func (a *Auth) checkLogin(req *http.Request, user *User, spec *spec.Spec) AuthRe
 // checkToken try:
 // 1. uc token
 // 2. openapi oauth2 token
+// 3. access key
 func (a *Auth) checkToken(spec *spec.Spec, req *http.Request) (TokenClient, AuthResult) {
 	// 1. uc token
 	ucTC, err := VerifyUCClientToken(req.Header.Get(HeaderAuthorization))
@@ -202,10 +205,15 @@ func (a *Auth) checkToken(spec *spec.Spec, req *http.Request) (TokenClient, Auth
 	}
 	// 2. openapi oauth2 token
 	oauth2TC, err := VerifyOpenapiOAuth2Token(a.OAuth2Server, &OpenapiSpec{Spec: spec}, req)
+	if err == nil {
+		return oauth2TC, AuthResult{AuthSucc, ""}
+	}
+	// 3. access key
+	accesskey, err := VerifyAccessKey(a.TokenService, req)
 	if err != nil {
 		return TokenClient{}, AuthResult{AuthFail, err.Error()}
 	}
-	return oauth2TC, AuthResult{AuthSucc, ""}
+	return accesskey, AuthResult{AuthSucc, ""}
 }
 
 func (a *Auth) checkBasicAuth(req *http.Request, user *User) AuthResult {
