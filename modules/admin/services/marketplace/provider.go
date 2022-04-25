@@ -16,6 +16,7 @@ package marketplace
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -28,6 +29,8 @@ import (
 	"github.com/erda-project/erda-proto-go/admin/marketplace/pb"
 	commonPb "github.com/erda-project/erda-proto-go/common/pb"
 	extensionPb "github.com/erda-project/erda-proto-go/core/dicehub/extension/pb"
+	releasepb "github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
+	"github.com/erda-project/erda/modules/admin/cache"
 	"github.com/erda-project/erda/modules/admin/services/marketplace/apierr"
 	"github.com/erda-project/erda/modules/admin/services/marketplace/model"
 	"github.com/erda-project/erda/pkg/common/apis"
@@ -70,6 +73,7 @@ type provider struct {
 
 	// gRPC clients
 	extensionCli extensionPb.ExtensionServiceServer `autowired:"erda.core.dicehub.extension.ExtensionService"`
+	releaseCli   releasepb.ReleaseServiceServer     `autowired:"erda.core.dicehub.release.ReleaseGetDiceService"`
 
 	l *logrus.Entry
 }
@@ -90,8 +94,93 @@ func (p *provider) ListGalleries(ctx context.Context, req *pb.ListGalleriesReq) 
 }
 
 func (p *provider) CreateGallery(ctx context.Context, req *pb.CreateGalleryReq) (*commonPb.VoidResponse, error) {
-	//TODO implement me
-	panic("implement me")
+	// get org info
+	orgID := apis.GetOrgID(ctx)
+	orgDTO, ok := cache.GetOrgByOrgID(orgID)
+	if !ok {
+		return nil, apierr.CreateGallery.InvalidParameter("invalid organization: " + orgID)
+	}
+
+	// get user info
+	userID := apis.GetUserID(ctx)
+
+	// todo: 鉴权
+
+	// do not support other gallery type yet
+	if ArtifactsProject.String() != req.GetType() {
+		return nil, apierr.CreateGallery.InvalidParameter("invalid gallery type: " + req.GetType())
+	}
+	if req.GetName() == "" {
+		return nil, apierr.CreateGallery.InvalidParameter("invalid gallery type")
+	}
+	if req.GetVersion() == "" {
+		return nil, apierr.CreateGallery.InvalidParameter("invalid gallery version")
+	}
+	var spec = new(pb.CreateGalleryReq_ReleaseSpec)
+	if err := req.GetSpec().UnmarshalTo(spec); err != nil {
+		return nil, apierr.CreateGallery.InvalidParameter("invalid spec")
+	}
+
+	// check the record if is exists
+	switch err := p.DB.Where(map[string]interface{}{
+		"org_id":  orgID,
+		"name":    req.GetName(),
+		"type":    req.GetType(),
+		"version": req.GetVersion(),
+	}).Find(new(model.MarketplaceGalleryArtifacts)).Error; {
+	case err == nil:
+		return nil, apierr.CreateGallery.InvalidParameter(fmt.Sprintf("the gallery is exists, name: %s, type: %s, version: %s",
+			req.GetName(), req.GetType(), req.GetVersion()))
+	case errors.Is(err, gorm.ErrRecordNotFound):
+	default:
+		return nil, apierr.CreateGallery.InternalError(err)
+	}
+
+	// check the release if is exists
+	release, err := p.releaseCli.GetRelease(ctx, &releasepb.ReleaseGetRequest{ReleaseID: spec.GetReleaseID()})
+	if err != nil {
+		p.l.WithField("releaseID", spec.GetReleaseID()).Errorln("failed to p.releaseCli.GetRelease")
+		return nil, apierr.CreateGallery.InternalError(errors.Wrap(err, "failed to get release"))
+	}
+	if release == nil || release.Data == nil {
+		p.l.WithField("releaseID", spec.GetReleaseID()).Warnln("release data not found")
+		return nil, apierr.CreateGallery.NotFound()
+	}
+
+	if err := p.DB.Model(new(model.MarketplaceGalleryArtifacts)).
+		Where(map[string]interface{}{
+			"org_id": orgID,
+			"name":   req.GetName(),
+			"type":   req.GetType(),
+		}).
+		Updates(map[string]interface{}{
+			"is_default": false,
+			"updater_id": userID,
+		}).
+		Error; err != nil {
+		return nil, apierr.CreateGallery.InternalError(err)
+	}
+
+	var m = &model.MarketplaceGalleryArtifacts{
+		Common: model.Common{
+			OrgID:     uint32(orgDTO.ID),
+			OrgName:   orgDTO.Name,
+			CreatorID: userID,
+			UpdaterID: userID,
+		},
+		ReleaseID:   spec.GetReleaseID(),
+		Name:        req.GetName(),
+		DisplayName: "", // todo: 查询项目, 以项目 displaceName 为值
+		Version:     req.GetVersion(),
+		Type:        req.GetType(),
+		Changelog:   release.Data.Changelog,
+		IsDefault:   true,
+	}
+	if err := p.DB.Create(m).Error; err != nil {
+		return nil, apierr.CreateGallery.InternalError(err)
+	}
+
+	return new(commonPb.VoidResponse), nil
 }
 
 func (p *provider) GetGallery(ctx context.Context, req *pb.GetGalleryReq) (*pb.GetGalleryResp, error) {

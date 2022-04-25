@@ -163,7 +163,7 @@ message CreateGalleryReq {
   string name = 1;
   string type = 2;
   string version = 3;
-  google.protobuf.Any any = 4;
+  google.protobuf.Any spec = 4;
 }
 
 message CreateGalleryReq_ReleaseSpec {

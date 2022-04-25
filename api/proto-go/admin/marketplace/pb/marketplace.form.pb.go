@@ -429,24 +429,24 @@ func (m *CreateGalleryReq) UnmarshalURLValues(prefix string, values url.Values) 
 				m.Type = vals[0]
 			case "version":
 				m.Version = vals[0]
-			case "any":
-				if m.Any == nil {
-					m.Any = &anypb.Any{}
+			case "spec":
+				if m.Spec == nil {
+					m.Spec = &anypb.Any{}
 				}
-			case "any.type_url":
-				if m.Any == nil {
-					m.Any = &anypb.Any{}
+			case "spec.type_url":
+				if m.Spec == nil {
+					m.Spec = &anypb.Any{}
 				}
-				m.Any.TypeUrl = vals[0]
-			case "any.value":
-				if m.Any == nil {
-					m.Any = &anypb.Any{}
+				m.Spec.TypeUrl = vals[0]
+			case "spec.value":
+				if m.Spec == nil {
+					m.Spec = &anypb.Any{}
 				}
 				val, err := base64.StdEncoding.DecodeString(vals[0])
 				if err != nil {
 					return err
 				}
-				m.Any.Value = val
+				m.Spec.Value = val
 			}
 		}
 	}
