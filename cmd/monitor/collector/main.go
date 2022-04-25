@@ -34,7 +34,7 @@ import (
 
 	// grpc
 	_ "github.com/erda-project/erda-infra/providers/grpcclient"
-	_ "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/client"
+	_ "github.com/erda-project/erda-proto-go/core/token/client"
 
 	// pipeline collector
 	_ "github.com/erda-project/erda/modules/oap/collector/core"

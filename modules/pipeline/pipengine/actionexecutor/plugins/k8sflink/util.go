@@ -152,9 +152,7 @@ func (k *K8sFlink) ComposeFlinkCluster(job apistructs.JobFromUser, data apistruc
 				Replicas:  getInt32Points(data.Spec.FlinkConf.JobManagerResource.Replica),
 				Resources: composeResources(data.Spec.FlinkConf.JobManagerResource),
 				PodLabels: map[string]string{
-					apistructs.TerminusDefineTag:     containers.MakeFlinkJobManagerID(data.Name),
-					apistructs.MSPTerminusOrgIDTag:   job.GetOrgID(),
-					apistructs.MSPTerminusOrgNameTag: job.GetOrgName(),
+					apistructs.TerminusDefineTag: containers.MakeFlinkJobManagerID(data.Name),
 				},
 				Volumes:        nil,
 				VolumeMounts:   nil,
@@ -173,9 +171,7 @@ func (k *K8sFlink) ComposeFlinkCluster(job apistructs.JobFromUser, data apistruc
 				Replicas:  data.Spec.FlinkConf.TaskManagerResource.Replica,
 				Resources: composeResources(data.Spec.FlinkConf.TaskManagerResource),
 				PodLabels: map[string]string{
-					apistructs.TerminusDefineTag:     containers.MakeFlinkTaskManagerID(data.Name),
-					apistructs.MSPTerminusOrgIDTag:   job.GetOrgID(),
-					apistructs.MSPTerminusOrgNameTag: job.GetOrgName(),
+					apistructs.TerminusDefineTag: containers.MakeFlinkTaskManagerID(data.Name),
 				},
 				Volumes:        nil,
 				VolumeMounts:   nil,

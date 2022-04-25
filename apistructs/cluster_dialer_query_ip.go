@@ -12,15 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package accesskey
+package apistructs
 
-import (
-	"testing"
-
-	"github.com/stretchr/testify/assert"
-)
-
-func TestAccessKey_TableName(t *testing.T) {
-	m := &AccessKey{}
-	assert.Equal(t, "erda_access_key", m.TableName())
+type QueryClusterDialerIPResponse struct {
+	Succeeded bool   `json:"succeeded"`
+	Error     string `json:"error"`
+	IP        string `json:"IP"`
 }

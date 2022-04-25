@@ -32,11 +32,18 @@ func (s *PipelineSvc) TaskDetail(taskID uint64) (*spec.PipelineTask, error) {
 }
 
 func (s *PipelineSvc) GetOpenapiOAuth2TokenForActionInvokeOpenapi(task *spec.PipelineTask) (*apistructs.OAuth2Token, error) {
-	tokenInfo, err := s.bdl.GetOAuth2Token(apistructs.OAuth2TokenGetRequest{
+	var tokenInfo *apistructs.OAuth2Token
+	var err error
+	req := apistructs.OAuth2TokenGetRequest{
 		ClientID:     conf.OpenapiOAuth2TokenClientID(),
 		ClientSecret: conf.OpenapiOAuth2TokenClientSecret(),
 		Payload:      task.Extra.OpenapiOAuth2TokenPayload,
-	})
+	}
+	if s.edgeRegister.IsEdge() {
+		tokenInfo, err = s.edgeRegister.GetOAuth2Token(req)
+	} else {
+		tokenInfo, err = s.bdl.GetOAuth2Token(req)
+	}
 	if err != nil {
 		return nil, apierrors.ErrGetOpenapiOAuth2Token.InternalError(err)
 	}
