@@ -16,8 +16,12 @@ package reconciler
 
 import (
 	"context"
+	"reflect"
 	"testing"
 
+	"bou.ke/monkey"
+
+	"github.com/erda-project/erda-infra/base/logs/logrusx"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 )
@@ -66,5 +70,80 @@ func Test_defaultPipelineReconciler_IsReconcileDone(t *testing.T) {
 	done = pr.IsReconcileDone(ctx, p)
 	if !done {
 		t.Fatalf("should done")
+	}
+}
+
+func Test_defaultPipelineReconciler_PrepareBeforeReconcile(t *testing.T) {
+	ctx := context.TODO()
+	r := &provider{}
+	pr := &defaultPipelineReconciler{
+		r:                     r,
+		chanToTriggerNextLoop: make(chan struct{}),
+		log:                   logrusx.New(),
+	}
+	go func() {
+		for {
+			select {
+			case <-pr.chanToTriggerNextLoop:
+			}
+		}
+	}()
+	monkey.PatchInstanceMethod(reflect.TypeOf(pr), "UpdatePipelineToRunning",
+		func(_ *defaultPipelineReconciler, ctx context.Context, p *spec.Pipeline) {
+			p.Status = apistructs.PipelineStatusRunning
+		})
+
+	// pipeline in queue status
+	// two tasks
+	p := &spec.Pipeline{
+		PipelineBase: spec.PipelineBase{
+			Status: apistructs.PipelineStatusQueue,
+		},
+	}
+	monkey.PatchInstanceMethod(reflect.TypeOf(r), "YmlTaskMergeDBTasks",
+		func(_ *provider, pipeline *spec.Pipeline) ([]*spec.PipelineTask, error) {
+			// two tasks
+			tasks := []*spec.PipelineTask{
+				{Name: "s1c1"},
+				{Name: "s2c1"},
+			}
+			return tasks, nil
+		})
+	pr.PrepareBeforeReconcile(ctx, p)
+	if pr.totalTaskNumber == nil {
+		t.Fatalf("task num can not be nil")
+	}
+	if *pr.totalTaskNumber != 2 {
+		t.Fatalf("task num should be 2")
+	}
+	if !p.Status.IsRunningStatus() {
+		t.Fatalf("should be running")
+	}
+
+	// pipeline already in running status
+	// two tasks
+	p = &spec.Pipeline{
+		PipelineBase: spec.PipelineBase{
+			Status: apistructs.PipelineStatusRunning,
+		},
+	}
+	monkey.PatchInstanceMethod(reflect.TypeOf(r), "YmlTaskMergeDBTasks",
+		func(_ *provider, pipeline *spec.Pipeline) ([]*spec.PipelineTask, error) {
+			// two tasks
+			tasks := []*spec.PipelineTask{
+				{Name: "s1c1"},
+				{Name: "s2c1"},
+			}
+			return tasks, nil
+		})
+	pr.PrepareBeforeReconcile(ctx, p)
+	if pr.totalTaskNumber == nil {
+		t.Fatalf("task num can not be nil")
+	}
+	if *pr.totalTaskNumber != 2 {
+		t.Fatalf("task num should be 2")
+	}
+	if !p.Status.IsRunningStatus() {
+		t.Fatalf("should be running")
 	}
 }
