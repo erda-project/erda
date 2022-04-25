@@ -20,7 +20,7 @@ const _ = http.SupportPackageIsVersion1
 type ActionServiceHandler interface {
 	// GET /api/pipeline-actions
 	List(context.Context, *PipelineActionListRequest) (*PipelineActionListResponse, error)
-	// POST /api/pipeline-actions/action/save
+	// POST /api/pipeline-actions/actions/save
 	Save(context.Context, *PipelineActionSaveRequest) (*PipelineActionSaveResponse, error)
 	// DELETE /api/pipeline-actions
 	Delete(context.Context, *PipelineActionDeleteRequest) (*PipelineActionDeleteResponse, error)
@@ -158,6 +158,6 @@ func RegisterActionServiceHandler(r http.Router, srv ActionServiceHandler, opts 
 	}
 
 	add_List("GET", "/api/pipeline-actions", srv.List)
-	add_Save("POST", "/api/pipeline-actions/action/save", srv.Save)
+	add_Save("POST", "/api/pipeline-actions/actions/save", srv.Save)
 	add_Delete("DELETE", "/api/pipeline-actions", srv.Delete)
 }

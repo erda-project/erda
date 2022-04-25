@@ -40,7 +40,16 @@ type Interface interface {
 
 	ShouldDispatchToEdge(source, clusterName string) bool
 	GetEdgeBundleByClusterName(clusterName string) (*bundle.Bundle, error)
+	ClusterIsEdge(clusterName string) (bool, error)
 	//RegisterEdgeToDialer(ctx context.Context)
+}
+
+func (p *provider) ClusterIsEdge(clusterName string) (bool, error) {
+	isEdge, err := p.bdl.IsClusterDialerClientRegistered(apistructs.ClusterDialerClientTypePipeline, clusterName)
+	if err != nil {
+		return false, err
+	}
+	return isEdge, nil
 }
 
 func (p *provider) ShouldDispatchToEdge(source, clusterName string) bool {

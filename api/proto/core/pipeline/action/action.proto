@@ -16,7 +16,7 @@ service ActionService {
     }
     rpc Save (PipelineActionSaveRequest) returns (PipelineActionSaveResponse) {
         option (google.api.http) = {
-            post: "/api/pipeline-actions/action/save",
+            post: "/api/pipeline-actions/actions/save",
         };
     }
     rpc Delete (PipelineActionDeleteRequest) returns (PipelineActionDeleteResponse) {

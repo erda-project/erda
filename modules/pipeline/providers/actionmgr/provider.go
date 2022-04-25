@@ -28,6 +28,8 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/pipeline/providers/actionmgr/db"
+	"github.com/erda-project/erda/modules/pipeline/providers/clusterinfo"
+	"github.com/erda-project/erda/modules/pipeline/providers/edgepipeline_register"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/goroutinepool"
 )
@@ -39,10 +41,12 @@ type config struct {
 
 // +provider
 type provider struct {
-	Cfg      *config
-	Log      logs.Logger
-	Register transport.Register
-	MySQL    mysqlxorm.Interface
+	Cfg          *config
+	Log          logs.Logger
+	Register     transport.Register
+	MySQL        mysqlxorm.Interface
+	EdgeRegister edgepipeline_register.Interface
+	ClusterInfo  clusterinfo.Interface
 
 	sync.Mutex
 	bdl *bundle.Bundle
@@ -54,7 +58,7 @@ type provider struct {
 }
 
 func (s *provider) Init(ctx servicehub.Context) error {
-	s.actionService = &actionService{s, &db.Client{Interface: s.MySQL}}
+	s.actionService = &actionService{s, &db.Client{Interface: s.MySQL}, s.EdgeRegister, s.ClusterInfo}
 	if s.Register != nil {
 		pb.RegisterActionServiceImp(s.Register, s.actionService, apis.Options())
 	}
