@@ -77,9 +77,13 @@ func (l *Loop) Do(f func() (bool, error)) error {
 		return nil
 	}
 
-	var i uint64
+	var (
+		i     uint64
+		err   error
+		abort bool
+	)
 	for i = 0; i < l.maxTimes; i++ {
-		abort, err := f()
+		abort, err = f()
 		if abort {
 			return err
 		}
@@ -90,7 +94,7 @@ func (l *Loop) Do(f func() (bool, error)) error {
 				l.lastSleepTime = l.declineLimit
 			}
 
-			if err = sleepUntilCtxDone(l.lastSleepTime, l.ctx); err != nil {
+			if err := sleepUntilCtxDone(l.lastSleepTime, l.ctx); err != nil {
 				return nil
 			}
 
@@ -100,11 +104,11 @@ func (l *Loop) Do(f func() (bool, error)) error {
 		// 成功执行 reset 暂停时间
 		l.lastSleepTime = l.interval
 
-		if err = sleepUntilCtxDone(l.lastSleepTime, l.ctx); err != nil {
+		if err := sleepUntilCtxDone(l.lastSleepTime, l.ctx); err != nil {
 			return nil
 		}
 	}
-	return nil
+	return err
 }
 
 // WithMaxTimes 设置循环的最大次数.
