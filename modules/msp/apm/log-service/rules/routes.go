@@ -202,6 +202,9 @@ func (p *provider) checkLogConfig(c *LogMetricConfig) interface{} {
 			}
 			keyset[key] = true
 		}
+		p.Config["replaceKey"] = map[string]string{
+			"level": "_level",
+		}
 	}
 	return nil
 }
@@ -297,7 +300,7 @@ func (p *provider) testRule(params struct {
 		if err != nil {
 			return api.Errors.InvalidParameter("fail to create processor", err.Error())
 		}
-		name, fields, _, err := proc.Process(params.Content)
+		name, fields, _, _, err := proc.Process(params.Content)
 		if err != nil {
 			return api.Success(nil)
 		}
