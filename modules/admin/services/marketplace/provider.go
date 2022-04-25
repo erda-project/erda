@@ -28,8 +28,8 @@ import (
 	"github.com/erda-project/erda-proto-go/admin/marketplace/pb"
 	commonPb "github.com/erda-project/erda-proto-go/common/pb"
 	extensionPb "github.com/erda-project/erda-proto-go/core/dicehub/extension/pb"
-	"github.com/erda-project/erda/modules/admin/providers/marketplace/apierr"
-	"github.com/erda-project/erda/modules/admin/providers/marketplace/model"
+	"github.com/erda-project/erda/modules/admin/services/marketplace/apierr"
+	"github.com/erda-project/erda/modules/admin/services/marketplace/model"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 
