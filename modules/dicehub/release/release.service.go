@@ -428,7 +428,7 @@ func (s *ReleaseService) GetRelease(ctx context.Context, req *pb.ReleaseGetReque
 	if err != nil {
 		return nil, apierrors.ErrGetRelease.InternalError(err)
 	}
-	return &pb.ReleaseGetResponse{Data: resp}, nil
+	return &pb.ReleaseGetResponse{Data: resp, UserIDs: []string{resp.UserID}}, nil
 }
 
 func (s *ReleaseService) DeleteRelease(ctx context.Context, req *pb.ReleaseDeleteRequest) (*pb.ReleaseDeleteResponse, error) {

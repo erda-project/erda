@@ -618,6 +618,8 @@ func (m *ReleaseGetResponse) UnmarshalURLValues(prefix string, values url.Values
 					m.Data = &ReleaseGetResponseData{}
 				}
 				m.Data.AddonYaml = vals[0]
+			case "userIDs":
+				m.UserIDs = vals
 			}
 		}
 	}
