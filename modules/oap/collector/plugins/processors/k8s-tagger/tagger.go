@@ -23,17 +23,26 @@ import (
 
 var matcherPattern = regexp.MustCompile("%{([^%{}]*)}")
 
-func (p *provider) getPodMetadata(tags map[string]interface{}) (pod.Value, bool) {
-	f := p.Cfg.Pod.AddMetadata.Finder
-	switch f.Indexer {
-	case pod.IndexerPodName:
-		index := generateIndexByMatcher(f.Matcher, tags)
-		return p.podCache.GetByPodNameIndexer(index)
-	case pod.IndexerPodNameContainer:
-		index := generateIndexByMatcher(f.Matcher, tags)
-		return p.podCache.GetByPodNameContainerIndexer(index)
+func (p *provider) getPodMetadata(tags map[string]interface{}) pod.Value {
+	fs := p.Cfg.Pod.AddMetadata.Finders
+	res := pod.NewValue()
+	for _, f := range fs {
+		switch f.Indexer {
+		case pod.IndexerPodName:
+			index := generateIndexByMatcher(f.Matcher, tags)
+			tmp, ok := p.podCache.GetByPodNameIndexer(index)
+			if ok {
+				res.Merge(tmp)
+			}
+		case pod.IndexerPodNameContainer:
+			index := generateIndexByMatcher(f.Matcher, tags)
+			tmp, ok := p.podCache.GetByPodNameContainerIndexer(index)
+			if ok {
+				res.Merge(tmp)
+			}
+		}
 	}
-	return pod.Value{}, false
+	return res
 }
 
 // {namespace}/{pod}

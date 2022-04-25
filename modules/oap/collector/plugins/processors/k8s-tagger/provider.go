@@ -55,11 +55,7 @@ func (p *provider) ComponentConfig() interface{} {
 // 1. filter with config filters
 // 2. pass tags to handle
 func (p *provider) Process(in odata.ObservableData) (odata.ObservableData, error) {
-	podMeta, ok := p.getPodMetadata(in.Pairs())
-	if !ok {
-		return in, nil
-	}
-
+	podMeta := p.getPodMetadata(in.Pairs())
 	in.HandleKeyValuePair(func(m map[string]interface{}) map[string]interface{} {
 		for k, v := range podMeta.Tags {
 			m[k] = v
