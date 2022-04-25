@@ -20,11 +20,12 @@ import (
 	"strings"
 	"time"
 
+	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/modules/openapi/conf"
 )
 
-func NewServer() (*http.Server, error) {
-	s, err := NewLoginServer()
+func NewServer(token tokenpb.TokenServiceServer) (*http.Server, error) {
+	s, err := NewLoginServer(token)
 	if err != nil {
 		return nil, err
 	}
