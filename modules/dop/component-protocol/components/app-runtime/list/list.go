@@ -35,8 +35,8 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/admin/component-protocol/types"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/app-runtime/common"
+	"github.com/erda-project/erda/modules/service/personal-workbench/component-protocol/types"
 )
 
 type List struct {

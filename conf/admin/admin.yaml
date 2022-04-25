@@ -1,18 +1,18 @@
-admin:
+service.admin:
   debug: ${DEBUG:false}
+service.personal-workbench:
+service.dingtalk-test:
+
+service-register:
 
 http-server:
   addr: ":9095"
   allow_cors: true
 
-
 grpc-server:
   addr: ":8096"
 
 health:
-service-register:
-
-erda.admin.dingtalk-test:
 
 # component-protocol framework
 component-protocol:
