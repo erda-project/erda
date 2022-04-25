@@ -196,7 +196,7 @@ func VerifyAccessKey(tokenService tokenpb.TokenServiceServer, r *http.Request) (
 	if auth != "" && strings.HasPrefix(auth, HeaderAuthorizationBearerPrefix) {
 		token = auth[len(HeaderAuthorizationBearerPrefix):]
 	}
-	resp, err := tokenService.QueryTokens(context.Background(), &tokenpb.QueryTokensRequest{
+	resp, err := tokenService.QueryTokens(r.Context(), &tokenpb.QueryTokensRequest{
 		Access: token,
 		Scope:  strings.ToLower(tokenpb.ScopeEnum_CMP_CLUSTER.String()),
 		Type:   mysqltokenstore.AccessKey.String(),
@@ -209,10 +209,14 @@ func VerifyAccessKey(tokenService tokenpb.TokenServiceServer, r *http.Request) (
 	} else if resp.Total > 1 {
 		return TokenClient{}, fmt.Errorf("auth failed, duplidate data")
 	}
+	scopeId := resp.Data[0].ScopeId
 	if resp.Data[0].ScopeId != "" {
-		r.Header.Set(httputil.InternalHeader, resp.Data[0].ScopeId)
+		r.Header.Set(httputil.InternalHeader, scopeId)
 	} else {
 		r.Header.Set(httputil.InternalHeader, tokenpb.ScopeEnum_CMP_CLUSTER.String())
 	}
-	return TokenClient{}, nil
+	return TokenClient{
+		ClientID:   scopeId,
+		ClientName: scopeId,
+	}, nil
 }
