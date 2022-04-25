@@ -45,7 +45,7 @@ type PipelineCron struct {
 	// Deprecated
 	BasePipelineID uint64 `json:"basePipelineID"` // 用于记录最开始创建出这条 cron 记录的 pipeline id
 	// definition id
-	PipelineDefinitionID string `json:"pipeline_definition_id"`
+	PipelineDefinitionID string `json:"pipelineDefinitionID"`
 }
 
 // PipelineCronExtra cron 扩展信息, 不参与过滤

@@ -63,14 +63,28 @@ func (this *CronStopResponse) Validate() error {
 	return nil
 }
 func (this *CronCreateRequest) Validate() error {
-	if this.PipelineCreateRequest != nil {
-		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.PipelineCreateRequest); err != nil {
-			return github_com_mwitkow_go_proto_validators.FieldError("PipelineCreateRequest", err)
+	if this.Enable != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Enable); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("Enable", err)
 		}
 	}
+	// Validation of proto3 map<> fields is unsupported.
+	// Validation of proto3 map<> fields is unsupported.
+	// Validation of proto3 map<> fields is unsupported.
+	if this.CronStartFrom != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.CronStartFrom); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("CronStartFrom", err)
+		}
+	}
+	// Validation of proto3 map<> fields is unsupported.
 	return nil
 }
 func (this *CronCreateResponse) Validate() error {
+	if this.Data != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Data); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("Data", err)
+		}
+	}
 	return nil
 }
 func (this *CronDeleteRequest) Validate() error {

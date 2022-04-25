@@ -15,6 +15,10 @@ import (
 // is compatible with the "encoding/json" package it is being compiled against.
 var _ json.Marshaler = (*Cron)(nil)
 var _ json.Unmarshaler = (*Cron)(nil)
+var _ json.Marshaler = (*CronExtra)(nil)
+var _ json.Unmarshaler = (*CronExtra)(nil)
+var _ json.Marshaler = (*CronCompensator)(nil)
+var _ json.Unmarshaler = (*CronCompensator)(nil)
 
 // Cron implement json.Marshaler.
 func (m *Cron) MarshalJSON() ([]byte, error) {
@@ -29,6 +33,42 @@ func (m *Cron) MarshalJSON() ([]byte, error) {
 
 // Cron implement json.Marshaler.
 func (m *Cron) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// CronExtra implement json.Marshaler.
+func (m *CronExtra) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// CronExtra implement json.Marshaler.
+func (m *CronExtra) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// CronCompensator implement json.Marshaler.
+func (m *CronCompensator) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// CronCompensator implement json.Marshaler.
+func (m *CronCompensator) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)

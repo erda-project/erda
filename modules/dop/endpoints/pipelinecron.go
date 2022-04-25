@@ -30,6 +30,8 @@ import (
 	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
+	"github.com/erda-project/erda/pkg/parser/pipelineyml"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 func (e *Endpoints) pipelineCronPaging(ctx context.Context, r *http.Request, vars map[string]string) (
@@ -163,15 +165,31 @@ func (e *Endpoints) pipelineCronCreate(ctx context.Context, r *http.Request, var
 		return apierrors.ErrCreatePipelineCron.AccessDenied().ToResp(), nil
 	}
 
-	var createReq = cronpb.CronCreateRequest{
-		PipelineCreateRequest: &req,
+	pipelineYml, err := pipelineyml.New([]byte(req.PipelineYml))
+	if err != nil {
+		return nil, err
 	}
-	cron, err := e.PipelineCron.CronCreate(context.Background(), &createReq)
+
+	result, err := e.PipelineCron.CronCreate(context.Background(), &cronpb.CronCreateRequest{
+		CronExpr:               pipelineYml.Spec().Cron,
+		PipelineYmlName:        req.PipelineYmlName,
+		PipelineSource:         req.PipelineSource,
+		Enable:                 wrapperspb.Bool(false),
+		PipelineYml:            req.PipelineYml,
+		ClusterName:            req.ClusterName,
+		FilterLabels:           req.Labels,
+		NormalLabels:           req.NormalLabels,
+		Envs:                   req.Envs,
+		ConfigManageNamespaces: strutil.DedupSlice(append(req.ConfigManageNamespaces, req.ConfigManageNamespaces...), true),
+		CronStartFrom:          req.CronStartFrom,
+		IncomingSecrets:        req.GetSecrets(),
+		PipelineDefinitionID:   req.DefinitionID,
+	})
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
 
-	return httpserver.OkResp(cron)
+	return httpserver.OkResp(result.Data)
 }
 
 func (e *Endpoints) pipelineCronDelete(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {

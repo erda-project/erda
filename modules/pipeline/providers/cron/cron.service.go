@@ -16,9 +16,12 @@ package cron
 
 import (
 	context "context"
+	"encoding/json"
+	"time"
 
 	"github.com/go-errors/errors"
 
+	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	pb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	common "github.com/erda-project/erda-proto-go/core/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -31,72 +34,100 @@ import (
 
 func (s *provider) CronCreate(ctx context.Context, req *pb.CronCreateRequest) (*pb.CronCreateResponse, error) {
 	// param validate
-	if !apistructs.PipelineSource(req.PipelineCreateRequest.PipelineSource).Valid() {
-		return nil, apierrors.ErrCreatePipelineCron.InvalidParameter(errors.Errorf("invalid pipelineSource: %s", req.PipelineCreateRequest.PipelineSource))
+	if !apistructs.PipelineSource(req.PipelineSource).Valid() {
+		return nil, apierrors.ErrCreatePipelineCron.InvalidParameter(errors.Errorf("invalid pipelineSource: %s", req.PipelineSource))
 	}
-	if req.PipelineCreateRequest.PipelineYmlName == "" {
+	if req.PipelineYmlName == "" {
 		return nil, apierrors.ErrCreatePipelineCron.InvalidParameter(errors.Errorf("missing pipelineYmlName"))
 	}
-	if req.PipelineCreateRequest.PipelineYml == "" {
+	if req.PipelineYml == "" {
 		return nil, apierrors.ErrCreatePipelineCron.InvalidParameter(errors.Errorf("missing pipelineYml"))
 	}
-	pipelineYml, err := pipelineyml.New([]byte(req.PipelineCreateRequest.PipelineYml))
+
+	pipelineYml, err := pipelineyml.New([]byte(req.PipelineYml))
 	if err != nil {
-		return nil, err
+		return nil, apierrors.ErrParsePipelineYml.InternalError(err)
 	}
-	if pipelineYml.Spec().Cron == "" {
-		return nil, apierrors.ErrCreatePipelineCron.InvalidParameter(errors.Errorf("not cron pipeline"))
+	var compensator *apistructs.CronCompensator
+	if pipelineYml.Spec().CronCompensator != nil {
+		compensator = &apistructs.CronCompensator{}
+		compensator.Enable = pipelineYml.Spec().CronCompensator.Enable
+		compensator.StopIfLatterExecuted = pipelineYml.Spec().CronCompensator.StopIfLatterExecuted
+		compensator.LatestFirst = pipelineYml.Spec().CronCompensator.LatestFirst
 	}
 
-	// store to db
-	cron := db.PipelineCron{
-		PipelineSource:  apistructs.PipelineSource(req.PipelineCreateRequest.PipelineSource),
-		PipelineYmlName: req.PipelineCreateRequest.PipelineYmlName,
-		CronExpr:        pipelineYml.Spec().Cron,
-		Enable:          &[]bool{req.PipelineCreateRequest.AutoStartCron}[0],
+	if req.CronExpr == "" {
+		req.CronExpr = pipelineYml.Spec().Cron
 	}
-	if req.PipelineCreateRequest != nil {
-		var extra = db.PipelineCronExtra{
-			PipelineYml:  req.PipelineCreateRequest.PipelineYml,
-			ClusterName:  req.PipelineCreateRequest.ClusterName,
-			FilterLabels: req.PipelineCreateRequest.Labels,
-			NormalLabels: req.PipelineCreateRequest.NormalLabels,
-			Envs:         req.PipelineCreateRequest.Envs,
-			Version:      "v2",
-			Compensator: &apistructs.CronCompensator{
-				Enable: pipelineYml.Spec().CronCompensator.Enable,
-			},
+
+	createCron := &db.PipelineCron{
+		ID:              req.ID,
+		PipelineSource:  apistructs.PipelineSource(req.PipelineSource),
+		PipelineYmlName: req.PipelineYmlName,
+		CronExpr:        req.CronExpr,
+		Enable:          &[]bool{req.Enable.Value}[0],
+		Extra: db.PipelineCronExtra{
+			PipelineYml:            req.PipelineYml,
+			ClusterName:            req.ClusterName,
+			FilterLabels:           req.FilterLabels,
+			NormalLabels:           req.NormalLabels,
+			Envs:                   req.Envs,
+			ConfigManageNamespaces: req.ConfigManageNamespaces,
+			CronStartFrom: func() *time.Time {
+				if req.CronStartFrom == nil {
+					return nil
+				}
+				cronStartFrom := req.CronStartFrom.AsTime()
+				return &cronStartFrom
+			}(),
+			Version:         "v2",
+			Compensator:     compensator,
+			IncomingSecrets: req.IncomingSecrets,
+		},
+		PipelineDefinitionID: req.PipelineDefinitionID,
+	}
+
+	err = Transaction(s.dbClient, func(op mysqlxorm.SessionOption) error {
+		if req.CronExpr == "" {
+			err = s.InsertOrUpdatePipelineCron(createCron, op)
+		} else {
+			err = s.disable(createCron, op)
 		}
-		cron.Extra.ConfigManageNamespaces = strutil.DedupSlice(append(cron.Extra.ConfigManageNamespaces, req.PipelineCreateRequest.ConfigManageNamespaces...), true)
-		cron.Extra.IncomingSecrets = req.PipelineCreateRequest.GetSecrets()
-
-		if pipelineYml.Spec().CronCompensator != nil {
-			cron.Extra.Compensator = &apistructs.CronCompensator{
-				Enable:               pipelineYml.Spec().CronCompensator.Enable,
-				LatestFirst:          pipelineYml.Spec().CronCompensator.LatestFirst,
-				StopIfLatterExecuted: pipelineYml.Spec().CronCompensator.StopIfLatterExecuted,
-			}
+		if err != nil {
+			return err
 		}
-
-		if req.PipelineCreateRequest.CronStartFrom != nil {
-			var cronStartFrom = req.PipelineCreateRequest.CronStartFrom.AsTime()
-			extra.CronStartFrom = &cronStartFrom
+		req.ID = createCron.ID
+		if err := s.Daemon.AddIntoPipelineCrond(createCron.ID); err != nil {
+			return err
 		}
-		cron.Extra = extra
-	}
-
-	err = s.dbClient.InsertOrUpdatePipelineCron(&cron)
+		return nil
+	})
 	if err != nil {
-		return nil, apierrors.ErrCreatePipelineCron.InternalError(err)
-	}
-
-	if err := s.Daemon.AddIntoPipelineCrond(cron.ID); err != nil {
-		return nil, apierrors.ErrReloadCrond.InternalError(err)
+		return nil, nil
 	}
 
 	return &pb.CronCreateResponse{
-		Data: cron.ID,
+		Data: createCron.Convert2DTO(),
 	}, nil
+}
+
+func Transaction(dbClient *db.Client, do func(option mysqlxorm.SessionOption) error) error {
+	txSession := dbClient.NewSession()
+	defer txSession.Close()
+	if err := txSession.Begin(); err != nil {
+		return err
+	}
+	err := do(mysqlxorm.WithSession(txSession))
+	if err != nil {
+		if rbErr := txSession.Rollback(); rbErr != nil {
+			return err
+		}
+		return err
+	}
+	if cmErr := txSession.Commit(); cmErr != nil {
+		return cmErr
+	}
+	return nil
 }
 
 func (s *provider) CronPaging(ctx context.Context, req *pb.CronPagingRequest) (*pb.CronPagingResponse, error) {
@@ -228,4 +259,122 @@ func (s *provider) CronUpdate(ctx context.Context, req *pb.CronUpdateRequest) (*
 	}
 
 	return &pb.CronUpdateResponse{}, nil
+}
+
+func (s *provider) InsertOrUpdatePipelineCron(new *db.PipelineCron, ops ...mysqlxorm.SessionOption) error {
+	var err error
+
+	// 寻找 v1
+	queryV1 := &db.PipelineCron{
+		ApplicationID:   new.ApplicationID,
+		Branch:          new.Branch,
+		PipelineYmlName: new.PipelineYmlName,
+	}
+	v1Exist, err := s.dbClient.GetDBClient().Get(queryV1)
+	if err != nil {
+		return err
+	}
+	if queryV1.Extra.Version == "v2" {
+		v1Exist = false
+	}
+	if v1Exist {
+		new.ID = queryV1.ID
+		new.Enable = queryV1.Enable
+		err := s.dbClient.UpdatePipelineCron(new.ID, new, ops...)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// 寻找 v2
+	queryV2 := &db.PipelineCron{
+		PipelineSource:  new.PipelineSource,
+		PipelineYmlName: new.PipelineYmlName,
+	}
+	v2Exist, err := s.dbClient.GetDBClient().Get(queryV2)
+	if err != nil {
+		return err
+	}
+	if v2Exist {
+		new.ID = queryV2.ID
+		new.Enable = queryV2.Enable
+		err := s.dbClient.UpdatePipelineCron(new.ID, new, ops...)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	err = s.dbClient.CreatePipelineCron(new, ops...)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *provider) disable(cron *db.PipelineCron, option mysqlxorm.SessionOption) error {
+	var disable = false
+	var updateCron = &db.PipelineCron{}
+	var columns = []string{spec.PipelineCronCronExpr, spec.PipelineCronEnable}
+	var err error
+
+	queryV1 := &db.PipelineCron{
+		ApplicationID:   cron.ApplicationID,
+		Branch:          cron.Branch,
+		PipelineYmlName: cron.PipelineYmlName,
+	}
+	v1Exist, err := s.dbClient.GetDBClient().Get(queryV1)
+	if err != nil {
+		return err
+	}
+	if queryV1.Extra.Version == "v2" {
+		v1Exist = false
+	}
+	if v1Exist {
+		updateCron.Enable = &disable
+		updateCron.ID = queryV1.ID
+		updateCron.CronExpr = cron.CronExpr
+		err := s.dbClient.UpdatePipelineCronWillUseDefault(updateCron.ID, updateCron, columns, option)
+		if err != nil {
+			return err
+		}
+		cron.ID = updateCron.ID
+		return nil
+	}
+
+	queryV2 := &db.PipelineCron{
+		PipelineSource:  cron.PipelineSource,
+		PipelineYmlName: cron.PipelineYmlName,
+	}
+	v2Exist, err := s.dbClient.GetDBClient().Get(queryV2)
+	if err != nil {
+		return err
+	}
+	if v2Exist {
+		updateCron.Enable = &disable
+		updateCron.ID = queryV2.ID
+		updateCron.CronExpr = cron.CronExpr
+		err := s.dbClient.UpdatePipelineCronWillUseDefault(updateCron.ID, updateCron, columns, option)
+		if err != nil {
+			return err
+		}
+		cron.ID = updateCron.ID
+		return nil
+	}
+	return nil
+}
+
+func pbCronToDBCron(pbCron *common.Cron) (*db.PipelineCron, error) {
+	dbCronJson, err := json.Marshal(pbCron)
+	if err != nil {
+		return nil, err
+	}
+
+	var result db.PipelineCron
+	err = json.Unmarshal(dbCronJson, &result)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
 }

@@ -16,11 +16,16 @@ package db
 
 import (
 	"github.com/pkg/errors"
+	"github.com/xormplus/xorm"
 
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	"github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 )
+
+func (client *Client) GetDBClient() (db *xorm.Engine) {
+	return client.DB()
+}
 
 // return: result, total, nil
 func (client *Client) PagingPipelineCron(req *pb.CronPagingRequest, ops ...mysqlxorm.SessionOption) ([]PipelineCron, int64, error) {
