@@ -19,9 +19,9 @@ import (
 	_ "github.com/erda-project/erda-infra/providers"
 	_ "github.com/erda-project/erda-infra/providers/component-protocol"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
-	_ "github.com/erda-project/erda/modules/admin"
-	_ "github.com/erda-project/erda/modules/admin/component-protocol/components"
-	_ "github.com/erda-project/erda/modules/admin/dingtalktest"
+	_ "github.com/erda-project/erda/modules/service/admin"
+	_ "github.com/erda-project/erda/modules/service/dingtalktest"
+	_ "github.com/erda-project/erda/modules/service/personal-workbench"
 	"github.com/erda-project/erda/pkg/common"
 )
 
