@@ -15,13 +15,17 @@
 package projectpipeline
 
 import (
+	"reflect"
 	"testing"
 
+	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/erda-project/erda-infra/base/logs"
 	spb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
 	"github.com/erda-project/erda-proto-go/dop/projectpipeline/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -151,4 +155,286 @@ func TestIsSameSourceInApp(t *testing.T) {
 		assert.Equal(t, v.want, isSameSourceInApp(v.source, v.params))
 	}
 
+}
+
+func Test_getRemotes(t *testing.T) {
+	type args struct {
+		appNames    []string
+		orgName     string
+		projectName string
+	}
+	tests := []struct {
+		name string
+		args args
+		want []string
+	}{
+		{
+			name: "test remote",
+			args: args{
+				appNames:    []string{"erda-release", "dice"},
+				orgName:     "org",
+				projectName: "erda",
+			},
+			want: []string{"org/erda/erda-release", "org/erda/dice"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := getRemotes(tt.args.appNames, tt.args.orgName, tt.args.projectName); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("getRemotes() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestProjectPipelineService_fetchRemotePipeline(t *testing.T) {
+	type fields struct {
+		logger logs.Logger
+	}
+	type args struct {
+		source *spb.PipelineSource
+		orgID  string
+		userID string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    string
+		wantErr bool
+	}{
+		{
+			name:   "test fetch fetchRemotePipeline",
+			fields: fields{},
+			args: args{
+				source: &spb.PipelineSource{
+					Remote: "org/erda/erda-release",
+				},
+				orgID:  "",
+				userID: "",
+			},
+			want: `version: "1.1"
+stages:
+  - stage:
+      - git-checkout:
+          alias: git-checkout
+          description: 代码仓库克隆`,
+			wantErr: false,
+		},
+	}
+
+	var bdl *bundle.Bundle
+	pm := monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetGittarBlobNode",
+		func(bdl *bundle.Bundle, repo, orgID, userID string) (string, error) {
+			return `version: "1.1"
+stages:
+  - stage:
+      - git-checkout:
+          alias: git-checkout
+          description: 代码仓库克隆`, nil
+		})
+	defer pm.Unpatch()
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &ProjectPipelineService{
+				bundle: bdl,
+			}
+			got, err := p.fetchRemotePipeline(tt.args.source, tt.args.orgID, tt.args.userID)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("fetchRemotePipeline() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("fetchRemotePipeline() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_getNameByRemote(t *testing.T) {
+	type args struct {
+		remote string
+	}
+	tests := []struct {
+		name string
+		args args
+		want RemoteName
+	}{
+		{
+			name: "test getNameByRemote",
+			args: args{remote: "org/erda/erda-release"},
+			want: RemoteName{
+				OrgName:     "org",
+				ProjectName: "erda",
+				AppName:     "erda-release",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := getNameByRemote(tt.args.remote); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("getNameByRemote() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestProjectPipelineService_makeLocationByAppID(t *testing.T) {
+	type fields struct {
+		bundle *bundle.Bundle
+	}
+	type args struct {
+		appID uint64
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    string
+		wantErr bool
+	}{
+		{
+			name:    "test makeLocationByAppID",
+			fields:  fields{},
+			args:    args{appID: 1},
+			want:    "cicd/org/erda",
+			wantErr: false,
+		},
+	}
+
+	var bdl *bundle.Bundle
+	pm := monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetApp",
+		func(bdl *bundle.Bundle, appID uint64) (*apistructs.ApplicationDTO, error) {
+			return &apistructs.ApplicationDTO{
+				ID:          1,
+				Name:        "erda-release",
+				OrgName:     "org",
+				ProjectName: "erda",
+			}, nil
+		})
+	defer pm.Unpatch()
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &ProjectPipelineService{
+				bundle: bdl,
+			}
+			got, err := p.makeLocationByAppID(tt.args.appID)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("makeLocationByAppID() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("makeLocationByAppID() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestProjectPipelineService_makeLocationByProjectID(t *testing.T) {
+	type fields struct {
+		bundle *bundle.Bundle
+	}
+	type args struct {
+		projectID uint64
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    string
+		wantErr bool
+	}{
+		{
+			name:    "test makeLocationByProjectID",
+			fields:  fields{},
+			args:    args{},
+			want:    "cicd/org/erda",
+			wantErr: false,
+		},
+	}
+
+	var bdl *bundle.Bundle
+	pm := monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetProject",
+		func(bdl *bundle.Bundle, id uint64) (*apistructs.ProjectDTO, error) {
+			return &apistructs.ProjectDTO{
+				ID:   1,
+				Name: "erda",
+			}, nil
+		})
+	defer pm.Unpatch()
+
+	pm2 := monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetOrg",
+		func(bdl *bundle.Bundle, id interface{}) (*apistructs.OrgDTO, error) {
+			return &apistructs.OrgDTO{
+				ID:   1,
+				Name: "org",
+			}, nil
+		})
+	defer pm2.Unpatch()
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &ProjectPipelineService{
+				bundle: bdl,
+			}
+			got, err := p.makeLocationByProjectID(tt.args.projectID)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("makeLocationByProjectID() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("makeLocationByProjectID() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestProjectPipelineService_checkDataPermission(t *testing.T) {
+	type fields struct {
+		logger logs.Logger
+	}
+	type args struct {
+		project *apistructs.ProjectDTO
+		org     *apistructs.OrgDTO
+		source  *spb.PipelineSource
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name:   "test has permission",
+			fields: fields{},
+			args: args{
+				project: &apistructs.ProjectDTO{Name: "erda"},
+				org:     &apistructs.OrgDTO{Name: "org"},
+				source:  &spb.PipelineSource{Remote: "org/erda/erda-release"},
+			},
+			wantErr: false,
+		},
+		{
+			name:   "test no permission",
+			fields: fields{},
+			args: args{
+				project: &apistructs.ProjectDTO{Name: "dice"},
+				org:     &apistructs.OrgDTO{Name: "org"},
+				source:  &spb.PipelineSource{Remote: "org/erda/erda-release"},
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &ProjectPipelineService{
+				logger: tt.fields.logger,
+			}
+			if err := p.checkDataPermission(tt.args.project, tt.args.org, tt.args.source); (err != nil) != tt.wantErr {
+				t.Errorf("checkDataPermission() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
 }
