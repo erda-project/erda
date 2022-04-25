@@ -52,7 +52,7 @@ type (
 type (
 	config struct {
 		RequestTimeout time.Duration `file:"request_timeout" default:"1m"`
-		CheckInterval  time.Duration `file:"check_interval" default:"1h"`
+		CheckInterval  time.Duration `file:"check_interval" default:"1m"`
 		PrintOnly      bool          `file:"print_only"`
 		DiskClean      diskClean     `file:"disk_clean"`
 	}
@@ -117,6 +117,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	if !p.loader.QueryIndexTimeRange() {
 		p.Log.Warnf("index clean is enable, but QueryIndexTimeRange of elasticsearch.index.loader is disable")
 	}
+	//go p.runCleanIndices(ctx)
 	p.election.OnLeader(p.runCleanIndices)
 
 	if int64(p.Cfg.DiskClean.CheckInterval) <= 0 {
@@ -175,14 +176,14 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	}
 
 	// init manager routes
-	routeRrefix := "/api/elasticsearch/index"
+	routePrefix := "/api/elasticsearch/index"
 	if len(ctx.Label()) > 0 {
-		routeRrefix = routeRrefix + "/" + ctx.Label()
+		routePrefix = routePrefix + "/" + ctx.Label()
 	} else {
-		routeRrefix = routeRrefix + "/-"
+		routePrefix = routePrefix + "/-"
 	}
 	routes := ctx.Service("http-router", interceptors.CORS()).(httpserver.Router)
-	err = p.intRoutes(routes, routeRrefix)
+	err = p.intRoutes(routes, routePrefix)
 	if err != nil {
 		return fmt.Errorf("failed to init routes: %s", err)
 	}
