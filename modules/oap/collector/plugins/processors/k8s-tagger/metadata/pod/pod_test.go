@@ -148,7 +148,7 @@ func TestCache_extractPodContainerMetadata(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			c, err := NewCache(nil, tt.fields.aInclude, tt.fields.lInclude)
 			assert.Nil(t, err)
-			assert.Equal(t, tt.want, c.extractPodContainerMetadata(tt.args.pod, tt.args.container))
+			assert.Equal(t, tt.want, c.extractPodContainerMetadata(tt.args.container))
 		})
 	}
 }
