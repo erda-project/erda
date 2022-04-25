@@ -126,15 +126,7 @@ func TestCache_extractPodContainerMetadata(t *testing.T) {
 				},
 			},
 			want: Value{
-				Tags: map[string]string{
-					metadata.PrefixPod + "name":                        "aaa",
-					metadata.PrefixPod + "namespace":                   "default",
-					metadata.PrefixPod + "uid":                         "aaa-bbb-ccc-ddd",
-					metadata.PrefixPod + "ip":                          "1.1.1.1",
-					metadata.PrefixPodLabels + "dop_erda_cloud_a":      "b",
-					metadata.PrefixPodLabels + "msp_erda_cloud_c":      "d",
-					metadata.PrefixPodAnnotations + "msp_erda_cloud_e": "f",
-				},
+				Tags: map[string]string{},
 				Fields: map[string]interface{}{
 					"container_resources_cpu_request":    0.1,
 					"container_resources_memory_request": int64(512 * 1024 * 1024),
