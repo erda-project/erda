@@ -37,3 +37,7 @@ http-server:
   allow_cors: true
 grpc-server:
   addr: ":9029"
+
+pprof:
+http-server@admin:
+  addr: ":9030"
