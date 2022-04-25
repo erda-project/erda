@@ -30,6 +30,7 @@ type config struct {
 	Pattern    string            `json:"pattern"`
 	Keys       []*pb.FieldDefine `json:"keys"`
 	AppendTags map[string]string `json:"appendTags"`
+	ReplaceKey map[string]string `json:"replaceKey"`
 }
 
 type processor struct {
@@ -37,6 +38,7 @@ type processor struct {
 	reg        *regexp.Regexp
 	keys       []*pb.FieldDefine
 	appendTags map[string]string
+	replaceKey map[string]string
 	converts   []func(text string) (interface{}, error)
 }
 
@@ -67,6 +69,7 @@ func New(metric string, cfg []byte) (processors.Processor, error) {
 		reg:        reg,
 		keys:       c.Keys,
 		appendTags: c.AppendTags,
+		replaceKey: c.ReplaceKey,
 		converts:   converts,
 	}, nil
 }
@@ -75,15 +78,15 @@ func New(metric string, cfg []byte) (processors.Processor, error) {
 var ErrNotMatch = fmt.Errorf("not match regexp")
 
 // Process .
-func (p *processor) Process(content string) (string, map[string]interface{}, map[string]string, error) {
+func (p *processor) Process(content string) (string, map[string]interface{}, map[string]string, map[string]string, error) {
 	match := p.reg.FindAllSubmatch(reflectx.StringToBytes(content), 1)
 	if len(match) <= 0 {
-		return "", nil, nil, ErrNotMatch
+		return "", nil, nil, nil, ErrNotMatch
 	}
 	fields := make(map[string]interface{})
 	for _, parts := range match {
 		if len(parts) != len(p.keys)+1 {
-			return "", nil, nil, ErrNotMatch
+			return "", nil, nil, nil, ErrNotMatch
 		}
 		for i, byts := range parts[1:] {
 			if i < len(p.keys) {
@@ -91,7 +94,7 @@ func (p *processor) Process(content string) (string, map[string]interface{}, map
 				convert := p.converts[i]
 				val, err := convert(reflectx.BytesToString(byts))
 				if err != nil {
-					return "", nil, nil, ErrNotMatch
+					return "", nil, nil, nil, ErrNotMatch
 				}
 				fields[key.Key] = val
 			}
@@ -99,7 +102,7 @@ func (p *processor) Process(content string) (string, map[string]interface{}, map
 		break // 只处理第一次匹配
 	}
 
-	return p.metric, fields, p.appendTags, nil
+	return p.metric, fields, p.appendTags, p.replaceKey, nil
 }
 
 func (p *processor) Keys() []*pb.FieldDefine {

@@ -34,7 +34,8 @@ type consumer struct {
 type content struct {
 	// encoding.RawBytes 不去解析具体内容
 	ID        encoding.RawBytes            `json:"id"`
-	Timestamp encoding.RawBytes            `json:"timestamp"`
+	Timestamp int64                        `json:"timestamp,omitempty"`
+	Time      *time.Time                   `json:"time,omitempty"`
 	Source    encoding.RawBytes            `json:"source"`
 	Content   encoding.RawBytes            `json:"content"`
 	Offset    encoding.RawBytes            `json:"offset"`
@@ -70,7 +71,9 @@ func (c *consumer) Invoke(key []byte, value []byte, topic *string, timestamp tim
 	if len(key) <= 2 {
 		return nil
 	}
-
+	if data.Timestamp == 0 && data.Time != nil {
+		data.Timestamp = data.Time.UnixNano()
+	}
 	// do filter
 	// allow no filter
 	// todo: support filter by es index existence
