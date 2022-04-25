@@ -124,6 +124,11 @@ func (pr *defaultPipelineReconciler) PrepareBeforeReconcile(ctx context.Context,
 		return rutil.ContinueWorkingAbort
 	}, rutil.WithContinueWorkingDefaultRetryInterval(pr.defaultRetryInterval))
 
+	// update pipeline status to running
+	pr.UpdatePipelineToRunning(ctx, p)
+}
+
+func (pr *defaultPipelineReconciler) UpdatePipelineToRunning(ctx context.Context, p *spec.Pipeline) {
 	// update pipeline status if necessary
 	// send event in a tx
 	if p.Status.AfterPipelineQueue() {
