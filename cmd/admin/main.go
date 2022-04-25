@@ -21,8 +21,8 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
 	_ "github.com/erda-project/erda/modules/admin"
 	_ "github.com/erda-project/erda/modules/admin/component-protocol/components"
-	_ "github.com/erda-project/erda/modules/admin/dingtalktest"
-	_ "github.com/erda-project/erda/modules/admin/providers/marketplace"
+	_ "github.com/erda-project/erda/modules/admin/services/dingtalktest"
+	_ "github.com/erda-project/erda/modules/admin/services/marketplace"
 	"github.com/erda-project/erda/pkg/common"
 )
 
