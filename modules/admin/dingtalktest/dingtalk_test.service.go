@@ -21,7 +21,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 
-	pb "github.com/erda-project/erda-proto-go/admin/pb"
+	"github.com/erda-project/erda-proto-go/admin/dingtalk/pb"
 )
 
 type dingTalkTestService struct {

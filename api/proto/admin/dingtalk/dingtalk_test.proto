@@ -1,7 +1,8 @@
 syntax = "proto3";
 
-package erda.admin;
-option go_package = "github.com/erda-project/erda-proto-go/admin/pb";
+package erda.admin.dingtalk;
+option go_package = "github.com/erda-project/erda-proto-go/admin/dingtalk/pb";
+
 import "google/api/annotations.proto";
 import "github.com/mwitkow/go-proto-validators/validator.proto";
 

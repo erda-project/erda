@@ -22,6 +22,7 @@ import (
 	_ "github.com/erda-project/erda/modules/admin"
 	_ "github.com/erda-project/erda/modules/admin/component-protocol/components"
 	_ "github.com/erda-project/erda/modules/admin/dingtalktest"
+	_ "github.com/erda-project/erda/modules/admin/providers/marketplace"
 	"github.com/erda-project/erda/pkg/common"
 )
 

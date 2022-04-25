@@ -1,0 +1,171 @@
+syntax = "proto3";
+
+package erda.admin.marketplace;
+option go_package = "github.com/erda-project/erda-proto-go/admin/marketplace/pb";
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/any.proto";
+import "common/openapi.proto";
+import "common/http.proto";
+
+service Marketplace {
+  option(erda.common.openapi_service) = {
+    service: "admin",
+    auth: {
+      check_login: true,
+      check_token: true,
+    }
+  };
+
+  // ListGalleries:
+  // en: list galleries in the org.
+  // zh_CN: 查询组织下所有的 gallery.
+  rpc ListGalleries(ListGalleriesReq) returns (ListGalleriesResp) {
+    option(google.api.http) = {
+      get: "/api/marketplace/galleries?type={type}&keyword={keyword}&pageNo={pageNo}&pageSize={pageSize}",
+    };
+    option(erda.common.openapi) = {
+      path: "/api/marketplace/galleries",
+    };
+  }
+
+  // CreateGallery:
+  // en: publish a gallery
+  // zh_CN: 发布到集市
+  rpc CreateGallery(CreateGalleryReq) returns (common.VoidResponse) {
+    option(google.api.http) = {
+      post: "/api/marketplace/galleries",
+    };
+    option(erda.common.openapi) = {
+      path: "/api/marketplace/galleries",
+    };
+  }
+
+  // GetGallery:
+  // en: query details of the gallery.
+  // zh_CN: 查询 gallery 详情.
+  rpc GetGallery(GetGalleryReq) returns (GetGalleryResp) {
+    option(google.api.http) = {
+      get: "/api/marketplace/galleries/{name}?type={type}&version={version}",
+    };
+    option(erda.common.openapi) = {
+      path: "/api/marketplace/galleries/{name}",
+    };
+  };
+
+  // DeleteGallery:
+  // en: delete the gallery from marketplace.
+  // zh_CN: 从 marketplace 下架 gallery.
+  rpc DeleteGallery(DeleteGalleryReq) returns (common.VoidResponse) {
+    option(google.api.http) = {
+      delete: "/api/marketplace/galleries/{name}?type={type}&version={version}",
+    };
+    option(erda.common.openapi) = {
+      path: "/api/marketplace/galleries/{name}",
+    };
+  };
+}
+
+message ListGalleriesReq {
+  string type = 1;
+  string keyword = 2;
+  int32 pageNo = 3;
+  int32 pageSize = 4;
+}
+
+message ListGalleriesResp {
+  ListGalleriesRespData data = 1;
+  repeated string userIDs = 2;
+}
+
+message ListGalleriesRespData {
+  int32 total = 1;
+  repeated ListGalleriesRespDataItem data = 2;
+}
+
+message ListGalleriesRespDataItem {
+  string id = 1;
+  string releaseID = 2;
+  string type = 3;
+  string name = 4;
+  string displayName = 5;
+  string category = 6;
+  string displayCategory = 7;
+  string desc = 8;
+  User publisher = 9;
+  string logoUrl = 10;
+}
+
+message User {
+  string id = 1;
+  string name = 2;
+  string nickName = 3;
+}
+
+message GetGalleryResp {
+    GetGalleryRespData data = 1;
+    repeated string userIDs = 2;
+}
+
+message GetGalleryRespData {
+  int32 total = 1;
+  repeated GetGalleryRespDataItem list = 2;
+}
+
+message GetGalleryRespDataItem {
+  string name = 1;
+  string displayName = 2;
+  string version = 3;
+  string type = 4;
+  string category = 5;
+  string logoUrl = 6;
+  google.protobuf.Any dice = 7;
+  google.protobuf.Any spec = 8;
+  string readme = 9;
+  string changeLog = 10;
+  bool isDefault = 11;
+  google.protobuf.Timestamp createdAt = 12;
+  google.protobuf.Timestamp updatedAt = 13;
+  User publisher = 14;
+  repeated ActionParam params = 15;
+  repeated ActionOutputs outputs = 16;
+  repeated string configVars = 17;
+}
+
+message ActionParam {
+  string name = 1;
+  string type = 2;
+  string desc = 3;
+  bool required = 4;
+  string default = 5;
+}
+
+message ActionOutputs {
+  string name = 1;
+  string type = 2;
+  string desc = 3;
+}
+
+message GetGalleryReq {
+  string name = 1;
+  string type = 2;
+  string version = 3;
+}
+
+message DeleteGalleryReq {
+  string name = 1;
+  string type = 2;
+  string version = 3;
+}
+
+message CreateGalleryReq {
+  string name = 1;
+  string type = 2;
+  string version = 3;
+  google.protobuf.Any any = 4;
+}
+
+message CreateGalleryReq_ReleaseSpec {
+  string releaseID = 1;
+}

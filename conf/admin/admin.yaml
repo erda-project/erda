@@ -12,7 +12,14 @@ grpc-server:
 health:
 service-register:
 
-erda.admin.dingtalk-test:
+# provider services
+erda.admin.dingtalk.DingTalkTestService:
+erda.admin.marketplace.Marketplace:
+
+# gRPC clients
+grpc-client@erda.core.dicehub.extension:
+  addr: "{DICEHUB_GRPC_ADD:dicehub:7080}"
+erda.core.dicehub.extension-client: {}
 
 # component-protocol framework
 component-protocol:
@@ -25,3 +32,10 @@ i18n@cp:
 i18n:
   common:
     - conf/admin/i18n/cp/common.yaml # TODO : distinguish between admin global common.yaml and cp/common.yaml
+
+gorm.v2:
+  host: "${MYSQL_HOST}"
+  port: "${MYSQL_PORT}"
+  username: "${MYSQL_USERNAME}"
+  password: "${MYSQL_PASSWORD}"
+  database: "${MYSQL_DATABASE}"
