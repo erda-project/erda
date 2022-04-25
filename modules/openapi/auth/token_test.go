@@ -48,8 +48,10 @@ func TestVerifyAccessKey(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:    "valid",
-			want:    TokenClient{},
+			name: "valid",
+			want: TokenClient{
+				"2", "2",
+			},
 			wantErr: false,
 		},
 	}
