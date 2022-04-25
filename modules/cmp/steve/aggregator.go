@@ -208,10 +208,23 @@ func (a *Aggregator) Add(clusterInfo apistructs.ClusterInfo) {
 	a.servers.Store(clusterInfo.Name, g)
 	go func() {
 		logrus.Infof("starting steve server for cluster %s", clusterInfo.Name)
+		var err error
 		server, cancel, err := a.createSteve(clusterInfo)
+		defer func() {
+			if err != nil {
+				if cancel != nil {
+					cancel()
+				}
+				a.servers.Delete(clusterInfo.Name)
+			}
+		}()
 		if err != nil {
 			logrus.Errorf("failed to create steve server for cluster %s, %v", clusterInfo.Name, err)
-			a.servers.Delete(clusterInfo.Name)
+			return
+		}
+
+		if err = a.createPredefinedResource(clusterInfo.Name); err != nil {
+			logrus.Errorf("failed to create predefined resource for cluster %s, %v", clusterInfo.Name, err)
 			return
 		}
 
@@ -222,11 +235,6 @@ func (a *Aggregator) Add(clusterInfo apistructs.ClusterInfo) {
 		}
 		a.servers.Store(clusterInfo.Name, g)
 		logrus.Infof("steve server for cluster %s started", clusterInfo.Name)
-
-		if err = a.createPredefinedResource(clusterInfo.Name); err != nil {
-			logrus.Errorf("failed to create predefined resource for cluster %s, %v", clusterInfo.Name, err)
-			a.servers.Delete(clusterInfo.Name)
-		}
 	}()
 }
 
