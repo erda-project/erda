@@ -58,7 +58,11 @@ func (e *Endpoints) CreateDeploymentOrder(ctx context.Context, r *http.Request, 
 	data, err := e.deploymentOrder.Create(ctx, &req)
 	if err != nil {
 		logrus.Errorf("failed to create deployment order: %v", err)
-		return errorresp.ErrResp(err)
+		errCtx := map[string]interface{}{}
+		if data != nil {
+			errCtx["deploymentOrderID"] = data.Id
+		}
+		return errorresp.New().InternalError(err).SetCtx(errCtx).ToResp(), nil
 	}
 
 	if req.Source != apistructs.SourceDeployPipeline {

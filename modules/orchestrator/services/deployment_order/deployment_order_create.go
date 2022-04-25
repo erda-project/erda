@@ -134,7 +134,8 @@ func (d *DeploymentOrder) Create(ctx context.Context, req *apistructs.Deployment
 		executeDeployResp, err := d.executeDeploy(order, releaseResp.Data, req.Source, parseRuntimeNameFromBranch(req))
 		if err != nil {
 			logrus.Errorf("failed to executeDeploy, err: %v", err)
-			return nil, err
+			// order had been created, return error with order context
+			return createResp, err
 		}
 		createResp.Deployments = executeDeployResp
 	}
@@ -234,6 +235,26 @@ func (d *DeploymentOrder) executeDeploy(order *dbclient.DeploymentOrder, release
 		}
 	}
 
+	orderStatus := apistructs.DeploymentStatusDeploying
+	var failedReason string
+
+	deployResponse := make(map[string]*apistructs.DeploymentCreateResponseDTO)
+	// create runtimes
+	for _, rtCreateReq := range rtCreateReqs {
+		runtimeCreateResp, err := d.rt.Create(order.Operator, rtCreateReq)
+		if err != nil {
+			logrus.Errorf("failed to create runtime %s, cluster: %s, release id: %s, err: %v",
+				rtCreateReq.Name, rtCreateReq.ClusterName, rtCreateReq.ReleaseID, err)
+			applicationsStatus[rtCreateReq.Extra.ApplicationName] = apistructs.DeploymentOrderStatusItem{
+				DeploymentStatus: apistructs.DeploymentStatusFailed,
+			}
+			orderStatus = apistructs.DeploymentStatusFailed
+			failedReason = fmt.Sprintf("application: %s, failed reason: %v", rtCreateReq.Extra.ApplicationName, err)
+			break
+		}
+		deployResponse[rtCreateReq.Extra.ApplicationName] = runtimeCreateResp
+	}
+
 	// marshal applications status
 	jsonAppStatus, err := json.Marshal(applicationsStatus)
 	if err != nil {
@@ -241,22 +262,15 @@ func (d *DeploymentOrder) executeDeploy(order *dbclient.DeploymentOrder, release
 	}
 
 	order.StatusDetail = string(jsonAppStatus)
-	order.Status = string(apistructs.DeploymentStatusDeploying)
+	order.Status = string(orderStatus)
 
 	if err := d.db.UpdateDeploymentOrder(order); err != nil {
 		logrus.Errorf("failed to update deployment order, err: %v", err)
 		return nil, err
 	}
 
-	deployResponse := make(map[string]*apistructs.DeploymentCreateResponseDTO)
-	// create runtimes
-	for _, rtCreateReq := range rtCreateReqs {
-		runtimeCreateResp, err := d.rt.Create(order.Operator, rtCreateReq)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create runtime %s, cluster: %s, release id: %s, err: %v",
-				rtCreateReq.Name, rtCreateReq.ClusterName, rtCreateReq.ReleaseID, err)
-		}
-		deployResponse[rtCreateReq.Extra.ApplicationName] = runtimeCreateResp
+	if orderStatus == apistructs.DeploymentStatusFailed {
+		return nil, fmt.Errorf("deploy failed, reason: %s", failedReason)
 	}
 
 	return deployResponse, nil
