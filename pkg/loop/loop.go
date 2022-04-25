@@ -55,7 +55,8 @@ func New(options ...Option) *Loop {
 	return loop
 }
 
-// sleepUntilCtxDone sleep d duration until ctx canceled
+// sleepUntilCtxDone sleep d duration until ctx done.
+// Done maybe triggered by context timeout of deadline exceeded.
 func sleepUntilCtxDone(d time.Duration, ctx context.Context) (abort bool) {
 	if ctx == nil {
 		time.Sleep(d)
