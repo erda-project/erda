@@ -115,6 +115,15 @@ func (pr *defaultPipelineReconciler) PrepareBeforeReconcile(ctx context.Context,
 	// trigger first loop
 	defer safe.Go(func() { pr.chanToTriggerNextLoop <- struct{}{} })
 
+	// set totalTaskNum before reconcile
+	rutil.ContinueWorking(ctx, pr.log, func(ctx context.Context) rutil.WaitDuration {
+		if err := pr.setTotalTaskNumberBeforeReconcilePipeline(ctx, p); err != nil {
+			pr.log.Errorf("failed to set totalTaskNumber before reconcile pipeline(auto retry), pipelineID: %d, err: %v", p.ID, err)
+			return rutil.ContinueWorkingWithDefaultInterval
+		}
+		return rutil.ContinueWorkingAbort
+	}, rutil.WithContinueWorkingDefaultRetryInterval(pr.defaultRetryInterval))
+
 	// update pipeline status if necessary
 	// send event in a tx
 	if p.Status.AfterPipelineQueue() {
@@ -136,15 +145,6 @@ func (pr *defaultPipelineReconciler) PrepareBeforeReconcile(ctx context.Context,
 	events.EmitPipelineInstanceEvent(p, p.GetUserID())
 	//})
 	//return err
-
-	// set totalTaskNum before reconcile
-	rutil.ContinueWorking(ctx, pr.log, func(ctx context.Context) rutil.WaitDuration {
-		if err := pr.setTotalTaskNumberBeforeReconcilePipeline(ctx, p); err != nil {
-			pr.log.Errorf("failed to set totalTaskNumber before reconcile pipeline(auto retry), pipelineID: %d, err: %v", p.ID, err)
-			return rutil.ContinueWorkingWithDefaultInterval
-		}
-		return rutil.ContinueWorkingAbort
-	}, rutil.WithContinueWorkingDefaultRetryInterval(pr.defaultRetryInterval))
 }
 
 // GetTasksCanBeConcurrentlyScheduled .
