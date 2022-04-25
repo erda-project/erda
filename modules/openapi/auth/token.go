@@ -23,12 +23,14 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/api/spec"
 	"github.com/erda-project/erda/modules/openapi/conf"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/oauth2"
+	"github.com/erda-project/erda/pkg/oauth2/tokenstore/mysqltokenstore"
 	"github.com/erda-project/erda/pkg/strutil"
 	"github.com/erda-project/erda/pkg/ucauth"
 )
@@ -186,4 +188,35 @@ func matchAPISpec(accessibleAPI apistructs.AccessibleAPI, spec OAuth2APISpec) bo
 	return spec.MatchPath(accessibleAPI.Path) &&
 		accessibleAPI.Method == spec.Method() &&
 		strutil.Equal(accessibleAPI.Schema, spec.Scheme(), true)
+}
+
+func VerifyAccessKey(tokenService tokenpb.TokenServiceServer, r *http.Request) (TokenClient, error) {
+	auth := r.Header.Get(HeaderAuthorization)
+	token := ""
+	if auth != "" && strings.HasPrefix(auth, HeaderAuthorizationBearerPrefix) {
+		token = auth[len(HeaderAuthorizationBearerPrefix):]
+	}
+	resp, err := tokenService.QueryTokens(r.Context(), &tokenpb.QueryTokensRequest{
+		Access: token,
+		Scope:  strings.ToLower(tokenpb.ScopeEnum_CMP_CLUSTER.String()),
+		Type:   mysqltokenstore.AccessKey.String(),
+	})
+	if err != nil || resp == nil {
+		return TokenClient{}, err
+	}
+	if resp.Total == 0 {
+		return TokenClient{}, fmt.Errorf("auth failed, access key: %s", token)
+	} else if resp.Total > 1 {
+		return TokenClient{}, fmt.Errorf("auth failed, duplidate data")
+	}
+	scopeId := resp.Data[0].ScopeId
+	if resp.Data[0].ScopeId != "" {
+		r.Header.Set(httputil.InternalHeader, scopeId)
+	} else {
+		r.Header.Set(httputil.InternalHeader, tokenpb.ScopeEnum_CMP_CLUSTER.String())
+	}
+	return TokenClient{
+		ClientID:   scopeId,
+		ClientName: scopeId,
+	}, nil
 }

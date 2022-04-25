@@ -19,6 +19,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/modules/core/openapi-ng"
 	openapiauth "github.com/erda-project/erda/modules/core/openapi-ng/auth"
 	"github.com/erda-project/erda/pkg/oauth2"
@@ -35,6 +36,7 @@ type provider struct {
 	Router       openapi.Interface `autowired:"openapi-router"`
 	Redis        *redis.Client     `autowired:"redis-client"`
 	oauth2server *oauth2.OAuth2Server
+	TokenService tokenpb.TokenServiceServer `autowired:"erda.core.token.TokenService"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) (err error) {

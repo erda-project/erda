@@ -58,6 +58,9 @@ func (d *dao) QueryToken(ctx context.Context, req *pb.QueryTokensRequest) ([]tok
 	if req.Type != "" {
 		where["type"] = req.Type
 	}
+	if req.Access != "" {
+		where["access_key"] = req.Access
+	}
 
 	var count int64
 	cres := q.Where(where).Count(&count)

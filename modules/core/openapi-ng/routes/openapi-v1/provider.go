@@ -21,6 +21,7 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
+	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/modules/core/openapi-ng"
 	"github.com/erda-project/erda/modules/core/openapi-ng/proxy"
 	openapiv1 "github.com/erda-project/erda/modules/openapi"
@@ -37,12 +38,13 @@ type config struct {
 
 // +provider
 type provider struct {
-	Cfg      *config
-	Log      logs.Logger
-	Discover discover.Interface `autowired:"discover"`
-	Router   openapi.Interface  `autowired:"openapi-router"`
-	proxy    proxy.Proxy
-	handler  http.Handler
+	Cfg          *config
+	Log          logs.Logger
+	Discover     discover.Interface `autowired:"discover"`
+	Router       openapi.Interface  `autowired:"openapi-router"`
+	proxy        proxy.Proxy
+	handler      http.Handler
+	TokenService tokenpb.TokenServiceServer `autowired:"erda.core.token.TokenService"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) (err error) {
@@ -50,7 +52,7 @@ func (p *provider) Init(ctx servicehub.Context) (err error) {
 	p.proxy.Discover = p.Discover
 	hooks.Enable = false
 	conf.Load()
-	srv, err := openapiv1.NewServer()
+	srv, err := openapiv1.NewServer(p.TokenService)
 	if err != nil {
 		return err
 	}
