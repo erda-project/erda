@@ -44,7 +44,7 @@ func (p *provider) invoke(key []byte, value []byte, topic *string, timestamp tim
 		return nil
 	}
 	if log.Timestamp == 0 && log.Time != nil {
-		log.Timestamp = log.Time.UnixNano() / 1e6
+		log.Timestamp = log.Time.UnixNano()
 	}
 
 	// 兼容
