@@ -28,7 +28,6 @@ redis:
   sentinels_addr: "${REDIS_SENTINELS_ADDR}"
 
 
-erda.core.services.authentication.credentials.accesskey:
 erda.core.services.errorbox:
 
 http-server@admin:
@@ -46,3 +45,5 @@ dingtalk.api:
 erda.core.messenger.notifychannel:
 
 audit:
+
+erda.core.token:

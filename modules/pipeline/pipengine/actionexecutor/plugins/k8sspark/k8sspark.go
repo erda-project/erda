@@ -517,6 +517,22 @@ func (k *K8sSpark) generateKubeSparkJob(job *apistructs.JobFromUser, conf *apist
 
 	sparkApp.Spec.Executor.SparkPodSpec = k.composePodSpec(job, conf, sparkExecutorType, volMounts)
 	sparkApp.Spec.Executor.Instances = int32ptr(conf.Spec.SparkConf.ExecutorResource.Replica)
+	scheduleInfo2, _, _ := logic.GetScheduleInfo(k.cluster, string(k.Name()), string(Kind), *job)
+
+	// spark-submit doesn't support affinity, so transfer affinity to node selector
+	// in-the-feature, spark-submit will support affinity, and just need to set podSpec.Affinity = &constraintbuilders.K8S(&scheduleInfo2, nil, nil, nil).Affinity
+	affinity := &constraintbuilders.K8S(&scheduleInfo2, nil, nil, nil).Affinity
+	sparkApp.Spec.NodeSelector = make(map[string]string)
+	if affinity != nil && affinity.NodeAffinity != nil && affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution != nil && affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms != nil {
+		nodeTerms := affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms
+		for _, term := range nodeTerms {
+			for _, expression := range term.MatchExpressions {
+				if expression.Operator == corev1.NodeSelectorOpExists {
+					sparkApp.Spec.NodeSelector[expression.Key] = "true"
+				}
+			}
+		}
+	}
 
 	return sparkApp, nil
 }
@@ -526,7 +542,6 @@ func (k *K8sSpark) composePodSpec(job *apistructs.JobFromUser, conf *apistructs.
 
 	resource := apistructs.BigdataResource{}
 
-	scheduleInfo2, _, _ := logic.GetScheduleInfo(k.cluster, string(k.Name()), string(Kind), *job)
 	switch podType {
 	case sparkDriverType:
 		podSpec.Annotations = map[string]string{
@@ -549,7 +564,7 @@ func (k *K8sSpark) composePodSpec(job *apistructs.JobFromUser, conf *apistructs.
 	k.appendEnvs(&podSpec, &resource, conf.Name, podType)
 	podSpec.Labels = addLabels(conf)
 	podSpec.VolumeMounts = mount
-	podSpec.Affinity = &constraintbuilders.K8S(&scheduleInfo2, nil, nil, nil).Affinity
+
 	return podSpec
 }
 

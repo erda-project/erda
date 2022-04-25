@@ -26,6 +26,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/providers/clusterinfo"
 	"github.com/erda-project/erda/modules/pipeline/providers/cron/daemon"
 	"github.com/erda-project/erda/modules/pipeline/providers/edgepipeline"
+	"github.com/erda-project/erda/modules/pipeline/providers/edgepipeline_register"
 	"github.com/erda-project/erda/modules/pipeline/providers/engine"
 	"github.com/erda-project/erda/modules/pipeline/providers/queuemanager"
 	"github.com/erda-project/erda/modules/pipeline/providers/run"
@@ -61,6 +62,7 @@ type Endpoints struct {
 	queueManager queuemanager.Interface
 	clusterInfo  clusterinfo.Interface
 	edgePipeline edgepipeline.Interface
+	edgeRegister edgepipeline_register.Interface
 	mySQL        mysqlxorm.Interface
 	run          run.Interface
 	cancel       cancel.Interface
@@ -172,6 +174,12 @@ func WithClusterInfo(clusterInfo clusterinfo.Interface) Option {
 func WithEdgePipeline(edgePipeline edgepipeline.Interface) Option {
 	return func(e *Endpoints) {
 		e.edgePipeline = edgePipeline
+	}
+}
+
+func WithEdgeRegister(edgeRegister edgepipeline_register.Interface) Option {
+	return func(e *Endpoints) {
+		e.edgeRegister = edgeRegister
 	}
 }
 

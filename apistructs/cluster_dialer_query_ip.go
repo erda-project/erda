@@ -12,22 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package endpoints
+package apistructs
 
-import (
-	"context"
-	"net/http"
-
-	"github.com/erda-project/erda/modules/dop/services/monitor"
-	"github.com/erda-project/erda/pkg/http/httpserver"
-)
-
-func (e *Endpoints) RunIssueHistory(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
-	go monitor.RunIssueHistoryData(e.db, e.uc, e.bdl)
-	return httpserver.OkResp(nil)
-}
-
-func (e *Endpoints) RunIssueAddOrRepairHistory(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
-	go monitor.RunHistoryData(e.db, e.bdl)
-	return httpserver.OkResp(nil)
+type QueryClusterDialerIPResponse struct {
+	Succeeded bool   `json:"succeeded"`
+	Error     string `json:"error"`
+	IP        string `json:"IP"`
 }

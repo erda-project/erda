@@ -16,18 +16,109 @@ package edgepipeline_register
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/rancher/remotedialer"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/pkg/clusterdialer"
 	"github.com/erda-project/erda/pkg/discover"
 )
 
 type Interface interface {
+	GetAccessToken(req apistructs.OAuth2TokenGetRequest) (*apistructs.OAuth2Token, error)
+	GetOAuth2Token(req apistructs.OAuth2TokenGetRequest) (*apistructs.OAuth2Token, error)
+	GetEdgePipelineEnvs() apistructs.ClusterDialerClientDetail
+	CheckAccessToken(token string) error
+	CheckAccessTokenFromHttpRequest(req *http.Request) error
+	IsEdge() bool
+
+	ShouldDispatchToEdge(source, clusterName string) bool
+	GetEdgeBundleByClusterName(clusterName string) (*bundle.Bundle, error)
 	//RegisterEdgeToDialer(ctx context.Context)
+}
+
+func (p *provider) ShouldDispatchToEdge(source, clusterName string) bool {
+	if clusterName == "" {
+		return false
+	}
+	if p.Cfg.ClusterName == clusterName {
+		return false
+	}
+	var findInWhitelist bool
+	for _, whiteListSource := range p.Cfg.AllowedSources {
+		if strings.HasPrefix(source, whiteListSource) {
+			findInWhitelist = true
+			break
+		}
+	}
+	if !findInWhitelist {
+		return false
+	}
+	isEdge, err := p.bdl.IsClusterDialerClientRegistered(clusterName, apistructs.ClusterDialerClientTypePipeline.String())
+	if !isEdge || err != nil {
+		return false
+	}
+
+	return true
+}
+
+func (p *provider) GetDialContextByClusterName(clusterName string) clusterdialer.DialContextFunc {
+	clusterKey := apistructs.ClusterDialerClientTypePipeline.MakeClientKey(clusterName)
+	return clusterdialer.DialContext(clusterKey)
+}
+
+func (p *provider) GetEdgeBundleByClusterName(clusterName string) (*bundle.Bundle, error) {
+	edgeDial := p.GetDialContextByClusterName(clusterName)
+	edgeDetail, err := p.bdl.GetClusterDialerClientData(apistructs.ClusterDialerClientTypePipeline.String(), clusterName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get edge bundle for cluster %s, err: %v", clusterName, err)
+	}
+	pipelineAddr := edgeDetail.Get(apistructs.ClusterDialerDataKeyPipelineAddr)
+	return bundle.New(bundle.WithDialContext(edgeDial), bundle.WithCustom(discover.EnvPipeline, pipelineAddr)), nil
+}
+
+func (p *provider) GetAccessToken(req apistructs.OAuth2TokenGetRequest) (*apistructs.OAuth2Token, error) {
+	return &apistructs.OAuth2Token{
+		AccessToken: p.Cfg.accessToken,
+		ExpiresIn:   0,
+		TokenType:   "Bearer",
+	}, nil
+}
+
+func (p *provider) GetOAuth2Token(req apistructs.OAuth2TokenGetRequest) (*apistructs.OAuth2Token, error) {
+	return &apistructs.OAuth2Token{
+		AccessToken: p.Cfg.accessToken,
+		ExpiresIn:   0,
+		TokenType:   "Bearer",
+	}, nil
+}
+
+func (p *provider) CheckAccessTokenFromHttpRequest(req *http.Request) error {
+	if p.Cfg.IsEdge {
+		token := req.Header.Get("Authorization")
+		return p.CheckAccessToken(token)
+	}
+	return nil
+}
+
+func (p *provider) CheckAccessToken(token string) error {
+	if token != p.Cfg.accessToken {
+		return fmt.Errorf("invalid access token")
+	}
+	return nil
+}
+
+func (p *provider) GetEdgePipelineEnvs() apistructs.ClusterDialerClientDetail {
+	return apistructs.ClusterDialerClientDetail{
+		apistructs.ClusterDialerDataKeyPipelineAddr: p.Cfg.PipelineAddr,
+		apistructs.ClusterDialerDataKeyPipelineHost: p.Cfg.PipelineHost,
+	}
 }
 
 // RegisterEdgeToDialer only registers the edge to the dialer
@@ -60,6 +151,10 @@ func (p *provider) RegisterEdgeToDialer(ctx context.Context) {
 			// retry connect dialer
 		}
 	}
+}
+
+func (p *provider) IsEdge() bool {
+	return p.Cfg.IsEdge
 }
 
 func (p *provider) ConnectAuthorizer(proto string, address string) bool {

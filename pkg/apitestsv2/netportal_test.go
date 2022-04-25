@@ -15,14 +15,12 @@
 package apitestsv2
 
 import (
-	"net/http"
 	"reflect"
 	"testing"
 
 	"github.com/alecthomas/assert"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/pkg/http/customhttp"
 )
 
 func Test_getK8sNamespace(t *testing.T) {
@@ -116,9 +114,8 @@ func Test_checkNetportal(t *testing.T) {
 }
 
 func Test_handleCustomNetportalRequest(t *testing.T) {
-	inetAddr := "web.n1.svc.cluster.local:80"
+	//inetAddr := "web.n1.svc.cluster.local:80"
 	netportalURL := "inet://xxx.yyy"
-	customhttp.SetInetAddr(inetAddr)
 	type args struct {
 		apiReq       *apistructs.APIRequestInfo
 		netportalOpt *netportalOption
@@ -160,21 +157,21 @@ func Test_handleCustomNetportalRequest(t *testing.T) {
 			},
 			wantErr: true,
 		},
-		{
-			name: "internal service url, NOT in blacklist, use netportal",
-			args: args{
-				apiReq: &apistructs.APIRequestInfo{URL: "http://web.n1.svc.cluster.local:8080", Headers: make(http.Header)},
-				netportalOpt: &netportalOption{
-					url:                           netportalURL,
-					blacklistOfK8sNamespaceAccess: []string{"n2"},
-				},
-			},
-			want: want{
-				schema: "http",
-				host:   inetAddr,
-			},
-			wantErr: false,
-		},
+		//{
+		//	name: "internal service url, NOT in blacklist, use netportal",
+		//	args: args{
+		//		apiReq: &apistructs.APIRequestInfo{URL: "http://web.n1.svc.cluster.local:8080", Headers: make(http.Header)},
+		//		netportalOpt: &netportalOption{
+		//			url:                           netportalURL,
+		//			blacklistOfK8sNamespaceAccess: []string{"n2"},
+		//		},
+		//	},
+		//	want: want{
+		//		schema: "http",
+		//		host:   inetAddr,
+		//	},
+		//	wantErr: false,
+		//},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

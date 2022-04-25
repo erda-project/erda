@@ -25,6 +25,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/pkg/transport"
 	election "github.com/erda-project/erda-infra/providers/etcd-election"
 	"github.com/erda-project/erda/modules/pipeline/providers/leaderworker/worker"
 )
@@ -34,6 +35,7 @@ type provider struct {
 	Cfg        *config
 	Election   election.Interface `autowired:"etcd-election@leader-worker"`
 	EtcdClient *clientv3.Client
+	Register   transport.Register
 
 	lock sync.Mutex
 
@@ -95,7 +97,9 @@ func (p *provider) removeFromTaskWorkerAssignMap(logicTaskID worker.LogicTaskID,
 	p.lock.Lock()
 	defer p.lock.Unlock()
 	// findWorkerByTask
-	delete(p.forLeaderUse.findWorkerByTask, logicTaskID)
+	if currentWorkerID := p.forLeaderUse.findWorkerByTask[logicTaskID]; currentWorkerID == workerID {
+		delete(p.forLeaderUse.findWorkerByTask, logicTaskID)
+	}
 	// findTaskByWorker
 	workerTasks, ok := p.forLeaderUse.findTaskByWorker[workerID]
 	if ok {
@@ -123,6 +127,7 @@ func (p *provider) leaderUseDeleteWorkerTaskAssign(deleteWorkerID worker.ID) {
 
 func (p *provider) Run(ctx context.Context) error {
 	p.Election.OnLeader(p.leaderFramework)
+	p.startInspector(ctx)
 	return nil
 }
 

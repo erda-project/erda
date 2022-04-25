@@ -260,6 +260,7 @@ func (m *Member) UpdateMemberUserInfo(req apistructs.MemberUserInfoUpdateRequest
 			"mobile": member.Mobile,
 			"name":   member.Name,
 			"nick":   member.Nick,
+			"avatar": member.Avatar,
 		}); err != nil {
 			return err
 		}

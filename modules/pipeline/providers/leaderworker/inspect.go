@@ -12,15 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package accesskey
+package leaderworker
 
 import (
-	"testing"
+	"context"
+	"fmt"
+	"net/http"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/davecgh/go-spew/spew"
 )
 
-func TestAccessKey_TableName(t *testing.T) {
-	m := &AccessKey{}
-	assert.Equal(t, "erda_access_key", m.TableName())
+func (p *provider) startInspector(ctx context.Context) {
+	p.Register.Add(http.MethodGet, "/leaderworker/inspect", func(rw http.ResponseWriter, r *http.Request) {
+		p.lock.Lock()
+		if p.Election.IsLeader() {
+			spew.Fdump(rw, "forLeaderUse", p.forLeaderUse)
+		}
+		_, _ = fmt.Fprintln(rw)
+		spew.Fdump(rw, "forWorkerUse", p.forWorkerUse)
+		p.lock.Unlock()
+	})
 }
