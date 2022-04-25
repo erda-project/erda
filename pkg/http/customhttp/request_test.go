@@ -21,6 +21,7 @@ import (
 	"os"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/erda-project/erda/pkg/discover"
 )
@@ -140,6 +141,7 @@ func TestQueryClusterDialerIP(t *testing.T) {
 	})
 	go http.ListenAndServe(queryIPAddr, nil)
 
+	time.Sleep(1 * time.Second)
 	os.Setenv(discover.EnvClusterDialer, queryIPAddr)
 	res, ok := queryClusterDialerIP("")
 	if !ok {
