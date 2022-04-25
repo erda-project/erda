@@ -16,6 +16,7 @@ package deployment_order
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/sirupsen/logrus"
 
@@ -50,6 +51,41 @@ func (d *DeploymentOrder) Cancel(ctx context.Context, req *apistructs.Deployment
 
 	if len(*runtimes) == 0 {
 		logrus.Warnf("none runtimes need cancel deploying")
+		// project release order deal with sync
+		if order.Status == string(apistructs.DeploymentStatusCanceled) || order.Type == apistructs.TypeProjectRelease {
+			return nil, nil
+		}
+		defaultStatusItem := apistructs.DeploymentOrderStatusItem{
+			AppID:            uint64(order.ApplicationId),
+			DeploymentStatus: apistructs.DeploymentStatusCanceled,
+		}
+
+		// deal with application release order
+		order.Status = string(apistructs.DeploymentStatusCanceled)
+		statusMap := make(apistructs.DeploymentOrderStatusMap)
+		if err := json.Unmarshal([]byte(order.StatusDetail), &statusMap); err != nil {
+			logrus.Errorf("failed to unmarshal status detail, err: %v", err)
+			statusMap[order.ApplicationName] = defaultStatusItem
+		} else {
+			if app, ok := statusMap[order.ApplicationName]; ok {
+				app.DeploymentStatus = apistructs.DeploymentStatusFailed
+				statusMap[order.ApplicationName] = app
+			} else {
+				statusMap[order.ApplicationName] = defaultStatusItem
+			}
+		}
+
+		newStatusDetail, err := json.Marshal(statusMap)
+		if err == nil {
+			order.StatusDetail = string(newStatusDetail)
+		} else {
+			logrus.Errorf("failed to marshal status detail, err: %v", err)
+		}
+
+		if err := d.db.UpdateDeploymentOrder(order); err != nil {
+			logrus.Errorf("failed to update deployment order, id: %s, err: %v", order.ID, err)
+			return nil, err
+		}
 		return nil, nil
 	}
 
