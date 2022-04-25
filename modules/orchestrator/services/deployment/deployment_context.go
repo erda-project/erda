@@ -953,8 +953,7 @@ func (fsm *DeployFSMContext) deployService() error {
 
 	// do deploy
 	if fsm.Runtime.Deployed {
-		// TODO: internal call update ServiceGroup
-		if _, err := fsm.serviceGroupImpl.Update(apistructs.ServiceGroupUpdateV2Request(group)); err != nil {
+		if err = fsm.UpdateServiceGroupWithLoop(group); err != nil {
 			return err
 		}
 	} else {
