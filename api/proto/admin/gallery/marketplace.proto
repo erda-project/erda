@@ -1,7 +1,7 @@
 syntax = "proto3";
 
-package erda.admin.marketplace;
-option go_package = "github.com/erda-project/erda-proto-go/admin/marketplace/pb";
+package erda.admin.gallery;
+option go_package = "github.com/erda-project/erda-proto-go/admin/gallery/pb";
 
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
@@ -21,12 +21,12 @@ service Marketplace {
   // ListGalleries:
   // en: list galleries in the org.
   // zh_CN: 查询组织下所有的 gallery.
-  rpc ListGalleries(ListGalleriesReq) returns (ListGalleriesResp) {
+  rpc ListGalleries(ListArtifactsReq) returns (ListArtifactsResp) {
     option(google.api.http) = {
-      get: "/api/marketplace/galleries?type={type}&keyword={keyword}&pageNo={pageNo}&pageSize={pageSize}",
+      get: "/api/gallery/artifacts?type={type}&keyword={keyword}&pageNo={pageNo}&pageSize={pageSize}",
     };
     option(erda.common.openapi) = {
-      path: "/api/marketplace/galleries",
+      path: "/api/gallery/artifacts",
     };
   }
 
@@ -35,10 +35,10 @@ service Marketplace {
   // zh_CN: 发布到集市
   rpc CreateGallery(CreateGalleryReq) returns (common.VoidResponse) {
     option(google.api.http) = {
-      post: "/api/marketplace/galleries",
+      post: "/api/gallery/artifacts",
     };
     option(erda.common.openapi) = {
-      path: "/api/marketplace/galleries",
+      path: "/api/gallery/artifacts",
     };
   }
 
@@ -47,10 +47,10 @@ service Marketplace {
   // zh_CN: 查询 gallery 详情.
   rpc GetGallery(GetGalleryReq) returns (GetGalleryResp) {
     option(google.api.http) = {
-      get: "/api/marketplace/galleries/{name}?type={type}&version={version}",
+      get: "/api/gallery/artifacts/{name}?type={type}&version={version}",
     };
     option(erda.common.openapi) = {
-      path: "/api/marketplace/galleries/{name}",
+      path: "/api/gallery/artifacts/{name}",
     };
   };
 
@@ -59,32 +59,32 @@ service Marketplace {
   // zh_CN: 从 marketplace 下架 gallery.
   rpc DeleteGallery(DeleteGalleryReq) returns (common.VoidResponse) {
     option(google.api.http) = {
-      delete: "/api/marketplace/galleries/{name}?type={type}&version={version}",
+      delete: "/api/gallery/artifacts/{name}?type={type}&version={version}",
     };
     option(erda.common.openapi) = {
-      path: "/api/marketplace/galleries/{name}",
+      path: "/api/gallery/artifacts/{name}",
     };
   };
 }
 
-message ListGalleriesReq {
+message ListArtifactsReq {
   string type = 1;
   string keyword = 2;
   int32 pageNo = 3;
   int32 pageSize = 4;
 }
 
-message ListGalleriesResp {
-  ListGalleriesRespData data = 1;
+message ListArtifactsResp {
+  ListArtifactsRespData data = 1;
   repeated string userIDs = 2;
 }
 
-message ListGalleriesRespData {
+message ListArtifactsRespData {
   int32 total = 1;
-  repeated ListGalleriesRespDataItem data = 2;
+  repeated ListArtifactsRespDataItem data = 2;
 }
 
-message ListGalleriesRespDataItem {
+message ListArtifactsRespDataItem {
   string id = 1;
   string releaseID = 2;
   string type = 3;

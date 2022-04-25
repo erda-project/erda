@@ -9,14 +9,14 @@ info:
 servers:
   - url: 'https://openapi.dev.terminus.io'
 tags:
-  - name: marketplace
-    description: marketplace
+  - name: gallery
+    description: gallery
 
 paths:
   /api/marketplace/gallery:
     get:
       tags:
-        - marketplace
+        - gallery
       summary: 查询组织下所有的 gallery 资源
       description: 查询组织下所有的 artifacts 资源 (extensions 和 上架的项目制品)
       parameters:
@@ -121,7 +121,7 @@ paths:
 
     get:
       tags:
-        - marketplace
+        - gallery
       summary: 某 gallery 的详情
       description: 某 gallery 的详情
       responses:
@@ -223,7 +223,7 @@ paths:
 
     delete:
       tags:
-        - marketplace
+        - gallery
       summary: 制品下架
       parameters:
         - name: version
@@ -248,7 +248,7 @@ paths:
           type: string
     post:
       tags:
-        - marketplace
+        - gallery
       summary: 生成页面分享查看链接
       requestBody:
         $ref: "#/components/requestBodies/GenerateSharedURL"
@@ -281,9 +281,9 @@ paths:
           type: string
     post:
       tags:
-        - marketplace
+        - gallery
       summary: 制品上架
-      description: 发布制品到 marketplace
+      description: 发布制品到 gallery
       requestBody:
         $ref: "#/components/requestBodies/PublishGallery"
       responses:

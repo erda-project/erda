@@ -183,7 +183,7 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 		return false, errorsx.UserErrorf(err.Error())
 	}
 
-	// 从 extension marketplace 获取 image 和 resource limit
+	// 从 extension gallery 获取 image 和 resource limit
 	extSearchReq := make([]string, 0)
 	extSearchReq = append(extSearchReq, getActionAgentTypeVersion())
 	extSearchReq = append(extSearchReq, extmarketsvc.MakeActionTypeVersion(&task.Extra.Action))

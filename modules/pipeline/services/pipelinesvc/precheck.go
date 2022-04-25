@@ -51,7 +51,7 @@ func (s *PipelineSvc) PreCheck(p *spec.Pipeline, stages []spec.PipelineStage, us
 		GlobalSnippetConfigLabels: p.Labels,
 	}
 
-	// 从 extension marketplace 获取 action
+	// 从 extension gallery 获取 action
 	extSearchReq := make([]string, 0)
 	actionTypeVerMap := make(map[string]struct{})
 	for _, task := range tasks {

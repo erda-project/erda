@@ -43,15 +43,15 @@ const (
 )
 
 var (
-	name = "erda.admin.marketplace"
+	name = "erda.admin.gallery"
 	spec = servicehub.Spec{
 		Define:               nil,
 		Services:             pb.ServiceNames(),
 		Dependencies:         nil,
 		OptionalDependencies: []string{"service-register"},
 		DependenciesFunc:     nil,
-		Summary:              "marketplace service",
-		Description:          "marketplace service",
+		Summary:              "gallery service",
+		Description:          "gallery service",
 		ConfigFunc: func() interface{} {
 			return new(struct{})
 		},
