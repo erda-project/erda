@@ -30,10 +30,8 @@ import (
 
 type (
 	config struct {
-		PodInfoCacheSize       int           `file:"pod_info_cache_size" default:"128"`
-		PodInfoCacheExpiration time.Duration `file:"pod_info_cache_expiration" default:"3h"`
-		BufferLines            int           `file:"buffer_lines" default:"1024"`
-		TimeSpan               time.Duration `file:"time_span" default:"3m"`
+		BufferLines int           `file:"buffer_lines" default:"1024"`
+		TimeSpan    time.Duration `file:"time_span" default:"3m"`
 	}
 	provider struct {
 		Cfg     *config

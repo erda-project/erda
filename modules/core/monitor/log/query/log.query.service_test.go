@@ -186,7 +186,7 @@ func Test_getIterator(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.service.getIterator(context.Background(), tt.sel, false)
+			got, err := tt.service.getIterator(context.Background(), tt.sel)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("getIterator() error = %v, wantErr %v", err, tt.wantErr)
 				return

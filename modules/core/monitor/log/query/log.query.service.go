@@ -292,9 +292,9 @@ func (s *logQueryService) queryLogItems(ctx context.Context, req Request, fn fun
 	}
 	var it storekit.Iterator
 	if withTotal {
-		it, err = s.getIterator(ctx, sel, req.GetLive())
+		it, err = s.getIterator(ctx, sel)
 	} else {
-		it, err = s.getOrderedIterator(ctx, s.splitSelectors(sel, time.Hour, 2, 10), req.GetLive())
+		it, err = s.getOrderedIterator(ctx, s.splitSelectors(sel, time.Hour, 2, 10))
 	}
 
 	if err != nil {
@@ -342,7 +342,7 @@ func (s *logQueryService) walkLogItems(ctx context.Context, req Request, fn func
 			return err
 		}
 	}
-	it, err := s.getIterator(ctx, sel, req.GetLive())
+	it, err := s.getIterator(ctx, sel)
 	if err != nil {
 		return errors.NewInternalServerError(err)
 	}
@@ -406,10 +406,10 @@ func (s *logQueryService) splitSelectors(sel *storage.Selector, initialInterval 
 	return reversed
 }
 
-func (s *logQueryService) getOrderedIterator(ctx context.Context, sels []*storage.Selector, live bool) (storekit.Iterator, error) {
+func (s *logQueryService) getOrderedIterator(ctx context.Context, sels []*storage.Selector) (storekit.Iterator, error) {
 	var its []storekit.Iterator
 	for _, item := range sels {
-		it, err := s.getIterator(ctx, item, live)
+		it, err := s.getIterator(ctx, item)
 		if err != nil {
 			return nil, err
 		}
@@ -419,21 +419,15 @@ func (s *logQueryService) getOrderedIterator(ctx context.Context, sels []*storag
 	return storekit.OrderedIterator(its...), nil
 }
 
-func (s *logQueryService) getIterator(ctx context.Context, sel *storage.Selector, live bool) (storekit.Iterator, error) {
+func (s *logQueryService) getIterator(ctx context.Context, sel *storage.Selector) (storekit.Iterator, error) {
 	if sel.Scheme == "advanced" {
 		if s.storageReader == nil && s.ckStorageReader == nil {
 			return storekit.EmptyIterator{}, nil
 		}
 		return s.tryGetIterator(ctx, sel, s.ckStorageReader, s.storageReader)
 	}
-	if sel.Scheme != "container" || !live {
-		if (s.storageReader != nil || s.ckStorageReader != nil) && (sel.Start > s.startTime || s.frozenStorageReader == nil) {
-			return s.tryGetIterator(ctx, sel, s.ckStorageReader, s.storageReader)
-		}
-		return s.tryGetIterator(ctx, sel, s.ckStorageReader, s.storageReader, s.frozenStorageReader)
-	}
-	if sel.End >= time.Now().Add(-24*time.Hour).UnixNano() {
-		return s.tryGetIterator(ctx, sel, s.k8sReader, s.ckStorageReader, s.storageReader, s.frozenStorageReader)
+	if (s.storageReader != nil || s.ckStorageReader != nil) && (sel.Start > s.startTime || s.frozenStorageReader == nil) {
+		return s.tryGetIterator(ctx, sel, s.ckStorageReader, s.storageReader)
 	}
 	return s.tryGetIterator(ctx, sel, s.ckStorageReader, s.storageReader, s.frozenStorageReader)
 }
