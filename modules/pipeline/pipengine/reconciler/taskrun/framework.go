@@ -118,20 +118,22 @@ func (tr *TaskRun) waitOp(itr TaskOp, o *Elem) (result error) {
 			})
 		}
 
-		// loop
-		if err := tr.handleTaskLoop(); err != nil {
-			// append err loop
-			errs = append(errs, fmt.Sprintf("%v", err))
-		}
-
 		if len(errs) > 0 {
 			result = errors.Errorf("failed to %s task, err: %s", itr.Op(), strutil.Join(errs, "\n", true))
 		}
-
-		// if result only contain platform error, task will retry, so don't set status changed
 		isExceed, _ := tr.Task.Inspect.IsErrorsExceed()
 		if result != nil && !errorsx.IsContainUserError(result) && !isExceed {
 			tr.Task.Status = oldStatus
+		} else {
+			// loop
+			if err := tr.handleTaskLoop(); err != nil {
+				// append err loop
+				errs = append(errs, fmt.Sprintf("%v", err))
+			}
+
+			if len(errs) > 0 {
+				result = errors.Errorf("failed to %s task, err: %s", itr.Op(), strutil.Join(errs, "\n", true))
+			}
 		}
 
 		// if we invoke `tr.fetchLatestTask` method here before `update`,
