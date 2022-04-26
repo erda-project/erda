@@ -23,10 +23,10 @@ import (
 	_ "github.com/erda-project/erda-infra/providers/etcd"
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
-	actionpb "github.com/erda-project/erda-proto-go/core/pipeline/action/pb"
 	"github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	_ "github.com/erda-project/erda/modules/pipeline/aop/plugins"
+	"github.com/erda-project/erda/modules/pipeline/providers/actionmgr"
 	"github.com/erda-project/erda/modules/pipeline/providers/cache"
 	"github.com/erda-project/erda/modules/pipeline/providers/cancel"
 	"github.com/erda-project/erda/modules/pipeline/providers/clusterinfo"
@@ -48,11 +48,10 @@ import (
 )
 
 type provider struct {
-	CmsService     pb.CmsServiceServer          `autowired:"erda.core.pipeline.cms.CmsService"`
-	MetricReport   report.MetricReport          `autowired:"metric-report-client" optional:"true"`
-	Router         httpserver.Router            `autowired:"http-router"`
-	CronService    cronpb.CronServiceServer     `autowired:"erda.core.pipeline.cron.CronService" required:"true"`
-	ActionService  actionpb.ActionServiceServer `autowired:"erda.core.pipeline.action.ActionService" required:"true"`
+	CmsService     pb.CmsServiceServer      `autowired:"erda.core.pipeline.cms.CmsService"`
+	MetricReport   report.MetricReport      `autowired:"metric-report-client" optional:"true"`
+	Router         httpserver.Router        `autowired:"http-router"`
+	CronService    cronpb.CronServiceServer `autowired:"erda.core.pipeline.cron.CronService" required:"true"`
 	CronDaemon     daemon.Interface
 	CronCompensate compensator.Interface
 	MySQL          mysqlxorm.Interface `autowired:"mysql-xorm"`
@@ -71,6 +70,7 @@ type provider struct {
 	Cancel       cancel.Interface
 	User         user.Interface
 	Secret       secret.Interface
+	ActionMgr    actionmgr.Interface
 }
 
 func (p *provider) Run(ctx context.Context) error {

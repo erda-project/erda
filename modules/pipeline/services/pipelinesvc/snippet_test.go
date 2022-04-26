@@ -24,6 +24,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/pipeline/providers/actionmgr"
 	"github.com/erda-project/erda/pkg/expression"
 	"github.com/erda-project/erda/pkg/pipeline_snippet_client"
 )
@@ -195,6 +196,7 @@ func Test_getActionDetail(t *testing.T) {
 
 		bdl := &bundle.Bundle{}
 		s.bdl = bdl
+		s.actionMgr = &actionmgr.MockActionMgr{}
 		monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "SearchExtensions", func(b *bundle.Bundle, req apistructs.ExtensionSearchRequest) (map[string]apistructs.ExtensionVersion, error) {
 			var extensionVersion = map[string]apistructs.ExtensionVersion{}
 			for _, v := range req.Extensions {

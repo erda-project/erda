@@ -113,9 +113,6 @@ type Conf struct {
 	// k8s executor goroutine pool size
 	K8SExecutorPoolSize int `env:"K8S_EXECUTOR_POOL_SIZE" default:"50"`
 
-	// external market refresh interval
-	ExtensionVersionRefreshIntervalMinute uint64 `env:"EXTENSION_VERSION_REFRESH_INTERVAL_MINUTE" default:"1"`
-
 	// k8s type executor max timeout second
 	K8SExecutorMaxInitializationSec uint64 `env:"K8S_EXECUTOR_MAX_INITIALIZATION_SEC" default:"5"`
 }
@@ -373,11 +370,6 @@ func SpecifyImagePullPolicy() string {
 // K8SExecutorPoolSize return default k8s executor pool size
 func K8SExecutorPoolSize() int {
 	return cfg.K8SExecutorPoolSize
-}
-
-// ExtensionVersionRefreshIntervalMinute external market refresh interval
-func ExtensionVersionRefreshIntervalMinute() uint64 {
-	return cfg.ExtensionVersionRefreshIntervalMinute
 }
 
 // K8SExecutorMaxInitializationSec k8s type executor max timeout second

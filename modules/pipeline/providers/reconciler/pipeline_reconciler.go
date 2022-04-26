@@ -203,7 +203,7 @@ func (pr *defaultPipelineReconciler) ReconcileOneSchedulableTask(ctx context.Con
 		defaultRetryInterval: pr.r.Cfg.RetryInterval,
 		pipelineSvcFuncs:     pr.r.pipelineSvcFuncs,
 		actionAgentSvc:       pr.r.actionAgentSvc,
-		extMarketSvc:         pr.r.extMarketSvc,
+		actionMgr:            pr.r.ActionMgr,
 	}
 	tr.ReconcileOneTaskUntilDone(ctx, p, task)
 	pr.releaseTaskAfterReconciled(ctx, p, task)

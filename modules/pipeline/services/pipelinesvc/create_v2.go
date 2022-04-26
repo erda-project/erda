@@ -28,7 +28,6 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/modules/pipeline/pkg/container_provider"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
-	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
@@ -245,11 +244,11 @@ func (s *PipelineSvc) makePipelineFromRequestV2(req *apistructs.PipelineCreateRe
 				if action.Type.IsSnippet() {
 					continue
 				}
-				extensionItems = append(extensionItems, extmarketsvc.MakeActionTypeVersion(action))
+				extensionItems = append(extensionItems, s.actionMgr.MakeActionTypeVersion(action))
 			}
 		}
 	}
-	_, extensions, err := s.extMarketSvc.SearchActions(extensionItems, extmarketsvc.MakeActionLocationsBySource(p.PipelineSource))
+	_, extensions, err := s.actionMgr.SearchActions(extensionItems, s.actionMgr.MakeActionLocationsBySource(p.PipelineSource))
 	if err != nil {
 		return nil, apierrors.ErrCreatePipeline.InternalError(err)
 	}

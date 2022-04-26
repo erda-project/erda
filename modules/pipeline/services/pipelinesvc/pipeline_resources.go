@@ -17,7 +17,6 @@ package pipelinesvc
 import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/pkg/action_info"
-	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/numeral"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
@@ -31,7 +30,7 @@ func (s *PipelineSvc) calculatePipelineResources(pipelineYml *pipelineyml.Pipeli
 
 	// load pipelineYml all action define and spec
 	var passedDataWhenCreate action_info.PassedDataWhenCreate
-	passedDataWhenCreate.InitData(s.bdl, s.extMarketSvc)
+	passedDataWhenCreate.InitData(s.bdl, s.actionMgr)
 	if err := passedDataWhenCreate.PutPassedDataByPipelineYml(pipelineYml, p); err != nil {
 		return nil, err
 	}
@@ -40,7 +39,7 @@ func (s *PipelineSvc) calculatePipelineResources(pipelineYml *pipelineyml.Pipeli
 	var stagesPipelineAppliedResources = make([][]*apistructs.PipelineAppliedResources, len(pipelineYml.Spec().Stages))
 	pipelineYml.Spec().LoopStagesActions(func(stage int, action *pipelineyml.Action) {
 		if !action.Type.IsSnippet() {
-			resources := calculateNormalTaskResources(action, passedDataWhenCreate.GetActionJobDefine(extmarketsvc.MakeActionTypeVersion(action)))
+			resources := calculateNormalTaskResources(action, passedDataWhenCreate.GetActionJobDefine(s.actionMgr.MakeActionTypeVersion(action)))
 			stagesPipelineAppliedResources[stage] = append(stagesPipelineAppliedResources[stage], &resources)
 		}
 	})

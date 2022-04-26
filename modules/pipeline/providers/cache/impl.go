@@ -20,7 +20,6 @@ import (
 	"fmt"
 
 	"github.com/erda-project/erda/modules/pipeline/pkg/action_info"
-	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
@@ -188,7 +187,7 @@ func (p *provider) GetOrSetPassedDataWhenCreateFromContext(pipelineYml *pipeline
 	}
 
 	passedDataWhenCreate = &action_info.PassedDataWhenCreate{}
-	passedDataWhenCreate.InitData(p.bdl, p.extMarketSvc)
+	passedDataWhenCreate.InitData(p.bdl, p.ActionMgr)
 	if err := passedDataWhenCreate.PutPassedDataByPipelineYml(pipelineYml, pipeline); err != nil {
 		return nil, err
 	}
@@ -232,8 +231,4 @@ func (p *provider) GetPipelineSecretByPipelineID(pipelineID uint64) (secret *Sec
 
 func (p *provider) ClearPipelineSecretByPipelineID(pipelineID uint64) {
 	p.cacheMap.Delete(makeMapKey(pipelineID, pipelineSecretCacheKey))
-}
-
-func (p *provider) SetExtMarketSvc(extMarketSvc *extmarketsvc.ExtMarketSvc) {
-	p.extMarketSvc = extMarketSvc
 }

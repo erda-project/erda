@@ -16,7 +16,6 @@ package cache
 
 import (
 	"github.com/erda-project/erda/modules/pipeline/pkg/action_info"
-	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
@@ -32,6 +31,4 @@ type Interface interface {
 	SetPipelineSecretByPipelineID(pipelineID uint64, secret *SecretCache)
 	GetPipelineSecretByPipelineID(pipelineID uint64) (secret *SecretCache)
 	ClearPipelineSecretByPipelineID(pipelineID uint64)
-
-	SetExtMarketSvc(extMarketSvc *extmarketsvc.ExtMarketSvc)
 }
