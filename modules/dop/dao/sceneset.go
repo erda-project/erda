@@ -44,17 +44,17 @@ func (client *DBClient) CreateSceneSet(sceneSet *SceneSet) error {
 	return client.Create(sceneSet).Error
 }
 
-func (client *DBClient) CountSceneSetByName(name string, spaceId uint64) (int, error) {
+func (client *DBClient) CountSceneSetByName(name string, spaceID uint64) (int, error) {
 	var res int
-	if err := client.Model(&SceneSet{}).Where("`space_id` = ? and name = ?", spaceId, name).Count(&res).Error; err != nil {
+	if err := client.Model(&SceneSet{}).Where("`space_id` = ? and `name` = ?", spaceID, name).Count(&res).Error; err != nil {
 		return -1, err
 	}
 	return res, nil
 }
 
-func (client *DBClient) FindSceneSetsByName(name string, spaceId uint64) ([]SceneSet, error) {
+func (client *DBClient) FindSceneSetsByName(name string, spaceID uint64) ([]SceneSet, error) {
 	var res []SceneSet
-	err := client.Model(&SceneSet{}).Where("`space_id` = ? and name = ?", spaceId, name).Find(&res).Error
+	err := client.Model(&SceneSet{}).Where("`space_id` = ? and `name` = ?", spaceID, name).Find(&res).Error
 	return res, err
 }
 
