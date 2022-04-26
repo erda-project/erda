@@ -14,6 +14,10 @@
 
 package log
 
+import (
+	"time"
+)
+
 // Log .
 type Log struct {
 	Source    string            `json:"source"`
@@ -21,6 +25,7 @@ type Log struct {
 	Stream    string            `json:"stream"`
 	Content   string            `json:"content"`
 	Offset    int64             `json:"offset"`
+	Time      *time.Time        `json:"time,omitempty"` // the time key in fluent-bit is RFC3339Nano
 	Timestamp int64             `json:"timestamp"`
 	Tags      map[string]string `json:"tags"`
 }

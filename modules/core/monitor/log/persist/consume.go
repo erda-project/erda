@@ -70,6 +70,11 @@ func (p *provider) normalize(data *log.Log) {
 		data.Tags = make(map[string]string)
 	}
 
+	if data.Time != nil {
+		data.Timestamp = data.Time.UnixNano()
+		data.Time = nil
+	}
+
 	// setup level
 	if level, ok := data.Tags["level"]; ok {
 		data.Tags["level"] = strings.ToUpper(level)
