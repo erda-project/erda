@@ -17,6 +17,7 @@ package cron
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/go-errors/errors"
@@ -88,7 +89,7 @@ func (s *provider) CronCreate(ctx context.Context, req *pb.CronCreateRequest) (*
 	}
 
 	err = Transaction(s.dbClient, func(op mysqlxorm.SessionOption) error {
-		if req.CronExpr == "" {
+		if req.CronExpr != "" {
 			err = s.InsertOrUpdatePipelineCron(createCron, op)
 		} else {
 			err = s.disable(createCron, op)
@@ -97,7 +98,7 @@ func (s *provider) CronCreate(ctx context.Context, req *pb.CronCreateRequest) (*
 			return err
 		}
 		req.ID = createCron.ID
-		if err := s.Daemon.AddIntoPipelineCrond(createCron.ID); err != nil {
+		if err := s.Daemon.AddIntoPipelineCrond(createCron); err != nil {
 			return err
 		}
 		return nil
@@ -173,9 +174,12 @@ func (s *provider) CronStop(ctx context.Context, req *pb.CronStopRequest) (*pb.C
 }
 
 func (s *provider) operate(cronID uint64, enable bool) (*common.Cron, error) {
-	cron, err := s.dbClient.GetPipelineCron(cronID)
+	cron, found, err := s.dbClient.GetPipelineCron(cronID)
 	if err != nil {
 		return nil, apierrors.ErrGetPipelineCron.InternalError(err)
+	}
+	if !found {
+		return nil, apierrors.ErrGetPipelineCron.InternalError(fmt.Errorf("not found"))
 	}
 
 	*cron.Enable = enable
@@ -184,39 +188,57 @@ func (s *provider) operate(cronID uint64, enable bool) (*common.Cron, error) {
 		return cron.Convert2DTO(), nil
 	}
 
-	if err = s.dbClient.UpdatePipelineCron(cron.ID, &cron); err != nil {
-		return nil, apierrors.ErrOperatePipeline.InternalError(err)
-	}
+	err = Transaction(s.dbClient, func(option mysqlxorm.SessionOption) error {
+		if err = s.dbClient.UpdatePipelineCron(cron.ID, &cron, option); err != nil {
+			return apierrors.ErrOperatePipeline.InternalError(err)
+		}
 
-	if err := s.Daemon.AddIntoPipelineCrond(cron.ID); err != nil {
-		return nil, apierrors.ErrReloadCrond.InternalError(err)
+		if err := s.Daemon.AddIntoPipelineCrond(&cron); err != nil {
+			return apierrors.ErrReloadCrond.InternalError(err)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
 	}
-
 	return cron.Convert2DTO(), nil
 }
 
 func (s *provider) CronDelete(ctx context.Context, req *pb.CronDeleteRequest) (*pb.CronDeleteResponse, error) {
 
-	cron, err := s.dbClient.GetPipelineCron(req.CronID)
+	err := Transaction(s.dbClient, func(option mysqlxorm.SessionOption) error {
+		cron, found, err := s.dbClient.GetPipelineCron(req.CronID, option)
+		if err != nil {
+			return apierrors.ErrDeletePipelineCron.InvalidParameter(err)
+		}
+		if !found {
+			return apierrors.ErrDeletePipelineCron.InvalidParameter(fmt.Errorf("not found"))
+		}
+
+		if err := s.dbClient.DeletePipelineCron(cron.ID, option); err != nil {
+			return apierrors.ErrDeletePipelineCron.InternalError(err)
+		}
+
+		if err := s.Daemon.DeleteFromPipelineCrond(&cron); err != nil {
+			return apierrors.ErrDeletePipelineCron.InternalError(err)
+		}
+		return nil
+	})
 	if err != nil {
-		return nil, apierrors.ErrDeletePipelineCron.InvalidParameter(err)
+		return nil, err
 	}
-
-	if err := s.dbClient.DeletePipelineCron(cron.ID); err != nil {
-		return nil, apierrors.ErrDeletePipelineCron.InternalError(err)
-	}
-
-	if err := s.Daemon.DeletePipelineCrond(cron.ID); err != nil {
-		return nil, apierrors.ErrReloadCrond.InternalError(err)
-	}
-
 	return &pb.CronDeleteResponse{}, nil
 }
 
 func (s *provider) CronGet(ctx context.Context, req *pb.CronGetRequest) (*pb.CronGetResponse, error) {
-	cron, err := s.dbClient.GetPipelineCron(req.CronID)
+	cron, found, err := s.dbClient.GetPipelineCron(req.CronID)
 	if err != nil {
 		return nil, apierrors.ErrGetPipelineCron.InvalidParameter(err)
+	}
+	if !found {
+		return &pb.CronGetResponse{
+			Data: nil,
+		}, nil
 	}
 
 	return &pb.CronGetResponse{
@@ -225,9 +247,12 @@ func (s *provider) CronGet(ctx context.Context, req *pb.CronGetRequest) (*pb.Cro
 }
 
 func (s *provider) CronUpdate(ctx context.Context, req *pb.CronUpdateRequest) (*pb.CronUpdateResponse, error) {
-	cron, err := s.dbClient.GetPipelineCron(req.CronID)
+	cron, found, err := s.dbClient.GetPipelineCron(req.CronID)
 	if err != nil {
 		return nil, err
+	}
+	if !found {
+		return nil, fmt.Errorf("not found")
 	}
 
 	pipeline, err := pipelineyml.New([]byte(req.PipelineYml))
@@ -241,23 +266,30 @@ func (s *provider) CronUpdate(ctx context.Context, req *pb.CronUpdateRequest) (*
 			StopIfLatterExecuted: pipeline.Spec().CronCompensator.StopIfLatterExecuted,
 		}
 	}
-
 	cron.CronExpr = req.CronExpr
 	cron.Extra.PipelineYml = req.PipelineYml
 	cron.Extra.ConfigManageNamespaces = strutil.DedupSlice(append(cron.Extra.ConfigManageNamespaces, req.ConfigManageNamespaces...), true)
 	cron.Extra.IncomingSecrets = req.Secrets
-
 	var fields = []string{spec.PipelineCronCronExpr, spec.Extra}
-
 	if req.PipelineDefinitionID != "" {
 		cron.PipelineDefinitionID = req.PipelineDefinitionID
 		fields = append(fields, spec.PipelineDefinitionID)
 	}
-	err = s.dbClient.UpdatePipelineCronWillUseDefault(cron.ID, &cron, fields)
+
+	err = Transaction(s.dbClient, func(option mysqlxorm.SessionOption) error {
+		err = s.dbClient.UpdatePipelineCronWillUseDefault(cron.ID, &cron, fields, option)
+		if err != nil {
+			return apierrors.ErrUpdatePipelineCron.InternalError(err)
+		}
+
+		if err := s.Daemon.AddIntoPipelineCrond(&cron); err != nil {
+			return apierrors.ErrUpdatePipelineCron.InternalError(err)
+		}
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
-
 	return &pb.CronUpdateResponse{}, nil
 }
 

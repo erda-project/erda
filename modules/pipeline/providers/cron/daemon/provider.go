@@ -64,19 +64,21 @@ func (p *provider) CrondSnapshot() []string {
 	return p.crondSnapshot()
 }
 
-func (p *provider) AddIntoPipelineCrond(cronID uint64) error {
-	if cronID <= 0 {
+func (p *provider) AddIntoPipelineCrond(cron *db.PipelineCron) error {
+	if cron.ID <= 0 {
 		return nil
 	}
-	_, err := p.EtcdClient.Put(context.Background(), etcdCronPrefixAddKey+strconv.FormatUint(cronID, 10), "")
+
+	_, err := p.EtcdClient.Put(context.Background(), etcdCronPrefixAddKey+strconv.FormatUint(cron.ID, 10), "")
 	return err
 }
 
-func (p *provider) DeletePipelineCrond(cronID uint64) error {
-	if cronID <= 0 {
+func (p *provider) DeleteFromPipelineCrond(cron *db.PipelineCron) error {
+	if cron.ID <= 0 {
 		return nil
 	}
-	_, err := p.EtcdClient.Put(context.Background(), etcdCronPrefixDeleteKey+strconv.FormatUint(cronID, 10), "")
+
+	_, err := p.EtcdClient.Put(context.Background(), etcdCronPrefixDeleteKey+strconv.FormatUint(cron.ID, 10), "")
 	return err
 }
 
