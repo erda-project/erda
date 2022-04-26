@@ -128,6 +128,7 @@ func (a *Aggregator) HasAccess(clusterName string, apiOp *types.APIRequest, verb
 	return access.Grants(verb, gr, ns, attributes.Resource(schema)), nil
 }
 
+// watchClusters watches whether there is a steve server for deleted cluster
 func (a *Aggregator) watchClusters(ctx context.Context) {
 	for {
 		select {
@@ -136,7 +137,7 @@ func (a *Aggregator) watchClusters(ctx context.Context) {
 		case <-time.Tick(time.Minute):
 			clusters, err := a.listClusterByType("k8s", "edas")
 			if err != nil {
-				logrus.Errorf("failed to list k8s clusters when watch: %v", err)
+				logrus.Errorf("failed to list clusters when watching: %v", err)
 				continue
 			}
 			exists := make(map[string]struct{})
@@ -207,6 +208,13 @@ func (a *Aggregator) Add(clusterInfo apistructs.ClusterInfo) {
 	g := &group{ready: false}
 	a.servers.Store(clusterInfo.Name, g)
 	go func() {
+		logrus.Infof("creating predefined resource for cluster %s", clusterInfo.Name)
+		if err := a.createPredefinedResource(clusterInfo.Name); err != nil {
+			logrus.Infof("failed to create predefined resource for cluster %s, %v. Skip starting steve server",
+				clusterInfo.Name, err)
+			a.servers.Delete(clusterInfo.Name)
+			return
+		}
 		logrus.Infof("starting steve server for cluster %s", clusterInfo.Name)
 		var err error
 		server, cancel, err := a.createSteve(clusterInfo)
@@ -220,11 +228,6 @@ func (a *Aggregator) Add(clusterInfo apistructs.ClusterInfo) {
 		}()
 		if err != nil {
 			logrus.Errorf("failed to create steve server for cluster %s, %v", clusterInfo.Name, err)
-			return
-		}
-
-		if err = a.createPredefinedResource(clusterInfo.Name); err != nil {
-			logrus.Errorf("failed to create predefined resource for cluster %s, %v", clusterInfo.Name, err)
 			return
 		}
 

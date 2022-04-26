@@ -30,11 +30,12 @@ import (
 
 const (
 	// clusterTypeK8S Identify the k8s cluster type in the colony event
-	clusterTypeK8S = "k8s"
+	clusterTypeK8S  = "k8s"
+	clusterTypeEdas = "edas"
 )
 
-// SteveClusterHook starts steve server when create cluster and stop steve server when delete cluster
-func (e *Endpoints) SteveClusterHook(ctx context.Context, r *http.Request, vars map[string]string) (resp httpserver.Responser, err error) {
+// ClusterHook starts steve server when create cluster and stop steve server when delete cluster
+func (e *Endpoints) ClusterHook(ctx context.Context, r *http.Request, vars map[string]string) (resp httpserver.Responser, err error) {
 	if r.Body == nil {
 		return httpserver.HTTPResponse{Status: http.StatusBadRequest, Content: "nil body"}, nil
 	}
@@ -45,16 +46,24 @@ func (e *Endpoints) SteveClusterHook(ctx context.Context, r *http.Request, vars 
 		return httpserver.HTTPResponse{Status: http.StatusBadRequest, Content: errstr}, nil
 	}
 
-	if !strutil.Equal(req.Content.Type, clusterTypeK8S, true) {
+	if !strutil.Equal(req.Content.Type, clusterTypeK8S) || !strutil.Equal(req.Content.Type, clusterTypeEdas) {
 		return httpserver.HTTPResponse{Status: http.StatusOK}, nil
 	}
 
 	if strutil.Equal(req.Action, bundle.CreateAction, true) {
+		logrus.Infof("received cluster creating event, add steve server for cluster %s", req.Content.Name)
 		e.SteveAggregator.Add(req.Content)
 	}
 
 	if strutil.Equal(req.Action, bundle.DeleteAction, true) {
+		logrus.Infof("received cluster delete event, delete steve server for cluster %s", req.Content.Name)
 		e.SteveAggregator.Delete(req.Content.Name)
+	}
+
+	if strutil.Equal(req.Action, bundle.UpdateAction, true) {
+		logrus.Infof("received cluster updating event, update steve server for cluster %s", req.Content.Name)
+		e.SteveAggregator.Delete(req.Content.Name)
+		e.SteveAggregator.Add(req.Content)
 	}
 
 	return httpserver.HTTPResponse{Status: http.StatusOK}, nil

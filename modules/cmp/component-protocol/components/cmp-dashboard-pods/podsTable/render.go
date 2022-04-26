@@ -128,16 +128,16 @@ func (p *ComponentPodsTable) InitComponent(ctx context.Context) {
 	p.server = steveServer
 }
 
-func (p *ComponentPodsTable) GenComponentState(c *cptype.Component) error {
-	if c == nil || c.State == nil {
+func (p *ComponentPodsTable) GenComponentState(component *cptype.Component) error {
+	if component == nil || component.State == nil {
 		return nil
 	}
 	var s State
-	jsonData, err := json.Marshal(c.State)
+	data, err := json.Marshal(component.State)
 	if err != nil {
 		return err
 	}
-	if err = json.Unmarshal(jsonData, &s); err != nil {
+	if err = json.Unmarshal(data, &s); err != nil {
 		return err
 	}
 	p.State = s
@@ -149,34 +149,34 @@ func (p *ComponentPodsTable) DecodeURLQuery() error {
 	if !ok {
 		return nil
 	}
-	decode, err := base64.StdEncoding.DecodeString(query)
+	decoded, err := base64.StdEncoding.DecodeString(query)
 	if err != nil {
 		return err
 	}
-	urlQuery := make(map[string]interface{})
-	if err := json.Unmarshal(decode, &urlQuery); err != nil {
+	queryData := make(map[string]interface{})
+	if err := json.Unmarshal(decoded, &queryData); err != nil {
 		return err
 	}
-	p.State.PageNo = int(urlQuery["pageNo"].(float64))
-	p.State.PageSize = int(urlQuery["pageSize"].(float64))
-	sorter := urlQuery["sorterData"].(map[string]interface{})
-	p.State.Sorter.Field, _ = sorter["field"].(string)
-	p.State.Sorter.Order, _ = sorter["order"].(string)
+	p.State.PageNo = int(queryData["pageNo"].(float64))
+	p.State.PageSize = int(queryData["pageSize"].(float64))
+	sorterData := queryData["sorterData"].(map[string]interface{})
+	p.State.Sorter.Field, _ = sorterData["field"].(string)
+	p.State.Sorter.Order, _ = sorterData["order"].(string)
 	return nil
 }
 
 func (p *ComponentPodsTable) EncodeURLQuery() error {
-	urlQuery := make(map[string]interface{})
-	urlQuery["pageNo"] = p.State.PageNo
-	urlQuery["pageSize"] = p.State.PageSize
-	urlQuery["sorterData"] = p.State.Sorter
-	data, err := json.Marshal(urlQuery)
+	query := make(map[string]interface{})
+	query["pageNo"] = p.State.PageNo
+	query["pageSize"] = p.State.PageSize
+	query["sorterData"] = p.State.Sorter
+	data, err := json.Marshal(query)
 	if err != nil {
 		return err
 	}
 
-	encoded := base64.StdEncoding.EncodeToString(data)
-	p.State.PodsTableURLQuery = encoded
+	encode := base64.StdEncoding.EncodeToString(data)
+	p.State.PodsTableURLQuery = encode
 	return nil
 }
 
@@ -773,10 +773,10 @@ func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
 	}
 }
 
-func (p *ComponentPodsTable) Transfer(comp *cptype.Component) {
-	comp.Props = cputil.MustConvertProps(p.Props)
-	comp.Data = map[string]interface{}{"list": p.Data.List}
-	comp.State = map[string]interface{}{
+func (p *ComponentPodsTable) Transfer(component *cptype.Component) {
+	component.Props = cputil.MustConvertProps(p.Props)
+	component.Data = map[string]interface{}{"list": p.Data.List}
+	component.State = map[string]interface{}{
 		"clusterName":         p.State.ClusterName,
 		"countValues":         p.State.CountValues,
 		"pageNo":              p.State.PageNo,
@@ -787,7 +787,7 @@ func (p *ComponentPodsTable) Transfer(comp *cptype.Component) {
 		"podsTable__urlQuery": p.State.PodsTableURLQuery,
 		"activeKey":           p.State.ActiveKey,
 	}
-	comp.Operations = p.Operations
+	component.Operations = p.Operations
 }
 
 func (p *ComponentPodsTable) parsePodStatus(state string) Status {
