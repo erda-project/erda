@@ -25,7 +25,7 @@ import (
 	_ "github.com/erda-project/erda-infra/providers/serviceregister"
 	_ "github.com/erda-project/erda/modules/pipeline"
 	_ "github.com/erda-project/erda/modules/pipeline/aop"
-	_ "github.com/erda-project/erda/modules/pipeline/providers/action"
+	_ "github.com/erda-project/erda/modules/pipeline/providers/actionmgr"
 	_ "github.com/erda-project/erda/modules/pipeline/providers/clusterinfo"
 	_ "github.com/erda-project/erda/modules/pipeline/providers/cms"
 	_ "github.com/erda-project/erda/modules/pipeline/providers/cron"

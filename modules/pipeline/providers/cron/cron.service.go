@@ -15,14 +15,14 @@
 package cron
 
 import (
-	context "context"
+	"context"
 	"encoding/json"
 	"time"
 
 	"github.com/go-errors/errors"
 
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
-	pb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
+	"github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	common "github.com/erda-project/erda-proto-go/core/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/providers/cron/db"

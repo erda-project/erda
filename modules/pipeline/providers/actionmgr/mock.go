@@ -12,26 +12,39 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package extmarketsvc
+package actionmgr
 
 import (
-	"strings"
+	"context"
 
+	"github.com/erda-project/erda-proto-go/core/pipeline/action/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
-// MakeActionTypeVersion return ext item.
-// Example: git, git@1.0, git@1.1
-func MakeActionTypeVersion(action *pipelineyml.Action) string {
+type MockActionMgr struct{}
+
+func (m *MockActionMgr) List(ctx context.Context, request *pb.PipelineActionListRequest) (*pb.PipelineActionListResponse, error) {
+	return nil, nil
+}
+func (m *MockActionMgr) Save(ctx context.Context, request *pb.PipelineActionSaveRequest) (*pb.PipelineActionSaveResponse, error) {
+	return nil, nil
+}
+func (m *MockActionMgr) Delete(ctx context.Context, request *pb.PipelineActionDeleteRequest) (*pb.PipelineActionDeleteResponse, error) {
+	return nil, nil
+}
+func (m *MockActionMgr) SearchActions(items []string, locations []string, ops ...OpOption) (map[string]*diceyml.Job, map[string]*apistructs.ActionSpec, error) {
+	return nil, nil, nil
+}
+func (m *MockActionMgr) MakeActionTypeVersion(action *pipelineyml.Action) string {
 	r := action.Type.String()
 	if action.Version != "" {
 		r = r + "@" + action.Version
 	}
 	return r
 }
-
-func MakeActionLocationsBySource(source apistructs.PipelineSource) []string {
+func (m *MockActionMgr) MakeActionLocationsBySource(source apistructs.PipelineSource) []string {
 	var locations []string
 	switch source {
 	case apistructs.PipelineSourceCDPDev, apistructs.PipelineSourceCDPTest, apistructs.PipelineSourceCDPStaging, apistructs.PipelineSourceCDPProd, apistructs.PipelineSourceBigData:
@@ -42,14 +55,4 @@ func MakeActionLocationsBySource(source apistructs.PipelineSource) []string {
 		locations = append(locations, apistructs.PipelineTypeDefault.String()+"/")
 	}
 	return locations
-}
-
-func getActionTypeVersion(nameVersion string) (string, string) {
-	splits := strings.SplitN(nameVersion, "@", 2)
-	name := splits[0]
-	version := ""
-	if len(splits) > 1 {
-		version = splits[1]
-	}
-	return name, version
 }

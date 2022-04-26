@@ -19,6 +19,7 @@ import (
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
+	"github.com/erda-project/erda/modules/pipeline/providers/actionmgr"
 	"github.com/erda-project/erda/modules/pipeline/providers/cache"
 	"github.com/erda-project/erda/modules/pipeline/providers/clusterinfo"
 	"github.com/erda-project/erda/modules/pipeline/providers/cron/daemon"
@@ -29,7 +30,6 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/providers/user"
 	"github.com/erda-project/erda/modules/pipeline/services/actionagentsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/appsvc"
-	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/permissionsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/queuemanage"
 	"github.com/erda-project/erda/modules/pkg/websocket"
@@ -41,7 +41,6 @@ type PipelineSvc struct {
 	appSvc          *appsvc.AppSvc
 	crondSvc        daemon.Interface
 	actionAgentSvc  *actionagentsvc.ActionAgentSvc
-	extMarketSvc    *extmarketsvc.ExtMarketSvc
 	pipelineCronSvc cronpb.CronServiceServer
 	permissionSvc   *permissionsvc.PermissionSvc
 	queueManage     *queuemanage.QueueManage
@@ -63,10 +62,11 @@ type PipelineSvc struct {
 	secret       secret.Interface
 	user         user.Interface
 	run          run.Interface
+	actionMgr    actionmgr.Interface
 }
 
 func New(appSvc *appsvc.AppSvc, crondSvc daemon.Interface,
-	actionAgentSvc *actionagentsvc.ActionAgentSvc, extMarketSvc *extmarketsvc.ExtMarketSvc,
+	actionAgentSvc *actionagentsvc.ActionAgentSvc,
 	pipelineCronSvc cronpb.CronServiceServer, permissionSvc *permissionsvc.PermissionSvc,
 	queueManage *queuemanage.QueueManage,
 	dbClient *dbclient.Client, bdl *bundle.Bundle, publisher *websocket.Publisher,
@@ -76,7 +76,6 @@ func New(appSvc *appsvc.AppSvc, crondSvc daemon.Interface,
 	s.appSvc = appSvc
 	s.crondSvc = crondSvc
 	s.actionAgentSvc = actionAgentSvc
-	s.extMarketSvc = extMarketSvc
 	s.pipelineCronSvc = pipelineCronSvc
 	s.permissionSvc = permissionSvc
 	s.queueManage = queueManage
@@ -106,4 +105,8 @@ func (s *PipelineSvc) WithUser(user user.Interface) {
 
 func (s *PipelineSvc) WithRun(run run.Interface) {
 	s.run = run
+}
+
+func (s *PipelineSvc) WithActionMgr(actionMgr actionmgr.Interface) {
+	s.actionMgr = actionMgr
 }

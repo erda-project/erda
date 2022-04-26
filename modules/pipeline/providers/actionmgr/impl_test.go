@@ -12,20 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package extmarketsvc
+package actionmgr
 
 import (
 	"testing"
 
-	"gopkg.in/stretchr/testify.v1/assert"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
 func TestMakeActionTypeVersion(t *testing.T) {
-	item := MakeActionTypeVersion(&pipelineyml.Action{Type: "git", Version: "1.0"})
+	p := &provider{}
+	item := p.MakeActionTypeVersion(&pipelineyml.Action{Type: "git", Version: "1.0"})
 	assert.Equal(t, item, "git@1.0")
 
-	item = MakeActionTypeVersion(&pipelineyml.Action{Type: "git"})
+	item = p.MakeActionTypeVersion(&pipelineyml.Action{Type: "git"})
 	assert.Equal(t, item, "git")
 }
