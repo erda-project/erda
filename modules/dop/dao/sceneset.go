@@ -52,6 +52,12 @@ func (client *DBClient) CountSceneSetByName(name string, spaceId uint64) (int, e
 	return res, nil
 }
 
+func (client *DBClient) FindSceneSetsByName(name string, spaceId uint64) ([]SceneSet, error) {
+	var res []SceneSet
+	err := client.Model(&SceneSet{}).Where("`space_id` = ? and name = ?", spaceId, name).Find(&res).Error
+	return res, err
+}
+
 // Get Sceneset by id
 func (client *DBClient) GetSceneSet(id uint64) (*SceneSet, error) {
 	var res SceneSet
