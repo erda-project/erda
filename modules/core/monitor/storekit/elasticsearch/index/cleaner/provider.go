@@ -52,7 +52,7 @@ type (
 type (
 	config struct {
 		RequestTimeout time.Duration `file:"request_timeout" default:"1m"`
-		CheckInterval  time.Duration `file:"check_interval" default:"1m"`
+		CheckInterval  time.Duration `file:"check_interval" default:"1h"`
 		PrintOnly      bool          `file:"print_only"`
 		DiskClean      diskClean     `file:"disk_clean"`
 	}
