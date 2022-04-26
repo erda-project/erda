@@ -23,6 +23,11 @@ import (
 )
 
 const (
+	ConfigMapNameOfClusterInfo = "dice-cluster-info" // ConfigMapNameOfClusterInfo cluster info configmap name
+	ConfigMapNameOfAddons      = "dice-addons-info"  // ConfigMapNameOfAddons addon configmap name
+)
+
+const (
 	ETCD_ENDPOINTS          ClusterInfoMapKey = "ETCD_ENDPOINTS"          // k8s etcd的rs ip地址，逗号分割
 	DICE_INSIDE             ClusterInfoMapKey = "DICE_INSIDE"             // bool值, true表示当前集群是离线部署的
 	DICE_CLUSTER_TYPE       ClusterInfoMapKey = "DICE_CLUSTER_TYPE"       // 集群类型
