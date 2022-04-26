@@ -258,5 +258,8 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 
 		// k8s clusters
 		{Path: "/api/k8s/clusters", Method: http.MethodGet, Handler: e.ListK8SClusters},
+
+		// cluster hook
+		{Path: "/api/clusterhook", Method: http.MethodPost, Handler: e.ClusterHook},
 	}
 }
