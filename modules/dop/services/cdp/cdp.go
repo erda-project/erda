@@ -23,6 +23,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/conf"
@@ -35,7 +36,8 @@ var (
 
 // CDP pipeline 结构体
 type CDP struct {
-	bdl *bundle.Bundle
+	bdl           *bundle.Bundle
+	resourceTrans i18n.Translator
 }
 
 // Option CDP 配置选项
@@ -54,6 +56,12 @@ func New(options ...Option) *CDP {
 func WithBundle(bdl *bundle.Bundle) Option {
 	return func(f *CDP) {
 		f.bdl = bdl
+	}
+}
+
+func WithResourceTranslator(resourceTrans i18n.Translator) Option {
+	return func(f *CDP) {
+		f.resourceTrans = resourceTrans
 	}
 }
 
@@ -174,6 +182,7 @@ func (cdp *CDP) CdpNotifyProcess(pipelineEvent *apistructs.PipelineInstanceEvent
 				continue
 			}
 			notifyItem := notifyDetail.NotifyItems[0]
+			lang, _ := i18n.ParseLanguageCode(org.Locale)
 			params := map[string]string{
 				"pipelineID":     strconv.FormatUint(pipelineData.PipelineID, 10),
 				"notifyItemName": notifyItem.DisplayName,
@@ -184,7 +193,12 @@ func (cdp *CDP) CdpNotifyProcess(pipelineEvent *apistructs.PipelineInstanceEvent
 				"orgName":        org.Name,
 				"branch":         pipelineDetail.Branch,
 				"uiPublicURL":    conf.UIPublicURL(),
+				"diceWorkspace":  cdp.resourceTrans.Text(lang, pipelineDetail.Extra.DiceWorkspace),
 			}
+			if runUser := pipelineDetail.Extra.RunUser; runUser != nil {
+				params["operatorName"] = runUser.Name
+			}
+
 			//失败情况尝输出错误日志
 			if notifyItem.Name == "pipeline_failed" {
 				// 等待日志采集
