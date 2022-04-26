@@ -55,8 +55,11 @@ func (d *provider) runCronPipelineFunc(ctx context.Context, id uint64) {
 	cronTriggerTime := time.Now()
 
 	// Query cron details
-	pc, err := d.dbClient.GetPipelineCron(id)
+	pc, found, err := d.dbClient.GetPipelineCron(id)
 	if err != nil {
+		return
+	}
+	if !found {
 		return
 	}
 
@@ -203,9 +206,13 @@ func (s *provider) listenCrond(ctx context.Context) {
 		}
 
 		if strings.HasPrefix(key, etcdCronPrefixAddKey) {
-			pc, err := s.dbClient.GetPipelineCron(cronID)
+			pc, found, err := s.dbClient.GetPipelineCron(cronID)
 			if err != nil {
 				s.Log.Errorf("crond: failed to get cron cronID: %v error: %v", cronID, err)
+				return
+			}
+			if !found {
+				s.Log.Errorf("crond: failed to get cron cronID: %v error: %v", cronID, fmt.Errorf("not found"))
 				return
 			}
 			// why delete it first, because crond.AddFunc cannot add a scheduled task with the same name

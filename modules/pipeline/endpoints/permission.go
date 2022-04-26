@@ -17,7 +17,6 @@ package endpoints
 import (
 	"fmt"
 	"net/http"
-	"strconv"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
@@ -25,17 +24,6 @@ import (
 	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
-
-// checkPipelineCronPermission 包装校验 cron 权限
-func (e *Endpoints) checkPipelineCronPermission(r *http.Request, cronID uint64, permissionAction string) error {
-	// 获取 cron 信息
-	pc, err := e.dbClient.GetPipelineCron(cronID)
-	if err != nil {
-		return apierrors.ErrGetPipelineCron.InvalidParameter(err)
-	}
-
-	return e.checkBranchPermission(r, strconv.FormatUint(pc.GetAppID(), 10), pc.GetBranch(), permissionAction)
-}
 
 // checkPipelineCronPermission 包装校验 app 权限
 func (e *Endpoints) checkAppPermission(r *http.Request, appID uint64, permissionAction string) error {
