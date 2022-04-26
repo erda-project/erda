@@ -31,7 +31,7 @@ func (svc *Service) CreateSceneSet(req apistructs.SceneSetRequest) (uint64, erro
 		return 0, err
 	}
 
-	if ok := svc.sceneSetNameCheck(req.SpaceID, req.Name, 0); !ok {
+	if ok := svc.sceneSetCaseSensitiveNameCheck(req.SpaceID, req.Name, 0); !ok {
 		return 0, apierrors.ErrCreateAutoTestSceneSet.AlreadyExists()
 	}
 
@@ -63,7 +63,7 @@ func (svc *Service) CreateSceneSet(req apistructs.SceneSetRequest) (uint64, erro
 	return sceneSet.ID, nil
 }
 
-func (svc *Service) sceneSetNameCheck(spaceID uint64, name string, setID uint64) bool {
+func (svc *Service) sceneSetCaseSensitiveNameCheck(spaceID uint64, name string, setID uint64) bool {
 	sets, err := svc.db.FindSceneSetsByName(name, spaceID)
 	if err != nil {
 		return false
@@ -115,7 +115,7 @@ func (svc *Service) UpdateSceneSet(setID uint64, req apistructs.SceneSetRequest)
 		return nil, apierrors.ErrGetAutoTestSceneSet.InternalError(err)
 	}
 
-	if ok := svc.sceneSetNameCheck(req.SpaceID, req.Name, setID); !ok {
+	if ok := svc.sceneSetCaseSensitiveNameCheck(req.SpaceID, req.Name, setID); !ok {
 		return nil, apierrors.ErrUpdateAutoTestSceneSet.AlreadyExists()
 	}
 

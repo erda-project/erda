@@ -146,7 +146,7 @@ func TestService_sceneSetNameCheck(t *testing.T) {
 			svc := &Service{
 				db: tt.fields.db,
 			}
-			if got := svc.sceneSetNameCheck(tt.args.spaceID, tt.args.name, tt.args.setID); got != tt.want {
+			if got := svc.sceneSetCaseSensitiveNameCheck(tt.args.spaceID, tt.args.name, tt.args.setID); got != tt.want {
 				t.Errorf("sceneSetNameCheck() = %v, want %v", got, tt.want)
 			}
 		})
