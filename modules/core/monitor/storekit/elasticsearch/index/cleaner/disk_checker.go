@@ -19,10 +19,11 @@ import (
 	"sort"
 	"time"
 
-	"github.com/olivere/elastic"
+	"github.com/robfig/cron/v3"
 
 	"github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index"
 	"github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/loader"
+	"github.com/olivere/elastic"
 )
 
 func (p *provider) runDiskCheckAndClean(ctx context.Context) {
@@ -43,6 +44,15 @@ func (p *provider) runDiskCheckAndClean(ctx context.Context) {
 		}
 		timer.Reset(p.Cfg.DiskClean.CheckInterval)
 	}
+}
+
+func (p *provider) runDocsCheckAndClean() {
+	c := cron.New(cron.WithSeconds())
+	_, err := c.AddFunc(p.Cfg.DiskClean.TTL.TriggerSpecCron, p.deleteByQuery)
+	if err != nil {
+		panic("create cron failed.")
+	}
+	c.Start()
 }
 
 func (p *provider) getNodeStats() (map[string]*elastic.NodesStatsNode, error) {
@@ -92,7 +102,7 @@ func (p *provider) getNodeDiskUsage(filter func(*NodeDiskUsage) bool) (map[strin
 			UsedPercent:  float64(node.FS.Total.TotalInBytes-node.FS.Total.AvailableInBytes) / float64(node.FS.Total.TotalInBytes) * 100,
 			StorePercent: float64(node.Indices.Store.SizeInBytes) / float64(node.FS.Total.TotalInBytes) * 100,
 		}
-		if filter == nil || filter(usage) {
+		if filter != nil || filter(usage) {
 			diskUsage[id] = usage
 		}
 	}

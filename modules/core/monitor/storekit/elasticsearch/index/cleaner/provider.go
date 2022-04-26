@@ -57,7 +57,11 @@ type (
 		DiskClean      diskClean     `file:"disk_clean"`
 	}
 	diskClean struct {
-		Enable                 bool          `file:"enable"`
+		Enable bool `file:"enable"`
+		TTL    struct {
+			MaxStoreTime    int    `file:"max_store_time" default:"7"`
+			TriggerSpecCron string `file:"trigger_spec_cron" default:"0 0 3 * * *"`
+		}
 		CheckInterval          time.Duration `file:"check_interval" default:"5m"`
 		MinIndicesStore        string        `file:"min_indices_store" default:"10GB"`
 		MinIndicesStorePercent float64       `file:"min_indices_store_percent" default:"10"`
@@ -117,7 +121,6 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	if !p.loader.QueryIndexTimeRange() {
 		p.Log.Warnf("index clean is enable, but QueryIndexTimeRange of elasticsearch.index.loader is disable")
 	}
-	//go p.runCleanIndices(ctx)
 	p.election.OnLeader(p.runCleanIndices)
 
 	if int64(p.Cfg.DiskClean.CheckInterval) <= 0 {
@@ -171,9 +174,10 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	}
 
 	if p.Cfg.DiskClean.Enable {
-		// run disk clean task on leader node
 		p.election.OnLeader(p.runDiskCheckAndClean)
 	}
+
+	p.runDocsCheckAndClean()
 
 	// init manager routes
 	routePrefix := "/api/elasticsearch/index"

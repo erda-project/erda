@@ -19,9 +19,9 @@ import (
 	"time"
 )
 
-func (p *provider) syncIndiceToCache(ctx context.Context) {
-	p.Log.Infof("start indices-cache sycn task")
-	defer p.Log.Info("exit indices-cache sycn task")
+func (p *provider) syncIndicesToCache(ctx context.Context) {
+	p.Log.Infof("start indices-cache sync task")
+	defer p.Log.Info("exit indices-cache sync task")
 
 	if p.startSyncCh != nil {
 		close(p.startSyncCh)
