@@ -28,6 +28,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/types"
 	"github.com/erda-project/erda/modules/pipeline/pkg/errorsx"
+	"github.com/erda-project/erda/modules/pipeline/providers/actionmgr"
 	"github.com/erda-project/erda/modules/pipeline/providers/cache"
 	"github.com/erda-project/erda/modules/pipeline/providers/clusterinfo"
 	"github.com/erda-project/erda/modules/pipeline/providers/edgepipeline_register"
@@ -36,7 +37,6 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/taskrun"
 	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/taskrun/taskop"
 	"github.com/erda-project/erda/modules/pipeline/services/actionagentsvc"
-	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/loop"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -73,7 +73,7 @@ type defaultTaskReconciler struct {
 	// legacy fields TODO decouple it
 	pipelineSvcFuncs *PipelineSvcFuncs
 	actionAgentSvc   *actionagentsvc.ActionAgentSvc
-	extMarketSvc     *extmarketsvc.ExtMarketSvc
+	actionMgr        actionmgr.Interface
 }
 
 func (tr *defaultTaskReconciler) ReconcileOneTaskUntilDone(ctx context.Context, p *spec.Pipeline, task *spec.PipelineTask) {
@@ -204,7 +204,7 @@ func (tr *defaultTaskReconciler) ReconcileNormalTask(ctx context.Context, p *spe
 		}
 
 		// generate framework to run task
-		framework = taskrun.New(ctx, task, executor, p, tr.bdl, tr.dbClient, tr.actionAgentSvc, tr.extMarketSvc, tr.clusterInfo, tr.edgeRegister, tr.defaultRetryInterval)
+		framework = taskrun.New(ctx, task, executor, p, tr.bdl, tr.dbClient, tr.actionAgentSvc, tr.actionMgr, tr.clusterInfo, tr.edgeRegister, tr.defaultRetryInterval)
 		return rutil.ContinueWorkingAbort
 	}, rutil.WithContinueWorkingDefaultRetryInterval(tr.defaultRetryInterval))
 

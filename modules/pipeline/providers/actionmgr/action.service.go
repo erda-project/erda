@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package action
+package actionmgr
 
 import (
-	context "context"
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -23,9 +23,9 @@ import (
 
 	"sigs.k8s.io/yaml"
 
-	pb "github.com/erda-project/erda-proto-go/core/pipeline/action/pb"
+	"github.com/erda-project/erda-proto-go/core/pipeline/action/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/pipeline/providers/action/db"
+	"github.com/erda-project/erda/modules/pipeline/providers/actionmgr/db"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/crypto/uuid"

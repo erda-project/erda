@@ -24,7 +24,7 @@ import (
 	"github.com/alecthomas/assert"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
+	"github.com/erda-project/erda/modules/pipeline/providers/actionmgr"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
@@ -32,7 +32,7 @@ import (
 
 func Test_passedDataWhenCreate_putPassedDataByPipelineYml(t *testing.T) {
 	type fields struct {
-		extMarketSvc     *extmarketsvc.ExtMarketSvc
+		actionMgr        actionmgr.Interface
 		actionJobDefines map[string]*diceyml.Job
 		actionJobSpecs   map[string]*apistructs.ActionSpec
 	}
@@ -156,9 +156,9 @@ func Test_passedDataWhenCreate_putPassedDataByPipelineYml(t *testing.T) {
 			yml, err := pipelineyml.New([]byte(tt.args.pipelineYml))
 			assert.NoError(t, err)
 
-			extMarketSvc := extmarketsvc.ExtMarketSvc{}
-			that.extMarketSvc = &extMarketSvc
-			patch := monkey.PatchInstanceMethod(reflect.TypeOf(&extMarketSvc), "SearchActions", func(extMarketSvc *extmarketsvc.ExtMarketSvc, items []string, location []string, ops ...extmarketsvc.OpOption) (map[string]*diceyml.Job, map[string]*apistructs.ActionSpec, error) {
+			mockActionMgr := &actionmgr.MockActionMgr{}
+			that.actionMgr = mockActionMgr
+			patch := monkey.PatchInstanceMethod(reflect.TypeOf(mockActionMgr), "SearchActions", func(_ *actionmgr.MockActionMgr, items []string, location []string, ops ...actionmgr.OpOption) (map[string]*diceyml.Job, map[string]*apistructs.ActionSpec, error) {
 				actionJobMap := make(map[string]*diceyml.Job)
 				actionSpecMap := make(map[string]*apistructs.ActionSpec)
 				for _, item := range items {
@@ -203,5 +203,29 @@ func Test_passedDataWhenCreate_putPassedDataByPipelineYml(t *testing.T) {
 
 			patch.Unpatch()
 		})
+	}
+}
+
+func TestPassedDataWhenCreate_InitData(t *testing.T) {
+	var d *PassedDataWhenCreate
+	d.InitData(nil, nil)
+	if d != nil {
+		t.Fatalf("should be nil")
+	}
+
+	d = &PassedDataWhenCreate{}
+	d.InitData(nil, nil)
+	if d.actionJobDefines == nil {
+		t.Fatalf("actionJobDefines should be initialized")
+	}
+	if d.actionJobSpecs == nil {
+		t.Fatalf("actionJobSpecs should be initialized")
+	}
+
+	d = &PassedDataWhenCreate{}
+	actionMgr := &actionmgr.MockActionMgr{}
+	d.InitData(nil, actionMgr)
+	if d.actionMgr == nil {
+		t.Fatalf("actionMgr should not be nil")
 	}
 }

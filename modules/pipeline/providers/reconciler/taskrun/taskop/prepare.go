@@ -37,9 +37,9 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/pkg/container_provider"
 	"github.com/erda-project/erda/modules/pipeline/pkg/containers"
 	"github.com/erda-project/erda/modules/pipeline/pkg/errorsx"
+	"github.com/erda-project/erda/modules/pipeline/providers/actionmgr"
 	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/taskrun"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
-	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/expression"
 	"github.com/erda-project/erda/pkg/http/httputil"
@@ -186,9 +186,9 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 	// 从 extension marketplace 获取 image 和 resource limit
 	extSearchReq := make([]string, 0)
 	extSearchReq = append(extSearchReq, getActionAgentTypeVersion())
-	extSearchReq = append(extSearchReq, extmarketsvc.MakeActionTypeVersion(&task.Extra.Action))
-	actionDiceYmlJobMap, actionSpecYmlJobMap, err := pre.ExtMarketSvc.SearchActions(extSearchReq, extmarketsvc.MakeActionLocationsBySource(p.PipelineSource),
-		extmarketsvc.SearchActionWithRender(map[string]string{"storageMountPoint": mountPoint}))
+	extSearchReq = append(extSearchReq, pre.ActionMgr.MakeActionTypeVersion(&task.Extra.Action))
+	actionDiceYmlJobMap, actionSpecYmlJobMap, err := pre.ActionMgr.SearchActions(extSearchReq, pre.ActionMgr.MakeActionLocationsBySource(p.PipelineSource),
+		actionmgr.SearchOpWithRender(map[string]string{"storageMountPoint": mountPoint}))
 	if err != nil {
 		return true, err
 	}
@@ -291,7 +291,7 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 	// 所有 action，包括 custom-script，都需要在 ext market 注册；
 	// 从 ext market 获取 action 的 job dice.yml，解析 image 和 resource；
 	// 只有 custom-script 可以设置自定义镜像，优先级高于默认自定义镜像。
-	diceYmlJob, ok := actionDiceYmlJobMap[extmarketsvc.MakeActionTypeVersion(action)]
+	diceYmlJob, ok := actionDiceYmlJobMap[pre.ActionMgr.MakeActionTypeVersion(action)]
 	if !ok || diceYmlJob == nil || diceYmlJob.Image == "" {
 		return false, apierrors.ErrRunPipeline.InvalidState(
 			fmt.Sprintf("not found image, actionType: %q, version: %q", action.Type, action.Version))
@@ -407,7 +407,7 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 	}
 
 	// for get action callback openapi oauth2 token
-	specYmlJob, ok := actionSpecYmlJobMap[extmarketsvc.MakeActionTypeVersion(action)]
+	specYmlJob, ok := actionSpecYmlJobMap[pre.ActionMgr.MakeActionTypeVersion(action)]
 	if !ok || specYmlJob == nil {
 		return false, apierrors.ErrRunPipeline.InvalidState(
 			fmt.Sprintf("not found action spec, actionType: %q, version: %q", action.Type, action.Version))

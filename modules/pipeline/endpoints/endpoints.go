@@ -34,7 +34,6 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/services/appsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/buildartifactsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/buildcachesvc"
-	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/permissionsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/pipelinesvc"
 	"github.com/erda-project/erda/modules/pipeline/services/queuemanage"
@@ -51,7 +50,6 @@ type Endpoints struct {
 	buildArtifactSvc *buildartifactsvc.BuildArtifactSvc
 	buildCacheSvc    *buildcachesvc.BuildCacheSvc
 	actionAgentSvc   *actionagentsvc.ActionAgentSvc
-	extMarketSvc     *extmarketsvc.ExtMarketSvc
 	reportSvc        *reportsvc.ReportSvc
 	queueManage      *queuemanage.QueueManage
 
@@ -120,12 +118,6 @@ func WithCrondSvc(svc daemon.Interface) Option {
 func WithActionAgentSvc(svc *actionagentsvc.ActionAgentSvc) Option {
 	return func(e *Endpoints) {
 		e.actionAgentSvc = svc
-	}
-}
-
-func WithExtMarketSvc(svc *extmarketsvc.ExtMarketSvc) Option {
-	return func(e *Endpoints) {
-		e.extMarketSvc = svc
 	}
 }
 
