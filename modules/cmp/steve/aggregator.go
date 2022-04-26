@@ -443,14 +443,19 @@ func (a *Aggregator) createSteve(clusterInfo apistructs.ClusterInfo) (*Server, c
 
 func (a *Aggregator) preloadCache(ctx context.Context, server *Server, resType string) {
 	for i := 0; i < 10; i++ {
-		logrus.Infof("preload cache for %s in cluster %s", resType, server.ClusterName)
-		err := a.listAndSetCache(ctx, server, resType)
-		if err == nil {
-			logrus.Infof("preload cache for %s in cluster %s succeeded", resType, server.ClusterName)
+		select {
+		case <-ctx.Done():
 			return
+		default:
+			logrus.Infof("preload cache for %s in cluster %s", resType, server.ClusterName)
+			err := a.listAndSetCache(ctx, server, resType)
+			if err == nil {
+				logrus.Infof("preload cache for %s in cluster %s succeeded", resType, server.ClusterName)
+				return
+			}
+			logrus.Infof("preload cache for %s in cluster %s failed, retry after 5 seconds, err: %v", resType, server.ClusterName, err)
+			time.Sleep(time.Second * 5)
 		}
-		logrus.Infof("preload cache for %s in cluster %s failed, retry after 5 seconds, err: %v", resType, server.ClusterName, err)
-		time.Sleep(time.Second * 5)
 	}
 }
 
