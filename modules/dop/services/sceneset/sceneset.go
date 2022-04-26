@@ -31,11 +31,7 @@ func (svc *Service) CreateSceneSet(req apistructs.SceneSetRequest) (uint64, erro
 		return 0, err
 	}
 
-	count, err := svc.db.CountSceneSetByName(req.Name, req.SpaceID)
-	if err != nil {
-		return 0, err
-	}
-	if count > 0 {
+	if ok := svc.sceneSetCaseSensitiveNameCheck(req.SpaceID, req.Name, 0); !ok {
 		return 0, apierrors.ErrCreateAutoTestSceneSet.AlreadyExists()
 	}
 
@@ -65,6 +61,24 @@ func (svc *Service) CreateSceneSet(req apistructs.SceneSetRequest) (uint64, erro
 		return 0, apierrors.ErrCreateAutoTestSceneSet.InternalError(err)
 	}
 	return sceneSet.ID, nil
+}
+
+func (svc *Service) sceneSetCaseSensitiveNameCheck(spaceID uint64, name string, setID uint64) bool {
+	sets, err := svc.db.FindSceneSetsByName(name, spaceID)
+	if err != nil {
+		return false
+	}
+	for _, set := range sets {
+		// mysql not case sensitive
+		if set.Name != name {
+			continue
+		}
+		if set.ID == setID {
+			continue
+		}
+		return false
+	}
+	return true
 }
 
 func (svc *Service) GetSceneSetsBySpaceID(spaceID uint64) ([]apistructs.SceneSet, error) {
@@ -101,11 +115,7 @@ func (svc *Service) UpdateSceneSet(setID uint64, req apistructs.SceneSetRequest)
 		return nil, apierrors.ErrGetAutoTestSceneSet.InternalError(err)
 	}
 
-	count, err := svc.db.CountSceneSetByName(req.Name, req.SpaceID)
-	if err != nil {
-		return nil, err
-	}
-	if count > 1 || count == 1 && req.Name != s.Name {
+	if ok := svc.sceneSetCaseSensitiveNameCheck(req.SpaceID, req.Name, setID); !ok {
 		return nil, apierrors.ErrUpdateAutoTestSceneSet.AlreadyExists()
 	}
 
