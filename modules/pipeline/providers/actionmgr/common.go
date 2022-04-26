@@ -28,7 +28,7 @@ var (
 	defaultVersion = "default"
 )
 
-func (s *provider) updateExtension(extension apistructs.Extension) {
+func (s *provider) updateExtensionCache(extension apistructs.Extension) {
 	extensionVersions, err := s.bdl.QueryExtensionVersions(apistructs.ExtensionVersionQueryRequest{
 		Name:               extension.Name,
 		All:                true,
@@ -41,27 +41,27 @@ func (s *provider) updateExtension(extension apistructs.Extension) {
 	}
 	s.Lock()
 	defer s.Unlock()
-	delete(s.defaultActions, extension.Name)
+	delete(s.defaultActionsCache, extension.Name)
 	for _, extensionVersion := range extensionVersions {
-		s.actions[fmt.Sprintf("%s@%s", extension.Name, extensionVersion.Version)] = extensionVersion
+		s.actionsCache[fmt.Sprintf("%s@%s", extension.Name, extensionVersion.Version)] = extensionVersion
 		if extensionVersion.IsDefault {
-			s.defaultActions[extension.Name] = extensionVersion
+			s.defaultActionsCache[extension.Name] = extensionVersion
 		}
 	}
 	// if not get the default version, set the first public version as default
-	if _, ok := s.defaultActions[extension.Name]; !ok && len(extensionVersions) > 0 {
+	if _, ok := s.defaultActionsCache[extension.Name]; !ok && len(extensionVersions) > 0 {
 		for _, extensionVersion := range extensionVersions {
 			if extensionVersion.Public {
-				s.defaultActions[extension.Name] = extensionVersion
+				s.defaultActionsCache[extension.Name] = extensionVersion
 				break
 			}
 		}
 	}
 }
 
-// getOrUpdateExtension get the fitted extension from the cache
+// getOrUpdateExtensionFromCache get the fitted extension from the cache
 // if not exist, try to update the cache by the given extension name
-func (s *provider) getOrUpdateExtension(nameVersion string) (action apistructs.ExtensionVersion, found bool) {
+func (s *provider) getOrUpdateExtensionFromCache(nameVersion string) (action apistructs.ExtensionVersion, found bool) {
 	splits := strings.SplitN(nameVersion, "@", 2)
 	name := splits[0]
 	version := ""
@@ -70,7 +70,7 @@ func (s *provider) getOrUpdateExtension(nameVersion string) (action apistructs.E
 	}
 	if version == "" {
 		s.Lock()
-		action, found = s.defaultActions[name]
+		action, found = s.defaultActionsCache[name]
 		s.Unlock()
 		if !found {
 			newAction, err := s.bdl.GetExtensionVersion(apistructs.ExtensionVersionGetRequest{
@@ -83,14 +83,14 @@ func (s *provider) getOrUpdateExtension(nameVersion string) (action apistructs.E
 				return
 			}
 			s.Lock()
-			s.defaultActions[name] = *newAction
+			s.defaultActionsCache[name] = *newAction
 			s.Unlock()
 			return *newAction, true
 		}
 		return
 	}
 	s.Lock()
-	action, found = s.actions[nameVersion]
+	action, found = s.actionsCache[nameVersion]
 	s.Unlock()
 	if !found {
 		newAction, err := s.bdl.GetExtensionVersion(apistructs.ExtensionVersionGetRequest{
@@ -103,7 +103,7 @@ func (s *provider) getOrUpdateExtension(nameVersion string) (action apistructs.E
 			return
 		}
 		s.Lock()
-		s.actions[nameVersion] = *newAction
+		s.actionsCache[nameVersion] = *newAction
 		s.Unlock()
 		return *newAction, true
 	}

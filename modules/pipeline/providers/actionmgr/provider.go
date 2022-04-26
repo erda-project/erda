@@ -42,15 +42,15 @@ type provider struct {
 	Cfg      *config
 	Log      logs.Logger
 	Register transport.Register
-	MySQL    mysqlxorm.Interface `autowired:"mysql-xorm"`
+	MySQL    mysqlxorm.Interface
 
 	sync.Mutex
 	bdl *bundle.Bundle
 	*actionService
 
-	actions        map[string]apistructs.ExtensionVersion
-	defaultActions map[string]apistructs.ExtensionVersion
-	pools          *goroutinepool.GoroutinePool
+	actionsCache        map[string]apistructs.ExtensionVersion
+	defaultActionsCache map[string]apistructs.ExtensionVersion
+	pools               *goroutinepool.GoroutinePool
 }
 
 func (s *provider) Init(ctx servicehub.Context) error {
@@ -58,8 +58,8 @@ func (s *provider) Init(ctx servicehub.Context) error {
 	if s.Register != nil {
 		pb.RegisterActionServiceImp(s.Register, s.actionService, apis.Options())
 	}
-	s.actions = make(map[string]apistructs.ExtensionVersion)
-	s.defaultActions = make(map[string]apistructs.ExtensionVersion)
+	s.actionsCache = make(map[string]apistructs.ExtensionVersion)
+	s.defaultActionsCache = make(map[string]apistructs.ExtensionVersion)
 	s.pools = goroutinepool.New(s.Cfg.PoolSize)
 	s.bdl = bundle.New(bundle.WithAllAvailableClients())
 	return nil

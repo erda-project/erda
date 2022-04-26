@@ -26,7 +26,7 @@ func (s *provider) continuousRefreshAction() {
 	defer ticker.Stop()
 	for ; true; <-ticker.C {
 		if err := s.constructAllActions(); err != nil {
-			s.Log.Errorf("extension market failed to construct all actions: %v", err)
+			s.Log.Errorf("failed to construct all actions: %v", err)
 		}
 	}
 }
@@ -43,7 +43,7 @@ func (s *provider) constructAllActions() error {
 	for i := range allExtensions {
 		extension := allExtensions[i]
 		s.pools.MustGo(func() {
-			s.updateExtension(extension)
+			s.updateExtensionCache(extension)
 		})
 	}
 	s.pools.Stop()

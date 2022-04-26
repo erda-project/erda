@@ -59,7 +59,7 @@ func (s *provider) SearchActions(items []string, locations []string, ops ...OpOp
 	for _, nameVersion := range notFindNameVersion {
 		worker.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
 			nameVersion := i[0].(string)
-			action, ok := s.getOrUpdateExtension(nameVersion)
+			action, ok := s.getOrUpdateExtensionFromCache(nameVersion)
 
 			locker.Lock()
 			defer locker.Unlock()
