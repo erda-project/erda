@@ -48,8 +48,8 @@ type provider struct {
 	bdl *bundle.Bundle
 	*actionService
 
-	actionsCache        map[string]apistructs.ExtensionVersion
-	defaultActionsCache map[string]apistructs.ExtensionVersion
+	actionsCache        map[string]apistructs.ExtensionVersion // key: type@version, see getActionNameVersion
+	defaultActionsCache map[string]apistructs.ExtensionVersion // key: type (only type, no version)
 	pools               *goroutinepool.GoroutinePool
 }
 

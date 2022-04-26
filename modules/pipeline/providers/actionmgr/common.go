@@ -16,7 +16,6 @@ package actionmgr
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	actionpb "github.com/erda-project/erda-proto-go/core/pipeline/action/pb"
@@ -29,6 +28,7 @@ var (
 )
 
 func (s *provider) updateExtensionCache(extension apistructs.Extension) {
+	// query
 	extensionVersions, err := s.bdl.QueryExtensionVersions(apistructs.ExtensionVersionQueryRequest{
 		Name:               extension.Name,
 		All:                true,
@@ -39,16 +39,20 @@ func (s *provider) updateExtensionCache(extension apistructs.Extension) {
 		s.Log.Errorf("failed to query extension version, name: %s, err: %v", extension.Name, err)
 		return
 	}
+
 	s.Lock()
 	defer s.Unlock()
+
+	// delete from defaultActionsCache by action name firstly, because maybe not have default versions in queried result
 	delete(s.defaultActionsCache, extension.Name)
+	// update
 	for _, extensionVersion := range extensionVersions {
-		s.actionsCache[fmt.Sprintf("%s@%s", extension.Name, extensionVersion.Version)] = extensionVersion
+		s.actionsCache[makeActionNameVersion(extensionVersion.Name, extensionVersion.Version)] = extensionVersion
 		if extensionVersion.IsDefault {
 			s.defaultActionsCache[extension.Name] = extensionVersion
 		}
 	}
-	// if not get the default version, set the first public version as default
+	// if not found the default version, set the first public version as default
 	if _, ok := s.defaultActionsCache[extension.Name]; !ok && len(extensionVersions) > 0 {
 		for _, extensionVersion := range extensionVersions {
 			if extensionVersion.Public {
@@ -124,7 +128,7 @@ func (s *provider) searchPipelineActions(items []string, locations []string) (ma
 	pipelineActionListRequest.YamlFormat = true
 	pipelineActionListRequest.Locations = locations
 	for _, nameVersion := range items {
-		name, version := getActionTypeVersion(nameVersion)
+		name, version := getActionNameVersion(nameVersion)
 		query := &actionpb.ActionNameWithVersionQuery{
 			Name:    name,
 			Version: version,
@@ -143,7 +147,7 @@ func (s *provider) searchPipelineActions(items []string, locations []string) (ma
 
 	var result = map[string]apistructs.ExtensionVersion{}
 	for _, nameVersion := range items {
-		name, version := getActionTypeVersion(nameVersion)
+		name, version := getActionNameVersion(nameVersion)
 
 		var findAction *actionpb.Action
 		for _, action := range resp.Data {
@@ -182,7 +186,7 @@ func (s *provider) searchPipelineActions(items []string, locations []string) (ma
 	return result, nil
 }
 
-func getActionTypeVersion(nameVersion string) (string, string) {
+func getActionNameVersion(nameVersion string) (string, string) {
 	splits := strings.SplitN(nameVersion, "@", 2)
 	name := splits[0]
 	version := ""
@@ -190,4 +194,11 @@ func getActionTypeVersion(nameVersion string) (string, string) {
 		version = splits[1]
 	}
 	return name, version
+}
+
+func makeActionNameVersion(name, version string) string {
+	if len(version) == 0 {
+		return name
+	}
+	return name + "@" + version
 }
