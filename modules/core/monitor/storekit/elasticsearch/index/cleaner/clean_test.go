@@ -40,6 +40,15 @@ func Test_provider_getIndicesList(t *testing.T) {
 				}},
 			},
 		}, []string{"test-index1", "test-index2"}},
+		{"case2", args{
+			ctx: context.Background(),
+			indices: &loader.IndexGroup{
+				Groups: map[string]*loader.IndexGroup{"test-group": {
+					List: []*loader.IndexEntry{{Index: "test-index1"}, {Index: "test-index2"}},
+				}},
+				List: []*loader.IndexEntry{{Index: "test-index3"}},
+			},
+		}, []string{"test-index3", "test-index1", "test-index2"}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
