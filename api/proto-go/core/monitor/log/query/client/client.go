@@ -45,6 +45,10 @@ func (s *logQueryServiceWrapper) GetLogByRuntime(ctx context.Context, req *pb.Ge
 	return s.client.GetLogByRuntime(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }
 
+func (s *logQueryServiceWrapper) GetLogByRealtime(ctx context.Context, req *pb.GetLogByRuntimeRequest) (*pb.GetLogByRuntimeResponse, error) {
+	return s.client.GetLogByRealtime(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+}
+
 func (s *logQueryServiceWrapper) GetLogByOrganization(ctx context.Context, req *pb.GetLogByOrganizationRequest) (*pb.GetLogByOrganizationResponse, error) {
 	return s.client.GetLogByOrganization(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }

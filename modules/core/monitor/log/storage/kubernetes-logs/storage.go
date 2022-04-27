@@ -38,7 +38,6 @@ type queryFunc func(it *logsIterator, opts *v1.PodLogOptions) (io.ReadCloser, er
 type cStorage struct {
 	log          logs.Logger
 	getQueryFunc func(clusterName string) (func(it *logsIterator, opts *v1.PodLogOptions) (io.ReadCloser, error), error)
-	pods         PodInfoQueryer
 	bufferLines  int64
 	timeSpan     int64
 }
@@ -67,8 +66,6 @@ func newPodLogOptions(containerName string, startTime int64) *v1.PodLogOptions {
 	}
 }
 
-var podInfoKeys = []string{"cluster_name", "pod_namespace", "pod_name", "container_name"}
-
 const (
 	defaultBufferLines = 1024
 	defaultTimeSpan    = 3 * time.Minute
@@ -76,12 +73,14 @@ const (
 
 func (s *cStorage) Iterator(ctx context.Context, sel *storage.Selector) (storekit.Iterator, error) {
 	var err error
-	var id, applicationID, clusterName string
+	var podName, containerName, namespace, clusterName, id string
+
 	matcher := func(data *pb.LogItem, it *logsIterator) bool { return true }
 	for _, filter := range sel.Filters {
 		if filter.Value == nil {
 			continue
 		}
+
 		if filter.Key != "content" && filter.Op != storage.EQ {
 			s.log.Debugf("%s only support EQ filter, ignore kubernetes logs query", filter.Key)
 			return storekit.EmptyIterator{}, nil
@@ -94,10 +93,6 @@ func (s *cStorage) Iterator(ctx context.Context, sel *storage.Selector) (storeki
 		case "source":
 			source, _ := filter.Value.(string)
 			if len(source) > 0 && source != "container" {
-				return storekit.EmptyIterator{}, nil
-			}
-		case "stream":
-			if filter.Value != nil {
 				return storekit.EmptyIterator{}, nil
 			}
 		case "content":
@@ -129,62 +124,29 @@ func (s *cStorage) Iterator(ctx context.Context, sel *storage.Selector) (storeki
 					}
 				}
 			}
-		case "tags.dice_application_id":
-			if len(applicationID) <= 0 {
-				applicationID, _ = filter.Value.(string)
-
+		case "container_name":
+			containerName, _ = filter.Value.(string)
+			if len(containerName) <= 0 {
+				return storekit.EmptyIterator{}, nil
 			}
-		case "tags.dice_cluster_name":
+		case "pod_name":
+			podName, _ = filter.Value.(string)
+			if len(podName) <= 0 {
+				return storekit.EmptyIterator{}, nil
+			}
+		case "pod_namespace":
+			namespace, _ = filter.Value.(string)
+			if len(namespace) <= 0 {
+				return storekit.EmptyIterator{}, nil
+			}
+		case "cluster_name":
+			clusterName, _ = filter.Value.(string)
 			if len(clusterName) <= 0 {
-				clusterName, _ = filter.Value.(string)
+				return storekit.EmptyIterator{}, nil
 			}
 		}
 	}
 
-	tags := make(map[string]string)
-	for _, key := range podInfoKeys {
-		value, _ := sel.Options[key].(string)
-		if len(value) > 0 {
-			tags[key] = value
-		}
-	}
-	for _, key := range podInfoKeys {
-		if len(tags[key]) <= 0 || len(applicationID) > 0 {
-			if len(id) <= 0 {
-				s.log.Debugf("not found id, ignore kubernetes logs query")
-				return storekit.EmptyIterator{}, nil
-			}
-			info, err := s.pods.GetPodInfo(id, sel)
-			if err != nil {
-				s.log.Debugf("failed to query pod info for container(%q): %s, ignore kubernetes logs query", id, err)
-				return storekit.EmptyIterator{}, nil
-			}
-			if len(applicationID) > 0 && info["dice_application_id"] != applicationID {
-				s.log.Debugf("tags.dice_cluster_name(%q) != %q, ignore kubernetes logs query", applicationID, tags["dice_application_id"])
-				return storekit.EmptyIterator{}, nil
-			}
-			for k, v := range info {
-				if len(tags[k]) <= 0 {
-					tags[k] = v
-				}
-			}
-			break
-		}
-	}
-	if len(tags["cluster_name"]) <= 0 {
-		tags["cluster_name"] = clusterName
-	} else if len(clusterName) <= 0 {
-		clusterName = tags["cluster_name"]
-	}
-	for _, key := range podInfoKeys {
-		if len(tags[key]) <= 0 {
-			s.log.Debugf("not found %q for container(%q), ignore kubernetes logs query", key, id)
-			return storekit.EmptyIterator{}, nil
-		}
-	}
-	if len(clusterName) <= 0 {
-		clusterName = tags["cluster_name"]
-	}
 	queryFunc, err := s.getQueryFunc(clusterName)
 	if err != nil {
 		s.log.Debugf("failed to GetClient(%q): %s, ignore kubernetes logs query", clusterName, err)
@@ -197,19 +159,19 @@ func (s *cStorage) Iterator(ctx context.Context, sel *storage.Selector) (storeki
 	}
 	timeSpan := s.timeSpan
 	if timeSpan <= 0 {
-		bufferLines = int64(defaultTimeSpan)
+		timeSpan = int64(defaultTimeSpan)
 	}
 	return &logsIterator{
 		ctx:           ctx,
 		sel:           sel,
 		id:            id,
-		podNamespace:  tags["pod_namespace"],
-		podName:       tags["pod_name"],
-		containerName: tags["container_name"],
+		podNamespace:  namespace,
+		podName:       podName,
+		containerName: containerName,
 		matcher:       matcher,
 		queryFunc:     queryFunc,
 		pageSize:      bufferLines,
-		timeSpan:      int64(3 * time.Minute),
+		timeSpan:      timeSpan,
 	}, nil
 }
 

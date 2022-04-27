@@ -58,7 +58,7 @@ func (m *LogItem) MarshalJSON() ([]byte, error) {
 	err := (&jsonpb.Marshaler{
 		OrigName:     false,
 		EnumsAsInts:  false,
-		EmitDefaults: true,
+		EmitDefaults: false,
 	}).Marshal(buf, m)
 	return buf.Bytes(), err
 }
@@ -66,7 +66,7 @@ func (m *LogItem) MarshalJSON() ([]byte, error) {
 // LogItem implement json.Marshaler.
 func (m *LogItem) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
-		DiscardUnknown: true,
+		DiscardUnknown: false,
 	}).Unmarshal(b, m)
 }
 
@@ -76,7 +76,7 @@ func (m *GetLogRequest) MarshalJSON() ([]byte, error) {
 	err := (&jsonpb.Marshaler{
 		OrigName:     false,
 		EnumsAsInts:  false,
-		EmitDefaults: true,
+		EmitDefaults: false,
 	}).Marshal(buf, m)
 	return buf.Bytes(), err
 }
@@ -84,7 +84,7 @@ func (m *GetLogRequest) MarshalJSON() ([]byte, error) {
 // GetLogRequest implement json.Marshaler.
 func (m *GetLogRequest) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
-		DiscardUnknown: true,
+		DiscardUnknown: false,
 	}).Unmarshal(b, m)
 }
 
@@ -94,7 +94,7 @@ func (m *GetLogByRuntimeRequest) MarshalJSON() ([]byte, error) {
 	err := (&jsonpb.Marshaler{
 		OrigName:     false,
 		EnumsAsInts:  false,
-		EmitDefaults: true,
+		EmitDefaults: false,
 	}).Marshal(buf, m)
 	return buf.Bytes(), err
 }
@@ -102,7 +102,7 @@ func (m *GetLogByRuntimeRequest) MarshalJSON() ([]byte, error) {
 // GetLogByRuntimeRequest implement json.Marshaler.
 func (m *GetLogByRuntimeRequest) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
-		DiscardUnknown: true,
+		DiscardUnknown: false,
 	}).Unmarshal(b, m)
 }
 
@@ -112,7 +112,7 @@ func (m *GetLogByOrganizationRequest) MarshalJSON() ([]byte, error) {
 	err := (&jsonpb.Marshaler{
 		OrigName:     false,
 		EnumsAsInts:  false,
-		EmitDefaults: true,
+		EmitDefaults: false,
 	}).Marshal(buf, m)
 	return buf.Bytes(), err
 }
@@ -120,7 +120,7 @@ func (m *GetLogByOrganizationRequest) MarshalJSON() ([]byte, error) {
 // GetLogByOrganizationRequest implement json.Marshaler.
 func (m *GetLogByOrganizationRequest) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
-		DiscardUnknown: true,
+		DiscardUnknown: false,
 	}).Unmarshal(b, m)
 }
 
@@ -130,7 +130,7 @@ func (m *QueryMeta) MarshalJSON() ([]byte, error) {
 	err := (&jsonpb.Marshaler{
 		OrigName:     false,
 		EnumsAsInts:  false,
-		EmitDefaults: true,
+		EmitDefaults: false,
 	}).Marshal(buf, m)
 	return buf.Bytes(), err
 }
@@ -138,7 +138,7 @@ func (m *QueryMeta) MarshalJSON() ([]byte, error) {
 // QueryMeta implement json.Marshaler.
 func (m *QueryMeta) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
-		DiscardUnknown: true,
+		DiscardUnknown: false,
 	}).Unmarshal(b, m)
 }
 
@@ -148,7 +148,7 @@ func (m *LogUniqueID) MarshalJSON() ([]byte, error) {
 	err := (&jsonpb.Marshaler{
 		OrigName:     false,
 		EnumsAsInts:  false,
-		EmitDefaults: true,
+		EmitDefaults: false,
 	}).Marshal(buf, m)
 	return buf.Bytes(), err
 }
@@ -156,7 +156,7 @@ func (m *LogUniqueID) MarshalJSON() ([]byte, error) {
 // LogUniqueID implement json.Marshaler.
 func (m *LogUniqueID) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
-		DiscardUnknown: true,
+		DiscardUnknown: false,
 	}).Unmarshal(b, m)
 }
 
@@ -166,7 +166,7 @@ func (m *ExtraFilter) MarshalJSON() ([]byte, error) {
 	err := (&jsonpb.Marshaler{
 		OrigName:     false,
 		EnumsAsInts:  false,
-		EmitDefaults: true,
+		EmitDefaults: false,
 	}).Marshal(buf, m)
 	return buf.Bytes(), err
 }
@@ -174,7 +174,7 @@ func (m *ExtraFilter) MarshalJSON() ([]byte, error) {
 // ExtraFilter implement json.Marshaler.
 func (m *ExtraFilter) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
-		DiscardUnknown: true,
+		DiscardUnknown: false,
 	}).Unmarshal(b, m)
 }
 
@@ -184,7 +184,7 @@ func (m *GetLogByExpressionRequest) MarshalJSON() ([]byte, error) {
 	err := (&jsonpb.Marshaler{
 		OrigName:     false,
 		EnumsAsInts:  false,
-		EmitDefaults: true,
+		EmitDefaults: false,
 	}).Marshal(buf, m)
 	return buf.Bytes(), err
 }
@@ -192,7 +192,7 @@ func (m *GetLogByExpressionRequest) MarshalJSON() ([]byte, error) {
 // GetLogByExpressionRequest implement json.Marshaler.
 func (m *GetLogByExpressionRequest) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
-		DiscardUnknown: true,
+		DiscardUnknown: false,
 	}).Unmarshal(b, m)
 }
 
@@ -202,7 +202,7 @@ func (m *HistogramAggOptions) MarshalJSON() ([]byte, error) {
 	err := (&jsonpb.Marshaler{
 		OrigName:     false,
 		EnumsAsInts:  false,
-		EmitDefaults: true,
+		EmitDefaults: false,
 	}).Marshal(buf, m)
 	return buf.Bytes(), err
 }
@@ -210,7 +210,7 @@ func (m *HistogramAggOptions) MarshalJSON() ([]byte, error) {
 // HistogramAggOptions implement json.Marshaler.
 func (m *HistogramAggOptions) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
-		DiscardUnknown: true,
+		DiscardUnknown: false,
 	}).Unmarshal(b, m)
 }
 
@@ -220,7 +220,7 @@ func (m *TermsAggOptions) MarshalJSON() ([]byte, error) {
 	err := (&jsonpb.Marshaler{
 		OrigName:     false,
 		EnumsAsInts:  false,
-		EmitDefaults: true,
+		EmitDefaults: false,
 	}).Marshal(buf, m)
 	return buf.Bytes(), err
 }
@@ -228,7 +228,7 @@ func (m *TermsAggOptions) MarshalJSON() ([]byte, error) {
 // TermsAggOptions implement json.Marshaler.
 func (m *TermsAggOptions) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
-		DiscardUnknown: true,
+		DiscardUnknown: false,
 	}).Unmarshal(b, m)
 }
 
@@ -238,7 +238,7 @@ func (m *AggregationDescriptor) MarshalJSON() ([]byte, error) {
 	err := (&jsonpb.Marshaler{
 		OrigName:     false,
 		EnumsAsInts:  false,
-		EmitDefaults: true,
+		EmitDefaults: false,
 	}).Marshal(buf, m)
 	return buf.Bytes(), err
 }
@@ -246,7 +246,7 @@ func (m *AggregationDescriptor) MarshalJSON() ([]byte, error) {
 // AggregationDescriptor implement json.Marshaler.
 func (m *AggregationDescriptor) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
-		DiscardUnknown: true,
+		DiscardUnknown: false,
 	}).Unmarshal(b, m)
 }
 
@@ -256,7 +256,7 @@ func (m *LogAggregationRequest) MarshalJSON() ([]byte, error) {
 	err := (&jsonpb.Marshaler{
 		OrigName:     false,
 		EnumsAsInts:  false,
-		EmitDefaults: true,
+		EmitDefaults: false,
 	}).Marshal(buf, m)
 	return buf.Bytes(), err
 }
@@ -264,7 +264,7 @@ func (m *LogAggregationRequest) MarshalJSON() ([]byte, error) {
 // LogAggregationRequest implement json.Marshaler.
 func (m *LogAggregationRequest) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
-		DiscardUnknown: true,
+		DiscardUnknown: false,
 	}).Unmarshal(b, m)
 }
 
@@ -274,7 +274,7 @@ func (m *AggregationBucket) MarshalJSON() ([]byte, error) {
 	err := (&jsonpb.Marshaler{
 		OrigName:     false,
 		EnumsAsInts:  false,
-		EmitDefaults: true,
+		EmitDefaults: false,
 	}).Marshal(buf, m)
 	return buf.Bytes(), err
 }
@@ -282,7 +282,7 @@ func (m *AggregationBucket) MarshalJSON() ([]byte, error) {
 // AggregationBucket implement json.Marshaler.
 func (m *AggregationBucket) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
-		DiscardUnknown: true,
+		DiscardUnknown: false,
 	}).Unmarshal(b, m)
 }
 
@@ -292,7 +292,7 @@ func (m *AggregationResult) MarshalJSON() ([]byte, error) {
 	err := (&jsonpb.Marshaler{
 		OrigName:     false,
 		EnumsAsInts:  false,
-		EmitDefaults: true,
+		EmitDefaults: false,
 	}).Marshal(buf, m)
 	return buf.Bytes(), err
 }
@@ -300,7 +300,7 @@ func (m *AggregationResult) MarshalJSON() ([]byte, error) {
 // AggregationResult implement json.Marshaler.
 func (m *AggregationResult) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
-		DiscardUnknown: true,
+		DiscardUnknown: false,
 	}).Unmarshal(b, m)
 }
 
@@ -310,7 +310,7 @@ func (m *LogAggregationResponse) MarshalJSON() ([]byte, error) {
 	err := (&jsonpb.Marshaler{
 		OrigName:     false,
 		EnumsAsInts:  false,
-		EmitDefaults: true,
+		EmitDefaults: false,
 	}).Marshal(buf, m)
 	return buf.Bytes(), err
 }
@@ -318,7 +318,7 @@ func (m *LogAggregationResponse) MarshalJSON() ([]byte, error) {
 // LogAggregationResponse implement json.Marshaler.
 func (m *LogAggregationResponse) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
-		DiscardUnknown: true,
+		DiscardUnknown: false,
 	}).Unmarshal(b, m)
 }
 
@@ -328,7 +328,7 @@ func (m *GetLogResponse) MarshalJSON() ([]byte, error) {
 	err := (&jsonpb.Marshaler{
 		OrigName:     false,
 		EnumsAsInts:  false,
-		EmitDefaults: true,
+		EmitDefaults: false,
 	}).Marshal(buf, m)
 	return buf.Bytes(), err
 }
@@ -336,7 +336,7 @@ func (m *GetLogResponse) MarshalJSON() ([]byte, error) {
 // GetLogResponse implement json.Marshaler.
 func (m *GetLogResponse) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
-		DiscardUnknown: true,
+		DiscardUnknown: false,
 	}).Unmarshal(b, m)
 }
 
@@ -346,7 +346,7 @@ func (m *GetLogByRuntimeResponse) MarshalJSON() ([]byte, error) {
 	err := (&jsonpb.Marshaler{
 		OrigName:     false,
 		EnumsAsInts:  false,
-		EmitDefaults: true,
+		EmitDefaults: false,
 	}).Marshal(buf, m)
 	return buf.Bytes(), err
 }
@@ -354,7 +354,7 @@ func (m *GetLogByRuntimeResponse) MarshalJSON() ([]byte, error) {
 // GetLogByRuntimeResponse implement json.Marshaler.
 func (m *GetLogByRuntimeResponse) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
-		DiscardUnknown: true,
+		DiscardUnknown: false,
 	}).Unmarshal(b, m)
 }
 
@@ -364,7 +364,7 @@ func (m *GetLogByOrganizationResponse) MarshalJSON() ([]byte, error) {
 	err := (&jsonpb.Marshaler{
 		OrigName:     false,
 		EnumsAsInts:  false,
-		EmitDefaults: true,
+		EmitDefaults: false,
 	}).Marshal(buf, m)
 	return buf.Bytes(), err
 }
@@ -372,7 +372,7 @@ func (m *GetLogByOrganizationResponse) MarshalJSON() ([]byte, error) {
 // GetLogByOrganizationResponse implement json.Marshaler.
 func (m *GetLogByOrganizationResponse) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
-		DiscardUnknown: true,
+		DiscardUnknown: false,
 	}).Unmarshal(b, m)
 }
 
@@ -382,7 +382,7 @@ func (m *GetLogByExpressionResponse) MarshalJSON() ([]byte, error) {
 	err := (&jsonpb.Marshaler{
 		OrigName:     false,
 		EnumsAsInts:  false,
-		EmitDefaults: true,
+		EmitDefaults: false,
 	}).Marshal(buf, m)
 	return buf.Bytes(), err
 }
@@ -390,6 +390,6 @@ func (m *GetLogByExpressionResponse) MarshalJSON() ([]byte, error) {
 // GetLogByExpressionResponse implement json.Marshaler.
 func (m *GetLogByExpressionResponse) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
-		DiscardUnknown: true,
+		DiscardUnknown: false,
 	}).Unmarshal(b, m)
 }

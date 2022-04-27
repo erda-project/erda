@@ -118,13 +118,12 @@ elasticsearch.index.cleaner@log:
         alias: "erda-logs-<org>.<key>-rollover"
 log-storage-elasticsearch:
   _enable: ${QUERY_LOG_FROM_ES_ENABLE:true}
-  query_timeout: "1m"
+  query_timeout: "${QUERY_LOG_FROM_ES_TIMEOUT:1m}"
   read_page_size: 200
 kubernetes-logs-storage:
-  _enable: ${QUERY_LOG_FROM_K8S_API_ENABLE:false}
-  pod_info_cache_size: 256
-  pod_info_cache_expiration: "3h"
-  buffer_lines: 200
+  _enable: ${QUERY_LOG_FROM_K8S_API_ENABLE:true}
+  buffer_lines: ${QUERY_LOG_FROM_K8S_API_BUFFER_LINES:200}
+  time_span: ${QUERY_LOG_FROM_K8S_API_TIME_SPAN:3m}
 log-storage-cassandra:
   _enable: ${QUERY_LOG_FROM_CASSANDRA_ENABLE:false}
   read_page_size: 201
