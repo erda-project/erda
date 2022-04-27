@@ -58,7 +58,7 @@ func (l *Label) Create(req *apistructs.ProjectLabelCreateRequest) (int64, error)
 	}
 
 	// 同名检查
-	old, err := l.db.GetLabelByName(req.ProjectID, req.Name)
+	old, err := l.db.GetLabelByNameAndType(req.ProjectID, req.Name, string(req.Type))
 	if err != nil && !gorm.IsRecordNotFoundError(err) {
 		return 0, err
 	}
@@ -98,7 +98,7 @@ func (l *Label) Update(req *apistructs.ProjectLabelUpdateRequest) error {
 	}
 
 	// 新名称 label 是否存在
-	new, err := l.db.GetLabelByName(label.ProjectID, req.Name)
+	new, err := l.db.GetLabelByNameAndType(label.ProjectID, req.Name, string(label.Type))
 	if err != nil && !gorm.IsRecordNotFoundError(err) {
 		return err
 	}
