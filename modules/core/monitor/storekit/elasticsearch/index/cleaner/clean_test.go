@@ -16,9 +16,10 @@ package cleaner
 
 import (
 	"context"
-	"github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/loader"
 	"reflect"
 	"testing"
+
+	"github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/loader"
 )
 
 func Test_provider_getIndicesList(t *testing.T) {
