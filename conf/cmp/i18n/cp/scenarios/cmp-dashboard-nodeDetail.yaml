@@ -47,7 +47,7 @@ zh:
   lb: 负载均衡
   label-value: 标签值
   addLabel: 添加标签
-  podNum: Pod 数量
+  podNum: Pod 容量
 
 en:
-  podNum: Number of Pods
+  podNum: Capacity of pods
