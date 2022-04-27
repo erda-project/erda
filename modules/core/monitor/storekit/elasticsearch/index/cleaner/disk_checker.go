@@ -54,7 +54,7 @@ func (p *provider) runDocsCheckAndClean() {
 			panic("create cron failed.")
 		}
 		c.Start()
-		p.Log.Infof("Enable disk clean corn task.")
+		p.Log.Infof("Enable disk clean cron task. Cron expression: %s, Max store time: %v", p.Cfg.DiskClean.TTL.TriggerSpecCron, p.Cfg.DiskClean.TTL.MaxStoreTime)
 	}
 }
 

@@ -21,6 +21,9 @@ import (
 	"github.com/golang/mock/gomock"
 	"gotest.tools/assert"
 
+	"github.com/erda-project/erda-infra/base/logs"
+	election "github.com/erda-project/erda-infra/providers/etcd-election"
+	"github.com/erda-project/erda/modules/core/monitor/pkg"
 	"github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/loader"
 )
 
@@ -86,4 +89,65 @@ func Test_getSortedIndices_Should_Success(t *testing.T) {
 	result := p.getSortedIndices()
 
 	assert.DeepEqual(t, result, want)
+}
+
+func Test_provider_runDocsCheckAndClean(t *testing.T) {
+	type fields struct {
+		Cfg                      *config
+		Log                      logs.Logger
+		election                 election.Interface
+		loader                   loader.Interface
+		retentions               RetentionStrategy
+		clearCh                  chan *clearRequest
+		minIndicesStoreInDisk    int64
+		rolloverBodyForDiskClean string
+		rolloverAliasPatterns    []*indexAliasPattern
+	}
+	tests := []struct {
+		name   string
+		fields fields
+	}{
+		{"case1", fields{
+			Cfg: &config{DiskClean: diskClean{
+				Enable: true,
+				TTL: struct {
+					Enable          bool   `json:"enable" default:"true"`
+					MaxStoreTime    int    `file:"max_store_time" default:"7"`
+					TriggerSpecCron string `file:"trigger_spec_cron" default:"0 0 3 * * *"`
+				}{
+					Enable: false,
+				},
+			}},
+		}},
+		{"case2", fields{
+			Cfg: &config{DiskClean: diskClean{
+				Enable: true,
+				TTL: struct {
+					Enable          bool   `json:"enable" default:"true"`
+					MaxStoreTime    int    `file:"max_store_time" default:"7"`
+					TriggerSpecCron string `file:"trigger_spec_cron" default:"0 0 3 * * *"`
+				}{
+					Enable:          true,
+					TriggerSpecCron: "0 0 3 * * *",
+					MaxStoreTime:    7,
+				},
+			}},
+		}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var logger *pkg.MockLogger
+			if tt.fields.Cfg.DiskClean.TTL.Enable {
+				ctrl := gomock.NewController(t)
+				defer ctrl.Finish()
+				logger = pkg.NewMockLogger(ctrl)
+				logger.EXPECT().Infof(gomock.Any(), gomock.Any())
+			}
+			p := &provider{
+				Cfg: tt.fields.Cfg,
+				Log: logger,
+			}
+			p.runDocsCheckAndClean()
+		})
+	}
 }
