@@ -135,6 +135,7 @@ func (p *provider) doPipelineReporter(ctx context.Context, pipelineID uint64) er
 func (p *provider) compensatorPipelineReporter(ctx context.Context) {
 	ticker := time.NewTicker(1 * time.Millisecond)
 	defer ticker.Stop()
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -156,10 +157,25 @@ func (p *provider) doCompensatorPipelineReporter(ctx context.Context) {
 		return
 	}
 
-	for _, v := range pipelines {
+	// Only end status can be reported
+	newPipelines := pipelineFilterIn(pipelines, func(p *spec.PipelineBase) bool {
+		return p.Status.IsEndStatus()
+	})
+
+	for _, v := range newPipelines {
 		if err = p.doPipelineReporter(ctx, v.ID); err != nil {
 			p.Log.Errorf("failed to doPipelineReporter in compensator, err: %v", err)
 		}
 	}
 	return
+}
+
+func pipelineFilterIn(pipelines []spec.PipelineBase, fn func(p *spec.PipelineBase) bool) []spec.PipelineBase {
+	newPipelines := make([]spec.PipelineBase, 0)
+	for i := range pipelines {
+		if fn(&pipelines[i]) {
+			newPipelines = append(newPipelines, pipelines[i])
+		}
+	}
+	return newPipelines
 }
