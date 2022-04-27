@@ -544,6 +544,8 @@ var (
 	ErrGetPublishItem    = err("ErrGetPublishItem", "获取发布内容详情失败")
 	ErrSratisticsErrList = err("ErrSratisticsErrList", "获取错误列表失败")
 	ErrCrashRateList     = err("ErrCrashRateList", "获取崩溃率失败")
+
+	ErrNotFoundPipelineCron = err("ErrNotFoundPipelineCron", "未找到流水线定时配置")
 )
 
 func err(template, defaultValue string) *errorresp.APIError {

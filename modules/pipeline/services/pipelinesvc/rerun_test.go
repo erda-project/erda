@@ -12,25 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package endpoints
+package pipelinesvc
 
 import (
 	"context"
-	"fmt"
-	"net/http"
-	"strings"
+	"reflect"
 	"testing"
 
-	"github.com/alecthomas/assert"
+	"bou.ke/monkey"
 
-	pb1 "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	commonpb "github.com/erda-project/erda-proto-go/core/pipeline/pb"
-	"github.com/erda-project/erda/modules/dop/services/apierrors"
-	"github.com/erda-project/erda/pkg/encoding/jsonparse"
-	"github.com/erda-project/erda/pkg/http/httpserver"
-	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
-	"github.com/erda-project/erda/pkg/http/httputil"
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/pipeline/dbclient"
+	"github.com/erda-project/erda/modules/pipeline/spec"
 )
 
 type TestPipelineCron struct {
@@ -69,78 +64,54 @@ func (t TestPipelineCron) CronUpdate(ctx context.Context, request *cronpb.CronUp
 	panic("implement me")
 }
 
-func TestEndpoints_pipelineCronCreate(t *testing.T) {
-	e := &Endpoints{}
-	var createV2 pb1.PipelineCreateRequest
-	createV2.PipelineYml = `version: 1.1
-cron_compensator:
-  enable: true
-  latest_first: true
-  stop_if_latter_executed: true
-stages: []
-`
-	req, err := http.NewRequest("method", "body", strings.NewReader(jsonparse.JsonOneLine(createV2)))
-	assert.Nil(t, err)
-	req.Header = map[string][]string{
-		"USER-ID": {"2"},
-		httputil.InternalHeader: {
-			"true",
-		},
+func TestPipelineSvc_Rerun(t *testing.T) {
+	type args struct {
+		ctx context.Context
+		req *apistructs.PipelineRerunRequest
 	}
-
-	var testPipelineCron TestPipelineCron
-	e.PipelineCron = testPipelineCron
-	got, err := e.pipelineCronCreate(context.Background(), req, nil)
-	assert.NoError(t, err)
-	resp := got.GetContent().(httpserver.Resp)
-	assert.Equal(t, resp.Data, &commonpb.Cron{
-		ID: 123,
-	})
-}
-
-func TestEndpoints_pipelineCronDelete(t *testing.T) {
 	tests := []struct {
 		name    string
-		want    httpserver.Responser
+		args    args
+		want    *spec.Pipeline
 		wantErr bool
 	}{
 		{
-			name:    "test",
-			wantErr: false,
-			want: func() httpserver.Responser {
-				result, _ := errorresp.ErrResp(apierrors.ErrNotFoundPipelineCron.InternalError(fmt.Errorf("cron not found")))
-				return result
-			}(),
+			name: "test",
+			args: args{
+				ctx: context.Background(),
+				req: &apistructs.PipelineRerunRequest{
+					PipelineID: 1,
+				},
+			},
+			wantErr: true,
+			want:    nil,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			e := &Endpoints{}
+			s := &PipelineSvc{}
 
-			req, err := http.NewRequest("method", "body", strings.NewReader(""))
-			assert.Nil(t, err)
-			req.Header = map[string][]string{
-				"USER-ID": {"2"},
-				httputil.InternalHeader: {
-					"true",
-				},
-			}
+			var dbClient dbclient.Client
+			patch := monkey.PatchInstanceMethod(reflect.TypeOf(&dbClient), "GetPipeline", func(dbClient *dbclient.Client, id interface{}, ops ...dbclient.SessionOption) (spec.Pipeline, error) {
+				return spec.Pipeline{}, nil
+			})
+			defer patch.Unpatch()
 
 			var testPipelineCron TestPipelineCron
 			testPipelineCron.getResp = &cronpb.CronGetResponse{
 				Data: nil,
 			}
-			e.PipelineCron = testPipelineCron
+			s.pipelineCronSvc = testPipelineCron
 
-			got, err := e.pipelineCronDelete(context.Background(), req, map[string]string{
-				pathCronID: "10",
-			})
+			got, err := s.Rerun(tt.args.ctx, tt.args.req)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("pipelineCronDelete() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("Rerun() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 
-			assert.EqualValues(t, tt.want, got)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Rerun() got = %v, want %v", got, tt.want)
+			}
 		})
 	}
 }
