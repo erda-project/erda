@@ -7,6 +7,7 @@ import "google/protobuf/descriptor.proto";
 import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
 import "common/openapi.proto";
+import "common/http.proto";
 
 service ReleaseService {
   option (erda.common.openapi_service) = {
@@ -160,6 +161,9 @@ service ReleaseService {
       path: "/api/releases/actions/check-version",
     };
   }
+
+  rpc PublishArtifacts(release.ReleaseGetRequest)returns(common.VoidResponse){}
+  rpc UnPublishArtifacts(release.ReleaseGetRequest)returns(common.VoidResponse){}
 }
 
 message ReleaseList{

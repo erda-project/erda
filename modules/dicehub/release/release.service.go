@@ -33,6 +33,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"gopkg.in/yaml.v2"
 
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
@@ -871,6 +872,20 @@ func (s *ReleaseService) CheckVersion(ctx context.Context, req *pb.CheckVersionR
 			IsUnique: len(releases) == 0,
 		},
 	}, nil
+}
+
+func (s *ReleaseService) PublishArtifacts(_ context.Context, req *pb.ReleaseGetRequest) (*commonpb.VoidResponse, error) {
+	if err := s.db.PublishRelease(req.GetReleaseID()); err != nil {
+		return nil, err
+	}
+	return new(commonpb.VoidResponse), nil
+}
+
+func (s *ReleaseService) UnPublishArtifacts(_ context.Context, req *pb.ReleaseGetRequest) (*commonpb.VoidResponse, error) {
+	if err := s.db.UnPublishRelease(req.GetReleaseID()); err != nil {
+		return nil, err
+	}
+	return new(commonpb.VoidResponse), nil
 }
 
 // GetDiceYAML get dice.yml context

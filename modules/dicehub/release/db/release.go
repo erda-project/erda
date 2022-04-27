@@ -286,3 +286,18 @@ func (client *ReleaseConfigDB) GetReleasesByBranch(projectID, appID int64, gitBr
 	}
 	return releases, nil
 }
+
+func (client *ReleaseConfigDB) PublishRelease(releaseID string) error {
+	return client.putOnOffRelease(releaseID, true)
+}
+func (client *ReleaseConfigDB) UnPublishRelease(releaseID string) error {
+	return client.putOnOffRelease(releaseID, false)
+}
+
+func (client *ReleaseConfigDB) putOnOffRelease(releaseID string, pub bool) error {
+	return client.Model(new(Release)).
+		Where("release_id = ?", releaseID).
+		Where("is_project_release = ?", true).
+		Update(map[string]interface{}{"is_published": pub}).
+		Error
+}

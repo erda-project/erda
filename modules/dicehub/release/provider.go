@@ -58,7 +58,7 @@ type provider struct {
 	Register              transport.Register `autowired:"service-register" required:"true"`
 	DB                    *gorm.DB           `autowired:"mysql-client"`
 	Etcd                  *clientv3.Client   `autowired:"etcd"`
-	releaseService        *ReleaseService
+	releaseService        pb.ReleaseServiceServer
 	releaseGetDiceService *releaseGetDiceService
 	bdl                   *bundle.Bundle
 }

@@ -1,0 +1,270 @@
+syntax = "proto3";
+
+package erda.admin.gallery;
+option go_package = "github.com/erda-project/erda-proto-go/admin/gallery/pb";
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
+import "common/openapi.proto";
+import "common/http.proto";
+
+service Gallery {
+  option(erda.common.openapi_service) = {
+    service: "admin",
+    auth: {
+      check_login: true,
+      check_token: true,
+    }
+  };
+
+  // ListArtifacts:
+  // en: list Artifacts in the org.
+  // zh_CN: 查询 room 下所有的 Artifacts.
+  rpc ListArtifacts(ListArtifactsReq) returns (ListArtifactsResp) {
+    option(google.api.http) = {
+      get: "/api/gallery/artifacts",
+    };
+    option(erda.common.openapi) = {
+      path: "/api/gallery/artifacts",
+    };
+  }
+
+  rpc PutOnProjectArtifacts(PutOnProjectArtifactsReq) returns (common.VoidResponse) {}
+
+  rpc PutOffProjectArtifacts(PutOnProjectArtifactsReq) returns (common.VoidResponse) {}
+
+  // GetArtifacts:
+  // en: query details of the Artifacts.
+  // zh_CN: 查询 Artifacts 详情.
+  rpc GetArtifacts(GetArtifactsReq) returns (GetArtifactsResp) {
+    option(google.api.http) = {
+      get: "/api/gallery/artifacts/{name}?type={type}&version={version}",
+    };
+    option(erda.common.openapi) = {
+      path: "/api/gallery/artifacts/{name}",
+    };
+  };
+}
+
+message ListArtifactsReq {
+  string type = 1;
+  string keyword = 2;
+  int32 pageNo = 3;
+  int32 pageSize = 4;
+}
+
+message ListArtifactsResp {
+  ListArtifactsRespData data = 1;
+  repeated string userIDs = 2;
+}
+
+message ListArtifactsRespData {
+  int32 total = 1;
+  repeated ListArtifactsRespDataItem data = 2;
+}
+
+message ListArtifactsRespDataItem {
+  string id = 1;
+  string releaseID = 2;
+  string type = 3;
+  string name = 4;
+  string displayName = 5;
+  string category = 6;
+  string displayCategory = 7;
+  string desc = 8;
+  User publisher = 9;
+  string logoUrl = 10;
+}
+
+message User {
+  string id = 1;
+  string name = 2;
+  string nickName = 3;
+}
+
+message GetArtifactsResp {
+  GetArtifactsRespData data = 1;
+  repeated string userIDs = 2;
+}
+
+message GetArtifactsRespData {
+  int32 total = 1;
+  repeated GetArtifactsRespDataItem list = 2;
+}
+
+message GetArtifactsRespDataItem {
+  string name = 1;
+  string displayName = 2;
+  string version = 3;
+  string type = 4;
+  string category = 5;
+  string logoUrl = 6;
+  google.protobuf.Struct dice = 7;
+  google.protobuf.Struct spec = 8;
+  string readme = 9;
+  string changeLog = 10;
+  bool isDefault = 11;
+  google.protobuf.Timestamp createdAt = 12;
+  google.protobuf.Timestamp updatedAt = 13;
+  User publisher = 14;
+  repeated ActionParam params = 15;
+  repeated ActionOutputs outputs = 16;
+  repeated string configVars = 17;
+}
+
+message ActionParam {
+  string name = 1;
+  string type = 2;
+  string desc = 3;
+  bool required = 4;
+  string default = 5;
+}
+
+message ActionOutputs {
+  string name = 1;
+  string type = 2;
+  string desc = 3;
+}
+
+message GetArtifactsReq {
+  string name = 1;
+  string type = 2;
+  string version = 3;
+}
+
+message DeleteArtifactsReq {
+  string name = 1;
+  string type = 2;
+  string version = 3;
+}
+
+message CreateArtifactsReq {
+  string name = 1;
+  string type = 2;
+  string version = 3;
+  google.protobuf.Struct spec = 4;
+}
+
+message CreateArtifactsReq_ReleaseSpec {
+  string releaseID = 1;
+}
+
+message PutOnProjectArtifactsReq {
+  string name = 1;
+  string version = 4;
+  string room = 5;
+  map<string, string> values = 8;
+  PresentationRef presentation = 9;
+  google.protobuf.Struct publisher = 10;
+  Installer installer = 11;
+
+  string syntax = 100;          // presentation 语法的版本
+  string roomKey = 200;         // 用于鉴别 room 权限的 key
+  string roomSign = 201;        // 用于鉴别 room 权限的签名
+}
+
+message PubOffProjectArtifactsReq {
+  string name = 1;
+  string version = 2;
+  string room = 3;
+}
+
+message PresentationRef {
+  string ref = 1;                 // 要求实现一定的接口
+  Presentation presentation = 2;
+}
+
+message Presentation {
+  Info info = 1;
+  Download download = 7;        // 下载信息 {"downloadable": true, "url": "https://..."}
+  repeated Readme readme = 9;   // 主显示文本
+  Parameters parameters = 10;  // key: schema 组名, value: 有效的 OAS3 schema 片段列表
+  google.protobuf.Timestamp createdAt = 11; // 发布时间, 不填, 由 gallery 服务端决定
+  repeated string labels = 14;  // 标签
+  string catalog = 15;          // 分类
+}
+
+enum ArtifactsType {
+  unknown = 0;
+  extensionAddon = 1;
+  extensionAction = 2;
+  artifactsProject = 3;
+}
+
+enum Lang {
+  unknownLang = 0;
+  en = 10;
+  en_US = 11;
+  en_GB = 12;
+  zh = 20;
+  zh_CN = 21;
+  zh_TW = 22;
+  zh_HK = 23;
+  others = 1000;
+}
+
+message Homepage {
+  string name = 1;    // 主页名称
+  string url = 2;     // 主页地址
+  string logoURL = 3; // logo url
+}
+
+message Download {
+  bool downloadable = 1;  // 是否可供下载
+  string url = 2;           // 下载地址
+}
+
+message Opensource {
+  bool isOpenSourced = 1;  // 是否开源
+  string url = 2;       // 源代码地址
+  License license = 3;  // 开源协议
+}
+
+// license like:
+//  license:
+//    name: "Apache 2.0"
+//    url: "https://www.apache.org/licenses/LICENSE-2.0.html"
+message License {
+  string name = 1;  // 开源协议名称
+  string url = 2;   // 开源协议地址
+}
+
+message Readme {
+  Lang lang = 1;
+  string source = 2;
+  string text = 3;
+}
+
+message Info {
+  string name = 1;              // 制品标识
+  string displayName = 2;       // 制品名称
+  string type = 3;              // 制品类型 erda/artifacts/project
+  string version = 4;           // 版本号
+  string summary = 5;
+  string description = 6;
+  Contact contact = 7;
+  Opensource opensource = 9;
+  string logoURL = 11;
+  Homepage homepage = 12;       // 主页相关信息
+}
+
+message Contact {
+  string name = 1;
+  string url = 2;
+  string email = 3;
+}
+
+message Installer {
+  string installer = 1;
+  google.protobuf.Struct spec = 2;
+}
+
+message ErdaProjectArtifactsInstaller {
+  string releaseID = 1;
+}
+
+message Parameters {
+  repeated string ins = 1;
+  repeated google.protobuf.Value parameter = 2; // parameter 是 Openapi3.ParameterObject
+}

@@ -7,6 +7,7 @@ import (
 	context "context"
 
 	grpc "github.com/erda-project/erda-infra/pkg/transport/grpc"
+	pb1 "github.com/erda-project/erda-proto-go/common/pb"
 	pb "github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	grpc1 "google.golang.org/grpc"
 )
@@ -120,4 +121,12 @@ func (s *releaseServiceWrapper) DeleteReleases(ctx context.Context, req *pb.Rele
 
 func (s *releaseServiceWrapper) CheckVersion(ctx context.Context, req *pb.CheckVersionRequest) (*pb.CheckVersionResponse, error) {
 	return s.client.CheckVersion(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+}
+
+func (s *releaseServiceWrapper) PublishArtifacts(ctx context.Context, req *pb.ReleaseGetRequest) (*pb1.VoidResponse, error) {
+	return s.client.PublishArtifacts(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+}
+
+func (s *releaseServiceWrapper) UnPublishArtifacts(ctx context.Context, req *pb.ReleaseGetRequest) (*pb1.VoidResponse, error) {
+	return s.client.UnPublishArtifacts(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }

@@ -51,7 +51,7 @@ message CreateExportRecordsReq {
 
 message CreateExportRecordsResp {
     ExportRecord data = 1;
-    repeated string userIDs = 2;
+    repeated string userIDs = 2;// userIDs: 用户 id 列表
 }
 
 message ExportRecord {

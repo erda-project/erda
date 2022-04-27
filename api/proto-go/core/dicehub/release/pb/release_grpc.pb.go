@@ -8,6 +8,7 @@ import (
 
 	transport "github.com/erda-project/erda-infra/pkg/transport"
 	grpc1 "github.com/erda-project/erda-infra/pkg/transport/grpc"
+	pb "github.com/erda-project/erda-proto-go/common/pb"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -37,6 +38,8 @@ type ReleaseServiceClient interface {
 	ToFormalReleases(ctx context.Context, in *FormalReleasesRequest, opts ...grpc.CallOption) (*FormalReleasesResponse, error)
 	DeleteReleases(ctx context.Context, in *ReleasesDeleteRequest, opts ...grpc.CallOption) (*ReleasesDeleteResponse, error)
 	CheckVersion(ctx context.Context, in *CheckVersionRequest, opts ...grpc.CallOption) (*CheckVersionResponse, error)
+	PublishArtifacts(ctx context.Context, in *ReleaseGetRequest, opts ...grpc.CallOption) (*pb.VoidResponse, error)
+	UnPublishArtifacts(ctx context.Context, in *ReleaseGetRequest, opts ...grpc.CallOption) (*pb.VoidResponse, error)
 }
 
 type releaseServiceClient struct {
@@ -191,6 +194,24 @@ func (c *releaseServiceClient) CheckVersion(ctx context.Context, in *CheckVersio
 	return out, nil
 }
 
+func (c *releaseServiceClient) PublishArtifacts(ctx context.Context, in *ReleaseGetRequest, opts ...grpc.CallOption) (*pb.VoidResponse, error) {
+	out := new(pb.VoidResponse)
+	err := c.cc.Invoke(ctx, "/erda.core.dicehub.release.ReleaseService/PublishArtifacts", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *releaseServiceClient) UnPublishArtifacts(ctx context.Context, in *ReleaseGetRequest, opts ...grpc.CallOption) (*pb.VoidResponse, error) {
+	out := new(pb.VoidResponse)
+	err := c.cc.Invoke(ctx, "/erda.core.dicehub.release.ReleaseService/UnPublishArtifacts", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ReleaseServiceServer is the server API for ReleaseService service.
 // All implementations should embed UnimplementedReleaseServiceServer
 // for forward compatibility
@@ -211,6 +232,8 @@ type ReleaseServiceServer interface {
 	ToFormalReleases(context.Context, *FormalReleasesRequest) (*FormalReleasesResponse, error)
 	DeleteReleases(context.Context, *ReleasesDeleteRequest) (*ReleasesDeleteResponse, error)
 	CheckVersion(context.Context, *CheckVersionRequest) (*CheckVersionResponse, error)
+	PublishArtifacts(context.Context, *ReleaseGetRequest) (*pb.VoidResponse, error)
+	UnPublishArtifacts(context.Context, *ReleaseGetRequest) (*pb.VoidResponse, error)
 }
 
 // UnimplementedReleaseServiceServer should be embedded to have forward compatible implementations.
@@ -264,6 +287,12 @@ func (*UnimplementedReleaseServiceServer) DeleteReleases(context.Context, *Relea
 }
 func (*UnimplementedReleaseServiceServer) CheckVersion(context.Context, *CheckVersionRequest) (*CheckVersionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CheckVersion not implemented")
+}
+func (*UnimplementedReleaseServiceServer) PublishArtifacts(context.Context, *ReleaseGetRequest) (*pb.VoidResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PublishArtifacts not implemented")
+}
+func (*UnimplementedReleaseServiceServer) UnPublishArtifacts(context.Context, *ReleaseGetRequest) (*pb.VoidResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UnPublishArtifacts not implemented")
 }
 
 func RegisterReleaseServiceServer(s grpc1.ServiceRegistrar, srv ReleaseServiceServer, opts ...grpc1.HandleOption) {
@@ -426,6 +455,24 @@ func _get_ReleaseService_serviceDesc(srv ReleaseServiceServer, opts ...grpc1.Han
 	if h.Interceptor != nil {
 		_ReleaseService_CheckVersion_info = transport.NewServiceInfo("erda.core.dicehub.release.ReleaseService", "CheckVersion", srv)
 		_ReleaseService_CheckVersion_Handler = h.Interceptor(_ReleaseService_CheckVersion_Handler)
+	}
+
+	_ReleaseService_PublishArtifacts_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.PublishArtifacts(ctx, req.(*ReleaseGetRequest))
+	}
+	var _ReleaseService_PublishArtifacts_info transport.ServiceInfo
+	if h.Interceptor != nil {
+		_ReleaseService_PublishArtifacts_info = transport.NewServiceInfo("erda.core.dicehub.release.ReleaseService", "PublishArtifacts", srv)
+		_ReleaseService_PublishArtifacts_Handler = h.Interceptor(_ReleaseService_PublishArtifacts_Handler)
+	}
+
+	_ReleaseService_UnPublishArtifacts_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.UnPublishArtifacts(ctx, req.(*ReleaseGetRequest))
+	}
+	var _ReleaseService_UnPublishArtifacts_info transport.ServiceInfo
+	if h.Interceptor != nil {
+		_ReleaseService_UnPublishArtifacts_info = transport.NewServiceInfo("erda.core.dicehub.release.ReleaseService", "UnPublishArtifacts", srv)
+		_ReleaseService_UnPublishArtifacts_Handler = h.Interceptor(_ReleaseService_UnPublishArtifacts_Handler)
 	}
 
 	var serviceDesc = _ReleaseService_serviceDesc
@@ -796,6 +843,52 @@ func _get_ReleaseService_serviceDesc(srv ReleaseServiceServer, opts ...grpc1.Han
 					FullMethod: "/erda.core.dicehub.release.ReleaseService/CheckVersion",
 				}
 				return interceptor(ctx, in, info, _ReleaseService_CheckVersion_Handler)
+			},
+		},
+		{
+			MethodName: "PublishArtifacts",
+			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+				in := new(ReleaseGetRequest)
+				if err := dec(in); err != nil {
+					return nil, err
+				}
+				if interceptor == nil && h.Interceptor == nil {
+					return srv.(ReleaseServiceServer).PublishArtifacts(ctx, in)
+				}
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _ReleaseService_PublishArtifacts_info)
+				}
+				if interceptor == nil {
+					return _ReleaseService_PublishArtifacts_Handler(ctx, in)
+				}
+				info := &grpc.UnaryServerInfo{
+					Server:     srv,
+					FullMethod: "/erda.core.dicehub.release.ReleaseService/PublishArtifacts",
+				}
+				return interceptor(ctx, in, info, _ReleaseService_PublishArtifacts_Handler)
+			},
+		},
+		{
+			MethodName: "UnPublishArtifacts",
+			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+				in := new(ReleaseGetRequest)
+				if err := dec(in); err != nil {
+					return nil, err
+				}
+				if interceptor == nil && h.Interceptor == nil {
+					return srv.(ReleaseServiceServer).UnPublishArtifacts(ctx, in)
+				}
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _ReleaseService_UnPublishArtifacts_info)
+				}
+				if interceptor == nil {
+					return _ReleaseService_UnPublishArtifacts_Handler(ctx, in)
+				}
+				info := &grpc.UnaryServerInfo{
+					Server:     srv,
+					FullMethod: "/erda.core.dicehub.release.ReleaseService/UnPublishArtifacts",
+				}
+				return interceptor(ctx, in, info, _ReleaseService_UnPublishArtifacts_Handler)
 			},
 		},
 	}

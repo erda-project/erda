@@ -85,7 +85,7 @@ type CreateExportRecordsResp struct {
 	unknownFields protoimpl.UnknownFields
 
 	Data    *ExportRecord `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
-	UserIDs []string      `protobuf:"bytes,2,rep,name=userIDs,proto3" json:"userIDs,omitempty"`
+	UserIDs []string      `protobuf:"bytes,2,rep,name=userIDs,proto3" json:"userIDs,omitempty"` // userIDs: 用户 id 列表
 }
 
 func (x *CreateExportRecordsResp) Reset() {

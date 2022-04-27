@@ -26,11 +26,12 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
-	"github.com/erda-project/erda-proto-go/admin/marketplace/pb"
+	_ "github.com/erda-project/erda-infra/providers/mysql/v2"
+	"github.com/erda-project/erda-proto-go/admin/gallery/pb"
 	commonPb "github.com/erda-project/erda-proto-go/common/pb"
 	extensionPb "github.com/erda-project/erda-proto-go/core/dicehub/extension/pb"
 	releasepb "github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
-	"github.com/erda-project/erda/modules/admin/cache"
+	"github.com/erda-project/erda/modules/admin/services/cache"
 	"github.com/erda-project/erda/modules/admin/services/marketplace/apierr"
 	"github.com/erda-project/erda/modules/admin/services/marketplace/model"
 	"github.com/erda-project/erda/pkg/common/apis"
@@ -71,6 +72,9 @@ type provider struct {
 	R  transport.Register `autowired:"service-register" required:"true"`
 	DB *gorm.DB           `autowired:"mysql-gorm.v2-client"`
 
+	// providers clients
+	c *cache.Cache `autowired:"easy-memory-cache-client"`
+
 	// gRPC clients
 	extensionCli extensionPb.ExtensionServiceServer `autowired:"erda.core.dicehub.extension.ExtensionService"`
 	releaseCli   releasepb.ReleaseServiceServer     `autowired:"erda.core.dicehub.release.ReleaseGetDiceService"`
@@ -88,15 +92,15 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	return nil
 }
 
-func (p *provider) ListGalleries(ctx context.Context, req *pb.ListGalleriesReq) (*pb.ListGalleriesResp, error) {
+func (p *provider) ListArtifacts(ctx context.Context, req *pb.ListArtifactsReq) (*pb.ListArtifactsResp, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (p *provider) CreateGallery(ctx context.Context, req *pb.CreateGalleryReq) (*commonPb.VoidResponse, error) {
+func (p *provider) CreateArtifacts(ctx context.Context, req *pb.CreateArtifactsReq) (*commonPb.VoidResponse, error) {
 	// get org info
 	orgID := apis.GetOrgID(ctx)
-	orgDTO, ok := cache.GetOrgByOrgID(orgID)
+	orgDTO, ok := p.c.GetOrgByOrgID(orgID)
 	if !ok {
 		return nil, apierr.CreateGallery.InvalidParameter("invalid organization: " + orgID)
 	}
@@ -108,15 +112,15 @@ func (p *provider) CreateGallery(ctx context.Context, req *pb.CreateGalleryReq) 
 
 	// do not support other gallery type yet
 	if ArtifactsProject.String() != req.GetType() {
-		return nil, apierr.CreateGallery.InvalidParameter("invalid gallery type: " + req.GetType())
+		return nil, apierr.CreateGallery.InvalidParameter("invalid artifacts type: " + req.GetType())
 	}
 	if req.GetName() == "" {
-		return nil, apierr.CreateGallery.InvalidParameter("invalid gallery type")
+		return nil, apierr.CreateGallery.InvalidParameter("invalid artifacts name")
 	}
 	if req.GetVersion() == "" {
-		return nil, apierr.CreateGallery.InvalidParameter("invalid gallery version")
+		return nil, apierr.CreateGallery.InvalidParameter("invalid artifacts name")
 	}
-	var spec = new(pb.CreateGalleryReq_ReleaseSpec)
+	var spec = new(pb.CreateArtifactsReq_ReleaseSpec)
 	if err := req.GetSpec().UnmarshalTo(spec); err != nil {
 		return nil, apierr.CreateGallery.InvalidParameter("invalid spec")
 	}
@@ -136,7 +140,7 @@ func (p *provider) CreateGallery(ctx context.Context, req *pb.CreateGalleryReq) 
 		return nil, apierr.CreateGallery.InternalError(err)
 	}
 
-	// check the release if is exists
+	// check the release if is not exists
 	release, err := p.releaseCli.GetRelease(ctx, &releasepb.ReleaseGetRequest{ReleaseID: spec.GetReleaseID()})
 	if err != nil {
 		p.l.WithField("releaseID", spec.GetReleaseID()).Errorln("failed to p.releaseCli.GetRelease")
@@ -147,7 +151,16 @@ func (p *provider) CreateGallery(ctx context.Context, req *pb.CreateGalleryReq) 
 		return nil, apierr.CreateGallery.NotFound()
 	}
 
-	if err := p.DB.Model(new(model.MarketplaceGalleryArtifacts)).
+	tx := p.DB.Begin()
+	defer func() {
+		if err == nil {
+			tx.Commit()
+		} else {
+			tx.Rollback()
+		}
+	}()
+
+	if err = tx.Model(new(model.MarketplaceGalleryArtifacts)).
 		Where(map[string]interface{}{
 			"org_id": orgID,
 			"name":   req.GetName(),
@@ -176,14 +189,18 @@ func (p *provider) CreateGallery(ctx context.Context, req *pb.CreateGalleryReq) 
 		Changelog:   release.Data.Changelog,
 		IsDefault:   true,
 	}
-	if err := p.DB.Create(m).Error; err != nil {
+	if err = tx.Create(m).Error; err != nil {
 		return nil, apierr.CreateGallery.InternalError(err)
+	}
+
+	if _, err = p.releaseCli.PublishArtifacts(ctx, &releasepb.ReleaseGetRequest{ReleaseID: spec.GetReleaseID()}); err != nil {
+		return nil, apierr.CreateGallery.InternalError(errors.Wrap(err, "failed to PublishArtifacts"))
 	}
 
 	return new(commonPb.VoidResponse), nil
 }
 
-func (p *provider) GetGallery(ctx context.Context, req *pb.GetGalleryReq) (*pb.GetGalleryResp, error) {
+func (p *provider) GetArtifacts(ctx context.Context, req *pb.GetArtifactsReq) (*pb.GetArtifactsResp, error) {
 	if req.GetName() == "" {
 		return nil, apierr.GetGallery.NotFound()
 	}
@@ -194,7 +211,7 @@ func (p *provider) GetGallery(ctx context.Context, req *pb.GetGalleryReq) (*pb.G
 		if err != nil {
 			return nil, apierr.GetGallery.InternalError(err)
 		}
-		return &pb.GetGalleryResp{Data: &pb.GetGalleryRespData{
+		return &pb.GetArtifactsResp{Data: &pb.GetArtifactsRespData{
 			Total: int32(len(extensions)),
 			List:  extensions,
 		}}, nil
@@ -203,7 +220,7 @@ func (p *provider) GetGallery(ctx context.Context, req *pb.GetGalleryReq) (*pb.G
 		if err != nil {
 			return nil, apierr.GetGallery.InternalError(err)
 		}
-		return &pb.GetGalleryResp{Data: &pb.GetGalleryRespData{
+		return &pb.GetArtifactsResp{Data: &pb.GetArtifactsRespData{
 			Total: int32(len(galleries)),
 			List:  galleries,
 		}}, nil
@@ -212,7 +229,7 @@ func (p *provider) GetGallery(ctx context.Context, req *pb.GetGalleryReq) (*pb.G
 		if err != nil {
 			return nil, apierr.GetGallery.InternalError(err)
 		}
-		var resp = &pb.GetGalleryResp{Data: &pb.GetGalleryRespData{
+		var resp = &pb.GetArtifactsResp{Data: &pb.GetArtifactsRespData{
 			Total: int32(len(galleries)),
 			List:  galleries,
 		}}
@@ -225,7 +242,7 @@ func (p *provider) GetGallery(ctx context.Context, req *pb.GetGalleryReq) (*pb.G
 	}
 }
 
-func (p *provider) getExtensions(ctx context.Context, name, type_, version string) ([]*pb.GetGalleryRespDataItem, error) {
+func (p *provider) getExtensions(ctx context.Context, name, type_, version string) ([]*pb.GetArtifactsRespDataItem, error) {
 	versions, err := p.extensionCli.QueryExtensionVersions(ctx, &extensionPb.ExtensionVersionQueryRequest{
 		Name:               name,
 		YamlFormat:         true,
@@ -236,7 +253,7 @@ func (p *provider) getExtensions(ctx context.Context, name, type_, version strin
 		return nil, errors.Wrap(err, "failed to QueryExtensionVersions")
 	}
 	var (
-		result    []*pb.GetGalleryRespDataItem
+		result    []*pb.GetArtifactsRespDataItem
 		publisher = &pb.User{
 			Id:       "0",
 			Name:     "erda",
@@ -250,7 +267,7 @@ func (p *provider) getExtensions(ctx context.Context, name, type_, version strin
 		if version != "" && version != v.GetVersion() {
 			continue
 		}
-		item := &pb.GetGalleryRespDataItem{
+		item := &pb.GetArtifactsRespDataItem{
 			Name:        v.GetName(),
 			DisplayName: "", // todo: 需要解析 spec.yml
 			Version:     v.GetVersion(),
@@ -280,7 +297,7 @@ func (p *provider) getExtensions(ctx context.Context, name, type_, version strin
 	return result, nil
 }
 
-func (p *provider) getProjectArtifacts(_ context.Context, orgID, name, version string) ([]*pb.GetGalleryRespDataItem, error) {
+func (p *provider) getProjectArtifacts(_ context.Context, orgID, name, version string) ([]*pb.GetArtifactsRespDataItem, error) {
 	var artifacts []model.MarketplaceGalleryArtifacts
 	where := p.DB.Where("name = ?", name)
 	if version != "" {
@@ -290,9 +307,9 @@ func (p *provider) getProjectArtifacts(_ context.Context, orgID, name, version s
 	if err := where.Find(&artifacts).Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, errors.Wrap(err, "failed to Find")
 	}
-	var result []*pb.GetGalleryRespDataItem
+	var result []*pb.GetArtifactsRespDataItem
 	for _, a := range artifacts {
-		var item = &pb.GetGalleryRespDataItem{
+		var item = &pb.GetArtifactsRespDataItem{
 			Name:        a.Name,
 			DisplayName: a.DisplayName,
 			Version:     a.Version,
@@ -308,7 +325,53 @@ func (p *provider) getProjectArtifacts(_ context.Context, orgID, name, version s
 	return result, nil
 }
 
-func (p *provider) DeleteGallery(ctx context.Context, req *pb.DeleteGalleryReq) (*commonPb.VoidResponse, error) {
+func (p *provider) DeleteArtifacts(ctx context.Context, req *pb.DeleteArtifactsReq) (*commonPb.VoidResponse, error) {
+	// get org info
+	orgID := apis.GetOrgID(ctx)
+
+	// get user info
+	userID := apis.GetUserID(ctx)
+
+	// todo: 鉴权
+
+	// do not support other artifacts type yet
+	if ArtifactsProject.String() != req.GetType() {
+		return nil, apierr.DeleteGallery.InvalidParameter("invalid artifacts type: " + req.GetType())
+	}
+	if req.GetName() == "" {
+		return nil, apierr.DeleteGallery.InvalidParameter("invalid artifacts name")
+	}
+	if req.GetVersion() == "" {
+		return nil, apierr.DeleteGallery.InvalidParameter("invalid artifacts version")
+	}
+
+	var (
+		tx  = p.DB.Begin()
+		err error
+	)
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		} else {
+			tx.Commit()
+		}
+	}()
+
+	if err = tx.Where(map[string]interface{}{
+		"org_id":  orgID,
+		"name":    req.GetName(),
+		"type":    req.GetType(),
+		"version": req.GetVersion(),
+	}).
+		Delete(new(model.MarketplaceGalleryArtifacts)).
+		Error; err != nil {
+		return nil, apierr.DeleteGallery.InternalError(err)
+	}
+
+	// set default
+
+	// tag unpublish in dicehub
+
 	//TODO implement me
 	panic("implement me")
 }
