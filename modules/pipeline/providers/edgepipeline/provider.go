@@ -39,12 +39,12 @@ type provider struct {
 	EdgePipelineRegister edgepipeline_register.Interface
 }
 
-func (p *provider) Init(ctx servicehub.Context) error {
-	p.bdl = bundle.New(bundle.WithClusterDialer())
+func (s *provider) Init(ctx servicehub.Context) error {
+	s.bdl = bundle.New(bundle.WithClusterDialer())
 	return nil
 }
 
-func (p *provider) Run(ctx context.Context) error {
+func (s *provider) Run(ctx context.Context) error {
 	return nil
 }
 

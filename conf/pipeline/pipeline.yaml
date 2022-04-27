@@ -27,13 +27,13 @@ etcd:
 pipengine: {}
 queue-manager:
   incoming_pipeline:
-    etcd_key_prefix_with_slash: /devops/pipeline/v2/queue-manager/incoming_pipeline/
+    etcd_key_prefix_with_slash: "${QM_ETCD_KEY_PREFIX_WITH_SLASH:/devops/pipeline/v2/queue-manager/incoming_pipeline/}"
 dispatcher: {}
 leader-worker:
   leader:
-    etcd_key_prefix_with_slash: /devops/pipeline/v2/leader-worker/leader/
+    etcd_key_prefix_with_slash: "${LW_LEADER_ETCD_KEY_PREFIX_WITH_SLASH:/devops/pipeline/v2/leader-worker/leader/}"
   worker:
-    etcd_key_prefix_with_slash: /devops/pipeline/v2/leader-worker/worker/
+    etcd_key_prefix_with_slash: "${LW_WORKER_ETCD_KEY_PREFIX_WITH_SLASH:/devops/pipeline/v2/leader-worker/worker/}"
 reconciler: {}
 clusterinfo:
   refresh_clusters_interval: "${REFRESH_CLUSTERS_INTERVAL:20m}"
@@ -53,7 +53,7 @@ edge-reporter: {}
 actionmgr: {}
 
 etcd-election@leader-worker:
-  root_path: erda/component-leader/pipeline/leader-worker
+  root_path: "${LW_ETCD_ELECTION_ROOT_PATH:erda/component-leader/pipeline/leader-worker}"
 
 metric-report-client:
   report_config:

@@ -34,7 +34,7 @@ func TestSourceWhiteList(t *testing.T) {
 	}
 	tests := []struct {
 		name string
-		src  string
+		src  apistructs.PipelineSource
 		want bool
 	}{
 		{
@@ -69,7 +69,7 @@ func TestSourceWhiteList(t *testing.T) {
 	defer patch.Unpatch()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := p.ShouldDispatchToEdge(tt.src, "dev"); got != tt.want {
+			if got := p.CanProxyToEdge(tt.src, "dev"); got != tt.want {
 				t.Errorf("sourceWhiteList() = %v, want %v", got, tt.want)
 			}
 		})
@@ -270,7 +270,7 @@ func TestShouldDispatchToEdge(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := p.ShouldDispatchToEdge("cdp-dev", tt.clusterName)
+			got := p.CanProxyToEdge("cdp-dev", tt.clusterName)
 			if got != tt.wantEdge {
 				t.Errorf("want edge: %v, but got: %v", tt.wantEdge, got)
 			}

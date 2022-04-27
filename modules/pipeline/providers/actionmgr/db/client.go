@@ -100,16 +100,14 @@ func (action *PipelineAction) Convert(yamlFormat bool) (*pb.Action, error) {
 	}
 
 	displayName, ok := specInterface[displayNameKey].(string)
-	if !ok {
-		return nil, fmt.Errorf("spec displayName was not string struct")
+	if ok {
+		actionDto.DisplayName = displayName
 	}
-	actionDto.DisplayName = displayName
 
 	desc, ok := specInterface[descKey].(string)
-	if !ok {
-		return nil, fmt.Errorf("spec desc was not string struct")
+	if ok {
+		actionDto.Desc = desc
 	}
-	actionDto.Desc = desc
 
 	if yamlFormat {
 		specYmlInfo, err := yaml.Marshal(specInterface)

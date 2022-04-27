@@ -38,7 +38,7 @@ type Interface interface {
 	CheckAccessTokenFromHttpRequest(req *http.Request) error
 	IsEdge() bool
 
-	ShouldDispatchToEdge(source, clusterName string) bool
+	CanProxyToEdge(source apistructs.PipelineSource, clusterName string) bool
 	GetEdgeBundleByClusterName(clusterName string) (*bundle.Bundle, error)
 	ClusterIsEdge(clusterName string) (bool, error)
 
@@ -61,7 +61,7 @@ func (p *provider) ClusterIsEdge(clusterName string) (bool, error) {
 	return isEdge, nil
 }
 
-func (p *provider) ShouldDispatchToEdge(source, clusterName string) bool {
+func (p *provider) CanProxyToEdge(source apistructs.PipelineSource, clusterName string) bool {
 	if clusterName == "" {
 		return false
 	}
@@ -70,7 +70,7 @@ func (p *provider) ShouldDispatchToEdge(source, clusterName string) bool {
 	}
 	var findInWhitelist bool
 	for _, whiteListSource := range p.Cfg.AllowedSources {
-		if strings.HasPrefix(source, whiteListSource) {
+		if strings.HasPrefix(source.String(), whiteListSource) {
 			findInWhitelist = true
 			break
 		}
@@ -146,15 +146,15 @@ func (p *provider) RegisterEdgeToDialer(ctx context.Context) {
 		return
 	}
 	if p.Cfg.ClusterAccessKey == "" {
-		p.Log.Panicf("cluster access key is empty, couldn't make edge registration")
+		p.Log.Fatalf("cluster access key is empty, couldn't make edge registration")
 	}
 	headers, err := p.makeEdgeConnHeaders()
 	if err != nil {
-		p.Log.Panicf("failed to make edge connection headers: %v", err)
+		p.Log.Fatalf("failed to make edge connection headers: %v", err)
 	}
 	ep, err := p.parseDialerEndpoint()
 	if err != nil {
-		p.Log.Panicf("failed to parse dialer endpoint: %v", err)
+		p.Log.Fatalf("failed to parse dialer endpoint: %v", err)
 	}
 	for {
 		// if client connect successfully, will block until client disconnect

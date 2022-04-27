@@ -381,6 +381,11 @@ func (s *PipelineSvc) CreatePipelineGraph(p *spec.Pipeline) (newStages []spec.Pi
 			return nil, apierrors.ErrCreatePipelineGraph.InternalError(
 				fmt.Errorf("failed to update pipeline snapshot for applied resources, err: %v", err))
 		}
+		// TODO
+		// sync back to center
+		if err := s.syncBackToCenter(p); err != nil {
+			return nil, apierrors.ErrCreatePipelineGraph.InternalError(errors.Wrapf(err, "failed to sync back to center, pipelineID: %d", p.ID))
+		}
 		return nil, nil
 	})
 	if err != nil {
@@ -395,6 +400,16 @@ func (s *PipelineSvc) CreatePipelineGraph(p *spec.Pipeline) (newStages []spec.Pi
 	// events
 	events.EmitPipelineInstanceEvent(p, p.GetSubmitUserID())
 	return newStages, nil
+}
+
+// TODO uniform syncer
+func (s *PipelineSvc) syncBackToCenter(p *spec.Pipeline) error {
+	if !p.IsEdge {
+		return nil
+	}
+	// sync
+	logrus.Println("sync")
+	return nil
 }
 
 func (s *PipelineSvc) createPipelineAndCheckNotEndStatus(p *spec.Pipeline, session *xorm.Session) error {

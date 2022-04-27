@@ -30,7 +30,7 @@ import (
 type Config struct {
 	IsEdge                     bool          `env:"DICE_IS_EDGE" default:"false"`
 	ClusterName                string        `env:"DICE_CLUSTER_NAME"`
-	AllowedSources             []string      `env:"EDGE_ALLOWED_SOURCES"`
+	AllowedSources             []string      `file:"allowed_sources" env:"EDGE_ALLOWED_SOURCES"` // env support comma-seperated string
 	PipelineAddr               string        `env:"PIPELINE_ADDR"`
 	PipelineHost               string        `env:"PIPELINE_HOST"`
 	ClusterDialEndpoint        string        `file:"cluster_dialer_endpoint" desc:"cluster dialer endpoint"`

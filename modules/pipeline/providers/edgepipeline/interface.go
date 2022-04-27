@@ -22,30 +22,15 @@ import (
 )
 
 type Interface interface {
-	CreatePipeline(ctx context.Context, req *apistructs.PipelineCreateRequestV2) (*apistructs.PipelineDTO, error)
+	CreateInterface
+
 	InjectLegacyFields(pSvc *pipelinesvc.PipelineSvc)
 }
 
-func (p *provider) InjectLegacyFields(pipelineSvc *pipelinesvc.PipelineSvc) {
-	p.pipelineSvc = pipelineSvc
+type CreateInterface interface {
+	CreatePipeline(ctx context.Context, req *apistructs.PipelineCreateRequestV2) (*apistructs.PipelineDTO, error)
 }
 
-func (p *provider) CreatePipeline(ctx context.Context, req *apistructs.PipelineCreateRequestV2) (*apistructs.PipelineDTO, error) {
-	isEdge := p.EdgePipelineRegister.ShouldDispatchToEdge(req.PipelineSource.String(), req.ClusterName)
-	if !isEdge {
-		pipeline, err := p.pipelineSvc.CreateV2(ctx, req)
-		if err != nil {
-			return nil, err
-		}
-		return p.pipelineSvc.ConvertPipeline(pipeline), nil
-	}
-	edgeBundle, err := p.EdgePipelineRegister.GetEdgeBundleByClusterName(req.ClusterName)
-	if err != nil {
-		return nil, err
-	}
-	pipelineDto, err := edgeBundle.CreatePipeline(req)
-	if err != nil {
-		return nil, err
-	}
-	return pipelineDto, nil
+func (s *provider) InjectLegacyFields(pipelineSvc *pipelinesvc.PipelineSvc) {
+	s.pipelineSvc = pipelineSvc
 }
