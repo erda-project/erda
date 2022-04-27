@@ -81,10 +81,11 @@ func (client *DBClient) GetLabel(labelID int64) (*Label, error) {
 	return &label, nil
 }
 
-// GetLabelByName 根据 name 获取标签详情
-func (client *DBClient) GetLabelByName(projectID uint64, name string) (*Label, error) {
+// GetLabelByNameAndType 根据 name 获取标签详情
+func (client *DBClient) GetLabelByNameAndType(projectID uint64, name string, typ string) (*Label, error) {
 	var label Label
-	if err := client.Where("project_id = ?", projectID).Where("name = ?", name).First(&label).Error; err != nil {
+	if err := client.Where("project_id = ?", projectID).Where("name = ?", name).Where("type = ?", typ).
+		First(&label).Error; err != nil {
 		return nil, err
 	}
 	return &label, nil
