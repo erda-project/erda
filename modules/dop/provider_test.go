@@ -26,6 +26,15 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/protobuf/proto-go/cp/pb"
 	"github.com/erda-project/erda-infra/providers/i18n"
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/dop/providers/autotest/testplan"
+	"github.com/erda-project/erda/modules/dop/providers/cms"
+	"github.com/erda-project/erda/modules/dop/providers/guide"
+	"github.com/erda-project/erda/modules/dop/providers/issue/stream"
+	"github.com/erda-project/erda/modules/dop/providers/issue/sync"
+	"github.com/erda-project/erda/modules/dop/providers/projectpipeline"
+	"github.com/erda-project/erda/modules/dop/providers/taskerror"
+	"github.com/erda-project/erda/modules/dop/services/cdp"
 )
 
 type MockCP struct {
@@ -61,4 +70,36 @@ func Test_provider_Init(t *testing.T) {
 	err := p.Init(nil)
 	assert.NoError(t, err)
 	assert.Equal(t, mockCP.Tran, nopTran)
+}
+
+type MockResourceTran struct{}
+
+func (m *MockResourceTran) Get(lang i18n.LanguageCodes, key string, def string) string { return "" }
+func (m *MockResourceTran) Text(lang i18n.LanguageCodes, key string) string            { return "" }
+func (m *MockResourceTran) Sprintf(lang i18n.LanguageCodes, key string, args ...interface{}) string {
+	return ""
+}
+func (m MockResourceTran) Translator(namespace string) i18n.Translator { return &i18n.NopTranslator{} }
+
+func TestNewCDP(t *testing.T) {
+	bdl := bundle.New()
+	nopTran := &MockResourceTran{}
+	c := cdp.New(cdp.WithBundle(bdl), cdp.WithResourceTranslator(nopTran))
+	assert.NotNil(t, c)
+}
+
+func Test_initEndpoints(t *testing.T) {
+	p := &provider{
+		Log:                   logrusx.New(),
+		TestPlanSvc:           &testplan.TestPlanService{},
+		TaskErrorSvc:          &taskerror.TaskErrorService{},
+		CommentIssueStreamSvc: &stream.CommentIssueStreamService{},
+		IssueSyncSvc:          &sync.IssueSyncService{},
+		ProjectPipelineSvc:    &projectpipeline.ProjectPipelineService{},
+		GuideSvc:              &guide.GuideService{},
+		CICDCmsSvc:            &cms.CICDCmsService{},
+	}
+
+	_, err := p.initEndpoints(nil)
+	assert.NoError(t, err)
 }
