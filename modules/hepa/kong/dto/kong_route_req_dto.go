@@ -65,7 +65,7 @@ type KongRouteReqDto struct {
 	// See more https://docs.konghq.com/enterprise/2.2.x/admin-api/#path-handling-algorithms
 	PathHandling *string `json:"path_handling,omitempty"`
 
-	Tags []string `json:"tags"`
+	Tags []string `json:"tags,omitempty"`
 
 	tags url.Values
 }
@@ -121,5 +121,6 @@ func Versioning(i interface{ GetVersion() (string, error) }) Option {
 			return
 		}
 		dto.PathHandling = nil
+		dto.Tags = nil
 	}
 }
