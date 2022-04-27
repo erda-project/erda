@@ -152,8 +152,14 @@ func (a *Aggregator) watchClusters(ctx context.Context) {
 				a.Add(cluster)
 			}
 
+			var readyCluster []string
 			checkDeleted := func(key interface{}, value interface{}) (res bool) {
 				res = true
+				g, _ := value.(*group)
+				if g.ready {
+					readyCluster = append(readyCluster, key.(string))
+				}
+
 				if _, ok := exists[key.(string)]; ok {
 					return
 				}
@@ -161,6 +167,7 @@ func (a *Aggregator) watchClusters(ctx context.Context) {
 				return
 			}
 			a.servers.Range(checkDeleted)
+			logrus.Infof("Clusters with ready steve server: %v", readyCluster)
 		}
 	}
 }
