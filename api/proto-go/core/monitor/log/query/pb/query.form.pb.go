@@ -186,6 +186,14 @@ func (m *GetLogByRuntimeRequest) UnmarshalURLValues(prefix string, values url.Va
 					return err
 				}
 				m.Debug = val
+			case "podName":
+				m.PodName = vals[0]
+			case "podNamespace":
+				m.PodNamespace = vals[0]
+			case "containerName":
+				m.ContainerName = vals[0]
+			case "clusterName":
+				m.ClusterName = vals[0]
 			}
 		}
 	}
