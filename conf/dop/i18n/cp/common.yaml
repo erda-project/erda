@@ -320,6 +320,7 @@ zh:
   sourceFile: 源文件
   updateName: 编辑名称
   update: 编辑
+  reopenCount: 重新打开次数
 
 en:
   issue-manage: issue manage
@@ -650,3 +651,4 @@ en:
   running duration: Deployment time
   deployTime: Deployment time
   restart: Restart
+  reopenCount: Reopen count
