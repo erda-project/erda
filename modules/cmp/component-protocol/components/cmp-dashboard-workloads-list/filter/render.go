@@ -321,24 +321,24 @@ func (f *ComponentFilter) SetComponentValue(ctx context.Context) error {
 }
 
 func (f *ComponentFilter) EncodeURLQuery() error {
-	jsonData, err := json.Marshal(f.State.Values)
+	data, err := json.Marshal(f.State.Values)
 	if err != nil {
 		return err
 	}
 
-	encode := base64.StdEncoding.EncodeToString(jsonData)
-	f.State.FilterURLQuery = encode
+	encoded := base64.StdEncoding.EncodeToString(data)
+	f.State.FilterURLQuery = encoded
 	return nil
 }
 
-func (f *ComponentFilter) Transfer(c *cptype.Component) {
-	c.State = map[string]interface{}{
+func (f *ComponentFilter) Transfer(component *cptype.Component) {
+	component.State = map[string]interface{}{
 		"clusterName":      f.State.ClusterName,
 		"conditions":       f.State.Conditions,
 		"values":           f.State.Values,
 		"filter__urlQuery": f.State.FilterURLQuery,
 	}
-	c.Operations = f.Operations
+	component.Operations = f.Operations
 }
 
 func hasSuffix(name string) (string, bool) {
