@@ -182,16 +182,17 @@ func (at *APITest) Invoke(httpClient *http.Client, testEnv *apistructs.APITestEn
 			reqBody = fmt.Sprint(at.API.Body.Content)
 		}
 	}
+	// headers
+	if apiReq.Headers == nil {
+		apiReq.Headers = make(http.Header)
+	}
+
 	apiReq.Body.Type = at.API.Body.Type
 	if apiReq.Body.Type != "" && apiReq.Body.Type != apistructs.APIBodyTypeNone {
 		apiReq.Headers.Set("Content-Type", apiReq.Body.Type.String())
 	}
 	apiReq.Body.Content = reqBody
 
-	// headers
-	if apiReq.Headers == nil {
-		apiReq.Headers = make(http.Header)
-	}
 	if testEnv != nil && testEnv.Header != nil {
 		for k, v := range testEnv.Header {
 			apiReq.Headers.Set(strings.TrimSpace(k), strings.TrimSpace(v))
