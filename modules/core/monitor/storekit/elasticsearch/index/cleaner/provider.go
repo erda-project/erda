@@ -59,6 +59,7 @@ type (
 	diskClean struct {
 		Enable bool `file:"enable"`
 		TTL    struct {
+			Enable          bool   `json:"enable" default:"true"`
 			MaxStoreTime    int    `file:"max_store_time" default:"7"`
 			TriggerSpecCron string `file:"trigger_spec_cron" default:"0 0 3 * * *"`
 		}

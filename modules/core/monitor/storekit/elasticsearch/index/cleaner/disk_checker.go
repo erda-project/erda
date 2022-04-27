@@ -19,11 +19,11 @@ import (
 	"sort"
 	"time"
 
+	"github.com/olivere/elastic"
 	"github.com/robfig/cron/v3"
 
 	"github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index"
 	"github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/loader"
-	"github.com/olivere/elastic"
 )
 
 func (p *provider) runDiskCheckAndClean(ctx context.Context) {
@@ -47,12 +47,15 @@ func (p *provider) runDiskCheckAndClean(ctx context.Context) {
 }
 
 func (p *provider) runDocsCheckAndClean() {
-	c := cron.New(cron.WithSeconds())
-	_, err := c.AddFunc(p.Cfg.DiskClean.TTL.TriggerSpecCron, p.deleteByQuery)
-	if err != nil {
-		panic("create cron failed.")
+	if p.Cfg.DiskClean.TTL.Enable {
+		c := cron.New(cron.WithSeconds())
+		_, err := c.AddFunc(p.Cfg.DiskClean.TTL.TriggerSpecCron, p.deleteByQuery)
+		if err != nil {
+			panic("create cron failed.")
+		}
+		c.Start()
+		p.Log.Infof("Enable disk clean corn task.")
 	}
-	c.Start()
 }
 
 func (p *provider) getNodeStats() (map[string]*elastic.NodesStatsNode, error) {
