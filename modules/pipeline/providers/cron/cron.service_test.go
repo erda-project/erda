@@ -16,6 +16,7 @@ package cron
 
 import (
 	"context"
+	"net/http"
 	"reflect"
 	"testing"
 	"time"
@@ -30,8 +31,71 @@ import (
 	"github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	. "github.com/erda-project/erda-proto-go/core/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/pipeline/providers/cron/daemon"
 	"github.com/erda-project/erda/modules/pipeline/providers/cron/db"
 )
+
+type daemonInterface struct {
+}
+
+func (d daemonInterface) AddIntoPipelineCrond(cron *db.PipelineCron) error {
+	return nil
+}
+
+func (d daemonInterface) DeleteFromPipelineCrond(cron *db.PipelineCron) error {
+	return nil
+}
+
+func (d daemonInterface) ReloadCrond(ctx context.Context) ([]string, error) {
+	panic("implement me")
+}
+
+func (d daemonInterface) CrondSnapshot() []string {
+	panic("implement me")
+}
+
+func (d daemonInterface) WithPipelineFunc(createPipelineFunc daemon.CreatePipelineFunc) {
+	panic("implement me")
+}
+
+type EdgePipelineRegisterImpl struct {
+	ShouldDispatchToEdgeResult    bool
+	GetEdgeBundleByClusterNameBdl *bundle.Bundle
+	GetEdgeBundleByClusterNameErr error
+}
+
+func (e EdgePipelineRegisterImpl) GetAccessToken(req apistructs.OAuth2TokenGetRequest) (*apistructs.OAuth2Token, error) {
+	panic("implement me")
+}
+
+func (e EdgePipelineRegisterImpl) GetOAuth2Token(req apistructs.OAuth2TokenGetRequest) (*apistructs.OAuth2Token, error) {
+	panic("implement me")
+}
+
+func (e EdgePipelineRegisterImpl) GetEdgePipelineEnvs() apistructs.ClusterDialerClientDetail {
+	panic("implement me")
+}
+
+func (e EdgePipelineRegisterImpl) CheckAccessToken(token string) error {
+	panic("implement me")
+}
+
+func (e EdgePipelineRegisterImpl) CheckAccessTokenFromHttpRequest(req *http.Request) error {
+	panic("implement me")
+}
+
+func (e EdgePipelineRegisterImpl) IsEdge() bool {
+	panic("implement me")
+}
+
+func (e EdgePipelineRegisterImpl) ShouldDispatchToEdge(source, clusterName string) bool {
+	return e.ShouldDispatchToEdgeResult
+}
+
+func (e EdgePipelineRegisterImpl) GetEdgeBundleByClusterName(clusterName string) (*bundle.Bundle, error) {
+	return e.GetEdgeBundleByClusterNameBdl, e.GetEdgeBundleByClusterNameErr
+}
 
 func Test_provider_CronCreate(t *testing.T) {
 	type args struct {
@@ -499,7 +563,7 @@ func Test_provider_CronUpdate(t *testing.T) {
 		{
 			name: "cron not find",
 			result: result{
-				bool: false,
+				bool: true,
 			},
 			args: args{
 				ctx: nil,
@@ -530,6 +594,121 @@ func Test_provider_CronUpdate(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("CronUpdate() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_provider_cronDelete(t *testing.T) {
+	type args struct {
+		req    *pb.CronDeleteRequest
+		option mysqlxorm.SessionOption
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "test to edege",
+			args: args{
+				req: &pb.CronDeleteRequest{
+					CronID: 1,
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &provider{}
+
+			var dbClient db.Client
+			patch2 := monkey.PatchInstanceMethod(reflect.TypeOf(&dbClient), "GetPipelineCron", func(dbClient *db.Client, id interface{}, ops ...mysqlxorm.SessionOption) (cron db.PipelineCron, bool bool, err error) {
+				cron.ID = tt.args.req.CronID
+				return cron, true, nil
+			})
+			defer patch2.Unpatch()
+
+			patch3 := monkey.PatchInstanceMethod(reflect.TypeOf(&dbClient), "DeletePipelineCron", func(dbClient *db.Client, id interface{}, ops ...mysqlxorm.SessionOption) error {
+				return nil
+			})
+			defer patch3.Unpatch()
+			s.dbClient = &dbClient
+
+			var bdl bundle.Bundle
+			patch4 := monkey.PatchInstanceMethod(reflect.TypeOf(&bdl), "DeleteCron", func(bdl *bundle.Bundle, cronID uint64) error {
+				assert.EqualValues(t, cronID, tt.args.req.CronID)
+				return nil
+			})
+			defer patch4.Unpatch()
+
+			var daemonInterface daemonInterface
+			s.Daemon = daemonInterface
+			s.EdgePipelineRegister = EdgePipelineRegisterImpl{
+				ShouldDispatchToEdgeResult:    true,
+				GetEdgeBundleByClusterNameBdl: &bdl,
+				GetEdgeBundleByClusterNameErr: nil,
+			}
+
+			if err := s.delete(tt.args.req, tt.args.option); (err != nil) != tt.wantErr {
+				t.Errorf("cronDelete() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func Test_provider_update(t *testing.T) {
+	type args struct {
+		req    *pb.CronUpdateRequest
+		cron   db.PipelineCron
+		fields []string
+		option mysqlxorm.SessionOption
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "test to edge",
+			args: args{
+				req: &pb.CronUpdateRequest{
+					CronID: 2,
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &provider{}
+
+			var dbClient db.Client
+			patch2 := monkey.PatchInstanceMethod(reflect.TypeOf(&dbClient), "UpdatePipelineCronWillUseDefault", func(dbClient *db.Client, id interface{}, cron *db.PipelineCron, columns []string, ops ...mysqlxorm.SessionOption) error {
+				return nil
+			})
+			defer patch2.Unpatch()
+			s.dbClient = &dbClient
+
+			var daemonInterface daemonInterface
+			s.Daemon = daemonInterface
+
+			var bdl bundle.Bundle
+			patch3 := monkey.PatchInstanceMethod(reflect.TypeOf(&bdl), "CronUpdate", func(bdl *bundle.Bundle, req *pb.CronUpdateRequest) error {
+				assert.EqualValues(t, req, tt.args.req)
+				return nil
+			})
+			defer patch3.Unpatch()
+
+			s.EdgePipelineRegister = EdgePipelineRegisterImpl{
+				ShouldDispatchToEdgeResult:    true,
+				GetEdgeBundleByClusterNameBdl: &bdl,
+				GetEdgeBundleByClusterNameErr: nil,
+			}
+
+			if err := s.update(tt.args.req, tt.args.cron, tt.args.fields, tt.args.option); (err != nil) != tt.wantErr {
+				t.Errorf("update() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
