@@ -341,7 +341,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		return nil, err
 	}
 
-	c := cdp.New(cdp.WithBundle(bdl.Bdl))
+	c := cdp.New(cdp.WithBundle(bdl.Bdl), cdp.WithResourceTranslator(p.ResourceTrans))
 
 	// init event
 	e := event.New(event.WithBundle(bdl.Bdl))
