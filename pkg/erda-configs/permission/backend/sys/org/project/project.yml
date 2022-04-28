@@ -839,4 +839,11 @@
   resource: testReport
   action: UPDATE
 
-## test report end ##
+  ## test report end ##
+
+## rb workflow start ##
+- role: Owner,Lead
+  scope: project
+  resource: rbWorkflow
+  action: OPERATE
+## rb workflow end ##

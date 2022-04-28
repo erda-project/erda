@@ -44,6 +44,7 @@ import (
 	_ "github.com/erda-project/erda/modules/dop/providers/issue/sync"
 	_ "github.com/erda-project/erda/modules/dop/providers/project/home"
 	_ "github.com/erda-project/erda/modules/dop/providers/projectpipeline"
+	_ "github.com/erda-project/erda/modules/dop/providers/rbworkflow"
 	_ "github.com/erda-project/erda/modules/dop/providers/taskerror"
 	_ "github.com/erda-project/erda/providers/audit"
 

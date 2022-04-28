@@ -95,7 +95,7 @@ require (
 	github.com/jehiah/go-strftime v0.0.0-20171201141054-1d33003b3869 // indirect
 	github.com/jinzhu/copier v0.3.2
 	github.com/jinzhu/gorm v1.9.16
-	github.com/jinzhu/now v1.1.4
+	github.com/jinzhu/now v1.1.5
 	github.com/jmespath/go-jmespath v0.4.0
 	github.com/jonboulle/clockwork v0.2.2 // indirect
 	github.com/json-iterator/go v1.1.11
@@ -185,7 +185,8 @@ require (
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 	gorm.io/driver/mysql v1.3.2
-	gorm.io/gorm v1.23.2
+	gorm.io/gorm v1.23.5
+	gorm.io/plugin/soft_delete v1.1.0 // indirect
 	gotest.tools v2.2.0+incompatible
 	helm.sh/helm/v3 v3.6.2
 	howett.net/plist v0.0.0-20201203080718-1454fab16a06

@@ -1,0 +1,121 @@
+syntax = "proto3";
+
+package erda.dop.rbworkflow;
+
+import "common/openapi.proto";
+import "github.com/mwitkow/go-proto-validators/validator.proto";
+import "google/api/annotations.proto";
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/erda-project/erda-proto-go/dop/rbWorkflow/pb";
+
+service RbWorkflowService {
+    option(erda.common.openapi_service) = {
+        service: "dop",
+        auth: {
+            check_login: true,
+            check_token: true,
+        }
+    };
+
+    rpc CreateRbWorkflow(CreateRbWorkflowRequest)
+            returns (CreateRbWorkflowResponse) {
+        option(google.api.http) = {
+            post: "/api/rbWorkflow",
+        };
+        option(erda.common.openapi) = {
+            path: "/api/rbWorkflow",
+        };
+    }
+    rpc UpdateRbWorkflow(UpdateRbWorkflowRequest)
+            returns (UpdateRbWorkflowResponse) {
+        option(google.api.http) = {
+            put: "/api/rbWorkflow/{ID}",
+        };
+        option(erda.common.openapi) = {
+            path: "/api/rbWorkflow/{ID}",
+        };
+    }
+    rpc DeleteRbWorkflow(DeleteRbWorkflowRequest)
+            returns (DeleteRbWorkflowResponse) {
+        option(google.api.http) = {
+            delete: "/api/rbWorkflow/{ID}",
+        };
+        option(erda.common.openapi) = {
+            path: "/api/rbWorkflow/{ID}",
+        };
+    }
+    rpc ListRbWorkflows(ListRbWorkflowRequest)
+            returns (ListRbWorkflowResponse) {
+        option(google.api.http) = {
+            get: "/api/rbWorkflow",
+        };
+        option(erda.common.openapi) = {
+            path: "/api/rbWorkflow",
+        };
+    }
+
+}
+
+message CreateRbWorkflowRequest {
+    uint64 projectID = 1 [(validator.field) = {int_gt: 0}];
+    string stage = 2 [(validator.field) = {string_not_empty: true}];
+    uint64 sort = 3 [(validator.field) = {int_gt: 0}];
+    string branch = 4 [(validator.field) = {string_not_empty: true}];
+    string artifact = 5 [(validator.field) = {string_not_empty: true}];
+    string environment = 6 [(validator.field) = {string_not_empty: true}];
+    repeated string subFlows = 7;
+}
+
+message CreateRbWorkflowResponse {
+    RbWorkflow data = 1;
+}
+
+message UpdateRbWorkflowRequest {
+    string ID = 1 [json_name = "id"];
+    string stage = 3 [(validator.field) = {string_not_empty: true}];
+    uint64 sort = 4 [(validator.field) = {int_gt: 0}];
+    string branch = 5 [(validator.field) = {string_not_empty: true}];
+    string artifact = 6 [(validator.field) = {string_not_empty: true}];
+    string environment = 7 [(validator.field) = {string_not_empty: true}];
+    repeated string subFlows = 8;
+}
+
+message UpdateRbWorkflowResponse {
+    RbWorkflow data = 1;
+}
+
+message DeleteRbWorkflowRequest {
+    string ID = 1 [json_name = "id"];
+}
+
+message DeleteRbWorkflowResponse {
+}
+
+message ListRbWorkflowRequest {
+    uint64 projectID = 1;
+}
+
+message ListRbWorkflowResponse {
+    repeated RbWorkflow data = 1;
+}
+
+message RbWorkflow {
+    string ID = 1 [json_name = "id"];
+    string stage = 2;
+    uint64 sort = 3;
+    string branch = 4;
+    string artifact = 5;
+    string environment = 6;
+    repeated string subFlows = 7;
+    uint64 orgID = 8;
+    string orgName = 9;
+    uint64 projectID = 10;
+    string projectName = 11;
+    google.protobuf.Timestamp timeCreated = 12;
+    google.protobuf.Timestamp timeUpdated = 13;
+    string creator = 14;
+    string updater = 15;
+}
+
