@@ -61,23 +61,37 @@ func (p *provider) runDocsCheckAndClean(ctx context.Context) {
 func (p *provider) runTaskCheck(ctx context.Context) {
 	p.Log.Infof("run ttl task check")
 	defer p.Log.Infof("exit ttl task check")
-	timer := time.NewTimer(20 * time.Second)
 	for {
 		select {
-		case <-timer.C:
 		case <-ctx.Done():
 			return
-		case task := <-p.ttlCh:
+		case task := <-p.ttlTaskCh:
 			tasksGetTask := p.loader.Client().TasksGetTask()
 			taskStatus, err := tasksGetTask.TaskId(task.TaskId).Do(ctx)
 			if err != nil {
 				continue
 			}
-			if taskStatus != nil && taskStatus.Completed {
-				p.forceMerge(ctx, task.Indices...)
+			if taskStatus != nil && !taskStatus.Completed {
+				timer := time.NewTimer(time.Second * time.Duration(p.Cfg.DiskClean.TTL.TaskCheckInterval))
+				go func(task *TtlTask) {
+				retryLoop:
+					for {
+						select {
+						case <-timer.C:
+							p.ttlTaskCh <- &TtlTask{
+								TaskId:  task.TaskId,
+								Indices: task.Indices,
+							}
+							p.Log.Infof("Task uncompleted. delay retry. taskId: %s, indices: %s", task.TaskId, task.Indices)
+							break retryLoop
+						}
+					}
+				}(task)
+				continue
 			}
+			p.Log.Infof("Task completed. taskId: %s, task status: %v", taskStatus.Task.Id, taskStatus.Task.Status)
+			p.forceMerge(ctx, task.Indices...)
 		}
-		timer.Reset(p.Cfg.DiskClean.CheckInterval)
 	}
 }
 

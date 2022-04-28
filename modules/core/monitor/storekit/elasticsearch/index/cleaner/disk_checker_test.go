@@ -15,6 +15,7 @@
 package cleaner
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -111,9 +112,10 @@ func Test_provider_runDocsCheckAndClean(t *testing.T) {
 			Cfg: &config{DiskClean: diskClean{
 				Enable: true,
 				TTL: struct {
-					Enable          bool   `json:"enable" default:"true"`
-					MaxStoreTime    int    `file:"max_store_time" default:"7"`
-					TriggerSpecCron string `file:"trigger_spec_cron" default:"0 0 3 * * *"`
+					Enable            bool   `json:"enable" default:"true"`
+					MaxStoreTime      int    `file:"max_store_time" default:"7"`
+					TriggerSpecCron   string `file:"trigger_spec_cron" default:"0 0 3 * * *"`
+					TaskCheckInterval int64  `json:"task_check_interval" default:"5"`
 				}{
 					Enable: false,
 				},
@@ -123,9 +125,10 @@ func Test_provider_runDocsCheckAndClean(t *testing.T) {
 			Cfg: &config{DiskClean: diskClean{
 				Enable: true,
 				TTL: struct {
-					Enable          bool   `json:"enable" default:"true"`
-					MaxStoreTime    int    `file:"max_store_time" default:"7"`
-					TriggerSpecCron string `file:"trigger_spec_cron" default:"0 0 3 * * *"`
+					Enable            bool   `json:"enable" default:"true"`
+					MaxStoreTime      int    `file:"max_store_time" default:"7"`
+					TriggerSpecCron   string `file:"trigger_spec_cron" default:"0 0 3 * * *"`
+					TaskCheckInterval int64  `json:"task_check_interval" default:"5"`
 				}{
 					Enable:          true,
 					TriggerSpecCron: "0 0 3 * * *",
@@ -147,7 +150,7 @@ func Test_provider_runDocsCheckAndClean(t *testing.T) {
 				Cfg: tt.fields.Cfg,
 				Log: logger,
 			}
-			p.runDocsCheckAndClean()
+			p.runDocsCheckAndClean(context.Background())
 		})
 	}
 }

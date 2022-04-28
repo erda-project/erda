@@ -59,9 +59,10 @@ type (
 	diskClean struct {
 		Enable bool `file:"enable"`
 		TTL    struct {
-			Enable          bool   `json:"enable" default:"true"`
-			MaxStoreTime    int    `file:"max_store_time" default:"7"`
-			TriggerSpecCron string `file:"trigger_spec_cron" default:"0 0 3 * * *"`
+			Enable            bool   `json:"enable" default:"true"`
+			MaxStoreTime      int    `file:"max_store_time" default:"7"`
+			TriggerSpecCron   string `file:"trigger_spec_cron" default:"0 0 3 * * *"`
+			TaskCheckInterval int64  `json:"task_check_interval" default:"5"`
 		}
 		CheckInterval          time.Duration `file:"check_interval" default:"5m"`
 		MinIndicesStore        string        `file:"min_indices_store" default:"10GB"`
@@ -96,7 +97,7 @@ type (
 		rolloverBodyForDiskClean string
 		rolloverAliasPatterns    []*indexAliasPattern
 
-		ttlCh chan *TtlTask
+		ttlTaskCh chan *TtlTask
 	}
 )
 
@@ -183,7 +184,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	if p.Cfg.DiskClean.Enable {
 		p.election.OnLeader(p.runDiskCheckAndClean)
 	}
-	p.ttlCh = make(chan *TtlTask, 1)
+	p.ttlTaskCh = make(chan *TtlTask, 1)
 	p.election.OnLeader(p.runDocsCheckAndClean)
 	p.election.OnLeader(p.runTaskCheck)
 

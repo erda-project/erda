@@ -175,7 +175,7 @@ func (p *provider) deleteByQuery() {
 			p.Log.Errorf("delete failed. indices: %s, err: %v", index, err.Error())
 			continue
 		}
-		p.ttlCh <- &TtlTask{
+		p.ttlTaskCh <- &TtlTask{
 			TaskId:  resp.TaskId,
 			Indices: []string{index},
 		}
