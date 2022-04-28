@@ -314,8 +314,10 @@ func (tr *defaultTaskReconciler) TeardownAfterReconcileDone(ctx context.Context,
 	// handle aop synchronously, then do subsequent tasks
 	_ = aop.Handle(aop.NewContextForTask(*task, *p, aoptypes.TuneTriggerTaskAfterExec))
 
-	// report task
-	tr.edgeReporter.AddOneTaskReporter(task.ID)
+	// report task in edge cluster
+	if tr.edgeRegister.IsEdge() {
+		tr.edgeReporter.AddOneTaskReporter(task.ID)
+	}
 
 	// invalidate openapi oauth2 token
 	tokens := strutil.DedupSlice([]string{

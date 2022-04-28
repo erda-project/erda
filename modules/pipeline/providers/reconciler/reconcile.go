@@ -81,6 +81,7 @@ func (r *provider) generatePipelineReconcilerForEachPipelineID() *defaultPipelin
 		flagCanceling:              false,
 		totalTaskNumber:            nil,
 		edgeReporter:               r.EdgeReporter,
+		edgeRegister:               r.EdgeRegister,
 	}
 	return pr
 }

@@ -31,6 +31,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/metrics"
 	"github.com/erda-project/erda/modules/pipeline/providers/cache"
 	"github.com/erda-project/erda/modules/pipeline/providers/cron/compensator"
+	"github.com/erda-project/erda/modules/pipeline/providers/edgepipeline_register"
 	"github.com/erda-project/erda/modules/pipeline/providers/edgereporter"
 	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/rutil"
 	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/schedulabletask"
@@ -74,6 +75,7 @@ type defaultPipelineReconciler struct {
 	cache           cache.Interface
 	r               *provider
 	edgeReporter    edgereporter.Interface
+	edgeRegister    edgepipeline_register.Interface
 
 	// internal fields
 	lock                 sync.Mutex
@@ -276,8 +278,10 @@ func (pr *defaultPipelineReconciler) TeardownAfterReconcileDone(ctx context.Cont
 	pr.resourceGC.WaitGC(p.Extra.Namespace, p.ID, p.GetResourceGCTTL())
 	// clear pipeline cache
 	pr.cache.ClearReconcilerPipelineContextCaches(p.ID)
-	// report pipeline
-	pr.edgeReporter.AddOnePipelineReporter(p.ID)
+	// report pipeline in edge cluster
+	if pr.edgeRegister.IsEdge() {
+		pr.edgeReporter.AddOnePipelineReporter(p.ID)
+	}
 
 	// mark teardown
 	rutil.ContinueWorking(ctx, pr.log, func(ctx context.Context) rutil.WaitDuration {

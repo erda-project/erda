@@ -16,7 +16,6 @@ package edgereporter
 
 import (
 	"context"
-	"net/http"
 	"reflect"
 	"time"
 
@@ -25,11 +24,10 @@ import (
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
+	"github.com/erda-project/erda/modules/pipeline/providers/edgepipeline_register"
 	"github.com/erda-project/erda/modules/pipeline/providers/edgereporter/db"
 	"github.com/erda-project/erda/modules/pipeline/providers/leaderworker"
-	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 type config struct {
@@ -42,29 +40,31 @@ type provider struct {
 	bdl      *bundle.Bundle
 	dbClient *db.Client
 
-	Cfg   *config
-	Log   logs.Logger
-	LW    leaderworker.Interface
-	MySQL mysqlxorm.Interface
+	Cfg          *config
+	Log          logs.Logger
+	LW           leaderworker.Interface
+	MySQL        mysqlxorm.Interface
+	edgeRegister edgepipeline_register.Interface
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.bdl = bundle.New(bundle.WithAllAvailableClients())
 	p.dbClient = &db.Client{Client: dbclient.Client{Engine: p.MySQL.DB()}}
-	p.LW.OnLeader(p.taskReporter)
-	p.LW.OnLeader(p.pipelineReporter)
-	p.LW.OnLeader(p.compensatorPipelineReporter)
+	if p.edgeRegister.IsEdge() {
+		p.LW.OnLeader(p.taskReporter)
+		p.LW.OnLeader(p.pipelineReporter)
+		p.LW.OnLeader(p.compensatorPipelineReporter)
+	}
 	return nil
 }
 
 func (p *provider) Run(ctx context.Context) error {
-	// TODO token
-	tokenInfo, err := p.GetOpenapiOAuth2TokenForActionInvokeOpenapi()
+	token, err := p.edgeRegister.GetAccessToken(apistructs.OAuth2TokenGetRequest{})
 	if err != nil {
-		p.Log.Errorf("failed to get token, err: %v", err)
+		p.Log.Errorf("failed to GetAccessToken, err: %v", err)
 		return err
 	}
-	p.Cfg.OpenapiToken = tokenInfo.AccessToken
+	p.Cfg.OpenapiToken = token.AccessToken
 	return nil
 }
 
@@ -77,26 +77,4 @@ func init() {
 		ConfigFunc:   func() interface{} { return &config{} },
 		Creator:      func() servicehub.Provider { return &provider{} },
 	})
-}
-
-func (p *provider) GetOpenapiOAuth2TokenForActionInvokeOpenapi() (*apistructs.OAuth2Token, error) {
-	tokenInfo, err := p.bdl.GetOAuth2Token(apistructs.OAuth2TokenGetRequest{
-		ClientID:     conf.OpenapiOAuth2TokenClientID(),
-		ClientSecret: conf.OpenapiOAuth2TokenClientSecret(),
-		Payload: apistructs.OAuth2TokenPayload{
-			AccessTokenExpiredIn: "0",
-			AllowAccessAllAPIs:   false,
-			AccessibleAPIs: []apistructs.AccessibleAPI{
-				{
-					Path:   "/api/pipelines/actions/callback",
-					Method: http.MethodPost,
-					Schema: "http",
-				},
-			},
-			Metadata: map[string]string{
-				httputil.InternalHeader: "edge-reporter",
-			},
-		},
-	})
-	return tokenInfo, err
 }
