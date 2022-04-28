@@ -63,7 +63,7 @@ func TestSourceWhiteList(t *testing.T) {
 			want: false,
 		},
 	}
-	patch := monkey.PatchInstanceMethod(reflect.TypeOf(p.bdl), "IsClusterDialerClientRegistered", func(_ *bundle.Bundle, _ string, _ string) (bool, error) {
+	patch := monkey.PatchInstanceMethod(reflect.TypeOf(p.bdl), "IsClusterDialerClientRegistered", func(_ *bundle.Bundle, _ apistructs.ClusterDialerClientType, _ string) (bool, error) {
 		return true, nil
 	})
 	defer patch.Unpatch()
@@ -237,4 +237,43 @@ func TestIsEdge(t *testing.T) {
 		},
 	}
 	assert.Equal(t, true, p.IsEdge())
+}
+
+func TestShouldDispatchToEdge(t *testing.T) {
+	bdl := bundle.New()
+	patch := monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "IsClusterDialerClientRegistered", func(_ *bundle.Bundle, _ apistructs.ClusterDialerClientType, _ string) (bool, error) {
+		return true, nil
+	})
+	defer patch.Unpatch()
+	p := provider{
+		bdl: bdl,
+		Cfg: &Config{
+			ClusterName:    "dev",
+			AllowedSources: []string{"cdp-", "recommend-"},
+		},
+	}
+	tests := []struct {
+		name        string
+		clusterName string
+		wantEdge    bool
+	}{
+		{
+			name:        "edge",
+			clusterName: "edge",
+			wantEdge:    true,
+		},
+		{
+			name:        "center",
+			clusterName: "dev",
+			wantEdge:    false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := p.ShouldDispatchToEdge("cdp-dev", tt.clusterName)
+			if got != tt.wantEdge {
+				t.Errorf("want edge: %v, but got: %v", tt.wantEdge, got)
+			}
+		})
+	}
 }
