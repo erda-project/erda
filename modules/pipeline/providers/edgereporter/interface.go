@@ -15,6 +15,6 @@
 package edgereporter
 
 type Interface interface {
-	AddOneTaskReporter(taskID uint64)
-	AddOnePipelineReporter(pipelineID uint64)
+	TriggerOnceTaskReport(taskID uint64)
+	TriggerOncePipelineReport(pipelineID uint64)
 }

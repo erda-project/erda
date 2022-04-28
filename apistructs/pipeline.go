@@ -701,9 +701,9 @@ type PipelineCallbackResponse struct {
 type PipelineCallbackType string
 
 var (
-	PipelineCallbackTypeOfAction   PipelineCallbackType = "ACTION"
-	PipelineCallbackTypeOfTask     PipelineCallbackType = "TASK"
-	PipelineCallbackTypeOfPIPELINE PipelineCallbackType = "PIPELINE"
+	PipelineCallbackTypeOfAction             PipelineCallbackType = "ACTION"
+	PipelineCallbackTypeOfEdgeTaskReport     PipelineCallbackType = "TASK"
+	PipelineCallbackTypeOfEdgePipelineReport PipelineCallbackType = "PIPELINE"
 )
 
 func (p PipelineCallbackType) String() string {

@@ -53,11 +53,11 @@ func (e *Endpoints) pipelineCallback(ctx context.Context, r *http.Request, vars 
 		if err := e.pipelineSvc.DealPipelineCallbackOfAction(req.Data); err != nil {
 			return apierrors.ErrCallback.InternalError(err).ToResp(), nil
 		}
-	case apistructs.PipelineCallbackTypeOfTask.String():
+	case apistructs.PipelineCallbackTypeOfEdgeTaskReport.String():
 		if err := e.pipelineSvc.DealPipelineCallbackOfTask(req.Data); err != nil {
 			return apierrors.ErrCallback.InternalError(err).ToResp(), nil
 		}
-	case apistructs.PipelineCallbackTypeOfPIPELINE.String():
+	case apistructs.PipelineCallbackTypeOfEdgePipelineReport.String():
 		if err := e.pipelineSvc.DealPipelineCallbackOfPipeline(req.Data); err != nil {
 			return apierrors.ErrCallback.InternalError(err).ToResp(), nil
 		}

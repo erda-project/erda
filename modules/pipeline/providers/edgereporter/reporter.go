@@ -28,11 +28,11 @@ var (
 	pipelineReportChan = make(chan uint64)
 )
 
-func (p *provider) AddOneTaskReporter(taskID uint64) {
+func (p *provider) TriggerOnceTaskReport(taskID uint64) {
 	taskReportChan <- taskID
 }
 
-func (p *provider) AddOnePipelineReporter(pipelineID uint64) {
+func (p *provider) TriggerOncePipelineReport(pipelineID uint64) {
 	pipelineReportChan <- pipelineID
 }
 
@@ -64,7 +64,7 @@ func (p *provider) doTaskReporter(ctx context.Context, taskID uint64) error {
 		return err
 	}
 	err = p.bdl.PipelineCallback(apistructs.PipelineCallbackRequest{
-		Type: apistructs.PipelineCallbackTypeOfTask.String(),
+		Type: apistructs.PipelineCallbackTypeOfEdgeTaskReport.String(),
 		Data: b,
 	}, p.Cfg.OpenAPIPublicURL, p.Cfg.OpenapiToken)
 
@@ -124,7 +124,7 @@ func (p *provider) doPipelineReporter(ctx context.Context, pipelineID uint64) er
 	}()
 
 	err = p.bdl.PipelineCallback(apistructs.PipelineCallbackRequest{
-		Type: apistructs.PipelineCallbackTypeOfPIPELINE.String(),
+		Type: apistructs.PipelineCallbackTypeOfEdgePipelineReport.String(),
 		Data: b,
 	}, p.Cfg.OpenAPIPublicURL, p.Cfg.OpenapiToken)
 

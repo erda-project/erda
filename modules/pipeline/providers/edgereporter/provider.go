@@ -44,13 +44,13 @@ type provider struct {
 	Log          logs.Logger
 	LW           leaderworker.Interface
 	MySQL        mysqlxorm.Interface
-	edgeRegister edgepipeline_register.Interface
+	EdgeRegister edgepipeline_register.Interface
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.bdl = bundle.New(bundle.WithAllAvailableClients())
 	p.dbClient = &db.Client{Client: &dbclient.Client{Engine: p.MySQL.DB()}}
-	if p.edgeRegister.IsEdge() {
+	if p.EdgeRegister.IsEdge() {
 		p.LW.OnLeader(p.taskReporter)
 		p.LW.OnLeader(p.pipelineReporter)
 		p.LW.OnLeader(p.compensatorPipelineReporter)
@@ -59,7 +59,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 }
 
 func (p *provider) Run(ctx context.Context) error {
-	token, err := p.edgeRegister.GetAccessToken(apistructs.OAuth2TokenGetRequest{})
+	token, err := p.EdgeRegister.GetAccessToken(apistructs.OAuth2TokenGetRequest{})
 	if err != nil {
 		p.Log.Errorf("failed to GetAccessToken, err: %v", err)
 		return err

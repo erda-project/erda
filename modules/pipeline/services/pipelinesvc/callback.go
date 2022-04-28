@@ -200,7 +200,7 @@ func (s *PipelineSvc) DealPipelineCallbackOfPipeline(data []byte) error {
 	if err != nil {
 		return err
 	}
-	err = s.dbClient.MultiCreatePipelineTasks(pst.PipelineTasks)
+	err = s.dbClient.BatchCreatePipelineTasks(pst.PipelineTasks)
 	if err != nil {
 		return err
 	}
@@ -209,7 +209,7 @@ func (s *PipelineSvc) DealPipelineCallbackOfPipeline(data []byte) error {
 	if err != nil {
 		return err
 	}
-	return s.dbClient.MultiCreatePipelineStages(pst.PipelineStages)
+	return s.dbClient.BatchCreatePipelineStages(pst.PipelineStages)
 }
 
 func (s *PipelineSvc) CreateOrUpdatePipeline(pipeline *spec.Pipeline) error {

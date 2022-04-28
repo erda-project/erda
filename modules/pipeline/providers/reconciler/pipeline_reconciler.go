@@ -280,7 +280,7 @@ func (pr *defaultPipelineReconciler) TeardownAfterReconcileDone(ctx context.Cont
 	pr.cache.ClearReconcilerPipelineContextCaches(p.ID)
 	// report pipeline in edge cluster
 	if pr.edgeRegister.IsEdge() {
-		pr.edgeReporter.AddOnePipelineReporter(p.ID)
+		pr.edgeReporter.TriggerOncePipelineReport(p.ID)
 	}
 
 	// mark teardown

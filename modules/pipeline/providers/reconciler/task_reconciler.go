@@ -316,7 +316,7 @@ func (tr *defaultTaskReconciler) TeardownAfterReconcileDone(ctx context.Context,
 
 	// report task in edge cluster
 	if tr.edgeRegister.IsEdge() {
-		tr.edgeReporter.AddOneTaskReporter(task.ID)
+		tr.edgeReporter.TriggerOnceTaskReport(task.ID)
 	}
 
 	// invalidate openapi oauth2 token
