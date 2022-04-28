@@ -105,7 +105,7 @@ func (p *provider) getNodeDiskUsage(filter func(*NodeDiskUsage) bool) (map[strin
 			UsedPercent:  float64(node.FS.Total.TotalInBytes-node.FS.Total.AvailableInBytes) / float64(node.FS.Total.TotalInBytes) * 100,
 			StorePercent: float64(node.Indices.Store.SizeInBytes) / float64(node.FS.Total.TotalInBytes) * 100,
 		}
-		if filter != nil || filter(usage) {
+		if filter == nil || filter(usage) {
 			diskUsage[id] = usage
 		}
 	}
