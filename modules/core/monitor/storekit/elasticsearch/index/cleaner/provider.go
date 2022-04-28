@@ -78,6 +78,10 @@ type (
 		index *index.Pattern
 		alias *index.Pattern
 	}
+	TtlTask struct {
+		TaskId  string
+		Indices []string
+	}
 	provider struct {
 		Cfg        *config
 		Log        logs.Logger
@@ -91,6 +95,8 @@ type (
 		minIndicesStoreInDisk    int64
 		rolloverBodyForDiskClean string
 		rolloverAliasPatterns    []*indexAliasPattern
+
+		ttlCh chan *TtlTask
 	}
 )
 
@@ -177,8 +183,9 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	if p.Cfg.DiskClean.Enable {
 		p.election.OnLeader(p.runDiskCheckAndClean)
 	}
-
-	p.runDocsCheckAndClean()
+	p.ttlCh = make(chan *TtlTask, 1)
+	p.election.OnLeader(p.runDocsCheckAndClean)
+	p.election.OnLeader(p.runTaskCheck)
 
 	// init manager routes
 	routePrefix := "/api/elasticsearch/index"

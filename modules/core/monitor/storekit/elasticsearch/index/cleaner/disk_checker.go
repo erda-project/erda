@@ -46,7 +46,7 @@ func (p *provider) runDiskCheckAndClean(ctx context.Context) {
 	}
 }
 
-func (p *provider) runDocsCheckAndClean() {
+func (p *provider) runDocsCheckAndClean(ctx context.Context) {
 	if p.Cfg.DiskClean.TTL.Enable {
 		c := cron.New(cron.WithSeconds())
 		_, err := c.AddFunc(p.Cfg.DiskClean.TTL.TriggerSpecCron, p.deleteByQuery)
@@ -55,6 +55,29 @@ func (p *provider) runDocsCheckAndClean() {
 		}
 		c.Start()
 		p.Log.Infof("Enable disk clean cron task. Cron expression: %s, Max store time: %v", p.Cfg.DiskClean.TTL.TriggerSpecCron, p.Cfg.DiskClean.TTL.MaxStoreTime)
+	}
+}
+
+func (p *provider) runTaskCheck(ctx context.Context) {
+	p.Log.Infof("run ttl task check")
+	defer p.Log.Infof("exit ttl task check")
+	timer := time.NewTimer(20 * time.Second)
+	for {
+		select {
+		case <-timer.C:
+		case <-ctx.Done():
+			return
+		case task := <-p.ttlCh:
+			tasksGetTask := p.loader.Client().TasksGetTask()
+			taskStatus, err := tasksGetTask.TaskId(task.TaskId).Do(ctx)
+			if err != nil {
+				continue
+			}
+			if taskStatus != nil && taskStatus.Completed {
+				p.forceMerge(ctx, task.Indices...)
+			}
+		}
+		timer.Reset(p.Cfg.DiskClean.CheckInterval)
 	}
 }
 

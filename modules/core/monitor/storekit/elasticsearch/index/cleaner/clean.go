@@ -160,21 +160,26 @@ func (p *provider) deleteByQuery() {
 	indices := p.getIndicesList(ctx, indexGroup)
 
 	for _, index := range indices {
-		ttl := elastic.NewRangeQuery("@timestamp").From(0).To(time.Now().AddDate(0, 0, -p.Cfg.DiskClean.TTL.MaxStoreTime).UnixNano() / 1e6)
-		resp, err := p.loader.Client().DeleteByQuery(index).WaitForCompletion(false).Conflicts("proceed").Query(ttl).Do(ctx)
+		ttl := elastic.NewRangeQuery("@timestamp").
+			From(0).
+			To(time.Now().AddDate(0, 0, -p.Cfg.DiskClean.TTL.MaxStoreTime).UnixNano() / 1e6)
+
+		resp, err := p.loader.Client().DeleteByQuery().
+			Index(index).
+			WaitForCompletion(false).
+			ProceedOnVersionConflict().
+			Query(ttl).
+			Pretty(true).
+			DoAsync(ctx)
 		if err != nil {
-			p.forceMerge(ctx, index)
 			p.Log.Errorf("delete failed. indices: %s, err: %v", index, err.Error())
 			continue
 		}
-		if resp.Failures != nil && len(resp.Failures) > 0 {
-			p.forceMerge(ctx, index)
-			p.Log.Errorf("delete failed. err: %v", resp.Failures)
-			continue
+		p.ttlCh <- &TtlTask{
+			TaskId:  resp.TaskId,
+			Indices: []string{index},
 		}
-
-		p.Log.Infof("Clean doc by ttl, indices count: %d, indices %v, docs count: %v ", len(index), index, resp.Total)
-		p.forceMerge(ctx, index)
+		p.Log.Infof("Clean doc by ttl, taskId: %s", resp.TaskId)
 	}
 }
 
