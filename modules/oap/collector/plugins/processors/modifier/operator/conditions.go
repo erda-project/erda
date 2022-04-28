@@ -52,6 +52,26 @@ func NewValueMatch(cfg ConditionCfg) Condition {
 	return &ValueMatch{cfg: cfg, pattern: regexp.MustCompile(cfg.Value)}
 }
 
+type ValueEmpty struct {
+	cfg ConditionCfg
+}
+
+func (ve *ValueEmpty) Match(pairs map[string]interface{}) bool {
+	value, ok := pairs[ve.cfg.Key]
+	if !ok {
+		return false
+	}
+	strValue, ok := value.(string)
+	if !ok {
+		return false
+	}
+	return strValue == ""
+}
+
+func NewValueEmpty(cfg ConditionCfg) Condition {
+	return &ValueEmpty{cfg: cfg}
+}
+
 type NoopCondition struct {
 	cfg ConditionCfg
 }

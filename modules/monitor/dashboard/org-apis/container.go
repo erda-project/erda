@@ -70,9 +70,10 @@ func (p *provider) getContainers(ctx httpserver.Context, r *http.Request, params
 func (p *provider) queryContainers(cluster string, hostIPs []string, instanceType string, filters []*resourceFilter, start, end int64) []*containerData {
 	query := elastic.NewBoolQuery().
 		Filter(elastic.NewTermQuery(tagsClusterName, cluster)).
-		Filter(elastic.NewRangeQuery(timestamp).Gte(start*int64(time.Millisecond)).Lt(end*int64(time.Millisecond))).
+		Filter(elastic.NewRangeQuery(timestamp).Gte(start * int64(time.Millisecond)).Lt(end * int64(time.Millisecond))).
 		Filter(elastic.NewTermsQuery(tagsHostIP, utils.ConvertStringArrToInterfaceArr(hostIPs)...)).
-		MustNot(elastic.NewTermQuery("tags.container", "POD"), elastic.NewTermQuery("tags.pause", "true"))
+		MustNot(elastic.NewTermQuery("tags.container", "POD")).
+		MustNot(elastic.NewTermQuery("tags.podsandbox", "true"))
 	if instanceType != instanceTypeAll {
 		query = query.Filter(elastic.NewTermQuery(tagsInstanceType, instanceType))
 	}
@@ -230,6 +231,9 @@ func wrapContainerData(src *containerData, topHits *elastic.AggregationTopHitsMe
 		src.JobID, _ = utils.GetMapValueString(tags, jobID)
 
 		src.Container, _ = utils.GetMapValueString(tags, "container")
+		src.PodUid, _ = utils.GetMapValueString(tags, "pod_uid")
+		src.PodName, _ = utils.GetMapValueString(tags, "pod_name")
+		src.PodNamespace, _ = utils.GetMapValueString(tags, "pod_namespace")
 	}
 	return
 }
