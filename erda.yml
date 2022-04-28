@@ -98,9 +98,6 @@ services:
       - port: 9095
         protocol: TCP
         l4_protocol: TCP
-      - port: 9096
-        protocol: TCP
-        l4_protocol: TCP
       - port: 8096
         protocol: TCP
         l4_protocol: TCP
@@ -210,8 +207,12 @@ services:
       max_mem: 2048
       network:
         mode: "container"
+    binds:
+      - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-ca.pem:/certs/etcd-ca.pem:ro"
+      - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client.pem:/certs/etcd-client.pem:ro"
+      - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client-key.pem:/certs/etcd-client-key.pem:ro"
     deployments:
-      replicas: 1
+      replicas: 2
       labels:
         GROUP: "dice"
     health_check:
@@ -755,5 +756,5 @@ addons:
     plan: "custom:basic"
     options:
       version: "1.0.0"
-  rds:
-    plan: "alicloud-rds:basic"
+  mysql:
+    plan: "mysql:basic"

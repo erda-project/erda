@@ -19,6 +19,8 @@
 package bundle
 
 import (
+	"context"
+	"net"
 	"os"
 	"time"
 
@@ -29,9 +31,10 @@ import (
 
 // Bundle 定义了所有方法的集合对象.
 type Bundle struct {
-	hc         *httpclient.HTTPClient
-	i18nLoader *i18n.LocaleResourceLoader
-	urls       urls
+	hc          *httpclient.HTTPClient
+	i18nLoader  *i18n.LocaleResourceLoader
+	urls        urls
+	dialContext func(ctx context.Context, network, addr string) (net.Conn, error)
 }
 
 // Option 定义 Bundle 对象的配置选项.
@@ -47,6 +50,7 @@ func New(options ...Option) *Bundle {
 	}
 	if b.hc == nil {
 		b.hc = httpclient.New(
+			httpclient.WithDialContext(b.dialContext),
 			httpclient.WithTimeout(time.Second*60, time.Second*60),
 		)
 	}
@@ -283,6 +287,12 @@ func WithClusterDialer() Option {
 		k := discover.ClusterDialer()
 		v := os.Getenv(k)
 		b.urls.Put(k, v)
+	}
+}
+
+func WithDialContext(dialContext func(ctx context.Context, network string, address string) (net.Conn, error)) Option {
+	return func(b *Bundle) {
+		b.dialContext = dialContext
 	}
 }
 

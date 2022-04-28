@@ -131,7 +131,7 @@ func (p *provider) convertToMetricMeta(cfg *db.LogMetricConfig) (*pb.MetricMeta,
 		"dice_project_id", "dice_project_name",
 		"dice_application_id", "dice_application_name",
 		"dice_runtime_id", "dice_runtime_name",
-		"dice_service_name", "level"} {
+		"dice_service_name", "_level"} {
 		m.Tags[key] = &pb.TagDefine{Key: key, Name: key}
 	}
 

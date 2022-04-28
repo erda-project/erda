@@ -18,7 +18,7 @@ package cmp
 import (
 	"context"
 	"flag"
-	"net/http/pprof"
+	"fmt"
 	"os"
 	"strings"
 	"time"
@@ -28,7 +28,7 @@ import (
 	"k8s.io/klog/v2"
 
 	"github.com/erda-project/erda-infra/base/version"
-	credentialpb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
+	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/conf"
@@ -188,11 +188,6 @@ func (p *provider) do(ctx context.Context) (*httpserver.Server, error) {
 	}
 	server.Router().PathPrefix("/api/k8s/clusters/{clusterName}").Handler(middlewares.Handler(ep.SteveAggregator))
 	server.Router().PathPrefix("/api/apim/metrics").Handler(endpoints.InternalReverseHandler(endpoints.ProxyMetrics))
-	server.Router().Path("/debug/pprof").HandlerFunc(pprof.Index)
-	server.Router().Path("/debug/pprof/cmdline").HandlerFunc(pprof.Cmdline)
-	server.Router().Path("/debug/pprof/profile").HandlerFunc(pprof.Profile)
-	server.Router().Path("/debug/pprof/symbol").HandlerFunc(pprof.Symbol)
-	server.Router().Path("/debug/pprof/trace").HandlerFunc(pprof.Trace)
 
 	logrus.Infof("start the service and listen on address: %s", conf.ListenAddr())
 	logrus.Info("starting cmp instance")
@@ -204,7 +199,7 @@ func (p *provider) do(ctx context.Context) (*httpserver.Server, error) {
 }
 
 func (p *provider) initEndpoints(ctx context.Context, db *dbclient.DBClient, js, cachedJS jsonstore.JsonStore, bdl *bundle.Bundle,
-	o *org_resource.OrgResource, c credentialpb.AccessKeyServiceServer, rt *resource.ReportTable) (*endpoints.Endpoints, error) {
+	o *org_resource.OrgResource, c tokenpb.TokenServiceServer, rt *resource.ReportTable) (*endpoints.Endpoints, error) {
 
 	// compose endpoints
 	ep := endpoints.New(
@@ -229,6 +224,7 @@ func (p *provider) initEndpoints(ctx context.Context, db *dbclient.DBClient, js,
 		ep.TaskClean(conf.TaskCleanDuration())
 	}()
 
+	registerWebHook(bdl)
 	registerWebHook(bdl)
 
 	return ep, nil
@@ -262,4 +258,29 @@ func registerWebHook(bdl *bundle.Bundle) {
 	if err := bdl.CreateWebhook(ev); err != nil {
 		logrus.Warnf("failed to register pipeline tasks event, (%v)", err)
 	}
+}
+
+// registerClusterHook register cluster webhook in eventBox
+func registerClusterHook() error {
+	bdl := bundle.New(bundle.WithCoreServices())
+
+	ev := apistructs.CreateHookRequest{
+		Name:   "cmp-clusterhook",
+		Events: []string{"cluster"},
+		URL:    fmt.Sprintf("http://%s/clusterhook", discover.CMP()),
+		Active: true,
+		HookLocation: apistructs.HookLocation{
+			Org:         "-1",
+			Project:     "-1",
+			Application: "-1",
+		},
+	}
+
+	if err := bdl.CreateWebhook(ev); err != nil {
+		logrus.Warnf("failed to register cluster event, (%v)", err)
+		return err
+	}
+
+	logrus.Infof("register cluster event success")
+	return nil
 }

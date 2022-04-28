@@ -162,7 +162,9 @@ func (k *K8sFlink) ComposeFlinkCluster(job apistructs.JobFromUser, data apistruc
 				Tolerations:    nil,
 				Sidecars:       nil,
 				PodAnnotations: map[string]string{
-					apistructs.MSPTerminusDefineTag: containers.MakeFlinkJobManagerID(data.Name),
+					apistructs.MSPTerminusDefineTag:  containers.MakeFlinkJobManagerID(data.Name),
+					apistructs.MSPTerminusOrgIDTag:   job.GetOrgID(),
+					apistructs.MSPTerminusOrgNameTag: job.GetOrgName(),
 				},
 			},
 			TaskManager: flinkoperatorv1beta1.TaskManagerSpec{
@@ -179,7 +181,9 @@ func (k *K8sFlink) ComposeFlinkCluster(job apistructs.JobFromUser, data apistruc
 				Tolerations:    nil,
 				Sidecars:       nil,
 				PodAnnotations: map[string]string{
-					apistructs.MSPTerminusDefineTag: containers.MakeFlinkTaskManagerID(data.Name),
+					apistructs.MSPTerminusDefineTag:  containers.MakeFlinkTaskManagerID(data.Name),
+					apistructs.MSPTerminusOrgIDTag:   job.GetOrgID(),
+					apistructs.MSPTerminusOrgNameTag: job.GetOrgName(),
 				},
 			},
 			EnvVars:         data.Spec.Envs,

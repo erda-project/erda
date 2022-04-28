@@ -108,7 +108,7 @@ func (c *Clusters) OfflineEdgeCluster(req apistructs.OfflineEdgeClusterRequest, 
 
 	// Offline cluster by call cmd /api/clusters/<clusterName>
 	if status == dbclient.StatusTypeSuccess {
-		if _, err = c.bdl.DereferenceCluster(req.OrgID, req.ClusterName, userid); err != nil {
+		if _, err = c.bdl.DereferenceCluster(req.OrgID, req.ClusterName, userid, req.Force); err != nil {
 			return
 		}
 
@@ -119,7 +119,7 @@ func (c *Clusters) OfflineEdgeCluster(req apistructs.OfflineEdgeClusterRequest, 
 			return
 		}
 
-		if len(relations) == 0 || req.Force {
+		if len(relations) == 0 {
 			err = c.bdl.DeleteCluster(req.ClusterName, map[string][]string{httputil.InternalHeader: {"cmp"}})
 			if err != nil {
 				errstr := fmt.Sprintf("failed to delete cluster %s : %v", req.ClusterName, err)

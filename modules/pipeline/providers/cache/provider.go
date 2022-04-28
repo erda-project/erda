@@ -23,15 +23,17 @@ import (
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
+	"github.com/erda-project/erda/modules/pipeline/providers/actionmgr"
 )
 
 type config struct {
 }
 
 type provider struct {
-	Log   logs.Logger
-	Cfg   *config
-	MySQL mysqlxorm.Interface
+	Log       logs.Logger
+	Cfg       *config
+	MySQL     mysqlxorm.Interface
+	ActionMgr actionmgr.Interface
 
 	dbClient *dbclient.Client
 	bdl      *bundle.Bundle

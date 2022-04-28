@@ -74,6 +74,7 @@
         filenames:
           - "20220110-file-record-soft-delete"
           - "20211227-project-soft-delete"
+          - "20220414-rename-oauth2-client-table"
     - stmtType: AlterTableStmt.AlterTableAlterColumn
     - stmtType: AlterTableStmt.AlterTableLock
       forbidden: true
@@ -497,6 +498,7 @@
   white:
     patterns:
       - ".*-base$"
+      - ".*-pipeline-action$"
     committedAt:
       - "<=20220215"
   meta:
@@ -509,6 +511,7 @@
   white:
     patterns:
       - ".*-base$"
+      - ".*-pipeline-action$"
     committedAt:
       - "<=20220215"
   meta:

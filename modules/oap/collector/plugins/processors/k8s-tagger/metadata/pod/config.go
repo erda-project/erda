@@ -23,7 +23,7 @@ type WatchSelector struct {
 type AddMetadata struct {
 	LabelInclude      []string `file:"label_include"`
 	AnnotationInclude []string `file:"annotation_include"`
-	Finder            Finder   `file:"finder"`
+	Finders           []Finder `file:"finders"`
 }
 
 type Filter struct {

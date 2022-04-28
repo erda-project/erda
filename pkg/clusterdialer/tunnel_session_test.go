@@ -21,7 +21,11 @@ import (
 )
 
 func TestTunnelSession_getClusterDialer_timeout(t *testing.T) {
-	var session TunnelSession
+	sessionCtx, cancel := context.WithCancel(context.Background())
+	session := TunnelSession{
+		expired: sessionCtx,
+		cancel:  cancel,
+	}
 	go session.initialize("ws://127.0.0.1")
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 	dialer := session.getClusterDialer(ctx, "test")

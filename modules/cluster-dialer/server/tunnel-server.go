@@ -19,7 +19,6 @@ import (
 	"crypto/tls"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -31,11 +30,13 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/coreos/etcd/clientv3"
 	"github.com/gorilla/mux"
+	"github.com/pkg/errors"
 	"github.com/rancher/remotedialer"
 	"github.com/sirupsen/logrus"
 
-	credentialpb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
+	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cluster-dialer/auth"
@@ -56,6 +57,8 @@ const (
 	portalHostHeader    = "X-Portal-Host"
 	portalDestHeader    = "X-Portal-Dest"
 	portalTimeoutHeader = "X-Portal-Timeout"
+
+	ClusterManagerETCDKeyPrefix = "cluster-manager/clusterKey/"
 )
 
 type cluster struct {
@@ -64,7 +67,7 @@ type cluster struct {
 	CACert  string `json:"caCert"`
 }
 
-func clusterRegister(server *remotedialer.Server, rw http.ResponseWriter, req *http.Request, needClusterInfo bool) {
+func clusterRegister(ctx context.Context, server *remotedialer.Server, rw http.ResponseWriter, req *http.Request, needClusterInfo bool, etcd *clientv3.Client) {
 	registerFunc := func(clusterKey string, clusterInfo cluster) {
 		ctx, cancel := context.WithTimeout(context.Background(), registerTimeout)
 		defer cancel()
@@ -130,6 +133,19 @@ func clusterRegister(server *remotedialer.Server, rw http.ResponseWriter, req *h
 		remotedialer.DefaultErrorWriter(rw, req, 400, errors.New("missing header:X-Erda-Cluster-Key"))
 		return
 	}
+
+	podIP, err := getLocalIP()
+	if err != nil {
+		logrus.Errorf("failed to get local IP, %v", err)
+		return
+	}
+
+	_, err = etcd.Put(ctx, ClusterManagerETCDKeyPrefix+clusterKey, podIP)
+	if err != nil {
+		logrus.Errorf("failed to put clusterKey to etcd, %v", err)
+		return
+	}
+
 	switch clientType {
 	case apistructs.ClusterDialerClientTypeDefault, apistructs.ClusterDialerClientTypeCluster:
 		if needClusterInfo {
@@ -189,6 +205,61 @@ func clusterRegister(server *remotedialer.Server, rw http.ResponseWriter, req *h
 
 register:
 	server.ServeHTTP(rw, req)
+}
+
+func getLocalIP() (string, error) {
+	netInterfaces, err := net.Interfaces()
+	if err != nil {
+		return "", errors.Errorf("net.Interfaces failed, %v", err.Error())
+	}
+	for i := 0; i < len(netInterfaces); i++ {
+		if (netInterfaces[i].Flags & net.FlagUp) != 0 {
+			addrs, _ := netInterfaces[i].Addrs()
+			for _, address := range addrs {
+				if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+					if ipnet.IP.To4() != nil {
+						return ipnet.IP.String(), nil
+					}
+				}
+			}
+		}
+	}
+	return "", errors.New("can not find local IP")
+}
+
+func queryIP(rw http.ResponseWriter, req *http.Request, etcd *clientv3.Client) {
+	resp := apistructs.QueryClusterDialerIPResponse{}
+	clusterKey := req.URL.Query().Get("clusterKey")
+	logrus.Debugf("got queryIP request, clusterKey: %s", clusterKey)
+	if clusterKey == "" {
+		resp.Error = errors.New("MissingParameter: clusterKey").Error()
+		resp.Succeeded = false
+		writeResp(rw, resp, http.StatusBadRequest)
+		return
+	}
+
+	r, err := etcd.Get(req.Context(), ClusterManagerETCDKeyPrefix+clusterKey)
+	if err != nil {
+		resp.Error = errors.Errorf("failed to get clusterKey from etcd, %v", err).Error()
+		resp.Succeeded = false
+		writeResp(rw, resp, http.StatusInternalServerError)
+		return
+	}
+	if len(r.Kvs) == 0 {
+		resp.Succeeded = true
+		writeResp(rw, resp, http.StatusOK)
+		return
+	}
+
+	resp.Succeeded = true
+	resp.IP = string(r.Kvs[0].Value)
+	writeResp(rw, resp, http.StatusOK)
+}
+
+func writeResp(rw http.ResponseWriter, resp interface{}, code int) {
+	data, _ := json.Marshal(resp)
+	rw.WriteHeader(code)
+	rw.Write(data)
 }
 
 func netportal(server *remotedialer.Server, rw http.ResponseWriter, req *http.Request, timeout time.Duration) {
@@ -297,7 +368,7 @@ func getClusterClient(server *remotedialer.Server, clusterKey string, timeout ti
 	return client
 }
 
-func Start(ctx context.Context, credential credentialpb.AccessKeyServiceServer, cfg *config.Config) error {
+func Start(ctx context.Context, credential tokenpb.TokenServiceServer, cfg *config.Config, etcd *clientv3.Client) error {
 	authorizer := auth.New(
 		auth.WithCredentialClient(credential),
 		auth.WithConfig(cfg),
@@ -319,9 +390,12 @@ func Start(ctx context.Context, credential credentialpb.AccessKeyServiceServer, 
 	// TODO: support handler.AddPeer
 	router := mux.NewRouter()
 	router.Handle("/clusterdialer", handler)
+	router.HandleFunc("/clusterdialer/ip", func(rw http.ResponseWriter, req *http.Request) {
+		queryIP(rw, req, etcd)
+	})
 	router.HandleFunc("/clusteragent/connect", func(rw http.ResponseWriter,
 		req *http.Request) {
-		clusterRegister(handler, rw, req, cfg.NeedClusterInfo)
+		clusterRegister(ctx, handler, rw, req, cfg.NeedClusterInfo, etcd)
 	})
 	router.HandleFunc("/clusteragent/check", func(rw http.ResponseWriter,
 		req *http.Request) {

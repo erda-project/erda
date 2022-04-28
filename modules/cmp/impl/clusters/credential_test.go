@@ -27,8 +27,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
-	credentialpb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
-	"github.com/erda-project/erda/apistructs"
+	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/dbclient"
 	"github.com/erda-project/erda/pkg/k8sclient"
@@ -38,14 +37,11 @@ var (
 	bdl         *bundle.Bundle
 	db          *dbclient.DBClient
 	fakeCluster = "fake-cluster"
-	fakeAkItem  = &credentialpb.AccessKeysItem{
-		Id:          "5e34b95b-cd06-464c-8ee9-3aef696586c6",
-		AccessKey:   "Q9x5k4MJ89h327yqoc9zvvoP",
-		Status:      credentialpb.StatusEnum_ACTIVATE,
-		SubjectType: credentialpb.SubjectTypeEnum_CLUSTER,
-		Subject:     fakeCluster,
-		Scope:       apistructs.CMPClusterScope,
-		ScopeId:     fakeCluster,
+	fakeAkItem  = &tokenpb.Token{
+		Id:        "5e34b95b-cd06-464c-8ee9-3aef696586c6",
+		AccessKey: "Q9x5k4MJ89h327yqoc9zvvoP",
+		Scope:     "cmp_cluster",
+		ScopeId:   fakeCluster,
 	}
 )
 
@@ -53,13 +49,13 @@ var (
 func Test_GetOrCreateAccessKey_Create(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	akService := NewMockAccessKeyServiceServer(ctrl)
+	akService := NewMockTokenServiceServer(ctrl)
 
-	akService.EXPECT().QueryAccessKeys(gomock.Any(), gomock.Any()).AnyTimes().Return(&credentialpb.QueryAccessKeysResponse{
-		Data: []*credentialpb.AccessKeysItem{},
+	akService.EXPECT().QueryTokens(gomock.Any(), gomock.Any()).AnyTimes().Return(&tokenpb.QueryTokensResponse{
+		Data: []*tokenpb.Token{},
 	}, nil)
 
-	akService.EXPECT().CreateAccessKey(gomock.Any(), gomock.Any()).AnyTimes().Return(&credentialpb.CreateAccessKeyResponse{
+	akService.EXPECT().CreateToken(gomock.Any(), gomock.Any()).AnyTimes().Return(&tokenpb.CreateTokenResponse{
 		Data: fakeAkItem,
 	}, nil)
 
@@ -79,14 +75,14 @@ func Test_GetOrCreateAccessKey_Create(t *testing.T) {
 func Test_GetOrCreateAccessKey_Get(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	akService := NewMockAccessKeyServiceServer(ctrl)
+	akService := NewMockTokenServiceServer(ctrl)
 
-	akService.EXPECT().QueryAccessKeys(gomock.Any(), gomock.Any()).AnyTimes().Return(&credentialpb.QueryAccessKeysResponse{
-		Data:  []*credentialpb.AccessKeysItem{fakeAkItem},
+	akService.EXPECT().QueryTokens(gomock.Any(), gomock.Any()).AnyTimes().Return(&tokenpb.QueryTokensResponse{
+		Data:  []*tokenpb.Token{fakeAkItem},
 		Total: 1,
 	}, nil)
 
-	akService.EXPECT().CreateAccessKey(gomock.Any(), gomock.Any()).AnyTimes().Return(&credentialpb.CreateAccessKeyResponse{
+	akService.EXPECT().CreateToken(gomock.Any(), gomock.Any()).AnyTimes().Return(&tokenpb.CreateTokenResponse{
 		Data: fakeAkItem,
 	}, nil)
 
@@ -99,12 +95,12 @@ func Test_GetOrCreateAccessKey_Get(t *testing.T) {
 func Test_DeleteAccessKey(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	akService := NewMockAccessKeyServiceServer(ctrl)
+	akService := NewMockTokenServiceServer(ctrl)
 
-	akService.EXPECT().DeleteAccessKey(gomock.Any(), gomock.Any()).AnyTimes().Return(&credentialpb.DeleteAccessKeyResponse{}, nil)
+	akService.EXPECT().DeleteToken(gomock.Any(), gomock.Any()).AnyTimes().Return(&tokenpb.DeleteTokenResponse{}, nil)
 
-	akService.EXPECT().QueryAccessKeys(gomock.Any(), gomock.Any()).AnyTimes().Return(&credentialpb.QueryAccessKeysResponse{
-		Data:  []*credentialpb.AccessKeysItem{fakeAkItem},
+	akService.EXPECT().QueryTokens(gomock.Any(), gomock.Any()).AnyTimes().Return(&tokenpb.QueryTokensResponse{
+		Data:  []*tokenpb.Token{fakeAkItem},
 		Total: 1,
 	}, nil)
 
@@ -133,7 +129,7 @@ func Test_ResetAccessKey_InCluster_Error(t *testing.T) {
 		return nil, csErr
 	})
 
-	monkey.Patch(k8sclient.NewForInCluster, func() (*k8sclient.K8sClient, error) {
+	monkey.Patch(k8sclient.NewForInCluster, func(ops ...k8sclient.Option) (*k8sclient.K8sClient, error) {
 		return nil, csErr
 	})
 

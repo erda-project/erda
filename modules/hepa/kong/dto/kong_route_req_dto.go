@@ -15,6 +15,7 @@
 package dto
 
 import (
+	"net/url"
 	"strings"
 )
 
@@ -63,6 +64,10 @@ type KongRouteReqDto struct {
 	//
 	// See more https://docs.konghq.com/enterprise/2.2.x/admin-api/#path-handling-algorithms
 	PathHandling *string `json:"path_handling,omitempty"`
+
+	Tags []string `json:"tags,omitempty"`
+
+	tags url.Values
 }
 
 func NewKongRouteReqDto() *KongRouteReqDto {
@@ -71,6 +76,7 @@ func NewKongRouteReqDto() *KongRouteReqDto {
 	return &KongRouteReqDto{
 		StripPath:    &stripPath,
 		PathHandling: &pathHandling,
+		tags:         make(url.Values),
 	}
 }
 
@@ -86,6 +92,25 @@ func (dto *KongRouteReqDto) Adjust(opts ...Option) {
 	}
 }
 
+func (dto *KongRouteReqDto) AddTag(key, value string) {
+	if dto.tags == nil {
+		dto.tags = make(url.Values)
+	}
+	dto.tags.Add(key, value)
+	dto.refreshTags()
+}
+
+func (dto *KongRouteReqDto) refreshTags() {
+	var tags []string
+	for k := range dto.tags {
+		vs := dto.tags[k]
+		for _, v := range vs {
+			tags = append(tags, k+"~"+v)
+		}
+	}
+	dto.Tags = tags
+}
+
 type Option func(dto *KongRouteReqDto)
 
 func Versioning(i interface{ GetVersion() (string, error) }) Option {
@@ -96,5 +121,6 @@ func Versioning(i interface{ GetVersion() (string, error) }) Option {
 			return
 		}
 		dto.PathHandling = nil
+		dto.Tags = nil
 	}
 }

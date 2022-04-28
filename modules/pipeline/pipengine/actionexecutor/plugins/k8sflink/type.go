@@ -34,13 +34,15 @@ type K8sFlink struct {
 }
 
 func New(name types.Name, clusterName string, cluster apistructs.ClusterInfo) (*K8sFlink, error) {
-	k, err := k8sclient.NewWithTimeOut(clusterName, time.Duration(conf.K8SExecutorMaxInitializationSec())*time.Second)
+	// we could operate normal resources (job, pod, deploy,pvc,pv,crd and so on) by default config permissions(injected by kubernetes, /var/run/secrets/kubernetes.io/serviceaccount)
+	// so WithPreferredToUseInClusterConfig it's enough for pipeline and orchestrator
+	client, err := k8sclient.New(clusterName, k8sclient.WithTimeout(time.Duration(conf.K8SExecutorMaxInitializationSec())*time.Second), k8sclient.WithPreferredToUseInClusterConfig())
 	if err != nil {
 		return nil, err
 	}
 	k8sFlink := &K8sFlink{
 		name:        name,
-		client:      k,
+		client:      client,
 		clusterName: clusterName,
 		cluster:     cluster,
 		errWrapper:  logic.NewErrorWrapper(name.String()),

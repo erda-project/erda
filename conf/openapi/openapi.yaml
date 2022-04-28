@@ -104,7 +104,7 @@ openapi-v1-routes:
           - cmp-dashboard-pods
           - cmp-dashboard-podDetail
           - cmp-cluster-list
-      - addr: admin:9096
+      - addr: admin:9095
         scenarios:
           - personal-workbench
       - addr: msp:8080
@@ -174,3 +174,7 @@ erda-discover:
 http-server@admin:
   addr: ":9432"
 pprof:
+
+grpc-client@erda.core.token:
+  addr: "${CORE_SERVICES_GRPC_ADDR:core-services:9537}"
+erda.core.token-client: {}

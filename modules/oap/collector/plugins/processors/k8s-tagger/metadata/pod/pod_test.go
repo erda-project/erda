@@ -66,7 +66,8 @@ func TestCache_extractPodMetadata(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c := NewCache(nil, tt.fields.aInclude, tt.fields.lInclude)
+			c, err := NewCache(nil, tt.fields.aInclude, tt.fields.lInclude)
+			assert.Nil(t, err)
 			assert.Equal(t, tt.want, c.extractPodMetadata(tt.args.pod))
 		})
 	}
@@ -89,8 +90,8 @@ func TestCache_extractPodContainerMetadata(t *testing.T) {
 		{
 			name: "podnamecontainerIndexer",
 			fields: fields{
-				aInclude: []string{"msp.erda.cloud/(.+)"},
-				lInclude: []string{"(.+).erda.cloud/(.+)"},
+				aInclude: []string{"msp.erda.cloud/*"},
+				lInclude: []string{"*.erda.cloud/*"},
 			},
 			args: args{pod: apiv1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
@@ -125,15 +126,7 @@ func TestCache_extractPodContainerMetadata(t *testing.T) {
 				},
 			},
 			want: Value{
-				Tags: map[string]string{
-					metadata.PrefixPod + "name":                        "aaa",
-					metadata.PrefixPod + "namespace":                   "default",
-					metadata.PrefixPod + "uid":                         "aaa-bbb-ccc-ddd",
-					metadata.PrefixPod + "ip":                          "1.1.1.1",
-					metadata.PrefixPodLabels + "dop_erda_cloud_a":      "b",
-					metadata.PrefixPodLabels + "msp_erda_cloud_c":      "d",
-					metadata.PrefixPodAnnotations + "msp_erda_cloud_e": "f",
-				},
+				Tags: map[string]string{},
 				Fields: map[string]interface{}{
 					"container_resources_cpu_request":    0.1,
 					"container_resources_memory_request": int64(512 * 1024 * 1024),
@@ -145,8 +138,9 @@ func TestCache_extractPodContainerMetadata(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c := NewCache(nil, tt.fields.aInclude, tt.fields.lInclude)
-			assert.Equal(t, tt.want, c.extractPodContainerMetadata(tt.args.pod, tt.args.container))
+			c, err := NewCache(nil, tt.fields.aInclude, tt.fields.lInclude)
+			assert.Nil(t, err)
+			assert.Equal(t, tt.want, c.extractPodContainerMetadata(tt.args.container))
 		})
 	}
 }

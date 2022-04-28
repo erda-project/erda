@@ -490,3 +490,16 @@ func MergeRequestCount(ctx *webcontext.Context) {
 	}
 	ctx.Success(response)
 }
+
+func GetMergeRequestsStats(ctx *webcontext.Context) {
+	queryCondition := &apistructs.GittarQueryMrRequest{}
+	queryCondition.Query = ctx.Query("query")
+	queryCondition.AuthorId = ctx.Query("authorId")
+	queryCondition.AssigneeId = ctx.Query("assigneeId")
+	response, err := ctx.Service.QueryMergeRequestsStats(ctx.Repository, queryCondition)
+	if err != nil {
+		ctx.Abort(err)
+		return
+	}
+	ctx.Success(response)
+}

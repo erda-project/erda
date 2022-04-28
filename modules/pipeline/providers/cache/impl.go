@@ -179,15 +179,16 @@ func (p *provider) setPipelineRerunSuccessTasksToContextByPipelineID(successTask
 // GetOrSetPassedDataWhenCreateFromContext
 // get value from caches map
 // if not exist search value from db and save to caches map
-func (p *provider) GetOrSetPassedDataWhenCreateFromContext(pipelineYml *pipelineyml.PipelineYml, pipelineID uint64) (passedDataWhenCreate *action_info.PassedDataWhenCreate, err error) {
+func (p *provider) GetOrSetPassedDataWhenCreateFromContext(pipelineYml *pipelineyml.PipelineYml, pipeline *spec.Pipeline) (passedDataWhenCreate *action_info.PassedDataWhenCreate, err error) {
+	pipelineID := pipeline.ID
 	passedDataWhenCreate = p.getPassedDataWhenCreateFromContextByPipelineID(pipelineID)
 	if passedDataWhenCreate != nil {
 		return passedDataWhenCreate, nil
 	}
 
 	passedDataWhenCreate = &action_info.PassedDataWhenCreate{}
-	passedDataWhenCreate.InitData(p.bdl)
-	if err := passedDataWhenCreate.PutPassedDataByPipelineYml(pipelineYml); err != nil {
+	passedDataWhenCreate.InitData(p.bdl, p.ActionMgr)
+	if err := passedDataWhenCreate.PutPassedDataByPipelineYml(pipelineYml, pipeline); err != nil {
 		return nil, err
 	}
 

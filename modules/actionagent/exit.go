@@ -15,7 +15,10 @@
 package actionagent
 
 import (
+	"fmt"
 	"os"
+
+	"github.com/sirupsen/logrus"
 )
 
 // Teardown teardown agent, including prestop, callback.
@@ -31,4 +34,13 @@ func (agent *Agent) Teardown(exitCode ...int) {
 // Exit exit agent.
 func (agent *Agent) Exit() {
 	os.Exit(agent.ExitCode)
+}
+
+func (agent *Agent) writeEndFlagLine() {
+	if _, err := fmt.Fprintf(agent.EasyUse.RunMultiStdout, "\n%s\n", agent.EasyUse.FlagEndLineForTail); err != nil {
+		logrus.Println("stdout append flag err:", err)
+	}
+	if _, err := fmt.Fprintf(agent.EasyUse.RunMultiStderr, "\n%s\n", agent.EasyUse.FlagEndLineForTail); err != nil {
+		logrus.Println("stderr append flag err:", err)
+	}
 }

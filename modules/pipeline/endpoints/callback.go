@@ -44,6 +44,10 @@ func (e *Endpoints) pipelineCallback(ctx context.Context, r *http.Request, vars 
 		return errorresp.ErrResp(err)
 	}
 
+	if err := e.edgeRegister.CheckAccessTokenFromHttpRequest(r); err != nil {
+		return errorresp.ErrResp(apierrors.ErrCheckPermission.AccessDenied())
+	}
+
 	switch req.Type {
 	case apistructs.PipelineCallbackTypeOfAction.String():
 		if err := e.pipelineSvc.DealPipelineCallbackOfAction(req.Data); err != nil {

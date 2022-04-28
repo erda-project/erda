@@ -956,9 +956,15 @@ func (s *ReleaseService) parseReleaseFile(req *pb.ReleaseUploadRequest, file io.
 					return nil, nil, errors.Errorf("failed to get releases by app and version, %v", err)
 				}
 				if len(existedReleases) > 0 {
-					oldDice, err := diceyml.New([]byte(existedReleases[0].Dice), true)
-					if err != nil {
-						return nil, nil, errors.Errorf("dice yml for release %s is invalid, %v", existedReleases[0].ReleaseID, err)
+					var oldDice *diceyml.DiceYaml
+					if len(existedReleases[0].Dice) != 0 {
+						oldDice, err = diceyml.New([]byte(existedReleases[0].Dice), true)
+						if err != nil {
+							return nil, nil, errors.Errorf("dice yml for release %s is invalid, %v", existedReleases[0].ReleaseID, err)
+						}
+					}
+					if dices[appName] == "" {
+						return nil, nil, errors.Errorf("dice yml for app %s release is empty", appName)
 					}
 					newDice, err := diceyml.New([]byte(dices[appName]), true)
 					if err != nil {

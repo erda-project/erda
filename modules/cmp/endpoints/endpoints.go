@@ -19,7 +19,7 @@ import (
 	"net/http"
 
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
-	credentialpb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
+	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/dbclient"
 	"github.com/erda-project/erda/modules/cmp/impl/addons"
@@ -54,7 +54,7 @@ type Endpoints struct {
 	CachedJS        jsonstore.JsonStore
 	SteveAggregator *steve.Aggregator
 	Resource        *resource.Resource
-	Credential      credentialpb.AccessKeyServiceServer
+	Credential      tokenpb.TokenServiceServer
 
 	reportTable *resource.ReportTable
 	CronService cronpb.CronServiceServer
@@ -102,7 +102,7 @@ func WithOrgResource(o *org_resource.OrgResource) Option {
 }
 
 // WithCredential with accessKey credential
-func WithCredential(c credentialpb.AccessKeyServiceServer) Option {
+func WithCredential(c tokenpb.TokenServiceServer) Option {
 	return func(e *Endpoints) {
 		e.Credential = c
 	}
@@ -258,5 +258,8 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 
 		// k8s clusters
 		{Path: "/api/k8s/clusters", Method: http.MethodGet, Handler: e.ListK8SClusters},
+
+		// cluster hook
+		{Path: "/api/clusterhook", Method: http.MethodPost, Handler: e.ClusterHook},
 	}
 }

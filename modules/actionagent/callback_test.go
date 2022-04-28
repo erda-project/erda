@@ -79,3 +79,74 @@ bbb`,
 		assert.Equal(t, cb.Metadata[index].Value, kvs[index].value)
 	}
 }
+
+func Test_canDoNormalCallback(t *testing.T) {
+	tests := []struct {
+		name           string
+		openapiAddr    string
+		pipelineAddr   string
+		isEdgePipeline bool
+		wantErr        bool
+	}{
+		{
+			name:           "normal",
+			openapiAddr:    "openapi:80",
+			isEdgePipeline: false,
+		},
+		{
+			name:           "normal empty openapi",
+			openapiAddr:    "",
+			isEdgePipeline: false,
+			wantErr:        true,
+		},
+	}
+	for _, tt := range tests {
+		agent := &Agent{
+			EasyUse: EasyUse{
+				OpenAPIAddr:    tt.openapiAddr,
+				PipelineAddr:   tt.pipelineAddr,
+				IsEdgePipeline: tt.isEdgePipeline,
+			},
+		}
+		t.Run(tt.name, func(t *testing.T) {
+			if err := agent.canDoNormalCallback(); (err != nil) != tt.wantErr {
+				t.Errorf("Agent.canDoNormalCallback() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func Test_canDoEdgeCallback(t *testing.T) {
+	tests := []struct {
+		name           string
+		pipelineAddr   string
+		isEdgePipeline bool
+		wantErr        bool
+	}{
+		{
+			name:           "edge pipeline",
+			pipelineAddr:   "pipeline:3081",
+			isEdgePipeline: true,
+			wantErr:        false,
+		},
+		{
+			name:           "edge pipeline empty pipeline addr",
+			pipelineAddr:   "",
+			isEdgePipeline: true,
+			wantErr:        true,
+		},
+	}
+	for _, tt := range tests {
+		agent := &Agent{
+			EasyUse: EasyUse{
+				PipelineAddr:   tt.pipelineAddr,
+				IsEdgePipeline: tt.isEdgePipeline,
+			},
+		}
+		t.Run(tt.name, func(t *testing.T) {
+			if err := agent.canDoEdgeCallback(); (err != nil) != tt.wantErr {
+				t.Errorf("Agent.canDoNormalCallback() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}

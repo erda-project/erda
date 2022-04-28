@@ -43,20 +43,12 @@ erda.oap.collector.processor.k8s-tagger@prw:
         - "dice/component"
         - "dice/job"
       annotation_include:
-        - "msp.erda.cloud/application_name"
-        - "msp.erda.cloud/application_id"
-        - "msp.erda.cloud/org_name"
-        - "msp.erda.cloud/org_id"
-        - "msp.erda.cloud/project_name"
-        - "msp.erda.cloud/project_id"
-        - "msp.erda.cloud/runtime_name"
-        - "msp.erda.cloud/runtime_id"
-        - "msp.erda.cloud/service_name"
-        - "msp.erda.cloud/terminus_key"
-        - "msp.erda.cloud/workspace"
-      finder:
-        indexer: pod_name_container
-        matcher: "%{namespace}/%{pod}/%{container}"
+        - "msp.erda.cloud/*"
+      finders:
+        - indexer: pod_name
+          matcher: "%{namespace}/%{pod}"
+        - indexer: pod_name_container
+          matcher: "%{namespace}/%{pod}/%{container}"
 
 erda.oap.collector.processor.modifier:
   keypass:
@@ -153,7 +145,9 @@ erda.oap.collector.processor.modifier@docker_container_summary:
       value: __dp__tx_errors
     - action: regex
       key: id
-      value: '^\/kubepods\/\w+\/[\w|\-]+\/(?P<container_id>\w+)'
+      value: '^\/kubepods.*\/.*?\/.*?\/(\w+\-)?(?P<container_id>\w+)'
+      # /kubepods.slice/kubepods-burstable.slice/kubepods-burstable-podfebb6bd8_349e_49ea_a629_bf27a28d63f3.slice/docker-39693d24c3985d77348b260bdb4f5af465fc0d86b3c07ec8560b3b56ae629d62.scope
+      # /kubepods/burstable/podc15fa300-e090-4b5d-a850-eb65900a8dac/0fa5d0a7434e23d87f13617f2ab16186530c32ef877724842f96bbe8d4ba8935
     - action: rename
       key: __dp__container_resources_memory_request
       value: __dp__mem_request
@@ -166,6 +160,9 @@ erda.oap.collector.processor.modifier@docker_container_summary:
     - action: rename
       key: __dp__container_resources_cpu_limit
       value: __dp_cpu_limit
+    - action: rename
+      key: terminus_define_tag
+      value: job_id
     # --- instance_type logic block ---
     - action: set
       key: instance_type

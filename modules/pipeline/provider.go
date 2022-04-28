@@ -26,6 +26,7 @@ import (
 	"github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	_ "github.com/erda-project/erda/modules/pipeline/aop/plugins"
+	"github.com/erda-project/erda/modules/pipeline/providers/actionmgr"
 	"github.com/erda-project/erda/modules/pipeline/providers/cache"
 	"github.com/erda-project/erda/modules/pipeline/providers/cancel"
 	"github.com/erda-project/erda/modules/pipeline/providers/clusterinfo"
@@ -33,6 +34,8 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/providers/cron/daemon"
 	"github.com/erda-project/erda/modules/pipeline/providers/dbgc"
 	_ "github.com/erda-project/erda/modules/pipeline/providers/dispatcher"
+	"github.com/erda-project/erda/modules/pipeline/providers/edgepipeline"
+	"github.com/erda-project/erda/modules/pipeline/providers/edgepipeline_register"
 	"github.com/erda-project/erda/modules/pipeline/providers/engine"
 	"github.com/erda-project/erda/modules/pipeline/providers/leaderworker"
 	"github.com/erda-project/erda/modules/pipeline/providers/queuemanager"
@@ -56,6 +59,8 @@ type provider struct {
 	Engine       engine.Interface
 	QueueManager queuemanager.Interface
 	Reconciler   reconciler.Interface
+	EdgePipeline edgepipeline.Interface
+	EdgeRegister edgepipeline_register.Interface
 	LeaderWorker leaderworker.Interface
 	ClusterInfo  clusterinfo.Interface
 	DBGC         dbgc.Interface
@@ -65,6 +70,7 @@ type provider struct {
 	Cancel       cancel.Interface
 	User         user.Interface
 	Secret       secret.Interface
+	ActionMgr    actionmgr.Interface
 }
 
 func (p *provider) Run(ctx context.Context) error {

@@ -25,6 +25,8 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/providers/cancel"
 	"github.com/erda-project/erda/modules/pipeline/providers/clusterinfo"
 	"github.com/erda-project/erda/modules/pipeline/providers/cron/daemon"
+	"github.com/erda-project/erda/modules/pipeline/providers/edgepipeline"
+	"github.com/erda-project/erda/modules/pipeline/providers/edgepipeline_register"
 	"github.com/erda-project/erda/modules/pipeline/providers/engine"
 	"github.com/erda-project/erda/modules/pipeline/providers/queuemanager"
 	"github.com/erda-project/erda/modules/pipeline/providers/run"
@@ -32,7 +34,6 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/services/appsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/buildartifactsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/buildcachesvc"
-	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/permissionsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/pipelinesvc"
 	"github.com/erda-project/erda/modules/pipeline/services/queuemanage"
@@ -49,7 +50,6 @@ type Endpoints struct {
 	buildArtifactSvc *buildartifactsvc.BuildArtifactSvc
 	buildCacheSvc    *buildcachesvc.BuildCacheSvc
 	actionAgentSvc   *actionagentsvc.ActionAgentSvc
-	extMarketSvc     *extmarketsvc.ExtMarketSvc
 	reportSvc        *reportsvc.ReportSvc
 	queueManage      *queuemanage.QueueManage
 
@@ -59,6 +59,8 @@ type Endpoints struct {
 	engine       engine.Interface
 	queueManager queuemanager.Interface
 	clusterInfo  clusterinfo.Interface
+	edgePipeline edgepipeline.Interface
+	edgeRegister edgepipeline_register.Interface
 	mySQL        mysqlxorm.Interface
 	run          run.Interface
 	cancel       cancel.Interface
@@ -119,12 +121,6 @@ func WithActionAgentSvc(svc *actionagentsvc.ActionAgentSvc) Option {
 	}
 }
 
-func WithExtMarketSvc(svc *extmarketsvc.ExtMarketSvc) Option {
-	return func(e *Endpoints) {
-		e.extMarketSvc = svc
-	}
-}
-
 func WithPipelineSvc(svc *pipelinesvc.PipelineSvc) Option {
 	return func(e *Endpoints) {
 		e.pipelineSvc = svc
@@ -164,6 +160,18 @@ func WithQueueManager(qm queuemanager.Interface) Option {
 func WithClusterInfo(clusterInfo clusterinfo.Interface) Option {
 	return func(e *Endpoints) {
 		e.clusterInfo = clusterInfo
+	}
+}
+
+func WithEdgePipeline(edgePipeline edgepipeline.Interface) Option {
+	return func(e *Endpoints) {
+		e.edgePipeline = edgePipeline
+	}
+}
+
+func WithEdgeRegister(edgeRegister edgepipeline_register.Interface) Option {
+	return func(e *Endpoints) {
+		e.edgeRegister = edgeRegister
 	}
 }
 

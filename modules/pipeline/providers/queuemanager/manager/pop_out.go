@@ -16,6 +16,12 @@ package manager
 
 import (
 	"strconv"
+	"time"
+
+	"github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/pipeline/spec"
 )
 
 func (mgr *defaultManager) PopOutPipelineFromQueue(pipelineID uint64) {
@@ -23,6 +29,8 @@ func (mgr *defaultManager) PopOutPipelineFromQueue(pipelineID uint64) {
 	if p == nil {
 		return
 	}
+
+	mgr.cancelPipelineIfInQueue(p)
 
 	relatedQueueID, ok := p.GetPipelineQueueID()
 	if !ok {
@@ -36,4 +44,18 @@ func (mgr *defaultManager) PopOutPipelineFromQueue(pipelineID uint64) {
 		return
 	}
 	q.PopOutPipeline(p)
+}
+
+func (mgr *defaultManager) cancelPipelineIfInQueue(p *spec.Pipeline) {
+	if p.Status.InQueue() {
+		for {
+			if err := mgr.dbClient.UpdatePipelineBaseStatus(p.ID, apistructs.PipelineStatusStopByUser); err != nil {
+				logrus.Errorf("%s: failed to update pipeline status from Queue to StopByUser(auto retry), pipelineID: %d, err: %v", defaultQueueManagerLogPrefix, p.ID, err)
+				time.Sleep(time.Second * 5)
+				continue
+			}
+			logrus.Infof("%s: update pipeline status from Queue to StopByUser, pipelineID: %d", defaultQueueManagerLogPrefix, p.ID)
+			break
+		}
+	}
 }

@@ -15,11 +15,13 @@
 package pod
 
 import (
-	"regexp"
+	"fmt"
 	"strings"
 	"sync"
 
 	apiv1 "k8s.io/api/core/v1"
+
+	"github.com/erda-project/erda/modules/oap/collector/common/filter"
 
 	"github.com/erda-project/erda/modules/oap/collector/common"
 	"github.com/erda-project/erda/modules/oap/collector/plugins/processors/k8s-tagger/metadata"
@@ -41,6 +43,15 @@ type Value struct {
 	Fields map[string]interface{}
 }
 
+func (v Value) Merge(other Value) {
+	for key, val := range other.Tags {
+		v.Tags[key] = val
+	}
+	for key, val := range other.Fields {
+		v.Fields[key] = val
+	}
+}
+
 func NewValue() Value {
 	return Value{
 		Tags:   make(map[string]string),
@@ -51,8 +62,8 @@ func NewValue() Value {
 type Cache struct {
 	podnameIndexer          map[Key]Value
 	podnameContainerIndexer map[Key]Value
-	annotationInclude       []*regexp.Regexp
-	labelInclude            []*regexp.Regexp
+	annotationFilter        filter.Filter
+	labelFilter             filter.Filter
 	mu                      sync.RWMutex
 }
 
@@ -64,31 +75,32 @@ func PodNameContainer(namespace, name, cname string) Key {
 	return Key(strings.Join([]string{namespace, name, cname}, "/"))
 }
 
-func NewCache(podList []apiv1.Pod, aInclude, lInclude []string) *Cache {
+func NewCache(podList []apiv1.Pod, aInclude, lInclude []string) (*Cache, error) {
+	af, err := filter.Compile(aInclude)
+	if err != nil {
+		return nil, fmt.Errorf("compile aInclude: %w", err)
+	}
+	lf, err := filter.Compile(lInclude)
+	if err != nil {
+		return nil, fmt.Errorf("compile lInclude: %w", err)
+	}
 	c := &Cache{
 		podnameIndexer:          make(map[Key]Value, len(podList)),
 		podnameContainerIndexer: make(map[Key]Value, len(podList)),
-		annotationInclude:       make([]*regexp.Regexp, len(aInclude)),
-		labelInclude:            make([]*regexp.Regexp, len(lInclude)),
-	}
-
-	for idx, item := range aInclude {
-		c.annotationInclude[idx] = regexp.MustCompile(item)
-	}
-	for idx, item := range lInclude {
-		c.labelInclude[idx] = regexp.MustCompile(item)
+		annotationFilter:        af,
+		labelFilter:             lf,
 	}
 
 	for _, pod := range podList {
 		c.updateCache(pod)
 	}
-	return c
+	return c, nil
 }
 
 func (c *Cache) updateCache(pod apiv1.Pod) {
 	c.podnameIndexer[PodName(pod.Namespace, pod.Name)] = c.extractPodMetadata(pod)
 	for _, container := range pod.Spec.Containers {
-		c.podnameContainerIndexer[PodNameContainer(pod.Namespace, pod.Name, container.Name)] = c.extractPodContainerMetadata(pod, container)
+		c.podnameContainerIndexer[PodNameContainer(pod.Namespace, pod.Name, container.Name)] = c.extractPodContainerMetadata(container)
 	}
 }
 
@@ -137,27 +149,23 @@ func (c *Cache) extractPodMetadata(pod apiv1.Pod) Value {
 	value.Tags[metadata.PrefixPod+"ip"] = pod.Status.PodIP
 
 	// labels
-	for _, p := range c.labelInclude {
-		for k, v := range pod.Labels {
-			if p.Match([]byte(k)) {
-				value.Tags[metadata.PrefixPodLabels+common.NormalizeKey(k)] = v
-			}
+	for k, v := range pod.Labels {
+		if c.labelFilter.Match(k) {
+			value.Tags[metadata.PrefixPodLabels+common.NormalizeKey(k)] = v
 		}
 	}
 
 	// annotations
-	for _, p := range c.annotationInclude {
-		for k, v := range pod.Annotations {
-			if p.Match([]byte(k)) {
-				value.Tags[metadata.PrefixPodAnnotations+common.NormalizeKey(k)] = v
-			}
+	for k, v := range pod.Annotations {
+		if c.annotationFilter.Match(k) {
+			value.Tags[metadata.PrefixPodAnnotations+common.NormalizeKey(k)] = v
 		}
 	}
 	return value
 }
 
-func (c *Cache) extractPodContainerMetadata(pod apiv1.Pod, container apiv1.Container) Value {
-	value := c.extractPodMetadata(pod)
+func (c *Cache) extractPodContainerMetadata(container apiv1.Container) Value {
+	value := NewValue()
 	if v := container.Resources.Requests.Cpu(); v != nil {
 		value.Fields["container_resources_cpu_request"] = v.AsApproximateFloat64()
 	}

@@ -44,9 +44,10 @@ func (r *provider) mustFetchPipelineDetail(ctx context.Context, pipelineID uint6
 	}
 }
 
+// YmlTaskMergeDBTasks .
 // parse out tasks according to the yml structure, and then query the created tasks from the database,
 // and replace the tasks that already exist in the database with yml tasks
-func (r *provider) ymlTaskMergeDBTasks(pipeline *spec.Pipeline) ([]*spec.PipelineTask, error) {
+func (r *provider) YmlTaskMergeDBTasks(pipeline *spec.Pipeline) ([]*spec.PipelineTask, error) {
 	// get pipeline tasks from db
 	tasks, err := r.dbClient.ListPipelineTasksByPipelineID(pipeline.ID)
 	if err != nil {
@@ -65,7 +66,7 @@ func (r *provider) ymlTaskMergeDBTasks(pipeline *spec.Pipeline) ([]*spec.Pipelin
 		return nil, err
 	}
 
-	passedDataWhenCreate, err := r.Cache.GetOrSetPassedDataWhenCreateFromContext(pipelineYml, pipeline.ID)
+	passedDataWhenCreate, err := r.Cache.GetOrSetPassedDataWhenCreateFromContext(pipelineYml, pipeline)
 	if err != nil {
 		return nil, err
 	}

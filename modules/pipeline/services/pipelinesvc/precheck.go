@@ -64,7 +64,7 @@ func (s *PipelineSvc) PreCheck(p *spec.Pipeline, stages []spec.PipelineStage, us
 		actionTypeVerMap[typeVersion] = struct{}{}
 		extSearchReq = append(extSearchReq, typeVersion)
 	}
-	_, actionSpecs, err := s.extMarketSvc.SearchActions(extSearchReq)
+	_, actionSpecs, err := s.actionMgr.SearchActions(extSearchReq, s.actionMgr.MakeActionLocationsBySource(p.PipelineSource))
 	if err != nil {
 		return apierrors.ErrPreCheckPipeline.InternalError(err)
 	}

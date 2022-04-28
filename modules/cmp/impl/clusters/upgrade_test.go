@@ -23,7 +23,7 @@ import (
 	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
 
-	credentialpb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
+	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/dbclient"
@@ -69,11 +69,11 @@ func patch(bdl *bundle.Bundle, c *Clusters) {
 	})
 
 	// monkey patch Credential with core services
-	monkey.PatchInstanceMethod(reflect.TypeOf(c), "GetOrCreateAccessKey", func(_ *Clusters, cluster string) (*credentialpb.AccessKeysItem, error) {
+	monkey.PatchInstanceMethod(reflect.TypeOf(c), "GetOrCreateAccessKey", func(_ *Clusters, cluster string) (*tokenpb.Token, error) {
 		if strings.Contains(cluster, "without-access-key") {
 			return nil, fmt.Errorf("get or create access key failed")
 		}
-		return &credentialpb.AccessKeysItem{AccessKey: "clusterAccessKey"}, nil
+		return &tokenpb.Token{AccessKey: "clusterAccessKey"}, nil
 	})
 }
 

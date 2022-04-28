@@ -29,7 +29,6 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/pipengine/pvolumes"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/filehelper"
-	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
 const (
@@ -90,24 +89,7 @@ func (agent *Agent) restore() {
 
 	for _, f := range agent.Arg.Context.CmsDiceFiles {
 		// invoke openapi /api/files?file=${uuid} to download files
-		respBody, resp, err := httpclient.New(httpclient.WithCompleteRedirect()).
-			Get(agent.EasyUse.OpenAPIAddr).
-			Path("/api/files").
-			Param("file", f.Labels[pvolumes.VoLabelKeyDiceFileUUID]).
-			Header("Authorization", agent.EasyUse.TokenForBootstrap).
-			Do().StreamBody()
-		if err != nil {
-			agent.AppendError(errors.Errorf("failed to download cms file, uuid: %s, err: %v",
-				f.Labels[pvolumes.VoLabelKeyDiceFileUUID], err))
-			continue
-		}
-		if !resp.IsOK() {
-			bodyBytes, _ := ioutil.ReadAll(respBody)
-			agent.AppendError(errors.Errorf("failed to download cms file, uuid: %s, err: %v",
-				f.Labels[pvolumes.VoLabelKeyDiceFileUUID], string(bodyBytes)))
-			continue
-		}
-		if err := filehelper.CreateFile2(f.Value, respBody, 0755); err != nil {
+		if err := agent.CallbackReporter.GetCmsFile(f.Labels[pvolumes.VoLabelKeyDiceFileUUID], f.Value); err != nil {
 			agent.AppendError(err)
 			continue
 		}

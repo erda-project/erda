@@ -24,6 +24,8 @@ import (
 	"gopkg.in/yaml.v3"
 	corev1 "k8s.io/api/core/v1"
 
+	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
+	common "github.com/erda-project/erda-proto-go/core/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/commonutil/costtimeutil"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
@@ -121,28 +123,35 @@ func (s *PipelineSvc) Detail(pipelineID uint64) (*apistructs.PipelineDetailDTO, 
 					Value: task.Inspect.Events,
 				})
 			}
+			// set analyzed yaml task to NoNeedBySystem to simulate db task's behaviour
+			if p.Status.IsStopByUser() && task.Status == apistructs.PipelineStatusAnalyzed {
+				task.Status = apistructs.PipelineStatusNoNeedBySystem
+			}
 			taskDTOs = append(taskDTOs, *task.Convert2DTO())
 		}
 		stageDetailDTO = append(stageDetailDTO,
 			apistructs.PipelineStageDetailDTO{PipelineStageDTO: *stage.Convert2DTO(), PipelineTasks: taskDTOs})
 	}
 
-	var pc *spec.PipelineCron
+	var pc *common.Cron
 	// CronExpr 不为空，则 cron 必须存在
 	if len(p.Extra.CronExpr) > 0 {
 		if p.CronID == nil {
 			return nil, apierrors.ErrGetPipelineDetail.MissingParameter("cronID")
 		}
-		c, err := s.dbClient.GetPipelineCron(*p.CronID)
+
+		result, err := s.pipelineCronSvc.CronGet(context.Background(), &cronpb.CronGetRequest{
+			CronID: *p.CronID,
+		})
 		if err != nil {
 			return nil, apierrors.ErrGetPipelineDetail.InternalError(err)
 		}
-		pc = &c
+		pc = result.Data
 	} else {
 		// cron 按钮（开始、停止操作）目前挂在 pipeline 实例上，非周期创建的实例，也需要有 cron 按钮信息进行操作
 		// 尝试根据 pipelineSource + pipelineYmlName 获取 cron
-		pcs, _, err := s.dbClient.PagingPipelineCron(apistructs.PipelineCronPagingRequest{
-			Sources:  []apistructs.PipelineSource{p.PipelineSource},
+		resp, err := s.pipelineCronSvc.CronPaging(context.Background(), &cronpb.CronPagingRequest{
+			Sources:  []string{p.PipelineSource.String()},
 			YmlNames: []string{p.PipelineYmlName},
 			PageSize: 1,
 			PageNo:   1,
@@ -150,8 +159,8 @@ func (s *PipelineSvc) Detail(pipelineID uint64) (*apistructs.PipelineDetailDTO, 
 		if err != nil {
 			return nil, apierrors.ErrPagingPipelineCron.InternalError(err)
 		}
-		if len(pcs) > 0 {
-			pc = &pcs[0]
+		if len(resp.Data) > 0 {
+			pc = resp.Data[0]
 		}
 	}
 
@@ -167,10 +176,10 @@ func (s *PipelineSvc) Detail(pipelineID uint64) (*apistructs.PipelineDetailDTO, 
 	}
 	detail.PipelineDTO.Labels = labels
 	detail.PipelineStages = stageDetailDTO
-	detail.PipelineCron = pc.Convert2DTO()
+	detail.PipelineCron = pc
 	// 前端需要 cron 对象不为空
 	if detail.PipelineCron == nil {
-		detail.PipelineCron = &apistructs.PipelineCronDTO{}
+		detail.PipelineCron = &common.Cron{}
 	}
 
 	buttons, err := s.setPipelineButtons(p, pc)
@@ -328,7 +337,7 @@ func (s *PipelineSvc) Statistic(source, clusterName string) (*apistructs.Pipelin
 }
 
 // 设置按钮状态
-func (s *PipelineSvc) setPipelineButtons(p spec.Pipeline, pc *spec.PipelineCron) (button apistructs.PipelineButton, err error) {
+func (s *PipelineSvc) setPipelineButtons(p spec.Pipeline, pc *common.Cron) (button apistructs.PipelineButton, err error) {
 	defer func() {
 		err = errors.Wrap(err, "failed to set pipeline button")
 	}()
@@ -373,13 +382,13 @@ func canRerunFailed(p spec.Pipeline) bool {
 }
 
 // canStartCron p.cronID = pc.id
-func canStartCron(p spec.Pipeline, pc *spec.PipelineCron) bool {
-	return pc != nil && pc.Enable != nil && !*pc.Enable
+func canStartCron(p spec.Pipeline, pc *common.Cron) bool {
+	return pc != nil && pc.Enable != nil && !pc.Enable.Value
 }
 
 // canStopCron p.cronID = pc.id
-func canStopCron(p spec.Pipeline, pc *spec.PipelineCron) bool {
-	return pc != nil && pc.Enable != nil && *pc.Enable
+func canStopCron(p spec.Pipeline, pc *common.Cron) bool {
+	return pc != nil && pc.Enable != nil && pc.Enable.Value
 }
 
 // canPause TODO 需要关心所有节点运行状态，如果所有节点都在运行中，则不能暂停

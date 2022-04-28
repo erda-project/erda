@@ -26,8 +26,9 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/pipeline/providers/actionmgr"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
-	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
+	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -38,6 +39,7 @@ type PassedDataWhenCreate struct {
 	bdl              *bundle.Bundle
 	actionJobDefines *sync.Map
 	actionJobSpecs   *sync.Map
+	actionMgr        actionmgr.Interface
 }
 
 func (that *PassedDataWhenCreate) GetActionJobDefine(actionTypeVersion string) *diceyml.Job {
@@ -73,7 +75,7 @@ func (that *PassedDataWhenCreate) GetActionJobSpecs(actionTypeVersion string) *a
 	return nil
 }
 
-func (that *PassedDataWhenCreate) InitData(bdl *bundle.Bundle) {
+func (that *PassedDataWhenCreate) InitData(bdl *bundle.Bundle, actionMgr actionmgr.Interface) {
 	if that == nil {
 		return
 	}
@@ -84,10 +86,11 @@ func (that *PassedDataWhenCreate) InitData(bdl *bundle.Bundle) {
 	if that.actionJobSpecs == nil {
 		that.actionJobSpecs = &sync.Map{}
 	}
+	that.actionMgr = actionMgr
 	that.bdl = bdl
 }
 
-func (that *PassedDataWhenCreate) PutPassedDataByPipelineYml(pipelineYml *pipelineyml.PipelineYml) error {
+func (that *PassedDataWhenCreate) PutPassedDataByPipelineYml(pipelineYml *pipelineyml.PipelineYml, p *spec.Pipeline) error {
 	if that == nil {
 		return nil
 	}
@@ -99,18 +102,18 @@ func (that *PassedDataWhenCreate) PutPassedDataByPipelineYml(pipelineYml *pipeli
 				if action.Type.IsSnippet() {
 					continue
 				}
-				extItem := extmarketsvc.MakeActionTypeVersion(action)
+				extItem := that.actionMgr.MakeActionTypeVersion(action)
 				// extension already searched, skip
 				if _, ok := that.actionJobDefines.Load(extItem); ok {
 					continue
 				}
-				extItems = append(extItems, extmarketsvc.MakeActionTypeVersion(action))
+				extItems = append(extItems, that.actionMgr.MakeActionTypeVersion(action))
 			}
 		}
 	}
 
 	extItems = strutil.DedupSlice(extItems, true)
-	actionJobDefines, actionJobSpecs, err := searchActions(that.bdl, extItems)
+	actionJobDefines, actionJobSpecs, err := that.actionMgr.SearchActions(extItems, that.actionMgr.MakeActionLocationsBySource(p.PipelineSource))
 	if err != nil {
 		return apierrors.ErrCreatePipelineGraph.InternalError(err)
 	}

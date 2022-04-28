@@ -34,7 +34,6 @@ import (
 	"github.com/erda-project/erda/modules/dop/services/issueproperty"
 	"github.com/erda-project/erda/modules/dop/services/issuerelated"
 	"github.com/erda-project/erda/modules/dop/services/issuestream"
-	"github.com/erda-project/erda/modules/dop/services/monitor"
 	"github.com/erda-project/erda/pkg/strutil"
 	"github.com/erda-project/erda/pkg/ucauth"
 )
@@ -241,9 +240,6 @@ func (svc *Issue) Create(req *apistructs.IssueCreateRequest) (*dao.Issue, error)
 			logrus.Errorf("create issue %d event err: %v", streamReq.IssueID, err)
 		}
 	}()
-
-	go monitor.MetricsIssueById(int(create.ID), svc.db, svc.uc, svc.bdl)
-
 	return &create, nil
 }
 
@@ -721,7 +717,6 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 		return fmt.Errorf("after issue update failed when issue id: %v update, err: %v", issueModel.ID, err)
 	}
 
-	go monitor.MetricsIssueById(int(req.ID), svc.db, svc.uc, svc.bdl)
 	return nil
 }
 
@@ -1045,12 +1040,6 @@ func (svc *Issue) BatchUpdateIssue(req *apistructs.IssueBatchUpdateRequest) erro
 		}
 	}
 
-	go func(issues []dao.Issue) {
-		for _, v := range issues {
-			go monitor.MetricsIssueById(int(v.ID), svc.db, svc.uc, svc.bdl)
-		}
-	}(issues)
-
 	return nil
 }
 
@@ -1132,10 +1121,6 @@ func (svc *Issue) Delete(issueID uint64, identityInfo apistructs.IdentityInfo) e
 	}
 
 	err = svc.db.DeleteIssue(issueID)
-	if err == nil {
-		go monitor.MetricsIssueById(int(issueID), svc.db, svc.uc, svc.bdl)
-	}
-
 	return err
 }
 

@@ -26,7 +26,7 @@ type Interface interface {
 	GetOrSetPipelineRerunSuccessTasksFromContext(pipelineID uint64) (successTasks map[string]*spec.PipelineTask, err error)
 	GetOrSetStagesFromContext(pipelineID uint64) (stages []spec.PipelineStage, err error)
 	GetOrSetPipelineYmlFromContext(pipelineID uint64) (yml *pipelineyml.PipelineYml, err error)
-	GetOrSetPassedDataWhenCreateFromContext(pipelineYml *pipelineyml.PipelineYml, pipelineID uint64) (passedDataWhenCreate *action_info.PassedDataWhenCreate, err error)
+	GetOrSetPassedDataWhenCreateFromContext(pipelineYml *pipelineyml.PipelineYml, pipeline *spec.Pipeline) (passedDataWhenCreate *action_info.PassedDataWhenCreate, err error)
 	ClearReconcilerPipelineContextCaches(pipelineID uint64)
 	SetPipelineSecretByPipelineID(pipelineID uint64, secret *SecretCache)
 	GetPipelineSecretByPipelineID(pipelineID uint64) (secret *SecretCache)

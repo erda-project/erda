@@ -21,6 +21,7 @@ import (
 	definitiondb "github.com/erda-project/erda/modules/pipeline/providers/definition/db"
 	sourcedb "github.com/erda-project/erda/modules/pipeline/providers/source/db"
 	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/pkg/crypto/uuid"
 )
 
 func (client *Client) ListPipelineBasesByIDs(pipelineIDs []uint64, ops ...SessionOption) (map[uint64]spec.PipelineBase, error) {
@@ -62,6 +63,9 @@ func (client *Client) CreatePipelineBase(base *spec.PipelineBase, ops ...Session
 
 	// TODO the edge pipeline should add init report status
 	base.EdgeReportStatus = apistructs.InitEdgeReportStatus
+	if base.ID == 0 {
+		base.ID = uuid.SnowFlakeIDUint64()
+	}
 	_, err := session.InsertOne(base)
 	return err
 }

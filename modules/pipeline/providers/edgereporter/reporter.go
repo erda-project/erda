@@ -151,7 +151,7 @@ func (p *provider) compensatorPipelineReporter(ctx context.Context) {
 func (p *provider) doCompensatorPipelineReporter(ctx context.Context) {
 	p.Log.Infof("begin do compensator pipeline report")
 	defer p.Log.Infof("end do compensator pipeline report")
-	pipelines, err := p.dbClient.ListEdgePipelineIDsWithInitReportStatus()
+	pipelines, err := p.dbClient.ListEdgePipelineIDsForCompensatorReporter()
 	if err != nil {
 		p.Log.Errorf("failed to ListEdgePipelineIDsWithInitReportStatus in compensator, err: %v", err)
 		return

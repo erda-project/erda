@@ -38,7 +38,7 @@ type ClientStoreItem struct {
 }
 
 func (ClientStoreItem) TableName() string {
-	return "openapi_oauth2_token_clients"
+	return "erda_token_client"
 }
 
 // NewClientStore creates PostgreSQL store instance
