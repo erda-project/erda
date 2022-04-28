@@ -279,6 +279,9 @@ type containerData struct {
 	DiskLimit       float64 `json:"diskLimit"`
 	Status          string  `json:"status"`
 	Container       string  `json:"container"`
+	PodUid          string  `json:"podUid"`
+	PodName         string  `json:"podName"`
+	PodNamespace    string  `json:"podNamespace"`
 }
 
 type resourceChart struct {

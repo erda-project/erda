@@ -119,3 +119,51 @@ func TestValueMatch_Match(t *testing.T) {
 		})
 	}
 }
+
+func TestValueEmpty_Match(t *testing.T) {
+	type fields struct {
+		cfg ConditionCfg
+	}
+	type args struct {
+		pairs map[string]interface{}
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   bool
+	}{
+		{
+			fields: fields{
+				cfg: ConditionCfg{
+					Key: "aaa",
+				},
+			},
+			args: args{
+				pairs: map[string]interface{}{"aaa": ""},
+			},
+			want: true,
+		},
+		{
+			fields: fields{
+				cfg: ConditionCfg{
+					Key: "aaa",
+				},
+			},
+			args: args{
+				pairs: map[string]interface{}{"aaa": "bbb"},
+			},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ve := &ValueEmpty{
+				cfg: tt.fields.cfg,
+			}
+			if got := ve.Match(tt.args.pairs); got != tt.want {
+				t.Errorf("Match() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

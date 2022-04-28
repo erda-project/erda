@@ -268,3 +268,58 @@ func TestSet_Operate(t *testing.T) {
 		})
 	}
 }
+
+func TestJoin_Modify(t *testing.T) {
+	type fields struct {
+		cfg ModifierCfg
+	}
+	type args struct {
+		pairs map[string]interface{}
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   map[string]interface{}
+	}{
+		{
+			fields: fields{cfg: ModifierCfg{
+				Keys:      []string{"aaa", "bbb"},
+				Separator: ",",
+				TargetKey: "new",
+			}},
+			args: args{pairs: map[string]interface{}{
+				"aaa": "hello",
+				"bbb": "world",
+			}},
+			want: map[string]interface{}{
+				"aaa": "hello",
+				"bbb": "world",
+				"new": "hello,world",
+			},
+		},
+		{
+			fields: fields{cfg: ModifierCfg{
+				Keys:      []string{"aaa", "bbb"},
+				Separator: ",",
+				TargetKey: "new",
+			}},
+			args: args{pairs: map[string]interface{}{
+				"aaa": "hello",
+			}},
+			want: map[string]interface{}{
+				"aaa": "hello",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			j := &Join{
+				cfg: tt.fields.cfg,
+			}
+			if got := j.Modify(tt.args.pairs); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Modify() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
