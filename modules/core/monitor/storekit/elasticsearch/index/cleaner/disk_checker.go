@@ -72,7 +72,7 @@ func (p *provider) runTaskCheck(ctx context.Context) {
 				continue
 			}
 			if taskStatus != nil && !taskStatus.Completed {
-				timer := time.NewTimer(time.Second * time.Duration(p.Cfg.DiskClean.TTL.TaskCheckInterval))
+				timer := time.NewTimer(time.Minute * time.Duration(p.Cfg.DiskClean.TTL.TaskCheckInterval))
 				go func(task *TtlTask) {
 				retryLoop:
 					for {
