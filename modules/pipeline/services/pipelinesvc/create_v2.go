@@ -29,6 +29,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/modules/pipeline/pkg/container_provider"
+	"github.com/erda-project/erda/modules/pipeline/providers/cron/crontypes"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
@@ -303,6 +304,9 @@ func (s *PipelineSvc) makePipelineFromRequestV2(req *apistructs.PipelineCreateRe
 		if err != nil {
 			return nil, apierrors.ErrGetPipelineCron.InvalidParameter(err)
 		}
+		if pc.Data == nil {
+			return nil, apierrors.ErrNotFoundPipelineCron.InvalidParameter(crontypes.ErrCronNotFound)
+		}
 		p.CronID = &pc.Data.ID
 		p.Extra.CronExpr = pc.Data.CronExpr
 	}
@@ -367,7 +371,10 @@ func (s *PipelineSvc) UpdatePipelineCron(p *spec.Pipeline, cronStartFrom *time.T
 	if err != nil {
 		return apierrors.ErrUpdatePipelineCron.InternalError(err)
 	}
-	p.CronID = &result.Data.ID
+
+	if result.Data.ID > 0 {
+		p.CronID = &result.Data.ID
+	}
 	return nil
 }
 

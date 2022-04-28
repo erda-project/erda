@@ -33,6 +33,7 @@ import (
 	dicestructs "github.com/erda-project/erda/apistructs"
 	block "github.com/erda-project/erda/modules/core/monitor/dataview/v1-chart-block"
 	"github.com/erda-project/erda/modules/monitor/utils"
+	"github.com/erda-project/erda/modules/pipeline/providers/cron/crontypes"
 	"github.com/erda-project/erda/modules/pkg/mysql"
 	api "github.com/erda-project/erda/pkg/common/httpapi"
 	"github.com/erda-project/erda/pkg/discover"
@@ -153,6 +154,9 @@ func (p *provider) switchOrgReportTask(params struct {
 	})
 	if err != nil {
 		return api.Errors.Internal(err)
+	}
+	if result.Data == nil {
+		return api.Errors.Internal(crontypes.ErrCronNotFound)
 	}
 	if result.Data.Enable.Value && !params.Enable {
 		_, err := p.CronService.CronStop(context.Background(), &cronpb.CronStopRequest{

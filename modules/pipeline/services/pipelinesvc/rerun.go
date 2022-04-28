@@ -21,6 +21,7 @@ import (
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	common "github.com/erda-project/erda-proto-go/core/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/pipeline/providers/cron/crontypes"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 )
@@ -40,6 +41,9 @@ func (s *PipelineSvc) Rerun(ctx context.Context, req *apistructs.PipelineRerunRe
 		})
 		if err != nil {
 			return nil, apierrors.ErrRerunPipeline.InternalError(err)
+		}
+		if result.Data == nil {
+			return nil, apierrors.ErrNotFoundPipelineCron.InternalError(crontypes.ErrCronNotFound)
 		}
 		originCron = result.Data
 	}

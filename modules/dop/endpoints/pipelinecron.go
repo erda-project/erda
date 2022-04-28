@@ -27,6 +27,7 @@ import (
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
+	"github.com/erda-project/erda/modules/pipeline/providers/cron/crontypes"
 	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
@@ -87,6 +88,9 @@ func (e *Endpoints) pipelineCronStart(ctx context.Context, r *http.Request, vars
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
+	if result.Data == nil {
+		return errorresp.ErrResp(apierrors.ErrNotFoundPipelineCron.InternalError(crontypes.ErrCronNotFound))
+	}
 	cronInfo := result.Data
 
 	if err := e.permission.CheckRuntimeBranch(identityInfo, cronInfo.ApplicationID, cronInfo.Branch, apistructs.OperateAction); err != nil {
@@ -131,6 +135,9 @@ func (e *Endpoints) pipelineCronStop(ctx context.Context, r *http.Request, vars 
 	})
 	if err != nil {
 		return errorresp.ErrResp(err)
+	}
+	if result.Data == nil {
+		return errorresp.ErrResp(apierrors.ErrNotFoundPipelineCron.InternalError(crontypes.ErrCronNotFound))
 	}
 	cronInfo := result.Data
 
@@ -210,6 +217,9 @@ func (e *Endpoints) pipelineCronDelete(ctx context.Context, r *http.Request, var
 	})
 	if err != nil {
 		return errorresp.ErrResp(err)
+	}
+	if result.Data == nil {
+		return errorresp.ErrResp(apierrors.ErrNotFoundPipelineCron.InternalError(crontypes.ErrCronNotFound))
 	}
 	cronInfo := result.Data
 
