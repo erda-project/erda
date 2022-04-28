@@ -49,7 +49,7 @@ type provider struct {
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.bdl = bundle.New(bundle.WithAllAvailableClients())
-	p.dbClient = &db.Client{Client: dbclient.Client{Engine: p.MySQL.DB()}}
+	p.dbClient = &db.Client{Client: &dbclient.Client{Engine: p.MySQL.DB()}}
 	if p.edgeRegister.IsEdge() {
 		p.LW.OnLeader(p.taskReporter)
 		p.LW.OnLeader(p.pipelineReporter)

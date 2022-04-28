@@ -19,5 +19,5 @@ import (
 )
 
 type Client struct {
-	dbclient.Client
+	*dbclient.Client
 }
