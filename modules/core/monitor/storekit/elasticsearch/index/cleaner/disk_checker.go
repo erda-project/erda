@@ -72,19 +72,15 @@ func (p *provider) runTaskCheck(ctx context.Context) {
 				continue
 			}
 			if taskStatus != nil && !taskStatus.Completed {
-				timer := time.NewTimer(time.Minute * time.Duration(p.Cfg.DiskClean.TTL.TaskCheckInterval))
 				go func(task *TtlTask) {
-				retryLoop:
-					for {
-						select {
-						case <-timer.C:
-							p.ttlTaskCh <- &TtlTask{
-								TaskId:  task.TaskId,
-								Indices: task.Indices,
-							}
-							p.Log.Infof("Task uncompleted. delay retry. taskId: %s, indices: %s", task.TaskId, task.Indices)
-							break retryLoop
+					timer := time.NewTimer(time.Minute * time.Duration(p.Cfg.DiskClean.TTL.TaskCheckInterval))
+					select {
+					case <-timer.C:
+						p.ttlTaskCh <- &TtlTask{
+							TaskId:  task.TaskId,
+							Indices: task.Indices,
 						}
+						p.Log.Infof("Task uncompleted. delay retry. taskId: %s, indices: %s", task.TaskId, task.Indices)
 					}
 				}(task)
 				continue
