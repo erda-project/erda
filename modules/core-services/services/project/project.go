@@ -35,7 +35,6 @@ import (
 	"github.com/erda-project/erda/modules/core-services/dao"
 	"github.com/erda-project/erda/modules/core-services/model"
 	"github.com/erda-project/erda/modules/core-services/types"
-	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/filehelper"
 	local "github.com/erda-project/erda/pkg/i18n"
 	calcu "github.com/erda-project/erda/pkg/resourcecalculator"
@@ -252,7 +251,6 @@ func (p *Project) Create(userID string, createReq *apistructs.ProjectCreateReque
 			UserSyncAt: time.Now(),
 			OrgID:      project.OrgID,
 			ProjectID:  project.ID,
-			Token:      uuid.UUID(),
 		}
 		memberExtra := model.MemberExtra{
 			UserID:        userID,

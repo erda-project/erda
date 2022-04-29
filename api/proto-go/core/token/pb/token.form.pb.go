@@ -439,6 +439,8 @@ func (m *QueryTokensRequest) UnmarshalURLValues(prefix string, values url.Values
 					return err
 				}
 				m.PageSize = val
+			case "creatorId":
+				m.CreatorId = vals[0]
 			}
 		}
 	}
