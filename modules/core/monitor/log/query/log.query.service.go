@@ -151,6 +151,9 @@ func (s *logQueryService) LogAggregation(ctx context.Context, req *pb.LogAggrega
 }
 
 func (s *logQueryService) ScanLogsByExpression(req *pb.GetLogByExpressionRequest, stream pb.LogQueryService_ScanLogsByExpressionServer) error {
+	if req.GetCount() == 0 {
+		req.Count = 100000
+	}
 	return s.walkLogItems(context.Background(), req, nil, func(item *pb.LogItem) error {
 		return stream.Send(item)
 	})
@@ -341,6 +344,9 @@ func (s *logQueryService) walkLogItems(ctx context.Context, req Request, fn func
 		if err != nil {
 			return err
 		}
+	}
+	if req.GetDebug() {
+		s.p.Log.Infof("req: %+v, selector: %+v", req, sel)
 	}
 	it, err := s.getIterator(ctx, sel)
 	if err != nil {

@@ -94,6 +94,10 @@ func (p *provider) downloadLog(w http.ResponseWriter, r *http.Request, req *LogR
 	w.Header().Set("Content-Type", "application/octet-stream")
 	flusher := w.(http.Flusher)
 
+	if req.Count == 0 {
+		req.Count = 100000
+	}
+
 	var count int
 	err := p.logQueryService.walkLogItems(r.Context(), req,
 		func(sel *storage.Selector) (*storage.Selector, error) {
