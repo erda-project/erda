@@ -46,6 +46,8 @@ service ClusterService {
 
 message ListClusterRequest {
   string clusterType = 1;
+  // optional, return all clusters if orgID == 0
+  uint64 orgID = 2;
 }
 
 message ListClusterResponse {
@@ -96,12 +98,13 @@ message CreateClusterRequest {
   SysConf sysConfig = 10;
   ManageConfig manageConfig = 11;
 
-  // Deprecated
-  int64 orgID = 12;
+  uint64 orgID = 12;
   // Deprecated
   map<string, string> urls = 13;
   // Deprecated
   map<string, string> config = 14;
+  // Required. Used to create org cluster relation
+  string userID = 15;
 }
 
 message CreateClusterResponse {

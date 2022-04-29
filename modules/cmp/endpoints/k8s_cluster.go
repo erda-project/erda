@@ -21,9 +21,13 @@ import (
 	"strconv"
 
 	"github.com/pkg/errors"
+	"google.golang.org/grpc/metadata"
 
+	"github.com/erda-project/erda-infra/pkg/transport"
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/http/httpserver"
+	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 // ListK8SClusters list ready and unready k8s clusters in current org
@@ -41,7 +45,7 @@ func (e *Endpoints) ListK8SClusters(ctx context.Context, r *http.Request, vars m
 			},
 		})
 	}
-	clusters, err := e.listClusters(scopeID, "k8s", "edas")
+	clusters, err := e.listClusters(ctx, scopeID, "k8s", "edas")
 	if err != nil {
 		errstr := fmt.Sprintf("failed to list cluster, %v", err)
 		return mkResponse(apistructs.K8SClusters{
@@ -82,14 +86,18 @@ func (e *Endpoints) ListK8SClusters(ctx context.Context, r *http.Request, vars m
 	})
 }
 
-func (e *Endpoints) listClusters(scopeID uint64, clusterTypes ...string) ([]apistructs.ClusterInfo, error) {
-	var clusters []apistructs.ClusterInfo
+func (e *Endpoints) listClusters(ctx context.Context, scopeID uint64, clusterTypes ...string) ([]*clusterpb.ClusterInfo, error) {
+	ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "cmp"}))
+	var clusters []*clusterpb.ClusterInfo
 	for _, typ := range clusterTypes {
-		c, err := e.bdl.ListClusters(typ, scopeID)
+		r, err := e.ClusterSvc.ListCluster(ctx, &clusterpb.ListClusterRequest{
+			ClusterType: typ,
+			OrgID:       scopeID,
+		})
 		if err != nil {
 			return nil, errors.Errorf("failed to list %s clusters, %v", typ, err)
 		}
-		clusters = append(clusters, c...)
+		clusters = append(clusters, r.Data...)
 	}
 	return clusters, nil
 }

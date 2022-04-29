@@ -52,6 +52,24 @@ func (c *ClusterService) ListCluster(ctx context.Context, req *pb.ListClusterReq
 		return nil, apierrors.ErrListCluster.InternalError(err)
 	}
 
+	if req.OrgID == 0 {
+		return &pb.ListClusterResponse{Data: clusters}, nil
+	}
+
+	clusterRelation, err := c.bdl.GetOrgClusterRelationsByOrg(req.OrgID)
+	if err != nil {
+		return nil, apierrors.ErrListCluster.InternalError(err)
+	}
+
+	var clustersInOrg []*pb.ClusterInfo
+	for _, relation := range clusterRelation {
+		for _, cluster := range clusters {
+			if uint64(cluster.Id) == relation.ClusterID {
+				clustersInOrg = append(clustersInOrg, cluster)
+				break
+			}
+		}
+	}
 	return &pb.ListClusterResponse{
 		Data: clusters,
 	}, nil
@@ -78,9 +96,16 @@ func (c *ClusterService) CreateCluster(ctx context.Context, req *pb.CreateCluste
 	if err := auth(ctx); err != nil {
 		return nil, err
 	}
+	if req.UserID == "" {
+		return nil, apierrors.ErrCreateCluster.MissingParameter("userID")
+	}
 
 	if err := c.CreateWithEvent(req); err != nil {
-		return nil, apierrors.ErrCreateCluster.InvalidParameter(err)
+		return nil, apierrors.ErrCreateCluster.InternalError(err)
+	}
+
+	if err := c.bdl.CreateOrgClusterRelationsByOrg(req.Name, req.UserID, req.OrgID); err != nil {
+		return nil, apierrors.ErrCreateCluster.InternalError(err)
 	}
 	return &pb.CreateClusterResponse{}, nil
 }

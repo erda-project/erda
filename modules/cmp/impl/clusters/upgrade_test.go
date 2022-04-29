@@ -15,6 +15,7 @@
 package clusters
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"strings"
@@ -81,7 +82,7 @@ func TestUpgradeEdgeCluster(t *testing.T) {
 	var bdl *bundle.Bundle
 	var db *dbclient.DBClient
 	db = &dbclient.DBClient{}
-	c := New(db, bdl, nil)
+	c := New(db, bdl, nil, &fakeClusterServiceServer{})
 
 	patch(bdl, c)
 
@@ -90,7 +91,7 @@ func TestUpgradeEdgeCluster(t *testing.T) {
 		PreCheck:    false,
 	}
 
-	_, _, _, err := c.UpgradeEdgeCluster(req, "123", "")
+	_, _, _, err := c.UpgradeEdgeCluster(context.Background(), req, "123", "")
 	assert.NoError(t, err)
 }
 
@@ -98,7 +99,7 @@ func TestEmptyCluster(t *testing.T) {
 	var bdl *bundle.Bundle
 	var db *dbclient.DBClient
 	db = &dbclient.DBClient{}
-	c := New(db, bdl, nil)
+	c := New(db, bdl, nil, &fakeClusterServiceServer{})
 
 	patch(bdl, c)
 
@@ -106,14 +107,14 @@ func TestEmptyCluster(t *testing.T) {
 		ClusterName: "",
 		PreCheck:    false,
 	}
-	_, _, _, err := c.UpgradeEdgeCluster(req, "123", "")
+	_, _, _, err := c.UpgradeEdgeCluster(context.Background(), req, "123", "")
 	assert.Contains(t, err.Error(), "empty cluster name")
 }
 
 func TestEmptyDBClient(t *testing.T) {
 	var bdl *bundle.Bundle
 	var db *dbclient.DBClient
-	c := New(db, bdl, nil)
+	c := New(db, bdl, nil, &fakeClusterServiceServer{})
 
 	patch(bdl, c)
 
@@ -122,7 +123,7 @@ func TestEmptyDBClient(t *testing.T) {
 		PreCheck:    false,
 	}
 
-	_, _, _, err := c.UpgradeEdgeCluster(req, "123", "")
+	_, _, _, err := c.UpgradeEdgeCluster(context.Background(), req, "123", "")
 	assert.Contains(t, err.Error(), "invalid db client")
 }
 
@@ -130,7 +131,7 @@ func TestClusterWithoutAccessKey(t *testing.T) {
 	var bdl *bundle.Bundle
 	var db *dbclient.DBClient
 	db = &dbclient.DBClient{}
-	c := New(db, bdl, nil)
+	c := New(db, bdl, nil, &fakeClusterServiceServer{})
 
 	patch(bdl, c)
 
@@ -139,7 +140,7 @@ func TestClusterWithoutAccessKey(t *testing.T) {
 		PreCheck:    false,
 	}
 
-	_, _, _, err := c.UpgradeEdgeCluster(req, "123", "")
+	_, _, _, err := c.UpgradeEdgeCluster(context.Background(), req, "123", "")
 	assert.Contains(t, err.Error(), "get or create access key failed")
 }
 
@@ -147,7 +148,7 @@ func TestClusterWithoutUserID(t *testing.T) {
 	var bdl *bundle.Bundle
 	var db *dbclient.DBClient
 	db = &dbclient.DBClient{}
-	c := New(db, bdl, nil)
+	c := New(db, bdl, nil, &fakeClusterServiceServer{})
 
 	patch(bdl, c)
 
@@ -156,6 +157,6 @@ func TestClusterWithoutUserID(t *testing.T) {
 		PreCheck:    false,
 	}
 
-	_, _, _, err := c.UpgradeEdgeCluster(req, "", "")
+	_, _, _, err := c.UpgradeEdgeCluster(context.Background(), req, "", "")
 	assert.Contains(t, err.Error(), "invalid user id")
 }

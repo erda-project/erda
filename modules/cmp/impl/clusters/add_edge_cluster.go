@@ -15,6 +15,7 @@
 package clusters
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -22,15 +23,19 @@ import (
 	"strings"
 
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc/metadata"
 	"gopkg.in/yaml.v3"
 
+	"github.com/erda-project/erda-infra/pkg/transport"
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cmp/dbclient"
 	"github.com/erda-project/erda/pkg/envconf"
+	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-func (c *Clusters) AddClusters(req apistructs.CloudClusterRequest, userid string) (uint64, error) {
+func (c *Clusters) AddClusters(ctx context.Context, req apistructs.CloudClusterRequest, userid string) (uint64, error) {
 	var recordID uint64
 	// load central cluster env
 	err := envconf.Load(&req)
@@ -110,14 +115,14 @@ func (c *Clusters) AddClusters(req apistructs.CloudClusterRequest, userid string
 		ClusterType:    "k8s",
 		WildcardDomain: req.RootDomain,
 	}
-	err = c.importCluster(userid, &ic)
+	err = c.importCluster(ctx, userid, &ic)
 	if err != nil {
 		logrus.Errorf("import cluster failed, request: %v, error: %v", req, err)
 		return recordID, err
 	}
 
 	// get cluster access key
-	cak, err := c.GetOrCreateAccessKey(req.ClusterName)
+	cak, err := c.GetOrCreateAccessKey(ctx, req.ClusterName)
 	if err != nil {
 		logrus.Errorf("get cluster access key failed, cluster: %s, error: %v", req.ClusterName, err)
 		return recordID, err
@@ -220,32 +225,33 @@ func (c *Clusters) MonitorCloudCluster() (abort bool, err error) {
 		return
 	}
 	logrus.Infof("get %d add edge cluster records", len(records))
+	ctx := context.Background()
 	for _, record := range records {
 		if record.PipelineID == 0 {
 			err = fmt.Errorf("invalid pipeline id")
-			_ = c.processFailedPipeline(record, err)
+			_ = c.processFailedPipeline(ctx, record, err)
 			continue
 		}
 		dto, err = c.bdl.GetPipeline(record.PipelineID)
 		if err != nil && strutil.Contains(err.Error(), "not found") {
 			err = fmt.Errorf("not found pipeline: %d", record.PipelineID)
-			_ = c.processFailedPipeline(record, err)
+			_ = c.processFailedPipeline(ctx, record, err)
 			continue
 		}
 		if dto == nil {
 			err = fmt.Errorf("empty pipeline content")
-			_ = c.processFailedPipeline(record, err)
+			_ = c.processFailedPipeline(ctx, record, err)
 			continue
 		}
 		if len(dto.PipelineStages) == 0 {
 			err = fmt.Errorf("empty pipeline stages, pipelineid: %d", record.PipelineID)
-			_ = c.processFailedPipeline(record, err)
+			_ = c.processFailedPipeline(ctx, record, err)
 			continue
 		}
 		for _, stage := range dto.PipelineStages {
 			if len(stage.PipelineTasks) == 0 {
 				err = fmt.Errorf("empty task in pipeline stage")
-				_ = c.processFailedPipeline(record, err)
+				_ = c.processFailedPipeline(ctx, record, err)
 				break
 			}
 			for _, task := range stage.PipelineTasks {
@@ -255,7 +261,7 @@ func (c *Clusters) MonitorCloudCluster() (abort bool, err error) {
 					} else {
 						err = fmt.Errorf("run pipeline failed")
 					}
-					_ = c.processFailedPipeline(record, err)
+					_ = c.processFailedPipeline(ctx, record, err)
 					break
 				}
 				if !task.Status.IsSuccessStatus() {
@@ -271,7 +277,7 @@ func (c *Clusters) MonitorCloudCluster() (abort bool, err error) {
 	return false, nil
 }
 
-func (c *Clusters) processFailedPipeline(record dbclient.Record, error error) error {
+func (c *Clusters) processFailedPipeline(ctx context.Context, record dbclient.Record, error error) error {
 	record.Status = dbclient.StatusTypeFailed
 	record.Detail = error.Error()
 	err := c.db.RecordsWriter().Update(record)
@@ -288,7 +294,7 @@ func (c *Clusters) processFailedPipeline(record dbclient.Record, error error) er
 		ClusterName: record.ClusterName,
 	}
 	// if create cluster failed, delete the init record
-	_, _, err = c.OfflineEdgeCluster(req, record.UserID, record.OrgID)
+	_, _, err = c.OfflineEdgeCluster(ctx, req, record.UserID, record.OrgID)
 	if err != nil {
 		return err
 	}
@@ -296,7 +302,7 @@ func (c *Clusters) processFailedPipeline(record dbclient.Record, error error) er
 }
 
 func (c *Clusters) processSuccessPipeline(pTaskResult apistructs.PipelineTaskResult, record dbclient.Record) error {
-	var req apistructs.ClusterCreateRequest
+	req := &clusterpb.CreateClusterRequest{}
 	// get cluster info from pipeline result
 	for _, m := range pTaskResult.Metadata {
 		if m.Name == "cluster_info" {
@@ -311,23 +317,25 @@ func (c *Clusters) processSuccessPipeline(pTaskResult apistructs.PipelineTaskRes
 	}
 
 	// get cluster info
-	cluster, err := c.bdl.GetCluster(record.ClusterName)
+	ctx := transport.WithHeader(context.Background(), metadata.New(map[string]string{httputil.InternalHeader: "true"}))
+	resp, err := c.clusterSvc.GetCluster(ctx, &clusterpb.GetClusterRequest{IdOrName: record.ClusterName})
 	if err != nil {
 		logrus.Errorf("get cluster info failed, cluster:%s,  error: %v", record.ClusterName, err)
 		return err
 	}
 
+	clusterInfo := resp.Data
 	// update cluster info
-	ur := apistructs.ClusterUpdateRequest{
-		Name:            cluster.Name,
-		DisplayName:     cluster.DisplayName,
-		Type:            cluster.Type,
+	ur := &clusterpb.UpdateClusterRequest{
+		Name:            clusterInfo.Name,
+		DisplayName:     clusterInfo.DisplayName,
+		Type:            clusterInfo.Type,
 		CloudVendor:     req.CloudVendor,
-		WildcardDomain:  cluster.WildcardDomain,
-		SchedulerConfig: cluster.SchedConfig,
+		WildcardDomain:  clusterInfo.WildcardDomain,
+		SchedulerConfig: clusterInfo.SchedConfig,
 		OpsConfig:       req.OpsConfig,
 	}
-	err = c.bdl.UpdateCluster(ur)
+	_, err = c.clusterSvc.UpdateCluster(ctx, ur)
 	if err != nil {
 		logrus.Errorf("update cluster info failed, cluster:%s,  error: %v", record.ClusterName, err)
 		return err

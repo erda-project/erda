@@ -26,7 +26,7 @@ type BaseModel struct {
 // Cluster cluster model
 type Cluster struct {
 	BaseModel
-	OrgID           int64
+	OrgID           uint64
 	Name            string
 	DisplayName     string
 	CloudVendor     string

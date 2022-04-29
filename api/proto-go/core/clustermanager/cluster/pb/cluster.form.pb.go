@@ -48,6 +48,12 @@ func (m *ListClusterRequest) UnmarshalURLValues(prefix string, values url.Values
 			switch prefix + key {
 			case "clusterType":
 				m.ClusterType = vals[0]
+			case "orgID":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.OrgID = val
 			}
 		}
 	}
@@ -3782,11 +3788,13 @@ func (m *CreateClusterRequest) UnmarshalURLValues(prefix string, values url.Valu
 				}
 				m.ManageConfig.CredentialSource = vals[0]
 			case "orgID":
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseUint(vals[0], 10, 64)
 				if err != nil {
 					return err
 				}
 				m.OrgID = val
+			case "userID":
+				m.UserID = vals[0]
 			}
 		}
 	}
