@@ -46,9 +46,13 @@ func (p *provider) Iterator(ctx context.Context, sel *storage.Selector) (storeki
 
 	pageSize := p.Cfg.ReadPageSize
 
-	count, ok := sel.Options[storage.SelectorKeyCount]
-	if ok || sel.Meta.PreferredBufferSize > 0 {
-		pageSize = int(math.Max(math.Abs(float64(count.(int64))), float64(sel.Meta.PreferredBufferSize)))
+	var count float64
+	if c, ok := sel.Options[storage.SelectorKeyCount]; ok {
+		count = math.Abs(float64(c.(int64)))
+	}
+
+	if count > 0 || sel.Meta.PreferredBufferSize > 0 {
+		pageSize = int(math.Max(count, float64(sel.Meta.PreferredBufferSize)))
 	}
 
 	var callback = func(logItem *pb.LogItem) {
