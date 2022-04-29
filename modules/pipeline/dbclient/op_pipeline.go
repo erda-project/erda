@@ -31,6 +31,9 @@ import (
 // CreatePipeline: base + extra + labels
 func (client *Client) CreatePipeline(p *spec.Pipeline, ops ...SessionOption) error {
 	// base
+	// TODO the edge pipeline should add init report status
+	p.PipelineBase.EdgeReportStatus = apistructs.InitEdgeReportStatus
+
 	if err := client.CreatePipelineBase(&p.PipelineBase, ops...); err != nil {
 		return errors.Errorf("failed to create pipeline base, err: %v", err)
 	}

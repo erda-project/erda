@@ -113,6 +113,7 @@ func (client *Client) BatchCreatePipelineStages(stages []spec.PipelineStage, ops
 	session := client.NewSession(ops...)
 	defer session.Close()
 
-	_, err = session.Table("pipeline_stages").InsertMulti(stages)
+	stage := &spec.PipelineStage{}
+	_, err = session.Table(stage.TableName()).InsertMulti(stages)
 	return err
 }

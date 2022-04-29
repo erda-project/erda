@@ -66,7 +66,7 @@ func (p *provider) doTaskReporter(ctx context.Context, taskID uint64) error {
 	err = p.bdl.PipelineCallback(apistructs.PipelineCallbackRequest{
 		Type: apistructs.PipelineCallbackTypeOfEdgeTaskReport.String(),
 		Data: b,
-	}, p.Cfg.OpenAPIPublicURL, p.Cfg.OpenapiToken)
+	}, p.Cfg.OpenapiPublicURL, p.Cfg.OpenapiToken)
 
 	return err
 }
@@ -126,7 +126,7 @@ func (p *provider) doPipelineReporter(ctx context.Context, pipelineID uint64) er
 	err = p.bdl.PipelineCallback(apistructs.PipelineCallbackRequest{
 		Type: apistructs.PipelineCallbackTypeOfEdgePipelineReport.String(),
 		Data: b,
-	}, p.Cfg.OpenAPIPublicURL, p.Cfg.OpenapiToken)
+	}, p.Cfg.OpenapiPublicURL, p.Cfg.OpenapiToken)
 
 	return err
 }

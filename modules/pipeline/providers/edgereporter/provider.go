@@ -31,9 +31,9 @@ import (
 )
 
 type config struct {
-	CompensatorDuration time.Duration `file:"COMPENSATOR_DURATION" env:"COMPENSATOR_DURATION" default:"2h"`
-	OpenAPIPublicURL    string        `file:"OPENAPI_PUBLIC_URL" env:"OPENAPI_PUBLIC_URL"`
-	OpenapiToken        string        `file:"DICE_OPENAPI_TOKEN" env:"DICE_OPENAPI_TOKEN"`
+	CompensatorDuration time.Duration `file:"compensator_duration" env:"COMPENSATOR_DURATION" default:"2h"`
+	OpenapiPublicURL    string        `file:"openapi_public_url" env:"OPENAPI_PUBLIC_URL"`
+	OpenapiToken        string        `file:"openapi_token" env:"OPENAPI_TOKEN"`
 }
 
 type provider struct {

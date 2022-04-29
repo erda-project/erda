@@ -276,6 +276,7 @@ func (client *Client) BatchCreatePipelineTasks(pts []spec.PipelineTask, ops ...S
 	session := client.NewSession(ops...)
 	defer session.Close()
 
-	_, err = session.Table("pipeline_tasks").InsertMulti(&pts)
+	task := &spec.PipelineTask{}
+	_, err = session.Table(task.TableName()).InsertMulti(&pts)
 	return err
 }

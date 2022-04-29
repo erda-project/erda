@@ -702,8 +702,8 @@ type PipelineCallbackType string
 
 var (
 	PipelineCallbackTypeOfAction             PipelineCallbackType = "ACTION"
-	PipelineCallbackTypeOfEdgeTaskReport     PipelineCallbackType = "TASK"
-	PipelineCallbackTypeOfEdgePipelineReport PipelineCallbackType = "PIPELINE"
+	PipelineCallbackTypeOfEdgeTaskReport     PipelineCallbackType = "EDGETASKREPORT"
+	PipelineCallbackTypeOfEdgePipelineReport PipelineCallbackType = "EDGEPIPELINEREPORT"
 )
 
 func (p PipelineCallbackType) String() string {

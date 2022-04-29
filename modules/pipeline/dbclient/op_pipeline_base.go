@@ -61,8 +61,6 @@ func (client *Client) CreatePipelineBase(base *spec.PipelineBase, ops ...Session
 	session := client.NewSession(ops...)
 	defer session.Close()
 
-	// TODO the edge pipeline should add init report status
-	base.EdgeReportStatus = apistructs.InitEdgeReportStatus
 	if base.ID == 0 {
 		base.ID = uuid.SnowFlakeIDUint64()
 	}
