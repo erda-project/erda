@@ -401,6 +401,7 @@ func Test_cStorage_Iterator_Next(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			var namespace, name, container string
 			for _, v := range tt.sel.Filters {
 				switch v.Key {
@@ -742,6 +743,7 @@ func Test_cStorage_Iterator_Prev(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			var namespace, name, container string
 			for _, v := range tt.sel.Filters {
 				switch v.Key {
@@ -858,6 +860,7 @@ func Test_cStorage_Iterator_FirstNext(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			var namespace, name, container string
 			for _, v := range tt.sel.Filters {
 				switch v.Key {
@@ -977,6 +980,7 @@ func Test_cStorage_Iterator_LastPrev(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			var namespace, name, container string
 			for _, v := range tt.sel.Filters {
 				switch v.Key {

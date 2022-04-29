@@ -877,6 +877,18 @@ func (m *GetLogResponse) UnmarshalURLValues(prefix string, values url.Values) er
 
 // GetLogByRuntimeResponse implement urlenc.URLValuesUnmarshaler.
 func (m *GetLogByRuntimeResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "isFallback":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.IsFallback = val
+			}
+		}
+	}
 	return nil
 }
 

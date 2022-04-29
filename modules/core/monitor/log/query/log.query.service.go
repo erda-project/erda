@@ -68,7 +68,13 @@ func (s *logQueryService) GetLogByRuntime(ctx context.Context, req *pb.GetLogByR
 		return sel
 	}, true, false)
 	if err != nil {
+		if req.GetLive() && req.GetSource() == "container" {
+			return s.GetLogByRealtime(ctx, req)
+		}
 		return nil, err
+	}
+	if len(items) <= 0 && req.GetStart() <= time.Now().Add(-1*s.p.Cfg.DelayBackoffTime).UnixNano() {
+		return s.GetLogByRealtime(ctx, req)
 	}
 	return &pb.GetLogByRuntimeResponse{Lines: items}, nil
 }
@@ -81,7 +87,7 @@ func (s *logQueryService) GetLogByRealtime(ctx context.Context, req *pb.GetLogBy
 	if err != nil {
 		return nil, err
 	}
-	return &pb.GetLogByRuntimeResponse{Lines: items}, nil
+	return &pb.GetLogByRuntimeResponse{Lines: items, IsFallback: true}, nil
 }
 
 func (s *logQueryService) GetLogByOrganization(ctx context.Context, req *pb.GetLogByOrganizationRequest) (*pb.GetLogByOrganizationResponse, error) {
@@ -516,9 +522,10 @@ func absInt(v int64) int64 {
 
 func toQuerySelector(req Request) (*storage.Selector, error) {
 	sel := &storage.Selector{
-		Start: req.GetStart(),
-		End:   req.GetEnd(),
-		Debug: req.GetDebug(),
+		Start:   req.GetStart(),
+		End:     req.GetEnd(),
+		Debug:   req.GetDebug(),
+		Options: map[string]interface{}{},
 	}
 
 	if sel.End <= 0 {
@@ -526,6 +533,7 @@ func toQuerySelector(req Request) (*storage.Selector, error) {
 	}
 	if sel.Start <= 0 {
 		sel.Start = sel.End - defaultQueryTimeRange
+		sel.Options["is_first_query"] = true
 		if sel.Start < 0 {
 			sel.Start = 0
 		}

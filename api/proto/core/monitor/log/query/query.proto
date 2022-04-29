@@ -203,6 +203,7 @@ message GetLogResponse {
 
 message GetLogByRuntimeResponse {
   repeated LogItem lines = 1;
+  bool isFallback = 2;
 }
 
 message GetLogByOrganizationResponse {
