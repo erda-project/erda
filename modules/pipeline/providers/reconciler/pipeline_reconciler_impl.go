@@ -102,7 +102,7 @@ func (pr *defaultPipelineReconciler) setTotalTaskNumberBeforeReconcilePipeline(c
 	// set processed tasks
 	for _, task := range allTasks {
 		task := task
-		if task.ID > 0 && (task.Status.IsEndStatus() || task.Status.IsDisabledStatus()) {
+		if task.Status.IsEndStatus() || task.Status.IsDisabledStatus() {
 			pr.processedTasks.Store(task.NodeName(), struct{}{})
 		}
 	}
