@@ -60,7 +60,7 @@ func (p *provider) ShouldDispatchToEdge(source, clusterName string) bool {
 	if !findInWhitelist {
 		return false
 	}
-	isEdge, err := p.bdl.IsClusterDialerClientRegistered(clusterName, apistructs.ClusterDialerClientTypePipeline.String())
+	isEdge, err := p.bdl.IsClusterDialerClientRegistered(apistructs.ClusterDialerClientTypePipeline, clusterName)
 	if !isEdge || err != nil {
 		return false
 	}
@@ -75,7 +75,7 @@ func (p *provider) GetDialContextByClusterName(clusterName string) clusterdialer
 
 func (p *provider) GetEdgeBundleByClusterName(clusterName string) (*bundle.Bundle, error) {
 	edgeDial := p.GetDialContextByClusterName(clusterName)
-	edgeDetail, err := p.bdl.GetClusterDialerClientData(apistructs.ClusterDialerClientTypePipeline.String(), clusterName)
+	edgeDetail, err := p.bdl.GetClusterDialerClientData(apistructs.ClusterDialerClientTypePipeline, clusterName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get edge bundle for cluster %s, err: %v", clusterName, err)
 	}

@@ -92,6 +92,16 @@ erda.oap.collector.processor.modifier:
     - action: add
       key: org_name
       value: ${DICE_ORG_NAME}
+    # container is empty when pause in containerd-env
+    - action: set
+      key: container
+      value: POD
+      condition:
+        op: value_empty
+        key: container
+    - action: add
+      key: container
+      value: POD
 
 erda.oap.collector.processor.modifier@addmeta:
   rules:

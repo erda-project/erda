@@ -549,6 +549,8 @@ var (
 	ErrUpdateRbWorkflow = err("ErrUpdateRbWorkflow", "更新研发工作流失败")
 	ErrListRbWorkflow   = err("ErrListRbWorkflow", "获取研发工作流列表失败")
 	ErrDeleteRbWorkflow = err("ErrDeleteRbWorkflow", "删除研发工作流失败")
+
+	ErrNotFoundPipelineCron = err("ErrNotFoundPipelineCron", "未找到流水线定时配置")
 )
 
 func err(template, defaultValue string) *errorresp.APIError {
