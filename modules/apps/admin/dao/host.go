@@ -12,20 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package dao
 
 import (
-	"github.com/erda-project/erda-infra/base/servicehub"
-	_ "github.com/erda-project/erda-infra/providers"
-	_ "github.com/erda-project/erda-infra/providers/component-protocol"
-	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
-	_ "github.com/erda-project/erda/cmd/admin/registry"
-	"github.com/erda-project/erda/pkg/common"
+	"github.com/jinzhu/gorm"
+
+	"github.com/erda-project/erda/modules/apps/admin/model"
 )
 
-func main() {
-	common.RegisterHubListener(cpregister.NewHubListener())
-	common.Run(&servicehub.RunOptions{
-		ConfigFile: "conf/admin/admin.yaml",
-	})
+// GetHostByClusterAndIP get host info according cluster & privateAddr
+func (client *DBClient) GetHostByClusterAndIP(clusterName, privateAddr string) (*model.Host, error) {
+	var host model.Host
+	if err := client.Where("cluster = ?", clusterName).
+		Where("private_addr = ?", privateAddr).First(&host).Error; err != nil {
+		if gorm.IsRecordNotFoundError(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return &host, nil
 }

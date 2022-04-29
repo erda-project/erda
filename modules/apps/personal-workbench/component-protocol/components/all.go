@@ -12,20 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package components
 
 import (
-	"github.com/erda-project/erda-infra/base/servicehub"
-	_ "github.com/erda-project/erda-infra/providers"
-	_ "github.com/erda-project/erda-infra/providers/component-protocol"
-	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
-	_ "github.com/erda-project/erda/cmd/admin/registry"
-	"github.com/erda-project/erda/pkg/common"
+	_ "github.com/erda-project/erda/modules/apps/personal-workbench/component-protocol/components/personal-workbench"
 )
-
-func main() {
-	common.RegisterHubListener(cpregister.NewHubListener())
-	common.Run(&servicehub.RunOptions{
-		ConfigFile: "conf/admin/admin.yaml",
-	})
-}

@@ -3,8 +3,14 @@ service.admin:
 service.personal-workbench:
 service.dingtalk-test:
 
-service-register:
+mysql:
+  host: "${MYSQL_HOST}"
+  port: "${MYSQL_PORT}"
+  username: "${MYSQL_USERNAME}"
+  password: "${MYSQL_PASSWORD}"
+  database: "${MYSQL_DATABASE}"
 
+service-register:
 http-server:
   addr: ":9095"
   allow_cors: true
