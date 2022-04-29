@@ -67,6 +67,34 @@ func Test_defaultPipelineReconciler_setTotalTaskNumberBeforeReconcilePipeline(t 
 	if *pr.totalTaskNumber != 0 {
 		t.Fatalf("should have none tasks, actually %v", *pr.totalTaskNumber)
 	}
+
+	// one disabled task and one running task
+	monkey.PatchInstanceMethod(reflect.TypeOf(r), "YmlTaskMergeDBTasks",
+		func(_ *provider, pipeline *spec.Pipeline) ([]*spec.PipelineTask, error) {
+			// none tasks
+			return []*spec.PipelineTask{
+				{
+					Name:   "disabled task",
+					ID:     0,
+					Status: apistructs.PipelineStatusDisabled,
+				},
+				{
+					Name:   "running task",
+					ID:     1,
+					Status: apistructs.PipelineStatusRunning,
+				},
+			}, nil
+		})
+	err = pr.setTotalTaskNumberBeforeReconcilePipeline(ctx, p)
+	if err != nil {
+		t.Fatalf("should no err, err: %v", err)
+	}
+	if *pr.totalTaskNumber != 2 {
+		t.Fatalf("should have two tasks, actually %v", *pr.totalTaskNumber)
+	}
+	if _, ok := pr.processedTasks.Load("disabled task"); !ok {
+		t.Fatalf("should have disabled task, actually %v", ok)
+	}
 }
 
 func Test_defaultPipelineReconciler_updateCalculatedPipelineStatusForTaskUseField(t *testing.T) {
