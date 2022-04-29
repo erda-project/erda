@@ -40,7 +40,16 @@ type Interface interface {
 
 	ShouldDispatchToEdge(source, clusterName string) bool
 	GetEdgeBundleByClusterName(clusterName string) (*bundle.Bundle, error)
-	//RegisterEdgeToDialer(ctx context.Context)
+
+	// OnEdge register hook that will be invoked if you are running on edge.
+	// Could register multi hooks as you need.
+	// All hooks executed asynchronously.
+	OnEdge(func(context.Context))
+
+	// OnCenter register hook that will be invoked if you are running on center.
+	// Could register multi hooks as you need.
+	// All hooks executed asynchronously.
+	OnCenter(func(context.Context))
 }
 
 func (p *provider) ShouldDispatchToEdge(source, clusterName string) bool {
