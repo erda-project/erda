@@ -519,6 +519,9 @@ func toQuerySelector(req Request) (*storage.Selector, error) {
 		Start: req.GetStart(),
 		End:   req.GetEnd(),
 		Debug: req.GetDebug(),
+		Options: map[string]interface{}{
+			storage.SelectorKeyCount: req.GetCount(),
+		},
 	}
 
 	if sel.End <= 0 {

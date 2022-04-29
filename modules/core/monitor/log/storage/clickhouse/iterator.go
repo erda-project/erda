@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"math"
 	"strconv"
 	"sync/atomic"
 	"time"
@@ -44,8 +45,10 @@ func (p *provider) Iterator(ctx context.Context, sel *storage.Selector) (storeki
 	}
 
 	pageSize := p.Cfg.ReadPageSize
-	if sel.Meta.PreferredBufferSize > 0 {
-		pageSize = sel.Meta.PreferredBufferSize
+
+	count, ok := sel.Options[storage.SelectorKeyCount]
+	if ok || sel.Meta.PreferredBufferSize > 0 {
+		pageSize = int(math.Max(math.Abs(float64(count.(int64))), float64(sel.Meta.PreferredBufferSize)))
 	}
 
 	var callback = func(logItem *pb.LogItem) {
