@@ -95,7 +95,7 @@ func (p *provider) downloadLog(w http.ResponseWriter, r *http.Request, req *LogR
 	flusher := w.(http.Flusher)
 
 	if req.Count == 0 {
-		req.Count = 100000
+		req.Count = 1000000
 	}
 
 	var count int

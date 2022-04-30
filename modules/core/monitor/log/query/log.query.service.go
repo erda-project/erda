@@ -152,7 +152,7 @@ func (s *logQueryService) LogAggregation(ctx context.Context, req *pb.LogAggrega
 
 func (s *logQueryService) ScanLogsByExpression(req *pb.GetLogByExpressionRequest, stream pb.LogQueryService_ScanLogsByExpressionServer) error {
 	if req.GetCount() == 0 {
-		req.Count = 100000
+		req.Count = 1000000
 	}
 	return s.walkLogItems(context.Background(), req, nil, func(item *pb.LogItem) error {
 		return stream.Send(item)
