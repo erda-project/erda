@@ -701,8 +701,14 @@ type PipelineCallbackResponse struct {
 type PipelineCallbackType string
 
 var (
-	PipelineCallbackTypeOfAction PipelineCallbackType = "ACTION"
+	PipelineCallbackTypeOfAction             PipelineCallbackType = "ACTION"
+	PipelineCallbackTypeOfEdgeTaskReport     PipelineCallbackType = "EDGETASKREPORT"
+	PipelineCallbackTypeOfEdgePipelineReport PipelineCallbackType = "EDGEPIPELINEREPORT"
 )
+
+func (p PipelineCallbackType) String() string {
+	return string(p)
+}
 
 // pipeline invoked combo 用于流水线侧边栏聚合，每个 combo 是侧边栏一条记录
 // 大数据：combo(branch: master + source: bigdata  + 文件名不限)
@@ -774,4 +780,16 @@ type PipelineCronGetResponse struct {
 type PipelineDefinitionExtraValue struct {
 	CreateRequest *PipelineCreateRequestV2 `json:"createRequest"`
 	RunParams     []*pb.PipelineRunParam   `json:"runParams"`
+}
+
+type EdgeReportStatus string
+
+const (
+	InitEdgeReportStatus       EdgeReportStatus = "init"
+	ProcessingEdgeReportStatus EdgeReportStatus = "processing"
+	DoneEdgeReportStatus       EdgeReportStatus = "done"
+)
+
+func (e EdgeReportStatus) String() string {
+	return string(e)
 }
