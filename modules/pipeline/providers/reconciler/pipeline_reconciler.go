@@ -31,6 +31,8 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/metrics"
 	"github.com/erda-project/erda/modules/pipeline/providers/cache"
 	"github.com/erda-project/erda/modules/pipeline/providers/cron/compensator"
+	"github.com/erda-project/erda/modules/pipeline/providers/edgepipeline_register"
+	"github.com/erda-project/erda/modules/pipeline/providers/edgereporter"
 	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/rutil"
 	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/schedulabletask"
 	"github.com/erda-project/erda/modules/pipeline/providers/resourcegc"
@@ -72,6 +74,8 @@ type defaultPipelineReconciler struct {
 	cronCompensator compensator.Interface
 	cache           cache.Interface
 	r               *provider
+	edgeReporter    edgereporter.Interface
+	edgeRegister    edgepipeline_register.Interface
 
 	// internal fields
 	lock                 sync.Mutex
@@ -203,6 +207,7 @@ func (pr *defaultPipelineReconciler) ReconcileOneSchedulableTask(ctx context.Con
 		defaultRetryInterval: pr.r.Cfg.RetryInterval,
 		pipelineSvcFuncs:     pr.r.pipelineSvcFuncs,
 		actionAgentSvc:       pr.r.actionAgentSvc,
+		edgeReporter:         pr.r.EdgeReporter,
 		actionMgr:            pr.r.ActionMgr,
 	}
 	tr.ReconcileOneTaskUntilDone(ctx, p, task)
@@ -273,6 +278,10 @@ func (pr *defaultPipelineReconciler) TeardownAfterReconcileDone(ctx context.Cont
 	pr.resourceGC.WaitGC(p.Extra.Namespace, p.ID, p.GetResourceGCTTL())
 	// clear pipeline cache
 	pr.cache.ClearReconcilerPipelineContextCaches(p.ID)
+	// report pipeline in edge cluster
+	if pr.edgeRegister.IsEdge() {
+		pr.edgeReporter.TriggerOncePipelineReport(p.ID)
+	}
 
 	// mark teardown
 	rutil.ContinueWorking(ctx, pr.log, func(ctx context.Context) rutil.WaitDuration {

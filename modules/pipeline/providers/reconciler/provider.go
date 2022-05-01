@@ -29,6 +29,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/providers/clusterinfo"
 	"github.com/erda-project/erda/modules/pipeline/providers/cron/compensator"
 	"github.com/erda-project/erda/modules/pipeline/providers/edgepipeline_register"
+	"github.com/erda-project/erda/modules/pipeline/providers/edgereporter"
 	"github.com/erda-project/erda/modules/pipeline/providers/leaderworker"
 	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/taskpolicy"
 	"github.com/erda-project/erda/modules/pipeline/providers/resourcegc"
@@ -47,6 +48,7 @@ type provider struct {
 	EdgeRegister    edgepipeline_register.Interface
 	ResourceGC      resourcegc.Interface
 	CronCompensator compensator.Interface
+	EdgeReporter    edgereporter.Interface
 	ActionMgr       actionmgr.Interface
 
 	dbClient *dbclient.Client

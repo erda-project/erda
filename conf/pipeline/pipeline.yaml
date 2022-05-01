@@ -49,6 +49,7 @@ secret: {}
 run: {}
 user: {}
 cancel: {}
+edge-reporter: {}
 actionmgr: {}
 
 etcd-election@leader-worker:
