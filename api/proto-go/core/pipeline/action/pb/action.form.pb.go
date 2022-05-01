@@ -254,12 +254,6 @@ func (m *PipelineActionSaveRequest) UnmarshalURLValues(prefix string, values url
 				m.Spec = vals[0]
 			case "location":
 				m.Location = vals[0]
-			case "is_default":
-				val, err := strconv.ParseBool(vals[0])
-				if err != nil {
-					return err
-				}
-				m.IsDefault = val
 			}
 		}
 	}

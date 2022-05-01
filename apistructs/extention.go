@@ -26,6 +26,11 @@ import (
 
 const DicehubExtensionsMenu = "dicehub.extensions.menu"
 
+type SpecType string
+
+const SpecActionType SpecType = "action"
+const SpecAddonType SpecType = "addon"
+
 var (
 	ExtensionSpecDisableECILabel = "eci_disable"
 )

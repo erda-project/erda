@@ -94,10 +94,9 @@ func Test_makeActionTypeVersion(t *testing.T) {
 
 func Test_provider_updateExtensionCache(t *testing.T) {
 	p := &provider{Cfg: &config{RefreshInterval: time.Minute, PoolSize: 20}}
-	err := p.Init(nil)
-	if err != nil {
-		t.Fatalf("init err: %v", err)
-	}
+	p.actionsCache = make(map[string]apistructs.ExtensionVersion)
+	p.defaultActionsCache = make(map[string]apistructs.ExtensionVersion)
+	p.bdl = bundle.New(bundle.WithAllAvailableClients())
 
 	// before: not-in-cache
 	// mock bundle
