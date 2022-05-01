@@ -17,7 +17,9 @@ package actionmgr
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -70,8 +72,21 @@ func (s *actionService) List(ctx context.Context, req *pb.PipelineActionListRequ
 	}
 
 	return &pb.PipelineActionListResponse{
-		Data: data,
+		Data: actionsOrderByLocationIndex(req.Locations, data),
 	}, nil
+}
+
+func actionsOrderByLocationIndex(locations []string, data []*pb.Action) []*pb.Action {
+	var locationActionMap = map[string][]*pb.Action{}
+	for _, action := range data {
+		locationActionMap[action.Location] = append(locationActionMap[action.Location], action)
+	}
+
+	var orderAction []*pb.Action
+	for _, location := range locations {
+		orderAction = append(orderAction, locationActionMap[location]...)
+	}
+	return orderAction
 }
 
 func (s *actionService) Save(ctx context.Context, req *pb.PipelineActionSaveRequest) (*pb.PipelineActionSaveResponse, error) {
@@ -92,16 +107,14 @@ func (s *actionService) Save(ctx context.Context, req *pb.PipelineActionSaveRequ
 		return nil, apierrors.ErrSavePipelineAction.InvalidParameter(fmt.Errorf("location need %v suffix", string(os.PathSeparator)))
 	}
 
-	var spec apistructs.Spec
-	err := yaml.Unmarshal([]byte(req.Spec), &spec)
+	saveAction, err := PipelineActionSaveRequestToAction(req)
 	if err != nil {
 		return nil, apierrors.ErrSavePipelineAction.InternalError(err)
 	}
-
-	if spec.Name == "" {
+	if saveAction.Name == "" {
 		return nil, apierrors.ErrSavePipelineAction.InvalidParameter("spec name was empty")
 	}
-	if spec.Version == "" {
+	if saveAction.VersionInfo == "" {
 		return nil, apierrors.ErrSavePipelineAction.InvalidParameter("spec version was empty")
 	}
 
@@ -109,8 +122,8 @@ func (s *actionService) Save(ctx context.Context, req *pb.PipelineActionSaveRequ
 		Locations: []string{req.Location},
 		ActionNameWithVersionQuery: []*pb.ActionNameWithVersionQuery{
 			{
-				Name:    spec.Name,
-				Version: spec.Version,
+				Name:    saveAction.Name,
+				Version: saveAction.VersionInfo,
 			},
 		},
 	})
@@ -118,37 +131,18 @@ func (s *actionService) Save(ctx context.Context, req *pb.PipelineActionSaveRequ
 		return nil, apierrors.ErrSavePipelineAction.InternalError(err)
 	}
 
-	var saveAction *db.PipelineAction
+	var insert = true
 	for _, action := range actions {
 		if action.Location == req.Location {
-			saveAction = &action
+			saveAction.ID = action.ID
+			insert = false
 			break
 		}
 	}
 
-	var insert = false
-	if saveAction == nil {
-		saveAction = &db.PipelineAction{}
-		saveAction.ID = uuid.New()
-		saveAction.TimeCreated = time.Now()
-		insert = true
-	}
-
-	saveAction.VersionInfo = spec.Version
-	saveAction.Name = spec.Name
-	saveAction.Location = req.Location
-	saveAction.Spec = req.Spec
-	saveAction.Desc = spec.Desc
-	saveAction.DisplayName = spec.DisplayName
-	saveAction.IsDefault = spec.IsDefault
-	saveAction.IsPublic = spec.Public
-	saveAction.Dice = req.Dice
-	saveAction.Readme = req.Readme
-	saveAction.LogoUrl = spec.LogoUrl
-	saveAction.Category = spec.Category
-	saveAction.TimeUpdated = time.Now()
-
 	if insert {
+		saveAction.TimeCreated = time.Now()
+		saveAction.ID = uuid.New()
 		err := s.dbClient.InsertPipelineAction(saveAction)
 		if err != nil {
 			return nil, apierrors.ErrSavePipelineAction.InternalError(err)
@@ -168,6 +162,32 @@ func (s *actionService) Save(ctx context.Context, req *pb.PipelineActionSaveRequ
 	return &pb.PipelineActionSaveResponse{
 		Action: result,
 	}, nil
+}
+
+func PipelineActionSaveRequestToAction(req *pb.PipelineActionSaveRequest) (saveAction *db.PipelineAction, err error) {
+	var specInfo apistructs.Spec
+	err = yaml.Unmarshal([]byte(req.Spec), &specInfo)
+	if err != nil {
+		return nil, err
+	}
+
+	saveAction = &db.PipelineAction{}
+
+	saveAction.VersionInfo = specInfo.Version
+	saveAction.Name = specInfo.Name
+	saveAction.Desc = specInfo.Desc
+	saveAction.DisplayName = specInfo.DisplayName
+	saveAction.IsDefault = specInfo.IsDefault
+	saveAction.IsPublic = specInfo.Public
+	saveAction.LogoUrl = specInfo.LogoUrl
+	saveAction.Category = specInfo.Category
+	saveAction.TimeUpdated = time.Now()
+
+	saveAction.Spec = req.Spec
+	saveAction.Location = req.Location
+	saveAction.Dice = req.Dice
+	saveAction.Readme = req.Readme
+	return saveAction, nil
 }
 
 func (s *actionService) Delete(ctx context.Context, req *pb.PipelineActionDeleteRequest) (*pb.PipelineActionDeleteResponse, error) {
@@ -217,4 +237,126 @@ func (s *actionService) Delete(ctx context.Context, req *pb.PipelineActionDelete
 	}
 
 	return &pb.PipelineActionDeleteResponse{}, nil
+}
+
+func (s *actionService) InitAction(addr string) {
+	s.p.Log.Info("Start init action")
+	defer s.p.Log.Info("end init action")
+
+	// load action repo by addr
+	repo := LoadActionRepo(addr)
+	for _, v := range repo.versions {
+		// NewSaveRequest by version addr
+		saveRequest, err := NewSaveRequest(v)
+		if err != nil {
+			s.p.Log.Errorf("make create request error %v", err)
+			continue
+		}
+		_, err = s.Save(apis.WithInternalClientContext(context.Background(), "pipeline"), saveRequest)
+		if err != nil {
+			s.p.Log.Errorf("Save action request %v error %v", saveRequest, err)
+			continue
+		}
+	}
+}
+
+func NewSaveRequest(dirname string) (*pb.PipelineActionSaveRequest, error) {
+	fileInfos, err := ioutil.ReadDir(dirname)
+	if err != nil {
+		return nil, fmt.Errorf("failed to ReadDir %v", err)
+	}
+
+	var request = &pb.PipelineActionSaveRequest{}
+	for _, fileInfo := range fileInfos {
+		if fileInfo.IsDir() {
+			continue
+		}
+		switch {
+		case strings.EqualFold(fileInfo.Name(), "spec.yml") || strings.EqualFold(fileInfo.Name(), "spec.yaml"):
+			specJson, err := ioutil.ReadFile(filepath.Join(dirname, fileInfo.Name()))
+			if err != nil {
+				return nil, fmt.Errorf("failed to ReadFile spec %v", err)
+			}
+			request.Spec = string(specJson)
+		case strings.EqualFold(fileInfo.Name(), "dice.yml") || strings.EqualFold(fileInfo.Name(), "dice.yaml"):
+			diceJson, err := ioutil.ReadFile(filepath.Join(dirname, fileInfo.Name()))
+			if err != nil {
+				return nil, fmt.Errorf("failed to ReadFile dice %v", err)
+			}
+			request.Dice = string(diceJson)
+		case strings.EqualFold(fileInfo.Name(), "readme.md") || strings.EqualFold(fileInfo.Name(), "readme.markdown"):
+			readmeJson, err := ioutil.ReadFile(filepath.Join(dirname, fileInfo.Name()))
+			if err != nil {
+				return nil, fmt.Errorf("failed to ReadFile readme %v", err)
+			}
+			request.Readme = string(readmeJson)
+		}
+	}
+
+	if request.Spec == "" {
+		return nil, fmt.Errorf("spec can not empty")
+	}
+
+	var spec apistructs.Spec
+	err = yaml.Unmarshal([]byte(request.Spec), &spec)
+	if err != nil {
+		return nil, fmt.Errorf("failed to Unmarshal spec %v", err)
+	}
+	if spec.Type != string(apistructs.SpecActionType) {
+		return nil, fmt.Errorf("pipeline action only support action")
+	}
+
+	request.Location = apistructs.PipelineTypeDefault.String() + "/"
+	return request, nil
+}
+
+func LoadActionRepo(addr string) *Repo {
+	repo := &Repo{
+		addr: addr,
+	}
+	repo.locate(repo.addr, 0)
+	return repo
+}
+
+type Repo struct {
+	// addr workPath
+	addr string
+	// versions action version dir path
+	versions []string
+}
+
+// locate Recursively traverse folders
+func (repo *Repo) locate(dirname string, deep int) {
+	infos, ok := isThereSpecFile(dirname)
+	if ok {
+		repo.versions = append(repo.versions, dirname)
+		return
+	}
+
+	for _, cur := range infos {
+		// only find path /repoName/actions
+		if deep == 1 && cur.Name() != "actions" {
+			continue
+		}
+		repo.locate(filepath.Join(dirname, cur.Name()), deep+1)
+	}
+}
+
+// isThereSpecFile  check is there have spec.yml
+func isThereSpecFile(dirname string) ([]os.FileInfo, bool) {
+	var dirs []os.FileInfo
+	infos, err := ioutil.ReadDir(dirname)
+	if err != nil {
+		return nil, false
+	}
+	for _, file := range infos {
+		if file.IsDir() {
+			dirs = append(dirs, file)
+			continue
+		}
+		if strings.EqualFold(file.Name(), "spec.yml") || strings.EqualFold(file.Name(), "spec.yaml") {
+			return nil, true
+		}
+	}
+	return dirs, false
 }
