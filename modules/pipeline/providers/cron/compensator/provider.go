@@ -31,6 +31,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/providers/cron/db"
+	"github.com/erda-project/erda/modules/pipeline/providers/edgepipeline_register"
 	"github.com/erda-project/erda/modules/pipeline/providers/leaderworker"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/jsonstore"
@@ -50,11 +51,12 @@ type config struct {
 
 // +provider
 type provider struct {
-	Log          logs.Logger
-	LeaderWorker leaderworker.Interface `autowired:"leader-worker"`
-	ETCD         etcd.Interface         // autowired
-	EtcdClient   *v3.Client
-	MySQL        mysqlxorm.Interface `autowired:"mysql-xorm"`
+	Log                  logs.Logger
+	LeaderWorker         leaderworker.Interface `autowired:"leader-worker"`
+	ETCD                 etcd.Interface         // autowired
+	EtcdClient           *v3.Client
+	MySQL                mysqlxorm.Interface `autowired:"mysql-xorm"`
+	EdgePipelineRegister edgepipeline_register.Interface
 
 	jsonStore    jsonstore.JsonStore
 	dbClient     *dbclient.Client
@@ -511,8 +513,13 @@ func (p *provider) createCronCompensatePipeline(ctx context.Context, pc db.Pipel
 	})
 }
 
-// isCronShouldIgnore if trigger time before cron start from time, should ignore cron at this trigger time
+// isCronShouldIgnore If the cron trigger time is not triggered at this time or does not belong to this edge cluster, it should be skipped
 func (p *provider) isCronShouldBeIgnored(pc db.PipelineCron) bool {
+	ok := p.EdgePipelineRegister.ShouldDispatchToEdge(pc.PipelineSource.String(), pc.Extra.ClusterName)
+	if ok {
+		return true
+	}
+
 	if pc.Extra.CronStartFrom == nil {
 		return false
 	}

@@ -105,6 +105,7 @@ func TestPipelineCron_Convert2DTO(t *testing.T) {
 				Branch:               "test",
 				BasePipelineID:       1,
 				PipelineDefinitionID: "test",
+				IsEdge:               true,
 			},
 			want: &pb.Cron{
 				ID:                     1,
@@ -126,6 +127,7 @@ func TestPipelineCron_Convert2DTO(t *testing.T) {
 				Secrets: map[string]string{
 					"test": "test",
 				},
+				IsEdge: wrapperspb.Bool(true),
 				Extra: &pb.CronExtra{
 					PipelineYml: "test",
 					ClusterName: "test",

@@ -22,6 +22,7 @@ import (
 	pb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	"github.com/erda-project/erda/modules/pipeline/providers/cron/daemon"
 	"github.com/erda-project/erda/modules/pipeline/providers/cron/db"
+	"github.com/erda-project/erda/modules/pipeline/providers/edgepipeline_register"
 	"github.com/erda-project/erda/modules/pipeline/providers/leaderworker"
 )
 
@@ -37,8 +38,9 @@ type provider struct {
 	MySQL        mysqlxorm.Interface    `autowired:"mysql-xorm"`
 	LeaderWorker leaderworker.Interface `autowired:"leader-worker"`
 
-	Daemon   daemon.Interface
-	dbClient *db.Client
+	Daemon               daemon.Interface
+	dbClient             *db.Client
+	EdgePipelineRegister edgepipeline_register.Interface
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {

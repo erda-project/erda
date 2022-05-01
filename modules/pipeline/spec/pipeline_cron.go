@@ -27,6 +27,7 @@ const (
 	PipelineDefinitionID = "pipeline_definition_id"
 	PipelineCronEnable   = "enable"
 	Extra                = "extra"
+	PipelineCronIsEdge   = "is_edge"
 )
 
 type PipelineCron struct {
