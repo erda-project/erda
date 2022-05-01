@@ -72,7 +72,6 @@ message PipelineActionSaveRequest {
     string dice = 2;
     string spec = 3;
     string location = 4;
-    bool is_default = 5;
 }
 
 message PipelineActionSaveResponse {

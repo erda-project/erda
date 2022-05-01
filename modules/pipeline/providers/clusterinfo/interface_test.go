@@ -15,6 +15,7 @@
 package clusterinfo
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -188,6 +189,16 @@ func (c cacheImpl) GetAllClusters() []apistructs.ClusterInfo {
 
 type edgePipelineRegisterImpl struct {
 	cache map[string]string
+}
+
+func (e edgePipelineRegisterImpl) OnEdge(f func(context.Context)) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (e edgePipelineRegisterImpl) OnCenter(f func(context.Context)) {
+	//TODO implement me
+	panic("implement me")
 }
 
 func (e edgePipelineRegisterImpl) GetAccessToken(req apistructs.OAuth2TokenGetRequest) (*apistructs.OAuth2Token, error) {

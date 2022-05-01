@@ -141,12 +141,14 @@ func (s *provider) MakeActionTypeVersion(action *pipelineyml.Action) string {
 }
 
 func (s *provider) MakeActionLocationsBySource(source apistructs.PipelineSource) []string {
+	var locations []string
 	switch source {
 	case apistructs.PipelineSourceCDPDev, apistructs.PipelineSourceCDPTest, apistructs.PipelineSourceCDPStaging, apistructs.PipelineSourceCDPProd, apistructs.PipelineSourceBigData:
-		return []string{apistructs.PipelineTypeFDP.String() + "/"}
+		locations = append(locations, apistructs.PipelineTypeFDP.String()+"/")
 	case apistructs.PipelineSourceDice, apistructs.PipelineSourceProject, apistructs.PipelineSourceProjectLocal, apistructs.PipelineSourceOps, apistructs.PipelineSourceQA:
-		return []string{apistructs.PipelineTypeCICD.String() + "/"}
-	default:
-		return []string{apistructs.PipelineTypeDefault.String() + "/"}
+		locations = append(locations, apistructs.PipelineTypeCICD.String()+"/")
 	}
+
+	locations = append(locations, apistructs.PipelineTypeDefault.String()+"/")
+	return locations
 }

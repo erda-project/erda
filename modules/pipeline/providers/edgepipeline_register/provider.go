@@ -18,6 +18,7 @@ import (
 	"context"
 	"os"
 	"reflect"
+	"sync"
 	"time"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -40,11 +41,16 @@ type Config struct {
 }
 
 type provider struct {
+	sync.Mutex
+
 	Log logs.Logger
 	Cfg *Config
 	LW  leaderworker.Interface
 
-	bdl *bundle.Bundle
+	bdl          *bundle.Bundle
+	started      bool
+	forCenterUse forCenterUse
+	forEdgeUse   forEdgeUse
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -56,6 +62,9 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		}
 		p.Cfg.accessToken = string(accessToken)
 	}
+	p.forEdgeUse.handlersOnEdge = make(chan func(context.Context), 0)
+	p.forCenterUse.handlersOnCenter = make(chan func(context.Context), 0)
+	p.startEdgeCenterUse(ctx)
 	return nil
 }
 

@@ -271,3 +271,12 @@ func (client *Client) CleanPipelineTaskResult(id uint64, ops ...SessionOption) e
 	}
 	return nil
 }
+
+func (client *Client) BatchCreatePipelineTasks(pts []spec.PipelineTask, ops ...SessionOption) (err error) {
+	session := client.NewSession(ops...)
+	defer session.Close()
+
+	task := &spec.PipelineTask{}
+	_, err = session.Table(task.TableName()).InsertMulti(&pts)
+	return err
+}

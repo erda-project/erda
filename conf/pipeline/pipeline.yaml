@@ -35,7 +35,8 @@ leader-worker:
   worker:
     etcd_key_prefix_with_slash: /devops/pipeline/v2/leader-worker/worker/
 reconciler: {}
-clusterinfo: {}
+clusterinfo:
+  refresh_clusters_interval: "${REFRESH_CLUSTERS_INTERVAL:20m}"
 edgepipeline_register:
   cluster_dialer_endpoint: "${CLUSTER_DIALER_PUBLIC_URL}/clusteragent/connect"
   cluster_access_key: "${CLUSTER_ACCESS_KEY}"
@@ -48,6 +49,7 @@ secret: {}
 run: {}
 user: {}
 cancel: {}
+edge-reporter: {}
 actionmgr: {}
 
 etcd-election@leader-worker:

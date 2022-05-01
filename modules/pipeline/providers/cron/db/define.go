@@ -46,6 +46,8 @@ type PipelineCron struct {
 	BasePipelineID uint64 `json:"basePipelineID"` // 用于记录最开始创建出这条 cron 记录的 pipeline id
 	// definition id
 	PipelineDefinitionID string `json:"pipelineDefinitionID"`
+
+	IsEdge bool `json:"is_edge"`
 }
 
 // PipelineCronExtra cron 扩展信息, 不参与过滤
@@ -114,6 +116,7 @@ func (pc *PipelineCron) Convert2DTO() *pb.Cron {
 		OrgID:                  pc.GetOrgID(),
 		PipelineDefinitionID:   pc.PipelineDefinitionID,
 		PipelineSource:         pc.PipelineSource.String(),
+		IsEdge:                 wrapperspb.Bool(pc.IsEdge),
 	}
 
 	extra := &pb.CronExtra{

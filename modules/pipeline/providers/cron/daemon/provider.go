@@ -28,6 +28,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/pipeline/providers/cron/db"
+	"github.com/erda-project/erda/modules/pipeline/providers/edgepipeline_register"
 	"github.com/erda-project/erda/modules/pipeline/providers/leaderworker"
 	"github.com/erda-project/erda/pkg/cron"
 )
@@ -45,11 +46,12 @@ type provider struct {
 	MySQL        mysqlxorm.Interface    `autowired:"mysql-xorm"`
 	LeaderWorker leaderworker.Interface `autowired:"leader-worker"`
 
-	createPipelineFunc CreatePipelineFunc
-	bdl                *bundle.Bundle
-	dbClient           *db.Client
-	crond              *cron.Cron
-	mu                 *sync.Mutex
+	createPipelineFunc   CreatePipelineFunc
+	bdl                  *bundle.Bundle
+	dbClient             *db.Client
+	crond                *cron.Cron
+	mu                   *sync.Mutex
+	EdgePipelineRegister edgepipeline_register.Interface
 }
 
 func (p *provider) WithPipelineFunc(createPipelineFunc CreatePipelineFunc) {
@@ -69,12 +71,28 @@ func (p *provider) AddIntoPipelineCrond(cron *db.PipelineCron) error {
 		return nil
 	}
 
+	ok := p.EdgePipelineRegister.ShouldDispatchToEdge(cron.PipelineSource.String(), cron.Extra.ClusterName)
+	if ok {
+		return nil
+	}
+	if cron.IsEdge != p.EdgePipelineRegister.IsEdge() {
+		return nil
+	}
+
 	_, err := p.EtcdClient.Put(context.Background(), etcdCronPrefixAddKey+strconv.FormatUint(cron.ID, 10), "")
 	return err
 }
 
 func (p *provider) DeleteFromPipelineCrond(cron *db.PipelineCron) error {
 	if cron.ID <= 0 {
+		return nil
+	}
+
+	ok := p.EdgePipelineRegister.ShouldDispatchToEdge(cron.PipelineSource.String(), cron.Extra.ClusterName)
+	if ok {
+		return nil
+	}
+	if cron.IsEdge != p.EdgePipelineRegister.IsEdge() {
 		return nil
 	}
 

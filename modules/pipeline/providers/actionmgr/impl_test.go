@@ -46,54 +46,54 @@ func Test_provider_MakeActionLocationsBySource(t *testing.T) {
 		// fdp
 		{
 			inputSource:               apistructs.PipelineSourceCDPDev,
-			expectedOutputLocationNum: 1,
-			expectedOutputLocations:   []string{apistructs.PipelineTypeFDP.String() + "/"},
+			expectedOutputLocationNum: 2,
+			expectedOutputLocations:   []string{apistructs.PipelineTypeFDP.String() + "/", apistructs.PipelineTypeDefault.String() + "/"},
 		},
 		{
 			inputSource:               apistructs.PipelineSourceCDPTest,
-			expectedOutputLocationNum: 1,
-			expectedOutputLocations:   []string{apistructs.PipelineTypeFDP.String() + "/"},
+			expectedOutputLocationNum: 2,
+			expectedOutputLocations:   []string{apistructs.PipelineTypeFDP.String() + "/", apistructs.PipelineTypeDefault.String() + "/"},
 		},
 		{
 			inputSource:               apistructs.PipelineSourceCDPStaging,
-			expectedOutputLocationNum: 1,
-			expectedOutputLocations:   []string{apistructs.PipelineTypeFDP.String() + "/"},
+			expectedOutputLocationNum: 2,
+			expectedOutputLocations:   []string{apistructs.PipelineTypeFDP.String() + "/", apistructs.PipelineTypeDefault.String() + "/"},
 		},
 		{
 			inputSource:               apistructs.PipelineSourceCDPProd,
-			expectedOutputLocationNum: 1,
-			expectedOutputLocations:   []string{apistructs.PipelineTypeFDP.String() + "/"},
+			expectedOutputLocationNum: 2,
+			expectedOutputLocations:   []string{apistructs.PipelineTypeFDP.String() + "/", apistructs.PipelineTypeDefault.String() + "/"},
 		},
 		{
 			inputSource:               apistructs.PipelineSourceBigData,
-			expectedOutputLocationNum: 1,
-			expectedOutputLocations:   []string{apistructs.PipelineTypeFDP.String() + "/"},
+			expectedOutputLocationNum: 2,
+			expectedOutputLocations:   []string{apistructs.PipelineTypeFDP.String() + "/", apistructs.PipelineTypeDefault.String() + "/"},
 		},
 		// cicd
 		{
 			inputSource:               apistructs.PipelineSourceDice,
-			expectedOutputLocationNum: 1,
-			expectedOutputLocations:   []string{apistructs.PipelineTypeCICD.String() + "/"},
+			expectedOutputLocationNum: 2,
+			expectedOutputLocations:   []string{apistructs.PipelineTypeCICD.String() + "/", apistructs.PipelineTypeDefault.String() + "/"},
 		},
 		{
 			inputSource:               apistructs.PipelineSourceProject,
-			expectedOutputLocationNum: 1,
-			expectedOutputLocations:   []string{apistructs.PipelineTypeCICD.String() + "/"},
+			expectedOutputLocationNum: 2,
+			expectedOutputLocations:   []string{apistructs.PipelineTypeCICD.String() + "/", apistructs.PipelineTypeDefault.String() + "/"},
 		},
 		{
 			inputSource:               apistructs.PipelineSourceProjectLocal,
-			expectedOutputLocationNum: 1,
-			expectedOutputLocations:   []string{apistructs.PipelineTypeCICD.String() + "/"},
+			expectedOutputLocationNum: 2,
+			expectedOutputLocations:   []string{apistructs.PipelineTypeCICD.String() + "/", apistructs.PipelineTypeDefault.String() + "/"},
 		},
 		{
 			inputSource:               apistructs.PipelineSourceOps,
-			expectedOutputLocationNum: 1,
-			expectedOutputLocations:   []string{apistructs.PipelineTypeCICD.String() + "/"},
+			expectedOutputLocationNum: 2,
+			expectedOutputLocations:   []string{apistructs.PipelineTypeCICD.String() + "/", apistructs.PipelineTypeDefault.String() + "/"},
 		},
 		{
 			inputSource:               apistructs.PipelineSourceQA,
-			expectedOutputLocationNum: 1,
-			expectedOutputLocations:   []string{apistructs.PipelineTypeCICD.String() + "/"},
+			expectedOutputLocationNum: 2,
+			expectedOutputLocations:   []string{apistructs.PipelineTypeCICD.String() + "/", apistructs.PipelineTypeDefault.String() + "/"},
 		},
 		// default
 		{

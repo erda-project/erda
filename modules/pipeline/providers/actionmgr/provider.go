@@ -35,8 +35,9 @@ import (
 )
 
 type config struct {
-	RefreshInterval time.Duration `file:"refresh_interval" default:"1m"`
-	PoolSize        int           `file:"pool_size" default:"20"`
+	RefreshInterval    time.Duration `file:"refresh_interval" default:"1m"`
+	PoolSize           int           `file:"pool_size" default:"20"`
+	ActionInitFilePath string        `file:"action_init_file_path" default:"/app/extensions-init"`
 }
 
 // +provider
@@ -66,6 +67,13 @@ func (s *provider) Init(ctx servicehub.Context) error {
 	s.defaultActionsCache = make(map[string]apistructs.ExtensionVersion)
 	s.pools = goroutinepool.New(s.Cfg.PoolSize)
 	s.bdl = bundle.New(bundle.WithAllAvailableClients())
+	s.dbClient = &db.Client{Interface: s.MySQL}
+	go func() {
+		if s.EdgeRegister.IsEdge() {
+			return
+		}
+		s.actionService.InitAction(s.Cfg.ActionInitFilePath)
+	}()
 	return nil
 }
 

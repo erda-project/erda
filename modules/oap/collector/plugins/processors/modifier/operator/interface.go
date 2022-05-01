@@ -86,4 +86,5 @@ type condCreator func(cfg ConditionCfg) Condition
 var conditions = map[string]condCreator{
 	"key_exist":   NewKeyExist,
 	"value_match": NewValueMatch,
+	"value_empty": NewValueEmpty,
 }
