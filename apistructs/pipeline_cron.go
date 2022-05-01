@@ -16,6 +16,8 @@ package apistructs
 
 import (
 	"time"
+
+	"github.com/erda-project/erda-proto-go/core/pipeline/pb"
 )
 
 type PipelineCronPagingRequest struct {
@@ -62,9 +64,28 @@ type PipelineCronDTO struct {
 
 type PipelineCronCreateResponse struct {
 	Header
-	Data uint64 `json:"data"` // cronID
+	Data *pb.Cron `json:"data"`
+}
+
+type PipelineCronUpdateResponse struct {
+	Header
+}
+
+type PipelineCronGetResponse struct {
+	Header
+	Data *pb.Cron `json:"data"`
 }
 
 type PipelineCronDeleteResponse struct {
 	Header
+}
+
+type PipelineCronStartResponse struct {
+	Header
+	Data *pb.Cron `json:"data"`
+}
+
+type PipelineCronStopResponse struct {
+	Header
+	Data *pb.Cron `json:"data"`
 }

@@ -611,16 +611,6 @@ type PipelineCronListResponse struct {
 	Data []PipelineCronDTO `json:"data"`
 }
 
-type PipelineCronStartResponse struct {
-	Header
-	Data *PipelineCronDTO `json:"data"`
-}
-
-type PipelineCronStopResponse struct {
-	Header
-	Data *PipelineCronDTO `json:"data"`
-}
-
 // pipeline operate
 
 type PipelineGetBranchRuleResponse struct {
@@ -770,11 +760,6 @@ type PipelineStatisticResponseData struct {
 
 type PipelineDeleteResponse struct {
 	Header
-}
-
-type PipelineCronGetResponse struct {
-	Header
-	Data *PipelineCronDTO `json:"data"`
 }
 
 type PipelineDefinitionExtraValue struct {
