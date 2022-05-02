@@ -65,6 +65,21 @@ type EdgePipelineRegisterImpl struct {
 	GetEdgeBundleByClusterNameErr error
 }
 
+func (e EdgePipelineRegisterImpl) ClusterIsEdge(clusterName string) (bool, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (e EdgePipelineRegisterImpl) OnEdge(f func(context.Context)) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (e EdgePipelineRegisterImpl) OnCenter(f func(context.Context)) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (e EdgePipelineRegisterImpl) GetAccessToken(req apistructs.OAuth2TokenGetRequest) (*apistructs.OAuth2Token, error) {
 	panic("implement me")
 }

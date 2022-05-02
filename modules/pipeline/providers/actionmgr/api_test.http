@@ -17,8 +17,8 @@ Content-Type: application/json
 Internal-Client: true
 
 {
-  "name": "python-script",
-  "version": "4.0",
+  "name": "java-builds",
+  "version": "1.0",
   "location": "cicd/"
 }
 
