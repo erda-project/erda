@@ -17,6 +17,8 @@ package apistructs
 import (
 	"strings"
 	"time"
+
+	"github.com/erda-project/erda-proto-go/core/pipeline/action/pb"
 )
 
 const (
@@ -177,4 +179,13 @@ type ActionItem struct {
 	IsDefault int       `json:"isDefault"`
 	Desc      string    `json:"desc"`
 	CreatedAt time.Time `json:"createdAt"`
+}
+
+type PipelineActionSaveResponse struct {
+	Header
+	Action *pb.Action
+}
+
+type PipelineActionDeleteResponse struct {
+	Header
 }

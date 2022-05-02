@@ -15,7 +15,9 @@
 package clusterinfo
 
 import (
+	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"reflect"
 	"testing"
@@ -157,4 +159,158 @@ func Test_registerClusterHook(t *testing.T) {
 	}
 	err := p.registerClusterHook()
 	assert.Equal(t, true, err != nil)
+}
+
+type cacheImpl struct {
+	cache map[string]string
+}
+
+func (c cacheImpl) GetClusterInfoByName(name string) (apistructs.ClusterInfo, bool) {
+	panic("implement me")
+}
+
+func (c cacheImpl) UpdateClusterInfo(clusterInfo apistructs.ClusterInfo) {
+	panic("implement me")
+}
+
+func (c cacheImpl) DeleteClusterInfo(name string) {
+	panic("implement me")
+}
+
+func (c cacheImpl) GetAllClusters() []apistructs.ClusterInfo {
+	var infos []apistructs.ClusterInfo
+	for key := range c.cache {
+		infos = append(infos, apistructs.ClusterInfo{
+			Name: key,
+		})
+	}
+	return infos
+}
+
+type edgePipelineRegisterImpl struct {
+	cache map[string]string
+}
+
+func (e edgePipelineRegisterImpl) OnEdge(f func(context.Context)) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (e edgePipelineRegisterImpl) OnCenter(f func(context.Context)) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (e edgePipelineRegisterImpl) GetAccessToken(req apistructs.OAuth2TokenGetRequest) (*apistructs.OAuth2Token, error) {
+	panic("implement me")
+}
+
+func (e edgePipelineRegisterImpl) GetOAuth2Token(req apistructs.OAuth2TokenGetRequest) (*apistructs.OAuth2Token, error) {
+	panic("implement me")
+}
+
+func (e edgePipelineRegisterImpl) GetEdgePipelineEnvs() apistructs.ClusterDialerClientDetail {
+	panic("implement me")
+}
+
+func (e edgePipelineRegisterImpl) CheckAccessToken(token string) error {
+	panic("implement me")
+}
+
+func (e edgePipelineRegisterImpl) CheckAccessTokenFromHttpRequest(req *http.Request) error {
+	panic("implement me")
+}
+
+func (e edgePipelineRegisterImpl) IsEdge() bool {
+	panic("implement me")
+}
+
+func (e edgePipelineRegisterImpl) ShouldDispatchToEdge(source, clusterName string) bool {
+	panic("implement me")
+}
+
+func (e edgePipelineRegisterImpl) GetEdgeBundleByClusterName(clusterName string) (*bundle.Bundle, error) {
+	panic("implement me")
+}
+
+func (e edgePipelineRegisterImpl) ClusterIsEdge(clusterName string) (bool, error) {
+	return e.cache[clusterName] == "edge", nil
+}
+
+func Test_provider_ListAllClusterInfos(t *testing.T) {
+	type args struct {
+		onlyEdge bool
+	}
+
+	tests := []struct {
+		name    string
+		cache   map[string]string
+		args    args
+		want    []apistructs.ClusterInfo
+		wantErr bool
+	}{
+		{
+			name: "test all cluster",
+			cache: map[string]string{
+				"test":  "edge",
+				"test1": "notEdge",
+			},
+			args: args{
+				onlyEdge: false,
+			},
+			want: []apistructs.ClusterInfo{
+				{
+					Name: "test",
+				},
+				{
+					Name: "test1",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "test edge cluster",
+			cache: map[string]string{
+				"test":  "edge",
+				"test1": "notEdge",
+			},
+			args: args{
+				onlyEdge: true,
+			},
+			want: []apistructs.ClusterInfo{
+				{
+					Name: "test",
+				},
+				{
+					Name: "test1",
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &provider{}
+			p.cache = cacheImpl{
+				cache: tt.cache,
+			}
+			p.EdgeRegister = edgePipelineRegisterImpl{cache: tt.cache}
+
+			got, err := p.listAllClusterInfos(tt.args.onlyEdge)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ListAllClusterInfos() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			for _, clu := range got {
+				var find = false
+				for _, wantClu := range tt.want {
+					if clu.Name == wantClu.Name {
+						find = true
+						break
+					}
+				}
+				assert.True(t, find)
+			}
+		})
+	}
 }
