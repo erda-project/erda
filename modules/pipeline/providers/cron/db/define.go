@@ -25,6 +25,14 @@ import (
 	"github.com/erda-project/erda/apistructs"
 )
 
+const (
+	PipelineCronCronExpr = "cron_expr"
+	PipelineDefinitionID = "pipeline_definition_id"
+	PipelineCronEnable   = "enable"
+	Extra                = "extra"
+	PipelineCronIsEdge   = "is_edge"
+)
+
 type PipelineCron struct {
 	ID          uint64    `json:"id" xorm:"pk autoincr"`
 	TimeCreated time.Time `json:"timeCreated" xorm:"created"` // 记录创建时间

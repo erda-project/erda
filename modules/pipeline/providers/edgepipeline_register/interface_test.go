@@ -34,7 +34,7 @@ func TestSourceWhiteList(t *testing.T) {
 	}
 	tests := []struct {
 		name string
-		src  string
+		src  apistructs.PipelineSource
 		want bool
 	}{
 		{
@@ -69,7 +69,7 @@ func TestSourceWhiteList(t *testing.T) {
 	defer patch.Unpatch()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := p.ShouldDispatchToEdge(tt.src, "dev"); got != tt.want {
+			if got := p.CanProxyToEdge(tt.src, "dev"); got != tt.want {
 				t.Errorf("sourceWhiteList() = %v, want %v", got, tt.want)
 			}
 		})
@@ -124,31 +124,31 @@ func TestGetAccessToken(t *testing.T) {
 	p := &provider{
 		Cfg: &Config{
 			IsEdge:      true,
-			accessToken: "xxx",
+			AccessToken: "xxx",
 		},
 	}
 	accessToken, err := p.GetAccessToken(apistructs.OAuth2TokenGetRequest{})
 	assert.NoError(t, err)
-	assert.Equal(t, p.Cfg.accessToken, accessToken.AccessToken)
+	assert.Equal(t, p.Cfg.AccessToken, accessToken.AccessToken)
 }
 
 func TestGetOAuth2Token(t *testing.T) {
 	p := &provider{
 		Cfg: &Config{
 			IsEdge:      true,
-			accessToken: "xxx",
+			AccessToken: "xxx",
 		},
 	}
 	oauth2Token, err := p.GetOAuth2Token(apistructs.OAuth2TokenGetRequest{})
 	assert.NoError(t, err)
-	assert.Equal(t, p.Cfg.accessToken, oauth2Token.AccessToken)
+	assert.Equal(t, p.Cfg.AccessToken, oauth2Token.AccessToken)
 }
 
 func TestCheckAccessToken(t *testing.T) {
 	p := &provider{
 		Cfg: &Config{
 			IsEdge:      true,
-			accessToken: "xxx",
+			AccessToken: "xxx",
 		},
 	}
 	tests := []struct {
@@ -181,7 +181,7 @@ func TestGetEdgePipelineEnvs(t *testing.T) {
 	p := &provider{
 		Cfg: &Config{
 			IsEdge:       true,
-			accessToken:  "xxx",
+			AccessToken:  "xxx",
 			PipelineAddr: "pipeline:3081",
 			PipelineHost: "pipeline.default.svc.cluster.local",
 		},
@@ -195,7 +195,7 @@ func TestCheckAccessTokenFromHttpRequest(t *testing.T) {
 	p := &provider{
 		Cfg: &Config{
 			IsEdge:      true,
-			accessToken: "xxx",
+			AccessToken: "xxx",
 		},
 	}
 	tests := []struct {
@@ -233,7 +233,7 @@ func TestIsEdge(t *testing.T) {
 	p := &provider{
 		Cfg: &Config{
 			IsEdge:      true,
-			accessToken: "xxx",
+			AccessToken: "xxx",
 		},
 	}
 	assert.Equal(t, true, p.IsEdge())
@@ -270,7 +270,7 @@ func TestShouldDispatchToEdge(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := p.ShouldDispatchToEdge("cdp-dev", tt.clusterName)
+			got := p.CanProxyToEdge("cdp-dev", tt.clusterName)
 			if got != tt.wantEdge {
 				t.Errorf("want edge: %v, but got: %v", tt.wantEdge, got)
 			}

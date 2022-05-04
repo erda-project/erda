@@ -279,7 +279,7 @@ func (s *provider) reloadCrond(ctx context.Context) ([]string, error) {
 		pc := pcs[i]
 		if pc.Enable != nil && *pc.Enable && pc.CronExpr != "" {
 
-			ok := s.EdgePipelineRegister.ShouldDispatchToEdge(pc.PipelineSource.String(), pc.Extra.ClusterName)
+			ok := s.EdgePipelineRegister.CanProxyToEdge(pc.PipelineSource, pc.Extra.ClusterName)
 			if ok {
 				err := s.syncCronToEdge(pc)
 				if err != nil {

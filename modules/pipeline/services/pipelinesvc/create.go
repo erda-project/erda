@@ -411,6 +411,9 @@ func (s *PipelineSvc) createPipelineAndCheckNotEndStatus(p *spec.Pipeline, sessi
 	}
 
 	// create pipeline
+	if s.edgeRegister.IsEdge() {
+		p.IsEdge = true
+	}
 	if err := s.dbClient.CreatePipeline(p, dbclient.WithTxSession(session)); err != nil {
 		return apierrors.ErrCreatePipeline.InternalError(err)
 	}

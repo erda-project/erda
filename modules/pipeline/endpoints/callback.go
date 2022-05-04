@@ -61,6 +61,10 @@ func (e *Endpoints) pipelineCallback(ctx context.Context, r *http.Request, vars 
 		if err := e.pipelineSvc.DealPipelineCallbackOfPipeline(req.Data); err != nil {
 			return apierrors.ErrCallback.InternalError(err).ToResp(), nil
 		}
+	case apistructs.PipelineCallbackTypeOfEdgeCronReport.String():
+		if err := e.pipelineSvc.DealPipelineCallbackOfCron(req.Data); err != nil {
+			return apierrors.ErrCallback.InternalError(err).ToResp(), nil
+		}
 	default:
 		return apierrors.ErrCallback.InvalidParameter(strutil.Concat("invalid callback type: ", req.Type)).ToResp(), nil
 	}

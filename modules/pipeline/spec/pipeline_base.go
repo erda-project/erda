@@ -56,6 +56,7 @@ type PipelineBase struct {
 	TimeUpdated *time.Time `json:"timeUpdated,omitempty" xorm:"updated"`
 
 	PipelineDefinitionID string                      `json:"pipelineDefinitionID"`
+	IsEdge               bool                        `json:"isEdge"`
 	EdgeReportStatus     apistructs.EdgeReportStatus `json:"edgeReportStatus"`
 }
 
