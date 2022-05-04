@@ -48,5 +48,9 @@ func (s *provider) directCreatePipeline(ctx context.Context, req *apistructs.Pip
 	if err != nil {
 		return nil, err
 	}
+	// report
+	if s.EdgePipelineRegister.IsEdge() {
+		s.EdgeReporter.TriggerOncePipelineReport(p.ID)
+	}
 	return s.pipelineSvc.ConvertPipeline(p), nil
 }

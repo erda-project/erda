@@ -222,7 +222,7 @@ func (p *provider) RegisterRefreshEvent() <-chan struct{} {
 // GetCurrentClusterInfoFromK8sConfigMap return current cluster info config map data by k8s in-cluster client
 // because in edge cluster, we cloud not get the cluster info from cluster-manager
 func (p *provider) GetCurrentClusterInfoFromK8sConfigMap() (apistructs.ClusterInfo, error) {
-	client, err := k8sclient.New(p.Cfg.ClusterName /*k8sclient.WithPreferredToUseInClusterConfig(),*/, k8sclient.WithTimeout(5*time.Second))
+	client, err := k8sclient.New(p.Cfg.ClusterName, k8sclient.WithPreferredToUseInClusterConfig(), k8sclient.WithTimeout(5*time.Second))
 	if err != nil {
 		return apistructs.ClusterInfo{}, err
 	}

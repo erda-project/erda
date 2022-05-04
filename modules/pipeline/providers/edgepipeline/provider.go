@@ -20,8 +20,10 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/pipeline/providers/edgepipeline_register"
+	"github.com/erda-project/erda/modules/pipeline/providers/edgereporter"
 	"github.com/erda-project/erda/modules/pipeline/services/pipelinesvc"
 )
 
@@ -34,9 +36,12 @@ type provider struct {
 	Log logs.Logger
 	Cfg *config
 
-	bdl                  *bundle.Bundle
-	pipelineSvc          *pipelinesvc.PipelineSvc
+	Cron                 cronpb.CronServiceServer
 	EdgePipelineRegister edgepipeline_register.Interface
+	EdgeReporter         edgereporter.Interface
+
+	bdl         *bundle.Bundle
+	pipelineSvc *pipelinesvc.PipelineSvc
 }
 
 func (s *provider) Init(ctx servicehub.Context) error {

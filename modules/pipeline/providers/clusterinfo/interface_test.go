@@ -191,6 +191,11 @@ type edgePipelineRegisterImpl struct {
 	cache map[string]string
 }
 
+func (e edgePipelineRegisterImpl) CanProxyToEdge(source apistructs.PipelineSource, clusterName string) bool {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (e edgePipelineRegisterImpl) OnEdge(f func(context.Context)) {
 	//TODO implement me
 	panic("implement me")
@@ -222,10 +227,6 @@ func (e edgePipelineRegisterImpl) CheckAccessTokenFromHttpRequest(req *http.Requ
 }
 
 func (e edgePipelineRegisterImpl) IsEdge() bool {
-	panic("implement me")
-}
-
-func (e edgePipelineRegisterImpl) ShouldDispatchToEdge(source, clusterName string) bool {
 	panic("implement me")
 }
 

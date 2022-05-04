@@ -71,7 +71,7 @@ func (p *provider) AddIntoPipelineCrond(cron *db.PipelineCron) error {
 		return nil
 	}
 
-	ok := p.EdgePipelineRegister.ShouldDispatchToEdge(cron.PipelineSource.String(), cron.Extra.ClusterName)
+	ok := p.EdgePipelineRegister.CanProxyToEdge(cron.PipelineSource, cron.Extra.ClusterName)
 	if ok {
 		return nil
 	}
@@ -88,7 +88,7 @@ func (p *provider) DeleteFromPipelineCrond(cron *db.PipelineCron) error {
 		return nil
 	}
 
-	ok := p.EdgePipelineRegister.ShouldDispatchToEdge(cron.PipelineSource.String(), cron.Extra.ClusterName)
+	ok := p.EdgePipelineRegister.CanProxyToEdge(cron.PipelineSource, cron.Extra.ClusterName)
 	if ok {
 		return nil
 	}

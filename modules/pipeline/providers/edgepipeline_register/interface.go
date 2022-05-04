@@ -103,7 +103,7 @@ func (p *provider) GetEdgeBundleByClusterName(clusterName string) (*bundle.Bundl
 
 func (p *provider) GetAccessToken(req apistructs.OAuth2TokenGetRequest) (*apistructs.OAuth2Token, error) {
 	return &apistructs.OAuth2Token{
-		AccessToken: p.Cfg.accessToken,
+		AccessToken: p.Cfg.AccessToken,
 		ExpiresIn:   0,
 		TokenType:   "Bearer",
 	}, nil
@@ -111,7 +111,7 @@ func (p *provider) GetAccessToken(req apistructs.OAuth2TokenGetRequest) (*apistr
 
 func (p *provider) GetOAuth2Token(req apistructs.OAuth2TokenGetRequest) (*apistructs.OAuth2Token, error) {
 	return &apistructs.OAuth2Token{
-		AccessToken: p.Cfg.accessToken,
+		AccessToken: p.Cfg.AccessToken,
 		ExpiresIn:   0,
 		TokenType:   "Bearer",
 	}, nil
@@ -126,7 +126,7 @@ func (p *provider) CheckAccessTokenFromHttpRequest(req *http.Request) error {
 }
 
 func (p *provider) CheckAccessToken(token string) error {
-	if token != p.Cfg.accessToken {
+	if token != p.Cfg.AccessToken {
 		return fmt.Errorf("invalid access token")
 	}
 	return nil

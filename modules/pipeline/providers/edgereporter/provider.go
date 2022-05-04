@@ -16,12 +16,14 @@ package edgereporter
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"time"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
+	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
@@ -31,40 +33,61 @@ import (
 )
 
 type config struct {
-	CompensatorDuration time.Duration `file:"compensator_duration" env:"COMPENSATOR_DURATION" default:"2h"`
-	OpenapiPublicURL    string        `file:"openapi_public_url" env:"OPENAPI_PUBLIC_URL"`
-	OpenapiToken        string        `file:"openapi_token" env:"OPENAPI_TOKEN"`
+	Compensator compensatorConfig
+	Target      targetConfig
+}
+
+type targetConfig struct {
+	URL       string `file:"target_url" env:"EDGE_REPORTER_TARGET_URL"`
+	AuthToken string `file:"target_auth" env:"EDGE_REPORTER_TARGET_AUTH_TOKEN"`
+}
+
+type compensatorConfig struct {
+	Interval time.Duration `file:"interval" env:"EDGE_REPORTER_COMPENSATOR_INTERVAL" default:"2h"`
 }
 
 type provider struct {
-	bdl      *bundle.Bundle
-	dbClient *db.Client
+	Cfg *config
+	Log logs.Logger
 
-	Cfg          *config
-	Log          logs.Logger
 	LW           leaderworker.Interface
 	MySQL        mysqlxorm.Interface
 	EdgeRegister edgepipeline_register.Interface
+	Cron         cronpb.CronServiceServer
+
+	bdl      *bundle.Bundle
+	dbClient *db.Client
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.bdl = bundle.New(bundle.WithAllAvailableClients())
 	p.dbClient = &db.Client{Client: &dbclient.Client{Engine: p.MySQL.DB()}}
+
+	// target config
 	if p.EdgeRegister.IsEdge() {
-		p.LW.OnLeader(p.taskReporter)
-		p.LW.OnLeader(p.pipelineReporter)
-		p.LW.OnLeader(p.compensatorPipelineReporter)
+		// url
+		if len(p.Cfg.Target.URL) == 0 {
+			return fmt.Errorf("missing target url")
+		}
+
+		// token
+		if len(p.Cfg.Target.AuthToken) == 0 {
+			token, err := p.EdgeRegister.GetAccessToken(apistructs.OAuth2TokenGetRequest{})
+			if err != nil {
+				return err
+			}
+			p.Cfg.Target.AuthToken = token.AccessToken
+		}
 	}
 	return nil
 }
 
 func (p *provider) Run(ctx context.Context) error {
-	token, err := p.EdgeRegister.GetAccessToken(apistructs.OAuth2TokenGetRequest{})
-	if err != nil {
-		p.Log.Errorf("failed to GetAccessToken, err: %v", err)
-		return err
+	if p.EdgeRegister.IsEdge() {
+		p.LW.OnLeader(p.taskReporter)
+		p.LW.OnLeader(p.pipelineReporter)
+		p.LW.OnLeader(p.compensatorPipelineReporter)
 	}
-	p.Cfg.OpenapiToken = token.AccessToken
 	return nil
 }
 

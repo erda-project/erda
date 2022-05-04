@@ -49,7 +49,11 @@ secret: {}
 run: {}
 user: {}
 cancel: {}
-edge-reporter: {}
+edge-reporter:
+  target:
+    url: "${OPENAPI_PUBLIC_URL}"
+    auth_token: "${OPENAPI_TOKEN}"
+
 actionmgr: {}
 
 etcd-election@leader-worker:

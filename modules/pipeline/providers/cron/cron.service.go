@@ -28,7 +28,6 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/providers/cron/db"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
-	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -90,7 +89,7 @@ func (s *provider) CronCreate(ctx context.Context, req *pb.CronCreateRequest) (*
 
 	err = Transaction(s.dbClient, func(op mysqlxorm.SessionOption) error {
 
-		toEdge := s.EdgePipelineRegister.ShouldDispatchToEdge(createCron.PipelineSource.String(), createCron.Extra.ClusterName)
+		toEdge := s.EdgePipelineRegister.CanProxyToEdge(createCron.PipelineSource, createCron.Extra.ClusterName)
 		if toEdge || s.EdgePipelineRegister.IsEdge() {
 			createCron.IsEdge = true
 		}
@@ -219,7 +218,7 @@ func (s *provider) operate(cronID uint64, enable bool) (*common.Cron, error) {
 			return apierrors.ErrReloadCrond.InternalError(err)
 		}
 
-		toEdge := s.EdgePipelineRegister.ShouldDispatchToEdge(cron.PipelineSource.String(), cron.Extra.ClusterName)
+		toEdge := s.EdgePipelineRegister.CanProxyToEdge(cron.PipelineSource, cron.Extra.ClusterName)
 
 		if toEdge {
 			bdl, err := s.EdgePipelineRegister.GetEdgeBundleByClusterName(cron.Extra.ClusterName)
@@ -278,7 +277,7 @@ func (s *provider) delete(req *pb.CronDeleteRequest, option mysqlxorm.SessionOpt
 		return apierrors.ErrDeletePipelineCron.InternalError(err)
 	}
 
-	toEdge := s.EdgePipelineRegister.ShouldDispatchToEdge(cron.PipelineSource.String(), cron.Extra.ClusterName)
+	toEdge := s.EdgePipelineRegister.CanProxyToEdge(cron.PipelineSource, cron.Extra.ClusterName)
 
 	if toEdge {
 		bdl, err := s.EdgePipelineRegister.GetEdgeBundleByClusterName(cron.Extra.ClusterName)
@@ -336,10 +335,10 @@ func (s *provider) CronUpdate(ctx context.Context, req *pb.CronUpdateRequest) (*
 	cron.Extra.PipelineYml = req.PipelineYml
 	cron.Extra.ConfigManageNamespaces = strutil.DedupSlice(append(cron.Extra.ConfigManageNamespaces, req.ConfigManageNamespaces...), true)
 	cron.Extra.IncomingSecrets = req.Secrets
-	var fields = []string{spec.PipelineCronCronExpr, spec.Extra}
+	var fields = []string{db.PipelineCronCronExpr, db.Extra}
 	if req.PipelineDefinitionID != "" {
 		cron.PipelineDefinitionID = req.PipelineDefinitionID
-		fields = append(fields, spec.PipelineDefinitionID)
+		fields = append(fields, db.PipelineDefinitionID)
 	}
 
 	err = Transaction(s.dbClient, func(option mysqlxorm.SessionOption) error {
@@ -352,10 +351,10 @@ func (s *provider) CronUpdate(ctx context.Context, req *pb.CronUpdateRequest) (*
 }
 
 func (s *provider) update(req *pb.CronUpdateRequest, cron db.PipelineCron, fields []string, option mysqlxorm.SessionOption) error {
-	toEdge := s.EdgePipelineRegister.ShouldDispatchToEdge(cron.PipelineSource.String(), cron.Extra.ClusterName)
+	toEdge := s.EdgePipelineRegister.CanProxyToEdge(cron.PipelineSource, cron.Extra.ClusterName)
 
 	if toEdge || s.EdgePipelineRegister.IsEdge() {
-		fields = append(fields, spec.PipelineCronIsEdge)
+		fields = append(fields, db.PipelineCronIsEdge)
 		cron.IsEdge = true
 	}
 
@@ -439,7 +438,7 @@ func (s *provider) InsertOrUpdatePipelineCron(new *db.PipelineCron, ops ...mysql
 func (s *provider) disable(cron *db.PipelineCron, option mysqlxorm.SessionOption) error {
 	var disable = false
 	var updateCron = &db.PipelineCron{}
-	var columns = []string{spec.PipelineCronCronExpr, spec.PipelineCronEnable, spec.PipelineCronIsEdge}
+	var columns = []string{db.PipelineCronCronExpr, db.PipelineCronEnable, db.PipelineCronIsEdge}
 	var err error
 
 	updateCron.IsEdge = cron.IsEdge
