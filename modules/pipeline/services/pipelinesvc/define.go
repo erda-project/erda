@@ -15,6 +15,7 @@
 package pipelinesvc
 
 import (
+	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	"github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	"github.com/erda-project/erda/bundle"
@@ -24,6 +25,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/providers/clusterinfo"
 	"github.com/erda-project/erda/modules/pipeline/providers/cron/daemon"
 	"github.com/erda-project/erda/modules/pipeline/providers/edgepipeline_register"
+	"github.com/erda-project/erda/modules/pipeline/providers/edgereporter"
 	"github.com/erda-project/erda/modules/pipeline/providers/engine"
 	"github.com/erda-project/erda/modules/pipeline/providers/run"
 	"github.com/erda-project/erda/modules/pipeline/providers/secret"
@@ -59,10 +61,12 @@ type PipelineSvc struct {
 	cmsService   pb.CmsServiceServer
 	clusterInfo  clusterinfo.Interface
 	edgeRegister edgepipeline_register.Interface
+	edgeReporter edgereporter.Interface
 	secret       secret.Interface
 	user         user.Interface
 	run          run.Interface
 	actionMgr    actionmgr.Interface
+	mysql        mysqlxorm.Interface
 }
 
 func New(appSvc *appsvc.AppSvc, crondSvc daemon.Interface,
@@ -109,4 +113,12 @@ func (s *PipelineSvc) WithRun(run run.Interface) {
 
 func (s *PipelineSvc) WithActionMgr(actionMgr actionmgr.Interface) {
 	s.actionMgr = actionMgr
+}
+
+func (s *PipelineSvc) WithMySQL(mysql mysqlxorm.Interface) {
+	s.mysql = mysql
+}
+
+func (s *PipelineSvc) WithEdgeReporter(r edgereporter.Interface) {
+	s.edgeReporter = r
 }

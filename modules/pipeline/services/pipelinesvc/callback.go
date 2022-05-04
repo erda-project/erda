@@ -24,6 +24,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/events"
+	crondb "github.com/erda-project/erda/modules/pipeline/providers/cron/db"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 )
@@ -212,6 +213,15 @@ func (s *PipelineSvc) DealPipelineCallbackOfPipeline(data []byte) error {
 	return s.dbClient.BatchCreatePipelineStages(pst.PipelineStages)
 }
 
+func (s *PipelineSvc) DealPipelineCallbackOfCron(data []byte) error {
+	var pc crondb.PipelineCron
+	if err := json.Unmarshal(data, &pc); err != nil {
+		return err
+	}
+
+	return s.CreateOrUpdatePipelineCron(&pc)
+}
+
 func (s *PipelineSvc) CreateOrUpdatePipeline(pipeline *spec.Pipeline) error {
 	var baseDao spec.PipelineBase
 	exist, err := s.dbClient.ID(pipeline.ID).Get(&baseDao)
@@ -251,4 +261,17 @@ func (s *PipelineSvc) CreateOrUpdatePipelineTask(pt *spec.PipelineTask) error {
 		return s.dbClient.UpdatePipelineTask(pt.ID, pt)
 	}
 	return s.dbClient.CreatePipelineTask(pt)
+}
+
+func (s *PipelineSvc) CreateOrUpdatePipelineCron(pc *crondb.PipelineCron) error {
+	var dao crondb.PipelineCron
+	exist, err := s.dbClient.ID(pc.ID).Get(&dao)
+	if err != nil {
+		return err
+	}
+	dbClient := &crondb.Client{Interface: s.mysql}
+	if exist {
+		return dbClient.UpdatePipelineCron(pc.ID, pc)
+	}
+	return dbClient.CreatePipelineCron(pc)
 }

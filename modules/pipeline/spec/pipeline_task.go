@@ -55,6 +55,8 @@ type PipelineTask struct {
 	TimeEnd      time.Time `json:"timeEnd"`                    // 执行结束时间
 	TimeCreated  time.Time `json:"timeCreated" xorm:"created"` // 记录创建时间
 	TimeUpdated  time.Time `json:"timeUpdated" xorm:"updated"` // 记录更新时间
+
+	IsEdge bool `json:"isEdge"`
 }
 
 func (pt *PipelineTask) NodeName() string {

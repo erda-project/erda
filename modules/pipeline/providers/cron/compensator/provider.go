@@ -515,7 +515,7 @@ func (p *provider) createCronCompensatePipeline(ctx context.Context, pc db.Pipel
 
 // isCronShouldIgnore If the cron trigger time is not triggered at this time or does not belong to this edge cluster, it should be skipped
 func (p *provider) isCronShouldBeIgnored(pc db.PipelineCron) bool {
-	ok := p.EdgePipelineRegister.ShouldDispatchToEdge(pc.PipelineSource.String(), pc.Extra.ClusterName)
+	ok := p.EdgePipelineRegister.CanProxyToEdge(pc.PipelineSource, pc.Extra.ClusterName)
 	if ok {
 		return true
 	}

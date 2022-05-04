@@ -65,6 +65,10 @@ type EdgePipelineRegisterImpl struct {
 	GetEdgeBundleByClusterNameErr error
 }
 
+func (e EdgePipelineRegisterImpl) CanProxyToEdge(source apistructs.PipelineSource, clusterName string) bool {
+	return e.ShouldDispatchToEdgeResult
+}
+
 func (e EdgePipelineRegisterImpl) ClusterIsEdge(clusterName string) (bool, error) {
 	//TODO implement me
 	panic("implement me")
@@ -102,10 +106,6 @@ func (e EdgePipelineRegisterImpl) CheckAccessTokenFromHttpRequest(req *http.Requ
 
 func (e EdgePipelineRegisterImpl) IsEdge() bool {
 	panic("implement me")
-}
-
-func (e EdgePipelineRegisterImpl) ShouldDispatchToEdge(source, clusterName string) bool {
-	return e.ShouldDispatchToEdgeResult
 }
 
 func (e EdgePipelineRegisterImpl) GetEdgeBundleByClusterName(clusterName string) (*bundle.Bundle, error) {
@@ -625,7 +625,7 @@ func Test_provider_cronDelete(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "test to edege",
+			name: "test to edge",
 			args: args{
 				req: &pb.CronDeleteRequest{
 					CronID: 1,

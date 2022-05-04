@@ -51,10 +51,10 @@ func (e *Endpoints) pipelineCreateV2(ctx context.Context, r *http.Request, vars 
 	}
 	createReq.IdentityInfo = identityInfo
 
-	p, err := e.pipelineSvc.CreateV2(ctx, &createReq)
+	p, err := e.edgePipeline.CreatePipeline(ctx, &createReq)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
 
-	return httpserver.OkResp(e.pipelineSvc.ConvertPipeline(p))
+	return httpserver.OkResp(p)
 }

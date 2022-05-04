@@ -36,6 +36,7 @@ import (
 	_ "github.com/erda-project/erda/modules/pipeline/providers/dispatcher"
 	"github.com/erda-project/erda/modules/pipeline/providers/edgepipeline"
 	"github.com/erda-project/erda/modules/pipeline/providers/edgepipeline_register"
+	"github.com/erda-project/erda/modules/pipeline/providers/edgereporter"
 	"github.com/erda-project/erda/modules/pipeline/providers/engine"
 	"github.com/erda-project/erda/modules/pipeline/providers/leaderworker"
 	"github.com/erda-project/erda/modules/pipeline/providers/queuemanager"
@@ -61,6 +62,7 @@ type provider struct {
 	Reconciler   reconciler.Interface
 	EdgePipeline edgepipeline.Interface
 	EdgeRegister edgepipeline_register.Interface
+	EdgeReporter edgereporter.Interface
 	LeaderWorker leaderworker.Interface
 	ClusterInfo  clusterinfo.Interface
 	DBGC         dbgc.Interface

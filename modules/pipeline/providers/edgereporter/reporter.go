@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"time"
 
+	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 )
@@ -26,6 +27,7 @@ import (
 var (
 	taskReportChan     = make(chan uint64)
 	pipelineReportChan = make(chan uint64)
+	cronReportChan     = make(chan uint64)
 )
 
 func (p *provider) TriggerOnceTaskReport(taskID uint64) {
@@ -34,6 +36,10 @@ func (p *provider) TriggerOnceTaskReport(taskID uint64) {
 
 func (p *provider) TriggerOncePipelineReport(pipelineID uint64) {
 	pipelineReportChan <- pipelineID
+}
+
+func (p *provider) TriggerOnceCronReport(cronID uint64) {
+	cronReportChan <- cronID
 }
 
 // taskReporter Only report task
@@ -66,7 +72,7 @@ func (p *provider) doTaskReporter(ctx context.Context, taskID uint64) error {
 	err = p.bdl.PipelineCallback(apistructs.PipelineCallbackRequest{
 		Type: apistructs.PipelineCallbackTypeOfEdgeTaskReport.String(),
 		Data: b,
-	}, p.Cfg.OpenapiPublicURL, p.Cfg.OpenapiToken)
+	}, p.Cfg.Target.URL, p.Cfg.Target.AuthToken)
 
 	return err
 }
@@ -126,7 +132,42 @@ func (p *provider) doPipelineReporter(ctx context.Context, pipelineID uint64) er
 	err = p.bdl.PipelineCallback(apistructs.PipelineCallbackRequest{
 		Type: apistructs.PipelineCallbackTypeOfEdgePipelineReport.String(),
 		Data: b,
-	}, p.Cfg.OpenapiPublicURL, p.Cfg.OpenapiToken)
+	}, p.Cfg.Target.URL, p.Cfg.Target.AuthToken)
+
+	return err
+}
+
+// cronReporter Only report cron
+func (p *provider) cronReporter(ctx context.Context) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case cronID := <-cronReportChan:
+			go func() {
+				if err := p.doCronReporter(ctx, cronID); err != nil {
+					p.Log.Errorf("failed to doCronReporter, err: %v", err)
+				}
+			}()
+		}
+	}
+}
+
+// doCronReporter Do report cron
+func (p *provider) doCronReporter(ctx context.Context, cronID uint64) error {
+	p.Log.Infof("begin do cron report, cronID: %d", cronID)
+	resp, err := p.Cron.CronGet(ctx, &cronpb.CronGetRequest{CronID: cronID})
+	if err != nil {
+		return err
+	}
+	b, err := json.Marshal(resp.Data)
+	if err != nil {
+		return err
+	}
+	err = p.bdl.PipelineCallback(apistructs.PipelineCallbackRequest{
+		Type: apistructs.PipelineCallbackTypeOfEdgeCronReport.String(),
+		Data: b,
+	}, p.Cfg.Target.URL, p.Cfg.Target.AuthToken)
 
 	return err
 }
@@ -142,7 +183,7 @@ func (p *provider) compensatorPipelineReporter(ctx context.Context) {
 			return
 		case <-ticker.C:
 			p.doCompensatorPipelineReporter(ctx)
-			ticker.Reset(p.Cfg.CompensatorDuration)
+			ticker.Reset(p.Cfg.Compensator.Interval)
 		}
 	}
 }

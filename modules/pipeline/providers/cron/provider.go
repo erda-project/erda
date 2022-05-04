@@ -15,11 +15,11 @@
 package cron
 
 import (
-	logs "github.com/erda-project/erda-infra/base/logs"
-	servicehub "github.com/erda-project/erda-infra/base/servicehub"
-	transport "github.com/erda-project/erda-infra/pkg/transport"
+	"github.com/erda-project/erda-infra/base/logs"
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
-	pb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
+	"github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	"github.com/erda-project/erda/modules/pipeline/providers/cron/daemon"
 	"github.com/erda-project/erda/modules/pipeline/providers/cron/db"
 	"github.com/erda-project/erda/modules/pipeline/providers/edgepipeline_register"
@@ -43,14 +43,14 @@ type provider struct {
 	EdgePipelineRegister edgepipeline_register.Interface
 }
 
-func (p *provider) Init(ctx servicehub.Context) error {
-	p.dbClient = &db.Client{Interface: p.MySQL}
-	pb.RegisterCronServiceImp(p.Register, p)
+func (s *provider) Init(ctx servicehub.Context) error {
+	s.dbClient = &db.Client{Interface: s.MySQL}
+	pb.RegisterCronServiceImp(s.Register, s)
 	return nil
 }
 
-func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
-	return p
+func (s *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
+	return s
 }
 
 func init() {

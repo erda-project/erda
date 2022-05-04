@@ -147,6 +147,11 @@ func (tr *defaultTaskReconciler) IdempotentSaveTask(ctx context.Context, p *spec
 	}
 
 	// save task
+	if tr.edgeRegister != nil {
+		if tr.edgeRegister.IsEdge() {
+			task.IsEdge = true
+		}
+	}
 	if err := tr.dbClient.CreatePipelineTask(task); err != nil {
 		return err
 	}
