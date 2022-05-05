@@ -11,6 +11,11 @@
         "operator":"eq",
         "tag":"terminus_key",
         "value":"$terminus_key"
+      },
+      {
+        "operator": "neq",
+        "tag": "container",
+        "value": "POD"
       }
     ],
     "functions":[
