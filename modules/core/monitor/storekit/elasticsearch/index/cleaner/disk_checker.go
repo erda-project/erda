@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/olivere/elastic"
+	"github.com/robfig/cron/v3"
 
 	"github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index"
 	"github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/loader"
@@ -42,6 +43,57 @@ func (p *provider) runDiskCheckAndClean(ctx context.Context) {
 			p.Log.Errorf("failed to check disk: %s", err)
 		}
 		timer.Reset(p.Cfg.DiskClean.CheckInterval)
+	}
+}
+
+func (p *provider) runDocsCheckAndClean(ctx context.Context) {
+	if p.Cfg.DiskClean.TTL.Enable {
+		c := cron.New(cron.WithSeconds())
+		_, err := c.AddFunc(p.Cfg.DiskClean.TTL.TriggerSpecCron, p.deleteByQuery)
+		if err != nil {
+			panic("create cron failed.")
+		}
+		c.Start()
+		p.Log.Infof("Enable disk clean cron task. Cron expression: %s, Max store time: %v", p.Cfg.DiskClean.TTL.TriggerSpecCron, p.Cfg.DiskClean.TTL.MaxStoreTime)
+	}
+}
+
+func (p *provider) runTaskCheck(ctx context.Context) {
+	p.Log.Infof("run ttl task check")
+	defer p.Log.Infof("exit ttl task check")
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case task := <-p.ttlTaskCh:
+			tasksGetTask := p.loader.Client().TasksGetTask()
+			taskStatus, err := tasksGetTask.TaskId(task.TaskId).Do(ctx)
+			if err != nil {
+				continue
+			}
+			if taskStatus != nil && !taskStatus.Completed {
+				go func(task *TtlTask) {
+					timer := time.NewTimer(time.Minute * time.Duration(p.Cfg.DiskClean.TTL.TaskCheckInterval))
+					select {
+					case <-timer.C:
+						p.AddTask(task)
+						p.Log.Infof("Task uncompleted. delay retry. taskId: %s, indices: %s", task.TaskId, task.Indices)
+					}
+				}(task)
+				continue
+			}
+			p.Log.Infof("Task completed. taskId: %s, task status: %v", taskStatus.Task.Id, taskStatus.Task.Status)
+			p.forceMerge(ctx, task.Indices...)
+		}
+	}
+}
+
+func (p *provider) AddTask(task *TtlTask) {
+	if task != nil && task.TaskId != "" && len(task.Indices) > 0 {
+		p.ttlTaskCh <- &TtlTask{
+			TaskId:  task.TaskId,
+			Indices: task.Indices,
+		}
 	}
 }
 

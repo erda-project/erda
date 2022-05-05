@@ -131,7 +131,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		if p.es == nil || p.Redis == nil || p.election == nil {
 			return fmt.Errorf("elasticsearch-client、etcd-election、redis-client are required")
 		}
-		p.election.OnLeader(p.syncIndiceToCache)
+		p.election.OnLeader(p.syncIndicesToCache)
 		ctx.AddTask(p.runCacheLoader, servicehub.WithTaskName("cached index loader"))
 	default:
 		return fmt.Errorf("invalid load_mode, only support: %v", []LoadMode{LoadFromElasticSearchOnly, LoadFromCacheOnly, LoadWithCache})

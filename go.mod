@@ -136,6 +136,7 @@ require (
 	github.com/recallsong/go-utils v1.1.2-0.20210826100715-fce05eefa294
 	github.com/rifflock/lfshook v0.0.0-20180920164130-b9218ef580f5
 	github.com/robfig/cron v1.2.0
+	github.com/robfig/cron/v3 v3.0.1
 	github.com/russross/blackfriday/v2 v2.1.0
 	github.com/sabhiram/go-gitignore v0.0.0-20201211210132-54b8a0bf510f
 	github.com/satori/go.uuid v1.2.0
