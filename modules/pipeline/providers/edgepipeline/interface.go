@@ -32,6 +32,7 @@ type Interface interface {
 type CreateInterface interface {
 	CreatePipeline(ctx context.Context, req *apistructs.PipelineCreateRequestV2) (*apistructs.PipelineDTO, error)
 	CreateCron(ctx context.Context, req *cronpb.CronCreateRequest) (*pb.Cron, error)
+	RunPipeline(ctx context.Context, req *apistructs.PipelineRunRequest) error
 }
 
 func (s *provider) InjectLegacyFields(pipelineSvc *pipelinesvc.PipelineSvc) {

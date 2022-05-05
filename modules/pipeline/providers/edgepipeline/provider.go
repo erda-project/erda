@@ -24,6 +24,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/pipeline/providers/edgepipeline_register"
 	"github.com/erda-project/erda/modules/pipeline/providers/edgereporter"
+	"github.com/erda-project/erda/modules/pipeline/providers/run"
 	"github.com/erda-project/erda/modules/pipeline/services/pipelinesvc"
 )
 
@@ -37,6 +38,7 @@ type provider struct {
 	Cfg *config
 
 	Cron                 cronpb.CronServiceServer
+	PipelineRun          run.Interface
 	EdgePipelineRegister edgepipeline_register.Interface
 	EdgeReporter         edgereporter.Interface
 
