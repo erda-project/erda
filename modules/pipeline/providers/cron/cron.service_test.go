@@ -65,6 +65,16 @@ type EdgePipelineRegisterImpl struct {
 	GetEdgeBundleByClusterNameErr error
 }
 
+func (e EdgePipelineRegisterImpl) ClusterAccessKey() string {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (e EdgePipelineRegisterImpl) IsCenter() bool {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (e EdgePipelineRegisterImpl) CanProxyToEdge(source apistructs.PipelineSource, clusterName string) bool {
 	return e.ShouldDispatchToEdgeResult
 }

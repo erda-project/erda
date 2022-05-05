@@ -26,6 +26,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
+	"github.com/erda-project/erda/modules/pipeline/providers/edgepipeline_register"
 	"github.com/erda-project/erda/modules/pipeline/providers/edgereporter/db"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 )
@@ -142,10 +143,11 @@ func Test_provider_doTaskReporter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &provider{
-				bdl:      tt.fields.bdl,
-				dbClient: tt.fields.dbClient,
-				Log:      tt.fields.Log,
-				Cfg:      tt.fields.config,
+				bdl:          tt.fields.bdl,
+				dbClient:     tt.fields.dbClient,
+				Log:          tt.fields.Log,
+				Cfg:          tt.fields.config,
+				EdgeRegister: &edgepipeline_register.MockEdgeRegister{},
 			}
 			if err := p.doTaskReporter(tt.args.ctx, tt.args.taskID); (err != nil) != tt.wantErr {
 				t.Errorf("doTaskReporter() error = %v, wantErr %v", err, tt.wantErr)
@@ -222,10 +224,11 @@ func Test_provider_doPipelineReporter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &provider{
-				bdl:      tt.fields.bdl,
-				dbClient: tt.fields.dbClient,
-				Cfg:      tt.fields.Cfg,
-				Log:      tt.fields.Log,
+				bdl:          tt.fields.bdl,
+				dbClient:     tt.fields.dbClient,
+				Cfg:          tt.fields.Cfg,
+				Log:          tt.fields.Log,
+				EdgeRegister: &edgepipeline_register.MockEdgeRegister{},
 			}
 			if err := p.doPipelineReporter(tt.args.ctx, tt.args.pipelineID); (err != nil) != tt.wantErr {
 				t.Errorf("doPipelineReporter() error = %v, wantErr %v", err, tt.wantErr)
