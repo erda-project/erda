@@ -22,6 +22,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/pipeline/providers/cancel"
 	"github.com/erda-project/erda/modules/pipeline/providers/edgepipeline_register"
 	"github.com/erda-project/erda/modules/pipeline/providers/edgereporter"
 	"github.com/erda-project/erda/modules/pipeline/providers/run"
@@ -37,10 +38,11 @@ type provider struct {
 	Log logs.Logger
 	Cfg *config
 
-	Cron                 cronpb.CronServiceServer
-	PipelineRun          run.Interface
-	EdgePipelineRegister edgepipeline_register.Interface
-	EdgeReporter         edgereporter.Interface
+	Cron           cronpb.CronServiceServer
+	PipelineRun    run.Interface
+	PipelineCancel cancel.Interface
+	EdgeRegister   edgepipeline_register.Interface
+	EdgeReporter   edgereporter.Interface
 
 	bdl         *bundle.Bundle
 	pipelineSvc *pipelinesvc.PipelineSvc

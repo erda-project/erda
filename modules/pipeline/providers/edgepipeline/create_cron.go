@@ -23,7 +23,7 @@ import (
 )
 
 func (s *provider) CreateCron(ctx context.Context, req *cronpb.CronCreateRequest) (*pb.Cron, error) {
-	canProxy := s.EdgePipelineRegister.CanProxyToEdge(apistructs.PipelineSource(req.PipelineSource), req.ClusterName)
+	canProxy := s.EdgeRegister.CanProxyToEdge(apistructs.PipelineSource(req.PipelineSource), req.ClusterName)
 
 	if canProxy {
 		return s.proxyCreateCronRequestToEdge(ctx, req)
@@ -34,7 +34,7 @@ func (s *provider) CreateCron(ctx context.Context, req *cronpb.CronCreateRequest
 
 func (s *provider) proxyCreateCronRequestToEdge(ctx context.Context, req *cronpb.CronCreateRequest) (*pb.Cron, error) {
 	// handle at edge side
-	edgeBundle, err := s.EdgePipelineRegister.GetEdgeBundleByClusterName(req.ClusterName)
+	edgeBundle, err := s.EdgeRegister.GetEdgeBundleByClusterName(req.ClusterName)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +51,7 @@ func (s *provider) directCreateCron(ctx context.Context, req *cronpb.CronCreateR
 		return nil, err
 	}
 	// report
-	if s.EdgePipelineRegister.IsEdge() {
+	if s.EdgeRegister.IsEdge() {
 		s.EdgeReporter.TriggerOnceTaskReport(resp.Data.ID)
 	}
 	return resp.Data, nil
