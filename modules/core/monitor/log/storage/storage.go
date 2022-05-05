@@ -27,6 +27,7 @@ import (
 )
 
 const (
+	IsLive           = "is_live"
 	SelectorKeyCount = "count"
 	IsFirstQuery     = "is_first_query"
 )

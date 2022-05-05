@@ -272,12 +272,6 @@ func (s *logQueryService) queryRealLogItems(ctx context.Context, req Request, fn
 		sel = fn(sel)
 	}
 
-	if req.GetLive() != true {
-		return nil, fmt.Errorf("no supported to stop container of real log")
-	}
-	if sel.Scheme != "container" {
-		return nil, fmt.Errorf("no supported query %s of real log", sel.Scheme)
-	}
 	it, err := s.tryGetIterator(ctx, sel, s.k8sReader)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
@@ -533,6 +527,7 @@ func toQuerySelector(req Request) (*storage.Selector, error) {
 		Debug: req.GetDebug(),
 		Options: map[string]interface{}{
 			storage.SelectorKeyCount: req.GetCount(),
+			storage.IsLive:           req.GetLive(),
 		},
 	}
 

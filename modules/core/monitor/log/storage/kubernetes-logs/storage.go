@@ -78,12 +78,22 @@ func (s *cStorage) Iterator(ctx context.Context, sel *storage.Selector) (storeki
 	var err error
 	var podName, containerName, namespace, clusterName, id string
 
+	if sel.Scheme != "container" {
+		s.log.Debugf("kubernetes-log not supported query %s of real log", sel.Scheme)
+		return storekit.EmptyIterator{}, nil
+	}
+
+	live, ok := sel.Options[storage.IsLive]
+	if !ok || !live.(bool) {
+		s.log.Debugf("kubernetes-log not supported to stop container of real log")
+		return storekit.EmptyIterator{}, nil
+	}
+
 	matcher := func(data *pb.LogItem, it *logsIterator) bool { return true }
 	for _, filter := range sel.Filters {
 		if filter.Value == nil {
 			continue
 		}
-
 		if filter.Key != "content" && filter.Op != storage.EQ {
 			s.log.Debugf("%s only support EQ filter, ignore kubernetes logs query", filter.Key)
 			return storekit.EmptyIterator{}, nil
