@@ -55,7 +55,14 @@ type PipelineCron struct {
 	// definition id
 	PipelineDefinitionID string `json:"pipelineDefinitionID"`
 
-	IsEdge bool `json:"is_edge"`
+	IsEdge *bool `json:"is_edge"`
+}
+
+func (pc PipelineCron) GetIsEdge() bool {
+	if pc.IsEdge == nil {
+		return false
+	}
+	return *pc.IsEdge
 }
 
 // PipelineCronExtra cron 扩展信息, 不参与过滤
@@ -124,7 +131,7 @@ func (pc *PipelineCron) Convert2DTO() *pb.Cron {
 		OrgID:                  pc.GetOrgID(),
 		PipelineDefinitionID:   pc.PipelineDefinitionID,
 		PipelineSource:         pc.PipelineSource.String(),
-		IsEdge:                 wrapperspb.Bool(pc.IsEdge),
+		IsEdge:                 wrapperspb.Bool(pc.GetIsEdge()),
 	}
 
 	extra := &pb.CronExtra{
