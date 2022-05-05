@@ -24,8 +24,7 @@ func (client *Client) UpdatePipelineEdgeReportStatus(pipelineID uint64, status a
 	return err
 }
 
-// TODO add edge pipeline condition
 func (client *Client) ListEdgePipelineIDsForCompensatorReporter() (bases []spec.PipelineBase, err error) {
-	err = client.Select("id").Where("edge_report_status != ?", apistructs.DoneEdgeReportStatus).Find(&bases)
+	err = client.Select("id").Where("is_edge = 1").Where("edge_report_status != ?", apistructs.DoneEdgeReportStatus).Find(&bases)
 	return
 }
