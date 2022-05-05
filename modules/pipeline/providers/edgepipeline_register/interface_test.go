@@ -277,3 +277,32 @@ func TestShouldDispatchToEdge(t *testing.T) {
 		})
 	}
 }
+
+func Test_getAccessKey(t *testing.T) {
+	p := &provider{
+		Cfg: &Config{
+			ClusterAccessKey: "xxx",
+		},
+	}
+	assert.Equal(t, "xxx", p.ClusterAccessKey())
+}
+
+func Test_setAccessKey(t *testing.T) {
+	p := &provider{Cfg: &Config{}}
+	p.setAccessKey("xxx")
+	assert.Equal(t, "xxx", p.ClusterAccessKey())
+}
+
+func Test_getAccessToken(t *testing.T) {
+	p := &provider{Cfg: &Config{AccessToken: "xxx"}}
+	assert.Equal(t, "xxx", p.EdgeTaskAccessToken())
+}
+
+func Test_setAccessTokenIfNotExist(t *testing.T) {
+	p := &provider{Cfg: &Config{AccessToken: "aaa"}}
+	p.setAccessTokenIfNotExist("bbb")
+	assert.Equal(t, "aaa", p.EdgeTaskAccessToken())
+	p.Cfg.AccessToken = ""
+	p.setAccessTokenIfNotExist("bbb")
+	assert.Equal(t, "bbb", p.EdgeTaskAccessToken())
+}
