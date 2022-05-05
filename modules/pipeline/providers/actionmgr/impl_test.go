@@ -15,14 +15,65 @@
 package actionmgr
 
 import (
+	"context"
+	"net/http"
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 	"github.com/erda-project/erda/pkg/strutil"
 )
+
+type TestEdgePipelineRegister struct {
+}
+
+func (t TestEdgePipelineRegister) GetAccessToken(req apistructs.OAuth2TokenGetRequest) (*apistructs.OAuth2Token, error) {
+	panic("implement me")
+}
+
+func (t TestEdgePipelineRegister) GetOAuth2Token(req apistructs.OAuth2TokenGetRequest) (*apistructs.OAuth2Token, error) {
+	panic("implement me")
+}
+
+func (t TestEdgePipelineRegister) GetEdgePipelineEnvs() apistructs.ClusterDialerClientDetail {
+	panic("implement me")
+}
+
+func (t TestEdgePipelineRegister) CheckAccessToken(token string) error {
+	panic("implement me")
+}
+
+func (t TestEdgePipelineRegister) CheckAccessTokenFromHttpRequest(req *http.Request) error {
+	panic("implement me")
+}
+
+func (t TestEdgePipelineRegister) IsEdge() bool {
+	return true
+}
+
+func (t TestEdgePipelineRegister) CanProxyToEdge(source apistructs.PipelineSource, clusterName string) bool {
+	panic("implement me")
+}
+
+func (t TestEdgePipelineRegister) GetEdgeBundleByClusterName(clusterName string) (*bundle.Bundle, error) {
+	panic("implement me")
+}
+
+func (t TestEdgePipelineRegister) ClusterIsEdge(clusterName string) (bool, error) {
+	panic("implement me")
+}
+
+func (t TestEdgePipelineRegister) OnEdge(f func(context.Context)) {
+	panic("implement me")
+}
+
+func (t TestEdgePipelineRegister) OnCenter(f func(context.Context)) {
+	panic("implement me")
+}
 
 func TestMakeActionTypeVersion(t *testing.T) {
 	p := &provider{}
@@ -118,5 +169,33 @@ func Test_provider_MakeActionLocationsBySource(t *testing.T) {
 				t.Fatalf("missing expected output location %s", el)
 			}
 		}
+	}
+}
+
+func Test_provider_searchFromDiceHub(t *testing.T) {
+	type args struct {
+		notFindNameVersion []string
+	}
+	tests := []struct {
+		name string
+		args args
+		want map[string]apistructs.ExtensionVersion
+	}{
+		{
+			name: "test is edge return",
+			args: args{
+				notFindNameVersion: []string{"custom"},
+			},
+			want: map[string]apistructs.ExtensionVersion{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &provider{}
+			s.EdgeRegister = TestEdgePipelineRegister{}
+			if got := s.searchFromDiceHub(tt.args.notFindNameVersion); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("searchFromDiceHub() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }
