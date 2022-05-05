@@ -131,7 +131,7 @@ log-storage-cassandra:
     keyspace:
       name: "spot_prod"
 erda.core.monitor.log.query:
-  delay_backoff_time: 4h
+  delay_backoff_time: ${LOG_DELAY_BACKOFF_TIME:10m}
   download_api_throttling:
     current_limit: ${LOG_DOWNLOAD_API_THROTTLING_CURRENT_LIMIT:200}
 
