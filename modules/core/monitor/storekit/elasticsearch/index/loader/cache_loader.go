@@ -97,8 +97,8 @@ func (p *provider) reloadIndicesFromCache(ctx context.Context) error {
 
 func (p *provider) storeIndicesToCache(indices *IndexGroup) error {
 	expiration := 2*p.Cfg.IndexReloadInterval + p.Cfg.RequestTimeout
-	byts, _ := json.Marshal(indices)
-	if err := p.Redis.Set(p.Cfg.CacheKeyPrefix+"-all", string(byts), expiration).Err(); err != nil {
+	bytes, _ := json.Marshal(indices)
+	if err := p.Redis.Set(p.Cfg.CacheKeyPrefix+"-all", string(bytes), expiration).Err(); err != nil {
 		return err
 	}
 	return nil
