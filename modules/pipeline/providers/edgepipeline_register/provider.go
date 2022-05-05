@@ -60,13 +60,13 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.forEdgeUse.handlersOnEdge = make(chan func(context.Context), 0)
 	p.forCenterUse.handlersOnCenter = make(chan func(context.Context), 0)
 	p.startEdgeCenterUse(ctx)
+	p.OnEdge(p.watchClusterCredential)
+	p.waitingEdgeReady(ctx)
 	return nil
 }
 
 func (p *provider) Run(ctx context.Context) error {
 	p.LW.OnLeader(p.RegisterEdgeToDialer)
-	p.OnEdge(p.watchClusterCredential)
-	p.waitingEdgeReady(ctx)
 	return nil
 }
 

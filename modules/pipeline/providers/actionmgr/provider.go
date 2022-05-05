@@ -78,9 +78,7 @@ func (s *provider) Init(ctx servicehub.Context) error {
 }
 
 func (s *provider) Run(ctx context.Context) error {
-	if s.edgeRegister.IsEdge() {
-		s.continuousRefreshAction()
-	}
+	s.edgeRegister.OnCenter(s.continuousRefreshAction)
 	return nil
 }
 
