@@ -22,6 +22,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/pkg/safe"
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -69,6 +70,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		if len(p.Cfg.Target.URL) == 0 {
 			return fmt.Errorf("missing target url")
 		}
+		p.Log.Infof("target url: %s", p.Cfg.Target.URL)
 
 		// token
 		if len(p.Cfg.Target.AuthToken) == 0 {
@@ -78,14 +80,16 @@ func (p *provider) Init(ctx servicehub.Context) error {
 			}
 			p.Cfg.Target.AuthToken = token.AccessToken
 		}
+		p.Log.Infof("target auth token: %s", p.Cfg.Target.AuthToken)
 	}
 	return nil
 }
 
 func (p *provider) Run(ctx context.Context) error {
 	if p.EdgeRegister.IsEdge() {
-		p.LW.OnLeader(p.taskReporter)
-		p.LW.OnLeader(p.pipelineReporter)
+		safe.Go(func() { p.pipelineReporter(ctx) })
+		safe.Go(func() { p.taskReporter(ctx) })
+		safe.Go(func() { p.cronReporter(ctx) })
 		p.LW.OnLeader(p.compensatorPipelineReporter)
 	}
 	return nil

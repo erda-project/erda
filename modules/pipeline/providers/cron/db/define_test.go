@@ -105,7 +105,7 @@ func TestPipelineCron_Convert2DTO(t *testing.T) {
 				Branch:               "test",
 				BasePipelineID:       1,
 				PipelineDefinitionID: "test",
-				IsEdge:               true,
+				IsEdge:               &[]bool{true}[0],
 			},
 			want: &pb.Cron{
 				ID:                     1,

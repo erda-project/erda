@@ -287,7 +287,7 @@ func (s *provider) reloadCrond(ctx context.Context) ([]string, error) {
 				}
 				continue
 			}
-			if pc.IsEdge != s.EdgePipelineRegister.IsEdge() {
+			if pc.GetIsEdge() != s.EdgePipelineRegister.IsEdge() {
 				continue
 			}
 

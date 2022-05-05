@@ -24,6 +24,7 @@ func (s *provider) CreatePipeline(ctx context.Context, req *apistructs.PipelineC
 	canProxy := s.EdgePipelineRegister.CanProxyToEdge(req.PipelineSource, req.ClusterName)
 
 	if canProxy {
+		s.Log.Infof("proxy create pipeline to edge, source: %s, yamlName: %s", req.PipelineSource, req.PipelineYmlName)
 		return s.proxyCreatePipelineRequestToEdge(ctx, req)
 	}
 

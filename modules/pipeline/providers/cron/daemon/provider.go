@@ -75,7 +75,7 @@ func (p *provider) AddIntoPipelineCrond(cron *db.PipelineCron) error {
 	if ok {
 		return nil
 	}
-	if cron.IsEdge != p.EdgePipelineRegister.IsEdge() {
+	if cron.GetIsEdge() != p.EdgePipelineRegister.IsEdge() {
 		return nil
 	}
 
@@ -92,7 +92,7 @@ func (p *provider) DeleteFromPipelineCrond(cron *db.PipelineCron) error {
 	if ok {
 		return nil
 	}
-	if cron.IsEdge != p.EdgePipelineRegister.IsEdge() {
+	if cron.GetIsEdge() != p.EdgePipelineRegister.IsEdge() {
 		return nil
 	}
 

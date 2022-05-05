@@ -19,6 +19,7 @@ import (
 
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
+	"github.com/erda-project/erda/modules/pipeline/providers/edgepipeline_register"
 	"github.com/erda-project/erda/modules/pkg/websocket"
 )
 
@@ -30,7 +31,7 @@ var mgr EventManager
 
 var defaultEvent DefaultEvent
 
-func Initialize(bdl *bundle.Bundle, wsClient *websocket.Publisher, dbClient *dbclient.Client) {
+func Initialize(bdl *bundle.Bundle, wsClient *websocket.Publisher, dbClient *dbclient.Client, edgeRegister edgepipeline_register.Interface) {
 	mgr = EventManager{
 		ch: make(chan Event, 100),
 	}
@@ -39,6 +40,8 @@ func Initialize(bdl *bundle.Bundle, wsClient *websocket.Publisher, dbClient *dbc
 		bdl:      bdl,
 		wsClient: wsClient,
 		dbClient: dbClient,
+
+		edgeRegister: edgeRegister,
 	}
 
 	go func() {
@@ -48,11 +51,14 @@ func Initialize(bdl *bundle.Bundle, wsClient *websocket.Publisher, dbClient *dbc
 				//logrus.Debugf("received an %s Event: %s (kind: %s, header: %+v, sender: %s, content: %+v)",
 				//	e.Kind(), e, e.Kind(), e.Header(), e.Sender(), e.Content())
 
-				go handle(ev, HookTypeWebHook, ev.HandleWebhook)
-				go handle(ev, HookTypeWebSocket, ev.HandleWebSocket)
-				go handle(ev, HookTypeDINGDING, ev.HandleDingDing)
-				go handle(ev, HookTypeHTTP, ev.HandleHTTP)
 				go handle(ev, HookTypeDB, ev.HandleDB)
+
+				if !edgeRegister.IsEdge() {
+					go handle(ev, HookTypeWebHook, ev.HandleWebhook)
+					go handle(ev, HookTypeWebSocket, ev.HandleWebSocket)
+					go handle(ev, HookTypeDINGDING, ev.HandleDingDing)
+					go handle(ev, HookTypeHTTP, ev.HandleHTTP)
+				}
 			}(e)
 		}
 	}()
