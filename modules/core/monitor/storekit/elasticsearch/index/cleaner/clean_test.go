@@ -16,6 +16,7 @@ package cleaner
 
 import (
 	"context"
+	"errors"
 	"reflect"
 	"testing"
 	"time"
@@ -95,6 +96,14 @@ func Test_provider_forceMerge(t *testing.T) {
 			ctx:     context.Background(),
 			indices: []string{"test"},
 		}, false},
+		{"case2", fields{}, args{
+			ctx:     context.Background(),
+			indices: []string{"error"},
+		}, true},
+		{"case3", fields{}, args{
+			ctx:     context.Background(),
+			indices: []string{"error-shards"},
+		}, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -106,23 +115,50 @@ func Test_provider_forceMerge(t *testing.T) {
 			var logger *pkg.MockLogger
 			defer ctrl.Finish()
 			logger = pkg.NewMockLogger(ctrl)
-			logger.EXPECT().Infof(gomock.Any(), gomock.Any())
+
 			p := &provider{loader: indices, Log: logger}
 
 			esClient := &elastic.Client{}
 			monkey.PatchInstanceMethod(reflect.TypeOf(esClient), "Forcemerge", func(client *elastic.Client, indices ...string) *elastic.IndicesForcemergeService {
 				return &elastic.IndicesForcemergeService{}
 			})
+
 			s := &elastic.IndicesForcemergeService{}
-			monkey.PatchInstanceMethod(reflect.TypeOf(s), "Do", func(client *elastic.IndicesForcemergeService, ctx context.Context) (*elastic.IndicesForcemergeResponse, error) {
-				return &elastic.IndicesForcemergeResponse{
-					Shards: &elastic.ShardsInfo{
-						Failures: []*elastic.ShardFailure{},
-					},
-				}, nil
-			})
+			if tt.args.indices[0] == "test" {
+				monkey.PatchInstanceMethod(reflect.TypeOf(s), "Do", func(client *elastic.IndicesForcemergeService, ctx context.Context) (*elastic.IndicesForcemergeResponse, error) {
+					return &elastic.IndicesForcemergeResponse{
+						Shards: &elastic.ShardsInfo{
+							Failures: []*elastic.ShardFailure{},
+						},
+					}, nil
+				})
+				logger.EXPECT().Infof(gomock.Any(), gomock.Any())
+			}
+
+			if tt.args.indices[0] == "error" {
+				monkey.PatchInstanceMethod(reflect.TypeOf(s), "Do", func(client *elastic.IndicesForcemergeService, ctx context.Context) (*elastic.IndicesForcemergeResponse, error) {
+					return nil, errors.New("error")
+				})
+				logger.EXPECT().Error(gomock.Any())
+			}
+
+			if tt.args.indices[0] == "error-shards" {
+				monkey.PatchInstanceMethod(reflect.TypeOf(s), "Do", func(client *elastic.IndicesForcemergeService, ctx context.Context) (*elastic.IndicesForcemergeResponse, error) {
+					return &elastic.IndicesForcemergeResponse{
+						Shards: &elastic.ShardsInfo{
+							Failures: []*elastic.ShardFailure{
+								{
+									Index: "error-test",
+								},
+							},
+						},
+					}, nil
+				})
+				logger.EXPECT().Errorf(gomock.Any(), gomock.Any())
+			}
+
 			err := p.forceMerge(tt.args.ctx, tt.args.indices...)
-			if err != nil {
+			if (err != nil) != tt.wantError {
 				t.Errorf("forceMerge(), wantError %v", tt.wantError)
 			}
 		})
