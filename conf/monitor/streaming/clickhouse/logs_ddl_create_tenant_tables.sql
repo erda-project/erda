@@ -5,7 +5,6 @@ CREATE TABLE IF NOT EXISTS <database>.<table_name> ON CLUSTER '{cluster}'
     `timestamp` DateTime64(9,'Asia/Shanghai'),
     `source` String,
     `id` String,
-    `env_id` String,
     `org_name` String,
     `stream` String,
     `offset` Int64,
@@ -15,7 +14,7 @@ CREATE TABLE IF NOT EXISTS <database>.<table_name> ON CLUSTER '{cluster}'
     )
     ENGINE = ReplicatedMergeTree('/clickhouse/tables/{cluster}-{shard}/<table_name>', '{replica}')
     PARTITION BY toYYYYMMDD(timestamp)
-    ORDER BY (org_name, env_id, timestamp, id)
+    ORDER BY (org_name, timestamp, id)
     TTL toDateTime(timestamp) + INTERVAL 7 DAY;
 
 // 将常用字段添加为物化列
