@@ -132,3 +132,51 @@ func Test_provider_updateExtensionCache(t *testing.T) {
 		t.Fatalf("1.0 is default")
 	}
 }
+
+func Test_getActionNameVersion(t *testing.T) {
+	type args struct {
+		nameVersion string
+	}
+	tests := []struct {
+		name  string
+		args  args
+		want  string
+		want1 string
+	}{
+		{
+			name: "test default",
+			args: args{
+				nameVersion: "test@default",
+			},
+			want:  "test",
+			want1: "",
+		},
+		{
+			name: "test version",
+			args: args{
+				nameVersion: "test@1.0",
+			},
+			want1: "1.0",
+			want:  "test",
+		},
+		{
+			name: "test empty version",
+			args: args{
+				nameVersion: "test@",
+			},
+			want:  "test",
+			want1: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, got1 := getActionNameVersion(tt.args.nameVersion)
+			if got != tt.want {
+				t.Errorf("getActionNameVersion() got = %v, want %v", got, tt.want)
+			}
+			if got1 != tt.want1 {
+				t.Errorf("getActionNameVersion() got1 = %v, want %v", got1, tt.want1)
+			}
+		})
+	}
+}

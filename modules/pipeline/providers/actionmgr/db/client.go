@@ -256,7 +256,7 @@ func (client *Client) ListPipelineAction(req *pb.PipelineActionListRequest, ops 
 		engine = engine.Where(sqlBuild, args...)
 	}
 
-	engine = engine.OrderBy("created_at desc")
+	engine = engine.OrderBy("version_info desc")
 	err = engine.Find(&pipelineActions)
 	if err != nil {
 		return nil, err
