@@ -72,6 +72,8 @@ clickhouse.table.loader@log:
 
 log-storage-clickhouse:
   _enable: ${QUERY_LOG_FROM_CLICKHOUSE_ENABLE:false}
+  field_name_mapper:
+    tags.request_id: tags.trace_id
 
 elasticsearch@log:
   _enable: ${LOG_ELASTICSEARCH_ENABLE:false}

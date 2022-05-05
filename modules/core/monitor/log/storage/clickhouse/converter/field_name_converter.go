@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package utils
+package converter
 
 import (
 	"fmt"
@@ -21,7 +21,27 @@ import (
 	"github.com/erda-project/erda/modules/core/monitor/storekit/clickhouse/table/loader"
 )
 
-func ConvertUnknownField(tableMeta *loader.TableMeta, field string) string {
+type FieldNameConverter interface {
+	Convert(field string) string
+}
+
+func NewFieldNameConverter(tableMeta *loader.TableMeta, fieldNameMapper map[string]string) FieldNameConverter {
+	return &defaultFieldNameConverter{
+		tableMeta:       tableMeta,
+		fieldNameMapper: fieldNameMapper,
+	}
+}
+
+type defaultFieldNameConverter struct {
+	tableMeta       *loader.TableMeta
+	fieldNameMapper map[string]string
+}
+
+func (c *defaultFieldNameConverter) Convert(field string) string {
+	return convertUnknownField(c.tableMeta, c.fieldNameMapper, field)
+}
+
+func convertUnknownField(tableMeta *loader.TableMeta, fieldNameMapper map[string]string, field string) string {
 	if tableMeta == nil {
 		return field
 	}
@@ -29,6 +49,11 @@ func ConvertUnknownField(tableMeta *loader.TableMeta, field string) string {
 	if ok {
 		return field
 	}
+
+	if mapperField, ok := fieldNameMapper[field]; ok && tableMeta.Columns[mapperField] != nil {
+		return mapperField
+	}
+
 	splits := strings.SplitN(field, ".", 2)
 	if len(splits) != 2 {
 		return field

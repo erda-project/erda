@@ -22,8 +22,8 @@ import (
 	"github.com/doug-martin/goqu/v9"
 
 	"github.com/erda-project/erda/modules/core/monitor/log/storage"
+	"github.com/erda-project/erda/modules/core/monitor/log/storage/clickhouse/converter"
 	"github.com/erda-project/erda/modules/core/monitor/log/storage/clickhouse/query_parser"
-	"github.com/erda-project/erda/modules/core/monitor/log/storage/clickhouse/utils"
 	"github.com/erda-project/erda/modules/core/monitor/storekit/clickhouse/table/loader"
 )
 
@@ -78,7 +78,9 @@ func (p *provider) appendSqlWherePart(expr *goqu.SelectDataset, tableMeta *loade
 			continue
 		}
 
-		field := utils.ConvertUnknownField(tableMeta, filter.Key)
+		nameConverter := converter.NewFieldNameConverter(tableMeta, p.Cfg.FieldNameMapper)
+
+		field := nameConverter.Convert(filter.Key)
 
 		switch filter.Op {
 		case storage.EQ:
@@ -88,7 +90,7 @@ func (p *provider) appendSqlWherePart(expr *goqu.SelectDataset, tableMeta *loade
 		case storage.CONTAINS:
 			expr = expr.Where(goqu.L(field).Like(fmt.Sprintf("%%%s%%", val)))
 		case storage.EXPRESSION:
-			parser := query_parser.NewEsqsParser(tableMeta, "content", "AND", req.Meta.Highlight)
+			parser := query_parser.NewEsqsParser(nameConverter, "content", "AND", req.Meta.Highlight)
 			result := parser.Parse(val)
 			if result.Error() != nil {
 				return expr, highlightItems, fmt.Errorf("wrong search expression: %s", result.Error())
