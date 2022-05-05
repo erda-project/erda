@@ -541,7 +541,7 @@ func toQuerySelector(req Request) (*storage.Selector, error) {
 	}
 	if sel.Start <= 0 {
 		sel.Start = sel.End - defaultQueryTimeRange
-		sel.Options["is_first_query"] = true
+		sel.Options[storage.IsFirstQuery] = true
 		if sel.Start < 0 {
 			sel.Start = 0
 		}

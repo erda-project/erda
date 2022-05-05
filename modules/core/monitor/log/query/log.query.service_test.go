@@ -68,6 +68,7 @@ func Test_toQuerySelector(t *testing.T) {
 				},
 				Options: map[string]interface{}{
 					storage.SelectorKeyCount: int64(0),
+					storage.IsFirstQuery:     true,
 				},
 			},
 		},

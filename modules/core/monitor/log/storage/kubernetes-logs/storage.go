@@ -306,7 +306,7 @@ func (it *logsIterator) Prev() bool {
 			it.fetch(startTime, -1, true)
 		}
 	} else {
-		v, ok := it.sel.Options["is_first_query"]
+		v, ok := it.sel.Options[storage.IsFirstQuery]
 
 		if ok && v.(bool) {
 			it.fetchByTailLine(it.sel.Start, it.pageSize, true)

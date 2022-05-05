@@ -28,6 +28,7 @@ import (
 
 const (
 	SelectorKeyCount = "count"
+	IsFirstQuery     = "is_first_query"
 )
 
 type (
