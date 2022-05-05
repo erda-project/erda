@@ -126,7 +126,10 @@ func (p *provider) doPipelineReporter(ctx context.Context, pipelineID uint64) er
 			err = p.dbClient.UpdatePipelineEdgeReportStatus(pipelineID, apistructs.InitEdgeReportStatus)
 			return
 		}
-		err = p.dbClient.UpdatePipelineEdgeReportStatus(pipelineID, apistructs.DoneEdgeReportStatus)
+		if pipeline.Status.IsEndStatus() {
+			err = p.dbClient.UpdatePipelineEdgeReportStatus(pipelineID, apistructs.DoneEdgeReportStatus)
+			return
+		}
 	}()
 
 	err = p.bdl.PipelineCallback(apistructs.PipelineCallbackRequest{
