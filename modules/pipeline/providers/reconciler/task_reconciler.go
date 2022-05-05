@@ -311,9 +311,9 @@ func (tr *defaultTaskReconciler) TeardownAfterReconcileDone(ctx context.Context,
 	_ = aop.Handle(aop.NewContextForTask(*task, *p, aoptypes.TuneTriggerTaskAfterExec))
 
 	// invalidate openapi oauth2 token
+	// TODO Temporarily remove EnvOpenapiToken, this causes the deployment to not be canceled when pipeline is canceled. And its ttl is 3630s,
 	tokens := strutil.DedupSlice([]string{
 		task.Extra.PublicEnvs[apistructs.EnvOpenapiTokenForActionBootstrap],
-		task.Extra.PrivateEnvs[apistructs.EnvOpenapiToken],
 	}, true)
 	for _, token := range tokens {
 		_, err := tr.bdl.InvalidateOAuth2Token(apistructs.OAuth2TokenInvalidateRequest{AccessToken: token})
