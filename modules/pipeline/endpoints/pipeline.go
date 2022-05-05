@@ -226,7 +226,7 @@ func (e *Endpoints) pipelineRun(ctx context.Context, r *http.Request, vars map[s
 		}
 	}
 
-	if p, err = e.run.RunOnePipeline(ctx, &apistructs.PipelineRunRequest{
+	if err = e.edgePipeline.RunPipeline(ctx, &apistructs.PipelineRunRequest{
 		PipelineID:             p.ID,
 		IdentityInfo:           identityInfo,
 		PipelineRunParams:      runRequest.PipelineRunParams,
