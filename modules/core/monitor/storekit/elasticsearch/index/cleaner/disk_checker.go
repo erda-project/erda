@@ -76,10 +76,7 @@ func (p *provider) runTaskCheck(ctx context.Context) {
 					timer := time.NewTimer(time.Minute * time.Duration(p.Cfg.DiskClean.TTL.TaskCheckInterval))
 					select {
 					case <-timer.C:
-						p.ttlTaskCh <- &TtlTask{
-							TaskId:  task.TaskId,
-							Indices: task.Indices,
-						}
+						p.AddTask(task)
 						p.Log.Infof("Task uncompleted. delay retry. taskId: %s, indices: %s", task.TaskId, task.Indices)
 					}
 				}(task)
@@ -87,6 +84,15 @@ func (p *provider) runTaskCheck(ctx context.Context) {
 			}
 			p.Log.Infof("Task completed. taskId: %s, task status: %v", taskStatus.Task.Id, taskStatus.Task.Status)
 			p.forceMerge(ctx, task.Indices...)
+		}
+	}
+}
+
+func (p *provider) AddTask(task *TtlTask) {
+	if task != nil && task.TaskId != "" && len(task.Indices) > 0 {
+		p.ttlTaskCh <- &TtlTask{
+			TaskId:  task.TaskId,
+			Indices: task.Indices,
 		}
 	}
 }

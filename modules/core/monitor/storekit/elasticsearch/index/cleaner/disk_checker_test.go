@@ -154,3 +154,37 @@ func Test_provider_runDocsCheckAndClean(t *testing.T) {
 		})
 	}
 }
+
+func Test_provider_AddTask(t *testing.T) {
+	type fields struct {
+		Cfg                      *config
+		Log                      logs.Logger
+		election                 election.Interface
+		loader                   loader.Interface
+		retentions               RetentionStrategy
+		clearCh                  chan *clearRequest
+		minIndicesStoreInDisk    int64
+		rolloverBodyForDiskClean string
+		rolloverAliasPatterns    []*indexAliasPattern
+		ttlTaskCh                chan *TtlTask
+	}
+	type args struct {
+		task *TtlTask
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+	}{
+		{"case1", fields{ttlTaskCh: make(chan *TtlTask, 1)}, args{task: &TtlTask{TaskId: "id", Indices: []string{"test-index"}}}},
+		{"case2", fields{ttlTaskCh: make(chan *TtlTask, 1)}, args{task: nil}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &provider{
+				ttlTaskCh: tt.fields.ttlTaskCh,
+			}
+			p.AddTask(tt.args.task)
+		})
+	}
+}
