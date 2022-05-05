@@ -201,6 +201,13 @@ func (p *provider) traverseDoCompensate(ctx context.Context, doCompensate func(c
 				pc.ID, triggerTime, *pc.Extra.CronStartFrom)
 			continue
 		}
+
+		// center should skip compensate. do compensate at edge side.
+		ok := p.EdgePipelineRegister.CanProxyToEdge(pc.PipelineSource, pc.Extra.ClusterName)
+		if ok {
+			continue
+		}
+
 		if sync {
 			doCompensate(ctx, pc)
 		} else {
@@ -513,13 +520,8 @@ func (p *provider) createCronCompensatePipeline(ctx context.Context, pc db.Pipel
 	})
 }
 
-// isCronShouldIgnore If the cron trigger time is not triggered at this time or does not belong to this edge cluster, it should be skipped
+// isCronShouldIgnore If the cron trigger time is not triggered at this time, it should be skipped
 func (p *provider) isCronShouldBeIgnored(pc db.PipelineCron) bool {
-	ok := p.EdgePipelineRegister.CanProxyToEdge(pc.PipelineSource, pc.Extra.ClusterName)
-	if ok {
-		return true
-	}
-
 	if pc.Extra.CronStartFrom == nil {
 		return false
 	}
