@@ -16,7 +16,6 @@ package cron
 
 import (
 	"context"
-	"net/http"
 	"reflect"
 	"testing"
 	"time"
@@ -34,6 +33,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/pipeline/providers/cron/daemon"
 	"github.com/erda-project/erda/modules/pipeline/providers/cron/db"
+	"github.com/erda-project/erda/modules/pipeline/providers/edgepipeline_register"
 )
 
 type daemonInterface struct {
@@ -57,69 +57,6 @@ func (d daemonInterface) CrondSnapshot() []string {
 
 func (d daemonInterface) WithPipelineFunc(createPipelineFunc daemon.CreatePipelineFunc) {
 	panic("implement me")
-}
-
-type EdgePipelineRegisterImpl struct {
-	ShouldDispatchToEdgeResult    bool
-	GetEdgeBundleByClusterNameBdl *bundle.Bundle
-	GetEdgeBundleByClusterNameErr error
-}
-
-func (e EdgePipelineRegisterImpl) ClusterAccessKey() string {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (e EdgePipelineRegisterImpl) IsCenter() bool {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (e EdgePipelineRegisterImpl) CanProxyToEdge(source apistructs.PipelineSource, clusterName string) bool {
-	return e.ShouldDispatchToEdgeResult
-}
-
-func (e EdgePipelineRegisterImpl) ClusterIsEdge(clusterName string) (bool, error) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (e EdgePipelineRegisterImpl) OnEdge(f func(context.Context)) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (e EdgePipelineRegisterImpl) OnCenter(f func(context.Context)) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (e EdgePipelineRegisterImpl) GetAccessToken(req apistructs.OAuth2TokenGetRequest) (*apistructs.OAuth2Token, error) {
-	panic("implement me")
-}
-
-func (e EdgePipelineRegisterImpl) GetOAuth2Token(req apistructs.OAuth2TokenGetRequest) (*apistructs.OAuth2Token, error) {
-	panic("implement me")
-}
-
-func (e EdgePipelineRegisterImpl) GetEdgePipelineEnvs() apistructs.ClusterDialerClientDetail {
-	panic("implement me")
-}
-
-func (e EdgePipelineRegisterImpl) CheckAccessToken(token string) error {
-	panic("implement me")
-}
-
-func (e EdgePipelineRegisterImpl) CheckAccessTokenFromHttpRequest(req *http.Request) error {
-	panic("implement me")
-}
-
-func (e EdgePipelineRegisterImpl) IsEdge() bool {
-	panic("implement me")
-}
-
-func (e EdgePipelineRegisterImpl) GetEdgeBundleByClusterName(clusterName string) (*bundle.Bundle, error) {
-	return e.GetEdgeBundleByClusterNameBdl, e.GetEdgeBundleByClusterNameErr
 }
 
 func Test_provider_CronCreate(t *testing.T) {
@@ -670,11 +607,7 @@ func Test_provider_cronDelete(t *testing.T) {
 
 			var daemonInterface daemonInterface
 			s.Daemon = daemonInterface
-			s.EdgePipelineRegister = EdgePipelineRegisterImpl{
-				ShouldDispatchToEdgeResult:    true,
-				GetEdgeBundleByClusterNameBdl: &bdl,
-				GetEdgeBundleByClusterNameErr: nil,
-			}
+			s.EdgePipelineRegister = &edgepipeline_register.MockEdgeRegister{}
 
 			if err := s.delete(tt.args.req, tt.args.option); (err != nil) != tt.wantErr {
 				t.Errorf("cronDelete() error = %v, wantErr %v", err, tt.wantErr)
@@ -726,11 +659,7 @@ func Test_provider_update(t *testing.T) {
 			})
 			defer patch3.Unpatch()
 
-			s.EdgePipelineRegister = EdgePipelineRegisterImpl{
-				ShouldDispatchToEdgeResult:    true,
-				GetEdgeBundleByClusterNameBdl: &bdl,
-				GetEdgeBundleByClusterNameErr: nil,
-			}
+			s.EdgePipelineRegister = &edgepipeline_register.MockEdgeRegister{}
 
 			if err := s.update(tt.args.req, tt.args.cron, tt.args.fields, tt.args.option); (err != nil) != tt.wantErr {
 				t.Errorf("update() error = %v, wantErr %v", err, tt.wantErr)
