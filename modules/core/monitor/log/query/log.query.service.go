@@ -157,6 +157,9 @@ func (s *logQueryService) LogAggregation(ctx context.Context, req *pb.LogAggrega
 }
 
 func (s *logQueryService) ScanLogsByExpression(req *pb.GetLogByExpressionRequest, stream pb.LogQueryService_ScanLogsByExpressionServer) error {
+	if req.GetCount() == 0 {
+		req.Count = 1000000
+	}
 	return s.walkLogItems(context.Background(), req, nil, func(item *pb.LogItem) error {
 		return stream.Send(item)
 	})
@@ -348,6 +351,9 @@ func (s *logQueryService) walkLogItems(ctx context.Context, req Request, fn func
 			return err
 		}
 	}
+	if req.GetDebug() {
+		s.p.Log.Infof("req: %+v, selector: %+v", req, sel)
+	}
 	it, err := s.getIterator(ctx, sel)
 	if err != nil {
 		return errors.NewInternalServerError(err)
@@ -522,10 +528,12 @@ func absInt(v int64) int64 {
 
 func toQuerySelector(req Request) (*storage.Selector, error) {
 	sel := &storage.Selector{
-		Start:   req.GetStart(),
-		End:     req.GetEnd(),
-		Debug:   req.GetDebug(),
-		Options: map[string]interface{}{},
+		Start: req.GetStart(),
+		End:   req.GetEnd(),
+		Debug: req.GetDebug(),
+		Options: map[string]interface{}{
+			storage.SelectorKeyCount: req.GetCount(),
+		},
 	}
 
 	if sel.End <= 0 {

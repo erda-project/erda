@@ -611,16 +611,6 @@ type PipelineCronListResponse struct {
 	Data []PipelineCronDTO `json:"data"`
 }
 
-type PipelineCronStartResponse struct {
-	Header
-	Data *PipelineCronDTO `json:"data"`
-}
-
-type PipelineCronStopResponse struct {
-	Header
-	Data *PipelineCronDTO `json:"data"`
-}
-
 // pipeline operate
 
 type PipelineGetBranchRuleResponse struct {
@@ -701,8 +691,15 @@ type PipelineCallbackResponse struct {
 type PipelineCallbackType string
 
 var (
-	PipelineCallbackTypeOfAction PipelineCallbackType = "ACTION"
+	PipelineCallbackTypeOfAction             PipelineCallbackType = "ACTION"
+	PipelineCallbackTypeOfEdgeTaskReport     PipelineCallbackType = "EDGE_TASK_REPORT"
+	PipelineCallbackTypeOfEdgePipelineReport PipelineCallbackType = "EDGE_PIPELINE_REPORT"
+	PipelineCallbackTypeOfEdgeCronReport     PipelineCallbackType = "EDGE_CRON_REPORT"
 )
+
+func (p PipelineCallbackType) String() string {
+	return string(p)
+}
 
 // pipeline invoked combo 用于流水线侧边栏聚合，每个 combo 是侧边栏一条记录
 // 大数据：combo(branch: master + source: bigdata  + 文件名不限)
@@ -766,12 +763,19 @@ type PipelineDeleteResponse struct {
 	Header
 }
 
-type PipelineCronGetResponse struct {
-	Header
-	Data *PipelineCronDTO `json:"data"`
-}
-
 type PipelineDefinitionExtraValue struct {
 	CreateRequest *PipelineCreateRequestV2 `json:"createRequest"`
 	RunParams     []*pb.PipelineRunParam   `json:"runParams"`
+}
+
+type EdgeReportStatus string
+
+const (
+	InitEdgeReportStatus       EdgeReportStatus = "init"
+	ProcessingEdgeReportStatus EdgeReportStatus = "processing"
+	DoneEdgeReportStatus       EdgeReportStatus = "done"
+)
+
+func (e EdgeReportStatus) String() string {
+	return string(e)
 }

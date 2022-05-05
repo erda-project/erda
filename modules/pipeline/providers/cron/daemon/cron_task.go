@@ -24,7 +24,10 @@ import (
 
 	"github.com/coreos/etcd/clientv3"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/protobuf/types/known/timestamppb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
+	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/modules/pipeline/providers/cron/db"
@@ -275,6 +278,19 @@ func (s *provider) reloadCrond(ctx context.Context) ([]string, error) {
 	for i := range pcs {
 		pc := pcs[i]
 		if pc.Enable != nil && *pc.Enable && pc.CronExpr != "" {
+
+			ok := s.EdgePipelineRegister.CanProxyToEdge(pc.PipelineSource, pc.Extra.ClusterName)
+			if ok {
+				err := s.syncCronToEdge(pc)
+				if err != nil {
+					logrus.Errorf("failed to syncCronToEdge error %v", err)
+				}
+				continue
+			}
+			if pc.IsEdge != s.EdgePipelineRegister.IsEdge() {
+				continue
+			}
+
 			if err = s.crond.AddFunc(pc.CronExpr, func() { s.runCronPipelineFunc(ctx, pc.ID) }, makePipelineCronName(pc.ID)); err != nil {
 				l := fmt.Sprintf("failed to load pipeline cron item: %s, cronExpr: %v, err: %v", makePipelineCronName(pc.ID), pc.CronExpr, err)
 				logs = append(logs, l)
@@ -299,6 +315,47 @@ func (s *provider) reloadCrond(ctx context.Context) ([]string, error) {
 	logs = append(logs, s.crondSnapshot()...)
 
 	return logs, nil
+}
+
+func (s *provider) syncCronToEdge(dbCron db.PipelineCron) error {
+	pc := dbCron
+	bdl, err := s.EdgePipelineRegister.GetEdgeBundleByClusterName(dbCron.Extra.ClusterName)
+	if err != nil {
+		return fmt.Errorf("failed to GetEdgeBundleByClusterName error %v", err)
+	}
+
+	edgeCron, err := bdl.GetCron(pc.ID)
+	if err != nil {
+		return fmt.Errorf("failed to GetCron error %v", err)
+	}
+
+	if edgeCron == nil {
+		_, err := bdl.CronCreate(&cronpb.CronCreateRequest{
+			ID:                     pc.ID,
+			CronExpr:               pc.CronExpr,
+			PipelineYmlName:        pc.PipelineYmlName,
+			PipelineSource:         pc.PipelineSource.String(),
+			Enable:                 wrapperspb.Bool(*pc.Enable),
+			PipelineYml:            pc.Extra.PipelineYml,
+			ClusterName:            pc.Extra.ClusterName,
+			FilterLabels:           pc.Extra.FilterLabels,
+			NormalLabels:           pc.Extra.NormalLabels,
+			Envs:                   pc.Extra.Envs,
+			ConfigManageNamespaces: pc.Extra.ConfigManageNamespaces,
+			CronStartFrom: func() *timestamppb.Timestamp {
+				if pc.Extra.CronStartFrom == nil {
+					return nil
+				}
+				return timestamppb.New(*pc.Extra.CronStartFrom)
+			}(),
+			IncomingSecrets:      pc.Extra.IncomingSecrets,
+			PipelineDefinitionID: pc.PipelineDefinitionID,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to CreateCron error %v", err)
+		}
+	}
+	return nil
 }
 
 func (s *provider) cleanBuildCacheImages() {

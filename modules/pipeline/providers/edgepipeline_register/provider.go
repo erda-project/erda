@@ -18,6 +18,7 @@ import (
 	"context"
 	"os"
 	"reflect"
+	"sync"
 	"time"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -29,33 +30,46 @@ import (
 type Config struct {
 	IsEdge                     bool          `env:"DICE_IS_EDGE" default:"false"`
 	ClusterName                string        `env:"DICE_CLUSTER_NAME"`
-	AllowedSources             []string      `env:"EDGE_ALLOWED_SOURCES"`
+	AllowedSources             []string      `file:"allowed_sources" env:"EDGE_ALLOWED_SOURCES"` // env support comma-seperated string
 	PipelineAddr               string        `env:"PIPELINE_ADDR"`
 	PipelineHost               string        `env:"PIPELINE_HOST"`
 	ClusterDialEndpoint        string        `file:"cluster_dialer_endpoint" desc:"cluster dialer endpoint"`
 	ClusterAccessKey           string        `file:"cluster_access_key" desc:"cluster access key, if specified will doesn't start watcher"`
 	RetryConnectDialerInterval time.Duration `file:"retry_cluster_hook_interval" default:"1s"`
-	AccessTokenFile            string        `env:"ACCESS_TOKEN_FILE" default:"/var/run/secrets/kubernetes.io/serviceaccount/token"`
-	accessToken                string
+	AccessTokenFile            string        `file:"access_token_file" env:"ACCESS_TOKEN_FILE" default:"/var/run/secrets/kubernetes.io/serviceaccount/token"`
+	AccessToken                string        `file:"token" env:"EDGE_PIPELINE_ACCESS_TOKEN"`
 }
 
 type provider struct {
+	sync.Mutex
+
 	Log logs.Logger
 	Cfg *Config
 	LW  leaderworker.Interface
 
-	bdl *bundle.Bundle
+	bdl          *bundle.Bundle
+	started      bool
+	forCenterUse forCenterUse
+	forEdgeUse   forEdgeUse
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.bdl = bundle.New(bundle.WithClusterDialer())
 	if p.Cfg.IsEdge {
-		accessToken, err := os.ReadFile(p.Cfg.AccessTokenFile)
-		if err != nil {
-			p.Log.Panicf("failed to read access token file: %s, err: %v", p.Cfg.AccessTokenFile, err)
+		if len(p.Cfg.AccessToken) == 0 {
+			accessToken, err := os.ReadFile(p.Cfg.AccessTokenFile)
+			if err != nil {
+				p.Log.Fatalf("failed to read access token file: %s, err: %v", p.Cfg.AccessTokenFile, err)
+			}
+			p.Cfg.AccessToken = string(accessToken)
 		}
-		p.Cfg.accessToken = string(accessToken)
+		if len(p.Cfg.AccessToken) == 0 {
+			p.Log.Fatalf("missing access token (neither in env nor file)")
+		}
 	}
+	p.forEdgeUse.handlersOnEdge = make(chan func(context.Context), 0)
+	p.forCenterUse.handlersOnCenter = make(chan func(context.Context), 0)
+	p.startEdgeCenterUse(ctx)
 	return nil
 }
 

@@ -80,6 +80,8 @@ func (r *provider) generatePipelineReconcilerForEachPipelineID() *defaultPipelin
 		doneChan:                   make(chan struct{}),
 		flagCanceling:              false,
 		totalTaskNumber:            nil,
+		edgeReporter:               r.EdgeReporter,
+		edgeRegister:               r.EdgeRegister,
 	}
 	return pr
 }

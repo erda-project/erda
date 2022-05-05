@@ -371,9 +371,13 @@ func (s *PipelineSvc) UpdatePipelineCron(p *spec.Pipeline, cronStartFrom *time.T
 	if err != nil {
 		return apierrors.ErrUpdatePipelineCron.InternalError(err)
 	}
+	p.CronID = &result.Data.ID
 
-	if result.Data.ID > 0 {
-		p.CronID = &result.Data.ID
+	// report
+	if s.edgeRegister != nil {
+		if s.edgeRegister.IsEdge() {
+			s.edgeReporter.TriggerOnceCronReport(*p.CronID)
+		}
 	}
 	return nil
 }

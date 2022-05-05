@@ -28,7 +28,6 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/providers/cron/db"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
-	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -89,6 +88,12 @@ func (s *provider) CronCreate(ctx context.Context, req *pb.CronCreateRequest) (*
 	}
 
 	err = Transaction(s.dbClient, func(op mysqlxorm.SessionOption) error {
+
+		toEdge := s.EdgePipelineRegister.CanProxyToEdge(createCron.PipelineSource, createCron.Extra.ClusterName)
+		if toEdge || s.EdgePipelineRegister.IsEdge() {
+			createCron.IsEdge = true
+		}
+
 		if req.CronExpr != "" {
 			err = s.InsertOrUpdatePipelineCron(createCron, op)
 		} else {
@@ -97,10 +102,25 @@ func (s *provider) CronCreate(ctx context.Context, req *pb.CronCreateRequest) (*
 		if err != nil {
 			return err
 		}
+
 		req.ID = createCron.ID
 		if err := s.Daemon.AddIntoPipelineCrond(createCron); err != nil {
 			return err
 		}
+
+		if toEdge {
+			bdl, err := s.EdgePipelineRegister.GetEdgeBundleByClusterName(createCron.Extra.ClusterName)
+			if err != nil {
+				s.Log.Errorf("GetEdgeBundleByClusterName error %v", err)
+				return err
+			}
+			_, err = bdl.CronCreate(req)
+			if err != nil {
+				s.Log.Errorf("edge bdl CronCreate error %v", err)
+				return err
+			}
+		}
+
 		return nil
 	})
 	if err != nil {
@@ -189,12 +209,37 @@ func (s *provider) operate(cronID uint64, enable bool) (*common.Cron, error) {
 	}
 
 	err = Transaction(s.dbClient, func(option mysqlxorm.SessionOption) error {
+
 		if err = s.dbClient.UpdatePipelineCron(cron.ID, &cron, option); err != nil {
 			return apierrors.ErrOperatePipeline.InternalError(err)
 		}
 
 		if err := s.Daemon.AddIntoPipelineCrond(&cron); err != nil {
 			return apierrors.ErrReloadCrond.InternalError(err)
+		}
+
+		toEdge := s.EdgePipelineRegister.CanProxyToEdge(cron.PipelineSource, cron.Extra.ClusterName)
+
+		if toEdge {
+			bdl, err := s.EdgePipelineRegister.GetEdgeBundleByClusterName(cron.Extra.ClusterName)
+			if err != nil {
+				s.Log.Errorf("GetEdgeBundleByClusterName error %v", err)
+				return err
+			}
+
+			if enable {
+				_, err = bdl.CronStart(&pb.CronStartRequest{
+					CronID: cron.ID,
+				})
+			} else {
+				_, err = bdl.CronStop(&pb.CronStopRequest{
+					CronID: cron.ID,
+				})
+			}
+			if err != nil {
+				s.Log.Errorf("edge bdl operate error %v enable %v", err, enable)
+				return err
+			}
 		}
 		return nil
 	})
@@ -207,27 +252,47 @@ func (s *provider) operate(cronID uint64, enable bool) (*common.Cron, error) {
 func (s *provider) CronDelete(ctx context.Context, req *pb.CronDeleteRequest) (*pb.CronDeleteResponse, error) {
 
 	err := Transaction(s.dbClient, func(option mysqlxorm.SessionOption) error {
-		cron, found, err := s.dbClient.GetPipelineCron(req.CronID, option)
-		if err != nil {
-			return apierrors.ErrDeletePipelineCron.InvalidParameter(err)
-		}
-		if !found {
-			return apierrors.ErrDeletePipelineCron.InvalidParameter(fmt.Errorf("not found"))
-		}
-
-		if err := s.dbClient.DeletePipelineCron(cron.ID, option); err != nil {
-			return apierrors.ErrDeletePipelineCron.InternalError(err)
-		}
-
-		if err := s.Daemon.DeleteFromPipelineCrond(&cron); err != nil {
-			return apierrors.ErrDeletePipelineCron.InternalError(err)
-		}
-		return nil
+		return s.delete(req, option)
 	})
 	if err != nil {
 		return nil, err
 	}
 	return &pb.CronDeleteResponse{}, nil
+}
+
+func (s *provider) delete(req *pb.CronDeleteRequest, option mysqlxorm.SessionOption) error {
+	cron, found, err := s.dbClient.GetPipelineCron(req.CronID, option)
+	if err != nil {
+		return apierrors.ErrDeletePipelineCron.InvalidParameter(err)
+	}
+	if !found {
+		return apierrors.ErrDeletePipelineCron.InvalidParameter(fmt.Errorf("not found"))
+	}
+
+	if err := s.dbClient.DeletePipelineCron(cron.ID, option); err != nil {
+		return apierrors.ErrDeletePipelineCron.InternalError(err)
+	}
+
+	if err := s.Daemon.DeleteFromPipelineCrond(&cron); err != nil {
+		return apierrors.ErrDeletePipelineCron.InternalError(err)
+	}
+
+	toEdge := s.EdgePipelineRegister.CanProxyToEdge(cron.PipelineSource, cron.Extra.ClusterName)
+
+	if toEdge {
+		bdl, err := s.EdgePipelineRegister.GetEdgeBundleByClusterName(cron.Extra.ClusterName)
+		if err != nil {
+			s.Log.Errorf("GetEdgeBundleByClusterName error %v", err)
+			return err
+		}
+
+		err = bdl.DeleteCron(cron.ID)
+		if err != nil {
+			s.Log.Errorf("edge bdl DeleteCron error %v", err)
+			return err
+		}
+	}
+	return nil
 }
 
 func (s *provider) CronGet(ctx context.Context, req *pb.CronGetRequest) (*pb.CronGetResponse, error) {
@@ -270,27 +335,52 @@ func (s *provider) CronUpdate(ctx context.Context, req *pb.CronUpdateRequest) (*
 	cron.Extra.PipelineYml = req.PipelineYml
 	cron.Extra.ConfigManageNamespaces = strutil.DedupSlice(append(cron.Extra.ConfigManageNamespaces, req.ConfigManageNamespaces...), true)
 	cron.Extra.IncomingSecrets = req.Secrets
-	var fields = []string{spec.PipelineCronCronExpr, spec.Extra}
+	var fields = []string{db.PipelineCronCronExpr, db.Extra}
 	if req.PipelineDefinitionID != "" {
 		cron.PipelineDefinitionID = req.PipelineDefinitionID
-		fields = append(fields, spec.PipelineDefinitionID)
+		fields = append(fields, db.PipelineDefinitionID)
 	}
 
 	err = Transaction(s.dbClient, func(option mysqlxorm.SessionOption) error {
-		err = s.dbClient.UpdatePipelineCronWillUseDefault(cron.ID, &cron, fields, option)
-		if err != nil {
-			return apierrors.ErrUpdatePipelineCron.InternalError(err)
-		}
-
-		if err := s.Daemon.AddIntoPipelineCrond(&cron); err != nil {
-			return apierrors.ErrUpdatePipelineCron.InternalError(err)
-		}
-		return nil
+		return s.update(req, cron, fields, option)
 	})
 	if err != nil {
 		return nil, err
 	}
 	return &pb.CronUpdateResponse{}, nil
+}
+
+func (s *provider) update(req *pb.CronUpdateRequest, cron db.PipelineCron, fields []string, option mysqlxorm.SessionOption) error {
+	toEdge := s.EdgePipelineRegister.CanProxyToEdge(cron.PipelineSource, cron.Extra.ClusterName)
+
+	if toEdge || s.EdgePipelineRegister.IsEdge() {
+		fields = append(fields, db.PipelineCronIsEdge)
+		cron.IsEdge = true
+	}
+
+	err := s.dbClient.UpdatePipelineCronWillUseDefault(cron.ID, &cron, fields, option)
+	if err != nil {
+		return apierrors.ErrUpdatePipelineCron.InternalError(err)
+	}
+
+	if err := s.Daemon.AddIntoPipelineCrond(&cron); err != nil {
+		return apierrors.ErrUpdatePipelineCron.InternalError(err)
+	}
+
+	if toEdge {
+		bdl, err := s.EdgePipelineRegister.GetEdgeBundleByClusterName(cron.Extra.ClusterName)
+		if err != nil {
+			s.Log.Errorf("GetEdgeBundleByClusterName error %v", err)
+			return err
+		}
+
+		err = bdl.CronUpdate(req)
+		if err != nil {
+			s.Log.Errorf("edge bdl CronUpdate error %v", err)
+			return err
+		}
+	}
+	return nil
 }
 
 func (s *provider) InsertOrUpdatePipelineCron(new *db.PipelineCron, ops ...mysqlxorm.SessionOption) error {
@@ -348,8 +438,10 @@ func (s *provider) InsertOrUpdatePipelineCron(new *db.PipelineCron, ops ...mysql
 func (s *provider) disable(cron *db.PipelineCron, option mysqlxorm.SessionOption) error {
 	var disable = false
 	var updateCron = &db.PipelineCron{}
-	var columns = []string{spec.PipelineCronCronExpr, spec.PipelineCronEnable}
+	var columns = []string{db.PipelineCronCronExpr, db.PipelineCronEnable, db.PipelineCronIsEdge}
 	var err error
+
+	updateCron.IsEdge = cron.IsEdge
 
 	queryV1 := &db.PipelineCron{
 		ApplicationID:   cron.ApplicationID,
