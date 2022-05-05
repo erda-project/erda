@@ -33,13 +33,13 @@ import (
 )
 
 type config struct {
-	Compensator compensatorConfig
-	Target      targetConfig
+	Compensator compensatorConfig `file:"compensator"`
+	Target      targetConfig      `file:"target"`
 }
 
 type targetConfig struct {
-	URL       string `file:"target_url" env:"EDGE_REPORTER_TARGET_URL"`
-	AuthToken string `file:"target_auth" env:"EDGE_REPORTER_TARGET_AUTH_TOKEN"`
+	URL       string `file:"url" env:"EDGE_REPORTER_TARGET_URL"`
+	AuthToken string `file:"auth_token" env:"EDGE_REPORTER_TARGET_AUTH_TOKEN"`
 }
 
 type compensatorConfig struct {
