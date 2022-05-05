@@ -25,7 +25,6 @@ import (
 	"github.com/erda-project/erda-infra/pkg/safe"
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/providers/edgepipeline_register"
@@ -73,14 +72,11 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		p.Log.Infof("target url: %s", p.Cfg.Target.URL)
 
 		// token
-		if len(p.Cfg.Target.AuthToken) == 0 {
-			token, err := p.EdgeRegister.GetAccessToken(apistructs.OAuth2TokenGetRequest{})
-			if err != nil {
-				return err
-			}
-			p.Cfg.Target.AuthToken = token.AccessToken
+		if len(p.Cfg.Target.AuthToken) > 0 {
+			p.Log.Infof("target auth token: %s", p.Cfg.Target.AuthToken)
+		} else {
+			p.Log.Infof("target auth token not set, get from edge register when used")
 		}
-		p.Log.Infof("target auth token: %s", p.Cfg.Target.AuthToken)
 	}
 	return nil
 }
