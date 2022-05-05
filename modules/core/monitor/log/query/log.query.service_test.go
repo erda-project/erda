@@ -66,6 +66,9 @@ func Test_toQuerySelector(t *testing.T) {
 						Value: "testid",
 					},
 				},
+				Options: map[string]interface{}{
+					storage.SelectorKeyCount: int64(0),
+				},
 			},
 		},
 		{
@@ -91,6 +94,9 @@ func Test_toQuerySelector(t *testing.T) {
 						Op:    storage.EQ,
 						Value: "container",
 					},
+				},
+				Options: map[string]interface{}{
+					storage.SelectorKeyCount: int64(-200),
 				},
 			},
 		},
@@ -129,6 +135,9 @@ func Test_toQuerySelector(t *testing.T) {
 				Skip: storage.ResultSkip{
 					AfterId:    &storage.UniqueId{Id: "id-1", Offset: 10, Timestamp: 123},
 					FromOffset: 12,
+				},
+				Options: map[string]interface{}{
+					storage.SelectorKeyCount: int64(100),
 				},
 			},
 		},
