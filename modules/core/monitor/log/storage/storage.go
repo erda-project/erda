@@ -26,6 +26,10 @@ import (
 	"github.com/erda-project/erda/modules/core/monitor/storekit"
 )
 
+const (
+	SelectorKeyCount = "count"
+)
+
 type (
 	// Operator .
 	Operator int32
