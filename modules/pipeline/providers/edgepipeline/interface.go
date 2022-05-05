@@ -21,6 +21,7 @@ import (
 	"github.com/erda-project/erda-proto-go/core/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/services/pipelinesvc"
+	"github.com/erda-project/erda/modules/pipeline/spec"
 )
 
 type Interface interface {
@@ -32,7 +33,10 @@ type Interface interface {
 type CreateInterface interface {
 	CreatePipeline(ctx context.Context, req *apistructs.PipelineCreateRequestV2) (*apistructs.PipelineDTO, error)
 	CreateCron(ctx context.Context, req *cronpb.CronCreateRequest) (*pb.Cron, error)
-	RunPipeline(ctx context.Context, req *apistructs.PipelineRunRequest) error
+	RunPipeline(ctx context.Context, p *spec.Pipeline, req *apistructs.PipelineRunRequest) error
+	CancelPipeline(ctx context.Context, p *spec.Pipeline, req *apistructs.PipelineCancelRequest) error
+	RerunFailedPipeline(ctx context.Context, p *spec.Pipeline, req *apistructs.PipelineRerunFailedRequest) (*apistructs.PipelineDTO, error)
+	RerunPipeline(ctx context.Context, p *spec.Pipeline, req *apistructs.PipelineRerunRequest) (*apistructs.PipelineDTO, error)
 }
 
 func (s *provider) InjectLegacyFields(pipelineSvc *pipelinesvc.PipelineSvc) {

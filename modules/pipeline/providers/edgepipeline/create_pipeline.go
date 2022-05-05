@@ -21,7 +21,7 @@ import (
 )
 
 func (s *provider) CreatePipeline(ctx context.Context, req *apistructs.PipelineCreateRequestV2) (*apistructs.PipelineDTO, error) {
-	canProxy := s.EdgePipelineRegister.CanProxyToEdge(req.PipelineSource, req.ClusterName)
+	canProxy := s.EdgeRegister.CanProxyToEdge(req.PipelineSource, req.ClusterName)
 
 	if canProxy {
 		s.Log.Infof("proxy create pipeline to edge, source: %s, yamlName: %s", req.PipelineSource, req.PipelineYmlName)
@@ -33,7 +33,7 @@ func (s *provider) CreatePipeline(ctx context.Context, req *apistructs.PipelineC
 
 func (s *provider) proxyCreatePipelineRequestToEdge(ctx context.Context, req *apistructs.PipelineCreateRequestV2) (*apistructs.PipelineDTO, error) {
 	// handle at edge side
-	edgeBundle, err := s.EdgePipelineRegister.GetEdgeBundleByClusterName(req.ClusterName)
+	edgeBundle, err := s.EdgeRegister.GetEdgeBundleByClusterName(req.ClusterName)
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +50,7 @@ func (s *provider) directCreatePipeline(ctx context.Context, req *apistructs.Pip
 		return nil, err
 	}
 	// report
-	if s.EdgePipelineRegister.IsEdge() {
+	if s.EdgeRegister.IsEdge() {
 		s.EdgeReporter.TriggerOncePipelineReport(p.ID)
 	}
 	return s.pipelineSvc.ConvertPipeline(p), nil

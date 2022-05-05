@@ -15,9 +15,7 @@
 package clusterinfo
 
 import (
-	"context"
 	"fmt"
-	"net/http"
 	"os"
 	"reflect"
 	"testing"
@@ -28,6 +26,7 @@ import (
 	"github.com/erda-project/erda-infra/base/logs/logrusx"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/pipeline/providers/edgepipeline_register"
 )
 
 func TestGetClusterInfoByNameEdge(t *testing.T) {
@@ -187,57 +186,6 @@ func (c cacheImpl) GetAllClusters() []apistructs.ClusterInfo {
 	return infos
 }
 
-type edgePipelineRegisterImpl struct {
-	cache map[string]string
-}
-
-func (e edgePipelineRegisterImpl) CanProxyToEdge(source apistructs.PipelineSource, clusterName string) bool {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (e edgePipelineRegisterImpl) OnEdge(f func(context.Context)) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (e edgePipelineRegisterImpl) OnCenter(f func(context.Context)) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (e edgePipelineRegisterImpl) GetAccessToken(req apistructs.OAuth2TokenGetRequest) (*apistructs.OAuth2Token, error) {
-	panic("implement me")
-}
-
-func (e edgePipelineRegisterImpl) GetOAuth2Token(req apistructs.OAuth2TokenGetRequest) (*apistructs.OAuth2Token, error) {
-	panic("implement me")
-}
-
-func (e edgePipelineRegisterImpl) GetEdgePipelineEnvs() apistructs.ClusterDialerClientDetail {
-	panic("implement me")
-}
-
-func (e edgePipelineRegisterImpl) CheckAccessToken(token string) error {
-	panic("implement me")
-}
-
-func (e edgePipelineRegisterImpl) CheckAccessTokenFromHttpRequest(req *http.Request) error {
-	panic("implement me")
-}
-
-func (e edgePipelineRegisterImpl) IsEdge() bool {
-	panic("implement me")
-}
-
-func (e edgePipelineRegisterImpl) GetEdgeBundleByClusterName(clusterName string) (*bundle.Bundle, error) {
-	panic("implement me")
-}
-
-func (e edgePipelineRegisterImpl) ClusterIsEdge(clusterName string) (bool, error) {
-	return e.cache[clusterName] == "edge", nil
-}
-
 func Test_provider_ListAllClusterInfos(t *testing.T) {
 	type args struct {
 		onlyEdge bool
@@ -295,7 +243,7 @@ func Test_provider_ListAllClusterInfos(t *testing.T) {
 			p.cache = cacheImpl{
 				cache: tt.cache,
 			}
-			p.EdgeRegister = edgePipelineRegisterImpl{cache: tt.cache}
+			p.EdgeRegister = &edgepipeline_register.MockEdgeRegister{}
 
 			got, err := p.listAllClusterInfos(tt.args.onlyEdge)
 			if (err != nil) != tt.wantErr {

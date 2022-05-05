@@ -39,12 +39,14 @@ import (
 )
 
 type Interface interface {
+	ClusterAccessKey() string
 	GetAccessToken(req apistructs.OAuth2TokenGetRequest) (*apistructs.OAuth2Token, error)
 	GetOAuth2Token(req apistructs.OAuth2TokenGetRequest) (*apistructs.OAuth2Token, error)
 	GetEdgePipelineEnvs() apistructs.ClusterDialerClientDetail
 	CheckAccessToken(token string) error
 	CheckAccessTokenFromHttpRequest(req *http.Request) error
 	IsEdge() bool
+	IsCenter() bool
 
 	CanProxyToEdge(source apistructs.PipelineSource, clusterName string) bool
 	GetEdgeBundleByClusterName(clusterName string) (*bundle.Bundle, error)
@@ -184,6 +186,10 @@ func (p *provider) RegisterEdgeToDialer(ctx context.Context) {
 
 func (p *provider) IsEdge() bool {
 	return p.Cfg.IsEdge
+}
+
+func (p *provider) IsCenter() bool {
+	return !p.IsEdge()
 }
 
 func (p *provider) ConnectAuthorizer(proto string, address string) bool {

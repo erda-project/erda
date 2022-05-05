@@ -226,7 +226,7 @@ func (e *Endpoints) pipelineRun(ctx context.Context, r *http.Request, vars map[s
 		}
 	}
 
-	if err = e.edgePipeline.RunPipeline(ctx, &apistructs.PipelineRunRequest{
+	if err = e.edgePipeline.RunPipeline(ctx, p, &apistructs.PipelineRunRequest{
 		PipelineID:             p.ID,
 		IdentityInfo:           identityInfo,
 		PipelineRunParams:      runRequest.PipelineRunParams,
@@ -255,7 +255,12 @@ func (e *Endpoints) pipelineCancel(ctx context.Context, r *http.Request, vars ma
 			strutil.Concat(pathPipelineID, ": ", pipelineIDStr)).ToResp(), nil
 	}
 
-	if err := e.cancel.CancelOnePipeline(ctx, &apistructs.PipelineCancelRequest{
+	p, err := e.pipelineSvc.Get(pipelineID)
+	if err != nil {
+		return errorresp.ErrResp(err)
+	}
+
+	if err := e.edgePipeline.CancelPipeline(ctx, p, &apistructs.PipelineCancelRequest{
 		PipelineID:   pipelineID,
 		IdentityInfo: identityInfo,
 	}); err != nil {
@@ -294,15 +299,20 @@ func (e *Endpoints) pipelineRerunFailed(ctx context.Context, r *http.Request, va
 		return errorresp.ErrResp(err)
 	}
 
-	rerunFailedReq.PipelineID = pipelineID
-	rerunFailedReq.IdentityInfo = identityInfo
-
-	p, err := e.pipelineSvc.RerunFailed(ctx, &rerunFailedReq)
+	p, err := e.pipelineSvc.Get(pipelineID)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
 
-	return httpserver.OkResp(e.pipelineSvc.ConvertPipeline(p))
+	rerunFailedReq.PipelineID = pipelineID
+	rerunFailedReq.IdentityInfo = identityInfo
+
+	newP, err := e.edgePipeline.RerunFailedPipeline(ctx, p, &rerunFailedReq)
+	if err != nil {
+		return errorresp.ErrResp(err)
+	}
+
+	return httpserver.OkResp(newP)
 }
 
 // pipelineRerun 重跑整个 pipeline，相当于一个全新的 pipeline，不需要注入上一次的上下文。
@@ -334,15 +344,20 @@ func (e *Endpoints) pipelineRerun(ctx context.Context, r *http.Request, vars map
 		return errorresp.ErrResp(err)
 	}
 
-	rerunReq.PipelineID = pipelineID
-	rerunReq.IdentityInfo = identityInfo
-
-	p, err := e.pipelineSvc.Rerun(ctx, &rerunReq)
+	p, err := e.pipelineSvc.Get(pipelineID)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
 
-	return httpserver.OkResp(e.pipelineSvc.ConvertPipeline(p))
+	rerunReq.PipelineID = pipelineID
+	rerunReq.IdentityInfo = identityInfo
+
+	newP, err := e.edgePipeline.RerunPipeline(ctx, p, &rerunReq)
+	if err != nil {
+		return errorresp.ErrResp(err)
+	}
+
+	return httpserver.OkResp(newP)
 }
 
 // pipelineYmlGraph 根据 yml 文件内容返回解析好的 spec 结构，兼容 1.0, 1.1

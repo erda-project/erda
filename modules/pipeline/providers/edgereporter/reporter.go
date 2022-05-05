@@ -73,7 +73,7 @@ func (p *provider) doTaskReporter(ctx context.Context, taskID uint64) error {
 	err = p.bdl.PipelineCallback(apistructs.PipelineCallbackRequest{
 		Type: apistructs.PipelineCallbackTypeOfEdgeTaskReport.String(),
 		Data: b,
-	}, p.Cfg.Target.URL, p.Cfg.Target.AuthToken)
+	}, p.Cfg.Target.URL, p.GetTargetAuthToken())
 
 	return err
 }
@@ -137,7 +137,7 @@ func (p *provider) doPipelineReporter(ctx context.Context, pipelineID uint64) er
 	err = p.bdl.PipelineCallback(apistructs.PipelineCallbackRequest{
 		Type: apistructs.PipelineCallbackTypeOfEdgePipelineReport.String(),
 		Data: b,
-	}, p.Cfg.Target.URL, p.Cfg.Target.AuthToken)
+	}, p.Cfg.Target.URL, p.GetTargetAuthToken())
 
 	return err
 }
@@ -173,7 +173,7 @@ func (p *provider) doCronReporter(ctx context.Context, cronID uint64) error {
 	err = p.bdl.PipelineCallback(apistructs.PipelineCallbackRequest{
 		Type: apistructs.PipelineCallbackTypeOfEdgeCronReport.String(),
 		Data: b,
-	}, p.Cfg.Target.URL, p.Cfg.Target.AuthToken)
+	}, p.Cfg.Target.URL, p.GetTargetAuthToken())
 
 	return err
 }
