@@ -26,11 +26,17 @@ ALTER TABLE <database>.<table_name> ON CLUSTER '{cluster}'
     ADD COLUMN IF NOT EXISTS `tags.pod_name` String MATERIALIZED tags['pod_name'],
     ADD COLUMN IF NOT EXISTS `tags.pod_ip` String MATERIALIZED tags['pod_ip'],
     ADD COLUMN IF NOT EXISTS `tags.container_name` String MATERIALIZED tags['container_name'],
-    ADD COLUMN IF NOT EXISTS `tags.container_id` String MATERIALIZED tags['container_id'];
+    ADD COLUMN IF NOT EXISTS `tags.container_id` String MATERIALIZED tags['container_id'],
+    ADD COLUMN IF NOT EXISTS `tags.monitor_log_key` String MATERIALIZED tags['monitor_log_key'],
+    ADD COLUMN IF NOT EXISTS `tags.msp_env_id` String MATERIALIZED tags['msp_env_id'],
+    ADD COLUMN IF NOT EXISTS `tags.dice_application_id` String MATERIALIZED tags['dice_application_id'];
 
 // 对常用字段添加索引
 ALTER TABLE <database>.<table_name> ON CLUSTER '{cluster}' ADD INDEX IF NOT EXISTS idx_tace_id(tags.trace_id) TYPE bloom_filter GRANULARITY 1;
 ALTER TABLE <database>.<table_name> ON CLUSTER '{cluster}' ADD INDEX IF NOT EXISTS idx_id(id) TYPE bloom_filter GRANULARITY 1;
+ALTER TABLE <database>.<table_name> ON CLUSTER '{cluster}' ADD INDEX IF NOT EXISTS idx_monitor_log_key(tags.monitor_log_key) TYPE bloom_filter GRANULARITY 1;
+ALTER TABLE <database>.<table_name> ON CLUSTER '{cluster}' ADD INDEX IF NOT EXISTS idx_msp_env_id(tags.msp_env_id) TYPE bloom_filter GRANULARITY 1;
+ALTER TABLE <database>.<table_name> ON CLUSTER '{cluster}' ADD INDEX IF NOT EXISTS idx_dice_application_id(tags.dice_application_id) TYPE bloom_filter GRANULARITY 1;
 
 // 创建分布式表
 // 注意: 如果对logs表结构新增列, 需要同步修改logs_all
@@ -42,3 +48,15 @@ AS <database>.logs
 CREATE TABLE IF NOT EXISTS <database>.<alias_table_name>_search ON CLUSTER '{cluster}'
 AS <database>.logs
 ENGINE = Merge(<database>, 'logs_all|<alias_table_name>.*_all$');
+
+// 在分布式表中添加新增列
+ALTER TABLE <database>.<table_name>_all ON CLUSTER '{cluster}'
+    ADD COLUMN IF NOT EXISTS `tags.monitor_log_key` String MATERIALIZED tags['monitor_log_key'],
+    ADD COLUMN IF NOT EXISTS `tags.msp_env_id` String MATERIALIZED tags['msp_env_id'],
+    ADD COLUMN IF NOT EXISTS `tags.dice_application_id` String MATERIALIZED tags['dice_application_id'];
+
+// 在Merge表中添加新增列
+ALTER TABLE <database>.<alias_table_name>_search ON CLUSTER '{cluster}'
+    ADD COLUMN IF NOT EXISTS `tags.monitor_log_key` String MATERIALIZED tags['monitor_log_key'],
+    ADD COLUMN IF NOT EXISTS `tags.msp_env_id` String MATERIALIZED tags['msp_env_id'],
+    ADD COLUMN IF NOT EXISTS `tags.dice_application_id` String MATERIALIZED tags['dice_application_id'];
