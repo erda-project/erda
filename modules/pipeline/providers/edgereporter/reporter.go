@@ -44,6 +44,7 @@ func (p *provider) TriggerOnceCronReport(cronID uint64) {
 
 // taskReporter Only report task
 func (p *provider) taskReporter(ctx context.Context) {
+	p.Log.Infof("task reporter started")
 	for {
 		select {
 		case <-ctx.Done():
@@ -51,7 +52,7 @@ func (p *provider) taskReporter(ctx context.Context) {
 		case taskID := <-taskReportChan:
 			go func() {
 				if err := p.doTaskReporter(ctx, taskID); err != nil {
-					p.Log.Errorf("failed to doTaskReporter, err: %v", err)
+					p.Log.Errorf("failed to doTaskReporter, taskID: %d, err: %v", taskID, err)
 				}
 			}()
 		}
@@ -79,6 +80,7 @@ func (p *provider) doTaskReporter(ctx context.Context, taskID uint64) error {
 
 // pipelineReporter Report pipeline with pipelineBase, pipelineExtra, pipelineLabel, pipelineStage and pipelineTask
 func (p *provider) pipelineReporter(ctx context.Context) {
+	p.Log.Infof("pipeline reporter started")
 	for {
 		select {
 		case <-ctx.Done():
@@ -86,7 +88,7 @@ func (p *provider) pipelineReporter(ctx context.Context) {
 		case pipelineID := <-pipelineReportChan:
 			go func() {
 				if err := p.doPipelineReporter(ctx, pipelineID); err != nil {
-					p.Log.Errorf("failed to doPipelineReporter, err: %v", err)
+					p.Log.Errorf("failed to doPipelineReporter, pipelineID: %d, err: %v", pipelineID, err)
 				}
 			}()
 		}
@@ -139,6 +141,7 @@ func (p *provider) doPipelineReporter(ctx context.Context, pipelineID uint64) er
 
 // cronReporter Only report cron
 func (p *provider) cronReporter(ctx context.Context) {
+	p.Log.Infof("cron reporter started")
 	for {
 		select {
 		case <-ctx.Done():
@@ -146,7 +149,7 @@ func (p *provider) cronReporter(ctx context.Context) {
 		case cronID := <-cronReportChan:
 			go func() {
 				if err := p.doCronReporter(ctx, cronID); err != nil {
-					p.Log.Errorf("failed to doCronReporter, err: %v", err)
+					p.Log.Errorf("failed to doCronReporter, cronID: %d, err: %v", cronID, err)
 				}
 			}()
 		}
@@ -205,7 +208,7 @@ func (p *provider) doCompensatorPipelineReporter(ctx context.Context) {
 
 	for _, v := range newPipelines {
 		if err = p.doPipelineReporter(ctx, v.ID); err != nil {
-			p.Log.Errorf("failed to doPipelineReporter in compensator, err: %v", err)
+			p.Log.Errorf("failed to doPipelineReporter in compensator, pipelineID: %d, err: %v", v.ID, err)
 		}
 	}
 	return

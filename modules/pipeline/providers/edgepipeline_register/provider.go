@@ -53,6 +53,9 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
+	for _, s := range p.Cfg.AllowedSources {
+		p.Log.Infof("allowed source: %s", s)
+	}
 	p.bdl = bundle.New(bundle.WithClusterDialer())
 	p.forEdgeUse.handlersOnEdge = make(chan func(context.Context), 0)
 	p.forCenterUse.handlersOnCenter = make(chan func(context.Context), 0)
