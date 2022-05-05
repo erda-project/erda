@@ -175,23 +175,24 @@ func (p *provider) deleteByQuery() {
 			p.Log.Errorf("delete failed. indices: %s, err: %v", index, err.Error())
 			continue
 		}
-		p.ttlTaskCh <- &TtlTask{
+		p.AddTask(&TtlTask{
 			TaskId:  resp.TaskId,
 			Indices: []string{index},
-		}
+		})
 		p.Log.Infof("Clean doc by ttl, taskId: %s", resp.TaskId)
 	}
 }
 
-func (p *provider) forceMerge(ctx context.Context, indices ...string) {
+func (p *provider) forceMerge(ctx context.Context, indices ...string) error {
 	forceMergeResponse, err := p.loader.Client().Forcemerge(indices...).Do(ctx)
 	if err != nil {
 		p.Log.Error(err)
-		return
+		return err
 	}
 	if forceMergeResponse.Shards.Failures != nil && len(forceMergeResponse.Shards.Failures) > 0 {
 		p.Log.Errorf("force merge failed, err: %v", forceMergeResponse.Shards.Failures)
-		return
+		return fmt.Errorf("force merge failed, err: %v", forceMergeResponse.Shards.Failures)
 	}
 	p.Log.Infof("Force merge successful. contains indices: %v", indices)
+	return nil
 }

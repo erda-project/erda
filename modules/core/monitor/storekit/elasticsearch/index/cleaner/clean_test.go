@@ -86,14 +86,15 @@ func Test_provider_forceMerge(t *testing.T) {
 		indices []string
 	}
 	tests := []struct {
-		name   string
-		fields fields
-		args   args
+		name      string
+		fields    fields
+		args      args
+		wantError bool
 	}{
 		{"case1", fields{}, args{
 			ctx:     context.Background(),
 			indices: []string{"test"},
-		}},
+		}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -120,7 +121,10 @@ func Test_provider_forceMerge(t *testing.T) {
 					},
 				}, nil
 			})
-			p.forceMerge(tt.args.ctx, tt.args.indices...)
+			err := p.forceMerge(tt.args.ctx, tt.args.indices...)
+			if err != nil {
+				t.Errorf("forceMerge(), wantError %v", tt.wantError)
+			}
 		})
 	}
 }
