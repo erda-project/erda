@@ -18,6 +18,7 @@ import (
 	"context"
 	"reflect"
 	"testing"
+	"time"
 
 	"bou.ke/monkey"
 	"github.com/golang/mock/gomock"
@@ -120,6 +121,88 @@ func Test_provider_forceMerge(t *testing.T) {
 				}, nil
 			})
 			p.forceMerge(tt.args.ctx, tt.args.indices...)
+		})
+	}
+}
+
+func Test_provider_deleteByQuery(t *testing.T) {
+	type fields struct {
+		Cfg                      *config
+		Log                      logs.Logger
+		election                 election.Interface
+		loader                   loader.Interface
+		retentions               RetentionStrategy
+		clearCh                  chan *clearRequest
+		minIndicesStoreInDisk    int64
+		rolloverBodyForDiskClean string
+		rolloverAliasPatterns    []*indexAliasPattern
+		ttlTaskCh                chan *TtlTask
+	}
+	tests := []struct {
+		name   string
+		fields fields
+	}{
+		{
+			"case1", fields{
+				Cfg:                      nil,
+				Log:                      nil,
+				election:                 nil,
+				loader:                   nil,
+				retentions:               nil,
+				clearCh:                  nil,
+				minIndicesStoreInDisk:    0,
+				rolloverBodyForDiskClean: "",
+				rolloverAliasPatterns:    nil,
+				ttlTaskCh:                nil,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			var logger *pkg.MockLogger
+			defer ctrl.Finish()
+			logger = pkg.NewMockLogger(ctrl)
+			logger.EXPECT().Infof(gomock.Any(), gomock.Any())
+
+			indices := NewMockInterface(ctrl)
+			defer ctrl.Finish()
+			now := time.Now()
+			indices.EXPECT().WaitAndGetIndices(context.Background())
+			indices.EXPECT().AllIndices().Return(&loader.IndexGroup{
+				List: []*loader.IndexEntry{
+					{
+						Index:      "d",
+						StoreBytes: 2,
+						MaxT:       now.AddDate(0, 0, -3),
+					},
+					{
+						Index:      "a",
+						StoreBytes: 1,
+						MaxT:       now.AddDate(0, 0, -1),
+					},
+					{
+						Index:      "b",
+						StoreBytes: 1,
+						MaxT:       now.AddDate(0, 0, -2),
+					},
+					{
+						Index:      "c",
+						StoreBytes: 2,
+						MaxT:       now.AddDate(0, 0, -2),
+					},
+				}})
+
+			p := &provider{
+				Log:    logger,
+				loader: indices,
+			}
+
+			esClient := &elastic.Client{}
+			monkey.PatchInstanceMethod(reflect.TypeOf(esClient), "WaitAndGetIndices", func(client *elastic.Client, indices ...string) *elastic.IndicesForcemergeService {
+				return &elastic.IndicesForcemergeService{}
+			})
+			p.deleteByQuery()
 		})
 	}
 }
