@@ -32,6 +32,7 @@ func Test_Aggregate(t *testing.T) {
 		Loader:     MockLoader{},
 		Creator:    MockCreator{},
 		clickhouse: MockClickhouse{},
+		Cfg:        &config{},
 	}
 	_, err := p.Aggregate(context.Background(), &storage.Aggregation{
 		Selector: &storage.Selector{

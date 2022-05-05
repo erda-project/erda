@@ -19,16 +19,17 @@ import (
 
 	"gotest.tools/assert"
 
+	"github.com/erda-project/erda/modules/core/monitor/log/storage/clickhouse/converter"
 	"github.com/erda-project/erda/modules/core/monitor/storekit/clickhouse/table/loader"
 )
 
 func Test_Parse(t *testing.T) {
 	parser := NewEsqsParser(
-		&loader.TableMeta{
+		converter.NewFieldNameConverter(&loader.TableMeta{
 			Columns: map[string]*loader.TableColumn{
 				"tags": {Type: "Map(String,String)"},
 			},
-		},
+		}, nil),
 		"content", "AND", true)
 
 	result := parser.Parse("da-ta:\"中 文\" (not v.al:zz OR yy:dd) AND hello AND \"hi\"")
@@ -40,11 +41,11 @@ func Test_Parse(t *testing.T) {
 
 func Test_Parse_Empty_Input(t *testing.T) {
 	parser := NewEsqsParser(
-		&loader.TableMeta{
+		converter.NewFieldNameConverter(&loader.TableMeta{
 			Columns: map[string]*loader.TableColumn{
 				"tags": {Type: "Map(String,String)"},
 			},
-		},
+		}, nil),
 		"content", "AND", true)
 
 	result := parser.Parse("  ")
@@ -56,11 +57,48 @@ func Test_Parse_Empty_Input(t *testing.T) {
 
 func Test_Parse_NonExistTagFields(t *testing.T) {
 	parser := NewEsqsParser(
-		&loader.TableMeta{
+		converter.NewFieldNameConverter(&loader.TableMeta{
 			Columns: map[string]*loader.TableColumn{
 				"tags": {Type: "Map(String,String)"},
 			},
-		},
+		}, nil),
+		"content", "AND", true)
+
+	result := parser.Parse("tags.aaa:bbb")
+	assert.NilError(t, result.Error())
+	want := "tags['aaa']='bbb'"
+	sql := result.Sql()
+	assert.Equal(t, sql, want)
+}
+
+func Test_Parse_NonExistTagFields_ExistsMapper(t *testing.T) {
+	parser := NewEsqsParser(
+		converter.NewFieldNameConverter(&loader.TableMeta{
+			Columns: map[string]*loader.TableColumn{
+				"tags":     {Type: "Map(String,String)"},
+				"tags.ccc": {Type: "String"},
+			},
+		}, map[string]string{
+			"tags.aaa": "tags.ccc",
+		}),
+		"content", "AND", true)
+
+	result := parser.Parse("tags.aaa:bbb")
+	assert.NilError(t, result.Error())
+	want := "tags.ccc='bbb'"
+	sql := result.Sql()
+	assert.Equal(t, sql, want)
+}
+
+func Test_Parse_NonExistTagAndMapperFields(t *testing.T) {
+	parser := NewEsqsParser(
+		converter.NewFieldNameConverter(&loader.TableMeta{
+			Columns: map[string]*loader.TableColumn{
+				"tags": {Type: "Map(String,String)"},
+			},
+		}, map[string]string{
+			"tags.aaa": "tags.ccc",
+		}),
 		"content", "AND", true)
 
 	result := parser.Parse("tags.aaa:bbb")
@@ -72,12 +110,12 @@ func Test_Parse_NonExistTagFields(t *testing.T) {
 
 func Test_Parse_ExistTagFields(t *testing.T) {
 	parser := NewEsqsParser(
-		&loader.TableMeta{
+		converter.NewFieldNameConverter(&loader.TableMeta{
 			Columns: map[string]*loader.TableColumn{
 				"tags":          {Type: "Map(String,String)"},
 				"tags.trace_id": {Type: "String"},
 			},
-		},
+		}, nil),
 		"content", "AND", true)
 
 	result := parser.Parse("tags.trace_id:bbb")
