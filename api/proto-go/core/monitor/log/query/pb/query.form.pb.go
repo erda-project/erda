@@ -194,6 +194,12 @@ func (m *GetLogByRuntimeRequest) UnmarshalURLValues(prefix string, values url.Va
 				m.ContainerName = vals[0]
 			case "clusterName":
 				m.ClusterName = vals[0]
+			case "isFirstQuery":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.IsFirstQuery = val
 			}
 		}
 	}

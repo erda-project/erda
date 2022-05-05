@@ -51,7 +51,9 @@ var (
 		{Timestamp: 16, Content: "6666.1"},
 		{Timestamp: 19, Content: "9999"},
 	}
-	commonTestOptions = map[string]interface{}{}
+	commonTestOptions = map[string]interface{}{
+		storage.IsLive: true,
+	}
 	commonTestFilters = []*storage.Filter{
 		{
 			Key:   "id",
@@ -120,6 +122,10 @@ func queryFuncForTest(expectNamespace, expectPod, expectContainer string, items 
 	}
 }
 
+const (
+	kubernetesLogScheme = "container"
+)
+
 func Test_cStorage_Iterator_Next(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -134,6 +140,7 @@ func Test_cStorage_Iterator_Next(t *testing.T) {
 			sel: &storage.Selector{
 				Start:   11,
 				End:     13,
+				Scheme:  kubernetesLogScheme,
 				Filters: commonTestFilters,
 				Options: commonTestOptions,
 			},
@@ -168,6 +175,7 @@ func Test_cStorage_Iterator_Next(t *testing.T) {
 			sel: &storage.Selector{
 				Start:   12,
 				End:     13,
+				Scheme:  kubernetesLogScheme,
 				Filters: commonTestFilters,
 				Options: commonTestOptions,
 			},
@@ -191,6 +199,7 @@ func Test_cStorage_Iterator_Next(t *testing.T) {
 			sel: &storage.Selector{
 				Start:   13,
 				End:     16,
+				Scheme:  kubernetesLogScheme,
 				Filters: commonTestFilters,
 				Options: commonTestOptions,
 			},
@@ -247,6 +256,7 @@ func Test_cStorage_Iterator_Next(t *testing.T) {
 			sel: &storage.Selector{
 				Start:   100,
 				End:     1000,
+				Scheme:  kubernetesLogScheme,
 				Filters: commonTestFilters,
 				Options: commonTestOptions,
 			},
@@ -258,6 +268,7 @@ func Test_cStorage_Iterator_Next(t *testing.T) {
 			sel: &storage.Selector{
 				Start:   10,
 				End:     11,
+				Scheme:  kubernetesLogScheme,
 				Filters: commonTestFilters,
 				Options: commonTestOptions,
 			},
@@ -269,6 +280,7 @@ func Test_cStorage_Iterator_Next(t *testing.T) {
 			sel: &storage.Selector{
 				Start:   11,
 				End:     13,
+				Scheme:  kubernetesLogScheme,
 				Filters: commonTestFilters,
 				Options: commonTestOptions,
 			},
@@ -303,6 +315,7 @@ func Test_cStorage_Iterator_Next(t *testing.T) {
 			sel: &storage.Selector{
 				Start:   17,
 				End:     18,
+				Scheme:  kubernetesLogScheme,
 				Filters: commonTestFilters,
 				Options: commonTestOptions,
 			},
@@ -337,6 +350,7 @@ func Test_cStorage_Iterator_Next(t *testing.T) {
 			sel: &storage.Selector{
 				Start:   16,
 				End:     20,
+				Scheme:  kubernetesLogScheme,
 				Filters: commonTestFilters,
 				Options: commonTestOptions,
 			},
@@ -398,10 +412,23 @@ func Test_cStorage_Iterator_Next(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:        "Option_No_Live",
+			source:      commonLogTestItems,
+			bufferLines: 1,
+			sel: &storage.Selector{
+				Start:   11,
+				End:     13,
+				Scheme:  kubernetesLogScheme,
+				Filters: commonTestFilters,
+				Options: map[string]interface{}{},
+			},
+			want: nil,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
+			tt = tt
 			var namespace, name, container string
 			for _, v := range tt.sel.Filters {
 				switch v.Key {
@@ -454,6 +481,7 @@ func Test_cStorage_Iterator_Prev(t *testing.T) {
 			sel: &storage.Selector{
 				Start:   11,
 				End:     13,
+				Scheme:  kubernetesLogScheme,
 				Filters: commonTestFilters,
 				Options: commonTestOptions,
 			},
@@ -488,6 +516,7 @@ func Test_cStorage_Iterator_Prev(t *testing.T) {
 			sel: &storage.Selector{
 				Start:   12,
 				End:     13,
+				Scheme:  kubernetesLogScheme,
 				Filters: commonTestFilters,
 				Options: commonTestOptions,
 			},
@@ -511,6 +540,7 @@ func Test_cStorage_Iterator_Prev(t *testing.T) {
 			sel: &storage.Selector{
 				Start:   13,
 				End:     16,
+				Scheme:  kubernetesLogScheme,
 				Filters: commonTestFilters,
 				Options: commonTestOptions,
 			},
@@ -567,6 +597,7 @@ func Test_cStorage_Iterator_Prev(t *testing.T) {
 			sel: &storage.Selector{
 				Start:   100,
 				End:     1000,
+				Scheme:  kubernetesLogScheme,
 				Filters: commonTestFilters,
 				Options: commonTestOptions,
 			},
@@ -578,6 +609,7 @@ func Test_cStorage_Iterator_Prev(t *testing.T) {
 			sel: &storage.Selector{
 				Start:   0,
 				End:     11,
+				Scheme:  kubernetesLogScheme,
 				Filters: commonTestFilters,
 				Options: commonTestOptions,
 			},
@@ -589,6 +621,7 @@ func Test_cStorage_Iterator_Prev(t *testing.T) {
 			sel: &storage.Selector{
 				Start:   10,
 				End:     13,
+				Scheme:  kubernetesLogScheme,
 				Filters: commonTestFilters,
 				Options: commonTestOptions,
 			},
@@ -623,6 +656,7 @@ func Test_cStorage_Iterator_Prev(t *testing.T) {
 			sel: &storage.Selector{
 				Start:   16,
 				End:     18,
+				Scheme:  kubernetesLogScheme,
 				Filters: commonTestFilters,
 				Options: commonTestOptions,
 			},
@@ -679,6 +713,7 @@ func Test_cStorage_Iterator_Prev(t *testing.T) {
 			sel: &storage.Selector{
 				Start:   16,
 				End:     20,
+				Scheme:  kubernetesLogScheme,
 				Filters: commonTestFilters,
 				Options: commonTestOptions,
 			},
@@ -743,7 +778,6 @@ func Test_cStorage_Iterator_Prev(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
 			var namespace, name, container string
 			for _, v := range tt.sel.Filters {
 				switch v.Key {
@@ -796,6 +830,7 @@ func Test_cStorage_Iterator_FirstNext(t *testing.T) {
 			sel: &storage.Selector{
 				Start:   13,
 				End:     15,
+				Scheme:  kubernetesLogScheme,
 				Filters: commonTestFilters,
 				Options: commonTestOptions,
 			},
@@ -841,6 +876,7 @@ func Test_cStorage_Iterator_FirstNext(t *testing.T) {
 			sel: &storage.Selector{
 				Start:   100,
 				End:     1000,
+				Scheme:  kubernetesLogScheme,
 				Filters: commonTestFilters,
 				Options: commonTestOptions,
 			},
@@ -852,6 +888,7 @@ func Test_cStorage_Iterator_FirstNext(t *testing.T) {
 			sel: &storage.Selector{
 				Start:   10,
 				End:     11,
+				Scheme:  kubernetesLogScheme,
 				Filters: commonTestFilters,
 				Options: commonTestOptions,
 			},
@@ -860,7 +897,6 @@ func Test_cStorage_Iterator_FirstNext(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
 			var namespace, name, container string
 			for _, v := range tt.sel.Filters {
 				switch v.Key {
@@ -916,6 +952,7 @@ func Test_cStorage_Iterator_LastPrev(t *testing.T) {
 			sel: &storage.Selector{
 				Start:   13,
 				End:     15,
+				Scheme:  kubernetesLogScheme,
 				Filters: commonTestFilters,
 				Options: commonTestOptions,
 			},
@@ -961,6 +998,7 @@ func Test_cStorage_Iterator_LastPrev(t *testing.T) {
 			sel: &storage.Selector{
 				Start:   100,
 				End:     1000,
+				Scheme:  kubernetesLogScheme,
 				Filters: commonTestFilters,
 				Options: commonTestOptions,
 			},
@@ -972,6 +1010,7 @@ func Test_cStorage_Iterator_LastPrev(t *testing.T) {
 			sel: &storage.Selector{
 				Start:   10,
 				End:     11,
+				Scheme:  kubernetesLogScheme,
 				Filters: commonTestFilters,
 				Options: commonTestOptions,
 			},
@@ -980,7 +1019,6 @@ func Test_cStorage_Iterator_LastPrev(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
 			var namespace, name, container string
 			for _, v := range tt.sel.Filters {
 				switch v.Key {

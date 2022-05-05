@@ -73,7 +73,7 @@ func (s *logQueryService) GetLogByRuntime(ctx context.Context, req *pb.GetLogByR
 		}
 		return nil, err
 	}
-	if len(items) <= 0 && req.GetStart() <= time.Now().Add(-1*s.p.Cfg.DelayBackoffTime).UnixNano() {
+	if len(items) <= 0 && (req.GetStart() == 0 || req.GetStart() >= time.Now().Add(-1*s.p.Cfg.DelayBackoffTime).UnixNano()) {
 		return s.GetLogByRealtime(ctx, req)
 	}
 	return &pb.GetLogByRuntimeResponse{Lines: items}, nil
@@ -478,6 +478,7 @@ type ByContainerMetaRequest interface {
 	GetPodNamespace() string
 	GetContainerName() string
 	GetClusterName() string
+	GetIsFirstQuery() bool
 }
 type ByContainerIdRequest interface {
 	Request
@@ -536,7 +537,6 @@ func toQuerySelector(req Request) (*storage.Selector, error) {
 	}
 	if sel.Start <= 0 {
 		sel.Start = sel.End - defaultQueryTimeRange
-		sel.Options[storage.IsFirstQuery] = true
 		if sel.Start < 0 {
 			sel.Start = 0
 		}
@@ -624,6 +624,9 @@ func toQuerySelector(req Request) (*storage.Selector, error) {
 	}
 
 	if byContainerMetaRequest, ok := req.(ByContainerMetaRequest); ok {
+		// set is first query flag.for first query, may be use tail speed up perform
+		sel.Options[storage.IsFirstQuery] = byContainerMetaRequest.GetIsFirstQuery()
+
 		if len(byContainerMetaRequest.GetContainerName()) > 0 {
 			sel.Filters = append(sel.Filters, &storage.Filter{
 				Key:   "container_name",

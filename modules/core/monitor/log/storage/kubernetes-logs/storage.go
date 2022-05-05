@@ -385,9 +385,20 @@ func (it *logsIterator) fetchByTailLine(startTime int64, limit int64, backward b
 		minTime, maxTime int64 = math.MaxInt64, 0
 	)
 
+	var lastTimestamp, offset int64 = -1, initialOffset
+
 	err = parseLines(reader, func(line []byte) error {
 		text := string(line)
 		data, content := parseLine(text, it)
+
+		if data.UnixNano != lastTimestamp {
+			lastTimestamp = data.UnixNano
+			offset = initialOffset
+		} else {
+			offset++
+		}
+		data.Offset = offset
+
 		if data.UnixNano > 0 {
 			if data.UnixNano < minTime {
 				minTime = data.UnixNano
@@ -395,6 +406,8 @@ func (it *logsIterator) fetchByTailLine(startTime int64, limit int64, backward b
 			if data.UnixNano > maxTime {
 				maxTime = data.UnixNano
 			}
+			it.lastEndTimestamp, it.lastEndOffset = data.UnixNano, data.Offset
+
 			parseContent(content, data)
 			if !it.matcher(data, it) {
 				return nil
