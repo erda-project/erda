@@ -21,26 +21,26 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/spec"
 )
 
-func (s *provider) RunPipeline(ctx context.Context, p *spec.Pipeline, req *apistructs.PipelineRunRequest) error {
+func (s *provider) CancelPipeline(ctx context.Context, p *spec.Pipeline, req *apistructs.PipelineCancelRequest) error {
 	if s.EdgeRegister.IsCenter() && p.IsEdge {
-		s.Log.Infof("proxy run pipeline to edge, pipelineID: %d", p.ID)
-		return s.proxyRunPipelineRequestToEdge(ctx, p, req)
+		s.Log.Infof("proxy cancel pipeline to edge, pipelineID: %d", p.ID)
+		return s.proxyCancelPipelineRequestToEdge(ctx, p, req)
 	}
 
-	return s.directRunPipeline(ctx, p, req)
+	return s.directCancelPipeline(ctx, p, req)
 }
 
-func (s *provider) proxyRunPipelineRequestToEdge(ctx context.Context, p *spec.Pipeline, req *apistructs.PipelineRunRequest) error {
+func (s *provider) proxyCancelPipelineRequestToEdge(ctx context.Context, p *spec.Pipeline, req *apistructs.PipelineCancelRequest) error {
 	// handle at edge side
 	edgeBundle, err := s.EdgeRegister.GetEdgeBundleByClusterName(p.ClusterName)
 	if err != nil {
 		return err
 	}
-	return edgeBundle.RunPipeline(*req)
+	return edgeBundle.CancelPipeline(*req)
 }
 
-func (s *provider) directRunPipeline(ctx context.Context, p *spec.Pipeline, req *apistructs.PipelineRunRequest) error {
-	if _, err := s.PipelineRun.RunOnePipeline(ctx, req); err != nil {
+func (s *provider) directCancelPipeline(ctx context.Context, p *spec.Pipeline, req *apistructs.PipelineCancelRequest) error {
+	if err := s.PipelineCancel.CancelOnePipeline(ctx, req); err != nil {
 		return err
 	}
 	// report

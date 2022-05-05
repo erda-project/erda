@@ -21,31 +21,32 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/spec"
 )
 
-func (s *provider) RunPipeline(ctx context.Context, p *spec.Pipeline, req *apistructs.PipelineRunRequest) error {
+func (s *provider) RerunFailedPipeline(ctx context.Context, p *spec.Pipeline, req *apistructs.PipelineRerunFailedRequest) (*apistructs.PipelineDTO, error) {
 	if s.EdgeRegister.IsCenter() && p.IsEdge {
-		s.Log.Infof("proxy run pipeline to edge, pipelineID: %d", p.ID)
-		return s.proxyRunPipelineRequestToEdge(ctx, p, req)
+		s.Log.Infof("proxy rerun-failed pipeline to edge, pipelineID: %d", p.ID)
+		return s.proxyRerunFailedPipelineRequestToEdge(ctx, p, req)
 	}
 
-	return s.directRunPipeline(ctx, p, req)
+	return s.directRerunFailedPipeline(ctx, p, req)
 }
 
-func (s *provider) proxyRunPipelineRequestToEdge(ctx context.Context, p *spec.Pipeline, req *apistructs.PipelineRunRequest) error {
+func (s *provider) proxyRerunFailedPipelineRequestToEdge(ctx context.Context, p *spec.Pipeline, req *apistructs.PipelineRerunFailedRequest) (*apistructs.PipelineDTO, error) {
 	// handle at edge side
 	edgeBundle, err := s.EdgeRegister.GetEdgeBundleByClusterName(p.ClusterName)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return edgeBundle.RunPipeline(*req)
+	return edgeBundle.RerunFailedPipeline(*req)
 }
 
-func (s *provider) directRunPipeline(ctx context.Context, p *spec.Pipeline, req *apistructs.PipelineRunRequest) error {
-	if _, err := s.PipelineRun.RunOnePipeline(ctx, req); err != nil {
-		return err
+func (s *provider) directRerunFailedPipeline(ctx context.Context, p *spec.Pipeline, req *apistructs.PipelineRerunFailedRequest) (*apistructs.PipelineDTO, error) {
+	newP, err := s.pipelineSvc.RerunFailed(ctx, req)
+	if err != nil {
+		return nil, err
 	}
 	// report
 	if s.EdgeRegister.IsEdge() {
 		s.EdgeReporter.TriggerOncePipelineReport(p.ID)
 	}
-	return nil
+	return s.pipelineSvc.ConvertPipeline(newP), nil
 }
