@@ -27,7 +27,8 @@ import (
 )
 
 type config struct {
-	ReadPageSize int `file:"read_page_size" default:"200"`
+	ReadPageSize    int               `file:"read_page_size" default:"200"`
+	FieldNameMapper map[string]string `file:"field_name_mapper"`
 }
 
 type provider struct {

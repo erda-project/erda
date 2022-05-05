@@ -22,9 +22,8 @@ import (
 
 	"github.com/antlr/antlr4/runtime/Go/antlr"
 
+	"github.com/erda-project/erda/modules/core/monitor/log/storage/clickhouse/converter"
 	"github.com/erda-project/erda/modules/core/monitor/log/storage/clickhouse/query_parser/parser"
-	"github.com/erda-project/erda/modules/core/monitor/log/storage/clickhouse/utils"
-	"github.com/erda-project/erda/modules/core/monitor/storekit/clickhouse/table/loader"
 )
 
 type EsqsParser interface {
@@ -37,20 +36,20 @@ type EsqsParseResult interface {
 	HighlightItems() map[string][]string
 }
 
-func NewEsqsParser(tableMeta *loader.TableMeta, defaultField string, defaultOp string, highlight bool) EsqsParser {
+func NewEsqsParser(fieldNameConverter converter.FieldNameConverter, defaultField string, defaultOp string, highlight bool) EsqsParser {
 	return &esqsParser{
-		defaultOp:    defaultOp,
-		defaultField: defaultField,
-		highlight:    highlight,
-		tableMeta:    tableMeta,
+		defaultOp:          defaultOp,
+		defaultField:       defaultField,
+		highlight:          highlight,
+		fieldNameConverter: fieldNameConverter,
 	}
 }
 
 type esqsParser struct {
-	defaultOp    string
-	defaultField string
-	highlight    bool
-	tableMeta    *loader.TableMeta
+	defaultOp          string
+	defaultField       string
+	highlight          bool
+	fieldNameConverter converter.FieldNameConverter
 }
 
 func (ep *esqsParser) Parse(esqsExpr string) EsqsParseResult {
@@ -60,10 +59,10 @@ func (ep *esqsParser) Parse(esqsExpr string) EsqsParseResult {
 	p := parser.NewEsQueryStringParser(stream)
 
 	listener := &esqsListener{
-		defaultOp:    ep.defaultOp,
-		defaultField: ep.defaultField,
-		highlight:    ep.highlight,
-		tableMeta:    ep.tableMeta,
+		defaultOp:          ep.defaultOp,
+		defaultField:       ep.defaultField,
+		highlight:          ep.highlight,
+		fieldNameConverter: ep.fieldNameConverter,
 	}
 	p.AddErrorListener(listener)
 	antlr.ParseTreeWalkerDefault.Walk(listener, p.Query())
@@ -75,10 +74,10 @@ type esqsListener struct {
 	*parser.BaseEsQueryStringListener
 	*antlr.DefaultErrorListener
 
-	defaultOp    string
-	defaultField string
-	highlight    bool
-	tableMeta    *loader.TableMeta
+	defaultOp          string
+	defaultField       string
+	highlight          bool
+	fieldNameConverter converter.FieldNameConverter
 
 	stack          []string
 	errs           []error
@@ -193,7 +192,7 @@ func (l *esqsListener) formatExpression(field, value string) string {
 		l.buildHighlightItems(field, value)
 	}
 
-	field = utils.ConvertUnknownField(l.tableMeta, field)
+	field = l.fieldNameConverter.Convert(field)
 
 	switch field {
 	case l.defaultField:
