@@ -91,7 +91,7 @@ func (s *provider) CronCreate(ctx context.Context, req *pb.CronCreateRequest) (*
 
 		toEdge := s.EdgePipelineRegister.CanProxyToEdge(createCron.PipelineSource, createCron.Extra.ClusterName)
 		if toEdge || s.EdgePipelineRegister.IsEdge() {
-			createCron.IsEdge = true
+			createCron.IsEdge = &[]bool{true}[0]
 		}
 
 		if req.CronExpr != "" {
@@ -355,7 +355,7 @@ func (s *provider) update(req *pb.CronUpdateRequest, cron db.PipelineCron, field
 
 	if toEdge || s.EdgePipelineRegister.IsEdge() {
 		fields = append(fields, db.PipelineCronIsEdge)
-		cron.IsEdge = true
+		cron.IsEdge = &[]bool{true}[0]
 	}
 
 	err := s.dbClient.UpdatePipelineCronWillUseDefault(cron.ID, &cron, fields, option)
