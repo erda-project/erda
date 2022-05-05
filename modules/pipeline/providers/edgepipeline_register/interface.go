@@ -17,25 +17,17 @@ package edgepipeline_register
 import (
 	"context"
 	"fmt"
-	"math/rand"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
 
 	"github.com/rancher/remotedialer"
-	corev1 "k8s.io/api/core/v1"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/watch"
-	"k8s.io/client-go/tools/cache"
-	watchtools "k8s.io/client-go/tools/watch"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/pkg/clusterdialer"
 	"github.com/erda-project/erda/pkg/discover"
-	"github.com/erda-project/erda/pkg/k8sclient"
 )
 
 type Interface interface {
@@ -109,37 +101,6 @@ func (p *provider) GetEdgeBundleByClusterName(clusterName string) (*bundle.Bundl
 	}
 	pipelineAddr := edgeDetail.Get(apistructs.ClusterDialerDataKeyPipelineAddr)
 	return bundle.New(bundle.WithDialContext(edgeDial), bundle.WithCustom(discover.EnvPipeline, pipelineAddr)), nil
-}
-
-func (p *provider) GetAccessToken(req apistructs.OAuth2TokenGetRequest) (*apistructs.OAuth2Token, error) {
-	return &apistructs.OAuth2Token{
-		AccessToken: p.EdgeTaskAccessToken(),
-		ExpiresIn:   0,
-		TokenType:   "Bearer",
-	}, nil
-}
-
-func (p *provider) GetOAuth2Token(req apistructs.OAuth2TokenGetRequest) (*apistructs.OAuth2Token, error) {
-	return &apistructs.OAuth2Token{
-		AccessToken: p.EdgeTaskAccessToken(),
-		ExpiresIn:   0,
-		TokenType:   "Bearer",
-	}, nil
-}
-
-func (p *provider) CheckAccessTokenFromHttpRequest(req *http.Request) error {
-	if p.Cfg.IsEdge {
-		token := req.Header.Get("Authorization")
-		return p.CheckAccessToken(token)
-	}
-	return nil
-}
-
-func (p *provider) CheckAccessToken(token string) error {
-	if token != p.EdgeTaskAccessToken() {
-		return fmt.Errorf("invalid access token")
-	}
-	return nil
 }
 
 func (p *provider) GetEdgePipelineEnvs() apistructs.ClusterDialerClientDetail {
@@ -261,156 +222,11 @@ func (p *provider) waitingEdgeReady(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-time.After(1 * time.Second):
-			if p.ClusterAccessKey() != "" && p.EdgeTaskAccessToken() != "" {
+			if p.ClusterAccessKey() != "" {
 				p.Log.Infof("edge pipeline is ready")
 				return
 			}
 			p.Log.Warnf("waiting for edge ready...")
 		}
 	}
-}
-
-func (p *provider) watchClusterCredential(ctx context.Context) {
-	// if specified cluster access key, preferred to use it.
-	if p.ClusterAccessKey() != "" {
-		p.setAccessTokenIfNotExist(p.ClusterAccessKey())
-		return
-	}
-
-	var (
-		retryWatcher *watchtools.RetryWatcher
-		err          error
-	)
-
-	// Wait cluster credential secret ready.
-	for {
-		retryWatcher, err = p.getInClusterRetryWatcher(p.Cfg.ErdaNamespace)
-		if err != nil {
-			p.Log.Errorf("get retry warcher, %v", err)
-		} else if retryWatcher != nil {
-			break
-		}
-
-		select {
-		case <-ctx.Done():
-			return
-		case <-time.After(time.Duration(rand.Int()%10) * time.Second):
-			p.Log.Warnf("failed to get retry watcher, try again")
-		}
-	}
-
-	defer retryWatcher.Stop()
-
-	p.Log.Info("start retry watcher")
-
-	for {
-		select {
-		case event := <-retryWatcher.ResultChan():
-			sec, ok := event.Object.(*corev1.Secret)
-			if !ok {
-				p.Log.Errorf("illegal secret object, igonre")
-				continue
-			}
-
-			p.Log.Debugf("event type: %v, object: %+v", event.Type, sec)
-
-			switch event.Type {
-			case watch.Deleted:
-				// ignore delete event, if cluster offline, reconnect will be failed.
-				continue
-			case watch.Added, watch.Modified:
-				ak, ok := sec.Data[apistructs.ClusterAccessKey]
-				// If accidentally deleted credential key, use the latest access key
-				if !ok {
-					p.Log.Errorf("cluster info doesn't contain cluster access key value")
-					continue
-				}
-
-				// Access key values doesn't change, skip reconnect
-				if string(ak) == p.ClusterAccessKey() {
-					p.Log.Debug("cluster access key doesn't change, skip")
-					continue
-				}
-
-				if p.ClusterAccessKey() == "" {
-					p.Log.Infof("get cluster access key: %s", string(ak))
-				} else {
-					p.Log.Infof("cluster access key change from %s to %s", p.ClusterAccessKey(), string(ak))
-				}
-
-				// change value
-				p.setAccessKey(string(ak))
-				p.setAccessTokenIfNotExist(string(ak))
-			}
-		case <-ctx.Done():
-			return
-		}
-	}
-}
-
-func (p *provider) getInClusterRetryWatcher(ns string) (*watchtools.RetryWatcher, error) {
-	cs, err := k8sclient.New(p.Cfg.ClusterName, k8sclient.WithPreferredToUseInClusterConfig())
-	if err != nil {
-		return nil, fmt.Errorf("create clientset error: %v", err)
-	}
-
-	// Get or create secret
-	secInit, err := cs.ClientSet.CoreV1().Secrets(ns).Get(context.Background(), apistructs.ErdaClusterCredential, v1.GetOptions{})
-	if err != nil {
-		if !k8serrors.IsNotFound(err) {
-			return nil, fmt.Errorf("get secret error: %v", err)
-		}
-		// try to create init cluster credential secret
-		secInit, err = cs.ClientSet.CoreV1().Secrets(ns).Create(context.Background(), &corev1.Secret{
-			ObjectMeta: v1.ObjectMeta{Name: apistructs.ErdaClusterCredential},
-			Data:       map[string][]byte{apistructs.ClusterAccessKey: []byte("init")},
-		}, v1.CreateOptions{})
-
-		if err != nil {
-			return nil, fmt.Errorf("create init cluster credential secret error: %v", err)
-		}
-	}
-
-	// create retry watcher
-	retryWatcher, err := watchtools.NewRetryWatcher(secInit.ResourceVersion, &cache.ListWatch{
-		WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
-			return cs.ClientSet.CoreV1().Secrets(ns).Watch(context.Background(), v1.ListOptions{
-				FieldSelector: fmt.Sprintf("metadata.name=%s", apistructs.ErdaClusterCredential),
-			})
-		},
-	})
-
-	if err != nil {
-		return nil, fmt.Errorf("create retry watcher error: %v", err)
-	}
-
-	return retryWatcher, nil
-}
-
-func (p *provider) ClusterAccessKey() string {
-	p.Lock()
-	ac := p.Cfg.ClusterAccessKey
-	p.Unlock()
-	return ac
-}
-
-func (p *provider) setAccessKey(ac string) {
-	p.Lock()
-	defer p.Unlock()
-	p.Cfg.ClusterAccessKey = ac
-}
-
-func (p *provider) EdgeTaskAccessToken() string {
-	p.Lock()
-	token := p.Cfg.AccessToken
-	p.Unlock()
-	return token
-}
-
-func (p *provider) setAccessTokenIfNotExist(token string) {
-	p.Lock()
-	if p.Cfg.AccessToken == "" {
-		p.Cfg.AccessToken = token
-	}
-	p.Unlock()
 }
