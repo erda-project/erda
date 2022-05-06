@@ -80,6 +80,7 @@ type provider struct {
 	AddonMySQLSvc         addonmysqlpb.AddonMySQLServiceServer    `autowired:"erda.orchestrator.addon.mysql.AddonMySQLService"`
 	DicehubReleaseSvc     dicehubpb.ReleaseServiceServer          `autowired:"erda.core.dicehub.release.ReleaseService"`
 	CICDCmsSvc            *cms.CICDCmsService                     `autowired:"erda.dop.cms.CICDCmsService"`
+	UnitTestService       *unittest.UnitTestService               `autowired:"erda.dop.qa.unittest.UnitTestService"`
 	TokenService          tokenpb.TokenServiceServer              `autowired:"erda.core.token.TokenService"`
 	ClusterSvc            clusterpb.ClusterServiceServer          `autowired:"erda.core.clustermanager.cluster.ClusterService"`
 
