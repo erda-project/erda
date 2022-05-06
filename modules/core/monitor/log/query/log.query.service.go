@@ -68,12 +68,9 @@ func (s *logQueryService) GetLogByRuntime(ctx context.Context, req *pb.GetLogByR
 		return sel
 	}, true, false)
 	if err != nil {
-		if req.GetLive() && req.GetSource() == "container" {
-			return s.GetLogByRealtime(ctx, req)
-		}
-		return nil, err
+		return s.GetLogByRealtime(ctx, req)
 	}
-	if len(items) <= 0 && (req.GetStart() == 0 || req.GetStart() >= time.Now().Add(-1*s.p.Cfg.DelayBackoffTime).UnixNano()) {
+	if len(items) <= 0 && (req.IsFirstQuery || req.GetStart() >= time.Now().Add(-1*s.p.Cfg.DelayBackoffTime).UnixNano()) {
 		return s.GetLogByRealtime(ctx, req)
 	}
 	return &pb.GetLogByRuntimeResponse{Lines: items}, nil
