@@ -68,23 +68,25 @@ func (s *logQueryService) GetLogByRuntime(ctx context.Context, req *pb.GetLogByR
 		return sel
 	}, true, false)
 	if err != nil {
+		s.p.Log.Error("query runtime log is failed, hosted by fallback", err)
 		return s.GetLogByRealtime(ctx, req)
 	}
 	if len(items) <= 0 && (req.IsFirstQuery || req.GetStart() >= time.Now().Add(-1*s.p.Cfg.DelayBackoffTime).UnixNano()) {
+		s.p.Log.Error("query runtime log is empty, hosted by fallback")
 		return s.GetLogByRealtime(ctx, req)
 	}
 	return &pb.GetLogByRuntimeResponse{Lines: items}, nil
 }
 
 func (s *logQueryService) GetLogByRealtime(ctx context.Context, req *pb.GetLogByRuntimeRequest) (*pb.GetLogByRuntimeResponse, error) {
-	items, err := s.queryRealLogItems(ctx, req, func(sel *storage.Selector) *storage.Selector {
+	items, isFallBack, err := s.queryRealLogItems(ctx, req, func(sel *storage.Selector) *storage.Selector {
 		s.tryFillQueryMeta(ctx, sel)
 		return sel
 	}, true)
 	if err != nil {
 		return nil, err
 	}
-	return &pb.GetLogByRuntimeResponse{Lines: items, IsFallback: true}, nil
+	return &pb.GetLogByRuntimeResponse{Lines: items, IsFallback: isFallBack}, nil
 }
 
 func (s *logQueryService) GetLogByOrganization(ctx context.Context, req *pb.GetLogByOrganizationRequest) (*pb.GetLogByOrganizationResponse, error) {
@@ -259,11 +261,10 @@ func (s *logQueryService) toAggregation(req *pb.LogAggregationRequest) (*storage
 
 	return agg, nil
 }
-
-func (s *logQueryService) queryRealLogItems(ctx context.Context, req Request, fn func(sel *storage.Selector) *storage.Selector, ascendingResult bool) ([]*pb.LogItem, error) {
+func (s *logQueryService) queryRealLogItems(ctx context.Context, req Request, fn func(sel *storage.Selector) *storage.Selector, ascendingResult bool) ([]*pb.LogItem, bool, error) {
 	sel, err := toQuerySelector(req)
 	if err != nil {
-		return nil, err
+		return nil, true, err
 	}
 	if fn != nil {
 		sel = fn(sel)
@@ -271,15 +272,19 @@ func (s *logQueryService) queryRealLogItems(ctx context.Context, req Request, fn
 
 	it, err := s.tryGetIterator(ctx, sel, s.k8sReader)
 	if err != nil {
-		return nil, errors.NewInternalServerError(err)
+		return nil, true, errors.NewInternalServerError(err)
 	}
 	defer it.Close()
 
+	if _, ok := it.(storekit.EmptyIterator); ok {
+		return nil, false, nil
+	}
+
 	items, err := toLogItems(ctx, it, req.GetCount() >= 0, getLimit(req.GetCount()), ascendingResult)
 	if err != nil {
-		return nil, errors.NewInternalServerError(err)
+		return nil, true, errors.NewInternalServerError(err)
 	}
-	return items, nil
+	return items, true, nil
 }
 
 func (s *logQueryService) queryLogItems(ctx context.Context, req Request, fn func(sel *storage.Selector) *storage.Selector, ascendingResult bool, withTotal bool) ([]*pb.LogItem, int64, error) {

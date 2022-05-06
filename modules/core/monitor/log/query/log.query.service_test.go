@@ -393,6 +393,53 @@ func Test_splitSelectors(t *testing.T) {
 	}
 }
 
+func Test_realTimeNoIterator(t *testing.T) {
+	tests := []struct {
+		name    string
+		req     *pb.GetLogByRuntimeRequest
+		service *logQueryService
+		want    bool
+		wantErr bool
+	}{
+		{
+			req: &pb.GetLogByRuntimeRequest{
+				ContainerName: "no_container",
+				Live:          true,
+				Id:            "123",
+			},
+			service: &logQueryService{
+				storageReader: &mockStorage{},
+			},
+			want:    false,
+			wantErr: false,
+		},
+		{
+			req: &pb.GetLogByRuntimeRequest{
+				ContainerName: "container",
+				Live:          false,
+				Id:            "123",
+			},
+			service: &logQueryService{
+				storageReader: &mockStorage{},
+			},
+			want:    false,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.service.GetLogByRealtime(context.Background(), tt.req)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Test_realTimeNoIterator error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got.IsFallback, tt.want) {
+				t.Errorf("Test_realTimeNoIterator,IsFallBack = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 type mockStorage struct {
 }
 
