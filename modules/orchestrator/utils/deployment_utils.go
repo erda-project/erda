@@ -127,9 +127,7 @@ func applyOverlay__(services *diceyml.Services, name string, serviceOverlay *dic
 
 		r := service.Resources
 		r.CPU = serviceOverlay.Resources.CPU
-		r.MaxCPU = serviceOverlay.Resources.MaxCPU
 		r.Mem = int(serviceOverlay.Resources.Mem)
-		r.MaxMem = serviceOverlay.Resources.MaxMem
 		r.Disk = int(serviceOverlay.Resources.Disk)
 		r.EmptyDirCapacity = int(serviceOverlay.Resources.EmptyDirCapacity)
 		r.EphemeralStorageCapacity = int(serviceOverlay.Resources.EmptyDirCapacity)
