@@ -41,6 +41,7 @@ edgepipeline_register:
   cluster_dialer_endpoint: "${CLUSTER_DIALER_PUBLIC_URL}/clusteragent/connect"
   cluster_access_key: "${CLUSTER_ACCESS_KEY}"
   allowed_sources: "cdp-,fdp-"
+  cluster_access_key_etcd_prefix: "${EDGE_PIPELINE_CLUSTER_ACCESS_KEY_ETCD_PREFIX:/devops/pipeline/v2/edge/cluster-access-key}"
 edgepipeline: {}
 resourcegc: {}
 dbgc: {}

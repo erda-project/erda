@@ -20,6 +20,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/coreos/etcd/clientv3"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/bundle"
@@ -27,16 +29,16 @@ import (
 )
 
 type Config struct {
-	IsEdge                     bool          `env:"DICE_IS_EDGE" default:"false"`
-	ErdaNamespace              string        `env:"DICE_NAMESPACE"`
-	ClusterName                string        `env:"DICE_CLUSTER_NAME"`
-	AllowedSources             []string      `file:"allowed_sources" env:"EDGE_ALLOWED_SOURCES"` // env support comma-seperated string
-	PipelineAddr               string        `env:"PIPELINE_ADDR"`
-	PipelineHost               string        `env:"PIPELINE_HOST"`
-	ClusterDialEndpoint        string        `file:"cluster_dialer_endpoint" desc:"cluster dialer endpoint"`
-	ClusterAccessKey           string        `file:"cluster_access_key" desc:"cluster access key, if specified will doesn't start watcher"`
-	RetryConnectDialerInterval time.Duration `file:"retry_cluster_hook_interval" default:"1s"`
-	AccessToken                string        `file:"token" env:"EDGE_PIPELINE_ACCESS_TOKEN"`
+	IsEdge                       bool          `env:"DICE_IS_EDGE" default:"false"`
+	ErdaNamespace                string        `env:"DICE_NAMESPACE"`
+	ClusterName                  string        `env:"DICE_CLUSTER_NAME"`
+	AllowedSources               []string      `file:"allowed_sources" env:"EDGE_ALLOWED_SOURCES"` // env support comma-seperated string
+	PipelineAddr                 string        `env:"PIPELINE_ADDR"`
+	PipelineHost                 string        `env:"PIPELINE_HOST"`
+	ClusterDialEndpoint          string        `file:"cluster_dialer_endpoint" desc:"cluster dialer endpoint"`
+	ClusterAccessKey             string        `file:"cluster_access_key" desc:"cluster access key, if specified will doesn't start watcher"`
+	RetryConnectDialerInterval   time.Duration `file:"retry_cluster_hook_interval" default:"1s"`
+	EtcdPrefixOfClusterAccessKey string        `file:"cluster_access_key_etcd_prefix" env:"EDGE_PIPELINE_CLUSTER_ACCESS_KEY_ETCD_PREFIX"`
 }
 
 type provider struct {
@@ -47,6 +49,7 @@ type provider struct {
 	LW  leaderworker.Interface
 
 	bdl          *bundle.Bundle
+	EtcdClient   *clientv3.Client
 	started      bool
 	forCenterUse forCenterUse
 	forEdgeUse   forEdgeUse
@@ -55,6 +58,9 @@ type provider struct {
 func (p *provider) Init(ctx servicehub.Context) error {
 	for _, s := range p.Cfg.AllowedSources {
 		p.Log.Infof("allowed source: %s", s)
+	}
+	if err := p.checkEtcdPrefixKey(p.Cfg.EtcdPrefixOfClusterAccessKey); err != nil {
+		return err
 	}
 	p.bdl = bundle.New(bundle.WithClusterDialer())
 	p.forEdgeUse.handlersOnEdge = make(chan func(context.Context), 0)
