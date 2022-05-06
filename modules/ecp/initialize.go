@@ -46,6 +46,7 @@ func (p *provider) initialize() error {
 	ep := endpoints.New(
 		db,
 		endpoints.WithBundle(bdl),
+		endpoints.WithClusterSvc(p.clusterSvc),
 	)
 
 	server := httpserver.New(p.Cfg.Listen)

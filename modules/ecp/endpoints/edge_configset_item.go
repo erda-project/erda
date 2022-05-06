@@ -184,7 +184,7 @@ func (e *Endpoints) CreateEdgeConfigSetItem(ctx context.Context, r *http.Request
 	}
 	logrus.Infof("request body: %+v", req)
 
-	itemID, err := e.edge.CreateConfigSetItem(&req)
+	itemID, err := e.edge.CreateConfigSetItem(ctx, &req)
 	if err != nil {
 		return apierrors.ErrCreateEdgeCfgSetItem.InternalError(err).ToResp(), nil
 	}
@@ -223,7 +223,7 @@ func (e *Endpoints) UpdateEdgeConfigSetItem(ctx context.Context, r *http.Request
 	}
 	logrus.Infof("request body: %+v", req)
 
-	err = e.edge.UpdateConfigSetItem(edgeSiteID, &req)
+	err = e.edge.UpdateConfigSetItem(ctx, edgeSiteID, &req)
 	if err != nil {
 		return apierrors.ErrUpdateEdgeCfgSetItem.InternalError(err).ToResp(), nil
 	}
@@ -250,7 +250,7 @@ func (e *Endpoints) DeleteEdgeConfigSetItem(ctx context.Context, r *http.Request
 		return apierrors.AccessDeny.AccessDenied().ToResp(), nil
 	}
 
-	if err = e.edge.DeleteConfigSetItem(itemID); err != nil {
+	if err = e.edge.DeleteConfigSetItem(ctx, itemID); err != nil {
 		return apierrors.ErrDeleteEdgeCfgSetItem.InternalError(err).ToResp(), nil
 	}
 

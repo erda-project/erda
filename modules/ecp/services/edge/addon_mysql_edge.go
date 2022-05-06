@@ -15,6 +15,7 @@
 package edge
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -28,6 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/ecp/dbclient"
 	"github.com/erda-project/erda/pkg/clientgo/apis/openyurt/v1alpha1"
@@ -41,14 +43,14 @@ const (
 	SlaveTag  = "mysql-slave"
 )
 
-func (e *Edge) CreateEdgeMysql(req *apistructs.EdgeAppCreateRequest) error {
+func (e *Edge) CreateEdgeMysql(ctx context.Context, req *apistructs.EdgeAppCreateRequest) error {
 	var err error
 	var extensionResult *apistructs.ExtensionVersion
 	var masterUD *v1alpha1.UnitedDeployment
 	var slaveUD *v1alpha1.UnitedDeployment
 	var masterSvc *v1.Service
 	var slaveSvc *v1.Service
-	var clusterInfo *apistructs.ClusterInfo
+	var clusterInfo *clusterpb.ClusterInfo
 	var envs []v1.EnvVar
 	var mysqlExtraData map[string]string
 	var mysqlPortMap []apistructs.PortMap
@@ -91,7 +93,7 @@ func (e *Edge) CreateEdgeMysql(req *apistructs.EdgeAppCreateRequest) error {
 	slaveLimitCpu := fmt.Sprintf("%.fm", extDice.Services[SlaveTag].Resources.MaxCPU*1000)
 	slaveLimitMemory := fmt.Sprintf("%.dMi", extDice.Services[SlaveTag].Resources.Mem)
 
-	if clusterInfo, err = e.getClusterInfo(req.ClusterID); err != nil {
+	if clusterInfo, err = e.getClusterInfo(ctx, req.ClusterID); err != nil {
 		return err
 	}
 	envs = append(envs, v1.EnvVar{
@@ -324,18 +326,18 @@ func (e *Edge) CreateEdgeMysql(req *apistructs.EdgeAppCreateRequest) error {
 	return nil
 }
 
-func (e *Edge) UpdateEdgeMysql(edgeAppID int64, req *apistructs.EdgeAppUpdateRequest) error {
+func (e *Edge) UpdateEdgeMysql(ctx context.Context, edgeAppID int64, req *apistructs.EdgeAppUpdateRequest) error {
 	var masterUD *v1alpha1.UnitedDeployment
 	var slaveUD *v1alpha1.UnitedDeployment
 	var err error
 	var app *dbclient.EdgeApp
-	var clusterInfo *apistructs.ClusterInfo
+	var clusterInfo *clusterpb.ClusterInfo
 	var nodePools []v1alpha1.Pool
 	var replicas int32
 
 	namespace := fmt.Sprintf("%s-%s", EdgeAppPrefix, req.Name)
 	replicas = 1
-	if clusterInfo, err = e.getClusterInfo(req.ClusterID); err != nil {
+	if clusterInfo, err = e.getClusterInfo(ctx, req.ClusterID); err != nil {
 		return err
 	}
 
@@ -426,12 +428,12 @@ func (e *Edge) UpdateEdgeMysql(edgeAppID int64, req *apistructs.EdgeAppUpdateReq
 	return nil
 }
 
-func (e *Edge) GetEdgeMysqlStatus(appID int64) (*apistructs.EdgeAppStatusResponse, error) {
+func (e *Edge) GetEdgeMysqlStatus(ctx context.Context, appID int64) (*apistructs.EdgeAppStatusResponse, error) {
 	var err error
 	var app *dbclient.EdgeApp
 	var udMaster *v1alpha1.UnitedDeployment
 	var udSlave *v1alpha1.UnitedDeployment
-	var clusterInfo *apistructs.ClusterInfo
+	var clusterInfo *clusterpb.ClusterInfo
 	var appStatus apistructs.EdgeAppStatusResponse
 	var appInfo *apistructs.EdgeAppInfo
 	var tmpStatus string
@@ -443,7 +445,7 @@ func (e *Edge) GetEdgeMysqlStatus(appID int64) (*apistructs.EdgeAppStatusRespons
 		return nil, err
 	}
 	namespace := fmt.Sprintf("%s-%s", EdgeAppPrefix, app.Name)
-	if clusterInfo, err = e.getClusterInfo(appInfo.ClusterID); err != nil {
+	if clusterInfo, err = e.getClusterInfo(ctx, appInfo.ClusterID); err != nil {
 		return nil, err
 	}
 	if udMaster, err = e.k8s.GetUnitedDeployment(clusterInfo.Name, namespace, fmt.Sprintf("%s-%s", appInfo.Name, MasterTag)); err != nil {
@@ -472,12 +474,12 @@ func (e *Edge) GetEdgeMysqlStatus(appID int64) (*apistructs.EdgeAppStatusRespons
 	return &appStatus, nil
 }
 
-func (e *Edge) DeleteEdgeMysql(appID int64) error {
+func (e *Edge) DeleteEdgeMysql(ctx context.Context, appID int64) error {
 	var err error
 	var apps *[]dbclient.EdgeApp
 	var app *dbclient.EdgeApp
 	var dependApp []string
-	var clusterInfo *apistructs.ClusterInfo
+	var clusterInfo *clusterpb.ClusterInfo
 
 	if app, err = e.db.GetEdgeApp(appID); err != nil {
 		return err
@@ -503,7 +505,7 @@ func (e *Edge) DeleteEdgeMysql(appID int64) error {
 	}
 
 	namespace := fmt.Sprintf("%s-%s", EdgeAppPrefix, app.Name)
-	if clusterInfo, err = e.getClusterInfo(app.ClusterID); err != nil {
+	if clusterInfo, err = e.getClusterInfo(ctx, app.ClusterID); err != nil {
 		return err
 	}
 
@@ -516,7 +518,7 @@ func (e *Edge) DeleteEdgeMysql(appID int64) error {
 	return nil
 }
 
-func (e *Edge) RestartEdgeMysql(edgeApp *dbclient.EdgeApp, siteName string) error {
+func (e *Edge) RestartEdgeMysql(ctx context.Context, edgeApp *dbclient.EdgeApp, siteName string) error {
 	var (
 		masterName   string
 		slaveName    string
@@ -525,7 +527,7 @@ func (e *Edge) RestartEdgeMysql(edgeApp *dbclient.EdgeApp, siteName string) erro
 		slavePrefix  = fmt.Sprintf("%s-%s-%s", edgeApp.Name, SlaveTag, siteName)
 	)
 
-	clusterInfo, err := e.getClusterInfo(edgeApp.ClusterID)
+	clusterInfo, err := e.getClusterInfo(ctx, edgeApp.ClusterID)
 	if err != nil {
 		return fmt.Errorf("get cluster info error: %v", err)
 	}
@@ -555,7 +557,7 @@ func (e *Edge) RestartEdgeMysql(edgeApp *dbclient.EdgeApp, siteName string) erro
 	return nil
 }
 
-func (e *Edge) OfflineEdgeMysql(edgeApp *dbclient.EdgeApp, siteName string) error {
+func (e *Edge) OfflineEdgeMysql(ctx context.Context, edgeApp *dbclient.EdgeApp, siteName string) error {
 	var (
 		isResourceFound bool
 		edgeSites       []string
@@ -595,7 +597,7 @@ func (e *Edge) OfflineEdgeMysql(edgeApp *dbclient.EdgeApp, siteName string) erro
 		return fmt.Errorf("application %s releated this application in site: %s", fmt.Sprint(relatedApps), siteName)
 	}
 
-	clusterInfo, err := e.getClusterInfo(edgeApp.ClusterID)
+	clusterInfo, err := e.getClusterInfo(ctx, edgeApp.ClusterID)
 	if err != nil {
 		return fmt.Errorf("get cluster info error: %v", err)
 	}

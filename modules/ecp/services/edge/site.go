@@ -15,6 +15,7 @@
 package edge
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"time"
@@ -29,7 +30,7 @@ import (
 )
 
 // ListSite List edge site paging.
-func (e *Edge) ListSite(param *apistructs.EdgeSiteListPageRequest) (int, *[]apistructs.EdgeSiteInfo, error) {
+func (e *Edge) ListSite(ctx context.Context, param *apistructs.EdgeSiteListPageRequest) (int, *[]apistructs.EdgeSiteInfo, error) {
 	var clusterIDs []int64
 
 	total, sites, err := e.db.ListEdgeSite(param)
@@ -43,7 +44,7 @@ func (e *Edge) ListSite(param *apistructs.EdgeSiteListPageRequest) (int, *[]apis
 		clusterIDs = e.getSitesClusterIDs(sites)
 	}
 
-	clusterNodePools, err := e.getNodePoolsByClusters(clusterIDs)
+	clusterNodePools, err := e.getNodePoolsByClusters(ctx, clusterIDs)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -53,7 +54,7 @@ func (e *Edge) ListSite(param *apistructs.EdgeSiteListPageRequest) (int, *[]apis
 	for i := range *sites {
 		nodePoolMap := clusterNodePools[(*sites)[i].ClusterID]
 		if nodePool, ok := nodePoolMap[(*sites)[i].Name]; ok {
-			clusterInfo, err := e.getClusterInfo((*sites)[i].ClusterID)
+			clusterInfo, err := e.getClusterInfo(ctx, (*sites)[i].ClusterID)
 			if err != nil {
 				return 0, nil, err
 			}
@@ -68,7 +69,7 @@ func (e *Edge) ListSite(param *apistructs.EdgeSiteListPageRequest) (int, *[]apis
 }
 
 // GetEdgeSite get edge site with site id
-func (e *Edge) GetEdgeSite(edgeSiteID int64) (*apistructs.EdgeSiteInfo, error) {
+func (e *Edge) GetEdgeSite(ctx context.Context, edgeSiteID int64) (*apistructs.EdgeSiteInfo, error) {
 	var (
 		siteInfo *apistructs.EdgeSiteInfo
 	)
@@ -78,12 +79,12 @@ func (e *Edge) GetEdgeSite(edgeSiteID int64) (*apistructs.EdgeSiteInfo, error) {
 		return nil, err
 	}
 
-	clusterNodePool, err := e.getNodePoolsByCluster(site.ClusterID)
+	clusterNodePool, err := e.getNodePoolsByCluster(ctx, site.ClusterID)
 	if err != nil {
 		return nil, err
 	}
 
-	clusterInfo, err := e.getClusterInfo(site.ClusterID)
+	clusterInfo, err := e.getClusterInfo(ctx, site.ClusterID)
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +95,7 @@ func (e *Edge) GetEdgeSite(edgeSiteID int64) (*apistructs.EdgeSiteInfo, error) {
 }
 
 // CreateSite Create edge site.
-func (e *Edge) CreateSite(req *apistructs.EdgeSiteCreateRequest) (uint64, error) {
+func (e *Edge) CreateSite(ctx context.Context, req *apistructs.EdgeSiteCreateRequest) (uint64, error) {
 	var (
 		// DefaultLabelKey: [clusterID].[orgName]
 		// s.g. terminus-dev.terminus
@@ -136,7 +137,7 @@ func (e *Edge) CreateSite(req *apistructs.EdgeSiteCreateRequest) (uint64, error)
 		},
 	}
 
-	clusterInfo, err := e.getClusterInfo(req.ClusterID)
+	clusterInfo, err := e.getClusterInfo(ctx, req.ClusterID)
 	if err != nil {
 		return 0, err
 	}
@@ -186,13 +187,13 @@ func (e *Edge) UpdateSite(edgeSiteID int64, req *apistructs.EdgeSiteUpdateReques
 }
 
 // DeleteSite Delete edge site.
-func (e *Edge) DeleteSite(edgeSiteID int64) error {
+func (e *Edge) DeleteSite(ctx context.Context, edgeSiteID int64) error {
 	edgeSite, err := e.db.GetEdgeSite(edgeSiteID)
 	if err != nil || edgeSite == nil {
 		return fmt.Errorf("failed to get edgesite, (%v)", err)
 	}
 
-	clusterInfo, err := e.getClusterInfo(edgeSite.ClusterID)
+	clusterInfo, err := e.getClusterInfo(ctx, edgeSite.ClusterID)
 	if err != nil {
 		return fmt.Errorf("get cluster (id: %d) error: %v", edgeSite.ClusterID, err)
 	}
@@ -226,7 +227,7 @@ func (e *Edge) DeleteSite(edgeSiteID int64) error {
 	rmItemError := ""
 
 	for _, item := range *cfgItem {
-		if err = e.DeleteConfigSetItem(int64(item.ID)); err != nil {
+		if err = e.DeleteConfigSetItem(ctx, int64(item.ID)); err != nil {
 			rmItemError += err.Error()
 		}
 	}
@@ -249,7 +250,7 @@ func (e *Edge) DeleteSite(edgeSiteID int64) error {
 }
 
 // GetInitSiteShell Get edge site init shell.
-func (e *Edge) GetInitSiteShell(edgeSiteID int64) (map[string][]string, error) {
+func (e *Edge) GetInitSiteShell(ctx context.Context, edgeSiteID int64) (map[string][]string, error) {
 	var (
 		result           = make(map[string][]string)
 		initNodeShell    = make([]string, 0)
@@ -268,7 +269,7 @@ func (e *Edge) GetInitSiteShell(edgeSiteID int64) (map[string][]string, error) {
 		return nil, fmt.Errorf("failed to get edgesite, (%v)", err)
 	}
 
-	clusterInfo, err := e.getClusterInfo(edgeSite.ClusterID)
+	clusterInfo, err := e.getClusterInfo(ctx, edgeSite.ClusterID)
 	if err != nil {
 		return nil, err
 	}
@@ -299,7 +300,7 @@ func (e *Edge) GetInitSiteShell(edgeSiteID int64) (map[string][]string, error) {
 }
 
 // OfflineEdgeHost Offline edge host and clean monitor data.
-func (e *Edge) OfflineEdgeHost(edgeSiteID int64, siteIP string) error {
+func (e *Edge) OfflineEdgeHost(ctx context.Context, edgeSiteID int64, siteIP string) error {
 	var (
 		nodeFormatter  = "edgenode-%s-%s"
 		appAddonType   = "addon"
@@ -314,7 +315,7 @@ func (e *Edge) OfflineEdgeHost(edgeSiteID int64, siteIP string) error {
 		return fmt.Errorf("get edge site (id: %d) error: %v", edgeSiteID, err)
 	}
 
-	clusterInfo, err := e.getClusterInfo(edgeSite.ClusterID)
+	clusterInfo, err := e.getClusterInfo(ctx, edgeSite.ClusterID)
 	if err != nil {
 		return fmt.Errorf("get cluster (id: %d) info error: %v", edgeSite.ClusterID, err)
 	}
@@ -403,12 +404,12 @@ func (e *Edge) OfflineEdgeHost(edgeSiteID int64, siteIP string) error {
 }
 
 // getNodePoolsByClusters Get node pools by clusters.
-func (e *Edge) getNodePoolsByClusters(clusterIDs []int64) (map[int64]NodePools, error) {
+func (e *Edge) getNodePoolsByClusters(ctx context.Context, clusterIDs []int64) (map[int64]NodePools, error) {
 	var (
 		clustersNodePools = make(map[int64]NodePools, 0)
 	)
 	for _, clusterID := range clusterIDs {
-		nodePools, err := e.getNodePoolsByCluster(clusterID)
+		nodePools, err := e.getNodePoolsByCluster(ctx, clusterID)
 		if err != nil {
 			return clustersNodePools, fmt.Errorf("get node pool (cluster: %v) error, %v", clusterID, err)
 		}
@@ -418,13 +419,13 @@ func (e *Edge) getNodePoolsByClusters(clusterIDs []int64) (map[int64]NodePools, 
 }
 
 // getNodePoolsByCluster Get all node pool by clusterID.
-func (e *Edge) getNodePoolsByCluster(clusterID int64) (NodePools, error) {
+func (e *Edge) getNodePoolsByCluster(ctx context.Context, clusterID int64) (NodePools, error) {
 	var (
 		nodePoolList *v1alpha1.NodePoolList
 		nodePools    = make(NodePools, 0)
 	)
 
-	clusterInfo, err := e.getClusterInfo(clusterID)
+	clusterInfo, err := e.getClusterInfo(ctx, clusterID)
 	if err != nil {
 		return nil, err
 	}
