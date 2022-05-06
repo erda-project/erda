@@ -16,9 +16,9 @@ package orchestrator
 
 import "github.com/erda-project/erda/modules/openapi/api/apis"
 
-var ORCHESTRATOR_RUNTIME_GROUP_BY_MY_APPS = apis.ApiSpec{
-	Path:        "/api/runtimes/actions/group-by-my-apps",
-	BackendPath: "/api/runtimes/actions/group-by-my-apps",
+var ORCHESTRATOR_RUNTIME_LIST_MY_RUNTIMES = apis.ApiSpec{
+	Path:        "/api/runtimes/actions/list-my-runtimes",
+	BackendPath: "/api/runtimes/actions/list-my-runtimes",
 	Host:        "orchestrator.marathon.l4lb.thisdcos.directory:8081",
 	Scheme:      "http",
 	Method:      "GET",

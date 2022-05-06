@@ -410,12 +410,13 @@ func (e *Endpoints) ListRuntimesGroupByApps(ctx context.Context, r *http.Request
 	return httpserver.OkResp(runtimes)
 }
 
-// ListRuntimesGroupByMyApps lists runtimes group by my apps in project
-func (e *Endpoints) ListRuntimesGroupByMyApps(ctx context.Context, r *http.Request, _ map[string]string) (httpserver.Responser, error) {
+// ListMyRuntimes lists the runtimes for which the current user has permissions
+func (e *Endpoints) ListMyRuntimes(ctx context.Context, r *http.Request, _ map[string]string) (httpserver.Responser, error) {
 	var (
-		l      = logrus.WithField("func", "*Endpoints.ListRuntimesGroupByApps")
-		appIDs []uint64
-		env    string
+		l          = logrus.WithField("func", "*Endpoints.ListRuntimesGroupByApps")
+		appIDs     []uint64
+		appID2Name = make(map[uint64]string)
+		env        string
 	)
 
 	userId, err := user.GetUserID(r)
@@ -449,13 +450,22 @@ func (e *Endpoints) ListRuntimesGroupByMyApps(ctx context.Context, r *http.Reque
 	myApps, err := e.bdl.GetMyAppsByProject(string(userId), orgId, projectID, "")
 	for i := range myApps.List {
 		appIDs = append(appIDs, myApps.List[i].ID)
+		appID2Name[myApps.List[i].ID] = myApps.List[i].Name
 	}
 
 	runtimes, err := e.runtime.ListGroupByApps(appIDs, env)
 	if err != nil {
 		return apierrors.ErrListRuntime.InternalError(err).ToResp(), nil
 	}
-	return httpserver.OkResp(runtimes)
+
+	var res []*apistructs.RuntimeSummaryDTO
+	for _, sli := range runtimes {
+		for i := range sli {
+			sli[i].ApplicationName = appID2Name[sli[i].ApplicationID]
+			res = append(res, sli[i])
+		}
+	}
+	return httpserver.OkResp(res)
 }
 
 // BatchRuntimeServices responses the runtimes for the given apps.
