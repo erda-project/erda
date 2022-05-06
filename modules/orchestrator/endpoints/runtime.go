@@ -410,6 +410,54 @@ func (e *Endpoints) ListRuntimesGroupByApps(ctx context.Context, r *http.Request
 	return httpserver.OkResp(runtimes)
 }
 
+// ListRuntimesGroupByMyApps lists runtimes group by my apps in project
+func (e *Endpoints) ListRuntimesGroupByMyApps(ctx context.Context, r *http.Request, _ map[string]string) (httpserver.Responser, error) {
+	var (
+		l      = logrus.WithField("func", "*Endpoints.ListRuntimesGroupByApps")
+		appIDs []uint64
+		env    string
+	)
+
+	userId, err := user.GetUserID(r)
+	if err != nil {
+		l.Errorf("failed to get user id ,err :%v", err)
+		return nil, err
+	}
+	orgId, err := getOrgID(r)
+	if err != nil {
+		l.Errorf("failed to get org id ,err :%v", err)
+		return nil, err
+	}
+
+	projectIDStr := r.URL.Query().Get("projectID")
+	if projectIDStr == "" {
+		return nil, apierrors.ErrListRuntime.MissingParameter("projectID")
+	}
+	projectID, err := strconv.ParseUint(projectIDStr, 10, 64)
+	if err != nil {
+		return nil, apierrors.ErrListRuntime.InvalidParameter("projectID")
+	}
+
+	envParam := r.URL.Query()["workspace"]
+
+	if len(envParam) == 0 {
+		env = ""
+	} else {
+		env = envParam[0]
+	}
+
+	myApps, err := e.bdl.GetMyAppsByProject(string(userId), orgId, projectID, "")
+	for i := range myApps.List {
+		appIDs = append(appIDs, myApps.List[i].ID)
+	}
+
+	runtimes, err := e.runtime.ListGroupByApps(appIDs, env)
+	if err != nil {
+		return apierrors.ErrListRuntime.InternalError(err).ToResp(), nil
+	}
+	return httpserver.OkResp(runtimes)
+}
+
 // BatchRuntimeServices responses the runtimes for the given apps.
 func (e *Endpoints) BatchRuntimeServices(ctx context.Context, r *http.Request, _ map[string]string) (httpserver.Responser, error) {
 	var (
