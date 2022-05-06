@@ -68,9 +68,11 @@ func (s *logQueryService) GetLogByRuntime(ctx context.Context, req *pb.GetLogByR
 		return sel
 	}, true, false)
 	if err != nil {
+		s.p.Log.Error("query runtime log is failed, hosted by fallback", err)
 		return s.GetLogByRealtime(ctx, req)
 	}
 	if len(items) <= 0 && (req.IsFirstQuery || req.GetStart() >= time.Now().Add(-1*s.p.Cfg.DelayBackoffTime).UnixNano()) {
+		s.p.Log.Error("query runtime log is empty, hosted by fallback")
 		return s.GetLogByRealtime(ctx, req)
 	}
 	return &pb.GetLogByRuntimeResponse{Lines: items}, nil
