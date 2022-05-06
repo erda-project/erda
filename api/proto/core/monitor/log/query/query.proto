@@ -100,6 +100,7 @@ message GetLogByRuntimeRequest {
   string podNamespace  = 14;
   string containerName = 15;
   string clusterName   = 16;
+  bool   isFirstQuery  = 17;
 }
 
 message GetLogByOrganizationRequest {
@@ -203,6 +204,7 @@ message GetLogResponse {
 
 message GetLogByRuntimeResponse {
   repeated LogItem lines = 1;
+  bool isFallback = 2;
 }
 
 message GetLogByOrganizationResponse {

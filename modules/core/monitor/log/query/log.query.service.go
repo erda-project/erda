@@ -68,7 +68,10 @@ func (s *logQueryService) GetLogByRuntime(ctx context.Context, req *pb.GetLogByR
 		return sel
 	}, true, false)
 	if err != nil {
-		return nil, err
+		return s.GetLogByRealtime(ctx, req)
+	}
+	if len(items) <= 0 && (req.IsFirstQuery || req.GetStart() >= time.Now().Add(-1*s.p.Cfg.DelayBackoffTime).UnixNano()) {
+		return s.GetLogByRealtime(ctx, req)
 	}
 	return &pb.GetLogByRuntimeResponse{Lines: items}, nil
 }
@@ -81,7 +84,7 @@ func (s *logQueryService) GetLogByRealtime(ctx context.Context, req *pb.GetLogBy
 	if err != nil {
 		return nil, err
 	}
-	return &pb.GetLogByRuntimeResponse{Lines: items}, nil
+	return &pb.GetLogByRuntimeResponse{Lines: items, IsFallback: true}, nil
 }
 
 func (s *logQueryService) GetLogByOrganization(ctx context.Context, req *pb.GetLogByOrganizationRequest) (*pb.GetLogByOrganizationResponse, error) {
@@ -266,12 +269,6 @@ func (s *logQueryService) queryRealLogItems(ctx context.Context, req Request, fn
 		sel = fn(sel)
 	}
 
-	if req.GetLive() != true {
-		return nil, fmt.Errorf("no supported to stop container of real log")
-	}
-	if sel.Scheme != "container" {
-		return nil, fmt.Errorf("no supported query %s of real log", sel.Scheme)
-	}
 	it, err := s.tryGetIterator(ctx, sel, s.k8sReader)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
@@ -478,6 +475,7 @@ type ByContainerMetaRequest interface {
 	GetPodNamespace() string
 	GetContainerName() string
 	GetClusterName() string
+	GetIsFirstQuery() bool
 }
 type ByContainerIdRequest interface {
 	Request
@@ -527,6 +525,7 @@ func toQuerySelector(req Request) (*storage.Selector, error) {
 		Debug: req.GetDebug(),
 		Options: map[string]interface{}{
 			storage.SelectorKeyCount: req.GetCount(),
+			storage.IsLive:           req.GetLive(),
 		},
 	}
 
@@ -622,6 +621,9 @@ func toQuerySelector(req Request) (*storage.Selector, error) {
 	}
 
 	if byContainerMetaRequest, ok := req.(ByContainerMetaRequest); ok {
+		// set is first query flag.for first query, may be use tail speed up perform
+		sel.Options[storage.IsFirstQuery] = byContainerMetaRequest.GetIsFirstQuery()
+
 		if len(byContainerMetaRequest.GetContainerName()) > 0 {
 			sel.Filters = append(sel.Filters, &storage.Filter{
 				Key:   "container_name",
