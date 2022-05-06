@@ -26,6 +26,7 @@ import (
 	pb1 "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	commonpb "github.com/erda-project/erda-proto-go/core/pipeline/pb"
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/pkg/encoding/jsonparse"
 	"github.com/erda-project/erda/pkg/http/httpserver"
@@ -141,6 +142,114 @@ func TestEndpoints_pipelineCronDelete(t *testing.T) {
 			}
 
 			assert.EqualValues(t, tt.want, got)
+		})
+	}
+}
+
+func Test_getBranchFromCronExtraLabels(t *testing.T) {
+	type args struct {
+		cronInfo *commonpb.Cron
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    string
+		wantErr bool
+	}{
+		{
+			name: "test empty",
+			args: args{
+				cronInfo: &commonpb.Cron{},
+			},
+			want:    "",
+			wantErr: true,
+		},
+		{
+			name: "test normal",
+			args: args{
+				cronInfo: &commonpb.Cron{
+					Extra: &commonpb.CronExtra{
+						NormalLabels: map[string]string{
+							apistructs.LabelBranch: "test",
+						},
+					},
+				},
+			},
+			wantErr: false,
+			want:    "test",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := getBranchFromCronExtraLabels(tt.args.cronInfo)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("getBranchFromCronExtraLabels() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("getBranchFromCronExtraLabels() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_getAppIDFromCronExtraLabels(t *testing.T) {
+	type args struct {
+		cronInfo *commonpb.Cron
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    uint64
+		wantErr bool
+	}{
+		{
+			name: "test empty",
+			args: args{
+				cronInfo: &commonpb.Cron{},
+			},
+			want:    0,
+			wantErr: true,
+		},
+		{
+			name: "test not appIDStr",
+			args: args{
+				cronInfo: &commonpb.Cron{
+					Extra: &commonpb.CronExtra{
+						NormalLabels: map[string]string{
+							apistructs.LabelAppID: "test",
+						},
+					},
+				},
+			},
+			want:    0,
+			wantErr: true,
+		},
+		{
+			name: "test normal",
+			args: args{
+				cronInfo: &commonpb.Cron{
+					Extra: &commonpb.CronExtra{
+						NormalLabels: map[string]string{
+							apistructs.LabelAppID: "1",
+						},
+					},
+				},
+			},
+			want:    1,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := getAppIDFromCronExtraLabels(tt.args.cronInfo)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("getAppIDFromCronExtraLabels() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("getAppIDFromCronExtraLabels() got = %v, want %v", got, tt.want)
+			}
 		})
 	}
 }

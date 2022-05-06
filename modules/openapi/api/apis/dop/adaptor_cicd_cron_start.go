@@ -41,7 +41,12 @@ var ADAPTOR_CICD_CRON_START = apis.ApiSpec{
 			return err
 		}
 		cronDTO := res.Data
-		app, err := ctx.GetApp(cronDTO.ApplicationID)
+
+		if cronDTO == nil || cronDTO.Extra == nil || cronDTO.Extra.NormalLabels == nil {
+			return nil
+		}
+
+		app, err := ctx.GetApp(cronDTO.Extra.NormalLabels[apistructs.LabelAppID])
 		if err != nil {
 			return err
 		}
@@ -52,7 +57,7 @@ var ADAPTOR_CICD_CRON_START = apis.ApiSpec{
 				"projectName": app.ProjectName,
 				"appName":     app.Name,
 				"pipelineId":  strconv.FormatUint(cronDTO.BasePipelineID, 10),
-				"branch":      cronDTO.Branch,
+				"branch":      cronDTO.Extra.NormalLabels[apistructs.LabelBranch],
 			},
 			ProjectID:    app.ProjectID,
 			AppID:        app.ID,
