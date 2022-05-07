@@ -15,7 +15,9 @@
 package actionagent
 
 import (
+	"os"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -149,4 +151,15 @@ func Test_canDoEdgeCallback(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_SetCallbackReporter(t *testing.T) {
+	agent := &Agent{
+		EasyUse: EasyUse{},
+	}
+	os.Setenv(apistructs.EnvOpenapiTokenForActionBootstrap, "xxx")
+	os.Setenv(EnvFileStreamTimeoutSec, "30")
+	agent.SetCallbackReporter()
+	reporter := agent.CallbackReporter.(*CenterCallbackReporter)
+	assert.Equal(t, time.Second*time.Duration(30), reporter.FileStreamTimeoutSec)
 }
