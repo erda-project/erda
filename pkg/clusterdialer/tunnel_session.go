@@ -48,6 +48,7 @@ func (s *TunnelSession) initialize(endpoint string) {
 		if err != nil {
 			logrus.Errorf("Failed to connect to proxy server %s, err: %v", endpoint, err)
 			s.cancel()
+			sessions.Delete(s.clusterDialerEndpoint)
 			return
 		}
 		s.lock.Lock()
