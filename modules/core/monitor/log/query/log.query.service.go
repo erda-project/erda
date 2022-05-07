@@ -42,6 +42,8 @@ type logQueryService struct {
 	currentDownloadLimit *int64
 }
 
+var timeNow = time.Now
+
 func (s *logQueryService) GetLog(ctx context.Context, req *pb.GetLogRequest) (*pb.GetLogResponse, error) {
 	items, _, err := s.queryLogItems(ctx, req, func(sel *storage.Selector) *storage.Selector {
 		sel.Meta.PreferredReturnFields = storage.OnlyIdContent
@@ -71,16 +73,71 @@ func (s *logQueryService) GetLogByRuntime(ctx context.Context, req *pb.GetLogByR
 		s.p.Log.Error("query runtime log is failed, hosted by fallback", err)
 		return s.GetLogByRealtime(ctx, req)
 	}
-	if len(items) <= 0 && (req.IsFirstQuery || req.GetStart() >= time.Now().Add(-1*s.p.Cfg.DelayBackoffTime).UnixNano()) {
+	if len(items) <= 0 && s.isRequestUseFallBack(req) {
 		s.p.Log.Error("query runtime log is empty, hosted by fallback")
 		return s.GetLogByRealtime(ctx, req)
 	}
 	return &pb.GetLogByRuntimeResponse{Lines: items}, nil
 }
+func (s *logQueryService) isRequestUseFallBack(req *pb.GetLogByRuntimeRequest) bool {
+	if req.IsFirstQuery {
+		return true
+	}
+
+	sBackoffTime := timeNow().Add(s.p.Cfg.DelayBackoffStartTime).UnixNano()
+	eBackoffTime := timeNow().Add(s.p.Cfg.DelayBackoffEndTime).UnixNano()
+
+	// start is 0, end is [DelayBackoffTime,3)
+	if req.GetStart() == 0 && req.End >= sBackoffTime && req.End < eBackoffTime {
+		return true
+	}
+
+	// [DelayBackoffTime,now + 3)
+	if req.GetStart() >= sBackoffTime && req.GetStart() < eBackoffTime {
+		return true
+	}
+	return false
+}
 
 func (s *logQueryService) GetLogByRealtime(ctx context.Context, req *pb.GetLogByRuntimeRequest) (*pb.GetLogByRuntimeResponse, error) {
 	items, isFallBack, err := s.queryRealLogItems(ctx, req, func(sel *storage.Selector) *storage.Selector {
 		s.tryFillQueryMeta(ctx, sel)
+
+		// set is first query flag.for first query, may be use tail speed up perform
+		sel.Options[storage.IsFirstQuery] = req.GetIsFirstQuery()
+
+		if len(req.GetContainerName()) > 0 {
+			sel.Filters = append(sel.Filters, &storage.Filter{
+				Key:   "container_name",
+				Op:    storage.EQ,
+				Value: req.GetContainerName(),
+			})
+		}
+
+		if len(req.GetPodName()) > 0 {
+			sel.Filters = append(sel.Filters, &storage.Filter{
+				Key:   "pod_name",
+				Op:    storage.EQ,
+				Value: req.GetPodName(),
+			})
+		}
+
+		if len(req.GetPodNamespace()) > 0 {
+			sel.Filters = append(sel.Filters, &storage.Filter{
+				Key:   "pod_namespace",
+				Op:    storage.EQ,
+				Value: req.GetPodNamespace(),
+			})
+		}
+
+		if len(req.GetClusterName()) > 0 {
+			sel.Filters = append(sel.Filters, &storage.Filter{
+				Key:   "cluster_name",
+				Op:    storage.EQ,
+				Value: req.GetClusterName(),
+			})
+		}
+
 		return sel
 	}, true)
 	if err != nil {
@@ -624,45 +681,6 @@ func toQuerySelector(req Request) (*storage.Selector, error) {
 			}
 		}
 	}
-
-	if byContainerMetaRequest, ok := req.(ByContainerMetaRequest); ok {
-		// set is first query flag.for first query, may be use tail speed up perform
-		sel.Options[storage.IsFirstQuery] = byContainerMetaRequest.GetIsFirstQuery()
-
-		if len(byContainerMetaRequest.GetContainerName()) > 0 {
-			sel.Filters = append(sel.Filters, &storage.Filter{
-				Key:   "container_name",
-				Op:    storage.EQ,
-				Value: byContainerMetaRequest.GetContainerName(),
-			})
-		}
-
-		if len(byContainerMetaRequest.GetPodName()) > 0 {
-			sel.Filters = append(sel.Filters, &storage.Filter{
-				Key:   "pod_name",
-				Op:    storage.EQ,
-				Value: byContainerMetaRequest.GetPodName(),
-			})
-		}
-
-		if len(byContainerMetaRequest.GetPodNamespace()) > 0 {
-			sel.Filters = append(sel.Filters, &storage.Filter{
-				Key:   "pod_namespace",
-				Op:    storage.EQ,
-				Value: byContainerMetaRequest.GetPodNamespace(),
-			})
-		}
-
-		if len(byContainerMetaRequest.GetClusterName()) > 0 {
-			sel.Filters = append(sel.Filters, &storage.Filter{
-				Key:   "cluster_name",
-				Op:    storage.EQ,
-				Value: byContainerMetaRequest.GetClusterName(),
-			})
-		}
-
-	}
-
 	return sel, nil
 }
 
