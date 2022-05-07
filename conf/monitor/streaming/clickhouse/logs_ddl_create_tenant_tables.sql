@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS <database>.<table_name> ON CLUSTER '{cluster}'
     `tags.container_id` String MATERIALIZED tags['container_id'],
     `tags.monitor_log_key` String MATERIALIZED tags['monitor_log_key'],
     `tags.msp_env_id` String MATERIALIZED tags['msp_env_id'],
-    `tags.dice_application_id` String MATERIALIZED tags['dice_application_id']
+    `tags.dice_application_id` String MATERIALIZED tags['dice_application_id'],
 
     INDEX idx__id(_id) TYPE minmax GRANULARITY 1,
     INDEX idx_tace_id(tags.trace_id) TYPE bloom_filter GRANULARITY 1,
