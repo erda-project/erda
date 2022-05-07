@@ -16,7 +16,7 @@ envs:
   MONITOR_ADDR: monitor:7096
   COLLECTOR_ADDR: collector:7076
   PIPELINE_ADDR: pipeline:3081
-  ADMIN_ADDR: admin:9095
+  ERDA_SERVER_ADDR: erda-server:9095
   MSP_ADDR: msp:8080
   DOP_ADDR: dop:9527
   CORE_SERVICES_ADDR: core-services:9526
@@ -90,8 +90,8 @@ services:
       max_mem: 2048
       network:
         mode: container
-  admin:
-    cmd: "/app/admin"
+  erda-server:
+    cmd: "/app/erda-server"
     envs:
       DEBUG: "false"
     ports:

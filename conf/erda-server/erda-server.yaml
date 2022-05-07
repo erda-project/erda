@@ -25,9 +25,9 @@ component-protocol:
 
 i18n@cp:
   common:
-    - conf/admin/i18n/cp/common.yaml
+    - modules/apps/personal-workbench/i18n/cp/common.yaml
   files:
-    - conf/admin/i18n/cp/scenarios/
+    - modules/apps/personal-workbench/i18n/cp/scenarios/
 i18n:
   common:
-    - conf/admin/i18n/cp/common.yaml # TODO : distinguish between admin global common.yaml and cp/common.yaml
+    - modules/apps/personal-workbench/i18n/common.yaml # TODO : distinguish between admin global common.yaml and cp/common.yaml

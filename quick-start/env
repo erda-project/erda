@@ -1,5 +1,5 @@
 # service addr
-ADMIN_ADDR=admin:9095
+ERDA_SERVER_ADDR=erda-server:9095
 CORE_SERVICES_ADDR=core-services:9526
 DOP_ADDR=dop:9527
 ECP_ADDR=ecp:9029

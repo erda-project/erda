@@ -24,7 +24,7 @@ import (
 var ADMIN_AUDITS_LIST = apis.ApiSpec{
 	Path:         "/api/audits/actions/list",
 	BackendPath:  "/api/audits/actions/list",
-	Host:         "admin.marathon.l4lb.thisdcos.directory:9095",
+	Host:         "erda-server.marathon.l4lb.thisdcos.directory:9095",
 	Scheme:       "http",
 	Method:       http.MethodGet,
 	IsOpenAPI:    true,
