@@ -144,58 +144,6 @@ func Test_toQuerySelector(t *testing.T) {
 				},
 			},
 		},
-		{
-			name: "Test_Option_Is_Live",
-			req: &pb.GetLogByRuntimeRequest{
-				Live:  true,
-				Id:    "testid",
-				Start: 1,
-				End:   10,
-			},
-			want: &storage.Selector{
-				Start: 2,
-				End:   10,
-				Filters: []*storage.Filter{
-					{
-						Key:   "id",
-						Op:    storage.EQ,
-						Value: "testid",
-					},
-				},
-				Options: map[string]interface{}{
-					storage.SelectorKeyCount: int64(0),
-					storage.IsLive:           true,
-					storage.IsFirstQuery:     false,
-				},
-			},
-			wantErr: false,
-		},
-		{
-			name: "Test_Option_Is_Query_First",
-			req: &pb.GetLogByRuntimeRequest{
-				Id:           "testid",
-				IsFirstQuery: true,
-				Start:        1,
-				End:          10,
-			},
-			want: &storage.Selector{
-				Start: 2,
-				End:   10,
-				Filters: []*storage.Filter{
-					{
-						Key:   "id",
-						Op:    storage.EQ,
-						Value: "testid",
-					},
-				},
-				Options: map[string]interface{}{
-					storage.SelectorKeyCount: int64(0),
-					storage.IsLive:           false,
-					storage.IsFirstQuery:     true,
-				},
-			},
-			wantErr: false,
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

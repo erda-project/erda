@@ -81,6 +81,42 @@ func (s *logQueryService) GetLogByRuntime(ctx context.Context, req *pb.GetLogByR
 func (s *logQueryService) GetLogByRealtime(ctx context.Context, req *pb.GetLogByRuntimeRequest) (*pb.GetLogByRuntimeResponse, error) {
 	items, isFallBack, err := s.queryRealLogItems(ctx, req, func(sel *storage.Selector) *storage.Selector {
 		s.tryFillQueryMeta(ctx, sel)
+
+		// set is first query flag.for first query, may be use tail speed up perform
+		sel.Options[storage.IsFirstQuery] = req.GetIsFirstQuery()
+
+		if len(req.GetContainerName()) > 0 {
+			sel.Filters = append(sel.Filters, &storage.Filter{
+				Key:   "container_name",
+				Op:    storage.EQ,
+				Value: req.GetContainerName(),
+			})
+		}
+
+		if len(req.GetPodName()) > 0 {
+			sel.Filters = append(sel.Filters, &storage.Filter{
+				Key:   "pod_name",
+				Op:    storage.EQ,
+				Value: req.GetPodName(),
+			})
+		}
+
+		if len(req.GetPodNamespace()) > 0 {
+			sel.Filters = append(sel.Filters, &storage.Filter{
+				Key:   "pod_namespace",
+				Op:    storage.EQ,
+				Value: req.GetPodNamespace(),
+			})
+		}
+
+		if len(req.GetClusterName()) > 0 {
+			sel.Filters = append(sel.Filters, &storage.Filter{
+				Key:   "cluster_name",
+				Op:    storage.EQ,
+				Value: req.GetClusterName(),
+			})
+		}
+
 		return sel
 	}, true)
 	if err != nil {
@@ -624,45 +660,6 @@ func toQuerySelector(req Request) (*storage.Selector, error) {
 			}
 		}
 	}
-
-	if byContainerMetaRequest, ok := req.(ByContainerMetaRequest); ok {
-		// set is first query flag.for first query, may be use tail speed up perform
-		sel.Options[storage.IsFirstQuery] = byContainerMetaRequest.GetIsFirstQuery()
-
-		if len(byContainerMetaRequest.GetContainerName()) > 0 {
-			sel.Filters = append(sel.Filters, &storage.Filter{
-				Key:   "container_name",
-				Op:    storage.EQ,
-				Value: byContainerMetaRequest.GetContainerName(),
-			})
-		}
-
-		if len(byContainerMetaRequest.GetPodName()) > 0 {
-			sel.Filters = append(sel.Filters, &storage.Filter{
-				Key:   "pod_name",
-				Op:    storage.EQ,
-				Value: byContainerMetaRequest.GetPodName(),
-			})
-		}
-
-		if len(byContainerMetaRequest.GetPodNamespace()) > 0 {
-			sel.Filters = append(sel.Filters, &storage.Filter{
-				Key:   "pod_namespace",
-				Op:    storage.EQ,
-				Value: byContainerMetaRequest.GetPodNamespace(),
-			})
-		}
-
-		if len(byContainerMetaRequest.GetClusterName()) > 0 {
-			sel.Filters = append(sel.Filters, &storage.Filter{
-				Key:   "cluster_name",
-				Op:    storage.EQ,
-				Value: byContainerMetaRequest.GetClusterName(),
-			})
-		}
-
-	}
-
 	return sel, nil
 }
 
