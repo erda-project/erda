@@ -21,6 +21,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -32,6 +33,10 @@ import (
 	"github.com/erda-project/erda/pkg/envconf"
 	"github.com/erda-project/erda/pkg/retry"
 	"github.com/erda-project/erda/pkg/strutil"
+)
+
+const (
+	EnvFileStreamTimeoutSec = "ACTIONAGENT_FILE_STREAM_TIMEOUT_SEC"
 )
 
 func (agent *Agent) Callback() {
@@ -80,18 +85,31 @@ func (agent *Agent) SetCallbackReporter() {
 		agent.AppendError(err)
 		return
 	}
+	var fileStreamTimeoutSec uint64 = 60
+	var err error
+	envFileStreamTimeoutSecStr := os.Getenv(EnvFileStreamTimeoutSec)
+	if envFileStreamTimeoutSecStr != "" {
+		fileStreamTimeoutSec, err = strconv.ParseUint(envFileStreamTimeoutSecStr, 10, 64)
+		if err != nil {
+			agent.AppendError(err)
+		}
+	}
+	fileStreamTimeoutDuration := time.Second * time.Duration(fileStreamTimeoutSec)
+	agent.EasyUse.FileStreamTimeoutSec = fileStreamTimeoutDuration
 	if agent.EasyUse.IsEdgePipeline {
 		agent.CallbackReporter = &EdgeCallbackReporter{
-			PipelineAddr:      agent.EasyUse.PipelineAddr,
-			TokenForBootstrap: agent.EasyUse.TokenForBootstrap,
-			OpenAPIToken:      agent.EasyUse.OpenAPIToken,
+			PipelineAddr:         agent.EasyUse.PipelineAddr,
+			TokenForBootstrap:    agent.EasyUse.TokenForBootstrap,
+			OpenAPIToken:         agent.EasyUse.OpenAPIToken,
+			FileStreamTimeoutSec: fileStreamTimeoutDuration,
 		}
 		return
 	}
 	agent.CallbackReporter = &CenterCallbackReporter{
-		OpenAPIAddr:       agent.EasyUse.OpenAPIAddr,
-		OpenAPIToken:      agent.EasyUse.OpenAPIToken,
-		TokenForBootstrap: agent.EasyUse.TokenForBootstrap,
+		OpenAPIAddr:          agent.EasyUse.OpenAPIAddr,
+		OpenAPIToken:         agent.EasyUse.OpenAPIToken,
+		TokenForBootstrap:    agent.EasyUse.TokenForBootstrap,
+		FileStreamTimeoutSec: fileStreamTimeoutDuration,
 	}
 }
 

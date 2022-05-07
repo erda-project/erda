@@ -19,6 +19,7 @@ import (
 	"os"
 	"regexp"
 	"sync"
+	"time"
 
 	"github.com/c2h5oh/datasize"
 
@@ -107,6 +108,8 @@ type EasyUse struct {
 
 	// Machine stat
 	MachineStat apistructs.PipelineTaskMachineStat
+
+	FileStreamTimeoutSec time.Duration // download or upload file stream timeout
 }
 
 type RunningEnvironment struct {

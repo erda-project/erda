@@ -47,10 +47,11 @@ type CallbackReporter interface {
 }
 
 type CenterCallbackReporter struct {
-	OpenAPIAddr       string
-	OpenAPIToken      string
-	TokenForBootstrap string
-	CollectorAddr     string
+	OpenAPIAddr          string
+	OpenAPIToken         string
+	TokenForBootstrap    string
+	CollectorAddr        string
+	FileStreamTimeoutSec time.Duration
 }
 
 func (cr *CenterCallbackReporter) CallbackToPipelinePlatform(cbReq apistructs.PipelineCallbackRequest) error {
@@ -74,7 +75,7 @@ func (cr *CenterCallbackReporter) CallbackToPipelinePlatform(cbReq apistructs.Pi
 
 func (cr *CenterCallbackReporter) UploadFile(pipelineID, taskID uint64, file *os.File) (apistructs.FileUploadResponse, error) {
 	var uploadResp apistructs.FileUploadResponse
-	resp, err := httpclient.New(httpclient.WithCompleteRedirect(), httpclient.WithTimeout(defaultFileUploadTimeout, defaultFileUploadTimeout)).
+	resp, err := httpclient.New(httpclient.WithCompleteRedirect(), httpclient.WithTimeout(cr.FileStreamTimeoutSec, cr.FileStreamTimeoutSec)).
 		Post(cr.OpenAPIAddr).
 		Path("/api/files").
 		Param("fileFrom", fmt.Sprintf("action-upload-%d-%d", pipelineID, taskID)).
@@ -144,7 +145,7 @@ func (cr *CenterCallbackReporter) PushCollectorLog(logLines *[]apistructs.LogPus
 }
 
 func (cr *CenterCallbackReporter) GetCmsFile(uuid string, absPath string) error {
-	respBody, resp, err := httpclient.New(httpclient.WithCompleteRedirect(), httpclient.WithTimeout(defaultClientTimeout, defaultClientTimeout)).
+	respBody, resp, err := httpclient.New(httpclient.WithCompleteRedirect(), httpclient.WithTimeout(cr.FileStreamTimeoutSec, cr.FileStreamTimeoutSec)).
 		Get(cr.OpenAPIAddr).
 		Path("/api/files").
 		Param("file", uuid).
@@ -166,10 +167,11 @@ func (cr *CenterCallbackReporter) GetCmsFile(uuid string, absPath string) error 
 }
 
 type EdgeCallbackReporter struct {
-	PipelineAddr      string
-	OpenAPIToken      string
-	TokenForBootstrap string
-	CollectorAddr     string
+	PipelineAddr         string
+	OpenAPIToken         string
+	TokenForBootstrap    string
+	CollectorAddr        string
+	FileStreamTimeoutSec time.Duration
 }
 
 func (er *EdgeCallbackReporter) CallbackToPipelinePlatform(cbReq apistructs.PipelineCallbackRequest) error {
