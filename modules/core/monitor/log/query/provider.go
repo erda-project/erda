@@ -30,7 +30,9 @@ import (
 )
 
 type config struct {
-	DelayBackoffTime      time.Duration `file:"delay_backoff_time" default:"30m"`
+	DelayBackoffStartTime time.Duration `file:"delay_backoff_start_time" default:"-30m"`
+	DelayBackoffEndTime   time.Duration `file:"delay_backoff_end_time" default:"30m"`
+
 	DownloadAPIThrottling struct {
 		CurrentLimit int64 `file:"current_limit"`
 	} `file:"download_api_throttling"`

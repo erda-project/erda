@@ -42,6 +42,8 @@ type logQueryService struct {
 	currentDownloadLimit *int64
 }
 
+var timeNow = time.Now
+
 func (s *logQueryService) GetLog(ctx context.Context, req *pb.GetLogRequest) (*pb.GetLogResponse, error) {
 	items, _, err := s.queryLogItems(ctx, req, func(sel *storage.Selector) *storage.Selector {
 		sel.Meta.PreferredReturnFields = storage.OnlyIdContent
@@ -71,11 +73,30 @@ func (s *logQueryService) GetLogByRuntime(ctx context.Context, req *pb.GetLogByR
 		s.p.Log.Error("query runtime log is failed, hosted by fallback", err)
 		return s.GetLogByRealtime(ctx, req)
 	}
-	if len(items) <= 0 && (req.IsFirstQuery || req.GetStart() >= time.Now().Add(-1*s.p.Cfg.DelayBackoffTime).UnixNano()) {
+	if len(items) <= 0 && s.isRequestUseFallBack(req) {
 		s.p.Log.Error("query runtime log is empty, hosted by fallback")
 		return s.GetLogByRealtime(ctx, req)
 	}
 	return &pb.GetLogByRuntimeResponse{Lines: items}, nil
+}
+func (s *logQueryService) isRequestUseFallBack(req *pb.GetLogByRuntimeRequest) bool {
+	if req.IsFirstQuery {
+		return true
+	}
+
+	sBackoffTime := timeNow().Add(s.p.Cfg.DelayBackoffStartTime).UnixNano()
+	eBackoffTime := timeNow().Add(s.p.Cfg.DelayBackoffEndTime).UnixNano()
+
+	// start is 0, end is [DelayBackoffTime,3)
+	if req.GetStart() == 0 && req.End >= sBackoffTime && req.End < eBackoffTime {
+		return true
+	}
+
+	// [DelayBackoffTime,now + 3)
+	if req.GetStart() >= sBackoffTime && req.GetStart() < eBackoffTime {
+		return true
+	}
+	return false
 }
 
 func (s *logQueryService) GetLogByRealtime(ctx context.Context, req *pb.GetLogByRuntimeRequest) (*pb.GetLogByRuntimeResponse, error) {
