@@ -15,10 +15,14 @@
 package stdout
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda/modules/core/monitor/log"
+	"github.com/erda-project/erda/modules/core/monitor/metric"
+	"github.com/erda-project/erda/modules/msp/apm/trace"
 	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
 	"github.com/erda-project/erda/modules/oap/collector/plugins"
 )
@@ -39,9 +43,26 @@ func (p *provider) ComponentConfig() interface{} {
 	return p.Cfg
 }
 
-func (p *provider) Process(in odata.ObservableData) (odata.ObservableData, error) {
-	fmt.Printf("%s\n", in)
-	return in, nil
+func (p *provider) ProcessMetric(item *metric.Metric) (*metric.Metric, error) {
+	printJSON(item)
+	return item, nil
+}
+func (p *provider) ProcessLog(item *log.Log) (*log.Log, error) {
+	printJSON(item)
+	return item, nil
+}
+func (p *provider) ProcessSpan(item *trace.Span) (*trace.Span, error) {
+	printJSON(item)
+	return item, nil
+}
+func (p *provider) ProcessorRaw(item *odata.Raw) (*odata.Raw, error) {
+	printJSON(item)
+	return item, nil
+}
+
+func printJSON(data interface{}) {
+	buf, _ := json.Marshal(data)
+	fmt.Printf("%s\n", string(buf))
 }
 
 // Run this is optional

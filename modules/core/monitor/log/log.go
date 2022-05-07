@@ -32,6 +32,17 @@ type Log struct {
 	Tags      map[string]string `json:"tags" ch:"tags"`
 }
 
+func (l *Log) Hash() uint64 {
+	return 0
+}
+
+func (l *Log) GetTags() map[string]string {
+	if l.Tags == nil {
+		l.Tags = map[string]string{}
+	}
+	return l.Tags
+}
+
 // LabeledLog .
 type LabeledLog struct {
 	Log

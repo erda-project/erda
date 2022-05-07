@@ -14,7 +14,13 @@
 
 package metric
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"hash/fnv"
+	"sort"
+
+	"github.com/erda-project/erda/pkg/strutil"
+)
 
 // Metric .
 type Metric struct {
@@ -22,6 +28,37 @@ type Metric struct {
 	Timestamp int64                  `json:"timestamp"`
 	Tags      map[string]string      `json:"tags"`
 	Fields    map[string]interface{} `json:"fields"`
+}
+
+func (m *Metric) Hash() uint64 {
+	sortedTags := make([]tag, len(m.Tags))
+	for k, v := range m.Tags {
+		sortedTags = append(sortedTags, tag{k, v})
+	}
+	sort.Slice(sortedTags, func(i, j int) bool {
+		return sortedTags[i].key < sortedTags[j].key
+	})
+
+	h := fnv.New64a()
+	for _, item := range sortedTags {
+		h.Write(strutil.NoCopyStringToBytes(item.key))
+		h.Write(strutil.NoCopyStringToBytes("\n"))
+		h.Write(strutil.NoCopyStringToBytes(item.value))
+		h.Write(strutil.NoCopyStringToBytes("\n"))
+	}
+	h.Write(strutil.NoCopyStringToBytes(m.Name))
+	return h.Sum64()
+}
+
+type tag struct {
+	key, value string
+}
+
+func (m *Metric) GetTags() map[string]string {
+	if m.Tags == nil {
+		m.Tags = map[string]string{}
+	}
+	return m.Tags
 }
 
 func (m *Metric) String() string {

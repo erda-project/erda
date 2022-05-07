@@ -17,6 +17,10 @@ package operator
 import (
 	"reflect"
 	"testing"
+
+	"github.com/erda-project/erda/modules/core/monitor/log"
+	"github.com/erda-project/erda/modules/core/monitor/metric"
+	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
 )
 
 func TestTrimPrefix_Operate(t1 *testing.T) {
@@ -24,13 +28,13 @@ func TestTrimPrefix_Operate(t1 *testing.T) {
 		cfg ModifierCfg
 	}
 	type args struct {
-		pairs map[string]interface{}
+		item odata.ObservableData
 	}
 	tests := []struct {
 		name   string
 		fields fields
 		args   args
-		want   map[string]interface{}
+		want   odata.ObservableData
 	}{
 		{
 			name: "",
@@ -41,11 +45,15 @@ func TestTrimPrefix_Operate(t1 *testing.T) {
 					Action: "trim_prefix",
 				},
 			},
-			args: args{pairs: map[string]interface{}{
-				"kubernetes_pod_ip": "1.1.1.1",
+			args: args{item: &metric.Metric{
+				Tags: map[string]string{
+					"kubernetes_pod_ip": "1.1.1.1",
+				},
 			}},
-			want: map[string]interface{}{
-				"pod_ip": "1.1.1.1",
+			want: &metric.Metric{
+				Tags: map[string]string{
+					"pod_ip": "1.1.1.1",
+				},
 			},
 		},
 	}
@@ -54,7 +62,7 @@ func TestTrimPrefix_Operate(t1 *testing.T) {
 			t := &TrimPrefix{
 				cfg: tt.fields.cfg,
 			}
-			if got := t.Modify(tt.args.pairs); !reflect.DeepEqual(got, tt.want) {
+			if got := t.Modify(tt.args.item); !reflect.DeepEqual(got, tt.want) {
 				t1.Errorf("Modify() = %v, want %v", got, tt.want)
 			}
 		})
@@ -66,29 +74,29 @@ func TestAdd_Operate(t *testing.T) {
 		cfg ModifierCfg
 	}
 	type args struct {
-		pairs map[string]interface{}
+		item odata.ObservableData
 	}
 	tests := []struct {
 		name   string
 		fields fields
 		args   args
-		want   map[string]interface{}
+		want   odata.ObservableData
 	}{
 		{
 			fields: fields{cfg: ModifierCfg{
-				Key:   "aaa",
+				Key:   "tags.aaa",
 				Value: "bbb",
 			}},
-			args: args{pairs: map[string]interface{}{}},
-			want: map[string]interface{}{"aaa": "bbb"},
+			args: args{item: &log.Log{}},
+			want: &log.Log{Tags: map[string]string{"aaa": "bbb"}},
 		},
 		{
 			fields: fields{cfg: ModifierCfg{
-				Key:   "aaa",
+				Key:   "tags.aaa",
 				Value: "bbb",
 			}},
-			args: args{pairs: map[string]interface{}{"aaa": "ccc"}},
-			want: map[string]interface{}{"aaa": "ccc"},
+			args: args{item: &log.Log{Tags: map[string]string{"aaa": "ccc"}}},
+			want: &log.Log{Tags: map[string]string{"aaa": "ccc"}},
 		},
 	}
 	for _, tt := range tests {
@@ -96,7 +104,7 @@ func TestAdd_Operate(t *testing.T) {
 			a := &Add{
 				cfg: tt.fields.cfg,
 			}
-			if got := a.Modify(tt.args.pairs); !reflect.DeepEqual(got, tt.want) {
+			if got := a.Modify(tt.args.item); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Modify() = %v, want %v", got, tt.want)
 			}
 		})
@@ -108,29 +116,29 @@ func TestCopy_Operate(t *testing.T) {
 		cfg ModifierCfg
 	}
 	type args struct {
-		pairs map[string]interface{}
+		item odata.ObservableData
 	}
 	tests := []struct {
 		name   string
 		fields fields
 		args   args
-		want   map[string]interface{}
+		want   odata.ObservableData
 	}{
 		{
 			fields: fields{cfg: ModifierCfg{
-				Key:   "aaa",
-				Value: "bbb",
+				Key:   "tags.aaa",
+				Value: "tags.bbb",
 			}},
-			args: args{pairs: map[string]interface{}{"aaa": "ccc"}},
-			want: map[string]interface{}{"aaa": "ccc", "bbb": "ccc"},
+			args: args{item: &metric.Metric{Tags: map[string]string{"aaa": "ccc"}}},
+			want: &metric.Metric{Tags: map[string]string{"aaa": "ccc", "bbb": "ccc"}},
 		},
 		{
 			fields: fields{cfg: ModifierCfg{
-				Key:   "bbb",
-				Value: "bbb",
+				Key:   "tags.bbb",
+				Value: "tags.bbb",
 			}},
-			args: args{pairs: map[string]interface{}{"aaa": "ccc"}},
-			want: map[string]interface{}{"aaa": "ccc"},
+			args: args{item: &metric.Metric{Tags: map[string]string{"aaa": "ccc"}}},
+			want: &metric.Metric{Tags: map[string]string{"aaa": "ccc"}},
 		},
 	}
 	for _, tt := range tests {
@@ -138,7 +146,7 @@ func TestCopy_Operate(t *testing.T) {
 			c := &Copy{
 				cfg: tt.fields.cfg,
 			}
-			if got := c.Modify(tt.args.pairs); !reflect.DeepEqual(got, tt.want) {
+			if got := c.Modify(tt.args.item); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Modify() = %v, want %v", got, tt.want)
 			}
 		})
@@ -150,27 +158,27 @@ func TestDrop_Operate(t *testing.T) {
 		cfg ModifierCfg
 	}
 	type args struct {
-		pairs map[string]interface{}
+		item odata.ObservableData
 	}
 	tests := []struct {
 		name   string
 		fields fields
 		args   args
-		want   map[string]interface{}
+		want   odata.ObservableData
 	}{
 		{
 			fields: fields{cfg: ModifierCfg{
-				Key: "aaa",
+				Key: "tags.aaa",
 			}},
-			args: args{pairs: map[string]interface{}{"aaa": "ccc"}},
-			want: map[string]interface{}{},
+			args: args{item: &metric.Metric{Tags: map[string]string{"aaa": "ccc"}}},
+			want: &metric.Metric{Tags: map[string]string{}},
 		},
 		{
 			fields: fields{cfg: ModifierCfg{
-				Key: "aaa",
+				Key: "tags.aaa",
 			}},
-			args: args{pairs: map[string]interface{}{}},
-			want: map[string]interface{}{},
+			args: args{item: &metric.Metric{Tags: map[string]string{}}},
+			want: &metric.Metric{Tags: map[string]string{}},
 		},
 	}
 	for _, tt := range tests {
@@ -178,7 +186,7 @@ func TestDrop_Operate(t *testing.T) {
 			d := &Drop{
 				cfg: tt.fields.cfg,
 			}
-			if got := d.Modify(tt.args.pairs); !reflect.DeepEqual(got, tt.want) {
+			if got := d.Modify(tt.args.item); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Modify() = %v, want %v", got, tt.want)
 			}
 		})
@@ -190,29 +198,37 @@ func TestRename_Operate(t *testing.T) {
 		cfg ModifierCfg
 	}
 	type args struct {
-		pairs map[string]interface{}
+		item odata.ObservableData
 	}
 	tests := []struct {
 		name   string
 		fields fields
 		args   args
-		want   map[string]interface{}
+		want   odata.ObservableData
 	}{
 		{
 			fields: fields{cfg: ModifierCfg{
-				Key:   "aaa",
-				Value: "bbb",
+				Key:   "tags.aaa",
+				Value: "tags.bbb",
 			}},
-			args: args{pairs: map[string]interface{}{"aaa": "ccc"}},
-			want: map[string]interface{}{"bbb": "ccc"},
+			args: args{item: &metric.Metric{Tags: map[string]string{"aaa": "ccc"}}},
+			want: &metric.Metric{Tags: map[string]string{"bbb": "ccc"}},
 		},
 		{
 			fields: fields{cfg: ModifierCfg{
-				Key:   "ccc",
-				Value: "bbb",
+				Key:   "tags.ccc",
+				Value: "tags.bbb",
 			}},
-			args: args{pairs: map[string]interface{}{"aaa": "ccc"}},
-			want: map[string]interface{}{"aaa": "ccc"},
+			args: args{item: &metric.Metric{Tags: map[string]string{"aaa": "ccc"}}},
+			want: &metric.Metric{Tags: map[string]string{"aaa": "ccc"}},
+		},
+		{
+			fields: fields{cfg: ModifierCfg{
+				Key:   "fields.aaa",
+				Value: "fields.bbb",
+			}},
+			args: args{item: &metric.Metric{Fields: map[string]interface{}{"aaa": "ccc"}}},
+			want: &metric.Metric{Fields: map[string]interface{}{"bbb": "ccc"}},
 		},
 	}
 	for _, tt := range tests {
@@ -220,7 +236,7 @@ func TestRename_Operate(t *testing.T) {
 			r := &Rename{
 				cfg: tt.fields.cfg,
 			}
-			if got := r.Modify(tt.args.pairs); !reflect.DeepEqual(got, tt.want) {
+			if got := r.Modify(tt.args.item); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Modify() = %v, want %v", got, tt.want)
 			}
 		})
@@ -232,29 +248,29 @@ func TestSet_Operate(t *testing.T) {
 		cfg ModifierCfg
 	}
 	type args struct {
-		pairs map[string]interface{}
+		item odata.ObservableData
 	}
 	tests := []struct {
 		name   string
 		fields fields
 		args   args
-		want   map[string]interface{}
+		want   odata.ObservableData
 	}{
 		{
 			fields: fields{cfg: ModifierCfg{
-				Key:   "aaa",
+				Key:   "tags.aaa",
 				Value: "bbb",
 			}},
-			args: args{pairs: map[string]interface{}{"aaa": "ccc"}},
-			want: map[string]interface{}{"aaa": "bbb"},
+			args: args{item: &metric.Metric{Tags: map[string]string{"aaa": "ccc"}}},
+			want: &metric.Metric{Tags: map[string]string{"aaa": "bbb"}},
 		},
 		{
 			fields: fields{cfg: ModifierCfg{
-				Key:   "aaa",
+				Key:   "tags.aaa",
 				Value: "bbb",
 			}},
-			args: args{pairs: map[string]interface{}{}},
-			want: map[string]interface{}{"aaa": "bbb"},
+			args: args{item: &metric.Metric{Tags: map[string]string{}}},
+			want: &metric.Metric{Tags: map[string]string{"aaa": "bbb"}},
 		},
 	}
 	for _, tt := range tests {
@@ -262,7 +278,7 @@ func TestSet_Operate(t *testing.T) {
 			s := &Set{
 				cfg: tt.fields.cfg,
 			}
-			if got := s.Modify(tt.args.pairs); !reflect.DeepEqual(got, tt.want) {
+			if got := s.Modify(tt.args.item); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Modify() = %v, want %v", got, tt.want)
 			}
 		})
@@ -274,42 +290,42 @@ func TestJoin_Modify(t *testing.T) {
 		cfg ModifierCfg
 	}
 	type args struct {
-		pairs map[string]interface{}
+		item odata.ObservableData
 	}
 	tests := []struct {
 		name   string
 		fields fields
 		args   args
-		want   map[string]interface{}
+		want   odata.ObservableData
 	}{
 		{
 			fields: fields{cfg: ModifierCfg{
-				Keys:      []string{"aaa", "bbb"},
+				Keys:      []string{"tags.aaa", "tags.bbb"},
 				Separator: ",",
-				TargetKey: "new",
+				TargetKey: "tags.new",
 			}},
-			args: args{pairs: map[string]interface{}{
+			args: args{item: &metric.Metric{Tags: map[string]string{
 				"aaa": "hello",
 				"bbb": "world",
-			}},
-			want: map[string]interface{}{
+			}}},
+			want: &metric.Metric{Tags: map[string]string{
 				"aaa": "hello",
 				"bbb": "world",
 				"new": "hello,world",
-			},
+			}},
 		},
 		{
 			fields: fields{cfg: ModifierCfg{
-				Keys:      []string{"aaa", "bbb"},
+				Keys:      []string{"tags.aaa", "tags.bbb"},
 				Separator: ",",
-				TargetKey: "new",
+				TargetKey: "tags.new",
 			}},
-			args: args{pairs: map[string]interface{}{
+			args: args{item: &metric.Metric{Tags: map[string]string{
+				"aaa": "hello",
+			}}},
+			want: &metric.Metric{Tags: map[string]string{
 				"aaa": "hello",
 			}},
-			want: map[string]interface{}{
-				"aaa": "hello",
-			},
 		},
 	}
 	for _, tt := range tests {
@@ -317,7 +333,7 @@ func TestJoin_Modify(t *testing.T) {
 			j := &Join{
 				cfg: tt.fields.cfg,
 			}
-			if got := j.Modify(tt.args.pairs); !reflect.DeepEqual(got, tt.want) {
+			if got := j.Modify(tt.args.item); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Modify() = %v, want %v", got, tt.want)
 			}
 		})

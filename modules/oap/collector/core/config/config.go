@@ -19,19 +19,26 @@ import (
 )
 
 // The global common config for pipeline component
-type GlobalConfig struct {
-	BatchLimit    int           `file:"batch_limit" default:"10"`
-	FlushInterval time.Duration `file:"flush_interval" default:"1s"`
-	FlushJitter   time.Duration `file:"flush_jitter" default:"1s"`
+type Batch struct {
 }
 
 type Config struct {
-	GlobalConfig GlobalConfig `file:"global_config"`
-	Pipelines    []Pipeline   `file:"pipelines" desc:"compose of components"`
+	Pipelines PipelineWrap `file:"pipelines"`
 }
 
 type Pipeline struct {
-	Receivers  []string `file:"receivers"`
-	Processors []string `file:"processors"`
-	Exporters  []string `file:"exporters"`
+	Enable        bool          `file:"_enable" default:"true" desc:"pipeline enable or not"`
+	BatchSize     int           `file:"batch_size" desc:"the batch max size for per exporter"`
+	FlushInterval time.Duration `file:"flush_interval"  desc:"the ticker for per exporter"`
+	FlushJitter   time.Duration `file:"flush_jitter"  desc:"the ticker jitter for per exporter"`
+	Receivers     []string      `file:"receivers"`
+	Processors    []string      `file:"processors"`
+	Exporters     []string      `file:"exporters"`
+}
+
+type PipelineWrap struct {
+	Metrics []Pipeline `file:"metrics"`
+	Logs    []Pipeline `file:"logs"`
+	Spans   []Pipeline `file:"spans"`
+	Raws    []Pipeline `file:"raws"`
 }

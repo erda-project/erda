@@ -16,86 +16,96 @@ package odata
 
 import (
 	"sync"
+
+	"github.com/erda-project/erda/modules/core/monitor/log"
+	"github.com/erda-project/erda/modules/core/monitor/metric"
+	"github.com/erda-project/erda/modules/msp/apm/trace"
 )
 
-// Buffer stores ObservableData in a circular buffer.
-// https://en.wikipedia.org/wiki/Circular_buffer
+// Buffer. Store ObservableData
 type Buffer struct {
 	sync.Mutex
-	buf        []ObservableData
-	start, end int
-	cap, size  int
+	buf []ObservableData
+	cap int
 }
 
 func NewBuffer(cap int) *Buffer {
 	return &Buffer{
-		buf:   make([]ObservableData, cap),
-		start: 0,
-		end:   0,
-		cap:   cap,
-		size:  0,
+		buf: make([]ObservableData, 0, cap),
+		cap: cap,
 	}
 }
 
+// return isFull
 func (b *Buffer) Push(od ObservableData) {
 	b.Lock()
 	defer b.Unlock()
-	if b.size == b.cap {
-		return
+	if len(b.buf) == b.cap {
+		panic("must not full when push od")
 	}
-	b.buf[b.end] = od
-
-	b.end = b.next(b.end)
-	b.size++
-}
-
-func (b *Buffer) Pop() ObservableData {
-	b.Lock()
-	defer b.Unlock()
-	if b.size == 0 {
-		return nil
-	}
-	item := b.buf[b.start]
-
-	b.start = b.next(b.start)
-	b.size--
-	return item
+	b.buf = append(b.buf, od)
 }
 
 func (b *Buffer) Full() bool {
 	b.Lock()
 	defer b.Unlock()
-	return b.size == b.cap
+	return len(b.buf) == b.cap
 }
 
 func (b *Buffer) Empty() bool {
-	return b.size == 0
+	b.Lock()
+	defer b.Unlock()
+	return len(b.buf) == 0
 }
 
 // FlushAll empty buffer, then return a copy of internal buf
-func (b *Buffer) FlushAll() []ObservableData {
+func (b *Buffer) FlushAllMetrics() []*metric.Metric {
 	b.Lock()
 	defer b.Unlock()
-	out := make([]ObservableData, b.size)
-	for i := range out {
-		out[i] = b.buf[b.start]
-		b.buf[b.start] = nil
-		b.start = b.next(b.start)
+	out := make([]*metric.Metric, len(b.buf))
+	for i := range b.buf {
+		out[i] = b.buf[i].(*metric.Metric)
 	}
-	b.size = 0
+
+	b.buf = b.buf[:0]
 	return out
 }
 
-func (b *Buffer) next(index int) int {
-	index++
-	if index == b.cap {
-		return 0
+// FlushAll empty buffer, then return a copy of internal buf
+func (b *Buffer) FlushAllLogs() []*log.Log {
+	b.Lock()
+	defer b.Unlock()
+	out := make([]*log.Log, len(b.buf))
+	for i := range b.buf {
+		out[i] = b.buf[i].(*log.Log)
 	}
-	return index
+
+	b.buf = b.buf[:0]
+	return out
 }
 
-func (b *Buffer) nextBy(index, offset int) int {
-	index += offset
-	index %= b.cap
-	return index
+// FlushAll empty buffer, then return a copy of internal buf
+func (b *Buffer) FlushAllSpans() []*trace.Span {
+	b.Lock()
+	defer b.Unlock()
+	out := make([]*trace.Span, len(b.buf))
+	for i := range b.buf {
+		out[i] = b.buf[i].(*trace.Span)
+	}
+
+	b.buf = b.buf[:0]
+	return out
+}
+
+// FlushAll empty buffer, then return a copy of internal buf
+func (b *Buffer) FlushAllRaws() []*Raw {
+	b.Lock()
+	defer b.Unlock()
+	out := make([]*Raw, len(b.buf))
+	for i := range b.buf {
+		out[i] = b.buf[i].(*Raw)
+	}
+
+	b.buf = b.buf[:0]
+	return out
 }

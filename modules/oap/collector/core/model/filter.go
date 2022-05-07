@@ -17,8 +17,8 @@ package model
 import (
 	"fmt"
 
-	"github.com/erda-project/erda/modules/oap/collector/common/filter"
 	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
+	"github.com/erda-project/erda/modules/oap/collector/lib/filter"
 )
 
 // semantic same as https://github.com/influxdata/telegraf/blob/master/docs/CONFIGURATION.md#metric-filtering
@@ -41,18 +41,13 @@ type DataFilter struct {
 
 // https://github.com/influxdata/telegraf/blob/master/docs/CONFIGURATION.md#selectors
 func (df *DataFilter) Selected(od odata.ObservableData) bool {
-	attr := od.Pairs()
 	if df.Keypass != nil {
 		for k, subf := range df.Keypass {
-			val, ok := attr[k]
+			val, ok := odata.GetKeyValue(od, k)
 			if !ok {
 				continue
 			}
-			sval, ok := val.(string)
-			if !ok {
-				continue
-			}
-			if !subf.Match(sval) {
+			if !subf.Match(val.(string)) {
 				return false
 			}
 		}
@@ -60,28 +55,24 @@ func (df *DataFilter) Selected(od odata.ObservableData) bool {
 
 	if df.Keydrop != nil {
 		for k, subf := range df.Keydrop {
-			val, ok := attr[k]
+			val, ok := odata.GetKeyValue(od, k)
 			if !ok {
 				continue
 			}
-			sval, ok := val.(string)
-			if !ok {
-				continue
-			}
-			if subf.Match(sval) {
+			if subf.Match(val.(string)) {
 				return false
 			}
 		}
 	}
 
 	for _, key := range df.Keyinclude {
-		_, ok := attr[key]
+		_, ok := odata.GetKeyValue(od, key)
 		if !ok {
 			return false
 		}
 	}
 	for _, key := range df.Keyexclude {
-		_, ok := attr[key]
+		_, ok := odata.GetKeyValue(od, key)
 		if ok {
 			return false
 		}

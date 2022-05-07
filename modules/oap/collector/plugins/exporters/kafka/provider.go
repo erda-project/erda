@@ -15,13 +15,15 @@
 package kafka
 
 import (
-	"fmt"
+	"encoding/json"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	writer "github.com/erda-project/erda-infra/pkg/parallel-writer"
 	"github.com/erda-project/erda-infra/providers/kafka"
-	"github.com/erda-project/erda/modules/oap/collector/common"
+	"github.com/erda-project/erda/modules/core/monitor/log"
+	"github.com/erda-project/erda/modules/core/monitor/metric"
+	"github.com/erda-project/erda/modules/msp/apm/trace"
 	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
 	"github.com/erda-project/erda/modules/oap/collector/plugins"
 )
@@ -44,54 +46,34 @@ type provider struct {
 	writer writer.Writer
 }
 
+func (p *provider) ExportMetric(items ...*metric.Metric) error {
+	for _, item := range items {
+		data, err := json.Marshal(item) // TODO. Parallelism
+		if err != nil {
+			p.Log.Errorf("serialize err: %s", err)
+			continue
+		}
+		err = p.writer.Write(&kafka.Message{
+			Data: data,
+		})
+		if err != nil {
+			p.Log.Errorf("write data to %s err: %s", p.Cfg.Producer.Topic, err)
+			continue
+		}
+	}
+	return nil
+}
+
+func (p *provider) ExportLog(items ...*log.Log) error     { return nil }
+func (p *provider) ExportSpan(items ...*trace.Span) error { return nil }
+func (p *provider) ExportRaw(items ...*odata.Raw) error   { return nil }
+
 func (p *provider) ComponentConfig() interface{} {
 	return p.Cfg
 }
 
 func (p *provider) Connect() error {
 	return nil
-}
-
-func (p *provider) Export(ods []odata.ObservableData) error {
-	for _, item := range ods {
-		data, err := p.serialize(item, p.Cfg.Compatibility)
-		if err != nil {
-			p.Log.Errorf("serialize err: %s", err)
-			continue
-		}
-
-		if p.Cfg.MetadataKeyOfTopic != "" {
-			tmp, ok := item.Metadata().Get(p.Cfg.MetadataKeyOfTopic)
-			if !ok {
-				p.Log.Errorf("unable to find topic with key %s", p.Cfg.MetadataKeyOfTopic)
-				continue
-			}
-
-			if err := p.writer.Write(&kafka.Message{
-				Topic: &tmp,
-				Data:  data,
-			}); err != nil {
-				p.Log.Errorf("write data to %s err: %s", tmp, err)
-			}
-		} else {
-			if err := p.writer.Write(data); err != nil {
-				p.Log.Errorf("write data to %s err: %s", p.Cfg.Producer.Topic, err)
-			}
-		}
-	}
-	return nil
-}
-
-func (p *provider) serialize(od odata.ObservableData, compatibility bool) ([]byte, error) {
-	if od.SourceType() == odata.RawType {
-		return od.Source().([]byte), nil
-	}
-
-	data, err := common.JSONSerializeSingle(od, compatibility)
-	if err != nil {
-		return nil, fmt.Errorf("JSONSerializeSingle item err: %s", err)
-	}
-	return data, nil
 }
 
 // Run this is optional

@@ -18,12 +18,8 @@ import (
 	"testing"
 	"time"
 
-	structpb "github.com/golang/protobuf/ptypes/struct"
+	"github.com/erda-project/erda/modules/core/monitor/metric"
 	"github.com/stretchr/testify/assert"
-
-	mpb "github.com/erda-project/erda-proto-go/oap/metrics/pb"
-	"github.com/erda-project/erda/modules/oap/collector/common/pbconvert"
-	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
 )
 
 func Test_provider_Init(t *testing.T) {
@@ -82,13 +78,13 @@ func Test_provider_add(t *testing.T) {
 		Cfg *config
 	}
 	type args struct {
-		in []odata.ObservableData
+		in []*metric.Metric
 	}
 	tests := []struct {
 		name   string
 		fields fields
 		args   args
-		want   []odata.ObservableData
+		want   []*metric.Metric
 	}{
 		{
 			fields: fields{
@@ -96,66 +92,66 @@ func Test_provider_add(t *testing.T) {
 					Rules: []RuleConfig{
 						{
 							Func:      "rate",
-							Args:      []interface{}{"__dp__counter_a"},
-							TargetKey: "__dp__rate_a",
+							Args:      []interface{}{"counter_a"},
+							TargetKey: "rate_a",
 						},
 						{
 							Func:      "*",
-							Args:      []interface{}{"__dp__rate_a", 100},
-							TargetKey: "__dp__rate_a",
+							Args:      []interface{}{"rate_a", 100},
+							TargetKey: "rate_a",
 						},
 					},
 				},
 			},
 			args: args{
-				in: []odata.ObservableData{
-					odata.NewMetric(&mpb.Metric{
-						Name:         "name",
-						TimeUnixNano: uint64(1649397600 * time.Second),
-						DataPoints: map[string]*structpb.Value{
-							"counter_a": pbconvert.ToValue(1),
+				in: []*metric.Metric{
+					{
+						Name:      "name",
+						Timestamp: int64(time.Second * 1649397600),
+						Fields: map[string]interface{}{
+							"counter_a": float64(1),
 						},
-					}),
-					odata.NewMetric(&mpb.Metric{
-						Name:         "name",
-						TimeUnixNano: uint64(1649397601 * time.Second),
-						DataPoints: map[string]*structpb.Value{
-							"counter_a": pbconvert.ToValue(2),
+					},
+					{
+						Name:      "name",
+						Timestamp: int64(time.Second * 1649397601),
+						Fields: map[string]interface{}{
+							"counter_a": float64(2),
 						},
-					}),
-					odata.NewMetric(&mpb.Metric{
-						Name:         "name",
-						TimeUnixNano: uint64(1649397602 * time.Second),
-						DataPoints: map[string]*structpb.Value{
-							"counter_a": pbconvert.ToValue(3),
+					},
+					{
+						Name:      "name",
+						Timestamp: int64(time.Second * 1649397602),
+						Fields: map[string]interface{}{
+							"counter_a": float64(3),
 						},
-					}),
+					},
 				},
 			},
-			want: []odata.ObservableData{
-				odata.NewMetric(&mpb.Metric{
-					Name:         "name",
-					TimeUnixNano: uint64(1649397600 * time.Second),
-					DataPoints: map[string]*structpb.Value{
-						"counter_a": pbconvert.ToValue(1),
+			want: []*metric.Metric{
+				{
+					Name:      "name",
+					Timestamp: int64(1649397600 * time.Second),
+					Fields: map[string]interface{}{
+						"counter_a": float64(1),
 					},
-				}),
-				odata.NewMetric(&mpb.Metric{
-					Name:         "name",
-					TimeUnixNano: uint64(1649397601 * time.Second),
-					DataPoints: map[string]*structpb.Value{
-						"counter_a": pbconvert.ToValue(2),
-						"rate_a":    pbconvert.ToValue(100),
+				},
+				{
+					Name:      "name",
+					Timestamp: int64(1649397601 * time.Second),
+					Fields: map[string]interface{}{
+						"counter_a": float64(2),
+						"rate_a":    float64(100),
 					},
-				}),
-				odata.NewMetric(&mpb.Metric{
-					Name:         "name",
-					TimeUnixNano: uint64(1649397602 * time.Second),
-					DataPoints: map[string]*structpb.Value{
-						"counter_a": pbconvert.ToValue(3),
-						"rate_a":    pbconvert.ToValue(100),
+				},
+				{
+					Name:      "name",
+					Timestamp: int64(1649397602 * time.Second),
+					Fields: map[string]interface{}{
+						"counter_a": float64(3),
+						"rate_a":    float64(100),
 					},
-				}),
+				},
 			},
 		},
 	}
@@ -166,7 +162,7 @@ func Test_provider_add(t *testing.T) {
 			}
 			assert.Nil(t, p.Init(nil))
 			for i := 0; i < len(tt.args.in); i++ {
-				assert.Equal(t, tt.want[i].String(), p.add(tt.args.in[i]).String())
+				assert.Equal(t, tt.want[i], p.add(tt.args.in[i]))
 			}
 		})
 	}

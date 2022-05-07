@@ -14,68 +14,22 @@
 
 package odata
 
-import (
-	"fmt"
-)
+var _ ObservableData = &Raw{}
 
 // bytes representation of ObservableData for performance
-type Raws []*Raw
-
 type Raw struct {
-	Data []byte    `json:"data"`
-	Meta *Metadata `json:"meta"`
+	Data []byte            `json:"data"`
+	Meta map[string]string `json:"meta"`
 }
 
-func (r *Raw) HasKey(key string) bool {
-	return true
-}
-
-func (r *Raw) Get(key string) (interface{}, bool) {
-	return "", false
-}
-
-func (r *Raw) HashID() uint64 {
+func (r *Raw) Hash() uint64 {
 	return 0
 }
 
-func NewRaw(item []byte) *Raw {
-	return &Raw{Data: item, Meta: NewMetadata()}
+func NewRaw(data []byte) *Raw {
+	return &Raw{Data: data, Meta: map[string]string{}}
 }
 
-func (r *Raw) HandleKeyValuePair(_ func(pairs map[string]interface{}) map[string]interface{}) {
-}
-
-func (r *Raw) Pairs() map[string]interface{} { return nil }
-
-func (r *Raw) Name() string {
-	return ""
-}
-
-func (r *Raw) Metadata() *Metadata {
-	return r.Meta
-}
-
-func (r *Raw) Clone() ObservableData {
-	item := make([]byte, len(r.Data))
-	copy(item, r.Data)
-	return &Raw{
-		Data: item,
-		Meta: r.Meta.Clone(),
-	}
-}
-
-func (r *Raw) Source() interface{} {
-	return r.Data
-}
-
-func (r *Raw) SourceCompatibility() interface{} {
-	return r.Data
-}
-
-func (r *Raw) SourceType() SourceType {
-	return RawType
-}
-
-func (r *Raw) String() string {
-	return fmt.Sprintf("raw(%d)", len(r.Data))
+func (r *Raw) GetTags() map[string]string {
+	return map[string]string{}
 }

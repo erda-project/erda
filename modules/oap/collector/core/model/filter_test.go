@@ -17,9 +17,9 @@ package model
 import (
 	"testing"
 
+	"github.com/erda-project/erda/modules/core/monitor/metric"
 	"github.com/stretchr/testify/assert"
 
-	mpb "github.com/erda-project/erda-proto-go/oap/metrics/pb"
 	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
 )
 
@@ -39,45 +39,79 @@ func TestDataFilter_Selected(t *testing.T) {
 		{
 			name: "keypass",
 			fields: fields{cfg: FilterConfig{
-				Keypass: map[string][]string{"__kw__name": {"ab*"}},
+				Keypass: map[string][]string{"name": {"ab*"}},
 			}},
-			args: args{od: odata.NewMetric(&mpb.Metric{
-				Name:         "abcd",
-				TimeUnixNano: 0,
-			})},
+			args: args{od: &metric.Metric{
+				Name:      "abcd",
+				Timestamp: 0,
+			}},
 			want: true,
 		},
 		{
 			fields: fields{cfg: FilterConfig{
-				Keypass: map[string][]string{"__kw__name": {".*"}},
+				Keypass: map[string][]string{"name": {".*"}},
 			}},
-			args: args{od: odata.NewMetric(&mpb.Metric{
-				TimeUnixNano: 0,
-			})},
+			args: args{od: &metric.Metric{
+				Timestamp: 0,
+			}},
 			want: false,
 		},
 		{
+			name: "keyinclude",
 			fields: fields{cfg: FilterConfig{
-				Keyinclude: []string{"__kw_name", "abc"},
+				Keyinclude: []string{"name", "abc"},
 			}},
-			args: args{od: odata.NewMetric(&mpb.Metric{
-				Name:         "abcd",
-				TimeUnixNano: 0,
-			})},
+			args: args{od: &metric.Metric{
+				Name:      "abcd",
+				Timestamp: 0,
+			}},
 			want: false,
 		},
 		{
+			name: "keyexclude",
 			fields: fields{cfg: FilterConfig{
-				Keyexclude: []string{"abc"},
+				Keyexclude: []string{"tags.abc"},
 			}},
-			args: args{od: odata.NewMetric(&mpb.Metric{
-				Name:         "abcd",
-				TimeUnixNano: 0,
-				Attributes: map[string]string{
+			args: args{od: &metric.Metric{
+				Name:      "abcd",
+				Timestamp: 0,
+				Tags: map[string]string{
 					"abc": "hello",
 				},
-			})},
+			}},
 			want: false,
+		},
+		{
+			name: "keydrop",
+			fields: fields{cfg: FilterConfig{
+				Keydrop: map[string][]string{"tags.container": {"POD"}},
+			}},
+			args: args{od: &metric.Metric{
+				Name: "abcd",
+				Tags: map[string]string{
+					"container": "POD",
+				},
+			}},
+			want: false,
+		},
+		{
+			name: "composite",
+			fields: fields{cfg: FilterConfig{
+				Keypass:    map[string][]string{"name": {"abcd"}},
+				Keydrop:    map[string][]string{"tags.container": {"POD"}},
+				Keyinclude: []string{"name", "fields.container_cpu_usage_seconds_total", "tags.cluster_name", "tags.id"},
+			}},
+			args: args{od: &metric.Metric{
+				Name: "abcd",
+				Fields: map[string]interface{}{
+					"container_cpu_usage_seconds_total": 500,
+				},
+				Tags: map[string]string{
+					"cluster_name": "xxx",
+					"id":           "aaa",
+				},
+			}},
+			want: true,
 		},
 	}
 	for _, tt := range tests {

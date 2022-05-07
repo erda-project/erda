@@ -14,12 +14,50 @@
 
 package trace
 
+const (
+	CH_TABLE_SERIES = "spans_series"
+	CH_TABLE_META   = "spans_meta"
+
+	OrgNameKey = "org_name"
+)
+
 type Span struct {
-	TraceId       string            `json:"trace_id"`
-	SpanId        string            `json:"span_id"`
-	ParentSpanId  string            `json:"parent_span_id"`
-	OperationName string            `json:"operation_name"`
-	StartTime     int64             `json:"start_time"`
-	EndTime       int64             `json:"end_time"`
-	Tags          map[string]string `json:"tags"`
+	OrgName      string `json:"-" ch:"org_name"`
+	TraceId      string `json:"trace_id" ch:"trace_id"`
+	SpanId       string `json:"span_id" ch:"span_id"`
+	ParentSpanId string `json:"parent_span_id" ch:"parent_span_id"`
+	// Deprecated, move to tags
+	OperationName string            `json:"operation_name" ch:"-"`
+	StartTime     int64             `json:"start_time" ch:"start_time"`
+	EndTime       int64             `json:"end_time" ch:"end_time"`
+	Tags          map[string]string `json:"tags" ch:"tags"`
+}
+
+func (s *Span) Hash() uint64 {
+	return 0
+}
+
+func (s *Span) GetTags() map[string]string {
+	if s.Tags == nil {
+		s.Tags = map[string]string{}
+	}
+	return s.Tags
+}
+
+type Series struct {
+	OrgName      string `json:"-" ch:"org_name"`
+	TraceId      string `json:"trace_id" ch:"trace_id"`
+	SpanId       string `json:"span_id" ch:"span_id"`
+	ParentSpanId string `json:"parent_span_id" ch:"parent_span_id"`
+	StartTime    int64  `json:"start_time" ch:"start_time"`
+	EndTime      int64  `json:"end_time" ch:"end_time"`
+	SeriesID     uint64 `json:"seriesId" ch:"series_id"`
+}
+
+type Meta struct {
+	OrgName  string `json:"-" ch:"org_name"`
+	Key      string `json:"key" ch:"key"`
+	Value    string `json:"value" ch:"value"`
+	SeriesID uint64 `json:"seriesId" ch:"series_id"`
+	CreateAt int64  `json:"createAt" ch:"create_at"`
 }

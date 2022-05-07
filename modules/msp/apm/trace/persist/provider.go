@@ -65,7 +65,7 @@ func (p *provider) Init(ctx servicehub.Context) (err error) {
 
 	// add consumer task
 	for i := 0; i < p.Cfg.Parallelism; i++ {
-		//spot
+		// spot
 		ctx.AddTask(func(ctx context.Context) error {
 			r, err := p.Kafka.NewBatchReader(&p.Cfg.SpotInput, kafka.WithReaderDecoder(p.decodeSpotSpan))
 			if err != nil {
@@ -88,7 +88,7 @@ func (p *provider) Init(ctx servicehub.Context) (err error) {
 			})
 		}, servicehub.WithTaskName(fmt.Sprintf("spotspan-consumer(%d)", i)))
 
-		//oap
+		// oap
 		ctx.AddTask(func(ctx context.Context) error {
 			r, err := p.Kafka.NewBatchReader(&p.Cfg.OapInput, kafka.WithReaderDecoder(p.decodeOapSpan))
 			if err != nil {

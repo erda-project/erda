@@ -16,15 +16,18 @@ package collector
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/modules/oap/collector/common"
-	"github.com/erda-project/erda/modules/oap/collector/common/compressor"
+	"github.com/erda-project/erda/modules/core/monitor/log"
+	"github.com/erda-project/erda/modules/core/monitor/metric"
+	"github.com/erda-project/erda/modules/msp/apm/trace"
 	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
+	"github.com/erda-project/erda/modules/oap/collector/lib/compressor"
 	"github.com/erda-project/erda/modules/oap/collector/plugins"
 	"github.com/erda-project/erda/modules/oap/collector/plugins/exporters/collector/auth"
 )
@@ -55,6 +58,35 @@ type provider struct {
 	cp     compressor.Compressor
 }
 
+func (p *provider) ExportMetric(items ...*metric.Metric) error {
+	buf, err := json.Marshal(items)
+	if err != nil {
+		return fmt.Errorf("serialize err: %w", err)
+	}
+	buf, err = p.cp.Compress(buf)
+	if err != nil {
+		return fmt.Errorf("compress err: %w", err)
+	}
+	req, err := http.NewRequest(http.MethodPost, p.Cfg.URL, bytes.NewReader(buf))
+	if err != nil {
+		return fmt.Errorf("create request err: %w", err)
+	}
+	setHeaders(req, p.Cfg.Headers)
+	p.au.Secure(req)
+	code, err := doRequest(p.client, req)
+	if err != nil {
+		return fmt.Errorf("do request err: %w", err)
+	}
+	if code < 200 || code >= 300 {
+		return fmt.Errorf("response status code %d is not success", code)
+	}
+	return nil
+}
+
+func (p *provider) ExportLog(items ...*log.Log) error     { return nil }
+func (p *provider) ExportSpan(items ...*trace.Span) error { return nil }
+func (p *provider) ExportRaw(items ...*odata.Raw) error   { return nil }
+
 func (p *provider) ComponentConfig() interface{} {
 	return p.Cfg
 }
@@ -75,32 +107,6 @@ func (p *provider) Connect() error {
 	}
 	if code >= 500 {
 		return fmt.Errorf("invalid response code: %d", code)
-	}
-	return nil
-}
-
-func (p *provider) Export(ods []odata.ObservableData) error {
-	// TODO. not support Raw ObservableData
-	buf, err := common.SerializeBatch(p.Cfg.Serializer, ods, p.Cfg.Compatibility)
-	if err != nil {
-		return fmt.Errorf("serialize err: %w", err)
-	}
-	buf, err = p.cp.Compress(buf)
-	if err != nil {
-		return fmt.Errorf("compress err: %w", err)
-	}
-	req, err := http.NewRequest(http.MethodPost, p.Cfg.URL, bytes.NewReader(buf))
-	if err != nil {
-		return fmt.Errorf("create request err: %w", err)
-	}
-	setHeaders(req, p.Cfg.Headers)
-	p.au.Secure(req)
-	code, err := doRequest(p.client, req)
-	if err != nil {
-		return fmt.Errorf("do request err: %w", err)
-	}
-	if code < 200 || code >= 300 {
-		return fmt.Errorf("response status code %d is not success", code)
 	}
 	return nil
 }

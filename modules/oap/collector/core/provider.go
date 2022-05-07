@@ -18,12 +18,15 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"time"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/modules/oap/collector/core/config"
 	"github.com/erda-project/erda/modules/oap/collector/core/model"
+	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
 	"github.com/erda-project/erda/modules/oap/collector/core/pipeline"
+	"github.com/erda-project/erda/modules/oap/collector/lib/protoparser/common/unmarshalwork"
 )
 
 // +provider
@@ -32,13 +35,13 @@ type provider struct {
 	Log        logs.Logger
 	servicectx servicehub.Context
 
-	pipelines []*pipeline.Pipeline
+	metricPipelines, spanPipelines, logPipeline, rawPipeline []*pipeline.Pipeline
 }
 
 // Run this is optional
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.servicectx = ctx
-	p.pipelines = make([]*pipeline.Pipeline, 0)
+	p.metricPipelines = make([]*pipeline.Pipeline, 0)
 	return nil
 }
 
@@ -53,33 +56,92 @@ func (p *provider) Run(ctx context.Context) error {
 	return nil
 }
 
-func (p *provider) initComponents() error {
-	for idx, item := range p.Cfg.Pipelines {
-		rs, err := findComponents(p.servicectx, item.Receivers)
-		if err != nil {
-			return err
-		}
-		ps, err := findComponents(p.servicectx, item.Processors)
-		if err != nil {
-			return err
-		}
-		es, err := findComponents(p.servicectx, item.Exporters)
-		if err != nil {
-			return err
-		}
+func (p *provider) Start() error {
+	unmarshalwork.Start()
+	return nil
+}
 
-		pipe := pipeline.NewPipeline(p.Log.Sub(fmt.Sprintf("core-pipeline-%d", idx)), p.Cfg.GlobalConfig)
-		err = pipe.InitComponents(rs, ps, es)
-		if err != nil {
-			return fmt.Errorf("init components err: %w", err)
-		}
-		p.pipelines = append(p.pipelines, pipe)
+func (p *provider) Close() error {
+	unmarshalwork.Stop()
+	return nil
+}
+
+func (p *provider) initComponents() error {
+	var err error
+	p.metricPipelines, err = p.createPipelines(p.Cfg.Pipelines.Metrics, odata.MetricType)
+	if err != nil {
+		return err
+	}
+	p.logPipeline, err = p.createPipelines(p.Cfg.Pipelines.Logs, odata.LogType)
+	if err != nil {
+		return err
+	}
+	p.spanPipelines, err = p.createPipelines(p.Cfg.Pipelines.Spans, odata.SpanType)
+	if err != nil {
+		return err
+	}
+	p.rawPipeline, err = p.createPipelines(p.Cfg.Pipelines.Raws, odata.RawType)
+	if err != nil {
+		return err
 	}
 	return nil
 }
 
+var defaultPipelineCfg = config.Pipeline{
+	BatchSize:     10,
+	FlushInterval: time.Second,
+	FlushJitter:   time.Second,
+}
+
+func (p *provider) createPipelines(cfgs []config.Pipeline, dtype odata.DataType) ([]*pipeline.Pipeline, error) {
+	res := []*pipeline.Pipeline{}
+	for idx, item := range cfgs {
+		if !item.Enable {
+			continue
+		}
+
+		if item.BatchSize == 0 {
+			item.BatchSize = defaultPipelineCfg.BatchSize
+		}
+		if item.FlushInterval == 0 {
+			item.FlushInterval = defaultPipelineCfg.FlushInterval
+		}
+		if item.FlushJitter == 0 {
+			item.FlushJitter = defaultPipelineCfg.FlushJitter
+		}
+
+		rs, err := findComponents(p.servicectx, item.Receivers)
+		if err != nil {
+			return nil, err
+		}
+		ps, err := findComponents(p.servicectx, item.Processors)
+		if err != nil {
+			return nil, err
+		}
+		es, err := findComponents(p.servicectx, item.Exporters)
+		if err != nil {
+			return nil, err
+		}
+
+		pipe := pipeline.NewPipeline(p.Log.Sub(fmt.Sprintf("core-pipeline-%d", idx)), item, dtype)
+		err = pipe.InitComponents(rs, ps, es)
+		if err != nil {
+			return nil, fmt.Errorf("init components err: %w", err)
+		}
+		res = append(res, pipe)
+	}
+	return res, nil
+}
+
 func (p *provider) start(ctx context.Context) {
-	for _, pipe := range p.pipelines {
+	startPipeline(ctx, p.metricPipelines)
+	startPipeline(ctx, p.logPipeline)
+	startPipeline(ctx, p.spanPipelines)
+	startPipeline(ctx, p.rawPipeline)
+}
+
+func startPipeline(ctx context.Context, pipes []*pipeline.Pipeline) {
+	for _, pipe := range pipes {
 		go func(pi *pipeline.Pipeline) {
 			pi.StartStream(ctx)
 		}(pipe)

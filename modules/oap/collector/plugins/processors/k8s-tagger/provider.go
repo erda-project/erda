@@ -18,11 +18,13 @@ import (
 	"context"
 	"time"
 
+	"github.com/erda-project/erda/modules/core/monitor/log"
+	"github.com/erda-project/erda/modules/core/monitor/metric"
+	"github.com/erda-project/erda/modules/msp/apm/trace"
+	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
-
-	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -52,21 +54,34 @@ func (p *provider) ComponentConfig() interface{} {
 	return p.Cfg
 }
 
-// 1. filter with config filters
-// 2. pass tags to handle
-func (p *provider) Process(in odata.ObservableData) (odata.ObservableData, error) {
-	podMeta := p.getPodMetadata(in.Pairs())
-	in.HandleKeyValuePair(func(m map[string]interface{}) map[string]interface{} {
-		for k, v := range podMeta.Tags {
-			m[k] = v
-		}
-		for k, v := range podMeta.Fields {
-			m[odata.DataPointsKeyPrefix+k] = v
-		}
-		return m
-	})
-	return in, nil
+func (p *provider) ProcessMetric(item *metric.Metric) (*metric.Metric, error) {
+	podMeta := p.getPodMetadata(item.Tags)
+	for k, v := range podMeta.Tags {
+		item.Tags[k] = v
+	}
+	for k, v := range podMeta.Fields {
+		item.Fields[k] = v
+	}
+	return item, nil
 }
+
+func (p *provider) ProcessLog(item *log.Log) (*log.Log, error) {
+	podMeta := p.getPodMetadata(item.Tags)
+	for k, v := range podMeta.Tags {
+		item.Tags[k] = v
+	}
+	return item, nil
+}
+
+func (p *provider) ProcessSpan(item *trace.Span) (*trace.Span, error) {
+	podMeta := p.getPodMetadata(item.Tags)
+	for k, v := range podMeta.Tags {
+		item.Tags[k] = v
+	}
+	return item, nil
+}
+
+func (p *provider) ProcessorRaw(item *odata.Raw) (*odata.Raw, error) { return item, nil }
 
 // Run this is optional
 func (p *provider) Init(ctx servicehub.Context) error {

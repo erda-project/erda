@@ -20,15 +20,12 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/erda-project/erda/modules/core/monitor/metric"
+	"github.com/erda-project/erda/modules/oap/collector/lib"
 	"github.com/golang/protobuf/proto"
 	"github.com/labstack/echo"
 	pmodel "github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/prompb"
-	"google.golang.org/protobuf/types/known/structpb"
-
-	mpb "github.com/erda-project/erda-proto-go/oap/metrics/pb"
-	"github.com/erda-project/erda/modules/oap/collector/common"
-	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -62,7 +59,7 @@ func (p *provider) prwHandler(ctx echo.Context) error {
 		return ctx.NoContent(http.StatusOK)
 	}
 	req := ctx.Request()
-	buf, err := common.ReadBody(req)
+	buf, err := lib.ReadBody(req)
 	if err != nil {
 		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("read body err: %s", err))
 	}
@@ -75,42 +72,42 @@ func (p *provider) prwHandler(ctx echo.Context) error {
 
 	now := time.Now() // receive time
 	for _, ts := range wr.Timeseries {
-		attrs := map[string]string{}
+		tags := map[string]string{}
 		for _, l := range ts.Labels {
-			attrs[l.Name] = l.Value
+			tags[l.Name] = l.Value
 		}
-		metricName := attrs[pmodel.MetricNameLabel]
+		metricName := tags[pmodel.MetricNameLabel]
 		if metricName == "" {
-			return fmt.Errorf("%q not found in attrs or empty", pmodel.MetricNameLabel)
+			return fmt.Errorf("%q not found in tags or empty", pmodel.MetricNameLabel)
 		}
-		delete(attrs, pmodel.MetricNameLabel)
+		delete(tags, pmodel.MetricNameLabel)
 
 		// set pmodel.JobLabel as  name
-		job := attrs[pmodel.JobLabel]
+		job := tags[pmodel.JobLabel]
 		if job == "" {
-			return fmt.Errorf("%q not found in attrs or empty", pmodel.JobLabel)
+			return fmt.Errorf("%q not found in tags or empty", pmodel.JobLabel)
 		}
-		delete(attrs, pmodel.JobLabel)
+		delete(tags, pmodel.JobLabel)
 
 		for _, s := range ts.Samples {
-			dataPoints := make(map[string]*structpb.Value)
+			fields := make(map[string]interface{})
 			if math.IsNaN(s.Value) {
 				continue
 			}
-			dataPoints[metricName] = structpb.NewNumberValue(s.Value)
+			fields[metricName] = s.Value
 
 			// converting to metric
 			t := now
 			if s.Timestamp > 0 {
 				t = time.Unix(0, s.Timestamp*1000000)
 			}
-			m := &mpb.Metric{
-				Name:         job,
-				TimeUnixNano: uint64(t.UnixNano()),
-				Attributes:   attrs,
-				DataPoints:   dataPoints,
+			m := metric.Metric{
+				Name:      job,
+				Timestamp: t.UnixNano(),
+				Tags:      tags,
+				Fields:    fields,
 			}
-			p.consumerFunc(odata.NewMetric(m))
+			p.consumerFunc(&m)
 		}
 	}
 
