@@ -109,7 +109,7 @@ func Test_defaultPipelineReconciler_updateCalculatedPipelineStatusForTaskUseFiel
 
 	// already end status
 	p.Status = apistructs.PipelineStatusFailed
-	err := pr.updateCalculatedPipelineStatusForTaskUseField(ctx, p)
+	err := pr.UpdateCalculatedPipelineStatusForTaskUseField(ctx, p)
 	if err != nil {
 		t.Fatalf("should no err, err: %v", err)
 	}
@@ -121,7 +121,7 @@ func Test_defaultPipelineReconciler_updateCalculatedPipelineStatusForTaskUseFiel
 	pr = &defaultPipelineReconciler{r: r}
 	p.Status = apistructs.PipelineStatusRunning
 	pr.flagCanceling = true
-	err = pr.updateCalculatedPipelineStatusForTaskUseField(ctx, p)
+	err = pr.UpdateCalculatedPipelineStatusForTaskUseField(ctx, p)
 	if err != nil {
 		t.Fatalf("should no err, err: %v", err)
 	}
@@ -139,7 +139,7 @@ func Test_defaultPipelineReconciler_updateCalculatedPipelineStatusForTaskUseFiel
 			}, nil
 		})
 	p.Status = apistructs.PipelineStatusRunning
-	err = pr.updateCalculatedPipelineStatusForTaskUseField(ctx, p)
+	err = pr.UpdateCalculatedPipelineStatusForTaskUseField(ctx, p)
 	if err != nil {
 		t.Fatalf("should no err, err: %v", err)
 	}

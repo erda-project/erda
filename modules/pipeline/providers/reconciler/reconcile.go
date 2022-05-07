@@ -87,6 +87,8 @@ func (r *provider) generatePipelineReconcilerForEachPipelineID() *defaultPipelin
 }
 
 func (pr *defaultPipelineReconciler) releaseTaskAfterReconciled(ctx context.Context, p *spec.Pipeline, task *spec.PipelineTask) {
+	pr.lock.Lock()
+	defer pr.lock.Unlock()
 	pr.processingTasks.Delete(task.NodeName())
 	pr.processedTasks.Store(task.NodeName(), struct{}{})
 }
@@ -151,7 +153,7 @@ func (pr *defaultPipelineReconciler) internalNextLoopLogic(ctx context.Context, 
 	defer pr.lock.Unlock()
 
 	// update current pipeline status at beginning
-	if err := pr.updateCalculatedPipelineStatusForTaskUseField(ctx, p); err != nil {
+	if err := pr.UpdateCalculatedPipelineStatusForTaskUseField(ctx, p); err != nil {
 		pr.log.Errorf("failed to update calculatedPipelineStatusForTaskUse field(auto retry), pipelineID: %d, err: %v", p.ID, err)
 		return err
 	}

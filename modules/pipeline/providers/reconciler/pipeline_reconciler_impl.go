@@ -25,7 +25,7 @@ import (
 // updateCalculatedPipelineStatusForTaskUseField by:
 // 1. other flags (higher priority)
 // 2. all reconciled tasks
-func (pr *defaultPipelineReconciler) updateCalculatedPipelineStatusForTaskUseField(ctx context.Context, p *spec.Pipeline) error {
+func (pr *defaultPipelineReconciler) UpdateCalculatedPipelineStatusForTaskUseField(ctx context.Context, p *spec.Pipeline) error {
 	newStatus := p.Status
 	defer func() {
 		pr.calculatedStatusForTaskUse = newStatus
