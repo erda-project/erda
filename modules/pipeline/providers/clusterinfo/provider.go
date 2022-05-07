@@ -32,7 +32,7 @@ type config struct {
 	ErdaNamespace            string        `env:"DICE_NAMESPACE"`
 	IsEdge                   bool          `env:"DICE_IS_EDGE" default:"false"`
 	RetryClusterHookInterval time.Duration `file:"retry_cluster_hook_interval" default:"5s"`
-	RefreshClustersInterval  time.Duration `file:"refresh_clusters_interval" default:"20m"`
+	RefreshClustersInterval  time.Duration `file:"refresh_clusters_interval" env:"REFRESH_CLUSTERS_INTERVAL"`
 }
 
 type provider struct {
