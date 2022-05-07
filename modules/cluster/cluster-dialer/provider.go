@@ -16,42 +16,40 @@ package cluster_dialer
 
 import (
 	"context"
-	"os"
 
+	"github.com/coreos/etcd/clientv3"
+	"github.com/rancher/remotedialer"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/modules/cluster-ops/client"
-	"github.com/erda-project/erda/modules/cluster-ops/config"
+	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
+	"github.com/erda-project/erda/modules/cluster/cluster-dialer/config"
+	"github.com/erda-project/erda/modules/cluster/cluster-dialer/server"
 )
 
 type provider struct {
-	Cfg *config.Config
+	Cfg        *config.Config             // auto inject this field
+	Credential tokenpb.TokenServiceServer `autowired:"erda.core.token.TokenService" optional:"true"`
+	Etcd       *clientv3.Client           `autowired:"etcd"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	logrus.SetOutput(os.Stdout)
-
 	if p.Cfg.Debug {
 		logrus.SetLevel(logrus.DebugLevel)
+		remotedialer.PrintTunnelData = true
 	}
 	return nil
 }
 
 func (p *provider) Run(ctx context.Context) error {
-	c := client.New(client.WithConfig(p.Cfg))
-	return c.Execute()
+	return server.Start(ctx, p.Credential, p.Cfg, p.Etcd)
 }
 
 func init() {
-	servicehub.Register("cluster-ops", &servicehub.Spec{
-		Services:    []string{"cluster-ops"},
-		Description: "cluster ops",
-		ConfigFunc: func() interface{} {
-			return &config.Config{}
-		},
-		Creator: func() servicehub.Provider {
-			return &provider{}
-		},
+	servicehub.Register("cluster-dialer", &servicehub.Spec{
+		Services:    []string{"cluster-dialer"},
+		Description: "cluster dialer",
+		ConfigFunc:  func() interface{} { return &config.Config{} },
+		Creator:     func() servicehub.Provider { return &provider{} },
 	})
 }

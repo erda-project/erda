@@ -12,25 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cluster_dialer
+package cluster_agent
 
 import (
 	"context"
 
-	"github.com/coreos/etcd/clientv3"
 	"github.com/rancher/remotedialer"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
-	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
-	"github.com/erda-project/erda/modules/cluster-dialer/config"
-	"github.com/erda-project/erda/modules/cluster-dialer/server"
+	"github.com/erda-project/erda/modules/cluster/cluster-agent/client"
+	"github.com/erda-project/erda/modules/cluster/cluster-agent/config"
 )
 
 type provider struct {
-	Cfg        *config.Config             // auto inject this field
-	Credential tokenpb.TokenServiceServer `autowired:"erda.core.token.TokenService" optional:"true"`
-	Etcd       *clientv3.Client           `autowired:"etcd"`
+	Cfg *config.Config // auto inject this field
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -42,14 +38,19 @@ func (p *provider) Init(ctx servicehub.Context) error {
 }
 
 func (p *provider) Run(ctx context.Context) error {
-	return server.Start(ctx, p.Credential, p.Cfg, p.Etcd)
+	c := client.New(client.WithConfig(p.Cfg))
+	return c.Start(ctx)
 }
 
 func init() {
-	servicehub.Register("cluster-dialer", &servicehub.Spec{
-		Services:    []string{"cluster-dialer"},
-		Description: "cluster dialer",
-		ConfigFunc:  func() interface{} { return &config.Config{} },
-		Creator:     func() servicehub.Provider { return &provider{} },
+	servicehub.Register("cluster-agent", &servicehub.Spec{
+		Services:    []string{"cluster-agent"},
+		Description: "cluster agent",
+		ConfigFunc: func() interface{} {
+			return &config.Config{}
+		},
+		Creator: func() servicehub.Provider {
+			return &provider{}
+		},
 	})
 }

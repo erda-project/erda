@@ -18,7 +18,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/erda-project/erda/modules/cluster-manager/services/apierrors"
+	"github.com/erda-project/erda/modules/cluster/cluster-manager/services/apierrors"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httputil"
 )

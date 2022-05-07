@@ -18,8 +18,8 @@ import (
 	"net/http"
 
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/cluster-manager/dbclient"
-	"github.com/erda-project/erda/modules/cluster-manager/services/cluster"
+	"github.com/erda-project/erda/modules/cluster/cluster-manager/dbclient"
+	"github.com/erda-project/erda/modules/cluster/cluster-manager/services/cluster"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 

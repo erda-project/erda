@@ -12,42 +12,33 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cluster_agent
+package cluster_manager
 
 import (
 	"context"
 
-	"github.com/rancher/remotedialer"
-	"github.com/sirupsen/logrus"
-
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/modules/cluster-agent/client"
-	"github.com/erda-project/erda/modules/cluster-agent/config"
+	"github.com/erda-project/erda/modules/cluster/cluster-manager/conf"
 )
 
 type provider struct {
-	Cfg *config.Config // auto inject this field
+	Cfg *conf.Conf
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	if p.Cfg.Debug {
-		logrus.SetLevel(logrus.DebugLevel)
-		remotedialer.PrintTunnelData = true
-	}
-	return nil
+	return initialize(p.Cfg)
 }
 
 func (p *provider) Run(ctx context.Context) error {
-	c := client.New(client.WithConfig(p.Cfg))
-	return c.Start(ctx)
+	return nil
 }
 
 func init() {
-	servicehub.Register("cluster-agent", &servicehub.Spec{
-		Services:    []string{"cluster-agent"},
-		Description: "cluster agent",
+	servicehub.Register("cluster-manager", &servicehub.Spec{
+		Services:    []string{"cluster-manager"},
+		Description: "cluster manager",
 		ConfigFunc: func() interface{} {
-			return &config.Config{}
+			return &conf.Conf{}
 		},
 		Creator: func() servicehub.Provider {
 			return &provider{}

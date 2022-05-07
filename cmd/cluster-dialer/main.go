@@ -20,7 +20,7 @@ import (
 
 	_ "github.com/erda-project/erda-infra/providers"
 	_ "github.com/erda-project/erda-proto-go/core/token/client"
-	_ "github.com/erda-project/erda/modules/cluster-dialer"
+	_ "github.com/erda-project/erda/modules/cluster/cluster-dialer"
 )
 
 func main() {

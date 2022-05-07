@@ -17,7 +17,7 @@ package dbclient
 import (
 	"github.com/jinzhu/gorm"
 
-	"github.com/erda-project/erda/modules/cluster-manager/model"
+	"github.com/erda-project/erda/modules/cluster/cluster-manager/model"
 )
 
 // CreateCluster create cluster

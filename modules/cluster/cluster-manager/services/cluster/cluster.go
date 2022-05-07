@@ -23,9 +23,9 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/cluster-manager/dbclient"
-	"github.com/erda-project/erda/modules/cluster-manager/model"
-	"github.com/erda-project/erda/modules/cluster-manager/services/apierrors"
+	"github.com/erda-project/erda/modules/cluster/cluster-manager/dbclient"
+	"github.com/erda-project/erda/modules/cluster/cluster-manager/model"
+	"github.com/erda-project/erda/modules/cluster/cluster-manager/services/apierrors"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
