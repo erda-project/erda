@@ -545,10 +545,10 @@ var (
 	ErrSratisticsErrList = err("ErrSratisticsErrList", "获取错误列表失败")
 	ErrCrashRateList     = err("ErrCrashRateList", "获取崩溃率失败")
 
-	ErrCreateRbWorkflow = err("ErrCreateRbWorkflow", "创建研发工作流失败")
-	ErrUpdateRbWorkflow = err("ErrUpdateRbWorkflow", "更新研发工作流失败")
-	ErrListRbWorkflow   = err("ErrListRbWorkflow", "获取研发工作流列表失败")
-	ErrDeleteRbWorkflow = err("ErrDeleteRbWorkflow", "删除研发工作流失败")
+	ErrCreateDevWorkflow = err("ErrCreateDevWorkflow", "创建研发工作流失败")
+	ErrUpdateDevWorkflow = err("ErrUpdateDevWorkflow", "更新研发工作流失败")
+	ErrGetDevWorkflow    = err("ErrGetDevWorkflow", "获取研发工作流列表失败")
+	ErrDeleteDevWorkflow = err("ErrDeleteDevWorkflow", "删除研发工作流失败")
 
 	ErrNotFoundPipelineCron = err("ErrNotFoundPipelineCron", "未找到流水线定时配置")
 )

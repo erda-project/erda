@@ -668,6 +668,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		endpoints.WithPipelineSource(p.PipelineSource),
 		endpoints.WithPipelineDefinition(p.PipelineDefinition),
 		endpoints.WithPublishItem(publishItem),
+		endpoints.WithDevWorkFlow(p.DevWorkflow),
 	)
 
 	ep.ImportChannel = make(chan uint64)

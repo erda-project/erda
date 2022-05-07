@@ -12,22 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package rbworkflow
+package devworkflow
 
 import (
 	"context"
 	"reflect"
 
-	"github.com/erda-project/erda/pkg/common/apis"
 	"gorm.io/gorm"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/i18n"
-	"github.com/erda-project/erda-proto-go/dop/rbworkflow/pb"
+	"github.com/erda-project/erda-proto-go/dop/devworkflow/pb"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/dop/providers/rbworkflow/db"
+	"github.com/erda-project/erda/modules/dop/providers/devworkflow/db"
+	"github.com/erda-project/erda/pkg/common/apis"
 )
 
 type config struct {
@@ -41,7 +41,7 @@ type provider struct {
 	Register transport.Register `autowired:"service-register" required:"true"`
 	Trans    i18n.Translator    `translator:"project-pipeline" required:"true"`
 
-	RbWorkflowSvc *ServiceImplement
+	WorkflowSvc *ServiceImplement
 }
 
 func (p *provider) Run(ctx context.Context) error {
@@ -50,28 +50,28 @@ func (p *provider) Run(ctx context.Context) error {
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.bundle = bundle.New(bundle.WithGittar())
-	p.RbWorkflowSvc = &ServiceImplement{
+	p.WorkflowSvc = &ServiceImplement{
 		db:  &db.Client{DB: p.DB},
 		bdl: p.bundle,
 	}
 	if p.Register != nil {
-		pb.RegisterRbWorkflowServiceImp(p.Register, p.RbWorkflowSvc, apis.Options())
+		pb.RegisterDevWorkflowServiceImp(p.Register, p.WorkflowSvc, apis.Options())
 	}
 	return nil
 }
 
 func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
 	switch {
-	case ctx.Service() == "erda.dop.rbWorkflow.RbWorkflowServiceMethod" || ctx.Type() == reflect.TypeOf(reflect.TypeOf((*Service)(nil)).Elem()):
-		return p.RbWorkflowSvc
-	case ctx.Service() == "erda.dop.rbWorkflow.RbWorkflowService" || ctx.Type() == pb.RbWorkflowServiceServerType() || ctx.Type() == pb.RbWorkflowServiceHandlerType():
-		return p.RbWorkflowSvc
+	case ctx.Service() == "erda.dop.devWorkflow.DevWorkflowServiceMethod" || ctx.Type() == reflect.TypeOf(reflect.TypeOf((*Service)(nil)).Elem()):
+		return p.WorkflowSvc
+	case ctx.Service() == "erda.dop.devWorkflow.DevWorkflowService" || ctx.Type() == pb.DevWorkflowServiceServerType() || ctx.Type() == pb.DevWorkflowServiceHandlerType():
+		return p.WorkflowSvc
 	}
 	return p
 }
 
 func init() {
-	servicehub.Register("erda.dop.rbWorkflow", &servicehub.Spec{
+	servicehub.Register("erda.dop.devWorkflow", &servicehub.Spec{
 		Services:             pb.ServiceNames(),
 		Types:                append(pb.Types()),
 		OptionalDependencies: []string{"service-register"},

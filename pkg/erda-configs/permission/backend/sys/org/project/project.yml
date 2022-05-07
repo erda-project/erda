@@ -844,6 +844,10 @@
 ## rb workflow start ##
 - role: Owner,Lead
   scope: project
-  resource: rbWorkflow
+  resource: devWorkflow
   action: OPERATE
+- role: Owner,Lead,PM,PD,Dev,QA,Support,Reporter,Guest
+  scope: project
+  resource: devWorkflow
+  action: LIST
 ## rb workflow end ##
