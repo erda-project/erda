@@ -57,6 +57,11 @@ func (p *provider) NewWriter(ctx context.Context) (storekit.BatchWriter, error) 
 			}
 			logData.Log.UniqId = strconv.FormatInt(logData.Timestamp, 36) + "-" + id
 			logData.OrgName = logData.Tags["dice_org_name"]
+			tenantId := logData.Tags["monitor_log_key"]
+			if len(tenantId) == 0 {
+				tenantId = logData.Tags["msp_env_id"]
+			}
+			logData.TenantId = tenantId
 			item.Table = table
 			return item, nil
 		},
