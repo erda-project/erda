@@ -21,7 +21,7 @@ import (
 	"strconv"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/action-runner-scheduler/services/apierrors"
+	"github.com/erda-project/erda/modules/pipeline/action-runner-scheduler/services/apierrors"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 )
