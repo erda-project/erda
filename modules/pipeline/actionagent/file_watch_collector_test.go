@@ -21,7 +21,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda/modules/actionagent/filewatch"
+	"github.com/erda-project/erda/modules/pipeline/actionagent/filewatch"
 )
 
 func TestAgent_asyncPushCollectorLog(t *testing.T) {

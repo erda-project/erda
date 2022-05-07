@@ -19,7 +19,7 @@ import (
 	"github.com/erda-project/erda/pkg/common"
 
 	// providers and modules
-	_ "github.com/erda-project/erda/modules/action-runner-scheduler"
+	_ "github.com/erda-project/erda/modules/pipeline/action-runner-scheduler"
 )
 
 func main() {
