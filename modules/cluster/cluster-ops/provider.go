@@ -12,33 +12,43 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cluster_manager
+package cluster_dialer
 
 import (
 	"context"
+	"os"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/modules/cluster-manager/conf"
+	"github.com/erda-project/erda/modules/cluster/cluster-ops/client"
+	"github.com/erda-project/erda/modules/cluster/cluster-ops/config"
 )
 
 type provider struct {
-	Cfg *conf.Conf
+	Cfg *config.Config
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	return initialize(p.Cfg)
-}
+	logrus.SetOutput(os.Stdout)
 
-func (p *provider) Run(ctx context.Context) error {
+	if p.Cfg.Debug {
+		logrus.SetLevel(logrus.DebugLevel)
+	}
 	return nil
 }
 
+func (p *provider) Run(ctx context.Context) error {
+	c := client.New(client.WithConfig(p.Cfg))
+	return c.Execute()
+}
+
 func init() {
-	servicehub.Register("cluster-manager", &servicehub.Spec{
-		Services:    []string{"cluster-manager"},
-		Description: "cluster manager",
+	servicehub.Register("cluster-ops", &servicehub.Spec{
+		Services:    []string{"cluster-ops"},
+		Description: "cluster ops",
 		ConfigFunc: func() interface{} {
-			return &conf.Conf{}
+			return &config.Config{}
 		},
 		Creator: func() servicehub.Provider {
 			return &provider{}

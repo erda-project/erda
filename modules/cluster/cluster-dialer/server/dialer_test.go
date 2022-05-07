@@ -29,10 +29,10 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 
-	clusteragent "github.com/erda-project/erda/modules/cluster-agent/client"
-	clientconfig "github.com/erda-project/erda/modules/cluster-agent/config"
-	"github.com/erda-project/erda/modules/cluster-dialer/auth"
-	serverconfig "github.com/erda-project/erda/modules/cluster-dialer/config"
+	clusteragent "github.com/erda-project/erda/modules/cluster/cluster-agent/client"
+	clientconfig "github.com/erda-project/erda/modules/cluster/cluster-agent/config"
+	"github.com/erda-project/erda/modules/cluster/cluster-dialer/auth"
+	serverconfig "github.com/erda-project/erda/modules/cluster/cluster-dialer/config"
 	"github.com/erda-project/erda/pkg/clusterdialer"
 	"github.com/erda-project/erda/pkg/discover"
 )
