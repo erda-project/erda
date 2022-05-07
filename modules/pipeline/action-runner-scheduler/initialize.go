@@ -16,10 +16,10 @@ package action_runner_scheduler
 
 import (
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/action-runner-scheduler/conf"
-	"github.com/erda-project/erda/modules/action-runner-scheduler/dbclient"
-	"github.com/erda-project/erda/modules/action-runner-scheduler/endpoints"
-	"github.com/erda-project/erda/modules/action-runner-scheduler/services/runnertask"
+	"github.com/erda-project/erda/modules/pipeline/action-runner-scheduler/conf"
+	"github.com/erda-project/erda/modules/pipeline/action-runner-scheduler/dbclient"
+	"github.com/erda-project/erda/modules/pipeline/action-runner-scheduler/endpoints"
+	"github.com/erda-project/erda/modules/pipeline/action-runner-scheduler/services/runnertask"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 

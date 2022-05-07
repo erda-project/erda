@@ -24,7 +24,7 @@ import (
 	"github.com/c2h5oh/datasize"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/actionagent/filewatch"
+	"github.com/erda-project/erda/modules/pipeline/actionagent/filewatch"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 )
 

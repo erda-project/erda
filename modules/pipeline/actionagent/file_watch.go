@@ -27,7 +27,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/actionagent/filewatch"
+	"github.com/erda-project/erda/modules/pipeline/actionagent/filewatch"
 	"github.com/erda-project/erda/pkg/filehelper"
 )
 

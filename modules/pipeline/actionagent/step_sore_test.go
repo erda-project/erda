@@ -23,7 +23,7 @@ import (
 	"github.com/c2h5oh/datasize"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/erda-project/erda/modules/actionagent/agenttool"
+	"github.com/erda-project/erda/modules/pipeline/actionagent/agenttool"
 )
 
 func TestStoreAndRestore(t *testing.T) {
