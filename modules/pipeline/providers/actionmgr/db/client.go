@@ -87,7 +87,7 @@ func (action *PipelineAction) Convert(yamlFormat bool) (*pb.Action, error) {
 	var specInterface = map[string]interface{}{}
 	withLocaleInfo, specInfo := SpecI18nReplace(action.Spec)
 	if !withLocaleInfo {
-		err := yaml.Unmarshal([]byte(action.Spec), specInterface)
+		err := yaml.Unmarshal([]byte(action.Spec), &specInterface)
 		if err != nil {
 			return nil, err
 		}
