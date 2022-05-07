@@ -143,7 +143,7 @@ func (p *provider) initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, e
 
 	// init scheduler
 	instanceinfoImpl := instanceinfo.NewInstanceInfoImpl()
-	scheduler := scheduler.NewScheduler(instanceinfoImpl)
+	scheduler := scheduler.NewScheduler(instanceinfoImpl, p.ClusterSvc)
 
 	migration := migration.New(
 		migration.WithBundle(bdl),
@@ -169,6 +169,7 @@ func (p *provider) initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, e
 		addon.WithServiceGroup(scheduler.Httpendpoints.ServiceGroupImpl),
 		addon.WithInstanceinfoImpl(instanceinfoImpl),
 		addon.WithClusterInfoImpl(scheduler.Httpendpoints.ClusterinfoImpl),
+		addon.WithClusterSvc(p.ClusterSvc),
 	)
 
 	// init runtime service
@@ -180,6 +181,7 @@ func (p *provider) initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, e
 		runtime.WithReleaseSvc(p.DicehubReleaseSvc),
 		runtime.WithServiceGroup(scheduler.Httpendpoints.ServiceGroupImpl),
 		runtime.WithClusterInfo(scheduler.Httpendpoints.ClusterinfoImpl),
+		runtime.WithClusterSvc(p.ClusterSvc),
 	)
 	envConfig := environment.New(
 		environment.WithDBClient(db),
@@ -198,13 +200,15 @@ func (p *provider) initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, e
 		deployment.WithServiceGroup(scheduler.Httpendpoints.ServiceGroupImpl),
 		deployment.WithScheduler(scheduler),
 		deployment.WithEnvConfig(envConfig),
+		deployment.WithClusterSvc(p.ClusterSvc),
 	)
 
 	// init domain service
 	dom := domain.New(
 		domain.WithDBClient(db),
 		domain.WithEventManager(p.EventManager),
-		domain.WithBundle(bdl))
+		domain.WithBundle(bdl),
+		domain.WithClusterSvc(p.ClusterSvc))
 
 	ins := instance.New(
 		instance.WithBundle(bdl),
