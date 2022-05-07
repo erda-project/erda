@@ -187,6 +187,10 @@ var (
 	ErrListAPITestEnvs  = err("ErrListAPITestEnvs", "查询接口测试环境列表失败")
 	ErrDeleteAPITestEnv = err("ErrDeleteAPITestEnv", "删除接口测试环境失败")
 
+	ErrGetApplicationPublishItemRelation    = err("ErrGetApplicationPublishItemRelation", "获取应用发布关联失败")
+	ErrUpdateApplicationPublishItemRelation = err("ErrUpdateApplicationPublishItemRelation", "设置应用发布关联失败")
+	ErrRemoveApplicationPublishItemRelation = err("ErrRemoveApplicationPublishItemRelation", "删除应用发布关联失败")
+
 	ErrCreateAPITest         = err("ErrCreateAPITest", "创建接口测试失败")
 	ErrUpdateAPITest         = err("ErrUpdateAPITest", "更新接口测试失败")
 	ErrGetAPITest            = err("ErrGetAPITest", "查询接口测试失败")
