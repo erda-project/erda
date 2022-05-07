@@ -23,6 +23,9 @@ import (
 const (
 	keyAppPagingRequest = "AppPagingRequest"
 	keyOption           = "Option"
+	OpKeyProjectID      = "projectId"
+	OpKeyAppID          = "appId"
+	OpValTargetRepo     = "repo"
 )
 
 type GSHelper struct {
