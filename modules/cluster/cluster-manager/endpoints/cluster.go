@@ -22,7 +22,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/cluster-manager/services/apierrors"
+	"github.com/erda-project/erda/modules/cluster/cluster-manager/services/apierrors"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/strutil"

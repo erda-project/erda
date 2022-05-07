@@ -17,9 +17,9 @@ package cluster_manager
 import (
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda/modules/cluster-manager/conf"
-	"github.com/erda-project/erda/modules/cluster-manager/dbclient"
-	"github.com/erda-project/erda/modules/cluster-manager/endpoints"
+	"github.com/erda-project/erda/modules/cluster/cluster-manager/conf"
+	"github.com/erda-project/erda/modules/cluster/cluster-manager/dbclient"
+	"github.com/erda-project/erda/modules/cluster/cluster-manager/endpoints"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 
