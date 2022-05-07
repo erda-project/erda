@@ -13,7 +13,35 @@ tags:
     description: gallery
 
 paths:
-  /api/marketplace/gallery:
+  /api/opus-types:
+    get:
+      tags:
+        - gallery
+      summary: 查询所有 opus 类型
+      description: 查询所有 opus 类型
+      responses:
+        '200':
+          description: successful operation
+          content:
+            "application/json":
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/BaseResponse"
+                type: object
+                properties:
+                  "data":
+                    type: object
+                    properties:
+                      "total":
+                        description: 数量
+                        type: integer
+                      "list":
+                        description: 列表
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/OpusType"
+
+  /api/opus:
     get:
       tags:
         - gallery
@@ -27,30 +55,58 @@ paths:
           schema:
             type: string
             enum:
-              - extension/action
-              - extension/addon
-              - artifacts/project
-            example: "extension/addon"
+              - erda/extension/action
+              - erda/extension/addon
+              - erda/artifacts/project
+            example: "erda/extension/addon"
+        - name: name
+          in: query
+          description: artifact 名称
+          required: false
+          schema:
+            type: string
         - name: keyword
           in: query
           description: 搜索关键字
           x-todo: 搜索什么字段
           required: false
           schema:
-              type: string
-              default: ""
-        - name: pageSize
+            type: string
+            default: ""
+        - name: withPresentation
           in: query
+          description: 返回结构是否要携带 presentation 字段, 为 false 时 presentation 仅包含列表所需信息
           required: false
           schema:
-            type: integer
-            default: 1
+            type: boolean
+            default: false
+        - name: withPublication
+          in: query
+          description: 返回结构是否要携带 publication 字段
+          required: false
+          schema:
+            type: boolean
+            default: false
+        - name: withInstallation
+          in: query
+          description: 返回结构是否要携带 installation 字段
+          required: false
+          schema:
+            type: boolean
+            default: false
+
         - name: pageNo
           in: query
           required: false
           schema:
             type: integer
             default: 20
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
       responses:
         '200':
           description: successful operation
@@ -71,175 +127,9 @@ paths:
                         description: 列表
                         type: array
                         items:
-                          type: object
-                          properties:
-                            "id":
-                              type: string
-                            "releaseID":
-                              type: string
-                              description: 仅 type=artifacts/project 时有有效的值
-                            "type":
-                              description: gallery 类型
-                              type: string
-                              enum:
-                                - extension/action
-                                - extension/addon
-                                - artifacts/project
-                            "name":
-                              description: gallery 名称
-                              type: string
-                            "displayName":
-                              type: string
-                            "category":
-                              type: string
-                            "displayCategory":
-                              type: string
-                              description: with i18n
-                            "desc":
-                              description: 描述信息
-                            "publisher":
-                              type: object
-                              properties:
-                                "id":
-                                  type: string
-                                "name":
-                                  type: string
-                                "nickName":
-                                  type: string
-                              description: Erda 官方发布的 extensions 值为 Erda Cloud.
-                            "logoUrl":
-                              type: string
+                          $ref: "#/components/schemas/Opus"
 
-  /api/marketplace/gallery/{name}:
-    parameters:
-      - name: name
-        in: path
-        description: gallery name
-        required: true
-        schema:
-          type: string
-
-    get:
-      tags:
-        - gallery
-      summary: 某 gallery 的详情
-      description: 某 gallery 的详情
-      responses:
-        '200':
-          description: successful operation
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/BaseResponse'
-                type: object
-                properties:
-                  "data":
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        "name":
-                          type: string
-                        "displayName":
-                          type: string
-                        "version":
-                          type: string
-                        "type":
-                          type: string
-                        "category":
-                          type: string
-                        "logoUrl":
-                          type: string
-                        "dice":
-                          type: object
-                          allOf:
-                            - $ref: '#/components/schemas/JSONRawMessage'
-                        "spec":
-                          type: object
-                          allOf:
-                            - $ref: '#/components/schemas/JSONRawMessage'
-                        "readme":
-                          type: string
-                          description: |-
-                            with i18n. 英文时优先返回 readme.en.md 文本内容;
-                            中文时优先返回 readme.zh_CN.md 的文本内容;
-                            若没有这样的文件, 则返回 readme.md 的文本内容.
-                        "changeLog":
-                          type: string
-                          description: extensions 显示 readme, artifacts 显示 changeLog
-                        "isDefault":
-                          type: boolean
-                          description: 最多只有一个 {item}.isDefault 为 true, 如果有, 肯定排在第一个.
-                        "createdAt":
-                          type: string
-                          format: date-time
-                        "updatedAt":
-                          type: string
-                          format: date-time
-                        "publisher":
-                          type: object
-                          properties:
-                            "id":
-                              type: string
-                            "name":
-                              type: string
-                            "displayName":
-                              type: string
-                        "params":
-                          description: action 的入参
-                          type: array
-                          items:
-                            type: object
-                            properties:
-                              "name":
-                                type: string
-                              "type":
-                                type: string
-                              "desc":
-                                type: string
-                                description: with i18n
-                              "required":
-                                type: boolean
-                              "default":
-                                type: string
-                        "outputs":
-                          description: action 的出参
-                          type: array
-                          items:
-                            type: object
-                            properties:
-                              "name":
-                                type: string
-                              "type":
-                                type: string
-                              "desc":
-                                type: string
-                        "configVars":
-                          description: 自定义 addon 的环境变量
-                          type: array
-                          items:
-                            type: string
-
-    delete:
-      tags:
-        - gallery
-      summary: 制品下架
-      parameters:
-        - name: version
-          in: query
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: successful operation
-          content:
-            "application/json":
-              schema:
-                $ref: '#/components/schemas/BaseResponse'
-
-  /api/marketplace/gallery/{name}/actions/gen-shared-url:
+  /api/opus/{id}/actions/gen-shared-url:
     parameters:
       - name: name
         in: path
@@ -271,37 +161,6 @@ paths:
                       "url":
                         type: string
 
-  /api/releases/{id}/actions/publish:
-    parameters:
-      - name: id
-        in: path
-        description: release id
-        required: true
-        schema:
-          type: string
-    post:
-      tags:
-        - gallery
-      summary: 制品上架
-      description: 发布制品到 gallery
-      requestBody:
-        $ref: "#/components/requestBodies/PublishGallery"
-      responses:
-        '200':
-          description: successful operation
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/BaseResponse'
-                properties:
-                  "data":
-                    type: object
-                    properties:
-                      "id":
-                        type: string
-
-
 components:
   schemas:
     BaseResponse:
@@ -312,8 +171,259 @@ components:
         err:
           type: object
 
-    JSONRawMessage:
+    Opus:
       type: object
+      properties:
+        "id":
+          type: string
+        "createdAt":
+          type: string
+          format: date-time
+        "updatedAt":
+          type: string
+          format: date-time
+        "orgID":
+          type: string
+        "orgName":
+          type: string
+        "creatorID":
+          type: string
+        "updaterID":
+          type: string
+        "type":
+          type: string
+        "name":
+          type: string
+        "version":
+          type: string
+        "displayName":
+          type: string
+        "summary":
+          type: string
+        "labels":
+          type: array
+          items:
+            type: string
+        "catalog":
+          type: string
+        "logoURL":
+          type: string
+        "checkValidURL":
+          type: string
+        "isValid":
+          type: boolean
+        "presentation":
+          $ref: "#/components/schemas/Presentation"
+        "publication":
+          $ref: "#/components/schemas/Publication"
+        "installation":
+          $ref: "#/components/schemas/Installation"
+        "syntax":
+          type: string
+
+    Presentation:
+      type: object
+      properties:
+        "desc":
+          type: string
+        "contactName":
+          type: string
+        "contactURL":
+          type: string
+        "contactEmail":
+          type: string
+        "isOpenSourced":
+          type: boolean
+        "opensourceURL":
+          type: string
+        "licenseName":
+          type: string
+        "licenseURL":
+          type: string
+        "homepageName":
+          type: string
+        "homepageURL":
+          type: string
+        "isDownloadable":
+          type: boolean
+        "downloadURL":
+          type: string
+        "readme":
+          type: string
+        "ref":
+          type: string
+
+    Publication:
+      type: object
+
+    Installation:
+      type: object
+
+    Info:
+      type: object
+      properties:
+        "name":
+          type: string
+        "displayName":
+          type: string
+        "type":
+          type: string
+        "version":
+          type: string
+        "summary":
+          type: string
+        "description":
+          type: string
+        "contact":
+          $ref: "#/components/schemas/Contact"
+        "opensource":
+          $ref: "#/components/schemas/Opensource"
+        "logoURL":
+          type: string
+        "homepage":
+          $ref: "#/components/schemas/Homepage"
+
+    Download:
+      type: object
+      properties:
+        "downloadable":
+          type: boolean
+        "url":
+          type: string
+
+    Readme:
+      type: object
+      properties:
+        "lang":
+          type: string
+        "langName":
+          type: string
+        "source":
+          type: string
+        "text":
+          type: string
+
+    Parameters:
+      type: object
+      properties:
+        "ins":
+          type: array
+          items:
+            type: string
+        "parameters":
+          type: array
+          items:
+            $ref: "#/components/schemas/Parameter"
+
+    Contact:
+      type: object
+      properties:
+        "name":
+          type: string
+        "url":
+          type: string
+        "email":
+          type: string
+
+    Opensource:
+      type: object
+      properties:
+        "isOpenSourced":
+          type: boolean
+        "url":
+          type: string
+        "license":
+          $ref: "#/components/schemas/License"
+
+    Homepage:
+      type: object
+      properties:
+        "name":
+          type: string
+        "url":
+          type: string
+        "logURL":
+          type: string
+
+    Parameter:
+      type: object
+      properties:
+        "name":
+          type: string
+        "in":
+          type: string
+        "description":
+          type: string
+        "style":
+          type: string
+        "explode":
+          type: boolean
+        "allowEmptyValue":
+          type: boolean
+        "allowReserved":
+          type: boolean
+        "deprecated":
+          type: boolean
+        "required":
+          type: boolean
+        "schema":
+          $ref: "#/components/schemas/Schema"
+
+    License:
+      type: object
+      properties:
+        "name":
+          type: string
+        "url":
+          type: string
+
+    Schema:
+      type: object
+      properties:
+        "type":
+          type: string
+        "title":
+          type: string
+        "format":
+          type: string
+        "description":
+          type: string
+        "deprecated":
+          type: boolean
+        "items":
+          $ref: "#/components/schemas/Schema"
+        "required":
+          type: boolean
+        properties:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/Schema"
+
+    Form:
+      type: object
+      properties:
+        "title":
+          type: string
+        "headers":
+          type: array
+          items:
+            type: string
+        "lines":
+          type: array
+          items:
+            type: array
+            items:
+              type: string
+
+    OpusType:
+      type: object
+      properties:
+        "name":
+          type: string
+          description: 类型标识
+        "displayName":
+          type: string
+          description: 类型名称
 
   requestBodies:
     GenerateSharedURL:
@@ -327,13 +437,3 @@ components:
               "version":
                 type: string
       required: true
-    PublishGallery:
-      content:
-        "application/json":
-          schema:
-            type: object
-            properties:
-              "name":
-                type: string
-                description: |-
-                  todo: 是否需要用户取名 ?

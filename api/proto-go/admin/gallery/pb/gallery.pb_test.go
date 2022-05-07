@@ -16,10 +16,8 @@ package pb_test
 import (
 	"testing"
 
-	"github.com/getkin/kin-openapi/openapi3"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/erda-project/erda-infra/pkg/transport/http/encoding/jsonpb"
 	"github.com/erda-project/erda-proto-go/admin/gallery/pb"
@@ -55,7 +53,8 @@ func TestPresentation_MarshalJSON(t *testing.T) {
 			},
 		},
 		Download: &pb.Download{
-			Downloadable: false,
+			Downloadable: true,
+			Url:          "https://github.com/erda-project/erda/archive/refs/tags/v2.0.0.tar.gz",
 		},
 		Readme: []*pb.Readme{
 			{
@@ -65,69 +64,58 @@ func TestPresentation_MarshalJSON(t *testing.T) {
 			},
 		},
 		Parameters: &pb.Parameters{
-			Ins:       []string{"params", "outputs"},
-			Parameter: nil,
+			Ins: []string{"params", "outputs"},
+			Parameters: []*pb.Parameter{
+				{
+					Name:        "name",
+					In:          "params",
+					Description: "custom addon name",
+					Required:    true,
+					Schema:      &pb.Schema{Type: "string"},
+				}, {
+					Name:        "tag",
+					In:          "params",
+					Description: "custom addon tag",
+					Required:    true,
+					Schema:      &pb.Schema{Type: "string"},
+				}, {
+					Name:        "success",
+					In:          "outputs",
+					Description: "create custom addon success or not",
+					Required:    true,
+					Schema:      &pb.Schema{Type: "string"},
+				},
+			},
 		},
 		CreatedAt: timestamppb.Now(),
 		Labels:    []string{"official", "addon"},
 		Catalog:   "deployment",
 	}
 
-	var parameters = []interface{}{
-		openapi3.Parameter{
-			ExtensionProps: openapi3.ExtensionProps{},
-			Name:           "name",
-			In:             "params",
-			Description:    "custom addon name",
-			Required:       true,
-			Schema:         &openapi3.SchemaRef{Value: openapi3.NewStringSchema()},
-		}, openapi3.Parameter{
-			ExtensionProps: openapi3.ExtensionProps{},
-			Name:           "tag",
-			In:             "params",
-			Description:    "custom addon tag",
-			Required:       true,
-			Schema:         &openapi3.SchemaRef{Value: openapi3.NewStringSchema()},
-		}, openapi3.Parameter{
-			ExtensionProps: openapi3.ExtensionProps{},
-			Name:           "success",
-			In:             "outputs",
-			Description:    "create custom addon success or not",
-			Required:       true,
-			Schema:         &openapi3.SchemaRef{Value: openapi3.NewStringSchema()},
-		},
-	}
-
-	bytes := wrapperspb.Bytes()
-
-	_ = p
-	list, err := structpb.NewList(parameters)
-	if err != nil {
-		t.Fatal(err)
-	}
-	s, err := (&jsonpb.Marshaler{Indent: "  "}).MarshalToString(list)
+	s, err := (&jsonpb.Marshaler{Indent: "  "}).MarshalToString(&p)
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Log(s)
-	//	p.Parameters.Parameter = make([]*structpb.Value, len(parameters))
-	//	var orderM = make(map[string]int)
-	//	for i, param := range parameters {
-	//		orderM[param.In] = i
-	//		v, err := structpb.NewValue(param)
-	//		if err != nil {
-	//			t.Fatal(i, err)
-	//		}
-	//		p.Parameters.Parameter[i] = v
-	//	}
-	//
-	//	sort.Slice(p.Parameters.Parameter, func(i, j int) bool {
-	//		return orderM[parameters[i].In] < orderM[parameters[j].In]
-	//	})
-	//
-	//	s, err := (&jsonpb.Marshaler{Indent: "  "}).MarshalToString(&p)
-	//	if err != nil {
-	//		t.Fatal(err)
-	//	}
-	//	t.Log(s)
+
+	var artifact = pb.PutOnProjectArtifactsReq{
+		Name:         "erda-create-custom-addon",
+		Version:      "1.0",
+		Room:         "erda",
+		Values:       map[string]string{"example": "..."},
+		Presentation: &pb.PresentationRef{Presentation: &p},
+		Publisher:    &structpb.Struct{},
+		Installer: &pb.Installer{
+			Installer: "",
+			Spec:      &structpb.Struct{Fields: map[string]*structpb.Value{"releaseID": structpb.NewStringValue("xxx-yyy-zzz")}},
+		},
+		Syntax:   "1.0",
+		RoomKey:  "",
+		RoomSign: "",
+	}
+	s, err = (&jsonpb.Marshaler{Indent: "  "}).MarshalToString(&artifact)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log("\n", s)
 }
