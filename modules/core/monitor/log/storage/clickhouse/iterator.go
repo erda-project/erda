@@ -269,12 +269,12 @@ func (it *clickhouseIterator) fetch(dir iteratorDir) {
 				if len(it.lastID) > 0 {
 					expr = expr.Where(goqu.C("_id").Lt(it.lastID))
 				}
-				expr = expr.Order(goqu.C("org_name").Desc(), goqu.C("timestamp").Desc())
+				expr = expr.Order(goqu.C("org_name").Desc(), goqu.C("tenant_id").Desc(), goqu.C("group_id").Desc(), goqu.C("timestamp").Desc())
 			} else {
 				if len(it.lastID) > 0 {
 					expr = expr.Where(goqu.C("_id").Gt(it.lastID))
 				}
-				expr = expr.Order(goqu.C("org_name").Asc(), goqu.C("timestamp").Asc())
+				expr = expr.Order(goqu.C("org_name").Asc(), goqu.C("tenant_id").Asc(), goqu.C("group_id").Asc(), goqu.C("timestamp").Asc())
 			}
 
 			expr = expr.Offset(uint(it.fromOffset)).Limit(uint(it.pageSize))

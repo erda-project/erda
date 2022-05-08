@@ -22,6 +22,8 @@ import (
 type Log struct {
 	UniqId    string            `json:"-" ch:"_id"`
 	OrgName   string            `json:"-" ch:"org_name"`
+	TenantId  string            `json:"-" ch:"tenant_id"`
+	GroupId   string            `json:"-" ch:"group_id"`
 	Source    string            `json:"source" ch:"source"`
 	ID        string            `json:"id" ch:"id"`
 	Stream    string            `json:"stream" ch:"stream"`
