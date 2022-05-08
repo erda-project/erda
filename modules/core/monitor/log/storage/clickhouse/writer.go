@@ -50,15 +50,23 @@ func (p *provider) NewWriter(ctx context.Context) (storekit.BatchWriter, error) 
 					return nil, storekit.ErrExitConsume
 				}
 			}
-
-			id := logData.ID
-			if len(id) > 12 {
-				id = id[:12]
-			}
-			logData.Log.UniqId = strconv.FormatInt(logData.Timestamp, 36) + "-" + id
-			logData.OrgName = logData.Tags["dice_org_name"]
+			p.fillLogInfo(&logData.Log)
 			item.Table = table
 			return item, nil
 		},
 	}), nil
+}
+
+func (p *provider) fillLogInfo(logData *log.Log) {
+	id := logData.ID
+	if len(id) > 12 {
+		id = id[:12]
+	}
+	logData.UniqId = strconv.FormatInt(logData.Timestamp, 36) + "-" + id
+	logData.OrgName = logData.Tags["dice_org_name"]
+	tenantId := logData.Tags["monitor_log_key"]
+	if len(tenantId) == 0 {
+		tenantId = logData.Tags["msp_env_id"]
+	}
+	logData.TenantId = tenantId
 }
