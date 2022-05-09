@@ -177,7 +177,7 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 			case route == nil:
 				l.WithError(err).
 					WithField("tb_gateway_package_api.id", api.Id).
-					Warnf("failed to routeDB.GetByApiId(%s): not found", api.Id)
+					Warnf("failed to routeDB.GetByApiId(%s): not found", gatewayApi.Id)
 			default:
 				routes[route.RouteId] = struct{}{}
 			}
