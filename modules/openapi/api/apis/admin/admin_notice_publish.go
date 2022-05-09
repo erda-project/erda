@@ -25,7 +25,7 @@ import (
 var ADMIN_NOTICE_PUBLISH = apis.ApiSpec{
 	Path:         "/api/notices/<id>/actions/publish",
 	BackendPath:  "/api/notices/<id>/actions/publish",
-	Host:         "admin.marathon.l4lb.thisdcos.directory:9095",
+	Host:         "erda-server.marathon.l4lb.thisdcos.directory:9095",
 	Scheme:       "http",
 	Method:       http.MethodPut,
 	CheckLogin:   true,
