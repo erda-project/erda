@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS <database>.<table_name> ON CLUSTER '{cluster}'
     `org_name` LowCardinality(String),
     `tenant_id` LowCardinality(String),
     `group_id` String,
-    `stream` Enum8('stdout' = 1,'stderr' = 2),
+    `stream` Enum8('' = 0, 'stdout' = 1,'stderr' = 2),
     `offset` Int64,
     `content` String,
     `tags` Map(String,String),
