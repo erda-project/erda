@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS <database>.logs ON CLUSTER '{cluster}'
     `tags.dice_application_id` LowCardinality(String) MATERIALIZED tags['dice_application_id'],
 
     INDEX idx__id(_id) TYPE minmax GRANULARITY 1,
-    INDEX idx_tace_id(tags.trace_id) TYPE bloom_filter GRANULARITY 1,
+    INDEX idx_trace_id(tags.trace_id) TYPE bloom_filter GRANULARITY 1,
     INDEX idx_id(id) TYPE bloom_filter GRANULARITY 1,
     INDEX idx_monitor_log_key(tags.monitor_log_key) TYPE bloom_filter GRANULARITY 1,
     INDEX idx_msp_env_id(tags.msp_env_id) TYPE bloom_filter GRANULARITY 1,
