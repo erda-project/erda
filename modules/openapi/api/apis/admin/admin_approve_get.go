@@ -22,7 +22,7 @@ import (
 var ADMIN_APPROVE_GET = apis.ApiSpec{
 	Path:         "/api/approves/<approveId>",
 	BackendPath:  "/api/approves/<approveId>",
-	Host:         "admin.marathon.l4lb.thisdcos.directory:9095",
+	Host:         "erda-server.marathon.l4lb.thisdcos.directory:9095",
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,
