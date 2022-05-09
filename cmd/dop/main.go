@@ -33,6 +33,7 @@ import (
 	_ "github.com/erda-project/erda-proto-go/core/pipeline/definition/client"
 	_ "github.com/erda-project/erda-proto-go/core/pipeline/source/client"
 	_ "github.com/erda-project/erda-proto-go/core/services/errorbox/client"
+	_ "github.com/erda-project/erda-proto-go/core/token/client"
 	_ "github.com/erda-project/erda-proto-go/orchestrator/addon/mysql/client"
 	_ "github.com/erda-project/erda/modules/dop"
 	_ "github.com/erda-project/erda/modules/dop/providers/api-management"

@@ -17,6 +17,7 @@ package project
 import (
 	"archive/zip"
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -36,11 +37,13 @@ import (
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 
+	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/modules/dop/services/namespace"
 	"github.com/erda-project/erda/pkg/filehelper"
+	"github.com/erda-project/erda/pkg/oauth2/tokenstore/mysqltokenstore"
 )
 
 const (
@@ -73,17 +76,19 @@ type PackageContext struct {
 }
 
 type PackageDataDirector struct {
-	Creator   PackageDataCreator
-	bdl       *bundle.Bundle
-	namespace *namespace.Namespace
-	errs      []error
+	Creator      PackageDataCreator
+	bdl          *bundle.Bundle
+	namespace    *namespace.Namespace
+	errs         []error
+	tokenService tokenpb.TokenServiceServer
 }
 
-func (t *PackageDataDirector) New(creator PackageDataCreator, bdl *bundle.Bundle, namespace *namespace.Namespace) {
+func (t *PackageDataDirector) New(creator PackageDataCreator, bdl *bundle.Bundle, namespace *namespace.Namespace, tokenSvc tokenpb.TokenServiceServer) {
 	t.Creator = creator
 	t.bdl = bdl
 	t.namespace = namespace
 	t.errs = make([]error, 0)
+	t.tokenService = tokenSvc
 }
 
 func (t *PackageDataDirector) Construct() error {
@@ -550,13 +555,21 @@ func (t *PackageDataDirector) makeGittarRemoteUrl() (string, error) {
 		gittar = fmt.Sprintf("http://%s", gittar)
 	}
 	logrus.Infof("gittar url %s", gittar)
-
-	members, err := t.bdl.GetMemberByUserAndScope(apistructs.OrgScope, t.Creator.GetContext().UserID, t.Creator.GetContext().OrgID)
+	// query creator PAT when we create repo in app.
+	res, err := t.tokenService.QueryTokens(context.Background(), &tokenpb.QueryTokensRequest{
+		Scope:     string(apistructs.OrgScope),
+		ScopeId:   strconv.FormatUint(t.Creator.GetContext().OrgID, 10),
+		Type:      mysqltokenstore.PAT.String(),
+		CreatorId: t.Creator.GetContext().UserID,
+	})
 	if err != nil {
 		return "", err
 	}
-	token := members[0].Token
+	if res.Total == 0 {
+		return "", errors.New("the member is not exist")
+	}
 
+	token := res.Data[0].AccessKey
 	u := url.UserPassword("git", token)
 	gittarUrl, err := url.Parse(gittar)
 	if err != nil {
@@ -622,7 +635,7 @@ func (p *Project) ParsePackage(r io.ReadCloser) (*apistructs.ProjectPackage, err
 	}
 	packageZip := PackageZip{reader: zipReader}
 	packageDirector := PackageDataDirector{}
-	packageDirector.New(&packageZip, p.bdl, p.namespace)
+	packageDirector.New(&packageZip, p.bdl, p.namespace, p.tokenService)
 	if err := packageDirector.Construct(); err != nil {
 		return nil, err
 	}
