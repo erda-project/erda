@@ -50,5 +50,5 @@ en:
   autotest.plan.operations: Operations
   autotest.plan.edit: Edit
   autotest.plan.execute: Execute
-  autotest.plan.configuration.information: Configuration information
-  searchPlan: Search plan name
+  autotest.plan.configuration.information: Configuration Information
+  searchPlan: Search by plan name

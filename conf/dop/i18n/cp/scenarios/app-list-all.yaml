@@ -28,7 +28,7 @@ en:
   projectInfo: Project
   runtime: Number of application instances
   updatedAt: Updated time
-  appType: Application type
+  appType: App type
   all: All
   appModeLIBRARY: Library application
   appModeBIGDATA: Bigdata application
@@ -41,6 +41,6 @@ en:
   hourAgo: hour(s) ago
   minuteAgo: minute(s) ago
   secondAgo: second(s) ago
-  defaultAppDescription: Edit description in application setting
+  defaultAppDescription: Edit the description in app settings
   myApp: My apps
   openMrCount: Number of merge requests in progress

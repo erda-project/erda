@@ -183,19 +183,19 @@ en:
   step: Step
   subtask: Number of subtasks
   apiPath: Interface path
-  addScene: Add scene
-  refSceneSet: Reference scene set
-  editSceneSet: Edit scene set
-  editScene: Edit scene
-  copyToAnotherSceneSet: Copy to other scene set
-  exportSceneSet: Export scene set
-  copyScene: Copy scene
+  addScene: Add Scene
+  refSceneSet: Reference Scene Set
+  editSceneSet: Edit Scene Set
+  editScene: Edit Scene
+  copyToAnotherSceneSet: Copy to Other Scene Set
+  exportSceneSet: Export Scene Set
+  copyScene: Copy Scene
   addParallelScene: Add parallel scene
   changeToSerial: Change to serial
   sceneList: Scene list
   execute: Execute
-  configInfo: Configuration information
-  executeDetail: Execution details
+  configInfo: Configuration Information
+  executeDetail: Execution Details
   sceneInput: Input parameters
   paramName: Parameter name
   refValue: Reference value
@@ -221,7 +221,7 @@ en:
   waitTime: Wait time(s)
   sceneOut: Output parameters
   refresh: Refresh
-  execHistory: Execution history
+  execHistory: Execution History
   pipelineID: Pipeline ID
   duration: Duration
   totalApi: Total interfaces
@@ -287,5 +287,5 @@ en:
   version: Version
   executor: Executor
   triggerTime: Trigger time
-  searchPlaceHolder: Search (stay tuned)
+  searchPlaceHolder: Search (coming soon)
   backLatestResult: Back to latest record

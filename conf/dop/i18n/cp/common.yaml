@@ -341,10 +341,10 @@ en:
   expireIn7Days: ExpireIn7Days
   expireIn30Days: ExpireIn30Days
   expireInFuture: ExpireInFuture
-  urgent: URGENT
-  high: HIGH
-  normal: NORMAL
-  low: LOW
+  urgent: Urgent
+  high: High
+  normal: Medium
+  low: Low
   move-to-priority: MoveToPriority
   move-to: MoveTo
   move-out: MoveOut
@@ -360,19 +360,19 @@ en:
   empty-filter-bookmark: Unselected
   choose-filter-bookmark: Choose Filter
   save-filter-bookmark-placeholder: 'Please enter a name to save the current filter'
-  sprint: Sprint
+  sprint: Iteration
   all: All
-  choose-sprint: Choose Sprint
+  choose-sprint: Choose the iteration
   title: Title
   please-enter-title-or-id: "Please enter title or ID"
   label: Label
-  please-choose-label: Please choose label
+  please-choose-label: Choose the label
   priority: Priority
   complexity: Complexity
-  HARD: Hard
-  NORMAL: Normal
+  HARD: Complex
+  NORMAL: Medium
   EASY: Easy
-  choose-priorities: Choose Priorities
+  choose-priorities: Choose the priority
   severity: Severity
   choose-severity: Choose Severity
   fatal: FATAL
@@ -381,21 +381,21 @@ en:
   slight: SLIGHT
   suggest: SUGGEST
   creator: Creator
-  choose-yourself: Choose Yourself
+  choose-yourself: Choose yourself
   assignee: Assignee
-  responsible-person: Responsible Person
+  responsible-person: Principal
   epic: EPIC
   task-type: Task Type
   import-source: Import source
   demand-design: Demand Design
   architecture-design: Architecture Design
   code-development: Code Development
-  created-at: Created At
+  created-at: Creation date
   deadline: Deadline
   closed-at: Closed At
-  requirement: REQUIREMENT
-  bug: BUG
-  task: TASK
+  requirement: Requirement
+  bug: Bug
+  task: Task
   create-issue: Create Issue
   create-requirement: Create Requirement
   create-bug: Create Bug
@@ -427,26 +427,26 @@ en:
   desc: Description
   status: Status
   result: Result
-  test-case-num-total: Test Case Total Number
-  test-case-num-succ: Pass
-  test-case-num-fail: Fail
-  test-case-num-block: Block
+  test-case-num-total: Total number of test cases
+  test-case-num-succ: Passed
+  test-case-num-fail: Not passed
+  test-case-num-block: Blocked
   test-case-num-init: Init
-  test-case-rate-passed: Passed Rate
-  test-case-rate-executed: Executed Rate
+  test-case-rate-passed: Pass rate
+  test-case-rate-executed: Execution rate
   no-iteration: no iteration
   test-case-status: Status
   block: Block
   notpassed: Not Passed
-  mt-plan-chart: Manual Test Plan Chart
-  INIT: Not Executed
+  mt-plan-chart: Chart of manual test plan
+  INIT: Not executed
   BLOCK: Block
   PASSED: Success
   FAIL: Failed
-  at-case-rate-trending-chart: Auto Test Executed&Pass Rate Trending Chart
-  at-plan-latest-waterfall-chart: Auto Test Plan Execute Detail Waterfall Chart
-  auto-test-scene-num: Scene Number
-  auto-test-api-num: Api Number
+  at-case-rate-trending-chart: Execution and pass rate trends of automated testing
+  at-plan-latest-waterfall-chart: Waterfall chart of auto test plan execution details
+  auto-test-scene-num: Scene
+  auto-test-api-num: Api
   user-not-exist: user does not exist
   radar-manual-test-plan: Manual Test Plan
   radar-auto-test-plan: Auto Test Plan
@@ -455,11 +455,11 @@ en:
   radar-total-quality-score: Total Quality Score
   radar-bug-reopen-rate: Bug Reopen Rate
   radar-code-coverage: Code Coverage
-  scene-avg-cost: Scene - Execute Avg Cost Top500
-  scene-failed-rate: Scene - Execute Failed Rate Top500
-  scene-passed-rate: Scene - Execute Pass Rate Top500
-  api-avg-cost: Api - Execute Avg Cost Top500
-  api-failed-rate: Api - Execute Failed Rate Top500
+  scene-avg-cost: Scene - By average execution time Top 500
+  scene-failed-rate: Scene - By execution failure rate Top 500
+  scene-passed-rate: Scene - By execution pass rate Top 500
+  api-avg-cost: API - By average execution time Top 500
+  api-failed-rate: API - By execution failure rate Top 500
   test-dashboard-tip: If there is no data under the selected iteration, please confirm whether there is a related test plan under the iteration, and whether the existing test plan is configured correctly for the iteration
   week: Last week
   month: Last month
@@ -486,7 +486,7 @@ en:
   cancel-confirm: Forced cancellation will result in neither the details nor the report being generated!
   project-code-coverage-trend: Project code coverage trends
   line-coverage: Line coverage
-  statistics-object-configuration: Statistics object configuration
+  statistics-object-configuration: Statistical Object Configuration
   contain: Contain
   enter-contain-expression: Please enter an expression containing
   enter-not-contain-expression: Please enter an expression non-containing
@@ -496,12 +496,12 @@ en:
   end: End
   dev-env: Development Environment
   test-env: Test Environment
-  feature-env: Pre-release Environment
+  feature-env: Staging Environment
   prod-env: Production Environment
-  coverage-plugin-not-enable-tip: The coverage plugin is not enabled in the current environment, please refer to
+  coverage-plugin-not-enable-tip: The coverage addon is not enabled in the current environment. Please refer to
   coverage-processing-tip: Code coverage statistics are in progress, start and end buttons are unavailable, please wait (time-consuming depends on the number and size of the application), and check the results after manual refresh
   coverage-generating-tip: During code coverage statistics generation, the start and end buttons are unavailable, please wait (time-consuming depends on the number and size of the application), and check the results after manual refresh
-  enable-coverage-docs: How to enable integration test code coverage statistics
+  enable-coverage-docs: Code Coverage Statistics in Integration Testing.
   report-generating: Report generating
   stop-by-user: Stop By User
   coverage-processing: Processing
@@ -513,17 +513,17 @@ en:
   current-line-coverage: Current line coverage
   log: Log
   statistics-starter: Statistics Starter
-  start-time: Start Time
+  start-time: Start time
   statistics-finisher: Statistics Finisher
   statistics-end-time: Statistics End Time
-  operate: Operate
+  operate: Operations
   statistics-start: Start
   within-a-week: Within a week
   within-a-month: Within a month
   report-details: Report details
   coverage-statistics-record: Project code coverage statistics execution record
-  execute-record: Execution record
-  tip-message: 'Note: The trend of code coverage mainly reflects the number of lines of code of a project (not a single or partial application) covered by test cases'
+  execute-record: Execution Records
+  tip-message: 'Note: The trend of code coverage mainly reflects the number of lines of code in a project (not a single or partial app) covered by test cases.'
   config-tip-message: 'Note: The statistical range can be determined by entering expressions in include and exclude; multiple expressions can be separated by colons (: ), and * wildcards are supported. \n Example: org/apache* will match all source directories starting with org/apache, */model will match all directories ending with model, and foo/*:bar/* will match all directories starting with foo or bar'
   searchByName: Search by name
   member: Member
@@ -553,7 +553,7 @@ en:
   updatedBy: Updated by
   creationTime: Creation time
   updateTime: Update time
-  enterName: Please enter a name
+  enterName: Please enter the name
   image: Image
   command: Command
   enterCommand: Please enter the command
@@ -578,7 +578,7 @@ en:
   please-choose-branch: Please choose branch
   pipeline: Pipeline
   pipelineStatus: Status
-  costTime: Cost time
+  costTime: Time
   applicationName: Application name
   branch: Branch
   startTime: Begin time
@@ -634,8 +634,19 @@ en:
   publicProperty: Property
   exit: Exit
   exitProjectConfirm: After exiting the current project, you will no longer have project collaboration permission. If you want to join again, you need to be invited by the project administrator. Are you sure you want to exit?
-  searchAppName: Search app name
+  searchAppName: Search by app name
   unfinishedIssue: Unfinished issue
   sourceFile: source file
   updateName: Update name
   update: Update
+  deploymentStatus: Deployment status
+  select status: Select the status
+  OK: Completed
+  app: App
+  deploy: Deployment
+  deploymentOrderName: Deployment
+  select deploymentOrderName: Select the deployment
+  service: Service
+  running duration: Deployment time
+  deployTime: Deployment time
+  restart: Restart

@@ -14,7 +14,7 @@ zh:
   publicProjectEmpty: 当前没有任何公开项目
 en:
   myProject: My Projects
-  publicProject: Public Projects
+  publicProject: Public
   privateProject: Private
   project.list.all.app.number: "Number of apps"
   project.list.all.joined: "Joined"
