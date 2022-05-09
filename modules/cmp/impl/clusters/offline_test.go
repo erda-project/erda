@@ -106,7 +106,7 @@ func TestOfflineWithDeleteClusterFailed(t *testing.T) {
 	})
 
 	_, _, err := c.OfflineEdgeCluster(context.Background(), req, "", "")
-	assert.Error(t, err)
+	assert.NoError(t, err)
 }
 
 func TestOfflineWithDeleteAKFailed(t *testing.T) {
@@ -185,7 +185,7 @@ func TestBatchOfflineEdgeCluster(t *testing.T) {
 		return nil
 	})
 
-	err := c.BatchOfflineEdgeCluster(req, "")
+	err := c.BatchOfflineEdgeCluster(context.Background(), req, "")
 	assert.Error(t, err)
 }
 

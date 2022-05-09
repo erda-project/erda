@@ -138,8 +138,8 @@ func removeScheduleConfigSensitiveInfo(csc *clusterpb.ClusterSchedConfig) {
 }
 
 func removeSysConfSensitiveInfo(sc *clusterpb.SysConf) {
-	sc.Ssh = nil
-	sc.Platform = nil
+	sc.Ssh = &clusterpb.SSH{}
+	sc.Platform = &clusterpb.Platform{}
 	sc.MainPlatform = nil
 }
 

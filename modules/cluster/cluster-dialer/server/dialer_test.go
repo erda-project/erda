@@ -29,6 +29,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	clusteragent "github.com/erda-project/erda/modules/cluster/cluster-agent/client"
 	clientconfig "github.com/erda-project/erda/modules/cluster/cluster-agent/config"
 	"github.com/erda-project/erda/modules/cluster/cluster-dialer/auth"
@@ -44,7 +45,7 @@ const (
 
 func startServer(etcd *clientv3.Client) (context.Context, context.CancelFunc) {
 	ctx, cancel := context.WithCancel(context.Background())
-	go Start(ctx, nil, &serverconfig.Config{
+	go Start(ctx, &fakeClusterSvc{}, nil, &serverconfig.Config{
 		Listen:          dialerListenAddr,
 		NeedClusterInfo: false,
 	}, etcd)
@@ -57,6 +58,18 @@ type fakeKV struct {
 
 func (f *fakeKV) Put(ctx context.Context, key, val string, opts ...clientv3.OpOption) (*clientv3.PutResponse, error) {
 	return nil, nil
+}
+
+type fakeClusterSvc struct {
+	clusterpb.ClusterServiceServer
+}
+
+func (f *fakeClusterSvc) GetCluster(context.Context, *clusterpb.GetClusterRequest) (*clusterpb.GetClusterResponse, error) {
+	return &clusterpb.GetClusterResponse{Data: &clusterpb.ClusterInfo{Name: "testCluster"}}, nil
+}
+
+func (f *fakeClusterSvc) PatchCluster(context.Context, *clusterpb.PatchClusterRequest) (*clusterpb.PatchClusterResponse, error) {
+	return &clusterpb.PatchClusterResponse{}, nil
 }
 
 func Test_DialerContext(t *testing.T) {

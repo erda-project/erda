@@ -65,8 +65,16 @@ func (f *fakeClusterServiceServer) ListCluster(context.Context, *clusterpb.ListC
 	}}, nil
 }
 
+func (f *fakeClusterServiceServer) DeleteCluster(context.Context, *clusterpb.DeleteClusterRequest) (*clusterpb.DeleteClusterResponse, error) {
+	return &clusterpb.DeleteClusterResponse{}, nil
+}
+
 func (f *fakeClusterServiceServer) UpdateCluster(context.Context, *clusterpb.UpdateClusterRequest) (*clusterpb.UpdateClusterResponse, error) {
 	return &clusterpb.UpdateClusterResponse{}, nil
+}
+
+func (f *fakeClusterServiceServer) CreateCluster(context.Context, *clusterpb.CreateClusterRequest) (*clusterpb.CreateClusterResponse, error) {
+	return &clusterpb.CreateClusterResponse{}, nil
 }
 
 ////go:generate mockgen -destination=./credential_ak_test.go -package clusters github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb AccessKeyServiceServer
@@ -85,7 +93,7 @@ func Test_GetOrCreateAccessKey_Create(t *testing.T) {
 
 	c := New(db, bdl, akService, &fakeClusterServiceServer{})
 
-	monkey.PatchInstanceMethod(reflect.TypeOf(c), "CheckCluster", func(_ *Clusters, _ string) error {
+	monkey.PatchInstanceMethod(reflect.TypeOf(c), "CheckCluster", func(_ *Clusters, _ context.Context, _ string) error {
 		return nil
 	})
 

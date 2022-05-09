@@ -70,7 +70,7 @@ func patch(bdl *bundle.Bundle, c *Clusters) {
 	})
 
 	// monkey patch Credential with core services
-	monkey.PatchInstanceMethod(reflect.TypeOf(c), "GetOrCreateAccessKey", func(_ *Clusters, cluster string) (*tokenpb.Token, error) {
+	monkey.PatchInstanceMethod(reflect.TypeOf(c), "GetOrCreateAccessKey", func(_ *Clusters, _ context.Context, cluster string) (*tokenpb.Token, error) {
 		if strings.Contains(cluster, "without-access-key") {
 			return nil, fmt.Errorf("get or create access key failed")
 		}
