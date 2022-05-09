@@ -22,6 +22,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/i18n"
+	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/modules/core-services/dao"
 	"github.com/erda-project/erda/modules/core-services/providers/errorbox"
 	"github.com/erda-project/erda/modules/core-services/services/permission"
@@ -35,7 +36,8 @@ type provider struct {
 	ResourceTrans i18n.Translator           `translator:"resource-trans"`
 	oauth2server  *oauth2.OAuth2Server
 	perm          *permission.Permission
-	DB            *gorm.DB `autowired:"mysql-client"`
+	DB            *gorm.DB                   `autowired:"mysql-client"`
+	TokenService  tokenpb.TokenServiceServer `autowired:"erda.core.token.TokenService"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) (err error) {

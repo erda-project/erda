@@ -38,7 +38,7 @@ type provider struct {
 	Cfg                  *config
 	Register             transport.Register `autowired:"service-register"`
 	credentialKeyService *accessKeyService
-	TokenService         tokenpb.TokenServiceServer `autowired:erda.core.token.TokenService"`
+	TokenService         tokenpb.TokenServiceServer `autowired:"erda.core.token.TokenService"`
 	bdl                  *bundle.Bundle
 	audit                audit.Auditor
 	Tenant               tenantpb.TenantServiceServer `autowired:"erda.msp.tenant.TenantService"`

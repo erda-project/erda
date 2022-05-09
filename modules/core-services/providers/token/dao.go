@@ -23,12 +23,11 @@ import (
 	"github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/pkg/common/errors"
 	tokenstore "github.com/erda-project/erda/pkg/oauth2/tokenstore/mysqltokenstore"
-	"github.com/erda-project/erda/pkg/secret"
 )
 
 type Dao interface {
 	QueryToken(ctx context.Context, req *pb.QueryTokensRequest) ([]tokenstore.TokenStoreItem, int64, error)
-	CreateToken(ctx context.Context, req *pb.CreateTokenRequest) (*tokenstore.TokenStoreItem, error)
+	CreateToken(ctx context.Context, obj tokenstore.TokenStoreItem) (*tokenstore.TokenStoreItem, error)
 	GetToken(ctx context.Context, req *pb.GetTokenRequest) (*tokenstore.TokenStoreItem, error)
 	UpdateToken(ctx context.Context, req *pb.UpdateTokenRequest) error
 	DeleteToken(ctx context.Context, req *pb.DeleteTokenRequest) error
@@ -61,6 +60,9 @@ func (d *dao) QueryToken(ctx context.Context, req *pb.QueryTokensRequest) ([]tok
 	if req.Access != "" {
 		where["access_key"] = req.Access
 	}
+	if req.CreatorId != "" {
+		where["creator_id"] = req.CreatorId
+	}
 
 	var count int64
 	cres := q.Where(where).Count(&count)
@@ -83,8 +85,7 @@ func (d *dao) QueryToken(ctx context.Context, req *pb.QueryTokensRequest) ([]tok
 	return objs, count, nil
 }
 
-func (d *dao) CreateToken(ctx context.Context, req *pb.CreateTokenRequest) (*tokenstore.TokenStoreItem, error) {
-	obj := toModel(req)
+func (d *dao) CreateToken(ctx context.Context, obj tokenstore.TokenStoreItem) (*tokenstore.TokenStoreItem, error) {
 	q := d.db.Create(&obj)
 	if q.Error != nil {
 		return nil, q.Error
@@ -120,17 +121,4 @@ func (d *dao) UpdateToken(ctx context.Context, req *pb.UpdateTokenRequest) error
 func (d *dao) DeleteToken(ctx context.Context, req *pb.DeleteTokenRequest) error {
 	return d.db.Model(&tokenstore.TokenStoreItem{}).Scopes(NotDeleted).Where(&tokenstore.TokenStoreItem{ID: req.Id}).
 		Update(map[string]interface{}{"soft_deleted_at": time.Now().UnixNano() / 1e6}).Error
-}
-
-func toModel(req *pb.CreateTokenRequest) tokenstore.TokenStoreItem {
-	pair := secret.CreateAkSkPair()
-	return tokenstore.TokenStoreItem{
-		AccessKey:   pair.AccessKeyID,
-		SecretKey:   pair.SecretKey,
-		Description: req.Description,
-		Scope:       req.Scope,
-		ScopeId:     req.ScopeId,
-		CreatorID:   req.CreatorId,
-		Type:        req.Type,
-	}
 }

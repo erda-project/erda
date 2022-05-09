@@ -109,6 +109,7 @@ message QueryTokensRequest {
   string status = 5;
   int64 pageNo = 6;
   int64 pageSize = 7;
+  string creatorId = 8;
 }
 
 message QueryTokensResponse {

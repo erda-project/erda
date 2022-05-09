@@ -89,6 +89,7 @@ type TokenType string
 const (
 	OAuth2    TokenType = "OAuth2"
 	AccessKey TokenType = "AccessKey"
+	PAT       TokenType = "PAT"
 )
 
 func (s TokenType) String() string {

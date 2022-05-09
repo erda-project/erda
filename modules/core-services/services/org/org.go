@@ -16,6 +16,7 @@
 package org
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -26,6 +27,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
+	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/core-services/conf"
@@ -33,19 +35,20 @@ import (
 	"github.com/erda-project/erda/modules/core-services/model"
 	"github.com/erda-project/erda/modules/core-services/services/apierrors"
 	"github.com/erda-project/erda/modules/core-services/types"
-	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/numeral"
+	"github.com/erda-project/erda/pkg/oauth2/tokenstore/mysqltokenstore"
 	"github.com/erda-project/erda/pkg/strutil"
 	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 // Org 资源对象操作封装
 type Org struct {
-	db       *dao.DBClient
-	uc       *ucauth.UCClient
-	bdl      *bundle.Bundle
-	redisCli *redis.Client
-	trans    i18n.Translator
+	db           *dao.DBClient
+	uc           *ucauth.UCClient
+	bdl          *bundle.Bundle
+	redisCli     *redis.Client
+	trans        i18n.Translator
+	tokenService tokenpb.TokenServiceServer
 }
 
 // Option 定义 Org 对象的配置选项
@@ -92,6 +95,12 @@ func WithRedisClient(cli *redis.Client) Option {
 func WithI18n(trans i18n.Translator) Option {
 	return func(o *Org) {
 		o.trans = trans
+	}
+}
+
+func WithTokenSvc(tokenService tokenpb.TokenServiceServer) Option {
+	return func(o *Org) {
+		o.tokenService = tokenService
 	}
 }
 
@@ -175,6 +184,16 @@ func (o *Org) Create(createReq apistructs.OrgCreateRequest) (*model.Org, error) 
 		logrus.Warnf("failed to query user info, (%v)", err)
 	}
 	if len(users) > 0 {
+		_, err := o.tokenService.CreateToken(context.Background(), &tokenpb.CreateTokenRequest{
+			Scope:     string(apistructs.OrgScope),
+			ScopeId:   strconv.FormatInt(org.ID, 10),
+			Type:      mysqltokenstore.PAT.String(),
+			CreatorId: userID,
+		})
+		if err != nil {
+			logrus.Warnf("failed to create token, (%v)", err)
+		}
+
 		member := model.Member{
 			ScopeType:  apistructs.OrgScope,
 			ScopeID:    org.ID,
@@ -187,7 +206,6 @@ func (o *Org) Create(createReq apistructs.OrgCreateRequest) (*model.Org, error) 
 			Avatar:     users[0].AvatarURL,
 			UserSyncAt: time.Now(),
 			OrgID:      org.ID,
-			Token:      uuid.UUID(),
 		}
 		if err = o.db.CreateMember(&member); err != nil {
 			logrus.Warnf("failed to insert member info to db, (%v)", err)

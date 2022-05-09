@@ -25,18 +25,21 @@ import (
 	"gopkg.in/yaml.v2"
 
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
+	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/conf"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/oauth2/tokenstore/mysqltokenstore"
 )
 
 type Application struct {
-	db  *dao.DBClient
-	bdl *bundle.Bundle
-	cms cmspb.CmsServiceServer
+	db           *dao.DBClient
+	bdl          *bundle.Bundle
+	cms          cmspb.CmsServiceServer
+	tokenService tokenpb.TokenServiceServer
 }
 
 type Option func(*Application)
@@ -64,6 +67,12 @@ func WithBundle(bdl *bundle.Bundle) Option {
 func WithPipelineCms(cms cmspb.CmsServiceServer) Option {
 	return func(a *Application) {
 		a.cms = cms
+	}
+}
+
+func WithTokenSvc(tokenService tokenpb.TokenServiceServer) Option {
+	return func(a *Application) {
+		a.tokenService = tokenService
 	}
 }
 
@@ -103,12 +112,20 @@ func (a *Application) Init(initReq *apistructs.ApplicationInitRequest) (uint64, 
 
 	// generate remote url
 	var token string
-	if members, err := a.bdl.GetMemberByUserAndScope(apistructs.OrgScope, initReq.UserID, app.OrgID); err == nil && members != nil {
-		token = members[0].Token
+	res, err := a.tokenService.QueryTokens(context.Background(), &tokenpb.QueryTokensRequest{
+		Scope:     string(apistructs.OrgScope),
+		ScopeId:   strconv.FormatUint(app.OrgID, 10),
+		Type:      mysqltokenstore.PAT.String(),
+		CreatorId: initReq.UserID,
+	})
+	if err != nil {
+		return 0, err
 	}
-	if token == "" {
-		return 0, errors.Errorf("not found user token")
+	if res.Total == 0 {
+		return 0, errors.New("the member is not exist")
 	}
+	token = res.Data[0].AccessKey
+
 	org, err := a.bdl.GetOrg(app.OrgID)
 	if err != nil {
 		return 0, err

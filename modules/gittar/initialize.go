@@ -79,6 +79,7 @@ func (p *provider) Initialize() error {
 	webcontext.WithBundle(diceBundle)
 	webcontext.WithUCAuth(ucUserAuth)
 	webcontext.WithEtcdClient(p.EtcdClient)
+	webcontext.WithTokenService(&p.TokenService)
 
 	e := echo.New()
 	systemGroup := e.Group("/_system")

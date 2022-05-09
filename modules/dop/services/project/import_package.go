@@ -333,7 +333,7 @@ func (p *Project) ImportProjectPackage(record *dao.TestFileRecord) {
 		TmpDir: tmpDir,
 	}
 	packageDirector := PackageDataDirector{}
-	packageDirector.New(&packageZip, p.bdl, p.namespace)
+	packageDirector.New(&packageZip, p.bdl, p.namespace, p.tokenService)
 	if err := packageDirector.Construct(); err != nil {
 		logrus.Errorf("%s failed to construct package data, err: %v", projectPackageResource, err)
 		p.updatePackageFileRecord(id, apistructs.FileRecordStateFail, "", packageDirector.GenErrInfo())

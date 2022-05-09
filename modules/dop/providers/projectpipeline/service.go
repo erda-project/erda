@@ -23,6 +23,7 @@ import (
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	dpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
 	sourcepb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
+	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	guidepb "github.com/erda-project/erda-proto-go/dop/guide/pb"
 	"github.com/erda-project/erda-proto-go/dop/projectpipeline/pb"
 	"github.com/erda-project/erda/bundle"
@@ -45,6 +46,7 @@ type ProjectPipelineService struct {
 	trans              i18n.Translator
 	GuideSvc           guidepb.GuideServiceServer
 	PipelineCron       cronpb.CronServiceServer
+	tokenService       tokenpb.TokenServiceServer
 }
 
 func (p *ProjectPipelineService) WithPipelineSvc(svc *pipeline.Pipeline) {

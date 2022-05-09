@@ -27,6 +27,7 @@ import (
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	dpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
 	sourcepb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
+	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	guidepb "github.com/erda-project/erda-proto-go/dop/guide/pb"
 	"github.com/erda-project/erda-proto-go/dop/projectpipeline/pb"
 	"github.com/erda-project/erda/bundle"
@@ -52,6 +53,7 @@ type provider struct {
 	PipelineCms        cmspb.CmsServiceServer       `autowired:"erda.core.pipeline.cms.CmsService"`
 	GuideSvc           guidepb.GuideServiceServer   `autowired:"erda.dop.guide.GuideService" required:"true"`
 	PipelineCron       cronpb.CronServiceServer     `autowired:"erda.core.pipeline.cron.CronService" required:"true"`
+	TokenService       tokenpb.TokenServiceServer   `autowired:"erda.core.token.TokenService"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -70,6 +72,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		trans:              p.Trans,
 		GuideSvc:           p.GuideSvc,
 		PipelineCron:       p.PipelineCron,
+		tokenService:       p.TokenService,
 	}
 	if p.Register != nil {
 		pb.RegisterProjectPipelineServiceImp(p.Register, p.projectPipelineSvc, apis.Options())

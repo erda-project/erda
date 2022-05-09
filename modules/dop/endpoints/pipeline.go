@@ -28,6 +28,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
+	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/conf"
@@ -43,6 +44,7 @@ import (
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/loop"
+	"github.com/erda-project/erda/pkg/oauth2/tokenstore/mysqltokenstore"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -419,22 +421,27 @@ func (e *Endpoints) pipelineRun(ctx context.Context, r *http.Request, vars map[s
 
 // UpdateCmsNsConfigs update CmsNsConfigs
 func (e *Endpoints) UpdateCmsNsConfigs(userID string, orgID uint64) error {
-	members, err := e.bdl.GetMemberByUserAndScope(apistructs.OrgScope, userID, orgID)
+	res, err := e.tokenService.QueryTokens(context.Background(), &tokenpb.QueryTokensRequest{
+		Scope:     string(apistructs.OrgScope),
+		ScopeId:   strconv.FormatUint(orgID, 10),
+		Type:      mysqltokenstore.PAT.String(),
+		CreatorId: userID,
+	})
 	if err != nil {
 		return err
 	}
 
-	if len(members) <= 0 {
+	if res.Total == 0 {
 		return errors.New("the member is not exist")
 	}
-
+	// TODO: gittar token in pipeline may not use PAT
 	_, err = e.pipelineCms.UpdateCmsNsConfigs(apis.WithInternalClientContext(context.Background(), "dop"),
 		&cmspb.CmsNsConfigsUpdateRequest{
 			Ns:             utils.MakeUserOrgPipelineCmsNs(userID, orgID),
 			PipelineSource: apistructs.PipelineSourceDice.String(),
 			KVs: map[string]*cmspb.PipelineCmsConfigValue{
 				utils.MakeOrgGittarUsernamePipelineCmsNsConfig(): {Value: "git", EncryptInDB: true},
-				utils.MakeOrgGittarTokenPipelineCmsNsConfig():    {Value: members[0].Token, EncryptInDB: true}},
+				utils.MakeOrgGittarTokenPipelineCmsNsConfig():    {Value: res.Data[0].AccessKey, EncryptInDB: true}},
 		})
 
 	return err

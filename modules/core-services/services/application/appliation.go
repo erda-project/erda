@@ -32,7 +32,6 @@ import (
 	"github.com/erda-project/erda/modules/core-services/model"
 	"github.com/erda-project/erda/modules/core-services/types"
 	"github.com/erda-project/erda/pkg/common/apis"
-	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/gittarutil"
 	"github.com/erda-project/erda/pkg/strutil"
 	"github.com/erda-project/erda/pkg/ucauth"
@@ -194,7 +193,6 @@ func (a *Application) Create(userID string, createReq *apistructs.ApplicationCre
 			OrgID:         org.ID,
 			ProjectID:     application.ProjectID,
 			ApplicationID: application.ID,
-			Token:         uuid.UUID(),
 		}
 		memberExtra := model.MemberExtra{
 			UserID:        userID,

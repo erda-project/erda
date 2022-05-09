@@ -25,6 +25,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/core-services/conf"
 	"github.com/erda-project/erda/modules/core-services/dao"
@@ -34,6 +35,7 @@ import (
 	"github.com/erda-project/erda/pkg/filehelper"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httputil"
+	"github.com/erda-project/erda/pkg/oauth2/tokenstore/mysqltokenstore"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -854,9 +856,14 @@ func (e *Endpoints) convertToApplicationDTO(ctx context.Context, application mod
 
 	token := ""
 	if withProjectToken {
-		members, err := e.db.GetMemberByScopeAndUserID(userID, apistructs.OrgScope, application.OrgID)
-		if err == nil && members != nil && len(members) > 0 {
-			token = members[0].Token
+		res, err := e.tokenService.QueryTokens(ctx, &tokenpb.QueryTokensRequest{
+			Scope:     string(apistructs.OrgScope),
+			ScopeId:   strconv.FormatInt(application.OrgID, 10),
+			Type:      mysqltokenstore.PAT.String(),
+			CreatorId: userID,
+		})
+		if err == nil && res != nil && res.Total > 0 {
+			token = res.Data[0].AccessKey
 		}
 	}
 

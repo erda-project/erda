@@ -26,6 +26,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/gittar/models"
@@ -36,15 +37,16 @@ import (
 )
 
 type Context struct {
-	EchoContext echo.Context
-	Repository  *gitmodule.Repository
-	User        *models.User
-	Service     *models.Service
-	DBClient    *models.DBClient
-	Bundle      *bundle.Bundle
-	UCAuth      *ucauth.UCUserAuth
-	next        bool
-	EtcdClient  *clientv3.Client
+	EchoContext  echo.Context
+	Repository   *gitmodule.Repository
+	User         *models.User
+	Service      *models.Service
+	DBClient     *models.DBClient
+	Bundle       *bundle.Bundle
+	UCAuth       *ucauth.UCUserAuth
+	next         bool
+	EtcdClient   *clientv3.Client
+	TokenService tokenpb.TokenServiceServer
 }
 
 type ContextHandlerFunc func(*Context)
@@ -53,6 +55,7 @@ var dbClientInstance *models.DBClient
 var diceBundleInstance *bundle.Bundle
 var ucAuthInstance *ucauth.UCUserAuth
 var etcdClientInstance *clientv3.Client
+var tokenServiceInstance *tokenpb.TokenServiceServer
 
 func WithDB(db *models.DBClient) {
 	dbClientInstance = db
@@ -68,6 +71,10 @@ func WithUCAuth(ucAuth *ucauth.UCUserAuth) {
 
 func WithEtcdClient(client *clientv3.Client) {
 	etcdClientInstance = client
+}
+
+func WithTokenService(tokenService *tokenpb.TokenServiceServer) {
+	tokenServiceInstance = tokenService
 }
 
 func WrapHandler(handlerFunc ContextHandlerFunc) echo.HandlerFunc {
@@ -135,14 +142,15 @@ func NewEchoContext(c echo.Context, db *models.DBClient) *Context {
 		user = userValue.(*models.User)
 	}
 	return &Context{
-		Repository:  repository.(*gitmodule.Repository),
-		EchoContext: c,
-		User:        user,
-		Service:     models.NewService(db, diceBundleInstance),
-		DBClient:    db,
-		UCAuth:      ucAuthInstance,
-		Bundle:      diceBundleInstance,
-		EtcdClient:  etcdClientInstance,
+		Repository:   repository.(*gitmodule.Repository),
+		EchoContext:  c,
+		User:         user,
+		Service:      models.NewService(db, diceBundleInstance),
+		DBClient:     db,
+		UCAuth:       ucAuthInstance,
+		Bundle:       diceBundleInstance,
+		EtcdClient:   etcdClientInstance,
+		TokenService: *tokenServiceInstance,
 	}
 }
 
