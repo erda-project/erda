@@ -90,7 +90,7 @@ func (pr *defaultPipelineReconciler) releaseTaskAfterReconciled(ctx context.Cont
 	pr.lock.Lock()
 	defer pr.lock.Unlock()
 	pr.processingTasks.Delete(task.NodeName())
-	pr.processedTasks.Store(task.NodeName(), struct{}{})
+	pr.processedTasks.Store(task.NodeName(), task)
 }
 
 func (pr *defaultPipelineReconciler) waitPipelineDoneAndDoTeardown(ctx context.Context, p *spec.Pipeline) {
