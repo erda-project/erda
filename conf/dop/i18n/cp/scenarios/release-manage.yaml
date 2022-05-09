@@ -35,6 +35,13 @@ zh:
   tag: 标签
   selectTag: 请选择标签
   formalOrNot: 是否为正式
+  confirmPutOn: 确认上架应用市场？
+  confirmPutOff: 确认从应用市场下架？
+  putOn: 上架应用市场
+  putOff: 从应用市场下架
+  putOnSucceeded: 上架成功
+  putOffSucceeded: 下架成功
+  canNotDeletePutOnRelease: 不能删除已上架的制品
 en:
   searchByVersionOrID: Search by version or releaseID
   application: Application
@@ -72,3 +79,10 @@ en:
   tag: Tag
   selectTag: Select tag
   formalOrNot: Formal or not
+  confirmPutOn: Sure to put on ?
+  confirmPutOff: Sure to put off ?
+  putOn: Put on
+  putOff: Put Off
+  putOnSucceeded: Put on succeeded
+  pufOffSucceeded: Put off succeeded
+  canNotDeletePutOnRelease: Can not delete the release which has been put on

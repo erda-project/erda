@@ -48,6 +48,7 @@ import (
 	"github.com/erda-project/erda/pkg/jsonstore"
 	"github.com/erda-project/erda/pkg/loop"
 	"github.com/erda-project/erda/pkg/strutil"
+	ticker2 "github.com/erda-project/erda/pkg/time/ticker"
 )
 
 func (p *provider) initialize(ctx context.Context) error {
@@ -167,7 +168,7 @@ func (p *provider) do(ctx context.Context) (*httpserver.Server, error) {
 		tasks.DailyQuotaCollectorWithBundle(bdl),
 		tasks.DailyQuotaCollectorWithCMPAPI(p),
 	)
-	ticker := tasks.New(time.Hour, dailyCollector.Task)
+	ticker := ticker2.New(time.Hour, dailyCollector.Task)
 	go ticker.Run()
 
 	if conf.EnableEss() {
