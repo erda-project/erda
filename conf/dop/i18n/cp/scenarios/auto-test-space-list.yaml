@@ -45,7 +45,7 @@ en:
   wb.content.autotest.space.edit: Edit
   wb.content.autotest.space.copy: Copy
   wb.content.autotest.space.copy.confirm: Are you sure to copy?
-  wb.content.autotest.space.delete: delete
+  wb.content.autotest.space.delete: Delete
   wb.content.autotest.space.delete.confirm: Are you sure to delete?
   wb.content.autotest.space.delete.disable.tip: Couldn't delete
   wb.content.autotest.space.retry: retry
@@ -63,7 +63,7 @@ en:
   wb.content.autotest.space.table.title.status: Status
   wb.content.autotest.space.table.title.result: Result
 
-  autoTestSpaceInit: init
-  autoTestSpaceInProgress: inprogress
-  autoTestSpaceCompleted: completed
+  autoTestSpaceInit: Not Started
+  autoTestSpaceInProgress: In Progress
+  autoTestSpaceCompleted: Completed
   spaceName: Space name

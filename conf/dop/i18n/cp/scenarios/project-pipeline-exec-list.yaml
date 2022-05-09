@@ -10,8 +10,8 @@ zh:
 en:
   pipelineName: pipeline name
   pipelineStatus: status
-  costTime: cost time
-  applicationName: application name
+  costTime: Time
+  applicationName: App
   branch: branch
   executor: executor
-  startTime: begin time
+  startTime: Start time
