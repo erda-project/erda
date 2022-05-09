@@ -24,7 +24,7 @@ import (
 var ADMIN_AUDITS_EXPORT = apis.ApiSpec{
 	Path:        "/api/audits/actions/export-excel",
 	BackendPath: "/api/audits/actions/export-excel",
-	Host:        "admin.marathon.l4lb.thisdcos.directory:9095",
+	Host:        "erda-server.marathon.l4lb.thisdcos.directory:9095",
 	Scheme:      "http",
 	Method:      http.MethodGet,
 	IsOpenAPI:   true,

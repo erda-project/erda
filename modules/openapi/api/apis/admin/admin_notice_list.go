@@ -24,7 +24,7 @@ import (
 var ADMIN_NOTICE_LIST = apis.ApiSpec{
 	Path:         "/api/notices",
 	BackendPath:  "/api/notices",
-	Host:         "admin.marathon.l4lb.thisdcos.directory:9095",
+	Host:         "erda-server.marathon.l4lb.thisdcos.directory:9095",
 	Scheme:       "http",
 	Method:       http.MethodGet,
 	CheckLogin:   true,

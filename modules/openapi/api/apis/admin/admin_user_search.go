@@ -22,7 +22,7 @@ import (
 var ADMIN_USER_SEARCH = apis.ApiSpec{
 	Path:         "/api/users/actions/search",
 	BackendPath:  "/api/users/actions/search",
-	Host:         "admin.marathon.l4lb.thisdcos.directory:9095",
+	Host:         "erda-server.marathon.l4lb.thisdcos.directory:9095",
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,
