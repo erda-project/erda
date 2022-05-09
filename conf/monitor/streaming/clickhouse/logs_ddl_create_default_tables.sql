@@ -2,13 +2,13 @@
 CREATE TABLE IF NOT EXISTS <database>.logs ON CLUSTER '{cluster}'
 (
     `_id` String,
-    `timestamp` DateTime64(9,'Asia/Shanghai'),
+    `timestamp` DateTime64(9, 'Asia/Shanghai'),
     `source` LowCardinality(String),
     `id` String,
     `org_name` LowCardinality(String),
     `tenant_id` LowCardinality(String),
     `group_id` String,
-    `stream` Enum8('' = 0, 'stdout' = 1,'stderr' = 2),
+    `stream`  Enum8('' = 0, 'stdout' = 1, 'stderr' = 2),
     `offset` Int64,
     `content` String,
     `tags` Map(String,String),
