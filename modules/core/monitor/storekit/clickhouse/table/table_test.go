@@ -24,7 +24,7 @@ import (
 func Test_formatTTLToDays(t *testing.T) {
 	tests := []struct {
 		ttl  time.Duration
-		want int
+		want int64
 	}{
 		{
 			ttl:  time.Hour * 7 * 24,
