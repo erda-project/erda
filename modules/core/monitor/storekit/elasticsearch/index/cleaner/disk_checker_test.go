@@ -16,10 +16,10 @@ package cleaner
 
 import (
 	"context"
-	"github.com/erda-project/erda/pkg/mock"
 	"testing"
 	"time"
 
+	"github.com/erda-project/erda/pkg/mock"
 	"github.com/golang/mock/gomock"
 	"gotest.tools/assert"
 

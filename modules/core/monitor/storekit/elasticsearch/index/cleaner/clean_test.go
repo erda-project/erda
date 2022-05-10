@@ -17,12 +17,12 @@ package cleaner
 import (
 	"context"
 	"errors"
-	"github.com/erda-project/erda/pkg/mock"
 	"reflect"
 	"testing"
 	"time"
 
 	"bou.ke/monkey"
+	"github.com/erda-project/erda/pkg/mock"
 	"github.com/golang/mock/gomock"
 	"github.com/olivere/elastic"
 
