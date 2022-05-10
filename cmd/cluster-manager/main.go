@@ -21,6 +21,7 @@ import (
 	_ "github.com/erda-project/erda-infra/providers/mysql"
 	_ "github.com/erda-project/erda-infra/providers/serviceregister"
 	_ "github.com/erda-project/erda/modules/cluster/cluster-manager"
+	_ "github.com/erda-project/erda/modules/cluster/cluster-manager/cluster"
 )
 
 func main() {
