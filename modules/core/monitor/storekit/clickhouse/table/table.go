@@ -38,5 +38,5 @@ func NormalizeKey(s string) string {
 }
 
 func FormatTTLToDays(ttl time.Duration) int64 {
-	return int64(math.Ceil(math.Max(float64(ttl/time.Hour/24), 1)))
+	return int64(math.Ceil(math.Max(ttl.Hours()/24, 1)))
 }

@@ -36,7 +36,7 @@ func Test_formatTTLToDays(t *testing.T) {
 		},
 		{
 			ttl:  time.Hour*8*24 + time.Hour,
-			want: 8,
+			want: 9,
 		},
 	}
 
