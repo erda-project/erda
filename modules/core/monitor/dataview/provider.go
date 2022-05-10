@@ -16,7 +16,6 @@ package dataview
 
 import (
 	"context"
-
 	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -114,7 +113,6 @@ func (p *provider) Init(ctx servicehub.Context) error {
 			select {
 			case id := <-p.ExportChannel:
 				p.ExportTask(id)
-			default:
 			}
 		}
 	}()
