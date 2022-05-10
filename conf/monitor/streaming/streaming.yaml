@@ -70,6 +70,7 @@ clickhouse:
 clickhouse.table.initializer@log:
   _enable: ${CLICKHOUSE_ENABLE:false}
   table_prefix: "logs"
+  ttl_sync_interval: "${CLICKHOUSE_TABLE_TTL_SYNC_INTERVAL:24h}"
   default_ddl_files:
     - path: "${CONFIG_PATH}/clickhouse/logs_ddl_create_db.sql"
       ignore_err: "false"
