@@ -378,6 +378,8 @@ func (it *clickhouseIterator) count() error {
 type logItem struct {
 	UniqId    string            `ch:"_id"`
 	OrgName   string            `ch:"org_name"`
+	TenantId  string            `ch:"tenant_id"`
+	GroupId   string            `ch:"group_id"`
 	Source    string            `ch:"source"`
 	ID        string            `ch:"id"`
 	Stream    string            `ch:"stream"`
