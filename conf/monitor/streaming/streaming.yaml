@@ -64,13 +64,17 @@ clickhouse:
   username: "${CLICKHOUSE_USERNAME:default}"
   password: "${CLICKHOUSE_PASSWORD:default}"
 
-clickhouse.table.initializer:
+clickhouse.table.initializer@log:
   _enable: ${CLICKHOUSE_ENABLE:false}
-  ddl_files:
+  table_prefix: "logs"
+  default_ddl_files:
     - path: "${CONFIG_PATH}/clickhouse/logs_ddl_create_db.sql"
       ignore_err: "false"
     - path: "${CONFIG_PATH}/clickhouse/logs_ddl_create_default_tables.sql"
       ignore_err: "false"
+  tenant_ddl_files:
+    - path: "${CONFIG_PATH}/clickhouse/logs_ddl_create_tenant_tables.sql"
+      ignore_err: "true"
 
 clickhouse.table.creator@log:
   _enable: ${WRITE_LOG_TO_CLICKHOUSE_ENABLE:false}

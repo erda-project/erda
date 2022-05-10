@@ -18,6 +18,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
+	"strconv"
 	"time"
 
 	ck "github.com/ClickHouse/clickhouse-go/v2"
@@ -91,21 +93,25 @@ func (p *provider) runClickhouseTablesLoader(ctx context.Context) error {
 
 func (p *provider) reloadTablesFromClickhouse(ctx context.Context) error {
 	var tables []struct {
-		Database string `ch:"database"`
-		Name     string `ch:"name"`
-		Engine   string `ch:"engine"`
+		Database       string `ch:"database"`
+		Name           string `ch:"name"`
+		Engine         string `ch:"engine"`
+		CreateTableSql string `ch:"create_table_query"`
 	}
 	err := p.Clickhouse.Client().
-		Select(ctx, &tables, "select database, name, engine from system.tables where database = @db and name like @name",
+		Select(ctx, &tables, "select database, name, engine, create_table_query from system.tables where database = @db and name like @name",
 			ck.Named("db", p.Cfg.Database), ck.Named("name", fmt.Sprintf("%s%%", p.Cfg.TablePrefix)))
 	if err != nil {
 		return err
 	}
 	tablesMeta := map[string]*TableMeta{}
 	for _, table := range tables {
+		ttlBaseTime, ttl := p.extractTTLDays(table.CreateTableSql)
 		tablesMeta[fmt.Sprintf("%s.%s", table.Database, table.Name)] = &TableMeta{
-			Engine:  table.Engine,
-			Columns: map[string]*TableColumn{},
+			Engine:       table.Engine,
+			Columns:      map[string]*TableColumn{},
+			TTLDays:      ttl,
+			TTLBaseField: ttlBaseTime,
 		}
 	}
 
@@ -136,4 +142,15 @@ func (p *provider) reloadTablesFromClickhouse(ctx context.Context) error {
 	case <-ctx.Done():
 	}
 	return nil
+}
+
+func (p *provider) extractTTLDays(createTableSql string) (baseTimeField string, ttl int64) {
+	regex, _ := regexp.Compile(`TTL\s(.*?)\s\+\stoIntervalDay\((\d+)\)`)
+	match := regex.FindStringSubmatch(createTableSql)
+	if len(match) < 3 {
+		return
+	}
+	baseTimeField = match[1]
+	ttl, _ = strconv.ParseInt(match[2], 10, 64)
+	return
 }

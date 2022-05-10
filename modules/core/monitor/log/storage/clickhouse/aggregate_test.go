@@ -79,8 +79,12 @@ func (m MockLoader) ReloadTables() chan error {
 	panic("implement me")
 }
 
-func (m MockLoader) Tables() map[string]*loader.TableMeta {
+func (m MockLoader) WaitAndGetTables(ctx context.Context) map[string]*loader.TableMeta {
 	panic("implement me")
+}
+
+func (m MockLoader) WatchLoadEvent(func(map[string]*loader.TableMeta)) {
+
 }
 
 func (m MockLoader) Database() string {
@@ -90,7 +94,7 @@ func (m MockLoader) Database() string {
 type MockCreator struct {
 }
 
-func (m MockCreator) Ensure(ctx context.Context, tenant, key string) (<-chan error, string) {
+func (m MockCreator) Ensure(ctx context.Context, tenant, key string, ttlDay int64) (<-chan error, string) {
 	return nil, fmt.Sprintf("monitor.logs_%s_%s", tenant, key)
 }
 

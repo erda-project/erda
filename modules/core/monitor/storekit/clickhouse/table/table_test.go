@@ -15,28 +15,33 @@
 package table
 
 import (
-	"math"
-	"strings"
+	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
-const (
-	TableNameKey      = "<table_name>"
-	AliasTableNameKey = "<alias_table_name>"
-	DatabaseNameKey   = "<database>"
-	TtlDaysNameKey    = "<ttl_in_days>"
-)
+func Test_formatTTLToDays(t *testing.T) {
+	tests := []struct {
+		ttl  time.Duration
+		want int
+	}{
+		{
+			ttl:  time.Hour * 7 * 24,
+			want: 7,
+		},
+		{
+			ttl:  time.Hour,
+			want: 1,
+		},
+		{
+			ttl:  time.Hour*8*24 + time.Hour,
+			want: 8,
+		},
+	}
 
-var keyReplacer = strings.NewReplacer(
-	"-", "_",
-	".", "_",
-)
-
-// NormalizeKey .
-func NormalizeKey(s string) string {
-	return keyReplacer.Replace(strings.ToLower(s))
-}
-
-func FormatTTLToDays(ttl time.Duration) int64 {
-	return int64(math.Ceil(math.Max(float64(ttl/time.Hour/24), 1)))
+	for _, tt := range tests {
+		ret := FormatTTLToDays(tt.ttl)
+		assert.Equal(t, tt.want, ret)
+	}
 }
