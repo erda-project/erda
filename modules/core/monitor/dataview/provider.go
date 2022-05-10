@@ -108,7 +108,12 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	}
 
 	p.ExportChannel = make(chan string, 1)
+	p.ExportTaskExecutor()
+	routes := ctx.Service("http-server", interceptors.Recover(p.Log), interceptors.CORS()).(httpserver.Router)
+	return p.initRoutes(routes)
+}
 
+func (p *provider) ExportTaskExecutor() {
 	// Scheduled polling export task
 	go func() {
 		ticker := time.NewTicker(time.Second * 20)
@@ -121,9 +126,6 @@ func (p *provider) Init(ctx servicehub.Context) error {
 			}
 		}
 	}()
-
-	routes := ctx.Service("http-server", interceptors.Recover(p.Log), interceptors.CORS()).(httpserver.Router)
-	return p.initRoutes(routes)
 }
 
 func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
