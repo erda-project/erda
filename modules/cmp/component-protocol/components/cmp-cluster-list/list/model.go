@@ -18,15 +18,17 @@ import (
 	"context"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/bundle"
 )
 
 type List struct {
-	SDK   *cptype.SDK
-	Bdl   *bundle.Bundle
-	Ctx   context.Context
-	Data  map[string][]DataItem `json:"data"`
-	State State                 `json:"state"`
+	SDK        *cptype.SDK
+	Bdl        *bundle.Bundle
+	Ctx        context.Context
+	ClusterSvc clusterpb.ClusterServiceServer
+	Data       map[string][]DataItem `json:"data"`
+	State      State                 `json:"state"`
 }
 
 type State struct {

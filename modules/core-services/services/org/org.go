@@ -25,8 +25,11 @@ import (
 	"github.com/go-redis/redis"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc/metadata"
 
+	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/i18n"
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
@@ -35,6 +38,7 @@ import (
 	"github.com/erda-project/erda/modules/core-services/model"
 	"github.com/erda-project/erda/modules/core-services/services/apierrors"
 	"github.com/erda-project/erda/modules/core-services/types"
+	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/numeral"
 	"github.com/erda-project/erda/pkg/oauth2/tokenstore/mysqltokenstore"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -49,6 +53,7 @@ type Org struct {
 	redisCli     *redis.Client
 	trans        i18n.Translator
 	tokenService tokenpb.TokenServiceServer
+	clusterSvc   clusterpb.ClusterServiceServer
 }
 
 // Option 定义 Org 对象的配置选项
@@ -101,6 +106,12 @@ func WithI18n(trans i18n.Translator) Option {
 func WithTokenSvc(tokenService tokenpb.TokenServiceServer) Option {
 	return func(o *Org) {
 		o.tokenService = tokenService
+	}
+}
+
+func WithClusterSvc(clusterSvc clusterpb.ClusterServiceServer) Option {
+	return func(o *Org) {
+		o.clusterSvc = clusterSvc
 	}
 }
 
@@ -587,7 +598,7 @@ func orgNameRetriever(domain, rootDomain string) string {
 }
 
 // RelateCluster 关联集群，创建企业集群关联关系
-func (o *Org) RelateCluster(userID string, req *apistructs.OrgClusterRelationCreateRequest) error {
+func (o *Org) RelateCluster(ctx context.Context, userID string, req *apistructs.OrgClusterRelationCreateRequest) error {
 	org, err := o.db.GetOrg(int64(req.OrgID))
 	if err != nil {
 		return err
@@ -600,15 +611,17 @@ func (o *Org) RelateCluster(userID string, req *apistructs.OrgClusterRelationCre
 	} else if org.Name != req.OrgName {
 		return errors.Errorf("org info doesn't match")
 	}
-	cluster, err := o.bdl.GetCluster(req.ClusterName)
+	ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "cmp"}))
+	resp, err := o.clusterSvc.GetCluster(ctx, &clusterpb.GetClusterRequest{IdOrName: req.ClusterName})
 	if err != nil {
 		return err
 	}
+	cluster := resp.Data
 	if cluster == nil {
 		return errors.Errorf("cluster not found")
 	}
 	// 若企业集群关系已存在，则返回
-	relation, err := o.db.GetOrgClusterRelationByOrgAndCluster(org.ID, int64(cluster.ID))
+	relation, err := o.db.GetOrgClusterRelationByOrgAndCluster(org.ID, cluster.Id)
 	if err != nil {
 		return err
 	}
@@ -619,7 +632,7 @@ func (o *Org) RelateCluster(userID string, req *apistructs.OrgClusterRelationCre
 	relation = &model.OrgClusterRelation{
 		OrgID:       req.OrgID,
 		OrgName:     req.OrgName,
-		ClusterID:   uint64(cluster.ID),
+		ClusterID:   uint64(cluster.Id),
 		ClusterName: req.ClusterName,
 		Creator:     userID,
 	}
@@ -813,11 +826,13 @@ func (o *Org) GetNotifyConfig(orgID int64) (*apistructs.OrgConfig, error) {
 }
 
 // DereferenceCluster 解除关联集群关系
-func (o *Org) DereferenceCluster(userID string, req *apistructs.DereferenceClusterRequest) error {
-	clusterInfo, err := o.bdl.GetCluster(req.Cluster)
+func (o *Org) DereferenceCluster(ctx context.Context, userID string, req *apistructs.DereferenceClusterRequest) error {
+	ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "cmp"}))
+	resp, err := o.clusterSvc.GetCluster(ctx, &clusterpb.GetClusterRequest{IdOrName: req.Cluster})
 	if err != nil {
 		return err
 	}
+	clusterInfo := resp.Data
 	if clusterInfo == nil {
 		return errors.Errorf("不存在的集群%s", req.Cluster)
 	}

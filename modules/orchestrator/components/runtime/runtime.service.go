@@ -21,10 +21,13 @@ import (
 	"strconv"
 
 	"github.com/pkg/errors"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/erda-project/erda-infra/base/logs"
+	"github.com/erda-project/erda-infra/pkg/transport"
 	cpb "github.com/erda-project/erda-proto-go/common/pb"
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda-proto-go/orchestrator/runtime/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
@@ -34,6 +37,7 @@ import (
 	"github.com/erda-project/erda/modules/orchestrator/spec"
 	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -45,6 +49,7 @@ type Service struct {
 	db               DBService
 	evMgr            EventManagerService
 	serviceGroupImpl servicegroup.ServiceGroup
+	clusterSvc       clusterpb.ClusterServiceServer
 }
 
 func convertRuntimeToPB(runtime *dbclient.Runtime, app *apistructs.ApplicationDTO) *pb.Runtime {
@@ -225,7 +230,7 @@ func (r *Service) GetRuntime(ctx context.Context, request *pb.GetRuntimeRequest)
 		runtime    *dbclient.Runtime
 		deployment *dbclient.Deployment
 		domainMap  map[string][]string
-		cluster    *apistructs.ClusterInfo
+		cluster    *clusterpb.ClusterInfo
 		sg         *apistructs.ServiceGroup
 		app        *apistructs.ApplicationDTO
 		ri         *pb.RuntimeInspect
@@ -257,9 +262,12 @@ func (r *Service) GetRuntime(ctx context.Context, request *pb.GetRuntimeRequest)
 		return nil, err
 	}
 
-	if cluster, err = r.bundle.GetCluster(runtime.ClusterName); err != nil {
+	ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "cmp"}))
+	resp, err := r.clusterSvc.GetCluster(ctx, &clusterpb.GetClusterRequest{IdOrName: runtime.ClusterName})
+	if err != nil {
 		return nil, err
 	}
+	cluster = resp.Data
 
 	if runtime.ScheduleName.Name != "" {
 		sg, _ = r.serviceGroupImpl.InspectServiceGroupWithTimeout(runtime.ScheduleName.Args())
@@ -327,7 +335,7 @@ func fillInspectByApp(data *pb.RuntimeInspect, runtime *dbclient.Runtime, app *a
 	data.TimeCreated = timestamppb.New(runtime.CreatedAt)
 }
 
-func fillInspectByDeployment(data *pb.RuntimeInspect, runtime *dbclient.Runtime, deployment *dbclient.Deployment, cluster *apistructs.ClusterInfo) {
+func fillInspectByDeployment(data *pb.RuntimeInspect, runtime *dbclient.Runtime, deployment *dbclient.Deployment, cluster *clusterpb.ClusterInfo) {
 	data.DeployStatus = string(deployment.Status)
 	if deployment.Status == apistructs.DeploymentStatusDeploying ||
 		deployment.Status == apistructs.DeploymentStatusWaiting ||
@@ -522,6 +530,13 @@ func WithEventManagerService(evMgr EventManagerService) ServiceOption {
 func WithServiceGroupImpl(serviceGroupImpl servicegroup.ServiceGroup) ServiceOption {
 	return func(service *Service) *Service {
 		service.serviceGroupImpl = serviceGroupImpl
+		return service
+	}
+}
+
+func WithClusterSvc(clusterSvc clusterpb.ClusterServiceServer) ServiceOption {
+	return func(service *Service) *Service {
+		service.clusterSvc = clusterSvc
 		return service
 	}
 }

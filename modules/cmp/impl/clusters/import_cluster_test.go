@@ -15,6 +15,7 @@
 package clusters
 
 import (
+	"context"
 	"encoding/base64"
 	"net/http"
 	"reflect"
@@ -23,6 +24,7 @@ import (
 	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
 
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/dbclient"
@@ -36,7 +38,7 @@ const (
 func Test_ImportCluster(t *testing.T) {
 	var bdl *bundle.Bundle
 	var db *dbclient.DBClient
-	c := New(db, bdl, nil)
+	c := New(db, bdl, nil, &fakeClusterServiceServer{})
 
 	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "CreateClusterWithOrg", func(bundle *bundle.Bundle, userID string, orgID uint64, req *apistructs.ClusterCreateRequest, header ...http.Header) error {
 		return nil
@@ -44,7 +46,7 @@ func Test_ImportCluster(t *testing.T) {
 
 	defer monkey.UnpatchAll()
 
-	err := c.importCluster("1", &apistructs.ImportCluster{
+	err := c.importCluster(context.Background(), "1", &apistructs.ImportCluster{
 		ClusterName:    "",
 		Credential:     apistructs.ICCredential{},
 		CredentialType: ProxyType,
@@ -126,7 +128,7 @@ func Test_ParseManageConfigFromCredential(t *testing.T) {
 }
 
 func Test_Generate(t *testing.T) {
-	_ = generateSetValues(&apistructs.ClusterInfo{
+	_ = generateSetValues(&clusterpb.ClusterInfo{
 		Type:           "k8s",
 		WildcardDomain: "fake-domain",
 		Name:           "fake-cluster",

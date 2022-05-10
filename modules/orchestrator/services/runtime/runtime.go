@@ -34,6 +34,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/erda-project/erda-infra/pkg/transport"
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
@@ -63,6 +64,7 @@ type Runtime struct {
 	releaseSvc       pb.ReleaseServiceServer
 	serviceGroupImpl servicegroup.ServiceGroup
 	clusterinfoImpl  clusterinfo.ClusterInfo
+	clusterSvc       clusterpb.ClusterServiceServer
 }
 
 // Option 应用实例对象配置选项
@@ -122,6 +124,12 @@ func WithServiceGroup(serviceGroupImpl servicegroup.ServiceGroup) Option {
 func WithClusterInfo(clusterinfo clusterinfo.ClusterInfo) Option {
 	return func(r *Runtime) {
 		r.clusterinfoImpl = clusterinfo
+	}
+}
+
+func WithClusterSvc(clusterSvc clusterpb.ClusterServiceServer) Option {
+	return func(r *Runtime) {
+		r.clusterSvc = clusterSvc
 	}
 }
 
@@ -328,10 +336,12 @@ func (r *Runtime) Create(operator user.ID, req *apistructs.RuntimeCreateRequest)
 	if !perm.Access {
 		return nil, apierrors.ErrCreateRuntime.AccessDenied()
 	}
-	cluster, err := r.bdl.GetCluster(req.ClusterName)
+	ctx := transport.WithHeader(context.Background(), metadata.New(map[string]string{httputil.InternalHeader: "cmp"}))
+	resp, err := r.clusterSvc.GetCluster(ctx, &clusterpb.GetClusterRequest{IdOrName: req.ClusterName})
 	if err != nil {
 		return nil, apierrors.ErrCreateRuntime.InvalidState(fmt.Sprintf("cluster: %v not found", req.ClusterName))
 	}
+	cluster := resp.Data
 
 	// build runtimeUniqueId
 	uniqueID := spec.RuntimeUniqueId{ApplicationId: appID, Workspace: req.Extra.Workspace, Name: req.Name}
@@ -339,7 +349,7 @@ func (r *Runtime) Create(operator user.ID, req *apistructs.RuntimeCreateRequest)
 	// prepare runtime
 	// TODO: we do not need RepoAbbrev
 	runtime, created, err := r.db.FindRuntimeOrCreate(uniqueID, req.Operator, req.Source, req.ClusterName,
-		uint64(cluster.ID), app.GitRepoAbbrev, req.Extra.ProjectID, app.OrgID, req.DeploymentOrderId, req.ReleaseVersion, req.ExtraParams)
+		uint64(cluster.Id), app.GitRepoAbbrev, req.Extra.ProjectID, app.OrgID, req.DeploymentOrderId, req.ReleaseVersion, req.ExtraParams)
 	if err != nil {
 		return nil, apierrors.ErrCreateRuntime.InternalError(err)
 	}
@@ -1230,11 +1240,13 @@ func (r *Runtime) Destroy(runtimeID uint64) error {
 	if runtime.ScheduleName.Name != "" {
 		// delete scheduler group
 		var req apistructs.ServiceGroupDeleteRequest
-		cInfo, err := r.bdl.GetCluster(runtime.ClusterName)
+		ctx := transport.WithHeader(context.Background(), metadata.New(map[string]string{httputil.InternalHeader: "cmp"}))
+		resp, err := r.clusterSvc.GetCluster(ctx, &clusterpb.GetClusterRequest{IdOrName: runtime.ClusterName})
 		if err != nil {
 			logrus.Errorf("get cluster info failed, cluster name: %s, error: %v", runtime.ClusterName, err)
 			return err
 		}
+		cInfo := resp.Data
 		if cInfo != nil && cInfo.OpsConfig != nil && cInfo.OpsConfig.Status == apistructs.ClusterStatusOffline {
 			req.Force = true
 		}
@@ -1563,7 +1575,7 @@ func (r *Runtime) convertRuntimeSummaryDTOFromRuntimeModel(d *apistructs.Runtime
 }
 
 // Get 查询应用实例
-func (r *Runtime) Get(userID user.ID, orgID uint64, idOrName string, appID string, workspace string) (*apistructs.RuntimeInspectDTO, error) {
+func (r *Runtime) Get(ctx context.Context, userID user.ID, orgID uint64, idOrName string, appID string, workspace string) (*apistructs.RuntimeInspectDTO, error) {
 	runtime, err := r.findRuntimeByIDOrName(idOrName, appID, workspace)
 	if err != nil {
 		return nil, err
@@ -1612,10 +1624,12 @@ func (r *Runtime) Get(userID user.ID, orgID uint64, idOrName string, appID strin
 		sg, _ = r.serviceGroupImpl.InspectServiceGroupWithTimeout(runtime.ScheduleName.Namespace, runtime.ScheduleName.Name)
 	}
 
-	cluster, err := r.bdl.GetCluster(runtime.ClusterName)
+	ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "cmp"}))
+	resp, err := r.clusterSvc.GetCluster(ctx, &clusterpb.GetClusterRequest{IdOrName: runtime.ClusterName})
 	if err != nil {
 		return nil, apierrors.ErrGetRuntime.InvalidState(fmt.Sprintf("cluster: %v not found", runtime.ClusterName))
 	}
+	cluster := resp.Data
 
 	// return value
 	var data apistructs.RuntimeInspectDTO
@@ -2072,15 +2086,17 @@ func (r *Runtime) RuntimeDeployLogs(userID user.ID, orgID uint64, orgName string
 }
 
 // OrgJobLogs 数据中心--->任务列表 日志接口
-func (r *Runtime) OrgJobLogs(userID user.ID, orgID uint64, orgName string, jobID, clusterName string, paramValues url.Values) (*apistructs.DashboardSpotLogData, error) {
+func (r *Runtime) OrgJobLogs(ctx context.Context, userID user.ID, orgID uint64, orgName string, jobID, clusterName string, paramValues url.Values) (*apistructs.DashboardSpotLogData, error) {
 	if clusterName == "" {
 		logrus.Errorf("job instance infos without cluster, jobID is: %s", jobID)
 		return nil, apierrors.ErrOrgLog.AccessDenied()
 	}
-	clusterInfo, err := r.bdl.GetCluster(clusterName)
+	ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "cmp"}))
+	resp, err := r.clusterSvc.GetCluster(ctx, &clusterpb.GetClusterRequest{IdOrName: clusterName})
 	if err != nil {
 		return nil, err
 	}
+	clusterInfo := resp.Data
 	if clusterInfo == nil {
 		logrus.Errorf("can not find cluster info, clusterName: %s", clusterName)
 		return nil, apierrors.ErrOrgLog.AccessDenied()

@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/metadata"
 
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda-proto-go/orchestrator/runtime/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/orchestrator/components/runtime/mock"
@@ -33,6 +34,16 @@ import (
 
 ////go:generate mockgen -destination=./mock/mock_sg.go -package mock github.com/erda-project/erda/modules/orchestrator/scheduler/impl/servicegroup ServiceGroup
 
+type fakeClusterServiceServer struct {
+	clusterpb.ClusterServiceServer
+}
+
+func (f *fakeClusterServiceServer) GetCluster(context.Context, *clusterpb.GetClusterRequest) (*clusterpb.GetClusterResponse, error) {
+	return &clusterpb.GetClusterResponse{Data: &clusterpb.ClusterInfo{
+		Name: "testCluster",
+	}}, nil
+}
+
 func TestService_GetRuntime(t *testing.T) {
 	assert := require.New(t)
 	ctrl := gomock.NewController(t)
@@ -41,7 +52,7 @@ func TestService_GetRuntime(t *testing.T) {
 	bdlSvc := mock.NewMockBundleService(ctrl)
 	dbSvc := mock.NewMockDBService(ctrl)
 	sgiSvc := mock.NewMockServiceGroup(ctrl)
-	svc := NewRuntimeService(WithBundleService(bdlSvc), WithDBService(dbSvc), WithServiceGroupImpl(sgiSvc))
+	svc := NewRuntimeService(WithBundleService(bdlSvc), WithDBService(dbSvc), WithServiceGroupImpl(sgiSvc), WithClusterSvc(&fakeClusterServiceServer{}))
 
 	md := metadata.New(map[string]string{
 		"user-id": "2",
@@ -102,13 +113,13 @@ func TestService_GetRuntime(t *testing.T) {
 			},
 		}, nil).MinTimes(1)
 
-	bdlSvc.
-		EXPECT().
-		GetCluster(gomock.Eq("foo")).
-		Return(&apistructs.ClusterInfo{
-			Name: "foo",
-		}, nil).MinTimes(1)
-
+	//bdlSvc.
+	//	EXPECT().
+	//	GetCluster(gomock.Eq("foo")).
+	//	Return(&apistructs.ClusterInfo{
+	//		Name: "foo",
+	//	}, nil).MinTimes(1)
+	//
 	bdlSvc.
 		EXPECT().
 		GetApp(gomock.Eq(uint64(1))).

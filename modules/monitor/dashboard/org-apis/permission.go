@@ -16,15 +16,21 @@ package orgapis
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"strconv"
 
+	"google.golang.org/grpc/metadata"
+
+	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/httpserver"
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/modules/monitor/common/permission"
 	api "github.com/erda-project/erda/pkg/common/httpapi"
+	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 func (p *provider) checkOrgMetrics(ctx httpserver.Context) (string, error) {
@@ -169,12 +175,13 @@ func (p *provider) checkOrgIDByClusters(orgID uint64, clusterNames []string) err
 }
 
 func (p *provider) listClustersByOrg(orgID uint64) ([]string, error) {
-	resp, err := p.bundle.ListClusters("", orgID)
+	ctx := transport.WithHeader(context.Background(), metadata.New(map[string]string{httputil.InternalHeader: "cmp"}))
+	resp, err := p.clusterSvc.ListCluster(ctx, &clusterpb.ListClusterRequest{OrgID: orgID})
 	if err != nil {
 		return nil, err
 	}
 	var list []string
-	for _, item := range resp {
+	for _, item := range resp.Data {
 		list = append(list, item.Name)
 	}
 	return list, nil

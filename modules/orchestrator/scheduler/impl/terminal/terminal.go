@@ -25,7 +25,10 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc/metadata"
 
+	"github.com/erda-project/erda-infra/pkg/transport"
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/orchestrator/conf"
@@ -34,6 +37,7 @@ import (
 	"github.com/erda-project/erda/modules/orchestrator/scheduler/impl/cluster/clusterutil"
 	"github.com/erda-project/erda/modules/orchestrator/scheduler/instanceinfo"
 	"github.com/erda-project/erda/pkg/database/dbengine"
+	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -65,7 +69,7 @@ type ContainerInfoArg struct {
 	Container string `json:"container"`
 }
 
-func Terminal(w http.ResponseWriter, r *http.Request) {
+func Terminal(clusterSvc clusterpb.ClusterServiceServer, w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		logrus.Errorf("upgrade: %v", err)
@@ -89,7 +93,7 @@ func Terminal(w http.ResponseWriter, r *http.Request) {
 	}
 	if containerinfo.Name != "docker" {
 		// Not a container console, as a soldier as a proxy
-		SoldierTerminal(r, message, conn)
+		SoldierTerminal(clusterSvc, r, message, conn)
 		return
 	}
 	var args ContainerInfoArg
@@ -177,15 +181,16 @@ func Terminal(w http.ResponseWriter, r *http.Request) {
 }
 
 // SoldierTerminal proxy of soldier
-func SoldierTerminal(r *http.Request, initmessage []byte, upperConn *websocket.Conn) {
-	bdl := bundle.New(bundle.WithClusterManager())
+func SoldierTerminal(clusterSvc clusterpb.ClusterServiceServer, r *http.Request, initmessage []byte, upperConn *websocket.Conn) {
 	clusterName := r.URL.Query().Get("clusterName")
-	clusterInfo, err := bdl.GetCluster(clusterName)
+	ctx := transport.WithHeader(r.Context(), metadata.New(map[string]string{httputil.InternalHeader: "cmp"}))
+	resp, err := clusterSvc.GetCluster(ctx, &clusterpb.GetClusterRequest{IdOrName: clusterName})
 	if err != nil {
 		logrus.Errorf("failed to get cluster info with bundle err :%v", err)
 	}
 
-	soldierAddr, err := url.Parse(clusterInfo.URLs["colonySoldier"])
+	clusterInfo := resp.Data
+	soldierAddr, err := url.Parse(clusterInfo.Urls["colonySoldier"])
 	if err != nil {
 		logrus.Errorf("failed to url parse: %v, err: %v", r.URL.Query().Get("url"), err)
 	}

@@ -177,7 +177,7 @@ func (p *provider) do(ctx context.Context) (*httpserver.Server, error) {
 	server := httpserver.New(conf.ListenAddr())
 	server.RegisterEndpoint(append(ep.Routes()))
 
-	authenticator := middleware.NewAuthenticator(bdl)
+	authenticator := middleware.NewAuthenticator(bdl, p.ClusterSvc)
 	shellHandler := middleware.NewShellHandler(ctx)
 	auditor := middleware.NewAuditor(bdl)
 
@@ -212,6 +212,7 @@ func (p *provider) initEndpoints(ctx context.Context, db *dbclient.DBClient, js,
 		endpoints.WithCredential(c),
 		endpoints.WithResourceTable(rt),
 		endpoints.WithCronServiceServer(p.CronService),
+		endpoints.WithClusterServiceServer(p.ClusterSvc),
 	)
 
 	// Sync org resource task status
