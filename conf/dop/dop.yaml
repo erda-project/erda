@@ -75,7 +75,6 @@ grpc-client@erda.core.services.errorbox:
   addr: "${CORE_SERVICES_GRPC_ADDR:core-services:9537}"
 erda.core.services.errorbox-client: {}
 
-<<<<<<< HEAD
 grpc-client@erda.core.token:
   addr: "${CORE_SERVICES_GRPC_ADDR:core-services:9537}"
 erda.core.token-client: {}
