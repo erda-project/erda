@@ -759,7 +759,7 @@ func (p *Project) fetchPodInfo(dto *apistructs.ProjectDTO) {
 		return
 	}
 	var podInfos []apistructs.PodInfo
-	if err := p.db.Find(&podInfos, map[string]interface{}{"project_id": dto.ID, "phase": "running"}).Error; err != nil {
+	if err := p.db.Find(&podInfos, map[string]interface{}{"project_id": strconv.FormatUint(dto.ID, 10), "phase": "running"}).Error; err != nil {
 		logrus.WithError(err).WithField("project_id", dto.ID).
 			Warnln("failed to Find the namespaces info in the project")
 		return
