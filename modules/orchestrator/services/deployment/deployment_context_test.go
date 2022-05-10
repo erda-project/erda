@@ -25,6 +25,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
@@ -353,7 +354,7 @@ func genFakeFSM(specPath ...string) *DeployFSMContext {
 				},
 			},
 		},
-		Cluster: &apistructs.ClusterInfo{
+		Cluster: &clusterpb.ClusterInfo{
 			Name:           "terminus-test",
 			OrgID:          104,
 			WildcardDomain: "test.terminus.io",

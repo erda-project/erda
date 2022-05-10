@@ -57,7 +57,7 @@ func Test_netportal(t *testing.T) {
 		ClusterAccessKey:    fakeClusterAccessKey,
 	}))
 
-	go Start(context.Background(), nil, &serverconfig.Config{
+	go Start(context.Background(), &fakeClusterSvc{}, nil, &serverconfig.Config{
 		Listen:          dialerListenAddr2,
 		NeedClusterInfo: false,
 	}, &clientv3.Client{KV: &fakeKV{}})

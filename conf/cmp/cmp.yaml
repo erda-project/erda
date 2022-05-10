@@ -32,6 +32,10 @@ grpc-client@erda.core.pipeline.cron:
   addr: "${PIPELINE_GRPC_ADDR:pipeline:30810}"
 erda.core.pipeline.cron-client: {}
 
+grpc-client@erda.core.clustermanager.cluster:
+  addr: "${CLUSTER_MANAGER_GRPC_ADDR:cluster-manager:9095}"
+erda.core.clustermanager.cluster-client: {}
+
 http-server:
   addr: ":9028"
   allow_cors: true

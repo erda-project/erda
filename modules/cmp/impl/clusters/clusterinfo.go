@@ -24,10 +24,14 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"golang.org/x/text/message"
+	"google.golang.org/grpc/metadata"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/erda-project/erda-infra/pkg/transport"
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cmp/conf"
+	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/k8sclient"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -58,6 +62,7 @@ func (c *Clusters) ClusterInfo(ctx context.Context, orgID uint64, clusterNames [
 
 	wg.Add(len(clusterNames))
 
+	ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "true"}))
 	for _, clusterName := range clusterNames {
 		go func(clusterName string) {
 			defer func() {
@@ -68,12 +73,13 @@ func (c *Clusters) ClusterInfo(ctx context.Context, orgID uint64, clusterNames [
 				wg.Done()
 			}()
 
-			clusterMetaData, err := c.bdl.GetCluster(clusterName)
+			resp, err := c.clusterSvc.GetCluster(ctx, &clusterpb.GetClusterRequest{IdOrName: clusterName})
 			if err != nil {
-				logrus.Errorf("get cluster info error: %v", err)
+				logrus.Errorf("get cluster info error for cluster %s: %v", clusterName, err)
 				return
 			}
 
+			clusterMetaData := resp.Data
 			baseInfo := map[string]apistructs.NameValue{
 				"manageType":         {Name: i18n.Sprintf("manage type"), Value: parseManageType(clusterMetaData.ManageConfig)},
 				"clusterName":        {Name: i18n.Sprintf("cluster name"), Value: clusterMetaData.Name},
@@ -145,7 +151,7 @@ func (c *Clusters) ClusterInfo(ctx context.Context, orgID uint64, clusterNames [
 	return resultList, nil
 }
 
-func (c *Clusters) getClusterStatus(kc *k8sclient.K8sClient, meta *apistructs.ClusterInfo) (string, error) {
+func (c *Clusters) getClusterStatus(kc *k8sclient.K8sClient, meta *clusterpb.ClusterInfo) (string, error) {
 	if kc == nil || kc.ClientSet == nil {
 		return "", fmt.Errorf("kubernetes client is nil")
 	}
@@ -212,7 +218,7 @@ func (c *Clusters) getClusterStatus(kc *k8sclient.K8sClient, meta *apistructs.Cl
 	}
 }
 
-func parseManageType(mc *apistructs.ManageConfig) string {
+func parseManageType(mc *clusterpb.ManageConfig) string {
 	if mc == nil {
 		return "create"
 	}

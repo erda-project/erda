@@ -30,6 +30,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
@@ -73,6 +74,18 @@ func Init() {
 	opts = option{port: p}
 }
 
+type fakeClusterServiceServer struct {
+	clusterpb.ClusterServiceServer
+}
+
+func (f *fakeClusterServiceServer) ListCluster(context.Context, *clusterpb.ListClusterRequest) (*clusterpb.ListClusterResponse, error) {
+	return &clusterpb.ListClusterResponse{Data: []*clusterpb.ClusterInfo{
+		{
+			Name: "testCluster",
+		},
+	}}, nil
+}
+
 func TestChain(t *testing.T) {
 	Init()
 	bundleOpts := []bundle.Option{
@@ -96,7 +109,7 @@ func TestChain(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	auth := NewAuthenticator(bdl)
+	auth := NewAuthenticator(bdl, &fakeClusterServiceServer{})
 	audit := NewAuditor(bdl)
 	shell := NewShellHandler(context.Background())
 	chain := Chain{

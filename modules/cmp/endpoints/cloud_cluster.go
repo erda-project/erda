@@ -110,7 +110,7 @@ func (e *Endpoints) AddCloudClusters(ctx context.Context, r *http.Request, vars 
 		}
 	}
 
-	recordID, err := e.clusters.AddClusters(req, i.UserID)
+	recordID, err := e.clusters.AddClusters(ctx, req, i.UserID)
 	if err != nil {
 		err = fmt.Errorf("failed to add clusters: %v", err)
 		return

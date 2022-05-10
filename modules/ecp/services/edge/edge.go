@@ -15,17 +15,22 @@
 package edge
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strconv"
 
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc/metadata"
 
+	"github.com/erda-project/erda-infra/pkg/transport"
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/ecp/dbclient"
 	"github.com/erda-project/erda/modules/ecp/services/kubernetes"
 	"github.com/erda-project/erda/pkg/clientgo/apis/openyurt/v1alpha1"
+	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 const (
@@ -43,7 +48,7 @@ const (
 
 var (
 	// Cluster ID/Name/RequestAddress which fixed param will cache in memory.
-	clusterInfos = make(map[int64]*apistructs.ClusterInfo, 0)
+	clusterInfos = make(map[int64]*clusterpb.ClusterInfo, 0)
 	orgInfos     = make(map[int64]*apistructs.OrgDTO, 0)
 )
 
@@ -51,9 +56,10 @@ var (
 type NodePools = map[string]*v1alpha1.NodePool
 
 type Edge struct {
-	db  *dbclient.DBClient
-	bdl *bundle.Bundle
-	k8s *kubernetes.Kubernetes
+	db         *dbclient.DBClient
+	bdl        *bundle.Bundle
+	k8s        *kubernetes.Kubernetes
+	clusterSvc clusterpb.ClusterServiceServer
 }
 
 type Option func(*Edge)
@@ -87,17 +93,25 @@ func WithBundle(bdl *bundle.Bundle) Option {
 	}
 }
 
-// getClusterInfo Get or cache clusterInfo.
-func (e *Edge) getClusterInfo(clusterID int64) (*apistructs.ClusterInfo, error) {
+// WithClusterSvc With cluster-manager ClusterService
+func WithClusterSvc(clusterSvc clusterpb.ClusterServiceServer) Option {
+	return func(e *Edge) {
+		e.clusterSvc = clusterSvc
+	}
+}
 
+// getClusterInfo Get or cache clusterInfo.
+func (e *Edge) getClusterInfo(ctx context.Context, clusterID int64) (*clusterpb.ClusterInfo, error) {
 	if clusterInfo, ok := clusterInfos[clusterID]; ok {
 		return clusterInfo, nil
 	}
-	clusterInfo, err := e.bdl.GetCluster(strconv.FormatInt(clusterID, 10))
+	ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "cmp"}))
+	resp, err := e.clusterSvc.GetCluster(ctx, &clusterpb.GetClusterRequest{IdOrName: strconv.FormatInt(clusterID, 10)})
 	if err != nil {
 		logrus.Errorf("query cluster info failed, cluster:%d, err:%v", clusterID, err)
 		return nil, fmt.Errorf("query cluster info failed, cluster:%d, err:%v", clusterID, err)
 	}
+	clusterInfo := resp.Data
 	clusterInfos[clusterID] = clusterInfo
 	return clusterInfo, nil
 }

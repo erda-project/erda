@@ -27,6 +27,7 @@ import (
 	_ "github.com/erda-project/erda-infra/providers/mysql/v2"
 	_ "github.com/erda-project/erda-infra/providers/serviceregister"
 	_ "github.com/erda-project/erda-proto-go/cmp/dashboard/client"
+	_ "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/client"
 	_ "github.com/erda-project/erda-proto-go/core/dicehub/release/client"
 	_ "github.com/erda-project/erda-proto-go/core/pipeline/cms/client"
 	_ "github.com/erda-project/erda-proto-go/core/pipeline/cron/client"

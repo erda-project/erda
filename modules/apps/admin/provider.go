@@ -24,6 +24,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	hs "github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/i18n"
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/modules/apps/admin/dao"
 	"github.com/erda-project/erda/modules/apps/admin/manager"
 	"github.com/erda-project/erda/modules/dop/conf"
@@ -43,7 +44,8 @@ type provider struct {
 	CPTran i18n.I18n       `autowired:"i18n@cp"`
 	Tran   i18n.Translator `translator:"common"`
 
-	DB *gorm.DB `autowired:"mysql-client"`
+	DB         *gorm.DB                       `autowired:"mysql-client"`
+	ClusterSvc clusterpb.ClusterServiceServer `autowired:"erda.core.clustermanager.cluster.ClusterService"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -69,6 +71,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	admin := manager.NewAdminManager(
 		manager.WithDB(db),
 		manager.WithBundle(manager.NewBundle()),
+		manager.WithClusterSvc(p.ClusterSvc),
 	)
 	server := httpserver.New(conf.ListenAddr())
 	server.Router().UseEncodedPath()

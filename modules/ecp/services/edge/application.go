@@ -15,6 +15,7 @@
 package edge
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -27,6 +28,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/ecp/dbclient"
 	"github.com/erda-project/erda/pkg/clientgo/apis/openyurt/v1alpha1"
@@ -85,10 +87,10 @@ func (e *Edge) GetApp(edgeAppID int64) (*apistructs.EdgeAppInfo, error) {
 }
 
 // CreateApp Create edge application
-func (e *Edge) CreateApp(req *apistructs.EdgeAppCreateRequest) error {
+func (e *Edge) CreateApp(ctx context.Context, req *apistructs.EdgeAppCreateRequest) error {
 	var ud *v1alpha1.UnitedDeployment
 	var err error
-	var clusterInfo *apistructs.ClusterInfo
+	var clusterInfo *clusterpb.ClusterInfo
 	var svc *v1.Service
 	var appExtraData map[string]string
 	var envs []v1.EnvVar
@@ -130,7 +132,7 @@ func (e *Edge) CreateApp(req *apistructs.EdgeAppCreateRequest) error {
 		EdgeSites:  req.EdgeSites,
 		Replicas:   req.Replicas,
 	}
-	if clusterInfo, err = e.getClusterInfo(req.ClusterID); err != nil {
+	if clusterInfo, err = e.getClusterInfo(ctx, req.ClusterID); err != nil {
 		return err
 	}
 	//Handling environment variable injection for dependent applications
@@ -316,12 +318,12 @@ func (e *Edge) CreateApp(req *apistructs.EdgeAppCreateRequest) error {
 	return nil
 }
 
-func (e *Edge) UpdateApp(edgeAppID int64, req *apistructs.EdgeAppUpdateRequest) error {
+func (e *Edge) UpdateApp(ctx context.Context, edgeAppID int64, req *apistructs.EdgeAppUpdateRequest) error {
 
 	var ud *v1alpha1.UnitedDeployment
 	var oldUd *v1alpha1.UnitedDeployment
 	var err error
-	var clusterInfo *apistructs.ClusterInfo
+	var clusterInfo *clusterpb.ClusterInfo
 	var svc *v1.Service
 	var oldSvc *v1.Service
 	var appExtraData map[string]string
@@ -365,7 +367,7 @@ func (e *Edge) UpdateApp(edgeAppID int64, req *apistructs.EdgeAppUpdateRequest) 
 		Replicas:   req.Replicas,
 	}
 
-	if clusterInfo, err = e.getClusterInfo(req.ClusterID); err != nil {
+	if clusterInfo, err = e.getClusterInfo(ctx, req.ClusterID); err != nil {
 		return err
 	}
 	//Handling environment variable injection for dependent applications
@@ -560,11 +562,11 @@ func (e *Edge) UpdateApp(edgeAppID int64, req *apistructs.EdgeAppUpdateRequest) 
 	return nil
 }
 
-func (e *Edge) GetAppStatus(appID int64) (*apistructs.EdgeAppStatusResponse, error) {
+func (e *Edge) GetAppStatus(ctx context.Context, appID int64) (*apistructs.EdgeAppStatusResponse, error) {
 	var err error
 	var app *dbclient.EdgeApp
 	var ud *v1alpha1.UnitedDeployment
-	var clusterInfo *apistructs.ClusterInfo
+	var clusterInfo *clusterpb.ClusterInfo
 	var appStatus apistructs.EdgeAppStatusResponse
 	var appInfo *apistructs.EdgeAppInfo
 	var tmpStatus string
@@ -576,7 +578,7 @@ func (e *Edge) GetAppStatus(appID int64) (*apistructs.EdgeAppStatusResponse, err
 		return nil, err
 	}
 	namespace := fmt.Sprintf("%s-%s", EdgeAppPrefix, app.Name)
-	if clusterInfo, err = e.getClusterInfo(appInfo.ClusterID); err != nil {
+	if clusterInfo, err = e.getClusterInfo(ctx, appInfo.ClusterID); err != nil {
 		return nil, err
 	}
 	if ud, err = e.k8s.GetUnitedDeployment(clusterInfo.Name, namespace, appInfo.Name); err != nil {
@@ -601,12 +603,12 @@ func (e *Edge) GetAppStatus(appID int64) (*apistructs.EdgeAppStatusResponse, err
 	return &appStatus, nil
 }
 
-func (e *Edge) DeleteApp(appID int64) error {
+func (e *Edge) DeleteApp(ctx context.Context, appID int64) error {
 	var err error
 	var apps *[]dbclient.EdgeApp
 	var app *dbclient.EdgeApp
 	var dependApp []string
-	var clusterInfo *apistructs.ClusterInfo
+	var clusterInfo *clusterpb.ClusterInfo
 
 	if app, err = e.db.GetEdgeApp(appID); err != nil {
 		return err
@@ -633,7 +635,7 @@ func (e *Edge) DeleteApp(appID int64) error {
 
 	namespace := fmt.Sprintf("%s-%s", EdgeAppPrefix, app.Name)
 
-	if clusterInfo, err = e.getClusterInfo(app.ClusterID); err != nil {
+	if clusterInfo, err = e.getClusterInfo(ctx, app.ClusterID); err != nil {
 		return err
 	}
 
@@ -646,7 +648,7 @@ func (e *Edge) DeleteApp(appID int64) error {
 	return nil
 }
 
-func (e *Edge) RestartAppSite(edgeApp *dbclient.EdgeApp, siteName string) error {
+func (e *Edge) RestartAppSite(ctx context.Context, edgeApp *dbclient.EdgeApp, siteName string) error {
 	var (
 		deploymentName string
 	)
@@ -654,7 +656,7 @@ func (e *Edge) RestartAppSite(edgeApp *dbclient.EdgeApp, siteName string) error 
 	namespace := fmt.Sprintf("%s-%s", EdgeAppPrefix, edgeApp.Name)
 	deploymentPrefix := fmt.Sprintf("%s-%s", edgeApp.Name, siteName)
 
-	clusterInfo, err := e.getClusterInfo(edgeApp.ClusterID)
+	clusterInfo, err := e.getClusterInfo(ctx, edgeApp.ClusterID)
 	if err != nil {
 		return fmt.Errorf("get cluster info error: %v", err)
 	}
@@ -679,7 +681,7 @@ func (e *Edge) RestartAppSite(edgeApp *dbclient.EdgeApp, siteName string) error 
 	return nil
 }
 
-func (e *Edge) OfflineAppSite(edgeApp *dbclient.EdgeApp, siteName string) error {
+func (e *Edge) OfflineAppSite(ctx context.Context, edgeApp *dbclient.EdgeApp, siteName string) error {
 	var (
 		isResourceFound bool
 		edgeSites       []string
@@ -712,7 +714,7 @@ func (e *Edge) OfflineAppSite(edgeApp *dbclient.EdgeApp, siteName string) error 
 
 	namespace := fmt.Sprintf("%s-%s", EdgeAppPrefix, edgeApp.Name)
 
-	clusterInfo, err := e.getClusterInfo(edgeApp.ClusterID)
+	clusterInfo, err := e.getClusterInfo(ctx, edgeApp.ClusterID)
 	if err != nil {
 		return fmt.Errorf("get cluster info error: %v", err)
 	}

@@ -29,6 +29,7 @@ import (
 	"google.golang.org/grpc/metadata"
 
 	"github.com/erda-project/erda-infra/pkg/transport"
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
@@ -61,6 +62,7 @@ type Deployment struct {
 	serviceGroupImpl servicegroup.ServiceGroup
 	scheduler        *scheduler.Scheduler
 	envConfig        *environment.EnvConfig
+	clusterSvc       clusterpb.ClusterServiceServer
 }
 
 // Option 部署对象配置选项
@@ -149,9 +151,15 @@ func WithEnvConfig(envConfig *environment.EnvConfig) Option {
 	}
 }
 
+func WithClusterSvc(clusterSvc clusterpb.ClusterServiceServer) Option {
+	return func(d *Deployment) {
+		d.clusterSvc = clusterSvc
+	}
+}
+
 func (d *Deployment) ContinueDeploy(deploymentID uint64) error {
 	// prepare the context
-	fsm := NewFSMContext(deploymentID, d.db, d.evMgr, d.bdl, d.addon, d.migration, d.encrypt, d.resource, d.releaseSvc, d.serviceGroupImpl, d.scheduler, d.envConfig)
+	fsm := NewFSMContext(deploymentID, d.db, d.evMgr, d.bdl, d.addon, d.migration, d.encrypt, d.resource, d.releaseSvc, d.serviceGroupImpl, d.scheduler, d.envConfig, d.clusterSvc)
 	if err := fsm.Load(); err != nil {
 		return errors.Wrapf(err, "failed to load fsm, deployment: %d, (%v)", deploymentID, err)
 	}
@@ -184,7 +192,7 @@ func (d *Deployment) CancelLastDeploy(runtimeID uint64, operator string, force b
 	if deployment == nil {
 		return apierrors.ErrCancelDeployment.NotFound()
 	}
-	fsm := NewFSMContext(deployment.ID, d.db, d.evMgr, d.bdl, d.addon, d.migration, d.encrypt, d.resource, d.releaseSvc, d.serviceGroupImpl, d.scheduler, d.envConfig)
+	fsm := NewFSMContext(deployment.ID, d.db, d.evMgr, d.bdl, d.addon, d.migration, d.encrypt, d.resource, d.releaseSvc, d.serviceGroupImpl, d.scheduler, d.envConfig, d.clusterSvc)
 	if err := fsm.Load(); err != nil {
 		return err
 	}

@@ -15,6 +15,7 @@
 package clusters
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"reflect"
@@ -57,14 +58,14 @@ func TestOfflineEdgeCluster(t *testing.T) {
 		return 0, nil
 	})
 
-	c := New(db, bdl, nil)
+	c := New(db, bdl, nil, &fakeClusterServiceServer{})
 
 	// monkey patch Credential with core services
 	monkey.PatchInstanceMethod(reflect.TypeOf(c), "DeleteAccessKey", func(*Clusters, string) error {
 		return nil
 	})
 
-	_, _, err := c.OfflineEdgeCluster(req, "", "")
+	_, _, err := c.OfflineEdgeCluster(context.Background(), req, "", "")
 	assert.NoError(t, err)
 }
 
@@ -97,15 +98,15 @@ func TestOfflineWithDeleteClusterFailed(t *testing.T) {
 		return 0, nil
 	})
 
-	c := New(db, bdl, nil)
+	c := New(db, bdl, nil, &fakeClusterServiceServer{})
 
 	// monkey patch Credential with core services
 	monkey.PatchInstanceMethod(reflect.TypeOf(c), "DeleteAccessKey", func(*Clusters, string) error {
 		return nil
 	})
 
-	_, _, err := c.OfflineEdgeCluster(req, "", "")
-	assert.Error(t, err)
+	_, _, err := c.OfflineEdgeCluster(context.Background(), req, "", "")
+	assert.NoError(t, err)
 }
 
 func TestOfflineWithDeleteAKFailed(t *testing.T) {
@@ -137,14 +138,14 @@ func TestOfflineWithDeleteAKFailed(t *testing.T) {
 		return 0, nil
 	})
 
-	c := New(db, bdl, nil)
+	c := New(db, bdl, nil, &fakeClusterServiceServer{})
 
 	// monkey patch Credential with core services
 	monkey.PatchInstanceMethod(reflect.TypeOf(c), "DeleteAccessKey", func(*Clusters, string) error {
 		return fmt.Errorf("fake error")
 	})
 
-	_, _, err := c.OfflineEdgeCluster(req, "", "")
+	_, _, err := c.OfflineEdgeCluster(context.Background(), req, "", "")
 	assert.Error(t, err)
 }
 
@@ -177,14 +178,14 @@ func TestBatchOfflineEdgeCluster(t *testing.T) {
 		return 0, nil
 	})
 
-	c := New(db, bdl, nil)
+	c := New(db, bdl, nil, &fakeClusterServiceServer{})
 
 	// monkey patch Credential with core services
 	monkey.PatchInstanceMethod(reflect.TypeOf(c), "DeleteAccessKey", func(*Clusters, string) error {
 		return nil
 	})
 
-	err := c.BatchOfflineEdgeCluster(req, "")
+	err := c.BatchOfflineEdgeCluster(context.Background(), req, "")
 	assert.Error(t, err)
 }
 
@@ -233,6 +234,8 @@ func TestOfflineEdgeClusters(t *testing.T) {
 		ClusterName: "fake-cluster",
 	}
 
+	ctx := context.Background()
+
 	// monkey patch Bundle
 
 	for _, tt := range tests {
@@ -270,9 +273,9 @@ func TestOfflineEdgeClusters(t *testing.T) {
 				return 0, nil
 			})
 
-			c := New(db, bdl, nil)
+			c := New(db, bdl, nil, &fakeClusterServiceServer{})
 
-			_, hint, err := c.OfflineEdgeCluster(req, "", "")
+			_, hint, err := c.OfflineEdgeCluster(ctx, req, "", "")
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("OfflineEdgeCluster error = %v, wantErr %v", err, tt.wantErr)

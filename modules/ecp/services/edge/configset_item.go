@@ -15,6 +15,7 @@
 package edge
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -83,7 +84,7 @@ func (e *Edge) GetConfigSetItem(itemID int64) (*apistructs.EdgeCfgSetItemInfo, e
 }
 
 // CreateConfigSetItem  Create configSet item.
-func (e *Edge) CreateConfigSetItem(req *apistructs.EdgeCfgSetItemCreateRequest) ([]uint64, error) {
+func (e *Edge) CreateConfigSetItem(ctx context.Context, req *apistructs.EdgeCfgSetItemCreateRequest) ([]uint64, error) {
 	var (
 		configSetItemIDs = make([]uint64, 0)
 		err              error
@@ -99,7 +100,7 @@ func (e *Edge) CreateConfigSetItem(req *apistructs.EdgeCfgSetItemCreateRequest) 
 		return nil, err
 	}
 
-	clusterInfo, err := e.getClusterInfo(cfgSet.ClusterID)
+	clusterInfo, err := e.getClusterInfo(ctx, cfgSet.ClusterID)
 	if err != nil {
 		return nil, err
 	}
@@ -256,7 +257,7 @@ func (e *Edge) createItemToConfigMap(clusterName, namespace, cmName, itemKey, it
 }
 
 // DeleteConfigSetItem Delete configSet item.
-func (e *Edge) DeleteConfigSetItem(itemID int64) error {
+func (e *Edge) DeleteConfigSetItem(ctx context.Context, itemID int64) error {
 	cfgSetItem, err := e.db.GetEdgeConfigSetItem(itemID)
 	if err != nil {
 		return err
@@ -270,7 +271,7 @@ func (e *Edge) DeleteConfigSetItem(itemID int64) error {
 		return err
 	}
 
-	clusterInfo, err := e.getClusterInfo(cfgSet.ClusterID)
+	clusterInfo, err := e.getClusterInfo(ctx, cfgSet.ClusterID)
 	if err != nil {
 		return err
 	}
@@ -320,7 +321,7 @@ func (e *Edge) deleteItemToConfigMap(clusterName, namespace, cmName, itemKey str
 }
 
 // UpdateConfigSetItem Update configSet item.
-func (e *Edge) UpdateConfigSetItem(itemID int64, req *apistructs.EdgeCfgSetItemUpdateRequest) error {
+func (e *Edge) UpdateConfigSetItem(ctx context.Context, itemID int64, req *apistructs.EdgeCfgSetItemUpdateRequest) error {
 	var cm *v1.ConfigMap
 
 	cfgSetItem, err := e.db.GetEdgeConfigSetItem(itemID)
@@ -338,7 +339,7 @@ func (e *Edge) UpdateConfigSetItem(itemID int64, req *apistructs.EdgeCfgSetItemU
 		return err
 	}
 
-	clusterInfo, err := e.getClusterInfo(cfgSet.ClusterID)
+	clusterInfo, err := e.getClusterInfo(ctx, cfgSet.ClusterID)
 	if err != nil {
 		return err
 	}

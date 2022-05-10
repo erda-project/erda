@@ -174,6 +174,9 @@ services:
       - port: 9094
         protocol: "TCP"
         l4_protocol: "TCP"
+      - port: 9095
+        protocol: "TCP"
+        l4_protocol: "TCP"
     envs:
       DEBUG: "false"
     resources:

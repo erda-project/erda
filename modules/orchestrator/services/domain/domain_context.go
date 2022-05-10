@@ -15,13 +15,18 @@
 package domain
 
 import (
+	context2 "context"
 	"fmt"
 	"sort"
 	"strings"
 
 	"github.com/pkg/errors"
+	"google.golang.org/grpc/metadata"
 
+	"github.com/erda-project/erda-infra/pkg/transport"
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/pkg/http/httputil"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
@@ -36,19 +41,21 @@ const (
 
 type context struct {
 	Runtime    *dbclient.Runtime
-	Cluster    *apistructs.ClusterInfo
+	Cluster    *clusterpb.ClusterInfo
 	RootDomain string
 	Domains    []dbclient.RuntimeDomain
 
 	// db and clients and etc.
-	db  *dbclient.DBClient
-	bdl *bundle.Bundle
+	db         *dbclient.DBClient
+	bdl        *bundle.Bundle
+	clusterSvc clusterpb.ClusterServiceServer
 }
 
-func newCtx(db *dbclient.DBClient, bdl *bundle.Bundle) *context {
+func newCtx(db *dbclient.DBClient, bdl *bundle.Bundle, clusterSvc clusterpb.ClusterServiceServer) *context {
 	return &context{
-		db:  db,
-		bdl: bdl,
+		db:         db,
+		bdl:        bdl,
+		clusterSvc: clusterSvc,
 	}
 }
 
@@ -57,10 +64,12 @@ func (ctx *context) load(runtimeId uint64) error {
 	if err != nil {
 		return err
 	}
-	cluster, err := ctx.bdl.GetCluster(runtime.ClusterName)
+	getClusterCtx := transport.WithHeader(context2.Background(), metadata.New(map[string]string{httputil.InternalHeader: "cmp"}))
+	resp, err := ctx.clusterSvc.GetCluster(getClusterCtx, &clusterpb.GetClusterRequest{IdOrName: runtime.ClusterName})
 	if err != nil {
 		return err
 	}
+	cluster := resp.Data
 	rootDomains := strings.Split(cluster.WildcardDomain, ",")
 	if len(rootDomains) == 0 {
 		return errors.Errorf("集群未配置域名")

@@ -17,6 +17,7 @@ package project
 import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	dashboardPb "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/services/namespace"
@@ -56,5 +57,11 @@ func WithNamespace(ns *namespace.Namespace) Option {
 func WithTokenSvc(tokenService tokenpb.TokenServiceServer) Option {
 	return func(p *Project) {
 		p.tokenService = tokenService
+	}
+}
+
+func WithClusterSvc(clusterSvc clusterpb.ClusterServiceServer) Option {
+	return func(p *Project) {
+		p.clusterSvc = clusterSvc
 	}
 }

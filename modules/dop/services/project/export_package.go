@@ -494,7 +494,7 @@ func (p *Project) ExportProjectPackage(record *dao.TestFileRecord) {
 		TempDir:     tmpDir,
 	}
 	packageDirector := PackageDataDirector{}
-	packageDirector.New(&packageDB, p.bdl, p.namespace, p.tokenService)
+	packageDirector.New(&packageDB, p.bdl, p.namespace, p.tokenService, p.clusterSvc)
 	if err := packageDirector.Construct(); err != nil {
 		logrus.Error(apierrors.ErrExportProjectPackage.InternalError(err))
 		if err := p.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateFail, ErrorInfo: packageDirector.GenErrInfo()}); err != nil {

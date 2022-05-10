@@ -22,6 +22,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/i18n"
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/modules/core-services/dao"
 	"github.com/erda-project/erda/modules/core-services/providers/errorbox"
@@ -30,10 +31,11 @@ import (
 )
 
 type provider struct {
-	Tran          i18n.Translator           `translator:"i18n"`
-	Router        httpserver.Router         `autowired:"http-router"`
-	ErrorBoxSvc   *errorbox.ErrorBoxService `autowired:"erda.core.services.errorbox.ErrorBoxService"`
-	ResourceTrans i18n.Translator           `translator:"resource-trans"`
+	Tran          i18n.Translator                `translator:"i18n"`
+	Router        httpserver.Router              `autowired:"http-router"`
+	ErrorBoxSvc   *errorbox.ErrorBoxService      `autowired:"erda.core.services.errorbox.ErrorBoxService"`
+	ClusterSvc    clusterpb.ClusterServiceServer `autowired:"erda.core.clustermanager.cluster.ClusterService"`
+	ResourceTrans i18n.Translator                `translator:"resource-trans"`
 	oauth2server  *oauth2.OAuth2Server
 	perm          *permission.Permission
 	DB            *gorm.DB                   `autowired:"mysql-client"`

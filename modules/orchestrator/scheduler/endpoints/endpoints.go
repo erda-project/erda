@@ -24,6 +24,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/apistructs"
 	cap2 "github.com/erda-project/erda/modules/orchestrator/scheduler/impl/cap"
 	"github.com/erda-project/erda/modules/orchestrator/scheduler/impl/cluster"
@@ -51,6 +52,7 @@ type HTTPEndpoints struct {
 	resourceinfoImpl  resourceinfo.ResourceInfo
 	Cap               cap2.Cap
 	//metric            metric.Metric
+	clusterSvc clusterpb.ClusterServiceServer
 	// TODO: add more impl here
 }
 
@@ -64,7 +66,8 @@ func NewHTTPEndpoints(
 	clusterinfo clusterinfo.ClusterInfo,
 	componentinfo instanceinfo.ComponentInfo,
 	resourceinfo resourceinfo.ResourceInfo,
-	cap cap2.Cap) *HTTPEndpoints {
+	cap cap2.Cap,
+	clusterSvc clusterpb.ClusterServiceServer) *HTTPEndpoints {
 	return &HTTPEndpoints{
 		volume,
 		servicegroup,
@@ -76,6 +79,7 @@ func NewHTTPEndpoints(
 		componentinfo,
 		resourceinfo,
 		cap,
+		clusterSvc,
 	}
 }
 
@@ -288,7 +292,7 @@ func (h *HTTPEndpoints) ResourceInfo(ctx context.Context, r *http.Request, vars 
 }
 
 func (h *HTTPEndpoints) Terminal(ctx context.Context, w http.ResponseWriter, r *http.Request, vars map[string]string) error {
-	terminal.Terminal(w, r)
+	terminal.Terminal(h.clusterSvc, w, r)
 	return nil
 }
 

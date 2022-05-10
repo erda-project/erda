@@ -21,7 +21,7 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/i18n"
-	"github.com/erda-project/erda/apistructs"
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 )
 
 type NopTranslator struct{}
@@ -213,7 +213,7 @@ func TestList_SetComponentValue(t *testing.T) {
 
 func TestList_GetBgImage(t *testing.T) {
 	type args struct {
-		c apistructs.ClusterInfo
+		c *clusterpb.ClusterInfo
 	}
 	tests := []struct {
 		name string
@@ -223,22 +223,22 @@ func TestList_GetBgImage(t *testing.T) {
 		// TODO: Add test cases.
 		{
 			name: "1",
-			args: args{c: apistructs.ClusterInfo{Type: "edas"}},
+			args: args{c: &clusterpb.ClusterInfo{Type: "edas"}},
 			want: "edas_cluster_bg",
 		},
 		{
 			name: "2",
-			args: args{c: apistructs.ClusterInfo{Type: "k8s"}},
+			args: args{c: &clusterpb.ClusterInfo{Type: "k8s"}},
 			want: "k8s_cluster_bg",
 		},
 		{
 			name: "3",
-			args: args{c: apistructs.ClusterInfo{Type: "dcos"}},
+			args: args{c: &clusterpb.ClusterInfo{Type: "dcos"}},
 			want: "dcos_cluster_bg",
 		},
 		{
 			name: "4",
-			args: args{c: apistructs.ClusterInfo{Type: "ack"}},
+			args: args{c: &clusterpb.ClusterInfo{Type: "ack"}},
 			want: "ali_cloud_cluster_bg",
 		},
 	}

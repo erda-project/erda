@@ -20,13 +20,13 @@ import (
 	"encoding/base64"
 	"fmt"
 	"math/rand"
-	"net/http"
 	"strconv"
 	"strings"
 	"text/template"
 	"time"
 
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc/metadata"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -38,6 +38,8 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/clientcmd/api"
 
+	"github.com/erda-project/erda-infra/pkg/transport"
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cmp/conf"
 	"github.com/erda-project/erda/modules/cmp/dbclient"
@@ -70,7 +72,7 @@ type RenderDeploy struct {
 }
 
 // importCluster import cluster
-func (c *Clusters) importCluster(userID string, req *apistructs.ImportCluster) error {
+func (c *Clusters) importCluster(ctx context.Context, userID string, req *apistructs.ImportCluster) error {
 	mc, err := ParseManageConfigFromCredential(req.CredentialType, req.Credential)
 	if err != nil {
 		return err
@@ -85,16 +87,18 @@ func (c *Clusters) importCluster(userID string, req *apistructs.ImportCluster) e
 	req.ScheduleConfig.EnableWorkspace = &enableWorkspace
 
 	// create cluster request to cluster-manager and core-service
-	if err = c.bdl.CreateClusterWithOrg(userID, req.OrgID, &apistructs.ClusterCreateRequest{
-		OrgID:           int64(req.OrgID),
+	ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "cmp"}))
+	if _, err = c.clusterSvc.CreateCluster(ctx, &clusterpb.CreateClusterRequest{
 		Name:            req.ClusterName,
 		DisplayName:     req.DisplayName,
-		Description:     req.Description,
+		Description:     req.DisplayName,
 		Type:            req.ClusterType,
-		SchedulerConfig: &req.ScheduleConfig,
 		WildcardDomain:  req.WildcardDomain,
+		SchedulerConfig: convertSchedConfigToPbSchedConfig(&req.ScheduleConfig),
 		ManageConfig:    mc,
-	}, http.Header{httputil.InternalHeader: []string{"cmp"}}); err != nil {
+		OrgID:           req.OrgID,
+		UserID:          userID,
+	}); err != nil {
 		return err
 	}
 
@@ -135,7 +139,7 @@ func (c *Clusters) importCluster(userID string, req *apistructs.ImportCluster) e
 			}
 		}
 
-		_, err = c.ResetAccessKeyWithClientSet(req.ClusterName, inClusterCs)
+		_, err = c.ResetAccessKeyWithClientSet(ctx, req.ClusterName, inClusterCs)
 		if err != nil {
 			logrus.Errorf("reset accesskey error: %v", err)
 			return err
@@ -145,14 +149,14 @@ func (c *Clusters) importCluster(userID string, req *apistructs.ImportCluster) e
 	}
 
 	if mc.Type == apistructs.ManageProxy {
-		if _, err = c.GetOrCreateAccessKey(req.ClusterName); err != nil {
+		if _, err = c.GetOrCreateAccessKey(ctx, req.ClusterName); err != nil {
 			err = fmt.Errorf("create cluster accessKey error, err: %v", err)
 			return err
 		}
 		return nil
 	}
 
-	ci, err := c.bdl.GetCluster(req.ClusterName)
+	resp, err := c.clusterSvc.GetCluster(ctx, &clusterpb.GetClusterRequest{IdOrName: req.ClusterName})
 	if err != nil {
 		return err
 	}
@@ -163,6 +167,7 @@ func (c *Clusters) importCluster(userID string, req *apistructs.ImportCluster) e
 		return err
 	}
 
+	ci := resp.Data
 	status, err := c.getClusterStatus(kc, ci)
 	if err != nil {
 		logrus.Errorf("get cluster status error: %v", err)
@@ -185,7 +190,7 @@ func (c *Clusters) importCluster(userID string, req *apistructs.ImportCluster) e
 	}
 
 	// create init job
-	initJob, err := c.generateClusterInitJob(req.OrgID, req.ClusterName, false)
+	initJob, err := c.generateClusterInitJob(ctx, req.OrgID, req.ClusterName, false)
 	if err != nil {
 		logrus.Errorf("generate cluster init job error: %v", err)
 		return err
@@ -201,14 +206,14 @@ func (c *Clusters) importCluster(userID string, req *apistructs.ImportCluster) e
 }
 
 // ImportClusterWithRecord import cluster with record
-func (c *Clusters) ImportClusterWithRecord(userID string, req *apistructs.ImportCluster) error {
+func (c *Clusters) ImportClusterWithRecord(ctx context.Context, userID string, req *apistructs.ImportCluster) error {
 	var (
 		err        error
 		detailInfo string
 		status     = dbclient.StatusTypeSuccess
 	)
 
-	if err = c.importCluster(userID, req); err != nil {
+	if err = c.importCluster(ctx, userID, req); err != nil {
 		detailInfo = err.Error()
 		status = dbclient.StatusTypeFailed
 	}
@@ -262,7 +267,7 @@ func (c *Clusters) ClusterInitRetry(orgID uint64, req *apistructs.ClusterInitRet
 					continue
 				}
 				// generate init job
-				initJob, err := c.generateClusterInitJob(orgID, req.ClusterName, true)
+				initJob, err := c.generateClusterInitJob(ctx, orgID, req.ClusterName, true)
 				if err != nil {
 					logrus.Errorf("generate retry cluster init job error: %v", err)
 					continue
@@ -393,8 +398,8 @@ func (c *Clusters) importPreCheck(kc *k8sclient.K8sClient, ns string) error {
 }
 
 // ParseKubeconfig parse kubeconfig to manage config
-func ParseKubeconfig(kubeconfig []byte) (*apistructs.ManageConfig, error) {
-	var mc apistructs.ManageConfig
+func ParseKubeconfig(kubeconfig []byte) (*clusterpb.ManageConfig, error) {
+	var mc clusterpb.ManageConfig
 
 	config, err := clientcmd.Load(kubeconfig)
 	if err != nil {
@@ -450,10 +455,9 @@ func ParseKubeconfig(kubeconfig []byte) (*apistructs.ManageConfig, error) {
 func (c *Clusters) RenderInitCmd(orgName, clusterName string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-
+	ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "true"}))
 	var (
-		cluster *apistructs.ClusterInfo
-		err     error
+		cluster *clusterpb.ClusterInfo
 	)
 
 	for {
@@ -461,12 +465,14 @@ func (c *Clusters) RenderInitCmd(orgName, clusterName string) (string, error) {
 		case <-ctx.Done():
 			return "", fmt.Errorf("get cluster init command timeout")
 		default:
-			cluster, err = c.bdl.GetCluster(clusterName)
+			resp, err := c.clusterSvc.GetCluster(ctx, &clusterpb.GetClusterRequest{IdOrName: clusterName})
 			if err != nil {
+				logrus.Errorf("failed to get cluster (%v), retrying...", err)
 				time.Sleep(500 * time.Millisecond)
 				continue
 			}
 
+			cluster = resp.Data
 			if cluster.ManageConfig.Type != apistructs.ManageProxy {
 				return "", fmt.Errorf("only support proxy manage type")
 			}
@@ -482,11 +488,13 @@ func (c *Clusters) RenderInitCmd(orgName, clusterName string) (string, error) {
 	}
 }
 
-func (c *Clusters) RenderInitContent(orgName, clusterName string, accessKey string) (string, error) {
-	cluster, err := c.bdl.GetCluster(clusterName)
+func (c *Clusters) RenderInitContent(ctx context.Context, orgName, clusterName string, accessKey string) (string, error) {
+	ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "true"}))
+	resp, err := c.clusterSvc.GetCluster(ctx, &clusterpb.GetClusterRequest{IdOrName: clusterName})
 	if err != nil {
 		return "", fmt.Errorf("get cluster error:%v", err)
 	}
+	cluster := resp.Data
 	if cluster.ManageConfig == nil {
 		return "", fmt.Errorf("manage config is nil")
 	}
@@ -495,7 +503,7 @@ func (c *Clusters) RenderInitContent(orgName, clusterName string, accessKey stri
 		return "", fmt.Errorf("accesskey is error")
 	}
 
-	rd, err := c.renderCommonDeployConfig(orgName, clusterName)
+	rd, err := c.renderCommonDeployConfig(ctx, orgName, clusterName)
 
 	tmpl := template.Must(template.New("render").Parse(ProxyDeployTemplate))
 	buf := new(bytes.Buffer)
@@ -508,8 +516,8 @@ func (c *Clusters) RenderInitContent(orgName, clusterName string, accessKey stri
 
 }
 
-func ParseSecretes(address string, secret []byte) (*apistructs.ManageConfig, error) {
-	var mc apistructs.ManageConfig
+func ParseSecretes(address string, secret []byte) (*clusterpb.ManageConfig, error) {
+	var mc clusterpb.ManageConfig
 
 	if address != "" {
 		mc.Address = address
@@ -538,8 +546,8 @@ func ParseSecretes(address string, secret []byte) (*apistructs.ManageConfig, err
 	}
 }
 
-func ParseManageConfigFromCredential(credentialType string, credential apistructs.ICCredential) (*apistructs.ManageConfig, error) {
-	mc := &apistructs.ManageConfig{
+func ParseManageConfigFromCredential(credentialType string, credential apistructs.ICCredential) (*clusterpb.ManageConfig, error) {
+	mc := &clusterpb.ManageConfig{
 		CredentialSource: credentialType,
 	}
 
@@ -572,7 +580,7 @@ func ParseManageConfigFromCredential(credentialType string, credential apistruct
 }
 
 // generateClusterInitJob generate cluster init job
-func (c *Clusters) generateClusterInitJob(orgID uint64, clusterName string, reInstall bool) (*batchv1.Job, error) {
+func (c *Clusters) generateClusterInitJob(ctx context.Context, orgID uint64, clusterName string, reInstall bool) (*batchv1.Job, error) {
 	var (
 		backOffLimit int32
 		jobName      = generateInitJobName(orgID, clusterName)
@@ -583,7 +591,7 @@ func (c *Clusters) generateClusterInitJob(orgID uint64, clusterName string, reIn
 		return nil, err
 	}
 
-	rd, err := c.renderCommonDeployConfig(orgDto.Name, clusterName)
+	rd, err := c.renderCommonDeployConfig(ctx, orgDto.Name, clusterName)
 	if err != nil {
 		return nil, err
 	}
@@ -626,14 +634,15 @@ func (c *Clusters) generateClusterInitJob(orgID uint64, clusterName string, reIn
 }
 
 // renderCommonDeployConfig render deploy struct with common config
-func (c *Clusters) renderCommonDeployConfig(orgName, clusterName string) (*RenderDeploy, error) {
-	ci, err := c.bdl.GetCluster(clusterName)
+func (c *Clusters) renderCommonDeployConfig(ctx context.Context, orgName, clusterName string) (*RenderDeploy, error) {
+	resp, err := c.clusterSvc.GetCluster(ctx, &clusterpb.GetClusterRequest{IdOrName: clusterName})
 	if err != nil {
 		logrus.Errorf("render deploy config error: %v", err)
 		return nil, err
 	}
+	ci := resp.Data
 
-	ak, err := c.GetOrCreateAccessKey(clusterName)
+	ak, err := c.GetOrCreateAccessKey(ctx, clusterName)
 	if err != nil {
 		logrus.Errorf("render cluster accessKey error: %v", err)
 		return nil, err
@@ -658,7 +667,7 @@ func (c *Clusters) renderCommonDeployConfig(orgName, clusterName string) (*Rende
 }
 
 // generateSetValues generate the values of helm chart install set
-func generateSetValues(ci *apistructs.ClusterInfo, clusterAK string) string {
+func generateSetValues(ci *clusterpb.ClusterInfo, clusterAK string) string {
 	// current cluster type in database is k8s, dice-cluster-info need kubernetes
 	if ci.Type == "k8s" {
 		ci.Type = "kubernetes"
@@ -708,4 +717,37 @@ func generateInitJobName(orgID uint64, clusterName string) string {
 func getWorkerNamespace() string {
 	// TODO: support different namespace of master and slave
 	return conf.ErdaNamespace()
+}
+
+func convertSchedConfigToPbSchedConfig(in *apistructs.ClusterSchedConfig) *clusterpb.ClusterSchedConfig {
+	if in == nil {
+		return nil
+	}
+	enableWorkspaceStr := ""
+	if in.EnableWorkspace != nil {
+		enableWorkspaceStr = strconv.FormatBool(*in.EnableWorkspace)
+	}
+	return &clusterpb.ClusterSchedConfig{
+		MasterURL:                in.MasterURL,
+		AuthType:                 in.AuthType,
+		AuthUsername:             in.AuthUsername,
+		AuthPassword:             in.AuthPassword,
+		CaCrt:                    in.CACrt,
+		ClientCrt:                in.ClientCrt,
+		ClientKey:                in.ClientKey,
+		EnableTag:                in.EnableTag,
+		EnableWorkspace:          enableWorkspaceStr,
+		EdasConsoleAddr:          in.EdasConsoleAddr,
+		AccessKey:                in.AccessKey,
+		AccessSecret:             in.AccessSecret,
+		ClusterID:                in.ClusterID,
+		RegionID:                 in.RegionID,
+		LogicalRegionID:          in.LogicalRegionID,
+		K8SAddr:                  in.K8sAddr,
+		RegAddr:                  in.RegAddr,
+		CpuSubscribeRatio:        in.DevCPUSubscribeRatio,
+		DevCPUSubscribeRatio:     in.CPUSubscribeRatio,
+		TestCPUSubscribeRatio:    in.TestCPUSubscribeRatio,
+		StagingCPUSubscribeRatio: in.StagingCPUSubscribeRatio,
+	}
 }

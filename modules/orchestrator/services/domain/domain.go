@@ -15,6 +15,7 @@
 package domain
 
 import (
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
@@ -26,9 +27,10 @@ import (
 
 // Domain 域名封装
 type Domain struct {
-	db    *dbclient.DBClient
-	evMgr *events.EventManager
-	bdl   *bundle.Bundle
+	db         *dbclient.DBClient
+	evMgr      *events.EventManager
+	bdl        *bundle.Bundle
+	clusterSvc clusterpb.ClusterServiceServer
 }
 
 // Option 域名对象配置选项
@@ -64,6 +66,12 @@ func WithBundle(bdl *bundle.Bundle) Option {
 	}
 }
 
+func WithClusterSvc(clusterSvc clusterpb.ClusterServiceServer) Option {
+	return func(d *Domain) {
+		d.clusterSvc = clusterSvc
+	}
+}
+
 // List 查询域名列表
 func (d *Domain) List(userID user.ID, orgID uint64, runtimeID uint64) (*apistructs.DomainGroup, error) {
 	runtime, err := d.db.GetRuntime(runtimeID)
@@ -83,7 +91,7 @@ func (d *Domain) List(userID user.ID, orgID uint64, runtimeID uint64) (*apistruc
 	if !perm.Access {
 		return nil, apierrors.ErrListDomain.AccessDenied()
 	}
-	dc := newCtx(d.db, d.bdl)
+	dc := newCtx(d.db, d.bdl, d.clusterSvc)
 	if err := dc.load(runtimeID); err != nil {
 		return nil, err
 	}
@@ -109,7 +117,7 @@ func (d *Domain) Update(userID user.ID, orgID uint64, runtimeID uint64, group *a
 	if !perm.Access {
 		return apierrors.ErrUpdateDomain.AccessDenied()
 	}
-	dc := newCtx(d.db, d.bdl)
+	dc := newCtx(d.db, d.bdl, d.clusterSvc)
 	if err := dc.load(runtimeID); err != nil {
 		return err
 	}

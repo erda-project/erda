@@ -59,13 +59,13 @@ func (e *Endpoints) AddCloudNodes(ctx context.Context, r *http.Request, vars map
 
 	var recordID uint64
 	if req.CloudVendor == string(apistructs.CloudVendorAliEcs) {
-		recordID, err = e.nodes.AddCloudNodes(req, i.UserID)
+		recordID, err = e.nodes.AddCloudNodes(ctx, req, i.UserID)
 	} else if req.CloudVendor == string(apistructs.CloudVendorAliAck) { // TODO remove
-		recordID, err = e.nodes.AddCSNodes(req, i.UserID)
+		recordID, err = e.nodes.AddCSNodes(ctx, req, i.UserID)
 	} else if req.CloudVendor == string(apistructs.CloudVendorAliCS) {
-		recordID, err = e.nodes.AddCSNodes(req, i.UserID)
+		recordID, err = e.nodes.AddCSNodes(ctx, req, i.UserID)
 	} else if req.CloudVendor == string(apistructs.CloudVendorAliCSManaged) {
-		recordID, err = e.nodes.AddCSNodes(req, i.UserID)
+		recordID, err = e.nodes.AddCSNodes(ctx, req, i.UserID)
 	} else {
 		err = fmt.Errorf("cloud vendor:%v is not valid", req.CloudVendor)
 	}

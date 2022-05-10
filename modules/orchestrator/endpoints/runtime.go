@@ -506,7 +506,7 @@ func (e *Endpoints) GetRuntime(ctx context.Context, r *http.Request, vars map[st
 		appID     = r.URL.Query().Get("applicationId")
 		workspace = r.URL.Query().Get("workspace")
 	)
-	data, err := e.runtime.Get(userID, orgID, idOrName, appID, workspace)
+	data, err := e.runtime.Get(ctx, userID, orgID, idOrName, appID, workspace)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
@@ -619,7 +619,7 @@ func (e *Endpoints) OrgcenterJobLogs(ctx context.Context, r *http.Request, vars 
 	if clusterName == "" {
 		return apierrors.ErrGetRuntime.MissingParameter("clusterName").ToResp(), nil
 	}
-	result, err := e.runtime.OrgJobLogs(userID, orgID, r.Header.Get("org"), jobID, clusterName, r.URL.Query())
+	result, err := e.runtime.OrgJobLogs(ctx, userID, orgID, r.Header.Get("org"), jobID, clusterName, r.URL.Query())
 	if err != nil {
 		return apierrors.ErrGetRuntime.InvalidParameter(strutil.Concat("jobID: ", jobID)).ToResp(), nil
 	}

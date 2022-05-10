@@ -22,6 +22,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/pkg/http/httpserver"
@@ -52,7 +53,7 @@ func (e *Endpoints) ClusterHook(ctx context.Context, r *http.Request, vars map[s
 
 	if strutil.Equal(req.Action, bundle.CreateAction, true) {
 		logrus.Infof("received cluster creating event, add steve server for cluster %s", req.Content.Name)
-		e.SteveAggregator.Add(req.Content)
+		e.SteveAggregator.Add(convertToPbClusterInfo(&req.Content))
 	}
 
 	if strutil.Equal(req.Action, bundle.DeleteAction, true) {
@@ -63,8 +64,30 @@ func (e *Endpoints) ClusterHook(ctx context.Context, r *http.Request, vars map[s
 	if strutil.Equal(req.Action, bundle.UpdateAction, true) {
 		logrus.Infof("received cluster updating event, update steve server for cluster %s", req.Content.Name)
 		e.SteveAggregator.Delete(req.Content.Name)
-		e.SteveAggregator.Add(req.Content)
+		e.SteveAggregator.Add(convertToPbClusterInfo(&req.Content))
 	}
 
 	return httpserver.HTTPResponse{Status: http.StatusOK}, nil
+}
+
+func convertToPbClusterInfo(in *apistructs.ClusterInfo) *clusterpb.ClusterInfo {
+	var manageConfig *clusterpb.ManageConfig
+	if in.ManageConfig != nil {
+		manageConfig = &clusterpb.ManageConfig{
+			Type:             in.ManageConfig.Type,
+			Address:          in.ManageConfig.Address,
+			CaData:           in.ManageConfig.CaData,
+			CertData:         in.ManageConfig.CertData,
+			KeyData:          in.ManageConfig.KeyData,
+			Token:            in.ManageConfig.Token,
+			AccessKey:        in.ManageConfig.AccessKey,
+			CredentialSource: in.ManageConfig.CredentialSource,
+		}
+	}
+	return &clusterpb.ClusterInfo{
+		Name:         in.Name,
+		DisplayName:  in.DisplayName,
+		Type:         in.Type,
+		ManageConfig: manageConfig,
+	}
 }

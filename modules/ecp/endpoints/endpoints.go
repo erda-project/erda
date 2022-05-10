@@ -17,6 +17,7 @@ package endpoints
 import (
 	"net/http"
 
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/ecp/dbclient"
 	"github.com/erda-project/erda/modules/ecp/services/edge"
@@ -25,9 +26,10 @@ import (
 )
 
 type Endpoints struct {
-	bdl      *bundle.Bundle
-	dbClient *dbclient.DBClient
-	edge     *edge.Edge
+	bdl        *bundle.Bundle
+	dbClient   *dbclient.DBClient
+	edge       *edge.Edge
+	clusterSvc clusterpb.ClusterServiceServer
 }
 
 type Option func(*Endpoints)
@@ -43,6 +45,7 @@ func New(db *dbclient.DBClient, options ...Option) *Endpoints {
 		edge.WithDBClient(db),
 		edge.WithBundle(e.bdl),
 		edge.WithKubernetes(kubernetes.New()),
+		edge.WithClusterSvc(e.clusterSvc),
 	)
 	return e
 }
@@ -51,6 +54,13 @@ func New(db *dbclient.DBClient, options ...Option) *Endpoints {
 func WithBundle(bdl *bundle.Bundle) Option {
 	return func(e *Endpoints) {
 		e.bdl = bdl
+	}
+}
+
+// WithClusterSvc With cluster-manager ClusterService
+func WithClusterSvc(clusterSvc clusterpb.ClusterServiceServer) Option {
+	return func(e *Endpoints) {
+		e.clusterSvc = clusterSvc
 	}
 }
 

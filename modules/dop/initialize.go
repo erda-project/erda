@@ -568,6 +568,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		project.WithCMP(p.Cmp),
 		project.WithNamespace(ns),
 		project.WithTokenSvc(p.TokenService),
+		project.WithClusterSvc(p.ClusterSvc),
 	)
 	proj.UpdateFileRecord = testCaseSvc.UpdateFileRecord
 	proj.CreateFileRecord = testCaseSvc.CreateFileRecord

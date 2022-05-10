@@ -36,6 +36,7 @@ import (
 	_ "github.com/erda-project/erda-infra/providers/httpserver"
 	_ "github.com/erda-project/erda-infra/providers/mysql"
 	_ "github.com/erda-project/erda-infra/providers/serviceregister"
+	_ "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/client"
 )
 
 func main() {

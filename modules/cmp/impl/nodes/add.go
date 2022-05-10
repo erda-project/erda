@@ -15,30 +15,36 @@
 package nodes
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strconv"
 	"strings"
 
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc/metadata"
 	"gopkg.in/yaml.v3"
 
+	"github.com/erda-project/erda-infra/pkg/transport"
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/pkg/crypto/encrypt"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
+	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/strutil"
 
 	"github.com/erda-project/erda/modules/cmp/dbclient"
 )
 
 type Nodes struct {
-	db  *dbclient.DBClient
-	bdl *bundle.Bundle
+	db         *dbclient.DBClient
+	bdl        *bundle.Bundle
+	clusterSvc clusterpb.ClusterServiceServer
 }
 
-func New(db *dbclient.DBClient, bdl *bundle.Bundle) *Nodes {
-	return &Nodes{db: db, bdl: bdl}
+func New(db *dbclient.DBClient, bdl *bundle.Bundle, clusterSvc clusterpb.ClusterServiceServer) *Nodes {
+	return &Nodes{db: db, bdl: bdl, clusterSvc: clusterSvc}
 }
 
 func (n *Nodes) AddNodes(req apistructs.AddNodesRequest, userid string) (uint64, error) {
@@ -118,7 +124,7 @@ func (n *Nodes) AddNodes(req apistructs.AddNodesRequest, userid string) (uint64,
 	return recordID, nil
 }
 
-func (n *Nodes) AddCSNodes(req apistructs.CloudNodesRequest, userid string) (uint64, error) {
+func (n *Nodes) AddCSNodes(ctx context.Context, req apistructs.CloudNodesRequest, userid string) (uint64, error) {
 	var recordID uint64
 	clusterInfo, err := n.bdl.QueryClusterInfo(req.ClusterName)
 	if err != nil {
@@ -133,12 +139,14 @@ func (n *Nodes) AddCSNodes(req apistructs.CloudNodesRequest, userid string) (uin
 		return recordID, err
 	}
 
-	clusterConf, err := n.bdl.GetCluster(req.ClusterName)
+	ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "true"}))
+	resp, err := n.clusterSvc.GetCluster(ctx, &clusterpb.GetClusterRequest{IdOrName: req.ClusterName})
 	if err != nil {
-		err = fmt.Errorf("failed to query cluster cofig form cmdb: %v, cluster config: %v", err, clusterConf)
+		err = fmt.Errorf("failed to query cluster cofig form cmdb: %v, resp: %v", err, resp)
 		logrus.Errorln(err)
 		return recordID, err
 	}
+	clusterConf := resp.Data
 	opsConfig := clusterConf.OpsConfig
 	if opsConfig == nil {
 		err = fmt.Errorf("empty ops_config, cluster config: %v", clusterConf)
@@ -235,7 +243,7 @@ func (n *Nodes) AddCSNodes(req apistructs.CloudNodesRequest, userid string) (uin
 	return recordID, nil
 }
 
-func (n *Nodes) AddCloudNodes(req apistructs.CloudNodesRequest, userid string) (uint64, error) {
+func (n *Nodes) AddCloudNodes(ctx context.Context, req apistructs.CloudNodesRequest, userid string) (uint64, error) {
 	var recordID uint64
 	clusterInfo, err := n.bdl.QueryClusterInfo(req.ClusterName)
 	if err != nil {
@@ -251,12 +259,14 @@ func (n *Nodes) AddCloudNodes(req apistructs.CloudNodesRequest, userid string) (
 		return recordID, err
 	}
 
-	clusterConf, err := n.bdl.GetCluster(req.ClusterName)
+	ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "true"}))
+	resp, err := n.clusterSvc.GetCluster(ctx, &clusterpb.GetClusterRequest{IdOrName: req.ClusterName})
 	if err != nil {
-		errstr := fmt.Sprintf("failed to query cluster cofig form cmdb: %v, cluster config: %v", err, clusterConf)
+		errstr := fmt.Sprintf("failed to query cluster cofig form cmdb: %v, resp: %v", err, resp)
 		logrus.Errorf(errstr)
 		return recordID, err
 	}
+	clusterConf := resp.Data
 	opsConfig := clusterConf.OpsConfig
 	if opsConfig == nil {
 		err := fmt.Errorf("empty ops_config, cluster name: %v", req.ClusterName)
@@ -276,7 +286,7 @@ func (n *Nodes) AddCloudNodes(req apistructs.CloudNodesRequest, userid string) (
 	req.SecurityGroupIds = strings.Split(opsConfig.SgIDs, ",")
 	req.ChargeType = opsConfig.ChargeType
 	if req.ChargeType == apistructs.PrePaidChargeType {
-		req.ChargePeriod = opsConfig.ChargePeriod
+		req.ChargePeriod = int(opsConfig.ChargePeriod)
 	}
 	req.AccessKey = encrypt.AesDecrypt(opsConfig.AccessKey, apistructs.TerraformEcyKey)
 	req.SecretKey = encrypt.AesDecrypt(opsConfig.SecretKey, apistructs.TerraformEcyKey)

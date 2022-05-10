@@ -20,6 +20,7 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda-proto-go/orchestrator/runtime/pb"
 	"github.com/erda-project/erda/modules/orchestrator/events"
 	"github.com/erda-project/erda/modules/orchestrator/scheduler/impl/servicegroup"
@@ -34,8 +35,9 @@ type provider struct {
 	Cfg          *config
 	Logger       logs.Logger
 	Register     transport.Register
-	DB           *gorm.DB             `autowired:"mysql-client"`
-	EventManager *events.EventManager `autowired:"erda.orchestrator.events.event-manager"`
+	DB           *gorm.DB                       `autowired:"mysql-client"`
+	EventManager *events.EventManager           `autowired:"erda.orchestrator.events.event-manager"`
+	ClusterSvc   clusterpb.ClusterServiceServer `autowired:"erda.core.clustermanager.cluster.ClusterService"`
 
 	runtimeService pb.RuntimeServiceServer
 }
@@ -46,6 +48,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		WithDBService(NewDBService(p.DB)),
 		WithEventManagerService(p.EventManager),
 		WithServiceGroupImpl(servicegroup.NewServiceGroupImplInit()),
+		WithClusterSvc(p.ClusterSvc),
 	)
 
 	if p.Register != nil {

@@ -20,11 +20,15 @@ import (
 	"net/http"
 
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc/metadata"
 
+	"github.com/erda-project/erda-infra/pkg/transport"
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/apps/admin/apierrors"
 	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/http/httpserver"
+	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 func (am *AdminManager) AppendClusterEndpoint() {
@@ -58,16 +62,17 @@ func (am *AdminManager) ListCluster(ctx context.Context, req *http.Request, reso
 	}
 
 	clusterType := req.URL.Query().Get("clusterType")
-	newClusters := []apistructs.ClusterInfo{}
+	newClusters := []*clusterpb.ClusterInfo{}
 
 	// use sys symbol if use admin user and return all cluster info
 	// else return cluster with org relation
+	ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "cmp"}))
 	if req.URL.Query().Get("sys") != "" {
-		clusters, err := am.bundle.ListClusters(clusterType)
+		resp, err := am.clusterSvc.ListCluster(ctx, &clusterpb.ListClusterRequest{ClusterType: clusterType})
 		if err != nil {
 			return apierrors.ErrListCluster.InternalError(err).ToResp(), nil
 		}
-		newClusters = clusters
+		newClusters = resp.Data
 	} else {
 		orgID, err = GetOrgID(req)
 		if err != nil {
@@ -78,14 +83,15 @@ func (am *AdminManager) ListCluster(ctx context.Context, req *http.Request, reso
 		if err != nil {
 			return apierrors.ErrListCluster.InternalError(err).ToResp(), nil
 		}
-		clusters, err := am.bundle.ListClusters(clusterType)
+		resp, err := am.clusterSvc.ListCluster(ctx, &clusterpb.ListClusterRequest{ClusterType: clusterType})
 		if err != nil {
 			return apierrors.ErrListCluster.InternalError(err).ToResp(), nil
 		}
 
+		clusters := resp.Data
 		for _, cluster := range clusters {
 			for _, relate := range clusterRelation {
-				if relate.ClusterID == uint64(cluster.ID) && relate.OrgID == orgID {
+				if relate.ClusterID == uint64(cluster.Id) && relate.OrgID == orgID {
 					cluster.IsRelation = "Y"
 					newClusters = append(newClusters, cluster)
 				}
@@ -95,29 +101,46 @@ func (am *AdminManager) ListCluster(ctx context.Context, req *http.Request, reso
 
 	// remove sensitive info
 	for i := range newClusters {
-		removeSensitiveInfo(&newClusters[i])
+		removeSensitiveInfo(newClusters[i])
 	}
 
 	return httpserver.OkResp(newClusters)
 }
 
-func removeSensitiveInfo(cluster *apistructs.ClusterInfo) {
+func removeSensitiveInfo(cluster *clusterpb.ClusterInfo) {
 	if cluster == nil {
 		return
 	}
 	if cluster.SchedConfig != nil {
-		cluster.SchedConfig.RemoveSensitiveInfo()
+		removeScheduleConfigSensitiveInfo(cluster.SchedConfig)
 	}
 	cluster.OpsConfig = nil
 	if cluster.System != nil {
-		cluster.System.RemoveSensitiveInfo()
+		removeSysConfSensitiveInfo(cluster.System)
 	}
 	if cluster.ManageConfig != nil {
-		cluster.ManageConfig = &apistructs.ManageConfig{
+		cluster.ManageConfig = &clusterpb.ManageConfig{
 			CredentialSource: cluster.ManageConfig.CredentialSource,
 			Address:          cluster.ManageConfig.Address,
 		}
 	}
+}
+
+func removeScheduleConfigSensitiveInfo(csc *clusterpb.ClusterSchedConfig) {
+	csc.AuthType = ""
+	csc.AuthUsername = ""
+	csc.AuthPassword = ""
+	csc.CaCrt = ""
+	csc.ClientKey = ""
+	csc.ClientCrt = ""
+	csc.AccessKey = ""
+	csc.AccessSecret = ""
+}
+
+func removeSysConfSensitiveInfo(sc *clusterpb.SysConf) {
+	sc.Ssh = &clusterpb.SSH{}
+	sc.Platform = &clusterpb.Platform{}
+	sc.MainPlatform = nil
 }
 
 func (am *AdminManager) DereferenceCluster(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
@@ -151,10 +174,11 @@ func (am *AdminManager) InspectCluster(ctx context.Context, r *http.Request, var
 		return apierrors.ErrGetCluster.MissingParameter("clusterName").ToResp(), nil
 	}
 
-	info, err := am.bundle.GetCluster(clusterName)
+	ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "cmp"}))
+	resp, err := am.clusterSvc.GetCluster(ctx, &clusterpb.GetClusterRequest{IdOrName: clusterName})
 	if err != nil {
 		return apierrors.ErrGetCluster.InternalError(err).ToResp(), nil
 	}
 
-	return httpserver.OkResp(info)
+	return httpserver.OkResp(resp.Data)
 }

@@ -101,7 +101,7 @@ func (e *Endpoints) CreateAccessKey(ctx context.Context, r *http.Request, vars m
 		return
 	}
 
-	res, err := e.clusters.GetOrCreateAccessKeyWithRecord(req.ClusterName, i.UserID, i.OrgID)
+	res, err := e.clusters.GetOrCreateAccessKeyWithRecord(ctx, req.ClusterName, i.UserID, i.OrgID)
 	if err != nil {
 		return mkResponse(&apistructs.ClusterCreateAkResponse{
 			Header: apistructs.Header{
@@ -139,7 +139,7 @@ func (e *Endpoints) ResetAccessKey(ctx context.Context, r *http.Request, vars ma
 		return
 	}
 
-	res, err := e.clusters.ResetAccessKeyWithRecord(req.ClusterName, i.UserID, i.OrgID)
+	res, err := e.clusters.ResetAccessKeyWithRecord(ctx, req.ClusterName, i.UserID, i.OrgID)
 	if err != nil {
 		return mkResponse(&apistructs.ClusterResetAkResponse{
 			Header: apistructs.Header{

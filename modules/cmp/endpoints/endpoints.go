@@ -18,6 +18,7 @@ import (
 	"context"
 	"net/http"
 
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/bundle"
@@ -55,6 +56,7 @@ type Endpoints struct {
 	SteveAggregator *steve.Aggregator
 	Resource        *resource.Resource
 	Credential      tokenpb.TokenServiceServer
+	ClusterSvc      clusterpb.ClusterServiceServer
 
 	reportTable *resource.ReportTable
 	CronService cronpb.CronServiceServer
@@ -70,17 +72,17 @@ func New(ctx context.Context, db *dbclient.DBClient, js jsonstore.JsonStore, cac
 	}
 	e.dbclient = db
 	e.labels = labels.New(db, e.bdl)
-	e.nodes = nodes.New(db, e.bdl)
-	e.clusters = clusters.New(db, e.bdl, e.Credential)
-	e.Mns = mns.New(db, e.bdl, e.nodes, js)
-	e.Ess = ess.New(e.bdl, e.Mns, e.nodes, e.labels)
+	e.nodes = nodes.New(db, e.bdl, e.ClusterSvc)
+	e.clusters = clusters.New(db, e.bdl, e.Credential, e.ClusterSvc)
+	e.Mns = mns.New(db, e.bdl, e.nodes, js, e.ClusterSvc)
+	e.Ess = ess.New(e.bdl, e.Mns, e.nodes, e.labels, e.ClusterSvc)
 	e.CloudAccount = cloud_account.New(db, cachedJS)
 	e.Addons = addons.New(db, e.bdl)
 	e.JS = js
 	e.metrics = ctx.Value("metrics").(*metrics.Metric)
 	e.Resource = ctx.Value("resource").(*resource.Resource)
 	e.CachedJS = cachedJS
-	e.SteveAggregator = steve.NewAggregator(ctx, e.bdl)
+	e.SteveAggregator = steve.NewAggregator(ctx, e.bdl, e.ClusterSvc)
 	return e
 }
 
@@ -117,6 +119,12 @@ func WithResourceTable(reportTable *resource.ReportTable) Option {
 func WithCronServiceServer(cronService cronpb.CronServiceServer) Option {
 	return func(e *Endpoints) {
 		e.CronService = cronService
+	}
+}
+
+func WithClusterServiceServer(clusterSvc clusterpb.ClusterServiceServer) Option {
+	return func(e *Endpoints) {
+		e.ClusterSvc = clusterSvc
 	}
 }
 

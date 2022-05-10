@@ -24,46 +24,47 @@ import (
 	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
 
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 )
 
 func TestRemoveSensitiveInfo(t *testing.T) {
-	cluster := apistructs.ClusterInfo{
+	cluster := &clusterpb.ClusterInfo{
 		Name: "fake-cluster",
-		SchedConfig: &apistructs.ClusterSchedConfig{
+		SchedConfig: &clusterpb.ClusterSchedConfig{
 			MasterURL:    "FakeMasterURL",
 			AuthType:     "FakeAuthType",
 			AuthUsername: "FakeAuthUsername",
 			AuthPassword: "FakeAuthPassword",
-			CACrt:        "FakeCACrt",
+			CaCrt:        "FakeCACrt",
 			ClientKey:    "FakeClientKey",
 			ClientCrt:    "FakeClientCrt",
 			AccessKey:    "FakeAccessKey",
 			AccessSecret: "FakeAccessSecret",
 		},
-		OpsConfig: &apistructs.OpsConfig{
+		OpsConfig: &clusterpb.OpsConfig{
 			AccessKey: "Fake AccessKey",
 		},
-		System: &apistructs.Sysconf{
-			SSH: apistructs.SSH{
+		System: &clusterpb.SysConf{
+			Ssh: &clusterpb.SSH{
 				User:     "FakeUser",
 				Password: "FakePassword",
 			},
-			Storage: apistructs.Storage{
+			Storage: &clusterpb.Storage{
 				MountPoint: "FakeMountPoint",
 			},
 		},
-		ManageConfig: &apistructs.ManageConfig{
+		ManageConfig: &clusterpb.ManageConfig{
 			CaData:           "FakeCaData",
 			CredentialSource: "FakeCredentialSource",
 		},
 	}
-	removeSensitiveInfo(&cluster)
+	removeSensitiveInfo(cluster)
 	// remove assert
 	assert.Equal(t, "", cluster.SchedConfig.AuthPassword)
-	assert.Equal(t, (*apistructs.OpsConfig)(nil), cluster.OpsConfig)
-	assert.Equal(t, "", cluster.System.SSH.Password)
+	assert.Equal(t, (*clusterpb.OpsConfig)(nil), cluster.OpsConfig)
+	assert.Equal(t, "", cluster.System.Ssh.Password)
 	assert.Equal(t, "", cluster.ManageConfig.CaData)
 	// keep assert
 	assert.Equal(t, "FakeMasterURL", cluster.SchedConfig.MasterURL)

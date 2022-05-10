@@ -18,6 +18,8 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/pkg/common"
 
+	_ "github.com/erda-project/erda-infra/providers/mysql"
+	_ "github.com/erda-project/erda-infra/providers/serviceregister"
 	_ "github.com/erda-project/erda/modules/cluster/cluster-manager"
 )
 
