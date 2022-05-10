@@ -16,6 +16,7 @@ package dataview
 
 import (
 	"testing"
+	"time"
 )
 
 func Test_provider_ExportTaskExecutor(t *testing.T) {
@@ -27,13 +28,16 @@ func Test_provider_ExportTaskExecutor(t *testing.T) {
 		fields fields
 	}{
 		{"case1", fields{ExportChannel: make(chan string, 1)}},
+		{"case2", fields{ExportChannel: make(chan string)}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &provider{
 				ExportChannel: tt.fields.ExportChannel,
 			}
-			p.ExportTaskExecutor()
+			p.ExportTaskExecutor(time.Second * time.Duration(1))
+
+			time.Sleep(time.Second * time.Duration(2))
 		})
 	}
 }

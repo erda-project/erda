@@ -108,19 +108,19 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	}
 
 	p.ExportChannel = make(chan string, 1)
-	p.ExportTaskExecutor()
+	p.ExportTaskExecutor(time.Second * time.Duration(20))
 	routes := ctx.Service("http-server", interceptors.Recover(p.Log), interceptors.CORS()).(httpserver.Router)
 	return p.initRoutes(routes)
 }
 
-func (p *provider) ExportTaskExecutor() {
+func (p *provider) ExportTaskExecutor(interval time.Duration) {
 	// Scheduled polling export task
 	go func() {
-		ticker := time.NewTicker(time.Second * 20)
+		ticker := time.NewTicker(interval)
 		for {
 			select {
 			case <-ticker.C:
-				ticker.Reset(time.Second * 20)
+				ticker.Reset(interval)
 			case id := <-p.ExportChannel:
 				p.ExportTask(id)
 			}
