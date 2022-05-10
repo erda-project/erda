@@ -16,6 +16,8 @@ package dataview
 
 import (
 	"context"
+	"time"
+
 	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -109,8 +111,11 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 	// Scheduled polling export task
 	go func() {
+		ticker := time.NewTicker(time.Second * 20)
 		for {
 			select {
+			case <-ticker.C:
+				ticker.Reset(time.Second * 20)
 			case id := <-p.ExportChannel:
 				p.ExportTask(id)
 			}
