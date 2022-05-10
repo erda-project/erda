@@ -759,7 +759,7 @@ func (p *Project) fetchPodInfo(dto *apistructs.ProjectDTO) {
 		return
 	}
 	var podInfos []apistructs.PodInfo
-	if err := p.db.Find(&podInfos, map[string]interface{}{"project_id": strconv.FormatUint(dto.ID, 10), "phase": "running"}).Error; err != nil {
+	if err := p.db.Find(&podInfos, RunningPodCond(dto.ID)).Error; err != nil {
 		logrus.WithError(err).WithField("project_id", dto.ID).
 			Warnln("failed to Find the namespaces info in the project")
 		return
@@ -1581,4 +1581,11 @@ func (p *Project) ListUnblockAppCountsByProjectIDS(projectIDS []uint64) ([]model
 		return nil, nil
 	}
 	return p.db.ListUnblockAppCountsByProjectIDS(projectIDS)
+}
+
+func RunningPodCond(projectID uint64) map[string]interface{} {
+	return map[string]interface{}{
+		"project_id": strconv.FormatUint(projectID, 10),
+		"phase":      "running",
+	}
 }
