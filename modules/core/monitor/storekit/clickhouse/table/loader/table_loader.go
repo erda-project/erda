@@ -145,7 +145,7 @@ func (p *provider) reloadTablesFromClickhouse(ctx context.Context) error {
 }
 
 func (p *provider) extractTTLDays(createTableSql string) (baseTimeField string, ttl int64) {
-	regex, _ := regexp.Compile(`TTL\s(.*?)\s\+\stoIntervalDay\((\d+)\)`)
+	regex, _ := regexp.Compile(`TTL\s(.*?)\s\+\stoIntervalDay\((\d+)\)\s+SETTINGS`)
 	match := regex.FindStringSubmatch(createTableSql)
 	if len(match) < 3 {
 		return

@@ -19,16 +19,20 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/ClickHouse/clickhouse-go/v2"
+
 	"github.com/erda-project/erda/modules/core/monitor/storekit/clickhouse/table"
 	"github.com/erda-project/erda/modules/core/monitor/storekit/clickhouse/table/loader"
 )
 
 func (p *provider) syncTTL(ctx context.Context) {
+	p.Log.Infof("run sync ttl with interval: %v", p.Cfg.TTLSyncInterval)
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-time.After(p.Cfg.TTLSyncInterval):
+			p.Log.Infof("start check and sync ttls")
 			tables := p.Loader.WaitAndGetTables(ctx)
 			for t, meta := range tables {
 				select {
@@ -42,7 +46,7 @@ func (p *provider) syncTTL(ctx context.Context) {
 				}
 
 				// default table
-				if t == p.Cfg.TablePrefix && meta.TTLDays != table.FormatTTLToDays(p.Retention.DefaultTTL()) {
+				if t == fmt.Sprintf("%s.%s", p.Cfg.Database, p.Cfg.TablePrefix) && meta.TTLDays != table.FormatTTLToDays(p.Retention.DefaultTTL()) {
 					p.AlterTableTTL(t, meta, table.FormatTTLToDays(p.Retention.DefaultTTL()))
 					continue
 				}
@@ -66,11 +70,14 @@ func (p *provider) syncTTL(ctx context.Context) {
 }
 
 func (p *provider) AlterTableTTL(tableName string, meta *loader.TableMeta, ttlDays int64) {
-	sql := fmt.Sprintf("ALTER TABLE %s MODIFY TTL %s + INTERVAL %v DAY;", tableName, meta.TTLBaseField, ttlDays)
-	err := p.Clickhouse.Client().Exec(context.Background(), sql)
+	p.Log.Infof("start change ttl of table[%s]", tableName)
+	sql := fmt.Sprintf("ALTER TABLE %s ON CLUSTER '{cluster}' MODIFY TTL %s + INTERVAL %v DAY;", tableName, meta.TTLBaseField, ttlDays)
+	err := p.Clickhouse.Client().Exec(clickhouse.Context(context.Background(), clickhouse.WithSettings(map[string]interface{}{
+		"materialize_ttl_after_modify": 0,
+	})), sql)
 	if err != nil {
-		p.Log.Warnf("failed to sync ttl of table[%s] to %v, sql: %s", tableName, ttlDays, sql)
+		p.Log.Warnf("failed to change ttl of table[%s] to %v day, sql: %s", tableName, ttlDays, sql)
 	} else {
-		p.Log.Infof("sync ttl of table[%s] to %v", tableName, ttlDays)
+		p.Log.Infof("finish change ttl of table[%s] to %v day", tableName, ttlDays)
 	}
 }
