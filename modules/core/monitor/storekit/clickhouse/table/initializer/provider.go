@@ -46,7 +46,7 @@ type provider struct {
 	Clickhouse clickhouse.Interface `autowired:"clickhouse" inherit-label:"preferred"`
 	Retention  retention.Interface  `autowired:"storage-retention-strategy" inherit-label:"preferred"`
 	Loader     loader.Interface     `autowired:"clickhouse.table.loader" inherit-label:"true"`
-	Election   election.Interface   `autowired:"etcd-election@table"`
+	Election   election.Interface   `autowired:"etcd-election@table-initializer"`
 
 	once sync.Once
 }

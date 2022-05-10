@@ -52,8 +52,11 @@ etcd:
 etcd-election@index:
   root_path: "/erda/monitor-index-rollover-election"
 
-etcd-election@table:
+etcd-election@table-loader:
   root_path: "/erda/monitor-ck-table-loader-election"
+
+etcd-election@table-initializer:
+  root_path: "/erda/monitor-ck-table-initializer-election"
 
 etcd-mutex:
   root_path: "/erda/streaming"

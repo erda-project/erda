@@ -77,7 +77,7 @@ type provider struct {
 	Log        logs.Logger
 	Clickhouse clickhouse.Interface `autowired:"clickhouse" inherit-label:"preferred"`
 	Redis      *redis.Client        `autowired:"redis-client"`
-	Election   election.Interface   `autowired:"etcd-election@table"`
+	Election   election.Interface   `autowired:"etcd-election@table-loader"`
 
 	tables      atomic.Value
 	listeners   []func(map[string]*TableMeta)

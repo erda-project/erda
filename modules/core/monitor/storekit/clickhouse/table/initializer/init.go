@@ -81,7 +81,7 @@ func (p *provider) extractTenantAndKey(table string, meta *loader.TableMeta, tab
 			continue
 		}
 
-		arr := strings.SplitN(tenant, p.Cfg.TablePrefix, 2)
+		arr := strings.SplitN(tenant, fmt.Sprintf(".%s_", p.Cfg.TablePrefix), 2)
 		if len(arr) != 2 {
 			return
 		}
