@@ -17,6 +17,7 @@ package cleaner
 import (
 	"context"
 	"errors"
+	"github.com/erda-project/erda/pkg/mock"
 	"reflect"
 	"testing"
 	"time"
@@ -27,7 +28,6 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	election "github.com/erda-project/erda-infra/providers/etcd-election"
-	"github.com/erda-project/erda/modules/core/monitor/pkg"
 	"github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/loader"
 )
 
@@ -112,9 +112,9 @@ func Test_provider_forceMerge(t *testing.T) {
 			indices := NewMockInterface(ctrl)
 			defer ctrl.Finish()
 			indices.EXPECT().Client()
-			var logger *pkg.MockLogger
+			var logger *mock.MockLogger
 			defer ctrl.Finish()
-			logger = pkg.NewMockLogger(ctrl)
+			logger = mock.NewMockLogger(ctrl)
 
 			p := &provider{loader: indices, Log: logger}
 
@@ -200,9 +200,9 @@ func Test_provider_deleteByQuery(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
-			var logger *pkg.MockLogger
+			var logger *mock.MockLogger
 			defer ctrl.Finish()
-			logger = pkg.NewMockLogger(ctrl)
+			logger = mock.NewMockLogger(ctrl)
 			logger.EXPECT().Infof(gomock.Any(), gomock.Any())
 
 			indices := NewMockInterface(ctrl)

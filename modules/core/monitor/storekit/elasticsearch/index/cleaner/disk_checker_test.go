@@ -16,6 +16,7 @@ package cleaner
 
 import (
 	"context"
+	"github.com/erda-project/erda/pkg/mock"
 	"testing"
 	"time"
 
@@ -24,7 +25,6 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	election "github.com/erda-project/erda-infra/providers/etcd-election"
-	"github.com/erda-project/erda/modules/core/monitor/pkg"
 	"github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/loader"
 )
 
@@ -139,11 +139,11 @@ func Test_provider_runDocsCheckAndClean(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var logger *pkg.MockLogger
+			var logger *mock.MockLogger
 			if tt.fields.Cfg.DiskClean.TTL.Enable {
 				ctrl := gomock.NewController(t)
 				defer ctrl.Finish()
-				logger = pkg.NewMockLogger(ctrl)
+				logger = mock.NewMockLogger(ctrl)
 				logger.EXPECT().Infof(gomock.Any(), gomock.Any())
 			}
 			p := &provider{
