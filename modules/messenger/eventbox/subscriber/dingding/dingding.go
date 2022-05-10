@@ -39,6 +39,10 @@ var (
 	DINGDINGBadURLErr = errors.New("bad DINGDING URL")
 )
 
+var (
+	maxContentSize = 20000
+)
+
 // example dingding message:
 // {
 //      "msgtype": "text",
@@ -112,7 +116,7 @@ func (d *DDSubscriber) Publish(dest string, content string, time int64, msg *typ
 	if !ok {
 		m = DDMessage{
 			Msgtype: "text",
-			Text:    &DDContent{content},
+			Text:    &DDContent{DingPrint(content)},
 			At:      ddAt,
 		}
 	} else {
@@ -132,7 +136,7 @@ func (d *DDSubscriber) Publish(dest string, content string, time int64, msg *typ
 			Msgtype: "markdown",
 			Markdown: &DDMarkdown{
 				Title: title,
-				Text:  content,
+				Text:  DingPrint(content),
 			},
 			At: ddAt,
 		}
@@ -289,6 +293,13 @@ func PrettyPrint(content string, isWebhook bool) string {
 	}
 	if indentContent, err := indentJSON(contentI); err == nil {
 		return indentContent
+	}
+	return content
+}
+
+func DingPrint(content string) string {
+	if len(content) > maxContentSize {
+		return content[:maxContentSize]
 	}
 	return content
 }
