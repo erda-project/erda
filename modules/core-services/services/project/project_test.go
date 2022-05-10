@@ -398,3 +398,13 @@ func TestGetNotFoundProject(t *testing.T) {
 	_, err := p.Get(context.Background(), 1, true)
 	assert.Equal(t, dao.ErrNotFoundProject, err)
 }
+
+func TestRunningPodCond(t *testing.T) {
+	cond := RunningPodCond(1)
+	if cond["project_id"] != "1" {
+		t.Fatal("error")
+	}
+	if cond["phase"] != "running" {
+		t.Fatal("error")
+	}
+}
