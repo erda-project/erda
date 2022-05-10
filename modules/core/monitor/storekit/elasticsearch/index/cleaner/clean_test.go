@@ -22,13 +22,13 @@ import (
 	"time"
 
 	"bou.ke/monkey"
-	"github.com/erda-project/erda/pkg/mock"
 	"github.com/golang/mock/gomock"
 	"github.com/olivere/elastic"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	election "github.com/erda-project/erda-infra/providers/etcd-election"
 	"github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/loader"
+	"github.com/erda-project/erda/pkg/mock"
 )
 
 func Test_provider_getIndicesList(t *testing.T) {

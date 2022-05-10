@@ -19,13 +19,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/erda-project/erda/pkg/mock"
 	"github.com/golang/mock/gomock"
 	"gotest.tools/assert"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	election "github.com/erda-project/erda-infra/providers/etcd-election"
 	"github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/loader"
+	"github.com/erda-project/erda/pkg/mock"
 )
 
 // -go:generate mockgen -destination=./mock_loader_test.go -package cleaner -source=../loader/interface.go Interface
