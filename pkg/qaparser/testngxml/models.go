@@ -19,6 +19,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/erda-project/erda-proto-go/dop/qa/unittest/pb"
 	"github.com/erda-project/erda/apistructs"
 )
 
@@ -208,8 +209,8 @@ func argumentsToString(ps []*Param) string {
 }
 
 // set ng test result to standard output
-func (ng *NgTestResult) Transfer() ([]*apistructs.TestSuite, error) {
-	var suites []*apistructs.TestSuite
+func (ng *NgTestResult) Transfer() ([]*pb.TestSuite, error) {
+	var suites []*pb.TestSuite
 
 	if len(ng.Suites) == 0 {
 		return suites, nil
@@ -218,15 +219,15 @@ func (ng *NgTestResult) Transfer() ([]*apistructs.TestSuite, error) {
 	// suite 一般只有一个
 	for _, ngSuite := range ng.Suites {
 		// standard suite
-		suite := &apistructs.TestSuite{
+		suite := &pb.TestSuite{
 			Name: ngSuite.Name,
-			Totals: &apistructs.TestTotals{
-				Statuses: make(map[apistructs.TestStatus]int),
+			Totals: &pb.TestTotal{
+				Statuses: make(map[string]int64),
 			},
 			Extra: make(map[string]string),
 		}
 
-		suite.Totals.Duration = ngSuite.Duration
+		suite.Totals.Duration = int64(ngSuite.Duration)
 
 		// ngTest
 		for _, ngTest := range ngSuite.Tests {
@@ -243,24 +244,24 @@ func (ng *NgTestResult) Transfer() ([]*apistructs.TestSuite, error) {
 					// set total ngTest( total case)
 					suite.Totals.Tests += 1
 
-					test := &apistructs.Test{
+					test := &pb.Test{
 						Name: ngMethod.Name,
 					}
 					test.Classname = ngClass.Name
-					test.Status = ngMethod.Status.ToStatus()
-					test.Duration = ngMethod.Duration
-					test.SystemOut = fmt.Sprintf("%s %s",
+					test.Status = string(ngMethod.Status.ToStatus())
+					test.Duration = int64(ngMethod.Duration)
+					test.Stdout = fmt.Sprintf("%s %s",
 						argumentsToString(ngMethod.Params),
 						ngMethod.ReporterOutput.String())
 
 					switch ngMethod.Status {
 					case NgSkipped:
-						suite.Totals.Statuses[apistructs.TestStatusSkipped] += 1
+						suite.Totals.Statuses[string(apistructs.TestStatusSkipped)] += 1
 					case NgPassed:
-						suite.Totals.Statuses[apistructs.TestStatusPassed] += 1
+						suite.Totals.Statuses[string(apistructs.TestStatusPassed)] += 1
 					case NgFailed:
-						suite.Totals.Statuses[apistructs.TestStatusFailed] += 1
-						test.Error = apistructs.TestError{
+						suite.Totals.Statuses[string(apistructs.TestStatusFailed)] += 1
+						test.Error = &pb.TestError{
 							Message: ngMethod.Exception.Message,
 							Type:    ngMethod.Exception.Class,
 							Body:    ngMethod.Exception.FullStacktrace,

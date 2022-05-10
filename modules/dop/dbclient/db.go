@@ -21,8 +21,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-proto-go/dop/qa/unittest/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/pkg/qaparser/types"
 )
 
 const (
@@ -59,13 +59,14 @@ type TPRecordDO struct {
 	CaseDir         string                   `xorm:"case_dir" json:"caseDir"`
 	Application     string                   `xorm:"-" json:"application"`
 	Avatar          string                   `xorm:"-" json:"avatar,omitempty"`
-	TType           apistructs.TestType      `xorm:"type" json:"type" validate:"required"`
-	Totals          *apistructs.TestTotals   `xorm:"totals json" json:"totals"`
-	ParserType      types.TestParserType     `xorm:"parser_type" json:"parserType"`
+	TType           string                   `xorm:"type" json:"type" validate:"required"`
+	Totals          *pb.TestTotal            `xorm:"totals json" json:"totals"`
+	ParserType      string                   `xorm:"parser_type" json:"parserType"`
 	Extra           map[string]string        `xorm:"varchar(1024) 'extra'" json:"extra,omitempty"`
 	Envs            map[string]string        `xorm:"varchar(1024) 'envs'" json:"envs"`
 	Workspace       apistructs.DiceWorkspace `xorm:"workspace" json:"workspace" validate:"required"`
-	Suites          []*apistructs.TestSuite  `xorm:"longtext 'suites'" json:"suites"`
+	Suites          []*pb.TestSuite          `xorm:"longtext 'suites'" json:"suites"`
+	Report          []*pb.CodeCoverageNode   `xorm:"longtext 'report'" json:"report"`
 }
 
 func (TPRecordDO) TableName() string {
@@ -74,8 +75,8 @@ func (TPRecordDO) TableName() string {
 
 func NewTPRecordDO() *TPRecordDO {
 	return &TPRecordDO{
-		Totals: &apistructs.TestTotals{
-			Statuses: make(map[apistructs.TestStatus]int),
+		Totals: &pb.TestTotal{
+			Statuses: make(map[string]int64),
 		},
 		Extra: make(map[string]string),
 	}
@@ -96,7 +97,7 @@ func (tp *TPRecordDO) SetCols(cols interface{}) (*TPRecordDO, error) {
 }
 
 func (tp *TPRecordDO) SetTPType(tpType apistructs.TestType) *TPRecordDO {
-	tp.TType = tpType
+	tp.TType = string(tpType)
 	return tp
 }
 

@@ -15,6 +15,7 @@
 package apistructs
 
 import (
+	"strings"
 	"time"
 )
 
@@ -178,6 +179,28 @@ type TestSuite struct {
 	Totals *TestTotals `json:"totals" yaml:"totals"`
 
 	Extra map[string]string `json:"extra,omitempty"`
+
+	Children []*TestSuite `json:"children,omitempty"`
+}
+
+func (t *TestSuite) Calculate() *TestTotals {
+	if t.Totals == nil {
+		t.Totals = &TestTotals{Statuses: make(map[TestStatus]int)}
+	}
+	for _, node := range t.Children {
+		tmpTotal := node.Calculate()
+		node.Name = strings.TrimPrefix(node.Name, t.Name+"/")
+		if tmpTotal != nil {
+			if tmpTotal.Statuses == nil {
+				tmpTotal.Statuses = make(map[TestStatus]int)
+			}
+			t.Totals.Statuses[TestStatusPassed] += tmpTotal.Statuses[TestStatusPassed]
+			t.Totals.Statuses[TestStatusSkipped] += tmpTotal.Statuses[TestStatusSkipped]
+			t.Totals.Statuses[TestStatusFailed] += tmpTotal.Statuses[TestStatusFailed]
+			t.Totals.Statuses[TestStatusError] += tmpTotal.Statuses[TestStatusError]
+		}
+	}
+	return t.Totals
 }
 
 // Test represents the results of a single test run.

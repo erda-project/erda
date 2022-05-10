@@ -281,10 +281,6 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/sonar-metric-rules/actions/query-list", Method: http.MethodGet, Handler: e.QuerySonarMetricRules},
 
 		// test platform
-		{Path: "/api/qa/actions/all-test-type", Method: http.MethodGet, Handler: e.GetTestTypes},
-		{Path: "/api/qa/actions/test-list", Method: http.MethodGet, Handler: e.GetRecords},
-		{Path: "/api/qa/test/{id}", Method: http.MethodGet, Handler: e.GetTestRecord},
-		{Path: "/api/qa/actions/test-callback", Method: http.MethodPost, Handler: e.TestCallback},
 		{Path: "/api/qa/actions/get-sonar-credential", Method: http.MethodGet, Handler: e.GetSonarCredential},
 
 		// pmp api test
