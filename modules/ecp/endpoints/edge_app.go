@@ -178,12 +178,12 @@ func (e *Endpoints) GetEdgeAppStatus(ctx context.Context, r *http.Request, vars 
 
 	switch app.Type {
 	case ImageType, ProductType:
-		rsp, err = e.edge.GetAppStatus(edgeAppID)
+		rsp, err = e.edge.GetAppStatus(ctx, edgeAppID)
 	case AddonType:
 		switch app.AddonName {
 		case MysqlAddonName:
 			//just update edge sites
-			rsp, err = e.edge.GetEdgeMysqlStatus(edgeAppID)
+			rsp, err = e.edge.GetEdgeMysqlStatus(ctx, edgeAppID)
 		}
 	}
 	if err != nil {
@@ -275,11 +275,11 @@ func (e *Endpoints) CreateEdgeApp(ctx context.Context, r *http.Request, vars map
 
 	switch req.Type {
 	case ImageType, ProductType:
-		err = e.edge.CreateApp(&req)
+		err = e.edge.CreateApp(ctx, &req)
 	case AddonType:
 		switch req.AddonName {
 		case MysqlAddonName:
-			err = e.edge.CreateEdgeMysql(&req)
+			err = e.edge.CreateEdgeMysql(ctx, &req)
 		}
 	}
 	if err != nil {
@@ -323,12 +323,12 @@ func (e *Endpoints) UpdateEdgeApp(ctx context.Context, r *http.Request, vars map
 
 	switch req.Type {
 	case ImageType, ProductType:
-		err = e.edge.UpdateApp(edgeAppID, &req)
+		err = e.edge.UpdateApp(ctx, edgeAppID, &req)
 	case AddonType:
 		switch req.AddonName {
 		case MysqlAddonName:
 			//just update edgesites
-			err = e.edge.UpdateEdgeMysql(edgeAppID, &req)
+			err = e.edge.UpdateEdgeMysql(ctx, edgeAppID, &req)
 		}
 	}
 	if err != nil {
@@ -365,12 +365,12 @@ func (e *Endpoints) DeleteEdgeApp(ctx context.Context, r *http.Request, vars map
 	}
 	switch app.Type {
 	case ImageType, ProductType:
-		err = e.edge.DeleteApp(edgeAppID)
+		err = e.edge.DeleteApp(ctx, edgeAppID)
 	case AddonType:
 		switch app.AddonName {
 		case MysqlAddonName:
 			//just update edge sites
-			err = e.edge.DeleteEdgeMysql(edgeAppID)
+			err = e.edge.DeleteEdgeMysql(ctx, edgeAppID)
 		}
 	}
 	if err != nil {
@@ -416,12 +416,12 @@ func (e *Endpoints) OfflineAppSite(ctx context.Context, r *http.Request, vars ma
 
 	switch app.Type {
 	case ImageType, ProductType:
-		err = e.edge.OfflineAppSite(app, req.SiteName)
+		err = e.edge.OfflineAppSite(ctx, app, req.SiteName)
 		break
 	case AddonType:
 		switch app.AddonName {
 		case MysqlAddonName:
-			err = e.edge.OfflineEdgeMysql(app, req.SiteName)
+			err = e.edge.OfflineEdgeMysql(ctx, app, req.SiteName)
 			break
 		}
 		break
@@ -470,12 +470,12 @@ func (e *Endpoints) RestartAppSite(ctx context.Context, r *http.Request, vars ma
 
 	switch app.Type {
 	case ImageType, ProductType:
-		err = e.edge.RestartAppSite(app, req.SiteName)
+		err = e.edge.RestartAppSite(ctx, app, req.SiteName)
 		break
 	case AddonType:
 		switch app.AddonName {
 		case MysqlAddonName:
-			err = e.edge.RestartEdgeMysql(app, req.SiteName)
+			err = e.edge.RestartEdgeMysql(ctx, app, req.SiteName)
 			break
 		}
 		break

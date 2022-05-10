@@ -31,3 +31,7 @@ i18n@cp:
 i18n:
   common:
     - conf/erda-server/i18n/common.yaml # TODO : distinguish between admin global common.yaml and cp/common.yaml
+
+grpc-client@erda.core.clustermanager.cluster:
+  addr: "${CLUSTER_MANAGER_GRPC_ADDR:cluster-manager:9095}"
+erda.core.clustermanager.cluster-client: {}

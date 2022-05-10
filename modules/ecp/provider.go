@@ -18,11 +18,13 @@ import (
 	"context"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/modules/ecp/conf"
 )
 
 type provider struct {
-	Cfg *conf.Conf
+	Cfg        *conf.Conf
+	clusterSvc clusterpb.ClusterServiceServer `autowired:"erda.core.clustermanager.cluster.ClusterService"`
 }
 
 // Run Run the provider

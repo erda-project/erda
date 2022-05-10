@@ -20,6 +20,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/i18n"
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/cmp_interface"
 	"github.com/erda-project/erda/modules/cmp/dbclient"
@@ -28,11 +29,12 @@ import (
 const Lang = "Lang"
 
 type Resource struct {
-	Bdl    *bundle.Bundle
-	Ctx    context.Context
-	Server cmp_interface.Provider
-	I18N   i18n.Translator
-	DB     *dbclient.DBClient
+	Bdl        *bundle.Bundle
+	Ctx        context.Context
+	Server     cmp_interface.Provider
+	I18N       i18n.Translator
+	DB         *dbclient.DBClient
+	ClusterSvc clusterpb.ClusterServiceServer
 }
 
 func (r *Resource) I18n(lang i18n.LanguageCodes, key string, args ...interface{}) string {
@@ -58,11 +60,12 @@ func GetHeader(ctx context.Context, key string) string {
 	return ""
 }
 
-func New(ctx context.Context, i18n i18n.Translator, mServer cmp_interface.Provider) *Resource {
+func New(ctx context.Context, i18n i18n.Translator, mServer cmp_interface.Provider, clusterSvc clusterpb.ClusterServiceServer) *Resource {
 	r := &Resource{}
 	r.I18N = i18n
 	r.Ctx = ctx
 	r.Server = mServer
+	r.ClusterSvc = clusterSvc
 	return r
 }
 

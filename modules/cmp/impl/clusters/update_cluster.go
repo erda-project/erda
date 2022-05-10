@@ -15,25 +15,32 @@
 package clusters
 
 import (
+	"context"
 	"net/http"
 	"strings"
 
+	"google.golang.org/grpc/metadata"
+
+	"github.com/erda-project/erda-infra/pkg/transport"
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
-func (c *Clusters) UpdateCluster(req apistructs.CMPClusterUpdateRequest, header http.Header) error {
+func (c *Clusters) UpdateCluster(ctx context.Context, req apistructs.CMPClusterUpdateRequest, header http.Header) error {
 	var (
-		mc  *apistructs.ManageConfig
+		mc  *clusterpb.ManageConfig
 		err error
 	)
 
-	cluster, err := c.bdl.GetCluster(req.ClusterUpdateRequest.Name)
+	ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "true"}))
+	resp, err := c.clusterSvc.GetCluster(ctx, &clusterpb.GetClusterRequest{IdOrName: req.ClusterUpdateRequest.Name})
 	if err != nil {
 		return err
 	}
 
-	mc = cluster.ManageConfig
+	clusterInfo := resp.Data
+	mc = clusterInfo.ManageConfig
 
 	// if credential content is empty, use the latest credential data.
 	// if credential change to agent from other type, clear credential info
@@ -45,28 +52,29 @@ func (c *Clusters) UpdateCluster(req apistructs.CMPClusterUpdateRequest, header 
 		}
 	}
 
-	var newSchedulerConfig *apistructs.ClusterSchedConfig
+	var newSchedulerConfig *clusterpb.ClusterSchedConfig
 
 	if req.Type != apistructs.EDAS {
-		newSchedulerConfig = cluster.SchedConfig
-		newSchedulerConfig.CPUSubscribeRatio = req.SchedulerConfig.CPUSubscribeRatio
+		newSchedulerConfig = clusterInfo.SchedConfig
+		newSchedulerConfig.CpuSubscribeRatio = req.SchedulerConfig.CPUSubscribeRatio
 	} else {
-		newSchedulerConfig = req.SchedulerConfig
+		newSchedulerConfig = convertSchedConfigToPbSchedConfig(req.SchedulerConfig)
 	}
 
 	// TODO: support tag switch, current force true
 	// e.g. modules/scheduler/impl/cluster/hook.go line:136
 	newSchedulerConfig.EnableTag = true
 
-	return c.bdl.UpdateCluster(apistructs.ClusterUpdateRequest{
-		Name:            cluster.Name,
+	if _, err = c.clusterSvc.UpdateCluster(ctx, &clusterpb.UpdateClusterRequest{
+		Name:            clusterInfo.Name,
 		DisplayName:     req.DisplayName,
-		Type:            cluster.Type,
 		Description:     req.Description,
+		Type:            clusterInfo.Type,
 		WildcardDomain:  req.WildcardDomain,
 		SchedulerConfig: newSchedulerConfig,
 		ManageConfig:    mc,
-	}, map[string][]string{
-		httputil.InternalHeader: {"cmp"},
-	})
+	}); err != nil {
+		return err
+	}
+	return nil
 }

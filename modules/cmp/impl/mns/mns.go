@@ -29,13 +29,17 @@ import (
 	ali_mns "github.com/aliyun/aliyun-mns-go-sdk"
 	"github.com/golang-collections/collections/set"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc/metadata"
 
+	"github.com/erda-project/erda-infra/pkg/transport"
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/dbclient"
 	"github.com/erda-project/erda/modules/cmp/impl/nodes"
 	"github.com/erda-project/erda/pkg/crypto/encrypt"
 	"github.com/erda-project/erda/pkg/dlock"
+	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/jsonstore"
 	"github.com/erda-project/erda/pkg/retry"
 )
@@ -54,11 +58,12 @@ const (
 )
 
 type Mns struct {
-	nodes  *nodes.Nodes
-	db     *dbclient.DBClient
-	bdl    *bundle.Bundle
-	js     jsonstore.JsonStore
-	Config *Config
+	nodes      *nodes.Nodes
+	db         *dbclient.DBClient
+	bdl        *bundle.Bundle
+	js         jsonstore.JsonStore
+	Config     *Config
+	ClusterSvc clusterpb.ClusterServiceServer
 }
 
 type Config struct {
@@ -74,8 +79,8 @@ type Config struct {
 	BathSize        int32
 }
 
-func New(db *dbclient.DBClient, bdl *bundle.Bundle, n *nodes.Nodes, js jsonstore.JsonStore) *Mns {
-	return &Mns{db: db, bdl: bdl, nodes: n, js: js}
+func New(db *dbclient.DBClient, bdl *bundle.Bundle, n *nodes.Nodes, js jsonstore.JsonStore, clusterSvc clusterpb.ClusterServiceServer) *Mns {
+	return &Mns{db: db, bdl: bdl, nodes: n, js: js, ClusterSvc: clusterSvc}
 }
 
 func (m *Mns) GetAccountID(req apistructs.BasicCloudConf) (string, error) {
@@ -304,8 +309,8 @@ func (m *Mns) GetScaleOutInfo() (*apistructs.ScaleInfo, error) {
 }
 
 // periodically fetch cluster info from db
-func (m *Mns) PeriodicallyFetchClusters() chan apistructs.ClusterInfo {
-	clusterInfoChan := make(chan apistructs.ClusterInfo, 100)
+func (m *Mns) PeriodicallyFetchClusters() chan *clusterpb.ClusterInfo {
+	clusterInfoChan := make(chan *clusterpb.ClusterInfo, 100)
 	ticker := time.NewTicker(time.Minute * 1)
 
 	go func() {
@@ -324,13 +329,15 @@ func (m *Mns) PeriodicallyFetchClusters() chan apistructs.ClusterInfo {
 	return clusterInfoChan
 }
 
-func (m *Mns) FetchValidClusterInfo() []apistructs.ClusterInfo {
-	clusters, err := m.bdl.ListClusters("")
-	var result []apistructs.ClusterInfo
+func (m *Mns) FetchValidClusterInfo() []*clusterpb.ClusterInfo {
+	ctx := transport.WithHeader(context.Background(), metadata.New(map[string]string{httputil.InternalHeader: "cmp"}))
+	resp, err := m.ClusterSvc.ListCluster(ctx, &clusterpb.ListClusterRequest{})
 	if err != nil {
 		logrus.Error("failed get to get cluster list")
 		return nil
 	}
+	clusters := resp.Data
+	var result []*clusterpb.ClusterInfo
 	for _, cluster := range clusters {
 		err := m.validateOpsConfig(cluster.OpsConfig)
 		if err != nil {
@@ -351,7 +358,7 @@ func (m *Mns) FetchValidClusterInfo() []apistructs.ClusterInfo {
 	return result
 }
 
-func (m *Mns) validateOpsConfig(opsConf *apistructs.OpsConfig) error {
+func (m *Mns) validateOpsConfig(opsConf *clusterpb.OpsConfig) error {
 	if opsConf == nil {
 		err := fmt.Errorf("empty ops config")
 		logrus.Error(err.Error())
@@ -369,7 +376,7 @@ func (m *Mns) isEmpty(str string) bool {
 	return strings.Replace(str, " ", "", -1) == ""
 }
 
-func (m *Mns) Consume(clusterInfo apistructs.ClusterInfo) {
+func (m *Mns) Consume(clusterInfo *clusterpb.ClusterInfo) {
 	mnsReq := m.getMnsReq(clusterInfo)
 	err := m.InitConfig(mnsReq)
 	if err != nil {
@@ -470,7 +477,7 @@ func (m *Mns) IsClusterLocked(clusterName string) (bool, error) {
 }
 
 // check latest add nodes status, if failed, lock auto scale
-func (m *Mns) PreProcess(info apistructs.ClusterInfo) error {
+func (m *Mns) PreProcess(info *clusterpb.ClusterInfo) error {
 
 	// Check the cluster's history of adding/removing nodes to determine whether the cluster is need lock
 	var req apistructs.RecordRequest
@@ -523,7 +530,7 @@ func (m *Mns) PreProcess(info apistructs.ClusterInfo) error {
 		reqDL.ScalingGroupId = info.OpsConfig.EssGroupID
 		reqDL.InstanceIDs = strings.Join(d.InstanceIDs, ",")
 		reqDL.ForceDelete = true
-		if _, err := m.nodes.DeleteEssNodes(reqDL, apistructs.AutoScaleUserID, strconv.Itoa(info.OrgID)); err != nil {
+		if _, err := m.nodes.DeleteEssNodes(reqDL, apistructs.AutoScaleUserID, strconv.Itoa(int(info.OrgID))); err != nil {
 			logrus.Errorf("mns force delete ess nodes failed, cluster name: %v, error: %v", info.Name, err)
 			return err
 		}
@@ -532,7 +539,7 @@ func (m *Mns) PreProcess(info apistructs.ClusterInfo) error {
 	return nil
 }
 
-func (m *Mns) getMnsReq(info apistructs.ClusterInfo) apistructs.MnsReq {
+func (m *Mns) getMnsReq(info *clusterpb.ClusterInfo) apistructs.MnsReq {
 	var r apistructs.MnsReq
 	r.Region = info.OpsConfig.Region
 	r.AccessKeyId = info.OpsConfig.AccessKey
@@ -541,7 +548,7 @@ func (m *Mns) getMnsReq(info apistructs.ClusterInfo) apistructs.MnsReq {
 	return r
 }
 
-func (m *Mns) getAddNodesReq(info apistructs.ClusterInfo, msg map[string]string) (*apistructs.AddNodesRequest, error) {
+func (m *Mns) getAddNodesReq(info *clusterpb.ClusterInfo, msg map[string]string) (*apistructs.AddNodesRequest, error) {
 	var r apistructs.AddNodesRequest
 	var d apistructs.NodesRecordDetail
 	r.ClusterName = info.Name
@@ -581,7 +588,7 @@ func (m *Mns) Process(ctx context.Context) {
 				req := apistructs.RecordUpdateRequest{
 					ClusterName: c.Name,
 					UserID:      apistructs.AutoScaleUserID,
-					OrgID:       strconv.Itoa(c.OrgID),
+					OrgID:       strconv.Itoa(int(c.OrgID)),
 					RecordType:  string(dbclient.RecordTypeDeleteEssNodes),
 					PageSize:    1,
 				}

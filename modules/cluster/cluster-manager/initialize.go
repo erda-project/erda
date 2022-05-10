@@ -18,25 +18,11 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/modules/cluster/cluster-manager/conf"
-	"github.com/erda-project/erda/modules/cluster/cluster-manager/dbclient"
-	"github.com/erda-project/erda/modules/cluster/cluster-manager/endpoints"
-	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 
 func initialize(cfg *conf.Conf) error {
 	if cfg.Debug {
 		logrus.SetLevel(logrus.DebugLevel)
 	}
-
-	ep := endpoints.New(
-		endpoints.WithDBClient(dbclient.Open()),
-	)
-
-	server := httpserver.New(cfg.Listen)
-	server.RegisterEndpoint(append(ep.Routes()))
-
-	logrus.Infof("start the service and listen on address [%s]", cfg.Listen)
-	logrus.Info("starting cluster-manager instance")
-
-	return server.ListenAndServe()
+	return nil
 }

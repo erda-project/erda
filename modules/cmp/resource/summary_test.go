@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/apistructs"
 	_interface "github.com/erda-project/erda/modules/cmp/cmp_interface"
 )
@@ -85,7 +86,7 @@ func TestResource_FilterCluster(t *testing.T) {
 		Lang   i18n.LanguageCodes
 	}
 	type args struct {
-		clusters     []apistructs.ClusterInfo
+		clusters     []*clusterpb.ClusterInfo
 		clusterNames map[string]struct{}
 	}
 	tests := []struct {
@@ -97,7 +98,7 @@ func TestResource_FilterCluster(t *testing.T) {
 		{
 			name: "test",
 			args: args{
-				clusters:     []apistructs.ClusterInfo{{Name: "terminus-dev"}},
+				clusters:     []*clusterpb.ClusterInfo{{Name: "terminus-dev"}},
 				clusterNames: map[string]struct{}{"terminus-dev": {}},
 			},
 			want: []string{"terminus-dev"},

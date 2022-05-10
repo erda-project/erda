@@ -113,7 +113,7 @@ func (e *Endpoints) ListEdgeSite(ctx context.Context, r *http.Request, vars map[
 		PageSize:  pageSize,
 	}
 
-	total, edgeSites, err := e.edge.ListSite(pageQueryParam)
+	total, edgeSites, err := e.edge.ListSite(ctx, pageQueryParam)
 
 	if err != nil {
 		return apierrors.ErrListEdgeSite.InternalError(err).ToResp(), nil
@@ -144,7 +144,7 @@ func (e *Endpoints) GetEdgeSite(ctx context.Context, r *http.Request, vars map[s
 		return apierrors.ErrGetEdgeSite.InvalidParameter(err).ToResp(), nil
 	}
 
-	edgeSite, err := e.edge.GetEdgeSite(edgeSiteID)
+	edgeSite, err := e.edge.GetEdgeSite(ctx, edgeSiteID)
 
 	if err != nil {
 		return apierrors.ErrListEdgeSite.InternalError(err).ToResp(), nil
@@ -183,7 +183,7 @@ func (e *Endpoints) CreateEdgeSite(ctx context.Context, r *http.Request, vars ma
 		return apierrors.ErrListEdgeSite.InternalError(fmt.Errorf("illegal create param")).ToResp(), nil
 	}
 
-	edgeSiteID, err := e.edge.CreateSite(&req)
+	edgeSiteID, err := e.edge.CreateSite(ctx, &req)
 	if err != nil {
 		return apierrors.ErrCreateEdgeSite.InternalError(err).ToResp(), nil
 	}
@@ -248,7 +248,7 @@ func (e *Endpoints) DeleteEdgeSite(ctx context.Context, r *http.Request, vars ma
 		return apierrors.ErrDeleteEdgeSite.InvalidParameter(err).ToResp(), nil
 	}
 
-	if err = e.edge.DeleteSite(edgeSiteID); err != nil {
+	if err = e.edge.DeleteSite(ctx, edgeSiteID); err != nil {
 		return apierrors.ErrDeleteEdgeSite.InternalError(err).ToResp(), nil
 	}
 
@@ -274,7 +274,7 @@ func (e *Endpoints) GetInitEdgeSiteShell(ctx context.Context, r *http.Request, v
 		return apierrors.ErrGetEdgeSiteInit.InvalidParameter(err).ToResp(), nil
 	}
 
-	res, err := e.edge.GetInitSiteShell(edgeSiteID)
+	res, err := e.edge.GetInitSiteShell(ctx, edgeSiteID)
 	if err != nil {
 		return apierrors.ErrGetEdgeSiteInit.InternalError(err).ToResp(), nil
 	}
@@ -310,7 +310,7 @@ func (e *Endpoints) OfflineEdgeHost(ctx context.Context, r *http.Request, vars m
 	}
 	logrus.Infof("request body: %+v", offlineRequest)
 
-	if err = e.edge.OfflineEdgeHost(edgeSiteID, offlineRequest.SiteIP); err != nil {
+	if err = e.edge.OfflineEdgeHost(ctx, edgeSiteID, offlineRequest.SiteIP); err != nil {
 		return apierrors.ErrOfflineEdgeSite.InternalError(err).ToResp(), nil
 	}
 

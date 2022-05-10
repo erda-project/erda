@@ -34,11 +34,14 @@ import (
 	"github.com/rancher/apiserver/pkg/types"
 	"github.com/rancher/wrangler/pkg/data"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc/metadata"
 	"k8s.io/api/policy/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apiuser "k8s.io/apiserver/pkg/authentication/user"
 	"k8s.io/apiserver/pkg/endpoints/request"
 
+	"github.com/erda-project/erda-infra/pkg/transport"
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
 	"github.com/erda-project/erda/modules/cmp/cache"
@@ -967,14 +970,15 @@ func (a *Aggregator) Audit(userID, orgID, templateName string, ctx map[string]in
 	return a.Bdl.CreateAuditEvent(&auditReq)
 }
 
-func (a *Aggregator) listCluster(orgID uint64, types ...string) ([]apistructs.ClusterInfo, error) {
-	var result []apistructs.ClusterInfo
+func (a *Aggregator) listCluster(orgID uint64, types ...string) ([]*clusterpb.ClusterInfo, error) {
+	var result []*clusterpb.ClusterInfo
+	ctx := transport.WithHeader(a.Ctx, metadata.New(map[string]string{httputil.InternalHeader: "true"}))
 	for _, typ := range types {
-		clusters, err := a.Bdl.ListClusters(typ, orgID)
+		resp, err := a.clusterSvc.ListCluster(ctx, &clusterpb.ListClusterRequest{ClusterType: typ})
 		if err != nil {
 			return nil, err
 		}
-		result = append(result, clusters...)
+		result = append(result, resp.Data...)
 	}
 	return result, nil
 }

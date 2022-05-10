@@ -35,10 +35,12 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rancher/remotedialer"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc/metadata"
 
+	"github.com/erda-project/erda-infra/pkg/transport"
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cluster/cluster-dialer/auth"
 	"github.com/erda-project/erda/modules/cluster/cluster-dialer/config"
 	"github.com/erda-project/erda/pkg/http/httputil"
@@ -67,7 +69,7 @@ type cluster struct {
 	CACert  string `json:"caCert"`
 }
 
-func clusterRegister(ctx context.Context, server *remotedialer.Server, rw http.ResponseWriter, req *http.Request, needClusterInfo bool, etcd *clientv3.Client) {
+func clusterRegister(ctx context.Context, server *remotedialer.Server, rw http.ResponseWriter, req *http.Request, needClusterInfo bool, etcd *clientv3.Client, clusterSvc clusterpb.ClusterServiceServer) {
 	registerFunc := func(clusterKey string, clusterInfo cluster) {
 		ctx, cancel := context.WithTimeout(context.Background(), registerTimeout)
 		defer cancel()
@@ -84,41 +86,40 @@ func clusterRegister(ctx context.Context, server *remotedialer.Server, rw http.R
 				}
 				logrus.Infof("session exsited, patch cluster info to cluster-manager [%s]", clusterKey)
 				// register to cluster manager
-				bdl := bundle.New(bundle.WithClusterManager())
-				c, err := bdl.GetCluster(clusterKey)
+				c, err := clusterSvc.GetCluster(ctx, &clusterpb.GetClusterRequest{IdOrName: clusterKey})
 				if err != nil {
 					logrus.Errorf("failed to get cluster from cluster-manager: %s, err: %v", clusterKey, err)
 					remotedialer.DefaultErrorWriter(rw, req, 500, err)
 					return
 				}
 
-				if c.ManageConfig != nil {
-					if c.ManageConfig.Type != apistructs.ManageProxy {
+				if c.Data.ManageConfig != nil {
+					if c.Data.ManageConfig.Type != apistructs.ManageProxy {
 						logrus.Warnf("cluster is not proxy type [%s]", clusterKey)
 						return
 					}
-					if clusterInfo.Token == c.ManageConfig.Token && clusterInfo.Address == c.ManageConfig.Address &&
-						clusterInfo.CACert == c.ManageConfig.CaData {
+					if clusterInfo.Token == c.Data.ManageConfig.Token && clusterInfo.Address == c.Data.ManageConfig.Address &&
+						clusterInfo.CACert == c.Data.ManageConfig.CaData {
 						logrus.Infof("cluster info isn't change [%s]", clusterKey)
 						return
 					}
 				}
 
-				if err = bdl.PatchCluster(&apistructs.ClusterPatchRequest{
+				ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.ClientIDHeader: "cluster-dialer"}))
+				if _, err = clusterSvc.PatchCluster(ctx, &clusterpb.PatchClusterRequest{
 					Name: clusterKey,
-					ManageConfig: &apistructs.ManageConfig{
+					ManageConfig: &clusterpb.ManageConfig{
 						Type:             apistructs.ManageProxy,
 						Address:          clusterInfo.Address,
 						CaData:           clusterInfo.CACert,
 						Token:            clusterInfo.Token,
 						CredentialSource: apistructs.ManageProxy,
 					},
-				}, map[string][]string{httputil.InternalHeader: {"cluster-dialer"}}); err != nil {
+				}); err != nil {
 					logrus.Errorf("failed to patch cluster [%s], err: %v", clusterKey, err)
 					remotedialer.DefaultErrorWriter(rw, req, 500, err)
 					return
 				}
-
 				logrus.Infof("patch cluster info success [%s]", clusterKey)
 
 				return
@@ -368,7 +369,7 @@ func getClusterClient(server *remotedialer.Server, clusterKey string, timeout ti
 	return client
 }
 
-func Start(ctx context.Context, credential tokenpb.TokenServiceServer, cfg *config.Config, etcd *clientv3.Client) error {
+func Start(ctx context.Context, clusterSvc clusterpb.ClusterServiceServer, credential tokenpb.TokenServiceServer, cfg *config.Config, etcd *clientv3.Client) error {
 	authorizer := auth.New(
 		auth.WithCredentialClient(credential),
 		auth.WithConfig(cfg),
@@ -395,7 +396,7 @@ func Start(ctx context.Context, credential tokenpb.TokenServiceServer, cfg *conf
 	})
 	router.HandleFunc("/clusteragent/connect", func(rw http.ResponseWriter,
 		req *http.Request) {
-		clusterRegister(ctx, handler, rw, req, cfg.NeedClusterInfo, etcd)
+		clusterRegister(ctx, handler, rw, req, cfg.NeedClusterInfo, etcd, clusterSvc)
 	})
 	router.HandleFunc("/clusteragent/check", func(rw http.ResponseWriter,
 		req *http.Request) {

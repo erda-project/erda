@@ -75,9 +75,14 @@ grpc-client@erda.core.services.errorbox:
   addr: "${CORE_SERVICES_GRPC_ADDR:core-services:9537}"
 erda.core.services.errorbox-client: {}
 
+<<<<<<< HEAD
 grpc-client@erda.core.token:
   addr: "${CORE_SERVICES_GRPC_ADDR:core-services:9537}"
 erda.core.token-client: {}
+
+grpc-client@erda.core.clustermanager.cluster:
+  addr: "${CLUSTER_MANAGER_GRPC_ADDR:cluster-manager:9095}"
+erda.core.clustermanager.cluster-client: {}
 
 erda.core.dop.autotest.testplan: {}
 erda.dop.projecthome: {}
