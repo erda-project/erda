@@ -51,6 +51,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/providers/issue/stream"
 	"github.com/erda-project/erda/modules/dop/providers/issue/sync"
 	"github.com/erda-project/erda/modules/dop/providers/projectpipeline"
+	"github.com/erda-project/erda/modules/dop/providers/qa/unittest"
 	"github.com/erda-project/erda/modules/dop/providers/taskerror"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/dumpstack"
