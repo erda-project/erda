@@ -248,6 +248,27 @@ type GittarCreateMergeRequest struct {
 	RemoveSourceBranch bool   `json:"removeSourceBranch"`
 }
 
+type MergeOperationTempBranchOperationType string
+
+const JoinToTempBranch MergeOperationTempBranchOperationType = "joinToTempBranch"
+const RemoveFromTempBranch MergeOperationTempBranchOperationType = "removeFromTempBranch"
+const ReJoinAllBranchToTempBranch MergeOperationTempBranchOperationType = "reJoinAllBranchToTempBranch"
+
+const JoinTempBranchSuccessStatus = "success"
+const JoinTempBranchFailedStatus = "failed"
+const RemoveFromTempBranchStatus = "remove"
+
+// GittarCreateMergeRequest POST /<projectName>/<appName>/merge-requests 创建merge request
+type GittarMergeOperationTempBranchRequest struct {
+	MergeID    uint64                                `json:"mergeID"`
+	TempBranch string                                `json:"tempBranch"`
+	Operation  MergeOperationTempBranchOperationType `json:"operation"`
+}
+
+type GittarMergeOperationTempBranchResponse struct {
+	Header
+}
+
 type RepoCreateMrEvent struct {
 	EventHeader
 	Content MergeRequestInfo `json:"content"`
@@ -287,6 +308,14 @@ type MergeRequestInfo struct {
 	RebaseBranch         string       `json:"rebaseBranch" default:"-"`
 	EventName            string       `json:"eventName"`
 	CheckRuns            CheckRuns    `json:"checkRuns,omitempty"`
+	JoinTempBranchStatus string       `json:"joinTempBranchStatus"`
+}
+
+func (that MergeRequestInfo) IsJoinTempBranch() bool {
+	if that.JoinTempBranchStatus == "" || that.JoinTempBranchStatus == RemoveFromTempBranchStatus {
+		return false
+	}
+	return true
 }
 
 type MergeStatusInfo struct {
@@ -317,7 +346,11 @@ type GittarQueryMrRequest struct {
 	//页数
 	Page int `query:"pageNo"`
 	//每页数量
-	Size int `query:"pageSize" `
+	Size int `query:"pageSize"`
+	// targetBranch
+	TargetBranch string `query:"targetBranch"`
+	// sourceBranch
+	SourceBranch string `query:"sourceBranch"`
 }
 
 // GittarQueryMrResponse 查询mr响应

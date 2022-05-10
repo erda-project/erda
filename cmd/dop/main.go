@@ -36,6 +36,8 @@ import (
 	_ "github.com/erda-project/erda-proto-go/core/services/errorbox/client"
 	_ "github.com/erda-project/erda-proto-go/core/token/client"
 	_ "github.com/erda-project/erda-proto-go/orchestrator/addon/mysql/client"
+	_ "github.com/erda-project/erda/modules/apps/devflow/flow"
+	_ "github.com/erda-project/erda/modules/apps/devflow/issuerelation"
 	_ "github.com/erda-project/erda/modules/dop"
 	_ "github.com/erda-project/erda/modules/dop/providers/api-management"
 	_ "github.com/erda-project/erda/modules/dop/providers/autotest/testplan"
