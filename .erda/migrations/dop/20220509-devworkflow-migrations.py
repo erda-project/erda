@@ -137,7 +137,6 @@ def entry():
         except ObjectDoesNotExist:
             print("Either the project or org doesn't exist.")
             continue
-        print(project.id)
         wf = ErdaDevWorkflow()
         wf.id = str(uuid.uuid4())
         wf.org_id = org.id
