@@ -549,6 +549,11 @@ var (
 	ErrSratisticsErrList = err("ErrSratisticsErrList", "获取错误列表失败")
 	ErrCrashRateList     = err("ErrCrashRateList", "获取崩溃率失败")
 
+	ErrCreateDevFlowRule = err("ErrCreateDevFlowRule", "创建研发工作流失败")
+	ErrUpdateDevFlowRule = err("ErrUpdateDevFlowRule", "更新研发工作流失败")
+	ErrGetDevFlowRule    = err("ErrGetDevFlowRule", "获取研发工作流列表失败")
+	ErrDeleteDevFlowRule = err("ErrDeleteDevFlowRule", "删除研发工作流失败")
+
 	ErrNotFoundPipelineCron = err("ErrNotFoundPipelineCron", "未找到流水线定时配置")
 )
 

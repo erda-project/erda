@@ -840,3 +840,14 @@
   action: UPDATE
 
 ## test report end ##
+
+## devFlowRule start ##
+- role: Owner,Lead
+  scope: project
+  resource: devFlowRule
+  action: OPERATE
+- role: Owner,Lead,PM,PD,Dev,QA,Support,Reporter,Guest
+  scope: project
+  resource: devFlowRule
+  action: LIST
+## devFlowRule end ##

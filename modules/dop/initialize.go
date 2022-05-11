@@ -671,6 +671,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		endpoints.WithPipelineSource(p.PipelineSource),
 		endpoints.WithPipelineDefinition(p.PipelineDefinition),
 		endpoints.WithPublishItem(publishItem),
+		endpoints.WithDevFlowRule(p.DevFlowRule),
 		endpoints.WithTokenSvc(p.TokenService),
 	)
 
