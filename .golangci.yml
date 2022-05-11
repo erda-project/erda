@@ -10,6 +10,7 @@ run:
     - modules/openapi/api/generate
     - pkg/parser/pipelineyml/pipelineymlv1
     - third_party
+    - pkg/mock
   skip-files:
     - apistructs/generated_desc.go
     - modules/openapi/api/api.go
