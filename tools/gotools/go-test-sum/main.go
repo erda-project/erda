@@ -137,7 +137,7 @@ func testAllPackages(base string) error {
 		if !codeFileExts[ext] {
 			return nil
 		}
-		if strings.HasSuffix(path, "_test.go") {
+		if strings.HasSuffix(path, "_test.go") || strings.HasSuffix(path, "_mock.go") {
 			pkgi.hasTestFile = true
 		}
 		pkgi.files = append(pkgi.files, &fileInfo{
