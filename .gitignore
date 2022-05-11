@@ -75,3 +75,5 @@ modules/openapi/api/generate
 
 # extensions
 extensions/
+
+http-client.env.json
