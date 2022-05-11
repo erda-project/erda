@@ -16,11 +16,13 @@ package clickhouse
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 
 	"github.com/erda-project/erda-infra/providers/clickhouse"
 	"github.com/erda-project/erda/modules/core/monitor/log"
 	"github.com/erda-project/erda/modules/core/monitor/storekit"
+	tablepkg "github.com/erda-project/erda/modules/core/monitor/storekit/clickhouse/table"
 )
 
 func (p *provider) NewWriter(ctx context.Context) (storekit.BatchWriter, error) {
@@ -34,15 +36,17 @@ func (p *provider) NewWriter(ctx context.Context) (storekit.BatchWriter, error) 
 			var table string
 
 			if p.Retention == nil {
-				wait, table = p.Creator.Ensure(ctx, logData.Tags["dice_org_name"], "")
-			} else {
-				key := p.Retention.GetConfigKey(logData.Source, logData.Tags)
-				if len(key) > 0 {
-					wait, table = p.Creator.Ensure(ctx, logData.Tags["dice_org_name"], key)
-				} else {
-					wait, table = p.Creator.Ensure(ctx, logData.Tags["dice_org_name"], "")
-				}
+				return nil, fmt.Errorf("provider storage-retention-strategy@log is required")
 			}
+
+			key := p.Retention.GetConfigKey(logData.Source, logData.Tags)
+			ttl := p.Retention.GetTTL(key)
+			if len(key) > 0 {
+				wait, table = p.Creator.Ensure(ctx, logData.Tags["dice_org_name"], key, tablepkg.FormatTTLToDays(ttl))
+			} else {
+				wait, table = p.Creator.Ensure(ctx, logData.Tags["dice_org_name"], "", tablepkg.FormatTTLToDays(ttl))
+			}
+
 			if wait != nil {
 				select {
 				case <-wait:
