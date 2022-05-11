@@ -17,6 +17,7 @@ package clickhouse
 import (
 	"context"
 	"testing"
+	"time"
 
 	"gotest.tools/assert"
 
@@ -26,7 +27,10 @@ import (
 func Test_Iterator_Should_Success(t *testing.T) {
 	p := &provider{
 		Cfg: &config{
-			ReadPageSize: 100,
+			ReadPageSize:    100,
+			QueryMaxMemory:  10000000000,
+			QueryMaxThreads: 3,
+			QueryTimeout:    time.Minute,
 		},
 		Loader:     MockLoader{},
 		Creator:    MockCreator{},
