@@ -82,6 +82,10 @@ func (e *Endpoints) ListServiceInstance(ctx context.Context, r *http.Request, va
 	if ip != "" {
 		req.InstanceIP = ip
 	}
+	rID, _ := strconv.Atoi(runtimeID)
+	if runtime, err := e.db.GetRuntime(uint64(rID)); err == nil {
+		req.Cluster = runtime.ClusterName
+	}
 	switch status {
 	case "", "running":
 		req.Phases = []string{apistructs.InstanceStatusHealthy, apistructs.InstanceStatusUnHealthy, apistructs.InstanceStatusRunning}
@@ -332,11 +336,11 @@ func (e *Endpoints) isInstanceRunning(status string) bool {
 }
 
 func parseInstanceMeta(meta string) apistructs.K8sInstanceMetaInfo {
-	ret := apistructs.K8sInstanceMetaInfo{}
+	info := apistructs.K8sInstanceMetaInfo{}
 
 	kvs := strings.Split(meta, ",")
 	if len(kvs) == 0 {
-		return ret
+		return info
 	}
 
 	for _, kv := range kvs {
@@ -349,15 +353,15 @@ func parseInstanceMeta(meta string) apistructs.K8sInstanceMetaInfo {
 
 		switch k {
 		case apistructs.K8sNamespace:
-			ret.PodNamespace = v
+			info.PodNamespace = v
 		case apistructs.K8sPodName:
-			ret.PodName = v
+			info.PodName = v
 		case apistructs.K8sContainerName:
-			ret.ContainerName = v
+			info.ContainerName = v
 		case apistructs.K8sPodUid:
-			ret.PodUid = v
+			info.PodUid = v
 		}
 	}
 
-	return ret
+	return info
 }

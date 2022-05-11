@@ -14,6 +14,12 @@
 
 package surefilexml
 
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
+
 //import (
 //	"encoding/json"
 //	"testing"
@@ -38,3 +44,24 @@ package surefilexml
 //	assert.Nil(t, err)
 //	logrus.Info(string(js))
 //}
+
+func TestIngest(t *testing.T) {
+	demo := `
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd" name="io.terminus.demo.apmdemo.ApmDemoApplicationTests" time="7.124" tests="1" errors="1" skipped="0" failures="0">
+  <properties>
+    <property name="java.class.version" value="61.0"/>
+    <property name="maven.test.failure.ignore" value="true"/>
+  </properties>
+  <testcase name="contextLoads" classname="io.terminus.demo.apmdemo.ApmDemoApplicationTests" time="0.002">
+    <error message="Failed to load ApplicationContext" type="java.lang.IllegalStateException"><![CDATA[java.lang.IllegalStateException: Failed to load ApplicationContext
+Caused by: org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'dubboApiController': Injection of @DubboReference dependencies is failed; nested exception is java.lang.IllegalStateException: Failed to check the status of the service io.terminus.demo.rpc.DubboService. No provider available for the service io.terminus.demo.rpc.DubboService from the url nacos://127.0.0.1:8848/org.apache.dubbo.registry.RegistryService?application=apm-demo-api&dubbo=2.0.2&init=false&interface=io.terminus.demo.rpc.DubboService&metadata-type=remote&methods=mysqlUsers,redisGet,httpRequest,hello,error&pid=24884&qos.enable=false&register.ip=30.43.49.72&release=2.7.8&side=consumer&sticky=false&timestamp=1652174418412 to the consumer 30.43.49.72 use dubbo version 2.7.8
+Caused by: java.lang.IllegalStateException: Failed to check the status of the service io.terminus.demo.rpc.DubboService. No provider available for the service io.terminus.demo.rpc.DubboService from the url nacos://127.0.0.1:8848/org.apache.dubbo.registry.RegistryService?application=apm-demo-api&dubbo=2.0.2&init=false&interface=io.terminus.demo.rpc.DubboService&metadata-type=remote&methods=mysqlUsers,redisGet,httpRequest,hello,error&pid=24884&qos.enable=false&register.ip=30.43.49.72&release=2.7.8&side=consumer&sticky=false&timestamp=1652174418412 to the consumer 30.43.49.72 use dubbo version 2.7.8
+]]></error>
+  </testcase>
+</testsuite>
+`
+	suites, err := Ingest([]byte(demo))
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(suites))
+}

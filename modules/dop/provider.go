@@ -39,6 +39,7 @@ import (
 	sourcepb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
 	errboxpb "github.com/erda-project/erda-proto-go/core/services/errorbox/pb"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
+	dwfpb "github.com/erda-project/erda-proto-go/dop/devflowrule/pb"
 	addonmysqlpb "github.com/erda-project/erda-proto-go/orchestrator/addon/mysql/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/bdl"
@@ -51,6 +52,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/providers/issue/stream"
 	"github.com/erda-project/erda/modules/dop/providers/issue/sync"
 	"github.com/erda-project/erda/modules/dop/providers/projectpipeline"
+	"github.com/erda-project/erda/modules/dop/providers/qa/unittest"
 	"github.com/erda-project/erda/modules/dop/providers/taskerror"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/dumpstack"
@@ -80,6 +82,8 @@ type provider struct {
 	AddonMySQLSvc         addonmysqlpb.AddonMySQLServiceServer    `autowired:"erda.orchestrator.addon.mysql.AddonMySQLService"`
 	DicehubReleaseSvc     dicehubpb.ReleaseServiceServer          `autowired:"erda.core.dicehub.release.ReleaseService"`
 	CICDCmsSvc            *cms.CICDCmsService                     `autowired:"erda.dop.cms.CICDCmsService"`
+	UnitTestService       *unittest.UnitTestService               `autowired:"erda.dop.qa.unittest.UnitTestService"`
+	DevFlowRule           dwfpb.DevFlowRuleServiceServer          `autowired:"erda.dop.devflowrule.DevFlowRuleService" required:"true"`
 	TokenService          tokenpb.TokenServiceServer              `autowired:"erda.core.token.TokenService"`
 	ClusterSvc            clusterpb.ClusterServiceServer          `autowired:"erda.core.clustermanager.cluster.ClusterService"`
 

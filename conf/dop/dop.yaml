@@ -39,6 +39,7 @@ etcd:
     ca_file: "${ETCD_CA_FILE:/certs/etcd-ca.pem}"
 
 erda.core.dop.taskerror: {}
+erda.dop.qa.unittest: {}
 
 # pipeline cms
 grpc-client@erda.core.pipeline.cms:
@@ -92,6 +93,7 @@ erda.dop.issue.sync: {}
 erda.dop.apim: {}
 erda.dop.guide: {}
 erda.dop.cms: {}
+erda.dop.devFlowRule: {}
 
 # component-protocol framework
 component-protocol: {}

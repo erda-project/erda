@@ -18,7 +18,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda-proto-go/dop/qa/unittest/pb"
 	"github.com/erda-project/erda/pkg/cloudstorage"
 	"github.com/erda-project/erda/pkg/qaparser"
 	"github.com/erda-project/erda/pkg/qaparser/types"
@@ -39,7 +39,7 @@ func (d DefaultParser) Register() {
 	qaparser.Register(d, types.Default, types.JUnit)
 }
 
-func (DefaultParser) Parse(endpoint, ak, sk, bucket, objectName string) ([]*apistructs.TestSuite, error) {
+func (DefaultParser) Parse(endpoint, ak, sk, bucket, objectName string) ([]*pb.TestSuite, error) {
 	client, err := cloudstorage.New(endpoint, ak, sk)
 	if err != nil {
 		return nil, errors.Wrap(err, "get cloud storage client")
@@ -50,7 +50,7 @@ func (DefaultParser) Parse(endpoint, ak, sk, bucket, objectName string) ([]*apis
 		return nil, errors.Wrapf(err, "download filename=%s", objectName)
 	}
 
-	var suites []*apistructs.TestSuite
+	var suites []*pb.TestSuite
 	if suites, err = Ingest(byteArray); err != nil {
 		return nil, err
 	}

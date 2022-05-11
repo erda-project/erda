@@ -22,13 +22,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/erda-project/erda-proto-go/dop/qa/unittest/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/qaparser"
 )
 
 // IngestDir will search the given directory for XML files and return a slice
 // of all contained JUnit test suite definitions.
-func IngestDir(directory string) ([]*apistructs.TestSuite, error) {
+func IngestDir(directory string) ([]*pb.TestSuite, error) {
 	var filenames []string
 
 	err := filepath.Walk(directory, func(path string, info os.FileInfo, err error) error {
@@ -53,8 +54,8 @@ func IngestDir(directory string) ([]*apistructs.TestSuite, error) {
 
 // IngestFiles will parse the given XML files and return a slice of all
 // contained JUnit test suite definitions.
-func IngestFiles(filenames []string) ([]*apistructs.TestSuite, error) {
-	var all []*apistructs.TestSuite
+func IngestFiles(filenames []string) ([]*pb.TestSuite, error) {
+	var all []*pb.TestSuite
 
 	for _, filename := range filenames {
 		suites, err := IngestFile(filename)
@@ -69,7 +70,7 @@ func IngestFiles(filenames []string) ([]*apistructs.TestSuite, error) {
 
 // IngestFile will parse the given XML file and return a slice of all contained
 // JUnit test suite definitions.
-func IngestFile(filename string) ([]*apistructs.TestSuite, error) {
+func IngestFile(filename string) ([]*pb.TestSuite, error) {
 	data, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return nil, err
@@ -80,10 +81,10 @@ func IngestFile(filename string) ([]*apistructs.TestSuite, error) {
 
 // Ingest will parse the given XML data and return a slice of all contained
 // JUnit test suite definitions.
-func Ingest(data []byte) ([]*apistructs.TestSuite, error) {
+func Ingest(data []byte) ([]*pb.TestSuite, error) {
 	var (
-		suiteChan = make(chan apistructs.TestSuite)
-		suites    []*apistructs.TestSuite
+		suiteChan = make(chan pb.TestSuite)
+		suites    []*pb.TestSuite
 	)
 
 	nodes, err := qaparser.NodeParse(data)
@@ -109,7 +110,7 @@ func Ingest(data []byte) ([]*apistructs.TestSuite, error) {
 
 // findparser.Suites performs a depth-first search through the XML document, and
 // attempts to ingest any "testsuite" tags that are encountered.
-func findSuites(nodes []qaparser.XmlNode, suites chan apistructs.TestSuite) {
+func findSuites(nodes []qaparser.XmlNode, suites chan pb.TestSuite) {
 	for _, node := range nodes {
 		switch node.XMLName.Local {
 		case "testsuite":
@@ -120,8 +121,8 @@ func findSuites(nodes []qaparser.XmlNode, suites chan apistructs.TestSuite) {
 	}
 }
 
-func ingestSuite(root qaparser.XmlNode) apistructs.TestSuite {
-	suite := apistructs.TestSuite{
+func ingestSuite(root qaparser.XmlNode) pb.TestSuite {
+	suite := pb.TestSuite{
 		Name:    root.Attr("name"),
 		Package: root.Attr("package"),
 	}
@@ -135,9 +136,9 @@ func ingestSuite(root qaparser.XmlNode) apistructs.TestSuite {
 			props := ingestProperties(node)
 			suite.Properties = props
 		case "system-out":
-			suite.SystemOut = string(node.Content)
+			suite.Stdout = string(node.Content)
 		case "system-err":
-			suite.SystemErr = string(node.Content)
+			suite.Stderr = string(node.Content)
 		}
 	}
 
@@ -162,36 +163,36 @@ func ingestProperties(root qaparser.XmlNode) map[string]string {
 	return props
 }
 
-func ingestTestcase(root qaparser.XmlNode) *apistructs.Test {
-	test := apistructs.Test{
+func ingestTestcase(root qaparser.XmlNode) *pb.Test {
+	test := pb.Test{
 		Name:      root.Attr("name"),
 		Classname: root.Attr("classname"),
-		Duration:  duration(root.Attr("time")),
-		Status:    apistructs.TestStatusPassed,
+		Duration:  int64(duration(root.Attr("time"))),
+		Status:    string(apistructs.TestStatusPassed),
 	}
 
 	for _, node := range root.Nodes {
 		switch node.XMLName.Local {
 		case "skipped":
-			test.Status = apistructs.TestStatusSkipped
+			test.Status = string(apistructs.TestStatusSkipped)
 		case "failure":
 			test.Error = ingestError(node)
-			test.Status = apistructs.TestStatusFailed
+			test.Status = string(apistructs.TestStatusFailed)
 		case "error":
 			test.Error = ingestError(node)
-			test.Status = apistructs.TestStatusError
+			test.Status = string(apistructs.TestStatusError)
 		case "system-out":
-			test.SystemOut = string(node.Content)
+			test.Stdout = string(node.Content)
 		case "system-err":
-			test.SystemErr = string(node.Content)
+			test.Stderr = string(node.Content)
 		}
 	}
 
 	return &test
 }
 
-func ingestError(root qaparser.XmlNode) apistructs.TestError {
-	return apistructs.TestError{
+func ingestError(root qaparser.XmlNode) *pb.TestError {
+	return &pb.TestError{
 		Body:    string(root.Content),
 		Type:    root.Attr("type"),
 		Message: root.Attr("message"),
