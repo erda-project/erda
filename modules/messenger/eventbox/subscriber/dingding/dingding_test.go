@@ -46,7 +46,7 @@ func Test_DingPrint(t *testing.T) {
 		},
 		{
 			name:    "over",
-			want:    content,
+			want:    content[:7] + overflowText,
 			t:       content + "1",
 			isError: true,
 		},

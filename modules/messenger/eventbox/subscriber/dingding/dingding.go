@@ -40,7 +40,8 @@ var (
 )
 
 var (
-	maxContentSize = 20000
+	maxContentSize = 19902
+	overflowText   = "..."
 )
 
 // example dingding message:
@@ -298,8 +299,12 @@ func PrettyPrint(content string, isWebhook bool) string {
 }
 
 func DingPrint(content string) string {
+	/*
+		Please try to process it upstream, this should only be used as a `bottom line`
+		Truncating byte arrays, which may cause `garbled characters`
+	*/
 	if len(content) > maxContentSize {
-		return content[:maxContentSize]
+		return content[:maxContentSize-len(overflowText)] + overflowText
 	}
 	return content
 }
