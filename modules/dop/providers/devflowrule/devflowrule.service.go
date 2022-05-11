@@ -23,16 +23,25 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/providers/devflowrule/db"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
+	"github.com/erda-project/erda/modules/pkg/diceworkspace"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 
 const resource = "branch_rule"
+
+type GetFlowByRuleRequest struct {
+	ProjectID    uint64
+	FlowType     string
+	ChangeBranch string
+	TargetBranch string
+}
 
 type Service interface {
 	CreateDevFlowRule(context.Context, *pb.CreateDevFlowRuleRequest) (*pb.CreateDevFlowRuleResponse, error)
 	DeleteDevFlowRule(context.Context, *pb.DeleteDevFlowRuleRequest) (*pb.DeleteDevFlowRuleResponse, error)
 	UpdateDevFlowRule(context.Context, *pb.UpdateDevFlowRuleRequest) (*pb.UpdateDevFlowRuleResponse, error)
 	GetDevFlowRulesByProjectID(context.Context, *pb.GetDevFlowRuleRequest) (*pb.GetDevFlowRuleResponse, error)
+	GetFlowByRule(context.Context, GetFlowByRuleRequest) (*db.Flow, error)
 }
 
 type ServiceImplement struct {
@@ -162,7 +171,11 @@ func (s *ServiceImplement) UpdateDevFlowRule(ctx context.Context, request *pb.Up
 		return nil, apierrors.ErrUpdateDevFlowRule.AccessDenied()
 	}
 
-	devFlow.Flows = db.JSON(request.Flows)
+	b, err := json.Marshal(request.Flows)
+	if err != nil {
+		return nil, apierrors.ErrUpdateDevFlowRule.InternalError(err)
+	}
+	devFlow.Flows = b
 	devFlow.Operator.Updater = apis.GetUserID(ctx)
 	if err = s.db.UpdateDevFlowRule(devFlow); err != nil {
 		return nil, apierrors.ErrUpdateDevFlowRule.InternalError(err)
@@ -199,4 +212,34 @@ func (s *ServiceImplement) DeleteDevFlowRule(ctx context.Context, request *pb.De
 		return nil, apierrors.ErrDeleteDevFlowRule.InternalError(err)
 	}
 	return &pb.DeleteDevFlowRuleResponse{}, nil
+}
+
+func (s *ServiceImplement) GetFlowByRule(ctx context.Context, request GetFlowByRuleRequest) (*db.Flow, error) {
+	wfs, err := s.db.GetDevFlowRuleByProjectID(request.ProjectID)
+	if err != nil {
+		return nil, err
+	}
+	flows := make([]db.Flow, 0)
+	if err = json.Unmarshal(wfs.Flows, &flows); err != nil {
+		return nil, err
+	}
+	for _, v := range flows {
+		if v.FlowType != request.FlowType {
+			continue
+		}
+		if request.FlowType == "single_branch" {
+			if diceworkspace.IsRefPatternMatch(request.TargetBranch, []string{v.TargetBranch}) {
+				return &v, nil
+			}
+		} else if request.FlowType == "two_branch" || request.FlowType == "three_branch" {
+			if !diceworkspace.IsRefPatternMatch(request.TargetBranch, []string{v.TargetBranch}) {
+				continue
+			}
+			if !diceworkspace.IsRefPatternMatch(request.ChangeBranch, []string{v.ChangeBranch}) {
+				continue
+			}
+			return &v, nil
+		}
+	}
+	return nil, nil
 }

@@ -105,6 +105,8 @@ type StartWorkflowHint struct {
 }
 
 func (r *DevFlowRule) Convert() *pb.DevFlowRule {
+	flows := make([]*pb.Flow, 0)
+	_ = json.Unmarshal(r.Flows, &flows)
 	return &pb.DevFlowRule{
 		ID:          r.ID.String,
 		OrgID:       r.OrgID,
@@ -115,7 +117,7 @@ func (r *DevFlowRule) Convert() *pb.DevFlowRule {
 		TimeUpdated: timestamppb.New(r.UpdatedAt),
 		Creator:     r.Creator,
 		Updater:     r.Updater,
-		Flows:       r.Flows.String(),
+		Flows:       flows,
 	}
 }
 

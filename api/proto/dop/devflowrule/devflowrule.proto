@@ -24,6 +24,9 @@ service DevFlowRuleService {
     rpc DeleteDevFlowRule(DeleteDevFlowRuleRequest)
             returns (DeleteDevFlowRuleResponse) {
     }
+    rpc GetFlowByRule(GetFlowByRuleRequest)
+            returns (GetFlowByRuleResponse) {
+    }
     rpc UpdateDevFlowRule(UpdateDevFlowRuleRequest)
             returns (UpdateDevFlowRuleResponse) {
         option(google.api.http) = {
@@ -64,7 +67,7 @@ message DeleteDevFlowRuleResponse {
 
 message UpdateDevFlowRuleRequest {
     string ID = 1 [json_name = "id"];
-    string flows = 2 ;
+    repeated Flow flows = 2 ;
 }
 
 message UpdateDevFlowRuleResponse {
@@ -81,7 +84,7 @@ message GetDevFlowRuleResponse {
 
 message DevFlowRule {
     string ID = 1 [json_name = "id"];
-    string flows = 2 ;
+    repeated Flow flows = 2 ;
     uint64 orgID = 3;
     string orgName = 4;
     uint64 projectID = 5;
@@ -92,3 +95,21 @@ message DevFlowRule {
     string updater = 10;
 }
 
+message Flow {
+    string name = 1;
+    string flowType = 2;
+    string targetBranch = 3;
+    string changeFromBranch = 4;
+    string changeBranch = 5;
+    bool enableAutoMerge = 6;
+    string autoMergeBranch = 7;
+    string artifact = 8;
+    string environment = 9;
+    repeated StartWorkflowHint startWorkflowHints = 10;
+
+}
+
+message StartWorkflowHint {
+    string Place = 1;
+    string ChangeBranchRule = 2;
+}
