@@ -67,6 +67,7 @@ import (
 	_ "github.com/erda-project/erda-proto-go/dop/issue/sync/pb"
 	_ "github.com/erda-project/erda-proto-go/dop/projecthome/pb"
 	_ "github.com/erda-project/erda-proto-go/dop/projectpipeline/pb"
+	_ "github.com/erda-project/erda-proto-go/dop/qa/unittest/pb"
 	_ "github.com/erda-project/erda-proto-go/examples/pb"
 	_ "github.com/erda-project/erda-proto-go/msp/apm/adapter/pb"
 	_ "github.com/erda-project/erda-proto-go/msp/apm/alert/pb"

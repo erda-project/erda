@@ -18,7 +18,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda-proto-go/dop/qa/unittest/pb"
 	"github.com/erda-project/erda/pkg/cloudstorage"
 	"github.com/erda-project/erda/pkg/qaparser"
 	"github.com/erda-project/erda/pkg/qaparser/types"
@@ -39,7 +39,7 @@ func (ng NgParser) Register() {
 // parse xml to entity
 // 1. get file from cloud storage
 // 2. parse
-func (NgParser) Parse(endpoint, ak, sk, bucket, objectName string) ([]*apistructs.TestSuite, error) {
+func (NgParser) Parse(endpoint, ak, sk, bucket, objectName string) ([]*pb.TestSuite, error) {
 	client, err := cloudstorage.New(endpoint, ak, sk)
 	if err != nil {
 		return nil, errors.Wrap(err, "get cloud storage client")

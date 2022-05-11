@@ -14,6 +14,12 @@
 
 package testngxml
 
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
+
 //import (
 //	"encoding/json"
 //	"fmt"
@@ -47,3 +53,21 @@ package testngxml
 //	fmt.Println(string(js))
 //
 //}
+
+func TestTransfer(t *testing.T) {
+	result := &NgTestResult{
+		Suites: []*Suite{
+			{
+				Name: "test1",
+				Tests: []*Test{
+					{
+						Name: "test1",
+					},
+				},
+			},
+		},
+	}
+	suites, err := result.Transfer()
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(suites))
+}

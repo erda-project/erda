@@ -18,14 +18,14 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda-proto-go/dop/qa/unittest/pb"
 	"github.com/erda-project/erda/pkg/qaparser/types"
 )
 
 var m Manager
 
 type Parser interface {
-	Parse(endpoint, ak, sk, bucket, objectName string) ([]*apistructs.TestSuite, error)
+	Parse(endpoint, ak, sk, bucket, objectName string) ([]*pb.TestSuite, error)
 	Register()
 }
 

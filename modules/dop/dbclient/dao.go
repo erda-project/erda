@@ -19,7 +19,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/xormplus/xorm"
 
-	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda-proto-go/dop/qa/unittest/pb"
 	"github.com/erda-project/erda/pkg/database/cimysql"
 )
 
@@ -63,10 +63,10 @@ func FindTPRecordByCommitId(commitID string) (*TPRecordDO, error) {
 	return r, nil
 }
 
-func FindTPRecordPagingByAppID(req apistructs.TestRecordPagingRequest) (*Paging, error) {
+func FindTPRecordPagingByAppID(req *pb.TestRecordPagingRequest) (*Paging, error) {
 	var list []*TPRecordDO
-	total, err := cimysql.Engine.Select("id,name,branch,operator_name,totals,type,created_at").Where("app_id = ?", req.AppID).
-		Limit(req.PageSize, (req.PageNo-1)*req.PageSize).Desc("id").FindAndCount(&list)
+	total, err := cimysql.Engine.Select("id,name,branch,operator_name,totals,type,created_at").Where("app_id = ?", req.ApplicationId).
+		Limit(int(req.PageSize), (int(req.PageNo)-1)*int(req.PageSize)).Desc("id").FindAndCount(&list)
 	if err != nil {
 		return nil, err
 	}

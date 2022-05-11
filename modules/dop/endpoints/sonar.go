@@ -424,8 +424,8 @@ func getUtPassed(commitID string) (string, error) {
 
 	var (
 		ok     bool
-		passed int
-		skiped int
+		passed int64
+		skiped int64
 	)
 	totals := record.Totals
 	if passed, ok = totals.Statuses["passed"]; !ok {
