@@ -421,6 +421,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 	branchRule := branchrule.New(
 		branchrule.WithDBClient(db),
 		branchrule.WithBundle(bdl.Bdl),
+		branchrule.WithDevFlowRule(p.DevFlowRule),
 	)
 	gittarFileTreeSvc := filetree.New(filetree.WithBundle(bdl.Bdl), filetree.WithBranchRule(branchRule))
 

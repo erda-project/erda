@@ -182,7 +182,7 @@ func (s *ServiceImplement) GetDevFlowRulesByProjectID(ctx context.Context, reque
 	if err != nil {
 		return nil, apierrors.ErrGetDevFlowRule.InternalError(err)
 	}
-	if !access.Access {
+	if !access.Access && !apis.IsInternalClient(ctx) {
 		return nil, apierrors.ErrGetDevFlowRule.AccessDenied()
 	}
 

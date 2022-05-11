@@ -15,14 +15,17 @@
 package branchrule
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
+	dfrpb "github.com/erda-project/erda-proto-go/dop/devflowrule/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/model"
 	"github.com/erda-project/erda/modules/pkg/diceworkspace"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/ucauth"
 )
 
@@ -30,6 +33,8 @@ type BranchRule struct {
 	db  *dao.DBClient
 	uc  *ucauth.UCClient
 	bdl *bundle.Bundle
+
+	devFlowRule dfrpb.DevFlowRuleServiceServer
 }
 
 type Option func(*BranchRule)
@@ -56,11 +61,33 @@ func WithBundle(bdl *bundle.Bundle) Option {
 	}
 }
 
+func WithDevFlowRule(svc dfrpb.DevFlowRuleServiceServer) Option {
+	return func(o *BranchRule) {
+		o.devFlowRule = svc
+	}
+}
+
 func (branchRule *BranchRule) Count(scopeType apistructs.ScopeType) (int64, error) {
 	return branchRule.db.GetBranchRulesCount(scopeType)
 }
 
 func (branchRule *BranchRule) Query(scopeType apistructs.ScopeType, scopeID int64) ([]*apistructs.BranchRule, error) {
+	if scopeType == apistructs.ProjectScope {
+		devFlowRuleRsp, err := branchRule.devFlowRule.GetDevFlowRulesByProjectID(apis.WithInternalClientContext(context.Background(), "bundle"), &dfrpb.GetDevFlowRuleRequest{ProjectID: uint64(scopeID)})
+		if err != nil {
+			return nil, err
+		}
+		devFlowRule := apistructs.DevFlowRule{
+			ID:          devFlowRuleRsp.Data.ID,
+			Flows:       devFlowRuleRsp.Data.Flows,
+			OrgID:       devFlowRuleRsp.Data.OrgID,
+			OrgName:     devFlowRuleRsp.Data.OrgName,
+			ProjectID:   devFlowRuleRsp.Data.ProjectID,
+			ProjectName: devFlowRuleRsp.Data.ProjectName,
+		}
+		return devFlowRule.MakeBranchRules()
+	}
+
 	rules, err := branchRule.db.QueryBranchRules(scopeType, scopeID)
 	if err != nil {
 		return nil, err
