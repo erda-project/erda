@@ -72,6 +72,8 @@ clickhouse.table.loader@log:
 
 log-storage-clickhouse:
   _enable: ${QUERY_LOG_FROM_CLICKHOUSE_ENABLE:false}
+  field_name_mapper:
+    tags.request_id: tags.trace_id
 
 elasticsearch@log:
   _enable: ${LOG_ELASTICSEARCH_ENABLE:false}
@@ -131,6 +133,8 @@ log-storage-cassandra:
     keyspace:
       name: "spot_prod"
 erda.core.monitor.log.query:
+  delay_backoff_start_time: ${LOG_DELAY_BACKOFF_START_TIME:-30m}
+  delay_backoff_end_time: ${LOG_DELAY_BACKOFF_END_TIME:-3m}
   download_api_throttling:
     current_limit: ${LOG_DOWNLOAD_API_THROTTLING_CURRENT_LIMIT:200}
 
@@ -374,3 +378,7 @@ metric-report-client:
 grpc-client@erda.core.pipeline.cron:
   addr: "${PIPELINE_GRPC_ADDR:pipeline:30810}"
 erda.core.pipeline.cron-client:
+
+grpc-client@erda.core.clustermanager.cluster:
+  addr: "${CLUSTER_MANAGER_GRPC_ADDR:cluster-manager:9095}"
+erda.core.clustermanager.cluster-client: {}

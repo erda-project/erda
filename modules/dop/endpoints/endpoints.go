@@ -29,6 +29,7 @@ import (
 	dpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
 	sourcepb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
 	dwfpb "github.com/erda-project/erda-proto-go/dop/devworkflow/pb"
+	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/dao"
@@ -750,6 +751,8 @@ type Endpoints struct {
 	ImportChannel chan uint64
 	ExportChannel chan uint64
 	CopyChannel   chan uint64
+
+	tokenService tokenpb.TokenServiceServer
 }
 
 type Option func(*Endpoints)
@@ -1190,4 +1193,10 @@ func (e *Endpoints) ProjectService() *project.Project {
 
 func (e *Endpoints) PermissionService() *permission.Permission {
 	return e.permission
+}
+
+func WithTokenSvc(tokenService tokenpb.TokenServiceServer) Option {
+	return func(e *Endpoints) {
+		e.tokenService = tokenService
+	}
 }

@@ -32,6 +32,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/providers/cache"
 	"github.com/erda-project/erda/modules/pipeline/providers/clusterinfo"
 	"github.com/erda-project/erda/modules/pipeline/providers/edgepipeline_register"
+	"github.com/erda-project/erda/modules/pipeline/providers/edgereporter"
 	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/rutil"
 	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/taskpolicy"
 	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/taskrun"
@@ -61,9 +62,10 @@ type defaultTaskReconciler struct {
 	policy       taskpolicy.Interface
 	cache        cache.Interface
 	clusterInfo  clusterinfo.Interface
-	edgeRegister edgepipeline_register.Interface
 	r            *provider
 	pr           *defaultPipelineReconciler
+	edgeReporter edgereporter.Interface
+	edgeRegister edgepipeline_register.Interface
 
 	// internal fields
 	dbClient             *dbclient.Client
@@ -145,6 +147,11 @@ func (tr *defaultTaskReconciler) IdempotentSaveTask(ctx context.Context, p *spec
 	}
 
 	// save task
+	if tr.edgeRegister != nil {
+		if tr.edgeRegister.IsEdge() {
+			task.IsEdge = true
+		}
+	}
 	if err := tr.dbClient.CreatePipelineTask(task); err != nil {
 		return err
 	}
@@ -178,7 +185,7 @@ func (tr *defaultTaskReconciler) ReconcileSnippetTask(ctx context.Context, p *sp
 	tr.pr.r.ReconcileOnePipeline(ctx, snippetPipeline.ID)
 
 	// setup snippet task info according to snippet pipeline result
-	if err := tr.fulfillParentSnippetTask(snippetPipeline); err != nil {
+	if err := tr.fulfillParentSnippetTask(snippetPipeline, task); err != nil {
 		return err
 	}
 
@@ -312,10 +319,15 @@ func (tr *defaultTaskReconciler) TeardownAfterReconcileDone(ctx context.Context,
 	// handle aop synchronously, then do subsequent tasks
 	_ = aop.Handle(aop.NewContextForTask(*task, *p, aoptypes.TuneTriggerTaskAfterExec))
 
+	// report task in edge cluster
+	if tr.edgeRegister.IsEdge() {
+		tr.edgeReporter.TriggerOnceTaskReport(task.ID)
+	}
+
 	// invalidate openapi oauth2 token
+	// TODO Temporarily remove EnvOpenapiToken, this causes the deployment to not be canceled when pipeline is canceled. And its ttl is 3630s,
 	tokens := strutil.DedupSlice([]string{
 		task.Extra.PublicEnvs[apistructs.EnvOpenapiTokenForActionBootstrap],
-		task.Extra.PrivateEnvs[apistructs.EnvOpenapiToken],
 	}, true)
 	for _, token := range tokens {
 		_, err := tr.bdl.InvalidateOAuth2Token(apistructs.OAuth2TokenInvalidateRequest{AccessToken: token})

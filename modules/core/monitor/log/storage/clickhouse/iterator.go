@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"math"
 	"strconv"
 	"sync/atomic"
 	"time"
@@ -44,8 +45,14 @@ func (p *provider) Iterator(ctx context.Context, sel *storage.Selector) (storeki
 	}
 
 	pageSize := p.Cfg.ReadPageSize
-	if sel.Meta.PreferredBufferSize > 0 {
-		pageSize = sel.Meta.PreferredBufferSize
+
+	var count float64
+	if c, ok := sel.Options[storage.SelectorKeyCount]; ok {
+		count = math.Abs(float64(c.(int64)))
+	}
+
+	if count > 0 || sel.Meta.PreferredBufferSize > 0 {
+		pageSize = int(math.Max(count, float64(sel.Meta.PreferredBufferSize)))
 	}
 
 	var callback = func(logItem *pb.LogItem) {
@@ -262,12 +269,12 @@ func (it *clickhouseIterator) fetch(dir iteratorDir) {
 				if len(it.lastID) > 0 {
 					expr = expr.Where(goqu.C("_id").Lt(it.lastID))
 				}
-				expr = expr.Order(goqu.C("org_name").Desc(), goqu.C("timestamp").Desc())
+				expr = expr.Order(goqu.C("org_name").Desc(), goqu.C("tenant_id").Desc(), goqu.C("group_id").Desc(), goqu.C("timestamp").Desc())
 			} else {
 				if len(it.lastID) > 0 {
 					expr = expr.Where(goqu.C("_id").Gt(it.lastID))
 				}
-				expr = expr.Order(goqu.C("org_name").Asc(), goqu.C("timestamp").Asc())
+				expr = expr.Order(goqu.C("org_name").Asc(), goqu.C("tenant_id").Asc(), goqu.C("group_id").Asc(), goqu.C("timestamp").Asc())
 			}
 
 			expr = expr.Offset(uint(it.fromOffset)).Limit(uint(it.pageSize))
@@ -371,6 +378,8 @@ func (it *clickhouseIterator) count() error {
 type logItem struct {
 	UniqId    string            `ch:"_id"`
 	OrgName   string            `ch:"org_name"`
+	TenantId  string            `ch:"tenant_id"`
+	GroupId   string            `ch:"group_id"`
 	Source    string            `ch:"source"`
 	ID        string            `ch:"id"`
 	Stream    string            `ch:"stream"`

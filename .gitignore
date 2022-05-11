@@ -72,3 +72,6 @@ modules/openapi/api/generate
 
 # python vitural environments
 /venv/
+
+# extensions
+extensions/

@@ -17,35 +17,28 @@ package edgepipeline
 import (
 	"context"
 
+	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
+	"github.com/erda-project/erda-proto-go/core/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/services/pipelinesvc"
+	"github.com/erda-project/erda/modules/pipeline/spec"
 )
 
 type Interface interface {
-	CreatePipeline(ctx context.Context, req *apistructs.PipelineCreateRequestV2) (*apistructs.PipelineDTO, error)
+	CreateInterface
+
 	InjectLegacyFields(pSvc *pipelinesvc.PipelineSvc)
 }
 
-func (p *provider) InjectLegacyFields(pipelineSvc *pipelinesvc.PipelineSvc) {
-	p.pipelineSvc = pipelineSvc
+type CreateInterface interface {
+	CreatePipeline(ctx context.Context, req *apistructs.PipelineCreateRequestV2) (*apistructs.PipelineDTO, error)
+	CreateCron(ctx context.Context, req *cronpb.CronCreateRequest) (*pb.Cron, error)
+	RunPipeline(ctx context.Context, p *spec.Pipeline, req *apistructs.PipelineRunRequest) error
+	CancelPipeline(ctx context.Context, p *spec.Pipeline, req *apistructs.PipelineCancelRequest) error
+	RerunFailedPipeline(ctx context.Context, p *spec.Pipeline, req *apistructs.PipelineRerunFailedRequest) (*apistructs.PipelineDTO, error)
+	RerunPipeline(ctx context.Context, p *spec.Pipeline, req *apistructs.PipelineRerunRequest) (*apistructs.PipelineDTO, error)
 }
 
-func (p *provider) CreatePipeline(ctx context.Context, req *apistructs.PipelineCreateRequestV2) (*apistructs.PipelineDTO, error) {
-	isEdge := p.EdgePipelineRegister.ShouldDispatchToEdge(req.PipelineSource.String(), req.ClusterName)
-	if !isEdge {
-		pipeline, err := p.pipelineSvc.CreateV2(ctx, req)
-		if err != nil {
-			return nil, err
-		}
-		return p.pipelineSvc.ConvertPipeline(pipeline), nil
-	}
-	edgeBundle, err := p.EdgePipelineRegister.GetEdgeBundleByClusterName(req.ClusterName)
-	if err != nil {
-		return nil, err
-	}
-	pipelineDto, err := edgeBundle.CreatePipeline(req)
-	if err != nil {
-		return nil, err
-	}
-	return pipelineDto, nil
+func (s *provider) InjectLegacyFields(pipelineSvc *pipelinesvc.PipelineSvc) {
+	s.pipelineSvc = pipelineSvc
 }

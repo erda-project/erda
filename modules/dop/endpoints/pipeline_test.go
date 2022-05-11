@@ -78,16 +78,16 @@ func Test_shouldCheckPermission(t *testing.T) {
 	}
 }
 
-func TestUpdateCmsNsConfigsWhenUserNotExist(t *testing.T) {
-	var bdl *bundle.Bundle
-	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetMemberByUserAndScope",
-		func(*bundle.Bundle, apistructs.ScopeType, string, uint64) ([]apistructs.Member, error) {
-			return nil, nil
-		})
-	defer monkey.UnpatchAll()
-	e := New()
-	assert.Equal(t, "the member is not exist", e.UpdateCmsNsConfigs("1", 1).Error())
-}
+// func TestUpdateCmsNsConfigsWhenUserNotExist(t *testing.T) {
+// 	var bdl *bundle.Bundle
+// 	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetMemberByUserAndScope",
+// 		func(*bundle.Bundle, apistructs.ScopeType, string, uint64) ([]apistructs.Member, error) {
+// 			return nil, nil
+// 		})
+// 	defer monkey.UnpatchAll()
+// 	e := New()
+// 	assert.Equal(t, "the member is not exist", e.UpdateCmsNsConfigs("1", 1).Error())
+// }
 
 func TestEndpoints_pipelineDetail(t *testing.T) {
 

@@ -35,6 +35,7 @@ import (
 	dpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
 	common "github.com/erda-project/erda-proto-go/core/pipeline/pb"
 	spb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
+	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	guidepb "github.com/erda-project/erda-proto-go/dop/guide/pb"
 	"github.com/erda-project/erda-proto-go/dop/projectpipeline/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -46,6 +47,7 @@ import (
 	"github.com/erda-project/erda/pkg/encoding/jsonparse"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/limit_sync_group"
+	"github.com/erda-project/erda/pkg/oauth2/tokenstore/mysqltokenstore"
 )
 
 type CategoryType string
@@ -1409,12 +1411,17 @@ func (p *ProjectPipelineService) checkDataPermissionByProjectID(projectID uint64
 
 // UpdateCmsNsConfigs update CmsNsConfigs
 func (e *ProjectPipelineService) UpdateCmsNsConfigs(userID string, orgID uint64) error {
-	members, err := e.bundle.GetMemberByUserAndScope(apistructs.OrgScope, userID, orgID)
+	res, err := e.tokenService.QueryTokens(context.Background(), &tokenpb.QueryTokensRequest{
+		Scope:     string(apistructs.OrgScope),
+		ScopeId:   strconv.FormatUint(orgID, 10),
+		Type:      mysqltokenstore.PAT.String(),
+		CreatorId: userID,
+	})
 	if err != nil {
 		return err
 	}
 
-	if len(members) <= 0 {
+	if res.Total == 0 {
 		return errors.New("the member is not exist")
 	}
 
@@ -1424,7 +1431,7 @@ func (e *ProjectPipelineService) UpdateCmsNsConfigs(userID string, orgID uint64)
 			PipelineSource: apistructs.PipelineSourceDice.String(),
 			KVs: map[string]*cmspb.PipelineCmsConfigValue{
 				utils.MakeOrgGittarUsernamePipelineCmsNsConfig(): {Value: "git", EncryptInDB: true},
-				utils.MakeOrgGittarTokenPipelineCmsNsConfig():    {Value: members[0].Token, EncryptInDB: true}},
+				utils.MakeOrgGittarTokenPipelineCmsNsConfig():    {Value: res.Data[0].AccessKey, EncryptInDB: true}},
 		})
 
 	return err

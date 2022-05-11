@@ -15,11 +15,13 @@
 package actionmgr
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/pipeline/providers/edgepipeline_register"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -46,54 +48,54 @@ func Test_provider_MakeActionLocationsBySource(t *testing.T) {
 		// fdp
 		{
 			inputSource:               apistructs.PipelineSourceCDPDev,
-			expectedOutputLocationNum: 1,
-			expectedOutputLocations:   []string{apistructs.PipelineTypeFDP.String() + "/"},
+			expectedOutputLocationNum: 2,
+			expectedOutputLocations:   []string{apistructs.PipelineTypeFDP.String() + "/", apistructs.PipelineTypeDefault.String() + "/"},
 		},
 		{
 			inputSource:               apistructs.PipelineSourceCDPTest,
-			expectedOutputLocationNum: 1,
-			expectedOutputLocations:   []string{apistructs.PipelineTypeFDP.String() + "/"},
+			expectedOutputLocationNum: 2,
+			expectedOutputLocations:   []string{apistructs.PipelineTypeFDP.String() + "/", apistructs.PipelineTypeDefault.String() + "/"},
 		},
 		{
 			inputSource:               apistructs.PipelineSourceCDPStaging,
-			expectedOutputLocationNum: 1,
-			expectedOutputLocations:   []string{apistructs.PipelineTypeFDP.String() + "/"},
+			expectedOutputLocationNum: 2,
+			expectedOutputLocations:   []string{apistructs.PipelineTypeFDP.String() + "/", apistructs.PipelineTypeDefault.String() + "/"},
 		},
 		{
 			inputSource:               apistructs.PipelineSourceCDPProd,
-			expectedOutputLocationNum: 1,
-			expectedOutputLocations:   []string{apistructs.PipelineTypeFDP.String() + "/"},
+			expectedOutputLocationNum: 2,
+			expectedOutputLocations:   []string{apistructs.PipelineTypeFDP.String() + "/", apistructs.PipelineTypeDefault.String() + "/"},
 		},
 		{
 			inputSource:               apistructs.PipelineSourceBigData,
-			expectedOutputLocationNum: 1,
-			expectedOutputLocations:   []string{apistructs.PipelineTypeFDP.String() + "/"},
+			expectedOutputLocationNum: 2,
+			expectedOutputLocations:   []string{apistructs.PipelineTypeFDP.String() + "/", apistructs.PipelineTypeDefault.String() + "/"},
 		},
 		// cicd
 		{
 			inputSource:               apistructs.PipelineSourceDice,
-			expectedOutputLocationNum: 1,
-			expectedOutputLocations:   []string{apistructs.PipelineTypeCICD.String() + "/"},
+			expectedOutputLocationNum: 2,
+			expectedOutputLocations:   []string{apistructs.PipelineTypeCICD.String() + "/", apistructs.PipelineTypeDefault.String() + "/"},
 		},
 		{
 			inputSource:               apistructs.PipelineSourceProject,
-			expectedOutputLocationNum: 1,
-			expectedOutputLocations:   []string{apistructs.PipelineTypeCICD.String() + "/"},
+			expectedOutputLocationNum: 2,
+			expectedOutputLocations:   []string{apistructs.PipelineTypeCICD.String() + "/", apistructs.PipelineTypeDefault.String() + "/"},
 		},
 		{
 			inputSource:               apistructs.PipelineSourceProjectLocal,
-			expectedOutputLocationNum: 1,
-			expectedOutputLocations:   []string{apistructs.PipelineTypeCICD.String() + "/"},
+			expectedOutputLocationNum: 2,
+			expectedOutputLocations:   []string{apistructs.PipelineTypeCICD.String() + "/", apistructs.PipelineTypeDefault.String() + "/"},
 		},
 		{
 			inputSource:               apistructs.PipelineSourceOps,
-			expectedOutputLocationNum: 1,
-			expectedOutputLocations:   []string{apistructs.PipelineTypeCICD.String() + "/"},
+			expectedOutputLocationNum: 2,
+			expectedOutputLocations:   []string{apistructs.PipelineTypeCICD.String() + "/", apistructs.PipelineTypeDefault.String() + "/"},
 		},
 		{
 			inputSource:               apistructs.PipelineSourceQA,
-			expectedOutputLocationNum: 1,
-			expectedOutputLocations:   []string{apistructs.PipelineTypeCICD.String() + "/"},
+			expectedOutputLocationNum: 2,
+			expectedOutputLocations:   []string{apistructs.PipelineTypeCICD.String() + "/", apistructs.PipelineTypeDefault.String() + "/"},
 		},
 		// default
 		{
@@ -118,5 +120,33 @@ func Test_provider_MakeActionLocationsBySource(t *testing.T) {
 				t.Fatalf("missing expected output location %s", el)
 			}
 		}
+	}
+}
+
+func Test_provider_searchFromDiceHub(t *testing.T) {
+	type args struct {
+		notFindNameVersion []string
+	}
+	tests := []struct {
+		name string
+		args args
+		want map[string]apistructs.ExtensionVersion
+	}{
+		{
+			name: "test is edge return",
+			args: args{
+				notFindNameVersion: []string{"custom"},
+			},
+			want: map[string]apistructs.ExtensionVersion{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &provider{}
+			s.EdgeRegister = &edgepipeline_register.MockEdgeRegister{}
+			if got := s.searchFromDiceHub(tt.args.notFindNameVersion); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("searchFromDiceHub() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }

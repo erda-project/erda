@@ -17,12 +17,12 @@ package reconciler
 import (
 	"context"
 	"reflect"
+	"sync"
 	"testing"
 
 	"bou.ke/monkey"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 )
 
@@ -67,6 +67,34 @@ func Test_defaultPipelineReconciler_setTotalTaskNumberBeforeReconcilePipeline(t 
 	if *pr.totalTaskNumber != 0 {
 		t.Fatalf("should have none tasks, actually %v", *pr.totalTaskNumber)
 	}
+
+	// one disabled task and one running task
+	monkey.PatchInstanceMethod(reflect.TypeOf(r), "YmlTaskMergeDBTasks",
+		func(_ *provider, pipeline *spec.Pipeline) ([]*spec.PipelineTask, error) {
+			// none tasks
+			return []*spec.PipelineTask{
+				{
+					Name:   "disabled task",
+					ID:     0,
+					Status: apistructs.PipelineStatusDisabled,
+				},
+				{
+					Name:   "running task",
+					ID:     1,
+					Status: apistructs.PipelineStatusRunning,
+				},
+			}, nil
+		})
+	err = pr.setTotalTaskNumberBeforeReconcilePipeline(ctx, p)
+	if err != nil {
+		t.Fatalf("should no err, err: %v", err)
+	}
+	if *pr.totalTaskNumber != 2 {
+		t.Fatalf("should have two tasks, actually %v", *pr.totalTaskNumber)
+	}
+	if _, ok := pr.processedTasks.Load("disabled task"); !ok {
+		t.Fatalf("should have disabled task, actually %v", ok)
+	}
 }
 
 func Test_defaultPipelineReconciler_updateCalculatedPipelineStatusForTaskUseField(t *testing.T) {
@@ -81,7 +109,7 @@ func Test_defaultPipelineReconciler_updateCalculatedPipelineStatusForTaskUseFiel
 
 	// already end status
 	p.Status = apistructs.PipelineStatusFailed
-	err := pr.updateCalculatedPipelineStatusForTaskUseField(ctx, p)
+	err := pr.UpdateCalculatedPipelineStatusForTaskUseField(ctx, p)
 	if err != nil {
 		t.Fatalf("should no err, err: %v", err)
 	}
@@ -93,7 +121,7 @@ func Test_defaultPipelineReconciler_updateCalculatedPipelineStatusForTaskUseFiel
 	pr = &defaultPipelineReconciler{r: r}
 	p.Status = apistructs.PipelineStatusRunning
 	pr.flagCanceling = true
-	err = pr.updateCalculatedPipelineStatusForTaskUseField(ctx, p)
+	err = pr.UpdateCalculatedPipelineStatusForTaskUseField(ctx, p)
 	if err != nil {
 		t.Fatalf("should no err, err: %v", err)
 	}
@@ -103,15 +131,9 @@ func Test_defaultPipelineReconciler_updateCalculatedPipelineStatusForTaskUseFiel
 
 	// running
 	pr = &defaultPipelineReconciler{r: r}
-	dbClient := &dbclient.Client{}
-	monkey.PatchInstanceMethod(reflect.TypeOf(dbClient), "ListPipelineTasksByPipelineID",
-		func(_ *dbclient.Client, pipelineID uint64, ops ...dbclient.SessionOption) ([]spec.PipelineTask, error) {
-			return []spec.PipelineTask{
-				{ID: 1, Name: "s1c1", Status: apistructs.PipelineStatusSuccess},
-			}, nil
-		})
+	pr.processedTasks.Store("s1c1", &spec.PipelineTask{ID: 1, Name: "s1c1", Status: apistructs.PipelineStatusSuccess})
 	p.Status = apistructs.PipelineStatusRunning
-	err = pr.updateCalculatedPipelineStatusForTaskUseField(ctx, p)
+	err = pr.UpdateCalculatedPipelineStatusForTaskUseField(ctx, p)
 	if err != nil {
 		t.Fatalf("should no err, err: %v", err)
 	}
@@ -129,84 +151,58 @@ func Test_defaultPipelineReconciler_calculateNewStatusByReconciledTasks(t *testi
 	ctx := context.TODO()
 	r := &provider{}
 	pr := &defaultPipelineReconciler{r: r}
-	dbClient := &dbclient.Client{}
 
 	// no tasks
-	monkey.PatchInstanceMethod(reflect.TypeOf(dbClient), "ListPipelineTasksByPipelineID",
-		func(_ *dbclient.Client, pipelineID uint64, ops ...dbclient.SessionOption) ([]spec.PipelineTask, error) {
-			return []spec.PipelineTask{}, nil
-		})
 	pr.totalTaskNumber = &[]int{0}[0]
-	newStatus, err := pr.calculatePipelineStatusForTaskUseField(ctx, p)
-	if err != nil {
-		t.Fatalf("should no err, err: %v", err)
-	}
+	newStatus := pr.calculatePipelineStatusForTaskUseField(ctx, p)
 	if newStatus != apistructs.PipelineStatusSuccess {
 		t.Fatalf("should be success if no task")
 	}
 
 	// one task but nothing scheduled (first loop)
-	monkey.PatchInstanceMethod(reflect.TypeOf(dbClient), "ListPipelineTasksByPipelineID",
-		func(_ *dbclient.Client, pipelineID uint64, ops ...dbclient.SessionOption) ([]spec.PipelineTask, error) {
-			return []spec.PipelineTask{}, nil
-		})
 	pr.totalTaskNumber = &[]int{1}[0]
-	newStatus, err = pr.calculatePipelineStatusForTaskUseField(ctx, p)
-	if err != nil {
-		t.Fatalf("should no err, err: %v", err)
-	}
+	newStatus = pr.calculatePipelineStatusForTaskUseField(ctx, p)
 	if newStatus != apistructs.PipelineStatusRunning {
 		t.Fatalf("should be running")
 	}
 
 	// three task and two scheduled (one success, one running) => running
-	monkey.PatchInstanceMethod(reflect.TypeOf(dbClient), "ListPipelineTasksByPipelineID",
-		func(_ *dbclient.Client, pipelineID uint64, ops ...dbclient.SessionOption) ([]spec.PipelineTask, error) {
-			return []spec.PipelineTask{
-				{ID: 1, Name: "s1c1", Status: apistructs.PipelineStatusSuccess},
-				{ID: 2, Name: "s2c1", Status: apistructs.PipelineStatusRunning},
-			}, nil
-		})
+	pr.processedTasks.Store("s1c1", &spec.PipelineTask{ID: 1, Name: "s1c1", Status: apistructs.PipelineStatusSuccess})
+	pr.processedTasks.Store("s2c1", &spec.PipelineTask{ID: 2, Name: "s2c1", Status: apistructs.PipelineStatusRunning})
 	pr.totalTaskNumber = &[]int{3}[0]
-	newStatus, err = pr.calculatePipelineStatusForTaskUseField(ctx, p)
-	if err != nil {
-		t.Fatalf("should no err, err: %v", err)
-	}
+	newStatus = pr.calculatePipelineStatusForTaskUseField(ctx, p)
 	if newStatus != apistructs.PipelineStatusRunning {
 		t.Fatalf("should be running")
 	}
 
 	// three task and two scheduled (one success, one failed) => failed
-	monkey.PatchInstanceMethod(reflect.TypeOf(dbClient), "ListPipelineTasksByPipelineID",
-		func(_ *dbclient.Client, pipelineID uint64, ops ...dbclient.SessionOption) ([]spec.PipelineTask, error) {
-			return []spec.PipelineTask{
-				{ID: 1, Name: "s1c1", Status: apistructs.PipelineStatusSuccess},
-				{ID: 2, Name: "s2c1", Status: apistructs.PipelineStatusFailed},
-			}, nil
-		})
+	pr.processedTasks = sync.Map{}
+	pr.processedTasks.Store("s1c1", &spec.PipelineTask{ID: 1, Name: "s1c1", Status: apistructs.PipelineStatusSuccess})
+	pr.processedTasks.Store("s2c1", &spec.PipelineTask{ID: 2, Name: "s2c1", Status: apistructs.PipelineStatusFailed})
 	pr.totalTaskNumber = &[]int{3}[0]
-	newStatus, err = pr.calculatePipelineStatusForTaskUseField(ctx, p)
-	if err != nil {
-		t.Fatalf("should no err, err: %v", err)
-	}
+	newStatus = pr.calculatePipelineStatusForTaskUseField(ctx, p)
 	if newStatus != apistructs.PipelineStatusFailed {
 		t.Fatalf("should be failed")
 	}
 
 	// three task and two scheduled (one running, one failed) => running
-	monkey.PatchInstanceMethod(reflect.TypeOf(dbClient), "ListPipelineTasksByPipelineID",
-		func(_ *dbclient.Client, pipelineID uint64, ops ...dbclient.SessionOption) ([]spec.PipelineTask, error) {
-			return []spec.PipelineTask{
-				{ID: 1, Name: "s1c1", Status: apistructs.PipelineStatusRunning},
-				{ID: 2, Name: "s2c1", Status: apistructs.PipelineStatusFailed},
-			}, nil
-		})
+	pr.processedTasks = sync.Map{}
+	pr.processedTasks.Store("s1c1", &spec.PipelineTask{ID: 1, Name: "s1c1", Status: apistructs.PipelineStatusRunning})
+	pr.processingTasks.Store("s2c1", &spec.PipelineTask{ID: 1, Name: "s1c1", Status: apistructs.PipelineStatusFailed})
 	pr.totalTaskNumber = &[]int{3}[0]
-	newStatus, err = pr.calculatePipelineStatusForTaskUseField(ctx, p)
-	if err != nil {
-		t.Fatalf("should no err, err: %v", err)
-	}
+	newStatus = pr.calculatePipelineStatusForTaskUseField(ctx, p)
 	if newStatus != apistructs.PipelineStatusRunning {
 		t.Fatalf("should be running")
+	}
+
+	// three tasks are all disabled => success
+	pr.totalTaskNumber = &[]int{3}[0]
+	pr.processedTasks = sync.Map{}
+	pr.processedTasks.Store("task-1", &spec.PipelineTask{ID: 1, Name: "s1c1", Status: apistructs.PipelineStatusDisabled})
+	pr.processedTasks.Store("task-2", &spec.PipelineTask{ID: 2, Name: "s1c1", Status: apistructs.PipelineStatusDisabled})
+	pr.processedTasks.Store("task-3", &spec.PipelineTask{ID: 1, Name: "s1c1", Status: apistructs.PipelineStatusDisabled})
+	newStatus = pr.calculatePipelineStatusForTaskUseField(ctx, p)
+	if newStatus != apistructs.PipelineStatusSuccess {
+		t.Fatalf("should be success")
 	}
 }

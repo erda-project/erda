@@ -124,7 +124,6 @@ func (s *provider) searchPipelineActions(items []string, locations []string) (ma
 	}
 
 	var pipelineActionListRequest actionpb.PipelineActionListRequest
-	pipelineActionListRequest.IsPublic = true
 	pipelineActionListRequest.YamlFormat = true
 	pipelineActionListRequest.Locations = locations
 	for _, nameVersion := range items {
@@ -133,10 +132,6 @@ func (s *provider) searchPipelineActions(items []string, locations []string) (ma
 			Name:    name,
 			Version: version,
 		}
-		if query.Version == "" {
-			query.IsDefault = true
-		}
-
 		pipelineActionListRequest.ActionNameWithVersionQuery = append(pipelineActionListRequest.ActionNameWithVersionQuery, query)
 	}
 
@@ -154,8 +149,8 @@ func (s *provider) searchPipelineActions(items []string, locations []string) (ma
 			if action.Name != name {
 				continue
 			}
+
 			if version == "" {
-				// get first default action
 				if action.IsDefault {
 					findAction = action
 					break
@@ -167,9 +162,25 @@ func (s *provider) searchPipelineActions(items []string, locations []string) (ma
 				}
 			}
 		}
+
+		// Set the first public action if the default cannot be found
+		if findAction == nil && version == "" {
+			for _, action := range resp.Data {
+				if action.Name != name {
+					continue
+				}
+				if !action.IsPublic {
+					continue
+				}
+				findAction = action
+				break
+			}
+		}
+
 		if findAction == nil {
 			continue
 		}
+
 		result[nameVersion] = apistructs.ExtensionVersion{
 			Name:      findAction.Name,
 			Version:   findAction.Version,
@@ -192,6 +203,9 @@ func getActionNameVersion(nameVersion string) (string, string) {
 	version := ""
 	if len(splits) > 1 {
 		version = splits[1]
+	}
+	if version == defaultVersion {
+		version = ""
 	}
 	return name, version
 }

@@ -567,6 +567,8 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		project.WithTrans(p.ResourceTrans),
 		project.WithCMP(p.Cmp),
 		project.WithNamespace(ns),
+		project.WithTokenSvc(p.TokenService),
+		project.WithClusterSvc(p.ClusterSvc),
 	)
 	proj.UpdateFileRecord = testCaseSvc.UpdateFileRecord
 	proj.CreateFileRecord = testCaseSvc.CreateFileRecord
@@ -575,6 +577,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		application.WithBundle(bdl.Bdl),
 		application.WithDBClient(db),
 		application.WithPipelineCms(p.PipelineCms),
+		application.WithTokenSvc(p.TokenService),
 	)
 
 	codeCvc := code_coverage.New(
@@ -669,6 +672,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		endpoints.WithPipelineDefinition(p.PipelineDefinition),
 		endpoints.WithPublishItem(publishItem),
 		endpoints.WithDevWorkFlow(p.DevWorkflow),
+		endpoints.WithTokenSvc(p.TokenService),
 	)
 
 	ep.ImportChannel = make(chan uint64)

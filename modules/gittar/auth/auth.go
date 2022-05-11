@@ -31,6 +31,7 @@ import (
 	"github.com/patrickmn/go-cache"
 	"github.com/sirupsen/logrus"
 
+	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/gittar/conf"
 	"github.com/erda-project/erda/modules/gittar/models"
@@ -38,6 +39,7 @@ import (
 	"github.com/erda-project/erda/modules/gittar/uc"
 	"github.com/erda-project/erda/modules/gittar/webcontext"
 	"github.com/erda-project/erda/pkg/http/httputil"
+	"github.com/erda-project/erda/pkg/oauth2/tokenstore/mysqltokenstore"
 	"github.com/erda-project/erda/pkg/ucauth"
 )
 
@@ -282,15 +284,16 @@ func GetUserInfoByTokenOrBasicAuth(c *webcontext.Context, projectID int64) (*uca
 	if ok && username != "" && password != "" {
 		// 触发token校验
 		if username == conf.GitTokenUserName() {
-			// dice token
-			member, err := c.Bundle.GetMemberByToken(&apistructs.GetMemberByTokenRequest{
-				Token: password,
+			res, err := c.TokenService.QueryTokens(context.Background(), &tokenpb.QueryTokensRequest{
+				Access: password,
+				Type:   mysqltokenstore.PAT.String(),
 			})
-			if err == nil {
-				userInfo, err := uc.FindUserById(member.UserID)
+			if err == nil && res.Total > 0 {
+				userID := res.Data[0].CreatorId
+				userInfo, err := uc.FindUserById(userID)
 				if err == nil {
 					return &ucauth.UserInfo{
-						ID:        ucauth.USERID(member.UserID),
+						ID:        ucauth.USERID(userID),
 						Email:     userInfo.Email,
 						Phone:     userInfo.Phone,
 						AvatarUrl: userInfo.AvatarURL,
@@ -299,7 +302,7 @@ func GetUserInfoByTokenOrBasicAuth(c *webcontext.Context, projectID int64) (*uca
 					}, nil
 				}
 			} else {
-				logrus.Errorf("GetMemberByToken err:%s", err)
+				logrus.Errorf("get PAT err:%s", err)
 				return nil, errors.New("invalid token")
 			}
 		} else {

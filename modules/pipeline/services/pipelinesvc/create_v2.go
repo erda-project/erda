@@ -371,9 +371,18 @@ func (s *PipelineSvc) UpdatePipelineCron(p *spec.Pipeline, cronStartFrom *time.T
 	if err != nil {
 		return apierrors.ErrUpdatePipelineCron.InternalError(err)
 	}
-
+	// todo CronCreate should be simple, do not contains disable logic.
+	//  Add an interface method HandleCron to merge all logic for easy use.
+	// When cron create cron express is empty, cron create will execute disable logic, if not find cron by source and ymlName the ID of result may be 0
 	if result.Data.ID > 0 {
 		p.CronID = &result.Data.ID
+	}
+
+	// report
+	if s.edgeRegister != nil {
+		if s.edgeRegister.IsEdge() {
+			s.edgeReporter.TriggerOnceCronReport(*p.CronID)
+		}
 	}
 	return nil
 }

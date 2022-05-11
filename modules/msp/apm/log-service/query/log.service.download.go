@@ -47,7 +47,7 @@ type LogDownloadRequest struct {
 
 func (p *provider) logDownload(r *http.Request, w http.ResponseWriter, params *LogDownloadRequest) interface{} {
 	if params.MaxReturn <= 0 {
-		params.MaxReturn = 100000
+		params.MaxReturn = 1000000
 	}
 	if params.Size <= 0 {
 		params.Size = 1000

@@ -18,6 +18,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
+	"github.com/erda-project/erda/modules/pipeline/providers/edgepipeline_register"
 	"github.com/erda-project/erda/modules/pkg/websocket"
 )
 
@@ -34,6 +35,8 @@ type DefaultEvent struct {
 	bdl      *bundle.Bundle
 	dbClient *dbclient.Client
 	wsClient *websocket.Publisher
+
+	edgeRegister edgepipeline_register.Interface
 }
 
 type IdentityInfo struct {

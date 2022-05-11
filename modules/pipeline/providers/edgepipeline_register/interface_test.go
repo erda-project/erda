@@ -15,13 +15,17 @@
 package edgepipeline_register
 
 import (
+	"context"
+	"fmt"
 	"net/http"
 	"reflect"
 	"testing"
 
 	"bou.ke/monkey"
+	"github.com/coreos/etcd/clientv3"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/erda-project/erda-infra/base/logs/logrusx"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 )
@@ -34,7 +38,7 @@ func TestSourceWhiteList(t *testing.T) {
 	}
 	tests := []struct {
 		name string
-		src  string
+		src  apistructs.PipelineSource
 		want bool
 	}{
 		{
@@ -69,7 +73,7 @@ func TestSourceWhiteList(t *testing.T) {
 	defer patch.Unpatch()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := p.ShouldDispatchToEdge(tt.src, "dev"); got != tt.want {
+			if got := p.CanProxyToEdge(tt.src, "dev"); got != tt.want {
 				t.Errorf("sourceWhiteList() = %v, want %v", got, tt.want)
 			}
 		})
@@ -123,34 +127,52 @@ func Test_parseDialerEndpoint(t *testing.T) {
 func TestGetAccessToken(t *testing.T) {
 	p := &provider{
 		Cfg: &Config{
-			IsEdge:      true,
-			accessToken: "xxx",
+			IsEdge:           true,
+			ClusterAccessKey: "xxx",
 		},
 	}
 	accessToken, err := p.GetAccessToken(apistructs.OAuth2TokenGetRequest{})
 	assert.NoError(t, err)
-	assert.Equal(t, p.Cfg.accessToken, accessToken.AccessToken)
+	assert.Equal(t, p.Cfg.ClusterAccessKey, accessToken.AccessToken)
 }
 
 func TestGetOAuth2Token(t *testing.T) {
 	p := &provider{
 		Cfg: &Config{
-			IsEdge:      true,
-			accessToken: "xxx",
+			IsEdge:           true,
+			ClusterAccessKey: "xxx",
 		},
 	}
 	oauth2Token, err := p.GetOAuth2Token(apistructs.OAuth2TokenGetRequest{})
 	assert.NoError(t, err)
-	assert.Equal(t, p.Cfg.accessToken, oauth2Token.AccessToken)
+	assert.Equal(t, p.Cfg.ClusterAccessKey, oauth2Token.AccessToken)
+}
+
+type mockKV struct{}
+
+func (o mockKV) Put(ctx context.Context, key, val string, opts ...clientv3.OpOption) (*clientv3.PutResponse, error) {
+	return nil, nil
+}
+func (o mockKV) Get(ctx context.Context, key string, opts ...clientv3.OpOption) (*clientv3.GetResponse, error) {
+	if key == "/xxx" {
+		return nil, nil
+	}
+	return nil, fmt.Errorf("not found")
+}
+func (o mockKV) Delete(ctx context.Context, key string, opts ...clientv3.OpOption) (*clientv3.DeleteResponse, error) {
+	panic("implement me")
+}
+func (o mockKV) Compact(ctx context.Context, rev int64, opts ...clientv3.CompactOption) (*clientv3.CompactResponse, error) {
+	panic("implement me")
+}
+func (o mockKV) Do(ctx context.Context, op clientv3.Op) (clientv3.OpResponse, error) {
+	panic("implement me")
+}
+func (o mockKV) Txn(ctx context.Context) clientv3.Txn {
+	panic("implement me")
 }
 
 func TestCheckAccessToken(t *testing.T) {
-	p := &provider{
-		Cfg: &Config{
-			IsEdge:      true,
-			accessToken: "xxx",
-		},
-	}
 	tests := []struct {
 		name        string
 		accessToken string
@@ -167,6 +189,17 @@ func TestCheckAccessToken(t *testing.T) {
 			wantErr:     true,
 		},
 	}
+	etcdClient := &clientv3.Client{
+		KV: &mockKV{},
+	}
+	p := &provider{
+		Cfg: &Config{
+			IsEdge:           true,
+			ClusterAccessKey: "xxx",
+		},
+		EtcdClient: etcdClient,
+		Log:        logrusx.New(),
+	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := p.CheckAccessToken(tt.accessToken)
@@ -180,10 +213,10 @@ func TestCheckAccessToken(t *testing.T) {
 func TestGetEdgePipelineEnvs(t *testing.T) {
 	p := &provider{
 		Cfg: &Config{
-			IsEdge:       true,
-			accessToken:  "xxx",
-			PipelineAddr: "pipeline:3081",
-			PipelineHost: "pipeline.default.svc.cluster.local",
+			IsEdge:           true,
+			ClusterAccessKey: "xxx",
+			PipelineAddr:     "pipeline:3081",
+			PipelineHost:     "pipeline.default.svc.cluster.local",
 		},
 	}
 	envs := p.GetEdgePipelineEnvs()
@@ -192,11 +225,16 @@ func TestGetEdgePipelineEnvs(t *testing.T) {
 }
 
 func TestCheckAccessTokenFromHttpRequest(t *testing.T) {
+	etcdClient := &clientv3.Client{
+		KV: &mockKV{},
+	}
 	p := &provider{
 		Cfg: &Config{
-			IsEdge:      true,
-			accessToken: "xxx",
+			IsEdge:           true,
+			ClusterAccessKey: "xxx",
 		},
+		EtcdClient: etcdClient,
+		Log:        logrusx.New(),
 	}
 	tests := []struct {
 		name        string
@@ -232,8 +270,8 @@ func TestCheckAccessTokenFromHttpRequest(t *testing.T) {
 func TestIsEdge(t *testing.T) {
 	p := &provider{
 		Cfg: &Config{
-			IsEdge:      true,
-			accessToken: "xxx",
+			IsEdge:           true,
+			ClusterAccessKey: "xxx",
 		},
 	}
 	assert.Equal(t, true, p.IsEdge())
@@ -270,10 +308,46 @@ func TestShouldDispatchToEdge(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := p.ShouldDispatchToEdge("cdp-dev", tt.clusterName)
+			got := p.CanProxyToEdge("cdp-dev", tt.clusterName)
 			if got != tt.wantEdge {
 				t.Errorf("want edge: %v, but got: %v", tt.wantEdge, got)
 			}
 		})
+	}
+}
+
+func Test_checkEtcdPrefixKey(t *testing.T) {
+	tests := []struct {
+		name    string
+		key     string
+		wantErr bool
+	}{
+		{
+			name:    "empty key",
+			key:     "",
+			wantErr: true,
+		},
+		{
+			name:    "end with /",
+			key:     "/xxx/",
+			wantErr: true,
+		},
+		{
+			name:    "not start with /",
+			key:     "xxx",
+			wantErr: true,
+		},
+		{
+			name:    "valid key",
+			key:     "/devops/pipeline/cluster-key",
+			wantErr: false,
+		},
+	}
+	p := &provider{Cfg: &Config{}}
+	for _, tt := range tests {
+		p.Cfg.EtcdPrefixOfClusterAccessKey = tt.key
+		if err := p.checkEtcdPrefixKey(p.Cfg.EtcdPrefixOfClusterAccessKey); (err != nil) != tt.wantErr {
+			t.Errorf("want err: %v, but got: %v", tt.wantErr, err)
+		}
 	}
 }

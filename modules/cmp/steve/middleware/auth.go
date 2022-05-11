@@ -22,24 +22,29 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc/metadata"
 	apiuser "k8s.io/apiserver/pkg/authentication/user"
 	"k8s.io/apiserver/pkg/endpoints/request"
 
+	"github.com/erda-project/erda-infra/pkg/transport"
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/steve/predefined"
+	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 const varsKey = "stevePathVars"
 
 type Authenticator struct {
-	bdl *bundle.Bundle
+	bdl        *bundle.Bundle
+	clusterSvc clusterpb.ClusterServiceServer
 }
 
 // NewAuthenticator return a steve Authenticator with bundle.
 // bdl need withCoreServices to check permission.
-func NewAuthenticator(bdl *bundle.Bundle) *Authenticator {
-	return &Authenticator{bdl: bdl}
+func NewAuthenticator(bdl *bundle.Bundle, clusterSvc clusterpb.ClusterServiceServer) *Authenticator {
+	return &Authenticator{bdl: bdl, clusterSvc: clusterSvc}
 }
 
 // AuthMiddleware authenticate for steve server by bundle.
@@ -63,7 +68,7 @@ func (a *Authenticator) AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		clusters, err := a.listClusterByType(scopeID, "k8s", "edas")
+		clusters, err := a.listClusterByType(req.Context(), scopeID, "k8s", "edas")
 		if err != nil {
 			logrus.Errorf("failed to list cluster %s in steve authenticate, %v", clusterName, err)
 			resp.WriteHeader(http.StatusInternalServerError)
@@ -140,14 +145,15 @@ func (a *Authenticator) AuthMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func (a *Authenticator) listClusterByType(orgID uint64, types ...string) ([]apistructs.ClusterInfo, error) {
-	var result []apistructs.ClusterInfo
+func (a *Authenticator) listClusterByType(ctx context.Context, orgID uint64, types ...string) ([]*clusterpb.ClusterInfo, error) {
+	var result []*clusterpb.ClusterInfo
+	ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "true"}))
 	for _, typ := range types {
-		clusters, err := a.bdl.ListClusters(typ, orgID)
+		resp, err := a.clusterSvc.ListCluster(ctx, &clusterpb.ListClusterRequest{ClusterType: typ})
 		if err != nil {
 			return nil, err
 		}
-		result = append(result, clusters...)
+		result = append(result, resp.Data...)
 	}
 	return result, nil
 }

@@ -23,7 +23,7 @@ var ADMIN_CLUSTER_GET = apis.ApiSpec{
 	Path:         "/api/clusters/<clusterName>",
 	BackendPath:  "/api/clusters/<clusterName>",
 	Method:       "GET",
-	Host:         "admin.marathon.l4lb.thisdcos.directory:9095",
+	Host:         "erda-server.marathon.l4lb.thisdcos.directory:9095",
 	Scheme:       "http",
 	CheckLogin:   true,
 	ResponseType: apistructs.ClusterInfo{},

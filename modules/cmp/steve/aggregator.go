@@ -26,16 +26,20 @@ import (
 	"github.com/rancher/apiserver/pkg/types"
 	"github.com/rancher/steve/pkg/attributes"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc/metadata"
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apiserver/pkg/endpoints/request"
 
+	"github.com/erda-project/erda-infra/pkg/transport"
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	apierrors2 "github.com/erda-project/erda/bundle/apierrors"
 	"github.com/erda-project/erda/modules/cmp/steve/predefined"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
+	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/k8sclient"
 	"github.com/erda-project/erda/pkg/k8sclient/config"
 )
@@ -47,16 +51,18 @@ type group struct {
 }
 
 type Aggregator struct {
-	Ctx     context.Context
-	Bdl     *bundle.Bundle
-	servers sync.Map
+	Ctx        context.Context
+	Bdl        *bundle.Bundle
+	servers    sync.Map
+	clusterSvc clusterpb.ClusterServiceServer
 }
 
 // NewAggregator new an aggregator with steve servers for all current clusters
-func NewAggregator(ctx context.Context, bdl *bundle.Bundle) *Aggregator {
+func NewAggregator(ctx context.Context, bdl *bundle.Bundle, clusterSvc clusterpb.ClusterServiceServer) *Aggregator {
 	a := &Aggregator{
-		Ctx: ctx,
-		Bdl: bdl,
+		Ctx:        ctx,
+		Bdl:        bdl,
+		clusterSvc: clusterSvc,
 	}
 	a.init()
 	go a.watchClusters(ctx)
@@ -173,14 +179,15 @@ func (a *Aggregator) watchClusters(ctx context.Context) {
 	}
 }
 
-func (a *Aggregator) listClusterByType(types ...string) ([]apistructs.ClusterInfo, error) {
-	var result []apistructs.ClusterInfo
+func (a *Aggregator) listClusterByType(types ...string) ([]*clusterpb.ClusterInfo, error) {
+	ctx := transport.WithHeader(a.Ctx, metadata.New(map[string]string{httputil.InternalHeader: "true"}))
+	var result []*clusterpb.ClusterInfo
 	for _, typ := range types {
-		clusters, err := a.Bdl.ListClustersWithType(typ)
+		clusters, err := a.clusterSvc.ListCluster(ctx, &clusterpb.ListClusterRequest{ClusterType: typ})
 		if err != nil {
 			return nil, err
 		}
-		result = append(result, clusters...)
+		result = append(result, clusters.Data...)
 	}
 	return result, nil
 }
@@ -202,7 +209,7 @@ func (a *Aggregator) init() {
 }
 
 // Add starts a steve server for k8s cluster with clusterName and add it into aggregator
-func (a *Aggregator) Add(clusterInfo apistructs.ClusterInfo) {
+func (a *Aggregator) Add(clusterInfo *clusterpb.ClusterInfo) {
 	if clusterInfo.Type != "k8s" && clusterInfo.Type != "edas" {
 		return
 	}
@@ -346,7 +353,8 @@ func (a *Aggregator) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 
 	s, ok := a.servers.Load(clusterName)
 	if !ok {
-		cluster, err := a.Bdl.GetCluster(clusterName)
+		ctx := transport.WithHeader(a.Ctx, metadata.New(map[string]string{httputil.InternalHeader: "true"}))
+		resp, err := a.clusterSvc.GetCluster(ctx, &clusterpb.GetClusterRequest{IdOrName: clusterName})
 		if err != nil {
 			apiErr, _ := err.(*errorresp.APIError)
 			if apiErr.HttpCode() != http.StatusNotFound {
@@ -361,16 +369,17 @@ func (a *Aggregator) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		if cluster.Type != "k8s" && cluster.Type != "edas" {
+		clusterInfo := resp.Data
+		if clusterInfo.Type != "k8s" && clusterInfo.Type != "edas" {
 			rw.WriteHeader(http.StatusBadRequest)
 			rw.Write(apistructs.NewSteveError(apistructs.BadRequest,
 				fmt.Sprintf("cluster %s is not a k8s or edas cluster", clusterName)).JSON())
 			return
 		}
 
-		logrus.Infof("steve for cluster %s not exist, starting a new server", cluster.Name)
-		a.Add(*cluster)
-		if s, ok = a.servers.Load(cluster.Name); !ok {
+		logrus.Infof("steve for cluster %s not exist, starting a new server", clusterInfo.Name)
+		a.Add(clusterInfo)
+		if s, ok = a.servers.Load(clusterInfo.Name); !ok {
 			rw.WriteHeader(http.StatusInternalServerError)
 			rw.Write(apistructs.NewSteveError(apistructs.ServerError, "Internal server error").JSON())
 			return
@@ -390,7 +399,8 @@ func (a *Aggregator) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 func (a *Aggregator) Serve(clusterName string, apiOp *types.APIRequest) error {
 	s, ok := a.servers.Load(clusterName)
 	if !ok {
-		cluster, err := a.Bdl.GetCluster(clusterName)
+		ctx := transport.WithHeader(a.Ctx, metadata.New(map[string]string{httputil.InternalHeader: "true"}))
+		resp, err := a.clusterSvc.GetCluster(ctx, &clusterpb.GetClusterRequest{IdOrName: clusterName})
 		if err != nil {
 			apiErr, _ := err.(*errorresp.APIError)
 			if apiErr.HttpCode() != http.StatusNotFound {
@@ -399,14 +409,15 @@ func (a *Aggregator) Serve(clusterName string, apiOp *types.APIRequest) error {
 			return apierrors2.ErrInvoke.InvalidParameter(errors.Errorf("cluster %s not found", clusterName))
 		}
 
-		if cluster.Type != "k8s" && cluster.Type != "edas" {
+		clusterInfo := resp.Data
+		if clusterInfo.Type != "k8s" && clusterInfo.Type != "edas" {
 			return apierrors2.ErrInvoke.InvalidParameter(errors.Errorf("cluster %s is not a k8s or edas cluster", clusterName))
 		}
 
-		logrus.Infof("steve for cluster %s not exist, starting a new server", cluster.Name)
-		a.Add(*cluster)
-		if s, ok = a.servers.Load(cluster.Name); !ok {
-			return apierrors2.ErrInvoke.InternalError(errors.Errorf("failed to start steve server for cluster %s", cluster.Name))
+		logrus.Infof("steve for cluster %s not exist, starting a new server", clusterInfo.Name)
+		a.Add(clusterInfo)
+		if s, ok = a.servers.Load(clusterInfo.Name); !ok {
+			return apierrors2.ErrInvoke.InternalError(errors.Errorf("failed to start steve server for cluster %s", clusterInfo.Name))
 		}
 	}
 
@@ -424,12 +435,12 @@ func (a *Aggregator) Serve(clusterName string, apiOp *types.APIRequest) error {
 	return nil
 }
 
-func (a *Aggregator) createSteve(clusterInfo apistructs.ClusterInfo) (*Server, context.CancelFunc, error) {
+func (a *Aggregator) createSteve(clusterInfo *clusterpb.ClusterInfo) (*Server, context.CancelFunc, error) {
 	if clusterInfo.ManageConfig == nil {
 		return nil, nil, fmt.Errorf("manageConfig of cluster %s is null", clusterInfo.Name)
 	}
 
-	restConfig, err := config.ParseManageConfig(clusterInfo.Name, clusterInfo.ManageConfig)
+	restConfig, err := config.ParseManageConfigPb(clusterInfo.Name, clusterInfo.ManageConfig)
 	if err != nil {
 		return nil, nil, err
 	}

@@ -85,6 +85,16 @@ func (p *provider) getRemoveList(ctx context.Context, indices *loader.IndexGroup
 	return list
 }
 
+func (p *provider) getIndicesList(ctx context.Context, indices *loader.IndexGroup) (list []string) {
+	for _, entry := range indices.List {
+		list = append(list, entry.Index)
+	}
+	for _, group := range indices.Groups {
+		list = append(list, p.getIndicesList(ctx, group)...)
+	}
+	return list
+}
+
 func (p *provider) needToDelete(entry *loader.IndexEntry, now time.Time) bool {
 	if entry.MaxT.IsZero() || (entry.Num >= 0 && entry.Active) {
 		return false
@@ -134,5 +144,55 @@ func (p *provider) deleteIndex(indices []string) error {
 		return fmt.Errorf("delete indices Acknowledged=false")
 	}
 	p.Log.Infof("clean indices %d, %v", len(indices), indices)
+	return nil
+}
+
+func (p *provider) deleteByQuery() {
+	ctx := context.Background()
+	p.loader.WaitAndGetIndices(ctx)
+	p.Log.Infof("Running ES docs clean...")
+	defer p.Log.Infof("Docs cleaned...")
+
+	indexGroup := p.loader.AllIndices()
+	if indexGroup == nil {
+		return
+	}
+	indices := p.getIndicesList(ctx, indexGroup)
+
+	for _, index := range indices {
+		ttl := elastic.NewRangeQuery("@timestamp").
+			From(0).
+			To(time.Now().AddDate(0, 0, -p.Cfg.DiskClean.TTL.MaxStoreTime).UnixNano() / 1e6)
+
+		resp, err := p.loader.Client().DeleteByQuery().
+			Index(index).
+			WaitForCompletion(false).
+			ProceedOnVersionConflict().
+			Query(ttl).
+			Pretty(true).
+			DoAsync(ctx)
+		if err != nil {
+			p.Log.Errorf("delete failed. indices: %s, err: %v", index, err.Error())
+			continue
+		}
+		p.AddTask(&TtlTask{
+			TaskId:  resp.TaskId,
+			Indices: []string{index},
+		})
+		p.Log.Infof("Clean doc by ttl, taskId: %s", resp.TaskId)
+	}
+}
+
+func (p *provider) forceMerge(ctx context.Context, indices ...string) error {
+	forceMergeResponse, err := p.loader.Client().Forcemerge(indices...).Do(ctx)
+	if err != nil {
+		p.Log.Error(err)
+		return err
+	}
+	if forceMergeResponse.Shards.Failures != nil && len(forceMergeResponse.Shards.Failures) > 0 {
+		p.Log.Errorf("force merge failed, err: %v", forceMergeResponse.Shards.Failures)
+		return fmt.Errorf("force merge failed, err: %v", forceMergeResponse.Shards.Failures)
+	}
+	p.Log.Infof("Force merge successful. contains indices: %v", indices)
 	return nil
 }

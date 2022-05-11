@@ -550,7 +550,7 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 	if err != nil {
 		return apierrors.ErrUpdateIssue.InternalError(err)
 	}
-	//如果是BUG从打开或者重新打开切换状态为已解决，修改责任人为当前用户
+	// if state of bug is changed to resolved/wontfix, change owner to operator/creator
 	if issueModel.Type == apistructs.IssueTypeBug {
 		currentState, err := cache.TryGetState(issueModel.State)
 		if err != nil {
@@ -561,8 +561,10 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 			if err != nil {
 				return apierrors.ErrGetIssue.InternalError(err)
 			}
-			if (currentState.Belong == apistructs.IssueStateBelongOpen || currentState.Belong == apistructs.IssueStateBelongReopen) && newState.Belong == apistructs.IssueStateBelongResolved {
+			if (currentState.Belong != apistructs.IssueStateBelongResolved) && newState.Belong == apistructs.IssueStateBelongResolved {
 				req.Owner = &req.IdentityInfo.UserID
+			} else if (currentState.Belong != apistructs.IssueStateBelongWontfix) && newState.Belong == apistructs.IssueStateBelongWontfix {
+				req.Owner = &issueModel.Creator
 			}
 		}
 	}

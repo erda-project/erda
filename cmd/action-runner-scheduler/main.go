@@ -15,15 +15,20 @@
 package main
 
 import (
+	_ "embed"
+
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/pkg/common"
 
 	// providers and modules
-	_ "github.com/erda-project/erda/modules/action-runner-scheduler"
+	_ "github.com/erda-project/erda/modules/pipeline/action-runner-scheduler"
 )
+
+//go:embed bootstrap.yaml
+var bootstrapCfg string
 
 func main() {
 	common.Run(&servicehub.RunOptions{
-		ConfigFile: "conf/action_runner_scheduler/action_runner_scheduler.yaml",
+		Content: bootstrapCfg,
 	})
 }

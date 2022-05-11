@@ -33,6 +33,7 @@ import (
 	"google.golang.org/grpc/metadata"
 
 	"github.com/erda-project/erda-infra/pkg/transport"
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
@@ -61,7 +62,7 @@ import (
 type DeployFSMContext struct {
 	Deployment        *dbclient.Deployment
 	Runtime           *dbclient.Runtime
-	Cluster           *apistructs.ClusterInfo
+	Cluster           *clusterpb.ClusterInfo
 	App               *apistructs.ApplicationDTO
 	Spec              *diceyml.Object
 	ProjectNamespaces map[string]string
@@ -84,10 +85,11 @@ type DeployFSMContext struct {
 	serviceGroupImpl servicegroup.ServiceGroup
 	scheduler        *scheduler.Scheduler
 	envConfig        *environment.EnvConfig
+	clusterSvc       clusterpb.ClusterServiceServer
 }
 
 // TODO: context should base on deployment service
-func NewFSMContext(deploymentID uint64, db *dbclient.DBClient, evMgr *events.EventManager, bdl *bundle.Bundle, a *addon.Addon, m *migration.Migration, encrypt *encryption.EnvEncrypt, resource *resource.Resource, releaseSvc pb.ReleaseServiceServer, serviceGroupImpl servicegroup.ServiceGroup, scheduler *scheduler.Scheduler, envConfig *environment.EnvConfig) *DeployFSMContext {
+func NewFSMContext(deploymentID uint64, db *dbclient.DBClient, evMgr *events.EventManager, bdl *bundle.Bundle, a *addon.Addon, m *migration.Migration, encrypt *encryption.EnvEncrypt, resource *resource.Resource, releaseSvc pb.ReleaseServiceServer, serviceGroupImpl servicegroup.ServiceGroup, scheduler *scheduler.Scheduler, envConfig *environment.EnvConfig, clusterSvc clusterpb.ClusterServiceServer) *DeployFSMContext {
 	logger := log.DeployLogHelper{DeploymentID: strconv.FormatUint(deploymentID, 10), Bdl: bdl}
 	// prepare the context
 	return &DeployFSMContext{
@@ -104,6 +106,7 @@ func NewFSMContext(deploymentID uint64, db *dbclient.DBClient, evMgr *events.Eve
 		serviceGroupImpl: serviceGroupImpl,
 		scheduler:        scheduler,
 		envConfig:        envConfig,
+		clusterSvc:       clusterSvc,
 	}
 }
 
@@ -130,10 +133,12 @@ func (fsm *DeployFSMContext) Load() error {
 	if len(runtime.ClusterName) == 0 {
 		return errors.Errorf("cluster_name null, runtimeID: %v", runtime.ID)
 	}
-	cluster, err := fsm.bdl.GetCluster(runtime.ClusterName)
+	ctx := transport.WithHeader(context.Background(), metadata.New(map[string]string{httputil.InternalHeader: "cmp"}))
+	resp, err := fsm.clusterSvc.GetCluster(ctx, &clusterpb.GetClusterRequest{IdOrName: runtime.ClusterName})
 	if err != nil {
 		return err
 	}
+	cluster := resp.Data
 	app, err := fsm.bdl.GetApp(runtime.ApplicationID)
 	if err != nil {
 		return err
@@ -873,10 +878,12 @@ func (fsm *DeployFSMContext) deployService() error {
 	// make sure runtime must have scheduleName
 	if fsm.Runtime.ScheduleName.Name == "" {
 		// if no scheduleName, we set it
-		cluster, err := fsm.bdl.GetCluster(fsm.Runtime.ClusterName)
+		ctx := transport.WithHeader(context.Background(), metadata.New(map[string]string{httputil.InternalHeader: "cmp"}))
+		resp, err := fsm.clusterSvc.GetCluster(ctx, &clusterpb.GetClusterRequest{IdOrName: fsm.Runtime.ClusterName})
 		if err != nil {
 			return err
 		}
+		cluster := resp.Data
 		fsm.Runtime.InitScheduleName(cluster.Type)
 		if err := fsm.db.UpdateRuntime(fsm.Runtime); err != nil {
 			return err

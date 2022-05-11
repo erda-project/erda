@@ -15,13 +15,14 @@
 package actionmgr
 
 import (
+	"context"
 	"fmt"
 	"time"
 
 	"github.com/erda-project/erda/apistructs"
 )
 
-func (s *provider) continuousRefreshAction() {
+func (s *provider) continuousRefreshAction(ctx context.Context) {
 	ticker := time.NewTicker(s.Cfg.RefreshInterval)
 	defer ticker.Stop()
 	for ; true; <-ticker.C {

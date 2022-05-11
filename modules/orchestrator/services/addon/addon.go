@@ -15,6 +15,7 @@
 package addon
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -26,7 +27,10 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc/metadata"
 
+	"github.com/erda-project/erda-infra/pkg/transport"
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/orchestrator/components/addon/mysql"
@@ -43,6 +47,7 @@ import (
 	"github.com/erda-project/erda/pkg/crypto/encryption"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
+	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/i18n"
 	"github.com/erda-project/erda/pkg/kms/kmstypes"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
@@ -77,6 +82,7 @@ type Addon struct {
 	serviceGroupImpl servicegroup.ServiceGroup
 	instanceinfoImpl *instanceinfo.InstanceInfoImpl
 	clusterinfoImpl  clusterinfo.ClusterInfo
+	clusterSvc       clusterpb.ClusterServiceServer
 }
 
 // Option addon 实例对象配置选项
@@ -157,6 +163,12 @@ func WithInstanceinfoImpl(instanceinfoImpl *instanceinfo.InstanceInfoImpl) Optio
 func WithClusterInfoImpl(instanceinfoImpl clusterinfo.ClusterInfo) Option {
 	return func(a *Addon) {
 		a.clusterinfoImpl = instanceinfoImpl
+	}
+}
+
+func WithClusterSvc(clusterSvc clusterpb.ClusterServiceServer) Option {
+	return func(a *Addon) {
+		a.clusterSvc = clusterSvc
 	}
 }
 
@@ -1529,7 +1541,8 @@ func (a *Addon) Delete(userID, routingInstanceID string) error {
 					logrus.Errorf("failed to GetByOutSideInstanceID, %+v", err)
 					return err
 				}
-				cInfo, err := a.bdl.GetCluster(routingInstance.Cluster)
+				ctx := transport.WithHeader(context.Background(), metadata.New(map[string]string{httputil.InternalHeader: "cmp"}))
+				resp, err := a.clusterSvc.GetCluster(ctx, &clusterpb.GetClusterRequest{IdOrName: routingInstance.Cluster})
 				if err != nil {
 					logrus.Errorf("get cluster info failed, cluster name: %s, error: %v", routingInstance.Cluster, err)
 					//The addon can also be forcibly deleted, when the cluster is not exists
@@ -1537,6 +1550,7 @@ func (a *Addon) Delete(userID, routingInstanceID string) error {
 						return err
 					}
 				}
+				cInfo := resp.Data
 				var force bool
 				if cInfo != nil && cInfo.OpsConfig != nil && cInfo.OpsConfig.Status == apistructs.ClusterStatusOffline {
 					force = true

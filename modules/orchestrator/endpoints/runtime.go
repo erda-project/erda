@@ -410,6 +410,64 @@ func (e *Endpoints) ListRuntimesGroupByApps(ctx context.Context, r *http.Request
 	return httpserver.OkResp(runtimes)
 }
 
+// ListMyRuntimes lists the runtimes for which the current user has permissions
+func (e *Endpoints) ListMyRuntimes(ctx context.Context, r *http.Request, _ map[string]string) (httpserver.Responser, error) {
+	var (
+		l          = logrus.WithField("func", "*Endpoints.ListRuntimesGroupByApps")
+		appIDs     []uint64
+		appID2Name = make(map[uint64]string)
+		env        string
+	)
+
+	userId, err := user.GetUserID(r)
+	if err != nil {
+		l.Errorf("failed to get user id ,err :%v", err)
+		return nil, err
+	}
+	orgId, err := getOrgID(r)
+	if err != nil {
+		l.Errorf("failed to get org id ,err :%v", err)
+		return nil, err
+	}
+
+	projectIDStr := r.URL.Query().Get("projectID")
+	if projectIDStr == "" {
+		return nil, apierrors.ErrListRuntime.MissingParameter("projectID")
+	}
+	projectID, err := strconv.ParseUint(projectIDStr, 10, 64)
+	if err != nil {
+		return nil, apierrors.ErrListRuntime.InvalidParameter("projectID")
+	}
+
+	envParam := r.URL.Query()["workspace"]
+
+	if len(envParam) == 0 {
+		env = ""
+	} else {
+		env = envParam[0]
+	}
+
+	myApps, err := e.bdl.GetMyAppsByProject(string(userId), orgId, projectID, "")
+	for i := range myApps.List {
+		appIDs = append(appIDs, myApps.List[i].ID)
+		appID2Name[myApps.List[i].ID] = myApps.List[i].Name
+	}
+
+	runtimes, err := e.runtime.ListGroupByApps(appIDs, env)
+	if err != nil {
+		return apierrors.ErrListRuntime.InternalError(err).ToResp(), nil
+	}
+
+	var res []*apistructs.RuntimeSummaryDTO
+	for _, sli := range runtimes {
+		for i := range sli {
+			sli[i].ApplicationName = appID2Name[sli[i].ApplicationID]
+			res = append(res, sli[i])
+		}
+	}
+	return httpserver.OkResp(res)
+}
+
 // BatchRuntimeServices responses the runtimes for the given apps.
 func (e *Endpoints) BatchRuntimeServices(ctx context.Context, r *http.Request, _ map[string]string) (httpserver.Responser, error) {
 	var (
@@ -448,7 +506,7 @@ func (e *Endpoints) GetRuntime(ctx context.Context, r *http.Request, vars map[st
 		appID     = r.URL.Query().Get("applicationId")
 		workspace = r.URL.Query().Get("workspace")
 	)
-	data, err := e.runtime.Get(userID, orgID, idOrName, appID, workspace)
+	data, err := e.runtime.Get(ctx, userID, orgID, idOrName, appID, workspace)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
@@ -561,7 +619,7 @@ func (e *Endpoints) OrgcenterJobLogs(ctx context.Context, r *http.Request, vars 
 	if clusterName == "" {
 		return apierrors.ErrGetRuntime.MissingParameter("clusterName").ToResp(), nil
 	}
-	result, err := e.runtime.OrgJobLogs(userID, orgID, r.Header.Get("org"), jobID, clusterName, r.URL.Query())
+	result, err := e.runtime.OrgJobLogs(ctx, userID, orgID, r.Header.Get("org"), jobID, clusterName, r.URL.Query())
 	if err != nil {
 		return apierrors.ErrGetRuntime.InvalidParameter(strutil.Concat("jobID: ", jobID)).ToResp(), nil
 	}

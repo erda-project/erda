@@ -26,6 +26,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/k8sclient"
+	"github.com/erda-project/erda/pkg/limit_sync_group"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -48,6 +49,8 @@ type Interface interface {
 	RegisterClusterEvent() <-chan apistructs.ClusterEvent
 	// RegisterRefreshEvent return channel to receive refresh event
 	RegisterRefreshEvent() <-chan struct{}
+	// ListEdgeClusterInfos return all edge clusters, contain cluster connection info and config map data
+	ListEdgeClusterInfos() ([]apistructs.ClusterInfo, error)
 }
 
 func (p *provider) registerClusterHook() error {
@@ -157,14 +160,55 @@ func (p *provider) GetClusterInfoByName(clusterName string) (apistructs.ClusterI
 // ListAllClusterInfos firstly get all cluster from cache
 // if cache is empty, try to get all from bundle and update the cache
 func (p *provider) ListAllClusterInfos() ([]apistructs.ClusterInfo, error) {
+	return p.listAllClusterInfos(false)
+}
+
+// ListEdgeClusterInfos firstly get all edge cluster from cache
+// if cache is empty, try to get all from bundle and update the cache
+func (p *provider) ListEdgeClusterInfos() ([]apistructs.ClusterInfo, error) {
+	return p.listAllClusterInfos(true)
+}
+
+func (p *provider) listAllClusterInfos(onlyEdge bool) ([]apistructs.ClusterInfo, error) {
 	clusters := p.cache.GetAllClusters()
 	if len(clusters) != 0 {
-		return clusters, nil
+		return p.filterClusters(clusters, onlyEdge), nil
 	}
 	if err := p.batchUpdateClusterInfo(); err != nil {
 		return nil, err
 	}
-	return p.cache.GetAllClusters(), nil
+	return p.filterClusters(p.cache.GetAllClusters(), onlyEdge), nil
+}
+
+func (p *provider) filterClusters(clusters []apistructs.ClusterInfo, onlyEdge bool) []apistructs.ClusterInfo {
+	if !onlyEdge {
+		return clusters
+	}
+
+	var edgeCluster []apistructs.ClusterInfo
+	wait := limit_sync_group.NewWorker(10)
+
+	for index := range clusters {
+		wait.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
+			index := i[0].(int)
+			cluster := clusters[index]
+
+			isEdge, err := p.EdgeRegister.ClusterIsEdge(cluster.Name)
+			if err != nil {
+				p.Log.Errorf("failed to get ClusterIsEdge cluster %v error %v", cluster.Name, err)
+				return nil
+			}
+			if isEdge {
+				locker.Lock()
+				defer locker.Unlock()
+				edgeCluster = append(edgeCluster, cluster)
+			}
+			return nil
+		}, index)
+	}
+
+	_ = wait.Do().Error()
+	return edgeCluster
 }
 
 func (p *provider) RegisterClusterEvent() <-chan apistructs.ClusterEvent {

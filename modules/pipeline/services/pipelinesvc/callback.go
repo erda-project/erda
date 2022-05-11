@@ -19,9 +19,12 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
+	"github.com/xormplus/xorm"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/events"
+	crondb "github.com/erda-project/erda/modules/pipeline/providers/cron/db"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 )
@@ -172,4 +175,103 @@ func (s *PipelineSvc) findFlinkSparkTasks(p *spec.Pipeline, depend string) ([]sp
 
 func isFlinkSparkAction(action string) bool {
 	return action == "flink" || action == "spark"
+}
+
+func (s *PipelineSvc) DealPipelineCallbackOfTask(data []byte) error {
+	var pt spec.PipelineTask
+	if err := json.Unmarshal(data, &pt); err != nil {
+		return err
+	}
+
+	return s.CreateOrUpdatePipelineTask(&pt)
+}
+
+func (s *PipelineSvc) DealPipelineCallbackOfPipeline(data []byte) error {
+	var pst spec.PipelineWithStageAndTask
+	if err := json.Unmarshal(data, &pst); err != nil {
+		return err
+	}
+
+	err := s.CreateOrUpdatePipeline(&pst.Pipeline)
+	if err != nil {
+		return err
+	}
+
+	err = s.dbClient.DeletePipelineTasksByPipelineID(pst.ID)
+	if err != nil {
+		return err
+	}
+	err = s.dbClient.BatchCreatePipelineTasks(pst.PipelineTasks)
+	if err != nil {
+		return err
+	}
+
+	err = s.dbClient.DeletePipelineStagesByPipelineID(pst.ID)
+	if err != nil {
+		return err
+	}
+	return s.dbClient.BatchCreatePipelineStages(pst.PipelineStages)
+}
+
+func (s *PipelineSvc) DealPipelineCallbackOfCron(data []byte) error {
+	var pc crondb.PipelineCron
+	if err := json.Unmarshal(data, &pc); err != nil {
+		return err
+	}
+
+	return s.CreateOrUpdatePipelineCron(&pc)
+}
+
+func (s *PipelineSvc) CreateOrUpdatePipeline(pipeline *spec.Pipeline) error {
+	var baseDao spec.PipelineBase
+	exist, err := s.dbClient.ID(pipeline.ID).Get(&baseDao)
+	if err != nil {
+		return err
+	}
+	if !exist {
+		_, err = s.dbClient.Transaction(func(session *xorm.Session) (interface{}, error) {
+			return nil, s.dbClient.CreatePipeline(pipeline, dbclient.WithTxSession(session))
+		})
+		return err
+	}
+	err = s.dbClient.UpdatePipelineBase(pipeline.ID, &pipeline.PipelineBase)
+	if err != nil {
+		return err
+	}
+
+	err = s.dbClient.UpdatePipelineExtraByPipelineID(pipeline.ID, &pipeline.PipelineExtra)
+	if err != nil {
+		return err
+	}
+
+	err = s.dbClient.DeletePipelineLabelsByPipelineID(pipeline.ID)
+	if err != nil {
+		return err
+	}
+	return s.dbClient.CreatePipelineLabels(pipeline)
+}
+
+func (s *PipelineSvc) CreateOrUpdatePipelineTask(pt *spec.PipelineTask) error {
+	var dao spec.PipelineTask
+	exist, err := s.dbClient.ID(pt.ID).Get(&dao)
+	if err != nil {
+		return err
+	}
+	if exist {
+		return s.dbClient.UpdatePipelineTask(pt.ID, pt)
+	}
+	return s.dbClient.CreatePipelineTask(pt)
+}
+
+func (s *PipelineSvc) CreateOrUpdatePipelineCron(pc *crondb.PipelineCron) error {
+	var dao crondb.PipelineCron
+	exist, err := s.dbClient.ID(pc.ID).Get(&dao)
+	if err != nil {
+		return err
+	}
+	dbClient := &crondb.Client{Interface: s.mysql}
+	if exist {
+		return dbClient.UpdatePipelineCron(pc.ID, pc)
+	}
+	return dbClient.CreatePipelineCron(pc)
 }

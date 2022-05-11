@@ -25,6 +25,14 @@ import (
 	"github.com/erda-project/erda/apistructs"
 )
 
+const (
+	PipelineCronCronExpr = "cron_expr"
+	PipelineDefinitionID = "pipeline_definition_id"
+	PipelineCronEnable   = "enable"
+	Extra                = "extra"
+	PipelineCronIsEdge   = "is_edge"
+)
+
 type PipelineCron struct {
 	ID          uint64    `json:"id" xorm:"pk autoincr"`
 	TimeCreated time.Time `json:"timeCreated" xorm:"created"` // 记录创建时间
@@ -46,6 +54,15 @@ type PipelineCron struct {
 	BasePipelineID uint64 `json:"basePipelineID"` // 用于记录最开始创建出这条 cron 记录的 pipeline id
 	// definition id
 	PipelineDefinitionID string `json:"pipelineDefinitionID"`
+
+	IsEdge *bool `json:"is_edge"`
+}
+
+func (pc PipelineCron) GetIsEdge() bool {
+	if pc.IsEdge == nil {
+		return false
+	}
+	return *pc.IsEdge
 }
 
 // PipelineCronExtra cron 扩展信息, 不参与过滤
@@ -114,6 +131,7 @@ func (pc *PipelineCron) Convert2DTO() *pb.Cron {
 		OrgID:                  pc.GetOrgID(),
 		PipelineDefinitionID:   pc.PipelineDefinitionID,
 		PipelineSource:         pc.PipelineSource.String(),
+		IsEdge:                 wrapperspb.Bool(pc.GetIsEdge()),
 	}
 
 	extra := &pb.CronExtra{

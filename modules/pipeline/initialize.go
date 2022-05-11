@@ -133,6 +133,8 @@ func (p *provider) do() error {
 	pipelineSvc.WithUser(p.User)
 	pipelineSvc.WithRun(p.PipelineRun)
 	pipelineSvc.WithActionMgr(p.ActionMgr)
+	pipelineSvc.WithMySQL(p.MySQL)
+	pipelineSvc.WithEdgeReporter(p.EdgeReporter)
 
 	// todo resolve cycle import here through better module architecture
 	pipelineFuncs := reconciler.PipelineSvcFuncs{
@@ -190,7 +192,7 @@ func (p *provider) do() error {
 	p.Router.Any("/**", server.Router())
 
 	// 加载 event manager
-	events.Initialize(bdl, publisher, dbClient)
+	events.Initialize(bdl, publisher, dbClient, p.EdgeRegister)
 
 	// aop
 	aop.Initialize(bdl, dbClient, reportSvc)

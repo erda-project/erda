@@ -42,6 +42,8 @@ type logQueryService struct {
 	currentDownloadLimit *int64
 }
 
+var timeNow = time.Now
+
 func (s *logQueryService) GetLog(ctx context.Context, req *pb.GetLogRequest) (*pb.GetLogResponse, error) {
 	items, _, err := s.queryLogItems(ctx, req, func(sel *storage.Selector) *storage.Selector {
 		sel.Meta.PreferredReturnFields = storage.OnlyIdContent
@@ -68,20 +70,80 @@ func (s *logQueryService) GetLogByRuntime(ctx context.Context, req *pb.GetLogByR
 		return sel
 	}, true, false)
 	if err != nil {
-		return nil, err
+		s.p.Log.Error("query runtime log is failed, hosted by fallback", err)
+		return s.GetLogByRealtime(ctx, req)
+	}
+	if len(items) <= 0 && s.isRequestUseFallBack(req) {
+		s.p.Log.Error("query runtime log is empty, hosted by fallback")
+		return s.GetLogByRealtime(ctx, req)
 	}
 	return &pb.GetLogByRuntimeResponse{Lines: items}, nil
 }
+func (s *logQueryService) isRequestUseFallBack(req *pb.GetLogByRuntimeRequest) bool {
+	if req.IsFirstQuery {
+		return true
+	}
+
+	sBackoffTime := timeNow().Add(s.p.Cfg.DelayBackoffStartTime).UnixNano()
+	eBackoffTime := timeNow().Add(s.p.Cfg.DelayBackoffEndTime).UnixNano()
+
+	// start is 0, end is [DelayBackoffTime,3)
+	if req.GetStart() == 0 && req.End >= sBackoffTime && req.End < eBackoffTime {
+		return true
+	}
+
+	// [DelayBackoffTime,now + 3)
+	if req.GetStart() >= sBackoffTime && req.GetStart() < eBackoffTime {
+		return true
+	}
+	return false
+}
 
 func (s *logQueryService) GetLogByRealtime(ctx context.Context, req *pb.GetLogByRuntimeRequest) (*pb.GetLogByRuntimeResponse, error) {
-	items, err := s.queryRealLogItems(ctx, req, func(sel *storage.Selector) *storage.Selector {
+	items, isFallBack, err := s.queryRealLogItems(ctx, req, func(sel *storage.Selector) *storage.Selector {
 		s.tryFillQueryMeta(ctx, sel)
+
+		// set is first query flag.for first query, may be use tail speed up perform
+		sel.Options[storage.IsFirstQuery] = req.GetIsFirstQuery()
+
+		if len(req.GetContainerName()) > 0 {
+			sel.Filters = append(sel.Filters, &storage.Filter{
+				Key:   "container_name",
+				Op:    storage.EQ,
+				Value: req.GetContainerName(),
+			})
+		}
+
+		if len(req.GetPodName()) > 0 {
+			sel.Filters = append(sel.Filters, &storage.Filter{
+				Key:   "pod_name",
+				Op:    storage.EQ,
+				Value: req.GetPodName(),
+			})
+		}
+
+		if len(req.GetPodNamespace()) > 0 {
+			sel.Filters = append(sel.Filters, &storage.Filter{
+				Key:   "pod_namespace",
+				Op:    storage.EQ,
+				Value: req.GetPodNamespace(),
+			})
+		}
+
+		if len(req.GetClusterName()) > 0 {
+			sel.Filters = append(sel.Filters, &storage.Filter{
+				Key:   "cluster_name",
+				Op:    storage.EQ,
+				Value: req.GetClusterName(),
+			})
+		}
+
 		return sel
 	}, true)
 	if err != nil {
 		return nil, err
 	}
-	return &pb.GetLogByRuntimeResponse{Lines: items}, nil
+	return &pb.GetLogByRuntimeResponse{Lines: items, IsFallback: isFallBack}, nil
 }
 
 func (s *logQueryService) GetLogByOrganization(ctx context.Context, req *pb.GetLogByOrganizationRequest) (*pb.GetLogByOrganizationResponse, error) {
@@ -151,6 +213,9 @@ func (s *logQueryService) LogAggregation(ctx context.Context, req *pb.LogAggrega
 }
 
 func (s *logQueryService) ScanLogsByExpression(req *pb.GetLogByExpressionRequest, stream pb.LogQueryService_ScanLogsByExpressionServer) error {
+	if req.GetCount() == 0 {
+		req.Count = 1000000
+	}
 	return s.walkLogItems(context.Background(), req, nil, func(item *pb.LogItem) error {
 		return stream.Send(item)
 	})
@@ -253,33 +318,30 @@ func (s *logQueryService) toAggregation(req *pb.LogAggregationRequest) (*storage
 
 	return agg, nil
 }
-
-func (s *logQueryService) queryRealLogItems(ctx context.Context, req Request, fn func(sel *storage.Selector) *storage.Selector, ascendingResult bool) ([]*pb.LogItem, error) {
+func (s *logQueryService) queryRealLogItems(ctx context.Context, req Request, fn func(sel *storage.Selector) *storage.Selector, ascendingResult bool) ([]*pb.LogItem, bool, error) {
 	sel, err := toQuerySelector(req)
 	if err != nil {
-		return nil, err
+		return nil, true, err
 	}
 	if fn != nil {
 		sel = fn(sel)
 	}
 
-	if req.GetLive() != true {
-		return nil, fmt.Errorf("no supported to stop container of real log")
-	}
-	if sel.Scheme != "container" {
-		return nil, fmt.Errorf("no supported query %s of real log", sel.Scheme)
-	}
 	it, err := s.tryGetIterator(ctx, sel, s.k8sReader)
 	if err != nil {
-		return nil, errors.NewInternalServerError(err)
+		return nil, true, errors.NewInternalServerError(err)
 	}
 	defer it.Close()
 
+	if _, ok := it.(storekit.EmptyIterator); ok {
+		return nil, false, nil
+	}
+
 	items, err := toLogItems(ctx, it, req.GetCount() >= 0, getLimit(req.GetCount()), ascendingResult)
 	if err != nil {
-		return nil, errors.NewInternalServerError(err)
+		return nil, true, errors.NewInternalServerError(err)
 	}
-	return items, nil
+	return items, true, nil
 }
 
 func (s *logQueryService) queryLogItems(ctx context.Context, req Request, fn func(sel *storage.Selector) *storage.Selector, ascendingResult bool, withTotal bool) ([]*pb.LogItem, int64, error) {
@@ -341,6 +403,9 @@ func (s *logQueryService) walkLogItems(ctx context.Context, req Request, fn func
 		if err != nil {
 			return err
 		}
+	}
+	if req.GetDebug() {
+		s.p.Log.Infof("req: %+v, selector: %+v", req, sel)
 	}
 	it, err := s.getIterator(ctx, sel)
 	if err != nil {
@@ -472,6 +537,7 @@ type ByContainerMetaRequest interface {
 	GetPodNamespace() string
 	GetContainerName() string
 	GetClusterName() string
+	GetIsFirstQuery() bool
 }
 type ByContainerIdRequest interface {
 	Request
@@ -519,6 +585,10 @@ func toQuerySelector(req Request) (*storage.Selector, error) {
 		Start: req.GetStart(),
 		End:   req.GetEnd(),
 		Debug: req.GetDebug(),
+		Options: map[string]interface{}{
+			storage.SelectorKeyCount: req.GetCount(),
+			storage.IsLive:           req.GetLive(),
+		},
 	}
 
 	if sel.End <= 0 {
@@ -611,42 +681,6 @@ func toQuerySelector(req Request) (*storage.Selector, error) {
 			}
 		}
 	}
-
-	if byContainerMetaRequest, ok := req.(ByContainerMetaRequest); ok {
-		if len(byContainerMetaRequest.GetContainerName()) > 0 {
-			sel.Filters = append(sel.Filters, &storage.Filter{
-				Key:   "container_name",
-				Op:    storage.EQ,
-				Value: byContainerMetaRequest.GetContainerName(),
-			})
-		}
-
-		if len(byContainerMetaRequest.GetPodName()) > 0 {
-			sel.Filters = append(sel.Filters, &storage.Filter{
-				Key:   "pod_name",
-				Op:    storage.EQ,
-				Value: byContainerMetaRequest.GetPodName(),
-			})
-		}
-
-		if len(byContainerMetaRequest.GetPodNamespace()) > 0 {
-			sel.Filters = append(sel.Filters, &storage.Filter{
-				Key:   "pod_namespace",
-				Op:    storage.EQ,
-				Value: byContainerMetaRequest.GetPodNamespace(),
-			})
-		}
-
-		if len(byContainerMetaRequest.GetClusterName()) > 0 {
-			sel.Filters = append(sel.Filters, &storage.Filter{
-				Key:   "cluster_name",
-				Op:    storage.EQ,
-				Value: byContainerMetaRequest.GetClusterName(),
-			})
-		}
-
-	}
-
 	return sel, nil
 }
 

@@ -19,8 +19,10 @@ import (
 	"github.com/erda-project/erda/pkg/common"
 
 	_ "github.com/erda-project/erda-infra/providers"
+	_ "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/client"
 	_ "github.com/erda-project/erda-proto-go/core/token/client"
-	_ "github.com/erda-project/erda/modules/cluster-dialer"
+	_ "github.com/erda-project/erda/modules/cluster/cluster-dialer"
+	_ "github.com/erda-project/erda/modules/cluster/cluster-manager"
 )
 
 func main() {

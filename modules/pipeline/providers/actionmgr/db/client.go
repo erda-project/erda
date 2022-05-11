@@ -87,7 +87,7 @@ func (action *PipelineAction) Convert(yamlFormat bool) (*pb.Action, error) {
 	var specInterface = map[string]interface{}{}
 	withLocaleInfo, specInfo := SpecI18nReplace(action.Spec)
 	if !withLocaleInfo {
-		err := yaml.Unmarshal([]byte(action.Spec), specInterface)
+		err := yaml.Unmarshal([]byte(action.Spec), &specInterface)
 		if err != nil {
 			return nil, err
 		}
@@ -100,16 +100,14 @@ func (action *PipelineAction) Convert(yamlFormat bool) (*pb.Action, error) {
 	}
 
 	displayName, ok := specInterface[displayNameKey].(string)
-	if !ok {
-		return nil, fmt.Errorf("spec displayName was not string struct")
+	if ok {
+		actionDto.DisplayName = displayName
 	}
-	actionDto.DisplayName = displayName
 
 	desc, ok := specInterface[descKey].(string)
-	if !ok {
-		return nil, fmt.Errorf("spec desc was not string struct")
+	if ok {
+		actionDto.Desc = desc
 	}
-	actionDto.Desc = desc
 
 	if yamlFormat {
 		specYmlInfo, err := yaml.Marshal(specInterface)
@@ -258,7 +256,7 @@ func (client *Client) ListPipelineAction(req *pb.PipelineActionListRequest, ops 
 		engine = engine.Where(sqlBuild, args...)
 	}
 
-	engine = engine.OrderBy("created_at desc")
+	engine = engine.OrderBy("version_info desc")
 	err = engine.Find(&pipelineActions)
 	if err != nil {
 		return nil, err

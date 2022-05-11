@@ -54,24 +54,7 @@ func (s *provider) SearchActions(items []string, locations []string, ops ...OpOp
 	}
 
 	// search from dicehub
-	notFindActionMap := make(map[string]apistructs.ExtensionVersion)
-	worker := limit_sync_group.NewWorker(5)
-	for _, nameVersion := range notFindNameVersion {
-		worker.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
-			nameVersion := i[0].(string)
-			action, ok := s.getOrUpdateExtensionFromCache(nameVersion)
-
-			locker.Lock()
-			defer locker.Unlock()
-
-			if ok {
-				notFindActionMap[nameVersion] = action
-			}
-			return nil
-		}, nameVersion)
-	}
-	worker.Do()
-
+	notFindActionMap := s.searchFromDiceHub(notFindNameVersion)
 	for key, notFindAction := range notFindActionMap {
 		pipelineActionMap[key] = notFindAction
 	}
@@ -81,9 +64,7 @@ func (s *provider) SearchActions(items []string, locations []string, ops ...OpOp
 	for _, nameVersion := range items {
 		action, ok := pipelineActionMap[nameVersion]
 		if !ok {
-			if len(locations) == 0 {
-				return nil, nil, errors.Errorf("failed to find action: %s", nameVersion)
-			}
+			return nil, nil, errors.Errorf("failed to find action: %s", nameVersion)
 		}
 
 		diceYmlStr, ok := action.Dice.(string)
@@ -130,6 +111,33 @@ func (s *provider) SearchActions(items []string, locations []string, ops ...OpOp
 	return actionDiceYmlJobMap, actionSpecMap, nil
 }
 
+func (s *provider) searchFromDiceHub(notFindNameVersion []string) map[string]apistructs.ExtensionVersion {
+	notFindActionMap := make(map[string]apistructs.ExtensionVersion)
+
+	if s.EdgeRegister.IsEdge() {
+		return notFindActionMap
+	}
+
+	worker := limit_sync_group.NewWorker(5)
+	for _, nameVersion := range notFindNameVersion {
+		worker.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
+			nameVersion := i[0].(string)
+			action, ok := s.getOrUpdateExtensionFromCache(nameVersion)
+
+			locker.Lock()
+			defer locker.Unlock()
+
+			if ok {
+				notFindActionMap[nameVersion] = action
+			}
+			return nil
+		}, nameVersion)
+	}
+	worker.Do()
+
+	return notFindActionMap
+}
+
 // MakeActionTypeVersion return ext item.
 // Example: git, git@1.0, git@1.1
 func (s *provider) MakeActionTypeVersion(action *pipelineyml.Action) string {
@@ -141,12 +149,14 @@ func (s *provider) MakeActionTypeVersion(action *pipelineyml.Action) string {
 }
 
 func (s *provider) MakeActionLocationsBySource(source apistructs.PipelineSource) []string {
+	var locations []string
 	switch source {
 	case apistructs.PipelineSourceCDPDev, apistructs.PipelineSourceCDPTest, apistructs.PipelineSourceCDPStaging, apistructs.PipelineSourceCDPProd, apistructs.PipelineSourceBigData:
-		return []string{apistructs.PipelineTypeFDP.String() + "/"}
+		locations = append(locations, apistructs.PipelineTypeFDP.String()+"/")
 	case apistructs.PipelineSourceDice, apistructs.PipelineSourceProject, apistructs.PipelineSourceProjectLocal, apistructs.PipelineSourceOps, apistructs.PipelineSourceQA:
-		return []string{apistructs.PipelineTypeCICD.String() + "/"}
-	default:
-		return []string{apistructs.PipelineTypeDefault.String() + "/"}
+		locations = append(locations, apistructs.PipelineTypeCICD.String()+"/")
 	}
+
+	locations = append(locations, apistructs.PipelineTypeDefault.String()+"/")
+	return locations
 }

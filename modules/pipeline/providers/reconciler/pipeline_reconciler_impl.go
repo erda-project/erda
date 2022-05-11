@@ -25,7 +25,7 @@ import (
 // updateCalculatedPipelineStatusForTaskUseField by:
 // 1. other flags (higher priority)
 // 2. all reconciled tasks
-func (pr *defaultPipelineReconciler) updateCalculatedPipelineStatusForTaskUseField(ctx context.Context, p *spec.Pipeline) error {
+func (pr *defaultPipelineReconciler) UpdateCalculatedPipelineStatusForTaskUseField(ctx context.Context, p *spec.Pipeline) error {
 	newStatus := p.Status
 	defer func() {
 		pr.calculatedStatusForTaskUse = newStatus
@@ -43,37 +43,35 @@ func (pr *defaultPipelineReconciler) updateCalculatedPipelineStatusForTaskUseFie
 	}
 
 	// calculate new status
-	calculatedStatus, err := pr.calculatePipelineStatusForTaskUseField(ctx, p)
-	if err != nil {
-		pr.log.Errorf("failed to calculate new status by reconciled tasks(auto retry), pipelineID: %d, err: %v", p.ID, err)
-		return err
-	}
+	calculatedStatus := pr.calculatePipelineStatusForTaskUseField(ctx, p)
 	newStatus = calculatedStatus
 	return nil
 }
 
-func (pr *defaultPipelineReconciler) calculatePipelineStatusForTaskUseField(ctx context.Context, p *spec.Pipeline) (apistructs.PipelineStatus, error) {
+func (pr *defaultPipelineReconciler) calculatePipelineStatusForTaskUseField(ctx context.Context, p *spec.Pipeline) apistructs.PipelineStatus {
 	// get all reconciled tasks
-	reconciledDBTasks, err := pr.dbClient.ListPipelineTasksByPipelineID(p.ID)
-	if err != nil {
-		return "", err
-	}
 	var reconciledTasks []*spec.PipelineTask
-	for _, t := range reconciledDBTasks {
-		t := t
-		reconciledTasks = append(reconciledTasks, &t)
-	}
+	pr.processedTasks.Range(func(key, value interface{}) bool {
+		t, ok := value.(*spec.PipelineTask)
+		if !ok {
+			pr.log.Panicf("invalid type of value in processedTasks, key: %v, value: %v, pipelineID: %d",
+				key, value, p.ID)
+		}
+		reconciledTasks = append(reconciledTasks, t)
+		return true
+	})
 
 	// calculate new pipeline status
 	calculatedPipelineStatusByAllReconciledTasks := statusutil.CalculatePipelineStatusV2(reconciledTasks)
 	// consider some special cases:
 	// - no reconciled tasks but pipeline actually have tasks (to resolve first time of loop)
+	// - all tasks are disabled, in this case, total task number gt 0 but no reconciled tasks
 	if calculatedPipelineStatusByAllReconciledTasks.IsSuccessStatus() && len(reconciledTasks) == 0 && *pr.totalTaskNumber > 0 {
 		calculatedPipelineStatusByAllReconciledTasks = apistructs.PipelineStatusRunning
 	}
 
 	// update status
-	return calculatedPipelineStatusByAllReconciledTasks, nil
+	return calculatedPipelineStatusByAllReconciledTasks
 }
 
 func (pr *defaultPipelineReconciler) getCalculatedStatusByAllReconciledTasks() apistructs.PipelineStatus {
@@ -102,8 +100,8 @@ func (pr *defaultPipelineReconciler) setTotalTaskNumberBeforeReconcilePipeline(c
 	// set processed tasks
 	for _, task := range allTasks {
 		task := task
-		if task.ID > 0 && (task.Status.IsEndStatus() || task.Status.IsDisabledStatus()) {
-			pr.processedTasks.Store(task.NodeName(), struct{}{})
+		if task.Status.IsEndStatus() || task.Status.IsDisabledStatus() {
+			pr.processedTasks.Store(task.NodeName(), task)
 		}
 	}
 	pr.setTotalTaskNumber(len(allTasks))

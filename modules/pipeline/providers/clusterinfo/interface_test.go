@@ -26,6 +26,7 @@ import (
 	"github.com/erda-project/erda-infra/base/logs/logrusx"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/pipeline/providers/edgepipeline_register"
 )
 
 func TestGetClusterInfoByNameEdge(t *testing.T) {
@@ -157,4 +158,108 @@ func Test_registerClusterHook(t *testing.T) {
 	}
 	err := p.registerClusterHook()
 	assert.Equal(t, true, err != nil)
+}
+
+type cacheImpl struct {
+	cache map[string]string
+}
+
+func (c cacheImpl) GetClusterInfoByName(name string) (apistructs.ClusterInfo, bool) {
+	panic("implement me")
+}
+
+func (c cacheImpl) UpdateClusterInfo(clusterInfo apistructs.ClusterInfo) {
+	panic("implement me")
+}
+
+func (c cacheImpl) DeleteClusterInfo(name string) {
+	panic("implement me")
+}
+
+func (c cacheImpl) GetAllClusters() []apistructs.ClusterInfo {
+	var infos []apistructs.ClusterInfo
+	for key := range c.cache {
+		infos = append(infos, apistructs.ClusterInfo{
+			Name: key,
+		})
+	}
+	return infos
+}
+
+func Test_provider_ListAllClusterInfos(t *testing.T) {
+	type args struct {
+		onlyEdge bool
+	}
+
+	tests := []struct {
+		name    string
+		cache   map[string]string
+		args    args
+		want    []apistructs.ClusterInfo
+		wantErr bool
+	}{
+		{
+			name: "test all cluster",
+			cache: map[string]string{
+				"test":  "edge",
+				"test1": "notEdge",
+			},
+			args: args{
+				onlyEdge: false,
+			},
+			want: []apistructs.ClusterInfo{
+				{
+					Name: "test",
+				},
+				{
+					Name: "test1",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "test edge cluster",
+			cache: map[string]string{
+				"test":  "edge",
+				"test1": "notEdge",
+			},
+			args: args{
+				onlyEdge: true,
+			},
+			want: []apistructs.ClusterInfo{
+				{
+					Name: "test",
+				},
+				{
+					Name: "test1",
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &provider{}
+			p.cache = cacheImpl{
+				cache: tt.cache,
+			}
+			p.EdgeRegister = &edgepipeline_register.MockEdgeRegister{}
+
+			got, err := p.listAllClusterInfos(tt.args.onlyEdge)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ListAllClusterInfos() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			for _, clu := range got {
+				var find = false
+				for _, wantClu := range tt.want {
+					if clu.Name == wantClu.Name {
+						find = true
+						break
+					}
+				}
+				assert.True(t, find)
+			}
+		})
+	}
 }
