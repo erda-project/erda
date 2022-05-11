@@ -25,7 +25,7 @@ import (
 	"gorm.io/plugin/soft_delete"
 
 	"github.com/erda-project/erda-infra/providers/mysql/v2/plugins/fields"
-	"github.com/erda-project/erda-proto-go/dop/devworkflow/pb"
+	"github.com/erda-project/erda-proto-go/dop/devflowrule/pb"
 )
 
 type Model struct {
@@ -47,16 +47,16 @@ type Operator struct {
 	Updater string
 }
 
-type DevWorkflow struct {
+type DevFlowRule struct {
 	Model
 	Scope
 	Operator
 
-	WorkFlows JSON
+	Flows JSON
 }
 
-func (DevWorkflow) TableName() string {
-	return "erda_dev_workflow"
+func (DevFlowRule) TableName() string {
+	return "erda_dev_flow_rule"
 }
 
 type JSON json.RawMessage
@@ -84,9 +84,9 @@ func (j JSON) String() string {
 	return string(j)
 }
 
-type WorkFlows []WorkFlow
+type Flows []Flow
 
-type WorkFlow struct {
+type Flow struct {
 	Name               string              `json:"name"`
 	FlowType           string              `json:"flowType"`
 	TargetBranch       string              `json:"targetBranch"`
@@ -104,8 +104,8 @@ type StartWorkflowHint struct {
 	ChangeBranchRule string
 }
 
-func (r *DevWorkflow) Convert() *pb.DevWorkflow {
-	return &pb.DevWorkflow{
+func (r *DevFlowRule) Convert() *pb.DevFlowRule {
+	return &pb.DevFlowRule{
 		ID:          r.ID.String,
 		OrgID:       r.OrgID,
 		OrgName:     r.OrgName,
@@ -115,28 +115,28 @@ func (r *DevWorkflow) Convert() *pb.DevWorkflow {
 		TimeUpdated: timestamppb.New(r.UpdatedAt),
 		Creator:     r.Creator,
 		Updater:     r.Updater,
-		WorkFlows:   r.WorkFlows.String(),
+		Flows:       r.Flows.String(),
 	}
 }
 
-func (db Client) CreateWf(wf *DevWorkflow) error {
-	return db.Create(wf).Error
+func (db Client) CreateDevFlowRule(f *DevFlowRule) error {
+	return db.Create(f).Error
 }
 
-func (db Client) GetWf(id string) (wf *DevWorkflow, err error) {
-	err = db.Where("id = ?", id).First(&wf).Error
+func (db Client) GetDevFlowRule(id string) (f *DevFlowRule, err error) {
+	err = db.Where("id = ?", id).First(&f).Error
 	return
 }
 
-func (db Client) GetWfByProjectID(proID uint64) (wfs *DevWorkflow, err error) {
-	err = db.Model(&DevWorkflow{}).Where("project_id = ?", proID).First(&wfs).Error
+func (db Client) GetDevFlowRuleByProjectID(proID uint64) (fs *DevFlowRule, err error) {
+	err = db.Model(&DevFlowRule{}).Where("project_id = ?", proID).First(&fs).Error
 	return
 }
 
-func (db Client) UpdateWf(wf *DevWorkflow) error {
-	return db.Save(wf).Error
+func (db Client) UpdateDevFlowRule(f *DevFlowRule) error {
+	return db.Save(f).Error
 }
 
-func (db Client) DeleteWfByProjectID(projectID uint64) error {
-	return db.Where("project_id = ?", projectID).Delete(&DevWorkflow{}).Error
+func (db Client) DeleteDevFlowRuleByProjectID(projectID uint64) error {
+	return db.Where("project_id = ?", projectID).Delete(&DevFlowRule{}).Error
 }

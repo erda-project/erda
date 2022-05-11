@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package devworkflow
+package devflowrule
 
 import (
 	"context"
@@ -24,9 +24,9 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/i18n"
-	"github.com/erda-project/erda-proto-go/dop/devworkflow/pb"
+	"github.com/erda-project/erda-proto-go/dop/devflowrule/pb"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/dop/providers/devworkflow/db"
+	"github.com/erda-project/erda/modules/dop/providers/devflowrule/db"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 
@@ -55,23 +55,23 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		bdl: p.bundle,
 	}
 	if p.Register != nil {
-		pb.RegisterDevWorkflowServiceImp(p.Register, p.WorkflowSvc, apis.Options())
+		pb.RegisterDevFlowRuleServiceImp(p.Register, p.WorkflowSvc, apis.Options())
 	}
 	return nil
 }
 
 func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
 	switch {
-	case ctx.Service() == "erda.dop.devWorkflow.DevWorkflowServiceMethod" || ctx.Type() == reflect.TypeOf(reflect.TypeOf((*Service)(nil)).Elem()):
+	case ctx.Service() == "erda.dop.devFlowRule.DevFlowRuleServiceMethod" || ctx.Type() == reflect.TypeOf(reflect.TypeOf((*Service)(nil)).Elem()):
 		return p.WorkflowSvc
-	case ctx.Service() == "erda.dop.devWorkflow.DevWorkflowService" || ctx.Type() == pb.DevWorkflowServiceServerType() || ctx.Type() == pb.DevWorkflowServiceHandlerType():
+	case ctx.Service() == "erda.dop.devFlowRule.DevFlowRuleService" || ctx.Type() == pb.DevFlowRuleServiceServerType() || ctx.Type() == pb.DevFlowRuleServiceHandlerType():
 		return p.WorkflowSvc
 	}
 	return p
 }
 
 func init() {
-	servicehub.Register("erda.dop.devWorkflow", &servicehub.Spec{
+	servicehub.Register("erda.dop.devFlowRule", &servicehub.Spec{
 		Services:             pb.ServiceNames(),
 		Types:                append(pb.Types()),
 		OptionalDependencies: []string{"service-register"},

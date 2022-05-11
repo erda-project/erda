@@ -12,27 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package devworkflow
+package devflowrule
 
 import (
 	"context"
 	"encoding/json"
 
-	"github.com/erda-project/erda-proto-go/dop/devworkflow/pb"
+	"github.com/erda-project/erda-proto-go/dop/devflowrule/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/dop/providers/devworkflow/db"
+	"github.com/erda-project/erda/modules/dop/providers/devflowrule/db"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 
-const resource = "devWorkflow"
+const resource = "branch_rule"
 
 type Service interface {
-	CreateDevWorkflow(context.Context, *pb.CreateDevWorkflowRequest) (*pb.CreateDevWorkflowResponse, error)
-	DeleteDevWorkflow(context.Context, *pb.DeleteDevWorkflowRequest) (*pb.DeleteDevWorkflowResponse, error)
-	UpdateDevWorkflow(context.Context, *pb.UpdateDevWorkflowRequest) (*pb.UpdateDevWorkflowResponse, error)
-	GetDevWorkflowsByProjectID(context.Context, *pb.GetDevWorkflowRequest) (*pb.GetDevWorkflowResponse, error)
+	CreateDevFlowRule(context.Context, *pb.CreateDevFlowRuleRequest) (*pb.CreateDevFlowRuleResponse, error)
+	DeleteDevFlowRule(context.Context, *pb.DeleteDevFlowRuleRequest) (*pb.DeleteDevFlowRuleResponse, error)
+	UpdateDevFlowRule(context.Context, *pb.UpdateDevFlowRuleRequest) (*pb.UpdateDevFlowRuleResponse, error)
+	GetDevFlowRulesByProjectID(context.Context, *pb.GetDevFlowRuleRequest) (*pb.GetDevFlowRuleResponse, error)
 }
 
 type ServiceImplement struct {
@@ -40,22 +40,22 @@ type ServiceImplement struct {
 	bdl *bundle.Bundle
 }
 
-func (s *ServiceImplement) CreateDevWorkflow(ctx context.Context, request *pb.CreateDevWorkflowRequest) (*pb.CreateDevWorkflowResponse, error) {
+func (s *ServiceImplement) CreateDevFlowRule(ctx context.Context, request *pb.CreateDevFlowRuleRequest) (*pb.CreateDevFlowRuleResponse, error) {
 	project, err := s.bdl.GetProject(request.ProjectID)
 	if err != nil {
-		return nil, apierrors.ErrCreateDevWorkflow.InternalError(err)
+		return nil, apierrors.ErrCreateDevFlowRule.InternalError(err)
 	}
 	org, err := s.bdl.GetOrg(project.OrgID)
 	if err != nil {
-		return nil, apierrors.ErrCreateDevWorkflow.InternalError(err)
+		return nil, apierrors.ErrCreateDevFlowRule.InternalError(err)
 	}
 
-	flows := s.InitWorkFlows()
+	flows := s.InitFlows()
 	b, err := json.Marshal(&flows)
 	if err != nil {
-		return nil, apierrors.ErrCreateDevWorkflow.InternalError(err)
+		return nil, apierrors.ErrCreateDevFlowRule.InternalError(err)
 	}
-	wf := db.DevWorkflow{
+	devFlow := db.DevFlowRule{
 		Scope: db.Scope{
 			OrgID:       org.ID,
 			OrgName:     org.Name,
@@ -66,17 +66,17 @@ func (s *ServiceImplement) CreateDevWorkflow(ctx context.Context, request *pb.Cr
 			Creator: request.UserID,
 			Updater: request.UserID,
 		},
-		WorkFlows: b,
+		Flows: b,
 	}
-	err = s.db.CreateWf(&wf)
+	err = s.db.CreateDevFlowRule(&devFlow)
 	if err != nil {
-		return nil, apierrors.ErrCreateDevWorkflow.InternalError(err)
+		return nil, apierrors.ErrCreateDevFlowRule.InternalError(err)
 	}
-	return &pb.CreateDevWorkflowResponse{Data: wf.Convert()}, nil
+	return &pb.CreateDevFlowRuleResponse{Data: devFlow.Convert()}, nil
 }
 
-func (s *ServiceImplement) InitWorkFlows() db.WorkFlows {
-	return db.WorkFlows{
+func (s *ServiceImplement) InitFlows() db.Flows {
+	return db.Flows{
 		{
 			Name:             "DEV",
 			FlowType:         "two_branch",
@@ -138,65 +138,65 @@ func (s *ServiceImplement) InitWorkFlows() db.WorkFlows {
 
 }
 
-func (s *ServiceImplement) UpdateDevWorkflow(ctx context.Context, request *pb.UpdateDevWorkflowRequest) (*pb.UpdateDevWorkflowResponse, error) {
+func (s *ServiceImplement) UpdateDevFlowRule(ctx context.Context, request *pb.UpdateDevFlowRuleRequest) (*pb.UpdateDevFlowRuleResponse, error) {
 	if err := request.Validate(); err != nil {
-		return nil, apierrors.ErrUpdateDevWorkflow.InvalidParameter(err)
+		return nil, apierrors.ErrUpdateDevFlowRule.InvalidParameter(err)
 	}
 
-	wf, err := s.db.GetWf(request.ID)
+	devFlow, err := s.db.GetDevFlowRule(request.ID)
 	if err != nil {
-		return nil, apierrors.ErrUpdateDevWorkflow.InternalError(err)
+		return nil, apierrors.ErrUpdateDevFlowRule.InternalError(err)
 	}
 
 	access, err := s.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
 		UserID:   apis.GetUserID(ctx),
 		Scope:    apistructs.ProjectScope,
-		ScopeID:  wf.ProjectID,
+		ScopeID:  devFlow.ProjectID,
 		Resource: resource,
 		Action:   apistructs.OperateAction,
 	})
 	if err != nil {
-		return nil, apierrors.ErrUpdateDevWorkflow.InternalError(err)
+		return nil, apierrors.ErrUpdateDevFlowRule.InternalError(err)
 	}
 	if !access.Access {
-		return nil, apierrors.ErrUpdateDevWorkflow.AccessDenied()
+		return nil, apierrors.ErrUpdateDevFlowRule.AccessDenied()
 	}
 
-	wf.WorkFlows = db.JSON(request.WorkFlows)
-	wf.Operator.Updater = apis.GetUserID(ctx)
-	if err = s.db.UpdateWf(wf); err != nil {
-		return nil, apierrors.ErrUpdateDevWorkflow.InternalError(err)
+	devFlow.Flows = db.JSON(request.Flows)
+	devFlow.Operator.Updater = apis.GetUserID(ctx)
+	if err = s.db.UpdateDevFlowRule(devFlow); err != nil {
+		return nil, apierrors.ErrUpdateDevFlowRule.InternalError(err)
 	}
 
-	return &pb.UpdateDevWorkflowResponse{Data: wf.Convert()}, nil
+	return &pb.UpdateDevFlowRuleResponse{Data: devFlow.Convert()}, nil
 }
 
-func (s *ServiceImplement) GetDevWorkflowsByProjectID(ctx context.Context, request *pb.GetDevWorkflowRequest) (*pb.GetDevWorkflowResponse, error) {
+func (s *ServiceImplement) GetDevFlowRulesByProjectID(ctx context.Context, request *pb.GetDevFlowRuleRequest) (*pb.GetDevFlowRuleResponse, error) {
 	access, err := s.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
 		UserID:   apis.GetUserID(ctx),
 		Scope:    apistructs.ProjectScope,
 		ScopeID:  request.ProjectID,
 		Resource: resource,
-		Action:   apistructs.ListAction,
+		Action:   apistructs.OperateAction,
 	})
 	if err != nil {
-		return nil, apierrors.ErrGetDevWorkflow.InternalError(err)
+		return nil, apierrors.ErrGetDevFlowRule.InternalError(err)
 	}
 	if !access.Access {
-		return nil, apierrors.ErrGetDevWorkflow.AccessDenied()
+		return nil, apierrors.ErrGetDevFlowRule.AccessDenied()
 	}
 
-	wfs, err := s.db.GetWfByProjectID(request.ProjectID)
+	wfs, err := s.db.GetDevFlowRuleByProjectID(request.ProjectID)
 	if err != nil {
-		return nil, apierrors.ErrGetDevWorkflow.InternalError(err)
+		return nil, apierrors.ErrGetDevFlowRule.InternalError(err)
 	}
 
-	return &pb.GetDevWorkflowResponse{Data: wfs.Convert()}, nil
+	return &pb.GetDevFlowRuleResponse{Data: wfs.Convert()}, nil
 }
 
-func (s *ServiceImplement) DeleteDevWorkflow(ctx context.Context, request *pb.DeleteDevWorkflowRequest) (*pb.DeleteDevWorkflowResponse, error) {
-	if err := s.db.DeleteWfByProjectID(request.ProjectID); err != nil {
-		return nil, apierrors.ErrDeleteDevWorkflow.InternalError(err)
+func (s *ServiceImplement) DeleteDevFlowRule(ctx context.Context, request *pb.DeleteDevFlowRuleRequest) (*pb.DeleteDevFlowRuleResponse, error) {
+	if err := s.db.DeleteDevFlowRuleByProjectID(request.ProjectID); err != nil {
+		return nil, apierrors.ErrDeleteDevFlowRule.InternalError(err)
 	}
-	return &pb.DeleteDevWorkflowResponse{}, nil
+	return &pb.DeleteDevFlowRuleResponse{}, nil
 }

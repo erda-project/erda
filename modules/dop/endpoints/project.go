@@ -27,7 +27,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	dwfpb "github.com/erda-project/erda-proto-go/dop/devworkflow/pb"
+	dwfpb "github.com/erda-project/erda-proto-go/dop/devflowrule/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/conf"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
@@ -107,9 +107,9 @@ func (e *Endpoints) CreateProject(ctx context.Context, r *http.Request, vars map
 		logrus.Warnf("failed to add state to db when create project, (%v)", err)
 	}
 
-	// create devWorkflow
-	if _, err = e.DevWorkFlow.CreateDevWorkflow(ctx, &dwfpb.CreateDevWorkflowRequest{ProjectID: projectID, UserID: identity.UserID}); err != nil {
-		logrus.Warnf("failed to CreateDevWorkflow, (%v)", err)
+	// create devFlowRule
+	if _, err = e.DevFlowRule.CreateDevFlowRule(ctx, &dwfpb.CreateDevFlowRuleRequest{ProjectID: projectID, UserID: identity.UserID}); err != nil {
+		logrus.Warnf("failed to CreateDevFlowRule, (%v)", err)
 	}
 	return httpserver.OkResp(projectID)
 }
@@ -184,9 +184,9 @@ func (e *Endpoints) DeleteProject(ctx context.Context, r *http.Request, vars map
 		return apierrors.ErrDeleteProject.InternalError(err).ToResp(), nil
 	}
 
-	// delete devWorkFlow
-	if _, err = e.DevWorkFlow.DeleteDevWorkflow(ctx, &dwfpb.DeleteDevWorkflowRequest{ProjectID: uint64(projectID), UserID: identity.UserID}); err != nil {
-		logrus.Warnf("failed to DeleteDevWorkflow, (%v)", err)
+	// delete devFlowRule
+	if _, err = e.DevFlowRule.DeleteDevFlowRule(ctx, &dwfpb.DeleteDevFlowRuleRequest{ProjectID: uint64(projectID), UserID: identity.UserID}); err != nil {
+		logrus.Warnf("failed to DeleteDevFlowRule, (%v)", err)
 	}
 
 	return httpserver.OkResp(project)

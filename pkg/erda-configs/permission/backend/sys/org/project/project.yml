@@ -841,13 +841,13 @@
 
 ## test report end ##
 
-## devWorkflow start ##
+## devFlowRule start ##
 - role: Owner,Lead
   scope: project
-  resource: devWorkflow
+  resource: devFlowRule
   action: OPERATE
 - role: Owner,Lead,PM,PD,Dev,QA,Support,Reporter,Guest
   scope: project
-  resource: devWorkflow
+  resource: devFlowRule
   action: LIST
-## devWorkflow end ##
+## devFlowRule end ##

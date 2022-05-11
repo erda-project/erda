@@ -28,8 +28,8 @@ import (
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	dpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
 	sourcepb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
-	dwfpb "github.com/erda-project/erda-proto-go/dop/devworkflow/pb"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
+	dwfpb "github.com/erda-project/erda-proto-go/dop/devflowrule/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/dao"
@@ -746,7 +746,7 @@ type Endpoints struct {
 	PipelineCron       cronpb.CronServiceServer
 	PipelineSource     sourcepb.SourceServiceServer
 	PipelineDefinition dpb.DefinitionServiceServer
-	DevWorkFlow        dwfpb.DevWorkflowServiceServer
+	DevFlowRule        dwfpb.DevFlowRuleServiceServer
 
 	ImportChannel chan uint64
 	ExportChannel chan uint64
@@ -1134,9 +1134,9 @@ func WithPipelineDefinition(svc dpb.DefinitionServiceServer) Option {
 	}
 }
 
-func WithDevWorkFlow(svc dwfpb.DevWorkflowServiceServer) Option {
+func WithDevFlowRule(svc dwfpb.DevFlowRuleServiceServer) Option {
 	return func(e *Endpoints) {
-		e.DevWorkFlow = svc
+		e.DevFlowRule = svc
 	}
 }
 
