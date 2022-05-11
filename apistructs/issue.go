@@ -64,6 +64,7 @@ type Issue struct {
 
 	TestPlanCaseRels []TestPlanCaseRel `json:"testPlanCaseRels"`
 	relatedIssueIDs  []uint64
+	ReopenCount      int
 }
 
 // GetStage 获取任务状态或者Bug阶段

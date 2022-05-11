@@ -126,11 +126,17 @@ type TableItem struct {
 	Complexity  Complexity `json:"complexity,omitempty"`
 	State       State      `json:"state"`
 	// Title       Title      `json:"title"`
-	Type     string   `json:"type"`
-	Deadline Deadline `json:"deadline"`
-	Assignee Assignee `json:"assignee"`
-	ClosedAt ClosedAt `json:"closedAt"`
-	Name     Name     `json:"name"`
+	Type        string    `json:"type"`
+	Deadline    Deadline  `json:"deadline"`
+	Assignee    Assignee  `json:"assignee"`
+	ClosedAt    ClosedAt  `json:"closedAt"`
+	Name        Name      `json:"name"`
+	ReopenCount TextBlock `json:"reopenCount,omitempty"`
+}
+
+type TextBlock struct {
+	Value      string `json:"value"`
+	RenderType string `json:"renderType"`
 }
 
 type Name struct {
@@ -484,9 +490,11 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 	}
 
 	severityCol, closedAtCol := "", ""
+	reopenCountCol := ""
 	if len(cond.Type) == 1 && cond.Type[0] == apistructs.IssueTypeBug {
 		severityCol = `{ "title": "` + cputil.I18n(ctx, "severity") + `", "dataIndex": "severity", "hidden": false },`
 		closedAtCol = `,{ "title": "` + cputil.I18n(ctx, "closed-at") + `", "dataIndex": "closedAt", "hidden": true }`
+		reopenCountCol = `,{ "title": "` + cputil.I18n(ctx, "reopenCount") + `", "dataIndex": "reopenCount", "hidden": true }`
 	}
 	props := `{
     "columns": [
@@ -522,7 +530,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
             "dataIndex": "deadline",
             "title": "` + cputil.I18n(ctx, "deadline") + `"
         }` +
-		closedAtCol +
+		closedAtCol + reopenCountCol +
 		`],
     "rowKey": "id",
 	"pageSizeOptions": ["10", "20", "50", "100"]
@@ -790,6 +798,10 @@ func (ca *ComponentAction) buildTableItem(ctx context.Context, data *apistructs.
 		Name:     nameColumn,
 		Deadline: deadline,
 		ClosedAt: closedAt,
+		ReopenCount: TextBlock{
+			RenderType: "text",
+			Value:      fmt.Sprintf("%d", data.ReopenCount),
+		},
 	}
 }
 

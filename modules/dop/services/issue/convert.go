@@ -196,6 +196,7 @@ func (svc *Issue) ConvertWithoutButton(model dao.Issue,
 		BugStage:       bugStage,
 		TaskType:       taskType,
 		FinishTime:     model.FinishTime,
+		ReopenCount:    model.ReopenCount,
 	}
 }
 
@@ -331,6 +332,7 @@ func (svc *Issue) convertIssueToExcelList(issues []apistructs.Issue, property []
 			i.ManHour.GetFormartTime("EstimateTime"),
 			finishTime,
 			planStartedAt,
+			fmt.Sprintf("%d", i.ReopenCount),
 		}))
 		relations := propertyMap[i.ID]
 		// 获取每个自定义字段的值
@@ -515,12 +517,14 @@ func (svc *Issue) decodeFromExcelFile(req apistructs.IssueImportExcelRequest, r 
 			issue.PlanStartedAt = &planStartAt
 		}
 
+		// row[20] reopen count, jump over
+
 		// 获取自定义字段
 		relation := apistructs.IssuePropertyRelationCreateRequest{
 			OrgID:     req.OrgID,
 			ProjectID: int64(req.ProjectID),
 		}
-		if len(row) >= 21 {
+		if len(row) >= 22 {
 			for indexx, line := range row[20:] {
 				index := indexx + 20
 				// 获取字段名对应的字段
