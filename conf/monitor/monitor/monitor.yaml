@@ -45,7 +45,7 @@ etcd:
 etcd-election@index:
   root_path: "/erda/monitor-index-clean-election"
 
-etcd-election@table:
+etcd-election@table-loader:
   root_path: "/erda/monitor-ck-table-loader-election"
 
 redis:

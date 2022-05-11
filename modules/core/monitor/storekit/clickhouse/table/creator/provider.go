@@ -26,7 +26,7 @@ import (
 )
 
 type Interface interface {
-	Ensure(ctx context.Context, tenant, key string) (<-chan error, string)
+	Ensure(ctx context.Context, tenant, key string, ttlDays int64) (<-chan error, string)
 }
 
 type config struct {
@@ -40,6 +40,7 @@ type request struct {
 	Ctx       context.Context
 	TableName string
 	AliasName string
+	TTLDays   int64
 	Wait      chan error
 }
 

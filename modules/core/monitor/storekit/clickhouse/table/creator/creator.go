@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -27,13 +28,7 @@ import (
 	"github.com/erda-project/erda/modules/core/monitor/storekit/clickhouse/table"
 )
 
-const (
-	tableNameKey      = "<table_name>"
-	aliasTableNameKey = "<alias_table_name>"
-	databaseNameKey   = "<database>"
-)
-
-func (p *provider) Ensure(ctx context.Context, tenant, key string) (_ <-chan error, writeTableName string) {
+func (p *provider) Ensure(ctx context.Context, tenant, key string, ttlDays int64) (_ <-chan error, writeTableName string) {
 	if len(tenant) == 0 || len(key) == 0 {
 		return nil, fmt.Sprintf("%s.%s", p.Cfg.Database, p.Cfg.DefaultWriteTable)
 	}
@@ -53,6 +48,7 @@ func (p *provider) Ensure(ctx context.Context, tenant, key string) (_ <-chan err
 	p.createCh <- request{
 		TableName: writeTableName,
 		AliasName: searchTableName,
+		TTLDays:   ttlDays,
 		Wait:      ch,
 		Ctx:       ctx,
 	}
@@ -79,7 +75,7 @@ func (p *provider) Run(ctx context.Context) error {
 					return
 				}
 				for {
-					err = p.createTable(ctx, req.TableName, req.AliasName)
+					err = p.createTable(ctx, req.TableName, req.AliasName, req.TTLDays)
 					if err == nil {
 						p.created.Store(req.TableName, true)
 						return
@@ -108,11 +104,12 @@ func (p *provider) Run(ctx context.Context) error {
 	return nil
 }
 
-func (p *provider) createTable(ctx context.Context, tableName, aliasTableName string) error {
+func (p *provider) createTable(ctx context.Context, tableName, aliasTableName string, ttlDays int64) error {
 	replacer := strings.NewReplacer(
-		tableNameKey, tableName,
-		aliasTableNameKey, aliasTableName,
-		databaseNameKey, p.Cfg.Database)
+		table.TableNameKey, tableName,
+		table.AliasTableNameKey, aliasTableName,
+		table.DatabaseNameKey, p.Cfg.Database,
+		table.TtlDaysNameKey, strconv.FormatInt(ttlDays, 10))
 
 	data, err := ioutil.ReadFile(p.Cfg.DDLTemplate)
 	if err != nil {

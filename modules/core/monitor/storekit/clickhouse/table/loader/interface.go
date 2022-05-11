@@ -15,7 +15,9 @@
 package loader
 
 import (
+	"context"
 	"fmt"
+	"time"
 
 	"github.com/erda-project/erda/modules/core/monitor/storekit/clickhouse/table"
 )
@@ -24,7 +26,8 @@ type Interface interface {
 	ExistsWriteTable(tenant, key string) (ok bool, writeTableName string)
 	GetSearchTable(tenant string) (string, *TableMeta)
 	ReloadTables() chan error
-	Tables() map[string]*TableMeta
+	WatchLoadEvent(listener func(map[string]*TableMeta))
+	WaitAndGetTables(ctx context.Context) map[string]*TableMeta
 	Database() string
 }
 
@@ -60,9 +63,25 @@ func (p *provider) ReloadTables() chan error {
 	return ch
 }
 
-func (p *provider) Tables() map[string]*TableMeta {
-	tables, _ := p.tables.Load().(map[string]*TableMeta)
-	return tables
+func (p *provider) WatchLoadEvent(listener func(map[string]*TableMeta)) {
+	p.listeners = append(p.listeners, listener)
+}
+
+func (p *provider) WaitAndGetTables(ctx context.Context) map[string]*TableMeta {
+	for {
+		tables, ok := p.tables.Load().(map[string]*TableMeta)
+
+		if ok && len(tables) > 0 {
+			return tables
+		}
+
+		// wait for the index to complete loading
+		select {
+		case <-time.After(1 * time.Second):
+		case <-ctx.Done():
+			return nil
+		}
+	}
 }
 
 func (p *provider) Database() string {
