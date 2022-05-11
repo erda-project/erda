@@ -725,7 +725,11 @@ func (m *GetClusterResponse) UnmarshalURLValues(prefix string, values url.Values
 				if m.Data.System.Fps == nil {
 					m.Data.System.Fps = &FPS{}
 				}
-				m.Data.System.Fps.Proxy = vals[0]
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Data.System.Fps.Proxy = val
 			case "data.system.storage":
 				if m.Data == nil {
 					m.Data = &ClusterInfo{}
@@ -2071,7 +2075,11 @@ func (m *UpdateClusterRequest) UnmarshalURLValues(prefix string, values url.Valu
 				if m.SysConfig.Fps == nil {
 					m.SysConfig.Fps = &FPS{}
 				}
-				m.SysConfig.Fps.Proxy = vals[0]
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.SysConfig.Fps.Proxy = val
 			case "sysConfig.storage":
 				if m.SysConfig == nil {
 					m.SysConfig = &SysConf{}
@@ -3148,7 +3156,11 @@ func (m *CreateClusterRequest) UnmarshalURLValues(prefix string, values url.Valu
 				if m.SysConfig.Fps == nil {
 					m.SysConfig.Fps = &FPS{}
 				}
-				m.SysConfig.Fps.Proxy = vals[0]
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.SysConfig.Fps.Proxy = val
 			case "sysConfig.storage":
 				if m.SysConfig == nil {
 					m.SysConfig = &SysConf{}
@@ -4313,7 +4325,11 @@ func (m *ClusterInfo) UnmarshalURLValues(prefix string, values url.Values) error
 				if m.System.Fps == nil {
 					m.System.Fps = &FPS{}
 				}
-				m.System.Fps.Proxy = vals[0]
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.System.Fps.Proxy = val
 			case "system.storage":
 				if m.System == nil {
 					m.System = &SysConf{}
@@ -5244,7 +5260,11 @@ func (m *SysConf) UnmarshalURLValues(prefix string, values url.Values) error {
 				if m.Fps == nil {
 					m.Fps = &FPS{}
 				}
-				m.Fps.Proxy = vals[0]
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Fps.Proxy = val
 			case "storage":
 				if m.Storage == nil {
 					m.Storage = &Storage{}
@@ -5738,7 +5758,11 @@ func (m *FPS) UnmarshalURLValues(prefix string, values url.Values) error {
 				}
 				m.Port = val
 			case "proxy":
-				m.Proxy = vals[0]
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Proxy = val
 			}
 		}
 	}
