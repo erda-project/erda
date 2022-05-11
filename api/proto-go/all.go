@@ -61,6 +61,7 @@ import (
 	_ "github.com/erda-project/erda-proto-go/dop/apim/pb"
 	_ "github.com/erda-project/erda-proto-go/dop/cms/pb"
 	_ "github.com/erda-project/erda-proto-go/dop/contribution/pb"
+	_ "github.com/erda-project/erda-proto-go/dop/devflowrule/pb"
 	_ "github.com/erda-project/erda-proto-go/dop/guide/pb"
 	_ "github.com/erda-project/erda-proto-go/dop/issue/pb"
 	_ "github.com/erda-project/erda-proto-go/dop/issue/sync/pb"
