@@ -7,6 +7,7 @@ import json
 import uuid
 
 import django.db.models
+from django.core.exceptions import ObjectDoesNotExist
 
 
 class DiceOrg(django.db.models.Model):
@@ -128,12 +129,16 @@ def entry():
             rule_dict[rule.scope_id].append(rule)
 
     for k, rules in rule_dict.items():
-        wf = ErdaDevWorkflow()
-        project = ErdaProject.objects.get(id=k)
-        org = DiceOrg.objects.get(id=project.org_id)
         if len(rules) == 0:
             continue
-
+        try:
+            project = ErdaProject.objects.get(id=k)
+            org = DiceOrg.objects.get(id=project.org_id)
+        except ObjectDoesNotExist:
+            print("Either the project or org doesn't exist.")
+            continue
+        print(project.id)
+        wf = ErdaDevWorkflow()
         wf.id = str(uuid.uuid4())
         wf.org_id = org.id
         wf.org_name = org.name
@@ -166,7 +171,6 @@ def entry():
                 "startWorkflowHints": None
             })
 
-        work_flows.reverse()
         wf.work_flows = json.dumps(work_flows)
         wf.save()
     pass
