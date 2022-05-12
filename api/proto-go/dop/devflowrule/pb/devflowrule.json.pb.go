@@ -31,6 +31,10 @@ var _ json.Marshaler = (*GetDevFlowRuleResponse)(nil)
 var _ json.Unmarshaler = (*GetDevFlowRuleResponse)(nil)
 var _ json.Marshaler = (*DevFlowRule)(nil)
 var _ json.Unmarshaler = (*DevFlowRule)(nil)
+var _ json.Marshaler = (*Flow)(nil)
+var _ json.Unmarshaler = (*Flow)(nil)
+var _ json.Marshaler = (*StartWorkflowHint)(nil)
+var _ json.Unmarshaler = (*StartWorkflowHint)(nil)
 
 // CreateDevFlowRuleRequest implement json.Marshaler.
 func (m *CreateDevFlowRuleRequest) MarshalJSON() ([]byte, error) {
@@ -189,6 +193,42 @@ func (m *DevFlowRule) MarshalJSON() ([]byte, error) {
 
 // DevFlowRule implement json.Marshaler.
 func (m *DevFlowRule) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// Flow implement json.Marshaler.
+func (m *Flow) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// Flow implement json.Marshaler.
+func (m *Flow) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// StartWorkflowHint implement json.Marshaler.
+func (m *StartWorkflowHint) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// StartWorkflowHint implement json.Marshaler.
+func (m *StartWorkflowHint) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)
