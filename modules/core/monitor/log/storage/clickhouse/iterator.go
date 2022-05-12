@@ -23,6 +23,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	cksdk "github.com/ClickHouse/clickhouse-go/v2"
 	ckdriver "github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"github.com/doug-martin/goqu/v9"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -86,6 +87,9 @@ func (p *provider) Iterator(ctx context.Context, sel *storage.Selector) (storeki
 		callback,
 		sel.Meta.PreferredReturnFields,
 		sel.Debug,
+		p.Cfg.QueryTimeout,
+		p.Cfg.QueryMaxThreads,
+		p.Cfg.QueryMaxMemory,
 	)
 }
 
@@ -99,6 +103,9 @@ func newClickhouseIterator(
 	callback func(item *pb.LogItem),
 	returnFieldMode storage.ReturnFieldMode,
 	debug bool,
+	queryTimeout time.Duration,
+	queryMaxThreads int,
+	queryMaxMemory int64,
 ) (storekit.Iterator, error) {
 	return &clickhouseIterator{
 		ctx:             ctx,
@@ -110,6 +117,9 @@ func newClickhouseIterator(
 		callback:        callback,
 		returnFieldMode: returnFieldMode,
 		debug:           debug,
+		queryTimeout:    queryTimeout,
+		queryMaxThreads: queryMaxThreads,
+		queryMaxMemory:  queryMaxMemory,
 	}, nil
 }
 
@@ -131,6 +141,10 @@ type clickhouseIterator struct {
 	callback        func(item *pb.LogItem)
 	returnFieldMode storage.ReturnFieldMode
 	debug           bool
+
+	queryTimeout    time.Duration
+	queryMaxThreads int
+	queryMaxMemory  int64
 
 	lastResp ckdriver.Rows
 	buffer   []interface{}
@@ -295,8 +309,11 @@ func (it *clickhouseIterator) fetch(dir iteratorDir) {
 				it.err = err
 				return
 			}
-
-			rows, err := it.ck.Client().Query(it.ctx, sql)
+			ctx, cancel := it.buildQueryContext(it.ctx)
+			rows, err := it.ck.Client().Query(ctx, sql)
+			if cancel != nil {
+				cancel()
+			}
 			if err != nil {
 				it.err = err
 				return
@@ -328,6 +345,22 @@ func (it *clickhouseIterator) fetch(dir iteratorDir) {
 			return
 		}
 	}
+}
+
+func (it *clickhouseIterator) buildQueryContext(ctx context.Context) (context.Context, context.CancelFunc) {
+	var cancel context.CancelFunc
+	if it.queryTimeout > 0 {
+		ctx, cancel = context.WithTimeout(ctx, it.queryTimeout)
+	}
+	settings := map[string]interface{}{}
+	if it.queryMaxThreads > 0 {
+		settings["max_threads"] = it.queryMaxThreads
+	}
+	if it.queryMaxMemory > 0 {
+		settings["max_memory_usage"] = it.queryMaxMemory
+	}
+	ctx = cksdk.Context(ctx, cksdk.WithSettings(settings))
+	return ctx, cancel
 }
 
 func (it *clickhouseIterator) decode(log *logItem) *pb.LogItem {

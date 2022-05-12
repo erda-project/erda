@@ -14,7 +14,18 @@
 
 package table
 
-import "strings"
+import (
+	"math"
+	"strings"
+	"time"
+)
+
+const (
+	TableNameKey      = "<table_name>"
+	AliasTableNameKey = "<alias_table_name>"
+	DatabaseNameKey   = "<database>"
+	TtlDaysNameKey    = "<ttl_in_days>"
+)
 
 var keyReplacer = strings.NewReplacer(
 	"-", "_",
@@ -24,4 +35,8 @@ var keyReplacer = strings.NewReplacer(
 // NormalizeKey .
 func NormalizeKey(s string) string {
 	return keyReplacer.Replace(strings.ToLower(s))
+}
+
+func FormatTTLToDays(ttl time.Duration) int64 {
+	return int64(math.Ceil(math.Max(ttl.Hours()/24, 1)))
 }

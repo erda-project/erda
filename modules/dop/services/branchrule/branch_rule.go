@@ -73,19 +73,7 @@ func (branchRule *BranchRule) Count(scopeType apistructs.ScopeType) (int64, erro
 
 func (branchRule *BranchRule) Query(scopeType apistructs.ScopeType, scopeID int64) ([]*apistructs.BranchRule, error) {
 	if scopeType == apistructs.ProjectScope {
-		devFlowRuleRsp, err := branchRule.devFlowRule.GetDevFlowRulesByProjectID(apis.WithInternalClientContext(context.Background(), "bundle"), &dfrpb.GetDevFlowRuleRequest{ProjectID: uint64(scopeID)})
-		if err != nil {
-			return nil, err
-		}
-		devFlowRule := apistructs.DevFlowRule{
-			ID:          devFlowRuleRsp.Data.ID,
-			Flows:       devFlowRuleRsp.Data.Flows,
-			OrgID:       devFlowRuleRsp.Data.OrgID,
-			OrgName:     devFlowRuleRsp.Data.OrgName,
-			ProjectID:   devFlowRuleRsp.Data.ProjectID,
-			ProjectName: devFlowRuleRsp.Data.ProjectName,
-		}
-		return devFlowRule.MakeBranchRules()
+		return branchRule.GetBranchRuleFromDevFlowRule(uint64(scopeID))
 	}
 
 	rules, err := branchRule.db.QueryBranchRules(scopeType, scopeID)
@@ -97,6 +85,44 @@ func (branchRule *BranchRule) Query(scopeType apistructs.ScopeType, scopeID int6
 		result = append(result, rule.ToApiData())
 	}
 	return result, nil
+}
+
+func (branchRule *BranchRule) GetBranchRuleFromDevFlowRule(projectID uint64) ([]*apistructs.BranchRule, error) {
+	devFlowRuleRsp, err := branchRule.devFlowRule.GetDevFlowRulesByProjectID(apis.WithInternalClientContext(context.Background(), "bundle"), &dfrpb.GetDevFlowRuleRequest{ProjectID: projectID})
+	if err != nil {
+		return nil, err
+	}
+	flows := make([]apistructs.Flow, 0, len(devFlowRuleRsp.Data.Flows))
+	for _, v := range devFlowRuleRsp.Data.Flows {
+		hints := make([]apistructs.StartWorkflowHint, 0, len(v.StartWorkflowHints))
+		for _, hint := range v.StartWorkflowHints {
+			hints = append(hints, apistructs.StartWorkflowHint{
+				Place:            hint.Place,
+				ChangeBranchRule: hint.ChangeBranchRule,
+			})
+		}
+		flows = append(flows, apistructs.Flow{
+			Name:               v.Name,
+			FlowType:           v.FlowType,
+			TargetBranch:       v.TargetBranch,
+			ChangeFromBranch:   v.ChangeFromBranch,
+			ChangeBranch:       v.ChangeBranch,
+			EnableAutoMerge:    v.EnableAutoMerge,
+			AutoMergeBranch:    v.AutoMergeBranch,
+			Artifact:           v.Artifact,
+			Environment:        v.Environment,
+			StartWorkflowHints: hints,
+		})
+	}
+	devFlowRule := apistructs.DevFlowRule{
+		ID:          devFlowRuleRsp.Data.ID,
+		Flows:       flows,
+		OrgID:       devFlowRuleRsp.Data.OrgID,
+		OrgName:     devFlowRuleRsp.Data.OrgName,
+		ProjectID:   devFlowRuleRsp.Data.ProjectID,
+		ProjectName: devFlowRuleRsp.Data.ProjectName,
+	}
+	return devFlowRule.MakeBranchRules()
 }
 
 func (branchRule *BranchRule) GetAllProjectRulesMap() (map[int64][]*apistructs.BranchRule, error) {

@@ -12,23 +12,36 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dop
+package table
 
 import (
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/openapi/api/apis"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
-var QA_TEST_CALLBACK = apis.ApiSpec{
-	Path:         "/api/qa/actions/test-callback",
-	BackendPath:  "/api/qa/actions/test-callback",
-	Host:         "dop.marathon.l4lb.thisdcos.directory:9527",
-	Scheme:       "http",
-	Method:       "POST",
-	CheckLogin:   true,
-	CheckToken:   true,
-	Doc:          "summary: 测试结果回调",
-	RequestType:  apistructs.TestCallBackRequest{},
-	ResponseType: apistructs.TestCallBackResponse{},
-	IsOpenAPI:    true,
+func Test_formatTTLToDays(t *testing.T) {
+	tests := []struct {
+		ttl  time.Duration
+		want int64
+	}{
+		{
+			ttl:  time.Hour * 7 * 24,
+			want: 7,
+		},
+		{
+			ttl:  time.Hour,
+			want: 1,
+		},
+		{
+			ttl:  time.Hour*8*24 + time.Hour,
+			want: 9,
+		},
+	}
+
+	for _, tt := range tests {
+		ret := FormatTTLToDays(tt.ttl)
+		assert.Equal(t, tt.want, ret)
+	}
 }

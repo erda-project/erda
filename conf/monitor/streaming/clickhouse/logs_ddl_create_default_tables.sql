@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS <database>.logs ON CLUSTER '{cluster}'
 ENGINE = ReplicatedMergeTree('/clickhouse/tables/{cluster}-{shard}/logs', '{replica}')
 PARTITION BY toYYYYMMDD(timestamp)
 ORDER BY (org_name, tenant_id, group_id, timestamp)
-TTL toDateTime(timestamp) + INTERVAL 7 DAY;
+TTL toDateTime(timestamp) + INTERVAL <ttl_in_days> DAY;
 
 // create distributed table
 // notice: ddls to the logs table should be synced to the logs_all table

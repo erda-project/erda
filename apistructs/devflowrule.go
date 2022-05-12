@@ -15,7 +15,6 @@
 package apistructs
 
 import (
-	"encoding/json"
 	"time"
 )
 
@@ -26,7 +25,7 @@ type DevFlowRuleResponse struct {
 
 type DevFlowRule struct {
 	ID          string    `json:"id"`
-	Flows       string    `json:"flows"`
+	Flows       []Flow    `json:"flows"`
 	OrgID       uint64    `json:"orgID"`
 	OrgName     string    `json:"orgName"`
 	ProjectID   uint64    `json:"projectID"`
@@ -56,23 +55,18 @@ type StartWorkflowHint struct {
 }
 
 func (f *DevFlowRule) MakeBranchRules() ([]*BranchRule, error) {
-	if f.Flows == "" {
+	if len(f.Flows) == 0 {
 		return nil, nil
 	}
-	var flows []Flow
-	err := json.Unmarshal([]byte(f.Flows), &flows)
-	if err != nil {
-		return nil, err
-	}
-	rules := make([]*BranchRule, 0, len(flows))
-	for i := range flows {
+	rules := make([]*BranchRule, 0, len(f.Flows))
+	for _, v := range f.Flows {
 		var rule string
-		if flows[i].FlowType == "single_branch" {
-			rule = flows[i].TargetBranch
-		} else if flows[i].FlowType == "two_branch" {
-			rule = flows[i].ChangeBranch
-		} else if flows[i].FlowType == "three_branch" {
-			rule = flows[i].ChangeBranch
+		if v.FlowType == "single_branch" {
+			rule = v.TargetBranch
+		} else if v.FlowType == "two_branch" {
+			rule = v.ChangeBranch
+		} else if v.FlowType == "three_branch" {
+			rule = v.ChangeBranch
 		}
 		rules = append(rules, &BranchRule{
 			ScopeType:         "project",
@@ -82,7 +76,7 @@ func (f *DevFlowRule) MakeBranchRules() ([]*BranchRule, error) {
 			IsProtect:         false,
 			IsTriggerPipeline: false,
 			NeedApproval:      false,
-			Workspace:         flows[i].Environment,
+			Workspace:         v.Environment,
 			ArtifactWorkspace: "",
 		})
 	}

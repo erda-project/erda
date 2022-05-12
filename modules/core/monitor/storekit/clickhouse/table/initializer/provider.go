@@ -15,9 +15,16 @@
 package initializer
 
 import (
+	"context"
+	"sync"
+	"time"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/clickhouse"
+	election "github.com/erda-project/erda-infra/providers/etcd-election"
+	"github.com/erda-project/erda/modules/core/monitor/settings/retention-strategy"
+	"github.com/erda-project/erda/modules/core/monitor/storekit/clickhouse/table/loader"
 )
 
 type ddlFile struct {
@@ -26,18 +33,33 @@ type ddlFile struct {
 }
 
 type config struct {
-	DDLs     []ddlFile `file:"ddl_files"`
-	Database string    `file:"database" default:"monitor"`
+	DefaultDDLs     []ddlFile     `file:"default_ddl_files"`
+	TenantDDLs      []ddlFile     `file:"tenant_ddl_files"`
+	Database        string        `file:"database" default:"monitor"`
+	TablePrefix     string        `file:"table_prefix"`
+	TTLSyncInterval time.Duration `file:"ttl_sync_interval" default:"24h"`
 }
 
 type provider struct {
 	Cfg        *config
 	Log        logs.Logger
 	Clickhouse clickhouse.Interface `autowired:"clickhouse" inherit-label:"preferred"`
+	Retention  retention.Interface  `autowired:"storage-retention-strategy" inherit-label:"preferred"`
+	Loader     loader.Interface     `autowired:"clickhouse.table.loader" inherit-label:"true"`
+	Election   election.Interface   `autowired:"etcd-election@table-initializer"`
+
+	once sync.Once
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	return p.initDDLs()
+	p.Election.OnLeader(func(ctx context.Context) {
+		p.once.Do(func() {
+			_ = p.initDefaultDDLs()
+			p.initTenantDDLs()
+		})
+		go p.syncTTL(ctx)
+	})
+	return nil
 }
 
 func init() {

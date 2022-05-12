@@ -382,6 +382,7 @@ type CodeTestReport struct {
 	ProjectID   uint64          `json:"projectID"`
 	ProjectName string          `json:"projectName"`
 	XMLName     xml.Name        `xml:"report"`
+	Name        string          `xml:"name,attr"`
 	Packages    []ReportPackage `xml:"package"`
 	Counters    []ReportCounter `xml:"counter"`
 }

@@ -45,7 +45,7 @@ etcd:
 etcd-election@index:
   root_path: "/erda/monitor-index-clean-election"
 
-etcd-election@table:
+etcd-election@table-loader:
   root_path: "/erda/monitor-ck-table-loader-election"
 
 redis:
@@ -72,6 +72,9 @@ clickhouse.table.loader@log:
 
 log-storage-clickhouse:
   _enable: ${QUERY_LOG_FROM_CLICKHOUSE_ENABLE:false}
+  query_timeout: "${QUERY_LOG_FROM_CLICKHOUSE_TIMEOUT:1m}"
+  query_max_threads: "${QUERY_LOG_FROM_CLICKHOUSE_MAX_THREADS:0}"
+  query_max_memory: "${QUERY_LOG_FROM_CLICKHOUSE_MAX_MEMORY:0}"
   field_name_mapper:
     tags.request_id: tags.trace_id
 
