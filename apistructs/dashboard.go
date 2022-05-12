@@ -85,6 +85,7 @@ type DashboardSpotLogRequest struct {
 	Count  int64
 	Start  time.Duration // 纳秒
 	End    time.Duration // 纳秒
+	Debug  bool
 }
 
 type DashboardSpotLogStream string

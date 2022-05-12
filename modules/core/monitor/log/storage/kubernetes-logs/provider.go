@@ -24,7 +24,6 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/loader"
 	k8sclient "github.com/erda-project/erda/providers/k8s-client-manager"
 )
 
@@ -37,7 +36,6 @@ type (
 		Cfg     *config
 		Log     logs.Logger
 		Redis   *redis.Client       `autowired:"redis-client"`
-		Loader  loader.Interface    `autowired:"elasticsearch.index.loader@log"`
 		Clients k8sclient.Interface `autowired:"k8s-client-manager"`
 
 		ctx servicehub.Context

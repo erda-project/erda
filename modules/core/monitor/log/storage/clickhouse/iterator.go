@@ -309,11 +309,8 @@ func (it *clickhouseIterator) fetch(dir iteratorDir) {
 				it.err = err
 				return
 			}
-			ctx, cancel := it.buildQueryContext(it.ctx)
+			ctx := it.buildQueryContext(it.ctx)
 			rows, err := it.ck.Client().Query(ctx, sql)
-			if cancel != nil {
-				cancel()
-			}
 			if err != nil {
 				it.err = err
 				return
@@ -347,20 +344,22 @@ func (it *clickhouseIterator) fetch(dir iteratorDir) {
 	}
 }
 
-func (it *clickhouseIterator) buildQueryContext(ctx context.Context) (context.Context, context.CancelFunc) {
-	var cancel context.CancelFunc
-	if it.queryTimeout > 0 {
-		ctx, cancel = context.WithTimeout(ctx, it.queryTimeout)
-	}
+func (it *clickhouseIterator) buildQueryContext(ctx context.Context) context.Context {
 	settings := map[string]interface{}{}
+	if it.queryTimeout > 0 {
+		settings["max_execution_time"] = int(it.queryTimeout.Seconds()) + 5
+	}
 	if it.queryMaxThreads > 0 {
 		settings["max_threads"] = it.queryMaxThreads
 	}
 	if it.queryMaxMemory > 0 {
 		settings["max_memory_usage"] = it.queryMaxMemory
 	}
+	if len(settings) == 0 {
+		return ctx
+	}
 	ctx = cksdk.Context(ctx, cksdk.WithSettings(settings))
-	return ctx, cancel
+	return ctx
 }
 
 func (it *clickhouseIterator) decode(log *logItem) *pb.LogItem {
