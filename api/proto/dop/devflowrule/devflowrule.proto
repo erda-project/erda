@@ -24,9 +24,6 @@ service DevFlowRuleService {
     rpc DeleteDevFlowRule(DeleteDevFlowRuleRequest)
             returns (DeleteDevFlowRuleResponse) {
     }
-    rpc GetFlowByRule(GetFlowByRuleRequest)
-            returns (GetFlowByRuleResponse) {
-    }
     rpc UpdateDevFlowRule(UpdateDevFlowRuleRequest)
             returns (UpdateDevFlowRuleResponse) {
         option(google.api.http) = {

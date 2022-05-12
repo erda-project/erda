@@ -17,6 +17,7 @@ package devflowrule
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/erda-project/erda-proto-go/dop/devflowrule/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -41,7 +42,7 @@ type Service interface {
 	DeleteDevFlowRule(context.Context, *pb.DeleteDevFlowRuleRequest) (*pb.DeleteDevFlowRuleResponse, error)
 	UpdateDevFlowRule(context.Context, *pb.UpdateDevFlowRuleRequest) (*pb.UpdateDevFlowRuleResponse, error)
 	GetDevFlowRulesByProjectID(context.Context, *pb.GetDevFlowRuleRequest) (*pb.GetDevFlowRuleResponse, error)
-	GetFlowByRule(context.Context, GetFlowByRuleRequest) (*db.Flow, error)
+	GetFlowByRule(context.Context, GetFlowByRuleRequest) (*pb.Flow, error)
 }
 
 type ServiceImplement struct {
@@ -171,6 +172,10 @@ func (s *ServiceImplement) UpdateDevFlowRule(ctx context.Context, request *pb.Up
 		return nil, apierrors.ErrUpdateDevFlowRule.AccessDenied()
 	}
 
+	if err = s.CheckFlow(request.Flows); err != nil {
+		return nil, apierrors.ErrUpdateDevFlowRule.InternalError(err)
+	}
+
 	b, err := json.Marshal(request.Flows)
 	if err != nil {
 		return nil, apierrors.ErrUpdateDevFlowRule.InternalError(err)
@@ -182,6 +187,18 @@ func (s *ServiceImplement) UpdateDevFlowRule(ctx context.Context, request *pb.Up
 	}
 
 	return &pb.UpdateDevFlowRuleResponse{Data: devFlow.Convert()}, nil
+}
+
+func (s *ServiceImplement) CheckFlow(flows []*pb.Flow) error {
+	nameMap := make(map[string]struct{})
+	for _, v := range flows {
+		if _, ok := nameMap[v.Name]; ok {
+			return fmt.Errorf("the name %s is duplicate", v.Name)
+		} else {
+			nameMap[v.Name] = struct{}{}
+		}
+	}
+	return nil
 }
 
 func (s *ServiceImplement) GetDevFlowRulesByProjectID(ctx context.Context, request *pb.GetDevFlowRuleRequest) (*pb.GetDevFlowRuleResponse, error) {
@@ -214,7 +231,7 @@ func (s *ServiceImplement) DeleteDevFlowRule(ctx context.Context, request *pb.De
 	return &pb.DeleteDevFlowRuleResponse{}, nil
 }
 
-func (s *ServiceImplement) GetFlowByRule(ctx context.Context, request GetFlowByRuleRequest) (*db.Flow, error) {
+func (s *ServiceImplement) GetFlowByRule(ctx context.Context, request GetFlowByRuleRequest) (*pb.Flow, error) {
 	wfs, err := s.db.GetDevFlowRuleByProjectID(request.ProjectID)
 	if err != nil {
 		return nil, err
@@ -229,7 +246,7 @@ func (s *ServiceImplement) GetFlowByRule(ctx context.Context, request GetFlowByR
 		}
 		if request.FlowType == "single_branch" {
 			if diceworkspace.IsRefPatternMatch(request.TargetBranch, []string{v.TargetBranch}) {
-				return &v, nil
+				return v.Convert(), nil
 			}
 		} else if request.FlowType == "two_branch" || request.FlowType == "three_branch" {
 			if !diceworkspace.IsRefPatternMatch(request.TargetBranch, []string{v.TargetBranch}) {
@@ -238,7 +255,7 @@ func (s *ServiceImplement) GetFlowByRule(ctx context.Context, request GetFlowByR
 			if !diceworkspace.IsRefPatternMatch(request.ChangeBranch, []string{v.ChangeBranch}) {
 				continue
 			}
-			return &v, nil
+			return v.Convert(), nil
 		}
 	}
 	return nil, nil
