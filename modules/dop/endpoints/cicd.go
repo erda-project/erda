@@ -62,6 +62,12 @@ func (e *Endpoints) CICDTaskLog(ctx context.Context, r *http.Request, vars map[s
 	logReq.ID = logID
 	logReq.Source = apistructs.DashboardSpotLogSourceJob
 
+	debug, ok := vars["debug"]
+	if ok {
+		b, _ := strconv.ParseBool(debug)
+		logReq.Debug = b
+	}
+
 	log, err := e.bdl.GetLog(r.Header.Get("org"), logReq)
 	if err != nil {
 		return errorresp.ErrResp(err)
