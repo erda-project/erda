@@ -202,18 +202,20 @@ func (s *ServiceImplement) CheckFlow(flows []*pb.Flow) error {
 }
 
 func (s *ServiceImplement) GetDevFlowRulesByProjectID(ctx context.Context, request *pb.GetDevFlowRuleRequest) (*pb.GetDevFlowRuleResponse, error) {
-	access, err := s.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
-		UserID:   apis.GetUserID(ctx),
-		Scope:    apistructs.ProjectScope,
-		ScopeID:  request.ProjectID,
-		Resource: resource,
-		Action:   apistructs.OperateAction,
-	})
-	if err != nil {
-		return nil, apierrors.ErrGetDevFlowRule.InternalError(err)
-	}
-	if !access.Access {
-		return nil, apierrors.ErrGetDevFlowRule.AccessDenied()
+	if !apis.IsInternalClient(ctx) {
+		access, err := s.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+			UserID:   apis.GetUserID(ctx),
+			Scope:    apistructs.ProjectScope,
+			ScopeID:  request.ProjectID,
+			Resource: resource,
+			Action:   apistructs.OperateAction,
+		})
+		if err != nil {
+			return nil, apierrors.ErrGetDevFlowRule.InternalError(err)
+		}
+		if !access.Access {
+			return nil, apierrors.ErrGetDevFlowRule.AccessDenied()
+		}
 	}
 
 	wfs, err := s.db.GetDevFlowRuleByProjectID(request.ProjectID)

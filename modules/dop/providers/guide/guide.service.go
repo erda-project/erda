@@ -232,7 +232,7 @@ func (g *GuideService) getPipelineYml(app *apistructs.ApplicationDTO, userID str
 }
 
 func (g *GuideService) checkBranchRule(branch string, projectID int64) (bool, error) {
-	branchRules, err := g.branchRuleSve.Query(apistructs.ProjectScope, int64(projectID))
+	branchRules, err := g.branchRuleSve.Query(apistructs.ProjectScope, projectID)
 	if err != nil {
 		return false, err
 	}

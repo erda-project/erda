@@ -15,14 +15,17 @@
 package branchrule
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
+	dfrpb "github.com/erda-project/erda-proto-go/dop/devflowrule/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/model"
 	"github.com/erda-project/erda/modules/pkg/diceworkspace"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/ucauth"
 )
 
@@ -30,6 +33,8 @@ type BranchRule struct {
 	db  *dao.DBClient
 	uc  *ucauth.UCClient
 	bdl *bundle.Bundle
+
+	devFlowRule dfrpb.DevFlowRuleServiceServer
 }
 
 type Option func(*BranchRule)
@@ -56,11 +61,21 @@ func WithBundle(bdl *bundle.Bundle) Option {
 	}
 }
 
+func WithDevFlowRule(svc dfrpb.DevFlowRuleServiceServer) Option {
+	return func(o *BranchRule) {
+		o.devFlowRule = svc
+	}
+}
+
 func (branchRule *BranchRule) Count(scopeType apistructs.ScopeType) (int64, error) {
 	return branchRule.db.GetBranchRulesCount(scopeType)
 }
 
 func (branchRule *BranchRule) Query(scopeType apistructs.ScopeType, scopeID int64) ([]*apistructs.BranchRule, error) {
+	if scopeType == apistructs.ProjectScope {
+		return branchRule.GetBranchRuleFromDevFlowRule(uint64(scopeID))
+	}
+
 	rules, err := branchRule.db.QueryBranchRules(scopeType, scopeID)
 	if err != nil {
 		return nil, err
@@ -70,6 +85,44 @@ func (branchRule *BranchRule) Query(scopeType apistructs.ScopeType, scopeID int6
 		result = append(result, rule.ToApiData())
 	}
 	return result, nil
+}
+
+func (branchRule *BranchRule) GetBranchRuleFromDevFlowRule(projectID uint64) ([]*apistructs.BranchRule, error) {
+	devFlowRuleRsp, err := branchRule.devFlowRule.GetDevFlowRulesByProjectID(apis.WithInternalClientContext(context.Background(), "bundle"), &dfrpb.GetDevFlowRuleRequest{ProjectID: projectID})
+	if err != nil {
+		return nil, err
+	}
+	flows := make([]apistructs.Flow, 0, len(devFlowRuleRsp.Data.Flows))
+	for _, v := range devFlowRuleRsp.Data.Flows {
+		hints := make([]apistructs.StartWorkflowHint, 0, len(v.StartWorkflowHints))
+		for _, hint := range v.StartWorkflowHints {
+			hints = append(hints, apistructs.StartWorkflowHint{
+				Place:            hint.Place,
+				ChangeBranchRule: hint.ChangeBranchRule,
+			})
+		}
+		flows = append(flows, apistructs.Flow{
+			Name:               v.Name,
+			FlowType:           v.FlowType,
+			TargetBranch:       v.TargetBranch,
+			ChangeFromBranch:   v.ChangeFromBranch,
+			ChangeBranch:       v.ChangeBranch,
+			EnableAutoMerge:    v.EnableAutoMerge,
+			AutoMergeBranch:    v.AutoMergeBranch,
+			Artifact:           v.Artifact,
+			Environment:        v.Environment,
+			StartWorkflowHints: hints,
+		})
+	}
+	devFlowRule := apistructs.DevFlowRule{
+		ID:          devFlowRuleRsp.Data.ID,
+		Flows:       flows,
+		OrgID:       devFlowRuleRsp.Data.OrgID,
+		OrgName:     devFlowRuleRsp.Data.OrgName,
+		ProjectID:   devFlowRuleRsp.Data.ProjectID,
+		ProjectName: devFlowRuleRsp.Data.ProjectName,
+	}
+	return devFlowRule.MakeBranchRules()
 }
 
 func (branchRule *BranchRule) GetAllProjectRulesMap() (map[int64][]*apistructs.BranchRule, error) {

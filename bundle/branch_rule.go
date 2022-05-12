@@ -25,7 +25,12 @@ import (
 
 // GetProjectBranchRules 查询项目分支规则
 func (b *Bundle) GetProjectBranchRules(projectId uint64) ([]*apistructs.BranchRule, error) {
-	return b.GetBranchRules(apistructs.ProjectScope, projectId)
+	devFlowRule, err := b.GetDevFlowRule(projectId)
+	if err != nil {
+		return nil, err
+	}
+
+	return devFlowRule.MakeBranchRules()
 }
 
 // GetAppBranchRules 查询应用分支规则
