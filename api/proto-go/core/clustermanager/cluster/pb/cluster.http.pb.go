@@ -6,6 +6,7 @@ package pb
 import (
 	context "context"
 	http1 "net/http"
+	strconv "strconv"
 	strings "strings"
 
 	transport "github.com/erda-project/erda-infra/pkg/transport"
@@ -88,6 +89,13 @@ func RegisterClusterServiceHandler(r http.Router, srv ClusterServiceHandler, opt
 				params := r.URL.Query()
 				if vals := params["clusterType"]; len(vals) > 0 {
 					in.ClusterType = vals[0]
+				}
+				if vals := params["orgID"]; len(vals) > 0 {
+					val, err := strconv.ParseUint(vals[0], 10, 64)
+					if err != nil {
+						return nil, err
+					}
+					in.OrgID = val
 				}
 				out, err := handler(ctx, &in)
 				if err != nil {
