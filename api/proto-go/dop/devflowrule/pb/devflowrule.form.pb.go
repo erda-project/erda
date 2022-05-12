@@ -573,9 +573,9 @@ func (m *StartWorkflowHint) UnmarshalURLValues(prefix string, values url.Values)
 	for key, vals := range values {
 		if len(vals) > 0 {
 			switch prefix + key {
-			case "Place":
+			case "place":
 				m.Place = vals[0]
-			case "ChangeBranchRule":
+			case "changeBranchRule":
 				m.ChangeBranchRule = vals[0]
 			}
 		}
