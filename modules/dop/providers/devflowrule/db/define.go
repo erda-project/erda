@@ -104,7 +104,31 @@ type StartWorkflowHint struct {
 	ChangeBranchRule string
 }
 
+func (f *Flow) Convert() *pb.Flow {
+	hints := make([]*pb.StartWorkflowHint, 0, len(f.StartWorkflowHints))
+	for _, v := range f.StartWorkflowHints {
+		hints = append(hints, &pb.StartWorkflowHint{
+			Place:            v.Place,
+			ChangeBranchRule: v.ChangeBranchRule,
+		})
+	}
+	return &pb.Flow{
+		Name:               f.Name,
+		FlowType:           f.FlowType,
+		TargetBranch:       f.TargetBranch,
+		ChangeFromBranch:   f.ChangeFromBranch,
+		ChangeBranch:       f.ChangeBranch,
+		EnableAutoMerge:    f.EnableAutoMerge,
+		AutoMergeBranch:    f.AutoMergeBranch,
+		Artifact:           f.Artifact,
+		Environment:        f.Environment,
+		StartWorkflowHints: hints,
+	}
+}
+
 func (r *DevFlowRule) Convert() *pb.DevFlowRule {
+	flows := make([]*pb.Flow, 0)
+	_ = json.Unmarshal(r.Flows, &flows)
 	return &pb.DevFlowRule{
 		ID:          r.ID.String,
 		OrgID:       r.OrgID,
@@ -115,7 +139,7 @@ func (r *DevFlowRule) Convert() *pb.DevFlowRule {
 		TimeUpdated: timestamppb.New(r.UpdatedAt),
 		Creator:     r.Creator,
 		Updater:     r.Updater,
-		Flows:       r.Flows.String(),
+		Flows:       flows,
 	}
 }
 

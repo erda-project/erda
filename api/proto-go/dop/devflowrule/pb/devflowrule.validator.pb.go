@@ -39,6 +39,13 @@ func (this *DeleteDevFlowRuleResponse) Validate() error {
 	return nil
 }
 func (this *UpdateDevFlowRuleRequest) Validate() error {
+	for _, item := range this.Flows {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("Flows", err)
+			}
+		}
+	}
 	return nil
 }
 func (this *UpdateDevFlowRuleResponse) Validate() error {
@@ -61,6 +68,13 @@ func (this *GetDevFlowRuleResponse) Validate() error {
 	return nil
 }
 func (this *DevFlowRule) Validate() error {
+	for _, item := range this.Flows {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("Flows", err)
+			}
+		}
+	}
 	if this.TimeCreated != nil {
 		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.TimeCreated); err != nil {
 			return github_com_mwitkow_go_proto_validators.FieldError("TimeCreated", err)
@@ -71,5 +85,18 @@ func (this *DevFlowRule) Validate() error {
 			return github_com_mwitkow_go_proto_validators.FieldError("TimeUpdated", err)
 		}
 	}
+	return nil
+}
+func (this *Flow) Validate() error {
+	for _, item := range this.StartWorkflowHints {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("StartWorkflowHints", err)
+			}
+		}
+	}
+	return nil
+}
+func (this *StartWorkflowHint) Validate() error {
 	return nil
 }

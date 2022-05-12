@@ -22,6 +22,8 @@ var _ urlenc.URLValuesUnmarshaler = (*UpdateDevFlowRuleResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetDevFlowRuleRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetDevFlowRuleResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*DevFlowRule)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*Flow)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*StartWorkflowHint)(nil)
 
 // CreateDevFlowRuleRequest implement urlenc.URLValuesUnmarshaler.
 func (m *CreateDevFlowRuleRequest) UnmarshalURLValues(prefix string, values url.Values) error {
@@ -56,11 +58,6 @@ func (m *CreateDevFlowRuleResponse) UnmarshalURLValues(prefix string, values url
 					m.Data = &DevFlowRule{}
 				}
 				m.Data.ID = vals[0]
-			case "data.flows":
-				if m.Data == nil {
-					m.Data = &DevFlowRule{}
-				}
-				m.Data.Flows = vals[0]
 			case "data.orgID":
 				if m.Data == nil {
 					m.Data = &DevFlowRule{}
@@ -198,8 +195,6 @@ func (m *UpdateDevFlowRuleRequest) UnmarshalURLValues(prefix string, values url.
 			switch prefix + key {
 			case "ID":
 				m.ID = vals[0]
-			case "flows":
-				m.Flows = vals[0]
 			}
 		}
 	}
@@ -220,11 +215,6 @@ func (m *UpdateDevFlowRuleResponse) UnmarshalURLValues(prefix string, values url
 					m.Data = &DevFlowRule{}
 				}
 				m.Data.ID = vals[0]
-			case "data.flows":
-				if m.Data == nil {
-					m.Data = &DevFlowRule{}
-				}
-				m.Data.Flows = vals[0]
 			case "data.orgID":
 				if m.Data == nil {
 					m.Data = &DevFlowRule{}
@@ -362,11 +352,6 @@ func (m *GetDevFlowRuleResponse) UnmarshalURLValues(prefix string, values url.Va
 					m.Data = &DevFlowRule{}
 				}
 				m.Data.ID = vals[0]
-			case "data.flows":
-				if m.Data == nil {
-					m.Data = &DevFlowRule{}
-				}
-				m.Data.Flows = vals[0]
 			case "data.orgID":
 				if m.Data == nil {
 					m.Data = &DevFlowRule{}
@@ -480,8 +465,6 @@ func (m *DevFlowRule) UnmarshalURLValues(prefix string, values url.Values) error
 			switch prefix + key {
 			case "ID":
 				m.ID = vals[0]
-			case "flows":
-				m.Flows = vals[0]
 			case "orgID":
 				val, err := strconv.ParseUint(vals[0], 10, 64)
 				if err != nil {
@@ -546,6 +529,54 @@ func (m *DevFlowRule) UnmarshalURLValues(prefix string, values url.Values) error
 				m.Creator = vals[0]
 			case "updater":
 				m.Updater = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// Flow implement urlenc.URLValuesUnmarshaler.
+func (m *Flow) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "name":
+				m.Name = vals[0]
+			case "flowType":
+				m.FlowType = vals[0]
+			case "targetBranch":
+				m.TargetBranch = vals[0]
+			case "changeFromBranch":
+				m.ChangeFromBranch = vals[0]
+			case "changeBranch":
+				m.ChangeBranch = vals[0]
+			case "enableAutoMerge":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.EnableAutoMerge = val
+			case "autoMergeBranch":
+				m.AutoMergeBranch = vals[0]
+			case "artifact":
+				m.Artifact = vals[0]
+			case "environment":
+				m.Environment = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// StartWorkflowHint implement urlenc.URLValuesUnmarshaler.
+func (m *StartWorkflowHint) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "Place":
+				m.Place = vals[0]
+			case "ChangeBranchRule":
+				m.ChangeBranchRule = vals[0]
 			}
 		}
 	}
