@@ -355,6 +355,9 @@ func (it *clickhouseIterator) buildQueryContext(ctx context.Context) context.Con
 	if it.queryMaxMemory > 0 {
 		settings["max_memory_usage"] = it.queryMaxMemory
 	}
+	if len(settings) == 0 {
+		return ctx
+	}
 	ctx = cksdk.Context(ctx, cksdk.WithSettings(settings))
 	return ctx
 }
