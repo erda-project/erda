@@ -100,8 +100,8 @@ type Flow struct {
 }
 
 type StartWorkflowHint struct {
-	Place            string
-	ChangeBranchRule string
+	Place            string `json:"place"`
+	ChangeBranchRule string `json:"changeBranchRule"`
 }
 
 func (f *Flow) Convert() *pb.Flow {
