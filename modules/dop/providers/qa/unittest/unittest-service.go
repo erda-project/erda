@@ -90,6 +90,10 @@ func (s *UnitTestService) ListRecords(ctx context.Context, req *pb.TestRecordPag
 	for _, r := range pagingResult.List.([]*dbclient.TPRecordDO) {
 		// erase sensitive information
 		r.EraseSensitiveInfo()
+		// only return the parent code coverage data when list unittest records
+		for _, coverageReport := range r.CoverageReport {
+			coverageReport.Children = nil
+		}
 		records = append(records, convertRecordToPB(r))
 	}
 	return &pb.TestRecordPagingResponse{
