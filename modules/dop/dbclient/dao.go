@@ -65,7 +65,7 @@ func FindTPRecordByCommitId(commitID string) (*TPRecordDO, error) {
 
 func FindTPRecordPagingByAppID(req *pb.TestRecordPagingRequest) (*Paging, error) {
 	var list []*TPRecordDO
-	total, err := cimysql.Engine.Select("id,name,branch,operator_name,totals,type,created_at").Where("app_id = ?", req.ApplicationId).
+	total, err := cimysql.Engine.Select("id,name,branch,operator_name,totals,type,created_at,coverage_report").Where("app_id = ?", req.ApplicationId).
 		Limit(int(req.PageSize), (int(req.PageNo)-1)*int(req.PageSize)).Desc("id").FindAndCount(&list)
 	if err != nil {
 		return nil, err
