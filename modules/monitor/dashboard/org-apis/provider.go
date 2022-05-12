@@ -42,7 +42,7 @@ type provider struct {
 	metricq    metricq.Queryer
 	service    queryServiceImpl
 	t          i18n.Translator
-	clusterSvc clusterpb.ClusterServiceServer `autowired:"erda.core.clustermanager.cluster.ClusterService"`
+	ClusterSvc clusterpb.ClusterServiceServer `autowired:"erda.core.clustermanager.cluster.ClusterService"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
