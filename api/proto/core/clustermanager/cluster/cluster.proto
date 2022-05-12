@@ -9,7 +9,7 @@ import "google/protobuf/struct.proto";
 service ClusterService {
   rpc ListCluster(ListClusterRequest) returns (ListClusterResponse) {
     option (google.api.http) = {
-      get: "/api/clusters?clusterType={clusterType}"
+      get: "/api/clusters?clusterType={clusterType}&orgID={orgID}"
     };
   }
 
