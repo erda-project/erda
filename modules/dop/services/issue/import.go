@@ -249,7 +249,7 @@ func (svc *Issue) storeExcel2DB(request apistructs.IssueImportExcelRequest, issu
 				Priority:       req.Priority,
 				Complexity:     req.Complexity,
 				Severity:       apistructs.IssueSeverityNormal,
-				Creator:        memberMap[req.Creator],
+				Creator:        request.UserID,
 				Assignee:       memberMap[req.Assignee],
 				Source:         req.Source,
 				External:       true,
