@@ -119,7 +119,7 @@ func (s WorkNoticeSubscriber) worknoticeSend(u, agentID string, userIDList []str
 	body.Set("userid_list", strings.Join(userIDList, ","))
 	msg := map[string]interface{}{
 		"msgtype": "text", "text": map[string]interface{}{
-			"content": content,
+			"content": dingding.DingPrint(content),
 		},
 	}
 	msgstr, _ := json.Marshal(msg)
