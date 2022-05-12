@@ -357,7 +357,7 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 	// edge pipeline envs
 	edgePipelineEnvs := pre.EdgeRegister.GetEdgePipelineEnvs()
 	task.Extra.PublicEnvs[apistructs.EnvIsEdgePipeline] = strconv.FormatBool(pre.EdgeRegister.IsEdge())
-	task.Extra.PublicEnvs[apistructs.EnvPipelineAddr] = edgePipelineEnvs.Get(apistructs.ClusterDialerDataKeyPipelineAddr)
+	task.Extra.PublicEnvs[apistructs.EnvPipelineAddr] = edgePipelineEnvs.Get(apistructs.ClusterManagerDataKeyPipelineAddr)
 
 	// 条件表达式存在
 	if jump := condition(task); jump {

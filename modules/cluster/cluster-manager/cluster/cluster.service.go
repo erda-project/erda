@@ -22,7 +22,6 @@ import (
 	"github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cluster/cluster-manager/cluster/db"
-	"github.com/erda-project/erda/modules/cluster/cluster-manager/services/apierrors"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -31,6 +30,28 @@ import (
 type ClusterService struct {
 	db  *db.ClusterDB
 	bdl *bundle.Bundle
+}
+
+type Option = func(c *ClusterService)
+
+func NewClusterService(options ...Option) *ClusterService {
+	svc := &ClusterService{}
+	for _, option := range options {
+		option(svc)
+	}
+	return svc
+}
+
+func WithDB(db *db.ClusterDB) Option {
+	return func(c *ClusterService) {
+		c.db = db
+	}
+}
+
+func WithBundle(bdl *bundle.Bundle) Option {
+	return func(c *ClusterService) {
+		c.bdl = bdl
+	}
 }
 
 func (c *ClusterService) ListCluster(ctx context.Context, req *pb.ListClusterRequest) (*pb.ListClusterResponse, error) {
@@ -49,7 +70,7 @@ func (c *ClusterService) ListCluster(ctx context.Context, req *pb.ListClusterReq
 		clusters, err = c.List()
 	}
 	if err != nil {
-		return nil, apierrors.ErrListCluster.InternalError(err)
+		return nil, ErrListCluster.InternalError(err)
 	}
 
 	if req.OrgID == 0 {
@@ -58,7 +79,7 @@ func (c *ClusterService) ListCluster(ctx context.Context, req *pb.ListClusterReq
 
 	clusterRelation, err := c.bdl.GetOrgClusterRelationsByOrg(req.OrgID)
 	if err != nil {
-		return nil, apierrors.ErrListCluster.InternalError(err)
+		return nil, ErrListCluster.InternalError(err)
 	}
 
 	var clustersInOrg []*pb.ClusterInfo
@@ -83,9 +104,9 @@ func (c *ClusterService) GetCluster(ctx context.Context, req *pb.GetClusterReque
 	cluster, err := c.Get(req.IdOrName)
 	if err != nil {
 		if strutil.Contains(err.Error(), "not found") {
-			return nil, apierrors.ErrGetCluster.NotFound()
+			return nil, ErrGetCluster.NotFound()
 		}
-		return nil, apierrors.ErrGetCluster.InternalError(err)
+		return nil, ErrGetCluster.InternalError(err)
 	}
 
 	return &pb.GetClusterResponse{Data: cluster}, nil
@@ -97,15 +118,15 @@ func (c *ClusterService) CreateCluster(ctx context.Context, req *pb.CreateCluste
 		return nil, err
 	}
 	if req.UserID == "" {
-		return nil, apierrors.ErrCreateCluster.MissingParameter("userID")
+		return nil, ErrCreateCluster.MissingParameter("userID")
 	}
 
 	if err := c.CreateWithEvent(req); err != nil {
-		return nil, apierrors.ErrCreateCluster.InternalError(err)
+		return nil, ErrCreateCluster.InternalError(err)
 	}
 
 	if err := c.bdl.CreateOrgClusterRelationsByOrg(req.Name, req.UserID, req.OrgID); err != nil {
-		return nil, apierrors.ErrCreateCluster.InternalError(err)
+		return nil, ErrCreateCluster.InternalError(err)
 	}
 	return &pb.CreateClusterResponse{}, nil
 }
@@ -118,9 +139,9 @@ func (c *ClusterService) UpdateCluster(ctx context.Context, req *pb.UpdateCluste
 
 	if err := c.UpdateWithEvent(req); err != nil {
 		if strutil.Contains(err.Error(), "not found") {
-			return nil, apierrors.ErrGetCluster.NotFound()
+			return nil, ErrGetCluster.NotFound()
 		}
-		return nil, apierrors.ErrUpdateCluster.InvalidParameter(err)
+		return nil, ErrUpdateCluster.InvalidParameter(err)
 	}
 
 	return &pb.UpdateClusterResponse{}, nil
@@ -146,9 +167,9 @@ func (c *ClusterService) PatchCluster(ctx context.Context, req *pb.PatchClusterR
 
 	if err := c.PatchWithEvent(req); err != nil {
 		if strutil.Contains(err.Error(), "not found") {
-			return nil, apierrors.ErrGetCluster.NotFound()
+			return nil, ErrGetCluster.NotFound()
 		}
-		return nil, apierrors.ErrPatchCluster.InvalidParameter(err)
+		return nil, ErrPatchCluster.InvalidParameter(err)
 	}
 
 	return &pb.PatchClusterResponse{}, nil
@@ -157,7 +178,7 @@ func (c *ClusterService) PatchCluster(ctx context.Context, req *pb.PatchClusterR
 func auth(ctx context.Context) error {
 	internalClient := apis.GetHeader(ctx, httputil.InternalHeader)
 	if internalClient == "" {
-		return apierrors.ErrPreCheckCluster.AccessDenied()
+		return ErrPreCheckCluster.AccessDenied()
 	}
 	return nil
 }

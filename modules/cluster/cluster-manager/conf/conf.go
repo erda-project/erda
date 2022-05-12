@@ -14,7 +14,12 @@
 
 package conf
 
+import "time"
+
 type Conf struct {
-	Debug  bool   `default:"false"`
-	Listen string `default:":9094"`
+	Debug           bool          `default:"false"`
+	Listen          string        `default:":9094"`
+	NeedClusterInfo bool          `default:"true" desc:"need agent register cluster info"`
+	AuthWhitelist   string        `desc:"auth whitelist, will skip auth"`
+	Timeout         time.Duration `default:"60s" desc:"default timeout"`
 }

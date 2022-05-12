@@ -67,7 +67,7 @@ func TestSourceWhiteList(t *testing.T) {
 			want: false,
 		},
 	}
-	patch := monkey.PatchInstanceMethod(reflect.TypeOf(p.bdl), "IsClusterDialerClientRegistered", func(_ *bundle.Bundle, _ apistructs.ClusterDialerClientType, _ string) (bool, error) {
+	patch := monkey.PatchInstanceMethod(reflect.TypeOf(p.bdl), "IsClusterManagerClientRegistered", func(_ *bundle.Bundle, _ apistructs.ClusterManagerClientType, _ string) (bool, error) {
 		return true, nil
 	})
 	defer patch.Unpatch()
@@ -95,22 +95,22 @@ func Test_parseDialerEndpoint(t *testing.T) {
 		},
 		{
 			name:     "http endpoint",
-			endpoint: "http://cluster-dialer:80",
-			want:     "ws://cluster-dialer:80",
+			endpoint: "http://cluster-manager:9094",
+			want:     "ws://cluster-manager:9094",
 			wantErr:  false,
 		},
 		{
 			name:     "https endpoint",
-			endpoint: "https://cluster-dialer:80",
-			want:     "wss://cluster-dialer:80",
+			endpoint: "https://cluster-manager:9094",
+			want:     "wss://cluster-manager:9094",
 			wantErr:  false,
 		},
 	}
 	for _, tt := range tests {
 		p := &provider{
 			Cfg: &Config{
-				IsEdge:              true,
-				ClusterDialEndpoint: tt.endpoint,
+				IsEdge:                 true,
+				ClusterManagerEndpoint: tt.endpoint,
 			},
 		}
 		got, err := p.parseDialerEndpoint()
@@ -220,8 +220,8 @@ func TestGetEdgePipelineEnvs(t *testing.T) {
 		},
 	}
 	envs := p.GetEdgePipelineEnvs()
-	assert.Equal(t, "pipeline:3081", envs.Get(apistructs.ClusterDialerDataKeyPipelineAddr))
-	assert.Equal(t, "pipeline.default.svc.cluster.local", envs.Get(apistructs.ClusterDialerDataKeyPipelineHost))
+	assert.Equal(t, "pipeline:3081", envs.Get(apistructs.ClusterManagerDataKeyPipelineAddr))
+	assert.Equal(t, "pipeline.default.svc.cluster.local", envs.Get(apistructs.ClusterManagerDataKeyPipelineHost))
 }
 
 func TestCheckAccessTokenFromHttpRequest(t *testing.T) {
@@ -279,7 +279,7 @@ func TestIsEdge(t *testing.T) {
 
 func TestShouldDispatchToEdge(t *testing.T) {
 	bdl := bundle.New()
-	patch := monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "IsClusterDialerClientRegistered", func(_ *bundle.Bundle, _ apistructs.ClusterDialerClientType, _ string) (bool, error) {
+	patch := monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "IsClusterManagerClientRegistered", func(_ *bundle.Bundle, _ apistructs.ClusterManagerClientType, _ string) (bool, error) {
 		return true, nil
 	})
 	defer patch.Unpatch()

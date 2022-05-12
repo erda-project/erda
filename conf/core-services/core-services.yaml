@@ -50,4 +50,5 @@ erda.core.token:
 
 grpc-client@erda.core.clustermanager.cluster:
   addr: "${CLUSTER_MANAGER_GRPC_ADDR:cluster-manager:9095}"
+  block: false
 erda.core.clustermanager.cluster-client: {}

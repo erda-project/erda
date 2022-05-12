@@ -181,30 +181,6 @@ services:
     envs:
       DEBUG: "false"
     resources:
-      cpu: ${request_cpu:0.2}
-      max_cpu: 0.2
-      mem: ${request_mem:256}
-      max_mem: 256
-      network:
-        mode: "container"
-    deployments:
-      replicas: ${replicas:1}
-      labels:
-        GROUP: "dice"
-    health_check:
-      http: { }
-      exec: { }
-  cluster-dialer:
-    cmd: "/app/cluster-dialer"
-    expose:
-      - 80
-    ports:
-      - port: 80
-        protocol: "TCP"
-        l4_protocol: "TCP"
-    envs:
-      DEBUG: "false"
-    resources:
       cpu: ${request_cpu:2}
       max_cpu: 2
       mem: ${request_mem:2048}
@@ -216,7 +192,7 @@ services:
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client.pem:/certs/etcd-client.pem:ro"
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client-key.pem:/certs/etcd-client-key.pem:ro"
     deployments:
-      replicas: 1
+      replicas: ${replicas:1}
       labels:
         GROUP: "dice"
     health_check:
