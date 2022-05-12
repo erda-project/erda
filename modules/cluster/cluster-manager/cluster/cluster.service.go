@@ -61,17 +61,18 @@ func (c *ClusterService) ListCluster(ctx context.Context, req *pb.ListClusterReq
 		return nil, apierrors.ErrListCluster.InternalError(err)
 	}
 
+	inOrgIDMap := make(map[uint64]struct{})
+	for i := 0; i < len(clusterRelation); i++ {
+		inOrgIDMap[clusterRelation[i].ClusterID] = struct{}{}
+	}
 	var clustersInOrg []*pb.ClusterInfo
-	for _, relation := range clusterRelation {
-		for _, cluster := range clusters {
-			if uint64(cluster.Id) == relation.ClusterID {
-				clustersInOrg = append(clustersInOrg, cluster)
-				break
-			}
+	for _, cluster := range clusters {
+		if _, ok := inOrgIDMap[uint64(cluster.Id)]; ok {
+			clustersInOrg = append(clustersInOrg, cluster)
 		}
 	}
 	return &pb.ListClusterResponse{
-		Data: clusters,
+		Data: clustersInOrg,
 	}, nil
 }
 
