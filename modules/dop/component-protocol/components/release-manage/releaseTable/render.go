@@ -107,12 +107,12 @@ func (r *ComponentReleaseTable) InitComponent(ctx context.Context) {
 	r.svc = svc
 }
 
-func (r *ComponentReleaseTable) GenComponentState(c *cptype.Component) error {
-	if c == nil || c.State == nil {
+func (r *ComponentReleaseTable) GenComponentState(component *cptype.Component) error {
+	if component == nil || component.State == nil {
 		return nil
 	}
 	var state State
-	data, err := json.Marshal(c.State)
+	data, err := json.Marshal(component.State)
 	if err != nil {
 		return err
 	}
@@ -145,17 +145,17 @@ func (r *ComponentReleaseTable) DecodeURLQuery() error {
 }
 
 func (r *ComponentReleaseTable) EncodeURLQuery() error {
-	urlQuery := make(map[string]interface{})
-	urlQuery["pageNo"] = r.State.PageNo
-	urlQuery["pageSize"] = r.State.PageSize
-	urlQuery["sorterData"] = r.State.Sorter
-	jsonData, err := json.Marshal(urlQuery)
+	query := make(map[string]interface{})
+	query["pageNo"] = r.State.PageNo
+	query["pageSize"] = r.State.PageSize
+	query["sorterData"] = r.State.Sorter
+	jsonData, err := json.Marshal(query)
 	if err != nil {
 		return err
 	}
 
-	encode := base64.StdEncoding.EncodeToString(jsonData)
-	r.State.ReleaseTableURLQuery = encode
+	encoded := base64.StdEncoding.EncodeToString(jsonData)
+	r.State.ReleaseTableURLQuery = encoded
 	return nil
 }
 

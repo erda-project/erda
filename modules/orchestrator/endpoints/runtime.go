@@ -422,12 +422,12 @@ func (e *Endpoints) ListMyRuntimes(ctx context.Context, r *http.Request, _ map[s
 	userId, err := user.GetUserID(r)
 	if err != nil {
 		l.Errorf("failed to get user id ,err :%v", err)
-		return nil, err
+		return nil, apierrors.ErrListRuntime.NotLogin()
 	}
 	orgId, err := getOrgID(r)
 	if err != nil {
 		l.Errorf("failed to get org id ,err :%v", err)
-		return nil, err
+		return nil, apierrors.ErrListRuntime.NotLogin()
 	}
 
 	projectIDStr := r.URL.Query().Get("projectID")
@@ -439,6 +439,15 @@ func (e *Endpoints) ListMyRuntimes(ctx context.Context, r *http.Request, _ map[s
 		return nil, apierrors.ErrListRuntime.InvalidParameter("projectID")
 	}
 
+	appIDStrs := r.URL.Query()["appID"]
+	for _, str := range appIDStrs {
+		id, err := strconv.ParseUint(str, 10, 64)
+		if err != nil {
+			return nil, apierrors.ErrListRuntime.InvalidState("appID")
+		}
+		appIDs = append(appIDs, id)
+	}
+
 	envParam := r.URL.Query()["workspace"]
 
 	if len(envParam) == 0 {
@@ -447,13 +456,25 @@ func (e *Endpoints) ListMyRuntimes(ctx context.Context, r *http.Request, _ map[s
 		env = envParam[0]
 	}
 
+	var myAppIDs []uint64
 	myApps, err := e.bdl.GetMyAppsByProject(string(userId), orgId, projectID, "")
 	for i := range myApps.List {
-		appIDs = append(appIDs, myApps.List[i].ID)
+		myAppIDs = append(myAppIDs, myApps.List[i].ID)
 		appID2Name[myApps.List[i].ID] = myApps.List[i].Name
 	}
 
-	runtimes, err := e.runtime.ListGroupByApps(appIDs, env)
+	var targetAppIDs []uint64
+	if len(appIDs) == 0 {
+		targetAppIDs = myAppIDs
+	} else {
+		for _, id := range appIDs {
+			if _, ok := appID2Name[id]; ok {
+				targetAppIDs = append(targetAppIDs, id)
+			}
+		}
+	}
+
+	runtimes, err := e.runtime.ListGroupByApps(targetAppIDs, env)
 	if err != nil {
 		return apierrors.ErrListRuntime.InternalError(err).ToResp(), nil
 	}
