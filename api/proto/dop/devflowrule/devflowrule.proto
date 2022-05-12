@@ -107,6 +107,6 @@ message Flow {
 }
 
 message StartWorkflowHint {
-    string Place = 1;
-    string ChangeBranchRule = 2;
+    string place = 1;
+    string changeBranchRule = 2;
 }
