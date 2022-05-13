@@ -211,3 +211,14 @@ func (client *Client) ListAllPipelineCrons(ops ...mysqlxorm.SessionOption) (cron
 	}
 	return crons, nil
 }
+
+func (client *Client) IsCronExist(cron *PipelineCron, ops ...mysqlxorm.SessionOption) (bool bool, err error) {
+	session := client.NewSession(ops...)
+	defer session.Close()
+
+	existed, err := session.Get(cron)
+	if err != nil {
+		return false, err
+	}
+	return existed, nil
+}
