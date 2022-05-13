@@ -276,22 +276,6 @@ func Test_provider_InsertOrUpdatePipelineCron(t *testing.T) {
 			s := &provider{}
 
 			var engine xorm.Engine
-			patch := monkey.PatchInstanceMethod(reflect.TypeOf(&engine), "Get", func(engine *xorm.Engine, bean interface{}) (bool, error) {
-				cron := bean.(*db.PipelineCron)
-				assert.Equal(t, cron.ApplicationID, tt.args.new_.ApplicationID)
-				assert.Equal(t, cron.Branch, tt.args.new_.Branch)
-				assert.Equal(t, cron.PipelineYmlName, tt.args.new_.PipelineYmlName)
-				cron.ID = 1
-
-				if cron.ApplicationID > 0 {
-					return true, nil
-				}
-				if cron.PipelineSource != "" {
-					return true, nil
-				}
-				return false, nil
-			})
-			defer patch.Unpatch()
 
 			var dbClient db.Client
 			patch2 := monkey.PatchInstanceMethod(reflect.TypeOf(&dbClient), "GetDBClient", func(dbClient *db.Client) *xorm.Engine {
@@ -309,6 +293,22 @@ func Test_provider_InsertOrUpdatePipelineCron(t *testing.T) {
 				return nil
 			})
 			defer patch4.Unpatch()
+
+			patch5 := monkey.PatchInstanceMethod(reflect.TypeOf(&dbClient), "IsCronExist", func(dbClient *db.Client, cron *db.PipelineCron, ops ...mysqlxorm.SessionOption) (bool bool, err error) {
+				assert.Equal(t, cron.ApplicationID, tt.args.new_.ApplicationID)
+				assert.Equal(t, cron.Branch, tt.args.new_.Branch)
+				assert.Equal(t, cron.PipelineYmlName, tt.args.new_.PipelineYmlName)
+				cron.ID = 1
+
+				if cron.ApplicationID > 0 {
+					return true, nil
+				}
+				if cron.PipelineSource != "" {
+					return true, nil
+				}
+				return false, nil
+			})
+			defer patch5.Unpatch()
 
 			s.dbClient = &dbClient
 			if err := s.InsertOrUpdatePipelineCron(tt.args.new_, tt.args.ops...); (err != nil) != tt.wantErr {
@@ -355,19 +355,6 @@ func Test_provider_disable(t *testing.T) {
 			s := &provider{}
 
 			var engine xorm.Engine
-			patch := monkey.PatchInstanceMethod(reflect.TypeOf(&engine), "Get", func(engine *xorm.Engine, bean interface{}) (bool, error) {
-				cron := bean.(*db.PipelineCron)
-				cron.ID = 1
-
-				if cron.ApplicationID > 0 {
-					return true, nil
-				}
-				if cron.PipelineSource != "" {
-					return true, nil
-				}
-				return false, nil
-			})
-			defer patch.Unpatch()
 
 			var dbClient db.Client
 			patch2 := monkey.PatchInstanceMethod(reflect.TypeOf(&dbClient), "GetDBClient", func(dbClient *db.Client) *xorm.Engine {
@@ -380,6 +367,19 @@ func Test_provider_disable(t *testing.T) {
 				return nil
 			})
 			defer patch3.Unpatch()
+
+			patch4 := monkey.PatchInstanceMethod(reflect.TypeOf(&dbClient), "IsCronExist", func(dbClient *db.Client, cron *db.PipelineCron, ops ...mysqlxorm.SessionOption) (bool bool, err error) {
+				cron.ID = 1
+
+				if cron.ApplicationID > 0 {
+					return true, nil
+				}
+				if cron.PipelineSource != "" {
+					return true, nil
+				}
+				return false, nil
+			})
+			defer patch4.Unpatch()
 
 			s.dbClient = &dbClient
 			if err := s.disable(tt.args.cron, tt.args.option); (err != nil) != tt.wantErr {

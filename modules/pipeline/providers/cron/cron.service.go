@@ -392,7 +392,7 @@ func (s *provider) InsertOrUpdatePipelineCron(new *db.PipelineCron, ops ...mysql
 		Branch:          new.Branch,
 		PipelineYmlName: new.PipelineYmlName,
 	}
-	v1Exist, err := s.dbClient.GetDBClient().Get(queryV1)
+	v1Exist, err := s.dbClient.IsCronExist(queryV1, ops...)
 	if err != nil {
 		return err
 	}
@@ -414,7 +414,7 @@ func (s *provider) InsertOrUpdatePipelineCron(new *db.PipelineCron, ops ...mysql
 		PipelineSource:  new.PipelineSource,
 		PipelineYmlName: new.PipelineYmlName,
 	}
-	v2Exist, err := s.dbClient.GetDBClient().Get(queryV2)
+	v2Exist, err := s.dbClient.IsCronExist(queryV2, ops...)
 	if err != nil {
 		return err
 	}
@@ -448,7 +448,7 @@ func (s *provider) disable(cron *db.PipelineCron, option mysqlxorm.SessionOption
 		Branch:          cron.Branch,
 		PipelineYmlName: cron.PipelineYmlName,
 	}
-	v1Exist, err := s.dbClient.GetDBClient().Get(queryV1)
+	v1Exist, err := s.dbClient.IsCronExist(queryV1, option)
 	if err != nil {
 		return err
 	}
@@ -471,7 +471,7 @@ func (s *provider) disable(cron *db.PipelineCron, option mysqlxorm.SessionOption
 		PipelineSource:  cron.PipelineSource,
 		PipelineYmlName: cron.PipelineYmlName,
 	}
-	v2Exist, err := s.dbClient.GetDBClient().Get(queryV2)
+	v2Exist, err := s.dbClient.IsCronExist(queryV2, option)
 	if err != nil {
 		return err
 	}
