@@ -24,6 +24,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/cassandra"
+	"github.com/erda-project/erda-infra/providers/clickhouse"
 	componentprotocol "github.com/erda-project/erda-infra/providers/component-protocol"
 	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
 	"github.com/erda-project/erda-infra/providers/i18n"
@@ -43,6 +44,7 @@ type config struct {
 type querySource struct {
 	ElasticSearch bool `file:"elasticsearch"`
 	Cassandra     bool `file:"cassandra"`
+	ClickHouse    bool `file:"clickhouse"`
 }
 
 //go:embed scenarios
@@ -58,6 +60,7 @@ type provider struct {
 	Metric        metricpb.MetricServiceServer `autowired:"erda.core.monitor.metric.MetricService"`
 	DB            *gorm.DB                     `autowired:"mysql-client"`
 	Cassandra     cassandra.Interface          `autowired:"cassandra" optional:"true"`
+	Clickhouse    clickhouse.Interface         `autowired:"clickhouse" optional:"true"`
 	StorageReader storage.Storage              `autowired:"span-storage-elasticsearch-reader" optional:"true"`
 	Source        source.TraceSource
 	Protocol      componentprotocol.Interface
@@ -77,14 +80,20 @@ func (p *provider) Init(ctx servicehub.Context) error {
 			if err != nil {
 				return fmt.Errorf("fail to create cassandra session: %s", err)
 			}
-			p.Source = &source.CassandraSource{CassandraSession: session}
+			p.Source = &source.CassandraSource{CassandraSession: session, Log: p.Log}
 		}
 	}
 	if p.Cfg.QuerySource.ElasticSearch {
 		if p.StorageReader == nil {
 			panic("elasticsearch provider autowired failed.")
 		}
-		p.Source = &source.ElasticsearchSource{StorageReader: p.StorageReader}
+		p.Source = &source.ElasticsearchSource{StorageReader: p.StorageReader, Metric: p.Metric, Log: p.Log}
+	}
+	if p.Cfg.QuerySource.ClickHouse {
+		if p.Clickhouse == nil {
+			panic("clickhouse provider autowired failed.")
+		}
+		p.Source = &source.ClickhouseSource{Clickhouse: p.Clickhouse, Log: p.Log}
 	}
 
 	p.traceService = &TraceService{
