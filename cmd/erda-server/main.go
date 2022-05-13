@@ -15,6 +15,8 @@
 package main
 
 import (
+	_ "embed"
+
 	"github.com/erda-project/erda-infra/base/servicehub"
 	_ "github.com/erda-project/erda-infra/providers"
 	_ "github.com/erda-project/erda-infra/providers/component-protocol"
@@ -24,9 +26,12 @@ import (
 	"github.com/erda-project/erda/pkg/common"
 )
 
+//go:embed bootstrap.yaml
+var bootstrapCfg string
+
 func main() {
 	common.RegisterHubListener(cpregister.NewHubListener())
 	common.Run(&servicehub.RunOptions{
-		ConfigFile: "conf/erda-server/erda-server.yaml",
+		Content: bootstrapCfg,
 	})
 }

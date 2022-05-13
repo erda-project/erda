@@ -41,7 +41,6 @@ type provider struct {
 
 	Log    logs.Logger
 	Router hs.Router       `autowired:"http-router"`
-	CPTran i18n.I18n       `autowired:"i18n@cp"`
 	Tran   i18n.Translator `translator:"common"`
 
 	DB         *gorm.DB                       `autowired:"mysql-client"`

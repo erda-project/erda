@@ -34,6 +34,9 @@ import (
 //go:embed component-protocol/scenarios
 var scenarioFS embed.FS
 
+//go:embed i18n
+var i18nFS embed.FS
+
 type Config struct {
 	Debug bool `default:"false" env:"DEBUG" desc:"enable debug logging"`
 }
@@ -43,7 +46,7 @@ type provider struct {
 
 	Log      logs.Logger
 	Protocol componentprotocol.Interface
-	CPTran   i18n.I18n       `autowired:"i18n@cp"`
+	CPTran   i18n.I18n       `autowired:"i18n@personal-workbench"`
 	Tran     i18n.Translator `translator:"common"`
 }
 
@@ -69,7 +72,9 @@ func (p *provider) Init(ctx servicehub.Context) error {
 				httpclient.WithEnableAutoRetry(false),
 			)),
 	)
-
+	if err := p.CPTran.RegisterFilesFromFS("i18n", i18nFS); err != nil {
+		return err
+	}
 	p.Protocol.SetI18nTran(p.CPTran)
 	wb := workbench.New(workbench.WithBundle(bdl))
 	p.Protocol.WithContextValue(types.Workbench, wb)

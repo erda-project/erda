@@ -506,9 +506,14 @@ github.com/envoyproxy/go-control-plane v0.9.1-0.20191026205805-5f8ba28d4473/go.m
 github.com/envoyproxy/protoc-gen-validate v0.1.0/go.mod h1:iSmxcyjqTsJpI2R4NaDN7+kN2VEUnK/pcBlmesArF7c=
 github.com/erda-project/elastic v0.0.1-ex h1:5ajfxQ5S5YjpzFqY9LzL9hiKWCn6q/JDT4n8sNv7+pU=
 github.com/erda-project/elastic v0.0.1-ex/go.mod h1:iAVsas6fcmt9pxtge1+dErMhecv+RLSXlD4rnZRJVW0=
+github.com/erda-project/erda-infra v0.0.0-20220415022648-11680af2f88c h1:TEFWWAgcjeBObnOxMCa+zn55vD0QKofdxmDcEZ8GvLQ=
 github.com/erda-project/erda-infra v0.0.0-20220415022648-11680af2f88c/go.mod h1:NMBt1leoQ8mNWZntbgfIfZM19sEnv9IIxvpb6CLvojE=
 github.com/erda-project/erda-infra v0.0.0-20220510024943-61dad704a06b h1:WJSqwp6TgUe463Wku/QG6kVhU0OWVVyJ8lmC0+dw4pw=
 github.com/erda-project/erda-infra v0.0.0-20220510024943-61dad704a06b/go.mod h1:cXHRmo8Xf+25FMkdZM7UVUNJZtoXBRBhZc28evhZDAQ=
+github.com/erda-project/erda-infra v0.0.0-20220511065801-82dcddec8f21 h1:yWbA/7WQeIxcH8LcCmjsOPXmMo80MEntgUm+KSTaG3U=
+github.com/erda-project/erda-infra v0.0.0-20220511065801-82dcddec8f21/go.mod h1:cXHRmo8Xf+25FMkdZM7UVUNJZtoXBRBhZc28evhZDAQ=
+github.com/erda-project/erda-infra v0.0.0-20220512085035-6a568ec6bdf2 h1:dCJw75d7ldZxxvV9FRii79jy/9DzIRQk5oMFwpnulFM=
+github.com/erda-project/erda-infra v0.0.0-20220512085035-6a568ec6bdf2/go.mod h1:cXHRmo8Xf+25FMkdZM7UVUNJZtoXBRBhZc28evhZDAQ=
 github.com/erda-project/erda-oap-thirdparty-protocol v0.0.0-20210907135609-15886a136d5b h1:GWf2ChasZFerFwQoTokIvjJLWH57ligTSLD2hUb7UWk=
 github.com/erda-project/erda-oap-thirdparty-protocol v0.0.0-20210907135609-15886a136d5b/go.mod h1:H/f81Thef2Tnz4nUeLt0r4VwHdOznthpyXBwT9vDWo0=
 github.com/erda-project/erda-sourcecov v0.1.0 h1:iLvoMsQ1xX81KNOW98BKr85Vs7sSazrIDEphLYdmgP4=
@@ -1082,6 +1087,7 @@ github.com/kisielk/errcheck v1.2.0/go.mod h1:/BMXB+zMLi60iA8Vv6Ksmxu/1UDYcXs4uQL
 github.com/kisielk/errcheck v1.5.0/go.mod h1:pFxgyoBC7bSaBwPgfKdkLd5X25qrDl4LWUI2bnpBCr8=
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=
 github.com/klauspost/compress v1.4.1/go.mod h1:RyIbtBH6LamlWaDj8nUwkbUhJ87Yi3uG0guNDohfE1A=
+github.com/klauspost/compress v1.8.2 h1:Bx0qjetmNjdFXASH02NSAREKpiaDwkO1DRZ3dV2KCcs=
 github.com/klauspost/compress v1.8.2/go.mod h1:RyIbtBH6LamlWaDj8nUwkbUhJ87Yi3uG0guNDohfE1A=
 github.com/klauspost/compress v1.14.2 h1:S0OHlFk/Gbon/yauFJ4FfJJF5V0fc5HbBTJazi28pRw=
 github.com/klauspost/compress v1.14.2/go.mod h1:/3/Vjq9QcHkK5uEr5lBEmyoZ1iFhe47etQ6QUkpK6sk=

@@ -23,14 +23,7 @@ health:
 # component-protocol framework
 component-protocol:
 
-i18n@cp:
-  common:
-    - conf/erda-server/i18n/cp/common.yaml
-  files:
-    - conf/erda-server/i18n/cp/scenarios/
-i18n:
-  common:
-    - conf/erda-server/i18n/common.yaml # TODO : distinguish between admin global common.yaml and cp/common.yaml
+i18n@personal-workbench:
 
 grpc-client@erda.core.clustermanager.cluster:
   addr: "${CLUSTER_MANAGER_GRPC_ADDR:cluster-manager:9095}"
