@@ -9,6 +9,7 @@ values:
   test:
     request_cpu: 0.1
     request_mem: 128
+    log_service_replicas: 1
   production:
     nfs_root: "<%$.Storage.MountPoint%>"
     gittar_root: "<%$.Storage.GittarDataPath%>"
@@ -716,7 +717,7 @@ services:
       network:
         mode: "container"
     deployments:
-      replicas: 0
+      replicas: ${log_service_replicas:0}
       labels:
         GROUP: "spot-v2"
     health_check:
