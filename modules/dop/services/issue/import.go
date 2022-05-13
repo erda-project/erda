@@ -235,32 +235,7 @@ func (svc *Issue) storeExcel2DB(request apistructs.IssueImportExcelRequest, issu
 				}
 			}
 		} else {
-			// 创建 issue
-			create := dao.Issue{
-				PlanStartedAt:  req.PlanStartedAt,
-				PlanFinishedAt: req.PlanFinishedAt,
-				ProjectID:      uint64(request.ProjectID),
-				IterationID:    req.IterationID,
-				AppID:          req.AppID,
-				Type:           req.Type,
-				Title:          req.Title,
-				Content:        req.Content,
-				State:          req.State,
-				Priority:       req.Priority,
-				Complexity:     req.Complexity,
-				Severity:       apistructs.IssueSeverityNormal,
-				Creator:        request.UserID,
-				Assignee:       memberMap[req.Assignee],
-				Source:         req.Source,
-				External:       true,
-				Stage:          req.GetStage(),
-				Owner:          memberMap[req.Owner],
-				//ManHour:      req.GetDBManHour(),
-			}
-			if req.ManHour.EstimateTime > 0 {
-				newManHour, _ := json.Marshal(req.ManHour)
-				create.ManHour = string(newManHour)
-			}
+			create := importIssueBuilder(req, request, memberMap)
 			if string(create.Type) != string(request.Type) {
 				falseIssue = append(falseIssue, excelIndex[index])
 				falseReason = append(falseReason, "创建任务失败, err:事件类型不符合")
@@ -313,4 +288,32 @@ func (svc *Issue) storeExcel2DB(request apistructs.IssueImportExcelRequest, issu
 		}
 	}
 	return falseIssue, falseReason
+}
+
+func importIssueBuilder(issue apistructs.Issue, request apistructs.IssueImportExcelRequest, memberMap map[string]string) dao.Issue {
+	create := dao.Issue{
+		PlanStartedAt:  issue.PlanStartedAt,
+		PlanFinishedAt: issue.PlanFinishedAt,
+		ProjectID:      uint64(request.ProjectID),
+		IterationID:    issue.IterationID,
+		AppID:          issue.AppID,
+		Type:           issue.Type,
+		Title:          issue.Title,
+		Content:        issue.Content,
+		State:          issue.State,
+		Priority:       issue.Priority,
+		Complexity:     issue.Complexity,
+		Severity:       apistructs.IssueSeverityNormal,
+		Creator:        request.UserID,
+		Assignee:       memberMap[issue.Assignee],
+		Source:         issue.Source,
+		External:       true,
+		Stage:          issue.GetStage(),
+		Owner:          memberMap[issue.Owner],
+	}
+	if issue.ManHour.EstimateTime > 0 {
+		newManHour, _ := json.Marshal(issue.ManHour)
+		create.ManHour = string(newManHour)
+	}
+	return create
 }
