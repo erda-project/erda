@@ -187,7 +187,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 	gorm.io/driver/mysql v1.3.2
 	gorm.io/gorm v1.23.5
-	gorm.io/plugin/soft_delete v1.1.0 // indirect
+	gorm.io/plugin/soft_delete v1.1.0
 	gotest.tools v2.2.0+incompatible
 	helm.sh/helm/v3 v3.6.2
 	howett.net/plist v0.0.0-20201203080718-1454fab16a06
