@@ -56,7 +56,7 @@ func createV2(url string) (result benchmarkPipelineCreateRes) {
     "labels": {
         "branch": "develop",
         "diceWorkspace": "TEST",
-        "has-report-basic": "true",
+        "has-report-basic": "true"
     },
     "normalLabels": {
         "appName": "go-demo",
