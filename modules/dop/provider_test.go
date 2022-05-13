@@ -16,6 +16,7 @@ package dop
 
 import (
 	"context"
+	"embed"
 	"reflect"
 	"testing"
 
@@ -54,7 +55,8 @@ func (m *MockI18n) Text(namespace string, lang i18n.LanguageCodes, key string) s
 func (m *MockI18n) Sprintf(namespace string, lang i18n.LanguageCodes, key string, args ...interface{}) string {
 	return ""
 }
-func (m MockI18n) Translator(namespace string) i18n.Translator { return &i18n.NopTranslator{} }
+func (m MockI18n) Translator(namespace string) i18n.Translator                 { return &i18n.NopTranslator{} }
+func (m *MockI18n) RegisterFilesFromFS(fsPrefix string, rootFS embed.FS) error { return nil }
 
 func Test_provider_Init(t *testing.T) {
 
