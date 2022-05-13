@@ -90,33 +90,33 @@ func Test_existContinuePrivateEnv(t *testing.T) {
 	}{
 		{
 			name: "application name",
-			key:  "DICE_APPLICATION_NAME",
+			key:  apistructs.DiceApplicationName,
 			envs: map[string]string{
-				"DICE_APPLICATION_NAME": "test",
+				apistructs.DiceApplicationName: "test",
 			},
 			wantExist: true,
 		},
 		{
 			name: "application id",
-			key:  "DICE_APPLICATION_ID",
+			key:  apistructs.DiceApplicationId,
 			envs: map[string]string{
-				"DICE_APPLICATION_ID": "1",
+				apistructs.DiceApplicationId: "1",
 			},
 			wantExist: true,
 		},
 		{
 			name: "gittar branch",
-			key:  "GITTAR_BRANCH",
+			key:  apistructs.GittarBranchEnv,
 			envs: map[string]string{
-				"GITTAR_BRANCH": "develop",
+				apistructs.GittarBranchEnv: "develop",
 			},
 			wantExist: true,
 		},
 		{
 			name: "no exist",
-			key:  "DICE_SOURCE_NAME",
+			key:  apistructs.SourceDeployPipeline,
 			envs: map[string]string{
-				"DICE_SOURCE_NAME": "cdp",
+				apistructs.SourceDeployPipeline: "cdp",
 			},
 			wantExist: false,
 		},
