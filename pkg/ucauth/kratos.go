@@ -19,6 +19,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/pkg/errors"
+
 	"github.com/erda-project/erda/modules/openapi/conf"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
@@ -101,31 +103,18 @@ func getUserByKey(kratosPrivateAddr string, key string) ([]User, error) {
 	}
 }
 
-func CreateUser(req OryKratosRegistrationRequest) error {
+func CreateUser(req OryKratosCreateIdentitiyRequest) (string, error) {
 	var rsp OryKratosFlowResponse
 	r, err := httpclient.New(httpclient.WithCompleteRedirect()).
-		Get(conf.OryKratosAddr()).
-		Path("/self-service/registration/api").
+		Post(conf.OryKratosPrivateAddr()).
+		Path("/identities").
+		JSONBody(req).
 		Do().JSON(&rsp)
 	if err != nil {
-		return err
+		return "", err
 	}
 	if !r.IsOK() {
-		return fmt.Errorf("failed to create user, statusCode: %d, %v", r.StatusCode(), string(r.Body()))
+		return "", errors.Errorf("get kratos user info error, statusCode: %d, err: %s", r.StatusCode(), r.Body())
 	}
-
-	var register OryKratosRegistrationResponse
-	r, err = httpclient.New(httpclient.WithCompleteRedirect()).
-		Post(conf.OryKratosAddr()).
-		Path("/self-service/registration").
-		Param("flow", rsp.ID).
-		JSONBody(req).
-		Do().JSON(&register)
-	if err != nil {
-		return err
-	}
-	if !r.IsOK() {
-		return fmt.Errorf("failed to create user, statusCode: %d, %v", r.StatusCode(), string(r.Body()))
-	}
-	return nil
+	return rsp.ID, nil
 }

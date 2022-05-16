@@ -77,16 +77,25 @@ func (m *User) MigrateUser() error {
 				Avatar: u.Avatar,
 			},
 		}
+		if u.Password != "" && u.Password != "no pass" {
+			req.Credentials = ucauth.OryKratosAdminIdentityImportCredentials{
+				Password: &ucauth.OryKratosAdminIdentityImportCredentialsPassword{
+					Config: ucauth.OryKratosIdentityCredentialsPasswordConfig{
+						HashedPassword: u.Password,
+					},
+				},
+			}
+		}
 
 		uuid, err := m.uc.UserMigration(req)
 		if err != nil {
 			logrus.Errorf("fail to migrate user: %v, err: %v", u.ID, err)
 			continue
 		}
-		if err := m.db.InsertMapping(strconv.FormatInt(u.ID, 10), uuid, u.Password); err != nil {
+		if err := m.db.InsertMapping(strconv.FormatInt(u.ID, 10), uuid); err != nil {
 			return err
 		}
-		logrus.Infof("migrate user %v to krataos user %v successfully", u.ID, uuid)
+		logrus.Infof("migrate user %v to kratos user %v successfully", u.ID, uuid)
 	}
 	return nil
 }
