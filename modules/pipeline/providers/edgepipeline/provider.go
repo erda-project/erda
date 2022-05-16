@@ -20,30 +20,40 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/pipeline/providers/cancel"
+	"github.com/erda-project/erda/modules/pipeline/providers/edgepipeline_register"
+	"github.com/erda-project/erda/modules/pipeline/providers/edgereporter"
+	"github.com/erda-project/erda/modules/pipeline/providers/run"
 	"github.com/erda-project/erda/modules/pipeline/services/pipelinesvc"
 )
 
 type config struct {
-	IsEdge         bool     `env:"DICE_IS_EDGE" default:"false"`
-	ClusterName    string   `env:"DICE_CLUSTER_NAME"`
-	AllowedSources []string `env:"EDGE_ALLOW_SOURCES"`
+	IsEdge      bool   `env:"DICE_IS_EDGE" default:"false"`
+	ClusterName string `env:"DICE_CLUSTER_NAME"`
 }
 
 type provider struct {
 	Log logs.Logger
 	Cfg *config
 
+	Cron           cronpb.CronServiceServer
+	PipelineRun    run.Interface
+	PipelineCancel cancel.Interface
+	EdgeRegister   edgepipeline_register.Interface
+	EdgeReporter   edgereporter.Interface
+
 	bdl         *bundle.Bundle
 	pipelineSvc *pipelinesvc.PipelineSvc
 }
 
-func (p *provider) Init(ctx servicehub.Context) error {
-	p.bdl = bundle.New(bundle.WithClusterDialer())
+func (s *provider) Init(ctx servicehub.Context) error {
+	s.bdl = bundle.New(bundle.WithClusterDialer())
 	return nil
 }
 
-func (p *provider) Run(ctx context.Context) error {
+func (s *provider) Run(ctx context.Context) error {
 	return nil
 }
 

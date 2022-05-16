@@ -41,7 +41,6 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/services/appsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/buildartifactsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/buildcachesvc"
-	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/permissionsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/pipelinesvc"
 	"github.com/erda-project/erda/modules/pipeline/services/queuemanage"
@@ -123,17 +122,19 @@ func (p *provider) do() error {
 	buildCacheSvc := buildcachesvc.New(dbClient)
 	permissionSvc := permissionsvc.New(bdl)
 	actionAgentSvc := actionagentsvc.New(dbClient, bdl, js, etcdctl)
-	extMarketSvc := extmarketsvc.New(bdl, p.ActionService)
 	reportSvc := reportsvc.New(reportsvc.WithDBClient(dbClient))
 	queueManage := queuemanage.New(queuemanage.WithDBClient(dbClient))
 
 	// init services
-	pipelineSvc := pipelinesvc.New(appSvc, p.CronDaemon, actionAgentSvc, extMarketSvc, p.CronService,
-		permissionSvc, queueManage, dbClient, bdl, publisher, p.Engine, js, etcdctl, p.ClusterInfo, p.Cache)
+	pipelineSvc := pipelinesvc.New(appSvc, p.CronDaemon, actionAgentSvc, p.CronService,
+		permissionSvc, queueManage, dbClient, bdl, publisher, p.Engine, js, etcdctl, p.ClusterInfo, p.EdgeRegister, p.Cache)
 	pipelineSvc.WithCmsService(p.CmsService)
 	pipelineSvc.WithSecret(p.Secret)
 	pipelineSvc.WithUser(p.User)
 	pipelineSvc.WithRun(p.PipelineRun)
+	pipelineSvc.WithActionMgr(p.ActionMgr)
+	pipelineSvc.WithMySQL(p.MySQL)
+	pipelineSvc.WithEdgeReporter(p.EdgeReporter)
 
 	// todo resolve cycle import here through better module architecture
 	pipelineFuncs := reconciler.PipelineSvcFuncs{
@@ -146,7 +147,7 @@ func (p *provider) do() error {
 	// init CallbackActionFunc
 	pipelinefunc.CallbackActionFunc = pipelineSvc.DealPipelineCallbackOfAction
 
-	p.Reconciler.InjectLegacyFields(&pipelineFuncs, actionAgentSvc, extMarketSvc)
+	p.Reconciler.InjectLegacyFields(&pipelineFuncs, actionAgentSvc)
 	p.EdgePipeline.InjectLegacyFields(pipelineSvc)
 
 	if err := registerSnippetClient(dbClient); err != nil {
@@ -169,7 +170,6 @@ func (p *provider) do() error {
 		endpoints.WithPermissionSvc(permissionSvc),
 		endpoints.WithCrondSvc(p.CronDaemon),
 		endpoints.WithActionAgentSvc(actionAgentSvc),
-		endpoints.WithExtMarketSvc(extMarketSvc),
 		endpoints.WithPipelineSvc(pipelineSvc),
 		endpoints.WithReportSvc(reportSvc),
 		endpoints.WithQueueManage(queueManage),
@@ -177,6 +177,7 @@ func (p *provider) do() error {
 		endpoints.WithEngine(p.Engine),
 		endpoints.WithClusterInfo(p.ClusterInfo),
 		endpoints.WithEdgePipeline(p.EdgePipeline),
+		endpoints.WithEdgeRegister(p.EdgeRegister),
 		endpoints.WithMysql(p.MySQL),
 		endpoints.WithRun(p.PipelineRun),
 		endpoints.WithCancel(p.Cancel),
@@ -184,7 +185,6 @@ func (p *provider) do() error {
 
 	p.CronDaemon.WithPipelineFunc(pipelineSvc.CreateV2)
 	p.CronCompensate.WithPipelineFunc(compensator.PipelineFunc{CreatePipeline: pipelineSvc.CreateV2, RunPipeline: p.PipelineRun.RunOnePipeline})
-	p.Cache.SetExtMarketSvc(extMarketSvc)
 
 	//server.Router().Path("/metrics").Methods(http.MethodGet).Handler(promxp.Handler("pipeline"))
 	server := httpserver.New(conf.ListenAddr())
@@ -192,7 +192,7 @@ func (p *provider) do() error {
 	p.Router.Any("/**", server.Router())
 
 	// 加载 event manager
-	events.Initialize(bdl, publisher, dbClient)
+	events.Initialize(bdl, publisher, dbClient, p.EdgeRegister)
 
 	// aop
 	aop.Initialize(bdl, dbClient, reportSvc)

@@ -143,19 +143,6 @@ func (at *APITest) Invoke(httpClient *http.Client, testEnv *apistructs.APITestEn
 	}
 	apiReq.Params = params
 
-	// headers
-	if apiReq.Headers == nil {
-		apiReq.Headers = make(http.Header)
-	}
-	if testEnv != nil && testEnv.Header != nil {
-		for k, v := range testEnv.Header {
-			apiReq.Headers.Set(strings.TrimSpace(k), strings.TrimSpace(v))
-		}
-	}
-	for _, h := range at.API.Headers {
-		apiReq.Headers.Set(h.Key, h.Value)
-	}
-
 	// request body
 	var reqBody string
 	if at.API.Body.Content != nil && fmt.Sprint(at.API.Body.Content) != "" {
@@ -195,11 +182,25 @@ func (at *APITest) Invoke(httpClient *http.Client, testEnv *apistructs.APITestEn
 			reqBody = fmt.Sprint(at.API.Body.Content)
 		}
 	}
+	// headers
+	if apiReq.Headers == nil {
+		apiReq.Headers = make(http.Header)
+	}
+
 	apiReq.Body.Type = at.API.Body.Type
 	if apiReq.Body.Type != "" && apiReq.Body.Type != apistructs.APIBodyTypeNone {
 		apiReq.Headers.Set("Content-Type", apiReq.Body.Type.String())
 	}
 	apiReq.Body.Content = reqBody
+
+	if testEnv != nil && testEnv.Header != nil {
+		for k, v := range testEnv.Header {
+			apiReq.Headers.Set(strings.TrimSpace(k), strings.TrimSpace(v))
+		}
+	}
+	for _, h := range at.API.Headers {
+		apiReq.Headers.Set(h.Key, h.Value)
+	}
 
 	// use netportal
 	customReq, err := handleCustomNetportalRequest(&apiReq, at.opt.netportalOption)

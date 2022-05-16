@@ -15,6 +15,7 @@
 package clusters
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"sort"
@@ -25,29 +26,34 @@ import (
 
 	"github.com/golang-collections/collections/set"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc/metadata"
 	"gopkg.in/yaml.v3"
 
-	credentialpb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
+	"github.com/erda-project/erda-infra/pkg/transport"
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
+	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/dbclient"
+	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 type Clusters struct {
 	db         *dbclient.DBClient
 	bdl        *bundle.Bundle
-	credential credentialpb.AccessKeyServiceServer
+	credential tokenpb.TokenServiceServer
+	clusterSvc clusterpb.ClusterServiceServer
 }
 
-func New(db *dbclient.DBClient, bdl *bundle.Bundle, c credentialpb.AccessKeyServiceServer) *Clusters {
-	return &Clusters{db: db, bdl: bdl, credential: c}
+func New(db *dbclient.DBClient, bdl *bundle.Bundle, c tokenpb.TokenServiceServer, clusterSvc clusterpb.ClusterServiceServer) *Clusters {
+	return &Clusters{db: db, bdl: bdl, credential: c, clusterSvc: clusterSvc}
 }
 
 // status:
 //		1 -- in processing, jump to check log
 //		2 -- do precheck
 //		3 -- invalid, do not support (non k8s cluster, central cluster, higher version ecluster)
-func (c *Clusters) UpgradeEdgeCluster(req apistructs.UpgradeEdgeClusterRequest, userid string, orgid string) (recordID uint64, status int, precheckHint string, err error) {
+func (c *Clusters) UpgradeEdgeCluster(ctx context.Context, req apistructs.UpgradeEdgeClusterRequest, userid string, orgid string) (recordID uint64, status int, precheckHint string, err error) {
 	records, err := getUpgradeRecords(c.db, req.ClusterName)
 	if err != nil {
 		errstr := fmt.Sprintf("failed to query record: %v", err)
@@ -104,7 +110,7 @@ func (c *Clusters) UpgradeEdgeCluster(req apistructs.UpgradeEdgeClusterRequest, 
 	}
 
 	// get cluster access key
-	cak, err := c.GetOrCreateAccessKey(req.ClusterName)
+	cak, err := c.GetOrCreateAccessKey(ctx, req.ClusterName)
 	if err != nil {
 		logrus.Errorf("get cluster access key failed, cluster: %s, error: %v", req.ClusterName, err)
 		return
@@ -170,9 +176,9 @@ func getUpgradeRecords(db *dbclient.DBClient, cluster string) ([]dbclient.Record
 	return db.RecordsReader().ByClusterNames(cluster).ByRecordTypes(dbclient.RecordTypeUpgradeEdgeCluster.String()).Do()
 }
 
-func (c *Clusters) BatchUpgradeEdgeCluster(req apistructs.BatchUpgradeEdgeClusterRequest, userid string) {
+func (c *Clusters) BatchUpgradeEdgeCluster(ctx context.Context, req apistructs.BatchUpgradeEdgeClusterRequest, userid string) {
 	for _, v := range req.Clusters {
-		recordID, status, precheckHint, err := c.UpgradeEdgeCluster(
+		recordID, status, precheckHint, err := c.UpgradeEdgeCluster(ctx,
 			apistructs.UpgradeEdgeClusterRequest{
 				OrgID:       v.OrgID,
 				ClusterName: v.ClusterName},
@@ -223,7 +229,7 @@ func (c *Clusters) GetOrgInfo(req *apistructs.OrgSearchRequest) (map[uint64]apis
 	return result, nil
 }
 
-func (c *Clusters) ListClusters(req apistructs.OrgClusterInfoRequest) (result []apistructs.OrgClusterInfoBasicData, err error) {
+func (c *Clusters) ListClusters(ctx context.Context, req apistructs.OrgClusterInfoRequest) (result []apistructs.OrgClusterInfoBasicData, err error) {
 	orgsInfo := make(map[uint64]apistructs.OrgDTO)
 	result = make([]apistructs.OrgClusterInfoBasicData, 0)
 	// get org info
@@ -239,7 +245,8 @@ func (c *Clusters) ListClusters(req apistructs.OrgClusterInfoRequest) (result []
 	if len(orgsInfo) == 0 {
 		return result, nil
 	}
-	clusters := make([]apistructs.ClusterInfo, 0)
+	clusters := make([]*clusterpb.ClusterInfo, 0)
+	ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "cmp"}))
 	if req.OrgName != "" && len(orgsInfo) < 5 {
 		var wg sync.WaitGroup
 		for k := range orgsInfo {
@@ -248,17 +255,24 @@ func (c *Clusters) ListClusters(req apistructs.OrgClusterInfoRequest) (result []
 				defer func() {
 					wg.Done()
 				}()
-				c, e := c.bdl.ListClusters(req.ClusterType, orgid)
+				r, e := c.clusterSvc.ListCluster(ctx, &clusterpb.ListClusterRequest{
+					ClusterType: req.ClusterType,
+					OrgID:       orgid,
+				})
 				if e != nil {
 					err = e
 					return
 				}
-				clusters = append(clusters, c...)
+				clusters = append(clusters, r.Data...)
 			}(k)
 		}
 		wg.Wait()
 	} else {
-		clusters, err = c.bdl.ListClusters(req.ClusterType, 0)
+		var resp *clusterpb.ListClusterResponse
+		resp, err = c.clusterSvc.ListCluster(ctx, &clusterpb.ListClusterRequest{
+			ClusterType: req.ClusterType,
+		})
+		clusters = resp.Data
 	}
 
 	if err != nil {
@@ -276,7 +290,7 @@ func (c *Clusters) ListClusters(req apistructs.OrgClusterInfoRequest) (result []
 				ClusterName: v.Name,
 				ClusterType: v.Type,
 				Version:     "",
-				CreateTime:  v.CreatedAt.UTC().Format("2006-01-02T15:04:05Z"),
+				CreateTime:  v.CreatedAt.AsTime().UTC().Format("2006-01-02T15:04:05Z"),
 			})
 	}
 	sort.Sort(orgClusterInfoList(result))
@@ -312,10 +326,10 @@ func (c *Clusters) UpdateClusterVersion(req []apistructs.OrgClusterInfoBasicData
 	return nil
 }
 
-func (c *Clusters) GetOrgClusterInfo(req apistructs.OrgClusterInfoRequest) (apistructs.OrgClusterInfoData, error) {
+func (c *Clusters) GetOrgClusterInfo(ctx context.Context, req apistructs.OrgClusterInfoRequest) (apistructs.OrgClusterInfoData, error) {
 	var start, end int
 	result := apistructs.OrgClusterInfoData{}
-	clusters, err := c.ListClusters(req)
+	clusters, err := c.ListClusters(ctx, req)
 	if err != nil {
 		return result, err
 	}

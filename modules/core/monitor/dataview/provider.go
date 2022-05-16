@@ -16,6 +16,7 @@ package dataview
 
 import (
 	"context"
+	"time"
 
 	"github.com/jinzhu/gorm"
 
@@ -107,20 +108,24 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	}
 
 	p.ExportChannel = make(chan string, 1)
+	p.ExportTaskExecutor(time.Second * time.Duration(20))
+	routes := ctx.Service("http-server", interceptors.Recover(p.Log), interceptors.CORS()).(httpserver.Router)
+	return p.initRoutes(routes)
+}
 
+func (p *provider) ExportTaskExecutor(interval time.Duration) {
 	// Scheduled polling export task
 	go func() {
+		ticker := time.NewTicker(interval)
 		for {
 			select {
+			case <-ticker.C:
+				ticker.Reset(interval)
 			case id := <-p.ExportChannel:
 				p.ExportTask(id)
-			default:
 			}
 		}
 	}()
-
-	routes := ctx.Service("http-server", interceptors.Recover(p.Log), interceptors.CORS()).(httpserver.Router)
-	return p.initRoutes(routes)
 }
 
 func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {

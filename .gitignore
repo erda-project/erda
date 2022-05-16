@@ -66,3 +66,14 @@ quick-start/data
 
 modules/openapi/api/generate
 /fake_subscriber.txt
+
+# deploy related temp dir
+/deploy
+
+# python vitural environments
+/venv/
+
+# extensions
+extensions/
+
+http-client.env.json

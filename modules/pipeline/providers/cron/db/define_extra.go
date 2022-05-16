@@ -16,10 +16,28 @@ package db
 
 import (
 	"github.com/pkg/errors"
+	"github.com/xormplus/xorm"
 
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	"github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
+	"github.com/erda-project/erda/pkg/crypto/uuid"
 )
+
+func (client *Client) GetDBClient() (db *xorm.Engine) {
+	return client.DB()
+}
+
+func (client *Client) ListPipelineCrons(enable *bool, ops ...mysqlxorm.SessionOption) ([]PipelineCron, error) {
+	session := client.NewSession(ops...)
+	defer session.Close()
+
+	if enable != nil {
+		session.Where("enable=?", *enable)
+	}
+	var crons []PipelineCron
+	err := session.Find(&crons)
+	return crons, err
+}
 
 // return: result, total, nil
 func (client *Client) PagingPipelineCron(req *pb.CronPagingRequest, ops ...mysqlxorm.SessionOption) ([]PipelineCron, int64, error) {
@@ -89,21 +107,22 @@ func (client *Client) PagingPipelineCron(req *pb.CronPagingRequest, ops ...mysql
 	return result, total, nil
 }
 
-func (client *Client) GetPipelineCron(id interface{}, ops ...mysqlxorm.SessionOption) (cron PipelineCron, err error) {
+func (client *Client) GetPipelineCron(id interface{}, ops ...mysqlxorm.SessionOption) (cron PipelineCron, bool bool, err error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
 	defer func() {
 		err = errors.Wrapf(err, "failed to get pipeline cron by id [%v]", id)
 	}()
+
 	found, err := session.ID(id).Get(&cron)
 	if err != nil {
-		return PipelineCron{}, err
+		return PipelineCron{}, false, err
 	}
 	if !found {
-		return PipelineCron{}, errors.New("not found")
+		return PipelineCron{}, false, nil
 	}
-	return cron, nil
+	return cron, true, nil
 }
 
 func (client *Client) UpdatePipelineCron(id interface{}, cron *PipelineCron, ops ...mysqlxorm.SessionOption) error {
@@ -158,6 +177,9 @@ func (client *Client) CreatePipelineCron(cron *PipelineCron, ops ...mysqlxorm.Se
 	session := client.NewSession(ops...)
 	defer session.Close()
 
+	if cron.ID == 0 {
+		cron.ID = uuid.SnowFlakeIDUint64()
+	}
 	_, err := session.InsertOne(cron)
 	return errors.Wrapf(err, "failed to create pipeline cron, applicationID [%d], branch [%s], expr [%s], enable [%v]", cron.ApplicationID, cron.Branch, cron.CronExpr, cron.Enable)
 }
@@ -188,4 +210,15 @@ func (client *Client) ListAllPipelineCrons(ops ...mysqlxorm.SessionOption) (cron
 		return nil, err
 	}
 	return crons, nil
+}
+
+func (client *Client) IsCronExist(cron *PipelineCron, ops ...mysqlxorm.SessionOption) (bool bool, err error) {
+	session := client.NewSession(ops...)
+	defer session.Close()
+
+	existed, err := session.Get(cron)
+	if err != nil {
+		return false, err
+	}
+	return existed, nil
 }

@@ -24,14 +24,16 @@ import (
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
+	"github.com/erda-project/erda/modules/pipeline/providers/actionmgr"
 	"github.com/erda-project/erda/modules/pipeline/providers/cache"
 	"github.com/erda-project/erda/modules/pipeline/providers/clusterinfo"
 	"github.com/erda-project/erda/modules/pipeline/providers/cron/compensator"
+	"github.com/erda-project/erda/modules/pipeline/providers/edgepipeline_register"
+	"github.com/erda-project/erda/modules/pipeline/providers/edgereporter"
 	"github.com/erda-project/erda/modules/pipeline/providers/leaderworker"
 	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/taskpolicy"
 	"github.com/erda-project/erda/modules/pipeline/providers/resourcegc"
 	"github.com/erda-project/erda/modules/pipeline/services/actionagentsvc"
-	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
 )
 
 type provider struct {
@@ -43,8 +45,11 @@ type provider struct {
 	Cache           cache.Interface
 	TaskPolicy      taskpolicy.Interface
 	ClusterInfo     clusterinfo.Interface
+	EdgeRegister    edgepipeline_register.Interface
 	ResourceGC      resourcegc.Interface
 	CronCompensator compensator.Interface
+	EdgeReporter    edgereporter.Interface
+	ActionMgr       actionmgr.Interface
 
 	dbClient *dbclient.Client
 	bdl      *bundle.Bundle
@@ -52,7 +57,6 @@ type provider struct {
 	// legacy fields
 	pipelineSvcFuncs *PipelineSvcFuncs
 	actionAgentSvc   *actionagentsvc.ActionAgentSvc
-	extMarketSvc     *extmarketsvc.ExtMarketSvc
 }
 
 type config struct {

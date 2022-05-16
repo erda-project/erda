@@ -142,6 +142,10 @@ func (b *Bundle) GetLog(orgName string, req apistructs.DashboardSpotLogRequest) 
 		Param("start", strconv.FormatInt(int64(req.Start), 10)).
 		Param("end", strconv.FormatInt(int64(req.End), 10))
 
+	if req.Debug {
+		request = request.Param("debug", "true")
+	}
+
 	var logResp apistructs.DashboardSpotLogResponse
 
 	httpResp, err := request.Do().JSON(&logResp)

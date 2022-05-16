@@ -57,6 +57,10 @@ func FilterJson(jsonValue []byte, express string, expressType string) interface{
 	d.UseNumber()
 	err := d.Decode(&body)
 	if err != nil {
+		// resp not a json and express mean get all result, so return all resp
+		if express == "." {
+			return string(jsonValue)
+		}
 		return ""
 	}
 

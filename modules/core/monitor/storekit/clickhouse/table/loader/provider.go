@@ -51,8 +51,10 @@ type setTablesRequest struct {
 }
 
 type TableMeta struct {
-	Engine  string
-	Columns map[string]*TableColumn
+	Engine       string
+	Columns      map[string]*TableColumn
+	TTLDays      int64
+	TTLBaseField string
 }
 
 type ColumnType string
@@ -75,7 +77,7 @@ type provider struct {
 	Log        logs.Logger
 	Clickhouse clickhouse.Interface `autowired:"clickhouse" inherit-label:"preferred"`
 	Redis      *redis.Client        `autowired:"redis-client"`
-	Election   election.Interface   `autowired:"etcd-election@table"`
+	Election   election.Interface   `autowired:"etcd-election@table-loader"`
 
 	tables      atomic.Value
 	listeners   []func(map[string]*TableMeta)

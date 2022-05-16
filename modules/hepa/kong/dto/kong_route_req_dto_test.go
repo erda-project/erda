@@ -54,3 +54,10 @@ func TestKongRouteReqDto_Adjust(t *testing.T) {
 		t.Fatal("req.PathHandling should be v1")
 	}
 }
+
+func TestKongRouteReqDto_AddTag(t *testing.T) {
+	var req = dto.NewKongRouteReqDto()
+	req.AddTag("package_id", "0x333")
+	req.AddTag("api_id", "0xtag")
+	t.Log(req.Tags)
+}

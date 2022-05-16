@@ -57,7 +57,13 @@ type (
 		DiskClean      diskClean     `file:"disk_clean"`
 	}
 	diskClean struct {
-		Enable                 bool          `file:"enable"`
+		Enable bool `file:"enable"`
+		TTL    struct {
+			Enable            bool   `json:"enable" default:"true"`
+			MaxStoreTime      int    `file:"max_store_time" default:"7"`
+			TriggerSpecCron   string `file:"trigger_spec_cron" default:"0 0 3 * * *"`
+			TaskCheckInterval int64  `json:"task_check_interval" default:"5"`
+		}
 		CheckInterval          time.Duration `file:"check_interval" default:"5m"`
 		MinIndicesStore        string        `file:"min_indices_store" default:"10GB"`
 		MinIndicesStorePercent float64       `file:"min_indices_store_percent" default:"10"`
@@ -73,6 +79,10 @@ type (
 		index *index.Pattern
 		alias *index.Pattern
 	}
+	TtlTask struct {
+		TaskId  string
+		Indices []string
+	}
 	provider struct {
 		Cfg        *config
 		Log        logs.Logger
@@ -86,6 +96,8 @@ type (
 		minIndicesStoreInDisk    int64
 		rolloverBodyForDiskClean string
 		rolloverAliasPatterns    []*indexAliasPattern
+
+		ttlTaskCh chan *TtlTask
 	}
 )
 
@@ -170,19 +182,21 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	}
 
 	if p.Cfg.DiskClean.Enable {
-		// run disk clean task on leader node
 		p.election.OnLeader(p.runDiskCheckAndClean)
 	}
+	p.ttlTaskCh = make(chan *TtlTask, 1)
+	p.election.OnLeader(p.runDocsCheckAndClean)
+	p.election.OnLeader(p.runTaskCheck)
 
 	// init manager routes
-	routeRrefix := "/api/elasticsearch/index"
+	routePrefix := "/api/elasticsearch/index"
 	if len(ctx.Label()) > 0 {
-		routeRrefix = routeRrefix + "/" + ctx.Label()
+		routePrefix = routePrefix + "/" + ctx.Label()
 	} else {
-		routeRrefix = routeRrefix + "/-"
+		routePrefix = routePrefix + "/-"
 	}
 	routes := ctx.Service("http-router", interceptors.CORS()).(httpserver.Router)
-	err = p.intRoutes(routes, routeRrefix)
+	err = p.intRoutes(routes, routePrefix)
 	if err != nil {
 		return fmt.Errorf("failed to init routes: %s", err)
 	}

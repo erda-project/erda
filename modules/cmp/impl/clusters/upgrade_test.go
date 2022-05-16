@@ -15,6 +15,7 @@
 package clusters
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"strings"
@@ -23,7 +24,7 @@ import (
 	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
 
-	credentialpb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
+	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/dbclient"
@@ -69,11 +70,11 @@ func patch(bdl *bundle.Bundle, c *Clusters) {
 	})
 
 	// monkey patch Credential with core services
-	monkey.PatchInstanceMethod(reflect.TypeOf(c), "GetOrCreateAccessKey", func(_ *Clusters, cluster string) (*credentialpb.AccessKeysItem, error) {
+	monkey.PatchInstanceMethod(reflect.TypeOf(c), "GetOrCreateAccessKey", func(_ *Clusters, _ context.Context, cluster string) (*tokenpb.Token, error) {
 		if strings.Contains(cluster, "without-access-key") {
 			return nil, fmt.Errorf("get or create access key failed")
 		}
-		return &credentialpb.AccessKeysItem{AccessKey: "clusterAccessKey"}, nil
+		return &tokenpb.Token{AccessKey: "clusterAccessKey"}, nil
 	})
 }
 
@@ -81,7 +82,7 @@ func TestUpgradeEdgeCluster(t *testing.T) {
 	var bdl *bundle.Bundle
 	var db *dbclient.DBClient
 	db = &dbclient.DBClient{}
-	c := New(db, bdl, nil)
+	c := New(db, bdl, nil, &fakeClusterServiceServer{})
 
 	patch(bdl, c)
 
@@ -90,7 +91,7 @@ func TestUpgradeEdgeCluster(t *testing.T) {
 		PreCheck:    false,
 	}
 
-	_, _, _, err := c.UpgradeEdgeCluster(req, "123", "")
+	_, _, _, err := c.UpgradeEdgeCluster(context.Background(), req, "123", "")
 	assert.NoError(t, err)
 }
 
@@ -98,7 +99,7 @@ func TestEmptyCluster(t *testing.T) {
 	var bdl *bundle.Bundle
 	var db *dbclient.DBClient
 	db = &dbclient.DBClient{}
-	c := New(db, bdl, nil)
+	c := New(db, bdl, nil, &fakeClusterServiceServer{})
 
 	patch(bdl, c)
 
@@ -106,14 +107,14 @@ func TestEmptyCluster(t *testing.T) {
 		ClusterName: "",
 		PreCheck:    false,
 	}
-	_, _, _, err := c.UpgradeEdgeCluster(req, "123", "")
+	_, _, _, err := c.UpgradeEdgeCluster(context.Background(), req, "123", "")
 	assert.Contains(t, err.Error(), "empty cluster name")
 }
 
 func TestEmptyDBClient(t *testing.T) {
 	var bdl *bundle.Bundle
 	var db *dbclient.DBClient
-	c := New(db, bdl, nil)
+	c := New(db, bdl, nil, &fakeClusterServiceServer{})
 
 	patch(bdl, c)
 
@@ -122,7 +123,7 @@ func TestEmptyDBClient(t *testing.T) {
 		PreCheck:    false,
 	}
 
-	_, _, _, err := c.UpgradeEdgeCluster(req, "123", "")
+	_, _, _, err := c.UpgradeEdgeCluster(context.Background(), req, "123", "")
 	assert.Contains(t, err.Error(), "invalid db client")
 }
 
@@ -130,7 +131,7 @@ func TestClusterWithoutAccessKey(t *testing.T) {
 	var bdl *bundle.Bundle
 	var db *dbclient.DBClient
 	db = &dbclient.DBClient{}
-	c := New(db, bdl, nil)
+	c := New(db, bdl, nil, &fakeClusterServiceServer{})
 
 	patch(bdl, c)
 
@@ -139,7 +140,7 @@ func TestClusterWithoutAccessKey(t *testing.T) {
 		PreCheck:    false,
 	}
 
-	_, _, _, err := c.UpgradeEdgeCluster(req, "123", "")
+	_, _, _, err := c.UpgradeEdgeCluster(context.Background(), req, "123", "")
 	assert.Contains(t, err.Error(), "get or create access key failed")
 }
 
@@ -147,7 +148,7 @@ func TestClusterWithoutUserID(t *testing.T) {
 	var bdl *bundle.Bundle
 	var db *dbclient.DBClient
 	db = &dbclient.DBClient{}
-	c := New(db, bdl, nil)
+	c := New(db, bdl, nil, &fakeClusterServiceServer{})
 
 	patch(bdl, c)
 
@@ -156,6 +157,6 @@ func TestClusterWithoutUserID(t *testing.T) {
 		PreCheck:    false,
 	}
 
-	_, _, _, err := c.UpgradeEdgeCluster(req, "", "")
+	_, _, _, err := c.UpgradeEdgeCluster(context.Background(), req, "", "")
 	assert.Contains(t, err.Error(), "invalid user id")
 }

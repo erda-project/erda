@@ -15,13 +15,18 @@
 package clusterinfo
 
 import (
+	"context"
+	"encoding/json"
+	"fmt"
 	"time"
 
-	"github.com/sirupsen/logrus"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/pkg/discover"
+	"github.com/erda-project/erda/pkg/k8sclient"
+	"github.com/erda-project/erda/pkg/limit_sync_group"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -44,6 +49,8 @@ type Interface interface {
 	RegisterClusterEvent() <-chan apistructs.ClusterEvent
 	// RegisterRefreshEvent return channel to receive refresh event
 	RegisterRefreshEvent() <-chan struct{}
+	// ListEdgeClusterInfos return all edge clusters, contain cluster connection info and config map data
+	ListEdgeClusterInfos() ([]apistructs.ClusterInfo, error)
 }
 
 func (p *provider) registerClusterHook() error {
@@ -60,7 +67,7 @@ func (p *provider) registerClusterHook() error {
 	}
 
 	if err := p.bdl.CreateWebhook(ev); err != nil {
-		logrus.Errorf("failed to register watch cluster changed event, err: %v", err)
+		p.Log.Errorf("failed to register watch cluster changed event, err: %v", err)
 		return err
 	}
 	return nil
@@ -91,6 +98,19 @@ func (p *provider) BatchUpdateAndDispatchRefresh() error {
 }
 
 func (p *provider) batchUpdateClusterInfo() error {
+	// first the edge and center both get their current cluster info from k8s configmap
+	currentClusterInfo, err := p.GetCurrentClusterInfoFromK8sConfigMap()
+	if err != nil {
+		p.Log.Warnf("failed to get current cluster info(continue list clusters), err: %v", err)
+	} else {
+		p.cache.UpdateClusterInfo(currentClusterInfo)
+	}
+	if p.Cfg.IsEdge {
+		p.Log.Info("edge pipeline only get current cluster info from k8s configmap")
+		return nil
+	}
+	// then center continue get all clusters from cluster-manager
+	// and will cover the current cluster info, it's acceptable
 	clusterInfos, err := p.bdl.ListClusters("", 0)
 	if err != nil {
 		return err
@@ -108,7 +128,7 @@ func (p *provider) continueUpdateAndRefresh() {
 		select {
 		case <-ticker.C:
 			if err := p.BatchUpdateAndDispatchRefresh(); err != nil {
-				logrus.Errorf("[provider clusterinfo] failed to update cluster info, err: %v", err)
+				p.Log.Errorf("[provider clusterinfo] failed to update cluster info, err: %v", err)
 			}
 		}
 	}
@@ -119,6 +139,16 @@ func (p *provider) GetClusterInfoByName(clusterName string) (apistructs.ClusterI
 	if ok {
 		return cluster, nil
 	}
+	// if pipeline is edge-deploy and cluster is current cluster, try to get from k8s configmap
+	// otherwise, try to query cluster info from cluster-manager
+	if clusterName == p.Cfg.ClusterName && p.Cfg.IsEdge {
+		currentClusterInfo, err := p.GetCurrentClusterInfoFromK8sConfigMap()
+		if err != nil {
+			return apistructs.ClusterInfo{}, err
+		}
+		p.cache.UpdateClusterInfo(currentClusterInfo)
+		return currentClusterInfo, nil
+	}
 	clusterInfo, err := p.bdl.GetCluster(clusterName)
 	if err != nil {
 		return apistructs.ClusterInfo{}, err
@@ -127,17 +157,58 @@ func (p *provider) GetClusterInfoByName(clusterName string) (apistructs.ClusterI
 	return *clusterInfo, nil
 }
 
-// ListAllClusters firstly get all cluster from cache
+// ListAllClusterInfos firstly get all cluster from cache
 // if cache is empty, try to get all from bundle and update the cache
 func (p *provider) ListAllClusterInfos() ([]apistructs.ClusterInfo, error) {
+	return p.listAllClusterInfos(false)
+}
+
+// ListEdgeClusterInfos firstly get all edge cluster from cache
+// if cache is empty, try to get all from bundle and update the cache
+func (p *provider) ListEdgeClusterInfos() ([]apistructs.ClusterInfo, error) {
+	return p.listAllClusterInfos(true)
+}
+
+func (p *provider) listAllClusterInfos(onlyEdge bool) ([]apistructs.ClusterInfo, error) {
 	clusters := p.cache.GetAllClusters()
 	if len(clusters) != 0 {
-		return clusters, nil
+		return p.filterClusters(clusters, onlyEdge), nil
 	}
 	if err := p.batchUpdateClusterInfo(); err != nil {
 		return nil, err
 	}
-	return p.cache.GetAllClusters(), nil
+	return p.filterClusters(p.cache.GetAllClusters(), onlyEdge), nil
+}
+
+func (p *provider) filterClusters(clusters []apistructs.ClusterInfo, onlyEdge bool) []apistructs.ClusterInfo {
+	if !onlyEdge {
+		return clusters
+	}
+
+	var edgeCluster []apistructs.ClusterInfo
+	wait := limit_sync_group.NewWorker(10)
+
+	for index := range clusters {
+		wait.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
+			index := i[0].(int)
+			cluster := clusters[index]
+
+			isEdge, err := p.EdgeRegister.ClusterIsEdge(cluster.Name)
+			if err != nil {
+				p.Log.Errorf("failed to get ClusterIsEdge cluster %v error %v", cluster.Name, err)
+				return nil
+			}
+			if isEdge {
+				locker.Lock()
+				defer locker.Unlock()
+				edgeCluster = append(edgeCluster, cluster)
+			}
+			return nil
+		}, index)
+	}
+
+	_ = wait.Do().Error()
+	return edgeCluster
 }
 
 func (p *provider) RegisterClusterEvent() <-chan apistructs.ClusterEvent {
@@ -146,6 +217,31 @@ func (p *provider) RegisterClusterEvent() <-chan apistructs.ClusterEvent {
 
 func (p *provider) RegisterRefreshEvent() <-chan struct{} {
 	return p.notifier.RegisterRefreshEvent()
+}
+
+// GetCurrentClusterInfoFromK8sConfigMap return current cluster info config map data by k8s in-cluster client
+// because in edge cluster, we cloud not get the cluster info from cluster-manager
+func (p *provider) GetCurrentClusterInfoFromK8sConfigMap() (apistructs.ClusterInfo, error) {
+	client, err := k8sclient.New(p.Cfg.ClusterName, k8sclient.WithPreferredToUseInClusterConfig(), k8sclient.WithTimeout(5*time.Second))
+	if err != nil {
+		return apistructs.ClusterInfo{}, err
+	}
+	cm, err := client.ClientSet.CoreV1().ConfigMaps(p.Cfg.ErdaNamespace).Get(context.Background(), apistructs.ConfigMapNameOfClusterInfo, metav1.GetOptions{})
+	if err != nil {
+		return apistructs.ClusterInfo{}, err
+	}
+	cmBytes, err := json.Marshal(cm.Data)
+	if err != nil {
+		return apistructs.ClusterInfo{}, fmt.Errorf("failed to marshal configmap data, clusterName: %s, err: %v", p.Cfg.ClusterName, err)
+	}
+	var cmInfoData apistructs.ClusterInfoData
+	if err := json.Unmarshal(cmBytes, &cmInfoData); err != nil {
+		return apistructs.ClusterInfo{}, fmt.Errorf("failed to unmarshal configmap data, clusterName: %s, err: %v", p.Cfg.ClusterName, err)
+	}
+	return apistructs.ClusterInfo{
+		Name: p.Cfg.ClusterName,
+		CM:   cmInfoData,
+	}, nil
 }
 
 // TODO: GetClusterInfoByName

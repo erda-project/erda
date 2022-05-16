@@ -37,10 +37,13 @@ func Test_Process_With_ValidParams_Should_Success(t *testing.T) {
 		"appendTags": map[string]string{
 			"append_tag_1": "value_1",
 		},
+		"replaceKey": map[string]string{
+			"level": "_level",
+		},
 	})
 	p, _ := New(metricName, cfg)
 
-	metric, fields, appendTags, err := p.(processors.Processor).Process("123")
+	metric, fields, appendTags, replaceKey, err := p.(processors.Processor).Process("123")
 	if metric != metricName {
 		t.Errorf("Process error, expect metricName: %s, but got %s", metricName, metric)
 	}
@@ -50,8 +53,10 @@ func Test_Process_With_ValidParams_Should_Success(t *testing.T) {
 	if len(appendTags) == 0 {
 		t.Errorf("appendTags should not empty")
 	}
-
-	metric, fields, appendTags, err = p.Process("abc")
+	if len(replaceKey) == 0 {
+		t.Errorf("replaceKey should not empty")
+	}
+	metric, fields, appendTags, replaceKey, err = p.Process("abc")
 	if err != ErrNotMatch {
 		t.Errorf("should miss match")
 	}
@@ -80,7 +85,7 @@ func Test_Process_With_InvalidLenOfKeys_Should_Fail(t *testing.T) {
 	})
 	p, _ := New(metricName, cfg)
 
-	_, _, _, err := p.(processors.Processor).Process("abc")
+	_, _, _, _, err := p.(processors.Processor).Process("abc")
 	if err != ErrNotMatch {
 		t.Errorf("should miss match")
 	}
@@ -104,7 +109,7 @@ func Test_Process_With_InvalidTypeOfKeys_Should_Fail(t *testing.T) {
 	})
 	p, _ := New(metricName, cfg)
 
-	_, _, _, err := p.(processors.Processor).Process("abc")
+	_, _, _, _, err := p.(processors.Processor).Process("abc")
 	if err != ErrNotMatch {
 		t.Errorf("should miss match")
 	}

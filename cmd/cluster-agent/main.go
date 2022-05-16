@@ -19,7 +19,7 @@ import (
 	"github.com/erda-project/erda/pkg/common"
 
 	_ "github.com/erda-project/erda-infra/providers"
-	_ "github.com/erda-project/erda/modules/cluster-agent"
+	_ "github.com/erda-project/erda/modules/cluster/cluster-agent"
 )
 
 func main() {

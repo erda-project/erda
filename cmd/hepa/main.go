@@ -20,6 +20,8 @@ import (
 
 	// providers and modules
 	_ "github.com/erda-project/erda-infra/providers"
+	_ "github.com/erda-project/erda-infra/providers/grpcclient"
+	_ "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/client"
 	_ "github.com/erda-project/erda/modules/hepa"
 	_ "github.com/erda-project/erda/modules/hepa/providers/api_policy"
 	_ "github.com/erda-project/erda/modules/hepa/providers/domain"

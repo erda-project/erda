@@ -44,9 +44,25 @@ func (e *Endpoints) pipelineCallback(ctx context.Context, r *http.Request, vars 
 		return errorresp.ErrResp(err)
 	}
 
+	if err := e.edgeRegister.CheckAccessTokenFromHttpRequest(r); err != nil {
+		return errorresp.ErrResp(apierrors.ErrCheckPermission.AccessDenied())
+	}
+
 	switch req.Type {
-	case string(apistructs.PipelineCallbackTypeOfAction):
+	case apistructs.PipelineCallbackTypeOfAction.String():
 		if err := e.pipelineSvc.DealPipelineCallbackOfAction(req.Data); err != nil {
+			return apierrors.ErrCallback.InternalError(err).ToResp(), nil
+		}
+	case apistructs.PipelineCallbackTypeOfEdgeTaskReport.String():
+		if err := e.pipelineSvc.DealPipelineCallbackOfTask(req.Data); err != nil {
+			return apierrors.ErrCallback.InternalError(err).ToResp(), nil
+		}
+	case apistructs.PipelineCallbackTypeOfEdgePipelineReport.String():
+		if err := e.pipelineSvc.DealPipelineCallbackOfPipeline(req.Data); err != nil {
+			return apierrors.ErrCallback.InternalError(err).ToResp(), nil
+		}
+	case apistructs.PipelineCallbackTypeOfEdgeCronReport.String():
+		if err := e.pipelineSvc.DealPipelineCallbackOfCron(req.Data); err != nil {
 			return apierrors.ErrCallback.InternalError(err).ToResp(), nil
 		}
 	default:

@@ -27,7 +27,7 @@ import (
 	grpc1 "github.com/erda-project/erda-infra/pkg/transport/grpc"
 	"github.com/erda-project/erda-infra/pkg/transport/http"
 	"github.com/erda-project/erda-infra/pkg/transport/http/encoding"
-	akpb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
+	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda-proto-go/msp/credential/pb"
 	tenant "github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -42,11 +42,11 @@ import (
 func Test_accessKeyService_QueryAccessKeys(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	akService := NewMockAccessKeyServiceServer(ctrl)
+	akService := NewMockTokenServiceServer(ctrl)
 	tenantService := NewMockTenantServiceServer(ctrl)
 
-	akService.EXPECT().CreateAccessKey(gomock.Any(), gomock.Any()).AnyTimes().Return(&akpb.CreateAccessKeyResponse{
-		Data: &akpb.AccessKeysItem{},
+	akService.EXPECT().CreateToken(gomock.Any(), gomock.Any()).AnyTimes().Return(&tokenpb.CreateTokenResponse{
+		Data: &tokenpb.Token{},
 	}, nil)
 	tenantService.EXPECT().GetTenantProject(gomock.Any(), gomock.Any()).AnyTimes().Return(&tenant.GetTenantProjectResponse{
 		Data: &tenant.TenantProjectData{
@@ -89,14 +89,14 @@ func Test_accessKeyService_QueryAccessKeys(t *testing.T) {
 		Cfg:                  &config{},
 		Register:             NewMockRegister(ctrl),
 		credentialKeyService: &accessKeyService{},
-		AccessKeyService:     akService,
+		TokenService:         akService,
 		bdl:                  &bundle.Bundle{},
 		audit:                nil,
 		Tenant:               tenantService,
 	}
 	pro.credentialKeyService.p = pro
 	_, err := pro.credentialKeyService.CreateAccessKey(context.Background(), &pb.CreateAccessKeyRequest{
-		SubjectType: akpb.SubjectTypeEnum_SYSTEM,
+		SubjectType: pb.SubjectTypeEnum_SYSTEM,
 		Subject:     "xddd",
 		Description: "cdddd",
 	})
@@ -109,7 +109,7 @@ func Test_accessKeyService_DeleteAccessKey(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	tenantService := NewMockTenantServiceServer(ctrl)
-	akService := NewMockAccessKeyServiceServer(ctrl)
+	akService := NewMockTokenServiceServer(ctrl)
 	monkey.Patch((*bundle.Bundle).GetProject, func(bdl *bundle.Bundle, id uint64) (*apistructs.ProjectDTO, error) {
 		return &apistructs.ProjectDTO{
 			ID:                   89,
@@ -140,19 +140,15 @@ func Test_accessKeyService_DeleteAccessKey(t *testing.T) {
 		}, nil
 	})
 	defer monkey.UnpatchAll()
-	akService.EXPECT().GetAccessKey(gomock.Any(), gomock.Any()).AnyTimes().Return(&akpb.GetAccessKeyResponse{
-		Data: &akpb.AccessKeysItem{
+	akService.EXPECT().GetToken(gomock.Any(), gomock.Any()).AnyTimes().Return(&tokenpb.GetTokenResponse{
+		Data: &tokenpb.Token{
 			Id:          "2",
 			AccessKey:   "sfdfgfg",
 			SecretKey:   "sdgds",
-			Status:      0,
-			SubjectType: 0,
-			Subject:     "ss",
 			Description: "ss",
 			CreatedAt:   nil,
 			Scope:       "ss",
 			ScopeId:     "dfdfd",
-			Token:       "ss",
 			CreatorId:   "2",
 		},
 	}, nil)
@@ -162,12 +158,12 @@ func Test_accessKeyService_DeleteAccessKey(t *testing.T) {
 			ProjectId: "98",
 		},
 	}, nil)
-	akService.EXPECT().DeleteAccessKey(gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
+	akService.EXPECT().DeleteToken(gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
 	pro := &provider{
 		Cfg:                  &config{},
 		Register:             NewMockRegister(ctrl),
 		credentialKeyService: &accessKeyService{},
-		AccessKeyService:     akService,
+		TokenService:         akService,
 		bdl:                  &bundle.Bundle{},
 		audit:                nil,
 		Tenant:               tenantService,
@@ -184,15 +180,15 @@ func Test_accessKeyService_DeleteAccessKey(t *testing.T) {
 func Test_accessKeyService_QueryAccessKeys1(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	akService := NewMockAccessKeyServiceServer(ctrl)
-	akService.EXPECT().QueryAccessKeys(gomock.Any(), gomock.Any()).AnyTimes().Return(&akpb.QueryAccessKeysResponse{
-		Data: make([]*akpb.AccessKeysItem, 0),
+	akService := NewMockTokenServiceServer(ctrl)
+	akService.EXPECT().QueryTokens(gomock.Any(), gomock.Any()).AnyTimes().Return(&tokenpb.QueryTokensResponse{
+		Data: make([]*tokenpb.Token, 0),
 	}, nil)
 	pro := &provider{
 		Cfg:                  &config{},
 		Register:             NewMockRegister(ctrl),
 		credentialKeyService: &accessKeyService{},
-		AccessKeyService:     akService,
+		TokenService:         akService,
 	}
 	pro.credentialKeyService.p = pro
 	_, err := pro.credentialKeyService.QueryAccessKeys(context.Background(), &pb.QueryAccessKeysRequest{
@@ -209,15 +205,15 @@ func Test_accessKeyService_QueryAccessKeys1(t *testing.T) {
 func Test_accessKeyService_GetAccessKey(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	akService := NewMockAccessKeyServiceServer(ctrl)
-	akService.EXPECT().GetAccessKey(gomock.Any(), gomock.Any()).AnyTimes().Return(&akpb.GetAccessKeyResponse{
-		Data: &akpb.AccessKeysItem{},
+	akService := NewMockTokenServiceServer(ctrl)
+	akService.EXPECT().GetToken(gomock.Any(), gomock.Any()).AnyTimes().Return(&tokenpb.GetTokenResponse{
+		Data: &tokenpb.Token{},
 	}, nil)
 	pro := &provider{
 		Cfg:                  &config{},
 		Register:             NewMockRegister(ctrl),
 		credentialKeyService: &accessKeyService{},
-		AccessKeyService:     akService,
+		TokenService:         akService,
 	}
 	pro.credentialKeyService.p = pro
 	_, err := pro.credentialKeyService.GetAccessKey(context.Background(), &pb.GetAccessKeyRequest{
@@ -231,15 +227,12 @@ func Test_accessKeyService_GetAccessKey(t *testing.T) {
 func Test_accessKeyService_DownloadAccessKeyFile(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	akService := NewMockAccessKeyServiceServer(ctrl)
-	akService.EXPECT().GetAccessKey(gomock.Any(), gomock.Any()).AnyTimes().Return(&akpb.GetAccessKeyResponse{
-		Data: &akpb.AccessKeysItem{
+	akService := NewMockTokenServiceServer(ctrl)
+	akService.EXPECT().GetToken(gomock.Any(), gomock.Any()).AnyTimes().Return(&tokenpb.GetTokenResponse{
+		Data: &tokenpb.Token{
 			Id:          "ssss",
 			AccessKey:   "dddd",
 			SecretKey:   "dddd",
-			Status:      0,
-			SubjectType: 0,
-			Subject:     "ccc",
 			Description: "aaa",
 			CreatedAt:   &timestamppb.Timestamp{},
 		},
@@ -248,7 +241,7 @@ func Test_accessKeyService_DownloadAccessKeyFile(t *testing.T) {
 		Cfg:                  &config{},
 		Register:             NewMockRegister(ctrl),
 		credentialKeyService: &accessKeyService{},
-		AccessKeyService:     akService,
+		TokenService:         akService,
 	}
 	pro.credentialKeyService.p = pro
 	_, err := pro.credentialKeyService.DownloadAccessKeyFile(context.Background(), &pb.DownloadAccessKeyFileRequest{
@@ -262,12 +255,12 @@ func Test_accessKeyService_DownloadAccessKeyFile(t *testing.T) {
 func Test_Init(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	akService := NewMockAccessKeyServiceServer(ctrl)
+	akService := NewMockTokenServiceServer(ctrl)
 	pro := &provider{
 		Cfg:                  &config{},
 		Register:             NewMockRegister(ctrl),
 		credentialKeyService: &accessKeyService{},
-		AccessKeyService:     akService,
+		TokenService:         akService,
 		bdl:                  &bundle.Bundle{},
 		audit:                nil,
 		Tenant:               nil,
@@ -279,14 +272,11 @@ func Test_Init(t *testing.T) {
 	})
 	monkey.Patch(pb.RegisterAccessKeyServiceHandler, func(r http.Router, srv pb.AccessKeyServiceHandler, opts ...http.HandleOption) {})
 	monkey.Patch(pb.RegisterAccessKeyServiceServer, func(s grpc1.ServiceRegistrar, srv pb.AccessKeyServiceServer, opts ...grpc1.HandleOption) {})
-	akService.EXPECT().GetAccessKey(gomock.Any(), gomock.Any()).AnyTimes().Return(&akpb.GetAccessKeyResponse{
-		Data: &akpb.AccessKeysItem{
+	akService.EXPECT().GetToken(gomock.Any(), gomock.Any()).AnyTimes().Return(&tokenpb.GetTokenResponse{
+		Data: &tokenpb.Token{
 			Id:          "ssss",
 			AccessKey:   "dddd",
 			SecretKey:   "dddd",
-			Status:      0,
-			SubjectType: 0,
-			Subject:     "ccc",
 			Description: "aaa",
 			CreatedAt:   &timestamppb.Timestamp{},
 		},

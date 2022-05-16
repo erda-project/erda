@@ -99,7 +99,7 @@ func (policy Policy) buildPluginReq(dto *PolicyDto) *kongDto.KongPluginReqDto {
 }
 
 func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interface{}) (apipolicy.PolicyConfig, error) {
-	log.WithField("func", "CSRF-Token.ParseConfig").Trace("ParseConfig")
+	l := log.WithField("func", "CSRF-Token.ParseConfig")
 	res := apipolicy.PolicyConfig{}
 	policyDto, ok := dto.(*PolicyDto)
 	if !ok {
@@ -121,10 +121,7 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 	if !ok {
 		return res, errors.Errorf("convert failed:%+v", value)
 	}
-	routes, ok := ctx["routes"].(map[string]struct{})
-	if !ok {
-		return res, errors.Errorf("failed to get routes: %+v", ctx["routes"])
-	}
+
 	policyDb, _ := db.NewGatewayPolicyServiceImpl()
 	exist, err := policyDb.GetByAny(&orm.GatewayPolicy{
 		ZoneId:     zone.Id,
@@ -134,23 +131,80 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 		return res, err
 	}
 	req := policy.buildPluginReq(policyDto)
+
+	var routes = make(map[string]struct{})
+	packageAPIDB, _ := db.NewGatewayPackageApiServiceImpl()
+	apiDB, _ := db.NewGatewayApiServiceImpl()
+	routeDB, _ := db.NewGatewayRouteServiceImpl()
+	apis, err := packageAPIDB.SelectByAny(&orm.GatewayPackageApi{ZoneId: zone.Id})
+	if err != nil || len(apis) == 0 {
+		l.WithError(err).Warnf("failed to packageAPIDB.SelectByAny(&orm.GatewayPackageApi{ZoneId: %s})", zone.Id)
+	}
+
+	for _, api := range apis {
+		switch route, err := routeDB.GetByApiId(api.Id); {
+		case err != nil:
+			l.WithError(err).
+				WithField("tb_gateway_package_api.id", api.Id).
+				Warnf("failed to routeDB.GetByApiId(%s)", api.Id)
+		case route == nil:
+			l.WithError(err).
+				WithField("tb_gateway_package_api.id", api.Id).
+				Warnf("failed to routeDB.GetByApiId(%s): not found", api.Id)
+		default:
+			routes[route.RouteId] = struct{}{}
+		}
+
+		if api.DiceApiId == "" {
+			continue
+		}
+		var cond orm.GatewayApi
+		cond.Id = api.DiceApiId
+		gatewayApis, err := apiDB.SelectByAny(&cond)
+		if err != nil {
+			l.WithError(err).
+				WithField("tb_gateway_package_api.id", api.Id).
+				WithField("tb_gateway_package_api.dice_api_id", api.DiceApiId).
+				Warnf("failed to apiDB.SelectByAny(&orm.GatewayApi{Id: %s})", cond.Id)
+			continue
+		}
+		for _, gatewayApi := range gatewayApis {
+			switch route, err := routeDB.GetByApiId(gatewayApi.Id); {
+			case err != nil:
+				l.WithError(err).WithField("tb_gateway_package_api.id", api.Id).
+					WithField("tb_gateway_package_api.dice_api_id", api.DiceApiId).
+					Warnf("failed to routeDB.GetByApiId(%s)", gatewayApi.Id)
+			case route == nil:
+				l.WithError(err).
+					WithField("tb_gateway_package_api.id", api.Id).
+					Warnf("failed to routeDB.GetByApiId(%s): not found", api.Id)
+			default:
+				routes[route.RouteId] = struct{}{}
+			}
+		}
+	}
+
 	if !policyDto.Switch {
 		if exist != nil {
 			adapter.RemovePlugin(exist.PluginId)
+			_ = policyDb.DeleteById(exist.Id)
 		}
 		for routeID := range routes {
 			routeReq := *req
 			routeReq.RouteId = routeID
 			plugin, err := adapter.GetPlugin(&routeReq)
 			if err != nil {
-				log.WithError(err).Errorf("failed to GetPlugin, req: %+v", routeReq)
+				l.WithError(err).Warnf("failed to adapter.GetPlugin(%+v)", routeReq)
+				continue
+			}
+			if plugin == nil {
+				l.Warnf("failed to adapter.GetPlugin(%+v): not found", routeReq)
 				continue
 			}
 			if err = adapter.RemovePlugin(plugin.Id); err != nil {
-				log.WithError(err).Errorf("failed to RemovePlugin, plugin id: %v", plugin.Id)
+				l.WithError(err).Warnf("failed to adapter.RemovePlugin(%s)", plugin.Id)
 			}
 		}
-		_ = policyDb.DeleteById(exist.Id)
 		res.KongPolicyChange = true
 		return res, nil
 	}
@@ -158,9 +212,8 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 	for routeID := range routes {
 		routeReq := *req
 		routeReq.RouteId = routeID
-		_, err := adapter.CreateOrUpdatePlugin(&routeReq)
-		if err != nil {
-			log.WithError(err).Errorf("failed to CreateOrUpdatePlugin, req: %+v", routeReq)
+		if _, err := adapter.CreateOrUpdatePlugin(&routeReq); err != nil {
+			l.WithError(err).Errorf("faield to adapter.CreateOrUpdatePlugin(%+v)", routeReq)
 			return res, err
 		}
 	}

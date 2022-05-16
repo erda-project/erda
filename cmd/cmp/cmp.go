@@ -24,10 +24,11 @@ import (
 	_ "github.com/erda-project/erda-infra/providers"
 	_ "github.com/erda-project/erda-infra/providers/component-protocol"
 	_ "github.com/erda-project/erda-infra/providers/serviceregister"
+	_ "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/client"
 	_ "github.com/erda-project/erda-proto-go/core/monitor/alert/client"
 	_ "github.com/erda-project/erda-proto-go/core/monitor/metric/client"
 	_ "github.com/erda-project/erda-proto-go/core/pipeline/cron/client"
-	_ "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/client"
+	_ "github.com/erda-project/erda-proto-go/core/token/client"
 
 	_ "github.com/erda-project/erda/modules/cmp"
 	_ "github.com/erda-project/erda/modules/msp/configcenter"

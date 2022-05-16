@@ -313,6 +313,9 @@ type cmdWithTimestamp struct {
 
 func (w *wrapConn) Read(p []byte) (n int, err error) {
 	n, err = w.Conn.Read(p)
+	if n == 0 {
+		return n, err
+	}
 	defer func() {
 		if r := recover(); r != nil {
 			logrus.Error(r)
@@ -320,6 +323,9 @@ func (w *wrapConn) Read(p []byte) (n int, err error) {
 	}()
 	data := websocket.DecodeFrames(p[:n])
 	for _, datum := range data {
+		if len(datum) == 0 {
+			continue
+		}
 		if datum[0] != '0' {
 			return
 		}

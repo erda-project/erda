@@ -28,14 +28,16 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/types"
 	"github.com/erda-project/erda/modules/pipeline/pkg/errorsx"
+	"github.com/erda-project/erda/modules/pipeline/providers/actionmgr"
 	"github.com/erda-project/erda/modules/pipeline/providers/cache"
 	"github.com/erda-project/erda/modules/pipeline/providers/clusterinfo"
+	"github.com/erda-project/erda/modules/pipeline/providers/edgepipeline_register"
+	"github.com/erda-project/erda/modules/pipeline/providers/edgereporter"
 	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/rutil"
 	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/taskpolicy"
 	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/taskrun"
 	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/taskrun/taskop"
 	"github.com/erda-project/erda/modules/pipeline/services/actionagentsvc"
-	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/loop"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -56,12 +58,14 @@ type TaskReconciler interface {
 }
 
 type defaultTaskReconciler struct {
-	log         logs.Logger
-	policy      taskpolicy.Interface
-	cache       cache.Interface
-	clusterInfo clusterinfo.Interface
-	r           *provider
-	pr          *defaultPipelineReconciler
+	log          logs.Logger
+	policy       taskpolicy.Interface
+	cache        cache.Interface
+	clusterInfo  clusterinfo.Interface
+	r            *provider
+	pr           *defaultPipelineReconciler
+	edgeReporter edgereporter.Interface
+	edgeRegister edgepipeline_register.Interface
 
 	// internal fields
 	dbClient             *dbclient.Client
@@ -71,7 +75,7 @@ type defaultTaskReconciler struct {
 	// legacy fields TODO decouple it
 	pipelineSvcFuncs *PipelineSvcFuncs
 	actionAgentSvc   *actionagentsvc.ActionAgentSvc
-	extMarketSvc     *extmarketsvc.ExtMarketSvc
+	actionMgr        actionmgr.Interface
 }
 
 func (tr *defaultTaskReconciler) ReconcileOneTaskUntilDone(ctx context.Context, p *spec.Pipeline, task *spec.PipelineTask) {
@@ -143,6 +147,11 @@ func (tr *defaultTaskReconciler) IdempotentSaveTask(ctx context.Context, p *spec
 	}
 
 	// save task
+	if tr.edgeRegister != nil {
+		if tr.edgeRegister.IsEdge() {
+			task.IsEdge = true
+		}
+	}
 	if err := tr.dbClient.CreatePipelineTask(task); err != nil {
 		return err
 	}
@@ -176,7 +185,7 @@ func (tr *defaultTaskReconciler) ReconcileSnippetTask(ctx context.Context, p *sp
 	tr.pr.r.ReconcileOnePipeline(ctx, snippetPipeline.ID)
 
 	// setup snippet task info according to snippet pipeline result
-	if err := tr.fulfillParentSnippetTask(snippetPipeline); err != nil {
+	if err := tr.fulfillParentSnippetTask(snippetPipeline, task); err != nil {
 		return err
 	}
 
@@ -202,7 +211,7 @@ func (tr *defaultTaskReconciler) ReconcileNormalTask(ctx context.Context, p *spe
 		}
 
 		// generate framework to run task
-		framework = taskrun.New(ctx, task, executor, p, tr.bdl, tr.dbClient, tr.actionAgentSvc, tr.extMarketSvc, tr.clusterInfo, tr.defaultRetryInterval)
+		framework = taskrun.New(ctx, task, executor, p, tr.bdl, tr.dbClient, tr.actionAgentSvc, tr.actionMgr, tr.clusterInfo, tr.edgeRegister, tr.defaultRetryInterval)
 		return rutil.ContinueWorkingAbort
 	}, rutil.WithContinueWorkingDefaultRetryInterval(tr.defaultRetryInterval))
 
@@ -310,10 +319,15 @@ func (tr *defaultTaskReconciler) TeardownAfterReconcileDone(ctx context.Context,
 	// handle aop synchronously, then do subsequent tasks
 	_ = aop.Handle(aop.NewContextForTask(*task, *p, aoptypes.TuneTriggerTaskAfterExec))
 
+	// report task in edge cluster
+	if tr.edgeRegister.IsEdge() {
+		tr.edgeReporter.TriggerOnceTaskReport(task.ID)
+	}
+
 	// invalidate openapi oauth2 token
+	// TODO Temporarily remove EnvOpenapiToken, this causes the deployment to not be canceled when pipeline is canceled. And its ttl is 3630s,
 	tokens := strutil.DedupSlice([]string{
 		task.Extra.PublicEnvs[apistructs.EnvOpenapiTokenForActionBootstrap],
-		task.Extra.PrivateEnvs[apistructs.EnvOpenapiToken],
 	}, true)
 	for _, token := range tokens {
 		_, err := tr.bdl.InvalidateOAuth2Token(apistructs.OAuth2TokenInvalidateRequest{AccessToken: token})
@@ -346,7 +360,7 @@ func (tr *defaultTaskReconciler) PrepareBeforeReconcileSnippetPipeline(ctx conte
 
 	// set snippetDetail for snippetTask
 	var snippetPipelineTasks []*spec.PipelineTask
-	snippetPipelineTasks, err := tr.r.ymlTaskMergeDBTasks(sp)
+	snippetPipelineTasks, err := tr.r.YmlTaskMergeDBTasks(sp)
 	if err != nil {
 		return err
 	}
@@ -406,10 +420,10 @@ func (tr *defaultTaskReconciler) tryCorrectFromExecutorBeforeReconcile(ctx conte
 
 func (tr *defaultTaskReconciler) judgeIfExpression(ctx context.Context, p *spec.Pipeline, task *spec.PipelineTask) error {
 	// if calculated pipeline status is failed and current task have no if expression(cannot must run), set task no-need-run
-	if tr.pr.calculatedPipelineStatusByAllReconciledTasks.IsFailedStatus() {
+	if tr.pr.calculatedStatusForTaskUse.IsFailedStatus() {
 		needSetToNoNeedBySystem := false
 		// stopByUser -> force no-need-by-system -> not check if expression
-		if tr.pr.calculatedPipelineStatusByAllReconciledTasks == apistructs.PipelineStatusStopByUser {
+		if tr.pr.calculatedStatusForTaskUse == apistructs.PipelineStatusStopByUser {
 			needSetToNoNeedBySystem = true
 		}
 		// failed but not stopByUser -> check if expression
@@ -423,8 +437,8 @@ func (tr *defaultTaskReconciler) judgeIfExpression(ctx context.Context, p *spec.
 			return err
 		}
 		task.Status = apistructs.PipelineStatusNoNeedBySystem
-		tr.log.Infof("set task status to %s (calculatedPipelineStatusByAllReconciledTasks: %s, action if expression is empty), pipelineID: %d, taskID: %d, taskName: %s",
-			apistructs.PipelineStatusNoNeedBySystem, tr.pr.calculatedPipelineStatusByAllReconciledTasks, p.ID, task.ID, task.Name)
+		tr.log.Infof("set task status to %s (calculatedStatusForTaskUse: %s, action if expression is empty), pipelineID: %d, taskID: %d, taskName: %s",
+			apistructs.PipelineStatusNoNeedBySystem, tr.pr.calculatedStatusForTaskUse, p.ID, task.ID, task.Name)
 	}
 	return nil
 }

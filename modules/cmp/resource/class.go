@@ -24,10 +24,14 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc/metadata"
 
+	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 const (
@@ -92,16 +96,19 @@ type Quota struct {
 func (r *Resource) GetPie(ctx context.Context, ordId, userId string, request *apistructs.ClassRequest) (data map[string]*PieData, err error) {
 	logrus.Debug("func GetPie start")
 	defer logrus.Debug("func GetPie finished")
-	var clusters []apistructs.ClusterInfo
+	var clusters []*clusterpb.ClusterInfo
 	data = make(map[string]*PieData)
 	orgID, err := strconv.ParseUint(ordId, 10, 64)
 	if err != nil {
 		return
 	}
-	clusters, err = r.Bdl.ListClusters("", orgID)
+
+	ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "cmp"}))
+	clusterResp, err := r.ClusterSvc.ListCluster(ctx, &clusterpb.ListClusterRequest{OrgID: orgID})
 	if err != nil {
 		return
 	}
+	clusters = clusterResp.Data
 	var filter = make(map[string]struct{})
 	for _, cluster := range request.ClusterName {
 		filter[cluster] = struct{}{}
@@ -332,7 +339,7 @@ func (r *Resource) PieSort(series []SerieData) {
 	})
 }
 
-func (r *Resource) GetClusterTrend(ctx context.Context, ordId int64, userId string, request *apistructs.TrendRequest) (td *Histogram, err error) {
+func (r *Resource) GetClusterTrend(ctx context.Context, orgId int64, userId string, request *apistructs.TrendRequest) (td *Histogram, err error) {
 	logrus.Debug("func GetClusterTrend start")
 	defer logrus.Debug("func GetClusterTrend finished")
 	var (
@@ -354,12 +361,14 @@ func (r *Resource) GetClusterTrend(ctx context.Context, ordId int64, userId stri
 	td.Series[1].Name = r.I18n(langCodes, "total")
 	var (
 		pd       []apistructs.ClusterResourceDailyModel
-		clusters []apistructs.ClusterInfo
+		clusters []*clusterpb.ClusterInfo
 	)
-	clusters, err = r.Bdl.ListClusters("", uint64(ordId))
+	ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "cmp"}))
+	resp, err := r.ClusterSvc.ListCluster(ctx, &clusterpb.ListClusterRequest{OrgID: uint64(orgId)})
 	if err != nil {
 		return nil, err
 	}
+	clusters = resp.Data
 	request.Query.ClustersNames = r.FilterCluster(clusters, request.Query.GetClustersNames())
 	if len(request.Query.ClustersNames) == 0 {
 		return nil, errNoClusterFound
@@ -488,12 +497,14 @@ func (r *Resource) GetProjectTrend(ctx context.Context, request *apistructs.Tren
 	td.Series[1].Name = r.I18n(langCodes, "quota")
 	var (
 		pd       []*apistructs.ProjectResourceDailyModel
-		clusters []apistructs.ClusterInfo
+		clusters []*clusterpb.ClusterInfo
 	)
-	clusters, err := r.Bdl.ListClusters("", orgID)
+	ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "cmp"}))
+	clusterResp, err := r.ClusterSvc.ListCluster(ctx, &clusterpb.ListClusterRequest{OrgID: orgID})
 	if err != nil {
 		return nil, err
 	}
+	clusters = clusterResp.Data
 	request.Query.ClustersNames = r.FilterCluster(clusters, request.Query.GetClustersNames())
 	if len(request.Query.ClustersNames) == 0 {
 		return nil, errNoClusterFound

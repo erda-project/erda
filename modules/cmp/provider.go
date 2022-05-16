@@ -30,10 +30,11 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	alertpb "github.com/erda-project/erda-proto-go/cmp/alert/pb"
 	pb2 "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	monitor "github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
-	credentialpb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
+	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/cmp/metrics"
@@ -47,10 +48,11 @@ import (
 var scenarioFS embed.FS
 
 type provider struct {
-	Server      pb.MetricServiceServer              `autowired:"erda.core.monitor.metric.MetricService"`
-	Credential  credentialpb.AccessKeyServiceServer `autowired:"erda.core.services.authentication.credentials.accesskey.AccessKeyService" optional:"true"`
-	Register    transport.Register                  `autowired:"service-register" optional:"true"`
-	CronService cronpb.CronServiceServer            `autowired:"erda.core.pipeline.cron.CronService" required:"true"`
+	Server      pb.MetricServiceServer         `autowired:"erda.core.monitor.metric.MetricService"`
+	Credential  tokenpb.TokenServiceServer     `autowired:"erda.core.token.TokenService" optional:"true"`
+	Register    transport.Register             `autowired:"service-register" optional:"true"`
+	CronService cronpb.CronServiceServer       `autowired:"erda.core.pipeline.cron.CronService" required:"true"`
+	ClusterSvc  clusterpb.ClusterServiceServer `autowired:"erda.core.clustermanager.cluster.ClusterService"`
 
 	Metrics         *metrics.Metric
 	Monitor         monitor.AlertServiceServer `autowired:"erda.core.monitor.alert.AlertService" optional:"true"`
@@ -66,7 +68,7 @@ func (p *provider) Run(ctx context.Context) error {
 	runtime.GOMAXPROCS(2)
 	p.Metrics = metrics.New(p.Server, ctx)
 	logrus.Info("cmp provider is running...")
-	p.Resource = resource.New(ctx, p.Tran, p)
+	p.Resource = resource.New(ctx, p.Tran, p, p.ClusterSvc)
 	ctxNew := context.WithValue(ctx, "metrics", p.Metrics)
 	ctxNew = context.WithValue(ctxNew, "resource", p.Resource)
 	return p.initialize(ctxNew)
@@ -82,6 +84,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 				httpclient.WithEnableAutoRetry(false),
 			)),
 	))
+	p.Protocol.WithContextValue(types.ClusterSvc, p.ClusterSvc)
 	protocol.MustRegisterProtocolsFromFS(scenarioFS)
 	pb2.RegisterClusterResourceImp(p.Register, p, apis.Options())
 	alertpb.RegisterAlertServiceImp(p.Register, p, apis.Options())

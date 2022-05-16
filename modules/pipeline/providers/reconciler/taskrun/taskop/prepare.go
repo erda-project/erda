@@ -29,7 +29,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/actionagent"
+	"github.com/erda-project/erda/modules/pipeline/actionagent"
 	"github.com/erda-project/erda/modules/pipeline/aop/aoptypes"
 	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/k8sjob"
@@ -37,9 +37,9 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/pkg/container_provider"
 	"github.com/erda-project/erda/modules/pipeline/pkg/containers"
 	"github.com/erda-project/erda/modules/pipeline/pkg/errorsx"
+	"github.com/erda-project/erda/modules/pipeline/providers/actionmgr"
 	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/taskrun"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
-	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/expression"
 	"github.com/erda-project/erda/pkg/http/httputil"
@@ -186,9 +186,9 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 	// 从 extension marketplace 获取 image 和 resource limit
 	extSearchReq := make([]string, 0)
 	extSearchReq = append(extSearchReq, getActionAgentTypeVersion())
-	extSearchReq = append(extSearchReq, extmarketsvc.MakeActionTypeVersion(&task.Extra.Action))
-	actionDiceYmlJobMap, actionSpecYmlJobMap, err := pre.ExtMarketSvc.SearchActions(extSearchReq, extmarketsvc.MakeActionLocationsBySource(p.PipelineSource),
-		extmarketsvc.SearchActionWithRender(map[string]string{"storageMountPoint": mountPoint}))
+	extSearchReq = append(extSearchReq, pre.ActionMgr.MakeActionTypeVersion(&task.Extra.Action))
+	actionDiceYmlJobMap, actionSpecYmlJobMap, err := pre.ActionMgr.SearchActions(extSearchReq, pre.ActionMgr.MakeActionLocationsBySource(p.PipelineSource),
+		actionmgr.SearchOpWithRender(map[string]string{"storageMountPoint": mountPoint}))
 	if err != nil {
 		return true, err
 	}
@@ -291,7 +291,7 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 	// 所有 action，包括 custom-script，都需要在 ext market 注册；
 	// 从 ext market 获取 action 的 job dice.yml，解析 image 和 resource；
 	// 只有 custom-script 可以设置自定义镜像，优先级高于默认自定义镜像。
-	diceYmlJob, ok := actionDiceYmlJobMap[extmarketsvc.MakeActionTypeVersion(action)]
+	diceYmlJob, ok := actionDiceYmlJobMap[pre.ActionMgr.MakeActionTypeVersion(action)]
 	if !ok || diceYmlJob == nil || diceYmlJob.Image == "" {
 		return false, apierrors.ErrRunPipeline.InvalidState(
 			fmt.Sprintf("not found image, actionType: %q, version: %q", action.Type, action.Version))
@@ -354,6 +354,11 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 	task.Extra.PublicEnvs["PIPELINE_REQUESTED_MEM"] = fmt.Sprintf("%g", task.Extra.RuntimeResource.Memory)
 	task.Extra.PublicEnvs["PIPELINE_REQUESTED_DISK"] = fmt.Sprintf("%g", task.Extra.RuntimeResource.Disk)
 
+	// edge pipeline envs
+	edgePipelineEnvs := pre.EdgeRegister.GetEdgePipelineEnvs()
+	task.Extra.PublicEnvs[apistructs.EnvIsEdgePipeline] = strconv.FormatBool(pre.EdgeRegister.IsEdge())
+	task.Extra.PublicEnvs[apistructs.EnvPipelineAddr] = edgePipelineEnvs.Get(apistructs.ClusterDialerDataKeyPipelineAddr)
+
 	// 条件表达式存在
 	if jump := condition(task); jump {
 		return false, nil
@@ -402,7 +407,7 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 	}
 
 	// for get action callback openapi oauth2 token
-	specYmlJob, ok := actionSpecYmlJobMap[extmarketsvc.MakeActionTypeVersion(action)]
+	specYmlJob, ok := actionSpecYmlJobMap[pre.ActionMgr.MakeActionTypeVersion(action)]
 	if !ok || specYmlJob == nil {
 		return false, apierrors.ErrRunPipeline.InvalidState(
 			fmt.Sprintf("not found action spec, actionType: %q, version: %q", action.Type, action.Version))
@@ -620,12 +625,14 @@ func (pre *prepare) generateOpenapiTokenForPullBootstrapInfo(task *spec.Pipeline
 		return nil
 	}
 
-	// 申请到的 token 只能请求 get-bootstrap-info api，并且保证 pipelineID 和 taskID 必须匹配
-	tokenInfo, err := pre.Bdl.GetOAuth2Token(apistructs.OAuth2TokenGetRequest{
+	var tokenInfo *apistructs.OAuth2Token
+	var err error
+	// the applied token can only request the get-bootstrap-info api, and ensure that pipelineID and taskID must match
+	req := apistructs.OAuth2TokenGetRequest{
 		ClientID:     "pipeline",
 		ClientSecret: "devops/pipeline",
 		Payload: apistructs.OAuth2TokenPayload{
-			AccessTokenExpiredIn: "0", // 该 token 申请后至 agent 运行这段时间目前无超时时间，所以设置 0 表示不过期
+			AccessTokenExpiredIn: "0", // there is currently no timeout period from the time the token is applied until the agent runs, so setting 0 means it will not expire
 			AllowAccessAllAPIs:   false,
 			AccessibleAPIs: []apistructs.AccessibleAPI{
 				// PIPELINE_TASK_GET_BOOTSTRAP_INFO
@@ -655,7 +662,12 @@ func (pre *prepare) generateOpenapiTokenForPullBootstrapInfo(task *spec.Pipeline
 				httputil.OrgHeader:      pre.P.Labels[apistructs.LabelOrgID],
 			},
 		},
-	})
+	}
+	if pre.EdgeRegister.IsEdge() {
+		tokenInfo, err = pre.EdgeRegister.GetAccessToken(req)
+	} else {
+		tokenInfo, err = pre.Bdl.GetOAuth2Token(req)
+	}
 	if err != nil {
 		return err
 	}

@@ -124,23 +124,23 @@ func (r *ComponentReleaseTable) GenComponentState(component *cptype.Component) e
 }
 
 func (r *ComponentReleaseTable) DecodeURLQuery() error {
-	query, ok := r.sdk.InParams["releaseTable__urlQuery"].(string)
+	urlQuery, ok := r.sdk.InParams["releaseTable__urlQuery"].(string)
 	if !ok {
 		return nil
 	}
-	decoded, err := base64.StdEncoding.DecodeString(query)
+	decode, err := base64.StdEncoding.DecodeString(urlQuery)
 	if err != nil {
 		return err
 	}
-	queryData := make(map[string]interface{})
-	if err := json.Unmarshal(decoded, &queryData); err != nil {
+	query := make(map[string]interface{})
+	if err := json.Unmarshal(decode, &query); err != nil {
 		return err
 	}
-	r.State.PageNo = int64(queryData["pageNo"].(float64))
-	r.State.PageSize = int64(queryData["pageSize"].(float64))
-	sorterData := queryData["sorterData"].(map[string]interface{})
-	r.State.Sorter.Field, _ = sorterData["field"].(string)
-	r.State.Sorter.Order, _ = sorterData["order"].(string)
+	r.State.PageNo = int64(query["pageNo"].(float64))
+	r.State.PageSize = int64(query["pageSize"].(float64))
+	sorter := query["sorterData"].(map[string]interface{})
+	r.State.Sorter.Field, _ = sorter["field"].(string)
+	r.State.Sorter.Order, _ = sorter["order"].(string)
 	return nil
 }
 
@@ -149,13 +149,13 @@ func (r *ComponentReleaseTable) EncodeURLQuery() error {
 	query["pageNo"] = r.State.PageNo
 	query["pageSize"] = r.State.PageSize
 	query["sorterData"] = r.State.Sorter
-	data, err := json.Marshal(query)
+	jsonData, err := json.Marshal(query)
 	if err != nil {
 		return err
 	}
 
-	encode := base64.StdEncoding.EncodeToString(data)
-	r.State.ReleaseTableURLQuery = encode
+	encoded := base64.StdEncoding.EncodeToString(jsonData)
+	r.State.ReleaseTableURLQuery = encoded
 	return nil
 }
 

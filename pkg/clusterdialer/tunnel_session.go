@@ -29,8 +29,11 @@ import (
 const HandshakeTimeOut = 10 * time.Second
 
 type TunnelSession struct {
-	session *remotedialer.Session
-	lock    sync.Mutex
+	session               *remotedialer.Session
+	lock                  sync.Mutex
+	expired               context.Context
+	cancel                context.CancelFunc
+	clusterDialerEndpoint string
 }
 
 func (s *TunnelSession) initialize(endpoint string) {
@@ -44,8 +47,9 @@ func (s *TunnelSession) initialize(endpoint string) {
 		ws, _, err := dialer.Dial(endpoint, headers)
 		if err != nil {
 			logrus.Errorf("Failed to connect to proxy server %s, err: %v", endpoint, err)
-			time.Sleep(time.Duration(rand.Int()%10) * time.Second)
-			continue
+			s.cancel()
+			sessions.Delete(s.clusterDialerEndpoint)
+			return
 		}
 		s.lock.Lock()
 		s.session = remotedialer.NewClientSession(func(string, string) bool { return true }, ws)
@@ -76,11 +80,15 @@ func (s *TunnelSession) getClusterDialer(ctx context.Context, clusterKey string)
 			break
 		}
 		select {
+		case <-s.expired.Done():
+			logrus.Infof("clusterdial session fro clusterKey %s canceled", clusterKey)
+			ipCache.Delete(s.clusterDialerEndpoint)
+			return nil
 		case <-ctx.Done():
-			logrus.Errorf("get clusterdial session failed, cost %.3fs", time.Since(start).Seconds())
+			logrus.Errorf("get clusterdial session failed for clusterKey %s, cost %.3fs", clusterKey, time.Since(start).Seconds())
 			return nil
 		case <-time.After(1 * time.Second):
-			logrus.Infof("waiting fo clusterdial session ready... ")
+			logrus.Infof("waiting for clusterdial session ready for clusterKey %s... ", clusterKey)
 		}
 	}
 	return remotedialer.ToDialer(session, clusterKey)

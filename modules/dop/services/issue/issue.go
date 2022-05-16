@@ -34,7 +34,6 @@ import (
 	"github.com/erda-project/erda/modules/dop/services/issueproperty"
 	"github.com/erda-project/erda/modules/dop/services/issuerelated"
 	"github.com/erda-project/erda/modules/dop/services/issuestream"
-	"github.com/erda-project/erda/modules/dop/services/monitor"
 	"github.com/erda-project/erda/pkg/strutil"
 	"github.com/erda-project/erda/pkg/ucauth"
 )
@@ -241,9 +240,6 @@ func (svc *Issue) Create(req *apistructs.IssueCreateRequest) (*dao.Issue, error)
 			logrus.Errorf("create issue %d event err: %v", streamReq.IssueID, err)
 		}
 	}()
-
-	go monitor.MetricsIssueById(int(create.ID), svc.db, svc.uc, svc.bdl)
-
 	return &create, nil
 }
 
@@ -554,7 +550,7 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 	if err != nil {
 		return apierrors.ErrUpdateIssue.InternalError(err)
 	}
-	//如果是BUG从打开或者重新打开切换状态为已解决，修改责任人为当前用户
+	// if state of bug is changed to resolved/wontfix, change owner to operator/creator
 	if issueModel.Type == apistructs.IssueTypeBug {
 		currentState, err := cache.TryGetState(issueModel.State)
 		if err != nil {
@@ -565,8 +561,10 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 			if err != nil {
 				return apierrors.ErrGetIssue.InternalError(err)
 			}
-			if (currentState.Belong == apistructs.IssueStateBelongOpen || currentState.Belong == apistructs.IssueStateBelongReopen) && newState.Belong == apistructs.IssueStateBelongResolved {
+			if (currentState.Belong != apistructs.IssueStateBelongResolved) && newState.Belong == apistructs.IssueStateBelongResolved {
 				req.Owner = &req.IdentityInfo.UserID
+			} else if (currentState.Belong != apistructs.IssueStateBelongWontfix) && newState.Belong == apistructs.IssueStateBelongWontfix {
+				req.Owner = &issueModel.Creator
 			}
 		}
 	}
@@ -721,7 +719,6 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 		return fmt.Errorf("after issue update failed when issue id: %v update, err: %v", issueModel.ID, err)
 	}
 
-	go monitor.MetricsIssueById(int(req.ID), svc.db, svc.uc, svc.bdl)
 	return nil
 }
 
@@ -1045,12 +1042,6 @@ func (svc *Issue) BatchUpdateIssue(req *apistructs.IssueBatchUpdateRequest) erro
 		}
 	}
 
-	go func(issues []dao.Issue) {
-		for _, v := range issues {
-			go monitor.MetricsIssueById(int(v.ID), svc.db, svc.uc, svc.bdl)
-		}
-	}(issues)
-
 	return nil
 }
 
@@ -1132,10 +1123,6 @@ func (svc *Issue) Delete(issueID uint64, identityInfo apistructs.IdentityInfo) e
 	}
 
 	err = svc.db.DeleteIssue(issueID)
-	if err == nil {
-		go monitor.MetricsIssueById(int(issueID), svc.db, svc.uc, svc.bdl)
-	}
-
 	return err
 }
 

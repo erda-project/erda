@@ -17,6 +17,7 @@ package endpoints
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -25,11 +26,15 @@ import (
 
 	pb1 "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
+	common "github.com/erda-project/erda-proto-go/core/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
+	"github.com/erda-project/erda/modules/pipeline/providers/cron/crontypes"
 	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
+	"github.com/erda-project/erda/pkg/parser/pipelineyml"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 func (e *Endpoints) pipelineCronPaging(ctx context.Context, r *http.Request, vars map[string]string) (
@@ -85,14 +90,26 @@ func (e *Endpoints) pipelineCronStart(ctx context.Context, r *http.Request, vars
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
+	if result.Data == nil {
+		return errorresp.ErrResp(apierrors.ErrNotFoundPipelineCron.InternalError(crontypes.ErrCronNotFound))
+	}
 	cronInfo := result.Data
 
-	if err := e.permission.CheckRuntimeBranch(identityInfo, cronInfo.ApplicationID, cronInfo.Branch, apistructs.OperateAction); err != nil {
+	appID, err := getAppIDFromCronExtraLabels(cronInfo)
+	if err != nil {
+		return errorresp.ErrResp(err)
+	}
+	branch, err := getBranchFromCronExtraLabels(cronInfo)
+	if err != nil {
+		return errorresp.ErrResp(err)
+	}
+
+	if err := e.permission.CheckRuntimeBranch(identityInfo, appID, branch, apistructs.OperateAction); err != nil {
 		return errorresp.ErrResp(err)
 	}
 
 	// update CmsNsConfigs
-	appDto, err := e.bdl.GetApp(cronInfo.ApplicationID)
+	appDto, err := e.bdl.GetApp(appID)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
@@ -130,9 +147,20 @@ func (e *Endpoints) pipelineCronStop(ctx context.Context, r *http.Request, vars 
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
+	if result.Data == nil {
+		return errorresp.ErrResp(apierrors.ErrNotFoundPipelineCron.InternalError(crontypes.ErrCronNotFound))
+	}
 	cronInfo := result.Data
 
-	if err := e.permission.CheckRuntimeBranch(identityInfo, cronInfo.ApplicationID, cronInfo.Branch, apistructs.OperateAction); err != nil {
+	appID, err := getAppIDFromCronExtraLabels(cronInfo)
+	if err != nil {
+		return errorresp.ErrResp(err)
+	}
+	branch, err := getBranchFromCronExtraLabels(cronInfo)
+	if err != nil {
+		return errorresp.ErrResp(err)
+	}
+	if err := e.permission.CheckRuntimeBranch(identityInfo, appID, branch, apistructs.OperateAction); err != nil {
 		return errorresp.ErrResp(err)
 	}
 
@@ -163,15 +191,31 @@ func (e *Endpoints) pipelineCronCreate(ctx context.Context, r *http.Request, var
 		return apierrors.ErrCreatePipelineCron.AccessDenied().ToResp(), nil
 	}
 
-	var createReq = cronpb.CronCreateRequest{
-		PipelineCreateRequest: &req,
+	pipelineYml, err := pipelineyml.New([]byte(req.PipelineYml))
+	if err != nil {
+		return nil, err
 	}
-	cron, err := e.PipelineCron.CronCreate(context.Background(), &createReq)
+
+	result, err := e.PipelineCron.CronCreate(context.Background(), &cronpb.CronCreateRequest{
+		CronExpr:               pipelineYml.Spec().Cron,
+		PipelineYmlName:        req.PipelineYmlName,
+		PipelineSource:         req.PipelineSource,
+		Enable:                 wrapperspb.Bool(false),
+		PipelineYml:            req.PipelineYml,
+		ClusterName:            req.ClusterName,
+		FilterLabels:           req.Labels,
+		NormalLabels:           req.NormalLabels,
+		Envs:                   req.Envs,
+		ConfigManageNamespaces: strutil.DedupSlice(append(req.ConfigManageNamespaces, req.ConfigManageNamespaces...), true),
+		CronStartFrom:          req.CronStartFrom,
+		IncomingSecrets:        req.GetSecrets(),
+		PipelineDefinitionID:   req.DefinitionID,
+	})
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
 
-	return httpserver.OkResp(cron)
+	return httpserver.OkResp(result.Data)
 }
 
 func (e *Endpoints) pipelineCronDelete(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
@@ -193,9 +237,20 @@ func (e *Endpoints) pipelineCronDelete(ctx context.Context, r *http.Request, var
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
+	if result.Data == nil {
+		return errorresp.ErrResp(apierrors.ErrNotFoundPipelineCron.InternalError(crontypes.ErrCronNotFound))
+	}
 	cronInfo := result.Data
 
-	if err := e.permission.CheckRuntimeBranch(identityInfo, cronInfo.ApplicationID, cronInfo.Branch, apistructs.OperateAction); err != nil {
+	appID, err := getAppIDFromCronExtraLabels(cronInfo)
+	if err != nil {
+		return errorresp.ErrResp(err)
+	}
+	branch, err := getBranchFromCronExtraLabels(cronInfo)
+	if err != nil {
+		return errorresp.ErrResp(err)
+	}
+	if err := e.permission.CheckRuntimeBranch(identityInfo, appID, branch, apistructs.OperateAction); err != nil {
 		return errorresp.ErrResp(err)
 	}
 
@@ -207,6 +262,27 @@ func (e *Endpoints) pipelineCronDelete(ctx context.Context, r *http.Request, var
 	}
 
 	return httpserver.OkResp(nil)
+}
+
+func getAppIDFromCronExtraLabels(cronInfo *common.Cron) (uint64, error) {
+	if cronInfo == nil || cronInfo.Extra == nil || cronInfo.Extra.NormalLabels == nil {
+		return 0, fmt.Errorf("not find appID from cronInfo")
+	}
+
+	appIDStr := cronInfo.Extra.NormalLabels[apistructs.LabelAppID]
+	appID, err := strconv.ParseInt(appIDStr, 10, 64)
+	if err != nil {
+		return 0, apierrors.ErrGetApp.InternalError(fmt.Errorf("app %v ParseInt error %v", appIDStr, err))
+	}
+	return uint64(appID), nil
+}
+
+func getBranchFromCronExtraLabels(cronInfo *common.Cron) (string, error) {
+	if cronInfo == nil || cronInfo.Extra == nil || cronInfo.Extra.NormalLabels == nil {
+		return "", fmt.Errorf("not find branch from cronInfo")
+	}
+
+	return cronInfo.Extra.NormalLabels[apistructs.LabelBranch], nil
 }
 
 // pipelineUpdate pipeline cron update

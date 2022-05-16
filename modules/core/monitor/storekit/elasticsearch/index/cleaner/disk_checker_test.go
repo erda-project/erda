@@ -15,13 +15,17 @@
 package cleaner
 
 import (
+	"context"
 	"testing"
 	"time"
 
 	"github.com/golang/mock/gomock"
 	"gotest.tools/assert"
 
+	"github.com/erda-project/erda-infra/base/logs"
+	election "github.com/erda-project/erda-infra/providers/etcd-election"
 	"github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/loader"
+	"github.com/erda-project/erda/pkg/mock"
 )
 
 // -go:generate mockgen -destination=./mock_loader_test.go -package cleaner -source=../loader/interface.go Interface
@@ -86,4 +90,101 @@ func Test_getSortedIndices_Should_Success(t *testing.T) {
 	result := p.getSortedIndices()
 
 	assert.DeepEqual(t, result, want)
+}
+
+func Test_provider_runDocsCheckAndClean(t *testing.T) {
+	type fields struct {
+		Cfg                      *config
+		Log                      logs.Logger
+		election                 election.Interface
+		loader                   loader.Interface
+		retentions               RetentionStrategy
+		clearCh                  chan *clearRequest
+		minIndicesStoreInDisk    int64
+		rolloverBodyForDiskClean string
+		rolloverAliasPatterns    []*indexAliasPattern
+	}
+	tests := []struct {
+		name   string
+		fields fields
+	}{
+		{"case1", fields{
+			Cfg: &config{DiskClean: diskClean{
+				Enable: true,
+				TTL: struct {
+					Enable            bool   `json:"enable" default:"true"`
+					MaxStoreTime      int    `file:"max_store_time" default:"7"`
+					TriggerSpecCron   string `file:"trigger_spec_cron" default:"0 0 3 * * *"`
+					TaskCheckInterval int64  `json:"task_check_interval" default:"5"`
+				}{
+					Enable: false,
+				},
+			}},
+		}},
+		{"case2", fields{
+			Cfg: &config{DiskClean: diskClean{
+				Enable: true,
+				TTL: struct {
+					Enable            bool   `json:"enable" default:"true"`
+					MaxStoreTime      int    `file:"max_store_time" default:"7"`
+					TriggerSpecCron   string `file:"trigger_spec_cron" default:"0 0 3 * * *"`
+					TaskCheckInterval int64  `json:"task_check_interval" default:"5"`
+				}{
+					Enable:          true,
+					TriggerSpecCron: "0 0 3 * * *",
+					MaxStoreTime:    7,
+				},
+			}},
+		}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var logger *mock.MockLogger
+			if tt.fields.Cfg.DiskClean.TTL.Enable {
+				ctrl := gomock.NewController(t)
+				defer ctrl.Finish()
+				logger = mock.NewMockLogger(ctrl)
+				logger.EXPECT().Infof(gomock.Any(), gomock.Any())
+			}
+			p := &provider{
+				Cfg: tt.fields.Cfg,
+				Log: logger,
+			}
+			p.runDocsCheckAndClean(context.Background())
+		})
+	}
+}
+
+func Test_provider_AddTask(t *testing.T) {
+	type fields struct {
+		Cfg                      *config
+		Log                      logs.Logger
+		election                 election.Interface
+		loader                   loader.Interface
+		retentions               RetentionStrategy
+		clearCh                  chan *clearRequest
+		minIndicesStoreInDisk    int64
+		rolloverBodyForDiskClean string
+		rolloverAliasPatterns    []*indexAliasPattern
+		ttlTaskCh                chan *TtlTask
+	}
+	type args struct {
+		task *TtlTask
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+	}{
+		{"case1", fields{ttlTaskCh: make(chan *TtlTask, 1)}, args{task: &TtlTask{TaskId: "id", Indices: []string{"test-index"}}}},
+		{"case2", fields{ttlTaskCh: make(chan *TtlTask, 1)}, args{task: nil}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &provider{
+				ttlTaskCh: tt.fields.ttlTaskCh,
+			}
+			p.AddTask(tt.args.task)
+		})
+	}
 }

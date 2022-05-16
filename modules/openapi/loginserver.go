@@ -26,6 +26,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/openapi/auth"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/generate/auto_register"
@@ -44,9 +45,9 @@ type LoginServer struct {
 	oauth2server *oauth2.OAuth2Server
 }
 
-func NewLoginServer() (*LoginServer, error) {
+func NewLoginServer(token tokenpb.TokenServiceServer) (*LoginServer, error) {
 	oauth2server := oauth2.NewOAuth2Server()
-	auth, err := auth.NewAuth(oauth2server)
+	auth, err := auth.NewAuth(oauth2server, token)
 	if err != nil {
 		return nil, err
 	}

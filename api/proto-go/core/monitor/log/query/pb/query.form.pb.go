@@ -186,6 +186,20 @@ func (m *GetLogByRuntimeRequest) UnmarshalURLValues(prefix string, values url.Va
 					return err
 				}
 				m.Debug = val
+			case "podName":
+				m.PodName = vals[0]
+			case "podNamespace":
+				m.PodNamespace = vals[0]
+			case "containerName":
+				m.ContainerName = vals[0]
+			case "clusterName":
+				m.ClusterName = vals[0]
+			case "isFirstQuery":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.IsFirstQuery = val
 			}
 		}
 	}
@@ -869,6 +883,18 @@ func (m *GetLogResponse) UnmarshalURLValues(prefix string, values url.Values) er
 
 // GetLogByRuntimeResponse implement urlenc.URLValuesUnmarshaler.
 func (m *GetLogByRuntimeResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "isFallback":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.IsFallback = val
+			}
+		}
+	}
 	return nil
 }
 

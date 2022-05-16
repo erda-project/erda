@@ -22,7 +22,7 @@ import (
 	"github.com/erda-project/erda/bundle/apierrors"
 )
 
-func (b *Bundle) IsClusterDialerClientRegistered(clientType string, clusterKey string) (bool, error) {
+func (b *Bundle) IsClusterDialerClientRegistered(clientType apistructs.ClusterDialerClientType, clusterKey string) (bool, error) {
 	host, err := b.urls.ClusterDialer()
 	if err != nil {
 		return false, err
@@ -32,7 +32,7 @@ func (b *Bundle) IsClusterDialerClientRegistered(clientType string, clusterKey s
 	var getResp bool
 	resp, err := hc.Get(host).
 		Path("/clusteragent/check").
-		Param("clientType", clientType).
+		Param("clientType", clientType.String()).
 		Param("clusterKey", clusterKey).
 		Do().
 		JSON(&getResp)
@@ -45,7 +45,7 @@ func (b *Bundle) IsClusterDialerClientRegistered(clientType string, clusterKey s
 	return getResp, nil
 }
 
-func (b *Bundle) GetClusterDialerClientData(clientType string, clusterKey string) (apistructs.ClusterDialerClientDetail, error) {
+func (b *Bundle) GetClusterDialerClientData(clientType apistructs.ClusterDialerClientType, clusterKey string) (apistructs.ClusterDialerClientDetail, error) {
 	host, err := b.urls.ClusterDialer()
 	if err != nil {
 		return apistructs.ClusterDialerClientDetail{}, err

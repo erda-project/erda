@@ -17,31 +17,36 @@ package clusters
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc/metadata"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
-	credentialpb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
+	"github.com/erda-project/erda-infra/pkg/transport"
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
+	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cmp/conf"
 	"github.com/erda-project/erda/modules/cmp/dbclient"
+	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/k8sclient"
+	"github.com/erda-project/erda/pkg/oauth2/tokenstore/mysqltokenstore"
 )
 
 // GetAccessKey get access key with cluster name.
-func (c *Clusters) GetAccessKey(clusterName string) (*credentialpb.QueryAccessKeysResponse, error) {
-	return c.credential.QueryAccessKeys(context.Background(), &credentialpb.QueryAccessKeysRequest{
-		Status:      credentialpb.StatusEnum_ACTIVATE,
-		SubjectType: credentialpb.SubjectTypeEnum_CLUSTER,
-		Subject:     clusterName,
+func (c *Clusters) GetAccessKey(clusterName string) (*tokenpb.QueryTokensResponse, error) {
+	return c.credential.QueryTokens(context.Background(), &tokenpb.QueryTokensRequest{
+		Scope:   strings.ToLower(tokenpb.ScopeEnum_CMP_CLUSTER.String()),
+		ScopeId: clusterName,
 	})
 }
 
 // GetOrCreateAccessKey get or create access key
-func (c *Clusters) GetOrCreateAccessKey(clusterName string) (*credentialpb.AccessKeysItem, error) {
+func (c *Clusters) GetOrCreateAccessKey(ctx context.Context, clusterName string) (*tokenpb.Token, error) {
 	ak, err := c.GetAccessKey(clusterName)
 	if err != nil {
 		logrus.Errorf("get access key error when create precheck: %v", err)
@@ -54,16 +59,15 @@ func (c *Clusters) GetOrCreateAccessKey(clusterName string) (*credentialpb.Acces
 	}
 
 	// Check cluster exist or not
-	if err = c.CheckCluster(clusterName); err != nil {
+	if err = c.CheckCluster(ctx, clusterName); err != nil {
 		return nil, err
 	}
 
 	// Create accessKey
-	res, err := c.credential.CreateAccessKey(context.Background(), &credentialpb.CreateAccessKeyRequest{
-		Subject:     clusterName,
-		SubjectType: credentialpb.SubjectTypeEnum_CLUSTER,
-		Scope:       apistructs.CMPClusterScope,
-		ScopeId:     clusterName,
+	res, err := c.credential.CreateToken(context.Background(), &tokenpb.CreateTokenRequest{
+		Scope:   strings.ToLower(tokenpb.ScopeEnum_CMP_CLUSTER.String()),
+		ScopeId: clusterName,
+		Type:    mysqltokenstore.AccessKey.String(),
 	})
 
 	if err != nil {
@@ -75,20 +79,20 @@ func (c *Clusters) GetOrCreateAccessKey(clusterName string) (*credentialpb.Acces
 }
 
 // GetOrCreateAccessKeyWithRecord get or create access key with record
-func (c *Clusters) GetOrCreateAccessKeyWithRecord(clusterName, userID, orgID string) (*credentialpb.AccessKeysItem, error) {
+func (c *Clusters) GetOrCreateAccessKeyWithRecord(ctx context.Context, clusterName, userID, orgID string) (*tokenpb.Token, error) {
 	var (
 		detailInfo string
 		err        error
-		res        = &credentialpb.AccessKeysItem{}
+		res        = &tokenpb.Token{}
 		status     = dbclient.StatusTypeSuccess
 	)
 
 	if clusterName == conf.ErdaClusterName() {
 		if cs, err := k8sclient.NewForInCluster(); err == nil {
-			res, err = c.ResetAccessKeyWithClientSet(clusterName, cs.ClientSet)
+			res, err = c.ResetAccessKeyWithClientSet(ctx, clusterName, cs.ClientSet)
 		}
 	} else {
-		res, err = c.GetOrCreateAccessKey(clusterName)
+		res, err = c.GetOrCreateAccessKey(ctx, clusterName)
 	}
 
 	if err != nil {
@@ -133,7 +137,7 @@ func (c *Clusters) DeleteAccessKey(clusterName string) error {
 
 	// Clear all access key about clusterName
 	for _, item := range res.Data {
-		_, err = c.credential.DeleteAccessKey(context.Background(), &credentialpb.DeleteAccessKeyRequest{
+		_, err = c.credential.DeleteToken(context.Background(), &tokenpb.DeleteTokenRequest{
 			Id: item.Id,
 		})
 		if err != nil {
@@ -150,7 +154,7 @@ func (c *Clusters) DeleteAccessKey(clusterName string) error {
 }
 
 // ResetAccessKey reset access key
-func (c *Clusters) ResetAccessKey(clusterName string) (*credentialpb.AccessKeysItem, error) {
+func (c *Clusters) ResetAccessKey(ctx context.Context, clusterName string) (*tokenpb.Token, error) {
 	// In cluster use Inner clientSet priority.
 	if clusterName == conf.ErdaClusterName() {
 		kc, err := k8sclient.NewForInCluster()
@@ -159,7 +163,7 @@ func (c *Clusters) ResetAccessKey(clusterName string) (*credentialpb.AccessKeysI
 			logrus.Errorf(tipErr.Error())
 			return nil, tipErr
 		}
-		return c.ResetAccessKeyWithClientSet(clusterName, kc.ClientSet)
+		return c.ResetAccessKeyWithClientSet(ctx, clusterName, kc.ClientSet)
 	}
 
 	// Get configmap and PreCheck cluster connection
@@ -173,11 +177,11 @@ func (c *Clusters) ResetAccessKey(clusterName string) (*credentialpb.AccessKeysI
 	// Get kubernetes clientSet
 	cs := kc.ClientSet
 
-	return c.ResetAccessKeyWithClientSet(clusterName, cs)
+	return c.ResetAccessKeyWithClientSet(ctx, clusterName, cs)
 }
 
 // ResetAccessKeyWithClientSet reset access key with specified clientSet
-func (c *Clusters) ResetAccessKeyWithClientSet(clusterName string, cs *kubernetes.Clientset) (*credentialpb.AccessKeysItem, error) {
+func (c *Clusters) ResetAccessKeyWithClientSet(ctx context.Context, clusterName string, cs *kubernetes.Clientset) (*tokenpb.Token, error) {
 	// Get worker namespace
 	workerNs := getWorkerNamespace()
 
@@ -208,7 +212,7 @@ func (c *Clusters) ResetAccessKeyWithClientSet(clusterName string, cs *kubernete
 	}
 
 	// Create new accessKey
-	newAk, err := c.GetOrCreateAccessKey(clusterName)
+	newAk, err := c.GetOrCreateAccessKey(ctx, clusterName)
 	if err != nil {
 		logrus.Errorf("create access key error: %v", err)
 		return nil, err
@@ -231,13 +235,13 @@ func (c *Clusters) ResetAccessKeyWithClientSet(clusterName string, cs *kubernete
 }
 
 // ResetAccessKeyWithRecord reset ak with record
-func (c *Clusters) ResetAccessKeyWithRecord(clusterName, userID, orgID string) (*credentialpb.AccessKeysItem, error) {
+func (c *Clusters) ResetAccessKeyWithRecord(ctx context.Context, clusterName, userID, orgID string) (*tokenpb.Token, error) {
 	var (
 		detailInfo string
 		status     = dbclient.StatusTypeSuccess
 	)
 
-	res, err := c.ResetAccessKey(clusterName)
+	res, err := c.ResetAccessKey(ctx, clusterName)
 	if err != nil {
 		detailInfo = err.Error()
 		status = dbclient.StatusTypeFailed
@@ -265,9 +269,10 @@ func (c *Clusters) ResetAccessKeyWithRecord(clusterName, userID, orgID string) (
 }
 
 // CheckCluster check cluster
-func (c *Clusters) CheckCluster(clusterName string) error {
+func (c *Clusters) CheckCluster(ctx context.Context, clusterName string) error {
 	// check cluster exist or not
-	_, err := c.bdl.GetCluster(clusterName)
+	ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "true"}))
+	_, err := c.clusterSvc.GetCluster(ctx, &clusterpb.GetClusterRequest{IdOrName: clusterName})
 	if err != nil {
 		logrus.Errorf("check cluster error: %v", err)
 		return err

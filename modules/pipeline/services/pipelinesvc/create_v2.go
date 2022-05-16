@@ -22,13 +22,15 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/protobuf/types/known/timestamppb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/modules/pipeline/pkg/container_provider"
+	"github.com/erda-project/erda/modules/pipeline/providers/cron/crontypes"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
-	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
@@ -245,11 +247,11 @@ func (s *PipelineSvc) makePipelineFromRequestV2(req *apistructs.PipelineCreateRe
 				if action.Type.IsSnippet() {
 					continue
 				}
-				extensionItems = append(extensionItems, extmarketsvc.MakeActionTypeVersion(action))
+				extensionItems = append(extensionItems, s.actionMgr.MakeActionTypeVersion(action))
 			}
 		}
 	}
-	_, extensions, err := s.extMarketSvc.SearchActions(extensionItems, extmarketsvc.MakeActionLocationsBySource(p.PipelineSource))
+	_, extensions, err := s.actionMgr.SearchActions(extensionItems, s.actionMgr.MakeActionLocationsBySource(p.PipelineSource))
 	if err != nil {
 		return nil, apierrors.ErrCreatePipeline.InternalError(err)
 	}
@@ -296,12 +298,17 @@ func (s *PipelineSvc) makePipelineFromRequestV2(req *apistructs.PipelineCreateRe
 		if err != nil {
 			return nil, apierrors.ErrCreatePipeline.InvalidParameter(err)
 		}
-		pc, err := s.dbClient.GetPipelineCron(cronID)
+		pc, err := s.pipelineCronSvc.CronGet(context.Background(), &cronpb.CronGetRequest{
+			CronID: cronID,
+		})
 		if err != nil {
 			return nil, apierrors.ErrGetPipelineCron.InvalidParameter(err)
 		}
-		p.CronID = &pc.ID
-		p.Extra.CronExpr = pc.CronExpr
+		if pc.Data == nil {
+			return nil, apierrors.ErrNotFoundPipelineCron.InvalidParameter(crontypes.ErrCronNotFound)
+		}
+		p.CronID = &pc.Data.ID
+		p.Extra.CronExpr = pc.Data.CronExpr
 	}
 
 	// triggerMode
@@ -355,71 +362,51 @@ func (s *PipelineSvc) makePipelineFromRequestV2(req *apistructs.PipelineCreateRe
 // 非定时触发的，如果有定时配置，需要插入或更新 pipeline_crons enable 配置
 // 不管是定时还是非定时，只要定时配置是空的，就将pipeline_crons disable
 func (s *PipelineSvc) UpdatePipelineCron(p *spec.Pipeline, cronStartFrom *time.Time, configManageNamespaces []string, cronCompensator *pipelineyml.CronCompensator) error {
+	if p.TriggerMode == apistructs.PipelineTriggerModeCron {
+		return nil
+	}
 
-	var cron *spec.PipelineCron
-	var cronID uint64
+	var createRequest = constructToCreateCronRequest(p, cronStartFrom, configManageNamespaces)
+	result, err := s.pipelineCronSvc.CronCreate(context.Background(), createRequest)
+	if err != nil {
+		return apierrors.ErrUpdatePipelineCron.InternalError(err)
+	}
+	// todo CronCreate should be simple, do not contains disable logic.
+	//  Add an interface method HandleCron to merge all logic for easy use.
+	// When cron create cron express is empty, cron create will execute disable logic, if not find cron by source and ymlName the ID of result may be 0
+	if result.Data.ID > 0 {
+		p.CronID = &result.Data.ID
+	}
 
-	//是定时类型的流水线，切定时的表达式不为空，更新cron的配置
-	if p.TriggerMode != apistructs.PipelineTriggerModeCron && p.Extra.CronExpr != "" {
-
-		cron = constructPipelineCron(p, cronStartFrom, configManageNamespaces, cronCompensator)
-
-		if err := s.dbClient.InsertOrUpdatePipelineCron(cron); err != nil {
-			return apierrors.ErrUpdatePipelineCron.InternalError(err)
+	// report
+	if s.edgeRegister != nil {
+		if s.edgeRegister.IsEdge() {
+			s.edgeReporter.TriggerOnceCronReport(*p.CronID)
 		}
-		p.CronID = &cron.ID
-		cronID = cron.ID
 	}
-
-	//cron表达式为空，就需要关闭定时
-	if p.Extra.CronExpr == "" {
-		var err error
-
-		cron = constructPipelineCron(p, cronStartFrom, configManageNamespaces, cronCompensator)
-		if cronID, err = s.dbClient.DisablePipelineCron(cron); err != nil {
-			return apierrors.ErrUpdatePipelineCron.InternalError(err)
-		}
-		p.CronID = nil
-	}
-
-	if err := s.crondSvc.AddIntoPipelineCrond(cronID); err != nil {
-		logrus.Errorf("[alert] add crond failed, err: %v", err)
-	}
-
 	return nil
 }
 
-func constructPipelineCron(p *spec.Pipeline, cronStartFrom *time.Time, configManageNamespaces []string, cronCompensator *pipelineyml.CronCompensator) *spec.PipelineCron {
-	appID, _ := strconv.ParseUint(p.Labels[apistructs.LabelAppID], 10, 64)
-	var compensator *apistructs.CronCompensator
-	if cronCompensator != nil {
-		compensator = &apistructs.CronCompensator{}
-		compensator.Enable = cronCompensator.Enable
-		compensator.LatestFirst = cronCompensator.LatestFirst
-		compensator.StopIfLatterExecuted = cronCompensator.StopIfLatterExecuted
-	}
-	cron := &spec.PipelineCron{
-		ApplicationID:   appID,
-		Branch:          p.Labels[apistructs.LabelBranch],
-		PipelineSource:  p.PipelineSource,
-		PipelineYmlName: p.PipelineYmlName,
-		CronExpr:        p.Extra.CronExpr,
-		Enable:          &[]bool{false}[0],
-		Extra: spec.PipelineCronExtra{
-			PipelineYml:            p.PipelineYml,
-			ClusterName:            p.ClusterName,
-			FilterLabels:           p.Labels,
-			NormalLabels:           p.GenerateNormalLabelsForCreateV2(),
-			Envs:                   p.Snapshot.Envs,
-			ConfigManageNamespaces: configManageNamespaces,
-			CronStartFrom:          cronStartFrom,
-			Version:                "v2",
-			Compensator:            compensator,
-			LastCompensateAt:       nil,
-			IncomingSecrets:        p.Extra.IncomingSecrets,
-		},
+func constructToCreateCronRequest(p *spec.Pipeline, cronStartFrom *time.Time, configManageNamespaces []string) *cronpb.CronCreateRequest {
+	createReq := &cronpb.CronCreateRequest{
+		PipelineSource:         p.PipelineSource.String(),
+		PipelineYmlName:        p.PipelineYmlName,
+		CronExpr:               p.Extra.CronExpr,
+		Enable:                 wrapperspb.Bool(false),
+		PipelineYml:            p.PipelineYml,
+		ClusterName:            p.ClusterName,
+		FilterLabels:           p.Labels,
+		NormalLabels:           p.GenerateNormalLabelsForCreateV2(),
+		Envs:                   p.Snapshot.Envs,
+		ConfigManageNamespaces: configManageNamespaces,
+		CronStartFrom: func() *timestamppb.Timestamp {
+			if cronStartFrom == nil {
+				return nil
+			}
+			return timestamppb.New(*cronStartFrom)
+		}(),
+		IncomingSecrets:      p.Extra.IncomingSecrets,
 		PipelineDefinitionID: p.PipelineDefinitionID,
 	}
-
-	return cron
+	return createReq
 }

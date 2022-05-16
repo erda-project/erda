@@ -22,6 +22,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/httpserver/interceptors"
 	"github.com/erda-project/erda-infra/providers/i18n"
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/core/monitor/metric/query/metricq"
 	"github.com/erda-project/erda/modules/pkg/bundle-ex/cmdb"
@@ -34,13 +35,14 @@ type config struct {
 }
 
 type provider struct {
-	C       *config
-	L       logs.Logger
-	bundle  *bundle.Bundle
-	cmdb    *cmdb.Cmdb
-	metricq metricq.Queryer
-	service queryServiceImpl
-	t       i18n.Translator
+	C          *config
+	L          logs.Logger
+	bundle     *bundle.Bundle
+	cmdb       *cmdb.Cmdb
+	metricq    metricq.Queryer
+	service    queryServiceImpl
+	t          i18n.Translator
+	ClusterSvc clusterpb.ClusterServiceServer `autowired:"erda.core.clustermanager.cluster.ClusterService"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {

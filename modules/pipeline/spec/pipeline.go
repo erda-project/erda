@@ -46,6 +46,12 @@ type PipelineStageWithTask struct {
 	PipelineTasks []*PipelineTask
 }
 
+type PipelineWithStageAndTask struct {
+	Pipeline
+	PipelineStages []PipelineStage
+	PipelineTasks  []PipelineTask
+}
+
 type PipelineCombosReq struct {
 	Branches []string `json:"branches"`
 	Sources  []string `json:"sources"`

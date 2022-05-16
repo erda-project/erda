@@ -15,6 +15,8 @@
 package main
 
 import (
+	_ "embed"
+
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/pkg/common"
@@ -25,7 +27,7 @@ import (
 	_ "github.com/erda-project/erda-infra/providers/serviceregister"
 	_ "github.com/erda-project/erda/modules/pipeline"
 	_ "github.com/erda-project/erda/modules/pipeline/aop"
-	_ "github.com/erda-project/erda/modules/pipeline/providers/action"
+	_ "github.com/erda-project/erda/modules/pipeline/providers/actionmgr"
 	_ "github.com/erda-project/erda/modules/pipeline/providers/clusterinfo"
 	_ "github.com/erda-project/erda/modules/pipeline/providers/cms"
 	_ "github.com/erda-project/erda/modules/pipeline/providers/cron"
@@ -39,6 +41,9 @@ import (
 	_ "github.com/erda-project/erda/modules/pipeline/providers/source"
 )
 
+//go:embed bootstrap.yaml
+var bootstrapCfg string
+
 func main() {
 	common.RegisterHubListener(&servicehub.DefaultListener{
 		BeforeInitFunc: func(h *servicehub.Hub, config map[string]interface{}) error {
@@ -47,6 +52,6 @@ func main() {
 		},
 	})
 	common.Run(&servicehub.RunOptions{
-		ConfigFile: "conf/pipeline/pipeline.yaml",
+		Content: bootstrapCfg,
 	})
 }

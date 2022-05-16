@@ -28,7 +28,6 @@ redis:
   sentinels_addr: "${REDIS_SENTINELS_ADDR}"
 
 
-erda.core.services.authentication.credentials.accesskey:
 erda.core.services.errorbox:
 
 http-server@admin:
@@ -46,3 +45,9 @@ dingtalk.api:
 erda.core.messenger.notifychannel:
 
 audit:
+
+erda.core.token:
+
+grpc-client@erda.core.clustermanager.cluster:
+  addr: "${CLUSTER_MANAGER_GRPC_ADDR:cluster-manager:9095}"
+erda.core.clustermanager.cluster-client: {}

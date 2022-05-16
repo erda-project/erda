@@ -35,7 +35,6 @@ import (
 	"github.com/erda-project/erda/modules/core-services/dao"
 	"github.com/erda-project/erda/modules/core-services/model"
 	"github.com/erda-project/erda/modules/core-services/types"
-	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/filehelper"
 	local "github.com/erda-project/erda/pkg/i18n"
 	calcu "github.com/erda-project/erda/pkg/resourcecalculator"
@@ -252,7 +251,6 @@ func (p *Project) Create(userID string, createReq *apistructs.ProjectCreateReque
 			UserSyncAt: time.Now(),
 			OrgID:      project.OrgID,
 			ProjectID:  project.ID,
-			Token:      uuid.UUID(),
 		}
 		memberExtra := model.MemberExtra{
 			UserID:        userID,
@@ -761,7 +759,7 @@ func (p *Project) fetchPodInfo(dto *apistructs.ProjectDTO) {
 		return
 	}
 	var podInfos []apistructs.PodInfo
-	if err := p.db.Find(&podInfos, map[string]interface{}{"project_id": dto.ID, "phase": "running"}).Error; err != nil {
+	if err := p.db.Find(&podInfos, RunningPodCond(dto.ID)).Error; err != nil {
 		logrus.WithError(err).WithField("project_id", dto.ID).
 			Warnln("failed to Find the namespaces info in the project")
 		return
@@ -1583,4 +1581,11 @@ func (p *Project) ListUnblockAppCountsByProjectIDS(projectIDS []uint64) ([]model
 		return nil, nil
 	}
 	return p.db.ListUnblockAppCountsByProjectIDS(projectIDS)
+}
+
+func RunningPodCond(projectID uint64) map[string]interface{} {
+	return map[string]interface{}{
+		"project_id": strconv.FormatUint(projectID, 10),
+		"phase":      "running",
+	}
 }

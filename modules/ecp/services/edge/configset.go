@@ -15,6 +15,7 @@
 package edge
 
 import (
+	"context"
 	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
@@ -30,7 +31,7 @@ var (
 )
 
 // ListConfigSet List configSet by orgID or clusterID.
-func (e *Edge) ListConfigSet(param *apistructs.EdgeConfigSetListPageRequest) (int, *[]apistructs.EdgeConfigSetInfo, error) {
+func (e *Edge) ListConfigSet(ctx context.Context, param *apistructs.EdgeConfigSetListPageRequest) (int, *[]apistructs.EdgeConfigSetInfo, error) {
 	total, configSets, err := e.db.ListEdgeConfigSet(param)
 	if err != nil {
 		return 0, nil, err
@@ -39,7 +40,7 @@ func (e *Edge) ListConfigSet(param *apistructs.EdgeConfigSetListPageRequest) (in
 	configSetInfos := make([]apistructs.EdgeConfigSetInfo, 0, len(*configSets))
 
 	for _, configSet := range *configSets {
-		clusterInfo, err := e.getClusterInfo(configSet.ClusterID)
+		clusterInfo, err := e.getClusterInfo(ctx, configSet.ClusterID)
 		if err != nil {
 			return 0, nil, err
 		}
@@ -50,7 +51,7 @@ func (e *Edge) ListConfigSet(param *apistructs.EdgeConfigSetListPageRequest) (in
 }
 
 // GetConfigSet Get configSet by configSetID.
-func (e *Edge) GetConfigSet(configSetID int64) (*apistructs.EdgeConfigSetInfo, error) {
+func (e *Edge) GetConfigSet(ctx context.Context, configSetID int64) (*apistructs.EdgeConfigSetInfo, error) {
 	var (
 		configSetInfo *apistructs.EdgeConfigSetInfo
 	)
@@ -60,7 +61,7 @@ func (e *Edge) GetConfigSet(configSetID int64) (*apistructs.EdgeConfigSetInfo, e
 		return nil, err
 	}
 
-	clusterInfo, err := e.getClusterInfo(configSet.ClusterID)
+	clusterInfo, err := e.getClusterInfo(ctx, configSet.ClusterID)
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +72,7 @@ func (e *Edge) GetConfigSet(configSetID int64) (*apistructs.EdgeConfigSetInfo, e
 }
 
 // CreateConfigSet Create configSet namespaces in specified cluster.
-func (e *Edge) CreateConfigSet(req *apistructs.EdgeConfigSetCreateRequest) (uint64, error) {
+func (e *Edge) CreateConfigSet(ctx context.Context, req *apistructs.EdgeConfigSetCreateRequest) (uint64, error) {
 	var (
 		nsAPIVersion = "v1"
 		nsKind       = "Namespace"
@@ -92,7 +93,7 @@ func (e *Edge) CreateConfigSet(req *apistructs.EdgeConfigSetCreateRequest) (uint
 		},
 	}
 
-	clusterInfo, err := e.getClusterInfo(req.ClusterID)
+	clusterInfo, err := e.getClusterInfo(ctx, req.ClusterID)
 	if err != nil {
 		return 0, err
 	}
@@ -119,7 +120,7 @@ func (e *Edge) CreateConfigSet(req *apistructs.EdgeConfigSetCreateRequest) (uint
 }
 
 // DeleteConfigSet Delete configSet by configSetID in specified cluster.
-func (e *Edge) DeleteConfigSet(configSetID int64) error {
+func (e *Edge) DeleteConfigSet(ctx context.Context, configSetID int64) error {
 	configSet, err := e.db.GetEdgeConfigSet(configSetID)
 	if err != nil {
 		return fmt.Errorf("failed to get edge configset, configSetID: %d, err: (%v)", configSetID, err)
@@ -142,7 +143,7 @@ func (e *Edge) DeleteConfigSet(configSetID int64) error {
 		return fmt.Errorf("failed to delete edge configset, (%v)", err)
 	}
 
-	clusterInfo, err := e.getClusterInfo(configSet.ClusterID)
+	clusterInfo, err := e.getClusterInfo(ctx, configSet.ClusterID)
 	if err != nil {
 		return err
 	}

@@ -22,10 +22,14 @@ import (
 
 	"github.com/rancher/apiserver/pkg/types"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc/metadata"
 
+	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 const (
@@ -126,11 +130,13 @@ func (r *Resource) GetQuotaResource(ctx context.Context, ordId string, userID st
 		return
 	}
 	logrus.Debug("start list cluster")
-	clusters, err := r.Bdl.ListClusters("", orgid)
+	ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "cmp"}))
+	clustersResp, err := r.ClusterSvc.ListCluster(ctx, &clusterpb.ListClusterRequest{OrgID: orgid})
 	logrus.Debug("list cluster finished")
 	if err != nil {
 		return
 	}
+	clusters := clustersResp.Data
 	// 1. filter Cluster
 	var filter = make(map[string]struct{})
 	for _, cluster := range clusterNames {
@@ -234,7 +240,7 @@ func (r *Resource) GetQuotaResource(ctx context.Context, ordId string, userID st
 	return
 }
 
-func (r *Resource) FilterCluster(clusters []apistructs.ClusterInfo, clusterNames map[string]struct{}) []string {
+func (r *Resource) FilterCluster(clusters []*clusterpb.ClusterInfo, clusterNames map[string]struct{}) []string {
 	var names []string
 	if len(clusterNames) == 0 {
 		for _, cluster := range clusters {

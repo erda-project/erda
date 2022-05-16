@@ -55,18 +55,19 @@ func New(options ...Option) *Loop {
 	return loop
 }
 
-// sleepUntilCtxDone return error when ctx is done during waiting
-func sleepUntilCtxDone(d time.Duration, ctx context.Context) error {
+// sleepUntilCtxDone sleep d duration until ctx done.
+// Done maybe triggered by context timeout of deadline exceeded.
+func sleepUntilCtxDone(d time.Duration, ctx context.Context) (abort bool) {
 	if ctx == nil {
 		time.Sleep(d)
-		return nil
+		return false
 	}
 
 	select {
 	case <-time.After(d):
-		return nil
+		return false
 	case <-ctx.Done():
-		return ctx.Err()
+		return true
 	}
 }
 
@@ -77,9 +78,13 @@ func (l *Loop) Do(f func() (bool, error)) error {
 		return nil
 	}
 
-	var i uint64
+	var (
+		i     uint64
+		err   error
+		abort bool
+	)
 	for i = 0; i < l.maxTimes; i++ {
-		abort, err := f()
+		abort, err = f()
 		if abort {
 			return err
 		}
@@ -89,22 +94,19 @@ func (l *Loop) Do(f func() (bool, error)) error {
 			if l.declineLimit > 0 && l.lastSleepTime > l.declineLimit {
 				l.lastSleepTime = l.declineLimit
 			}
-
-			if err = sleepUntilCtxDone(l.lastSleepTime, l.ctx); err != nil {
+			if sleepUntilCtxDone(l.lastSleepTime, l.ctx) {
 				return nil
 			}
-
 			continue
 		}
 
 		// 成功执行 reset 暂停时间
 		l.lastSleepTime = l.interval
-
-		if err = sleepUntilCtxDone(l.lastSleepTime, l.ctx); err != nil {
+		if sleepUntilCtxDone(l.lastSleepTime, l.ctx) {
 			return nil
 		}
 	}
-	return nil
+	return err
 }
 
 // WithMaxTimes 设置循环的最大次数.

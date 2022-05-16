@@ -23,7 +23,10 @@ import (
 	"strings"
 
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc/metadata"
 
+	"github.com/erda-project/erda-infra/pkg/transport"
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cmp/impl/ess"
@@ -64,7 +67,7 @@ func (e *Endpoints) UpgradeEdgeCluster(ctx context.Context, r *http.Request, var
 		return
 	}
 
-	recordID, status, precheckHint, err := e.clusters.UpgradeEdgeCluster(req, i.UserID, i.OrgID)
+	recordID, status, precheckHint, err := e.clusters.UpgradeEdgeCluster(ctx, req, i.UserID, i.OrgID)
 	if err != nil {
 		err = fmt.Errorf("failed to upgrade cluster: %v", err)
 		return
@@ -105,7 +108,7 @@ func (e *Endpoints) BatchUpgradeEdgeCluster(ctx context.Context, r *http.Request
 	if err != nil {
 	}
 
-	go e.clusters.BatchUpgradeEdgeCluster(req, userID.String())
+	go e.clusters.BatchUpgradeEdgeCluster(ctx, req, userID.String())
 
 	return mkResponse(apistructs.BatchUpgradeEdgeClusterResponse{
 		Header: apistructs.Header{Success: true},
@@ -149,7 +152,7 @@ func (e *Endpoints) OrgClusterInfo(ctx context.Context, r *http.Request, vars ma
 		req.PageSize = 10
 	}
 
-	data, er := e.clusters.GetOrgClusterInfo(req)
+	data, er := e.clusters.GetOrgClusterInfo(ctx, req)
 	if er != nil {
 		err = fmt.Errorf("list org cluster info failed")
 		logrus.Errorf("%s, request:%+v, error:%v", err.Error(), req, er)
@@ -192,14 +195,10 @@ func (e *Endpoints) OfflineEdgeCluster(ctx context.Context, r *http.Request, var
 		return
 	}
 
-	recordID, preCheckHint, err := e.clusters.OfflineEdgeCluster(req, i.UserID, i.OrgID)
+	recordID, preCheckHint, err := e.clusters.OfflineEdgeCluster(ctx, req, i.UserID, i.OrgID)
 	if err != nil {
 		err = fmt.Errorf("failed to offline cluster: %v", err)
 		return
-	}
-
-	if !req.PreCheck {
-		e.SteveAggregator.Delete(req.ClusterName)
 	}
 
 	return mkResponse(apistructs.OfflineEdgeClusterResponse{
@@ -235,13 +234,10 @@ func (e *Endpoints) BatchOfflineEdgeCluster(ctx context.Context, r *http.Request
 		return
 	}
 
-	err = e.clusters.BatchOfflineEdgeCluster(req, userid)
+	err = e.clusters.BatchOfflineEdgeCluster(ctx, req, userid)
 	if err != nil {
 		err = fmt.Errorf("failed to offline cluster: %v", err)
 		return
-	}
-	for _, cluster := range req.Clusters {
-		e.SteveAggregator.Delete(cluster)
 	}
 
 	return mkResponse(apistructs.OfflineEdgeClusterResponse{
@@ -302,7 +298,7 @@ func (e *Endpoints) ClusterUpdate(ctx context.Context, r *http.Request, vars map
 	}
 
 	if req.OpsConfig != nil {
-		errStr := e.handleUpdateReq(&req)
+		errStr := e.handleUpdateReq(ctx, &req)
 		if errStr != "ok" {
 			err = fmt.Errorf("faliled to handle update request, message: %s", errStr)
 			return
@@ -321,18 +317,10 @@ func (e *Endpoints) ClusterUpdate(ctx context.Context, r *http.Request, vars map
 		return errorresp.ErrResp(err)
 	}
 
-	err = e.clusters.UpdateCluster(req, header)
+	err = e.clusters.UpdateCluster(ctx, req, header)
 	if err != nil {
 		err = fmt.Errorf("failed to update clusterinfo: %v", err)
 		return
-	}
-
-	clusterInfo, err := e.bdl.GetCluster(req.Name)
-	if err == nil {
-		e.SteveAggregator.Delete(req.Name)
-		e.SteveAggregator.Add(*clusterInfo)
-	} else {
-		logrus.Errorf("failed to get cluster %s when update steve server", req.Name)
 	}
 
 	return mkResponse(apistructs.OpsClusterInfoResponse{
@@ -341,15 +329,17 @@ func (e *Endpoints) ClusterUpdate(ctx context.Context, r *http.Request, vars map
 	})
 }
 
-func (e *Endpoints) handleUpdateReq(req *apistructs.CMPClusterUpdateRequest) string {
+func (e *Endpoints) handleUpdateReq(ctx context.Context, req *apistructs.CMPClusterUpdateRequest) string {
 	var as *ess.Ess
 	var isEdit bool
-	clusterInfo, err := e.bdl.GetCluster(req.Name)
+	ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "true"}))
+	resp, err := e.ClusterSvc.GetCluster(ctx, &clusterpb.GetClusterRequest{IdOrName: req.Name})
 	//TODO: check clusterInfo info
 	if err != nil {
 		return fmt.Sprintf("failed to get cluster info: %v", err)
 	}
 
+	clusterInfo := resp.Data
 	accountInfoReq := apistructs.BasicCloudConf{
 		Region:          clusterInfo.OpsConfig.Region,
 		AccessKeyId:     clusterInfo.OpsConfig.AccessKey,
@@ -385,7 +375,12 @@ func (e *Endpoints) handleUpdateReq(req *apistructs.CMPClusterUpdateRequest) str
 		if err != nil {
 			return fmt.Sprintf("failed to create auto scale mode: %v", err)
 		}
-		req.OpsConfig = clusterInfo.OpsConfig
+
+		opsConfig, err := convertPbOpsConfigToOpsConfig(clusterInfo.OpsConfig)
+		if err != nil {
+			return fmt.Sprintf("failed to convert clusterpb.OpsConfig to apistructs.OpsConfig")
+		}
+		req.OpsConfig = opsConfig
 		req.OpsConfig.EssScaleRule = as.Config.EssScaleRule
 		req.OpsConfig.EssGroupID = as.Config.EssGroupID
 		req.OpsConfig.ScalePipeLineID = 0
@@ -405,17 +400,17 @@ func (e *Endpoints) handleUpdateReq(req *apistructs.CMPClusterUpdateRequest) str
 				isEdit = true
 			}
 		}
-		clusterInfo.OpsConfig.ScaleNumber = req.OpsConfig.ScaleNumber
+		clusterInfo.OpsConfig.ScaleNumber = int64(req.OpsConfig.ScaleNumber)
 		clusterInfo.OpsConfig.LaunchTime = req.OpsConfig.LaunchTime
 		clusterInfo.OpsConfig.RepeatMode = req.OpsConfig.RepeatMode
 		clusterInfo.OpsConfig.RepeatValue = req.OpsConfig.RepeatValue
-		clusterInfo.OpsConfig.ScaleDuration = req.OpsConfig.ScaleDuration
+		clusterInfo.OpsConfig.ScaleDuration = int64(req.OpsConfig.ScaleDuration)
 		err := as.CreateSchedulerFlow(apistructs.SchedulerScaleReq{
 			ClusterName:     req.Name,
 			VSwitchID:       clusterInfo.OpsConfig.VSwitchIDs,
 			EcsPassword:     clusterInfo.OpsConfig.EcsPassword,
 			SgID:            clusterInfo.OpsConfig.SgIDs,
-			OrgID:           clusterInfo.OrgID,
+			OrgID:           int(clusterInfo.OrgID),
 			Region:          clusterInfo.OpsConfig.Region,
 			AccessKeyId:     clusterInfo.OpsConfig.AccessKey,
 			AccessKeySecret: clusterInfo.OpsConfig.SecretKey,
@@ -430,7 +425,12 @@ func (e *Endpoints) handleUpdateReq(req *apistructs.CMPClusterUpdateRequest) str
 		if err != nil {
 			return fmt.Sprintf("failed to create scheduler scale mode: %v", err)
 		}
-		req.OpsConfig = clusterInfo.OpsConfig
+
+		opsConfig, err := convertPbOpsConfigToOpsConfig(clusterInfo.OpsConfig)
+		if err != nil {
+			return fmt.Sprintf("failed to convert clusterpb.OpsConfig to apistructs.OpsConfig")
+		}
+		req.OpsConfig = opsConfig
 		req.OpsConfig.ScheduledTaskId = as.Config.ScheduledTaskId
 		req.OpsConfig.ScalePipeLineID = as.Config.ScalePipeLineID
 		req.OpsConfig.EssGroupID = as.Config.EssGroupID
@@ -449,14 +449,19 @@ func (e *Endpoints) handleUpdateReq(req *apistructs.CMPClusterUpdateRequest) str
 		if err != nil {
 			return fmt.Sprintf("failed to delete scheduler task : %v", err)
 		}
-		req.OpsConfig = clusterInfo.OpsConfig
+
+		opsConfig, err := convertPbOpsConfigToOpsConfig(clusterInfo.OpsConfig)
+		if err != nil {
+			return fmt.Sprintf("failed to convert clusterpb.OpsConfig to apistructs.OpsConfig")
+		}
+		req.OpsConfig = opsConfig
 		req.OpsConfig.ScalePipeLineID = 0
 		req.OpsConfig.EssGroupID = as.Config.EssGroupID
 	}
 	return "ok"
 }
 
-func (e *Endpoints) validateOpsConfig(opsConf *apistructs.OpsConfig) error {
+func (e *Endpoints) validateOpsConfig(opsConf *clusterpb.OpsConfig) error {
 	if opsConf == nil {
 		err := fmt.Errorf("empty ops config")
 		logrus.Error(err.Error())
@@ -508,13 +513,14 @@ func (e *Endpoints) ImportCluster(ctx context.Context, r *http.Request, vars map
 		return
 	}
 
-	if err = e.clusters.ImportClusterWithRecord(i.UserID, &req); err != nil {
+	if err = e.clusters.ImportClusterWithRecord(ctx, i.UserID, &req); err != nil {
 		return
 	}
 
-	clusterInfo, err := e.bdl.GetCluster(req.ClusterName)
+	ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "true"}))
+	clusterResp, err := e.ClusterSvc.GetCluster(ctx, &clusterpb.GetClusterRequest{IdOrName: req.ClusterName})
 	if err == nil {
-		e.SteveAggregator.Add(*clusterInfo)
+		e.SteveAggregator.Add(clusterResp.Data)
 	}
 	return mkResponse(apistructs.ImportClusterResponse{
 		Header: apistructs.Header{Success: true},
@@ -576,7 +582,7 @@ func (e *Endpoints) InitCluster(ctx context.Context, w http.ResponseWriter, r *h
 	orgName := r.URL.Query().Get("orgName")
 
 	if accessKey != "" {
-		content, err := e.clusters.RenderInitContent(orgName, clusterName, accessKey)
+		content, err := e.clusters.RenderInitContent(ctx, orgName, clusterName, accessKey)
 		if err != nil {
 			return err
 		}
@@ -610,4 +616,17 @@ func (e *Endpoints) InitCluster(ctx context.Context, w http.ResponseWriter, r *h
 	w.Write(respData)
 
 	return nil
+}
+
+func convertPbOpsConfigToOpsConfig(pbConfig *clusterpb.OpsConfig) (*apistructs.OpsConfig, error) {
+	data, err := json.Marshal(pbConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	res := apistructs.OpsConfig{}
+	if err = json.Unmarshal(data, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
 }

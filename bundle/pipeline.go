@@ -314,3 +314,23 @@ func (b *Bundle) GetPipelineActionParamsAndOutputs(req apistructs.SnippetQueryDe
 	}
 	return snippetQueryDetailsResponse.Data, nil
 }
+
+func (b *Bundle) PipelineCallback(req apistructs.PipelineCallbackRequest, openapiAddr, token string) error {
+	hc := b.hc
+	var resp apistructs.PipelineCallbackResponse
+
+	r, err := hc.Post(openapiAddr).
+		Path("/api/pipelines/actions/callback").
+		Header("Authorization", token).
+		Header(httputil.InternalHeader, "bundle").
+		JSONBody(&req).
+		Do().
+		JSON(&resp)
+	if err != nil {
+		return err
+	}
+	if !r.IsOK() || !resp.Success {
+		return errors.Errorf("status-code %d, resp %#v", r.StatusCode(), resp)
+	}
+	return nil
+}

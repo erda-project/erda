@@ -15,97 +15,106 @@
 package pipelinesvc
 
 import (
-	"os"
-	"reflect"
+	"context"
 	"testing"
 	"time"
 
-	"bou.ke/monkey"
-	"github.com/davecgh/go-spew/spew"
-	"github.com/stretchr/testify/assert"
-
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
+	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
+	"github.com/erda-project/erda-proto-go/core/pipeline/pb"
 	"github.com/erda-project/erda/modules/pipeline/spec"
-	"github.com/erda-project/erda/pkg/http/httpclient"
-	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
-func TestValidateCreateRequest(t *testing.T) {
-	os.Setenv("SCHEDULER_ADDR", "scheduler.default.svc.cluster.local:9091")
-	svc := PipelineSvc{
-		bdl: bundle.New(
-			bundle.WithHTTPClient(httpclient.New(httpclient.WithTimeout(time.Second, time.Second))),
-			bundle.WithScheduler(),
-		),
-	}
-
-	req := apistructs.PipelineCreateRequestV2{
-		PipelineYml:    "1.yml",
-		ClusterName:    "local",
-		Namespace:      "custom-namespace",
-		PipelineSource: apistructs.PipelineSourceQA,
-		IdentityInfo:   apistructs.IdentityInfo{InternalClient: "local"},
-		Labels: map[string]string{
-			"1": "01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789",
-			"01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789": "1",
-			"key": "v",
-		},
-		NormalLabels: map[string]string{
-			"1": "value",
-		},
-	}
-	err := svc.validateCreateRequest(&req)
-	assert.NoError(t, err)
-	spew.Dump(req)
+type CronServiceServerTestImpl struct {
+	create *cronpb.CronCreateResponse
 }
 
-func TestMakePipelineFromRequestV2(t *testing.T) {
-	req := apistructs.PipelineCreateRequestV2{
-		PipelineYml: `version: "1.1"
-stages:
-  - stage:
-      - api-test:
-          alias: api-test
-          description: 执行单个接口测试。上层可以通过 pipeline.yml 编排一组接口测试的执行顺序。
-          version: "2.0"
-          params:
-            body:
-              type: none
-            method: GET
-            url: www.baidu.com`,
-		ClusterName:    "local",
-		Namespace:      "custom-namespace",
-		PipelineSource: apistructs.PipelineSourceQA,
-		IdentityInfo:   apistructs.IdentityInfo{InternalClient: "local"},
-		Labels: map[string]string{
-			"1":   "0123456789",
-			"key": "v",
-		},
-		NormalLabels: map[string]string{
-			"1": "value",
-		},
-	}
-	extSvc := &extmarketsvc.ExtMarketSvc{}
-	svc := PipelineSvc{
-		bdl: bundle.New(
-			bundle.WithHTTPClient(httpclient.New(httpclient.WithTimeout(time.Second, time.Second))),
-			bundle.WithScheduler(),
-		),
-	}
-	pm := monkey.PatchInstanceMethod(reflect.TypeOf(&svc), "UpdatePipelineCron", func(s *PipelineSvc, p *spec.Pipeline, cronStartFrom *time.Time, configManageNamespaces []string, cronCompensator *pipelineyml.CronCompensator) error {
-		return nil
-	})
-	defer pm.Unpatch()
-	pm1 := monkey.PatchInstanceMethod(reflect.TypeOf(extSvc), "SearchActions", func(s *extmarketsvc.ExtMarketSvc, items []string, locations []string, ops ...extmarketsvc.OpOption) (map[string]*diceyml.Job, map[string]*apistructs.ActionSpec, error) {
-		return nil, nil, nil
-	})
-	defer pm1.Unpatch()
+func (c CronServiceServerTestImpl) CronCreate(ctx context.Context, request *cronpb.CronCreateRequest) (*cronpb.CronCreateResponse, error) {
+	return c.create, nil
+}
 
-	p, err := svc.makePipelineFromRequestV2(&req)
-	assert.NoError(t, err)
-	assert.Equal(t, "custom-namespace", p.Extra.Namespace)
-	assert.Equal(t, true, p.Extra.NotPipelineControlledNs)
+func (c CronServiceServerTestImpl) CronPaging(ctx context.Context, request *cronpb.CronPagingRequest) (*cronpb.CronPagingResponse, error) {
+	panic("implement me")
+}
+
+func (c CronServiceServerTestImpl) CronStart(ctx context.Context, request *cronpb.CronStartRequest) (*cronpb.CronStartResponse, error) {
+	panic("implement me")
+}
+
+func (c CronServiceServerTestImpl) CronStop(ctx context.Context, request *cronpb.CronStopRequest) (*cronpb.CronStopResponse, error) {
+	panic("implement me")
+}
+
+func (c CronServiceServerTestImpl) CronDelete(ctx context.Context, request *cronpb.CronDeleteRequest) (*cronpb.CronDeleteResponse, error) {
+	panic("implement me")
+}
+
+func (c CronServiceServerTestImpl) CronGet(ctx context.Context, request *cronpb.CronGetRequest) (*cronpb.CronGetResponse, error) {
+	panic("implement me")
+}
+
+func (c CronServiceServerTestImpl) CronUpdate(ctx context.Context, request *cronpb.CronUpdateRequest) (*cronpb.CronUpdateResponse, error) {
+	panic("implement me")
+}
+
+func TestPipelineSvc_UpdatePipelineCron(t *testing.T) {
+	type args struct {
+		p                      *spec.Pipeline
+		cronStartFrom          *time.Time
+		configManageNamespaces []string
+		cronCompensator        *pipelineyml.CronCompensator
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "test id > 0",
+			args: args{
+				p: &spec.Pipeline{
+					PipelineBase: spec.PipelineBase{
+						PipelineSource:  "test",
+						PipelineYmlName: "test",
+						ClusterName:     "test",
+					},
+					PipelineExtra: spec.PipelineExtra{
+						Extra: spec.PipelineExtraInfo{
+							CronExpr: "test",
+						},
+						PipelineYml: "test",
+						Snapshot: spec.Snapshot{
+							Envs: map[string]string{
+								"test": "test",
+							},
+						},
+					},
+					Labels: map[string]string{
+						"test": "test",
+					},
+				},
+				cronStartFrom:          nil,
+				configManageNamespaces: nil,
+				cronCompensator:        nil,
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &PipelineSvc{}
+			impl := CronServiceServerTestImpl{
+				create: &cronpb.CronCreateResponse{
+					Data: &pb.Cron{
+						ID: 1,
+					},
+				},
+			}
+			s.pipelineCronSvc = impl
+
+			if err := s.UpdatePipelineCron(tt.args.p, tt.args.cronStartFrom, tt.args.configManageNamespaces, tt.args.cronCompensator); (err != nil) != tt.wantErr {
+				t.Errorf("UpdatePipelineCron() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
 }

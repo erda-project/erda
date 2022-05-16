@@ -64,8 +64,22 @@ type OryKratosUpdateIdentitiyRequest struct {
 }
 
 type OryKratosCreateIdentitiyRequest struct {
-	SchemaID string                  `json:"schema_id"`
-	Traits   OryKratosIdentityTraits `json:"traits"`
+	SchemaID    string                                  `json:"schema_id"`
+	Traits      OryKratosIdentityTraits                 `json:"traits"`
+	Credentials OryKratosAdminIdentityImportCredentials `json:"credentials"`
+}
+
+type OryKratosAdminIdentityImportCredentials struct {
+	Password *OryKratosAdminIdentityImportCredentialsPassword `json:"password"`
+}
+
+type OryKratosAdminIdentityImportCredentialsPassword struct {
+	Config OryKratosIdentityCredentialsPasswordConfig `json:"config"`
+}
+
+type OryKratosIdentityCredentialsPasswordConfig struct {
+	HashedPassword string `json:"hashed_password"`
+	Password       string `json:"password"`
 }
 
 const (

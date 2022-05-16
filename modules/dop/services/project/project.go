@@ -19,6 +19,8 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/i18n"
 	dashboardPb "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
+	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/dbclient"
@@ -27,15 +29,17 @@ import (
 )
 
 type Project struct {
-	db        *dbclient.DBClient
-	bdl       *bundle.Bundle
-	trans     i18n.Translator
-	cmp       dashboardPb.ClusterResourceServer
-	namespace *namespace.Namespace
+	db         *dbclient.DBClient
+	bdl        *bundle.Bundle
+	trans      i18n.Translator
+	cmp        dashboardPb.ClusterResourceServer
+	namespace  *namespace.Namespace
+	clusterSvc clusterpb.ClusterServiceServer
 
 	appOwnerCache    *cache.Cache
 	CreateFileRecord func(req apistructs.TestFileRecordRequest) (uint64, error)
 	UpdateFileRecord func(req apistructs.TestFileRecordRequest) error
+	tokenService     tokenpb.TokenServiceServer
 }
 
 func New(options ...Option) *Project {

@@ -22,13 +22,17 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/pipeline/providers/edgepipeline_register"
 )
 
 var pd *provider
 
 type config struct {
+	ClusterName              string        `env:"DICE_CLUSTER_NAME"`
+	ErdaNamespace            string        `env:"DICE_NAMESPACE"`
+	IsEdge                   bool          `env:"DICE_IS_EDGE" default:"false"`
 	RetryClusterHookInterval time.Duration `file:"retry_cluster_hook_interval" default:"5s"`
-	RefreshClustersInterval  time.Duration `file:"refresh_clusters_interval" default:"20m"`
+	RefreshClustersInterval  time.Duration `file:"refresh_clusters_interval" env:"REFRESH_CLUSTERS_INTERVAL"`
 }
 
 type provider struct {
@@ -38,13 +42,14 @@ type provider struct {
 	bdl      *bundle.Bundle
 	cache    cache
 	notifier Notifier
+
+	EdgeRegister edgepipeline_register.Interface
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.bdl = bundle.New(bundle.WithClusterManager(), bundle.WithCoreServices())
 	p.cache = NewClusterInfoCache()
 	p.notifier = NewClusterInfoNotifier()
-	p.registerClusterHookUntilSuccess(ctx)
 	pd = p
 	return nil
 }
@@ -67,6 +72,7 @@ func (p *provider) registerClusterHookUntilSuccess(ctx context.Context) {
 
 func (p *provider) Run(ctx context.Context) error {
 	go p.continueUpdateAndRefresh()
+	p.EdgeRegister.OnCenter(p.registerClusterHookUntilSuccess)
 	return nil
 }
 

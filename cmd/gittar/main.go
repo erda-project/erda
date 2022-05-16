@@ -19,6 +19,8 @@ import (
 	"github.com/erda-project/erda/pkg/common"
 
 	// providers and modules
+	_ "github.com/erda-project/erda-infra/providers/grpcclient"
+	_ "github.com/erda-project/erda-proto-go/core/token/client"
 	_ "github.com/erda-project/erda/modules/gittar"
 )
 

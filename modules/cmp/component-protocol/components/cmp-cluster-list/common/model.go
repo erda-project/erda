@@ -24,6 +24,7 @@ import (
 	"gopkg.in/square/go-jose.v2/json"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cmp/conf"
 	"github.com/erda-project/erda/pkg/k8sclient"
@@ -73,7 +74,7 @@ func Transfer(a, b interface{}) error {
 	return nil
 }
 
-func GetClusterStatus(kc *k8sclient.K8sClient, meta apistructs.ClusterInfo) (string, error) {
+func GetClusterStatus(kc *k8sclient.K8sClient, meta *clusterpb.ClusterInfo) (string, error) {
 	if kc == nil || kc.ClientSet == nil {
 		return "", fmt.Errorf("kubernetes client is nil")
 	}
@@ -140,7 +141,7 @@ func GetClusterStatus(kc *k8sclient.K8sClient, meta apistructs.ClusterInfo) (str
 	}
 }
 
-func ParseManageType(mc *apistructs.ManageConfig) string {
+func ParseManageType(mc *clusterpb.ManageConfig) string {
 	if mc == nil {
 		return "create"
 	}

@@ -24,6 +24,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/core-services/services/dingtalk/api/interfaces"
 	"github.com/erda-project/erda/modules/messenger/eventbox/subscriber"
+	"github.com/erda-project/erda/modules/messenger/eventbox/subscriber/dingding"
 	"github.com/erda-project/erda/modules/messenger/eventbox/types"
 	"github.com/erda-project/erda/pkg/template"
 )
@@ -89,7 +90,7 @@ func (d DingWorkNoticeSubscriber) Publish(dest string, content string, time int6
 		appSecret = notifyChannel.Config.AppSecret
 	}
 	dingClient := d.dingTalkApi.GetClient(appKey, appSecret, agentId)
-	respMessage, err := dingClient.SendWorkNotice(mobiles, paramMap["title"], workNotifyData.Template)
+	respMessage, err := dingClient.SendWorkNotice(mobiles, paramMap["title"], dingding.DingPrint(workNotifyData.Template))
 	if err != nil {
 		errs = append(errs, err)
 	}

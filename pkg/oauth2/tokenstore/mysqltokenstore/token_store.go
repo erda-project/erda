@@ -19,14 +19,19 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"gopkg.in/oauth2.v3"
 	"gopkg.in/oauth2.v3/models"
 
+	"github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 )
+
+// TODO: Move pkg to core-services
 
 type TokenStore struct {
 	db         *gorm.DB
@@ -37,13 +42,62 @@ type TokenStore struct {
 
 // TokenStoreItem data item
 type TokenStoreItem struct {
-	ID        int64 `gorm:"primary_key"`
-	CreatedAt time.Time
-	ExpiredAt *time.Time
-	Code      string
-	Access    string
-	Refresh   string
-	Data      TokenStoreItemData
+	ID            string `gorm:"primary_key"`
+	Scope         string
+	ScopeId       string
+	AccessKey     string
+	SecretKey     string
+	Status        string
+	Description   string
+	CreatorID     string
+	Type          string
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
+	ExpiredAt     *time.Time
+	Code          string
+	Data          TokenStoreItemData
+	Refresh       string
+	SoftDeletedAt uint64
+}
+
+func (t *TokenStoreItem) BeforeCreate(scope *gorm.Scope) (err error) {
+	id, err := uuid.NewRandom()
+	if err != nil {
+		return
+	}
+	t.ID = id.String()
+	return
+}
+
+func (t *TokenStoreItem) ToPbToken() *pb.Token {
+	return &pb.Token{
+		Id:          t.ID,
+		SecretKey:   t.SecretKey,
+		AccessKey:   t.AccessKey,
+		Status:      t.Status,
+		Description: t.Description,
+		Scope:       t.Scope,
+		ScopeId:     t.ScopeId,
+		Type:        t.Type,
+		CreatorId:   t.CreatorID,
+		CreatedAt:   timestamppb.New(t.CreatedAt),
+	}
+}
+
+type TokenType string
+
+const (
+	OAuth2    TokenType = "OAuth2"
+	AccessKey TokenType = "AccessKey"
+	PAT       TokenType = "PAT"
+)
+
+func (s TokenType) String() string {
+	return string(s)
+}
+
+func Oauth2Type(db *gorm.DB) *gorm.DB {
+	return db.Where("`type` = ?", OAuth2)
 }
 
 type TokenStoreItemData struct {
@@ -80,7 +134,7 @@ func (data *TokenStoreItemData) Scan(value interface{}) error {
 }
 
 func (TokenStoreItem) TableName() string {
-	return "openapi_oauth2_tokens"
+	return "erda_token"
 }
 
 // NewTokenStore creates PostgreSQL store instance
@@ -124,7 +178,7 @@ func (s *TokenStore) gc() {
 func (s *TokenStore) clean() {
 	now := time.Unix(time.Now().Unix(), 0)
 
-	err := s.db.Where("expired_at is not null and expired_at <= ?", now).Or("code='' AND access='' AND refresh=''").Delete(&TokenStoreItem{}).Error
+	err := s.db.Scopes(Oauth2Type).Where("expired_at is not null and expired_at <= ?", now).Or("code='' AND access_key='' AND refresh=''").Delete(&TokenStoreItem{}).Error
 	if err != nil {
 		logrus.Errorf("[alert] failed to gc clean expired openapi oauth2 token, err: %v", err)
 		return
@@ -142,7 +196,7 @@ func (s *TokenStore) Create(info oauth2.TokenInfo) error {
 		item.Code = code
 		item.ExpiredAt = handleExpiredAt(info.GetCodeCreateAt(), info.GetCodeExpiresIn())
 	} else {
-		item.Access = info.GetAccess()
+		item.AccessKey = info.GetAccess()
 		item.ExpiredAt = handleExpiredAt(info.GetAccessCreateAt(), info.GetAccessExpiresIn())
 
 		if refresh := info.GetRefresh(); refresh != "" {
@@ -155,9 +209,10 @@ func (s *TokenStore) Create(info oauth2.TokenInfo) error {
 		CreatedAt: item.CreatedAt,
 		ExpiredAt: item.ExpiredAt,
 		Code:      item.Code,
-		Access:    item.Access,
+		AccessKey: item.AccessKey,
 		Refresh:   item.Refresh,
 		Data:      item.Data,
+		Type:      string(OAuth2),
 	}).Error
 }
 
@@ -170,7 +225,7 @@ func handleExpiredAt(createdAt time.Time, expiredIn time.Duration) *time.Time {
 
 // RemoveByCode delete the authorization code
 func (s *TokenStore) RemoveByCode(code string) error {
-	err := s.db.Where("code = ?", code).Delete(&TokenStoreItem{}).Error
+	err := s.db.Scopes(Oauth2Type).Where("code = ?", code).Delete(&TokenStoreItem{}).Error
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return err
 	}
@@ -179,7 +234,7 @@ func (s *TokenStore) RemoveByCode(code string) error {
 
 // RemoveByAccess use the access token to delete the token information
 func (s *TokenStore) RemoveByAccess(access string) error {
-	err := s.db.Where("access = ?", access).Delete(&TokenStoreItem{}).Error
+	err := s.db.Scopes(Oauth2Type).Where("access_key = ?", access).Delete(&TokenStoreItem{}).Error
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return err
 	}
@@ -188,7 +243,7 @@ func (s *TokenStore) RemoveByAccess(access string) error {
 
 // RemoveByRefresh use the refresh token to delete the token information
 func (s *TokenStore) RemoveByRefresh(refresh string) error {
-	err := s.db.Where("refresh = ?", refresh).Delete(&TokenStoreItem{}).Error
+	err := s.db.Scopes(Oauth2Type).Where("refresh = ?", refresh).Delete(&TokenStoreItem{}).Error
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return err
 	}
@@ -202,7 +257,7 @@ func (s *TokenStore) GetByCode(code string) (oauth2.TokenInfo, error) {
 	}
 
 	var tokenItem TokenStoreItem
-	err := s.db.Where("code = ?", code).First(&tokenItem).Error
+	err := s.db.Scopes(Oauth2Type).Where("code = ?", code).First(&tokenItem).Error
 	if err != nil && !gorm.IsRecordNotFoundError(err) {
 		return nil, err
 	}
@@ -216,7 +271,7 @@ func (s *TokenStore) GetByAccess(access string) (oauth2.TokenInfo, error) {
 	}
 
 	var tokenItem TokenStoreItem
-	err := s.db.Where("access = ?", access).First(&tokenItem).Error
+	err := s.db.Scopes(Oauth2Type).Where("access_key = ?", access).First(&tokenItem).Error
 	if err != nil && !gorm.IsRecordNotFoundError(err) {
 		return nil, err
 	}
@@ -230,7 +285,7 @@ func (s *TokenStore) GetByRefresh(refresh string) (oauth2.TokenInfo, error) {
 	}
 
 	var tokenItem TokenStoreItem
-	err := s.db.Where("refresh = ?", refresh).First(&tokenItem).Error
+	err := s.db.Scopes(Oauth2Type).Where("refresh = ?", refresh).First(&tokenItem).Error
 	if err != nil && !gorm.IsRecordNotFoundError(err) {
 		return nil, err
 	}

@@ -104,7 +104,7 @@ func (e *Endpoints) ListEdgeConfigSet(ctx context.Context, r *http.Request, vars
 		PageSize:  pageSize,
 	}
 
-	total, configSetInfos, err := e.edge.ListConfigSet(pageQueryParam)
+	total, configSetInfos, err := e.edge.ListConfigSet(ctx, pageQueryParam)
 
 	if err != nil {
 		return apierrors.ErrListEdgeConfigSet.InternalError(err).ToResp(), nil
@@ -140,7 +140,7 @@ func (e *Endpoints) GetEdgeConfigSet(ctx context.Context, r *http.Request, vars 
 	if internalClient == "" {
 	}
 
-	cfgSetItem, err := e.edge.GetConfigSet(itemID)
+	cfgSetItem, err := e.edge.GetConfigSet(ctx, itemID)
 
 	if err != nil {
 		return apierrors.ErrListEdgeConfigSet.InternalError(err).ToResp(), nil
@@ -171,7 +171,7 @@ func (e *Endpoints) CreateEdgeConfigSet(ctx context.Context, r *http.Request, va
 	}
 	logrus.Infof("request body: %+v", req)
 
-	edgeSiteID, err := e.edge.CreateConfigSet(&req)
+	edgeSiteID, err := e.edge.CreateConfigSet(ctx, &req)
 	if err != nil {
 		return apierrors.ErrCreateEdgeConfigSet.InternalError(err).ToResp(), nil
 	}
@@ -232,7 +232,7 @@ func (e *Endpoints) DeleteEdgeConfigSet(ctx context.Context, r *http.Request, va
 		return apierrors.ErrDeleteEdgeConfigSet.InvalidParameter(err).ToResp(), nil
 	}
 
-	if err = e.edge.DeleteConfigSet(configSetID); err != nil {
+	if err = e.edge.DeleteConfigSet(ctx, configSetID); err != nil {
 		return apierrors.ErrDeleteEdgeConfigSet.InternalError(err).ToResp(), nil
 	}
 

@@ -24,6 +24,9 @@ type LogQueryServiceHandler interface {
 	// for runtime log
 	// GET /api/runtime/logs
 	GetLogByRuntime(context.Context, *GetLogByRuntimeRequest) (*GetLogByRuntimeResponse, error)
+	// for runtime log
+	// GET /api/runtime/realtime/logs
+	GetLogByRealtime(context.Context, *GetLogByRuntimeRequest) (*GetLogByRuntimeResponse, error)
 	// for organization log
 	// GET /api/orgCenter/logs
 	GetLogByOrganization(context.Context, *GetLogByOrganizationRequest) (*GetLogByOrganizationResponse, error)
@@ -107,6 +110,42 @@ func RegisterLogQueryServiceHandler(r http.Router, srv LogQueryServiceHandler, o
 				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
 				if h.Interceptor != nil {
 					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, GetLogByRuntime_info)
+				}
+				r = r.WithContext(ctx)
+				var in GetLogByRuntimeRequest
+				if err := h.Decode(r, &in); err != nil {
+					return nil, err
+				}
+				var input interface{} = &in
+				if u, ok := (input).(urlenc.URLValuesUnmarshaler); ok {
+					if err := u.UnmarshalURLValues("", r.URL.Query()); err != nil {
+						return nil, err
+					}
+				}
+				out, err := handler(ctx, &in)
+				if err != nil {
+					return out, err
+				}
+				return out, nil
+			}),
+		)
+	}
+
+	add_GetLogByRealtime := func(method, path string, fn func(context.Context, *GetLogByRuntimeRequest) (*GetLogByRuntimeResponse, error)) {
+		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+			return fn(ctx, req.(*GetLogByRuntimeRequest))
+		}
+		var GetLogByRealtime_info transport.ServiceInfo
+		if h.Interceptor != nil {
+			GetLogByRealtime_info = transport.NewServiceInfo("erda.core.monitor.log.query.LogQueryService", "GetLogByRealtime", srv)
+			handler = h.Interceptor(handler)
+		}
+		r.Add(method, path, encodeFunc(
+			func(w http1.ResponseWriter, r *http1.Request) (interface{}, error) {
+				ctx := http.WithRequest(r.Context(), r)
+				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, GetLogByRealtime_info)
 				}
 				r = r.WithContext(ctx)
 				var in GetLogByRuntimeRequest
@@ -238,6 +277,7 @@ func RegisterLogQueryServiceHandler(r http.Router, srv LogQueryServiceHandler, o
 
 	add_GetLog("GET", "/api/logs", srv.GetLog)
 	add_GetLogByRuntime("GET", "/api/runtime/logs", srv.GetLogByRuntime)
+	add_GetLogByRealtime("GET", "/api/runtime/realtime/logs", srv.GetLogByRealtime)
 	add_GetLogByOrganization("GET", "/api/orgCenter/logs", srv.GetLogByOrganization)
 	add_GetLogByExpression("GET", "/api/logs/search", srv.GetLogByExpression)
 	add_LogAggregation("GET", "/api/logs/aggregation", srv.LogAggregation)

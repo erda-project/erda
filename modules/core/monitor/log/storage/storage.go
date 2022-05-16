@@ -26,6 +26,12 @@ import (
 	"github.com/erda-project/erda/modules/core/monitor/storekit"
 )
 
+const (
+	IsLive           = "is_live"
+	SelectorKeyCount = "count"
+	IsFirstQuery     = "is_first_query"
+)
+
 type (
 	// Operator .
 	Operator int32

@@ -15,12 +15,16 @@
 package clusters
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strconv"
 
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc/metadata"
 
+	"github.com/erda-project/erda-infra/pkg/transport"
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cmp/dbclient"
 	"github.com/erda-project/erda/pkg/http/httputil"
@@ -35,7 +39,7 @@ type cmdbDeleteClusterResp struct {
 	Data    string `json:"data"`
 }
 
-func (c *Clusters) OfflineEdgeCluster(req apistructs.OfflineEdgeClusterRequest, userid string, orgid string) (recordID uint64, preCheckHint string, err error) {
+func (c *Clusters) OfflineEdgeCluster(ctx context.Context, req apistructs.OfflineEdgeClusterRequest, userid string, orgid string) (recordID uint64, preCheckHint string, err error) {
 	var (
 		fakecluster bool
 	)
@@ -108,7 +112,7 @@ func (c *Clusters) OfflineEdgeCluster(req apistructs.OfflineEdgeClusterRequest, 
 
 	// Offline cluster by call cmd /api/clusters/<clusterName>
 	if status == dbclient.StatusTypeSuccess {
-		if _, err = c.bdl.DereferenceCluster(req.OrgID, req.ClusterName, userid); err != nil {
+		if _, err = c.bdl.DereferenceCluster(req.OrgID, req.ClusterName, userid, req.Force); err != nil {
 			return
 		}
 
@@ -119,8 +123,9 @@ func (c *Clusters) OfflineEdgeCluster(req apistructs.OfflineEdgeClusterRequest, 
 			return
 		}
 
-		if len(relations) == 0 || req.Force {
-			err = c.bdl.DeleteCluster(req.ClusterName, map[string][]string{httputil.InternalHeader: {"cmp"}})
+		if len(relations) == 0 {
+			ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "cmp"}))
+			_, err = c.clusterSvc.DeleteCluster(ctx, &clusterpb.DeleteClusterRequest{ClusterName: req.ClusterName})
 			if err != nil {
 				errstr := fmt.Sprintf("failed to delete cluster %s : %v", req.ClusterName, err)
 				logrus.Errorf(errstr)
@@ -163,14 +168,14 @@ func createRecord(db *dbclient.DBClient, record dbclient.Record) (recordID uint6
 	return db.RecordsWriter().Create(&record)
 }
 
-func (c *Clusters) BatchOfflineEdgeCluster(req apistructs.BatchOfflineEdgeClusterRequest, userid string) error {
+func (c *Clusters) BatchOfflineEdgeCluster(ctx context.Context, req apistructs.BatchOfflineEdgeClusterRequest, userid string) error {
 	for _, cluster := range req.Clusters {
 		req := apistructs.OfflineEdgeClusterRequest{
 			OrgID:       0,
 			ClusterName: cluster,
 			Force:       true,
 		}
-		_, _, err := c.OfflineEdgeCluster(req, "onlyYou", strconv.Itoa(int(req.OrgID)))
+		_, _, err := c.OfflineEdgeCluster(ctx, req, "onlyYou", strconv.Itoa(int(req.OrgID)))
 		if err != nil {
 			err := fmt.Errorf("cluster offline failed, cluster: %s, error: %v", cluster, err)
 			logrus.Errorf(err.Error())

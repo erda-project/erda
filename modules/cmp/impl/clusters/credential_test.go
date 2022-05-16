@@ -15,6 +15,7 @@
 package clusters
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"testing"
@@ -27,8 +28,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
-	credentialpb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
-	"github.com/erda-project/erda/apistructs"
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
+	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/dbclient"
 	"github.com/erda-project/erda/pkg/k8sclient"
@@ -38,40 +39,67 @@ var (
 	bdl         *bundle.Bundle
 	db          *dbclient.DBClient
 	fakeCluster = "fake-cluster"
-	fakeAkItem  = &credentialpb.AccessKeysItem{
-		Id:          "5e34b95b-cd06-464c-8ee9-3aef696586c6",
-		AccessKey:   "Q9x5k4MJ89h327yqoc9zvvoP",
-		Status:      credentialpb.StatusEnum_ACTIVATE,
-		SubjectType: credentialpb.SubjectTypeEnum_CLUSTER,
-		Subject:     fakeCluster,
-		Scope:       apistructs.CMPClusterScope,
-		ScopeId:     fakeCluster,
+	fakeAkItem  = &tokenpb.Token{
+		Id:        "5e34b95b-cd06-464c-8ee9-3aef696586c6",
+		AccessKey: "Q9x5k4MJ89h327yqoc9zvvoP",
+		Scope:     "cmp_cluster",
+		ScopeId:   fakeCluster,
 	}
 )
+
+type fakeClusterServiceServer struct {
+	clusterpb.ClusterServiceServer
+}
+
+func (f *fakeClusterServiceServer) GetCluster(context.Context, *clusterpb.GetClusterRequest) (*clusterpb.GetClusterResponse, error) {
+	return &clusterpb.GetClusterResponse{Data: &clusterpb.ClusterInfo{
+		Name: "testCluster",
+	}}, nil
+}
+
+func (f *fakeClusterServiceServer) ListCluster(context.Context, *clusterpb.ListClusterRequest) (*clusterpb.ListClusterResponse, error) {
+	return &clusterpb.ListClusterResponse{Data: []*clusterpb.ClusterInfo{
+		{
+			Name: "testCluster",
+		},
+	}}, nil
+}
+
+func (f *fakeClusterServiceServer) DeleteCluster(context.Context, *clusterpb.DeleteClusterRequest) (*clusterpb.DeleteClusterResponse, error) {
+	return &clusterpb.DeleteClusterResponse{}, nil
+}
+
+func (f *fakeClusterServiceServer) UpdateCluster(context.Context, *clusterpb.UpdateClusterRequest) (*clusterpb.UpdateClusterResponse, error) {
+	return &clusterpb.UpdateClusterResponse{}, nil
+}
+
+func (f *fakeClusterServiceServer) CreateCluster(context.Context, *clusterpb.CreateClusterRequest) (*clusterpb.CreateClusterResponse, error) {
+	return &clusterpb.CreateClusterResponse{}, nil
+}
 
 ////go:generate mockgen -destination=./credential_ak_test.go -package clusters github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb AccessKeyServiceServer
 func Test_GetOrCreateAccessKey_Create(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	akService := NewMockAccessKeyServiceServer(ctrl)
+	akService := NewMockTokenServiceServer(ctrl)
 
-	akService.EXPECT().QueryAccessKeys(gomock.Any(), gomock.Any()).AnyTimes().Return(&credentialpb.QueryAccessKeysResponse{
-		Data: []*credentialpb.AccessKeysItem{},
+	akService.EXPECT().QueryTokens(gomock.Any(), gomock.Any()).AnyTimes().Return(&tokenpb.QueryTokensResponse{
+		Data: []*tokenpb.Token{},
 	}, nil)
 
-	akService.EXPECT().CreateAccessKey(gomock.Any(), gomock.Any()).AnyTimes().Return(&credentialpb.CreateAccessKeyResponse{
+	akService.EXPECT().CreateToken(gomock.Any(), gomock.Any()).AnyTimes().Return(&tokenpb.CreateTokenResponse{
 		Data: fakeAkItem,
 	}, nil)
 
-	c := New(db, bdl, akService)
+	c := New(db, bdl, akService, &fakeClusterServiceServer{})
 
-	monkey.PatchInstanceMethod(reflect.TypeOf(c), "CheckCluster", func(_ *Clusters, _ string) error {
+	monkey.PatchInstanceMethod(reflect.TypeOf(c), "CheckCluster", func(_ *Clusters, _ context.Context, _ string) error {
 		return nil
 	})
 
 	defer monkey.UnpatchAll()
 
-	akResp, err := c.GetOrCreateAccessKey(fakeCluster)
+	akResp, err := c.GetOrCreateAccessKey(context.Background(), fakeCluster)
 	assert.NoError(t, err)
 	assert.Equal(t, akResp, fakeAkItem)
 }
@@ -79,19 +107,19 @@ func Test_GetOrCreateAccessKey_Create(t *testing.T) {
 func Test_GetOrCreateAccessKey_Get(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	akService := NewMockAccessKeyServiceServer(ctrl)
+	akService := NewMockTokenServiceServer(ctrl)
 
-	akService.EXPECT().QueryAccessKeys(gomock.Any(), gomock.Any()).AnyTimes().Return(&credentialpb.QueryAccessKeysResponse{
-		Data:  []*credentialpb.AccessKeysItem{fakeAkItem},
+	akService.EXPECT().QueryTokens(gomock.Any(), gomock.Any()).AnyTimes().Return(&tokenpb.QueryTokensResponse{
+		Data:  []*tokenpb.Token{fakeAkItem},
 		Total: 1,
 	}, nil)
 
-	akService.EXPECT().CreateAccessKey(gomock.Any(), gomock.Any()).AnyTimes().Return(&credentialpb.CreateAccessKeyResponse{
+	akService.EXPECT().CreateToken(gomock.Any(), gomock.Any()).AnyTimes().Return(&tokenpb.CreateTokenResponse{
 		Data: fakeAkItem,
 	}, nil)
 
-	c := New(db, bdl, akService)
-	akResp, err := c.GetOrCreateAccessKey(fakeCluster)
+	c := New(db, bdl, akService, &fakeClusterServiceServer{})
+	akResp, err := c.GetOrCreateAccessKey(context.Background(), fakeCluster)
 	assert.NoError(t, err)
 	assert.Equal(t, akResp, fakeAkItem)
 }
@@ -99,16 +127,16 @@ func Test_GetOrCreateAccessKey_Get(t *testing.T) {
 func Test_DeleteAccessKey(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	akService := NewMockAccessKeyServiceServer(ctrl)
+	akService := NewMockTokenServiceServer(ctrl)
 
-	akService.EXPECT().DeleteAccessKey(gomock.Any(), gomock.Any()).AnyTimes().Return(&credentialpb.DeleteAccessKeyResponse{}, nil)
+	akService.EXPECT().DeleteToken(gomock.Any(), gomock.Any()).AnyTimes().Return(&tokenpb.DeleteTokenResponse{}, nil)
 
-	akService.EXPECT().QueryAccessKeys(gomock.Any(), gomock.Any()).AnyTimes().Return(&credentialpb.QueryAccessKeysResponse{
-		Data:  []*credentialpb.AccessKeysItem{fakeAkItem},
+	akService.EXPECT().QueryTokens(gomock.Any(), gomock.Any()).AnyTimes().Return(&tokenpb.QueryTokensResponse{
+		Data:  []*tokenpb.Token{fakeAkItem},
 		Total: 1,
 	}, nil)
 
-	c := New(db, bdl, akService)
+	c := New(db, bdl, akService, &fakeClusterServiceServer{})
 	err := c.DeleteAccessKey(fakeCluster)
 	assert.NoError(t, err)
 }
@@ -137,7 +165,7 @@ func Test_ResetAccessKey_InCluster_Error(t *testing.T) {
 		return nil, csErr
 	})
 
-	c := New(db, bdl, nil)
-	_, err := c.ResetAccessKey(emptyClusterName)
+	c := New(db, bdl, nil, &fakeClusterServiceServer{})
+	_, err := c.ResetAccessKey(context.Background(), emptyClusterName)
 	assert.Equal(t, err, fmt.Errorf("get inCluster kubernetes client error: %s", csErr.Error()))
 }

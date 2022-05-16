@@ -17,17 +17,12 @@
 package action_info
 
 import (
-	"errors"
-	"fmt"
 	"sync"
-
-	"github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v3"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/pipeline/providers/actionmgr"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
-	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
@@ -39,7 +34,7 @@ type PassedDataWhenCreate struct {
 	bdl              *bundle.Bundle
 	actionJobDefines *sync.Map
 	actionJobSpecs   *sync.Map
-	extMarketSvc     *extmarketsvc.ExtMarketSvc
+	actionMgr        actionmgr.Interface
 }
 
 func (that *PassedDataWhenCreate) GetActionJobDefine(actionTypeVersion string) *diceyml.Job {
@@ -75,7 +70,7 @@ func (that *PassedDataWhenCreate) GetActionJobSpecs(actionTypeVersion string) *a
 	return nil
 }
 
-func (that *PassedDataWhenCreate) InitData(bdl *bundle.Bundle, extMarketSvc *extmarketsvc.ExtMarketSvc) {
+func (that *PassedDataWhenCreate) InitData(bdl *bundle.Bundle, actionMgr actionmgr.Interface) {
 	if that == nil {
 		return
 	}
@@ -86,7 +81,7 @@ func (that *PassedDataWhenCreate) InitData(bdl *bundle.Bundle, extMarketSvc *ext
 	if that.actionJobSpecs == nil {
 		that.actionJobSpecs = &sync.Map{}
 	}
-	that.extMarketSvc = extMarketSvc
+	that.actionMgr = actionMgr
 	that.bdl = bdl
 }
 
@@ -102,18 +97,18 @@ func (that *PassedDataWhenCreate) PutPassedDataByPipelineYml(pipelineYml *pipeli
 				if action.Type.IsSnippet() {
 					continue
 				}
-				extItem := extmarketsvc.MakeActionTypeVersion(action)
+				extItem := that.actionMgr.MakeActionTypeVersion(action)
 				// extension already searched, skip
 				if _, ok := that.actionJobDefines.Load(extItem); ok {
 					continue
 				}
-				extItems = append(extItems, extmarketsvc.MakeActionTypeVersion(action))
+				extItems = append(extItems, that.actionMgr.MakeActionTypeVersion(action))
 			}
 		}
 	}
 
 	extItems = strutil.DedupSlice(extItems, true)
-	actionJobDefines, actionJobSpecs, err := that.extMarketSvc.SearchActions(extItems, extmarketsvc.MakeActionLocationsBySource(p.PipelineSource))
+	actionJobDefines, actionJobSpecs, err := that.actionMgr.SearchActions(extItems, that.actionMgr.MakeActionLocationsBySource(p.PipelineSource))
 	if err != nil {
 		return apierrors.ErrCreatePipelineGraph.InternalError(err)
 	}
@@ -125,76 +120,4 @@ func (that *PassedDataWhenCreate) PutPassedDataByPipelineYml(pipelineYml *pipeli
 		that.actionJobSpecs.Store(extItem, actionJobSpec)
 	}
 	return nil
-}
-
-type SearchOption struct {
-	NeedRender   bool
-	Placeholders map[string]string
-}
-
-func searchActions(bdl *bundle.Bundle, items []string) (map[string]*diceyml.Job, map[string]*apistructs.ActionSpec, error) {
-	req := apistructs.ExtensionSearchRequest{Extensions: items, YamlFormat: true}
-	actions, err := bdl.SearchExtensions(req)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	so := SearchOption{
-		NeedRender:   false,
-		Placeholders: nil,
-	}
-
-	actionDiceYmlJobMap := make(map[string]*diceyml.Job)
-	for nameVersion, action := range actions {
-		if action.NotExist() {
-			errMsg := fmt.Sprintf("action %q not exist in Extension Market", nameVersion)
-			logrus.Errorf("[alert] %s", errMsg)
-			return nil, nil, errors.New(errMsg)
-		}
-
-		diceYmlStr, ok := action.Dice.(string)
-		if !ok {
-			errMsg := fmt.Sprintf("failed to search action from extension market, action: %s, err: %s", nameVersion, "action's dice.yml is not string")
-			logrus.Errorf("[alert] %s, action's dice.yml: %#v", errMsg, action.Dice)
-			return nil, nil, errors.New(errMsg)
-		}
-		if so.NeedRender && len(so.Placeholders) > 0 {
-			rendered, err := pipelineyml.RenderSecrets([]byte(diceYmlStr), so.Placeholders)
-			if err != nil {
-				errMsg := fmt.Sprintf("failed to render action's dice.yml, action: %s, err: %v", nameVersion, err)
-				logrus.Errorf("[alert] %s, action's dice.yml: %#v", errMsg, action.Dice)
-				return nil, nil, errors.New(errMsg)
-			}
-			diceYmlStr = string(rendered)
-		}
-		diceYml, err := diceyml.New([]byte(diceYmlStr), false)
-		if err != nil {
-			errMsg := fmt.Sprintf("failed to parse action's dice.yml, action: %s, err: %v", nameVersion, err)
-			logrus.Errorf("[alert] %s, action's dice.yml: %#v", errMsg, action.Dice)
-			return nil, nil, errors.New(errMsg)
-		}
-		for _, job := range diceYml.Obj().Jobs {
-			actionDiceYmlJobMap[nameVersion] = job
-			break
-		}
-	}
-	actionSpecMap := make(map[string]*apistructs.ActionSpec)
-	for nameVersion, action := range actions {
-		actionSpecMap[nameVersion] = nil
-		specYmlStr, ok := action.Spec.(string)
-		if !ok {
-			errMsg := fmt.Sprintf("failed to search action from extension market, action: %s, err: %s", nameVersion, "action's spec.yml is not string")
-			logrus.Errorf("[alert] %s, action's spec.yml: %#v", errMsg, action.Spec)
-			return nil, nil, errors.New(errMsg)
-		}
-		var actionSpec apistructs.ActionSpec
-		if err := yaml.Unmarshal([]byte(specYmlStr), &actionSpec); err != nil {
-			errMsg := fmt.Sprintf("failed to parse action's spec.yml, action: %s, err: %v", nameVersion, err)
-			logrus.Errorf("[alert] %s, action's spec.yml: %#v", errMsg, action.Spec)
-			return nil, nil, errors.New(errMsg)
-		}
-		actionSpecMap[nameVersion] = &actionSpec
-	}
-
-	return actionDiceYmlJobMap, actionSpecMap, nil
 }

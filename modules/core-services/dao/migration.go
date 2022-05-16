@@ -15,10 +15,7 @@
 package dao
 
 import (
-	"fmt"
 	"strconv"
-
-	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda/modules/core-services/model"
 )
@@ -36,14 +33,8 @@ func (client *DBClient) GetUcUserList() ([]model.User, error) {
 	return users, nil
 }
 
-func (client *DBClient) InsertMapping(userID, uuid, hash string) error {
-	return client.Transaction(func(tx *gorm.DB) error {
-		sql := fmt.Sprintf("UPDATE identity_credentials SET config = JSON_SET(config, '$.hashed_password', ?) WHERE identity_id = ?")
-		if err := tx.Exec(sql, hash, uuid).Error; err != nil {
-			return err
-		}
-		return client.Table("kratos_uc_userid_mapping").Create(&model.UserIDMapping{ID: userID, UserID: uuid}).Error
-	})
+func (client *DBClient) InsertMapping(userID, uuid string) error {
+	return client.Table("kratos_uc_userid_mapping").Create(&model.UserIDMapping{ID: userID, UserID: uuid}).Error
 }
 
 func (client *DBClient) GetUcUserID(uuid string) (string, error) {

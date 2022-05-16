@@ -286,6 +286,7 @@ func updatePodAndInstance(dbclient *instanceinfo.Client, podlist *corev1.PodList
 			k8snamespace     string
 			k8spodname       string
 			k8scontainername string
+			k8spoduid        string
 
 			diceComponent string
 
@@ -302,6 +303,9 @@ func updatePodAndInstance(dbclient *instanceinfo.Client, podlist *corev1.PodList
 		containerIP = pod.Status.PodIP
 		hostIP = pod.Status.HostIP
 		var err error
+		if cluster == "" {
+			continue
+		}
 		orgs[i], _ = orgCache.GetOrgByOrgID(orgID)
 		cpuRequest, err = strconv.ParseFloat(pod.Spec.Containers[0].Resources.Requests.Cpu().AsDec().String(), 64)
 		if err != nil {
@@ -340,6 +344,7 @@ func updatePodAndInstance(dbclient *instanceinfo.Client, podlist *corev1.PodList
 
 		k8snamespace = pod.Namespace
 		k8spodname = pod.Name
+		k8spoduid = string(pod.UID)
 		k8scontainername = container.Name
 
 		// The namespace and name of the servicegroup are written into ENV, so that they cannot be obtained directly from the pod information.
@@ -517,13 +522,18 @@ func updatePodAndInstance(dbclient *instanceinfo.Client, podlist *corev1.PodList
 		// -------------------------------
 		// 2. Update and create InstanceInfo records
 		// -------------------------------
-		meta := strutil.Join([]string{
-			"k8snamespace=" + k8snamespace,
-			"k8spodname=" + k8spodname,
-			"k8scontainername=" + k8scontainername}, ",")
-		if diceComponent != "" {
-			meta += fmt.Sprintf(",dice_component=%s", diceComponent)
+		kvFormat := "%s=%s"
+		metaSlice := []string{
+			fmt.Sprintf(kvFormat, apistructs.K8sNamespace, k8snamespace),
+			fmt.Sprintf(kvFormat, apistructs.K8sPodName, k8spodname),
+			fmt.Sprintf(kvFormat, apistructs.K8sContainerName, k8scontainername),
+			fmt.Sprintf(kvFormat, apistructs.K8sPodUid, k8spoduid),
 		}
+		if diceComponent != "" {
+			metaSlice = append(metaSlice, fmt.Sprintf(kvFormat, "dice_component", diceComponent))
+		}
+
+		meta := strings.Join(metaSlice, ",")
 		if prevContainerID != "" {
 			instances, err := r.ByOrgName(orgName).
 				ByProjectName(projectName).

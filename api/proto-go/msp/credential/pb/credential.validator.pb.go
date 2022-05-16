@@ -8,7 +8,6 @@ import (
 	math "math"
 
 	_ "github.com/erda-project/erda-proto-go/common/pb"
-	_ "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
 	proto "github.com/golang/protobuf/proto"
 	github_com_mwitkow_go_proto_validators "github.com/mwitkow/go-proto-validators"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
@@ -85,5 +84,19 @@ func (this *QueryAccessKeys) Validate() error {
 			return github_com_mwitkow_go_proto_validators.FieldError("CreatedAt", err)
 		}
 	}
+	return nil
+}
+func (this *AccessKeysItem) Validate() error {
+	if this.CreatedAt != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.CreatedAt); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("CreatedAt", err)
+		}
+	}
+	return nil
+}
+func (this *SubjectTypeEnum) Validate() error {
+	return nil
+}
+func (this *StatusEnum) Validate() error {
 	return nil
 }

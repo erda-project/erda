@@ -43,6 +43,15 @@ type Value struct {
 	Fields map[string]interface{}
 }
 
+func (v Value) Merge(other Value) {
+	for key, val := range other.Tags {
+		v.Tags[key] = val
+	}
+	for key, val := range other.Fields {
+		v.Fields[key] = val
+	}
+}
+
 func NewValue() Value {
 	return Value{
 		Tags:   make(map[string]string),
@@ -91,7 +100,7 @@ func NewCache(podList []apiv1.Pod, aInclude, lInclude []string) (*Cache, error) 
 func (c *Cache) updateCache(pod apiv1.Pod) {
 	c.podnameIndexer[PodName(pod.Namespace, pod.Name)] = c.extractPodMetadata(pod)
 	for _, container := range pod.Spec.Containers {
-		c.podnameContainerIndexer[PodNameContainer(pod.Namespace, pod.Name, container.Name)] = c.extractPodContainerMetadata(pod, container)
+		c.podnameContainerIndexer[PodNameContainer(pod.Namespace, pod.Name, container.Name)] = c.extractPodContainerMetadata(container)
 	}
 }
 
@@ -155,8 +164,8 @@ func (c *Cache) extractPodMetadata(pod apiv1.Pod) Value {
 	return value
 }
 
-func (c *Cache) extractPodContainerMetadata(pod apiv1.Pod, container apiv1.Container) Value {
-	value := c.extractPodMetadata(pod)
+func (c *Cache) extractPodContainerMetadata(container apiv1.Container) Value {
+	value := NewValue()
 	if v := container.Resources.Requests.Cpu(); v != nil {
 		value.Fields["container_resources_cpu_request"] = v.AsApproximateFloat64()
 	}

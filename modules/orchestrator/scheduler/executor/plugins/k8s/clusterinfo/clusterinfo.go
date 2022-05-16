@@ -41,10 +41,6 @@ import (
 const (
 	// diceCMNamespace dice configmap namespace
 	diceCMNamespace = "default"
-	// clusterInfoConfigMapName cluster info configmap name
-	clusterInfoConfigMapName = "dice-cluster-info"
-	// addonsConfigMapName addon configmap name
-	addonsConfigMapName = "dice-addons-info"
 	// clusterInfoPrefix 是集群配置信息在 etcd 中的路径前缀
 	clusterInfoPrefix = "/dice/scheduler/clusterinfo/"
 	// dlockKeyPrefix 分布式锁前缀，每个集群一把锁
@@ -174,17 +170,17 @@ func (ci *ClusterInfo) Load() error {
 		err     error
 	)
 	if ci.k8sClient != nil {
-		cm, err = ci.k8sClient.CoreV1().ConfigMaps(namespace).Get(context.Background(), clusterInfoConfigMapName, metav1.GetOptions{})
+		cm, err = ci.k8sClient.CoreV1().ConfigMaps(namespace).Get(context.Background(), apistructs.ConfigMapNameOfClusterInfo, metav1.GetOptions{})
 	} else {
 		if ci.ConfigMap == nil {
 			return errors.New("configMap is nil")
 		}
-		cm, err = ci.ConfigMap.Get(namespace, clusterInfoConfigMapName)
+		cm, err = ci.ConfigMap.Get(namespace, apistructs.ConfigMapNameOfClusterInfo)
 	}
 
 	if err != nil {
 		return errors.Errorf("failed to get %s configMap, clusterName: %s, (%v)",
-			clusterInfoConfigMapName, ci.clusterName, err)
+			apistructs.ConfigMapNameOfClusterInfo, ci.clusterName, err)
 	}
 
 	// 忽略指定的字段
@@ -193,13 +189,13 @@ func (ci *ClusterInfo) Load() error {
 	}
 	ci.data = cm.Data
 	if ci.k8sClient != nil {
-		addonCM, err = ci.k8sClient.CoreV1().ConfigMaps(namespace).Get(context.Background(), addonsConfigMapName, metav1.GetOptions{})
+		addonCM, err = ci.k8sClient.CoreV1().ConfigMaps(namespace).Get(context.Background(), apistructs.ConfigMapNameOfAddons, metav1.GetOptions{})
 	} else {
-		addonCM, err = ci.ConfigMap.Get(namespace, addonsConfigMapName)
+		addonCM, err = ci.ConfigMap.Get(namespace, apistructs.ConfigMapNameOfAddons)
 	}
 	if err != nil {
 		return errors.Errorf("failed to get %s configMap, clusterName: %s, (%v)",
-			addonsConfigMapName, ci.clusterName, err)
+			apistructs.ConfigMapNameOfAddons, ci.clusterName, err)
 	}
 
 	// add registry addr

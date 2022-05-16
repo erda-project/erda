@@ -39,6 +39,12 @@ var _ json.Marshaler = (*QueryAccessKeysData)(nil)
 var _ json.Unmarshaler = (*QueryAccessKeysData)(nil)
 var _ json.Marshaler = (*QueryAccessKeys)(nil)
 var _ json.Unmarshaler = (*QueryAccessKeys)(nil)
+var _ json.Marshaler = (*AccessKeysItem)(nil)
+var _ json.Unmarshaler = (*AccessKeysItem)(nil)
+var _ json.Marshaler = (*SubjectTypeEnum)(nil)
+var _ json.Unmarshaler = (*SubjectTypeEnum)(nil)
+var _ json.Marshaler = (*StatusEnum)(nil)
+var _ json.Unmarshaler = (*StatusEnum)(nil)
 
 // CreateAccessKeyRequest implement json.Marshaler.
 func (m *CreateAccessKeyRequest) MarshalJSON() ([]byte, error) {
@@ -269,6 +275,60 @@ func (m *QueryAccessKeys) MarshalJSON() ([]byte, error) {
 
 // QueryAccessKeys implement json.Marshaler.
 func (m *QueryAccessKeys) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// AccessKeysItem implement json.Marshaler.
+func (m *AccessKeysItem) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// AccessKeysItem implement json.Marshaler.
+func (m *AccessKeysItem) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// SubjectTypeEnum implement json.Marshaler.
+func (m *SubjectTypeEnum) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// SubjectTypeEnum implement json.Marshaler.
+func (m *SubjectTypeEnum) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// StatusEnum implement json.Marshaler.
+func (m *StatusEnum) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// StatusEnum implement json.Marshaler.
+func (m *StatusEnum) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)

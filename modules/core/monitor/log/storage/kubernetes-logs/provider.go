@@ -24,32 +24,26 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/loader"
 	k8sclient "github.com/erda-project/erda/providers/k8s-client-manager"
 )
 
 type (
 	config struct {
-		PodInfoCacheSize       int           `file:"pod_info_cache_size" default:"128"`
-		PodInfoCacheExpiration time.Duration `file:"pod_info_cache_expiration" default:"3h"`
-		BufferLines            int           `file:"buffer_lines" default:"1024"`
-		TimeSpan               time.Duration `file:"time_span" default:"3m"`
+		BufferLines int           `file:"buffer_lines" default:"1024"`
+		TimeSpan    time.Duration `file:"time_span" default:"3m"`
 	}
 	provider struct {
 		Cfg     *config
 		Log     logs.Logger
 		Redis   *redis.Client       `autowired:"redis-client"`
-		Loader  loader.Interface    `autowired:"elasticsearch.index.loader@log"`
 		Clients k8sclient.Interface `autowired:"k8s-client-manager"`
 
-		ctx  servicehub.Context
-		pods PodInfoQueryer
+		ctx servicehub.Context
 	}
 )
 
 func (p *provider) Init(ctx servicehub.Context) (err error) {
 	p.ctx = ctx
-	p.pods = newPodInfoQueryer(p)
 	return nil
 }
 
@@ -68,7 +62,6 @@ func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}
 				return client.CoreV1().Pods(it.podNamespace).GetLogs(it.podName, opts).Stream(it.ctx)
 			}, nil
 		},
-		pods:        p.pods,
 		bufferLines: int64(p.Cfg.BufferLines),
 		timeSpan:    int64(p.Cfg.TimeSpan),
 	}

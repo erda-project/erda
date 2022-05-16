@@ -226,7 +226,7 @@ environments:
           version: 5.7.29
         plan: mysql:basic
 envs:
-  ADMIN_ADDR: admin:9095
+  ERDA_SERVER_ADDR: erda-server:9095 
   CMP_ADDR: cmp:9027
   COLLECTOR_ADDR: collector:7076
   CORE_SERVICES_ADDR: core-services:9526
@@ -292,9 +292,6 @@ services:
     ports:
     - l4_protocol: TCP
       port: 9095
-      protocol: TCP
-    - l4_protocol: TCP
-      port: 9096
       protocol: TCP
     - l4_protocol: TCP
       port: 8096

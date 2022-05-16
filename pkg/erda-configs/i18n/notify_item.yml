@@ -80,18 +80,24 @@ zh-CN:
   notify.pipeline.pipeline_success.markdown_template: |-
     ### 流水线运行成功
     - 对象：{{projectName}} 项目/{{appName}} 应用
+    - 操作人：{{operatorName}}
+    - 环境：{{diceWorkspace}}
     - 流水线ID：{{pipelineID}}
     - 内容：流水线运行成功 [点击查看详情]({{uiPublicURL}}/{{orgName}}/dop/projects/{{projectID}}/apps/{{appID}}/pipeline?pipelineID={{pipelineID}})
   notify.pipeline.pipeline_running: 流水线开始运行
   notify.pipeline.pipeline_running.markdown_template: |-
     ### 流水线开始运行
     - 对象：{{projectName}} 项目/{{appName}} 应用
+    - 操作人：{{operatorName}}
+    - 环境：{{diceWorkspace}}
     - 流水线ID：{{pipelineID}}
     - 内容：流水线开始运行 [点击查看详情]({{uiPublicURL}}/{{orgName}}/dop/projects/{{projectID}}/apps/{{appID}}/pipeline?pipelineID={{pipelineID}})
   notify.pipeline.pipeline_failed: 流水线运行失败
   notify.pipeline.pipeline_failed.markdown_template: |-
     ### 流水线运行失败
     - 对象：{{projectName}} 项目/{{appName}} 应用
+    - 操作人：{{operatorName}}
+    - 环境：{{diceWorkspace}}
     - 流水线ID：{{pipelineID}}
     - 内容：流水线执行失败 [点击查看详情]({{uiPublicURL}}/{{orgName}}/dop/projects/{{projectID}}/apps/{{appID}}/pipeline?pipelineID={{pipelineID}})
     {{failedDetail}}
@@ -220,18 +226,24 @@ en-US:
   notify.pipeline.pipeline_success.markdown_template: |-
     ### Pipeline Success
     - Target：{{projectName}} Project/{{appName}} App
+    - Operator:{{operatorName}}
+    - Environment：{{diceWorkspace}}
     - Pipeline ID：{{pipelineID}}
     - Content：Pipeline Success [Link]({{uiPublicURL}}/{{orgName}}/dop/projects/{{projectID}}/apps/{{appID}}/pipeline?pipelineID={{pipelineID}})
   notify.pipeline.pipeline_running: Pipeline Running
   notify.pipeline.pipeline_running.markdown_template: |-
     ### Pipeline Running
     - Target：{{projectName}} 项目/{{appName}} 应用
+    - Operator:{{operatorName}}
+    - Environment：{{diceWorkspace}}
     - Pipeline ID：{{pipelineID}}
     - Content：Pipeline Running [Link]({{uiPublicURL}}/{{orgName}}/dop/projects/{{projectID}}/apps/{{appID}}/pipeline?pipelineID={{pipelineID}})
   notify.pipeline.pipeline_failed: Pipeline Failed
   notify.pipeline.pipeline_failed.markdown_template: |-
     ### Pipeline failed
     - Target：{{projectName}} Project/{{appName}} App
+    - Operator:{{operatorName}}
+    - Environment：{{diceWorkspace}}
     - Pipeline ID：{{pipelineID}}
     - Content：Pipeline failed [Link]({{uiPublicURL}}/{{orgName}}/dop/projects/{{projectID}}/apps/{{appID}}/pipeline?pipelineID={{pipelineID}})
     {{failedDetail}}

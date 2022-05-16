@@ -20,6 +20,13 @@ service LogQueryService {
     };
   }
 
+  // for runtime log
+  rpc GetLogByRealtime (GetLogByRuntimeRequest) returns (GetLogByRuntimeResponse) {
+    option (google.api.http) = {
+      get: "/api/runtime/realtime/logs",
+    };
+  }
+
   // for organization log
   rpc GetLogByOrganization (GetLogByOrganizationRequest) returns (GetLogByOrganizationResponse) {
     option (google.api.http) = {
@@ -89,6 +96,11 @@ message GetLogByRuntimeRequest {
   int64  offset        = 10;
   bool   live          = 11;
   bool   debug         = 12;
+  string podName       = 13;
+  string podNamespace  = 14;
+  string containerName = 15;
+  string clusterName   = 16;
+  bool   isFirstQuery  = 17;
 }
 
 message GetLogByOrganizationRequest {
@@ -192,6 +204,7 @@ message GetLogResponse {
 
 message GetLogByRuntimeResponse {
   repeated LogItem lines = 1;
+  bool isFallback = 2;
 }
 
 message GetLogByOrganizationResponse {

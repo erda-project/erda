@@ -23,7 +23,6 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/modules/pipeline/pkg/action_info"
-	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/numeral"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
@@ -56,7 +55,7 @@ func (s *PipelineSvc) makeNormalPipelineTask(p *spec.Pipeline, ps *spec.Pipeline
 	task.Extra.Action = *action
 
 	// set executor
-	executorKind, executorName := s.judgeTaskExecutor(task, passedDataWhenCreate.GetActionJobSpecs(extmarketsvc.MakeActionTypeVersion(action)))
+	executorKind, executorName := s.judgeTaskExecutor(task, passedDataWhenCreate.GetActionJobSpecs(s.actionMgr.MakeActionTypeVersion(action)))
 	task.ExecutorKind = executorKind
 	task.Extra.ExecutorName = executorName
 
@@ -110,7 +109,7 @@ func (s *PipelineSvc) makeNormalPipelineTask(p *spec.Pipeline, ps *spec.Pipeline
 	}
 
 	// applied resources
-	task.Extra.AppliedResources = calculateNormalTaskResources(action, passedDataWhenCreate.GetActionJobDefine(extmarketsvc.MakeActionTypeVersion(action)))
+	task.Extra.AppliedResources = calculateNormalTaskResources(action, passedDataWhenCreate.GetActionJobDefine(s.actionMgr.MakeActionTypeVersion(action)))
 
 	return task
 }

@@ -13,10 +13,10 @@ zh:
   project.list.my.project.public.browse: "浏览该组织下的公开项目"
   publicProjectEmpty: 当前没有任何公开项目
 en:
-  myProject: My project
-  publicProject: Public project
-  privateProject: Private project
-  project.list.all.app.number: "Number of applications"
+  myProject: My Projects
+  publicProject: Public
+  privateProject: Private
+  project.list.all.app.number: "Number of apps"
   project.list.all.joined: "Joined"
   project.list.all.unblocking: "Unblocking, please wait"
   project.list.all.unblocked: "Unblocked"

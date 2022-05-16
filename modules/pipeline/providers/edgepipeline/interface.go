@@ -16,80 +16,29 @@ package edgepipeline
 
 import (
 	"context"
-	"fmt"
-	"strings"
 
+	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
+	"github.com/erda-project/erda-proto-go/core/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/pipeline/services/pipelinesvc"
-	"github.com/erda-project/erda/pkg/clusterdialer"
-	"github.com/erda-project/erda/pkg/discover"
+	"github.com/erda-project/erda/modules/pipeline/spec"
 )
 
 type Interface interface {
-	CreatePipeline(ctx context.Context, req *apistructs.PipelineCreateRequestV2) (*apistructs.PipelineDTO, error)
+	CreateInterface
+
 	InjectLegacyFields(pSvc *pipelinesvc.PipelineSvc)
 }
 
-func (p *provider) InjectLegacyFields(pipelineSvc *pipelinesvc.PipelineSvc) {
-	p.pipelineSvc = pipelineSvc
+type CreateInterface interface {
+	CreatePipeline(ctx context.Context, req *apistructs.PipelineCreateRequestV2) (*apistructs.PipelineDTO, error)
+	CreateCron(ctx context.Context, req *cronpb.CronCreateRequest) (*pb.Cron, error)
+	RunPipeline(ctx context.Context, p *spec.Pipeline, req *apistructs.PipelineRunRequest) error
+	CancelPipeline(ctx context.Context, p *spec.Pipeline, req *apistructs.PipelineCancelRequest) error
+	RerunFailedPipeline(ctx context.Context, p *spec.Pipeline, req *apistructs.PipelineRerunFailedRequest) (*apistructs.PipelineDTO, error)
+	RerunPipeline(ctx context.Context, p *spec.Pipeline, req *apistructs.PipelineRerunRequest) (*apistructs.PipelineDTO, error)
 }
 
-func (p *provider) ShouldDispatchToEdge(source, clusterName string) bool {
-	if clusterName == "" {
-		return false
-	}
-	if p.Cfg.ClusterName == clusterName {
-		return false
-	}
-	var findInWhitelist bool
-	for _, whiteListSource := range p.Cfg.AllowedSources {
-		if strings.HasPrefix(source, whiteListSource) {
-			findInWhitelist = true
-			break
-		}
-	}
-	if !findInWhitelist {
-		return false
-	}
-	isEdge, err := p.bdl.IsClusterDialerClientRegistered(clusterName, apistructs.ClusterDialerClientTypePipeline.String())
-	if !isEdge || err != nil {
-		return false
-	}
-	return true
-}
-
-func (p *provider) GetDialContextByClusterName(clusterName string) clusterdialer.DialContextFunc {
-	clusterKey := apistructs.ClusterDialerClientTypePipeline.MakeClientKey(clusterName)
-	return clusterdialer.DialContext(clusterKey)
-}
-
-func (p *provider) GetEdgeBundleByClusterName(clusterName string) (*bundle.Bundle, error) {
-	edgeDial := p.GetDialContextByClusterName(clusterName)
-	edgeDetail, err := p.bdl.GetClusterDialerClientData(apistructs.ClusterDialerClientTypePipeline.String(), clusterName)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get edge bundle for cluster %s, err: %v", clusterName, err)
-	}
-	pipelineAddr := edgeDetail.Get(apistructs.ClusterDialerDataKeyPipelineAddr)
-	return bundle.New(bundle.WithDialContext(edgeDial), bundle.WithCustom(discover.EnvPipeline, pipelineAddr)), nil
-}
-
-func (p *provider) CreatePipeline(ctx context.Context, req *apistructs.PipelineCreateRequestV2) (*apistructs.PipelineDTO, error) {
-	isEdge := p.ShouldDispatchToEdge(req.PipelineSource.String(), req.ClusterName)
-	if !isEdge {
-		pipeline, err := p.pipelineSvc.CreateV2(ctx, req)
-		if err != nil {
-			return nil, err
-		}
-		return p.pipelineSvc.ConvertPipeline(pipeline), nil
-	}
-	edgeBundle, err := p.GetEdgeBundleByClusterName(req.ClusterName)
-	if err != nil {
-		return nil, err
-	}
-	pipelineDto, err := edgeBundle.CreatePipeline(req)
-	if err != nil {
-		return nil, err
-	}
-	return pipelineDto, nil
+func (s *provider) InjectLegacyFields(pipelineSvc *pipelinesvc.PipelineSvc) {
+	s.pipelineSvc = pipelineSvc
 }

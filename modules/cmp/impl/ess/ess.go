@@ -25,7 +25,10 @@ import (
 	api "github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc/metadata"
 
+	"github.com/erda-project/erda-infra/pkg/transport"
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/impl/labels"
@@ -33,6 +36,7 @@ import (
 	"github.com/erda-project/erda/modules/cmp/impl/nodes"
 	"github.com/erda-project/erda/pkg/crypto/encrypt"
 	"github.com/erda-project/erda/pkg/dlock"
+	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 const (
@@ -47,11 +51,12 @@ const (
 )
 
 type Ess struct {
-	bdl    *bundle.Bundle
-	mns    *mns.Mns
-	nodes  *nodes.Nodes
-	labels *labels.Labels
-	Config *Config
+	bdl        *bundle.Bundle
+	mns        *mns.Mns
+	nodes      *nodes.Nodes
+	labels     *labels.Labels
+	Config     *Config
+	ClusterSvc clusterpb.ClusterServiceServer
 }
 
 type Config struct {
@@ -68,8 +73,8 @@ type Config struct {
 	ScalePipeLineID uint64
 }
 
-func New(bdl *bundle.Bundle, mns *mns.Mns, nodes *nodes.Nodes, labels *labels.Labels) *Ess {
-	return &Ess{bdl: bdl, mns: mns, nodes: nodes, labels: labels}
+func New(bdl *bundle.Bundle, mns *mns.Mns, nodes *nodes.Nodes, labels *labels.Labels, clusterSvc clusterpb.ClusterServiceServer) *Ess {
+	return &Ess{bdl: bdl, mns: mns, nodes: nodes, labels: labels, ClusterSvc: clusterSvc}
 }
 
 // Init Init auto scale
@@ -554,13 +559,15 @@ func (e *Ess) AutoScale() {
 func (e *Ess) DetectResource(ctx context.Context) {
 	ticker := time.NewTicker(time.Minute * DetectInterval)
 	logrus.Errorf("begin to execute autoscale...")
+	ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "cmp"}))
 	for range ticker.C {
 		logrus.Errorf("begin to execute autoscale in loop...")
-		clusters, err := e.bdl.ListClusters("")
+		resp, err := e.ClusterSvc.ListCluster(ctx, &clusterpb.ListClusterRequest{})
 		if err != nil {
 			logrus.Errorf("failed get to get cluster list")
 			continue
 		}
+		clusters := resp.Data
 		var totalCPU float64
 		var totalMem int64
 		var requestCPU float64
@@ -649,7 +656,7 @@ func (e *Ess) DetectResource(ctx context.Context) {
 							ScalingGroupId: cluster.OpsConfig.EssGroupID,
 							InstanceIDs:    id,
 						}
-						_, err = e.nodes.DeleteEssNodes(req, apistructs.AutoScaleUserID, strconv.Itoa(cluster.OrgID))
+						_, err = e.nodes.DeleteEssNodes(req, apistructs.AutoScaleUserID, strconv.Itoa(int(cluster.OrgID)))
 						if err != nil {
 							logrus.Errorf("failed delete node from ess: %v", err)
 						}
@@ -672,7 +679,7 @@ func (e *Ess) DetectResource(ctx context.Context) {
 	<-ctx.Done()
 }
 
-func (e *Ess) validateOpsConfig(opsConf *apistructs.OpsConfig) error {
+func (e *Ess) validateOpsConfig(opsConf *clusterpb.OpsConfig) error {
 	if opsConf == nil {
 		err := fmt.Errorf("empty ops config")
 		logrus.Error(err.Error())

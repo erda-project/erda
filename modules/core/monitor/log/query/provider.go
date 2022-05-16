@@ -30,6 +30,9 @@ import (
 )
 
 type config struct {
+	DelayBackoffStartTime time.Duration `file:"delay_backoff_start_time" default:"-30m"`
+	DelayBackoffEndTime   time.Duration `file:"delay_backoff_end_time" default:"-3m"`
+
 	DownloadAPIThrottling struct {
 		CurrentLimit int64 `file:"current_limit"`
 	} `file:"download_api_throttling"`
@@ -66,6 +69,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 			perm.NoPermMethod(pb.LogQueryServiceServer.GetLog),
 			perm.Method(pb.LogQueryServiceServer.GetLogByRuntime, perm.ScopeApp, common.ResourceRuntime, perm.ActionGet, perm.FieldValue("ApplicationId")),
 			perm.Method(pb.LogQueryServiceServer.GetLogByOrganization, perm.ScopeOrg, common.ResourceOrgCenter, perm.ActionGet, monitorperm.OrgIDByClusterWrapper("ClusterName")),
+			perm.NoPermMethod(pb.LogQueryServiceServer.GetLogByRealtime),
 			perm.NoPermMethod(pb.LogQueryServiceServer.GetLogByExpression),
 			perm.NoPermMethod(pb.LogQueryServiceServer.LogAggregation),
 			perm.NoPermMethod(pb.LogQueryServiceServer.ScanLogsByExpression),
