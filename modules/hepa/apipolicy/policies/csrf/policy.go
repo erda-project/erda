@@ -155,14 +155,13 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 			routes[route.RouteId] = struct{}{}
 		}
 
-		var cond orm.GatewayApi
-		cond.Id = api.DiceApiId
-		gatewayApis, err := apiDB.SelectByAny(&cond)
+		option := orm.SelectOption{Type: orm.ExactMatch, Column: "id", Value: api.DiceApiId}
+		gatewayApis, err := apiDB.SelectByOptions([]orm.SelectOption{option})
 		if err != nil {
 			l.WithError(err).
 				WithField("tb_gateway_package_api.id", api.Id).
 				WithField("tb_gateway_package_api.dice_api_id", api.DiceApiId).
-				Warnf("failed to apiDB.SelectByAny(&orm.GatewayApi{Id: %s})", cond.Id)
+				Warnf("failed to apiDB.SelectByAny(&orm.GatewayApi{Id: %s})", option.Value)
 			continue
 		}
 		for _, gatewayApi := range gatewayApis {
