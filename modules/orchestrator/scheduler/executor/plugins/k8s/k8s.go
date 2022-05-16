@@ -147,6 +147,10 @@ func init() {
 				}
 				ctx, cancel := context.WithCancel(parentctx)
 				lock, err := dlock.New(strutil.Concat("/instanceinfosync/", clustername), func() { cancel() })
+				if err != nil {
+					logrus.Errorf("failed to new dlock, executor: %s, (%v)", name, err)
+					continue
+				}
 				if err := lock.Lock(context.Background()); err != nil {
 					logrus.Errorf("failed to lock: %v", err)
 					continue
@@ -314,6 +318,8 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 		logrus.Errorf("cluster %s get http client and addr error: %v", clusterName, err)
 		return nil, err
 	}
+
+	logrus.Infof("cluster %s init client success, addr: %s", clusterName, addr)
 
 	//Get the value of the super-scoring ratio for different environments
 	var (
@@ -1301,10 +1307,11 @@ func (k *Kubernetes) Scale(ctx context.Context, spec interface{}) (interface{}, 
 }
 
 func (k *Kubernetes) composeNodeAntiAffinityPreferredWithWorkspace(workspace string) []apiv1.PreferredSchedulingTerm {
-	var workspaceKeys = []string{"dev", "test", "staging", "prod"}
-	var weightMap = map[string]int32{"dev": 60, "test": 60, "staging": 80, "prod": 100}
-
-	preferredSchedulerTerms := []apiv1.PreferredSchedulingTerm{}
+	var (
+		workspaceKeys           = []string{"dev", "test", "staging", "prod"}
+		weightMap               = map[string]int32{"dev": 60, "test": 60, "staging": 80, "prod": 100}
+		preferredSchedulerTerms = make([]apiv1.PreferredSchedulingTerm, 0, len(workspaceKeys))
+	)
 
 	for index, key := range workspaceKeys {
 		if strings.ToLower(workspace) == key {
