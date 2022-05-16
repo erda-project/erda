@@ -24,6 +24,7 @@ import (
 )
 
 type config struct {
+	NeedInitDb bool `file:"need_init_db" default:"true"`
 }
 
 // +provider
