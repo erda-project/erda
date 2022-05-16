@@ -22,8 +22,8 @@ import (
 	"github.com/erda-project/erda/bundle/apierrors"
 )
 
-func (b *Bundle) IsClusterDialerClientRegistered(clientType apistructs.ClusterDialerClientType, clusterKey string) (bool, error) {
-	host, err := b.urls.ClusterDialer()
+func (b *Bundle) IsClusterManagerClientRegistered(clientType apistructs.ClusterManagerClientType, clusterKey string) (bool, error) {
+	host, err := b.urls.ClusterManager()
 	if err != nil {
 		return false, err
 	}
@@ -45,23 +45,23 @@ func (b *Bundle) IsClusterDialerClientRegistered(clientType apistructs.ClusterDi
 	return getResp, nil
 }
 
-func (b *Bundle) GetClusterDialerClientData(clientType apistructs.ClusterDialerClientType, clusterKey string) (apistructs.ClusterDialerClientDetail, error) {
-	host, err := b.urls.ClusterDialer()
+func (b *Bundle) GetClusterManagerClientData(clientType apistructs.ClusterManagerClientType, clusterKey string) (apistructs.ClusterManagerClientDetail, error) {
+	host, err := b.urls.ClusterManager()
 	if err != nil {
-		return apistructs.ClusterDialerClientDetail{}, err
+		return apistructs.ClusterManagerClientDetail{}, err
 	}
 	hc := b.hc
 
-	var getResp apistructs.ClusterDialerClientDetail
+	var getResp apistructs.ClusterManagerClientDetail
 	resp, err := hc.Get(host).
 		Path(fmt.Sprintf("/clusteragent/client-detail/%s/%s", clientType, clusterKey)).
 		Do().
 		JSON(&getResp)
 	if err != nil {
-		return apistructs.ClusterDialerClientDetail{}, apierrors.ErrInvoke.InternalError(err)
+		return apistructs.ClusterManagerClientDetail{}, apierrors.ErrInvoke.InternalError(err)
 	}
 	if !resp.IsOK() {
-		return apistructs.ClusterDialerClientDetail{}, apierrors.ErrInvoke.InternalError(fmt.Errorf("%s", resp.Body()))
+		return apistructs.ClusterManagerClientDetail{}, apierrors.ErrInvoke.InternalError(fmt.Errorf("%s", resp.Body()))
 	}
 	return getResp, nil
 }

@@ -49,7 +49,7 @@ type provider struct {
 }
 
 func (s *provider) Init(ctx servicehub.Context) error {
-	s.bdl = bundle.New(bundle.WithClusterDialer())
+	s.bdl = bundle.New(bundle.WithClusterManager())
 	return nil
 }
 

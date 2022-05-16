@@ -80,7 +80,7 @@ func (c *Clusters) AddClusters(ctx context.Context, req apistructs.CloudClusterR
 		req.OpenAPI = fmt.Sprintf("%s://openapi.%s", req.CentralDiceProtocol, req.CentralRootDomain)
 	}
 	if req.ClusterDialer == "" {
-		req.ClusterDialer = fmt.Sprintf("%s://cluster-dialer.%s", req.CentralDiceProtocol, req.CentralRootDomain)
+		req.ClusterDialer = fmt.Sprintf("%s://cluster-manager.%s", req.CentralDiceProtocol, req.CentralRootDomain)
 	}
 
 	// check DICE_ROOT_DOMAIN

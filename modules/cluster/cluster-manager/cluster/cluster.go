@@ -27,7 +27,6 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cluster/cluster-manager/cluster/db"
-	"github.com/erda-project/erda/modules/cluster/cluster-manager/services/apierrors"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -291,16 +290,16 @@ func (c *ClusterService) PatchWithEvent(req *pb.PatchClusterRequest) error {
 func (c *ClusterService) DeleteWithEvent(clusterName string) error {
 	cluster, err := c.Get(clusterName)
 	if err != nil {
-		return apierrors.ErrDeleteCluster.InternalError(err)
+		return ErrDeleteCluster.InternalError(err)
 	}
 	if cluster == nil {
 		return errors.Errorf("not found")
 	}
 
-	logrus.Infof("deleting cluster: %+v", *cluster)
+	logrus.Infof("deleting cluster: %+v", cluster)
 
 	if err := c.DeleteByName(clusterName); err != nil {
-		return apierrors.ErrDeleteCluster.InternalError(err)
+		return ErrDeleteCluster.InternalError(err)
 	}
 
 	ev := &apistructs.EventCreateRequest{

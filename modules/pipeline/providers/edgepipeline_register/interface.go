@@ -34,7 +34,7 @@ type Interface interface {
 	ClusterAccessKey() string
 	GetAccessToken(req apistructs.OAuth2TokenGetRequest) (*apistructs.OAuth2Token, error)
 	GetOAuth2Token(req apistructs.OAuth2TokenGetRequest) (*apistructs.OAuth2Token, error)
-	GetEdgePipelineEnvs() apistructs.ClusterDialerClientDetail
+	GetEdgePipelineEnvs() apistructs.ClusterManagerClientDetail
 	CheckAccessToken(token string) error
 	CheckAccessTokenFromHttpRequest(req *http.Request) error
 	IsEdge() bool
@@ -56,7 +56,7 @@ type Interface interface {
 }
 
 func (p *provider) ClusterIsEdge(clusterName string) (bool, error) {
-	isEdge, err := p.bdl.IsClusterDialerClientRegistered(apistructs.ClusterDialerClientTypePipeline, clusterName)
+	isEdge, err := p.bdl.IsClusterManagerClientRegistered(apistructs.ClusterManagerClientTypePipeline, clusterName)
 	if err != nil {
 		return false, err
 	}
@@ -80,7 +80,7 @@ func (p *provider) CanProxyToEdge(source apistructs.PipelineSource, clusterName 
 	if !findInWhitelist {
 		return false
 	}
-	isEdge, err := p.bdl.IsClusterDialerClientRegistered(apistructs.ClusterDialerClientTypePipeline, clusterName)
+	isEdge, err := p.bdl.IsClusterManagerClientRegistered(apistructs.ClusterManagerClientTypePipeline, clusterName)
 	if !isEdge || err != nil {
 		return false
 	}
@@ -89,24 +89,24 @@ func (p *provider) CanProxyToEdge(source apistructs.PipelineSource, clusterName 
 }
 
 func (p *provider) GetDialContextByClusterName(clusterName string) clusterdialer.DialContextFunc {
-	clusterKey := apistructs.ClusterDialerClientTypePipeline.MakeClientKey(clusterName)
+	clusterKey := apistructs.ClusterManagerClientTypePipeline.MakeClientKey(clusterName)
 	return clusterdialer.DialContext(clusterKey)
 }
 
 func (p *provider) GetEdgeBundleByClusterName(clusterName string) (*bundle.Bundle, error) {
 	edgeDial := p.GetDialContextByClusterName(clusterName)
-	edgeDetail, err := p.bdl.GetClusterDialerClientData(apistructs.ClusterDialerClientTypePipeline, clusterName)
+	edgeDetail, err := p.bdl.GetClusterManagerClientData(apistructs.ClusterManagerClientTypePipeline, clusterName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get edge bundle for cluster %s, err: %v", clusterName, err)
 	}
-	pipelineAddr := edgeDetail.Get(apistructs.ClusterDialerDataKeyPipelineAddr)
+	pipelineAddr := edgeDetail.Get(apistructs.ClusterManagerDataKeyPipelineAddr)
 	return bundle.New(bundle.WithDialContext(edgeDial), bundle.WithCustom(discover.EnvPipeline, pipelineAddr)), nil
 }
 
-func (p *provider) GetEdgePipelineEnvs() apistructs.ClusterDialerClientDetail {
-	return apistructs.ClusterDialerClientDetail{
-		apistructs.ClusterDialerDataKeyPipelineAddr: p.Cfg.PipelineAddr,
-		apistructs.ClusterDialerDataKeyPipelineHost: p.Cfg.PipelineHost,
+func (p *provider) GetEdgePipelineEnvs() apistructs.ClusterManagerClientDetail {
+	return apistructs.ClusterManagerClientDetail{
+		apistructs.ClusterManagerDataKeyPipelineAddr: p.Cfg.PipelineAddr,
+		apistructs.ClusterManagerDataKeyPipelineHost: p.Cfg.PipelineHost,
 	}
 }
 
@@ -166,9 +166,9 @@ func (p *provider) ConnectAuthorizer(proto string, address string) bool {
 }
 
 func (p *provider) makeEdgeConnDetail() (string, error) {
-	edgeDetail := apistructs.ClusterDialerClientDetail{
-		apistructs.ClusterDialerDataKeyPipelineAddr: p.Cfg.PipelineAddr,
-		apistructs.ClusterDialerDataKeyPipelineHost: p.Cfg.PipelineHost,
+	edgeDetail := apistructs.ClusterManagerClientDetail{
+		apistructs.ClusterManagerDataKeyPipelineAddr: p.Cfg.PipelineAddr,
+		apistructs.ClusterManagerDataKeyPipelineHost: p.Cfg.PipelineHost,
 	}
 	edgeDetailBytes, err := edgeDetail.Marshal()
 	if err != nil {
@@ -183,23 +183,23 @@ func (p *provider) makeEdgeConnHeaders() (http.Header, error) {
 		return nil, err
 	}
 	edgeHeaders := http.Header{
-		apistructs.ClusterDialerHeaderKeyClusterKey.String():    {p.Cfg.ClusterName},
-		apistructs.ClusterDialerHeaderKeyClientType.String():    {apistructs.ClusterDialerClientTypePipeline.String()},
-		apistructs.ClusterDialerHeaderKeyAuthorization.String(): {p.ClusterAccessKey()},
-		apistructs.ClusterDialerHeaderKeyClientDetail.String():  {edgeDetail},
+		apistructs.ClusterManagerHeaderKeyClusterKey.String():    {p.Cfg.ClusterName},
+		apistructs.ClusterManagerHeaderKeyClientType.String():    {apistructs.ClusterManagerClientTypePipeline.String()},
+		apistructs.ClusterManagerHeaderKeyAuthorization.String(): {p.ClusterAccessKey()},
+		apistructs.ClusterManagerHeaderKeyClientDetail.String():  {edgeDetail},
 	}
 	return edgeHeaders, nil
 }
 
 func (p *provider) parseDialerEndpoint() (string, error) {
-	u, err := url.Parse(p.Cfg.ClusterDialEndpoint)
+	u, err := url.Parse(p.Cfg.ClusterManagerEndpoint)
 	if err != nil {
 		return "", err
 	}
 
 	//inCluster, visit dialer inner service first.
-	if !p.Cfg.IsEdge && discover.ClusterDialer() != "" {
-		return "ws://" + discover.ClusterDialer() + u.Path, nil
+	if !p.Cfg.IsEdge && discover.ClusterManager() != "" {
+		return "ws://" + discover.ClusterManager() + u.Path, nil
 	}
 
 	switch u.Scheme {

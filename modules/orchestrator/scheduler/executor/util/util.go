@@ -228,7 +228,7 @@ func GetClient(clusterName string, manageConfig *apistructs.ManageConfig) (strin
 	// check mange config type
 	switch manageConfig.Type {
 	case apistructs.ManageProxy, apistructs.ManageToken:
-		// cluster-agent -> (register) cluster-dialer -> (patch) cluster-manager
+		// cluster-agent -> (patch) cluster-manager
 		// -> (update) eventBox -> (update) scheduler -> scheduler reload executor
 		if manageConfig.Token == "" || manageConfig.Address == "" {
 			return "", nil, fmt.Errorf("token or address is empty")

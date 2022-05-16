@@ -450,7 +450,7 @@ func (e *Endpoints) CreateOrgClusterRelation(ctx context.Context, r *http.Reques
 		return apierrors.ErrRelateCluster.MissingParameter("cluster name").ToResp(), nil
 	}
 
-	if err = e.org.RelateCluster(ctx, userID.String(), &req); err != nil {
+	if err = e.org.RelateCluster(userID.String(), &req); err != nil {
 		return apierrors.ErrRelateCluster.InternalError(err).ToResp(), nil
 	}
 	return httpserver.OkResp("success")
@@ -847,7 +847,7 @@ func (e *Endpoints) DereferenceCluster(ctx context.Context, r *http.Request, var
 	if err := e.member.CheckPermission(identity.UserID, apistructs.OrgScope, req.OrgID); err != nil {
 		return apierrors.ErrDereferenceCluster.InternalError(err).ToResp(), nil
 	}
-	if err := e.org.DereferenceCluster(ctx, identity.UserID, &req); err != nil {
+	if err := e.org.DereferenceCluster(identity.UserID, &req); err != nil {
 		return errorresp.ErrResp(err)
 	}
 

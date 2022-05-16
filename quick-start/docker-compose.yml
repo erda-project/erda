@@ -115,18 +115,6 @@ services:
     restart: always
     platform: linux/amd64
 
-  cluster-dialer:
-    image: registry.erda.cloud/erda/erda:1.3.0-stable-20211015023812-fee1f38
-    command: /app/cluster-dialer
-    container_name: erda-cluster-dialer
-    env_file:
-      - ./env
-    environment:
-      - DEBUG=false
-    ports:
-      - "80"
-    platform: linux/amd64
-
   cluster-manager:
     image: registry.erda.cloud/erda/erda:1.3.0-stable-20211015023812-fee1f38
     command: /app/cluster-manager
