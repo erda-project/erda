@@ -31,8 +31,8 @@ func (m *MockEdgeRegister) GetAccessToken(req apistructs.OAuth2TokenGetRequest) 
 func (m *MockEdgeRegister) GetOAuth2Token(req apistructs.OAuth2TokenGetRequest) (*apistructs.OAuth2Token, error) {
 	return nil, nil
 }
-func (m *MockEdgeRegister) GetEdgePipelineEnvs() apistructs.ClusterDialerClientDetail {
-	return apistructs.ClusterDialerClientDetail{}
+func (m *MockEdgeRegister) GetEdgePipelineEnvs() apistructs.ClusterManagerClientDetail {
+	return apistructs.ClusterManagerClientDetail{}
 }
 func (m *MockEdgeRegister) CheckAccessToken(token string) error                     { return nil }
 func (m *MockEdgeRegister) CheckAccessTokenFromHttpRequest(req *http.Request) error { return nil }

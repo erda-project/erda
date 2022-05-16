@@ -19,58 +19,58 @@ import (
 	"fmt"
 )
 
-type ClusterDialerHeaderKey string
+type ClusterManagerHeaderKey string
 
 var (
-	ClusterDialerHeaderKeyClusterKey    ClusterDialerHeaderKey = "X-Erda-Cluster-Key"
-	ClusterDialerHeaderKeyClientType    ClusterDialerHeaderKey = "X-Erda-Client-Type"
-	ClusterDialerHeaderKeyClusterInfo   ClusterDialerHeaderKey = "X-Erda-Cluster-Info"
-	ClusterDialerHeaderKeyAuthorization ClusterDialerHeaderKey = "Authorization"
-	ClusterDialerHeaderKeyClientDetail  ClusterDialerHeaderKey = "X-Erda-Client-Detail"
+	ClusterManagerHeaderKeyClusterKey    ClusterManagerHeaderKey = "X-Erda-Cluster-Key"
+	ClusterManagerHeaderKeyClientType    ClusterManagerHeaderKey = "X-Erda-Client-Type"
+	ClusterManagerHeaderKeyClusterInfo   ClusterManagerHeaderKey = "X-Erda-Cluster-Info"
+	ClusterManagerHeaderKeyAuthorization ClusterManagerHeaderKey = "Authorization"
+	ClusterManagerHeaderKeyClientDetail  ClusterManagerHeaderKey = "X-Erda-Client-Detail"
 )
 
-func (c ClusterDialerHeaderKey) String() string {
+func (c ClusterManagerHeaderKey) String() string {
 	return string(c)
 }
 
-type ClusterDialerClientType string
+type ClusterManagerClientType string
 
 var (
-	ClusterDialerClientTypeDefault  ClusterDialerClientType = ""         // cluster
-	ClusterDialerClientTypeCluster  ClusterDialerClientType = "cluster"  // cluster
-	ClusterDialerClientTypePipeline ClusterDialerClientType = "pipeline" // pipeline
+	ClusterManagerClientTypeDefault  ClusterManagerClientType = ""         // cluster
+	ClusterManagerClientTypeCluster  ClusterManagerClientType = "cluster"  // cluster
+	ClusterManagerClientTypePipeline ClusterManagerClientType = "pipeline" // pipeline
 )
 
-func (c ClusterDialerClientType) String() string {
+func (c ClusterManagerClientType) String() string {
 	return string(c)
 }
 
-func (c ClusterDialerClientType) MakeClientKey(clusterKey string) string {
+func (c ClusterManagerClientType) MakeClientKey(clusterKey string) string {
 	if c == "" {
 		return clusterKey
 	}
 	return fmt.Sprintf("%s-client-type-%s", clusterKey, c)
 }
 
-type ClusterDialerClientDetailKey string
+type ClusterManagerClientDetailKey string
 
 var (
-	ClusterDialerDataKeyPipelineHost ClusterDialerClientDetailKey = "pipelineHost"
-	ClusterDialerDataKeyPipelineAddr ClusterDialerClientDetailKey = "pipelineAddr"
+	ClusterManagerDataKeyPipelineHost ClusterManagerClientDetailKey = "pipelineHost"
+	ClusterManagerDataKeyPipelineAddr ClusterManagerClientDetailKey = "pipelineAddr"
 )
 
-type ClusterDialerClientDetail map[ClusterDialerClientDetailKey]string
+type ClusterManagerClientDetail map[ClusterManagerClientDetailKey]string
 
-type ClusterDialerClientMap map[string]ClusterDialerClientDetail
+type ClusterManagerClientMap map[string]ClusterManagerClientDetail
 
-func (detail ClusterDialerClientDetail) Get(key ClusterDialerClientDetailKey) string {
+func (detail ClusterManagerClientDetail) Get(key ClusterManagerClientDetailKey) string {
 	return detail[key]
 }
 
-func (detail ClusterDialerClientDetail) Marshal() ([]byte, error) {
+func (detail ClusterManagerClientDetail) Marshal() ([]byte, error) {
 	return json.Marshal(detail)
 }
 
-func (m ClusterDialerClientMap) GetClientDetail(clientKey string) ClusterDialerClientDetail {
+func (m ClusterManagerClientMap) GetClientDetail(clientKey string) ClusterManagerClientDetail {
 	return m[clientKey]
 }

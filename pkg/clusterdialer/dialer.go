@@ -33,7 +33,7 @@ import (
 
 var (
 	sessions = sync.Map{}
-	ipCache  = cache.New("clusterDialerEndpoint", time.Second*30, queryClusterDialerIP)
+	ipCache  = cache.New("clusterManagerEndpoint", time.Second*30, queryClusterManagerIP)
 )
 
 type DialContextFunc func(ctx context.Context, network, address string) (net.Conn, error)
@@ -73,14 +73,14 @@ func DialContextTCP(clusterKey string) DialContextProtoFunc {
 	return DialContextProto(clusterKey, "tcp")
 }
 
-func queryClusterDialerIP(clusterKey interface{}) (interface{}, bool) {
+func queryClusterManagerIP(clusterKey interface{}) (interface{}, bool) {
 	log := logrus.WithField("func", "DialContext")
 
-	log.Debugf("start querying clusterDialer IP in dialContext...")
-	host := "http://" + discover.ClusterDialer()
+	log.Debugf("start querying clusterManager IP in dialContext...")
+	host := "http://" + discover.ClusterManager()
 	resp, err := http.Get(host + fmt.Sprintf("/clusterdialer/ip?clusterKey=%s", clusterKey))
 	if err != nil {
-		log.Errorf("failed to request clsuterdialer in cache updating in dialContext, %v", err)
+		log.Errorf("failed to request clusterManager in cache updating in dialContext, %v", err)
 		return "", false
 	}
 	data, err := io.ReadAll(resp.Body)
@@ -97,7 +97,7 @@ func queryClusterDialerIP(clusterKey interface{}) (interface{}, bool) {
 	succeeded, _ := r["succeeded"].(bool)
 	if !succeeded {
 		errStr, _ := r["error"].(string)
-		log.Errorf("return error from clusterdialer in cache updating, %s", errStr)
+		log.Errorf("return error from clusterManager in cache updating, %s", errStr)
 		return "", false
 	}
 
@@ -106,23 +106,23 @@ func queryClusterDialerIP(clusterKey interface{}) (interface{}, bool) {
 }
 
 func getSession(clusterKey string) (*TunnelSession, error) {
-	clusterDialerEndpoint, ok := ipCache.LoadWithUpdate(clusterKey)
+	clusterManagerEndpoint, ok := ipCache.LoadWithUpdate(clusterKey)
 	if !ok {
-		logrus.Errorf("failed to get clusterDialer endpoint for clusterKey %s", clusterKey)
-		return nil, errors.Errorf("failed to get clusterDialer endpoint for clusterKey %s", clusterKey)
+		logrus.Errorf("failed to get clusterManager endpoint for clusterKey %s", clusterKey)
+		return nil, errors.Errorf("failed to get clusterManager endpoint for clusterKey %s", clusterKey)
 	}
-	if clusterDialerEndpoint == "" {
-		return nil, errors.Errorf("can not found clusterDialer for clusterKey %s", clusterKey)
+	if clusterManagerEndpoint == "" {
+		return nil, errors.Errorf("can not found clusterManager endpoint for clusterKey %s", clusterKey)
 	}
-	logrus.Debugf("[DEBUG] get cluster dialer endpoint succeeded, IP: %s", clusterDialerEndpoint)
+	logrus.Debugf("[DEBUG] get clusterManager endpoint succeeded, IP: %s", clusterManagerEndpoint)
 
 	var session *TunnelSession
-	v, ok := sessions.Load(clusterDialerEndpoint)
+	v, ok := sessions.Load(clusterManagerEndpoint)
 	if !ok {
 		ctx, cancel := context.WithCancel(context.Background())
-		session = &TunnelSession{expired: ctx, cancel: cancel, clusterDialerEndpoint: clusterDialerEndpoint.(string)}
-		go session.initialize(fmt.Sprintf("ws://%s%s", clusterDialerEndpoint, "/clusterdialer"))
-		sessions.Store(clusterDialerEndpoint, session)
+		session = &TunnelSession{expired: ctx, cancel: cancel, clusterManagerEndpoint: clusterManagerEndpoint.(string)}
+		go session.initialize(fmt.Sprintf("ws://%s%s", clusterManagerEndpoint, "/clusterdialer"))
+		sessions.Store(clusterManagerEndpoint, session)
 	} else {
 		session, _ = v.(*TunnelSession)
 	}

@@ -35,7 +35,7 @@ type Config struct {
 	AllowedSources               []string      `file:"allowed_sources" env:"EDGE_ALLOWED_SOURCES"` // env support comma-seperated string
 	PipelineAddr                 string        `env:"PIPELINE_ADDR"`
 	PipelineHost                 string        `env:"PIPELINE_HOST"`
-	ClusterDialEndpoint          string        `file:"cluster_dialer_endpoint" desc:"cluster dialer endpoint"`
+	ClusterManagerEndpoint       string        `file:"cluster_manager_endpoint" desc:"cluster manager endpoint"`
 	ClusterAccessKey             string        `file:"cluster_access_key" desc:"cluster access key, if specified will doesn't start watcher"`
 	RetryConnectDialerInterval   time.Duration `file:"retry_cluster_hook_interval" default:"1s"`
 	EtcdPrefixOfClusterAccessKey string        `file:"cluster_access_key_etcd_prefix" env:"EDGE_PIPELINE_CLUSTER_ACCESS_KEY_ETCD_PREFIX"`
@@ -62,7 +62,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	if err := p.checkEtcdPrefixKey(p.Cfg.EtcdPrefixOfClusterAccessKey); err != nil {
 		return err
 	}
-	p.bdl = bundle.New(bundle.WithClusterDialer())
+	p.bdl = bundle.New(bundle.WithClusterManager())
 	p.forEdgeUse.handlersOnEdge = make(chan func(context.Context), 0)
 	p.forCenterUse.handlersOnCenter = make(chan func(context.Context), 0)
 	p.startEdgeCenterUse(ctx)

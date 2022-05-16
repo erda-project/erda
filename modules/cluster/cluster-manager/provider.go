@@ -17,19 +17,44 @@ package cluster_manager
 import (
 	"context"
 
+	"github.com/coreos/etcd/clientv3"
+	"github.com/jinzhu/gorm"
+	"github.com/rancher/remotedialer"
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/httpserver"
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
+	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/cluster/cluster-manager/cluster"
+	"github.com/erda-project/erda/modules/cluster/cluster-manager/cluster/db"
 	"github.com/erda-project/erda/modules/cluster/cluster-manager/conf"
+	"github.com/erda-project/erda/modules/cluster/cluster-manager/dialer/server"
 )
 
 type provider struct {
-	Cfg *conf.Conf
+	Cfg        *conf.Conf
+	Bdl        *bundle.Bundle
+	DB         *gorm.DB                   `autowired:"mysql-client"`
+	Router     httpserver.Router          `autowired:"http-router"`
+	Credential tokenpb.TokenServiceServer `autowired:"erda.core.token.TokenService" optional:"true"`
+	Etcd       *clientv3.Client           `autowired:"etcd"`
+	Cluster    clusterpb.ClusterServiceServer
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	return initialize(p.Cfg)
+	p.Bdl = bundle.New(bundle.WithCoreServices())
+	if p.Cfg.Debug {
+		logrus.SetLevel(logrus.DebugLevel)
+		remotedialer.PrintTunnelData = true
+	}
+	p.Cluster = cluster.NewClusterService(cluster.WithDB(&db.ClusterDB{DB: p.DB}), cluster.WithBundle(p.Bdl))
+	return nil
 }
 
 func (p *provider) Run(ctx context.Context) error {
+	p.Router.Any("/**", server.NewDialerRouter(ctx, p.Cluster, p.Credential, p.Cfg, p.Etcd).ServeHTTP)
 	return nil
 }
 

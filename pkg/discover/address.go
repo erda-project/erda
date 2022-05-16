@@ -39,7 +39,6 @@ const (
 	EnvTMC            = "TMC_ADDR" // TODO REMOVE
 	EnvMSP            = "MSP_ADDR"
 	EnvUC             = "UC_ADDR"
-	EnvClusterDialer  = "CLUSTER_DIALER_ADDR"
 	EnvDOP            = "DOP_ADDR"
 	EnvECP            = "ECP_ADDR"
 	EnvClusterManager = "CLUSTER_MANAGER_ADDR"
@@ -70,7 +69,6 @@ const (
 	SvcTMC            = "tmc"
 	SvcMSP            = "msp"
 	SvcUC             = "uc"
-	SvcClusterDialer  = "cluster-dialer"
 	SvcDOP            = "dop"
 	SvcECP            = "ecp"
 	SvcClusterManager = "cluster-manager"
@@ -99,7 +97,6 @@ var ServicesEnvKeys = map[string]string{
 	SvcTMC:            EnvTMC,
 	SvcMSP:            EnvMSP,
 	SvcUC:             EnvUC,
-	SvcClusterDialer:  EnvClusterDialer,
 	SvcDOP:            EnvDOP,
 	SvcECP:            EnvECP,
 	SvcClusterManager: EnvClusterManager,
@@ -137,7 +134,6 @@ func KMS() string            { return getURL(SvcKMS) }
 func QA() string             { return getURL(SvcQA) }
 func APIM() string           { return getURL(SvcAPIM) }
 func UC() string             { return getURL(SvcUC) }
-func ClusterDialer() string  { return getURL(SvcClusterDialer) }
 func DOP() string            { return getURL(SvcDOP) }
 func CoreServices() string   { return getURL(SvcCoreServices) }
 func ECP() string            { return getURL(SvcECP) }

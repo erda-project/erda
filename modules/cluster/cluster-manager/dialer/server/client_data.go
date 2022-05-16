@@ -22,22 +22,22 @@ import (
 
 var (
 	clientMutex sync.Mutex
-	clientDatas = map[apistructs.ClusterDialerClientType]apistructs.ClusterDialerClientMap{}
+	clientDatas = map[apistructs.ClusterManagerClientType]apistructs.ClusterManagerClientMap{}
 )
 
-func updateClientDetail(clientType apistructs.ClusterDialerClientType, clusterKey string, data apistructs.ClusterDialerClientDetail) {
+func updateClientDetail(clientType apistructs.ClusterManagerClientType, clusterKey string, data apistructs.ClusterManagerClientDetail) {
 	clientMutex.Lock()
 	defer clientMutex.Unlock()
 	if clusterKey == "" || clientType == "" {
 		return
 	}
 	if _, ok := clientDatas[clientType]; !ok {
-		clientDatas[clientType] = apistructs.ClusterDialerClientMap{}
+		clientDatas[clientType] = apistructs.ClusterManagerClientMap{}
 	}
 	clientDatas[clientType][clusterKey] = data
 }
 
-func getClientDetail(clientType apistructs.ClusterDialerClientType, clusterKey string) (apistructs.ClusterDialerClientDetail, bool) {
+func getClientDetail(clientType apistructs.ClusterManagerClientType, clusterKey string) (apistructs.ClusterManagerClientDetail, bool) {
 	clientMutex.Lock()
 	defer clientMutex.Unlock()
 	if data, ok := clientDatas[clientType]; ok {
@@ -45,5 +45,5 @@ func getClientDetail(clientType apistructs.ClusterDialerClientType, clusterKey s
 			return clientData, true
 		}
 	}
-	return apistructs.ClusterDialerClientDetail{}, false
+	return apistructs.ClusterManagerClientDetail{}, false
 }

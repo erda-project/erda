@@ -129,7 +129,7 @@ func Test_parseInetUrl(t *testing.T) {
 	}
 }
 
-func TestQueryClusterDialerIP(t *testing.T) {
+func TestQueryClusterManagerIP(t *testing.T) {
 	targetResIP := "testIP"
 	http.HandleFunc("/clusterdialer/ip", func(rw http.ResponseWriter, req *http.Request) {
 		res := map[string]interface{}{
@@ -142,10 +142,10 @@ func TestQueryClusterDialerIP(t *testing.T) {
 	go http.ListenAndServe(queryIPAddr, nil)
 
 	time.Sleep(1 * time.Second)
-	os.Setenv(discover.EnvClusterDialer, queryIPAddr)
-	res, ok := queryClusterDialerIP("")
+	os.Setenv(discover.EnvClusterManager, queryIPAddr)
+	res, ok := queryClusterManagerIP("")
 	if !ok {
-		t.Error("failed to get cluster dialer ip")
+		t.Error("failed to get cluster manager ip")
 	}
 
 	ip, _ := res.(string)

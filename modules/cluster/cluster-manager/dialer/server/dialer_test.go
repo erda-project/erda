@@ -32,8 +32,8 @@ import (
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	clusteragent "github.com/erda-project/erda/modules/cluster/cluster-agent/client"
 	clientconfig "github.com/erda-project/erda/modules/cluster/cluster-agent/config"
-	"github.com/erda-project/erda/modules/cluster/cluster-dialer/auth"
-	serverconfig "github.com/erda-project/erda/modules/cluster/cluster-dialer/config"
+	"github.com/erda-project/erda/modules/cluster/cluster-manager/conf"
+	"github.com/erda-project/erda/modules/cluster/cluster-manager/dialer/auth"
 	"github.com/erda-project/erda/pkg/clusterdialer"
 	"github.com/erda-project/erda/pkg/discover"
 )
@@ -45,7 +45,7 @@ const (
 
 func startServer(etcd *clientv3.Client) (context.Context, context.CancelFunc) {
 	ctx, cancel := context.WithCancel(context.Background())
-	go Start(ctx, &fakeClusterSvc{}, nil, &serverconfig.Config{
+	go Start(ctx, &fakeClusterSvc{}, nil, &conf.Conf{
 		Listen:          dialerListenAddr,
 		NeedClusterInfo: false,
 	}, etcd)
@@ -81,10 +81,10 @@ func Test_DialerContext(t *testing.T) {
 	})
 
 	client := clusteragent.New(clusteragent.WithConfig(&clientconfig.Config{
-		ClusterDialEndpoint: fmt.Sprintf("ws://%s/clusteragent/connect", dialerListenAddr),
-		ClusterKey:          fakeClusterKey,
-		CollectClusterInfo:  false,
-		ClusterAccessKey:    fakeClusterAccessKey,
+		ClusterManagerEndpoint: fmt.Sprintf("ws://%s/clusteragent/connect", dialerListenAddr),
+		ClusterKey:             fakeClusterKey,
+		CollectClusterInfo:     false,
+		ClusterAccessKey:       fakeClusterAccessKey,
 	}))
 
 	ctx, cancel := startServer(&clientv3.Client{KV: &fakeKV{}})
@@ -105,7 +105,7 @@ func Test_DialerContext(t *testing.T) {
 		time.Sleep(1 * time.Second)
 	}
 
-	os.Setenv(discover.EnvClusterDialer, helloListenAddr)
+	os.Setenv(discover.EnvClusterManager, helloListenAddr)
 	hc := http.Client{
 		Transport: &http.Transport{
 			DialContext: clusterdialer.DialContext("test"),

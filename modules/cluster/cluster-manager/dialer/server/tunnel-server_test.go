@@ -31,8 +31,8 @@ import (
 
 	clusteragent "github.com/erda-project/erda/modules/cluster/cluster-agent/client"
 	clientconfig "github.com/erda-project/erda/modules/cluster/cluster-agent/config"
-	"github.com/erda-project/erda/modules/cluster/cluster-dialer/auth"
-	serverconfig "github.com/erda-project/erda/modules/cluster/cluster-dialer/config"
+	"github.com/erda-project/erda/modules/cluster/cluster-manager/conf"
+	"github.com/erda-project/erda/modules/cluster/cluster-manager/dialer/auth"
 )
 
 const (
@@ -51,16 +51,17 @@ func Test_netportal(t *testing.T) {
 	})
 
 	client := clusteragent.New(clusteragent.WithConfig(&clientconfig.Config{
-		ClusterDialEndpoint: fmt.Sprintf("ws://%s/clusteragent/connect", dialerListenAddr2),
-		ClusterKey:          fakeClusterKey,
-		CollectClusterInfo:  false,
-		ClusterAccessKey:    fakeClusterAccessKey,
+		ClusterManagerEndpoint: fmt.Sprintf("ws://%s/clusteragent/connect", dialerListenAddr2),
+		ClusterKey:             fakeClusterKey,
+		CollectClusterInfo:     false,
+		ClusterAccessKey:       fakeClusterAccessKey,
 	}))
 
-	go Start(context.Background(), &fakeClusterSvc{}, nil, &serverconfig.Config{
+	go Start(context.Background(), &fakeClusterSvc{}, nil, &conf.Conf{
 		Listen:          dialerListenAddr2,
 		NeedClusterInfo: false,
 	}, &clientv3.Client{KV: &fakeKV{}})
+
 	helloHandler := func(w http.ResponseWriter, req *http.Request) {
 		io.WriteString(w, "Hello, world!")
 	}

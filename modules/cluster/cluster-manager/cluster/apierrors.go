@@ -12,11 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package apierrors
+package cluster
 
-import (
-	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
-)
+import "github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 
 var (
 	ErrPreCheckCluster = err("ErrPreCheckCluster", "auth failed")

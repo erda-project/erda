@@ -25,13 +25,13 @@ import (
 func TestGetUpdateClientData(t *testing.T) {
 	type args struct {
 		clusterKey string
-		clientType apistructs.ClusterDialerClientType
-		data       apistructs.ClusterDialerClientDetail
+		clientType apistructs.ClusterManagerClientType
+		data       apistructs.ClusterManagerClientDetail
 	}
 	type test struct {
 		name       string
 		args       args
-		want       apistructs.ClusterDialerClientDetail
+		want       apistructs.ClusterManagerClientDetail
 		wantExists bool
 	}
 	tests := []test{
@@ -39,12 +39,12 @@ func TestGetUpdateClientData(t *testing.T) {
 			name: "test pipeline client data",
 			args: args{
 				clusterKey: "erda-dev",
-				clientType: apistructs.ClusterDialerClientTypePipeline,
-				data: apistructs.ClusterDialerClientDetail{
+				clientType: apistructs.ClusterManagerClientTypePipeline,
+				data: apistructs.ClusterManagerClientDetail{
 					"host": "localhost",
 				},
 			},
-			want: apistructs.ClusterDialerClientDetail{
+			want: apistructs.ClusterManagerClientDetail{
 				"host": "localhost",
 			},
 			wantExists: true,
@@ -53,12 +53,12 @@ func TestGetUpdateClientData(t *testing.T) {
 			name: "test cluster agent client data",
 			args: args{
 				clusterKey: "erda-dev",
-				clientType: apistructs.ClusterDialerClientTypeCluster,
-				data: apistructs.ClusterDialerClientDetail{
+				clientType: apistructs.ClusterManagerClientTypeCluster,
+				data: apistructs.ClusterManagerClientDetail{
 					"namespace": "erda-dev",
 				},
 			},
-			want: apistructs.ClusterDialerClientDetail{
+			want: apistructs.ClusterManagerClientDetail{
 				"namespace": "erda-dev",
 			},
 			wantExists: true,
@@ -67,12 +67,12 @@ func TestGetUpdateClientData(t *testing.T) {
 			name: "test cluster agent client data",
 			args: args{
 				clusterKey: "terminus-dev",
-				clientType: apistructs.ClusterDialerClientTypeCluster,
-				data: apistructs.ClusterDialerClientDetail{
+				clientType: apistructs.ClusterManagerClientTypeCluster,
+				data: apistructs.ClusterManagerClientDetail{
 					"namespace": "erda-dev",
 				},
 			},
-			want: apistructs.ClusterDialerClientDetail{
+			want: apistructs.ClusterManagerClientDetail{
 				"namespace": "erda-dev",
 			},
 			wantExists: true,
@@ -81,10 +81,10 @@ func TestGetUpdateClientData(t *testing.T) {
 			name: "test empty cluster key",
 			args: args{
 				clusterKey: "",
-				clientType: apistructs.ClusterDialerClientTypeCluster,
-				data:       apistructs.ClusterDialerClientDetail{},
+				clientType: apistructs.ClusterManagerClientTypeCluster,
+				data:       apistructs.ClusterManagerClientDetail{},
 			},
-			want:       apistructs.ClusterDialerClientDetail{},
+			want:       apistructs.ClusterManagerClientDetail{},
 			wantExists: false,
 		},
 	}

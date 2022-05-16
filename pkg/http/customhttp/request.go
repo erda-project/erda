@@ -20,7 +20,6 @@ import (
 	"io"
 	"net/http"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/pkg/errors"
@@ -32,7 +31,7 @@ import (
 
 var (
 	ErrInvalidAddr = Error{"customhttp: invalid inetaddr"}
-	ipCache        = cache.New("clusterDialerEndpoint", time.Second*30, queryClusterDialerIP)
+	ipCache        = cache.New("clusterManagerEndpoint", time.Second*30, queryClusterManagerIP)
 )
 
 type Error struct {
@@ -42,8 +41,6 @@ type Error struct {
 func (e Error) Error() string {
 	return e.msg
 }
-
-var mtx sync.Mutex
 
 const (
 	portalHostHeader = "X-Portal-Host"
@@ -94,14 +91,14 @@ func NewRequest(method, url string, body io.Reader) (*http.Request, error) {
 		return nil, err
 	}
 
-	clusterDialerEndpoint, ok := ipCache.LoadWithUpdate(portalHost)
+	clusterManagerEndpoint, ok := ipCache.LoadWithUpdate(portalHost)
 	if !ok {
-		logrus.Errorf("failed to get clusterDialer endpoint for portal host %s", portalHost)
-		return nil, errors.Errorf("failed to get clusterDialer endpoint for portal host %s", portalHost)
+		logrus.Errorf("failed to get clusterManager endpoint for portal host %s", portalHost)
+		return nil, errors.Errorf("failed to get clusterManager endpoint for portal host %s", portalHost)
 	}
-	logrus.Infof("[DEBUG] get cluster dialer endpoint succeeded, IP: %s", clusterDialerEndpoint)
+	logrus.Infof("[DEBUG] get cluster manager endpoint succeeded, IP: %s", clusterManagerEndpoint)
 
-	url = fmt.Sprintf("http://%s/%s", clusterDialerEndpoint, portalUrl)
+	url = fmt.Sprintf("http://%s/%s", clusterManagerEndpoint, portalUrl)
 	request, err := http.NewRequest(method, url, body)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -111,11 +108,11 @@ func NewRequest(method, url string, body io.Reader) (*http.Request, error) {
 	return request, nil
 }
 
-func queryClusterDialerIP(clusterKey interface{}) (interface{}, bool) {
+func queryClusterManagerIP(clusterKey interface{}) (interface{}, bool) {
 	log := logrus.WithField("func", "NetPortal NewRequest")
 
-	log.Debug("start querying clusterDialer IP in netPortal NewRequest...")
-	host := "http://" + discover.ClusterDialer()
+	log.Debug("start querying clusterManager IP in netPortal NewRequest...")
+	host := "http://" + discover.ClusterManager()
 	resp, err := http.Get(host + fmt.Sprintf("/clusterdialer/ip?clusterKey=%s", clusterKey))
 	if err != nil {
 		log.Errorf("failed to request clsuterdialer in cache updating in netPortal NewRequest, %v", err)
@@ -135,7 +132,7 @@ func queryClusterDialerIP(clusterKey interface{}) (interface{}, bool) {
 	succeeded, _ := r["succeeded"].(bool)
 	if !succeeded {
 		errStr, _ := r["error"].(string)
-		log.Errorf("reutrn error from clusterdialer in cache updating, %s", errStr)
+		log.Errorf("reutrn error from clusterManager in cache updating, %s", errStr)
 		return "", false
 	}
 

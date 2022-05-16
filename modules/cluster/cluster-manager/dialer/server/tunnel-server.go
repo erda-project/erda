@@ -41,8 +41,8 @@ import (
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/cluster/cluster-dialer/auth"
-	"github.com/erda-project/erda/modules/cluster/cluster-dialer/config"
+	"github.com/erda-project/erda/modules/cluster/cluster-manager/conf"
+	"github.com/erda-project/erda/modules/cluster/cluster-manager/dialer/auth"
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
@@ -105,7 +105,7 @@ func clusterRegister(ctx context.Context, server *remotedialer.Server, rw http.R
 					}
 				}
 
-				ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.ClientIDHeader: "cluster-dialer"}))
+				ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.ClientIDHeader: "cluster-manager"}))
 				if _, err = clusterSvc.PatchCluster(ctx, &clusterpb.PatchClusterRequest{
 					Name: clusterKey,
 					ManageConfig: &clusterpb.ManageConfig{
@@ -127,8 +127,8 @@ func clusterRegister(ctx context.Context, server *remotedialer.Server, rw http.R
 		}
 	}
 
-	clientType := apistructs.ClusterDialerClientType(req.Header.Get(apistructs.ClusterDialerHeaderKeyClientType.String()))
-	clusterKey := req.Header.Get(apistructs.ClusterDialerHeaderKeyClusterKey.String())
+	clientType := apistructs.ClusterManagerClientType(req.Header.Get(apistructs.ClusterManagerHeaderKeyClientType.String()))
+	clusterKey := req.Header.Get(apistructs.ClusterManagerHeaderKeyClusterKey.String())
 	clusterKey = clientType.MakeClientKey(clusterKey)
 	if clusterKey == "" {
 		remotedialer.DefaultErrorWriter(rw, req, 400, errors.New("missing header:X-Erda-Cluster-Key"))
@@ -148,16 +148,16 @@ func clusterRegister(ctx context.Context, server *remotedialer.Server, rw http.R
 	}
 
 	switch clientType {
-	case apistructs.ClusterDialerClientTypeDefault, apistructs.ClusterDialerClientTypeCluster:
+	case apistructs.ClusterManagerClientTypeDefault, apistructs.ClusterManagerClientTypeCluster:
 		if needClusterInfo {
 			// Get cluster info from agent request
-			info := req.Header.Get(apistructs.ClusterDialerHeaderKeyClusterInfo.String())
+			info := req.Header.Get(apistructs.ClusterManagerHeaderKeyClusterInfo.String())
 			if info == "" {
 				remotedialer.DefaultErrorWriter(rw, req, 400, errors.New("missing header:X-Erda-Cluster-Info"))
 				return
 			}
 
-			if req.Header.Get(apistructs.ClusterDialerHeaderKeyAuthorization.String()) == "" {
+			if req.Header.Get(apistructs.ClusterManagerHeaderKeyAuthorization.String()) == "" {
 				remotedialer.DefaultErrorWriter(rw, req, 400, errors.New("missing header:Authorization"))
 				return
 			}
@@ -191,9 +191,9 @@ func clusterRegister(ctx context.Context, server *remotedialer.Server, rw http.R
 			go registerFunc(clusterKey, clusterInfo)
 		}
 	default:
-		clientDataStr := req.Header.Get(apistructs.ClusterDialerHeaderKeyClientDetail.String())
+		clientDataStr := req.Header.Get(apistructs.ClusterManagerHeaderKeyClientDetail.String())
 		if clientDataStr != "" {
-			var clientData apistructs.ClusterDialerClientDetail
+			var clientData apistructs.ClusterManagerClientDetail
 			if err := json.Unmarshal([]byte(clientDataStr), &clientData); err != nil {
 				logrus.Errorf("failed to unmarshal client data(skip clients update), clientType: %s, clusterKey: %s, err: %v",
 					clientType, clusterKey, err)
@@ -229,7 +229,7 @@ func getLocalIP() (string, error) {
 }
 
 func queryIP(rw http.ResponseWriter, req *http.Request, etcd *clientv3.Client) {
-	resp := apistructs.QueryClusterDialerIPResponse{}
+	resp := apistructs.QueryClusterManagerIPResponse{}
 	clusterKey := req.URL.Query().Get("clusterKey")
 	logrus.Debugf("got queryIP request, clusterKey: %s", clusterKey)
 	if clusterKey == "" {
@@ -315,7 +315,7 @@ func netportal(server *remotedialer.Server, rw http.ResponseWriter, req *http.Re
 
 func checkClusterIsExisted(server *remotedialer.Server, rw http.ResponseWriter, req *http.Request) {
 	clusterKey := req.URL.Query().Get("clusterKey")
-	clientType := apistructs.ClusterDialerClientType(req.URL.Query().Get("clientType"))
+	clientType := apistructs.ClusterManagerClientType(req.URL.Query().Get("clientType"))
 	clusterKey = clientType.MakeClientKey(clusterKey)
 	isExisted := server.HasSession(clusterKey)
 	rw.Write([]byte(strconv.FormatBool(isExisted)))
@@ -323,7 +323,7 @@ func checkClusterIsExisted(server *remotedialer.Server, rw http.ResponseWriter, 
 
 func getClusterClientData(server *remotedialer.Server, rw http.ResponseWriter, req *http.Request) {
 	clusterKey := mux.Vars(req)["clusterKey"]
-	clientType := apistructs.ClusterDialerClientType(mux.Vars(req)["clientType"])
+	clientType := apistructs.ClusterManagerClientType(mux.Vars(req)["clientType"])
 	clusterKey = clientType.MakeClientKey(clusterKey)
 	isExisted := server.HasSession(clusterKey)
 	if !isExisted {
@@ -369,7 +369,7 @@ func getClusterClient(server *remotedialer.Server, clusterKey string, timeout ti
 	return client
 }
 
-func Start(ctx context.Context, clusterSvc clusterpb.ClusterServiceServer, credential tokenpb.TokenServiceServer, cfg *config.Config, etcd *clientv3.Client) error {
+func NewDialerRouter(ctx context.Context, clusterSvc clusterpb.ClusterServiceServer, credential tokenpb.TokenServiceServer, cfg *conf.Conf, etcd *clientv3.Client) *mux.Router {
 	authorizer := auth.New(
 		auth.WithCredentialClient(credential),
 		auth.WithConfig(cfg),
@@ -410,12 +410,16 @@ func Start(ctx context.Context, clusterSvc clusterpb.ClusterServiceServer, crede
 		req *http.Request) {
 		netportal(handler, rw, req, cfg.Timeout)
 	})
+	return router
+}
+
+func Start(ctx context.Context, clusterSvc clusterpb.ClusterServiceServer, credential tokenpb.TokenServiceServer, cfg *conf.Conf, etcd *clientv3.Client) error {
 	server := &http.Server{
 		BaseContext: func(net.Listener) context.Context {
 			return ctx
 		},
 		Addr:    cfg.Listen,
-		Handler: router,
+		Handler: NewDialerRouter(ctx, clusterSvc, nil, cfg, etcd),
 	}
 	return server.ListenAndServe()
 }

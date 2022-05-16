@@ -14,7 +14,7 @@
 
 package apistructs
 
-type QueryClusterDialerIPResponse struct {
+type QueryClusterManagerIPResponse struct {
 	Succeeded bool   `json:"succeeded"`
 	Error     string `json:"error"`
 	IP        string `json:"IP"`

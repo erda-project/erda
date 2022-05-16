@@ -25,7 +25,7 @@ import (
 
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/cluster/cluster-dialer/config"
+	"github.com/erda-project/erda/modules/cluster/cluster-manager/conf"
 )
 
 const (
@@ -36,7 +36,7 @@ type Option func(authorizer *Authorizer)
 
 type Authorizer struct {
 	Credential tokenpb.TokenServiceServer
-	cfg        *config.Config
+	cfg        *conf.Conf
 }
 
 func New(opts ...Option) *Authorizer {
@@ -57,7 +57,7 @@ func WithCredentialClient(credential tokenpb.TokenServiceServer) Option {
 }
 
 // WithConfig with dialer config
-func WithConfig(cfg *config.Config) Option {
+func WithConfig(cfg *conf.Conf) Option {
 	return func(a *Authorizer) {
 		a.cfg = cfg
 	}
@@ -70,9 +70,9 @@ func (a *Authorizer) Authorizer(req *http.Request) (string, bool, error) {
 		return "proxy", true, nil
 	}
 
-	clusterKey := req.Header.Get(apistructs.ClusterDialerHeaderKeyClusterKey.String())
-	authInfo := req.Header.Get(apistructs.ClusterDialerHeaderKeyAuthorization.String())
-	clientType := apistructs.ClusterDialerClientType(req.Header.Get(apistructs.ClusterDialerHeaderKeyClientType.String()))
+	clusterKey := req.Header.Get(apistructs.ClusterManagerHeaderKeyClusterKey.String())
+	authInfo := req.Header.Get(apistructs.ClusterManagerHeaderKeyAuthorization.String())
+	clientType := apistructs.ClusterManagerClientType(req.Header.Get(apistructs.ClusterManagerHeaderKeyClientType.String()))
 
 	// Check header param
 	if clusterKey == "" || authInfo == "" {
