@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/erda-project/erda/pkg/math"
 	"net/url"
 	"strconv"
 	"strings"
@@ -32,6 +31,7 @@ import (
 	"github.com/erda-project/erda/modules/msp/apm/trace/storage"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
+	"github.com/erda-project/erda/pkg/math"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
