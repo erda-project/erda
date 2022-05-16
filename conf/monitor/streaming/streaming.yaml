@@ -66,6 +66,7 @@ clickhouse:
   addr: "${CLICKHOUSE_ADDR:localhost:9000}"
   username: "${CLICKHOUSE_USERNAME:default}"
   password: "${CLICKHOUSE_PASSWORD:default}"
+  conn_open_strategy: "round_robin"
 
 clickhouse.table.initializer@log:
   _enable: ${CLICKHOUSE_ENABLE:false}
