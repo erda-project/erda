@@ -259,3 +259,6 @@ en:
     网盘: Machine Netdisk
     网盘容量使用量异常告警: Machine Netdisk Used
     页面内容改变: App Status Browser
+    app_transaction: App Transaction
+    app_browser: Browser Performance
+    app_exception: App Error

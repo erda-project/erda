@@ -243,7 +243,7 @@
         label: "应用名"
         i18n:
           alias:
-            en: "Application name"
+            en: "App name"
         column: 1
       count.tags.http_path:
         label: "HTTP慢事务异常告警数"
@@ -335,17 +335,17 @@
         label: "应用资源"
         i18n:
           alias:
-            en: "Application resources"
+            en: "App Resource"
       app_transaction:
         label: "应用事务"
         i18n:
           alias:
-            en: "application transaction"
+            en: "App Transaction"
       app_status:
         label: "主动监控"
         i18n:
           alias:
-            en: "Active monitoring"
+            en: "Active Monitoring"
       org_customize:
         label: "企业自定义"
         i18n:
@@ -355,7 +355,7 @@
         label: "微服务自定义"
         i18n:
           alias:
-            en: "Microservice customization"
+            en: "Custom Microservice"
       addon:
         label: "项目中间件"
         i18n:
@@ -365,7 +365,7 @@
         label: "微服务"
         i18n:
           alias:
-            en: "Microservices"
+            en: "Microservice"
       api_gateway_cpu:
         label: "API网关实例CPU使用率异常"
         i18n:
@@ -634,7 +634,7 @@
         label: "应用名"
         i18n:
           alias:
-            en: "Application name"
+            en: "App name"
         column: 1
 
 - app_http_slow_resource:
@@ -663,7 +663,7 @@
         label: "应用名"
         i18n:
           alias:
-            en: "Application name"
+            en: "App name"
         column: 1
 
 - app_http_error_resource:
@@ -692,7 +692,7 @@
         label: "应用名"
         i18n:
           alias:
-            en: "Application name"
+            en: "App name"
         column: 1
 
 - error_resource:
@@ -715,7 +715,7 @@
         label: "应用名"
         i18n:
           alias:
-            en: "Application name"
+            en: "App name"
         column: 1
       last.tags.project_name:
         label: "项目名"
