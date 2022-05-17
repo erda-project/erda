@@ -61,21 +61,22 @@ func TestPrepareListOpusesOptions(t *testing.T) {
 		Type     string
 		Name     string
 		OrgID    int64
+		Keyword  string
 		PageSize int
 		PageNo   int
 	}{
-		{Type: "erda/extensions/addon", Name: "mysql", OrgID: 1, PageSize: 10, PageNo: 2},
-		{Type: "", Name: "", OrgID: 1, PageSize: 10, PageNo: 2},
+		{Type: "erda/extensions/addon", Name: "mysql", OrgID: 1, Keyword: "mysql", PageSize: 10, PageNo: 2},
+		{OrgID: 1, PageSize: 10, PageNo: 2},
 	}
 	var results = []struct {
 		SQL  string
 		Vars []interface{}
 	}{
 		{
-			SQL:  "SELECT * FROM `erda_gallery_opus` WHERE type = ? AND name = ? AND (org_id = ? OR level = ?) AND (`erda_gallery_opus`.`deleted_at` = ? OR `erda_gallery_opus`.`deleted_at` IS NULL) LIMIT 10 OFFSET 10",
-			Vars: []interface{}{cases[0].Type, cases[0].Name, cases[0].OrgID, apistructs.OpusLevelSystem, time.Unix(0, 0)},
+			SQL:  "SELECT * FROM `erda_gallery_opus` WHERE type = ? AND name = ? AND (display_name LIKE ? OR display_name_i18n LIKE ? OR summary LIKE ? OR summary_i18n LIKE ?) AND (org_id = ? OR level = ?) AND (`erda_gallery_opus`.`deleted_at` = ? OR `erda_gallery_opus`.`deleted_at` IS NULL) ORDER BY type DESC,name DESC,updated_at DESC LIMIT 10 OFFSET 10",
+			Vars: []interface{}{cases[0].Type, cases[0].Name, "%mysql%", "%mysql%", "%mysql%", "%mysql%", cases[0].OrgID, apistructs.OpusLevelSystem, time.Unix(0, 0)},
 		}, {
-			SQL:  "SELECT * FROM `erda_gallery_opus` WHERE (org_id = ? OR level = ?) AND (`erda_gallery_opus`.`deleted_at` = ? OR `erda_gallery_opus`.`deleted_at` IS NULL) LIMIT 10 OFFSET 10",
+			SQL:  "SELECT * FROM `erda_gallery_opus` WHERE (org_id = ? OR level = ?) AND (`erda_gallery_opus`.`deleted_at` = ? OR `erda_gallery_opus`.`deleted_at` IS NULL) ORDER BY type DESC,name DESC,updated_at DESC LIMIT 10 OFFSET 10",
 			Vars: []interface{}{cases[1].OrgID, apistructs.OpusLevelSystem, time.Unix(0, 0)},
 		},
 	}
@@ -86,7 +87,7 @@ func TestPrepareListOpusesOptions(t *testing.T) {
 	}
 	defer os.Remove(dbname)
 	for i, case_ := range cases {
-		options := handler.PrepareListOpusesOptions(case_.OrgID, case_.Type, case_.Name, case_.PageSize, case_.PageNo)
+		options := handler.PrepareListOpusesOptions(case_.OrgID, case_.Type, case_.Name, case_.Keyword, case_.PageSize, case_.PageNo)
 		db := db.Debug().Session(&gorm.Session{DryRun: true})
 		for _, opt := range options {
 			db = opt(db)
@@ -96,11 +97,11 @@ func TestPrepareListOpusesOptions(t *testing.T) {
 			t.Fatalf("SQL error, expected:\n%s\nactual:\n%s\n", results[i].SQL, db.Statement.SQL.String())
 		}
 		if len(results[i].Vars) != len(db.Statement.Vars) {
-			t.Fatalf("length of vars error, expected: %d, actual: %d", len(results[i].Vars), len(db.Statement.Vars))
+			t.Fatalf("length of vars error, expected: %d, actual: %d, actuals: %v", len(results[i].Vars), len(db.Statement.Vars), db.Statement.Vars)
 		}
 		for j := range results[i].Vars {
 			if results[i].Vars[j] != db.Statement.Vars[j] {
-				t.Fatalf("vars values not equal, [%d][%d], expectd: %v, actual: %v", i, j, results[i].Vars[j], db.Statement.Vars[j])
+				t.Fatalf("vars values not equal, [%d][%d], expectd: %v, actual: %v, actuals: %v", i, j, results[i].Vars[j], db.Statement.Vars[j], db.Statement.Vars)
 			}
 		}
 	}
@@ -176,32 +177,23 @@ func TestComposeListOpusResp(t *testing.T) {
 			Name:        "mysql",
 			DisplayName: "mysql",
 		}
-		version = model.OpusVersion{
-			Model:   model.Model{ID: fields.UUID{String: uuid.New().String(), Valid: true}},
-			Version: "1.2.3",
-			Summary: "this is test text.",
-			IsValid: true,
-		}
 	)
-	opus.DefaultVersionID = version.ID.String
-	opus.LatestVersionID = version.ID.String
+	opus.DefaultVersionID = uuid.New().String()
+	opus.LatestVersionID = uuid.New().String()
 	opus.CreatedAt = timeNow
 	opus.UpdatedAt = timeNow
-	version.OpusID = opus.ID.String
-	version.CreatedAt = timeNow
-	version.UpdatedAt = timeNow
-	resp := handler.ComposeListOpusResp(total, []*model.Opus{&opus}, []*model.OpusVersion{&version})
+	resp := handler.ComposeListOpusResp("en-us", total, []*model.Opus{&opus})
 	t.Logf("%v", resp)
 }
 
 // need not do unit test
 func TestComposeListOpusVersionRespWithOpus(t *testing.T) {
-	handler.ComposeListOpusVersionRespWithOpus(new(pb.ListOpusVersionsResp), new(model.Opus))
+	handler.ComposeListOpusVersionRespWithOpus("en-us", new(pb.ListOpusVersionsResp), new(model.Opus))
 }
 
 // need not do unit test
 func TestComposeListOpusVersionRespWithVersions(t *testing.T) {
-	_ = handler.ComposeListOpusVersionRespWithVersions(new(pb.ListOpusVersionsResp), []*model.OpusVersion{new(model.OpusVersion)})
+	_ = handler.ComposeListOpusVersionRespWithVersions("en-us", new(pb.ListOpusVersionsResp), []*model.OpusVersion{new(model.OpusVersion)})
 }
 
 // need not do unit test
@@ -209,7 +201,7 @@ func TestComposeListOpusVersionRespWithPresentations(t *testing.T) {
 	var id = uuid.New().String()
 	var resp = &pb.ListOpusVersionsResp{Data: &pb.ListOpusVersionsRespData{Versions: []*pb.ListOpusVersionRespDataVersion{{Id: id}}}}
 	var presentation = &model.OpusPresentation{VersionID: id}
-	handler.ComposeListOpusVersionRespWithPresentations(resp, []*model.OpusPresentation{presentation})
+	handler.ComposeListOpusVersionRespWithPresentations("en-us", resp, []*model.OpusPresentation{presentation})
 }
 
 // need not do unit test
