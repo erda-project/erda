@@ -173,6 +173,8 @@ func GetMergeRequests(ctx *webcontext.Context) {
 	queryCondition.Query = ctx.Query("query")
 	queryCondition.AuthorId = ctx.Query("authorId")
 	queryCondition.AssigneeId = ctx.Query("assigneeId")
+	queryCondition.TargetBranch = ctx.Query("targetBranch")
+	queryCondition.SourceBranch = ctx.Query("sourceBranch")
 	queryCondition.Page = ctx.GetQueryInt32("pageNo", 1)
 	queryCondition.Size = ctx.GetQueryInt32("pageSize", 10)
 	response, err := ctx.Service.QueryMergeRequests(ctx.Repository, queryCondition)

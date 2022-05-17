@@ -42,6 +42,7 @@ import (
 	dwfpb "github.com/erda-project/erda-proto-go/dop/devflowrule/pb"
 	addonmysqlpb "github.com/erda-project/erda-proto-go/orchestrator/addon/mysql/pb"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/apps/devflow/flow"
 	"github.com/erda-project/erda/modules/dop/bdl"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/dop/conf"
@@ -86,6 +87,7 @@ type provider struct {
 	DevFlowRule           dwfpb.DevFlowRuleServiceServer          `autowired:"erda.dop.devflowrule.DevFlowRuleService" required:"true"`
 	TokenService          tokenpb.TokenServiceServer              `autowired:"erda.core.token.TokenService"`
 	ClusterSvc            clusterpb.ClusterServiceServer          `autowired:"erda.core.clustermanager.cluster.ClusterService"`
+	DevFlowSvc            *flow.Service                           `autowired:"erda.apps.devflow.flow.FlowService"`
 
 	Protocol      componentprotocol.Interface
 	CPTran        i18n.I18n        `autowired:"i18n@cp"`

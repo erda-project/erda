@@ -68,28 +68,29 @@ type MergeOptions struct {
 
 //MergeRequest model
 type MergeRequest struct {
-	ID                 int64
-	RepoID             int64 `gorm:"size:150;index:idx_repo_id"`
-	Title              string
-	Description        string `gorm:"type:text"`
-	State              string `gorm:"size:150;index:idx_state"`
-	AuthorId           string `gorm:"size:150;index:idx_author_id"`
-	AssigneeId         string `gorm:"size:150;index:idx_assignee_id"`
-	MergeUserId        string
-	CloseUserId        string
-	MergeCommitSha     string
-	RepoMergeId        int
-	SourceBranch       string
-	SourceSha          string
-	TargetBranch       string
-	TargetSha          string
-	RemoveSourceBranch bool
-	CreatedAt          time.Time
-	UpdatedAt          *time.Time
-	MergeAt            *time.Time
-	CloseAt            *time.Time
-	Score              int `gorm:"size:150;index:idx_score"`
-	ScoreNum           int `gorm:"size:150;index:idx_score_num"`
+	ID                   int64
+	RepoID               int64 `gorm:"size:150;index:idx_repo_id"`
+	Title                string
+	Description          string `gorm:"type:text"`
+	State                string `gorm:"size:150;index:idx_state"`
+	AuthorId             string `gorm:"size:150;index:idx_author_id"`
+	AssigneeId           string `gorm:"size:150;index:idx_assignee_id"`
+	MergeUserId          string
+	CloseUserId          string
+	MergeCommitSha       string
+	RepoMergeId          int
+	SourceBranch         string
+	SourceSha            string
+	TargetBranch         string
+	TargetSha            string
+	RemoveSourceBranch   bool
+	CreatedAt            time.Time
+	UpdatedAt            *time.Time
+	MergeAt              *time.Time
+	CloseAt              *time.Time
+	Score                int    `gorm:"size:150;index:idx_score"`
+	ScoreNum             int    `gorm:"size:150;index:idx_score_num"`
+	JoinTempBranchStatus string `gorm:"join_temp_branch_status"`
 }
 
 type MrCheckRun struct {
@@ -123,6 +124,7 @@ func (mergeRequest *MergeRequest) ToInfo(repo *gitmodule.Repository) *apistructs
 	result.AppID = repo.ApplicationId
 	result.Score = mergeRequest.Score
 	result.ScoreNum = mergeRequest.ScoreNum
+	result.JoinTempBranchStatus = mergeRequest.JoinTempBranchStatus
 
 	if mergeRequest.SourceBranch != "" && mergeRequest.TargetBranch != "" {
 		result.DefaultCommitMessage = fmt.Sprintf("Merge branch '%s' into '%s'", mergeRequest.SourceBranch, mergeRequest.TargetBranch)
@@ -368,6 +370,15 @@ func (svc *Service) QueryMergeRequests(repo *gitmodule.Repository, queryConditio
 	if queryCondition.AssigneeId != "" {
 		query = query.Where("assignee_id = ?", queryCondition.AssigneeId)
 	}
+
+	if queryCondition.TargetBranch != "" {
+		query = query.Where("target_branch = ?", queryCondition.TargetBranch)
+	}
+
+	if queryCondition.SourceBranch != "" {
+		query = query.Where("source_branch = ?", queryCondition.SourceBranch)
+	}
+
 	var count int
 	err := query.Count(&count).Error
 	if err != nil {
@@ -548,7 +559,6 @@ func (svc *Service) ReopenMR(repo *gitmodule.Repository, user *User, mergeId int
 
 	return mergeRequest.ToInfo(repo), nil
 }
-
 func (svc *Service) RemoveMR(repository *Repo) error {
 	req := &MergeRequest{}
 	svc.db.Where("repo_id =? ", repository.ID).Delete(&req)
