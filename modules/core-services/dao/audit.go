@@ -18,6 +18,8 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/jinzhu/gorm"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/core-services/model"
 )
@@ -36,7 +38,7 @@ func (client *DBClient) BatchCreateAudit(audits []model.Audit) error {
 func (client *DBClient) GetAuditsByParam(param *apistructs.AuditsListRequest) (int, []model.Audit, error) {
 	var audits []model.Audit
 	var total int
-	db := client.Table("dice_audit").Where("deleted = 0").Where("start_time >= ? AND start_time <= ?", param.StartAt, param.EndAt)
+	db := client.Table("dice_audit").Scopes(NotDeleted).Where("start_time >= ? AND start_time <= ?", param.StartAt, param.EndAt)
 
 	if !param.Sys {
 		db = db.Where("org_id = ?", param.OrgID)
@@ -76,8 +78,8 @@ func (client *DBClient) GetAuditSettings() ([]model.AuditSettings, error) {
 func (client *DBClient) DeleteAuditsByTimeAndOrg(startTime time.Time, orgID uint64) error {
 	// var audit model.Audit
 	var minID BaseModel
-	baseSql := client.Table("dice_audit").Where("org_id = ?", orgID).Where("start_time <= ?", startTime).
-		Where("scope_type != 'sys'").Where("deleted = 0")
+	baseSql := client.Table("dice_audit").Scopes(NotDeleted).Where("org_id = ?", orgID).Where("start_time <= ?", startTime).
+		Where("scope_type != 'sys'")
 	if err := baseSql.Select("min(id) as id").Scan(&minID).Error; err != nil {
 		return err
 	}
@@ -85,15 +87,14 @@ func (client *DBClient) DeleteAuditsByTimeAndOrg(startTime time.Time, orgID uint
 	if minID.ID > 0 {
 		baseSql = baseSql.Where("id >= ?", minID.ID)
 	}
-	return baseSql.Update("deleted", "1").Error
+	return baseSql.Update("soft_deleted_at", time.Now().UnixNano()/1e6).Error
 }
 
 // DeleteAuditsByTimeAndSys 软删除系统级别的审计事件
 func (client *DBClient) DeleteAuditsByTimeAndSys(startTime time.Time) error {
 	// var audit model.Audit
 	var minID BaseModel
-	baseSql := client.Table("dice_audit").Where("start_time <= ?", startTime).Where("scope_type = 'sys'").
-		Where("deleted = 0")
+	baseSql := client.Table("dice_audit").Scopes(NotDeleted).Where("start_time <= ?", startTime).Where("scope_type = 'sys'")
 	if err := baseSql.Select("min(id) as id").Scan(&minID).Error; err != nil {
 		return err
 	}
@@ -101,18 +102,22 @@ func (client *DBClient) DeleteAuditsByTimeAndSys(startTime time.Time) error {
 	if minID.ID > 0 {
 		baseSql = baseSql.Where("id >= ?", minID.ID)
 	}
-	return baseSql.Update("deleted", "1").Error
+	return baseSql.Update("soft_deleted_at", time.Now().UnixNano()/1e6).Error
+}
+
+func Deleted(db *gorm.DB) *gorm.DB {
+	return db.Where("soft_deleted_at > 0")
 }
 
 // ArchiveAuditsByTimeAndOrg 归档某个企业的审计事件
 func (client *DBClient) ArchiveAuditsByTimeAndOrg() error {
 	// 在审计历史表创建
 	if err := client.Table("dice_audit_history").
-		Exec("INSERT INTO `dice_audit_history` SELECT * FROM `dice_audit` Where deleted = '1'").Error; err != nil {
+		Exec("INSERT INTO `dice_audit_history` SELECT * FROM `dice_audit` WHERE soft_deleted_at > 0").Error; err != nil {
 		return err
 	}
 	// 删除审计表数据
-	if err := client.Table("dice_audit").Where("deleted = '1'").Delete(model.Audit{}).Error; err != nil {
+	if err := client.Table("dice_audit").Scopes(Deleted).Delete(model.Audit{}).Error; err != nil {
 		return err
 	}
 
