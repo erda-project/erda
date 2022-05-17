@@ -178,6 +178,7 @@ services:
     cmd: "/app/cluster-manager"
     ports:
       - port: 9094
+        expose: true
         protocol: "TCP"
         l4_protocol: "TCP"
       - port: 9095
