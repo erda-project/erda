@@ -21,6 +21,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -75,14 +76,22 @@ func DialContextTCP(clusterKey string) DialContextProtoFunc {
 
 func queryClusterManagerIP(clusterKey interface{}) (interface{}, bool) {
 	log := logrus.WithField("func", "DialContext")
-
 	log.Debugf("start querying clusterManager IP in dialContext...")
-	host := "http://" + discover.ClusterManager()
+
+	splits := strings.Split(discover.ClusterManager(), ":")
+	if len(splits) != 2 {
+		log.Errorf("invalid clusterManager addr: %s", discover.ClusterManager())
+		return "", false
+	}
+	addr := splits[0]
+	port := splits[1]
+	host := fmt.Sprintf("http://%s:%s", addr, port)
 	resp, err := http.Get(host + fmt.Sprintf("/clusterdialer/ip?clusterKey=%s", clusterKey))
 	if err != nil {
 		log.Errorf("failed to request clusterManager in cache updating in dialContext, %v", err)
 		return "", false
 	}
+
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Errorf("failed to read from resp in cache updating, %v", err)
@@ -102,7 +111,7 @@ func queryClusterManagerIP(clusterKey interface{}) (interface{}, bool) {
 	}
 
 	ip, _ := r["IP"].(string)
-	return ip, true
+	return fmt.Sprintf("%s:%s", ip, port), true
 }
 
 func getSession(clusterKey string) (*TunnelSession, error) {
