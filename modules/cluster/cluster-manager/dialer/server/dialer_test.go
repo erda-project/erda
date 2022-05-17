@@ -16,7 +16,6 @@ package server
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -26,6 +25,7 @@ import (
 
 	"bou.ke/monkey"
 	"github.com/coreos/etcd/clientv3"
+	"github.com/coreos/etcd/mvcc/mvccpb"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 
@@ -39,14 +39,15 @@ import (
 )
 
 const (
-	dialerListenAddr = "127.0.0.1:18751"
+	dialerListenAddr = "127.0.0.1"
+	dialerListenPort = "18751"
 	helloListenAddr  = "127.0.0.1:18752"
 )
 
 func startServer(etcd *clientv3.Client) (context.Context, context.CancelFunc) {
 	ctx, cancel := context.WithCancel(context.Background())
 	go Start(ctx, &fakeClusterSvc{}, nil, &conf.Conf{
-		Listen:          dialerListenAddr,
+		Listen:          fmt.Sprintf("%s:%s", dialerListenAddr, dialerListenPort),
 		NeedClusterInfo: false,
 	}, etcd)
 	return ctx, cancel
@@ -54,6 +55,14 @@ func startServer(etcd *clientv3.Client) (context.Context, context.CancelFunc) {
 
 type fakeKV struct {
 	clientv3.KV
+}
+
+func (f *fakeKV) Get(ctx context.Context, key string, opts ...clientv3.OpOption) (*clientv3.GetResponse, error) {
+	return &clientv3.GetResponse{
+		Kvs: []*mvccpb.KeyValue{{
+			Key: []byte(dialerListenAddr),
+		}},
+	}, nil
 }
 
 func (f *fakeKV) Put(ctx context.Context, key, val string, opts ...clientv3.OpOption) (*clientv3.PutResponse, error) {
@@ -81,7 +90,7 @@ func Test_DialerContext(t *testing.T) {
 	})
 
 	client := clusteragent.New(clusteragent.WithConfig(&clientconfig.Config{
-		ClusterManagerEndpoint: fmt.Sprintf("ws://%s/clusteragent/connect", dialerListenAddr),
+		ClusterManagerEndpoint: fmt.Sprintf("ws://%s/clusteragent/connect", fmt.Sprintf("%s:%s", dialerListenAddr, dialerListenPort)),
 		ClusterKey:             fakeClusterKey,
 		CollectClusterInfo:     false,
 		ClusterAccessKey:       fakeClusterAccessKey,
@@ -93,7 +102,6 @@ func Test_DialerContext(t *testing.T) {
 	}
 	mx := mux.NewRouter()
 	mx.HandleFunc("/hello", helloHandler)
-	mx.HandleFunc("/clusterdialer/ip", queryIPFunc)
 	go http.ListenAndServe(helloListenAddr, mx)
 
 	go client.Start(ctx)
@@ -105,10 +113,10 @@ func Test_DialerContext(t *testing.T) {
 		time.Sleep(1 * time.Second)
 	}
 
-	os.Setenv(discover.EnvClusterManager, helloListenAddr)
+	os.Setenv(discover.EnvClusterManager, fmt.Sprintf("%s:%s", dialerListenAddr, dialerListenPort))
 	hc := http.Client{
 		Transport: &http.Transport{
-			DialContext: clusterdialer.DialContext("test"),
+			DialContext: clusterdialer.DialContext(fakeClusterKey),
 		},
 		Timeout: 10 * time.Second,
 	}
@@ -121,13 +129,4 @@ func Test_DialerContext(t *testing.T) {
 	select {
 	case <-ctx.Done():
 	}
-}
-
-func queryIPFunc(w http.ResponseWriter, req *http.Request) {
-	res := map[string]interface{}{
-		"succeeded": true,
-		"IP":        dialerListenAddr,
-	}
-	data, _ := json.Marshal(res)
-	io.WriteString(w, string(data))
 }
