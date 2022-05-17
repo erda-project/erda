@@ -1,4 +1,10 @@
 {
+  "title": [
+    {
+      "pattern": "^(build|ci|docs|feat|fix|perf|refactor|style|test|chore|revert)(\\([a-zA-Z,-]+\\))?:\\s",
+      "message": "Your title needs to be prefixed with a topic"
+    }
+  ],
   "body": [
     {
       "pattern": "\\|[^\\|]*中文[^\\|]*\\|[^\\|]*[^\\|\\s]+[^\\|]*\\|",
