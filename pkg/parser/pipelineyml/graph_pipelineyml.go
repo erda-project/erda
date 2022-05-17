@@ -51,6 +51,7 @@ func ConvertGraphPipelineYmlContent(data []byte) ([]byte, error) {
 					Image:       frontendAction.Image,
 					Commands:    frontendAction.Commands,
 					Timeout:     frontendAction.Timeout,
+					Disable:     frontendAction.Disable,
 					If:          frontendAction.If,
 					Loop:        frontendAction.Loop,
 					Type:        ActionType(frontendAction.Type),
