@@ -15,11 +15,11 @@
 package oapspan
 
 import (
-	"encoding/json"
 	"fmt"
 
 	oap "github.com/erda-project/erda-proto-go/oap/trace/pb"
 	"github.com/erda-project/erda/modules/msp/apm/trace"
+	"github.com/erda-project/erda/modules/oap/collector/lib/protoparser/common"
 	"github.com/erda-project/erda/modules/oap/collector/lib/protoparser/common/unmarshalwork"
 )
 
@@ -42,10 +42,10 @@ func newUnmarshalWork(buf []byte, callback func(span *trace.Span) error) *unmars
 	return &unmarshalWork{buf: buf, callback: callback}
 }
 
+// TODO. Better error handle
 func (uw *unmarshalWork) Unmarshal() {
 	data := &oap.Span{}
-	if err := json.Unmarshal(uw.buf, data); err != nil {
-		fmt.Printf("%q\n", string(uw.buf))
+	if err := common.JsonDecoder.Unmarshal(uw.buf, data); err != nil {
 		uw.err = fmt.Errorf("json umarshal failed: %w", err)
 		return
 	}
@@ -58,6 +58,12 @@ func (uw *unmarshalWork) Unmarshal() {
 		Tags:         data.Attributes,
 	}
 	span.Tags["operation_name"] = data.Name
+	if v, ok := span.Tags[trace.OrgNameKey]; ok {
+		span.OrgName = v
+	} else {
+		uw.err = fmt.Errorf("must have %q", trace.OrgNameKey)
+	}
+
 	if err := uw.callback(span); err != nil {
 		uw.err = err
 	}

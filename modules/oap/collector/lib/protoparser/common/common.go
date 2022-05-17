@@ -12,4 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package span
+package common
+
+import (
+	jsoniter "github.com/json-iterator/go"
+)
+
+// Proper config for our circumstance
+var JsonDecoder = jsoniter.Config{MarshalFloatWith6Digits: true, EscapeHTML: true}.Froze()

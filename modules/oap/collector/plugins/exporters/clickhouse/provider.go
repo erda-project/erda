@@ -1,3 +1,17 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package clickhouse
 
 import (
@@ -37,7 +51,8 @@ func (p *provider) ExportLog(items ...*log.Log) error          { return nil }
 
 // TODO currency
 func (p *provider) ExportSpan(items ...*trace.Span) error {
-	return p.spanWriter.WriteAll(p.ctx, items)
+	p.spanWriter.AddBatch(items)
+	return nil
 }
 
 func (p *provider) ComponentConfig() interface{} {
@@ -75,6 +90,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 }
 
 func (p *provider) Start() error {
+	p.spanWriter.Start(p.ctx)
 	return nil
 }
 

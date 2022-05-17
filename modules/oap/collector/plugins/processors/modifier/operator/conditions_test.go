@@ -53,9 +53,7 @@ func TestKeyExist_Match(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			k := &KeyExist{
-				cfg: tt.fields.cfg,
-			}
+			k := NewKeyExist(tt.fields.cfg)
 			if got := k.Match(tt.args.item); got != tt.want {
 				t.Errorf("Match() = %v, want %v", got, tt.want)
 			}
@@ -161,10 +159,43 @@ func TestValueEmpty_Match(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ve := &ValueEmpty{
-				cfg: tt.fields.cfg,
-			}
+			ve := NewValueEmpty(tt.fields.cfg)
 			if got := ve.Match(tt.args.item); got != tt.want {
+				t.Errorf("Match() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestNoopCondition_Match(t *testing.T) {
+	type fields struct {
+		cfg ConditionCfg
+	}
+	type args struct {
+		item odata.ObservableData
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   bool
+	}{
+		{
+			fields: fields{
+				cfg: ConditionCfg{
+					Key: "tags.aaa",
+				},
+			},
+			args: args{
+				item: &metric.Metric{Tags: map[string]string{"aaa": ""}},
+			},
+			want: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			n := NewNoopCondition(tt.fields.cfg)
+			if got := n.Match(tt.args.item); got != tt.want {
 				t.Errorf("Match() = %v, want %v", got, tt.want)
 			}
 		})

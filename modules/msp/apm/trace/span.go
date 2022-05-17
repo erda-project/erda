@@ -45,19 +45,19 @@ func (s *Span) GetTags() map[string]string {
 }
 
 type Series struct {
+	StartTime    int64  `json:"start_time" ch:"start_time"`
+	EndTime      int64  `json:"end_time" ch:"end_time"`
+	SeriesID     uint64 `json:"seriesId" ch:"series_id"`
 	OrgName      string `json:"-" ch:"org_name"`
 	TraceId      string `json:"trace_id" ch:"trace_id"`
 	SpanId       string `json:"span_id" ch:"span_id"`
 	ParentSpanId string `json:"parent_span_id" ch:"parent_span_id"`
-	StartTime    int64  `json:"start_time" ch:"start_time"`
-	EndTime      int64  `json:"end_time" ch:"end_time"`
-	SeriesID     uint64 `json:"seriesId" ch:"series_id"`
 }
 
 type Meta struct {
+	SeriesID uint64 `json:"seriesId" ch:"series_id"`
+	CreateAt int64  `json:"createAt" ch:"create_at"`
 	OrgName  string `json:"-" ch:"org_name"`
 	Key      string `json:"key" ch:"key"`
 	Value    string `json:"value" ch:"value"`
-	SeriesID uint64 `json:"seriesId" ch:"series_id"`
-	CreateAt int64  `json:"createAt" ch:"create_at"`
 }

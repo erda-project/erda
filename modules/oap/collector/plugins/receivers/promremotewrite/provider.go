@@ -20,12 +20,13 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/erda-project/erda/modules/core/monitor/metric"
-	"github.com/erda-project/erda/modules/oap/collector/lib"
 	"github.com/golang/protobuf/proto"
 	"github.com/labstack/echo"
 	pmodel "github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/prompb"
+
+	"github.com/erda-project/erda/modules/core/monitor/metric"
+	"github.com/erda-project/erda/modules/oap/collector/lib"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"

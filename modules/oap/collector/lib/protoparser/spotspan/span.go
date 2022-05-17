@@ -15,13 +15,13 @@
 package spotspan
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
 
 	"github.com/erda-project/erda/modules/core/monitor/metric"
 	"github.com/erda-project/erda/modules/msp/apm/trace"
+	"github.com/erda-project/erda/modules/oap/collector/lib/protoparser/common"
 	"github.com/erda-project/erda/modules/oap/collector/lib/protoparser/common/unmarshalwork"
 )
 
@@ -132,7 +132,7 @@ func newUnmarshalWork(buf []byte, callback func(span *trace.Span) error) *unmars
 
 func (uw *unmarshalWork) Unmarshal() {
 	data := &metric.Metric{}
-	if err := json.Unmarshal(uw.buf, data); err != nil {
+	if err := common.JsonDecoder.Unmarshal(uw.buf, data); err != nil {
 		uw.err = fmt.Errorf("json umarshal failed: %w", err)
 		fmt.Printf("caught err: %s", uw.err)
 		return
@@ -142,6 +142,11 @@ func (uw *unmarshalWork) Unmarshal() {
 		uw.err = fmt.Errorf("cannot convert metric to span: %w", err)
 		fmt.Printf("caught err: %s", uw.err)
 		return
+	}
+	if v, ok := span.Tags[trace.OrgNameKey]; ok {
+		span.OrgName = v
+	} else {
+		uw.err = fmt.Errorf("must have %q", trace.OrgNameKey)
 	}
 
 	if err := uw.callback(span); err != nil {

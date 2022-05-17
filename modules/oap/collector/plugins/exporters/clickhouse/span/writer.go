@@ -24,6 +24,8 @@ import (
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
+	"github.com/erda-project/erda/modules/oap/collector/lib"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda/modules/msp/apm/trace"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -37,10 +39,13 @@ type Config struct {
 }
 
 type WriteSpan struct {
-	db       string
-	retryCnt int
-	logger   logs.Logger
-	client   clickhouse.Conn
+	db          string
+	retryCnt    int
+	logger      logs.Logger
+	client      clickhouse.Conn
+	seriesBatch driver.Batch
+
+	itemsCh chan []*trace.Span
 }
 
 func NewWriteSpan(cfg Config) *WriteSpan {
@@ -52,104 +57,81 @@ func NewWriteSpan(cfg Config) *WriteSpan {
 	}
 }
 
-func (ws *WriteSpan) WriteAll(ctx context.Context, items []*trace.Span) error {
-	metaBuf, seriesBuf := getMetaBuf(), getseriesBuf()
-	defer func() {
-		putMetaBuf(metaBuf)
-		putseriesBuf(seriesBuf)
-	}()
-
-	for i := range items {
-		span := items[i]
-		if v, ok := span.Tags[trace.OrgNameKey]; ok {
-			span.OrgName = v
-		} else {
-			return fmt.Errorf("must have %q", trace.OrgNameKey)
-		}
-		series, metas, sid := splitSpan(span)
-		seriesBuf = append(seriesBuf, series)
-
-		if !seriesIDExisted(sid) {
-			metaBuf = append(metaBuf, metas...)
-		}
+func (ws *WriteSpan) Start(ctx context.Context) {
+	maxprocs := lib.AvailableCPUs()
+	ws.itemsCh = make(chan []*trace.Span, maxprocs)
+	for i := 0; i < maxprocs; i++ {
+		go ws.handleSpan(ctx)
 	}
-
-	metaBatch, seriesBatch, err := ws.buildBatch(ctx, metaBuf, seriesBuf)
-	if err != nil {
-		return fmt.Errorf("cannot build batch: %w", err)
-	}
-
-	if metaBatch != nil {
-		go ws.sendBatch(ctx, metaBatch)
-	}
-	if seriesBatch != nil {
-		go ws.sendBatch(ctx, seriesBatch)
-	}
-	return nil
 }
 
-func splitSpan(data *trace.Span) (*trace.Series, []*trace.Meta, uint64) {
-	metas := make([]*trace.Meta, 0, len(data.Tags))
-	for k, v := range data.Tags {
-		metas = append(metas, &trace.Meta{Key: k, Value: v, OrgName: data.OrgName, CreateAt: data.EndTime})
-	}
-	sort.Slice(metas, func(i, j int) bool {
-		return metas[i].Key < metas[j].Key
-	})
-	sid := hashTagsList(metas)
-
-	for i := range metas {
-		metas[i].SeriesID = sid
-	}
-
-	series := &trace.Series{
-		OrgName:      data.OrgName,
-		TraceId:      data.TraceId,
-		SpanId:       data.SpanId,
-		ParentSpanId: data.ParentSpanId,
-		StartTime:    data.StartTime,
-		EndTime:      data.EndTime,
-		SeriesID:     sid,
-	}
-	return series, metas, sid
-}
-
-func (ws *WriteSpan) buildBatch(
-	ctx context.Context,
-	metaBuf []*trace.Meta,
-	seriesBuf []*trace.Series,
-) (metaBatch driver.Batch, seriesBatch driver.Batch, err error) {
-	m, n := len(metaBuf), len(seriesBuf)
-	if m > 0 {
-		b, err := ws.client.PrepareBatch(ctx, "INSERT INTO "+ws.db+"."+trace.CH_TABLE_META)
+func (ws *WriteSpan) handleSpan(ctx context.Context) {
+begin:
+	for items := range ws.itemsCh {
+		metaBatch, err := ws.client.PrepareBatch(ctx, "INSERT INTO "+ws.db+"."+trace.CH_TABLE_META)
 		if err != nil {
-			return nil, nil, err
+			ws.logger.Errorf("prepare metaBatch: %s", err)
+			continue
 		}
-		for i := 0; i < m; i++ {
-			if err := b.AppendStruct(metaBuf[i]); err != nil {
-				_ = b.Abort()
-				return nil, nil, err
+		seriesBatch, err := ws.client.PrepareBatch(ctx, "INSERT INTO "+ws.db+"."+trace.CH_TABLE_SERIES)
+		if err != nil {
+			ws.logger.Errorf("prepare seriesBatch: %s", err)
+			continue
+		}
+
+		for _, data := range items {
+			metas := getMetaBuf()
+			for k, v := range data.Tags {
+				metas = append(metas, trace.Meta{Key: k, Value: v, OrgName: data.OrgName, CreateAt: data.EndTime})
+			}
+			sort.Slice(metas, func(i, j int) bool {
+				return metas[i].Key < metas[j].Key
+			})
+			sid := hashTagsList(metas)
+
+			if !seriesIDExisted(sid) {
+				for i := range metas {
+					metas[i].SeriesID = sid
+					err := metaBatch.AppendStruct(&metas[i])
+					if err != nil {
+						ws.logger.Errorf("metaBatch append: %s", err)
+						_ = metaBatch.Abort()
+						putMetaBuf(metas)
+						goto begin
+					}
+				}
+				putMetaBuf(metas)
+			}
+
+			err = seriesBatch.AppendStruct(&trace.Series{
+				OrgName:      data.OrgName,
+				TraceId:      data.TraceId,
+				SpanId:       data.SpanId,
+				ParentSpanId: data.ParentSpanId,
+				StartTime:    data.StartTime,
+				EndTime:      data.EndTime,
+				SeriesID:     sid,
+			})
+			if err != nil {
+				ws.logger.Errorf("seriesBatch: %s", err)
+				_ = seriesBatch.Abort()
+				goto begin
 			}
 		}
-		metaBatch = b
-	}
-	if n > 0 {
-		b, err := ws.client.PrepareBatch(ctx, "INSERT INTO "+ws.db+"."+trace.CH_TABLE_SERIES)
-		if err != nil {
-			return nil, nil, err
+
+		if err := metaBatch.Send(); err != nil {
+			ws.logger.Errorf("metaBatch cannot send: %s", err)
 		}
-		for i := 0; i < n; i++ {
-			if err := b.AppendStruct(seriesBuf[i]); err != nil {
-				_ = b.Abort()
-				return nil, nil, err
-			}
+		if err := seriesBatch.Send(); err != nil {
+			ws.logger.Errorf("seriesBatch cannot send: %s", err)
 		}
-		seriesBatch = b
 	}
-	return
 }
 
-// TODO. Graceful close
+func (ws *WriteSpan) AddBatch(items []*trace.Span) {
+	ws.itemsCh <- items
+}
+
 func (ws *WriteSpan) sendBatch(ctx context.Context, b driver.Batch) {
 	select {
 	case <-ctx.Done():
@@ -182,7 +164,7 @@ func (ws *WriteSpan) sendBatch(ctx context.Context, b driver.Batch) {
 	}()
 }
 
-func hashTagsList(list []*trace.Meta) uint64 {
+func hashTagsList(list []trace.Meta) uint64 {
 	h := fnv.New64a()
 	for _, item := range list {
 		h.Write(strutil.NoCopyStringToBytes(item.Key))
@@ -195,32 +177,17 @@ func hashTagsList(list []*trace.Meta) uint64 {
 
 var metaBufPool sync.Pool
 
-func getMetaBuf() []*trace.Meta {
+func getMetaBuf() []trace.Meta {
 	v := metaBufPool.Get()
 	if v == nil {
-		return []*trace.Meta{}
+		return []trace.Meta{}
 	}
-	return v.([]*trace.Meta)
+	return v.([]trace.Meta)
 }
 
-func putMetaBuf(buf []*trace.Meta) {
+func putMetaBuf(buf []trace.Meta) {
 	buf = buf[:0]
 	metaBufPool.Put(buf)
-}
-
-var seriesBufPool sync.Pool
-
-func getseriesBuf() []*trace.Series {
-	v := seriesBufPool.Get()
-	if v == nil {
-		return []*trace.Series{}
-	}
-	return v.([]*trace.Series)
-}
-
-func putseriesBuf(buf []*trace.Series) {
-	buf = buf[:0]
-	seriesBufPool.Put(buf)
 }
 
 // currency limiter
@@ -253,6 +220,7 @@ func seriesIDExisted(sid uint64) bool {
 func InitSeriesIDMap(client clickhouse.Conn, db string) error {
 	simMutex = &sync.RWMutex{}
 
+	// nolint
 	rows, err := client.Query(context.TODO(), "select distinct(series_id) from "+db+".spans_meta")
 	if err != nil {
 		return err

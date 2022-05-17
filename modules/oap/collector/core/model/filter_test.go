@@ -17,8 +17,9 @@ package model
 import (
 	"testing"
 
-	"github.com/erda-project/erda/modules/core/monitor/metric"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/erda-project/erda/modules/core/monitor/metric"
 
 	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
 )

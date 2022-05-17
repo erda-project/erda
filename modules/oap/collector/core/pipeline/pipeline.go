@@ -241,7 +241,6 @@ func newConsumer(ctx context.Context, out chan<- odata.ObservableData) model.Obs
 	return func(od odata.ObservableData) {
 		select {
 		case out <- od:
-
 		case <-ctx.Done():
 			return
 		}
