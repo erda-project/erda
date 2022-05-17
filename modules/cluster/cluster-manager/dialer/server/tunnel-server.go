@@ -241,14 +241,15 @@ func queryIP(rw http.ResponseWriter, req *http.Request, etcd *clientv3.Client) {
 
 	r, err := etcd.Get(req.Context(), ClusterManagerETCDKeyPrefix+clusterKey)
 	if err != nil {
-		resp.Error = errors.Errorf("failed to get clusterKey from etcd, %v", err).Error()
+		resp.Error = errors.Errorf("failed to get ip for clusterKey %s from etcd, %v", clusterKey, err).Error()
 		resp.Succeeded = false
 		writeResp(rw, resp, http.StatusInternalServerError)
 		return
 	}
 	if len(r.Kvs) == 0 {
-		resp.Succeeded = true
-		writeResp(rw, resp, http.StatusOK)
+		resp.Error = errors.Errorf("can not find ip for clusterKey %s", clusterKey).Error()
+		resp.Succeeded = false
+		writeResp(rw, resp, http.StatusNotFound)
 		return
 	}
 

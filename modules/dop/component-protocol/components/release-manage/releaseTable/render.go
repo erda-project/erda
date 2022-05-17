@@ -107,12 +107,12 @@ func (r *ComponentReleaseTable) InitComponent(ctx context.Context) {
 	r.svc = svc
 }
 
-func (r *ComponentReleaseTable) GenComponentState(component *cptype.Component) error {
-	if component == nil || component.State == nil {
+func (r *ComponentReleaseTable) GenComponentState(c *cptype.Component) error {
+	if c == nil || c.State == nil {
 		return nil
 	}
 	var state State
-	data, err := json.Marshal(component.State)
+	data, err := json.Marshal(c.State)
 	if err != nil {
 		return err
 	}
