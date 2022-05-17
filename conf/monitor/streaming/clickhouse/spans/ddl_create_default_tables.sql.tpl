@@ -26,4 +26,4 @@ CREATE TABLE IF NOT EXISTS <database>.spans_meta ON CLUSTER '{cluster}'
 ENGINE = ReplicatedMergeTree('/clickhouse/tables/{cluster}-{shard}/{database}/spans_meta', '{replica}')
 PARTITION BY toYYYYMM(create_at)
 ORDER BY (org_name, series_id, key, value)
-TTL toDateTime(create_at) + INTERVAL 30 DAY;
+TTL toDateTime(create_at) + INTERVAL 14 DAY;
