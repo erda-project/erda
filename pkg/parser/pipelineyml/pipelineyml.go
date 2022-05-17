@@ -54,6 +54,20 @@ type PipelineYml struct {
 	runParams []apistructs.PipelineRunParam // 运行时的输入参数
 }
 
+func (pipelineYml PipelineYml) HasOnPushBranch(branch string) bool {
+	if pipelineYml.Spec().On == nil || pipelineYml.Spec().On.Push == nil {
+		return false
+	}
+
+	var isOnPushBranch bool
+	for _, pushBranch := range pipelineYml.Spec().On.Push.Branches {
+		if pushBranch == branch {
+			isOnPushBranch = true
+		}
+	}
+	return isOnPushBranch
+}
+
 func New(b []byte, ops ...Option) (_ *PipelineYml, err error) {
 	y := PipelineYml{
 		data: b,
