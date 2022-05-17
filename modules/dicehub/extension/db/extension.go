@@ -313,7 +313,7 @@ func (client *ExtensionConfigDB) QueryAllExtensions() ([]ExtensionVersion, error
 
 func (client *ExtensionConfigDB) ListExtensionVersions(names []string, all bool) (map[string][]ExtensionVersion, error) {
 	var result []ExtensionVersion
-	query := client.Model(&ExtensionVersion{}).Where("name in (?)", names).Order("version desc")
+	query := client.Model(&ExtensionVersion{}).Order("version desc")
 	if !all {
 		query = query.Where("public = ?", true)
 	}
@@ -322,9 +322,16 @@ func (client *ExtensionConfigDB) ListExtensionVersions(names []string, all bool)
 		return nil, err
 	}
 
+	namesMap := make(map[string]struct{})
+	for _, name := range names {
+		namesMap[name] = struct{}{}
+	}
+
 	var extensions = map[string][]ExtensionVersion{}
 	for _, extVersion := range result {
-		extensions[extVersion.Name] = append(extensions[extVersion.Name], extVersion)
+		if _, ok := namesMap[extVersion.Name]; ok {
+			extensions[extVersion.Name] = append(extensions[extVersion.Name], extVersion)
+		}
 	}
 
 	return extensions, err

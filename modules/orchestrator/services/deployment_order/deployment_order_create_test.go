@@ -264,7 +264,7 @@ func TestGetWorkspaceFromBranch(t *testing.T) {
 	order := New()
 	bdl := bundle.New()
 
-	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetBranchRules", func(*bundle.Bundle, apistructs.ScopeType, uint64) ([]*apistructs.BranchRule, error) {
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetProjectBranchRules", func(*bundle.Bundle, uint64) ([]*apistructs.BranchRule, error) {
 		return []*apistructs.BranchRule{
 			{
 				Rule:      "feature/*",
@@ -284,6 +284,7 @@ func TestGetWorkspaceFromBranch(t *testing.T) {
 			},
 		}, nil
 	})
+	defer monkey.UnpatchAll()
 
 	type args struct {
 		Branch string

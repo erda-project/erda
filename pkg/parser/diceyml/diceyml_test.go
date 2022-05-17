@@ -226,7 +226,7 @@ environments:
           version: 5.7.29
         plan: mysql:basic
 envs:
-  ADMIN_ADDR: admin:9095
+  ERDA_SERVER_ADDR: erda-server:9095 
   CMP_ADDR: cmp:9027
   COLLECTOR_ADDR: collector:7076
   CORE_SERVICES_ADDR: core-services:9526
@@ -324,31 +324,6 @@ services:
       mem: ${request_mem:1024}
       network:
         mode: container
-  cluster-dialer:
-    cmd: /app/cluster-dialer
-    deployments:
-      labels:
-        GROUP: dice
-      replicas: 1
-    envs:
-      DEBUG: "false"
-    expose:
-    - 80
-    health_check:
-      exec: {}
-      http: {}
-    image: registry.erda.cloud/erda/erda:1.4.0-alpha-20211008033801-158b666
-    ports:
-    - l4_protocol: TCP
-      port: 80
-      protocol: TCP
-    resources:
-      cpu: ${request_cpu:2}
-      max_cpu: 2
-      max_mem: 2048
-      mem: ${request_mem:2048}
-      network:
-        mode: container
   cluster-manager:
     cmd: /app/cluster-manager
     deployments:
@@ -367,8 +342,8 @@ services:
       protocol: TCP
     resources:
       cpu: ${request_cpu:0.2}
-      max_cpu: 0.2
-      max_mem: 256
+      max_cpu: 2
+      max_mem: 2048
       mem: ${request_mem:256}
       network:
         mode: container

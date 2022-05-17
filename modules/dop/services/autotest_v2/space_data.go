@@ -304,7 +304,8 @@ func (a *AutoTestSpaceData) addSceneStepToExcel(file *excel.XlsxFile) error {
 				excel.NewCell(strutil.String(step.SceneID)),
 				excel.NewCell(strutil.String(step.SpaceID)),
 				excel.NewCell(strutil.String(step.PreType)),
-				excel.NewCell(strutil.String(step.APISpecID)),
+				// set api spec id zero because api test markets are not exported
+				excel.NewCell("0"),
 				excel.NewCell(strutil.String(step.IsDisabled)),
 			})
 			for _, pv := range step.Children {
@@ -317,7 +318,8 @@ func (a *AutoTestSpaceData) addSceneStepToExcel(file *excel.XlsxFile) error {
 					excel.NewCell(strutil.String(pv.SceneID)),
 					excel.NewCell(strutil.String(pv.SpaceID)),
 					excel.NewCell(strutil.String(pv.PreType)),
-					excel.NewCell(strutil.String(pv.APISpecID)),
+					// set api spec id zero because api test markets are not exported
+					excel.NewCell("0"),
 					excel.NewCell(strutil.String(pv.IsDisabled)),
 				})
 			}

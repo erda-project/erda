@@ -239,9 +239,8 @@ stages:
             tag_version: ${{ outputs.extract-repo-version.version }}
             image:
               action-runner-scheduler: ${{ outputs.build-erda.image }}
-              admin: ${{ outputs.build-erda.image }}
+              erda-server: ${{ outputs.build-erda.image }}
               cluster-agent: ${{ outputs.build-agent.image }}
-              cluster-dialer: ${{ outputs.build-erda.image }}
               cluster-manager: ${{ outputs.build-erda.image }}
               cmp: ${{ outputs.build-erda.image }}
               collector: ${{ outputs.build-erda.image }}

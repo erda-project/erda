@@ -30,7 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/actionagent"
+	"github.com/erda-project/erda/modules/pipeline/actionagent"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/logic"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/types"
 	"github.com/erda-project/erda/modules/pipeline/pkg/task_uuid"

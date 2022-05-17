@@ -29,8 +29,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/app-list-all/common/gshelper"
-	"github.com/erda-project/erda/modules/service/personal-workbench/component-protocol/components/personal-workbench/common"
-	"github.com/erda-project/erda/modules/service/personal-workbench/component-protocol/types"
+	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 )
 
 const (
@@ -190,10 +189,10 @@ func (l *List) doFilterApp() (data *list.Data) {
 						WithServerDataPtr(list.OpItemClickGotoServerData{
 							OpItemBasicServerData: list.OpItemBasicServerData{
 								Params: map[string]interface{}{
-									common.OpKeyProjectID: p.ProjectID,
-									common.OpKeyAppID:     p.ID,
+									gshelper.OpKeyProjectID: p.ProjectID,
+									gshelper.OpKeyAppID:     p.ID,
 								},
-								Target: common.OpValTargetRepo,
+								Target: gshelper.OpValTargetRepo,
 							},
 						})
 					if !authorized {

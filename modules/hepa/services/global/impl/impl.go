@@ -26,7 +26,10 @@ import (
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
+	"google.golang.org/grpc/metadata"
 
+	"github.com/erda-project/erda-infra/pkg/transport"
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	"github.com/erda-project/erda/modules/hepa/bundle"
 	"github.com/erda-project/erda/modules/hepa/common"
@@ -39,6 +42,7 @@ import (
 	db "github.com/erda-project/erda/modules/hepa/repository/service"
 	"github.com/erda-project/erda/modules/hepa/services/endpoint_api"
 	"github.com/erda-project/erda/modules/hepa/services/global"
+	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 type GatewayGlobalServiceImpl struct {
@@ -46,13 +50,14 @@ type GatewayGlobalServiceImpl struct {
 	kongDb     db.GatewayKongInfoService
 	packageBiz *endpoint_api.GatewayOpenapiService
 	reqCtx     context.Context
+	clusterSvc clusterpb.ClusterServiceServer
 }
 
 var diceHealth *gw.DiceHealthDto = &gw.DiceHealthDto{Status: gw.DiceHealthOK}
 
 var once sync.Once
 
-func NewGatewayGlobalServiceImpl() (e error) {
+func NewGatewayGlobalServiceImpl(clusterSvc clusterpb.ClusterServiceServer) (e error) {
 	once.Do(
 		func() {
 			azDb, err := db.NewGatewayAzInfoServiceImpl()
@@ -69,6 +74,7 @@ func NewGatewayGlobalServiceImpl() (e error) {
 				azDb:       azDb,
 				packageBiz: &endpoint_api.Service,
 				kongDb:     kongDb,
+				clusterSvc: clusterSvc,
 			}
 			global.Service = &impl
 			go func() {
@@ -272,10 +278,12 @@ func (impl *GatewayGlobalServiceImpl) GetClustersByOrg(orgId string) ([]string, 
 	if err != nil {
 		return nil, nil
 	}
-	clusters, err := bundle.Bundle.ListClusters("", idNum)
+	ctx := transport.WithHeader(context.Background(), metadata.New(map[string]string{httputil.InternalHeader: "hepa"}))
+	resp, err := impl.clusterSvc.ListCluster(ctx, &clusterpb.ListClusterRequest{OrgID: idNum})
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
+	clusters := resp.Data
 	var names []string
 	for _, cluster := range clusters {
 		names = append(names, cluster.Name)

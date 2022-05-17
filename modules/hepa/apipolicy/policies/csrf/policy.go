@@ -155,6 +155,9 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 			routes[route.RouteId] = struct{}{}
 		}
 
+		if api.DiceApiId == "" {
+			continue
+		}
 		var cond orm.GatewayApi
 		cond.Id = api.DiceApiId
 		gatewayApis, err := apiDB.SelectByAny(&cond)

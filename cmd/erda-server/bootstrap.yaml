@@ -1,0 +1,30 @@
+service.admin:
+  debug: ${DEBUG:false}
+service.personal-workbench:
+service.dingtalk-test:
+
+mysql:
+  host: "${MYSQL_HOST}"
+  port: "${MYSQL_PORT}"
+  username: "${MYSQL_USERNAME}"
+  password: "${MYSQL_PASSWORD}"
+  database: "${MYSQL_DATABASE}"
+
+service-register:
+http-server:
+  addr: ":9095"
+  allow_cors: true
+
+grpc-server:
+  addr: ":8096"
+
+health:
+
+# component-protocol framework
+component-protocol:
+
+i18n@personal-workbench:
+
+grpc-client@erda.core.clustermanager.cluster:
+  addr: "${CLUSTER_MANAGER_GRPC_ADDR:cluster-manager:9095}"
+erda.core.clustermanager.cluster-client: {}

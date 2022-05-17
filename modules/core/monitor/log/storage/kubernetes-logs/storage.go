@@ -19,7 +19,6 @@ import (
 	"errors"
 	"io"
 	"math"
-	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -48,10 +47,14 @@ func (s *cStorage) NewWriter(ctx context.Context) (storekit.BatchWriter, error) 
 	return nil, storekit.ErrOpNotSupported
 }
 
-func newPodLogOptions(containerName string, startTime int64) *v1.PodLogOptions {
+func newPodLogOptions(containerName string, startTime int64, tail int64) *v1.PodLogOptions {
 	var sinceTime *metav1.Time
 	if startTime > 0 {
 		sinceTime = &metav1.Time{Time: time.Unix(startTime/int64(time.Second), startTime%int64(time.Second))}
+	}
+	var tailLines *int64
+	if tail > 0 {
+		tailLines = &tail
 	}
 	return &v1.PodLogOptions{
 		Container:                    containerName,
@@ -60,7 +63,7 @@ func newPodLogOptions(containerName string, startTime int64) *v1.PodLogOptions {
 		SinceSeconds:                 nil,
 		SinceTime:                    sinceTime,
 		Timestamps:                   true,
-		TailLines:                    nil,
+		TailLines:                    tailLines,
 		LimitBytes:                   nil,
 		InsecureSkipTLSVerifyBackend: true,
 	}
@@ -75,12 +78,22 @@ func (s *cStorage) Iterator(ctx context.Context, sel *storage.Selector) (storeki
 	var err error
 	var podName, containerName, namespace, clusterName, id string
 
+	if sel.Scheme != "container" {
+		s.log.Debugf("kubernetes-log not supported query %s of real log", sel.Scheme)
+		return storekit.EmptyIterator{}, nil
+	}
+
+	live, ok := sel.Options[storage.IsLive]
+	if !ok || !live.(bool) {
+		s.log.Debugf("kubernetes-log not supported to stop container of real log")
+		return storekit.EmptyIterator{}, nil
+	}
+
 	matcher := func(data *pb.LogItem, it *logsIterator) bool { return true }
 	for _, filter := range sel.Filters {
 		if filter.Value == nil {
 			continue
 		}
-
 		if filter.Key != "content" && filter.Op != storage.EQ {
 			s.log.Debugf("%s only support EQ filter, ignore kubernetes logs query", filter.Key)
 			return storekit.EmptyIterator{}, nil
@@ -172,6 +185,7 @@ func (s *cStorage) Iterator(ctx context.Context, sel *storage.Selector) (storeki
 		queryFunc:     queryFunc,
 		pageSize:      bufferLines,
 		timeSpan:      timeSpan,
+		log:           s.log,
 	}, nil
 }
 
@@ -208,6 +222,8 @@ type logsIterator struct {
 	value  *pb.LogItem
 	err    error
 	closed bool
+
+	log logs.Logger
 }
 
 func (it *logsIterator) First() bool {
@@ -300,11 +316,17 @@ func (it *logsIterator) Prev() bool {
 			it.fetch(startTime, -1, true)
 		}
 	} else {
-		startTime := it.sel.End - it.timeSpan
-		if startTime < it.sel.Start {
-			startTime = it.sel.Start
+		v, ok := it.sel.Options[storage.IsFirstQuery]
+
+		if ok && v.(bool) {
+			it.fetchByTailLine(it.sel.Start, it.pageSize, true)
+		} else {
+			startTime := it.sel.End - it.timeSpan
+			if startTime < it.sel.Start {
+				startTime = it.sel.Start
+			}
+			it.fetch(startTime, -1, true)
 		}
-		it.fetch(startTime, -1, true)
 	}
 	if it.offset >= 0 && it.offset < len(it.buffer) {
 		it.value = it.buffer[it.offset]
@@ -345,11 +367,74 @@ func (it *logsIterator) checkClosed() bool {
 	return false
 }
 
-var stdout2 = os.Stdout
-
 var errLimited = errors.New("limited")
 
 const initialOffset = math.MinInt64
+
+func (it *logsIterator) fetchByTailLine(startTime int64, limit int64, backward bool) {
+	opts := newPodLogOptions(it.containerName, startTime, limit)
+	reader, err := it.queryFunc(it, opts)
+
+	if err != nil {
+		it.err = err
+		return
+	}
+	defer reader.Close()
+
+	var (
+		minTime, maxTime int64 = math.MaxInt64, 0
+	)
+
+	var lastTimestamp, offset int64 = -1, initialOffset
+
+	err = parseLines(reader, func(line []byte) error {
+		text := string(line)
+		data, content := parseLine(text, it)
+
+		if data.UnixNano != lastTimestamp {
+			lastTimestamp = data.UnixNano
+			offset = initialOffset
+		} else {
+			offset++
+		}
+		data.Offset = offset
+
+		if data.UnixNano > 0 {
+			if data.UnixNano < minTime {
+				minTime = data.UnixNano
+			}
+			if data.UnixNano > maxTime {
+				maxTime = data.UnixNano
+			}
+			it.lastEndTimestamp, it.lastEndOffset = data.UnixNano, data.Offset
+
+			parseContent(content, data)
+			if !it.matcher(data, it) {
+				return nil
+			}
+			it.buffer = append(it.buffer, data)
+		}
+
+		return nil
+	})
+	if err != nil && !errors.Is(err, io.EOF) {
+		it.err = err
+		return
+	}
+	if backward {
+		it.offset = len(it.buffer) - 1
+	} else {
+		it.offset = 0
+	}
+
+	it.lastStartTime = minTime
+	if startTime < it.lastStartTime {
+		it.lastStartTime = startTime
+	}
+	if maxTime != 0 && (it.lastEndTime == 0 || !backward) {
+		it.lastEndTime = maxTime
+	}
+}
 
 func (it *logsIterator) fetch(startTime, limit int64, backward bool) {
 	it.buffer = nil
@@ -357,7 +442,7 @@ func (it *logsIterator) fetch(startTime, limit int64, backward bool) {
 	var lastTimestamp, offset int64 = -1, initialOffset
 	for it.err == nil && len(it.buffer) <= 0 && startTime >= it.sel.Start {
 		func() error {
-			opts := newPodLogOptions(it.containerName, startTime)
+			opts := newPodLogOptions(it.containerName, startTime, 0)
 			reader, err := it.queryFunc(it, opts)
 			if err != nil {
 				it.err = err

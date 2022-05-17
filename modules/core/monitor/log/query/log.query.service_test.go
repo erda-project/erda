@@ -68,6 +68,7 @@ func Test_toQuerySelector(t *testing.T) {
 				},
 				Options: map[string]interface{}{
 					storage.SelectorKeyCount: int64(0),
+					storage.IsLive:           false,
 				},
 			},
 		},
@@ -97,6 +98,7 @@ func Test_toQuerySelector(t *testing.T) {
 				},
 				Options: map[string]interface{}{
 					storage.SelectorKeyCount: int64(-200),
+					storage.IsLive:           false,
 				},
 			},
 		},
@@ -138,6 +140,7 @@ func Test_toQuerySelector(t *testing.T) {
 				},
 				Options: map[string]interface{}{
 					storage.SelectorKeyCount: int64(100),
+					storage.IsLive:           false,
 				},
 			},
 		},
@@ -333,6 +336,197 @@ func Test_splitSelectors(t *testing.T) {
 			got := s.splitSelectors(tt.sel, tt.interval, tt.deltaFactor, tt.maxSlices)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("splitSelectors() = %+v, want %+v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_realTimeNoIterator(t *testing.T) {
+	tests := []struct {
+		name    string
+		req     *pb.GetLogByRuntimeRequest
+		service *logQueryService
+		want    bool
+		wantErr bool
+	}{
+		{
+			req: &pb.GetLogByRuntimeRequest{
+				ContainerName: "no_container",
+				Live:          true,
+				Id:            "123",
+			},
+			service: &logQueryService{
+				storageReader: &mockStorage{},
+			},
+			want:    false,
+			wantErr: false,
+		},
+		{
+			req: &pb.GetLogByRuntimeRequest{
+				ContainerName: "container",
+				Live:          false,
+				Id:            "123",
+			},
+			service: &logQueryService{
+				storageReader: &mockStorage{},
+			},
+			want:    false,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.service.GetLogByRealtime(context.Background(), tt.req)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Test_realTimeNoIterator error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got.IsFallback, tt.want) {
+				t.Errorf("Test_realTimeNoIterator,IsFallBack = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_isRequestUseFallBack(t *testing.T) {
+	now := time.Now()
+	timeNow = func() time.Time {
+		return now
+	}
+	tests := []struct {
+		name string
+		req  *pb.GetLogByRuntimeRequest
+		want bool
+	}{
+		{
+			name: "is_first_query",
+			req: &pb.GetLogByRuntimeRequest{
+				Start:        int64(0),
+				End:          int64(0),
+				IsFirstQuery: true,
+			},
+			want: true,
+		},
+		{
+			name: "now-4",
+			req: &pb.GetLogByRuntimeRequest{
+				Start: int64(timeNow().UnixNano()),
+				End:   int64(timeNow().Add(time.Second * 4).UnixNano()),
+			},
+			want: true,
+		},
+		{
+			name: "-2-now",
+			req: &pb.GetLogByRuntimeRequest{
+				Start: int64(timeNow().Add(time.Second * -2).UnixNano()),
+				End:   int64(timeNow().UnixNano()),
+			},
+			want: true,
+		},
+		{
+			name: "-3-now",
+			req: &pb.GetLogByRuntimeRequest{
+				Start: int64(timeNow().Add(time.Second * -3).UnixNano()),
+				End:   int64(timeNow().UnixNano()),
+			},
+			want: true,
+		},
+		{
+			name: "-4-now",
+			req: &pb.GetLogByRuntimeRequest{
+				Start: int64(timeNow().Add(time.Second * -4).UnixNano()),
+				End:   int64(timeNow().UnixNano()),
+			},
+			want: false,
+		},
+		{
+			name: "-5-now",
+			req: &pb.GetLogByRuntimeRequest{
+				Start: int64(timeNow().Add(time.Second * -5).UnixNano()),
+				End:   int64(timeNow().UnixNano()),
+			},
+			want: false,
+		},
+		{
+			name: "0-now",
+			req: &pb.GetLogByRuntimeRequest{
+				Start: int64(0),
+				End:   int64(timeNow().UnixNano()),
+			},
+			want: true,
+		},
+		{
+			name: "0-(4)",
+			req: &pb.GetLogByRuntimeRequest{
+				Start: int64(0),
+				End:   int64(timeNow().Add(time.Second * 4).UnixNano()),
+			},
+			want: false,
+		},
+		{
+			name: "0-(3)",
+			req: &pb.GetLogByRuntimeRequest{
+				Start: int64(0),
+				End:   int64(timeNow().Add(time.Second * 3).UnixNano()),
+			},
+			want: true,
+		},
+		{
+			name: "0-(-2)",
+			req: &pb.GetLogByRuntimeRequest{
+				Start: int64(0),
+				End:   int64(timeNow().Add(time.Second * -2).UnixNano()),
+			},
+			want: true,
+		},
+		{
+			name: "0-(-3)",
+			req: &pb.GetLogByRuntimeRequest{
+				Start: int64(0),
+				End:   int64(timeNow().Add(time.Second * -3).UnixNano()),
+			},
+			want: true,
+		},
+		{
+			name: "0-(-4)",
+			req: &pb.GetLogByRuntimeRequest{
+				Start: int64(0),
+				End:   int64(timeNow().Add(time.Second * -4).UnixNano()),
+			},
+			want: false,
+		},
+		{
+			name: "0-(-5)",
+			req: &pb.GetLogByRuntimeRequest{
+				Start: int64(0),
+				End:   int64(timeNow().Add(time.Second * -5).UnixNano()),
+			},
+			want: false,
+		},
+		{
+			name: "-5-5",
+			req: &pb.GetLogByRuntimeRequest{
+				Start: int64(timeNow().Add(time.Second * -5).UnixNano()),
+				End:   int64(timeNow().Add(time.Second * 5).UnixNano()),
+			},
+			want: false,
+		},
+	}
+	service := &logQueryService{
+		storageReader: &mockStorage{},
+		p: &provider{
+			Cfg: &config{
+				DelayBackoffStartTime: time.Second * -3,
+				DelayBackoffEndTime:   time.Second * 4,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := service.isRequestUseFallBack(tt.req)
+
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Test_realTimeNoIterator,IsFallBack = %v, want %v", got, tt.want)
 			}
 		})
 	}

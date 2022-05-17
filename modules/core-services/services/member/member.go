@@ -16,6 +16,7 @@
 package member
 
 import (
+	"context"
 	"strconv"
 	"time"
 	"unicode/utf8"
@@ -26,22 +27,24 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
+	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/core-services/dao"
 	"github.com/erda-project/erda/modules/core-services/model"
 	"github.com/erda-project/erda/modules/core-services/types"
-	"github.com/erda-project/erda/pkg/crypto/uuid"
 	locale "github.com/erda-project/erda/pkg/i18n"
+	"github.com/erda-project/erda/pkg/oauth2/tokenstore/mysqltokenstore"
 	"github.com/erda-project/erda/pkg/strutil"
 	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 // Member 成员操作封装
 type Member struct {
-	db       *dao.DBClient
-	uc       *ucauth.UCClient
-	redisCli *redis.Client
-	tran     i18n.Translator
+	db           *dao.DBClient
+	uc           *ucauth.UCClient
+	redisCli     *redis.Client
+	tran         i18n.Translator
+	tokenService tokenpb.TokenServiceServer
 }
 
 // Option 定义 Member 对象配置选项
@@ -80,6 +83,12 @@ func WithRedisClient(cli *redis.Client) Option {
 func WithTranslator(tran i18n.Translator) Option {
 	return func(m *Member) {
 		m.tran = tran
+	}
+}
+
+func WithTokenSvc(tokenService tokenpb.TokenServiceServer) Option {
+	return func(m *Member) {
+		m.tokenService = tokenService
 	}
 }
 
@@ -210,6 +219,19 @@ func (m *Member) CreateOrUpdate(userID string, req apistructs.MemberAddRequest) 
 			// 创建成员
 			if len(members) == 0 {
 				orgID, projectID, applicationID := m.getIDs(req, targetScopeID)
+				// create PAT when user is invited to org.
+				// TODO: After we expose PAT management on UI, this can be removed.
+				if req.Scope.Type == apistructs.OrgScope {
+					_, err := m.tokenService.CreateToken(context.Background(), &tokenpb.CreateTokenRequest{
+						Scope:     string(apistructs.OrgScope),
+						ScopeId:   req.Scope.ID,
+						Type:      mysqltokenstore.PAT.String(),
+						CreatorId: user.ID,
+					})
+					if err != nil {
+						return err
+					}
+				}
 				member := &model.Member{
 					ScopeType:     targetScopeType,
 					ScopeID:       targetScopeID,
@@ -225,7 +247,6 @@ func (m *Member) CreateOrUpdate(userID string, req apistructs.MemberAddRequest) 
 					OrgID:         orgID,
 					ProjectID:     projectID,
 					ApplicationID: applicationID,
-					Token:         uuid.UUID(),
 				}
 				if err := m.db.CreateMember(member); err != nil {
 					return errors.Errorf("failed to add member, (%v)", err)

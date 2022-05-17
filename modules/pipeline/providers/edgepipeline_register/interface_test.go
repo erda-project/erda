@@ -15,13 +15,17 @@
 package edgepipeline_register
 
 import (
+	"context"
+	"fmt"
 	"net/http"
 	"reflect"
 	"testing"
 
 	"bou.ke/monkey"
+	"github.com/coreos/etcd/clientv3"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/erda-project/erda-infra/base/logs/logrusx"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 )
@@ -63,7 +67,7 @@ func TestSourceWhiteList(t *testing.T) {
 			want: false,
 		},
 	}
-	patch := monkey.PatchInstanceMethod(reflect.TypeOf(p.bdl), "IsClusterDialerClientRegistered", func(_ *bundle.Bundle, _ apistructs.ClusterDialerClientType, _ string) (bool, error) {
+	patch := monkey.PatchInstanceMethod(reflect.TypeOf(p.bdl), "IsClusterManagerClientRegistered", func(_ *bundle.Bundle, _ apistructs.ClusterManagerClientType, _ string) (bool, error) {
 		return true, nil
 	})
 	defer patch.Unpatch()
@@ -91,22 +95,22 @@ func Test_parseDialerEndpoint(t *testing.T) {
 		},
 		{
 			name:     "http endpoint",
-			endpoint: "http://cluster-dialer:80",
-			want:     "ws://cluster-dialer:80",
+			endpoint: "http://cluster-manager:9094",
+			want:     "ws://cluster-manager:9094",
 			wantErr:  false,
 		},
 		{
 			name:     "https endpoint",
-			endpoint: "https://cluster-dialer:80",
-			want:     "wss://cluster-dialer:80",
+			endpoint: "https://cluster-manager:9094",
+			want:     "wss://cluster-manager:9094",
 			wantErr:  false,
 		},
 	}
 	for _, tt := range tests {
 		p := &provider{
 			Cfg: &Config{
-				IsEdge:              true,
-				ClusterDialEndpoint: tt.endpoint,
+				IsEdge:                 true,
+				ClusterManagerEndpoint: tt.endpoint,
 			},
 		}
 		got, err := p.parseDialerEndpoint()
@@ -123,34 +127,52 @@ func Test_parseDialerEndpoint(t *testing.T) {
 func TestGetAccessToken(t *testing.T) {
 	p := &provider{
 		Cfg: &Config{
-			IsEdge:      true,
-			AccessToken: "xxx",
+			IsEdge:           true,
+			ClusterAccessKey: "xxx",
 		},
 	}
 	accessToken, err := p.GetAccessToken(apistructs.OAuth2TokenGetRequest{})
 	assert.NoError(t, err)
-	assert.Equal(t, p.Cfg.AccessToken, accessToken.AccessToken)
+	assert.Equal(t, p.Cfg.ClusterAccessKey, accessToken.AccessToken)
 }
 
 func TestGetOAuth2Token(t *testing.T) {
 	p := &provider{
 		Cfg: &Config{
-			IsEdge:      true,
-			AccessToken: "xxx",
+			IsEdge:           true,
+			ClusterAccessKey: "xxx",
 		},
 	}
 	oauth2Token, err := p.GetOAuth2Token(apistructs.OAuth2TokenGetRequest{})
 	assert.NoError(t, err)
-	assert.Equal(t, p.Cfg.AccessToken, oauth2Token.AccessToken)
+	assert.Equal(t, p.Cfg.ClusterAccessKey, oauth2Token.AccessToken)
+}
+
+type mockKV struct{}
+
+func (o mockKV) Put(ctx context.Context, key, val string, opts ...clientv3.OpOption) (*clientv3.PutResponse, error) {
+	return nil, nil
+}
+func (o mockKV) Get(ctx context.Context, key string, opts ...clientv3.OpOption) (*clientv3.GetResponse, error) {
+	if key == "/xxx" {
+		return nil, nil
+	}
+	return nil, fmt.Errorf("not found")
+}
+func (o mockKV) Delete(ctx context.Context, key string, opts ...clientv3.OpOption) (*clientv3.DeleteResponse, error) {
+	panic("implement me")
+}
+func (o mockKV) Compact(ctx context.Context, rev int64, opts ...clientv3.CompactOption) (*clientv3.CompactResponse, error) {
+	panic("implement me")
+}
+func (o mockKV) Do(ctx context.Context, op clientv3.Op) (clientv3.OpResponse, error) {
+	panic("implement me")
+}
+func (o mockKV) Txn(ctx context.Context) clientv3.Txn {
+	panic("implement me")
 }
 
 func TestCheckAccessToken(t *testing.T) {
-	p := &provider{
-		Cfg: &Config{
-			IsEdge:      true,
-			AccessToken: "xxx",
-		},
-	}
 	tests := []struct {
 		name        string
 		accessToken string
@@ -167,6 +189,17 @@ func TestCheckAccessToken(t *testing.T) {
 			wantErr:     true,
 		},
 	}
+	etcdClient := &clientv3.Client{
+		KV: &mockKV{},
+	}
+	p := &provider{
+		Cfg: &Config{
+			IsEdge:           true,
+			ClusterAccessKey: "xxx",
+		},
+		EtcdClient: etcdClient,
+		Log:        logrusx.New(),
+	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := p.CheckAccessToken(tt.accessToken)
@@ -180,23 +213,28 @@ func TestCheckAccessToken(t *testing.T) {
 func TestGetEdgePipelineEnvs(t *testing.T) {
 	p := &provider{
 		Cfg: &Config{
-			IsEdge:       true,
-			AccessToken:  "xxx",
-			PipelineAddr: "pipeline:3081",
-			PipelineHost: "pipeline.default.svc.cluster.local",
+			IsEdge:           true,
+			ClusterAccessKey: "xxx",
+			PipelineAddr:     "pipeline:3081",
+			PipelineHost:     "pipeline.default.svc.cluster.local",
 		},
 	}
 	envs := p.GetEdgePipelineEnvs()
-	assert.Equal(t, "pipeline:3081", envs.Get(apistructs.ClusterDialerDataKeyPipelineAddr))
-	assert.Equal(t, "pipeline.default.svc.cluster.local", envs.Get(apistructs.ClusterDialerDataKeyPipelineHost))
+	assert.Equal(t, "pipeline:3081", envs.Get(apistructs.ClusterManagerDataKeyPipelineAddr))
+	assert.Equal(t, "pipeline.default.svc.cluster.local", envs.Get(apistructs.ClusterManagerDataKeyPipelineHost))
 }
 
 func TestCheckAccessTokenFromHttpRequest(t *testing.T) {
+	etcdClient := &clientv3.Client{
+		KV: &mockKV{},
+	}
 	p := &provider{
 		Cfg: &Config{
-			IsEdge:      true,
-			AccessToken: "xxx",
+			IsEdge:           true,
+			ClusterAccessKey: "xxx",
 		},
+		EtcdClient: etcdClient,
+		Log:        logrusx.New(),
 	}
 	tests := []struct {
 		name        string
@@ -232,8 +270,8 @@ func TestCheckAccessTokenFromHttpRequest(t *testing.T) {
 func TestIsEdge(t *testing.T) {
 	p := &provider{
 		Cfg: &Config{
-			IsEdge:      true,
-			AccessToken: "xxx",
+			IsEdge:           true,
+			ClusterAccessKey: "xxx",
 		},
 	}
 	assert.Equal(t, true, p.IsEdge())
@@ -241,7 +279,7 @@ func TestIsEdge(t *testing.T) {
 
 func TestShouldDispatchToEdge(t *testing.T) {
 	bdl := bundle.New()
-	patch := monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "IsClusterDialerClientRegistered", func(_ *bundle.Bundle, _ apistructs.ClusterDialerClientType, _ string) (bool, error) {
+	patch := monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "IsClusterManagerClientRegistered", func(_ *bundle.Bundle, _ apistructs.ClusterManagerClientType, _ string) (bool, error) {
 		return true, nil
 	})
 	defer patch.Unpatch()
@@ -278,31 +316,38 @@ func TestShouldDispatchToEdge(t *testing.T) {
 	}
 }
 
-func Test_getAccessKey(t *testing.T) {
-	p := &provider{
-		Cfg: &Config{
-			ClusterAccessKey: "xxx",
+func Test_checkEtcdPrefixKey(t *testing.T) {
+	tests := []struct {
+		name    string
+		key     string
+		wantErr bool
+	}{
+		{
+			name:    "empty key",
+			key:     "",
+			wantErr: true,
+		},
+		{
+			name:    "end with /",
+			key:     "/xxx/",
+			wantErr: true,
+		},
+		{
+			name:    "not start with /",
+			key:     "xxx",
+			wantErr: true,
+		},
+		{
+			name:    "valid key",
+			key:     "/devops/pipeline/cluster-key",
+			wantErr: false,
 		},
 	}
-	assert.Equal(t, "xxx", p.ClusterAccessKey())
-}
-
-func Test_setAccessKey(t *testing.T) {
 	p := &provider{Cfg: &Config{}}
-	p.setAccessKey("xxx")
-	assert.Equal(t, "xxx", p.ClusterAccessKey())
-}
-
-func Test_getAccessToken(t *testing.T) {
-	p := &provider{Cfg: &Config{AccessToken: "xxx"}}
-	assert.Equal(t, "xxx", p.EdgeTaskAccessToken())
-}
-
-func Test_setAccessTokenIfNotExist(t *testing.T) {
-	p := &provider{Cfg: &Config{AccessToken: "aaa"}}
-	p.setAccessTokenIfNotExist("bbb")
-	assert.Equal(t, "aaa", p.EdgeTaskAccessToken())
-	p.Cfg.AccessToken = ""
-	p.setAccessTokenIfNotExist("bbb")
-	assert.Equal(t, "bbb", p.EdgeTaskAccessToken())
+	for _, tt := range tests {
+		p.Cfg.EtcdPrefixOfClusterAccessKey = tt.key
+		if err := p.checkEtcdPrefixKey(p.Cfg.EtcdPrefixOfClusterAccessKey); (err != nil) != tt.wantErr {
+			t.Errorf("want err: %v, but got: %v", tt.wantErr, err)
+		}
+	}
 }

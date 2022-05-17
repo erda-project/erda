@@ -34,3 +34,7 @@ mysql:
 grpc-client@erda.core.dicehub.release:
   addr: "${DICEHUB_GRPC_ADDR:dicehub:7080}"
 erda.core.dicehub.release-client:
+
+grpc-client@erda.core.clustermanager.cluster:
+  addr: "${CLUSTER_MANAGER_GRPC_ADDR:cluster-manager:9095}"
+erda.core.clustermanager.cluster-client: {}

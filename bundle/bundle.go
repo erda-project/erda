@@ -282,14 +282,6 @@ func WithClusterManager() Option {
 	}
 }
 
-func WithClusterDialer() Option {
-	return func(b *Bundle) {
-		k := discover.ClusterDialer()
-		v := os.Getenv(k)
-		b.urls.Put(k, v)
-	}
-}
-
 func WithDialContext(dialContext func(ctx context.Context, network string, address string) (net.Conn, error)) Option {
 	return func(b *Bundle) {
 		b.dialContext = dialContext

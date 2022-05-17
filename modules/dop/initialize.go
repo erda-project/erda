@@ -421,6 +421,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 	branchRule := branchrule.New(
 		branchrule.WithDBClient(db),
 		branchrule.WithBundle(bdl.Bdl),
+		branchrule.WithDevFlowRule(p.DevFlowRule),
 	)
 	gittarFileTreeSvc := filetree.New(filetree.WithBundle(bdl.Bdl), filetree.WithBranchRule(branchRule))
 
@@ -567,6 +568,8 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		project.WithTrans(p.ResourceTrans),
 		project.WithCMP(p.Cmp),
 		project.WithNamespace(ns),
+		project.WithTokenSvc(p.TokenService),
+		project.WithClusterSvc(p.ClusterSvc),
 	)
 	proj.UpdateFileRecord = testCaseSvc.UpdateFileRecord
 	proj.CreateFileRecord = testCaseSvc.CreateFileRecord
@@ -575,6 +578,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		application.WithBundle(bdl.Bdl),
 		application.WithDBClient(db),
 		application.WithPipelineCms(p.PipelineCms),
+		application.WithTokenSvc(p.TokenService),
 	)
 
 	codeCvc := code_coverage.New(
@@ -668,6 +672,8 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		endpoints.WithPipelineSource(p.PipelineSource),
 		endpoints.WithPipelineDefinition(p.PipelineDefinition),
 		endpoints.WithPublishItem(publishItem),
+		endpoints.WithDevFlowRule(p.DevFlowRule),
+		endpoints.WithTokenSvc(p.TokenService),
 	)
 
 	ep.ImportChannel = make(chan uint64)

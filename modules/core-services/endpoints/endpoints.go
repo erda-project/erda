@@ -21,6 +21,7 @@ import (
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/gorilla/schema"
 
+	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/core-services/dao"
 	"github.com/erda-project/erda/modules/core-services/services/activity"
@@ -75,6 +76,7 @@ type Endpoints struct {
 	fileSvc            *filesvc.FileService
 	user               *user.User
 	subscribe          *subscribe.Subscribe
+	tokenService       tokenpb.TokenServiceServer
 }
 
 type Option func(*Endpoints)
@@ -257,6 +259,12 @@ func WithUserSvc(svc *user.User) Option {
 func WithSubscribe(sub *subscribe.Subscribe) Option {
 	return func(e *Endpoints) {
 		e.subscribe = sub
+	}
+}
+
+func WithTokenSvc(tokenService tokenpb.TokenServiceServer) Option {
+	return func(e *Endpoints) {
+		e.tokenService = tokenService
 	}
 }
 

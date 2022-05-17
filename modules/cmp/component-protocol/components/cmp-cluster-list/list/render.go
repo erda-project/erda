@@ -25,18 +25,22 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rancher/wrangler/pkg/data"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc/metadata"
 	"k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-cluster-list/common"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/cmp/metrics"
+	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/k8sclient"
 )
 
@@ -69,6 +73,8 @@ func (l *List) Render(ctx context.Context, c *cptype.Component, scenario cptype.
 	l.SDK = cputil.SDK(ctx)
 	bdl := ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 	l.Bdl = bdl
+	clusterSvc := ctx.Value(types.ClusterSvc).(clusterpb.ClusterServiceServer)
+	l.ClusterSvc = clusterSvc
 	err = l.GetComponentValue()
 	if err != nil {
 		return err
@@ -133,7 +139,7 @@ func (l *List) GetState() State {
 	return State{PageNo: false}
 }
 
-func (l *List) GetOperations(clusterInfo apistructs.ClusterInfo, status string) map[string]Operation {
+func (l *List) GetOperations(clusterInfo *clusterpb.ClusterInfo, status string) map[string]Operation {
 	mapp := make(map[string]interface{})
 	err := common.Transfer(clusterInfo, &mapp)
 
@@ -254,7 +260,7 @@ func (l *List) SetComponentValue(c *cptype.Component) error {
 func (l *List) GetData(ctx context.Context) (map[string][]DataItem, error) {
 	var (
 		err      error
-		clusters []apistructs.ClusterInfo
+		clusters []*clusterpb.ClusterInfo
 		nodes    []data.Object
 	)
 	orgId, err := strconv.ParseUint(l.SDK.Identity.OrgID, 10, 64)
@@ -262,10 +268,15 @@ func (l *List) GetData(ctx context.Context) (map[string][]DataItem, error) {
 		logrus.Errorf("org id parse err :%v", err)
 	}
 	logrus.Infof("cluster start get data")
-	clusters, err = l.Bdl.ListClusters("", orgId)
+	ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "true"}))
+	resp, err := l.ClusterSvc.ListCluster(ctx, &clusterpb.ListClusterRequest{
+		OrgID: orgId,
+	})
 	if err != nil {
 		return nil, err
 	}
+	clusters = resp.Data
+
 	wg := sync.WaitGroup{}
 	wg.Add(2)
 	res := make(map[string]*ResData)
@@ -320,8 +331,8 @@ func (l *List) GetData(ctx context.Context) (map[string][]DataItem, error) {
 				clusterInfos[c.Name].Version = ci.Get(apistructs.DICE_VERSION)
 				clusterInfos[c.Name].ClusterType = ci.Get(apistructs.DICE_CLUSTER_TYPE)
 				clusterInfos[c.Name].Management = common.ParseManageType(c.ManageConfig)
-				clusterInfos[c.Name].CreateTime = c.CreatedAt.Format("2006-01-02")
-				clusterInfos[c.Name].UpdateTime = c.UpdatedAt.Format("2006-01-02")
+				clusterInfos[c.Name].CreateTime = c.CreatedAt.AsTime().Local().Format("2006-01-02")
+				clusterInfos[c.Name].UpdateTime = c.UpdatedAt.AsTime().Local().Format("2006-01-02")
 				kc, err := k8sclient.NewWithTimeOut(c.Name, 2*time.Second)
 				if err != nil {
 					logrus.Error(err)
@@ -368,7 +379,7 @@ func (l *List) GetData(ctx context.Context) (map[string][]DataItem, error) {
 			displayName = c.Name
 		}
 		i := DataItem{
-			ID:            c.ID,
+			ID:            int(c.Id),
 			Title:         displayName,
 			Description:   description,
 			PrefixImg:     "cluster",
@@ -398,7 +409,7 @@ func (l *List) GetVersion(clusterName string) (string, error) {
 	return info.GitVersion, nil
 }
 
-func (l *List) GetBgImage(c apistructs.ClusterInfo) string {
+func (l *List) GetBgImage(c *clusterpb.ClusterInfo) string {
 	switch c.Type {
 	case "k8s":
 		return "k8s_cluster_bg"

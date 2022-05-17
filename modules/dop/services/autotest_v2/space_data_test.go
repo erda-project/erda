@@ -23,8 +23,11 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/pkg/database/dbengine"
+	"github.com/erda-project/erda/pkg/excel"
+	"github.com/erda-project/erda/pkg/i18n"
 )
 
 func TestCopy(t *testing.T) {
@@ -156,5 +159,28 @@ func TestCopyScenes(t *testing.T) {
 	a.svc = autotestSvc
 
 	err := a.CopyScenes()
+	assert.NoError(t, err)
+}
+
+func Test_addSceneStepToExcel(t *testing.T) {
+	bdl := bundle.New(bundle.WithI18nLoader(&i18n.LocaleResourceLoader{}))
+	m := monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetLocale",
+		func(bdl *bundle.Bundle, local ...string) *i18n.LocaleResource {
+			return &i18n.LocaleResource{}
+		})
+	defer m.Unpatch()
+	ad := &AutoTestSpaceData{
+		svc: New(WithBundle(bdl)),
+		Steps: map[uint64][]apistructs.AutoTestSceneStep{
+			1: []apistructs.AutoTestSceneStep{
+				{
+					Name:      "step1",
+					APISpecID: 2,
+				},
+			},
+		},
+	}
+	f := excel.NewXLSXFile()
+	err := ad.addSceneStepToExcel(f)
 	assert.NoError(t, err)
 }

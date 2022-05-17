@@ -29,7 +29,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/actionagent"
+	"github.com/erda-project/erda/modules/pipeline/actionagent"
 	"github.com/erda-project/erda/modules/pipeline/aop/aoptypes"
 	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/k8sjob"
@@ -357,7 +357,7 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 	// edge pipeline envs
 	edgePipelineEnvs := pre.EdgeRegister.GetEdgePipelineEnvs()
 	task.Extra.PublicEnvs[apistructs.EnvIsEdgePipeline] = strconv.FormatBool(pre.EdgeRegister.IsEdge())
-	task.Extra.PublicEnvs[apistructs.EnvPipelineAddr] = edgePipelineEnvs.Get(apistructs.ClusterDialerDataKeyPipelineAddr)
+	task.Extra.PublicEnvs[apistructs.EnvPipelineAddr] = edgePipelineEnvs.Get(apistructs.ClusterManagerDataKeyPipelineAddr)
 
 	// 条件表达式存在
 	if jump := condition(task); jump {

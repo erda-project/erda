@@ -188,6 +188,7 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 		org.WithBundle(bdl),
 		org.WithRedisClient(redisCli),
 		org.WithI18n(p.Tran),
+		org.WithTokenSvc(p.TokenService),
 	)
 
 	// init project service
@@ -211,6 +212,7 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 		member.WithUCClient(uc),
 		member.WithRedisClient(redisCli),
 		member.WithTranslator(p.Tran),
+		member.WithTokenSvc(p.TokenService),
 	)
 	mr := manual_review.New(
 		manual_review.WithDBClient(db),
@@ -312,6 +314,7 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 		endpoints.WithFileSvc(fileSvc),
 		endpoints.WithUserSvc(user),
 		endpoints.WithSubscribe(sub),
+		endpoints.WithTokenSvc(p.TokenService),
 	)
 	return ep, nil
 }

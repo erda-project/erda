@@ -79,7 +79,7 @@ func (tr *defaultTaskReconciler) CreateSnippetPipeline(ctx context.Context, p *s
 }
 
 // fulfillParentSnippetTask 填充 parent snippet task 信息
-func (tr *defaultTaskReconciler) fulfillParentSnippetTask(p *spec.Pipeline) error {
+func (tr *defaultTaskReconciler) fulfillParentSnippetTask(p *spec.Pipeline, task *spec.PipelineTask) error {
 	if !p.IsSnippet || p.ParentTaskID == nil {
 		return nil
 	}
@@ -107,6 +107,7 @@ func (tr *defaultTaskReconciler) fulfillParentSnippetTask(p *spec.Pipeline) erro
 	if err := tr.dbClient.UpdatePipelineTaskStatus(*p.ParentTaskID, p.Status); err != nil {
 		return err
 	}
+	task.Status = p.Status
 	// update the costTime,timeBegin,timeEnd of pipeline task
 	if err := tr.dbClient.UpdatePipelineTaskTime(p); err != nil {
 		return err

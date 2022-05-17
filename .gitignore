@@ -70,5 +70,10 @@ modules/openapi/api/generate
 # deploy related temp dir
 /deploy
 
+# python vitural environments
+/venv/
+
 # extensions
 extensions/
+
+http-client.env.json

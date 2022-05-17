@@ -23,6 +23,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/orchestrator/scheduler/endpoints"
@@ -58,8 +59,8 @@ type Scheduler struct {
 	Httpendpoints *endpoints.HTTPEndpoints
 }
 
-// NewScheduler creates a scheduler instance, it be used to handle servicegroup create/update/delete actions.
-func NewScheduler(instanceinfoImpl instanceinfo.InstanceInfo) *Scheduler {
+// NewSched, p.ClusterSvc, p.ClusterSvculer creates a scheduler instance, it be used to handle servicegroup create/update/delete actions.
+func NewScheduler(instanceinfoImpl instanceinfo.InstanceInfo, clusterSvc clusterpb.ClusterServiceServer) *Scheduler {
 	option := jsonstore.UseCacheEtcdStore(context.Background(), "/dice", 500)
 	store, err := jsonstore.New(option)
 	if err != nil {
@@ -99,7 +100,7 @@ func NewScheduler(instanceinfoImpl instanceinfo.InstanceInfo) *Scheduler {
 		panic(err)
 	}
 
-	httpendpoints := endpoints.NewHTTPEndpoints(volumeImpl, servicegroupImpl, clusterImpl, jobImpl, labelManagerImpl, instanceinfoImpl, clusterinfoImpl, componentImpl, resourceinfoImpl, capImpl)
+	httpendpoints := endpoints.NewHTTPEndpoints(volumeImpl, servicegroupImpl, clusterImpl, jobImpl, labelManagerImpl, instanceinfoImpl, clusterinfoImpl, componentImpl, resourceinfoImpl, capImpl, clusterSvc)
 
 	scheduler := &Scheduler{
 		sched:         sched,

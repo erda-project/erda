@@ -27,7 +27,10 @@ import (
 	sdkvpc "github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/text/message"
+	"google.golang.org/grpc/metadata"
 
+	"github.com/erda-project/erda-infra/pkg/transport"
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/apistructs"
 	aliyun_resources "github.com/erda-project/erda/modules/cmp/impl/aliyun-resources"
 	"github.com/erda-project/erda/modules/cmp/impl/aliyun-resources/ack"
@@ -105,7 +108,8 @@ func (e *Endpoints) TagResources(ctx context.Context, r *http.Request, vars map[
 
 		logrus.Infof("get cmp config from db, cluster name: %v", req.ClusterName)
 
-		ci, err := e.bdl.GetCluster(req.ClusterName)
+		ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "true"}))
+		resp, err := e.ClusterSvc.GetCluster(ctx, &clusterpb.GetClusterRequest{IdOrName: req.ClusterName})
 		if err != nil {
 			logrus.Errorf("failed to get cluster info, cluster name: %v, error: %v", req.ClusterName, err)
 			return mkResponse(apistructs.CloudResourcesDetailResponse{
@@ -116,6 +120,7 @@ func (e *Endpoints) TagResources(ctx context.Context, r *http.Request, vars map[
 			})
 		}
 
+		ci := resp.Data
 		if ci.OpsConfig == nil ||
 			ci.OpsConfig.Region == "" ||
 			ci.OpsConfig.AccessKey == "" ||
@@ -226,7 +231,9 @@ func (e *Endpoints) QueryCloudResourceDetail(ctx context.Context, r *http.Reques
 	httpserver.Responser, error) {
 	resource := strutil.ToUpper(r.URL.Query().Get("resource"))
 	cluster := r.URL.Query().Get("cluster")
-	clusterinfo, err := e.bdl.GetCluster(cluster)
+
+	ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "true"}))
+	resp, err := e.ClusterSvc.GetCluster(ctx, &clusterpb.GetClusterRequest{IdOrName: cluster})
 	if err != nil {
 		return mkResponse(apistructs.CloudResourcesDetailResponse{
 			Header: apistructs.Header{
@@ -236,6 +243,7 @@ func (e *Endpoints) QueryCloudResourceDetail(ctx context.Context, r *http.Reques
 		})
 	}
 
+	clusterinfo := resp.Data
 	if clusterinfo.OpsConfig == nil ||
 		clusterinfo.OpsConfig.Region == "" ||
 		clusterinfo.OpsConfig.AccessKey == "" ||

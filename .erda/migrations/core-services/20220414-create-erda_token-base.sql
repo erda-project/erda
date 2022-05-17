@@ -21,6 +21,8 @@ CREATE TABLE `erda_token` (
   KEY `idx_scope` (`scope`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='erda token';
 
+update erda_access_key set creator_id = '' where creator_id is null;
+
 INSERT INTO `erda_token` (id, secret_key, access_key, data, description, scope, scope_id, type, creator_id, created_at, updated_at)
 SELECT UUID(), secret_key, access_key, '', description, scope, scope_id, 'AccessKey', creator_id, created_at, updated_at
 FROM `erda_access_key`;

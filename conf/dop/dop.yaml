@@ -39,6 +39,7 @@ etcd:
     ca_file: "${ETCD_CA_FILE:/certs/etcd-ca.pem}"
 
 erda.core.dop.taskerror: {}
+erda.dop.qa.unittest: {}
 
 # pipeline cms
 grpc-client@erda.core.pipeline.cms:
@@ -75,6 +76,14 @@ grpc-client@erda.core.services.errorbox:
   addr: "${CORE_SERVICES_GRPC_ADDR:core-services:9537}"
 erda.core.services.errorbox-client: {}
 
+grpc-client@erda.core.token:
+  addr: "${CORE_SERVICES_GRPC_ADDR:core-services:9537}"
+erda.core.token-client: {}
+
+grpc-client@erda.core.clustermanager.cluster:
+  addr: "${CLUSTER_MANAGER_GRPC_ADDR:cluster-manager:9095}"
+erda.core.clustermanager.cluster-client: {}
+
 erda.core.dop.autotest.testplan: {}
 erda.dop.projecthome: {}
 erda.dop.contribution: {}
@@ -84,6 +93,7 @@ erda.dop.issue.sync: {}
 erda.dop.apim: {}
 erda.dop.guide: {}
 erda.dop.cms: {}
+erda.dop.devFlowRule: {}
 
 # component-protocol framework
 component-protocol: {}
