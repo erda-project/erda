@@ -146,7 +146,7 @@ func (client *Client) SelectTargetIDsByLabels(req apistructs.TargetIDSelectByLab
 
 	// SQL
 	sqlSegments := []string{
-		"SELECT `target_id` FROM `pipeline_labels`",
+		"SELECT DISTINCT(`target_id`) FROM `pipeline_labels`",
 		"FORCE INDEX (`idx_type_source_key_value_targetid`, `idx_type_source_ymlname_key_value_targetid`)",
 		"WHERE `type` = ?",
 	}
@@ -196,23 +196,29 @@ func (client *Client) SelectTargetIDsByLabels(req apistructs.TargetIDSelectByLab
 
 	if len(req.AnyMatchLabels) > 0 {
 		var allNeedMergeTargetIDs [][]uint64
+		innerSegments := append(sqlSegments, " AND (")
+		innerArgs := make([]interface{}, len(sqlArgs))
+		copy(innerArgs, sqlArgs)
 		for key, values := range req.AnyMatchLabels {
 			if len(values) == 0 {
 				continue
 			}
-			innerSegments := append(sqlSegments, fmt.Sprintf("AND `key` = ? AND `value` IN (%s)", questionMarks(len(values))))
-			innerArgs := append(sqlArgs, key)
+			innerSegments = append(innerSegments, fmt.Sprintf("(`key` = ? AND `value` IN (%s))", questionMarks(len(values))), "OR")
+			innerArgs = append(innerArgs, key)
 			for _, v := range values {
 				innerArgs = append(innerArgs, v)
 			}
-			// execute
-			var innerPipelineIDs []uint64
-			err := session.SQL(strutil.Join(innerSegments, " "), innerArgs...).Find(&innerPipelineIDs)
-			if err != nil {
-				return nil, err
-			}
-			allNeedMergeTargetIDs = append(allNeedMergeTargetIDs, innerPipelineIDs)
 		}
+		if innerSegments[len(innerSegments)-1] == "OR" {
+			innerSegments = innerSegments[:len(innerSegments)-1]
+		}
+		innerSegments = append(innerSegments, ")")
+		var innerPipelineIDs []uint64
+		err := session.SQL(strutil.Join(innerSegments, " "), innerArgs...).Find(&innerPipelineIDs)
+		if err != nil {
+			return nil, err
+		}
+		allNeedMergeTargetIDs = append(allNeedMergeTargetIDs, innerPipelineIDs)
 		handleResult = merge(allNeedMergeTargetIDs...)
 	}
 
