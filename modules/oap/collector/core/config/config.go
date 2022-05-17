@@ -27,7 +27,7 @@ type Config struct {
 }
 
 type Pipeline struct {
-	Enable        bool          `file:"_enable" default:"true" desc:"pipeline enable or not"`
+	Enable        *bool         `file:"_enable" desc:"pipeline enable or not"`
 	BatchSize     int           `file:"batch_size" desc:"the batch max size for per exporter"`
 	FlushInterval time.Duration `file:"flush_interval"  desc:"the ticker for per exporter"`
 	FlushJitter   time.Duration `file:"flush_jitter"  desc:"the ticker jitter for per exporter"`

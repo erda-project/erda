@@ -33,10 +33,10 @@ type jaegerServiceImpl struct {
 
 func (s *jaegerServiceImpl) SpansWithThrift(ctx context.Context, req *jaegerpb.PostSpansRequest) (*common.VoidResponse, error) {
 	if req.Spans != nil {
-		for _, span := range req.Spans {
+		for i := range req.Spans {
 			uw := &unmarshalCtx{
 				logger: s.Log,
-				span:   span,
+				span:   req.Spans[i],
 				callback: func(buf []byte) error {
 					s.p.consumer(odata.NewRaw(buf))
 					return nil

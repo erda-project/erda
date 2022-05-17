@@ -33,10 +33,10 @@ type otlpService struct {
 
 func (s *otlpService) Export(ctx context.Context, req *otppb.PostSpansRequest) (*common.VoidResponse, error) {
 	if req.Spans != nil && s.p.consumer != nil {
-		for _, span := range req.Spans {
+		for i := range req.Spans {
 			uw := &unmarshalCtx{
 				logger: s.Log,
-				span:   span,
+				span:   req.Spans[i],
 				callback: func(buf []byte) error {
 					s.p.consumer(odata.NewRaw(buf))
 					return nil

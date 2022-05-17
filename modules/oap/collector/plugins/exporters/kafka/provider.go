@@ -66,7 +66,29 @@ func (p *provider) ExportMetric(items ...*metric.Metric) error {
 
 func (p *provider) ExportLog(items ...*log.Log) error     { return nil }
 func (p *provider) ExportSpan(items ...*trace.Span) error { return nil }
-func (p *provider) ExportRaw(items ...*odata.Raw) error   { return nil }
+func (p *provider) ExportRaw(items ...*odata.Raw) error {
+	for _, item := range items {
+		if p.Cfg.MetadataKeyOfTopic != "" {
+			tmp, ok := item.Meta[p.Cfg.MetadataKeyOfTopic]
+			if !ok {
+				p.Log.Errorf("unable to find topic with key %s", p.Cfg.MetadataKeyOfTopic)
+				continue
+			}
+
+			if err := p.writer.Write(&kafka.Message{
+				Topic: &tmp,
+				Data:  item.Data,
+			}); err != nil {
+				p.Log.Errorf("write data to %s err: %s", tmp, err)
+			}
+		} else {
+			if err := p.writer.Write(item.Data); err != nil {
+				p.Log.Errorf("write data to %s err: %s", p.Cfg.Producer.Topic, err)
+			}
+		}
+	}
+	return nil
+}
 
 func (p *provider) ComponentConfig() interface{} {
 	return p.Cfg

@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 	"hash/fnv"
-	"runtime"
 	"sort"
 	"sync"
 	"time"
@@ -29,10 +28,6 @@ import (
 	"github.com/erda-project/erda/modules/msp/apm/trace"
 	"github.com/erda-project/erda/pkg/strutil"
 )
-
-func init() {
-	runtime.SetBlockProfileRate(1000)
-}
 
 type Config struct {
 	Database string

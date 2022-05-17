@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"runtime"
 	"time"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -28,6 +29,10 @@ import (
 	"github.com/erda-project/erda/modules/oap/collector/core/pipeline"
 	"github.com/erda-project/erda/modules/oap/collector/lib/protoparser/common/unmarshalwork"
 )
+
+func init() {
+	runtime.SetBlockProfileRate(1000)
+}
 
 // +provider
 type provider struct {
@@ -87,19 +92,22 @@ func (p *provider) initComponents() error {
 	return nil
 }
 
-var defaultPipelineCfg = config.Pipeline{
-	BatchSize:     10,
-	FlushInterval: time.Second,
-	FlushJitter:   time.Second,
-}
+var (
+	defaultEnable      = true
+	defaultPipelineCfg = config.Pipeline{
+		BatchSize:     10,
+		FlushInterval: time.Second,
+		FlushJitter:   time.Second,
+		Enable:        &defaultEnable,
+	}
+)
 
 func (p *provider) createPipelines(cfgs []config.Pipeline, dtype odata.DataType) ([]*pipeline.Pipeline, error) {
 	res := []*pipeline.Pipeline{}
 	for idx, item := range cfgs {
-		if !item.Enable {
-			continue
+		if item.Enable == nil {
+			item.Enable = &defaultEnable
 		}
-
 		if item.BatchSize == 0 {
 			item.BatchSize = defaultPipelineCfg.BatchSize
 		}
@@ -108,6 +116,10 @@ func (p *provider) createPipelines(cfgs []config.Pipeline, dtype odata.DataType)
 		}
 		if item.FlushJitter == 0 {
 			item.FlushJitter = defaultPipelineCfg.FlushJitter
+		}
+
+		if !(*item.Enable) {
+			continue
 		}
 
 		rs, err := findComponents(p.servicectx, item.Receivers)
@@ -123,11 +135,13 @@ func (p *provider) createPipelines(cfgs []config.Pipeline, dtype odata.DataType)
 			return nil, err
 		}
 
-		pipe := pipeline.NewPipeline(p.Log.Sub(fmt.Sprintf("core-pipeline-%d", idx)), item, dtype)
+		name := fmt.Sprintf("core-pipeline-%s-%d", dtype, idx)
+		pipe := pipeline.NewPipeline(p.Log.Sub(name), item, dtype)
 		err = pipe.InitComponents(rs, ps, es)
 		if err != nil {
 			return nil, fmt.Errorf("init components err: %w", err)
 		}
+		p.Log.Infof("%s has been created successfully!", name)
 		res = append(res, pipe)
 	}
 	return res, nil
