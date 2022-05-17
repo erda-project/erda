@@ -81,6 +81,9 @@ func PreCheck(ctx context.Context, pipelineYmlByte []byte, itemForCheck precheck
 		stageOutputs := pipelineyml.Outputs{}
 		for _, actions := range stage.Actions {
 			for _, action := range actions {
+				if action.Disable {
+					continue
+				}
 				// check refs / outputs / secrets
 				precheckY, err := pipelineyml.New(pipelineYmlByte,
 					pipelineyml.WithEnvs(itemForCheck.Envs),

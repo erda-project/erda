@@ -57,6 +57,9 @@ func (s *PipelineSvc) PreCheck(p *spec.Pipeline, stages []spec.PipelineStage, us
 		if task.Type == apistructs.ActionTypeSnippet {
 			continue
 		}
+		if task.Status.IsDisabledStatus() {
+			continue
+		}
 		typeVersion := task.Extra.Action.GetActionTypeVersion()
 		if _, ok := actionTypeVerMap[typeVersion]; ok {
 			continue
