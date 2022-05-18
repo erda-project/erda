@@ -228,7 +228,7 @@ services:
         securityContext:
           privileged: true
   monitor-agent-injector:
-    cmd: /erda/cmd/agent-injector/bin
+    cmd: /erda/cmd/monitor/agent-injector/bin
     ports:
       - port: 8443
         protocol: "TCP"
@@ -262,7 +262,7 @@ services:
   collector:
     labels:
       cpu_bound: "true"
-    cmd: /erda/cmd/collector/bin
+    cmd: /erda/cmd/monitor/collector/bin
     ports:
       - port: 7076
         protocol: "TCP"
