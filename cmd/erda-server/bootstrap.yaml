@@ -3,7 +3,6 @@ service.admin:
 service.personal-workbench:
 service.dingtalk-test:
 erda.apps.gallery:
-  LogLevel: 5
 
 mysql:
   host: "${MYSQL_HOST}"

@@ -65,10 +65,10 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	logrus.SetLevel(p.Cfg.LogLevel)
+	logrus.SetLevel(p.Cfg.GetLogLevel())
 	p.l = logrus.WithField("provider", name)
 	p.l.Infoln("Init")
-	if p.Cfg.LogLevel > logrus.InfoLevel {
+	if p.Cfg.GetLogLevel() > logrus.InfoLevel {
 		p.D = p.D.Debug()
 	}
 	dao.Init(p.D)
@@ -83,4 +83,11 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 type config struct {
 	LogLevel logrus.Level
+}
+
+func (c config) GetLogLevel() logrus.Level {
+	if c.LogLevel <= logrus.InfoLevel {
+		return logrus.InfoLevel
+	}
+	return c.LogLevel
 }
