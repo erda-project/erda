@@ -136,6 +136,9 @@ func (c *UCClient) FindUsers(ids []string) ([]User, error) {
 				users[i].ID = userID
 			}
 		}
+		if sysOpExist {
+			users = append(users, systemOperator)
+		}
 		return users, nil
 	}
 	parts := make([]string, 0)

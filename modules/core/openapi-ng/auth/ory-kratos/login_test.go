@@ -15,33 +15,33 @@
 package orykratos
 
 import (
-	"fmt"
-	"net/http"
-	"net/url"
-
-	"github.com/erda-project/erda/modules/core/openapi-ng/common"
+	"testing"
 )
 
-func (p *provider) LoginURL(rw http.ResponseWriter, r *http.Request) {
-	referer := r.Header.Get("Referer")
-	common.ResponseJSON(rw, &struct {
-		URL string `json:"url"`
-	}{
-		URL: redirectUrl(referer),
-	})
-}
-
-func (p *provider) Logout(rw http.ResponseWriter, r *http.Request) {
-	common.ResponseJSON(rw, &struct {
-		URL string `json:"url"`
-	}{
-		URL: "/uc/login",
-	})
-}
-
-func redirectUrl(referer string) string {
-	if referer == "" {
-		return "/uc/login"
+func Test_redirectUrl(t *testing.T) {
+	type args struct {
+		referer string
 	}
-	return fmt.Sprintf("/uc/login?redirectUrl=%s", url.QueryEscape(referer))
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			args: args{
+				referer: "https://erda.cloud/erda",
+			},
+			want: "/uc/login?redirectUrl=https%3A%2F%2Ferda.cloud%2Ferda",
+		},
+		{
+			want: "/uc/login",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := redirectUrl(tt.args.referer); got != tt.want {
+				t.Errorf("redirectUrl() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
