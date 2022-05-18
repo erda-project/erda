@@ -18,6 +18,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build\
 
 
 
+ARG BASE_DOCKER_IMAGE
 FROM ${BASE_DOCKER_IMAGE} as app-handler
 ARG MODULE_PATH
 ENV PROJ_ROOT="/go/src/github.com/erda-project/erda"

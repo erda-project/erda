@@ -83,7 +83,7 @@ clickhouse.table.initializer@log:
 
 clickhouse.table.creator@log:
   _enable: ${WRITE_LOG_TO_CLICKHOUSE_ENABLE:false}
-  ddl_template: "${conf}/clickhouse/logs_ddl_create_tenant_tables.sql"
+  ddl_template: "conf/clickhouse/logs_ddl_create_tenant_tables.sql"
   default_write_table: "logs"
   table_prefix: "logs"
 
@@ -107,7 +107,7 @@ elasticsearch.index.initializer@log:
   _enable: ${WRITE_LOG_TO_ES_ENABLE:true}
   templates:
     - name: "erda-logs"
-      path: "${conf}/log_index_template.json"
+      path: "conf/log_index_template.json"
 
 elasticsearch.index.loader@log:
   _enable: ${WRITE_LOG_TO_ES_ENABLE:true}
@@ -131,7 +131,7 @@ elasticsearch.index.creator@log:
 elasticsearch.index.rollover@log:
   _enable: ${WRITE_LOG_TO_ES_ENABLE:true}
   check_interval: "30s"
-  body_file: "${conf}/index_rollover.json"
+  body_file: "conf/index_rollover.json"
   patterns:
     - index: "erda-logs-<org>-{number}"
       alias: "erda-logs-<org>-rollover"
@@ -216,7 +216,7 @@ elasticsearch.index.initializer@event:
   _enable: ${WRITE_EVENT_TO_ES_ENABLE:true}
   templates:
     - name: "erda-events"
-      path: "${conf}/event_index_template.json"
+      path: "conf/event_index_template.json"
 
 elasticsearch.index.loader@event:
   _enable: ${WRITE_EVENT_TO_ES_ENABLE:true}
@@ -240,7 +240,7 @@ elasticsearch.index.creator@event:
 elasticsearch.index.rollover@event:
   _enable: ${WRITE_EVENT_TO_ES_ENABLE:true}
   check_interval: "30s"
-  body_file: "${conf}/index_rollover.json"
+  body_file: "conf/index_rollover.json"
   patterns:
     - index: "erda-events-<event>-<namespace>-{number}"
       alias: "erda-events-<event>-<namespace>-rollover"
@@ -277,7 +277,7 @@ elasticsearch:
 elasticsearch.index.initializer@metric:
   templates:
     - name: "spot_metric_template"
-      path: "${conf}/metric_index_template.json"
+      path: "conf/metric_index_template.json"
 
 elasticsearch.index.loader@metric:
   load_mode: "LoadFromElasticSearchOnly"
@@ -308,7 +308,7 @@ elasticsearch.index.creator@metric:
 
 elasticsearch.index.rollover@metric:
   check_interval: "30m"
-  body_file: "${conf}/index_rollover.json"
+  body_file: "conf/index_rollover.json"
   patterns:
     - index: "spot-<metric>-<namespace>-r-{number}"
       alias: "spot-<metric>-<namespace>-rollover"
@@ -348,7 +348,7 @@ elasticsearch.index.initializer@span:
   _enable: ${WRITE_SPAN_TO_ES_ENABLE:true}
   templates:
     - name: "erda-spans"
-      path: "${conf}/span_index_template.json"
+      path: "conf/span_index_template.json"
 
 elasticsearch.index.loader@span:
   _enable: ${WRITE_SPAN_TO_ES_ENABLE:true}
@@ -372,7 +372,7 @@ elasticsearch.index.creator@span:
 elasticsearch.index.rollover@span:
   _enable: ${WRITE_SPAN_TO_ES_ENABLE:true}
   check_interval: "30s"
-  body_file: "${conf}/index_rollover.json"
+  body_file: "conf/index_rollover.json"
   patterns:
     - index: "erda-spans-<org>-{number}"
       alias: "erda-spans-<org>-rollover"
@@ -427,7 +427,7 @@ browser-analytics:
     batch:
       size:  ${KAFKA_BATCH_SIZE:50}
       timeout: "10s"
-  ipdb: "${conf}/ipdata.dat"
+  ipdb: "conf/ipdata.dat"
 
 trace-storage:
   _enable: ${WRITE_SPAN_TO_CASSANDRA_ENABLE:false}
@@ -480,7 +480,7 @@ elasticsearch.index.initializer@entity:
   _enable: ${WRITE_ENTITY_TO_ES_ENABLE:true}
   templates:
     - name: "erda-entity"
-      path: "${conf}/entity_index_template.json"
+      path: "conf/entity_index_template.json"
 entity-storage-elasticsearch:
   write_timeout: "1m"
   query_timeout: "1m"
