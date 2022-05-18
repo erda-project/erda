@@ -216,6 +216,9 @@ func (k *Kubernetes) deleteHistoryJob(namespace, name string) error {
 	sort.Slice(list.Items, func(i, j int) bool {
 		return list.Items[i].CreationTimestamp.After(list.Items[j].CreationTimestamp.Time)
 	})
+	if len(list.Items) < 2 {
+		return nil
+	}
 	for _, job := range list.Items[2:] {
 		logrus.Errorf("job name for deleted: %+v\n", job.Name)
 		if err = k.job.Delete(namespace, job.Name); err != nil {
