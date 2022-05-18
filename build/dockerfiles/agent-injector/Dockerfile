@@ -28,8 +28,6 @@ RUN ./build/scripts/build_all/app_handler.sh /erda "${MODULE_PATH}" /erda-handle
 ARG BASE_DOCKER_IMAGE
 FROM ${BASE_DOCKER_IMAGE}
 
-WORKDIR /app
-
 ARG APP_NAME
 ARG CONFIG_PATH
 ENV APP_NAME=${APP_NAME}
@@ -38,3 +36,6 @@ ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib:/usr/local/lib64:/lib:/lib64
 COPY --from=app-handler /erda-handled /erda
 COPY --from=build "$GOPATH/src/github.com/erda-project/erda/build/java-agent" "/opt/spot-original/java-agent"
 COPY --from=build "$GOPATH/src/github.com/erda-project/erda/build/scripts/monitor-agent-injector/container-init.sh" "/bin/container-init.sh"
+
+WORKDIR /erda
+CMD ["sh", "-c", "/erda/cmd/${MODULE_PATH}/bin"]
