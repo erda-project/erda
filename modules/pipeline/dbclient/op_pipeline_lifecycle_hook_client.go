@@ -25,12 +25,37 @@ func (ps *PipelineLifecycleHookClient) TableName() string {
 	return "dice_pipeline_lifecycle_hook_clients"
 }
 
-func (client *Client) FindLifecycleHookClientList() (clients []*PipelineLifecycleHookClient, err error) {
+func (client *Client) FindLifecycleHookClientList(ops ...SessionOption) (clients []*PipelineLifecycleHookClient, err error) {
+	session := client.NewSession(ops...)
+	defer session.Close()
 
-	err = client.Find(&clients)
+	err = session.Find(&clients)
 	if err != nil {
 		return nil, err
 	}
 
 	return clients, err
+}
+
+func (client *Client) InsertOrUpdateLifeCycleClient(hookClient *PipelineLifecycleHookClient, ops ...SessionOption) error {
+	session := client.NewSession(ops...)
+	defer session.Close()
+
+	exist, err := session.Where("name = ?", hookClient.Name).Get(&PipelineLifecycleHookClient{})
+	if err != nil {
+		return err
+	}
+
+	// already exist, try to update client info
+	if exist {
+		if _, err := session.Where("name = ?", hookClient.Name).Update(hookClient); err != nil {
+			return err
+		}
+		return nil
+	}
+
+	if _, err := session.Insert(hookClient); err != nil {
+		return err
+	}
+	return nil
 }
