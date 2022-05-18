@@ -16,6 +16,7 @@ package source
 
 import (
 	"testing"
+	"time"
 
 	"github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
 )
@@ -58,6 +59,37 @@ func Test_chSpanCovertToSpan(t *testing.T) {
 			}
 			if tt.args.span.ParentSpanId != tt.args.cs.ParentSpanId {
 				t.Errorf("ParentSpanId not equal. span.ParentSpanId: %s, cs.ParentSpanId: %s", tt.args.span.ParentSpanId, tt.args.cs.ParentSpanId)
+			}
+		})
+	}
+}
+
+func Test_GetInterval(t *testing.T) {
+	type args struct {
+		duration int64
+	}
+	tests := []struct {
+		name string
+		args args
+		want int64
+	}{
+		{"case1", args{duration: time.Hour.Milliseconds()}, 1},
+		{"case2", args{duration: time.Hour.Milliseconds() * 3}, 3},
+		{"case3", args{duration: time.Hour.Milliseconds() * 6}, 6},
+		{"case4", args{duration: time.Hour.Milliseconds() * 12}, 12},
+		{"case5", args{duration: time.Hour.Milliseconds() * 24}, 24},
+		{"case6", args{duration: time.Hour.Milliseconds() * 72}, 72},
+		{"case7", args{duration: time.Hour.Milliseconds() * 168}, 168},
+		{"case8", args{duration: time.Hour.Milliseconds() * 168 * 3}, 12},
+		{"case9", args{duration: time.Hour.Milliseconds() * 168 * 5}, 36},
+		{"case10", args{duration: time.Hour.Milliseconds() * 168 * 10}, 36},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			got, _, _ := GetInterval(tt.args.duration)
+			if got != tt.want {
+				t.Errorf("GetInterval() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

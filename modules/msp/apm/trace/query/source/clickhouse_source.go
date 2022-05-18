@@ -79,7 +79,7 @@ const (
 	Month3 = 3 * Month
 )
 
-func (chs *ClickhouseSource) GetInterval(duration int64) (int64, string, int64) {
+func GetInterval(duration int64) (int64, string, int64) {
 	count := int64(60) * time.Second.Milliseconds()
 	if duration > 0 && duration <= Hour.Milliseconds() {
 		interval := Hour.Milliseconds() / count
@@ -112,7 +112,7 @@ func (chs *ClickhouseSource) GetInterval(duration int64) (int64, string, int64) 
 }
 
 func (chs *ClickhouseSource) GetTraceReqDistribution(ctx context.Context, model custom.Model) ([]*TraceDistributionItem, error) {
-	n, unit, interval := chs.GetInterval(model.EndTime - model.StartTime)
+	n, unit, interval := GetInterval(model.EndTime - model.StartTime)
 	specSql := "SELECT toStartOfInterval(min_start_time, INTERVAL %v %s) AS date,count(trace_id) AS trace_count, " +
 		"avg(duration) AS avg_duration FROM (%s) GROUP BY date ORDER BY date WITH FILL STEP %v ;"
 
