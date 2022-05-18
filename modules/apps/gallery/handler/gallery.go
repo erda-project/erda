@@ -172,11 +172,8 @@ func (p *GalleryHandler) PutOnArtifacts(ctx context.Context, req *pb.PutOnArtifa
 	}
 
 	// update opus
-	if err = tx.Updates(&opus, map[string]interface{}{
-		"updater_id":         userID,
-		"default_version_id": version.ID,
-		"latest_version_id":  version.ID,
-	}, dao.ByIDOption(opus.ID)); err != nil {
+	updates := GenOpusUpdates(userID, version.ID.String, req.GetSummary(), "", req.GetDisplayName(), "", req.GetLogoURL(), true)
+	if err = tx.Updates(&opus, updates, dao.ByIDOption(opus.ID)); err != nil {
 		l.WithError(err).Errorln("failed to Updates opus")
 		return nil, apierr.PutOnArtifacts.InternalError(err)
 	}
@@ -565,17 +562,7 @@ func (p *GalleryHandler) updateExtension(ctx context.Context, l *logrus.Entry, u
 	}
 
 	// update opus
-	updates := map[string]interface{}{
-		"updater_id": userID,
-	}
-	if req.GetIsDefault() || opus.DefaultVersionID == "" {
-		updates["default_version_id"] = version.ID
-		updates["display_name"] = req.GetDisplayName()
-		updates["display_name_i18n"] = req.GetDisplayNameI18N()
-		updates["summary"] = version.Summary
-		updates["summary_i18n"] = version.SummaryI18n
-		updates["logo_url"] = version.LogoURL
-	}
+	updates := GenOpusUpdates(userID, version.ID.String, req.GetSummary(), req.GetSummaryI18N(), req.GetDisplayName(), req.GetDisplayNameI18N(), req.GetLogoURL(), req.GetIsDefault() || opus.DefaultVersionID == "")
 	if err = tx.Updates(opus, updates, dao.ByIDOption(opus.ID)); err != nil {
 		l.WithError(err).Errorln("failed to Updates opus")
 		return nil, apierr.PutOnExtension.InternalError(err)
@@ -683,15 +670,7 @@ func (p *GalleryHandler) createExtensions(ctx context.Context, l *logrus.Entry, 
 	}
 
 	// update opus
-	updates := map[string]interface{}{
-		"updater_id": userID,
-	}
-	if req.GetIsDefault() {
-		updates["default_version_id"] = version.ID
-		updates["summary"] = version.Summary
-		updates["summary_i18n"] = version.SummaryI18n
-		updates["logo_url"] = version.LogoURL
-	}
+	updates := GenOpusUpdates(userID, version.ID.String, req.GetSummary(), req.GetSummaryI18N(), req.GetDisplayName(), req.GetSummaryI18N(), req.GetLogoURL(), req.GetIsDefault())
 	if err = tx.Updates(opus, updates, dao.ByIDOption(opus.ID)); err != nil {
 		l.WithError(err).Errorln("failed to Updates opus")
 		return nil, apierr.PutOnExtension.InternalError(err)
