@@ -34,7 +34,7 @@ func (p *provider) IsMatch(tmc *db.Tmc) bool {
 func (p *provider) CheckIfNeedTmcInstance(req *handlers.ResourceDeployRequest, resourceInfo *handlers.ResourceInfo) (*db.Instance, bool, error) {
 	tmcInstance, needDeploy, err := p.DefaultDeployHandler.CheckIfNeedTmcInstance(req, resourceInfo)
 
-	if !p.Cfg.NeedInitDb {
+	if p.Cfg.SkipInitDb {
 		return tmcInstance, needDeploy, err
 	}
 
@@ -73,7 +73,7 @@ func (p *provider) DoPostDeployJob(tmcInstance *db.Instance, serviceGroupDeployR
 	options := map[string]string{}
 	utils.JsonConvertObjToType(tmcInstance.Options, &options)
 
-	if !p.Cfg.NeedInitDb {
+	if p.Cfg.SkipInitDb {
 		return config, nil
 	}
 
@@ -146,7 +146,7 @@ func (p *provider) DoApplyTmcInstanceTenant(req *handlers.ResourceDeployRequest,
 
 	// create if not exists
 	if instance == nil {
-		if p.Cfg.NeedInitDb {
+		if !p.Cfg.SkipInitDb {
 			err = p.createIndex(options["orgId"], tmcInstance.Az, tenant.TenantGroup)
 			if err != nil {
 				return nil, err
