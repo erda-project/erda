@@ -15,60 +15,61 @@
 package qaparser
 
 import (
+	"github.com/erda-project/erda-proto-go/dop/qa/unittest/pb"
 	"github.com/erda-project/erda/apistructs"
 )
 
 type Totals struct {
-	*apistructs.TestTotals
+	*pb.TestTotal
 }
 
 type Suite struct {
-	*apistructs.TestSuite
+	*pb.TestSuite
 }
 
-func NewStatuses(pass, skip, failed, err int) map[apistructs.TestStatus]int {
-	return map[apistructs.TestStatus]int{
-		apistructs.TestStatusPassed:  pass,
-		apistructs.TestStatusSkipped: skip,
-		apistructs.TestStatusFailed:  failed,
-		apistructs.TestStatusError:   err,
+func NewStatuses(pass, skip, failed, err int64) map[string]int64 {
+	return map[string]int64{
+		string(apistructs.TestStatusPassed):  pass,
+		string(apistructs.TestStatusSkipped): skip,
+		string(apistructs.TestStatusFailed):  failed,
+		string(apistructs.TestStatusError):   err,
 	}
 }
 
-func (t *Totals) SetStatuses(statuses map[apistructs.TestStatus]int) *Totals {
+func (t *Totals) SetStatuses(statuses map[string]int64) *Totals {
 	t.Statuses = statuses
 	return t
 }
 
-func (t *Totals) Add(total *apistructs.TestTotals) *Totals {
+func (t *Totals) Add(total *pb.TestTotal) *Totals {
 	t.Tests += total.Tests
 	t.Duration += total.Duration
-	t.Statuses[apistructs.TestStatusPassed] += total.Statuses[apistructs.TestStatusPassed]
-	t.Statuses[apistructs.TestStatusSkipped] += total.Statuses[apistructs.TestStatusSkipped]
-	t.Statuses[apistructs.TestStatusFailed] += total.Statuses[apistructs.TestStatusFailed]
-	t.Statuses[apistructs.TestStatusError] += total.Statuses[apistructs.TestStatusError]
+	t.Statuses[string(apistructs.TestStatusPassed)] += total.Statuses[string(apistructs.TestStatusPassed)]
+	t.Statuses[string(apistructs.TestStatusSkipped)] += total.Statuses[string(apistructs.TestStatusSkipped)]
+	t.Statuses[string(apistructs.TestStatusFailed)] += total.Statuses[string(apistructs.TestStatusFailed)]
+	t.Statuses[string(apistructs.TestStatusError)] += total.Statuses[string(apistructs.TestStatusError)]
 	return t
 }
 
 // Aggregate calculates result sums across all tests.
 func (s *Suite) Aggregate() {
 	//totals := Totals{Tests: len(s.Tests)}
-	totals := &apistructs.TestTotals{
-		Tests:    len(s.Tests),
-		Statuses: make(map[apistructs.TestStatus]int),
+	totals := &pb.TestTotal{
+		Tests:    int64(len(s.Tests)),
+		Statuses: make(map[string]int64),
 	}
 
 	for _, test := range s.Tests {
 		totals.Duration += test.Duration
 		switch test.Status {
-		case apistructs.TestStatusPassed:
-			totals.Statuses[apistructs.TestStatusPassed] += 1
-		case apistructs.TestStatusSkipped:
-			totals.Statuses[apistructs.TestStatusSkipped] += 1
-		case apistructs.TestStatusFailed:
-			totals.Statuses[apistructs.TestStatusFailed] += 1
-		case apistructs.TestStatusError:
-			totals.Statuses[apistructs.TestStatusError] += 1
+		case string(apistructs.TestStatusPassed):
+			totals.Statuses[string(apistructs.TestStatusPassed)] += 1
+		case string(apistructs.TestStatusSkipped):
+			totals.Statuses[string(apistructs.TestStatusSkipped)] += 1
+		case string(apistructs.TestStatusFailed):
+			totals.Statuses[string(apistructs.TestStatusFailed)] += 1
+		case string(apistructs.TestStatusError):
+			totals.Statuses[string(apistructs.TestStatusError)] += 1
 		}
 	}
 

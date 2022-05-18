@@ -24,10 +24,6 @@ type User struct {
 	Password string
 }
 
-type Config struct {
-	HashedPassword string `json:"hashed_password"`
-}
-
 type UserIDMapping struct {
 	ID     string
 	UserID string

@@ -4,6 +4,9 @@ package proto
 
 import (
 	_ "github.com/erda-project/erda-proto-go/admin/pb"
+	_ "github.com/erda-project/erda-proto-go/apps/devflow/flow/pb"
+	_ "github.com/erda-project/erda-proto-go/apps/devflow/issuerelation/pb"
+	_ "github.com/erda-project/erda-proto-go/apps/gallery/pb"
 	_ "github.com/erda-project/erda-proto-go/cmp/alert/pb"
 	_ "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	_ "github.com/erda-project/erda-proto-go/common/pb"
@@ -61,11 +64,13 @@ import (
 	_ "github.com/erda-project/erda-proto-go/dop/apim/pb"
 	_ "github.com/erda-project/erda-proto-go/dop/cms/pb"
 	_ "github.com/erda-project/erda-proto-go/dop/contribution/pb"
+	_ "github.com/erda-project/erda-proto-go/dop/devflowrule/pb"
 	_ "github.com/erda-project/erda-proto-go/dop/guide/pb"
 	_ "github.com/erda-project/erda-proto-go/dop/issue/pb"
 	_ "github.com/erda-project/erda-proto-go/dop/issue/sync/pb"
 	_ "github.com/erda-project/erda-proto-go/dop/projecthome/pb"
 	_ "github.com/erda-project/erda-proto-go/dop/projectpipeline/pb"
+	_ "github.com/erda-project/erda-proto-go/dop/qa/unittest/pb"
 	_ "github.com/erda-project/erda-proto-go/examples/pb"
 	_ "github.com/erda-project/erda-proto-go/msp/apm/adapter/pb"
 	_ "github.com/erda-project/erda-proto-go/msp/apm/alert/pb"

@@ -33,6 +33,8 @@ import (
 )
 
 func (k *Kubernetes) createJob(ctx context.Context, service *apistructs.Service, sg *apistructs.ServiceGroup) error {
+	//delete history job
+	k.deleteHistoryJob(service.Namespace, service.Name)
 	job, err := k.newJob(service, sg)
 	if err != nil {
 		return errors.Errorf("failed to generate job struct, name: %s, (%v)", service.Name, err)
@@ -195,6 +197,29 @@ func (k *Kubernetes) deleteJob(namespace, name string) error {
 		return err
 	}
 	for _, job := range list.Items {
+		logrus.Errorf("job name for deleted: %+v\n", job.Name)
+		if err = k.job.Delete(namespace, job.Name); err != nil {
+			logrus.Errorf("failed to delete job %s in namespace %s: %+n", job.Name, namespace, err)
+			return err
+		}
+	}
+	return nil
+}
+
+func (k *Kubernetes) deleteHistoryJob(namespace, name string) error {
+	var err error
+	var list batchv1.JobList
+	if list, err = k.job.List(namespace, map[string]string{"app": name}); err != nil {
+		logrus.Errorf("failed to list job in namespcae %s: %+\n", namespace, err)
+		return err
+	}
+	sort.Slice(list.Items, func(i, j int) bool {
+		return list.Items[i].CreationTimestamp.After(list.Items[j].CreationTimestamp.Time)
+	})
+	if len(list.Items) < 2 {
+		return nil
+	}
+	for _, job := range list.Items[2:] {
 		logrus.Errorf("job name for deleted: %+v\n", job.Name)
 		if err = k.job.Delete(namespace, job.Name); err != nil {
 			logrus.Errorf("failed to delete job %s in namespace %s: %+n", job.Name, namespace, err)

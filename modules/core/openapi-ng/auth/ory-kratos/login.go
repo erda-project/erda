@@ -15,16 +15,19 @@
 package orykratos
 
 import (
+	"fmt"
 	"net/http"
+	"net/url"
 
 	"github.com/erda-project/erda/modules/core/openapi-ng/common"
 )
 
 func (p *provider) LoginURL(rw http.ResponseWriter, r *http.Request) {
+	referer := r.Header.Get("Referer")
 	common.ResponseJSON(rw, &struct {
 		URL string `json:"url"`
 	}{
-		URL: "/uc/login",
+		URL: redirectUrl(referer),
 	})
 }
 
@@ -34,4 +37,11 @@ func (p *provider) Logout(rw http.ResponseWriter, r *http.Request) {
 	}{
 		URL: "/uc/login",
 	})
+}
+
+func redirectUrl(referer string) string {
+	if referer == "" {
+		return "/uc/login"
+	}
+	return fmt.Sprintf("/uc/login?redirectUrl=%s", url.QueryEscape(referer))
 }

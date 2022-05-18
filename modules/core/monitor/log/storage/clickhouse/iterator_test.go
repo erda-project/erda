@@ -17,7 +17,10 @@ package clickhouse
 import (
 	"context"
 	"testing"
+	"time"
+	_ "unsafe" //nolint
 
+	"github.com/ClickHouse/clickhouse-go/v2"
 	"gotest.tools/assert"
 
 	"github.com/erda-project/erda/modules/core/monitor/log/storage"
@@ -26,7 +29,10 @@ import (
 func Test_Iterator_Should_Success(t *testing.T) {
 	p := &provider{
 		Cfg: &config{
-			ReadPageSize: 100,
+			ReadPageSize:    100,
+			QueryMaxMemory:  10000000000,
+			QueryMaxThreads: 3,
+			QueryTimeout:    time.Minute,
 		},
 		Loader:     MockLoader{},
 		Creator:    MockCreator{},
@@ -113,4 +119,20 @@ func Test_Iterator_Should_Success(t *testing.T) {
 		typedIt := it.(*clickhouseIterator)
 		assert.Equal(t, tt.wantPageSize, typedIt.pageSize)
 	}
+}
+
+//go:linkname _contextOptionKey github.com/ClickHouse/clickhouse-go/v2._contextOptionKey
+var _contextOptionKey *clickhouse.QueryOptions
+
+func Test_buildQueryContext(t *testing.T) {
+	it := clickhouseIterator{
+		queryTimeout:    time.Minute,
+		queryMaxMemory:  10,
+		queryMaxThreads: 2,
+	}
+
+	ctx := it.buildQueryContext(context.Background())
+
+	_, ok := ctx.Value(_contextOptionKey).(clickhouse.QueryOptions)
+	assert.Equal(t, true, ok)
 }

@@ -75,7 +75,7 @@ func TestConvertToListReleaseResponse(t *testing.T) {
 		UpdatedAt:        time.Unix(0, 0),
 	}
 
-	respData, err := convertToListReleaseResponse(release, nil, nil)
+	respData, err := convertToListReleaseResponse(release, nil, nil, nil)
 	if err != nil {
 		t.Error(err)
 	}

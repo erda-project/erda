@@ -421,6 +421,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 	branchRule := branchrule.New(
 		branchrule.WithDBClient(db),
 		branchrule.WithBundle(bdl.Bdl),
+		branchrule.WithDevFlowRule(p.DevFlowRule),
 	)
 	gittarFileTreeSvc := filetree.New(filetree.WithBundle(bdl.Bdl), filetree.WithBranchRule(branchRule))
 
@@ -611,6 +612,9 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 
 	p.CICDCmsSvc.WithPermission(perm)
 
+	p.DevFlowSvc.WithBranchRule(branchRule)
+	p.DevFlowSvc.WithGittarFileTree(gittarFileTreeSvc)
+
 	// compose endpoints
 	ep := endpoints.New(
 		endpoints.WithBundle(bdl.Bdl),
@@ -671,6 +675,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		endpoints.WithPipelineSource(p.PipelineSource),
 		endpoints.WithPipelineDefinition(p.PipelineDefinition),
 		endpoints.WithPublishItem(publishItem),
+		endpoints.WithDevFlowRule(p.DevFlowRule),
 		endpoints.WithTokenSvc(p.TokenService),
 	)
 

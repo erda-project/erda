@@ -56,7 +56,7 @@ func New(options ...Option) *Bundle {
 	}
 	if b.i18nLoader == nil {
 		b.i18nLoader = i18n.NewLoader()
-		b.i18nLoader.LoadDir("erda-configs/i18n")
+		b.i18nLoader.LoadDir("common-conf/erda-configs/i18n")
 		b.i18nLoader.DefaultLocale("zh-CN")
 	}
 	return b
@@ -277,14 +277,6 @@ func WithAPIM() Option {
 func WithClusterManager() Option {
 	return func(b *Bundle) {
 		k := discover.EnvClusterManager
-		v := os.Getenv(k)
-		b.urls.Put(k, v)
-	}
-}
-
-func WithClusterDialer() Option {
-	return func(b *Bundle) {
-		k := discover.ClusterDialer()
 		v := os.Getenv(k)
 		b.urls.Put(k, v)
 	}

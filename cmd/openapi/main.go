@@ -15,8 +15,9 @@
 package main
 
 import (
+	_ "embed"
+
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/conf"
 	"github.com/erda-project/erda/pkg/common"
 
 	// providers and modules
@@ -48,9 +49,11 @@ import (
 	_ "github.com/erda-project/erda/providers/service-discover/fixed-discover"
 )
 
+//go:embed bootstrap.yaml
+var bootstrapCfg string
+
 func main() {
 	common.Run(&servicehub.RunOptions{
-		ConfigFile: conf.OpenAPIConfigFilePath,
-		Content:    conf.OpenAPIDefaultConfig,
+		Content: bootstrapCfg,
 	})
 }

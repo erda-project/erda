@@ -2,9 +2,14 @@ version: "2.0"
 meta:
   ERDA_COMPONENT: ""
 values:
+  development:
+    request_cpu: 0.1
+    request_mem: 128
+    replicas: 1
   test:
     request_cpu: 0.1
     request_mem: 128
+    log_service_replicas: 1
   production:
     nfs_root: "<%$.Storage.MountPoint%>"
     gittar_root: "<%$.Storage.GittarDataPath%>"
@@ -27,9 +32,10 @@ envs:
   OTEL_TRACES_ENABLED: false
   OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://collector:7076/api/otlp/v1/traces
   OTEL_TRACES_SAMPLER_ARG: 0.1
+  CLUSTER_MANAGER_ADDR: cluster-manager:9094
 services:
   action-runner-scheduler:
-    cmd: "/app/action-runner-scheduler"
+    cmd: /erda/cmd/action-runner-scheduler/bin
     ports:
       - port: 9500
         protocol: "TCP"
@@ -62,7 +68,7 @@ services:
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-ca.pem:/certs/etcd-ca.pem:ro"
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client.pem:/certs/etcd-client.pem:ro"
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client-key.pem:/certs/etcd-client-key.pem:ro"
-    cmd: /app/dop
+    cmd: /erda/cmd/dop/bin
     deployments:
       labels:
         GROUP: "devops"
@@ -91,7 +97,7 @@ services:
       network:
         mode: container
   erda-server:
-    cmd: "/app/erda-server"
+    cmd: /erda/cmd/erda-server/bin
     envs:
       DEBUG: "false"
     ports:
@@ -123,7 +129,7 @@ services:
         duration: 120
       exec: { }
   core-services:
-    cmd: "/app/core-services"
+    cmd: /erda/cmd/core-services/bin
     ports:
       - port: 9526
         protocol: "TCP"
@@ -169,36 +175,12 @@ services:
         duration: 120
       exec: { }
   cluster-manager:
-    cmd: "/app/cluster-manager"
+    cmd: /erda/cmd/cluster-manager/bin
     ports:
       - port: 9094
         protocol: "TCP"
         l4_protocol: "TCP"
       - port: 9095
-        protocol: "TCP"
-        l4_protocol: "TCP"
-    envs:
-      DEBUG: "false"
-    resources:
-      cpu: ${request_cpu:0.2}
-      max_cpu: 0.2
-      mem: ${request_mem:256}
-      max_mem: 256
-      network:
-        mode: "container"
-    deployments:
-      replicas: ${replicas:1}
-      labels:
-        GROUP: "dice"
-    health_check:
-      http: { }
-      exec: { }
-  cluster-dialer:
-    cmd: "/app/cluster-dialer"
-    expose:
-      - 80
-    ports:
-      - port: 80
         protocol: "TCP"
         l4_protocol: "TCP"
     envs:
@@ -215,14 +197,14 @@ services:
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client.pem:/certs/etcd-client.pem:ro"
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client-key.pem:/certs/etcd-client-key.pem:ro"
     deployments:
-      replicas: 1
+      replicas: ${replicas:2}
       labels:
         GROUP: "dice"
     health_check:
       http: { }
       exec: { }
   cluster-agent:
-    cmd: "/app/cluster-agent"
+    cmd: /erda/cmd/cluster-agent/bin
     ports: [ ]
     envs:
       DEBUG: "false"
@@ -246,7 +228,7 @@ services:
         securityContext:
           privileged: true
   monitor-agent-injector:
-    cmd: "/app/agent-injector"
+    cmd: /erda/cmd/agent-injector/bin
     ports:
       - port: 8443
         protocol: "TCP"
@@ -280,7 +262,7 @@ services:
   collector:
     labels:
       cpu_bound: "true"
-    cmd: "/app/collector"
+    cmd: /erda/cmd/collector/bin
     ports:
       - port: 7076
         protocol: "TCP"
@@ -315,7 +297,7 @@ services:
     hosts: [ ]
     binds: [ ]
   dicehub:
-    cmd: "/app/dicehub"
+    cmd: /erda/cmd/dicehub/bin
     ports:
       - port: 10000
         protocol: "TCP"
@@ -349,7 +331,7 @@ services:
         duration: 120
       exec: { }
   gittar:
-    cmd: "/app/gittar"
+    cmd: /erda/cmd/gittar/bin
     ports:
       - port: 5566
         protocol: "TCP"
@@ -382,7 +364,7 @@ services:
       http: { }
       exec: { }
   hepa:
-    cmd: "/app/hepa"
+    cmd: /erda/cmd/hepa/bin
     ports:
       - port: 8080
         protocol: "TCP"
@@ -407,7 +389,7 @@ services:
         duration: 120
       exec: { }
   monitor:
-    cmd: "/app/monitor"
+    cmd: /erda/cmd/monitor/monitor/bin
     ports:
       - port: 7096
         protocol: "TCP"
@@ -444,7 +426,7 @@ services:
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client.pem:/certs/etcd-client.pem:ro"
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client-key.pem:/certs/etcd-client-key.pem:ro"
   msp:
-    cmd: "/app/msp"
+    cmd: /erda/cmd/msp/bin
     ports:
       - port: 8080
         protocol: "TCP"
@@ -481,7 +463,7 @@ services:
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client.pem:/certs/etcd-client.pem:ro"
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client-key.pem:/certs/etcd-client-key.pem:ro"
   openapi:
-    cmd: "/app/openapi"
+    cmd: /erda/cmd/openapi/bin
     ports:
       - port: 9529
         protocol: "TCP"
@@ -520,7 +502,7 @@ services:
         duration: 120
       exec: { }
   ecp:
-    cmd: "/app/ecp"
+    cmd: /erda/cmd/ecp/bin
     ports:
       - port: 9029
         protocol: "TCP"
@@ -539,7 +521,7 @@ services:
       http: { }
       exec: { }
   cmp:
-    cmd: "/app/cmp"
+    cmd: /erda/cmd/cmp/bin
     envs:
       UC_CLIENT_ID: "dice"
       UC_CLIENT_SECRET: "secret"
@@ -574,7 +556,7 @@ services:
       http: { }
       exec: { }
   orchestrator:
-    cmd: "/app/orchestrator"
+    cmd: /erda/cmd/orchestrator/bin
     ports:
       - port: 8081
         protocol: "TCP"
@@ -609,7 +591,7 @@ services:
         duration: 120
       exec: { }
   pipeline:
-    cmd: "/app/pipeline"
+    cmd: /erda/cmd/pipeline/bin
     ports:
       - port: 3081
         protocol: "TCP"
@@ -644,7 +626,7 @@ services:
   streaming:
     labels:
       cpu_bound: "true"
-    cmd: "/app/streaming"
+    cmd: /erda/cmd/monitor/streaming/bin
     ports:
       - port: 7091
         protocol: "TCP"
@@ -689,7 +671,7 @@ services:
         duration: 120
       exec: { }
   log-service:
-    cmd: "/app/log-service"
+    cmd: /erda/cmd/monitor/log-service/bin
     ports:
       - port: 7099
         protocol: "TCP"
@@ -711,7 +693,7 @@ services:
       network:
         mode: "container"
     deployments:
-      replicas: 0
+      replicas: ${log_service_replicas:0}
       labels:
         GROUP: "spot-v2"
     health_check:
@@ -721,7 +703,7 @@ services:
         duration: 120
       exec: { }
   uc-adaptor:
-    cmd: "/app/uc-adaptor"
+    cmd: /erda/cmd/uc-adaptor/bin
     ports:
       - port: 12580
         protocol: "TCP"

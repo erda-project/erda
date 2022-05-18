@@ -250,6 +250,10 @@ func TestNew(t *testing.T) {
 		return &rest.Config{}, nil
 	})
 
+	monkey.Patch(k8sclient.NewForRestConfig, func(*rest.Config, ...k8sclient.Option) (*k8sclient.K8sClient, error) {
+		return &k8sclient.K8sClient{}, nil
+	})
+
 	monkey.Patch(util.GetClient, func(_ string, _ *apistructs.ManageConfig) (string, *httpclient.HTTPClient, error) {
 		return "localhost", httpclient.New(), nil
 	})
@@ -265,8 +269,7 @@ func TestNew(t *testing.T) {
 	defer monkey.UnpatchAll()
 
 	_, err := New("MARATHONFORMOCKCLUSTER", mockCluster, map[string]string{})
-	//assert.NilError(t, err)
-	fmt.Println(err)
+	assert.NilError(t, err)
 }
 
 func TestSetFineGrainedCPU(t *testing.T) {

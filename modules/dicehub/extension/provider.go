@@ -23,13 +23,14 @@ import (
 
 	"github.com/jinzhu/gorm"
 
-	logs "github.com/erda-project/erda-infra/base/logs"
-	servicehub "github.com/erda-project/erda-infra/base/servicehub"
-	transport "github.com/erda-project/erda-infra/pkg/transport"
+	"github.com/erda-project/erda-infra/base/logs"
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/pkg/transport"
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 	"github.com/erda-project/erda-infra/pkg/transport/http/encoding"
 	election "github.com/erda-project/erda-infra/providers/etcd-election"
-	pb "github.com/erda-project/erda-proto-go/core/dicehub/extension/pb"
+	gallerypb "github.com/erda-project/erda-proto-go/apps/gallery/pb"
+	"github.com/erda-project/erda-proto-go/core/dicehub/extension/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dicehub/extension/db"
 	"github.com/erda-project/erda/pkg/common/apis"
@@ -40,17 +41,18 @@ type config struct {
 	ExtensionMenu        map[string][]string `file:"extension_menu" env:"EXTENSION_MENU"`
 	ExtensionSources     string              `file:"extension_sources" env:"EXTENSION_SOURCES"`
 	ExtensionSourcesCron string              `file:"extension_sources_cron" env:"EXTENSION_SOURCES_CRON"`
-}
 
-const FilePath = "/app/extensions-init"
+	InitFilePath string `file:"init_file_path" default:"common-conf/extensions-init"`
+}
 
 // +provider
 type provider struct {
 	Cfg                   *config
 	Log                   logs.Logger
-	Register              transport.Register `autowired:"service-register" required:"true"`
-	DB                    *gorm.DB           `autowired:"mysql-client"`
-	InitExtensionElection election.Interface `autowired:"etcd-election@initExtension"`
+	Register              transport.Register      `autowired:"service-register" required:"true"`
+	DB                    *gorm.DB                `autowired:"mysql-client"`
+	InitExtensionElection election.Interface      `autowired:"etcd-election@initExtension"`
+	GalleryServer         gallerypb.GalleryServer `autowired:"erda.apps.gallery.Gallery"`
 	extensionService      *extensionService
 }
 
@@ -93,7 +95,7 @@ func (p *provider) InitSources() error {
 	RegisterExtensionSource(fileSources)
 	StartSyncExtensionSource()
 
-	sources := strings.Split(FilePath+","+p.Cfg.ExtensionSources, ",")
+	sources := strings.Split(p.Cfg.InitFilePath+","+p.Cfg.ExtensionSources, ",")
 	for _, source := range sources {
 		err := AddSyncExtension(source)
 		if err != nil {

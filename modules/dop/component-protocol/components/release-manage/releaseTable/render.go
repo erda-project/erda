@@ -82,6 +82,22 @@ func (r *ComponentReleaseTable) Render(ctx context.Context, component *cptype.Co
 		if err = r.deleteReleases(ctx, selectedIDs); err != nil {
 			return errors.Errorf("%s, %v", r.sdk.I18n("releaseDeleteFailed"), err)
 		}
+	case "putOn":
+		id, err := getReleaseID(event.OperationData)
+		if err != nil {
+			return err
+		}
+		if err = r.putOnRelease(ctx, id); err != nil {
+			return err
+		}
+	case "putOff":
+		id, err := getReleaseID(event.OperationData)
+		if err != nil {
+			return err
+		}
+		if err = r.putOffRelease(ctx, id); err != nil {
+			return err
+		}
 	}
 	logrus.Debugf("[DEBUG] start render table")
 	if err := r.RenderTable(ctx, gs); err != nil {
@@ -107,12 +123,12 @@ func (r *ComponentReleaseTable) InitComponent(ctx context.Context) {
 	r.svc = svc
 }
 
-func (r *ComponentReleaseTable) GenComponentState(component *cptype.Component) error {
-	if component == nil || component.State == nil {
+func (r *ComponentReleaseTable) GenComponentState(c *cptype.Component) error {
+	if c == nil || c.State == nil {
 		return nil
 	}
 	var state State
-	data, err := json.Marshal(component.State)
+	data, err := json.Marshal(c.State)
 	if err != nil {
 		return err
 	}
@@ -145,17 +161,17 @@ func (r *ComponentReleaseTable) DecodeURLQuery() error {
 }
 
 func (r *ComponentReleaseTable) EncodeURLQuery() error {
-	urlQuery := make(map[string]interface{})
-	urlQuery["pageNo"] = r.State.PageNo
-	urlQuery["pageSize"] = r.State.PageSize
-	urlQuery["sorterData"] = r.State.Sorter
-	jsonData, err := json.Marshal(urlQuery)
+	query := make(map[string]interface{})
+	query["pageNo"] = r.State.PageNo
+	query["pageSize"] = r.State.PageSize
+	query["sorterData"] = r.State.Sorter
+	jsonData, err := json.Marshal(query)
 	if err != nil {
 		return err
 	}
 
-	encode := base64.StdEncoding.EncodeToString(jsonData)
-	r.State.ReleaseTableURLQuery = encode
+	encoded := base64.StdEncoding.EncodeToString(jsonData)
+	r.State.ReleaseTableURLQuery = encoded
 	return nil
 }
 
@@ -368,6 +384,30 @@ func (r *ComponentReleaseTable) RenderTable(ctx context.Context, gs *cptype.Glob
 				Key:  "referencedReleases",
 				Text: r.sdk.I18n("referencedReleases"),
 			}
+
+			if release.OpusID == "" {
+				item.Operations.Operations["putOn"] = Operation{
+					Confirm: r.sdk.I18n("confirmPutOn"),
+					Key:     "putOn",
+					Reload:  true,
+					Text:    r.sdk.I18n("putOn"),
+					Meta: map[string]interface{}{
+						"id": release.ReleaseID,
+					},
+					SuccessMsg: r.sdk.I18n("putOnSucceeded"),
+				}
+			} else {
+				item.Operations.Operations["putOff"] = Operation{
+					Confirm: r.sdk.I18n("confirmPutOff"),
+					Key:     "putOff",
+					Reload:  true,
+					Text:    r.sdk.I18n("putOff"),
+					Meta: map[string]interface{}{
+						"id": release.ReleaseID,
+					},
+					SuccessMsg: r.sdk.I18n("putOffSucceeded"),
+				}
+			}
 		}
 		if !release.IsFormal {
 			if hasWriteAccess {
@@ -380,6 +420,10 @@ func (r *ComponentReleaseTable) RenderTable(ctx context.Context, gs *cptype.Glob
 			formalOperation.DisabledTip = r.sdk.I18n("formalReleaseCanNotBeModified")
 			deleteOperation.Disabled = true
 			deleteOperation.DisabledTip = r.sdk.I18n("formalReleaseCanNotBeModified")
+		}
+		if release.IsProjectRelease && release.OpusID != "" {
+			deleteOperation.Disabled = true
+			deleteOperation.DisabledTip = r.sdk.I18n("canNotDeletePutOnRelease")
 		}
 		item.Operations.Operations["edit"] = editOperation
 		item.Operations.Operations["formal"] = formalOperation
@@ -429,6 +473,20 @@ func (r *ComponentReleaseTable) SetComponentValue() {
 		"changeSort": Operation{
 			Key:    "changeSort",
 			Reload: true,
+		},
+		"putOn": Operation{
+			Key:        "putOn",
+			Reload:     true,
+			Text:       r.sdk.I18n("putOn"),
+			Confirm:    r.sdk.I18n("confirmPutOn"),
+			SuccessMsg: r.sdk.I18n("putOnSucceeded"),
+		},
+		"putOff": Operation{
+			Key:        "putOff",
+			Reload:     true,
+			Text:       r.sdk.I18n("putOff"),
+			Confirm:    r.sdk.I18n("confirmPutOff"),
+			SuccessMsg: r.sdk.I18n("putOffSucceeded"),
 		},
 	}
 
@@ -492,12 +550,12 @@ func (r *ComponentReleaseTable) SetComponentValue() {
 	}
 }
 
-func (r *ComponentReleaseTable) Transfer(c *cptype.Component) {
-	c.Props = cputil.MustConvertProps(r.Props)
-	c.Data = map[string]interface{}{
+func (r *ComponentReleaseTable) Transfer(component *cptype.Component) {
+	component.Props = cputil.MustConvertProps(r.Props)
+	component.Data = map[string]interface{}{
 		"list": r.Data.List,
 	}
-	c.State = map[string]interface{}{
+	component.State = map[string]interface{}{
 		"releaseTable__urlQuery": r.State.ReleaseTableURLQuery,
 		"pageNo":                 r.State.PageNo,
 		"pageSize":               r.State.PageSize,
@@ -510,7 +568,7 @@ func (r *ComponentReleaseTable) Transfer(c *cptype.Component) {
 		"applicationID":          r.State.ApplicationID,
 		"filterValues":           r.State.FilterValues,
 	}
-	c.Operations = r.Operations
+	component.Operations = r.Operations
 }
 
 func (r *ComponentReleaseTable) formalReleases(ctx context.Context, releaseID []string) error {

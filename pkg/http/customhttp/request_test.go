@@ -16,6 +16,7 @@ package customhttp
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -26,7 +27,10 @@ import (
 	"github.com/erda-project/erda/pkg/discover"
 )
 
-const queryIPAddr = "127.0.0.1:18751"
+const (
+	queryIPAddr = "127.0.0.1"
+	queryIPPort = "18751"
+)
 
 func Test_parseInetUrl(t *testing.T) {
 	type args struct {
@@ -129,27 +133,27 @@ func Test_parseInetUrl(t *testing.T) {
 	}
 }
 
-func TestQueryClusterDialerIP(t *testing.T) {
-	targetResIP := "testIP"
+func TestQueryClusterManagerIP(t *testing.T) {
 	http.HandleFunc("/clusterdialer/ip", func(rw http.ResponseWriter, req *http.Request) {
 		res := map[string]interface{}{
 			"succeeded": true,
-			"IP":        targetResIP,
+			"IP":        queryIPAddr,
 		}
 		data, _ := json.Marshal(res)
 		io.WriteString(rw, string(data))
 	})
-	go http.ListenAndServe(queryIPAddr, nil)
+	targetEndpoint := fmt.Sprintf("%s:%s", queryIPAddr, queryIPPort)
+	go http.ListenAndServe(targetEndpoint, nil)
 
 	time.Sleep(1 * time.Second)
-	os.Setenv(discover.EnvClusterDialer, queryIPAddr)
-	res, ok := queryClusterDialerIP("")
+	os.Setenv(discover.EnvClusterManager, targetEndpoint)
+	res, ok := queryClusterManagerIP("")
 	if !ok {
-		t.Error("failed to get cluster dialer ip")
+		t.Error("failed to get cluster manager ip")
 	}
 
 	ip, _ := res.(string)
-	if ip != targetResIP {
-		t.Errorf("got IP: %s, want: %s", ip, targetResIP)
+	if ip != targetEndpoint {
+		t.Errorf("got IP: %s, want: %s", ip, targetEndpoint)
 	}
 }

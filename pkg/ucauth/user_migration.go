@@ -15,7 +15,6 @@
 package ucauth
 
 import (
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/modules/openapi/conf"
@@ -23,19 +22,7 @@ import (
 )
 
 func (c *UCClient) UserMigration(req OryKratosCreateIdentitiyRequest) (string, error) {
-	var rsp OryKratosFlowResponse
-	r, err := httpclient.New(httpclient.WithCompleteRedirect()).
-		Post(conf.OryKratosPrivateAddr()).
-		Path("/identities").
-		JSONBody(req).
-		Do().JSON(&rsp)
-	if err != nil {
-		return "", err
-	}
-	if !r.IsOK() {
-		return "", errors.Errorf("get kratos user info error, statusCode: %d, err: %s", r.StatusCode(), r.Body())
-	}
-	return rsp.ID, nil
+	return CreateUser(req)
 }
 
 func (c *UCClient) MigrationReady() bool {

@@ -15,11 +15,11 @@
 package config
 
 type Config struct {
-	Debug               bool   `default:"false" desc:"enable debug logging"`
-	CollectClusterInfo  bool   `default:"true" desc:"enable collect cluster info"`
-	ClusterDialEndpoint string `desc:"cluster dialer endpoint"`
-	ClusterKey          string `desc:"cluster key"`
-	ErdaNamespace       string `desc:"erda namespace"`
-	ClusterAccessKey    string `desc:"cluster access key, if specified will doesn't start watcher"`
-	K8SApiServerAddr    string `desc:"kube-apiserver address in cluster"`
+	Debug                  bool   `default:"false" desc:"enable debug logging"`
+	CollectClusterInfo     bool   `default:"true" desc:"enable collect cluster info"`
+	ClusterManagerEndpoint string `desc:"cluster manager endpoint"`
+	ClusterKey             string `desc:"cluster key"`
+	ErdaNamespace          string `desc:"erda namespace"`
+	ClusterAccessKey       string `desc:"cluster access key, if specified will doesn't start watcher"`
+	K8SApiServerAddr       string `desc:"kube-apiserver address in cluster"`
 }

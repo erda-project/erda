@@ -9,7 +9,7 @@ import "google/protobuf/struct.proto";
 service ClusterService {
   rpc ListCluster(ListClusterRequest) returns (ListClusterResponse) {
     option (google.api.http) = {
-      get: "/api/clusters?clusterType={clusterType}"
+      get: "/api/clusters?clusterType={clusterType}&orgID={orgID}"
     };
   }
 
@@ -241,7 +241,7 @@ message SSH {
 message FPS {
   string host = 1;
   int64 port = 2;
-  string proxy = 3;
+  bool proxy = 3;
 }
 
 message Storage {

@@ -189,7 +189,6 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 		org.WithRedisClient(redisCli),
 		org.WithI18n(p.Tran),
 		org.WithTokenSvc(p.TokenService),
-		org.WithClusterSvc(p.ClusterSvc),
 	)
 
 	// init project service

@@ -85,7 +85,7 @@ func (c *Client) Start(ctx context.Context) error {
 		headers["X-Erda-Cluster-Info"] = []string{base64.StdEncoding.EncodeToString(bytes)}
 	}
 
-	ep, err := parseDialerEndpoint(c.cfg.ClusterDialEndpoint)
+	ep, err := parseDialerEndpoint(c.cfg.ClusterManagerEndpoint)
 	if err != nil {
 		logrus.Errorf("failed to parse dial endpoint: %v", err)
 		return err
@@ -186,8 +186,8 @@ func parseDialerEndpoint(endpoint string) (string, error) {
 	}
 
 	//inCluster, visit dialer inner service first.
-	if os.Getenv(string(apistructs.DICE_IS_EDGE)) == "false" && discover.ClusterDialer() != "" {
-		return "ws://" + discover.ClusterDialer() + u.Path, nil
+	if os.Getenv(string(apistructs.DICE_IS_EDGE)) == "false" && discover.ClusterManager() != "" {
+		return "ws://" + discover.ClusterManager() + u.Path, nil
 	}
 
 	switch u.Scheme {
