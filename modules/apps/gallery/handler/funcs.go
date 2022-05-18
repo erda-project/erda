@@ -148,6 +148,9 @@ func ComposeListOpusVersionRespWithOpus(lang string, resp *pb.ListOpusVersionsRe
 }
 
 func ComposeListOpusVersionRespWithVersions(lang string, resp *pb.ListOpusVersionsResp, versions []*model.OpusVersion) error {
+	sort.Slice(versions, func(i, j int) bool {
+		return versions[i].CreatedAt.After(versions[j].CreatedAt)
+	})
 	for _, version := range versions {
 		item := pb.ListOpusVersionRespDataVersion{
 			Id:        version.ID.String,
