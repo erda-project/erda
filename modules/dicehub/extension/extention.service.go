@@ -17,6 +17,7 @@ package extension
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -33,14 +34,17 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/erda-project/erda-infra/base/version"
-	pb "github.com/erda-project/erda-proto-go/core/dicehub/extension/pb"
+	gallerypb "github.com/erda-project/erda-proto-go/apps/gallery/pb"
+	"github.com/erda-project/erda-proto-go/core/dicehub/extension/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	galleryTypes "github.com/erda-project/erda/modules/apps/gallery/types"
 	"github.com/erda-project/erda/modules/dicehub/extension/db"
 	"github.com/erda-project/erda/modules/dicehub/service/apierrors"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/i18n"
 	"github.com/erda-project/erda/pkg/limit_sync_group"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 type extensionService struct {
@@ -484,50 +488,22 @@ func (s *extensionService) CreateExtensionVersionByRequest(req *pb.ExtensionVers
 		return nil, apierrors.ErrQueryExtension.InternalError(err)
 	}
 
-	version, err := s.db.GetExtensionVersion(req.Name, req.Version)
-
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			version = &db.ExtensionVersion{
-				ExtensionId: ext.Id,
-				Name:        specData.Name,
-				Version:     specData.Version,
-				Dice:        req.DiceYml,
-				Spec:        req.SpecYml,
-				Swagger:     req.SwaggerYml,
-				Readme:      req.Readme,
-				Public:      req.Public,
-				IsDefault:   req.IsDefault,
-			}
-			err = s.db.CreateExtensionVersion(version)
-			s.triggerPushEvent(specData, "create")
-			if err != nil {
-				return nil, apierrors.ErrQueryExtension.InternalError(err)
-			}
-
-			data, err := version.ToApiData(ext.Type, false)
-			if err != nil {
-				return nil, apierrors.ErrQueryExtension.InternalError(err)
-			}
-			return &pb.ExtensionVersionCreateResponse{Data: data}, nil
-		} else {
-			return nil, apierrors.ErrQueryExtension.InternalError(err)
-		}
-	}
-	if req.ForceUpdate {
-		version.Spec = req.SpecYml
-		version.Dice = req.DiceYml
-		version.Swagger = req.SwaggerYml
-		version.Readme = req.Readme
-		version.Public = req.Public
-		version.IsDefault = req.IsDefault
-		if version.IsDefault {
-			err := s.db.SetUnDefaultVersion(version.Name)
+	ver, err := s.db.GetExtensionVersion(req.Name, req.Version)
+	switch {
+	case err == nil && req.GetForceUpdate():
+		ver.Spec = req.SpecYml
+		ver.Dice = req.DiceYml
+		ver.Swagger = req.SwaggerYml
+		ver.Readme = req.Readme
+		ver.Public = req.Public
+		ver.IsDefault = req.IsDefault
+		if ver.IsDefault {
+			err := s.db.SetUnDefaultVersion(ver.Name)
 			if err != nil {
 				return nil, apierrors.ErrQueryExtension.InternalError(err)
 			}
 		}
-		err := s.db.Save(&version).Error
+		err := s.db.Save(&ver).Error
 		if err != nil {
 			return nil, apierrors.ErrQueryExtension.InternalError(err)
 		}
@@ -544,13 +520,41 @@ func (s *extensionService) CreateExtensionVersionByRequest(req *pb.ExtensionVers
 				return nil, apierrors.ErrQueryExtension.InternalError(err)
 			}
 		}
-		data, err := version.ToApiData(ext.Type, false)
+		data, err := ver.ToApiData(ext.Type, false)
 		if err != nil {
 			return nil, apierrors.ErrQueryExtension.InternalError(err)
 		}
+
+		go s.PutOnExtensionWithNameVersion(context.Background(), *ver)
 		return &pb.ExtensionVersionCreateResponse{Data: data}, nil
-	} else {
-		return nil, apierrors.ErrQueryExtension.InternalError(errors.New("version already exist"))
+	case err == nil:
+		return nil, apierrors.ErrQueryExtension.AlreadyExists()
+	case err == gorm.ErrRecordNotFound:
+		ver = &db.ExtensionVersion{
+			ExtensionId: ext.Id,
+			Name:        specData.Name,
+			Version:     specData.Version,
+			Dice:        req.DiceYml,
+			Spec:        req.SpecYml,
+			Swagger:     req.SwaggerYml,
+			Readme:      req.Readme,
+			Public:      req.Public,
+			IsDefault:   req.IsDefault,
+		}
+		err = s.db.CreateExtensionVersion(ver)
+		s.triggerPushEvent(specData, "create")
+		if err != nil {
+			return nil, apierrors.ErrQueryExtension.InternalError(err)
+		}
+
+		data, err := ver.ToApiData(ext.Type, false)
+		if err != nil {
+			return nil, apierrors.ErrQueryExtension.InternalError(err)
+		}
+		go s.PutOnExtensionWithNameVersion(context.Background(), *ver)
+		return &pb.ExtensionVersionCreateResponse{Data: data}, nil
+	default:
+		return nil, apierrors.ErrQueryExtension.InternalError(err)
 	}
 }
 
@@ -657,6 +661,97 @@ func (s *extensionService) GetExtensionDefaultVersion(name string, yamlFormat bo
 	return extensionVersion.ToApiData(ext.Type, yamlFormat)
 }
 
+func (s *extensionService) PutOnExtensionsToGallery(ctx context.Context) error {
+	l := logrus.WithField("impl", "extensionService").WithField("func", "PutOnExtensionsToGallery")
+	extensions, err := s.db.QueryAllExtensions()
+	if err != nil {
+		l.WithError(err).Errorln("failed to QueryAllExtensions")
+		return errors.Wrap(err, "failed to QueryAllExtensions")
+	}
+	for _, ext := range extensions {
+		if err := s.PutOnExtensionWithName(ctx, ext.Name); err != nil {
+			l.WithError(err).WithField("name", ext.Name).Errorln("failed to PutOnExtensionWithName")
+		}
+	}
+	return nil
+}
+
+func (s *extensionService) PutOnExtensionWithName(ctx context.Context, name string) error {
+	l := logrus.WithField("impl", "extensionService").
+		WithField("func", "PutOnExtensionWithNameVersion").
+		WithField("name", name)
+
+	versions, err := s.db.QueryExtensionVersions(name, true, true)
+	if err != nil {
+		l.WithError(err).Errorln("failed to QueryExtensionVersions")
+		return errors.Wrap(err, "failed to QueryExtensionVersions")
+	}
+	for _, ver := range versions {
+		if !ver.Public {
+			continue
+		}
+		if err := s.PutOnExtensionWithNameVersion(ctx, ver); err != nil {
+			l.WithError(err).Errorln("failed to PutOnExtensionWithNameVersion")
+		}
+	}
+	return nil
+}
+
+func (s *extensionService) PutOnExtensionWithNameVersion(ctx context.Context, ver db.ExtensionVersion) error {
+	l := logrus.WithField("impl", "extensionService").
+		WithField("func", "PutOnExtensionWithNameVersion").
+		WithField("name", ver.Name).
+		WithField("version", ver.Version)
+
+	var spec apistructs.Spec
+	if err := yaml.Unmarshal([]byte(ver.Spec), &spec); err != nil {
+		l.WithError(err).Errorln("failed to yaml.Unmarshal ver.Spec")
+		return err
+	}
+
+	if spec.DisplayName == "" {
+		spec.DisplayName = spec.Name
+	}
+	types := map[string]string{"action": galleryTypes.OpusTypeExtensionAction.String(), "addon": galleryTypes.OpusTypeExtensionAddon.String()}
+	item := &gallerypb.PutOnExtensionsReq{
+		Type:        types[strings.ToLower(spec.Type)],
+		Name:        ver.Name,
+		Version:     ver.Version,
+		DisplayName: spec.DisplayName,
+		Summary:     spec.Desc,
+		Catalog:     spec.Category,
+		LogoURL:     spec.LogoUrl,
+		Level:       galleryTypes.OpusLevelSystem.String(),
+		Mode:        galleryTypes.PutOnOpusModeOverride.String(),
+		Desc:        spec.Desc,
+		Readme: []*gallerypb.Readme{{
+			Lang:     galleryTypes.LangUnknown.String(),
+			LangName: galleryTypes.LangTypes[galleryTypes.LangUnknown],
+			Text:     ver.Readme,
+		}},
+		IsDefault: spec.IsDefault,
+	}
+	for k, v := range spec.Labels {
+		item.Labels = append(item.Labels, k+"="+v)
+	}
+	local, _ := json.Marshal(spec.Locale)
+	item.DisplayNameI18N = ConvertFieldI18n(item.GetDisplayName(), spec.Locale)
+	item.SummaryI18N = ConvertFieldI18n(item.GetSummary(), spec.Locale)
+	item.DescI18N = ConvertFieldI18n(item.GetDesc(), spec.Locale)
+	item.I18N = string(local)
+
+	l.Infoln("GalleryServer.PutOnExtensions")
+	resp, err := s.p.GalleryServer.PutOnExtensions(ctx, item)
+	if err != nil {
+		l.WithError(err).Errorln("failed to PutOnExtensions")
+		return err
+	}
+	l.WithField("opus id", resp.OpusID).
+		WithField("opus version id", resp.VersionID).
+		Infoln("the extension is pushed to the gallery")
+	return nil
+}
+
 func (s *extensionService) triggerPushEvent(specData apistructs.Spec, action string) {
 	if specData.Type != "addon" {
 		return
@@ -712,4 +807,31 @@ func ToProtoValue(i interface{}) (*structpb.Value, error) {
 		return nil, err
 	}
 	return v, nil
+}
+
+func ConvertFieldI18n(key string, locale map[string]map[string]string) string {
+	if key == "" || len(locale) == 0 {
+		return ""
+	}
+	left := "${{"
+	right := "}}"
+	prefix := "i18n."
+	exprF := func(s string) bool { return strings.HasPrefix(s, prefix) }
+	expr, start, end, err := strutil.FirstCustomExpression(key, left, right, exprF)
+	fmt.Printf("expr: %s, start: %d, end: %d, err: %v\n", expr, start, end, err)
+	if err != nil || start == end || expr == "" {
+		return ""
+	}
+	expr = strings.TrimPrefix(expr, prefix)
+	var m = make(map[string]string)
+	for lang, kvs := range locale {
+		if len(kvs) == 0 {
+			continue
+		}
+		if v, ok := kvs[expr]; ok {
+			m[strings.ToLower(lang)] = v
+		}
+	}
+	data, _ := json.Marshal(m)
+	return string(data)
 }
