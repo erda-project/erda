@@ -24,6 +24,7 @@ import (
 )
 
 type config struct {
+	SkipInitDb bool `file:"skip_init_db" default:"false"`
 }
 
 // +provider
