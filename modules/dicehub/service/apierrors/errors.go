@@ -30,6 +30,8 @@ var (
 	ErrCheckReleaseVersion             = err("ErrCheckReleaseVersion", "校验Version失败")
 	ErrGetYAML                         = err("ErrGetYAML", "获取Dice YAML失败")
 	ErrGetIosPlist                     = err("ErrGetIosPlist", "获取Ios Plist文件失败")
+	ErrPutOnRelease                    = err("ErrPutOnRelease", "上架制品失败")
+	ErrPutOffRelease                   = err("ErrPutOffRelease", "下架制品失败")
 	ErrCreateImage                     = err("ErrCreateImage", "添加镜像失败")
 	ErrUpdateImage                     = err("ErrUpdateImage", "更新镜像失败")
 	ErrDeleteImage                     = err("ErrDeleteImage", "删除镜像失败")

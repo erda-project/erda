@@ -27,12 +27,22 @@ erda.core.dicehub.extension:
   extension_sources_cron: "${EXTENSION_SOURCES_CRON:0 */5 * * * ?}"
 #  extension_menu: ${EXTENSION_MENU:{"":""}}
 
+grpc-client@erda.apps.gallery:
+  addr: "${ERDA_SERVER_GRPC_ADDR:erda-server:8096}"
+erda.apps.gallery-client:
+
 mysql:
   host: "${MYSQL_HOST:localhost}"
   port: "${MYSQL_PORT:3306}"
   username: "${MYSQL_USERNAME:root}"
   password: "${MYSQL_PASSWORD:123456}"
   database: "${MYSQL_DATABASE:dice}"
+gorm.v2:
+  host: "${MYSQL_HOST}"
+  port: "${MYSQL_PORT}"
+  username: "${MYSQL_USERNAME}"
+  password: "${MYSQL_PASSWORD}"
+  database: "${MYSQL_DATABASE}"
 
 etcd-election@initExtension:
   root_path: erda/component-leader/dicehub/init_extension

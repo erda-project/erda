@@ -12,35 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tasks_test
+package types_test
 
 import (
-	"fmt"
 	"testing"
-	"time"
 
-	"github.com/pkg/errors"
-
-	"github.com/erda-project/erda/modules/cmp/tasks"
+	"github.com/erda-project/erda/modules/apps/gallery/types"
 )
 
-func TestExitError_Error(t *testing.T) {
-	var e = tasks.ExitError{Message: "something wrong"}
-	t.Log(e.Error())
-}
-
-func TestTicker_Close(t *testing.T) {
-	var times = 0
-	ticker := tasks.New(time.Millisecond*200, func() (bool, error) {
-		times++
-		fmt.Println("times:", times)
-		if times > 5 {
-			return true, &tasks.ExitError{Message: "time over"}
-		}
-		if times > 3 {
-			return false, errors.New("normal error")
-		}
-		return false, nil
-	})
-	ticker.Run()
+func TestOpusType_String(t *testing.T) {
+	s := types.OpusTypeExtensionAction.String()
+	types.OpusTypeExtensionAction.Equal(s)
+	s = types.OpusLevelSystem.String()
+	types.OpusLevelSystem.Equal(s)
+	s = types.PutOnOpusModeAppend.String()
+	types.PutOnOpusModeAppend.Equal(s)
+	s = types.LangUnknown.String()
+	types.LangUnknown.Equal(s)
 }

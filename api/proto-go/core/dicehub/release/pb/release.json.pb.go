@@ -113,6 +113,16 @@ var _ json.Marshaler = (*CheckVersionResponse)(nil)
 var _ json.Unmarshaler = (*CheckVersionResponse)(nil)
 var _ json.Marshaler = (*CheckVersionResponseData)(nil)
 var _ json.Unmarshaler = (*CheckVersionResponseData)(nil)
+var _ json.Marshaler = (*UpdateGalleryInfoRequest)(nil)
+var _ json.Unmarshaler = (*UpdateGalleryInfoRequest)(nil)
+var _ json.Marshaler = (*ReleasePutOnRequest)(nil)
+var _ json.Unmarshaler = (*ReleasePutOnRequest)(nil)
+var _ json.Marshaler = (*ReleasePutOnResponse)(nil)
+var _ json.Unmarshaler = (*ReleasePutOnResponse)(nil)
+var _ json.Marshaler = (*ReleasePutOffRequest)(nil)
+var _ json.Unmarshaler = (*ReleasePutOffRequest)(nil)
+var _ json.Marshaler = (*ReleasePutOffResponse)(nil)
+var _ json.Unmarshaler = (*ReleasePutOffResponse)(nil)
 
 // ReleaseList implement json.Marshaler.
 func (m *ReleaseList) MarshalJSON() ([]byte, error) {
@@ -1009,6 +1019,96 @@ func (m *CheckVersionResponseData) MarshalJSON() ([]byte, error) {
 
 // CheckVersionResponseData implement json.Marshaler.
 func (m *CheckVersionResponseData) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// UpdateGalleryInfoRequest implement json.Marshaler.
+func (m *UpdateGalleryInfoRequest) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// UpdateGalleryInfoRequest implement json.Marshaler.
+func (m *UpdateGalleryInfoRequest) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// ReleasePutOnRequest implement json.Marshaler.
+func (m *ReleasePutOnRequest) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// ReleasePutOnRequest implement json.Marshaler.
+func (m *ReleasePutOnRequest) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// ReleasePutOnResponse implement json.Marshaler.
+func (m *ReleasePutOnResponse) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// ReleasePutOnResponse implement json.Marshaler.
+func (m *ReleasePutOnResponse) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// ReleasePutOffRequest implement json.Marshaler.
+func (m *ReleasePutOffRequest) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// ReleasePutOffRequest implement json.Marshaler.
+func (m *ReleasePutOffRequest) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// ReleasePutOffResponse implement json.Marshaler.
+func (m *ReleasePutOffResponse) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// ReleasePutOffResponse implement json.Marshaler.
+func (m *ReleasePutOffResponse) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)

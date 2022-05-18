@@ -7,6 +7,7 @@ import (
 	fmt "fmt"
 	math "math"
 
+	_ "github.com/erda-project/erda-proto-go/apps/gallery/pb"
 	_ "github.com/erda-project/erda-proto-go/common/pb"
 	proto "github.com/golang/protobuf/proto"
 	github_com_mwitkow_go_proto_validators "github.com/mwitkow/go-proto-validators"
@@ -330,5 +331,30 @@ func (this *CheckVersionResponse) Validate() error {
 	return nil
 }
 func (this *CheckVersionResponseData) Validate() error {
+	return nil
+}
+func (this *UpdateGalleryInfoRequest) Validate() error {
+	return nil
+}
+func (this *ReleasePutOnRequest) Validate() error {
+	if this.Req != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Req); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("Req", err)
+		}
+	}
+	return nil
+}
+func (this *ReleasePutOnResponse) Validate() error {
+	return nil
+}
+func (this *ReleasePutOffRequest) Validate() error {
+	if this.Req != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Req); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("Req", err)
+		}
+	}
+	return nil
+}
+func (this *ReleasePutOffResponse) Validate() error {
 	return nil
 }

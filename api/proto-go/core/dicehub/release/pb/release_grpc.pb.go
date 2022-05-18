@@ -37,6 +37,8 @@ type ReleaseServiceClient interface {
 	ToFormalReleases(ctx context.Context, in *FormalReleasesRequest, opts ...grpc.CallOption) (*FormalReleasesResponse, error)
 	DeleteReleases(ctx context.Context, in *ReleasesDeleteRequest, opts ...grpc.CallOption) (*ReleasesDeleteResponse, error)
 	CheckVersion(ctx context.Context, in *CheckVersionRequest, opts ...grpc.CallOption) (*CheckVersionResponse, error)
+	PutOnRelease(ctx context.Context, in *ReleasePutOnRequest, opts ...grpc.CallOption) (*ReleasePutOnResponse, error)
+	PutOffRelease(ctx context.Context, in *ReleasePutOffRequest, opts ...grpc.CallOption) (*ReleasePutOffResponse, error)
 }
 
 type releaseServiceClient struct {
@@ -191,6 +193,24 @@ func (c *releaseServiceClient) CheckVersion(ctx context.Context, in *CheckVersio
 	return out, nil
 }
 
+func (c *releaseServiceClient) PutOnRelease(ctx context.Context, in *ReleasePutOnRequest, opts ...grpc.CallOption) (*ReleasePutOnResponse, error) {
+	out := new(ReleasePutOnResponse)
+	err := c.cc.Invoke(ctx, "/erda.core.dicehub.release.ReleaseService/PutOnRelease", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *releaseServiceClient) PutOffRelease(ctx context.Context, in *ReleasePutOffRequest, opts ...grpc.CallOption) (*ReleasePutOffResponse, error) {
+	out := new(ReleasePutOffResponse)
+	err := c.cc.Invoke(ctx, "/erda.core.dicehub.release.ReleaseService/PutOffRelease", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ReleaseServiceServer is the server API for ReleaseService service.
 // All implementations should embed UnimplementedReleaseServiceServer
 // for forward compatibility
@@ -211,6 +231,8 @@ type ReleaseServiceServer interface {
 	ToFormalReleases(context.Context, *FormalReleasesRequest) (*FormalReleasesResponse, error)
 	DeleteReleases(context.Context, *ReleasesDeleteRequest) (*ReleasesDeleteResponse, error)
 	CheckVersion(context.Context, *CheckVersionRequest) (*CheckVersionResponse, error)
+	PutOnRelease(context.Context, *ReleasePutOnRequest) (*ReleasePutOnResponse, error)
+	PutOffRelease(context.Context, *ReleasePutOffRequest) (*ReleasePutOffResponse, error)
 }
 
 // UnimplementedReleaseServiceServer should be embedded to have forward compatible implementations.
@@ -264,6 +286,12 @@ func (*UnimplementedReleaseServiceServer) DeleteReleases(context.Context, *Relea
 }
 func (*UnimplementedReleaseServiceServer) CheckVersion(context.Context, *CheckVersionRequest) (*CheckVersionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CheckVersion not implemented")
+}
+func (*UnimplementedReleaseServiceServer) PutOnRelease(context.Context, *ReleasePutOnRequest) (*ReleasePutOnResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PutOnRelease not implemented")
+}
+func (*UnimplementedReleaseServiceServer) PutOffRelease(context.Context, *ReleasePutOffRequest) (*ReleasePutOffResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PutOffRelease not implemented")
 }
 
 func RegisterReleaseServiceServer(s grpc1.ServiceRegistrar, srv ReleaseServiceServer, opts ...grpc1.HandleOption) {
@@ -426,6 +454,24 @@ func _get_ReleaseService_serviceDesc(srv ReleaseServiceServer, opts ...grpc1.Han
 	if h.Interceptor != nil {
 		_ReleaseService_CheckVersion_info = transport.NewServiceInfo("erda.core.dicehub.release.ReleaseService", "CheckVersion", srv)
 		_ReleaseService_CheckVersion_Handler = h.Interceptor(_ReleaseService_CheckVersion_Handler)
+	}
+
+	_ReleaseService_PutOnRelease_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.PutOnRelease(ctx, req.(*ReleasePutOnRequest))
+	}
+	var _ReleaseService_PutOnRelease_info transport.ServiceInfo
+	if h.Interceptor != nil {
+		_ReleaseService_PutOnRelease_info = transport.NewServiceInfo("erda.core.dicehub.release.ReleaseService", "PutOnRelease", srv)
+		_ReleaseService_PutOnRelease_Handler = h.Interceptor(_ReleaseService_PutOnRelease_Handler)
+	}
+
+	_ReleaseService_PutOffRelease_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.PutOffRelease(ctx, req.(*ReleasePutOffRequest))
+	}
+	var _ReleaseService_PutOffRelease_info transport.ServiceInfo
+	if h.Interceptor != nil {
+		_ReleaseService_PutOffRelease_info = transport.NewServiceInfo("erda.core.dicehub.release.ReleaseService", "PutOffRelease", srv)
+		_ReleaseService_PutOffRelease_Handler = h.Interceptor(_ReleaseService_PutOffRelease_Handler)
 	}
 
 	var serviceDesc = _ReleaseService_serviceDesc
@@ -796,6 +842,52 @@ func _get_ReleaseService_serviceDesc(srv ReleaseServiceServer, opts ...grpc1.Han
 					FullMethod: "/erda.core.dicehub.release.ReleaseService/CheckVersion",
 				}
 				return interceptor(ctx, in, info, _ReleaseService_CheckVersion_Handler)
+			},
+		},
+		{
+			MethodName: "PutOnRelease",
+			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+				in := new(ReleasePutOnRequest)
+				if err := dec(in); err != nil {
+					return nil, err
+				}
+				if interceptor == nil && h.Interceptor == nil {
+					return srv.(ReleaseServiceServer).PutOnRelease(ctx, in)
+				}
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _ReleaseService_PutOnRelease_info)
+				}
+				if interceptor == nil {
+					return _ReleaseService_PutOnRelease_Handler(ctx, in)
+				}
+				info := &grpc.UnaryServerInfo{
+					Server:     srv,
+					FullMethod: "/erda.core.dicehub.release.ReleaseService/PutOnRelease",
+				}
+				return interceptor(ctx, in, info, _ReleaseService_PutOnRelease_Handler)
+			},
+		},
+		{
+			MethodName: "PutOffRelease",
+			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+				in := new(ReleasePutOffRequest)
+				if err := dec(in); err != nil {
+					return nil, err
+				}
+				if interceptor == nil && h.Interceptor == nil {
+					return srv.(ReleaseServiceServer).PutOffRelease(ctx, in)
+				}
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _ReleaseService_PutOffRelease_info)
+				}
+				if interceptor == nil {
+					return _ReleaseService_PutOffRelease_Handler(ctx, in)
+				}
+				info := &grpc.UnaryServerInfo{
+					Server:     srv,
+					FullMethod: "/erda.core.dicehub.release.ReleaseService/PutOffRelease",
+				}
+				return interceptor(ctx, in, info, _ReleaseService_PutOffRelease_Handler)
 			},
 		},
 	}
