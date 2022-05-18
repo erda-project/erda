@@ -234,3 +234,9 @@ func TestComposeListOpusVersionRespWithReadmes(t *testing.T) {
 		VersionID: "xxx-yyy",
 	}})
 }
+
+// need not do unit test
+func TestGenOpusUpdates(t *testing.T) {
+	s := "xxx"
+	handler.GenOpusUpdates(s, s, s, s, s, s, s, true)
+}

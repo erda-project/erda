@@ -269,3 +269,23 @@ func RenderI18n(value *string, values, lang string) error {
 	}
 	return nil
 }
+
+func GenOpusUpdates(userID, versionID, summary, summaryI18n, displayName, displayNameI18n, logoURL string, isDefault bool) map[string]interface{} {
+	var updates = map[string]interface{}{
+		"updater_id":        userID,
+		"latest_version_id": versionID,
+	}
+	if isDefault {
+		updates["default_version_id"] = versionID
+		updates["summary"] = summary
+		if summaryI18n != "" {
+			updates["summary_i18n"] = summaryI18n
+		}
+		updates["display_name"] = displayName
+		if displayNameI18n != "" {
+			updates["display_name_i18n"] = displayNameI18n
+		}
+		updates["logo_url"] = logoURL
+	}
+	return updates
+}
