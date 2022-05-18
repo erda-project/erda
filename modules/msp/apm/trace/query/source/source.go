@@ -30,8 +30,8 @@ type TraceSource interface {
 
 type (
 	TraceDistributionItem struct {
-		Date        string
-		AvgDuration uint64
-		Count       uint64
+		Date        string  `ch:"date"`
+		AvgDuration float64 `ch:"avg_duration"`
+		Count       uint64  `ch:"trace_count"`
 	}
 )

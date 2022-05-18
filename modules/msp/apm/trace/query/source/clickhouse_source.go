@@ -19,11 +19,13 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/providers/clickhouse"
 	"github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
 	"github.com/erda-project/erda/modules/msp/apm/trace/query/commom/custom"
+	"github.com/erda-project/erda/pkg/math"
 )
 
 type ClickhouseSource struct {
@@ -53,6 +55,11 @@ type (
 		Duration  int64    `ch:"duration"`
 		Services  []string `ch:"services"`
 	}
+	distributionItem struct {
+		AvgDuration float64   `ch:"avg_duration"`
+		Count       uint64    `ch:"trace_count"`
+		Date        time.Time `ch:"date"`
+	}
 )
 
 const (
@@ -60,8 +67,91 @@ const (
 	SpanMetaTable   = "monitor.spans_meta"
 )
 
+const (
+	Hour   = time.Hour
+	Hour3  = 3 * Hour
+	Hour6  = 6 * Hour
+	Hour12 = 12 * Hour
+	Day    = 24 * Hour
+	Day3   = 3 * Day
+	Day7   = 7 * Day
+	Month  = 30 * Day
+	Month3 = 3 * Month
+)
+
+func (chs *ClickhouseSource) GetInterval(duration int64) (int64, string, int64) {
+	count := int64(60) * time.Second.Milliseconds()
+	if duration > 0 && duration <= Hour.Milliseconds() {
+		interval := Hour.Milliseconds() / count
+		return 1, "minute", interval
+	} else if duration > Hour.Milliseconds() && duration <= Hour3.Milliseconds() {
+		interval := Hour3.Milliseconds() / count
+		return 3, "minute", interval
+	} else if duration > Hour3.Milliseconds() && duration <= Hour6.Milliseconds() {
+		interval := 6 * time.Hour.Milliseconds() / count
+		return 6, "minute", interval
+	} else if duration > Hour6.Milliseconds() && duration <= Hour12.Milliseconds() {
+		interval := 12 * time.Hour.Milliseconds() / count
+		return 12, "minute", interval
+	} else if duration > Hour12.Milliseconds() && duration <= Day.Milliseconds() {
+		interval := Day.Milliseconds() / count
+		return 24, "minute", interval
+	} else if duration > Day.Milliseconds() && duration <= Day3.Milliseconds() {
+		interval := Day3.Milliseconds() / count
+		return 72, "minute", interval
+	} else if duration > Day3.Milliseconds() && duration <= Day7.Milliseconds() {
+		interval := Day7.Milliseconds() / count
+		return 168, "minute", interval
+	} else if duration > Day7.Milliseconds() && duration <= Month.Milliseconds() {
+		interval := Month.Milliseconds() / count
+		return 12, "hour", interval
+	} else {
+		interval := Month3.Milliseconds() / count
+		return 36, "hour", interval
+	}
+}
+
 func (chs *ClickhouseSource) GetTraceReqDistribution(ctx context.Context, model custom.Model) ([]*TraceDistributionItem, error) {
-	return nil, nil
+	n, unit, interval := chs.GetInterval(model.EndTime - model.StartTime)
+	specSql := "SELECT toStartOfInterval(min_start_time, INTERVAL %v %s) AS date,count(trace_id) AS trace_count, " +
+		"avg(duration) AS avg_duration FROM (%s) GROUP BY date ORDER BY date WITH FILL STEP %v ;"
+
+	tracingSql := "SELECT distinct(trace_id) AS trace_id,(toUnixTimestamp64Nano(max(end_time)) - toUnixTimestamp64Nano(min(start_time))) AS duration, min(start_time) AS min_start_time FROM %s %s GROUP BY spans_series.trace_id"
+
+	var where bytes.Buffer
+	// trace id condition
+	where.WriteString(fmt.Sprintf("WHERE toUnixTimestamp64Milli(start_time) >= %v AND toUnixTimestamp64Milli(end_time) <= %v ", model.StartTime, model.EndTime))
+
+	if model.TraceId != "" {
+		where.WriteString("AND trace_id LIKE %" + model.TraceId + "%) ")
+	}
+	if model.DurationMin > 0 && model.DurationMax > 0 && model.DurationMin < model.DurationMax {
+		where.WriteString(fmt.Sprintf("AND ((toUnixTimestamp64Nano(end_time) - toUnixTimestamp64Nano(start_time)) >= %v "+
+			"AND (toUnixTimestamp64Nano(end_time) - toUnixTimestamp64Nano(start_time)) <= %v)", model.DurationMin, model.DurationMax))
+	}
+	where.WriteString(fmt.Sprintf("AND series_id IN (%s)", chs.composeFilter(&pb.GetTracesRequest{TenantID: model.TenantId, ServiceName: model.ServiceName, RpcMethod: model.RpcMethod, HttpPath: model.HttpPath})))
+
+	tracingSql = fmt.Sprintf(tracingSql, SpanSeriesTable, where.String())
+	sql := fmt.Sprintf(specSql, n, unit, tracingSql, interval)
+	rows, err := chs.Clickhouse.Client().Query(ctx, sql)
+	if err != nil {
+		chs.Log.Error(err)
+		return []*TraceDistributionItem{}, err
+	}
+	items := make([]*TraceDistributionItem, 0, 10)
+	for rows.Next() {
+		item := &TraceDistributionItem{}
+		var i distributionItem
+		if err := rows.ScanStruct(&i); err != nil {
+			chs.Log.Error(err)
+			continue
+		}
+		item.Date = i.Date.Format("2006-01-02 15:04:05")
+		item.Count = i.Count
+		item.AvgDuration = math.DecimalPlacesWithDigitsNumber(i.AvgDuration, 2)
+		items = append(items, item)
+	}
+	return items, nil
 }
 
 func (chs *ClickhouseSource) GetTraces(ctx context.Context, req *pb.GetTracesRequest) (*pb.GetTracesResponse, error) {
@@ -80,6 +170,37 @@ func (chs *ClickhouseSource) GetTraces(ctx context.Context, req *pb.GetTracesReq
 			"AND (toUnixTimestamp64Nano(end_time) - toUnixTimestamp64Nano(start_time)) <= %v)", req.DurationMin, req.DurationMax))
 	}
 
+	where.WriteString(fmt.Sprintf("AND series_id IN (%s)", chs.composeFilter(req)))
+
+	sql := fmt.Sprintf(specSql, SpanSeriesTable, where.String(), chs.sortConditionStrategy(req.Sort), req.PageSize, (req.PageNo-1)*req.PageSize)
+
+	rows, err := chs.Clickhouse.Client().Query(ctx, sql)
+	if err != nil {
+		return &pb.GetTracesResponse{}, err
+	}
+	defer rows.Close()
+
+	traces := make([]*pb.Trace, 0, 10)
+	for rows.Next() {
+		var t tracing
+		tracing := &pb.Trace{}
+		if err := rows.ScanStruct(&t); err != nil {
+			chs.Log.Error(err)
+			continue
+		}
+		tracing.Id = t.TraceId
+		tracing.Duration = float64(t.Duration)
+		tracing.StartTime = t.StartTime
+		tracing.SpanCount = int64(t.SpanCount)
+		serviceNames, _ := chs.selectKeyByTraceId(ctx, tracing.Id, "service_name")
+		tracing.Services = serviceNames
+		traces = append(traces, tracing)
+	}
+	count := chs.GetTraceCount(ctx, where.String())
+	return &pb.GetTracesResponse{PageNo: req.PageNo, PageSize: req.PageSize, Data: traces, Total: count}, nil
+}
+
+func (chs *ClickhouseSource) composeFilter(req *pb.GetTracesRequest) string {
 	var subSqlBuf bytes.Buffer
 	subSqlBuf.WriteString(fmt.Sprintf("SELECT distinct(series_id) FROM %s WHERE (key='terminus_key' AND value = '%s') AND ", SpanMetaTable, req.TenantID))
 
@@ -99,34 +220,7 @@ func (chs *ClickhouseSource) GetTraces(ctx context.Context, req *pb.GetTracesReq
 	if strings.HasSuffix(subSql, "AND ") {
 		subSql = subSql[:len(subSql)-4]
 	}
-
-	where.WriteString(fmt.Sprintf("AND series_id IN (%s)", subSql))
-
-	sql := fmt.Sprintf(specSql, SpanSeriesTable, where.String(), chs.sortConditionStrategy(req.Sort), req.PageSize, (req.PageNo-1)*req.PageSize)
-
-	rows, err := chs.Clickhouse.Client().Query(ctx, sql)
-	if err != nil {
-		return &pb.GetTracesResponse{}, err
-	}
-	defer rows.Close()
-
-	traces := make([]*pb.Trace, 0, 10)
-	for rows.Next() {
-		var t tracing
-		tracing := &pb.Trace{}
-		if err := rows.ScanStruct(&t); err != nil {
-			continue
-		}
-		tracing.Id = t.TraceId
-		tracing.Duration = float64(t.Duration)
-		tracing.StartTime = t.StartTime
-		tracing.SpanCount = int64(t.SpanCount)
-		serviceNames, _ := chs.selectKeyByTraceId(ctx, tracing.Id, "service_name")
-		tracing.Services = serviceNames
-		traces = append(traces, tracing)
-	}
-	count := chs.GetTraceCount(ctx, where.String())
-	return &pb.GetTracesResponse{PageNo: req.PageNo, PageSize: req.PageSize, Data: traces, Total: count}, nil
+	return subSql
 }
 
 func (chs *ClickhouseSource) selectKeyByTraceId(ctx context.Context, traceId, key string) ([]string, error) {

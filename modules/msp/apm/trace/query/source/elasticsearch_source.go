@@ -134,7 +134,7 @@ func (esc ElasticsearchSource) GetTraceReqDistribution(ctx context.Context, mode
 		date := timeFormat
 		avgDuration := math.DecimalPlacesWithDigitsNumber(row.Values[1].GetNumberValue(), 2)
 		count := row.Values[2].GetNumberValue()
-		item := &TraceDistributionItem{Date: date, AvgDuration: uint64(avgDuration), Count: uint64(count)}
+		item := &TraceDistributionItem{Date: date, AvgDuration: avgDuration, Count: uint64(count)}
 		items = append(items, item)
 	}
 	return items, nil
