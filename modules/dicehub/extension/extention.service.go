@@ -38,6 +38,7 @@ import (
 	"github.com/erda-project/erda-proto-go/core/dicehub/extension/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	galleryTypes "github.com/erda-project/erda/modules/apps/gallery/types"
 	"github.com/erda-project/erda/modules/dicehub/extension/db"
 	"github.com/erda-project/erda/modules/dicehub/service/apierrors"
 	"github.com/erda-project/erda/pkg/common/apis"
@@ -711,7 +712,7 @@ func (s *extensionService) PutOnExtensionWithNameVersion(ctx context.Context, ve
 	if spec.DisplayName == "" {
 		spec.DisplayName = spec.Name
 	}
-	types := map[string]string{"action": apistructs.OpusTypeExtensionAction.String(), "addon": apistructs.OpusTypeExtensionAddon.String()}
+	types := map[string]string{"action": galleryTypes.OpusTypeExtensionAction.String(), "addon": galleryTypes.OpusTypeExtensionAddon.String()}
 	item := &gallerypb.PutOnExtensionsReq{
 		Type:        types[strings.ToLower(spec.Type)],
 		Name:        ver.Name,
@@ -720,12 +721,12 @@ func (s *extensionService) PutOnExtensionWithNameVersion(ctx context.Context, ve
 		Summary:     spec.Desc,
 		Catalog:     spec.Category,
 		LogoURL:     spec.LogoUrl,
-		Level:       apistructs.OpusLevelSystem.String(),
-		Mode:        apistructs.PutOnOpusModeOverride.String(),
+		Level:       galleryTypes.OpusLevelSystem.String(),
+		Mode:        galleryTypes.PutOnOpusModeOverride.String(),
 		Desc:        spec.Desc,
 		Readme: []*gallerypb.Readme{{
-			Lang:     apistructs.LangUnknown.String(),
-			LangName: apistructs.LangTypes[apistructs.LangUnknown],
+			Lang:     galleryTypes.LangUnknown.String(),
+			LangName: galleryTypes.LangTypes[galleryTypes.LangUnknown],
 			Text:     ver.Readme,
 		}},
 		IsDefault: spec.IsDefault,

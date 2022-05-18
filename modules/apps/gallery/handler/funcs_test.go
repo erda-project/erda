@@ -27,9 +27,9 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/mysql/v2/plugins/fields"
 	"github.com/erda-project/erda-proto-go/apps/gallery/pb"
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/apps/gallery/handler"
 	"github.com/erda-project/erda/modules/apps/gallery/model"
+	"github.com/erda-project/erda/modules/apps/gallery/types"
 )
 
 func TestListOpusTypes(t *testing.T) {
@@ -74,10 +74,10 @@ func TestPrepareListOpusesOptions(t *testing.T) {
 	}{
 		{
 			SQL:  "SELECT * FROM `erda_gallery_opus` WHERE type = ? AND name = ? AND (display_name LIKE ? OR display_name_i18n LIKE ? OR summary LIKE ? OR summary_i18n LIKE ?) AND (org_id = ? OR level = ?) AND (`erda_gallery_opus`.`deleted_at` = ? OR `erda_gallery_opus`.`deleted_at` IS NULL) ORDER BY type DESC,name DESC,updated_at DESC LIMIT 10 OFFSET 10",
-			Vars: []interface{}{cases[0].Type, cases[0].Name, "%mysql%", "%mysql%", "%mysql%", "%mysql%", cases[0].OrgID, apistructs.OpusLevelSystem, time.Unix(0, 0)},
+			Vars: []interface{}{cases[0].Type, cases[0].Name, "%mysql%", "%mysql%", "%mysql%", "%mysql%", cases[0].OrgID, types.OpusLevelSystem, time.Unix(0, 0)},
 		}, {
 			SQL:  "SELECT * FROM `erda_gallery_opus` WHERE (org_id = ? OR level = ?) AND (`erda_gallery_opus`.`deleted_at` = ? OR `erda_gallery_opus`.`deleted_at` IS NULL) ORDER BY type DESC,name DESC,updated_at DESC LIMIT 10 OFFSET 10",
-			Vars: []interface{}{cases[1].OrgID, apistructs.OpusLevelSystem, time.Unix(0, 0)},
+			Vars: []interface{}{cases[1].OrgID, types.OpusLevelSystem, time.Unix(0, 0)},
 		},
 	}
 	dbname := filepath.Join(os.TempDir(), "gorm.db")
@@ -212,25 +212,25 @@ func TestComposeListOpusVersionRespWithReadmes(t *testing.T) {
 			Versions: []*pb.ListOpusVersionRespDataVersion{{Id: id}},
 		},
 	}
-	handler.ComposeListOpusVersionRespWithReadmes(resp, apistructs.LangEn.String(), []*model.OpusReadme{{
+	handler.ComposeListOpusVersionRespWithReadmes(resp, types.LangEn.String(), []*model.OpusReadme{{
 		VersionID: id,
-		Lang:      apistructs.LangEn.String(),
-		LangName:  apistructs.LangTypes[apistructs.LangEn],
+		Lang:      types.LangEn.String(),
+		LangName:  types.LangTypes[types.LangEn],
 		Text:      "xxx",
 	}})
-	handler.ComposeListOpusVersionRespWithReadmes(resp, apistructs.LangEn.String(), []*model.OpusReadme{{
+	handler.ComposeListOpusVersionRespWithReadmes(resp, types.LangEn.String(), []*model.OpusReadme{{
 		VersionID: id,
-		Lang:      apistructs.LangUnknown.String(),
-		LangName:  apistructs.LangTypes[apistructs.LangUnknown],
+		Lang:      types.LangUnknown.String(),
+		LangName:  types.LangTypes[types.LangUnknown],
 		Text:      "xxx",
 	}})
-	handler.ComposeListOpusVersionRespWithReadmes(resp, apistructs.LangEn.String(), []*model.OpusReadme{{
+	handler.ComposeListOpusVersionRespWithReadmes(resp, types.LangEn.String(), []*model.OpusReadme{{
 		VersionID: id,
 		Lang:      "other",
 		LangName:  "other",
 		Text:      "xxx",
 	}})
-	handler.ComposeListOpusVersionRespWithReadmes(resp, apistructs.LangEn.String(), []*model.OpusReadme{{
+	handler.ComposeListOpusVersionRespWithReadmes(resp, types.LangEn.String(), []*model.OpusReadme{{
 		VersionID: "xxx-yyy",
 	}})
 }

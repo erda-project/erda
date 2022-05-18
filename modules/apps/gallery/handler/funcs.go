@@ -23,19 +23,19 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/erda-project/erda-proto-go/apps/gallery/pb"
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/apps/gallery/dao"
 	"github.com/erda-project/erda/modules/apps/gallery/model"
+	"github.com/erda-project/erda/modules/apps/gallery/types"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
 func ListOpusTypes() *pb.ListOpusTypesRespData {
 	var data pb.ListOpusTypesRespData
-	for type_, name := range apistructs.OpusTypeNames {
+	for type_, name := range types.OpusTypeNames {
 		data.List = append(data.List, &pb.OpusType{
 			Type:        type_.String(),
 			Name:        name,
-			DisplayName: apistructs.OpusTypeDisplayNames[type_],
+			DisplayName: types.OpusTypeDisplayNames[type_],
 		})
 	}
 	sort.Slice(data.List, func(i, j int) bool {
@@ -74,7 +74,7 @@ func PrepareListOpusesOptions(orgID int64, type_, name, keyword string, pageSize
 		options = append(options, dao.WhereOption("display_name LIKE ? OR display_name_i18n LIKE ? OR summary LIKE ? OR summary_i18n LIKE ?",
 			keyword, keyword, keyword, keyword))
 	}
-	options = append(options, dao.WhereOption("org_id = ? OR level = ?", orgID, apistructs.OpusLevelSystem))
+	options = append(options, dao.WhereOption("org_id = ? OR level = ?", orgID, types.OpusLevelSystem))
 	return options
 }
 
@@ -107,14 +107,14 @@ func ComposeListOpusResp(lang string, total int64, opuses []*model.Opus) *pb.Lis
 			CreatorID:   opus.CreatorID,
 			UpdaterID:   opus.UpdaterID,
 			Type:        opus.Type,
-			TypeName:    apistructs.OpusTypeNames[apistructs.OpusType(opus.Type)],
+			TypeName:    types.OpusTypeNames[types.OpusType(opus.Type)],
 			Name:        opus.Name,
 			DisplayName: opus.DisplayName,
 			Summary:     opus.Summary,
 			Catalog:     opus.Catalog,
 			LogoURL:     opus.LogoURL,
 		}
-		if apistructs.OpusLevelSystem.Equal(opus.Level) {
+		if types.OpusLevelSystem.Equal(opus.Level) {
 			item.OrgName = "Erda"
 		}
 		_ = RenderI18n(&item.DisplayName, opus.DisplayNameI18n, lang)
@@ -135,13 +135,13 @@ func ComposeListOpusVersionRespWithOpus(lang string, resp *pb.ListOpusVersionsRe
 		UpdaterID:        opus.UpdaterID,
 		Level:            opus.Level,
 		Type:             opus.Type,
-		Name:             apistructs.OpusTypeNames[apistructs.OpusType(opus.Type)],
+		Name:             types.OpusTypeNames[types.OpusType(opus.Type)],
 		DisplayName:      opus.DisplayName,
 		Catalog:          opus.Catalog,
 		DefaultVersionID: opus.DefaultVersionID,
 		LatestVersionID:  opus.LatestVersionID,
 	}
-	if apistructs.OpusLevelSystem.Equal(opus.Level) {
+	if types.OpusLevelSystem.Equal(opus.Level) {
 		resp.Data.OrgName = "Erda"
 	}
 	_ = RenderI18n(&resp.Data.DisplayName, opus.DisplayNameI18n, lang)
@@ -221,7 +221,7 @@ func ComposeListOpusVersionRespWithReadmes(resp *pb.ListOpusVersionsResp, lang s
 			version.Readme = readme.Text
 			continue
 		}
-		if readme, ok := langs[apistructs.LangUnknown.String()]; ok {
+		if readme, ok := langs[types.LangUnknown.String()]; ok {
 			version.ReadmeLang = readme.Lang
 			version.ReadmeLangName = readme.LangName
 			version.Readme = readme.Text

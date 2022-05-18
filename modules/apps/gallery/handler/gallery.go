@@ -30,6 +30,7 @@ import (
 	"github.com/erda-project/erda/modules/apps/gallery/cache"
 	"github.com/erda-project/erda/modules/apps/gallery/dao"
 	"github.com/erda-project/erda/modules/apps/gallery/model"
+	"github.com/erda-project/erda/modules/apps/gallery/types"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 
@@ -262,7 +263,7 @@ func (p *GalleryHandler) PutOnExtensions(ctx context.Context, req *pb.PutOnExten
 	if err != nil {
 		orgID = int64(req.GetOrgID())
 	}
-	if orgID == 0 && apistructs.OpusLevelOrg.Equal(req.GetLevel()) {
+	if orgID == 0 && types.OpusLevelOrg.Equal(req.GetLevel()) {
 		return nil, apierr.PutOnExtension.MissingParameter("missing orgID")
 	}
 	var orgName string
@@ -278,10 +279,10 @@ func (p *GalleryHandler) PutOnExtensions(ctx context.Context, req *pb.PutOnExten
 	if userID == "" {
 		userID = req.GetUserID()
 	}
-	if userID == "" && (apistructs.OpusLevelOrg.Equal(req.GetLevel())) {
+	if userID == "" && (types.OpusLevelOrg.Equal(req.GetLevel())) {
 		return nil, apierr.PutOnExtension.InvalidParameter("missing userID")
 	}
-	if apistructs.OpusTypeExtensionAddon.Equal(req.GetType()) && apistructs.OpusTypeExtensionAction.Equal(req.GetType()) {
+	if types.OpusTypeExtensionAddon.Equal(req.GetType()) && types.OpusTypeExtensionAction.Equal(req.GetType()) {
 		return nil, apierr.PutOnExtension.InvalidParameter("invalid type: " + req.GetType())
 	}
 	if req.GetName() == "" {
@@ -290,7 +291,7 @@ func (p *GalleryHandler) PutOnExtensions(ctx context.Context, req *pb.PutOnExten
 	if req.GetVersion() == "" {
 		return nil, apierr.PutOnExtension.InvalidParameter("missing version")
 	}
-	if apistructs.OpusLevelSystem.Equal(req.GetLevel()) && apistructs.OpusLevelOrg.Equal(req.GetLevel()) {
+	if types.OpusLevelSystem.Equal(req.GetLevel()) && types.OpusLevelOrg.Equal(req.GetLevel()) {
 		return nil, apierr.PutOnExtension.InvalidParameter("invalid level: " + req.GetLevel())
 	}
 
@@ -300,7 +301,7 @@ func (p *GalleryHandler) PutOnExtensions(ctx context.Context, req *pb.PutOnExten
 		"name":  req.GetName(),
 		"level": req.GetLevel(),
 	}
-	if apistructs.OpusLevelOrg.Equal(req.GetLevel()) {
+	if types.OpusLevelOrg.Equal(req.GetLevel()) {
 		where["org_id"] = orgID
 	}
 	opus, ok, err := dao.GetOpus(dao.Q(), dao.MapOption(where))
@@ -325,7 +326,7 @@ func (p *GalleryHandler) PutOnExtensions(ctx context.Context, req *pb.PutOnExten
 		return p.createExtensions(ctx, l, opus.OrgID, opus.OrgName, userID, opus, req)
 	}
 
-	if apistructs.PutOnOpusModeAppend.Equal(req.GetMode()) {
+	if types.PutOnOpusModeAppend.Equal(req.GetMode()) {
 		l.Warnln("failed to put on extension, the version already exists, can not append")
 		return nil, apierr.PutOnExtension.AlreadyExists()
 	}
@@ -360,7 +361,7 @@ func (p *GalleryHandler) putOnArtifactsPreCheck(ctx context.Context, req *pb.Put
 func (p *GalleryHandler) putOnArtifactsGetOrCreateOpus(tx *dao.TX, common model.Common, req *pb.PutOnArtifactsReq) (*model.Opus, error) {
 	opus, ok, err := dao.GetOpus(tx, dao.MapOption(map[string]interface{}{
 		"org_id": common.OrgID,
-		"type":   apistructs.OpusTypeArtifactsProject,
+		"type":   types.OpusTypeArtifactsProject,
 		"name":   req.GetName(),
 	}))
 	if err != nil {
@@ -372,8 +373,8 @@ func (p *GalleryHandler) putOnArtifactsGetOrCreateOpus(tx *dao.TX, common model.
 
 	opus = &model.Opus{
 		Common:      common,
-		Level:       string(apistructs.OpusLevelOrg),
-		Type:        string(apistructs.OpusTypeArtifactsProject),
+		Level:       string(types.OpusLevelOrg),
+		Type:        string(types.OpusTypeArtifactsProject),
 		Name:        req.GetName(),
 		DisplayName: req.GetDisplayName(),
 		Summary:     req.GetSummary(),
@@ -468,7 +469,7 @@ func (p *GalleryHandler) putOnArtifactsCreateInstallation(tx *dao.TX, opusID, ve
 		Common:    common,
 		OpusID:    opusID,
 		VersionID: versionID,
-		Installer: string(apistructs.OpusTypeArtifactsProject),
+		Installer: string(types.OpusTypeArtifactsProject),
 		Spec:      string(spec),
 	}
 	if err = tx.Create(&installation); err != nil {
@@ -530,7 +531,7 @@ func (p *GalleryHandler) updateExtension(ctx context.Context, l *logrus.Entry, u
 		}
 		var option = dao.MapOption(where)
 		var updates = map[string]interface{}{
-			"lang_name": apistructs.LangTypes[apistructs.Lang(item.GetLang())],
+			"lang_name": types.LangTypes[types.Lang(item.GetLang())],
 			"text":      item.GetText(),
 		}
 		_, ok, err := dao.GetReadme(tx, option)
@@ -554,7 +555,7 @@ func (p *GalleryHandler) updateExtension(ctx context.Context, l *logrus.Entry, u
 				OpusID:    version.OpusID,
 				VersionID: version.ID.String,
 				Lang:      item.GetLang(),
-				LangName:  apistructs.LangTypes[apistructs.Lang(item.GetLang())],
+				LangName:  types.LangTypes[types.Lang(item.GetLang())],
 				Text:      item.GetText(),
 			}); err != nil {
 				l.WithError(err).WithField("lang", item.GetLang()).Errorln("failed to Create readme")
@@ -671,7 +672,7 @@ func (p *GalleryHandler) createExtensions(ctx context.Context, l *logrus.Entry, 
 			OpusID:    opus.ID.String,
 			VersionID: version.ID.String,
 			Lang:      item.GetLang(),
-			LangName:  apistructs.LangTypes[apistructs.Lang(item.GetLang())],
+			LangName:  types.LangTypes[types.Lang(item.GetLang())],
 			Text:      item.GetText(),
 		}
 		readmes = append(readmes, &readme)

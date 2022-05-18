@@ -12,21 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package apistructs_test
+package types_test
 
 import (
 	"testing"
 
-	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/apps/gallery/types"
 )
 
 func TestOpusType_String(t *testing.T) {
-	s := apistructs.OpusTypeExtensionAction.String()
-	apistructs.OpusTypeExtensionAction.Equal(s)
-	s = apistructs.OpusLevelSystem.String()
-	apistructs.OpusLevelSystem.Equal(s)
-	s = apistructs.PutOnOpusModeAppend.String()
-	apistructs.PutOnOpusModeAppend.Equal(s)
-	s = apistructs.LangUnknown.String()
-	apistructs.LangUnknown.Equal(s)
+	s := types.OpusTypeExtensionAction.String()
+	types.OpusTypeExtensionAction.Equal(s)
+	s = types.OpusLevelSystem.String()
+	types.OpusLevelSystem.Equal(s)
+	s = types.PutOnOpusModeAppend.String()
+	types.PutOnOpusModeAppend.Equal(s)
+	s = types.LangUnknown.String()
+	types.LangUnknown.Equal(s)
 }

@@ -24,7 +24,7 @@ import (
 	"github.com/erda-project/erda-infra/pkg/transport"
 	gallerypb "github.com/erda-project/erda-proto-go/apps/gallery/pb"
 	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
-	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/apps/gallery/types"
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
@@ -66,8 +66,8 @@ func (r *ComponentReleaseTable) putOnRelease(ctx context.Context, releaseID stri
 		DownloadURL:    fmt.Sprintf("/api/%s/releases/%s/actions/download", org.Name, release.ReleaseID),
 		Readme: []*gallerypb.Readme{
 			{
-				Lang:     apistructs.LangUnknown.String(),
-				LangName: apistructs.LangUnknown.String(),
+				Lang:     types.LangUnknown.String(),
+				LangName: types.LangUnknown.String(),
 				Text:     release.Changelog,
 			},
 		},
