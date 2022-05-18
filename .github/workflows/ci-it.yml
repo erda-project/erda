@@ -46,7 +46,7 @@ jobs:
       - name: Go generate files
         run: make prepare
       - name: Run Build
-        run: make GO_BUILD_OPTIONS="-tags=musl"
+        run: GO_BUILD_OPTIONS="-tags=musl" make build-all
   CODE-CHECK:
     runs-on: ubuntu-latest
     container:

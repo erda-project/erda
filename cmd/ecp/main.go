@@ -15,6 +15,8 @@
 package main
 
 import (
+	_ "embed"
+
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/pkg/common"
 
@@ -24,8 +26,11 @@ import (
 	_ "github.com/erda-project/erda/modules/ecp"
 )
 
+//go:embed bootstrap.yaml
+var bootstrapCfg string
+
 func main() {
 	common.Run(&servicehub.RunOptions{
-		ConfigFile: "conf/ecp/ecp.yaml",
+		Content: bootstrapCfg,
 	})
 }

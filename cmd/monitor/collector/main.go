@@ -15,6 +15,7 @@
 package main
 
 import (
+	_ "embed"
 	"os"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -41,18 +42,19 @@ import (
 	_ "github.com/erda-project/erda/modules/oap/collector/plugins/all"
 )
 
-const (
-	centralCollector = "conf/monitor/collector/collector.yaml"
-	edgeCollector    = "conf/monitor/collector/collector-agent.yaml"
-)
+//go:embed bootstrap.yaml
+var centralBootstrapCfg string
+
+//go:embed bootstrap-agent.yaml
+var edgeBootstrapCfg string
 
 //go:generate sh -c "cd ${PROJ_PATH} && go generate -v -x github.com/erda-project/erda/modules/monitor/core/collector"
 func main() {
-	cfg := centralCollector
+	cfg := centralBootstrapCfg
 	if os.Getenv("DICE_IS_EDGE") == "true" {
-		cfg = edgeCollector
+		cfg = edgeBootstrapCfg
 	}
 	common.Run(&servicehub.RunOptions{
-		ConfigFile: cfg,
+		Content: cfg,
 	})
 }

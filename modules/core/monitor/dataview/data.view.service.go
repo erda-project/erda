@@ -25,8 +25,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-proto-go/core/monitor/dataview/pb"
-	"github.com/erda-project/erda/conf"
-	"github.com/erda-project/erda/conf/monitor/monitor"
+	"github.com/erda-project/erda/cmd/monitor/monitor/conf"
 	"github.com/erda-project/erda/modules/core/monitor/dataview/db"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
@@ -75,7 +74,7 @@ func (s *dataViewService) parseViewBlocks(view *pb.View, config, data string) *p
 }
 
 func (s *dataViewService) ListSystemViews(ctx context.Context, req *pb.ListSystemViewsRequest) (*pb.ListSystemViewsResponse, error) {
-	views := *monitor.GetSystemChartview()
+	views := *conf.GetSystemChartview()
 
 	vlist := &pb.ViewList{}
 	var vs []*pb.View
@@ -118,7 +117,7 @@ func (s *dataViewService) GetSystemView(ctx context.Context, req *pb.GetSystemVi
 	if req.Id == "" {
 		return nil, errors.NewMissingParameterError("id")
 	}
-	chartView := (*monitor.GetSystemChartview())[req.Id]
+	chartView := (*conf.GetSystemChartview())[req.Id]
 	if chartView == nil {
 		return nil, errors.NewNotFoundError(req.Id)
 	}

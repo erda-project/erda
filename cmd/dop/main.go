@@ -15,6 +15,8 @@
 package main
 
 import (
+	_ "embed"
+
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
 	"github.com/erda-project/erda/pkg/common"
@@ -57,9 +59,10 @@ import (
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components"
 )
 
+//go:embed bootstrap.yaml
+var bootstrapCfg string
+
 func main() {
 	common.RegisterHubListener(cpregister.NewHubListener())
-	common.Run(&servicehub.RunOptions{
-		ConfigFile: "conf/dop/dop.yaml",
-	})
+	common.Run(&servicehub.RunOptions{Content: bootstrapCfg})
 }

@@ -1,0 +1,38 @@
+http-server:
+  addr: ":8080"
+health:
+hepa:
+  server:
+    dbSources:
+      - "${MYSQL_USERNAME}:${MYSQL_PASSWORD}@tcp(${MYSQL_HOST}:${MYSQL_PORT})/${MYSQL_DATABASE}?charset=utf8"
+    clusterName: ${DICE_CLUSTER_NAME}
+    hasRouteInfo: ${SERVER_HAS_ROUTE_INFO}
+    useAdminEndpoint: ${SERVER_USE_ADMIN_ENDPOINT}
+    aoneAppName: ${SERVER_AONE_APP_NAME}
+    clusterUIType: ${SERVER_CLUSTER_UI_TYPE}
+    subDomainSplit: ${SERVER_SUB_DOMAIN_SPLIT}
+  log:
+    errorLevel: ${LOG_ERROR_LEVEL}
+
+service-register:
+permission:
+erda.core.hepa.global:    
+erda.core.hepa.domain:
+erda.core.hepa.consumer:
+erda.core.hepa.api:  
+erda.core.hepa.legacy_upstream:
+erda.core.hepa.legacy_upstream_lb:
+erda.core.hepa.openapi_rule:
+erda.core.hepa.openapi_consumer:
+erda.core.hepa.api_policy:  
+erda.core.hepa.org_client:
+erda.core.hepa.endpoint_api:
+erda.core.hepa.runtime_service:
+
+i18n:
+  files:
+    - conf/i18n/log-trans.yaml
+
+grpc-client@erda.core.clustermanager.cluster:
+  addr: "${CLUSTER_MANAGER_GRPC_ADDR:cluster-manager:9095}"
+erda.core.clustermanager.cluster-client: {}

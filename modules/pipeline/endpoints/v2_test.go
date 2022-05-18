@@ -19,8 +19,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
-	"sync"
-	"testing"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -138,16 +136,16 @@ func newCreateV2Work(workerID int) (count int) {
 	return
 }
 
-func Test_benchmarkCreateV2(t *testing.T) {
-	wait := &sync.WaitGroup{}
-	// concurrency of create pipeline
-	for i := 0; i < 1; i++ {
-		wait.Add(1)
-		go func(idx int) {
-			defer wait.Done()
-			count := newCreateV2Work(idx)
-			logrus.Infof("worker %d created %d pipelines", idx, count)
-		}(i)
-	}
-	wait.Wait()
-}
+//func Test_benchmarkCreateV2(t *testing.T) {
+//	wait := &sync.WaitGroup{}
+//	// concurrency of create pipeline
+//	for i := 0; i < 1; i++ {
+//		wait.Add(1)
+//		go func(idx int) {
+//			defer wait.Done()
+//			count := newCreateV2Work(idx)
+//			logrus.Infof("worker %d created %d pipelines", idx, count)
+//		}(i)
+//	}
+//	wait.Wait()
+//}

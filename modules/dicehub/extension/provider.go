@@ -41,9 +41,9 @@ type config struct {
 	ExtensionMenu        map[string][]string `file:"extension_menu" env:"EXTENSION_MENU"`
 	ExtensionSources     string              `file:"extension_sources" env:"EXTENSION_SOURCES"`
 	ExtensionSourcesCron string              `file:"extension_sources_cron" env:"EXTENSION_SOURCES_CRON"`
-}
 
-const FilePath = "/app/extensions-init"
+	InitFilePath string `file:"init_file_path" default:"common-conf/extensions-init"`
+}
 
 // +provider
 type provider struct {
@@ -95,7 +95,7 @@ func (p *provider) InitSources() error {
 	RegisterExtensionSource(fileSources)
 	StartSyncExtensionSource()
 
-	sources := strings.Split(FilePath+","+p.Cfg.ExtensionSources, ",")
+	sources := strings.Split(p.Cfg.InitFilePath+","+p.Cfg.ExtensionSources, ",")
 	for _, source := range sources {
 		err := AddSyncExtension(source)
 		if err != nil {
