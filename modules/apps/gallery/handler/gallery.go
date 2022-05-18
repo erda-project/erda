@@ -174,6 +174,9 @@ func (p *GalleryHandler) PutOnArtifacts(ctx context.Context, req *pb.PutOnArtifa
 	// update opus
 	if err = tx.Updates(&opus, map[string]interface{}{
 		"updater_id":         userID,
+		"logo_url":           version.LogoURL,
+		"summary":            version.Summary,
+		"summary_i18n":       version.SummaryI18n,
 		"default_version_id": version.ID,
 		"latest_version_id":  version.ID,
 	}, dao.ByIDOption(opus.ID)); err != nil {
@@ -684,7 +687,8 @@ func (p *GalleryHandler) createExtensions(ctx context.Context, l *logrus.Entry, 
 
 	// update opus
 	updates := map[string]interface{}{
-		"updater_id": userID,
+		"updater_id":        userID,
+		"latest_version_id": version.ID,
 	}
 	if req.GetIsDefault() {
 		updates["default_version_id"] = version.ID
