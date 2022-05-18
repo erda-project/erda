@@ -113,20 +113,6 @@ func (spec *Spec) GetLocaleDesc(lang string) string {
 	return spec.Locale[lang][specDesc]
 }
 
-func (spec *Spec) GetLocaleValue(lang, key, default_ string) string {
-	if lang == "" {
-		lang = i18n.ZH
-	}
-	if len(spec.Locale) == 0 || len(spec.Locale[lang]) == 0 {
-		return default_
-	}
-	v := spec.Locale[lang][key]
-	if v == "" {
-		return default_
-	}
-	return v
-}
-
 func (spec *Spec) IsDisableECI() bool {
 	if spec.Labels == nil {
 		return false

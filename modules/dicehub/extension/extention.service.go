@@ -724,8 +724,8 @@ func (s *extensionService) PutOnExtensionWithNameVersion(ctx context.Context, ve
 		Mode:        apistructs.PutOnOpusModeOverride.String(),
 		Desc:        spec.Desc,
 		Readme: []*gallerypb.Readme{{
-			Lang:     apistructs.LangUnkown.String(),
-			LangName: apistructs.LangTypes[apistructs.LangUnkown],
+			Lang:     apistructs.LangUnknown.String(),
+			LangName: apistructs.LangTypes[apistructs.LangUnknown],
 			Text:     ver.Readme,
 		}},
 		IsDefault: spec.IsDefault,

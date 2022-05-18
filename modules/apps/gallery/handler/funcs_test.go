@@ -220,8 +220,8 @@ func TestComposeListOpusVersionRespWithReadmes(t *testing.T) {
 	}})
 	handler.ComposeListOpusVersionRespWithReadmes(resp, apistructs.LangEn.String(), []*model.OpusReadme{{
 		VersionID: id,
-		Lang:      apistructs.LangUnkown.String(),
-		LangName:  apistructs.LangTypes[apistructs.LangUnkown],
+		Lang:      apistructs.LangUnknown.String(),
+		LangName:  apistructs.LangTypes[apistructs.LangUnknown],
 		Text:      "xxx",
 	}})
 	handler.ComposeListOpusVersionRespWithReadmes(resp, apistructs.LangEn.String(), []*model.OpusReadme{{

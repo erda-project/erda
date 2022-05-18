@@ -29,11 +29,11 @@ const (
 	PutOnOpusModeAppend   PutOnOpusMode = "append"
 	PutOnOpusModeOverride PutOnOpusMode = "override"
 
-	LangUnkown Lang = "unknown"
-	LangEn     Lang = "en"
-	LangEnUs   Lang = "en_us"
-	LangZh     Lang = "zh"
-	LangZhCn   Lang = "zh_cn"
+	LangUnknown Lang = "unknown"
+	LangEn      Lang = "en"
+	LangEnUs    Lang = "en_us"
+	LangZh      Lang = "zh"
+	LangZhCn    Lang = "zh_cn"
 )
 
 var (
@@ -49,11 +49,11 @@ var (
 	}
 
 	LangTypes = map[Lang]string{
-		LangUnkown: "unknown",
-		LangEn:     "English",
-		LangEnUs:   "English",
-		LangZh:     "中文",
-		LangZhCn:   "中文",
+		LangUnknown: "unknown",
+		LangEn:      "English",
+		LangEnUs:    "English",
+		LangZh:      "中文",
+		LangZhCn:    "中文",
 	}
 )
 

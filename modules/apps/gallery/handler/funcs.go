@@ -221,7 +221,7 @@ func ComposeListOpusVersionRespWithReadmes(resp *pb.ListOpusVersionsResp, lang s
 			version.Readme = readme.Text
 			continue
 		}
-		if readme, ok := langs[apistructs.LangUnkown.String()]; ok {
+		if readme, ok := langs[apistructs.LangUnknown.String()]; ok {
 			version.ReadmeLang = readme.Lang
 			version.ReadmeLangName = readme.LangName
 			version.Readme = readme.Text

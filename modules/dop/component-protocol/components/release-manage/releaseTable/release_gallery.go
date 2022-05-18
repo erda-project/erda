@@ -66,8 +66,8 @@ func (r *ComponentReleaseTable) putOnRelease(ctx context.Context, releaseID stri
 		DownloadURL:    fmt.Sprintf("/api/%s/releases/%s/actions/download", org.Name, release.ReleaseID),
 		Readme: []*gallerypb.Readme{
 			{
-				Lang:     apistructs.LangUnkown.String(),
-				LangName: apistructs.LangUnkown.String(),
+				Lang:     apistructs.LangUnknown.String(),
+				LangName: apistructs.LangUnknown.String(),
 				Text:     release.Changelog,
 			},
 		},
