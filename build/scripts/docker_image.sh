@@ -37,7 +37,7 @@ DOCKERFILE=${DOCKERFILE_DEFAULT}
 
 # setup single module envionment variables
 setup_single_module_env() {
-    MAKE_BUILD_CMD="build"
+    MAKE_BUILD_CMD="build-one"
 
     # application name
     APP_NAME="$(echo ${MODULE_PATH} | sed 's/^\(.*\)[/]//')"
@@ -49,23 +49,6 @@ setup_single_module_env() {
         DOCKERFILE="build/dockerfiles/${APP_NAME}/Dockerfile"
     fi
     DOCKER_IMAGE=${APP_NAME}:${IMAGE_TAG}
-
-    # config file or directory path
-    if [ -f "conf/${APP_NAME}.yaml" ];then
-        CONFIG_PATH="${APP_NAME}.yaml"
-    elif [ -f "conf/${APP_NAME}.yml" ];then
-        CONFIG_PATH="${APP_NAME}.yml"
-    elif [ -f "conf/${MODULE_PATH}.yaml" ];then
-        CONFIG_PATH="${MODULE_PATH}.yaml"
-    elif [ -f "conf/${MODULE_PATH}.yml" ];then
-        CONFIG_PATH="${MODULE_PATH}.yml"
-    elif [ -d "conf/${MODULE_PATH}" ];then
-        CONFIG_PATH="${MODULE_PATH}"
-    elif [ -d "conf/${APP_NAME}" ];then
-        CONFIG_PATH="${APP_NAME}"
-    else
-        CONFIG_PATH=""
-    fi
 }
 
 # setup envionment variables for build all
@@ -129,7 +112,6 @@ build_image()  {
         --label "build-time=$(date '+%Y-%m-%d %T%z')" \
         --build-arg "MODULE_PATH=${MODULE_PATH}" \
         --build-arg "APP_NAME=${APP_NAME}" \
-        --build-arg "CONFIG_PATH=${CONFIG_PATH}" \
         --build-arg "DOCKER_IMAGE=${DOCKER_IMAGE}" \
         --build-arg "BASE_DOCKER_IMAGE=${BASE_DOCKER_IMAGE}" \
         --build-arg "MAKE_BUILD_CMD=${MAKE_BUILD_CMD}" \

@@ -15,8 +15,9 @@
 package main
 
 import (
+	_ "embed"
+
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/conf"
 	"github.com/erda-project/erda/pkg/common"
 
 	// modules
@@ -52,8 +53,11 @@ import (
 	_ "github.com/erda-project/erda-infra/providers"
 )
 
+//go:embed bootstrap.yaml
+var bootstrapCfg string
+
 func main() {
 	common.Run(&servicehub.RunOptions{
-		ConfigFile: conf.MonitorStreamingConfigFilePath,
+		Content: bootstrapCfg,
 	})
 }

@@ -15,16 +15,19 @@
 package main
 
 import (
+	_ "embed"
+
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/conf"
 	"github.com/erda-project/erda/pkg/common"
 
 	_ "github.com/erda-project/erda/modules/monitor/dashboard/report/engine"
 )
 
+//go:embed bootstrap.yaml
+var bootstrapCfg string
+
 func main() {
 	common.Run(&servicehub.RunOptions{
-		ConfigFile: conf.MonitorReportEngineFilePath,
-		Content:    conf.MonitorReportEngineDefaultConfig,
+		Content: bootstrapCfg,
 	})
 }
