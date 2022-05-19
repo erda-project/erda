@@ -181,7 +181,7 @@ func (s *logService) SequentialSearchFromMonitor(ctx context.Context, req *pb.Se
 	start, end := req.TimestampNanos, int64(0)
 	isDescendingOrder := req.Sort == "desc"
 	if isDescendingOrder {
-		start, end = start-int64(7*24*time.Hour), start
+		start, end = 0, start
 	}
 	if req.Start > 0 || req.End > 0 {
 		start = req.Start * int64(time.Millisecond)
