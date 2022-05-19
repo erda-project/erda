@@ -73,6 +73,7 @@ func clusterRegister(ctx context.Context, server *remotedialer.Server, rw http.R
 	registerFunc := func(clusterKey string, clusterInfo cluster) {
 		ctx, cancel := context.WithTimeout(context.Background(), registerTimeout)
 		defer cancel()
+		ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "cluster-manager"}))
 		for {
 			select {
 			case <-ctx.Done():
@@ -105,7 +106,6 @@ func clusterRegister(ctx context.Context, server *remotedialer.Server, rw http.R
 					}
 				}
 
-				ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.ClientIDHeader: "cluster-manager"}))
 				if _, err = clusterSvc.PatchCluster(ctx, &clusterpb.PatchClusterRequest{
 					Name: clusterKey,
 					ManageConfig: &clusterpb.ManageConfig{

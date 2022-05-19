@@ -93,24 +93,30 @@ func (c *ClusterService) ListCluster(ctx context.Context, req *pb.ListClusterReq
 		}
 	}
 	return &pb.ListClusterResponse{
-		Data: clustersInOrg,
+		Data:    clustersInOrg,
+		Success: true,
 	}, nil
 }
 
 func (c *ClusterService) GetCluster(ctx context.Context, req *pb.GetClusterRequest) (*pb.GetClusterResponse, error) {
 	if err := auth(ctx); err != nil {
+		logrus.Errorf("failed to auth, %v", err)
 		return nil, err
 	}
 
 	cluster, err := c.Get(req.IdOrName)
 	if err != nil {
+		logrus.Errorf("failed to get cluster %s, %v", req.IdOrName, err)
 		if strutil.Contains(err.Error(), "not found") {
 			return nil, ErrGetCluster.NotFound()
 		}
 		return nil, ErrGetCluster.InternalError(err)
 	}
 
-	return &pb.GetClusterResponse{Data: cluster}, nil
+	return &pb.GetClusterResponse{
+		Data:    cluster,
+		Success: true,
+	}, nil
 }
 
 func (c *ClusterService) CreateCluster(ctx context.Context, req *pb.CreateClusterRequest) (*pb.CreateClusterResponse, error) {
@@ -129,7 +135,7 @@ func (c *ClusterService) CreateCluster(ctx context.Context, req *pb.CreateCluste
 	if err := c.bdl.CreateOrgClusterRelationsByOrg(req.Name, req.UserID, req.OrgID); err != nil {
 		return nil, ErrCreateCluster.InternalError(err)
 	}
-	return &pb.CreateClusterResponse{}, nil
+	return &pb.CreateClusterResponse{Success: true}, nil
 }
 
 func (c *ClusterService) UpdateCluster(ctx context.Context, req *pb.UpdateClusterRequest) (*pb.UpdateClusterResponse, error) {
@@ -145,7 +151,7 @@ func (c *ClusterService) UpdateCluster(ctx context.Context, req *pb.UpdateCluste
 		return nil, ErrUpdateCluster.InvalidParameter(err)
 	}
 
-	return &pb.UpdateClusterResponse{}, nil
+	return &pb.UpdateClusterResponse{Success: true}, nil
 }
 
 func (c *ClusterService) DeleteCluster(ctx context.Context, req *pb.DeleteClusterRequest) (*pb.DeleteClusterResponse, error) {
@@ -157,7 +163,7 @@ func (c *ClusterService) DeleteCluster(ctx context.Context, req *pb.DeleteCluste
 		return nil, err
 	}
 
-	return &pb.DeleteClusterResponse{}, nil
+	return &pb.DeleteClusterResponse{Success: true}, nil
 }
 
 func (c *ClusterService) PatchCluster(ctx context.Context, req *pb.PatchClusterRequest) (*pb.PatchClusterResponse, error) {
