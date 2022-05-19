@@ -15,8 +15,11 @@
 package main
 
 import (
+	_ "embed"
+	"fmt"
+	"runtime"
+
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/conf"
 	"github.com/erda-project/erda/modules/extensions/loghub"
 	"github.com/erda-project/erda/pkg/common"
 
@@ -69,9 +72,13 @@ import (
 	_ "github.com/erda-project/erda-infra/providers"
 )
 
+//go:embed bootstrap.yaml
+var bootstrapCfg string
+
 func main() {
+	fmt.Println(runtime.Caller(0))
 	common.RegisterInitializer(loghub.Init)
 	common.Run(&servicehub.RunOptions{
-		ConfigFile: conf.MonitorConfigFilePath,
+		Content: bootstrapCfg,
 	})
 }

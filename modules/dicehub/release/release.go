@@ -17,6 +17,7 @@ package release
 import (
 	"archive/zip"
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -485,9 +486,13 @@ func (s *ReleaseService) UpdateReference(orgID int64, releaseID string, req *pb.
 }
 
 // Delete delete Release
-func (s *ReleaseService) Delete(orgID int64, releaseIDs ...string) error {
+func (s *ReleaseService) Delete(orgID int64, opusMap map[string]*pb.ListArtifactsRespItem, releaseIDs ...string) error {
 	var failed []string
 	for _, releaseID := range releaseIDs {
+		if _, ok := opusMap[releaseID]; ok {
+			failed = append(failed, fmt.Sprintf("%s(%s)", releaseID, "can not delete release which has been put on to gallery"))
+			continue
+		}
 		release, err := s.db.GetRelease(releaseID)
 		if err != nil {
 			failed = append(failed, fmt.Sprintf("%s(%s)", releaseID, err.Error()))
@@ -618,7 +623,7 @@ func (s *ReleaseService) Get(orgID int64, releaseID string) (*pb.ReleaseGetRespo
 }
 
 // List Search based on search parameters
-func (s *ReleaseService) List(orgID int64, req *pb.ReleaseListRequest) (*pb.ReleaseListResponseData, error) {
+func (s *ReleaseService) List(ctx context.Context, orgID int64, req *pb.ReleaseListRequest) (*pb.ReleaseListResponseData, error) {
 	if len(req.Tags) != 0 {
 		lrs, err := s.labelRelationDB.GetLabelRelationsByLabels(apistructs.LabelTypeRelease, req.Tags)
 		if err != nil {
@@ -664,16 +669,19 @@ func (s *ReleaseService) List(orgID int64, req *pb.ReleaseListRequest) (*pb.Rele
 		return nil, err
 	}
 
-	resp, err := s.bdl.ListLabel(apistructs.ProjectLabelListRequest{
-		ProjectID: uint64(req.ProjectID),
-		Type:      apistructs.LabelTypeRelease,
-		PageNo:    1,
-		PageSize:  1000,
-	})
-	if err != nil {
-		return nil, errors.Errorf("failed to list labels, %v", err)
+	var tags []apistructs.ProjectLabel
+	if req.ProjectID != 0 {
+		resp, err := s.bdl.ListLabel(apistructs.ProjectLabelListRequest{
+			ProjectID: uint64(req.ProjectID),
+			Type:      apistructs.LabelTypeRelease,
+			PageNo:    1,
+			PageSize:  1000,
+		})
+		if err != nil {
+			return nil, errors.Errorf("failed to list labels, %v", err)
+		}
+		tags = resp.List
 	}
-	tags := resp.List
 	tagMap := make(map[int64]*apistructs.ProjectLabel)
 	for i := range tags {
 		tagMap[tags[i].ID] = &tags[i]
@@ -688,9 +696,14 @@ func (s *ReleaseService) List(orgID int64, req *pb.ReleaseListRequest) (*pb.Rele
 		return nil, errors.Errorf("failed to batcy query release label id map, %v", err)
 	}
 
+	opuses, err := s.opus.ListArtifacts(ctx, &pb.ListArtifactsReq{OrgID: uint32(orgID), ReleaseIDs: releaseIDs})
+	if err != nil {
+		return nil, errors.Errorf("failed to list opus, %v", err)
+	}
+
 	releaseList := make([]*pb.ReleaseData, 0, len(releases))
 	for _, v := range releases {
-		release, err := convertToListReleaseResponse(&v, releaseTagMap[v.ReleaseID], tagMap)
+		release, err := convertToListReleaseResponse(&v, releaseTagMap[v.ReleaseID], tagMap, opuses.Data)
 		if err != nil {
 			logrus.WithField("func", "*ReleaseList").Errorln("failed to convertToListReleaseResponse")
 			continue
@@ -704,7 +717,7 @@ func (s *ReleaseService) List(orgID int64, req *pb.ReleaseListRequest) (*pb.Rele
 	}, nil
 }
 
-func convertToListReleaseResponse(release *db.Release, tagIDs []uint64, tagsMap map[int64]*apistructs.ProjectLabel) (*pb.ReleaseData, error) {
+func convertToListReleaseResponse(release *db.Release, tagIDs []uint64, tagsMap map[int64]*apistructs.ProjectLabel, opusMap map[string]*pb.ListArtifactsRespItem) (*pb.ReleaseData, error) {
 	var labels map[string]string
 	err := json.Unmarshal([]byte(release.Labels), &labels)
 	if err != nil {
@@ -735,6 +748,12 @@ func convertToListReleaseResponse(release *db.Release, tagIDs []uint64, tagsMap 
 		})
 	}
 
+	var opusID, opusVersionID string
+	opusInfo := opusMap[release.ReleaseID]
+	if opusInfo != nil {
+		opusID = opusInfo.OpusID
+		opusVersionID = opusInfo.OpusVersionID
+	}
 	respData := &pb.ReleaseData{
 		ReleaseID:        release.ReleaseID,
 		ReleaseName:      release.ReleaseName,
@@ -762,6 +781,8 @@ func convertToListReleaseResponse(release *db.Release, tagIDs []uint64, tagsMap 
 		CreatedAt:        timestamppb.New(release.CreatedAt),
 		UpdatedAt:        timestamppb.New(release.UpdatedAt),
 		IsLatest:         release.IsLatest,
+		OpusID:           opusID,
+		OpusVersionID:    opusVersionID,
 	}
 	return respData, nil
 }

@@ -15,6 +15,7 @@
 package mock
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -103,13 +104,13 @@ func getTime(timeType string) string {
 	case TimeStampNsAfterDay:
 		return strconv.FormatInt(currentTime.UnixNano()+HourStampNs*24, 10)
 	case Date:
-		return currentTime.Format("2006-01-02")
+		return fmt.Sprintf(`"%s"`, currentTime.Format("2006-01-02"))
 	case DateDay:
-		return currentTime.Add(day).Format("2006-01-02")
+		return fmt.Sprintf(`"%s"`, currentTime.Add(day).Format("2006-01-02"))
 	case DateTime:
-		return currentTime.Format("2006-01-02 15:04:05")
+		return fmt.Sprintf(`"%s"`, currentTime.Format("2006-01-02 15:04:05"))
 	case DateTimeHour:
-		return currentTime.Add(hour).Format("2006-01-02 15:04:05")
+		return fmt.Sprintf(`"%s"`, currentTime.Add(hour).Format("2006-01-02 15:04:05"))
 	}
 
 	if !strings.HasPrefix(timeType, DateTimeCustom) {
@@ -118,7 +119,7 @@ func getTime(timeType string) string {
 
 	key := strings.TrimPrefix(timeType, DateTimeCustom)
 	if format, ok := dateTimeCustoms[key]; ok {
-		return currentTime.Format(format)
+		return fmt.Sprintf(`"%s"`, currentTime.Format(format))
 	}
 	return currentTime.Format(key)
 }

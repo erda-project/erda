@@ -15,19 +15,26 @@
 package main
 
 import (
+	_ "embed"
+
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/pkg/common"
 
 	// providers and modules
 	_ "github.com/erda-project/erda-infra/providers"
+	_ "github.com/erda-project/erda-infra/providers/grpcclient"
+	_ "github.com/erda-project/erda-proto-go/apps/gallery/client"
 	_ "github.com/erda-project/erda/modules/dicehub"
 	_ "github.com/erda-project/erda/modules/dicehub/extension"
 	_ "github.com/erda-project/erda/modules/dicehub/image"
 	_ "github.com/erda-project/erda/modules/dicehub/release"
 )
 
+//go:embed bootstrap.yaml
+var bootstrapCfg string
+
 func main() {
 	common.Run(&servicehub.RunOptions{
-		ConfigFile: "conf/dicehub/dicehub.yaml",
+		Content: bootstrapCfg,
 	})
 }

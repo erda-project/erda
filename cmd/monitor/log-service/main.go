@@ -15,8 +15,9 @@
 package main
 
 import (
+	_ "embed"
+
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/conf"
 	"github.com/erda-project/erda/modules/extensions/loghub"
 	"github.com/erda-project/erda/pkg/common"
 	"github.com/erda-project/erda/pkg/common/addon"
@@ -38,11 +39,13 @@ import (
 	_ "github.com/erda-project/erda-infra/providers/pprof"
 )
 
+//go:embed bootstrap.yaml
+var bootstrapCfg string
+
 func main() {
 	common.RegisterInitializer(addon.OverrideEnvs)
 	common.RegisterInitializer(loghub.Init)
 	common.Run(&servicehub.RunOptions{
-		ConfigFile: conf.MonitorLogServiceConfigFilePath,
-		Content:    conf.MonitorLogServiceDefaultConfig,
+		Content: bootstrapCfg,
 	})
 }

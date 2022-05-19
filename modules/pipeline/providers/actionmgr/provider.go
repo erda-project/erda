@@ -37,7 +37,7 @@ import (
 type config struct {
 	RefreshInterval    time.Duration `file:"refresh_interval" default:"1m"`
 	PoolSize           int           `file:"pool_size" default:"20"`
-	ActionInitFilePath string        `file:"action_init_file_path" default:"/app/extensions-init"`
+	ActionInitFilePath string        `file:"action_init_file_path" default:"common-conf/extensions-init"`
 }
 
 // +provider
