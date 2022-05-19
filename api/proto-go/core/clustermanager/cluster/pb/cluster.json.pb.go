@@ -13,6 +13,8 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the "encoding/json" package it is being compiled against.
+var _ json.Marshaler = (*ErrResponse)(nil)
+var _ json.Unmarshaler = (*ErrResponse)(nil)
 var _ json.Marshaler = (*ListClusterRequest)(nil)
 var _ json.Unmarshaler = (*ListClusterRequest)(nil)
 var _ json.Marshaler = (*ListClusterResponse)(nil)
@@ -67,6 +69,24 @@ var _ json.Marshaler = (*Platform)(nil)
 var _ json.Unmarshaler = (*Platform)(nil)
 var _ json.Marshaler = (*ManageConfig)(nil)
 var _ json.Unmarshaler = (*ManageConfig)(nil)
+
+// ErrResponse implement json.Marshaler.
+func (m *ErrResponse) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// ErrResponse implement json.Marshaler.
+func (m *ErrResponse) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
 
 // ListClusterRequest implement json.Marshaler.
 func (m *ListClusterRequest) MarshalJSON() ([]byte, error) {
