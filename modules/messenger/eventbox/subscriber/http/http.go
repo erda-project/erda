@@ -22,6 +22,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/erda-project/erda/modules/messenger/eventbox/constant"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
@@ -79,9 +80,16 @@ func (s *HTTPSubscriber) Publish(dest string, content string, timestamp int64, m
 			if parsedUrl.Scheme == "https" {
 				opt = []httpclient.OpOption{httpclient.WithHTTPS()}
 			}
+			var userID string
+			if m, ok := msg.Labels[types.LabelKey(constant.WebhookLabelKey)].(map[string]interface{}); ok {
+				userID = m["userID"].(string)
+			}
+
 			var respBody bytes.Buffer
 			resp, err := httpclient.New(opt...).Post(parsedUrl.Host).Path(parsedUrl.Path).
-				Header("Content-Type", "application/json").RawBody(buf).Do().Body(&respBody)
+				Header("Content-Type", "application/json").
+				Header("USER-ID", userID).
+				RawBody(buf).Do().Body(&respBody)
 			if err != nil {
 				errs <- errors.Wrapf(err, "url: %s", destUrl)
 				return

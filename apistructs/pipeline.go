@@ -29,6 +29,7 @@ import (
 
 const (
 	DefaultPipelineYmlName        = "pipeline.yml"
+	DefaultPipelinePath    string = ""
 	DicePipelinePath       string = ".dice/pipelines"
 	ErdaPipelinePath       string = ".erda/pipelines"
 	YmlSuffix              string = ".yml"

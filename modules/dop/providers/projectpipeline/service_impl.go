@@ -26,6 +26,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/erda-project/erda/modules/pkg/diceworkspace"
+	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -58,6 +60,9 @@ const (
 
 	CreateProjectPipelineNamePreCheckLocaleKey   string = "ProjectPipelineCreateNamePreCheckNotPass"
 	CreateProjectPipelineSourcePreCheckLocaleKey string = "ProjectPipelineCreateSourcePreCheckNotPass"
+
+	InitCommitID string = "0000000000000000000000000000000000000000"
+	BranchPrefix string = "refs/heads/"
 )
 
 type AutoRunParams struct {
@@ -76,13 +81,23 @@ func (s *ProjectPipelineService) ListPipelineYml(ctx context.Context, req *pb.Li
 	if err != nil {
 		return nil, err
 	}
+	list, err := s.listPipelineYmlByApp(app, req.Branch, apis.GetUserID(ctx))
+	if err != nil {
+		return nil, err
+	}
 
+	return &pb.ListAppPipelineYmlResponse{
+		Result: list,
+	}, nil
+}
+
+func (s *ProjectPipelineService) listPipelineYmlByApp(app *apistructs.ApplicationDTO, branch, userID string) ([]*pb.PipelineYmlList, error) {
 	work := limit_sync_group.NewWorker(3)
 	var list []*pb.PipelineYmlList
-	var pathList = []string{"", apistructs.DicePipelinePath, apistructs.ErdaPipelinePath}
+	var pathList = []string{apistructs.DefaultPipelinePath, apistructs.DicePipelinePath, apistructs.ErdaPipelinePath}
 	for _, path := range pathList {
 		work.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
-			result, err := s.getPipelineYml(app, apis.GetUserID(ctx), req.Branch, i[0].(string))
+			result, err := s.GetPipelineYml(app, userID, branch, i[0].(string))
 			if err != nil {
 				return nil
 			}
@@ -96,13 +111,10 @@ func (s *ProjectPipelineService) ListPipelineYml(ctx context.Context, req *pb.Li
 	if err := work.Do().Error(); err != nil {
 		return nil, err
 	}
-
-	return &pb.ListAppPipelineYmlResponse{
-		Result: list,
-	}, nil
+	return list, nil
 }
 
-func (s *ProjectPipelineService) getPipelineYml(app *apistructs.ApplicationDTO, userID string, branch string, findPath string) ([]*pb.PipelineYmlList, error) {
+func (s *ProjectPipelineService) GetPipelineYml(app *apistructs.ApplicationDTO, userID string, branch string, findPath string) ([]*pb.PipelineYmlList, error) {
 	var path string
 	if findPath == "" {
 		path = fmt.Sprintf("/wb/%v/%v/tree/%v", app.ProjectName, app.Name, branch)
@@ -225,6 +237,79 @@ func (p *ProjectPipelineService) Create(ctx context.Context, params *pb.CreatePr
 	return &pb.CreateProjectPipelineResponse{ProjectPipeline: pipeline}, nil
 }
 
+func (p *ProjectPipelineService) BatchCreateByGittarPushHook(ctx context.Context, params *pb.GittarPushPayloadEvent) (*pb.BatchCreateProjectPipelineResponse, error) {
+	if params.Content.Before != InitCommitID {
+		return &pb.BatchCreateProjectPipelineResponse{}, nil
+	}
+
+	projectID, err := strconv.ParseUint(params.ProjectID, 10, 64)
+	if err != nil {
+		return nil, err
+	}
+	appID, err := strconv.ParseUint(params.ApplicationID, 10, 64)
+	if err != nil {
+		return nil, err
+	}
+	appDto, err := p.bundle.GetApp(appID)
+	if err != nil {
+		return nil, err
+	}
+	// Check branch rules
+	ok, err := p.checkBranchRule(getBranchFromRef(params.Content.Ref), int64(projectID))
+	if err != nil {
+		return nil, err
+	}
+	if !ok {
+		return &pb.BatchCreateProjectPipelineResponse{}, nil
+	}
+
+	// Find pipeline yml list
+	ymls, err := p.listPipelineYmlByApp(appDto, getBranchFromRef(params.Content.Ref), params.Content.Pusher.ID)
+	if err != nil {
+		return nil, err
+	}
+	if len(ymls) == 0 {
+		return &pb.BatchCreateProjectPipelineResponse{}, nil
+	}
+	pipelineYmls := make([]string, 0, len(ymls))
+	for i := range ymls {
+		pipelineYmls = append(pipelineYmls, filepath.Join(ymls[i].YmlPath, ymls[i].YmlName))
+	}
+
+	for _, v := range pipelineYmls {
+		req := pb.CreateProjectPipelineRequest{
+			ProjectID:  projectID,
+			AppID:      appID,
+			SourceType: "erda",
+			Ref:        getBranchFromRef(params.Content.Ref),
+			Path:       getFilePath(v),
+			FileName:   filepath.Base(v),
+		}
+		_, err = p.createOne(ctx, &req)
+		if err != nil {
+			p.logger.Errorf("failed to createOne, pipelineYml: %s, err: %v", v, err)
+		}
+	}
+
+	return &pb.BatchCreateProjectPipelineResponse{}, nil
+}
+
+func getBranchFromRef(ref string) string {
+	return ref[len(BranchPrefix):]
+}
+
+func (p *ProjectPipelineService) checkBranchRule(branch string, projectID int64) (bool, error) {
+	branchRules, err := p.branchRuleSve.Query(apistructs.ProjectScope, projectID)
+	if err != nil {
+		return false, err
+	}
+	_, err = diceworkspace.GetByGitReference(branch, branchRules)
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
 func (p *ProjectPipelineService) createOne(ctx context.Context, params *pb.CreateProjectPipelineRequest) (*pb.ProjectPipeline, error) {
 	sourceCheckResult, err := p.CreateSourcePreCheck(ctx, &pb.CreateProjectPipelineSourcePreCheckRequest{
 		SourceType: params.SourceType,
@@ -258,7 +343,7 @@ func (p *ProjectPipelineService) createOne(ctx context.Context, params *pb.Creat
 
 	definitionRsp, err := p.PipelineDefinition.Create(ctx, &dpb.PipelineDefinitionCreateRequest{
 		Location:         location,
-		Name:             params.Name,
+		Name:             makePipelineName(params, sourceReq.PipelineYml),
 		Creator:          apis.GetUserID(ctx),
 		PipelineSourceID: sourceRsp.PipelineSource.ID,
 		Category:         DefaultCategory.String(),
@@ -296,6 +381,20 @@ func (p *ProjectPipelineService) createOne(ctx context.Context, params *pb.Creat
 		FileName:         sourceRsp.PipelineSource.Name,
 		PipelineSourceID: sourceRsp.PipelineSource.ID,
 	}, nil
+}
+
+func makePipelineName(params *pb.CreateProjectPipelineRequest, pipelineYml string) string {
+	if params.Name != "" {
+		return params.Name
+	}
+	yml, err := pipelineyml.GetNameByPipelineYml(pipelineYml)
+	if err != nil {
+		return ""
+	}
+	if yml != "" {
+		return yml
+	}
+	return params.FileName
 }
 
 func (p *ProjectPipelineService) createCronIfNotExist(definition *dpb.PipelineDefinition, projectPipelineType ProjectSourceType) error {

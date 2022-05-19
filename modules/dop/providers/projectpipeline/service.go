@@ -29,6 +29,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/providers/projectpipeline/deftype"
+	"github.com/erda-project/erda/modules/dop/services/branchrule"
 	"github.com/erda-project/erda/modules/dop/services/permission"
 	"github.com/erda-project/erda/modules/dop/services/pipeline"
 )
@@ -47,6 +48,7 @@ type ProjectPipelineService struct {
 	GuideSvc           guidepb.GuideServiceServer
 	PipelineCron       cronpb.CronServiceServer
 	tokenService       tokenpb.TokenServiceServer
+	branchRuleSve      *branchrule.BranchRule
 }
 
 func (p *ProjectPipelineService) WithPipelineSvc(svc *pipeline.Pipeline) {
@@ -57,8 +59,13 @@ func (p *ProjectPipelineService) WithPermissionSvc(permission *permission.Permis
 	p.Permission = permission
 }
 
+func (p *ProjectPipelineService) WithBranchRuleSve(svc *branchrule.BranchRule) {
+	p.branchRuleSve = svc
+}
+
 type Service interface {
 	Create(ctx context.Context, params *pb.CreateProjectPipelineRequest) (*pb.CreateProjectPipelineResponse, error)
+	BatchCreateByGittarPushHook(ctx context.Context, params *pb.GittarPushPayloadEvent) (*pb.BatchCreateProjectPipelineResponse, error)
 	List(ctx context.Context, params deftype.ProjectPipelineList) ([]*dpb.PipelineDefinition, int64, error)
 	ListUsedRefs(ctx context.Context, params deftype.ProjectPipelineUsedRefList) ([]string, error)
 	Delete(ctx context.Context, params deftype.ProjectPipelineDelete) (*deftype.ProjectPipelineDeleteResult, error)

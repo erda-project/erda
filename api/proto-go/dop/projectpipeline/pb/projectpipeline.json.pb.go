@@ -73,6 +73,14 @@ var _ json.Marshaler = (*OneClickCreateProjectPipelineResponse)(nil)
 var _ json.Unmarshaler = (*OneClickCreateProjectPipelineResponse)(nil)
 var _ json.Marshaler = (*ProjectPipelineSource)(nil)
 var _ json.Unmarshaler = (*ProjectPipelineSource)(nil)
+var _ json.Marshaler = (*GittarPushPayloadEvent)(nil)
+var _ json.Unmarshaler = (*GittarPushPayloadEvent)(nil)
+var _ json.Marshaler = (*Content)(nil)
+var _ json.Unmarshaler = (*Content)(nil)
+var _ json.Marshaler = (*Pusher)(nil)
+var _ json.Unmarshaler = (*Pusher)(nil)
+var _ json.Marshaler = (*BatchCreateProjectPipelineResponse)(nil)
+var _ json.Unmarshaler = (*BatchCreateProjectPipelineResponse)(nil)
 
 // PipelineRunParam implement json.Marshaler.
 func (m *PipelineRunParam) MarshalJSON() ([]byte, error) {
@@ -609,6 +617,78 @@ func (m *ProjectPipelineSource) MarshalJSON() ([]byte, error) {
 
 // ProjectPipelineSource implement json.Marshaler.
 func (m *ProjectPipelineSource) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// GittarPushPayloadEvent implement json.Marshaler.
+func (m *GittarPushPayloadEvent) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// GittarPushPayloadEvent implement json.Marshaler.
+func (m *GittarPushPayloadEvent) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// Content implement json.Marshaler.
+func (m *Content) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// Content implement json.Marshaler.
+func (m *Content) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// Pusher implement json.Marshaler.
+func (m *Pusher) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// Pusher implement json.Marshaler.
+func (m *Pusher) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// BatchCreateProjectPipelineResponse implement json.Marshaler.
+func (m *BatchCreateProjectPipelineResponse) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// BatchCreateProjectPipelineResponse implement json.Marshaler.
+func (m *BatchCreateProjectPipelineResponse) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)

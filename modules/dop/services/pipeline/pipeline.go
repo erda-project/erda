@@ -726,7 +726,7 @@ func (p *Pipeline) createCron(appDto *apistructs.ApplicationDTO, ymlPathName str
 	return nil
 }
 
-// PipelineCronUpdate pipeline cron update
+// PipelineDefinitionUpdate pipeline definition update
 func (p *Pipeline) PipelineDefinitionUpdate(req apistructs.GittarPushPayloadEvent) error {
 	appID, err := strconv.ParseInt(req.ApplicationID, 10, 64)
 	if err != nil {

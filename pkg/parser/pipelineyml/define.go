@@ -33,6 +33,8 @@ const (
 type Spec struct {
 	Version string `yaml:"version"`
 
+	Name string `yaml:"name"`
+
 	On       *TriggerConfig                `yaml:"on,omitempty"`
 	Triggers []*apistructs.PipelineTrigger `yaml:"triggers,omitempty"` // todo Solve the problem that quotation marks will be automatically added after yaml is saved
 	Storage  *StorageConfig                `yaml:"storage,omitempty"`
@@ -381,4 +383,15 @@ func CountActionNumByPipelineYml(pipelineYmlStr string) (int64, error) {
 		totalActionNum++
 	})
 	return totalActionNum, nil
+}
+
+func GetNameByPipelineYml(pipelineYmlStr string) (string, error) {
+	if pipelineYmlStr == "" {
+		return "", nil
+	}
+	pipelineYml, err := New([]byte(pipelineYmlStr))
+	if err != nil {
+		return "", err
+	}
+	return pipelineYml.Spec().Name, nil
 }

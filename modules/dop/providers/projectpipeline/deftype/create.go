@@ -55,6 +55,31 @@ type ProjectPipelineCreate struct {
 	FileName   string              `json:"fileName"`
 }
 
+type ProjectPipelineBatchCreate struct {
+	ProjectID    uint64              `json:"projectID"`
+	Name         string              `json:"name"`
+	AppID        uint64              `json:"appID"`
+	SourceType   ProjectPipelineType `json:"sourceType"`
+	Ref          string              `json:"ref"`
+	PipelineYmls []string            `json:"pipelineYmls"`
+}
+
+func (p *ProjectPipelineBatchCreate) Validate() error {
+	if p.SourceType == ErdaProjectPipelineType && p.AppID == 0 {
+		return fmt.Errorf("the appID is 0")
+	}
+	if !p.SourceType.isEffectProjectPipelineType() {
+		return fmt.Errorf("the type is err")
+	}
+	if p.Ref == "" {
+		return fmt.Errorf("the ref is empty")
+	}
+	if len(p.PipelineYmls) == 0 {
+		return fmt.Errorf("the pipelineYmls is empty")
+	}
+	return nil
+}
+
 func (p *ProjectPipelineCreate) Validate() error {
 	if p.Name == "" {
 		return fmt.Errorf("the name is empty")

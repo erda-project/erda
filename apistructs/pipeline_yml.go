@@ -39,7 +39,8 @@ const (
 
 type PipelineYml struct {
 	// 用于构造 pipeline yml
-	Version         string                 `json:"version"`                                                    // 版本
+	Version         string                 `json:"version"` // 版本
+	Name            string                 `json:"name"`
 	Envs            map[string]string      `json:"envs,omitempty"`                                             // 环境变量
 	Cron            string                 `json:"cron,omitempty"`                                             // 定时配置
 	CronCompensator *CronCompensator       `json:"cronCompensator,omitempty" yaml:"cronCompensator,omitempty"` // 定时补偿配置
