@@ -15,6 +15,7 @@
 package projectpipeline
 
 import (
+	"context"
 	"reflect"
 	"sort"
 	"testing"
@@ -623,7 +624,7 @@ func TestProjectPipelineService_listPipelineYmlByApp(t *testing.T) {
 				return nil, nil
 			})
 			defer monkey.UnpatchAll()
-			got, err := s.listPipelineYmlByApp(tt.args.app, tt.args.branch, tt.args.userID)
+			got, err := s.ListPipelineYmlByApp(tt.args.app, tt.args.branch, tt.args.userID)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("listPipelineYmlByApp() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -633,6 +634,94 @@ func TestProjectPipelineService_listPipelineYmlByApp(t *testing.T) {
 			})
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("listPipelineYmlByApp() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestProjectPipelineService_BatchCreateByGittarPushHook(t *testing.T) {
+	type fields struct {
+		logger logs.Logger
+	}
+	type args struct {
+		ctx    context.Context
+		params *pb.GittarPushPayloadEvent
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    *pb.BatchCreateProjectPipelineResponse
+		wantErr bool
+	}{
+		{
+			name:   "test BatchCreateByGittarPushHook",
+			fields: fields{},
+			args: args{
+				ctx: context.Background(),
+				params: &pb.GittarPushPayloadEvent{
+					Event:         "git_push",
+					Action:        "git_push",
+					OrgID:         "1",
+					ProjectID:     "1",
+					ApplicationID: "1",
+					Content: &pb.Content{
+						Ref:    "refs/heads/master",
+						After:  "0000000000000000000000000000000000000abc",
+						Before: "0000000000000000000000000000000000000000",
+						Pusher: &pb.Pusher{
+							ID:       "10001",
+							Name:     "erda",
+							NickName: "erda",
+						},
+					},
+				},
+			},
+			want:    &pb.BatchCreateProjectPipelineResponse{},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var bdl *bundle.Bundle
+
+			p := &ProjectPipelineService{
+				logger: tt.fields.logger,
+				bundle: bdl,
+			}
+
+			monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetApp", func(bdl *bundle.Bundle, id uint64) (*apistructs.ApplicationDTO, error) {
+				return &apistructs.ApplicationDTO{
+					ID:   1,
+					Name: "erda",
+				}, nil
+			})
+			defer monkey.UnpatchAll()
+			monkey.PatchInstanceMethod(reflect.TypeOf(p), "CheckBranchRule", func(p *ProjectPipelineService, branch string, projectID int64) (bool, error) {
+				return true, nil
+			})
+
+			monkey.PatchInstanceMethod(reflect.TypeOf(p), "ListPipelineYmlByApp", func(p *ProjectPipelineService, app *apistructs.ApplicationDTO, branch, userID string) ([]*pb.PipelineYmlList, error) {
+				return []*pb.PipelineYmlList{{
+					YmlName: "pipeline.yml",
+					YmlPath: "",
+				}}, nil
+			})
+
+			monkey.PatchInstanceMethod(reflect.TypeOf(p), "CreateOne", func(p *ProjectPipelineService, ctx context.Context, params *pb.CreateProjectPipelineRequest) (*pb.ProjectPipeline, error) {
+				return &pb.ProjectPipeline{
+					ID:   "1",
+					Name: "pipeline.yml",
+				}, nil
+			})
+			got, err := p.BatchCreateByGittarPushHook(tt.args.ctx, tt.args.params)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("BatchCreateByGittarPushHook() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("BatchCreateByGittarPushHook() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

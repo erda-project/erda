@@ -81,7 +81,7 @@ func (s *ProjectPipelineService) ListPipelineYml(ctx context.Context, req *pb.Li
 	if err != nil {
 		return nil, err
 	}
-	list, err := s.listPipelineYmlByApp(app, req.Branch, apis.GetUserID(ctx))
+	list, err := s.ListPipelineYmlByApp(app, req.Branch, apis.GetUserID(ctx))
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +91,7 @@ func (s *ProjectPipelineService) ListPipelineYml(ctx context.Context, req *pb.Li
 	}, nil
 }
 
-func (s *ProjectPipelineService) listPipelineYmlByApp(app *apistructs.ApplicationDTO, branch, userID string) ([]*pb.PipelineYmlList, error) {
+func (s *ProjectPipelineService) ListPipelineYmlByApp(app *apistructs.ApplicationDTO, branch, userID string) ([]*pb.PipelineYmlList, error) {
 	work := limit_sync_group.NewWorker(3)
 	var list []*pb.PipelineYmlList
 	var pathList = []string{apistructs.DefaultPipelinePath, apistructs.DicePipelinePath, apistructs.ErdaPipelinePath}
@@ -230,7 +230,7 @@ func (p *ProjectPipelineService) Create(ctx context.Context, params *pb.CreatePr
 	if err != nil {
 		return nil, err
 	}
-	pipeline, err := p.createOne(ctx, params)
+	pipeline, err := p.CreateOne(ctx, params)
 	if err != nil {
 		return nil, apierrors.ErrCreateProjectPipeline.InternalError(err)
 	}
@@ -255,7 +255,7 @@ func (p *ProjectPipelineService) BatchCreateByGittarPushHook(ctx context.Context
 		return nil, err
 	}
 	// Check branch rules
-	ok, err := p.checkBranchRule(getBranchFromRef(params.Content.Ref), int64(projectID))
+	ok, err := p.CheckBranchRule(getBranchFromRef(params.Content.Ref), int64(projectID))
 	if err != nil {
 		return nil, err
 	}
@@ -264,7 +264,7 @@ func (p *ProjectPipelineService) BatchCreateByGittarPushHook(ctx context.Context
 	}
 
 	// Find pipeline yml list
-	ymls, err := p.listPipelineYmlByApp(appDto, getBranchFromRef(params.Content.Ref), params.Content.Pusher.ID)
+	ymls, err := p.ListPipelineYmlByApp(appDto, getBranchFromRef(params.Content.Ref), params.Content.Pusher.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -285,7 +285,7 @@ func (p *ProjectPipelineService) BatchCreateByGittarPushHook(ctx context.Context
 			Path:       getFilePath(v),
 			FileName:   filepath.Base(v),
 		}
-		_, err = p.createOne(ctx, &req)
+		_, err = p.CreateOne(ctx, &req)
 		if err != nil {
 			p.logger.Errorf("failed to createOne, pipelineYml: %s, err: %v", v, err)
 		}
@@ -298,7 +298,7 @@ func getBranchFromRef(ref string) string {
 	return ref[len(BranchPrefix):]
 }
 
-func (p *ProjectPipelineService) checkBranchRule(branch string, projectID int64) (bool, error) {
+func (p *ProjectPipelineService) CheckBranchRule(branch string, projectID int64) (bool, error) {
 	branchRules, err := p.branchRuleSve.Query(apistructs.ProjectScope, projectID)
 	if err != nil {
 		return false, err
@@ -310,7 +310,7 @@ func (p *ProjectPipelineService) checkBranchRule(branch string, projectID int64)
 	return true, nil
 }
 
-func (p *ProjectPipelineService) createOne(ctx context.Context, params *pb.CreateProjectPipelineRequest) (*pb.ProjectPipeline, error) {
+func (p *ProjectPipelineService) CreateOne(ctx context.Context, params *pb.CreateProjectPipelineRequest) (*pb.ProjectPipeline, error) {
 	sourceCheckResult, err := p.CreateSourcePreCheck(ctx, &pb.CreateProjectPipelineSourcePreCheckRequest{
 		SourceType: params.SourceType,
 		Ref:        params.Ref,
@@ -1783,7 +1783,7 @@ func (p *ProjectPipelineService) OneClickCreate(ctx context.Context, params *pb.
 		wait.Add(1)
 		go func(params *pb.CreateProjectPipelineRequest) {
 			defer wait.Done()
-			pipeline, err := p.createOne(ctx, params)
+			pipeline, err := p.CreateOne(ctx, params)
 			if err != nil {
 				errMsgs = append(errMsgs, fmt.Sprintf("failed to create %s, err: %s", filepath.Join(params.Path, params.FileName), err.Error()))
 			} else {
