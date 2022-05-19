@@ -46,9 +46,9 @@ func TestDevFlowRule_MakeBranchRules(t *testing.T) {
 				Flows: []Flow{
 					{
 						Name:             "DEV",
-						FlowType:         "two_branch",
+						FlowType:         "multi_branch",
 						TargetBranch:     "develop",
-						ChangeFromBranch: "",
+						ChangeFromBranch: "develop",
 						ChangeBranch:     "feature/*,bugfix/*",
 						EnableAutoMerge:  true,
 						AutoMergeBranch:  "dev",
@@ -79,7 +79,7 @@ func TestDevFlowRule_MakeBranchRules(t *testing.T) {
 					},
 					{
 						Name:               "STAGING",
-						FlowType:           "three_branch",
+						FlowType:           "multi_branch",
 						TargetBranch:       "master",
 						ChangeFromBranch:   "develop",
 						ChangeBranch:       "release/*",
@@ -160,10 +160,10 @@ func TestDevFlowRule_MakeBranchRules(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:    "test with nil",
-			fields:  fields{
-				ID:          "228667a3-5a32-42a7-9d0f-995e339e52a1",
-				Flows:       nil,
+			name: "test with nil",
+			fields: fields{
+				ID:    "228667a3-5a32-42a7-9d0f-995e339e52a1",
+				Flows: nil,
 			},
 			want:    nil,
 			wantErr: false,
