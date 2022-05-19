@@ -37,6 +37,7 @@
 
 # build output
 /bin
+cmd/**/bin
 
 # for local debug
 /.env
