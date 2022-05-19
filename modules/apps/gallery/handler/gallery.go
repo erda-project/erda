@@ -562,7 +562,8 @@ func (p *GalleryHandler) updateExtension(ctx context.Context, l *logrus.Entry, u
 	}
 
 	// update opus
-	updates := GenOpusUpdates(userID, version.ID.String, req.GetSummary(), req.GetSummaryI18N(), req.GetDisplayName(), req.GetDisplayNameI18N(), req.GetLogoURL(), req.GetIsDefault() || opus.DefaultVersionID == "")
+	updates := GenOpusUpdates(userID, version.ID.String, req.GetSummary(), req.GetSummaryI18N(), req.GetDisplayName(),
+		req.GetDisplayNameI18N(), req.GetLogoURL(), req.GetIsDefault() || opus.DefaultVersionID == "")
 	if err = tx.Updates(opus, updates, dao.ByIDOption(opus.ID)); err != nil {
 		l.WithError(err).Errorln("failed to Updates opus")
 		return nil, apierr.PutOnExtension.InternalError(err)
@@ -596,7 +597,7 @@ func (p *GalleryHandler) createExtensions(ctx context.Context, l *logrus.Entry, 
 			DisplayName:     req.GetDisplayName(),
 			DisplayNameI18n: req.GetDisplayNameI18N(),
 			Summary:         req.GetSummary(),
-			SummaryI18n:     req.GetDisplayNameI18N(),
+			SummaryI18n:     req.GetSummaryI18N(),
 			LogoURL:         req.GetLogoURL(),
 			Catalog:         req.GetCatalog(),
 		}
@@ -622,27 +623,7 @@ func (p *GalleryHandler) createExtensions(ctx context.Context, l *logrus.Entry, 
 	}
 
 	// create presentation
-	var presentation = model.OpusPresentation{
-		Common:          common,
-		OpusID:          opus.ID.String,
-		VersionID:       version.ID.String,
-		Ref:             "",
-		Desc:            req.GetDesc(),
-		DescI18n:        req.GetI18N(),
-		ContactName:     req.GetContactName(),
-		ContactURL:      req.GetContactURL(),
-		ContactEmail:    req.GetContactEmail(),
-		IsOpenSourced:   req.GetIsOpenSourced(),
-		OpensourceURL:   req.GetOpensourceURL(),
-		LicenseName:     req.GetLicenseName(),
-		LicenseURL:      req.GetLicenseURL(),
-		HomepageName:    req.GetHomepageName(),
-		HomepageURL:     req.GetHomepageURL(),
-		HomepageLogoURL: req.GetHomepageLogoURL(),
-		IsDownloadable:  req.GetIsDownloadable(),
-		DownloadURL:     req.GetDownloadURL(),
-		I18n:            req.GetI18N(),
-	}
+	var presentation = GenPresentationFromReq(opus.ID.String, version.ID.String, common, req)
 	if err = tx.Create(&presentation); err != nil {
 		l.WithError(err).Errorln("failed to Create presentation")
 		return nil, apierr.PutOnExtension.InternalError(err)
@@ -670,7 +651,8 @@ func (p *GalleryHandler) createExtensions(ctx context.Context, l *logrus.Entry, 
 	}
 
 	// update opus
-	updates := GenOpusUpdates(userID, version.ID.String, req.GetSummary(), req.GetSummaryI18N(), req.GetDisplayName(), req.GetSummaryI18N(), req.GetLogoURL(), req.GetIsDefault())
+	updates := GenOpusUpdates(userID, version.ID.String, req.GetSummary(), req.GetSummaryI18N(),
+		req.GetDisplayName(), req.GetDisplayNameI18N(), req.GetLogoURL(), req.GetIsDefault())
 	if err = tx.Updates(opus, updates, dao.ByIDOption(opus.ID)); err != nil {
 		l.WithError(err).Errorln("failed to Updates opus")
 		return nil, apierr.PutOnExtension.InternalError(err)

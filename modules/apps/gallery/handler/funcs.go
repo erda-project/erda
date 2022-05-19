@@ -289,3 +289,27 @@ func GenOpusUpdates(userID, versionID, summary, summaryI18n, displayName, displa
 	}
 	return updates
 }
+
+func GenPresentationFromReq(opusID, versionID string, common model.Common, req *pb.PutOnExtensionsReq) model.OpusPresentation {
+	return model.OpusPresentation{
+		Common:          common,
+		OpusID:          opusID,
+		VersionID:       versionID,
+		Ref:             "",
+		Desc:            req.GetDesc(),
+		DescI18n:        req.GetDescI18N(),
+		ContactName:     req.GetContactName(),
+		ContactURL:      req.GetContactURL(),
+		ContactEmail:    req.GetContactEmail(),
+		IsOpenSourced:   req.GetIsOpenSourced(),
+		OpensourceURL:   req.GetOpensourceURL(),
+		LicenseName:     req.GetLicenseName(),
+		LicenseURL:      req.GetLicenseURL(),
+		HomepageName:    req.GetHomepageName(),
+		HomepageURL:     req.GetHomepageURL(),
+		HomepageLogoURL: req.GetHomepageLogoURL(),
+		IsDownloadable:  req.GetIsDownloadable(),
+		DownloadURL:     req.GetDownloadURL(),
+		I18n:            req.GetI18N(),
+	}
+}

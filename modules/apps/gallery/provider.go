@@ -15,6 +15,8 @@
 package gallery
 
 import (
+	"os"
+
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 
@@ -68,7 +70,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	logrus.SetLevel(p.Cfg.GetLogLevel())
 	p.l = logrus.WithField("provider", name)
 	p.l.Infoln("Init")
-	if p.Cfg.GetLogLevel() > logrus.InfoLevel {
+	if p.Cfg.GetLogLevel() > logrus.InfoLevel || os.Getenv("GORM_DEBUG") == "true" {
 		p.D = p.D.Debug()
 	}
 	dao.Init(p.D)
@@ -82,7 +84,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 }
 
 type config struct {
-	LogLevel logrus.Level
+	LogLevel logrus.Level `json:"log-level" yaml:"log-level"`
 }
 
 func (c config) GetLogLevel() logrus.Level {
