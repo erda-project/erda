@@ -144,34 +144,34 @@ func (r *ComponentReleaseTable) DecodeURLQuery() error {
 	if !ok {
 		return nil
 	}
-	decode, err := base64.StdEncoding.DecodeString(urlQuery)
+	decoded, err := base64.StdEncoding.DecodeString(urlQuery)
 	if err != nil {
 		return err
 	}
-	query := make(map[string]interface{})
-	if err := json.Unmarshal(decode, &query); err != nil {
+	queryData := make(map[string]interface{})
+	if err := json.Unmarshal(decoded, &queryData); err != nil {
 		return err
 	}
-	r.State.PageNo = int64(query["pageNo"].(float64))
-	r.State.PageSize = int64(query["pageSize"].(float64))
-	sorter := query["sorterData"].(map[string]interface{})
-	r.State.Sorter.Field, _ = sorter["field"].(string)
-	r.State.Sorter.Order, _ = sorter["order"].(string)
+	r.State.PageNo = int64(queryData["pageNo"].(float64))
+	r.State.PageSize = int64(queryData["pageSize"].(float64))
+	sorterData := queryData["sorterData"].(map[string]interface{})
+	r.State.Sorter.Field, _ = sorterData["field"].(string)
+	r.State.Sorter.Order, _ = sorterData["order"].(string)
 	return nil
 }
 
 func (r *ComponentReleaseTable) EncodeURLQuery() error {
-	query := make(map[string]interface{})
-	query["pageNo"] = r.State.PageNo
-	query["pageSize"] = r.State.PageSize
-	query["sorterData"] = r.State.Sorter
-	jsonData, err := json.Marshal(query)
+	urlQuery := make(map[string]interface{})
+	urlQuery["pageNo"] = r.State.PageNo
+	urlQuery["pageSize"] = r.State.PageSize
+	urlQuery["sorterData"] = r.State.Sorter
+	data, err := json.Marshal(urlQuery)
 	if err != nil {
 		return err
 	}
 
-	encoded := base64.StdEncoding.EncodeToString(jsonData)
-	r.State.ReleaseTableURLQuery = encoded
+	encode := base64.StdEncoding.EncodeToString(data)
+	r.State.ReleaseTableURLQuery = encode
 	return nil
 }
 
@@ -550,12 +550,12 @@ func (r *ComponentReleaseTable) SetComponentValue() {
 	}
 }
 
-func (r *ComponentReleaseTable) Transfer(component *cptype.Component) {
-	component.Props = cputil.MustConvertProps(r.Props)
-	component.Data = map[string]interface{}{
+func (r *ComponentReleaseTable) Transfer(c *cptype.Component) {
+	c.Props = cputil.MustConvertProps(r.Props)
+	c.Data = map[string]interface{}{
 		"list": r.Data.List,
 	}
-	component.State = map[string]interface{}{
+	c.State = map[string]interface{}{
 		"releaseTable__urlQuery": r.State.ReleaseTableURLQuery,
 		"pageNo":                 r.State.PageNo,
 		"pageSize":               r.State.PageSize,
@@ -568,7 +568,7 @@ func (r *ComponentReleaseTable) Transfer(component *cptype.Component) {
 		"applicationID":          r.State.ApplicationID,
 		"filterValues":           r.State.FilterValues,
 	}
-	component.Operations = r.Operations
+	c.Operations = r.Operations
 }
 
 func (r *ComponentReleaseTable) formalReleases(ctx context.Context, releaseID []string) error {

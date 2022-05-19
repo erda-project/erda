@@ -213,7 +213,11 @@ func (m *GetClusterResponse) UnmarshalURLValues(prefix string, values url.Values
 				if m.Data.SchedConfig == nil {
 					m.Data.SchedConfig = &ClusterSchedConfig{}
 				}
-				m.Data.SchedConfig.EnableWorkspace = vals[0]
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Data.SchedConfig.EnableWorkspace = val
 			case "data.schedConfig.edasConsoleAddr":
 				if m.Data == nil {
 					m.Data = &ClusterInfo{}
@@ -1725,7 +1729,11 @@ func (m *UpdateClusterRequest) UnmarshalURLValues(prefix string, values url.Valu
 				if m.SchedulerConfig == nil {
 					m.SchedulerConfig = &ClusterSchedConfig{}
 				}
-				m.SchedulerConfig.EnableWorkspace = vals[0]
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.SchedulerConfig.EnableWorkspace = val
 			case "schedulerConfig.edasConsoleAddr":
 				if m.SchedulerConfig == nil {
 					m.SchedulerConfig = &ClusterSchedConfig{}
@@ -2806,7 +2814,11 @@ func (m *CreateClusterRequest) UnmarshalURLValues(prefix string, values url.Valu
 				if m.SchedulerConfig == nil {
 					m.SchedulerConfig = &ClusterSchedConfig{}
 				}
-				m.SchedulerConfig.EnableWorkspace = vals[0]
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.SchedulerConfig.EnableWorkspace = val
 			case "schedulerConfig.edasConsoleAddr":
 				if m.SchedulerConfig == nil {
 					m.SchedulerConfig = &ClusterSchedConfig{}
@@ -3975,7 +3987,11 @@ func (m *ClusterInfo) UnmarshalURLValues(prefix string, values url.Values) error
 				if m.SchedConfig == nil {
 					m.SchedConfig = &ClusterSchedConfig{}
 				}
-				m.SchedConfig.EnableWorkspace = vals[0]
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.SchedConfig.EnableWorkspace = val
 			case "schedConfig.edasConsoleAddr":
 				if m.SchedConfig == nil {
 					m.SchedConfig = &ClusterSchedConfig{}
@@ -5052,7 +5068,11 @@ func (m *ClusterSchedConfig) UnmarshalURLValues(prefix string, values url.Values
 				}
 				m.EnableTag = val
 			case "enableWorkspace":
-				m.EnableWorkspace = vals[0]
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.EnableWorkspace = val
 			case "edasConsoleAddr":
 				m.EdasConsoleAddr = vals[0]
 			case "accessKey":
