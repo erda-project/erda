@@ -82,7 +82,9 @@ func (s *HTTPSubscriber) Publish(dest string, content string, timestamp int64, m
 			}
 			var userID string
 			if m, ok := msg.Labels[types.LabelKey(constant.WebhookLabelKey)].(map[string]interface{}); ok {
-				userID = m["userID"].(string)
+				if v, ok := m["userID"].(string); ok {
+					userID = v
+				}
 			}
 
 			var respBody bytes.Buffer
