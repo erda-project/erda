@@ -385,29 +385,29 @@ func (r *ComponentReleaseTable) RenderTable(ctx context.Context, gs *cptype.Glob
 				Text: r.sdk.I18n("referencedReleases"),
 			}
 
-			if release.OpusID == "" {
-				item.Operations.Operations["putOn"] = Operation{
-					Confirm: r.sdk.I18n("confirmPutOn"),
-					Key:     "putOn",
-					Reload:  true,
-					Text:    r.sdk.I18n("putOn"),
-					Meta: map[string]interface{}{
-						"id": release.ReleaseID,
-					},
-					SuccessMsg: r.sdk.I18n("putOnSucceeded"),
-				}
-			} else {
-				item.Operations.Operations["putOff"] = Operation{
-					Confirm: r.sdk.I18n("confirmPutOff"),
-					Key:     "putOff",
-					Reload:  true,
-					Text:    r.sdk.I18n("putOff"),
-					Meta: map[string]interface{}{
-						"id": release.ReleaseID,
-					},
-					SuccessMsg: r.sdk.I18n("putOffSucceeded"),
-				}
-			}
+			//if release.OpusID == "" {
+			//	item.Operations.Operations["putOn"] = Operation{
+			//		Confirm: r.sdk.I18n("confirmPutOn"),
+			//		Key:     "putOn",
+			//		Reload:  true,
+			//		Text:    r.sdk.I18n("putOn"),
+			//		Meta: map[string]interface{}{
+			//			"id": release.ReleaseID,
+			//		},
+			//		SuccessMsg: r.sdk.I18n("putOnSucceeded"),
+			//	}
+			//} else {
+			//	item.Operations.Operations["putOff"] = Operation{
+			//		Confirm: r.sdk.I18n("confirmPutOff"),
+			//		Key:     "putOff",
+			//		Reload:  true,
+			//		Text:    r.sdk.I18n("putOff"),
+			//		Meta: map[string]interface{}{
+			//			"id": release.ReleaseID,
+			//		},
+			//		SuccessMsg: r.sdk.I18n("putOffSucceeded"),
+			//	}
+			//}
 		}
 		if !release.IsFormal {
 			if hasWriteAccess {
@@ -421,10 +421,10 @@ func (r *ComponentReleaseTable) RenderTable(ctx context.Context, gs *cptype.Glob
 			deleteOperation.Disabled = true
 			deleteOperation.DisabledTip = r.sdk.I18n("formalReleaseCanNotBeModified")
 		}
-		if release.IsProjectRelease && release.OpusID != "" {
-			deleteOperation.Disabled = true
-			deleteOperation.DisabledTip = r.sdk.I18n("canNotDeletePutOnRelease")
-		}
+		//if release.IsProjectRelease && release.OpusID != "" {
+		//	deleteOperation.Disabled = true
+		//	deleteOperation.DisabledTip = r.sdk.I18n("canNotDeletePutOnRelease")
+		//}
 		item.Operations.Operations["edit"] = editOperation
 		item.Operations.Operations["formal"] = formalOperation
 		item.Operations.Operations["delete"] = deleteOperation
@@ -550,12 +550,12 @@ func (r *ComponentReleaseTable) SetComponentValue() {
 	}
 }
 
-func (r *ComponentReleaseTable) Transfer(component *cptype.Component) {
-	component.Props = cputil.MustConvertProps(r.Props)
-	component.Data = map[string]interface{}{
+func (r *ComponentReleaseTable) Transfer(c *cptype.Component) {
+	c.Props = cputil.MustConvertProps(r.Props)
+	c.Data = map[string]interface{}{
 		"list": r.Data.List,
 	}
-	component.State = map[string]interface{}{
+	c.State = map[string]interface{}{
 		"releaseTable__urlQuery": r.State.ReleaseTableURLQuery,
 		"pageNo":                 r.State.PageNo,
 		"pageSize":               r.State.PageSize,
@@ -568,7 +568,7 @@ func (r *ComponentReleaseTable) Transfer(component *cptype.Component) {
 		"applicationID":          r.State.ApplicationID,
 		"filterValues":           r.State.FilterValues,
 	}
-	component.Operations = r.Operations
+	c.Operations = r.Operations
 }
 
 func (r *ComponentReleaseTable) formalReleases(ctx context.Context, releaseID []string) error {
