@@ -16,7 +16,8 @@ RUN --mount=type=cache,target=/root/.cache/go-build\
     --mount=type=cache,target=/go/pkg/mod \
     make ${MAKE_BUILD_CMD} MODULE_PATH=${MODULE_PATH} DOCKER_IMAGE=${DOCKER_IMAGE} GO_BUILD_OPTIONS="-tags musl" GOPROXY=${GOPROXY}
 
-ARG BASE_DOCKER_IMAGE
+
+
 FROM ${BASE_DOCKER_IMAGE} as app-handler
 ARG MODULE_PATH
 ENV PROJ_ROOT="/go/src/github.com/erda-project/erda"
@@ -25,17 +26,16 @@ WORKDIR /erda
 # handle app
 RUN ./build/scripts/build_all/app_handler.sh /erda "${MODULE_PATH}" /erda-handled
 
-ARG BASE_DOCKER_IMAGE
+
+
 FROM ${BASE_DOCKER_IMAGE}
 
-ARG APP_NAME
-ARG CONFIG_PATH
-ENV APP_NAME=${APP_NAME}
+ARG MODULE_PATH
 ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib:/usr/local/lib64:/lib:/lib64
 
 COPY --from=app-handler /erda-handled /erda
 COPY --from=build "$GOPATH/src/github.com/erda-project/erda/build/java-agent" "/opt/spot-original/java-agent"
-COPY --from=build "$GOPATH/src/github.com/erda-project/erda/build/scripts/monitor-agent-injector/container-init.sh" "/bin/container-init.sh"
+COPY --from=build "$GOPATH/src/github.com/erda-project/erda/cmd/${MODULE_PATH}/conf/container-init.sh" "/bin/container-init.sh"
 
 WORKDIR /erda
 CMD ["sh", "-c", "/erda/cmd/${MODULE_PATH}/bin"]
