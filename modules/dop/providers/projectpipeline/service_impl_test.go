@@ -15,7 +15,9 @@
 package projectpipeline
 
 import (
+	"context"
 	"reflect"
+	"sort"
 	"testing"
 
 	"bou.ke/monkey"
@@ -434,6 +436,292 @@ func TestProjectPipelineService_checkDataPermission(t *testing.T) {
 			}
 			if err := p.checkDataPermission(tt.args.project, tt.args.org, tt.args.source); (err != nil) != tt.wantErr {
 				t.Errorf("checkDataPermission() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func Test_makePipelineName(t *testing.T) {
+	type args struct {
+		params      *pb.CreateProjectPipelineRequest
+		pipelineYml string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "test with params' name",
+			args: args{
+				params: &pb.CreateProjectPipelineRequest{
+					Name:     "ci-deploy",
+					FileName: "ci-deploy.yml",
+				},
+				pipelineYml: `version: "1.1"
+name: ci-deploy-dev
+stages:
+  - stage:
+      - git-checkout:
+          alias: git-checkout
+          version: "1.0"
+          params:
+            branch: ((gittar.branch))
+            depth: 1
+            password: ((gittar.password))
+            uri: ((gittar.repo))
+            username: ((gittar.username))
+          timeout: 3600`,
+			},
+			want: "ci-deploy",
+		},
+		{
+			name: "test with params' name",
+			args: args{
+				params: &pb.CreateProjectPipelineRequest{
+					Name:     "",
+					FileName: "ci-deploy.yml",
+				},
+				pipelineYml: `version: "1.1"
+name: ci-deploy-dev
+stages:
+  - stage:
+      - git-checkout:
+          alias: git-checkout
+          version: "1.0"
+          params:
+            branch: ((gittar.branch))
+            depth: 1
+            password: ((gittar.password))
+            uri: ((gittar.repo))
+            username: ((gittar.username))
+          timeout: 3600`,
+			},
+			want: "ci-deploy-dev",
+		},
+		{
+			name: "test with params' name",
+			args: args{
+				params: &pb.CreateProjectPipelineRequest{
+					Name:     "",
+					FileName: "ci-deploy.yml",
+				},
+				pipelineYml: `version: "1.1"
+stages:
+  - stage:
+      - git-checkout:
+          alias: git-checkout
+          version: "1.0"
+          params:
+            branch: ((gittar.branch))
+            depth: 1
+            password: ((gittar.password))
+            uri: ((gittar.repo))
+            username: ((gittar.username))
+          timeout: 3600`,
+			},
+			want: "ci-deploy.yml",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := makePipelineName(tt.args.params, tt.args.pipelineYml); got != tt.want {
+				t.Errorf("makePipelineName() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_getBranchFromRef(t *testing.T) {
+	type args struct {
+		ref string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "test with branch",
+			args: args{
+				ref: "refs/heads/master",
+			},
+			want: "master",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := getBranchFromRef(tt.args.ref); got != tt.want {
+				t.Errorf("getBranchFromRef() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestProjectPipelineService_listPipelineYmlByApp(t *testing.T) {
+	type fields struct {
+		logger logs.Logger
+		bundle *bundle.Bundle
+	}
+	type args struct {
+		app    *apistructs.ApplicationDTO
+		branch string
+		userID string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    []*pb.PipelineYmlList
+		wantErr bool
+	}{
+		{
+			name:   "test listPipelineYmlByApp",
+			fields: fields{},
+			args:   args{},
+			want: []*pb.PipelineYmlList{
+				{
+					YmlName: "pipeline.yml",
+					YmlPath: "",
+				},
+				{
+					YmlName: "pipeline.yml",
+					YmlPath: ".dice/pipelines",
+				},
+				{
+					YmlName: "pipeline.yml",
+					YmlPath: ".erda/pipelines",
+				},
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &ProjectPipelineService{
+				logger: tt.fields.logger,
+				bundle: tt.fields.bundle,
+			}
+
+			monkey.PatchInstanceMethod(reflect.TypeOf(s), "GetPipelineYml", func(s *ProjectPipelineService, app *apistructs.ApplicationDTO, userID string, branch string, findPath string) ([]*pb.PipelineYmlList, error) {
+				if findPath == apistructs.DefaultPipelinePath {
+					return []*pb.PipelineYmlList{{
+						YmlName: "pipeline.yml",
+						YmlPath: "",
+					}}, nil
+				} else if findPath == apistructs.DicePipelinePath {
+					return []*pb.PipelineYmlList{{
+						YmlName: "pipeline.yml",
+						YmlPath: ".dice/pipelines",
+					}}, nil
+				} else if findPath == apistructs.ErdaPipelinePath {
+					return []*pb.PipelineYmlList{{
+						YmlName: "pipeline.yml",
+						YmlPath: ".erda/pipelines",
+					}}, nil
+				}
+				return nil, nil
+			})
+			defer monkey.UnpatchAll()
+			got, err := s.ListPipelineYmlByApp(tt.args.app, tt.args.branch, tt.args.userID)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("listPipelineYmlByApp() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			sort.Slice(got, func(i, j int) bool {
+				return got[i].YmlPath < got[j].YmlPath
+			})
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("listPipelineYmlByApp() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestProjectPipelineService_BatchCreateByGittarPushHook(t *testing.T) {
+	type fields struct {
+		logger logs.Logger
+	}
+	type args struct {
+		ctx    context.Context
+		params *pb.GittarPushPayloadEvent
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    *pb.BatchCreateProjectPipelineResponse
+		wantErr bool
+	}{
+		{
+			name:   "test BatchCreateByGittarPushHook",
+			fields: fields{},
+			args: args{
+				ctx: context.Background(),
+				params: &pb.GittarPushPayloadEvent{
+					Event:         "git_push",
+					Action:        "git_push",
+					OrgID:         "1",
+					ProjectID:     "1",
+					ApplicationID: "1",
+					Content: &pb.Content{
+						Ref:    "refs/heads/master",
+						After:  "0000000000000000000000000000000000000abc",
+						Before: "0000000000000000000000000000000000000000",
+						Pusher: &pb.Pusher{
+							ID:       "10001",
+							Name:     "erda",
+							NickName: "erda",
+						},
+					},
+				},
+			},
+			want:    &pb.BatchCreateProjectPipelineResponse{},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var bdl *bundle.Bundle
+
+			p := &ProjectPipelineService{
+				logger: tt.fields.logger,
+				bundle: bdl,
+			}
+
+			monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetApp", func(bdl *bundle.Bundle, id uint64) (*apistructs.ApplicationDTO, error) {
+				return &apistructs.ApplicationDTO{
+					ID:   1,
+					Name: "erda",
+				}, nil
+			})
+			defer monkey.UnpatchAll()
+			monkey.PatchInstanceMethod(reflect.TypeOf(p), "CheckBranchRule", func(p *ProjectPipelineService, branch string, projectID int64) (bool, error) {
+				return true, nil
+			})
+
+			monkey.PatchInstanceMethod(reflect.TypeOf(p), "ListPipelineYmlByApp", func(p *ProjectPipelineService, app *apistructs.ApplicationDTO, branch, userID string) ([]*pb.PipelineYmlList, error) {
+				return []*pb.PipelineYmlList{{
+					YmlName: "pipeline.yml",
+					YmlPath: "",
+				}}, nil
+			})
+
+			monkey.PatchInstanceMethod(reflect.TypeOf(p), "CreateOne", func(p *ProjectPipelineService, ctx context.Context, params *pb.CreateProjectPipelineRequest) (*pb.ProjectPipeline, error) {
+				return &pb.ProjectPipeline{
+					ID:   "1",
+					Name: "pipeline.yml",
+				}, nil
+			})
+			got, err := p.BatchCreateByGittarPushHook(tt.args.ctx, tt.args.params)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("BatchCreateByGittarPushHook() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("BatchCreateByGittarPushHook() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

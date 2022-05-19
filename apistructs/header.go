@@ -45,6 +45,7 @@ type EventHeader struct {
 	OrgID         string `json:"orgID"`
 	ProjectID     string `json:"projectID"`
 	ApplicationID string `json:"applicationID"`
+	UserID        string `json:"userID"`
 	Env           string `json:"env"`
 	// Content   PlaceHolder `json:"content"`
 	TimeStamp string `json:"timestamp"`
