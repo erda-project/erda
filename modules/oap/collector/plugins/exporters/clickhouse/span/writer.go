@@ -69,11 +69,13 @@ func (ws *WriteSpan) Start(ctx context.Context) {
 func (ws *WriteSpan) handleSpan(ctx context.Context) {
 begin:
 	for items := range ws.itemsCh {
+		// nolint
 		metaBatch, err := ws.client.PrepareBatch(ctx, "INSERT INTO "+ws.db+"."+trace.CH_TABLE_META)
 		if err != nil {
 			ws.logger.Errorf("prepare metaBatch: %s", err)
 			continue
 		}
+		// nolint
 		seriesBatch, err := ws.client.PrepareBatch(ctx, "INSERT INTO "+ws.db+"."+trace.CH_TABLE_SERIES)
 		if err != nil {
 			ws.logger.Errorf("prepare seriesBatch: %s", err)
