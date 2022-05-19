@@ -246,3 +246,8 @@ func TestGenOpusUpdates(t *testing.T) {
 	s := "xxx"
 	handler.GenOpusUpdates(s, s, s, s, s, s, s, true)
 }
+
+// need not do unit test
+func TestGenPresentationFromReq(t *testing.T) {
+	handler.GenPresentationFromReq("", "", model.Common{}, new(pb.PutOnExtensionsReq))
+}
