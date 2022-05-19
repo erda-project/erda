@@ -67,6 +67,11 @@ func (p *provider) processLog(log *logmodule.Log) {
 		log.Tags = make(map[string]string)
 	}
 
+	if log.Time != nil {
+		log.Timestamp = log.Time.UnixNano()
+		log.Time = nil
+	}
+
 	level, ok := log.Tags["level"]
 	if !ok {
 		level = "INFO" // default log level
