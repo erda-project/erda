@@ -37,9 +37,10 @@ zh:
   ago: 前
   no authority found: 暂无所属应用权限
   allInvolveApp: 已参与
-
+  accessDenied: 无权限
 en:
   allInvolveApp: Involved
+  accessDenied: Access denied
 
 
 
