@@ -80,17 +80,11 @@ func (s *HTTPSubscriber) Publish(dest string, content string, timestamp int64, m
 			if parsedUrl.Scheme == "https" {
 				opt = []httpclient.OpOption{httpclient.WithHTTPS()}
 			}
-			var userID string
-			if m, ok := msg.Labels[types.LabelKey(constant.WebhookLabelKey)].(map[string]interface{}); ok {
-				if v, ok := m["userID"].(string); ok {
-					userID = v
-				}
-			}
 
 			var respBody bytes.Buffer
 			resp, err := httpclient.New(opt...).Post(parsedUrl.Host).Path(parsedUrl.Path).
 				Header("Content-Type", "application/json").
-				Header("USER-ID", userID).
+				Header("USER-ID", getUserIDFromMessage(msg)).
 				RawBody(buf).Do().Body(&respBody)
 			if err != nil {
 				errs <- errors.Wrapf(err, "url: %s", destUrl)
@@ -112,6 +106,18 @@ func (s *HTTPSubscriber) Publish(dest string, content string, timestamp int64, m
 		es = append(es, e)
 	}
 	return es
+}
+
+func getUserIDFromMessage(msg *types.Message) string {
+	if msg == nil {
+		return ""
+	}
+	if m, ok := msg.Labels[types.LabelKey(constant.WebhookLabelKey)].(map[string]interface{}); ok {
+		if v, ok := m["userID"].(string); ok {
+			return v
+		}
+	}
+	return ""
 }
 
 func (s *HTTPSubscriber) Status() interface{} {
