@@ -50,7 +50,7 @@ type GuideService struct {
 	branchRuleSve *branchrule.BranchRule
 }
 
-func (g *GuideService) WithPipelineSvc(svc *branchrule.BranchRule) {
+func (g *GuideService) WithBranchRuleSve(svc *branchrule.BranchRule) {
 	g.branchRuleSve = svc
 }
 
@@ -90,7 +90,7 @@ func (g *GuideService) CreateGuideByGittarPushHook(ctx context.Context, req *pb.
 		return &pb.CreateGuideResponse{}, nil
 	}
 
-	// Find if pipeline yml list
+	// Find pipeline yml list
 	ymls, err := g.ListPipelineYml(appDto, getBranchFromRef(req.Content.Ref), req.Content.Pusher.ID)
 	if err != nil {
 		return nil, apierrors.ErrCreateGuide.InternalError(err)

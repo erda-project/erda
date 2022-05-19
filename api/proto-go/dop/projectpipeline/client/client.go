@@ -84,3 +84,7 @@ func (s *projectPipelineServiceWrapper) Cancel(ctx context.Context, req *pb.Canc
 func (s *projectPipelineServiceWrapper) OneClickCreate(ctx context.Context, req *pb.OneClickCreateProjectPipelineRequest) (*pb.OneClickCreateProjectPipelineResponse, error) {
 	return s.client.OneClickCreate(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }
+
+func (s *projectPipelineServiceWrapper) BatchCreateByGittarPushHook(ctx context.Context, req *pb.GittarPushPayloadEvent) (*pb.BatchCreateProjectPipelineResponse, error) {
+	return s.client.BatchCreateByGittarPushHook(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+}

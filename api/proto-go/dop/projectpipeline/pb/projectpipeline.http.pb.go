@@ -45,6 +45,8 @@ type ProjectPipelineServiceHandler interface {
 	Cancel(context.Context, *CancelProjectPipelineRequest) (*CancelProjectPipelineResponse, error)
 	// POST /api/project-pipeline/actions/one-click-create
 	OneClickCreate(context.Context, *OneClickCreateProjectPipelineRequest) (*OneClickCreateProjectPipelineResponse, error)
+	// POST /api/project-pipeline/actions/create-by-gittar-push-hook
+	BatchCreateByGittarPushHook(context.Context, *GittarPushPayloadEvent) (*BatchCreateProjectPipelineResponse, error)
 }
 
 // RegisterProjectPipelineServiceHandler register ProjectPipelineServiceHandler to http.Router.
@@ -617,6 +619,42 @@ func RegisterProjectPipelineServiceHandler(r http.Router, srv ProjectPipelineSer
 		)
 	}
 
+	add_BatchCreateByGittarPushHook := func(method, path string, fn func(context.Context, *GittarPushPayloadEvent) (*BatchCreateProjectPipelineResponse, error)) {
+		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+			return fn(ctx, req.(*GittarPushPayloadEvent))
+		}
+		var BatchCreateByGittarPushHook_info transport.ServiceInfo
+		if h.Interceptor != nil {
+			BatchCreateByGittarPushHook_info = transport.NewServiceInfo("erda.dop.projectpipeline.ProjectPipelineService", "BatchCreateByGittarPushHook", srv)
+			handler = h.Interceptor(handler)
+		}
+		r.Add(method, path, encodeFunc(
+			func(w http1.ResponseWriter, r *http1.Request) (interface{}, error) {
+				ctx := http.WithRequest(r.Context(), r)
+				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, BatchCreateByGittarPushHook_info)
+				}
+				r = r.WithContext(ctx)
+				var in GittarPushPayloadEvent
+				if err := h.Decode(r, &in); err != nil {
+					return nil, err
+				}
+				var input interface{} = &in
+				if u, ok := (input).(urlenc.URLValuesUnmarshaler); ok {
+					if err := u.UnmarshalURLValues("", r.URL.Query()); err != nil {
+						return nil, err
+					}
+				}
+				out, err := handler(ctx, &in)
+				if err != nil {
+					return out, err
+				}
+				return out, nil
+			}),
+		)
+	}
+
 	add_Create("POST", "/api/project-pipeline", srv.Create)
 	add_ListApp("GET", "/api/project-pipeline/actions/get-my-apps", srv.ListApp)
 	add_ListPipelineYml("GET", "/api/project-pipeline/actions/get-pipeline-yml-list", srv.ListPipelineYml)
@@ -629,4 +667,5 @@ func RegisterProjectPipelineServiceHandler(r http.Router, srv ProjectPipelineSer
 	add_RerunFailed("POST", "/api/project-pipeline/definitions/{pipelineDefinitionID}/actions/rerun-failed", srv.RerunFailed)
 	add_Cancel("POST", "/api/project-pipeline/definitions/{pipelineDefinitionID}/actions/cancel", srv.Cancel)
 	add_OneClickCreate("POST", "/api/project-pipeline/actions/one-click-create", srv.OneClickCreate)
+	add_BatchCreateByGittarPushHook("POST", "/api/project-pipeline/actions/create-by-gittar-push-hook", srv.BatchCreateByGittarPushHook)
 }

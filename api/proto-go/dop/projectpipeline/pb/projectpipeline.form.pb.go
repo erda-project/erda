@@ -46,6 +46,10 @@ var _ urlenc.URLValuesUnmarshaler = (*UpdateProjectPipelineResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*OneClickCreateProjectPipelineRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*OneClickCreateProjectPipelineResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ProjectPipelineSource)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GittarPushPayloadEvent)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*Content)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*Pusher)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*BatchCreateProjectPipelineResponse)(nil)
 
 // PipelineRunParam implement urlenc.URLValuesUnmarshaler.
 func (m *PipelineRunParam) UnmarshalURLValues(prefix string, values url.Values) error {
@@ -1073,5 +1077,153 @@ func (m *ProjectPipelineSource) UnmarshalURLValues(prefix string, values url.Val
 			}
 		}
 	}
+	return nil
+}
+
+// GittarPushPayloadEvent implement urlenc.URLValuesUnmarshaler.
+func (m *GittarPushPayloadEvent) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "event":
+				m.Event = vals[0]
+			case "action":
+				m.Action = vals[0]
+			case "orgID":
+				m.OrgID = vals[0]
+			case "projectID":
+				m.ProjectID = vals[0]
+			case "applicationID":
+				m.ApplicationID = vals[0]
+			case "env":
+				m.Env = vals[0]
+			case "timeStamp":
+				m.TimeStamp = vals[0]
+			case "content":
+				if m.Content == nil {
+					m.Content = &Content{}
+				}
+			case "content.ref":
+				if m.Content == nil {
+					m.Content = &Content{}
+				}
+				m.Content.Ref = vals[0]
+			case "content.after":
+				if m.Content == nil {
+					m.Content = &Content{}
+				}
+				m.Content.After = vals[0]
+			case "content.before":
+				if m.Content == nil {
+					m.Content = &Content{}
+				}
+				m.Content.Before = vals[0]
+			case "content.pusher":
+				if m.Content == nil {
+					m.Content = &Content{}
+				}
+				if m.Content.Pusher == nil {
+					m.Content.Pusher = &Pusher{}
+				}
+			case "content.pusher.ID":
+				if m.Content == nil {
+					m.Content = &Content{}
+				}
+				if m.Content.Pusher == nil {
+					m.Content.Pusher = &Pusher{}
+				}
+				m.Content.Pusher.ID = vals[0]
+			case "content.pusher.name":
+				if m.Content == nil {
+					m.Content = &Content{}
+				}
+				if m.Content.Pusher == nil {
+					m.Content.Pusher = &Pusher{}
+				}
+				m.Content.Pusher.Name = vals[0]
+			case "content.pusher.nickName":
+				if m.Content == nil {
+					m.Content = &Content{}
+				}
+				if m.Content.Pusher == nil {
+					m.Content.Pusher = &Pusher{}
+				}
+				m.Content.Pusher.NickName = vals[0]
+			case "content.pusher.email":
+				if m.Content == nil {
+					m.Content = &Content{}
+				}
+				if m.Content.Pusher == nil {
+					m.Content.Pusher = &Pusher{}
+				}
+				m.Content.Pusher.Email = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// Content implement urlenc.URLValuesUnmarshaler.
+func (m *Content) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "ref":
+				m.Ref = vals[0]
+			case "after":
+				m.After = vals[0]
+			case "before":
+				m.Before = vals[0]
+			case "pusher":
+				if m.Pusher == nil {
+					m.Pusher = &Pusher{}
+				}
+			case "pusher.ID":
+				if m.Pusher == nil {
+					m.Pusher = &Pusher{}
+				}
+				m.Pusher.ID = vals[0]
+			case "pusher.name":
+				if m.Pusher == nil {
+					m.Pusher = &Pusher{}
+				}
+				m.Pusher.Name = vals[0]
+			case "pusher.nickName":
+				if m.Pusher == nil {
+					m.Pusher = &Pusher{}
+				}
+				m.Pusher.NickName = vals[0]
+			case "pusher.email":
+				if m.Pusher == nil {
+					m.Pusher = &Pusher{}
+				}
+				m.Pusher.Email = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// Pusher implement urlenc.URLValuesUnmarshaler.
+func (m *Pusher) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "ID":
+				m.ID = vals[0]
+			case "name":
+				m.Name = vals[0]
+			case "nickName":
+				m.NickName = vals[0]
+			case "email":
+				m.Email = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// BatchCreateProjectPipelineResponse implement urlenc.URLValuesUnmarshaler.
+func (m *BatchCreateProjectPipelineResponse) UnmarshalURLValues(prefix string, values url.Values) error {
 	return nil
 }

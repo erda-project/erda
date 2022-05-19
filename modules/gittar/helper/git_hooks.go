@@ -175,6 +175,7 @@ func PostReceiveHook(pushEvents []*models.PayloadPushEvent, c *webcontext.Contex
 				OrgID:         strconv.FormatInt(repository.OrgId, 10),
 				Event:         event.GitPushEvent,
 				Action:        event.GitPushEvent,
+				UserID:        pushEvent.Pusher.Id,
 			},
 			Sender:  "gittar",
 			Content: pushEvent,
