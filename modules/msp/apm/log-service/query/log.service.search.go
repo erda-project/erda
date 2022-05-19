@@ -223,6 +223,7 @@ func (s *logService) SequentialSearchFromMonitor(ctx context.Context, req *pb.Se
 			OrgName:                 apis.GetHeader(ctx, "Org"),
 			IgnoreMaxTimeRangeLimit: true,
 			PreferredBufferSize:     int32(req.Count),
+			SkipTotalStat:           true,
 		},
 		Count: count,
 		Debug: req.Debug,

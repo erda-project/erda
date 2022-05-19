@@ -120,6 +120,7 @@ func (p *provider) DownloadLogsFromMonitor(r *http.Request, w http.ResponseWrite
 			IgnoreMaxTimeRangeLimit: true,
 			PreferredIterateStyle:   monitorpb.IterateStyle_Scroll,
 			PreferredBufferSize:     int32(params.Size),
+			SkipTotalStat:           true,
 		},
 		Count: maxReturn,
 		Debug: params.Debug,
