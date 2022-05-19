@@ -120,6 +120,7 @@ func newClickhouseIterator(
 		queryTimeout:    queryTimeout,
 		queryMaxThreads: queryMaxThreads,
 		queryMaxMemory:  queryMaxMemory,
+		lastID:          searchAfterID,
 	}, nil
 }
 

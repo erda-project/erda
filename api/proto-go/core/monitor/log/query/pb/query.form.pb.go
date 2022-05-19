@@ -293,6 +293,12 @@ func (m *QueryMeta) UnmarshalURLValues(prefix string, values url.Values) error {
 				}
 				m.PreferredBufferSize = int32(val)
 			case "preferredIterateStyle":
+			case "skipTotalStat":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.SkipTotalStat = val
 			}
 		}
 	}
@@ -432,6 +438,15 @@ func (m *GetLogByExpressionRequest) UnmarshalURLValues(prefix string, values url
 				if m.QueryMeta == nil {
 					m.QueryMeta = &QueryMeta{}
 				}
+			case "queryMeta.skipTotalStat":
+				if m.QueryMeta == nil {
+					m.QueryMeta = &QueryMeta{}
+				}
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.QueryMeta.SkipTotalStat = val
 			case "extraFilter":
 				if m.ExtraFilter == nil {
 					m.ExtraFilter = &ExtraFilter{}
@@ -710,6 +725,18 @@ func (m *LogAggregationRequest) UnmarshalURLValues(prefix string, values url.Val
 				if m.Query.QueryMeta == nil {
 					m.Query.QueryMeta = &QueryMeta{}
 				}
+			case "query.queryMeta.skipTotalStat":
+				if m.Query == nil {
+					m.Query = &GetLogByExpressionRequest{}
+				}
+				if m.Query.QueryMeta == nil {
+					m.Query.QueryMeta = &QueryMeta{}
+				}
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Query.QueryMeta.SkipTotalStat = val
 			case "query.extraFilter":
 				if m.Query == nil {
 					m.Query = &GetLogByExpressionRequest{}
