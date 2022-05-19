@@ -111,3 +111,74 @@ stages:
 		})
 	}
 }
+
+func TestGetNameByPipelineYml(t *testing.T) {
+	type args struct {
+		pipelineYmlStr string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    string
+		wantErr bool
+	}{
+		{
+			name: "test with empty",
+			args: args{
+				pipelineYmlStr: ``,
+			},
+			want:    "",
+			wantErr: false,
+		},
+		{
+			name: "test with error",
+			args: args{
+				pipelineYmlStr: `foo: bar`,
+			},
+			want:    "",
+			wantErr: true,
+		},
+		{
+			name: "test with name",
+			args: args{
+				pipelineYmlStr: `version: "1.1"
+name: pipeline-deploy
+stages:
+  - stage:
+      - git-checkout:
+          alias: git-checkout
+          description: 代码仓库克隆
+          version: "1.0"
+          params:
+            branch: ((gittar.branch))
+            depth: 1
+            password: ((gittar.password))
+            uri: ((gittar.repo))
+            username: ((gittar.username))
+          timeout: 3600
+  - stage:
+      - custom-script:
+          alias: custom-script
+          version: "1.0"
+          image: registry.erda.cloud/erda-actions/custom-script-action:1.0-20211216-b1d5635
+          commands:
+            - echo hello
+`,
+			},
+			want:    "pipeline-deploy",
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := GetNameByPipelineYml(tt.args.pipelineYmlStr)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetNameByPipelineYml() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("GetNameByPipelineYml() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
