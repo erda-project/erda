@@ -562,7 +562,8 @@ func (p *GalleryHandler) updateExtension(ctx context.Context, l *logrus.Entry, u
 	}
 
 	// update opus
-	updates := GenOpusUpdates(userID, version.ID.String, req.GetSummary(), req.GetSummaryI18N(), req.GetDisplayName(), req.GetDisplayNameI18N(), req.GetLogoURL(), req.GetIsDefault() || opus.DefaultVersionID == "")
+	updates := GenOpusUpdates(userID, version.ID.String, req.GetSummary(), req.GetSummaryI18N(), req.GetDisplayName(),
+		req.GetDisplayNameI18N(), req.GetLogoURL(), req.GetIsDefault() || opus.DefaultVersionID == "")
 	if err = tx.Updates(opus, updates, dao.ByIDOption(opus.ID)); err != nil {
 		l.WithError(err).Errorln("failed to Updates opus")
 		return nil, apierr.PutOnExtension.InternalError(err)
@@ -596,7 +597,7 @@ func (p *GalleryHandler) createExtensions(ctx context.Context, l *logrus.Entry, 
 			DisplayName:     req.GetDisplayName(),
 			DisplayNameI18n: req.GetDisplayNameI18N(),
 			Summary:         req.GetSummary(),
-			SummaryI18n:     req.GetDisplayNameI18N(),
+			SummaryI18n:     req.GetSummaryI18N(),
 			LogoURL:         req.GetLogoURL(),
 			Catalog:         req.GetCatalog(),
 		}
@@ -628,7 +629,7 @@ func (p *GalleryHandler) createExtensions(ctx context.Context, l *logrus.Entry, 
 		VersionID:       version.ID.String,
 		Ref:             "",
 		Desc:            req.GetDesc(),
-		DescI18n:        req.GetI18N(),
+		DescI18n:        req.GetDescI18N(),
 		ContactName:     req.GetContactName(),
 		ContactURL:      req.GetContactURL(),
 		ContactEmail:    req.GetContactEmail(),
@@ -670,7 +671,8 @@ func (p *GalleryHandler) createExtensions(ctx context.Context, l *logrus.Entry, 
 	}
 
 	// update opus
-	updates := GenOpusUpdates(userID, version.ID.String, req.GetSummary(), req.GetSummaryI18N(), req.GetDisplayName(), req.GetSummaryI18N(), req.GetLogoURL(), req.GetIsDefault())
+	updates := GenOpusUpdates(userID, version.ID.String, req.GetSummary(), req.GetSummaryI18N(),
+		req.GetDisplayName(), req.GetDisplayNameI18N(), req.GetLogoURL(), req.GetIsDefault())
 	if err = tx.Updates(opus, updates, dao.ByIDOption(opus.ID)); err != nil {
 		l.WithError(err).Errorln("failed to Updates opus")
 		return nil, apierr.PutOnExtension.InternalError(err)

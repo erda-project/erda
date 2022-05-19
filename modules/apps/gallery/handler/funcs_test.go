@@ -90,7 +90,7 @@ func TestPrepareListOpusesOptions(t *testing.T) {
 		options := handler.PrepareListOpusesOptions(case_.OrgID, case_.Type, case_.Name, case_.Keyword, case_.PageSize, case_.PageNo)
 		db := db.Debug().Session(&gorm.Session{DryRun: true})
 		for _, opt := range options {
-			db = opt(db)
+			db = opt.With(db)
 		}
 		db = db.Find(new(model.Opus))
 		if results[i].SQL != db.Statement.SQL.String() {
@@ -105,6 +105,12 @@ func TestPrepareListOpusesOptions(t *testing.T) {
 			}
 		}
 	}
+	options := handler.PrepareListOpusesOptions(1, "", "", "", 10, 2)
+	db2 := db.Debug().Session(&gorm.Session{DryRun: true})
+	for _, opt := range options {
+		db2 = opt.With(db2)
+	}
+	db2 = db2.Find(new(model.Opus))
 }
 
 func TestPrepareListOpusesKeywordFilterOption(t *testing.T) {
@@ -126,7 +132,7 @@ func TestPrepareListOpusesKeywordFilterOption(t *testing.T) {
 		t.Fatalf("failed to connect dbtabase: %v", err)
 	}
 	defer os.Remove(dbname)
-	db = handler.PrepareListOpusesKeywordFilterOption(keyword, versions)(db)
+	db = handler.PrepareListOpusesKeywordFilterOption(keyword, versions).With(db)
 	db = db.Debug().Session(&gorm.Session{DryRun: true}).Find(new(model.Opus))
 	if db.Statement.SQL.String() != sql {
 		t.Fatalf("sql error, expected: %s\n, actual: %s\n", sql, db.Statement.SQL.String())
@@ -157,7 +163,7 @@ func TestPrepareListVersionsInOpusesIDsOption(t *testing.T) {
 		opuses[i].ID = vars[i].(fields.UUID)
 	}
 
-	db = handler.PrepareListVersionsInOpusesIDsOption(opuses)(db)
+	db = handler.PrepareListVersionsInOpusesIDsOption(opuses).With(db)
 	db = db.Debug().Session(&gorm.Session{DryRun: true}).Find(new(model.OpusVersion))
 	if db.Statement.SQL.String() != sql {
 		t.Fatalf("sql not equal, expected: %s\n, actual: %s\n", sql, db.Statement.SQL.String())
