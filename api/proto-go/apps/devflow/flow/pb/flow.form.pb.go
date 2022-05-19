@@ -95,6 +95,8 @@ func (m *DevFlowNode) UnmarshalURLValues(prefix string, values url.Values) error
 					return err
 				}
 				m.MergeID = val
+			case "appName":
+				m.AppName = vals[0]
 			}
 		}
 	}
@@ -383,8 +385,19 @@ func (m *DevFlowInfo) UnmarshalURLValues(prefix string, values url.Values) error
 					return err
 				}
 				m.DevFlowNode.MergeID = val
+			case "devFlowNode.appName":
+				if m.DevFlowNode == nil {
+					m.DevFlowNode = &DevFlowNode{}
+				}
+				m.DevFlowNode.AppName = vals[0]
 			case "commit":
 				m.Commit = vals[0]
+			case "hasPermission":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.HasPermission = val
 			}
 		}
 	}

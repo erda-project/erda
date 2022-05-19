@@ -74,6 +74,7 @@ message DevFlowNode {
     string tempBranch = 7;
     uint64 issueID = 8;
     uint64 mergeID = 9;
+    string appName = 10;
 }
 
 // CreateFlow
@@ -139,6 +140,7 @@ message DevFlowInfo {
     repeated ChangeBranch changeBranch = 2;
     repeated PipelineStepInfo pipelineStepInfos = 3;
     string commit = 4;
+    bool hasPermission = 5;
 }
 
 message GetDevFlowInfoResponse {
