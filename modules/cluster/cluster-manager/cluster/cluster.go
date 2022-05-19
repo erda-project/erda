@@ -488,7 +488,7 @@ func (c *ClusterService) convert(cluster *db.Cluster) *pb.ClusterInfo {
 	}
 
 	return &pb.ClusterInfo{
-		Id:             cluster.ID,
+		Id:             int32(cluster.ID),
 		Name:           cluster.Name,
 		DisplayName:    cluster.DisplayName,
 		Description:    cluster.Description,

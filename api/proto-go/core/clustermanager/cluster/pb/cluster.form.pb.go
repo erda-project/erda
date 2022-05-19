@@ -13,6 +13,7 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the "github.com/erda-project/erda-infra/pkg/urlenc" package it is being compiled against.
+var _ urlenc.URLValuesUnmarshaler = (*ErrResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ListClusterRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ListClusterResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetClusterRequest)(nil)
@@ -41,6 +42,21 @@ var _ urlenc.URLValuesUnmarshaler = (*OpenVPN)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*Platform)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ManageConfig)(nil)
 
+// ErrResponse implement urlenc.URLValuesUnmarshaler.
+func (m *ErrResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "code":
+				m.Code = vals[0]
+			case "msg":
+				m.Msg = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
 // ListClusterRequest implement urlenc.URLValuesUnmarshaler.
 func (m *ListClusterRequest) UnmarshalURLValues(prefix string, values url.Values) error {
 	for key, vals := range values {
@@ -62,6 +78,32 @@ func (m *ListClusterRequest) UnmarshalURLValues(prefix string, values url.Values
 
 // ListClusterResponse implement urlenc.URLValuesUnmarshaler.
 func (m *ListClusterResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "success":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Success = val
+			case "err":
+				if m.Err == nil {
+					m.Err = &ErrResponse{}
+				}
+			case "err.code":
+				if m.Err == nil {
+					m.Err = &ErrResponse{}
+				}
+				m.Err.Code = vals[0]
+			case "err.msg":
+				if m.Err == nil {
+					m.Err = &ErrResponse{}
+				}
+				m.Err.Msg = vals[0]
+			}
+		}
+	}
 	return nil
 }
 
@@ -91,11 +133,11 @@ func (m *GetClusterResponse) UnmarshalURLValues(prefix string, values url.Values
 				if m.Data == nil {
 					m.Data = &ClusterInfo{}
 				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.Data.Id = val
+				m.Data.Id = int32(val)
 			case "data.name":
 				if m.Data == nil {
 					m.Data = &ClusterInfo{}
@@ -1642,16 +1684,36 @@ func (m *GetClusterResponse) UnmarshalURLValues(prefix string, values url.Values
 				if m.Data == nil {
 					m.Data = &ClusterInfo{}
 				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.Data.OrgID = val
+				m.Data.OrgID = int32(val)
 			case "data.isRelation":
 				if m.Data == nil {
 					m.Data = &ClusterInfo{}
 				}
 				m.Data.IsRelation = vals[0]
+			case "success":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Success = val
+			case "err":
+				if m.Err == nil {
+					m.Err = &ErrResponse{}
+				}
+			case "err.code":
+				if m.Err == nil {
+					m.Err = &ErrResponse{}
+				}
+				m.Err.Code = vals[0]
+			case "err.msg":
+				if m.Err == nil {
+					m.Err = &ErrResponse{}
+				}
+				m.Err.Msg = vals[0]
 			}
 		}
 	}
@@ -2740,6 +2802,32 @@ func (m *UpdateClusterRequest) UnmarshalURLValues(prefix string, values url.Valu
 
 // UpdateClusterResponse implement urlenc.URLValuesUnmarshaler.
 func (m *UpdateClusterResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "success":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Success = val
+			case "err":
+				if m.Err == nil {
+					m.Err = &ErrResponse{}
+				}
+			case "err.code":
+				if m.Err == nil {
+					m.Err = &ErrResponse{}
+				}
+				m.Err.Code = vals[0]
+			case "err.msg":
+				if m.Err == nil {
+					m.Err = &ErrResponse{}
+				}
+				m.Err.Msg = vals[0]
+			}
+		}
+	}
 	return nil
 }
 
@@ -3827,6 +3915,32 @@ func (m *CreateClusterRequest) UnmarshalURLValues(prefix string, values url.Valu
 
 // CreateClusterResponse implement urlenc.URLValuesUnmarshaler.
 func (m *CreateClusterResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "success":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Success = val
+			case "err":
+				if m.Err == nil {
+					m.Err = &ErrResponse{}
+				}
+			case "err.code":
+				if m.Err == nil {
+					m.Err = &ErrResponse{}
+				}
+				m.Err.Code = vals[0]
+			case "err.msg":
+				if m.Err == nil {
+					m.Err = &ErrResponse{}
+				}
+				m.Err.Msg = vals[0]
+			}
+		}
+	}
 	return nil
 }
 
@@ -3845,6 +3959,32 @@ func (m *DeleteClusterRequest) UnmarshalURLValues(prefix string, values url.Valu
 
 // DeleteClusterResponse implement urlenc.URLValuesUnmarshaler.
 func (m *DeleteClusterResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "success":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Success = val
+			case "err":
+				if m.Err == nil {
+					m.Err = &ErrResponse{}
+				}
+			case "err.code":
+				if m.Err == nil {
+					m.Err = &ErrResponse{}
+				}
+				m.Err.Code = vals[0]
+			case "err.msg":
+				if m.Err == nil {
+					m.Err = &ErrResponse{}
+				}
+				m.Err.Msg = vals[0]
+			}
+		}
+	}
 	return nil
 }
 
@@ -3916,11 +4056,11 @@ func (m *ClusterInfo) UnmarshalURLValues(prefix string, values url.Values) error
 		if len(vals) > 0 {
 			switch prefix + key {
 			case "id":
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.Id = val
+				m.Id = int32(val)
 			case "name":
 				m.Name = vals[0]
 			case "displayName":
@@ -5029,11 +5169,11 @@ func (m *ClusterInfo) UnmarshalURLValues(prefix string, values url.Values) error
 				}
 				m.UpdatedAt.Nanos = int32(val)
 			case "orgID":
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.OrgID = val
+				m.OrgID = int32(val)
 			case "isRelation":
 				m.IsRelation = vals[0]
 			}
