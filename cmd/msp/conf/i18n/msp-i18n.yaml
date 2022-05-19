@@ -54,10 +54,10 @@ en:
   occurTime: "Occur Time"
   traceId: Trace ID
   traceDuration: Duration
-  traceStartTime: Start Time
-  traceSpanCount: Span Count
-  traceServices: Services
-  traceDistribution: Trace Duration Distribution
+  traceStartTime: Start time
+  traceSpanCount: Number of spans
+  traceServices: Service
+  traceDistribution: Tracing time distribution
   cpuUsage: Container CPU
   memoryUsage: Container 内存
   diskioUsage: Disk IO
