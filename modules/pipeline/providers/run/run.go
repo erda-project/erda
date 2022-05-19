@@ -174,7 +174,7 @@ func (s *provider) updatePipelineDefinition(p spec.Pipeline) error {
 	if err != nil {
 		return err
 	}
-	totalActionNum, err = pipelineyml.CountActionNumByPipelineYml(p.PipelineYml)
+	totalActionNum, err = pipelineyml.CountEnabledActionNumByPipelineYml(p.PipelineYml)
 	if err != nil {
 		return err
 	}
