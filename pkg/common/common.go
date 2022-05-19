@@ -55,6 +55,10 @@ func loadModuleEnvFile(dir string) {
 	config.LoadEnvFileWithPath(path, false)
 }
 
+func loadRootEnvFile() {
+	loadModuleEnvFile("")
+}
+
 func prepare() {
 	openMysqlTLS()
 	version.PrintIfCommand()
@@ -135,6 +139,8 @@ func newHub() *servicehub.Hub {
 
 // Run .
 func Run(opts *servicehub.RunOptions) {
+	// load .env before change cwd
+	loadRootEnvFile()
 	setCwd()
 	prepare()
 	opts.Name = GetEnv("CONFIG_NAME", opts.Name)
