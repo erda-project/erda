@@ -20,3 +20,6 @@ fi
 
 # common-conf
 mv "${projPath}/conf" "${targetProjPath}/conf"
+
+# remove .env files
+find "${targetProjPath}/cmd" -type f -name ".env" -delete

@@ -89,11 +89,11 @@ func (s *ServiceImplement) InitFlows() db.Flows {
 	return db.Flows{
 		{
 			Name:             "DEV",
-			FlowType:         "two_branch",
+			FlowType:         "multi_branch",
 			TargetBranch:     "develop",
-			ChangeFromBranch: "",
+			ChangeFromBranch: "develop",
 			ChangeBranch:     "feature/*,bugfix/*",
-			EnableAutoMerge:  true,
+			EnableAutoMerge:  false,
 			AutoMergeBranch:  "dev",
 			Artifact:         "alpha",
 			Environment:      "DEV",
@@ -122,7 +122,7 @@ func (s *ServiceImplement) InitFlows() db.Flows {
 		},
 		{
 			Name:               "STAGING",
-			FlowType:           "three_branch",
+			FlowType:           "multi_branch",
 			TargetBranch:       "master",
 			ChangeFromBranch:   "develop",
 			ChangeBranch:       "release/*",
@@ -250,7 +250,7 @@ func (s *ServiceImplement) GetFlowByRule(ctx context.Context, request GetFlowByR
 			if diceworkspace.IsRefPatternMatch(request.TargetBranch, []string{v.TargetBranch}) {
 				return v.Convert(), nil
 			}
-		} else if request.FlowType == "two_branch" || request.FlowType == "three_branch" {
+		} else if request.FlowType == "multi_branch" {
 			if !diceworkspace.IsRefPatternMatch(request.TargetBranch, []string{v.TargetBranch}) {
 				continue
 			}

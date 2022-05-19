@@ -44,7 +44,10 @@ func Q() *TX {
 	if q == nil || q.tx == nil {
 		panic("q is not init")
 	}
-	return q
+	return &TX{
+		tx:    q.tx,
+		valid: true,
+	}
 }
 
 func Begin() *TX {
@@ -72,14 +75,14 @@ func (tx *TX) CreateInBatches(i interface{}, size int) error {
 }
 
 func (tx *TX) Delete(i interface{}, options ...Option) error {
-	options = append(options, deleteOption(i))
-	db := options[0](tx.tx)
+	options = append(options, deleteOption{i: i})
+	db := options[0].With(tx.tx)
 	if tx.Error = db.Error; tx.Error != nil {
 		return tx.Error
 	}
 	if len(options) > 1 {
 		for _, opt := range options[1:] {
-			db = opt(db)
+			db = opt.With(db)
 			if tx.Error = db.Error; tx.Error != nil {
 				return tx.Error
 			}
@@ -89,14 +92,14 @@ func (tx *TX) Delete(i interface{}, options ...Option) error {
 }
 
 func (tx *TX) Updates(i, v interface{}, options ...Option) error {
-	options = append(options, updatesOption(i, v))
-	db := options[0](tx.tx)
+	options = append(options, updatesOption{i: i, v: v})
+	db := options[0].With(tx.tx)
 	if tx.Error = db.Error; tx.Error != nil {
 		return tx.Error
 	}
 	if len(options) > 1 {
 		for _, opt := range options[1:] {
-			db = opt(db)
+			db = opt.With(db)
 			if tx.Error = db.Error; tx.Error != nil {
 				return tx.Error
 			}
@@ -107,8 +110,17 @@ func (tx *TX) Updates(i, v interface{}, options ...Option) error {
 
 func (tx *TX) List(i interface{}, options ...Option) (int64, error) {
 	var total int64
-	options = append(options, listOption(i, &total))
-	db := options[0](tx.tx)
+	var list = listOption{i: i, total: &total}
+	var opts []Option
+	for _, opt := range options {
+		if paging, ok := opt.(pageOption); ok {
+			list.pageSize, list.pageNo = paging.pageSize, paging.pageNo
+			continue
+		}
+		opts = append(opts, opt)
+	}
+	opts = append(opts, list)
+	db := opts[0].With(tx.tx)
 	if db.Error != nil {
 		if errors.Is(db.Error, gorm.ErrRecordNotFound) {
 			return 0, nil
@@ -116,11 +128,11 @@ func (tx *TX) List(i interface{}, options ...Option) (int64, error) {
 		tx.Error = db.Error
 		return 0, tx.Error
 	}
-	if len(options) == 1 {
+	if len(opts) == 1 {
 		return total, nil
 	}
-	for _, opt := range options[1:] {
-		db = opt(db)
+	for _, opt := range opts[1:] {
+		db = opt.With(db)
 		if db.Error != nil {
 			if errors.Is(db.Error, gorm.ErrRecordNotFound) {
 				return 0, nil
@@ -133,8 +145,8 @@ func (tx *TX) List(i interface{}, options ...Option) (int64, error) {
 }
 
 func (tx *TX) Get(i interface{}, options ...Option) (bool, error) {
-	options = append(options, firstOption(i))
-	db := options[0](tx.tx)
+	options = append(options, firstOption{i: i})
+	db := options[0].With(tx.tx)
 	if db.Error != nil {
 		if errors.Is(db.Error, gorm.ErrRecordNotFound) {
 			return false, nil
@@ -146,7 +158,7 @@ func (tx *TX) Get(i interface{}, options ...Option) (bool, error) {
 		return true, nil
 	}
 	for _, opt := range options[1:] {
-		db = opt(db)
+		db = opt.With(db)
 		if db.Error != nil {
 			if errors.Is(db.Error, gorm.ErrRecordNotFound) {
 				return false, nil
@@ -172,28 +184,4 @@ func (tx *TX) CommitOrRollback() {
 
 func (tx *TX) DB() *gorm.DB {
 	return tx.tx
-}
-
-func deleteOption(i interface{}) Option {
-	return func(db *gorm.DB) *gorm.DB {
-		return db.Delete(i)
-	}
-}
-
-func updatesOption(i, v interface{}) Option {
-	return func(db *gorm.DB) *gorm.DB {
-		return db.Model(i).Updates(v)
-	}
-}
-
-func listOption(i interface{}, total *int64) Option {
-	return func(db *gorm.DB) *gorm.DB {
-		return db.Find(i).Count(total)
-	}
-}
-
-func firstOption(i interface{}) Option {
-	return func(db *gorm.DB) *gorm.DB {
-		return db.First(i)
-	}
 }
