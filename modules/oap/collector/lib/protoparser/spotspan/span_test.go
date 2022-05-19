@@ -41,6 +41,7 @@ func Test_unmarshalWork_Unmarshal(t *testing.T) {
 				SpanId:       "aaa",
 				TraceId:      "bbb",
 				ParentSpanId: "",
+				OrgName:      "erda",
 				StartTime:    int64(1652756014793552896),
 				EndTime:      int64(1652756014793552896),
 				Tags: map[string]string{
