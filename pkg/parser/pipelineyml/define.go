@@ -382,3 +382,22 @@ func CountActionNumByPipelineYml(pipelineYmlStr string) (int64, error) {
 	})
 	return totalActionNum, nil
 }
+
+// CountEnabledActionNumByPipelineYml count enabled action by pipelineYml
+func CountEnabledActionNumByPipelineYml(pipelineYmlStr string) (int64, error) {
+	if pipelineYmlStr == "" {
+		return 0, nil
+	}
+	pipelineYml, err := New([]byte(pipelineYmlStr))
+	if err != nil {
+		return 0, err
+	}
+
+	var totalActionNum int64
+	pipelineYml.Spec().LoopStagesActions(func(stage int, action *Action) {
+		if !action.Disable {
+			totalActionNum++
+		}
+	})
+	return totalActionNum, nil
+}
