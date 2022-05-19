@@ -63,9 +63,7 @@ func (f *DevFlowRule) MakeBranchRules() ([]*BranchRule, error) {
 		var rule string
 		if v.FlowType == "single_branch" {
 			rule = v.TargetBranch
-		} else if v.FlowType == "two_branch" {
-			rule = v.ChangeBranch
-		} else if v.FlowType == "three_branch" {
+		} else if v.FlowType == "multi_branch" {
 			rule = v.ChangeBranch
 		}
 		rules = append(rules, &BranchRule{
