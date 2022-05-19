@@ -28,7 +28,7 @@ import (
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 
-const resource = "branch_rule"
+const resource = "devFlowRule"
 
 type GetFlowByRuleRequest struct {
 	ProjectID    uint64
@@ -208,7 +208,7 @@ func (s *ServiceImplement) GetDevFlowRulesByProjectID(ctx context.Context, reque
 			Scope:    apistructs.ProjectScope,
 			ScopeID:  request.ProjectID,
 			Resource: resource,
-			Action:   apistructs.OperateAction,
+			Action:   apistructs.ListAction,
 		})
 		if err != nil {
 			return nil, apierrors.ErrGetDevFlowRule.InternalError(err)

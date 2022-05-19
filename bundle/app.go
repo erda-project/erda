@@ -208,7 +208,7 @@ func (b *Bundle) GetAppsByProjectSimple(projectID, orgID uint64, userID string) 
 		Header(httputil.OrgHeader, strconv.FormatUint(orgID, 10)).
 		Header(httputil.UserHeader, userID).
 		Param("projectId", strconv.FormatUint(projectID, 10)).
-		Param("pageSize", "100").
+		Param("pageSize", "9999").
 		Param("pageNo", "1").
 		Param("isSimple", "true").
 		Do().JSON(&listResp)
