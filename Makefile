@@ -183,12 +183,12 @@ setup-cmd-conf:
 	PROJ_PATH = "$(PROJ_PATH)"
 	MODULE_PATH = "$(MODULE_PATH)"
 
-build-all: build-version submodule tidy prepare
+build-all: build-version submodule prepare tidy
 	@set -eo pipefail; \
 	./build/scripts/build_all/build_all.sh; \
 	make cli
 
-build-one: build-version submodule tidy prepare
+build-one: build-version submodule prepare tidy
 	@set -eo pipefail; \
 	./build/scripts/build_all/build_all.sh
 
