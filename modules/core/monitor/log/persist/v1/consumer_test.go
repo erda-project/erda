@@ -68,6 +68,21 @@ func Test_provider_processLog(t *testing.T) {
 	}
 	mp.processLog(log)
 	ass.Equal("bbb", log.ID)
+
+	// time key
+	now := time.Unix(1652948267, 0)
+	log = &logmodule.Log{
+		ID:      "aaa",
+		Source:  "container",
+		Stream:  "",
+		Offset:  0,
+		Time:    &now,
+		Content: "",
+		Tags:    map[string]string{},
+	}
+	mp.processLog(log)
+	ass.Equal(log.Timestamp, int64(1652948267000000000))
+	ass.Equal(log.Time, (*time.Time)(nil))
 }
 
 func Test_provider_invokeV2(t *testing.T) {
