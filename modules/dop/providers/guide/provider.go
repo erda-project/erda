@@ -18,7 +18,6 @@ import (
 	"context"
 	"reflect"
 
-	"github.com/erda-project/erda/modules/dop/providers/projectpipeline"
 	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -39,13 +38,12 @@ type config struct {
 }
 
 type provider struct {
-	Cfg             *config
-	Log             logs.Logger
-	bundle          *bundle.Bundle
-	DB              *gorm.DB           `autowired:"mysql-client"`
-	Register        transport.Register `autowired:"service-register" required:"true"`
-	Trans           i18n.Translator    `translator:"project-pipeline" required:"true"`
-	projectPipeline projectpipeline.Service
+	Cfg      *config
+	Log      logs.Logger
+	bundle   *bundle.Bundle
+	DB       *gorm.DB           `autowired:"mysql-client"`
+	Register transport.Register `autowired:"service-register" required:"true"`
+	Trans    i18n.Translator    `translator:"project-pipeline" required:"true"`
 
 	GuideService *GuideService
 }

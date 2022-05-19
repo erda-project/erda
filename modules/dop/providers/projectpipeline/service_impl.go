@@ -26,8 +26,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/erda-project/erda/modules/pkg/diceworkspace"
-	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -45,11 +43,13 @@ import (
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/modules/dop/utils"
 	def "github.com/erda-project/erda/modules/pipeline/providers/definition"
+	"github.com/erda-project/erda/modules/pkg/diceworkspace"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/encoding/jsonparse"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/limit_sync_group"
 	"github.com/erda-project/erda/pkg/oauth2/tokenstore/mysqltokenstore"
+	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
 type CategoryType string

@@ -22,10 +22,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/erda-project/erda/modules/messenger/eventbox/constant"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda/modules/messenger/eventbox/constant"
 	"github.com/erda-project/erda/modules/messenger/eventbox/monitor"
 	"github.com/erda-project/erda/modules/messenger/eventbox/subscriber"
 	"github.com/erda-project/erda/modules/messenger/eventbox/types"
