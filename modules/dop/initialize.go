@@ -614,6 +614,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 
 	p.DevFlowSvc.WithBranchRule(branchRule)
 	p.DevFlowSvc.WithGittarFileTree(gittarFileTreeSvc)
+	p.DevFlowSvc.WithPermission(perm)
 
 	// compose endpoints
 	ep := endpoints.New(

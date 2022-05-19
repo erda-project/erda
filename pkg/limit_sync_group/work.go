@@ -66,6 +66,7 @@ func (that *Worker) Do() *Worker {
 		}(index)
 	}
 	that.wait.Wait()
+	that.functions = nil
 	return that
 }
 
