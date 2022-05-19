@@ -17,8 +17,9 @@ package oapspan
 import (
 	"testing"
 
-	"github.com/erda-project/erda/modules/msp/apm/trace"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/erda-project/erda/modules/msp/apm/trace"
 )
 
 func Test_unmarshalWork_Unmarshal(t *testing.T) {
