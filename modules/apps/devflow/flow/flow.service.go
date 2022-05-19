@@ -58,6 +58,9 @@ func (p *Service) WithBranchRule(branchRuleSvc *branchrule.BranchRule) {
 const issueRelationType = "devflow"
 const gittarPrefixOpenApi = "/wb/"
 
+const mrOpenState = "open"
+const mrMergedState = "merged"
+
 func (s *Service) CreateFlowNode(ctx context.Context, req *pb.CreateFlowNodeRequest) (*pb.CreateFlowNodeResponse, error) {
 	app, err := s.p.bdl.GetApp(req.AppID)
 	if err != nil {
@@ -90,7 +93,6 @@ func (s *Service) CreateFlowNode(ctx context.Context, req *pb.CreateFlowNodeRequ
 
 	// find branch merge
 	result, err := s.p.bdl.ListMergeRequest(req.AppID, apis.GetUserID(ctx), apistructs.GittarQueryMrRequest{
-		State:        "open",
 		TargetBranch: req.TargetBranch,
 		SourceBranch: req.SourceBranch,
 		Page:         1,
@@ -99,11 +101,19 @@ func (s *Service) CreateFlowNode(ctx context.Context, req *pb.CreateFlowNodeRequ
 	if err != nil {
 		return nil, err
 	}
-	openMergeInfoList := result.List
+	mergeInfoList := result.List
+
+	var mergeResult *apistructs.MergeRequestInfo
+	for _, merge := range mergeInfoList {
+		if merge.State == mrOpenState || merge.State == mrMergedState {
+			mergeResult = merge
+			break
+		}
+	}
 
 	var mergeID int64
 	var repoMergeID int
-	if len(openMergeInfoList) == 0 {
+	if mergeResult == nil {
 		// auto create merge
 		mergeInfo, err := s.p.bdl.CreateMergeRequest(req.AppID, apis.GetUserID(ctx), apistructs.GittarCreateMergeRequest{
 			TargetBranch:       req.TargetBranch,
@@ -119,8 +129,8 @@ func (s *Service) CreateFlowNode(ctx context.Context, req *pb.CreateFlowNodeRequ
 		mergeID = mergeInfo.Id
 		repoMergeID = mergeInfo.RepoMergeId
 	} else {
-		mergeID = openMergeInfoList[0].Id
-		repoMergeID = openMergeInfoList[0].RepoMergeId
+		mergeID = mergeResult.Id
+		repoMergeID = mergeResult.RepoMergeId
 	}
 
 	var extra = pb.IssueRelationExtra{
@@ -293,7 +303,7 @@ func (s *Service) GetDevFlowInfo(ctx context.Context, req *pb.GetDevFlowInfoRequ
 				return err
 			}
 
-			if mrInfo.State != "open" {
+			if mrInfo.State != mrMergedState && mrInfo.State != mrOpenState {
 				go func() {
 					_, err := s.p.IssueRelation.Delete(ctx, &issuerelationpb.DeleteIssueRelationRequest{
 						RelationID: relation.ID,
