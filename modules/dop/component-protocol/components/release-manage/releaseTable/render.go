@@ -385,29 +385,29 @@ func (r *ComponentReleaseTable) RenderTable(ctx context.Context, gs *cptype.Glob
 				Text: r.sdk.I18n("referencedReleases"),
 			}
 
-			if release.OpusID == "" {
-				item.Operations.Operations["putOn"] = Operation{
-					Confirm: r.sdk.I18n("confirmPutOn"),
-					Key:     "putOn",
-					Reload:  true,
-					Text:    r.sdk.I18n("putOn"),
-					Meta: map[string]interface{}{
-						"id": release.ReleaseID,
-					},
-					SuccessMsg: r.sdk.I18n("putOnSucceeded"),
-				}
-			} else {
-				item.Operations.Operations["putOff"] = Operation{
-					Confirm: r.sdk.I18n("confirmPutOff"),
-					Key:     "putOff",
-					Reload:  true,
-					Text:    r.sdk.I18n("putOff"),
-					Meta: map[string]interface{}{
-						"id": release.ReleaseID,
-					},
-					SuccessMsg: r.sdk.I18n("putOffSucceeded"),
-				}
-			}
+			//if release.OpusID == "" {
+			//	item.Operations.Operations["putOn"] = Operation{
+			//		Confirm: r.sdk.I18n("confirmPutOn"),
+			//		Key:     "putOn",
+			//		Reload:  true,
+			//		Text:    r.sdk.I18n("putOn"),
+			//		Meta: map[string]interface{}{
+			//			"id": release.ReleaseID,
+			//		},
+			//		SuccessMsg: r.sdk.I18n("putOnSucceeded"),
+			//	}
+			//} else {
+			//	item.Operations.Operations["putOff"] = Operation{
+			//		Confirm: r.sdk.I18n("confirmPutOff"),
+			//		Key:     "putOff",
+			//		Reload:  true,
+			//		Text:    r.sdk.I18n("putOff"),
+			//		Meta: map[string]interface{}{
+			//			"id": release.ReleaseID,
+			//		},
+			//		SuccessMsg: r.sdk.I18n("putOffSucceeded"),
+			//	}
+			//}
 		}
 		if !release.IsFormal {
 			if hasWriteAccess {
@@ -421,10 +421,10 @@ func (r *ComponentReleaseTable) RenderTable(ctx context.Context, gs *cptype.Glob
 			deleteOperation.Disabled = true
 			deleteOperation.DisabledTip = r.sdk.I18n("formalReleaseCanNotBeModified")
 		}
-		if release.IsProjectRelease && release.OpusID != "" {
-			deleteOperation.Disabled = true
-			deleteOperation.DisabledTip = r.sdk.I18n("canNotDeletePutOnRelease")
-		}
+		//if release.IsProjectRelease && release.OpusID != "" {
+		//	deleteOperation.Disabled = true
+		//	deleteOperation.DisabledTip = r.sdk.I18n("canNotDeletePutOnRelease")
+		//}
 		item.Operations.Operations["edit"] = editOperation
 		item.Operations.Operations["formal"] = formalOperation
 		item.Operations.Operations["delete"] = deleteOperation
