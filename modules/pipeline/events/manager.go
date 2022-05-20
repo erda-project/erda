@@ -52,9 +52,9 @@ func Initialize(bdl *bundle.Bundle, wsClient *websocket.Publisher, dbClient *dbc
 				//	e.Kind(), e, e.Kind(), e.Header(), e.Sender(), e.Content())
 
 				go handle(ev, HookTypeDB, ev.HandleDB)
+				go handle(ev, HookTypeWebHook, ev.HandleWebhook)
 
 				if !edgeRegister.IsEdge() {
-					go handle(ev, HookTypeWebHook, ev.HandleWebhook)
 					go handle(ev, HookTypeWebSocket, ev.HandleWebSocket)
 					go handle(ev, HookTypeDINGDING, ev.HandleDingDing)
 					go handle(ev, HookTypeHTTP, ev.HandleHTTP)

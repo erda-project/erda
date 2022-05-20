@@ -16,6 +16,8 @@ package apistructs
 
 import (
 	"encoding/json"
+
+	"github.com/erda-project/erda-proto-go/core/messenger/eventbox/pb"
 )
 
 // EventCreateRequest  用于发送 event 的 json request (非 OPENAPI)
@@ -44,4 +46,16 @@ func (r EventCreateRequest) MarshalJSON() ([]byte, error) {
 		}{Webhook: r.EventHeader},
 	}
 	return json.Marshal(result)
+}
+
+func (r *EventCreateRequest) ConvertToPB() (*pb.CreateMessageRequest, error) {
+	reqByte, err := json.Marshal(r)
+	if err != nil {
+		return nil, err
+	}
+	reqPb := pb.CreateMessageRequest{}
+	if err := json.Unmarshal(reqByte, &reqPb); err != nil {
+		return nil, err
+	}
+	return &reqPb, nil
 }

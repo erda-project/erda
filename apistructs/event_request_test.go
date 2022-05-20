@@ -43,3 +43,20 @@ func TestEventCreateRequestMarshal(t *testing.T) {
 	assert.False(t, ok)
 
 }
+
+func TestConvertEventToPB(t *testing.T) {
+	event := &EventCreateRequest{
+		Sender: "pipeline",
+		Content: PipelineInstanceEventData{
+			PipelineID: 1,
+			Status:     PipelineStatusSuccess.String(),
+			Branch:     "develop",
+		},
+		EventHeader: EventHeader{
+			Event: "pipeline",
+		},
+	}
+	eventPB, err := event.ConvertToPB()
+	assert.NoError(t, err)
+	assert.Equal(t, "pipeline", eventPB.Sender)
+}

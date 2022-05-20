@@ -65,7 +65,10 @@ func (e *PipelineTaskRuntimeEvent) HandleWebhook() error {
 	req.EventHeader = e.Header()
 	req.Content = e.Content()
 
-	return e.DefaultEvent.bdl.CreateEvent(req)
+	if !e.edgeRegister.IsEdge() {
+		return e.DefaultEvent.bdl.CreateEvent(req)
+	}
+	return e.edgeRegister.CreateMessageEvent(req)
 }
 
 type WSPipelineTaskRuntimeIDUpdatePayload struct {

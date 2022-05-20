@@ -21,10 +21,15 @@ import (
 	"time"
 
 	"github.com/coreos/etcd/clientv3"
+	"github.com/gorilla/schema"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/messenger/eventbox/dispatcher"
+	httpinput "github.com/erda-project/erda/modules/messenger/eventbox/input/http"
+	"github.com/erda-project/erda/modules/messenger/eventbox/webhook"
 	"github.com/erda-project/erda/modules/pipeline/providers/leaderworker"
 )
 
@@ -44,15 +49,21 @@ type Config struct {
 type provider struct {
 	sync.Mutex
 
-	Log logs.Logger
-	Cfg *Config
-	LW  leaderworker.Interface
+	Log      logs.Logger
+	Cfg      *Config
+	LW       leaderworker.Interface
+	Register transport.Register
 
-	bdl          *bundle.Bundle
-	EtcdClient   *clientv3.Client
-	started      bool
-	forCenterUse forCenterUse
-	forEdgeUse   forEdgeUse
+	bdl                *bundle.Bundle
+	EtcdClient         *clientv3.Client
+	started            bool
+	forCenterUse       forCenterUse
+	forEdgeUse         forEdgeUse
+	queryStringDecoder *schema.Decoder
+
+	webHookHTTP     *webhook.WebHookHTTP
+	httpI           *httpinput.HttpInput
+	eventDispatcher dispatcher.Dispatcher
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -63,10 +74,28 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		return err
 	}
 	p.bdl = bundle.New(bundle.WithClusterManager())
+	p.queryStringDecoder = schema.NewDecoder()
+	webHookHTTP, err := webhook.NewWebHookHTTP()
+	if err != nil {
+		return err
+	}
+	p.webHookHTTP = webHookHTTP
+	httpI, err := httpinput.New()
+	if err != nil {
+		return err
+	}
+	p.httpI = httpI
+	eventDispatcher, err := p.newEventDispatcher()
+	if err != nil {
+		return err
+	}
+	p.eventDispatcher = eventDispatcher
 	p.forEdgeUse.handlersOnEdge = make(chan func(context.Context), 0)
 	p.forCenterUse.handlersOnCenter = make(chan func(context.Context), 0)
 	p.startEdgeCenterUse(ctx)
 	p.OnEdge(p.watchClusterCredential)
+	p.OnEdge(p.initWebHookEndpoints)
+	p.OnEdge(p.startEventDispatcher)
 	p.waitingEdgeReady(ctx)
 	return nil
 }
