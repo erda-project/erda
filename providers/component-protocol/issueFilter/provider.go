@@ -111,6 +111,9 @@ func (f *IssueFilter) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			filter.OpFilterItemSave{}.OpKey():   cputil.NewOpBuilder().Build(),
 			filter.OpFilterItemDelete{}.OpKey(): cputil.NewOpBuilder().Build(),
 		}
+		if f.InParams.FrontendFixedIssueType == apistructs.IssueTypeTicket.String() {
+			f.StdDataPtr.HideSave = true
+		}
 		return nil
 	}
 }

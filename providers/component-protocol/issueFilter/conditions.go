@@ -148,6 +148,7 @@ func (f *IssueFilter) ConditionRetriever() ([]interface{}, error) {
 	}
 	complexity := model.NewSelectCondition(PropConditionKeyComplexity, cputil.I18n(f.sdk.Ctx, "complexity"), complexityOptions)
 
+	var status interface{}
 	if f.State.WithStateCondition {
 		statesMap, err := f.issueStateSvc.GetIssueStatesMap(&apistructs.IssueStatesGetRequest{
 			ProjectID: f.InParams.ProjectID,
@@ -156,7 +157,7 @@ func (f *IssueFilter) ConditionRetriever() ([]interface{}, error) {
 			return nil, err
 		}
 
-		status := func() interface{} {
+		status = func() interface{} {
 			switch f.InParams.FrontendFixedIssueType {
 			case "ALL":
 				return model.NewSelectConditionWithChildren(PropConditionKeyStates, cputil.I18n(f.sdk.Ctx, "state"), convertAllConditions(f.sdk.Ctx, statesMap))
@@ -166,6 +167,8 @@ func (f *IssueFilter) ConditionRetriever() ([]interface{}, error) {
 				return model.NewSelectCondition(PropConditionKeyStates, cputil.I18n(f.sdk.Ctx, "state"), convertConditions(statesMap[apistructs.IssueTypeTask]))
 			case apistructs.IssueTypeBug.String():
 				return model.NewSelectCondition(PropConditionKeyStates, cputil.I18n(f.sdk.Ctx, "state"), convertConditions(statesMap[apistructs.IssueTypeBug]))
+			case apistructs.IssueTypeTicket.String():
+				return model.NewSelectCondition(PropConditionKeyStates, cputil.I18n(f.sdk.Ctx, "state"), convertConditions(statesMap[apistructs.IssueTypeTicket]))
 			}
 			return nil
 		}()
@@ -183,6 +186,8 @@ func (f *IssueFilter) ConditionRetriever() ([]interface{}, error) {
 		rightGroup = append(rightGroup, owner, closed)
 	case "ALL":
 		rightGroup = append(rightGroup, owner)
+	case apistructs.IssueTypeTicket.String():
+		leftGroup = []interface{}{status, labels, priority, severity}
 	}
 
 	conditions := Zigzag(leftGroup, rightGroup)

@@ -73,7 +73,7 @@ func TestIssueState_GetIssueStatesMap(t *testing.T) {
 		ProjectID: 1,
 	})
 	assert.NoError(t, err)
-	assert.Equal(t, 3, len(res))
+	assert.Equal(t, 4, len(res))
 }
 
 func TestInitProjectState(t *testing.T) {

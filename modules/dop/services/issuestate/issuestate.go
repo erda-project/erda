@@ -145,6 +145,9 @@ func (is *IssueState) GetIssueStates(req *apistructs.IssueStatesGetRequest) ([]a
 	states = append(states, apistructs.IssueTypeState{
 		IssueType: apistructs.IssueTypeEpic,
 	})
+	states = append(states, apistructs.IssueTypeState{
+		IssueType: apistructs.IssueTypeTicket,
+	})
 	for _, v := range st {
 		if v.IssueType == apistructs.IssueTypeTask {
 			states[0].State = append(states[0].State, v.Name)
@@ -154,6 +157,8 @@ func (is *IssueState) GetIssueStates(req *apistructs.IssueStatesGetRequest) ([]a
 			states[2].State = append(states[2].State, v.Name)
 		} else if v.IssueType == apistructs.IssueTypeEpic {
 			states[3].State = append(states[3].State, v.Name)
+		} else if v.IssueType == apistructs.IssueTypeTicket {
+			states[4].State = append(states[4].State, v.Name)
 		}
 	}
 	return states, nil
@@ -164,6 +169,7 @@ func (is *IssueState) GetIssueStatesMap(req *apistructs.IssueStatesGetRequest) (
 		apistructs.IssueTypeRequirement: make([]apistructs.IssueStatus, 0),
 		apistructs.IssueTypeTask:        make([]apistructs.IssueStatus, 0),
 		apistructs.IssueTypeBug:         make([]apistructs.IssueStatus, 0),
+		apistructs.IssueTypeTicket:      make([]apistructs.IssueStatus, 0),
 	}
 	st, err := is.db.GetIssuesStatesByProjectID(req.ProjectID, "")
 	if err != nil {

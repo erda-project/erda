@@ -67,6 +67,8 @@ func (f *IssueFilter) setInParams() error {
 			f.InParams.IssueTypes = []apistructs.IssueType{apistructs.IssueTypeTask}
 		case apistructs.IssueTypeBug.String():
 			f.InParams.IssueTypes = []apistructs.IssueType{apistructs.IssueTypeBug}
+		case apistructs.IssueTypeTicket.String():
+			f.InParams.IssueTypes = []apistructs.IssueType{apistructs.IssueTypeTicket}
 		}
 	}
 	if f.InParams.FrontendFixedIteration != "" {

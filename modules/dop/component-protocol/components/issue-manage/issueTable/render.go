@@ -132,6 +132,7 @@ type TableItem struct {
 	ClosedAt    ClosedAt  `json:"closedAt"`
 	Name        Name      `json:"name"`
 	ReopenCount TextBlock `json:"reopenCount,omitempty"`
+	CreatedAt   CreatedAt `json:"createdAt"`
 }
 
 type TextBlock struct {
@@ -168,6 +169,8 @@ type ClosedAt struct {
 	Value      string `json:"value"`
 	NoBorder   bool   `json:"noBorder"`
 }
+
+type CreatedAt ClosedAt
 
 type PriorityOperationData struct {
 	Meta struct {
@@ -496,6 +499,11 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		closedAtCol = `,{ "title": "` + cputil.I18n(ctx, "closed-at") + `", "dataIndex": "closedAt", "hidden": true }`
 		reopenCountCol = `,{ "title": "` + cputil.I18n(ctx, "reopenCount") + `", "dataIndex": "reopenCount", "hidden": true }`
 	}
+	var createdAtCol string
+	if len(cond.Type) == 1 && cond.Type[0] == apistructs.IssueTypeTicket {
+		severityCol = `{ "title": "` + cputil.I18n(ctx, "severity") + `", "dataIndex": "severity", "hidden": false },`
+		createdAtCol = `,{ "title": "` + cputil.I18n(ctx, "created-at") + `", "dataIndex": "createdAt", "hidden": false }`
+	}
 	props := `{
     "columns": [
 		{
@@ -530,7 +538,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
             "dataIndex": "deadline",
             "title": "` + cputil.I18n(ctx, "deadline") + `"
         }` +
-		closedAtCol + reopenCountCol +
+		closedAtCol + reopenCountCol + createdAtCol +
 		`],
     "rowKey": "id",
 	"pageSizeOptions": ["10", "20", "50", "100"]
@@ -710,6 +718,11 @@ func (ca *ComponentAction) buildTableItem(ctx context.Context, data *apistructs.
 	if data.FinishTime != nil {
 		closedAt.Value = data.FinishTime.Format(time.RFC3339)
 	}
+	createdAt := CreatedAt{
+		RenderType: "datePicker",
+		Value:      data.CreatedAt.Format(time.RFC3339),
+		NoBorder:   true,
+	}
 	state := State{
 		// Operations: stateOperations,
 		RenderType: "dropdownMenu",
@@ -795,9 +808,10 @@ func (ca *ComponentAction) buildTableItem(ctx context.Context, data *apistructs.
 				true: "无权限",
 			}[ca.isGuest],
 		},
-		Name:     nameColumn,
-		Deadline: deadline,
-		ClosedAt: closedAt,
+		Name:      nameColumn,
+		Deadline:  deadline,
+		ClosedAt:  closedAt,
+		CreatedAt: createdAt,
 		ReopenCount: TextBlock{
 			RenderType: "text",
 			Value:      fmt.Sprintf("%d", data.ReopenCount),
