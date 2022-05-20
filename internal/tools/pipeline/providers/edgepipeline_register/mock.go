@@ -50,8 +50,9 @@ func (m *MockEdgeRegister) GetEdgeBundleByClusterName(clusterName string) (*bund
 func (m *MockEdgeRegister) ClusterIsEdge(clusterName string) (bool, error) {
 	return true, nil
 }
-func (m *MockEdgeRegister) OnEdge(f func(context.Context))   {}
-func (m *MockEdgeRegister) OnCenter(f func(context.Context)) {}
+func (m *MockEdgeRegister) OnEdge(f func(context.Context))                                {}
+func (m *MockEdgeRegister) OnCenter(f func(context.Context))                              {}
+func (m *MockEdgeRegister) CreateMessageEvent(event *apistructs.EventCreateRequest) error { return nil }
 
 type MockKV struct{}
 

@@ -44,6 +44,9 @@ type Interface interface {
 	GetEdgeBundleByClusterName(clusterName string) (*bundle.Bundle, error)
 	ClusterIsEdge(clusterName string) (bool, error)
 
+	// CreateMessageEvent edge-side pipeline send events by event-dispatcher
+	CreateMessageEvent(event *apistructs.EventCreateRequest) error
+
 	// OnEdge register hook that will be invoked if you are running on edge.
 	// Could register multi hooks as you need.
 	// All hooks executed asynchronously.
