@@ -23,6 +23,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/commodel"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/list"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/protobuf/proto-go/cp/pb"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
@@ -40,9 +41,11 @@ func (t NopTranslator) Sprintf(lang i18n.LanguageCodes, key string, args ...inte
 }
 
 var defaultSDK = &cptype.SDK{
-
+	Tran: &NopTranslator{},
+	Identity: &pb.IdentityInfo{
+		UserID: "1",
+	},
 	GlobalState: &cptype.GlobalStateData{},
-	Tran:        &NopTranslator{},
 }
 
 func TestList_doFilter(t *testing.T) {
@@ -312,9 +315,14 @@ func Test_getKvInfos(t *testing.T) {
 }
 
 func Test_getMoreOperations(t *testing.T) {
+	bdl := bundle.New()
+	l := &List{
+		Bdl: bdl,
+		Sdk: defaultSDK,
+	}
 	type args struct {
-		sdk *cptype.SDK
-		id  string
+		id        uint64
+		workspace string
 	}
 	tests := []struct {
 		name string
@@ -323,12 +331,14 @@ func Test_getMoreOperations(t *testing.T) {
 		// TODO: Add test cases.
 		{
 			name: "1",
-			args: args{sdk: defaultSDK},
+			args: args{id: 1, workspace: "dev"},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			getMoreOperations(tt.args.sdk, tt.args.id)
+			if _, err := l.getMoreOperations(true); err != nil {
+				t.Error(err)
+			}
 		})
 	}
 }
