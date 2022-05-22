@@ -44,6 +44,11 @@ service ClusterService {
   }
 }
 
+message ErrResponse {
+  string code = 1;
+  string msg = 2;
+}
+
 message ListClusterRequest {
   string clusterType = 1;
   // optional, return all clusters if orgID == 0
@@ -52,6 +57,8 @@ message ListClusterRequest {
 
 message ListClusterResponse {
   repeated ClusterInfo data = 1;
+  bool success = 2;
+  ErrResponse err = 3;
 }
 
 message GetClusterRequest {
@@ -60,6 +67,8 @@ message GetClusterRequest {
 
 message GetClusterResponse {
   ClusterInfo data = 1;
+  bool success = 2;
+  ErrResponse err = 3;
 }
 
 message UpdateClusterRequest {
@@ -70,7 +79,7 @@ message UpdateClusterRequest {
   string type = 5;
   string logo = 6;
   string wildcardDomain = 7;
-  ClusterSchedConfig schedulerConfig = 8 [json_name="scheduler"];
+  ClusterSchedConfig schedulerConfig = 8 [json_name = "scheduler"];
   OpsConfig opsConfig = 9;
   SysConf sysConfig = 10;
   ManageConfig manageConfig = 11;
@@ -82,7 +91,8 @@ message UpdateClusterRequest {
 }
 
 message UpdateClusterResponse {
-
+  bool success = 1;
+  ErrResponse err = 2;
 }
 
 message CreateClusterRequest {
@@ -93,7 +103,7 @@ message CreateClusterRequest {
   string type = 5;
   string logo = 6;
   string wildcardDomain = 7;
-  ClusterSchedConfig schedulerConfig = 8 [json_name="scheduler"];
+  ClusterSchedConfig schedulerConfig = 8 [json_name = "scheduler"];
   OpsConfig opsConfig = 9;
   SysConf sysConfig = 10;
   ManageConfig manageConfig = 11;
@@ -108,7 +118,8 @@ message CreateClusterRequest {
 }
 
 message CreateClusterResponse {
-
+  bool success = 1;
+  ErrResponse err = 2;
 }
 
 message DeleteClusterRequest {
@@ -116,7 +127,8 @@ message DeleteClusterRequest {
 }
 
 message DeleteClusterResponse {
-
+  bool success = 1;
+  ErrResponse err = 2;
 }
 
 message PatchClusterRequest {
@@ -129,7 +141,7 @@ message PatchClusterResponse {
 }
 
 message ClusterInfo {
-  int64 id = 1;
+  int32 id = 1;
   string name = 2;
   string displayName = 3;
   string type = 4;  // dcos, edas, k8s
@@ -137,7 +149,7 @@ message ClusterInfo {
   string logo = 6;
   string description = 7;
   string wildcardDomain = 8;
-  ClusterSchedConfig schedConfig = 9 [json_name="scheduler"];
+  ClusterSchedConfig schedConfig = 9 [json_name = "scheduler"];
   OpsConfig opsConfig = 10;
   SysConf system = 11;
   ManageConfig manageConfig = 12;
@@ -145,7 +157,7 @@ message ClusterInfo {
   google.protobuf.Timestamp updatedAt = 14;
 
   // Deprecated
-  int64 orgID = 15;
+  int32 orgID = 15;
   // Deprecated
   map<string, string> urls = 16;
   // Deprecated
@@ -165,7 +177,7 @@ message ClusterSchedConfig {
   string clientCrt = 6;
   string clientKey = 7;
   bool enableTag = 8;
-  string enableWorkspace = 9;
+  bool enableWorkspace = 9;
   string edasConsoleAddr = 10;
   string accessKey = 11;
   string accessSecret = 12;
@@ -212,7 +224,7 @@ message SysConf {
   Storage storage = 4;
   Docker docker = 5;
   repeated Node nodes = 6;
-  repeated Node newNodes = 7 [json_name="-"];
+  repeated Node newNodes = 7 [json_name = "-"];
   Platform platform = 8;
   Platform mainPlatform = 9;
   map<string, string> envs = 10;
@@ -292,7 +304,7 @@ message Platform {
   string wildcardDomain = 2;
   map<string, string> assignDomains = 3;
   map<string, string> assignNodes = 4;
-  MySQL mySQL = 5 [json_name="mysql"];
+  MySQL mySQL = 5 [json_name = "mysql"];
   bool acceptMaster = 6;
   bool acceptLB = 7;
   string dataDiskDevice = 8;
@@ -300,7 +312,7 @@ message Platform {
   string scheme = 10;
   int64 port = 11;
   string registryHost = 12;
-  OpenVPN openVPN = 13 [json_name="openvpn"];
+  OpenVPN openVPN = 13 [json_name = "openvpn"];
 }
 
 message ManageConfig {

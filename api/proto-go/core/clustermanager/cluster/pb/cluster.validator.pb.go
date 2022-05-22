@@ -19,6 +19,9 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+func (this *ErrResponse) Validate() error {
+	return nil
+}
 func (this *ListClusterRequest) Validate() error {
 	return nil
 }
@@ -30,6 +33,11 @@ func (this *ListClusterResponse) Validate() error {
 			}
 		}
 	}
+	if this.Err != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Err); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("Err", err)
+		}
+	}
 	return nil
 }
 func (this *GetClusterRequest) Validate() error {
@@ -39,6 +47,11 @@ func (this *GetClusterResponse) Validate() error {
 	if this.Data != nil {
 		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Data); err != nil {
 			return github_com_mwitkow_go_proto_validators.FieldError("Data", err)
+		}
+	}
+	if this.Err != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Err); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("Err", err)
 		}
 	}
 	return nil
@@ -68,6 +81,11 @@ func (this *UpdateClusterRequest) Validate() error {
 	return nil
 }
 func (this *UpdateClusterResponse) Validate() error {
+	if this.Err != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Err); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("Err", err)
+		}
+	}
 	return nil
 }
 func (this *CreateClusterRequest) Validate() error {
@@ -96,12 +114,22 @@ func (this *CreateClusterRequest) Validate() error {
 	return nil
 }
 func (this *CreateClusterResponse) Validate() error {
+	if this.Err != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Err); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("Err", err)
+		}
+	}
 	return nil
 }
 func (this *DeleteClusterRequest) Validate() error {
 	return nil
 }
 func (this *DeleteClusterResponse) Validate() error {
+	if this.Err != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Err); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("Err", err)
+		}
+	}
 	return nil
 }
 func (this *PatchClusterRequest) Validate() error {

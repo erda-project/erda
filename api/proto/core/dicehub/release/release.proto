@@ -7,6 +7,7 @@ import "google/protobuf/descriptor.proto";
 import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
 import "common/openapi.proto";
+import "apps/gallery/gallery.proto";
 
 service ReleaseService {
   option (erda.common.openapi_service) = {
@@ -160,6 +161,9 @@ service ReleaseService {
       path: "/api/releases/actions/check-version",
     };
   }
+
+  rpc PutOnRelease (ReleasePutOnRequest) returns (ReleasePutOnResponse);
+  rpc PutOffRelease (ReleasePutOffRequest) returns (ReleasePutOffResponse);
 }
 
 message ReleaseList{
@@ -265,6 +269,8 @@ message ReleaseUpdateRequest {
   int64 orgID = 7 [json_name = "orgId"] ;
   int64 projectID = 9 [json_name = "projectId"] ;
   int64 applicationID = 10 [json_name = "applicationId"] ;
+  string opusID = 11;
+  string opusVersionID = 12;
 }
 
 // ReleaseDataResponse response only return data
@@ -386,6 +392,8 @@ message ReleaseGetResponseData {
 
   repeated AddonInfo addons = 29;
   string addonYaml = 30;
+  string opusID = 31;
+  string opusVersionID = 32;
 }
 
 message AddonInfo {
@@ -429,8 +437,9 @@ message ReleaseListRequest {
   string isStable = 7;
   string isFormal = 8;
   string isProjectRelease = 9;
-  repeated string userID = 10 [json_name = "userId"];
-  string version = 11;
+  string from = 10;
+  repeated string userID = 11 [json_name = "userId"];
+  string version = 12;
   string commitID = 13 [json_name = "commitId"];
   repeated uint64 tags = 14;
 
@@ -520,6 +529,9 @@ message ReleaseData {
 
   // 是否为分支最新
   bool isLatest = 27;
+
+  string opusID = 28;
+  string opusVersionID = 29;
 }
 
 // ReleaseNameListRequest release name list request
@@ -580,6 +592,8 @@ message GetLatestReleasesResponseData{
   google.protobuf.Timestamp createdAt = 18;
   // UpdatedAt Release update time, updated by the server during update
   google.protobuf.Timestamp updatedAt = 19;
+  string opusID = 20;
+  string opusVersionID = 21;
 }
 
 message ReleaseGCRequest{
@@ -654,4 +668,27 @@ message CheckVersionResponse{
 
 message CheckVersionResponseData{
   bool isUnique = 1;
+}
+
+message UpdateGalleryInfoRequest{
+  string releaseID = 1;
+  string OpusID = 2;
+  string OpusVersionID = 3;
+}
+
+message ReleasePutOnRequest {
+  apps.gallery.PutOnArtifactsReq req = 1;
+}
+
+message ReleasePutOnResponse {
+
+}
+
+message ReleasePutOffRequest {
+  apps.gallery.PutOffArtifactsReq req = 1;
+  string releaseID = 2;
+}
+
+message ReleasePutOffResponse {
+
 }

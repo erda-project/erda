@@ -131,6 +131,7 @@ message QueryMeta {
   bool            highlight               = 4;
   int32           preferredBufferSize     = 5;
   IterateStyle    preferredIterateStyle   = 6;
+  bool            skipTotalStat           = 7;
 }
 
 message LogUniqueID {
@@ -203,8 +204,8 @@ message GetLogResponse {
 }
 
 message GetLogByRuntimeResponse {
-  repeated LogItem lines = 1;
-  bool isFallback = 2;
+  repeated LogItem lines      = 1;
+  bool             isFallback = 2;
 }
 
 message GetLogByOrganizationResponse {

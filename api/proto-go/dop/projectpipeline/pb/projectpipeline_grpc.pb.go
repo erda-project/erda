@@ -33,6 +33,7 @@ type ProjectPipelineServiceClient interface {
 	RerunFailed(ctx context.Context, in *RerunFailedProjectPipelineRequest, opts ...grpc.CallOption) (*RerunFailedProjectPipelineResponse, error)
 	Cancel(ctx context.Context, in *CancelProjectPipelineRequest, opts ...grpc.CallOption) (*CancelProjectPipelineResponse, error)
 	OneClickCreate(ctx context.Context, in *OneClickCreateProjectPipelineRequest, opts ...grpc.CallOption) (*OneClickCreateProjectPipelineResponse, error)
+	BatchCreateByGittarPushHook(ctx context.Context, in *GittarPushPayloadEvent, opts ...grpc.CallOption) (*BatchCreateProjectPipelineResponse, error)
 }
 
 type projectPipelineServiceClient struct {
@@ -151,6 +152,15 @@ func (c *projectPipelineServiceClient) OneClickCreate(ctx context.Context, in *O
 	return out, nil
 }
 
+func (c *projectPipelineServiceClient) BatchCreateByGittarPushHook(ctx context.Context, in *GittarPushPayloadEvent, opts ...grpc.CallOption) (*BatchCreateProjectPipelineResponse, error) {
+	out := new(BatchCreateProjectPipelineResponse)
+	err := c.cc.Invoke(ctx, "/erda.dop.projectpipeline.ProjectPipelineService/BatchCreateByGittarPushHook", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ProjectPipelineServiceServer is the server API for ProjectPipelineService service.
 // All implementations should embed UnimplementedProjectPipelineServiceServer
 // for forward compatibility
@@ -167,6 +177,7 @@ type ProjectPipelineServiceServer interface {
 	RerunFailed(context.Context, *RerunFailedProjectPipelineRequest) (*RerunFailedProjectPipelineResponse, error)
 	Cancel(context.Context, *CancelProjectPipelineRequest) (*CancelProjectPipelineResponse, error)
 	OneClickCreate(context.Context, *OneClickCreateProjectPipelineRequest) (*OneClickCreateProjectPipelineResponse, error)
+	BatchCreateByGittarPushHook(context.Context, *GittarPushPayloadEvent) (*BatchCreateProjectPipelineResponse, error)
 }
 
 // UnimplementedProjectPipelineServiceServer should be embedded to have forward compatible implementations.
@@ -208,6 +219,9 @@ func (*UnimplementedProjectPipelineServiceServer) Cancel(context.Context, *Cance
 }
 func (*UnimplementedProjectPipelineServiceServer) OneClickCreate(context.Context, *OneClickCreateProjectPipelineRequest) (*OneClickCreateProjectPipelineResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method OneClickCreate not implemented")
+}
+func (*UnimplementedProjectPipelineServiceServer) BatchCreateByGittarPushHook(context.Context, *GittarPushPayloadEvent) (*BatchCreateProjectPipelineResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method BatchCreateByGittarPushHook not implemented")
 }
 
 func RegisterProjectPipelineServiceServer(s grpc1.ServiceRegistrar, srv ProjectPipelineServiceServer, opts ...grpc1.HandleOption) {
@@ -334,6 +348,15 @@ func _get_ProjectPipelineService_serviceDesc(srv ProjectPipelineServiceServer, o
 	if h.Interceptor != nil {
 		_ProjectPipelineService_OneClickCreate_info = transport.NewServiceInfo("erda.dop.projectpipeline.ProjectPipelineService", "OneClickCreate", srv)
 		_ProjectPipelineService_OneClickCreate_Handler = h.Interceptor(_ProjectPipelineService_OneClickCreate_Handler)
+	}
+
+	_ProjectPipelineService_BatchCreateByGittarPushHook_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.BatchCreateByGittarPushHook(ctx, req.(*GittarPushPayloadEvent))
+	}
+	var _ProjectPipelineService_BatchCreateByGittarPushHook_info transport.ServiceInfo
+	if h.Interceptor != nil {
+		_ProjectPipelineService_BatchCreateByGittarPushHook_info = transport.NewServiceInfo("erda.dop.projectpipeline.ProjectPipelineService", "BatchCreateByGittarPushHook", srv)
+		_ProjectPipelineService_BatchCreateByGittarPushHook_Handler = h.Interceptor(_ProjectPipelineService_BatchCreateByGittarPushHook_Handler)
 	}
 
 	var serviceDesc = _ProjectPipelineService_serviceDesc
@@ -612,6 +635,29 @@ func _get_ProjectPipelineService_serviceDesc(srv ProjectPipelineServiceServer, o
 					FullMethod: "/erda.dop.projectpipeline.ProjectPipelineService/OneClickCreate",
 				}
 				return interceptor(ctx, in, info, _ProjectPipelineService_OneClickCreate_Handler)
+			},
+		},
+		{
+			MethodName: "BatchCreateByGittarPushHook",
+			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+				in := new(GittarPushPayloadEvent)
+				if err := dec(in); err != nil {
+					return nil, err
+				}
+				if interceptor == nil && h.Interceptor == nil {
+					return srv.(ProjectPipelineServiceServer).BatchCreateByGittarPushHook(ctx, in)
+				}
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _ProjectPipelineService_BatchCreateByGittarPushHook_info)
+				}
+				if interceptor == nil {
+					return _ProjectPipelineService_BatchCreateByGittarPushHook_Handler(ctx, in)
+				}
+				info := &grpc.UnaryServerInfo{
+					Server:     srv,
+					FullMethod: "/erda.dop.projectpipeline.ProjectPipelineService/BatchCreateByGittarPushHook",
+				}
+				return interceptor(ctx, in, info, _ProjectPipelineService_BatchCreateByGittarPushHook_Handler)
 			},
 		},
 	}

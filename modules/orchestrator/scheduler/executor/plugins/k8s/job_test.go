@@ -92,6 +92,30 @@ func TestNewJob(t *testing.T) {
 
 }
 
+func TestDeleteHistoryJob(t *testing.T) {
+	k := &Kubernetes{
+		job: &job.Job{},
+	}
+	monkey.PatchInstanceMethod(reflect.TypeOf(k.job), "List", func(job *job.Job, namespace string, labelSelector map[string]string) (batchv1.JobList, error) {
+		return batchv1.JobList{
+			TypeMeta: metav1.TypeMeta{},
+			ListMeta: metav1.ListMeta{},
+			Items: []batchv1.Job{batchv1.Job{
+				TypeMeta: metav1.TypeMeta{},
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-job",
+					Namespace: "test-ns",
+				},
+				Status: batchv1.JobStatus{
+					Succeeded: 1,
+				},
+			}},
+		}, nil
+	})
+	err := k.deleteHistoryJob("test-ns", "test-job")
+	assert.Equal(t, err, nil)
+}
+
 func TestGetJobStatusFromMap(t *testing.T) {
 	k := &Kubernetes{
 		job: &job.Job{},

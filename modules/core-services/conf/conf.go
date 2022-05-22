@@ -103,7 +103,7 @@ type Conf struct {
 	OrgAuditMaxRetentionDays uint64 `env:"ORG_AUDIT_MAX_RETENTION_DAYS" default:"180"` // org level audit max retention days
 
 	// erda-configs
-	ErdaConfigsBasePath string `env:"ERDA_CONFIGS_BASE_PATH" default:"erda-configs"`
+	ErdaConfigsBasePath string `env:"ERDA_CONFIGS_BASE_PATH" default:"common-conf/erda-configs"`
 }
 
 var (

@@ -1,5 +1,7 @@
 version: "1.1"
 
+name: AutoDeploy For Dev-Environment
+
 on:
   push:
     branches:
@@ -64,7 +66,7 @@ stages:
               decline_limit_sec: 60
               interval_sec: 5
           resources:
-            cpu: 2
+            cpu: 0.5
             mem: 2048
       - custom-script:
           alias: build-erda-cli
@@ -81,7 +83,7 @@ stages:
               decline_limit_sec: 60
               interval_sec: 5
           resources:
-            cpu: 2
+            cpu: 0.5
             mem: 2048
       - custom-script:
           alias: build-erda-dicehub-ee
@@ -103,7 +105,7 @@ stages:
               decline_limit_sec: 60
               interval_sec: 5
           resources:
-            cpu: 2
+            cpu: 0.5
             mem: 2048
       - custom-script:
           alias: build-agent
@@ -119,7 +121,7 @@ stages:
               decline_limit_sec: 60
               interval_sec: 5
           resources:
-            cpu: 2
+            cpu: 0.5
             mem: 2048
       - custom-script:
           alias: build-monitor-injector
@@ -130,7 +132,7 @@ stages:
             - cp -r ${{ dirs.erda-java-extensions }}/dist/erda-java-agent ./build/java-agent
             - make build-push-image MODULE_PATH=monitor/agent-injector
           resources:
-            cpu: 1
+            cpu: 0.5
             mem: 1024
       - custom-script:
           alias: build-diagnotor-agent
@@ -139,7 +141,7 @@ stages:
             - export ERDA_VERSION=${{ outputs.extract-repo-version.major_minor_version }}
             - make build-push-image MODULE_PATH=monitor/diagnotor-agent
           resources:
-            cpu: 1
+            cpu: 0.5
             mem: 1024
       - custom-script:
           alias: build-erda-cli-linux
@@ -156,7 +158,7 @@ stages:
             - export CLI_VERSION=$(echo ${{ outputs.extract-repo-version.version }} | sed "s/\+.*//g")
             - 'echo action meta: version=${CLI_VERSION}'
           resources:
-            cpu: 2
+            cpu: 0.5
             mem: 2048
       - custom-script:
           alias: build-erda-cli-mac
@@ -173,7 +175,7 @@ stages:
             - export CLI_VERSION=$(echo ${{ outputs.extract-repo-version.version }} | sed "s/\+.*//g")
             - 'echo action meta: version=${CLI_VERSION}'
           resources:
-            cpu: 2
+            cpu: 0.5
             mem: 2048
   - stage:
       - oss-upload:

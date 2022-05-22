@@ -317,6 +317,38 @@ func (b *Bundle) GetGittarCommit(repo, ref, userID string) (*apistructs.Commit, 
 	return &commit.Data[0], nil
 }
 
+func (b *Bundle) ListGittarCommit(repo, ref, userID string, orgID string) (*apistructs.Commit, error) {
+	var (
+		host   string
+		err    error
+		commit apistructs.GittarCommitsListResponse
+	)
+	hc := b.hc
+	host, err = b.urls.Gittar()
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := hc.Get(host).
+		Path(repo+"/commits/"+ref).
+		Header(httputil.UserHeader, userID).
+		Header(httputil.OrgHeader, orgID).
+		Param("pageNo", "1").
+		Param("pageSize", "1").
+		Do().JSON(&commit)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() || !commit.Success {
+		return nil, toAPIError(resp.StatusCode(), commit.Error)
+	}
+
+	if len(commit.Data) == 0 {
+		return nil, errors.New("no commit found")
+	}
+	return &commit.Data[0], nil
+}
+
 // GetGittarBranches 获取指定应用的所有分支
 func (b *Bundle) GetGittarBranches(repo, userID string) ([]string, error) {
 	var (
@@ -379,6 +411,35 @@ func (b *Bundle) GetGittarBranchesV2(repo string, orgID string, onlyBranchNames 
 		branches = append(branches, branch.Name)
 	}
 	return branches, nil
+}
+
+// GetGittarBranchesV2 获取指定应用的所有分支
+func (b *Bundle) CreateGittarBranch(repo string, branchInfo apistructs.GittarCreateBranchRequest, orgID string, userID string) error {
+	var (
+		host       string
+		err        error
+		createResp apistructs.GittarCreateBranchResponse
+	)
+	hc := b.hc
+	host, err = b.urls.Gittar()
+	if err != nil {
+		return err
+	}
+
+	resp, err := hc.Post(host).
+		Path(repo+"/branches").
+		Header(httputil.OrgHeader, orgID).
+		Header(httputil.UserHeader, userID).
+		JSONBody(branchInfo).
+		Do().JSON(&createResp)
+	if err != nil {
+		return apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() || !createResp.Success {
+		return toAPIError(resp.StatusCode(), createResp.Error)
+	}
+
+	return nil
 }
 
 // GetGittarTreeNode 获取目录的子节点
@@ -604,6 +665,60 @@ func (b *Bundle) CloseMergeRequest(appID int64, mrID int, userID string) error {
 	return nil
 }
 
+// operation mr temp branch
+func (b *Bundle) OperationTempBranch(appID uint64, userID string, req apistructs.GittarMergeOperationTempBranchRequest) error {
+	var (
+		host string
+		err  error
+		rsp  apistructs.GittarMergeOperationTempBranchResponse
+	)
+	hc := b.hc
+	host, err = b.urls.Gittar()
+	if err != nil {
+		return err
+	}
+
+	resp, err := hc.Post(host).
+		Header(httputil.UserHeader, userID).
+		Path(fmt.Sprintf("/app-repo/%v/merge-requests/%v/operation-temp-branch", appID, req.MergeID)).
+		JSONBody(req).
+		Do().JSON(&rsp)
+	if err != nil {
+		return apierrors.ErrInvoke.InternalError(err)
+	}
+
+	if !resp.IsOK() {
+		return apierrors.ErrInvoke.InternalError(errors.Errorf("failed to list Mr"))
+	}
+	return nil
+}
+
+func (b *Bundle) CreateMergeRequest(appID uint64, userID string, req apistructs.GittarCreateMergeRequest) (*apistructs.MergeRequestInfo, error) {
+	var (
+		host string
+		err  error
+		rsp  apistructs.GittarCreateMergeResponse
+	)
+	hc := b.hc
+	host, err = b.urls.Gittar()
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := hc.Post(host).
+		Header(httputil.UserHeader, userID).
+		Path(fmt.Sprintf("/app-repo/%d/merge-requests", appID)).
+		JSONBody(req).
+		Do().JSON(&rsp)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() {
+		return nil, apierrors.ErrInvoke.InternalError(errors.Errorf("failed to list Mr"))
+	}
+	return rsp.Data, nil
+}
+
 // ListMergeRequest list mrs
 func (b *Bundle) ListMergeRequest(appID uint64, userID string, req apistructs.GittarQueryMrRequest) (*apistructs.QueryMergeRequestsData, error) {
 	var (
@@ -621,6 +736,8 @@ func (b *Bundle) ListMergeRequest(appID uint64, userID string, req apistructs.Gi
 		Header(httputil.UserHeader, userID).
 		Path(fmt.Sprintf("/app-repo/%d/merge-requests", appID)).
 		Param("state", req.State).
+		Param("targetBranch", req.TargetBranch).
+		Param("sourceBranch", req.SourceBranch).
 		Param("pageNo", strconv.FormatInt(int64(req.Page), 10)).
 		Param("pageSize", strconv.FormatInt(int64(req.Size), 10)).
 		Do().JSON(&rsp)
@@ -629,6 +746,32 @@ func (b *Bundle) ListMergeRequest(appID uint64, userID string, req apistructs.Gi
 	}
 	if !resp.IsOK() {
 		return nil, apierrors.ErrInvoke.InternalError(errors.Errorf("failed to list Mr"))
+	}
+	return &rsp.Data, nil
+}
+
+// ListMergeRequest list mrs
+func (b *Bundle) GetMergeRequestDetail(appID uint64, userID string, mrID uint64) (*apistructs.MergeRequestInfo, error) {
+	var (
+		host string
+		err  error
+		rsp  apistructs.GittarQueryMrDetailResponse
+	)
+	hc := b.hc
+	host, err = b.urls.Gittar()
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := hc.Get(host).
+		Header(httputil.UserHeader, userID).
+		Path(fmt.Sprintf("/app-repo/%d/merge-requests/%v", appID, mrID)).
+		Do().JSON(&rsp)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() {
+		return nil, apierrors.ErrInvoke.InternalError(errors.Errorf("failed to get Mr"))
 	}
 	return &rsp.Data, nil
 }

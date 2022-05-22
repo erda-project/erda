@@ -38,29 +38,6 @@ VERSION_OPS := -ldflags "\
 # GOPRIVATE ?= ""
 GO_BUILD_ENV := PROJ_PATH=${PROJ_PATH} GOPROXY=${GOPROXY} GOPRIVATE=${GOPRIVATE}
 
-.PHONY: build-version clean tidy
-build-all: build-version submodule tidy
-	@set -o errexit; \
-	MODULES=$$(find "./cmd" -maxdepth 10 -type d); \
-	for path in $${MODULES}; \
-	do \
-		HAS_GO_FILE=$$(eval echo $$(bash -c "find "$${path}" -maxdepth 1 -name *.go 2>/dev/null" | wc -l)); \
-		if [ $${HAS_GO_FILE} -gt 0 ]; then \
-			MODULE_PATH=$${path#cmd/}; \
-			echo "gonna build module: $$MODULE_PATH"; \
-			MODULE_PATHS="$${MODULE_PATHS} $${path}"; \
-		fi; \
-	done; \
-	mkdir -p "${PROJ_PATH}/bin" && \
-	${GO_BUILD_ENV} go build ${VERSION_OPS} ${GO_BUILD_OPTIONS} -o "${PROJ_PATH}/bin" $${MODULE_PATHS}; \
-	make cli; \
-	echo "build all modules successfully!"
-
-build: build-version submodule tidy
-	cd "${BUILD_PATH}" && \
-	${GO_BUILD_ENV} go build ${VERSION_OPS} ${GO_BUILD_OPTIONS} -o "${PROJ_PATH}/bin/${APP_NAME}"
-	@ echo "build the ${MODULE_PATH} module successfully!"
-
 build-cross: build-version submodule
 	cd "${BUILD_PATH}" && \
 	CGO_ENABLED=0 GOOS=${GOOS} GOARCH=${GOARCH} ${GO_BUILD_ENV} go build ${VERSION_OPS} ${GO_BUILD_OPTIONS} -o "${PROJ_PATH}/bin/${GOOS}-${GOARCH}-${APP_NAME}"
@@ -71,6 +48,7 @@ build-for-linux:
 build-version:
 	@echo ------------ Start Build Version Details ------------
 	@echo AppName: ${APP_NAME}
+	@echo ModulePath: ${MODULE_PATH}
 	@echo Arch: ${GOARCH}
 	@echo OS: ${GOOS}
 	@echo Version: ${VERSION}
@@ -167,13 +145,9 @@ build-image: prepare
 	./build/scripts/docker_image.sh ${MODULE_PATH} build
 push-image:
 	./build/scripts/docker_image.sh ${MODULE_PATH} push
-build-push-image: prepare
-	./build/scripts/docker_image.sh ${MODULE_PATH} build-push
 build-image-all:
 	MAKE_BUILD_CMD=build-all ./build/scripts/docker_image.sh build
 
-build-push-all:
-	MAKE_BUILD_CMD=build-all ./build/scripts/docker_image.sh / build-push
 build-push-base-image:
 	./build/scripts/base_image.sh build-push
 
@@ -196,3 +170,30 @@ upload-cli: cli cli-linux
 	go run tools/upload-cli/main.go ${ACCESS_KEY_ID} ${ACCESS_KEY_SECRET} cli/mac/erda "${PROJ_PATH}/bin/erda-cli"
 	go run tools/upload-cli/main.go ${ACCESS_KEY_ID} ${ACCESS_KEY_SECRET} cli/linux/erda "${PROJ_PATH}/bin/erda-cli-linux"
 
+
+
+.PHONY: setup-cmd-conf
+setup-cmd-conf:
+	find cmd -type f -name "main.go" -exec ./build/scripts/prepare/setup_cmd_conf.sh {} \;
+
+.EXPORT_ALL_VARIABLES:
+	GO_BUILD_ENV = "$(GO_BUILD_ENV)"
+	GO_BUILD_OPTIONS = "$(GO_BUILD_OPTIONS)"
+	VERSION_OPS = "$(VERSION_OPS)"
+	PROJ_PATH = "$(PROJ_PATH)"
+	MODULE_PATH = "$(MODULE_PATH)"
+
+build-all: build-version submodule prepare tidy
+	@set -eo pipefail; \
+	./build/scripts/build_all/build_all.sh; \
+	make cli
+
+build-one: build-version submodule prepare tidy
+	@set -eo pipefail; \
+	./build/scripts/build_all/build_all.sh
+
+build-push-all:
+	MAKE_BUILD_CMD=build-all ./build/scripts/docker_image.sh / build-push
+
+build-push-image:
+	./build/scripts/docker_image.sh ${MODULE_PATH} build-push

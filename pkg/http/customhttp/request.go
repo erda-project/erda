@@ -110,14 +110,22 @@ func NewRequest(method, url string, body io.Reader) (*http.Request, error) {
 
 func queryClusterManagerIP(clusterKey interface{}) (interface{}, bool) {
 	log := logrus.WithField("func", "NetPortal NewRequest")
-
 	log.Debug("start querying clusterManager IP in netPortal NewRequest...")
-	host := "http://" + discover.ClusterManager()
+
+	splits := strings.Split(discover.ClusterManager(), ":")
+	if len(splits) != 2 {
+		log.Errorf("invalid clusterManager addr: %s", discover.ClusterManager())
+		return "", false
+	}
+	addr := splits[0]
+	port := splits[1]
+	host := fmt.Sprintf("http://%s:%s", addr, port)
 	resp, err := http.Get(host + fmt.Sprintf("/clusterdialer/ip?clusterKey=%s", clusterKey))
 	if err != nil {
 		log.Errorf("failed to request clsuterdialer in cache updating in netPortal NewRequest, %v", err)
 		return "", false
 	}
+
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Errorf("failed to read from resp in cache updating , %v", err)
@@ -137,5 +145,5 @@ func queryClusterManagerIP(clusterKey interface{}) (interface{}, bool) {
 	}
 
 	ip, _ := r["IP"].(string)
-	return ip, true
+	return fmt.Sprintf("%s:%s", ip, port), true
 }

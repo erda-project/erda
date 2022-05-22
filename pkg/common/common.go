@@ -17,6 +17,8 @@ package common
 import (
 	"os"
 	"path/filepath"
+	"regexp"
+	"runtime"
 	"strings"
 
 	"github.com/recallsong/go-utils/config"
@@ -53,12 +55,53 @@ func loadModuleEnvFile(dir string) {
 	config.LoadEnvFileWithPath(path, false)
 }
 
+func loadRootEnvFile() {
+	loadModuleEnvFile("")
+}
+
 func prepare() {
 	openMysqlTLS()
 	version.PrintIfCommand()
 	Env()
 	for _, fn := range initializers {
 		fn()
+	}
+}
+
+func findMainEntranceFileName() (string, bool) {
+	pcs := make([]uintptr, 100) // 100 is enough for invoke chain
+	n := runtime.Callers(0, pcs)
+	pcs = pcs[:n]
+
+	frames := runtime.CallersFrames(pcs)
+	for {
+		frame, more := frames.Next()
+		if !more {
+			return "", false
+		}
+		if frame.Function == "main.main" {
+			fileName := frame.File // such as: /go/src/github.com/erda-project/erda/cmd/monitor/monitor/main.go
+			return fileName, true
+		}
+	}
+}
+
+func setCwd() {
+	mainFileName, found := findMainEntranceFileName()
+	if !found {
+		logrus.Fatalf("failed to find main entrance")
+	}
+	regex := regexp.MustCompile(`.*/cmd/(.*)/main\.go`) // such as: /go/src/github.com/erda-project/erda/cmd/monitor/monitor/main.go
+	ss := regex.FindStringSubmatch(mainFileName)
+	if len(ss) == 1 {
+		logrus.Fatalf("failed to find MODULE_PATH from main file name: %s", mainFileName)
+	}
+	modulePath := ss[1]
+
+	wd := filepath.Join("cmd", modulePath)
+	logrus.Infof("change working directory to: %s", wd)
+	if err := os.Chdir(wd); err != nil {
+		logrus.Fatalf("failed to change working directory to %s, err: %v", wd, err)
 	}
 }
 
@@ -96,6 +139,9 @@ func newHub() *servicehub.Hub {
 
 // Run .
 func Run(opts *servicehub.RunOptions) {
+	// load .env before change cwd
+	loadRootEnvFile()
+	setCwd()
 	prepare()
 	opts.Name = GetEnv("CONFIG_NAME", opts.Name)
 	cfg := GetEnv("CONFIG_FILE", opts.ConfigFile)

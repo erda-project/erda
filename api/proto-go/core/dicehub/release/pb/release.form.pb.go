@@ -8,6 +8,7 @@ import (
 	strconv "strconv"
 
 	urlenc "github.com/erda-project/erda-infra/pkg/urlenc"
+	pb "github.com/erda-project/erda-proto-go/apps/gallery/pb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -63,6 +64,11 @@ var _ urlenc.URLValuesUnmarshaler = (*ReleasesDeleteResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*CheckVersionRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*CheckVersionResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*CheckVersionResponseData)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*UpdateGalleryInfoRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*ReleasePutOnRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*ReleasePutOnResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*ReleasePutOffRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*ReleasePutOffResponse)(nil)
 
 // ReleaseList implement urlenc.URLValuesUnmarshaler.
 func (m *ReleaseList) UnmarshalURLValues(prefix string, values url.Values) error {
@@ -270,6 +276,10 @@ func (m *ReleaseUpdateRequest) UnmarshalURLValues(prefix string, values url.Valu
 					return err
 				}
 				m.ApplicationID = val
+			case "opusID":
+				m.OpusID = vals[0]
+			case "opusVersionID":
+				m.OpusVersionID = vals[0]
 			}
 		}
 	}
@@ -618,6 +628,16 @@ func (m *ReleaseGetResponse) UnmarshalURLValues(prefix string, values url.Values
 					m.Data = &ReleaseGetResponseData{}
 				}
 				m.Data.AddonYaml = vals[0]
+			case "data.opusID":
+				if m.Data == nil {
+					m.Data = &ReleaseGetResponseData{}
+				}
+				m.Data.OpusID = vals[0]
+			case "data.opusVersionID":
+				if m.Data == nil {
+					m.Data = &ReleaseGetResponseData{}
+				}
+				m.Data.OpusVersionID = vals[0]
 			case "userIDs":
 				m.UserIDs = vals
 			}
@@ -854,6 +874,10 @@ func (m *ReleaseGetResponseData) UnmarshalURLValues(prefix string, values url.Va
 				m.IsLatest = val
 			case "addonYaml":
 				m.AddonYaml = vals[0]
+			case "opusID":
+				m.OpusID = vals[0]
+			case "opusVersionID":
+				m.OpusVersionID = vals[0]
 			}
 		}
 	}
@@ -952,6 +976,8 @@ func (m *ReleaseListRequest) UnmarshalURLValues(prefix string, values url.Values
 				m.IsFormal = vals[0]
 			case "isProjectRelease":
 				m.IsProjectRelease = vals[0]
+			case "from":
+				m.From = vals[0]
 			case "userID":
 				m.UserID = vals
 			case "version":
@@ -1218,6 +1244,10 @@ func (m *ReleaseData) UnmarshalURLValues(prefix string, values url.Values) error
 					return err
 				}
 				m.IsLatest = val
+			case "opusID":
+				m.OpusID = vals[0]
+			case "opusVersionID":
+				m.OpusVersionID = vals[0]
 			}
 		}
 	}
@@ -1377,6 +1407,10 @@ func (m *GetLatestReleasesResponseData) UnmarshalURLValues(prefix string, values
 					return err
 				}
 				m.UpdatedAt.Nanos = int32(val)
+			case "opusID":
+				m.OpusID = vals[0]
+			case "opusVersionID":
+				m.OpusVersionID = vals[0]
 			}
 		}
 	}
@@ -1672,5 +1706,225 @@ func (m *CheckVersionResponseData) UnmarshalURLValues(prefix string, values url.
 			}
 		}
 	}
+	return nil
+}
+
+// UpdateGalleryInfoRequest implement urlenc.URLValuesUnmarshaler.
+func (m *UpdateGalleryInfoRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "releaseID":
+				m.ReleaseID = vals[0]
+			case "OpusID":
+				m.OpusID = vals[0]
+			case "OpusVersionID":
+				m.OpusVersionID = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// ReleasePutOnRequest implement urlenc.URLValuesUnmarshaler.
+func (m *ReleasePutOnRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "req":
+				if m.Req == nil {
+					m.Req = &pb.PutOnArtifactsReq{}
+				}
+			case "req.orgID":
+				if m.Req == nil {
+					m.Req = &pb.PutOnArtifactsReq{}
+				}
+				val, err := strconv.ParseUint(vals[0], 10, 32)
+				if err != nil {
+					return err
+				}
+				m.Req.OrgID = uint32(val)
+			case "req.userID":
+				if m.Req == nil {
+					m.Req = &pb.PutOnArtifactsReq{}
+				}
+				m.Req.UserID = vals[0]
+			case "req.name":
+				if m.Req == nil {
+					m.Req = &pb.PutOnArtifactsReq{}
+				}
+				m.Req.Name = vals[0]
+			case "req.version":
+				if m.Req == nil {
+					m.Req = &pb.PutOnArtifactsReq{}
+				}
+				m.Req.Version = vals[0]
+			case "req.displayName":
+				if m.Req == nil {
+					m.Req = &pb.PutOnArtifactsReq{}
+				}
+				m.Req.DisplayName = vals[0]
+			case "req.summary":
+				if m.Req == nil {
+					m.Req = &pb.PutOnArtifactsReq{}
+				}
+				m.Req.Summary = vals[0]
+			case "req.labels":
+				if m.Req == nil {
+					m.Req = &pb.PutOnArtifactsReq{}
+				}
+				m.Req.Labels = vals
+			case "req.catalog":
+				if m.Req == nil {
+					m.Req = &pb.PutOnArtifactsReq{}
+				}
+				m.Req.Catalog = vals[0]
+			case "req.logoURL":
+				if m.Req == nil {
+					m.Req = &pb.PutOnArtifactsReq{}
+				}
+				m.Req.LogoURL = vals[0]
+			case "req.desc":
+				if m.Req == nil {
+					m.Req = &pb.PutOnArtifactsReq{}
+				}
+				m.Req.Desc = vals[0]
+			case "req.contactName":
+				if m.Req == nil {
+					m.Req = &pb.PutOnArtifactsReq{}
+				}
+				m.Req.ContactName = vals[0]
+			case "req.contactURL":
+				if m.Req == nil {
+					m.Req = &pb.PutOnArtifactsReq{}
+				}
+				m.Req.ContactURL = vals[0]
+			case "req.contactEmail":
+				if m.Req == nil {
+					m.Req = &pb.PutOnArtifactsReq{}
+				}
+				m.Req.ContactEmail = vals[0]
+			case "req.isOpenSourced":
+				if m.Req == nil {
+					m.Req = &pb.PutOnArtifactsReq{}
+				}
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Req.IsOpenSourced = val
+			case "req.opensourceURL":
+				if m.Req == nil {
+					m.Req = &pb.PutOnArtifactsReq{}
+				}
+				m.Req.OpensourceURL = vals[0]
+			case "req.licenseName":
+				if m.Req == nil {
+					m.Req = &pb.PutOnArtifactsReq{}
+				}
+				m.Req.LicenseName = vals[0]
+			case "req.licenseURL":
+				if m.Req == nil {
+					m.Req = &pb.PutOnArtifactsReq{}
+				}
+				m.Req.LicenseURL = vals[0]
+			case "req.homepageName":
+				if m.Req == nil {
+					m.Req = &pb.PutOnArtifactsReq{}
+				}
+				m.Req.HomepageName = vals[0]
+			case "req.homepageURL":
+				if m.Req == nil {
+					m.Req = &pb.PutOnArtifactsReq{}
+				}
+				m.Req.HomepageURL = vals[0]
+			case "req.homepageLogoURL":
+				if m.Req == nil {
+					m.Req = &pb.PutOnArtifactsReq{}
+				}
+				m.Req.HomepageLogoURL = vals[0]
+			case "req.isDownloadable":
+				if m.Req == nil {
+					m.Req = &pb.PutOnArtifactsReq{}
+				}
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Req.IsDownloadable = val
+			case "req.downloadURL":
+				if m.Req == nil {
+					m.Req = &pb.PutOnArtifactsReq{}
+				}
+				m.Req.DownloadURL = vals[0]
+			case "req.installation":
+				if m.Req == nil {
+					m.Req = &pb.PutOnArtifactsReq{}
+				}
+				if m.Req.Installation == nil {
+					m.Req.Installation = &pb.ArtifactsInstallation{}
+				}
+			case "req.installation.releaseID":
+				if m.Req == nil {
+					m.Req = &pb.PutOnArtifactsReq{}
+				}
+				if m.Req.Installation == nil {
+					m.Req.Installation = &pb.ArtifactsInstallation{}
+				}
+				m.Req.Installation.ReleaseID = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// ReleasePutOnResponse implement urlenc.URLValuesUnmarshaler.
+func (m *ReleasePutOnResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	return nil
+}
+
+// ReleasePutOffRequest implement urlenc.URLValuesUnmarshaler.
+func (m *ReleasePutOffRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "req":
+				if m.Req == nil {
+					m.Req = &pb.PutOffArtifactsReq{}
+				}
+			case "req.orgID":
+				if m.Req == nil {
+					m.Req = &pb.PutOffArtifactsReq{}
+				}
+				val, err := strconv.ParseUint(vals[0], 10, 32)
+				if err != nil {
+					return err
+				}
+				m.Req.OrgID = uint32(val)
+			case "req.userID":
+				if m.Req == nil {
+					m.Req = &pb.PutOffArtifactsReq{}
+				}
+				m.Req.UserID = vals[0]
+			case "req.opusID":
+				if m.Req == nil {
+					m.Req = &pb.PutOffArtifactsReq{}
+				}
+				m.Req.OpusID = vals[0]
+			case "req.versionID":
+				if m.Req == nil {
+					m.Req = &pb.PutOffArtifactsReq{}
+				}
+				m.Req.VersionID = vals[0]
+			case "releaseID":
+				m.ReleaseID = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// ReleasePutOffResponse implement urlenc.URLValuesUnmarshaler.
+func (m *ReleasePutOffResponse) UnmarshalURLValues(prefix string, values url.Values) error {
 	return nil
 }

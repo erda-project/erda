@@ -15,6 +15,8 @@
 package main
 
 import (
+	_ "embed"
+
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/modules/extensions/loghub"
 	"github.com/erda-project/erda/pkg/common"
@@ -29,9 +31,12 @@ import (
 	_ "github.com/erda-project/erda-infra/providers/pprof"
 )
 
+//go:embed bootstrap.yaml
+var bootstrapCfg string
+
 func main() {
 	common.RegisterInitializer(loghub.Init)
 	common.Run(&servicehub.RunOptions{
-		ConfigFile: "conf/monitor/extensions/cloud-import.yaml",
+		Content: bootstrapCfg,
 	})
 }

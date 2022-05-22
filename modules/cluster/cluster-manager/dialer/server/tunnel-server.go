@@ -73,6 +73,7 @@ func clusterRegister(ctx context.Context, server *remotedialer.Server, rw http.R
 	registerFunc := func(clusterKey string, clusterInfo cluster) {
 		ctx, cancel := context.WithTimeout(context.Background(), registerTimeout)
 		defer cancel()
+		ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "cluster-manager"}))
 		for {
 			select {
 			case <-ctx.Done():
@@ -105,7 +106,6 @@ func clusterRegister(ctx context.Context, server *remotedialer.Server, rw http.R
 					}
 				}
 
-				ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.ClientIDHeader: "cluster-manager"}))
 				if _, err = clusterSvc.PatchCluster(ctx, &clusterpb.PatchClusterRequest{
 					Name: clusterKey,
 					ManageConfig: &clusterpb.ManageConfig{
@@ -241,14 +241,15 @@ func queryIP(rw http.ResponseWriter, req *http.Request, etcd *clientv3.Client) {
 
 	r, err := etcd.Get(req.Context(), ClusterManagerETCDKeyPrefix+clusterKey)
 	if err != nil {
-		resp.Error = errors.Errorf("failed to get clusterKey from etcd, %v", err).Error()
+		resp.Error = errors.Errorf("failed to get ip for clusterKey %s from etcd, %v", clusterKey, err).Error()
 		resp.Succeeded = false
 		writeResp(rw, resp, http.StatusInternalServerError)
 		return
 	}
 	if len(r.Kvs) == 0 {
-		resp.Succeeded = true
-		writeResp(rw, resp, http.StatusOK)
+		resp.Error = errors.Errorf("can not find ip for clusterKey %s", clusterKey).Error()
+		resp.Succeeded = false
+		writeResp(rw, resp, http.StatusNotFound)
 		return
 	}
 

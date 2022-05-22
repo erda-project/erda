@@ -37,6 +37,7 @@
 
 # build output
 /bin
+cmd/**/bin
 
 # for local debug
 /.env
@@ -45,6 +46,7 @@
 modules/local/
 cmd/local
 conf/local
+.env*
 
 # generated files
 # openapi
@@ -74,6 +76,6 @@ modules/openapi/api/generate
 /venv/
 
 # extensions
-extensions/
+/extensions/
 
 http-client.env.json

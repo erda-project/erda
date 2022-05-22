@@ -15,6 +15,8 @@
 package main
 
 import (
+	_ "embed"
+
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
 	"github.com/erda-project/erda/pkg/common"
@@ -26,6 +28,7 @@ import (
 	_ "github.com/erda-project/erda-infra/providers/mysql"
 	_ "github.com/erda-project/erda-infra/providers/mysql/v2"
 	_ "github.com/erda-project/erda-infra/providers/serviceregister"
+	_ "github.com/erda-project/erda-proto-go/apps/gallery/client"
 	_ "github.com/erda-project/erda-proto-go/cmp/dashboard/client"
 	_ "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/client"
 	_ "github.com/erda-project/erda-proto-go/core/dicehub/release/client"
@@ -36,6 +39,8 @@ import (
 	_ "github.com/erda-project/erda-proto-go/core/services/errorbox/client"
 	_ "github.com/erda-project/erda-proto-go/core/token/client"
 	_ "github.com/erda-project/erda-proto-go/orchestrator/addon/mysql/client"
+	_ "github.com/erda-project/erda/modules/apps/devflow/flow"
+	_ "github.com/erda-project/erda/modules/apps/devflow/issuerelation"
 	_ "github.com/erda-project/erda/modules/dop"
 	_ "github.com/erda-project/erda/modules/dop/providers/api-management"
 	_ "github.com/erda-project/erda/modules/dop/providers/autotest/testplan"
@@ -54,9 +59,10 @@ import (
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components"
 )
 
+//go:embed bootstrap.yaml
+var bootstrapCfg string
+
 func main() {
 	common.RegisterHubListener(cpregister.NewHubListener())
-	common.Run(&servicehub.RunOptions{
-		ConfigFile: "conf/dop/dop.yaml",
-	})
+	common.Run(&servicehub.RunOptions{Content: bootstrapCfg})
 }

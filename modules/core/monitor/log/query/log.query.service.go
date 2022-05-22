@@ -170,7 +170,7 @@ func (s *logQueryService) GetLogByExpression(ctx context.Context, req *pb.GetLog
 	items, total, err := s.queryLogItems(ctx, req, func(sel *storage.Selector) *storage.Selector {
 		sel.Meta.PreferredReturnFields = storage.AllFields
 		return s.tryFillQueryMeta(ctx, sel)
-	}, false, true)
+	}, false, s.getIfNeedTotalStat(req, true))
 	if err != nil {
 		return nil, err
 	}
@@ -219,6 +219,16 @@ func (s *logQueryService) ScanLogsByExpression(req *pb.GetLogByExpressionRequest
 	return s.walkLogItems(context.Background(), req, nil, func(item *pb.LogItem) error {
 		return stream.Send(item)
 	})
+}
+
+func (s *logQueryService) getIfNeedTotalStat(req *pb.GetLogByExpressionRequest, defaultValue bool) bool {
+	if req == nil || req.QueryMeta == nil {
+		return defaultValue
+	}
+	if req.QueryMeta.SkipTotalStat {
+		return false
+	}
+	return defaultValue
 }
 
 func (s *logQueryService) tryFillQueryMeta(ctx context.Context, sel *storage.Selector, orgNames ...string) *storage.Selector {
