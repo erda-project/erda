@@ -360,7 +360,7 @@ func (e *Endpoints) handleUpdateReq(ctx context.Context, req *apistructs.CMPClus
 	if req.OpsConfig.ScaleMode == "auto" {
 		if clusterInfo.OpsConfig != nil && clusterInfo.OpsConfig.ScaleMode == apistructs.ScaleModeScheduler {
 			_, err := e.CronService.CronStop(context.Background(), &cronpb.CronStopRequest{
-				CronID: clusterInfo.OpsConfig.ScalePipeLineID,
+				CronID: uint64(clusterInfo.OpsConfig.ScalePipeLineID),
 			})
 			if err != nil {
 				return fmt.Sprintf("failed to delete pipline cronjob : %v", err)
@@ -389,7 +389,7 @@ func (e *Endpoints) handleUpdateReq(ctx context.Context, req *apistructs.CMPClus
 		if clusterInfo.OpsConfig != nil && clusterInfo.OpsConfig.ScaleMode == apistructs.ScaleModeScheduler {
 			if clusterInfo.OpsConfig.ScalePipeLineID != 0 {
 				_, err := e.CronService.CronStop(context.Background(), &cronpb.CronStopRequest{
-					CronID: clusterInfo.OpsConfig.ScalePipeLineID,
+					CronID: uint64(clusterInfo.OpsConfig.ScalePipeLineID),
 				})
 				if err != nil {
 					return fmt.Sprintf("failed to delete pipline cronjob : %v", err)
@@ -400,11 +400,11 @@ func (e *Endpoints) handleUpdateReq(ctx context.Context, req *apistructs.CMPClus
 				isEdit = true
 			}
 		}
-		clusterInfo.OpsConfig.ScaleNumber = int64(req.OpsConfig.ScaleNumber)
+		clusterInfo.OpsConfig.ScaleNumber = int32(req.OpsConfig.ScaleNumber)
 		clusterInfo.OpsConfig.LaunchTime = req.OpsConfig.LaunchTime
 		clusterInfo.OpsConfig.RepeatMode = req.OpsConfig.RepeatMode
 		clusterInfo.OpsConfig.RepeatValue = req.OpsConfig.RepeatValue
-		clusterInfo.OpsConfig.ScaleDuration = int64(req.OpsConfig.ScaleDuration)
+		clusterInfo.OpsConfig.ScaleDuration = int32(req.OpsConfig.ScaleDuration)
 		err := as.CreateSchedulerFlow(apistructs.SchedulerScaleReq{
 			ClusterName:     req.Name,
 			VSwitchID:       clusterInfo.OpsConfig.VSwitchIDs,
@@ -438,7 +438,7 @@ func (e *Endpoints) handleUpdateReq(ctx context.Context, req *apistructs.CMPClus
 	if req.OpsConfig.ScaleMode == "none" {
 		if clusterInfo.OpsConfig != nil && clusterInfo.OpsConfig.ScaleMode == apistructs.ScaleModeScheduler {
 			_, err := e.CronService.CronStop(context.Background(), &cronpb.CronStopRequest{
-				CronID: clusterInfo.OpsConfig.ScalePipeLineID,
+				CronID: uint64(clusterInfo.OpsConfig.ScalePipeLineID),
 			})
 			if err != nil {
 				return fmt.Sprintf("failed to delete pipline cronjob : %v", err)

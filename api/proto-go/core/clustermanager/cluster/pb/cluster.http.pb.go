@@ -91,11 +91,11 @@ func RegisterClusterServiceHandler(r http.Router, srv ClusterServiceHandler, opt
 					in.ClusterType = vals[0]
 				}
 				if vals := params["orgID"]; len(vals) > 0 {
-					val, err := strconv.ParseUint(vals[0], 10, 64)
+					val, err := strconv.ParseUint(vals[0], 10, 32)
 					if err != nil {
 						return nil, err
 					}
-					in.OrgID = val
+					in.OrgID = uint32(val)
 				}
 				out, err := handler(ctx, &in)
 				if err != nil {

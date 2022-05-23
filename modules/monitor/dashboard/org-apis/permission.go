@@ -176,7 +176,7 @@ func (p *provider) checkOrgIDByClusters(orgID uint64, clusterNames []string) err
 
 func (p *provider) listClustersByOrg(orgID uint64) ([]string, error) {
 	ctx := transport.WithHeader(context.Background(), metadata.New(map[string]string{httputil.InternalHeader: "cmp"}))
-	resp, err := p.ClusterSvc.ListCluster(ctx, &clusterpb.ListClusterRequest{OrgID: orgID})
+	resp, err := p.ClusterSvc.ListCluster(ctx, &clusterpb.ListClusterRequest{OrgID: uint32(orgID)})
 	if err != nil {
 		return nil, err
 	}

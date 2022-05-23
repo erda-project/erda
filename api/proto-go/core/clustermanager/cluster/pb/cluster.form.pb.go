@@ -65,11 +65,11 @@ func (m *ListClusterRequest) UnmarshalURLValues(prefix string, values url.Values
 			case "clusterType":
 				m.ClusterType = vals[0]
 			case "orgID":
-				val, err := strconv.ParseUint(vals[0], 10, 64)
+				val, err := strconv.ParseUint(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.OrgID = val
+				m.OrgID = uint32(val)
 			}
 		}
 	}
@@ -442,11 +442,11 @@ func (m *GetClusterResponse) UnmarshalURLValues(prefix string, values url.Values
 				if m.Data.OpsConfig == nil {
 					m.Data.OpsConfig = &OpsConfig{}
 				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.Data.OpsConfig.ChargePeriod = val
+				m.Data.OpsConfig.ChargePeriod = int32(val)
 			case "data.opsConfig.region":
 				if m.Data == nil {
 					m.Data = &ClusterInfo{}
@@ -494,11 +494,11 @@ func (m *GetClusterResponse) UnmarshalURLValues(prefix string, values url.Values
 				if m.Data.OpsConfig == nil {
 					m.Data.OpsConfig = &OpsConfig{}
 				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.Data.OpsConfig.ScaleNumber = val
+				m.Data.OpsConfig.ScaleNumber = int32(val)
 			case "data.opsConfig.scaleDuration":
 				if m.Data == nil {
 					m.Data = &ClusterInfo{}
@@ -506,11 +506,11 @@ func (m *GetClusterResponse) UnmarshalURLValues(prefix string, values url.Values
 				if m.Data.OpsConfig == nil {
 					m.Data.OpsConfig = &OpsConfig{}
 				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.Data.OpsConfig.ScaleDuration = val
+				m.Data.OpsConfig.ScaleDuration = int32(val)
 			case "data.opsConfig.launchTime":
 				if m.Data == nil {
 					m.Data = &ClusterInfo{}
@@ -542,11 +542,11 @@ func (m *GetClusterResponse) UnmarshalURLValues(prefix string, values url.Values
 				if m.Data.OpsConfig == nil {
 					m.Data.OpsConfig = &OpsConfig{}
 				}
-				val, err := strconv.ParseUint(vals[0], 10, 64)
+				val, err := strconv.ParseUint(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.Data.OpsConfig.ScalePipeLineID = val
+				m.Data.OpsConfig.ScalePipeLineID = uint32(val)
 			case "data.system":
 				if m.Data == nil {
 					m.Data = &ClusterInfo{}
@@ -665,11 +665,11 @@ func (m *GetClusterResponse) UnmarshalURLValues(prefix string, values url.Values
 				if m.Data.System.Ssh == nil {
 					m.Data.System.Ssh = &SSH{}
 				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.Data.System.Ssh.Port = val
+				m.Data.System.Ssh.Port = int32(val)
 			case "data.system.ssh.user":
 				if m.Data == nil {
 					m.Data = &ClusterInfo{}
@@ -756,11 +756,11 @@ func (m *GetClusterResponse) UnmarshalURLValues(prefix string, values url.Values
 				if m.Data.System.Fps == nil {
 					m.Data.System.Fps = &FPS{}
 				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.Data.System.Fps.Port = val
+				m.Data.System.Fps.Port = int32(val)
 			case "data.system.fps.proxy":
 				if m.Data == nil {
 					m.Data = &ClusterInfo{}
@@ -880,11 +880,11 @@ func (m *GetClusterResponse) UnmarshalURLValues(prefix string, values url.Values
 				if m.Data.System.Storage.Gluster == nil {
 					m.Data.System.Storage.Gluster = &Gluster{}
 				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.Data.System.Storage.Gluster.Replica = val
+				m.Data.System.Storage.Gluster.Replica = int32(val)
 			case "data.system.storage.gluster.brick":
 				if m.Data == nil {
 					m.Data = &ClusterInfo{}
@@ -1025,11 +1025,11 @@ func (m *GetClusterResponse) UnmarshalURLValues(prefix string, values url.Values
 				if m.Data.System.Platform.MySQL == nil {
 					m.Data.System.Platform.MySQL = &MySQL{}
 				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.Data.System.Platform.MySQL.Port = val
+				m.Data.System.Platform.MySQL.Port = int32(val)
 			case "data.system.platform.mySQL.username":
 				if m.Data == nil {
 					m.Data = &ClusterInfo{}
@@ -1173,11 +1173,11 @@ func (m *GetClusterResponse) UnmarshalURLValues(prefix string, values url.Values
 				if m.Data.System.Platform == nil {
 					m.Data.System.Platform = &Platform{}
 				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.Data.System.Platform.Port = val
+				m.Data.System.Platform.Port = int32(val)
 			case "data.system.platform.registryHost":
 				if m.Data == nil {
 					m.Data = &ClusterInfo{}
@@ -1316,11 +1316,11 @@ func (m *GetClusterResponse) UnmarshalURLValues(prefix string, values url.Values
 				if m.Data.System.MainPlatform.MySQL == nil {
 					m.Data.System.MainPlatform.MySQL = &MySQL{}
 				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.Data.System.MainPlatform.MySQL.Port = val
+				m.Data.System.MainPlatform.MySQL.Port = int32(val)
 			case "data.system.mainPlatform.mySQL.username":
 				if m.Data == nil {
 					m.Data = &ClusterInfo{}
@@ -1464,11 +1464,11 @@ func (m *GetClusterResponse) UnmarshalURLValues(prefix string, values url.Values
 				if m.Data.System.MainPlatform == nil {
 					m.Data.System.MainPlatform = &Platform{}
 				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.Data.System.MainPlatform.Port = val
+				m.Data.System.MainPlatform.Port = int32(val)
 			case "data.system.mainPlatform.registryHost":
 				if m.Data == nil {
 					m.Data = &ClusterInfo{}
@@ -1542,11 +1542,11 @@ func (m *GetClusterResponse) UnmarshalURLValues(prefix string, values url.Values
 				if m.Data.System == nil {
 					m.Data.System = &SysConf{}
 				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.Data.System.OrgID = val
+				m.Data.System.OrgID = int32(val)
 			case "data.manageConfig":
 				if m.Data == nil {
 					m.Data = &ClusterInfo{}
@@ -1909,11 +1909,11 @@ func (m *UpdateClusterRequest) UnmarshalURLValues(prefix string, values url.Valu
 				if m.OpsConfig == nil {
 					m.OpsConfig = &OpsConfig{}
 				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.OpsConfig.ChargePeriod = val
+				m.OpsConfig.ChargePeriod = int32(val)
 			case "opsConfig.region":
 				if m.OpsConfig == nil {
 					m.OpsConfig = &OpsConfig{}
@@ -1943,20 +1943,20 @@ func (m *UpdateClusterRequest) UnmarshalURLValues(prefix string, values url.Valu
 				if m.OpsConfig == nil {
 					m.OpsConfig = &OpsConfig{}
 				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.OpsConfig.ScaleNumber = val
+				m.OpsConfig.ScaleNumber = int32(val)
 			case "opsConfig.scaleDuration":
 				if m.OpsConfig == nil {
 					m.OpsConfig = &OpsConfig{}
 				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.OpsConfig.ScaleDuration = val
+				m.OpsConfig.ScaleDuration = int32(val)
 			case "opsConfig.launchTime":
 				if m.OpsConfig == nil {
 					m.OpsConfig = &OpsConfig{}
@@ -1976,11 +1976,11 @@ func (m *UpdateClusterRequest) UnmarshalURLValues(prefix string, values url.Valu
 				if m.OpsConfig == nil {
 					m.OpsConfig = &OpsConfig{}
 				}
-				val, err := strconv.ParseUint(vals[0], 10, 64)
+				val, err := strconv.ParseUint(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.OpsConfig.ScalePipeLineID = val
+				m.OpsConfig.ScalePipeLineID = uint32(val)
 			case "sysConfig":
 				if m.SysConfig == nil {
 					m.SysConfig = &SysConf{}
@@ -2066,11 +2066,11 @@ func (m *UpdateClusterRequest) UnmarshalURLValues(prefix string, values url.Valu
 				if m.SysConfig.Ssh == nil {
 					m.SysConfig.Ssh = &SSH{}
 				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.SysConfig.Ssh.Port = val
+				m.SysConfig.Ssh.Port = int32(val)
 			case "sysConfig.ssh.user":
 				if m.SysConfig == nil {
 					m.SysConfig = &SysConf{}
@@ -2133,11 +2133,11 @@ func (m *UpdateClusterRequest) UnmarshalURLValues(prefix string, values url.Valu
 				if m.SysConfig.Fps == nil {
 					m.SysConfig.Fps = &FPS{}
 				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.SysConfig.Fps.Port = val
+				m.SysConfig.Fps.Port = int32(val)
 			case "sysConfig.fps.proxy":
 				if m.SysConfig == nil {
 					m.SysConfig = &SysConf{}
@@ -2230,11 +2230,11 @@ func (m *UpdateClusterRequest) UnmarshalURLValues(prefix string, values url.Valu
 				if m.SysConfig.Storage.Gluster == nil {
 					m.SysConfig.Storage.Gluster = &Gluster{}
 				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.SysConfig.Storage.Gluster.Replica = val
+				m.SysConfig.Storage.Gluster.Replica = int32(val)
 			case "sysConfig.storage.gluster.brick":
 				if m.SysConfig == nil {
 					m.SysConfig = &SysConf{}
@@ -2339,11 +2339,11 @@ func (m *UpdateClusterRequest) UnmarshalURLValues(prefix string, values url.Valu
 				if m.SysConfig.Platform.MySQL == nil {
 					m.SysConfig.Platform.MySQL = &MySQL{}
 				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.SysConfig.Platform.MySQL.Port = val
+				m.SysConfig.Platform.MySQL.Port = int32(val)
 			case "sysConfig.platform.mySQL.username":
 				if m.SysConfig == nil {
 					m.SysConfig = &SysConf{}
@@ -2454,11 +2454,11 @@ func (m *UpdateClusterRequest) UnmarshalURLValues(prefix string, values url.Valu
 				if m.SysConfig.Platform == nil {
 					m.SysConfig.Platform = &Platform{}
 				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.SysConfig.Platform.Port = val
+				m.SysConfig.Platform.Port = int32(val)
 			case "sysConfig.platform.registryHost":
 				if m.SysConfig == nil {
 					m.SysConfig = &SysConf{}
@@ -2564,11 +2564,11 @@ func (m *UpdateClusterRequest) UnmarshalURLValues(prefix string, values url.Valu
 				if m.SysConfig.MainPlatform.MySQL == nil {
 					m.SysConfig.MainPlatform.MySQL = &MySQL{}
 				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.SysConfig.MainPlatform.MySQL.Port = val
+				m.SysConfig.MainPlatform.MySQL.Port = int32(val)
 			case "sysConfig.mainPlatform.mySQL.username":
 				if m.SysConfig == nil {
 					m.SysConfig = &SysConf{}
@@ -2679,11 +2679,11 @@ func (m *UpdateClusterRequest) UnmarshalURLValues(prefix string, values url.Valu
 				if m.SysConfig.MainPlatform == nil {
 					m.SysConfig.MainPlatform = &Platform{}
 				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.SysConfig.MainPlatform.Port = val
+				m.SysConfig.MainPlatform.Port = int32(val)
 			case "sysConfig.mainPlatform.registryHost":
 				if m.SysConfig == nil {
 					m.SysConfig = &SysConf{}
@@ -2739,11 +2739,11 @@ func (m *UpdateClusterRequest) UnmarshalURLValues(prefix string, values url.Valu
 				if m.SysConfig == nil {
 					m.SysConfig = &SysConf{}
 				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.SysConfig.OrgID = val
+				m.SysConfig.OrgID = int32(val)
 			case "manageConfig":
 				if m.ManageConfig == nil {
 					m.ManageConfig = &ManageConfig{}
@@ -2789,11 +2789,11 @@ func (m *UpdateClusterRequest) UnmarshalURLValues(prefix string, values url.Valu
 				}
 				m.ManageConfig.CredentialSource = vals[0]
 			case "orgID":
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.OrgID = val
+				m.OrgID = int32(val)
 			}
 		}
 	}
@@ -3020,11 +3020,11 @@ func (m *CreateClusterRequest) UnmarshalURLValues(prefix string, values url.Valu
 				if m.OpsConfig == nil {
 					m.OpsConfig = &OpsConfig{}
 				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.OpsConfig.ChargePeriod = val
+				m.OpsConfig.ChargePeriod = int32(val)
 			case "opsConfig.region":
 				if m.OpsConfig == nil {
 					m.OpsConfig = &OpsConfig{}
@@ -3054,20 +3054,20 @@ func (m *CreateClusterRequest) UnmarshalURLValues(prefix string, values url.Valu
 				if m.OpsConfig == nil {
 					m.OpsConfig = &OpsConfig{}
 				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.OpsConfig.ScaleNumber = val
+				m.OpsConfig.ScaleNumber = int32(val)
 			case "opsConfig.scaleDuration":
 				if m.OpsConfig == nil {
 					m.OpsConfig = &OpsConfig{}
 				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.OpsConfig.ScaleDuration = val
+				m.OpsConfig.ScaleDuration = int32(val)
 			case "opsConfig.launchTime":
 				if m.OpsConfig == nil {
 					m.OpsConfig = &OpsConfig{}
@@ -3087,11 +3087,11 @@ func (m *CreateClusterRequest) UnmarshalURLValues(prefix string, values url.Valu
 				if m.OpsConfig == nil {
 					m.OpsConfig = &OpsConfig{}
 				}
-				val, err := strconv.ParseUint(vals[0], 10, 64)
+				val, err := strconv.ParseUint(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.OpsConfig.ScalePipeLineID = val
+				m.OpsConfig.ScalePipeLineID = uint32(val)
 			case "sysConfig":
 				if m.SysConfig == nil {
 					m.SysConfig = &SysConf{}
@@ -3177,11 +3177,11 @@ func (m *CreateClusterRequest) UnmarshalURLValues(prefix string, values url.Valu
 				if m.SysConfig.Ssh == nil {
 					m.SysConfig.Ssh = &SSH{}
 				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.SysConfig.Ssh.Port = val
+				m.SysConfig.Ssh.Port = int32(val)
 			case "sysConfig.ssh.user":
 				if m.SysConfig == nil {
 					m.SysConfig = &SysConf{}
@@ -3244,11 +3244,11 @@ func (m *CreateClusterRequest) UnmarshalURLValues(prefix string, values url.Valu
 				if m.SysConfig.Fps == nil {
 					m.SysConfig.Fps = &FPS{}
 				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.SysConfig.Fps.Port = val
+				m.SysConfig.Fps.Port = int32(val)
 			case "sysConfig.fps.proxy":
 				if m.SysConfig == nil {
 					m.SysConfig = &SysConf{}
@@ -3341,11 +3341,11 @@ func (m *CreateClusterRequest) UnmarshalURLValues(prefix string, values url.Valu
 				if m.SysConfig.Storage.Gluster == nil {
 					m.SysConfig.Storage.Gluster = &Gluster{}
 				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.SysConfig.Storage.Gluster.Replica = val
+				m.SysConfig.Storage.Gluster.Replica = int32(val)
 			case "sysConfig.storage.gluster.brick":
 				if m.SysConfig == nil {
 					m.SysConfig = &SysConf{}
@@ -3450,11 +3450,11 @@ func (m *CreateClusterRequest) UnmarshalURLValues(prefix string, values url.Valu
 				if m.SysConfig.Platform.MySQL == nil {
 					m.SysConfig.Platform.MySQL = &MySQL{}
 				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.SysConfig.Platform.MySQL.Port = val
+				m.SysConfig.Platform.MySQL.Port = int32(val)
 			case "sysConfig.platform.mySQL.username":
 				if m.SysConfig == nil {
 					m.SysConfig = &SysConf{}
@@ -3565,11 +3565,11 @@ func (m *CreateClusterRequest) UnmarshalURLValues(prefix string, values url.Valu
 				if m.SysConfig.Platform == nil {
 					m.SysConfig.Platform = &Platform{}
 				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.SysConfig.Platform.Port = val
+				m.SysConfig.Platform.Port = int32(val)
 			case "sysConfig.platform.registryHost":
 				if m.SysConfig == nil {
 					m.SysConfig = &SysConf{}
@@ -3675,11 +3675,11 @@ func (m *CreateClusterRequest) UnmarshalURLValues(prefix string, values url.Valu
 				if m.SysConfig.MainPlatform.MySQL == nil {
 					m.SysConfig.MainPlatform.MySQL = &MySQL{}
 				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.SysConfig.MainPlatform.MySQL.Port = val
+				m.SysConfig.MainPlatform.MySQL.Port = int32(val)
 			case "sysConfig.mainPlatform.mySQL.username":
 				if m.SysConfig == nil {
 					m.SysConfig = &SysConf{}
@@ -3790,11 +3790,11 @@ func (m *CreateClusterRequest) UnmarshalURLValues(prefix string, values url.Valu
 				if m.SysConfig.MainPlatform == nil {
 					m.SysConfig.MainPlatform = &Platform{}
 				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.SysConfig.MainPlatform.Port = val
+				m.SysConfig.MainPlatform.Port = int32(val)
 			case "sysConfig.mainPlatform.registryHost":
 				if m.SysConfig == nil {
 					m.SysConfig = &SysConf{}
@@ -3850,11 +3850,11 @@ func (m *CreateClusterRequest) UnmarshalURLValues(prefix string, values url.Valu
 				if m.SysConfig == nil {
 					m.SysConfig = &SysConf{}
 				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.SysConfig.OrgID = val
+				m.SysConfig.OrgID = int32(val)
 			case "manageConfig":
 				if m.ManageConfig == nil {
 					m.ManageConfig = &ManageConfig{}
@@ -3900,11 +3900,11 @@ func (m *CreateClusterRequest) UnmarshalURLValues(prefix string, values url.Valu
 				}
 				m.ManageConfig.CredentialSource = vals[0]
 			case "orgID":
-				val, err := strconv.ParseUint(vals[0], 10, 64)
+				val, err := strconv.ParseUint(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.OrgID = val
+				m.OrgID = uint32(val)
 			case "userID":
 				m.UserID = vals[0]
 			}
@@ -4245,11 +4245,11 @@ func (m *ClusterInfo) UnmarshalURLValues(prefix string, values url.Values) error
 				if m.OpsConfig == nil {
 					m.OpsConfig = &OpsConfig{}
 				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.OpsConfig.ChargePeriod = val
+				m.OpsConfig.ChargePeriod = int32(val)
 			case "opsConfig.region":
 				if m.OpsConfig == nil {
 					m.OpsConfig = &OpsConfig{}
@@ -4279,20 +4279,20 @@ func (m *ClusterInfo) UnmarshalURLValues(prefix string, values url.Values) error
 				if m.OpsConfig == nil {
 					m.OpsConfig = &OpsConfig{}
 				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.OpsConfig.ScaleNumber = val
+				m.OpsConfig.ScaleNumber = int32(val)
 			case "opsConfig.scaleDuration":
 				if m.OpsConfig == nil {
 					m.OpsConfig = &OpsConfig{}
 				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.OpsConfig.ScaleDuration = val
+				m.OpsConfig.ScaleDuration = int32(val)
 			case "opsConfig.launchTime":
 				if m.OpsConfig == nil {
 					m.OpsConfig = &OpsConfig{}
@@ -4312,11 +4312,11 @@ func (m *ClusterInfo) UnmarshalURLValues(prefix string, values url.Values) error
 				if m.OpsConfig == nil {
 					m.OpsConfig = &OpsConfig{}
 				}
-				val, err := strconv.ParseUint(vals[0], 10, 64)
+				val, err := strconv.ParseUint(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.OpsConfig.ScalePipeLineID = val
+				m.OpsConfig.ScalePipeLineID = uint32(val)
 			case "system":
 				if m.System == nil {
 					m.System = &SysConf{}
@@ -4402,11 +4402,11 @@ func (m *ClusterInfo) UnmarshalURLValues(prefix string, values url.Values) error
 				if m.System.Ssh == nil {
 					m.System.Ssh = &SSH{}
 				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.System.Ssh.Port = val
+				m.System.Ssh.Port = int32(val)
 			case "system.ssh.user":
 				if m.System == nil {
 					m.System = &SysConf{}
@@ -4469,11 +4469,11 @@ func (m *ClusterInfo) UnmarshalURLValues(prefix string, values url.Values) error
 				if m.System.Fps == nil {
 					m.System.Fps = &FPS{}
 				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.System.Fps.Port = val
+				m.System.Fps.Port = int32(val)
 			case "system.fps.proxy":
 				if m.System == nil {
 					m.System = &SysConf{}
@@ -4566,11 +4566,11 @@ func (m *ClusterInfo) UnmarshalURLValues(prefix string, values url.Values) error
 				if m.System.Storage.Gluster == nil {
 					m.System.Storage.Gluster = &Gluster{}
 				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.System.Storage.Gluster.Replica = val
+				m.System.Storage.Gluster.Replica = int32(val)
 			case "system.storage.gluster.brick":
 				if m.System == nil {
 					m.System = &SysConf{}
@@ -4675,11 +4675,11 @@ func (m *ClusterInfo) UnmarshalURLValues(prefix string, values url.Values) error
 				if m.System.Platform.MySQL == nil {
 					m.System.Platform.MySQL = &MySQL{}
 				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.System.Platform.MySQL.Port = val
+				m.System.Platform.MySQL.Port = int32(val)
 			case "system.platform.mySQL.username":
 				if m.System == nil {
 					m.System = &SysConf{}
@@ -4790,11 +4790,11 @@ func (m *ClusterInfo) UnmarshalURLValues(prefix string, values url.Values) error
 				if m.System.Platform == nil {
 					m.System.Platform = &Platform{}
 				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.System.Platform.Port = val
+				m.System.Platform.Port = int32(val)
 			case "system.platform.registryHost":
 				if m.System == nil {
 					m.System = &SysConf{}
@@ -4900,11 +4900,11 @@ func (m *ClusterInfo) UnmarshalURLValues(prefix string, values url.Values) error
 				if m.System.MainPlatform.MySQL == nil {
 					m.System.MainPlatform.MySQL = &MySQL{}
 				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.System.MainPlatform.MySQL.Port = val
+				m.System.MainPlatform.MySQL.Port = int32(val)
 			case "system.mainPlatform.mySQL.username":
 				if m.System == nil {
 					m.System = &SysConf{}
@@ -5015,11 +5015,11 @@ func (m *ClusterInfo) UnmarshalURLValues(prefix string, values url.Values) error
 				if m.System.MainPlatform == nil {
 					m.System.MainPlatform = &Platform{}
 				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.System.MainPlatform.Port = val
+				m.System.MainPlatform.Port = int32(val)
 			case "system.mainPlatform.registryHost":
 				if m.System == nil {
 					m.System = &SysConf{}
@@ -5075,11 +5075,11 @@ func (m *ClusterInfo) UnmarshalURLValues(prefix string, values url.Values) error
 				if m.System == nil {
 					m.System = &SysConf{}
 				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.System.OrgID = val
+				m.System.OrgID = int32(val)
 			case "manageConfig":
 				if m.ManageConfig == nil {
 					m.ManageConfig = &ManageConfig{}
@@ -5267,11 +5267,11 @@ func (m *OpsConfig) UnmarshalURLValues(prefix string, values url.Values) error {
 			case "chargeType":
 				m.ChargeType = vals[0]
 			case "chargePeriod":
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.ChargePeriod = val
+				m.ChargePeriod = int32(val)
 			case "region":
 				m.Region = vals[0]
 			case "scaleMode":
@@ -5283,17 +5283,17 @@ func (m *OpsConfig) UnmarshalURLValues(prefix string, values url.Values) error {
 			case "scheduledTaskId":
 				m.ScheduledTaskId = vals[0]
 			case "scaleNumber":
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.ScaleNumber = val
+				m.ScaleNumber = int32(val)
 			case "scaleDuration":
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.ScaleDuration = val
+				m.ScaleDuration = int32(val)
 			case "launchTime":
 				m.LaunchTime = vals[0]
 			case "repeatMode":
@@ -5301,11 +5301,11 @@ func (m *OpsConfig) UnmarshalURLValues(prefix string, values url.Values) error {
 			case "repeatValue":
 				m.RepeatValue = vals[0]
 			case "scalePipeLineID":
-				val, err := strconv.ParseUint(vals[0], 10, 64)
+				val, err := strconv.ParseUint(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.ScalePipeLineID = val
+				m.ScalePipeLineID = uint32(val)
 			}
 		}
 	}
@@ -5368,11 +5368,11 @@ func (m *SysConf) UnmarshalURLValues(prefix string, values url.Values) error {
 				if m.Ssh == nil {
 					m.Ssh = &SSH{}
 				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.Ssh.Port = val
+				m.Ssh.Port = int32(val)
 			case "ssh.user":
 				if m.Ssh == nil {
 					m.Ssh = &SSH{}
@@ -5411,11 +5411,11 @@ func (m *SysConf) UnmarshalURLValues(prefix string, values url.Values) error {
 				if m.Fps == nil {
 					m.Fps = &FPS{}
 				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.Fps.Port = val
+				m.Fps.Port = int32(val)
 			case "fps.proxy":
 				if m.Fps == nil {
 					m.Fps = &FPS{}
@@ -5481,11 +5481,11 @@ func (m *SysConf) UnmarshalURLValues(prefix string, values url.Values) error {
 				if m.Storage.Gluster == nil {
 					m.Storage.Gluster = &Gluster{}
 				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.Storage.Gluster.Replica = val
+				m.Storage.Gluster.Replica = int32(val)
 			case "storage.gluster.brick":
 				if m.Storage == nil {
 					m.Storage = &Storage{}
@@ -5554,11 +5554,11 @@ func (m *SysConf) UnmarshalURLValues(prefix string, values url.Values) error {
 				if m.Platform.MySQL == nil {
 					m.Platform.MySQL = &MySQL{}
 				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.Platform.MySQL.Port = val
+				m.Platform.MySQL.Port = int32(val)
 			case "platform.mySQL.username":
 				if m.Platform == nil {
 					m.Platform = &Platform{}
@@ -5636,11 +5636,11 @@ func (m *SysConf) UnmarshalURLValues(prefix string, values url.Values) error {
 				if m.Platform == nil {
 					m.Platform = &Platform{}
 				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.Platform.Port = val
+				m.Platform.Port = int32(val)
 			case "platform.registryHost":
 				if m.Platform == nil {
 					m.Platform = &Platform{}
@@ -5713,11 +5713,11 @@ func (m *SysConf) UnmarshalURLValues(prefix string, values url.Values) error {
 				if m.MainPlatform.MySQL == nil {
 					m.MainPlatform.MySQL = &MySQL{}
 				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.MainPlatform.MySQL.Port = val
+				m.MainPlatform.MySQL.Port = int32(val)
 			case "mainPlatform.mySQL.username":
 				if m.MainPlatform == nil {
 					m.MainPlatform = &Platform{}
@@ -5795,11 +5795,11 @@ func (m *SysConf) UnmarshalURLValues(prefix string, values url.Values) error {
 				if m.MainPlatform == nil {
 					m.MainPlatform = &Platform{}
 				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.MainPlatform.Port = val
+				m.MainPlatform.Port = int32(val)
 			case "mainPlatform.registryHost":
 				if m.MainPlatform == nil {
 					m.MainPlatform = &Platform{}
@@ -5837,11 +5837,11 @@ func (m *SysConf) UnmarshalURLValues(prefix string, values url.Values) error {
 				}
 				m.MainPlatform.OpenVPN.ConfigOPVN = vals[0]
 			case "orgID":
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.OrgID = val
+				m.OrgID = int32(val)
 			}
 		}
 	}
@@ -5883,11 +5883,11 @@ func (m *SSH) UnmarshalURLValues(prefix string, values url.Values) error {
 		if len(vals) > 0 {
 			switch prefix + key {
 			case "port":
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.Port = val
+				m.Port = int32(val)
 			case "user":
 				m.User = vals[0]
 			case "password":
@@ -5912,11 +5912,11 @@ func (m *FPS) UnmarshalURLValues(prefix string, values url.Values) error {
 			case "host":
 				m.Host = vals[0]
 			case "port":
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.Port = val
+				m.Port = int32(val)
 			case "proxy":
 				val, err := strconv.ParseBool(vals[0])
 				if err != nil {
@@ -5965,11 +5965,11 @@ func (m *Storage) UnmarshalURLValues(prefix string, values url.Values) error {
 				if m.Gluster == nil {
 					m.Gluster = &Gluster{}
 				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.Gluster.Replica = val
+				m.Gluster.Replica = int32(val)
 			case "gluster.brick":
 				if m.Gluster == nil {
 					m.Gluster = &Gluster{}
@@ -5997,11 +5997,11 @@ func (m *Gluster) UnmarshalURLValues(prefix string, values url.Values) error {
 				}
 				m.Server = val
 			case "replica":
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.Replica = val
+				m.Replica = int32(val)
 			case "brick":
 				m.Brick = vals[0]
 			}
@@ -6054,11 +6054,11 @@ func (m *MySQL) UnmarshalURLValues(prefix string, values url.Values) error {
 			case "host":
 				m.Host = vals[0]
 			case "port":
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.Port = val
+				m.Port = int32(val)
 			case "username":
 				m.Username = vals[0]
 			case "password":
@@ -6114,11 +6114,11 @@ func (m *Platform) UnmarshalURLValues(prefix string, values url.Values) error {
 				if m.MySQL == nil {
 					m.MySQL = &MySQL{}
 				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.MySQL.Port = val
+				m.MySQL.Port = int32(val)
 			case "mySQL.username":
 				if m.MySQL == nil {
 					m.MySQL = &MySQL{}
@@ -6163,11 +6163,11 @@ func (m *Platform) UnmarshalURLValues(prefix string, values url.Values) error {
 			case "scheme":
 				m.Scheme = vals[0]
 			case "port":
-				val, err := strconv.ParseInt(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 32)
 				if err != nil {
 					return err
 				}
-				m.Port = val
+				m.Port = int32(val)
 			case "registryHost":
 				m.RegistryHost = vals[0]
 			case "openVPN":

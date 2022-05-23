@@ -131,7 +131,7 @@ func (r *Resource) GetQuotaResource(ctx context.Context, ordId string, userID st
 	}
 	logrus.Debug("start list cluster")
 	ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "cmp"}))
-	clustersResp, err := r.ClusterSvc.ListCluster(ctx, &clusterpb.ListClusterRequest{OrgID: orgid})
+	clustersResp, err := r.ClusterSvc.ListCluster(ctx, &clusterpb.ListClusterRequest{OrgID: uint32(orgid)})
 	logrus.Debug("list cluster finished")
 	if err != nil {
 		return

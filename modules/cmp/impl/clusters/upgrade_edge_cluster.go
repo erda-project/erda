@@ -257,7 +257,7 @@ func (c *Clusters) ListClusters(ctx context.Context, req apistructs.OrgClusterIn
 				}()
 				r, e := c.clusterSvc.ListCluster(ctx, &clusterpb.ListClusterRequest{
 					ClusterType: req.ClusterType,
-					OrgID:       orgid,
+					OrgID:       uint32(orgid),
 				})
 				if e != nil {
 					err = e
