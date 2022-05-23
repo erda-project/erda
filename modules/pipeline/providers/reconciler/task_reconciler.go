@@ -176,7 +176,7 @@ func (tr *defaultTaskReconciler) ReconcileSnippetTask(ctx context.Context, p *sp
 	tr.pr.r.ReconcileOnePipeline(ctx, snippetPipeline.ID)
 
 	// setup snippet task info according to snippet pipeline result
-	if err := tr.fulfillParentSnippetTask(snippetPipeline); err != nil {
+	if err := tr.fulfillParentSnippetTask(snippetPipeline, task); err != nil {
 		return err
 	}
 
