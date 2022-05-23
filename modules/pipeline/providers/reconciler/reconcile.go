@@ -86,7 +86,7 @@ func (r *provider) generatePipelineReconcilerForEachPipelineID() *defaultPipelin
 
 func (pr *defaultPipelineReconciler) releaseTaskAfterReconciled(ctx context.Context, p *spec.Pipeline, task *spec.PipelineTask) {
 	pr.processingTasks.Delete(task.NodeName())
-	pr.processedTasks.Store(task.NodeName(), struct{}{})
+	pr.processedTasks.Store(task.NodeName(), task)
 }
 
 func (pr *defaultPipelineReconciler) waitPipelineDoneAndDoTeardown(ctx context.Context, p *spec.Pipeline) {
