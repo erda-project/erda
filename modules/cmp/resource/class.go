@@ -104,7 +104,7 @@ func (r *Resource) GetPie(ctx context.Context, ordId, userId string, request *ap
 	}
 
 	ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "cmp"}))
-	clusterResp, err := r.ClusterSvc.ListCluster(ctx, &clusterpb.ListClusterRequest{OrgID: orgID})
+	clusterResp, err := r.ClusterSvc.ListCluster(ctx, &clusterpb.ListClusterRequest{OrgID: uint32(orgID)})
 	if err != nil {
 		return
 	}
@@ -364,7 +364,7 @@ func (r *Resource) GetClusterTrend(ctx context.Context, orgId int64, userId stri
 		clusters []*clusterpb.ClusterInfo
 	)
 	ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "cmp"}))
-	resp, err := r.ClusterSvc.ListCluster(ctx, &clusterpb.ListClusterRequest{OrgID: uint64(orgId)})
+	resp, err := r.ClusterSvc.ListCluster(ctx, &clusterpb.ListClusterRequest{OrgID: uint32(orgId)})
 	if err != nil {
 		return nil, err
 	}
@@ -500,7 +500,7 @@ func (r *Resource) GetProjectTrend(ctx context.Context, request *apistructs.Tren
 		clusters []*clusterpb.ClusterInfo
 	)
 	ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "cmp"}))
-	clusterResp, err := r.ClusterSvc.ListCluster(ctx, &clusterpb.ListClusterRequest{OrgID: orgID})
+	clusterResp, err := r.ClusterSvc.ListCluster(ctx, &clusterpb.ListClusterRequest{OrgID: uint32(orgID)})
 	if err != nil {
 		return nil, err
 	}

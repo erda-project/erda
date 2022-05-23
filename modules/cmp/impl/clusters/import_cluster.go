@@ -95,7 +95,7 @@ func (c *Clusters) importCluster(ctx context.Context, userID string, req *apistr
 		WildcardDomain:  req.WildcardDomain,
 		SchedulerConfig: convertSchedConfigToPbSchedConfig(&req.ScheduleConfig),
 		ManageConfig:    mc,
-		OrgID:           req.OrgID,
+		OrgID:           uint32(req.OrgID),
 		UserID:          userID,
 	}); err != nil {
 		return err

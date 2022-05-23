@@ -77,7 +77,7 @@ func (c *ClusterService) ListCluster(ctx context.Context, req *pb.ListClusterReq
 		return &pb.ListClusterResponse{Data: clusters}, nil
 	}
 
-	clusterRelation, err := c.bdl.GetOrgClusterRelationsByOrg(req.OrgID)
+	clusterRelation, err := c.bdl.GetOrgClusterRelationsByOrg(uint64(req.OrgID))
 	if err != nil {
 		return nil, ErrListCluster.InternalError(err)
 	}
@@ -132,7 +132,7 @@ func (c *ClusterService) CreateCluster(ctx context.Context, req *pb.CreateCluste
 		return nil, ErrCreateCluster.InternalError(err)
 	}
 
-	if err := c.bdl.CreateOrgClusterRelationsByOrg(req.Name, req.UserID, req.OrgID); err != nil {
+	if err := c.bdl.CreateOrgClusterRelationsByOrg(req.Name, req.UserID, uint64(req.OrgID)); err != nil {
 		return nil, ErrCreateCluster.InternalError(err)
 	}
 	return &pb.CreateClusterResponse{Success: true}, nil
