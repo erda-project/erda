@@ -60,3 +60,5 @@ CREATE TABLE `dice_api_asset_version_instances` (
   `updated_at` datetime DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 DEFAULT CHARSET = utf8mb4;
+
+ALTER TABLE `dice_api_asset_version_instances` RENAME TO `dice_api_asset_version_instances2`;
