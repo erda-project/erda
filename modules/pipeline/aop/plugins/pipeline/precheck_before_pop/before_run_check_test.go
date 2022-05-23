@@ -25,9 +25,9 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
+	"github.com/erda-project/erda/modules/pipeline/providers/lifecycle_hook_client"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
-	"github.com/erda-project/erda/pkg/pipeline_network_hook_client"
 )
 
 func Test_matchHookType(t *testing.T) {
@@ -96,7 +96,8 @@ func TestCheckRun(t *testing.T) {
 			matchOtherLabel: "otherLabel",
 			haveError:       false,
 			httpBeforeCheckRun: HttpBeforeCheckRun{
-				PipelineID: 1000,
+				PipelineID:      1000,
+				LifeCycleClient: &lifecycle_hook_client.LifeCycleService{},
 			},
 			mockPipelineWithTasks: &spec.PipelineWithTasks{
 				Pipeline: &spec.Pipeline{
@@ -157,7 +158,8 @@ lifecycle:
 			haveError:       false,
 			matchOtherLabel: "",
 			httpBeforeCheckRun: HttpBeforeCheckRun{
-				PipelineID: 10001,
+				PipelineID:      10001,
+				LifeCycleClient: &lifecycle_hook_client.LifeCycleService{},
 			},
 			mockPipelineWithTasks: &spec.PipelineWithTasks{
 				Pipeline: &spec.Pipeline{
@@ -267,7 +269,7 @@ lifecycle:
 		guard1 := monkey.PatchInstanceMethod(reflect.TypeOf(&e), "ListLabelsByPipelineID", func(client *dbclient.Client, pipelineID uint64, ops ...dbclient.SessionOption) ([]spec.PipelineLabel, error) {
 			return nil, nil
 		})
-		guard2 := monkey.Patch(pipeline_network_hook_client.PostLifecycleHookHttpClient, func(source string, req interface{}, resp interface{}) error {
+		guard2 := monkey.PatchInstanceMethod(reflect.TypeOf(v.httpBeforeCheckRun.LifeCycleClient), "PostLifecycleHookHttpClient", func(_ *lifecycle_hook_client.LifeCycleService, source string, req interface{}, resp interface{}) error {
 			checkRunResultRequest := req.(CheckRunResultRequest)
 			if checkRunResultRequest.Labels != nil {
 				pipelineLabels := checkRunResultRequest.Labels["pipelineLabels"].(map[string]interface{})

@@ -20,8 +20,8 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
+	"github.com/erda-project/erda/modules/pipeline/providers/lifecycle_hook_client"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
-	"github.com/erda-project/erda/pkg/pipeline_network_hook_client"
 )
 
 const CheckResultSuccess = "success"
@@ -30,9 +30,10 @@ const CheckResultEnd = "end"
 const HookType = "before-run-check"
 
 type HttpBeforeCheckRun struct {
-	PipelineID uint64
-	Bdl        *bundle.Bundle
-	DBClient   *dbclient.Client
+	PipelineID      uint64
+	Bdl             *bundle.Bundle
+	DBClient        *dbclient.Client
+	LifeCycleClient *lifecycle_hook_client.LifeCycleService
 }
 
 type RetryOption struct {
@@ -122,7 +123,7 @@ func (beforeCheckRun HttpBeforeCheckRun) CheckRun() (result *CheckRunResult, err
 		checkRunResultRequest.Labels["pipelineLabels"] = info.Labels
 
 		var response CheckRunResultResponse
-		err := pipeline_network_hook_client.PostLifecycleHookHttpClient(info.Client, checkRunResultRequest, &response)
+		err := beforeCheckRun.LifeCycleClient.PostLifecycleHookHttpClient(info.Client, checkRunResultRequest, &response)
 		if err != nil {
 			return nil, err
 		}
