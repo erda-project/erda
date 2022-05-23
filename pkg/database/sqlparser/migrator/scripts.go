@@ -327,10 +327,17 @@ func (r *referencer) Enter(in ast.Node) (out ast.Node, skipChildren bool) {
 	case *ast.CreateTableStmt:
 		r.tableNames[stmt.Table.Name.String()] = true
 		return in, true
+	case *ast.AlterTableStmt:
+		for _, spec := range stmt.Specs {
+			if spec.Tp == ast.AlterTableRenameTable && spec.NewTable != nil && spec.NewTable.Name.String() != "" {
+				r.tableNames[spec.NewTable.Name.String()] = true
+			}
+		}
+		return in, false
 	case *ast.TableName:
 		// if the referenced table name is not in the tableNames, error happened
 		if _, ok := r.tableNames[stmt.Name.String()]; !ok {
-			r.err = errors.Errorf("the table you referenced is not exists, may it not created in this module directory")
+			r.err = errors.Errorf("the table you referenced dose not exist, may it not created in this module directory")
 		}
 		return in, true
 	default:
