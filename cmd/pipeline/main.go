@@ -37,6 +37,7 @@ import (
 	_ "github.com/erda-project/erda/modules/pipeline/providers/definition"
 	_ "github.com/erda-project/erda/modules/pipeline/providers/edgepipeline"
 	_ "github.com/erda-project/erda/modules/pipeline/providers/edgepipeline_register"
+	_ "github.com/erda-project/erda/modules/pipeline/providers/lifecycle_hook_client"
 	_ "github.com/erda-project/erda/modules/pipeline/providers/resourcegc"
 	_ "github.com/erda-project/erda/modules/pipeline/providers/source"
 )

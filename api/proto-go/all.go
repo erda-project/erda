@@ -52,6 +52,7 @@ import (
 	_ "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	_ "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
 	_ "github.com/erda-project/erda-proto-go/core/pipeline/label/pb"
+	_ "github.com/erda-project/erda-proto-go/core/pipeline/lifecycle_hook_client/pb"
 	_ "github.com/erda-project/erda-proto-go/core/pipeline/pb"
 	_ "github.com/erda-project/erda-proto-go/core/pipeline/queue/pb"
 	_ "github.com/erda-project/erda-proto-go/core/pipeline/report/pb"

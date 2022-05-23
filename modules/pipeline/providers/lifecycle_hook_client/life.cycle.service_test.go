@@ -12,24 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pipeline_network_hook_client
+package lifecycle_hook_client
 
 import (
-	"bytes"
-	"encoding/json"
 	"reflect"
 	"testing"
 
 	"bou.ke/monkey"
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/assert"
 
-	"github.com/xormplus/xorm"
-
-	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda-proto-go/core/pipeline/lifecycle_hook_client/pb"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 )
 
-func TestRegisterLifecycleHookClient(t *testing.T) {
+func Test_loadLifecycleHookClient(t *testing.T) {
 	var table = []struct {
 		clients []*dbclient.PipelineLifecycleHookClient
 	}{
@@ -56,24 +52,23 @@ func TestRegisterLifecycleHookClient(t *testing.T) {
 
 	for _, v := range table {
 		var e dbclient.Client
-		var engine xorm.Engine
-		guard1 := monkey.PatchInstanceMethod(reflect.TypeOf(&engine), "Find", func(engine *xorm.Engine, beans interface{}, condiBeans ...interface{}) error {
-			checkRunResultResponseJson, _ := json.Marshal(v.clients)
-			buffer := bytes.NewBuffer(checkRunResultResponseJson)
-			err := json.NewDecoder(buffer).Decode(&beans)
-			return err
+		monkey.PatchInstanceMethod(reflect.TypeOf(&e), "FindLifecycleHookClientList", func(_ *dbclient.Client, ops ...dbclient.SessionOption) (clients []*dbclient.PipelineLifecycleHookClient, err error) {
+			return v.clients, nil
 		})
-		e.Engine = &engine
-		defer guard1.Unpatch()
-		RegisterLifecycleHookClient(&e)
-
-		assert.Equal(t, len(v.clients), len(hookClientMap))
-		for _, client := range v.clients {
-			assert.Equal(t, hookClientMap[client.Name].Name, client.Name)
-			assert.Equal(t, hookClientMap[client.Name].ID, client.ID)
-			assert.Equal(t, hookClientMap[client.Name].Prefix, client.Prefix)
-			assert.Equal(t, hookClientMap[client.Name].Host, client.Host)
+		s := &LifeCycleService{
+			dbClient:      &e,
+			hookClientMap: map[string]*pb.LifeCycleClient{},
 		}
-		hookClientMap = map[string]*apistructs.PipelineLifecycleHookClient{}
+		err := s.loadLifecycleHookClient()
+		assert.NoError(t, err)
+
+		assert.Equal(t, len(v.clients), len(s.hookClientMap))
+		for _, client := range v.clients {
+			assert.Equal(t, s.hookClientMap[client.Name].Name, client.Name)
+			assert.Equal(t, s.hookClientMap[client.Name].ID, client.ID)
+			assert.Equal(t, s.hookClientMap[client.Name].Prefix, client.Prefix)
+			assert.Equal(t, s.hookClientMap[client.Name].Host, client.Host)
+		}
+		s.hookClientMap = map[string]*pb.LifeCycleClient{}
 	}
 }

@@ -68,6 +68,7 @@ metric-report-client:
       username: ${COLLECTOR_AUTH_USERNAME}
       password: ${COLLECTOR_AUTH_PASSWORD}
 erda.core.pipeline.definition:
+erda.core.pipeline.lifecycle_hook_client:
 erda.core.pipeline.cron:
 cron-daemon:
 cron-compensator:

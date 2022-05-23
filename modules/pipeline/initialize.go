@@ -50,7 +50,6 @@ import (
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/jsonstore"
 	"github.com/erda-project/erda/pkg/jsonstore/etcd"
-	"github.com/erda-project/erda/pkg/pipeline_network_hook_client"
 	"github.com/erda-project/erda/pkg/pipeline_snippet_client"
 )
 
@@ -151,9 +150,6 @@ func (p *provider) do() error {
 	p.EdgePipeline.InjectLegacyFields(pipelineSvc)
 
 	if err := registerSnippetClient(dbClient); err != nil {
-		return err
-	}
-	if err := pipeline_network_hook_client.RegisterLifecycleHookClient(dbClient); err != nil {
 		return err
 	}
 
