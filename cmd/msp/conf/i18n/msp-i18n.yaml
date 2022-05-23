@@ -3,10 +3,10 @@ en:
   success_get_tracing_data: "success to get tracing data"
   fail_get_tracing_data: "fail to get tracing data"
   stop_get_tracing_data: "cancelled to get tracing data"
-  workspace_dev: "DEV"
-  workspace_test: "TEST"
-  workspace_staging: "STAGING"
-  workspace_prod: "PROD"
+  workspace_dev: "Development"
+  workspace_test: "Testing"
+  workspace_staging: "Staging"
+  workspace_prod: "Production"
   workspace_default: "DEFAULT"
   project_type_dop: "DevOps Project"
   project_type_msp: "MSP Project"
@@ -20,38 +20,38 @@ en:
   trace_id: Trace ID
   rpc_method: Rpc Method
   http_path: HTTP Path
-  trace_success: SUCCESS
-  trace_error: ERROR
-  trace_all: ALL
-  rpsMaxTop5: Top5 High Traffic Services
-  rpsMinTop5: Top5 Low Traffic Services
-  avgDurationTop5: Top5 Slow Response Services
-  errorRateTop5: Top5 unhealthy services
-  pathRpsMaxTop5: Top5 High Throughput API
-  pathClientRpsMaxTop5: Top5 external API calls
-  pathSlowTop5: Top5 Slow response API
-  sqlSlowTop5: Top5 Slow response SQL
-  exceptionCountTop5: Top5 Exception type
-  pathErrorRateTop5: Top5 Error API
-  transactionName: "Transaction Name"
-  reqCount: "Request Count"
+  trace_success: Success
+  trace_error: Error
+  trace_all: All
+  rpsMaxTop5: Top 5 high traffic services
+  rpsMinTop5: Top 5 low traffic services
+  avgDurationTop5: Top 5 slow response services
+  errorRateTop5: Top 5 unhealthy services
+  pathRpsMaxTop5: Top 5 high throughput APIs
+  pathClientRpsMaxTop5: Top 5 external API calls
+  pathSlowTop5: Top 5 slow response APIs
+  sqlSlowTop5: Top 5 slow response SQL
+  exceptionCountTop5: Top 5 exception types
+  pathErrorRateTop5: Top 5 error APIs
+  transactionName: "Transaction name"
+  reqCount: "Number of calls"
   rps: "Throughput"
-  duration: "Duration"
+  duration: "Response time"
   avgDuration: "Avg Duration"
-  requestDistribution: "Request Distribution"
+  requestDistribution: "Request distribution"
   totalCount: "Total Count"
   avgRps: "Avg Rps"
-  slowCount: "Slow Request Count"
-  errorCount: "Error Request Count"
+  slowCount: "Number of slow calls"
+  errorCount: "Number of error calls"
   errorRate: "Error Rate"
   rpsUnit: "reqs/s"
   avgDurationUnit: "ms"
   countUnit: "freq"
   pcsUnit: "pcs"
   rateUnit: "%"
-  slowRequestDistribution: "Slow Request Distribution"
-  errorRequestDistribution: "Error Request Distribution"
-  occurTime: "Occur Time"
+  slowRequestDistribution: "Time distribution of slow calls"
+  errorRequestDistribution: "Time distribution of error calls"
+  occurTime: "Time of occurrence"
   traceId: Trace ID
   traceDuration: Duration
   traceStartTime: Start time
@@ -82,42 +82,42 @@ en:
   disk: Disk IO Rate
   network: Network Rate
   api: "API"
-  reqAvgDuration: "Request Avg Duration"
-  pageReqDurationDistribution: "Page Load Time Distribution"
+  reqAvgDuration: "Average response time of calls"
+  pageReqDurationDistribution: "Page loading time distribution"
   pvUvCount: "PV/UV"
   pv: "PV"
   uv: "UV"
   apdex: "Apdex"
-  avgPageLoadDuration: "Page Load Duration"
-  apiSuccessRate: "API Success Rate"
-  resourceLoadErrorCount: "Resource Load Error Count"
-  jsErrorCount: "JS Error Count"
-  maxReqDomainTop5: "High Request Domains Top5"
-  maxReqPageTop5: "High Request Pages Top5"
-  slowReqPageTop5: "Most Slow Page Top5"
-  slowReqRegionTop5: "Most Slow Region Top5"
+  avgPageLoadDuration: "Page loading time"
+  apiSuccessRate: "API success rate"
+  resourceLoadErrorCount: "Resource loading error"
+  jsErrorCount: "JS error"
+  maxReqDomainTop5: "Top 5 high request domains"
+  maxReqPageTop5: "Top 5 high request pages"
+  slowReqPageTop5: "Top 5 slow response pages"
+  slowReqRegionTop5: "Top 5 slow response regions"
   s: s
   m: m
   h: h
   project_owner_role: project owner
   project_lead_role: project development lead
   project_dev_role: development engineer
-  searchByTransactionName: "input transaction name"
-  searchByName: input name
+  searchByTransactionName: "Search by transaction name"
+  searchByName: Search by name
   alertListTableColumnName: Name
-  alertListTableColumnAlertName: AlertName
-  alertListTableColumnTriggerCount: TriggerCount
+  alertListTableColumnAlertName: Strategy
+  alertListTableColumnTriggerCount: Number of events
   alertListTableColumnAlertLevel: AlertLevel
   alertListTableColumnAlertState: AlertState
-  alertListTableColumnAlertSource: AlertSource
+  alertListTableColumnAlertSource: Event source
   alertListTableColumnLastTriggerTime: LastTriggerTime
-  FATAL: FATAL
-  CRITICAL: CRITICAL
-  WARNING: WARNING
-  NOTICE: NOTICE
+  FATAL: Fatal
+  CRITICAL: Serious
+  WARNING: Warning
+  NOTICE: Notice
   alert: Alert
-  recover: Recover
-  pause: Pause
+  recover: Recovered
+  pause: Stopped
   stop: Stop
   System: System
   Custom: Custom

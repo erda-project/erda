@@ -1,11 +1,11 @@
 en:
-  Channel: Notify Channel
-  Status: Send Status
-  SendTime: Send Time
-  Group: Associate Notify Groups
-  Rule: Associate Alert Rule
-  EventOverview: Event Overview
-  NotifyContent: Notify Content
+  Channel: Notification method
+  Status: Send status
+  SendTime: Send time
+  Group: Related notification group
+  Rule: Related alert rule
+  EventOverview: Overview
+  NotifyContent: Notification content
   success: success
   failed: failed
   dingding: dingding

@@ -1,6 +1,6 @@
 en:
-  success: success
-  failed: failed
+  success: Succeeded
+  failed: Failed
   dingding: dingding
   webhook: webhook
   email: email
@@ -8,14 +8,14 @@ en:
   vms: voice notify
   sms: short message notify
   dingtalk_work_notice: dingding work notify
-  NotifyName: Notify Name
+  NotifyName: Name
   Status: Status
-  Channel: Notify Channel
-  NotifyWay: Notify The Way
-  LinkedStrategy: Associate Strategy
-  SendTime: Send Time
+  Channel: Channel
+  NotifyWay: Notification method
+  LinkedStrategy: Related strategy
+  SendTime: Send time
   SelectStatus: Select State
-  SelectNotifyWay: Select Notify Way
+  SelectNotifyWay: Select the notification method
   SearchName: Search By Name
 
 zh:
