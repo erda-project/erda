@@ -52,7 +52,7 @@ message ErrResponse {
 message ListClusterRequest {
   string clusterType = 1;
   // optional, return all clusters if orgID == 0
-  uint64 orgID = 2;
+  uint32 orgID = 2;
 }
 
 message ListClusterResponse {
@@ -85,7 +85,7 @@ message UpdateClusterRequest {
   ManageConfig manageConfig = 11;
 
   // Deprecated
-  int64 orgID = 12;
+  int32 orgID = 12;
   // Deprecated
   map<string, string> urls = 13;
 }
@@ -108,7 +108,7 @@ message CreateClusterRequest {
   SysConf sysConfig = 10;
   ManageConfig manageConfig = 11;
 
-  uint64 orgID = 12;
+  uint32 orgID = 12;
   // Deprecated
   map<string, string> urls = 13;
   // Deprecated
@@ -202,18 +202,18 @@ message OpsConfig {
   string vSwitchIDs = 7;
   string sgIDs = 8;
   string chargeType = 9;
-  int64 chargePeriod = 10;
+  int32 chargePeriod = 10;
   string region = 11;
   string scaleMode = 12;
   string essGroupID = 13;
   string essScaleRule = 14;
   string scheduledTaskId = 15;
-  int64 scaleNumber = 16;
-  int64 scaleDuration = 17;
+  int32 scaleNumber = 16;
+  int32 scaleDuration = 17;
   string launchTime = 18;
   string repeatMode = 19;
   string repeatValue = 20;
-  uint64 scalePipeLineID = 21;
+  uint32 scalePipeLineID = 21;
   map<string, string> extra = 22;
 }
 
@@ -228,7 +228,7 @@ message SysConf {
   Platform platform = 8;
   Platform mainPlatform = 9;
   map<string, string> envs = 10;
-  int64 orgID = 11;
+  int32 orgID = 11;
 }
 
 message Cluster {
@@ -242,7 +242,7 @@ message Cluster {
 }
 
 message SSH {
-  int64 port = 1;
+  int32 port = 1;
   string user = 2;
   string password = 3;
   string account = 4;
@@ -252,7 +252,7 @@ message SSH {
 
 message FPS {
   string host = 1;
-  int64 port = 2;
+  int32 port = 2;
   bool proxy = 3;
 }
 
@@ -266,7 +266,7 @@ message Gluster {
   string version = 1;
   repeated string hosts = 2;
   bool server = 3;
-  int64 replica = 4;
+  int32 replica = 4;
   string brick = 5;
 }
 
@@ -285,7 +285,7 @@ message Node {
 
 message MySQL {
   string host = 1;
-  int64 port = 2;
+  int32 port = 2;
   string username = 3;
   string password = 4;
   string diceDB = 5;
@@ -310,7 +310,7 @@ message Platform {
   string dataDiskDevice = 8;
   string dataRoot = 9;
   string scheme = 10;
-  int64 port = 11;
+  int32 port = 11;
   string registryHost = 12;
   OpenVPN openVPN = 13 [json_name = "openvpn"];
 }

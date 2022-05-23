@@ -270,7 +270,7 @@ func (l *List) GetData(ctx context.Context) (map[string][]DataItem, error) {
 	logrus.Infof("cluster start get data")
 	ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "true"}))
 	resp, err := l.ClusterSvc.ListCluster(ctx, &clusterpb.ListClusterRequest{
-		OrgID: orgId,
+		OrgID: uint32(orgId),
 	})
 	if err != nil {
 		return nil, err

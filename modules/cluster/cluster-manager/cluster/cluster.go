@@ -115,7 +115,7 @@ func (c *ClusterService) Create(req *pb.CreateClusterRequest) error {
 	}
 
 	cluster := &db.Cluster{
-		OrgID:           req.OrgID,
+		OrgID:           uint64(req.OrgID),
 		Name:            req.Name,
 		DisplayName:     req.DisplayName,
 		Description:     req.Description,
