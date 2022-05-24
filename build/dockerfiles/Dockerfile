@@ -18,7 +18,6 @@ RUN --mount=type=cache,target=/root/.cache/go-build\
 
 
 
-ARG BASE_DOCKER_IMAGE
 FROM ${BASE_DOCKER_IMAGE} as app-handler
 ARG MODULE_PATH
 ENV PROJ_ROOT="/go/src/github.com/erda-project/erda"
@@ -30,9 +29,9 @@ RUN ./build/scripts/build_all/app_handler.sh /erda "${MODULE_PATH}" /erda-handle
 
 
 
-ARG BASE_DOCKER_IMAGE
 FROM ${BASE_DOCKER_IMAGE}
 ARG MODULE_PATH
+ENV MODULE_PATH=${MODULE_PATH}
 
 ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib:/usr/local/lib64:/lib:/lib64
 
