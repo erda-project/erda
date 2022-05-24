@@ -38,7 +38,6 @@ import (
 	"github.com/erda-project/erda/bundle"
 	apierrors2 "github.com/erda-project/erda/bundle/apierrors"
 	"github.com/erda-project/erda/modules/cmp/steve/predefined"
-	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/k8sclient"
 	"github.com/erda-project/erda/pkg/k8sclient/config"
@@ -356,16 +355,9 @@ func (a *Aggregator) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		ctx := transport.WithHeader(a.Ctx, metadata.New(map[string]string{httputil.InternalHeader: "true"}))
 		resp, err := a.clusterSvc.GetCluster(ctx, &clusterpb.GetClusterRequest{IdOrName: clusterName})
 		if err != nil {
-			apiErr, _ := err.(*errorresp.APIError)
-			if apiErr.HttpCode() != http.StatusNotFound {
-				logrus.Errorf("failed to get cluster %s, %s", clusterName, apiErr.Error())
-				rw.WriteHeader(http.StatusInternalServerError)
-				rw.Write(apistructs.NewSteveError(apistructs.ServerError, "Internal server error").JSON())
-				return
-			}
-			rw.WriteHeader(http.StatusNotFound)
-			rw.Write(apistructs.NewSteveError(apistructs.NotFound,
-				fmt.Sprintf("cluster %s not found", clusterName)).JSON())
+			rw.WriteHeader(http.StatusInternalServerError)
+			rw.Write(apistructs.NewSteveError(apistructs.ServerError,
+				fmt.Sprintf("failed to get cluster %s, %v", clusterName, err)).JSON())
 			return
 		}
 
@@ -402,11 +394,7 @@ func (a *Aggregator) Serve(clusterName string, apiOp *types.APIRequest) error {
 		ctx := transport.WithHeader(a.Ctx, metadata.New(map[string]string{httputil.InternalHeader: "true"}))
 		resp, err := a.clusterSvc.GetCluster(ctx, &clusterpb.GetClusterRequest{IdOrName: clusterName})
 		if err != nil {
-			apiErr, _ := err.(*errorresp.APIError)
-			if apiErr.HttpCode() != http.StatusNotFound {
-				return apierrors2.ErrInvoke.InternalError(errors.Errorf("failed to get cluster %s, %s", clusterName, apiErr.Error()))
-			}
-			return apierrors2.ErrInvoke.InvalidParameter(errors.Errorf("cluster %s not found", clusterName))
+			return apierrors2.ErrInvoke.InvalidParameter(errors.Errorf("failed to get cluster %s, %v", clusterName, err))
 		}
 
 		clusterInfo := resp.Data
