@@ -52,17 +52,31 @@ type Cache struct {
 	name    string
 	expired time.Duration
 	update  Update
+	isSync  bool // call update synchronously when expired if true
 }
 
 // New returns the *Cache.
 // the function update, if found new *item, returns true, and stores it;
 // else returns false, and delete the key from cache.
-func New(name string, expired time.Duration, update Update) *Cache {
-	return &Cache{
+func New(name string, expired time.Duration, update Update, options ...Option) *Cache {
+	c := &Cache{
 		C:       make(chan interface{}, 1<<16),
 		name:    name,
 		expired: expired,
 		update:  update,
+	}
+	for _, option := range options {
+		option(c)
+	}
+	return c
+}
+
+type Option func(c *Cache)
+
+// WithSync set sync=true for Cache
+func WithSync() Option {
+	return func(c *Cache) {
+		c.isSync = true
 	}
 }
 
@@ -87,6 +101,14 @@ func (c *Cache) LoadWithUpdate(key interface{}) (interface{}, bool) {
 	}
 	item := value.(*item)
 	if item.expired.Before(time.Now()) {
+		if c.isSync {
+			obj, ok := c.update(key)
+			if !ok {
+				return nil, false
+			}
+			c.Store(key, obj)
+			return obj, true
+		}
 		select {
 		case c.C <- key:
 			cachesC <- c

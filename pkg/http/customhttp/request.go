@@ -31,7 +31,7 @@ import (
 
 var (
 	ErrInvalidAddr = Error{"customhttp: invalid inetaddr"}
-	ipCache        = cache.New("clusterManagerEndpoint", time.Second*30, queryClusterManagerIP)
+	ipCache        = cache.New("clusterManagerEndpoint", time.Second*30, queryClusterManagerIP, cache.WithSync())
 )
 
 type Error struct {
