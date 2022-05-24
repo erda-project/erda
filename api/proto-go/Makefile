@@ -1,8 +1,12 @@
+GOPROXY := https://goproxy.cn,direct
+GHPROXY := ""
+
 .PHONY: build clean
-build: auto-update-infra-for-master
-	@./build.sh build
-	@go mod tidy
+build:
+	./build.sh build
+	go mod tidy
 	@echo "" && make format
+
 clean:
 	@./build.sh clean
 
@@ -21,5 +25,17 @@ auto-update-infra-for-master:
 
 update-infra:
 	echo "update infra and gohub"
+	go env -w GO111MODULE=on
+	go env -w GOPROXY="$(GOPROXY)"
 	go get -u github.com/erda-project/erda-infra
 	go get -u github.com/erda-project/erda-infra/tools/gohub
+	gohub tools install -v --goproxy="$(GOPROXY)" --ghproxy="$(GHPROXY)"
+
+build-use-docker-image:
+	proj_root=$$(cd ../../ && pwd) && \
+	docker run --rm -ti \
+		-v $${proj_root}:/go/src/github.com/erda-project/erda \
+		-v $$(go env GOMODCACHE):/go/pkg/mod \
+		-e target_proj_root=$${target_proj_root} \
+		registry.erda.cloud/erda/gohub:latest-linux-$$(go env GOARCH) \
+		sh -c 'cd /go/src/github.com/erda-project/erda && make proto-go-in-local'
