@@ -708,7 +708,7 @@ func (s *extensionService) PutOnExtensionWithNameVersion(ctx context.Context, ve
 		l.WithError(err).Errorln("failed to yaml.Unmarshal ver.Spec")
 		return err
 	}
-	if isExtensionPublic(&spec) {
+	if !isExtensionPublic(&spec) {
 		l.Debugf("extension %s is private, skip putting on", spec.Name)
 		return errors.New("private extension can not be put on")
 	}
@@ -840,6 +840,6 @@ func ConvertFieldI18n(key string, locale map[string]map[string]string) string {
 	return string(data)
 }
 
-func isExtensionPublic(spec *apistructs.Spec) bool {
-	return spec.Public
+func isExtensionPublic(s *apistructs.Spec) bool {
+	return s.Public
 }
