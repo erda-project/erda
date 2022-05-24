@@ -50,10 +50,6 @@ func TestGetTime(t *testing.T) {
 	t.Log("ns-after-hour:", getTime(TimeStampNsAfterHour))
 	t.Log("ns-day:", getTime(TimeStampNsDay))
 	t.Log("ns-after-day:", getTime(TimeStampNsAfterDay))
-	t.Log("date-before-hour", getTime(DateTimeHour))
-	t.Log("date-now", getTime(Date))
-	t.Log("date-day", getTime(DateDay))
-	t.Log("date-time", getTime(DateTime))
 
 	for k := range dateTimeCustoms {
 		t.Log(DateTimeCustom+k+":", getTime(DateTimeCustom+k))
