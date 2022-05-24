@@ -21,6 +21,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-proto-go/core/dicehub/extension/pb"
+	"github.com/erda-project/erda/apistructs"
 )
 
 func Test_extensionService_SearchExtensions(t *testing.T) {
@@ -466,4 +467,32 @@ func TestConvertFieldI18n(t *testing.T) {
 	}
 	data := ConvertFieldI18n(key, localeMap)
 	t.Log(data)
+}
+
+func TestIsExtensionPublic(t *testing.T) {
+	tests := []struct {
+		name string
+		spec *apistructs.Spec
+		want bool
+	}{
+		{
+			name: "public extension",
+			spec: &apistructs.Spec{Public: true},
+			want: true,
+		},
+		{
+			name: "private extension",
+			spec: &apistructs.Spec{Public: false},
+			want: false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			res := isExtensionPublic(test.spec)
+			if res != test.want {
+				t.Errorf("got %t, want %t", res, test.want)
+			}
+		})
+	}
 }
