@@ -15,6 +15,7 @@
 package monitor
 
 import (
+	"github.com/erda-project/erda-proto-go/core/monitor/settings/pb"
 	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -32,11 +33,12 @@ type config struct {
 // +provider
 type provider struct {
 	*handlers.DefaultDeployHandler
-	Cfg       *config
-	Log       logs.Logger
-	DB        *gorm.DB `autowired:"mysql-client"`
-	MonitorDb *monitor.MonitorDB
-	ProjectDb *db.ProjectDB
+	Cfg           *config
+	Log           logs.Logger
+	DB            *gorm.DB `autowired:"mysql-client"`
+	MonitorDb     *monitor.MonitorDB
+	ProjectDb     *db.ProjectDB
+	SettingClient pb.SettingsServiceServer `autowired:"erda.core.monitor.settings" optional:"true"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {

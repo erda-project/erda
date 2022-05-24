@@ -103,18 +103,18 @@ func (p *provider) Init(ctx servicehub.Context) error {
 			perm.NoPermMethod(AlertService.GetAlertConditionsValue),
 		),
 			p.audit.Audit(
-				audit.Method(AlertService.UpdateCustomizeAlert, audit.ProjectScope, string(apistructs.UpdateMicroserviceCustomAlert),
-					func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
-						r := resp.(*alert.UpdateCustomizeAlertResponse)
-						return r.Data, map[string]interface{}{}, nil
-					},
-				),
-				audit.Method(AlertService.DeleteCustomizeAlert, audit.ProjectScope, string(apistructs.DeleteMicroserviceCustomAlert),
-					func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
-						r := resp.(*alert.DeleteCustomizeAlertResponse)
-						return r.Data.ProjectId, map[string]interface{}{}, nil
-					},
-				),
+				//audit.Method(AlertService.UpdateCustomizeAlert, audit.ProjectScope, string(apistructs.UpdateMicroserviceCustomAlert),
+				//	func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
+				//		r := resp.(*alert.UpdateCustomizeAlertResponse)
+				//		return r.Data, map[string]interface{}{}, nil
+				//	},
+				//),
+				//audit.Method(AlertService.DeleteCustomizeAlert, audit.ProjectScope, string(apistructs.DeleteMicroserviceCustomAlert),
+				//	func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
+				//		r := resp.(*alert.DeleteCustomizeAlertResponse)
+				//		return r.Data.ProjectId, map[string]interface{}{}, nil
+				//	},
+				//),
 				audit.Method(AlertService.CreateCustomizeAlert, audit.ProjectScope, string(apistructs.CreateMicroserviceCustomAlert),
 					func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
 						r := resp.(*alert.CreateCustomizeAlertResponse)
@@ -128,22 +128,26 @@ func (p *provider) Init(ctx servicehub.Context) error {
 					},
 				),
 				audit.Method(AlertService.UpdateAlert, audit.ProjectScope, string(apistructs.UpdateMicroserviceAlert),
-					func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
-						r := resp.(*alert.UpdateAlertResponse)
-						return r.Data, map[string]interface{}{}, nil
-					},
+					p.alertService.auditOperateMicroserviceAlert(apistructs.UpdateMicroserviceAlert, "update"),
 				),
 				audit.Method(AlertService.DeleteAlert, audit.ProjectScope, string(apistructs.DeleteMicroserviceAlert),
-					func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
-						r := resp.(*alert.DeleteAlertResponse)
-						return r.Data.ProjectId, map[string]interface{}{}, nil
-					},
+					p.alertService.auditOperateMicroserviceAlert(apistructs.DeleteMicroserviceAlert, "delete"),
 				),
 				audit.Method(AlertService.UpdateAlertEnable, audit.ProjectScope, string(apistructs.SwitchMicroserviceAlert),
-					func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
-						r := resp.(*alert.UpdateAlertEnableResponse)
-						return r.Data, map[string]interface{}{}, nil
-					}),
+					p.alertService.auditOperateMicroserviceAlert(apistructs.SwitchMicroserviceAlert, ""),
+				),
+
+				audit.Method(AlertService.UpdateCustomizeAlert, audit.ProjectScope, string(apistructs.UpdateMicroserviceCustomAlert),
+					p.alertService.auditOperateMicroserviceCustomAlert(apistructs.UpdateMicroserviceCustomAlert, "update"),
+				),
+
+				audit.Method(AlertService.DeleteCustomizeAlert, audit.ProjectScope, string(apistructs.DeleteMicroserviceCustomAlert),
+					p.alertService.auditOperateMicroserviceCustomAlert(apistructs.DeleteMicroserviceCustomAlert, "delete"),
+				),
+
+				audit.Method(AlertService.UpdateCustomizeAlertEnable, audit.ProjectScope, string(apistructs.SwitchMicroserviceCustomAlert),
+					p.alertService.auditOperateMicroserviceCustomAlert(apistructs.SwitchMicroserviceCustomAlert, ""),
+				),
 			),
 		)
 	}
