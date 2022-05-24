@@ -36,7 +36,7 @@ import (
 
 func getServiceName() string {
 	for _, name := range []string{
-		//os.Getenv("DICE_COMPONENT"),
+		os.Getenv("DICE_COMPONENT"),
 		entrance.GetAppName(),
 	} {
 		if len(name) > 0 {
