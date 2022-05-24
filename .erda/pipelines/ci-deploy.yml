@@ -10,7 +10,7 @@ on:
 stages:
   - stage:
       - git-checkout:
-          alias: erda
+          alias: raw-erda
           params:
             depth: 1
       - git-checkout:
@@ -43,6 +43,16 @@ stages:
             uri: https://erda.cloud/erda/dop/erda-project/erda-java-extensions-mirror
             branch: master
             depth: 1
+  - stage:
+      - custom-script:
+          alias: erda
+          image: registry.erda.cloud/erda/gohub:latest
+          commands:
+            - cp -a ${{ dirs.raw-erda }}/. .
+            - make proto-go-in-local
+          resources:
+            cpu: 0.5
+            mem: 2048
   - stage:
       - extract-repo-version:
           params:

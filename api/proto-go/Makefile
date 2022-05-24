@@ -4,7 +4,6 @@ GHPROXY := ""
 .PHONY: build clean
 build:
 	./build.sh build
-	go mod tidy
 	@echo "" && make format
 
 clean:

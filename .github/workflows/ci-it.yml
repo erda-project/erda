@@ -21,42 +21,97 @@ on:
       - master
       - release/*
   pull_request:
+
 jobs:
+  PREPARE:
+    runs-on: ubuntu-latest
+    container:
+      image: registry.erda.cloud/erda/gohub:latest
+    steps:
+      - name: Clone repo
+        uses: actions/checkout@v3
+      - name: Calculate Go Cache Path
+        id: go-cache-paths
+        run: |
+          echo "::set-output name=go-build::$(go env GOCACHE)"
+          echo "::set-output name=go-mod::$(go env GOMODCACHE)"
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ${{ steps.go-cache-paths.outputs.go-build }}
+            ${{ steps.go-cache-paths.outputs.go-mod }}
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+      - name: Gen proto-go
+        run: |
+          HOME=/root make proto-go-in-local
+      - name: Upload proto-go as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: proto-go
+          path: ./api/proto-go
+          retention-days: 1
+
   CI:
     runs-on: ubuntu-latest
     container:
       image: letmein7788/letmein:golangci-lint
+    needs:
+      - PREPARE
     steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
       - name: Install Tools
         run: apk add tar
-      - name: Go Build Cache
-        uses: actions/cache@v2
-        env:
-          action-name: build
+      - name: Clone repo
+        uses: actions/checkout@v3
+      - name: Fetch proto-go
+        uses: actions/download-artifact@v3
+        with:
+          name: proto-go
+          path: ./api/proto-go
+      - name: Calculate Go Cache Path
+        id: go-cache-paths
+        run: |
+          echo "::set-output name=go-build::$(go env GOCACHE)"
+          echo "::set-output name=go-mod::$(go env GOMODCACHE)"
+      - uses: actions/cache@v3
         with:
           path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ env.action-name }}-${{ hashFiles('**/go.sum') }}
+            ${{ steps.go-cache-paths.outputs.go-build }}
+            ${{ steps.go-cache-paths.outputs.go-mod }}
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
-      - name: Go generate files
-        run: make prepare
       - name: Run Build
         run: GO_BUILD_OPTIONS="-tags=musl" make build-all
+
   CODE-CHECK:
     runs-on: ubuntu-latest
     container:
       image: letmein7788/letmein:golangci-lint
+    needs:
+      - PREPARE
     steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
       - name: Install Tools
         run: apk add tar
+      - name: Clone repo
+        uses: actions/checkout@v3
+      - name: Fetch proto-go
+        uses: actions/download-artifact@v3
+        with:
+          name: proto-go
+          path: ./api/proto-go
+      - name: Calculate Go Cache Path
+        id: go-cache-paths
+        run: |
+          echo "::set-output name=go-build::$(go env GOCACHE)"
+          echo "::set-output name=go-mod::$(go env GOMODCACHE)"
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ${{ steps.go-cache-paths.outputs.go-build }}
+            ${{ steps.go-cache-paths.outputs.go-mod }}
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
       - name: Go generate files
         run: make prepare
       - name: Check Go Imports
@@ -80,26 +135,42 @@ jobs:
           skip-pkg-cache: false
           # Optional: if set to true then the action don't cache or restore ~/.cache/go-build.
           skip-build-cache: false
+
   CODE-TEST:
     runs-on: ubuntu-latest
     container:
       image: letmein7788/letmein:golangci-lint
+    needs:
+      - PREPARE
     steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
       - name: Install Tools
         run: apk add tar
+      - name: Clone repo
+        uses: actions/checkout@v3
+      - name: Fetch proto-go
+        uses: actions/download-artifact@v3
+        with:
+          name: proto-go
+          path: ./api/proto-go
+      - name: Calculate Go Cache Path
+        id: go-cache-paths
+        run: |
+          echo "::set-output name=go-build::$(go env GOCACHE)"
+          echo "::set-output name=go-mod::$(go env GOMODCACHE)"
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ${{ steps.go-cache-paths.outputs.go-build }}
+            ${{ steps.go-cache-paths.outputs.go-mod }}
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+      - name: Go generate files
+        run: make prepare
       - name: Test Cache
         uses: actions/cache@v2
         with:
           path: |
-            ~/.cache/go-test
+            /root/.cache/go-test
           key: ${{ runner.os }}-go-test-${{ hashFiles('**/*.go', '**/*.s', '**/*.c', '**/*.h', '**/*.cpp') }}
-          restore-keys: |
-            ${{ runner.os }}-go-test-
-      - name: Go generate files
-        run: make prepare
       - name: Run Test
         env:
           GOLANG_PROTOBUF_REGISTRATION_CONFLICT: ignore
