@@ -44,6 +44,7 @@ const (
 	EnvClusterManager = "CLUSTER_MANAGER_ADDR"
 	EnvCoreServices   = "CORE_SERVICES_ADDR"
 	EnvFDPMaster      = "FDP_MASTER_ADDR"
+	EnvErdaServer     = "ERDA_SERVER_ADDR"
 )
 
 // 定义各个服务的 k8s svc 名称
@@ -74,6 +75,7 @@ const (
 	SvcClusterManager = "cluster-manager"
 	SvcCoreServices   = "core-services"
 	SvcFDPMaster      = "fdp-master"
+	SvcErdaServer     = "erda-server"
 )
 
 var ServicesEnvKeys = map[string]string{
@@ -102,6 +104,7 @@ var ServicesEnvKeys = map[string]string{
 	SvcClusterManager: EnvClusterManager,
 	SvcCoreServices:   EnvCoreServices,
 	SvcFDPMaster:      EnvFDPMaster,
+	SvcErdaServer:     EnvErdaServer,
 }
 
 func Services() []string {
