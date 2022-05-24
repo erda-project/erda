@@ -21,12 +21,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_findMainEntranceFileName(t *testing.T) {
-	mainFileName, found := findMainEntranceFileName()
-	assert.False(t, found)
-	assert.Empty(t, mainFileName)
-}
-
 func Test_loadRootEnvFile(t *testing.T) {
 	assert.NoError(t, os.Chdir("testdata"))
 	assert.Empty(t, os.Getenv("A"))
