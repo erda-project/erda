@@ -22,10 +22,8 @@ import (
 	"testing"
 
 	"bou.ke/monkey"
-
-	"gotest.tools/assert"
-
 	"github.com/scylladb/gocqlx/qb"
+	"gotest.tools/assert"
 
 	"github.com/erda-project/erda-proto-go/core/monitor/log/query/pb"
 	"github.com/erda-project/erda/modules/core/monitor/log/storage"
