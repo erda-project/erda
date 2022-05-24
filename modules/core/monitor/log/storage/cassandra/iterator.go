@@ -146,6 +146,14 @@ func (p *provider) Iterator(ctx context.Context, sel *storage.Selector) (_ store
 			return storekit.EmptyIterator{}, nil
 		}
 		table = p.getTableName(meta)
+	} else {
+		meta, _ := p.queryLogMetaWithFilters(qb.M{
+			"source": values["source"],
+			"id":     values["id"],
+		})
+		if meta != nil {
+			table = p.getTableName(meta)
+		}
 	}
 	return &logsIterator{
 		ctx:       ctx,

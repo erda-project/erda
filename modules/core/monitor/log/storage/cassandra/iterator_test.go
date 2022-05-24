@@ -21,7 +21,9 @@ import (
 	"reflect"
 	"testing"
 
+	"bou.ke/monkey"
 	"github.com/scylladb/gocqlx/qb"
+	"gotest.tools/assert"
 
 	"github.com/erda-project/erda-proto-go/core/monitor/log/query/pb"
 	"github.com/erda-project/erda/modules/core/monitor/log/storage"
@@ -339,6 +341,28 @@ func Test_logsIterator_Prev(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_Iterator(t *testing.T) {
+	monkey.Patch((*provider).queryLogMetaWithFilters, func(p *provider, filters qb.M) (*LogMeta, error) {
+		return &LogMeta{
+			ID:     "id-1",
+			Source: "container",
+			Tags:   map[string]string{"dice_org_name": "erda"}}, nil
+	})
+	defer monkey.Unpatch((*provider).queryLogMetaWithFilters)
+
+	p := &provider{
+		Cfg: &config{},
+	}
+
+	_, err := p.Iterator(context.Background(), &storage.Selector{
+		Filters: []*storage.Filter{
+			{Key: "id", Value: "id-1"},
+			{Key: "source", Value: "container"},
+		},
+	})
+	assert.NilError(t, err)
 }
 
 func gzipContent(content string) []byte {
