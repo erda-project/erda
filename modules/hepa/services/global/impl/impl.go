@@ -279,7 +279,7 @@ func (impl *GatewayGlobalServiceImpl) GetClustersByOrg(orgId string) ([]string, 
 		return nil, nil
 	}
 	ctx := transport.WithHeader(context.Background(), metadata.New(map[string]string{httputil.InternalHeader: "hepa"}))
-	resp, err := impl.clusterSvc.ListCluster(ctx, &clusterpb.ListClusterRequest{OrgID: idNum})
+	resp, err := impl.clusterSvc.ListCluster(ctx, &clusterpb.ListClusterRequest{OrgID: uint32(idNum)})
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}

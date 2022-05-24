@@ -25,6 +25,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda/modules/messenger/eventbox/constant"
 	"github.com/erda-project/erda/modules/messenger/eventbox/monitor"
 	"github.com/erda-project/erda/modules/messenger/eventbox/subscriber"
 	"github.com/erda-project/erda/modules/messenger/eventbox/types"
@@ -79,9 +80,12 @@ func (s *HTTPSubscriber) Publish(dest string, content string, timestamp int64, m
 			if parsedUrl.Scheme == "https" {
 				opt = []httpclient.OpOption{httpclient.WithHTTPS()}
 			}
+
 			var respBody bytes.Buffer
 			resp, err := httpclient.New(opt...).Post(parsedUrl.Host).Path(parsedUrl.Path).
-				Header("Content-Type", "application/json").RawBody(buf).Do().Body(&respBody)
+				Header("Content-Type", "application/json").
+				Header("USER-ID", getUserIDFromMessage(msg)).
+				RawBody(buf).Do().Body(&respBody)
 			if err != nil {
 				errs <- errors.Wrapf(err, "url: %s", destUrl)
 				return
@@ -102,6 +106,18 @@ func (s *HTTPSubscriber) Publish(dest string, content string, timestamp int64, m
 		es = append(es, e)
 	}
 	return es
+}
+
+func getUserIDFromMessage(msg *types.Message) string {
+	if msg == nil {
+		return ""
+	}
+	if m, ok := msg.Labels[types.LabelKey(constant.WebhookLabelKey)].(map[string]interface{}); ok {
+		if v, ok := m["userID"].(string); ok {
+			return v
+		}
+	}
+	return ""
 }
 
 func (s *HTTPSubscriber) Status() interface{} {

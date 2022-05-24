@@ -153,7 +153,7 @@ type ClusterSchedConfig struct {
 	ClientKey    string `json:"clientKey"`
 	EnableTag    bool   `json:"enableTag"`
 	// TODO enableWorkspace should be refactor, now pipeline will set default true
-	EnableWorkspace          *bool  `json:"enableWorkspace,omitempty"`
+	EnableWorkspace          bool   `json:"enableWorkspace,omitempty"`
 	EdasConsoleAddr          string `json:"edasConsoleAddr"`
 	AccessKey                string `json:"accessKey"`
 	AccessSecret             string `json:"accessSecret"`

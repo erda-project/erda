@@ -74,15 +74,6 @@ generate:
 	cd "${BUILD_PATH}" && \
 	${GO_BUILD_ENV} go generate -v -x
 
-prepare:
-ifeq "$(SKIP_PREPARE)" ""
-	cd "${PROJ_PATH}" && \
-	${GO_BUILD_ENV} go generate ./apistructs && \
-	${GO_BUILD_ENV} go generate ./modules/openapi/api/generate && \
-	${GO_BUILD_ENV} go generate ./modules/openapi/component-protocol/generate
-	make prepare-cli
-endif
-
 submodule:
 	git submodule update --init
 
@@ -183,17 +174,32 @@ setup-cmd-conf:
 	PROJ_PATH = "$(PROJ_PATH)"
 	MODULE_PATH = "$(MODULE_PATH)"
 
-build-all: build-version submodule tidy
+build-all: build-version submodule prepare tidy
 	@set -eo pipefail; \
 	./build/scripts/build_all/build_all.sh; \
 	make cli
 
-build-one: build-version submodule tidy
+build-one: build-version submodule prepare tidy
 	@set -eo pipefail; \
 	./build/scripts/build_all/build_all.sh
 
-build-push-all: prepare
+build-push-all:
 	MAKE_BUILD_CMD=build-all ./build/scripts/docker_image.sh / build-push
 
-build-push-image: prepare
+build-push-image:
 	./build/scripts/docker_image.sh ${MODULE_PATH} build-push
+
+prepare:
+ifeq "$(SKIP_PREPARE)" ""
+	cd "${PROJ_PATH}" && \
+	${GO_BUILD_ENV} go generate ./apistructs && \
+	${GO_BUILD_ENV} go generate ./modules/openapi/api/generate && \
+	${GO_BUILD_ENV} go generate ./modules/openapi/component-protocol/generate
+	make prepare-cli
+endif
+
+proto-go-in-ci:
+	cd api/proto-go && make build-use-docker-image
+
+proto-go-in-local:
+	cd api/proto-go && make build

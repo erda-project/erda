@@ -35,8 +35,8 @@ func GetScheduleInfo(cluster apistructs.ClusterInfo, executorName, executorKind 
 	}
 	// TODO migrate enableWorkspace, cluster-manager should control this param
 	enableWorkspace := true
-	if cluster.SchedConfig != nil && cluster.SchedConfig.EnableWorkspace != nil {
-		enableWorkspace = *cluster.SchedConfig.EnableWorkspace
+	if cluster.SchedConfig != nil {
+		enableWorkspace = cluster.SchedConfig.EnableWorkspace
 	}
 	configs := executorconfig.ExecutorWholeConfigs{
 		BasicConfig: map[string]string{

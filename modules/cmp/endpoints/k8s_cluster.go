@@ -92,7 +92,7 @@ func (e *Endpoints) listClusters(ctx context.Context, scopeID uint64, clusterTyp
 	for _, typ := range clusterTypes {
 		r, err := e.ClusterSvc.ListCluster(ctx, &clusterpb.ListClusterRequest{
 			ClusterType: typ,
-			OrgID:       scopeID,
+			OrgID:       uint32(scopeID),
 		})
 		if err != nil {
 			return nil, errors.Errorf("failed to list %s clusters, %v", typ, err)

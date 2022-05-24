@@ -270,3 +270,25 @@ func (this *ProjectPipelineSource) Validate() error {
 	}
 	return nil
 }
+func (this *GittarPushPayloadEvent) Validate() error {
+	if this.Content != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Content); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("Content", err)
+		}
+	}
+	return nil
+}
+func (this *Content) Validate() error {
+	if this.Pusher != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Pusher); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("Pusher", err)
+		}
+	}
+	return nil
+}
+func (this *Pusher) Validate() error {
+	return nil
+}
+func (this *BatchCreateProjectPipelineResponse) Validate() error {
+	return nil
+}

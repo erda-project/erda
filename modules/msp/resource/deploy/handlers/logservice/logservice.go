@@ -34,6 +34,10 @@ func (p *provider) IsMatch(tmc *db.Tmc) bool {
 func (p *provider) CheckIfNeedTmcInstance(req *handlers.ResourceDeployRequest, resourceInfo *handlers.ResourceInfo) (*db.Instance, bool, error) {
 	tmcInstance, needDeploy, err := p.DefaultDeployHandler.CheckIfNeedTmcInstance(req, resourceInfo)
 
+	if p.Cfg.SkipInitDb {
+		return tmcInstance, needDeploy, err
+	}
+
 	orgId := req.Options["orgId"]
 	if len(orgId) == 0 {
 		return tmcInstance, needDeploy, err
@@ -68,6 +72,10 @@ func (p *provider) DoPostDeployJob(tmcInstance *db.Instance, serviceGroupDeployR
 	config := map[string]string{}
 	options := map[string]string{}
 	utils.JsonConvertObjToType(tmcInstance.Options, &options)
+
+	if p.Cfg.SkipInitDb {
+		return config, nil
+	}
 
 	// reuse if already assign service_instance
 	orgId := options["orgId"]
@@ -138,9 +146,11 @@ func (p *provider) DoApplyTmcInstanceTenant(req *handlers.ResourceDeployRequest,
 
 	// create if not exists
 	if instance == nil {
-		err = p.createIndex(options["orgId"], tmcInstance.Az, tenant.TenantGroup)
-		if err != nil {
-			return nil, err
+		if !p.Cfg.SkipInitDb {
+			err = p.createIndex(options["orgId"], tmcInstance.Az, tenant.TenantGroup)
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		instance = &db.LogInstance{

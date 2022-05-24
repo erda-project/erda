@@ -16,7 +16,6 @@ package cluster
 
 import (
 	"encoding/json"
-	"strconv"
 	"time"
 
 	"github.com/pkg/errors"
@@ -116,7 +115,7 @@ func (c *ClusterService) Create(req *pb.CreateClusterRequest) error {
 	}
 
 	cluster := &db.Cluster{
-		OrgID:           req.OrgID,
+		OrgID:           uint64(req.OrgID),
 		Name:            req.Name,
 		DisplayName:     req.DisplayName,
 		Description:     req.Description,
@@ -275,7 +274,7 @@ func (c *ClusterService) PatchWithEvent(req *pb.PatchClusterRequest) error {
 			TimeStamp: time.Now().Format("2006-01-02 15:04:05"),
 		},
 		Sender:  bundle.SenderClusterManager,
-		Content: c.convert(cluster),
+		Content: cCluster,
 	}
 
 	if err = c.bdl.CreateEvent(ev); err != nil {
@@ -326,7 +325,7 @@ func (c *ClusterService) DeleteByName(clusterName string) error {
 	return c.db.DeleteCluster(clusterName)
 }
 
-// Get gets cluster by name
+// Get gets *apistructs.ClusterInfo by name
 func (c *ClusterService) Get(idOrName string) (*pb.ClusterInfo, error) {
 	var cluster *db.Cluster
 	clusterID, err := strutil.Atoi64(idOrName)
@@ -341,7 +340,6 @@ func (c *ClusterService) Get(idOrName string) (*pb.ClusterInfo, error) {
 	if cluster == nil {
 		return nil, errors.Errorf("not found")
 	}
-	//logrus.Infof("get cluster from db :%v", cluster.ClusterInfo)
 	return c.convert(cluster), nil
 }
 
@@ -442,7 +440,7 @@ func (c *ClusterService) diffSysConfig(new, old *pb.SysConf) error {
 	return nil
 }
 
-// convert convert cluster model to ClusterInfo
+// convert cluster model to *pb.ClusterInfo
 func (c *ClusterService) convert(cluster *db.Cluster) *pb.ClusterInfo {
 	var (
 		schedulerConfig *pb.ClusterSchedConfig
@@ -456,55 +454,41 @@ func (c *ClusterService) convert(cluster *db.Cluster) *pb.ClusterInfo {
 
 	if cluster.SysConfig != "" {
 		if err := json.Unmarshal([]byte(cluster.SysConfig), &sysConfig); err != nil {
-			logrus.Warnf("failed to unmarshal, (%v)", err)
+			logrus.Warnf("failed to unmarshal sysConfig, (%v)", err)
 		}
 	}
 
 	if cluster.ManageConfig != "" {
 		if err := json.Unmarshal([]byte(cluster.ManageConfig), &manageConfig); err != nil {
-			logrus.Warnf("failed to unmarshal, (%v)", err)
+			logrus.Warnf("failed to unmarshal manageConfig, (%v)", err)
 		}
 	}
 
 	if cluster.SchedulerConfig != "" {
-		sc := make(map[string]interface{})
-		if err := json.Unmarshal([]byte(cluster.SchedulerConfig), &sc); err != nil {
+		if err := json.Unmarshal([]byte(cluster.SchedulerConfig), &schedulerConfig); err != nil {
 			logrus.Warnf("failed to unmarshal schedulerConfig, %v", err)
-		} else {
-			enableWorkspaceStr := ""
-			enableWorkspace, ok := sc["enableWorkspace"].(bool)
-			if ok {
-				enableWorkspaceStr = strconv.FormatBool(enableWorkspace)
-			}
-			sc["enableWorkspace"] = enableWorkspaceStr
-			data, err := json.Marshal(sc)
-			if err != nil {
-				logrus.Errorf("failed to marshal schedulerConfig, %v", err)
-			} else if err = json.Unmarshal(data, &schedulerConfig); err != nil {
-				logrus.Warnf("failed to unmarshal, (%v)", err)
-			}
 		}
 	}
 
 	if cluster.OpsConfig != "" {
 		if err := json.Unmarshal([]byte(cluster.OpsConfig), &opsConfig); err != nil {
-			logrus.Warnf("failed to unmarshal, (%v)", err)
+			logrus.Warnf("failed to unmarshal opsConfig, (%v)", err)
 		}
 	}
 	// TODO: Deprecated at 1.2, use for edas soldier 1.1 version
 	if cluster.URLs != "" {
 		if err := json.Unmarshal([]byte(cluster.URLs), &urls); err != nil {
-			logrus.Warnf("failed to unmarshal, (%v)", err)
+			logrus.Warnf("failed to unmarshal urls, (%v)", err)
 		}
 	}
 	if cluster.ClusterInfo != "" {
 		if err := json.Unmarshal([]byte(cluster.ClusterInfo), &cm); err != nil {
-			logrus.Warnf("failed to unmarshal, (%v)", err)
+			logrus.Warnf("failed to unmarshal clusterInfo, (%v)", err)
 		}
 	}
 
 	return &pb.ClusterInfo{
-		Id:             cluster.ID,
+		Id:             int32(cluster.ID),
 		Name:           cluster.Name,
 		DisplayName:    cluster.DisplayName,
 		Description:    cluster.Description,

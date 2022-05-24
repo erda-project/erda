@@ -130,11 +130,11 @@ erda.msp.apm.diagnotor:
 
 i18n:
   common:
-    - conf/common/i18n/common.yml
-    - conf/common/i18n/apis.yml
-    - conf/msp/i18n/msp-i18n.yaml
+    - common-conf/i18n/common.yml
+    - common-conf/i18n/apis.yml
+    - conf/i18n/msp-i18n.yaml
   files:
-    - conf/msp/i18n/cp
+    - conf/i18n/cp
 
 metric-report-client:
   report_config:
@@ -295,6 +295,7 @@ erda.msp.resource.deploy.handlers.loganalytics:
 erda.msp.resource.deploy.handlers.loges:
 erda.msp.resource.deploy.handlers.logexporter:
 erda.msp.resource.deploy.handlers.logservice:
+  skip_init_db: ${WRITE_LOG_TO_CLICKHOUSE_ENABLE:false}
 erda.msp.resource.deploy.handlers.monitor:
   ta_collect_url: "//${COLLECTOR_PUBLIC_ADDR:analytics.terminus.io}/collect"
   ta_static_url: "//${COLLECTOR_PUBLIC_ADDR:static.terminus.io}/ta.js"

@@ -20,9 +20,7 @@ import (
 	"log"
 	"net/url"
 	"os"
-	"path/filepath"
 	"strconv"
-	"strings"
 	"time"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -33,30 +31,17 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 
 	traceinject "github.com/erda-project/erda-infra/pkg/trace/inject"
+	"github.com/erda-project/erda/pkg/common/entrance"
 )
 
 func getServiceName() string {
-	for _, key := range []string{
-		"DICE_SERVICE_NAME",
-		"DICE_SERVICE",
-		"APP_NAME",
+	for _, name := range []string{
+		os.Getenv("DICE_COMPONENT"),
+		entrance.GetAppName(),
 	} {
-		name := os.Getenv(key)
 		if len(name) > 0 {
 			return name
 		}
-	}
-	name := filepath.Base(os.Args[0])
-	if name != "main" {
-		return name
-	}
-	name, _ = os.Hostname()
-	if len(name) > 0 {
-		idx := strings.IndexAny(name, ".-")
-		if idx > 0 {
-			return name[:idx]
-		}
-		return name
 	}
 	return "" // unknown
 }
@@ -198,7 +183,7 @@ func getEndpointOptions() ([]otlptracehttp.Option, error) {
 	return opts, nil
 }
 
-func init() {
+func Init() {
 	if !tracesEnabled {
 		log.Println("[INFO] Opentelemetry traces exporter disabled ")
 		return

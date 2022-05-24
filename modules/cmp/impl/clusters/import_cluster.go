@@ -83,8 +83,7 @@ func (c *Clusters) importCluster(ctx context.Context, userID string, req *apistr
 	// TODO: support tag switch, current force true
 	// e.g. modules/scheduler/impl/cluster/hook.go line:136
 	req.ScheduleConfig.EnableTag = true
-	enableWorkspace := true
-	req.ScheduleConfig.EnableWorkspace = &enableWorkspace
+	req.ScheduleConfig.EnableWorkspace = true
 
 	// create cluster request to cluster-manager and core-service
 	ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "cmp"}))
@@ -96,7 +95,7 @@ func (c *Clusters) importCluster(ctx context.Context, userID string, req *apistr
 		WildcardDomain:  req.WildcardDomain,
 		SchedulerConfig: convertSchedConfigToPbSchedConfig(&req.ScheduleConfig),
 		ManageConfig:    mc,
-		OrgID:           req.OrgID,
+		OrgID:           uint32(req.OrgID),
 		UserID:          userID,
 	}); err != nil {
 		return err
@@ -723,10 +722,6 @@ func convertSchedConfigToPbSchedConfig(in *apistructs.ClusterSchedConfig) *clust
 	if in == nil {
 		return nil
 	}
-	enableWorkspaceStr := ""
-	if in.EnableWorkspace != nil {
-		enableWorkspaceStr = strconv.FormatBool(*in.EnableWorkspace)
-	}
 	return &clusterpb.ClusterSchedConfig{
 		MasterURL:                in.MasterURL,
 		AuthType:                 in.AuthType,
@@ -736,7 +731,7 @@ func convertSchedConfigToPbSchedConfig(in *apistructs.ClusterSchedConfig) *clust
 		ClientCrt:                in.ClientCrt,
 		ClientKey:                in.ClientKey,
 		EnableTag:                in.EnableTag,
-		EnableWorkspace:          enableWorkspaceStr,
+		EnableWorkspace:          in.EnableWorkspace,
 		EdasConsoleAddr:          in.EdasConsoleAddr,
 		AccessKey:                in.AccessKey,
 		AccessSecret:             in.AccessSecret,
