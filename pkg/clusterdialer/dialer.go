@@ -34,7 +34,7 @@ import (
 
 var (
 	sessions = sync.Map{}
-	ipCache  = cache.New("clusterManagerEndpoint", time.Second*30, queryClusterManagerIP)
+	ipCache  = cache.New("clusterManagerEndpoint", time.Second*30, queryClusterManagerIP, cache.WithSync())
 )
 
 type DialContextFunc func(ctx context.Context, network, address string) (net.Conn, error)
