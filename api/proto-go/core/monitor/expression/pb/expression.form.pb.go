@@ -295,6 +295,8 @@ func (m *AlertNotify) UnmarshalURLValues(prefix string, values url.Values) error
 					return err
 				}
 				m.Enable = val
+			case "updated":
+				m.Updated = vals[0]
 			}
 		}
 	}
