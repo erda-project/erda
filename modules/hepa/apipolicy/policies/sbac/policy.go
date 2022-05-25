@@ -27,7 +27,7 @@ import (
 	"github.com/erda-project/erda/modules/hepa/kong"
 	kongDto "github.com/erda-project/erda/modules/hepa/kong/dto"
 	"github.com/erda-project/erda/modules/hepa/repository/orm"
-	db "github.com/erda-project/erda/modules/hepa/repository/service"
+	"github.com/erda-project/erda/modules/hepa/repository/service"
 )
 
 // Name "sbac" is ServerBasedAccessControl
@@ -81,13 +81,13 @@ func (p Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interface{})
 		return res, errors.Errorf("failed to get identify with %s: %+v", apipolicy.CTX_ZONE, ctx)
 	}
 
-	policyDB, _ := db.NewGatewayPolicyServiceImpl()
+	policyDB, _ := service.NewGatewayPolicyServiceImpl()
 	exist, err := policyDB.GetByAny(&orm.GatewayPolicy{ZoneId: zone.Id, PluginName: Name})
 	if err != nil {
 		return res, err
 	}
 
-	packageAPIDB, _ := db.NewGatewayPackageApiServiceImpl()
+	packageAPIDB, _ := service.NewGatewayPackageApiServiceImpl()
 	apis, err := packageAPIDB.SelectByAny(&orm.GatewayPackageApi{ZoneId: zone.Id})
 	if err != nil {
 		l.WithError(err).Warnf("failed to packageAPIDB.SelectByAny(&orm.GatewayPackageApi{ZoneId: %s})", zone.Id)
@@ -98,8 +98,8 @@ func (p Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interface{})
 	}
 
 	var routes = make(map[string]struct{})
-	apiDB, _ := db.NewGatewayApiServiceImpl()
-	routeDB, _ := db.NewGatewayRouteServiceImpl()
+	apiDB, _ := service.NewGatewayApiServiceImpl()
+	routeDB, _ := service.NewGatewayRouteServiceImpl()
 	for _, api := range apis {
 		switch route, err := routeDB.GetByApiId(api.Id); {
 		case err != nil:
