@@ -25,18 +25,10 @@ import (
 	"sync"
 
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/hepa/apipolicy"
-	_ "github.com/erda-project/erda/modules/hepa/apipolicy/policies/built-in"
-	_ "github.com/erda-project/erda/modules/hepa/apipolicy/policies/cors"
-	_ "github.com/erda-project/erda/modules/hepa/apipolicy/policies/csrf"
-	_ "github.com/erda-project/erda/modules/hepa/apipolicy/policies/custom"
-	_ "github.com/erda-project/erda/modules/hepa/apipolicy/policies/ip"
-	_ "github.com/erda-project/erda/modules/hepa/apipolicy/policies/proxy"
-	_ "github.com/erda-project/erda/modules/hepa/apipolicy/policies/server-guard"
-	_ "github.com/erda-project/erda/modules/hepa/apipolicy/policies/waf"
 	"github.com/erda-project/erda/modules/hepa/bundle"
 	"github.com/erda-project/erda/modules/hepa/common"
 	"github.com/erda-project/erda/modules/hepa/config"
@@ -44,7 +36,7 @@ import (
 	"github.com/erda-project/erda/modules/hepa/k8s"
 	"github.com/erda-project/erda/modules/hepa/kong"
 	"github.com/erda-project/erda/modules/hepa/repository/orm"
-	db "github.com/erda-project/erda/modules/hepa/repository/service"
+	"github.com/erda-project/erda/modules/hepa/repository/service"
 	"github.com/erda-project/erda/modules/hepa/services/api_policy"
 	"github.com/erda-project/erda/modules/hepa/services/domain"
 	"github.com/erda-project/erda/modules/hepa/services/endpoint_api"
@@ -77,17 +69,17 @@ func getAzMutex(tag string) *sync.Mutex {
 }
 
 type GatewayApiPolicyServiceImpl struct {
-	azDb            db.GatewayAzInfoService
-	kongDb          db.GatewayKongInfoService
-	ingressPolicyDb db.GatewayIngressPolicyService
-	kongPolicyDb    db.GatewayPolicyService
-	packageDb       db.GatewayPackageService
-	packageApiDb    db.GatewayPackageApiService
-	routeDB         db.GatewayRouteService
-	defaultPolicyDb db.GatewayDefaultPolicyService
+	azDb            service.GatewayAzInfoService
+	kongDb          service.GatewayKongInfoService
+	ingressPolicyDb service.GatewayIngressPolicyService
+	kongPolicyDb    service.GatewayPolicyService
+	packageDb       service.GatewayPackageService
+	packageApiDb    service.GatewayPackageApiService
+	routeDB         service.GatewayRouteService
+	defaultPolicyDb service.GatewayDefaultPolicyService
 	openapiRuleBiz  *openapi_rule.GatewayOpenapiRuleService
 	zoneBiz         *zone.GatewayZoneService
-	zoneDb          db.GatewayZoneService
+	zoneDb          service.GatewayZoneService
 	globalBiz       *global.GatewayGlobalService
 	engine          *orm.OrmEngine
 	domainBiz       *domain.GatewayDomainService
@@ -100,15 +92,15 @@ var once sync.Once
 func NewGatewayApiPolicyServiceImpl() error {
 	once.Do(
 		func() {
-			azDb, _ := db.NewGatewayAzInfoServiceImpl()
-			ingressPolicyDb, _ := db.NewGatewayIngressPolicyServiceImpl()
-			kongPolicyDb, _ := db.NewGatewayPolicyServiceImpl()
-			defaultPolicyDb, _ := db.NewGatewayDefaultPolicyServiceImpl()
-			kongDb, _ := db.NewGatewayKongInfoServiceImpl()
-			zoneDb, _ := db.NewGatewayZoneServiceImpl()
-			packageDb, _ := db.NewGatewayPackageServiceImpl()
-			packageApiDb, _ := db.NewGatewayPackageApiServiceImpl()
-			routeDB, _ := db.NewGatewayRouteServiceImpl()
+			azDb, _ := service.NewGatewayAzInfoServiceImpl()
+			ingressPolicyDb, _ := service.NewGatewayIngressPolicyServiceImpl()
+			kongPolicyDb, _ := service.NewGatewayPolicyServiceImpl()
+			defaultPolicyDb, _ := service.NewGatewayDefaultPolicyServiceImpl()
+			kongDb, _ := service.NewGatewayKongInfoServiceImpl()
+			zoneDb, _ := service.NewGatewayZoneServiceImpl()
+			packageDb, _ := service.NewGatewayPackageServiceImpl()
+			packageApiDb, _ := service.NewGatewayPackageApiServiceImpl()
+			routeDB, _ := service.NewGatewayRouteServiceImpl()
 			engine, _ := orm.GetSingleton()
 			api_policy.Service = &GatewayApiPolicyServiceImpl{
 				azDb:            azDb,
@@ -140,7 +132,7 @@ func (impl GatewayApiPolicyServiceImpl) Clone(ctx context.Context) api_policy.Ga
 func (impl GatewayApiPolicyServiceImpl) GetPolicyConfig(category, packageId, packageApiId string) (result interface{}, err error) {
 	defer func() {
 		if err != nil {
-			log.Errorf("error happened, err:%+v", err)
+			logrus.Errorf("error happened, err:%+v", err)
 		}
 	}()
 	if category == "" || packageId == "" {
@@ -209,12 +201,12 @@ func (impl GatewayApiPolicyServiceImpl) RefreshZoneIngress(zone orm.GatewayZone,
 		return err
 	}
 	if exist == nil {
-		log.Infof("zone not exist, maybe session rollback, id:%s", zone.Id)
+		logrus.Infof("zone not exist, maybe session rollback, id:%s", zone.Id)
 		return nil
 	}
 	var zoneRegions []string
-	zoneRegions = append(zoneRegions, db.ZONE_REGIONS...)
-	zoneRegions = append(zoneRegions, db.GLOBAL_REGIONS...)
+	zoneRegions = append(zoneRegions, service.ZONE_REGIONS...)
+	zoneRegions = append(zoneRegions, service.GLOBAL_REGIONS...)
 
 	changes, err := impl.ingressPolicyDb.GetChangesByRegions(az.Az, strings.Join(zoneRegions, "|"), zone.Id)
 	if err != nil {
@@ -243,7 +235,7 @@ func (impl GatewayApiPolicyServiceImpl) patchGlobalHttpSnippet(k8sAdapter k8s.K8
 	count, err := k8sAdapter.CountIngressController()
 	if err != nil {
 		count = 1
-		log.Errorf("get ingress controller count failed, err:%+v", err)
+		logrus.Errorf("get ingress controller count failed, err:%+v", err)
 	}
 	qps := int64(math.Ceil(float64(config.ServerConf.OfflineQps) / float64(count)))
 	limitReqZone := fmt.Sprintf(`limit_req_zone 1 zone=offline-limit:1m rate=%dr/s;
@@ -260,12 +252,12 @@ map $http_origin-$cors_use_referer $from_request_origin_or_referer {
 	return nil
 }
 
-func (impl GatewayApiPolicyServiceImpl) deployControllerChanges(k8sAdapter k8s.K8SAdapter, changes db.IngressChanges) error {
+func (impl GatewayApiPolicyServiceImpl) deployControllerChanges(k8sAdapter k8s.K8SAdapter, changes service.IngressChanges) error {
 	configmap := map[string]*string{}
 	for _, options := range changes.ConfigmapOptions {
 		for key, value := range options {
 			if old, exist := configmap[key]; exist {
-				log.Debugf("invalid changes:%+v", changes)
+				logrus.Debugf("invalid changes:%+v", changes)
 				return errors.Errorf("config map key duplicated, key:%s, value:%+v, new value:%+v",
 					key, old, value)
 			}
@@ -311,13 +303,13 @@ func (impl GatewayApiPolicyServiceImpl) deployControllerChanges(k8sAdapter k8s.K
 	return nil
 }
 
-func (impl GatewayApiPolicyServiceImpl) getAnnotationChanges(changes db.IngressChanges) (map[string]*string, *string, error) {
+func (impl GatewayApiPolicyServiceImpl) getAnnotationChanges(changes service.IngressChanges) (map[string]*string, *string, error) {
 	emptyStr := ""
 	annotation := map[string]*string{}
 	for _, anno := range changes.Annotations {
 		for key, value := range anno {
 			if old, exist := annotation[key]; exist {
-				log.Debugf("invalid changes:%+v", changes)
+				logrus.Debugf("invalid changes:%+v", changes)
 				return nil, nil, errors.Errorf("annotation key duplicated, key:%s, value:%+v, new value:%+v",
 					key, old, value)
 			}
@@ -337,7 +329,7 @@ func (impl GatewayApiPolicyServiceImpl) getAnnotationChanges(changes db.IngressC
 	return annotation, locationSnippet, nil
 }
 
-func (impl GatewayApiPolicyServiceImpl) deployAnnotationChanges(k8sAdapter k8s.K8SAdapter, zone orm.GatewayZone, changes db.IngressChanges, namespace string) error {
+func (impl GatewayApiPolicyServiceImpl) deployAnnotationChanges(k8sAdapter k8s.K8SAdapter, zone orm.GatewayZone, changes service.IngressChanges, namespace string) error {
 	annotation, locationSnippet, err := impl.getAnnotationChanges(changes)
 	if err != nil {
 		return err
@@ -358,8 +350,8 @@ func (impl GatewayApiPolicyServiceImpl) deployAnnotationChanges(k8sAdapter k8s.K
 	}
 	return nil
 }
-func (impl GatewayApiPolicyServiceImpl) deployIngressChanges(k8sAdapter k8s.K8SAdapter, namespace string, zone orm.GatewayZone, changes db.IngressChanges, annotationReset ...bool) error {
-	log.Debugf("deploy ingress zone:%+v, changes:%+v", zone, changes)
+func (impl GatewayApiPolicyServiceImpl) deployIngressChanges(k8sAdapter k8s.K8SAdapter, namespace string, zone orm.GatewayZone, changes service.IngressChanges, annotationReset ...bool) error {
+	logrus.Debugf("deploy ingress zone:%+v, changes:%+v", zone, changes)
 	var err error
 	if len(annotationReset) > 0 && annotationReset[0] {
 		err = impl.deployAnnotationChanges(k8sAdapter, zone, changes, namespace)
@@ -427,10 +419,10 @@ func (impl GatewayApiPolicyServiceImpl) setIngressPolicyDaoConfig(policyDao *orm
 	return nil
 }
 
-func (impl GatewayApiPolicyServiceImpl) executePolicyEngine(zone *orm.GatewayZone, category string, engine apipolicy.PolicyEngine, config []byte, dto apipolicy.PolicyDto, ctx map[string]interface{}, policyService db.GatewayIngressPolicyService, k8sAdapter k8s.K8SAdapter, helper *db.SessionHelper, needDeployTag ...bool) error {
-	var apiService db.GatewayPackageApiService
-	var packService db.GatewayPackageService
-	var kongService db.GatewayKongInfoService
+func (impl GatewayApiPolicyServiceImpl) executePolicyEngine(zone *orm.GatewayZone, category string, engine apipolicy.PolicyEngine, config []byte, dto apipolicy.PolicyDto, ctx map[string]interface{}, policyService service.GatewayIngressPolicyService, k8sAdapter k8s.K8SAdapter, helper *service.SessionHelper, needDeployTag ...bool) error {
+	var apiService service.GatewayPackageApiService
+	var packService service.GatewayPackageService
+	var kongService service.GatewayKongInfoService
 	var err error
 	if helper != nil {
 		apiService, err = impl.packageApiDb.NewSession(helper)
@@ -490,7 +482,7 @@ func (impl GatewayApiPolicyServiceImpl) executePolicyEngine(zone *orm.GatewayZon
 		}
 	}
 	if policyConfig.KongPolicyChange {
-		if zone.Type == db.ZONE_TYPE_PACKAGE_API {
+		if zone.Type == service.ZONE_TYPE_PACKAGE_API {
 			api, err := apiService.GetByAny(&orm.GatewayPackageApi{
 				ZoneId: zone.Id,
 			})
@@ -503,7 +495,7 @@ func (impl GatewayApiPolicyServiceImpl) executePolicyEngine(zone *orm.GatewayZon
 					return err
 				}
 			}
-		} else if zone.Type == db.ZONE_TYPE_UNITY {
+		} else if zone.Type == service.ZONE_TYPE_UNITY {
 			pack, err := packService.GetByAny(&orm.GatewayPackage{
 				ZoneId: zone.Id,
 			})
@@ -521,13 +513,13 @@ func (impl GatewayApiPolicyServiceImpl) executePolicyEngine(zone *orm.GatewayZon
 	return nil
 }
 
-func (impl GatewayApiPolicyServiceImpl) SetZonePolicyConfig(zone *orm.GatewayZone, category string, config []byte, helper *db.SessionHelper, needDeployTag ...bool) (apipolicy.PolicyDto, string, error) {
+func (impl GatewayApiPolicyServiceImpl) SetZonePolicyConfig(zone *orm.GatewayZone, category string, config []byte, helper *service.SessionHelper, needDeployTag ...bool) (apipolicy.PolicyDto, string, error) {
 	needDeployIngress := true
 	if len(needDeployTag) > 0 {
 		needDeployIngress = needDeployTag[0]
 	}
-	var policyService db.GatewayIngressPolicyService
-	var kongService db.GatewayKongInfoService
+	var policyService service.GatewayIngressPolicyService
+	var kongService service.GatewayKongInfoService
 	var err error
 	if helper != nil {
 		policyService, err = impl.ingressPolicyDb.NewSession(helper)
@@ -595,16 +587,16 @@ func (impl GatewayApiPolicyServiceImpl) SetZonePolicyConfig(zone *orm.GatewayZon
 	return dto, "", nil
 }
 
-func (impl GatewayApiPolicyServiceImpl) SetZoneDefaultPolicyConfig(packageId string, zone *orm.GatewayZone, az *orm.GatewayAzInfo, helper ...*db.SessionHelper) (map[string]*string, *string, *db.SessionHelper, error) {
+func (impl GatewayApiPolicyServiceImpl) SetZoneDefaultPolicyConfig(packageId string, zone *orm.GatewayZone, az *orm.GatewayAzInfo, helper ...*service.SessionHelper) (map[string]*string, *string, *service.SessionHelper, error) {
 	mutex := getAzMutex(az.Az)
 	mutex.Lock()
 	defer mutex.Unlock()
-	var session *db.SessionHelper
+	var session *service.SessionHelper
 	var err error
 	if len(helper) > 0 {
 		session = helper[0]
 	} else {
-		session, err = db.NewSessionHelper()
+		session, err = service.NewSessionHelper()
 		if err != nil {
 			return nil, nil, nil, err
 		}
@@ -632,11 +624,11 @@ func (impl GatewayApiPolicyServiceImpl) SetZoneDefaultPolicyConfig(packageId str
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	controllerChange, err := policyService.GetChangesByRegions(az.Az, strings.Join(db.GLOBAL_REGIONS, "|"))
+	controllerChange, err := policyService.GetChangesByRegions(az.Az, strings.Join(service.GLOBAL_REGIONS, "|"))
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	zoneChange, err := policyService.GetChangesByRegions(az.Az, strings.Join(db.ZONE_REGIONS, "|"), zone.Id)
+	zoneChange, err := policyService.GetChangesByRegions(az.Az, strings.Join(service.ZONE_REGIONS, "|"), zone.Id)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -657,20 +649,20 @@ func (impl GatewayApiPolicyServiceImpl) SetZoneDefaultPolicyConfig(packageId str
 
 func doRecover() {
 	if r := recover(); r != nil {
-		log.Errorf("recovered from: %+v ", r)
+		logrus.Errorf("recovered from: %+v ", r)
 		debug.PrintStack()
 	}
 }
 
-func (impl GatewayApiPolicyServiceImpl) SetPackageDefaultPolicyConfig(category, packageId string, az *orm.GatewayAzInfo, config []byte, helperOption ...*db.SessionHelper) (string, error) {
+func (impl GatewayApiPolicyServiceImpl) SetPackageDefaultPolicyConfig(category, packageId string, az *orm.GatewayAzInfo, config []byte, helperOption ...*service.SessionHelper) (string, error) {
 	mutex := getAzMutex(az.Az)
 	mutex.Lock()
 	defer mutex.Unlock()
 	var err error
 	transSucc := false
-	var helper *db.SessionHelper
+	var helper *service.SessionHelper
 	if len(helperOption) == 0 {
-		helper, err = db.NewSessionHelper()
+		helper, err = service.NewSessionHelper()
 		if err != nil {
 			return "", err
 		}
@@ -696,13 +688,13 @@ func (impl GatewayApiPolicyServiceImpl) SetPackageDefaultPolicyConfig(category, 
 					defer doRecover()
 					err = impl.RefreshZoneIngress(z, *az)
 					if err != nil {
-						log.Errorf("refresh zone ingress failed, %+v", err)
+						logrus.Errorf("refresh zone ingress failed, %+v", err)
 					}
 					wg.Done()
 				}(zone)
 			}
 			wg.Wait()
-			log.Info("zone ingress rollback done")
+			logrus.Info("zone ingress rollback done")
 		}
 	}()
 	packageDb, err := impl.packageDb.NewSession(helper)
@@ -773,13 +765,13 @@ func (impl GatewayApiPolicyServiceImpl) SetPackageDefaultPolicyConfig(category, 
 			}
 		}
 	}
-	controllerChanges, err := policyService.GetChangesByRegions(az.Az, strings.Join(db.GLOBAL_REGIONS, "|"))
+	controllerChanges, err := policyService.GetChangesByRegions(az.Az, strings.Join(service.GLOBAL_REGIONS, "|"))
 	if err != nil {
 		return "", err
 	}
-	var zoneChanges []db.IngressChanges
+	var zoneChanges []service.IngressChanges
 	for _, zone := range zones {
-		zoneChange, err := policyService.GetChangesByRegions(az.Az, strings.Join(db.ZONE_REGIONS, "|"), zone.Id)
+		zoneChange, err := policyService.GetChangesByRegions(az.Az, strings.Join(service.ZONE_REGIONS, "|"), zone.Id)
 		if err != nil {
 			return "", err
 		}
@@ -855,7 +847,7 @@ func (impl GatewayApiPolicyServiceImpl) SetPolicyConfig(category, packageId, pac
 	var pack *orm.GatewayPackage
 	defer func() {
 		if rerr != nil {
-			log.Errorf("error happened, err:%+v", rerr)
+			logrus.Errorf("error happened, err:%+v", rerr)
 		}
 		if pack == nil {
 			return
@@ -886,7 +878,7 @@ func (impl GatewayApiPolicyServiceImpl) SetPolicyConfig(category, packageId, pac
 		if audit != nil {
 			err = bundle.Bundle.CreateAuditEvent(&apistructs.AuditCreateRequest{Audit: *audit})
 			if err != nil {
-				log.Errorf("create audit failed, err:%+v", err)
+				logrus.Errorf("create audit failed, err:%+v", err)
 			}
 		}
 	}()
@@ -910,7 +902,7 @@ func (impl GatewayApiPolicyServiceImpl) SetPolicyConfig(category, packageId, pac
 		var msg string
 		msg, rerr = impl.SetPackageDefaultPolicyConfig(category, packageId, az, config)
 		if rerr != nil {
-			log.Errorf("set default policy config failed, err:%+v", rerr)
+			logrus.Errorf("set default policy config failed, err:%+v", rerr)
 			if msg != "" {
 				rerr = errors.Errorf("update config failed: %s", msg)
 			}
@@ -958,7 +950,7 @@ func (impl GatewayApiPolicyServiceImpl) SetPolicyConfig(category, packageId, pac
 			return
 		}
 	}
-	helper, rerr := db.NewSessionHelper()
+	helper, rerr := service.NewSessionHelper()
 	if rerr != nil {
 		return
 	}
@@ -970,15 +962,15 @@ func (impl GatewayApiPolicyServiceImpl) SetPolicyConfig(category, packageId, pac
 			_ = helper.Rollback()
 			err := impl.RefreshZoneIngress(*zone, *az)
 			if err != nil {
-				log.Errorf("refresh zone ingress failed, %+v", err)
+				logrus.Errorf("refresh zone ingress failed, %+v", err)
 			}
-			log.Info("zone ingress rollback done")
+			logrus.Info("zone ingress rollback done")
 		}
 		helper.Close()
 	}()
 	dto, msg, rerr := impl.SetZonePolicyConfig(zone, category, config, helper)
 	if rerr != nil {
-		log.Errorf("set zone policy config failed, err:%+v", rerr)
+		logrus.Errorf("set zone policy config failed, err:%+v", rerr)
 		if msg != "" {
 			rerr = errors.Errorf("update config failed: %s", msg)
 		}
