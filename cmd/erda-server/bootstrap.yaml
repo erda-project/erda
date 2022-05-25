@@ -26,6 +26,10 @@ component-protocol:
 
 i18n@personal-workbench:
 
+i18n:
+  files:
+    - conf/i18n/gallery.yaml
+
 grpc-client@erda.core.clustermanager.cluster:
   addr: "${CLUSTER_MANAGER_GRPC_ADDR:cluster-manager:9095}"
 erda.core.clustermanager.cluster-client: {}
