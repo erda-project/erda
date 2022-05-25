@@ -15,6 +15,7 @@
 package handler_test
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -22,9 +23,12 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"google.golang.org/grpc/metadata"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 
+	"github.com/erda-project/erda-infra/pkg/transport"
+	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-infra/providers/mysql/v2/plugins/fields"
 	"github.com/erda-project/erda-proto-go/apps/gallery/pb"
 	"github.com/erda-project/erda/modules/apps/gallery/handler"
@@ -172,6 +176,18 @@ func TestPrepareListVersionsInOpusesIDsOption(t *testing.T) {
 	t.Log(db.Statement.Vars)
 }
 
+type MockTran struct {
+	i18n.Translator
+}
+
+func (m *MockTran) Text(lang i18n.LanguageCodes, key string) string {
+	return ""
+}
+
+func (m *MockTran) Sprintf(lang i18n.LanguageCodes, key string, args ...interface{}) string {
+	return ""
+}
+
 func TestComposeListOpusResp(t *testing.T) {
 	var (
 		total   int64 = 1
@@ -188,7 +204,9 @@ func TestComposeListOpusResp(t *testing.T) {
 	opus.LatestVersionID = uuid.New().String()
 	opus.CreatedAt = timeNow
 	opus.UpdatedAt = timeNow
-	resp := handler.ComposeListOpusResp("en-us", total, []*model.Opus{&opus})
+	resp := handler.ComposeListOpusResp(transport.WithHeader(context.Background(), metadata.New(map[string]string{
+		"lang": "en-us",
+	})), total, []*model.Opus{&opus}, &MockTran{})
 	t.Logf("%v", resp)
 }
 
