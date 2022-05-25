@@ -24,6 +24,13 @@ stages:
             uri: https://erda.cloud/erda/dop/erda-project/erda-addons-mirror
             branch: master
   - stage:
+      - custom-script:
+          alias: erda
+          image: registry.erda.cloud/erda/gohub:latest
+          commands:
+            - cp -a ${{ dirs.raw-erda }}/. .
+            - make proto-go-in-local
+  - stage:
       - extract-repo-version:
           params:
             git_dir: ${{ dirs.erda }}
