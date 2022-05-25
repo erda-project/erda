@@ -181,6 +181,8 @@ func (m *ListOpusRespDataItem) UnmarshalURLValues(prefix string, values url.Valu
 				m.Summary = vals[0]
 			case "catalog":
 				m.Catalog = vals[0]
+			case "catalogName":
+				m.CatalogName = vals[0]
 			case "logoURL":
 				m.LogoURL = vals[0]
 			}

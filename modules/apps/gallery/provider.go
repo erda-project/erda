@@ -22,6 +22,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
+	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/apps/gallery/pb"
 	"github.com/erda-project/erda/modules/apps/gallery/cache"
 	"github.com/erda-project/erda/modules/apps/gallery/dao"
@@ -58,8 +59,9 @@ type provider struct {
 	R transport.Register `autowired:"service-register" required:"true"`
 
 	// providers clients
-	C *cache.Cache `autowired:"erda.apps.gallery.easy-memory-cache-client"`
-	D *gorm.DB     `autowired:"mysql-gorm.v2-client"`
+	C    *cache.Cache    `autowired:"erda.apps.gallery.easy-memory-cache-client"`
+	D    *gorm.DB        `autowired:"mysql-gorm.v2-client"`
+	Tran i18n.Translator `translator:"gallery"`
 
 	Cfg *config
 
@@ -76,7 +78,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	dao.Init(p.D)
 	if p.R != nil {
 		p.l.Infoln("register GalleryServer")
-		h := &handler.GalleryHandler{C: p.C, L: p.l.WithField("handler", "GalleryHandler")}
+		h := &handler.GalleryHandler{C: p.C, L: p.l.WithField("handler", "GalleryHandler"), Tran: p.Tran}
 		pb.RegisterGalleryImp(p.R, h, apis.Options())
 	}
 

@@ -23,6 +23,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/apps/gallery/pb"
 	commonPb "github.com/erda-project/erda-proto-go/common/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -35,12 +36,13 @@ import (
 )
 
 type GalleryHandler struct {
-	C *cache.Cache
-	L *logrus.Entry
+	C    *cache.Cache
+	L    *logrus.Entry
+	Tran i18n.Translator
 }
 
-func (p *GalleryHandler) ListOpusTypes(_ context.Context, _ *commonPb.VoidRequest) (*pb.ListOpusTypesRespData, error) {
-	return ListOpusTypes(), nil
+func (p *GalleryHandler) ListOpusTypes(ctx context.Context, _ *commonPb.VoidRequest) (*pb.ListOpusTypesRespData, error) {
+	return ListOpusTypes(ctx, p.Tran), nil
 }
 
 func (p *GalleryHandler) ListOpus(ctx context.Context, req *pb.ListOpusReq) (*pb.ListOpusResp, error) {
@@ -65,7 +67,7 @@ func (p *GalleryHandler) ListOpus(ctx context.Context, req *pb.ListOpusReq) (*pb
 		return new(pb.ListOpusResp), nil
 	}
 
-	return ComposeListOpusResp(AdjustLang(apis.GetLang(ctx)), total, opuses), nil
+	return ComposeListOpusResp(ctx, total, opuses, p.Tran), nil
 }
 
 func (p *GalleryHandler) ListOpusVersions(ctx context.Context, req *pb.ListOpusVersionsReq) (*pb.ListOpusVersionsResp, error) {

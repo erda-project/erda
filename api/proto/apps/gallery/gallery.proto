@@ -90,7 +90,8 @@ message ListOpusRespDataItem {
   string displayName = 13;
   string summary = 14;
   string catalog = 16;
-  string logoURL = 17;
+  string catalogName = 17;
+  string logoURL = 18;
 }
 
 // +SKIP_GO-FORM
