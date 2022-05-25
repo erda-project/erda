@@ -59,6 +59,7 @@ type ProjectPipelineListResult struct {
 
 type ProjectPipelineUsedRefList struct {
 	ProjectID uint64 `json:"projectID"`
+	AppID     uint64 `json:"appID"`
 
 	IdentityInfo apistructs.IdentityInfo
 }

@@ -24,6 +24,8 @@ import (
 type InParams struct {
 	ProjectID    string `json:"projectId,omitempty"`
 	ProjectIDInt uint64
+	AppID        string `json:"appId,omitempty"`
+	AppIDInt     uint64
 	OrgIDInt     uint64
 }
 
@@ -46,5 +48,12 @@ func (p *CustomFilter) DecodeToCustomInParams(stdInParamsPtr *cptype.ExtraMap, c
 			panic(err)
 		}
 		p.InParams.ProjectIDInt = value
+	}
+	if p.InParams.AppID != "" {
+		value, err := strconv.ParseUint(p.InParams.AppID, 10, 64)
+		if err != nil {
+			panic(err)
+		}
+		p.InParams.AppIDInt = value
 	}
 }
