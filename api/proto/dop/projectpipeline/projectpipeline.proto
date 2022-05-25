@@ -287,6 +287,7 @@ message ProjectPipeline {
 
 message ListPipelineCategoryRequest {
     uint64 projectID = 1 [(validator.field) = {int_gt: 0}];
+    uint64 appID = 2;
 }
 
 message ListPipelineCategoryResponse {

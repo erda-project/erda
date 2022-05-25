@@ -206,6 +206,7 @@ message PipelineDefinitionListResponse {
 
 message PipelineDefinitionUsedRefListRequest {
   string location = 1 [(validator.field) = {string_not_empty: true}];
+  repeated string remotes = 2;
 }
 
 message PipelineDefinitionUsedRefListResponse {

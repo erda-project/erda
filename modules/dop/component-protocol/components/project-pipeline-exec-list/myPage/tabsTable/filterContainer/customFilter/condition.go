@@ -92,21 +92,35 @@ func (p *CustomFilter) MemberCondition() (*model.SelectCondition, error) {
 }
 
 func (p *CustomFilter) AppCondition() (*model.SelectCondition, error) {
+	if p.InParams.AppIDInt != 0 {
+		return p.AppConditionWithInParamsAppID()
+	}
+	return p.AppConditionWithNoInParamsAppID()
+}
+
+func (p *CustomFilter) AppConditionWithNoInParamsAppID() (*model.SelectCondition, error) {
 	apps, err := p.bdl.GetMyAppsByProject(p.sdk.Identity.UserID, p.InParams.OrgIDInt, p.InParams.ProjectIDInt, "")
 	if err != nil {
 		return nil, err
 	}
-	condition := model.NewSelectCondition("appList", cputil.I18n(p.sdk.Ctx, "application"), func() []model.SelectOption {
+	cond := model.NewSelectCondition("appList", cputil.I18n(p.sdk.Ctx, "application"), func() []model.SelectOption {
 		selectOptions := make([]model.SelectOption, 0, len(apps.List))
 		for _, v := range apps.List {
-			selectOptions = append(selectOptions, *model.NewSelectOption(func() string {
-				return v.Name
-			}(),
-				v.ID,
-			))
+			selectOptions = append(selectOptions, *model.NewSelectOption(v.Name, v.ID))
 		}
 		return selectOptions
 	}())
-	condition.ConditionBase.Placeholder = cputil.I18n(p.sdk.Ctx, "please-choose-application")
-	return condition, nil
+	cond.ConditionBase.Placeholder = cputil.I18n(p.sdk.Ctx, "please-choose-application")
+	return cond, nil
+}
+
+func (p *CustomFilter) AppConditionWithInParamsAppID() (*model.SelectCondition, error) {
+	app, err := p.bdl.GetApp(p.InParams.AppIDInt)
+	if err != nil {
+		return nil, err
+	}
+	cond := model.NewSelectCondition("appList", cputil.I18n(p.sdk.Ctx, "application"), []model.SelectOption{*model.NewSelectOption(app.Name, app.ID)})
+	cond.ConditionBase.Disabled = true
+	cond.ConditionBase.Placeholder = cputil.I18n(p.sdk.Ctx, "please-choose-application")
+	return cond, nil
 }

@@ -100,6 +100,8 @@ func (p *CustomFilter) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 
 		if p.URLQuery != nil {
 			p.State.FrontendConditionValues = *p.URLQuery
+		} else {
+			p.setDefaultValues()
 		}
 
 		p.gsHelper.SetStatuesFilter(p.State.FrontendConditionValues.Status)
@@ -156,5 +158,11 @@ func (p *CustomFilter) RegisterFilterItemDeleteOp(opData filter.OpFilterItemDele
 	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		fmt.Println("op come", opData.ClientData.DataRef)
 		return nil
+	}
+}
+
+func (p *CustomFilter) setDefaultValues() {
+	if p.InParams.AppIDInt != 0 {
+		p.State.FrontendConditionValues.AppList = []uint64{p.InParams.AppIDInt}
 	}
 }
