@@ -1,4 +1,8 @@
 zh:
+  erda/extension/addon: Addon
+  erda/extension/action: Action
+  erda/artifacts/project: 项目制品
+
   # addons
   database: 存储
   distributed_cooperation: 分布式协作
@@ -27,6 +31,10 @@ zh:
   custom_task: 自定义任务
 
 en:
+  erda/extension/addon: Addon
+  erda/extension/action: Action
+  erda/artifacts/project: Project Artifacts
+
   # addons
   database: Database
   distributed_cooperation: Distributed Cooperation

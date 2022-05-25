@@ -42,11 +42,6 @@ var (
 		OpusTypeExtensionAddon:   "Addon",
 		OpusTypeArtifactsProject: "Erda Artifacts",
 	}
-	OpusTypeDisplayNames = map[OpusType]string{
-		OpusTypeExtensionAction:  "Action",
-		OpusTypeExtensionAddon:   "Addon",
-		OpusTypeArtifactsProject: "Erda Artifacts",
-	}
 
 	LangTypes = map[Lang]string{
 		LangUnknown: "unknown",

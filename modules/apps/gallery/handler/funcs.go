@@ -32,13 +32,14 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-func ListOpusTypes() *pb.ListOpusTypesRespData {
+func ListOpusTypes(ctx context.Context, tran i18n.Translator) *pb.ListOpusTypesRespData {
 	var data pb.ListOpusTypesRespData
+	langCodes := apis.Language(ctx)
 	for type_, name := range types.OpusTypeNames {
 		data.List = append(data.List, &pb.OpusType{
 			Type:        type_.String(),
 			Name:        name,
-			DisplayName: types.OpusTypeDisplayNames[type_],
+			DisplayName: tran.Text(langCodes, type_.String()),
 		})
 	}
 	sort.Slice(data.List, func(i, j int) bool {

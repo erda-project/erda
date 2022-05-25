@@ -41,8 +41,8 @@ type GalleryHandler struct {
 	Tran i18n.Translator
 }
 
-func (p *GalleryHandler) ListOpusTypes(_ context.Context, _ *commonPb.VoidRequest) (*pb.ListOpusTypesRespData, error) {
-	return ListOpusTypes(), nil
+func (p *GalleryHandler) ListOpusTypes(ctx context.Context, _ *commonPb.VoidRequest) (*pb.ListOpusTypesRespData, error) {
+	return ListOpusTypes(ctx, p.Tran), nil
 }
 
 func (p *GalleryHandler) ListOpus(ctx context.Context, req *pb.ListOpusReq) (*pb.ListOpusResp, error) {

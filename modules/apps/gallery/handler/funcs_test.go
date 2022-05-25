@@ -37,7 +37,9 @@ import (
 )
 
 func TestListOpusTypes(t *testing.T) {
-	types := handler.ListOpusTypes()
+	types := handler.ListOpusTypes(transport.WithHeader(context.Background(), metadata.New(map[string]string{
+		"lang": "en-us",
+	})), &MockTran{})
 	data, _ := json.MarshalIndent(types, "", "  ")
 	t.Log(string(data))
 }
