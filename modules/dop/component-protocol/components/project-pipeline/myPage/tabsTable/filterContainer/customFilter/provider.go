@@ -40,6 +40,7 @@ type CustomFilter struct {
 	sdk      *cptype.SDK
 	State    State     `json:"state"`
 	InParams *InParams `json:"-"`
+	AppName  string    `json:"-"`
 
 	ProjectPipelineSvc projectpipeline.Service `autowired:"erda.dop.projectpipeline.ProjectPipelineService"`
 
@@ -171,6 +172,13 @@ func (p *CustomFilter) RegisterFilterItemDeleteOp(opData filter.OpFilterItemDele
 }
 
 func (p *CustomFilter) setDefaultValues() {
-	p.State.FrontendConditionValues.App = []string{common.Participated}
+	p.State.FrontendConditionValues.App = p.MakeDefaultAppSelect()
 	p.State.FrontendConditionValues.Branch = common.DefaultBranch
+}
+
+func (p *CustomFilter) MakeDefaultAppSelect() []string {
+	if p.AppName == "" {
+		return []string{common.Participated}
+	}
+	return []string{p.AppName}
 }

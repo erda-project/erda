@@ -122,6 +122,13 @@ func (p *CustomFilter) MemberCondition() (MemberCondition, error) {
 }
 
 func (p *CustomFilter) AppCondition() (*model.SelectCondition, error) {
+	if p.InParams.AppID != 0 {
+		return p.AppConditionWithInParamsAppID()
+	}
+	return p.AppConditionWithNoInParamsAppID()
+}
+
+func (p *CustomFilter) AppConditionWithNoInParamsAppID() (*model.SelectCondition, error) {
 	var (
 		allAppNames []string
 		myAppNames  []string
@@ -158,7 +165,7 @@ func (p *CustomFilter) AppCondition() (*model.SelectCondition, error) {
 	}
 	p.gsHelper.SetGlobalMyAppNames(myAppNames)
 
-	condition := model.NewSelectCondition("app", cputil.I18n(p.sdk.Ctx, "application"), func() []model.SelectOption {
+	cond := model.NewSelectCondition("app", cputil.I18n(p.sdk.Ctx, "application"), func() []model.SelectOption {
 		selectOptions := make([]model.SelectOption, 0, len(allAppNames)+1)
 		selectOptions = append(selectOptions, *model.NewSelectOption(cputil.I18n(p.sdk.Ctx, "participated"), common.Participated))
 		for _, v := range allAppNames {
@@ -166,15 +173,28 @@ func (p *CustomFilter) AppCondition() (*model.SelectCondition, error) {
 		}
 		return selectOptions
 	}())
-	condition.ConditionBase.Disabled = p.InParams.AppID != 0
-	condition.ConditionBase.Placeholder = cputil.I18n(p.sdk.Ctx, "please-choose-application")
-	return condition, nil
+	cond.ConditionBase.Disabled = false
+	cond.ConditionBase.Placeholder = cputil.I18n(p.sdk.Ctx, "please-choose-application")
+	return cond, nil
+}
+
+func (p *CustomFilter) AppConditionWithInParamsAppID() (*model.SelectCondition, error) {
+	app, err := p.bdl.GetApp(p.InParams.AppID)
+	if err != nil {
+		return nil, err
+	}
+	p.AppName = app.Name
+	cond := model.NewSelectCondition("app", cputil.I18n(p.sdk.Ctx, "application"), []model.SelectOption{*model.NewSelectOption(app.Name, app.Name)})
+	cond.ConditionBase.Disabled = true
+	cond.ConditionBase.Placeholder = cputil.I18n(p.sdk.Ctx, "please-choose-application")
+	return cond, nil
 }
 
 func (p *CustomFilter) BranchCondition() (*model.SelectCondition, error) {
 	branches, err := p.ProjectPipelineSvc.ListUsedRefs(p.sdk.Ctx, deftype.ProjectPipelineUsedRefList{
 		ProjectID:    p.InParams.ProjectID,
 		IdentityInfo: apistructs.IdentityInfo{UserID: p.sdk.Identity.UserID},
+		AppID:        p.InParams.AppID,
 	})
 	if err != nil {
 		return nil, err
@@ -186,7 +206,7 @@ func (p *CustomFilter) BranchCondition() (*model.SelectCondition, error) {
 		}
 		return selectOptions
 	}())
-	cond.ConditionBase.Disabled = p.InParams.AppID != 0
+	cond.ConditionBase.Disabled = false
 	cond.ConditionBase.Placeholder = cputil.I18n(p.sdk.Ctx, "please-choose-branch")
 	return cond, nil
 }

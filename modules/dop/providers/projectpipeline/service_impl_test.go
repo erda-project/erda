@@ -16,6 +16,7 @@ package projectpipeline
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"sort"
 	"testing"
@@ -722,6 +723,91 @@ func TestProjectPipelineService_BatchCreateByGittarPushHook(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("BatchCreateByGittarPushHook() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestProjectPipelineService_GetRemotesByAppID(t *testing.T) {
+	var bdl *bundle.Bundle
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetApp", func(bdl *bundle.Bundle, id uint64) (*apistructs.ApplicationDTO, error) {
+		if id == 1 {
+			return &apistructs.ApplicationDTO{
+				ID:   1,
+				Name: "erda-ui",
+			}, nil
+		}
+		return nil, fmt.Errorf("the app is not found")
+	})
+
+	type fields struct {
+		bundle *bundle.Bundle
+	}
+	type args struct {
+		appID       uint64
+		orgName     string
+		projectName string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    []string
+		wantErr bool
+	}{
+		{
+			name: "test with nil",
+			fields: fields{
+				bundle: bdl,
+			},
+			args: args{
+				appID:       0,
+				orgName:     "terminus",
+				projectName: "erda",
+			},
+			want:    nil,
+			wantErr: false,
+		},
+		{
+			name: "test with err",
+			fields: fields{
+				bundle: bdl,
+			},
+			args: args{
+				appID:       2,
+				orgName:     "terminus",
+				projectName: "erda",
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "test with correct",
+			fields: fields{
+				bundle: bdl,
+			},
+			args: args{
+				appID:       1,
+				orgName:     "terminus",
+				projectName: "erda",
+			},
+			want:    []string{"terminus/erda/erda-ui"},
+			wantErr: false,
+		},
+	}
+	defer monkey.UnpatchAll()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &ProjectPipelineService{
+				bundle: tt.fields.bundle,
+			}
+			got, err := p.GetRemotesByAppID(tt.args.appID, tt.args.orgName, tt.args.projectName)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetRemotesByAppID() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GetRemotesByAppID() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

@@ -1602,10 +1602,15 @@ func (p *ProjectPipelineService) ListUsedRefs(ctx context.Context, params deftyp
 		return nil, apierrors.ErrListProjectPipelineRef.InternalError(err)
 	}
 
+	remotes, err := p.GetRemotesByAppID(params.AppID, org.Name, project.Name)
+	if err != nil {
+		return nil, apierrors.ErrListProjectPipelineRef.InternalError(err)
+	}
+
 	resp, err := p.PipelineDefinition.ListUsedRefs(ctx, &dpb.PipelineDefinitionUsedRefListRequest{Location: apistructs.MakeLocation(&apistructs.ApplicationDTO{
 		OrgName:     org.Name,
 		ProjectName: project.Name,
-	}, apistructs.PipelineTypeCICD)})
+	}, apistructs.PipelineTypeCICD), Remotes: remotes})
 	if err != nil {
 		return nil, apierrors.ErrListProjectPipelineRef.InternalError(err)
 	}
@@ -1659,6 +1664,19 @@ func (p *ProjectPipelineService) ListPipelineCategory(ctx context.Context, param
 	if err := params.Validate(); err != nil {
 		return nil, apierrors.ErrListProjectPipelineCategory.InvalidParameter(err)
 	}
+
+	// Check project permission
+	req := apistructs.PermissionCheckRequest{
+		UserID:   apis.GetUserID(ctx),
+		Scope:    apistructs.ProjectScope,
+		ScopeID:  params.ProjectID,
+		Resource: apistructs.ProjectResource,
+		Action:   apistructs.GetAction,
+	}
+	if access, err := p.bundle.CheckPermission(&req); err != nil || !access.Access {
+		return nil, apierrors.ErrListProjectPipelineCategory.AccessDenied()
+	}
+
 	project, err := p.bundle.GetProject(params.ProjectID)
 	if err != nil {
 		return nil, apierrors.ErrListProjectPipelineCategory.InternalError(err)
@@ -1669,11 +1687,17 @@ func (p *ProjectPipelineService) ListPipelineCategory(ctx context.Context, param
 		return nil, apierrors.ErrListProjectPipelineCategory.InternalError(err)
 	}
 
+	remotes, err := p.GetRemotesByAppID(params.AppID, org.Name, project.Name)
+	if err != nil {
+		return nil, apierrors.ErrListProjectPipelineCategory.InternalError(err)
+	}
+
 	staticsResp, err := p.PipelineDefinition.StatisticsGroupByFilePath(ctx, &dpb.PipelineDefinitionStatisticsRequest{
 		Location: apistructs.MakeLocation(&apistructs.ApplicationDTO{
 			OrgName:     org.Name,
 			ProjectName: project.Name,
 		}, apistructs.PipelineTypeCICD),
+		Remotes: remotes,
 	})
 	if err != nil {
 		return nil, apierrors.ErrListProjectPipelineCategory.InternalError(err)
@@ -1713,6 +1737,17 @@ func (p *ProjectPipelineService) ListPipelineCategory(ctx context.Context, param
 		})
 	}
 	return &pb.ListPipelineCategoryResponse{Data: data}, nil
+}
+
+func (p *ProjectPipelineService) GetRemotesByAppID(appID uint64, orgName, projectName string) ([]string, error) {
+	if appID == 0 {
+		return nil, nil
+	}
+	appDto, err := p.bundle.GetApp(appID)
+	if err != nil {
+		return nil, err
+	}
+	return getRemotes([]string{appDto.Name}, orgName, projectName), nil
 }
 
 func getRemotes(appNames []string, orgName, projectName string) []string {

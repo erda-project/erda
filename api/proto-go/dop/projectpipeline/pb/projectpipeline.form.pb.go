@@ -786,6 +786,12 @@ func (m *ListPipelineCategoryRequest) UnmarshalURLValues(prefix string, values u
 					return err
 				}
 				m.ProjectID = val
+			case "appID":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.AppID = val
 			}
 		}
 	}

@@ -300,12 +300,16 @@ func (p *PipelineDefinitionSource) Convert() *pb.PipelineDefinition {
 func (client *Client) ListUsedRef(req *pb.PipelineDefinitionUsedRefListRequest, ops ...mysqlxorm.SessionOption) (refs []string, err error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
-	err = session.Table(PipelineDefinition{}.TableName()).
-		Cols("ref").
-		Where("soft_deleted_at = 0").
-		Where("location = ?", req.Location).
-		GroupBy("ref").
-		Find(&refs)
+	engine := session.Table(PipelineDefinition{}.TableName()).Alias("d").
+		Join("LEFT", []string{"pipeline_source", "s"}, "d.pipeline_source_id = s.id AND s.soft_deleted_at = 0").
+		Cols("d.ref").
+		Where("d.soft_deleted_at = 0").
+		Where("d.location = ?", req.Location).
+		GroupBy("d.ref")
+	if len(req.GetRemotes()) != 0 {
+		engine = engine.In("s.remote", req.GetRemotes())
+	}
+	err = engine.Find(&refs)
 	return
 }
 
