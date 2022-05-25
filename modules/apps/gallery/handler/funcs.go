@@ -15,6 +15,7 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"sort"
 	"strings"
@@ -22,20 +23,23 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/apps/gallery/pb"
 	"github.com/erda-project/erda/modules/apps/gallery/dao"
 	"github.com/erda-project/erda/modules/apps/gallery/model"
 	"github.com/erda-project/erda/modules/apps/gallery/types"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-func ListOpusTypes() *pb.ListOpusTypesRespData {
+func ListOpusTypes(ctx context.Context, tran i18n.Translator) *pb.ListOpusTypesRespData {
 	var data pb.ListOpusTypesRespData
+	langCodes := apis.Language(ctx)
 	for type_, name := range types.OpusTypeNames {
 		data.List = append(data.List, &pb.OpusType{
 			Type:        type_.String(),
 			Name:        name,
-			DisplayName: types.OpusTypeDisplayNames[type_],
+			DisplayName: tran.Text(langCodes, type_.String()),
 		})
 	}
 	sort.Slice(data.List, func(i, j int) bool {
@@ -95,8 +99,10 @@ func PrepareListVersionsInOpusesIDsOption(opuses []*model.Opus) dao.Option {
 	return dao.InOption("opus_id", opusesIDs)
 }
 
-func ComposeListOpusResp(lang string, total int64, opuses []*model.Opus) *pb.ListOpusResp {
+func ComposeListOpusResp(ctx context.Context, total int64, opuses []*model.Opus, trans i18n.Translator) *pb.ListOpusResp {
 	var result = pb.ListOpusResp{Data: &pb.ListOpusRespData{Total: int32(total)}}
+	langCodes := apis.Language(ctx)
+	lang := AdjustLang(apis.GetLang(ctx))
 	for _, opus := range opuses {
 		item := pb.ListOpusRespDataItem{
 			Id:          opus.ID.String,
@@ -112,6 +118,7 @@ func ComposeListOpusResp(lang string, total int64, opuses []*model.Opus) *pb.Lis
 			DisplayName: opus.DisplayName,
 			Summary:     opus.Summary,
 			Catalog:     opus.Catalog,
+			CatalogName: trans.Text(langCodes, opus.Catalog),
 			LogoURL:     opus.LogoURL,
 		}
 		if types.OpusLevelSystem.Equal(opus.Level) {
