@@ -107,7 +107,10 @@ func CopyMeta(m *pb.MetricMeta) *pb.MetricMeta {
 		Tags:   make(map[string]*pb.TagDefine),
 		Fields: make(map[string]*pb.FieldDefine),
 	}
-	n.Name = m.Name
+	n.Name = &pb.NameDefine{
+		Key:  m.Name.Key,
+		Name: m.Name.Name,
+	}
 	for k, t := range m.Tags {
 		n.Tags[k] = CopyTagDefine(t)
 	}
