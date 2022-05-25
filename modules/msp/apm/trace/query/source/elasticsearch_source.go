@@ -40,6 +40,8 @@ type ElasticsearchSource struct {
 	StorageReader storage.Storage
 	Metric        metricpb.MetricServiceServer
 	Log           logs.Logger
+
+	CompatibleSource TraceSource
 }
 
 func (esc ElasticsearchSource) GetSpans(ctx context.Context, req *pb.GetSpansRequest) []*pb.Span {

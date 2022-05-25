@@ -26,14 +26,22 @@ import (
 type CassandraSource struct {
 	CassandraSession *cassandra.Session
 	Log              logs.Logger
+
+	CompatibleSource TraceSource
 }
 
 func (cs *CassandraSource) GetTraceReqDistribution(ctx context.Context, model custom.Model) ([]*TraceDistributionItem, error) {
-	return nil, nil
+	if cs.CompatibleSource != nil {
+		return cs.CompatibleSource.GetTraceReqDistribution(ctx, model)
+	}
+	return []*TraceDistributionItem{}, nil
 }
 
 func (cs *CassandraSource) GetTraces(ctx context.Context, req *pb.GetTracesRequest) (*pb.GetTracesResponse, error) {
-	return nil, nil
+	if cs.CompatibleSource != nil {
+		return cs.CompatibleSource.GetTraces(ctx, req)
+	}
+	return &pb.GetTracesResponse{}, nil
 }
 
 func (cs *CassandraSource) GetSpans(ctx context.Context, req *pb.GetSpansRequest) []*pb.Span {

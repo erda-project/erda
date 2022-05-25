@@ -228,11 +228,16 @@ erda.msp.apm.trace.query:
   query_source:
     elasticsearch: "${QUERY_SPAN_FROM_ES_ENABLE:true}"
     cassandra: "${QUERY_SPAN_FROM_CASSANDRA_ENABLE:false}"
-    clickhouse: "${QUERY_SPAN_FROM_CLICKHOUSE_ENABLE:false}"
+    clickhouse: "${QUERY_SPAN_FROM_CLICKHOUSE_ENABLE:true}"
+  compatible_enable: true
   cassandra:
     keyspace:
       name: "spot_prod"
       auto: false # auto generate keyspace
+  clickhouse:
+    tables:
+      - name: span_series
+      - name: span_meta
 
 erda.msp.apm.exception.query:
   query_source:

@@ -31,6 +31,8 @@ import (
 type ClickhouseSource struct {
 	Clickhouse clickhouse.Interface
 	Log        logs.Logger
+
+	CompatibleSource TraceSource
 }
 
 type (
@@ -75,7 +77,7 @@ const (
 	Day    = 24 * Hour
 	Day3   = 3 * Day
 	Day7   = 7 * Day
-	Month  = 30 * Day
+	Month  = 30 * Day // just 30 day
 	Month3 = 3 * Month
 )
 
@@ -112,6 +114,15 @@ func GetInterval(duration int64) (int64, string, int64) {
 }
 
 func (chs *ClickhouseSource) GetTraceReqDistribution(ctx context.Context, model custom.Model) ([]*TraceDistributionItem, error) {
+	items := make([]*TraceDistributionItem, 0, 10)
+	if chs.CompatibleSource != nil {
+		result, err := chs.CompatibleSource.GetTraceReqDistribution(ctx, model)
+		if err != nil {
+			chs.Log.Error("compatible source query error.")
+		}
+		items = result
+	}
+
 	n, unit, interval := GetInterval(model.EndTime - model.StartTime)
 	specSql := "SELECT toStartOfInterval(min_start_time, INTERVAL %v %s) AS date,count(trace_id) AS trace_count, " +
 		"avg(duration) AS avg_duration FROM (%s) GROUP BY date ORDER BY date WITH FILL STEP %v ;"
@@ -138,7 +149,7 @@ func (chs *ClickhouseSource) GetTraceReqDistribution(ctx context.Context, model 
 		chs.Log.Error(err)
 		return []*TraceDistributionItem{}, err
 	}
-	items := make([]*TraceDistributionItem, 0, 10)
+
 	for rows.Next() {
 		item := &TraceDistributionItem{}
 		var i distributionItem
@@ -155,6 +166,16 @@ func (chs *ClickhouseSource) GetTraceReqDistribution(ctx context.Context, model 
 }
 
 func (chs *ClickhouseSource) GetTraces(ctx context.Context, req *pb.GetTracesRequest) (*pb.GetTracesResponse, error) {
+	traces := make([]*pb.Trace, 0, 10)
+	if chs.CompatibleSource != nil {
+		compatibleTraces, err := chs.CompatibleSource.GetTraces(ctx, req)
+		if err != nil {
+			chs.Log.Errorf("compatible query error. err: %v", err)
+		} else if compatibleTraces.Total > req.PageSize {
+			return compatibleTraces, nil
+		}
+	}
+
 	specSql := "SELECT distinct(trace_id) AS trace_id,toUnixTimestamp64Nano(min(start_time)) AS min_start_time,count(span_id) AS span_count," +
 		"(toUnixTimestamp64Nano(max(end_time)) - toUnixTimestamp64Nano(min(start_time))) AS duration FROM %s %s " +
 		"GROUP BY trace_id %s LIMIT %v OFFSET %v"
@@ -180,7 +201,6 @@ func (chs *ClickhouseSource) GetTraces(ctx context.Context, req *pb.GetTracesReq
 	}
 	defer rows.Close()
 
-	traces := make([]*pb.Trace, 0, 10)
 	for rows.Next() {
 		var t tracing
 		tracing := &pb.Trace{}
@@ -264,6 +284,15 @@ func (chs *ClickhouseSource) sortConditionStrategy(sort string) string {
 }
 
 func (chs *ClickhouseSource) GetSpans(ctx context.Context, req *pb.GetSpansRequest) []*pb.Span {
+	spans := make([]*pb.Span, 0, 10)
+
+	if chs.CompatibleSource != nil {
+		getSpans := chs.CompatibleSource.GetSpans(ctx, req)
+		if getSpans != nil && len(getSpans) > 0 {
+			return getSpans
+		}
+	}
+
 	sql := fmt.Sprintf("SELECT org_name,series_id,trace_id,span_id,parent_span_id,toUnixTimestamp64Nano(start_time) AS"+
 		" start_time,toUnixTimestamp64Nano(end_time) AS end_time FROM %s WHERE trace_id = $1 ORDER BY %s LIMIT %v",
 		SpanSeriesTable, "start_time", req.Limit)
@@ -273,7 +302,6 @@ func (chs *ClickhouseSource) GetSpans(ctx context.Context, req *pb.GetSpansReque
 		return nil
 	}
 	defer rows.Close()
-	spans := make([]*pb.Span, 0, 10)
 
 	for rows.Next() {
 		span := &pb.Span{}
@@ -338,7 +366,6 @@ func (chs *ClickhouseSource) GetSpanCount(ctx context.Context, traceID string) i
 }
 
 func (chs *ClickhouseSource) GetTraceCount(ctx context.Context, where string) int64 {
-
 	var count uint64
 	sql := fmt.Sprintf("SELECT COUNT(trace_id) FROM %s %s", SpanSeriesTable, where)
 	if err := chs.Clickhouse.Client().QueryRow(ctx, sql).Scan(&count); err != nil {

@@ -49,6 +49,7 @@ type TraceService struct {
 	i18n                  i18n.Translator
 	traceRequestHistoryDB *db.TraceRequestHistoryDB
 	Source                source.TraceSource
+	CompatibleSource      source.TraceSource
 }
 
 var EventFieldSet = set.NewSet("error", "stack", "event", "message", "error_kind", "error_object")
