@@ -1,13 +1,13 @@
 en:
   success: Succeeded
   failed: Failed
-  dingding: dingding
-  webhook: webhook
-  email: email
-  mbox: mbox
-  vms: voice notify
-  sms: short message notify
-  dingtalk_work_notice: dingding work notify
+  dingding: DingTalk
+  webhook: Webhook
+  email: Email
+  mbox: Site message
+  vms: Phone
+  sms: SMS
+  dingtalk_work_notice: DingTalk Work Notice
   NotifyName: Name
   Status: Status
   Channel: Channel

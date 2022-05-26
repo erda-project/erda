@@ -117,16 +117,16 @@ en:
   NOTICE: Notice
   alert: Alert
   recover: Recovered
-  pause: Stopped
-  stop: Stop
+  pause: Paused
+  stop: Stopped
   System: System
   Custom: Custom
-  dingding: dingding
-  email: email
-  mbox: mbox
-  vms: voice
-  sms: short message
-  dingtalk_work_notice: dingtalk
+  dingding: DingTalk
+  email: Email
+  mbox: Site message
+  vms: Phone
+  sms: SMS
+  dingtalk_work_notice: DingTalk Work Notice
   success: success
   failed: failed
 zh:
