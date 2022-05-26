@@ -60,6 +60,7 @@ type PipelineCronDTO struct {
 	OrgID                  uint64            `json:"orgID"`
 	PipelineDefinitionID   string            `json:"pipelineDefinitionID"`
 	PipelineSource         PipelineSource    `json:"pipelineSource"`
+	ClusterName            string            `json:"clusterName"`
 }
 
 type PipelineCronCreateResponse struct {
