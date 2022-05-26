@@ -21,12 +21,13 @@ import (
 	"time"
 
 	"github.com/go-errors/errors"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	"github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	common "github.com/erda-project/erda-proto-go/core/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
-	db2 "github.com/erda-project/erda/internal/tools/pipeline/providers/cron/db"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/cron/db"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/apierrors"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -60,13 +61,13 @@ func (s *provider) CronCreate(ctx context.Context, req *pb.CronCreateRequest) (*
 		req.CronExpr = pipelineYml.Spec().Cron
 	}
 
-	createCron := &db2.PipelineCron{
+	createCron := &db.PipelineCron{
 		ID:              req.ID,
 		PipelineSource:  apistructs.PipelineSource(req.PipelineSource),
 		PipelineYmlName: req.PipelineYmlName,
 		CronExpr:        req.CronExpr,
 		Enable:          &[]bool{req.Enable.Value}[0],
-		Extra: db2.PipelineCronExtra{
+		Extra: db.PipelineCronExtra{
 			PipelineYml:            req.PipelineYml,
 			ClusterName:            req.ClusterName,
 			FilterLabels:           req.FilterLabels,
@@ -125,7 +126,7 @@ func (s *provider) CronCreate(ctx context.Context, req *pb.CronCreateRequest) (*
 		return nil
 	})
 	if err != nil {
-		return nil, nil
+		return nil, err
 	}
 
 	return &pb.CronCreateResponse{
@@ -133,7 +134,7 @@ func (s *provider) CronCreate(ctx context.Context, req *pb.CronCreateRequest) (*
 	}, nil
 }
 
-func Transaction(dbClient *db2.Client, do func(option mysqlxorm.SessionOption) error) error {
+func Transaction(dbClient *db.Client, do func(option mysqlxorm.SessionOption) error) error {
 	txSession := dbClient.NewSession()
 	defer txSession.Close()
 	if err := txSession.Begin(); err != nil {
@@ -343,10 +344,10 @@ func (s *provider) CronUpdate(ctx context.Context, req *pb.CronUpdateRequest) (*
 	cron.Extra.PipelineYml = req.PipelineYml
 	cron.Extra.ConfigManageNamespaces = strutil.DedupSlice(append(cron.Extra.ConfigManageNamespaces, req.ConfigManageNamespaces...), true)
 	cron.Extra.IncomingSecrets = req.Secrets
-	var fields = []string{db2.PipelineCronCronExpr, db2.Extra}
+	var fields = []string{db.PipelineCronCronExpr, db.Extra}
 	if req.PipelineDefinitionID != "" {
 		cron.PipelineDefinitionID = req.PipelineDefinitionID
-		fields = append(fields, db2.PipelineDefinitionID)
+		fields = append(fields, db.PipelineDefinitionID)
 	}
 
 	err = Transaction(s.dbClient, func(option mysqlxorm.SessionOption) error {
@@ -358,11 +359,11 @@ func (s *provider) CronUpdate(ctx context.Context, req *pb.CronUpdateRequest) (*
 	return &pb.CronUpdateResponse{}, nil
 }
 
-func (s *provider) update(req *pb.CronUpdateRequest, cron db2.PipelineCron, fields []string, option mysqlxorm.SessionOption) error {
+func (s *provider) update(req *pb.CronUpdateRequest, cron db.PipelineCron, fields []string, option mysqlxorm.SessionOption) error {
 	toEdge := s.EdgePipelineRegister.CanProxyToEdge(cron.PipelineSource, cron.Extra.ClusterName)
 
 	if toEdge || s.EdgePipelineRegister.IsEdge() {
-		fields = append(fields, db2.PipelineCronIsEdge)
+		fields = append(fields, db.PipelineCronIsEdge)
 		cron.IsEdge = &[]bool{true}[0]
 	}
 
@@ -393,11 +394,11 @@ func (s *provider) update(req *pb.CronUpdateRequest, cron db2.PipelineCron, fiel
 	return nil
 }
 
-func (s *provider) InsertOrUpdatePipelineCron(new *db2.PipelineCron, ops ...mysqlxorm.SessionOption) error {
+func (s *provider) InsertOrUpdatePipelineCron(new *db.PipelineCron, ops ...mysqlxorm.SessionOption) error {
 	var err error
 
 	// 寻找 v1
-	queryV1 := &db2.PipelineCron{
+	queryV1 := &db.PipelineCron{
 		ApplicationID:   new.ApplicationID,
 		Branch:          new.Branch,
 		PipelineYmlName: new.PipelineYmlName,
@@ -420,7 +421,7 @@ func (s *provider) InsertOrUpdatePipelineCron(new *db2.PipelineCron, ops ...mysq
 	}
 
 	// 寻找 v2
-	queryV2 := &db2.PipelineCron{
+	queryV2 := &db.PipelineCron{
 		PipelineSource:  new.PipelineSource,
 		PipelineYmlName: new.PipelineYmlName,
 	}
@@ -445,15 +446,15 @@ func (s *provider) InsertOrUpdatePipelineCron(new *db2.PipelineCron, ops ...mysq
 	return nil
 }
 
-func (s *provider) disable(cron *db2.PipelineCron, option mysqlxorm.SessionOption) error {
+func (s *provider) disable(cron *db.PipelineCron, option mysqlxorm.SessionOption) error {
 	var disable = false
-	var updateCron = &db2.PipelineCron{}
-	var columns = []string{db2.PipelineCronCronExpr, db2.PipelineCronEnable, db2.PipelineCronIsEdge}
+	var updateCron = &db.PipelineCron{}
+	var columns = []string{db.PipelineCronCronExpr, db.PipelineCronEnable, db.PipelineCronIsEdge}
 	var err error
 
 	updateCron.IsEdge = cron.IsEdge
 
-	queryV1 := &db2.PipelineCron{
+	queryV1 := &db.PipelineCron{
 		ApplicationID:   cron.ApplicationID,
 		Branch:          cron.Branch,
 		PipelineYmlName: cron.PipelineYmlName,
@@ -477,7 +478,7 @@ func (s *provider) disable(cron *db2.PipelineCron, option mysqlxorm.SessionOptio
 		return nil
 	}
 
-	queryV2 := &db2.PipelineCron{
+	queryV2 := &db.PipelineCron{
 		PipelineSource:  cron.PipelineSource,
 		PipelineYmlName: cron.PipelineYmlName,
 	}
@@ -499,13 +500,58 @@ func (s *provider) disable(cron *db2.PipelineCron, option mysqlxorm.SessionOptio
 	return nil
 }
 
-func pbCronToDBCron(pbCron *common.Cron) (*db2.PipelineCron, error) {
+func (p *provider) EdgePipelineEventHandler(ctx context.Context, eventDetail apistructs.ClusterManagerClientDetail) {
+	p.Log.Infof("receive edge pipeline event %v", eventDetail)
+	clusterName := eventDetail.Get(apistructs.ClusterManagerDataKeyClusterKey)
+	if clusterName == "" {
+		p.Log.Warnf("cluster name is empty， ignore event")
+		return
+	}
+	edgeCrons, err := p.CronPaging(ctx, &pb.CronPagingRequest{
+		ClusterName: clusterName,
+		GetAll:      true,
+		AllSources:  true,
+	})
+	if err != nil {
+		p.Log.Errorf("failed to get edge pipeline crons, clusterName: %v, err: %v", clusterName, err)
+		return
+	}
+	for _, cron := range edgeCrons.Data {
+		enable := structpb.NewBoolValue(cron.Enable.Value)
+		if enable == nil || !enable.GetBoolValue() {
+			p.Log.Infof("cron %v is disabled, ignore", cron.ID)
+			continue
+		}
+		_, err := p.CronCreate(ctx, &pb.CronCreateRequest{
+			CronExpr:               cron.CronExpr,
+			PipelineYml:            cron.PipelineYml,
+			PipelineYmlName:        cron.PipelineYmlName,
+			PipelineSource:         cron.PipelineSource,
+			Enable:                 cron.Enable,
+			ClusterName:            cron.ClusterName,
+			FilterLabels:           cron.Extra.Labels,
+			NormalLabels:           cron.Extra.NormalLabels,
+			Envs:                   cron.Extra.Envs,
+			ConfigManageNamespaces: cron.Extra.ConfigManageNamespaces,
+			CronStartFrom:          cron.CronStartTime,
+			IncomingSecrets:        cron.Extra.IncomingSecrets,
+			PipelineDefinitionID:   cron.PipelineDefinitionID,
+		})
+		if err != nil {
+			p.Log.Errorf("failed to create edge pipeline cron, clusterName: %v error %v", clusterName, err)
+			continue
+		}
+		p.Log.Infof("create edge pipeline cron success, cronID: %d", cron.ID)
+	}
+}
+
+func pbCronToDBCron(pbCron *common.Cron) (*db.PipelineCron, error) {
 	dbCronJson, err := json.Marshal(pbCron)
 	if err != nil {
 		return nil, err
 	}
 
-	var result db2.PipelineCron
+	var result db.PipelineCron
 	err = json.Unmarshal(dbCronJson, &result)
 	if err != nil {
 		return nil, err

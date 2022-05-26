@@ -53,6 +53,8 @@ func (m *MockEdgeRegister) ClusterIsEdge(clusterName string) (bool, error) {
 func (m *MockEdgeRegister) OnEdge(f func(context.Context))                                {}
 func (m *MockEdgeRegister) OnCenter(f func(context.Context))                              {}
 func (m *MockEdgeRegister) CreateMessageEvent(event *apistructs.EventCreateRequest) error { return nil }
+func (m *MockEdgeRegister) RegisterEventHandler(handler EventHandler)                     {}
+func (m *MockEdgeRegister) ListAllClients() []apistructs.ClusterManagerClientDetail       { return nil }
 
 type MockKV struct{}
 

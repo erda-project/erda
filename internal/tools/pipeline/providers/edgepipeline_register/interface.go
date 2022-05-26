@@ -56,6 +56,14 @@ type Interface interface {
 	// Could register multi hooks as you need.
 	// All hooks executed asynchronously.
 	OnCenter(func(context.Context))
+
+	// RegisterEventHandler register edge event handler.
+	// Now only support update-operation event.
+	// All handlers executed asynchronously.
+	RegisterEventHandler(handler EventHandler)
+
+	// ListAllClients list all edge pipelines that are registered in center.
+	ListAllClients() []apistructs.ClusterManagerClientDetail
 }
 
 func (p *provider) ClusterIsEdge(clusterName string) (bool, error) {

@@ -45,6 +45,16 @@ func (c ClusterManagerClientType) String() string {
 	return string(c)
 }
 
+type ClusterManagerClientEventType string
+
+var (
+	ClusterManagerClientEventRegister ClusterManagerClientEventType = "register"
+)
+
+func (c ClusterManagerClientType) GenEventName(eventType ClusterManagerClientEventType) string {
+	return fmt.Sprintf("client-%s-event-%s", c, eventType)
+}
+
 func (c ClusterManagerClientType) MakeClientKey(clusterKey string) string {
 	if c == "" {
 		return clusterKey
@@ -55,6 +65,8 @@ func (c ClusterManagerClientType) MakeClientKey(clusterKey string) string {
 type ClusterManagerClientDetailKey string
 
 var (
+	ClusterManagerDataKeyClusterKey ClusterManagerClientDetailKey = "clusterKey"
+
 	ClusterManagerDataKeyPipelineHost ClusterManagerClientDetailKey = "pipelineHost"
 	ClusterManagerDataKeyPipelineAddr ClusterManagerClientDetailKey = "pipelineAddr"
 )
