@@ -1,0 +1,1 @@
+ALTER TABLE `s_instance_info` ADD INDEX `idx_runtimeid_servicename_cluster_orgid_phase_startedat` (`runtime_id`, `service_name`, `cluster`, `org_id`, `phase`, `started_at`)
