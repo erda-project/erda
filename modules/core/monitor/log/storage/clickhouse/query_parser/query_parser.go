@@ -196,10 +196,16 @@ func (l *esqsListener) formatExpression(field, value string) string {
 
 	switch field {
 	case l.defaultField:
-		return fmt.Sprintf("%s LIKE '%%%s%%'", field, value)
+		return fmt.Sprintf("%s LIKE '%%%s%%'", field, l.escapeStringValue(value))
 	default:
-		return fmt.Sprintf("%s='%s'", field, value)
+		return fmt.Sprintf("%s='%s'", field, l.escapeStringValue(value))
 	}
+}
+
+var replacer = strings.NewReplacer("'", "\\'")
+
+func (l *esqsListener) escapeStringValue(value string) string {
+	return replacer.Replace(value)
 }
 
 var highlightRegex, _ = regexp.Compile(`[^, '";=()+\[\]{}?@&<>/:\n\t\r]+`)

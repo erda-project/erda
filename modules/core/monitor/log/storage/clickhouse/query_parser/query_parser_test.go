@@ -124,3 +124,19 @@ func Test_Parse_ExistTagFields(t *testing.T) {
 	sql := result.Sql()
 	assert.Equal(t, sql, want)
 }
+
+func Test_Parse_EscapeValue(t *testing.T) {
+	parser := NewEsqsParser(
+		converter.NewFieldNameConverter(&loader.TableMeta{
+			Columns: map[string]*loader.TableColumn{
+				"tags": {Type: "Map(String,String)"},
+			},
+		}, nil),
+		"content", "AND", true)
+
+	result := parser.Parse("'hello'")
+	assert.NilError(t, result.Error())
+	want := `content LIKE '%\'hello\'%'`
+	sql := result.Sql()
+	assert.Equal(t, sql, want)
+}
