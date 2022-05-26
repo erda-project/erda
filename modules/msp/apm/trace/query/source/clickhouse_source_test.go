@@ -94,3 +94,30 @@ func Test_GetInterval(t *testing.T) {
 		})
 	}
 }
+
+func TestClickhouseSource_sortConditionStrategy(t *testing.T) {
+	type args struct {
+		sort string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{"case1", args{sort: ""}, "ORDER BY min_start_time DESC"},
+		{"case2", args{sort: "TRACE_TIME_DESC"}, "ORDER BY min_start_time DESC"},
+		{"case3", args{sort: "TRACE_TIME_ASC"}, "ORDER BY min_start_time ASC"},
+		{"case4", args{sort: "TRACE_DURATION_DESC"}, "ORDER BY duration DESC"},
+		{"case5", args{sort: "TRACE_DURATION_ASC"}, "ORDER BY duration ASC"},
+		{"case6", args{sort: "SPAN_COUNT_DESC"}, "ORDER BY span_count DESC"},
+		{"case7", args{sort: "SPAN_COUNT_ASC"}, "ORDER BY span_count ASC"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			chs := &ClickhouseSource{}
+			if got := chs.sortConditionStrategy(tt.args.sort); got != tt.want {
+				t.Errorf("sortConditionStrategy() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
