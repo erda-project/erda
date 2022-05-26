@@ -82,6 +82,10 @@ func (client *Client) PagingPipelineCron(req *pb.CronPagingRequest, ops ...mysql
 		limitSQL.In("pipeline_definition_id", req.PipelineDefinitionID)
 	}
 
+	if req.ClusterName != "" {
+		limitSQL.Where("cluster_name = ?", req.ClusterName)
+	}
+
 	// total
 	totalSQL := *limitSQL
 	var totalIDs []PipelineCron
