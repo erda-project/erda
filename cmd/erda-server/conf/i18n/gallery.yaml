@@ -6,6 +6,7 @@ zh:
   # addons
   database: 存储
   distributed_cooperation: 分布式协作
+  search: 搜索
   message: 消息
   content_management: 内容管理
   security: 安全
@@ -38,6 +39,7 @@ en:
   # addons
   database: Database
   distributed_cooperation: Distributed Cooperation
+  search: Search
   message: Message
   content_management: Content Management
   security: Security
