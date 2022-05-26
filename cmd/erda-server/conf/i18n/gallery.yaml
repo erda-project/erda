@@ -2,6 +2,7 @@ zh:
   erda/extension/addon: Addon
   erda/extension/action: Action
   erda/artifacts/project: 项目制品
+  others: 其他
 
   # addons
   database: 存储
@@ -30,11 +31,13 @@ zh:
   test_management: 测试管理
   data_management: 数据治理
   custom_task: 自定义任务
+  big_data: 大数据
 
 en:
   erda/extension/addon: Addon
   erda/extension/action: Action
   erda/artifacts/project: Project Artifacts
+  others: Others
 
   # addons
   database: Database
@@ -63,3 +66,4 @@ en:
   test_management: Test Management
   data_management: Data Management
   custom_task: Custom Task
+  big_data: Big Data
