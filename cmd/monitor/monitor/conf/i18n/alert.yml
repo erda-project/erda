@@ -274,8 +274,10 @@ en:
     短信: SMS
     站内信: Site message
     钉钉工作通知: DingTalk WorkNotice
+    dingtalk_work_notice: DingTalk WorkNotice
     dingding: DingTalk
     vms: Phone
     sms: SMS
     mbox: Site message
     webhook: "Webhook"
+    ticket: "Ticket"
