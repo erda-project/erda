@@ -33,26 +33,31 @@ func (p *CustomFilter) ConditionRetriever() ([]interface{}, error) {
 		appCondition    *model.SelectCondition
 		branchCondition *model.SelectCondition
 		memberCondition MemberCondition
-		err             error
 	)
 
 	worker := limit_sync_group.NewWorker(3)
 	worker.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
+		// If err is defined outside, there will be a data race
+		var err error
 		appCondition, err = p.AppCondition()
 		return err
 	})
 	worker.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
+		var err error
 		memberCondition, err = p.MemberCondition()
 		return err
 	})
 	worker.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
+		var err error
 		branchCondition, err = p.BranchCondition()
 		return err
 	})
-	if err = worker.Do().Error(); err != nil {
+	if err := worker.Do().Error(); err != nil {
 		return nil, err
 	}
-	conditions = append(conditions, appCondition)
+	if p.InParams.AppID == 0 {
+		conditions = append(conditions, appCondition)
+	}
 	conditions = append(conditions, branchCondition)
 	conditions = append(conditions, memberCondition.executorCondition)
 	conditions = append(conditions, model.NewDateRangeCondition("startedAtStartEnd", cputil.I18n(p.sdk.Ctx, "start-time")))
