@@ -267,9 +267,10 @@ func (a AppPermissionProcess) GetAllRoles(ctx context.Context) ([]string, error)
 	}
 	// get all project-level application
 	_, data, err := a.Adaptor.Db.GetApplicationsByIDs(&dto.OrgID, &dto.ProjectID, nil, &apistructs.ApplicationListRequest{
-		PageSize: 9999,
-		PageNo:   1,
-		Mode:     string(apistructs.ApplicationModeProjectService),
+		ProjectID: uint64(dto.ProjectID),
+		PageSize:  9999,
+		PageNo:    1,
+		Mode:      string(apistructs.ApplicationModeProjectService),
 	})
 	if err != nil {
 		return nil, err
