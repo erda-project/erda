@@ -30,14 +30,15 @@ func (p *CustomFilter) ConditionRetriever() ([]interface{}, error) {
 
 	var (
 		appCondition, executorCondition *model.SelectCondition
-		err                             error
 	)
 	worker := limit_sync_group.NewWorker(2)
 	worker.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
+		var err error
 		appCondition, err = p.AppCondition()
 		return err
 	})
 	worker.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
+		var err error
 		executorCondition, err = p.MemberCondition()
 		return err
 	})

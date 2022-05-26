@@ -33,23 +33,26 @@ func (p *CustomFilter) ConditionRetriever() ([]interface{}, error) {
 		appCondition    *model.SelectCondition
 		branchCondition *model.SelectCondition
 		memberCondition MemberCondition
-		err             error
 	)
 
 	worker := limit_sync_group.NewWorker(3)
 	worker.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
+		// If err is defined outside, there will be a data race
+		var err error
 		appCondition, err = p.AppCondition()
 		return err
 	})
 	worker.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
+		var err error
 		memberCondition, err = p.MemberCondition()
 		return err
 	})
 	worker.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
+		var err error
 		branchCondition, err = p.BranchCondition()
 		return err
 	})
-	if err = worker.Do().Error(); err != nil {
+	if err := worker.Do().Error(); err != nil {
 		return nil, err
 	}
 	if p.InParams.AppID == 0 {
