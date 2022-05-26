@@ -121,3 +121,27 @@ func TestClickhouseSource_sortConditionStrategy(t *testing.T) {
 		})
 	}
 }
+
+func TestClickhouseSource_composeFilter(t *testing.T) {
+	type args struct {
+		req *pb.GetTracesRequest
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{"case1", args{req: &pb.GetTracesRequest{TenantID: "test_tenant"}}, "SELECT distinct(series_id) FROM monitor.spans_meta WHERE (key='terminus_key' AND value = 'test_tenant') "},
+		{"case2", args{req: &pb.GetTracesRequest{TenantID: "test_tenant", ServiceName: "test_service_name"}}, "SELECT distinct(series_id) FROM monitor.spans_meta WHERE (key='terminus_key' AND value = 'test_tenant') AND (key='service_name' AND value LIKE '%test_service_name%') "},
+		{"case3", args{req: &pb.GetTracesRequest{TenantID: "test_tenant", RpcMethod: "hello()"}}, "SELECT distinct(series_id) FROM monitor.spans_meta WHERE (key='terminus_key' AND value = 'test_tenant') AND (key='rpc_method' AND value LIKE '%hello()%') "},
+		{"case4", args{req: &pb.GetTracesRequest{TenantID: "test_tenant", HttpPath: "/hello"}}, "SELECT distinct(series_id) FROM monitor.spans_meta WHERE (key='terminus_key' AND value = 'test_tenant') AND (key='http_path' AND value LIKE '%/hello%') "},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			chs := &ClickhouseSource{}
+			if got := chs.composeFilter(tt.args.req); got != tt.want {
+				t.Errorf("composeFilter() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
