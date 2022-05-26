@@ -173,7 +173,7 @@ func (p *CustomFilter) RegisterFilterItemDeleteOp(opData filter.OpFilterItemDele
 
 func (p *CustomFilter) setDefaultValues() {
 	p.State.FrontendConditionValues.App = p.MakeDefaultAppSelect()
-	p.State.FrontendConditionValues.Branch = common.DefaultBranch
+	p.State.FrontendConditionValues.Branch = p.MakeDefaultBranchSelect()
 }
 
 func (p *CustomFilter) MakeDefaultAppSelect() []string {
@@ -181,4 +181,11 @@ func (p *CustomFilter) MakeDefaultAppSelect() []string {
 		return []string{common.Participated}
 	}
 	return []string{p.AppName}
+}
+
+func (p *CustomFilter) MakeDefaultBranchSelect() []string {
+	if p.AppName == "" {
+		return common.DefaultBranch
+	}
+	return nil
 }

@@ -54,3 +54,39 @@ func TestCustomFilter_MakeDefaultAppSelect(t *testing.T) {
 		})
 	}
 }
+
+func TestCustomFilter_MakeDefaultBranchSelect(t *testing.T) {
+	type fields struct {
+		AppName string
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		want   []string
+	}{
+		{
+			name: "test with app",
+			fields: fields{
+				AppName: "erda",
+			},
+			want: nil,
+		},
+		{
+			name: "test with no app",
+			fields: fields{
+				AppName: "",
+			},
+			want: []string{"master", "develop"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &CustomFilter{
+				AppName: tt.fields.AppName,
+			}
+			if got := p.MakeDefaultBranchSelect(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("MakeDefaultBranchSelect() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
