@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strconv"
 
 	"github.com/pkg/errors"
@@ -42,7 +43,44 @@ type GalleryHandler struct {
 }
 
 func (p *GalleryHandler) ListOpusTypes(ctx context.Context, _ *commonPb.VoidRequest) (*pb.ListOpusTypesRespData, error) {
-	return ListOpusTypes(ctx, p.Tran), nil
+	orgID, err := apis.GetIntOrgID(ctx)
+	if err != nil {
+		return nil, apierr.ListOpus.InvalidParameter("invalid orgID")
+	}
+
+	_, opuses, err := dao.ListOpuses(dao.Q(), dao.WhereOption("org_id = ? OR level = ?", orgID, types.OpusLevelSystem))
+	opusCatalogNames := make(map[string][]*pb.CatalogInfo)
+	langCodes := apis.Language(ctx)
+	existed := make(map[string]map[string]struct{})
+	for _, opus := range opuses {
+		if opus.Type == types.OpusTypeArtifactsProject.String() {
+			continue
+		}
+		if _, ok := existed[opus.Type]; !ok {
+			existed[opus.Type] = make(map[string]struct{})
+		}
+		catalogName := p.Tran.Text(langCodes, "others")
+		if opus.Catalog != "" {
+			catalogName = p.Tran.Text(langCodes, opus.Catalog)
+		}
+		if _, ok := existed[opus.Type][opus.Catalog]; !ok {
+			existed[opus.Type][opus.Catalog] = struct{}{}
+			opusCatalogNames[opus.Type] = append(opusCatalogNames[opus.Type], &pb.CatalogInfo{
+				Key:  opus.Catalog,
+				Name: catalogName,
+			})
+		}
+	}
+
+	opusTypesList := ListOpusTypes(ctx, p.Tran)
+	for i := range opusTypesList.List {
+		children := opusCatalogNames[opusTypesList.List[i].Type]
+		sort.Slice(children, func(i, j int) bool {
+			return children[i].Key < children[j].Key
+		})
+		opusTypesList.List[i].Children = children
+	}
+	return opusTypesList, nil
 }
 
 func (p *GalleryHandler) ListOpus(ctx context.Context, req *pb.ListOpusReq) (*pb.ListOpusResp, error) {

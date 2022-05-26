@@ -178,10 +178,16 @@ message ListOpusTypesRespData {
   repeated OpusType list = 2;
 }
 
+message CatalogInfo {
+  string key = 1;
+  string name = 2;
+}
+
 message OpusType {
   string type = 1;
   string name = 2;
   string displayName = 3;
+  repeated CatalogInfo children = 4;
 }
 
 message PutOnArtifactsReq {
