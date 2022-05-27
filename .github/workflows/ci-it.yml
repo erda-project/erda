@@ -208,7 +208,7 @@ jobs:
           GOLANG_PROTOBUF_REGISTRATION_CONFLICT: ignore
         run: |
           mkdir -p ./coverage
-          go test ${{ matrix.package-path }}/... -tags=musl -work -timeout=10s -failfast -race -coverprofile=./coverage/${{ steps.cov-report-name.outputs.name }} -covermode=atomic -gcflags='-l'
+          go test ${{ matrix.package-path }}/... -tags=musl -work -timeout=10s -failfast -race -coverprofile=./coverage/${{ steps.cov-report-name.outputs.name }} -covermode=atomic -gcflags='-l -N'
       - name: Upload coverage As Artifact
         uses: actions/upload-artifact@v3
         with:
@@ -227,7 +227,6 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           path: ./coverage/
-      - run: ls -R ./coverage/
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
         with:
