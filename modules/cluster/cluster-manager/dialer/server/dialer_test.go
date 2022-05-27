@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"testing"
@@ -60,7 +61,7 @@ type fakeKV struct {
 func (f *fakeKV) Get(ctx context.Context, key string, opts ...clientv3.OpOption) (*clientv3.GetResponse, error) {
 	return &clientv3.GetResponse{
 		Kvs: []*mvccpb.KeyValue{{
-			Key: []byte(dialerListenAddr),
+			Value: []byte(dialerListenAddr),
 		}},
 	}, nil
 }
@@ -84,6 +85,7 @@ func (f *fakeClusterSvc) PatchCluster(context.Context, *clusterpb.PatchClusterRe
 func Test_DialerContext(t *testing.T) {
 	defer monkey.UnpatchAll()
 
+	logrus.SetLevel(logrus.DebugLevel)
 	authorizer := auth.New(auth.WithCredentialClient(nil))
 	monkey.Patch(authorizer.Authorizer, func(req *http.Request) (string, bool, error) {
 		return fakeClusterKey, true, nil
@@ -98,7 +100,7 @@ func Test_DialerContext(t *testing.T) {
 
 	ctx, cancel := startServer(&clientv3.Client{KV: &fakeKV{}})
 	helloHandler := func(w http.ResponseWriter, req *http.Request) {
-		io.WriteString(w, "Hello, world!\n")
+		io.WriteString(w, "Hello, world!")
 	}
 	mx := mux.NewRouter()
 	mx.HandleFunc("/hello", helloHandler)
@@ -120,10 +122,20 @@ func Test_DialerContext(t *testing.T) {
 		},
 		Timeout: 10 * time.Second,
 	}
-	req, _ := http.NewRequest("GET", "http://"+helloListenAddr, nil)
-	_, err := hc.Do(req)
+	req, _ := http.NewRequest("GET", fmt.Sprintf("http://%s/hello", helloListenAddr), nil)
+	resp, err := hc.Do(req)
 	if err != nil {
 		t.Errorf("dialer failed, err:%+v", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		t.Errorf("status:%d expect:200", resp.StatusCode)
+		return
+	}
+	respBody, _ := ioutil.ReadAll(resp.Body)
+	if string(respBody) != "Hello, world!" {
+		t.Errorf("respBody:%s, expect:Hello, world!", respBody)
+		return
 	}
 	cancel()
 	select {
