@@ -24,12 +24,8 @@ on:
 jobs:
   LICENSE-CHECK:
     runs-on: ubuntu-latest
-    container:
-      image: letmein7788/letmein:golangci-lint
     steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
+      - uses: actions/checkout@v3
       - name: Check Copyright Header
         run: make check-copyright
 
