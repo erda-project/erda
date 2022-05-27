@@ -40,18 +40,18 @@ jobs:
           path: |
             ${{ steps.go-cache-paths.outputs.go-build }}
             ${{ steps.go-cache-paths.outputs.go-mod }}
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}-4 # add '-1' to refresh cache
       - name: Gen proto-go
         run: |
           HOME=/root make proto-go-in-local
-      - name: Upload proto-go as artifact
+      - name: Upload proto-go As Artifact
         uses: actions/upload-artifact@v3
         with:
           name: proto-go
           path: ./api/proto-go
           retention-days: 1
+      - name: Go generate # refresh cache
+        run: make prepare && go mod tidy
 
   CI:
     runs-on: ubuntu-latest
@@ -79,7 +79,7 @@ jobs:
           path: |
             ${{ steps.go-cache-paths.outputs.go-build }}
             ${{ steps.go-cache-paths.outputs.go-mod }}
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}-4
           restore-keys: |
             ${{ runner.os }}-go-
       - name: Run Build
@@ -111,8 +111,10 @@ jobs:
           path: |
             ${{ steps.go-cache-paths.outputs.go-build }}
             ${{ steps.go-cache-paths.outputs.go-mod }}
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-      - name: Go generate files
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}-4
+          restore-keys: |
+            ${{ runner.os }}-go-
+      - name: Go generate files # it's faster than download artifact
         run: make prepare
       - name: Check Go Imports
         run: make check-imports
@@ -121,19 +123,10 @@ jobs:
       - name: Run Go Lint
         uses: golangci/golangci-lint-action@v2.5.2
         with:
-          # Optional: version of golangci-lint to use in form of v1.2 or v1.2.3 or `latest` to use the latest version
           version: v1.29
-          # Optional: working directory, useful for monorepos
-          # working-directory: somedir
-          # Optional: golangci-lint command line arguments.
           args: --timeout=10m
-          # Optional: show only new issues if it's a pull request. The default value is `false`.
-          # only-new-issues: true
-          # Optional: if set to true then the action will use pre-installed Go.
           skip-go-installation: true
-          # Optional: if set to true then the action don't cache or restore ~/go/pkg.
           skip-pkg-cache: false
-          # Optional: if set to true then the action don't cache or restore ~/.cache/go-build.
           skip-build-cache: false
 
   CODE-TEST:
@@ -142,6 +135,28 @@ jobs:
       image: letmein7788/letmein:golangci-lint
     needs:
       - PREPARE
+    strategy:
+      fail-fast: true
+      matrix:
+        package-paths:
+          - ./modules/apps/... ./modules/cluster/...
+          - ./modules/cmp/...
+          - ./modules/core/...
+
+          - ./modules/core-services/... ./modules/dicehub/... ./modules/ecp/... ./modules/extensions/... ./modules/gittar/...
+
+          - ./modules/dop/...
+
+          - ./modules/hepa/...
+
+          - ./modules/kms/... ./modules/messenger/... ./modules/monitor/... ./modules/msp/... ./modules/oap/...
+
+          - ./modules/openapi/...
+          - ./modules/orchestrator/...
+          - ./modules/pipeline/...
+
+          - ./modules/pkg/... ./modules/tools/... ./modules/uc-adaptor/... ./modules/volume-provisioner/... ./apistructs/... ./bundle/... ./providers/... ./tools/...
+          - ./pkg/...
     steps:
       - name: Install Tools
         run: apk add tar
@@ -162,18 +177,51 @@ jobs:
           path: |
             ${{ steps.go-cache-paths.outputs.go-build }}
             ${{ steps.go-cache-paths.outputs.go-mod }}
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}-4
+          restore-keys: |
+            ${{ runner.os }}-go-
       - name: Go generate files
         run: make prepare
-      - name: Test Cache
-        uses: actions/cache@v2
-        with:
-          path: |
-            /root/.cache/go-test
-          key: ${{ runner.os }}-go-test-${{ hashFiles('**/*.go', '**/*.s', '**/*.c', '**/*.h', '**/*.cpp') }}
-      - name: Run Test
+      - name: Gen coverage report name
+        shell: bash
+        id: cov-report-name
+        run: |
+          pkg_paths="${{ matrix.package-paths }}"
+          name=$(sed 's^\.\/^^g; s^\/\.\.\.^^g; s^\/^-^g; s^ ^_^g' <<< ${pkg_paths})
+          echo ${name}.txt
+          echo "::set-output name=name::coverage-${name}"
+          echo "::set-output name=path::coverage-${name}.txt"
+      - name: Run Go Test
         env:
           GOLANG_PROTOBUF_REGISTRATION_CONFLICT: ignore
         run: |
-          make run-test
+          mkdir -p ./coverage
+          go test -tags=musl -work -timeout=10s -failfast -race -cover -coverprofile=./coverage/${{ steps.cov-report-name.outputs.path }} -covermode=atomic -gcflags='-l -N' ${{ matrix.package-paths }}
+      - name: Upload coverage As Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ steps.cov-report-name.outputs.name }}
+          path: ./coverage/${{ steps.cov-report-name.outputs.path }}
+          retention-days: 1
+
+  CODE-COV:
+    runs-on: ubuntu-latest
+    needs:
+      - CODE-TEST
+    steps:
+      - name: Clone repo
+        uses: actions/checkout@v3
+      - name: download coverage reports
+        uses: actions/download-artifact@v3
+        with:
+          path: ./coverage/
+      - name: Upload coverage to Codecov
+#        uses: codecov/codecov-action@v3
+#        with:
+#          fail_ci_if_error: true
+#          directory: ./coverage
+#          flags: unittests
+#          verbose: true
+#          functionalities: fix
+        run: |
           curl -s https://codecov.io/bash | bash
