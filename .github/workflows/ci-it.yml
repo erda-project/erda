@@ -229,10 +229,12 @@ jobs:
         with:
           path: ./coverage/
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
-        with:
-          fail_ci_if_error: true
-          directory: ./coverage
-          flags: unittests
-          verbose: true
-          functionalities: fix
+#        uses: codecov/codecov-action@v3
+#        with:
+#          fail_ci_if_error: true
+#          directory: ./coverage
+#          flags: unittests
+#          verbose: true
+#          functionalities: fix
+        run: |
+          curl -s https://codecov.io/bash | bash
