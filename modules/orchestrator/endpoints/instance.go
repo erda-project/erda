@@ -45,7 +45,6 @@ func (e *Endpoints) ListServiceInstance(ctx context.Context, r *http.Request, va
 	if err != nil {
 		return apierrors.ErrListInstance.NotLogin().ToResp(), nil
 	}
-	orgID, err := getOrgID(r)
 	if err != nil {
 		return apierrors.ErrListInstance.NotLogin().ToResp(), nil
 	}
@@ -75,16 +74,11 @@ func (e *Endpoints) ListServiceInstance(ctx context.Context, r *http.Request, va
 	ip := r.URL.Query().Get("ip")
 
 	req := apistructs.InstanceInfoRequest{
-		OrgID:       strconv.FormatUint(orgID, 10),
 		RuntimeID:   runtimeID,
 		ServiceName: serviceName,
 	}
 	if ip != "" {
 		req.InstanceIP = ip
-	}
-	rID, _ := strconv.Atoi(runtimeID)
-	if runtime, err := e.db.GetRuntime(uint64(rID)); err == nil {
-		req.Cluster = runtime.ClusterName
 	}
 	switch status {
 	case "", "running":
