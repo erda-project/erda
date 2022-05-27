@@ -172,8 +172,10 @@ func getSearchSource(start, end int64, sel *storage.Selector) *elastic.SearchSou
 			query = query.Filter(elastic.NewTermQuery(filter.Key, val))
 		case storage.REGEXP:
 			query = query.Filter(elastic.NewRegexpQuery(filter.Key, val))
-		case storage.EXPRESSION, storage.CONTAINS:
+		case storage.EXPRESSION:
 			query = query.Filter(elastic.NewQueryStringQuery(val).DefaultField("content").DefaultOperator("AND"))
+		case storage.CONTAINS:
+			query = query.Filter(elastic.NewQueryStringQuery(escapeQueryString(val)).DefaultField("content").DefaultOperator("AND"))
 		}
 	}
 	if sel.Meta.Highlight {
@@ -186,6 +188,12 @@ func getSearchSource(start, end int64, sel *storage.Selector) *elastic.SearchSou
 			Field("*"))
 	}
 	return searchSource.Query(query)
+}
+
+var replacer = strings.NewReplacer(`"`, `\"`)
+
+func escapeQueryString(value string) string {
+	return fmt.Sprintf(`"%s"`, replacer.Replace(value))
 }
 
 var skip = errors.New("skip")
