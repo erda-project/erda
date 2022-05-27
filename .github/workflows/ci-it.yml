@@ -129,12 +129,45 @@ jobs:
           skip-pkg-cache: false
           skip-build-cache: false
 
-  UNIT-TEST-modules:
+  CODE-TEST:
     runs-on: ubuntu-latest
     container:
       image: letmein7788/letmein:golangci-lint
     needs:
       - PREPARE
+    strategy:
+      fail-fast: true
+      matrix:
+        package-path:
+          - ./modules/apps/
+          - ./modules/cluster/
+          - ./modules/cmp/
+          - ./modules/core/
+          - ./modules/core-services/
+          - ./modules/dicehub/
+          - ./modules/dop/
+          - ./modules/ecp/
+          - ./modules/extensions/
+          - ./modules/gittar/
+          - ./modules/hepa/
+          - ./modules/kms/
+          - ./modules/messenger/
+          - ./modules/monitor/
+          - ./modules/msp/
+          - ./modules/oap/
+          - ./modules/openapi/
+          - ./modules/orchestrator/
+          - ./modules/pipeline/
+          - ./modules/pkg/
+          - ./modules/tools/
+          - ./modules/uc-adaptor/
+          - ./modules/volume-provisioner/
+          - ./apistructs/
+          - ./bundle/
+#          - ./cmd/
+          - ./pkg/
+          - ./providers/
+          - ./tools/
     steps:
       - name: Install Tools
         run: apk add tar
@@ -160,277 +193,45 @@ jobs:
             ${{ runner.os }}-go-
       - name: Go generate files
         run: make prepare
+      - name: Gen coverage report name
+        shell: bash
+        id: cov-report-name
+        run: |
+          pkg_path=${{ matrix.package-path }}
+          name=${pkg_path#./}
+          name=${name%/}
+          name=$(sed 's^/^-^g' <<< ${name})
+          echo ${name}.txt
+          echo "::set-output name=name::coverage-${name}.txt"
       - name: Run Go Test
         env:
           GOLANG_PROTOBUF_REGISTRATION_CONFLICT: ignore
         run: |
-          go test $(go list ./modules/... | grep -v '/modules/hepa/' | grep -v '/modules/openapi/' |grep -v '/modules/cmp/' | grep -v 'modules/dop/' | grep -v '/modules/monitor/' | grep -v '/modules/core/monitor/' | grep -v '/modules/msp/' | grep -v '/modules/oap/') -tags=musl -work -timeout=10s -failfast -race -coverprofile=coverage-modules.txt -covermode=atomic -gcflags='-l'
+          mkdir -p ./coverage
+          go test ${{ matrix.package-path }}/... -tags=musl -work -timeout=10s -failfast -race -coverprofile=./coverage/${{ steps.cov-report-name.outputs.name }} -covermode=atomic -gcflags='-l'
       - name: Upload coverage As Artifact
         uses: actions/upload-artifact@v3
         with:
-          name: coverage-modules
-          path: coverage-modules.txt
-          retention-days: 1
-
-  UNIT-TEST-monitor:
-    runs-on: ubuntu-latest
-    container:
-      image: letmein7788/letmein:golangci-lint
-    needs:
-      - PREPARE
-    steps:
-      - name: Install Tools
-        run: apk add tar
-      - name: Clone repo
-        uses: actions/checkout@v3
-      - name: Fetch proto-go
-        uses: actions/download-artifact@v3
-        with:
-          name: proto-go
-          path: ./api/proto-go
-      - name: Calculate Go Cache Path
-        id: go-cache-paths
-        run: |
-          echo "::set-output name=go-build::$(go env GOCACHE)"
-          echo "::set-output name=go-mod::$(go env GOMODCACHE)"
-      - uses: actions/cache@v3
-        with:
-          path: |
-            ${{ steps.go-cache-paths.outputs.go-build }}
-            ${{ steps.go-cache-paths.outputs.go-mod }}
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}-4
-          restore-keys: |
-            ${{ runner.os }}-go-
-      - name: Go generate files
-        run: make prepare
-      - name: Run Go Test
-        env:
-          GOLANG_PROTOBUF_REGISTRATION_CONFLICT: ignore
-        run: |
-          go test ./modules/monitor/... ./modules/core/monitor/... ./modules/msp/... ./modules/oap/... -tags=musl -work -timeout=10s -failfast -race -coverprofile=coverage-monitor.txt -covermode=atomic -gcflags='-l'
-      - name: Upload coverage As Artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: coverage-monitor
-          path: coverage-monitor.txt
-          retention-days: 1
-
-  UNIT-TEST-pkg:
-    runs-on: ubuntu-latest
-    container:
-      image: letmein7788/letmein:golangci-lint
-    needs:
-      - PREPARE
-    steps:
-      - name: Install Tools
-        run: apk add tar
-      - name: Clone repo
-        uses: actions/checkout@v3
-      - name: Fetch proto-go
-        uses: actions/download-artifact@v3
-        with:
-          name: proto-go
-          path: ./api/proto-go
-      - name: Calculate Go Cache Path
-        id: go-cache-paths
-        run: |
-          echo "::set-output name=go-build::$(go env GOCACHE)"
-          echo "::set-output name=go-mod::$(go env GOMODCACHE)"
-      - uses: actions/cache@v3
-        with:
-          path: |
-            ${{ steps.go-cache-paths.outputs.go-build }}
-            ${{ steps.go-cache-paths.outputs.go-mod }}
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}-4
-          restore-keys: |
-            ${{ runner.os }}-go-
-      - name: Go generate files
-        run: make prepare
-      - name: Run Go Test
-        env:
-          GOLANG_PROTOBUF_REGISTRATION_CONFLICT: ignore
-        run: |
-          go test ./pkg/... -tags=musl -work -timeout=10s -failfast -race -coverprofile=coverage-pkg.txt -covermode=atomic -gcflags='-l'
-      - name: Upload coverage As Artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: coverage-pkg
-          path: coverage-pkg.txt
-          retention-days: 1
-
-  UNIT-TEST-cmp:
-    runs-on: ubuntu-latest
-    container:
-      image: letmein7788/letmein:golangci-lint
-    needs:
-      - PREPARE
-    steps:
-      - name: Install Tools
-        run: apk add tar
-      - name: Clone repo
-        uses: actions/checkout@v3
-      - name: Fetch proto-go
-        uses: actions/download-artifact@v3
-        with:
-          name: proto-go
-          path: ./api/proto-go
-      - name: Calculate Go Cache Path
-        id: go-cache-paths
-        run: |
-          echo "::set-output name=go-build::$(go env GOCACHE)"
-          echo "::set-output name=go-mod::$(go env GOMODCACHE)"
-      - uses: actions/cache@v3
-        with:
-          path: |
-            ${{ steps.go-cache-paths.outputs.go-build }}
-            ${{ steps.go-cache-paths.outputs.go-mod }}
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}-4
-          restore-keys: |
-            ${{ runner.os }}-go-
-      - name: Go generate files
-        run: make prepare
-      - name: Run Go Test
-        env:
-          GOLANG_PROTOBUF_REGISTRATION_CONFLICT: ignore
-        run: |
-          go test ./modules/cmp/... -tags=musl -work -timeout=10s -failfast -race -coverprofile=coverage-cmp.txt -covermode=atomic -gcflags='-l'
-      - name: Upload coverage As Artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: coverage-cmp
-          path: coverage-cmp.txt
-          retention-days: 1
-
-  UNIT-TEST-dop:
-    runs-on: ubuntu-latest
-    container:
-      image: letmein7788/letmein:golangci-lint
-    needs:
-      - PREPARE
-    steps:
-      - name: Install Tools
-        run: apk add tar
-      - name: Clone repo
-        uses: actions/checkout@v3
-      - name: Fetch proto-go
-        uses: actions/download-artifact@v3
-        with:
-          name: proto-go
-          path: ./api/proto-go
-      - name: Calculate Go Cache Path
-        id: go-cache-paths
-        run: |
-          echo "::set-output name=go-build::$(go env GOCACHE)"
-          echo "::set-output name=go-mod::$(go env GOMODCACHE)"
-      - uses: actions/cache@v3
-        with:
-          path: |
-            ${{ steps.go-cache-paths.outputs.go-build }}
-            ${{ steps.go-cache-paths.outputs.go-mod }}
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}-4
-          restore-keys: |
-            ${{ runner.os }}-go-
-      - name: Go generate files
-        run: make prepare
-      - name: Run Go Test
-        env:
-          GOLANG_PROTOBUF_REGISTRATION_CONFLICT: ignore
-        run: |
-          go test ./modules/dop/... -tags=musl -work -timeout=10s -failfast -race -coverprofile=coverage-dop.txt -covermode=atomic -gcflags='-l'
-      - name: Upload coverage As Artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: coverage-dop
-          path: coverage-dop.txt
-          retention-days: 1
-  UNIT-TEST-hepa-openapi:
-    runs-on: ubuntu-latest
-    container:
-      image: letmein7788/letmein:golangci-lint
-    needs:
-      - PREPARE
-    steps:
-      - name: Install Tools
-        run: apk add tar
-      - name: Clone repo
-        uses: actions/checkout@v3
-      - name: Fetch proto-go
-        uses: actions/download-artifact@v3
-        with:
-          name: proto-go
-          path: ./api/proto-go
-      - name: Calculate Go Cache Path
-        id: go-cache-paths
-        run: |
-          echo "::set-output name=go-build::$(go env GOCACHE)"
-          echo "::set-output name=go-mod::$(go env GOMODCACHE)"
-      - uses: actions/cache@v3
-        with:
-          path: |
-            ${{ steps.go-cache-paths.outputs.go-build }}
-            ${{ steps.go-cache-paths.outputs.go-mod }}
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}-4
-          restore-keys: |
-            ${{ runner.os }}-go-
-      - name: Go generate files
-        run: make prepare
-      - name: Run Go Test
-        env:
-          GOLANG_PROTOBUF_REGISTRATION_CONFLICT: ignore
-        run: |
-          go test ./modules/hepa/... ./modules/openapi/... -tags=musl -work -timeout=10s -failfast -race -coverprofile=coverage-hepa-openapi.txt -covermode=atomic -gcflags='-l'
-      - name: Upload coverage As Artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: coverage-hepa-openapi
-          path: coverage-hepa-openapi.txt
+          name: ${{ steps.cov-report-name.outputs.name }}
+          path: ./coverage/${{ steps.cov-report-name.outputs.name }}
           retention-days: 1
 
   CODE-COV:
     runs-on: ubuntu-latest
     needs:
-      - UNIT-TEST-modules
-      - UNIT-TEST-pkg
-      - UNIT-TEST-dop
-      - UNIT-TEST-cmp
-      - UNIT-TEST-monitor
+      - CODE-TEST
     steps:
       - name: Clone repo
         uses: actions/checkout@v3
-      - name: download coverage-modules.txt
+      - name: download coverage reports
         uses: actions/download-artifact@v3
         with:
-          name: coverage-modules
-          path: .
-      - name: download coverage-pkg.txt
-        uses: actions/download-artifact@v3
-        with:
-          name: coverage-pkg
-          path: .
-      - name: download coverage-cmp.txt
-        uses: actions/download-artifact@v3
-        with:
-          name: coverage-cmp
-          path: .
-      - name: download coverage-dop.txt
-        uses: actions/download-artifact@v3
-        with:
-          name: coverage-dop
-          path: .
-      - name: download coverage-monitor.txt
-        uses: actions/download-artifact@v3
-        with:
-          name: coverage-monitor
-          path: .
-      - name: download coverage-hepa-openapi.txt
-        uses: actions/download-artifact@v3
-        with:
-          name: coverage-hepa-openapi
-          path: .
+          path: ./coverage/
+      - run: ls -R ./coverage/
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
         with:
           fail_ci_if_error: true
-          files: ./coverage-pkg.txt,./coverage-modules.txt,./coverage-cmp.txt,./coverage-dop.txt,./coverage-monitor.txt,./coverage-hepa-openapi.txt
+          directory: ./coverage
           flags: unittests
           verbose: true
