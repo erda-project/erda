@@ -55,9 +55,7 @@ func (p *Package) Make() (err error) {
 		return errors.Wrap(err, "failed to make temp python package for migration")
 	}
 	defer func() {
-		if err != nil {
-			_ = p.Remove()
-		}
+		_ = p.Remove()
 	}()
 
 	msg := "failed to make python file for migration"

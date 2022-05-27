@@ -108,6 +108,7 @@ func TestZipXmind(t *testing.T) {
 	os.Chdir("./examples/xmind")
 	files := []string{"META-INF/", "content.xml", "meta.xml"}
 	err := archiver.Zip.Make("a.xmind", files)
+	defer os.Remove("a.xmind")
 	assert.NoError(t, err)
 }
 

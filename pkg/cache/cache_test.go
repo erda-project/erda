@@ -22,8 +22,8 @@ import (
 )
 
 func TestNew(t *testing.T) {
-	var c = cache.New("demo", time.Millisecond*300, func(i interface{}) (interface{}, bool) {
-		time.Sleep(time.Millisecond * 300)
+	var c = cache.New("demo", time.Millisecond*100, func(i interface{}) (interface{}, bool) {
+		time.Sleep(time.Millisecond * 100)
 		ii := i.(int)
 		return ii * ii, true
 	})
@@ -36,7 +36,7 @@ func TestNew(t *testing.T) {
 		cost[i] = time.Now().Sub(now).Microseconds()
 	}
 	var costWithCache = [10]int64{}
-	time.Sleep(time.Second)
+	time.Sleep(time.Millisecond * 100)
 	t.Log("second time LoadWithUpdate")
 	for i := 0; i < 10; i++ {
 		now := time.Now()

@@ -74,7 +74,7 @@ func Test_netportal(t *testing.T) {
 			logrus.Info("client connected")
 			break
 		}
-		time.Sleep(1 * time.Second)
+		time.Sleep(100 * time.Millisecond)
 	}
 	hc := &http.Client{}
 	req, _ := http.NewRequest("GET", "http://"+dialerListenAddr2+"/hello2", nil)

@@ -25,7 +25,7 @@ import (
 func TestUserCanAccessTheApp(t *testing.T) {
 	scopeAccess = cache.New(scopeAccessName, time.Minute, func(i interface{}) (interface{}, bool) {
 		us := i.(userScope)
-		time.Sleep(time.Second * 10)
+		time.Sleep(time.Millisecond * 100)
 		return &apistructs.ScopeRole{
 			Scope: apistructs.Scope{
 				Type: us.Scope,
