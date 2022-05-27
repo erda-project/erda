@@ -21,11 +21,9 @@ on:
       - master
       - release/*
     paths:
-      - '**'
       - '**.go'
   pull_request:
     paths:
-      - '**'
       - '**.go'
 
 jobs:
