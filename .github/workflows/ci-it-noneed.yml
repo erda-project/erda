@@ -48,8 +48,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: echo "No CODE-TEST required"
+#      - uses: actions/checkout@v3
+#      - run: |
+#          go test ./pkg/strutil/... -coverprofile=coverage-strutil.txt
+      - run: |
+          curl -s https://codecov.io/bash | bash
+
 
   CODE-COV:
     runs-on: ubuntu-latest
     steps:
       - run: echo "No CODE-COV required"
+

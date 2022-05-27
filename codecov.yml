@@ -21,8 +21,10 @@ coverage:
         threshold: 0%
         base: auto
         if_ci_failed: error
-        informational: false
+        informational: true
         only_pulls: false
+        if_not_found: success
+        flag_coverage_not_uploaded_behavior: pass
     patch:
       default:
         # basic
