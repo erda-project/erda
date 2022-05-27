@@ -16,7 +16,6 @@ package server
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -67,7 +66,6 @@ func Test_netportal(t *testing.T) {
 	}
 	mx := mux.NewRouter()
 	mx.HandleFunc("/hello2", helloHandler)
-	mx.HandleFunc("/clusterdialer/ip", queryIPFunc2)
 	go http.ListenAndServe(helloListenAddr2, mx)
 
 	go client.Start(context.Background())
@@ -101,13 +99,4 @@ func Test_netportal(t *testing.T) {
 		t.Errorf("respBody:%s, expect:Hello, world!", respBody)
 		return
 	}
-}
-
-func queryIPFunc2(w http.ResponseWriter, req *http.Request) {
-	res := map[string]interface{}{
-		"succeeded": true,
-		"IP":        dialerListenAddr2,
-	}
-	data, _ := json.Marshal(res)
-	io.WriteString(w, string(data))
 }
