@@ -122,6 +122,8 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 
 	registerWebHook(bdl.Bdl)
 
+	deleteWebhook(bdl.Bdl)
+
 	// 注册 hook
 	if err := ep.RegisterEvents(); err != nil {
 		return err
@@ -998,4 +1000,29 @@ func compensateIssueStateCirculation(ep *endpoints.Endpoints) error {
 	}
 
 	return ep.DBClient().BatchCreateIssueTransition(statesTrans)
+}
+
+func deleteWebhook(bdl *bundle.Bundle) error {
+	const (
+		createHookName = "guide_create"
+		deleteHookName = "guide_delete"
+	)
+
+	hookNames := []string{createHookName, deleteHookName}
+
+	for _, v := range hookNames {
+		err := bdl.DeleteWebhook(apistructs.DeleteHookRequest{
+			Name: v,
+			HookLocation: apistructs.HookLocation{
+				Org:         "-1",
+				Project:     "-1",
+				Application: "-1",
+			},
+		})
+		if err != nil {
+			logrus.Errorf("failed to DeleteWebhook, name: %s,err: %v", v, err)
+			return err
+		}
+	}
+	return nil
 }
