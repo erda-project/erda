@@ -625,13 +625,14 @@ func (s *ReleaseService) ListRelease(ctx context.Context, req *pb.ReleaseListReq
 			logrus.WithError(err).Errorln("failed to ListArtifacts")
 			return nil, errors.Wrap(err, "failed to ListArtifacts")
 		}
-		if len(artifacts.Data) > 0 {
-			var releaseIDs []string
-			for k := range artifacts.Data {
-				releaseIDs = append(releaseIDs, k)
-			}
-			req.ReleaseID = strings.Join(releaseIDs, ",")
+		if len(artifacts.Data) == 0 {
+			return &pb.ReleaseListResponse{}, nil
 		}
+		var releaseIDs []string
+		for k := range artifacts.Data {
+			releaseIDs = append(releaseIDs, k)
+		}
+		req.ReleaseID = strings.Join(releaseIDs, ",")
 		req.ProjectID = 0
 	}
 	resp, err := s.List(ctx, orgID, params)

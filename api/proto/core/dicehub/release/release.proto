@@ -517,6 +517,7 @@ message ReleaseData {
   int64 applicationID = 20 [json_name = "applicationId"];
 
   string projectName = 21;
+  string projectDisplayName = 30;
 
   string applicationName = 22;
 
