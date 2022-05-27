@@ -23,8 +23,33 @@ on:
   pull_request:
 
 jobs:
+  IS_GO_FILE_CHANGED:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 2  # OR "0" -> To retrieve the preceding commit.
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v21
+      - name: Check Any Go File Changed
+        id: check-go-file-changed
+        run: |
+          for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
+            if [[ "${file##*.}" == "go" ]]; then
+              echo "::set-output name=is-go-file-changed::true"
+              return
+            fi
+          done
+    # Map a step output to a job output
+    outputs:
+      is-go-file-changed: ${{ steps.check-go-file-changed.outputs.is-go-file-changed }}
+
   PREPARE:
     runs-on: ubuntu-latest
+    needs:
+      - IS_GO_FILE_CHANGED
+    if: needs.GO_FILE_CHANGED.outputs.is-go-file-changed
     container:
       image: registry.erda.cloud/erda/gohub:latest
     steps:
@@ -59,6 +84,7 @@ jobs:
       image: letmein7788/letmein:golangci-lint
     needs:
       - PREPARE
+    if: needs.GO_FILE_CHANGED.outputs.is-go-file-changed
     steps:
       - name: Install Tools
         run: apk add tar
