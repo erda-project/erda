@@ -15,6 +15,8 @@
 package customFilter
 
 import (
+	"strconv"
+
 	model "github.com/erda-project/erda-infra/providers/component-protocol/components/filter/models"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
@@ -102,18 +104,54 @@ func (p *CustomFilter) AppCondition() (*model.SelectCondition, error) {
 }
 
 func (p *CustomFilter) AppConditionWithNoInParamsAppID() (*model.SelectCondition, error) {
-	apps, err := p.bdl.GetMyAppsByProject(p.sdk.Identity.UserID, p.InParams.OrgIDInt, p.InParams.ProjectIDInt, "")
-	if err != nil {
+	var (
+		allApps      []apistructs.ApplicationDTO
+		myAppNames   []string
+		appIDNameMap = make(map[string]string)
+	)
+
+	worker := limit_sync_group.NewWorker(2)
+	worker.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
+		allAppResp, err := p.bdl.GetAppList(p.sdk.Identity.OrgID, p.sdk.Identity.UserID, apistructs.ApplicationListRequest{
+			ProjectID: p.InParams.ProjectIDInt,
+			PageNo:    1,
+			PageSize:  999,
+			IsSimple:  true,
+		})
+		if err != nil {
+			return err
+		}
+		allApps = allAppResp.List
+		return nil
+	})
+	worker.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
+		myAppResp, err := p.bdl.GetMyAppsByProject(p.sdk.Identity.UserID, p.InParams.OrgIDInt, p.InParams.ProjectIDInt, "")
+		if err != nil {
+			return err
+		}
+		for _, v := range myAppResp.List {
+			myAppNames = append(myAppNames, v.Name)
+		}
+		return nil
+	})
+	if err := worker.Do().Error(); err != nil {
 		return nil, err
 	}
+
 	cond := model.NewSelectCondition("appList", cputil.I18n(p.sdk.Ctx, "application"), func() []model.SelectOption {
-		selectOptions := make([]model.SelectOption, 0, len(apps.List))
-		for _, v := range apps.List {
+		selectOptions := make([]model.SelectOption, 0, len(allApps)+1)
+		selectOptions = append(selectOptions, *model.NewSelectOption(cputil.I18n(p.sdk.Ctx, "participated"), common.Participated))
+		for _, v := range allApps {
 			selectOptions = append(selectOptions, *model.NewSelectOption(v.Name, v.ID))
+			appIDNameMap[strconv.FormatUint(v.ID, 10)] = v.Name
 		}
 		return selectOptions
 	}())
+	cond.ConditionBase.Disabled = false
 	cond.ConditionBase.Placeholder = cputil.I18n(p.sdk.Ctx, "please-choose-application")
+
+	p.gsHelper.SetGlobalMyAppNames(myAppNames)
+	p.gsHelper.SetGlobalAppIDNameMap(appIDNameMap)
 	return cond, nil
 }
 
@@ -125,5 +163,6 @@ func (p *CustomFilter) AppConditionWithInParamsAppID() (*model.SelectCondition, 
 	cond := model.NewSelectCondition("appList", cputil.I18n(p.sdk.Ctx, "application"), []model.SelectOption{*model.NewSelectOption(app.Name, app.ID)})
 	cond.ConditionBase.Disabled = true
 	cond.ConditionBase.Placeholder = cputil.I18n(p.sdk.Ctx, "please-choose-application")
+	p.gsHelper.SetGlobalInParamsAppName(app.Name)
 	return cond, nil
 }

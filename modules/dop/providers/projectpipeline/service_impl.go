@@ -788,37 +788,22 @@ func (p *ProjectPipelineService) ListExecHistory(ctx context.Context, params def
 	if params.ProjectID == 0 {
 		return nil, apierrors.ErrListExecHistoryProjectPipeline.InternalError(fmt.Errorf("projectID can not empty"))
 	}
-	project, err := p.bundle.GetProject(params.ProjectID)
+
+	projectDto, err := p.bundle.GetProject(params.ProjectID)
 	if err != nil {
 		return nil, apierrors.ErrListExecHistoryProjectPipeline.InternalError(err)
 	}
-	appData, err := p.bundle.GetMyAppsByProject(params.IdentityInfo.UserID, project.OrgID, project.ID, "")
+
+	orgDto, err := p.bundle.GetOrg(projectDto.OrgID)
 	if err != nil {
 		return nil, apierrors.ErrListExecHistoryProjectPipeline.InternalError(err)
 	}
-	for _, app := range appData.List {
-		// search all project app
-		if len(params.AppIDList) <= 0 {
-			pipelineDefinition.SourceRemotes = append(pipelineDefinition.SourceRemotes, makeRemote(&app))
-			continue
-		}
-		// search user choose project app
-		for _, appID := range params.AppIDList {
-			if appID != app.ID {
-				continue
-			}
-			pipelineDefinition.SourceRemotes = append(pipelineDefinition.SourceRemotes, makeRemote(&app))
-		}
-	}
-	// No application returned directly
-	if len(pipelineDefinition.SourceRemotes) == 0 {
-		return &deftype.ProjectPipelineListExecHistoryResult{
-			Data: &apistructs.PipelinePageListData{
-				Total:           0,
-				CurrentPageSize: int64(params.PageSize),
-			},
-		}, nil
-	}
+
+	pipelineDefinition.Location = apistructs.MakeLocation(&apistructs.ApplicationDTO{
+		OrgName:     orgDto.Name,
+		ProjectName: projectDto.Name,
+	}, apistructs.PipelineTypeCICD)
+	pipelineDefinition.SourceRemotes = getRemotes(params.AppNames, orgDto.Name, projectDto.Name)
 
 	jsonValue, err := json.Marshal(pipelineDefinition)
 	if err != nil {

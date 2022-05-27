@@ -326,6 +326,7 @@ func (client *Client) PageListPipelines(req apistructs.PipelinePageListRequest, 
 			if len(definitionReq.Name) > 0 {
 				baseSQL.Where(fmt.Sprintf("%v.name like ?", definitiondb.PipelineDefinition{}.TableName()), "%"+definitionReq.Name+"%")
 			}
+			baseSQL.Where(fmt.Sprintf("%s.location = ?", definitiondb.PipelineDefinition{}.TableName()), definitionReq.Location)
 			if len(definitionReq.SourceRemotes) > 0 {
 				baseSQL.In(tableFieldName(sourcedb.PipelineSource{}.TableName(), "remote"), definitionReq.SourceRemotes)
 			}

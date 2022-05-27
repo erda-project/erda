@@ -27,6 +27,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/project-pipeline-exec-list/common/gshelper"
 )
 
 func TestCustomFilter_AppConditionWithInParamsAppID(t *testing.T) {
@@ -45,12 +46,14 @@ func TestCustomFilter_AppConditionWithInParamsAppID(t *testing.T) {
 		Tran: &MockTran{},
 	}
 	ctx := context.WithValue(context.Background(), cptype.GlobalInnerKeyCtxSDK, sdk)
+	gsHelper := gshelper.NewGSHelper(&cptype.GlobalStateData{})
 
 	type fields struct {
 		bdl      *bundle.Bundle
 		InParams *InParams
 		sdk      *cptype.SDK
 		Tran     i18n.Translator
+		gsHelper *gshelper.GSHelper
 	}
 	tests := []struct {
 		name    string
@@ -69,6 +72,7 @@ func TestCustomFilter_AppConditionWithInParamsAppID(t *testing.T) {
 					Ctx:  ctx,
 					Tran: &MockTran{},
 				},
+				gsHelper: gsHelper,
 			},
 			want:    nil,
 			wantErr: true,
@@ -84,6 +88,7 @@ func TestCustomFilter_AppConditionWithInParamsAppID(t *testing.T) {
 					Ctx:  ctx,
 					Tran: &MockTran{},
 				},
+				gsHelper: gsHelper,
 			},
 			want: &model.SelectCondition{
 				ConditionBase: model.ConditionBase{
@@ -112,6 +117,7 @@ func TestCustomFilter_AppConditionWithInParamsAppID(t *testing.T) {
 				bdl:      tt.fields.bdl,
 				InParams: tt.fields.InParams,
 				sdk:      tt.fields.sdk,
+				gsHelper: tt.fields.gsHelper,
 			}
 			got, err := p.AppConditionWithInParamsAppID()
 			if (err != nil) != tt.wantErr {
@@ -142,10 +148,12 @@ func TestCustomFilter_ConditionRetriever(t *testing.T) {
 		Tran: &MockTran{},
 	}
 	ctx := context.WithValue(context.Background(), cptype.GlobalInnerKeyCtxSDK, sdk)
+	gsHelper := gshelper.NewGSHelper(&cptype.GlobalStateData{})
 
 	type fields struct {
 		sdk      *cptype.SDK
 		InParams *InParams
+		gsHelper *gshelper.GSHelper
 	}
 	tests := []struct {
 		name    string
@@ -163,6 +171,7 @@ func TestCustomFilter_ConditionRetriever(t *testing.T) {
 					Ctx:  ctx,
 					Tran: &MockTran{},
 				},
+				gsHelper: gsHelper,
 			},
 			want:    4,
 			wantErr: false,
@@ -176,6 +185,7 @@ func TestCustomFilter_ConditionRetriever(t *testing.T) {
 					Ctx:  ctx,
 					Tran: &MockTran{},
 				},
+				gsHelper: gsHelper,
 			},
 			want:    5,
 			wantErr: false,
@@ -201,6 +211,7 @@ func TestCustomFilter_ConditionRetriever(t *testing.T) {
 			p := &CustomFilter{
 				sdk:      tt.fields.sdk,
 				InParams: tt.fields.InParams,
+				gsHelper: tt.fields.gsHelper,
 			}
 			got, err := p.ConditionRetriever()
 			if (err != nil) != tt.wantErr {

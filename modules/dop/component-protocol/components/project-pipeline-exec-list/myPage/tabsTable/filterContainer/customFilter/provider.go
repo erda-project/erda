@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/project-pipeline-exec-list/common"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/project-pipeline-exec-list/common/gshelper"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/util"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
@@ -164,5 +165,7 @@ func (p *CustomFilter) RegisterFilterItemDeleteOp(opData filter.OpFilterItemDele
 func (p *CustomFilter) setDefaultValues() {
 	if p.InParams.AppIDInt != 0 {
 		p.State.FrontendConditionValues.AppList = []uint64{p.InParams.AppIDInt}
+	} else {
+		p.State.FrontendConditionValues.AppList = []uint64{common.Participated}
 	}
 }
