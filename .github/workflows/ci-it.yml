@@ -138,36 +138,25 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        package-path:
-          - ./modules/apps/
-          - ./modules/cluster/
-          - ./modules/cmp/
-          - ./modules/core/
-          - ./modules/core-services/
-          - ./modules/dicehub/
-          - ./modules/dop/
-          - ./modules/ecp/
-          - ./modules/extensions/
-          - ./modules/gittar/
-          - ./modules/hepa/
-          - ./modules/kms/
-          - ./modules/messenger/
-          - ./modules/monitor/
-          - ./modules/msp/
-          - ./modules/oap/
-          - ./modules/openapi/
-          - ./modules/orchestrator/
-          - ./modules/pipeline/
-          - ./modules/pkg/
-          - ./modules/tools/
-          - ./modules/uc-adaptor/
-          - ./modules/volume-provisioner/
-          - ./apistructs/
-          - ./bundle/
-          #          - ./cmd/
-          - ./pkg/
-          - ./providers/
-          - ./tools/
+        package-paths:
+          - ./modules/apps/... ./modules/cluster/...
+          - ./modules/cmp/...
+          - ./modules/core/...
+
+          - ./modules/core-services/... ./modules/dicehub/... ./modules/ecp/... ./modules/extensions/... ./modules/gittar/...
+
+          - ./modules/dop/...
+
+          - ./modules/hepa/...
+
+          - ./modules/kms/... ./modules/messenger/... ./modules/monitor/... ./modules/msp/... ./modules/oap/...
+
+          - ./modules/openapi/...
+          - ./modules/orchestrator/...
+          - ./modules/pipeline/...
+
+          - ./modules/pkg/... ./modules/tools/... ./modules/uc-adaptor/... ./modules/volume-provisioner/... ./apistructs/... ./bundle/... ./providers/... ./tools/...
+          - ./pkg/...
     steps:
       - name: Install Tools
         run: apk add tar
@@ -197,10 +186,8 @@ jobs:
         shell: bash
         id: cov-report-name
         run: |
-          pkg_path=${{ matrix.package-path }}
-          name=${pkg_path#./}
-          name=${name%/}
-          name=$(sed 's^/^-^g' <<< ${name})
+          pkg_paths="${{ matrix.package-paths }}"
+          name=$(sed 's^\.\/^^g; s^\/\.\.\.^^g; s^\/^-^g; s^ ^_^g' <<< ${pkg_paths})
           echo ${name}.txt
           echo "::set-output name=name::coverage-${name}"
           echo "::set-output name=path::coverage-${name}.txt"
@@ -209,7 +196,7 @@ jobs:
           GOLANG_PROTOBUF_REGISTRATION_CONFLICT: ignore
         run: |
           mkdir -p ./coverage
-          go test -tags=musl -work -timeout=10s -failfast -race -cover -coverprofile=./coverage/${{ steps.cov-report-name.outputs.path }} -covermode=atomic -gcflags='-l -N' ${{ matrix.package-path }}/...
+          go test -tags=musl -work -timeout=10s -failfast -race -cover -coverprofile=./coverage/${{ steps.cov-report-name.outputs.path }} -covermode=atomic -gcflags='-l -N' ${{ matrix.package-paths }}
       - name: Upload coverage As Artifact
         uses: actions/upload-artifact@v3
         with:
