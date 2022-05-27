@@ -164,7 +164,7 @@ jobs:
           - ./modules/volume-provisioner/
           - ./apistructs/
           - ./bundle/
-#          - ./cmd/
+          #          - ./cmd/
           - ./pkg/
           - ./providers/
           - ./tools/
@@ -202,18 +202,19 @@ jobs:
           name=${name%/}
           name=$(sed 's^/^-^g' <<< ${name})
           echo ${name}.txt
-          echo "::set-output name=name::coverage-${name}.txt"
+          echo "::set-output name=name::coverage-${name}"
+          echo "::set-output name=path::coverage-${name}.txt"
       - name: Run Go Test
         env:
           GOLANG_PROTOBUF_REGISTRATION_CONFLICT: ignore
         run: |
           mkdir -p ./coverage
-          go test ${{ matrix.package-path }}/... -tags=musl -work -timeout=10s -failfast -race -coverprofile=./coverage/${{ steps.cov-report-name.outputs.name }} -covermode=atomic -gcflags='-l -N'
+          go test -tags=musl -work -timeout=10s -failfast -race -cover -coverprofile=./coverage/${{ steps.cov-report-name.outputs.path }} -covermode=atomic -gcflags='-l -N' ${{ matrix.package-path }}/...
       - name: Upload coverage As Artifact
         uses: actions/upload-artifact@v3
         with:
           name: ${{ steps.cov-report-name.outputs.name }}
-          path: ./coverage/${{ steps.cov-report-name.outputs.name }}
+          path: ./coverage/${{ steps.cov-report-name.outputs.path }}
           retention-days: 1
 
   CODE-COV:
@@ -234,3 +235,4 @@ jobs:
           directory: ./coverage
           flags: unittests
           verbose: true
+          functionalities: fix
