@@ -140,7 +140,7 @@ func (p *CustomFilter) AppConditionWithNoInParamsAppID() (*model.SelectCondition
 
 	cond := model.NewSelectCondition("appList", cputil.I18n(p.sdk.Ctx, "application"), func() []model.SelectOption {
 		selectOptions := make([]model.SelectOption, 0, len(allApps)+1)
-		selectOptions = append(selectOptions, *model.NewSelectOption(cputil.I18n(p.sdk.Ctx, "participated"), common.Participated))
+		selectOptions = append(selectOptions, *model.NewSelectOption(cputil.I18n(p.sdk.Ctx, "participated"), uint64(common.Participated)))
 		for _, v := range allApps {
 			selectOptions = append(selectOptions, *model.NewSelectOption(v.Name, v.ID))
 			appIDNameMap[strconv.FormatUint(v.ID, 10)] = v.Name
