@@ -41,7 +41,7 @@ const (
 	fakeClusterAccessKey = "init"
 )
 
-func test_netportal(t *testing.T) {
+func Test_netportal(t *testing.T) {
 	defer monkey.UnpatchAll()
 
 	authorizer := auth.New(auth.WithCredentialClient(nil))
