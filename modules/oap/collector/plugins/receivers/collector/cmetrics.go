@@ -25,7 +25,7 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/labstack/echo"
 
-	"github.com/erda-project/erda/modules/oap/collector/common"
+	"github.com/erda-project/erda/modules/oap/collector/lib"
 )
 
 func (p *provider) collectMetric(ctx echo.Context) error {
@@ -37,7 +37,7 @@ func (p *provider) collectMetric(ctx echo.Context) error {
 }
 
 func (p *provider) parseJSON(ctx echo.Context, name string) error {
-	body, err := common.ReadBody(ctx.Request())
+	body, err := lib.ReadBody(ctx.Request())
 	if err != nil {
 		return fmt.Errorf("parseJSON readBody: %w", err)
 	}
@@ -57,7 +57,7 @@ func (p *provider) parseJSON(ctx echo.Context, name string) error {
 }
 
 func (p *provider) parseLine(ctx echo.Context, name string) error {
-	r, err := common.ReadBody(ctx.Request())
+	r, err := lib.ReadBody(ctx.Request())
 	if err != nil {
 		return fmt.Errorf("parseLine readBody: %w", err)
 	}

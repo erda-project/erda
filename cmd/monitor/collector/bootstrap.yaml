@@ -16,12 +16,18 @@ erda.oap.collector.authentication:
 
 erda.oap.collector.core:
   pipelines:
-    - receivers: ["erda.oap.collector.receiver.collector"]
-      exporters: ["erda.oap.collector.exporter.kafka@collector"]
-    - receivers:
-        - "erda.oap.collector.receiver.jaeger"
-        - "erda.oap.collector.receiver.opentelemetry"
-      exporters: ["erda.oap.collector.exporter.kafka@erda-spans"]
+    raws:
+      - receivers: ["erda.oap.collector.receiver.collector"]
+        exporters: ["erda.oap.collector.exporter.kafka@collector"]
+
+      - receivers:
+          - "erda.oap.collector.receiver.jaeger"
+          - "erda.oap.collector.receiver.opentelemetry"
+        exporters:
+          - "erda.oap.collector.exporter.kafka@erda-spans"
+#          - "erda.oap.collector.exporter.stdout"
+
+    metrics:
     - receivers:
         #- "erda.oap.collector.receiver.dummy"
         - "erda.oap.collector.receiver.prometheus-remote-write"
@@ -39,15 +45,13 @@ erda.oap.collector.core:
 # ************* receivers *************
 erda.oap.collector.receiver.dummy:
   rate: 3s
-  metric_sample: '{"name":"kubelet_cadvisor","timeUnixNano":1640936985459000000,"relations":null,"attributes":{"container":"POD","container_name":"go-demo","host_ip":"10.118.177.94","id":"/kubepods/burstable/podff0b8bf8-4b48-4092-8f78-0bb9fffd75b4/67f7e9a8b0993ebdf8883a0ad8be9c3978b04883e56a156a8de563afa467d49d","image":"sha256:4a72b6f8d32bed5550174f75ba10f753e46eb04b8b9af8a96332030b7cdc9682","instance":"virtual-kubelet-cn-hangzhou-k","name":"67f7e9a8b0993ebdf8883a0ad8be9c3978b04883e56a156a8de563afa467d49d","namespace":"project-387-dev","pod":"telegraf-app-6fc3aaf6af-8bf72","pod_name":"telegraf-app-6fc3aaf6af-8bf72","prometheus":"default/prometheus","prometheus_replica":"prometheus-prometheus-0"},"dataPoints":{"container_cpu_usage_seconds_total":500}}'
+  metric_sample: '{"name":"kubelet_cadvisor","timestamp":1640936985459000000,"tags":{"container":"POD","container_name":"go-demo","host_ip":"10.118.177.94","id":"/kubepods/burstable/podff0b8bf8-4b48-4092-8f78-0bb9fffd75b4/67f7e9a8b0993ebdf8883a0ad8be9c3978b04883e56a156a8de563afa467d49d","image":"sha256:4a72b6f8d32bed5550174f75ba10f753e46eb04b8b9af8a96332030b7cdc9682","instance":"virtual-kubelet-cn-hangzhou-k","name":"67f7e9a8b0993ebdf8883a0ad8be9c3978b04883e56a156a8de563afa467d49d","namespace":"project-387-dev","pod":"telegraf-app-6fc3aaf6af-8bf72","pod_name":"telegraf-app-6fc3aaf6af-8bf72","prometheus":"default/prometheus","prometheus_replica":"prometheus-prometheus-0"},"fields":{"container_cpu_usage_seconds_total":500,"container_fs_usage_bytes":51200}}'
 
 erda.oap.collector.receiver.prometheus-remote-write:
 
 erda.oap.collector.receiver.jaeger:
 
 erda.oap.collector.receiver.opentelemetry:
-
-#erda.oap.collector.receiver.fluent-bit:
 
 erda.oap.collector.receiver.collector:
   metadata_key_of_topic: "KAFKA-TOPIC"
@@ -59,7 +63,7 @@ erda.oap.collector.receiver.collector:
 # ************* processors *************
 erda.oap.collector.processor.k8s-tagger@prw:
   keypass:
-    __kw__name: ["kubelet_cadvisor"]
+    name: ["kubelet_cadvisor"]
   pod:
     watch_selector:
       namespace: ""
@@ -79,205 +83,207 @@ erda.oap.collector.processor.k8s-tagger@prw:
 
 erda.oap.collector.processor.modifier:
   keypass:
-    __kw__name: ["kubelet_cadvisor"]
+    name: ["kubelet_cadvisor"]
   rules:
     - action: drop
-      key: kubernetes_pod_name
+      key: tags.kubernetes_pod_name
     - action: drop
-      key: kubernetes_pod_namespace
+      key: tags.kubernetes_pod_namespace
     - action: rename
-      key: pod
-      value: pod_name
+      key: tags.pod
+      value: tags.pod_name
     - action: rename
-      key: namespace
-      value: pod_namespace
+      key: tags.namespace
+      value: tags.pod_namespace
     - action: drop
-      key: kubernetes_pod_annotations_msp_erda_cloud_monitor_log_collector
+      key: tags.kubernetes_pod_annotations_msp_erda_cloud_monitor_log_collector
     - action: drop
-      key: kubernetes_pod_annotations_msp_erda_cloud_monitor_log_key
+      key: tags.kubernetes_pod_annotations_msp_erda_cloud_monitor_log_key
     - action: drop
-      key: kubernetes_pod_annotations_msp_erda_cloud_msp_log_attach
+      key: tags.kubernetes_pod_annotations_msp_erda_cloud_msp_log_attach
     - action: drop
-      key: kubernetes_pod_annotations_msp_erda_cloud_terminus_log_key
+      key: tags.kubernetes_pod_annotations_msp_erda_cloud_terminus_log_key
     - action: drop
-      key: instance
+      key: tags.instance
     - action: drop
-      key: prometheus
+      key: tags.prometheus
     - action: drop
-      key: prometheus_replica
+      key: tags.prometheus_replica
     - action: trim_prefix
       key: kubernetes_
     - action: trim_prefix
       key: pod_annotations_msp_erda_cloud_
     - action: copy
-      key: pod_uid
+      key: tags.pod_uid
       # for business
-      value: service_instance_id
+      value: tags.service_instance_id
     - action: add
-      key: cluster_name
+      key: tags.cluster_name
       value: ${DICE_CLUSTER_NAME}
     - action: add
-      key: org_name
+      key: tags.org_name
       value: ${DICE_ORG_NAME}
     # container is empty when pause in containerd-env
     - action: set
-      key: container
+      key: tags.container
       value: POD
       condition:
         op: value_empty
-        key: container
+        key: tags.container
     - action: add
-      key: container
+      key: tags.container
       value: POD
 
 erda.oap.collector.processor.modifier@addmeta:
   rules:
     - action: add
-      key: _meta
+      key: tags._meta
       value: "true"
     - action: add
-      key: _metric_scope
+      key: tags._metric_scope
       value: org
     - action: copy
-      key: org_name
-      value: _metric_scope_id
+      key: tags.org_name
+      value: tags._metric_scope_id
 
 # compatibility to docker_container_summary
 erda.oap.collector.processor.modifier@docker_container_summary:
   keypass:
-    __kw__name: ["kubelet_cadvisor"]
+    name: ["kubelet_cadvisor"]
   rules:
     - action: rename
-      key: __dp__container_fs_reads_bytes_total
-      value: __dp__blk_read_bytes
+      key: fields.container_fs_reads_bytes_total
+      value: fields.blk_read_bytes
     - action: rename
-      key: __dp__container_fs_reads_total
-      value: __dp__blk_reads
+      key: fields.container_fs_reads_total
+      value: fields.blk_reads
     - action: rename
-      key: __dp__container_fs_writes_bytes_total
-      value: __dp__blk_write_bytes
+      key: fields.container_fs_writes_bytes_total
+      value: fields.blk_write_bytes
     - action: rename
-      key: __dp__container_fs_writes_total
-      value: __dp__blk_writes
+      key: fields.container_fs_writes_total
+      value: fields.blk_writes
     - action: rename
-      key: __dp__container_fs_usage_bytes
-      value: __dp__disk_usage
+      key: fields.container_fs_usage_bytes
+      value: fields.disk_usage
     - action: rename
-      key: __dp__container_memory_max_usage_bytes
-      value: __dp__mem_max_usage
+      key: fields.container_memory_max_usage_bytes
+      value: fields.mem_max_usage
     - action: rename
-      key: __dp__container_memory_usage_bytes
-      value: __dp__mem_usage
+      key: fields.container_memory_usage_bytes
+      value: fields.mem_usage
     - action: rename
-      key: __dp__container_network_receive_bytes_total
-      value: __dp__rx_bytes
+      key: fields.container_network_receive_bytes_total
+      value: fields.rx_bytes
     - action: rename
-      key: __dp__container_network_receive_errors_total
-      value: __dp__rx_errors
+      key: fields.container_network_receive_errors_total
+      value: fields.rx_errors
     - action: rename
-      key: __dp__container_network_transmit_bytes_total
-      value: __dp__tx_bytes
+      key: fields.container_network_transmit_bytes_total
+      value: fields.tx_bytes
     - action: rename
-      key: __dp__container_network_transmit_errors_total
-      value: __dp__tx_errors
+      key: fields.container_network_transmit_errors_total
+      value: fields.tx_errors
     - action: regex
-      key: id
+      key: tags.id
       value: '^\/kubepods.*\/.*?\/.*?\/(\w+\-)?(?P<container_id>\w+)'
       # /kubepods.slice/kubepods-burstable.slice/kubepods-burstable-podfebb6bd8_349e_49ea_a629_bf27a28d63f3.slice/docker-39693d24c3985d77348b260bdb4f5af465fc0d86b3c07ec8560b3b56ae629d62.scope
       # /kubepods/burstable/podc15fa300-e090-4b5d-a850-eb65900a8dac/0fa5d0a7434e23d87f13617f2ab16186530c32ef877724842f96bbe8d4ba8935
     - action: rename
-      key: __dp__container_resources_memory_request
-      value: __dp__mem_request
+      key: fields.container_resources_memory_request
+      value: fields.mem_request
     - action: rename
-      key: __dp__container_resources_memory_limit
-      value: __dp__mem_limit
+      key: fields.container_resources_memory_limit
+      value: fields.mem_limit
     - action: rename
-      key: __dp__container_resources_cpu_request
-      value: __dp__cpu_request
+      key: fields.container_resources_cpu_request
+      value: fields.cpu_request
     - action: rename
-      key: __dp__container_resources_cpu_limit
-      value: __dp_cpu_limit
+      key: fields.container_resources_cpu_limit
+      value: fields.cpu_limit
     - action: rename
-      key: terminus_define_tag
-      value: job_id
+      key: tags.terminus_define_tag
+      value: tags.job_id
     # --- instance_type logic block ---
     - action: set
-      key: instance_type
+      key: tags.instance_type
       value: job
       condition:
         op: key_exist
-        key: pod_labels_dice_job
+        key: tags.pod_labels_dice_job
     - action: drop
-      key: pod_labels_dice_job
+      key: tags.pod_labels_dice_job
     - action: set
-      key: instance_type
+      key: tags.instance_type
       value: component
       condition:
         op: key_exist
-        key: pod_labels_dice_component
+        key: tags.pod_labels_dice_component
     - action: drop
-      key: pod_labels_dice_component
+      key: tags.pod_labels_dice_component
     - action: set
-      key: instance_type
+      key: tags.instance_type
       value: addon
       condition:
         op: value_match
-        key: pod_namespace
+        key: tags.pod_namespace
         value: '.*(addon).*?'
     - action: set
-      key: instance_type
+      key: tags.instance_type
       value: service
       condition:
         op: key_exist
-        key: service_name
+        key: tags.service_name
     # --- instance_type logic block ---
     - action: join
-      keys: [application_id, runtime_name, service_name]
-      target_key: service_id
+      keys: [tags.application_id, tags.runtime_name, tags.service_name]
+      target_key: tags.service_id
     - action: set
-      key: __kw__name
+      key: name
       value: docker_container_summary
     - action: drop
-      key: name
+      key: tags.name
 
 erda.oap.collector.processor.aggregator@cpu-usage:
   keypass:
-    __kw__name: ["docker_container_summary"]
+    name: ["docker_container_summary"]
   keydrop:
     container: ["POD"]
   keyinclude:
-    - "__kw__name"
-    - "__dp__container_cpu_usage_seconds_total"
-    - "cluster_name"
-    - "id"
+    - "name"
+    - "fields.container_cpu_usage_seconds_total"
+    - "tags.cluster_name"
+    - "tags.id"
 
   rules:
     - func: "rate"
-      args: ["__dp__container_cpu_usage_seconds_total"]
-      target_key: "__dp__cpu_usage_percent"
+      args: ["container_cpu_usage_seconds_total"]
+      target_key: "cpu_usage_percent"
     - func: "*"
-      args: ["__dp__cpu_usage_percent", 100]
-      target_key: "__dp__cpu_usage_percent"
+      args: ["cpu_usage_percent", 100]
+      target_key: "cpu_usage_percent"
 
 erda.oap.collector.processor.aggregator@mem-percent:
   keypass:
-    __kw__name: ["docker_container_summary"]
+    name: ["docker_container_summary"]
   keydrop:
-    container: ["POD"]
+    tags.container: ["POD"]
   keyinclude:
-    - "__kw__name"
-    - "__dp__mem_usage"
-    - "__dp__mem_limit"
-    - "cluster_name"
-    - "id"
+    - "name"
+    - "fields.mem_usage"
+    - "fields.mem_limit"
+    - "tags.cluster_name"
+    - "tags.id"
 
   rules:
     - func: "/"
-      args: ["__dp__mem_usage", "__dp__mem_limit"]
-      target_key: "__dp__mem_usage_percent"
+      args: ["mem_usage", "mem_limit"]
+      target_key: "mem_usage_percent"
     - func: "*"
-      args: ["__dp__mem_usage_percent", 100]
-      target_key: "__dp__mem_usage_percent"
+      args: ["mem_usage_percent", 100]
+      target_key: "mem_usage_percent"
+
+# ************* processors *************
 
 # ************* processors *************
 

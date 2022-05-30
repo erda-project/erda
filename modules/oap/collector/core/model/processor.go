@@ -15,6 +15,9 @@
 package model
 
 import (
+	"github.com/erda-project/erda/modules/core/monitor/log"
+	"github.com/erda-project/erda/modules/core/monitor/metric"
+	"github.com/erda-project/erda/modules/msp/apm/trace"
 	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
 )
 
@@ -26,7 +29,10 @@ type RuntimeProcessor struct {
 
 type Processor interface {
 	Component
-	Process(in odata.ObservableData) (odata.ObservableData, error)
+	ProcessMetric(item *metric.Metric) (*metric.Metric, error)
+	ProcessLog(item *log.Log) (*log.Log, error)
+	ProcessSpan(item *trace.Span) (*trace.Span, error)
+	ProcessorRaw(item *odata.Raw) (*odata.Raw, error)
 }
 
 type RunningProcessor interface {

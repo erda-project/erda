@@ -18,16 +18,21 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/erda-project/erda-infra/base/logs"
-	"github.com/erda-project/erda/modules/oap/collector/common"
+	"github.com/erda-project/erda/modules/core/monitor/log"
+	"github.com/erda-project/erda/modules/core/monitor/metric"
+	"github.com/erda-project/erda/modules/msp/apm/trace"
 	"github.com/erda-project/erda/modules/oap/collector/core/config"
 	"github.com/erda-project/erda/modules/oap/collector/core/model"
 	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
+	"github.com/erda-project/erda/modules/oap/collector/lib"
 )
 
 type Pipeline struct {
-	cfg        config.GlobalConfig
+	cfg        config.Pipeline
+	dtype      odata.DataType
 	receivers  []*model.RuntimeReceiver
 	processors []*model.RuntimeProcessor
 	exporters  []*model.RuntimeExporter
@@ -35,8 +40,12 @@ type Pipeline struct {
 	Log logs.Logger
 }
 
-func NewPipeline(log logs.Logger, cfg config.GlobalConfig) *Pipeline {
-	return &Pipeline{Log: log, cfg: cfg}
+func NewPipeline(logger logs.Logger, cfg config.Pipeline, dtype odata.DataType) *Pipeline {
+	return &Pipeline{
+		Log:   logger,
+		cfg:   cfg,
+		dtype: dtype,
+	}
 }
 
 func (p *Pipeline) InitComponents(receivers, processors, exporters []model.ComponentUnit) error {
@@ -89,15 +98,16 @@ func (p *Pipeline) esFromComponent(coms []model.ComponentUnit) ([]*model.Runtime
 		if !ok {
 			return nil, fmt.Errorf("invalid component<%s> type<%T>", com.Name, com.Component)
 		}
-		buffer := odata.NewBuffer(p.cfg.BatchLimit)
-		timer := common.NewRunningTimer(p.cfg.FlushInterval, p.cfg.FlushJitter)
 		res = append(res, &model.RuntimeExporter{
 			Name:     com.Name,
 			Logger:   p.Log.Sub("exporter-" + com.Name),
 			Exporter: c,
+			DType:    p.dtype,
 			Filter:   com.Filter,
-			Timer:    timer,
-			Buffer:   buffer,
+			Timer:    time.NewTimer(lib.RandomDuration(p.cfg.FlushInterval, p.cfg.FlushJitter)),
+			Interval: p.cfg.FlushInterval,
+			Jitter:   p.cfg.FlushJitter,
+			Buffer:   odata.NewBuffer(p.cfg.BatchSize),
 		})
 	}
 	return res, nil
@@ -122,14 +132,18 @@ func (p *Pipeline) StartExporters(ctx context.Context, out <-chan odata.Observab
 
 	for {
 		select {
-		case data := <-out:
+		case data, ok := <-out:
+			if !ok {
+				return
+			}
+			// TODO. fan-out connector
 			var wg sync.WaitGroup
 			wg.Add(len(p.exporters))
 			for _, e := range p.exporters {
 				go func(exp *model.RuntimeExporter, od odata.ObservableData) {
 					defer wg.Done()
 					exp.Add(od)
-				}(e, data.Clone())
+				}(e, data)
 			}
 			wg.Wait()
 		case <-ctx.Done():
@@ -150,20 +164,59 @@ func (p *Pipeline) startProcessors(ctx context.Context, in <-chan odata.Observab
 	for {
 	begin:
 		select {
-		case data := <-in:
+		case data, ok := <-in:
+			if !ok {
+				return
+			}
+			// TODO. Parallelism
 			for _, pr := range p.processors {
 				if !pr.Filter.Selected(data) {
 					continue
 				}
-				tmp, err := pr.Processor.Process(data)
-				if err != nil {
-					p.Log.Errorf("Processor<%s> process data error: %s", pr.Name, err)
+				switch p.dtype {
+				case odata.MetricType:
+					tmp, err := pr.Processor.ProcessMetric(data.(*metric.Metric))
+					if err != nil {
+						p.Log.Errorf("Processor<%s> process data error: %s", pr.Name, err)
+						continue
+					}
+					if tmp == nil {
+						goto begin
+					}
+					data = tmp
+				case odata.LogType:
+					tmp, err := pr.Processor.ProcessLog(data.(*log.Log))
+					if err != nil {
+						p.Log.Errorf("Processor<%s> process data error: %s", pr.Name, err)
+						continue
+					}
+					if tmp == nil {
+						goto begin
+					}
+					data = tmp
+				case odata.SpanType:
+					tmp, err := pr.Processor.ProcessSpan(data.(*trace.Span))
+					if err != nil {
+						p.Log.Errorf("Processor<%s> process data error: %s", pr.Name, err)
+						continue
+					}
+					if tmp == nil {
+						goto begin
+					}
+					data = tmp
+				case odata.RawType:
+					tmp, err := pr.Processor.ProcessorRaw(data.(*odata.Raw))
+					if err != nil {
+						p.Log.Errorf("Processor<%s> process data error: %s", pr.Name, err)
+						continue
+					}
+					if tmp == nil {
+						goto begin
+					}
+					data = tmp
+				default:
 					continue
 				}
-				if tmp == nil {
-					goto begin
-				}
-				data = tmp
 			}
 
 			// wait forever
@@ -188,7 +241,6 @@ func newConsumer(ctx context.Context, out chan<- odata.ObservableData) model.Obs
 	return func(od odata.ObservableData) {
 		select {
 		case out <- od:
-
 		case <-ctx.Done():
 			return
 		}

@@ -18,6 +18,9 @@ import (
 	"reflect"
 	"regexp"
 	"testing"
+
+	"github.com/erda-project/erda/modules/core/monitor/metric"
+	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
 )
 
 func TestRegex_Operate(t *testing.T) {
@@ -26,32 +29,44 @@ func TestRegex_Operate(t *testing.T) {
 		pattern *regexp.Regexp
 	}
 	type args struct {
-		pairs map[string]interface{}
+		item odata.ObservableData
 	}
 	tests := []struct {
 		name   string
 		fields fields
 		args   args
-		want   map[string]interface{}
+		want   odata.ObservableData
 	}{
 		{
 			fields: fields{
 				cfg: ModifierCfg{
-					Key:   "id",
+					Key:   "tags.id",
 					Value: "^\\/kubepods\\/\\w+\\/[\\w|\\-]+\\/(?P<container_id>\\w+)",
 				},
 			},
-			args: args{pairs: map[string]interface{}{"id": "/kubepods/burstable/poda102e534-399d-4553-a523-e6489222ca96/4c949b590a29dd49b08c2576cb408c57c69a58142aae9d75a7c79ca08dbaf7b9"}},
-			want: map[string]interface{}{
+			args: args{item: &metric.Metric{Tags: map[string]string{"id": "/kubepods/burstable/poda102e534-399d-4553-a523-e6489222ca96/4c949b590a29dd49b08c2576cb408c57c69a58142aae9d75a7c79ca08dbaf7b9"}}},
+			want: &metric.Metric{Tags: map[string]string{
 				"id":           "/kubepods/burstable/poda102e534-399d-4553-a523-e6489222ca96/4c949b590a29dd49b08c2576cb408c57c69a58142aae9d75a7c79ca08dbaf7b9",
 				"container_id": "4c949b590a29dd49b08c2576cb408c57c69a58142aae9d75a7c79ca08dbaf7b9",
+			}},
+		},
+		{
+			fields: fields{
+				cfg: ModifierCfg{
+					Key:   "tags.idxxx",
+					Value: "^\\/kubepods\\/\\w+\\/[\\w|\\-]+\\/(?P<container_id>\\w+)",
+				},
 			},
+			args: args{item: &metric.Metric{Tags: map[string]string{"id": "/kubepods/burstable/poda102e534-399d-4553-a523-e6489222ca96/4c949b590a29dd49b08c2576cb408c57c69a58142aae9d75a7c79ca08dbaf7b9"}}},
+			want: &metric.Metric{Tags: map[string]string{
+				"id": "/kubepods/burstable/poda102e534-399d-4553-a523-e6489222ca96/4c949b590a29dd49b08c2576cb408c57c69a58142aae9d75a7c79ca08dbaf7b9",
+			}},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			r := NewRegex(tt.fields.cfg)
-			if got := r.Modify(tt.args.pairs); !reflect.DeepEqual(got, tt.want) {
+			if got := r.Modify(tt.args.item); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Modify() = %v, want %v", got, tt.want)
 			}
 		})

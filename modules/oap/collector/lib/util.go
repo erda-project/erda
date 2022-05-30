@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common
+package lib
 
 import (
 	"bytes"
@@ -20,11 +20,15 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
+	"math/rand"
 	"net/http"
 	"regexp"
+	"runtime"
 	"strings"
+	"time"
 
 	"github.com/golang/snappy"
+	_ "go.uber.org/automaxprocs"
 )
 
 func NormalizeKey(key string) string {
@@ -101,4 +105,12 @@ func ReadBody(req *http.Request) ([]byte, error) {
 		return nil, fmt.Errorf("unsupported custom-content-encoding")
 	}
 	return res, nil
+}
+
+func RandomDuration(interval, jitter time.Duration) time.Duration {
+	return interval + time.Duration(rand.Int63n(jitter.Nanoseconds()))
+}
+
+func AvailableCPUs() int {
+	return runtime.GOMAXPROCS(-1)
 }

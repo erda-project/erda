@@ -20,6 +20,9 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda/modules/core/monitor/log"
+	"github.com/erda-project/erda/modules/core/monitor/metric"
+	"github.com/erda-project/erda/modules/msp/apm/trace"
 	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
 	"github.com/erda-project/erda/modules/oap/collector/plugins"
 )
@@ -47,9 +50,9 @@ func (p *provider) Close() error {
 	return nil
 }
 
-func (p *provider) Export(ods []odata.ObservableData) error {
-	for _, od := range ods {
-		buf, err := json.Marshal(od.Source())
+func (p *provider) ExportMetric(items ...*metric.Metric) error {
+	for _, item := range items {
+		buf, err := json.Marshal(item)
 		if err != nil {
 			return err
 		}
@@ -57,6 +60,30 @@ func (p *provider) Export(ods []odata.ObservableData) error {
 	}
 	return nil
 }
+
+func (p *provider) ExportLog(items ...*log.Log) error {
+	for _, item := range items {
+		buf, err := json.Marshal(item)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("%s\n", string(buf))
+	}
+	return nil
+}
+
+func (p *provider) ExportSpan(items ...*trace.Span) error {
+	for _, item := range items {
+		buf, err := json.Marshal(item)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("%s\n", string(buf))
+	}
+	return nil
+}
+
+func (p *provider) ExportRaw(items ...*odata.Raw) error { return nil }
 
 // Run this is optional
 func (p *provider) Init(ctx servicehub.Context) error {

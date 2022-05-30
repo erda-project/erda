@@ -16,35 +16,36 @@ package operator
 
 import (
 	"strings"
+
+	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
 )
 
 type Add struct {
 	cfg ModifierCfg
 }
 
-func NewAdd(cfg ModifierCfg) Modifier {
-	return &Add{cfg: cfg}
-}
-
-func (a *Add) Modify(pairs map[string]interface{}) map[string]interface{} {
-	if _, ok := pairs[a.cfg.Key]; ok {
-		return pairs
+func (a *Add) Modify(item odata.ObservableData) odata.ObservableData {
+	if _, ok := odata.GetKeyValue(item, a.cfg.Key); ok {
+		return item
 	}
 	if a.cfg.Value == "" {
-		return pairs
+		return item
 	}
-	pairs[a.cfg.Key] = a.cfg.Value
-	return pairs
+	odata.SetKeyValue(item, a.cfg.Key, a.cfg.Value)
+	return item
+}
+
+func NewAdd(cfg ModifierCfg) Modifier {
+	return &Add{cfg: cfg}
 }
 
 type Set struct {
 	cfg ModifierCfg
 }
 
-func (s *Set) Modify(pairs map[string]interface{}) map[string]interface{} {
-
-	pairs[s.cfg.Key] = s.cfg.Value
-	return pairs
+func (s *Set) Modify(item odata.ObservableData) odata.ObservableData {
+	odata.SetKeyValue(item, s.cfg.Key, s.cfg.Value)
+	return item
 }
 
 func NewSet(cfg ModifierCfg) Modifier {
@@ -55,9 +56,9 @@ type Drop struct {
 	cfg ModifierCfg
 }
 
-func (d *Drop) Modify(pairs map[string]interface{}) map[string]interface{} {
-	delete(pairs, d.cfg.Key)
-	return pairs
+func (d *Drop) Modify(item odata.ObservableData) odata.ObservableData {
+	odata.DeleteKeyValue(item, d.cfg.Key)
+	return item
 }
 
 func NewDrop(cfg ModifierCfg) Modifier {
@@ -68,14 +69,15 @@ type Rename struct {
 	cfg ModifierCfg
 }
 
-func (r *Rename) Modify(pairs map[string]interface{}) map[string]interface{} {
+func (r *Rename) Modify(item odata.ObservableData) odata.ObservableData {
 	// value is the new key
-	if _, ok := pairs[r.cfg.Key]; !ok {
-		return pairs
+	val, ok := odata.GetKeyValue(item, r.cfg.Key)
+	if !ok {
+		return item
 	}
-	pairs[r.cfg.Value] = pairs[r.cfg.Key]
-	delete(pairs, r.cfg.Key)
-	return pairs
+	odata.SetKeyValue(item, r.cfg.Value, val)
+	odata.DeleteKeyValue(item, r.cfg.Key)
+	return item
 }
 
 func NewRename(cfg ModifierCfg) Modifier {
@@ -86,12 +88,13 @@ type Copy struct {
 	cfg ModifierCfg
 }
 
-func (c *Copy) Modify(pairs map[string]interface{}) map[string]interface{} {
-	if _, ok := pairs[c.cfg.Key]; !ok {
-		return pairs
+func (c *Copy) Modify(item odata.ObservableData) odata.ObservableData {
+	val, ok := odata.GetKeyValue(item, c.cfg.Key)
+	if !ok {
+		return item
 	}
-	pairs[c.cfg.Value] = pairs[c.cfg.Key]
-	return pairs
+	odata.SetKeyValue(item, c.cfg.Value, val)
+	return item
 }
 
 func NewCopy(cfg ModifierCfg) Modifier {
@@ -102,17 +105,25 @@ type TrimPrefix struct {
 	cfg ModifierCfg
 }
 
-func (t *TrimPrefix) Modify(pairs map[string]interface{}) map[string]interface{} {
+// TODO. Need better way
+func (t *TrimPrefix) Modify(item odata.ObservableData) odata.ObservableData {
 	// key is the prefix
-	tmp := make(map[string]interface{}, len(pairs))
-	for k, v := range pairs {
+	tags := item.GetTags()
+	tmp := make(map[string]string)
+	for k := range tags {
 		if strings.Index(k, t.cfg.Key) != -1 { // found
-			tmp[k[len(t.cfg.Key):]] = v
-		} else {
-			tmp[k] = v
+			tmp[k] = k[len(t.cfg.Key):]
 		}
 	}
-	return tmp
+	for k, newk := range tmp {
+		val, ok := tags[k]
+		if !ok {
+			continue
+		}
+		delete(tags, k)
+		tags[newk] = val
+	}
+	return item
 }
 
 func NewTrimPrefix(cfg ModifierCfg) Modifier {
@@ -127,24 +138,20 @@ func NewJoin(cfg ModifierCfg) Modifier {
 	return &Join{cfg: cfg}
 }
 
-func (j *Join) Modify(pairs map[string]interface{}) map[string]interface{} {
+func (j *Join) Modify(item odata.ObservableData) odata.ObservableData {
 	if j.cfg.TargetKey == "" {
-		return pairs
+		return item
 	}
 
 	vals := make([]string, len(j.cfg.Keys))
 	for i, k := range j.cfg.Keys {
-		val, ok := pairs[k]
+		val, ok := odata.GetKeyValue(item, k)
 		if !ok {
-			return pairs
+			return item
 		}
 
-		valstr, ok := val.(string)
-		if !ok {
-			return pairs
-		}
-		vals[i] = valstr
+		vals[i] = val.(string)
 	}
-	pairs[j.cfg.TargetKey] = strings.Join(vals, j.cfg.Separator)
-	return pairs
+	odata.SetKeyValue(item, j.cfg.TargetKey, strings.Join(vals, j.cfg.Separator))
+	return item
 }

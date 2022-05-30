@@ -19,6 +19,9 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda/modules/core/monitor/log"
+	"github.com/erda-project/erda/modules/core/monitor/metric"
+	"github.com/erda-project/erda/modules/msp/apm/trace"
 	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
 	"github.com/erda-project/erda/modules/oap/collector/plugins"
 )
@@ -35,6 +38,7 @@ type config struct {
 }
 
 // +provider
+// TODO. Watch out: only work with metric's Fields now, so specify field key without `fields.` prefix
 type provider struct {
 	Cfg *config
 	Log logs.Logger
@@ -42,45 +46,44 @@ type provider struct {
 	cache  map[uint64]aggregate
 	rulers []*ruler
 }
+
 type aggregate struct {
-	data map[string]interface{}
+	data *metric.Metric
 }
 
 func (p *provider) ComponentConfig() interface{} {
 	return p.Cfg
 }
 
-func (p *provider) Process(in odata.ObservableData) (odata.ObservableData, error) {
-	if in.SourceType() == odata.MetricType {
-		return p.add(in), nil
-	}
-	return in, nil
+func (p *provider) ProcessMetric(item *metric.Metric) (*metric.Metric, error) {
+	return p.add(item), nil
 }
 
-func (p *provider) add(in odata.ObservableData) odata.ObservableData {
-	id := in.HashID()
+func (p *provider) ProcessLog(item *log.Log) (*log.Log, error)        { return item, nil }
+func (p *provider) ProcessSpan(item *trace.Span) (*trace.Span, error) { return item, nil }
+func (p *provider) ProcessorRaw(item *odata.Raw) (*odata.Raw, error)  { return item, nil }
+
+func (p *provider) add(item *metric.Metric) *metric.Metric {
+	id := item.Hash()
 	_, ok := p.cache[id]
 	if !ok {
 		agg := aggregate{
-			data: in.Pairs(),
+			data: item,
 		}
 		for _, rule := range p.rulers {
 			agg.data = rule.Fn(nil, agg.data)
 		}
 		p.cache[id] = agg
-		return in
+		return item
 	}
 
 	pre := p.cache[id]
 	for _, rule := range p.rulers {
-		pre.data = rule.Fn(pre.data, in.Pairs())
+		pre.data = rule.Fn(pre.data, item)
 	}
 	p.cache[id] = pre
 
-	return &odata.Metric{
-		Meta: odata.NewMetadata(),
-		Data: pre.data,
-	}
+	return pre.data
 }
 
 // Run this is optional
@@ -105,6 +108,7 @@ func init() {
 		ConfigFunc: func() interface{} {
 			return &config{}
 		},
+		Description: "Only work with Metric.Fields",
 		Creator: func() servicehub.Provider {
 			return &provider{}
 		},

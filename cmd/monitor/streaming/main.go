@@ -49,6 +49,10 @@ import (
 	_ "github.com/erda-project/erda/modules/msp/apm/trace/storage/cassandra_v1"
 	_ "github.com/erda-project/erda/modules/msp/apm/trace/storage/elasticsearch"
 
+	// erda stream pipeline
+	_ "github.com/erda-project/erda/modules/oap/collector/core"
+	_ "github.com/erda-project/erda/modules/oap/collector/plugins/all"
+
 	// providers
 	_ "github.com/erda-project/erda-infra/providers"
 )

@@ -17,7 +17,8 @@ package operator
 import (
 	"regexp"
 
-	"github.com/erda-project/erda/modules/oap/collector/common"
+	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
+	"github.com/erda-project/erda/modules/oap/collector/lib"
 )
 
 type Regex struct {
@@ -25,15 +26,16 @@ type Regex struct {
 	pattern *regexp.Regexp
 }
 
-func (r *Regex) Modify(pairs map[string]interface{}) map[string]interface{} {
-	val, ok := pairs[r.cfg.Key]
+func (r *Regex) Modify(item odata.ObservableData) odata.ObservableData {
+	val, ok := odata.GetKeyValue(item, r.cfg.Key)
 	if !ok {
-		return pairs
+		return item
 	}
-	for k, v := range common.RegexGroupMap(r.pattern, val.(string)) {
-		pairs[k] = v
+	// TODO. May use group index
+	for k, v := range lib.RegexGroupMap(r.pattern, val.(string)) {
+		odata.SetKeyValue(item, odata.TagsPrefix+k, v)
 	}
-	return pairs
+	return item
 }
 
 func NewRegex(cfg ModifierCfg) Modifier {

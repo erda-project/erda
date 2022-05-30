@@ -21,9 +21,9 @@ import (
 
 	apiv1 "k8s.io/api/core/v1"
 
-	"github.com/erda-project/erda/modules/oap/collector/common/filter"
+	"github.com/erda-project/erda/modules/oap/collector/lib/filter"
 
-	"github.com/erda-project/erda/modules/oap/collector/common"
+	"github.com/erda-project/erda/modules/oap/collector/lib"
 	"github.com/erda-project/erda/modules/oap/collector/plugins/processors/k8s-tagger/metadata"
 )
 
@@ -151,14 +151,14 @@ func (c *Cache) extractPodMetadata(pod apiv1.Pod) Value {
 	// labels
 	for k, v := range pod.Labels {
 		if c.labelFilter.Match(k) {
-			value.Tags[metadata.PrefixPodLabels+common.NormalizeKey(k)] = v
+			value.Tags[metadata.PrefixPodLabels+lib.NormalizeKey(k)] = v
 		}
 	}
 
 	// annotations
 	for k, v := range pod.Annotations {
 		if c.annotationFilter.Match(k) {
-			value.Tags[metadata.PrefixPodAnnotations+common.NormalizeKey(k)] = v
+			value.Tags[metadata.PrefixPodAnnotations+lib.NormalizeKey(k)] = v
 		}
 	}
 	return value

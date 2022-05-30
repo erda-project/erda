@@ -18,10 +18,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
+	"github.com/erda-project/erda/modules/core/monitor/metric"
 )
 
-type functionCall func(pre, cur map[string]interface{}) map[string]interface{}
+type functionCall func(pre, cur *metric.Metric) *metric.Metric
 
 type RuleConfig struct {
 	Func      string        `file:"func"`
@@ -36,15 +36,15 @@ type ruler struct {
 }
 
 type argGetter interface {
-	GetValue(data map[string]interface{}) (float64, bool)
+	GetValue(data *metric.Metric) (float64, bool)
 }
 
 type keySelector struct {
 	key string
 }
 
-func (ks *keySelector) GetValue(data map[string]interface{}) (float64, bool) {
-	val, ok := data[ks.key]
+func (ks *keySelector) GetValue(data *metric.Metric) (float64, bool) {
+	val, ok := data.Fields[ks.key]
 	if !ok {
 		return 0, false
 	}
@@ -82,7 +82,7 @@ type constSelector struct {
 	value float64
 }
 
-func (cs *constSelector) GetValue(map[string]interface{}) (float64, bool) {
+func (cs *constSelector) GetValue(*metric.Metric) (float64, bool) {
 	return cs.value, true
 }
 
@@ -139,7 +139,7 @@ func parserArgs(arg interface{}) (argGetter, error) {
 }
 
 // counter rate
-func (r *ruler) rateCall(pre, cur map[string]interface{}) map[string]interface{} {
+func (r *ruler) rateCall(pre, cur *metric.Metric) *metric.Metric {
 	if len(r.Args) != 1 {
 		return cur
 	}
@@ -162,15 +162,15 @@ func (r *ruler) rateCall(pre, cur map[string]interface{}) map[string]interface{}
 
 	ds := curT.Sub(preT).Seconds()
 	if curV < preV {
-		cur[r.Alias] = curV / ds
+		cur.Fields[r.Alias] = curV / ds
 	} else {
-		cur[r.Alias] = (curV - preV) / ds
+		cur.Fields[r.Alias] = (curV - preV) / ds
 	}
 	return cur
 }
 
 func (r *ruler) binaryFactory(op string) functionCall {
-	return func(_, cur map[string]interface{}) map[string]interface{} {
+	return func(_, cur *metric.Metric) *metric.Metric {
 		if len(r.Args) != 2 {
 			return cur
 		}
@@ -184,28 +184,20 @@ func (r *ruler) binaryFactory(op string) functionCall {
 		}
 		switch op {
 		case "*":
-			cur[r.Alias] = p1 * p2
+			cur.Fields[r.Alias] = p1 * p2
 		case "/":
 			if p2 != 0 {
-				cur[r.Alias] = p1 / p2
+				cur.Fields[r.Alias] = p1 / p2
 			}
 		case "+":
-			cur[r.Alias] = p1 + p2
+			cur.Fields[r.Alias] = p1 + p2
 		case "-":
-			cur[r.Alias] = p1 - p2
+			cur.Fields[r.Alias] = p1 - p2
 		}
 		return cur
 	}
 }
 
-func getEventTime(data map[string]interface{}) time.Time {
-	ts, ok := data[odata.TimestampKey]
-	if !ok {
-		return time.Now()
-	}
-	tst, ok := ts.(time.Time)
-	if !ok {
-		return time.Now()
-	}
-	return tst
+func getEventTime(data *metric.Metric) time.Time {
+	return time.Unix(0, data.Timestamp)
 }

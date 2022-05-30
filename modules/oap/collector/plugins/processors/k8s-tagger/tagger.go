@@ -23,7 +23,7 @@ import (
 
 var matcherPattern = regexp.MustCompile("%{([^%{}]*)}")
 
-func (p *provider) getPodMetadata(tags map[string]interface{}) pod.Value {
+func (p *provider) getPodMetadata(tags map[string]string) pod.Value {
 	fs := p.Cfg.Pod.AddMetadata.Finders
 	res := pod.NewValue()
 	for _, f := range fs {
@@ -46,18 +46,14 @@ func (p *provider) getPodMetadata(tags map[string]interface{}) pod.Value {
 }
 
 // {namespace}/{pod}
-func generateIndexByMatcher(matcher string, tags map[string]interface{}) pod.Key {
+func generateIndexByMatcher(matcher string, tags map[string]string) pod.Key {
 	matches := matcherPattern.FindAllStringSubmatch(matcher, -1)
 	for _, item := range matches {
 		if len(item) != 2 {
 			continue
 		}
 		if v, ok := tags[item[1]]; ok {
-			sv, ok := v.(string)
-			if !ok {
-				continue
-			}
-			matcher = strings.Replace(matcher, item[0], sv, -1)
+			matcher = strings.Replace(matcher, item[0], v, -1)
 		}
 	}
 	return pod.Key(matcher)

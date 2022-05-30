@@ -19,6 +19,9 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda/modules/core/monitor/log"
+	"github.com/erda-project/erda/modules/core/monitor/metric"
+	"github.com/erda-project/erda/modules/msp/apm/trace"
 	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
 	"github.com/erda-project/erda/modules/oap/collector/plugins"
 	"github.com/erda-project/erda/modules/oap/collector/plugins/processors/modifier/operator"
@@ -44,17 +47,37 @@ func (p *provider) ComponentConfig() interface{} {
 	return p.Cfg
 }
 
-func (p *provider) Process(in odata.ObservableData) (odata.ObservableData, error) {
+func (p *provider) ProcessMetric(item *metric.Metric) (*metric.Metric, error) {
 	for _, op := range p.operators {
-		in.HandleKeyValuePair(func(pairs map[string]interface{}) map[string]interface{} {
-			if !op.Condition.Match(pairs) {
-				return pairs
-			}
-			return op.Modifier.Modify(pairs)
-		})
+		if !op.Condition.Match(item) {
+			continue
+		}
+		item = op.Modifier.Modify(item).(*metric.Metric)
 	}
-	return in, nil
+	return item, nil
 }
+
+func (p *provider) ProcessLog(item *log.Log) (*log.Log, error) {
+	for _, op := range p.operators {
+		if !op.Condition.Match(item) {
+			continue
+		}
+		item = op.Modifier.Modify(item).(*log.Log)
+	}
+	return item, nil
+}
+
+func (p *provider) ProcessSpan(item *trace.Span) (*trace.Span, error) {
+	for _, op := range p.operators {
+		if !op.Condition.Match(item) {
+			continue
+		}
+		item = op.Modifier.Modify(item).(*trace.Span)
+	}
+	return item, nil
+}
+
+func (p *provider) ProcessorRaw(item *odata.Raw) (*odata.Raw, error) { return item, nil }
 
 // Run this is optional
 func (p *provider) Init(ctx servicehub.Context) error {

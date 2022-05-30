@@ -16,59 +16,99 @@ package model
 
 import (
 	"context"
+	"time"
 
 	"github.com/erda-project/erda-infra/base/logs"
-	"github.com/erda-project/erda/modules/oap/collector/common"
+	"github.com/erda-project/erda/modules/core/monitor/log"
+	"github.com/erda-project/erda/modules/core/monitor/metric"
+	"github.com/erda-project/erda/modules/msp/apm/trace"
 	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
+	"github.com/erda-project/erda/modules/oap/collector/lib"
 )
 
 type RuntimeExporter struct {
 	Name     string
+	DType    odata.DataType
 	Logger   logs.Logger
 	Exporter Exporter
 	Filter   *DataFilter
-	Timer    *common.RunningTimer
-	Buffer   *odata.Buffer
+
+	Buffer           *odata.Buffer
+	Timer            *time.Timer
+	Interval, Jitter time.Duration
+}
+
+func (re *RuntimeExporter) Add(od odata.ObservableData) {
+	re.Buffer.Push(od)
+
+	if re.Buffer.Full() {
+		if err := re.flushOnce(); err != nil {
+			re.Logger.Errorf("event limited, but flush err: %s", err)
+		}
+		if !re.Timer.Stop() {
+			<-re.Timer.C
+		}
+		re.Timer.Reset(lib.RandomDuration(re.Interval, re.Jitter))
+	}
 }
 
 func (re *RuntimeExporter) Start(ctx context.Context) {
-	go re.Timer.Run(ctx)
 	for {
 		select {
 		case <-ctx.Done():
 			if err := re.flushOnce(); err != nil {
 				re.Logger.Errorf("event done, but flush err: %s", err)
 			}
+			re.Timer.Stop()
 			return
-		case <-re.Timer.Elapsed():
-			if re.Buffer.Empty() {
-				continue
+		case <-re.Timer.C: // TODO. Timer, can reset
+			if !re.Buffer.Empty() {
+				if err := re.flushOnce(); err != nil {
+					re.Logger.Errorf("event elapsed, but flush err: %s", err)
+				}
 			}
-			if err := re.flushOnce(); err != nil {
-				re.Logger.Errorf("event elapsed, but flush err: %s", err)
-			}
+			re.Timer.Reset(lib.RandomDuration(re.Interval, re.Jitter))
 		}
 	}
 }
 
 func (re *RuntimeExporter) flushOnce() error {
-	return re.Exporter.Export(re.Buffer.FlushAll())
-}
-
-func (re *RuntimeExporter) Add(od odata.ObservableData) {
-	if re.Buffer.Full() {
-		if err := re.flushOnce(); err != nil {
-			re.Logger.Errorf("event buffer-full, but flush err: %s", err)
+	switch re.DType {
+	case odata.MetricType:
+		items := re.Buffer.FlushAllMetrics()
+		err := re.Exporter.ExportMetric(items...)
+		if err != nil {
+			re.Logger.Errorf("Exporter<%s> process data error: %s", re.Name, err)
 		}
-		re.Timer.Reset()
+	case odata.LogType:
+		items := re.Buffer.FlushAllLogs()
+		err := re.Exporter.ExportLog(items...)
+		if err != nil {
+			re.Logger.Errorf("Exporter<%s> process data error: %s", re.Name, err)
+		}
+	case odata.SpanType:
+		items := re.Buffer.FlushAllSpans()
+		err := re.Exporter.ExportSpan(items...)
+		if err != nil {
+			re.Logger.Errorf("Exporter<%s> process data error: %s", re.Name, err)
+		}
+	case odata.RawType:
+		items := re.Buffer.FlushAllRaws()
+		err := re.Exporter.ExportRaw(items...)
+		if err != nil {
+			re.Logger.Errorf("Exporter<%s> process data error: %s", re.Name, err)
+		}
 	}
-	re.Buffer.Push(od)
+	return nil
 }
 
 type Exporter interface {
 	Component
 	Connect() error
-	Export(ods []odata.ObservableData) error
+	ExportMetric(items ...*metric.Metric) error
+	ExportLog(items ...*log.Log) error
+	ExportSpan(items ...*trace.Span) error
+	ExportRaw(items ...*odata.Raw) error
 }
 
 type NoopExporter struct{}

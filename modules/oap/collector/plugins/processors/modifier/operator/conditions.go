@@ -16,14 +16,16 @@ package operator
 
 import (
 	"regexp"
+
+	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
 )
 
 type KeyExist struct {
 	cfg ConditionCfg
 }
 
-func (k *KeyExist) Match(pairs map[string]interface{}) bool {
-	_, ok := pairs[k.cfg.Key]
+func (k *KeyExist) Match(item odata.ObservableData) bool {
+	_, ok := odata.GetKeyValue(item, k.cfg.Key)
 	return ok
 }
 
@@ -36,16 +38,12 @@ type ValueMatch struct {
 	pattern *regexp.Regexp
 }
 
-func (v *ValueMatch) Match(pairs map[string]interface{}) bool {
-	value, ok := pairs[v.cfg.Key]
+func (v *ValueMatch) Match(item odata.ObservableData) bool {
+	value, ok := odata.GetKeyValue(item, v.cfg.Key)
 	if !ok {
 		return false
 	}
-	strValue, ok := value.(string)
-	if !ok {
-		return false
-	}
-	return v.pattern.MatchString(strValue)
+	return v.pattern.MatchString(value.(string))
 }
 
 func NewValueMatch(cfg ConditionCfg) Condition {
@@ -56,16 +54,12 @@ type ValueEmpty struct {
 	cfg ConditionCfg
 }
 
-func (ve *ValueEmpty) Match(pairs map[string]interface{}) bool {
-	value, ok := pairs[ve.cfg.Key]
+func (ve *ValueEmpty) Match(item odata.ObservableData) bool {
+	value, ok := odata.GetKeyValue(item, ve.cfg.Key)
 	if !ok {
 		return false
 	}
-	strValue, ok := value.(string)
-	if !ok {
-		return false
-	}
-	return strValue == ""
+	return value == ""
 }
 
 func NewValueEmpty(cfg ConditionCfg) Condition {
@@ -76,7 +70,7 @@ type NoopCondition struct {
 	cfg ConditionCfg
 }
 
-func (n *NoopCondition) Match(pairs map[string]interface{}) bool {
+func (n *NoopCondition) Match(item odata.ObservableData) bool {
 	return true
 }
 
