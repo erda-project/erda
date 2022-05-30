@@ -65,8 +65,8 @@ type (
 )
 
 const (
-	SpanSeriesTable = "monitor.spans_series"
-	SpanMetaTable   = "monitor.spans_meta"
+	SpanSeriesTable = "monitor.spans_series_all"
+	SpanMetaTable   = "monitor.spans_meta_all"
 )
 
 const (
