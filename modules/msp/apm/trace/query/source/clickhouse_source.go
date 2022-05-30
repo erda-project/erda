@@ -225,15 +225,15 @@ func (chs *ClickhouseSource) composeFilter(req *pb.GetTracesRequest) string {
 	subSqlBuf.WriteString(fmt.Sprintf("SELECT distinct(series_id) FROM %s WHERE (key='terminus_key' AND value = '%s') AND ", SpanMetaTable, req.TenantID))
 
 	if req.ServiceName != "" {
-		subSqlBuf.WriteString("(key='service_name' AND value LIKE '%" + req.ServiceName + "%') AND ")
+		subSqlBuf.WriteString("(key='service_name' AND value LIKE concat('%','" + req.ServiceName + "','%')) AND ")
 	}
 
 	if req.RpcMethod != "" {
-		subSqlBuf.WriteString("(key='rpc_method' AND value LIKE '%" + req.RpcMethod + "%') AND ")
+		subSqlBuf.WriteString("(key='rpc_method' AND value LIKE concat('%','" + req.RpcMethod + "','%')) AND ")
 	}
 
 	if req.HttpPath != "" {
-		subSqlBuf.WriteString("(key='http_path' AND value LIKE '%" + req.HttpPath + "%') AND ")
+		subSqlBuf.WriteString("(key='http_path' AND value LIKE concat('%','" + req.HttpPath + "','%')) AND ")
 	}
 
 	subSql := subSqlBuf.String()
