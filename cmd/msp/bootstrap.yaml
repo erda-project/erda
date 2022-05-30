@@ -234,10 +234,6 @@ erda.msp.apm.trace.query:
     keyspace:
       name: "spot_prod"
       auto: false # auto generate keyspace
-  clickhouse:
-    tables:
-      - name: span_series
-      - name: span_meta
 
 erda.msp.apm.exception.query:
   query_source:
