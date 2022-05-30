@@ -1,0 +1,117 @@
+# Copyright (c) 2021 Terminus, Inc.
+#
+# This program is free software: you can use, redistribute, and/or modify
+# it under the terms of the GNU Affero General Public License, version 3
+# or later ("AGPL"), as published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+name: CI AND IT
+on:
+  push:
+    tags:
+      - v*
+    branches:
+      - develop
+      - master
+      - release/*
+    paths:
+      - '**'
+      - '!**.go'
+  pull_request:
+    paths:
+      - '**'
+      - '!**.go'
+
+jobs:
+  CHECK-CHANGED-FILES:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - id: check
+        run: |
+          PR_NUMBER=${{ github.event.number }}
+          files=$(gh pr view ${PR_NUMBER} --json files -q '.files[].path')
+          for file in $files; do
+            ext="${file##*.}"
+            echo "file: $file, ext: $ext"
+            echo "::set-output name=have-${ext}::true"
+          done
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    outputs:
+      have-go: ${{ steps.check.outputs.have-go }}
+
+#  PATCH-PR-CHECK-STATUS:
+#    runs-on: ubuntu-latest
+#    needs: CHECK-CHANGED-FILES
+#    if: needs.CHECK-CHANGED-FILES.outputs.have-go != 'true'
+#    env:
+#      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#    steps:
+#      - run: echo "No CODE-TEST required"
+#      - name: Fetch check run ids
+#        id: fetch
+#        uses: octokit/request-action@v2.x
+#        with:
+#          repo: ${{ github.repository }}
+#          run_id: ${{ github.run_id }}
+#          route: GET /repos/{repo}/actions/runs/{run_id}/jobs
+#      - name: Echo check run ids
+#        run: |
+#          echo '${{ toJSON(fromJSON(steps.fetch.outputs.data)) }}'
+#          for run_id in $(jq '.[]' <<< '${{ toJSON(fromJSON(steps.fetch.outputs.data).jobs.*.id) }}'); do
+#            echo ${run_id}
+#          done
+
+  PREPARE:
+    runs-on: ubuntu-latest
+    needs: CHECK-CHANGED-FILES
+    if: ${{ needs.CHECK-CHANGED-FILES.outputs.have-go != 'true' }}
+    steps:
+      - run: echo "No PREPARE required"
+
+  CI:
+    runs-on: ubuntu-latest
+    needs: CHECK-CHANGED-FILES
+    if: ${{ needs.CHECK-CHANGED-FILES.outputs.have-go != 'true' }}
+    steps:
+      - run: echo "No CI required"
+
+  CODE-CHECK:
+    runs-on: ubuntu-latest
+    needs: CHECK-CHANGED-FILES
+    if: ${{ needs.CHECK-CHANGED-FILES.outputs.have-go != 'true' }}
+    steps:
+      - run: echo "No CODE-CHECK required"
+
+  CODE-TEST:
+    runs-on: ubuntu-latest
+    needs: CHECK-CHANGED-FILES
+    if: ${{ needs.CHECK-CHANGED-FILES.outputs.have-go != 'true' }}
+    steps:
+      - run: echo "No CODE-TEST required"
+
+  CODE-COV:
+    runs-on: ubuntu-latest
+    needs: CHECK-CHANGED-FILES
+    if: needs.CHECK-CHANGED-FILES.outputs.have-go != 'true'
+    steps:
+      - run: echo "No CODE-COV required"
+      - uses: actions/checkout@v3
+      - run: |
+          go test ./pkg/mimetype -coverprofile=coverage-quick.txt
+      - name: very quick codecov
+        run: |
+          cat <<-EOF >codecov.yml
+          coverage:
+            status:
+              project: off
+              patch: off
+          EOF
+          curl -s https://codecov.io/bash | bash -s - -f coverage-quick.txt
