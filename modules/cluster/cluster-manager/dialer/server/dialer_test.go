@@ -75,7 +75,7 @@ type fakeClusterSvc struct {
 }
 
 func (f *fakeClusterSvc) GetCluster(context.Context, *clusterpb.GetClusterRequest) (*clusterpb.GetClusterResponse, error) {
-	return &clusterpb.GetClusterResponse{Data: &clusterpb.ClusterInfo{Name: "testCluster"}}, nil
+	return &clusterpb.GetClusterResponse{Data: &clusterpb.ClusterInfo{Name: fakeClusterKey}}, nil
 }
 
 func (f *fakeClusterSvc) PatchCluster(context.Context, *clusterpb.PatchClusterRequest) (*clusterpb.PatchClusterResponse, error) {
@@ -109,7 +109,7 @@ func Test_DialerContext(t *testing.T) {
 	go client.Start(ctx)
 	for {
 		if client.IsConnected() {
-			logrus.Info("client connected")
+			logrus.Info("client connected at Test_DialerContext")
 			break
 		}
 		time.Sleep(1 * time.Second)
