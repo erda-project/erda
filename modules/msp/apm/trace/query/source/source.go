@@ -18,9 +18,20 @@ import (
 	"context"
 
 	"github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
+	"github.com/erda-project/erda/modules/msp/apm/trace/query/commom/custom"
 )
 
 type TraceSource interface {
 	GetSpans(ctx context.Context, req *pb.GetSpansRequest) []*pb.Span
 	GetSpanCount(ctx context.Context, traceID string) int64
+	GetTraceReqDistribution(ctx context.Context, model custom.Model) ([]*TraceDistributionItem, error)
+	GetTraces(ctx context.Context, req *pb.GetTracesRequest) (*pb.GetTracesResponse, error)
 }
+
+type (
+	TraceDistributionItem struct {
+		Date        string  `ch:"date"`
+		AvgDuration float64 `ch:"avg_duration"`
+		Count       uint64  `ch:"trace_count"`
+	}
+)

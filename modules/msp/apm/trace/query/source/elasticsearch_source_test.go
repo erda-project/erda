@@ -110,3 +110,30 @@ func TestElasticsearchSource_GetSpans(t *testing.T) {
 		})
 	}
 }
+
+func TestElasticsearchSource_sortConditionStrategy(t *testing.T) {
+	type args struct {
+		sort string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{"case1", args{sort: ""}, "ORDER BY start_time::field DESC"},
+		{"case2", args{sort: "TRACE_TIME_DESC"}, "ORDER BY start_time::field DESC"},
+		{"case3", args{sort: "TRACE_TIME_ASC"}, "ORDER BY start_time::field ASC"},
+		{"case4", args{sort: "TRACE_DURATION_DESC"}, "ORDER BY trace_duration::field DESC"},
+		{"case5", args{sort: "TRACE_DURATION_ASC"}, "ORDER BY trace_duration::field ASC"},
+		{"case6", args{sort: "SPAN_COUNT_DESC"}, "ORDER BY span_count::field DESC"},
+		{"case7", args{sort: "SPAN_COUNT_ASC"}, "ORDER BY span_count::field ASC"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			esc := ElasticsearchSource{}
+			if got := esc.sortConditionStrategy(tt.args.sort); got != tt.want {
+				t.Errorf("sortConditionStrategy() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
