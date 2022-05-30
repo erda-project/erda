@@ -105,8 +105,14 @@ jobs:
     steps:
       - run: echo "No CODE-COV required"
       - uses: actions/checkout@v3
-      - run: |
-          go test ./pkg/mimetype -coverprofile=coverage-quick.txt
+      - name: Get cached reports for Non-Go check use
+        uses: actions/cache@v3
+        with:
+          path: |
+            ./coverage/
+          key: codecov-report-cache-${{ github.ref_name }}
+          restore-keys: |
+            codecov-report-cache-
       - name: very quick codecov
         run: |
           rm codecov.yml
@@ -117,4 +123,4 @@ jobs:
               patch: off
           EOF
           cat codecov.yml
-          curl -s https://codecov.io/bash | bash -s - -f coverage-quick.txt
+          curl -s https://codecov.io/bash | bash
