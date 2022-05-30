@@ -215,13 +215,6 @@ jobs:
     steps:
       - name: Clone repo
         uses: actions/checkout@v3
-      - name: download coverage reports
-        uses: actions/download-artifact@v3
-        with:
-          path: ./coverage/
-      - name: Upload coverage to Codecov
-        run: |
-          curl -s https://codecov.io/bash | bash
       - name: Cache reports for Non-Go check use
         uses: actions/cache@v3
         with:
@@ -230,3 +223,10 @@ jobs:
           key: codecov-report-cache-${{ hashFiles('coverage/**') }}
           restore-keys: |
             codecov-report-cache-
+      - name: download coverage reports
+        uses: actions/download-artifact@v3
+        with:
+          path: ./coverage/
+      - name: Upload coverage to Codecov
+        run: |
+          curl -s https://codecov.io/bash | bash
