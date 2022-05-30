@@ -227,6 +227,6 @@ jobs:
         with:
           path: |
             ./coverage/
-          key: codecov-report-cache-${{ github.ref_name }}
+          key: codecov-report-cache-${{ hashFiles('coverage/**') }}
           restore-keys: |
             codecov-report-cache-
