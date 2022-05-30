@@ -21,8 +21,7 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/labstack/echo"
 
-	"github.com/erda-project/erda/modules/oap/collector/common"
-	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
+	"github.com/erda-project/erda/modules/oap/collector/lib"
 )
 
 func (p *provider) collectLogs(ctx echo.Context) error {
@@ -32,12 +31,12 @@ func (p *provider) collectLogs(ctx echo.Context) error {
 	}
 	name := source + "_log"
 
-	body, err := common.ReadBody(ctx.Request())
+	body, err := lib.ReadBody(ctx.Request())
 	if err != nil {
 		return fmt.Errorf("fail to read request body, err: %w", err)
 	}
 
-	if !common.IsJSONArray(body) {
+	if !lib.IsJSONArray(body) {
 		p.Log.Warnf("the body is not a json array. body=%s", string(body))
 		return ctx.NoContent(http.StatusNoContent)
 	}
@@ -58,16 +57,17 @@ func (p *provider) collectLogs(ctx echo.Context) error {
 }
 
 func (p *provider) sendRaw(name string, value []byte) error {
-	od := odata.NewRaw(value)
-
-	if p.Cfg.MetadataKeyOfTopic != "" {
-		topic, err := p.getTopic(name)
-		if err != nil {
-			return fmt.Errorf("getTopic with name: %s, err: %w", name, err)
-		}
-		od.Metadata().Add(p.Cfg.MetadataKeyOfTopic, topic)
-	}
-
-	p.consumer(od)
 	return nil
+	// od := odata.NewRaw(value)
+	//
+	// if p.Cfg.MetadataKeyOfTopic != "" {
+	// 	topic, err := p.getTopic(name)
+	// 	if err != nil {
+	// 		return fmt.Errorf("getTopic with name: %s, err: %w", name, err)
+	// 	}
+	// 	od.Metadata().Add(p.Cfg.MetadataKeyOfTopic, topic)
+	// }
+	//
+	// p.consumer(od)
+	// return nil
 }

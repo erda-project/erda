@@ -21,11 +21,10 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
-	lpb "github.com/erda-project/erda-proto-go/oap/logs/pb"
-	mpb "github.com/erda-project/erda-proto-go/oap/metrics/pb"
-	tpb "github.com/erda-project/erda-proto-go/oap/trace/pb"
+	"github.com/erda-project/erda/modules/core/monitor/log"
+	"github.com/erda-project/erda/modules/core/monitor/metric"
+	"github.com/erda-project/erda/modules/msp/apm/trace"
 	"github.com/erda-project/erda/modules/oap/collector/core/model"
-	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
 	"github.com/erda-project/erda/modules/oap/collector/plugins"
 )
 
@@ -66,7 +65,7 @@ func (p *provider) Run(ctx context.Context) error {
 	}
 
 	if p.Cfg.TraceSample != "" {
-		go p.dummyTraces(ctx)
+		go p.dummySpans(ctx)
 	}
 
 	if p.Cfg.LogSample != "" {
@@ -84,19 +83,19 @@ func (p *provider) dummyMetrics(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		}
-		item := mpb.Metric{}
+		item := metric.Metric{}
 		err := json.Unmarshal([]byte(p.Cfg.MetricSample), &item)
 		if err != nil {
 			p.Log.Errorf("unmarshal MetricSample err: %s", err)
 		}
 		if p.consumerFunc != nil {
-			item.TimeUnixNano = uint64(time.Now().UnixNano())
-			p.consumerFunc(odata.NewMetric(&item))
+			item.Timestamp = time.Now().UnixNano()
+			p.consumerFunc(&item)
 		}
 	}
 }
 
-func (p *provider) dummyTraces(ctx context.Context) {
+func (p *provider) dummySpans(ctx context.Context) {
 	ticker := time.NewTicker(p.Cfg.Rate)
 	defer ticker.Stop()
 	for {
@@ -105,15 +104,15 @@ func (p *provider) dummyTraces(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		}
-		item := tpb.Span{}
+		item := trace.Span{}
 		err := json.Unmarshal([]byte(p.Cfg.TraceSample), &item)
 		if err != nil {
 			p.Log.Errorf("unmarshal TraceSample err: %s", err)
 		}
 		if p.consumerFunc != nil {
-			item.StartTimeUnixNano = uint64(time.Now().UnixNano())
-			item.EndTimeUnixNano = uint64(time.Now().Add(time.Second * 10).UnixNano())
-			p.consumerFunc(odata.NewSpan(&item))
+			item.StartTime = time.Now().UnixNano()
+			item.EndTime = time.Now().Add(time.Second * 10).UnixNano()
+			p.consumerFunc(&item)
 		}
 	}
 }
@@ -127,16 +126,15 @@ func (p *provider) dummyLogs(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		}
-		item := lpb.Log{}
+		item := log.Log{}
 		err := json.Unmarshal([]byte(p.Cfg.MetricSample), &item)
 		if err != nil {
 			p.Log.Errorf("unmarshal LogSample err: %s", err)
 		}
-		item.TimeUnixNano = uint64(time.Now().Nanosecond())
 
 		if p.consumerFunc != nil {
-			item.TimeUnixNano = uint64(time.Now().UnixNano())
-			p.consumerFunc(odata.NewLog(&item))
+			item.Timestamp = time.Now().UnixNano()
+			p.consumerFunc(&item)
 		}
 	}
 }

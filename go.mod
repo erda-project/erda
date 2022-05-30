@@ -149,7 +149,7 @@ require (
 	github.com/spf13/afero v1.6.0
 	github.com/spf13/cast v1.3.1
 	github.com/spf13/cobra v1.4.0
-	github.com/stretchr/testify v1.7.0
+	github.com/stretchr/testify v1.7.1
 	github.com/t-tiger/gorm-bulk-insert v1.3.0
 	github.com/tealeg/xlsx v1.0.5
 	github.com/tealeg/xlsx/v3 v3.2.4-0.20210615062226-d5ce25722f69
@@ -166,6 +166,7 @@ require (
 	go.opentelemetry.io/otel/sdk v1.2.0
 	go.opentelemetry.io/proto/otlp v0.11.0
 	go.uber.org/atomic v1.8.0 // indirect
+	go.uber.org/automaxprocs v1.5.1
 	go.uber.org/multierr v1.7.0 // indirect
 	go.uber.org/ratelimit v0.2.0
 	golang.org/x/net v0.0.0-20210917221730-978cfadd31cf

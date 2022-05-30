@@ -23,7 +23,7 @@ import (
 func Test_generateIndexByMatcher(t *testing.T) {
 	type args struct {
 		matcher string
-		tags    map[string]interface{}
+		tags    map[string]string
 	}
 	tests := []struct {
 		name string
@@ -33,7 +33,7 @@ func Test_generateIndexByMatcher(t *testing.T) {
 		{
 			args: args{
 				matcher: "%{namespace}/%{pod}",
-				tags: map[string]interface{}{
+				tags: map[string]string{
 					"pod":       "aaa",
 					"namespace": "default",
 				},
@@ -44,7 +44,7 @@ func Test_generateIndexByMatcher(t *testing.T) {
 			name: "single match",
 			args: args{
 				matcher: "%{namespace}/%{pod}",
-				tags: map[string]interface{}{
+				tags: map[string]string{
 					"pod":        "aaa",
 					"namespacex": "default",
 				},
@@ -55,7 +55,7 @@ func Test_generateIndexByMatcher(t *testing.T) {
 			name: "not match",
 			args: args{
 				matcher: "%{namespace}/%{pod}",
-				tags: map[string]interface{}{
+				tags: map[string]string{
 					"podx":       "aaa",
 					"namespacex": "default",
 				},
@@ -75,7 +75,7 @@ func Test_generateIndexByMatcher(t *testing.T) {
 func Test_generateIndexByMatcher1(t *testing.T) {
 	type args struct {
 		matcher string
-		tags    map[string]interface{}
+		tags    map[string]string
 	}
 	tests := []struct {
 		name string
@@ -85,7 +85,7 @@ func Test_generateIndexByMatcher1(t *testing.T) {
 		{
 			args: args{
 				matcher: "%{pod_namespace}/%{pod_name}/%{container}",
-				tags: map[string]interface{}{
+				tags: map[string]string{
 					"pod_namespace": "default",
 					"pod_name":      "p1",
 					"container":     "c1",
@@ -96,7 +96,7 @@ func Test_generateIndexByMatcher1(t *testing.T) {
 		{
 			args: args{
 				matcher: "%{namespace}/%{name}/%{container}",
-				tags: map[string]interface{}{
+				tags: map[string]string{
 					"namespace": "default",
 					"name":      "p1",
 					"container": "c1",
@@ -107,7 +107,7 @@ func Test_generateIndexByMatcher1(t *testing.T) {
 		{
 			args: args{
 				matcher: "%{namespace}/%{name}/%{container}",
-				tags: map[string]interface{}{
+				tags: map[string]string{
 					"name":      "p1",
 					"container": "c1",
 				},

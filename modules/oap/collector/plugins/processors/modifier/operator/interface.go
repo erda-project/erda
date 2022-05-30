@@ -16,6 +16,8 @@ package operator
 
 import (
 	"fmt"
+
+	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
 )
 
 type Operator struct {
@@ -42,11 +44,11 @@ func NewOperator(cfg ModifierCfg) (*Operator, error) {
 }
 
 type Modifier interface {
-	Modify(pairs map[string]interface{}) map[string]interface{}
+	Modify(item odata.ObservableData) odata.ObservableData
 }
 
 type Condition interface {
-	Match(pairs map[string]interface{}) bool
+	Match(item odata.ObservableData) bool
 }
 
 type ModifierCfg struct {

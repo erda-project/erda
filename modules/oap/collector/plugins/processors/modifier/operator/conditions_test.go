@@ -16,6 +16,9 @@ package operator
 
 import (
 	"testing"
+
+	"github.com/erda-project/erda/modules/core/monitor/metric"
+	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
 )
 
 func TestKeyExist_Match(t *testing.T) {
@@ -23,7 +26,7 @@ func TestKeyExist_Match(t *testing.T) {
 		cfg ConditionCfg
 	}
 	type args struct {
-		pairs map[string]interface{}
+		item odata.ObservableData
 	}
 	tests := []struct {
 		name   string
@@ -33,27 +36,25 @@ func TestKeyExist_Match(t *testing.T) {
 	}{
 		{
 			fields: fields{cfg: ConditionCfg{
-				Key: "aaa",
+				Key: "tags.aaa",
 				Op:  "key_exist",
 			}},
-			args: args{pairs: map[string]interface{}{"aaa": ""}},
+			args: args{item: &metric.Metric{Tags: map[string]string{"aaa": ""}}},
 			want: true,
 		},
 		{
 			fields: fields{cfg: ConditionCfg{
-				Key: "aaa",
+				Key: "tags.aaa",
 				Op:  "key_exist",
 			}},
-			args: args{pairs: map[string]interface{}{"bbb": ""}},
+			args: args{item: &metric.Metric{Tags: map[string]string{"bbb": ""}}},
 			want: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			k := &KeyExist{
-				cfg: tt.fields.cfg,
-			}
-			if got := k.Match(tt.args.pairs); got != tt.want {
+			k := NewKeyExist(tt.fields.cfg)
+			if got := k.Match(tt.args.item); got != tt.want {
 				t.Errorf("Match() = %v, want %v", got, tt.want)
 			}
 		})
@@ -65,7 +66,7 @@ func TestValueMatch_Match(t *testing.T) {
 		cfg ConditionCfg
 	}
 	type args struct {
-		pairs map[string]interface{}
+		item odata.ObservableData
 	}
 	tests := []struct {
 		name   string
@@ -76,44 +77,44 @@ func TestValueMatch_Match(t *testing.T) {
 		{
 			fields: fields{
 				cfg: ConditionCfg{
-					Key:   "pod_namespace",
+					Key:   "tags.pod_namespace",
 					Value: "addon(.*?)",
 				},
 			},
-			args: args{pairs: map[string]interface{}{
+			args: args{item: &metric.Metric{Tags: map[string]string{
 				"pod_namespace": "group-addon-rocketmq--w28b7279764b64180843611a3dfbe0f4b",
-			}},
+			}}},
 			want: true,
 		},
 		{
 			fields: fields{
 				cfg: ConditionCfg{
-					Key:   "pod_namespace",
+					Key:   "tags.pod_namespace",
 					Value: "addon(.*?)",
 				},
 			},
-			args: args{pairs: map[string]interface{}{
+			args: args{item: &metric.Metric{Tags: map[string]string{
 				"pod_namespace": "addon-redis--yaf54cd190f484ddba84c681e4a9eba69",
-			}},
+			}}},
 			want: true,
 		},
 		{
 			fields: fields{
 				cfg: ConditionCfg{
-					Key:   "pod_namespace",
+					Key:   "tags.pod_namespace",
 					Value: "addon(.*?)",
 				},
 			},
-			args: args{pairs: map[string]interface{}{
+			args: args{item: &metric.Metric{Tags: map[string]string{
 				"pod_namespace": "app_name",
-			}},
+			}}},
 			want: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			v := NewValueMatch(tt.fields.cfg)
-			if got := v.Match(tt.args.pairs); got != tt.want {
+			if got := v.Match(tt.args.item); got != tt.want {
 				t.Errorf("Match() = %v, want %v", got, tt.want)
 			}
 		})
@@ -125,7 +126,7 @@ func TestValueEmpty_Match(t *testing.T) {
 		cfg ConditionCfg
 	}
 	type args struct {
-		pairs map[string]interface{}
+		item odata.ObservableData
 	}
 	tests := []struct {
 		name   string
@@ -136,32 +137,65 @@ func TestValueEmpty_Match(t *testing.T) {
 		{
 			fields: fields{
 				cfg: ConditionCfg{
-					Key: "aaa",
+					Key: "tags.aaa",
 				},
 			},
 			args: args{
-				pairs: map[string]interface{}{"aaa": ""},
+				item: &metric.Metric{Tags: map[string]string{"aaa": ""}},
 			},
 			want: true,
 		},
 		{
 			fields: fields{
 				cfg: ConditionCfg{
-					Key: "aaa",
+					Key: "tags.aaa",
 				},
 			},
 			args: args{
-				pairs: map[string]interface{}{"aaa": "bbb"},
+				item: &metric.Metric{Tags: map[string]string{"aaa": "bbb"}},
 			},
 			want: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ve := &ValueEmpty{
-				cfg: tt.fields.cfg,
+			ve := NewValueEmpty(tt.fields.cfg)
+			if got := ve.Match(tt.args.item); got != tt.want {
+				t.Errorf("Match() = %v, want %v", got, tt.want)
 			}
-			if got := ve.Match(tt.args.pairs); got != tt.want {
+		})
+	}
+}
+
+func TestNoopCondition_Match(t *testing.T) {
+	type fields struct {
+		cfg ConditionCfg
+	}
+	type args struct {
+		item odata.ObservableData
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   bool
+	}{
+		{
+			fields: fields{
+				cfg: ConditionCfg{
+					Key: "tags.aaa",
+				},
+			},
+			args: args{
+				item: &metric.Metric{Tags: map[string]string{"aaa": ""}},
+			},
+			want: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			n := NewNoopCondition(tt.fields.cfg)
+			if got := n.Match(tt.args.item); got != tt.want {
 				t.Errorf("Match() = %v, want %v", got, tt.want)
 			}
 		})
