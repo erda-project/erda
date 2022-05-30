@@ -33,12 +33,7 @@ func asyncUpdate() {
 	for {
 		select {
 		case c := <-cachesC:
-			k := <-c.C
-			if v, ok := c.update(k); ok {
-				c.Store(k, v)
-			} else {
-				c.Delete(k)
-			}
+			c.updateSync(<-c.C)
 		}
 	}
 }
@@ -46,38 +41,25 @@ func asyncUpdate() {
 // Cache defines the methods LoadWithUpdate and Store,
 // the user needs to define the function `update`.
 type Cache struct {
-	sync.Map
+	Map sync.Map
+	C   chan interface{}
 
-	C       chan interface{}
 	name    string
 	expired time.Duration
 	update  Update
-	isSync  bool // call update synchronously when expired if true
 }
 
 // New returns the *Cache.
 // the function update, if found new *item, returns true, and stores it;
 // else returns false, and delete the key from cache.
-func New(name string, expired time.Duration, update Update, options ...Option) *Cache {
+func New(name string, expired time.Duration, update Update) *Cache {
 	c := &Cache{
 		C:       make(chan interface{}, 1<<16),
 		name:    name,
 		expired: expired,
 		update:  update,
 	}
-	for _, option := range options {
-		option(c)
-	}
 	return c
-}
-
-type Option func(c *Cache)
-
-// WithSync set sync=true for Cache
-func WithSync() Option {
-	return func(c *Cache) {
-		c.isSync = true
-	}
 }
 
 // Name returns the Cache object's name
@@ -86,29 +68,16 @@ func (c *Cache) Name() string {
 }
 
 // LoadWithUpdate loads the cached item.
-// If the item is not cached, it returns the newest and cache the new item.
+// If the item is not cached, it returns the newest and caches the new item.
 // If the time is cached, it returns the item.
-// if the cached item is expired, it tries to cache the newest.
+// if the cached item is expired, it returns the current item and tries to cache the newest.
 func (c *Cache) LoadWithUpdate(key interface{}) (interface{}, bool) {
 	value, ok := c.Map.Load(key)
 	if !ok {
-		obj, ok := c.update(key)
-		if !ok {
-			return nil, false
-		}
-		c.Store(key, obj)
-		return obj, true
+		return c.updateSync(key)
 	}
 	item := value.(*item)
 	if item.expired.Before(time.Now()) {
-		if c.isSync {
-			obj, ok := c.update(key)
-			if !ok {
-				return nil, false
-			}
-			c.Store(key, obj)
-			return obj, true
-		}
 		select {
 		case c.C <- key:
 			cachesC <- c
@@ -120,9 +89,44 @@ func (c *Cache) LoadWithUpdate(key interface{}) (interface{}, bool) {
 	return item.Object, true
 }
 
+// LoadWithUpdateSync loads the cached item.
+// If the item is not cached, it returns the newest and caches the new item.
+// If the item is cached, it returns the item.
+// If the cached item is expired, it tries to retrieve the newest then caches and returns it.
+func (c *Cache) LoadWithUpdateSync(key interface{}) (interface{}, bool) {
+	value, ok := c.Map.Load(key)
+	if !ok {
+		return c.updateSync(key)
+	}
+	item := value.(*item)
+	if item.expired.Before(time.Now()) {
+		return c.updateSync(key)
+	}
+	return item.Object, true
+}
+
 // Store caches the key and value, and updates its expired time.
 func (c *Cache) Store(key interface{}, value interface{}) {
 	c.Map.Store(key, &item{Object: value, expired: time.Now().Add(c.expired)})
+}
+
+// Load loads the value from cache.
+func (c *Cache) Load(key interface{}) (interface{}, bool) {
+	v, ok := c.Map.Load(key)
+	if ok {
+		return v.(*item).Object, true
+	}
+	return nil, false
+}
+
+func (c *Cache) updateSync(key interface{}) (interface{}, bool) {
+	v, ok := c.update(key)
+	if ok {
+		go c.Store(key, v)
+		return v, true
+	}
+	go c.Map.Delete(key)
+	return nil, false
 }
 
 // item contains the item be cached
