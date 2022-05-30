@@ -16,7 +16,6 @@ package req_distribution
 
 import (
 	"context"
-	"strings"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -29,7 +28,6 @@ import (
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/modules/msp/apm/trace/query"
 	"github.com/erda-project/erda/modules/msp/apm/trace/query/commom/custom"
-	"github.com/erda-project/erda/pkg/math"
 )
 
 type provider struct {
@@ -52,6 +50,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 
 		//lang := sdk.Lang
 		response, err := p.TraceService.GetTraceReqDistribution(context.Background(), *p.TraceInParams.InParamsPtr)
+
 		if err != nil {
 			p.Log.Error(err)
 		}
@@ -61,23 +60,16 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			p.StdDataPtr = dataBuilder.Build()
 			return nil
 		}
-		rows := response.Results[0].Series[0].Rows
-		if rows == nil || len(rows) == 0 {
-			p.StdDataPtr = dataBuilder.Build()
-			return nil
-		}
-		for _, row := range response.Results[0].Series[0].Rows {
-			timeFormat := row.Values[0].GetStringValue()
-			timeFormat = strings.ReplaceAll(timeFormat, "T", " ")
-			timeFormat = strings.ReplaceAll(timeFormat, "Z", "")
-			x := timeFormat
-			y := math.DecimalPlacesWithDigitsNumber(row.Values[1].GetNumberValue(), 2)
-			size := row.Values[2].GetNumberValue()
+
+		for _, row := range response {
+			x := row.Date
+			y := row.AvgDuration
+			size := row.Count
 
 			dataBuilder.WithBubble(bubblegraph.NewBubbleBuilder().
 				WithValueX(x).
 				WithValueY(y).
-				WithValueSize(size).
+				WithValueSize(float64(size)).
 				WithDimension("Req Distribution").
 				Build())
 		}

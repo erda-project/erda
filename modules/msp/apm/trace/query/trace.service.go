@@ -15,21 +15,18 @@
 package query
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/asaskevich/govalidator"
-	"github.com/gocql/gocql"
 	uuid "github.com/satori/go.uuid"
 	"google.golang.org/protobuf/types/known/structpb"
 
@@ -52,6 +49,7 @@ type TraceService struct {
 	i18n                  i18n.Translator
 	traceRequestHistoryDB *db.TraceRequestHistoryDB
 	Source                source.TraceSource
+	CompatibleSource      source.TraceSource
 }
 
 var EventFieldSet = set.NewSet("error", "stack", "event", "message", "error_kind", "error_object")
@@ -96,26 +94,6 @@ func (s *TraceService) GetSpans(ctx context.Context, req *pb.GetSpansRequest) (*
 		return nil, errors.NewInternalServerError(err)
 	}
 	return response, nil
-}
-func (s *TraceService) fetchSpanFromCassandra(session *gocql.Session, traceId string, limit int64) []*pb.Span {
-	iter := session.Query("SELECT * FROM spans WHERE trace_id = ? limit ?", traceId, limit).Iter()
-	var items []*pb.Span
-	for {
-		row := make(map[string]interface{})
-		if !iter.MapScan(row) {
-			break
-		}
-		var span pb.Span
-		span.Id = row["span_id"].(string)
-		span.TraceId = row["trace_id"].(string)
-		span.OperationName = row["operation_name"].(string)
-		span.ParentSpanId = row["parent_span_id"].(string)
-		span.StartTime = row["start_time"].(int64)
-		span.EndTime = row["end_time"].(int64)
-		span.Tags = row["tags"].(map[string]string)
-		items = append(items, &span)
-	}
-	return items
 }
 
 type Spans []*pb.Span
@@ -335,32 +313,7 @@ func (s *TraceService) GetTraces(ctx context.Context, req *pb.GetTracesRequest) 
 		h, _ := time.ParseDuration("-1h")
 		req.StartTime = time.Now().Add(h).UnixNano() / 1e6
 	}
-
-	queryParams, statement, statementCount := s.composeTraceQueryConditions(req)
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-	defer cancel()
-
-	request := &metricpb.QueryWithInfluxFormatRequest{
-		Start:     strconv.FormatInt(req.StartTime, 10),
-		End:       strconv.FormatInt(req.EndTime, 10),
-		Statement: statement,
-		Params:    queryParams,
-	}
-
-	response, err := s.p.Metric.QueryWithInfluxFormat(ctx, request)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
-	}
-
-	total, err := s.GetTracesCount(ctx, req.StartTime, req.EndTime, queryParams, statementCount)
-	if err != nil {
-		return nil, err
-	}
-
-	rows := response.Results[0].Series[0].Rows
-	traces := s.handleTracesResponse(rows)
-	return &pb.GetTracesResponse{Data: traces, PageNo: req.PageNo, PageSize: req.PageSize, Total: total}, nil
+	return s.Source.GetTraces(ctx, req)
 }
 
 func (s *TraceService) handleTracesResponse(rows []*metricpb.Row) []*pb.Trace {
@@ -378,90 +331,6 @@ func (s *TraceService) handleTracesResponse(rows []*metricpb.Row) []*pb.Trace {
 		traces = append(traces, &t)
 	}
 	return traces
-}
-
-func (s *TraceService) composeTraceQueryConditions(req *pb.GetTracesRequest) (map[string]*structpb.Value, string, string) {
-	metricsParams := url.Values{}
-	metricsParams.Set("start", strconv.FormatInt(req.StartTime, 10))
-	metricsParams.Set("end", strconv.FormatInt(req.EndTime, 10))
-
-	queryParams := make(map[string]*structpb.Value)
-	queryParams["terminus_keys"] = structpb.NewStringValue(req.TenantID)
-
-	var where bytes.Buffer
-	// trace id condition
-	if req.TraceID != "" {
-		queryParams["trace_id"] = structpb.NewStringValue(req.TraceID)
-		where.WriteString("trace_id::tag=$trace_id AND ")
-	}
-
-	if req.ServiceName != "" {
-		queryParams["service_names"] = structpb.NewStringValue(req.ServiceName)
-		where.WriteString("service_names::field=$service_names AND ")
-	}
-
-	if req.RpcMethod != "" {
-		queryParams["rpc_methods"] = structpb.NewStringValue(req.RpcMethod)
-		where.WriteString("rpc_methods::field=$rpc_methods AND ")
-	}
-
-	if req.HttpPath != "" {
-		queryParams["http_paths"] = structpb.NewStringValue(req.HttpPath)
-		where.WriteString("http_paths::field=$http_paths AND ")
-	}
-
-	if req.DurationMin > 0 && req.DurationMax > 0 && req.DurationMin < req.DurationMax {
-		queryParams["duration_min"] = structpb.NewNumberValue(float64(req.DurationMin))
-		queryParams["duration_max"] = structpb.NewNumberValue(float64(req.DurationMax))
-		where.WriteString("trace_duration::field>$duration_min AND trace_duration::field<$duration_max AND ")
-	}
-
-	// trace status condition
-	where.WriteString(s.traceStatusConditionStrategy(req.Status))
-	// sort condition
-	sort := s.sortConditionStrategy(req.Sort)
-	statement := fmt.Sprintf("SELECT trace_id::tag,trace_duration::field,start_time::field,span_count::field,service_names::field "+
-		"FROM trace "+
-		"WHERE %s terminus_keys::field=$terminus_keys "+
-		"%s "+
-		"LIMIT %v OFFSET %v", where.String(), sort, req.PageSize, (req.PageNo-1)*req.PageSize)
-
-	statementCount := fmt.Sprintf("SELECT count(trace_id::tag) "+
-		"FROM trace "+
-		"WHERE %s terminus_keys::field=$terminus_keys ", where.String())
-	return queryParams, statement, statementCount
-}
-
-func (s *TraceService) traceStatusConditionStrategy(traceStatus string) string {
-	switch traceStatus {
-	case strings.ToLower(pb.TraceStatusCondition_TRACE_SUCCESS.String()):
-		return "errors_sum::field=0 AND"
-	case strings.ToLower(pb.TraceStatusCondition_TRACE_ALL.String()):
-		return "errors_sum::field>=0 AND"
-	case strings.ToLower(pb.TraceStatusCondition_TRACE_ERROR.String()):
-		return "errors_sum::field>0 AND"
-	default:
-		return "errors_sum::field>=0 AND"
-	}
-}
-
-func (s *TraceService) sortConditionStrategy(sort string) string {
-	switch strings.ToLower(sort) {
-	case strings.ToLower(pb.SortCondition_TRACE_TIME_DESC.String()):
-		return "ORDER BY start_time::field DESC"
-	case strings.ToLower(pb.SortCondition_TRACE_TIME_ASC.String()):
-		return "ORDER BY start_time::field ASC"
-	case strings.ToLower(pb.SortCondition_TRACE_DURATION_DESC.String()):
-		return "ORDER BY trace_duration::field DESC"
-	case strings.ToLower(pb.SortCondition_TRACE_DURATION_ASC.String()):
-		return "ORDER BY trace_duration::field ASC"
-	case strings.ToLower(pb.SortCondition_SPAN_COUNT_DESC.String()):
-		return "ORDER BY span_count::field DESC"
-	case strings.ToLower(pb.SortCondition_SPAN_COUNT_ASC.String()):
-		return "ORDER BY span_count::field ASC"
-	default:
-		return "ORDER BY start_time::field DESC"
-	}
 }
 
 func (s *TraceService) GetTraceDebugHistories(ctx context.Context, req *pb.GetTraceDebugHistoriesRequest) (*pb.GetTraceDebugHistoriesResponse, error) {
@@ -498,54 +367,8 @@ func (s *TraceService) GetTraceDebugHistories(ctx context.Context, req *pb.GetTr
 	return &pb.GetTraceDebugHistoriesResponse{Data: &td}, nil
 }
 
-func (s *TraceService) GetTraceReqDistribution(ctx context.Context, model custom.Model) (*metricpb.QueryWithInfluxFormatResponse, error) {
-	metricsParams := url.Values{}
-	metricsParams.Set("start", strconv.FormatInt(model.StartTime, 10))
-	metricsParams.Set("end", strconv.FormatInt(model.EndTime, 10))
-
-	queryParams := make(map[string]*structpb.Value)
-	queryParams["terminus_keys"] = structpb.NewStringValue(model.TenantId)
-
-	var where bytes.Buffer
-	// trace id condition
-	if model.TraceId != "" {
-		queryParams["trace_id"] = structpb.NewStringValue(model.TraceId)
-		where.WriteString("trace_id::tag=$trace_id AND ")
-	}
-
-	if model.ServiceName != "" {
-		queryParams["service_names"] = structpb.NewStringValue(model.ServiceName)
-		where.WriteString("service_names::field=$service_names AND ")
-	}
-
-	if model.RpcMethod != "" {
-		queryParams["rpc_methods"] = structpb.NewStringValue(model.RpcMethod)
-		where.WriteString("rpc_methods::field=$rpc_methods AND ")
-	}
-
-	if model.HttpPath != "" {
-		queryParams["http_paths"] = structpb.NewStringValue(model.HttpPath)
-		where.WriteString("http_paths::field=$http_paths AND ")
-	}
-
-	if model.DurationMin > 0 && model.DurationMax > 0 && model.DurationMin < model.DurationMax {
-		queryParams["duration_min"] = structpb.NewNumberValue(float64(model.DurationMin))
-		queryParams["duration_max"] = structpb.NewNumberValue(float64(model.DurationMax))
-		where.WriteString("trace_duration::field>$duration_min AND trace_duration::field<$duration_max AND ")
-	}
-
-	// trace status condition
-	where.WriteString(s.traceStatusConditionStrategy(model.Status))
-
-	statement := fmt.Sprintf("SELECT avg(trace_duration::field),count(trace_id::tag) FROM trace WHERE %s terminus_keys::field=$terminus_keys GROUP BY time()", where.String())
-
-	queryRequest := &metricpb.QueryWithInfluxFormatRequest{
-		Start:     strconv.FormatInt(model.StartTime, 10),
-		End:       strconv.FormatInt(model.EndTime, 10),
-		Statement: statement,
-		Params:    queryParams,
-	}
-	return s.p.Metric.QueryWithInfluxFormat(ctx, queryRequest)
+func (s *TraceService) GetTraceReqDistribution(ctx context.Context, model custom.Model) ([]*source.TraceDistributionItem, error) {
+	return s.Source.GetTraceReqDistribution(ctx, model)
 }
 
 func (s *TraceService) GetTraceQueryConditions(ctx context.Context, req *pb.GetTraceQueryConditionsRequest) (*pb.GetTraceQueryConditionsResponse, error) {
