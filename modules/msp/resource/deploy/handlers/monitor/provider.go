@@ -38,7 +38,7 @@ type provider struct {
 	DB            *gorm.DB `autowired:"mysql-client"`
 	MonitorDb     *monitor.MonitorDB
 	ProjectDb     *db.ProjectDB
-	SettingClient pb.SettingsServiceServer `autowired:"erda.core.monitor.settings" optional:"true"`
+	SettingClient pb.SettingsServiceServer `autowired:"erda.core.monitor.settings.SettingsService"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
