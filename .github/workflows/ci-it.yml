@@ -222,3 +222,11 @@ jobs:
       - name: Upload coverage to Codecov
         run: |
           curl -s https://codecov.io/bash | bash
+      - name: Cache reports for Non-Go check use
+        uses: actions/cache@v3
+        with:
+          path: |
+            ./coverage/
+          key: codecov-report-cache-${{ github.ref_name }}
+          restore-keys: |
+            codecov-report-cache-
