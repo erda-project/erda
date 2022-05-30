@@ -68,10 +68,16 @@ func Test_netportal(t *testing.T) {
 	mx.HandleFunc("/hello2", helloHandler)
 	go http.ListenAndServe(helloListenAddr2, mx)
 
+	tctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := serverHealthCheck(tctx); err != nil {
+		t.Fatal(err)
+	}
+
 	go client.Start(context.Background())
 	for {
 		if client.IsConnected() {
-			logrus.Info("client connected")
+			logrus.Info("client connected at Test_netportal")
 			break
 		}
 		time.Sleep(100 * time.Millisecond)
@@ -79,7 +85,7 @@ func Test_netportal(t *testing.T) {
 	hc := &http.Client{}
 	req, _ := http.NewRequest("GET", "http://"+dialerListenAddr2+"/hello2", nil)
 	req.Header = http.Header{
-		portalHostHeader:    {"test"},
+		portalHostHeader:    {fakeClusterKey},
 		portalDestHeader:    {helloListenAddr2},
 		portalTimeoutHeader: {"10"},
 	}
@@ -98,5 +104,27 @@ func Test_netportal(t *testing.T) {
 	if string(respBody) != "Hello, world!" {
 		t.Errorf("respBody:%s, expect:Hello, world!", respBody)
 		return
+	}
+}
+
+func serverHealthCheck(ctx context.Context) error {
+	for {
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("server health check timeout")
+		default:
+			hc := &http.Client{}
+			resp, err := hc.Get(fmt.Sprintf("http://%s/clusterdialer/ip?clusterKey=%s",
+				dialerListenAddr2, fakeClusterKey))
+			if err != nil {
+				logrus.Errorf("server health check failed, err:%+v", err)
+				time.Sleep(100 * time.Millisecond)
+				continue
+			}
+			resp.Body.Close()
+			if resp.StatusCode == http.StatusOK {
+				return nil
+			}
+		}
 	}
 }
