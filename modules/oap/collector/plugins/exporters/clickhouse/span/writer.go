@@ -96,38 +96,36 @@ begin:
 				for i := range metas {
 					metas[i].SeriesID = sid
 					err := metaBatch.AppendStruct(&metas[i])
-					if err != nil {
+					if err != nil { // TODO. Data may lost when encounter error
 						ws.logger.Errorf("metaBatch append: %s", err)
 						_ = metaBatch.Abort()
 						putMetaBuf(metas)
 						goto begin
 					}
 				}
-				putMetaBuf(metas)
 			}
+			putMetaBuf(metas)
 
-			err = seriesBatch.AppendStruct(&trace.Series{
-				OrgName:      data.OrgName,
-				TraceId:      data.TraceId,
-				SpanId:       data.SpanId,
-				ParentSpanId: data.ParentSpanId,
-				StartTime:    data.StartTime,
-				EndTime:      data.EndTime,
-				SeriesID:     sid,
-			})
-			if err != nil {
+			series := getSeriesBuf()
+			series.OrgName = data.OrgName
+			series.TraceId = data.TraceId
+			series.SpanId = data.SpanId
+			series.ParentSpanId = data.ParentSpanId
+			series.StartTime = data.StartTime
+			series.EndTime = data.EndTime
+			series.SeriesID = sid
+			err = seriesBatch.AppendStruct(&series)
+			if err != nil { // TODO. Data may lost when encounter error
 				ws.logger.Errorf("seriesBatch: %s", err)
 				_ = seriesBatch.Abort()
+				putSeriesBuf(series)
 				goto begin
 			}
+			putSeriesBuf(series)
 		}
 
-		if err := metaBatch.Send(); err != nil {
-			ws.logger.Errorf("metaBatch cannot send: %s", err)
-		}
-		if err := seriesBatch.Send(); err != nil {
-			ws.logger.Errorf("seriesBatch cannot send: %s", err)
-		}
+		ws.sendBatch(ctx, metaBatch)
+		ws.sendBatch(ctx, seriesBatch)
 	}
 }
 
@@ -178,7 +176,9 @@ func hashTagsList(list []trace.Meta) uint64 {
 	return h.Sum64()
 }
 
-var metaBufPool sync.Pool
+var (
+	metaBufPool, seriesBufPool sync.Pool
+)
 
 func getMetaBuf() []trace.Meta {
 	v := metaBufPool.Get()
@@ -193,6 +193,25 @@ func putMetaBuf(buf []trace.Meta) {
 	metaBufPool.Put(buf)
 }
 
+func getSeriesBuf() trace.Series {
+	v := seriesBufPool.Get()
+	if v == nil {
+		return trace.Series{}
+	}
+	return v.(trace.Series)
+}
+
+func putSeriesBuf(buf trace.Series) {
+	buf.SeriesID = 0
+	buf.EndTime = 0
+	buf.StartTime = 0
+	buf.OrgName = ""
+	buf.TraceId = ""
+	buf.SpanId = ""
+	buf.ParentSpanId = ""
+	seriesBufPool.Put(buf)
+}
+
 // currency limiter
 var currencyLimiter chan struct{}
 
@@ -202,7 +221,7 @@ func InitCurrencyLimiter(currency int) {
 
 // seriesIDMap
 var (
-	seriesIDMap map[uint64]struct{}
+	seriesIDMap map[uint64]struct{} // TODO. Need refresh with certain interval
 	simMutex    *sync.RWMutex
 )
 
@@ -223,10 +242,16 @@ func seriesIDExisted(sid uint64) bool {
 func InitSeriesIDMap(client clickhouse.Conn, db string) error {
 	simMutex = &sync.RWMutex{}
 
+retry:
 	// nolint
-	rows, err := client.Query(context.TODO(), "select distinct(series_id) from "+db+".spans_meta")
+	rows, err := client.Query(context.TODO(), "select distinct(series_id) from "+db+".spans_meta_all")
 	if err != nil {
-		return err
+		if exp, ok := err.(*clickhouse.Exception); ok && validExp(exp) {
+			time.Sleep(time.Second)
+			goto retry
+		} else {
+			return err
+		}
 	}
 
 	seriesIDMap = make(map[uint64]struct{}, 50000)
@@ -238,4 +263,12 @@ func InitSeriesIDMap(client clickhouse.Conn, db string) error {
 		seriesIDMap[sid] = struct{}{}
 	}
 	return rows.Close()
+}
+
+func validExp(exp *clickhouse.Exception) bool {
+	switch exp.Code {
+	case 81, 60: // db or table not existed
+		return true
+	}
+	return false
 }

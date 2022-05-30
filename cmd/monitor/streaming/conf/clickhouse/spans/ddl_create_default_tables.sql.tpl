@@ -27,3 +27,11 @@ ENGINE = ReplicatedMergeTree('/clickhouse/tables/{cluster}-{shard}/{database}/sp
 PARTITION BY toYYYYMM(create_at)
 ORDER BY (org_name, series_id, key, value)
 TTL toDateTime(create_at) + INTERVAL 14 DAY;
+
+// create distributed table
+// notice: ddls to the <table> table should be synced to the <table>_all table
+CREATE TABLE IF NOT EXISTS <database>.spans_meta_all ON CLUSTER '{cluster}' AS <database>.spans_meta
+ENGINE = Distributed('{cluster}', <database>, spans_meta, rand());
+
+CREATE TABLE IF NOT EXISTS <database>.spans_series_all ON CLUSTER '{cluster}' AS <database>.spans_series
+ENGINE = Distributed('{cluster}', <database>, spans_series, rand());

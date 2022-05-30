@@ -68,6 +68,19 @@ clickhouse:
   password: "${CLICKHOUSE_PASSWORD:default}"
   conn_open_strategy: "round_robin"
 
+clickhouse.table.initializer@span:
+  table_prefix: "spans"
+  ttl_sync_interval: "${CLICKHOUSE_TABLE_TTL_SYNC_INTERVAL:24h}"
+  default_ddl_files:
+    - path: "conf/clickhouse/spans/ddl_create_db.sql.tpl"
+      ignore_err: "false"
+    - path: "conf/clickhouse/spans/ddl_create_default_tables.sql.tpl"
+      ignore_err: "false"
+
+clickhouse.table.loader@span:
+  table_prefix: "spans"
+  default_search_table: "spans_all"
+
 clickhouse.table.initializer@log:
   _enable: ${CLICKHOUSE_ENABLE:false}
   table_prefix: "logs"
@@ -532,7 +545,7 @@ erda.oap.collector.core:
           - "erda.oap.collector.processor.modifier@span"
         exporters:
           - "erda.oap.collector.exporter.clickhouse@span"
-        batch_size: 1000
+        batch_size: ${EXPORTER_CLICKHOUSE_SPAN_BATCH_SIZE:3000}
         _enable: ${WRITE_SPAN_TO_CLICKHOUSE_ENABLE:false}
 
 # ************* receivers *************
@@ -574,7 +587,7 @@ erda.oap.collector.processor.modifier@span:
 # ************* exporters *************
 erda.oap.collector.exporter.clickhouse@span:
   _enable: ${WRITE_SPAN_TO_CLICKHOUSE_ENABLE:false}
-  currency_num: ${EXPORTER_CLICKHOUSE_CURRENCY_NUM:30}
+  currency_num: ${EXPORTER_CLICKHOUSE_CURRENCY_NUM:3}
 # ************* exporters *************
 
 # --- data pipeline block ---

@@ -29,8 +29,8 @@ import (
 )
 
 type config struct {
-	CurrencyNum int    `file:"currency_num" default:"20" ENV:"EXPORTER_CLICKHOUSE_CURRENCY_NUM"`
-	RetryNum    int    `file:"retry_num" default:"5" ENV:"EXPORTER_CLICKHOUSE_RETRY_NUM"`
+	CurrencyNum int    `file:"currency_num" default:"20" ENV:"EXPORTER_CH_CURRENCY_NUM"`
+	RetryNum    int    `file:"retry_num" default:"5" ENV:"EXPORTER_CH_RETRY_NUM"`
 	Database    string `file:"database" default:"monitor"`
 }
 
@@ -75,10 +75,6 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.ch = svc.(clickhouse.Interface)
 	p.ctx, p.cancelFunc = context.WithCancel(context.Background())
 
-	span.InitCurrencyLimiter(p.Cfg.CurrencyNum)
-	if err := span.InitSeriesIDMap(p.ch.Client(), p.Cfg.Database); err != nil {
-		return fmt.Errorf("cannot init seriesIDMap: %w", err)
-	}
 	p.spanWriter = span.NewWriteSpan(span.Config{
 		Database: p.Cfg.Database,
 		Retry:    p.Cfg.RetryNum,
@@ -90,6 +86,10 @@ func (p *provider) Init(ctx servicehub.Context) error {
 }
 
 func (p *provider) Start() error {
+	span.InitCurrencyLimiter(p.Cfg.CurrencyNum)
+	if err := span.InitSeriesIDMap(p.ch.Client(), p.Cfg.Database); err != nil {
+		return fmt.Errorf("cannot init seriesIDMap: %w", err)
+	}
 	p.spanWriter.Start(p.ctx)
 	return nil
 }
@@ -105,7 +105,7 @@ func init() {
 			"erda.oap.collector.exporter.clickhouse",
 		},
 		Description:  "here is description of erda.oap.collector.exporter.clickhouse",
-		Dependencies: []string{"clickhouse", "clickhouse.table.initializer"},
+		Dependencies: []string{"clickhouse", "clickhouse.table.initializer@span"},
 		ConfigFunc: func() interface{} {
 			return &config{}
 		},
