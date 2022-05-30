@@ -109,10 +109,12 @@ jobs:
           go test ./pkg/mimetype -coverprofile=coverage-quick.txt
       - name: very quick codecov
         run: |
+          rm codecov.yml
           cat <<-EOF >codecov.yml
           coverage:
             status:
               project: off
               patch: off
           EOF
+          cat codecov.yml
           curl -s https://codecov.io/bash | bash -s - -f coverage-quick.txt
