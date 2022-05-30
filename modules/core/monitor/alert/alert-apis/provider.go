@@ -241,6 +241,9 @@ func (p *provider) Init(ctx servicehub.Context) error {
 						return apis.GetOrgID(ctx), map[string]interface{}{}, nil
 					},
 				),
+
+				audit.Method(MonitorService.UpdateOrgAlertEnable, audit.OrgScope, string(apistructs.SwitchOrgAlert), p.alertService.auditOperateOrgAlert("")),
+				audit.Method(MonitorService.UpdateOrgCustomizeAlertEnable, audit.OrgScope, string(apistructs.SwitchOrgCustomAlert), p.alertService.auditOperateOrgCustomAlert(apistructs.SwitchOrgCustomAlert, "")),
 			),
 		)
 	}

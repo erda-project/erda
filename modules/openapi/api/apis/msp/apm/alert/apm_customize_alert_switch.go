@@ -15,7 +15,6 @@
 package alert
 
 import (
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/api/apis"
 )
 
@@ -28,5 +27,4 @@ var APM_CUSTOMIZE_ALERT_SWITCH = apis.ApiSpec{
 	CheckLogin:  true,
 	CheckToken:  true,
 	Doc:         "summary: 切换微服务自定义告警开关",
-	Audit:       auditOperateMicroserviceCustomAlert(apistructs.SwitchMicroserviceCustomAlert, ""),
 }

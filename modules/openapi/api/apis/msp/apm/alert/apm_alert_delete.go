@@ -15,7 +15,6 @@
 package alert
 
 import (
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/api/apis"
 )
 
@@ -28,5 +27,4 @@ var APM_ALERT_DELETE = apis.ApiSpec{
 	CheckLogin:  true,
 	CheckToken:  true,
 	Doc:         "summary: 删除微服务告警",
-	Audit:       auditOperateMicroserviceAlert(apistructs.DeleteMicroserviceAlert, "delete"),
 }
