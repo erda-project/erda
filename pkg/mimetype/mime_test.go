@@ -49,11 +49,6 @@ func TestTypeByFilename(t *testing.T) {
 			filePath: "test.unknown",
 			want:     "",
 		},
-		{
-			name:     "so",
-			filePath: "a.so",
-			want:     "application/octet-stream",
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
