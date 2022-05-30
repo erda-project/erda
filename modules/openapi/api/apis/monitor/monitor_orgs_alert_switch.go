@@ -15,7 +15,6 @@
 package monitor
 
 import (
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/api/apis"
 )
 
@@ -28,5 +27,4 @@ var MONITOR_ORGS_ALERT_SWITCH = apis.ApiSpec{
 	CheckLogin:  true,
 	CheckToken:  true,
 	Doc:         "summary: 切换企业告警开关",
-	Audit:       auditOperateOrgAlert(apistructs.SwitchOrgAlert, ""),
 }

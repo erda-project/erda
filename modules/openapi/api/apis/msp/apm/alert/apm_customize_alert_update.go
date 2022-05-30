@@ -15,7 +15,6 @@
 package alert
 
 import (
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/api/apis"
 )
 
@@ -28,5 +27,4 @@ var APM_CUSTOMIZE_ALERT_UPDATE = apis.ApiSpec{
 	CheckLogin:  true,
 	CheckToken:  true,
 	Doc:         "summary: 修改微服务自定义告警",
-	Audit:       auditOperateMicroserviceCustomAlert(apistructs.UpdateMicroserviceCustomAlert, "update"),
 }

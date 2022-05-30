@@ -15,10 +15,6 @@
 package monitor
 
 import (
-	"fmt"
-	"strconv"
-	"strings"
-
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/api/apis"
 	"github.com/erda-project/erda/modules/openapi/api/spec"
@@ -54,58 +50,6 @@ func auditCreateOrgAlert(tmp apistructs.TemplateName) func(ctx *spec.AuditContex
 			Context: map[string]interface{}{
 				"alertName": requestBody.Name,
 				"orgName":   org.Name,
-			},
-		})
-	}
-}
-
-func auditOperateOrgAlert(tmp apistructs.TemplateName, act string) func(ctx *spec.AuditContext) error {
-	return func(ctx *spec.AuditContext) error {
-		action := act
-		if action == "" {
-			enable := strings.ToLower(ctx.Request.URL.Query().Get("enable"))
-			if enable == "true" {
-				action = "enabled"
-			} else if enable == "false" {
-				action = "disabled"
-			}
-		}
-		org, err := ctx.Bundle.GetOrg(ctx.OrgID)
-		if err != nil {
-			return err
-		}
-		if org == nil {
-			return nil
-		}
-		id, err := strconv.ParseInt(ctx.UrlParams["id"], 10, 64)
-		if err != nil {
-			return err
-		}
-		name := ctx.UrlParams["id"]
-		if tmp == apistructs.DeleteOrgAlert {
-			var respBody struct {
-				apistructs.Header
-				Data map[string]interface{} `json:"data"`
-			}
-			err := ctx.BindResponseData(&respBody)
-			if err == nil && respBody.Data != nil && respBody.Data["name"] != nil {
-				name = fmt.Sprint(respBody.Data["name"])
-			}
-		} else {
-			alert, err := ctx.Bundle.GetMonitorAlertByID(id)
-			if err == nil && alert != nil {
-				name = alert.Name
-			}
-		}
-		return ctx.CreateAudit(&apistructs.Audit{
-			ScopeType:    apistructs.OrgScope,
-			ScopeID:      uint64(ctx.OrgID),
-			TemplateName: tmp,
-			Context: map[string]interface{}{
-				"alertID":   id,
-				"alertName": name,
-				"orgName":   org.Name,
-				"action":    action,
 			},
 		})
 	}

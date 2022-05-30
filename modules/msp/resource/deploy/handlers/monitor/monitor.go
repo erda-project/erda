@@ -15,9 +15,10 @@
 package monitor
 
 import (
+	"context"
 	"time"
 
-	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda-proto-go/core/monitor/settings/pb"
 	"github.com/erda-project/erda/modules/msp/instance/db"
 	monitordb "github.com/erda-project/erda/modules/msp/instance/db/monitor"
 	"github.com/erda-project/erda/modules/msp/resource/deploy/handlers"
@@ -156,20 +157,23 @@ func (p *provider) registerStatus(id string, options map[string]string) (map[str
 
 func (p *provider) registerMonitor(tk string, workspace string, orgId string) error {
 	desc := "tmc"
-	var configList = []apistructs.MonitorConfig{
+	var configList = []*pb.MonitorConfig{
 		p.newMonitorConfig(workspace, orgId, "application_*", "[{\"key\":\"target_terminus_key\",\"value\":\""+tk+"\"}]"),
 		p.newMonitorConfig(workspace, orgId, "application_*", "[{\"key\":\"source_terminus_key\",\"value\":\""+tk+"\"}]"),
 		p.newMonitorConfig(workspace, orgId, "jvm_*,nodejs_*,trace_*,error_count,service_node,status_page", "[{\"key\":\"terminus_key\",\"value\":\""+tk+"\"}]"),
 		p.newMonitorConfig(workspace, orgId, "ta_*", "[{\"key\":\"type\",\"value\":\"browser\"}, {\"key\":\"tk\",\"value\":\""+tk+"\"}]"),
 	}
-
-	return p.Bdl.RegisterConfig(desc, configList)
+	_, err := p.SettingClient.RegisterMonitorConfig(context.Background(), &pb.RegisterMonitorConfigRequest{
+		Data: configList,
+		Desc: desc,
+	})
+	return err
 }
 
-func (p *provider) newMonitorConfig(workspace, orgId, names, filters string) apistructs.MonitorConfig {
-	return apistructs.MonitorConfig{
+func (p *provider) newMonitorConfig(workspace, orgId, names, filters string) *pb.MonitorConfig {
+	return &pb.MonitorConfig{
 		Scope:     "org",
-		ScopeId:   orgId,
+		ScopeID:   orgId,
 		Namespace: workspace,
 		Type:      "metric",
 		Enable:    true,
