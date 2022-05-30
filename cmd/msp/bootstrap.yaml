@@ -326,4 +326,4 @@ erda.core.messenger.notifygroup-client:
 
 grpc-client@erda.core.monitor.settings:
   addr: "${MONITOR_GRPC_ADDR:monitor:7080}"
-erda.core.monitor.settings:
+erda.core.monitor.settings-client:
