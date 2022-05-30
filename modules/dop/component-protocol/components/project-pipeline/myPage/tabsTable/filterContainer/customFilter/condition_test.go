@@ -136,3 +136,87 @@ func (m *MockTran) Text(lang i18n.LanguageCodes, key string) string {
 func (m *MockTran) Sprintf(lang i18n.LanguageCodes, key string, args ...interface{}) string {
 	return "i18n:" + key
 }
+
+func TestCustomFilter_ConditionRetriever(t *testing.T) {
+	sdk := &cptype.SDK{
+		Tran: &MockTran{},
+	}
+	ctx := context.WithValue(context.Background(), cptype.GlobalInnerKeyCtxSDK, sdk)
+
+	type fields struct {
+		InParams *InParams
+		sdk      *cptype.SDK
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		want    int
+		wantErr bool
+	}{
+		{
+			name: "test with inParams appID",
+			fields: fields{
+				InParams: &InParams{
+					AppID: 1,
+				},
+				sdk: &cptype.SDK{
+					Ctx:  ctx,
+					Tran: &MockTran{},
+				},
+			},
+			want:    7,
+			wantErr: false,
+		},
+		{
+			name: "test with no inParams appID",
+			fields: fields{
+				InParams: &InParams{
+				},
+				sdk: &cptype.SDK{
+					Ctx:  ctx,
+					Tran: &MockTran{},
+				},
+			},
+			want:    8,
+			wantErr: false,
+		},
+	}
+
+	var p *CustomFilter
+	monkey.PatchInstanceMethod(reflect.TypeOf(p), "AppConditionWithInParamsAppID", func(*CustomFilter) (*model.SelectCondition, error) {
+		return &model.SelectCondition{}, nil
+	})
+	defer monkey.UnpatchAll()
+	monkey.PatchInstanceMethod(reflect.TypeOf(p), "AppConditionWithNoInParamsAppID", func(*CustomFilter) (*model.SelectCondition, error) {
+		return &model.SelectCondition{}, nil
+	})
+	monkey.PatchInstanceMethod(reflect.TypeOf(p), "MemberCondition", func(*CustomFilter) (MemberCondition, error) {
+		return MemberCondition{
+			executorCondition: &model.SelectCondition{},
+			creatorCondition:  &model.SelectCondition{},
+		}, nil
+	})
+	monkey.PatchInstanceMethod(reflect.TypeOf(p), "BranchCondition", func(*CustomFilter) (*model.SelectCondition, error) {
+		return &model.SelectCondition{}, nil
+	})
+	monkey.PatchInstanceMethod(reflect.TypeOf(p), "StatusCondition", func(*CustomFilter) *model.SelectCondition {
+		return &model.SelectCondition{}
+	})
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p = &CustomFilter{
+				InParams: tt.fields.InParams,
+				sdk:      tt.fields.sdk,
+			}
+			got, err := p.ConditionRetriever()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ConditionRetriever() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if len(got) != tt.want {
+				t.Errorf("ConditionRetriever() got = %v, want %v", len(got), tt.want)
+			}
+		})
+	}
+}

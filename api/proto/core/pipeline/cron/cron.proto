@@ -58,6 +58,7 @@ message CronPagingRequest {
   int64 pageNo = 5;
   google.protobuf.BoolValue enable = 6;
   repeated string pipelineDefinitionID = 7;
+  string clusterName = 8;
 }
 
 message CronPagingResponse {

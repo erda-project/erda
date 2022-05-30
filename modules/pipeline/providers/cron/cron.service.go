@@ -85,6 +85,7 @@ func (s *provider) CronCreate(ctx context.Context, req *pb.CronCreateRequest) (*
 			IncomingSecrets: req.IncomingSecrets,
 		},
 		PipelineDefinitionID: req.PipelineDefinitionID,
+		ClusterName:          req.ClusterName,
 	}
 
 	err = Transaction(s.dbClient, func(op mysqlxorm.SessionOption) error {

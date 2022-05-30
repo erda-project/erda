@@ -28,6 +28,7 @@ message Cron {
     map<string,string> secrets = 17;
     CronExtra extra = 18;
     google.protobuf.BoolValue IsEdge = 19;
+    string clusterName = 20;
 }
 
 message CronExtra {

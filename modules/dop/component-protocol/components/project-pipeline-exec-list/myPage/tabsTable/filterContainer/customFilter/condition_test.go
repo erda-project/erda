@@ -136,3 +136,80 @@ func (m *MockTran) Text(lang i18n.LanguageCodes, key string) string {
 func (m *MockTran) Sprintf(lang i18n.LanguageCodes, key string, args ...interface{}) string {
 	return "i18n:" + key
 }
+
+func TestCustomFilter_ConditionRetriever(t *testing.T) {
+	sdk := &cptype.SDK{
+		Tran: &MockTran{},
+	}
+	ctx := context.WithValue(context.Background(), cptype.GlobalInnerKeyCtxSDK, sdk)
+
+	type fields struct {
+		sdk      *cptype.SDK
+		InParams *InParams
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		want    int
+		wantErr bool
+	}{
+		{
+			name: "test with inParams appID",
+			fields: fields{
+				InParams: &InParams{
+					AppIDInt: 1,
+				},
+				sdk: &cptype.SDK{
+					Ctx:  ctx,
+					Tran: &MockTran{},
+				},
+			},
+			want:    4,
+			wantErr: false,
+		},
+		{
+			name: "test with no inParams appID",
+			fields: fields{
+				InParams: &InParams{
+				},
+				sdk: &cptype.SDK{
+					Ctx:  ctx,
+					Tran: &MockTran{},
+				},
+			},
+			want:    5,
+			wantErr: false,
+		},
+	}
+	var p *CustomFilter
+	monkey.PatchInstanceMethod(reflect.TypeOf(p), "AppConditionWithInParamsAppID", func(*CustomFilter) (*model.SelectCondition, error) {
+		return &model.SelectCondition{}, nil
+	})
+	defer monkey.UnpatchAll()
+	monkey.PatchInstanceMethod(reflect.TypeOf(p), "AppConditionWithNoInParamsAppID", func(*CustomFilter) (*model.SelectCondition, error) {
+		return &model.SelectCondition{}, nil
+	})
+	monkey.PatchInstanceMethod(reflect.TypeOf(p), "MemberCondition", func(*CustomFilter) (*model.SelectCondition, error) {
+		return &model.SelectCondition{}, nil
+	})
+	monkey.PatchInstanceMethod(reflect.TypeOf(p), "StatusCondition", func(*CustomFilter) *model.SelectCondition {
+		return &model.SelectCondition{}
+	})
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &CustomFilter{
+				sdk:      tt.fields.sdk,
+				InParams: tt.fields.InParams,
+			}
+			got, err := p.ConditionRetriever()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ConditionRetriever() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if len(got) != tt.want {
+				t.Errorf("ConditionRetriever() got = %v, want %v", len(got), tt.want)
+			}
+		})
+	}
+}

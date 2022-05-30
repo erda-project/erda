@@ -702,8 +702,18 @@ func (s *ReleaseService) List(ctx context.Context, orgID int64, req *pb.ReleaseL
 	}
 
 	releaseList := make([]*pb.ReleaseData, 0, len(releases))
+	projects, err := s.bdl.GetAllProjects()
+	if err != nil {
+		return nil, errors.Errorf("failed to list projects, %v", err)
+	}
+
+	id2DisplayName := make(map[uint64]string)
+	for i := range projects {
+		id2DisplayName[projects[i].ID] = projects[i].DisplayName
+	}
+
 	for _, v := range releases {
-		release, err := convertToListReleaseResponse(&v, releaseTagMap[v.ReleaseID], tagMap, opuses.Data)
+		release, err := convertToListReleaseResponse(&v, releaseTagMap[v.ReleaseID], tagMap, opuses.Data, id2DisplayName)
 		if err != nil {
 			logrus.WithField("func", "*ReleaseList").Errorln("failed to convertToListReleaseResponse")
 			continue
@@ -717,7 +727,7 @@ func (s *ReleaseService) List(ctx context.Context, orgID int64, req *pb.ReleaseL
 	}, nil
 }
 
-func convertToListReleaseResponse(release *db.Release, tagIDs []uint64, tagsMap map[int64]*apistructs.ProjectLabel, opusMap map[string]*pb.ListArtifactsRespItem) (*pb.ReleaseData, error) {
+func convertToListReleaseResponse(release *db.Release, tagIDs []uint64, tagsMap map[int64]*apistructs.ProjectLabel, opusMap map[string]*pb.ListArtifactsRespItem, projectsDisplayName map[uint64]string) (*pb.ReleaseData, error) {
 	var labels map[string]string
 	err := json.Unmarshal([]byte(release.Labels), &labels)
 	if err != nil {
@@ -755,34 +765,35 @@ func convertToListReleaseResponse(release *db.Release, tagIDs []uint64, tagsMap 
 		opusVersionID = opusInfo.OpusVersionID
 	}
 	respData := &pb.ReleaseData{
-		ReleaseID:        release.ReleaseID,
-		ReleaseName:      release.ReleaseName,
-		Diceyml:          release.Dice,
-		Desc:             release.Desc,
-		Addon:            release.Addon,
-		Changelog:        release.Changelog,
-		IsStable:         release.IsStable,
-		IsFormal:         release.IsFormal,
-		IsProjectRelease: release.IsProjectRelease,
-		Modes:            release.Modes,
-		Resources:        resources,
-		Labels:           labels,
-		Tags:             tags,
-		Version:          release.Version,
-		CrossCluster:     release.CrossCluster,
-		Reference:        release.Reference,
-		OrgID:            release.OrgID,
-		ProjectID:        release.ProjectID,
-		ApplicationID:    release.ApplicationID,
-		ProjectName:      release.ProjectName,
-		ApplicationName:  release.ApplicationName,
-		UserID:           release.UserID,
-		ClusterName:      release.ClusterName,
-		CreatedAt:        timestamppb.New(release.CreatedAt),
-		UpdatedAt:        timestamppb.New(release.UpdatedAt),
-		IsLatest:         release.IsLatest,
-		OpusID:           opusID,
-		OpusVersionID:    opusVersionID,
+		ReleaseID:          release.ReleaseID,
+		ReleaseName:        release.ReleaseName,
+		Diceyml:            release.Dice,
+		Desc:               release.Desc,
+		Addon:              release.Addon,
+		Changelog:          release.Changelog,
+		IsStable:           release.IsStable,
+		IsFormal:           release.IsFormal,
+		IsProjectRelease:   release.IsProjectRelease,
+		Modes:              release.Modes,
+		Resources:          resources,
+		Labels:             labels,
+		Tags:               tags,
+		Version:            release.Version,
+		CrossCluster:       release.CrossCluster,
+		Reference:          release.Reference,
+		OrgID:              release.OrgID,
+		ProjectID:          release.ProjectID,
+		ApplicationID:      release.ApplicationID,
+		ProjectName:        release.ProjectName,
+		ProjectDisplayName: projectsDisplayName[uint64(release.ProjectID)],
+		ApplicationName:    release.ApplicationName,
+		UserID:             release.UserID,
+		ClusterName:        release.ClusterName,
+		CreatedAt:          timestamppb.New(release.CreatedAt),
+		UpdatedAt:          timestamppb.New(release.UpdatedAt),
+		IsLatest:           release.IsLatest,
+		OpusID:             opusID,
+		OpusVersionID:      opusVersionID,
 	}
 	return respData, nil
 }

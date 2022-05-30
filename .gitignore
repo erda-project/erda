@@ -79,3 +79,8 @@ modules/openapi/api/generate
 /extensions/
 
 http-client.env.json
+
+api/proto-go
+
+# go test
+/coverage*
