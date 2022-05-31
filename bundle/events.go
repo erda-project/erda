@@ -397,3 +397,58 @@ func (b *Bundle) CreateWebhook(r apistructs.CreateHookRequest) error {
 	}
 	return nil
 }
+
+func (b *Bundle) DeleteWebhook(r apistructs.DeleteHookRequest) error {
+	host, err := b.urls.CoreServices()
+	if err != nil {
+		return err
+	}
+	hc := b.hc
+	list := apistructs.WebhookListResponse{}
+	resp, err := hc.Get(host).Path("/api/dice/eventbox/webhooks").
+		Param("orgId", r.Org).
+		Header("Accept", "application/json").
+		Do().JSON(&list)
+	if err != nil {
+		return apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() {
+		return apierrors.ErrInvoke.InternalError(
+			errors.Errorf("failed to list webhook, status-code: %d", resp.StatusCode()))
+	}
+
+	if !list.Success {
+		return apierrors.ErrInvoke.InternalError(errors.New(list.Error.Msg))
+	}
+
+	for i := range list.Data {
+		// delete webhook if already exist
+		if list.Data[i].Name == r.Name {
+			req := apistructs.WebhookDeleteRequestBody{
+				OrgId:         r.Org,
+				ProjectId:     r.Project,
+				ApplicationId: r.Application,
+				Id:            list.Data[i].ID,
+			}
+			var deleteRsp apistructs.WebhookDeleteResponse
+			resp, err := hc.Delete(host).Path("/api/dice/eventbox/webhooks/"+list.Data[i].ID).
+				Header("Accept", "application/json").
+				Header("Internal-Client", "bundle").
+				JSONBody(&req).
+				Do().JSON(&deleteRsp)
+			if err != nil {
+				return apierrors.ErrInvoke.InternalError(err)
+			}
+			if !resp.IsOK() {
+				return apierrors.ErrInvoke.InternalError(
+					errors.Errorf("failed to delete webhook, status-code: %d", resp.StatusCode()))
+			}
+			if !deleteRsp.Success {
+				return apierrors.ErrInvoke.InternalError(
+					errors.Errorf("failed to delete webhook: %+v", deleteRsp.Error))
+			}
+			return nil
+		}
+	}
+	return nil
+}
