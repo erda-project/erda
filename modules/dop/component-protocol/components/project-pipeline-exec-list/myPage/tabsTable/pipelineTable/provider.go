@@ -115,9 +115,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			},
 		}
 		helper := gshelper.NewGSHelper(sdk.GlobalState)
-		if helper.GetAppsFilter() != nil {
-			req.AppIDList = helper.GetAppsFilter()
-		}
+		req.AppNames = GetAppNames(helper)
 		if helper.GetExecutorsFilter() != nil {
 			req.Executors = helper.GetExecutorsFilter()
 		}
@@ -360,4 +358,20 @@ func init() {
 	base.InitProviderWithCreator("project-pipeline-exec-list", "pipelineTable", func() servicehub.Provider {
 		return &provider{}
 	})
+}
+
+func ParticipatedInApps(appIDs []uint64) bool {
+	for _, v := range appIDs {
+		if common.Participated == v {
+			return true
+		}
+	}
+	return false
+}
+
+func GetAppNames(helper *gshelper.GSHelper) []string {
+	if !ParticipatedInApps(helper.GetAppsFilter()) {
+		return helper.GetAppNamesFilter()
+	}
+	return strutil.DedupSlice(append(helper.GetAppNamesFilter(), helper.GetGlobalMyAppNames()...), true)
 }

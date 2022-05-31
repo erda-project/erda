@@ -23,7 +23,7 @@ import (
 type ProjectPipelineListExecHistory struct {
 	Name      string
 	Executors []string
-	AppIDList []uint64
+	AppNames  []string
 	Statuses  []string
 
 	PageNo         uint64

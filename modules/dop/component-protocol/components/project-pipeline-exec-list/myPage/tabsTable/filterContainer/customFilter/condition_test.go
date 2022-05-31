@@ -24,9 +24,11 @@ import (
 
 	model "github.com/erda-project/erda-infra/providers/component-protocol/components/filter/models"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/protobuf/proto-go/cp/pb"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/project-pipeline-exec-list/common/gshelper"
 )
 
 func TestCustomFilter_AppConditionWithInParamsAppID(t *testing.T) {
@@ -45,12 +47,14 @@ func TestCustomFilter_AppConditionWithInParamsAppID(t *testing.T) {
 		Tran: &MockTran{},
 	}
 	ctx := context.WithValue(context.Background(), cptype.GlobalInnerKeyCtxSDK, sdk)
+	gsHelper := gshelper.NewGSHelper(&cptype.GlobalStateData{})
 
 	type fields struct {
 		bdl      *bundle.Bundle
 		InParams *InParams
 		sdk      *cptype.SDK
 		Tran     i18n.Translator
+		gsHelper *gshelper.GSHelper
 	}
 	tests := []struct {
 		name    string
@@ -69,6 +73,7 @@ func TestCustomFilter_AppConditionWithInParamsAppID(t *testing.T) {
 					Ctx:  ctx,
 					Tran: &MockTran{},
 				},
+				gsHelper: gsHelper,
 			},
 			want:    nil,
 			wantErr: true,
@@ -84,6 +89,7 @@ func TestCustomFilter_AppConditionWithInParamsAppID(t *testing.T) {
 					Ctx:  ctx,
 					Tran: &MockTran{},
 				},
+				gsHelper: gsHelper,
 			},
 			want: &model.SelectCondition{
 				ConditionBase: model.ConditionBase{
@@ -112,6 +118,7 @@ func TestCustomFilter_AppConditionWithInParamsAppID(t *testing.T) {
 				bdl:      tt.fields.bdl,
 				InParams: tt.fields.InParams,
 				sdk:      tt.fields.sdk,
+				gsHelper: tt.fields.gsHelper,
 			}
 			got, err := p.AppConditionWithInParamsAppID()
 			if (err != nil) != tt.wantErr {
@@ -142,10 +149,12 @@ func TestCustomFilter_ConditionRetriever(t *testing.T) {
 		Tran: &MockTran{},
 	}
 	ctx := context.WithValue(context.Background(), cptype.GlobalInnerKeyCtxSDK, sdk)
+	gsHelper := gshelper.NewGSHelper(&cptype.GlobalStateData{})
 
 	type fields struct {
 		sdk      *cptype.SDK
 		InParams *InParams
+		gsHelper *gshelper.GSHelper
 	}
 	tests := []struct {
 		name    string
@@ -163,6 +172,7 @@ func TestCustomFilter_ConditionRetriever(t *testing.T) {
 					Ctx:  ctx,
 					Tran: &MockTran{},
 				},
+				gsHelper: gsHelper,
 			},
 			want:    4,
 			wantErr: false,
@@ -176,6 +186,7 @@ func TestCustomFilter_ConditionRetriever(t *testing.T) {
 					Ctx:  ctx,
 					Tran: &MockTran{},
 				},
+				gsHelper: gsHelper,
 			},
 			want:    5,
 			wantErr: false,
@@ -201,6 +212,7 @@ func TestCustomFilter_ConditionRetriever(t *testing.T) {
 			p := &CustomFilter{
 				sdk:      tt.fields.sdk,
 				InParams: tt.fields.InParams,
+				gsHelper: tt.fields.gsHelper,
 			}
 			got, err := p.ConditionRetriever()
 			if (err != nil) != tt.wantErr {
@@ -209,6 +221,123 @@ func TestCustomFilter_ConditionRetriever(t *testing.T) {
 			}
 			if len(got) != tt.want {
 				t.Errorf("ConditionRetriever() got = %v, want %v", len(got), tt.want)
+			}
+		})
+	}
+}
+
+func TestCustomFilter_AppConditionWithNoInParamsAppID(t *testing.T) {
+	sdk := &cptype.SDK{
+		Tran: &MockTran{},
+	}
+	ctx := context.WithValue(context.Background(), cptype.GlobalInnerKeyCtxSDK, sdk)
+	gsHelper := gshelper.NewGSHelper(&cptype.GlobalStateData{})
+
+	bdl := &bundle.Bundle{}
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetAppList", func(bdl *bundle.Bundle, orgID, userID string, req apistructs.ApplicationListRequest) (*apistructs.ApplicationListResponseData, error) {
+		return &apistructs.ApplicationListResponseData{
+			Total: 2,
+			List: []apistructs.ApplicationDTO{
+				{
+					ID:   1,
+					Name: "erda1",
+				},
+				{
+					ID:   2,
+					Name: "erda2",
+				},
+			},
+		}, nil
+	})
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetMyAppsByProject", func(bdl *bundle.Bundle, userid string, orgid, projectID uint64, appName string) (*apistructs.ApplicationListResponseData, error) {
+		return &apistructs.ApplicationListResponseData{
+			Total: 1,
+			List: []apistructs.ApplicationDTO{
+				{
+					ID:   1,
+					Name: "erda1",
+				},
+			},
+		}, nil
+	})
+	defer monkey.UnpatchAll()
+
+	type fields struct {
+		bdl      *bundle.Bundle
+		gsHelper *gshelper.GSHelper
+		sdk      *cptype.SDK
+		InParams *InParams
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		want    *model.SelectCondition
+		wantErr bool
+	}{
+		{
+			name: "test",
+			fields: fields{
+				bdl:      bdl,
+				gsHelper: gsHelper,
+				sdk: &cptype.SDK{
+					Ctx:  ctx,
+					Tran: &MockTran{},
+					Identity: &pb.IdentityInfo{
+						UserID:         "1",
+						InternalClient: "1",
+						OrgID:          "1",
+					},
+				},
+				InParams: &InParams{
+					ProjectIDInt: 1,
+				},
+			},
+			want: &model.SelectCondition{
+				ConditionBase: model.ConditionBase{
+					Key:         "appList",
+					Label:       "i18n:application",
+					Type:        "select",
+					Placeholder: "i18n:please-choose-application",
+					Disabled:    false,
+					Outside:     false,
+				},
+				Mode: "",
+				Options: []model.SelectOption{
+					{
+						Label: "i18n:participated",
+						Value: uint64(0),
+						Fix:   false,
+					},
+					{
+						Label: "erda1",
+						Value: uint64(1),
+						Fix:   false,
+					},
+					{
+						Label: "erda2",
+						Value: uint64(2),
+						Fix:   false,
+					},
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &CustomFilter{
+				bdl:      tt.fields.bdl,
+				gsHelper: tt.fields.gsHelper,
+				sdk:      tt.fields.sdk,
+				InParams: tt.fields.InParams,
+			}
+			got, err := p.AppConditionWithNoInParamsAppID()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("AppConditionWithNoInParamsAppID() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("AppConditionWithNoInParamsAppID() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
