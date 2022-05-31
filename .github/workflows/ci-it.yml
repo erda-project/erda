@@ -219,14 +219,6 @@ jobs:
     steps:
       - name: Clone repo
         uses: actions/checkout@v3
-      - name: Cache reports for Non-Go check use
-        uses: actions/cache@v3
-        with:
-          path: |
-            ./coverage/
-          key: codecov-report-cache-go
-      - name: Cleanup cached coverage dir before download
-        run: rm -fr ./coverage
       - name: Download coverage reports
         uses: actions/download-artifact@v3
         with:

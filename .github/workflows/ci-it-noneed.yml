@@ -113,14 +113,12 @@ jobs:
     steps:
       - run: echo "No CODE-COV required"
       - uses: actions/checkout@v3
-      - name: Get cached reports for Non-Go check use
-        uses: actions/cache@v3
+      - name: Download codecov reports from another workflow
+        uses: dawidd6/action-download-artifact@v2
         with:
-          path: |
-            ./coverage/
-          key: codecov-report-cache-non-go-${{ github.run_id }}-${{ github.run_attempt }}
-          restore-keys: |
-            codecov-report-cache-go
+          workflow: ci-it.yml
+          workflow_conclusion: success
+          path: ./coverage/
       - name: very quick codecov
         shell: bash
         run: |
