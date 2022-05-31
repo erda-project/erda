@@ -223,6 +223,13 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           path: ./coverage/
+      - name: Handle coverage reports
+        run: |
+          rm -fr ./coverage/proto-go
       - name: Upload coverage to Codecov
         run: |
-          curl -s https://codecov.io/bash | bash
+          curl -s https://codecov.io/bash | bash -s - -s ./coverage/
+      - name: Upload combined coverage reports to artifact
+        uses: actions/upload-artifact@v3
+        with:
+          path: ./coverage/
