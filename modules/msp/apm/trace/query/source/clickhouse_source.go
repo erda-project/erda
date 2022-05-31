@@ -184,7 +184,7 @@ func (chs *ClickhouseSource) GetTraces(ctx context.Context, req *pb.GetTracesReq
 	where.WriteString(fmt.Sprintf("WHERE toUnixTimestamp64Milli(start_time) >= %v AND toUnixTimestamp64Milli(end_time) <= %v ", req.StartTime, req.EndTime))
 
 	if req.TraceID != "" {
-		where.WriteString("AND trace_id LIKE %" + req.TraceID + "%) ")
+		where.WriteString("AND trace_id LIKE concat('%','" + req.TraceID + "','%') ")
 	}
 	if req.DurationMin > 0 && req.DurationMax > 0 && req.DurationMin < req.DurationMax {
 		where.WriteString(fmt.Sprintf("AND ((toUnixTimestamp64Nano(end_time) - toUnixTimestamp64Nano(start_time)) >= %v "+
