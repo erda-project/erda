@@ -392,6 +392,9 @@ func (definition *PipelineDefinitionRequest) IsEmptyValue() bool {
 	if len(definition.SourceRemotes) > 0 {
 		return false
 	}
+	if definition.Location != "" {
+		return false
+	}
 	return true
 }
 
