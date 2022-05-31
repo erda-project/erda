@@ -127,7 +127,7 @@ func (chs *ClickhouseSource) GetTraceReqDistribution(ctx context.Context, model 
 	specSql := "SELECT toStartOfInterval(min_start_time, INTERVAL %v %s) AS date,count(trace_id) AS trace_count, " +
 		"avg(duration) AS avg_duration FROM (%s) GROUP BY date ORDER BY date WITH FILL STEP %v ;"
 
-	tracingSql := "SELECT distinct(trace_id) AS trace_id,(toUnixTimestamp64Nano(max(end_time)) - toUnixTimestamp64Nano(min(start_time))) AS duration, min(start_time) AS min_start_time FROM %s %s GROUP BY spans_series.trace_id"
+	tracingSql := "SELECT distinct(trace_id) AS trace_id,(toUnixTimestamp64Nano(max(end_time)) - toUnixTimestamp64Nano(min(start_time))) AS duration, min(start_time) AS min_start_time FROM %s %s GROUP BY trace_id"
 
 	var where bytes.Buffer
 	// trace id condition
@@ -246,7 +246,8 @@ func (chs *ClickhouseSource) composeFilter(req *pb.GetTracesRequest) string {
 func (chs *ClickhouseSource) selectKeyByTraceId(ctx context.Context, traceId, key string) ([]string, error) {
 	keyMap := make(map[string]struct{}, 10)
 	keys := make([]string, 0, 10)
-	rows, err := chs.Clickhouse.Client().Query(ctx, fmt.Sprintf("SELECT value FROM %s WHERE series_id IN (SELECT series_id FROM %s WHERE trace_id = &1) AND key = &2", SpanMetaTable, SpanSeriesTable), traceId, key)
+	sql := fmt.Sprintf("SELECT value FROM %s WHERE series_id IN (SELECT series_id FROM %s WHERE trace_id = $1) AND key = $2", SpanMetaTable, SpanSeriesTable)
+	rows, err := chs.Clickhouse.Client().Query(ctx, sql, traceId, key)
 	if err != nil {
 		return nil, err
 	}
