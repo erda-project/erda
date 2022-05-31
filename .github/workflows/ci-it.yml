@@ -220,7 +220,7 @@ jobs:
         with:
           path: |
             ./coverage/
-          key: codecov-report-cache-${{ hashFiles('./coverage/') }}-1
+          key: codecov-report-cache-${{ github.run_id }}
       - name: download coverage reports
         uses: actions/download-artifact@v3
         with:
