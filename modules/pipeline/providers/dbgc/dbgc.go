@@ -28,6 +28,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/modules/pipeline/providers/dbgc/db"
+	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/rutil"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/jsonstore/storetypes"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -42,29 +43,21 @@ const (
 // these two methods will create a lot of etcd ttl, will cause high load on etcd
 // use fixed gc time, traverse the data in the database every day
 func (p *provider) PipelineDatabaseGC(ctx context.Context) {
-	ticker := time.NewTicker(1 * time.Millisecond)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-			// analyzed snippet and non-snippet pipeline database gc
-			p.doAnalyzedPipelineDatabaseGC(true)
-			p.doAnalyzedPipelineDatabaseGC(false)
+	rutil.ContinueWorking(ctx, p.Log, func(ctx context.Context) rutil.WaitDuration {
+		// analyzed snippet and non-snippet pipeline database gc
+		p.doAnalyzedPipelineDatabaseGC(true)
+		p.doAnalyzedPipelineDatabaseGC(false)
 
-			// not analyzed snippet and non-snippet pipeline database gc
-			p.doNotAnalyzedPipelineDatabaseGC(true)
-			p.doNotAnalyzedPipelineDatabaseGC(false)
+		// not analyzed snippet and non-snippet pipeline database gc
+		p.doNotAnalyzedPipelineDatabaseGC(true)
+		p.doNotAnalyzedPipelineDatabaseGC(false)
 
-			// pipeline archive database clean up
-			p.doAnalyzedPipelineArchiveGC()
-			p.doNotAnalyzedPipelineArchiveGC()
+		// pipeline archive database clean up
+		p.doAnalyzedPipelineArchiveGC()
+		p.doNotAnalyzedPipelineArchiveGC()
 
-			// reset ticker to 2 hours for next gc
-			ticker.Reset(p.Cfg.PipelineDBGCDuration)
-		}
-	}
+		return rutil.ContinueWorkingWithDefaultInterval
+	}, rutil.WithContinueWorkingDefaultRetryInterval(p.Cfg.PipelineDBGCDuration))
 }
 
 // doPipelineDatabaseGC query the data in the database according to req paging to perform gc
