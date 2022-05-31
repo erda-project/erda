@@ -118,6 +118,7 @@ jobs:
         with:
           workflow: ci-it.yml
           workflow_conclusion: success
+          name: pure-coverage
           path: ./coverage/
       - name: very quick codecov
         shell: bash
