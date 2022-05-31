@@ -19,12 +19,12 @@ import (
 	"fmt"
 	"hash/fnv"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
-
 	"github.com/erda-project/erda/modules/oap/collector/lib"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -33,28 +33,31 @@ import (
 )
 
 type Config struct {
-	Database string
-	Retry    int
-	Logger   logs.Logger
-	Client   clickhouse.Conn
+	RetryNum      int    `file:"retry_num" default:"5" ENV:"EXPORTER_CH_SPAN_RETRY_NUM"`
+	SeriesTagKeys string `file:"series_tag_keys"`
 }
 
 type WriteSpan struct {
-	db          string
-	retryCnt    int
-	logger      logs.Logger
-	client      clickhouse.Conn
-	seriesBatch driver.Batch
-
-	itemsCh chan []*trace.Span
+	db                  string
+	retryCnt            int
+	highCardinalityKeys map[string]struct{}
+	logger              logs.Logger
+	client              clickhouse.Conn
+	itemsCh             chan []*trace.Span
 }
 
-func NewWriteSpan(cfg Config) *WriteSpan {
+func NewWriteSpan(cli clickhouse.Conn, logger logs.Logger, db string, cfg *Config) *WriteSpan {
+	hk := make(map[string]struct{})
+	for _, k := range strings.Split(cfg.SeriesTagKeys, ",") {
+		hk[strings.TrimSpace(k)] = struct{}{}
+	}
+
 	return &WriteSpan{
-		db:       cfg.Database,
-		retryCnt: cfg.Retry,
-		logger:   cfg.Logger,
-		client:   cfg.Client,
+		db:                  db,
+		retryCnt:            cfg.RetryNum,
+		highCardinalityKeys: hk,
+		logger:              logger,
+		client:              cli,
 	}
 }
 
@@ -83,8 +86,19 @@ begin:
 		}
 
 		for _, data := range items {
+			var seriesTags map[string]string
+			if len(ws.highCardinalityKeys) > 0 {
+				seriesTags = make(map[string]string, len(ws.highCardinalityKeys))
+			}
+
 			metas := getMetaBuf()
 			for k, v := range data.Tags {
+				if len(ws.highCardinalityKeys) > 0 {
+					if _, ok := ws.highCardinalityKeys[k]; ok {
+						seriesTags[k] = v
+						continue
+					}
+				}
 				metas = append(metas, trace.Meta{Key: k, Value: v, OrgName: data.OrgName, CreateAt: data.EndTime})
 			}
 			sort.Slice(metas, func(i, j int) bool {
@@ -114,6 +128,7 @@ begin:
 			series.StartTime = data.StartTime
 			series.EndTime = data.EndTime
 			series.SeriesID = sid
+			series.Tags = seriesTags
 			err = seriesBatch.AppendStruct(&series)
 			if err != nil { // TODO. Data may lost when encounter error
 				ws.logger.Errorf("seriesBatch: %s", err)
@@ -209,6 +224,7 @@ func putSeriesBuf(buf trace.Series) {
 	buf.TraceId = ""
 	buf.SpanId = ""
 	buf.ParentSpanId = ""
+	buf.Tags = nil
 	seriesBufPool.Put(buf)
 }
 

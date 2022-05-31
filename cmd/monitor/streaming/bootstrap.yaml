@@ -588,6 +588,8 @@ erda.oap.collector.processor.modifier@span:
 erda.oap.collector.exporter.clickhouse@span:
   _enable: ${WRITE_SPAN_TO_CLICKHOUSE_ENABLE:false}
   currency_num: ${EXPORTER_CLICKHOUSE_CURRENCY_NUM:3}
+  span:
+    series_tag_keys: ${EXPORTER_CH_SPAN_SERIES_TAG_KEYS:}
 # ************* exporters *************
 
 # --- data pipeline block ---
