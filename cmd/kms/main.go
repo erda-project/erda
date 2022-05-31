@@ -21,7 +21,7 @@ import (
 	"github.com/erda-project/erda/pkg/common"
 
 	// providers and modules
-	_ "github.com/erda-project/erda/modules/kms"
+	_ "github.com/erda-project/erda/modules/tools/kms"
 )
 
 //go:embed bootstrap.yaml

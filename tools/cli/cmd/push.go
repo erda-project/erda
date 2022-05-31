@@ -90,7 +90,7 @@ func Push(ctx *command.Context, urlstr string, applications []string, configfile
 		existProjectNames[p.Name] = p
 	}
 
-	var applications2push []command.ApplicationInfo
+	var applicationspush []command.ApplicationInfo
 
 	_, c, err := command.GetProjectConfig()
 	if err != nil {
@@ -104,7 +104,7 @@ func Push(ctx *command.Context, urlstr string, applications []string, configfile
 		}
 		for _, app := range applications {
 			if a, ok := cMap[app]; ok {
-				applications2push = append(applications2push, a)
+				applicationspush = append(applicationspush, a)
 			} else {
 				return errors.Errorf("Failed to get application in local project.")
 			}
@@ -115,17 +115,17 @@ func Push(ctx *command.Context, urlstr string, applications []string, configfile
 			return errors.Errorf("Failed to get application from config file %s", configfile)
 		}
 
-		applications2push = append(applications2push, config.Applications...)
+		applicationspush = append(applicationspush, config.Applications...)
 
 	} else if pushall {
-		applications2push = append(applications2push, c.Applications...)
+		applicationspush = append(applicationspush, c.Applications...)
 	}
 
-	if len(applications2push) == 0 {
+	if len(applicationspush) == 0 {
 		return errors.New("No application set to push.")
 	}
 
-	for _, a := range applications2push {
+	for _, a := range applicationspush {
 		if _, err := os.Stat(a.Application); err != nil {
 			return errors.Errorf("Application %s is not found in current directory. You may change to root directory of the project.", a.Application)
 		}

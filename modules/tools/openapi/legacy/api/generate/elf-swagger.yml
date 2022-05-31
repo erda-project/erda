@@ -1,0 +1,439 @@
+openapi: 3.0.0
+
+info:
+  title: elf
+  version: default
+  
+paths:
+  /api/v1/environments:
+    get:
+      description: 'summary: 获取环境配置列表'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnvironmentListResponse'
+          description: write description here
+      summary: 'summary: 获取环境配置列表'
+      tags:
+      - default
+    post:
+      description: 'summary: 创建环境配置'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Environment'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnvironmentResponse'
+          description: write description here
+      summary: 'summary: 创建环境配置'
+      tags:
+      - default
+  /api/v1/environments/{*}:
+    delete:
+      description: 'summary: 删除环境配置'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnvironmentResponse'
+          description: write description here
+      summary: 'summary: 删除环境配置'
+      tags:
+      - default
+    get:
+      description: 'summary: 获取环境配置'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnvironmentResponse'
+          description: write description here
+      summary: 'summary: 获取环境配置'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: '*'
+      required: true
+      schema:
+        type: string
+    put:
+      description: 'summary: 更新环境配置'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Environment'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnvironmentResponse'
+          description: write description here
+      summary: 'summary: 更新环境配置'
+      tags:
+      - default
+  /api/v1/mods:
+    get:
+      description: 'summary: 更新环境配置'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DependencyPackageListResponse'
+          description: write description here
+      summary: 'summary: 更新环境配置'
+      tags:
+      - default
+  /api/v1/notebooks:
+    get:
+      description: 'summary: 获取笔记本配置列表'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotebookListResponse'
+          description: write description here
+      summary: 'summary: 获取笔记本配置列表'
+      tags:
+      - default
+    post:
+      description: 'summary: 创建笔记本配置'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Notebook'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotebookResponse'
+          description: write description here
+      summary: 'summary: 创建笔记本配置'
+      tags:
+      - default
+  /api/v1/notebooks/{*}:
+    delete:
+      description: 'summary: 删除笔记本配置'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotebookResponse'
+          description: write description here
+      summary: 'summary: 删除笔记本配置'
+      tags:
+      - default
+    get:
+      description: 'summary: 获取笔记本配置详情'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotebookResponse'
+          description: write description here
+      summary: 'summary: 获取笔记本配置详情'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: '*'
+      required: true
+      schema:
+        type: string
+    put:
+      description: 'summary: 更新笔记本配置'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Notebook'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotebookResponse'
+          description: write description here
+      summary: 'summary: 更新笔记本配置'
+      tags:
+      - default
+  
+components:
+  schemas:
+    DependencyPackageList:
+      properties:
+        DependencyPackageSpec:
+          $ref: '#/components/schemas/DependencyPackageSpec'
+        ListMetadata:
+          $ref: '#/components/schemas/ListMetadata'
+      type: object
+    DependencyPackageListResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/DependencyPackageList'
+      type: object
+    DependencyPackageSpec:
+      properties:
+        data:
+          items:
+            $ref: '#/components/schemas/DependencyPackageType'
+          type: array
+      type: object
+    DependencyPackageType:
+      properties:
+        packages:
+          items:
+            $ref: '#/components/schemas/DependencyPackageTypeItem'
+          type: array
+        type:
+          type: string
+      type: object
+    DependencyPackageTypeItem:
+      properties:
+        name:
+          type: string
+        version:
+          items:
+            type: string
+          type: array
+      type: object
+    ElfMetadata:
+      properties:
+        createdAt:
+          format: date-time
+          type: string
+        description:
+          type: string
+        id:
+          type: integer
+        name:
+          type: string
+        organizationID:
+          type: integer
+        organizationName:
+          type: string
+        ownerID:
+          type: integer
+        ownerName:
+          type: string
+        updatedAt:
+          format: date-time
+          type: string
+        workspace:
+          type: string
+      type: object
+    ElfResource:
+      properties:
+        cpu:
+          type: number
+        memory:
+          type: integer
+      type: object
+    EnvVar:
+      properties:
+        name:
+          type: string
+        value:
+          type: string
+        valueFrom:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    Environment:
+      properties:
+        ElfMetadata:
+          $ref: '#/components/schemas/ElfMetadata'
+        EnvironmentSpec:
+          $ref: '#/components/schemas/EnvironmentSpec'
+      type: object
+    EnvironmentList:
+      properties:
+        EnvironmentListSpec:
+          $ref: '#/components/schemas/EnvironmentListSpec'
+        ListMetadata:
+          $ref: '#/components/schemas/ListMetadata'
+      type: object
+    EnvironmentListResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/EnvironmentList'
+      type: object
+    EnvironmentListSpec:
+      properties:
+        data:
+          items:
+            $ref: '#/components/schemas/Environment'
+          type: array
+      type: object
+    EnvironmentResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/Environment'
+      type: object
+    EnvironmentSpec:
+      properties:
+        labels:
+          $ref: '#/components/schemas/emptyObject'
+        notebook_count:
+          type: integer
+        requires:
+          items:
+            $ref: '#/components/schemas/Require'
+          type: array
+      type: object
+    ErrorResponse:
+      properties:
+        code:
+          type: string
+        ctx:
+          $ref: '#/components/schemas/emptyObject'
+        msg:
+          type: string
+      type: object
+    Header:
+      properties:
+        err:
+          $ref: '#/components/schemas/ErrorResponse'
+        success:
+          type: boolean
+      type: object
+    ListMetadata:
+      properties:
+        total:
+          type: integer
+      type: object
+    MetadataField:
+      properties:
+        labels:
+          $ref: '#/components/schemas/emptyObject'
+        level:
+          type: string
+        name:
+          type: string
+        optional:
+          type: boolean
+        type:
+          type: string
+        value:
+          type: string
+      type: object
+    NoteBookList:
+      properties:
+        ListMetadata:
+          $ref: '#/components/schemas/ListMetadata'
+        NoteBookListSpec:
+          $ref: '#/components/schemas/NoteBookListSpec'
+      type: object
+    NoteBookListSpec:
+      properties:
+        data:
+          items:
+            $ref: '#/components/schemas/Notebook'
+          type: array
+      type: object
+    Notebook:
+      properties:
+        Metadata:
+          items:
+            $ref: '#/components/schemas/MetadataField'
+          type: array
+        NotebookSpec:
+          $ref: '#/components/schemas/NotebookSpec'
+        NotebookStatus:
+          $ref: '#/components/schemas/NotebookStatus'
+      type: object
+    NotebookListResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/NoteBookList'
+      type: object
+    NotebookResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/Notebook'
+      type: object
+    NotebookSpec:
+      properties:
+        applicationName:
+          type: string
+        clusterDomain:
+          type: string
+        clusterName:
+          type: string
+        datasourceID:
+          type: integer
+        envs:
+          items:
+            $ref: '#/components/schemas/EnvVar'
+          type: array
+        genericDomain:
+          type: string
+        image:
+          type: string
+        projectName:
+          type: string
+        requirementEnvID:
+          type: integer
+        resource:
+          $ref: '#/components/schemas/ElfResource'
+      type: object
+    NotebookStatus:
+      properties:
+        startedAt:
+          format: date-time
+          type: string
+        state:
+          type: string
+      type: object
+    Package:
+      properties:
+        name:
+          type: string
+        version:
+          type: string
+      type: object
+    Require:
+      properties:
+        packages:
+          items:
+            $ref: '#/components/schemas/Package'
+          type: array
+        type:
+          type: string
+      type: object
+    emptyObject:
+      type: object
+  
+tags:
+  - name: default
+  

@@ -1,0 +1,571 @@
+openapi: 3.0.0
+
+info:
+  title: erda-server
+  version: default
+  
+paths:
+  /api/admin/notify/dingtalk-test:
+    post:
+      description: 'summary: 测试通知组钉钉发送'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 测试通知组钉钉发送'
+      tags:
+      - default
+  /api/approves/{approveId}:
+    get:
+      description: 'summary: 获取审批详情'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApproveDetailResponse'
+          description: write description here
+      summary: 'summary: 获取审批详情'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: approveId
+      required: true
+      schema:
+        type: string
+    put:
+      description: 'summary: 更新审批'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApproveUpdateRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApproveUpdateResponse'
+          description: write description here
+      summary: 'summary: 更新审批'
+      tags:
+      - default
+  /api/approves/actions/list-approves:
+    get:
+      description: 'summary: 查询所有审批列表'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagingApproveDTO'
+          description: write description here
+      summary: 'summary: 查询所有审批列表'
+      tags:
+      - default
+  /api/audits/actions/export-excel:
+    get:
+      description: 'summary: 导出审计事件'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 导出审计事件'
+      tags:
+      - default
+  /api/audits/actions/list:
+    get:
+      description: 'summary: List 审计事件'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditsListResponse'
+          description: write description here
+      summary: 'summary: List 审计事件'
+      tags:
+      - default
+  /api/clusters:
+    get:
+      description: 'summary: 集群列表'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClusterListResponse'
+          description: write description here
+      summary: 'summary: 集群列表'
+      tags:
+      - default
+  /api/clusters/{clusterName}:
+    get:
+      description: 'summary: 集群列表'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClusterInfo'
+          description: write description here
+      summary: 'summary: 集群列表'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: clusterName
+      required: true
+      schema:
+        type: string
+  /api/notices:
+    get:
+      description: 'summary: 平台公告列表'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NoticeListResponse'
+          description: write description here
+      summary: 'summary: 平台公告列表'
+      tags:
+      - default
+    post:
+      description: 'summary: 创建平台公告'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NoticeCreateRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NoticeCreateResponse'
+          description: write description here
+      summary: 'summary: 创建平台公告'
+      tags:
+      - default
+  /api/notices/{id}:
+    delete:
+      description: 'summary: 删除平台公告'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NoticeDeleteResponse'
+          description: write description here
+      summary: 'summary: 删除平台公告'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: id
+      required: true
+      schema:
+        type: string
+    put:
+      description: 'summary: 编辑平台公告'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NoticeUpdateRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NoticeUpdateResponse'
+          description: write description here
+      summary: 'summary: 编辑平台公告'
+      tags:
+      - default
+  /api/notices/{id}/actions/publish:
+    parameters:
+    - in: path
+      name: id
+      required: true
+      schema:
+        type: string
+    put:
+      description: 'summary: 发布平台公告'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NoticePublishResponse'
+          description: write description here
+      summary: 'summary: 发布平台公告'
+      tags:
+      - default
+  /api/notices/{id}/actions/unpublish:
+    parameters:
+    - in: path
+      name: id
+      required: true
+      schema:
+        type: string
+    put:
+      description: 'summary: 下架平台公告'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 下架平台公告'
+      tags:
+      - default
+  /api/users:
+    get:
+      description: 'summary: 批量查询用户'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserListResponse'
+          description: write description here
+      summary: 'summary: 批量查询用户'
+      tags:
+      - users
+  /api/users/actions/search:
+    get:
+      description: summary:search user by page
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserListResponse'
+          description: write description here
+      summary: summary:search user by page
+      tags:
+      - users
+  
+components:
+  schemas:
+    ApproveDTO:
+      properties:
+        approvalTime:
+          format: date-time
+          type: string
+        approver:
+          type: string
+        createdAt:
+          format: date-time
+          type: string
+        desc:
+          type: string
+        entityId:
+          type: integer
+        extra:
+          $ref: '#/components/schemas/emptyObject'
+        id:
+          type: integer
+        orgId:
+          type: integer
+        priority:
+          type: string
+        status:
+          type: string
+        submitter:
+          type: string
+        targetId:
+          type: integer
+        targetName:
+          type: string
+        title:
+          type: string
+        type:
+          type: string
+        updatedAt:
+          format: date-time
+          type: string
+      type: object
+    ApproveDetailResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/ApproveDTO'
+      type: object
+    ApproveUpdateRequest:
+      properties:
+        approver:
+          type: string
+        desc:
+          type: string
+        extra:
+          $ref: '#/components/schemas/emptyObject'
+        orgId:
+          type: integer
+        priority:
+          type: string
+        status:
+          type: string
+      type: object
+    ApproveUpdateResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    AuditsListResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        UserInfoHeader:
+          $ref: '#/components/schemas/UserInfoHeader'
+        data:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    ClusterInfo:
+      properties:
+        cloudVendor:
+          type: string
+        cm:
+          $ref: '#/components/schemas/emptyObject'
+        config:
+          $ref: '#/components/schemas/emptyObject'
+        createdAt:
+          format: date-time
+          type: string
+        description:
+          type: string
+        displayName:
+          type: string
+        id:
+          type: integer
+        isRelation:
+          type: string
+        logo:
+          type: string
+        manageConfig:
+          $ref: '#/components/schemas/emptyObject'
+        name:
+          type: string
+        opsConfig:
+          $ref: '#/components/schemas/emptyObject'
+        orgID:
+          type: integer
+        scheduler:
+          $ref: '#/components/schemas/emptyObject'
+        settings:
+          $ref: '#/components/schemas/emptyObject'
+        system:
+          $ref: '#/components/schemas/emptyObject'
+        type:
+          type: string
+        updatedAt:
+          format: date-time
+          type: string
+        urls:
+          $ref: '#/components/schemas/emptyObject'
+        wildcardDomain:
+          type: string
+      type: object
+    ClusterListResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          items:
+            $ref: '#/components/schemas/ClusterInfo'
+          type: array
+      type: object
+    ErrorResponse:
+      properties:
+        code:
+          type: string
+        ctx:
+          $ref: '#/components/schemas/emptyObject'
+        msg:
+          type: string
+      type: object
+    Header:
+      properties:
+        err:
+          $ref: '#/components/schemas/ErrorResponse'
+        success:
+          type: boolean
+      type: object
+    IdentityInfo:
+      properties:
+        userID:
+          type: string
+      type: object
+    Notice:
+      properties:
+        content:
+          type: string
+        createdAt:
+          format: date-time
+          type: string
+        creator:
+          type: string
+        id:
+          type: integer
+        orgID:
+          type: integer
+        status:
+          type: string
+        updatedAt:
+          format: date-time
+          type: string
+      type: object
+    NoticeCreateRequest:
+      properties:
+        IdentityInfo:
+          $ref: '#/components/schemas/IdentityInfo'
+        content:
+          type: string
+      type: object
+    NoticeCreateResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/Notice'
+      type: object
+    NoticeDeleteResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/Notice'
+      type: object
+    NoticeListResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        UserInfoHeader:
+          $ref: '#/components/schemas/UserInfoHeader'
+        data:
+          $ref: '#/components/schemas/NoticeListResponseData'
+      type: object
+    NoticeListResponseData:
+      properties:
+        list:
+          items:
+            $ref: '#/components/schemas/Notice'
+          type: array
+        total:
+          type: integer
+      type: object
+    NoticePublishResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/Notice'
+      type: object
+    NoticeUpdateRequest:
+      properties:
+        content:
+          type: string
+      type: object
+    NoticeUpdateResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          type: integer
+      type: object
+    PagingApproveDTO:
+      properties:
+        list:
+          items:
+            $ref: '#/components/schemas/ApproveDTO'
+          type: array
+        total:
+          type: integer
+      type: object
+    UserInfo:
+      properties:
+        avatar:
+          type: string
+        email:
+          type: string
+        id:
+          type: string
+        lastLoginAt:
+          type: string
+        name:
+          type: string
+        nick:
+          type: string
+        phone:
+          type: string
+        pwdExpireAt:
+          type: string
+        source:
+          type: string
+        token:
+          type: string
+      type: object
+    UserInfoHeader:
+      properties:
+        userIDs:
+          items:
+            type: string
+          type: array
+        userInfo:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    UserListResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/UserListResponseData'
+      type: object
+    UserListResponseData:
+      properties:
+        users:
+          items:
+            $ref: '#/components/schemas/UserInfo'
+          type: array
+      type: object
+    emptyObject:
+      type: object
+  
+tags:
+  - name: default
+  - name: users
+  

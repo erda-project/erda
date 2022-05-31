@@ -21,8 +21,8 @@ import (
 	"github.com/erda-project/erda/pkg/common"
 
 	// modules
-	_ "github.com/erda-project/erda/modules/core/monitor/diagnotor/agent"
-	"github.com/erda-project/erda/modules/core/monitor/diagnotor/agent/bootstrap"
+	_ "github.com/erda-project/erda/modules/tools/monitor/core/diagnotor/agent"
+	"github.com/erda-project/erda/modules/tools/monitor/core/diagnotor/agent/bootstrap"
 
 	// providers
 	_ "github.com/erda-project/erda-infra/providers"

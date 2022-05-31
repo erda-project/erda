@@ -1,0 +1,100 @@
+openapi: 3.0.0
+
+info:
+  title: action-runner-scheduler
+  version: default
+  
+paths:
+  /api/runner/collect/logs/{runnerSource}:
+    parameters:
+    - in: path
+      name: runnerSource
+      required: true
+      schema:
+        type: string
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      tags:
+      - default
+  /api/runner/fetch-task:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      tags:
+      - default
+  /api/runner/tasks:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      tags:
+      - default
+  /api/runner/tasks/{runnerTaskID}:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: runnerTaskID
+      required: true
+      schema:
+        type: string
+    put:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      tags:
+      - default
+  
+components:
+  schemas:
+    emptyObject:
+      type: object
+  
+tags:
+  - name: default
+  

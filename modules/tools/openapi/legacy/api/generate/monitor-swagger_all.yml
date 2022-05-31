@@ -1,0 +1,2632 @@
+openapi: 3.0.0
+
+info:
+  title: monitor
+  version: default
+  
+paths:
+  /api/alert/metrics/{scope}:
+    get:
+      description: 'summary: 告警metrics接口'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 告警metrics接口'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: scope
+      required: true
+      schema:
+        type: string
+  /api/alert/metrics/{scope}/histogram:
+    get:
+      description: 'summary: 告警metrics曲线图接口'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 告警metrics曲线图接口'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: scope
+      required: true
+      schema:
+        type: string
+  /api/apitests/logs:
+    get:
+      description: 'summary: 查询 apitest 的日志内容'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 查询 apitest 的日志内容'
+      tags:
+      - default
+  /api/apitests/logs/actions/download:
+    get:
+      description: 'summary: Apitests 下载日志内容'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: Apitests 下载日志内容'
+      tags:
+      - default
+  /api/apm/alert:
+    post:
+      description: 'summary: 创建微服务告警通知'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 创建微服务告警通知'
+      tags:
+      - default
+  /api/apm/alert/{id}:
+    delete:
+      description: 'summary: 根据ID删除微服务告警通知'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 根据ID删除微服务告警通知'
+      tags:
+      - default
+    get:
+      description: 'summary: 根据ID获取微服务告警通知'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 根据ID获取微服务告警通知'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: id
+      required: true
+      schema:
+        type: string
+    put:
+      description: 'summary: 根据ID修改微服务告警通知'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 根据ID修改微服务告警通知'
+      tags:
+      - default
+  /api/apm/alert/{id}/switch:
+    parameters:
+    - in: path
+      name: id
+      required: true
+      schema:
+        type: string
+    put:
+      description: 'summary: 根据ID修改微服务告警通知是否开启'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 根据ID修改微服务告警通知是否开启'
+      tags:
+      - default
+  /api/apm/alerts:
+    get:
+      description: 'summary: 获取租户所有的微服务告警通知'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取租户所有的微服务告警通知'
+      tags:
+      - default
+  /api/apm/alerts/rules:
+    get:
+      description: 'summary: 获取当前租户告警通知对应的告警规则'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取当前租户告警通知对应的告警规则'
+      tags:
+      - default
+  /api/apm/customize/alert:
+    post:
+      description: 'summary: 创建自定义微服务告警策略'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 创建自定义微服务告警策略'
+      tags:
+      - default
+  /api/apm/customize/alert/{id}:
+    delete:
+      description: 'summary: 根据ID删除自定义微服务告警策略'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 根据ID删除自定义微服务告警策略'
+      tags:
+      - default
+    get:
+      description: 'summary: 根据ID获取自定义微服务告警策略'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 根据ID获取自定义微服务告警策略'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: id
+      required: true
+      schema:
+        type: string
+    put:
+      description: 'summary: 根据ID修改自定义微服务告警策略'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 根据ID修改自定义微服务告警策略'
+      tags:
+      - default
+  /api/apm/customize/alert/{id}/switch:
+    parameters:
+    - in: path
+      name: id
+      required: true
+      schema:
+        type: string
+    put:
+      description: 'summary: 根据ID修改自定义微服务告警策略是否开启'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 根据ID修改自定义微服务告警策略是否开启'
+      tags:
+      - default
+  /api/apm/customize/alerts:
+    get:
+      description: 'summary: 获取租户所有的自定义微服务告警策略'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取租户所有的自定义微服务告警策略'
+      tags:
+      - default
+  /api/apm/customize/alerts/metrics:
+    get:
+      description: 'summary: 获取自定义微服务告警指标'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取自定义微服务告警指标'
+      tags:
+      - default
+  /api/apm/customize/alerts/notifies/targets:
+    get:
+      description: 'summary: 获取可用通知组标签'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取可用通知组标签'
+      tags:
+      - default
+  /api/apm/instance:
+    get:
+      description: 'summary: 根据TerminusKey获取monitor实例'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 根据TerminusKey获取monitor实例'
+      tags:
+      - default
+  /api/apm/runtime:
+    get:
+      description: 'summary: 获取Runtime信息'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取Runtime信息'
+      tags:
+      - default
+  /api/apm/topology:
+    get:
+      description: 获取拓扑图数据
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 获取拓扑图数据
+      tags:
+      - default
+  /api/apm/topology/exception/message:
+    get:
+      description: 获取异常分析异常列表
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 获取异常分析异常列表
+      tags:
+      - default
+  /api/apm/topology/exception/types:
+    get:
+      description: 获取异常分析异常类型
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 获取异常分析异常类型
+      tags:
+      - default
+  /api/apm/topology/overview:
+    get:
+      description: 获取全局概览
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 获取全局概览
+      tags:
+      - default
+  /api/apm/topology/process/diskio:
+    get:
+      description: Disk io speed.
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: Disk io speed.
+      tags:
+      - default
+  /api/apm/topology/process/netio:
+    get:
+      description: Network io speed.
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: Network io speed.
+      tags:
+      - default
+  /api/apm/topology/search/tags:
+    get:
+      description: 获取拓扑图搜索条件
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 获取拓扑图搜索条件
+      tags:
+      - default
+  /api/apm/topology/search/tagv:
+    get:
+      description: 根据搜索条件获取指标
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 根据搜索条件获取指标
+      tags:
+      - default
+  /api/apm/topology/service/instance/ids:
+    get:
+      description: 获取进程分析实例ID
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 获取进程分析实例ID
+      tags:
+      - default
+  /api/apm/topology/service/instances:
+    get:
+      description: The number of running instances.
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: The number of running instances.
+      tags:
+      - default
+  /api/apm/topology/service/overview:
+    get:
+      description: 获取服务概览
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 获取服务概览
+      tags:
+      - default
+  /api/apm/topology/service/requests:
+    get:
+      description: 获取服务事务分析
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 获取服务事务分析
+      tags:
+      - default
+  /api/apm/topology/services:
+    get:
+      description: 获取拓扑服务列表
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 获取拓扑服务列表
+      tags:
+      - default
+  /api/apm/topology/translation:
+    get:
+      description: 获取事务分析概览
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 获取事务分析概览
+      tags:
+      - default
+  /api/apm/topology/translation/db:
+    get:
+      description: 获取数据库调用概览
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 获取数据库调用概览
+      tags:
+      - default
+  /api/apm/topology/translation/slow:
+    get:
+      description: 获取慢事务追踪
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 获取慢事务追踪
+      tags:
+      - default
+  /api/apm/trace/{id}:
+    get:
+      description: 'trace: 链路信息详情'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'trace: 链路信息详情'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: id
+      required: true
+      schema:
+        type: string
+  /api/apm/traces:
+    get:
+      description: 'traces: 链路追踪'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'traces: 链路追踪'
+      tags:
+      - default
+  /api/autotests/filetree/{inode}/actions/download-action-log:
+    get:
+      description: 下载自动化测试节点 action 日志
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 下载自动化测试节点 action 日志
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: inode
+      required: true
+      schema:
+        type: string
+  /api/autotests/filetree/{inode}/actions/get-action-log:
+    get:
+      description: 查看自动化测试节点 action 日志
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 查看自动化测试节点 action 日志
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: inode
+      required: true
+      schema:
+        type: string
+  /api/chart/meta:
+    get:
+      description: 'summary: 查询图表元数据'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 查询图表元数据'
+      tags:
+      - default
+  /api/cluster/resources/containers/{instanceType}:
+    parameters:
+    - in: path
+      name: instanceType
+      required: true
+      schema:
+        type: string
+    post:
+      description: 'summary: 获取容器运行的实例列表'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取容器运行的实例列表'
+      tags:
+      - default
+  /api/cluster/resources/containers/group/allocation/{metricType}:
+    parameters:
+    - in: path
+      name: metricType
+      required: true
+      schema:
+        type: string
+    post:
+      description: 'summary: 获取组件分配量'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取组件分配量'
+      tags:
+      - default
+  /api/cluster/resources/containers/group/count:
+    post:
+      description: 'summary: 获取组件运行数量'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取组件运行数量'
+      tags:
+      - default
+  /api/cluster/resources/containers/group/list:
+    get:
+      description: 'summary: 获取服务列表'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取服务列表'
+      tags:
+      - default
+  /api/cluster/resources/group:
+    post:
+      description: 'summary: 获取集群资源分组数据'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取集群资源分组数据'
+      tags:
+      - default
+  /api/cluster/resources/types:
+    get:
+      description: 'summary: 获取集群资源分组类别'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取集群资源分组类别'
+      tags:
+      - default
+  /api/container/{containerID}/files/download:
+    get:
+      description: 'summary: 下载容器文件'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 下载容器文件'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: containerID
+      required: true
+      schema:
+        type: string
+  /api/container/{containerID}/files/upload:
+    parameters:
+    - in: path
+      name: containerID
+      required: true
+      schema:
+        type: string
+    post:
+      description: 'summary: 上传容器文件'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 上传容器文件'
+      tags:
+      - default
+  /api/dashboard/blocks/export:
+    post:
+      description: 'summary: 大盘导出'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 大盘导出'
+      tags:
+      - default
+  /api/dashboard/blocks/import:
+    post:
+      description: 'summary: 大盘导入'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 大盘导入'
+      tags:
+      - default
+  /api/dashboard/blocks/parse:
+    post:
+      description: 'summary: 大盘导入校验'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 大盘导入校验'
+      tags:
+      - default
+  /api/dashboard/template:
+    post:
+      description: 'summary: 创建大盘模板'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 创建大盘模板'
+      tags:
+      - default
+  /api/dashboard/template/{id}:
+    delete:
+      description: 'summary: 删除大盘模板'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 删除大盘模板'
+      tags:
+      - default
+    get:
+      description: 'summary: 获取大盘模板详情'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取大盘模板详情'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: id
+      required: true
+      schema:
+        type: string
+    put:
+      description: 'summary: 更新大盘模板'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 更新大盘模板'
+      tags:
+      - default
+  /api/dashboard/templates:
+    get:
+      description: 'summary: 获取大盘模板列表'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取大盘模板列表'
+      tags:
+      - default
+  /api/host-status:
+    post:
+      description: 集群主机状态
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HostStatusListRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HostStatusListResponse'
+          description: write description here
+      summary: 集群主机状态
+      tags:
+      - default
+  /api/log-analytics/{addon}/search:
+    parameters:
+    - in: path
+      name: addon
+      required: true
+      schema:
+        type: string
+    post:
+      description: 'summary: 日志搜索接口'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 日志搜索接口'
+      tags:
+      - default
+  /api/micro-service/logs/tags/tree:
+    get:
+      description: 'summary: 获取日志查询所需要的tags'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取日志查询所需要的tags'
+      tags:
+      - default
+  /api/monitor/jvmprofiler/{addonID}/profiling:
+    get:
+      description: 'summary: 获取分析列表'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取分析列表'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: addonID
+      required: true
+      schema:
+        type: string
+    post:
+      description: 'summary: 启动 profiling'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 启动 profiling'
+      tags:
+      - default
+  /api/monitor/jvmprofiler/{addonID}/profiling/{profilingID}/actions/finish:
+    parameters:
+    - in: path
+      name: addonID
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: profilingID
+      required: true
+      schema:
+        type: string
+    put:
+      description: 'summary: 结束 profiling'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 结束 profiling'
+      tags:
+      - default
+  /api/monitor/jvmprofiler/{addonID}/profiling/{profilingID}/heap-gc:
+    parameters:
+    - in: path
+      name: addonID
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: profilingID
+      required: true
+      schema:
+        type: string
+    post:
+      description: 'summary: 启动执行GC'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 启动执行GC'
+      tags:
+      - default
+  /api/monitor/jvmprofiler/{addonID}/profiling/{profilingID}/heap-gc/{heapGCID}/state:
+    get:
+      description: 'summary: 获取执行GC状态'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取执行GC状态'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: addonID
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: profilingID
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: heapGCID
+      required: true
+      schema:
+        type: string
+  /api/monitor/jvmprofiler/{addonID}/profiling/{profilingID}/heap-snapshots:
+    get:
+      description: 'summary: 获取堆内存分析数据'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取堆内存分析数据'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: addonID
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: profilingID
+      required: true
+      schema:
+        type: string
+  /api/monitor/jvmprofiler/{addonID}/profiling/{profilingID}/heap-stats:
+    get:
+      description: 'summary: 获取内存区域使用统计'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取内存区域使用统计'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: addonID
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: profilingID
+      required: true
+      schema:
+        type: string
+  /api/monitor/jvmprofiler/{addonID}/profiling/{profilingID}/jvm-info:
+    get:
+      description: 'summary: 获取JVM 概览'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取JVM 概览'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: addonID
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: profilingID
+      required: true
+      schema:
+        type: string
+  /api/monitor/jvmprofiler/{addonID}/profiling/{profilingID}/state:
+    get:
+      description: 'summary: 获取 profiling 状态'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取 profiling 状态'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: addonID
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: profilingID
+      required: true
+      schema:
+        type: string
+  /api/monitor/jvmprofiler/{addonID}/profiling/{profilingID}/thread-snapshots:
+    get:
+      description: 'summary: 获取线程分析表格数据'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取线程分析表格数据'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: addonID
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: profilingID
+      required: true
+      schema:
+        type: string
+    post:
+      description: 'summary: 启动线程dump'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 启动线程dump'
+      tags:
+      - default
+  /api/monitor/jvmprofiler/{addonID}/profiling/{profilingID}/thread-snapshots/{snapshotsID}:
+    get:
+      description: 'summary: 获取线程dump快照结果'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取线程dump快照结果'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: addonID
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: profilingID
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: snapshotsID
+      required: true
+      schema:
+        type: string
+  /api/monitor/jvmprofiler/{addonID}/profiling/{profilingID}/thread-snapshots/{snapshotsID}/state:
+    get:
+      description: 'summary: 获取线程dump状态'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取线程dump状态'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: addonID
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: profilingID
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: snapshotsID
+      required: true
+      schema:
+        type: string
+  /api/monitor/jvmprofiler/{addonID}/profiling/{profilingID}/thread-stats:
+    get:
+      description: 'summary: 获取线程统计'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取线程统计'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: addonID
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: profilingID
+      required: true
+      schema:
+        type: string
+  /api/monitor/jvmprofiler/{addonID}/services:
+    get:
+      description: 'summary: 获取服务实例列表'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取服务实例列表'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: addonID
+      required: true
+      schema:
+        type: string
+  /api/notify/{id}/switch:
+    parameters:
+    - in: path
+      name: id
+      required: true
+      schema:
+        type: string
+    put:
+      description: summary:是否启用该告警通知
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: summary:是否启用该告警通知
+      tags:
+      - default
+  /api/notify/records:
+    get:
+      description: summary:获取用户创建的通知列表
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: summary:获取用户创建的通知列表
+      tags:
+      - default
+    post:
+      description: summary:创建告警通知
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: summary:创建告警通知
+      tags:
+      - default
+  /api/notify/records/{id}:
+    delete:
+      description: summary:删除告警通知
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: summary:删除告警通知
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: id
+      required: true
+      schema:
+        type: string
+    put:
+      description: summary:更新告警通知
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: summary:更新告警通知
+      tags:
+      - default
+  /api/notify/templates:
+    get:
+      description: summary:获取可用的告警通知模版
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: summary:获取可用的告警通知模版
+      tags:
+      - default
+  /api/notify/user-define/templates:
+    post:
+      description: summary:用户自定义告警通知模版
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: summary:用户自定义告警通知模版
+      tags:
+      - default
+  /api/org-alert-record-attrs:
+    get:
+      description: 'summary: 获取企业告警记录属性'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取企业告警记录属性'
+      tags:
+      - default
+  /api/org-alert-records:
+    get:
+      description: 'summary: 获取企业告警记录列表'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取企业告警记录列表'
+      tags:
+      - default
+  /api/org-alert-records/{groupId}:
+    get:
+      description: 'summary: 获取企业告警记录'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取企业告警记录'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: groupId
+      required: true
+      schema:
+        type: string
+  /api/org-alert-records/{groupId}/histories:
+    get:
+      description: 'summary: 获取企业告警记录历史'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取企业告警记录历史'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: groupId
+      required: true
+      schema:
+        type: string
+  /api/org-alert-records/{groupId}/issues:
+    parameters:
+    - in: path
+      name: groupId
+      required: true
+      schema:
+        type: string
+    post:
+      description: 'summary: 创建企业告警记录工单'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 创建企业告警记录工单'
+      tags:
+      - default
+  /api/org-alert-records/{groupId}/issues/{issueId}:
+    parameters:
+    - in: path
+      name: groupId
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: issueId
+      required: true
+      schema:
+        type: string
+    put:
+      description: 'summary: 修改企业告警记录工单'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 修改企业告警记录工单'
+      tags:
+      - default
+  /api/org-hosts-alert-records:
+    post:
+      description: 'summary: 获取企业机器告警记录列表'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取企业机器告警记录列表'
+      tags:
+      - default
+  /api/org/clusters/status:
+    get:
+      description: 'summary: 获取集群状态'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取集群状态'
+      tags:
+      - default
+  /api/org/logs/rules:
+    get:
+      description: 'summary: 获取日志清洗规则列表'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取日志清洗规则列表'
+      tags:
+      - default
+    post:
+      description: 'summary: 创建日志规则'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 创建日志规则'
+      tags:
+      - default
+  /api/org/logs/rules/{id}:
+    delete:
+      description: 'summary: 删除日志规则'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 删除日志规则'
+      tags:
+      - default
+    get:
+      description: 'summary: 获取日志规则详情'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取日志规则详情'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: id
+      required: true
+      schema:
+        type: string
+    put:
+      description: 'summary: 更新日志规则'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 更新日志规则'
+      tags:
+      - default
+  /api/org/logs/rules/{id}/state:
+    parameters:
+    - in: path
+      name: id
+      required: true
+      schema:
+        type: string
+    put:
+      description: 'summary: 启动日志规则'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 启动日志规则'
+      tags:
+      - default
+  /api/org/logs/rules/templates:
+    get:
+      description: 'summary: 获取日志规则模版'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取日志规则模版'
+      tags:
+      - default
+  /api/org/logs/rules/templates/{name}:
+    get:
+      description: 'summary: 获取日志规则模版详情'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取日志规则模版详情'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: name
+      required: true
+      schema:
+        type: string
+  /api/org/logs/rules/test:
+    post:
+      description: 'summary: 测试日志规则'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 测试日志规则'
+      tags:
+      - default
+  /api/org/logs/search:
+    get:
+      description: 'summary: 查询日志内容'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 查询日志内容'
+      tags:
+      - default
+  /api/org/logs/statistic/histogram:
+    get:
+      description: 'summary: 统计企业日志'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 统计企业日志'
+      tags:
+      - default
+  /api/org/logs/tags/tree:
+    get:
+      description: 'summary: 获取日志查询所需要的tags'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取日志查询所需要的tags'
+      tags:
+      - default
+  /api/org/report/tasks:
+    get:
+      description: 'summary: 获取企业报表任务列表'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取企业报表任务列表'
+      tags:
+      - default
+    post:
+      description: 'summary: 创建企业报表任务详情'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 创建企业报表任务详情'
+      tags:
+      - default
+  /api/org/report/tasks/{id}:
+    delete:
+      description: 'summary: 删除企业报表任务详情'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 删除企业报表任务详情'
+      tags:
+      - default
+    get:
+      description: 'summary: 获取企业报表任务详情'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取企业报表任务详情'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: id
+      required: true
+      schema:
+        type: string
+    put:
+      description: 'summary: 修改企业报表任务'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 修改企业报表任务'
+      tags:
+      - default
+  /api/org/report/tasks/{id}/switch:
+    parameters:
+    - in: path
+      name: id
+      required: true
+      schema:
+        type: string
+    put:
+      description: 'summary: 切换企业报表通知开关'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 切换企业报表通知开关'
+      tags:
+      - default
+  /api/orgCenter/alerts:
+    get:
+      description: 'summary: 获取企业告警列表'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取企业告警列表'
+      tags:
+      - default
+    post:
+      description: 'summary: 创建企业告警'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 创建企业告警'
+      tags:
+      - default
+  /api/orgCenter/alerts/{id}:
+    delete:
+      description: 'summary: 删除企业告警'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 删除企业告警'
+      tags:
+      - default
+    get:
+      description: 'summary: 获取企业告警详情'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取企业告警详情'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: id
+      required: true
+      schema:
+        type: string
+    put:
+      description: 'summary: 修改企业告警'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 修改企业告警'
+      tags:
+      - default
+  /api/orgCenter/alerts/{id}/switch:
+    parameters:
+    - in: path
+      name: id
+      required: true
+      schema:
+        type: string
+    put:
+      description: 'summary: 切换企业告警开关'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 切换企业告警开关'
+      tags:
+      - default
+  /api/orgCenter/alerts/rules:
+    get:
+      description: 'summary: 获取企业告警规则列表'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取企业告警规则列表'
+      tags:
+      - default
+  /api/orgCenter/customize/alerts:
+    get:
+      description: 'summary: 获取企业自定义告警列表'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取企业自定义告警列表'
+      tags:
+      - default
+    post:
+      description: 'summary: 创建企业自定义告警'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 创建企业自定义告警'
+      tags:
+      - default
+  /api/orgCenter/customize/alerts/{id}:
+    delete:
+      description: 'summary: 删除企业自定义告警'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 删除企业自定义告警'
+      tags:
+      - default
+    get:
+      description: 'summary: 获取企业自定义告警详情'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取企业自定义告警详情'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: id
+      required: true
+      schema:
+        type: string
+    put:
+      description: 'summary: 修改企业自定义告警'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 修改企业自定义告警'
+      tags:
+      - default
+  /api/orgCenter/customize/alerts/{id}/switch:
+    parameters:
+    - in: path
+      name: id
+      required: true
+      schema:
+        type: string
+    put:
+      description: 'summary: 切换企业自定义告警开关'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 切换企业自定义告警开关'
+      tags:
+      - default
+  /api/orgCenter/customize/alerts/dash-preview/query:
+    post:
+      description: 'summary: 根据告警规则生成预览大盘'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 根据告警规则生成预览大盘'
+      tags:
+      - default
+  /api/orgCenter/customize/alerts/metrics:
+    get:
+      description: 'summary: 获取企业自定义告警指标'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取企业自定义告警指标'
+      tags:
+      - default
+  /api/orgCenter/customize/alerts/notifies/targets:
+    get:
+      description: 'summary: 获取企业自定义告警通知方式'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取企业自定义告警通知方式'
+      tags:
+      - default
+  /api/orgCenter/logs:
+    get:
+      description: 'summary: 查询ORG日志内容'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 查询ORG日志内容'
+      tags:
+      - default
+  /api/orgCenter/logs/actions/download:
+    get:
+      description: 'summary: ORG下载日志内容'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: ORG下载日志内容'
+      tags:
+      - default
+  /api/orgCenter/metrics-query:
+    get:
+      description: 'summary: 查询多云管理平台监控指标数据'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 查询多云管理平台监控指标数据'
+      tags:
+      - default
+    post:
+      description: 'summary: 查询多云管理平台监控指标数据'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 查询多云管理平台监控指标数据'
+      tags:
+      - default
+  /api/orgCenter/metrics/{scope}:
+    get:
+      description: 'summary: ORG界面查询监控数据列表数据'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: ORG界面查询监控数据列表数据'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: scope
+      required: true
+      schema:
+        type: string
+  /api/orgCenter/metrics/{scope}/histogram:
+    get:
+      description: 'summary: ORG界面查询监控数据曲线图数据'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: ORG界面查询监控数据曲线图数据'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: scope
+      required: true
+      schema:
+        type: string
+  /api/project/metrics-query:
+    get:
+      description: 'summary: PROJECT界面查询监控数据'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: PROJECT界面查询监控数据'
+      tags:
+      - default
+    post:
+      description: 'summary: PROJECT界面查询监控数据'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: PROJECT界面查询监控数据'
+      tags:
+      - default
+  /api/project/metrics/{scope}:
+    get:
+      description: 'summary: project界面查询监控数据曲线图数据'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: project界面查询监控数据曲线图数据'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: scope
+      required: true
+      schema:
+        type: string
+  /api/project/metrics/{scope}/histogram:
+    get:
+      description: 'summary: PROJECT界面查询监控数据曲线图数据'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: PROJECT界面查询监控数据曲线图数据'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: scope
+      required: true
+      schema:
+        type: string
+  /api/report/histories:
+    get:
+      description: 'summary: 获取报表记录列表'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取报表记录列表'
+      tags:
+      - default
+    post:
+      description: 'summary: 创建报表详情'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 创建报表详情'
+      tags:
+      - default
+  /api/report/histories/{id}:
+    delete:
+      description: 'summary: 删除报表详情'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 删除报表详情'
+      tags:
+      - default
+    get:
+      description: 'summary: 获取报表详情'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取报表详情'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: id
+      required: true
+      schema:
+        type: string
+  /api/report/types:
+    get:
+      description: 'summary: 获取报表类型列表'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取报表类型列表'
+      tags:
+      - default
+  /api/runtime/logs:
+    get:
+      description: 'summary: 查询Runtime日志内容'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 查询Runtime日志内容'
+      tags:
+      - default
+  /api/runtime/logs/actions/download:
+    get:
+      description: 'summary: Runtime下载日志内容'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: Runtime下载日志内容'
+      tags:
+      - default
+  /api/runtime/metrics-query:
+    get:
+      description: 'summary: RUNTIME界面查询监控数据'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: RUNTIME界面查询监控数据'
+      tags:
+      - default
+    post:
+      description: 'summary: RUNTIME界面查询监控数据'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: RUNTIME界面查询监控数据'
+      tags:
+      - default
+  /api/runtime/metrics/{scope}:
+    get:
+      description: 'summary: RUNTIME界面查询监控数据曲线图数据'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: RUNTIME界面查询监控数据曲线图数据'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: scope
+      required: true
+      schema:
+        type: string
+  /api/runtime/metrics/{scope}/histogram:
+    get:
+      description: 'summary: RUNTIME界面查询监控数据曲线图数据'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: RUNTIME界面查询监控数据曲线图数据'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: scope
+      required: true
+      schema:
+        type: string
+  /api/runtime/realtime/logs:
+    get:
+      description: 'summary: 查询Runtime实时日志内容'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 查询Runtime实时日志内容'
+      tags:
+      - default
+  /api/system/addon/metrics/{scope}/histogram:
+    get:
+      description: 'summary: 查新系统中间件指标的接口'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 查新系统中间件指标的接口'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: scope
+      required: true
+      schema:
+        type: string
+  /api/system/pod/metrics:
+    get:
+      description: 'summary: Pod监控详情的接口'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: Pod监控详情的接口'
+      tags:
+      - default
+  
+components:
+  schemas:
+    ErrorResponse:
+      properties:
+        code:
+          type: string
+        ctx:
+          $ref: '#/components/schemas/emptyObject'
+        msg:
+          type: string
+      type: object
+    Header:
+      properties:
+        err:
+          $ref: '#/components/schemas/ErrorResponse'
+        success:
+          type: boolean
+      type: object
+    HostStatusListData:
+      properties:
+        abnormal_msg:
+          type: string
+        host_ip:
+          type: string
+        status_level:
+          type: string
+      type: object
+    HostStatusListRequest:
+      properties:
+        hosts:
+          items:
+            type: string
+          type: array
+        org_name:
+          type: string
+      type: object
+    HostStatusListResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          items:
+            $ref: '#/components/schemas/HostStatusListData'
+          type: array
+      type: object
+    emptyObject:
+      type: object
+  
+tags:
+  - name: default
+  

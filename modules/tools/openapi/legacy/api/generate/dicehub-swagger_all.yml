@@ -1,0 +1,1227 @@
+openapi: 3.0.0
+
+info:
+  title: dicehub
+  version: default
+  
+paths:
+  /api/images:
+    get:
+      description: 'summary: 版本镜像列表'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReleaseListResponse'
+          description: write description here
+      summary: 'summary: 版本镜像列表'
+      tags:
+      - default
+  /api/pipeline-templates:
+    get:
+      description: 'summary: 查询模板列表'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 查询模板列表'
+      tags:
+      - default
+  /api/pipeline-templates/{name}/actions/query-version:
+    get:
+      description: 'summary: 获取模板版本详情'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取模板版本详情'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: name
+      required: true
+      schema:
+        type: string
+  /api/pipeline-templates/{name}/actions/query-versions:
+    get:
+      description: 'summary: 查询模板的版本列表'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 查询模板的版本列表'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: name
+      required: true
+      schema:
+        type: string
+  /api/pipeline-templates/{name}/actions/render:
+    parameters:
+    - in: path
+      name: name
+      required: true
+      schema:
+        type: string
+    post:
+      description: 'summary: 渲染模板对应版本的pipeline.yml'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 渲染模板对应版本的pipeline.yml'
+      tags:
+      - default
+  /api/pipeline-templates/actions/apply:
+    post:
+      description: 'summary: 新增或修改模板'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 新增或修改模板'
+      tags:
+      - default
+  /api/pipeline-templates/local/actions/render-spec:
+    post:
+      description: 'summary: 根据spec直接渲染模板'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 根据spec直接渲染模板'
+      tags:
+      - default
+  /api/publish-items:
+    get:
+      description: 'summary: 查询发布'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueryPublishItemResponse'
+          description: write description here
+      summary: 'summary: 查询发布'
+      tags:
+      - default
+    post:
+      description: 'summary: 创建发布'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePublishItemRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreatePublishItemResponse'
+          description: write description here
+      summary: 'summary: 创建发布'
+      tags:
+      - default
+  /api/publish-items/{id}:
+    get:
+      description: 'summary: 查询发布内容'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 查询发布内容'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: id
+      required: true
+      schema:
+        type: string
+  /api/publish-items/{publishItemId}:
+    delete:
+      description: 'summary: 删除发布'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeletePublishItemResponse'
+          description: write description here
+      summary: 'summary: 删除发布'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: publishItemId
+      required: true
+      schema:
+        type: string
+    put:
+      description: 'summary: 更新发布'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePublishItemRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdatePublishItemResponse'
+          description: write description here
+      summary: 'summary: 更新发布'
+      tags:
+      - default
+  /api/publish-items/{publishItemId}/blacklist:
+    get:
+      description: 'summary: 发布内容黑名单列表'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 发布内容黑名单列表'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: publishItemId
+      required: true
+      schema:
+        type: string
+    post:
+      description: 'summary: 添加发布内容黑名单'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PublishItemUserlistRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublishItemAddBlacklistResponse'
+          description: write description here
+      summary: 'summary: 添加发布内容黑名单'
+      tags:
+      - default
+  /api/publish-items/{publishItemId}/blacklist/{blacklistId}:
+    delete:
+      description: 'summary: 删除发布内容黑名单'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublishItemDeleteBlacklistResponse'
+          description: write description here
+      summary: 'summary: 删除发布内容黑名单'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: publishItemId
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: blacklistId
+      required: true
+      schema:
+        type: string
+  /api/publish-items/{publishItemId}/distribution:
+    get:
+      description: 'summary: 发布下载信息'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublishItemDistributionResponse'
+          description: write description here
+      summary: 'summary: 发布下载信息'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: publishItemId
+      required: true
+      schema:
+        type: string
+  /api/publish-items/{publishItemId}/erase:
+    get:
+      description: 'summary: 发布内容数据擦除列表'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 发布内容数据擦除列表'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: publishItemId
+      required: true
+      schema:
+        type: string
+    post:
+      description: 'summary: 添加发布内容数据擦除'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicItemAddEraseResponse'
+          description: write description here
+      summary: 'summary: 添加发布内容数据擦除'
+      tags:
+      - default
+  /api/publish-items/{publishItemId}/list-monitor-keys:
+    get:
+      description: 'summary: 获取发布内容的监控key列表'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取发布内容的监控key列表'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: publishItemId
+      required: true
+      schema:
+        type: string
+  /api/publish-items/{publishItemId}/versions:
+    get:
+      description: 'summary: 查询发布版本'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueryPublishItemVersionResponse'
+          description: write description here
+      summary: 'summary: 查询发布版本'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: publishItemId
+      required: true
+      schema:
+        type: string
+    post:
+      description: 'summary: 创建发布版本'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePublishItemVersionRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreatePublishItemVersionResponse'
+          description: write description here
+      summary: 'summary: 创建发布版本'
+      tags:
+      - default
+  /api/publish-items/{publishItemId}/versions/{versionID}/actions/{action}:
+    parameters:
+    - in: path
+      name: publishItemId
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: versionID
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: action
+      required: true
+      schema:
+        type: string
+    post:
+      description: 'summary: 设置版本状态'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 设置版本状态'
+      tags:
+      - default
+  /api/publish-items/{publishItemId}/versions/actions/get-h5-packagename:
+    get:
+      description: 'summary: 获取移动应用H5包名'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取移动应用H5包名'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: publishItemId
+      required: true
+      schema:
+        type: string
+  /api/publish-items/{publishItemId}/versions/actions/public-version:
+    get:
+      description: 'summary: 获取线上已发布版本'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueryPublishItemVersionResponse'
+          description: write description here
+      summary: 'summary: 获取线上已发布版本'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: publishItemId
+      required: true
+      schema:
+        type: string
+  /api/publish-items/{publishItemId}/versions/create-offline-version:
+    parameters:
+    - in: path
+      name: publishItemId
+      required: true
+      schema:
+        type: string
+    post:
+      description: 'summary: 移动应用上传离线包'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 移动应用上传离线包'
+      tags:
+      - default
+  /api/publish-items/actions/latest-versions:
+    post:
+      description: 'summary: 获取移动应用最新的版本'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetPublishItemLatestVersionRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetPublishItemLatestVersionResponse'
+          description: write description here
+      summary: 'summary: 获取移动应用最新的版本'
+      tags:
+      - default
+  /api/publish-items/versions/actions/{action}:
+    parameters:
+    - in: path
+      name: action
+      required: true
+      schema:
+        type: string
+    post:
+      description: 'summary: 上架/下架版本'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePublishItemVersionStatesRequset'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 上架/下架版本'
+      tags:
+      - default
+  /api/release-rules:
+    get:
+      description: 列举制品规则
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 列举制品规则
+      tags:
+      - default
+    post:
+      description: 创建制品规则
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUpdateDeleteReleaseRuleRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateBranchRuleResponse'
+          description: write description here
+      summary: 创建制品规则
+      tags:
+      - default
+  /api/release-rules/{id}:
+    delete:
+      description: 删除制品规则
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 删除制品规则
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: id
+      required: true
+      schema:
+        type: string
+    put:
+      description: 修改制品规则
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 修改制品规则
+      tags:
+      - default
+  /api/releases/{releaseId}/actions/download:
+    get:
+      description: 下载Release Yaml文件
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 下载Release Yaml文件
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: releaseId
+      required: true
+      schema:
+        type: string
+  /api/releases/{releaseId}/actions/get-dice:
+    get:
+      description: |2
+  
+        summary: 获取指定版本dice.yml内容
+        parameters:
+          - in: path
+            name: releaseId
+            type: string
+            required: true
+        produces:
+          - application/x-yaml
+        responses:
+          '200':
+            description: Dice.yaml content
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取指定版本dice.yml内容'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: releaseId
+      required: true
+      schema:
+        type: string
+  
+components:
+  schemas:
+    CreateBranchRuleResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    CreatePublishItemRequest:
+      properties:
+        backgroundImage:
+          type: string
+        desc:
+          type: string
+        displayName:
+          type: string
+        geofenceLat:
+          type: number
+        geofenceLon:
+          type: number
+        geofenceRadius:
+          type: number
+        grayLevelPercent:
+          type: integer
+        logo:
+          type: string
+        name:
+          type: string
+        noJailbreak:
+          type: boolean
+        previewImages:
+          items:
+            type: string
+          type: array
+        public:
+          type: boolean
+        publisherId:
+          type: integer
+        type:
+          type: string
+      type: object
+    CreatePublishItemResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/PublishItem'
+      type: object
+    CreatePublishItemVersionRequest:
+      properties:
+        appID:
+          type: integer
+        buildID:
+          type: string
+        desc:
+          type: string
+        h5VersionInfo:
+          $ref: '#/components/schemas/H5VersionInfo'
+        is_default:
+          type: boolean
+        logo:
+          type: string
+        mobileType:
+          type: string
+        package_name:
+          type: string
+        public:
+          type: boolean
+        readme:
+          type: string
+        releaseId:
+          type: string
+        spec:
+          type: string
+        swagger:
+          type: string
+        version:
+          type: string
+      type: object
+    CreatePublishItemVersionResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/PublishItemVersion'
+        publishItem:
+          $ref: '#/components/schemas/PublishItem'
+      type: object
+    CreateUpdateDeleteReleaseRuleRequest:
+      properties:
+        Body:
+          $ref: '#/components/schemas/emptyObject'
+        OrgID:
+          type: integer
+        ProjectID:
+          type: integer
+        RuleID:
+          type: string
+        UserID:
+          type: integer
+      type: object
+    DeletePublishItemResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/PublishItem'
+      type: object
+    ErrorResponse:
+      properties:
+        code:
+          type: string
+        ctx:
+          $ref: '#/components/schemas/emptyObject'
+        msg:
+          type: string
+      type: object
+    GetPublishItemLatestVersionData:
+      properties:
+        appVerison:
+          $ref: '#/components/schemas/emptyObject'
+        h5Versions:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    GetPublishItemLatestVersionRequest:
+      properties:
+        ai:
+          type: string
+        ak:
+          type: string
+        check:
+          type: boolean
+        currentAppInfo:
+          $ref: '#/components/schemas/VersionInfo'
+        currentH5Info:
+          items:
+            $ref: '#/components/schemas/VersionInfo'
+          type: array
+        forceBetaH5:
+          type: boolean
+        mobileType:
+          type: string
+      type: object
+    GetPublishItemLatestVersionResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/GetPublishItemLatestVersionData'
+      type: object
+    H5VersionInfo:
+      properties:
+        TargetMobiles:
+          $ref: '#/components/schemas/emptyObject'
+        VersionInfo:
+          $ref: '#/components/schemas/VersionInfo'
+      type: object
+    Header:
+      properties:
+        err:
+          $ref: '#/components/schemas/ErrorResponse'
+        success:
+          type: boolean
+      type: object
+    PublicItemAddEraseData:
+      properties:
+        data:
+          $ref: '#/components/schemas/PublishItem'
+        deviceNo:
+          type: string
+      type: object
+    PublicItemAddEraseResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/PublicItemAddEraseData'
+      type: object
+    PublishItem:
+      properties:
+        ai:
+          type: string
+        ak:
+          type: string
+        backgroundImage:
+          type: string
+        createdAt:
+          format: date-time
+          type: string
+        creator:
+          type: string
+        desc:
+          type: string
+        displayName:
+          type: string
+        downloadUrl:
+          type: string
+        geofenceLat:
+          type: number
+        geofenceLon:
+          type: number
+        geofenceRadius:
+          type: number
+        grayLevelPercent:
+          type: integer
+        id:
+          type: integer
+        latestVersion:
+          type: string
+        logo:
+          type: string
+        name:
+          type: string
+        noJailbreak:
+          type: boolean
+        orgId:
+          type: integer
+        previewImages:
+          items:
+            type: string
+          type: array
+        public:
+          type: boolean
+        publisherId:
+          type: integer
+        refCount:
+          type: integer
+        type:
+          type: string
+        updatedAt:
+          format: date-time
+          type: string
+      type: object
+    PublishItemAddBlacklistResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/PublishItem'
+      type: object
+    PublishItemDeleteBlacklistResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/PublishItemUserListResponse'
+      type: object
+    PublishItemDistributionData:
+      properties:
+        backgroundImage:
+          type: string
+        createdAt:
+          format: date-time
+          type: string
+        default:
+          $ref: '#/components/schemas/emptyObject'
+        desc:
+          type: string
+        displayName:
+          type: string
+        logo:
+          type: string
+        name:
+          type: string
+        previewImages:
+          items:
+            type: string
+          type: array
+        versions:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    PublishItemDistributionResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/PublishItemDistributionData'
+      type: object
+    PublishItemUserListResponse:
+      properties:
+        createdAt:
+          format: date-time
+          type: string
+        deviceNo:
+          type: string
+        eraseStatus:
+          type: string
+        id:
+          type: integer
+        publishItemId:
+          type: integer
+        publishItemName:
+          type: string
+        userId:
+          type: string
+        userName:
+          type: string
+      type: object
+    PublishItemUserlistRequest:
+      properties:
+        deviceNo:
+          type: string
+        operator:
+          type: string
+        pageNo:
+          type: integer
+        pageSize:
+          type: integer
+        publishItemId:
+          type: integer
+        userId:
+          type: string
+        userName:
+          type: string
+      type: object
+    PublishItemVersion:
+      properties:
+        buildId:
+          type: string
+        createdAt:
+          format: date-time
+          type: string
+        desc:
+          type: string
+        grayLevelPercent:
+          type: integer
+        id:
+          type: integer
+        isDefault:
+          type: boolean
+        logo:
+          type: string
+        meta:
+          $ref: '#/components/schemas/emptyObject'
+        mobileType:
+          type: string
+        orgId:
+          type: integer
+        packageName:
+          type: string
+        public:
+          type: boolean
+        readme:
+          type: string
+        resources:
+          $ref: '#/components/schemas/emptyObject'
+        spec:
+          type: string
+        swagger:
+          $ref: '#/components/schemas/emptyObject'
+        targetMobiles:
+          $ref: '#/components/schemas/emptyObject'
+        updatedAt:
+          format: date-time
+          type: string
+        version:
+          type: string
+        versionStates:
+          type: string
+      type: object
+    QueryPublishItemData:
+      properties:
+        list:
+          items:
+            $ref: '#/components/schemas/emptyObject'
+          type: array
+        total:
+          type: integer
+      type: object
+    QueryPublishItemResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/QueryPublishItemData'
+      type: object
+    QueryPublishItemVersionData:
+      properties:
+        list:
+          items:
+            $ref: '#/components/schemas/emptyObject'
+          type: array
+        total:
+          type: integer
+      type: object
+    QueryPublishItemVersionResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/QueryPublishItemVersionData'
+      type: object
+    ReleaseData:
+      properties:
+        addon:
+          type: string
+        applicationId:
+          type: integer
+        applicationName:
+          type: string
+        applicationReleaseList:
+          type: string
+        changelog:
+          type: string
+        clusterName:
+          type: string
+        createdAt:
+          format: date-time
+          type: string
+        crossCluster:
+          type: boolean
+        desc:
+          type: string
+        diceyml:
+          type: string
+        images:
+          items:
+            type: string
+          type: array
+        isFormal:
+          type: boolean
+        isLatest:
+          type: boolean
+        isProjectRelease:
+          type: boolean
+        isStable:
+          type: boolean
+        labels:
+          $ref: '#/components/schemas/emptyObject'
+        orgId:
+          type: integer
+        projectId:
+          type: integer
+        projectName:
+          type: string
+        reference:
+          type: integer
+        releaseId:
+          type: string
+        releaseName:
+          type: string
+        resources:
+          items:
+            $ref: '#/components/schemas/ReleaseResource'
+          type: array
+        serviceImages:
+          items:
+            $ref: '#/components/schemas/emptyObject'
+          type: array
+        tags:
+          items:
+            $ref: '#/components/schemas/ReleaseTag'
+          type: array
+        updatedAt:
+          format: date-time
+          type: string
+        userId:
+          type: string
+        version:
+          type: string
+      type: object
+    ReleaseListResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/ReleaseListResponseData'
+      type: object
+    ReleaseListResponseData:
+      properties:
+        list:
+          items:
+            $ref: '#/components/schemas/ReleaseData'
+          type: array
+        total:
+          type: integer
+      type: object
+    ReleaseResource:
+      properties:
+        meta:
+          $ref: '#/components/schemas/emptyObject'
+        name:
+          type: string
+        type:
+          type: string
+        url:
+          type: string
+      type: object
+    ReleaseTag:
+      properties:
+        color:
+          type: string
+        createdAt:
+          format: date-time
+          type: string
+        creator:
+          type: string
+        id:
+          type: integer
+        name:
+          type: string
+        projectID:
+          type: integer
+        type:
+          type: string
+        updatedAt:
+          format: date-time
+          type: string
+      type: object
+    UpdatePublishItemRequest:
+      properties:
+        backgroundImage:
+          type: string
+        desc:
+          type: string
+        displayName:
+          type: string
+        geofenceLat:
+          type: number
+        geofenceLon:
+          type: number
+        geofenceRadius:
+          type: number
+        grayLevelPercent:
+          type: integer
+        logo:
+          type: string
+        noJailbreak:
+          type: boolean
+        previewImages:
+          items:
+            type: string
+          type: array
+        public:
+          type: boolean
+      type: object
+    UpdatePublishItemResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/PublishItem'
+      type: object
+    UpdatePublishItemVersionStatesRequset:
+      properties:
+        grayLevelPercent:
+          type: integer
+        packageName:
+          type: string
+        publishItemID:
+          type: integer
+        publishItemVersionID:
+          type: integer
+        versionStates:
+          type: string
+      type: object
+    VersionInfo:
+      properties:
+        buildId:
+          type: string
+        packageName:
+          type: string
+        version:
+          type: string
+      type: object
+    emptyObject:
+      type: object
+  
+tags:
+  - name: default
+  

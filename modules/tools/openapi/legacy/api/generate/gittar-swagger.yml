@@ -1,0 +1,1255 @@
+openapi: 3.0.0
+
+info:
+  title: gittar
+  version: default
+  
+paths:
+  /api/gittar/{org}/{repo}/archive/{*}:
+    get:
+      description: 'summary: 获取压缩包'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取压缩包'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: org
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: repo
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: '*'
+      required: true
+      schema:
+        type: string
+  /api/gittar/{org}/{repo}/blame/{*}:
+    get:
+      description: 'summary: 获取文件blame信息'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GittarBlameResponse'
+          description: write description here
+      summary: 'summary: 获取文件blame信息'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: org
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: repo
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: '*'
+      required: true
+      schema:
+        type: string
+  /api/gittar/{org}/{repo}/blob/{*}:
+    get:
+      description: 'summary: 获取git仓库文件'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GittarBlobResponse'
+          description: write description here
+      summary: 'summary: 获取git仓库文件'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: org
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: repo
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: '*'
+      required: true
+      schema:
+        type: string
+  /api/gittar/{org}/{repo}/branches:
+    get:
+      description: 'summary: 获取git仓库分支'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GittarBranchesResponse'
+          description: write description here
+      summary: 'summary: 获取git仓库分支'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: org
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: repo
+      required: true
+      schema:
+        type: string
+    post:
+      description: 'summary: 创建分支'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GittarCreateBranchRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GittarCreateBranchResponse'
+          description: write description here
+      summary: 'summary: 创建分支'
+      tags:
+      - default
+  /api/gittar/{org}/{repo}/branches/{*}:
+    delete:
+      description: 'summary: 删除分支'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GittarDeleteBranchResponse'
+          description: write description here
+      summary: 'summary: 删除分支'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: org
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: repo
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: '*'
+      required: true
+      schema:
+        type: string
+  /api/gittar/{org}/{repo}/check-runs:
+    get:
+      description: 'summary: 查询check run纪录'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateCheckRunResponse'
+          description: write description here
+      summary: 'summary: 查询check run纪录'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: org
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: repo
+      required: true
+      schema:
+        type: string
+    post:
+      description: 'summary: 创建check run纪录'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckRun'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateCheckRunResponse'
+          description: write description here
+      summary: 'summary: 创建check run纪录'
+      tags:
+      - default
+  /api/gittar/{org}/{repo}/commit/{*}:
+    get:
+      description: 'summary: 获取git commit详情'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GittarCommitResponse'
+          description: write description here
+      summary: 'summary: 获取git commit详情'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: org
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: repo
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: '*'
+      required: true
+      schema:
+        type: string
+  /api/gittar/{org}/{repo}/commits:
+    parameters:
+    - in: path
+      name: org
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: repo
+      required: true
+      schema:
+        type: string
+    post:
+      description: 'summary: 创建git commit'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GittarCreateCommitRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GittarCreateCommitResponse'
+          description: write description here
+      summary: 'summary: 创建git commit'
+      tags:
+      - default
+  /api/gittar/{org}/{repo}/commits/{*}:
+    get:
+      description: 'summary: 获取git 指定分支,tag的commits'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GittarCommitsResponse'
+          description: write description here
+      summary: 'summary: 获取git 指定分支,tag的commits'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: org
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: repo
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: '*'
+      required: true
+      schema:
+        type: string
+  /api/gittar/{org}/{repo}/compare/{*}:
+    get:
+      description: 'summary: 比较两个git分支差异'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GittarCompareResponse'
+          description: write description here
+      summary: 'summary: 比较两个git分支差异'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: org
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: repo
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: '*'
+      required: true
+      schema:
+        type: string
+  /api/gittar/{org}/{repo}/merge-requests:
+    get:
+      description: 'summary: MR 查询'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GittarQueryMrResponse'
+          description: write description here
+      summary: 'summary: MR 查询'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: org
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: repo
+      required: true
+      schema:
+        type: string
+    post:
+      description: 'summary: 创建MR'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GittarCreateMergeRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GittarCreateMergeResponse'
+          description: write description here
+      summary: 'summary: 创建MR'
+      tags:
+      - default
+  /api/gittar/{org}/{repo}/merge-requests/{id}:
+    get:
+      description: 'summary: MR 详情查看'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GittarQueryMrDetailResponse'
+          description: write description here
+      summary: 'summary: MR 详情查看'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: org
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: repo
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: id
+      required: true
+      schema:
+        type: string
+  /api/gittar/{org}/{repo}/merge-requests/{id}/{action}:
+    get:
+      description: 'summary: MR变更操作查询'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: MR变更操作查询'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: org
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: repo
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: id
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: action
+      required: true
+      schema:
+        type: string
+    post:
+      description: 'summary: MR变更操作'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: MR变更操作'
+      tags:
+      - default
+  /api/gittar/{org}/{repo}/merge-stats:
+    get:
+      description: 'summary: mr状态检测'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GittarMergeStatusResponse'
+          description: write description here
+      summary: 'summary: mr状态检测'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: org
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: repo
+      required: true
+      schema:
+        type: string
+  /api/gittar/{org}/{repo}/merge-templates:
+    get:
+      description: 'summary: 获取mr模板信息'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GittarMergeTemplatesResponse'
+          description: write description here
+      summary: 'summary: 获取mr模板信息'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: org
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: repo
+      required: true
+      schema:
+        type: string
+  /api/gittar/{org}/{repo}/raw/{*}:
+    get:
+      description: 'summary: 获取git仓库指定路基原始文件'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取git仓库指定路基原始文件'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: org
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: repo
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: '*'
+      required: true
+      schema:
+        type: string
+  /api/gittar/{org}/{repo}/stats:
+    get:
+      description: 'summary: 获取git仓库默认分支信息'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GittarStatsResponse'
+          description: write description here
+      summary: 'summary: 获取git仓库默认分支信息'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: org
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: repo
+      required: true
+      schema:
+        type: string
+  /api/gittar/{org}/{repo}/stats/{*}:
+    get:
+      description: 'summary: 获取git仓库指定分支信息'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GittarStatsResponse'
+          description: write description here
+      summary: 'summary: 获取git仓库指定分支信息'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: org
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: repo
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: '*'
+      required: true
+      schema:
+        type: string
+  /api/gittar/{org}/{repo}/tags:
+    get:
+      description: 'summary: 获取git仓库tag列表'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GittarTagsResponse'
+          description: write description here
+      summary: 'summary: 获取git仓库tag列表'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: org
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: repo
+      required: true
+      schema:
+        type: string
+    post:
+      description: 'summary: 创建tag'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GittarCreateTagRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GittarCreateTagResponse'
+          description: write description here
+      summary: 'summary: 创建tag'
+      tags:
+      - default
+  /api/gittar/{org}/{repo}/tags/{*}:
+    delete:
+      description: 'summary: 删除 tag'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GittarDeleteResponse'
+          description: write description here
+      summary: 'summary: 删除 tag'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: org
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: repo
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: '*'
+      required: true
+      schema:
+        type: string
+  /api/gittar/{org}/{repo}/tree-search:
+    get:
+      description: 'summary: 搜索文件'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GittarTreeSearchResponse'
+          description: write description here
+      summary: 'summary: 搜索文件'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: org
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: repo
+      required: true
+      schema:
+        type: string
+  /api/gittar/{org}/{repo}/tree/{*}:
+    get:
+      description: 'summary: 获取git仓库目录信息'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取git仓库目录信息'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: org
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: repo
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: '*'
+      required: true
+      schema:
+        type: string
+  /api/repo/{*}:
+    delete:
+      description: 'summary: repo delete api proxy'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: repo delete api proxy'
+      tags:
+      - default
+    get:
+      description: 'summary: repo get api proxy'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: repo get api proxy'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: '*'
+      required: true
+      schema:
+        type: string
+    post:
+      description: 'summary: repo delete api proxy'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: repo delete api proxy'
+      tags:
+      - default
+    put:
+      description: 'summary: repo delete api proxy'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: repo delete api proxy'
+      tags:
+      - default
+  
+components:
+  schemas:
+    Branch:
+      properties:
+        commit:
+          $ref: '#/components/schemas/emptyObject'
+        id:
+          type: string
+        name:
+          type: string
+      type: object
+    CheckRun:
+      properties:
+        CompletedAt:
+          format: date-time
+          type: string
+        commit:
+          type: string
+        createdAt:
+          format: date-time
+          type: string
+        externalId:
+          type: string
+        id:
+          type: integer
+        mrId:
+          type: integer
+        name:
+          type: string
+        output:
+          type: string
+        pipelineId:
+          type: string
+        repoId:
+          type: integer
+        result:
+          type: string
+        status:
+          type: string
+        type:
+          type: string
+      type: object
+    CheckRuns:
+      properties:
+        checkrun:
+          items:
+            $ref: '#/components/schemas/emptyObject'
+          type: array
+        mergable:
+          type: boolean
+        result:
+          type: string
+      type: object
+    Commit:
+      properties:
+        commitMessage:
+          type: string
+        committer:
+          $ref: '#/components/schemas/emptyObject'
+        id:
+          type: string
+        parentSha:
+          type: string
+      type: object
+    CreateCheckRunResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    DeleteEvent:
+      properties:
+        appId:
+          type: integer
+        appName:
+          type: string
+        event:
+          type: string
+        name:
+          type: string
+        projectId:
+          type: integer
+      type: object
+    Diff:
+      properties:
+        files:
+          items:
+            $ref: '#/components/schemas/emptyObject'
+          type: array
+        filesChanged:
+          type: integer
+        isFinish:
+          type: boolean
+        totalAddition:
+          type: integer
+        totalDeletion:
+          type: integer
+      type: object
+    EditActionItem:
+      properties:
+        action:
+          type: string
+        content:
+          type: string
+        path:
+          type: string
+        pathType:
+          type: string
+      type: object
+    ErrorResponse:
+      properties:
+        code:
+          type: string
+        ctx:
+          $ref: '#/components/schemas/emptyObject'
+        msg:
+          type: string
+      type: object
+    GittarBlameResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          items:
+            $ref: '#/components/schemas/emptyObject'
+          type: array
+      type: object
+    GittarBlobData:
+      properties:
+        binary:
+          type: boolean
+        content:
+          type: string
+      type: object
+    GittarBlobResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/GittarBlobData'
+      type: object
+    GittarBranchesResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          items:
+            $ref: '#/components/schemas/Branch'
+          type: array
+      type: object
+    GittarCommitResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/GittarDiffData'
+      type: object
+    GittarCommitsResponse:
+      properties:
+        Data:
+          items:
+            $ref: '#/components/schemas/Commit'
+          type: array
+        Header:
+          $ref: '#/components/schemas/Header'
+      type: object
+    GittarCompareData:
+      properties:
+        commits:
+          items:
+            $ref: '#/components/schemas/Commit'
+          type: array
+        diff:
+          $ref: '#/components/schemas/Diff'
+        from:
+          type: string
+        to:
+          type: string
+      type: object
+    GittarCompareResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/GittarCompareData'
+      type: object
+    GittarCreateBranchRequest:
+      properties:
+        name:
+          type: string
+        ref:
+          type: string
+      type: object
+    GittarCreateBranchResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+      type: object
+    GittarCreateCommitRequest:
+      properties:
+        actions:
+          items:
+            $ref: '#/components/schemas/EditActionItem'
+          type: array
+        branch:
+          type: string
+        message:
+          type: string
+      type: object
+    GittarCreateCommitResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+      type: object
+    GittarCreateMergeRequest:
+      properties:
+        assigneeId:
+          type: string
+        description:
+          type: string
+        removeSourceBranch:
+          type: boolean
+        sourceBranch:
+          type: string
+        targetBranch:
+          type: string
+        title:
+          type: string
+      type: object
+    GittarCreateMergeResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    GittarCreateTagRequest:
+      properties:
+        message:
+          type: string
+        name:
+          type: string
+        ref:
+          type: string
+      type: object
+    GittarCreateTagResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+      type: object
+    GittarDeleteBranchResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+      type: object
+    GittarDeleteResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/DeleteEvent'
+      type: object
+    GittarDiffData:
+      properties:
+        commit:
+          $ref: '#/components/schemas/Commit'
+        diff:
+          $ref: '#/components/schemas/Diff'
+      type: object
+    GittarMergeStatusData:
+      properties:
+        errorMsg:
+          type: string
+        hasConflict:
+          type: boolean
+        hasError:
+          type: boolean
+        isMerged:
+          type: boolean
+      type: object
+    GittarMergeStatusResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/GittarMergeStatusData'
+      type: object
+    GittarMergeTemplatesResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/MergeTemplatesResponseData'
+      type: object
+    GittarQueryMrDetailResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/MergeRequestInfo'
+      type: object
+    GittarQueryMrResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/QueryMergeRequestsData'
+      type: object
+    GittarStatsData:
+      properties:
+        applicationID:
+          type: integer
+        branches:
+          items:
+            type: string
+          type: array
+        commitId:
+          type: string
+        commitsCount:
+          type: integer
+        contributorCount:
+          type: integer
+        defaultBranch:
+          type: string
+        empty:
+          type: boolean
+        mergeRequestCount:
+          type: integer
+        projectID:
+          type: integer
+        readmeFile:
+          type: string
+        size:
+          type: integer
+        tags:
+          items:
+            type: string
+          type: array
+      type: object
+    GittarStatsResponse:
+      properties:
+        Data:
+          $ref: '#/components/schemas/GittarStatsData'
+        Header:
+          $ref: '#/components/schemas/Header'
+      type: object
+    GittarTagsResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          items:
+            $ref: '#/components/schemas/Tag'
+          type: array
+      type: object
+    GittarTreeSearchResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          items:
+            $ref: '#/components/schemas/emptyObject'
+          type: array
+      type: object
+    Header:
+      properties:
+        err:
+          $ref: '#/components/schemas/ErrorResponse'
+        success:
+          type: boolean
+      type: object
+    MergeRequestInfo:
+      properties:
+        appId:
+          type: integer
+        assigneeId:
+          type: string
+        assigneeUser:
+          $ref: '#/components/schemas/emptyObject'
+        authorId:
+          type: string
+        authorUser:
+          $ref: '#/components/schemas/emptyObject'
+        checkRuns:
+          $ref: '#/components/schemas/CheckRuns'
+        closeAt:
+          format: date-time
+          type: string
+        closeUser:
+          $ref: '#/components/schemas/emptyObject'
+        closeUserId:
+          type: string
+        createdAt:
+          format: date-time
+          type: string
+        defaultCommitMessage:
+          type: string
+        description:
+          type: string
+        eventName:
+          type: string
+        id:
+          type: integer
+        isCheckRunValid:
+          type: boolean
+        joinTempBranchStatus:
+          type: string
+        link:
+          type: string
+        mergeAt:
+          format: date-time
+          type: string
+        mergeId:
+          type: integer
+        mergeUser:
+          $ref: '#/components/schemas/emptyObject'
+        mergeUserId:
+          type: string
+        rebaseBranch:
+          type: string
+        removeSourceBranch:
+          type: boolean
+        repoId:
+          type: integer
+        score:
+          type: integer
+        scoreNum:
+          type: integer
+        sourceBranch:
+          type: string
+        sourceSha:
+          type: string
+        state:
+          type: string
+        targetBranch:
+          type: string
+        targetBranchRule:
+          $ref: '#/components/schemas/emptyObject'
+        targetSha:
+          type: string
+        title:
+          type: string
+        updatedAt:
+          format: date-time
+          type: string
+      type: object
+    MergeTemplatesResponseData:
+      properties:
+        branch:
+          type: string
+        names:
+          items:
+            type: string
+          type: array
+        path:
+          type: string
+      type: object
+    QueryMergeRequestsData:
+      properties:
+        list:
+          items:
+            $ref: '#/components/schemas/emptyObject'
+          type: array
+        total:
+          type: integer
+      type: object
+    Tag:
+      properties:
+        id:
+          type: string
+        message:
+          type: string
+        name:
+          type: string
+        object:
+          type: string
+        tagger:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    emptyObject:
+      type: object
+  
+tags:
+  - name: default
+  

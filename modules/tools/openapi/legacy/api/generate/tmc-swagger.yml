@@ -1,0 +1,122 @@
+openapi: 3.0.0
+
+info:
+  title: tmc
+  version: default
+  
+paths:
+  /api/alarm/notifies:
+    get:
+      description: 'summary: 告警通知列表'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 告警通知列表'
+      tags:
+      - default
+    post:
+      description: 'summary: 创建告警通知'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 创建告警通知'
+      tags:
+      - default
+  /api/alarm/notifies/{id}:
+    delete:
+      description: 'summary: 删除告警通知'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 删除告警通知'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: id
+      required: true
+      schema:
+        type: string
+    post:
+      description: 'summary: 编辑告警通知'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 编辑告警通知'
+      tags:
+      - default
+  /api/alarm/notifies/{id}/switch:
+    parameters:
+    - in: path
+      name: id
+      required: true
+      schema:
+        type: string
+    post:
+      description: 'summary: 暂停/开启告警通知'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 暂停/开启告警通知'
+      tags:
+      - default
+  /api/alarm/types:
+    get:
+      description: 'summary: 告警通知类型列表'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 告警通知类型列表'
+      tags:
+      - default
+  
+components:
+  schemas:
+    emptyObject:
+      type: object
+  
+tags:
+  - name: default
+  

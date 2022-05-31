@@ -1,0 +1,12 @@
+openapi: 3.0.0
+
+info:
+  title: cluster-manager
+  version: default
+  
+paths:
+  {}
+  
+components:
+  {}
+  

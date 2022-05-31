@@ -1,0 +1,35 @@
+openapi: 3.0.0
+
+info:
+  title: ecp
+  version: default
+  
+paths:
+  /api/edge/site/offline/{ID}:
+    delete:
+      description: 下线边缘计算站点机器
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 下线边缘计算站点机器
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: ID
+      required: true
+      schema:
+        type: string
+  
+components:
+  schemas:
+    emptyObject:
+      type: object
+  
+tags:
+  - name: default
+  

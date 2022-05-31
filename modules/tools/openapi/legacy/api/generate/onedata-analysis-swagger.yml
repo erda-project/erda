@@ -1,0 +1,265 @@
+openapi: 3.0.0
+
+info:
+  title: onedata-analysis
+  version: default
+  
+paths:
+  /api/analysis:
+    get:
+      description: 解析初始化
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OneDataAnalysisResponse'
+          description: write description here
+      summary: 解析初始化
+      tags:
+      - default
+  /api/analysis/businessProcess:
+    get:
+      description: 解析单个业务过程
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OneDataAnalysisBussProcResponse'
+          description: write description here
+      summary: 解析单个业务过程
+      tags:
+      - default
+  /api/analysis/businessProcesses:
+    get:
+      description: 解析多个业务过程
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OneDataAnalysisBussProcsResponse'
+          description: write description here
+      summary: 解析多个业务过程
+      tags:
+      - default
+  /api/analysis/dim:
+    get:
+      description: 解析维度
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OneDataAnalysisDimRequest'
+          description: write description here
+      summary: 解析维度
+      tags:
+      - default
+  /api/analysis/fuzzyAttrs:
+    get:
+      description: 模糊查询维度属性
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OneDataAnalysisFuzzyAttrsResponse'
+          description: write description here
+      summary: 模糊查询维度属性
+      tags:
+      - default
+  /api/analysis/outputTables:
+    get:
+      description: 解析数据集市
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OneDataAnalysisOutputTablesResponse'
+          description: write description here
+      summary: 解析数据集市
+      tags:
+      - default
+  /api/analysis/star:
+    get:
+      description: 解析星型图
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OneDataAnalysisStarResponse'
+          description: write description here
+      summary: 解析星型图
+      tags:
+      - default
+  
+components:
+  schemas:
+    AtomicIndexDTO:
+      properties:
+        ExtBaseParam:
+          $ref: '#/components/schemas/ExtBaseParam'
+        type:
+          type: string
+      type: object
+    AttrData:
+      type: object
+    BaseParam:
+      properties:
+        cnName:
+          type: string
+        desc:
+          type: string
+        enName:
+          type: string
+      type: object
+    BusinessDomainDTO:
+      properties:
+        BaseParam:
+          $ref: '#/components/schemas/BaseParam'
+      type: object
+    BusinessProcessDTO:
+      properties:
+        ExtBaseParam:
+          $ref: '#/components/schemas/ExtBaseParam'
+      type: object
+    BusinessProcessData:
+      type: object
+    DataDomainDTO:
+      properties:
+        BaseParam:
+          $ref: '#/components/schemas/BaseParam'
+      type: object
+    DimDTO:
+      properties:
+        ExtBaseParam:
+          $ref: '#/components/schemas/ExtBaseParam'
+        relations:
+          items:
+            $ref: '#/components/schemas/RelationDTO'
+          type: array
+      type: object
+    ErrorResponse:
+      properties:
+        code:
+          type: string
+        ctx:
+          $ref: '#/components/schemas/emptyObject'
+        msg:
+          type: string
+      type: object
+    ExtBaseParam:
+      properties:
+        BaseParam:
+          $ref: '#/components/schemas/BaseParam'
+        file:
+          type: string
+        table:
+          type: string
+      type: object
+    Header:
+      properties:
+        err:
+          $ref: '#/components/schemas/ErrorResponse'
+        success:
+          type: boolean
+      type: object
+    MarketDomainDTO:
+      properties:
+        BaseParam:
+          $ref: '#/components/schemas/BaseParam'
+      type: object
+    OneDataAnalysisBussProcResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/BusinessProcessDTO'
+      type: object
+    OneDataAnalysisBussProcsResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/BusinessProcessData'
+      type: object
+    OneDataAnalysisDimRequest:
+      properties:
+        FilePath:
+          type: string
+      type: object
+    OneDataAnalysisFuzzyAttrsResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/AttrData'
+      type: object
+    OneDataAnalysisOutputTablesResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/OutputTableData'
+      type: object
+    OneDataAnalysisResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/OneDataDTO'
+      type: object
+    OneDataAnalysisStarResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/StarDTO'
+      type: object
+    OneDataDTO:
+      properties:
+        businessDomain:
+          $ref: '#/components/schemas/BusinessDomainDTO'
+        dataDomains:
+          items:
+            $ref: '#/components/schemas/DataDomainDTO'
+          type: array
+        marketDomains:
+          items:
+            $ref: '#/components/schemas/MarketDomainDTO'
+          type: array
+      type: object
+    OutputTableData:
+      type: object
+    RelationDTO:
+      properties:
+        isPK:
+          type: boolean
+        relAttr:
+          type: string
+        sourceAttr:
+          type: string
+      type: object
+    StarDTO:
+      properties:
+        atomicIndices:
+          items:
+            $ref: '#/components/schemas/AtomicIndexDTO'
+          type: array
+        dims:
+          items:
+            $ref: '#/components/schemas/DimDTO'
+          type: array
+        relationGroup:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    emptyObject:
+      type: object
+  
+tags:
+  - name: default
+  

@@ -1,0 +1,1276 @@
+openapi: 3.0.0
+
+info:
+  title: pipeline
+  version: default
+  
+paths:
+  /api/actions:
+    get:
+      description: 'summary: 获取 action 列表'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionListResponse'
+          description: write description here
+      summary: 'summary: 获取 action 列表'
+      tags:
+      - default
+  /api/actions/{actionType}:
+    get:
+      description: 'summary: 获取单个 action 类型详情'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionDetailResponse'
+          description: write description here
+      summary: 'summary: 获取单个 action 类型详情'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: actionType
+      required: true
+      schema:
+        type: string
+  /api/build-artifacts:
+    post:
+      description: 'summary: 注册 build artifact'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BuildArtifactRegisterRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BuildArtifactRegisterResponse'
+          description: write description here
+      summary: 'summary: 注册 build artifact'
+      tags:
+      - default
+  /api/build-artifacts/{sha}:
+    get:
+      description: 'summary: 查询 build artifact 是否存在'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BuildArtifactQueryResponse'
+          description: write description here
+      summary: 'summary: 查询 build artifact 是否存在'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: sha
+      required: true
+      schema:
+        type: string
+  /api/build-caches:
+    post:
+      description: 'summary: 上报缓存镜像使用情况'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BuildCacheImageReportRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BuildCacheImageReportResponse'
+          description: write description here
+      summary: 'summary: 上报缓存镜像使用情况'
+      tags:
+      - default
+  /api/pipeline-crons:
+    get:
+      description: 'summary: 定时 pipeline 列表'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PipelineCronListResponse'
+          description: write description here
+      summary: 'summary: 定时 pipeline 列表'
+      tags:
+      - default
+  /api/pipeline-crons/{cronID}/actions/start:
+    parameters:
+    - in: path
+      name: cronID
+      required: true
+      schema:
+        type: string
+    put:
+      description: 'summary: 开始定时 pipeline'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PipelineCronStartResponse'
+          description: write description here
+      summary: 'summary: 开始定时 pipeline'
+      tags:
+      - default
+  /api/pipeline-crons/{cronID}/actions/stop:
+    parameters:
+    - in: path
+      name: cronID
+      required: true
+      schema:
+        type: string
+    put:
+      description: 'summary: 停止定时 pipeline'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PipelineCronStopResponse'
+          description: write description here
+      summary: 'summary: 停止定时 pipeline'
+      tags:
+      - default
+  /api/pipeline-queues:
+    get:
+      description: 'summary: 分页获取 pipeline 队列'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PipelineQueueListResponse'
+          description: write description here
+      summary: 'summary: 分页获取 pipeline 队列'
+      tags:
+      - default
+    post:
+      description: 'summary: 创建 pipeline 队列'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PipelineQueueCreateRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PipelineQueueCreateResponse'
+          description: write description here
+      summary: 'summary: 创建 pipeline 队列'
+      tags:
+      - default
+  /api/pipeline-queues/{queueID}:
+    delete:
+      description: 'summary: 删除 pipeline 队列'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 删除 pipeline 队列'
+      tags:
+      - default
+    get:
+      description: 'summary: 获取 pipeline 队列'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PipelineQueueCreateResponse'
+          description: write description here
+      summary: 'summary: 获取 pipeline 队列'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: queueID
+      required: true
+      schema:
+        type: string
+    put:
+      description: 'summary: 更新 pipeline 队列'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PipelineQueueUpdateRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PipelineQueueCreateResponse'
+          description: write description here
+      summary: 'summary: 更新 pipeline 队列'
+      tags:
+      - default
+  /api/pipeline-queues/actions/batch-upgrade-pipeline-priority:
+    put:
+      description: 'summary: 批量更新 pipeline 队列优先级'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PipelinePriorityBatchUpgradeRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 批量更新 pipeline 队列优先级'
+      tags:
+      - default
+  /api/pipeline-snippets/actions/query-details:
+    post:
+      description: 'summary: 用于查询 snippet 的 detail, 包括 params 和 outputs'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 用于查询 snippet 的 detail, 包括 params 和 outputs'
+      tags:
+      - default
+  /api/pipelines:
+    get:
+      description: 'summary: pipeline 列表'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PipelinePageListResponse'
+          description: write description here
+      summary: 'summary: pipeline 列表'
+      tags:
+      - default
+    post:
+      description: 'summary: 创建 pipeline'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PipelineCreateRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PipelineCreateResponse'
+          description: write description here
+      summary: 'summary: 创建 pipeline'
+      tags:
+      - default
+  /api/pipelines/{pipelineID}:
+    get:
+      description: 'summary: pipeline 详情'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PipelineDetailResponse'
+          description: write description here
+      summary: 'summary: pipeline 详情'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: pipelineID
+      required: true
+      schema:
+        type: string
+    put:
+      description: 'summary: 操作 pipeline'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PipelineOperateRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PipelineOperateResponse'
+          description: write description here
+      summary: 'summary: 操作 pipeline'
+      tags:
+      - default
+  /api/pipelines/{pipelineID}/actions/cancel:
+    parameters:
+    - in: path
+      name: pipelineID
+      required: true
+      schema:
+        type: string
+    post:
+      description: 'summary: 取消 pipeline'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PipelineCancelResponse'
+          description: write description here
+      summary: 'summary: 取消 pipeline'
+      tags:
+      - default
+  /api/pipelines/{pipelineID}/actions/rerun:
+    parameters:
+    - in: path
+      name: pipelineID
+      required: true
+      schema:
+        type: string
+    post:
+      description: 'summary: pipeline 全流程重试'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PipelineRerunResponse'
+          description: write description here
+      summary: 'summary: pipeline 全流程重试'
+      tags:
+      - default
+  /api/pipelines/{pipelineID}/actions/rerun-failed:
+    parameters:
+    - in: path
+      name: pipelineID
+      required: true
+      schema:
+        type: string
+    post:
+      description: 'summary: pipeline 从失败节点处开始重试'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PipelineRerunFailedResponse'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: pipeline 从失败节点处开始重试'
+      tags:
+      - default
+  /api/pipelines/{pipelineID}/actions/run:
+    parameters:
+    - in: path
+      name: pipelineID
+      required: true
+      schema:
+        type: string
+    post:
+      description: 'summary: 开始 pipeline'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PipelineRunResponse'
+          description: write description here
+      summary: 'summary: 开始 pipeline'
+      tags:
+      - default
+  /api/pipelines/{pipelineID}/tasks/{taskID}/actions/get-bootstrap-info:
+    get:
+      description: 'summary: task 调用 pipeline 获取启动参数'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: task 调用 pipeline 获取启动参数'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: pipelineID
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: taskID
+      required: true
+      schema:
+        type: string
+  /api/pipelines/actions/app-all-valid-branch-workspaces:
+    get:
+      description: 'summary: 获取应用下所有符合 gitflow 规范的分支列表，以及每个分支对应的 workspace'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PipelineAppAllValidBranchWorkspaceResponse'
+          description: write description here
+      summary: 'summary: 获取应用下所有符合 gitflow 规范的分支列表，以及每个分支对应的 workspace'
+      tags:
+      - default
+  /api/pipelines/actions/app-invoked-combos:
+    get:
+      description: 'summary: pipeline 侧边栏 combo'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PipelineInvokedComboResponse'
+          description: write description here
+      summary: 'summary: pipeline 侧边栏 combo'
+      tags:
+      - default
+  /api/pipelines/actions/batch-create:
+    post:
+      description: 'summary: 批量创建 pipeline'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PipelineBatchCreateRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PipelineBatchCreateResponse'
+          description: write description here
+      summary: 'summary: 批量创建 pipeline'
+      tags:
+      - default
+  /api/pipelines/actions/callback:
+    post:
+      description: 'summary: pipeline 所有回调统一接口'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PipelineCallbackRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PipelineCallbackResponse'
+          description: write description here
+      summary: 'summary: pipeline 所有回调统一接口'
+      tags:
+      - default
+  /api/pipelines/actions/fetch-config-namespaces:
+    get:
+      description: 'summary: 获取应用级别的配置的命名空间'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PipelineConfigNamespacesFetchResponse'
+          description: write description here
+      summary: 'summary: 获取应用级别的配置的命名空间'
+      tags:
+      - default
+  /api/pipelines/actions/pipeline-yml-graph:
+    post:
+      description: 'summary: pipeline yml 图形化展示接口'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PipelineYmlParseGraphRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PipelineYmlParseGraphResponse'
+          description: write description here
+      summary: 'summary: pipeline yml 图形化展示接口'
+      tags:
+      - default
+  /api/pipelines/ping:
+    get:
+      description: 'summary: ping 健康检查接口'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: ping 健康检查接口'
+      tags:
+      - default
+  /api/public-actions:
+    get:
+      description: 'summary: 获取action市场有效的action列表'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionQueryResponse'
+          description: write description here
+      summary: 'summary: 获取action市场有效的action列表'
+      tags:
+      - default
+    post:
+      description: 'summary: 发布 action 列表'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActionCreateRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionCreateResponse'
+          description: write description here
+      summary: 'summary: 发布 action 列表'
+      tags:
+      - default
+  /api/public-actions/{name}:
+    get:
+      description: 'summary: 根据action名字获取历史action版本'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionQueryResponse'
+          description: write description here
+      summary: 'summary: 根据action名字获取历史action版本'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: name
+      required: true
+      schema:
+        type: string
+  /api/public-actions/{name}/{version}/actions/republish:
+    parameters:
+    - in: path
+      name: name
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: version
+      required: true
+      schema:
+        type: string
+    post:
+      description: 'summary: 对发布失败的action重新发布'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionSetStatusResponse'
+          description: write description here
+      summary: 'summary: 对发布失败的action重新发布'
+      tags:
+      - default
+  /api/public-actions/{name}/{version}/actions/set-default:
+    parameters:
+    - in: path
+      name: name
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: version
+      required: true
+      schema:
+        type: string
+    post:
+      description: 'summary: 设置指定版本action为默认版本'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionSetStatusResponse'
+          description: write description here
+      summary: 'summary: 设置指定版本action为默认版本'
+      tags:
+      - default
+  /api/public-actions/{name}/{version}/actions/unset-default:
+    parameters:
+    - in: path
+      name: name
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: version
+      required: true
+      schema:
+        type: string
+    post:
+      description: 'summary: 取消设置指定版本action的默认状态'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionSetStatusResponse'
+          description: write description here
+      summary: 'summary: 取消设置指定版本action的默认状态'
+      tags:
+      - default
+  /api/v2/pipelines:
+    post:
+      description: 'summary: v2 版本创建 pipeline'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PipelineCreateRequestV2'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PipelineCreateResponse'
+          description: write description here
+      summary: 'summary: v2 版本创建 pipeline'
+      tags:
+      - default
+  
+components:
+  schemas:
+    ActionCreateRequest:
+      properties:
+        imageSrc:
+          type: string
+        name:
+          type: string
+        specSrc:
+          type: string
+        version:
+          type: string
+      type: object
+    ActionCreateResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    ActionDetailResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    ActionListResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    ActionQueryResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          items:
+            $ref: '#/components/schemas/emptyObject'
+          type: array
+      type: object
+    ActionSetStatusResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+      type: object
+    BuildArtifactQueryResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    BuildArtifactRegisterRequest:
+      properties:
+        cluster_name:
+          type: string
+        content:
+          type: string
+        identity_text:
+          type: string
+        pipelineID:
+          type: integer
+        sha:
+          type: string
+        type:
+          type: string
+      type: object
+    BuildArtifactRegisterResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    BuildCacheImageReportRequest:
+      properties:
+        action:
+          type: string
+        clusterName:
+          type: string
+        name:
+          type: string
+      type: object
+    BuildCacheImageReportResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+      type: object
+    ErrorResponse:
+      properties:
+        code:
+          type: string
+        ctx:
+          $ref: '#/components/schemas/emptyObject'
+        msg:
+          type: string
+      type: object
+    Header:
+      properties:
+        err:
+          $ref: '#/components/schemas/ErrorResponse'
+        success:
+          type: boolean
+      type: object
+    IdentityInfo:
+      properties:
+        userID:
+          type: string
+      type: object
+    PipelineAppAllValidBranchWorkspaceResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          items:
+            $ref: '#/components/schemas/ValidBranch'
+          type: array
+      type: object
+    PipelineBatchCreateRequest:
+      properties:
+        appID:
+          type: integer
+        autoRun:
+          type: boolean
+        batchPipelineYmlPaths:
+          items:
+            type: string
+          type: array
+        branch:
+          type: string
+        callbackURLs:
+          items:
+            type: string
+          type: array
+        source:
+          type: string
+        userID:
+          type: string
+      type: object
+    PipelineBatchCreateResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    PipelineCallbackRequest:
+      properties:
+        data:
+          items:
+            type: integer
+          type: array
+        type:
+          type: string
+      type: object
+    PipelineCallbackResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+      type: object
+    PipelineCancelResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+      type: object
+    PipelineConfigNamespacesFetchResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    PipelineCreateRequest:
+      properties:
+        appID:
+          type: integer
+        autoRun:
+          type: boolean
+        branch:
+          type: string
+        callbackURLs:
+          items:
+            type: string
+          type: array
+        isCronTriggered:
+          type: boolean
+        pipelineYmlContent:
+          type: string
+        pipelineYmlName:
+          type: string
+        pipelineYmlSource:
+          type: string
+        source:
+          type: string
+        userID:
+          type: string
+      type: object
+    PipelineCreateRequestV2:
+      properties:
+        IdentityInfo:
+          $ref: '#/components/schemas/IdentityInfo'
+        autoRun:
+          type: boolean
+        autoRunAtOnce:
+          type: boolean
+        autoStartCron:
+          type: boolean
+        clusterName:
+          type: string
+        configManageNamespaces:
+          items:
+            type: string
+          type: array
+        cronStartFrom:
+          format: date-time
+          type: string
+        definitionID:
+          type: string
+        envs:
+          $ref: '#/components/schemas/emptyObject'
+        forceRun:
+          type: boolean
+        gc:
+          $ref: '#/components/schemas/PipelineGC'
+        labels:
+          $ref: '#/components/schemas/emptyObject'
+        namespace:
+          type: string
+        normalLabels:
+          $ref: '#/components/schemas/emptyObject'
+        pipelineSource:
+          type: string
+        pipelineYml:
+          type: string
+        pipelineYmlName:
+          type: string
+        runParams:
+          items:
+            $ref: '#/components/schemas/PipelineRunParam'
+          type: array
+        secrets:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    PipelineCreateResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    PipelineCronDTO:
+      properties:
+        applicationID:
+          type: integer
+        basePipelineID:
+          type: integer
+        branch:
+          type: string
+        clusterName:
+          type: string
+        configManageNamespaces:
+          items:
+            type: string
+          type: array
+        cronExpr:
+          type: string
+        cronStartTime:
+          format: date-time
+          type: string
+        enable:
+          $ref: '#/components/schemas/emptyObject'
+        id:
+          type: integer
+        orgID:
+          type: integer
+        pipelineDefinitionID:
+          type: string
+        pipelineSource:
+          type: string
+        pipelineYml:
+          type: string
+        pipelineYmlName:
+          type: string
+        secrets:
+          $ref: '#/components/schemas/emptyObject'
+        timeCreated:
+          format: date-time
+          type: string
+        timeUpdated:
+          format: date-time
+          type: string
+        userID:
+          type: string
+      type: object
+    PipelineCronListResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          items:
+            $ref: '#/components/schemas/PipelineCronDTO'
+          type: array
+      type: object
+    PipelineCronStartResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    PipelineCronStopResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    PipelineDBGCItem:
+      properties:
+        needArchive:
+          $ref: '#/components/schemas/emptyObject'
+        ttlSecond:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    PipelineDatabaseGC:
+      properties:
+        analyzed:
+          $ref: '#/components/schemas/PipelineDBGCItem'
+        finished:
+          $ref: '#/components/schemas/PipelineDBGCItem'
+      type: object
+    PipelineDetailResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    PipelineGC:
+      properties:
+        databaseGC:
+          $ref: '#/components/schemas/PipelineDatabaseGC'
+        resourceGC:
+          $ref: '#/components/schemas/PipelineResourceGC'
+      type: object
+    PipelineInvokedCombo:
+      properties:
+        branch:
+          type: string
+        cancelUser:
+          $ref: '#/components/schemas/emptyObject'
+        commit:
+          type: string
+        pagingYmlNames:
+          items:
+            type: string
+          type: array
+        pipelineID:
+          type: integer
+        source:
+          type: string
+        status:
+          type: string
+        timeCreated:
+          format: date-time
+          type: string
+        triggerMode:
+          type: string
+        workspace:
+          type: string
+        ymlName:
+          type: string
+      type: object
+    PipelineInvokedComboResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          items:
+            $ref: '#/components/schemas/PipelineInvokedCombo'
+          type: array
+      type: object
+    PipelineOperateRequest:
+      properties:
+        taskOperates:
+          items:
+            $ref: '#/components/schemas/PipelineTaskOperateRequest'
+          type: array
+      type: object
+    PipelineOperateResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+      type: object
+    PipelinePageListResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    PipelinePriorityBatchUpgradeRequest:
+      properties:
+        pipelineIDsOrderByPriorityFromHighToLow:
+          items:
+            type: integer
+          type: array
+        queueID:
+          type: integer
+      type: object
+    PipelineQueueCreateRequest:
+      properties:
+        IdentityInfo:
+          $ref: '#/components/schemas/IdentityInfo'
+        clusterName:
+          type: string
+        concurrency:
+          type: integer
+        labels:
+          $ref: '#/components/schemas/emptyObject'
+        maxCPU:
+          type: number
+        maxMemoryMB:
+          type: number
+        mode:
+          type: string
+        name:
+          type: string
+        pipelineSource:
+          type: string
+        priority:
+          type: integer
+        scheduleStrategy:
+          type: string
+      type: object
+    PipelineQueueCreateResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    PipelineQueueListResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    PipelineQueueUpdateRequest:
+      properties:
+        PipelineQueueCreateRequest:
+          $ref: '#/components/schemas/PipelineQueueCreateRequest'
+      type: object
+    PipelineRerunFailedResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    PipelineRerunResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    PipelineResourceGC:
+      properties:
+        failedTTLSecond:
+          $ref: '#/components/schemas/emptyObject'
+        successTTLSecond:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    PipelineRunParam:
+      properties:
+        name:
+          type: string
+        value:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    PipelineRunResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+      type: object
+    PipelineTaskOperateRequest:
+      properties:
+        disable:
+          $ref: '#/components/schemas/emptyObject'
+        pause:
+          $ref: '#/components/schemas/emptyObject'
+        taskAlias:
+          type: string
+        taskID:
+          type: integer
+      type: object
+    PipelineYmlParseGraphRequest:
+      properties:
+        globalSnippetConfigLabels:
+          $ref: '#/components/schemas/emptyObject'
+        pipelineYmlContent:
+          type: string
+        snippetConfig:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    PipelineYmlParseGraphResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    ValidBranch:
+      properties:
+        artifactWorkspace:
+          type: string
+        isProtect:
+          type: boolean
+        isTriggerPipeline:
+          type: boolean
+        name:
+          type: string
+        needApproval:
+          type: boolean
+        workspace:
+          type: string
+      type: object
+    emptyObject:
+      type: object
+  
+tags:
+  - name: default
+  

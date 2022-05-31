@@ -1,0 +1,2391 @@
+openapi: 3.0.0
+
+info:
+  title: core-services
+  version: default
+  
+paths:
+  /api/applications:
+    get:
+      description: 'summary: 查询应用'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationListResponse'
+          description: write description here
+      summary: 'summary: 查询应用'
+      tags:
+      - default
+  /api/applications/{applicationId}:
+    get:
+      description: 'summary: 获取应用'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationFetchResponse'
+          description: write description here
+      summary: 'summary: 获取应用'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: applicationId
+      required: true
+      schema:
+        type: string
+  /api/applications/{applicationId}/actions/pin:
+    parameters:
+    - in: path
+      name: applicationId
+      required: true
+      schema:
+        type: string
+    put:
+      description: 'summary: pin应用'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: pin应用'
+      tags:
+      - default
+  /api/applications/{applicationId}/actions/unpin:
+    parameters:
+    - in: path
+      name: applicationId
+      required: true
+      schema:
+        type: string
+    put:
+      description: 'summary: unpin应用'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: unpin应用'
+      tags:
+      - default
+  /api/applications/actions/list-my-applications:
+    get:
+      description: 'summary: 查询我的应用列表'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationListResponse'
+          description: write description here
+      summary: 'summary: 查询我的应用列表'
+      tags:
+      - default
+  /api/applications/actions/list-templates:
+    get:
+      description: 'summary: 应用模板列表'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 应用模板列表'
+      tags:
+      - default
+  /api/approves:
+    post:
+      description: 'summary: 创建审批'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApproveCreateRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApproveCreateResponse'
+          description: write description here
+      summary: 'summary: 创建审批'
+      tags:
+      - default
+  /api/audits/actions/setting:
+    get:
+      description: 'summary: 查看审计事件设置'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditListCleanCronResponse'
+          description: write description here
+      summary: 'summary: 查看审计事件设置'
+      tags:
+      - default
+    put:
+      description: 'summary: 更新审计事件设置'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuditSetCleanCronRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditSetCleanCronResponse'
+          description: write description here
+      summary: 'summary: 更新审计事件设置'
+      tags:
+      - default
+  /api/clusters/actions/dereference:
+    put:
+      description: 'summary: 解除企业关联集群关系'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DereferenceClusterRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DereferenceClusterResponse'
+          description: write description here
+      summary: 'summary: 解除企业关联集群关系'
+      tags:
+      - default
+  /api/files:
+    get:
+      description: 'summary: 文件下载，在 query param 中通过 file=<uuid> 指定具体文件'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 文件下载，在 query param 中通过 file=<uuid> 指定具体文件'
+      tags:
+      - default
+    post:
+      description: 'summary: 文件上传'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileUploadResponse'
+          description: write description here
+      summary: 'summary: 文件上传'
+      tags:
+      - default
+  /api/files/{uuid}:
+    get:
+      description: 'summary: 文件下载，在 path 中指定具体文件'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 文件下载，在 path 中指定具体文件'
+      tags:
+      - default
+    head:
+      description: 'summary: HEAD 请求，文件下载，在 path 中指定具体文件'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: HEAD 请求，文件下载，在 path 中指定具体文件'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: uuid
+      required: true
+      schema:
+        type: string
+  /api/images/{imageName}:
+    get:
+      description: 'summary: 图片获取'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 图片获取'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: imageName
+      required: true
+      schema:
+        type: string
+  /api/images/actions/upload:
+    post:
+      description: 'summary: 图片上传'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 图片上传'
+      tags:
+      - default
+  /api/labels:
+    get:
+      description: 'summary: 分页查询 label'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectLabelListResponse'
+          description: write description here
+      summary: 'summary: 分页查询 label'
+      tags:
+      - default
+    post:
+      description: 'summary: 创建 label'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectLabelCreateRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectLabelCreateResponse'
+          description: write description here
+      summary: 'summary: 创建 label'
+      tags:
+      - default
+  /api/labels/{id}:
+    delete:
+      description: 'summary: 删除 label'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 删除 label'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: id
+      required: true
+      schema:
+        type: string
+    put:
+      description: 'summary: 更新 label'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectLabelUpdateRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 更新 label'
+      tags:
+      - default
+  /api/license:
+    get:
+      description: 'summary: 查询license信息'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LicenseResponse'
+          description: write description here
+      summary: 'summary: 查询license信息'
+      tags:
+      - default
+  /api/mboxs:
+    get:
+      description: 'summary: 查询站内信列表'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueryMBoxResponse'
+          description: write description here
+      summary: 'summary: 查询站内信列表'
+      tags:
+      - default
+  /api/mboxs/{mboxID}:
+    get:
+      description: 'summary: 查询站内信详情'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 查询站内信详情'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: mboxID
+      required: true
+      schema:
+        type: string
+  /api/mboxs/actions/read-all:
+    post:
+      description: 'summary: read all unread mbox with one click'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: read all unread mbox with one click'
+      tags:
+      - default
+  /api/mboxs/actions/stats:
+    get:
+      description: 'summary: 查询站内信统计信息'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 查询站内信统计信息'
+      tags:
+      - default
+  /api/members:
+    get:
+      description: 'summary: 查询成员列表'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberListResponse'
+          description: write description here
+      summary: 'summary: 查询成员列表'
+      tags:
+      - default
+    post:
+      description: 'summary: 添加成员'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MemberAddRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberAddResponse'
+          description: write description here
+      summary: 'summary: 添加成员'
+      tags:
+      - default
+  /api/members/actions/create-by-invitecode:
+    post:
+      description: 'summary: 通过邀请码添加成员'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MemberAddByInviteCodeRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberAddByInviteCodeResponse'
+          description: write description here
+      summary: 'summary: 通过邀请码添加成员'
+      tags:
+      - default
+  /api/members/actions/list-labels:
+    get:
+      description: 'summary: 查询成员标签列表'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberLabelListResponse'
+          description: write description here
+      summary: 'summary: 查询成员标签列表'
+      tags:
+      - default
+  /api/members/actions/list-user-roles:
+    get:
+      description: 'summary: 根据用户id获取成员角色列表'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListMemberRolesByUserResponse'
+          description: write description here
+      summary: 'summary: 根据用户id获取成员角色列表'
+      tags:
+      - default
+  /api/members/actions/remove:
+    post:
+      description: 'summary: 删除成员'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MemberRemoveRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberRemoveResponse'
+          description: write description here
+      summary: 'summary: 删除成员'
+      tags:
+      - default
+  /api/notifies:
+    get:
+      description: 'summary: 查询通知'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueryNotifyResponse'
+          description: write description here
+      summary: 'summary: 查询通知'
+      tags:
+      - default
+    post:
+      description: 'summary: 创建通知'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateNotifyRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateNotifyResponse'
+          description: write description here
+      summary: 'summary: 创建通知'
+      tags:
+      - default
+  /api/notifies/{notifyID}:
+    delete:
+      description: 'summary: 删除通知'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteNotifyResponse'
+          description: write description here
+      summary: 'summary: 删除通知'
+      tags:
+      - default
+    get:
+      description: 'summary: 获取通知详情'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取通知详情'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: notifyID
+      required: true
+      schema:
+        type: string
+    put:
+      description: 'summary: 更新通知'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateNotifyRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateNotifyResponse'
+          description: write description here
+      summary: 'summary: 更新通知'
+      tags:
+      - default
+  /api/notifies/{notifyID}/actions/disable:
+    parameters:
+    - in: path
+      name: notifyID
+      required: true
+      schema:
+        type: string
+    put:
+      description: 'summary: 禁用通知'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 禁用通知'
+      tags:
+      - default
+  /api/notifies/{notifyID}/actions/enable:
+    parameters:
+    - in: path
+      name: notifyID
+      required: true
+      schema:
+        type: string
+    put:
+      description: 'summary: 启用通知'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 启用通知'
+      tags:
+      - default
+  /api/notifies/actions/fuzzy-query-by-source:
+    get:
+      description: 'summary: 模糊查询通知'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 模糊查询通知'
+      tags:
+      - default
+  /api/notify-histories:
+    get:
+      description: 'summary: 查询通知项'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueryNotifyHistoryResponse'
+          description: write description here
+      summary: 'summary: 查询通知项'
+      tags:
+      - default
+  /api/notify-items:
+    get:
+      description: 'summary: 查询通知项'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueryNotifyItemResponse'
+          description: write description here
+      summary: 'summary: 查询通知项'
+      tags:
+      - default
+  /api/notify-items/{notifyItemID}:
+    parameters:
+    - in: path
+      name: notifyItemID
+      required: true
+      schema:
+        type: string
+    put:
+      description: 'summary: 更新通知项'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateNotifyItemRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateNotifyItemResponse'
+          description: write description here
+      summary: 'summary: 更新通知项'
+      tags:
+      - default
+  /api/orgs/{orgID}/actions/get-notify-config:
+    get:
+      description: 'summary: 获取通知配置'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotifyConfigGetResponse'
+          description: write description here
+      summary: 'summary: 获取通知配置'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: orgID
+      required: true
+      schema:
+        type: string
+  /api/orgs/{orgID}/actions/set-notify-config:
+    parameters:
+    - in: path
+      name: orgID
+      required: true
+      schema:
+        type: string
+    post:
+      description: 'summary: 设置通知配置'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotifyConfigUpdateRequestBody'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 设置通知配置'
+      tags:
+      - default
+  /api/orgs/actions/change-current-org:
+    post:
+      description: 'summary: 切换组织'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrgChangeRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrgChangeResponse'
+          description: write description here
+      summary: 'summary: 切换组织'
+      tags:
+      - default
+  /api/orgs/actions/gen-verify-code:
+    post:
+      description: 'summary: 获取企业邀请成员验证码'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrgGenVerfiCodeResponse'
+          description: write description here
+      summary: 'summary: 获取企业邀请成员验证码'
+      tags:
+      - default
+  /api/orgs/actions/relate-cluster:
+    post:
+      description: 'summary: 添加企业集群关联'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrgClusterRelationCreateRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 添加企业集群关联'
+      tags:
+      - default
+  /api/orgs/ingress/{orgID}:
+    get:
+      description: 'summary: 更新组织入口'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrgUpdateIngressResponse'
+          description: write description here
+      summary: 'summary: 更新组织入口'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: orgID
+      required: true
+      schema:
+        type: string
+  /api/permissions:
+    get:
+      description: 'summary: 列出用户所有权限'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScopeRoleListResponse'
+          description: write description here
+      summary: 'summary: 列出用户所有权限'
+      tags:
+      - permissions
+  /api/permissions/actions/access:
+    post:
+      description: 'summary: 访问权限列表'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScopeRoleAccessRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PermissionListResponse'
+          description: write description here
+      summary: 'summary: 访问权限列表'
+      tags:
+      - permissions
+  /api/permissions/actions/check:
+    post:
+      description: 'summary: 鉴权'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PermissionCheckRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PermissionCheckResponse'
+          description: write description here
+      summary: 'summary: 鉴权'
+      tags:
+      - permissions
+  /api/project-workspace-abilities:
+    delete:
+      description: 'summary: 删除项目环境能力'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 删除项目环境能力'
+      tags:
+      - default
+    post:
+      description: 'summary: 创建项目环境能力'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectWorkSpaceAbility'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 创建项目环境能力'
+      tags:
+      - default
+    put:
+      description: 'summary: 更新项目环境能力'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectWorkSpaceAbility'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 更新项目环境能力'
+      tags:
+      - default
+  /api/project-workspace-abilities/{projectID}/{workspace}:
+    get:
+      description: 'summary: 获取创建项目环境能力'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectWorkSpaceAbilityResponse'
+          description: write description here
+      summary: 'summary: 获取创建项目环境能力'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: projectID
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: workspace
+      required: true
+      schema:
+        type: string
+  /api/projects-namespaces:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      tags:
+      - default
+  /api/projects-quota:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      tags:
+      - default
+  /api/projects/{projectID}/actions/get-ns-info:
+    get:
+      description: 'summary: 获取项目级命名空间信息'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectNameSpaceInfoResponse'
+          description: write description here
+      summary: 'summary: 获取项目级命名空间信息'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: projectID
+      required: true
+      schema:
+        type: string
+  /api/projects/{projectId}:
+    parameters:
+    - in: path
+      name: projectId
+      required: true
+      schema:
+        type: string
+    put:
+      description: 'summary: 更新项目'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectUpdateRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectUpdateResponse'
+          description: write description here
+      summary: 'summary: 更新项目'
+      tags:
+      - default
+  /api/projects/actions/get-project-functions:
+    get:
+      description: 'summary: 获取项目功能配置'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取项目功能配置'
+      tags:
+      - default
+  /api/projects/actions/list-my-projects:
+    get:
+      description: 'summary: 查询我的项目列表'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectListResponse'
+          description: write description here
+      summary: 'summary: 查询我的项目列表'
+      tags:
+      - default
+  /api/projects/actions/set-project-functions:
+    post:
+      description: 'summary: 设置项目功能'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectFunctionSetRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectFunctionSetResponse'
+          description: write description here
+      summary: 'summary: 设置项目功能'
+      tags:
+      - default
+  /api/projects/resource/{resourceType}/actions/list-usage-histogram:
+    get:
+      description: 'summary: 查询项目资源汇总监控数据曲线图数据'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 查询项目资源汇总监控数据曲线图数据'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: resourceType
+      required: true
+      schema:
+        type: string
+  /api/reviews/actions/{id}:
+    get:
+      description: 'summary: 通过taskId查询审核记录是否存在'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetReviewByTaskIdIdResponse'
+          description: write description here
+      summary: 'summary: 通过taskId查询审核记录是否存在'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: id
+      required: true
+      schema:
+        type: string
+  /api/reviews/actions/authority:
+    get:
+      description: 'summary: 查询用户是否有权限'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetAuthorityByUserIdResponse'
+          description: write description here
+      summary: 'summary: 查询用户是否有权限'
+      tags:
+      - default
+  /api/reviews/actions/list-approved:
+    get:
+      description: 'summary: 查询用户需要审批的列表'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetReviewsByUserIdResponse'
+          description: write description here
+      summary: 'summary: 查询用户需要审批的列表'
+      tags:
+      - default
+  /api/reviews/actions/list-launched-approval:
+    get:
+      description: 'summary: 查询sponsorId(发起人)发起部署审批列表'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetReviewsBySponsorIdResponse'
+          description: write description here
+      summary: 'summary: 查询sponsorId(发起人)发起部署审批列表'
+      tags:
+      - default
+  /api/reviews/actions/review/approve:
+    post:
+      description: 'summary: 添加成员'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 添加成员'
+      tags:
+      - default
+  /api/reviews/actions/updateReview:
+    put:
+      description: 'summary: 添加成员'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateApproval'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 添加成员'
+      tags:
+      - default
+  /api/reviews/actions/user/create:
+    post:
+      description: 'summary: 添加用户审核记录'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateReviewUser'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 添加用户审核记录'
+      tags:
+      - default
+  /api/task-error/actions/create:
+    post:
+      description: 'summary: 上报错误日志'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ErrorLogCreateRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorLogCreateResponse'
+          description: write description here
+      summary: 'summary: 上报错误日志'
+      tags:
+      - default
+  
+components:
+  schemas:
+    ApplicationDTO:
+      properties:
+        blockStatus:
+          type: string
+        config:
+          $ref: '#/components/schemas/emptyObject'
+        createdAt:
+          format: date-time
+          type: string
+        creator:
+          type: string
+        desc:
+          type: string
+        displayName:
+          type: string
+        gitRepo:
+          type: string
+        gitRepoAbbrev:
+          type: string
+        gitRepoNew:
+          type: string
+        id:
+          type: integer
+        isExternalRepo:
+          type: boolean
+        isPublic:
+          type: boolean
+        logo:
+          type: string
+        memberRoles:
+          items:
+            type: string
+          type: array
+        mode:
+          type: string
+        name:
+          type: string
+        orgDisplayName:
+          type: string
+        orgId:
+          type: integer
+        orgName:
+          type: string
+        pined:
+          type: boolean
+        projectDisplayName:
+          type: string
+        projectId:
+          type: integer
+        projectName:
+          type: string
+        repoConfig:
+          $ref: '#/components/schemas/emptyObject'
+        sonarConfig:
+          $ref: '#/components/schemas/emptyObject'
+        stats:
+          $ref: '#/components/schemas/ApplicationStats'
+        token:
+          type: string
+        unBlockEnd:
+          format: date-time
+          type: string
+        unBlockStart:
+          format: date-time
+          type: string
+        updatedAt:
+          format: date-time
+          type: string
+        workspaces:
+          items:
+            $ref: '#/components/schemas/ApplicationWorkspace'
+          type: array
+      type: object
+    ApplicationFetchResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/ApplicationDTO'
+      type: object
+    ApplicationListResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/ApplicationListResponseData'
+      type: object
+    ApplicationListResponseData:
+      properties:
+        list:
+          items:
+            $ref: '#/components/schemas/ApplicationDTO'
+          type: array
+        total:
+          type: integer
+      type: object
+    ApplicationStats:
+      properties:
+        countMembers:
+          type: integer
+        countRuntimes:
+          type: integer
+        timeLastModified:
+          type: string
+      type: object
+    ApplicationWorkspace:
+      properties:
+        clusterName:
+          type: string
+        configNamespace:
+          type: string
+        workspace:
+          type: string
+      type: object
+    ApproveCreateRequest:
+      properties:
+        desc:
+          type: string
+        entityId:
+          type: integer
+        extra:
+          $ref: '#/components/schemas/emptyObject'
+        orgId:
+          type: integer
+        priority:
+          type: string
+        targetId:
+          type: integer
+        targetName:
+          type: string
+        title:
+          type: string
+        type:
+          type: string
+      type: object
+    ApproveCreateResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/ApproveDTO'
+      type: object
+    ApproveDTO:
+      properties:
+        approvalTime:
+          format: date-time
+          type: string
+        approver:
+          type: string
+        createdAt:
+          format: date-time
+          type: string
+        desc:
+          type: string
+        entityId:
+          type: integer
+        extra:
+          $ref: '#/components/schemas/emptyObject'
+        id:
+          type: integer
+        orgId:
+          type: integer
+        priority:
+          type: string
+        status:
+          type: string
+        submitter:
+          type: string
+        targetId:
+          type: integer
+        targetName:
+          type: string
+        title:
+          type: string
+        type:
+          type: string
+        updatedAt:
+          format: date-time
+          type: string
+      type: object
+    AuditListCleanCronResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        UserInfoHeader:
+          $ref: '#/components/schemas/UserInfoHeader'
+        data:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    AuditSetCleanCronRequest:
+      properties:
+        interval:
+          type: integer
+        orgId:
+          type: integer
+      type: object
+    AuditSetCleanCronResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          type: integer
+      type: object
+    CreateNotifyRequest:
+      properties:
+        channels:
+          type: string
+        clusterName:
+          type: string
+        enabled:
+          type: boolean
+        groupTargets:
+          items:
+            $ref: '#/components/schemas/NotifyTarget'
+          type: array
+        label:
+          type: string
+        name:
+          type: string
+        notifyGroupId:
+          type: integer
+        notifyItemIds:
+          items:
+            type: integer
+          type: array
+        notifySources:
+          items:
+            $ref: '#/components/schemas/NotifySource'
+          type: array
+        scopeId:
+          type: string
+        scopeType:
+          type: string
+        withGroup:
+          type: boolean
+        workspace:
+          type: string
+      type: object
+    CreateNotifyResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    CreateReviewUser:
+      properties:
+        createdAt:
+          format: date-time
+          type: string
+        operator:
+          type: string
+        orgId:
+          type: integer
+        taskId:
+          type: integer
+      type: object
+    DeleteNotifyResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    DereferenceClusterRequest:
+      properties:
+        Cluster:
+          type: string
+        orgID:
+          type: integer
+      type: object
+    DereferenceClusterResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          type: string
+      type: object
+    ErrorLog:
+      properties:
+        deDupId:
+          type: string
+        humanLog:
+          type: string
+        id:
+          type: integer
+        level:
+          type: string
+        occurrenceTime:
+          type: string
+        primevalLog:
+          type: string
+        resourceId:
+          type: string
+        resourceType:
+          type: string
+      type: object
+    ErrorLogCreateRequest:
+      properties:
+        errorLog:
+          $ref: '#/components/schemas/ErrorLog'
+      type: object
+    ErrorLogCreateResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          type: string
+      type: object
+    ErrorResponse:
+      properties:
+        code:
+          type: string
+        ctx:
+          $ref: '#/components/schemas/emptyObject'
+        msg:
+          type: string
+      type: object
+    FileUploadResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    GetAuthorityByUserIdResponse:
+      properties:
+        authority:
+          type: string
+      type: object
+    GetReviewByTaskIdIdResponse:
+      properties:
+        approvalStatus:
+          type: string
+        id:
+          type: integer
+        total:
+          type: integer
+      type: object
+    GetReviewsBySponsorIdResponse:
+      properties:
+        applicationId:
+          type: integer
+        applicationName:
+          type: string
+        approvalContent:
+          type: string
+        approvalReason:
+          type: string
+        approver:
+          items:
+            type: string
+          type: array
+        branchName:
+          type: string
+        buildId:
+          type: integer
+        commitId:
+          type: string
+        commitMessage:
+          type: string
+        id:
+          type: integer
+        projectId:
+          type: integer
+        projectName:
+          type: string
+      type: object
+    GetReviewsByUserIdResponse:
+      properties:
+        applicationId:
+          type: integer
+        applicationName:
+          type: string
+        approvalContent:
+          type: string
+        approvalReason:
+          type: string
+        approvalStatus:
+          type: string
+        branchName:
+          type: string
+        buildId:
+          type: integer
+        commitId:
+          type: string
+        commitMessage:
+          type: string
+        createdAt:
+          format: date-time
+          type: string
+        id:
+          type: integer
+        operator:
+          type: string
+        projectId:
+          type: integer
+        projectName:
+          type: string
+        updatedAt:
+          format: date-time
+          type: string
+      type: object
+    Header:
+      properties:
+        err:
+          $ref: '#/components/schemas/ErrorResponse'
+        success:
+          type: boolean
+      type: object
+    IdentityInfo:
+      properties:
+        userID:
+          type: string
+      type: object
+    LicenseResponse:
+      properties:
+        currentHostCount:
+          type: integer
+        license:
+          $ref: '#/components/schemas/emptyObject'
+        message:
+          type: string
+        valid:
+          type: boolean
+      type: object
+    ListMemberRolesByUserResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        UserInfoHeader:
+          $ref: '#/components/schemas/UserInfoHeader'
+        data:
+          $ref: '#/components/schemas/UserRoleListResponseData'
+      type: object
+    Member:
+      properties:
+        avatar:
+          type: string
+        deleted:
+          type: boolean
+        email:
+          type: string
+        labels:
+          items:
+            type: string
+          type: array
+        mobile:
+          type: string
+        name:
+          type: string
+        nick:
+          type: string
+        removed:
+          type: boolean
+        roles:
+          items:
+            type: string
+          type: array
+        scope:
+          $ref: '#/components/schemas/Scope'
+        status:
+          type: string
+        token:
+          type: string
+        userId:
+          type: string
+      type: object
+    MemberAddByInviteCodeRequest:
+      properties:
+        orgId:
+          type: string
+        userIds:
+          items:
+            type: string
+          type: array
+        verifyCode:
+          type: string
+      type: object
+    MemberAddByInviteCodeResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          type: string
+      type: object
+    MemberAddOptions:
+      properties:
+        rewrite:
+          type: boolean
+      type: object
+    MemberAddRequest:
+      properties:
+        labels:
+          items:
+            type: string
+          type: array
+        options:
+          $ref: '#/components/schemas/MemberAddOptions'
+        roles:
+          items:
+            type: string
+          type: array
+        scope:
+          $ref: '#/components/schemas/Scope'
+        targetScopeIds:
+          items:
+            type: integer
+          type: array
+        targetScopeType:
+          type: string
+        userIds:
+          items:
+            type: string
+          type: array
+        verifyCode:
+          type: string
+      type: object
+    MemberAddResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+      type: object
+    MemberLabelInfo:
+      properties:
+        label:
+          type: string
+        name:
+          type: string
+      type: object
+    MemberLabelList:
+      properties:
+        list:
+          items:
+            $ref: '#/components/schemas/MemberLabelInfo'
+          type: array
+      type: object
+    MemberLabelListResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/MemberLabelList'
+      type: object
+    MemberList:
+      properties:
+        list:
+          items:
+            $ref: '#/components/schemas/Member'
+          type: array
+        total:
+          type: integer
+      type: object
+    MemberListResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/MemberList'
+      type: object
+    MemberRemoveRequest:
+      properties:
+        IdentityInfo:
+          $ref: '#/components/schemas/IdentityInfo'
+        scope:
+          $ref: '#/components/schemas/Scope'
+        userIds:
+          items:
+            type: string
+          type: array
+      type: object
+    MemberRemoveResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        UserInfoHeader:
+          $ref: '#/components/schemas/UserInfoHeader'
+      type: object
+    NotifyConfigGetResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/NotifyConfigUpdateRequestBody'
+      type: object
+    NotifyConfigUpdateRequestBody:
+      properties:
+        config:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    NotifySource:
+      properties:
+        name:
+          type: string
+        params:
+          $ref: '#/components/schemas/emptyObject'
+        sourceId:
+          type: string
+        sourceType:
+          type: string
+      type: object
+    NotifyTarget:
+      properties:
+        type:
+          type: string
+        values:
+          items:
+            $ref: '#/components/schemas/Target'
+          type: array
+      type: object
+    OrgChangeRequest:
+      properties:
+        orgId:
+          type: integer
+        userId:
+          type: string
+      type: object
+    OrgChangeResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          type: boolean
+      type: object
+    OrgClusterRelationCreateRequest:
+      properties:
+        ClusterName:
+          type: string
+        OrgID:
+          type: integer
+        OrgName:
+          type: string
+      type: object
+    OrgGenVerfiCodeResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    OrgUpdateIngressResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          type: boolean
+      type: object
+    PagingProjectDTO:
+      properties:
+        list:
+          items:
+            $ref: '#/components/schemas/ProjectDTO'
+          type: array
+        total:
+          type: integer
+      type: object
+    PermissionCheckRequest:
+      properties:
+        action:
+          type: string
+        resource:
+          type: string
+        resourceRole:
+          type: string
+        scope:
+          type: string
+        scopeID:
+          type: integer
+        userID:
+          type: string
+      type: object
+    PermissionCheckResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/PermissionCheckResponseData'
+      type: object
+    PermissionCheckResponseData:
+      properties:
+        access:
+          type: boolean
+      type: object
+    PermissionList:
+      properties:
+        access:
+          type: boolean
+        contactsWhenNoPermission:
+          items:
+            type: string
+          type: array
+        exist:
+          type: boolean
+        permissionList:
+          items:
+            $ref: '#/components/schemas/ScopeResource'
+          type: array
+        resourceRoleList:
+          items:
+            $ref: '#/components/schemas/ScopeResource'
+          type: array
+        roles:
+          items:
+            type: string
+          type: array
+        scopeInfo:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    PermissionListResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/PermissionList'
+      type: object
+    ProjectDTO:
+      properties:
+        CanManage:
+          type: boolean
+        ProjectResourceUsage:
+          $ref: '#/components/schemas/ProjectResourceUsage'
+        activeTime:
+          type: string
+        blockStatus:
+          type: string
+        canUnblock:
+          $ref: '#/components/schemas/emptyObject'
+        clusterConfig:
+          $ref: '#/components/schemas/emptyObject'
+        cpuQuota:
+          type: number
+        createdAt:
+          format: date-time
+          type: string
+        creator:
+          type: string
+        ddHook:
+          type: string
+        desc:
+          type: string
+        displayName:
+          type: string
+        id:
+          type: integer
+        isPublic:
+          type: boolean
+        joined:
+          type: boolean
+        logo:
+          type: string
+        memQuota:
+          type: number
+        name:
+          type: string
+        orgId:
+          type: integer
+        owners:
+          items:
+            type: string
+          type: array
+        resourceConfig:
+          $ref: '#/components/schemas/emptyObject'
+        rollbackConfig:
+          $ref: '#/components/schemas/emptyObject'
+        stats:
+          $ref: '#/components/schemas/ProjectStats'
+        type:
+          type: string
+        updatedAt:
+          format: date-time
+          type: string
+      type: object
+    ProjectFunctionSetRequest:
+      properties:
+        projectFunction:
+          $ref: '#/components/schemas/emptyObject'
+        projectId:
+          type: integer
+      type: object
+    ProjectFunctionSetResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          type: string
+      type: object
+    ProjectLabelCreateRequest:
+      properties:
+        IdentityInfo:
+          $ref: '#/components/schemas/IdentityInfo'
+        color:
+          type: string
+        name:
+          type: string
+        projectID:
+          type: integer
+        type:
+          type: string
+      type: object
+    ProjectLabelCreateResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          type: integer
+      type: object
+    ProjectLabelListResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        UserInfoHeader:
+          $ref: '#/components/schemas/UserInfoHeader'
+        data:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    ProjectLabelUpdateRequest:
+      properties:
+        IdentityInfo:
+          $ref: '#/components/schemas/IdentityInfo'
+        color:
+          type: string
+        name:
+          type: string
+      type: object
+    ProjectListResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/PagingProjectDTO'
+      type: object
+    ProjectNameSpaceInfo:
+      properties:
+        enabled:
+          type: boolean
+        namespaces:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    ProjectNameSpaceInfoResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/ProjectNameSpaceInfo'
+      type: object
+    ProjectResourceUsage:
+      properties:
+        cpuAddonUsed:
+          type: number
+        cpuServiceUsed:
+          type: number
+        memAddonUsed:
+          type: number
+        memServiceUsed:
+          type: number
+      type: object
+    ProjectStats:
+      properties:
+        countApplications:
+          type: integer
+        countMembers:
+          type: integer
+        doneBugCount:
+          type: integer
+        doneBugPercent:
+          type: number
+        planningIterationsCount:
+          type: integer
+        planningManHourCount:
+          type: number
+        runningIterationsCount:
+          type: integer
+        totalApplicationsCount:
+          type: integer
+        totalBugCount:
+          type: integer
+        totalIterationsCount:
+          type: integer
+        totalManHourCount:
+          type: number
+        totalMembersCount:
+          type: integer
+        usedManHourCount:
+          type: number
+      type: object
+    ProjectUpdateBody:
+      properties:
+        clusterConfig:
+          $ref: '#/components/schemas/emptyObject'
+        cpuQuota:
+          type: number
+        ddHook:
+          type: string
+        desc:
+          type: string
+        displayName:
+          type: string
+        id:
+          type: integer
+        isPublic:
+          type: boolean
+        logo:
+          type: string
+        memQuota:
+          type: number
+        name:
+          type: string
+        resourceConfig:
+          $ref: '#/components/schemas/emptyObject'
+        rollbackConfig:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    ProjectUpdateRequest:
+      properties:
+        body:
+          $ref: '#/components/schemas/ProjectUpdateBody'
+      type: object
+    ProjectUpdateResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    ProjectWorkSpaceAbility:
+      properties:
+        created_at:
+          format: date-time
+          type: string
+        deployment_abilities:
+          type: string
+        id:
+          type: string
+        org_Name:
+          type: string
+        org_id:
+          type: integer
+        project_id:
+          type: integer
+        updated_at:
+          format: date-time
+          type: string
+        workspace:
+          type: string
+      type: object
+    ProjectWorkSpaceAbilityResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/ProjectWorkSpaceAbility'
+      type: object
+    QueryMBoxData:
+      properties:
+        list:
+          items:
+            $ref: '#/components/schemas/emptyObject'
+          type: array
+        total:
+          type: integer
+        unRead:
+          type: integer
+      type: object
+    QueryMBoxResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/QueryMBoxData'
+      type: object
+    QueryNotifyData:
+      properties:
+        list:
+          items:
+            $ref: '#/components/schemas/emptyObject'
+          type: array
+        total:
+          type: integer
+      type: object
+    QueryNotifyHistoryData:
+      properties:
+        list:
+          items:
+            $ref: '#/components/schemas/emptyObject'
+          type: array
+        total:
+          type: integer
+      type: object
+    QueryNotifyHistoryResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/QueryNotifyHistoryData'
+      type: object
+    QueryNotifyItemData:
+      properties:
+        list:
+          items:
+            $ref: '#/components/schemas/emptyObject'
+          type: array
+        total:
+          type: integer
+      type: object
+    QueryNotifyItemResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/QueryNotifyItemData'
+      type: object
+    QueryNotifyResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/QueryNotifyData'
+      type: object
+    Scope:
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+      type: object
+    ScopeResource:
+      properties:
+        action:
+          type: string
+        resource:
+          type: string
+        resourceRole:
+          type: string
+      type: object
+    ScopeRole:
+      properties:
+        access:
+          type: boolean
+        roles:
+          items:
+            type: string
+          type: array
+        scope:
+          $ref: '#/components/schemas/Scope'
+      type: object
+    ScopeRoleAccessRequest:
+      properties:
+        scope:
+          $ref: '#/components/schemas/Scope'
+      type: object
+    ScopeRoleList:
+      properties:
+        list:
+          items:
+            $ref: '#/components/schemas/ScopeRole'
+          type: array
+      type: object
+    ScopeRoleListResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/ScopeRoleList'
+      type: object
+    Target:
+      properties:
+        receiver:
+          type: string
+        secret:
+          type: string
+      type: object
+    UpdateApproval:
+      properties:
+        id:
+          type: integer
+        orgId:
+          type: integer
+        reason:
+          type: string
+        reject:
+          type: boolean
+      type: object
+    UpdateNotifyItemRequest:
+      properties:
+        id:
+          type: integer
+        mobileTemplate:
+          type: string
+      type: object
+    UpdateNotifyItemResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+      type: object
+    UpdateNotifyRequest:
+      properties:
+        channels:
+          type: string
+        groupTargets:
+          items:
+            $ref: '#/components/schemas/NotifyTarget'
+          type: array
+        id:
+          type: integer
+        notifyGroupId:
+          type: integer
+        notifyItemIds:
+          items:
+            type: integer
+          type: array
+        notifySources:
+          items:
+            $ref: '#/components/schemas/NotifySource'
+          type: array
+        withGroup:
+          type: boolean
+      type: object
+    UpdateNotifyResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    UserInfoHeader:
+      properties:
+        userIDs:
+          items:
+            type: string
+          type: array
+        userInfo:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    UserRoleListResponseData:
+      properties:
+        list:
+          items:
+            $ref: '#/components/schemas/UserScopeRole'
+          type: array
+        total:
+          type: integer
+      type: object
+    UserScopeRole:
+      properties:
+        roles:
+          items:
+            type: string
+          type: array
+        scopeId:
+          type: integer
+        scopeName:
+          type: string
+        scopeType:
+          type: string
+      type: object
+    emptyObject:
+      type: object
+  
+tags:
+  - name: default
+  - name: permissions
+  

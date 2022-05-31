@@ -1,0 +1,3034 @@
+openapi: 3.0.0
+
+info:
+  title: cmp
+  version: default
+  
+paths:
+  /api/addons/actions/config:
+    get:
+      description: Addon 运行配置参数获取
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddonConfigResponse'
+          description: write description here
+      summary: Addon 运行配置参数获取
+      tags:
+      - default
+    post:
+      description: Addon 运行配置参数更新
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddonConfigUpdateRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddonConfigUpdateResponse'
+          description: write description here
+      summary: Addon 运行配置参数更新
+      tags:
+      - default
+  /api/addons/actions/scale:
+    post:
+      description: Addon 扩缩容
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddonScaleRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddonScaleResponse'
+          description: write description here
+      summary: Addon 扩缩容
+      tags:
+      - default
+  /api/addons/status:
+    get:
+      description: 调用scheduler api 获取 addon status
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OpsAddonStatusResponse'
+          description: write description here
+      summary: 调用scheduler api 获取 addon status
+      tags:
+      - default
+  /api/cloud-account:
+    delete:
+      description: 删除 云账号
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteCloudAccountResponse'
+          description: write description here
+      summary: 删除 云账号
+      tags:
+      - default
+    get:
+      description: 获取 云账号 列表
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListCloudAccountResponse'
+          description: write description here
+      summary: 获取 云账号 列表
+      tags:
+      - default
+    post:
+      description: 导入 云账号
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCloudAccountRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateCloudAccountResponse'
+          description: write description here
+      summary: 导入 云账号
+      tags:
+      - default
+  /api/cloud-clusters:
+    post:
+      description: 创建并添加云集群
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CloudClusterRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CloudClusterResponse'
+          description: write description here
+      summary: 创建并添加云集群
+      tags:
+      - default
+  /api/cloud-ecs:
+    get:
+      description: 获取 ecs 信息列表
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListCloudResourceECSResponse'
+          description: write description here
+      summary: 获取 ecs 信息列表
+      tags:
+      - default
+  /api/cloud-ecs/actions/config-renew-attribute:
+    post:
+      description: 配置ECS实例的自动续费
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AutoRenewCloudResourceEcsRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HandleCloudResourceECSResponse'
+          description: write description here
+      summary: 配置ECS实例的自动续费
+      tags:
+      - default
+  /api/cloud-ecs/actions/restart:
+    post:
+      description: 重启ECS实例
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HandleCloudResourceEcsRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HandleCloudResourceECSResponse'
+          description: write description here
+      summary: 重启ECS实例
+      tags:
+      - default
+  /api/cloud-ecs/actions/start:
+    post:
+      description: 启动ECS实例
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HandleCloudResourceEcsRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HandleCloudResourceECSResponse'
+          description: write description here
+      summary: 启动ECS实例
+      tags:
+      - default
+  /api/cloud-ecs/actions/stop:
+    post:
+      description: 停止ECS实例
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HandleCloudResourceEcsRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HandleCloudResourceECSResponse'
+          description: write description here
+      summary: 停止ECS实例
+      tags:
+      - default
+  /api/cloud-gateway:
+    get:
+      description: 获取 gateway 信息列表
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListCloudResourceGatewayResponse'
+          description: write description here
+      summary: 获取 gateway 信息列表
+      tags:
+      - default
+  /api/cloud-mysql:
+    delete:
+      description: 删除 mysql
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CloudAddonResourceDeleteRespnse'
+          description: write description here
+      summary: 删除 mysql
+      tags:
+      - default
+    get:
+      description: 获取 mysql 信息列表
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListCloudResourceMysqlResponse'
+          description: write description here
+      summary: 获取 mysql 信息列表
+      tags:
+      - default
+    post:
+      description: 创建 mysql
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCloudResourceMysqlRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateCloudResourceMysqlResponse'
+          description: write description here
+      summary: 创建 mysql
+      tags:
+      - default
+  /api/cloud-mysql/{id or name}:
+    get:
+      description: 获取 mysql instance 详细信息
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CloudResourceMysqlDetailInfoResponse'
+          description: write description here
+      summary: 获取 mysql instance 详细信息
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: id or name
+      required: true
+      schema:
+        type: string
+  /api/cloud-mysql/{instanceID}/accounts:
+    get:
+      description: list mysql accounts
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CloudResourceMysqlListAccountResponse'
+          description: write description here
+      summary: list mysql accounts
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: instanceID
+      required: true
+      schema:
+        type: string
+  /api/cloud-mysql/{instanceID}/databases:
+    get:
+      description: query参数传入dbName, 返回相应db info; 未传入，则返回所有db info
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CloudResourceMysqlDBResponse'
+          description: write description here
+      summary: query参数传入dbName, 返回相应db info; 未传入，则返回所有db info
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: instanceID
+      required: true
+      schema:
+        type: string
+  /api/cloud-mysql/actions/create-account:
+    post:
+      description: 创建 mysql account
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCloudResourceMysqlAccountRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateCloudResourceMysqlAccountResponse'
+          description: write description here
+      summary: 创建 mysql account
+      tags:
+      - default
+  /api/cloud-mysql/actions/create-db:
+    post:
+      description: 创建 mysql databases
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCloudResourceMysqlDBRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateCloudResourceMysqlDBResponse'
+          description: write description here
+      summary: 创建 mysql databases
+      tags:
+      - default
+  /api/cloud-mysql/actions/delete-db:
+    delete:
+      description: 删除 mysql database
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CloudAddonResourceDeleteRespnse'
+          description: write description here
+      summary: 删除 mysql database
+      tags:
+      - default
+  /api/cloud-mysql/actions/grant-privilege:
+    post:
+      description: grant account privilege
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GrantMysqlAccountPrivilegeRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrantMysqlAccountPrivilegeResponse'
+          description: write description here
+      summary: grant account privilege
+      tags:
+      - default
+  /api/cloud-mysql/actions/reset-password:
+    post:
+      description: reset account password
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCloudResourceMysqlAccountRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateCloudResourceMysqlAccountResponse'
+          description: write description here
+      summary: reset account password
+      tags:
+      - default
+  /api/cloud-ons:
+    delete:
+      description: 删除 ons
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CloudAddonResourceDeleteRespnse'
+          description: write description here
+      summary: 删除 ons
+      tags:
+      - default
+    get:
+      description: 获取 ons 信息列表
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListCloudResourceOnsResponse'
+          description: write description here
+      summary: 获取 ons 信息列表
+      tags:
+      - default
+    post:
+      description: 创建 ons
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCloudResourceOnsRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateCloudResourceOnsResponse'
+          description: write description here
+      summary: 创建 ons
+      tags:
+      - default
+  /api/cloud-ons/{instance_id}:
+    get:
+      description: 获取 ons instance 详细信息
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CloudResourceOnsDetailInfoResponse'
+          description: write description here
+      summary: 获取 ons instance 详细信息
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: instance_id
+      required: true
+      schema:
+        type: string
+  /api/cloud-ons/actions/create-group:
+    post:
+      description: 创建 ons group
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCloudResourceOnsGroupRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateCloudResourceOnsGroupResponse'
+          description: write description here
+      summary: 创建 ons group
+      tags:
+      - default
+  /api/cloud-ons/actions/create-topic:
+    post:
+      description: 创建 ons topic
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCloudResourceOnsTopicRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateCloudResourceOnsTopicResponse'
+          description: write description here
+      summary: 创建 ons topic
+      tags:
+      - default
+  /api/cloud-ons/actions/delete-topic:
+    delete:
+      description: 删除 ons topic
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CloudAddonResourceDeleteRespnse'
+          description: write description here
+      summary: 删除 ons topic
+      tags:
+      - default
+  /api/cloud-ons/actions/list-group:
+    get:
+      description: query参数传入topicName时，返回相应topic信息；未传入则返回所有topic信息
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CloudResourceOnsGroupInfoResponse'
+          description: write description here
+      summary: query参数传入topicName时，返回相应topic信息；未传入则返回所有topic信息
+      tags:
+      - default
+  /api/cloud-ons/actions/list-topic:
+    get:
+      description: query参数传入topicName时，返回相应topic信息；未传入则返回所有topic信息
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CloudResourceOnsTopicInfoResponse'
+          description: write description here
+      summary: query参数传入topicName时，返回相应topic信息；未传入则返回所有topic信息
+      tags:
+      - default
+  /api/cloud-oss:
+    delete:
+      description: 删除 oss
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CloudAddonResourceDeleteRespnse'
+          description: write description here
+      summary: 删除 oss
+      tags:
+      - default
+    get:
+      description: 获取 oss 信息列表
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListCloudResourceOssResponse'
+          description: write description here
+      summary: 获取 oss 信息列表
+      tags:
+      - default
+    post:
+      description: 创建 oss bucket
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCloudResourceOssRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateCloudResourceOssResponse'
+          description: write description here
+      summary: 创建 oss bucket
+      tags:
+      - default
+  /api/cloud-oss/{bucket name}:
+    get:
+      description: 获取 oss bucket 详细信息
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CloudResourceOssDetailInfoResponse'
+          description: write description here
+      summary: 获取 oss bucket 详细信息
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: bucket name
+      required: true
+      schema:
+        type: string
+  /api/cloud-redis:
+    delete:
+      description: 删除 redis
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CloudAddonResourceDeleteRespnse'
+          description: write description here
+      summary: 删除 redis
+      tags:
+      - default
+    get:
+      description: 获取 redis 信息列表
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListCloudResourceRedisResponse'
+          description: write description here
+      summary: 获取 redis 信息列表
+      tags:
+      - default
+    post:
+      description: 创建 redis
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCloudResourceRedisRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateCloudResourceRedisResponse'
+          description: write description here
+      summary: 创建 redis
+      tags:
+      - default
+  /api/cloud-redis/{instance_id}:
+    get:
+      description: 获取 redis instance 详细信息
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CloudResourceRedisDetailInfoResponse'
+          description: write description here
+      summary: 获取 redis instance 详细信息
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: instance_id
+      required: true
+      schema:
+        type: string
+  /api/cloud-region:
+    get:
+      description: 获取 region 列表
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListCloudResourceRegionResponse'
+          description: write description here
+      summary: 获取 region 列表
+      tags:
+      - default
+  /api/cloud-resource-overview:
+    get:
+      description: 获取云资源信息总览
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CloudResourceOverviewResponse'
+          description: write description here
+      summary: 获取云资源信息总览
+      tags:
+      - default
+  /api/cloud-resource/set-tag:
+    post:
+      description: tag cluster on vpc
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CloudResourceSetTagRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CloudResourceSetTagResponse'
+          description: write description here
+      summary: tag cluster on vpc
+      tags:
+      - default
+  /api/cloud-vpc:
+    get:
+      description: 获取 vpc 信息列表
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListCloudResourceVPCResponse'
+          description: write description here
+      summary: 获取 vpc 信息列表
+      tags:
+      - default
+    post:
+      description: 创建 vpc
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCloudResourceVPCRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateCloudResourceVPCResponse'
+          description: write description here
+      summary: 创建 vpc
+      tags:
+      - default
+  /api/cloud-vsw:
+    get:
+      description: 获取 vswitch 信息列表
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListCloudResourceVSWResponse'
+          description: write description here
+      summary: 获取 vswitch 信息列表
+      tags:
+      - default
+    post:
+      description: 创建 vswitch
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCloudResourceVSWRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateCloudResourceVSWResponse'
+          description: write description here
+      summary: 创建 vswitch
+      tags:
+      - default
+  /api/cloud-zone:
+    get:
+      description: 获取 zone 列表
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListCloudResourceZoneResponse'
+          description: write description here
+      summary: 获取 zone 列表
+      tags:
+      - default
+  /api/cluster:
+    delete:
+      description: 集群下线
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OfflineEdgeClusterResponse'
+          description: write description here
+      summary: 集群下线
+      tags:
+      - default
+    get:
+      description: 获取集群详情
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 获取集群详情
+      tags:
+      - default
+  /api/cluster-preview:
+    post:
+      description: 创建集群预览
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 创建集群预览
+      tags:
+      - default
+  /api/cluster/actions/batch-upgrade:
+    post:
+      description: 边缘集群批量升级
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchUpgradeEdgeClusterRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchUpgradeEdgeClusterResponse'
+          description: write description here
+      summary: 边缘集群批量升级
+      tags:
+      - default
+  /api/cluster/actions/init-retry:
+    post:
+      description: 'summary: 集群初始化重试'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 集群初始化重试'
+      tags:
+      - default
+  /api/cluster/actions/upgrade:
+    post:
+      description: 边缘集群升级
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpgradeEdgeClusterRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpgradeEdgeClusterResponse'
+          description: write description here
+      summary: 边缘集群升级
+      tags:
+      - default
+  /api/cluster/credential/access-keys:
+    get:
+      description: 'summary: 获取集群认证TOKEN'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取集群认证TOKEN'
+      tags:
+      - default
+    post:
+      description: 'summary: 集群认证TOKEN创建'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 集群认证TOKEN创建'
+      tags:
+      - default
+  /api/cluster/credential/access-keys/actions/reset:
+    post:
+      description: 'summary: 重置集群认证TOKEN'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 重置集群认证TOKEN'
+      tags:
+      - default
+  /api/cluster/init-command:
+    get:
+      description: 'summary: 获取集群初始化命令'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取集群初始化命令'
+      tags:
+      - default
+  /api/clusters:
+    post:
+      description: 'summary: 创建集群'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 创建集群'
+      tags:
+      - default
+    put:
+      description: 'summary: 更新集群'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClusterUpdateRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClusterUpdateResponse'
+          description: write description here
+      summary: 'summary: 更新集群'
+      tags:
+      - default
+  /api/cmp/alerts/conditions:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      tags:
+      - default
+  /api/cmp/alerts/conditions/value:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      tags:
+      - default
+  /api/ecs-trending:
+    get:
+      description: 获取 ecs 增量趋势
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetCloudResourceECSTrendResponse'
+          description: write description here
+      summary: 获取 ecs 增量趋势
+      tags:
+      - default
+  /api/k8s/clusters:
+    get:
+      description: list ready and unready k8s clusters
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/K8SClusters'
+          description: write description here
+      summary: list ready and unready k8s clusters
+      tags:
+      - default
+  /api/k8s/clusters/{*}:
+    delete:
+      description: delete a k8s resource
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: delete a k8s resource
+      tags:
+      - default
+    get:
+      description: get or list k8s resource
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RawResource'
+          description: write description here
+      summary: get or list k8s resource
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: '*'
+      required: true
+      schema:
+        type: string
+    patch:
+      description: update a k8s resource
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RawResource'
+          description: write description here
+      summary: update a k8s resource
+      tags:
+      - default
+    post:
+      description: create a k8s resource
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RawResource'
+          description: write description here
+      summary: create a k8s resource
+      tags:
+      - default
+    put:
+      description: update a k8s resource
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RawResource'
+          description: write description here
+      summary: update a k8s resource
+      tags:
+      - default
+  /api/node-labels:
+    get:
+      description: 获取 node label 列表
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 获取 node label 列表
+      tags:
+      - default
+    post:
+      description: 更新 node label
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateLabelsRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateLabelsResponse'
+          description: write description here
+      summary: 更新 node label
+      tags:
+      - default
+  /api/node-logs:
+    get:
+      description: 查询 cmp 操作日志
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 查询 cmp 操作日志
+      tags:
+      - default
+  /api/nodes:
+    delete:
+      description: 下线节点
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RmNodesResponse'
+          description: write description here
+      summary: 下线节点
+      tags:
+      - default
+    post:
+      description: 增加节点
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddNodesRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddNodesResponse'
+          description: write description here
+      summary: 增加节点
+      tags:
+      - default
+  /api/ops/cloud-nodes:
+    post:
+      description: 创建并添加云机器
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CloudNodesRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CloudNodesResponse'
+          description: write description here
+      summary: 创建并添加云机器
+      tags:
+      - default
+  /api/ops/cloud-resource:
+    get:
+      description: 获取云资源信息
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 获取云资源信息
+      tags:
+      - default
+  /api/ops/cloud-resource-list:
+    get:
+      description: 云资源类型列表
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 云资源类型列表
+      tags:
+      - default
+  /api/org-cluster-info:
+    get:
+      description: 获取企业集群相关信息
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrgClusterInfoResponse'
+          description: write description here
+      summary: 获取企业集群相关信息
+      tags:
+      - default
+  /api/org/actions/list-running-tasks:
+    get:
+      description: 'summary: 获取指定企业的任务 (job/deployment) 列表'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrgRunningTasksListResponse'
+          description: write description here
+      summary: 'summary: 获取指定企业的任务 (job/deployment) 列表'
+      tags:
+      - default
+  /api/records:
+    get:
+      description: 查询 cmp 操作记录
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 查询 cmp 操作记录
+      tags:
+      - default
+  /api/recordtypes:
+    get:
+      description: 获取 recordtype 列表
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 获取 recordtype 列表
+      tags:
+      - default
+  /api/resource-overview/class:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      tags:
+      - default
+  /api/resource-overview/cluster-trend:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      tags:
+      - default
+  /api/resource-overview/gauge:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      tags:
+      - default
+  /api/resource-overview/project-trend:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      tags:
+      - default
+  /api/resource-overview/report-table:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      tags:
+      - default
+  
+components:
+  schemas:
+    "":
+      properties:
+        monthadd:
+          $ref: '#/components/schemas/MonthAddTrendData'
+      type: object
+    AddNodesData:
+      properties:
+        recordID:
+          type: integer
+      type: object
+    AddNodesRequest:
+      properties:
+        clusterName:
+          type: string
+        dataDiskDevice:
+          type: string
+        detail:
+          type: string
+        hosts:
+          items:
+            type: string
+          type: array
+        labels:
+          items:
+            type: string
+          type: array
+        orgID:
+          type: integer
+        password:
+          type: string
+        port:
+          type: integer
+        source:
+          type: string
+        sudoHasPassword:
+          type: string
+        user:
+          type: string
+      type: object
+    AddNodesResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/AddNodesData'
+      type: object
+    AddonConfigResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    AddonConfigUpdateRequest:
+      properties:
+        AddonOpsBaseRequest:
+          $ref: '#/components/schemas/AddonOpsBaseRequest'
+        config:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    AddonConfigUpdateResponse:
+      properties:
+        err:
+          $ref: '#/components/schemas/ErrorResponse'
+        success:
+          type: boolean
+      type: object
+    AddonOpsBaseRequest:
+      properties:
+        addonID:
+          type: string
+        addonName:
+          type: string
+        clusterName:
+          type: string
+        projectID:
+          type: string
+        projectName:
+          type: string
+      type: object
+    AddonScaleRequest:
+      properties:
+        AddonOpsBaseRequest:
+          $ref: '#/components/schemas/AddonOpsBaseRequest'
+        cpu:
+          type: number
+        mem:
+          type: integer
+        nodes:
+          type: integer
+      type: object
+    AddonScaleResponse:
+      properties:
+        err:
+          $ref: '#/components/schemas/ErrorResponse'
+        success:
+          type: boolean
+      type: object
+    ApiGatewayInfo:
+      properties:
+        instanceID:
+          type: string
+        name:
+          type: string
+      type: object
+    AutoRenewCloudResourceEcsRequest:
+      properties:
+        duration:
+          type: integer
+        instanceIds:
+          items:
+            type: string
+          type: array
+        region:
+          type: string
+        switch:
+          type: boolean
+        vendor:
+          type: string
+      type: object
+    BatchUpgradeEdgeClusterRequest:
+      properties:
+        clusters:
+          items:
+            $ref: '#/components/schemas/UpgradeClusterInfo'
+          type: array
+      type: object
+    BatchUpgradeEdgeClusterResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+      type: object
+    CloudAddonResourceDeleteRespnse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+      type: object
+    CloudClusterContainerInfo:
+      properties:
+        dockerBip:
+          type: string
+        dockerCIDR:
+          type: string
+        dockerRoot:
+          type: string
+        execRoot:
+          type: string
+        podCIDR:
+          type: string
+        serviceCIDR:
+          type: string
+      type: object
+    CloudClusterGlusterfs:
+      properties:
+        glusterfsIps:
+          type: string
+      type: object
+    CloudClusterHostsInfo:
+      properties:
+        dataPath:
+          type: string
+        device:
+          type: string
+        hostIps:
+          type: string
+      type: object
+    CloudClusterInfo:
+      properties:
+        clusterAccessKey:
+          type: string
+        clusterDialer:
+          type: string
+        clusterName:
+          type: string
+        clusterSize:
+          type: string
+        collectorURL:
+          type: string
+        displayName:
+          type: string
+        enableHttps:
+          type: boolean
+        nameservers:
+          type: string
+        openapi:
+          type: string
+        rootDomain:
+          type: string
+      type: object
+    CloudClusterInstaller:
+      properties:
+        installerIp:
+          type: string
+        password:
+          type: string
+        port:
+          type: string
+        user:
+          type: string
+      type: object
+    CloudClusterNas:
+      properties:
+        nasDomain:
+          type: string
+        nasPath:
+          type: string
+      type: object
+    CloudClusterNewCreateInfo:
+      properties:
+        CloudBasicRsc:
+          type: string
+        CloudVendorName:
+          type: string
+        ForwardTableID:
+          type: string
+        NatGatewayID:
+          type: string
+        SnatTableID:
+          type: string
+        accessKey:
+          type: string
+        appNodeNum:
+          type: integer
+        chargePeriod:
+          type: integer
+        chargeType:
+          type: string
+        cloudVendor:
+          type: string
+        clusterSpec:
+          type: string
+        clusterType:
+          type: string
+        ecsInstType:
+          type: string
+        k8sVersion:
+          type: string
+        region:
+          type: string
+        secretKey:
+          type: string
+        terraform:
+          type: string
+        vSwitchCIDR:
+          type: string
+        vSwitchID:
+          type: string
+        vpcCIDR:
+          type: string
+        vpcID:
+          type: string
+      type: object
+    CloudClusterRequest:
+      properties:
+        CloudClusterContainerInfo:
+          $ref: '#/components/schemas/CloudClusterContainerInfo'
+        CloudClusterGlusterfs:
+          $ref: '#/components/schemas/CloudClusterGlusterfs'
+        CloudClusterHostsInfo:
+          $ref: '#/components/schemas/CloudClusterHostsInfo'
+        CloudClusterInfo:
+          $ref: '#/components/schemas/CloudClusterInfo'
+        CloudClusterInstaller:
+          $ref: '#/components/schemas/CloudClusterInstaller'
+        CloudClusterNas:
+          $ref: '#/components/schemas/CloudClusterNas'
+        CloudClusterNewCreateInfo:
+          $ref: '#/components/schemas/CloudClusterNewCreateInfo'
+        centralClusterName:
+          type: string
+        centralDiceProtocol:
+          type: string
+        centralRootDomain:
+          type: string
+        diceVersion:
+          type: string
+        orgID:
+          type: integer
+        orgName:
+          type: string
+      type: object
+    CloudClusterResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/AddNodesData'
+      type: object
+    CloudNodesRequest:
+      properties:
+        accessKey:
+          type: string
+        availabilityZone:
+          type: string
+        chargePeriod:
+          type: integer
+        chargeType:
+          type: string
+        cloudResource:
+          type: string
+        cloudVendor:
+          type: string
+        clusterName:
+          type: string
+        diskSize:
+          type: integer
+        diskType:
+          type: string
+        instanceNum:
+          type: integer
+        instancePassword:
+          type: string
+        instanceType:
+          type: string
+        labels:
+          items:
+            type: string
+          type: array
+        orgID:
+          type: integer
+        region:
+          type: string
+        secretKey:
+          type: string
+        securityGroupIds:
+          items:
+            type: string
+          type: array
+        terraform:
+          type: string
+        vSwitchId:
+          type: string
+      type: object
+    CloudNodesResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/AddNodesData'
+      type: object
+    CloudResourceDetailInfo:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/CloudResourceDetailItem'
+          type: array
+        label:
+          type: string
+      type: object
+    CloudResourceDetailItem:
+      properties:
+        name:
+          type: string
+        value:
+          type: string
+      type: object
+    CloudResourceMysqlAccount:
+      properties:
+        account:
+          type: string
+        accountPrivilege:
+          type: string
+        password:
+          type: string
+      type: object
+    CloudResourceMysqlAccountPrivileges:
+      properties:
+        accountPrivilege:
+          type: string
+        dBName:
+          type: string
+      type: object
+    CloudResourceMysqlBasicData:
+      properties:
+        category:
+          type: string
+        chargeType:
+          type: string
+        createTime:
+          type: string
+        expireTime:
+          type: string
+        id:
+          type: string
+        name:
+          type: string
+        region:
+          type: string
+        spec:
+          type: string
+        status:
+          type: string
+        tag:
+          $ref: '#/components/schemas/emptyObject'
+        version:
+          type: string
+      type: object
+    CloudResourceMysqlDB:
+      properties:
+        accounts:
+          items:
+            $ref: '#/components/schemas/CloudResourceMysqlAccount'
+          type: array
+        addonID:
+          type: string
+        dbName:
+          type: string
+      type: object
+    CloudResourceMysqlDBInfo:
+      properties:
+        instanceID:
+          type: string
+        list:
+          items:
+            $ref: '#/components/schemas/CloudResourceMysqlDB'
+          type: array
+        total:
+          type: integer
+      type: object
+    CloudResourceMysqlDBResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/CloudResourceMysqlDBInfo'
+      type: object
+    CloudResourceMysqlData:
+      properties:
+        list:
+          items:
+            $ref: '#/components/schemas/CloudResourceMysqlBasicData'
+          type: array
+        total:
+          type: integer
+      type: object
+    CloudResourceMysqlDetailInfoData:
+      properties:
+        category:
+          type: string
+        host:
+          type: string
+        id:
+          type: string
+        memory:
+          type: string
+        name:
+          type: string
+        port:
+          type: string
+        regionID:
+          type: string
+        status:
+          type: string
+        storageSize:
+          type: string
+        storageType:
+          type: string
+        vSwitchID:
+          type: string
+        vpcID:
+          type: string
+        zoneID:
+          type: string
+      type: object
+    CloudResourceMysqlDetailInfoResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/CloudResourceMysqlDetailInfoData'
+      type: object
+    CloudResourceMysqlListAccountData:
+      properties:
+        list:
+          items:
+            $ref: '#/components/schemas/CloudResourceMysqlListAccountItem'
+          type: array
+      type: object
+    CloudResourceMysqlListAccountItem:
+      properties:
+        accountDescription:
+          type: string
+        accountName:
+          type: string
+        accountStatus:
+          type: string
+        accountType:
+          type: string
+        databasePrivileges:
+          items:
+            $ref: '#/components/schemas/CloudResourceMysqlAccountPrivileges'
+          type: array
+      type: object
+    CloudResourceMysqlListAccountResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/CloudResourceMysqlListAccountData'
+      type: object
+    CloudResourceOnsBasicData:
+      properties:
+        id:
+          type: string
+        instanceType:
+          type: string
+        name:
+          type: string
+        region:
+          type: string
+        status:
+          type: string
+        tags:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    CloudResourceOnsData:
+      properties:
+        list:
+          items:
+            $ref: '#/components/schemas/CloudResourceOnsBasicData'
+          type: array
+        total:
+          type: integer
+      type: object
+    CloudResourceOnsDetailInfoResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          items:
+            $ref: '#/components/schemas/CloudResourceDetailInfo'
+          type: array
+      type: object
+    CloudResourceOnsGroupBaseInfo:
+      properties:
+        groupID:
+          type: string
+        groupType:
+          type: string
+        remark:
+          type: string
+      type: object
+    CloudResourceOnsGroupBasicData:
+      properties:
+        createTime:
+          type: string
+        groupId:
+          type: string
+        groupType:
+          type: string
+        instanceId:
+          type: string
+        remark:
+          type: string
+        tags:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    CloudResourceOnsGroupInfoData:
+      properties:
+        list:
+          items:
+            $ref: '#/components/schemas/CloudResourceOnsGroupBasicData'
+          type: array
+        total:
+          type: integer
+      type: object
+    CloudResourceOnsGroupInfoResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/CloudResourceOnsGroupInfoData'
+      type: object
+    CloudResourceOnsTopicAndGroup:
+      properties:
+        CloudResourceOnsGroupBaseInfo:
+          $ref: '#/components/schemas/CloudResourceOnsGroupBaseInfo'
+        addonID:
+          type: string
+        messageType:
+          type: integer
+        remark:
+          type: string
+        topicName:
+          type: string
+      type: object
+    CloudResourceOnsTopicInfo:
+      properties:
+        list:
+          items:
+            $ref: '#/components/schemas/OnsTopic'
+          type: array
+        total:
+          type: integer
+      type: object
+    CloudResourceOnsTopicInfoResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/CloudResourceOnsTopicInfo'
+      type: object
+    CloudResourceOssBasicData:
+      properties:
+        createDate:
+          type: string
+        location:
+          type: string
+        name:
+          type: string
+        storageClass:
+          type: string
+        tags:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    CloudResourceOssData:
+      properties:
+        list:
+          items:
+            $ref: '#/components/schemas/CloudResourceOssBasicData'
+          type: array
+        total:
+          type: integer
+      type: object
+    CloudResourceOssDetailInfoData:
+      properties:
+        acl:
+          type: string
+        bucketName:
+          type: string
+        internetEndpoint:
+          type: string
+        intranetEndpoint:
+          type: string
+        location:
+          type: string
+      type: object
+    CloudResourceOssDetailInfoResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/CloudResourceOssDetailInfoData'
+      type: object
+    CloudResourceOverviewResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    CloudResourceRedisBasicData:
+      properties:
+        capacity:
+          type: string
+        chargeType:
+          type: string
+        createTime:
+          type: string
+        expireTime:
+          type: string
+        id:
+          type: string
+        name:
+          type: string
+        region:
+          type: string
+        spec:
+          type: string
+        status:
+          type: string
+        tags:
+          $ref: '#/components/schemas/emptyObject'
+        version:
+          type: string
+      type: object
+    CloudResourceRedisDetailInfoResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          items:
+            $ref: '#/components/schemas/CloudResourceDetailInfo'
+          type: array
+      type: object
+    CloudResourceSetTagRequest:
+      properties:
+        instanceID:
+          type: string
+        items:
+          items:
+            $ref: '#/components/schemas/CloudResourceTagItem'
+          type: array
+        resourceType:
+          type: string
+        tags:
+          items:
+            type: string
+          type: array
+      type: object
+    CloudResourceSetTagResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+      type: object
+    CloudResourceTagItem:
+      properties:
+        oldTags:
+          items:
+            type: string
+          type: array
+        region:
+          type: string
+        resourceID:
+          type: string
+        vendor:
+          type: string
+      type: object
+    ClusterUpdateRequest:
+      properties:
+        cloudVendor:
+          type: string
+        description:
+          type: string
+        displayName:
+          type: string
+        logo:
+          type: string
+        manageConfig:
+          $ref: '#/components/schemas/emptyObject'
+        name:
+          type: string
+        opsConfig:
+          $ref: '#/components/schemas/emptyObject'
+        orgID:
+          type: integer
+        scheduler:
+          $ref: '#/components/schemas/emptyObject'
+        sysConfig:
+          $ref: '#/components/schemas/emptyObject'
+        type:
+          type: string
+        urls:
+          $ref: '#/components/schemas/emptyObject'
+        wildcardDomain:
+          type: string
+      type: object
+    ClusterUpdateResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    ClustersData:
+      properties:
+        ready:
+          items:
+            type: string
+          type: array
+        unReady:
+          items:
+            type: string
+          type: array
+      type: object
+    CreateCloudAccountRequest:
+      properties:
+        accessKeyID:
+          type: string
+        accessKeySecret:
+          type: string
+        description:
+          type: string
+        vendor:
+          type: string
+      type: object
+    CreateCloudAccountResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+      type: object
+    CreateCloudResourceBaseInfo:
+      properties:
+        clientToken:
+          type: string
+        clusterName:
+          type: string
+        orgID:
+          type: string
+        projectID:
+          type: string
+        region:
+          type: string
+        source:
+          type: string
+        userID:
+          type: string
+        vSwitchID:
+          type: string
+        vendor:
+          type: string
+        vpcID:
+          type: string
+        zoneID:
+          type: string
+      type: object
+    CreateCloudResourceBaseResponseData:
+      properties:
+        recordID:
+          type: integer
+      type: object
+    CreateCloudResourceMysqlAccountRequest:
+      properties:
+        account:
+          type: string
+        description:
+          type: string
+        instanceID:
+          type: string
+        password:
+          type: string
+        region:
+          type: string
+        vendor:
+          type: string
+      type: object
+    CreateCloudResourceMysqlAccountResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/CreateCloudResourceBaseResponseData'
+      type: object
+    CreateCloudResourceMysqlDBRequest:
+      properties:
+        CreateCloudResourceBaseInfo:
+          $ref: '#/components/schemas/CreateCloudResourceBaseInfo'
+        databases:
+          items:
+            $ref: '#/components/schemas/MysqlDataBaseInfo'
+          type: array
+        instanceID:
+          type: string
+      type: object
+    CreateCloudResourceMysqlDBResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/CreateCloudResourceBaseResponseData'
+      type: object
+    CreateCloudResourceMysqlRequest:
+      properties:
+        CreateCloudResourceBaseRequest:
+          $ref: '#/components/schemas/emptyObject'
+        databases:
+          items:
+            $ref: '#/components/schemas/MysqlDataBaseInfo'
+          type: array
+        securityIPList:
+          type: string
+        spec:
+          type: string
+        specType:
+          type: string
+        storageSize:
+          type: integer
+        storageType:
+          type: string
+        version:
+          type: string
+      type: object
+    CreateCloudResourceMysqlResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/CreateCloudResourceBaseResponseData'
+      type: object
+    CreateCloudResourceOnsGroupRequest:
+      properties:
+        groups:
+          items:
+            $ref: '#/components/schemas/CloudResourceOnsGroupBaseInfo'
+          type: array
+        instanceID:
+          type: string
+        region:
+          type: string
+        vendor:
+          type: string
+      type: object
+    CreateCloudResourceOnsGroupResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+      type: object
+    CreateCloudResourceOnsRequest:
+      properties:
+        CreateCloudResourceBaseInfo:
+          $ref: '#/components/schemas/emptyObject'
+        name:
+          type: string
+        remark:
+          type: string
+        topics:
+          items:
+            $ref: '#/components/schemas/CloudResourceOnsTopicAndGroup'
+          type: array
+      type: object
+    CreateCloudResourceOnsResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/CreateCloudResourceBaseResponseData'
+      type: object
+    CreateCloudResourceOnsTopicRequest:
+      properties:
+        CreateCloudResourceBaseInfo:
+          $ref: '#/components/schemas/CreateCloudResourceBaseInfo'
+        instanceID:
+          type: string
+        topics:
+          items:
+            $ref: '#/components/schemas/CloudResourceOnsTopicAndGroup'
+          type: array
+      type: object
+    CreateCloudResourceOnsTopicResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/CreateCloudResourceBaseResponseData'
+      type: object
+    CreateCloudResourceOssRequest:
+      properties:
+        CreateCloudResourceBaseInfo:
+          $ref: '#/components/schemas/emptyObject'
+        buckets:
+          items:
+            $ref: '#/components/schemas/OssBucketInfo'
+          type: array
+      type: object
+    CreateCloudResourceOssResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/CreateCloudResourceBaseResponseData'
+      type: object
+    CreateCloudResourceRedisRequest:
+      properties:
+        CreateCloudResourceBaseRequest:
+          $ref: '#/components/schemas/emptyObject'
+        addonID:
+          type: string
+        password:
+          type: string
+        spec:
+          type: string
+        version:
+          type: string
+      type: object
+    CreateCloudResourceRedisResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/CreateCloudResourceBaseResponseData'
+      type: object
+    CreateCloudResourceVPC:
+      properties:
+        vpcID:
+          type: string
+      type: object
+    CreateCloudResourceVPCRequest:
+      properties:
+        cidrBlock:
+          type: string
+        description:
+          type: string
+        region:
+          type: string
+        vendor:
+          type: string
+        vpcName:
+          type: string
+      type: object
+    CreateCloudResourceVPCResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/CreateCloudResourceVPC'
+      type: object
+    CreateCloudResourceVSW:
+      properties:
+        vswID:
+          type: string
+      type: object
+    CreateCloudResourceVSWRequest:
+      properties:
+        cidrBlock:
+          type: string
+        description:
+          type: string
+        region:
+          type: string
+        vendor:
+          type: string
+        vpcID:
+          type: string
+        vswName:
+          type: string
+        zoneID:
+          type: string
+      type: object
+    CreateCloudResourceVSWResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/CreateCloudResourceVSW'
+      type: object
+    DeleteCloudAccountResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+      type: object
+    ErrorResponse:
+      properties:
+        code:
+          type: string
+        ctx:
+          $ref: '#/components/schemas/emptyObject'
+        msg:
+          type: string
+      type: object
+    GetCloudResourceECSTrendResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/MonthAddTrend'
+      type: object
+    GrantMysqlAccountPrivilegeRequest:
+      properties:
+        account:
+          type: string
+        accountPrivileges:
+          items:
+            $ref: '#/components/schemas/MysqlAccountPrivilege'
+          type: array
+        instanceID:
+          type: string
+        region:
+          type: string
+        vendor:
+          type: string
+      type: object
+    GrantMysqlAccountPrivilegeResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/CreateCloudResourceBaseResponseData'
+      type: object
+    HandleCloudResourceECSData:
+      properties:
+        failedInstances:
+          items:
+            $ref: '#/components/schemas/HandleCloudResourceECSDataResult'
+          type: array
+      type: object
+    HandleCloudResourceECSDataResult:
+      properties:
+        instanceId:
+          type: string
+        message:
+          type: string
+      type: object
+    HandleCloudResourceECSResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/HandleCloudResourceECSData'
+      type: object
+    HandleCloudResourceEcsRequest:
+      properties:
+        instanceIds:
+          items:
+            type: string
+          type: array
+        region:
+          type: string
+        vendor:
+          type: string
+      type: object
+    Header:
+      properties:
+        err:
+          $ref: '#/components/schemas/ErrorResponse'
+        success:
+          type: boolean
+      type: object
+    K8SClusters:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/ClustersData'
+      type: object
+    ListCloudAccount:
+      properties:
+        accessKeyID:
+          type: string
+        description:
+          type: string
+        orgID:
+          type: string
+        vendor:
+          type: string
+      type: object
+    ListCloudAccountData:
+      properties:
+        list:
+          items:
+            $ref: '#/components/schemas/ListCloudAccount'
+          type: array
+        total:
+          type: integer
+      type: object
+    ListCloudAccountResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/ListCloudAccountData'
+      type: object
+    ListCloudGateway:
+      properties:
+        gateways:
+          items:
+            $ref: '#/components/schemas/ApiGatewayInfo'
+          type: array
+        slbs:
+          items:
+            $ref: '#/components/schemas/PrivateSlbInfo'
+          type: array
+      type: object
+    ListCloudResourceECS:
+      properties:
+        chargeType:
+          type: string
+        cpu:
+          type: integer
+        expireTime:
+          type: string
+        hostname:
+          type: string
+        id:
+          type: string
+        innerIpAddress:
+          type: string
+        memory:
+          type: integer
+        osName:
+          type: string
+        regionID:
+          type: string
+        regionName:
+          type: string
+        startTime:
+          type: string
+        status:
+          type: string
+        tag:
+          $ref: '#/components/schemas/emptyObject'
+        vendor:
+          type: string
+      type: object
+    ListCloudResourceECSData:
+      properties:
+        list:
+          items:
+            $ref: '#/components/schemas/ListCloudResourceECS'
+          type: array
+        total:
+          type: integer
+      type: object
+    ListCloudResourceECSResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/ListCloudResourceECSData'
+      type: object
+    ListCloudResourceGatewayResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/ListCloudGateway'
+      type: object
+    ListCloudResourceMysqlResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/CloudResourceMysqlData'
+      type: object
+    ListCloudResourceOnsResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/CloudResourceOnsData'
+      type: object
+    ListCloudResourceOssResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/CloudResourceOssData'
+      type: object
+    ListCloudResourceRedisData:
+      properties:
+        list:
+          items:
+            $ref: '#/components/schemas/CloudResourceRedisBasicData'
+          type: array
+        total:
+          type: integer
+      type: object
+    ListCloudResourceRedisResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/ListCloudResourceRedisData'
+      type: object
+    ListCloudResourceRegion:
+      properties:
+        localName:
+          type: string
+        regionID:
+          type: string
+      type: object
+    ListCloudResourceRegionResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          items:
+            $ref: '#/components/schemas/ListCloudResourceRegion'
+          type: array
+      type: object
+    ListCloudResourceVPC:
+      properties:
+        cidrBlock:
+          type: string
+        regionID:
+          type: string
+        regionName:
+          type: string
+        status:
+          type: string
+        tags:
+          $ref: '#/components/schemas/emptyObject'
+        vendor:
+          type: string
+        vpcID:
+          type: string
+        vpcName:
+          type: string
+        vswNum:
+          type: integer
+      type: object
+    ListCloudResourceVPCData:
+      properties:
+        list:
+          items:
+            $ref: '#/components/schemas/ListCloudResourceVPC'
+          type: array
+        total:
+          type: integer
+      type: object
+    ListCloudResourceVPCResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/ListCloudResourceVPCData'
+      type: object
+    ListCloudResourceVSW:
+      properties:
+        cidrBlock:
+          type: string
+        region:
+          type: string
+        status:
+          type: string
+        tags:
+          $ref: '#/components/schemas/emptyObject'
+        vSwitchID:
+          type: string
+        vpcID:
+          type: string
+        vswName:
+          type: string
+        zoneID:
+          type: string
+        zoneName:
+          type: string
+      type: object
+    ListCloudResourceVSWData:
+      properties:
+        list:
+          items:
+            $ref: '#/components/schemas/ListCloudResourceVSW'
+          type: array
+        total:
+          type: integer
+      type: object
+    ListCloudResourceVSWResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/ListCloudResourceVSWData'
+      type: object
+    ListCloudResourceZone:
+      properties:
+        localName:
+          type: string
+        zoneID:
+          type: string
+      type: object
+    ListCloudResourceZoneResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          items:
+            $ref: '#/components/schemas/ListCloudResourceZone'
+          type: array
+      type: object
+    MonthAddTrend:
+      properties:
+        results:
+          items:
+            $ref: '#/components/schemas/MonthAddTrendData_0'
+          type: array
+        time:
+          items:
+            type: integer
+          type: array
+        title:
+          type: string
+        total:
+          type: integer
+      type: object
+    MonthAddTrendData:
+      properties:
+        axisIndex:
+          type: integer
+        chartType:
+          type: string
+        data:
+          items:
+            type: integer
+          type: array
+        name:
+          type: string
+        tag:
+          type: string
+        unit:
+          type: string
+        unitType:
+          type: string
+      type: object
+    MonthAddTrendData_0:
+      properties:
+        data:
+          items:
+            $ref: '#/components/schemas/'
+          type: array
+      type: object
+    MysqlAccountPrivilege:
+      properties:
+        accountPrivilege:
+          type: string
+        dbName:
+          type: string
+      type: object
+    MysqlDataBaseInfo:
+      properties:
+        CloudResourceMysqlAccount:
+          $ref: '#/components/schemas/CloudResourceMysqlAccount'
+        addonID:
+          type: string
+        characterSetName:
+          type: string
+        dbName:
+          type: string
+        description:
+          type: string
+      type: object
+    OfflineEdgeClusterData:
+      properties:
+        preCheckHint:
+          type: string
+        recordID:
+          type: integer
+      type: object
+    OfflineEdgeClusterResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/OfflineEdgeClusterData'
+      type: object
+    OnsTopic:
+      properties:
+        createTime:
+          type: string
+        messageType:
+          type: string
+        relation:
+          type: integer
+        relationName:
+          type: string
+        remark:
+          type: string
+        tags:
+          $ref: '#/components/schemas/emptyObject'
+        topicName:
+          type: string
+      type: object
+    OpsAddonStatusData:
+      properties:
+        status:
+          type: string
+      type: object
+    OpsAddonStatusResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/OpsAddonStatusData'
+      type: object
+    OrgClusterInfoBasicData:
+      properties:
+        clusterName:
+          type: string
+        clusterType:
+          type: string
+        createTime:
+          type: string
+        isCentralCluster:
+          type: boolean
+        orgDisplayName:
+          type: string
+        orgID:
+          type: integer
+        orgName:
+          type: string
+        version:
+          type: string
+      type: object
+    OrgClusterInfoData:
+      properties:
+        list:
+          items:
+            $ref: '#/components/schemas/OrgClusterInfoBasicData'
+          type: array
+        total:
+          type: integer
+      type: object
+    OrgClusterInfoResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/OrgClusterInfoData'
+      type: object
+    OrgRunningTasks:
+      properties:
+        applicationID:
+          type: integer
+        applicationName:
+          type: string
+        clusterName:
+          type: string
+        costTimeSec:
+          type: integer
+        createdAt:
+          format: date-time
+          type: string
+        env:
+          type: string
+        orgID:
+          type: integer
+        pipelineID:
+          type: integer
+        projectID:
+          type: integer
+        projectName:
+          type: string
+        queueTimeSec:
+          type: integer
+        releaseID:
+          type: string
+        runtimeID:
+          type: string
+        status:
+          type: string
+        taskID:
+          type: integer
+        taskName:
+          type: string
+        taskType:
+          type: string
+        userID:
+          type: string
+      type: object
+    OrgRunningTasksData:
+      properties:
+        tasks:
+          items:
+            $ref: '#/components/schemas/OrgRunningTasks'
+          type: array
+        total:
+          type: integer
+      type: object
+    OrgRunningTasksListResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/OrgRunningTasksData'
+      type: object
+    OssBucketInfo:
+      properties:
+        acl:
+          type: string
+        addonID:
+          type: string
+        name:
+          type: string
+      type: object
+    PrivateSlbInfo:
+      properties:
+        instanceID:
+          type: string
+        name:
+          type: string
+        port:
+          type: integer
+      type: object
+    RawResource:
+      properties:
+        actions:
+          $ref: '#/components/schemas/emptyObject'
+        id:
+          type: string
+        links:
+          $ref: '#/components/schemas/emptyObject'
+        type:
+          type: string
+      type: object
+    RmNodesData:
+      properties:
+        recordID:
+          type: integer
+      type: object
+    RmNodesResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/RmNodesData'
+      type: object
+    UpdateLabelsData:
+      properties:
+        RecordID:
+          type: integer
+      type: object
+    UpdateLabelsRequest:
+      properties:
+        clusterName:
+          type: string
+        hosts:
+          items:
+            type: string
+          type: array
+        labels:
+          items:
+            type: string
+          type: array
+        labelsWithValue:
+          $ref: '#/components/schemas/emptyObject'
+        orgID:
+          type: integer
+      type: object
+    UpdateLabelsResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/UpdateLabelsData'
+      type: object
+    UpgradeClusterInfo:
+      properties:
+        clusterName:
+          type: string
+        clusterType:
+          type: string
+        isCentralCluster:
+          type: boolean
+        orgID:
+          type: integer
+        version:
+          type: string
+      type: object
+    UpgradeEdgeClusterData:
+      properties:
+        precheckHint:
+          type: string
+        recordID:
+          type: integer
+        status:
+          type: integer
+      type: object
+    UpgradeEdgeClusterRequest:
+      properties:
+        clusterName:
+          type: string
+        orgID:
+          type: integer
+        precheck:
+          type: boolean
+      type: object
+    UpgradeEdgeClusterResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/UpgradeEdgeClusterData'
+      type: object
+    emptyObject:
+      type: object
+  
+tags:
+  - name: default
+  

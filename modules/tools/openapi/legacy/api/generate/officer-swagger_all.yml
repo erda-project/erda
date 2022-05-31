@@ -1,0 +1,35 @@
+openapi: 3.0.0
+
+info:
+  title: officer
+  version: default
+  
+paths:
+  /api/resource/aliyun/price:
+    post:
+      description: 'summary: 获取阿里云指定资源价格'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取阿里云指定资源价格'
+      tags:
+      - default
+  
+components:
+  schemas:
+    emptyObject:
+      type: object
+  
+tags:
+  - name: default
+  

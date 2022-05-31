@@ -1,0 +1,729 @@
+openapi: 3.0.0
+
+info:
+  title: hepa
+  version: default
+  
+paths:
+  /api/domains:
+    get:
+      description: 获取域名列表
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 获取域名列表
+      tags:
+      - default
+  /api/gateway/api:
+    get:
+      description: |2
+  
+        summary: 获取api列表
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取api列表'
+      tags:
+      - default
+    post:
+      description: |2
+  
+        summary: 创建api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 创建api'
+      tags:
+      - default
+  /api/gateway/api/{apiId}:
+    delete:
+      description: |2
+  
+        summary: 删除api
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 删除api'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: apiId
+      required: true
+      schema:
+        type: string
+    patch:
+      description: |2
+  
+        summary: 修改api配置
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 修改api配置'
+      tags:
+      - default
+  /api/gateway/check-compatibility:
+    post:
+      description: |2
+  
+        summary: 判断API兼容性
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 判断API兼容性'
+      tags:
+      - default
+  /api/gateway/consumer:
+    get:
+      description: |2
+  
+        summary: 获取授权调用者API授权详情
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取授权调用者API授权详情'
+      tags:
+      - default
+    patch:
+      description: |2
+  
+        summary: 修改调用者可调用的api授权
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 修改调用者可调用的api授权'
+      tags:
+      - default
+    post:
+      description: |2
+  
+        summary: 创建授权调用者
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 创建授权调用者'
+      tags:
+      - default
+  /api/gateway/consumer-api:
+    patch:
+      description: |2
+  
+        summary: 修改调度者各个api的限制策略
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 修改调度者各个api的限制策略'
+      tags:
+      - default
+  /api/gateway/consumer-list:
+    get:
+      description: |2
+  
+        summary: 获取调用者对api的授权信息列表
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取调用者对api的授权信息列表'
+      tags:
+      - default
+  /api/gateway/consumer/{consumerId}:
+    delete:
+      description: |2
+  
+        summary: 删除授权调用者
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 删除授权调用者'
+      tags:
+      - default
+    get:
+      description: |2
+  
+        summary: 获取授权调用者详情
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取授权调用者详情'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: consumerId
+      required: true
+      schema:
+        type: string
+    patch:
+      description: |2
+  
+        summary: 更新授权调用者详情
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 更新授权调用者详情'
+      tags:
+      - default
+  /api/gateway/domain:
+    get:
+      description: |2
+  
+        summary: 获取绑定域名信息
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取绑定域名信息'
+      tags:
+      - default
+    put:
+      description: |2
+  
+        summary: 更新绑定域名信息
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 更新绑定域名信息'
+      tags:
+      - default
+  /api/gateway/openapi/{*}:
+    delete:
+      description: |2
+  
+        summary: 删除openapi
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 删除openapi'
+      tags:
+      - default
+    get:
+      description: |2
+  
+        summary: 获取openapi
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取openapi'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: '*'
+      required: true
+      schema:
+        type: string
+    patch:
+      description: |2
+  
+        summary: 更新openapi
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 更新openapi'
+      tags:
+      - default
+    post:
+      description: |2
+  
+        summary: 创建openapi
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 创建openapi'
+      tags:
+      - default
+  /api/gateway/policies/{category}:
+    get:
+      description: |2
+  
+        summary: 获取api调用限制策略详情
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取api调用限制策略详情'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: category
+      required: true
+      schema:
+        type: string
+    post:
+      description: |2
+  
+        summary: 创建限制api调用策略
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 创建限制api调用策略'
+      tags:
+      - default
+    put:
+      description: |2
+  
+        summary: 创建或更新策略
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 创建或更新策略'
+      tags:
+      - default
+  /api/gateway/policies/{category}/{policyId}:
+    delete:
+      description: |2
+  
+        summary: 删除api调用限制策略
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 删除api调用限制策略'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: category
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: policyId
+      required: true
+      schema:
+        type: string
+    patch:
+      description: |2
+  
+        summary: 修改api调用限制策略详情
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 修改api调用限制策略详情'
+      tags:
+      - default
+  /api/gateway/publications/{apiPublishId}/authn:
+    get:
+      description: |2
+  
+        summary: 获取认证信息
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取认证信息'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: apiPublishId
+      required: true
+      schema:
+        type: string
+  /api/gateway/publications/{apiPublishId}/subscribe:
+    parameters:
+    - in: path
+      name: apiPublishId
+      required: true
+      schema:
+        type: string
+    post:
+      description: |2
+  
+        summary: 订阅API
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 订阅API'
+      tags:
+      - default
+  /api/gateway/publications/{apiPublishId}/swagger:
+    get:
+      description: |2
+  
+        summary: 下载swagger
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 下载swagger'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: apiPublishId
+      required: true
+      schema:
+        type: string
+  /api/gateway/register-apps:
+    get:
+      description: |2
+  
+        summary: 查看已注册的应用服务信息
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 查看已注册的应用服务信息'
+      tags:
+      - default
+  /api/gateway/registrations:
+    post:
+      description: |2
+  
+        summary: 注册API
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 注册API'
+      tags:
+      - default
+  /api/gateway/registrations/{apiRegisterId}/publish:
+    parameters:
+    - in: path
+      name: apiRegisterId
+      required: true
+      schema:
+        type: string
+    post:
+      description: |2
+  
+        summary: 发布API
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 发布API'
+      tags:
+      - default
+  /api/gateway/registrations/{apiRegisterId}/status:
+    get:
+      description: |2
+  
+        summary: API注册状态查询
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: API注册状态查询'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: apiRegisterId
+      required: true
+      schema:
+        type: string
+  /api/gateway/ui-type:
+    get:
+      description: |2
+  
+        summary: 获取当前的UI类型
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取当前的UI类型'
+      tags:
+      - default
+  /api/runtimes/{runtimeId}/k8s-domains:
+    get:
+      description: 获取 Runtime 域名
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DomainListResponse'
+          description: write description here
+      summary: 获取 Runtime 域名
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: runtimeId
+      required: true
+      schema:
+        type: string
+  /api/runtimes/{runtimeId}/services/{serviceName}/domains:
+    parameters:
+    - in: path
+      name: runtimeId
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: serviceName
+      required: true
+      schema:
+        type: string
+    put:
+      description: 更新 Runtime 内指定service的域名
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 更新 Runtime 内指定service的域名
+      tags:
+      - default
+  
+components:
+  schemas:
+    DomainListResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    ErrorResponse:
+      properties:
+        code:
+          type: string
+        ctx:
+          $ref: '#/components/schemas/emptyObject'
+        msg:
+          type: string
+      type: object
+    Header:
+      properties:
+        err:
+          $ref: '#/components/schemas/ErrorResponse'
+        success:
+          type: boolean
+      type: object
+    emptyObject:
+      type: object
+  
+tags:
+  - name: default
+  

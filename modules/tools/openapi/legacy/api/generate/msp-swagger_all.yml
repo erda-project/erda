@@ -1,0 +1,1336 @@
+openapi: 3.0.0
+
+info:
+  title: msp
+  version: default
+  
+paths:
+  /api/log-analytics/{addon}/aggregation:
+    get:
+      description: 'summary: 日志聚合接口'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 日志聚合接口'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: addon
+      required: true
+      schema:
+        type: string
+  /api/log-analytics/{addon}/download:
+    get:
+      description: 'summary: 日志下载接口'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 日志下载接口'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: addon
+      required: true
+      schema:
+        type: string
+  /api/log-analytics/{addon}/fields:
+    get:
+      description: 'summary: 日志字段列表'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 日志字段列表'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: addon
+      required: true
+      schema:
+        type: string
+  /api/log-analytics/{addon}/search:
+    get:
+      description: 'summary: 日志搜索接口'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 日志搜索接口'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: addon
+      required: true
+      schema:
+        type: string
+  /api/log-analytics/{addon}/sequentialSearch:
+    get:
+      description: 'summary: 日志连续搜索接口'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 日志连续搜索接口'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: addon
+      required: true
+      schema:
+        type: string
+  /api/log-analytics/{addon}/statistic:
+    get:
+      description: 'summary: 日志统计接口'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 日志统计接口'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: addon
+      required: true
+      schema:
+        type: string
+  /api/micro-service/logs/rules:
+    get:
+      description: 'summary: 获取日志清洗规则列表'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取日志清洗规则列表'
+      tags:
+      - default
+    post:
+      description: 'summary: 创建日志规则'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 创建日志规则'
+      tags:
+      - default
+  /api/micro-service/logs/rules/{id}:
+    delete:
+      description: 'summary: 删除日志规则'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 删除日志规则'
+      tags:
+      - default
+    get:
+      description: 'summary: 获取日志规则详情'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取日志规则详情'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: id
+      required: true
+      schema:
+        type: string
+    put:
+      description: 'summary: 更新日志规则'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 更新日志规则'
+      tags:
+      - default
+  /api/micro-service/logs/rules/{id}/state:
+    parameters:
+    - in: path
+      name: id
+      required: true
+      schema:
+        type: string
+    put:
+      description: 'summary: 启动日志规则'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 启动日志规则'
+      tags:
+      - default
+  /api/micro-service/logs/rules/templates:
+    get:
+      description: 'summary: 获取日志规则模版'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取日志规则模版'
+      tags:
+      - default
+  /api/micro-service/logs/rules/templates/{name}:
+    get:
+      description: 'summary: 获取日志规则模版详情'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取日志规则模版详情'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: name
+      required: true
+      schema:
+        type: string
+  /api/micro-service/logs/rules/test:
+    post:
+      description: 'summary: 测试日志规则'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 测试日志规则'
+      tags:
+      - default
+  /api/monitor/instances/{terminusKey}:
+    get:
+      description: 'summary: 根据TerminusKey获取monitor实例'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 根据TerminusKey获取monitor实例'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: terminusKey
+      required: true
+      schema:
+        type: string
+  /api/msp/apm/exceptions:
+    get:
+      description: Query exception list
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: Query exception list
+      tags:
+      - default
+  /api/msp/apm/exceptions/event-ids:
+    get:
+      description: Query exception event ids
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: Query exception event ids
+      tags:
+      - default
+  /api/msp/apm/exceptions/events:
+    get:
+      description: Query exception event info
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: Query exception event info
+      tags:
+      - default
+  /api/msp/apm/trace/conditions:
+    get:
+      description: Query apm traces Conditions.
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: Query apm traces Conditions.
+      tags:
+      - default
+  /api/msp/apm/traces:
+    get:
+      description: Query apm traces.
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: Query apm traces.
+      tags:
+      - default
+  /api/msp/apm/traces/{traceID}/spans:
+    get:
+      description: Query spans by traceID.
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: Query spans by traceID.
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: traceID
+      required: true
+      schema:
+        type: string
+  /api/msp/metrics/tenant/project/overview:
+    post:
+      description: GET MSP project overview for dashboard
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: GET MSP project overview for dashboard
+      tags:
+      - default
+  /api/msp/tenant:
+    get:
+      description: GET MSP tenant
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: GET MSP tenant
+      tags:
+      - default
+    post:
+      description: Create MSP tenant
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: Create MSP tenant
+      tags:
+      - default
+  /api/msp/tenant/project:
+    delete:
+      description: DELETE MSP project
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: DELETE MSP project
+      tags:
+      - default
+    get:
+      description: GET MSP project
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: GET MSP project
+      tags:
+      - default
+    post:
+      description: Create MSP project
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: Create MSP project
+      tags:
+      - default
+    put:
+      description: Update MSP projects
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: Update MSP projects
+      tags:
+      - default
+  /api/msp/tenant/project/overview:
+    get:
+      description: GET MSP project overview for dashboard
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: GET MSP project overview for dashboard
+      tags:
+      - default
+  /api/msp/tenant/projects:
+    get:
+      description: GET MSP projects
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: GET MSP projects
+      tags:
+      - default
+  /api/tmc/dashboard/blocks:
+    get:
+      description: 'summary: 获取自定义大盘列表'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取自定义大盘列表'
+      tags:
+      - default
+    post:
+      description: 'summary: 创建自定义大盘'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 创建自定义大盘'
+      tags:
+      - default
+  /api/tmc/dashboard/blocks/{id}:
+    delete:
+      description: 'summary: 删除自定义大盘'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 删除自定义大盘'
+      tags:
+      - default
+    get:
+      description: 'summary: 获取自定义大盘详情'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取自定义大盘详情'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: id
+      required: true
+      schema:
+        type: string
+    put:
+      description: 'summary: 更新自定义大盘'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 更新自定义大盘'
+      tags:
+      - default
+  /api/tmc/metric/groups:
+    get:
+      description: 'summary: 获取指标分组列表'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取指标分组列表'
+      tags:
+      - default
+  /api/tmc/metric/groups/{id}:
+    get:
+      description: 'summary: 获取指标分组详情'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取指标分组详情'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: id
+      required: true
+      schema:
+        type: string
+  /api/tmc/metrics-query:
+    get:
+      description: 'summary: 查询指标数据'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 查询指标数据'
+      tags:
+      - default
+    post:
+      description: 'summary: 查询指标数据'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 查询指标数据'
+      tags:
+      - default
+  /api/tmc/metrics/{scope}:
+    get:
+      description: 'summary: 查询指标数据'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 查询指标数据'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: scope
+      required: true
+      schema:
+        type: string
+    post:
+      description: 'summary: 查询指标数据'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 查询指标数据'
+      tags:
+      - default
+  /api/tmc/metrics/{scope}/{aggregate}:
+    get:
+      description: 'summary: 查询指标数据'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 查询指标数据'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: scope
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: aggregate
+      required: true
+      schema:
+        type: string
+    post:
+      description: 'summary: 查询指标数据'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 查询指标数据'
+      tags:
+      - default
+  /api/tmc/micro-service/tenantGroup/{tenantGroup}/alerts:
+    get:
+      description: 'summary: 获取微服务告警列表'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取微服务告警列表'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: tenantGroup
+      required: true
+      schema:
+        type: string
+    post:
+      description: 'summary: 创建微服务告警'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 创建微服务告警'
+      tags:
+      - default
+  /api/tmc/micro-service/tenantGroup/{tenantGroup}/alerts-rules:
+    get:
+      description: 'summary: 获取微服务告警规则列表'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取微服务告警规则列表'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: tenantGroup
+      required: true
+      schema:
+        type: string
+  /api/tmc/micro-service/tenantGroup/{tenantGroup}/alerts/{id}:
+    delete:
+      description: 'summary: 删除微服务告警'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 删除微服务告警'
+      tags:
+      - default
+    get:
+      description: 'summary: 获取微服务告警详情'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取微服务告警详情'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: tenantGroup
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: id
+      required: true
+      schema:
+        type: string
+    put:
+      description: 'summary: 修改微服务告警'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 修改微服务告警'
+      tags:
+      - default
+  /api/tmc/micro-service/tenantGroup/{tenantGroup}/alerts/{id}/switch:
+    parameters:
+    - in: path
+      name: tenantGroup
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: id
+      required: true
+      schema:
+        type: string
+    put:
+      description: 'summary: 切换微服务告警开关'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 切换微服务告警开关'
+      tags:
+      - default
+  /api/tmc/micro-service/tenantGroup/{tenantGroup}/customize/alerts:
+    get:
+      description: 'summary: 获取微服务自定义告警列表'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取微服务自定义告警列表'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: tenantGroup
+      required: true
+      schema:
+        type: string
+    post:
+      description: 'summary: 创建微服务自定义告警'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 创建微服务自定义告警'
+      tags:
+      - default
+  /api/tmc/micro-service/tenantGroup/{tenantGroup}/customize/alerts/{id}:
+    delete:
+      description: 'summary: 删除微服务自定义告警'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 删除微服务自定义告警'
+      tags:
+      - default
+    get:
+      description: 'summary: 获取微服务自定义告警详情'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取微服务自定义告警详情'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: tenantGroup
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: id
+      required: true
+      schema:
+        type: string
+    put:
+      description: 'summary: 修改微服务自定义告警'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 修改微服务自定义告警'
+      tags:
+      - default
+  /api/tmc/micro-service/tenantGroup/{tenantGroup}/customize/alerts/{id}/switch:
+    parameters:
+    - in: path
+      name: tenantGroup
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: id
+      required: true
+      schema:
+        type: string
+    put:
+      description: 'summary: 切换微服务自定义告警开关'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 切换微服务自定义告警开关'
+      tags:
+      - default
+  /api/tmc/micro-service/tenantGroup/{tenantGroup}/customize/alerts/dash-preview/query:
+    parameters:
+    - in: path
+      name: tenantGroup
+      required: true
+      schema:
+        type: string
+    post:
+      description: 'summary: 微服务自定义告警预览大盘生成'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 微服务自定义告警预览大盘生成'
+      tags:
+      - default
+  /api/tmc/micro-service/tenantGroup/{tenantGroup}/customize/alerts/metrics:
+    get:
+      description: 'summary: 获取企业自定义告警指标'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取企业自定义告警指标'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: tenantGroup
+      required: true
+      schema:
+        type: string
+  /api/tmc/micro-service/tenantGroup/{tenantGroup}/customize/alerts/notifies/targets:
+    get:
+      description: 'summary: 获取企业自定义告警通知方式'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取企业自定义告警通知方式'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: tenantGroup
+      required: true
+      schema:
+        type: string
+  /api/tmc/monitor/runtime/{runtimeId}:
+    get:
+      description: 'summary: 获取Runtime信息'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取Runtime信息'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: runtimeId
+      required: true
+      schema:
+        type: string
+  /api/tmc/tenantGroup/{tenantGroup}/alert-record-attrs:
+    get:
+      description: 'summary: 获取微服务告警记录属性'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取微服务告警记录属性'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: tenantGroup
+      required: true
+      schema:
+        type: string
+  /api/tmc/tenantGroup/{tenantGroup}/alert-records:
+    get:
+      description: 'summary: 获取微服务告警记录列表'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取微服务告警记录列表'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: tenantGroup
+      required: true
+      schema:
+        type: string
+  /api/tmc/tenantGroup/{tenantGroup}/alert-records/{groupId}:
+    get:
+      description: 'summary: 获取微服务告警记录'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取微服务告警记录'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: tenantGroup
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: groupId
+      required: true
+      schema:
+        type: string
+  /api/tmc/tenantGroup/{tenantGroup}/alert-records/{groupId}/histories:
+    get:
+      description: 'summary: 获取微服务告警记录历史'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取微服务告警记录历史'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: tenantGroup
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: groupId
+      required: true
+      schema:
+        type: string
+  /api/tmc/tenantGroup/{tenantGroup}/alert-records/{groupId}/issues:
+    parameters:
+    - in: path
+      name: tenantGroup
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: groupId
+      required: true
+      schema:
+        type: string
+    post:
+      description: 'summary: 创建微服务告警记录工单'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 创建微服务告警记录工单'
+      tags:
+      - default
+  /api/tmc/tenantGroup/{tenantGroup}/alert-records/{groupId}/issues/{issueId}:
+    parameters:
+    - in: path
+      name: tenantGroup
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: groupId
+      required: true
+      schema:
+        type: string
+    - in: path
+      name: issueId
+      required: true
+      schema:
+        type: string
+    put:
+      description: 'summary: 修改微服务告警记录工单'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 修改微服务告警记录工单'
+      tags:
+      - default
+  /api/trace-requests:
+    get:
+      description: Query trace debug histories.
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: Query trace debug histories.
+      tags:
+      - default
+    post:
+      description: send trace debug request
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: send trace debug request
+      tags:
+      - default
+  /api/trace-requests/{requestId}:
+    get:
+      description: Query trace debug info.
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: Query trace debug info.
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: requestId
+      required: true
+      schema:
+        type: string
+  /api/trace-requests/{requestId}/actions/cancel:
+    parameters:
+    - in: path
+      name: requestId
+      required: true
+      schema:
+        type: string
+    put:
+      description: stop trace debug request.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: stop trace debug request.
+      tags:
+      - default
+  /api/trace-requests/{requestId}/status:
+    get:
+      description: Query trace debug history status.
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: Query trace debug history status.
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: requestId
+      required: true
+      schema:
+        type: string
+  
+components:
+  schemas:
+    emptyObject:
+      type: object
+  
+tags:
+  - name: default
+  

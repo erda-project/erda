@@ -1,0 +1,61 @@
+openapi: 3.0.0
+
+info:
+  title: ops
+  version: default
+  
+paths:
+  /api/script/{name}:
+    get:
+      description: 'summary: 同步脚本'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 同步脚本'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: name
+      required: true
+      schema:
+        type: string
+  /api/script/info:
+    get:
+      description: 'summary: 获取最新的脚本信息'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScriptInfo'
+          description: write description here
+      summary: 'summary: 获取最新的脚本信息'
+      tags:
+      - default
+  
+components:
+  schemas:
+    ScriptInfo:
+      properties:
+        blackList:
+          items:
+            type: string
+          type: array
+        md5:
+          type: string
+        name:
+          type: string
+        size:
+          type: integer
+      type: object
+    emptyObject:
+      type: object
+  
+tags:
+  - name: default
+  

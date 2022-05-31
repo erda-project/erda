@@ -1,0 +1,2589 @@
+openapi: 3.0.0
+
+info:
+  title: orchestrator
+  version: default
+  
+paths:
+  /api/addon/action/yml-export:
+    post:
+      description: 'summary: 导出addon yml'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 导出addon yml'
+      tags:
+      - default
+  /api/addon/action/yml-import:
+    post:
+      description: 'summary: 导入addon yml'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 导入addon yml'
+      tags:
+      - default
+  /api/addon/metrics/charts/{scope}/histogram:
+    get:
+      description: 'summary: 查询监控数据曲线图数据'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 查询监控数据曲线图数据'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: scope
+      required: true
+      schema:
+        type: string
+  /api/addons:
+    get:
+      description: 'summary: addon 列表'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddonListResponse'
+          description: write description here
+      summary: 'summary: addon 列表'
+      tags:
+      - default
+    post:
+      description: 'summary: batch scale addons'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: batch scale addons'
+      tags:
+      - default
+  /api/addons/{addonID}/actions/references:
+    get:
+      description: 'summary: 获取 addon 引用列表'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddonReferencesResponse'
+          description: write description here
+      summary: 'summary: 获取 addon 引用列表'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: addonID
+      required: true
+      schema:
+        type: string
+  /api/addons/{addonId}:
+    delete:
+      description: 'summary: 删除 addon'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddonFetchResponse'
+          description: write description here
+      summary: 'summary: 删除 addon'
+      tags:
+      - default
+    get:
+      description: 'summary: 获取 addon 详情'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddonFetchResponse'
+          description: write description here
+      summary: 'summary: 获取 addon 详情'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: addonId
+      required: true
+      schema:
+        type: string
+  /api/addons/{addonId}/actions/update-custom:
+    parameters:
+    - in: path
+      name: addonId
+      required: true
+      schema:
+        type: string
+    put:
+      description: 'summary: 更新自定义 addon'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomAddonUpdateRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 更新自定义 addon'
+      tags:
+      - default
+  /api/addons/{instanceId}/logs:
+    get:
+      description: 'summary: addon 日志'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: addon 日志'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: instanceId
+      required: true
+      schema:
+        type: string
+  /api/addons/actions/create-addon:
+    post:
+      description: 'summary: 创建 addon'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddonDirectCreateRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 创建 addon'
+      tags:
+      - default
+  /api/addons/actions/create-custom:
+    post:
+      description: 'summary: 创建自定义 addon'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomAddonCreateRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 创建自定义 addon'
+      tags:
+      - default
+  /api/addons/actions/create-tenant:
+    post:
+      description: 'summary: 创建 addon tenant'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddonTenantCreateRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 创建 addon tenant'
+      tags:
+      - default
+  /api/addons/actions/list-available:
+    get:
+      description: 'summary: 获取可选 adon 列表(diceyml编辑时)'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddonAvailableResponse'
+          description: write description here
+      summary: 'summary: 获取可选 adon 列表(diceyml编辑时)'
+      tags:
+      - default
+  /api/addons/actions/list-customs:
+    get:
+      description: 'summary: 获取第三方addon信息'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取第三方addon信息'
+      tags:
+      - default
+  /api/addons/actions/list-extension:
+    get:
+      description: 'summary: 获取可选 extension 列表(diceyml编辑时)'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddonExtensionResponse'
+          description: write description here
+      summary: 'summary: 获取可选 extension 列表(diceyml编辑时)'
+      tags:
+      - default
+  /api/addons/actions/menu:
+    get:
+      description: 'summary: 获取 addon 分类菜单'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取 addon 分类菜单'
+      tags:
+      - default
+  /api/cmdb/clusters/{cluster}/instances-usage:
+    get:
+      description: |2
+  
+        summary: 获取某类实例集合的资源使用情况
+        parameters:
+          - in: path
+            name: cluster
+            type: string
+            required: true
+            description: 集群名或者ID
+          - in: query
+            name: type
+            type: string
+            required: true
+            enum: [cluster, host, project, application, runtime, service, component, addon]
+            description: 指定请求实例的类型
+            example: project
+          - in: query
+            name: host
+            type: string
+            description: type 等于 host时，若输入 host，则获取指定 host 信息；如果没有输入，则获取整个集群所有的 hosts 信息
+          - in: query
+            name: project
+            type: string
+            description: type 等于 project时，若输入 project，则获取指定 project 实例信息；如果没有输入，则获取整个集群所有的 projects 实例信息
+          - in: query
+            name: application
+            type: string
+            description: type 等于 application时，若输入 application，则获取指定 application 实例信息；如果没有输入，则获取整个集群所有的 applications 实例信息
+          - in: query
+            name: runtime
+            type: string
+            description: type 等于 runtime时，若输入 runtime，则获取指定 runtime 实例信息；如果没有输入，则获取整个集群所有的 runtimes 实例信息
+          - in: query
+            name: service
+            type: string
+            description: type 等于 service时，输入 runtime 必要参数。若输入 service，则获取指定 service 实例信息;如果没有输入，则获取指定runtime下所有的 services 实例信息
+          - in: query
+            name: component
+            type: string
+            description: type 等于 component时。若输入 component，则获取指定 component 实例信息;如果没有输入，则获取指定集群所有的 component 实例信息
+          - in: query
+            name: addon
+            type: string
+            description: type 等于 addon时。若输入 addon，则获取指定 addon 实例信息;如果没有输入，则获取指定集群所有的 addon 实例信息
+        produces:
+          - application/json
+  
+        responses:
+          '200':
+            description: OK
+            schema:
+              type: string
+              example: 参考 https://yuque.antfin-inc.com/terminus_paas_dev/paas/gosn9b#va3psl
+        components:
+          schemas:
+            ComponentUsage:
+              type: object
+              properties:
+                name:
+                    type: string
+                    description: 组件名
+                instance:
+                    type: integer
+                    description: 实例数
+                memory:
+                    type: number
+                    format: double
+                    description: 分配的内存（MB）
+                cpu:
+                    type: number
+                    format: double
+                    description: 分配的cpu数
+                disk:
+                    type: number
+                    format: double
+                    description: 分配的磁盘空间（MB）
+            AddonUsage:
+              type: object
+              properties:
+                name:
+                    type: string
+                    description: 组件名
+                instance:
+                    type: integer
+                    description: 实例数
+                memory:
+                    type: number
+                    format: double
+                    description: 分配的内存（MB）
+                cpu:
+                    type: number
+                    format: double
+                    description: 分配的cpu数
+                disk:
+                    type: number
+                    format: double
+                    description: 分配的磁盘空间（MB）
+            ProjectUsage:
+              type: object
+              properties:
+                id:
+                    type: string
+                    description: 项目ID
+                name:
+                    type: string
+                    description: 项目名
+                instance:
+                    type: integer
+                    description: 实例数
+                memory:
+                    type: number
+                    format: double
+                    description: 分配的内存（MB）
+                cpu:
+                    type: number
+                    format: double
+                    description: 分配的cpu数
+                disk:
+                    type: number
+                    format: double
+                    description: 分配的磁盘空间（MB）
+            ApplicationUsage:
+              type: object
+              properties:
+                id:
+                    type: string
+                    description: 应用ID
+                name:
+                    type: string
+                    description: 应用名
+                instance:
+                    type: integer
+                    description: 实例数
+                memory:
+                    type: number
+                    format: double
+                    description: 分配的内存（MB）
+                cpu:
+                    type: number
+                    format: double
+                    description: 分配的cpu数
+                disk:
+                    type: number
+                    format: double
+                    description: 分配的磁盘空间（MB）
+            RuntimeUsage:
+              type: object
+              properties:
+                id:
+                    type: string
+                    description: runtime ID
+                name:
+                    type: string
+                    description: runtime名
+                application:
+                    type: string
+                    description: 应用名
+                instance:
+                    type: integer
+                    description: 实例数
+                memory:
+                    type: number
+                    format: double
+                    description: 分配的内存（MB）
+                cpu:
+                    type: number
+                    format: double
+                    description: 分配的cpu数
+                disk:
+                    type: number
+                    format: double
+                    description: 分配的磁盘空间（MB）
+            ServiceUsage:
+              type: object
+              properties:
+                name:
+                    type: string
+                    description: service名
+                runtime:
+                    type: string
+                    description: runtime名
+                instance:
+                    type: integer
+                    description: 实例数
+                memory:
+                    type: number
+                    format: double
+                    description: 分配的内存（MB）
+                cpu:
+                    type: number
+                    format: double
+                    description: 分配的cpu数
+                disk:
+                    type: number
+                    format: double
+                    description: 分配的磁盘空间（MB）
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取某类实例集合的资源使用情况'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: cluster
+      required: true
+      schema:
+        type: string
+  /api/countProjectRuntime:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      tags:
+      - default
+  /api/deployment-orders:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      tags:
+      - default
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      tags:
+      - default
+  /api/deployment-orders/{deploymentOrderID}:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: deploymentOrderID
+      required: true
+      schema:
+        type: string
+  /api/deployment-orders/{deploymentOrderID}/actions/cancel:
+    parameters:
+    - in: path
+      name: deploymentOrderID
+      required: true
+      schema:
+        type: string
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      tags:
+      - default
+  /api/deployment-orders/{deploymentOrderID}/actions/deploy:
+    parameters:
+    - in: path
+      name: deploymentOrderID
+      required: true
+      schema:
+        type: string
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      tags:
+      - default
+  /api/deployment-orders/actions/render-detail:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      tags:
+      - default
+  /api/deployments:
+    get:
+      description: 查询部署列表
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeploymentListResponse'
+          description: write description here
+      summary: 查询部署列表
+      tags:
+      - default
+  /api/deployments/{deploymentID}/actions/deploy-addons:
+    parameters:
+    - in: path
+      name: deploymentID
+      required: true
+      schema:
+        type: string
+    post:
+      description: 部署 addon 步骤
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 部署 addon 步骤
+      tags:
+      - default
+  /api/deployments/{deploymentID}/actions/deploy-domains:
+    parameters:
+    - in: path
+      name: deploymentID
+      required: true
+      schema:
+        type: string
+    post:
+      description: 部署 domains 步骤
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 部署 domains 步骤
+      tags:
+      - default
+  /api/deployments/{deploymentID}/actions/deploy-services:
+    parameters:
+    - in: path
+      name: deploymentID
+      required: true
+      schema:
+        type: string
+    post:
+      description: 部署 service 步骤
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 部署 service 步骤
+      tags:
+      - default
+  /api/deployments/{deploymentId}/actions/cancel:
+    parameters:
+    - in: path
+      name: deploymentId
+      required: true
+      schema:
+        type: string
+    post:
+      description: 取消部署
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeploymentCancelRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeploymentCancelResponse'
+          description: write description here
+      summary: 取消部署
+      tags:
+      - default
+  /api/deployments/{deploymentId}/status:
+    get:
+      description: |2
+  
+        summary: 查询部署状态
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 查询部署状态'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: deploymentId
+      required: true
+      schema:
+        type: string
+  /api/deployments/actions/approve:
+    post:
+      description: 审批部署
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeploymentApproveRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeploymentApproveResponse'
+          description: write description here
+      summary: 审批部署
+      tags:
+      - default
+  /api/deployments/actions/list-approved:
+    get:
+      description: 查询已审批列表
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeploymentDetailListResponse'
+          description: write description here
+      summary: 查询已审批列表
+      tags:
+      - default
+  /api/deployments/actions/list-launched-approval:
+    get:
+      description: 查询'user-id'发起的部署审批列表
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeploymentDetailListResponse'
+          description: write description here
+      summary: 查询'user-id'发起的部署审批列表
+      tags:
+      - default
+  /api/deployments/actions/list-pending-approval:
+    get:
+      description: 查询待审批列表
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeploymentDetailListResponse'
+          description: write description here
+      summary: 查询待审批列表
+      tags:
+      - default
+  /api/instances-usage:
+    get:
+      description: |2
+  
+        summary: 获取某类实例集合的资源使用情况
+        parameters:
+          - in: path
+            name: cluster
+            type: string
+            required: true
+            description: 集群名或者ID
+          - in: query
+            name: type
+            type: string
+            required: true
+            enum: [cluster, host, project, application, runtime, service, component, addon]
+            description: 指定请求实例的类型
+            example: project
+          - in: query
+            name: host
+            type: string
+            description: type 等于 host时，若输入 host，则获取指定 host 信息；如果没有输入，则获取整个集群所有的 hosts 信息
+          - in: query
+            name: project
+            type: string
+            description: type 等于 project时，若输入 project，则获取指定 project 实例信息；如果没有输入，则获取整个集群所有的 projects 实例信息
+          - in: query
+            name: application
+            type: string
+            description: type 等于 application时，若输入 application，则获取指定 application 实例信息；如果没有输入，则获取整个集群所有的 applications 实例信息
+          - in: query
+            name: runtime
+            type: string
+            description: type 等于 runtime时，若输入 runtime，则获取指定 runtime 实例信息；如果没有输入，则获取整个集群所有的 runtimes 实例信息
+          - in: query
+            name: service
+            type: string
+            description: type 等于 service时，输入 runtime 必要参数。若输入 service，则获取指定 service 实例信息;如果没有输入，则获取指定runtime下所有的 services 实例信息
+          - in: query
+            name: component
+            type: string
+            description: type 等于 component时。若输入 component，则获取指定 component 实例信息;如果没有输入，则获取指定集群所有的 component 实例信息
+          - in: query
+            name: addon
+            type: string
+            description: type 等于 addon时。若输入 addon，则获取指定 addon 实例信息;如果没有输入，则获取指定集群所有的 addon 实例信息
+        produces:
+          - application/json
+  
+        responses:
+          '200':
+            description: OK
+            schema:
+              type: string
+              example: 参考 https://yuque.antfin-inc.com/terminus_paas_dev/paas/gosn9b#va3psl
+        components:
+          schemas:
+            ComponentUsage:
+              type: object
+              properties:
+                name:
+                    type: string
+                    description: 组件名
+                instance:
+                    type: integer
+                    description: 实例数
+                memory:
+                    type: number
+                    format: double
+                    description: 分配的内存（MB）
+                cpu:
+                    type: number
+                    format: double
+                    description: 分配的cpu数
+                disk:
+                    type: number
+                    format: double
+                    description: 分配的磁盘空间（MB）
+            AddonUsage:
+              type: object
+              properties:
+                name:
+                    type: string
+                    description: 组件名
+                instance:
+                    type: integer
+                    description: 实例数
+                memory:
+                    type: number
+                    format: double
+                    description: 分配的内存（MB）
+                cpu:
+                    type: number
+                    format: double
+                    description: 分配的cpu数
+                disk:
+                    type: number
+                    format: double
+                    description: 分配的磁盘空间（MB）
+            ProjectUsage:
+              type: object
+              properties:
+                id:
+                    type: string
+                    description: 项目ID
+                name:
+                    type: string
+                    description: 项目名
+                instance:
+                    type: integer
+                    description: 实例数
+                memory:
+                    type: number
+                    format: double
+                    description: 分配的内存（MB）
+                cpu:
+                    type: number
+                    format: double
+                    description: 分配的cpu数
+                disk:
+                    type: number
+                    format: double
+                    description: 分配的磁盘空间（MB）
+            ApplicationUsage:
+              type: object
+              properties:
+                id:
+                    type: string
+                    description: 应用ID
+                name:
+                    type: string
+                    description: 应用名
+                instance:
+                    type: integer
+                    description: 实例数
+                memory:
+                    type: number
+                    format: double
+                    description: 分配的内存（MB）
+                cpu:
+                    type: number
+                    format: double
+                    description: 分配的cpu数
+                disk:
+                    type: number
+                    format: double
+                    description: 分配的磁盘空间（MB）
+            RuntimeUsage:
+              type: object
+              properties:
+                id:
+                    type: string
+                    description: runtime ID
+                name:
+                    type: string
+                    description: runtime名
+                application:
+                    type: string
+                    description: 应用名
+                instance:
+                    type: integer
+                    description: 实例数
+                memory:
+                    type: number
+                    format: double
+                    description: 分配的内存（MB）
+                cpu:
+                    type: number
+                    format: double
+                    description: 分配的cpu数
+                disk:
+                    type: number
+                    format: double
+                    description: 分配的磁盘空间（MB）
+            ServiceUsage:
+              type: object
+              properties:
+                name:
+                    type: string
+                    description: service名
+                runtime:
+                    type: string
+                    description: runtime名
+                instance:
+                    type: integer
+                    description: 实例数
+                memory:
+                    type: number
+                    format: double
+                    description: 分配的内存（MB）
+                cpu:
+                    type: number
+                    format: double
+                    description: 分配的cpu数
+                disk:
+                    type: number
+                    format: double
+                    description: 分配的磁盘空间（MB）
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 获取某类实例集合的资源使用情况'
+      tags:
+      - default
+  /api/instances/actions/get-service:
+    get:
+      description: 'summary: runtime 下 service  实例列表'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContainerListResponse'
+          description: write description here
+      summary: 'summary: runtime 下 service  实例列表'
+      tags:
+      - default
+  /api/instances/actions/get-service-pods:
+    get:
+      description: 'summary: runtime 下 service pod 列表'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PodListResponse'
+          description: write description here
+      summary: 'summary: runtime 下 service pod 列表'
+      tags:
+      - default
+  /api/microservice/project/{projectID}/menus:
+    get:
+      description: 'summary: 项目对应微服务菜单'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MicroServiceMenuResponseData'
+          description: write description here
+      summary: 'summary: 项目对应微服务菜单'
+      tags:
+      - addons
+    parameters:
+    - in: path
+      name: projectID
+      required: true
+      schema:
+        type: string
+  /api/microservice/projects:
+    get:
+      description: 'summary: 微服务项目列表'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MicroServiceProjectResponse'
+          description: write description here
+      summary: 'summary: 微服务项目列表'
+      tags:
+      - addons
+  /api/middlewares:
+    get:
+      description: 'summary: middleware 列表'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MiddlewareListResponse'
+          description: write description here
+      summary: 'summary: middleware 列表'
+      tags:
+      - addons
+  /api/middlewares/{addonId}:
+    get:
+      description: 'summary: middleware 详情'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MiddlewareFetchResponse'
+          description: write description here
+      summary: 'summary: middleware 详情'
+      tags:
+      - addons
+    parameters:
+    - in: path
+      name: addonId
+      required: true
+      schema:
+        type: string
+  /api/middlewares/{addonId}/actions/get-resource:
+    get:
+      description: 'summary: middleware 资源详情'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MiddlewareResourceFetchResponse'
+          description: write description here
+      summary: 'summary: middleware 资源详情'
+      tags:
+      - addons
+    parameters:
+    - in: path
+      name: addonId
+      required: true
+      schema:
+        type: string
+  /api/middlewares/resource/classification:
+    get:
+      description: 'summary: middleware addon分类资源占用'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: middleware addon分类资源占用'
+      tags:
+      - addons
+  /api/middlewares/resource/daily:
+    get:
+      description: 'summary: middleware addon每日资源占用'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: middleware addon每日资源占用'
+      tags:
+      - addons
+  /api/migration/{migrationId}/logs:
+    get:
+      description: 'summary: 通过migrationId，获取migration执行日志'''
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 通过migrationId，获取migration执行日志'''
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: migrationId
+      required: true
+      schema:
+        type: string
+  /api/nodelabels:
+    get:
+      description: 获取可用 nodelabel 列表
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScheduleLabelListResponse'
+          description: write description here
+      summary: 获取可用 nodelabel 列表
+      tags:
+      - default
+    post:
+      description: 设置 nodelabel
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScheduleLabelSetRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScheduleLabelSetResponse'
+          description: write description here
+      summary: 设置 nodelabel
+      tags:
+      - default
+  /api/orgCenter/job/logs:
+    get:
+      description: 'summary: orgcenter job logs'''
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: orgcenter job logs'''
+      tags:
+      - default
+  /api/runtimes:
+    get:
+      description: |2
+  
+        summary: 搜索 Runtime
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 搜索 Runtime'
+      tags:
+      - default
+    post:
+      description: |2
+  
+        summary: 创建 Runtime
+        consumes:
+          - application/json
+        parameters:
+          - in: body
+            description: runtime to create
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: Runtime Name (pipeline 请用分支名)
+                releaseId:
+                  type: string
+                  description: diceHub 的 releaseId
+                operator:
+                  type: string
+                  description: 操作人用户 ID
+                clusterName:
+                  type: string
+                  description: 告知发布的集群 (aka "az")
+                source:
+                  type: string
+                  description: PIPELINE / RUNTIMEADDON / ABILITY
+                extra:
+                  type: object
+                  description: |
+                    格式为 key(string) / value(object):
+  
+                        {
+                          "k1": "v1",
+                          "k2": 123,
+                          "k3": ["1", "2", "3"],
+                          "k4": {
+                            "f1": "g1",
+                            "f2": "g2"
+                          }
+                        }
+  
+                    若为 PIPELINE, 需要传
+                      - orgId (integer)
+                      - projectId (integer)
+                      - applicationId (integer)
+                      - workspace
+                      - buildId (integer)
+  
+                    若为 RUNTIMEADDON, 需要传
+                      - orgId (integer)
+                      - projectId (integer)
+                      - applicationId (integer)
+                      - workspace
+                      - instanceId (string)
+  
+                    若为 ABILITY, 需要传
+                      - orgId (integer)
+                      - applicationId (integer) 或 applicationName (自动创建 application)
+                      - workspace
+                      - clusterId (string)
+                      - addonActions (map[string]interface{})
+        produces:
+          - application/json
+        responses:
+          '200':
+            description: ok
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                err:
+                  type: object
+                  properties:
+                    code:
+                      type: string
+                    msg:
+                      type: string
+                    ctx:
+                      type: object
+                data:
+                  type: object
+                  properties:
+                    deploymentId:
+                      type: integer
+                    applicationId:
+                      type: integer
+                    runtimeId:
+                      type: integer
+          '400':
+            description: bad request
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 创建 Runtime'
+      tags:
+      - default
+  /api/runtimes/{idOrName}:
+    get:
+      description: 查询 Runtime
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuntimeInspectResponse'
+          description: write description here
+      summary: 查询 Runtime
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: idOrName
+      required: true
+      schema:
+        type: string
+  /api/runtimes/{runtimeId}:
+    delete:
+      description: 删除应用实例
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuntimeDeleteResponse'
+          description: write description here
+      summary: 删除应用实例
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: runtimeId
+      required: true
+      schema:
+        type: string
+  /api/runtimes/{runtimeId}/actions/redeploy:
+    parameters:
+    - in: path
+      name: runtimeId
+      required: true
+      schema:
+        type: string
+    post:
+      description: |2
+  
+        summary: 重新部署 Runtime (必须要已经部署过一次)
+        consumes:
+          - application/json
+        parameters:
+          - in: path
+            name: runtimeId
+            type: integer
+            required: true
+            description: Runtime Id
+        produces:
+          - application/json
+        responses:
+          '200':
+            description: ok
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                err:
+                  type: object
+                  properties:
+                    code:
+                      type: string
+                    msg:
+                      type: string
+                    ctx:
+                      type: object
+                data:
+                  type: object
+                  properties:
+                    deploymentId:
+                      type: integer
+                    applicationId:
+                      type: integer
+                    runtimeId:
+                      type: integer
+          '400':
+            description: bad request
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 重新部署 Runtime (必须要已经部署过一次)'
+      tags:
+      - default
+  /api/runtimes/{runtimeId}/actions/redeploy-action:
+    parameters:
+    - in: path
+      name: runtimeId
+      required: true
+      schema:
+        type: string
+    post:
+      description: redeploy 的 action 调用 api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: redeploy 的 action 调用 api
+      tags:
+      - default
+  /api/runtimes/{runtimeId}/actions/rollback:
+    parameters:
+    - in: path
+      name: runtimeId
+      required: true
+      schema:
+        type: string
+    post:
+      description: |2
+  
+        summary: 回滚 Runtime (只能回滚到成功的部署单)
+        consumes:
+          - application/json
+        parameters:
+          - in: path
+            name: runtimeId
+            type: integer
+            required: true
+            description: Runtime Id
+          - in: body
+            description: rollback body
+            schema:
+              type: object
+              properties:
+                deploymentId:
+                  type: int
+                  description: Deployment Id
+        produces:
+          - application/json
+        responses:
+          '200':
+            description: ok
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                err:
+                  type: object
+                  properties:
+                    code:
+                      type: string
+                    msg:
+                      type: string
+                    ctx:
+                      type: object
+                data:
+                  type: object
+                  properties:
+                    deploymentId:
+                      type: integer
+                    applicationId:
+                      type: integer
+                    runtimeId:
+                      type: integer
+          '400':
+            description: bad request
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 回滚 Runtime (只能回滚到成功的部署单)'
+      tags:
+      - default
+  /api/runtimes/{runtimeId}/actions/rollback-action:
+    parameters:
+    - in: path
+      name: runtimeId
+      required: true
+      schema:
+        type: string
+    post:
+      description: rollback 的 action 调用 api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: rollback 的 action 调用 api
+      tags:
+      - default
+  /api/runtimes/{runtimeId}/configuration:
+    get:
+      description: |2
+  
+        summary: 查询 ServiceGroup configuration
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 查询 ServiceGroup configuration'
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: runtimeId
+      required: true
+      schema:
+        type: string
+  /api/runtimes/{runtimeId}/domains:
+    get:
+      description: 获取 Runtime 域名
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DomainListResponse'
+          description: write description here
+      summary: 获取 Runtime 域名
+      tags:
+      - default
+    parameters:
+    - in: path
+      name: runtimeId
+      required: true
+      schema:
+        type: string
+    put:
+      description: 更新 Runtime 域名
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DomainUpdateRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DomainUpdateResponse'
+          description: write description here
+      summary: 更新 Runtime 域名
+      tags:
+      - default
+  /api/runtimes/actions/batch-update-pre-overlay:
+    put:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      tags:
+      - default
+  /api/runtimes/actions/bulk-get-status:
+    get:
+      description: |2
+  
+        summary: 批量查询 ServiceGroup Status
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 批量查询 ServiceGroup Status'
+      tags:
+      - default
+  /api/runtimes/actions/deploy-release:
+    post:
+      description: 'summary: 通过releaseId创建runtime'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RuntimeReleaseCreateRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuntimeReleaseCreatePipelineResponse'
+          description: write description here
+      summary: 'summary: 通过releaseId创建runtime'
+      tags:
+      - default
+  /api/runtimes/actions/deploy-release-action:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RuntimeReleaseCreateRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuntimeCreateResponse'
+          description: write description here
+      tags:
+      - default
+  /api/runtimes/actions/get-app-workspace-releases:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppWorkspaceReleasesGetResponse'
+          description: write description here
+      tags:
+      - default
+  /api/runtimes/actions/group-by-apps:
+    get:
+      description: |2
+  
+        summary: 按给定的 app 分组返回 runtimes 列表
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 按给定的 app 分组返回 runtimes 列表'
+      tags:
+      - default
+  /api/runtimes/actions/killpod:
+    post:
+      description: 删除指定 pod
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RuntimeKillPodRequest'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 删除指定 pod
+      tags:
+      - default
+  /api/runtimes/actions/list-my-runtimes:
+    get:
+      description: |2
+  
+        summary: 按项目下我的 app 分组返回 runtimes 列表
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 按项目下我的 app 分组返回 runtimes 列表'
+      tags:
+      - default
+  /api/runtimes/actions/update-pre-overlay:
+    put:
+      description: |2
+  
+        summary: 更新 pre dice overlay
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/emptyObject'
+        description: write description here
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: 更新 pre dice overlay'
+      tags:
+      - default
+  /api/runtimes/deploy/logs:
+    get:
+      description: 'summary: runtime deploy logs'''
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      summary: 'summary: runtime deploy logs'''
+      tags:
+      - default
+  /api/runtimesServices:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/emptyObject'
+          description: write description here
+      tags:
+      - default
+  
+components:
+  schemas:
+    AddonAvailableResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          items:
+            $ref: '#/components/schemas/AddonFetchResponseData'
+          type: array
+      type: object
+    AddonDirectCreateRequest:
+      properties:
+        addons:
+          $ref: '#/components/schemas/emptyObject'
+        applicationId:
+          type: integer
+        clusterName:
+          type: string
+        operatorId:
+          type: string
+        orgId:
+          type: integer
+        projectId:
+          type: integer
+        shareScope:
+          type: string
+        workspace:
+          type: string
+      type: object
+    AddonExtensionResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          items:
+            $ref: '#/components/schemas/Extension'
+          type: array
+      type: object
+    AddonFetchResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/AddonFetchResponseData'
+      type: object
+    AddonFetchResponseData:
+      properties:
+        IsInsideAddon:
+          type: string
+        addonName:
+          type: string
+        attachCount:
+          type: integer
+        canDel:
+          type: boolean
+        category:
+          type: string
+        cluster:
+          type: string
+        config:
+          $ref: '#/components/schemas/emptyObject'
+        consoleUrl:
+          type: string
+        createdAt:
+          format: date-time
+          type: string
+        customAddonType:
+          type: string
+        desc:
+          type: string
+        displayName:
+          type: string
+        instanceId:
+          type: string
+        logoUrl:
+          type: string
+        name:
+          type: string
+        orgId:
+          type: integer
+        plan:
+          type: string
+        platform:
+          type: boolean
+        platformServiceType:
+          type: integer
+        projectId:
+          type: integer
+        projectName:
+          type: string
+        realInstanceId:
+          type: string
+        recordId:
+          type: integer
+        reference:
+          type: integer
+        shareScope:
+          type: string
+        status:
+          type: string
+        tag:
+          type: string
+        tenantOwner:
+          type: string
+        terminusKey:
+          type: string
+        updatedAt:
+          format: date-time
+          type: string
+        version:
+          type: string
+        workspace:
+          type: string
+      type: object
+    AddonListResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          items:
+            $ref: '#/components/schemas/AddonFetchResponseData'
+          type: array
+      type: object
+    AddonReferenceInfo:
+      properties:
+        applicationId:
+          type: integer
+        applicationName:
+          type: string
+        orgId:
+          type: integer
+        projectId:
+          type: integer
+        projectName:
+          type: string
+        runtimeId:
+          type: integer
+        runtimeName:
+          type: string
+      type: object
+    AddonReferencesResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          items:
+            $ref: '#/components/schemas/AddonReferenceInfo'
+          type: array
+      type: object
+    AddonTenantCreateRequest:
+      properties:
+        addonInstanceRoutingId:
+          type: string
+        configs:
+          $ref: '#/components/schemas/emptyObject'
+        name:
+          type: string
+      type: object
+    AppWorkspaceReleasesGetResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    Container:
+      properties:
+        K8sInstanceMetaInfo:
+          $ref: '#/components/schemas/K8sInstanceMetaInfo'
+        clusterName:
+          type: string
+        containerId:
+          type: string
+        cpu:
+          type: number
+        disk:
+          type: integer
+        exitCode:
+          type: integer
+        host:
+          type: string
+        id:
+          type: string
+        image:
+          type: string
+        ipAddress:
+          type: string
+        memory:
+          type: integer
+        message:
+          type: string
+        service:
+          type: string
+        stage:
+          type: string
+        startedAt:
+          type: string
+        status:
+          type: string
+        updatedAt:
+          type: string
+      type: object
+    ContainerListResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          items:
+            $ref: '#/components/schemas/Container'
+          type: array
+      type: object
+    CustomAddonCreateRequest:
+      properties:
+        addonName:
+          type: string
+        configs:
+          $ref: '#/components/schemas/emptyObject'
+        customAddonType:
+          type: string
+        extra:
+          $ref: '#/components/schemas/emptyObject'
+        name:
+          type: string
+        operatorID:
+          type: string
+        projectId:
+          type: integer
+        tag:
+          type: string
+        workspace:
+          type: string
+      type: object
+    CustomAddonUpdateRequest:
+      properties:
+        configs:
+          $ref: '#/components/schemas/emptyObject'
+        extra:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    DeploymentApproveRequest:
+      properties:
+        id:
+          type: integer
+        reason:
+          type: string
+        reject:
+          type: boolean
+      type: object
+    DeploymentApproveResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+      type: object
+    DeploymentCancelRequest:
+      properties:
+        operator:
+          type: string
+        runtimeId:
+          type: string
+      type: object
+    DeploymentCancelResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+      type: object
+    DeploymentCreateResponseDTO:
+      properties:
+        applicationId:
+          type: integer
+        deploymentId:
+          type: integer
+        runtimeId:
+          type: integer
+      type: object
+    DeploymentDetailListResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        UserInfoHeader:
+          $ref: '#/components/schemas/UserInfoHeader'
+        data:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    DeploymentListResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        UserInfoHeader:
+          $ref: '#/components/schemas/UserInfoHeader'
+        data:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    DomainListResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    DomainUpdateRequest:
+      properties:
+        Body:
+          $ref: '#/components/schemas/emptyObject'
+        RuntimeID:
+          type: integer
+      type: object
+    DomainUpdateResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    ErrorResponse:
+      properties:
+        code:
+          type: string
+        ctx:
+          $ref: '#/components/schemas/emptyObject'
+        msg:
+          type: string
+      type: object
+    Extension:
+      properties:
+        category:
+          type: string
+        createdAt:
+          format: date-time
+          type: string
+        desc:
+          type: string
+        displayName:
+          type: string
+        id:
+          type: integer
+        logoUrl:
+          type: string
+        name:
+          type: string
+        public:
+          type: boolean
+        type:
+          type: string
+        updatedAt:
+          format: date-time
+          type: string
+      type: object
+    Header:
+      properties:
+        err:
+          $ref: '#/components/schemas/ErrorResponse'
+        success:
+          type: boolean
+      type: object
+    K8sInstanceMetaInfo:
+      properties:
+        containerName:
+          type: string
+        podName:
+          type: string
+        podNamespace:
+          type: string
+        podUid:
+          type: string
+      type: object
+    MicroServiceMenuResponseData:
+      properties:
+        addonDisplayName:
+          type: string
+        addonName:
+          type: string
+        consoleUrl:
+          type: string
+        instanceId:
+          type: string
+        projectName:
+          type: string
+        terminusKey:
+          type: string
+      type: object
+    MicroServiceProjectResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          items:
+            $ref: '#/components/schemas/MicroServiceProjectResponseData'
+          type: array
+      type: object
+    MicroServiceProjectResponseData:
+      properties:
+        createTime:
+          format: date-time
+          type: string
+        envs:
+          items:
+            type: string
+          type: array
+        logoUrl:
+          type: string
+        projectDesc:
+          type: string
+        projectId:
+          type: string
+        projectName:
+          type: string
+        tenantGroups:
+          items:
+            type: string
+          type: array
+        workspaces:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    MiddlewareFetchResponse:
+      properties:
+        data:
+          $ref: '#/components/schemas/MiddlewareFetchResponseData'
+      type: object
+    MiddlewareFetchResponseData:
+      properties:
+        addonName:
+          type: string
+        attachCount:
+          type: integer
+        category:
+          type: string
+        cluster:
+          type: string
+        config:
+          $ref: '#/components/schemas/emptyObject'
+        createdAt:
+          format: date-time
+          type: string
+        instanceId:
+          type: string
+        isOperator:
+          type: boolean
+        logoUrl:
+          type: string
+        name:
+          type: string
+        plan:
+          type: string
+        projectId:
+          type: string
+        projectName:
+          type: string
+        referenceInfos:
+          items:
+            $ref: '#/components/schemas/AddonReferenceInfo'
+          type: array
+        status:
+          type: string
+        updatedAt:
+          format: date-time
+          type: string
+        version:
+          type: string
+        workspace:
+          type: string
+      type: object
+    MiddlewareListItem:
+      properties:
+        addonName:
+          type: string
+        attachCount:
+          type: integer
+        clusterName:
+          type: string
+        cpu:
+          type: number
+        env:
+          type: string
+        instanceId:
+          type: string
+        isOperator:
+          type: boolean
+        mem:
+          type: integer
+        name:
+          type: string
+        nodes:
+          type: integer
+        projectId:
+          type: string
+        projectName:
+          type: string
+      type: object
+    MiddlewareListResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/MiddlewareListResponseData'
+      type: object
+    MiddlewareListResponseData:
+      properties:
+        list:
+          items:
+            $ref: '#/components/schemas/MiddlewareListItem'
+          type: array
+        overview:
+          $ref: '#/components/schemas/Overview'
+        total:
+          type: integer
+      type: object
+    MiddlewareResourceFetchResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          items:
+            $ref: '#/components/schemas/MiddlewareResourceFetchResponseData'
+          type: array
+      type: object
+    MiddlewareResourceFetchResponseData:
+      properties:
+        clusterName:
+          type: string
+        containerIP:
+          type: string
+        containerId:
+          type: string
+        cpuLimit:
+          type: number
+        cpuRequest:
+          type: number
+        hostIP:
+          type: string
+        image:
+          type: string
+        instanceId:
+          type: string
+        memLimit:
+          type: integer
+        memRequest:
+          type: integer
+        startedAt:
+          format: date-time
+          type: string
+        status:
+          type: string
+      type: object
+    Overview:
+      properties:
+        cpu:
+          type: number
+        mem:
+          type: number
+        nodes:
+          type: integer
+      type: object
+    Pod:
+      properties:
+        clusterName:
+          type: string
+        host:
+          type: string
+        ipAddress:
+          type: string
+        k8sNamespace:
+          type: string
+        message:
+          type: string
+        phase:
+          type: string
+        podName:
+          type: string
+        service:
+          type: string
+        startedAt:
+          type: string
+        uid:
+          type: string
+      type: object
+    PodListResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          items:
+            $ref: '#/components/schemas/Pod'
+          type: array
+      type: object
+    RuntimeCreateResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/DeploymentCreateResponseDTO'
+      type: object
+    RuntimeDTO:
+      properties:
+        applicationId:
+          type: integer
+        applicationName:
+          type: string
+        clusterId:
+          type: integer
+        clusterName:
+          type: string
+        errors:
+          items:
+            $ref: '#/components/schemas/ErrorResponse'
+          type: array
+        gitBranch:
+          type: string
+        id:
+          type: integer
+        name:
+          type: string
+        orgId:
+          type: integer
+        projectId:
+          type: integer
+        projectName:
+          type: string
+        status:
+          type: string
+        workspace:
+          type: string
+      type: object
+    RuntimeDeleteResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/RuntimeDTO'
+      type: object
+    RuntimeInspectDTO:
+      properties:
+        applicationId:
+          type: integer
+        applicationName:
+          type: string
+        clusterId:
+          type: integer
+        clusterName:
+          type: string
+        clusterType:
+          type: string
+        createdAt:
+          format: date-time
+          type: string
+        creator:
+          type: string
+        deleteStatus:
+          type: string
+        deployAt:
+          format: date-time
+          type: string
+        deployStatus:
+          type: string
+        deploymentOrderId:
+          type: string
+        deploymentOrderName:
+          type: string
+        errors:
+          items:
+            $ref: '#/components/schemas/ErrorResponse'
+          type: array
+        extra:
+          $ref: '#/components/schemas/emptyObject'
+        id:
+          type: integer
+        lastMessage:
+          $ref: '#/components/schemas/emptyObject'
+        name:
+          type: string
+        projectID:
+          type: integer
+        rawDeploymentStatus:
+          type: string
+        rawStatus:
+          type: string
+        releaseId:
+          type: string
+        releaseVersion:
+          type: string
+        resources:
+          $ref: '#/components/schemas/RuntimeServiceResourceDTO'
+        serviceGroupName:
+          type: string
+        serviceGroupNamespace:
+          type: string
+        services:
+          $ref: '#/components/schemas/emptyObject'
+        source:
+          type: string
+        status:
+          type: string
+        timeCreated:
+          format: date-time
+          type: string
+        updatedAt:
+          format: date-time
+          type: string
+      type: object
+    RuntimeInspectResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/RuntimeInspectDTO'
+      type: object
+    RuntimeKillPodRequest:
+      properties:
+        podName:
+          type: string
+        runtimeID:
+          type: integer
+      type: object
+    RuntimeReleaseCreatePipelineResponse:
+      properties:
+        pipelineId:
+          type: integer
+      type: object
+    RuntimeReleaseCreateRequest:
+      properties:
+        applicationId:
+          type: integer
+        projectId:
+          type: integer
+        releaseId:
+          type: string
+        workspace:
+          type: string
+      type: object
+    RuntimeServiceResourceDTO:
+      properties:
+        cpu:
+          type: number
+        disk:
+          type: integer
+        mem:
+          type: integer
+      type: object
+    ScheduleLabelListData:
+      properties:
+        labels:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    ScheduleLabelListResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+        data:
+          $ref: '#/components/schemas/ScheduleLabelListData'
+      type: object
+    ScheduleLabelSetRequest:
+      properties:
+        clustername:
+          type: string
+        clustertype:
+          type: string
+        hosts:
+          items:
+            type: string
+          type: array
+        soldierURL:
+          type: string
+        tag:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    ScheduleLabelSetResponse:
+      properties:
+        Header:
+          $ref: '#/components/schemas/Header'
+      type: object
+    UserInfoHeader:
+      properties:
+        userIDs:
+          items:
+            type: string
+          type: array
+        userInfo:
+          $ref: '#/components/schemas/emptyObject'
+      type: object
+    emptyObject:
+      type: object
+  
+tags:
+  - name: addons
+  - name: default
+  
