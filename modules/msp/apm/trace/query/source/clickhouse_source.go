@@ -222,23 +222,25 @@ func (chs *ClickhouseSource) GetTraces(ctx context.Context, req *pb.GetTracesReq
 
 func (chs *ClickhouseSource) composeFilter(req *pb.GetTracesRequest) string {
 	var subSqlBuf bytes.Buffer
-	subSqlBuf.WriteString(fmt.Sprintf("SELECT distinct(series_id) FROM %s WHERE (key='terminus_key' AND value = '%s') AND ", SpanMetaTable, req.TenantID))
+	subSqlBuf.WriteString(fmt.Sprintf("SELECT distinct(series_id) FROM %s WHERE (series_id in (select distinct(series_id) from spans_meta_all where (key = 'terminus_key' AND value = '%s')) AND ", SpanMetaTable, req.TenantID))
 
 	if req.ServiceName != "" {
-		subSqlBuf.WriteString("(key='service_name' AND value LIKE concat('%','" + req.ServiceName + "','%')) AND ")
+		subSqlBuf.WriteString("(key='service_name' AND value LIKE concat('%','" + req.ServiceName + "','%')) OR ")
 	}
 
 	if req.RpcMethod != "" {
-		subSqlBuf.WriteString("(key='rpc_method' AND value LIKE concat('%','" + req.RpcMethod + "','%')) AND ")
+		subSqlBuf.WriteString("(key='rpc_method' AND value LIKE concat('%','" + req.RpcMethod + "','%')) OR ")
 	}
 
 	if req.HttpPath != "" {
-		subSqlBuf.WriteString("(key='http_path' AND value LIKE concat('%','" + req.HttpPath + "','%')) AND ")
+		subSqlBuf.WriteString("(key='http_path' AND value LIKE concat('%','" + req.HttpPath + "','%')) OR ")
 	}
 
 	subSql := subSqlBuf.String()
-	if strings.HasSuffix(subSql, "AND ") {
-		subSql = subSql[:len(subSql)-4]
+	if strings.HasSuffix(subSql, "OR ") {
+		subSql = subSql[:len(subSql)-4] + ")"
+	} else if strings.HasSuffix(subSql, "AND ") {
+		subSql = subSql[:len(subSql)-4] + ")"
 	}
 	return subSql
 }
