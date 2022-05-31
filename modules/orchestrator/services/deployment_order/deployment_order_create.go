@@ -380,9 +380,24 @@ func (d *DeploymentOrder) FetchDeploymentConfigDetail(namespace string) ([]apist
 	return envs, files, nil
 }
 func (d *DeploymentOrder) fetchDeploymentParams(applicationId int64, workspace string) (*apistructs.DeploymentOrderParam, error) {
-	configNsTmpl := "app-%d-%s"
+	app, err := d.bdl.GetApp(uint64(applicationId))
+	if err != nil {
+		return nil, fmt.Errorf("failed to get application %d, err: %v", applicationId, err)
+	}
 
-	deployConfig, fileConfig, err := d.FetchDeploymentConfigDetail(fmt.Sprintf(configNsTmpl, applicationId, strings.ToUpper(workspace)))
+	var cfgNamespace string
+	for _, ws := range app.Workspaces {
+		if strings.ToUpper(ws.Workspace) != strings.ToUpper(workspace) {
+			continue
+		}
+		cfgNamespace = ws.ConfigNamespace
+	}
+
+	if cfgNamespace == "" {
+		return nil, fmt.Errorf("failed to get config namespace, application %d, workspace %s", applicationId, workspace)
+	}
+
+	deployConfig, fileConfig, err := d.FetchDeploymentConfigDetail(cfgNamespace)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch deployment config, err: %v", err)
 	}

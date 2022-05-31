@@ -114,6 +114,15 @@ func TestRenderDetail(t *testing.T) {
 		},
 	)
 
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetApp", func(*bundle.Bundle, uint64) (*apistructs.ApplicationDTO, error) {
+		return &apistructs.ApplicationDTO{
+			ID: 1,
+			Workspaces: []apistructs.ApplicationWorkspace{
+				{Workspace: apistructs.WORKSPACE_PROD, ConfigNamespace: "1-198-PROD-480"},
+			},
+		}, nil
+	})
+
 	monkey.Patch(i18n.LangCodesSprintf, func(infrai18n.LanguageCodes, string, ...interface{}) string {
 		return ""
 	})

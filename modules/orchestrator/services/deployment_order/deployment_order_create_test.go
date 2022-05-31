@@ -112,7 +112,8 @@ func TestComposeRuntimeCreateRequests(t *testing.T) {
 }
 
 func TestFetchDeploymentOrderParam(t *testing.T) {
-	var order *DeploymentOrder
+	bdl := bundle.New()
+	order := New(WithBundle(bdl))
 
 	defer monkey.UnpatchAll()
 	monkey.PatchInstanceMethod(reflect.TypeOf(order), "FetchDeploymentConfigDetail",
@@ -122,7 +123,19 @@ func TestFetchDeploymentOrderParam(t *testing.T) {
 		},
 	)
 
-	got, err := order.fetchDeploymentParams(1, "STAGING")
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetApp", func(*bundle.Bundle, uint64) (*apistructs.ApplicationDTO, error) {
+		return &apistructs.ApplicationDTO{
+			ID: 1,
+			Workspaces: []apistructs.ApplicationWorkspace{
+				{
+					Workspace:       apistructs.WORKSPACE_PROD,
+					ConfigNamespace: "1-198-PROD-480",
+				},
+			},
+		}, nil
+	})
+
+	got, err := order.fetchDeploymentParams(1, apistructs.WORKSPACE_PROD)
 	assert.NoError(t, err)
 	assert.Equal(t, got, &apistructs.DeploymentOrderParam{
 		{Key: "key1", Value: "value1", Type: "ENV", Comment: "test1"},
