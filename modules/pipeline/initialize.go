@@ -39,8 +39,6 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/providers/reconciler"
 	"github.com/erda-project/erda/modules/pipeline/services/actionagentsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/appsvc"
-	"github.com/erda-project/erda/modules/pipeline/services/buildartifactsvc"
-	"github.com/erda-project/erda/modules/pipeline/services/buildcachesvc"
 	"github.com/erda-project/erda/modules/pipeline/services/permissionsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/pipelinesvc"
 	"github.com/erda-project/erda/modules/pipeline/services/queuemanage"
@@ -117,8 +115,6 @@ func (p *provider) do() error {
 
 	// init services
 	appSvc := appsvc.New(bdl)
-	buildArtifactSvc := buildartifactsvc.New(dbClient)
-	buildCacheSvc := buildcachesvc.New(dbClient)
 	permissionSvc := permissionsvc.New(bdl)
 	actionAgentSvc := actionagentsvc.New(dbClient, bdl, js, etcdctl)
 	reportSvc := reportsvc.New(reportsvc.WithDBClient(dbClient))
@@ -161,8 +157,6 @@ func (p *provider) do() error {
 		endpoints.WithDBClient(dbClient),
 		endpoints.WithQueryStringDecoder(queryStringDecoder),
 		endpoints.WithAppSvc(appSvc),
-		endpoints.WithBuildArtifactSvc(buildArtifactSvc),
-		endpoints.WithBuildCacheSvc(buildCacheSvc),
 		endpoints.WithPermissionSvc(permissionSvc),
 		endpoints.WithCrondSvc(p.CronDaemon),
 		endpoints.WithActionAgentSvc(actionAgentSvc),
