@@ -110,9 +110,9 @@ jobs:
         with:
           path: |
             ./coverage/
-          key: codecov-report-cache-${{ github.run_id }}
+          key: codecov-report-cache-non-go-${{ github.run_id }}
           restore-keys: |
-            codecov-report-cache-
+            codecov-report-cache-go
       - name: very quick codecov
         shell: bash
         run: |
