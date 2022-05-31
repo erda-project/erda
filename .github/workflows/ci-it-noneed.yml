@@ -110,7 +110,7 @@ jobs:
         with:
           path: |
             ./coverage/
-          key: codecov-report-cache-${{ hashFiles('./coverage/') }}
+          key: codecov-report-cache-${{ hashFiles('./coverage/') }}-1
           restore-keys: |
             codecov-report-cache-
       - name: very quick codecov

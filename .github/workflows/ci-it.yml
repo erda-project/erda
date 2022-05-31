@@ -220,9 +220,7 @@ jobs:
         with:
           path: |
             ./coverage/
-          key: codecov-report-cache-${{ hashFiles('./coverage/') }}
-          restore-keys: |
-            codecov-report-cache-
+          key: codecov-report-cache-${{ hashFiles('./coverage/') }}-1
       - name: download coverage reports
         uses: actions/download-artifact@v3
         with:
