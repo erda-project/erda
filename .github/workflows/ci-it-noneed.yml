@@ -121,6 +121,7 @@ jobs:
           workflow_conclusion: success
           name: pure-coverage
           path: ./coverage/
+          search_artifacts: true
       - name: very quick codecov
         shell: bash
         run: |
