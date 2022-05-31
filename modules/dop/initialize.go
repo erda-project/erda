@@ -122,7 +122,9 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 
 	registerWebHook(bdl.Bdl)
 
-	deleteWebhook(bdl.Bdl)
+	if err = deleteWebhook(bdl.Bdl); err != nil {
+		logrus.Errorf("failed to delete webhook, err: %v", err)
+	}
 
 	// 注册 hook
 	if err := ep.RegisterEvents(); err != nil {
