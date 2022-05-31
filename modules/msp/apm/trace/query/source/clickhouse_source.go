@@ -222,7 +222,7 @@ func (chs *ClickhouseSource) GetTraces(ctx context.Context, req *pb.GetTracesReq
 
 func (chs *ClickhouseSource) composeFilter(req *pb.GetTracesRequest) string {
 	var subSqlBuf bytes.Buffer
-	subSqlBuf.WriteString(fmt.Sprintf("SELECT distinct(series_id) FROM %s WHERE (series_id in (select distinct(series_id) from spans_meta_all where (key = 'terminus_key' AND value = '%s')) AND ", SpanMetaTable, req.TenantID))
+	subSqlBuf.WriteString(fmt.Sprintf("SELECT distinct(series_id) FROM %s WHERE (series_id in (select distinct(series_id) from %s where (key = 'terminus_key' AND value = '%s')) AND ", SpanMetaTable, SpanMetaTable, req.TenantID))
 
 	if req.ServiceName != "" {
 		subSqlBuf.WriteString("(key='service_name' AND value LIKE concat('%','" + req.ServiceName + "','%')) OR ")
