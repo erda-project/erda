@@ -15,6 +15,7 @@
 package gshelper
 
 import (
+	"strconv"
 	"time"
 
 	"github.com/mitchellh/mapstructure"
@@ -68,6 +69,24 @@ func (h *GSHelper) GetAppsFilter() []uint64 {
 	var t []uint64
 	_ = assign((*h.gs)["GlobalAppsFilter"], &t)
 	return t
+}
+
+func (h *GSHelper) GetAppNamesFilter() []string {
+	if h.gs == nil {
+		return nil
+	}
+	if h.GetGlobalInParamsAppName() != "" {
+		return []string{h.GetGlobalInParamsAppName()}
+	}
+	ids := h.GetAppsFilter()
+	idNameMap := h.GetGlobalAppIDNameMap()
+	appNames := make([]string, 0, len(ids))
+	for _, id := range ids {
+		if name, ok := idNameMap[strconv.FormatUint(id, 10)]; ok {
+			appNames = append(appNames, name)
+		}
+	}
+	return appNames
 }
 
 func (h *GSHelper) SetExecutorsFilter(executors []string) {
@@ -134,4 +153,52 @@ func (h *GSHelper) GetBeginTimeEndFilter() *time.Time {
 	_ = assign((*h.gs)["GlobalBeginTimeEndFilter"], &t)
 	var endTime = time.Unix(t/1000, 0)
 	return &endTime
+}
+
+func (h *GSHelper) SetGlobalAppIDNameMap(appIDNameMap map[string]string) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["GlobalAppIDNameMap"] = appIDNameMap
+}
+
+func (h *GSHelper) GetGlobalAppIDNameMap() map[string]string {
+	if h.gs == nil {
+		return nil
+	}
+	appIDNameMap := make(map[string]string)
+	_ = assign((*h.gs)["GlobalAppIDNameMap"], &appIDNameMap)
+	return appIDNameMap
+}
+
+func (h *GSHelper) SetGlobalMyAppNames(appNames []string) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["GlobalMyAppNames"] = appNames
+}
+
+func (h *GSHelper) GetGlobalMyAppNames() []string {
+	if h.gs == nil {
+		return nil
+	}
+	var appNames []string
+	_ = assign((*h.gs)["GlobalMyAppNames"], &appNames)
+	return appNames
+}
+
+func (h *GSHelper) SetGlobalInParamsAppName(appName string) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["GlobalInParamsAppName"] = appName
+}
+
+func (h *GSHelper) GetGlobalInParamsAppName() string {
+	if h.gs == nil {
+		return ""
+	}
+	var appName string
+	_ = assign((*h.gs)["GlobalInParamsAppName"], &appName)
+	return appName
 }

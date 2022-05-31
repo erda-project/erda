@@ -14,8 +14,11 @@
 
 package common
 
-const DefaultPageSize = 10
-const ColumnPipelineStatus = "pipelineStatus"
+const (
+	DefaultPageSize      = 10
+	ColumnPipelineStatus = "pipelineStatus"
+	Participated         = 0
+)
 
 type Sort struct {
 	FieldKey  string
