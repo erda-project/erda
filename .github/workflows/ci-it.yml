@@ -221,7 +221,9 @@ jobs:
           path: |
             ./coverage/
           key: codecov-report-cache-go
-      - name: download coverage reports
+      - name: Cleanup cached coverage dir before download
+        run: rm -fr ./coverage
+      - name: Download coverage reports
         uses: actions/download-artifact@v3
         with:
           path: ./coverage/
