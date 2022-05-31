@@ -138,6 +138,13 @@ type WebhookUpdateRequestBody struct {
 	Active bool `json:"active"`
 }
 
+type WebhookDeleteRequestBody struct {
+	OrgId         string `json:"orgId"`
+	ProjectId     string `json:"projectId"`
+	ApplicationId string `json:"applicationId"`
+	Id            string `json:"id"`
+}
+
 // WebhookUpdateResponseData WebhookUpdateResponse 的 Data
 type WebhookUpdateResponseData string
 
@@ -219,4 +226,9 @@ type HookLocation struct {
 
 	// webhook 所关心环境, nil 代表所有
 	Env []string `json:"env"`
+}
+
+type DeleteHookRequest struct {
+	Name string `json:"name"`
+	HookLocation
 }
