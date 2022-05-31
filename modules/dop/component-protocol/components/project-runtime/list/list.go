@@ -38,7 +38,6 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/project-runtime/common"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
-	"github.com/erda-project/erda/pkg/strutil"
 )
 
 type List struct {
@@ -415,37 +414,18 @@ func (p *List) getData() *list.Data {
 			nameStr = runtimeIdToAppNameMap[appRuntime.ID] + "/" + nameStr
 		}
 		logrus.Infof("%s : %s", appRuntime.Name, appRuntime.LastOperator)
-
-		hasReadPerm, err := p.hasPermission(apistructs.GetAction, appRuntime.Extra.Workspace, appRuntime.ApplicationID)
-		if err != nil {
-			logrus.Errorf("failed to check read permission for app %s, %v", appRuntime.Name, err)
-			continue
-		}
-
-		hasOperatePerm, err := p.hasPermission(apistructs.OperateAction, appRuntime.Extra.Workspace, appRuntime.ApplicationID)
-		if err != nil {
-			logrus.Errorf("failed to check operate permission for app %s, %v", appRuntime.Name, err)
-			continue
-		}
-
-		operations, err := p.getMoreOperations(hasOperatePerm)
-		if err != nil {
-			logrus.Errorf("failed to get more operations for runtime %s, %v", appRuntime.Name, err)
-			continue
-		}
+		_, isMyApp := myApp[appRuntime.ApplicationID]
 		item := list.Item{
 			ID:         idStr,
 			Title:      nameStr,
-			TitleState: getTitleState(p.Sdk, appRuntime.RawDeploymentStatus, deployIdStr, appIdStr, appRuntime.DeleteStatus, hasReadPerm),
-			Selectable: hasReadPerm,
+			TitleState: getTitleState(p.Sdk, appRuntime.RawDeploymentStatus, deployIdStr, appIdStr, appRuntime.DeleteStatus, isMyApp),
+			Selectable: isMyApp,
 			//KvInfos:        getKvInfos(p.Sdk, runtimeIdToAppNameMap[appRuntime.ID], uidToName[appRuntime.LastOperator], appRuntime.DeploymentOrderName, appRuntime.ReleaseVersion, healthStr, appRuntime, appRuntime.LastOperateTime),
-			Operations:     getOperations(p.Sdk, appRuntime.ProjectID, appRuntime.ApplicationID, appRuntime.ID, hasReadPerm),
-			MoreOperations: operations,
+			Operations:     getOperations(p.Sdk, appRuntime.ProjectID, appRuntime.ApplicationID, appRuntime.ID, isMyApp),
+			MoreOperations: getMoreOperations(p.Sdk, fmt.Sprintf("%d", appRuntime.ID)),
 		}
 		data.List = append(data.List, item)
-		if hasOperatePerm {
-			ids = append(ids, idStr)
-		}
+		ids = append(ids, idStr)
 		runtimeMap[idStr] = appRuntime
 	}
 
@@ -627,7 +607,7 @@ func getIconByServiceCnt(svcCnt, allCnt int) *commodel.Icon {
 	return &commodel.Icon{URL: statusStr}
 }
 
-func getTitleState(sdk *cptype.SDK, deployStatus, deploymentId, appId, dStatus string, readPerm bool) []list.StateInfo {
+func getTitleState(sdk *cptype.SDK, deployStatus, deploymentId, appId, dStatus string, isMy bool) []list.StateInfo {
 	if dStatus == "" {
 		var deployStr list.ItemCommStatus
 		switch deployStatus {
@@ -650,7 +630,7 @@ func getTitleState(sdk *cptype.SDK, deployStatus, deploymentId, appId, dStatus s
 				SuffixIcon: "right",
 			},
 		}
-		if readPerm {
+		if isMy {
 			info[0].Operations = map[cptype.OperationKey]cptype.Operation{
 				"click": {
 					SkipRender: true,
@@ -673,9 +653,9 @@ func getTitleState(sdk *cptype.SDK, deployStatus, deploymentId, appId, dStatus s
 	}
 }
 
-func getOperations(sdk *cptype.SDK, projectId, appId, runtimeId uint64, readPerm bool) map[cptype.OperationKey]cptype.Operation {
+func getOperations(sdk *cptype.SDK, projectId, appId, runtimeId uint64, isMyApp bool) map[cptype.OperationKey]cptype.Operation {
 	tip := ""
-	if !readPerm {
+	if !isMyApp {
 		tip = sdk.I18n("no authority found")
 	}
 	projectIdStr := fmt.Sprintf("%d", projectId)
@@ -683,7 +663,7 @@ func getOperations(sdk *cptype.SDK, projectId, appId, runtimeId uint64, readPerm
 	runtimeIdStr := fmt.Sprintf("%d", runtimeId)
 	return map[cptype.OperationKey]cptype.Operation{
 		"clickGoto": {
-			Disabled: !readPerm,
+			Disabled: !isMyApp,
 			Tip:      tip,
 			ServerData: &cptype.OpServerData{
 				"target": "projectDeployRuntime",
@@ -715,24 +695,15 @@ func (p List) getBatchOperation(sdk *cptype.SDK, ids []string) map[cptype.Operat
 		},
 	}
 }
-func (p *List) getMoreOperations(hasOperatorAccess bool) ([]list.MoreOpItem, error) {
-	disabled := false
-	tip := ""
-	if !hasOperatorAccess {
-		disabled = true
-		tip = p.Sdk.I18n("accessDenied")
-	}
-
+func getMoreOperations(sdk *cptype.SDK, id string) []list.MoreOpItem {
 	return []list.MoreOpItem{
 		{
 			ID:   common.DeleteOp,
 			Icon: "remove",
-			Text: p.Sdk.I18n("delete"),
+			Text: sdk.I18n("delete"),
 			Operations: map[cptype.OperationKey]cptype.Operation{
 				"click": {
-					Tip:        tip,
-					Confirm:    p.Sdk.I18n("delete confirm") + "?",
-					Disabled:   disabled,
+					Confirm:    sdk.I18n("delete confirm") + "?",
 					ClientData: &cptype.OpClientData{},
 				},
 			},
@@ -740,16 +711,27 @@ func (p *List) getMoreOperations(hasOperatorAccess bool) ([]list.MoreOpItem, err
 		{
 			ID:   common.ReStartOp,
 			Icon: "chongxinqidong",
-			Text: p.Sdk.I18n("restart"),
+			Text: sdk.I18n("restart"),
 			Operations: map[cptype.OperationKey]cptype.Operation{
 				"click": {
-					Tip:        tip,
-					Disabled:   disabled,
 					ClientData: &cptype.OpClientData{},
 				},
 			},
 		},
-	}, nil
+		//{
+		//	ID:   id,
+		//	Icon: "shuaxin",
+		//	// todo
+		//	Text: sdk.I18n("delete"),
+		//	Operations: map[cptype.OperationKey]cptype.Operation{
+		//		"click": {
+		//			// todo
+		//			Confirm:    sdk.I18n("delete confirm"),
+		//			ClientData: &cptype.OpClientData{},
+		//		},
+		//	},
+		//},
+	}
 }
 
 func getKvInfos(sdk *cptype.SDK, appName, creatorName, deployOrderName, deployVersion, healthyStr string, runtime bundle.GetApplicationRuntimesDataEle, lastOperatorTime time.Time) []list.KvInfo {
@@ -799,20 +781,6 @@ func getKvInfos(sdk *cptype.SDK, appName, creatorName, deployOrderName, deployVe
 		Value: appName,
 	})
 	return kvs
-}
-
-func (l *List) hasPermission(action, workspace string, appID uint64) (bool, error) {
-	perm, err := l.Bdl.CheckPermission(&apistructs.PermissionCheckRequest{
-		UserID:   l.Sdk.Identity.UserID,
-		Scope:    apistructs.AppScope,
-		ScopeID:  appID,
-		Resource: "runtime-" + strutil.ToLower(workspace),
-		Action:   action,
-	})
-	if err != nil {
-		return false, err
-	}
-	return perm.Access, nil
 }
 
 func init() {
