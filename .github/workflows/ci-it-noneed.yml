@@ -23,10 +23,14 @@ on:
     paths:
       - '**'
       - '!**.go'
+      - '!**/go.mod'
+      - '!**/go.sum'
   pull_request:
     paths:
       - '**'
       - '!**.go'
+      - '!**/go.mod'
+      - '!**/go.sum'
 
 jobs:
   CHECK-CHANGED-FILES:
@@ -44,6 +48,10 @@ jobs:
             ext="${file##*.}"
             echo "file: $file, ext: $ext"
             echo "::set-output name=have-${ext}::true"
+            base_filename=$(basename "${file}")
+            if [[ "${base_filename}" == "go.mod" || "${base_filename}" == "go.sum" ]]; then
+              echo "::set-output name=have-go::true"
+            fi
           done
     outputs:
       have-go: ${{ steps.check.outputs.have-go }}

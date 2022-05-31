@@ -22,9 +22,13 @@ on:
       - release/*
     paths:
       - '**.go'
+      - '**/go.mod'
+      - '**/go.sum'
   pull_request:
     paths:
       - '**.go'
+      - '**/go.mod'
+      - '**/go.sum'
 
 jobs:
   PREPARE:
