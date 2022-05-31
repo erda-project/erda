@@ -134,7 +134,7 @@ func (chs *ClickhouseSource) GetTraceReqDistribution(ctx context.Context, model 
 	where.WriteString(fmt.Sprintf("WHERE toUnixTimestamp64Milli(start_time) >= %v AND toUnixTimestamp64Milli(end_time) <= %v ", model.StartTime, model.EndTime))
 
 	if model.TraceId != "" {
-		where.WriteString("AND trace_id LIKE %" + model.TraceId + "%) ")
+		where.WriteString("AND trace_id LIKE concat('%','" + model.TraceId + "','%') ")
 	}
 	if model.DurationMin > 0 && model.DurationMax > 0 && model.DurationMin < model.DurationMax {
 		where.WriteString(fmt.Sprintf("AND ((toUnixTimestamp64Nano(end_time) - toUnixTimestamp64Nano(start_time)) >= %v "+
