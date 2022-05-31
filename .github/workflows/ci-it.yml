@@ -22,9 +22,13 @@ on:
       - release/*
     paths:
       - '**.go'
+      - '**/go.mod'
+      - '**/go.sum'
   pull_request:
     paths:
       - '**.go'
+      - '**/go.mod'
+      - '**/go.sum'
 
 jobs:
   PREPARE:
@@ -215,18 +219,19 @@ jobs:
     steps:
       - name: Clone repo
         uses: actions/checkout@v3
-      - name: Cache reports for Non-Go check use
-        uses: actions/cache@v3
-        with:
-          path: |
-            ./coverage/
-          key: codecov-report-cache-go
-      - name: Cleanup cached coverage dir before download
-        run: rm -fr ./coverage
       - name: Download coverage reports
         uses: actions/download-artifact@v3
         with:
           path: ./coverage/
+      - name: Handle coverage reports
+        run: |
+          rm -fr ./coverage/proto-go
       - name: Upload coverage to Codecov
         run: |
-          curl -s https://codecov.io/bash | bash
+          curl -s https://codecov.io/bash | bash -s - -s ./coverage/
+      - name: Upload combined coverage reports to artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: pure-coverage
+          path: ./coverage/
+          retention-days: 30
