@@ -127,14 +127,14 @@ func (chs *ClickhouseSource) GetTraceReqDistribution(ctx context.Context, model 
 	specSql := "SELECT toStartOfInterval(min_start_time, INTERVAL %v %s) AS date,count(trace_id) AS trace_count, " +
 		"avg(duration) AS avg_duration FROM (%s) GROUP BY date ORDER BY date WITH FILL STEP %v ;"
 
-	tracingSql := "SELECT distinct(trace_id) AS trace_id,(toUnixTimestamp64Nano(max(end_time)) - toUnixTimestamp64Nano(min(start_time))) AS duration, min(start_time) AS min_start_time FROM %s %s GROUP BY spans_series.trace_id"
+	tracingSql := "SELECT distinct(trace_id) AS trace_id,(toUnixTimestamp64Nano(max(end_time)) - toUnixTimestamp64Nano(min(start_time))) AS duration, min(start_time) AS min_start_time FROM %s %s GROUP BY trace_id"
 
 	var where bytes.Buffer
 	// trace id condition
 	where.WriteString(fmt.Sprintf("WHERE toUnixTimestamp64Milli(start_time) >= %v AND toUnixTimestamp64Milli(end_time) <= %v ", model.StartTime, model.EndTime))
 
 	if model.TraceId != "" {
-		where.WriteString("AND trace_id LIKE %" + model.TraceId + "%) ")
+		where.WriteString("AND trace_id LIKE concat('%','" + model.TraceId + "','%') ")
 	}
 	if model.DurationMin > 0 && model.DurationMax > 0 && model.DurationMin < model.DurationMax {
 		where.WriteString(fmt.Sprintf("AND ((toUnixTimestamp64Nano(end_time) - toUnixTimestamp64Nano(start_time)) >= %v "+
@@ -184,7 +184,7 @@ func (chs *ClickhouseSource) GetTraces(ctx context.Context, req *pb.GetTracesReq
 	where.WriteString(fmt.Sprintf("WHERE toUnixTimestamp64Milli(start_time) >= %v AND toUnixTimestamp64Milli(end_time) <= %v ", req.StartTime, req.EndTime))
 
 	if req.TraceID != "" {
-		where.WriteString("AND trace_id LIKE %" + req.TraceID + "%) ")
+		where.WriteString("AND trace_id LIKE concat('%','" + req.TraceID + "','%') ")
 	}
 	if req.DurationMin > 0 && req.DurationMax > 0 && req.DurationMin < req.DurationMax {
 		where.WriteString(fmt.Sprintf("AND ((toUnixTimestamp64Nano(end_time) - toUnixTimestamp64Nano(start_time)) >= %v "+
@@ -222,23 +222,25 @@ func (chs *ClickhouseSource) GetTraces(ctx context.Context, req *pb.GetTracesReq
 
 func (chs *ClickhouseSource) composeFilter(req *pb.GetTracesRequest) string {
 	var subSqlBuf bytes.Buffer
-	subSqlBuf.WriteString(fmt.Sprintf("SELECT distinct(series_id) FROM %s WHERE (key='terminus_key' AND value = '%s') AND ", SpanMetaTable, req.TenantID))
+	subSqlBuf.WriteString(fmt.Sprintf("SELECT distinct(series_id) FROM %s WHERE (series_id in (select distinct(series_id) from %s where (key = 'terminus_key' AND value = '%s')) AND ", SpanMetaTable, SpanMetaTable, req.TenantID))
 
 	if req.ServiceName != "" {
-		subSqlBuf.WriteString("(key='service_name' AND value LIKE concat('%','" + req.ServiceName + "','%')) AND ")
+		subSqlBuf.WriteString("(key='service_name' AND value LIKE concat('%','" + req.ServiceName + "','%')) OR ")
 	}
 
 	if req.RpcMethod != "" {
-		subSqlBuf.WriteString("(key='rpc_method' AND value LIKE concat('%','" + req.RpcMethod + "','%')) AND ")
+		subSqlBuf.WriteString("(key='rpc_method' AND value LIKE concat('%','" + req.RpcMethod + "','%')) OR ")
 	}
 
 	if req.HttpPath != "" {
-		subSqlBuf.WriteString("(key='http_path' AND value LIKE concat('%','" + req.HttpPath + "','%')) AND ")
+		subSqlBuf.WriteString("(key='http_path' AND value LIKE concat('%','" + req.HttpPath + "','%')) OR ")
 	}
 
 	subSql := subSqlBuf.String()
-	if strings.HasSuffix(subSql, "AND ") {
-		subSql = subSql[:len(subSql)-4]
+	if strings.HasSuffix(subSql, "OR ") {
+		subSql = subSql[:len(subSql)-4] + ")"
+	} else if strings.HasSuffix(subSql, "AND ") {
+		subSql = subSql[:len(subSql)-4] + ")"
 	}
 	return subSql
 }
@@ -246,7 +248,8 @@ func (chs *ClickhouseSource) composeFilter(req *pb.GetTracesRequest) string {
 func (chs *ClickhouseSource) selectKeyByTraceId(ctx context.Context, traceId, key string) ([]string, error) {
 	keyMap := make(map[string]struct{}, 10)
 	keys := make([]string, 0, 10)
-	rows, err := chs.Clickhouse.Client().Query(ctx, fmt.Sprintf("SELECT value FROM %s WHERE series_id IN (SELECT series_id FROM %s WHERE trace_id = &1) AND key = &2", SpanMetaTable, SpanSeriesTable), traceId, key)
+	sql := fmt.Sprintf("SELECT value FROM %s WHERE series_id IN (SELECT series_id FROM %s WHERE trace_id = $1) AND key = $2", SpanMetaTable, SpanSeriesTable)
+	rows, err := chs.Clickhouse.Client().Query(ctx, sql, traceId, key)
 	if err != nil {
 		return nil, err
 	}
