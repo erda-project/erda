@@ -20,7 +20,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/api/apis"
-	"github.com/erda-project/erda/modules/orchestrator/utils"
+	"github.com/erda-project/erda/modules/tools/orchestrator/utils"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )

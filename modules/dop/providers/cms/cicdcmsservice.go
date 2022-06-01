@@ -15,19 +15,19 @@
 package cms
 
 import (
-	context "context"
+	"context"
 	"strconv"
 	"strings"
 
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
-	pb "github.com/erda-project/erda-proto-go/dop/cms/pb"
+	"github.com/erda-project/erda-proto-go/dop/cms/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/modules/dop/services/permission"
 	"github.com/erda-project/erda/modules/dop/utils"
-	"github.com/erda-project/erda/modules/pipeline/providers/cms"
-	"github.com/erda-project/erda/modules/pipeline/providers/cms/db"
+	"github.com/erda-project/erda/modules/tools/pipeline/providers/cms"
+	"github.com/erda-project/erda/modules/tools/pipeline/providers/cms/db"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/providers/audit"
 )

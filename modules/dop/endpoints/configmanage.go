@@ -26,9 +26,9 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/modules/dop/utils"
-	"github.com/erda-project/erda/modules/pipeline/providers/cms"
 	"github.com/erda-project/erda/modules/pkg/gitflowutil"
 	"github.com/erda-project/erda/modules/pkg/user"
+	cms2 "github.com/erda-project/erda/modules/tools/pipeline/providers/cms"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 )
@@ -77,7 +77,7 @@ func (e *Endpoints) createOrUpdateCmsNsConfigs(ctx context.Context, r *http.Requ
 	for _, config := range oriReq.Configs {
 		var operations = &cmspb.PipelineCmsConfigOperations{}
 		switch config.Type {
-		case cms.ConfigTypeDiceFile:
+		case cms2.ConfigTypeDiceFile:
 			operations.CanDelete = true
 			operations.CanDownload = true
 			operations.CanEdit = true
@@ -325,7 +325,7 @@ func (e *Endpoints) generatorPipelineNS(appID uint64) (*apistructs.PipelineConfi
 	}
 
 	// default
-	defaultSecretNs := fmt.Sprintf("%s-%d-default", cms.PipelineAppConfigNameSpacePrefix, appID)
+	defaultSecretNs := fmt.Sprintf("%s-%d-default", cms2.PipelineAppConfigNameSpacePrefix, appID)
 	configNs.Namespaces = append(configNs.Namespaces, apistructs.PipelineConfigNamespaceItem{ID: gitflowutil.DEFAULT, Namespace: defaultSecretNs})
 
 	app, err := e.bdl.GetApp(appID)
@@ -353,7 +353,7 @@ func (e *Endpoints) generatorPipelineNS(appID uint64) (*apistructs.PipelineConfi
 			return nil, apierrors.ErrFetchConfigNamespace.InternalError(err)
 		}
 		if branchPrefix == gitflowutil.HOTFIX_WITHOUT_SLASH || branchPrefix == gitflowutil.SUPPORT_WITHOUT_SLASH {
-			ns := fmt.Sprintf("%s-%d-%s", cms.PipelineAppConfigNameSpacePrefix, appID, branchPrefix)
+			ns := fmt.Sprintf("%s-%d-%s", cms2.PipelineAppConfigNameSpacePrefix, appID, branchPrefix)
 			configs, err := e.pipelineCms.GetCmsNsConfigs(utils.WithInternalClientContext(context.Background()),
 				&cmspb.CmsNsConfigsGetRequest{
 					Ns:             ns,
@@ -378,7 +378,7 @@ func (e *Endpoints) generatorPipelineNS(appID uint64) (*apistructs.PipelineConfi
 		if ok {
 			branchStr = strings.Join(branches, ",")
 		}
-		ns := fmt.Sprintf("%s-%d-%s", cms.PipelineAppConfigNameSpacePrefix, appID, branchPrefix)
+		ns := fmt.Sprintf("%s-%d-%s", cms2.PipelineAppConfigNameSpacePrefix, appID, branchPrefix)
 		configNs.Namespaces = append(configNs.Namespaces,
 			apistructs.PipelineConfigNamespaceItem{
 				ID:        item.Workspace,
