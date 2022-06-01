@@ -21,22 +21,22 @@ import (
 	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda/apistructs"
-	model2 "github.com/erda-project/erda/modules/core/core-services/model"
+	"github.com/erda-project/erda/modules/core/legacy/model"
 )
 
 // CreateAudit 创建审计
-func (client *DBClient) CreateAudit(audit *model2.Audit) error {
+func (client *DBClient) CreateAudit(audit *model.Audit) error {
 	return client.Create(audit).Error
 }
 
 // BatchCreateAudit 批量传教审计
-func (client *DBClient) BatchCreateAudit(audits []model2.Audit) error {
+func (client *DBClient) BatchCreateAudit(audits []model.Audit) error {
 	return client.BulkInsert(audits)
 }
 
 // GetAuditsByParam 通过参数查询成员
-func (client *DBClient) GetAuditsByParam(param *apistructs.AuditsListRequest) (int, []model2.Audit, error) {
-	var audits []model2.Audit
+func (client *DBClient) GetAuditsByParam(param *apistructs.AuditsListRequest) (int, []model.Audit, error) {
+	var audits []model.Audit
 	var total int
 	db := client.Table("dice_audit").Scopes(NotDeleted).Where("start_time >= ? AND start_time <= ?", param.StartAt, param.EndAt)
 
@@ -65,8 +65,8 @@ func (client *DBClient) GetAuditsByParam(param *apistructs.AuditsListRequest) (i
 }
 
 // GetAuditSettings 从 dice_org 获取审计事件清理周期
-func (client *DBClient) GetAuditSettings() ([]model2.AuditSettings, error) {
-	var auditSettings []model2.AuditSettings
+func (client *DBClient) GetAuditSettings() ([]model.AuditSettings, error) {
+	var auditSettings []model.AuditSettings
 	if err := client.Table("dice_org").Select("id, config").Find(&auditSettings).Error; err != nil {
 		return nil, err
 	}
@@ -117,7 +117,7 @@ func (client *DBClient) ArchiveAuditsByTimeAndOrg() error {
 		return err
 	}
 	// 删除审计表数据
-	if err := client.Table("dice_audit").Scopes(Deleted).Delete(model2.Audit{}).Error; err != nil {
+	if err := client.Table("dice_audit").Scopes(Deleted).Delete(model.Audit{}).Error; err != nil {
 		return err
 	}
 
@@ -126,7 +126,7 @@ func (client *DBClient) ArchiveAuditsByTimeAndOrg() error {
 
 // InitOrgAuditInterval 初始化企业的审计事件清理周期
 func (client *DBClient) InitOrgAuditInterval(orgIDs []uint64) error {
-	var orgs []model2.Org
+	var orgs []model.Org
 	if err := client.Table("dice_org").Where("id in ( ? )", orgIDs).Find(&orgs).Error; err != nil {
 		return err
 	}
@@ -148,7 +148,7 @@ func (client *DBClient) InitOrgAuditInterval(orgIDs []uint64) error {
 
 // UpdateAuditCleanCron 修改企业事件清理周期
 func (client *DBClient) UpdateAuditCleanCron(orgID, interval int64) error {
-	var org model2.Org
+	var org model.Org
 	if err := client.Table("dice_org").Where("id = ( ? )", orgID).Find(&org).Error; err != nil {
 		return err
 	}
@@ -166,8 +166,8 @@ func (client *DBClient) UpdateAuditCleanCron(orgID, interval int64) error {
 }
 
 // GetAuditCleanCron 获取企业事件清理周期
-func (client *DBClient) GetAuditCleanCron(orgID int64) (*model2.Org, error) {
-	var org model2.Org
+func (client *DBClient) GetAuditCleanCron(orgID int64) (*model.Org, error) {
+	var org model.Org
 	if err := client.Table("dice_org").Where("id = ( ? )", orgID).Find(&org).Error; err != nil {
 		return nil, err
 	}

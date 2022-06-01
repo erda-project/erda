@@ -21,7 +21,7 @@ import (
 
 	"bou.ke/monkey"
 
-	"github.com/erda-project/erda/modules/core/core-services/conf"
+	"github.com/erda-project/erda/modules/core/legacy/conf"
 )
 
 const testClusterName = "core-services-test"

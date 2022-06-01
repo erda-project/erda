@@ -21,7 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/core/core-services/model"
+	"github.com/erda-project/erda/modules/core/legacy/model"
 )
 
 func TestSetDuplicateMboxStatus(t *testing.T) {

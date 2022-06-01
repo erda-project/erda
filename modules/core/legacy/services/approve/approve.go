@@ -27,11 +27,11 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/core/core-services/conf"
-	"github.com/erda-project/erda/modules/core/core-services/dao"
-	model2 "github.com/erda-project/erda/modules/core/core-services/model"
-	"github.com/erda-project/erda/modules/core/core-services/services/member"
-	"github.com/erda-project/erda/modules/core/core-services/utils"
+	"github.com/erda-project/erda/modules/core/legacy/conf"
+	"github.com/erda-project/erda/modules/core/legacy/dao"
+	"github.com/erda-project/erda/modules/core/legacy/model"
+	"github.com/erda-project/erda/modules/core/legacy/services/member"
+	"github.com/erda-project/erda/modules/core/legacy/utils"
 	"github.com/erda-project/erda/pkg/strutil"
 	"github.com/erda-project/erda/pkg/ucauth"
 )
@@ -111,7 +111,7 @@ func (a *Approve) Create(userID string, createReq *apistructs.ApproveCreateReque
 	}
 
 	// 添加Approve至DB
-	approve = &model2.Approve{
+	approve = &model.Approve{
 		OrgID:        createReq.OrgID,
 		TargetID:     createReq.TargetID,
 		EntityID:     createReq.EntityID,
@@ -180,7 +180,7 @@ func (a *Approve) Create(userID string, createReq *apistructs.ApproveCreateReque
 }
 
 func (a *Approve) mkMboxEmailNotify(id int64, done string, orgid uint64, projectname string,
-	member string, start, end time.Time, desc string, receivers []model2.Member) error {
+	member string, start, end time.Time, desc string, receivers []model.Member) error {
 	protocol := utils.GetProtocol()
 	domain := conf.UIDomain()
 	org, err := a.db.GetOrg(int64(orgid))
@@ -303,7 +303,7 @@ func (a *Approve) Update(approveID int64, updateReq *apistructs.ApproveUpdateReq
 			return errors.Errorf("failed to parse 'end' timestamp: %v", err)
 		}
 		if err := a.mkMboxEmailNotify(approve.ID, "done", approve.OrgID, approve.TargetName, member, start, end, approve.Desc,
-			[]model2.Member{{
+			[]model.Member{{
 				UserID: approve.Submitter,
 				Email:  memberlist[0].Email,
 			}}); err != nil {
@@ -382,7 +382,7 @@ func (c *Approve) Get(approveID int64) (*apistructs.ApproveDTO, error) {
 func (c *Approve) ListAllApproves(params *apistructs.ApproveListRequest) (
 	*apistructs.PagingApproveDTO, error) {
 	var total int
-	var approves []model2.Approve
+	var approves []model.Approve
 	var err error
 	if params.ID != nil {
 		approve, err := c.db.GetApproveByID(*params.ID)
@@ -390,7 +390,7 @@ func (c *Approve) ListAllApproves(params *apistructs.ApproveListRequest) (
 			return nil, errors.Errorf("failed to get approves, (%v)", err)
 		}
 		total = 1
-		approves = []model2.Approve{approve}
+		approves = []model.Approve{approve}
 	} else {
 		total, approves, err = c.db.GetApprovesByOrgIDAndStatus(params)
 		if err != nil {
@@ -407,7 +407,7 @@ func (c *Approve) ListAllApproves(params *apistructs.ApproveListRequest) (
 	return &apistructs.PagingApproveDTO{Total: total, List: approveDTOs}, nil
 }
 
-func (p *Approve) convertToApproveDTO(approve *model2.Approve) *apistructs.ApproveDTO {
+func (p *Approve) convertToApproveDTO(approve *model.Approve) *apistructs.ApproveDTO {
 	approveDto := &apistructs.ApproveDTO{
 		ID:           uint64(approve.ID),
 		Type:         apistructs.ApproveType(approve.Type),

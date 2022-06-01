@@ -20,7 +20,7 @@ import (
 	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda/apistructs"
-	model2 "github.com/erda-project/erda/modules/core/core-services/model"
+	"github.com/erda-project/erda/modules/core/legacy/model"
 )
 
 // CreateNotifyGroup 创建通知组
@@ -29,7 +29,7 @@ func (client *DBClient) CreateNotifyGroup(request *apistructs.CreateNotifyGroupR
 	if err != nil {
 		return 0, err
 	}
-	notifyGroup := model2.NotifyGroup{
+	notifyGroup := model.NotifyGroup{
 		Name:        request.Name,
 		ScopeType:   request.ScopeType,
 		ScopeID:     request.ScopeID,
@@ -54,7 +54,7 @@ func (client *DBClient) UpdateNotifyGroup(request *apistructs.UpdateNotifyGroupR
 	if err != nil {
 		return err
 	}
-	var notifyGroup model2.NotifyGroup
+	var notifyGroup model.NotifyGroup
 	err = client.Where("id = ? and org_id = ?", request.ID, request.OrgID).First(&notifyGroup).Error
 	if err != nil {
 		return err
@@ -68,15 +68,15 @@ func (client *DBClient) UpdateNotifyGroup(request *apistructs.UpdateNotifyGroupR
 
 func (client *DBClient) CheckNotifyGroupNameExist(scopeType, scopeID, name string) (bool, error) {
 	var count int64
-	err := client.Model(&model2.NotifyGroup{}).Where("scope_type =? and scope_id =? and name = ?",
+	err := client.Model(&model.NotifyGroup{}).Where("scope_type =? and scope_id =? and name = ?",
 		scopeType, scopeID, name).Count(&count).Error
 	return count > 0, err
 }
 
 // QueryNotifyGroup 查询通知组
 func (client *DBClient) QueryNotifyGroup(request *apistructs.QueryNotifyGroupRequest, orgID int64) (*apistructs.QueryNotifyGroupData, error) {
-	var notifyGroups []model2.NotifyGroup
-	query := client.Model(&model2.NotifyGroup{}).Where("org_id =? and auto_create= ?", orgID, false)
+	var notifyGroups []model.NotifyGroup
+	query := client.Model(&model.NotifyGroup{}).Where("org_id =? and auto_create= ?", orgID, false)
 	var count int
 	if request.ScopeType != "" && request.ScopeID != "" {
 		query = query.Where("scope_type = ? and scope_id =?", request.ScopeType, request.ScopeID)
@@ -114,7 +114,7 @@ func (client *DBClient) QueryNotifyGroup(request *apistructs.QueryNotifyGroupReq
 
 // GetNotifyGroupByID 获取通知组
 func (client *DBClient) GetNotifyGroupByID(id int64, orgID int64) (*apistructs.NotifyGroup, error) {
-	var notifyGroup model2.NotifyGroup
+	var notifyGroup model.NotifyGroup
 	err := client.Where("id = ? and org_id =? ", id, orgID).Find(&notifyGroup).Error
 	if err != nil {
 		return nil, err
@@ -124,7 +124,7 @@ func (client *DBClient) GetNotifyGroupByID(id int64, orgID int64) (*apistructs.N
 
 // GetNotifyGroupByIDWithoutOrgID 直接通过ID获取通知组
 func (client *DBClient) GetNotifyGroupByIDWithoutOrgID(id int64) (*apistructs.NotifyGroup, error) {
-	var notifyGroup model2.NotifyGroup
+	var notifyGroup model.NotifyGroup
 	err := client.Where("id = ?", id).Find(&notifyGroup).Error
 	if err != nil {
 		return nil, err
@@ -134,7 +134,7 @@ func (client *DBClient) GetNotifyGroupByIDWithoutOrgID(id int64) (*apistructs.No
 
 // BatchGetNotifyGroup 批量获取通知组
 func (client *DBClient) BatchGetNotifyGroup(ids []int64) ([]*apistructs.NotifyGroup, error) {
-	var notifyGroups []model2.NotifyGroup
+	var notifyGroups []model.NotifyGroup
 	err := client.Where("id in (?) ", ids).Find(&notifyGroups).Error
 	if err != nil {
 		return nil, err
@@ -147,7 +147,7 @@ func (client *DBClient) BatchGetNotifyGroup(ids []int64) ([]*apistructs.NotifyGr
 }
 
 func (client *DBClient) GetNotifyGroupNameByID(id int64, orgID int64) (*apistructs.NotifyGroup, error) {
-	var notifyGroup model2.NotifyGroup
+	var notifyGroup model.NotifyGroup
 	err := client.Where("id = ? and org_id =? ", id, orgID).Select("id,name").Find(&notifyGroup).Error
 	if err != nil {
 		return nil, err
@@ -156,7 +156,7 @@ func (client *DBClient) GetNotifyGroupNameByID(id int64, orgID int64) (*apistruc
 }
 
 func (client *DBClient) DeleteNotifyGroup(id int64, orgID int64) error {
-	var notifyGroup model2.NotifyGroup
+	var notifyGroup model.NotifyGroup
 	err := client.Where("id = ? and org_id = ? ", id, orgID).Find(&notifyGroup).Error
 	if err != nil {
 		return err
@@ -166,7 +166,7 @@ func (client *DBClient) DeleteNotifyGroup(id int64, orgID int64) error {
 
 // DeleteNotifyRelationsByScope 删除对应关联的通知信息
 func (client *DBClient) DeleteNotifyRelationsByScope(scopeType apistructs.ScopeType, scopeID string) error {
-	var notifies []model2.Notify
+	var notifies []model.Notify
 	err := client.Where("scope_type = ? and scope_id = ? ", scopeType, scopeID).Find(&notifies).Error
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return err
@@ -175,19 +175,19 @@ func (client *DBClient) DeleteNotifyRelationsByScope(scopeType apistructs.ScopeT
 	for _, notify := range notifies {
 		notifiyIDs = append(notifiyIDs, notify.ID)
 	}
-	err = client.Where("notify_id in (?)", notifiyIDs).Delete(&model2.NotifyItemRelation{}).Error
+	err = client.Where("notify_id in (?)", notifiyIDs).Delete(&model.NotifyItemRelation{}).Error
 	if err != nil {
 		return err
 	}
-	err = client.Where("notify_id in (?)", notifiyIDs).Delete(&model2.NotifySource{}).Error
+	err = client.Where("notify_id in (?)", notifiyIDs).Delete(&model.NotifySource{}).Error
 	if err != nil {
 		return err
 	}
 
-	err = client.Where("scope_type = ? and scope_id = ? ", scopeType, scopeID).Delete(&model2.NotifyGroup{}).Error
+	err = client.Where("scope_type = ? and scope_id = ? ", scopeType, scopeID).Delete(&model.NotifyGroup{}).Error
 	if err != nil {
 		return err
 	}
-	err = client.Where("scope_type = ? and scope_id = ? ", scopeType, scopeID).Delete(&model2.Notify{}).Error
+	err = client.Where("scope_type = ? and scope_id = ? ", scopeType, scopeID).Delete(&model.Notify{}).Error
 	return err
 }

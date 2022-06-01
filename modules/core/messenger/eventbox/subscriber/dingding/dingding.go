@@ -28,7 +28,7 @@ import (
 	"github.com/erda-project/erda-proto-go/core/messenger/notify/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/core/messenger/eventbox/monitor"
-	subscriber2 "github.com/erda-project/erda/modules/core/messenger/eventbox/subscriber"
+	"github.com/erda-project/erda/modules/core/messenger/eventbox/subscriber"
 	"github.com/erda-project/erda/modules/core/messenger/eventbox/types"
 	"github.com/erda-project/erda/modules/core/messenger/eventbox/webhook"
 	"github.com/erda-project/erda/pkg/http/httpclient"
@@ -85,7 +85,7 @@ type DDSubscriber struct {
 	messenger pb.NotifyServiceServer
 }
 
-func New(proxy string, messenger pb.NotifyServiceServer) subscriber2.Subscriber {
+func New(proxy string, messenger pb.NotifyServiceServer) subscriber.Subscriber {
 	return &DDSubscriber{
 		proxy:     proxy,
 		messenger: messenger,
@@ -172,7 +172,7 @@ func (d *DDSubscriber) Publish(dest string, content string, time int64, msg *typ
 		}
 	}
 	if msg.CreateHistory != nil {
-		subscriber2.SaveNotifyHistories(msg.CreateHistory, d.messenger)
+		subscriber.SaveNotifyHistories(msg.CreateHistory, d.messenger)
 	}
 	return errs
 }

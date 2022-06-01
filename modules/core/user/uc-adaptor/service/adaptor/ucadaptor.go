@@ -24,7 +24,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/core/user/uc-adaptor/conf"
-	dao2 "github.com/erda-project/erda/modules/core/user/uc-adaptor/dao"
+	"github.com/erda-project/erda/modules/core/user/uc-adaptor/dao"
 	"github.com/erda-project/erda/modules/core/user/uc-adaptor/ucclient"
 	"github.com/erda-project/erda/pkg/cron"
 	"github.com/erda-project/erda/pkg/dlock"
@@ -33,7 +33,7 @@ import (
 
 // Adaptor 结构体
 type Adaptor struct {
-	db        *dao2.DBClient
+	db        *dao.DBClient
 	uc        *ucclient.UCClient
 	cron      *cron.Cron
 	bdl       *bundle.Bundle
@@ -63,7 +63,7 @@ func New(options ...Option) *Adaptor {
 }
 
 // WithDBClient 配置 Issue 数据库选项
-func WithDBClient(db *dao2.DBClient) Option {
+func WithDBClient(db *dao.DBClient) Option {
 	return func(adaptor *Adaptor) {
 		adaptor.db = db
 	}
@@ -202,14 +202,14 @@ func (a *Adaptor) PullAudits() (*apistructs.UCAuditsListResponse, error) {
 	}
 
 	// 插入同步记录
-	var records []*dao2.UCSyncRecord
+	var records []*dao.UCSyncRecord
 	for _, v := range resp.Result {
 		t, err := time.ParseInLocation("2006-01-02 15:04:05", time.Unix(v.EventTime/1e3, 0).Format("2006-01-02 15:04:05"), time.Local)
 		if err != nil {
 			return nil, err
 		}
 
-		records = append(records, &dao2.UCSyncRecord{UCID: v.ID, UCEventTime: t})
+		records = append(records, &dao.UCSyncRecord{UCID: v.ID, UCEventTime: t})
 	}
 
 	if err := a.db.BatchCreateUCSyncRecord(records); err != nil {
@@ -322,7 +322,7 @@ func (a *Adaptor) removeSendFailedReceiver(Receiver string, ucIDs []int64) error
 }
 
 // ListSyncRecord 查看uc同步历史记录
-func (a *Adaptor) ListSyncRecord() ([]dao2.UCSyncRecord, error) {
+func (a *Adaptor) ListSyncRecord() ([]dao.UCSyncRecord, error) {
 	lastRecord, err := a.db.GetLastNRecord(100)
 	if err != nil {
 		return nil, err

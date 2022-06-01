@@ -26,8 +26,8 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/legacy/httpendpoints/i18n"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/core/core-services/dao"
-	"github.com/erda-project/erda/modules/core/core-services/services/apierrors"
+	"github.com/erda-project/erda/modules/core/legacy/dao"
+	"github.com/erda-project/erda/modules/core/legacy/services/apierrors"
 	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httputil"

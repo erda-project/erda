@@ -30,7 +30,7 @@ import (
 	"github.com/erda-project/erda-proto-go/core/messenger/notify/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	subscriber2 "github.com/erda-project/erda/modules/core/messenger/eventbox/subscriber"
+	"github.com/erda-project/erda/modules/core/messenger/eventbox/subscriber"
 	"github.com/erda-project/erda/modules/core/messenger/eventbox/types"
 	"github.com/erda-project/erda/pkg/template"
 )
@@ -83,7 +83,7 @@ func NewMailSubscriberInfo(host, port, user, password, displayUser, isSSLStr, in
 	return subscriber
 }
 
-func New(host, port, user, password, displayUser, isSSLStr, insecureSkipVerify string, bundle *bundle.Bundle, messenger pb.NotifyServiceServer) subscriber2.Subscriber {
+func New(host, port, user, password, displayUser, isSSLStr, insecureSkipVerify string, bundle *bundle.Bundle, messenger pb.NotifyServiceServer) subscriber.Subscriber {
 	subscriber := &MailSubscriber{
 		host:        host,
 		port:        port,
@@ -133,7 +133,7 @@ func (d *MailSubscriber) Publish(dest string, content string, time int64, msg *t
 		}
 	}
 	if msg.CreateHistory != nil {
-		subscriber2.SaveNotifyHistories(msg.CreateHistory, d.messenger)
+		subscriber.SaveNotifyHistories(msg.CreateHistory, d.messenger)
 	}
 	return errs
 }

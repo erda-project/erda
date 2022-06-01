@@ -16,11 +16,11 @@ package dao
 
 import (
 	"github.com/erda-project/erda/apistructs"
-	model2 "github.com/erda-project/erda/modules/core/core-services/model"
+	"github.com/erda-project/erda/modules/core/legacy/model"
 )
 
 func (client *DBClient) CreateNotify(request *apistructs.CreateNotifyRequest) (int64, error) {
-	notify := model2.Notify{
+	notify := model.Notify{
 		Name:          request.Name,
 		ScopeType:     request.ScopeType,
 		ScopeID:       request.ScopeID,
@@ -39,7 +39,7 @@ func (client *DBClient) CreateNotify(request *apistructs.CreateNotifyRequest) (i
 	}
 
 	for _, itemID := range request.NotifyItemIDs {
-		itemRelation := model2.NotifyItemRelation{
+		itemRelation := model.NotifyItemRelation{
 			NotifyItemID: itemID,
 			NotifyID:     notify.ID,
 		}
@@ -59,7 +59,7 @@ func (client *DBClient) CreateNotify(request *apistructs.CreateNotifyRequest) (i
 		}
 	}
 	for _, source := range request.NotifySources {
-		notifySource := model2.NotifySource{
+		notifySource := model.NotifySource{
 			Name:       source.Name,
 			NotifyID:   notify.ID,
 			SourceType: source.SourceType,
@@ -76,17 +76,17 @@ func (client *DBClient) CreateNotify(request *apistructs.CreateNotifyRequest) (i
 
 func (client *DBClient) CheckNotifyNameExist(scopeType, scopeID, name, label string) (bool, error) {
 	var count int64
-	err := client.Model(&model2.Notify{}).Where("scope_type =? and scope_id =? and name = ? and label = ?",
+	err := client.Model(&model.Notify{}).Where("scope_type =? and scope_id =? and name = ? and label = ?",
 		scopeType, scopeID, name, label).Count(&count).Error
 	return count > 0, err
 }
 
 func (client *DBClient) UpdateNotifyEnable(id int64, enabled bool, orgID int64) error {
-	return client.Model(&model2.Notify{}).Where("id = ? and org_id=?", id, orgID).Update("enabled", enabled).Error
+	return client.Model(&model.Notify{}).Where("id = ? and org_id=?", id, orgID).Update("enabled", enabled).Error
 }
 
 func (client *DBClient) UpdateNotify(request *apistructs.UpdateNotifyRequest) error {
-	var notify model2.Notify
+	var notify model.Notify
 	err := client.Where("id = ? ", request.ID).First(&notify).Error
 	if err != nil {
 		return err
@@ -106,10 +106,10 @@ func (client *DBClient) UpdateNotify(request *apistructs.UpdateNotifyRequest) er
 	} else {
 		notify.NotifyGroupID = request.NotifyGroupID
 	}
-	client.Delete(model2.NotifyItemRelation{}, "notify_id = ?", notify.ID)
-	client.Delete(model2.NotifySource{}, "notify_id = ?", notify.ID)
+	client.Delete(model.NotifyItemRelation{}, "notify_id = ?", notify.ID)
+	client.Delete(model.NotifySource{}, "notify_id = ?", notify.ID)
 	for _, itemID := range request.NotifyItemIDs {
-		itemRelation := model2.NotifyItemRelation{
+		itemRelation := model.NotifyItemRelation{
 			NotifyItemID: itemID,
 			NotifyID:     notify.ID,
 		}
@@ -129,7 +129,7 @@ func (client *DBClient) UpdateNotify(request *apistructs.UpdateNotifyRequest) er
 		}
 	}
 	for _, source := range request.NotifySources {
-		notifySource := model2.NotifySource{
+		notifySource := model.NotifySource{
 			Name:       source.Name,
 			NotifyID:   notify.ID,
 			SourceType: source.SourceType,
@@ -146,8 +146,8 @@ func (client *DBClient) UpdateNotify(request *apistructs.UpdateNotifyRequest) er
 }
 
 func (client *DBClient) QueryNotifies(request *apistructs.QueryNotifyRequest) (*apistructs.QueryNotifyData, error) {
-	var notifies []model2.Notify
-	query := client.Model(&model2.Notify{}).Where("org_id = ?", request.OrgID)
+	var notifies []model.Notify
+	query := client.Model(&model.Notify{}).Where("org_id = ?", request.OrgID)
 	if request.ScopeType != "" {
 		query = query.Where("scope_type = ?", request.ScopeType)
 	}
@@ -198,7 +198,7 @@ func (client *DBClient) QueryNotifies(request *apistructs.QueryNotifyRequest) (*
 }
 
 func (client *DBClient) QueryNotifiesBySource(sourceType, sourceID, itemName string, orgID int64, clusterName string, label string) ([]*apistructs.NotifyDetail, error) {
-	var notifies []model2.Notify
+	var notifies []model.Notify
 	query := client.Table("dice_notify_sources").
 		Joins("inner join dice_notifies on dice_notifies.id = dice_notify_sources.notify_id").
 		Joins("inner join dice_notify_item_relation on dice_notify_item_relation.notify_id = dice_notify_sources.notify_id").
@@ -240,7 +240,7 @@ func (client *DBClient) QueryNotifiesBySource(sourceType, sourceID, itemName str
 }
 
 func (client *DBClient) FuzzyQueryNotifiesBySource(req apistructs.FuzzyQueryNotifiesBySourceRequest) ([]*apistructs.NotifyDetail, int, error) {
-	var notifies []model2.Notify
+	var notifies []model.Notify
 	var total int
 	query := client.Table("dice_notify_sources").
 		Joins("inner join dice_notifies on dice_notifies.id = dice_notify_sources.notify_id").
@@ -293,8 +293,8 @@ func (client *DBClient) FuzzyQueryNotifiesBySource(req apistructs.FuzzyQueryNoti
 	return result, total, nil
 }
 
-func (client *DBClient) GetNotifyByGroupID(groupID int64) (*model2.Notify, error) {
-	var notify model2.Notify
+func (client *DBClient) GetNotifyByGroupID(groupID int64) (*model.Notify, error) {
+	var notify model.Notify
 	err := client.Where("notify_group_id = ?", groupID).Find(&notify).Error
 	if err != nil {
 		return nil, err
@@ -303,7 +303,7 @@ func (client *DBClient) GetNotifyByGroupID(groupID int64) (*model2.Notify, error
 }
 
 func (client *DBClient) GetNotifyDetail(id int64, orgID int64) (*apistructs.NotifyDetail, error) {
-	var notify model2.Notify
+	var notify model.Notify
 	err := client.Where("id = ? and org_id =?", id, orgID).Find(&notify).Error
 	if err != nil {
 		return nil, err
@@ -339,13 +339,13 @@ func (client *DBClient) GetNotifyDetail(id int64, orgID int64) (*apistructs.Noti
 }
 
 func (client *DBClient) DeleteNotify(id int64, withGroup bool, orgID int64) error {
-	var notify model2.Notify
+	var notify model.Notify
 	err := client.Where("id = ? and org_id= ?", id, orgID).Find(&notify).Error
 	if err != nil {
 		return err
 	}
-	client.Delete(model2.NotifyItemRelation{}, "notify_id = ?", notify.ID)
-	client.Delete(model2.NotifySource{}, "notify_id = ?", notify.ID)
+	client.Delete(model.NotifyItemRelation{}, "notify_id = ?", notify.ID)
+	client.Delete(model.NotifySource{}, "notify_id = ?", notify.ID)
 	if withGroup {
 		client.DeleteNotifyGroup(notify.NotifyGroupID, orgID)
 	}

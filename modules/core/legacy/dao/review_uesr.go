@@ -16,7 +16,7 @@ package dao
 
 import (
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/core/core-services/model"
+	"github.com/erda-project/erda/modules/core/legacy/model"
 )
 
 func (client *DBClient) GetOperatorByTaskID(taskID []int) ([]model.ReviewUser, error) {

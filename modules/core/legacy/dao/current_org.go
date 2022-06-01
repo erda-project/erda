@@ -15,7 +15,7 @@
 package dao
 
 import (
-	"github.com/erda-project/erda/modules/core/core-services/model"
+	"github.com/erda-project/erda/modules/core/legacy/model"
 )
 
 // CreateCurrentOrg 添加用户当前所属企业

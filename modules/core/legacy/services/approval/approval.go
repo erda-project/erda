@@ -15,7 +15,7 @@
 package approval
 
 import (
-	"github.com/erda-project/erda/modules/core/core-services/dao"
+	"github.com/erda-project/erda/modules/core/legacy/dao"
 )
 
 type Approval struct {

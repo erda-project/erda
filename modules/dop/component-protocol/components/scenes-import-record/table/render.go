@@ -28,7 +28,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/core/core-services/conf"
+	"github.com/erda-project/erda/modules/core/legacy/conf"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 )
 

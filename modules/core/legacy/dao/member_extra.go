@@ -18,24 +18,24 @@ import (
 	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda/apistructs"
-	model2 "github.com/erda-project/erda/modules/core/core-services/model"
+	"github.com/erda-project/erda/modules/core/legacy/model"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
 // CreateMemberExtra 创建成员关联关系
-func (client *DBClient) CreateMemberExtra(memberExtra *model2.MemberExtra) error {
+func (client *DBClient) CreateMemberExtra(memberExtra *model.MemberExtra) error {
 	return client.Create(memberExtra).Error
 }
 
 // BatchCreateMemberExtra 批量创建成员关联关系
-func (client *DBClient) BatchCreateMemberExtra(memberExtras []model2.MemberExtra) error {
+func (client *DBClient) BatchCreateMemberExtra(memberExtras []model.MemberExtra) error {
 	return client.BulkInsert(memberExtras)
 }
 
 // GetMemberExtra 根据UserID, Scope和resourceKey获取成员关联关系
 func (client *DBClient) GetMemberExtra(userIDs []string, scopeType apistructs.ScopeType, scopeID int64,
-	resourceKey []apistructs.ExtraResourceKey) ([]model2.MemberExtra, error) {
-	var memberExtras []model2.MemberExtra
+	resourceKey []apistructs.ExtraResourceKey) ([]model.MemberExtra, error) {
+	var memberExtras []model.MemberExtra
 	if err := client.Where("user_id in (?)", userIDs).Where("scope_id = ?", scopeID).Where("scope_type = ?", scopeType).
 		Where("resource_key in (?)", resourceKey).Find(&memberExtras).Error; err != nil {
 		if gorm.IsRecordNotFoundError(err) {
@@ -49,8 +49,8 @@ func (client *DBClient) GetMemberExtra(userIDs []string, scopeType apistructs.Sc
 
 // GetMemberExtraByIDs 根据多个userid和scopeid查询memberextra
 func (client *DBClient) GetMemberExtraByIDs(userIDs []string, scopeType apistructs.ScopeType, scopeIDs []int64,
-	resourceKey []apistructs.ExtraResourceKey) ([]model2.MemberExtra, error) {
-	var memberExtras []model2.MemberExtra
+	resourceKey []apistructs.ExtraResourceKey) ([]model.MemberExtra, error) {
+	var memberExtras []model.MemberExtra
 	if err := client.Where("user_id in (?)", userIDs).Where("scope_id in (?)", scopeIDs).Where("scope_type = ?", scopeType).
 		Where("resource_key in (?)", resourceKey).Find(&memberExtras).Error; err != nil {
 		if gorm.IsRecordNotFoundError(err) {
@@ -64,8 +64,8 @@ func (client *DBClient) GetMemberExtraByIDs(userIDs []string, scopeType apistruc
 
 // GetMemberByScopeAndRole 根据Scope和角色获取成员
 func (client *DBClient) GetMemberByScopeAndRole(scopeType apistructs.ScopeType, scopeIDs []uint64,
-	roles []string) ([]model2.MemberExtra, error) {
-	var memberExtras []model2.MemberExtra
+	roles []string) ([]model.MemberExtra, error) {
+	var memberExtras []model.MemberExtra
 	if err := client.Where("scope_id in (?)", scopeIDs).Where("scope_type = ?", scopeType).
 		Where("resource_value in (?)", roles).Find(&memberExtras).Error; err != nil {
 		if gorm.IsRecordNotFoundError(err) {
@@ -78,8 +78,8 @@ func (client *DBClient) GetMemberByScopeAndRole(scopeType apistructs.ScopeType, 
 }
 
 // GetProjectMembersByUser 根据userID查询项目权限，todo delete
-func (client *DBClient) GetProjectMembersByUser(userID string) ([]model2.MemberExtra, error) {
-	var memberExtras []model2.MemberExtra
+func (client *DBClient) GetProjectMembersByUser(userID string) ([]model.MemberExtra, error) {
+	var memberExtras []model.MemberExtra
 	if err := client.Where("scope_type = ?", apistructs.ProjectScope).
 		Where("user_id = ?", userID).
 		Find(&memberExtras).Error; err != nil {
@@ -89,8 +89,8 @@ func (client *DBClient) GetProjectMembersByUser(userID string) ([]model2.MemberE
 }
 
 // GetAppMembersByUser 根据userID查询应用权限
-func (client *DBClient) GetAppMembersByUser(userID string) ([]model2.MemberExtra, error) {
-	var memberExtras []model2.MemberExtra
+func (client *DBClient) GetAppMembersByUser(userID string) ([]model.MemberExtra, error) {
+	var memberExtras []model.MemberExtra
 	db := client.Where("scope_type = ?", apistructs.AppScope).
 		Where("user_id = ?", userID).
 		Find(&memberExtras)
@@ -103,8 +103,8 @@ func (client *DBClient) GetAppMembersByUser(userID string) ([]model2.MemberExtra
 }
 
 // GetMeberExtraByParentID 通过父scope获取成员extra
-func (client *DBClient) GetMeberExtraByParentID(userIDs []string, scopeType apistructs.ScopeType, parentID int64) ([]model2.MemberExtra, error) {
-	var memberExtras []model2.MemberExtra
+func (client *DBClient) GetMeberExtraByParentID(userIDs []string, scopeType apistructs.ScopeType, parentID int64) ([]model.MemberExtra, error) {
+	var memberExtras []model.MemberExtra
 	if err := client.Where("scope_type = ?", scopeType).Where("parent_id = ?", parentID).
 		Where("user_id in (?)", userIDs).Find(&memberExtras).Error; err != nil {
 		return nil, err
@@ -113,8 +113,8 @@ func (client *DBClient) GetMeberExtraByParentID(userIDs []string, scopeType apis
 }
 
 // GetMeberRoleByParentID 通过父scope获取成员extra
-func (client *DBClient) GetMeberRoleByParentID(userID string, scopeType apistructs.ScopeType, parentID int64) ([]model2.MemberExtra, error) {
-	var memberExtras []model2.MemberExtra
+func (client *DBClient) GetMeberRoleByParentID(userID string, scopeType apistructs.ScopeType, parentID int64) ([]model.MemberExtra, error) {
+	var memberExtras []model.MemberExtra
 	if err := client.Where("scope_type = ?", scopeType).Where("parent_id = ?", parentID).
 		Where("user_id = ?", userID).Where("resource_key = ?", apistructs.RoleResourceKey).
 		Find(&memberExtras).Error; err != nil {
@@ -124,10 +124,10 @@ func (client *DBClient) GetMeberRoleByParentID(userID string, scopeType apistruc
 }
 
 // PageMeberRoleByParentID 通过用户和父scope分页查询成员角色
-func (client *DBClient) PageMeberRoleByParentID(req apistructs.ListMemberRolesByUserRequest) (int, []model2.Member, error) {
+func (client *DBClient) PageMeberRoleByParentID(req apistructs.ListMemberRolesByUserRequest) (int, []model.Member, error) {
 	var (
-		tmpMembers []model2.Member
-		members    []model2.Member
+		tmpMembers []model.Member
+		members    []model.Member
 		total      int
 	)
 
@@ -175,45 +175,45 @@ func (client *DBClient) PageMeberRoleByParentID(req apistructs.ListMemberRolesBy
 // DeleteMemberExtraByScope 根据scope信息删除成员
 func (client *DBClient) DeleteMemberExtraByScope(scopeType apistructs.ScopeType, scopeID int64) error {
 	return client.Where("scope_type = ?", scopeType).Where("scope_id in (?)", scopeID).
-		Delete(&model2.MemberExtra{}).Error
+		Delete(&model.MemberExtra{}).Error
 }
 
 // DeleteMemberExtraByUserIDsAndScopeIDs 根据userID和多个scopeID删除成员关联关系
 func (client *DBClient) DeleteMemberExtraByUserIDsAndScopeIDs(scopeType apistructs.ScopeType, scopeIDs []int64,
 	userIDs []string) error {
 	return client.Where("user_id in (?)", userIDs).Where("scope_type = ?", scopeType).
-		Where("scope_id in (?)", scopeIDs).Delete(&model2.MemberExtra{}).Error
+		Where("scope_id in (?)", scopeIDs).Delete(&model.MemberExtra{}).Error
 }
 
 // DeleteMemberExtraByUserIDsAndScope 根据userID和scope删除成员关联关系
 func (client *DBClient) DeleteMemberExtraByUserIDsAndScope(scopeType apistructs.ScopeType, scopeID int64,
 	userIDs []string) error {
 	return client.Where("user_id in (?)", userIDs).Where("scope_type = ?", scopeType).
-		Where("scope_id = ?", scopeID).Delete(&model2.MemberExtra{}).Error
+		Where("scope_id = ?", scopeID).Delete(&model.MemberExtra{}).Error
 }
 
 // DeleteMemberExtraByParentID 根据parentID删除成员关联关系
 func (client *DBClient) DeleteMemberExtraByParentID(userIDs []string, scopeType apistructs.ScopeType, parentID int64) error {
 	return client.Where("user_id in (?)", userIDs).Where("scope_type = ?", scopeType).Where("parent_id = ?", parentID).
-		Delete(&model2.MemberExtra{}).Error
+		Delete(&model.MemberExtra{}).Error
 }
 
 // DeleteMemberExtraByParentIDs 根据多个parentID删除成员关联关系
 func (client *DBClient) DeleteMemberExtraByParentIDs(userID []string, scopeType apistructs.ScopeType, parentIDs []int64) error {
 	return client.Where("user_id in (?)", userID).Where("scope_type = ?", scopeType).Where("parent_id in (?)", parentIDs).
-		Delete(&model2.MemberExtra{}).Error
+		Delete(&model.MemberExtra{}).Error
 }
 
 // DeleteMemberExtraByIDsANDResourceValues 根据userIDs, scope和resourceValues删除成员标签
 func (client *DBClient) DeleteMemberExtraByIDsANDResourceValues(userIDs []string, scopeType apistructs.ScopeType,
 	scopeIDs []int64, resourceValues []string) error {
 	return client.Where("user_id in (?)", userIDs).Where("scope_id in (?)", scopeIDs).Where("scope_type = ?", scopeType).
-		Where("resource_value in (?)", resourceValues).Delete(&model2.MemberExtra{}).Error
+		Where("resource_value in (?)", resourceValues).Delete(&model.MemberExtra{}).Error
 }
 
 // DeleteMemberExtraByUxerIDANDResourceValues 根据userID, scope和resourceValues删除成员标签
 func (client *DBClient) DeleteMemberExtraByUxerIDANDResourceValues(userID string, scopeType apistructs.ScopeType,
 	scopeIDs []int64, resourceValues []string) error {
 	return client.Where("user_id = ?", userID).Where("scope_id in (?)", scopeIDs).Where("scope_type = ?", scopeType).
-		Where("resource_value in (?)", resourceValues).Delete(&model2.MemberExtra{}).Error
+		Where("resource_value in (?)", resourceValues).Delete(&model.MemberExtra{}).Error
 }

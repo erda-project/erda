@@ -29,9 +29,9 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/core/core-services/dao"
-	model2 "github.com/erda-project/erda/modules/core/core-services/model"
-	"github.com/erda-project/erda/modules/core/core-services/types"
+	"github.com/erda-project/erda/modules/core/legacy/dao"
+	"github.com/erda-project/erda/modules/core/legacy/model"
+	"github.com/erda-project/erda/modules/core/legacy/types"
 	locale "github.com/erda-project/erda/pkg/i18n"
 	"github.com/erda-project/erda/pkg/oauth2/tokenstore/mysqltokenstore"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -232,7 +232,7 @@ func (m *Member) CreateOrUpdate(userID string, req apistructs.MemberAddRequest) 
 						return err
 					}
 				}
-				member := &model2.Member{
+				member := &model.Member{
 					ScopeType:     targetScopeType,
 					ScopeID:       targetScopeID,
 					ScopeName:     m.db.GetScopeNameByScope(req.Scope.Type, targetScopeID),
@@ -291,7 +291,7 @@ func (m *Member) UpdateMemberUserInfo(req apistructs.MemberUserInfoUpdateRequest
 }
 
 // List 成员列表/查询
-func (m *Member) List(param *apistructs.MemberListRequest) (int, []model2.Member, error) {
+func (m *Member) List(param *apistructs.MemberListRequest) (int, []model.Member, error) {
 	return m.db.GetMembersByParam(param)
 }
 
@@ -382,17 +382,17 @@ func (m *Member) ListMemberRolesByUser(l *locale.LocaleResource, identityInfo ap
 }
 
 // ListByOrgAndUser 根据用户获取成员列表
-func (m *Member) ListByOrgAndUser(orgID int64, userID string) ([]model2.MemberJoin, error) {
+func (m *Member) ListByOrgAndUser(orgID int64, userID string) ([]model.MemberJoin, error) {
 	return m.db.GetMembersByOrgAndUser(orgID, userID)
 }
 
 // GetByUserAndScope 根据用户 & scope获取成员
-func (m *Member) GetByUserAndScope(userID string, scopeType apistructs.ScopeType, scopeID int64) ([]model2.MemberJoin, error) {
+func (m *Member) GetByUserAndScope(userID string, scopeType apistructs.ScopeType, scopeID int64) ([]model.MemberJoin, error) {
 	return m.db.GetMemberByScopeAndUserID(userID, scopeType, scopeID)
 }
 
 // GetByToken 根据用户token获取成员
-func (m *Member) GetByToken(token string) (*model2.Member, error) {
+func (m *Member) GetByToken(token string) (*model.Member, error) {
 	return m.db.GetMemberByToken(token)
 }
 
@@ -520,11 +520,11 @@ func (m *Member) syncReqExtra2DB(userIDs []string, scopeType apistructs.ScopeTyp
 	}
 
 	// 创建新增的角色
-	var mes []model2.MemberExtra
+	var mes []model.MemberExtra
 	for userID, rlMap := range newUserIDRLMap {
 		for k, v := range rlMap {
 			for _, scopeID := range scopeIDs {
-				me := model2.MemberExtra{
+				me := model.MemberExtra{
 					UserID:        userID,
 					ScopeType:     scopeType,
 					ScopeID:       scopeID,
@@ -765,7 +765,7 @@ func (m *Member) getParentScopeID(scopeType apistructs.ScopeType, scopeID int64)
 
 // IsAdmin 检查用户是否为系统管理员
 func (m *Member) IsAdmin(userID string) bool {
-	var member model2.Member
+	var member model.Member
 	if err := m.db.Where("scope_type = ?", apistructs.SysScope).
 		Where("user_id = ?", userID).Find(&member).Error; err != nil {
 		if err != gorm.ErrRecordNotFound {
@@ -790,7 +790,7 @@ func (m *Member) IsAdmin(userID string) bool {
 
 func (m *Member) noOneAdminForKratos() bool {
 	cnt := 1
-	if err := m.db.Model(&model2.Member{}).
+	if err := m.db.Model(&model.Member{}).
 		// only kratos user_id length greater than 11, add this check to prevent init sql's data: user_id=1 admin
 		// TODO: just a magic value, kratos' user_id is UUID, it is significantly larger than 11
 		Where("scope_type = ? AND length(user_id) > 11", apistructs.SysScope).
@@ -802,19 +802,19 @@ func (m *Member) noOneAdminForKratos() bool {
 }
 
 func (m *Member) firstUserBecomeAdmin(userID string) error {
-	return m.db.Create(&model2.Member{
+	return m.db.Create(&model.Member{
 		ScopeType: apistructs.SysScope,
 		UserID:    userID,
 	}).Error
 }
 
 // ListByScopeTypeAndUser 根据scopeType & user 获取成员
-func (m *Member) ListByScopeTypeAndUser(scopeType apistructs.ScopeType, userID string) ([]model2.Member, error) {
+func (m *Member) ListByScopeTypeAndUser(scopeType apistructs.ScopeType, userID string) ([]model.Member, error) {
 	return m.db.GetMembersByScopeTypeAndUser(scopeType, userID)
 }
 
 // ListOrgByUserIDs 获取userid对应的企业关系
-func (m *Member) ListOrgByUserIDs(userIDs []string) ([]model2.Member, error) {
+func (m *Member) ListOrgByUserIDs(userIDs []string) ([]model.Member, error) {
 	return m.db.GetOrgByUserIDs(userIDs)
 }
 

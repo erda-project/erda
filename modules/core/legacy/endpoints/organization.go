@@ -24,10 +24,10 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/core/core-services/conf"
-	model2 "github.com/erda-project/erda/modules/core/core-services/model"
-	"github.com/erda-project/erda/modules/core/core-services/services/apierrors"
-	"github.com/erda-project/erda/modules/core/core-services/utils"
+	"github.com/erda-project/erda/modules/core/legacy/conf"
+	"github.com/erda-project/erda/modules/core/legacy/model"
+	"github.com/erda-project/erda/modules/core/legacy/services/apierrors"
+	"github.com/erda-project/erda/modules/core/legacy/utils"
 	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/filehelper"
 	"github.com/erda-project/erda/pkg/http/httpserver"
@@ -194,7 +194,7 @@ func (e *Endpoints) UpdateOrg(ctx context.Context, r *http.Request, vars map[str
 func (e *Endpoints) GetOrg(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	var (
 		userID user.ID
-		org    *model2.Org
+		org    *model.Org
 		err    error
 	)
 	// 检查orgID合法性
@@ -247,7 +247,7 @@ func (e *Endpoints) DeleteOrg(ctx context.Context, r *http.Request, vars map[str
 		return apierrors.ErrDeleteOrg.NotLogin().ToResp(), nil
 	}
 
-	var org *model2.Org
+	var org *model.Org
 	// 检查orgID合法性
 	orgStr := vars["idOrName"]
 	orgID, _ := strutil.Atoi64(orgStr)
@@ -299,7 +299,7 @@ func (e *Endpoints) ListOrg(ctx context.Context, r *http.Request, vars map[strin
 	}
 	var (
 		total int
-		orgs  []model2.Org
+		orgs  []model.Org
 	)
 	total, orgs, err = e.org.ListOrgs(orgIDs, req, all)
 	if err != nil {
@@ -318,7 +318,7 @@ func (e *Endpoints) ListOrg(ctx context.Context, r *http.Request, vars map[strin
 	})
 }
 
-func (e *Endpoints) coverOrgsToDto(r *http.Request, orgs []model2.Org) ([]apistructs.OrgDTO, error) {
+func (e *Endpoints) coverOrgsToDto(r *http.Request, orgs []model.Org) ([]apistructs.OrgDTO, error) {
 	var currentOrgID int64
 	var err error
 	v := r.Header.Get(httputil.OrgHeader)
@@ -460,7 +460,7 @@ func (e *Endpoints) CreateOrgClusterRelation(ctx context.Context, r *http.Reques
 func (e *Endpoints) ListOrgClusterRelation(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	var (
 		err  error
-		rels []model2.OrgClusterRelation
+		rels []model.OrgClusterRelation
 	)
 	_, err = user.GetUserID(r)
 	if err != nil {
@@ -487,7 +487,7 @@ func (e *Endpoints) ListOrgClusterRelation(ctx context.Context, r *http.Request,
 	return httpserver.OkResp(relDTOs)
 }
 
-func (e *Endpoints) convertToOrgDTO(org model2.Org, domains ...string) apistructs.OrgDTO {
+func (e *Endpoints) convertToOrgDTO(org model.Org, domains ...string) apistructs.OrgDTO {
 	domain := ""
 	if len(domains) > 0 {
 		domain = domains[0]
@@ -547,7 +547,7 @@ func (e *Endpoints) convertToOrgDTO(org model2.Org, domains ...string) apistruct
 	return orgDto
 }
 
-func convertToOrgClusterRelationDTO(rel model2.OrgClusterRelation) apistructs.OrgClusterRelationDTO {
+func convertToOrgClusterRelationDTO(rel model.OrgClusterRelation) apistructs.OrgClusterRelationDTO {
 	return apistructs.OrgClusterRelationDTO{
 		ID:          uint64(rel.ID),
 		OrgID:       rel.OrgID,

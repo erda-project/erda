@@ -21,8 +21,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda/modules/core/core-services/conf"
-	"github.com/erda-project/erda/modules/core/core-services/dao"
+	"github.com/erda-project/erda/modules/core/legacy/conf"
+	"github.com/erda-project/erda/modules/core/legacy/dao"
 	"github.com/erda-project/erda/pkg/strutil"
 	"github.com/erda-project/erda/pkg/ucauth"
 )

@@ -25,15 +25,15 @@ import (
 	"github.com/erda-project/erda/modules/core/messenger/eventbox/constant"
 	"github.com/erda-project/erda/modules/core/messenger/eventbox/dispatcher/errors"
 	"github.com/erda-project/erda/modules/core/messenger/eventbox/types"
-	webhook2 "github.com/erda-project/erda/modules/core/messenger/eventbox/webhook"
+	"github.com/erda-project/erda/modules/core/messenger/eventbox/webhook"
 )
 
 type WebhookFilter struct {
-	impl *webhook2.WebHookImpl
+	impl *webhook.WebHookImpl
 }
 
 func NewWebhookFilter() (Filter, error) {
-	impl, err := webhook2.NewWebHookImpl()
+	impl, err := webhook.NewWebHookImpl()
 	if err != nil {
 		return nil, err
 	}
@@ -90,24 +90,24 @@ func (w *WebhookFilter) Filter(m *types.Message) *errors.DispatchError {
 	return derr
 }
 
-func decodeWebhookLabel(l interface{}) (*webhook2.EventLabel, error) {
+func decodeWebhookLabel(l interface{}) (*webhook.EventLabel, error) {
 	raw, err := json.Marshal(l)
 	if err != nil {
 		return nil, err
 	}
-	label := webhook2.EventLabel{}
+	label := webhook.EventLabel{}
 	if err := json.Unmarshal(raw, &label); err != nil {
 		return nil, err
 	}
 	return &label, nil
 }
 
-func replaceContent(m *types.Message, eventLabel webhook2.EventLabel) error {
+func replaceContent(m *types.Message, eventLabel webhook.EventLabel) error {
 	origin, err := json.Marshal(m.Content)
 	if err != nil {
 		return err
 	}
-	em := webhook2.MkEventMessage(eventLabel, origin)
+	em := webhook.MkEventMessage(eventLabel, origin)
 	if m.OriginContent() == nil {
 		m.SetOriginContent(m.Content)
 	}

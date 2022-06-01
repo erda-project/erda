@@ -26,9 +26,9 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/core/core-services/conf"
-	"github.com/erda-project/erda/modules/core/core-services/dao"
-	"github.com/erda-project/erda/modules/core/core-services/model"
+	"github.com/erda-project/erda/modules/core/legacy/conf"
+	"github.com/erda-project/erda/modules/core/legacy/dao"
+	"github.com/erda-project/erda/modules/core/legacy/model"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/i18n"

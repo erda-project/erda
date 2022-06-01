@@ -28,14 +28,14 @@ import (
 	monitor "github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/core/messenger/common"
-	db2 "github.com/erda-project/erda/modules/core/messenger/notify/db"
+	"github.com/erda-project/erda/modules/core/messenger/notify/db"
 	"github.com/erda-project/erda/modules/core/messenger/notify/model"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
 )
 
 type notifyService struct {
-	DB      *db2.DB
+	DB      *db.DB
 	L       logs.Logger
 	bdl     *bundle.Bundle
 	Monitor monitor.AlertServiceServer `autowired:"erda.core.monitor.alert.AlertService" optional:"true"`
@@ -65,7 +65,7 @@ func (n notifyService) CreateNotifyHistory(ctx context.Context, request *pb.Crea
 	return result, nil
 }
 
-func ToDBNotifyHistory(request *pb.CreateNotifyHistoryRequest) (*db2.NotifyHistory, error) {
+func ToDBNotifyHistory(request *pb.CreateNotifyHistoryRequest) (*db.NotifyHistory, error) {
 	targetData, err := json.Marshal(request.NotifyTargets)
 	if err != nil {
 		return nil, err
@@ -74,7 +74,7 @@ func ToDBNotifyHistory(request *pb.CreateNotifyHistoryRequest) (*db2.NotifyHisto
 	if err != nil {
 		return nil, err
 	}
-	history := &db2.NotifyHistory{
+	history := &db.NotifyHistory{
 		NotifyName:            request.NotifyName,
 		NotifyItemDisplayName: request.NotifyItemDisplayName,
 		Channel:               request.Channel,
@@ -116,7 +116,7 @@ func (n notifyService) CreateHistoryAndIndex(request *pb.CreateNotifyHistoryRequ
 		return 0, err
 	}
 	alertId := int64(request.NotifyTags["alertId"].GetNumberValue())
-	alertNotifyIndex := &db2.AlertNotifyIndex{
+	alertNotifyIndex := &db.AlertNotifyIndex{
 		NotifyID:   history.ID,
 		NotifyName: request.NotifyItemDisplayName,
 		Status:     request.Status,

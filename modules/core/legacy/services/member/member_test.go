@@ -22,8 +22,8 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/core/core-services/dao"
-	model2 "github.com/erda-project/erda/modules/core/core-services/model"
+	"github.com/erda-project/erda/modules/core/legacy/dao"
+	"github.com/erda-project/erda/modules/core/legacy/model"
 	"github.com/erda-project/erda/pkg/ucauth"
 )
 
@@ -63,15 +63,15 @@ func Test_checkUCUserInfo(t *testing.T) {
 }
 
 func TestMember_UpdateMemberUserInfo(t *testing.T) {
-	users := []model2.Member{
+	users := []model.Member{
 		{
-			BaseModel: model2.BaseModel{
+			BaseModel: model.BaseModel{
 				ID: 1,
 			},
 			UserID: "1",
 		},
 		{
-			BaseModel: model2.BaseModel{
+			BaseModel: model.BaseModel{
 				ID: 2,
 			},
 			UserID: "2",
@@ -79,7 +79,7 @@ func TestMember_UpdateMemberUserInfo(t *testing.T) {
 	}
 	var db *dao.DBClient
 	monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetMemberByUserID",
-		func(_ *dao.DBClient, userID string) ([]model2.Member, error) {
+		func(_ *dao.DBClient, userID string) ([]model.Member, error) {
 			return users, nil
 		})
 	monkey.PatchInstanceMethod(reflect.TypeOf(db), "UpdateMemberUserInfo",

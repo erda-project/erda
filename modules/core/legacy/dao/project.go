@@ -23,7 +23,7 @@ import (
 
 	"github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	"github.com/erda-project/erda/apistructs"
-	model2 "github.com/erda-project/erda/modules/core/core-services/model"
+	"github.com/erda-project/erda/modules/core/legacy/model"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -32,18 +32,18 @@ func NotDeleted(db *gorm.DB) *gorm.DB {
 }
 
 // CreateProject 创建项目
-func (client *DBClient) CreateProject(project *model2.Project) error {
+func (client *DBClient) CreateProject(project *model.Project) error {
 	return client.Create(project).Error
 }
 
 // UpdateProject 更新项目
-func (client *DBClient) UpdateProject(project *model2.Project) error {
+func (client *DBClient) UpdateProject(project *model.Project) error {
 	return client.Scopes(NotDeleted).Save(project).Error
 }
 
 // DeleteProject 删除项目
 func (client *DBClient) DeleteProject(projectID int64) error {
-	return client.Debug().Model(&model2.Project{}).Scopes(NotDeleted).Where("id = ?", projectID).Update("soft_deleted_at", time.Now().UnixNano()/1e6).Error
+	return client.Debug().Model(&model.Project{}).Scopes(NotDeleted).Where("id = ?", projectID).Update("soft_deleted_at", time.Now().UnixNano()/1e6).Error
 }
 
 func (client *DBClient) DeleteProjectQutoa(projectID int64) error {
@@ -51,8 +51,8 @@ func (client *DBClient) DeleteProjectQutoa(projectID int64) error {
 }
 
 // GetProjectByID 根据projectID获取项目信息
-func (client *DBClient) GetProjectByID(projectID int64) (model2.Project, error) {
-	var project model2.Project
+func (client *DBClient) GetProjectByID(projectID int64) (model.Project, error) {
+	var project model.Project
 	if err := client.Scopes(NotDeleted).Where("id = ?", projectID).Find(&project).Error; err != nil {
 		if gorm.IsRecordNotFoundError(err) {
 			return project, ErrNotFoundProject
@@ -76,9 +76,9 @@ func (client *DBClient) GetQuotaByProjectID(projectID int64) (*apistructs.Projec
 
 // GetProjectsByOrgIDAndName 根据orgID与名称获取项目列表
 func (client *DBClient) GetProjectsByOrgIDAndName(orgID int64, params *apistructs.ProjectListRequest) (
-	int, []model2.Project, error) {
+	int, []model.Project, error) {
 	var (
-		projects []model2.Project
+		projects []model.Project
 		total    int
 	)
 	db := client.Scopes(NotDeleted).Where("org_id = ?", orgID)
@@ -111,10 +111,10 @@ func (client *DBClient) GetProjectsByOrgIDAndName(orgID int64, params *apistruct
 
 // GetProjectsByIDs 根据projectIDs获取项目列表
 func (client *DBClient) GetProjectsByIDs(projectIDs []uint64, params *apistructs.ProjectListRequest) (
-	int, []model2.Project, error) {
+	int, []model.Project, error) {
 	var (
 		total    int
-		projects []model2.Project
+		projects []model.Project
 	)
 	db := client.Scopes(NotDeleted).Where("id in (?)", projectIDs)
 	if params.Name != "" {
@@ -144,8 +144,8 @@ func (client *DBClient) GetProjectsByIDs(projectIDs []uint64, params *apistructs
 }
 
 // GetProjectByOrgAndName 根据orgID & 项目名称 获取项目
-func (client *DBClient) GetProjectByOrgAndName(orgID int64, name string) (*model2.Project, error) {
-	var project model2.Project
+func (client *DBClient) GetProjectByOrgAndName(orgID int64, name string) (*model.Project, error) {
+	var project model.Project
 	if err := client.Scopes(NotDeleted).Where("org_id = ?", orgID).
 		Where("name = ?", name).Find(&project).Error; err != nil {
 		return nil, err
@@ -154,17 +154,17 @@ func (client *DBClient) GetProjectByOrgAndName(orgID int64, name string) (*model
 }
 
 // GetAllProjects get all projects
-func (client *DBClient) GetAllProjects() ([]model2.Project, error) {
-	var projects []model2.Project
-	if err := client.Model(model2.Project{}).Scopes(NotDeleted).Find(&projects).Error; err != nil {
+func (client *DBClient) GetAllProjects() ([]model.Project, error) {
+	var projects []model.Project
+	if err := client.Model(model.Project{}).Scopes(NotDeleted).Find(&projects).Error; err != nil {
 		return nil, err
 	}
 	return projects, nil
 }
 
 // ListProjectByOrgID 根据 orgID 获取项目列表
-func (client *DBClient) ListProjectByOrgID(orgID uint64) ([]model2.Project, error) {
-	var projects []model2.Project
+func (client *DBClient) ListProjectByOrgID(orgID uint64) ([]model.Project, error) {
+	var projects []model.Project
 	if err := client.Scopes(NotDeleted).Where("org_id = ?", orgID).Find(&projects).Error; err != nil {
 		return nil, err
 	}
@@ -172,8 +172,8 @@ func (client *DBClient) ListProjectByOrgID(orgID uint64) ([]model2.Project, erro
 }
 
 // ListProjectByCluster 根据clusterName 获取项目列表
-func (client *DBClient) ListProjectByCluster(clusterName string) ([]model2.Project, error) {
-	var projects []model2.Project
+func (client *DBClient) ListProjectByCluster(clusterName string) ([]model.Project, error) {
+	var projects []model.Project
 	if err := client.Scopes(NotDeleted).Where("cluster_config LIKE ?", "%"+clusterName+"%").Find(&projects).Error; err != nil {
 		return nil, err
 	}
@@ -181,8 +181,8 @@ func (client *DBClient) ListProjectByCluster(clusterName string) ([]model2.Proje
 }
 
 // ListProjectByOrgCluster 根据 orgID 和 clusterName 获取项目列表
-func (client *DBClient) ListProjectByOrgCluster(clusterName string, orgID uint64) ([]model2.Project, error) {
-	var projects []model2.Project
+func (client *DBClient) ListProjectByOrgCluster(clusterName string, orgID uint64) ([]model.Project, error) {
+	var projects []model.Project
 	if err := client.Scopes(NotDeleted).Where("cluster_config LIKE ? AND org_id = ?", "%"+clusterName+"%", orgID).Find(&projects).Error; err != nil {
 		return nil, err
 	}
@@ -191,7 +191,7 @@ func (client *DBClient) ListProjectByOrgCluster(clusterName string, orgID uint64
 
 // UpdateProjectQuota 更新项目配额
 func (client *DBClient) UpdateProjectQuota(clusterName string, cpuOverSellChangeRatio float64) error {
-	return client.Scopes(NotDeleted).Model(model2.Project{}).
+	return client.Scopes(NotDeleted).Model(model.Project{}).
 		Where("cluster_config LIKE ?", "%"+clusterName+"%").
 		Update("cpu_quota", gorm.Expr("cpu_quota * ?", cpuOverSellChangeRatio)).Error
 }
@@ -205,7 +205,7 @@ func (client *DBClient) GetJoinedProjectNumByUserID(userID string, orgID string)
 	var total int
 	var proIDS []ProjectID
 	res := make([]string, 0)
-	if err := client.Model(&model2.Member{}).
+	if err := client.Model(&model.Member{}).
 		Where("user_id = ? and org_id = ? and scope_type = \"?\"", userID, orgID, apistructs.ProjectScopeType).
 		Select("project_id").Find(&proIDS).Offset(0).Limit(-1).Count(&total).Error; err != nil {
 		return total, res, err
@@ -217,12 +217,12 @@ func (client *DBClient) GetJoinedProjectNumByUserID(userID string, orgID string)
 }
 
 // GetProjectIDListByStates get states by projectID list
-func (client *DBClient) GetProjectIDListByStates(req apistructs.IssuePagingRequest, projectIDList []uint64) (int, []model2.Project, error) {
+func (client *DBClient) GetProjectIDListByStates(req apistructs.IssuePagingRequest, projectIDList []uint64) (int, []model.Project, error) {
 	var (
 		total int
-		res   []model2.Project
+		res   []model.Project
 	)
-	sql := client.Model(&model2.Project{}).Scopes(NotDeleted).Where("id in (select distinct project_id from dice_issues where deleted = 0 and project_id in (?) and assignee IN (?) and state IN (?) and type IN(?) )", projectIDList, req.Assignees, req.State, req.Type).
+	sql := client.Model(&model.Project{}).Scopes(NotDeleted).Where("id in (select distinct project_id from dice_issues where deleted = 0 and project_id in (?) and assignee IN (?) and state IN (?) and type IN(?) )", projectIDList, req.Assignees, req.State, req.Type).
 		Order("name")
 	offset := (req.PageNo - 1) * req.PageSize
 	if err := sql.Offset(offset).Limit(req.PageSize).Find(&res).Error; err != nil {
@@ -278,5 +278,5 @@ func (client *DBClient) GetProjectClustersNamespacesByProjectID(result map[strin
 }
 
 func (client *DBClient) ProjectIsExists(projectID uint64) bool {
-	return client.Scopes(NotDeleted).First(new(model2.Project), map[string]interface{}{"id": projectID}).Error == nil
+	return client.Scopes(NotDeleted).First(new(model.Project), map[string]interface{}{"id": projectID}).Error == nil
 }

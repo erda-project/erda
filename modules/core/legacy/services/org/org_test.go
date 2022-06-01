@@ -25,8 +25,8 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/apistructs"
-	dao2 "github.com/erda-project/erda/modules/core/core-services/dao"
-	"github.com/erda-project/erda/modules/core/core-services/model"
+	"github.com/erda-project/erda/modules/core/legacy/dao"
+	"github.com/erda-project/erda/modules/core/legacy/model"
 )
 
 // func TestShouldGetOrgByName(t *testing.T) {
@@ -64,12 +64,12 @@ func TestGetOrgByDomainAndOrgName(t *testing.T) {
 		}
 	})
 	defer orgByDomain.Unpatch()
-	db := &dao2.DBClient{}
-	orgByName := monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetOrgByName", func(_ *dao2.DBClient, orgName string) (*model.Org, error) {
+	db := &dao.DBClient{}
+	orgByName := monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetOrgByName", func(_ *dao.DBClient, orgName string) (*model.Org, error) {
 		if orgName == "org0" {
 			return org, nil
 		} else {
-			return nil, dao2.ErrNotFoundOrg
+			return nil, dao.ErrNotFoundOrg
 		}
 	})
 	defer orgByName.Unpatch()

@@ -29,9 +29,9 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/core/core-services/conf"
-	"github.com/erda-project/erda/modules/core/core-services/services/apierrors"
-	"github.com/erda-project/erda/modules/core/core-services/services/filesvc"
+	"github.com/erda-project/erda/modules/core/legacy/conf"
+	"github.com/erda-project/erda/modules/core/legacy/services/apierrors"
+	"github.com/erda-project/erda/modules/core/legacy/services/filesvc"
 	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"

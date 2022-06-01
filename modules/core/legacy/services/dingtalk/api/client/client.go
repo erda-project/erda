@@ -15,8 +15,8 @@
 package client
 
 import (
-	"github.com/erda-project/erda/modules/core/core-services/services/dingtalk/api/interfaces"
-	"github.com/erda-project/erda/modules/core/core-services/services/dingtalk/api/native"
+	"github.com/erda-project/erda/modules/core/legacy/services/dingtalk/api/interfaces"
+	"github.com/erda-project/erda/modules/core/legacy/services/dingtalk/api/native"
 )
 
 type dingtalkApiClient struct {

@@ -20,7 +20,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/modules/core/messenger/eventbox/dispatcher/errors"
-	filters2 "github.com/erda-project/erda/modules/core/messenger/eventbox/dispatcher/filters"
+	"github.com/erda-project/erda/modules/core/messenger/eventbox/dispatcher/filters"
 	"github.com/erda-project/erda/modules/core/messenger/eventbox/types"
 )
 
@@ -46,22 +46,22 @@ import (
 //
 type Router struct {
 	dispatcher *DispatcherImpl
-	filters    []filters2.Filter
+	filters    []filters.Filter
 }
 
 func NewRouter(dispatcher *DispatcherImpl) (*Router, error) {
 	r := &Router{
 		dispatcher: dispatcher,
-		filters:    []filters2.Filter{},
+		filters:    []filters.Filter{},
 	}
 
-	unifyLabelsFilter := filters2.NewUnifyLabelsFilter()
-	registerFilter := filters2.NewRegisterFilter(dispatcher.GetRegister())
-	webhookFilter, err := filters2.NewWebhookFilter()
+	unifyLabelsFilter := filters.NewUnifyLabelsFilter()
+	registerFilter := filters.NewRegisterFilter(dispatcher.GetRegister())
+	webhookFilter, err := filters.NewWebhookFilter()
 	if err != nil {
 		return nil, fmt.Errorf("init webhookfilter: %v", err)
 	}
-	lastFilter := filters2.NewLastFilter(dispatcher.GetSubscribersPool(), dispatcher.GetSubscribers())
+	lastFilter := filters.NewLastFilter(dispatcher.GetSubscribersPool(), dispatcher.GetSubscribers())
 
 	r.RegisterFilter(unifyLabelsFilter)
 	r.RegisterFilter(registerFilter)
@@ -71,7 +71,7 @@ func NewRouter(dispatcher *DispatcherImpl) (*Router, error) {
 	return r, nil
 }
 
-func (r *Router) RegisterFilter(f filters2.Filter) {
+func (r *Router) RegisterFilter(f filters.Filter) {
 	logrus.Infof("Router register filter [%s]", f.Name())
 	r.filters = append(r.filters, f)
 }
@@ -92,6 +92,6 @@ func (r *Router) Route(m *types.Message) *errors.DispatchError {
 	return errors.New()
 }
 
-func (r *Router) GetFilters() []filters2.Filter {
+func (r *Router) GetFilters() []filters.Filter {
 	return r.filters
 }

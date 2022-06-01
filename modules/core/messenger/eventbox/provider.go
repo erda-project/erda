@@ -23,10 +23,11 @@ import (
 	"github.com/erda-project/erda-infra/pkg/transport"
 	eventpb "github.com/erda-project/erda-proto-go/core/messenger/eventbox/pb"
 	"github.com/erda-project/erda-proto-go/core/messenger/notify/pb"
-	"github.com/erda-project/erda/modules/core/core-services/services/dingtalk/api/interfaces"
+	"github.com/erda-project/erda/modules/core/legacy"
+	"github.com/erda-project/erda/modules/core/legacy/services/dingtalk/api/interfaces"
 	"github.com/erda-project/erda/modules/core/messenger/eventbox/input/http"
 	"github.com/erda-project/erda/modules/core/messenger/eventbox/monitor"
-	register2 "github.com/erda-project/erda/modules/core/messenger/eventbox/register"
+	"github.com/erda-project/erda/modules/core/messenger/eventbox/register"
 	"github.com/erda-project/erda/modules/core/messenger/eventbox/webhook"
 	"github.com/erda-project/erda/pkg/common/apis"
 	perm "github.com/erda-project/erda/pkg/common/permission"
@@ -75,7 +76,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		logrus.Error("Monitor init is failed err is ", err)
 		return err
 	}
-	reg, err := register2.New()
+	reg, err := register.New()
 	if err != nil {
 		logrus.Error("Register init is failed err is ", err)
 		return err
@@ -83,7 +84,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.eventBoxService.HttpI = httpi
 	p.eventBoxService.WebHookHTTP = wh
 	p.eventBoxService.MonitorHTTP = mon
-	p.eventBoxService.RegisterHTTP = register2.NewHTTP(reg)
+	p.eventBoxService.RegisterHTTP = register.NewHTTP(reg)
 
 	if p.Register != nil {
 		type EventBoxService = eventpb.EventBoxServiceServer

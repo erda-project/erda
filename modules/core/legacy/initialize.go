@@ -29,28 +29,28 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/core/core-services/cache/project"
-	"github.com/erda-project/erda/modules/core/core-services/conf"
-	"github.com/erda-project/erda/modules/core/core-services/dao"
-	endpoints2 "github.com/erda-project/erda/modules/core/core-services/endpoints"
-	"github.com/erda-project/erda/modules/core/core-services/services/activity"
-	"github.com/erda-project/erda/modules/core/core-services/services/application"
-	"github.com/erda-project/erda/modules/core/core-services/services/approve"
-	"github.com/erda-project/erda/modules/core/core-services/services/audit"
-	"github.com/erda-project/erda/modules/core/core-services/services/errorbox"
-	"github.com/erda-project/erda/modules/core/core-services/services/filesvc"
-	"github.com/erda-project/erda/modules/core/core-services/services/label"
-	"github.com/erda-project/erda/modules/core/core-services/services/manual_review"
-	"github.com/erda-project/erda/modules/core/core-services/services/mbox"
-	"github.com/erda-project/erda/modules/core/core-services/services/member"
-	"github.com/erda-project/erda/modules/core/core-services/services/notice"
-	"github.com/erda-project/erda/modules/core/core-services/services/notify"
-	"github.com/erda-project/erda/modules/core/core-services/services/org"
-	"github.com/erda-project/erda/modules/core/core-services/services/permission"
-	"github.com/erda-project/erda/modules/core/core-services/services/project"
-	"github.com/erda-project/erda/modules/core/core-services/services/subscribe"
-	"github.com/erda-project/erda/modules/core/core-services/services/user"
-	"github.com/erda-project/erda/modules/core/core-services/utils"
+	"github.com/erda-project/erda/modules/core/legacy/cache/project"
+	"github.com/erda-project/erda/modules/core/legacy/conf"
+	"github.com/erda-project/erda/modules/core/legacy/dao"
+	"github.com/erda-project/erda/modules/core/legacy/endpoints"
+	"github.com/erda-project/erda/modules/core/legacy/services/activity"
+	"github.com/erda-project/erda/modules/core/legacy/services/application"
+	"github.com/erda-project/erda/modules/core/legacy/services/approve"
+	"github.com/erda-project/erda/modules/core/legacy/services/audit"
+	"github.com/erda-project/erda/modules/core/legacy/services/errorbox"
+	"github.com/erda-project/erda/modules/core/legacy/services/filesvc"
+	"github.com/erda-project/erda/modules/core/legacy/services/label"
+	"github.com/erda-project/erda/modules/core/legacy/services/manual_review"
+	"github.com/erda-project/erda/modules/core/legacy/services/mbox"
+	"github.com/erda-project/erda/modules/core/legacy/services/member"
+	"github.com/erda-project/erda/modules/core/legacy/services/notice"
+	"github.com/erda-project/erda/modules/core/legacy/services/notify"
+	"github.com/erda-project/erda/modules/core/legacy/services/org"
+	"github.com/erda-project/erda/modules/core/legacy/services/permission"
+	"github.com/erda-project/erda/modules/core/legacy/services/project"
+	"github.com/erda-project/erda/modules/core/legacy/services/subscribe"
+	"github.com/erda-project/erda/modules/core/legacy/services/user"
+	"github.com/erda-project/erda/modules/core/legacy/utils"
 	"github.com/erda-project/erda/modules/core/messenger/eventbox/websocket"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpclient"
@@ -85,7 +85,7 @@ func (p *provider) Initialize() error {
 	server.WithLocaleLoader(bdl.GetLocaleLoader())
 	// Add auth middleware
 	// server.Router().Path("/metrics").Methods(http.MethodGet).Handler(promxp.Handler("cmdb"))
-	server.Router().Path("/api/images/{imageName}").Methods(http.MethodGet).HandlerFunc(endpoints2.GetImage)
+	server.Router().Path("/api/images/{imageName}").Methods(http.MethodGet).HandlerFunc(endpoints.GetImage)
 	logrus.Infof("start the service and listen on address: \"%s\"", conf.ListenAddr())
 
 	wsi, err := websocket.New()
@@ -99,7 +99,7 @@ func (p *provider) Initialize() error {
 }
 
 // 初始化 Endpoints
-func (p *provider) initEndpoints() (*endpoints2.Endpoints, error) {
+func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 	var (
 		etcdStore *etcd.Store
 		store     jsonstore.JsonStore
@@ -288,33 +288,33 @@ func (p *provider) initEndpoints() (*endpoints2.Endpoints, error) {
 	projectCache.New(db)
 
 	// compose endpoints
-	ep := endpoints2.New(
-		endpoints2.WithJSONStore(store),
-		endpoints2.WithEtcdStore(etcdStore),
-		endpoints2.WithOSSClient(ossClient),
-		endpoints2.WithDBClient(db),
-		endpoints2.WithUCClient(uc),
-		endpoints2.WithBundle(bdl),
-		endpoints2.WithOrg(o),
-		endpoints2.WithManualReview(mr),
-		endpoints2.WithProject(proj),
-		endpoints2.WithApp(app),
-		endpoints2.WithMember(m),
-		endpoints2.WithActivity(a),
-		endpoints2.WithPermission(pm),
-		endpoints2.WithNotify(notifyService),
-		endpoints2.WithLicense(license),
-		endpoints2.WithLabel(l),
-		endpoints2.WithMBox(mboxService),
-		endpoints2.WithNotice(notice),
-		endpoints2.WithApprove(approve),
-		endpoints2.WithQueryStringDecoder(queryStringDecoder),
-		endpoints2.WithAudit(audit),
-		endpoints2.WithErrorBox(errorBox),
-		endpoints2.WithFileSvc(fileSvc),
-		endpoints2.WithUserSvc(user),
-		endpoints2.WithSubscribe(sub),
-		endpoints2.WithTokenSvc(p.TokenService),
+	ep := endpoints.New(
+		endpoints.WithJSONStore(store),
+		endpoints.WithEtcdStore(etcdStore),
+		endpoints.WithOSSClient(ossClient),
+		endpoints.WithDBClient(db),
+		endpoints.WithUCClient(uc),
+		endpoints.WithBundle(bdl),
+		endpoints.WithOrg(o),
+		endpoints.WithManualReview(mr),
+		endpoints.WithProject(proj),
+		endpoints.WithApp(app),
+		endpoints.WithMember(m),
+		endpoints.WithActivity(a),
+		endpoints.WithPermission(pm),
+		endpoints.WithNotify(notifyService),
+		endpoints.WithLicense(license),
+		endpoints.WithLabel(l),
+		endpoints.WithMBox(mboxService),
+		endpoints.WithNotice(notice),
+		endpoints.WithApprove(approve),
+		endpoints.WithQueryStringDecoder(queryStringDecoder),
+		endpoints.WithAudit(audit),
+		endpoints.WithErrorBox(errorBox),
+		endpoints.WithFileSvc(fileSvc),
+		endpoints.WithUserSvc(user),
+		endpoints.WithSubscribe(sub),
+		endpoints.WithTokenSvc(p.TokenService),
 	)
 	return ep, nil
 }

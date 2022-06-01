@@ -27,8 +27,8 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	dao2 "github.com/erda-project/erda/modules/core/core-services/dao"
-	model2 "github.com/erda-project/erda/modules/core/core-services/model"
+	"github.com/erda-project/erda/modules/core/legacy/dao"
+	"github.com/erda-project/erda/modules/core/legacy/model"
 	"github.com/erda-project/erda/pkg/ucauth"
 )
 
@@ -43,7 +43,7 @@ func TestClass_genProjectNamespace(t *testing.T) {
 }
 
 func TestClaas_patchProject(t *testing.T) {
-	oldPrj := &model2.Project{
+	oldPrj := &model.Project{
 		DisplayName:    "displayName",
 		Desc:           "desc",
 		Logo:           "log",
@@ -94,13 +94,13 @@ func TestInitRollbackConfig(t *testing.T) {
 }
 
 func TestGetModelProjectsMap(t *testing.T) {
-	db := &dao2.DBClient{}
+	db := &dao.DBClient{}
 	m := monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetProjectsByIDs",
-		func(db *dao2.DBClient, projectIDs []uint64, params *apistructs.ProjectListRequest) (int, []model2.Project, error) {
-			return 3, []model2.Project{
-				{BaseModel: model2.BaseModel{ID: 1}},
-				{BaseModel: model2.BaseModel{ID: 2}},
-				{BaseModel: model2.BaseModel{ID: 3}},
+		func(db *dao.DBClient, projectIDs []uint64, params *apistructs.ProjectListRequest) (int, []model.Project, error) {
+			return 3, []model.Project{
+				{BaseModel: model.BaseModel{ID: 1}},
+				{BaseModel: model.BaseModel{ID: 2}},
+				{BaseModel: model.BaseModel{ID: 3}},
 			}, nil
 		})
 	defer m.Unpatch()
@@ -118,7 +118,7 @@ func TestWtihI18n(t *testing.T) {
 }
 
 func TestWithDBClient(t *testing.T) {
-	New(WithDBClient(new(dao2.DBClient)))
+	New(WithDBClient(new(dao.DBClient)))
 }
 
 func TestWithUCClient(t *testing.T) {
@@ -372,31 +372,31 @@ func Test_defaultResourceConfig(t *testing.T) {
 }
 
 func TestListUnblockAppCountsByProjectIDS(t *testing.T) {
-	db := &dao2.DBClient{}
+	db := &dao.DBClient{}
 	m := monkey.PatchInstanceMethod(reflect.TypeOf(db), "ListUnblockAppCountsByProjectIDS",
-		func(db *dao2.DBClient, projectIDS []uint64) ([]model2.ProjectUnblockAppCount, error) {
-			return []model2.ProjectUnblockAppCount{{ProjectID: 1, UnblockAppCount: 1}}, nil
+		func(db *dao.DBClient, projectIDS []uint64) ([]model.ProjectUnblockAppCount, error) {
+			return []model.ProjectUnblockAppCount{{ProjectID: 1, UnblockAppCount: 1}}, nil
 		})
 	defer m.Unpatch()
 	p := Project{db: db}
 	emptyCounts, err := p.ListUnblockAppCountsByProjectIDS([]uint64{})
 	assert.NoError(t, err)
-	assert.Equal(t, []model2.ProjectUnblockAppCount(nil), emptyCounts)
+	assert.Equal(t, []model.ProjectUnblockAppCount(nil), emptyCounts)
 	counts, err := p.ListUnblockAppCountsByProjectIDS([]uint64{1})
 	assert.NoError(t, err)
 	assert.Equal(t, counts[0].UnblockAppCount, int64(1))
 }
 
 func TestGetNotFoundProject(t *testing.T) {
-	db := &dao2.DBClient{}
+	db := &dao.DBClient{}
 	m := monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetProjectByID",
-		func(db *dao2.DBClient, projectID int64) (model2.Project, error) {
-			return model2.Project{}, dao2.ErrNotFoundProject
+		func(db *dao.DBClient, projectID int64) (model.Project, error) {
+			return model.Project{}, dao.ErrNotFoundProject
 		})
 	defer m.Unpatch()
 	p := Project{db: db}
 	_, err := p.Get(context.Background(), 1, true)
-	assert.Equal(t, dao2.ErrNotFoundProject, err)
+	assert.Equal(t, dao.ErrNotFoundProject, err)
 }
 
 func TestRunningPodCond(t *testing.T) {

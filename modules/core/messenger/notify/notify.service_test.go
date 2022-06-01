@@ -26,14 +26,14 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-proto-go/core/messenger/notify/pb"
-	db2 "github.com/erda-project/erda/modules/core/messenger/notify/db"
+	"github.com/erda-project/erda/modules/core/messenger/notify/db"
 	"github.com/erda-project/erda/modules/core/messenger/notify/model"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 
 func Test_notifyService_CreateNotifyHistory(t *testing.T) {
 	type fields struct {
-		DB *db2.DB
+		DB *db.DB
 		L  logs.Logger
 	}
 	type args struct {
@@ -49,12 +49,12 @@ func Test_notifyService_CreateNotifyHistory(t *testing.T) {
 		{
 			name: "test",
 			fields: fields{
-				DB: &db2.DB{
+				DB: &db.DB{
 					DB: &gorm.DB{},
-					AlertNotifyIndexDB: db2.AlertNotifyIndexDB{
+					AlertNotifyIndexDB: db.AlertNotifyIndexDB{
 						DB: &gorm.DB{},
 					},
-					NotifyHistoryDB: db2.NotifyHistoryDB{
+					NotifyHistoryDB: db.NotifyHistoryDB{
 						DB: &gorm.DB{},
 					},
 				},
@@ -86,8 +86,8 @@ func Test_notifyService_CreateNotifyHistory(t *testing.T) {
 		monkey.PatchInstanceMethod(reflect.TypeOf(ns), "CreateHistoryAndIndex", func(_ notifyService, request *pb.CreateNotifyHistoryRequest) (historyId int64, err error) {
 			return 3, nil
 		})
-		monkey.PatchInstanceMethod(reflect.TypeOf(&db2.NotifyHistoryDB{}), "CreateNotifyHistory", func(_ *db2.NotifyHistoryDB, request *db2.NotifyHistory) (*db2.NotifyHistory, error) {
-			return &db2.NotifyHistory{
+		monkey.PatchInstanceMethod(reflect.TypeOf(&db.NotifyHistoryDB{}), "CreateNotifyHistory", func(_ *db.NotifyHistoryDB, request *db.NotifyHistory) (*db.NotifyHistory, error) {
+			return &db.NotifyHistory{
 				BaseModel:             model.BaseModel{},
 				NotifyName:            "sss",
 				NotifyItemDisplayName: "sss",
@@ -119,7 +119,7 @@ func Test_notifyService_CreateNotifyHistory(t *testing.T) {
 
 func Test_notifyService_CreateHistoryAndIndex(t *testing.T) {
 	type fields struct {
-		DB *db2.DB
+		DB *db.DB
 		L  logs.Logger
 	}
 	type args struct {
@@ -134,12 +134,12 @@ func Test_notifyService_CreateHistoryAndIndex(t *testing.T) {
 		{
 			name: "test",
 			fields: fields{
-				DB: &db2.DB{
+				DB: &db.DB{
 					DB: &gorm.DB{},
-					AlertNotifyIndexDB: db2.AlertNotifyIndexDB{
+					AlertNotifyIndexDB: db.AlertNotifyIndexDB{
 						DB: &gorm.DB{},
 					},
-					NotifyHistoryDB: db2.NotifyHistoryDB{
+					NotifyHistoryDB: db.NotifyHistoryDB{
 						DB: &gorm.DB{},
 					},
 				},
@@ -171,8 +171,8 @@ func Test_notifyService_CreateHistoryAndIndex(t *testing.T) {
 		monkey.PatchInstanceMethod(reflect.TypeOf(ns), "CreateHistoryAndIndex", func(_ notifyService, request *pb.CreateNotifyHistoryRequest) (historyId int64, err error) {
 			return 3, nil
 		})
-		monkey.PatchInstanceMethod(reflect.TypeOf(&db2.NotifyHistoryDB{}), "CreateNotifyHistory", func(_ *db2.NotifyHistoryDB, request *db2.NotifyHistory) (*db2.NotifyHistory, error) {
-			return &db2.NotifyHistory{
+		monkey.PatchInstanceMethod(reflect.TypeOf(&db.NotifyHistoryDB{}), "CreateNotifyHistory", func(_ *db.NotifyHistoryDB, request *db.NotifyHistory) (*db.NotifyHistory, error) {
+			return &db.NotifyHistory{
 				BaseModel:             model.BaseModel{},
 				NotifyName:            "sss",
 				NotifyItemDisplayName: "sss",
@@ -207,7 +207,7 @@ func Test_notifyService_CreateHistoryAndIndex(t *testing.T) {
 
 func Test_notifyService_QueryNotifyHistories(t *testing.T) {
 	type fields struct {
-		DB *db2.DB
+		DB *db.DB
 		L  logs.Logger
 	}
 	type args struct {
@@ -224,12 +224,12 @@ func Test_notifyService_QueryNotifyHistories(t *testing.T) {
 		{
 			name: "test",
 			fields: fields{
-				DB: &db2.DB{
+				DB: &db.DB{
 					DB: &gorm.DB{},
-					AlertNotifyIndexDB: db2.AlertNotifyIndexDB{
+					AlertNotifyIndexDB: db.AlertNotifyIndexDB{
 						DB: &gorm.DB{},
 					},
-					NotifyHistoryDB: db2.NotifyHistoryDB{
+					NotifyHistoryDB: db.NotifyHistoryDB{
 						DB: &gorm.DB{},
 					},
 				},
@@ -256,8 +256,8 @@ func Test_notifyService_QueryNotifyHistories(t *testing.T) {
 			return "1"
 		})
 		defer monkey.UnpatchAll()
-		monkey.PatchInstanceMethod(reflect.TypeOf(&db2.NotifyHistoryDB{}), "QueryNotifyHistories", func(_ *db2.NotifyHistoryDB, request *model.QueryNotifyHistoriesRequest) ([]db2.NotifyHistory, int64, error) {
-			return []db2.NotifyHistory{
+		monkey.PatchInstanceMethod(reflect.TypeOf(&db.NotifyHistoryDB{}), "QueryNotifyHistories", func(_ *db.NotifyHistoryDB, request *model.QueryNotifyHistoriesRequest) ([]db.NotifyHistory, int64, error) {
+			return []db.NotifyHistory{
 				{
 					BaseModel:             model.BaseModel{},
 					NotifyName:            "test",
@@ -291,7 +291,7 @@ func Test_notifyService_QueryNotifyHistories(t *testing.T) {
 
 func Test_notifyService_GetNotifyStatus(t *testing.T) {
 	type fields struct {
-		DB *db2.DB
+		DB *db.DB
 		L  logs.Logger
 	}
 	type args struct {
@@ -308,12 +308,12 @@ func Test_notifyService_GetNotifyStatus(t *testing.T) {
 		{
 			name: "test",
 			fields: fields{
-				DB: &db2.DB{
+				DB: &db.DB{
 					DB: &gorm.DB{},
-					AlertNotifyIndexDB: db2.AlertNotifyIndexDB{
+					AlertNotifyIndexDB: db.AlertNotifyIndexDB{
 						DB: &gorm.DB{},
 					},
-					NotifyHistoryDB: db2.NotifyHistoryDB{
+					NotifyHistoryDB: db.NotifyHistoryDB{
 						DB: &gorm.DB{},
 					},
 				},
@@ -335,7 +335,7 @@ func Test_notifyService_GetNotifyStatus(t *testing.T) {
 		monkey.Patch(apis.GetOrgID, func(ctx context.Context) string {
 			return "1"
 		})
-		monkey.PatchInstanceMethod(reflect.TypeOf(&db2.NotifyHistoryDB{}), "FilterStatus", func(_ *db2.NotifyHistoryDB, request *model.FilterStatusRequest) ([]*model.FilterStatusResult, error) {
+		monkey.PatchInstanceMethod(reflect.TypeOf(&db.NotifyHistoryDB{}), "FilterStatus", func(_ *db.NotifyHistoryDB, request *model.FilterStatusRequest) ([]*model.FilterStatusResult, error) {
 			return []*model.FilterStatusResult{
 				{
 					Status: "success",
@@ -363,7 +363,7 @@ func Test_notifyService_GetNotifyStatus(t *testing.T) {
 
 func Test_notifyService_GetNotifyHistogram(t *testing.T) {
 	type fields struct {
-		DB *db2.DB
+		DB *db.DB
 		L  logs.Logger
 	}
 	type args struct {
@@ -380,12 +380,12 @@ func Test_notifyService_GetNotifyHistogram(t *testing.T) {
 		{
 			name: "test",
 			fields: fields{
-				DB: &db2.DB{
+				DB: &db.DB{
 					DB: &gorm.DB{},
-					AlertNotifyIndexDB: db2.AlertNotifyIndexDB{
+					AlertNotifyIndexDB: db.AlertNotifyIndexDB{
 						DB: &gorm.DB{},
 					},
-					NotifyHistoryDB: db2.NotifyHistoryDB{
+					NotifyHistoryDB: db.NotifyHistoryDB{
 						DB: &gorm.DB{},
 					},
 				},
@@ -408,7 +408,7 @@ func Test_notifyService_GetNotifyHistogram(t *testing.T) {
 		monkey.Patch(apis.GetOrgID, func(ctx context.Context) string {
 			return "1"
 		})
-		monkey.PatchInstanceMethod(reflect.TypeOf(&db2.NotifyHistoryDB{}), "QueryNotifyValue", func(_ *db2.NotifyHistoryDB, key string, orgId int, scopeType, scopeId string, interval, startTime, endTime int64) ([]*model.NotifyValue, error) {
+		monkey.PatchInstanceMethod(reflect.TypeOf(&db.NotifyHistoryDB{}), "QueryNotifyValue", func(_ *db.NotifyHistoryDB, key string, orgId int, scopeType, scopeId string, interval, startTime, endTime int64) ([]*model.NotifyValue, error) {
 			return []*model.NotifyValue{
 				{
 					Field:     "mbox",
@@ -433,7 +433,7 @@ func Test_notifyService_GetNotifyHistogram(t *testing.T) {
 
 func Test_notifyService_QueryAlertNotifyHistories(t *testing.T) {
 	type fields struct {
-		DB *db2.DB
+		DB *db.DB
 		L  logs.Logger
 	}
 	type args struct {
@@ -450,12 +450,12 @@ func Test_notifyService_QueryAlertNotifyHistories(t *testing.T) {
 		{
 			name: "test",
 			fields: fields{
-				DB: &db2.DB{
+				DB: &db.DB{
 					DB: &gorm.DB{},
-					AlertNotifyIndexDB: db2.AlertNotifyIndexDB{
+					AlertNotifyIndexDB: db.AlertNotifyIndexDB{
 						DB: &gorm.DB{},
 					},
-					NotifyHistoryDB: db2.NotifyHistoryDB{
+					NotifyHistoryDB: db.NotifyHistoryDB{
 						DB: &gorm.DB{},
 					},
 				},
@@ -481,8 +481,8 @@ func Test_notifyService_QueryAlertNotifyHistories(t *testing.T) {
 		monkey.Patch(apis.GetOrgID, func(ctx context.Context) string {
 			return "1"
 		})
-		monkey.PatchInstanceMethod(reflect.TypeOf(&db2.AlertNotifyIndexDB{}), "QueryAlertNotifyHistories", func(_ *db2.AlertNotifyIndexDB, request *model.QueryAlertNotifyIndexRequest) ([]db2.AlertNotifyIndex, int64, error) {
-			return []db2.AlertNotifyIndex{
+		monkey.PatchInstanceMethod(reflect.TypeOf(&db.AlertNotifyIndexDB{}), "QueryAlertNotifyHistories", func(_ *db.AlertNotifyIndexDB, request *model.QueryAlertNotifyIndexRequest) ([]db.AlertNotifyIndex, int64, error) {
+			return []db.AlertNotifyIndex{
 				{
 					ID:         1,
 					NotifyID:   1,

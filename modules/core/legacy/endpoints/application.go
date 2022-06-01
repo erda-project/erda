@@ -27,10 +27,10 @@ import (
 
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/core/core-services/conf"
-	"github.com/erda-project/erda/modules/core/core-services/dao"
-	model2 "github.com/erda-project/erda/modules/core/core-services/model"
-	"github.com/erda-project/erda/modules/core/core-services/services/apierrors"
+	"github.com/erda-project/erda/modules/core/legacy/conf"
+	"github.com/erda-project/erda/modules/core/legacy/dao"
+	"github.com/erda-project/erda/modules/core/legacy/model"
+	"github.com/erda-project/erda/modules/core/legacy/services/apierrors"
 	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/filehelper"
 	"github.com/erda-project/erda/pkg/http/httpserver"
@@ -310,7 +310,7 @@ func (e *Endpoints) listApplications(ctx context.Context, r *http.Request, isMin
 	// 获取当前用户
 	var (
 		total        int
-		applications []model2.Application
+		applications []model.Application
 		err          error
 	)
 
@@ -413,7 +413,7 @@ func (e *Endpoints) listApplications(ctx context.Context, r *http.Request, isMin
 	return httpserver.OkResp(apistructs.ApplicationListResponseData{Total: total, List: applicationDTOs})
 }
 
-func (e Endpoints) transferAppsToApplicationDTOS(isSimple bool, applications []model2.Application, blockStatusMap map[uint64]string, memberMap map[int64][]string) ([]apistructs.ApplicationDTO, error) {
+func (e Endpoints) transferAppsToApplicationDTOS(isSimple bool, applications []model.Application, blockStatusMap map[uint64]string, memberMap map[int64][]string) ([]apistructs.ApplicationDTO, error) {
 	projectIDs := make([]uint64, 0, len(applications))
 	appIDS := make([]int64, 0)
 	orgSet := make(map[int64]struct{})
@@ -431,7 +431,7 @@ func (e Endpoints) transferAppsToApplicationDTOS(isSimple bool, applications []m
 	if err != nil {
 		return nil, err
 	}
-	orgMap := make(map[int64]model2.Org, len(orgs))
+	orgMap := make(map[int64]model.Org, len(orgs))
 	for _, org := range orgs {
 		orgMap[org.ID] = org
 	}
@@ -445,7 +445,7 @@ func (e Endpoints) transferAppsToApplicationDTOS(isSimple bool, applications []m
 	if err != nil {
 		return nil, err
 	}
-	runtimeCounter := make(map[int64]model2.ApplicationRuntimeCount)
+	runtimeCounter := make(map[int64]model.ApplicationRuntimeCount)
 	for _, appRuntimeCount := range appRuntimeCounts {
 		runtimeCounter[appRuntimeCount.ApplicationID] = appRuntimeCount
 	}
@@ -455,7 +455,7 @@ func (e Endpoints) transferAppsToApplicationDTOS(isSimple bool, applications []m
 	for i := range applications {
 		var projectName string
 		var projectDisplayName string
-		var project *model2.Project
+		var project *model.Project
 		if v, ok := projectMap[applications[i].ProjectID]; ok {
 			projectName = v.Name
 			projectDisplayName = v.DisplayName
@@ -843,7 +843,7 @@ func (e *Endpoints) checkPermission(r *http.Request, scopeType apistructs.ScopeT
 	return nil
 }
 
-func (e *Endpoints) convertToApplicationDTO(ctx context.Context, application model2.Application, withProjectToken bool, userID string, blockStatusMap map[uint64]string) apistructs.ApplicationDTO {
+func (e *Endpoints) convertToApplicationDTO(ctx context.Context, application model.Application, withProjectToken bool, userID string, blockStatusMap map[uint64]string) apistructs.ApplicationDTO {
 	var config map[string]interface{}
 	if err := json.Unmarshal([]byte(application.Config), &config); err != nil {
 		config = make(map[string]interface{})

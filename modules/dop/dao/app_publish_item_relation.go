@@ -18,7 +18,7 @@ import (
 	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda/apistructs"
-	model2 "github.com/erda-project/erda/modules/core/core-services/model"
+	model2 "github.com/erda-project/erda/modules/core/legacy/model"
 )
 
 func (client *DBClient) QueryAppPublishItemRelations(req apistructs.QueryAppPublishItemRelationRequest) ([]apistructs.AppPublishItemRelation, error) {

@@ -24,7 +24,7 @@ import (
 	"github.com/sirupsen/logrus"
 	gormbulk "github.com/t-tiger/gorm-bulk-insert"
 
-	"github.com/erda-project/erda/modules/core/core-services/conf"
+	"github.com/erda-project/erda/modules/core/legacy/conf"
 )
 
 // DIALECT db 类型

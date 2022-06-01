@@ -28,9 +28,9 @@ import (
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/core/core-services/dao"
-	model2 "github.com/erda-project/erda/modules/core/core-services/model"
-	"github.com/erda-project/erda/modules/core/core-services/types"
+	"github.com/erda-project/erda/modules/core/legacy/dao"
+	"github.com/erda-project/erda/modules/core/legacy/model"
+	"github.com/erda-project/erda/modules/core/legacy/types"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/gittarutil"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -79,7 +79,7 @@ func WithBundle(bdl *bundle.Bundle) Option {
 }
 
 // CreateWithEvent 创建应用 & 发送事件
-func (a *Application) CreateWithEvent(userID string, createReq *apistructs.ApplicationCreateRequest) (*model2.Application, error) {
+func (a *Application) CreateWithEvent(userID string, createReq *apistructs.ApplicationCreateRequest) (*model.Application, error) {
 	// 创建应用
 	if createReq.DisplayName == "" {
 		createReq.DisplayName = createReq.Name
@@ -119,7 +119,7 @@ func getRepoConfigStr(config *apistructs.GitRepoConfig) string {
 }
 
 // Create 创建应用
-func (a *Application) Create(userID string, createReq *apistructs.ApplicationCreateRequest) (*model2.Application, error) {
+func (a *Application) Create(userID string, createReq *apistructs.ApplicationCreateRequest) (*model.Application, error) {
 	// 检查name重名
 	app, err := a.db.GetApplicationByName(int64(createReq.ProjectID), createReq.Name)
 	if err != nil {
@@ -143,7 +143,7 @@ func (a *Application) Create(userID string, createReq *apistructs.ApplicationCre
 	org, _ := a.db.GetOrg(project.OrgID)
 
 	// 添加application至DB
-	application := model2.Application{
+	application := model.Application{
 		Name:           createReq.Name,
 		DisplayName:    createReq.DisplayName,
 		Desc:           createReq.Desc,
@@ -178,7 +178,7 @@ func (a *Application) Create(userID string, createReq *apistructs.ApplicationCre
 		logrus.Warnf("failed to get user info, (%v)", err)
 	}
 	if len(users) > 0 {
-		member := model2.Member{
+		member := model.Member{
 			ScopeType:     apistructs.AppScope,
 			ScopeID:       application.ID,
 			ScopeName:     application.Name,
@@ -194,7 +194,7 @@ func (a *Application) Create(userID string, createReq *apistructs.ApplicationCre
 			ProjectID:     application.ProjectID,
 			ApplicationID: application.ID,
 		}
-		memberExtra := model2.MemberExtra{
+		memberExtra := model.MemberExtra{
 			UserID:        userID,
 			ScopeID:       application.ID,
 			ScopeType:     apistructs.AppScope,
@@ -239,7 +239,7 @@ func (a *Application) generateExtraInfo(applicationID, projectID int64) string {
 }
 
 // UpdateWithEvent 更新应用 & 发送事件
-func (a *Application) UpdateWithEvent(appID int64, updateReq *apistructs.ApplicationUpdateRequestBody) (*model2.Application, error) {
+func (a *Application) UpdateWithEvent(appID int64, updateReq *apistructs.ApplicationUpdateRequestBody) (*model.Application, error) {
 	// 更新应用
 	app, err := a.Update(appID, updateReq)
 	if err != nil {
@@ -268,7 +268,7 @@ func (a *Application) UpdateWithEvent(appID int64, updateReq *apistructs.Applica
 
 // Update 更新应用
 func (a *Application) Update(appID int64, updateReq *apistructs.ApplicationUpdateRequestBody) (
-	*model2.Application, error) {
+	*model.Application, error) {
 	// 检查应用是否存在
 	application, err := a.db.GetApplicationByID(appID)
 	if err != nil {
@@ -319,7 +319,7 @@ func (a *Application) Pin(appID int64, userID string) error {
 	}
 
 	// 添加收藏关系
-	fr = &model2.FavoritedResource{
+	fr = &model.FavoritedResource{
 		Target:   string(apistructs.AppScope),
 		TargetID: uint64(appID),
 		UserID:   userID,
@@ -389,7 +389,7 @@ func (a *Application) DeleteWithEvent(applicationID int64) error {
 }
 
 // Delete 删除应用
-func (a *Application) Delete(applicationID int64) (*model2.Application, error) {
+func (a *Application) Delete(applicationID int64) (*model.Application, error) {
 	// 查询应用是否存在
 	application, err := a.db.GetApplicationByID(applicationID)
 	if err != nil {
@@ -424,7 +424,7 @@ func (a *Application) Delete(applicationID int64) (*model2.Application, error) {
 }
 
 // Get 获取应用
-func (a *Application) Get(applicationID int64) (*model2.Application, error) {
+func (a *Application) Get(applicationID int64) (*model.Application, error) {
 	application, err := a.db.GetApplicationByID(applicationID)
 	if err != nil {
 		return nil, err
@@ -436,18 +436,18 @@ func (a *Application) Get(applicationID int64) (*model2.Application, error) {
 }
 
 // GetAllAppsByProject 根据projectID 获取应用
-func (a *Application) GetAllAppsByProject(projectID int64) ([]model2.Application, error) {
+func (a *Application) GetAllAppsByProject(projectID int64) ([]model.Application, error) {
 	return a.db.GetProjectApplications(projectID)
 }
 
 // GetAllApps 获取所有app列表
-func (a *Application) GetAllApps() ([]model2.Application, error) {
+func (a *Application) GetAllApps() ([]model.Application, error) {
 	return a.db.GetAllApps()
 }
 
 // List 应用列表/查询
 func (a *Application) List(orgID, projectID int64, userID string, request *apistructs.ApplicationListRequest) (
-	int, []model2.Application, error) {
+	int, []model.Application, error) {
 	// 获取应用列表
 	applicationIDs := request.ApplicationID
 	total, applications, err := a.db.GetApplicationsByIDs(&orgID, &projectID, applicationIDs, request)
@@ -460,7 +460,7 @@ func (a *Application) List(orgID, projectID int64, userID string, request *apist
 	if err != nil {
 		return 0, nil, err
 	}
-	frMap := make(map[uint64]model2.FavoritedResource, len(frs))
+	frMap := make(map[uint64]model.FavoritedResource, len(frs))
 	for _, v := range frs {
 		frMap[v.TargetID] = v
 	}
@@ -480,10 +480,10 @@ func (a *Application) List(orgID, projectID int64, userID string, request *apist
 
 // ListMyApplications 我的应用列表
 func (a *Application) ListMyApplications(orgID int64, userID string, request *apistructs.ApplicationListRequest) (
-	int, []model2.Application, error) {
+	int, []model.Application, error) {
 	var (
 		inputAppIDs []uint64
-		members     []model2.MemberExtra
+		members     []model.MemberExtra
 		err         error
 	)
 
@@ -527,7 +527,7 @@ func (a *Application) ListMyApplications(orgID int64, userID string, request *ap
 	if err != nil {
 		return 0, nil, err
 	}
-	frMap := make(map[uint64]model2.FavoritedResource, len(frs))
+	frMap := make(map[uint64]model.FavoritedResource, len(frs))
 	for _, v := range frs {
 		frMap[v.TargetID] = v
 	}
@@ -546,7 +546,7 @@ func (a *Application) ListMyApplications(orgID int64, userID string, request *ap
 }
 
 // ListByProjectID 根据projectID获取应用列表
-func (a *Application) ListByProjectID(projectID, pageNum, pageSize int64) ([]model2.Application, error) {
+func (a *Application) ListByProjectID(projectID, pageNum, pageSize int64) ([]model.Application, error) {
 	applications, err := a.db.GetApplicationsByProjectID(projectID, pageNum, pageSize)
 	if err != nil {
 		return nil, err
@@ -644,6 +644,6 @@ func (a *Application) BuildItemMonitorPipelineCmsNs(appID int64, workspace strin
 	return fmt.Sprintf("publish-item-monitor-%s-%d", workspace, appID)
 }
 
-func (a *Application) GetApplicationsByNames(projectID uint64, names []string) ([]model2.Application, error) {
+func (a *Application) GetApplicationsByNames(projectID uint64, names []string) ([]model.Application, error) {
 	return a.db.GetApplicationsByNames(projectID, names)
 }

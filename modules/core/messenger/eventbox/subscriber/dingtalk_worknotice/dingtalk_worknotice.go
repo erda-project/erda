@@ -22,8 +22,8 @@ import (
 	"github.com/erda-project/erda-proto-go/core/messenger/notify/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/core/core-services/services/dingtalk/api/interfaces"
-	subscriber2 "github.com/erda-project/erda/modules/core/messenger/eventbox/subscriber"
+	"github.com/erda-project/erda/modules/core/legacy/services/dingtalk/api/interfaces"
+	"github.com/erda-project/erda/modules/core/messenger/eventbox/subscriber"
 	"github.com/erda-project/erda/modules/core/messenger/eventbox/subscriber/dingding"
 	"github.com/erda-project/erda/modules/core/messenger/eventbox/types"
 	"github.com/erda-project/erda/pkg/template"
@@ -44,7 +44,7 @@ type WorkNoticeData struct {
 	OrgID    int64             `json:"orgID"`
 }
 
-func New(bundle *bundle.Bundle, dingtalk interfaces.DingTalkApiClientFactory, messenger pb.NotifyServiceServer) subscriber2.Subscriber {
+func New(bundle *bundle.Bundle, dingtalk interfaces.DingTalkApiClientFactory, messenger pb.NotifyServiceServer) subscriber.Subscriber {
 	subscriber := &DingWorkNoticeSubscriber{
 		bundle:      bundle,
 		dingTalkApi: dingtalk,
@@ -100,7 +100,7 @@ func (d DingWorkNoticeSubscriber) Publish(dest string, content string, time int6
 		}
 	}
 	if m.CreateHistory != nil {
-		subscriber2.SaveNotifyHistories(m.CreateHistory, d.messenger)
+		subscriber.SaveNotifyHistories(m.CreateHistory, d.messenger)
 	}
 	return errs
 }

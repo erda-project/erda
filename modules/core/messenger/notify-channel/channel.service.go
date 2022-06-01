@@ -30,7 +30,7 @@ import (
 	"github.com/erda-project/erda-proto-go/core/messenger/notifychannel/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/core/messenger/notify-channel/db"
-	kind2 "github.com/erda-project/erda/modules/core/messenger/notify-channel/kind"
+	"github.com/erda-project/erda/modules/core/messenger/notify-channel/kind"
 	"github.com/erda-project/erda/pkg/common/apis"
 	pkgerrors "github.com/erda-project/erda/pkg/common/errors"
 	"github.com/erda-project/erda/pkg/kms/kmstypes"
@@ -174,7 +174,7 @@ func (s *notifyChannelService) ConfigValidate(channelType string, c map[string]*
 		if err != nil {
 			return nil, errors.New("Json parser failed.")
 		}
-		var asm kind2.AliyunSMS
+		var asm kind.AliyunSMS
 		err = json.Unmarshal(bytes, &asm)
 		if err != nil {
 			return nil, errors.New("Json parser failed.")
@@ -191,7 +191,7 @@ func (s *notifyChannelService) ConfigValidate(channelType string, c map[string]*
 		if err != nil {
 			return nil, errors.New("Json parser failed.")
 		}
-		var dingNotice kind2.DingDingWorkNotice
+		var dingNotice kind.DingDingWorkNotice
 		err = json.Unmarshal(bytes, &dingNotice)
 		if err != nil {
 			return nil, err
@@ -208,7 +208,7 @@ func (s *notifyChannelService) ConfigValidate(channelType string, c map[string]*
 		if err != nil {
 			return nil, errors.New("Json parser failed.")
 		}
-		var email kind2.Email
+		var email kind.Email
 		err = json.Unmarshal(bytes, &email)
 		if err != nil {
 			return nil, err
@@ -221,7 +221,7 @@ func (s *notifyChannelService) ConfigValidate(channelType string, c map[string]*
 		if err != nil {
 			return nil, errors.New("Json parser failed.")
 		}
-		var vms kind2.AliyunVMS
+		var vms kind.AliyunVMS
 		err = json.Unmarshal(bytes, &vms)
 		if err != nil {
 			return nil, err

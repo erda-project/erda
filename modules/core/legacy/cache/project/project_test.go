@@ -17,7 +17,7 @@ package projectCache
 import (
 	"testing"
 
-	"github.com/erda-project/erda/modules/core/core-services/model"
+	"github.com/erda-project/erda/modules/core/legacy/model"
 )
 
 func Test_getFirstValidOwnerOrLead(t *testing.T) {

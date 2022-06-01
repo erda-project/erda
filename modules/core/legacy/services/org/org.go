@@ -30,11 +30,11 @@ import (
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/core/core-services/conf"
-	dao2 "github.com/erda-project/erda/modules/core/core-services/dao"
-	model2 "github.com/erda-project/erda/modules/core/core-services/model"
-	"github.com/erda-project/erda/modules/core/core-services/services/apierrors"
-	"github.com/erda-project/erda/modules/core/core-services/types"
+	"github.com/erda-project/erda/modules/core/legacy/conf"
+	"github.com/erda-project/erda/modules/core/legacy/dao"
+	"github.com/erda-project/erda/modules/core/legacy/model"
+	"github.com/erda-project/erda/modules/core/legacy/services/apierrors"
+	"github.com/erda-project/erda/modules/core/legacy/types"
 	"github.com/erda-project/erda/pkg/numeral"
 	"github.com/erda-project/erda/pkg/oauth2/tokenstore/mysqltokenstore"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -43,7 +43,7 @@ import (
 
 // Org 资源对象操作封装
 type Org struct {
-	db           *dao2.DBClient
+	db           *dao.DBClient
 	uc           *ucauth.UCClient
 	bdl          *bundle.Bundle
 	redisCli     *redis.Client
@@ -64,7 +64,7 @@ func New(options ...Option) *Org {
 }
 
 // WithDBClient 配置 db client
-func WithDBClient(db *dao2.DBClient) Option {
+func WithDBClient(db *dao.DBClient) Option {
 	return func(o *Org) {
 		o.db = db
 	}
@@ -105,7 +105,7 @@ func WithTokenSvc(tokenService tokenpb.TokenServiceServer) Option {
 }
 
 // CreateWithEvent 创建企业 & 发送创建事件
-func (o *Org) CreateWithEvent(userID string, createReq apistructs.OrgCreateRequest) (*model2.Org, error) {
+func (o *Org) CreateWithEvent(userID string, createReq apistructs.OrgCreateRequest) (*model.Org, error) {
 	// 创建企业
 	org, err := o.Create(createReq)
 	if err != nil {
@@ -132,7 +132,7 @@ func (o *Org) CreateWithEvent(userID string, createReq apistructs.OrgCreateReque
 }
 
 // Create 创建企业处理逻辑
-func (o *Org) Create(createReq apistructs.OrgCreateRequest) (*model2.Org, error) {
+func (o *Org) Create(createReq apistructs.OrgCreateRequest) (*model.Org, error) {
 	if len(createReq.Admins) == 0 {
 		return nil, errors.Errorf("failed to create org(param admins is empty)")
 	}
@@ -153,7 +153,7 @@ func (o *Org) Create(createReq apistructs.OrgCreateRequest) (*model2.Org, error)
 
 	// 校验企业名唯一
 	existOrg, err := o.db.GetOrgByName(createReq.Name)
-	if err != nil && err != dao2.ErrNotFoundOrg {
+	if err != nil && err != dao.ErrNotFoundOrg {
 		return nil, err
 	}
 	if existOrg != nil {
@@ -162,7 +162,7 @@ func (o *Org) Create(createReq apistructs.OrgCreateRequest) (*model2.Org, error)
 
 	// 添加企业至DB
 	userID := createReq.Admins[0]
-	org := &model2.Org{
+	org := &model.Org{
 		Name:        createReq.Name,
 		DisplayName: createReq.DisplayName,
 		Desc:        createReq.Desc,
@@ -194,7 +194,7 @@ func (o *Org) Create(createReq apistructs.OrgCreateRequest) (*model2.Org, error)
 			logrus.Warnf("failed to create token, (%v)", err)
 		}
 
-		member := model2.Member{
+		member := model.Member{
 			ScopeType:  apistructs.OrgScope,
 			ScopeID:    org.ID,
 			ScopeName:  org.Name,
@@ -210,7 +210,7 @@ func (o *Org) Create(createReq apistructs.OrgCreateRequest) (*model2.Org, error)
 		if err = o.db.CreateMember(&member); err != nil {
 			logrus.Warnf("failed to insert member info to db, (%v)", err)
 		}
-		if err = o.db.CreateMemberExtra(&model2.MemberExtra{
+		if err = o.db.CreateMemberExtra(&model.MemberExtra{
 			UserID:        userID,
 			ScopeType:     apistructs.OrgScope,
 			ScopeID:       org.ID,
@@ -225,7 +225,7 @@ func (o *Org) Create(createReq apistructs.OrgCreateRequest) (*model2.Org, error)
 }
 
 // UpdateWithEvent 更新企业 & 发送更新事件
-func (o *Org) UpdateWithEvent(orgID int64, updateReq apistructs.OrgUpdateRequestBody) (*model2.Org, apistructs.AuditMessage, error) {
+func (o *Org) UpdateWithEvent(orgID int64, updateReq apistructs.OrgUpdateRequestBody) (*model.Org, apistructs.AuditMessage, error) {
 	if updateReq.DisplayName == "" {
 		updateReq.DisplayName = updateReq.Name
 	}
@@ -255,7 +255,7 @@ func (o *Org) UpdateWithEvent(orgID int64, updateReq apistructs.OrgUpdateRequest
 }
 
 // Update 更新企业
-func (o *Org) Update(orgID int64, updateReq apistructs.OrgUpdateRequestBody) (*model2.Org, apistructs.AuditMessage, error) {
+func (o *Org) Update(orgID int64, updateReq apistructs.OrgUpdateRequestBody) (*model.Org, apistructs.AuditMessage, error) {
 	// 检查待更新的org是否存在
 	org, err := o.db.GetOrg(orgID)
 	if err != nil {
@@ -299,7 +299,7 @@ func (o *Org) Update(orgID int64, updateReq apistructs.OrgUpdateRequestBody) (*m
 	return &org, auditMessage, nil
 }
 
-func getAuditMessage(org model2.Org, req apistructs.OrgUpdateRequestBody) apistructs.AuditMessage {
+func getAuditMessage(org model.Org, req apistructs.OrgUpdateRequestBody) apistructs.AuditMessage {
 	var messageZH, messageEN strings.Builder
 	if org.DisplayName != req.DisplayName {
 		messageZH.WriteString(fmt.Sprintf("组织名称由 %s 改为 %s ", org.DisplayName, req.DisplayName))
@@ -409,7 +409,7 @@ func getAuditMessage(org model2.Org, req apistructs.OrgUpdateRequestBody) apistr
 }
 
 // Get 获取企业
-func (o *Org) Get(orgID int64) (*model2.Org, error) {
+func (o *Org) Get(orgID int64) (*model.Org, error) {
 	// 检查org是否存在
 	org, err := o.db.GetOrg(orgID)
 	if err != nil {
@@ -452,7 +452,7 @@ func (o *Org) Delete(orgID int64) error {
 }
 
 // GetByName 获取企业
-func (o *Org) GetByName(orgName string) (*model2.Org, error) {
+func (o *Org) GetByName(orgName string) (*model.Org, error) {
 	// 检查org是否存在
 	org, err := o.db.GetOrgByName(orgName)
 	if err != nil {
@@ -462,7 +462,7 @@ func (o *Org) GetByName(orgName string) (*model2.Org, error) {
 }
 
 // SearchByName 按企业名称过滤
-func (o *Org) SearchByName(name string, pageNo, pageSize int) (int, []model2.Org, error) {
+func (o *Org) SearchByName(name string, pageNo, pageSize int) (int, []model.Org, error) {
 	total, orgs, err := o.db.GetOrgsByParam(name, pageNo, pageSize)
 	if err != nil {
 		logrus.Warnf("failed to get orgs, (%v)", err)
@@ -472,7 +472,7 @@ func (o *Org) SearchByName(name string, pageNo, pageSize int) (int, []model2.Org
 }
 
 // Search public orgs
-func (o *Org) SearchPublicOrgsByName(name string, pageNo, pageSize int) (int, []model2.Org, error) {
+func (o *Org) SearchPublicOrgsByName(name string, pageNo, pageSize int) (int, []model.Org, error) {
 	total, orgs, err := o.db.GetPublicOrgsByParam(name, pageNo, pageSize)
 	if err != nil {
 		return 0, nil, err
@@ -481,14 +481,14 @@ func (o *Org) SearchPublicOrgsByName(name string, pageNo, pageSize int) (int, []
 }
 
 // ListByIDsAndName 根据IDs列表 & name 获取企业列表
-func (o *Org) ListByIDsAndName(orgIDs []int64, name string, pageNo, pageSize int) (int, []model2.Org, error) {
+func (o *Org) ListByIDsAndName(orgIDs []int64, name string, pageNo, pageSize int) (int, []model.Org, error) {
 	return o.db.GetOrgsByIDsAndName(orgIDs, name, pageNo, pageSize)
 }
 
-func (o *Org) ListOrgs(orgIDs []int64, req *apistructs.OrgSearchRequest, all bool) (int, []model2.Org, error) {
+func (o *Org) ListOrgs(orgIDs []int64, req *apistructs.OrgSearchRequest, all bool) (int, []model.Org, error) {
 	var (
 		total int
-		orgs  []model2.Org
+		orgs  []model.Org
 		err   error
 	)
 	if all {
@@ -516,7 +516,7 @@ func (o *Org) ChangeCurrentOrg(userID string, req *apistructs.OrgChangeRequest) 
 
 	orgID, err := o.db.GetCurrentOrgByUser(req.UserID)
 	if err != nil || orgID == 0 { // 若当前登录用户currentOrg记录不存在
-		currentOrg := &model2.CurrentOrg{
+		currentOrg := &model.CurrentOrg{
 			UserID: req.UserID,
 			OrgID:  int64(req.OrgID),
 		}
@@ -532,24 +532,24 @@ func (o *Org) GetCurrentOrgByUser(userID string) (int64, error) {
 }
 
 // List 获取所有企业列表
-func (o *Org) List() ([]model2.Org, error) {
+func (o *Org) List() ([]model.Org, error) {
 	return o.db.GetOrgList()
 }
 
 // Get Org by domain and org name
-func (o *Org) GetOrgByDomainAndOrgName(domain, orgName string) (*model2.Org, error) {
+func (o *Org) GetOrgByDomainAndOrgName(domain, orgName string) (*model.Org, error) {
 	if orgName == "" {
 		return o.GetOrgByDomain(domain)
 	}
 	org, err := o.db.GetOrgByName(orgName)
 	if err != nil {
-		if err != dao2.ErrNotFoundOrg {
+		if err != dao.ErrNotFoundOrg {
 			return nil, err
 		}
 		// Not found, search by domain
 		org, err = o.GetOrgByDomain(domain)
 		if err != nil {
-			if err != dao2.ErrNotFoundOrg {
+			if err != dao.ErrNotFoundOrg {
 				return nil, err
 			}
 			return nil, nil
@@ -559,7 +559,7 @@ func (o *Org) GetOrgByDomainAndOrgName(domain, orgName string) (*model2.Org, err
 }
 
 // GetOrgByDomain 通过域名获取企业
-func (o *Org) GetOrgByDomain(domain string) (*model2.Org, error) {
+func (o *Org) GetOrgByDomain(domain string) (*model.Org, error) {
 	if domain != "" && conf.OrgWhiteList[domain] {
 		return nil, nil
 	}
@@ -616,7 +616,7 @@ func (o *Org) RelateCluster(userID string, req *apistructs.OrgClusterRelationCre
 		return nil
 	}
 
-	relation = &model2.OrgClusterRelation{
+	relation = &model.OrgClusterRelation{
 		OrgID:       req.OrgID,
 		OrgName:     req.OrgName,
 		ClusterID:   uint64(cluster.ID),
@@ -716,12 +716,12 @@ func (o *Org) FetchOrgResources(orgID uint64) (*apistructs.OrgResourceInfo, erro
 }
 
 // ListAllOrgClusterRelation 获取所有企业对应集群关系
-func (o *Org) ListAllOrgClusterRelation() ([]model2.OrgClusterRelation, error) {
+func (o *Org) ListAllOrgClusterRelation() ([]model.OrgClusterRelation, error) {
 	return o.db.ListAllOrgClusterRelations()
 }
 
 // GetOrgClusterRelationsByOrg returns the list of clusters in the organization
-func (o *Org) GetOrgClusterRelationsByOrg(orgID uint64) ([]model2.OrgClusterRelation, error) {
+func (o *Org) GetOrgClusterRelationsByOrg(orgID uint64) ([]model.OrgClusterRelation, error) {
 	return o.db.GetOrgClusterRelationsByOrg(int64(orgID))
 }
 
@@ -749,7 +749,7 @@ func (o *Org) SetReleaseCrossCluster(orgID uint64, enable bool) error {
 		return apierrors.ErrSetReleaseCrossCluster.InvalidParameter(err)
 	}
 	org.Config.EnableReleaseCrossCluster = enable
-	return o.db.DB.Model(&model2.Org{}).Update(org).Error
+	return o.db.DB.Model(&model.Org{}).Update(org).Error
 }
 
 // GenVerifiCode 生成邀请成员加入企业的验证码

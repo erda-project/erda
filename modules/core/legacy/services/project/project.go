@@ -30,11 +30,11 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/core/core-services/cache/project"
-	"github.com/erda-project/erda/modules/core/core-services/conf"
-	"github.com/erda-project/erda/modules/core/core-services/dao"
-	model2 "github.com/erda-project/erda/modules/core/core-services/model"
-	"github.com/erda-project/erda/modules/core/core-services/types"
+	"github.com/erda-project/erda/modules/core/legacy/cache/project"
+	"github.com/erda-project/erda/modules/core/legacy/conf"
+	"github.com/erda-project/erda/modules/core/legacy/dao"
+	"github.com/erda-project/erda/modules/core/legacy/model"
+	"github.com/erda-project/erda/modules/core/legacy/types"
 	"github.com/erda-project/erda/pkg/filehelper"
 	local "github.com/erda-project/erda/pkg/i18n"
 	calcu "github.com/erda-project/erda/pkg/resourcecalculator"
@@ -120,7 +120,7 @@ func (p *Project) CreateWithEvent(userID string, createReq *apistructs.ProjectCr
 }
 
 // Create 创建项目
-func (p *Project) Create(userID string, createReq *apistructs.ProjectCreateRequest) (*model2.Project, error) {
+func (p *Project) Create(userID string, createReq *apistructs.ProjectCreateRequest) (*model.Project, error) {
 	// 参数合法性检查
 	if createReq.Name == "" {
 		return nil, errors.Errorf("failed to create project(name is empty)")
@@ -178,8 +178,8 @@ func (p *Project) Create(userID string, createReq *apistructs.ProjectCreateReque
 
 	now := time.Now()
 	// 添加项目至DB
-	project = &model2.Project{
-		BaseModel:      model2.BaseModel{},
+	project = &model.Project{
+		BaseModel:      model.BaseModel{},
 		Name:           createReq.Name,
 		DisplayName:    createReq.DisplayName,
 		Desc:           createReq.Desc,
@@ -237,7 +237,7 @@ func (p *Project) Create(userID string, createReq *apistructs.ProjectCreateReque
 		logrus.Warnf("user query error: %v", err)
 	}
 	if len(users) > 0 {
-		member := model2.Member{
+		member := model.Member{
 			ScopeType:  apistructs.ProjectScope,
 			ScopeID:    project.ID,
 			ScopeName:  project.Name,
@@ -252,7 +252,7 @@ func (p *Project) Create(userID string, createReq *apistructs.ProjectCreateReque
 			OrgID:      project.OrgID,
 			ProjectID:  project.ID,
 		}
-		memberExtra := model2.MemberExtra{
+		memberExtra := model.MemberExtra{
 			UserID:        userID,
 			ScopeID:       project.ID,
 			ScopeType:     apistructs.ProjectScope,
@@ -306,7 +306,7 @@ func (p *Project) UpdateWithEvent(ctx context.Context, orgID, projectID int64, u
 }
 
 // Update 更新项目
-func (p *Project) Update(ctx context.Context, orgID, projectID int64, userID string, updateReq *apistructs.ProjectUpdateBody) (*model2.Project, error) {
+func (p *Project) Update(ctx context.Context, orgID, projectID int64, userID string, updateReq *apistructs.ProjectUpdateBody) (*model.Project, error) {
 	if rc := updateReq.ResourceConfigs; rc != nil {
 		updateReq.ClusterConfig = map[string]string{
 			"PROD":    updateReq.ResourceConfigs.PROD.ClusterName,
@@ -396,7 +396,7 @@ func (p *Project) Update(ctx context.Context, orgID, projectID int64, userID str
 	go func() {
 		if project.Quota == nil || !isQuotaChanged(*oldQuota, *project.Quota) {
 			proCtx, _ := json.Marshal(map[string]string{"projectName": project.Name})
-			if err := p.db.CreateAudit(&model2.Audit{
+			if err := p.db.CreateAudit(&model.Audit{
 				ScopeType:    apistructs.ProjectScope,
 				ScopeID:      uint64(projectID),
 				ProjectID:    uint64(projectID),
@@ -521,7 +521,7 @@ func isQuotaChangedOnTheWorkspace(workspaces map[string]bool, oldQuota, newQuota
 		oldQuota.DevClusterName != newQuota.DevClusterName
 }
 
-func patchProject(project *model2.Project, updateReq *apistructs.ProjectUpdateBody, userID string) error {
+func patchProject(project *model.Project, updateReq *apistructs.ProjectUpdateBody, userID string) error {
 	clusterConf, err := json.Marshal(updateReq.ClusterConfig)
 	if err != nil {
 		logrus.Errorf("failed to marshal clusterConfig, (%v)", err)
@@ -568,7 +568,7 @@ func patchProject(project *model2.Project, updateReq *apistructs.ProjectUpdateBo
 	return nil
 }
 
-func convertAuditCreateReq2Model(req apistructs.Audit) (*model2.Audit, error) {
+func convertAuditCreateReq2Model(req apistructs.Audit) (*model.Audit, error) {
 	context, err := json.Marshal(req.Context)
 	if err != nil {
 		return nil, err
@@ -581,7 +581,7 @@ func convertAuditCreateReq2Model(req apistructs.Audit) (*model2.Audit, error) {
 	if err != nil {
 		return nil, err
 	}
-	audit := &model2.Audit{
+	audit := &model.Audit{
 		StartTime:    startAt,
 		EndTime:      endAt,
 		UserID:       req.UserID,
@@ -632,7 +632,7 @@ func (p *Project) DeleteWithEvent(projectID int64) error {
 }
 
 // Delete 删除项目
-func (p *Project) Delete(projectID int64) (*model2.Project, error) {
+func (p *Project) Delete(projectID int64) (*model.Project, error) {
 	langCodes, _ := i18n.ParseLanguageCode(local.GetGoroutineBindLang())
 	// check if application exists
 	if count, err := p.db.GetApplicationCountByProjectID(projectID); err != nil || count > 0 {
@@ -830,7 +830,7 @@ func (p *Project) calcuRequestRate(dto *apistructs.ProjectDTO) {
 }
 
 // GetModelProject 获取项目
-func (p *Project) GetModelProject(projectID int64) (*model2.Project, error) {
+func (p *Project) GetModelProject(projectID int64) (*model.Project, error) {
 	project, err := p.db.GetProjectByID(projectID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get project")
@@ -839,7 +839,7 @@ func (p *Project) GetModelProject(projectID int64) (*model2.Project, error) {
 	return &project, nil
 }
 
-func (p *Project) GetModelProjectsMap(projectIDs []uint64, keepMsp bool) (map[int64]*model2.Project, error) {
+func (p *Project) GetModelProjectsMap(projectIDs []uint64, keepMsp bool) (map[int64]*model.Project, error) {
 	_, projects, err := p.db.GetProjectsByIDs(projectIDs, &apistructs.ProjectListRequest{
 		PageNo:   1,
 		PageSize: len(projectIDs),
@@ -849,7 +849,7 @@ func (p *Project) GetModelProjectsMap(projectIDs []uint64, keepMsp bool) (map[in
 		return nil, errors.Errorf("failed to get projects, (%v)", err)
 	}
 
-	projectMap := make(map[int64]*model2.Project)
+	projectMap := make(map[int64]*model.Project)
 	for i, p := range projects {
 		projectMap[p.ID] = &projects[i]
 	}
@@ -1228,7 +1228,7 @@ func initRollbackConfig(rollbackConfig *map[string]int) error {
 	return checkRollbackConfig(rollbackConfig)
 }
 
-func (p *Project) convertToProjectDTO(joined bool, project *model2.Project) apistructs.ProjectDTO {
+func (p *Project) convertToProjectDTO(joined bool, project *model.Project) apistructs.ProjectDTO {
 	l := logrus.WithField("func", "convertToProjectDTO")
 	var rollbackConfig map[string]int
 	if err := json.Unmarshal([]byte(project.RollbackConfig), &rollbackConfig); err != nil {
@@ -1373,7 +1373,7 @@ func (p *Project) GetQuotaOnClusters(orgID int64, clusterNames []string) (*apist
 	}
 
 	// query all projects
-	var projects []*model2.Project
+	var projects []*model.Project
 	if err := p.db.Find(&projects, map[string]interface{}{"org_id": orgID}).Error; err != nil {
 		if gorm.IsRecordNotFoundError(err) {
 			logrus.WithError(err).Warnln("project record not found")
@@ -1406,7 +1406,7 @@ func (p *Project) GetQuotaOnClusters(orgID int64, clusterNames []string) (*apist
 	var ownerM = make(map[string]*apistructs.OwnerQuotaOnClusters)
 	for _, project := range projects {
 		// query project owner
-		var member = model2.Member{
+		var member = model.Member{
 			UserID: "0",
 			Name:   "unknown",
 			Nick:   "unknown",
@@ -1469,7 +1469,7 @@ func (p *Project) GetNamespacesBelongsTo(ctx context.Context, orgID uint64, clus
 		l            = logrus.WithField("func", "GetNamespacesBelongsTo")
 		langCodes, _ = ctx.Value("lang_codes").(i18n.LanguageCodes)
 		unknownName  = p.trans.Text(langCodes, "OwnerUnknown")
-		projects     []*model2.Project
+		projects     []*model.Project
 		projectIDs   []uint64
 		quotas       []*apistructs.ProjectQuota
 		quotasM      = make(map[uint64]*apistructs.ProjectQuota)
@@ -1576,7 +1576,7 @@ func (p *Project) checkNewQuotaIsLessThanRequest(ctx context.Context, dto *apist
 	return strings.Join(messages, "; "), false
 }
 
-func (p *Project) ListUnblockAppCountsByProjectIDS(projectIDS []uint64) ([]model2.ProjectUnblockAppCount, error) {
+func (p *Project) ListUnblockAppCountsByProjectIDS(projectIDS []uint64) ([]model.ProjectUnblockAppCount, error) {
 	if len(projectIDS) == 0 {
 		return nil, nil
 	}

@@ -20,8 +20,8 @@ import (
 	pb1 "github.com/erda-project/erda-proto-go/core/dop/taskerror/pb"
 	"github.com/erda-project/erda-proto-go/core/services/errorbox/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/core/core-services/dao"
-	"github.com/erda-project/erda/modules/core/core-services/services/apierrors"
+	"github.com/erda-project/erda/modules/core/legacy/dao"
+	"github.com/erda-project/erda/modules/core/legacy/services/apierrors"
 )
 
 type ErrorBoxService struct {

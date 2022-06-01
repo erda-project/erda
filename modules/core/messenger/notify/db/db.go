@@ -17,14 +17,14 @@ package db
 import (
 	"github.com/jinzhu/gorm"
 
-	db2 "github.com/erda-project/erda/modules/tools/monitor/core/alert/alert-apis/db"
+	alertdb "github.com/erda-project/erda/modules/tools/monitor/core/alert/alert-apis/db"
 )
 
 type DB struct {
 	*gorm.DB
 	AlertNotifyIndexDB AlertNotifyIndexDB
 	NotifyHistoryDB    NotifyHistoryDB
-	AlertNotifyDB      db2.AlertNotifyDB
+	AlertNotifyDB      alertdb.AlertNotifyDB
 }
 
 func New(db *gorm.DB) *DB {
@@ -32,7 +32,7 @@ func New(db *gorm.DB) *DB {
 		DB:                 db,
 		AlertNotifyIndexDB: AlertNotifyIndexDB{db},
 		NotifyHistoryDB:    NotifyHistoryDB{db},
-		AlertNotifyDB:      db2.AlertNotifyDB{db},
+		AlertNotifyDB:      alertdb.AlertNotifyDB{db},
 	}
 }
 

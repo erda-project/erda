@@ -25,7 +25,7 @@ import (
 	"github.com/erda-project/erda-proto-go/core/messenger/notify/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	subscriber2 "github.com/erda-project/erda/modules/core/messenger/eventbox/subscriber"
+	"github.com/erda-project/erda/modules/core/messenger/eventbox/subscriber"
 	"github.com/erda-project/erda/modules/core/messenger/eventbox/types"
 )
 
@@ -50,7 +50,7 @@ type VoiceData struct {
 type Option func(*VoiceSubscriber)
 
 // New 新建一个语音通知分发的实例
-func New(accessKeyID, accessKeySecret, monitorTtsCode, monitorCalledShowNumber string, bundle *bundle.Bundle, messenger pb.NotifyServiceServer) subscriber2.Subscriber {
+func New(accessKeyID, accessKeySecret, monitorTtsCode, monitorCalledShowNumber string, bundle *bundle.Bundle, messenger pb.NotifyServiceServer) subscriber.Subscriber {
 	subscriber := &VoiceSubscriber{
 		accessKeyID:             accessKeyID,
 		accessSecret:            accessKeySecret,
@@ -154,7 +154,7 @@ func (d *VoiceSubscriber) Publish(dest string, content string, time int64, msg *
 		}
 	}
 	if msg.CreateHistory != nil {
-		subscriber2.SaveNotifyHistories(msg.CreateHistory, d.messenger)
+		subscriber.SaveNotifyHistories(msg.CreateHistory, d.messenger)
 	}
 
 	return errs

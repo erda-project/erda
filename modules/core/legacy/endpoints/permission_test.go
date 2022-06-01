@@ -21,9 +21,9 @@ import (
 	"bou.ke/monkey"
 
 	"github.com/erda-project/erda/apistructs"
-	model2 "github.com/erda-project/erda/modules/core/core-services/model"
-	"github.com/erda-project/erda/modules/core/core-services/services/application"
-	"github.com/erda-project/erda/modules/core/core-services/services/project"
+	"github.com/erda-project/erda/modules/core/legacy/model"
+	"github.com/erda-project/erda/modules/core/legacy/services/application"
+	"github.com/erda-project/erda/modules/core/legacy/services/project"
 )
 
 func TestEndpoints_buildScopeInfo(t *testing.T) {
@@ -63,8 +63,8 @@ func TestEndpoints_buildScopeInfo(t *testing.T) {
 
 			var app = &application.Application{}
 
-			patch1 := monkey.PatchInstanceMethod(reflect.TypeOf(app), "Get", func(app *application.Application, applicationID int64) (*model2.Application, error) {
-				return &model2.Application{
+			patch1 := monkey.PatchInstanceMethod(reflect.TypeOf(app), "Get", func(app *application.Application, applicationID int64) (*model.Application, error) {
+				return &model.Application{
 					Name:      "test",
 					ProjectID: 1,
 				}, nil
@@ -72,8 +72,8 @@ func TestEndpoints_buildScopeInfo(t *testing.T) {
 			defer patch1.Unpatch()
 
 			var pj = &project.Project{}
-			patch2 := monkey.PatchInstanceMethod(reflect.TypeOf(pj), "GetModelProject", func(project *project.Project, projectID int64) (*model2.Project, error) {
-				return &model2.Project{
+			patch2 := monkey.PatchInstanceMethod(reflect.TypeOf(pj), "GetModelProject", func(project *project.Project, projectID int64) (*model.Project, error) {
+				return &model.Project{
 					DisplayName: "test",
 				}, nil
 			})

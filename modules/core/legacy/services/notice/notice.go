@@ -16,13 +16,13 @@ package notice
 
 import (
 	"github.com/erda-project/erda/apistructs"
-	dao2 "github.com/erda-project/erda/modules/core/core-services/dao"
-	"github.com/erda-project/erda/modules/core/core-services/services/apierrors"
+	"github.com/erda-project/erda/modules/core/legacy/dao"
+	"github.com/erda-project/erda/modules/core/legacy/services/apierrors"
 )
 
 // Notice 公告
 type Notice struct {
-	db *dao2.DBClient
+	db *dao.DBClient
 }
 
 // Option .
@@ -38,7 +38,7 @@ func New(options ...Option) *Notice {
 }
 
 // WithDBClient 设置 dbclient
-func WithDBClient(db *dao2.DBClient) Option {
+func WithDBClient(db *dao.DBClient) Option {
 	return func(n *Notice) {
 		n.db = db
 	}
@@ -49,7 +49,7 @@ func (n *Notice) Create(orgID uint64, createReq *apistructs.NoticeCreateRequest)
 	if createReq.Content == "" {
 		return 0, apierrors.ErrCreateNotice.MissingParameter("content")
 	}
-	notice := &dao2.Notice{
+	notice := &dao.Notice{
 		OrgID:   orgID,
 		Content: createReq.Content,
 		Status:  apistructs.NoticeUnpublished,
@@ -163,7 +163,7 @@ func (n *Notice) List(listReq *apistructs.NoticeListRequest) (*apistructs.Notice
 }
 
 // Convert 结构转换
-func (n *Notice) Convert(notice *dao2.Notice) *apistructs.Notice {
+func (n *Notice) Convert(notice *dao.Notice) *apistructs.Notice {
 	return &apistructs.Notice{
 		ID:        uint64(notice.ID),
 		OrgID:     notice.OrgID,

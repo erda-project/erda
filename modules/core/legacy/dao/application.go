@@ -20,28 +20,28 @@ import (
 	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda/apistructs"
-	model2 "github.com/erda-project/erda/modules/core/core-services/model"
+	"github.com/erda-project/erda/modules/core/legacy/model"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
 // CreateApplication 创建应用
-func (client *DBClient) CreateApplication(application *model2.Application) error {
+func (client *DBClient) CreateApplication(application *model.Application) error {
 	return client.Create(application).Error
 }
 
 // UpdateApplication 更新应用
-func (client *DBClient) UpdateApplication(application *model2.Application) error {
+func (client *DBClient) UpdateApplication(application *model.Application) error {
 	return client.Save(application).Error
 }
 
 // DeleteApplication 删除应用
 func (client *DBClient) DeleteApplication(applicationID int64) error {
-	return client.Where("id = ?", applicationID).Delete(&model2.Application{}).Error
+	return client.Where("id = ?", applicationID).Delete(&model.Application{}).Error
 }
 
 // GetApplicationByID 根据applicationID获取应用信息
-func (client *DBClient) GetApplicationByID(applicationID int64) (model2.Application, error) {
-	var application model2.Application
+func (client *DBClient) GetApplicationByID(applicationID int64) (model.Application, error) {
+	var application model.Application
 	if err := client.Where("id = ?", applicationID).Find(&application).Error; err != nil {
 		if gorm.IsRecordNotFoundError(err) {
 			return application, ErrNotFoundApplication
@@ -52,8 +52,8 @@ func (client *DBClient) GetApplicationByID(applicationID int64) (model2.Applicat
 }
 
 // GetApplicationByName 根据projectID & name获取应用
-func (client *DBClient) GetApplicationByName(projectID int64, name string) (model2.Application, error) {
-	var application model2.Application
+func (client *DBClient) GetApplicationByName(projectID int64, name string) (model.Application, error) {
+	var application model.Application
 	if err := client.Where("project_id = ?", projectID).Where("name = ?", name).
 		Find(&application).Error; err != nil {
 		if gorm.IsRecordNotFoundError(err) {
@@ -65,8 +65,8 @@ func (client *DBClient) GetApplicationByName(projectID int64, name string) (mode
 }
 
 // GetApplicationsByProjectID 根据projectID获取应用列表
-func (client *DBClient) GetApplicationsByProjectID(projectID, pageNum, pageSize int64) ([]model2.Application, error) {
-	var applications []model2.Application
+func (client *DBClient) GetApplicationsByProjectID(projectID, pageNum, pageSize int64) ([]model.Application, error) {
+	var applications []model.Application
 	// TODO 权限控制
 	if err := client.Where("project_id = ?", projectID).Order("updated_at DESC").
 		Offset((pageNum - 1) * pageSize).Limit(pageSize).Find(&applications).Error; err != nil {
@@ -76,11 +76,11 @@ func (client *DBClient) GetApplicationsByProjectID(projectID, pageNum, pageSize 
 }
 
 // GetApplicationsByProjectIDs 根据项目ID列表批量查询应用
-func (client *DBClient) GetApplicationsByProjectIDs(projectIDs []uint64) ([]model2.Application, error) {
+func (client *DBClient) GetApplicationsByProjectIDs(projectIDs []uint64) ([]model.Application, error) {
 	if len(projectIDs) == 0 {
 		return nil, nil
 	}
-	var applications []model2.Application
+	var applications []model.Application
 	if err := client.Where("project_id in (?)", projectIDs).
 		Order("updated_at DESC").Find(&applications).Error; err != nil {
 		return nil, err
@@ -91,7 +91,7 @@ func (client *DBClient) GetApplicationsByProjectIDs(projectIDs []uint64) ([]mode
 // GetApplicationCountByProjectID 根据projectID获取应用总数
 func (client *DBClient) GetApplicationCountByProjectID(projectID int64) (int64, error) {
 	var total int64
-	if err := client.Model(&model2.Application{}).Where("project_id = ?", projectID).
+	if err := client.Model(&model.Application{}).Where("project_id = ?", projectID).
 		Count(&total).Error; err != nil {
 		return 0, err
 	}
@@ -100,13 +100,13 @@ func (client *DBClient) GetApplicationCountByProjectID(projectID int64) (int64, 
 
 // GetApplicationsByIDs 根据applicationIDs & 名称模糊匹配获取应用列表
 func (client *DBClient) GetApplicationsByIDs(orgID *int64, projectID *int64, applicationIDs []uint64, request *apistructs.ApplicationListRequest) (
-	int, []model2.Application, error) {
+	int, []model.Application, error) {
 	var (
 		total        int
-		applications []model2.Application
+		applications []model.Application
 	)
 
-	db := client.Model(&model2.Application{})
+	db := client.Model(&model.Application{})
 	if request.Mode != "" {
 		db = db.Where("mode = ?", request.Mode)
 	}
@@ -150,8 +150,8 @@ func (client *DBClient) GetApplicationsByIDs(orgID *int64, projectID *int64, app
 }
 
 // GetApplicationByOrgAndName 根据orgID & 应用名称获取应用
-func (client *DBClient) GetApplicationByOrgAndName(orgID int64, name string) (*model2.Application, error) {
-	var app model2.Application
+func (client *DBClient) GetApplicationByOrgAndName(orgID int64, name string) (*model.Application, error) {
+	var app model.Application
 	if err := client.Where("org_id = ?", orgID).
 		Where("name = ?", name).Find(&app).Error; err != nil {
 		return nil, err
@@ -160,8 +160,8 @@ func (client *DBClient) GetApplicationByOrgAndName(orgID int64, name string) (*m
 }
 
 // GetProjectApplications 根据projectID获取所有应用列表
-func (client *DBClient) GetProjectApplications(projectID int64) ([]model2.Application, error) {
-	var applications []model2.Application
+func (client *DBClient) GetProjectApplications(projectID int64) ([]model.Application, error) {
+	var applications []model.Application
 	if err := client.Where("project_id = ?", projectID).Find(&applications).Error; err != nil {
 		return nil, err
 	}
@@ -169,8 +169,8 @@ func (client *DBClient) GetProjectApplications(projectID int64) ([]model2.Applic
 }
 
 // GetAllApps 获取所有app列表
-func (client *DBClient) GetAllApps() ([]model2.Application, error) {
-	var applications []model2.Application
+func (client *DBClient) GetAllApps() ([]model.Application, error) {
+	var applications []model.Application
 	if err := client.Find(&applications).Error; err != nil {
 		return nil, err
 	}
@@ -180,15 +180,15 @@ func (client *DBClient) GetAllApps() ([]model2.Application, error) {
 // GetJoinedAppNumByUserId get joined apps num by user and org
 func (client *DBClient) GetJoinedAppNumByUserId(userID, orgID string) (int, error) {
 	var total int
-	if err := client.Model(&model2.Member{}).Where("user_id = ? and org_id = ? and scope_type=\"?\"", userID, orgID, apistructs.AppScope).Count(&total).Error; err != nil {
+	if err := client.Model(&model.Member{}).Where("user_id = ? and org_id = ? and scope_type=\"?\"", userID, orgID, apistructs.AppScope).Count(&total).Error; err != nil {
 		return total, err
 	}
 	return total, nil
 }
 
 // GetRuntimeCountByAppIDS get every app runtime counts by id list
-func (client *DBClient) GetRuntimeCountByAppIDS(appIDS []int64) ([]model2.ApplicationRuntimeCount, error) {
-	counters := make([]model2.ApplicationRuntimeCount, 0)
+func (client *DBClient) GetRuntimeCountByAppIDS(appIDS []int64) ([]model.ApplicationRuntimeCount, error) {
+	counters := make([]model.ApplicationRuntimeCount, 0)
 	if err := client.Table("ps_v2_project_runtimes").
 		Where("application_id in (?)", appIDS).
 		Group("application_id").
@@ -200,8 +200,8 @@ func (client *DBClient) GetRuntimeCountByAppIDS(appIDS []int64) ([]model2.Applic
 }
 
 // ListUnblockAppCountsByProjectIDS count project's unblock app nums by unblock time
-func (client *DBClient) ListUnblockAppCountsByProjectIDS(projectIDS []uint64) ([]model2.ProjectUnblockAppCount, error) {
-	counters := make([]model2.ProjectUnblockAppCount, 0)
+func (client *DBClient) ListUnblockAppCountsByProjectIDS(projectIDS []uint64) ([]model.ProjectUnblockAppCount, error) {
+	counters := make([]model.ProjectUnblockAppCount, 0)
 	if err := client.Table("dice_app").
 		Where("project_id in (?) and unblock_start < now() and unblock_end > now()", projectIDS).
 		Group("project_id").
@@ -212,8 +212,8 @@ func (client *DBClient) ListUnblockAppCountsByProjectIDS(projectIDS []uint64) ([
 	return counters, nil
 }
 
-func (client *DBClient) GetApplicationsByNames(projectID uint64, names []string) ([]model2.Application, error) {
-	var applications []model2.Application
+func (client *DBClient) GetApplicationsByNames(projectID uint64, names []string) ([]model.Application, error) {
+	var applications []model.Application
 	err := client.Where("project_id = ?", projectID).Where("name in (?)", names).Find(&applications).Error
 	return applications, err
 }

@@ -22,7 +22,7 @@ import (
 
 	"bou.ke/monkey"
 
-	"github.com/erda-project/erda/modules/core/core-services/services/member"
+	"github.com/erda-project/erda/modules/core/legacy/services/member"
 )
 
 func TestEndpoints_getOrgPermissions(t *testing.T) {

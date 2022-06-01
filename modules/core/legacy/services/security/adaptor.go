@@ -21,7 +21,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/core/core-services/dao"
+	"github.com/erda-project/erda/modules/core/legacy/dao"
 )
 
 type PermissionAdaptor struct {

@@ -24,12 +24,12 @@ import (
 	"github.com/erda-project/erda-infra/base/version"
 	"github.com/erda-project/erda-proto-go/core/messenger/notify/pb"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/core/core-services/services/dingtalk/api/interfaces"
+	"github.com/erda-project/erda/modules/core/legacy/services/dingtalk/api/interfaces"
 	"github.com/erda-project/erda/modules/core/messenger/eventbox/conf"
 	"github.com/erda-project/erda/modules/core/messenger/eventbox/input"
 	inputhttp "github.com/erda-project/erda/modules/core/messenger/eventbox/input/http"
 	"github.com/erda-project/erda/modules/core/messenger/eventbox/monitor"
-	register2 "github.com/erda-project/erda/modules/core/messenger/eventbox/register"
+	"github.com/erda-project/erda/modules/core/messenger/eventbox/register"
 	"github.com/erda-project/erda/modules/core/messenger/eventbox/server"
 	stypes "github.com/erda-project/erda/modules/core/messenger/eventbox/server/types"
 	"github.com/erda-project/erda/modules/core/messenger/eventbox/subscriber"
@@ -60,7 +60,7 @@ type DispatcherImpl struct {
 	subscribers     map[string]subscriber.Subscriber
 	subscriberspool map[string]*goroutinepool.GoroutinePool
 	router          *Router
-	register        register2.Register
+	register        register.Register
 	inputs          []input.Input
 	httpserver      *server.Server
 
@@ -69,7 +69,7 @@ type DispatcherImpl struct {
 
 func New(dingtalk interfaces.DingTalkApiClientFactory, messenger pb.NotifyServiceServer, httpi *inputhttp.HttpInput,
 	mon *monitor.MonitorHTTP, wh *webhook.WebHookHTTP,
-	registerHttp *register2.RegisterHTTP) (Dispatcher, error) {
+	registerHttp *register.RegisterHTTP) (Dispatcher, error) {
 	dispatcher := DispatcherImpl{
 		subscribers:     make(map[string]subscriber.Subscriber),
 		subscriberspool: make(map[string]*goroutinepool.GoroutinePool),
@@ -127,13 +127,13 @@ func New(dingtalk interfaces.DingTalkApiClientFactory, messenger pb.NotifyServic
 		dispatcher.subscriberspool[name] = goroutinepool.New(conf.PoolSize())
 	}
 
-	reg, err := register2.New()
+	reg, err := register.New()
 	if err != nil {
 		return nil, err
 	}
 	dispatcher.register = reg
 	// provider register init
-	registerHttp = register2.NewHTTP(reg)
+	registerHttp = register.NewHTTP(reg)
 
 	server, err := server.New()
 	if err != nil {
@@ -151,7 +151,7 @@ func New(dingtalk interfaces.DingTalkApiClientFactory, messenger pb.NotifyServic
 	return &dispatcher, nil
 }
 
-func (d *DispatcherImpl) GetRegister() register2.Register {
+func (d *DispatcherImpl) GetRegister() register.Register {
 	return d.register
 }
 

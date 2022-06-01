@@ -23,9 +23,9 @@ import (
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
-	"github.com/erda-project/erda/modules/core/core-services/dao"
-	"github.com/erda-project/erda/modules/core/core-services/providers/errorbox"
-	"github.com/erda-project/erda/modules/core/core-services/services/permission"
+	"github.com/erda-project/erda/modules/core/legacy/dao"
+	"github.com/erda-project/erda/modules/core/legacy/providers/errorbox"
+	"github.com/erda-project/erda/modules/core/legacy/services/permission"
 	"github.com/erda-project/erda/pkg/oauth2"
 )
 

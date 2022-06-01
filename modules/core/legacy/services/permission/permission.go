@@ -21,9 +21,9 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/core/core-services/dao"
-	security2 "github.com/erda-project/erda/modules/core/core-services/services/security"
-	"github.com/erda-project/erda/modules/core/core-services/types"
+	"github.com/erda-project/erda/modules/core/legacy/dao"
+	security2 "github.com/erda-project/erda/modules/core/legacy/services/security"
+	"github.com/erda-project/erda/modules/core/legacy/types"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 

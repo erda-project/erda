@@ -22,13 +22,13 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/apistructs"
-	dao2 "github.com/erda-project/erda/modules/core/core-services/dao"
-	"github.com/erda-project/erda/modules/core/core-services/services/apierrors"
+	"github.com/erda-project/erda/modules/core/legacy/dao"
+	"github.com/erda-project/erda/modules/core/legacy/services/apierrors"
 )
 
 // Label 标签封装
 type Label struct {
-	db *dao2.DBClient
+	db *dao.DBClient
 }
 
 // Option 定义 Label 对象的配置选项
@@ -44,7 +44,7 @@ func New(options ...Option) *Label {
 }
 
 // WithDBClient 配置 db client
-func WithDBClient(db *dao2.DBClient) Option {
+func WithDBClient(db *dao.DBClient) Option {
 	return func(l *Label) {
 		l.db = db
 	}
@@ -67,7 +67,7 @@ func (l *Label) Create(req *apistructs.ProjectLabelCreateRequest) (int64, error)
 	}
 
 	// 标签信息入库
-	label := &dao2.Label{
+	label := &dao.Label{
 		Name:      req.Name,
 		Type:      req.Type,
 		Color:     req.Color,
@@ -162,7 +162,7 @@ func (l *Label) ListByNamesAndProjectID(req apistructs.ListByNamesAndProjectIDRe
 }
 
 // CreateRelation 创建标签关联关系
-func (l *Label) CreateRelation(lr *dao2.LabelRelation) error {
+func (l *Label) CreateRelation(lr *dao.LabelRelation) error {
 	return l.db.CreateLabelRelation(lr)
 }
 
@@ -193,7 +193,7 @@ func (l *Label) checkCreateParam(req *apistructs.ProjectLabelCreateRequest) erro
 	return nil
 }
 
-func (l *Label) convert(label dao2.Label) apistructs.ProjectLabel {
+func (l *Label) convert(label dao.Label) apistructs.ProjectLabel {
 	return apistructs.ProjectLabel{
 		ID:        label.ID,
 		Name:      label.Name,
