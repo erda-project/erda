@@ -23,7 +23,7 @@ import (
 	"github.com/erda-project/erda/modules/tools/orchestrator/conf"
 	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/executor"
 	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/impl/cluster/clusterutil"
-	task2 "github.com/erda-project/erda/modules/tools/orchestrator/scheduler/task"
+	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/task"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/jsonstore"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -54,15 +54,15 @@ type Job interface {
 
 type JobImpl struct {
 	js    jsonstore.JsonStore
-	sched *task2.Sched
+	sched *task.Sched
 }
 
-func NewJobImpl(js jsonstore.JsonStore, sched *task2.Sched) Job {
+func NewJobImpl(js jsonstore.JsonStore, sched *task.Sched) Job {
 	return &JobImpl{js, sched}
 }
 
 func (j *JobImpl) fetchJobStatus(ctx context.Context, job *apistructs.Job) (bool, error) {
-	result, err := j.handleJobTask(ctx, job, task2.TaskStatus)
+	result, err := j.handleJobTask(ctx, job, task.TaskStatus)
 	if err != nil {
 		return false, err
 	}
@@ -79,16 +79,16 @@ func (j *JobImpl) fetchJobStatus(ctx context.Context, job *apistructs.Job) (bool
 	return false, nil
 }
 
-func (j *JobImpl) handleJobVolumeTask(ctx context.Context, jobvolume *apistructs.JobVolume, action task2.Action) (task2.TaskResponse, error) {
+func (j *JobImpl) handleJobVolumeTask(ctx context.Context, jobvolume *apistructs.JobVolume, action task.Action) (task.TaskResponse, error) {
 	var (
-		result task2.TaskResponse
+		result task.TaskResponse
 		err    error
 	)
 
 	if err = clusterutil.SetJobVolumeExecutorByCluster(jobvolume); err != nil {
 		return result, err
 	}
-	tsk, err := j.sched.Send(ctx, task2.TaskRequest{
+	tsk, err := j.sched.Send(ctx, task.TaskRequest{
 		ExecutorKind: executor.GetJobExecutorKindByName(jobvolume.Executor),
 		ExecutorName: jobvolume.Executor,
 		Action:       action,
@@ -103,9 +103,9 @@ func (j *JobImpl) handleJobVolumeTask(ctx context.Context, jobvolume *apistructs
 	return result, result.Err()
 }
 
-func (j *JobImpl) handleJobTask(ctx context.Context, job *apistructs.Job, action task2.Action) (task2.TaskResponse, error) {
+func (j *JobImpl) handleJobTask(ctx context.Context, job *apistructs.Job, action task.Action) (task.TaskResponse, error) {
 	var (
-		result task2.TaskResponse
+		result task.TaskResponse
 		err    error
 	)
 
@@ -113,7 +113,7 @@ func (j *JobImpl) handleJobTask(ctx context.Context, job *apistructs.Job, action
 		return result, err
 	}
 
-	tsk, err := j.sched.Send(ctx, task2.TaskRequest{
+	tsk, err := j.sched.Send(ctx, task.TaskRequest{
 		ExecutorKind: executor.GetJobExecutorKindByName(job.Executor),
 		ExecutorName: job.Executor,
 		Action:       action,

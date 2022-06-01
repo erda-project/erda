@@ -49,7 +49,7 @@ import (
 	"github.com/erda-project/erda/modules/tools/orchestrator/services/log"
 	"github.com/erda-project/erda/modules/tools/orchestrator/services/migration"
 	"github.com/erda-project/erda/modules/tools/orchestrator/services/resource"
-	utils2 "github.com/erda-project/erda/modules/tools/orchestrator/utils"
+	"github.com/erda-project/erda/modules/tools/orchestrator/utils"
 	"github.com/erda-project/erda/pkg/crypto/encryption"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/loop"
@@ -193,7 +193,7 @@ func (fsm *DeployFSMContext) precheck() error {
 	// check service name
 	var invalidSvcName []string
 	for name := range fsm.Spec.Services {
-		if !utils2.IsValidK8sSvcName(name) {
+		if !utils.IsValidK8sSvcName(name) {
 			invalidSvcName = append(invalidSvcName, name)
 		}
 	}
@@ -919,7 +919,7 @@ func (fsm *DeployFSMContext) deployService() error {
 		return err
 	}
 
-	projectECI := utils2.IsProjectECIEnable(fsm.bdl, fsm.Runtime.ProjectID, fsm.Runtime.Workspace, fsm.Runtime.OrgID, fsm.Runtime.Creator)
+	projectECI := utils.IsProjectECIEnable(fsm.bdl, fsm.Runtime.ProjectID, fsm.Runtime.Workspace, fsm.Runtime.OrgID, fsm.Runtime.Creator)
 	// generate request
 	group := apistructs.ServiceGroupCreateV2Request{}
 	usedAddonInsMap, usedAddonTenantMap, err := fsm.generateDeployServiceRequest(&group, *projectAddons, projectAddonTenants, projectECI)
@@ -928,7 +928,7 @@ func (fsm *DeployFSMContext) deployService() error {
 	}
 	if projectECI {
 		// TODO: vendor need get by cluster
-		utils2.AddECIConfigToServiceGroupCreateV2Request(&group, apistructs.ECIVendorAlibaba)
+		utils.AddECIConfigToServiceGroupCreateV2Request(&group, apistructs.ECIVendorAlibaba)
 	}
 
 	// precheck，检查标签匹配，如果没有机器能匹配上，走下去也是pending的
@@ -1182,8 +1182,8 @@ func (fsm *DeployFSMContext) generateDeployServiceRequest(group *apistructs.Serv
 	group.ProjectNamespace = fsm.GetProjectNamespace(runtime.Workspace)
 
 	groupLabels := make(map[string]string)
-	utils2.AppendEnv(groupLabels, obj.Meta)
-	utils2.AppendEnv(groupLabels, convertGroupLabels(app, runtime, deployment.ID))
+	utils.AppendEnv(groupLabels, obj.Meta)
+	utils.AppendEnv(groupLabels, convertGroupLabels(app, runtime, deployment.ID))
 	obj.Meta = groupLabels
 	usedAddonInsMap := map[string]dbclient.AddonInstanceRouting{}
 	usedAddonTenantMap := map[string]dbclient.AddonInstanceTenant{}
@@ -1620,7 +1620,7 @@ func (fsm *DeployFSMContext) convertService(serviceName string, service *diceyml
 	if projectECI {
 		// 全部使用新的 volumes 定义
 		for _, vol := range service.Volumes {
-			newVolumes = append(newVolumes, utils2.ConvertVolume(vol))
+			newVolumes = append(newVolumes, utils.ConvertVolume(vol))
 		}
 	} else {
 		for _, vol := range service.Volumes {
@@ -1643,14 +1643,14 @@ func (fsm *DeployFSMContext) convertService(serviceName string, service *diceyml
 	} else {
 		service.Volumes = nil
 	}
-	service.Labels = utils2.ConvertServiceLabels(groupLabels, service.Labels, serviceName)
+	service.Labels = utils.ConvertServiceLabels(groupLabels, service.Labels, serviceName)
 	// TODO:
 	// currently platformEnv > serviceEnv > addonEnv > groupEnv
 	// we desire platformEnv > addonEnv > serviceEnv > groupEnv
 	envs := make(map[string]string)
-	utils2.AppendEnv(envs, groupEnv)
-	utils2.AppendEnv(envs, addonEnv)
-	utils2.AppendEnv(envs, service.Envs)
+	utils.AppendEnv(envs, groupEnv)
+	utils.AppendEnv(envs, addonEnv)
+	utils.AppendEnv(envs, service.Envs)
 	// at last, append platformEnv
 	envs["TERMINUS_APP"] = serviceName
 	// clear existing DICE_*
@@ -1769,7 +1769,7 @@ func (fsm *DeployFSMContext) convertJob(jobName string, job *diceyml.Job,
 	if projectECI {
 		// 全部使用新的 volumes 定义
 		for _, vol := range job.Volumes {
-			newVolumes = append(newVolumes, utils2.ConvertVolume(vol))
+			newVolumes = append(newVolumes, utils.ConvertVolume(vol))
 		}
 	} else {
 		for _, vol := range job.Volumes {
@@ -1792,14 +1792,14 @@ func (fsm *DeployFSMContext) convertJob(jobName string, job *diceyml.Job,
 	} else {
 		job.Volumes = nil
 	}
-	job.Labels = utils2.ConvertServiceLabels(groupLabels, job.Labels, jobName)
+	job.Labels = utils.ConvertServiceLabels(groupLabels, job.Labels, jobName)
 	// TODO:
 	// currently platformEnv > serviceEnv > addonEnv > groupEnv
 	// we desire platformEnv > addonEnv > serviceEnv > groupEnv
 	envs := make(map[string]string)
-	utils2.AppendEnv(envs, groupEnv)
-	utils2.AppendEnv(envs, addonEnv)
-	utils2.AppendEnv(envs, job.Envs)
+	utils.AppendEnv(envs, groupEnv)
+	utils.AppendEnv(envs, addonEnv)
+	utils.AppendEnv(envs, job.Envs)
 	// at last, append platformEnv
 	envs["TERMINUS_APP"] = jobName
 	// clear existing DICE_*

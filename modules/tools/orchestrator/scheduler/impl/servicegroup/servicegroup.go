@@ -32,7 +32,7 @@ import (
 	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/executor/executortypes"
 	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/impl/cluster/clusterutil"
 	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/impl/clusterinfo"
-	task2 "github.com/erda-project/erda/modules/tools/orchestrator/scheduler/task"
+	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/task"
 	"github.com/erda-project/erda/pkg/jsonstore"
 	"github.com/erda-project/erda/pkg/k8s/storage"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
@@ -65,12 +65,12 @@ type ServiceGroup interface {
 
 type ServiceGroupImpl struct {
 	Js          jsonstore.JsonStore
-	Sched       *task2.Sched
+	Sched       *task.Sched
 	Clusterinfo clusterinfo.ClusterInfo
 }
 
 func NewServiceGroupImplInit() ServiceGroup {
-	sched, err := task2.NewSched()
+	sched, err := task.NewSched()
 	if err != nil {
 		panic(err)
 	}
@@ -87,22 +87,22 @@ func NewServiceGroupImplInit() ServiceGroup {
 	}
 }
 
-func NewServiceGroupImpl(js jsonstore.JsonStore, sched *task2.Sched, clusterinfo clusterinfo.ClusterInfo) ServiceGroup {
+func NewServiceGroupImpl(js jsonstore.JsonStore, sched *task.Sched, clusterinfo clusterinfo.ClusterInfo) ServiceGroup {
 	return &ServiceGroupImpl{js, sched, clusterinfo}
 }
 
-func (s ServiceGroupImpl) handleKillPod(ctx context.Context, sg *apistructs.ServiceGroup, containerID string) (task2.TaskResponse, error) {
+func (s ServiceGroupImpl) handleKillPod(ctx context.Context, sg *apistructs.ServiceGroup, containerID string) (task.TaskResponse, error) {
 	var (
-		result task2.TaskResponse
+		result task.TaskResponse
 		err    error
 	)
 	if err = setServiceGroupExecutorByCluster(sg, s.Clusterinfo); err != nil {
 		return result, err
 	}
-	t, err := s.Sched.Send(ctx, task2.TaskRequest{
+	t, err := s.Sched.Send(ctx, task.TaskRequest{
 		ExecutorKind: getServiceExecutorKindByName(sg.Executor),
 		ExecutorName: sg.Executor,
-		Action:       task2.TaskKillPod,
+		Action:       task.TaskKillPod,
 		ID:           sg.ID,
 		Spec:         containerID,
 	})
@@ -115,16 +115,16 @@ func (s ServiceGroupImpl) handleKillPod(ctx context.Context, sg *apistructs.Serv
 	return result, nil
 }
 
-func (s ServiceGroupImpl) handleServiceGroup(ctx context.Context, sg *apistructs.ServiceGroup, taskAction task2.Action) (task2.TaskResponse, error) {
+func (s ServiceGroupImpl) handleServiceGroup(ctx context.Context, sg *apistructs.ServiceGroup, taskAction task.Action) (task.TaskResponse, error) {
 	var (
-		result task2.TaskResponse
+		result task.TaskResponse
 		err    error
 	)
 	if err = setServiceGroupExecutorByCluster(sg, s.Clusterinfo); err != nil {
 		return result, err
 	}
 
-	t, err := s.Sched.Send(ctx, task2.TaskRequest{
+	t, err := s.Sched.Send(ctx, task.TaskRequest{
 		ExecutorKind: getServiceExecutorKindByName(sg.Executor),
 		ExecutorName: sg.Executor,
 		Action:       taskAction,

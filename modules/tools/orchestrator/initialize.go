@@ -30,7 +30,7 @@ import (
 	"github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/tools/orchestrator/endpoints"
 	"github.com/erda-project/erda/modules/tools/orchestrator/i18n"
-	scheduler2 "github.com/erda-project/erda/modules/tools/orchestrator/scheduler"
+	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler"
 	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/impl/instanceinfo"
 	"github.com/erda-project/erda/modules/tools/orchestrator/services/addon"
 	"github.com/erda-project/erda/modules/tools/orchestrator/services/deployment"
@@ -91,7 +91,7 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 		logrus.Infof("i resign the leader now")
 	})
 
-	go scheduler2.GetDCOSTokenAuthPeriodically()
+	go scheduler.GetDCOSTokenAuthPeriodically()
 
 	// start cron jobs to sync addon & project infos
 	go initCron(ep, ctx)
@@ -143,7 +143,7 @@ func (p *provider) initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, e
 
 	// init scheduler
 	instanceinfoImpl := instanceinfo.NewInstanceInfoImpl()
-	scheduler := scheduler2.NewScheduler(instanceinfoImpl, p.ClusterSvc)
+	scheduler := scheduler.NewScheduler(instanceinfoImpl, p.ClusterSvc)
 
 	migration := migration.New(
 		migration.WithBundle(bdl),

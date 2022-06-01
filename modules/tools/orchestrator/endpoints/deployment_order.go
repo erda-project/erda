@@ -27,7 +27,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/modules/tools/orchestrator/services/apierrors"
-	utils2 "github.com/erda-project/erda/modules/tools/orchestrator/utils"
+	"github.com/erda-project/erda/modules/tools/orchestrator/utils"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -94,7 +94,7 @@ func (e *Endpoints) GetDeploymentOrder(ctx context.Context, r *http.Request, var
 // ListDeploymentOrder list deployment order with project id.
 func (e *Endpoints) ListDeploymentOrder(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	// get page
-	pageInfo, err := utils2.GetPageInfo(r)
+	pageInfo, err := utils.GetPageInfo(r)
 	if err != nil {
 		return apierrors.ErrListDeploymentOrder.InvalidParameter(err).ToResp(), nil
 	}
@@ -169,7 +169,7 @@ func (e *Endpoints) DeployDeploymentOrder(ctx context.Context, r *http.Request, 
 		return errorresp.ErrResp(err)
 	}
 
-	e.auditDeploymentOrder(userID.String(), order.ProjectName, utils2.ParseOrderName(order.ID), orgID, order.ProjectId,
+	e.auditDeploymentOrder(userID.String(), order.ProjectName, utils.ParseOrderName(order.ID), orgID, order.ProjectId,
 		apistructs.ExecuteDeploymentOrderTemplate, r)
 
 	return httpserver.OkResp(nil)
@@ -203,7 +203,7 @@ func (e *Endpoints) CancelDeploymentOrder(ctx context.Context, r *http.Request, 
 	}
 
 	if order != nil {
-		e.auditDeploymentOrder(userID.String(), order.ProjectName, utils2.ParseOrderName(order.ID), orgID, order.ProjectId,
+		e.auditDeploymentOrder(userID.String(), order.ProjectName, utils.ParseOrderName(order.ID), orgID, order.ProjectId,
 			apistructs.CancelDeploymentOrderTemplate, r)
 	}
 
@@ -249,7 +249,7 @@ func (e *Endpoints) auditDeploymentOrder(userId, projectName, orderName string, 
 			},
 			TemplateName: template,
 			Result:       "success",
-			ClientIP:     utils2.GetRealIP(r),
+			ClientIP:     utils.GetRealIP(r),
 			UserAgent:    r.UserAgent(),
 			StartTime:    strconv.FormatInt(time.Now().Unix(), 10),
 			EndTime:      strconv.FormatInt(time.Now().Unix(), 10),

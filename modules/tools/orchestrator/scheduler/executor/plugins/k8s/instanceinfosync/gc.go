@@ -20,18 +20,18 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	instanceinfo2 "github.com/erda-project/erda/modules/tools/orchestrator/scheduler/instanceinfo"
+	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/instanceinfo"
 )
 
 // gcDeadInstancesInDB Recover the instance of phase=Dead 7 days ago
-func gcDeadInstancesInDB(dbclient *instanceinfo2.Client, clusterName string) error {
+func gcDeadInstancesInDB(dbclient *instanceinfo.Client, clusterName string) error {
 	r := dbclient.InstanceReader()
 	w := dbclient.InstanceWriter()
 
 	// list instance info in database with limit 3000
 	r.Limit(3000)
 
-	instances, err := r.ByCluster(clusterName).ByPhase(instanceinfo2.InstancePhaseDead).ByFinishedTime(7).Do()
+	instances, err := r.ByCluster(clusterName).ByPhase(instanceinfo.InstancePhaseDead).ByFinishedTime(7).Do()
 	if err != nil {
 		return err
 	}
@@ -50,20 +50,20 @@ func gcDeadInstancesInDB(dbclient *instanceinfo2.Client, clusterName string) err
 // 1. There is actually no pod related to this instance in the k8s cluster, and it is dead.
 // 2. The event when this instance was deleted was not received or was processed correctly
 // 3. This db record will never be updated again
-func gcAliveInstancesInDB(dbclient *instanceinfo2.Client, secs int, clustername string) error {
+func gcAliveInstancesInDB(dbclient *instanceinfo.Client, secs int, clustername string) error {
 	r := dbclient.InstanceReader()
 	w := dbclient.InstanceWriter()
 
 	instances, err := r.ByPhases(
-		instanceinfo2.InstancePhaseHealthy,
-		instanceinfo2.InstancePhaseRunning,
-		instanceinfo2.InstancePhaseUnHealthy,
+		instanceinfo.InstancePhaseHealthy,
+		instanceinfo.InstancePhaseRunning,
+		instanceinfo.InstancePhaseUnHealthy,
 	).ByUpdatedTime(secs).ByTaskID(apistructs.K8S).ByCluster(clustername).Do()
 	if err != nil {
 		return err
 	}
 	for _, ins := range instances {
-		ins.Phase = instanceinfo2.InstancePhaseDead
+		ins.Phase = instanceinfo.InstancePhaseDead
 		finished := time.Now()
 		ins.FinishedAt = &finished
 		ins.ExitCode = 255
@@ -75,7 +75,7 @@ func gcAliveInstancesInDB(dbclient *instanceinfo2.Client, secs int, clustername 
 	return nil
 }
 
-func gcPodsInDB(dbclient *instanceinfo2.Client, secs int, clustername string) error {
+func gcPodsInDB(dbclient *instanceinfo.Client, secs int, clustername string) error {
 	r := dbclient.PodReader()
 	w := dbclient.PodWriter()
 
@@ -91,6 +91,6 @@ func gcPodsInDB(dbclient *instanceinfo2.Client, secs int, clustername string) er
 }
 
 // gcServicesInDB The contents of the s_service_info table will not be deleted regularly, because the contents of this table should grow very slowly
-func gcServicesInDB(dbclient *instanceinfo2.Client) error {
+func gcServicesInDB(dbclient *instanceinfo.Client) error {
 	return nil
 }

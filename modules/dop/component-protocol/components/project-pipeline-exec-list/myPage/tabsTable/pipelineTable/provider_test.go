@@ -76,10 +76,10 @@ func TestGetAppNames(t *testing.T) {
 	helper1.SetAppsFilter([]uint64{1})
 	helper1.SetGlobalInParamsAppName("erda1")
 
-	helper := gshelper.NewGSHelper(&cptype.GlobalStateData{})
-	helper.SetAppsFilter([]uint64{common.Participated, 1, 3})
-	helper.SetGlobalMyAppNames(myAppNames)
-	helper.SetGlobalAppIDNameMap(appIDNameMap)
+	helper2 := gshelper.NewGSHelper(&cptype.GlobalStateData{})
+	helper2.SetAppsFilter([]uint64{common.Participated, 1, 3})
+	helper2.SetGlobalMyAppNames(myAppNames)
+	helper2.SetGlobalAppIDNameMap(appIDNameMap)
 
 	helper3 := gshelper.NewGSHelper(&cptype.GlobalStateData{})
 	helper3.SetAppsFilter([]uint64{4, 5})
@@ -101,7 +101,7 @@ func TestGetAppNames(t *testing.T) {
 		{
 			name: "test with participated",
 			args: args{
-				helper: helper,
+				helper: helper2,
 			},
 			want: []string{"erda1", "erda2", "erda3"},
 		},

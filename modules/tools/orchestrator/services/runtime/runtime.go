@@ -48,7 +48,7 @@ import (
 	"github.com/erda-project/erda/modules/tools/orchestrator/services/addon"
 	"github.com/erda-project/erda/modules/tools/orchestrator/services/apierrors"
 	"github.com/erda-project/erda/modules/tools/orchestrator/spec"
-	utils2 "github.com/erda-project/erda/modules/tools/orchestrator/utils"
+	"github.com/erda-project/erda/modules/tools/orchestrator/utils"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
@@ -148,7 +148,7 @@ func (r *Runtime) CreateByReleaseIDPipeline(ctx context.Context, orgid uint64, o
 	branch := releaseResp.Data.Labels["gitBranch"]
 
 	// check if there is a runtime already being created by release
-	pipelines, err := utils2.FindCRBRRunningPipeline(releaseReq.ApplicationID, workspaces[0],
+	pipelines, err := utils.FindCRBRRunningPipeline(releaseReq.ApplicationID, workspaces[0],
 		fmt.Sprintf("dice-deploy-release-%s", branch), r.bdl)
 	if err != nil {
 		return nil, err
@@ -158,7 +158,7 @@ func (r *Runtime) CreateByReleaseIDPipeline(ctx context.Context, orgid uint64, o
 			errors.Errorf("There is already a runtime created by releaseID %s, please do not repeat deployment", releaseReq.ReleaseID)
 	}
 
-	yml := utils2.GenCreateByReleasePipelineYaml(releaseReq.ReleaseID, workspaces)
+	yml := utils.GenCreateByReleasePipelineYaml(releaseReq.ReleaseID, workspaces)
 	b, err := yaml.Marshal(yml)
 	if err != nil {
 		errstr := fmt.Sprintf("failed to marshal pipelineyml: %v", err)
@@ -436,7 +436,7 @@ func (r *Runtime) RedeployPipeline(ctx context.Context, operator user.ID, orgID 
 	if err != nil {
 		return nil, err
 	}
-	yml := utils2.GenRedeployPipelineYaml(runtimeID)
+	yml := utils.GenRedeployPipelineYaml(runtimeID)
 	app, err := r.bdl.GetApp(runtime.ApplicationID)
 	if err != nil {
 		return nil, err
@@ -605,7 +605,7 @@ func (r *Runtime) doDeployRuntime(ctx *DeployContext) (*apistructs.DeploymentCre
 		if err != nil {
 			return nil, apierrors.ErrDeployRuntime.InternalError(err)
 		}
-		utils2.ApplyOverlay(diceYmlObj, &overlay)
+		utils.ApplyOverlay(diceYmlObj, &overlay)
 	}
 	if ctx.Scale0 {
 		var scaleValue = 0
@@ -1544,7 +1544,7 @@ func (r *Runtime) convertRuntimeSummaryDTOFromRuntimeModel(d *apistructs.Runtime
 		d.DeleteStatus = dbclient.LegacyStatusDeleting
 	}
 	d.DeploymentOrderId = runtime.DeploymentOrderId
-	d.DeploymentOrderName = utils2.ParseOrderName(runtime.DeploymentOrderId)
+	d.DeploymentOrderName = utils.ParseOrderName(runtime.DeploymentOrderId)
 	d.ReleaseVersion = runtime.ReleaseVersion
 	d.ReleaseID = deployment.ReleaseId
 	d.ClusterID = runtime.ClusterId

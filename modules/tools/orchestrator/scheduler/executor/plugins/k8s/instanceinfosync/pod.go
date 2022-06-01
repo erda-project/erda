@@ -27,7 +27,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/tools/orchestrator/i18n"
 	orgCache "github.com/erda-project/erda/modules/tools/orchestrator/scheduler/cache/org"
-	instanceinfo2 "github.com/erda-project/erda/modules/tools/orchestrator/scheduler/instanceinfo"
+	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/instanceinfo"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -240,7 +240,7 @@ func extractEnvs(pod corev1.Pod) (
 }
 
 // updatePodInstance Update pod information to db
-func updatePodAndInstance(dbclient *instanceinfo2.Client, podlist *corev1.PodList, delete bool,
+func updatePodAndInstance(dbclient *instanceinfo.Client, podlist *corev1.PodList, delete bool,
 	eventmap map[string]*corev1.Event) ([]*apistructs.OrgDTO, error) {
 	r := dbclient.InstanceReader()
 	w := dbclient.InstanceWriter()
@@ -382,7 +382,7 @@ func updatePodAndInstance(dbclient *instanceinfo2.Client, podlist *corev1.PodLis
 			message = "Ok"
 		}
 		memrequest, memlimit, cpurequest, cpulimit := calcPodResource(pod)
-		podinfo := instanceinfo2.PodInfo{
+		podinfo := instanceinfo.PodInfo{
 			Cluster:         cluster,
 			Namespace:       namespace,
 			Name:            name,
@@ -401,7 +401,7 @@ func updatePodAndInstance(dbclient *instanceinfo2.Client, podlist *corev1.PodLis
 			Uid:             string(pod.UID),
 			K8sNamespace:    pod.Namespace,
 			PodName:         pod.Name,
-			Phase:           instanceinfo2.PodPhase(pod.Status.Phase),
+			Phase:           instanceinfo.PodPhase(pod.Status.Phase),
 			Message:         message,
 			PodIP:           pod.Status.PodIP,
 			HostIP:          pod.Status.HostIP,
@@ -442,7 +442,7 @@ func updatePodAndInstance(dbclient *instanceinfo2.Client, podlist *corev1.PodLis
 			currentContainerID         string
 			currentContainerStartedAt  time.Time
 			currentContainerFinishedAt *time.Time = nil
-			currentPhase               instanceinfo2.InstancePhase
+			currentPhase               instanceinfo.InstancePhase
 			currentMessage             string
 		)
 
@@ -478,10 +478,10 @@ func updatePodAndInstance(dbclient *instanceinfo2.Client, podlist *corev1.PodLis
 				currentContainerID = strutil.TrimPrefixes(mainContainer.ContainerID, "docker://")
 			}
 			currentContainerStartedAt = mainContainer.State.Running.StartedAt.Time
-			currentPhase = instanceinfo2.InstancePhaseUnHealthy
+			currentPhase = instanceinfo.InstancePhaseUnHealthy
 			for _, cond := range pod.Status.Conditions {
 				if cond.Type == "Ready" && cond.Status == "True" {
-					currentPhase = instanceinfo2.InstancePhaseHealthy
+					currentPhase = instanceinfo.InstancePhaseHealthy
 					currentMessage = "Ready"
 				}
 			}
@@ -490,7 +490,7 @@ func updatePodAndInstance(dbclient *instanceinfo2.Client, podlist *corev1.PodLis
 				"{"+mainContainer.Name+"}") {
 				currentMessage = event.Message
 				if event.Reason == "Unhealthy" {
-					currentPhase = instanceinfo2.InstancePhaseUnHealthy
+					currentPhase = instanceinfo.InstancePhaseUnHealthy
 				}
 			}
 		} else {
@@ -508,7 +508,7 @@ func updatePodAndInstance(dbclient *instanceinfo2.Client, podlist *corev1.PodLis
 					t, _ := time.Parse("2006-01", "2000-01")
 					currentContainerFinishedAt = &t
 				}
-				currentPhase = instanceinfo2.InstancePhaseDead
+				currentPhase = instanceinfo.InstancePhaseDead
 				if currentMessage == "" {
 					currentMessage = strutil.Join([]string{currentTerminatedContainer.Reason, currentTerminatedContainer.Message}, ", ", true)
 					if len(currentMessage) > 1000 {
@@ -545,7 +545,7 @@ func updatePodAndInstance(dbclient *instanceinfo2.Client, podlist *corev1.PodLis
 			if err != nil {
 				return orgs, err
 			}
-			instance := instanceinfo2.InstanceInfo{
+			instance := instanceinfo.InstanceInfo{
 				Cluster:             cluster,
 				Namespace:           namespace,
 				Name:                name,
@@ -563,7 +563,7 @@ func updatePodAndInstance(dbclient *instanceinfo2.Client, podlist *corev1.PodLis
 				Workspace:           workspace,
 				ServiceType:         servicetype(addonID, pipelineID),
 				AddonID:             addonID,
-				Phase:               instanceinfo2.InstancePhaseDead,
+				Phase:               instanceinfo.InstancePhaseDead,
 				Message:             prevMessage,
 				ContainerID:         prevContainerID,
 				ContainerIP:         containerIP,
@@ -612,7 +612,7 @@ func updatePodAndInstance(dbclient *instanceinfo2.Client, podlist *corev1.PodLis
 			if err != nil {
 				return orgs, err
 			}
-			instance := instanceinfo2.InstanceInfo{
+			instance := instanceinfo.InstanceInfo{
 				Cluster:             cluster,
 				Namespace:           namespace,
 				Name:                name,
@@ -661,7 +661,7 @@ func updatePodAndInstance(dbclient *instanceinfo2.Client, podlist *corev1.PodLis
 					instance.ID = ins.ID
 					if delete {
 						instance.FinishedAt = &(pod.ObjectMeta.DeletionTimestamp.Time)
-						instance.Phase = instanceinfo2.InstancePhaseDead
+						instance.Phase = instanceinfo.InstancePhaseDead
 					}
 					if err := w.Update(instance); err != nil {
 						return orgs, err
@@ -685,7 +685,7 @@ func updatePodAndInstance(dbclient *instanceinfo2.Client, podlist *corev1.PodLis
 	return orgs, nil
 }
 
-func updatePodOnWatch(bdl *bundle.Bundle, db *instanceinfo2.Client, addr string) (func(*corev1.Pod), func(*corev1.Pod)) {
+func updatePodOnWatch(bdl *bundle.Bundle, db *instanceinfo.Client, addr string) (func(*corev1.Pod), func(*corev1.Pod)) {
 	addOrUpdateFunc := func(pod *corev1.Pod) {
 		orgs, err := updatePodAndInstance(db, &corev1.PodList{Items: []corev1.Pod{*pod}}, false, nil)
 		if err != nil {

@@ -21,12 +21,12 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 
-	instanceinfo2 "github.com/erda-project/erda/modules/tools/orchestrator/scheduler/instanceinfo"
+	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/instanceinfo"
 )
 
 // updateStatelessServiceDeploymentService Update stateless-service type deployment to db
 // TODO: The 3 fields of'cluster','namespace', and'name' have not been processed
-func updateStatelessServiceDeployment(dbclient *instanceinfo2.Client, deploylist *appsv1.DeploymentList, delete bool) error {
+func updateStatelessServiceDeployment(dbclient *instanceinfo.Client, deploylist *appsv1.DeploymentList, delete bool) error {
 	r := dbclient.ServiceReader()
 	w := dbclient.ServiceWriter()
 
@@ -43,7 +43,7 @@ func updateStatelessServiceDeployment(dbclient *instanceinfo2.Client, deploylist
 			runtimeID       string
 			serviceName     string
 			workspace       string
-			phase           instanceinfo2.ServicePhase
+			phase           instanceinfo.ServicePhase
 			message         string
 			startedAt       time.Time
 			namespace       string
@@ -84,10 +84,10 @@ func updateStatelessServiceDeployment(dbclient *instanceinfo2.Client, deploylist
 		if skipThisDeploy {
 			continue
 		}
-		phase = instanceinfo2.ServicePhaseUnHealthy
+		phase = instanceinfo.ServicePhaseUnHealthy
 		for _, cond := range deploy.Status.Conditions {
 			if cond.Type == appsv1.DeploymentAvailable && cond.Status == corev1.ConditionFalse {
-				phase = instanceinfo2.ServicePhaseHealthy
+				phase = instanceinfo.ServicePhaseHealthy
 				break
 			}
 		}
@@ -114,7 +114,7 @@ func updateStatelessServiceDeployment(dbclient *instanceinfo2.Client, deploylist
 		if err != nil {
 			return err
 		}
-		serviceinfo := instanceinfo2.ServiceInfo{
+		serviceinfo := instanceinfo.ServiceInfo{
 			Cluster:         cluster,
 			Namespace:       namespace,
 			Name:            name,
@@ -160,7 +160,7 @@ func updateStatelessServiceDeployment(dbclient *instanceinfo2.Client, deploylist
 }
 
 // updateAddonDeploymentService Update addon type deployment to db
-func updateAddonDeployment(dbclient *instanceinfo2.Client, deploylist *appsv1.DeploymentList, delete bool) error {
+func updateAddonDeployment(dbclient *instanceinfo.Client, deploylist *appsv1.DeploymentList, delete bool) error {
 	r := dbclient.ServiceReader()
 	w := dbclient.ServiceWriter()
 
@@ -173,7 +173,7 @@ func updateAddonDeployment(dbclient *instanceinfo2.Client, deploylist *appsv1.De
 			projectID   string
 			workspace   string
 			addonName   string
-			phase       instanceinfo2.ServicePhase
+			phase       instanceinfo.ServicePhase
 			message     string
 			startedAt   time.Time
 
@@ -206,10 +206,10 @@ func updateAddonDeployment(dbclient *instanceinfo2.Client, deploylist *appsv1.De
 		if skipThisDeploy {
 			continue
 		}
-		phase = instanceinfo2.ServicePhaseUnHealthy
+		phase = instanceinfo.ServicePhaseUnHealthy
 		for _, cond := range deploy.Status.Conditions {
 			if cond.Type == appsv1.DeploymentAvailable && cond.Status == corev1.ConditionFalse {
-				phase = instanceinfo2.ServicePhaseHealthy
+				phase = instanceinfo.ServicePhaseHealthy
 				break
 			}
 		}
@@ -226,7 +226,7 @@ func updateAddonDeployment(dbclient *instanceinfo2.Client, deploylist *appsv1.De
 		if err != nil {
 			return err
 		}
-		serviceinfo := instanceinfo2.ServiceInfo{
+		serviceinfo := instanceinfo.ServiceInfo{
 			Cluster:     cluster,
 			OrgName:     orgName,
 			OrgID:       orgID,
@@ -264,7 +264,7 @@ func updateAddonDeployment(dbclient *instanceinfo2.Client, deploylist *appsv1.De
 	return nil
 }
 
-func updateDeploymentOnWatch(db *instanceinfo2.Client) (func(*appsv1.Deployment), func(*appsv1.Deployment)) {
+func updateDeploymentOnWatch(db *instanceinfo.Client) (func(*appsv1.Deployment), func(*appsv1.Deployment)) {
 	addOrUpdateFunc := func(deploy *appsv1.Deployment) {
 		if err := updateStatelessServiceDeployment(db,
 			&appsv1.DeploymentList{Items: []appsv1.Deployment{*deploy}}, false); err != nil {

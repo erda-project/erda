@@ -20,11 +20,11 @@ import (
 	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 
-	instanceinfo2 "github.com/erda-project/erda/modules/tools/orchestrator/scheduler/instanceinfo"
+	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/instanceinfo"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-func updateAddonStatefulSet(dbclient *instanceinfo2.Client, stslist *appsv1.StatefulSetList, delete bool) error {
+func updateAddonStatefulSet(dbclient *instanceinfo.Client, stslist *appsv1.StatefulSetList, delete bool) error {
 	r := dbclient.ServiceReader()
 	w := dbclient.ServiceWriter()
 
@@ -38,7 +38,7 @@ func updateAddonStatefulSet(dbclient *instanceinfo2.Client, stslist *appsv1.Stat
 			workspace   string
 			addonName   string
 
-			phase     instanceinfo2.ServicePhase
+			phase     instanceinfo.ServicePhase
 			message   string
 			startedAt time.Time
 
@@ -77,9 +77,9 @@ func updateAddonStatefulSet(dbclient *instanceinfo2.Client, stslist *appsv1.Stat
 		if skipThisSts {
 			continue
 		}
-		phase = instanceinfo2.ServicePhaseUnHealthy
+		phase = instanceinfo.ServicePhaseUnHealthy
 		if sts.Spec.Replicas == nil || *sts.Spec.Replicas == sts.Status.ReadyReplicas {
-			phase = instanceinfo2.ServicePhaseHealthy
+			phase = instanceinfo.ServicePhaseHealthy
 		}
 		startedAt = sts.ObjectMeta.CreationTimestamp.Time
 
@@ -94,7 +94,7 @@ func updateAddonStatefulSet(dbclient *instanceinfo2.Client, stslist *appsv1.Stat
 		if err != nil {
 			return err
 		}
-		serviceinfo := instanceinfo2.ServiceInfo{
+		serviceinfo := instanceinfo.ServiceInfo{
 			Cluster:     cluster,
 			OrgName:     orgName,
 			OrgID:       orgID,
@@ -132,7 +132,7 @@ func updateAddonStatefulSet(dbclient *instanceinfo2.Client, stslist *appsv1.Stat
 	return nil
 }
 
-func updateAddonStatefulSetOnWatch(db *instanceinfo2.Client) (func(*appsv1.StatefulSet), func(*appsv1.StatefulSet)) {
+func updateAddonStatefulSetOnWatch(db *instanceinfo.Client) (func(*appsv1.StatefulSet), func(*appsv1.StatefulSet)) {
 	addOrUpdateFunc := func(sts *appsv1.StatefulSet) {
 		if err := updateAddonStatefulSet(db,
 			&appsv1.StatefulSetList{Items: []appsv1.StatefulSet{*sts}}, false); err != nil {
