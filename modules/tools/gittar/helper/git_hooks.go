@@ -27,28 +27,28 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/tools/gittar/event"
-	models2 "github.com/erda-project/erda/modules/tools/gittar/models"
-	gitmodule2 "github.com/erda-project/erda/modules/tools/gittar/pkg/gitmodule"
+	"github.com/erda-project/erda/modules/tools/gittar/models"
+	"github.com/erda-project/erda/modules/tools/gittar/pkg/gitmodule"
 	"github.com/erda-project/erda/modules/tools/gittar/webcontext"
 )
 
 // protect branch
-func preReceiveHook(pushEvents []*models2.PayloadPushEvent, c *webcontext.Context) bool {
+func preReceiveHook(pushEvents []*models.PayloadPushEvent, c *webcontext.Context) bool {
 	for _, pushEvent := range pushEvents {
 		var err error
 		if pushEvent.IsTag {
 			//tag校验
 			if pushEvent.IsDelete {
-				err = c.CheckPermission(models2.PermissionDeleteTAG)
+				err = c.CheckPermission(models.PermissionDeleteTAG)
 			} else {
-				err = c.CheckPermission(models2.PermissionCreateTAG)
+				err = c.CheckPermission(models.PermissionCreateTAG)
 			}
 		} else {
 			//分支校验
 			if pushEvent.IsDelete {
-				err = c.CheckPermission(models2.PermissionDeleteBranch)
+				err = c.CheckPermission(models.PermissionDeleteBranch)
 			} else {
-				err = c.CheckPermission(models2.PermissionPush)
+				err = c.CheckPermission(models.PermissionPush)
 			}
 		}
 		if err != nil {
@@ -61,11 +61,11 @@ func preReceiveHook(pushEvents []*models2.PayloadPushEvent, c *webcontext.Contex
 		}
 
 		if !pushEvent.IsTag {
-			branch := strings.TrimPrefix(pushEvent.Ref, gitmodule2.BRANCH_PREFIX)
+			branch := strings.TrimPrefix(pushEvent.Ref, gitmodule.BRANCH_PREFIX)
 			//保护分支权限
 			if c.Repository.IsProtectBranch(branch) {
 				//是否可以推送保护分支
-				if err := c.CheckPermission(models2.PermissionPushProtectBranch); err != nil {
+				if err := c.CheckPermission(models.PermissionPushProtectBranch); err != nil {
 					c.Status(200)
 					c.GetWriter().Write(NewReportStatus(
 						"unpack ok",
@@ -89,7 +89,7 @@ func preReceiveHook(pushEvents []*models2.PayloadPushEvent, c *webcontext.Contex
 				} else {
 					//TODO 有一些情况遗漏
 					//全新推送
-					if pushEvent.Before == gitmodule2.INIT_COMMIT_ID {
+					if pushEvent.Before == gitmodule.INIT_COMMIT_ID {
 						_, err := c.Repository.GetBranchCommit(branch)
 						//如果master已经有commit，判断全新覆盖force push
 						if err == nil {
@@ -99,7 +99,7 @@ func preReceiveHook(pushEvents []*models2.PayloadPushEvent, c *webcontext.Contex
 				}
 
 				if isForcePush {
-					if err := c.CheckPermission(models2.PermissionPushProtectBranchForce); err != nil {
+					if err := c.CheckPermission(models.PermissionPushProtectBranchForce); err != nil {
 						c.Status(200)
 						c.GetWriter().Write(NewReportStatus(
 							"unpack ok",
@@ -116,7 +116,7 @@ func preReceiveHook(pushEvents []*models2.PayloadPushEvent, c *webcontext.Contex
 }
 
 // trigger event
-func PostReceiveHook(pushEvents []*models2.PayloadPushEvent, c *webcontext.Context) {
+func PostReceiveHook(pushEvents []*models.PayloadPushEvent, c *webcontext.Context) {
 	pusher := c.User
 	repository := c.Repository
 
@@ -141,7 +141,7 @@ func PostReceiveHook(pushEvents []*models2.PayloadPushEvent, c *webcontext.Conte
 		walker, _ := repo.Walk()
 		walker.PushRef(pushEvent.Ref)
 		beforeCommit, _ := git.NewOid(pushEvent.Before)
-		pushEvent.Commits = []models2.PayloadCommit{}
+		pushEvent.Commits = []models.PayloadCommit{}
 
 		statusCountToAdd := 20
 		walker.Iterate(func(commit *git.Commit) bool {
@@ -151,8 +151,8 @@ func PostReceiveHook(pushEvents []*models2.PayloadPushEvent, c *webcontext.Conte
 			statusCountToAdd--
 			pushEvent.TotalCommitsCount++
 			if statusCountToAdd >= 0 {
-				commitData := models2.PayloadCommit{}
-				commitData.Author = &models2.User{
+				commitData := models.PayloadCommit{}
+				commitData.Author = &models.User{
 					Name:  commit.Author().Name,
 					Email: commit.Author().Email,
 				}
@@ -186,13 +186,13 @@ func PostReceiveHook(pushEvents []*models2.PayloadPushEvent, c *webcontext.Conte
 		}
 
 		//project system hook
-		projectHooks, err := c.Service.GetProjectHooksByEvent(repository, models2.HOOK_EVENT_PUSH, true)
+		projectHooks, err := c.Service.GetProjectHooksByEvent(repository, models.HOOK_EVENT_PUSH, true)
 		if err != nil {
 			logrus.Error("error get project hooks")
 			continue
 		}
 
-		systemHooks, err := c.Service.GetSystemHooksByEvent(models2.HOOK_EVENT_PUSH, true)
+		systemHooks, err := c.Service.GetSystemHooksByEvent(models.HOOK_EVENT_PUSH, true)
 		if err != nil {
 			logrus.Error("error get system hooks")
 			continue
@@ -209,24 +209,24 @@ func PostReceiveHook(pushEvents []*models2.PayloadPushEvent, c *webcontext.Conte
 			jsonData, _ := json.Marshal(pushEvent)
 			for _, hook := range hooks {
 
-				task := &models2.WebHookTask{
+				task := &models.WebHookTask{
 					HookId:         hook.ID,
 					RequestContent: string(jsonData),
 					Url:            hook.Url,
-					Event:          models2.HOOK_EVENT_PUSH,
+					Event:          models.HOOK_EVENT_PUSH,
 				}
 				err := c.Service.CreateHookTask(task)
 				if err != nil {
 					logrus.Errorf("create hookTask error %v %v", err, task)
 					continue
 				}
-				models2.AddToHookTaskQueue(task)
+				models.AddToHookTaskQueue(task)
 			}
 		}
 
 		//更新mr表
 		if !pushEvent.IsTag {
-			branch := strings.TrimPrefix(pushEvent.Ref, gitmodule2.BRANCH_PREFIX)
+			branch := strings.TrimPrefix(pushEvent.Ref, gitmodule.BRANCH_PREFIX)
 			err := c.Service.SyncMergeRequest(repository, branch, pushEvent.After, pusher.Id, flag)
 			if err != nil {
 				logrus.Errorf("error sync merge request repo:%s ref:%s err:%s",

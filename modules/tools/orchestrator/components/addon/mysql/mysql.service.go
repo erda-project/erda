@@ -29,7 +29,7 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-proto-go/orchestrator/addon/mysql/pb"
 	"github.com/erda-project/erda/apistructs"
-	dbclient2 "github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
+	"github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/crypto/encryption"
 	"github.com/erda-project/erda/pkg/mysqlhelper"
@@ -41,7 +41,7 @@ type mysqlService struct {
 
 	kms  KMSWrapper
 	perm PermissionWrapper
-	db   *dbclient2.DBClient
+	db   *dbclient.DBClient
 
 	encrypt *encryption.EnvEncrypt
 }
@@ -70,7 +70,7 @@ func (s *mysqlService) ListMySQLAccount(ctx context.Context, req *pb.ListMySQLAc
 	return &pb.ListMySQLAccountResponse{Accounts: res}, nil
 }
 
-func (s *mysqlService) ToDTO(acc *dbclient2.MySQLAccount, decrypt bool) *pb.MySQLAccount {
+func (s *mysqlService) ToDTO(acc *dbclient.MySQLAccount, decrypt bool) *pb.MySQLAccount {
 	pass := "******"
 	if decrypt {
 		p, err := s.decrypt(acc)
@@ -98,7 +98,7 @@ type connConfig struct {
 	Pass string `json:"MYSQL_PASSWORD"`
 }
 
-func (s *mysqlService) getConnConfig(ins *dbclient2.AddonInstance) (*connConfig, error) {
+func (s *mysqlService) getConnConfig(ins *dbclient.AddonInstance) (*connConfig, error) {
 	var mysqlConfig connConfig
 	if err := json.Unmarshal([]byte(ins.Config), &mysqlConfig); err != nil {
 		return nil, err
@@ -119,7 +119,7 @@ func (s *mysqlService) getConnConfig(ins *dbclient2.AddonInstance) (*connConfig,
 	return &mysqlConfig, nil
 }
 
-func (s *mysqlService) execSql(ins *dbclient2.AddonInstance, sql ...string) error {
+func (s *mysqlService) execSql(ins *dbclient.AddonInstance, sql ...string) error {
 	if len(sql) == 0 {
 		return nil
 	}
@@ -177,7 +177,7 @@ func (s *mysqlService) GenerateMySQLAccount(ctx context.Context, req *pb.Generat
 		return nil, err
 	}
 
-	account := &dbclient2.MySQLAccount{
+	account := &dbclient.MySQLAccount{
 		Username:          user,
 		Password:          encryptData.CiphertextBase64,
 		KMSKey:            kr.KeyMetadata.KeyID,
@@ -347,7 +347,7 @@ func (s *mysqlService) UpdateAttachmentAccount(ctx context.Context, req *pb.Upda
 	return &pb.UpdateAttachmentAccountResponse{}, nil
 }
 
-func (s *mysqlService) decrypt(acc *dbclient2.MySQLAccount) (string, error) {
+func (s *mysqlService) decrypt(acc *dbclient.MySQLAccount) (string, error) {
 	pass := acc.Password
 	if acc.KMSKey != "" {
 		dr, err := s.kms.Decrypt(acc.Password, acc.KMSKey)
@@ -371,7 +371,7 @@ func (s *mysqlService) decrypt(acc *dbclient2.MySQLAccount) (string, error) {
 	return pass, nil
 }
 
-func (s *mysqlService) getConfig(att *dbclient2.AddonAttachment, decrypt bool) (map[string]string, error) {
+func (s *mysqlService) getConfig(att *dbclient.AddonAttachment, decrypt bool) (map[string]string, error) {
 	ins, err := s.db.GetAddonInstance(att.InstanceID)
 	if err != nil {
 		return nil, err
@@ -400,7 +400,7 @@ func (s *mysqlService) getConfig(att *dbclient2.AddonAttachment, decrypt bool) (
 	return configMap, nil
 }
 
-func (s *mysqlService) mustHavePerm(userID string, routing *dbclient2.AddonInstanceRouting, resource string, action string) error {
+func (s *mysqlService) mustHavePerm(userID string, routing *dbclient.AddonInstanceRouting, resource string, action string) error {
 	r, err := s.checkPerm(userID, routing, resource, action)
 	if err != nil {
 		return err
@@ -411,7 +411,7 @@ func (s *mysqlService) mustHavePerm(userID string, routing *dbclient2.AddonInsta
 	return nil
 }
 
-func (s *mysqlService) checkPerm(userID string, routing *dbclient2.AddonInstanceRouting, resource string, action string) (bool, error) {
+func (s *mysqlService) checkPerm(userID string, routing *dbclient.AddonInstanceRouting, resource string, action string) (bool, error) {
 	projectID, err := strutil.Atoi64(routing.ProjectID)
 	if err != nil {
 		return false, err
@@ -429,7 +429,7 @@ func (s *mysqlService) checkPerm(userID string, routing *dbclient2.AddonInstance
 	return pr.Access, nil
 }
 
-func (s *mysqlService) auditNoError(ctx context.Context, userID string, orgID string, routing *dbclient2.AddonInstanceRouting, att *dbclient2.AddonAttachment,
+func (s *mysqlService) auditNoError(ctx context.Context, userID string, orgID string, routing *dbclient.AddonInstanceRouting, att *dbclient.AddonAttachment,
 	tmplName apistructs.TemplateName, tmplCtx map[string]interface{}) {
 	err := s.audit(ctx, userID, orgID, routing, att, tmplName, tmplCtx)
 	if err != nil {
@@ -437,7 +437,7 @@ func (s *mysqlService) auditNoError(ctx context.Context, userID string, orgID st
 	}
 }
 
-func (s *mysqlService) audit(ctx context.Context, userID string, orgID string, routing *dbclient2.AddonInstanceRouting, att *dbclient2.AddonAttachment,
+func (s *mysqlService) audit(ctx context.Context, userID string, orgID string, routing *dbclient.AddonInstanceRouting, att *dbclient.AddonAttachment,
 	tmplName apistructs.TemplateName, tmplCtx map[string]interface{}) error {
 	oid, err := strutil.Atoi64(orgID)
 	if err != nil {

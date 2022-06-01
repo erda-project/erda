@@ -20,7 +20,7 @@ import (
 
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/tools/orchestrator/components/addon/mysql"
-	dbclient2 "github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
+	"github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/tools/orchestrator/services/log"
 	"github.com/erda-project/erda/modules/tools/orchestrator/services/resource"
 	"github.com/erda-project/erda/pkg/crypto/encryption"
@@ -30,32 +30,32 @@ import (
 
 func Test_buildMySQLAccount(t *testing.T) {
 	type args struct {
-		addonIns        *dbclient2.AddonInstance
-		addonInsRouting *dbclient2.AddonInstanceRouting
-		extra           *dbclient2.AddonInstanceExtra
+		addonIns        *dbclient.AddonInstance
+		addonInsRouting *dbclient.AddonInstanceRouting
+		extra           *dbclient.AddonInstanceExtra
 		operator        string
 	}
 	tests := []struct {
 		name string
 		args args
-		want *dbclient2.MySQLAccount
+		want *dbclient.MySQLAccount
 	}{
 		{
 			name: "t1",
 			args: args{
-				addonIns: &dbclient2.AddonInstance{
+				addonIns: &dbclient.AddonInstance{
 					ID:     "111",
 					KmsKey: "123",
 				},
-				addonInsRouting: &dbclient2.AddonInstanceRouting{
+				addonInsRouting: &dbclient.AddonInstanceRouting{
 					ID: "222",
 				},
-				extra: &dbclient2.AddonInstanceExtra{
+				extra: &dbclient.AddonInstanceExtra{
 					Value: "pass",
 				},
 				operator: "333",
 			},
-			want: &dbclient2.MySQLAccount{
+			want: &dbclient.MySQLAccount{
 				KMSKey:            "123",
 				Username:          "mysql",
 				Password:          "pass",
@@ -76,7 +76,7 @@ func Test_buildMySQLAccount(t *testing.T) {
 
 func TestAddon_prepareAttachment(t *testing.T) {
 	type fields struct {
-		db       *dbclient2.DBClient
+		db       *dbclient.DBClient
 		bdl      *bundle.Bundle
 		hc       *httpclient.HTTPClient
 		encrypt  *encryption.EnvEncrypt
@@ -84,8 +84,8 @@ func TestAddon_prepareAttachment(t *testing.T) {
 		Logger   *log.DeployLogHelper
 	}
 	type args struct {
-		addonInsRouting *dbclient2.AddonInstanceRouting
-		addonAttach     *dbclient2.AddonAttachment
+		addonInsRouting *dbclient.AddonInstanceRouting
+		addonAttach     *dbclient.AddonAttachment
 	}
 	tests := []struct {
 		name   string
@@ -97,7 +97,7 @@ func TestAddon_prepareAttachment(t *testing.T) {
 			name:   "t1",
 			fields: fields{},
 			args: args{
-				addonInsRouting: &dbclient2.AddonInstanceRouting{
+				addonInsRouting: &dbclient.AddonInstanceRouting{
 					AddonName: "not mysql",
 				},
 				addonAttach: nil,
@@ -123,7 +123,7 @@ func TestAddon_prepareAttachment(t *testing.T) {
 
 func TestAddon__toOverrideConfigFromMySQLAccount(t *testing.T) {
 	type fields struct {
-		db       *dbclient2.DBClient
+		db       *dbclient.DBClient
 		bdl      *bundle.Bundle
 		hc       *httpclient.HTTPClient
 		encrypt  *encryption.EnvEncrypt
@@ -133,7 +133,7 @@ func TestAddon__toOverrideConfigFromMySQLAccount(t *testing.T) {
 	}
 	type args struct {
 		config  map[string]interface{}
-		account *dbclient2.MySQLAccount
+		account *dbclient.MySQLAccount
 	}
 	tests := []struct {
 		name    string
@@ -148,7 +148,7 @@ func TestAddon__toOverrideConfigFromMySQLAccount(t *testing.T) {
 			},
 			args: args{
 				config: map[string]interface{}{},
-				account: &dbclient2.MySQLAccount{
+				account: &dbclient.MySQLAccount{
 					Username: "uuu",
 					Password: "***",
 					KMSKey:   "123",
@@ -198,7 +198,7 @@ func (k *MockKMS) Decrypt(ciphertext, keyID string) (*kmstypes.DecryptResponse, 
 
 func TestAddon__prepareAttachment(t *testing.T) {
 	type fields struct {
-		db       *dbclient2.DBClient
+		db       *dbclient.DBClient
 		bdl      *bundle.Bundle
 		hc       *httpclient.HTTPClient
 		encrypt  *encryption.EnvEncrypt
@@ -207,8 +207,8 @@ func TestAddon__prepareAttachment(t *testing.T) {
 		Logger   *log.DeployLogHelper
 	}
 	type args struct {
-		addonAttach *dbclient2.AddonAttachment
-		accounts    []dbclient2.MySQLAccount
+		addonAttach *dbclient.AddonAttachment
+		accounts    []dbclient.MySQLAccount
 	}
 	tests := []struct {
 		name   string
@@ -220,8 +220,8 @@ func TestAddon__prepareAttachment(t *testing.T) {
 			name:   "t1",
 			fields: fields{},
 			args: args{
-				addonAttach: &dbclient2.AddonAttachment{},
-				accounts:    []dbclient2.MySQLAccount{},
+				addonAttach: &dbclient.AddonAttachment{},
+				accounts:    []dbclient.MySQLAccount{},
 			},
 			want: false,
 		},
@@ -229,8 +229,8 @@ func TestAddon__prepareAttachment(t *testing.T) {
 			name:   "t2",
 			fields: fields{},
 			args: args{
-				addonAttach: &dbclient2.AddonAttachment{},
-				accounts: []dbclient2.MySQLAccount{
+				addonAttach: &dbclient.AddonAttachment{},
+				accounts: []dbclient.MySQLAccount{
 					{
 						ID: "123",
 					},

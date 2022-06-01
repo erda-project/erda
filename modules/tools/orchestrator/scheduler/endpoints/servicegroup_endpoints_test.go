@@ -28,7 +28,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/apistructs"
-	cap2 "github.com/erda-project/erda/modules/tools/orchestrator/scheduler/impl/cap"
+	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/impl/cap"
 	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/impl/cluster"
 	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/impl/clusterinfo"
 	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/impl/instanceinfo"
@@ -126,7 +126,7 @@ func TestHTTPEndpoints_ServiceGroupCreate(t *testing.T) {
 		clusterinfoImpl   clusterinfo.ClusterInfo
 		componentinfoImpl instanceinfo.ComponentInfo
 		resourceinfoImpl  resourceinfo.ResourceInfo
-		Cap               cap2.Cap
+		Cap               cap.Cap
 	}
 	type args struct {
 		ctx  context.Context
@@ -246,7 +246,7 @@ func TestHTTPEndpoints_ServiceGroupDelete(t *testing.T) {
 		clusterinfoImpl   clusterinfo.ClusterInfo
 		componentinfoImpl instanceinfo.ComponentInfo
 		resourceinfoImpl  resourceinfo.ResourceInfo
-		Cap               cap2.Cap
+		Cap               cap.Cap
 	}
 	type args struct {
 		ctx  context.Context
@@ -388,7 +388,7 @@ func TestHTTPEndpoints_ServiceGroupInfo(t *testing.T) {
 		clusterinfoImpl   clusterinfo.ClusterInfo
 		componentinfoImpl instanceinfo.ComponentInfo
 		resourceinfoImpl  resourceinfo.ResourceInfo
-		Cap               cap2.Cap
+		Cap               cap.Cap
 	}
 	type args struct {
 		ctx  context.Context
@@ -520,7 +520,7 @@ func TestHTTPEndpoints_ServiceGroupPrecheck(t *testing.T) {
 		clusterinfoImpl   clusterinfo.ClusterInfo
 		componentinfoImpl instanceinfo.ComponentInfo
 		resourceinfoImpl  resourceinfo.ResourceInfo
-		Cap               cap2.Cap
+		Cap               cap.Cap
 	}
 	type args struct {
 		ctx  context.Context
@@ -642,7 +642,7 @@ func TestHTTPEndpoints_ServiceGroupKillPod(t *testing.T) {
 		clusterinfoImpl   clusterinfo.ClusterInfo
 		componentinfoImpl instanceinfo.ComponentInfo
 		resourceinfoImpl  resourceinfo.ResourceInfo
-		Cap               cap2.Cap
+		Cap               cap.Cap
 	}
 	type args struct {
 		ctx  context.Context
@@ -782,7 +782,7 @@ func TestHTTPEndpoints_ServiceGroupConfigUpdate(t *testing.T) {
 		clusterinfoImpl   clusterinfo.ClusterInfo
 		componentinfoImpl instanceinfo.ComponentInfo
 		resourceinfoImpl  resourceinfo.ResourceInfo
-		Cap               cap2.Cap
+		Cap               cap.Cap
 	}
 	type args struct {
 		ctx  context.Context

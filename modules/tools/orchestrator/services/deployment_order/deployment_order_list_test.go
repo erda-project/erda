@@ -24,7 +24,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	dbclient2 "github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
+	"github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
 )
 
 func TestListDeploymentOrder(t *testing.T) {
@@ -36,12 +36,12 @@ func TestListDeploymentOrder(t *testing.T) {
 		return &apistructs.ApplicationListResponseData{}, nil
 	})
 
-	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "ListDeploymentOrder", func(*dbclient2.DBClient, *apistructs.DeploymentOrderListConditions, *apistructs.PageInfo) (int, []dbclient2.DeploymentOrder, error) {
-		return 0, []dbclient2.DeploymentOrder{}, nil
+	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "ListDeploymentOrder", func(*dbclient.DBClient, *apistructs.DeploymentOrderListConditions, *apistructs.PageInfo) (int, []dbclient.DeploymentOrder, error) {
+		return 0, []dbclient.DeploymentOrder{}, nil
 	})
 
-	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "ListReleases", func(*dbclient2.DBClient, []string) ([]*dbclient2.Release, error) {
-		return []*dbclient2.Release{}, nil
+	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "ListReleases", func(*dbclient.DBClient, []string) ([]*dbclient.Release, error) {
+		return []*dbclient.Release{}, nil
 	})
 
 	got, err := order.List("1", 1, &apistructs.DeploymentOrderListConditions{}, &apistructs.PageInfo{})
@@ -69,8 +69,8 @@ func TestConvertDeploymentOrderToResponseItem(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "ListReleases", func(*dbclient2.DBClient, []string) ([]*dbclient2.Release, error) {
-		return []*dbclient2.Release{
+	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "ListReleases", func(*dbclient.DBClient, []string) ([]*dbclient.Release, error) {
+		return []*dbclient.Release{
 			{
 				ReleaseId:        "68a6df7529914c89b632fb18450d0055",
 				IsProjectRelease: true,
@@ -87,7 +87,7 @@ func TestConvertDeploymentOrderToResponseItem(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	data := []dbclient2.DeploymentOrder{
+	data := []dbclient.DeploymentOrder{
 		{
 			Type:         apistructs.TypeProjectRelease,
 			ReleaseId:    "68a6df7529914c89b632fb18450d0055",

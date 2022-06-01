@@ -38,8 +38,8 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/tools/orchestrator/conf"
-	dbclient2 "github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
-	events2 "github.com/erda-project/erda/modules/tools/orchestrator/events"
+	"github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
+	"github.com/erda-project/erda/modules/tools/orchestrator/events"
 	"github.com/erda-project/erda/modules/tools/orchestrator/i18n"
 	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler"
 	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/impl/servicegroup"
@@ -60,8 +60,8 @@ import (
 )
 
 type DeployFSMContext struct {
-	Deployment        *dbclient2.Deployment
-	Runtime           *dbclient2.Runtime
+	Deployment        *dbclient.Deployment
+	Runtime           *dbclient.Runtime
 	Cluster           *clusterpb.ClusterInfo
 	App               *apistructs.ApplicationDTO
 	Spec              *diceyml.Object
@@ -73,8 +73,8 @@ type DeployFSMContext struct {
 	d *log.DeployLogHelper
 
 	// db and etc.
-	db    *dbclient2.DBClient
-	evMgr *events2.EventManager
+	db    *dbclient.DBClient
+	evMgr *events.EventManager
 	bdl   *bundle.Bundle
 	// TODO: should we put deployment.Deployment here?
 	addon            *addon.Addon
@@ -89,7 +89,7 @@ type DeployFSMContext struct {
 }
 
 // TODO: context should base on deployment service
-func NewFSMContext(deploymentID uint64, db *dbclient2.DBClient, evMgr *events2.EventManager, bdl *bundle.Bundle, a *addon.Addon, m *migration.Migration, encrypt *encryption.EnvEncrypt, resource *resource.Resource, releaseSvc pb.ReleaseServiceServer, serviceGroupImpl servicegroup.ServiceGroup, scheduler *scheduler.Scheduler, envConfig *environment.EnvConfig, clusterSvc clusterpb.ClusterServiceServer) *DeployFSMContext {
+func NewFSMContext(deploymentID uint64, db *dbclient.DBClient, evMgr *events.EventManager, bdl *bundle.Bundle, a *addon.Addon, m *migration.Migration, encrypt *encryption.EnvEncrypt, resource *resource.Resource, releaseSvc pb.ReleaseServiceServer, serviceGroupImpl servicegroup.ServiceGroup, scheduler *scheduler.Scheduler, envConfig *environment.EnvConfig, clusterSvc clusterpb.ClusterServiceServer) *DeployFSMContext {
 	logger := log.DeployLogHelper{DeploymentID: strconv.FormatUint(deploymentID, 10), Bdl: bdl}
 	// prepare the context
 	return &DeployFSMContext{
@@ -246,10 +246,10 @@ func (fsm *DeployFSMContext) continueWaiting() error {
 		}
 	}
 	// emit runtime deploy status changed event
-	event := events2.RuntimeEvent{
-		EventName:  events2.RuntimeDeployStatusChanged,
+	event := events.RuntimeEvent{
+		EventName:  events.RuntimeDeployStatusChanged,
 		Operator:   fsm.Deployment.Operator,
-		Runtime:    dbclient2.ConvertRuntimeDTO(fsm.Runtime, fsm.App),
+		Runtime:    dbclient.ConvertRuntimeDTO(fsm.Runtime, fsm.App),
 		Deployment: fsm.Deployment.Convert(),
 	}
 	fsm.evMgr.EmitEvent(&event)
@@ -330,10 +330,10 @@ func (fsm *DeployFSMContext) pushOnCanceled() error {
 		fsm.pushLog(errMsg)
 	}
 	// emit runtime deploy status changed event
-	event := events2.RuntimeEvent{
-		EventName:  events2.RuntimeDeployCanceled,
+	event := events.RuntimeEvent{
+		EventName:  events.RuntimeDeployCanceled,
 		Operator:   fsm.Deployment.Operator,
-		Runtime:    dbclient2.ConvertRuntimeDTO(fsm.Runtime, fsm.App),
+		Runtime:    dbclient.ConvertRuntimeDTO(fsm.Runtime, fsm.App),
 		Deployment: fsm.Deployment.Convert(),
 	}
 	fsm.evMgr.EmitEvent(&event)
@@ -510,7 +510,7 @@ func (fsm *DeployFSMContext) continueMigration() (string, error) {
 			fsm.pushLog(`migration found, but not found mysql addon...`)
 			return "", nil
 		}
-		var mysqlInstance dbclient2.AddonInstance
+		var mysqlInstance dbclient.AddonInstance
 		for _, v := range *runtimeAddonPrebuilds {
 			if v.DeleteStatus == apistructs.AddonPrebuildNotDeleted && v.AddonName == apistructs.AddonMySQL {
 				if v.InstanceID != "" {
@@ -529,7 +529,7 @@ func (fsm *DeployFSMContext) continueMigration() (string, error) {
 		}
 		// 保存migration执行记录
 		operatorID, err := strconv.ParseUint(fsm.Deployment.Operator, 10, 64)
-		baseMigrationLog := dbclient2.MigrationLog{
+		baseMigrationLog := dbclient.MigrationLog{
 			ProjectID:           fsm.App.ProjectID,
 			ApplicationID:       fsm.App.ID,
 			RuntimeID:           fsm.Runtime.ID,
@@ -579,7 +579,7 @@ func (fsm *DeployFSMContext) continueMigration() (string, error) {
 }
 
 // decryptConfig 环境变量解密
-func (fsm *DeployFSMContext) decryptConfig(instanceID string) (*dbclient2.AddonInstance, error) {
+func (fsm *DeployFSMContext) decryptConfig(instanceID string) (*dbclient.AddonInstance, error) {
 	mysqlInstanceResult, err := fsm.db.GetAddonInstance(instanceID)
 	if err != nil {
 		fsm.pushLog(`get mysql addon relation error...`)
@@ -617,7 +617,7 @@ func (fsm *DeployFSMContext) decryptConfig(instanceID string) (*dbclient2.AddonI
 	return mysqlInstanceResult, nil
 }
 
-func (fsm *DeployFSMContext) handleMigrationStatus(mig *dbclient2.MigrationLog) error {
+func (fsm *DeployFSMContext) handleMigrationStatus(mig *dbclient.MigrationLog) error {
 	fsm.pushLog(`migration job running now, please wait job finish...`)
 	migStatus, err := fsm.migration.Status(mig)
 	if err != nil {
@@ -711,10 +711,10 @@ func (fsm *DeployFSMContext) continuePhaseCompleted() error {
 		fsm.pushLog(errMsg)
 	}
 	// emit runtime deploy ok event
-	event := events2.RuntimeEvent{
-		EventName:  events2.RuntimeDeployOk,
+	event := events.RuntimeEvent{
+		EventName:  events.RuntimeDeployOk,
 		Operator:   fsm.Deployment.Operator,
-		Runtime:    dbclient2.ConvertRuntimeDTO(fsm.Runtime, fsm.App),
+		Runtime:    dbclient.ConvertRuntimeDTO(fsm.Runtime, fsm.App),
 		Deployment: fsm.Deployment.Convert(),
 	}
 	fsm.evMgr.EmitEvent(&event)
@@ -768,10 +768,10 @@ func (fsm *DeployFSMContext) pushOnPhase(phase apistructs.DeploymentPhase) error
 		return err
 	}
 	// emit runtime deploy fail event
-	event := events2.RuntimeEvent{
-		EventName:  events2.RuntimeDeployStatusChanged,
+	event := events.RuntimeEvent{
+		EventName:  events.RuntimeDeployStatusChanged,
 		Operator:   deployment.Operator,
-		Runtime:    dbclient2.ConvertRuntimeDTO(runtime, app),
+		Runtime:    dbclient.ConvertRuntimeDTO(runtime, app),
 		Deployment: deployment.Convert(),
 	}
 	fsm.evMgr.EmitEvent(&event)
@@ -799,10 +799,10 @@ func (fsm *DeployFSMContext) failDeploy(oriErr error) error {
 		fsm.pushLog(errMsg)
 	}
 	// emit runtime deploy fail event
-	event := events2.RuntimeEvent{
-		EventName:  events2.RuntimeDeployFailed,
+	event := events.RuntimeEvent{
+		EventName:  events.RuntimeDeployFailed,
 		Operator:   deployment.Operator,
-		Runtime:    dbclient2.ConvertRuntimeDTO(runtime, app),
+		Runtime:    dbclient.ConvertRuntimeDTO(runtime, app),
 		Deployment: deployment.Convert(),
 	}
 	fsm.evMgr.EmitEvent(&event)
@@ -997,7 +997,7 @@ func (fsm *DeployFSMContext) deployService() error {
 		}
 	}
 	for _, ins := range usedAddonInsMap {
-		attachment := dbclient2.AddonAttachment{
+		attachment := dbclient.AddonAttachment{
 			InstanceID:        ins.RealInstance,
 			RoutingInstanceID: ins.ID,
 			OrgID:             ins.OrgID,
@@ -1017,7 +1017,7 @@ func (fsm *DeployFSMContext) deployService() error {
 		}
 	}
 	for _, tenant := range usedAddonTenantMap {
-		attachment := dbclient2.AddonAttachment{
+		attachment := dbclient.AddonAttachment{
 			TenantInstanceID: tenant.ID,
 			OrgID:            tenant.OrgID,
 			ProjectID:        tenant.ProjectID,
@@ -1090,10 +1090,10 @@ func (fsm *DeployFSMContext) FetchDeploymentConfigDetail(namespace string) ([]ap
 }
 
 func (fsm *DeployFSMContext) generateDeployServiceRequest(group *apistructs.ServiceGroupCreateV2Request,
-	projectAddons []dbclient2.AddonInstanceRouting,
-	projectAddonTenants []dbclient2.AddonInstanceTenant,
+	projectAddons []dbclient.AddonInstanceRouting,
+	projectAddonTenants []dbclient.AddonInstanceTenant,
 	projectECI bool) (
-	map[string]dbclient2.AddonInstanceRouting, map[string]dbclient2.AddonInstanceTenant, error) {
+	map[string]dbclient.AddonInstanceRouting, map[string]dbclient.AddonInstanceTenant, error) {
 	// prepare context
 	deployment := fsm.Deployment
 	runtime := fsm.Runtime
@@ -1185,8 +1185,8 @@ func (fsm *DeployFSMContext) generateDeployServiceRequest(group *apistructs.Serv
 	utils2.AppendEnv(groupLabels, obj.Meta)
 	utils2.AppendEnv(groupLabels, convertGroupLabels(app, runtime, deployment.ID))
 	obj.Meta = groupLabels
-	usedAddonInsMap := map[string]dbclient2.AddonInstanceRouting{}
-	usedAddonTenantMap := map[string]dbclient2.AddonInstanceTenant{}
+	usedAddonInsMap := map[string]dbclient.AddonInstanceRouting{}
+	usedAddonTenantMap := map[string]dbclient.AddonInstanceTenant{}
 
 	extraParams := make(map[string]string)
 	if fsm.Runtime != nil && fsm.Runtime.ExtraParams != "" {
@@ -1275,7 +1275,7 @@ func (fsm *DeployFSMContext) convertErdaServiceTemplate(v string, projectNs stri
 		result          string
 		applicationResp *apistructs.ApplicationListResponseData
 		err             error
-		runtimes        []dbclient2.Runtime
+		runtimes        []dbclient.Runtime
 	)
 	nodes := strings.Split(v, ".")
 	if len(nodes) != 3 {
@@ -1432,10 +1432,10 @@ func (fsm *DeployFSMContext) increaseFakeHealthyCount() error {
 	return nil
 }
 
-func (fsm *DeployFSMContext) buildAddonVars(addonnameMap map[string][]dbclient2.AddonInstanceRouting,
-	addonIDMap map[string]dbclient2.AddonInstanceRouting,
-	addonTenantNameMap map[string][]dbclient2.AddonInstanceTenant,
-	addonTenantIDMap map[string]dbclient2.AddonInstanceTenant) (map[string]string, error) {
+func (fsm *DeployFSMContext) buildAddonVars(addonnameMap map[string][]dbclient.AddonInstanceRouting,
+	addonIDMap map[string]dbclient.AddonInstanceRouting,
+	addonTenantNameMap map[string][]dbclient.AddonInstanceTenant,
+	addonTenantIDMap map[string]dbclient.AddonInstanceTenant) (map[string]string, error) {
 	r := map[string]string{}
 	for k, addons := range addonnameMap {
 		if len(addons) != 1 {
@@ -1533,13 +1533,13 @@ func (fsm *DeployFSMContext) logAddonVars(addonvars map[string]string) {
 	fsm.pushLog("Available addon vars: " + ss)
 }
 
-func (fsm *DeployFSMContext) evalTemplate(projectAddons []dbclient2.AddonInstanceRouting,
-	projectAddonTenants []dbclient2.AddonInstanceTenant, envs map[string]string) (map[string]string, map[string]dbclient2.AddonInstanceRouting, map[string]dbclient2.AddonInstanceTenant, error) {
+func (fsm *DeployFSMContext) evalTemplate(projectAddons []dbclient.AddonInstanceRouting,
+	projectAddonTenants []dbclient.AddonInstanceTenant, envs map[string]string) (map[string]string, map[string]dbclient.AddonInstanceRouting, map[string]dbclient.AddonInstanceTenant, error) {
 	addonnameMap, addonIDMap, addonTenantNameMap, addonTenantIDMap := fsm.addon.BuildAddonAndTenantMap(
 		projectAddons,
 		projectAddonTenants)
-	usedAddonInsMap := map[string]dbclient2.AddonInstanceRouting{}
-	usedAddonTenantMap := map[string]dbclient2.AddonInstanceTenant{}
+	usedAddonInsMap := map[string]dbclient.AddonInstanceRouting{}
+	usedAddonTenantMap := map[string]dbclient.AddonInstanceTenant{}
 
 	// build sexp context
 	addonvars, err := fsm.buildAddonVars(addonnameMap, addonIDMap, addonTenantNameMap, addonTenantIDMap)
@@ -1604,14 +1604,14 @@ func (fsm *DeployFSMContext) evalTemplate(projectAddons []dbclient2.AddonInstanc
 	return result_envs, usedAddonInsMap, usedAddonTenantMap, nil
 }
 
-func BuildVolumeRootDir(runtime *dbclient2.Runtime) string {
+func BuildVolumeRootDir(runtime *dbclient.Runtime) string {
 	return fmt.Sprintf("/netdata/volumes/%s/%s", runtime.GitRepoAbbrev, strings.ToLower(runtime.Workspace))
 }
 
 func (fsm *DeployFSMContext) convertService(serviceName string, service *diceyml.Service,
 	extraEnv, groupLabels map[string]string, addonEnv map[string]string, groupEnv, groupFileconfigs map[string]string,
-	runtime *dbclient2.Runtime, projectAddons []dbclient2.AddonInstanceRouting,
-	projectAddonTenants []dbclient2.AddonInstanceTenant, projectECI bool) (map[string]dbclient2.AddonInstanceRouting, map[string]dbclient2.AddonInstanceTenant, error) {
+	runtime *dbclient.Runtime, projectAddons []dbclient.AddonInstanceRouting,
+	projectAddonTenants []dbclient.AddonInstanceTenant, projectECI bool) (map[string]dbclient.AddonInstanceRouting, map[string]dbclient.AddonInstanceTenant, error) {
 
 	newVolumes := make([]diceyml.Volume, 0)
 	// 用于兼容使用旧的 volume 定义方式的 volume，避免创建新 volume
@@ -1759,8 +1759,8 @@ func (fsm *DeployFSMContext) generateRuntimeFileToken() error {
 
 func (fsm *DeployFSMContext) convertJob(jobName string, job *diceyml.Job,
 	extraEnv, groupLabels map[string]string, addonEnv map[string]string, groupEnv, groupFileconfigs map[string]string,
-	runtime *dbclient2.Runtime, projectAddons []dbclient2.AddonInstanceRouting,
-	projectAddonTenants []dbclient2.AddonInstanceTenant, projectECI bool) (map[string]dbclient2.AddonInstanceRouting, map[string]dbclient2.AddonInstanceTenant, error) {
+	runtime *dbclient.Runtime, projectAddons []dbclient.AddonInstanceRouting,
+	projectAddonTenants []dbclient.AddonInstanceTenant, projectECI bool) (map[string]dbclient.AddonInstanceRouting, map[string]dbclient.AddonInstanceTenant, error) {
 
 	newVolumes := make([]diceyml.Volume, 0)
 	// 用于兼容使用旧的 volume 定义方式的 volume，避免创建新 volume
@@ -1904,7 +1904,7 @@ func (fsm *DeployFSMContext) getServiceGroup() (*apistructs.ServiceGroup, error)
 }
 
 // TODO: we should redundant app info into runtime, so then we can move this func to utils
-func convertGroupLabels(app *apistructs.ApplicationDTO, runtime *dbclient2.Runtime,
+func convertGroupLabels(app *apistructs.ApplicationDTO, runtime *dbclient.Runtime,
 	deploymentId uint64) map[string]string {
 	var configNamespace string
 	for _, w := range app.Workspaces {
@@ -2059,7 +2059,7 @@ func (fsm *DeployFSMContext) PutHepaService() error {
 }
 
 // prepareCheckProjectResource 计算项目预留资源，是否满足发布徐局
-func (fsm *DeployFSMContext) PrepareCheckProjectResource(app *apistructs.ApplicationDTO, projectID uint64, legacyDice *diceyml.Object, runtime *dbclient2.Runtime) (float64, float64, error) {
+func (fsm *DeployFSMContext) PrepareCheckProjectResource(app *apistructs.ApplicationDTO, projectID uint64, legacyDice *diceyml.Object, runtime *dbclient.Runtime) (float64, float64, error) {
 	/* todo: 修改逻辑
 	查找目标集群带该环境标签和stateless-service标签的集群的 allocatable 资源和 request 资源，分别记为 Allocatable 和 ActualRequest；
 	计算该项目当前环境已有的 services 和 addons, 他们的 dice.yml 声明的资源，记为 AlreadyRequest；

@@ -26,7 +26,7 @@ import (
 	"github.com/erda-project/erda-infra/pkg/transport"
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/bundle"
-	dbclient2 "github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
+	"github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/tools/orchestrator/services/apierrors"
 	"github.com/erda-project/erda/pkg/http/httputil"
 
@@ -40,18 +40,18 @@ const (
 )
 
 type context struct {
-	Runtime    *dbclient2.Runtime
+	Runtime    *dbclient.Runtime
 	Cluster    *clusterpb.ClusterInfo
 	RootDomain string
-	Domains    []dbclient2.RuntimeDomain
+	Domains    []dbclient.RuntimeDomain
 
 	// db and clients and etc.
-	db         *dbclient2.DBClient
+	db         *dbclient.DBClient
 	bdl        *bundle.Bundle
 	clusterSvc clusterpb.ClusterServiceServer
 }
 
-func newCtx(db *dbclient2.DBClient, bdl *bundle.Bundle, clusterSvc clusterpb.ClusterServiceServer) *context {
+func newCtx(db *dbclient.DBClient, bdl *bundle.Bundle, clusterSvc clusterpb.ClusterServiceServer) *context {
 	return &context{
 		db:         db,
 		bdl:        bdl,
@@ -99,7 +99,7 @@ func (ctx *context) GroupDomains() *apistructs.DomainGroup {
 	return &group
 }
 
-func convertDomainDTO(d *dbclient2.RuntimeDomain, rootDomain string) *apistructs.Domain {
+func convertDomainDTO(d *dbclient.RuntimeDomain, rootDomain string) *apistructs.Domain {
 	if d == nil {
 		return nil
 	}
@@ -167,7 +167,7 @@ func (ctx *context) UpdateDomains(group *apistructs.DomainGroup) error {
 		mp[item.Domain] = struct{}{}
 	}
 
-	beforeMap := make(map[string]*dbclient2.RuntimeDomain)
+	beforeMap := make(map[string]*dbclient.RuntimeDomain)
 	for i := range ctx.Domains {
 		beforeMap[ctx.Domains[i].Domain] = &ctx.Domains[i]
 	}
@@ -178,7 +178,7 @@ func (ctx *context) UpdateDomains(group *apistructs.DomainGroup) error {
 	for _, item := range list {
 		domain, exist := beforeMap[item.Domain]
 		if !exist {
-			domain = &dbclient2.RuntimeDomain{
+			domain = &dbclient.RuntimeDomain{
 				Domain: item.Domain,
 			}
 		}

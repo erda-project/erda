@@ -25,12 +25,12 @@ import (
 
 	releasepb "github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/apistructs"
-	dbclient2 "github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
+	"github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
 )
 
 func TestInspectDeploymentStatusDetail(t *testing.T) {
 	type args struct {
-		DeploymentOrder *dbclient2.DeploymentOrder
+		DeploymentOrder *dbclient.DeploymentOrder
 		StatusMap       apistructs.DeploymentOrderStatusMap
 	}
 
@@ -42,7 +42,7 @@ func TestInspectDeploymentStatusDetail(t *testing.T) {
 		{
 			name: "first-batch",
 			args: args{
-				DeploymentOrder: &dbclient2.DeploymentOrder{},
+				DeploymentOrder: &dbclient.DeploymentOrder{},
 				StatusMap: apistructs.DeploymentOrderStatusMap{
 					"java-demo": apistructs.DeploymentOrderStatusItem{
 						AppID:            1,
@@ -57,7 +57,7 @@ func TestInspectDeploymentStatusDetail(t *testing.T) {
 		{
 			name: "status-appending",
 			args: args{
-				DeploymentOrder: &dbclient2.DeploymentOrder{
+				DeploymentOrder: &dbclient.DeploymentOrder{
 					StatusDetail: "{\"go-demo\":{\"appId\":0,\"deploymentId\":0,\"deploymentStatus\":\"INIT\",\"runtimeId\":0}}",
 				},
 				StatusMap: apistructs.DeploymentOrderStatusMap{
@@ -115,8 +115,8 @@ func TestPushOnDeploymentOrderPolling(t *testing.T) {
 		t.Fatal(err)
 	}
 	order := New(WithReleaseSvc(rss))
-	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "FindUnfinishedDeploymentOrders", func(*dbclient2.DBClient) ([]dbclient2.DeploymentOrder, error) {
-		return []dbclient2.DeploymentOrder{
+	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "FindUnfinishedDeploymentOrders", func(*dbclient.DBClient) ([]dbclient.DeploymentOrder, error) {
+		return []dbclient.DeploymentOrder{
 			{
 				ReleaseId:    "202cb962ac59075b964b07152d234b70",
 				CurrentBatch: 1,
@@ -127,15 +127,15 @@ func TestPushOnDeploymentOrderPolling(t *testing.T) {
 			},
 		}, nil
 	})
-	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "GetRuntimeByAppName", func(*dbclient2.DBClient, string, uint64, string) (*dbclient2.Runtime, error) {
-		return &dbclient2.Runtime{}, nil
+	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "GetRuntimeByAppName", func(*dbclient.DBClient, string, uint64, string) (*dbclient.Runtime, error) {
+		return &dbclient.Runtime{}, nil
 	})
-	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "FindLastDeployment", func(*dbclient2.DBClient, uint64) (*dbclient2.Deployment, error) {
+	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "FindLastDeployment", func(*dbclient.DBClient, uint64) (*dbclient.Deployment, error) {
 		// if record not found, will return nil
 		return nil, nil
 	})
-	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "ListReleases", func(*dbclient2.DBClient, []string) ([]*dbclient2.Release, error) {
-		return []*dbclient2.Release{
+	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "ListReleases", func(*dbclient.DBClient, []string) ([]*dbclient.Release, error) {
+		return []*dbclient.Release{
 			{ReleaseId: "id1"},
 			{ReleaseId: "id2"},
 		}, nil

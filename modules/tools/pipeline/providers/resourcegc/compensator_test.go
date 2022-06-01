@@ -26,7 +26,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	dbclient2 "github.com/erda-project/erda/modules/tools/pipeline/dbclient"
+	"github.com/erda-project/erda/modules/tools/pipeline/dbclient"
 	spec2 "github.com/erda-project/erda/modules/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/jsonstore"
 )
@@ -308,9 +308,9 @@ func TestReconciler_getNeedGCPipeline(t *testing.T) {
 
 	for _, tt := range tests {
 
-		var db *dbclient2.Client
-		monkey.PatchInstanceMethod(reflect.TypeOf(db), "PageListPipelines", func(client *dbclient2.Client, req apistructs.PipelinePageListRequest, ops ...dbclient2.SessionOption) (*dbclient2.PageListPipelinesResult, error) {
-			return &dbclient2.PageListPipelinesResult{
+		var db *dbclient.Client
+		monkey.PatchInstanceMethod(reflect.TypeOf(db), "PageListPipelines", func(client *dbclient.Client, req apistructs.PipelinePageListRequest, ops ...dbclient.SessionOption) (*dbclient.PageListPipelinesResult, error) {
+			return &dbclient.PageListPipelinesResult{
 				Pipelines:         tt.args.pipelines,
 				PagingPipelineIDs: nil,
 				Total:             1,
@@ -341,10 +341,10 @@ func TestReconciler_getNeedGCPipeline(t *testing.T) {
 }
 
 func TestReconciler_doWaitGCCompensate(t *testing.T) {
-	var db *dbclient2.Client
+	var db *dbclient.Client
 
-	pm := monkey.PatchInstanceMethod(reflect.TypeOf(db), "PageListPipelines", func(client *dbclient2.Client, req apistructs.PipelinePageListRequest, ops ...dbclient2.SessionOption) (*dbclient2.PageListPipelinesResult, error) {
-		return &dbclient2.PageListPipelinesResult{
+	pm := monkey.PatchInstanceMethod(reflect.TypeOf(db), "PageListPipelines", func(client *dbclient.Client, req apistructs.PipelinePageListRequest, ops ...dbclient.SessionOption) (*dbclient.PageListPipelinesResult, error) {
+		return &dbclient.PageListPipelinesResult{
 			Pipelines:         []spec2.Pipeline{},
 			PagingPipelineIDs: []uint64{},
 			Total:             0,

@@ -24,21 +24,21 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	dbclient2 "github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
+	"github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
 )
 
 func TestCancel(t *testing.T) {
 	order := New()
 
 	defer monkey.UnpatchAll()
-	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "GetDeploymentOrder", func(*dbclient2.DBClient, string) (*dbclient2.DeploymentOrder, error) {
-		return &dbclient2.DeploymentOrder{}, nil
+	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "GetDeploymentOrder", func(*dbclient.DBClient, string) (*dbclient.DeploymentOrder, error) {
+		return &dbclient.DeploymentOrder{}, nil
 	})
-	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "UpdateDeploymentOrder", func(*dbclient2.DBClient, *dbclient2.DeploymentOrder) error {
+	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "UpdateDeploymentOrder", func(*dbclient.DBClient, *dbclient.DeploymentOrder) error {
 		return nil
 	})
-	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "GetRuntimeByDeployOrderId", func(*dbclient2.DBClient, uint64, string) (*[]dbclient2.Runtime, error) {
-		return &[]dbclient2.Runtime{}, nil
+	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "GetRuntimeByDeployOrderId", func(*dbclient.DBClient, uint64, string) (*[]dbclient.Runtime, error) {
+		return &[]dbclient.Runtime{}, nil
 	})
 
 	monkey.PatchInstanceMethod(reflect.TypeOf(order.bdl), "CheckPermission", func(*bundle.Bundle, *apistructs.PermissionCheckRequest) (*apistructs.PermissionCheckResponseData, error) {

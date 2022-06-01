@@ -29,7 +29,7 @@ import (
 	ofst "kmodules.xyz/offshoot-api/api/v1"
 
 	"github.com/erda-project/erda/apistructs"
-	addon2 "github.com/erda-project/erda/modules/tools/orchestrator/scheduler/executor/plugins/k8s/addon"
+	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/executor/plugins/k8s/addon"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders"
@@ -37,14 +37,14 @@ import (
 )
 
 type MysqlOperator struct {
-	k8s    addon2.K8SUtil
-	ns     addon2.NamespaceUtil
-	secret addon2.SecretUtil
-	pvc    addon2.PVCUtil
+	k8s    addon.K8SUtil
+	ns     addon.NamespaceUtil
+	secret addon.SecretUtil
+	pvc    addon.PVCUtil
 	client *httpclient.HTTPClient
 }
 
-func New(k8s addon2.K8SUtil, ns addon2.NamespaceUtil, secret addon2.SecretUtil, pvc addon2.PVCUtil, client *httpclient.HTTPClient) *MysqlOperator {
+func New(k8s addon.K8SUtil, ns addon.NamespaceUtil, secret addon.SecretUtil, pvc addon.PVCUtil, client *httpclient.HTTPClient) *MysqlOperator {
 	return &MysqlOperator{
 		k8s:    k8s,
 		ns:     ns,
@@ -218,7 +218,7 @@ func (my *MysqlOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
 	// set Labels and annotations
 	mysqlstruct.Labels = make(map[string]string)
 	mysqlstruct.Annotations = make(map[string]string)
-	addon2.SetAddonLabelsAndAnnotations(mysql, mysqlstruct.Labels, mysqlstruct.Annotations)
+	addon.SetAddonLabelsAndAnnotations(mysql, mysqlstruct.Labels, mysqlstruct.Annotations)
 
 	return mysqlSecretBackupPVC{
 		secret:    &secret,

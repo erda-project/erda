@@ -15,29 +15,29 @@
 package models
 
 import (
-	gitmodule2 "github.com/erda-project/erda/modules/tools/gittar/pkg/gitmodule"
+	"github.com/erda-project/erda/modules/tools/gittar/pkg/gitmodule"
 )
 
 // PayloadPushEvent struct
 // https://docs.gitlab.com/ce/user/project/integrations/webhooks.html#push-events
 
 type PayloadPushEvent struct {
-	ObjectKind        string                 `json:"object_kind"`
-	IsTag             bool                   `json:"is_tag"`
-	Ref               string                 `json:"ref"`
-	After             string                 `json:"after"`
-	Before            string                 `json:"before"`
-	IsDelete          bool                   `json:"is_delete"`
-	Commits           []PayloadCommit        `json:"commits"`
-	TotalCommitsCount int                    `json:"total_commits_count"`
-	Pusher            *User                  `json:"pusher"`
-	Repository        *gitmodule2.Repository `json:"repository"`
+	ObjectKind        string                `json:"object_kind"`
+	IsTag             bool                  `json:"is_tag"`
+	Ref               string                `json:"ref"`
+	After             string                `json:"after"`
+	Before            string                `json:"before"`
+	IsDelete          bool                  `json:"is_delete"`
+	Commits           []PayloadCommit       `json:"commits"`
+	TotalCommitsCount int                   `json:"total_commits_count"`
+	Pusher            *User                 `json:"pusher"`
+	Repository        *gitmodule.Repository `json:"repository"`
 }
 
 func (p *PayloadPushEvent) IsCreateNewBranch() bool {
-	return p.Before == gitmodule2.INIT_COMMIT_ID
+	return p.Before == gitmodule.INIT_COMMIT_ID
 }
 
 func (p *PayloadPushEvent) IsDeleteBranch() bool {
-	return p.After == gitmodule2.INIT_COMMIT_ID
+	return p.After == gitmodule.INIT_COMMIT_ID
 }

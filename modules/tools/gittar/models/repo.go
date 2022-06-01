@@ -27,7 +27,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/tools/gittar/conf"
-	gitmodule2 "github.com/erda-project/erda/modules/tools/gittar/pkg/gitmodule"
+	"github.com/erda-project/erda/modules/tools/gittar/pkg/gitmodule"
 	"github.com/erda-project/erda/pkg/gittarutil"
 )
 
@@ -84,7 +84,7 @@ func (svc *Service) CreateRepo(request *apistructs.CreateRepoRequest) (*Repo, er
 	repo.Path = gittarutil.MakeRepoPath(repo.OrgName, repo.ProjectName, repo.AppName)
 	if request.OnlyCheck {
 		if request.IsExternal {
-			err := gitmodule2.CheckRemoteHttpRepo(request.Config.Url, request.Config.Username, request.Config.Password)
+			err := gitmodule.CheckRemoteHttpRepo(request.Config.Url, request.Config.Username, request.Config.Password)
 			if err != nil {
 				return nil, err
 			}
@@ -101,11 +101,11 @@ func (svc *Service) CreateRepo(request *apistructs.CreateRepoRequest) (*Repo, er
 	if count == 0 {
 		if request.IsExternal {
 			// 先校验有效性
-			err := gitmodule2.CheckRemoteHttpRepo(request.Config.Url, request.Config.Username, request.Config.Password)
+			err := gitmodule.CheckRemoteHttpRepo(request.Config.Url, request.Config.Username, request.Config.Password)
 			if err != nil {
 				return nil, err
 			}
-			err = gitmodule2.InitExternalRepository(
+			err = gitmodule.InitExternalRepository(
 				repo.DiskPath(),
 				request.Config.Url,
 				request.Config.Username,
@@ -115,7 +115,7 @@ func (svc *Service) CreateRepo(request *apistructs.CreateRepoRequest) (*Repo, er
 				return nil, err
 			}
 		} else {
-			err = gitmodule2.InitRepository(repo.DiskPath(), true)
+			err = gitmodule.InitRepository(repo.DiskPath(), true)
 			if err != nil {
 				return nil, err
 			}
@@ -130,7 +130,7 @@ func (svc *Service) CreateRepo(request *apistructs.CreateRepoRequest) (*Repo, er
 
 var ERROR_REPO_LOCKED = errors.New("locked denied")
 
-func (svc *Service) SetLocked(repo *gitmodule2.Repository, user *User, info *apistructs.LockedRepoRequest) (*apistructs.LockedRepoRequest, error) {
+func (svc *Service) SetLocked(repo *gitmodule.Repository, user *User, info *apistructs.LockedRepoRequest) (*apistructs.LockedRepoRequest, error) {
 	if err := svc.CheckPermission(repo, user, PermissionRepoLocked, nil); err != nil {
 		return nil, ERROR_REPO_LOCKED
 	}
@@ -190,12 +190,12 @@ func (svc *Service) UpdateRepo(repo *Repo, request *apistructs.UpdateRepoRequest
 		if request.Config == nil {
 			return errors.New("repo config is nil")
 		}
-		err := gitmodule2.CheckRemoteHttpRepo(request.Config.Url, request.Config.Username, request.Config.Password)
+		err := gitmodule.CheckRemoteHttpRepo(request.Config.Url, request.Config.Username, request.Config.Password)
 		if err != nil {
 			return err
 		}
 	}
-	err := gitmodule2.UpdateExternalRepository(repo.DiskPath(), request.Config.Url, request.Config.Username, request.Config.Password)
+	err := gitmodule.UpdateExternalRepository(repo.DiskPath(), request.Config.Url, request.Config.Username, request.Config.Password)
 	if err != nil {
 		return err
 	}

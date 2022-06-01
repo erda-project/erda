@@ -26,7 +26,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs/logrusx"
 	"github.com/erda-project/erda/apistructs"
-	dbclient2 "github.com/erda-project/erda/modules/tools/pipeline/dbclient"
+	"github.com/erda-project/erda/modules/tools/pipeline/dbclient"
 	db2 "github.com/erda-project/erda/modules/tools/pipeline/providers/dbgc/db"
 	spec2 "github.com/erda-project/erda/modules/tools/pipeline/spec"
 )
@@ -70,19 +70,19 @@ func TestReconciler_doPipelineDatabaseGC(t *testing.T) {
 		},
 	}
 
-	DB := &dbclient2.Client{}
+	DB := &dbclient.Client{}
 
-	pm := monkey.PatchInstanceMethod(reflect.TypeOf(DB), "PageListPipelines", func(client *dbclient2.Client, req apistructs.PipelinePageListRequest, ops ...dbclient2.SessionOption) (*dbclient2.PageListPipelinesResult, error) {
+	pm := monkey.PatchInstanceMethod(reflect.TypeOf(DB), "PageListPipelines", func(client *dbclient.Client, req apistructs.PipelinePageListRequest, ops ...dbclient.SessionOption) (*dbclient.PageListPipelinesResult, error) {
 		assert.True(t, req.PageNum <= 2, "PageNum > 2")
 		if req.PageNum == 1 {
-			return &dbclient2.PageListPipelinesResult{
+			return &dbclient.PageListPipelinesResult{
 				Pipelines:         []spec2.Pipeline{pipelineMaps[1], pipelineMaps[0]},
 				PagingPipelineIDs: nil,
 				Total:             2,
 				CurrentPageSize:   2,
 			}, nil
 		} else {
-			return &dbclient2.PageListPipelinesResult{
+			return &dbclient.PageListPipelinesResult{
 				Pipelines:         nil,
 				PagingPipelineIDs: nil,
 				Total:             0,
@@ -138,14 +138,14 @@ func TestGetPipelineIDFromDBGCWatchedKey(t *testing.T) {
 
 func TestPipelineDatabaseGC(t *testing.T) {
 	var r provider
-	DB := &dbclient2.Client{}
+	DB := &dbclient.Client{}
 
-	pm := monkey.PatchInstanceMethod(reflect.TypeOf(DB), "PageListPipelines", func(client *dbclient2.Client, req apistructs.PipelinePageListRequest, ops ...dbclient2.SessionOption) (*dbclient2.PageListPipelinesResult, error) {
-		return &dbclient2.PageListPipelinesResult{Pipelines: nil}, nil
+	pm := monkey.PatchInstanceMethod(reflect.TypeOf(DB), "PageListPipelines", func(client *dbclient.Client, req apistructs.PipelinePageListRequest, ops ...dbclient.SessionOption) (*dbclient.PageListPipelinesResult, error) {
+		return &dbclient.PageListPipelinesResult{Pipelines: nil}, nil
 	})
 	defer pm.Unpatch()
 
-	pm1 := monkey.PatchInstanceMethod(reflect.TypeOf(r.dbClient), "DeletePipelineArchives", func(client *db2.Client, req db2.ArchiveDeleteRequest, ops ...dbclient2.SessionOption) error {
+	pm1 := monkey.PatchInstanceMethod(reflect.TypeOf(r.dbClient), "DeletePipelineArchives", func(client *db2.Client, req db2.ArchiveDeleteRequest, ops ...dbclient.SessionOption) error {
 		return nil
 	})
 	defer pm1.Unpatch()
@@ -166,20 +166,20 @@ func TestPipelineDatabaseGC(t *testing.T) {
 
 func TestReconciler_doPipelineDatabaseGC1(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
-		DB := &dbclient2.Client{}
+		DB := &dbclient.Client{}
 		var r provider
 		r.dbClient = &db2.Client{Client: *DB}
-		patch := monkey.PatchInstanceMethod(reflect.TypeOf(DB), "PageListPipelines", func(client *dbclient2.Client, req apistructs.PipelinePageListRequest, ops ...dbclient2.SessionOption) (*dbclient2.PageListPipelinesResult, error) {
+		patch := monkey.PatchInstanceMethod(reflect.TypeOf(DB), "PageListPipelines", func(client *dbclient.Client, req apistructs.PipelinePageListRequest, ops ...dbclient.SessionOption) (*dbclient.PageListPipelinesResult, error) {
 			switch req.PageNum {
 			case 1:
-				return &dbclient2.PageListPipelinesResult{
+				return &dbclient.PageListPipelinesResult{
 					Pipelines:         nil,
 					PagingPipelineIDs: nil,
 					Total:             0,
 					CurrentPageSize:   0,
 				}, nil
 			case 2:
-				return &dbclient2.PageListPipelinesResult{
+				return &dbclient.PageListPipelinesResult{
 					Pipelines: []spec2.Pipeline{
 						{
 							PipelineBase: spec2.PipelineBase{},
@@ -192,7 +192,7 @@ func TestReconciler_doPipelineDatabaseGC1(t *testing.T) {
 					CurrentPageSize:   1,
 				}, nil
 			default:
-				return &dbclient2.PageListPipelinesResult{
+				return &dbclient.PageListPipelinesResult{
 					Pipelines:         []spec2.Pipeline{},
 					PagingPipelineIDs: nil,
 					Total:             0,

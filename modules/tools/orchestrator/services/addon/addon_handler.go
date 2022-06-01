@@ -30,7 +30,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
 	"github.com/erda-project/erda/modules/tools/orchestrator/conf"
-	dbclient2 "github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
+	"github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/tools/orchestrator/i18n"
 	"github.com/erda-project/erda/modules/tools/orchestrator/services/log"
 	"github.com/erda-project/erda/modules/tools/orchestrator/utils"
@@ -301,7 +301,7 @@ func (a *Addon) addonCreateAux(addonSpec *apistructs.AddonExtension, addonDice *
 				config = s.Envs["config"]
 			}
 		}
-		if err := a.db.Create(&dbclient2.AddonManagement{
+		if err := a.db.Create(&dbclient.AddonManagement{
 			AddonID:     addonIns.ID,
 			Name:        addonIns.Name,
 			ProjectID:   addonIns.ProjectID,
@@ -394,7 +394,7 @@ func (a *Addon) addonAttach(addonSpec *apistructs.AddonExtension, addonDice *dic
 				config = s.Envs["config"]
 			}
 		}
-		if err := a.db.Create(&dbclient2.AddonManagement{
+		if err := a.db.Create(&dbclient.AddonManagement{
 			AddonID:     addonIns.ID,
 			Name:        addonIns.Name,
 			ProjectID:   addonIns.ProjectID,
@@ -455,7 +455,7 @@ func (a *Addon) buildRealCreate(addonSpec *apistructs.AddonExtension, params *ap
 
 // existAttachAddon 已存在addonRouting信息，需要执行attachment操作，mysql还需要进行
 func (a *Addon) existAttachAddon(params *apistructs.AddonHandlerCreateItem, addonSpec *apistructs.AddonExtension,
-	existInstanceRouting *dbclient2.AddonInstanceRouting) (*apistructs.AddonInstanceRes, error) {
+	existInstanceRouting *dbclient.AddonInstanceRouting) (*apistructs.AddonInstanceRes, error) {
 	logrus.Infof("addonAttach existAttachAddon start: %+v", existInstanceRouting)
 	// 能找到对应共享addon，查询attachments信息，看看是否关联了runtime
 	attachments, err := a.db.GetByRuntimeIDAndRoutingInstanceID(params.RuntimeID, existInstanceRouting.ID)
@@ -572,7 +572,7 @@ func (a *Addon) existAttachAddon(params *apistructs.AddonHandlerCreateItem, addo
 
 // strategyAddon addon策略部署
 func (a *Addon) strategyAddon(params *apistructs.AddonHandlerCreateItem,
-	addonSpec *apistructs.AddonExtension) (*dbclient2.AddonInstanceRouting, error) {
+	addonSpec *apistructs.AddonExtension) (*dbclient.AddonInstanceRouting, error) {
 	// 针对真实创建策略处理
 	if err := a.buildRealCreate(addonSpec, params); err != nil {
 		return nil, err
@@ -617,7 +617,7 @@ func (a *Addon) strategyAddon(params *apistructs.AddonHandlerCreateItem,
 		return nil, nil
 	}
 	var (
-		exitAddonInsRouting *[]dbclient2.AddonInstanceRouting
+		exitAddonInsRouting *[]dbclient.AddonInstanceRouting
 	)
 	// 策略，除了redis，其他的plan在dev、test环境都变为basic
 	a.strategyPlan(params)
@@ -630,7 +630,7 @@ func (a *Addon) strategyAddon(params *apistructs.AddonHandlerCreateItem,
 	if len(*exitAddonInsRouting) == 0 {
 		return nil, nil
 	}
-	var resultInsRouting dbclient2.AddonInstanceRouting
+	var resultInsRouting dbclient.AddonInstanceRouting
 	for _, value := range *exitAddonInsRouting {
 		if value.Version == addonSpec.Version {
 			// redis的basic和professional返回参数不一样，所以需要单独判断
@@ -645,7 +645,7 @@ func (a *Addon) strategyAddon(params *apistructs.AddonHandlerCreateItem,
 }
 
 // getTagInstance 根据tag获取addon实例信息
-func (a *Addon) getTagInstance(addonSpec *apistructs.AddonExtension, params *apistructs.AddonHandlerCreateItem) (*dbclient2.AddonInstanceRouting, error) {
+func (a *Addon) getTagInstance(addonSpec *apistructs.AddonExtension, params *apistructs.AddonHandlerCreateItem) (*dbclient.AddonInstanceRouting, error) {
 	l := logrus.WithField("func", "*Addon.getTagInstance")
 	if params.ShareScope == "" {
 		params.ShareScope = addonSpec.ShareScopes[0]
@@ -743,9 +743,9 @@ func (a *Addon) getMinShareId(params *apistructs.AddonHandlerCreateItem, addonSp
 }
 
 // getShareInstance 根据创建参数，查询是否有匹配的addon实例信息
-func (a *Addon) getShareInstance(addonSpec *apistructs.AddonExtension, params *apistructs.AddonHandlerCreateItem) (*dbclient2.AddonInstanceRouting, error) {
+func (a *Addon) getShareInstance(addonSpec *apistructs.AddonExtension, params *apistructs.AddonHandlerCreateItem) (*dbclient.AddonInstanceRouting, error) {
 	// 判断该addon支持的shareScope中，有没有匹配的addonInstance信息，有即可返回
-	var existRoutingIns dbclient2.AddonInstanceRouting
+	var existRoutingIns dbclient.AddonInstanceRouting
 	for _, scope := range addonSpec.ShareScopes {
 		switch scope {
 		case apistructs.ClusterShareScope:
@@ -816,7 +816,7 @@ func (a *Addon) getShareInstance(addonSpec *apistructs.AddonExtension, params *a
 }
 
 // CreateAddonResource 创建addon资源
-func (a *Addon) createAddonResource(addonIns *dbclient2.AddonInstance, addonInsRouting *dbclient2.AddonInstanceRouting,
+func (a *Addon) createAddonResource(addonIns *dbclient.AddonInstance, addonInsRouting *dbclient.AddonInstanceRouting,
 	addonSpec *apistructs.AddonExtension, addonDice *diceyml.Object, params *apistructs.AddonHandlerCreateItem) error {
 	// 自定义addon直接save数据，返回
 	switch addonSpec.Category {
@@ -857,7 +857,7 @@ func (a *Addon) createAddonResource(addonIns *dbclient2.AddonInstance, addonInsR
 }
 
 // insideAddonAttach 内部addon发布流程
-func (a *Addon) insideAddonAttach(addonIns *dbclient2.AddonInstance, addonSpec *apistructs.AddonExtension, addonDice *diceyml.Object,
+func (a *Addon) insideAddonAttach(addonIns *dbclient.AddonInstance, addonSpec *apistructs.AddonExtension, addonDice *diceyml.Object,
 	params *apistructs.AddonHandlerCreateItem) error {
 	// 发布内部addon
 	insideIds, err := a.insideAddonDeploy(addonIns, addonSpec, addonDice, params)
@@ -903,7 +903,7 @@ func (a *Addon) insideAddonAttach(addonIns *dbclient2.AddonInstance, addonSpec *
 }
 
 // providerAddonDeploy provider addon发布
-func (a *Addon) providerAddonDeploy(addonIns *dbclient2.AddonInstance, addonInsRouting *dbclient2.AddonInstanceRouting,
+func (a *Addon) providerAddonDeploy(addonIns *dbclient.AddonInstance, addonInsRouting *dbclient.AddonInstanceRouting,
 	params *apistructs.AddonHandlerCreateItem, addonSpec *apistructs.AddonExtension) error {
 	// 走http domain的方式
 	addonProviderRequest := apistructs.AddonProviderRequest{
@@ -963,7 +963,7 @@ func (a *Addon) providerAddonDeploy(addonIns *dbclient2.AddonInstance, addonInsR
 }
 
 // basicAddonDeploy 基础addon发布
-func (a *Addon) basicAddonDeploy(addonIns *dbclient2.AddonInstance, addonInsRouting *dbclient2.AddonInstanceRouting,
+func (a *Addon) basicAddonDeploy(addonIns *dbclient.AddonInstance, addonInsRouting *dbclient.AddonInstanceRouting,
 	params *apistructs.AddonHandlerCreateItem, addonSpec *apistructs.AddonExtension, addonDice *diceyml.Object, vendor string) error {
 	if err := a.preCheck(params); err != nil {
 		return err
@@ -1061,14 +1061,14 @@ func (a *Addon) preCheck(params *apistructs.AddonHandlerCreateItem) error {
 }
 
 // custom addon 发布
-func (a *Addon) customDeploy(addonIns *dbclient2.AddonInstance, addonInsRouting *dbclient2.AddonInstanceRouting,
+func (a *Addon) customDeploy(addonIns *dbclient.AddonInstance, addonInsRouting *dbclient.AddonInstanceRouting,
 	params *apistructs.AddonHandlerCreateItem) error {
 	if len(addonIns.Config) == 0 {
 		a.ExportLogInfo(apistructs.ErrorLevel, apistructs.RuntimeError, params.RuntimeID, params.RuntimeID, i18n.OrgSprintf(addonIns.OrgID, "CustomAddonDoseNotExist"),
 			addonInsRouting.AddonName, addonInsRouting.Name)
 		return errors.Errorf("custom addon should be created before being referenced, addon name: %s, instance name: %s", addonInsRouting.AddonName, addonInsRouting.Name)
 	}
-	addonAudit := dbclient2.AddonAudit{
+	addonAudit := dbclient.AddonAudit{
 		OrgID:     addonIns.OrgID,
 		ProjectID: addonIns.ProjectID,
 		Workspace: addonIns.Workspace,
@@ -1090,8 +1090,8 @@ func (a *Addon) customDeploy(addonIns *dbclient2.AddonInstance, addonInsRouting 
 }
 
 // buildAddonInstance addonInstance数据装填
-func (a *Addon) buildAddonInstance(addonSpec *apistructs.AddonExtension, params *apistructs.AddonHandlerCreateItem) (*dbclient2.AddonInstance, error) {
-	addonIns := dbclient2.AddonInstance{
+func (a *Addon) buildAddonInstance(addonSpec *apistructs.AddonExtension, params *apistructs.AddonHandlerCreateItem) (*dbclient.AddonInstance, error) {
+	addonIns := dbclient.AddonInstance{
 		ID:                  a.getRandomId(),
 		Name:                params.InstanceName,
 		AddonName:           params.AddonName,
@@ -1147,7 +1147,7 @@ func (a *Addon) buildAddonInstance(addonSpec *apistructs.AddonExtension, params 
 // buildAddonInstance addonInstanceRouting数据装填
 func (a *Addon) buildAddonInstanceRouting(addonSpec *apistructs.AddonExtension,
 	params *apistructs.AddonHandlerCreateItem,
-	addonIns *dbclient2.AddonInstance, reference ...int) *dbclient2.AddonInstanceRouting {
+	addonIns *dbclient.AddonInstance, reference ...int) *dbclient.AddonInstanceRouting {
 
 	if params.InsideAddon == "" {
 		params.InsideAddon = apistructs.NOT_INSIDE
@@ -1157,7 +1157,7 @@ func (a *Addon) buildAddonInstanceRouting(addonSpec *apistructs.AddonExtension,
 		ref = reference[0]
 	}
 
-	addonInsRout := dbclient2.AddonInstanceRouting{
+	addonInsRout := dbclient.AddonInstanceRouting{
 		ID:                  a.getRandomId(),
 		Name:                params.InstanceName,
 		AddonName:           params.AddonName,
@@ -1205,8 +1205,8 @@ func (a *Addon) buildAddonInstanceRouting(addonSpec *apistructs.AddonExtension,
 }
 
 // buildAddonAttachments AddonAttachment数据装填
-func (a *Addon) buildAddonAttachments(params *apistructs.AddonHandlerCreateItem, addonInsRouting *dbclient2.AddonInstanceRouting) *dbclient2.AddonAttachment {
-	addonAttachment := dbclient2.AddonAttachment{
+func (a *Addon) buildAddonAttachments(params *apistructs.AddonHandlerCreateItem, addonInsRouting *dbclient.AddonInstanceRouting) *dbclient.AddonAttachment {
+	addonAttachment := dbclient.AddonAttachment{
 		InstanceID:        addonInsRouting.RealInstance,
 		RoutingInstanceID: addonInsRouting.ID,
 		OrgID:             params.OrgID,
@@ -1303,7 +1303,7 @@ func (a *Addon) DeleteAddonProvider(req *apistructs.AddonProviderRequest, uuid, 
 }
 
 // FindNeedCreateAddon 判断是否需要真实创建addon
-func (a *Addon) FindNeedCreateAddon(params *apistructs.AddonHandlerCreateItem) (*dbclient2.AddonInstanceRouting, error) {
+func (a *Addon) FindNeedCreateAddon(params *apistructs.AddonHandlerCreateItem) (*dbclient.AddonInstanceRouting, error) {
 	addonSpec, _, err := a.GetAddonExtention(params)
 	if err != nil {
 		logrus.Errorf("AttachAndCreate GetAddonExtention err:  %v", err)
@@ -1337,7 +1337,7 @@ func (a *Addon) pushLogCore(content string, params map[string]string) {
 	logHelper.Log(content, tags)
 }
 
-type addonInstanceRoutingList []dbclient2.AddonInstanceRouting
+type addonInstanceRoutingList []dbclient.AddonInstanceRouting
 
 func (l addonInstanceRoutingList) sort() {
 	f := func(i, j int) bool {
@@ -1354,7 +1354,7 @@ func (l addonInstanceRoutingList) sort() {
 	}
 }
 
-func (l addonInstanceRoutingList) GetByName(name string) (*dbclient2.AddonInstanceRouting, bool) {
+func (l addonInstanceRoutingList) GetByName(name string) (*dbclient.AddonInstanceRouting, bool) {
 	l.sort()
 	for i := range l {
 		if l[i].Name == name {
@@ -1364,7 +1364,7 @@ func (l addonInstanceRoutingList) GetByName(name string) (*dbclient2.AddonInstan
 	return nil, false
 }
 
-func (l addonInstanceRoutingList) GetByTag(tag string) (*dbclient2.AddonInstanceRouting, bool) {
+func (l addonInstanceRoutingList) GetByTag(tag string) (*dbclient.AddonInstanceRouting, bool) {
 	if tag == "" {
 		return nil, false
 	}

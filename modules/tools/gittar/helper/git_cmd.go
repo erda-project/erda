@@ -33,8 +33,8 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/modules/tools/gittar/conf"
-	models2 "github.com/erda-project/erda/modules/tools/gittar/models"
-	gitmodule2 "github.com/erda-project/erda/modules/tools/gittar/pkg/gitmodule"
+	"github.com/erda-project/erda/modules/tools/gittar/models"
+	"github.com/erda-project/erda/modules/tools/gittar/pkg/gitmodule"
 	"github.com/erda-project/erda/modules/tools/gittar/webcontext"
 )
 
@@ -174,7 +174,7 @@ func RunProcess(service string, c *webcontext.Context) {
 	defer reqBody.Close()
 
 	// Grab pushEvent
-	var pushEvents []*models2.PayloadPushEvent
+	var pushEvents []*models.PayloadPushEvent
 	if service == "receive-pack" {
 		header, err := ReadGitSendPackHeader(reqBody)
 		if err != nil {
@@ -189,19 +189,19 @@ func RunProcess(service string, c *webcontext.Context) {
 
 		matchHeader := removeEndMarkerFromHeader(header)
 		for _, matches := range re.FindAllSubmatch(matchHeader, -1) {
-			pushEvent := &models2.PayloadPushEvent{
+			pushEvent := &models.PayloadPushEvent{
 				Before:            string(matches[1]),
 				After:             string(matches[2]),
 				Ref:               string(bytes.Trim(matches[3], "\x00")),
 				IsTag:             string(matches[4]) == "tags",
-				Pusher:            c.MustGet("user").(*models2.User),
+				Pusher:            c.MustGet("user").(*models.User),
 				TotalCommitsCount: 0,
 			}
-			pushEvent.IsDelete = pushEvent.After == gitmodule2.INIT_COMMIT_ID
+			pushEvent.IsDelete = pushEvent.After == gitmodule.INIT_COMMIT_ID
 			pushEvents = append(pushEvents, pushEvent)
 		}
 
-		repository := c.MustGet("repository").(*gitmodule2.Repository)
+		repository := c.MustGet("repository").(*gitmodule.Repository)
 		if preReceiveHook(pushEvents, c) {
 			// Only when one branch is created will it be written to the writer
 			// Refer to github
@@ -209,7 +209,7 @@ func RunProcess(service string, c *webcontext.Context) {
 				c.GetWriter().Write(NewReportStatus(
 					"unpack ok",
 					"ok "+pushEvents[0].Ref,
-					makeCreatePipelineLink(pushEvents[0].Ref[len(gitmodule2.BRANCH_PREFIX):], c.Repository.OrgName, c.Repository.ProjectId)))
+					makeCreatePipelineLink(pushEvents[0].Ref[len(gitmodule.BRANCH_PREFIX):], c.Repository.OrgName, c.Repository.ProjectId)))
 			}
 			runCommand2(c.GetWriter(), gitCommand(
 				version,
@@ -224,7 +224,7 @@ func RunProcess(service string, c *webcontext.Context) {
 			version,
 			service,
 			"--stateless-rpc",
-			c.MustGet("repository").(*gitmodule2.Repository).DiskPath(),
+			c.MustGet("repository").(*gitmodule.Repository).DiskPath(),
 		), reqBody)
 	}
 }
@@ -245,7 +245,7 @@ func RunArchive(c *webcontext.Context, ref string, format string) {
 		c.Repository.ApplicationName+"-"+
 		strings.Replace(ref, "/", "-", -1)+"."+format)
 
-	fullPath, _ := filepath.Abs(c.MustGet("repository").(*gitmodule2.Repository).DiskPath())
+	fullPath, _ := filepath.Abs(c.MustGet("repository").(*gitmodule.Repository).DiskPath())
 	runCommand2(c.GetWriter(), gitCommand(
 		"",
 		"archive",
@@ -257,7 +257,7 @@ func RunArchive(c *webcontext.Context, ref string, format string) {
 // OutPutArchive 创建打包文件
 func OutPutArchive(c *webcontext.Context, ref string, format string) string {
 
-	fullPath, _ := filepath.Abs(c.MustGet("repository").(*gitmodule2.Repository).DiskPath())
+	fullPath, _ := filepath.Abs(c.MustGet("repository").(*gitmodule.Repository).DiskPath())
 	filename := fullPath + "/" + strings.Replace(ref, "/", "-", -1) + "." + format
 
 	runCommand2(c.GetWriter(), gitCommand(

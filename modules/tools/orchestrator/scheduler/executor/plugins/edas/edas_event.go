@@ -24,7 +24,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	events2 "github.com/erda-project/erda/modules/tools/orchestrator/scheduler/events"
+	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/events"
 	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/events/eventtypes"
 	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/executor/executortypes"
 	"github.com/erda-project/erda/pkg/discover"
@@ -50,11 +50,11 @@ func (m *EDAS) registerEventChanAndLocalStore(evCh chan *eventtypes.StatusEvent,
 		if t == storetypes.Del {
 			_, ok := lstore.Load(runtimeName)
 			if ok {
-				var e events2.RuntimeEvent
+				var e events.RuntimeEvent
 				e.RuntimeName = runtimeName
 				e.IsDeleted = true
 				lstore.Delete(runtimeName)
-				m.notifier.Send(e, events2.WithSender(name+events2.SUFFIX_EDAS), events2.WithDest(map[string]interface{}{"HTTP": []string{eventAddr}}))
+				m.notifier.Send(e, events.WithSender(name+events.SUFFIX_EDAS), events.WithDest(map[string]interface{}{"HTTP": []string{eventAddr}}))
 			}
 			return nil
 		}
@@ -115,7 +115,7 @@ func (m *EDAS) WaitEvent(lstore *sync.Map, stopCh chan struct{}) {
 		return nil
 	}
 
-	em := events2.GetEventManager()
+	em := events.GetEventManager()
 	if err := em.MemEtcdStore.ForEach(context.Background(), "/dice/service/", apistructs.ServiceGroup{}, initStore); err != nil {
 		logrus.Errorf("executor(%s) foreach initStore error: %v", m.name, err)
 	}
@@ -154,10 +154,10 @@ func (m *EDAS) WaitEvent(lstore *sync.Map, stopCh chan struct{}) {
 				return true
 			}
 
-			var e events2.RuntimeEvent
-			e.EventType = events2.EVENTS_TOTAL
+			var e events.RuntimeEvent
+			e.EventType = events.EVENTS_TOTAL
 			e.RuntimeName = k.(string)
-			e.ServiceStatuses = make([]events2.ServiceStatus, len(r.Services))
+			e.ServiceStatuses = make([]events.ServiceStatus, len(r.Services))
 			for i, srv := range r.Services {
 				e.ServiceStatuses[i].ServiceName = srv.Name
 				e.ServiceStatuses[i].Replica = srv.Scale
@@ -186,7 +186,7 @@ func (m *EDAS) WaitEvent(lstore *sync.Map, stopCh chan struct{}) {
 				*/
 			}
 
-			go m.notifier.Send(e, events2.WithSender(string(m.name)+events2.SUFFIX_EDAS), events2.WithDest(map[string]interface{}{"HTTP": []string{eventAddr}}))
+			go m.notifier.Send(e, events.WithSender(string(m.name)+events.SUFFIX_EDAS), events.WithDest(map[string]interface{}{"HTTP": []string{eventAddr}}))
 			return true
 
 		case <-ctx.Done():

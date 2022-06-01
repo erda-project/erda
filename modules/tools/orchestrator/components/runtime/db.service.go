@@ -15,15 +15,15 @@
 package runtime
 
 import (
-	dbclient2 "github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
+	"github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/tools/orchestrator/spec"
 )
 
 type DBService interface {
-	GetRuntimeAllowNil(id uint64) (*dbclient2.Runtime, error)
-	FindRuntime(id spec.RuntimeUniqueId) (*dbclient2.Runtime, error)
-	FindLastDeployment(id uint64) (*dbclient2.Deployment, error)
-	FindDomainsByRuntimeId(id uint64) ([]dbclient2.RuntimeDomain, error)
-	GetRuntime(id uint64) (*dbclient2.Runtime, error)
-	UpdateRuntime(runtime *dbclient2.Runtime) error
+	GetRuntimeAllowNil(id uint64) (*dbclient.Runtime, error)
+	FindRuntime(id spec.RuntimeUniqueId) (*dbclient.Runtime, error)
+	FindLastDeployment(id uint64) (*dbclient.Deployment, error)
+	FindDomainsByRuntimeId(id uint64) ([]dbclient.RuntimeDomain, error)
+	GetRuntime(id uint64) (*dbclient.Runtime, error)
+	UpdateRuntime(runtime *dbclient.Runtime) error
 }

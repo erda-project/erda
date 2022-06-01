@@ -29,7 +29,7 @@ import (
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	models2 "github.com/erda-project/erda/modules/tools/gittar/models"
+	"github.com/erda-project/erda/modules/tools/gittar/models"
 	"github.com/erda-project/erda/modules/tools/gittar/pkg/errorx"
 	"github.com/erda-project/erda/modules/tools/gittar/pkg/gitmodule"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -39,9 +39,9 @@ import (
 type Context struct {
 	EchoContext  echo.Context
 	Repository   *gitmodule.Repository
-	User         *models2.User
-	Service      *models2.Service
-	DBClient     *models2.DBClient
+	User         *models.User
+	Service      *models.Service
+	DBClient     *models.DBClient
 	Bundle       *bundle.Bundle
 	UCAuth       *ucauth.UCUserAuth
 	next         bool
@@ -51,13 +51,13 @@ type Context struct {
 
 type ContextHandlerFunc func(*Context)
 
-var dbClientInstance *models2.DBClient
+var dbClientInstance *models.DBClient
 var diceBundleInstance *bundle.Bundle
 var ucAuthInstance *ucauth.UCUserAuth
 var etcdClientInstance *clientv3.Client
 var tokenServiceInstance *tokenpb.TokenServiceServer
 
-func WithDB(db *models2.DBClient) {
+func WithDB(db *models.DBClient) {
 	dbClientInstance = db
 }
 
@@ -129,23 +129,23 @@ func WrapMiddlewareHandler(handlerFunc ContextHandlerFunc) echo.MiddlewareFunc {
 	}
 }
 
-func NewEchoContext(c echo.Context, db *models2.DBClient) *Context {
+func NewEchoContext(c echo.Context, db *models.DBClient) *Context {
 	repository := c.Get("repository")
 	if repository == nil {
 		repository = &gitmodule.Repository{}
 	}
 	repo := repository.(*gitmodule.Repository)
 	repo.Bundle = diceBundleInstance
-	var user *models2.User
+	var user *models.User
 	userValue := c.Get("user")
 	if userValue != nil {
-		user = userValue.(*models2.User)
+		user = userValue.(*models.User)
 	}
 	return &Context{
 		Repository:   repository.(*gitmodule.Repository),
 		EchoContext:  c,
 		User:         user,
-		Service:      models2.NewService(db, diceBundleInstance),
+		Service:      models.NewService(db, diceBundleInstance),
 		DBClient:     db,
 		UCAuth:       ucAuthInstance,
 		Bundle:       diceBundleInstance,
@@ -301,10 +301,10 @@ func (c *Context) BasicAuth() (username, password string, ok bool) {
 	return c.EchoContext.Request().BasicAuth()
 }
 
-func (c *Context) CheckPermission(permission models2.Permission) error {
+func (c *Context) CheckPermission(permission models.Permission) error {
 	return c.Service.CheckPermission(c.Repository, c.User, permission, nil)
 }
-func (c *Context) CheckBranchOperatePermission(user *models2.User, branch string) error {
+func (c *Context) CheckBranchOperatePermission(user *models.User, branch string) error {
 	if user.IsInnerUser() {
 		return nil
 	}
@@ -330,6 +330,6 @@ func (c *Context) CheckBranchOperatePermission(user *models2.User, branch string
 	return nil
 }
 
-func (c *Context) CheckPermissionWithRole(permission models2.Permission, resourceRoleList []string) error {
+func (c *Context) CheckPermissionWithRole(permission models.Permission, resourceRoleList []string) error {
 	return c.Service.CheckPermission(c.Repository, c.User, permission, resourceRoleList)
 }

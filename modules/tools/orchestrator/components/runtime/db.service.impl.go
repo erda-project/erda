@@ -17,45 +17,45 @@ package runtime
 import (
 	"github.com/jinzhu/gorm"
 
-	dbclient2 "github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
+	"github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/tools/orchestrator/spec"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 )
 
 type dbServiceImpl struct {
-	db *dbclient2.DBClient
+	db *dbclient.DBClient
 }
 
-func (d *dbServiceImpl) UpdateRuntime(runtime *dbclient2.Runtime) error {
+func (d *dbServiceImpl) UpdateRuntime(runtime *dbclient.Runtime) error {
 	return d.db.UpdateRuntime(runtime)
 }
 
-func (d *dbServiceImpl) GetRuntime(id uint64) (*dbclient2.Runtime, error) {
+func (d *dbServiceImpl) GetRuntime(id uint64) (*dbclient.Runtime, error) {
 	return d.db.GetRuntime(id)
 }
 
-func (d *dbServiceImpl) FindDomainsByRuntimeId(id uint64) ([]dbclient2.RuntimeDomain, error) {
+func (d *dbServiceImpl) FindDomainsByRuntimeId(id uint64) ([]dbclient.RuntimeDomain, error) {
 	return d.db.FindDomainsByRuntimeId(id)
 }
 
-func (d *dbServiceImpl) FindLastDeployment(id uint64) (*dbclient2.Deployment, error) {
+func (d *dbServiceImpl) FindLastDeployment(id uint64) (*dbclient.Deployment, error) {
 	return d.db.FindLastDeployment(id)
 }
 
-func (d *dbServiceImpl) FindRuntime(id spec.RuntimeUniqueId) (*dbclient2.Runtime, error) {
+func (d *dbServiceImpl) FindRuntime(id spec.RuntimeUniqueId) (*dbclient.Runtime, error) {
 	return d.db.FindRuntime(id)
 }
 
-func (d *dbServiceImpl) GetRuntimeAllowNil(id uint64) (*dbclient2.Runtime, error) {
+func (d *dbServiceImpl) GetRuntimeAllowNil(id uint64) (*dbclient.Runtime, error) {
 	return d.db.GetRuntimeAllowNil(id)
 }
 
-func newDBService(db *dbclient2.DBClient) DBService {
+func newDBService(db *dbclient.DBClient) DBService {
 	return &dbServiceImpl{db: db}
 }
 
 func NewDBService(orm *gorm.DB) DBService {
-	return newDBService(&dbclient2.DBClient{
+	return newDBService(&dbclient.DBClient{
 		DBEngine: &dbengine.DBEngine{
 			DB: orm,
 		},

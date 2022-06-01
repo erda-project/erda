@@ -28,8 +28,8 @@ import (
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	dbclient2 "github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
-	events2 "github.com/erda-project/erda/modules/tools/orchestrator/events"
+	"github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
+	"github.com/erda-project/erda/modules/tools/orchestrator/events"
 	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler"
 	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/impl/servicegroup"
 	"github.com/erda-project/erda/modules/tools/orchestrator/services/addon"
@@ -54,7 +54,7 @@ func TestConvertGroupLabels(t *testing.T) {
 			},
 		},
 	}
-	runtime := dbclient2.Runtime{
+	runtime := dbclient.Runtime{
 		BaseModel: dbengine.BaseModel{
 			ID: 4,
 		},
@@ -152,7 +152,7 @@ func TestConvertErdaServiceTemplate(t *testing.T) {
 	f.Cluster.Type = apistructs.EDAS
 
 	var bdl *bundle.Bundle
-	var db *dbclient2.DBClient
+	var db *dbclient.DBClient
 	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetAppsByProjectAndAppName",
 		func(_ *bundle.Bundle, projectID, orgID uint64, userID string, appName string, header ...http.Header) (*apistructs.ApplicationListResponseData, error) {
 			return &apistructs.ApplicationListResponseData{
@@ -165,9 +165,9 @@ func TestConvertErdaServiceTemplate(t *testing.T) {
 	)
 
 	monkey.PatchInstanceMethod(reflect.TypeOf(db), "FindRuntimesByAppIdAndWorkspace",
-		func(_ *dbclient2.DBClient, appId uint64, workspace string) ([]dbclient2.Runtime, error) {
-			return []dbclient2.Runtime{{
-				ScheduleName: dbclient2.ScheduleName{
+		func(_ *dbclient.DBClient, appId uint64, workspace string) ([]dbclient.Runtime, error) {
+			return []dbclient.Runtime{{
+				ScheduleName: dbclient.ScheduleName{
 					Namespace: "",
 					Name:      "",
 				},
@@ -246,11 +246,11 @@ func TestFSMContinueCanceling(t *testing.T) {
 	}
 }
 
-func recordUpdateDeployment() chan dbclient2.Deployment {
-	var db *dbclient2.DBClient
-	c := make(chan dbclient2.Deployment, 1000)
+func recordUpdateDeployment() chan dbclient.Deployment {
+	var db *dbclient.DBClient
+	c := make(chan dbclient.Deployment, 1000)
 	monkey.PatchInstanceMethod(reflect.TypeOf(db), "UpdateDeployment",
-		func(_ *dbclient2.DBClient, toUpdate *dbclient2.Deployment) error {
+		func(_ *dbclient.DBClient, toUpdate *dbclient.Deployment) error {
 			c <- *toUpdate
 			return nil
 		},
@@ -258,29 +258,29 @@ func recordUpdateDeployment() chan dbclient2.Deployment {
 	return c
 }
 
-func collectUpdateDeployment(c chan dbclient2.Deployment) []dbclient2.Deployment {
+func collectUpdateDeployment(c chan dbclient.Deployment) []dbclient.Deployment {
 	close(c)
-	updates := make([]dbclient2.Deployment, 0)
+	updates := make([]dbclient.Deployment, 0)
 	for u := range c {
 		updates = append(updates, u)
 	}
 	return updates
 }
 
-func recordEvent() chan events2.RuntimeEvent {
-	var event *events2.EventManager
-	c := make(chan events2.RuntimeEvent, 1000)
+func recordEvent() chan events.RuntimeEvent {
+	var event *events.EventManager
+	c := make(chan events.RuntimeEvent, 1000)
 	monkey.PatchInstanceMethod(reflect.TypeOf(event), "EmitEvent",
-		func(_ *events2.EventManager, e *events2.RuntimeEvent) {
+		func(_ *events.EventManager, e *events.RuntimeEvent) {
 			c <- *e
 		},
 	)
 	return c
 }
 
-func collectEvent(c chan events2.RuntimeEvent) []events2.RuntimeEvent {
+func collectEvent(c chan events.RuntimeEvent) []events.RuntimeEvent {
 	defer close(c)
-	es := make([]events2.RuntimeEvent, 0)
+	es := make([]events.RuntimeEvent, 0)
 	for {
 		select {
 		case e := <-c:
@@ -317,7 +317,7 @@ func collectDLog(c chan string) []string {
 
 func genFakeFSM(specPath ...string) *DeployFSMContext {
 	fsm := DeployFSMContext{
-		Deployment: &dbclient2.Deployment{
+		Deployment: &dbclient.Deployment{
 			BaseModel: dbengine.BaseModel{
 				ID: 100,
 			},
@@ -327,7 +327,7 @@ func genFakeFSM(specPath ...string) *DeployFSMContext {
 			ReleaseId: "xxx-yyy",
 			Operator:  "fake user",
 		},
-		Runtime: &dbclient2.Runtime{
+		Runtime: &dbclient.Runtime{
 			BaseModel: dbengine.BaseModel{
 				ID: 101,
 			},
@@ -336,7 +336,7 @@ func genFakeFSM(specPath ...string) *DeployFSMContext {
 			Workspace:     "DEV",
 			ClusterName:   "terminus-test",
 			ClusterId:     999,
-			ScheduleName:  dbclient2.ScheduleName{Namespace: "fake", Name: "schedule"},
+			ScheduleName:  dbclient.ScheduleName{Namespace: "fake", Name: "schedule"},
 			GitRepoAbbrev: "fake/runtime",
 		},
 		App: &apistructs.ApplicationDTO{
@@ -424,8 +424,8 @@ func Test_requestAddons(t *testing.T) {
 		d:          &log.DeployLogHelper{Bdl: bdl},
 		addon:      ad,
 		App:        &apistructs.ApplicationDTO{},
-		Deployment: &dbclient2.Deployment{},
-		Runtime:    &dbclient2.Runtime{},
+		Deployment: &dbclient.Deployment{},
+		Runtime:    &dbclient.Runtime{},
 		Spec:       &diceyml.Object{AddOns: map[string]*diceyml.AddOn{"empty-addon": nil}},
 	}
 	err := fsm.requestAddons()
@@ -439,8 +439,8 @@ func Test_genProjectNamespace(t *testing.T) {
 	fsm := DeployFSMContext{
 		d:          &log.DeployLogHelper{Bdl: bdl},
 		App:        &apistructs.ApplicationDTO{},
-		Deployment: &dbclient2.Deployment{},
-		Runtime:    &dbclient2.Runtime{},
+		Deployment: &dbclient.Deployment{},
+		Runtime:    &dbclient.Runtime{},
 		Spec:       &diceyml.Object{AddOns: map[string]*diceyml.AddOn{"empty-addon": nil}},
 	}
 	nsInfo := fsm.genProjectNamespace("111")

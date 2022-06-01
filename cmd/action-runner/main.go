@@ -24,7 +24,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	_ "github.com/erda-project/erda-infra/base/version"
-	actionrunner2 "github.com/erda-project/erda/modules/tools/pipeline/action-runner"
+	actionrunner "github.com/erda-project/erda/modules/tools/pipeline/action-runner"
 )
 
 var config = flag.String("config", "./config.json", "file path")
@@ -32,7 +32,7 @@ var config = flag.String("config", "./config.json", "file path")
 func main() {
 	flag.Parse()
 	conf := readConfig(*config)
-	runner := actionrunner2.New(conf)
+	runner := actionrunner.New(conf)
 	err := runner.Run()
 	if err != nil {
 		logrus.Error(err)
@@ -40,8 +40,8 @@ func main() {
 	}
 }
 
-func readConfig(path string) *actionrunner2.Conf {
-	var conf actionrunner2.Conf
+func readConfig(path string) *actionrunner.Conf {
+	var conf actionrunner.Conf
 	if len(path) > 0 {
 		byts, err := ioutil.ReadFile(path)
 		if err != nil {

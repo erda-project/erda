@@ -29,7 +29,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/tools/orchestrator/components/addon/mysql"
-	dbclient2 "github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
+	"github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/impl/servicegroup"
 	"github.com/erda-project/erda/modules/tools/orchestrator/services/log"
 	"github.com/erda-project/erda/modules/tools/orchestrator/services/resource"
@@ -248,7 +248,7 @@ func TestPreCheck(t *testing.T) {
 
 func TestAddon_basicAddonDeploy(t *testing.T) {
 	type fields struct {
-		db               *dbclient2.DBClient
+		db               *dbclient.DBClient
 		bdl              *bundle.Bundle
 		hc               *httpclient.HTTPClient
 		encrypt          *encryption.EnvEncrypt
@@ -258,8 +258,8 @@ func TestAddon_basicAddonDeploy(t *testing.T) {
 		serviceGroupImpl servicegroup.ServiceGroup
 	}
 	type args struct {
-		addonIns        *dbclient2.AddonInstance
-		addonInsRouting *dbclient2.AddonInstanceRouting
+		addonIns        *dbclient.AddonInstance
+		addonInsRouting *dbclient.AddonInstanceRouting
 		params          *apistructs.AddonHandlerCreateItem
 		addonSpec       *apistructs.AddonExtension
 		addonDice       *diceyml.Object
@@ -267,7 +267,7 @@ func TestAddon_basicAddonDeploy(t *testing.T) {
 	}
 
 	testfileds := fields{
-		db:               &dbclient2.DBClient{},
+		db:               &dbclient.DBClient{},
 		bdl:              &bundle.Bundle{},
 		hc:               &httpclient.HTTPClient{},
 		encrypt:          &encryption.EnvEncrypt{},
@@ -287,12 +287,12 @@ func TestAddon_basicAddonDeploy(t *testing.T) {
 			name:   "Test_01",
 			fields: testfileds,
 			args: args{
-				addonIns: &dbclient2.AddonInstance{
+				addonIns: &dbclient.AddonInstance{
 					ProjectID: "1",
 					OrgID:     "1",
 					Workspace: "DEV",
 				},
-				addonInsRouting: &dbclient2.AddonInstanceRouting{},
+				addonInsRouting: &dbclient.AddonInstanceRouting{},
 				params: &apistructs.AddonHandlerCreateItem{
 					InstanceName: "mysql",
 					OperatorID:   "2",
@@ -308,12 +308,12 @@ func TestAddon_basicAddonDeploy(t *testing.T) {
 			name:   "Test_02",
 			fields: testfileds,
 			args: args{
-				addonIns: &dbclient2.AddonInstance{
+				addonIns: &dbclient.AddonInstance{
 					ProjectID: "1",
 					OrgID:     "1",
 					Workspace: "DEV",
 				},
-				addonInsRouting: &dbclient2.AddonInstanceRouting{},
+				addonInsRouting: &dbclient.AddonInstanceRouting{},
 				params: &apistructs.AddonHandlerCreateItem{
 					InstanceName: "mysql",
 					OperatorID:   "2",
@@ -329,12 +329,12 @@ func TestAddon_basicAddonDeploy(t *testing.T) {
 			name:   "Test_03",
 			fields: testfileds,
 			args: args{
-				addonIns: &dbclient2.AddonInstance{
+				addonIns: &dbclient.AddonInstance{
 					ProjectID: "1",
 					OrgID:     "1",
 					Workspace: "DEV",
 				},
-				addonInsRouting: &dbclient2.AddonInstanceRouting{},
+				addonInsRouting: &dbclient.AddonInstanceRouting{},
 				params: &apistructs.AddonHandlerCreateItem{
 					InstanceName: "mysql",
 					OperatorID:   "2",
@@ -350,12 +350,12 @@ func TestAddon_basicAddonDeploy(t *testing.T) {
 			name:   "Test_04",
 			fields: testfileds,
 			args: args{
-				addonIns: &dbclient2.AddonInstance{
+				addonIns: &dbclient.AddonInstance{
 					ProjectID: "1",
 					OrgID:     "1",
 					Workspace: "DEV",
 				},
-				addonInsRouting: &dbclient2.AddonInstanceRouting{},
+				addonInsRouting: &dbclient.AddonInstanceRouting{},
 				params: &apistructs.AddonHandlerCreateItem{
 					InstanceName: "mysql",
 					OperatorID:   "2",
@@ -382,7 +382,7 @@ func TestAddon_basicAddonDeploy(t *testing.T) {
 
 				return true
 			})
-			patch2 := monkey.PatchInstanceMethod(reflect.TypeOf(a), "BuildAddonRequestGroup", func(a *Addon, params *apistructs.AddonHandlerCreateItem, addonIns *dbclient2.AddonInstance, addonSpec *apistructs.AddonExtension, addonDice *diceyml.Object) (*apistructs.ServiceGroupCreateV2Request, error) {
+			patch2 := monkey.PatchInstanceMethod(reflect.TypeOf(a), "BuildAddonRequestGroup", func(a *Addon, params *apistructs.AddonHandlerCreateItem, addonIns *dbclient.AddonInstance, addonSpec *apistructs.AddonExtension, addonDice *diceyml.Object) (*apistructs.ServiceGroupCreateV2Request, error) {
 
 				return &apistructs.ServiceGroupCreateV2Request{
 					ClusterName: "test",
@@ -391,13 +391,13 @@ func TestAddon_basicAddonDeploy(t *testing.T) {
 			patch3 := monkey.PatchInstanceMethod(reflect.TypeOf(a.serviceGroupImpl), "Create", func(_ *servicegroup.ServiceGroupImpl, sg apistructs.ServiceGroupCreateV2Request) (apistructs.ServiceGroup, error) {
 				return apistructs.ServiceGroup{}, nil
 			})
-			patch4 := monkey.PatchInstanceMethod(reflect.TypeOf(a), "GetAddonResourceStatus", func(a *Addon, addonIns *dbclient2.AddonInstance,
-				addonInsRouting *dbclient2.AddonInstanceRouting,
+			patch4 := monkey.PatchInstanceMethod(reflect.TypeOf(a), "GetAddonResourceStatus", func(a *Addon, addonIns *dbclient.AddonInstance,
+				addonInsRouting *dbclient.AddonInstanceRouting,
 				addonDice *diceyml.Object, addonSpec *apistructs.AddonExtension) error {
 
 				return nil
 			})
-			patch5 := monkey.PatchInstanceMethod(reflect.TypeOf(a), "InitMySQLAccount", func(a *Addon, addonIns *dbclient2.AddonInstance, addonInsRouting *dbclient2.AddonInstanceRouting, operator string) error {
+			patch5 := monkey.PatchInstanceMethod(reflect.TypeOf(a), "InitMySQLAccount", func(a *Addon, addonIns *dbclient.AddonInstance, addonInsRouting *dbclient.AddonInstanceRouting, operator string) error {
 
 				return nil
 			})
@@ -416,7 +416,7 @@ func TestAddon_basicAddonDeploy(t *testing.T) {
 
 func TestAddonInstanceRoutingList_GetByName(t *testing.T) {
 	var name = "dspo-mysql"
-	var list = []dbclient2.AddonInstanceRouting{
+	var list = []dbclient.AddonInstanceRouting{
 		{Name: name, Category: "database"},
 		{Name: name, Category: apistructs.CUSTOM_TYPE_CUSTOM},
 		{Name: name, Category: apistructs.CUSTOM_TYPE_CLOUD},
@@ -439,7 +439,7 @@ func TestAddonInstanceRoutingList_GetByTag(t *testing.T) {
 		name = "dspo-mysql"
 		tag  = "basic"
 	)
-	var list = []dbclient2.AddonInstanceRouting{
+	var list = []dbclient.AddonInstanceRouting{
 		{Name: name, Category: "database", Tag: tag},
 		{Name: name, Category: apistructs.CUSTOM_TYPE_CUSTOM, Tag: tag},
 	}

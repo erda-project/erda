@@ -30,14 +30,14 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	dbclient2 "github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
+	"github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/pkg/kms/kmstypes"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
 // CommonDeployStatus 通用addon状态拉取
-func (a *Addon) CommonDeployStatus(addonIns *dbclient2.AddonInstance, serviceGroup *apistructs.ServiceGroup,
+func (a *Addon) CommonDeployStatus(addonIns *dbclient.AddonInstance, serviceGroup *apistructs.ServiceGroup,
 	addonDice *diceyml.Object, addonSpec *apistructs.AddonExtension) (map[string]string, error) {
 	configMap := map[string]string{}
 	if len(addonSpec.ConfigVars) == 0 {
@@ -67,7 +67,7 @@ func (a *Addon) CommonDeployStatus(addonIns *dbclient2.AddonInstance, serviceGro
 }
 
 // MySQLDeployStatus myql状态拉取，以及后续环境变量处理
-func (a *Addon) MySQLDeployStatus(addonIns *dbclient2.AddonInstance, serviceGroup *apistructs.ServiceGroup,
+func (a *Addon) MySQLDeployStatus(addonIns *dbclient.AddonInstance, serviceGroup *apistructs.ServiceGroup,
 	clusterInfo *apistructs.ClusterInfoData) (map[string]string, error) {
 	configMap := map[string]string{}
 	// 获取
@@ -156,7 +156,7 @@ func (a *Addon) MySQLDeployStatus(addonIns *dbclient2.AddonInstance, serviceGrou
 }
 
 // CanalDeployStatus canal状态拉取
-func (a *Addon) CanalDeployStatus(addonIns *dbclient2.AddonInstance, serviceGroup *apistructs.ServiceGroup) (map[string]string, error) {
+func (a *Addon) CanalDeployStatus(addonIns *dbclient.AddonInstance, serviceGroup *apistructs.ServiceGroup) (map[string]string, error) {
 	configMap := map[string]string{}
 	for _, valueItem := range serviceGroup.Dice.Services {
 		configMap[apistructs.AddonCanalHostName] = valueItem.Vip
@@ -167,7 +167,7 @@ func (a *Addon) CanalDeployStatus(addonIns *dbclient2.AddonInstance, serviceGrou
 }
 
 // EsDeployStatus es状态拉取
-func (a *Addon) EsDeployStatus(addonIns *dbclient2.AddonInstance, serviceGroup *apistructs.ServiceGroup) (map[string]string, error) {
+func (a *Addon) EsDeployStatus(addonIns *dbclient.AddonInstance, serviceGroup *apistructs.ServiceGroup) (map[string]string, error) {
 	configMap := map[string]string{}
 	password, _ := a.db.GetByInstanceIDAndField(addonIns.ID, apistructs.AddonESPasswordKey)
 
@@ -186,7 +186,7 @@ func (a *Addon) EsDeployStatus(addonIns *dbclient2.AddonInstance, serviceGroup *
 }
 
 // KafkaDeployStatus kafka状态拉取
-func (a *Addon) KafkaDeployStatus(addonIns *dbclient2.AddonInstance, serviceGroup *apistructs.ServiceGroup, clusterInfo *apistructs.ClusterInfoData) (map[string]string, error) {
+func (a *Addon) KafkaDeployStatus(addonIns *dbclient.AddonInstance, serviceGroup *apistructs.ServiceGroup, clusterInfo *apistructs.ClusterInfoData) (map[string]string, error) {
 	configMap := map[string]string{}
 	var kafkaHost []string
 	for index, value := range serviceGroup.Services {
@@ -219,7 +219,7 @@ func (a *Addon) KafkaDeployStatus(addonIns *dbclient2.AddonInstance, serviceGrou
 }
 
 // RocketDeployStatus rocket状态拉取
-func (a *Addon) RocketDeployStatus(addonIns *dbclient2.AddonInstance, serviceGroup *apistructs.ServiceGroup) (map[string]string, error) {
+func (a *Addon) RocketDeployStatus(addonIns *dbclient.AddonInstance, serviceGroup *apistructs.ServiceGroup) (map[string]string, error) {
 	configMap := map[string]string{}
 	i := 1
 	var mqServerAddress []string
@@ -248,7 +248,7 @@ func (a *Addon) RocketDeployStatus(addonIns *dbclient2.AddonInstance, serviceGro
 }
 
 // RabbitmqDeployStatus rabbitmq状态拉取
-func (a *Addon) RabbitmqDeployStatus(addonIns *dbclient2.AddonInstance, serviceGroup *apistructs.ServiceGroup) (map[string]string, error) {
+func (a *Addon) RabbitmqDeployStatus(addonIns *dbclient.AddonInstance, serviceGroup *apistructs.ServiceGroup) (map[string]string, error) {
 	configMap := map[string]string{}
 	i := 1
 
@@ -277,7 +277,7 @@ func (a *Addon) RabbitmqDeployStatus(addonIns *dbclient2.AddonInstance, serviceG
 }
 
 // RedisDeployStatus redis状态拉取
-func (a *Addon) RedisDeployStatus(addonIns *dbclient2.AddonInstance, serviceGroup *apistructs.ServiceGroup) (map[string]string, error) {
+func (a *Addon) RedisDeployStatus(addonIns *dbclient.AddonInstance, serviceGroup *apistructs.ServiceGroup) (map[string]string, error) {
 	logrus.Info("redis环境变量提取。")
 	configMap := map[string]string{}
 	password, err := a.db.GetByInstanceIDAndField(addonIns.ID, apistructs.AddonRedisPasswordKey)
@@ -308,7 +308,7 @@ func (a *Addon) RedisDeployStatus(addonIns *dbclient2.AddonInstance, serviceGrou
 }
 
 // ZookeeperDeployStatus zk状态拉取
-func (a *Addon) ZookeeperDeployStatus(addonIns *dbclient2.AddonInstance, serviceGroup *apistructs.ServiceGroup) (map[string]string, error) {
+func (a *Addon) ZookeeperDeployStatus(addonIns *dbclient.AddonInstance, serviceGroup *apistructs.ServiceGroup) (map[string]string, error) {
 	configMap := map[string]string{}
 	var zkHost []string
 	for index, value := range serviceGroup.Services {
@@ -329,7 +329,7 @@ func (a *Addon) ZookeeperDeployStatus(addonIns *dbclient2.AddonInstance, service
 }
 
 // ApacheZookeeperDeployStatus zk状态拉取
-func (a *Addon) ApacheZookeeperDeployStatus(addonIns *dbclient2.AddonInstance, serviceGroup *apistructs.ServiceGroup) (map[string]string, error) {
+func (a *Addon) ApacheZookeeperDeployStatus(addonIns *dbclient.AddonInstance, serviceGroup *apistructs.ServiceGroup) (map[string]string, error) {
 	configMap := map[string]string{}
 	var zkHost []string
 	for index, value := range serviceGroup.Services {
@@ -350,7 +350,7 @@ func (a *Addon) ApacheZookeeperDeployStatus(addonIns *dbclient2.AddonInstance, s
 }
 
 // ConsulDeployStatus consul状态拉取
-func (a *Addon) ConsulDeployStatus(addonIns *dbclient2.AddonInstance, serviceGroup *apistructs.ServiceGroup) (map[string]string, error) {
+func (a *Addon) ConsulDeployStatus(addonIns *dbclient.AddonInstance, serviceGroup *apistructs.ServiceGroup) (map[string]string, error) {
 	configMap := map[string]string{}
 	i := 1
 	consulServices := make([]string, 0, len(serviceGroup.Services))
@@ -370,7 +370,7 @@ func (a *Addon) ConsulDeployStatus(addonIns *dbclient2.AddonInstance, serviceGro
 }
 
 // buildZookeeperServiceItem 构造zookeeper的service信息
-func (a *Addon) BuildZookeeperServiceItem(params *apistructs.AddonHandlerCreateItem, addonIns *dbclient2.AddonInstance,
+func (a *Addon) BuildZookeeperServiceItem(params *apistructs.AddonHandlerCreateItem, addonIns *dbclient.AddonInstance,
 	addonSpec *apistructs.AddonExtension, addonDice *diceyml.Object, clusterInfo *apistructs.ClusterInfoData) error {
 
 	addonDeployPlan := addonSpec.Plan[params.Plan]
@@ -448,7 +448,7 @@ func (a *Addon) BuildZookeeperServiceItem(params *apistructs.AddonHandlerCreateI
 }
 
 // BuildRealZkServiceItem 构造zookeeper的service信息
-func (a *Addon) BuildRealZkServiceItem(params *apistructs.AddonHandlerCreateItem, addonIns *dbclient2.AddonInstance,
+func (a *Addon) BuildRealZkServiceItem(params *apistructs.AddonHandlerCreateItem, addonIns *dbclient.AddonInstance,
 	addonSpec *apistructs.AddonExtension, addonDice *diceyml.Object, clusterInfo *apistructs.ClusterInfoData) error {
 
 	addonDeployPlan := addonSpec.Plan[params.Plan]
@@ -523,7 +523,7 @@ func (a *Addon) BuildRealZkServiceItem(params *apistructs.AddonHandlerCreateItem
 }
 
 // buildConsulServiceItem 构造consul的service信息
-func (a *Addon) BuildConsulServiceItem(params *apistructs.AddonHandlerCreateItem, addonIns *dbclient2.AddonInstance,
+func (a *Addon) BuildConsulServiceItem(params *apistructs.AddonHandlerCreateItem, addonIns *dbclient.AddonInstance,
 	addonSpec *apistructs.AddonExtension, addonDice *diceyml.Object, clusterInfo *apistructs.ClusterInfoData) error {
 	if len(params.Options) < 0 || params.Options["canal.instance.master.address"] != "" || params.Options["canal.instance.dbUsername"] != "" ||
 		params.Options["canal.instance.dbPassword"] != "" {
@@ -558,7 +558,7 @@ func (a *Addon) BuildConsulServiceItem(params *apistructs.AddonHandlerCreateItem
 }
 
 // buildEsServiceItem 构造es的service信息
-func (a *Addon) BuildEsServiceItem(params *apistructs.AddonHandlerCreateItem, addonIns *dbclient2.AddonInstance,
+func (a *Addon) BuildEsServiceItem(params *apistructs.AddonHandlerCreateItem, addonIns *dbclient.AddonInstance,
 	addonSpec *apistructs.AddonExtension, addonDice *diceyml.Object, clusterInfo *apistructs.ClusterInfoData) error {
 
 	addonDeployPlan := addonSpec.Plan[params.Plan]
@@ -616,7 +616,7 @@ func (a *Addon) BuildEsServiceItem(params *apistructs.AddonHandlerCreateItem, ad
 }
 
 // buildKafkaServiceItem 构造kafka的service信息
-func (a *Addon) BuildKafkaServiceItem(params *apistructs.AddonHandlerCreateItem, addonIns *dbclient2.AddonInstance,
+func (a *Addon) BuildKafkaServiceItem(params *apistructs.AddonHandlerCreateItem, addonIns *dbclient.AddonInstance,
 	addonSpec *apistructs.AddonExtension, addonDice *diceyml.Object, clusterInfo *apistructs.ClusterInfoData) error {
 
 	addonDeployPlan := addonSpec.Plan[params.Plan]
@@ -658,7 +658,7 @@ func (a *Addon) BuildKafkaServiceItem(params *apistructs.AddonHandlerCreateItem,
 		return errors.New("没有找到zk信息")
 	}
 	kafkaZkConn := strings.Join(zkHosts, "/"+addonIns.ID+",") + "/" + addonIns.ID
-	if err := a.db.CreateAddonInstanceExtra(&dbclient2.AddonInstanceExtra{
+	if err := a.db.CreateAddonInstanceExtra(&dbclient.AddonInstanceExtra{
 		ID:         a.getRandomId(),
 		CreatedAt:  time.Now(),
 		UpdatedAt:  time.Now(),
@@ -748,7 +748,7 @@ func (a *Addon) BuildKafkaServiceItem(params *apistructs.AddonHandlerCreateItem,
 	return nil
 }
 
-func (a *Addon) BuildRocketMqServiceItem(params *apistructs.AddonHandlerCreateItem, addonIns *dbclient2.AddonInstance,
+func (a *Addon) BuildRocketMqServiceItem(params *apistructs.AddonHandlerCreateItem, addonIns *dbclient.AddonInstance,
 	addonSpec *apistructs.AddonExtension, addonDice *diceyml.Object, clusterInfo *apistructs.ClusterInfoData) error {
 
 	addonDeployPlan := addonSpec.Plan[params.Plan]
@@ -908,7 +908,7 @@ func (a *Addon) BuildRocketMqServiceItem(params *apistructs.AddonHandlerCreateIt
 }
 
 // buildMysqlServiceItem 构造mysql的service信息
-func (a *Addon) BuildMysqlServiceItem(params *apistructs.AddonHandlerCreateItem, addonIns *dbclient2.AddonInstance,
+func (a *Addon) BuildMysqlServiceItem(params *apistructs.AddonHandlerCreateItem, addonIns *dbclient.AddonInstance,
 	addonSpec *apistructs.AddonExtension, addonDice *diceyml.Object, clusterInfo *apistructs.ClusterInfoData) error {
 	addonDeployPlan := addonSpec.Plan[params.Plan]
 	serviceMap := diceyml.Services{}
@@ -966,7 +966,7 @@ func (a *Addon) BuildMysqlServiceItem(params *apistructs.AddonHandlerCreateItem,
 		// 保存mysql的master节点信息
 		serviceNameItem := strings.Join([]string{addonSpec.Name, strconv.Itoa(i)}, "-")
 		if i == 1 {
-			addonInstanceExtra := dbclient2.AddonInstanceExtra{
+			addonInstanceExtra := dbclient.AddonInstanceExtra{
 				ID:         a.getRandomId(),
 				InstanceID: addonIns.ID,
 				Field:      apistructs.AddonMysqlMasterKey,
@@ -998,7 +998,7 @@ func (a *Addon) deepCopy(dst, src interface{}) error {
 	return gob.NewDecoder(bytes.NewBuffer(buf.Bytes())).Decode(dst)
 }
 
-func (a *Addon) BuildESOperatorServiceItem(options map[string]string, addonIns *dbclient2.AddonInstance, addonDice *diceyml.Object, version string) error {
+func (a *Addon) BuildESOperatorServiceItem(options map[string]string, addonIns *dbclient.AddonInstance, addonDice *diceyml.Object, version string) error {
 	// 设置密码
 	password, err := a.savePassword(addonIns, apistructs.AddonESPasswordKey)
 	if err != nil {
@@ -1033,7 +1033,7 @@ func (a *Addon) BuildESOperatorServiceItem(options map[string]string, addonIns *
 }
 
 // buildMysqlOperatorServiceItem 生成operator发布的格式
-func (a *Addon) BuildMysqlOperatorServiceItem(options map[string]string, addonIns *dbclient2.AddonInstance, addonDice *diceyml.Object, clusterInfo *apistructs.ClusterInfoData) error {
+func (a *Addon) BuildMysqlOperatorServiceItem(options map[string]string, addonIns *dbclient.AddonInstance, addonDice *diceyml.Object, clusterInfo *apistructs.ClusterInfoData) error {
 	// 设置密码
 	password, err := a.savePassword(addonIns, apistructs.AddonMysqlPasswordKey)
 	if err != nil {
@@ -1060,7 +1060,7 @@ func (a *Addon) BuildMysqlOperatorServiceItem(options map[string]string, addonIn
 		vol01 := SetAddonVolumes(options, "/for-operator", false)
 		v.Volumes = diceyml.Volumes{vol01}
 
-		addonInstanceExtra := dbclient2.AddonInstanceExtra{
+		addonInstanceExtra := dbclient.AddonInstanceExtra{
 			ID:         a.getRandomId(),
 			InstanceID: addonIns.ID,
 			Field:      apistructs.AddonMysqlMasterKey,
@@ -1076,7 +1076,7 @@ func (a *Addon) BuildMysqlOperatorServiceItem(options map[string]string, addonIn
 }
 
 // buildRedisServiceItem 构造redis的service信息
-func (a *Addon) BuildRedisServiceItem(params *apistructs.AddonHandlerCreateItem, addonIns *dbclient2.AddonInstance,
+func (a *Addon) BuildRedisServiceItem(params *apistructs.AddonHandlerCreateItem, addonIns *dbclient.AddonInstance,
 	addonSpec *apistructs.AddonExtension, addonDice *diceyml.Object) error {
 	addonDeployPlan := addonSpec.Plan[params.Plan]
 	serviceMap := diceyml.Services{}
@@ -1170,7 +1170,7 @@ func (a *Addon) BuildRedisServiceItem(params *apistructs.AddonHandlerCreateItem,
 }
 
 // buildRedisOperatorServiceItem redis operator build service item
-func (a *Addon) BuildRedisOperatorServiceItem(options map[string]string, addonIns *dbclient2.AddonInstance, addonDice *diceyml.Object) error {
+func (a *Addon) BuildRedisOperatorServiceItem(options map[string]string, addonIns *dbclient.AddonInstance, addonDice *diceyml.Object) error {
 	// 设置密码
 	password, err := a.savePassword(addonIns, apistructs.AddonRedisPasswordKey)
 	if err != nil {
@@ -1196,7 +1196,7 @@ func (a *Addon) BuildRedisOperatorServiceItem(options map[string]string, addonIn
 	return nil
 }
 
-func (a *Addon) guessCanalAddr(instanceroutings []dbclient2.AddonInstanceRouting, instances []dbclient2.AddonInstance) map[string]string {
+func (a *Addon) guessCanalAddr(instanceroutings []dbclient.AddonInstanceRouting, instances []dbclient.AddonInstance) map[string]string {
 	for _, routing := range instanceroutings {
 		var (
 			address    string
@@ -1298,7 +1298,7 @@ func (a *Addon) guessCanalAddr(instanceroutings []dbclient2.AddonInstanceRouting
 }
 
 // buildCanalServiceItem 构造canal的service信息
-func (a *Addon) BuildCanalServiceItem(params *apistructs.AddonHandlerCreateItem, addonIns *dbclient2.AddonInstance,
+func (a *Addon) BuildCanalServiceItem(params *apistructs.AddonHandlerCreateItem, addonIns *dbclient.AddonInstance,
 	addonSpec *apistructs.AddonExtension, addonDice *diceyml.Object) error {
 	if params.Options != nil && params.Options["mysql"] != "" {
 		idorname := params.Options["mysql"]
@@ -1316,7 +1316,7 @@ func (a *Addon) BuildCanalServiceItem(params *apistructs.AddonHandlerCreateItem,
 			if err != nil {
 				return err
 			}
-			options := a.guessCanalAddr([]dbclient2.AddonInstanceRouting{*routing}, []dbclient2.AddonInstance{*ins})
+			options := a.guessCanalAddr([]dbclient.AddonInstanceRouting{*routing}, []dbclient.AddonInstance{*ins})
 			if len(options) == 0 {
 				return fmt.Errorf("未找到配置的 mysql 信息")
 			}
@@ -1339,7 +1339,7 @@ func (a *Addon) BuildCanalServiceItem(params *apistructs.AddonHandlerCreateItem,
 						continue
 					}
 					routing := (*routings)[0]
-					options := a.guessCanalAddr([]dbclient2.AddonInstanceRouting{routing}, []dbclient2.AddonInstance{addon})
+					options := a.guessCanalAddr([]dbclient.AddonInstanceRouting{routing}, []dbclient.AddonInstance{addon})
 					if len(options) == 0 {
 						continue
 					}
@@ -1426,7 +1426,7 @@ func (a *Addon) BuildCanalServiceItem(params *apistructs.AddonHandlerCreateItem,
 }
 
 // BuildRabbitmqServiceItem 构造rabbitmq的service信息
-func (a *Addon) BuildRabbitmqServiceItem(params *apistructs.AddonHandlerCreateItem, addonIns *dbclient2.AddonInstance,
+func (a *Addon) BuildRabbitmqServiceItem(params *apistructs.AddonHandlerCreateItem, addonIns *dbclient.AddonInstance,
 	addonSpec *apistructs.AddonExtension, addonDice *diceyml.Object) error {
 	cc, err := json.Marshal(*addonSpec)
 	if err != nil {
@@ -1500,7 +1500,7 @@ func (a *Addon) BuildRabbitmqServiceItem(params *apistructs.AddonHandlerCreateIt
 }
 
 // BuildCommonServiceItem 构造标准化的addon发布service body
-func (a *Addon) BuildCommonServiceItem(params *apistructs.AddonHandlerCreateItem, addonIns *dbclient2.AddonInstance,
+func (a *Addon) BuildCommonServiceItem(params *apistructs.AddonHandlerCreateItem, addonIns *dbclient.AddonInstance,
 	addonSpec *apistructs.AddonExtension, addonDice *diceyml.Object, clusterInfo *apistructs.ClusterInfoData) error {
 
 	// 获取inside addon信息
@@ -1591,7 +1591,7 @@ func (a *Addon) DecryptPassword(kmskey *string, password string) (string, error)
 }
 
 // savePassword 保存密码
-func (a *Addon) savePassword(addonIns *dbclient2.AddonInstance, key string) (string, error) {
+func (a *Addon) savePassword(addonIns *dbclient.AddonInstance, key string) (string, error) {
 	password := random.String(16)
 
 	// encrypt
@@ -1605,7 +1605,7 @@ func (a *Addon) savePassword(addonIns *dbclient2.AddonInstance, key string) (str
 		return "", err
 	}
 	// 保存password信息
-	addonInstanceExtra := dbclient2.AddonInstanceExtra{
+	addonInstanceExtra := dbclient.AddonInstanceExtra{
 		ID:         a.getRandomId(),
 		InstanceID: addonIns.ID,
 		Field:      key,

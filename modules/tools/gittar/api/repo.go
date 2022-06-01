@@ -31,9 +31,9 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/tools/gittar/conf"
-	helper2 "github.com/erda-project/erda/modules/tools/gittar/helper"
-	models2 "github.com/erda-project/erda/modules/tools/gittar/models"
-	gitmodule2 "github.com/erda-project/erda/modules/tools/gittar/pkg/gitmodule"
+	"github.com/erda-project/erda/modules/tools/gittar/helper"
+	"github.com/erda-project/erda/modules/tools/gittar/models"
+	"github.com/erda-project/erda/modules/tools/gittar/pkg/gitmodule"
 	"github.com/erda-project/erda/modules/tools/gittar/pkg/gitmodule/tool"
 	"github.com/erda-project/erda/modules/tools/gittar/pkg/util"
 	"github.com/erda-project/erda/modules/tools/gittar/webcontext"
@@ -90,7 +90,7 @@ func GetRepoBranches(context *webcontext.Context) {
 		context.Abort(errors.New("branch error"))
 	} else {
 
-		b := gitmodule2.Branches(branches)
+		b := gitmodule.Branches(branches)
 		sort.Sort(b)
 		context.Success(b)
 	}
@@ -140,15 +140,15 @@ func CreateRepoBranch(context *webcontext.Context) {
 		context.Abort(err)
 		return
 	}
-	pushEvent := &models2.PayloadPushEvent{
+	pushEvent := &models.PayloadPushEvent{
 		IsTag:    false,
-		Ref:      gitmodule2.BRANCH_PREFIX + request.Name,
+		Ref:      gitmodule.BRANCH_PREFIX + request.Name,
 		After:    commit.ID,
-		Before:   gitmodule2.INIT_COMMIT_ID,
+		Before:   gitmodule.INIT_COMMIT_ID,
 		IsDelete: false,
 		Pusher:   context.User,
 	}
-	go helper2.PostReceiveHook([]*models2.PayloadPushEvent{pushEvent}, context)
+	go helper.PostReceiveHook([]*models.PayloadPushEvent{pushEvent}, context)
 	context.Success("")
 }
 
@@ -205,15 +205,15 @@ func DeleteRepoBranch(context *webcontext.Context) {
 		return
 	}
 
-	pushEvent := &models2.PayloadPushEvent{
+	pushEvent := &models.PayloadPushEvent{
 		IsTag:    false,
-		Ref:      gitmodule2.BRANCH_PREFIX + branch,
-		After:    gitmodule2.INIT_COMMIT_ID,
+		Ref:      gitmodule.BRANCH_PREFIX + branch,
+		After:    gitmodule.INIT_COMMIT_ID,
 		Before:   commit.ID,
 		IsDelete: false,
 		Pusher:   context.User,
 	}
-	go helper2.PostReceiveHook([]*models2.PayloadPushEvent{pushEvent}, context)
+	go helper.PostReceiveHook([]*models.PayloadPushEvent{pushEvent}, context)
 
 	go func() {
 		repo := context.Repository
@@ -254,7 +254,7 @@ func GetRepoTags(context *webcontext.Context) {
 
 // CreateRepoTag 创建tag
 func CreateRepoTag(context *webcontext.Context) {
-	if err := context.CheckPermission(models2.PermissionCreateTAG); err != nil {
+	if err := context.CheckPermission(models.PermissionCreateTAG); err != nil {
 		context.Abort(err)
 		return
 	}
@@ -276,8 +276,8 @@ func CreateRepoTag(context *webcontext.Context) {
 
 // DeleteRepoTag 删除tag
 func DeleteRepoTag(context *webcontext.Context) {
-	if err := context.CheckPermission(models2.PermissionDeleteTAG); err != nil {
-		context.Abort(models2.NO_PERMISSION_ERROR)
+	if err := context.CheckPermission(models.PermissionDeleteTAG); err != nil {
+		context.Abort(models.NO_PERMISSION_ERROR)
 		return
 	}
 	tag := context.Param("*")
@@ -360,7 +360,7 @@ func Commit(ctx *webcontext.Context) {
 		return
 	}
 
-	var oldCommit *gitmodule2.Commit
+	var oldCommit *gitmodule.Commit
 	if len(newCommit.Parents) == 0 {
 		oldCommit = nil
 	} else {
@@ -432,7 +432,7 @@ func Compare(ctx *webcontext.Context) {
 		return
 	}
 
-	var commitFrom *gitmodule2.Commit
+	var commitFrom *gitmodule.Commit
 	matchEmpty, _ := regexp.MatchString("^0+$", commits[0])
 	if matchEmpty {
 		commitFrom = nil
@@ -450,7 +450,7 @@ func Compare(ctx *webcontext.Context) {
 		return
 	}
 
-	var diff *gitmodule2.Diff
+	var diff *gitmodule.Diff
 	if !isCommit {
 		diff, err = ctx.Repository.GetDiff(commitFrom, baseCommit)
 		if err != nil {
@@ -617,13 +617,13 @@ func GetRepoBlob(context *webcontext.Context) {
 			if lineCount < to {
 				to = lineCount
 			}
-			result := []gitmodule2.DiffLine{}
+			result := []gitmodule.DiffLine{}
 
 			//底部展开 或者 显示声明unfold=false.不添加diff header
 			if unfold && !bottom {
-				result = append(result, gitmodule2.DiffLine{
+				result = append(result, gitmodule.DiffLine{
 					Content:   matchLine,
-					Type:      gitmodule2.DIFF_LINE_SECTION,
+					Type:      gitmodule.DIFF_LINE_SECTION,
 					NewLineNo: -1,
 					OldLineNo: -1,
 				})
@@ -631,9 +631,9 @@ func GetRepoBlob(context *webcontext.Context) {
 
 			for i := since; i <= to; i++ {
 				line := allTextLines[i-1]
-				result = append(result, gitmodule2.DiffLine{
+				result = append(result, gitmodule.DiffLine{
 					Content:   line,
-					Type:      gitmodule2.DIFF_LINE_CONTEXT,
+					Type:      gitmodule.DIFF_LINE_CONTEXT,
 					NewLineNo: i,
 					OldLineNo: i - offset,
 				})
@@ -641,9 +641,9 @@ func GetRepoBlob(context *webcontext.Context) {
 
 			//底部展开条,有额外内容才显示
 			if bottom && lineCount > to {
-				result = append(result, gitmodule2.DiffLine{
+				result = append(result, gitmodule.DiffLine{
 					Content:   "",
-					Type:      gitmodule2.DIFF_LINE_SECTION,
+					Type:      gitmodule.DIFF_LINE_SECTION,
 					NewLineNo: -1,
 					OldLineNo: -1,
 				})
@@ -680,7 +680,7 @@ func GetRepoBlob(context *webcontext.Context) {
 func CreateCommit(context *webcontext.Context) {
 	util.HandleRequest(context.HttpRequest())
 
-	if err := context.CheckPermission(models2.PermissionPush); err != nil {
+	if err := context.CheckPermission(models.PermissionPush); err != nil {
 		context.Abort(err)
 		return
 	}
@@ -696,7 +696,7 @@ func CreateCommit(context *webcontext.Context) {
 		return
 	}
 
-	var createCommitRequest gitmodule2.CreateCommit
+	var createCommitRequest gitmodule.CreateCommit
 	if err = context.BindJSON(&createCommitRequest); err != nil {
 		context.Abort(err)
 		return
@@ -712,7 +712,7 @@ func CreateCommit(context *webcontext.Context) {
 		return
 	}
 
-	beforeCommitID := gitmodule2.INIT_COMMIT_ID
+	beforeCommitID := gitmodule.INIT_COMMIT_ID
 	beforeCommit, err := context.Repository.GetBranchCommit(createCommitRequest.Branch)
 	if err == nil {
 		beforeCommitID = beforeCommit.ID
@@ -725,14 +725,14 @@ func CreateCommit(context *webcontext.Context) {
 		return
 	}
 
-	pushEvent := &models2.PayloadPushEvent{
+	pushEvent := &models.PayloadPushEvent{
 		Before: beforeCommitID,
 		After:  commit.ID,
-		Ref:    gitmodule2.BRANCH_PREFIX + createCommitRequest.Branch,
+		Ref:    gitmodule.BRANCH_PREFIX + createCommitRequest.Branch,
 		IsTag:  false,
-		Pusher: context.MustGet("user").(*models2.User),
+		Pusher: context.MustGet("user").(*models.User),
 	}
-	go helper2.PostReceiveHook([]*models2.PayloadPushEvent{pushEvent}, context)
+	go helper.PostReceiveHook([]*models.PayloadPushEvent{pushEvent}, context)
 
 	context.Success(Map{
 		"commit": commit,
@@ -959,7 +959,7 @@ func GetRepoTree(context *webcontext.Context) {
 				}
 
 				context.Success(Map{
-					"type":       gitmodule2.OBJECT_TREE,
+					"type":       gitmodule.OBJECT_TREE,
 					"refName":    refName,
 					"path":       repository.TreePath,
 					"binary":     false,
@@ -998,7 +998,7 @@ func GetRepoTree(context *webcontext.Context) {
 			}
 
 			context.Success(Map{
-				"type":    gitmodule2.OBJECT_BLOB,
+				"type":    gitmodule.OBJECT_BLOB,
 				"refName": refName,
 				"path":    repository.TreePath,
 				"binary":  !isTextFile,
@@ -1104,5 +1104,5 @@ func GetArchive(ctx *webcontext.Context) {
 		ctx.AbortWithString(404, "ref not found "+ref)
 		return
 	}
-	helper2.RunArchive(ctx, ref, format)
+	helper.RunArchive(ctx, ref, format)
 }

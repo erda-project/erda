@@ -27,7 +27,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/tools/orchestrator/conf"
-	dbclient2 "github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
+	"github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/tools/orchestrator/i18n"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/mysqlhelper"
@@ -36,8 +36,8 @@ import (
 )
 
 // GetAddonResourceStatus 从scheduler获取addon发布状态
-func (a *Addon) GetAddonResourceStatus(addonIns *dbclient2.AddonInstance,
-	addonInsRouting *dbclient2.AddonInstanceRouting,
+func (a *Addon) GetAddonResourceStatus(addonIns *dbclient.AddonInstance,
+	addonInsRouting *dbclient.AddonInstanceRouting,
 	addonDice *diceyml.Object, addonSpec *apistructs.AddonExtension) error {
 	startTime := time.Now().Unix()
 	for {
@@ -270,7 +270,7 @@ func (a *Addon) checkMysqlHa(serviceGroup *apistructs.ServiceGroup, masterName, 
 
 // createDBs mysql 创建数据库
 func (a *Addon) createDBs(serviceGroup *apistructs.ServiceGroup, existsMysqlExec *apistructs.ExistsMysqlExec,
-	addonIns *dbclient2.AddonInstance, masterName, password string, clusterInfo *apistructs.ClusterInfoData) ([]string, error) {
+	addonIns *dbclient.AddonInstance, masterName, password string, clusterInfo *apistructs.ClusterInfoData) ([]string, error) {
 
 	// create_dbs从options里面取出来
 	var dbNamesStr string
@@ -344,7 +344,7 @@ func (a *Addon) createDBs(serviceGroup *apistructs.ServiceGroup, existsMysqlExec
 // initSqlFile 初始化init.sql
 // Deprecated
 func (a *Addon) initSqlFile(serviceGroup *apistructs.ServiceGroup, existsMysqlExec *apistructs.ExistsMysqlExec,
-	addonIns *dbclient2.AddonInstance, createDbs []string, masterName, password string, clusterInfo *apistructs.ClusterInfoData) error {
+	addonIns *dbclient.AddonInstance, createDbs []string, masterName, password string, clusterInfo *apistructs.ClusterInfoData) error {
 	if createDbs == nil || len(createDbs) <= 0 {
 		return nil
 	}
@@ -402,7 +402,7 @@ func (a *Addon) initSqlFile(serviceGroup *apistructs.ServiceGroup, existsMysqlEx
 }
 
 // BuildAddonRequestGroup build请求serviceGroup的body信息
-func (a *Addon) BuildAddonRequestGroup(params *apistructs.AddonHandlerCreateItem, addonIns *dbclient2.AddonInstance, addonSpec *apistructs.AddonExtension, addonDice *diceyml.Object) (*apistructs.ServiceGroupCreateV2Request, error) {
+func (a *Addon) BuildAddonRequestGroup(params *apistructs.AddonHandlerCreateItem, addonIns *dbclient.AddonInstance, addonSpec *apistructs.AddonExtension, addonDice *diceyml.Object) (*apistructs.ServiceGroupCreateV2Request, error) {
 	addonDeployGroup := apistructs.ServiceGroupCreateV2Request{
 		ClusterName: params.ClusterName,
 		ID:          addonIns.ID,
@@ -549,7 +549,7 @@ func (a *Addon) BuildAddonRequestGroup(params *apistructs.AddonHandlerCreateItem
 				replica = v.Deployments.Replicas
 			}
 			for i := 0; i < replica; i++ {
-				a.db.CreateAddonNode(&dbclient2.AddonNode{
+				a.db.CreateAddonNode(&dbclient.AddonNode{
 					ID:         a.getRandomId(),
 					InstanceID: addonIns.ID,
 					Namespace:  addonIns.Namespace,
@@ -575,7 +575,7 @@ func (a *Addon) BuildAddonRequestGroup(params *apistructs.AddonHandlerCreateItem
 }
 
 // BuildAddonScaleRequestGroup build请求serviceGroup的body信息
-func (a *Addon) BuildAddonScaleRequestGroup(params *apistructs.AddonHandlerCreateItem, addonIns *dbclient2.AddonInstance, scaleAction string, addonSpec *apistructs.AddonExtension, addonDice *diceyml.Object) (*apistructs.ServiceGroup, error) {
+func (a *Addon) BuildAddonScaleRequestGroup(params *apistructs.AddonHandlerCreateItem, addonIns *dbclient.AddonInstance, scaleAction string, addonSpec *apistructs.AddonExtension, addonDice *diceyml.Object) (*apistructs.ServiceGroup, error) {
 	addonDeploysg := apistructs.ServiceGroup{
 		ClusterName: params.ClusterName,
 		Dice: apistructs.Dice{
@@ -638,7 +638,7 @@ func mysqlPreProcess(params *apistructs.AddonHandlerCreateItem, addonSpec *apist
 }
 
 // FailAndDelete addon发布失败后，更新表状态
-func (a *Addon) FailAndDelete(addonIns *dbclient2.AddonInstance) error {
+func (a *Addon) FailAndDelete(addonIns *dbclient.AddonInstance) error {
 	// 如果失败了，及时删除addon信息
 	if err := a.UpdateAddonStatus(addonIns, apistructs.AddonAttachFail); err != nil {
 		return err
@@ -666,7 +666,7 @@ func (a *Addon) FailAndDelete(addonIns *dbclient2.AddonInstance) error {
 
 // updateAddonStatus addon发布失败后，更新表状态
 // TODO 状态更新不应混杂删除逻辑
-func (a *Addon) UpdateAddonStatus(addonIns *dbclient2.AddonInstance, addonStatus apistructs.AddonStatus) error {
+func (a *Addon) UpdateAddonStatus(addonIns *dbclient.AddonInstance, addonStatus apistructs.AddonStatus) error {
 	// 如果失败了，及时删除addon信息
 	addonInsResult, err := a.db.GetAddonInstance(addonIns.ID)
 	if err != nil {
@@ -701,7 +701,7 @@ func (a *Addon) UpdateAddonStatus(addonIns *dbclient2.AddonInstance, addonStatus
 }
 
 // 内部addon发布
-func (a *Addon) insideAddonDeploy(addonIns *dbclient2.AddonInstance, addonSpec *apistructs.AddonExtension, addonDice *diceyml.Object,
+func (a *Addon) insideAddonDeploy(addonIns *dbclient.AddonInstance, addonSpec *apistructs.AddonExtension, addonDice *diceyml.Object,
 	params *apistructs.AddonHandlerCreateItem) (*[]string, error) {
 	// 无内部 addon 依赖
 	if len(addonDice.AddOns) == 0 {
@@ -751,7 +751,7 @@ func (a *Addon) insideAddonDeploy(addonIns *dbclient2.AddonInstance, addonSpec *
 		if err != nil {
 			return nil, err
 		}
-		if err := a.db.CreateAddonInstanceRelation(&dbclient2.AddonInstanceRelation{
+		if err := a.db.CreateAddonInstanceRelation(&dbclient.AddonInstanceRelation{
 			ID:                a.getRandomId(),
 			OutsideInstanceID: addonIns.ID,
 			InsideInstanceID:  insResp.RealInstanceID,
@@ -803,7 +803,7 @@ func (a *Addon) waitInsideAddonDeploy(insideInstanceIds *[]string) (*map[string]
 }
 
 // retrieveInsideAddon addon发布失败后，更新表状态
-func (a *Addon) retrieveInsideAddon(addonIns *dbclient2.AddonInstance) error {
+func (a *Addon) retrieveInsideAddon(addonIns *dbclient.AddonInstance) error {
 	insideList, err := a.db.GetByOutSideInstanceID(addonIns.ID)
 	if err != nil {
 		logrus.Errorf("retrieveInsideAddon GetByOutSideInstanceID err: %v ", err)

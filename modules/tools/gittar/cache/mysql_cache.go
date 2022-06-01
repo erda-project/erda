@@ -21,7 +21,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	models2 "github.com/erda-project/erda/modules/tools/gittar/models"
+	"github.com/erda-project/erda/modules/tools/gittar/models"
 	"github.com/erda-project/erda/modules/tools/gittar/pkg/gitmodule"
 )
 
@@ -31,10 +31,10 @@ type MysqlCache struct {
 	mutex      sync.RWMutex
 	typeName   string
 	hits, gets AtomicInt
-	db         *models2.DBClient
+	db         *models.DBClient
 }
 
-func NewMysqlCache(typeName string, db *models2.DBClient) *MysqlCache {
+func NewMysqlCache(typeName string, db *models.DBClient) *MysqlCache {
 	return &MysqlCache{
 		typeName: typeName,
 		db:       db,
@@ -49,7 +49,7 @@ func (c *MysqlCache) Status() *gitmodule.CacheStatus {
 		Gets:        c.gets.Get(),
 	}
 	currentSize := -1
-	c.db.Model(&models2.RepoCache{}).Where("type_name = ?", c.typeName).Count(&currentSize)
+	c.db.Model(&models.RepoCache{}).Where("type_name = ?", c.typeName).Count(&currentSize)
 	status.CurrentSize = currentSize
 	return status
 }
@@ -57,7 +57,7 @@ func (c *MysqlCache) Status() *gitmodule.CacheStatus {
 //Get value with key
 func (c *MysqlCache) Get(key string, outValue interface{}) error {
 	c.gets.Add(1)
-	var repoCache models2.RepoCache
+	var repoCache models.RepoCache
 	err := c.db.Where("type_name = ? and key_name = ? ", c.typeName, key).First(&repoCache).Error
 	if err == nil {
 		c.hits.Add(1)
@@ -74,11 +74,11 @@ func (c *MysqlCache) Set(key string, value interface{}) error {
 		return err
 	}
 
-	var repoCache models2.RepoCache
+	var repoCache models.RepoCache
 	err = c.db.Where("type_name = ? and key_name = ? ", c.typeName, key).First(&repoCache).Error
 	if err != nil {
 		//不存在 新增
-		repoCache := models2.RepoCache{
+		repoCache := models.RepoCache{
 			TypeName:  c.typeName,
 			KeyName:   key,
 			Value:     string(bytes),
@@ -103,7 +103,7 @@ func (c *MysqlCache) Set(key string, value interface{}) error {
 
 //Delete delete the key
 func (c *MysqlCache) Delete(key string) error {
-	err := c.db.Where("type_name = ? and key_name = ? ", c.typeName, key).Delete(models2.RepoCache{}).Error
+	err := c.db.Where("type_name = ? and key_name = ? ", c.typeName, key).Delete(models.RepoCache{}).Error
 	return err
 }
 

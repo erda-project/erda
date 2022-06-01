@@ -22,7 +22,7 @@ import (
 	"time"
 
 	"github.com/erda-project/erda/apistructs"
-	dbclient2 "github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
+	"github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/kms/kmstypes"
 	"github.com/erda-project/erda/pkg/mysqlhelper"
@@ -75,7 +75,7 @@ func (a *Addon) CreateAddonTenant(name string, addonInstanceRoutingID string, co
 	}
 }
 
-func (a *Addon) CreateMysqlTenant(name string, addoninsRouting *dbclient2.AddonInstanceRouting, addonins *dbclient2.AddonInstance, config map[string]string) (string, error) {
+func (a *Addon) CreateMysqlTenant(name string, addoninsRouting *dbclient.AddonInstanceRouting, addonins *dbclient.AddonInstance, config map[string]string) (string, error) {
 	username := name + "-" + uuid.UUID()[:12]
 
 	dbs_s := config["database"]
@@ -153,7 +153,7 @@ func (a *Addon) CreateMysqlTenant(name string, addoninsRouting *dbclient2.AddonI
 		return "", err
 	}
 	id := a.getRandomId()
-	if err := a.db.CreateAddonInstanceTenant(&dbclient2.AddonInstanceTenant{
+	if err := a.db.CreateAddonInstanceTenant(&dbclient.AddonInstanceTenant{
 		ID:                     id,
 		Name:                   name,
 		AddonInstanceID:        addonins.ID,

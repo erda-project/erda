@@ -28,7 +28,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/endpoints"
 	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/events"
-	cap2 "github.com/erda-project/erda/modules/tools/orchestrator/scheduler/impl/cap"
+	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/impl/cap"
 	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/impl/cluster"
 	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/impl/clusterinfo"
 	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/impl/instanceinfo"
@@ -94,7 +94,7 @@ func NewScheduler(instanceinfoImpl instanceinfo.InstanceInfo, clusterSvc cluster
 	// instanceinfoImpl := instanceinfo.NewInstanceInfoImpl()
 	componentImpl := instanceinfo.NewComponentInfoImpl()
 	resourceinfoImpl := resourceinfo.NewResourceInfoImpl()
-	capImpl := cap2.NewCapImpl()
+	capImpl := cap.NewCapImpl()
 
 	if err != nil {
 		panic(err)

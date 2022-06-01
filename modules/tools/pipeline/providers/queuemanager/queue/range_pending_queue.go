@@ -25,7 +25,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	aop2 "github.com/erda-project/erda/modules/tools/pipeline/aop"
 	"github.com/erda-project/erda/modules/tools/pipeline/aop/aoptypes"
-	events2 "github.com/erda-project/erda/modules/tools/pipeline/events"
+	"github.com/erda-project/erda/modules/tools/pipeline/events"
 	"github.com/erda-project/erda/modules/tools/pipeline/providers/queuemanager/pkg/queue/priorityqueue"
 	"github.com/erda-project/erda/modules/tools/pipeline/providers/reconciler/rlog"
 	"github.com/erda-project/erda/modules/tools/pipeline/spec"
@@ -95,7 +95,7 @@ func (q *defaultQueue) RangePendingQueue() {
 		validateResult := q.validatePipeline(p)
 		q.lock.RUnlock()
 		if !validateResult.Success {
-			q.emitEvent(p, PendingQueueValidate, validateResult.Reason, events2.EventLevelWarning)
+			q.emitEvent(p, PendingQueueValidate, validateResult.Reason, events.EventLevelWarning)
 			// stopRange if queue is strict mode
 			return q.IsStrictMode()
 		}
@@ -110,7 +110,7 @@ func (q *defaultQueue) RangePendingQueue() {
 			stopRange = false
 			q.emitEvent(p, PendingQueueValidate,
 				"queue precheck missing result, waiting for retry",
-				events2.EventLevelNormal)
+				events.EventLevelNormal)
 			return
 		}
 		checkResult, ok := checkResultI.(apistructs.PipelineQueueValidateResult)
@@ -118,7 +118,7 @@ func (q *defaultQueue) RangePendingQueue() {
 			// invalid result, log and wait for another retry
 			q.emitEvent(p, PendingQueueValidate,
 				fmt.Sprintf("queue precheck result type is not expected, detail: %#v", checkResult),
-				events2.EventLevelNormal)
+				events.EventLevelNormal)
 			stopRange = false
 			return
 		}
@@ -133,18 +133,18 @@ func (q *defaultQueue) RangePendingQueue() {
 			if checkResult.RetryOption == nil {
 				q.emitEvent(p, FailedQueue,
 					fmt.Sprintf("validate failed(no retry option), stop and remove from queue, reason: %s", checkResult.Reason),
-					events2.EventLevelWarning)
+					events.EventLevelWarning)
 				// mark pipeline as failed
 				q.emitEvent(p, FailedQueue,
 					"mark pipeline as failed",
-					events2.EventLevelNormal)
+					events.EventLevelNormal)
 				q.ensureMarkPipelineFailed(p)
 				return q.doStopAndRemove(item)
 			}
 			// need retry, sleep specific time
 			q.emitEvent(p, PendingQueueValidate,
 				fmt.Sprintf("validate failed(need retry), waiting for retry(%dmill), reason: %s", checkResult.RetryOption.IntervalMillisecond+checkResult.RetryOption.IntervalSecond*1000, checkResult.Reason),
-				events2.EventLevelNormal)
+				events.EventLevelNormal)
 			// judge whether need reRange before sleep
 			if q.needReRangePendingQueue() {
 				return true
@@ -156,7 +156,7 @@ func (q *defaultQueue) RangePendingQueue() {
 		// do pop
 		q.emitEvent(p, SuccessQueue,
 			"validate success, try pop now",
-			events2.EventLevelNormal)
+			events.EventLevelNormal)
 		stopRange = q.doPop(item)
 		return
 	})
@@ -220,7 +220,7 @@ func (q *defaultQueue) emitEvent(p *spec.Pipeline, reason string, message string
 		Count:          1,
 		Type:           eType,
 	}
-	events2.EmitPipelineStreamEvent(p.ID, []*apistructs.PipelineEvent{&se})
+	events.EmitPipelineStreamEvent(p.ID, []*apistructs.PipelineEvent{&se})
 	msg := fmt.Sprintf("queueManager: queueID: %s, queueName: %s, pipelineID: %d, Type: %s, Reason: %s, Message: %s",
 		q.ID(), q.pq.Name, p.ID, eType, reason, message)
 	rlog.PDebugf(p.ID, msg)

@@ -35,9 +35,9 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/tools/orchestrator/components/addon/mysql"
 	"github.com/erda-project/erda/modules/tools/orchestrator/conf"
-	dbclient2 "github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
+	"github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
 	i18n2 "github.com/erda-project/erda/modules/tools/orchestrator/i18n"
-	cap2 "github.com/erda-project/erda/modules/tools/orchestrator/scheduler/impl/cap"
+	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/impl/cap"
 	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/impl/clusterinfo"
 	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/impl/instanceinfo"
 	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/impl/servicegroup"
@@ -72,13 +72,13 @@ var ExtensionDeployAddon = map[string]string{"mysql": "", "redis": "", "consul":
 
 // Addon addon 实例对象封装
 type Addon struct {
-	db               *dbclient2.DBClient
+	db               *dbclient.DBClient
 	bdl              *bundle.Bundle
 	hc               *httpclient.HTTPClient
 	encrypt          *encryption.EnvEncrypt
 	resource         *resource.Resource
 	kms              mysql.KMSWrapper
-	cap              cap2.Cap
+	cap              cap.Cap
 	serviceGroupImpl servicegroup.ServiceGroup
 	instanceinfoImpl *instanceinfo.InstanceInfoImpl
 	clusterinfoImpl  clusterinfo.ClusterInfo
@@ -99,7 +99,7 @@ func New(options ...Option) *Addon {
 }
 
 // WithDBClient 配置 db client
-func WithDBClient(db *dbclient2.DBClient) Option {
+func WithDBClient(db *dbclient.DBClient) Option {
 	return func(a *Addon) {
 		a.db = db
 	}
@@ -140,7 +140,7 @@ func WithKMSWrapper(kms mysql.KMSWrapper) Option {
 	}
 }
 
-func WithCap(cap cap2.Cap) Option {
+func WithCap(cap cap.Cap) Option {
 	return func(a *Addon) {
 		a.cap = cap
 	}
@@ -292,13 +292,13 @@ func (a *Addon) BatchCreate(req *apistructs.AddonCreateRequest) error {
 
 	// prebuild 两种情况: 1. dice.yml 里删除后又在 dice.yml 里添加相同 addon 2. dice.yml 里未删除，在 UI 已删除，以 UI 删除为优先
 	// 若第一次部署，preBuilds 为空
-	existBuildMap := make(map[string]dbclient2.AddonPrebuild, len(*existBuilds))
+	existBuildMap := make(map[string]dbclient.AddonPrebuild, len(*existBuilds))
 	for _, v := range *existBuilds {
 		existBuildMap[strutil.Concat(v.RuntimeID, v.AddonName, v.InstanceName)] = v
 	}
 	// 找出新增 addons，添加至 prebuild
-	addonPrebuildList := make([]dbclient2.AddonPrebuild, 0, len(req.Addons)) // 新增 addons
-	newPrebuildList := make([]dbclient2.AddonPrebuild, 0, len(req.Addons))   // 新 addons 列表
+	addonPrebuildList := make([]dbclient.AddonPrebuild, 0, len(req.Addons)) // 新增 addons
+	newPrebuildList := make([]dbclient.AddonPrebuild, 0, len(req.Addons))   // 新 addons 列表
 	for _, v := range req.Addons {
 		newAddonName := a.parseAddonName(v.Type)
 		if old, ok := existBuildMap[fmt.Sprintf("%d%s%s", req.RuntimeID, newAddonName, v.Name)]; ok {
@@ -720,7 +720,7 @@ func (a *Addon) CreateCustom(req *apistructs.CustomAddonCreateRequest) (*map[str
 				return nil, err
 			}
 			// create instance
-			instance := &dbclient2.AddonInstance{
+			instance := &dbclient.AddonInstance{
 				ID:         instanceID,
 				Name:       req.Name,
 				AddonName:  req.AddonName,
@@ -744,7 +744,7 @@ func (a *Addon) CreateCustom(req *apistructs.CustomAddonCreateRequest) (*map[str
 			logrus.Infof("cloud addon,  instance:%+v", instance)
 
 			// create routing instance
-			routingIntance := &dbclient2.AddonInstanceRouting{
+			routingIntance := &dbclient.AddonInstanceRouting{
 				ID:           a.getRandomId(),
 				RealInstance: instanceID,
 				Name:         req.Name,
@@ -841,7 +841,7 @@ func (a *Addon) CreateCustom(req *apistructs.CustomAddonCreateRequest) (*map[str
 				return nil, err
 			}
 
-			instance := &dbclient2.AddonInstance{
+			instance := &dbclient.AddonInstance{
 				ID:         instanceID,
 				Name:       req.Name,
 				AddonName:  req.AddonName,
@@ -864,7 +864,7 @@ func (a *Addon) CreateCustom(req *apistructs.CustomAddonCreateRequest) (*map[str
 				return nil, err
 			}
 
-			routingIntance := &dbclient2.AddonInstanceRouting{
+			routingIntance := &dbclient.AddonInstanceRouting{
 				ID:           a.getRandomId(),
 				RealInstance: instanceID,
 				Name:         req.Name,
@@ -945,7 +945,7 @@ func (a *Addon) GetRuntimeAddonConfig(runtimeID uint64) (*[]apistructs.AddonConf
 	if err != nil {
 		return nil, err
 	}
-	routingMap := make(map[string]*dbclient2.AddonInstanceRouting)
+	routingMap := make(map[string]*dbclient.AddonInstanceRouting)
 	for _, r := range *routings {
 		routingMap[r.ID] = &r
 	}
@@ -998,7 +998,7 @@ func (a *Addon) GetRuntimeAddonConfig(runtimeID uint64) (*[]apistructs.AddonConf
 	return &configResList, nil
 }
 
-func (a *Addon) GetAddonTenantConfig(ins *dbclient2.AddonInstanceTenant) (map[string]interface{}, error) {
+func (a *Addon) GetAddonTenantConfig(ins *dbclient.AddonInstanceTenant) (map[string]interface{}, error) {
 	if ins != nil && ins.Config != "" {
 		var configMap map[string]interface{}
 		if err := json.Unmarshal([]byte(ins.Config), &configMap); err != nil {
@@ -1029,7 +1029,7 @@ func (a *Addon) GetAddonTenantConfig(ins *dbclient2.AddonInstanceTenant) (map[st
 	return nil, nil
 }
 
-func (a *Addon) GetAddonConfig(ins *dbclient2.AddonInstance) (*apistructs.AddonConfigRes, error) {
+func (a *Addon) GetAddonConfig(ins *dbclient.AddonInstance) (*apistructs.AddonConfigRes, error) {
 	if ins != nil && ins.Config != "" {
 		var configMap map[string]interface{}
 		if err := json.Unmarshal([]byte(ins.Config), &configMap); err != nil {
@@ -1073,7 +1073,7 @@ func (a *Addon) GetAddonConfig(ins *dbclient2.AddonInstance) (*apistructs.AddonC
 	return nil, nil
 }
 
-func (a *Addon) getAddonConfig(instanceID string, attachment *dbclient2.AddonAttachment) (*apistructs.AddonConfigRes, error) {
+func (a *Addon) getAddonConfig(instanceID string, attachment *dbclient.AddonAttachment) (*apistructs.AddonConfigRes, error) {
 	ins, err := a.db.GetAddonInstance(instanceID)
 	if err != nil {
 		return nil, err
@@ -1848,7 +1848,7 @@ func (a *Addon) Scale(userID, routingInstanceID, action string) error {
 			}
 
 			// 2. addon 无 inside addon，直接对 addon 进行 scale 操作
-			routingInstances := make([]dbclient2.AddonInstanceRouting, 0)
+			routingInstances := make([]dbclient.AddonInstanceRouting, 0)
 			routingInstances = append(routingInstances, *routingIns)
 			return a.doAddonScale(addonInstance, &routingInstances, action)
 		} else {
@@ -1860,7 +1860,7 @@ func (a *Addon) Scale(userID, routingInstanceID, action string) error {
 	}
 }
 
-func (a *Addon) insideAddonCanNotScale(routingIns *dbclient2.AddonInstanceRouting) error {
+func (a *Addon) insideAddonCanNotScale(routingIns *dbclient.AddonInstanceRouting) error {
 	errMsg := ""
 	addonRelation, err := a.db.GetByInSideInstanceID(routingIns.RealInstance)
 	if err != nil {
@@ -1905,7 +1905,7 @@ func (a *Addon) insideAddonCanNotScale(routingIns *dbclient2.AddonInstanceRoutin
 	return errors.New(errMsg)
 }
 
-func (a *Addon) doAddonScale(addonInstance *dbclient2.AddonInstance, addonInstanceRoutings *[]dbclient2.AddonInstanceRouting, action string) error {
+func (a *Addon) doAddonScale(addonInstance *dbclient.AddonInstance, addonInstanceRoutings *[]dbclient.AddonInstanceRouting, action string) error {
 	var optionMap map[string]string
 	json.Unmarshal([]byte(addonInstance.Options), &optionMap)
 	createItem := &apistructs.AddonHandlerCreateItem{
@@ -1990,7 +1990,7 @@ func addonCanScale(addonName, addonId, plan, version, status, action string) err
 }
 
 // createAddonScaleRequest 构建 addon scale 操作对应的请求
-func (a *Addon) createAddonScaleRequest(params *apistructs.AddonHandlerCreateItem, addonIns *dbclient2.AddonInstance, scaleAction string) (*apistructs.ServiceGroup, error) {
+func (a *Addon) createAddonScaleRequest(params *apistructs.AddonHandlerCreateItem, addonIns *dbclient.AddonInstance, scaleAction string) (*apistructs.ServiceGroup, error) {
 	// 获取addon extension信息
 	addonSpec, addonDice, err := a.GetAddonExtention(params)
 	if err != nil {
@@ -2211,19 +2211,19 @@ func (a *Addon) listMicroAttach(orgID string, projectIDs []string) (*[]apistruct
 	return &addonRespList, nil
 }
 
-func (a *Addon) BuildAddonAndTenantMap(projectAddons []dbclient2.AddonInstanceRouting, projectAddonTenants []dbclient2.AddonInstanceTenant) (
-	addonnameMap map[string][]dbclient2.AddonInstanceRouting, addonIDMap map[string]dbclient2.AddonInstanceRouting,
-	addonTenantNameMap map[string][]dbclient2.AddonInstanceTenant, addonTenantIDMap map[string]dbclient2.AddonInstanceTenant) {
+func (a *Addon) BuildAddonAndTenantMap(projectAddons []dbclient.AddonInstanceRouting, projectAddonTenants []dbclient.AddonInstanceTenant) (
+	addonnameMap map[string][]dbclient.AddonInstanceRouting, addonIDMap map[string]dbclient.AddonInstanceRouting,
+	addonTenantNameMap map[string][]dbclient.AddonInstanceTenant, addonTenantIDMap map[string]dbclient.AddonInstanceTenant) {
 
-	addonnameMap = map[string][]dbclient2.AddonInstanceRouting{}
-	addonIDMap = map[string]dbclient2.AddonInstanceRouting{}
-	addonTenantNameMap = map[string][]dbclient2.AddonInstanceTenant{}
-	addonTenantIDMap = map[string]dbclient2.AddonInstanceTenant{}
+	addonnameMap = map[string][]dbclient.AddonInstanceRouting{}
+	addonIDMap = map[string]dbclient.AddonInstanceRouting{}
+	addonTenantNameMap = map[string][]dbclient.AddonInstanceTenant{}
+	addonTenantIDMap = map[string]dbclient.AddonInstanceTenant{}
 	for _, addon := range projectAddons {
 		if v, ok := addonnameMap[addon.Name]; ok {
 			addonnameMap[addon.Name] = append(v, addon)
 		} else {
-			addonnameMap[addon.Name] = []dbclient2.AddonInstanceRouting{addon}
+			addonnameMap[addon.Name] = []dbclient.AddonInstanceRouting{addon}
 		}
 		addonIDMap[addon.ID] = addon
 	}
@@ -2231,7 +2231,7 @@ func (a *Addon) BuildAddonAndTenantMap(projectAddons []dbclient2.AddonInstanceRo
 		if v, ok := addonTenantNameMap[tenant.Name]; ok {
 			addonTenantNameMap[tenant.Name] = append(v, tenant)
 		} else {
-			addonTenantNameMap[tenant.Name] = []dbclient2.AddonInstanceTenant{tenant}
+			addonTenantNameMap[tenant.Name] = []dbclient.AddonInstanceTenant{tenant}
 		}
 		addonTenantIDMap[tenant.ID] = tenant
 	}
@@ -2419,7 +2419,7 @@ func (a *Addon) ListByRuntime(runtimeID uint64, projectID, workspace string) (*[
 				addonRespList = append(addonRespList, a.convert(routing))
 			}
 			if _, ok := instanceIdsMap[pre.RoutingInstanceID]; !ok {
-				addonInsRout := dbclient2.AddonInstanceRouting{
+				addonInsRout := dbclient.AddonInstanceRouting{
 					ID:                  pre.RoutingInstanceID,
 					Name:                pre.InstanceName,
 					AddonName:           pre.AddonName,
@@ -2698,7 +2698,7 @@ func (a *Addon) ListReferencesByRoutingInstanceID(orgID uint64, userID, routingI
 		if tenant == nil {
 			return nil, nil
 		}
-		routingIns = &dbclient2.AddonInstanceRouting{
+		routingIns = &dbclient.AddonInstanceRouting{
 			OrgID:     tenant.OrgID,
 			ProjectID: tenant.ProjectID,
 			Name:      tenant.Name,
@@ -2754,7 +2754,7 @@ func (a *Addon) ListReferencesByRoutingInstanceID(orgID uint64, userID, routingI
 	if err != nil {
 		return nil, err
 	}
-	attachments := []dbclient2.AddonAttachment{}
+	attachments := []dbclient.AddonAttachment{}
 	if addon_attachments != nil {
 		attachments = append(attachments, (*addon_attachments)...)
 	}
@@ -2996,7 +2996,7 @@ func (a *Addon) transAddonName(addonName string) string {
 }
 
 // deployAddons addons 部署
-func (a *Addon) deployAddons(req *apistructs.AddonCreateRequest, deploys []dbclient2.AddonPrebuild) error {
+func (a *Addon) deployAddons(req *apistructs.AddonCreateRequest, deploys []dbclient.AddonPrebuild) error {
 	needDeployAddons := []apistructs.AddonHandlerCreateItem{}
 	for _, v := range deploys {
 		if _, ok := AddonInfos.Load(v.AddonName); !ok {
@@ -3276,8 +3276,8 @@ func (a *Addon) StructToMap(data interface{}, depth int, tag ...string) map[stri
 }
 
 // removeUselessPrebuilds 删除无用的 addonPrebuild 记录
-func (a *Addon) removeUselessPrebuilds(runtimeID uint64, newPrebuildList []dbclient2.AddonPrebuild) error {
-	newPrebuildMap := make(map[string]dbclient2.AddonPrebuild, len(newPrebuildList))
+func (a *Addon) removeUselessPrebuilds(runtimeID uint64, newPrebuildList []dbclient.AddonPrebuild) error {
+	newPrebuildMap := make(map[string]dbclient.AddonPrebuild, len(newPrebuildList))
 	for _, v := range newPrebuildList {
 		newPrebuildMap[strutil.Concat(v.RuntimeID, v.AddonName, v.InstanceName)] = v
 	}
@@ -3303,7 +3303,7 @@ func (a *Addon) removeUselessPrebuilds(runtimeID uint64, newPrebuildList []dbcli
 }
 
 // GetDeployAndRemoveAddons 获取待部署 addons & 待删除 addons
-func (a *Addon) GetDeployAndRemoveAddons(runtimeID uint64) ([]dbclient2.AddonPrebuild, []dbclient2.AddonInstanceRouting, error) {
+func (a *Addon) GetDeployAndRemoveAddons(runtimeID uint64) ([]dbclient.AddonPrebuild, []dbclient.AddonInstanceRouting, error) {
 	createdInstanceRoutings, err := a.ListInstanceRoutingByRuntime(runtimeID)
 	if err != nil {
 		return nil, nil, err
@@ -3313,7 +3313,7 @@ func (a *Addon) GetDeployAndRemoveAddons(runtimeID uint64) ([]dbclient2.AddonPre
 	if err != nil {
 		return nil, nil, err
 	}
-	deployList := make([]dbclient2.AddonPrebuild, 0, len(*allPreBuilds))
+	deployList := make([]dbclient.AddonPrebuild, 0, len(*allPreBuilds))
 	// 数据库中没有发布信息，是首次发布
 	if createdInstanceRoutings == nil || len(*createdInstanceRoutings) == 0 {
 		// 遍历prebuild列表，将没有删除的数据全部放入deployList中，准备发布
@@ -3338,12 +3338,12 @@ func (a *Addon) GetDeployAndRemoveAddons(runtimeID uint64) ([]dbclient2.AddonPre
 	}
 
 	// 实例列表转map
-	instanceRoutingMap := make(map[string]dbclient2.AddonInstanceRouting, len(*createdInstanceRoutings))
+	instanceRoutingMap := make(map[string]dbclient.AddonInstanceRouting, len(*createdInstanceRoutings))
 	for _, v := range *createdInstanceRoutings {
 		instanceRoutingMap[v.ID] = v
 	}
 
-	removeList := make([]dbclient2.AddonInstanceRouting, 0, len(*allPreBuilds))
+	removeList := make([]dbclient.AddonInstanceRouting, 0, len(*allPreBuilds))
 	for _, v := range *allPreBuilds {
 		if v.RoutingInstanceID != "" {
 			// canal特殊处理，如果能查询到结果，说明已经发布成功，不需要再走deploy流程
@@ -3389,9 +3389,9 @@ func (a *Addon) GetDeployAndRemoveAddons(runtimeID uint64) ([]dbclient2.AddonPre
 	return sortPrebuild(deployList), removeList, nil
 }
 
-func sortPrebuild(prebuilds []dbclient2.AddonPrebuild) []dbclient2.AddonPrebuild {
-	canalPrebuilds := []dbclient2.AddonPrebuild{}
-	others := []dbclient2.AddonPrebuild{}
+func sortPrebuild(prebuilds []dbclient.AddonPrebuild) []dbclient.AddonPrebuild {
+	canalPrebuilds := []dbclient.AddonPrebuild{}
+	others := []dbclient.AddonPrebuild{}
 	for _, i := range prebuilds {
 		if i.AddonName == "canal" {
 			canalPrebuilds = append(canalPrebuilds, i)
@@ -3403,7 +3403,7 @@ func sortPrebuild(prebuilds []dbclient2.AddonPrebuild) []dbclient2.AddonPrebuild
 }
 
 // ListInstanceRoutingByRuntime 根据 runtimeID 获取已创建 addon 实例列表
-func (a *Addon) ListInstanceRoutingByRuntime(runtimeID uint64) (*[]dbclient2.AddonInstanceRouting, error) {
+func (a *Addon) ListInstanceRoutingByRuntime(runtimeID uint64) (*[]dbclient.AddonInstanceRouting, error) {
 	attachments, err := a.db.GetAttachMentsByRuntimeID(runtimeID)
 	if err != nil {
 		return nil, err
@@ -3412,7 +3412,7 @@ func (a *Addon) ListInstanceRoutingByRuntime(runtimeID uint64) (*[]dbclient2.Add
 		return nil, nil
 	}
 
-	instanceRoutings := make([]dbclient2.AddonInstanceRouting, 0, len(*attachments))
+	instanceRoutings := make([]dbclient.AddonInstanceRouting, 0, len(*attachments))
 	for i := range *attachments {
 		instanceRouting, err := a.db.GetInstanceRouting((*attachments)[i].RoutingInstanceID)
 		if err != nil {
@@ -3427,7 +3427,7 @@ func (a *Addon) ListInstanceRoutingByRuntime(runtimeID uint64) (*[]dbclient2.Add
 	return &instanceRoutings, nil
 }
 
-func (a *Addon) ListInstanceByRuntime(runtimeID uint64) ([]dbclient2.AddonInstance, error) {
+func (a *Addon) ListInstanceByRuntime(runtimeID uint64) ([]dbclient.AddonInstance, error) {
 	attachments, err := a.db.GetAttachMentsByRuntimeID(runtimeID)
 	if err != nil {
 		return nil, err
@@ -3435,7 +3435,7 @@ func (a *Addon) ListInstanceByRuntime(runtimeID uint64) ([]dbclient2.AddonInstan
 	if attachments == nil || len(*attachments) == 0 {
 		return nil, nil
 	}
-	instances := []dbclient2.AddonInstance{}
+	instances := []dbclient.AddonInstance{}
 	for _, attach := range *attachments {
 		instance, err := a.db.GetAddonInstance(attach.InstanceID)
 		if err != nil {
@@ -3450,8 +3450,8 @@ func (a *Addon) ListInstanceByRuntime(runtimeID uint64) ([]dbclient2.AddonInstan
 }
 
 // ParsePreBuild 根据 addon 信息生成 AddonPreBuild 对象
-func (a *Addon) ParsePreBuild(appID, runtimeID uint64, runtimeName, workspace string, addon apistructs.AddonCreateItem) *dbclient2.AddonPrebuild {
-	ap := &dbclient2.AddonPrebuild{
+func (a *Addon) ParsePreBuild(appID, runtimeID uint64, runtimeName, workspace string, addon apistructs.AddonCreateItem) *dbclient.AddonPrebuild {
+	ap := &dbclient.AddonPrebuild{
 		ApplicationID: strconv.FormatUint(appID, 10),
 		RuntimeID:     strconv.FormatUint(runtimeID, 10),
 		GitBranch:     runtimeName,
@@ -3511,9 +3511,9 @@ func (a *Addon) CheckCustomAddonPermission(userID string, orgID, projecID uint64
 }
 
 // 获取默认 addon 列表(若用户在 dice.yml 里未制定，默认为用户创建)
-func (a *Addon) getDefaultPreBuildList(appID, runtimeID uint64, runtimeName, workspace string) []dbclient2.AddonPrebuild {
+func (a *Addon) getDefaultPreBuildList(appID, runtimeID uint64, runtimeName, workspace string) []dbclient.AddonPrebuild {
 	// 添加默认 addon(目前只有monitor)
-	defaults := make([]dbclient2.AddonPrebuild, 0)
+	defaults := make([]dbclient.AddonPrebuild, 0)
 	addon := apistructs.AddonCreateItem{
 		Name: "monitor",
 		Type: "monitor",
@@ -3539,7 +3539,7 @@ func (a *Addon) parseAddonName(addonType string) string {
 	}
 }
 
-func (a *Addon) convertTenantInstance(t *dbclient2.AddonInstanceTenant, routingInstance *dbclient2.AddonInstanceRouting) apistructs.AddonFetchResponseData {
+func (a *Addon) convertTenantInstance(t *dbclient.AddonInstanceTenant, routingInstance *dbclient.AddonInstanceRouting) apistructs.AddonFetchResponseData {
 	addonResp := a.convert(routingInstance)
 
 	config := make(map[string]interface{})
@@ -3554,7 +3554,7 @@ func (a *Addon) convertTenantInstance(t *dbclient2.AddonInstanceTenant, routingI
 }
 
 // convert AddonInstanceRouting转换为AddonFetchResponseData
-func (a *Addon) convert(routingInstance *dbclient2.AddonInstanceRouting) apistructs.AddonFetchResponseData {
+func (a *Addon) convert(routingInstance *dbclient.AddonInstanceRouting) apistructs.AddonFetchResponseData {
 	orgID, _ := strconv.ParseUint(routingInstance.OrgID, 10, 64)
 	projectID, _ := strconv.ParseUint(routingInstance.ProjectID, 10, 64)
 
@@ -3756,7 +3756,7 @@ func (a *Addon) AddonYmlImport(projectID uint64, yml diceyml.Object, userid stri
 	return nil
 }
 
-func (a *Addon) ListAddonInstanceByOrg(orgid uint64) ([]dbclient2.AddonInstance, error) {
+func (a *Addon) ListAddonInstanceByOrg(orgid uint64) ([]dbclient.AddonInstance, error) {
 	addons, err := a.db.ListAddonInstanceByOrg(orgid)
 	if err != nil {
 		return nil, err

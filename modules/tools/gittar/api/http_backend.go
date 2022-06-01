@@ -18,22 +18,22 @@ import (
 	"path"
 	"strings"
 
-	helper2 "github.com/erda-project/erda/modules/tools/gittar/helper"
+	"github.com/erda-project/erda/modules/tools/gittar/helper"
 	"github.com/erda-project/erda/modules/tools/gittar/webcontext"
 )
 
 // GetRepoHead function
 func GetRepoHead(context *webcontext.Context) {
-	helper2.SendTextFile("HEAD", context)
+	helper.SendTextFile("HEAD", context)
 }
 
 // GetRepoInfoRefs function
 func GetRepoInfoRefs(c *webcontext.Context) {
 	serviceName := strings.Trim(c.Query("service"), "git-")
 	if serviceName != "" {
-		helper2.RunAdvertisement(serviceName, c)
+		helper.RunAdvertisement(serviceName, c)
 	} else {
-		helper2.SendInfoPacks(c)
+		helper.SendInfoPacks(c)
 	}
 }
 
@@ -45,16 +45,16 @@ func GetRepoObjects(c *webcontext.Context) {
 	case "pack":
 		pack := suffix
 		isIdx := strings.HasSuffix(pack, "idx")
-		helper2.SendPackIdxFile(suffix, isIdx, c)
+		helper.SendPackIdxFile(suffix, isIdx, c)
 	case "info":
 		if suffix == "packs" {
-			helper2.SendInfoPacks(c)
+			helper.SendInfoPacks(c)
 		} else {
 			file := suffix
-			helper2.SendTextFile(path.Join("objects", "info", file), c)
+			helper.SendTextFile(path.Join("objects", "info", file), c)
 		}
 	default:
-		helper2.SendLooseObject(prefix, suffix, c)
+		helper.SendLooseObject(prefix, suffix, c)
 	}
 }
 
@@ -73,5 +73,5 @@ func ServiceRepoRPC(c *webcontext.Context) {
 			return
 		}
 	}
-	helper2.RunProcess(service, c)
+	helper.RunProcess(service, c)
 }

@@ -25,7 +25,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pkg/diceworkspace"
-	gitmodule2 "github.com/erda-project/erda/modules/tools/gittar/pkg/gitmodule"
+	"github.com/erda-project/erda/modules/tools/gittar/pkg/gitmodule"
 	"github.com/erda-project/erda/modules/tools/gittar/uc"
 )
 
@@ -100,7 +100,7 @@ type MrCheckRun struct {
 	Name   string `json:"name"`
 }
 
-func (mergeRequest *MergeRequest) ToInfo(repo *gitmodule2.Repository) *apistructs.MergeRequestInfo {
+func (mergeRequest *MergeRequest) ToInfo(repo *gitmodule.Repository) *apistructs.MergeRequestInfo {
 	result := &apistructs.MergeRequestInfo{}
 	result.SourceBranch = mergeRequest.SourceBranch
 	result.TargetBranch = mergeRequest.TargetBranch
@@ -168,7 +168,7 @@ func (mergeRequest *MergeRequest) ToInfo(repo *gitmodule2.Repository) *apistruct
 	return result
 }
 
-func (svc *Service) CreateMergeRequest(repo *gitmodule2.Repository, user *User, info *apistructs.MergeRequestInfo) (*apistructs.MergeRequestInfo, error) {
+func (svc *Service) CreateMergeRequest(repo *gitmodule.Repository, user *User, info *apistructs.MergeRequestInfo) (*apistructs.MergeRequestInfo, error) {
 	info.RepoID = repo.ID
 
 	err := svc.CheckPermission(repo, user, PermissionCreateMR, nil)
@@ -220,7 +220,7 @@ func (svc *Service) CreateMergeRequest(repo *gitmodule2.Repository, user *User, 
 	return mergeRequest.ToInfo(repo), nil
 }
 
-func (svc *Service) UpdateMergeRequest(repo *gitmodule2.Repository, user *User, info *apistructs.MergeRequestInfo) (*apistructs.MergeRequestInfo, error) {
+func (svc *Service) UpdateMergeRequest(repo *gitmodule.Repository, user *User, info *apistructs.MergeRequestInfo) (*apistructs.MergeRequestInfo, error) {
 	info.RepoID = repo.ID
 	var mergeRequest MergeRequest
 	err := svc.db.Where("repo_id = ? and repo_merge_id=?", info.RepoID, info.RepoMergeId).First(&mergeRequest).Error
@@ -268,7 +268,7 @@ func (svc *Service) UpdateMergeRequest(repo *gitmodule2.Repository, user *User, 
 	return info, nil
 }
 
-func (svc *Service) GetMergeRequestDetail(repo *gitmodule2.Repository, mergeId int) (*apistructs.MergeRequestInfo, error) {
+func (svc *Service) GetMergeRequestDetail(repo *gitmodule.Repository, mergeId int) (*apistructs.MergeRequestInfo, error) {
 	var mergeRequest MergeRequest
 	err := svc.db.Where("repo_id = ? and repo_merge_id=?", repo.ID, mergeId).First(&mergeRequest).Error
 	if err != nil {
@@ -303,7 +303,7 @@ func (svc *Service) GetMergeRequestDetail(repo *gitmodule2.Repository, mergeId i
 	return result, err
 }
 
-func (svc *Service) SyncMergeRequest(repo *gitmodule2.Repository, branch string, commitID string, userID string, isHookExist bool) error {
+func (svc *Service) SyncMergeRequest(repo *gitmodule.Repository, branch string, commitID string, userID string, isHookExist bool) error {
 	var mergeRequests []MergeRequest
 	err := svc.db.Where("repo_id = ? and source_branch = ? and state = ?",
 		repo.ID, branch, MERGE_REQUEST_OPEN).Find(&mergeRequests).Error
@@ -349,7 +349,7 @@ func (svc *Service) SyncMergeRequest(repo *gitmodule2.Repository, branch string,
 	return nil
 }
 
-func (svc *Service) QueryMergeRequests(repo *gitmodule2.Repository, queryCondition *apistructs.GittarQueryMrRequest) (*QueryMergeRequestsResult, error) {
+func (svc *Service) QueryMergeRequests(repo *gitmodule.Repository, queryCondition *apistructs.GittarQueryMrRequest) (*QueryMergeRequestsResult, error) {
 	var mergeRequests []MergeRequest
 	query := svc.db.Model(&MergeRequest{}).Where("repo_id =? ", repo.ID)
 	if queryCondition.State != "all" && queryCondition.State != "" {
@@ -442,7 +442,7 @@ func (svc *Service) CountMergeRequests(appIDs []string, state string) (map[uint6
 	return res, nil
 }
 
-func (svc *Service) Merge(repo *gitmodule2.Repository, user *User, mergeId int, mergeOptions *MergeOptions) (*gitmodule2.Commit, error) {
+func (svc *Service) Merge(repo *gitmodule.Repository, user *User, mergeId int, mergeOptions *MergeOptions) (*gitmodule.Commit, error) {
 	var mergeRequest MergeRequest
 	err := svc.db.Where("repo_id =? and repo_merge_id=?", repo.ID, mergeId).First(&mergeRequest).Error
 	if err != nil {
@@ -509,7 +509,7 @@ func (svc *Service) Merge(repo *gitmodule2.Repository, user *User, mergeId int, 
 	return commit, nil
 }
 
-func (svc *Service) CloseMR(repo *gitmodule2.Repository, user *User, mergeId int) (*apistructs.MergeRequestInfo, error) {
+func (svc *Service) CloseMR(repo *gitmodule.Repository, user *User, mergeId int) (*apistructs.MergeRequestInfo, error) {
 	var mergeRequest MergeRequest
 	err := svc.db.Where("repo_id=? and repo_merge_id=?", repo.ID, mergeId).First(&mergeRequest).Error
 	if err != nil {
@@ -539,7 +539,7 @@ func (svc *Service) CloseMR(repo *gitmodule2.Repository, user *User, mergeId int
 	return mergeRequest.ToInfo(repo), nil
 }
 
-func (svc *Service) ReopenMR(repo *gitmodule2.Repository, user *User, mergeId int) (*apistructs.MergeRequestInfo, error) {
+func (svc *Service) ReopenMR(repo *gitmodule.Repository, user *User, mergeId int) (*apistructs.MergeRequestInfo, error) {
 	var mergeRequest MergeRequest
 	err := svc.db.Where("repo_id=? and repo_merge_id=?", repo.ID, mergeId).First(&mergeRequest).Error
 	if err != nil {
@@ -566,7 +566,7 @@ func (svc *Service) RemoveMR(repository *Repo) error {
 	return nil
 }
 
-func (svc *Service) CountMR(repo *gitmodule2.Repository, state string) (int, error) {
+func (svc *Service) CountMR(repo *gitmodule.Repository, state string) (int, error) {
 	var count int
 	query := svc.db.Model(&MergeRequest{}).Where("repo_id = ? ", repo.ID)
 	if state != "all" && state != "" {
@@ -614,7 +614,7 @@ type MergeRequestsStats struct {
 	Total int               `json:"total"`
 }
 
-func (svc *Service) QueryMergeRequestsStats(repo *gitmodule2.Repository, queryCondition *apistructs.GittarQueryMrRequest) (*QueryMergeRequestsStatsResult, error) {
+func (svc *Service) QueryMergeRequestsStats(repo *gitmodule.Repository, queryCondition *apistructs.GittarQueryMrRequest) (*QueryMergeRequestsStatsResult, error) {
 	var results []MergeRequestsStats
 	query := svc.db.Table("dice_repo_merge_requests").Select("state,count(*) AS total").
 		Where("repo_id =? ", repo.ID)

@@ -19,16 +19,16 @@ import (
 	"fmt"
 	"strings"
 
-	models2 "github.com/erda-project/erda/modules/tools/gittar/models"
+	"github.com/erda-project/erda/modules/tools/gittar/models"
 )
 
 func NewAuth() error {
-	db, err := models2.OpenDB()
+	db, err := models.OpenDB()
 	defer db.Close()
 	if err != nil {
 		return err
 	}
-	var repos []models2.Repo
+	var repos []models.Repo
 	db.Raw(`
 SELECT
 dice_app.id as app_id,
@@ -43,7 +43,7 @@ INNER JOIN dice_org on dice_app.org_id = dice_org.id
 	errorRepos := []string{}
 	tx := db.Begin()
 	for _, repo := range repos {
-		var currentRepo models2.Repo
+		var currentRepo models.Repo
 		err = db.Where("org_name=? and project_name=? and app_name=? ", repo.OrgName, repo.ProjectName, repo.AppName).
 			First(&currentRepo).Error
 

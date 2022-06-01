@@ -27,7 +27,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	release2 "github.com/erda-project/erda/modules/dicehub/release"
-	dbclient2 "github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
+	"github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/tools/orchestrator/i18n"
 )
 
@@ -66,8 +66,8 @@ func TestPreCheck(t *testing.T) {
 	defer monkey.UnpatchAll()
 
 	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "ListCustomInstancesByProjectAndEnv",
-		func(*dbclient2.DBClient, int64, string) ([]dbclient2.AddonInstance, error) {
-			return []dbclient2.AddonInstance{}, nil
+		func(*dbclient.DBClient, int64, string) ([]dbclient.AddonInstance, error) {
+			return []dbclient.AddonInstance{}, nil
 		},
 	)
 
@@ -104,13 +104,13 @@ func TestRenderDetail(t *testing.T) {
 		return nil, nil, nil
 	})
 	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "ListCustomInstancesByProjectAndEnv",
-		func(*dbclient2.DBClient, int64, string) ([]dbclient2.AddonInstance, error) {
-			return []dbclient2.AddonInstance{}, nil
+		func(*dbclient.DBClient, int64, string) ([]dbclient.AddonInstance, error) {
+			return []dbclient.AddonInstance{}, nil
 		},
 	)
 	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "ListRuntimesByAppsName",
-		func(*dbclient2.DBClient, string, uint64, []string) (*[]dbclient2.Runtime, error) {
-			return &[]dbclient2.Runtime{}, nil
+		func(*dbclient.DBClient, string, uint64, []string) (*[]dbclient.Runtime, error) {
+			return &[]dbclient.Runtime{}, nil
 		},
 	)
 

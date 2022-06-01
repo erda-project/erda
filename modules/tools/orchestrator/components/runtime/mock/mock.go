@@ -8,7 +8,7 @@ import (
 	"reflect"
 
 	"github.com/erda-project/erda/apistructs"
-	dbclient2 "github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
+	dbclient "github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/tools/orchestrator/events"
 	"github.com/erda-project/erda/modules/tools/orchestrator/spec"
 
@@ -39,10 +39,10 @@ func (m *MockDBService) EXPECT() *MockDBServiceMockRecorder {
 }
 
 // FindDomainsByRuntimeId mocks base method.
-func (m *MockDBService) FindDomainsByRuntimeId(arg0 uint64) ([]dbclient2.RuntimeDomain, error) {
+func (m *MockDBService) FindDomainsByRuntimeId(arg0 uint64) ([]dbclient.RuntimeDomain, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FindDomainsByRuntimeId", arg0)
-	ret0, _ := ret[0].([]dbclient2.RuntimeDomain)
+	ret0, _ := ret[0].([]dbclient.RuntimeDomain)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -54,10 +54,10 @@ func (mr *MockDBServiceMockRecorder) FindDomainsByRuntimeId(arg0 interface{}) *g
 }
 
 // FindLastDeployment mocks base method.
-func (m *MockDBService) FindLastDeployment(arg0 uint64) (*dbclient2.Deployment, error) {
+func (m *MockDBService) FindLastDeployment(arg0 uint64) (*dbclient.Deployment, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FindLastDeployment", arg0)
-	ret0, _ := ret[0].(*dbclient2.Deployment)
+	ret0, _ := ret[0].(*dbclient.Deployment)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -69,10 +69,10 @@ func (mr *MockDBServiceMockRecorder) FindLastDeployment(arg0 interface{}) *gomoc
 }
 
 // FindRuntime mocks base method.
-func (m *MockDBService) FindRuntime(arg0 spec.RuntimeUniqueId) (*dbclient2.Runtime, error) {
+func (m *MockDBService) FindRuntime(arg0 spec.RuntimeUniqueId) (*dbclient.Runtime, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FindRuntime", arg0)
-	ret0, _ := ret[0].(*dbclient2.Runtime)
+	ret0, _ := ret[0].(*dbclient.Runtime)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -84,10 +84,10 @@ func (mr *MockDBServiceMockRecorder) FindRuntime(arg0 interface{}) *gomock.Call 
 }
 
 // GetRuntime mocks base method.
-func (m *MockDBService) GetRuntime(arg0 uint64) (*dbclient2.Runtime, error) {
+func (m *MockDBService) GetRuntime(arg0 uint64) (*dbclient.Runtime, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetRuntime", arg0)
-	ret0, _ := ret[0].(*dbclient2.Runtime)
+	ret0, _ := ret[0].(*dbclient.Runtime)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -99,10 +99,10 @@ func (mr *MockDBServiceMockRecorder) GetRuntime(arg0 interface{}) *gomock.Call {
 }
 
 // GetRuntimeAllowNil mocks base method.
-func (m *MockDBService) GetRuntimeAllowNil(arg0 uint64) (*dbclient2.Runtime, error) {
+func (m *MockDBService) GetRuntimeAllowNil(arg0 uint64) (*dbclient.Runtime, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetRuntimeAllowNil", arg0)
-	ret0, _ := ret[0].(*dbclient2.Runtime)
+	ret0, _ := ret[0].(*dbclient.Runtime)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -114,7 +114,7 @@ func (mr *MockDBServiceMockRecorder) GetRuntimeAllowNil(arg0 interface{}) *gomoc
 }
 
 // UpdateRuntime mocks base method.
-func (m *MockDBService) UpdateRuntime(arg0 *dbclient2.Runtime) error {
+func (m *MockDBService) UpdateRuntime(arg0 *dbclient.Runtime) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateRuntime", arg0)
 	ret0, _ := ret[0].(error)

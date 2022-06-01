@@ -41,8 +41,8 @@ import (
 	"github.com/erda-project/erda/modules/pkg/diceworkspace"
 	"github.com/erda-project/erda/modules/pkg/gitflowutil"
 	"github.com/erda-project/erda/modules/pkg/user"
-	dbclient2 "github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
-	events2 "github.com/erda-project/erda/modules/tools/orchestrator/events"
+	"github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
+	"github.com/erda-project/erda/modules/tools/orchestrator/events"
 	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/impl/clusterinfo"
 	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/impl/servicegroup"
 	"github.com/erda-project/erda/modules/tools/orchestrator/services/addon"
@@ -57,8 +57,8 @@ import (
 
 // Runtime 应用实例对象封装
 type Runtime struct {
-	db               *dbclient2.DBClient
-	evMgr            *events2.EventManager
+	db               *dbclient.DBClient
+	evMgr            *events.EventManager
 	bdl              *bundle.Bundle
 	addon            *addon.Addon
 	releaseSvc       pb.ReleaseServiceServer
@@ -80,14 +80,14 @@ func New(options ...Option) *Runtime {
 }
 
 // WithDBClient 配置 db client
-func WithDBClient(db *dbclient2.DBClient) Option {
+func WithDBClient(db *dbclient.DBClient) Option {
 	return func(r *Runtime) {
 		r.db = db
 	}
 }
 
 // WithEventManager 配置 EventManager
-func WithEventManager(evMgr *events2.EventManager) Option {
+func WithEventManager(evMgr *events.EventManager) Option {
 	return func(r *Runtime) {
 		r.evMgr = evMgr
 	}
@@ -355,10 +355,10 @@ func (r *Runtime) Create(operator user.ID, req *apistructs.RuntimeCreateRequest)
 	}
 	if created {
 		// emit runtime add event
-		event := events2.RuntimeEvent{
-			EventName: events2.RuntimeCreated,
+		event := events.RuntimeEvent{
+			EventName: events.RuntimeCreated,
 			Operator:  req.Operator,
-			Runtime:   dbclient2.ConvertRuntimeDTO(runtime, app),
+			Runtime:   dbclient.ConvertRuntimeDTO(runtime, app),
 		}
 		r.evMgr.EmitEvent(&event)
 	}
@@ -513,7 +513,7 @@ func (r *Runtime) RedeployPipeline(ctx context.Context, operator user.ID, orgID 
 	return convertRuntimeDeployDto(app, releaseResp.Data, dto)
 }
 
-func (r *Runtime) setClusterName(rt *dbclient2.Runtime) error {
+func (r *Runtime) setClusterName(rt *dbclient.Runtime) error {
 	clusterInfo, err := r.clusterinfoImpl.Info(rt.ClusterName)
 	if err != nil {
 		logrus.Errorf("get cluster info failed, cluster name: %s, error: %v", rt.ClusterName, err)
@@ -674,7 +674,7 @@ func (r *Runtime) doDeployRuntime(ctx *DeployContext) (*apistructs.DeploymentCre
 			needApproval = true
 		}
 	}
-	deployment := dbclient2.Deployment{
+	deployment := dbclient.Deployment{
 		RuntimeId:         ctx.Runtime.ID,
 		Status:            status,
 		Phase:             "INIT",
@@ -781,10 +781,10 @@ func (r *Runtime) doDeployRuntime(ctx *DeployContext) (*apistructs.DeploymentCre
 	}
 
 	// emit runtime deploy start event
-	event := events2.RuntimeEvent{
-		EventName:  events2.RuntimeDeployStart,
+	event := events.RuntimeEvent{
+		EventName:  events.RuntimeDeployStart,
 		Operator:   ctx.Operator,
-		Runtime:    dbclient2.ConvertRuntimeDTO(ctx.Runtime, ctx.App),
+		Runtime:    dbclient.ConvertRuntimeDTO(ctx.Runtime, ctx.App),
 		Deployment: deployment.Convert(),
 	}
 	r.evMgr.EmitEvent(&event)
@@ -797,7 +797,7 @@ func (r *Runtime) doDeployRuntime(ctx *DeployContext) (*apistructs.DeploymentCre
 	}, nil
 }
 
-func (r *Runtime) checkOrgDeployBlocked(orgID uint64, runtime *dbclient2.Runtime) (bool, error) {
+func (r *Runtime) checkOrgDeployBlocked(orgID uint64, runtime *dbclient.Runtime) (bool, error) {
 	org, err := r.bdl.GetOrg(orgID)
 	if err != nil {
 		return false, err
@@ -1008,7 +1008,7 @@ func (r *Runtime) Rollback(operator user.ID, orgID uint64, runtimeID uint64, dep
 			needApproval = true
 		}
 	}
-	deployment := dbclient2.Deployment{
+	deployment := dbclient.Deployment{
 		RuntimeId:         runtime.ID,
 		Status:            status,
 		Phase:             "INIT",
@@ -1112,10 +1112,10 @@ func (r *Runtime) Rollback(operator user.ID, orgID uint64, runtimeID uint64, dep
 		}
 	}
 	// emit runtime deploy start event
-	event := events2.RuntimeEvent{
-		EventName:  events2.RuntimeDeployStart,
+	event := events.RuntimeEvent{
+		EventName:  events.RuntimeDeployStart,
 		Operator:   operator.String(),
-		Runtime:    dbclient2.ConvertRuntimeDTO(runtime, app),
+		Runtime:    dbclient.ConvertRuntimeDTO(runtime, app),
 		Deployment: deployment.Convert(),
 	}
 	r.evMgr.EmitEvent(&event)
@@ -1151,9 +1151,9 @@ func (r *Runtime) Delete(operator user.ID, orgID uint64, runtimeID uint64) (*api
 	if !perm.Access {
 		return nil, apierrors.ErrDeleteRuntime.AccessDenied()
 	}
-	if runtime.LegacyStatus == dbclient2.LegacyStatusDeleting {
+	if runtime.LegacyStatus == dbclient.LegacyStatusDeleting {
 		// already marked
-		return dbclient2.ConvertRuntimeDTO(runtime, app), nil
+		return dbclient.ConvertRuntimeDTO(runtime, app), nil
 	}
 	if runtime.FileToken != "" {
 		if _, err = r.bdl.InvalidateOAuth2Token(apistructs.OAuth2TokenInvalidateRequest{AccessToken: runtime.FileToken}); err != nil {
@@ -1162,19 +1162,19 @@ func (r *Runtime) Delete(operator user.ID, orgID uint64, runtimeID uint64) (*api
 		}
 	}
 	// set status to DELETING
-	runtime.LegacyStatus = dbclient2.LegacyStatusDeleting
+	runtime.LegacyStatus = dbclient.LegacyStatusDeleting
 	if err := r.db.UpdateRuntime(runtime); err != nil {
 		return nil, apierrors.ErrDeleteRuntime.InternalError(err)
 	}
 
-	event := events2.RuntimeEvent{
-		EventName: events2.RuntimeDeleting,
-		Runtime:   dbclient2.ConvertRuntimeDTO(runtime, app),
+	event := events.RuntimeEvent{
+		EventName: events.RuntimeDeleting,
+		Runtime:   dbclient.ConvertRuntimeDTO(runtime, app),
 		Operator:  operator.String(),
 	}
 	r.evMgr.EmitEvent(&event)
 	// TODO: should emit RuntimeDeleted after really deleted or RuntimeDeleteFailed if failed
-	return dbclient2.ConvertRuntimeDTO(runtime, app), nil
+	return dbclient.ConvertRuntimeDTO(runtime, app), nil
 }
 
 // CountPRByWorkspace count project runtimes by workspace .
@@ -1269,9 +1269,9 @@ func (r *Runtime) Destroy(runtimeID uint64) error {
 	if err := r.db.DeleteRuntime(runtimeID); err != nil {
 		return err
 	}
-	event := events2.RuntimeEvent{
-		EventName: events2.RuntimeDeleted,
-		Runtime:   dbclient2.ConvertRuntimeDTO(runtime, app),
+	event := events.RuntimeEvent{
+		EventName: events.RuntimeDeleted,
+		Runtime:   dbclient.ConvertRuntimeDTO(runtime, app),
 		// TODO: no activity yet, so operator useless currently
 		//Operator:  operator,
 	}
@@ -1291,7 +1291,7 @@ func (r *Runtime) syncRuntimeServices(runtimeID uint64, dice *diceyml.DiceYaml) 
 		if err == nil {
 			ports = string(portsStr)
 		}
-		err = r.db.CreateOrUpdateRuntimeService(&dbclient2.RuntimeService{
+		err = r.db.CreateOrUpdateRuntimeService(&dbclient.RuntimeService{
 			RuntimeId:   runtimeID,
 			ServiceName: name,
 			Replica:     service.Deployments.Replicas,
@@ -1311,7 +1311,7 @@ func (r *Runtime) syncRuntimeServices(runtimeID uint64, dice *diceyml.DiceYaml) 
 // List 查询应用实例列表
 func (r *Runtime) List(userID user.ID, orgID uint64, appID uint64, workspace, name string) ([]apistructs.RuntimeSummaryDTO, error) {
 	var l = logrus.WithField("func", "*Runtime.List")
-	var runtimes []dbclient2.Runtime
+	var runtimes []dbclient.Runtime
 	if len(workspace) > 0 && len(name) > 0 {
 		r, err := r.db.FindRuntime(spec.RuntimeUniqueId{ApplicationId: appID, Workspace: workspace, Name: name})
 		if err != nil {
@@ -1411,7 +1411,7 @@ func (r *Runtime) ListGroupByApps(appIDs []uint64, env string) (map[uint64][]*ap
 	for appID, runtimeList := range runtimes {
 		for _, runtime := range runtimeList {
 			wg.Add(1)
-			go func(runtime *dbclient2.Runtime, deployment dbclient2.Deployment) {
+			go func(runtime *dbclient.Runtime, deployment dbclient.Deployment) {
 				r.generateListGroupAppResult(&result, appID, runtime, deployment, &wg)
 			}(runtime, deployments[runtime.ID])
 		}
@@ -1424,7 +1424,7 @@ func (r *Runtime) generateListGroupAppResult(result *struct {
 	sync.RWMutex
 	m map[uint64][]*apistructs.RuntimeSummaryDTO
 }, appID uint64,
-	runtime *dbclient2.Runtime, deployment dbclient2.Deployment, wg *sync.WaitGroup) {
+	runtime *dbclient.Runtime, deployment dbclient.Deployment, wg *sync.WaitGroup) {
 	var l = logrus.WithField("func", "*Runtime.ListGroupByApps")
 	var d apistructs.RuntimeSummaryDTO
 	if err := r.convertRuntimeSummaryDTOFromRuntimeModel(&d, *runtime, &deployment); err != nil {
@@ -1459,7 +1459,7 @@ func (r *Runtime) GetServiceByRuntime(runtimeIDs []uint64) (map[uint64]*apistruc
 		}
 		if deployment == nil {
 			// make a fake deployment
-			deployment = &dbclient2.Deployment{
+			deployment = &dbclient.Deployment{
 				RuntimeId: runtime.ID,
 				Status:    apistructs.DeploymentStatusInit,
 				BaseModel: dbengine.BaseModel{
@@ -1469,10 +1469,10 @@ func (r *Runtime) GetServiceByRuntime(runtimeIDs []uint64) (map[uint64]*apistruc
 		}
 		if runtime.ScheduleName.Namespace != "" && runtime.ScheduleName.Name != "" {
 			wg.Add(1)
-			go func(rt dbclient2.Runtime, wg *sync.WaitGroup, servicesMap *struct {
+			go func(rt dbclient.Runtime, wg *sync.WaitGroup, servicesMap *struct {
 				sync.RWMutex
 				m map[uint64]*apistructs.RuntimeSummaryDTO
-			}, deployment *dbclient2.Deployment) {
+			}, deployment *dbclient.Deployment) {
 				d := apistructs.RuntimeSummaryDTO{}
 				sg, err := r.serviceGroupImpl.InspectServiceGroupWithTimeout(rt.ScheduleName.Namespace, rt.ScheduleName.Name)
 				if err != nil {
@@ -1501,7 +1501,7 @@ func (r *Runtime) GetServiceByRuntime(runtimeIDs []uint64) (map[uint64]*apistruc
 
 }
 
-func (r *Runtime) convertRuntimeSummaryDTOFromRuntimeModel(d *apistructs.RuntimeSummaryDTO, runtime dbclient2.Runtime, deployment *dbclient2.Deployment) error {
+func (r *Runtime) convertRuntimeSummaryDTOFromRuntimeModel(d *apistructs.RuntimeSummaryDTO, runtime dbclient.Runtime, deployment *dbclient.Deployment) error {
 	var l = logrus.WithField("func", "Runtime.convertRuntimeInspectDTOFromRuntimeModel")
 
 	if d == nil {
@@ -1515,7 +1515,7 @@ func (r *Runtime) convertRuntimeSummaryDTOFromRuntimeModel(d *apistructs.Runtime
 	if deployment == nil {
 		isFakeRuntime = true
 		// make a fake deployment
-		deployment = &dbclient2.Deployment{
+		deployment = &dbclient.Deployment{
 			RuntimeId: runtime.ID,
 			Status:    apistructs.DeploymentStatusInit,
 			BaseModel: dbengine.BaseModel{
@@ -1540,8 +1540,8 @@ func (r *Runtime) convertRuntimeSummaryDTOFromRuntimeModel(d *apistructs.Runtime
 		deployment.Status == apistructs.DeploymentStatusWaitApprove {
 		d.Status = apistructs.RuntimeStatusInit
 	}
-	if runtime.LegacyStatus == dbclient2.LegacyStatusDeleting {
-		d.DeleteStatus = dbclient2.LegacyStatusDeleting
+	if runtime.LegacyStatus == dbclient.LegacyStatusDeleting {
+		d.DeleteStatus = dbclient.LegacyStatusDeleting
 	}
 	d.DeploymentOrderId = runtime.DeploymentOrderId
 	d.DeploymentOrderName = utils2.ParseOrderName(runtime.DeploymentOrderId)
@@ -1817,7 +1817,7 @@ func (r *Runtime) KillPod(runtimeID uint64, podname string) error {
 }
 
 // TODO: this work is weird
-func (r *Runtime) findRuntimeByIDOrName(idOrName string, appIDStr string, workspace string) (*dbclient2.Runtime, error) {
+func (r *Runtime) findRuntimeByIDOrName(idOrName string, appIDStr string, workspace string) (*dbclient.Runtime, error) {
 	runtimeID, err := strconv.ParseUint(idOrName, 10, 64)
 	if err == nil {
 		// parse int success, idOrName is id
@@ -2048,7 +2048,7 @@ func (r *Runtime) MarkOutdatedForDelete(runtimeID uint64) {
 	}
 }
 
-func (r *Runtime) markOutdated(deployment *dbclient2.Deployment) {
+func (r *Runtime) markOutdated(deployment *dbclient.Deployment) {
 	if deployment.Outdated {
 		// already outdated
 		return
@@ -2174,7 +2174,7 @@ func init() {
 	queryStringDecoder.IgnoreUnknownKeys(true)
 }
 
-func getRedeployPipelineYmlName(runtime dbclient2.Runtime) string {
+func getRedeployPipelineYmlName(runtime dbclient.Runtime) string {
 	return fmt.Sprintf("%d/%s/%s/pipeline.yml", runtime.ApplicationID, runtime.Workspace, runtime.Name)
 }
 

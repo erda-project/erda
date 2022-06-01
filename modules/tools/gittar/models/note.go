@@ -22,7 +22,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	gitmodule2 "github.com/erda-project/erda/modules/tools/gittar/pkg/gitmodule"
+	"github.com/erda-project/erda/modules/tools/gittar/pkg/gitmodule"
 	"github.com/erda-project/erda/modules/tools/gittar/pkg/util/guid"
 	"github.com/erda-project/erda/modules/tools/gittar/uc"
 )
@@ -68,16 +68,16 @@ type Note struct {
 }
 
 type NoteData struct {
-	DiffLines   []*gitmodule2.DiffLine `json:"diffLines"`
-	OldPath     string                 `json:"oldPath"`
-	NewPath     string                 `json:"newPath"`
-	OldLine     int                    `json:"oldLine"`
-	NewLine     int                    `json:"newLine"`
-	OldCommitId string                 `json:"oldCommitId"`
-	NewCommitId string                 `json:"newCommitId"`
+	DiffLines   []*gitmodule.DiffLine `json:"diffLines"`
+	OldPath     string                `json:"oldPath"`
+	NewPath     string                `json:"newPath"`
+	OldLine     int                   `json:"oldLine"`
+	NewLine     int                   `json:"newLine"`
+	OldCommitId string                `json:"oldCommitId"`
+	NewCommitId string                `json:"newCommitId"`
 }
 
-func (svc *Service) CreateNote(repo *gitmodule2.Repository, user *User, mergeId int64, note NoteRequest) (*Note, error) {
+func (svc *Service) CreateNote(repo *gitmodule.Repository, user *User, mergeId int64, note NoteRequest) (*Note, error) {
 	switch note.Type {
 	case NoteTypeNormal:
 		return svc.CreateNormalNote(repo, user, mergeId, note)
@@ -95,7 +95,7 @@ const (
 	lineTypeNew = "new"
 )
 
-func (svc *Service) CreateDiscussionNote(repo *gitmodule2.Repository, user *User, mergeId int64, request NoteRequest) (*Note, error) {
+func (svc *Service) CreateDiscussionNote(repo *gitmodule.Repository, user *User, mergeId int64, request NoteRequest) (*Note, error) {
 	commitTo, err := repo.GetCommit(request.OldCommitId)
 	if err != nil {
 		return nil, err
@@ -120,7 +120,7 @@ func (svc *Service) CreateDiscussionNote(repo *gitmodule2.Repository, user *User
 	}
 
 	//找出section
-	var diffSection *gitmodule2.DiffSection
+	var diffSection *gitmodule.DiffSection
 	for _, section := range diff.Sections {
 		for _, diffLine := range section.Lines {
 			if lineType == lineTypeOld {
@@ -144,7 +144,7 @@ func (svc *Service) CreateDiscussionNote(repo *gitmodule2.Repository, user *User
 		return nil, errors.New("invalid lineNo")
 	}
 
-	var lines []*gitmodule2.DiffLine
+	var lines []*gitmodule.DiffLine
 	for _, v := range diffSection.Lines {
 		if lineType == lineTypeOld {
 			if v.OldLineNo <= line {
@@ -200,7 +200,7 @@ func (svc *Service) CreateDiscussionNote(repo *gitmodule2.Repository, user *User
 	return &Note, nil
 }
 
-func (svc *Service) ReplyDiscussionNote(repo *gitmodule2.Repository, user *User, mergeId int64, request NoteRequest) (*Note, error) {
+func (svc *Service) ReplyDiscussionNote(repo *gitmodule.Repository, user *User, mergeId int64, request NoteRequest) (*Note, error) {
 	var oldDiffNote Note
 	err := svc.db.Where("repo_id = ? and merge_id=? and discussion_id= ?",
 		repo.ID, mergeId, request.DiscussionId).
@@ -229,7 +229,7 @@ func (svc *Service) ReplyDiscussionNote(repo *gitmodule2.Repository, user *User,
 	return &Note, nil
 }
 
-func (svc *Service) CreateNormalNote(repo *gitmodule2.Repository, user *User, mergeId int64, note NoteRequest) (*Note, error) {
+func (svc *Service) CreateNormalNote(repo *gitmodule.Repository, user *User, mergeId int64, note NoteRequest) (*Note, error) {
 	Note := Note{
 		MergeId:  mergeId,
 		Note:     note.Note,
@@ -245,7 +245,7 @@ func (svc *Service) CreateNormalNote(repo *gitmodule2.Repository, user *User, me
 	return &Note, nil
 }
 
-func (svc *Service) QueryAllNotes(repo *gitmodule2.Repository, mergeId int64) ([]Note, error) {
+func (svc *Service) QueryAllNotes(repo *gitmodule.Repository, mergeId int64) ([]Note, error) {
 	var notes []Note
 	err := svc.db.Where("repo_id = ?  and merge_id=?", repo.ID, mergeId).Order("updated_at desc").Find(&notes).Error
 	if err != nil {
@@ -274,7 +274,7 @@ func (svc *Service) QueryAllNotes(repo *gitmodule2.Repository, mergeId int64) ([
 	return result, nil
 }
 
-func (svc *Service) QueryDiffNotes(repo *gitmodule2.Repository, mergeId int64, oldCommitId string, newCommitId string) ([]Note, error) {
+func (svc *Service) QueryDiffNotes(repo *gitmodule.Repository, mergeId int64, oldCommitId string, newCommitId string) ([]Note, error) {
 	var notes []Note
 	err := svc.db.Where("repo_id = ?and merge_id=? and oldCommitId=? and newCommitId= ?",
 		repo.ID, mergeId, oldCommitId, newCommitId).Find(&notes).Error

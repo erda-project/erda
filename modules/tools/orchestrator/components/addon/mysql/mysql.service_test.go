@@ -25,7 +25,7 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-proto-go/orchestrator/addon/mysql/pb"
 	"github.com/erda-project/erda/apistructs"
-	dbclient2 "github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
+	"github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/pkg/kms/kmstypes"
 )
 
@@ -55,10 +55,10 @@ func Test_mysqlService_ToDTO(t *testing.T) {
 	type fields struct {
 		logger logs.Logger
 		kms    KMSWrapper
-		db     *dbclient2.DBClient
+		db     *dbclient.DBClient
 	}
 	type args struct {
-		acc     *dbclient2.MySQLAccount
+		acc     *dbclient.MySQLAccount
 		decrypt bool
 	}
 	tests := []struct {
@@ -73,7 +73,7 @@ func Test_mysqlService_ToDTO(t *testing.T) {
 				kms: &MockKMS{},
 			},
 			args: args{
-				acc: &dbclient2.MySQLAccount{
+				acc: &dbclient.MySQLAccount{
 					ID:                "1",
 					CreatedAt:         time.Time{},
 					UpdatedAt:         time.Time{},
@@ -115,10 +115,10 @@ func Test_mysqlService_getConnConfig(t *testing.T) {
 	type fields struct {
 		logger logs.Logger
 		kms    KMSWrapper
-		db     *dbclient2.DBClient
+		db     *dbclient.DBClient
 	}
 	type args struct {
-		ins *dbclient2.AddonInstance
+		ins *dbclient.AddonInstance
 	}
 	tests := []struct {
 		name    string
@@ -133,7 +133,7 @@ func Test_mysqlService_getConnConfig(t *testing.T) {
 				kms: &MockKMS{},
 			},
 			args: args{
-				ins: &dbclient2.AddonInstance{
+				ins: &dbclient.AddonInstance{
 					Config: `{"MYSQL_HOST":"hhh","MYSQL_PORT":"ppp","MYSQL_USERNAME":"uuu","MYSQL_PASSWORD":"MjIy"}`,
 				},
 			},
@@ -198,11 +198,11 @@ func Test_mysqlService_checkPerm(t *testing.T) {
 		logger logs.Logger
 		kms    KMSWrapper
 		perm   PermissionWrapper
-		db     *dbclient2.DBClient
+		db     *dbclient.DBClient
 	}
 	type args struct {
 		userID   string
-		routing  *dbclient2.AddonInstanceRouting
+		routing  *dbclient.AddonInstanceRouting
 		resource string
 		action   string
 	}
@@ -219,7 +219,7 @@ func Test_mysqlService_checkPerm(t *testing.T) {
 			},
 			args: args{
 				userID: "111",
-				routing: &dbclient2.AddonInstanceRouting{
+				routing: &dbclient.AddonInstanceRouting{
 					ID:        "222",
 					ProjectID: "24",
 				},
@@ -235,7 +235,7 @@ func Test_mysqlService_checkPerm(t *testing.T) {
 			},
 			args: args{
 				userID: "111",
-				routing: &dbclient2.AddonInstanceRouting{
+				routing: &dbclient.AddonInstanceRouting{
 					ID:        "222",
 					ProjectID: "42",
 				},
@@ -265,14 +265,14 @@ func Test_mysqlService_audit(t *testing.T) {
 		logger logs.Logger
 		kms    KMSWrapper
 		perm   PermissionWrapper
-		db     *dbclient2.DBClient
+		db     *dbclient.DBClient
 	}
 	type args struct {
 		ctx      context.Context
 		userID   string
 		orgID    string
-		routing  *dbclient2.AddonInstanceRouting
-		att      *dbclient2.AddonAttachment
+		routing  *dbclient.AddonInstanceRouting
+		att      *dbclient.AddonAttachment
 		tmplName apistructs.TemplateName
 		tmplCtx  map[string]interface{}
 	}
@@ -291,7 +291,7 @@ func Test_mysqlService_audit(t *testing.T) {
 				ctx:    context.Background(),
 				userID: "111",
 				orgID:  "333",
-				routing: &dbclient2.AddonInstanceRouting{
+				routing: &dbclient.AddonInstanceRouting{
 					ID:        "222",
 					ProjectID: "24",
 				},
@@ -312,7 +312,7 @@ func Test_mysqlService_audit(t *testing.T) {
 				ctx:    context.Background(),
 				userID: "111",
 				orgID:  "333",
-				routing: &dbclient2.AddonInstanceRouting{
+				routing: &dbclient.AddonInstanceRouting{
 					ID:        "222",
 					ProjectID: "24",
 				},
@@ -333,11 +333,11 @@ func Test_mysqlService_audit(t *testing.T) {
 				ctx:    context.Background(),
 				userID: "111",
 				orgID:  "333",
-				routing: &dbclient2.AddonInstanceRouting{
+				routing: &dbclient.AddonInstanceRouting{
 					ID:        "222",
 					ProjectID: "24",
 				},
-				att: &dbclient2.AddonAttachment{
+				att: &dbclient.AddonAttachment{
 					RuntimeID:     "123",
 					RuntimeName:   "321",
 					ApplicationID: "444",

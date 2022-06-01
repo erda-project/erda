@@ -25,7 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/erda-project/erda/apistructs"
-	addon2 "github.com/erda-project/erda/modules/tools/orchestrator/scheduler/executor/plugins/k8s/addon"
+	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/executor/plugins/k8s/addon"
 	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/executor/plugins/k8s/k8sapi"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders"
@@ -34,23 +34,23 @@ import (
 )
 
 type RedisOperator struct {
-	k8s         addon2.K8SUtil
-	deployment  addon2.DeploymentUtil
-	statefulset addon2.StatefulsetUtil
-	ns          addon2.NamespaceUtil
-	service     addon2.ServiceUtil
-	overcommit  addon2.OvercommitUtil
-	secret      addon2.SecretUtil
+	k8s         addon.K8SUtil
+	deployment  addon.DeploymentUtil
+	statefulset addon.StatefulsetUtil
+	ns          addon.NamespaceUtil
+	service     addon.ServiceUtil
+	overcommit  addon.OvercommitUtil
+	secret      addon.SecretUtil
 	client      *httpclient.HTTPClient
 }
 
-func NewRedisOperator(k8sutil addon2.K8SUtil,
-	deploy addon2.DeploymentUtil,
-	sts addon2.StatefulsetUtil,
-	service addon2.ServiceUtil,
-	ns addon2.NamespaceUtil,
-	overcommit addon2.OvercommitUtil,
-	secret addon2.SecretUtil,
+func NewRedisOperator(k8sutil addon.K8SUtil,
+	deploy addon.DeploymentUtil,
+	sts addon.StatefulsetUtil,
+	service addon.ServiceUtil,
+	ns addon.NamespaceUtil,
+	overcommit addon.OvercommitUtil,
+	secret addon.SecretUtil,
 	client *httpclient.HTTPClient) *RedisOperator {
 	return &RedisOperator{
 		k8s:         k8sutil,
@@ -152,8 +152,8 @@ func (ro *RedisOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
 
 	labels := make(map[string]string)
 	annotations := make(map[string]string)
-	addon2.SetAddonLabelsAndAnnotations(svc0, labels, annotations)
-	addon2.SetAddonLabelsAndAnnotations(svc1, labels, annotations)
+	addon.SetAddonLabelsAndAnnotations(svc0, labels, annotations)
+	addon.SetAddonLabelsAndAnnotations(svc1, labels, annotations)
 
 	rf := RedisFailover{
 		TypeMeta: metav1.TypeMeta{

@@ -28,7 +28,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pkg/user"
-	dbclient2 "github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
+	"github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/tools/orchestrator/services/runtime"
 	"github.com/erda-project/erda/modules/tools/orchestrator/spec"
 	"github.com/erda-project/erda/pkg/database/dbengine"
@@ -58,14 +58,14 @@ func Test_GenOverlayDataForAudit(t *testing.T) {
 func TestEndpoints_getRuntimeScaleRecordByRuntimeIds(t *testing.T) {
 
 	s := &Endpoints{
-		db: &dbclient2.DBClient{},
+		db: &dbclient.DBClient{},
 	}
 
 	ids := []uint64{128, 129}
 
-	monkey.PatchInstanceMethod(reflect.TypeOf(s.db), "FindRuntimesByIds", func(db *dbclient2.DBClient, ids []uint64) ([]dbclient2.Runtime, error) {
-		runtimes := make([]dbclient2.Runtime, 0)
-		runtimes = append(runtimes, dbclient2.Runtime{
+	monkey.PatchInstanceMethod(reflect.TypeOf(s.db), "FindRuntimesByIds", func(db *dbclient.DBClient, ids []uint64) ([]dbclient.Runtime, error) {
+		runtimes := make([]dbclient.Runtime, 0)
+		runtimes = append(runtimes, dbclient.Runtime{
 			BaseModel: dbengine.BaseModel{
 				ID: 128,
 			},
@@ -78,7 +78,7 @@ func TestEndpoints_getRuntimeScaleRecordByRuntimeIds(t *testing.T) {
 			ClusterName:   "test",
 			ClusterId:     1,
 			Creator:       "2",
-			ScheduleName: dbclient2.ScheduleName{
+			ScheduleName: dbclient.ScheduleName{
 				Namespace: "services",
 				Name:      "302615dbf0",
 			},
@@ -94,7 +94,7 @@ func TestEndpoints_getRuntimeScaleRecordByRuntimeIds(t *testing.T) {
 			GitRepoAbbrev:    "xxx-test/test01",
 			OrgID:            1,
 		})
-		runtimes = append(runtimes, dbclient2.Runtime{
+		runtimes = append(runtimes, dbclient.Runtime{
 			BaseModel: dbengine.BaseModel{
 				ID: 129,
 			},
@@ -107,7 +107,7 @@ func TestEndpoints_getRuntimeScaleRecordByRuntimeIds(t *testing.T) {
 			ClusterName:   "test",
 			ClusterId:     1,
 			Creator:       "2",
-			ScheduleName: dbclient2.ScheduleName{
+			ScheduleName: dbclient.ScheduleName{
 				Namespace: "services",
 				Name:      "3dbfa5bf4c2",
 			},
@@ -127,7 +127,7 @@ func TestEndpoints_getRuntimeScaleRecordByRuntimeIds(t *testing.T) {
 		return runtimes, nil
 	})
 
-	monkey.PatchInstanceMethod(reflect.TypeOf(s.db), "FindPreDeployment", func(db *dbclient2.DBClient, uniqueId spec.RuntimeUniqueId) (*dbclient2.PreDeployment, error) {
+	monkey.PatchInstanceMethod(reflect.TypeOf(s.db), "FindPreDeployment", func(db *dbclient.DBClient, uniqueId spec.RuntimeUniqueId) (*dbclient.PreDeployment, error) {
 
 		uniqeKey := fmt.Sprintf("%s-%s-%s", strconv.Itoa(int(uniqueId.ApplicationId)), uniqueId.Name, uniqueId.Workspace)
 		if uniqeKey == "21-feature/develop-DEV" {
@@ -183,7 +183,7 @@ func TestEndpoints_getRuntimeScaleRecordByRuntimeIds(t *testing.T) {
 			b, _ = json.Marshal(&dice_overlay)
 			DiceOverlayJson := string(b)
 
-			return &dbclient2.PreDeployment{
+			return &dbclient.PreDeployment{
 				BaseModel: dbengine.BaseModel{
 					ID: 23,
 				},
@@ -247,7 +247,7 @@ func TestEndpoints_getRuntimeScaleRecordByRuntimeIds(t *testing.T) {
 			b, _ = json.Marshal(&dice_overlay)
 			DiceOverlayJson := string(b)
 
-			return &dbclient2.PreDeployment{
+			return &dbclient.PreDeployment{
 				BaseModel: dbengine.BaseModel{
 					ID: 20,
 				},
@@ -269,13 +269,13 @@ func TestEndpoints_getRuntimeScaleRecordByRuntimeIds(t *testing.T) {
 func TestEndpoints_batchRuntimeReDeploy(t *testing.T) {
 
 	s := &Endpoints{
-		db:      &dbclient2.DBClient{},
+		db:      &dbclient.DBClient{},
 		runtime: &runtime.Runtime{},
 	}
 
 	userID := user.ID("2")
 
-	runtime1 := dbclient2.Runtime{
+	runtime1 := dbclient.Runtime{
 		BaseModel: dbengine.BaseModel{
 			ID: 129,
 		},
@@ -288,7 +288,7 @@ func TestEndpoints_batchRuntimeReDeploy(t *testing.T) {
 		ClusterName:   "test",
 		ClusterId:     1,
 		Creator:       "2",
-		ScheduleName: dbclient2.ScheduleName{
+		ScheduleName: dbclient.ScheduleName{
 			Namespace: "services",
 			Name:      "3dbfa5bf4c2",
 		},
@@ -305,7 +305,7 @@ func TestEndpoints_batchRuntimeReDeploy(t *testing.T) {
 		OrgID:            1,
 	}
 
-	runtime2 := dbclient2.Runtime{
+	runtime2 := dbclient.Runtime{
 		BaseModel: dbengine.BaseModel{
 			ID: 128,
 		},
@@ -318,7 +318,7 @@ func TestEndpoints_batchRuntimeReDeploy(t *testing.T) {
 		ClusterName:   "test",
 		ClusterId:     1,
 		Creator:       "2",
-		ScheduleName: dbclient2.ScheduleName{
+		ScheduleName: dbclient.ScheduleName{
 			Namespace: "services",
 			Name:      "302615dbf0",
 		},
@@ -335,7 +335,7 @@ func TestEndpoints_batchRuntimeReDeploy(t *testing.T) {
 		OrgID:            1,
 	}
 
-	runtime3 := dbclient2.Runtime{
+	runtime3 := dbclient.Runtime{
 		BaseModel: dbengine.BaseModel{
 			ID: 130,
 		},
@@ -348,7 +348,7 @@ func TestEndpoints_batchRuntimeReDeploy(t *testing.T) {
 		ClusterName:   "test",
 		ClusterId:     1,
 		Creator:       "2",
-		ScheduleName: dbclient2.ScheduleName{
+		ScheduleName: dbclient.ScheduleName{
 			Namespace: "services",
 			Name:      "302615dbf1",
 		},
@@ -364,7 +364,7 @@ func TestEndpoints_batchRuntimeReDeploy(t *testing.T) {
 		GitRepoAbbrev:    "xxx-test/test03",
 		OrgID:            1,
 	}
-	runtimes := []dbclient2.Runtime{runtime1, runtime2}
+	runtimes := []dbclient.Runtime{runtime1, runtime2}
 	runtimeScaleRecords1 := apistructs.RuntimeScaleRecords{
 		IDs: []uint64{128, 129},
 	}
@@ -432,10 +432,10 @@ func TestEndpoints_batchRuntimeReDeploy(t *testing.T) {
 		IDs:      []uint64{130},
 	}
 
-	monkey.PatchInstanceMethod(reflect.TypeOf(s.db), "FindRuntime", func(db *dbclient2.DBClient, uniqueId spec.RuntimeUniqueId) (*dbclient2.Runtime, error) {
+	monkey.PatchInstanceMethod(reflect.TypeOf(s.db), "FindRuntime", func(db *dbclient.DBClient, uniqueId spec.RuntimeUniqueId) (*dbclient.Runtime, error) {
 		uniqeKey := fmt.Sprintf("%s-%s-%s", strconv.Itoa(int(uniqueId.ApplicationId)), uniqueId.Name, uniqueId.Workspace)
 		if uniqeKey == "21-feature/develop-DEV" {
-			runtime := &dbclient2.Runtime{
+			runtime := &dbclient.Runtime{
 				BaseModel: dbengine.BaseModel{
 					ID: 129,
 				},
@@ -448,7 +448,7 @@ func TestEndpoints_batchRuntimeReDeploy(t *testing.T) {
 				ClusterName:   "test",
 				ClusterId:     1,
 				Creator:       "2",
-				ScheduleName: dbclient2.ScheduleName{
+				ScheduleName: dbclient.ScheduleName{
 					Namespace: "services",
 					Name:      "3dbfa5bf4c2",
 				},
@@ -467,7 +467,7 @@ func TestEndpoints_batchRuntimeReDeploy(t *testing.T) {
 			return runtime, nil
 		}
 		if uniqeKey == "1-feature/develop-DEV" {
-			runtime := &dbclient2.Runtime{
+			runtime := &dbclient.Runtime{
 				BaseModel: dbengine.BaseModel{
 					ID: 128,
 				},
@@ -480,7 +480,7 @@ func TestEndpoints_batchRuntimeReDeploy(t *testing.T) {
 				ClusterName:   "test",
 				ClusterId:     1,
 				Creator:       "2",
-				ScheduleName: dbclient2.ScheduleName{
+				ScheduleName: dbclient.ScheduleName{
 					Namespace: "services",
 					Name:      "302615dbf0",
 				},
@@ -498,7 +498,7 @@ func TestEndpoints_batchRuntimeReDeploy(t *testing.T) {
 			}
 			return runtime, nil
 		} else {
-			runtime := &dbclient2.Runtime{
+			runtime := &dbclient.Runtime{
 				BaseModel: dbengine.BaseModel{
 					ID: 130,
 				},
@@ -511,7 +511,7 @@ func TestEndpoints_batchRuntimeReDeploy(t *testing.T) {
 				ClusterName:   "test",
 				ClusterId:     1,
 				Creator:       "2",
-				ScheduleName: dbclient2.ScheduleName{
+				ScheduleName: dbclient.ScheduleName{
 					Namespace: "services",
 					Name:      "302615dbf1",
 				},
@@ -646,7 +646,7 @@ func TestEndpoints_batchRuntimeReDeploy(t *testing.T) {
 		}
 	}
 
-	var rts []dbclient2.Runtime
+	var rts []dbclient.Runtime
 	got = s.batchRuntimeReDeploy(ctx, userID, rts, runtimeScaleRecords2)
 	if len(got.ReDeployedIds) != len(want2.ReDeployedIds) {
 		t.Errorf("batchRuntimeReDeploy() = %v, want %v", got, want2)
@@ -661,7 +661,7 @@ func TestEndpoints_batchRuntimeReDeploy(t *testing.T) {
 		}
 	}
 
-	runtimes3 := []dbclient2.Runtime{runtime3}
+	runtimes3 := []dbclient.Runtime{runtime3}
 	got = s.batchRuntimeReDeploy(ctx, userID, runtimes3, runtimeScaleRecords3)
 	if len(got.UnReDeployedIds) != len(want3.UnReDeployedIds) {
 		t.Errorf("batchRuntimeReDeploy() = %v, want %v", got, want3)
@@ -682,13 +682,13 @@ func TestEndpoints_batchRuntimeReDeploy(t *testing.T) {
 func TestEndpoints_batchRuntimeDelete(t *testing.T) {
 
 	s := &Endpoints{
-		db:      &dbclient2.DBClient{},
+		db:      &dbclient.DBClient{},
 		runtime: &runtime.Runtime{},
 	}
 
 	userID := user.ID("2")
 
-	runtime1 := dbclient2.Runtime{
+	runtime1 := dbclient.Runtime{
 		BaseModel: dbengine.BaseModel{
 			ID: 129,
 		},
@@ -701,7 +701,7 @@ func TestEndpoints_batchRuntimeDelete(t *testing.T) {
 		ClusterName:   "test",
 		ClusterId:     1,
 		Creator:       "2",
-		ScheduleName: dbclient2.ScheduleName{
+		ScheduleName: dbclient.ScheduleName{
 			Namespace: "services",
 			Name:      "3dbfa5bf4c2",
 		},
@@ -718,7 +718,7 @@ func TestEndpoints_batchRuntimeDelete(t *testing.T) {
 		OrgID:            1,
 	}
 
-	runtime2 := dbclient2.Runtime{
+	runtime2 := dbclient.Runtime{
 		BaseModel: dbengine.BaseModel{
 			ID: 128,
 		},
@@ -731,7 +731,7 @@ func TestEndpoints_batchRuntimeDelete(t *testing.T) {
 		ClusterName:   "test",
 		ClusterId:     1,
 		Creator:       "2",
-		ScheduleName: dbclient2.ScheduleName{
+		ScheduleName: dbclient.ScheduleName{
 			Namespace: "services",
 			Name:      "302615dbf0",
 		},
@@ -748,7 +748,7 @@ func TestEndpoints_batchRuntimeDelete(t *testing.T) {
 		OrgID:            1,
 	}
 
-	runtimes := []dbclient2.Runtime{runtime1, runtime2}
+	runtimes := []dbclient.Runtime{runtime1, runtime2}
 	runtimeScaleRecords1 := apistructs.RuntimeScaleRecords{
 		IDs: []uint64{128, 129},
 	}
@@ -831,10 +831,10 @@ func TestEndpoints_batchRuntimeDelete(t *testing.T) {
 		}
 	})
 
-	monkey.PatchInstanceMethod(reflect.TypeOf(s.db), "FindRuntime", func(db *dbclient2.DBClient, uniqueId spec.RuntimeUniqueId) (*dbclient2.Runtime, error) {
+	monkey.PatchInstanceMethod(reflect.TypeOf(s.db), "FindRuntime", func(db *dbclient.DBClient, uniqueId spec.RuntimeUniqueId) (*dbclient.Runtime, error) {
 		uniqeKey := fmt.Sprintf("%s-%s-%s", strconv.Itoa(int(uniqueId.ApplicationId)), uniqueId.Name, uniqueId.Workspace)
 		if uniqeKey == "21-feature/develop-DEV" {
-			runtime := &dbclient2.Runtime{
+			runtime := &dbclient.Runtime{
 				BaseModel: dbengine.BaseModel{
 					ID: 129,
 				},
@@ -847,7 +847,7 @@ func TestEndpoints_batchRuntimeDelete(t *testing.T) {
 				ClusterName:   "test",
 				ClusterId:     1,
 				Creator:       "2",
-				ScheduleName: dbclient2.ScheduleName{
+				ScheduleName: dbclient.ScheduleName{
 					Namespace: "services",
 					Name:      "3dbfa5bf4c2",
 				},
@@ -865,7 +865,7 @@ func TestEndpoints_batchRuntimeDelete(t *testing.T) {
 			}
 			return runtime, nil
 		} else {
-			runtime := &dbclient2.Runtime{
+			runtime := &dbclient.Runtime{
 				BaseModel: dbengine.BaseModel{
 					ID: 128,
 				},
@@ -878,7 +878,7 @@ func TestEndpoints_batchRuntimeDelete(t *testing.T) {
 				ClusterName:   "test",
 				ClusterId:     1,
 				Creator:       "2",
-				ScheduleName: dbclient2.ScheduleName{
+				ScheduleName: dbclient.ScheduleName{
 					Namespace: "services",
 					Name:      "302615dbf0",
 				},
@@ -955,7 +955,7 @@ func TestEndpoints_batchRuntimeDelete(t *testing.T) {
 		}
 	}
 
-	var rts []dbclient2.Runtime
+	var rts []dbclient.Runtime
 	got = s.batchRuntimeDelete(userID, rts, runtimeScaleRecords2)
 	if len(got.DeletedIds) != len(want2.DeletedIds) {
 		t.Errorf("batchRuntimeReDeploy() = %v, want %v", got, want2)

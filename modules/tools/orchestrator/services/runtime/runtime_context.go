@@ -16,14 +16,14 @@ package runtime
 
 import (
 	"github.com/erda-project/erda/apistructs"
-	dbclient2 "github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
+	"github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
 )
 
 // DeployContext 部署上下文
 type DeployContext struct {
-	Runtime        *dbclient2.Runtime
+	Runtime        *dbclient.Runtime
 	App            *apistructs.ApplicationDTO
-	LastDeployment *dbclient2.Deployment
+	LastDeployment *dbclient.Deployment
 	// ReleaseId to deploy
 	ReleaseID  string
 	Operator   string

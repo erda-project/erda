@@ -34,7 +34,7 @@ import (
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/tools/gittar/conf"
-	models2 "github.com/erda-project/erda/modules/tools/gittar/models"
+	"github.com/erda-project/erda/modules/tools/gittar/models"
 	"github.com/erda-project/erda/modules/tools/gittar/pkg/gitmodule"
 	"github.com/erda-project/erda/modules/tools/gittar/uc"
 	"github.com/erda-project/erda/modules/tools/gittar/webcontext"
@@ -190,7 +190,7 @@ func AuthenticateV3(c *webcontext.Context) {
 	doAuth(c, repo, repoName)
 }
 
-func doAuth(c *webcontext.Context, repo *models2.Repo, repoName string) {
+func doAuth(c *webcontext.Context, repo *models.Repo, repoName string) {
 	// Git Protocol version v2
 	version := c.GetHeader("Git-Protocol")
 	c.Set("gitProtocol", version)
@@ -223,7 +223,7 @@ func doAuth(c *webcontext.Context, repo *models2.Repo, repoName string) {
 			return
 		}
 
-		c.Set("user", &models2.User{
+		c.Set("user", &models.User{
 			Name:     userInfoDto.Username,
 			NickName: userInfoDto.NickName,
 			Email:    userInfoDto.Email,
@@ -245,7 +245,7 @@ func doAuth(c *webcontext.Context, repo *models2.Repo, repoName string) {
 				return
 			}
 			c.Set("repository", gitRepository)
-			c.Set("user", &models2.User{
+			c.Set("user", &models.User{
 				Name:     userInfo.UserName,
 				NickName: userInfo.NickName,
 				Email:    userInfo.Email,
@@ -264,7 +264,7 @@ func doAuth(c *webcontext.Context, repo *models2.Repo, repoName string) {
 
 type AuthResp struct {
 	Permission *apistructs.ScopeRole
-	Repo       *models2.Repo
+	Repo       *models.Repo
 }
 
 type ErrorData struct {
@@ -333,7 +333,7 @@ func GetUserByBasicAuth(c *webcontext.Context, username string, passwd string) (
 	return &userInfo, nil
 }
 
-func ValidaUserRepoWithCache(c *webcontext.Context, userId string, repo *models2.Repo) (*AuthResp, error) {
+func ValidaUserRepoWithCache(c *webcontext.Context, userId string, repo *models.Repo) (*AuthResp, error) {
 	key := userId + "-" + repo.Path
 	authResultCache, found := authCache.Get(key)
 	if found {
@@ -351,7 +351,7 @@ func ValidaUserRepoWithCache(c *webcontext.Context, userId string, repo *models2
 	return result, err
 }
 
-func ValidaUserRepo(c *webcontext.Context, userId string, repo *models2.Repo) (*AuthResp, error) {
+func ValidaUserRepo(c *webcontext.Context, userId string, repo *models.Repo) (*AuthResp, error) {
 	permission, err := c.Bundle.ScopeRoleAccess(userId, &apistructs.ScopeRoleAccessRequest{
 		Scope: apistructs.Scope{
 			Type: apistructs.AppScope,
@@ -370,7 +370,7 @@ func ValidaUserRepo(c *webcontext.Context, userId string, repo *models2.Repo) (*
 	}, nil
 }
 
-func openRepository(ctx *webcontext.Context, repo *models2.Repo) (*gitmodule.Repository, error) {
+func openRepository(ctx *webcontext.Context, repo *models.Repo) (*gitmodule.Repository, error) {
 	gitRepository, err := gitmodule.OpenRepositoryWithInit(conf.RepoRoot(), repo.Path)
 	if err != nil {
 		return nil, err

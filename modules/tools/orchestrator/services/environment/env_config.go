@@ -20,12 +20,12 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/apistructs"
-	dbclient2 "github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
+	"github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
 )
 
 // EnvConfig 命名空间参数
 type EnvConfig struct {
-	db *dbclient2.DBClient
+	db *dbclient.DBClient
 }
 
 // Option 定义 EnvConfig 对象的配置选项
@@ -41,7 +41,7 @@ func New(options ...Option) *EnvConfig {
 }
 
 // WithDBClient 配置 db client
-func WithDBClient(db *dbclient2.DBClient) Option {
+func WithDBClient(db *dbclient.DBClient) Option {
 	return func(o *EnvConfig) {
 		o.db = db
 	}
@@ -117,8 +117,8 @@ func (e *EnvConfig) GetDeployConfigs(namespace string) ([]apistructs.EnvConfig, 
 	return decryptAndEntitys2Res(newConfigsItem, true), nil
 }
 
-func filterDeployEnvFormat(configs []dbclient2.ConfigItem) ([]dbclient2.ConfigItem, error) {
-	var newConfigsItem []dbclient2.ConfigItem
+func filterDeployEnvFormat(configs []dbclient.ConfigItem) ([]dbclient.ConfigItem, error) {
+	var newConfigsItem []dbclient.ConfigItem
 	configMap := make(map[string]struct{}, 0)
 	for _, env := range configs {
 		m, err := regexp.MatchString(DeployEnvFormat, env.ItemKey)
@@ -137,7 +137,7 @@ func filterDeployEnvFormat(configs []dbclient2.ConfigItem) ([]dbclient2.ConfigIt
 	return newConfigsItem, nil
 }
 
-func decryptAndEntitys2Res(configItems []dbclient2.ConfigItem, decrypt bool) []apistructs.EnvConfig {
+func decryptAndEntitys2Res(configItems []dbclient.ConfigItem, decrypt bool) []apistructs.EnvConfig {
 	envConfigs := []apistructs.EnvConfig{}
 	for _, config := range configItems {
 		envConfig := apistructs.EnvConfig{

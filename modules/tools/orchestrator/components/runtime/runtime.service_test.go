@@ -26,7 +26,7 @@ import (
 	"github.com/erda-project/erda-proto-go/orchestrator/runtime/pb"
 	"github.com/erda-project/erda/apistructs"
 	mock2 "github.com/erda-project/erda/modules/tools/orchestrator/components/runtime/mock"
-	dbclient2 "github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
+	"github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/tools/orchestrator/events"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
@@ -66,12 +66,12 @@ func TestService_GetRuntime(t *testing.T) {
 	resp, err = svc.GetRuntime(ctx, &pb.GetRuntimeRequest{})
 	assert.NotNil(err)
 
-	runtime := &dbclient2.Runtime{BaseModel: dbengine.BaseModel{
+	runtime := &dbclient.Runtime{BaseModel: dbengine.BaseModel{
 		ID: 1,
 	},
 		ClusterName:   "foo",
 		ApplicationID: 1,
-		ScheduleName: dbclient2.ScheduleName{
+		ScheduleName: dbclient.ScheduleName{
 			Namespace: "ns",
 			Name:      "n",
 		},
@@ -90,7 +90,7 @@ func TestService_GetRuntime(t *testing.T) {
 	dbSvc.
 		EXPECT().
 		FindLastDeployment(gomock.Eq(uint64(1))).
-		Return(&dbclient2.Deployment{
+		Return(&dbclient.Deployment{
 			RuntimeId: uint64(10),
 			Status:    apistructs.DeploymentStatusDeploying,
 			Dice: `{
@@ -107,7 +107,7 @@ func TestService_GetRuntime(t *testing.T) {
 	dbSvc.
 		EXPECT().
 		FindDomainsByRuntimeId(gomock.Eq(uint64(1))).
-		Return([]dbclient2.RuntimeDomain{
+		Return([]dbclient.RuntimeDomain{
 			{
 				Domain: "foo.com",
 			},
@@ -208,7 +208,7 @@ func Test_DeleteRuntime(t *testing.T) {
 	assert.NotNil(err)
 
 	dbSvc.EXPECT().GetRuntime(gomock.Eq(uint64(20))).Return(
-		&dbclient2.Runtime{
+		&dbclient.Runtime{
 			ApplicationID: 1,
 		}, nil,
 	).Times(1)
@@ -222,7 +222,7 @@ func Test_DeleteRuntime(t *testing.T) {
 	).Times(1)
 	dbSvc.EXPECT().UpdateRuntime(
 		newMatcher(func(i interface{}) bool {
-			if runtime, ok := i.(*dbclient2.Runtime); !ok || runtime.LegacyStatus != dbclient2.LegacyStatusDeleting {
+			if runtime, ok := i.(*dbclient.Runtime); !ok || runtime.LegacyStatus != dbclient.LegacyStatusDeleting {
 				return false
 			}
 			return true

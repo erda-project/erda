@@ -26,7 +26,7 @@ import (
 	"github.com/erda-project/erda/modules/pkg/diceworkspace"
 	"github.com/erda-project/erda/modules/tools/gittar/conf"
 	"github.com/erda-project/erda/modules/tools/gittar/helper"
-	models2 "github.com/erda-project/erda/modules/tools/gittar/models"
+	"github.com/erda-project/erda/modules/tools/gittar/models"
 	"github.com/erda-project/erda/modules/tools/gittar/pkg/gitmodule"
 	"github.com/erda-project/erda/modules/tools/gittar/webcontext"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -267,7 +267,7 @@ func Merge(ctx *webcontext.Context) {
 		ctx.Abort(ERROR_ARG_ID)
 		return
 	}
-	var mergeOptions models2.MergeOptions
+	var mergeOptions models.MergeOptions
 	err = ctx.BindJSON(&mergeOptions)
 	if err != nil {
 		ctx.Abort(err)
@@ -279,14 +279,14 @@ func Merge(ctx *webcontext.Context) {
 		return
 	}
 
-	pushEvent := &models2.PayloadPushEvent{
+	pushEvent := &models.PayloadPushEvent{
 		Before: mergeRequestInfo.TargetSha,
 		After:  commit.ID,
 		Ref:    gitmodule.BRANCH_PREFIX + mergeRequestInfo.TargetBranch,
 		IsTag:  false,
 		Pusher: ctx.User,
 	}
-	go helper.PostReceiveHook([]*models2.PayloadPushEvent{pushEvent}, ctx)
+	go helper.PostReceiveHook([]*models.PayloadPushEvent{pushEvent}, ctx)
 	go func() {
 		rules, err := ctx.Bundle.GetAppBranchRules(uint64(ctx.Repository.ApplicationId))
 		if err != nil {
@@ -371,7 +371,7 @@ func QueryNotes(ctx *webcontext.Context) {
 		return
 	}
 
-	var result []models2.Note
+	var result []models.Note
 	if noteType == "all" {
 		result, err = ctx.Service.QueryAllNotes(ctx.Repository, request.Id)
 		if err != nil {
@@ -399,7 +399,7 @@ func CreateNotes(ctx *webcontext.Context) {
 		return
 	}
 
-	var noteRequest models2.NoteRequest
+	var noteRequest models.NoteRequest
 	err := ctx.BindJSON(&noteRequest)
 	if err != nil {
 		ctx.Abort(err)
@@ -428,7 +428,7 @@ func CreateNotes(ctx *webcontext.Context) {
 		return
 	}
 
-	if noteRequest.Type == models2.NoteTypeNormal && noteRequest.Score > 0 {
+	if noteRequest.Type == models.NoteTypeNormal && noteRequest.Score > 0 {
 		mergeRequestInfo.Score += noteRequest.Score
 		mergeRequestInfo.ScoreNum++
 		_, err = ctx.Service.UpdateMergeRequest(ctx.Repository, ctx.User, mergeRequestInfo)

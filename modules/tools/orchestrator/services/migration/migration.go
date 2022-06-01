@@ -25,7 +25,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	dbclient2 "github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
+	"github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/impl/job"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -33,7 +33,7 @@ import (
 
 // Migration migration 实例对象封装
 type Migration struct {
-	db  *dbclient2.DBClient
+	db  *dbclient.DBClient
 	bdl *bundle.Bundle
 	job job.Job
 }
@@ -52,7 +52,7 @@ func New(options ...Option) *Migration {
 }
 
 // WithDBClient 配置 db client
-func WithDBClient(db *dbclient2.DBClient) Option {
+func WithDBClient(db *dbclient.DBClient) Option {
 	return func(a *Migration) {
 		a.db = db
 	}
@@ -72,7 +72,7 @@ func WithJob(job job.Job) Option {
 	}
 }
 
-func (m *Migration) Create(migrationLog *dbclient2.MigrationLog, diceyml *diceyml.DiceYaml, Runtime *dbclient2.Runtime, App *apistructs.ApplicationDTO) (data interface{}, err error) {
+func (m *Migration) Create(migrationLog *dbclient.MigrationLog, diceyml *diceyml.DiceYaml, Runtime *dbclient.Runtime, App *apistructs.ApplicationDTO) (data interface{}, err error) {
 
 	job, err := m.transferToSchedulerJob(migrationLog, diceyml, Runtime, App)
 	if err != nil {
@@ -94,7 +94,7 @@ func (m *Migration) Create(migrationLog *dbclient2.MigrationLog, diceyml *diceym
 	return createdJob, nil
 }
 
-func (m *Migration) Start(migrationLog *dbclient2.MigrationLog, diceyml *diceyml.DiceYaml, Runtime *dbclient2.Runtime, App *apistructs.ApplicationDTO) (err error) {
+func (m *Migration) Start(migrationLog *dbclient.MigrationLog, diceyml *diceyml.DiceYaml, Runtime *dbclient.Runtime, App *apistructs.ApplicationDTO) (err error) {
 	created, started, err := m.Exist(migrationLog)
 	if err != nil {
 		return err
@@ -135,7 +135,7 @@ func (m *Migration) Start(migrationLog *dbclient2.MigrationLog, diceyml *diceyml
 // Exist 返回 job 存在情况
 // created: 调用 create 成功，job 在 etcd 中已创建
 // started: 调用 start 成功，job 在 cluster 中已存在并开始执行
-func (m *Migration) Exist(migrationLog *dbclient2.MigrationLog) (created, started bool, err error) {
+func (m *Migration) Exist(migrationLog *dbclient.MigrationLog) (created, started bool, err error) {
 	statusDesc, err := m.Status(migrationLog)
 	if err != nil {
 		created = false
@@ -174,7 +174,7 @@ func (m *Migration) Exist(migrationLog *dbclient2.MigrationLog) (created, starte
 }
 
 // Status 获取migration status信息
-func (m *Migration) Status(migrationLog *dbclient2.MigrationLog) (desc apistructs.MigrationStatusDesc, err error) {
+func (m *Migration) Status(migrationLog *dbclient.MigrationLog) (desc apistructs.MigrationStatusDesc, err error) {
 	namespace, name := getNamespaceAndName(migrationLog)
 	if os.Getenv(apistructs.ENABLE_SPECIFIED_K8S_NAMESPACE) != "" {
 		namespace = os.Getenv(apistructs.ENABLE_SPECIFIED_K8S_NAMESPACE)
@@ -242,7 +242,7 @@ func transferStatus(status string) apistructs.StatusCode {
 }
 
 // transferToSchedulerJob 转换为job
-func (m *Migration) transferToSchedulerJob(migrationLog *dbclient2.MigrationLog, diceyml *diceyml.DiceYaml, Runtime *dbclient2.Runtime, App *apistructs.ApplicationDTO) (job apistructs.JobFromUser, err error) {
+func (m *Migration) transferToSchedulerJob(migrationLog *dbclient.MigrationLog, diceyml *diceyml.DiceYaml, Runtime *dbclient.Runtime, App *apistructs.ApplicationDTO) (job apistructs.JobFromUser, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = errors.Errorf("%v", r)
@@ -317,7 +317,7 @@ func httpInvokeErr(err error) error {
 }
 
 // 获取schedule namespace和name
-func getNamespaceAndName(migrationLog *dbclient2.MigrationLog) (string, string) {
+func getNamespaceAndName(migrationLog *dbclient.MigrationLog) (string, string) {
 	taskId := strconv.FormatUint(migrationLog.ID, 10)
 	return "migration-" + taskId, "migration-task-" + taskId
 }

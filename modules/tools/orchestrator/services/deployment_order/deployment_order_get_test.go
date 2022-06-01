@@ -23,13 +23,13 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	dbclient2 "github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
+	"github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/tools/orchestrator/services/apierrors"
 )
 
 func TestComposeApplicationsInfo(t *testing.T) {
 	type args struct {
-		Releases   [][]*dbclient2.Release
+		Releases   [][]*dbclient.Release
 		Params     map[string]apistructs.DeploymentOrderParam
 		AppsStatus apistructs.DeploymentOrderStatusMap
 	}
@@ -56,7 +56,7 @@ func TestComposeApplicationsInfo(t *testing.T) {
 		{
 			name: "pipeline",
 			args: args{
-				Releases: [][]*dbclient2.Release{
+				Releases: [][]*dbclient.Release{
 					{
 						{
 							ReleaseId:       "8d2385a088df415decdf6357147ed4a2",
@@ -111,8 +111,8 @@ func TestGetDeploymentOrderAccessDenied(t *testing.T) {
 	order := New()
 
 	defer monkey.UnpatchAll()
-	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "GetDeploymentOrder", func(*dbclient2.DBClient, string) (*dbclient2.DeploymentOrder, error) {
-		return &dbclient2.DeploymentOrder{}, nil
+	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "GetDeploymentOrder", func(*dbclient.DBClient, string) (*dbclient.DeploymentOrder, error) {
+		return &dbclient.DeploymentOrder{}, nil
 	})
 	monkey.PatchInstanceMethod(reflect.TypeOf(order.bdl), "CheckPermission", func(*bundle.Bundle, *apistructs.PermissionCheckRequest) (*apistructs.PermissionCheckResponseData, error) {
 		return &apistructs.PermissionCheckResponseData{

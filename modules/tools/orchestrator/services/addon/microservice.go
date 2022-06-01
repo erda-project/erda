@@ -26,7 +26,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/tools/orchestrator/conf"
-	dbclient2 "github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
+	"github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
 )
 
 var allEnvs = []string{apistructs.WORKSPACE_DEV, apistructs.WORKSPACE_TEST, apistructs.WORKSPACE_STAGING, apistructs.WORKSPACE_PROD}
@@ -90,7 +90,7 @@ func (a *Addon) ListMicroServiceProject(projectIDs []string) ([]*apistructs.Micr
 	if err != nil {
 		return nil, err
 	}
-	attachRoutingMap := make(map[string]dbclient2.AddonInstanceRouting)
+	attachRoutingMap := make(map[string]dbclient.AddonInstanceRouting)
 	for _, attachRouting := range *attachRoutings {
 		attachRoutingMap[attachRouting.ID] = attachRouting
 	}
@@ -182,7 +182,7 @@ func (a *Addon) ListMicroServiceMenu(projectID, env string) ([]*apistructs.Micro
 	if err != nil {
 		return nil, err
 	}
-	attachRoutingMap := make(map[string]dbclient2.AddonInstanceRouting)
+	attachRoutingMap := make(map[string]dbclient.AddonInstanceRouting)
 	for _, attachRouting := range *attachRoutings {
 		attachRoutingMap[attachRouting.ID] = attachRouting
 	}
@@ -192,7 +192,7 @@ func (a *Addon) ListMicroServiceMenu(projectID, env string) ([]*apistructs.Micro
 	if err != nil {
 		return nil, err
 	}
-	instanceMap := make(map[string]dbclient2.AddonInstance)
+	instanceMap := make(map[string]dbclient.AddonInstance)
 	// 校验是否存在roost或zookeeper
 	var hasRoost bool
 	for _, instance := range *instances {
@@ -255,7 +255,7 @@ func (a *Addon) appendMicroServiceProjectData(dataMap map[uint64]*apistructs.Mic
 }
 
 // createMicroServiceMenuData 生成微服务菜单数据
-func (a *Addon) createMicroServiceMenuData(routing dbclient2.AddonInstanceRouting, instance dbclient2.AddonInstance, project *apistructs.ProjectDTO) *apistructs.MicroServiceMenuResponseData {
+func (a *Addon) createMicroServiceMenuData(routing dbclient.AddonInstanceRouting, instance dbclient.AddonInstance, project *apistructs.ProjectDTO) *apistructs.MicroServiceMenuResponseData {
 	data := new(apistructs.MicroServiceMenuResponseData)
 	data.AddonName = routing.AddonName
 

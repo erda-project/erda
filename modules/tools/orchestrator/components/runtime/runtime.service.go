@@ -31,7 +31,7 @@ import (
 	"github.com/erda-project/erda-proto-go/orchestrator/runtime/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pkg/user"
-	dbclient2 "github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
+	"github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/tools/orchestrator/events"
 	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/impl/servicegroup"
 	"github.com/erda-project/erda/modules/tools/orchestrator/services/apierrors"
@@ -52,7 +52,7 @@ type Service struct {
 	clusterSvc       clusterpb.ClusterServiceServer
 }
 
-func convertRuntimeToPB(runtime *dbclient2.Runtime, app *apistructs.ApplicationDTO) *pb.Runtime {
+func convertRuntimeToPB(runtime *dbclient.Runtime, app *apistructs.ApplicationDTO) *pb.Runtime {
 	return &pb.Runtime{
 		Name:            runtime.Name,
 		GitBranch:       runtime.Name,
@@ -86,18 +86,18 @@ func (r *Service) Delete(operator user.ID, orgID uint64, runtimeID uint64) (*pb.
 		return nil, err
 	}
 
-	if runtime.LegacyStatus == dbclient2.LegacyStatusDeleting {
+	if runtime.LegacyStatus == dbclient.LegacyStatusDeleting {
 		// already marked
 		return convertRuntimeToPB(runtime, app), nil
 	}
 	// set status to DELETING
-	runtime.LegacyStatus = dbclient2.LegacyStatusDeleting
+	runtime.LegacyStatus = dbclient.LegacyStatusDeleting
 	if err := r.db.UpdateRuntime(runtime); err != nil {
 		return nil, apierrors.ErrDeleteRuntime.InternalError(err)
 	}
 	event := events.RuntimeEvent{
 		EventName: events.RuntimeDeleting,
-		Runtime:   dbclient2.ConvertRuntimeDTO(runtime, app),
+		Runtime:   dbclient.ConvertRuntimeDTO(runtime, app),
 		Operator:  operator.String(),
 	}
 	r.evMgr.EmitEvent(&event)
@@ -126,7 +126,7 @@ func (r *Service) DelRuntime(ctx context.Context, req *pb.DelRuntimeRequest) (*p
 	return r.Delete(userID, orgID, runtimeID)
 }
 
-func (r *Service) findByIDOrName(idOrName string, appIDStr string, workspace string) (*dbclient2.Runtime, error) {
+func (r *Service) findByIDOrName(idOrName string, appIDStr string, workspace string) (*dbclient.Runtime, error) {
 	runtimeID, err := strconv.ParseUint(idOrName, 10, 64)
 	if err == nil {
 		// parse int success, idOrName is an id
@@ -175,7 +175,7 @@ func (r *Service) getUserAndOrgID(ctx context.Context) (userID user.ID, orgID ui
 	return
 }
 
-func (r *Service) checkRuntimeScopePermission(userID user.ID, runtime *dbclient2.Runtime, action string) error {
+func (r *Service) checkRuntimeScopePermission(userID user.ID, runtime *dbclient.Runtime, action string) error {
 	perm, err := r.bundle.CheckPermission(&apistructs.PermissionCheckRequest{
 		UserID:   userID.String(),
 		Scope:    apistructs.AppScope,
@@ -195,7 +195,7 @@ func (r *Service) checkRuntimeScopePermission(userID user.ID, runtime *dbclient2
 	return nil
 }
 
-func (r *Service) getRuntimeByRequest(request *pb.GetRuntimeRequest) (*dbclient2.Runtime, error) {
+func (r *Service) getRuntimeByRequest(request *pb.GetRuntimeRequest) (*dbclient.Runtime, error) {
 	runtime, err := r.findByIDOrName(request.NameOrID, request.AppID, request.Workspace)
 
 	if err != nil {
@@ -209,7 +209,7 @@ func (r *Service) getRuntimeByRequest(request *pb.GetRuntimeRequest) (*dbclient2
 	return runtime, nil
 }
 
-func (r *Service) getDeployment(runtimeID uint64) (*dbclient2.Deployment, error) {
+func (r *Service) getDeployment(runtimeID uint64) (*dbclient.Deployment, error) {
 	deployment, err := r.db.FindLastDeployment(runtimeID)
 	if err != nil {
 		return nil, apierrors.ErrGetRuntime.InternalError(err)
@@ -227,8 +227,8 @@ func (r *Service) GetRuntime(ctx context.Context, request *pb.GetRuntimeRequest)
 	var (
 		err        error
 		userID     user.ID
-		runtime    *dbclient2.Runtime
-		deployment *dbclient2.Deployment
+		runtime    *dbclient.Runtime
+		deployment *dbclient.Deployment
 		domainMap  map[string][]string
 		cluster    *clusterpb.ClusterInfo
 		sg         *apistructs.ServiceGroup
@@ -327,7 +327,7 @@ func isStatusForDisplay(status string) string {
 	}
 }
 
-func fillInspectByApp(data *pb.RuntimeInspect, runtime *dbclient2.Runtime, app *apistructs.ApplicationDTO) {
+func fillInspectByApp(data *pb.RuntimeInspect, runtime *dbclient.Runtime, app *apistructs.ApplicationDTO) {
 	data.ProjectID = app.ProjectID
 	data.ApplicationName = app.Name
 	data.CreatedAt = timestamppb.New(runtime.CreatedAt)
@@ -335,7 +335,7 @@ func fillInspectByApp(data *pb.RuntimeInspect, runtime *dbclient2.Runtime, app *
 	data.TimeCreated = timestamppb.New(runtime.CreatedAt)
 }
 
-func fillInspectByDeployment(data *pb.RuntimeInspect, runtime *dbclient2.Runtime, deployment *dbclient2.Deployment, cluster *clusterpb.ClusterInfo) {
+func fillInspectByDeployment(data *pb.RuntimeInspect, runtime *dbclient.Runtime, deployment *dbclient.Deployment, cluster *clusterpb.ClusterInfo) {
 	data.DeployStatus = string(deployment.Status)
 	if deployment.Status == apistructs.DeploymentStatusDeploying ||
 		deployment.Status == apistructs.DeploymentStatusWaiting ||
@@ -467,7 +467,7 @@ func convertInternalAddrs(sg *apistructs.ServiceGroup, serviceName string) []str
 	return addrs
 }
 
-func fillInspectBase(data *pb.RuntimeInspect, runtime *dbclient2.Runtime, sg *apistructs.ServiceGroup) {
+func fillInspectBase(data *pb.RuntimeInspect, runtime *dbclient.Runtime, sg *apistructs.ServiceGroup) {
 	data.Id = runtime.ID
 	data.Name = runtime.Name
 	data.ServiceGroupNamespace = runtime.ScheduleName.Namespace

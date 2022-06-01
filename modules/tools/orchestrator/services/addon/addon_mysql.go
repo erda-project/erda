@@ -20,7 +20,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	dbclient2 "github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
+	"github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
 )
 
 func (a *Addon) toOverrideConfigFromMySQLAccount(config map[string]interface{}, mySQLAccountID string) error {
@@ -31,7 +31,7 @@ func (a *Addon) toOverrideConfigFromMySQLAccount(config map[string]interface{}, 
 	return a._toOverrideConfigFromMySQLAccount(config, account)
 }
 
-func (a *Addon) _toOverrideConfigFromMySQLAccount(config map[string]interface{}, account *dbclient2.MySQLAccount) error {
+func (a *Addon) _toOverrideConfigFromMySQLAccount(config map[string]interface{}, account *dbclient.MySQLAccount) error {
 	password := account.Password
 	if account.KMSKey != "" {
 		dr, err := a.kms.Decrypt(account.Password, account.KMSKey)
@@ -57,7 +57,7 @@ func (a *Addon) _toOverrideConfigFromMySQLAccount(config map[string]interface{},
 	return nil
 }
 
-func (a *Addon) InitMySQLAccount(addonIns *dbclient2.AddonInstance, addonInsRouting *dbclient2.AddonInstanceRouting, operator string) error {
+func (a *Addon) InitMySQLAccount(addonIns *dbclient.AddonInstance, addonInsRouting *dbclient.AddonInstanceRouting, operator string) error {
 	if addonIns.AddonName != "mysql" {
 		return nil
 	}
@@ -72,9 +72,9 @@ func (a *Addon) InitMySQLAccount(addonIns *dbclient2.AddonInstance, addonInsRout
 	return a.db.CreateMySQLAccount(account)
 }
 
-func buildMySQLAccount(addonIns *dbclient2.AddonInstance, addonInsRouting *dbclient2.AddonInstanceRouting,
-	extra *dbclient2.AddonInstanceExtra, operator string) *dbclient2.MySQLAccount {
-	return &dbclient2.MySQLAccount{
+func buildMySQLAccount(addonIns *dbclient.AddonInstance, addonInsRouting *dbclient.AddonInstanceRouting,
+	extra *dbclient.AddonInstanceExtra, operator string) *dbclient.MySQLAccount {
+	return &dbclient.MySQLAccount{
 		Username:          "mysql",
 		Password:          extra.Value,
 		KMSKey:            addonIns.KmsKey,
@@ -84,7 +84,7 @@ func buildMySQLAccount(addonIns *dbclient2.AddonInstance, addonInsRouting *dbcli
 	}
 }
 
-func (a *Addon) prepareAttachment(addonInsRouting *dbclient2.AddonInstanceRouting, addonAttach *dbclient2.AddonAttachment) bool {
+func (a *Addon) prepareAttachment(addonInsRouting *dbclient.AddonInstanceRouting, addonAttach *dbclient.AddonAttachment) bool {
 	if addonInsRouting.AddonName != "mysql" {
 		return false
 	}
@@ -95,7 +95,7 @@ func (a *Addon) prepareAttachment(addonInsRouting *dbclient2.AddonInstanceRoutin
 	return a._prepareAttachment(addonAttach, accounts)
 }
 
-func (a *Addon) _prepareAttachment(addonAttach *dbclient2.AddonAttachment, accounts []dbclient2.MySQLAccount) bool {
+func (a *Addon) _prepareAttachment(addonAttach *dbclient.AddonAttachment, accounts []dbclient.MySQLAccount) bool {
 	if len(accounts) == 0 {
 		return false
 	}

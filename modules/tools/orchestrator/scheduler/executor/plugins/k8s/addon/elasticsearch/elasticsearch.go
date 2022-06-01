@@ -27,7 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/erda-project/erda/apistructs"
-	addon2 "github.com/erda-project/erda/modules/tools/orchestrator/scheduler/executor/plugins/k8s/addon"
+	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/executor/plugins/k8s/addon"
 	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/executor/plugins/k8s/k8sapi"
 	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/executor/plugins/k8s/k8serror"
 	"github.com/erda-project/erda/pkg/http/httpclient"
@@ -37,23 +37,23 @@ import (
 )
 
 type ElasticsearchOperator struct {
-	k8s         addon2.K8SUtil
-	statefulset addon2.StatefulsetUtil
-	ns          addon2.NamespaceUtil
-	service     addon2.ServiceUtil
-	overcommit  addon2.OvercommitUtil
-	secret      addon2.SecretUtil
-	imageSecret addon2.ImageSecretUtil
+	k8s         addon.K8SUtil
+	statefulset addon.StatefulsetUtil
+	ns          addon.NamespaceUtil
+	service     addon.ServiceUtil
+	overcommit  addon.OvercommitUtil
+	secret      addon.SecretUtil
+	imageSecret addon.ImageSecretUtil
 	client      *httpclient.HTTPClient
 }
 
-func New(k8s addon2.K8SUtil,
-	sts addon2.StatefulsetUtil,
-	ns addon2.NamespaceUtil,
-	service addon2.ServiceUtil,
-	overcommit addon2.OvercommitUtil,
-	secret addon2.SecretUtil,
-	imageSecret addon2.ImageSecretUtil,
+func New(k8s addon.K8SUtil,
+	sts addon.StatefulsetUtil,
+	ns addon.NamespaceUtil,
+	service addon.ServiceUtil,
+	overcommit addon.OvercommitUtil,
+	secret addon.SecretUtil,
+	imageSecret addon.ImageSecretUtil,
 	client *httpclient.HTTPClient) *ElasticsearchOperator {
 	return &ElasticsearchOperator{
 		k8s:         k8s,
@@ -146,7 +146,7 @@ func (eo *ElasticsearchOperator) Convert(sg *apistructs.ServiceGroup) interface{
 	// set Labels and annotations
 	es.Labels = make(map[string]string)
 	es.Annotations = make(map[string]string)
-	addon2.SetAddonLabelsAndAnnotations(svc0, es.Labels, es.Annotations)
+	addon.SetAddonLabelsAndAnnotations(svc0, es.Labels, es.Annotations)
 
 	secret := corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{

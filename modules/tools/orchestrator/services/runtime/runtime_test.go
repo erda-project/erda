@@ -27,7 +27,7 @@ import (
 	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	dbclient2 "github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
+	"github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/impl/clusterinfo"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
@@ -112,7 +112,7 @@ func TestGetRollbackConfig(t *testing.T) {
 
 func Test_getRedeployPipelineYmlName(t *testing.T) {
 	type args struct {
-		runtime dbclient2.Runtime
+		runtime dbclient.Runtime
 	}
 	tests := []struct {
 		name string
@@ -123,7 +123,7 @@ func Test_getRedeployPipelineYmlName(t *testing.T) {
 		{
 			name: "Filled in the space and scene set",
 			args: args{
-				runtime: dbclient2.Runtime{
+				runtime: dbclient.Runtime{
 					ApplicationID: 1,
 					Workspace:     "PORD",
 					Name:          "master",
@@ -134,7 +134,7 @@ func Test_getRedeployPipelineYmlName(t *testing.T) {
 		{
 			name: "Filled in the space and scene set",
 			args: args{
-				runtime: dbclient2.Runtime{
+				runtime: dbclient.Runtime{
 					ApplicationID: 4,
 					Workspace:     "TEST",
 					Name:          "master",
@@ -235,7 +235,7 @@ func Test_setClusterName(t *testing.T) {
 	})
 	defer m1.Unpatch()
 	runtimeSvc := New(WithBundle(bdl), WithClusterInfo(clusterinfoImpl))
-	rt := &dbclient2.Runtime{
+	rt := &dbclient.Runtime{
 		ClusterName: "erda-edge",
 	}
 	runtimeSvc.setClusterName(rt)
@@ -244,10 +244,10 @@ func Test_setClusterName(t *testing.T) {
 
 func Test_convertRuntimeSummaryDTOFromRuntimeModel(t *testing.T) {
 	var bdl *bundle.Bundle
-	var db *dbclient2.DBClient
+	var db *dbclient.DBClient
 	runtime := New(WithBundle(bdl), WithDBClient(db))
 	a := &apistructs.RuntimeSummaryDTO{}
-	r := dbclient2.Runtime{
+	r := dbclient.Runtime{
 		BaseModel: dbengine.BaseModel{
 			ID: 111,
 		},
@@ -255,7 +255,7 @@ func Test_convertRuntimeSummaryDTOFromRuntimeModel(t *testing.T) {
 		ApplicationID: 0,
 		Workspace:     "",
 	}
-	d := dbclient2.Deployment{
+	d := dbclient.Deployment{
 		BaseModel: dbengine.BaseModel{
 			ID: 3,
 		},
@@ -270,14 +270,14 @@ func Test_convertRuntimeSummaryDTOFromRuntimeModel(t *testing.T) {
 
 func Test_generateListGroupAppResult(t *testing.T) {
 	var bdl *bundle.Bundle
-	var db *dbclient2.DBClient
+	var db *dbclient.DBClient
 	runtime := New(WithBundle(bdl), WithDBClient(db))
 	var result = struct {
 		sync.RWMutex
 		m map[uint64][]*apistructs.RuntimeSummaryDTO
 	}{m: make(map[uint64][]*apistructs.RuntimeSummaryDTO)}
 	var wg sync.WaitGroup
-	r := dbclient2.Runtime{
+	r := dbclient.Runtime{
 		BaseModel: dbengine.BaseModel{
 			ID: 111,
 		},
@@ -285,7 +285,7 @@ func Test_generateListGroupAppResult(t *testing.T) {
 		ApplicationID: 1,
 		Workspace:     "",
 	}
-	d := dbclient2.Deployment{
+	d := dbclient.Deployment{
 		BaseModel: dbengine.BaseModel{
 			ID: 3,
 		},
@@ -301,10 +301,10 @@ func Test_generateListGroupAppResult(t *testing.T) {
 
 func Test_listGroupByApps(t *testing.T) {
 	var bdl *bundle.Bundle
-	var db *dbclient2.DBClient
-	m1 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "FindRuntimesInApps", func(_ *dbclient2.DBClient, appIDs []uint64, env string) (map[uint64][]*dbclient2.Runtime, []uint64, error) {
-		a := make(map[uint64][]*dbclient2.Runtime)
-		a[1] = []*dbclient2.Runtime{{
+	var db *dbclient.DBClient
+	m1 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "FindRuntimesInApps", func(_ *dbclient.DBClient, appIDs []uint64, env string) (map[uint64][]*dbclient.Runtime, []uint64, error) {
+		a := make(map[uint64][]*dbclient.Runtime)
+		a[1] = []*dbclient.Runtime{{
 			BaseModel: dbengine.BaseModel{
 				ID: 1,
 			},
@@ -316,14 +316,14 @@ func Test_listGroupByApps(t *testing.T) {
 	})
 	defer m1.Unpatch()
 
-	m2 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "FindLastDeploymentIDsByRutimeIDs", func(_ *dbclient2.DBClient, runtimeIDs []uint64) ([]uint64, error) {
+	m2 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "FindLastDeploymentIDsByRutimeIDs", func(_ *dbclient.DBClient, runtimeIDs []uint64) ([]uint64, error) {
 		return []uint64{5}, nil
 	})
 	defer m2.Unpatch()
 
-	m3 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "FindDeploymentsByIDs", func(_ *dbclient2.DBClient, ids []uint64) (map[uint64]dbclient2.Deployment, error) {
-		a := make(map[uint64]dbclient2.Deployment)
-		a[1] = dbclient2.Deployment{
+	m3 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "FindDeploymentsByIDs", func(_ *dbclient.DBClient, ids []uint64) (map[uint64]dbclient.Deployment, error) {
+		a := make(map[uint64]dbclient.Deployment)
+		a[1] = dbclient.Deployment{
 			BaseModel: dbengine.BaseModel{
 				ID: 5,
 			},

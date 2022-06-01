@@ -22,15 +22,15 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda-proto-go/core/pipeline/lifecycle_hook_client/pb"
-	dbclient2 "github.com/erda-project/erda/modules/tools/pipeline/dbclient"
+	"github.com/erda-project/erda/modules/tools/pipeline/dbclient"
 )
 
 func Test_loadLifecycleHookClient(t *testing.T) {
 	var table = []struct {
-		clients []*dbclient2.PipelineLifecycleHookClient
+		clients []*dbclient.PipelineLifecycleHookClient
 	}{
 		{
-			clients: []*dbclient2.PipelineLifecycleHookClient{
+			clients: []*dbclient.PipelineLifecycleHookClient{
 				{
 					Name:   "FDP",
 					ID:     1,
@@ -46,13 +46,13 @@ func Test_loadLifecycleHookClient(t *testing.T) {
 			},
 		},
 		{
-			clients: []*dbclient2.PipelineLifecycleHookClient{},
+			clients: []*dbclient.PipelineLifecycleHookClient{},
 		},
 	}
 
 	for _, v := range table {
-		var e dbclient2.Client
-		monkey.PatchInstanceMethod(reflect.TypeOf(&e), "FindLifecycleHookClientList", func(_ *dbclient2.Client, ops ...dbclient2.SessionOption) (clients []*dbclient2.PipelineLifecycleHookClient, err error) {
+		var e dbclient.Client
+		monkey.PatchInstanceMethod(reflect.TypeOf(&e), "FindLifecycleHookClientList", func(_ *dbclient.Client, ops ...dbclient.SessionOption) (clients []*dbclient.PipelineLifecycleHookClient, err error) {
 			return v.clients, nil
 		})
 		s := &LifeCycleService{

@@ -36,7 +36,7 @@ import (
 	eventboxapi "github.com/erda-project/erda/modules/tools/orchestrator/scheduler/events"
 	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/events/eventtypes"
 	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/executor/executortypes"
-	addon2 "github.com/erda-project/erda/modules/tools/orchestrator/scheduler/executor/plugins/k8s/addon"
+	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/executor/plugins/k8s/addon"
 	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/executor/plugins/k8s/addon/daemonset"
 	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/executor/plugins/k8s/addon/elasticsearch"
 	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/executor/plugins/k8s/addon/mysql"
@@ -213,11 +213,11 @@ type Kubernetes struct {
 	cpuNumQuota float64
 
 	// operators
-	elasticsearchoperator addon2.AddonOperator
-	redisoperator         addon2.AddonOperator
-	mysqloperator         addon2.AddonOperator
-	daemonsetoperator     addon2.AddonOperator
-	sourcecovoperator     addon2.AddonOperator
+	elasticsearchoperator addon.AddonOperator
+	redisoperator         addon.AddonOperator
+	mysqloperator         addon.AddonOperator
+	daemonsetoperator     addon.AddonOperator
+	sourcecovoperator     addon.AddonOperator
 
 	// instanceinfoSyncCancelFunc
 	instanceinfoSyncCancelFunc context.CancelFunc
@@ -479,7 +479,7 @@ func (k *Kubernetes) Create(ctx context.Context, specObj interface{}) (interface
 			return nil, fmt.Errorf("not found addonoperator: %v", operator)
 		}
 		// addon runtime id
-		return nil, addon2.Create(op, runtime)
+		return nil, addon.Create(op, runtime)
 	}
 
 	if err = k.createRuntime(ctx, runtime); err != nil {
@@ -531,7 +531,7 @@ func (k *Kubernetes) Destroy(ctx context.Context, specObj interface{}) error {
 			return fmt.Errorf("not found addonoperator: %v", operator)
 		}
 		// If it fails, try to delete it as a normal runtime
-		if err := addon2.Remove(op, runtime); err == nil {
+		if err := addon.Remove(op, runtime); err == nil {
 			return nil
 		}
 	}
@@ -598,7 +598,7 @@ func (k *Kubernetes) Update(ctx context.Context, specObj interface{}) (interface
 		if err != nil {
 			return nil, fmt.Errorf("not found addonoperator: %v", operator)
 		}
-		return nil, addon2.Update(op, runtime)
+		return nil, addon.Update(op, runtime)
 	}
 
 	// Update needs to distinguish between ordinary updates and updates that are "re-analyzed" after the system deletes the runtime (namespace) after the creation fails.
@@ -645,7 +645,7 @@ func (k *Kubernetes) Inspect(ctx context.Context, specObj interface{}) (interfac
 		if err != nil {
 			return nil, fmt.Errorf("not found addonoperator: %v", operator)
 		}
-		return addon2.Inspect(op, runtime)
+		return addon.Inspect(op, runtime)
 	}
 
 	if IsGroupStateful(runtime) {
@@ -1186,7 +1186,7 @@ func (k *Kubernetes) SetFineGrainedCPU(container *apiv1.Container, extra map[str
 	return nil
 }
 
-func (k *Kubernetes) whichOperator(operator string) (addon2.AddonOperator, error) {
+func (k *Kubernetes) whichOperator(operator string) (addon.AddonOperator, error) {
 	switch operator {
 	case "elasticsearch":
 		return k.elasticsearchoperator, nil
@@ -1265,7 +1265,7 @@ func (k *Kubernetes) Scale(ctx context.Context, spec interface{}) (interface{}, 
 		if err != nil {
 			return nil, fmt.Errorf("not found addonoperator: %v", operator)
 		}
-		return sg, addon2.Update(op, sg)
+		return sg, addon.Update(op, sg)
 	}
 
 	if IsGroupStateful(sg) {

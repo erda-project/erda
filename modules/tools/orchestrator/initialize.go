@@ -27,7 +27,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/tools/orchestrator/components/addon/mysql"
 	"github.com/erda-project/erda/modules/tools/orchestrator/conf"
-	dbclient2 "github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
+	"github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/tools/orchestrator/endpoints"
 	"github.com/erda-project/erda/modules/tools/orchestrator/i18n"
 	scheduler2 "github.com/erda-project/erda/modules/tools/orchestrator/scheduler"
@@ -58,7 +58,7 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 		logrus.SetLevel(logrus.DebugLevel)
 	}
 
-	db := &dbclient2.DBClient{
+	db := &dbclient.DBClient{
 		DBEngine: &dbengine.DBEngine{
 			DB: p.Orm,
 		},
@@ -104,7 +104,7 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 }
 
 // 初始化 Endpoints
-func (p *provider) initEndpoints(db *dbclient2.DBClient) (*endpoints.Endpoints, error) {
+func (p *provider) initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, error) {
 	// init pool
 	pool := goroutinepool.New(conf.PoolSize())
 	pool.Start()
@@ -304,7 +304,7 @@ func cleanLeaderRemainingAddon(ep *endpoints.Endpoints) error {
 	// find the addons which project is deleted
 	existProjectMap := make(map[uint64]struct{})
 	notExistProjectMap := make(map[uint64]struct{})
-	newAddons := addonsFilterIn(addons, func(addon *dbclient2.AddonInstance) bool {
+	newAddons := addonsFilterIn(addons, func(addon *dbclient.AddonInstance) bool {
 		if addon.ProjectID == "" {
 			return false
 		}
@@ -356,7 +356,7 @@ func cleanLeaderRemainingAddon(ep *endpoints.Endpoints) error {
 	return nil
 }
 
-func addonsFilterIn(addons []dbclient2.AddonInstance, fn func(addon *dbclient2.AddonInstance) bool) (newAddons []dbclient2.AddonInstance) {
+func addonsFilterIn(addons []dbclient.AddonInstance, fn func(addon *dbclient.AddonInstance) bool) (newAddons []dbclient.AddonInstance) {
 	for _, v := range addons {
 		if fn(&v) {
 			newAddons = append(newAddons, v)

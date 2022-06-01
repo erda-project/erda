@@ -34,7 +34,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/pkg/user"
-	dbclient2 "github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
+	"github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/tools/orchestrator/events"
 	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler"
 	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/impl/servicegroup"
@@ -51,7 +51,7 @@ import (
 
 // Deployment 部署对象封装
 type Deployment struct {
-	db               *dbclient2.DBClient
+	db               *dbclient.DBClient
 	evMgr            *events.EventManager
 	bdl              *bundle.Bundle
 	addon            *addon.Addon
@@ -78,7 +78,7 @@ func New(options ...Option) *Deployment {
 }
 
 // WithDBClient 配置 db client
-func WithDBClient(db *dbclient2.DBClient) Option {
+func WithDBClient(db *dbclient.DBClient) Option {
 	return func(d *Deployment) {
 		d.db = db
 	}
@@ -263,7 +263,7 @@ func (d *Deployment) ListOrg(ctx context.Context, userID user.ID, orgID uint64, 
 			allruntimeids = append(allruntimeids, r.ID)
 		}
 	}
-	filter := dbclient2.DeploymentFilter{
+	filter := dbclient.DeploymentFilter{
 		StatusIn:     nil,
 		NeedApproved: needApproval,
 		Approved:     approved,
@@ -354,7 +354,7 @@ func (d *Deployment) List(userID user.ID, orgID uint64, runtimeID uint64, status
 		return nil, apierrors.ErrListDeployment.AccessDenied()
 	}
 
-	filter := dbclient2.DeploymentFilter{StatusIn: statuses}
+	filter := dbclient.DeploymentFilter{StatusIn: statuses}
 	deployments, _, err := d.db.FindDeployments(runtimeID, filter, page.GetOffset(), page.GetLimit())
 	if err != nil {
 		return nil, apierrors.ErrListDeployment.InternalError(err)
@@ -391,7 +391,7 @@ func (d *Deployment) ListAllDeployments(userID user.ID, orgID uint64, runtimeID 
 		return nil, apierrors.ErrListDeployment.AccessDenied()
 	}
 
-	filter := dbclient2.DeploymentFilter{StatusIn: statuses}
+	filter := dbclient.DeploymentFilter{StatusIn: statuses}
 	deployments, err := d.db.FindAllDeployments(runtimeID, filter)
 	if err != nil {
 		return nil, apierrors.ErrListDeployment.InternalError(err)

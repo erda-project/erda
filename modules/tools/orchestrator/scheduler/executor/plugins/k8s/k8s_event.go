@@ -29,7 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 
 	"github.com/erda-project/erda/apistructs"
-	events2 "github.com/erda-project/erda/modules/tools/orchestrator/scheduler/events"
+	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/events"
 	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/events/eventtypes"
 	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/executor/executortypes"
 	"github.com/erda-project/erda/pkg/jsonstore/storetypes"
@@ -42,7 +42,7 @@ type Event struct {
 	Object apiv1.Event     `json:"object"`
 }
 
-func (k *Kubernetes) sendEvent(localStore *sync.Map, stopCh chan struct{}, notifier events2.Notifier) {
+func (k *Kubernetes) sendEvent(localStore *sync.Map, stopCh chan struct{}, notifier events.Notifier) {
 	time.Sleep(5 * time.Second)
 
 	logrus.Infof("executor in k8s sendEvent, name: %s", k.name)
@@ -111,7 +111,7 @@ func (k *Kubernetes) sendEvent(localStore *sync.Map, stopCh chan struct{}, notif
 
 			key := strutil.Concat("/dice/service/", paths[0], "/", paths[1])
 			var sg apistructs.ServiceGroup
-			if err := events2.GetEventManager().MemEtcdStore.Get(context.Background(), key, &sg); err != nil {
+			if err := events.GetEventManager().MemEtcdStore.Get(context.Background(), key, &sg); err != nil {
 				logrus.Errorf("failed to get k8s servicegroup from etcd, key: %s, (%v)", key, err)
 				continue
 			}
@@ -130,7 +130,7 @@ func (k *Kubernetes) sendEvent(localStore *sync.Map, stopCh chan struct{}, notif
 	}
 }
 
-func (k *Kubernetes) InstanceEvent(event Event, runtimeName string, notifier events2.Notifier) {
+func (k *Kubernetes) InstanceEvent(event Event, runtimeName string, notifier events.Notifier) {
 	name := event.Object.Name
 	pieces := strings.Split(name, "-")
 	var serviceName string
@@ -185,7 +185,7 @@ func (k *Kubernetes) InstanceEvent(event Event, runtimeName string, notifier eve
 		}
 	}
 
-	if err := notifier.Send(ie, events2.WithDest(map[string]interface{}{"WEBHOOK": apistructs.EventHeader{
+	if err := notifier.Send(ie, events.WithDest(map[string]interface{}{"WEBHOOK": apistructs.EventHeader{
 		Event:     "instances-status",
 		Action:    "changed",
 		OrgID:     "-1",
@@ -196,7 +196,7 @@ func (k *Kubernetes) InstanceEvent(event Event, runtimeName string, notifier eve
 }
 
 // Send full events regularly
-func (k *Kubernetes) totalEvent(localStore *sync.Map, notifier events2.Notifier, eventAddr string) {
+func (k *Kubernetes) totalEvent(localStore *sync.Map, notifier events.Notifier, eventAddr string) {
 	initStore := func(key string, v interface{}) error {
 		reKey := etcdKeyToMapKey(key)
 		if len(reKey) == 0 {
@@ -217,7 +217,7 @@ func (k *Kubernetes) totalEvent(localStore *sync.Map, notifier events2.Notifier,
 		return nil
 	}
 
-	em := events2.GetEventManager()
+	em := events.GetEventManager()
 	if err := em.MemEtcdStore.ForEach(context.Background(), "/dice/service/", apistructs.ServiceGroup{}, initStore); err != nil {
 		logrus.Errorf("executor(%s) foreach initStore error: %v", k.name, err)
 	}
@@ -226,7 +226,7 @@ func (k *Kubernetes) totalEvent(localStore *sync.Map, notifier events2.Notifier,
 	f := func(key, val interface{}) bool {
 		logrus.Infof("in totalEvent f, key: %v, value: %v", key, val)
 
-		_, ok := val.(events2.RuntimeEvent)
+		_, ok := val.(events.RuntimeEvent)
 		if !ok {
 			logrus.Errorf("failed to parse val to runtime event in totalEvent, key: %v, value: %v", key, val)
 			return true
@@ -245,7 +245,7 @@ func (k *Kubernetes) totalEvent(localStore *sync.Map, notifier events2.Notifier,
 		}
 		etcdKey := strutil.Concat("/dice/service/", paths[0], "/", paths[1])
 		var sg apistructs.ServiceGroup
-		if err := events2.GetEventManager().MemEtcdStore.Get(context.Background(), etcdKey, &sg); err != nil {
+		if err := events.GetEventManager().MemEtcdStore.Get(context.Background(), etcdKey, &sg); err != nil {
 			logrus.Errorf("failed to get servicegroup from etcd in totalEvent, key: %s, (%v)", key, err)
 			return true
 		}
@@ -265,12 +265,12 @@ func (k *Kubernetes) totalEvent(localStore *sync.Map, notifier events2.Notifier,
 			e := GenerateEvent(&sg)
 
 			go func() {
-				sender := strutil.Concat(string(k.name), events2.SUFFIX_K8S_PERIOD)
+				sender := strutil.Concat(string(k.name), events.SUFFIX_K8S_PERIOD)
 				if isInitEvent {
-					sender = strutil.Concat(string(k.name), events2.SUFFIX_K8S_INIT)
+					sender = strutil.Concat(string(k.name), events.SUFFIX_K8S_INIT)
 				}
-				err := notifier.Send(e, events2.WithSender(sender),
-					events2.WithDest(map[string]interface{}{"HTTP": []string{eventAddr}}))
+				err := notifier.Send(e, events.WithSender(sender),
+					events.WithDest(map[string]interface{}{"HTTP": []string{eventAddr}}))
 				if err != nil {
 					logrus.Errorf("failed to send k8s period event, executor: %s, runtime: %s", k.name, key)
 				}
@@ -289,11 +289,11 @@ func (k *Kubernetes) totalEvent(localStore *sync.Map, notifier events2.Notifier,
 	}
 }
 
-func GenerateEvent(sg *apistructs.ServiceGroup) events2.RuntimeEvent {
-	var e events2.RuntimeEvent
-	e.EventType = events2.EVENTS_TOTAL
+func GenerateEvent(sg *apistructs.ServiceGroup) events.RuntimeEvent {
+	var e events.RuntimeEvent
+	e.EventType = events.EVENTS_TOTAL
 	e.RuntimeName = strutil.Concat(sg.Type, "/", sg.ID)
-	e.ServiceStatuses = make([]events2.ServiceStatus, len(sg.Services))
+	e.ServiceStatuses = make([]events.ServiceStatus, len(sg.Services))
 	for i, srv := range sg.Services {
 		e.ServiceStatuses[i].ServiceName = srv.Name
 		e.ServiceStatuses[i].Replica = srv.Scale
@@ -319,7 +319,7 @@ func isStatusCached(localStore *sync.Map, name, status string) bool {
 	return false
 }
 
-func (k *Kubernetes) registerEvent(localStore *sync.Map, stopCh chan struct{}, notifier events2.Notifier) error {
+func (k *Kubernetes) registerEvent(localStore *sync.Map, stopCh chan struct{}, notifier events.Notifier) error {
 
 	name := string(k.name)
 
@@ -337,7 +337,7 @@ func (k *Kubernetes) registerEvent(localStore *sync.Map, stopCh chan struct{}, n
 		if t == storetypes.Del {
 			_, ok := localStore.Load(runtimeName)
 			if ok {
-				var e events2.RuntimeEvent
+				var e events.RuntimeEvent
 				e.RuntimeName = runtimeName
 				e.IsDeleted = true
 				localStore.Delete(runtimeName)

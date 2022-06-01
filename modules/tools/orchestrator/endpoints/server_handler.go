@@ -27,7 +27,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pkg/user"
-	dbclient2 "github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
+	"github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/tools/orchestrator/services/apierrors"
 	"github.com/erda-project/erda/modules/tools/orchestrator/spec"
 	"github.com/erda-project/erda/modules/tools/orchestrator/utils"
@@ -123,7 +123,7 @@ func (s *Endpoints) epUpdateOverlay(ctx context.Context, r *http.Request, vars m
 	return httpserver.OkResp(oldOverlayDataForAudit)
 }
 
-func getPreDeploymentDiceOverlay(pre *dbclient2.PreDeployment) (diceyml.Object, error) {
+func getPreDeploymentDiceOverlay(pre *dbclient.PreDeployment) (diceyml.Object, error) {
 	var oldOverlay diceyml.Object
 	if pre.DiceOverlay != "" {
 		if err := json.Unmarshal([]byte(pre.DiceOverlay), &oldOverlay); err != nil {
@@ -366,7 +366,7 @@ func (s *Endpoints) processRuntimeScaleRecord(rsc apistructs.RuntimeScaleRecord,
 
 // getRuntimeScaleRecordByRuntimeId 通过 runtime ID 列表查找 Runtime 实例并转换成 RuntimeScaleRecord 对象列表
 // 注意：逻辑中确保每个 Id 都有对应的 Runtime，以免有不存在的 id
-func (s *Endpoints) getRuntimeScaleRecordByRuntimeIds(ids []uint64) ([]dbclient2.Runtime, []apistructs.RuntimeScaleRecord, error) {
+func (s *Endpoints) getRuntimeScaleRecordByRuntimeIds(ids []uint64) ([]dbclient.Runtime, []apistructs.RuntimeScaleRecord, error) {
 	rsrs := make([]apistructs.RuntimeScaleRecord, 0)
 
 	runtimes, err := s.db.FindRuntimesByIds(ids)
@@ -460,7 +460,7 @@ func (s *Endpoints) BatchUpdateOverlay(ctx context.Context, r *http.Request, var
 		return utils.ErrRespIllegalParam(err, "failed to batch update Overlay, runtimeRecords and ids must only one wtih non-empty values in request body")
 	}
 
-	var runtimes []dbclient2.Runtime
+	var runtimes []dbclient.Runtime
 	if len(runtimeScaleRecords.Runtimes) == 0 {
 		runtimes, runtimeScaleRecords.Runtimes, err = s.getRuntimeScaleRecordByRuntimeIds(runtimeScaleRecords.IDs)
 		if err != nil {
@@ -579,7 +579,7 @@ func genOverlayDataForAudit(oldService *diceyml.Service) *apistructs.RuntimeInsp
 }
 
 // batchRuntimeReDeploy 批量重新部署
-func (s *Endpoints) batchRuntimeReDeploy(ctx context.Context, userID user.ID, runtimes []dbclient2.Runtime, runtimeScaleRecords apistructs.RuntimeScaleRecords) apistructs.BatchRuntimeReDeployResults {
+func (s *Endpoints) batchRuntimeReDeploy(ctx context.Context, userID user.ID, runtimes []dbclient.Runtime, runtimeScaleRecords apistructs.RuntimeScaleRecords) apistructs.BatchRuntimeReDeployResults {
 	batchRuntimeReDeployResult := apistructs.BatchRuntimeReDeployResults{
 		Total:           len(runtimeScaleRecords.Runtimes),
 		Success:         0,
@@ -731,7 +731,7 @@ func (s *Endpoints) batchRuntimeRecovery(runtimeScaleRecords *apistructs.Runtime
 	}
 }
 
-func (s *Endpoints) batchRuntimeDelete(userID user.ID, runtimes []dbclient2.Runtime, runtimeScaleRecords apistructs.RuntimeScaleRecords) apistructs.BatchRuntimeDeleteResults {
+func (s *Endpoints) batchRuntimeDelete(userID user.ID, runtimes []dbclient.Runtime, runtimeScaleRecords apistructs.RuntimeScaleRecords) apistructs.BatchRuntimeDeleteResults {
 	batchRuntimeDeleteResult := apistructs.BatchRuntimeDeleteResults{
 		Total:        len(runtimeScaleRecords.Runtimes),
 		Success:      0,

@@ -25,7 +25,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	dbclient2 "github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
+	"github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/impl/servicegroup"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
@@ -35,12 +35,12 @@ const count = 20
 func TestConcurrentReadWriteAppInfos(t *testing.T) {
 	var keys = []string{"1", "2", "3", "4", "5"}
 
-	var db *dbclient2.DBClient
+	var db *dbclient.DBClient
 	monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetAttachmentsByInstanceID",
-		func(*dbclient2.DBClient, string) (*[]dbclient2.AddonAttachment, error) {
-			var addons []dbclient2.AddonAttachment
+		func(*dbclient.DBClient, string) (*[]dbclient.AddonAttachment, error) {
+			var addons []dbclient.AddonAttachment
 			for _, v := range keys {
-				addons = append(addons, dbclient2.AddonAttachment{
+				addons = append(addons, dbclient.AddonAttachment{
 					ProjectID:     v,
 					ApplicationID: v,
 				})
@@ -88,10 +88,10 @@ func TestConcurrentReadWriteAppInfos(t *testing.T) {
 }
 
 func TestDeleteAddonUsed(t *testing.T) {
-	var db *dbclient2.DBClient
+	var db *dbclient.DBClient
 	monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetInstanceRouting",
-		func(*dbclient2.DBClient, string) (*dbclient2.AddonInstanceRouting, error) {
-			return &dbclient2.AddonInstanceRouting{}, nil
+		func(*dbclient.DBClient, string) (*dbclient.AddonInstanceRouting, error) {
+			return &dbclient.AddonInstanceRouting{}, nil
 		},
 	)
 
@@ -103,7 +103,7 @@ func TestDeleteAddonUsed(t *testing.T) {
 	)
 
 	monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetAttachmentCountByRoutingInstanceID",
-		func(*dbclient2.DBClient, string) (int64, error) {
+		func(*dbclient.DBClient, string) (int64, error) {
 			return 1, nil
 		},
 	)
@@ -292,12 +292,12 @@ func Test_addonCanScale(t *testing.T) {
 }
 
 func TestAddon_doAddonScale(t *testing.T) {
-	var db *dbclient2.DBClient
+	var db *dbclient.DBClient
 	var bdl *bundle.Bundle
 	var serviceGroupImpl *servicegroup.ServiceGroupImpl
 
 	a := New(WithDBClient(db), WithBundle(bdl), WithServiceGroup(serviceGroupImpl))
-	addonInstance := &dbclient2.AddonInstance{
+	addonInstance := &dbclient.AddonInstance{
 		ID:                  "z44f5f6543f004d54ac2a2538efd4e9ec",
 		Name:                "mysql",
 		AddonName:           "mysql",
@@ -324,7 +324,7 @@ func TestAddon_doAddonScale(t *testing.T) {
 		MemLimit:            17204,
 	}
 
-	addonInstanceRoutings := make([]dbclient2.AddonInstanceRouting, 0)
+	addonInstanceRoutings := make([]dbclient.AddonInstanceRouting, 0)
 
 	monkey.PatchInstanceMethod(reflect.TypeOf(a), "GetAddonExtention",
 		func(a *Addon, params *apistructs.AddonHandlerCreateItem) (*apistructs.AddonExtension, *diceyml.Object, error) {
@@ -333,7 +333,7 @@ func TestAddon_doAddonScale(t *testing.T) {
 	)
 
 	monkey.PatchInstanceMethod(reflect.TypeOf(a), "BuildAddonScaleRequestGroup",
-		func(a *Addon, params *apistructs.AddonHandlerCreateItem, addonIns *dbclient2.AddonInstance, scaleAction string, addonSpec *apistructs.AddonExtension, addonDice *diceyml.Object) (*apistructs.ServiceGroup, error) {
+		func(a *Addon, params *apistructs.AddonHandlerCreateItem, addonIns *dbclient.AddonInstance, scaleAction string, addonSpec *apistructs.AddonExtension, addonDice *diceyml.Object) (*apistructs.ServiceGroup, error) {
 			services := make(map[string]*diceyml.Service)
 			services["mysql-1"] = &diceyml.Service{
 				Image: "registry.erda.cloud/erda-addons-enterprise/addon-mysql:5.7.29-1.0.1-init",
@@ -479,13 +479,13 @@ func TestAddon_doAddonScale(t *testing.T) {
 	)
 
 	monkey.PatchInstanceMethod(reflect.TypeOf(a.db), "UpdateAddonInstanceStatus",
-		func(_ *dbclient2.DBClient, ID, status string) error {
+		func(_ *dbclient.DBClient, ID, status string) error {
 			return nil
 		},
 	)
 
 	monkey.PatchInstanceMethod(reflect.TypeOf(a.db), "UpdateInstanceRouting",
-		func(db *dbclient2.DBClient, routing *dbclient2.AddonInstanceRouting) error {
+		func(db *dbclient.DBClient, routing *dbclient.AddonInstanceRouting) error {
 			return nil
 		},
 	)
@@ -496,10 +496,10 @@ func TestAddon_doAddonScale(t *testing.T) {
 
 func TestAddon_insideAddonCanNotScale(t *testing.T) {
 	type fields struct {
-		db *dbclient2.DBClient
+		db *dbclient.DBClient
 	}
 	type args struct {
-		routingIns *dbclient2.AddonInstanceRouting
+		routingIns *dbclient.AddonInstanceRouting
 	}
 	tests := []struct {
 		name    string
@@ -510,10 +510,10 @@ func TestAddon_insideAddonCanNotScale(t *testing.T) {
 		{
 			name: "test_01",
 			fields: fields{
-				db: &dbclient2.DBClient{},
+				db: &dbclient.DBClient{},
 			},
 			args: args{
-				routingIns: &dbclient2.AddonInstanceRouting{
+				routingIns: &dbclient.AddonInstanceRouting{
 					AddonName:    "terminus-zookeeper",
 					RealInstance: "y6f6485f7d9974c32b47c3a1ecd244109",
 				},
@@ -523,10 +523,10 @@ func TestAddon_insideAddonCanNotScale(t *testing.T) {
 		{
 			name: "test_02",
 			fields: fields{
-				db: &dbclient2.DBClient{},
+				db: &dbclient.DBClient{},
 			},
 			args: args{
-				routingIns: &dbclient2.AddonInstanceRouting{
+				routingIns: &dbclient.AddonInstanceRouting{
 					AddonName:    "mysql",
 					RealInstance: "y6f6485f7d9974c32b47c3a1ecd244109",
 				},
@@ -536,10 +536,10 @@ func TestAddon_insideAddonCanNotScale(t *testing.T) {
 		{
 			name: "test_03",
 			fields: fields{
-				db: &dbclient2.DBClient{},
+				db: &dbclient.DBClient{},
 			},
 			args: args{
-				routingIns: &dbclient2.AddonInstanceRouting{
+				routingIns: &dbclient.AddonInstanceRouting{
 					AddonName:    "mysql",
 					RealInstance: "y6f6485f7d9974c32b47c3a1ecd244109",
 				},
@@ -555,11 +555,11 @@ func TestAddon_insideAddonCanNotScale(t *testing.T) {
 			}
 
 			monkey.PatchInstanceMethod(reflect.TypeOf(a.db), "GetByInSideInstanceID",
-				func(db *dbclient2.DBClient, instanceID string) (*dbclient2.AddonInstanceRelation, error) {
+				func(db *dbclient.DBClient, instanceID string) (*dbclient.AddonInstanceRelation, error) {
 					if tt.name == "test_02" {
 						return nil, nil
 					}
-					return &dbclient2.AddonInstanceRelation{
+					return &dbclient.AddonInstanceRelation{
 						OutsideInstanceID: "c32a40074138a4910af97cff325f8bcd5",
 						InsideInstanceID:  "y6f6485f7d9974c32b47c3a1ecd244109",
 					}, nil
@@ -567,12 +567,12 @@ func TestAddon_insideAddonCanNotScale(t *testing.T) {
 			)
 
 			monkey.PatchInstanceMethod(reflect.TypeOf(a.db), "GetInstanceRoutingByRealInstance",
-				func(db *dbclient2.DBClient, realIns string) (*[]dbclient2.AddonInstanceRouting, error) {
+				func(db *dbclient.DBClient, realIns string) (*[]dbclient.AddonInstanceRouting, error) {
 					if tt.name == "test_03" {
 						return nil, nil
 					}
-					ars := make([]dbclient2.AddonInstanceRouting, 0)
-					ars = append(ars, dbclient2.AddonInstanceRouting{
+					ars := make([]dbclient.AddonInstanceRouting, 0)
+					ars = append(ars, dbclient.AddonInstanceRouting{
 						Name: "kafka",
 						ID:   "g3dd89da1f63245a3b2b174d9610661bd",
 					})

@@ -24,7 +24,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
-	cap2 "github.com/erda-project/erda/modules/tools/orchestrator/scheduler/impl/cap"
+	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/impl/cap"
 	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/impl/clusterinfo"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
@@ -50,7 +50,7 @@ func TestBuildAddonRequestGroupForEsWithOperator(t *testing.T) {
 	defer monkey.UnpatchAll()
 
 	bdl := bundle.New()
-	var capImpl *cap2.CapImpl
+	var capImpl *cap.CapImpl
 	var clusterinfoImpl *clusterinfo.ClusterInfoImpl
 
 	addon := New(WithBundle(bdl), WithCap(capImpl), WithClusterInfoImpl(clusterinfoImpl))
@@ -59,7 +59,7 @@ func TestBuildAddonRequestGroupForEsWithOperator(t *testing.T) {
 		return apistructs.ClusterInfoData{}, nil
 	})
 
-	monkey.PatchInstanceMethod(reflect.TypeOf(capImpl), "CapacityInfo", func(_ *cap2.CapImpl, clustername string) apistructs.CapacityInfoData {
+	monkey.PatchInstanceMethod(reflect.TypeOf(capImpl), "CapacityInfo", func(_ *cap.CapImpl, clustername string) apistructs.CapacityInfoData {
 		return apistructs.CapacityInfoData{
 			ElasticsearchOperator: true,
 		}

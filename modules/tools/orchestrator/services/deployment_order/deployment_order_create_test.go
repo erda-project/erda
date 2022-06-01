@@ -29,7 +29,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	release2 "github.com/erda-project/erda/modules/dicehub/release"
 	"github.com/erda-project/erda/modules/pkg/user"
-	dbclient2 "github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
+	"github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/tools/orchestrator/services/runtime"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
@@ -72,8 +72,8 @@ func TestComposeRuntimeCreateRequests(t *testing.T) {
 			return &apistructs.ProjectDTO{ClusterConfig: map[string]string{"PROD": "fake-cluster"}}, nil
 		},
 	)
-	monkey.PatchInstanceMethod(reflect.TypeOf(do.db), "ListReleases", func(*dbclient2.DBClient, []string) ([]*dbclient2.Release, error) {
-		return []*dbclient2.Release{
+	monkey.PatchInstanceMethod(reflect.TypeOf(do.db), "ListReleases", func(*dbclient.DBClient, []string) ([]*dbclient.Release, error) {
+		return []*dbclient.Release{
 			{ReleaseId: "id1"},
 			{ReleaseId: "id2"},
 		}, nil
@@ -90,7 +90,7 @@ func TestComposeRuntimeCreateRequests(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err = do.composeRuntimeCreateRequests(&dbclient2.DeploymentOrder{
+	_, err = do.composeRuntimeCreateRequests(&dbclient.DeploymentOrder{
 		BatchSize:    10,
 		CurrentBatch: 1,
 		Type:         apistructs.TypeProjectRelease,
@@ -100,7 +100,7 @@ func TestComposeRuntimeCreateRequests(t *testing.T) {
 	}, ProjectReleaseResp, apistructs.SourceDeployCenter, false)
 	assert.NoError(t, err)
 
-	_, err = do.composeRuntimeCreateRequests(&dbclient2.DeploymentOrder{
+	_, err = do.composeRuntimeCreateRequests(&dbclient.DeploymentOrder{
 		BatchSize:    1,
 		CurrentBatch: 1,
 		Type:         apistructs.TypeApplicationRelease,
@@ -165,14 +165,14 @@ func TestParseAppsInfoWithOrder(t *testing.T) {
 	}
 
 	defer monkey.UnpatchAll()
-	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "ListReleases", func(*dbclient2.DBClient, []string) ([]*dbclient2.Release, error) {
-		return []*dbclient2.Release{
+	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "ListReleases", func(*dbclient.DBClient, []string) ([]*dbclient.Release, error) {
+		return []*dbclient.Release{
 			{ReleaseId: "id1"},
 			{ReleaseId: "id2"},
 		}, nil
 	})
 
-	got, err := order.parseAppsInfoWithOrder(&dbclient2.DeploymentOrder{
+	got, err := order.parseAppsInfoWithOrder(&dbclient.DeploymentOrder{
 		ApplicationName: "test",
 		ApplicationId:   1,
 		Type:            apistructs.TypeApplicationRelease,
@@ -212,8 +212,8 @@ func TestContinueDeployOrder(t *testing.T) {
 	}
 
 	defer monkey.UnpatchAll()
-	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "GetDeploymentOrder", func(*dbclient2.DBClient, string) (*dbclient2.DeploymentOrder, error) {
-		return &dbclient2.DeploymentOrder{
+	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "GetDeploymentOrder", func(*dbclient.DBClient, string) (*dbclient.DeploymentOrder, error) {
+		return &dbclient.DeploymentOrder{
 			CurrentBatch: 1,
 			BatchSize:    3,
 			Workspace:    apistructs.WORKSPACE_PROD,
@@ -221,11 +221,11 @@ func TestContinueDeployOrder(t *testing.T) {
 			DeployList:   string(data),
 		}, nil
 	})
-	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "UpdateDeploymentOrder", func(*dbclient2.DBClient, *dbclient2.DeploymentOrder) error {
+	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "UpdateDeploymentOrder", func(*dbclient.DBClient, *dbclient.DeploymentOrder) error {
 		return nil
 	})
-	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "ListReleases", func(*dbclient2.DBClient, []string) ([]*dbclient2.Release, error) {
-		return []*dbclient2.Release{
+	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "ListReleases", func(*dbclient.DBClient, []string) ([]*dbclient.Release, error) {
+		return []*dbclient.Release{
 			{ReleaseId: "id1"},
 			{ReleaseId: "id2"},
 		}, nil

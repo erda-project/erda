@@ -26,7 +26,7 @@ import (
 
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/apistructs"
-	cap2 "github.com/erda-project/erda/modules/tools/orchestrator/scheduler/impl/cap"
+	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/impl/cap"
 	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/impl/cluster"
 	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/impl/clusterinfo"
 	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/impl/instanceinfo"
@@ -50,7 +50,7 @@ type HTTPEndpoints struct {
 	ClusterinfoImpl   clusterinfo.ClusterInfo
 	componentinfoImpl instanceinfo.ComponentInfo
 	resourceinfoImpl  resourceinfo.ResourceInfo
-	Cap               cap2.Cap
+	Cap               cap.Cap
 	//metric            metric.Metric
 	clusterSvc clusterpb.ClusterServiceServer
 	// TODO: add more impl here
@@ -66,7 +66,7 @@ func NewHTTPEndpoints(
 	clusterinfo clusterinfo.ClusterInfo,
 	componentinfo instanceinfo.ComponentInfo,
 	resourceinfo resourceinfo.ResourceInfo,
-	cap cap2.Cap,
+	cap cap.Cap,
 	clusterSvc clusterpb.ClusterServiceServer) *HTTPEndpoints {
 	return &HTTPEndpoints{
 		volume,

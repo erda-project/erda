@@ -25,7 +25,7 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-proto-go/core/pipeline/lifecycle_hook_client/pb"
 	"github.com/erda-project/erda/bundle/apierrors"
-	dbclient2 "github.com/erda-project/erda/modules/tools/pipeline/dbclient"
+	"github.com/erda-project/erda/modules/tools/pipeline/dbclient"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
@@ -34,7 +34,7 @@ type LifeCycleService struct {
 	sync.Mutex
 	hookClientMap map[string]*pb.LifeCycleClient
 	logger        logs.Logger
-	dbClient      *dbclient2.Client
+	dbClient      *dbclient.Client
 }
 
 func (s *LifeCycleService) LifeCycleRegister(ctx context.Context, req *pb.LifeCycleClientRegisterRequest) (*pb.LifeCycleClientRegisterResponse, error) {
@@ -44,7 +44,7 @@ func (s *LifeCycleService) LifeCycleRegister(ctx context.Context, req *pb.LifeCy
 	if req.Host == "" {
 		return nil, apierrors.ErrInvalidParameter.InternalError(fmt.Errorf("client host is required"))
 	}
-	hookClient := &dbclient2.PipelineLifecycleHookClient{
+	hookClient := &dbclient.PipelineLifecycleHookClient{
 		Name:   req.Name,
 		Host:   req.Host,
 		Prefix: req.Prefix,

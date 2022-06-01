@@ -28,7 +28,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/apistructs"
-	cap2 "github.com/erda-project/erda/modules/tools/orchestrator/scheduler/impl/cap"
+	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/impl/cap"
 	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/impl/cluster"
 	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/impl/clusterinfo"
 	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/impl/instanceinfo"
@@ -51,7 +51,7 @@ func TestHTTPEndpoints_JobCreate(t *testing.T) {
 		clusterinfoImpl   clusterinfo.ClusterInfo
 		componentinfoImpl instanceinfo.ComponentInfo
 		resourceinfoImpl  resourceinfo.ResourceInfo
-		Cap               cap2.Cap
+		Cap               cap.Cap
 	}
 	type args struct {
 		ctx  context.Context
@@ -167,7 +167,7 @@ func TestHTTPEndpoints_JobStart(t *testing.T) {
 		clusterinfoImpl   clusterinfo.ClusterInfo
 		componentinfoImpl instanceinfo.ComponentInfo
 		resourceinfoImpl  resourceinfo.ResourceInfo
-		Cap               cap2.Cap
+		Cap               cap.Cap
 	}
 	type args struct {
 		ctx  context.Context
@@ -312,7 +312,7 @@ func TestHTTPEndpoints_JobStop(t *testing.T) {
 		clusterinfoImpl   clusterinfo.ClusterInfo
 		componentinfoImpl instanceinfo.ComponentInfo
 		resourceinfoImpl  resourceinfo.ResourceInfo
-		Cap               cap2.Cap
+		Cap               cap.Cap
 	}
 	type args struct {
 		ctx  context.Context
@@ -436,7 +436,7 @@ func TestHTTPEndpoints_JobDelete(t *testing.T) {
 		clusterinfoImpl   clusterinfo.ClusterInfo
 		componentinfoImpl instanceinfo.ComponentInfo
 		resourceinfoImpl  resourceinfo.ResourceInfo
-		Cap               cap2.Cap
+		Cap               cap.Cap
 	}
 	type args struct {
 		ctx  context.Context
@@ -558,7 +558,7 @@ func TestHTTPEndpoints_DeleteJobs(t *testing.T) {
 		clusterinfoImpl   clusterinfo.ClusterInfo
 		componentinfoImpl instanceinfo.ComponentInfo
 		resourceinfoImpl  resourceinfo.ResourceInfo
-		Cap               cap2.Cap
+		Cap               cap.Cap
 	}
 	type args struct {
 		ctx  context.Context
@@ -688,7 +688,7 @@ func TestHTTPEndpoints_JobInspect(t *testing.T) {
 		clusterinfoImpl   clusterinfo.ClusterInfo
 		componentinfoImpl instanceinfo.ComponentInfo
 		resourceinfoImpl  resourceinfo.ResourceInfo
-		Cap               cap2.Cap
+		Cap               cap.Cap
 	}
 
 	jobImpl := &job.JobImpl{}

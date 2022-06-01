@@ -26,7 +26,7 @@ import (
 
 	scv1 "github.com/erda-project/erda-sourcecov/api/v1alpha1"
 	"github.com/erda-project/erda/apistructs"
-	addon2 "github.com/erda-project/erda/modules/tools/orchestrator/scheduler/executor/plugins/k8s/addon"
+	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/executor/plugins/k8s/addon"
 	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/executor/plugins/k8s/k8sapi"
 	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/executor/plugins/k8s/k8serror"
 	"github.com/erda-project/erda/pkg/http/httpclient"
@@ -36,10 +36,10 @@ import (
 )
 
 type SourcecovOperator struct {
-	k8s    addon2.K8SUtil
+	k8s    addon.K8SUtil
 	client *httpclient.HTTPClient
-	oc     addon2.OvercommitUtil
-	ns     addon2.NamespaceUtil
+	oc     addon.OvercommitUtil
+	ns     addon.NamespaceUtil
 }
 
 var APIPrefix = "/apis/" + scv1.GroupVersion.String()
@@ -151,8 +151,8 @@ func (s *SourcecovOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
 	spec.Annotations = make(map[string]string)
 	spec.Spec.Labels = make(map[string]string)
 	spec.Spec.Annotations = make(map[string]string)
-	addon2.SetAddonLabelsAndAnnotations(svc, spec.Labels, spec.Annotations)
-	addon2.SetAddonLabelsAndAnnotations(svc, spec.Spec.Labels, spec.Spec.Annotations)
+	addon.SetAddonLabelsAndAnnotations(svc, spec.Labels, spec.Annotations)
+	addon.SetAddonLabelsAndAnnotations(svc, spec.Spec.Labels, spec.Spec.Annotations)
 
 	// set pvc annotations for snapshot
 	if len(svc.Volumes) > 0 {
@@ -288,7 +288,7 @@ func (s *SourcecovOperator) Update(i interface{}) error {
 	return nil
 }
 
-func New(k8s addon2.K8SUtil, client *httpclient.HTTPClient, oc addon2.OvercommitUtil, ns addon2.NamespaceUtil) *SourcecovOperator {
+func New(k8s addon.K8SUtil, client *httpclient.HTTPClient, oc addon.OvercommitUtil, ns addon.NamespaceUtil) *SourcecovOperator {
 	return &SourcecovOperator{
 		k8s:    k8s,
 		client: client,
