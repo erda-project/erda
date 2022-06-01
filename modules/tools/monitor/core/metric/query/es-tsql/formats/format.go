@@ -17,7 +17,7 @@ package formats
 import (
 	"fmt"
 
-	"github.com/erda-project/erda/modules/tools/monitor/core/metric/query/es-tsql"
+	tsql "github.com/erda-project/erda/modules/tools/monitor/core/metric/query/es-tsql"
 )
 
 // Formater response formater
