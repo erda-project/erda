@@ -16,7 +16,7 @@ package main
 
 import (
 	_ "github.com/erda-project/erda/modules/apps/admin"
-	_ "github.com/erda-project/erda/modules/apps/dingtalktest"
+	_ "github.com/erda-project/erda/modules/apps/admin/personal-workbench"
 	_ "github.com/erda-project/erda/modules/apps/gallery"
-	_ "github.com/erda-project/erda/modules/apps/personal-workbench"
+	_ "github.com/erda-project/erda/modules/pkg/dingtalktest"
 )

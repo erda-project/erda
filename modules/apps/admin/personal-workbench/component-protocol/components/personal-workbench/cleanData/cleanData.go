@@ -20,7 +20,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/erda-project/erda/modules/apps/personal-workbench/component-protocol/components/personal-workbench/common"
+	"github.com/erda-project/erda/modules/apps/admin/personal-workbench/component-protocol/components/personal-workbench/common"
 )
 
 type Clean struct {

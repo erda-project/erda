@@ -28,10 +28,10 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/apps/personal-workbench/component-protocol/components/personal-workbench/common"
-	"github.com/erda-project/erda/modules/apps/personal-workbench/component-protocol/components/personal-workbench/common/gshelper"
-	"github.com/erda-project/erda/modules/apps/personal-workbench/component-protocol/components/personal-workbench/i18n"
-	"github.com/erda-project/erda/modules/apps/personal-workbench/component-protocol/types"
+	"github.com/erda-project/erda/modules/apps/admin/personal-workbench/component-protocol/components/personal-workbench/common"
+	"github.com/erda-project/erda/modules/apps/admin/personal-workbench/component-protocol/components/personal-workbench/common/gshelper"
+	"github.com/erda-project/erda/modules/apps/admin/personal-workbench/component-protocol/components/personal-workbench/i18n"
+	"github.com/erda-project/erda/modules/apps/admin/personal-workbench/component-protocol/types"
 )
 
 const (
