@@ -24,8 +24,8 @@ import (
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/sig-storage-lib-external-provisioner/v6/controller"
 
-	"github.com/erda-project/erda/modules/volume-provisioner/localvolume"
-	"github.com/erda-project/erda/modules/volume-provisioner/netdatavolume"
+	"github.com/erda-project/erda/modules/tools/volume-provisioner/localvolume"
+	"github.com/erda-project/erda/modules/tools/volume-provisioner/netdatavolume"
 )
 
 func initLocalVolumeProvisioner(config *config, csConfig *rest.Config, client kubernetes.Interface, version *version.Info) {
