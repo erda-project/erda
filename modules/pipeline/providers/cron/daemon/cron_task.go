@@ -31,7 +31,6 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/modules/pipeline/providers/cron/db"
-	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/cron"
 	"github.com/erda-project/erda/pkg/loop"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -303,7 +302,7 @@ func (s *provider) reloadCrond(ctx context.Context) ([]string, error) {
 
 	// clean build cache cron task
 	buildCacheCleanJobName := makeCleanBuildCacheJobName(conf.BuildCacheCleanJobCron())
-	if err = s.crond.AddFunc(conf.BuildCacheCleanJobCron(), s.cleanBuildCacheImages, buildCacheCleanJobName); err != nil {
+	if err = s.crond.AddFunc(conf.BuildCacheCleanJobCron(), s.BuildSvc.CleanBuildCacheImages, buildCacheCleanJobName); err != nil {
 		l := fmt.Sprintf("failed to load build cache clean cron task: %s, err: %v", buildCacheCleanJobName, err)
 		logs = append(logs, l)
 		logrus.Errorln("[alert]", l)
@@ -356,71 +355,6 @@ func (s *provider) syncCronToEdge(dbCron db.PipelineCron) error {
 		}
 	}
 	return nil
-}
-
-func (s *provider) cleanBuildCacheImages() {
-	alertErr := func(err error) {
-		logrus.Errorf("[alert] failed to clean build cache images, err: %v", err)
-	}
-
-	alertErrWithCluster := func(err error, clusterName string) {
-		logrus.Errorf("[alert] failed to clean build cache images, clusterName: %s, err: %v", clusterName, err)
-	}
-	// If the time has not changed for a few days
-	date := time.Now().Add(-conf.BuildCacheExpireIn())
-
-	var toDeleteCacheImages []spec.CIV3BuildCache
-	if err := s.dbClient.DB().Where("last_pull_at is null and created_at < ?", date).Or("last_pull_at < ?", date).
-		Find(&toDeleteCacheImages); err != nil {
-		alertErr(err)
-		return
-	}
-
-	if len(toDeleteCacheImages) == 0 {
-		return
-	}
-
-	imageMap := make(map[string][]spec.CIV3BuildCache, 0)
-	for _, v := range toDeleteCacheImages {
-		images, ok := imageMap[v.ClusterName]
-		if ok {
-			images = append(images, v)
-			imageMap[v.ClusterName] = images
-		} else {
-			imageMap[v.ClusterName] = []spec.CIV3BuildCache{v}
-		}
-	}
-
-	for clusterName, images := range imageMap {
-		var imageNames []string
-		for _, v := range images {
-			imageNames = append(imageNames, v.Name)
-		}
-		result, err := s.bdl.DeleteImageManifests(clusterName, imageNames)
-		if err != nil {
-			alertErrWithCluster(err, clusterName)
-			continue
-		}
-		bytes, err := json.Marshal(result)
-		if err != nil {
-			alertErrWithCluster(err, clusterName)
-			continue
-		}
-
-		logrus.Errorf("[alert] clusterName: %s, delete build cache success: %s", clusterName, string(bytes))
-
-		for _, name := range result.Succeed {
-			cache, err := s.dbClient.GetBuildCache(clusterName, name)
-			if err != nil {
-				alertErrWithCluster(err, clusterName)
-				continue
-			}
-			if err = s.dbClient.DeleteBuildCache(cache.ID); err != nil {
-				alertErrWithCluster(err, clusterName)
-				continue
-			}
-		}
-	}
 }
 
 func (s *provider) crondSnapshot() []string {

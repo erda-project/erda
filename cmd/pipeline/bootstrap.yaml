@@ -70,6 +70,7 @@ metric-report-client:
 erda.core.pipeline.definition:
 erda.core.pipeline.lifecycle_hook_client:
 erda.core.pipeline.cron:
+erda.core.pipeline.build:
 cron-daemon:
 cron-compensator:
 erda.core.pipeline.source:

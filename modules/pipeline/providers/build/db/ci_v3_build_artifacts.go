@@ -12,11 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package spec
+package db
 
 import (
 	"time"
 
+	"github.com/erda-project/erda-proto-go/core/pipeline/build/pb"
 	"github.com/erda-project/erda/apistructs"
 )
 
@@ -36,11 +37,11 @@ func (*CIV3BuildArtifact) TableName() string {
 	return "ci_v3_build_artifacts"
 }
 
-func (artifact *CIV3BuildArtifact) Convert2DTO() *apistructs.BuildArtifact {
+func (artifact *CIV3BuildArtifact) Convert2PB() *pb.BuildArtifact {
 	if artifact == nil {
 		return nil
 	}
-	return &apistructs.BuildArtifact{
+	return &pb.BuildArtifact{
 		ID:           artifact.ID,
 		Sha256:       artifact.Sha256,
 		IdentityText: artifact.IdentityText,

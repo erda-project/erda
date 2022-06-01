@@ -7,14 +7,22 @@ import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/any.proto";
 import "common/identity.proto";
+import "common/openapi.proto";
 
 option go_package = "github.com/erda-project/erda-proto-go/core/pipeline/build/pb";
 
 // TODO Deprecated, move to dop
 service BuildService {
+  option (erda.common.openapi_service) = {
+    service: "pipeline",
+    auth: {
+      check_login: true,
+      check_token: true,
+    }
+  };
   rpc QueryBuildArtifact (BuildArtifactQueryRequest) returns (BuildArtifactQueryResponse) {
     option (google.api.http) = {
-      post: "/api/build-artifacts/{sha}",
+      get: "/api/build-artifacts/{sha}",
     };
   }
   rpc RegisterBuildArtifact (BuildArtifactRegisterRequest) returns (BuildArtifactRegisterResponse) {
@@ -38,10 +46,10 @@ message BuildCacheReportResponse {
 }
 message BuildArtifactRegisterRequest {
   string sha = 1;
-  string identityText = 2;
+  string identityText = 2 [json_name = "identity_text"];
   string type = 3;
   string content = 4;
-  string clusterName = 5;
+  string clusterName = 5 [json_name = "cluster_name"];
   uint64 pipelineID = 6;
 }
 message BuildArtifactRegisterResponse {
@@ -61,4 +69,9 @@ message BuildArtifact {
   string content = 5;
   string clusterName = 6;
   uint64 pipelineID = 7;
+}
+message BuildArtifactDeleteByImagesRequest{
+  repeated string images = 1;
+}
+message BuildArtifactDeleteByImagesResponse{
 }

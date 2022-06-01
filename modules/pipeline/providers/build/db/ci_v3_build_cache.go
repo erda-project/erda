@@ -15,13 +15,28 @@
 package db
 
 import (
+	"time"
+
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
-	"github.com/erda-project/erda/modules/pipeline/spec"
 )
 
-func (client *Client) GetBuildCache(clusterName, imageName string, ops ...mysqlxorm.SessionOption) (cache spec.CIV3BuildCache, err error) {
+type CIV3BuildCache struct {
+	ID          int64     `json:"id" xorm:"pk autoincr"`
+	Name        string    `json:"name"`
+	ClusterName string    `json:"clusterName"`
+	LastPullAt  time.Time `json:"lastPullAt"`
+	CreatedAt   time.Time `json:"createdAt" xorm:"created"`
+	UpdatedAt   time.Time `json:"updatedAt" xorm:"updated"`
+	DeletedAt   time.Time `xorm:"deleted"`
+}
+
+func (*CIV3BuildCache) TableName() string {
+	return "ci_v3_build_caches"
+}
+
+func (client *Client) GetBuildCache(clusterName, imageName string, ops ...mysqlxorm.SessionOption) (cache CIV3BuildCache, err error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
@@ -33,10 +48,10 @@ func (client *Client) GetBuildCache(clusterName, imageName string, ops ...mysqlx
 	cache.Name = imageName
 	ok, err := session.Get(&cache)
 	if err != nil {
-		return spec.CIV3BuildCache{}, err
+		return CIV3BuildCache{}, err
 	}
 	if !ok {
-		return spec.CIV3BuildCache{}, errors.New("not found")
+		return CIV3BuildCache{}, errors.New("not found")
 	}
 	return cache, nil
 }
@@ -47,6 +62,6 @@ func (client *Client) DeleteBuildCache(id interface{}, ops ...mysqlxorm.SessionO
 
 	defer func() { err = errors.Wrapf(err, "failed to delete build cache, id [%v]", id) }()
 
-	_, err = session.ID(id).Delete(&spec.CIV3BuildCache{})
+	_, err = session.ID(id).Delete(&CIV3BuildCache{})
 	return err
 }
