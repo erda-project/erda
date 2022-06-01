@@ -31,7 +31,7 @@ import (
 	"github.com/erda-project/erda/modules/hepa/config"
 	hepaI18n "github.com/erda-project/erda/modules/hepa/i18n"
 	"github.com/erda-project/erda/modules/hepa/repository/orm"
-	"github.com/erda-project/erda/modules/monitor/common/permission"
+	"github.com/erda-project/erda/modules/tools/monitor/common/permission"
 	"github.com/erda-project/erda/pkg/discover"
 )
 

@@ -17,7 +17,7 @@ package storage
 import (
 	"context"
 
-	"github.com/erda-project/erda/modules/core/monitor/storekit"
+	"github.com/erda-project/erda/modules/tools/monitor/core/storekit"
 )
 
 type (

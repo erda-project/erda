@@ -24,9 +24,9 @@ import (
 	"github.com/erda-project/erda-infra/pkg/strutil"
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda/apistructs"
-	metrics "github.com/erda-project/erda/modules/core/monitor/metric"
 	"github.com/erda-project/erda/modules/msp/apm/log-service/analysis/processors"
 	_ "github.com/erda-project/erda/modules/msp/apm/log-service/analysis/processors/regex" //
+	metrics "github.com/erda-project/erda/modules/tools/monitor/core/metric"
 	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
 

@@ -28,8 +28,8 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/cassandra"
 	oap "github.com/erda-project/erda-proto-go/oap/trace/pb"
-	metrics "github.com/erda-project/erda/modules/core/monitor/metric"
 	"github.com/erda-project/erda/modules/pkg/monitor"
+	metrics "github.com/erda-project/erda/modules/tools/monitor/core/metric"
 )
 
 func (p *provider) initCassandra(session *cassandra.Session) error {

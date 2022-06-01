@@ -25,7 +25,7 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	monitorpb "github.com/erda-project/erda-proto-go/core/monitor/log/query/pb"
-	"github.com/erda-project/erda/modules/extensions/loghub/index/query"
+	"github.com/erda-project/erda/modules/tools/monitor/extensions/loghub/index/query"
 	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
 
