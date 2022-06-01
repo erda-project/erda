@@ -232,6 +232,7 @@ func (h httpHandler) Do(ctx plugins.Context) error {
 		start := time.Now()
 		resp, err := client.Do(req)
 		if err != nil {
+			h.p.Log.Debugf("failed to do request for httpHandler (tags: %v)", tags)
 			fields["latency"] = 0
 			checkerStatusMetric("2", apis.StatusRED, 601, tags, fields)
 			continue
