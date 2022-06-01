@@ -30,7 +30,7 @@ import (
 	election "github.com/erda-project/erda-infra/providers/etcd-election"
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/httpserver/interceptors"
-	index2 "github.com/erda-project/erda/modules/tools/monitor/core/storekit/elasticsearch/index"
+	"github.com/erda-project/erda/modules/tools/monitor/core/storekit/elasticsearch/index"
 	"github.com/erda-project/erda/modules/tools/monitor/core/storekit/elasticsearch/index/loader"
 )
 
@@ -76,8 +76,8 @@ type (
 		} `file:"rollover_alias_patterns"`
 	}
 	indexAliasPattern struct {
-		index *index2.Pattern
-		alias *index2.Pattern
+		index *index.Pattern
+		alias *index.Pattern
 	}
 	TtlTask struct {
 		TaskId  string
@@ -110,7 +110,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	}
 	p.loader = loader
 
-	election, err := index2.FindElection(ctx, true)
+	election, err := index.FindElection(ctx, true)
 	if err != nil {
 		return err
 	}
@@ -167,11 +167,11 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		if len(ptn.Index) <= 0 || len(ptn.Alias) <= 0 {
 			return fmt.Errorf("pattern(%d) index and alias is required", i)
 		}
-		ip, err := index2.BuildPattern(ptn.Index)
+		ip, err := index.BuildPattern(ptn.Index)
 		if err != nil {
 			return err
 		}
-		ap, err := index2.BuildPattern(ptn.Alias)
+		ap, err := index.BuildPattern(ptn.Alias)
 		if err != nil {
 			return err
 		}
@@ -204,7 +204,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 }
 
 func (p *provider) initRetentionStrategy(ctx servicehub.Context) error {
-	obj, name := index2.FindService(ctx, "elasticsearch.index.retention-strategy")
+	obj, name := index.FindService(ctx, "elasticsearch.index.retention-strategy")
 	if obj == nil {
 		return fmt.Errorf("%q is required", name)
 	}

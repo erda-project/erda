@@ -23,7 +23,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/core/monitor/expression/pb"
 	"github.com/erda-project/erda/modules/core-services/dao"
-	"github.com/erda-project/erda/modules/tools/monitor/core/alert/alert-apis/db"
+	alertdb "github.com/erda-project/erda/modules/tools/monitor/core/alert/alert-apis/db"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 
@@ -43,10 +43,10 @@ type provider struct {
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.expressionService = &expressionService{
-		alertDB:                        &db.AlertExpressionDB{DB: p.DB},
-		metricDB:                       &db.MetricExpressionDB{DB: p.DB},
-		customizeAlertNotifyTemplateDB: &db.CustomizeAlertNotifyTemplateDB{DB: p.DB},
-		alertNotifyDB:                  &db.AlertNotifyDB{DB: p.DB},
+		alertDB:                        &alertdb.AlertExpressionDB{DB: p.DB},
+		metricDB:                       &alertdb.MetricExpressionDB{DB: p.DB},
+		customizeAlertNotifyTemplateDB: &alertdb.CustomizeAlertNotifyTemplateDB{DB: p.DB},
+		alertNotifyDB:                  &alertdb.AlertNotifyDB{DB: p.DB},
 		clientDB:                       &dao.DBClient{DB: p.DB},
 	}
 	err := p.expressionService.init(p.Cfg.AlertRules, p.Cfg.MetricRules)

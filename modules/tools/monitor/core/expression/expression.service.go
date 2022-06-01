@@ -27,7 +27,7 @@ import (
 
 	"github.com/erda-project/erda-proto-go/core/monitor/expression/pb"
 	"github.com/erda-project/erda/modules/core-services/dao"
-	"github.com/erda-project/erda/modules/tools/monitor/core/alert/alert-apis/db"
+	alertdb "github.com/erda-project/erda/modules/tools/monitor/core/alert/alert-apis/db"
 	"github.com/erda-project/erda/modules/tools/monitor/core/expression/model"
 )
 
@@ -49,10 +49,10 @@ var (
 )
 
 type expressionService struct {
-	alertDB                        *db.AlertExpressionDB
-	metricDB                       *db.MetricExpressionDB
-	customizeAlertNotifyTemplateDB *db.CustomizeAlertNotifyTemplateDB
-	alertNotifyDB                  *db.AlertNotifyDB
+	alertDB                        *alertdb.AlertExpressionDB
+	metricDB                       *alertdb.MetricExpressionDB
+	customizeAlertNotifyTemplateDB *alertdb.CustomizeAlertNotifyTemplateDB
+	alertNotifyDB                  *alertdb.AlertNotifyDB
 	clientDB                       *dao.DBClient
 }
 

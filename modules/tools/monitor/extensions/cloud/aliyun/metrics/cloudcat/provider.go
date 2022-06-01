@@ -25,8 +25,8 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	writer "github.com/erda-project/erda-infra/pkg/parallel-writer"
 	"github.com/erda-project/erda-infra/providers/kafka"
-	api2 "github.com/erda-project/erda/modules/tools/monitor/extensions/cloud/aliyun/metrics/cloudcat/api"
-	"github.com/erda-project/erda/modules/tools/monitor/extensions/cloud/aliyun/metrics/cloudcat/globals"
+	"github.com/erda-project/erda/modules/tools/monitor/extensions/cloud/aliyun/metrics/cloudcat/api"
+	g "github.com/erda-project/erda/modules/tools/monitor/extensions/cloud/aliyun/metrics/cloudcat/globals"
 	"github.com/erda-project/erda/modules/tools/monitor/extensions/cloud/aliyun/metrics/cloudcat/scheduler"
 )
 
@@ -38,7 +38,7 @@ func (d *define) Dependencies() []string {
 	return []string{"kafka-producer"}
 }
 func (d *define) Description() string { return d.Summary() }
-func (d *define) Config() interface{} { return &globals.Config{} }
+func (d *define) Config() interface{} { return &g.Config{} }
 func (d *define) Creator() servicehub.Creator {
 	return func() servicehub.Provider {
 		return &manager{}
@@ -46,10 +46,10 @@ func (d *define) Creator() servicehub.Creator {
 }
 
 type manager struct {
-	Cfg                 *globals.Config
+	Cfg                 *g.Config
 	Logger              logs.Logger
 	writer              writer.Writer
-	metaOrgClusters     []api2.OrgInfo
+	metaOrgClusters     []api.OrgInfo
 	schedulers          []*scheduler.Scheduler
 	schedulerChangedSig chan int
 	done                chan struct{}
@@ -57,9 +57,9 @@ type manager struct {
 }
 
 func (m *manager) Init(ctx servicehub.Context) error {
-	globals.Log = m.Logger
-	globals.Cfg = m.Cfg
-	globals.Cfg.Products = strings.Split(m.Cfg.ProductsCfg, ",")
+	g.Log = m.Logger
+	g.Cfg = m.Cfg
+	g.Cfg.Products = strings.Split(m.Cfg.ProductsCfg, ",")
 
 	m.ctx = ctx
 	if err := m.setWriter(); err != nil {
@@ -100,21 +100,21 @@ func (m *manager) sync() {
 			return
 		case <-timer.C:
 		}
-		globals.Log.Infof("start reload account...")
-		meta, err := api2.ListOrgInfos()
+		g.Log.Infof("start reload account...")
+		meta, err := api.ListOrgInfos()
 		if err != nil {
-			globals.Log.Errorf("list org cluster error: %s", err)
+			g.Log.Errorf("list org cluster error: %s", err)
 			continue
 		}
 		same := reflect.DeepEqual(meta, m.metaOrgClusters)
 		if !same {
 			m.Close()
 			if err := m.setWriter(); err != nil {
-				globals.Log.Errorf("set writer failed. err: %s", err)
+				g.Log.Errorf("set writer failed. err: %s", err)
 				continue
 			}
 			if err := m.initScheduler(); err != nil {
-				globals.Log.Errorf("init failed, err %s", err)
+				g.Log.Errorf("init failed, err %s", err)
 				continue
 			}
 			m.start()
@@ -123,7 +123,7 @@ func (m *manager) sync() {
 }
 
 func (m *manager) retryFailedScheduler() {
-	timer := time.NewTicker(globals.Cfg.AccountReload)
+	timer := time.NewTicker(g.Cfg.AccountReload)
 	for {
 		select {
 		case <-m.done:
@@ -131,7 +131,7 @@ func (m *manager) retryFailedScheduler() {
 			return
 		case <-timer.C:
 		}
-		globals.Log.Info("check & retry failure scheduler...")
+		g.Log.Info("check & retry failure scheduler...")
 		// retry
 		allSuccess := true
 		for i := 0; i < len(m.schedulers); i++ {
@@ -145,7 +145,7 @@ func (m *manager) retryFailedScheduler() {
 						m.schedulers[i].Sync(m.schedulerChangedSig)
 					}()
 				} else {
-					globals.Log.Errorf("retry scheduler=%s failed. err=%s", m.schedulers[i], err)
+					g.Log.Errorf("retry scheduler=%s failed. err=%s", m.schedulers[i], err)
 				}
 			}
 		}
@@ -185,7 +185,7 @@ func (m *manager) monitor() {
 		case <-m.done:
 			return
 		case idx := <-m.schedulerChangedSig:
-			globals.Log.Infof("%dth scheduler <%s> MetaProjects info changed, start to recreate", idx, m.schedulers[idx])
+			g.Log.Infof("%dth scheduler <%s> MetaProjects info changed, start to recreate", idx, m.schedulers[idx])
 			olds := m.schedulers[idx]
 			if olds == nil {
 				break
@@ -196,12 +196,12 @@ func (m *manager) monitor() {
 			news, err := scheduler.New(item, m.Cfg, m.writer)
 			m.schedulers[idx] = news
 			if err != nil {
-				globals.Log.Errorf("create scheduler with <%s, %s>", item.OrgId, item.OrgName)
+				g.Log.Errorf("create scheduler with <%s, %s>", item.OrgId, item.OrgName)
 				break
 			}
 			go func() { m.schedulers[idx].Start() }()
 			go func() { m.schedulers[idx].Sync(m.schedulerChangedSig) }()
-			globals.Log.Infof("%dth scheduler <%s> MetaProjects info changed, recreate complete", idx, m.schedulers[idx])
+			g.Log.Infof("%dth scheduler <%s> MetaProjects info changed, recreate complete", idx, m.schedulers[idx])
 		}
 	}
 }
@@ -210,9 +210,9 @@ func (m *manager) initScheduler() error {
 	m.done = make(chan struct{})
 	m.schedulerChangedSig = make(chan int)
 
-	meta, err := api2.ListOrgInfos()
+	meta, err := api.ListOrgInfos()
 	if err != nil {
-		globals.Log.Infof("can not get org info: %s. will try again with %s interval", err, globals.Cfg.AccountReload)
+		g.Log.Infof("can not get org info: %s. will try again with %s interval", err, g.Cfg.AccountReload)
 	}
 	m.metaOrgClusters = meta
 
@@ -221,9 +221,9 @@ func (m *manager) initScheduler() error {
 		item := m.metaOrgClusters[i]
 		s, err := scheduler.New(item, m.Cfg, m.writer)
 		if err != nil {
-			globals.Log.Errorf("create scheduler with <%s, %s> failed. err: %s", item.OrgId, item.OrgName, err)
+			g.Log.Errorf("create scheduler with <%s, %s> failed. err: %s", item.OrgId, item.OrgName, err)
 		} else {
-			globals.Log.Infof("create scheduler with <%s, %s> successfully", item.OrgId, item.OrgName)
+			g.Log.Infof("create scheduler with <%s, %s> successfully", item.OrgId, item.OrgName)
 		}
 		schedulers[i] = s
 	}

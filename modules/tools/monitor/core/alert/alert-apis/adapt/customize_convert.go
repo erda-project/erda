@@ -25,7 +25,6 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 	"github.com/erda-project/erda/modules/tools/monitor/core/alert/alert-apis/db"
-	util "github.com/erda-project/erda/modules/tools/monitor/utils"
 )
 
 // FromModel .

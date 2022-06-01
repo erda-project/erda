@@ -25,7 +25,7 @@ import (
 	"github.com/recallsong/go-utils/reflectx"
 
 	"github.com/erda-project/erda/modules/tools/monitor/core/metric/query/query"
-	queryv12 "github.com/erda-project/erda/modules/tools/monitor/core/metric/query/query/v1"
+	queryv1 "github.com/erda-project/erda/modules/tools/monitor/core/metric/query/query/v1"
 )
 
 // Form .
@@ -64,7 +64,7 @@ type RangeAgg struct {
 type Parser struct{}
 
 // Parse .
-func (p *Parser) Parse(statement string) (*queryv12.Request, error) {
+func (p *Parser) Parse(statement string) (*queryv1.Request, error) {
 	parts := strings.SplitN(statement, "?", 2)
 	if len(parts) != 2 {
 		return nil, fmt.Errorf("invalid query statement: %s", statement)
@@ -76,7 +76,7 @@ func (p *Parser) Parse(statement string) (*queryv12.Request, error) {
 	}
 
 	mparts := strings.SplitN(parts[0], "/", 2)
-	req := &queryv12.Request{
+	req := &queryv1.Request{
 		ExistKeys: make(map[string]struct{}),
 	}
 	req.Metrics = strings.Split(mparts[0], ",")
@@ -93,8 +93,8 @@ func (p *Parser) Parse(statement string) (*queryv12.Request, error) {
 		if _, ok := getScript(group); ok {
 			script = group
 		}
-		req.GroupBy = append(req.GroupBy, &queryv12.Group{
-			Property: queryv12.Property{
+		req.GroupBy = append(req.GroupBy, &queryv1.Group{
+			Property: queryv1.Property{
 				Name:   group,
 				Script: script,
 			},
@@ -113,7 +113,7 @@ func (p *Parser) Parse(statement string) (*queryv12.Request, error) {
 			val = val[:idx]
 		}
 		if val == "count" {
-			req.OrderBy = append(req.OrderBy, &queryv12.Order{
+			req.OrderBy = append(req.OrderBy, &queryv1.Order{
 				FuncName: val,
 				Sort:     sort,
 			})
@@ -125,8 +125,8 @@ func (p *Parser) Parse(statement string) (*queryv12.Request, error) {
 			if val == "timestamp" {
 				val = "." + val
 			}
-			req.OrderBy = append(req.OrderBy, &queryv12.Order{
-				Property: queryv12.Property{
+			req.OrderBy = append(req.OrderBy, &queryv1.Order{
+				Property: queryv1.Property{
 					Name: val,
 				},
 				FuncName: "",
@@ -136,8 +136,8 @@ func (p *Parser) Parse(statement string) (*queryv12.Request, error) {
 			if val[idx+1:] == "" || val[:idx] == "" {
 				return nil, fmt.Errorf("invalid sort %s", val)
 			}
-			req.OrderBy = append(req.OrderBy, &queryv12.Order{
-				Property: queryv12.Property{
+			req.OrderBy = append(req.OrderBy, &queryv1.Order{
+				Property: queryv1.Property{
 					Name: val[idx+1:],
 				},
 				FuncName: val[:idx],
@@ -148,7 +148,7 @@ func (p *Parser) Parse(statement string) (*queryv12.Request, error) {
 
 	for key, val := range form.Filter {
 		req.Where = append(req.Where, &query.Filter{
-			Key:      queryv12.NormalizeKey(key, query.TagKey),
+			Key:      queryv1.NormalizeKey(key, query.TagKey),
 			Operator: "=",
 			Value:    val,
 		})
@@ -156,7 +156,7 @@ func (p *Parser) Parse(statement string) (*queryv12.Request, error) {
 
 	for key, val := range form.Match {
 		req.Where = append(req.Where, &query.Filter{
-			Key:      queryv12.NormalizeKey(key, query.TagKey),
+			Key:      queryv1.NormalizeKey(key, query.TagKey),
 			Operator: "match",
 			Value:    val,
 		})
@@ -169,7 +169,7 @@ func (p *Parser) Parse(statement string) (*queryv12.Request, error) {
 			return nil, fmt.Errorf("invalid params field_%s=%s", key, val)
 		}
 		req.Where = append(req.Where, &query.Filter{
-			Key:      queryv12.NormalizeKey(key, query.TagKey),
+			Key:      queryv1.NormalizeKey(key, query.TagKey),
 			Operator: "field",
 			Value:    value,
 		})
@@ -182,7 +182,7 @@ func (p *Parser) Parse(statement string) (*queryv12.Request, error) {
 				values = append(values, val)
 			}
 			req.Where = append(req.Where, &query.Filter{
-				Key:      queryv12.NormalizeKey(key, query.TagKey),
+				Key:      queryv1.NormalizeKey(key, query.TagKey),
 				Operator: "in",
 				Value:    values,
 			})
@@ -209,8 +209,8 @@ func (p *Parser) Parse(statement string) (*queryv12.Request, error) {
 			return nil, err
 		}
 
-		req.Select = append(req.Select, &queryv12.Column{
-			Property: queryv12.Property{
+		req.Select = append(req.Select, &queryv1.Column{
+			Property: queryv1.Property{
 				Name:   val.Name,
 				Script: script,
 			},
@@ -220,7 +220,7 @@ func (p *Parser) Parse(statement string) (*queryv12.Request, error) {
 	}
 
 	for key, vals := range form.Function {
-		if _, ok := queryv12.Functions[key]; ok {
+		if _, ok := queryv1.Functions[key]; ok {
 			for _, val := range vals {
 				var script string
 				if s, ok := getScript(val); ok {
@@ -235,8 +235,8 @@ func (p *Parser) Parse(statement string) (*queryv12.Request, error) {
 						}
 					}
 				}
-				req.Select = append(req.Select, &queryv12.Column{
-					Property: queryv12.Property{
+				req.Select = append(req.Select, &queryv1.Column{
+					Property: queryv1.Property{
 						Name:   val,
 						Script: script,
 					},
@@ -248,21 +248,21 @@ func (p *Parser) Parse(statement string) (*queryv12.Request, error) {
 
 	align := strings.ToLower(form.Align)
 	if align == "true" {
-		req.TimeAlign = queryv12.TimeAlignAuto
+		req.TimeAlign = queryv1.TimeAlignAuto
 	} else if align == "false" {
-		req.TimeAlign = queryv12.TimeAlignNone
+		req.TimeAlign = queryv1.TimeAlignNone
 	} else {
-		req.TimeAlign = queryv12.TimeAlignUnset
+		req.TimeAlign = queryv1.TimeAlignUnset
 	}
 
 	if len(mparts) > 1 {
 		switch mparts[1] {
 		case "histogram":
-			req.Aggregate = &queryv12.Column{
+			req.Aggregate = &queryv1.Column{
 				FuncName: mparts[1],
 			}
 			req.Points = form.Points
-			req.AlignEnd = req.TimeAlign != queryv12.TimeAlignNone
+			req.AlignEnd = req.TimeAlign != queryv1.TimeAlignNone
 		case "range":
 		case "apdex":
 		}
@@ -276,7 +276,7 @@ func (p *Parser) Parse(statement string) (*queryv12.Request, error) {
 func getRangeParams(rangeAgg RangeAgg) (values []interface{}, err error) {
 	if len(rangeAgg.Ranges) > 0 {
 		for _, item := range rangeAgg.Ranges {
-			values = append(values, &queryv12.ValueRange{
+			values = append(values, &queryv1.ValueRange{
 				From: item.Form,
 				To:   item.To,
 			})
@@ -289,12 +289,12 @@ func getRangeParams(rangeAgg RangeAgg) (values []interface{}, err error) {
 		}
 		for i, last := 0, split-1; i < split; i++ {
 			if i >= last {
-				values = append(values, &queryv12.ValueRange{
+				values = append(values, &queryv1.ValueRange{
 					From: float64(i) * rangeSize,
 					To:   nil,
 				})
 			} else {
-				values = append(values, &queryv12.ValueRange{
+				values = append(values, &queryv1.ValueRange{
 					From: float64(i) * rangeSize,
 					To:   float64(i+1) * rangeSize,
 				})
@@ -375,5 +375,5 @@ func parseScript(script, keyType string) (string, map[string]struct{}, error) {
 }
 
 func init() {
-	queryv12.RegisterQueryParser("json", &Parser{})
+	queryv1.RegisterQueryParser("json", &Parser{})
 }

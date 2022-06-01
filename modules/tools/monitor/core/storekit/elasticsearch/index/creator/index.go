@@ -21,7 +21,7 @@ import (
 
 	"github.com/olivere/elastic"
 
-	index2 "github.com/erda-project/erda/modules/tools/monitor/core/storekit/elasticsearch/index"
+	"github.com/erda-project/erda/modules/tools/monitor/core/storekit/elasticsearch/index"
 )
 
 // Ensure .
@@ -37,12 +37,12 @@ func (p *provider) Ensure(keys ...string) (_ <-chan error, alias string) {
 	}
 	if pattern == nil {
 		ch := make(chan error, 1)
-		ch <- index2.ErrKeyLength
+		ch <- index.ErrKeyLength
 		close(ch)
 		return ch, ""
 	}
 	for i, key := range keys {
-		keys[i] = index2.NormalizeKey(key)
+		keys[i] = index.NormalizeKey(key)
 	}
 
 	// get index alias name by keys
@@ -59,7 +59,7 @@ func (p *provider) Ensure(keys ...string) (_ <-chan error, alias string) {
 	// get index name by keys
 	indexName, err := pattern.index.Fill(keys...)
 	if err != nil {
-		ch <- index2.ErrKeyLength
+		ch <- index.ErrKeyLength
 		close(ch)
 		return ch, ""
 	}
@@ -144,14 +144,14 @@ func (p *provider) FixedIndex(keys ...string) (string, error) {
 		if ptn.KeyNum == keylen {
 			list := make([]string, keylen)
 			for i, k := range keys {
-				list[i] = index2.NormalizeKey(k)
+				list[i] = index.NormalizeKey(k)
 			}
 			index, _ := ptn.Fill(list...)
 			return index, nil
 		}
 	}
 
-	return "", index2.ErrKeyLength
+	return "", index.ErrKeyLength
 }
 
 func (p *provider) removeConflictingIndices(ctx context.Context) error {
@@ -165,7 +165,7 @@ func (p *provider) removeConflictingIndices(ctx context.Context) error {
 			// never reach
 			return err
 		}
-		if ptn.alias.Segments[len(ptn.alias.Segments)-1].Type != index2.PatternSegmentStatic {
+		if ptn.alias.Segments[len(ptn.alias.Segments)-1].Type != index.PatternSegmentStatic {
 			p.Log.Warnf("can't to remove %s, the pattern %q has no static suffix", indexName, ptn.alias.Pattern)
 			continue
 		}

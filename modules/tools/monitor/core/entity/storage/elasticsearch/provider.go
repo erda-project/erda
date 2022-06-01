@@ -29,7 +29,7 @@ import (
 	"github.com/erda-project/erda-proto-go/oap/entity/pb"
 	"github.com/erda-project/erda/modules/tools/monitor/core/entity/storage"
 	"github.com/erda-project/erda/modules/tools/monitor/core/storekit"
-	index2 "github.com/erda-project/erda/modules/tools/monitor/core/storekit/elasticsearch/index"
+	"github.com/erda-project/erda/modules/tools/monitor/core/storekit/elasticsearch/index"
 )
 
 type (
@@ -46,7 +46,7 @@ type (
 		ES2            elasticsearch.Interface `autowired:"elasticsearch" optional:"true"`
 		es             elasticsearch.Interface
 		ctx            servicehub.Context
-		ptn            *index2.Pattern
+		ptn            *index.Pattern
 		writeTimeoutMS string
 		queyTimeoutMS  string
 	}
@@ -73,7 +73,7 @@ func (p *provider) initIndexPattern() error {
 	if len(p.Cfg.Pattern) <= 0 {
 		return fmt.Errorf("pattern is required")
 	}
-	ptn, err := index2.BuildPattern(p.Cfg.Pattern)
+	ptn, err := index.BuildPattern(p.Cfg.Pattern)
 	if err != nil {
 		return err
 	}
@@ -118,7 +118,7 @@ func (p *provider) encodeToDocument(ctx context.Context) func(val interface{}) (
 
 func (p *provider) getIndex(typ, key string) string {
 	if p.ptn.KeyNum == 1 {
-		index, _ := p.ptn.Fill(index2.NormalizeKey(typ))
+		index, _ := p.ptn.Fill(index.NormalizeKey(typ))
 		return index
 	}
 	return p.ptn.Pattern

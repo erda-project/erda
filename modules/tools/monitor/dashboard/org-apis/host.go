@@ -25,7 +25,6 @@ import (
 
 	"github.com/olivere/elastic"
 
-	util "github.com/erda-project/erda/modules/tools/monitor/utils"
 	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
 

@@ -18,13 +18,13 @@ import (
 	"context"
 
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
-	metricmeta2 "github.com/erda-project/erda/modules/tools/monitor/core/metric/query/metricmeta"
+	"github.com/erda-project/erda/modules/tools/monitor/core/metric/query/metricmeta"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 
 type metricMetaService struct {
 	p    *provider
-	meta *metricmeta2.Manager
+	meta *metricmeta.Manager
 }
 
 func (s *metricMetaService) ListMetricNames(ctx context.Context, req *pb.ListMetricNamesRequest) (*pb.ListMetricNamesResponse, error) {
@@ -51,11 +51,11 @@ func (s *metricMetaService) ListMetricGroups(ctx context.Context, req *pb.ListMe
 func (s *metricMetaService) GetMetricGroup(ctx context.Context, req *pb.GetMetricGroupRequest) (*pb.GetMetricGroupResponse, error) {
 	if len(req.Format) <= 0 {
 		if req.Version == "v2" {
-			req.Format = metricmeta2.InfluxFormat
+			req.Format = metricmeta.InfluxFormat
 			req.AppendTags = true
 		} else if len(req.Format) <= 0 && req.Mode != "analysis" {
 			// However, alarm expressions do not support dot format, so metadata queries that are not in alarm mode are all in dot format.
-			req.Format = metricmeta2.DotFormat
+			req.Format = metricmeta.DotFormat
 		}
 	}
 	list, err := s.meta.MetricGroup(apis.Language(ctx), req.Scope, req.ScopeID, req.Id, req.Mode, req.Format, req.AppendTags)

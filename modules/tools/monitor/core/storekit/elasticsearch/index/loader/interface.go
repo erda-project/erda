@@ -23,7 +23,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
-	index2 "github.com/erda-project/erda/modules/tools/monitor/core/storekit/elasticsearch/index"
+	"github.com/erda-project/erda/modules/tools/monitor/core/storekit/elasticsearch/index"
 )
 
 type (
@@ -41,7 +41,7 @@ type (
 		IndexGroup(path ...string) *IndexGroup
 
 		Prefixes() []string
-		Match(index string) *index2.MatchResult
+		Match(index string) *index.MatchResult
 
 		RequestTimeout() time.Duration
 		QueryIndexTimeRange() bool
@@ -53,7 +53,7 @@ type (
 
 // Find .
 func Find(ctx servicehub.Context, log logs.Logger, required bool) (Interface, error) {
-	obj, name := index2.FindService(ctx, "elasticsearch.index.loader")
+	obj, name := index.FindService(ctx, "elasticsearch.index.loader")
 	if obj != nil {
 		loader, ok := obj.(Interface)
 		if !ok {

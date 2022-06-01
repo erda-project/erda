@@ -23,7 +23,6 @@ import (
 	"github.com/olivere/elastic"
 
 	"github.com/erda-project/erda/modules/tools/monitor/core/metric/query/query"
-	util "github.com/erda-project/erda/modules/tools/monitor/utils"
 )
 
 // PodInfoSummary .

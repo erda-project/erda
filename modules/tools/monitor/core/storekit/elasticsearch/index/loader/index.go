@@ -26,7 +26,7 @@ import (
 	"github.com/recallsong/go-utils/encoding/jsonx"
 	"github.com/recallsong/go-utils/lang/size"
 
-	index2 "github.com/erda-project/erda/modules/tools/monitor/core/storekit/elasticsearch/index"
+	"github.com/erda-project/erda/modules/tools/monitor/core/storekit/elasticsearch/index"
 )
 
 func (p *provider) catIndices(ctx context.Context, prefix ...string) (elastic.CatIndicesResponse, error) {
@@ -64,29 +64,29 @@ func (p *provider) getIndicesFromES(ctx context.Context, catIndices func(ctx con
 				continue
 			}
 			indexName := item.Index[len(matcher.prefix):]
-			var matched *index2.MatchResult
+			var matched *index.MatchResult
 			var num, timestamp int64 = -1, -1
 		patterns:
 			for _, ptn := range matcher.patterns {
-				result, ok := ptn.Match(indexName, index2.InvalidPatternValueChars)
+				result, ok := ptn.Match(indexName, index.InvalidPatternValueChars)
 				if !ok {
 					continue
 				}
 				for i, v := range ptn.Vars {
 					switch v {
-					case index2.IndexVarNumber:
+					case index.IndexVarNumber:
 						n, err := strconv.ParseInt(result.Vars[i], 10, 64)
 						if err != nil {
 							continue patterns
 						}
 						num = n
-					case index2.IndexVarTimestamp:
+					case index.IndexVarTimestamp:
 						n, err := strconv.ParseInt(result.Vars[i], 10, 64)
 						if err != nil {
 							continue patterns
 						}
 						timestamp = n
-					case index2.IndexVarNone:
+					case index.IndexVarNone:
 					}
 				}
 				matched = result
@@ -383,7 +383,7 @@ func (p *provider) findIndexByPath(path []string, recursive bool, group *IndexGr
 		return
 	}
 	for _, key := range path {
-		key = index2.NormalizeKey(key)
+		key = index.NormalizeKey(key)
 		group = group.Groups[key]
 		if group == nil {
 			return
@@ -419,7 +419,7 @@ func matchTimeRange(entry *IndexEntry, start, end time.Time) bool {
 func (p *provider) Keys(path ...string) (keys []string) {
 	indices := p.WaitAndGetIndices(context.Background())
 	for _, key := range path {
-		key = index2.NormalizeKey(key)
+		key = index.NormalizeKey(key)
 		indices = indices.Groups[key]
 		if indices == nil {
 			return nil
@@ -434,7 +434,7 @@ func (p *provider) Keys(path ...string) (keys []string) {
 func (p *provider) IndexGroup(path ...string) *IndexGroup {
 	indices := p.WaitAndGetIndices(context.Background())
 	for _, key := range path {
-		key = index2.NormalizeKey(key)
+		key = index.NormalizeKey(key)
 		indices = indices.Groups[key]
 		if indices == nil {
 			return nil
@@ -451,7 +451,7 @@ func (p *provider) Prefixes() []string {
 	return prefixes
 }
 
-func (p *provider) Match(indexName string) (matched *index2.MatchResult) {
+func (p *provider) Match(indexName string) (matched *index.MatchResult) {
 	for _, matcher := range p.matchers {
 		if !strings.HasPrefix(indexName, matcher.prefix) {
 			continue
@@ -459,23 +459,23 @@ func (p *provider) Match(indexName string) (matched *index2.MatchResult) {
 		indexName = indexName[len(matcher.prefix):]
 	patterns:
 		for _, ptn := range matcher.patterns {
-			result, ok := ptn.Match(indexName, index2.InvalidPatternValueChars)
+			result, ok := ptn.Match(indexName, index.InvalidPatternValueChars)
 			if !ok {
 				continue
 			}
 			for i, v := range ptn.Vars {
 				switch v {
-				case index2.IndexVarNumber:
+				case index.IndexVarNumber:
 					_, err := strconv.ParseInt(result.Vars[i], 10, 64)
 					if err != nil {
 						continue patterns
 					}
-				case index2.IndexVarTimestamp:
+				case index.IndexVarTimestamp:
 					_, err := strconv.ParseInt(result.Vars[i], 10, 64)
 					if err != nil {
 						continue patterns
 					}
-				case index2.IndexVarNone:
+				case index.IndexVarNone:
 				}
 			}
 			matched = result

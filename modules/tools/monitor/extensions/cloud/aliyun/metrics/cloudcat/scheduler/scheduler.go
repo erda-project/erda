@@ -26,7 +26,7 @@ import (
 
 	writer "github.com/erda-project/erda-infra/pkg/parallel-writer"
 	"github.com/erda-project/erda-infra/providers/kafka"
-	api2 "github.com/erda-project/erda/modules/tools/monitor/extensions/cloud/aliyun/metrics/cloudcat/api"
+	"github.com/erda-project/erda/modules/tools/monitor/extensions/cloud/aliyun/metrics/cloudcat/api"
 	"github.com/erda-project/erda/modules/tools/monitor/extensions/cloud/aliyun/metrics/cloudcat/globals"
 	"github.com/erda-project/erda/modules/tools/monitor/extensions/cloud/aliyun/metrics/cloudcat/grabber"
 )
@@ -45,13 +45,13 @@ func init() {
 type Scheduler struct {
 	metaProjects      []cms.Resource
 	grabbers          []*grabber.Grabber
-	pipe              chan []*api2.Metric
+	pipe              chan []*api.Metric
 	done              chan struct{}
 	writer            writer.Writer
 	cfg               *globals.Config
 	grabberChangedSig chan int
 	// orgId, clusterName, orgName string
-	info  api2.OrgInfo
+	info  api.OrgInfo
 	index int // the index of manager.schedulers
 	State int
 }
@@ -60,25 +60,25 @@ func (s *Scheduler) String() string {
 	return fmt.Sprintf("scheduler <%s, %s>", s.info.OrgName, s.info.OrgId)
 }
 
-func (s *Scheduler) initAliyunVendor() (vendor api2.CloudVendor, err error) {
-	defaultcfg := api2.AliyunConfig{
+func (s *Scheduler) initAliyunVendor() (vendor api.CloudVendor, err error) {
+	defaultcfg := api.AliyunConfig{
 		Timeout:          s.cfg.ReqLimitTimeout,
 		MaxQPS:           s.cfg.MaxQPS,
 		ReqLimit:         s.cfg.ReqLimit,
 		ReqLimitDuration: s.cfg.ReqLimitDuration,
 	}
-	vendor, err = api2.NewAliyunVendor(s.info.AccessKey, s.info.AccessSecret, defaultcfg)
+	vendor, err = api.NewAliyunVendor(s.info.AccessKey, s.info.AccessSecret, defaultcfg)
 	if err != nil {
 		return nil, err
 	}
-	api2.RegisterVendor(s.info.OrgId, vendor)
+	api.RegisterVendor(s.info.OrgId, vendor)
 	return
 }
 
 //
-func New(info api2.OrgInfo, cfg *globals.Config, w writer.Writer) (sc *Scheduler, err error) {
+func New(info api.OrgInfo, cfg *globals.Config, w writer.Writer) (sc *Scheduler, err error) {
 	sc = &Scheduler{
-		pipe:              make(chan []*api2.Metric),
+		pipe:              make(chan []*api.Metric),
 		cfg:               cfg,
 		done:              make(chan struct{}),
 		writer:            w,
@@ -90,7 +90,7 @@ func New(info api2.OrgInfo, cfg *globals.Config, w writer.Writer) (sc *Scheduler
 		return sc, fmt.Errorf("create aliyun vendor failed. err=%s", err)
 	}
 
-	meta, err := api2.ListProjectMeta(info.OrgId, cfg.Products)
+	meta, err := api.ListProjectMeta(info.OrgId, cfg.Products)
 	if err != nil {
 		return sc, err
 	}
@@ -112,7 +112,7 @@ func (s *Scheduler) Retry() error {
 	if _, err := s.initAliyunVendor(); err != nil {
 		return fmt.Errorf("create aliyun vendor failed. err=%s", err)
 	}
-	meta, err := api2.ListProjectMeta(s.info.OrgId, s.cfg.Products)
+	meta, err := api.ListProjectMeta(s.info.OrgId, s.cfg.Products)
 	if err != nil {
 		return err
 	}
@@ -233,7 +233,7 @@ func (s *Scheduler) monitor() {
 	}
 }
 
-func (s *Scheduler) send(metric *api2.Metric) error {
+func (s *Scheduler) send(metric *api.Metric) error {
 	data, err := json.Marshal(metric)
 	if err != nil {
 		return err
@@ -261,7 +261,7 @@ func (s *Scheduler) createGrabbers(meta []cms.Resource) (gs []*grabber.Grabber, 
 		// 官方文档建议，采集窗口为5-10min。
 		g, err := grabber.New(meta[i].Namespace, s.cfg.GatherWindow, s.info.OrgId, i)
 		gs[i] = g
-		if err == api2.ErrEmptyResults {
+		if err == api.ErrEmptyResults {
 			logrus.Infof("grabber %+v with empty metaMetrics, ignore", meta[i].Namespace)
 			continue
 		}
@@ -273,7 +273,7 @@ func (s *Scheduler) createGrabbers(meta []cms.Resource) (gs []*grabber.Grabber, 
 }
 
 func (s *Scheduler) loadMetaProjects() (same bool, err error) {
-	meta, err := api2.ListProjectMeta(s.info.OrgId, s.cfg.Products)
+	meta, err := api.ListProjectMeta(s.info.OrgId, s.cfg.Products)
 	if err != nil {
 		return false, err
 	}

@@ -45,19 +45,19 @@ func Test_provider_getIndicesList(t *testing.T) {
 			ctx: context.Background(),
 			indices: &loader.IndexGroup{
 				Groups: map[string]*loader.IndexGroup{"test-group": {
-					List: []*loader.IndexEntry{{Index: "test-index1"}, {Index: "test-index2"}},
+					List: []*loader.IndexEntry{{Index: "test-index1"}, {Index: "test-index"}},
 				}},
 			},
-		}, []string{"test-index1", "test-index2"}},
+		}, []string{"test-index1", "test-index"}},
 		{"case2", args{
 			ctx: context.Background(),
 			indices: &loader.IndexGroup{
 				Groups: map[string]*loader.IndexGroup{"test-group": {
-					List: []*loader.IndexEntry{{Index: "test-index1"}, {Index: "test-index2"}},
+					List: []*loader.IndexEntry{{Index: "test-index1"}, {Index: "test-index"}},
 				}},
 				List: []*loader.IndexEntry{{Index: "test-index3"}},
 			},
-		}, []string{"test-index3", "test-index1", "test-index2"}},
+		}, []string{"test-index3", "test-index1", "test-index"}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -184,17 +184,17 @@ func Test_provider_deleteByQuery(t *testing.T) {
 	}{
 		{
 			"case1", fields{
-				Cfg:                      nil,
-				Log:                      nil,
-				election:                 nil,
-				loader:                   nil,
-				retentions:               nil,
-				clearCh:                  nil,
-				minIndicesStoreInDisk:    0,
-				rolloverBodyForDiskClean: "",
-				rolloverAliasPatterns:    nil,
-				ttlTaskCh:                nil,
-			},
+			Cfg:                      nil,
+			Log:                      nil,
+			election:                 nil,
+			loader:                   nil,
+			retentions:               nil,
+			clearCh:                  nil,
+			minIndicesStoreInDisk:    0,
+			rolloverBodyForDiskClean: "",
+			rolloverAliasPatterns:    nil,
+			ttlTaskCh:                nil,
+		},
 		},
 	}
 	for _, tt := range tests {

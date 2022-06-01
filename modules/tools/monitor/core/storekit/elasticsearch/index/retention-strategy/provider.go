@@ -21,7 +21,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
-	index2 "github.com/erda-project/erda/modules/tools/monitor/core/storekit/elasticsearch/index"
+	"github.com/erda-project/erda/modules/tools/monitor/core/storekit/elasticsearch/index"
 	"github.com/erda-project/erda/modules/tools/monitor/core/storekit/elasticsearch/index/cleaner"
 	"github.com/erda-project/erda/modules/tools/monitor/core/storekit/elasticsearch/index/loader"
 )
@@ -39,7 +39,7 @@ type (
 		KeyPatterns []string `file:"key_patterns"`
 	}
 	keyPattern struct {
-		pattern *index2.Pattern
+		pattern *index.Pattern
 		idx     int
 	}
 	provider struct {
@@ -54,7 +54,7 @@ var _ cleaner.RetentionStrategy = (*provider)(nil)
 
 func (p *provider) Init(ctx servicehub.Context) (err error) {
 	for _, item := range p.Cfg.KeyPatterns {
-		ptn, err := index2.BuildPattern(item)
+		ptn, err := index.BuildPattern(item)
 		if err != nil {
 			return err
 		}
@@ -81,7 +81,7 @@ func (p *provider) Init(ctx servicehub.Context) (err error) {
 
 func (p *provider) GetTTL(entry *loader.IndexEntry) time.Duration {
 	for _, ptn := range p.patterns {
-		result, ok := ptn.pattern.Match(entry.Index, index2.InvalidPatternValueChars)
+		result, ok := ptn.pattern.Match(entry.Index, index.InvalidPatternValueChars)
 		if ok {
 			return p.strategy.GetTTL(result.Keys[ptn.idx])
 		}
@@ -94,7 +94,7 @@ func (p *provider) Loading(ctx context.Context) {
 }
 
 func (p *provider) initStrategy(ctx servicehub.Context) error {
-	obj, name := index2.FindService(ctx, "storage-retention-strategy")
+	obj, name := index.FindService(ctx, "storage-retention-strategy")
 	if obj == nil {
 		return fmt.Errorf("%q is required", name)
 	}

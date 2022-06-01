@@ -31,7 +31,7 @@ import (
 	election "github.com/erda-project/erda-infra/providers/etcd-election"
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/httpserver/interceptors"
-	index2 "github.com/erda-project/erda/modules/tools/monitor/core/storekit/elasticsearch/index"
+	"github.com/erda-project/erda/modules/tools/monitor/core/storekit/elasticsearch/index"
 )
 
 type (
@@ -70,7 +70,7 @@ type (
 	}
 	matcher struct {
 		prefix   string
-		patterns []*index2.Pattern
+		patterns []*index.Pattern
 	}
 	indicesBundle struct {
 		indices *IndexGroup
@@ -89,10 +89,10 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		}
 		m := &matcher{
 			prefix:   item.Prefix,
-			patterns: make([]*index2.Pattern, len(item.Patterns), len(item.Patterns)),
+			patterns: make([]*index.Pattern, len(item.Patterns), len(item.Patterns)),
 		}
 		for i, item := range item.Patterns {
-			ptn, err := index2.BuildPattern(item)
+			ptn, err := index.BuildPattern(item)
 			if err != nil {
 				return err
 			}
@@ -105,7 +105,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		p.matchers[i] = m
 	}
 
-	if es, err := index2.FindElasticSearch(ctx, true); err != nil {
+	if es, err := index.FindElasticSearch(ctx, true); err != nil {
 		return err
 	} else {
 		p.es = es

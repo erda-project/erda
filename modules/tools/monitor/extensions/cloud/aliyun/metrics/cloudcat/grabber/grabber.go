@@ -24,7 +24,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cms"
 	"github.com/pkg/errors"
 
-	api2 "github.com/erda-project/erda/modules/tools/monitor/extensions/cloud/aliyun/metrics/cloudcat/api"
+	"github.com/erda-project/erda/modules/tools/monitor/extensions/cloud/aliyun/metrics/cloudcat/api"
 	gl "github.com/erda-project/erda/modules/tools/monitor/extensions/cloud/aliyun/metrics/cloudcat/globals"
 )
 
@@ -38,7 +38,7 @@ type Grabber struct {
 	index       int // the index in Scheduler.grabbers
 	orgId       string
 	done        chan struct{}
-	pipe        chan []*api2.Metric
+	pipe        chan []*api.Metric
 	interval    time.Duration // 采集时间间隔
 	metaMetrics []cms.Resource
 }
@@ -73,7 +73,7 @@ func (g *Grabber) String() string {
 	return fmt.Sprintf("%dth grabber<%s> of <%s>", g.index, g.Name, g.orgId)
 }
 
-func (g *Grabber) Subscribe(pipe chan []*api2.Metric) {
+func (g *Grabber) Subscribe(pipe chan []*api.Metric) {
 	g.pipe = pipe
 }
 
@@ -82,10 +82,10 @@ func (g *Grabber) Gather() {
 		gl.Log.Infof("grabber %s start to get data...", g)
 		for _, item := range g.metaMetrics {
 			go func(meta cms.Resource) {
-				data, err := api2.GetDescribeMetricLast(g.orgId, meta.Namespace, meta.MetricName)
+				data, err := api.GetDescribeMetricLast(g.orgId, meta.Namespace, meta.MetricName)
 				if err != nil {
 					switch err {
-					case api2.ErrEmptyResults:
+					case api.ErrEmptyResults:
 						// ignore
 					default:
 						gl.Log.Infof("gather failed of %s. err=%s name=%s metricName=%s", g, err, g.Name, meta.MetricName)
@@ -110,15 +110,15 @@ func (g *Grabber) Gather() {
 	}
 }
 
-func (g *Grabber) toMetrics(batch []string, meta cms.Resource) []*api2.Metric {
-	res := make([]*api2.Metric, 0, len(batch))
+func (g *Grabber) toMetrics(batch []string, meta cms.Resource) []*api.Metric {
+	res := make([]*api.Metric, 0, len(batch))
 	for _, dp := range batch {
 		res = append(res, g.extractDataPoints(dp, meta)...)
 	}
 	return res
 }
 
-func (g *Grabber) extractDataPoints(dp string, meta cms.Resource) (res []*api2.Metric) {
+func (g *Grabber) extractDataPoints(dp string, meta cms.Resource) (res []*api.Metric) {
 	defer func() {
 		if err := recover(); err != nil {
 			gl.Log.Errorf("extract failed. err=%s", err)
@@ -140,10 +140,10 @@ func (g *Grabber) extractDataPoints(dp string, meta cms.Resource) (res []*api2.M
 		}
 	}
 
-	res = make([]*api2.Metric, 0, len(all))
+	res = make([]*api.Metric, 0, len(all))
 	for i := 0; i < len(all); i++ {
 		data := all[i]
-		m := &api2.Metric{
+		m := &api.Metric{
 			Name:      "aliyun" + "_" + g.Name,
 			Timestamp: uint64(data["timestamp"].(float64)) * 1e6,
 			Tags:      map[string]string{},
@@ -182,7 +182,7 @@ func (g *Grabber) extractDataPoints(dp string, meta cms.Resource) (res []*api2.M
 }
 
 func (g *Grabber) loadMetaMetrics() (same bool, err error) {
-	data, err := api2.ListMetricMeta(g.orgId, g.Namespace)
+	data, err := api.ListMetricMeta(g.orgId, g.Namespace)
 	if err != nil {
 		return false, err
 	}

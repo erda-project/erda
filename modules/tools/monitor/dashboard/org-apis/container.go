@@ -27,7 +27,6 @@ import (
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	queryv1 "github.com/erda-project/erda/modules/tools/monitor/core/metric/query/query/v1"
-	util "github.com/erda-project/erda/modules/tools/monitor/utils"
 	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
 

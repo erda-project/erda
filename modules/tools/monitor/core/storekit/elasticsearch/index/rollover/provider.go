@@ -29,7 +29,7 @@ import (
 	election "github.com/erda-project/erda-infra/providers/etcd-election"
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/httpserver/interceptors"
-	index2 "github.com/erda-project/erda/modules/tools/monitor/core/storekit/elasticsearch/index"
+	"github.com/erda-project/erda/modules/tools/monitor/core/storekit/elasticsearch/index"
 	"github.com/erda-project/erda/modules/tools/monitor/core/storekit/elasticsearch/index/loader"
 )
 
@@ -50,8 +50,8 @@ type (
 		Verbose bool `file:"verbose"`
 	}
 	indexAliasPattern struct {
-		index *index2.Pattern
-		alias *index2.Pattern
+		index *index.Pattern
+		alias *index.Pattern
 	}
 	provider struct {
 		Cfg *config
@@ -84,11 +84,11 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		if len(ptn.Index) <= 0 || len(ptn.Alias) <= 0 {
 			return fmt.Errorf("pattern(%d) index and alias is required", i)
 		}
-		ip, err := index2.BuildPattern(ptn.Index)
+		ip, err := index.BuildPattern(ptn.Index)
 		if err != nil {
 			return err
 		}
-		ap, err := index2.BuildPattern(ptn.Alias)
+		ap, err := index.BuildPattern(ptn.Alias)
 		if err != nil {
 			return err
 		}
@@ -104,7 +104,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	}
 	p.loader = loader
 
-	election, err := index2.FindElection(ctx, true)
+	election, err := index.FindElection(ctx, true)
 	if err != nil {
 		return err
 	}
