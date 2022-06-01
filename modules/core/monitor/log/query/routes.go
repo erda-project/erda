@@ -104,7 +104,7 @@ func (p *provider) downloadLog(w http.ResponseWriter, r *http.Request, req *LogR
 			if sel.End-sel.Start > maxDownloadTimeRange {
 				return sel, errors.NewInvalidParameterError("(start,end]", "time range is too large for download")
 			}
-			if len(req.ClusterName) > 0 {
+			if len(req.ClusterName) > 0 && len(req.ID) == 0 {
 				sel.Filters = append(sel.Filters, &storage.Filter{
 					Key:   "tags.dice_cluster_name",
 					Op:    storage.EQ,
