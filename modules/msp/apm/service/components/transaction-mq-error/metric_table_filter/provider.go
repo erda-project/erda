@@ -26,7 +26,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda-infra/providers/i18n"
-	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-kanban/common/gshelper"
+	"github.com/erda-project/erda/modules/apps/dop/component-protocol/components/issue-kanban/common/gshelper"
 	error_transaction "github.com/erda-project/erda/modules/msp/apm/service/common/error-transaction"
 	"github.com/erda-project/erda/modules/tools/openapi/legacy/component-protocol/components/filter"
 )
