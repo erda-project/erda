@@ -25,7 +25,7 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/core/monitor/expression/pb"
-	"github.com/erda-project/erda/modules/tools/monitor/core/alert/alert-apis/db"
+	alertdb "github.com/erda-project/erda/modules/tools/monitor/core/alert/alert-apis/db"
 	"github.com/erda-project/erda/pkg/encoding/jsonmap"
 )
 
@@ -67,9 +67,9 @@ func Test_expressionService_GetTemplates(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		var adb *db.CustomizeAlertNotifyTemplateDB
-		alertExpression := monkey.PatchInstanceMethod(reflect.TypeOf(adb), "QueryCustomizeAlertTemplate", func(db *db.CustomizeAlertNotifyTemplateDB) ([]*db.CustomizeAlertNotifyTemplate, error) {
-			return []*db.CustomizeAlertNotifyTemplate{
+		var adb *alertdb.CustomizeAlertNotifyTemplateDB
+		alertExpression := monkey.PatchInstanceMethod(reflect.TypeOf(adb), "QueryCustomizeAlertTemplate", func(db *alertdb.CustomizeAlertNotifyTemplateDB) ([]*alertdb.CustomizeAlertNotifyTemplate, error) {
+			return []*alertdb.CustomizeAlertNotifyTemplate{
 				{
 					ID:               2,
 					Name:             "2233",
@@ -91,9 +91,9 @@ func Test_expressionService_GetTemplates(t *testing.T) {
 		defer alertExpression.Unpatch()
 		t.Run(tt.name, func(t *testing.T) {
 			e := &expressionService{
-				alertDB:                        &db.AlertExpressionDB{&gorm.DB{}},
-				metricDB:                       &db.MetricExpressionDB{&gorm.DB{}},
-				customizeAlertNotifyTemplateDB: &db.CustomizeAlertNotifyTemplateDB{&gorm.DB{}},
+				alertDB:                        &alertdb.AlertExpressionDB{&gorm.DB{}},
+				metricDB:                       &alertdb.MetricExpressionDB{&gorm.DB{}},
+				customizeAlertNotifyTemplateDB: &alertdb.CustomizeAlertNotifyTemplateDB{&gorm.DB{}},
 			}
 			_, err := e.GetTemplates(tt.args.ctx, tt.args.request)
 			if (err != nil) != tt.wantErr {
@@ -142,9 +142,9 @@ func Test_expressionService_GetAlertExpressions(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var adb *db.AlertExpressionDB
-			alertExpression := monkey.PatchInstanceMethod(reflect.TypeOf(adb), "GetAllAlertExpression", func(db *db.AlertExpressionDB, pageNo, pageSize int64) ([]*db.AlertExpression, int64, error) {
-				return []*db.AlertExpression{
+			var adb *alertdb.AlertExpressionDB
+			alertExpression := monkey.PatchInstanceMethod(reflect.TypeOf(adb), "GetAllAlertExpression", func(db *alertdb.AlertExpressionDB, pageNo, pageSize int64) ([]*alertdb.AlertExpression, int64, error) {
+				return []*alertdb.AlertExpression{
 					{
 						ID:         1,
 						AlertID:    1,
@@ -159,10 +159,10 @@ func Test_expressionService_GetAlertExpressions(t *testing.T) {
 			})
 			defer alertExpression.Unpatch()
 			e := &expressionService{
-				alertDB:                        &db.AlertExpressionDB{&gorm.DB{}},
-				metricDB:                       &db.MetricExpressionDB{&gorm.DB{}},
-				customizeAlertNotifyTemplateDB: &db.CustomizeAlertNotifyTemplateDB{&gorm.DB{}},
-				alertNotifyDB:                  &db.AlertNotifyDB{&gorm.DB{}},
+				alertDB:                        &alertdb.AlertExpressionDB{&gorm.DB{}},
+				metricDB:                       &alertdb.MetricExpressionDB{&gorm.DB{}},
+				customizeAlertNotifyTemplateDB: &alertdb.CustomizeAlertNotifyTemplateDB{&gorm.DB{}},
+				alertNotifyDB:                  &alertdb.AlertNotifyDB{&gorm.DB{}},
 			}
 			_, err := e.GetAlertExpressions(tt.args.ctx, tt.args.request)
 			if (err != nil) != tt.wantErr {
@@ -212,10 +212,10 @@ func Test_expressionService_GetMetricExpressions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			e := &expressionService{
-				alertDB:                        &db.AlertExpressionDB{&gorm.DB{}},
-				metricDB:                       &db.MetricExpressionDB{&gorm.DB{}},
-				customizeAlertNotifyTemplateDB: &db.CustomizeAlertNotifyTemplateDB{&gorm.DB{}},
-				alertNotifyDB:                  &db.AlertNotifyDB{&gorm.DB{}},
+				alertDB:                        &alertdb.AlertExpressionDB{&gorm.DB{}},
+				metricDB:                       &alertdb.MetricExpressionDB{&gorm.DB{}},
+				customizeAlertNotifyTemplateDB: &alertdb.CustomizeAlertNotifyTemplateDB{&gorm.DB{}},
+				alertNotifyDB:                  &alertdb.AlertNotifyDB{&gorm.DB{}},
 			}
 			_, err := e.GetMetricExpressions(tt.args.ctx, tt.args.request)
 			if (err != nil) != tt.wantErr {
@@ -264,9 +264,9 @@ func Test_expressionService_GetAlertNotifies(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var ndb *db.AlertNotifyDB
-			alertNotify := monkey.PatchInstanceMethod(reflect.TypeOf(ndb), "QueryAlertNotify", func(db *db.AlertNotifyDB, pageNo, pageSize int64) ([]*db.AlertNotify, int64, error) {
-				return []*db.AlertNotify{
+			var ndb *alertdb.AlertNotifyDB
+			alertNotify := monkey.PatchInstanceMethod(reflect.TypeOf(ndb), "QueryAlertNotify", func(db *alertdb.AlertNotifyDB, pageNo, pageSize int64) ([]*alertdb.AlertNotify, int64, error) {
+				return []*alertdb.AlertNotify{
 					{
 						ID:             1,
 						AlertID:        12,
@@ -283,10 +283,10 @@ func Test_expressionService_GetAlertNotifies(t *testing.T) {
 			})
 			defer alertNotify.Unpatch()
 			e := &expressionService{
-				alertDB:                        &db.AlertExpressionDB{&gorm.DB{}},
-				metricDB:                       &db.MetricExpressionDB{&gorm.DB{}},
-				customizeAlertNotifyTemplateDB: &db.CustomizeAlertNotifyTemplateDB{&gorm.DB{}},
-				alertNotifyDB:                  &db.AlertNotifyDB{&gorm.DB{}},
+				alertDB:                        &alertdb.AlertExpressionDB{&gorm.DB{}},
+				metricDB:                       &alertdb.MetricExpressionDB{&gorm.DB{}},
+				customizeAlertNotifyTemplateDB: &alertdb.CustomizeAlertNotifyTemplateDB{&gorm.DB{}},
+				alertNotifyDB:                  &alertdb.AlertNotifyDB{&gorm.DB{}},
 			}
 			_, err := e.GetAlertNotifies(tt.args.ctx, tt.args.request)
 			if (err != nil) != tt.wantErr {
