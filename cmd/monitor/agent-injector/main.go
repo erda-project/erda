@@ -21,12 +21,12 @@ import (
 	"github.com/erda-project/erda/pkg/common"
 
 	// providers
-	_ "github.com/erda-project/erda-infra/providers/health"              //
-	_ "github.com/erda-project/erda-infra/providers/httpserver"          //
-	_ "github.com/erda-project/erda-infra/providers/i18n"                //
-	_ "github.com/erda-project/erda-infra/providers/pprof"               //
-	_ "github.com/erda-project/erda-infra/providers/prometheus"          //
-	_ "github.com/erda-project/erda/modules/core/monitor/agent-injector" //
+	_ "github.com/erda-project/erda-infra/providers/health"                    //
+	_ "github.com/erda-project/erda-infra/providers/httpserver"                //
+	_ "github.com/erda-project/erda-infra/providers/i18n"                      //
+	_ "github.com/erda-project/erda-infra/providers/pprof"                     //
+	_ "github.com/erda-project/erda-infra/providers/prometheus"                //
+	_ "github.com/erda-project/erda/modules/tools/monitor/core/agent-injector" //
 )
 
 //go:embed bootstrap.yaml

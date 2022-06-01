@@ -20,7 +20,7 @@ import (
 
 	alertpb "github.com/erda-project/erda-proto-go/cmp/alert/pb"
 	monitor "github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
-	"github.com/erda-project/erda/modules/monitor/utils"
+	"github.com/erda-project/erda/modules/tools/monitor/utils"
 	"github.com/erda-project/erda/pkg/common/errors"
 )
 

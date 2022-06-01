@@ -170,8 +170,7 @@ func TestCustomFilter_ConditionRetriever(t *testing.T) {
 		{
 			name: "test with no inParams appID",
 			fields: fields{
-				InParams: &InParams{
-				},
+				InParams: &InParams{},
 				sdk: &cptype.SDK{
 					Ctx:  ctx,
 					Tran: &MockTran{},

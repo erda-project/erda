@@ -18,7 +18,7 @@ package elasticsearch
 //import (
 //	"context"
 //	"fmt"
-//	"github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/loader"
+//	"github.com/erda-project/erda/modules/tools/monitor/core/storekit/elasticsearch/index/loader"
 //	"github.com/erda-project/erda/modules/msp/apm/exception/erda-error/storage"
 //)
 //

@@ -27,9 +27,9 @@ import (
 	projectpb "github.com/erda-project/erda-proto-go/msp/tenant/project/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	db2 "github.com/erda-project/erda/modules/monitor/common/db"
 	instancedb "github.com/erda-project/erda/modules/msp/instance/db"
 	"github.com/erda-project/erda/modules/msp/tenant/db"
+	db2 "github.com/erda-project/erda/modules/tools/monitor/common/db"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/providers/audit"
 )

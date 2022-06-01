@@ -28,7 +28,7 @@ import (
 	"github.com/erda-project/erda-proto-go/msp/apm/alert/pb"
 	tenant "github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/monitor/utils"
+	"github.com/erda-project/erda/modules/tools/monitor/utils"
 )
 
 ////go:generate mockgen -destination=./alert_register_test.go -package alert github.com/erda-project/erda-infra/pkg/transport Register

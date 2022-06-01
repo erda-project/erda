@@ -154,7 +154,6 @@ func (m *MockIssueStater) GetIssuesStatesByTypes(req *apistructs.IssueStatesRequ
 	return ret0, ret1
 }
 
-
 // GetIssuesStates indicates an expected call of GetIssuesStates.
 func (mr *MockIssueStaterMockRecorder) GetIssuesStates(req interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()

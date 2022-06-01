@@ -21,7 +21,7 @@ import (
 	"github.com/erda-project/erda/pkg/common"
 
 	_ "github.com/erda-project/erda-infra/providers"
-	_ "github.com/erda-project/erda/modules/extensions/loghub/sls-log-to-metric"
+	_ "github.com/erda-project/erda/modules/tools/monitor/extensions/loghub/sls-log-to-metric"
 )
 
 //go:embed bootstrap.yaml

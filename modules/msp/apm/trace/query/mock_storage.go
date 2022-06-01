@@ -5,12 +5,13 @@
 package query
 
 import (
-	context "context"
-	reflect "reflect"
+	"context"
+	"reflect"
 
-	storekit "github.com/erda-project/erda/modules/core/monitor/storekit"
-	storage "github.com/erda-project/erda/modules/msp/apm/trace/storage"
-	gomock "github.com/golang/mock/gomock"
+	"github.com/erda-project/erda/modules/msp/apm/trace/storage"
+	"github.com/erda-project/erda/modules/tools/monitor/core/storekit"
+
+	"github.com/golang/mock/gomock"
 )
 
 // MockStorage is a mock of Storage interface.

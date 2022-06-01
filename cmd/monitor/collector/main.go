@@ -29,17 +29,17 @@ import (
 	_ "github.com/erda-project/erda-infra/providers/serviceregister"
 
 	// providers
-	_ "github.com/erda-project/erda/modules/core/monitor/collector"
-	_ "github.com/erda-project/erda/modules/oap/collector/authentication"
-	_ "github.com/erda-project/erda/modules/oap/collector/interceptor"
+	_ "github.com/erda-project/erda/modules/tools/monitor/core/collector"
+	_ "github.com/erda-project/erda/modules/tools/monitor/oap/collector/authentication"
+	_ "github.com/erda-project/erda/modules/tools/monitor/oap/collector/interceptor"
 
 	// grpc
 	_ "github.com/erda-project/erda-infra/providers/grpcclient"
 	_ "github.com/erda-project/erda-proto-go/core/token/client"
 
 	// pipeline collector
-	_ "github.com/erda-project/erda/modules/oap/collector/core"
-	_ "github.com/erda-project/erda/modules/oap/collector/plugins/all"
+	_ "github.com/erda-project/erda/modules/tools/monitor/oap/collector/core"
+	_ "github.com/erda-project/erda/modules/tools/monitor/oap/collector/plugins/all"
 )
 
 //go:embed bootstrap.yaml
@@ -48,7 +48,7 @@ var centralBootstrapCfg string
 //go:embed bootstrap-agent.yaml
 var edgeBootstrapCfg string
 
-//go:generate sh -c "cd ${PROJ_PATH} && go generate -v -x github.com/erda-project/erda/modules/monitor/core/collector"
+//go:generate sh -c "cd ${PROJ_PATH} && go generate -v -x github.com/erda-project/erda/modules/tools/monitor/core/collector"
 func main() {
 	cfg := centralBootstrapCfg
 	if os.Getenv("DICE_IS_EDGE") == "true" {

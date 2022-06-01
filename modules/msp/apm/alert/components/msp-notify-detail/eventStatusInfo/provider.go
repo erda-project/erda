@@ -30,8 +30,8 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	messenger "github.com/erda-project/erda-proto-go/core/messenger/notify/pb"
-	"github.com/erda-project/erda/modules/monitor/utils"
 	"github.com/erda-project/erda/modules/msp/apm/alert/components/msp-notify-detail/common"
+	"github.com/erda-project/erda/modules/tools/monitor/utils"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 

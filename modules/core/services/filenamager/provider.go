@@ -24,7 +24,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-proto-go/core/services/filemanager/pb"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/monitor/common/permission"
+	"github.com/erda-project/erda/modules/tools/monitor/common/permission"
 	"github.com/erda-project/erda/pkg/common/apis"
 	perm "github.com/erda-project/erda/pkg/common/permission"
 	k8sclient "github.com/erda-project/erda/providers/k8s-client-manager"

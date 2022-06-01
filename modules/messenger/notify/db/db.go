@@ -17,7 +17,7 @@ package db
 import (
 	"github.com/jinzhu/gorm"
 
-	db2 "github.com/erda-project/erda/modules/core/monitor/alert/alert-apis/db"
+	db2 "github.com/erda-project/erda/modules/tools/monitor/core/alert/alert-apis/db"
 )
 
 type DB struct {
