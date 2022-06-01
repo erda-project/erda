@@ -26,7 +26,7 @@ import (
 	"k8s.io/client-go/rest"
 
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/cluster/cluster-ops/config"
+	"github.com/erda-project/erda/modules/tools/cluster-ops/config"
 	erdahelm "github.com/erda-project/erda/pkg/helm"
 	kc "github.com/erda-project/erda/pkg/k8sclient/config"
 )
