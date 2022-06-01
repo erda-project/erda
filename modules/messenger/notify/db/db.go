@@ -32,7 +32,7 @@ func New(db *gorm.DB) *DB {
 		DB:                 db,
 		AlertNotifyIndexDB: AlertNotifyIndexDB{db},
 		NotifyHistoryDB:    NotifyHistoryDB{db},
-		AlertNotifyDB:      db.AlertNotifyDB{db},
+		AlertNotifyDB:      db2.AlertNotifyDB{db},
 	}
 }
 
