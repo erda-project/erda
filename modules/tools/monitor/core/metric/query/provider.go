@@ -31,7 +31,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/modules/tools/monitor/core/metric/query/metricmeta"
-	query2 "github.com/erda-project/erda/modules/tools/monitor/core/metric/query/query"
+	"github.com/erda-project/erda/modules/tools/monitor/core/metric/query/query"
 	indexloader "github.com/erda-project/erda/modules/tools/monitor/core/storekit/elasticsearch/index/loader"
 
 	"github.com/erda-project/erda/pkg/common/apis"
@@ -87,7 +87,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	}
 	p.metricService = &metricService{
 		p:     p,
-		query: query2.New(&query2.MetricIndexLoader{Interface: p.Index}),
+		query: query.New(&query.MetricIndexLoader{Interface: p.Index}),
 	}
 	if p.Register != nil {
 		pb.RegisterMetricServiceImp(p.Register, p.metricService, apis.Options(),
@@ -119,7 +119,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 						return nil
 					}
 					if filters != nil {
-						_fs, _opts := query2.ParseFilters(r.URL.Query())
+						_fs, _opts := query.ParseFilters(r.URL.Query())
 						fs, err := parseFilters(_fs)
 						if err != nil {
 							return errors.NewInvalidParameterError("filters", err.Error())
@@ -142,7 +142,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 						if len(*statement) > 0 {
 							if _, ok := data.(*pb.QueryWithTableFormatRequest); ok {
 								if r.URL.Query().Get("ql") == "influxql:ast" {
-									*statement, err = query2.ConvertAstToStatement(*statement)
+									*statement, err = query.ConvertAstToStatement(*statement)
 									if err != nil {
 										return errors.NewInvalidParameterError("statement", err.Error())
 									}

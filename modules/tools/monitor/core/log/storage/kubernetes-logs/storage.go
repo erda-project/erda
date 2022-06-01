@@ -29,7 +29,7 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-proto-go/core/monitor/log/query/pb"
 	"github.com/erda-project/erda/modules/tools/monitor/core/log/storage"
-	storekit2 "github.com/erda-project/erda/modules/tools/monitor/core/storekit"
+	"github.com/erda-project/erda/modules/tools/monitor/core/storekit"
 )
 
 type queryFunc func(it *logsIterator, opts *v1.PodLogOptions) (io.ReadCloser, error)
@@ -43,8 +43,8 @@ type cStorage struct {
 
 var _ storage.Storage = (*cStorage)(nil)
 
-func (s *cStorage) NewWriter(ctx context.Context) (storekit2.BatchWriter, error) {
-	return nil, storekit2.ErrOpNotSupported
+func (s *cStorage) NewWriter(ctx context.Context) (storekit.BatchWriter, error) {
+	return nil, storekit.ErrOpNotSupported
 }
 
 func newPodLogOptions(containerName string, startTime int64, tail int64) *v1.PodLogOptions {
@@ -74,19 +74,19 @@ const (
 	defaultTimeSpan    = 3 * time.Minute
 )
 
-func (s *cStorage) Iterator(ctx context.Context, sel *storage.Selector) (storekit2.Iterator, error) {
+func (s *cStorage) Iterator(ctx context.Context, sel *storage.Selector) (storekit.Iterator, error) {
 	var err error
 	var podName, containerName, namespace, clusterName, id string
 
 	if sel.Scheme != "container" {
 		s.log.Debugf("kubernetes-log not supported query %s of real log", sel.Scheme)
-		return storekit2.EmptyIterator{}, nil
+		return storekit.EmptyIterator{}, nil
 	}
 
 	live, ok := sel.Options[storage.IsLive]
 	if !ok || !live.(bool) {
 		s.log.Debugf("kubernetes-log not supported to stop container of real log")
-		return storekit2.EmptyIterator{}, nil
+		return storekit.EmptyIterator{}, nil
 	}
 
 	matcher := func(data *pb.LogItem, it *logsIterator) bool { return true }
@@ -96,7 +96,7 @@ func (s *cStorage) Iterator(ctx context.Context, sel *storage.Selector) (storeki
 		}
 		if filter.Key != "content" && filter.Op != storage.EQ {
 			s.log.Debugf("%s only support EQ filter, ignore kubernetes logs query", filter.Key)
-			return storekit2.EmptyIterator{}, nil
+			return storekit.EmptyIterator{}, nil
 		}
 		switch filter.Key {
 		case "id":
@@ -106,7 +106,7 @@ func (s *cStorage) Iterator(ctx context.Context, sel *storage.Selector) (storeki
 		case "source":
 			source, _ := filter.Value.(string)
 			if len(source) > 0 && source != "container" {
-				return storekit2.EmptyIterator{}, nil
+				return storekit.EmptyIterator{}, nil
 			}
 		case "content":
 			switch filter.Op {
@@ -116,7 +116,7 @@ func (s *cStorage) Iterator(ctx context.Context, sel *storage.Selector) (storeki
 					regex, err := regexp.Compile(exp)
 					if err != nil {
 						s.log.Debugf("invalid regexp %q, ignore kubernetes logs query", exp)
-						return storekit2.EmptyIterator{}, nil
+						return storekit.EmptyIterator{}, nil
 					}
 					matcher = func(data *pb.LogItem, it *logsIterator) bool {
 						return regex.MatchString(data.Content)
@@ -140,22 +140,22 @@ func (s *cStorage) Iterator(ctx context.Context, sel *storage.Selector) (storeki
 		case "container_name":
 			containerName, _ = filter.Value.(string)
 			if len(containerName) <= 0 {
-				return storekit2.EmptyIterator{}, nil
+				return storekit.EmptyIterator{}, nil
 			}
 		case "pod_name":
 			podName, _ = filter.Value.(string)
 			if len(podName) <= 0 {
-				return storekit2.EmptyIterator{}, nil
+				return storekit.EmptyIterator{}, nil
 			}
 		case "pod_namespace":
 			namespace, _ = filter.Value.(string)
 			if len(namespace) <= 0 {
-				return storekit2.EmptyIterator{}, nil
+				return storekit.EmptyIterator{}, nil
 			}
 		case "cluster_name":
 			clusterName, _ = filter.Value.(string)
 			if len(clusterName) <= 0 {
-				return storekit2.EmptyIterator{}, nil
+				return storekit.EmptyIterator{}, nil
 			}
 		}
 	}
@@ -163,7 +163,7 @@ func (s *cStorage) Iterator(ctx context.Context, sel *storage.Selector) (storeki
 	queryFunc, err := s.getQueryFunc(clusterName)
 	if err != nil {
 		s.log.Debugf("failed to GetClient(%q): %s, ignore kubernetes logs query", clusterName, err)
-		return storekit2.EmptyIterator{}, nil
+		return storekit.EmptyIterator{}, nil
 	}
 
 	bufferLines := s.bufferLines
@@ -263,7 +263,7 @@ func (it *logsIterator) Next() bool {
 		return false
 	}
 	if it.dir == iteratorBackward {
-		it.err = storekit2.ErrOpNotSupported
+		it.err = storekit.ErrOpNotSupported
 		return false
 	}
 	it.dir = iteratorForward
@@ -295,7 +295,7 @@ func (it *logsIterator) Prev() bool {
 		return false
 	}
 	if it.dir == iteratorForward {
-		it.err = storekit2.ErrOpNotSupported
+		it.err = storekit.ErrOpNotSupported
 		return false
 	}
 	it.dir = iteratorBackward
@@ -352,14 +352,14 @@ func (it *logsIterator) Close() error {
 func (it *logsIterator) checkClosed() bool {
 	if it.closed {
 		if it.err == nil {
-			it.err = storekit2.ErrIteratorClosed
+			it.err = storekit.ErrIteratorClosed
 		}
 		return true
 	}
 	select {
 	case <-it.ctx.Done():
 		if it.err == nil {
-			it.err = storekit2.ErrIteratorClosed
+			it.err = storekit.ErrIteratorClosed
 		}
 		return true
 	default:

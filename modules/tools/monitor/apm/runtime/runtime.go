@@ -23,7 +23,7 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	apm "github.com/erda-project/erda/modules/tools/monitor/apm/common"
-	db2 "github.com/erda-project/erda/modules/tools/monitor/common/db"
+	"github.com/erda-project/erda/modules/tools/monitor/common/db"
 	"github.com/erda-project/erda/modules/tools/monitor/common/permission"
 )
 
@@ -38,7 +38,7 @@ const (
 	ApplicationServiceNode = "application_service_node"
 )
 
-func getRuntimePermission(db *db2.DB) httpserver.Interceptor {
+func getRuntimePermission(db *db.DB) httpserver.Interceptor {
 	return permission.Intercepter(
 		permission.ScopeProject, permission.TkFromParams(db),
 		apm.Monitor, permission.ActionGet,
@@ -52,14 +52,14 @@ func getProjectPermission() httpserver.Interceptor {
 	)
 }
 
-func getInstancePermission(db *db2.DB) httpserver.Interceptor {
+func getInstancePermission(db *db.DB) httpserver.Interceptor {
 	return permission.Intercepter(
 		permission.ScopeProject, permission.TkFromParams(db),
 		apm.Monitor, permission.ActionGet,
 	)
 }
 
-func (runtime *provider) getInstanceByTk(key string) (db2.Monitor, error) {
+func (runtime *provider) getInstanceByTk(key string) (db.Monitor, error) {
 	return runtime.db.Monitor.GetInstanceByTk(key)
 }
 

@@ -31,9 +31,9 @@ import (
 	"github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/apistructs"
-	adapt2 "github.com/erda-project/erda/modules/tools/monitor/core/alert/alert-apis/adapt"
-	db2 "github.com/erda-project/erda/modules/tools/monitor/core/alert/alert-apis/db"
-	utils2 "github.com/erda-project/erda/modules/tools/monitor/utils"
+	"github.com/erda-project/erda/modules/tools/monitor/core/alert/alert-apis/adapt"
+	"github.com/erda-project/erda/modules/tools/monitor/core/alert/alert-apis/db"
+	"github.com/erda-project/erda/modules/tools/monitor/utils"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
 	api "github.com/erda-project/erda/pkg/common/httpapi"
@@ -77,7 +77,7 @@ func (m *alertService) QueryOrgDashboardByAlert(ctx context.Context, request *pb
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	dash, err := adapt2.NewDashboard(m.p.a).GenerateDashboardPreView(detail)
+	dash, err := adapt.NewDashboard(m.p.a).GenerateDashboardPreView(detail)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -162,10 +162,10 @@ func (m *alertService) CreateOrgAlert(ctx context.Context, request *pb.CreateOrg
 	}
 	aid, err := m.p.a.CreateOrgAlert(alert, orgID)
 	if err != nil {
-		if adapt2.IsInvalidParameterError(err) {
+		if adapt.IsInvalidParameterError(err) {
 			return nil, errors.NewInvalidParameterError("alertScope", alert.AlertScope)
 		}
-		if adapt2.IsAlreadyExistsError(err) {
+		if adapt.IsAlreadyExistsError(err) {
 			return nil, errors.NewAlreadyExistsError("monitor_org_alert")
 		}
 		return nil, errors.NewInternalServerError(err)
@@ -196,7 +196,7 @@ func (m *alertService) QueryCustomizeNotifyTarget(ctx context.Context, request *
 		Data: &pb.QueryCustomizeNotifyTargetData{},
 	}
 	lang := apis.Language(ctx)
-	context := utils2.NewContextWithHeader(ctx)
+	context := utils.NewContextWithHeader(ctx)
 	config, err := m.p.NotifyChannel.GetNotifyChannelsEnabled(context, &channelpb.GetNotifyChannelsEnabledRequest{})
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
@@ -211,7 +211,7 @@ func (m *alertService) QueryOrgCustomizeNotifyTarget(ctx context.Context, reques
 		Data: &pb.QueryCustomizeNotifyTargetData{},
 	}
 	lang := apis.Language(ctx)
-	context := utils2.NewContextWithHeader(ctx)
+	context := utils.NewContextWithHeader(ctx)
 	config, err := m.p.NotifyChannel.GetNotifyChannelsEnabled(context, &channelpb.GetNotifyChannelsEnabledRequest{})
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
@@ -387,25 +387,25 @@ func (m *alertService) QueryOrgCustomizeMetric(ctx context.Context, request *pb.
 	}
 	var functionOperators []*pb.Operator
 	for _, op := range cms.FunctionOperators {
-		if op.Type == adapt2.OperatorTypeOne {
+		if op.Type == adapt.OperatorTypeOne {
 			functionOperators = append(functionOperators, op)
 		}
 	}
 	cms.FunctionOperators = functionOperators
 	var filterOperators []*pb.Operator
 	for _, op := range cms.FilterOperators {
-		if op.Type == adapt2.OperatorTypeOne {
+		if op.Type == adapt.OperatorTypeOne {
 			filterOperators = append(filterOperators, op)
 		}
 	}
 	cms.FilterOperators = filterOperators
 	if lang == nil {
-		cms.NotifySample = adapt2.OrgNotifyTemplateSample
+		cms.NotifySample = adapt.OrgNotifyTemplateSample
 	} else {
-		cms.NotifySample = adapt2.OrgNotifyTemplateSampleEn
+		cms.NotifySample = adapt.OrgNotifyTemplateSampleEn
 		for _, v := range lang {
 			if strings.HasPrefix(v.Code, "zh") {
-				cms.NotifySample = adapt2.OrgNotifyTemplateSample
+				cms.NotifySample = adapt.OrgNotifyTemplateSample
 			}
 		}
 	}
@@ -511,7 +511,7 @@ func (m *alertService) CreateOrgCustomizeAlert(ctx context.Context, request *pb.
 	}
 	id, err := m.p.a.CreateCustomizeAlert(alertDetail, userID)
 	if err != nil {
-		if adapt2.IsAlreadyExistsError(err) {
+		if adapt.IsAlreadyExistsError(err) {
 			return nil, errors.NewAlreadyExistsError("alert")
 		}
 		return nil, errors.NewInternalServerError(err)
@@ -606,12 +606,12 @@ func (m *alertService) checkMetricMeta(
 			return fmt.Errorf(fmt.Sprintf("not support rule filter operator %s", filter.Operator))
 		}
 		filterValue := filter.Value.AsInterface()
-		if utils2.StringType != utils2.TypeOf(filterValue) {
+		if utils.StringType != utils.TypeOf(filterValue) {
 			return fmt.Errorf(fmt.Sprintf("not support rule filter value %v", filter.Value))
 		}
 
 		// 根据数据类型和操作类型转换阈值
-		value, apiErr := m.formatOperatorValue(opType, utils2.StringType, filter.Value.AsInterface())
+		value, apiErr := m.formatOperatorValue(opType, utils.StringType, filter.Value.AsInterface())
 		if apiErr != nil {
 			return apiErr
 		}
@@ -644,7 +644,7 @@ func (m *alertService) formatOperatorValue(
 	case "none":
 		return nil, nil
 	case "one":
-		if val, err := utils2.ConvertDataType(value, dataType); err != nil {
+		if val, err := utils.ConvertDataType(value, dataType); err != nil {
 			return nil, err
 		} else {
 			return val, nil
@@ -652,13 +652,13 @@ func (m *alertService) formatOperatorValue(
 	case "more":
 		switch value.(type) {
 		case string, []byte:
-			value, ok := utils2.ConvertString(value)
+			value, ok := utils.ConvertString(value)
 			if !ok {
 				return nil, fmt.Errorf(fmt.Sprintf("%s not support %v data", opType, value))
 			}
 			var values []interface{}
 			for _, val := range strings.Split(value, ",") {
-				if v, err := utils2.ConvertDataType(val, dataType); err != nil {
+				if v, err := utils.ConvertDataType(val, dataType); err != nil {
 					return nil, err
 				} else {
 					values = append(values, v)
@@ -671,14 +671,14 @@ func (m *alertService) formatOperatorValue(
 			switch valueOf.Kind() {
 			case reflect.Slice, reflect.Array:
 				for i := 0; i < valueOf.Len(); i++ {
-					if val, err := utils2.ConvertDataType(valueOf.Index(i).Interface(), dataType); err != nil {
+					if val, err := utils.ConvertDataType(valueOf.Index(i).Interface(), dataType); err != nil {
 						return nil, err
 					} else {
 						values = append(values, val)
 					}
 				}
 			default:
-				if val, err := utils2.ConvertDataType(value, dataType); err != nil {
+				if val, err := utils.ConvertDataType(value, dataType); err != nil {
 					return nil, err
 				} else {
 					values = append(values, val)
@@ -825,7 +825,7 @@ func (m *alertService) QueryDashboardByAlert(ctx context.Context, request *pb.Qu
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	dash, err := adapt2.NewDashboard(m.p.a).GenerateDashboardPreView(alert)
+	dash, err := adapt.NewDashboard(m.p.a).GenerateDashboardPreView(alert)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -921,7 +921,7 @@ func (m *alertService) UpdateAlert(ctx context.Context, request *pb.UpdateAlertR
 	}
 	alertRequest.Attributes["org_name"] = structpb.NewStringValue(org.Name)
 	if err := m.p.a.UpdateAlert(request.Id, alertRequest); err != nil {
-		if adapt2.IsInvalidParameterError(err) {
+		if adapt.IsInvalidParameterError(err) {
 			return nil, errors.NewInternalServerError(err)
 		}
 		return nil, errors.NewInternalServerError(err)
@@ -1056,7 +1056,7 @@ func (m *alertService) UpdateOrgAlert(ctx context.Context, request *pb.UpdateOrg
 		return nil, errors.NewInternalServerError(err)
 	}
 	if err := m.p.a.UpdateOrgAlert(request.Id, updateOrgAlertRequest, orgID); err != nil {
-		if adapt2.IsInvalidParameterError(err) {
+		if adapt.IsInvalidParameterError(err) {
 			return nil, errors.NewInvalidParameterError("alertScope", request.AlertScope)
 		}
 		return nil, errors.NewInternalServerError(err)
@@ -1168,7 +1168,7 @@ func (m *alertService) QueryAlertHistory(ctx context.Context, request *pb.QueryA
 		return &pb.QueryAlertHistoryResponse{}, nil
 	}
 	if request.End == 0 {
-		request.End = utils2.ConvertTimeToMS(time.Now())
+		request.End = utils.ConvertTimeToMS(time.Now())
 	}
 	if request.Start == 0 {
 		request.Start = request.End - time.Hour.Milliseconds()
@@ -1313,7 +1313,7 @@ func (m *alertService) GetOrgAlertRecord(ctx context.Context, request *pb.GetOrg
 
 func (m *alertService) QueryOrgAlertHistory(ctx context.Context, request *pb.QueryOrgAlertHistoryRequest) (*pb.QueryOrgAlertHistoryResponse, error) {
 	if request.End == 0 {
-		request.End = utils2.ConvertTimeToMS(time.Now())
+		request.End = utils.ConvertTimeToMS(time.Now())
 	}
 	if request.Start == 0 {
 		request.Start = request.End - time.Hour.Milliseconds()
@@ -1451,7 +1451,7 @@ func (m *alertService) CountUnRecoverAlertEvents(ctx context.Context, req *pb.Co
 }
 
 func (m *alertService) GetAlertEvents(ctx context.Context, req *pb.GetAlertEventRequest) (*pb.GetAlertEventResponse, error) {
-	var eventQuery = &db2.AlertEventQueryCondition{
+	var eventQuery = &db.AlertEventQueryCondition{
 		Name:                 req.Condition.Name,
 		Ids:                  req.Condition.Ids,
 		AlertLevels:          req.Condition.AlertLevels,
@@ -1468,7 +1468,7 @@ func (m *alertService) GetAlertEvents(ctx context.Context, req *pb.GetAlertEvent
 	}).ToSlice(&suppressStates)
 	if len(suppressStates) > 0 {
 		bv := true
-		suppressList, err := m.p.db.AlertEventSuppressDB.QueryByCondition(req.Scope, req.ScopeId, &db2.AlertEventSuppressQueryCondition{
+		suppressList, err := m.p.db.AlertEventSuppressDB.QueryByCondition(req.Scope, req.ScopeId, &db.AlertEventSuppressQueryCondition{
 			SuppressTypes: suppressStates,
 			Enabled:       &bv,
 		})
@@ -1493,9 +1493,9 @@ func (m *alertService) GetAlertEvents(ctx context.Context, req *pb.GetAlertEvent
 		return &pb.GetAlertEventResponse{}, nil
 	}
 
-	var sorts []*db2.AlertEventSort
+	var sorts []*db.AlertEventSort
 	linq.From(req.Sorts).Select(func(i interface{}) interface{} {
-		return &db2.AlertEventSort{
+		return &db.AlertEventSort{
 			SortField:  i.(*pb.AlertEventSort).SortField,
 			Descending: i.(*pb.AlertEventSort).Descending,
 		}
@@ -1503,7 +1503,7 @@ func (m *alertService) GetAlertEvents(ctx context.Context, req *pb.GetAlertEvent
 
 	// default sort by LastTriggerTime desc
 	if len(sorts) == 0 {
-		sorts = append(sorts, &db2.AlertEventSort{
+		sorts = append(sorts, &db.AlertEventSort{
 			SortField:  "LastTriggerTime",
 			Descending: true,
 		})
@@ -1515,15 +1515,15 @@ func (m *alertService) GetAlertEvents(ctx context.Context, req *pb.GetAlertEvent
 	}
 
 	// prepare suppress state
-	suppressEventIdMap := map[string]*db2.AlertEventSuppress{}
+	suppressEventIdMap := map[string]*db.AlertEventSuppress{}
 	var eventIds []string
 	linq.From(list).Select(func(i interface{}) interface{} {
-		return i.(*db2.AlertEvent).Id
+		return i.(*db.AlertEvent).Id
 	}).ToSlice(&eventIds)
 
 	if len(eventIds) > 0 {
 		bv := true
-		suppressList, err := m.p.db.AlertEventSuppressDB.QueryByCondition(req.Scope, req.ScopeId, &db2.AlertEventSuppressQueryCondition{
+		suppressList, err := m.p.db.AlertEventSuppressDB.QueryByCondition(req.Scope, req.ScopeId, &db.AlertEventSuppressQueryCondition{
 			EventIds: eventIds,
 			Enabled:  &bv,
 		})

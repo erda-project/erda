@@ -24,7 +24,7 @@ import (
 
 	"github.com/olivere/elastic"
 
-	storekit2 "github.com/erda-project/erda/modules/tools/monitor/core/storekit"
+	"github.com/erda-project/erda/modules/tools/monitor/core/storekit"
 )
 
 // SortItem .
@@ -45,7 +45,7 @@ func NewSearchIterator(
 	searchAfter []interface{},
 	search func() (*elastic.SearchSource, error),
 	decode func(data *elastic.SearchHit) (interface{}, error),
-) (storekit2.Iterator, error) {
+) (storekit.Iterator, error) {
 	if pageSize <= 1 {
 		// avoid query result only contains the last duplicated data,
 		// then lastSortValues keep previous values, but it not allowed
@@ -82,7 +82,7 @@ func NewScrollIterator(
 	sorts []*SortItem,
 	search func() (*elastic.SearchSource, error),
 	decode func(data *elastic.SearchHit) (interface{}, error),
-) (storekit2.Iterator, error) {
+) (storekit.Iterator, error) {
 	if pageSize <= 0 {
 		return nil, fmt.Errorf("pageSize must greater than 0")
 	}
@@ -128,7 +128,7 @@ type searchIterator struct {
 	sorts       []*SortItem
 	searchAfter []interface{}
 	decode      func(data *elastic.SearchHit) (interface{}, error)
-	limiter     storekit2.RateLimiter
+	limiter     storekit.RateLimiter
 
 	lastID         string
 	lastSortValues []interface{}
@@ -164,7 +164,7 @@ func (it *searchIterator) Next() bool {
 		return false
 	}
 	if it.dir == iteratorBackward {
-		it.err = storekit2.ErrOpNotSupported
+		it.err = storekit.ErrOpNotSupported
 		return false
 	}
 	if it.yield() {
@@ -179,7 +179,7 @@ func (it *searchIterator) Prev() bool {
 		return false
 	}
 	if it.dir == iteratorForward {
-		it.err = storekit2.ErrOpNotSupported
+		it.err = storekit.ErrOpNotSupported
 		return false
 	}
 	if it.yield() {
@@ -189,7 +189,7 @@ func (it *searchIterator) Prev() bool {
 	return it.yield()
 }
 
-func (it *searchIterator) Value() storekit2.Data { return it.value }
+func (it *searchIterator) Value() storekit.Data { return it.value }
 func (it *searchIterator) Error() error {
 	if it.err == io.EOF {
 		return nil
@@ -299,14 +299,14 @@ func (it *searchIterator) Total() (int64, error) {
 func (it *searchIterator) checkClosed() bool {
 	if it.closed {
 		if it.err == nil {
-			it.err = storekit2.ErrIteratorClosed
+			it.err = storekit.ErrIteratorClosed
 		}
 		return true
 	}
 	select {
 	case <-it.ctx.Done():
 		if it.err == nil {
-			it.err = storekit2.ErrIteratorClosed
+			it.err = storekit.ErrIteratorClosed
 		}
 		return true
 	default:
@@ -382,7 +382,7 @@ func (it *scrollIterator) Next() bool {
 		return false
 	}
 	if it.dir == iteratorBackward {
-		it.err = storekit2.ErrOpNotSupported
+		it.err = storekit.ErrOpNotSupported
 		return false
 	}
 	if it.yield() {
@@ -397,7 +397,7 @@ func (it *scrollIterator) Prev() bool {
 		return false
 	}
 	if it.dir == iteratorForward {
-		it.err = storekit2.ErrOpNotSupported
+		it.err = storekit.ErrOpNotSupported
 		return false
 	}
 	if it.yield() {
@@ -407,7 +407,7 @@ func (it *scrollIterator) Prev() bool {
 	return it.yield()
 }
 
-func (it *scrollIterator) Value() storekit2.Data { return it.value }
+func (it *scrollIterator) Value() storekit.Data { return it.value }
 func (it *scrollIterator) Error() error {
 	if it.err == io.EOF {
 		return nil
@@ -540,14 +540,14 @@ func (it *scrollIterator) Total() (int64, error) {
 func (it *scrollIterator) checkClosed() bool {
 	if it.closed {
 		if it.err == nil {
-			it.err = storekit2.ErrIteratorClosed
+			it.err = storekit.ErrIteratorClosed
 		}
 		return true
 	}
 	select {
 	case <-it.ctx.Done():
 		if it.err == nil {
-			it.err = storekit2.ErrIteratorClosed
+			it.err = storekit.ErrIteratorClosed
 		}
 		return true
 	default:

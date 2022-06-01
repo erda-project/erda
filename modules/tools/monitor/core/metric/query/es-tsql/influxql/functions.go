@@ -25,7 +25,7 @@ import (
 	"github.com/olivere/elastic"
 	"github.com/recallsong/go-utils/encoding/md5x"
 
-	tsql2 "github.com/erda-project/erda/modules/tools/monitor/core/metric/query/es-tsql"
+	tsql "github.com/erda-project/erda/modules/tools/monitor/core/metric/query/es-tsql"
 )
 
 // Context .
@@ -34,8 +34,8 @@ type Context struct {
 	calls            map[*influxql.Call]string
 	dimensions       map[string]bool
 	start, end       int64 // always nanosecond
-	originalTimeUnit tsql2.TimeUnit
-	targetTimeUnit   tsql2.TimeUnit
+	originalTimeUnit tsql.TimeUnit
+	targetTimeUnit   tsql.TimeUnit
 	timeKey          string
 	maxTimePoints    int64 // By time interval dimension
 	interval         int64 // The actual time interval used
@@ -62,17 +62,17 @@ func (c *Context) Now() time.Time {
 
 // Range .
 func (c *Context) Range(conv bool) (int64, int64) {
-	if conv && c.originalTimeUnit != tsql2.UnsetTimeUnit {
+	if conv && c.originalTimeUnit != tsql.UnsetTimeUnit {
 		return c.start / int64(c.originalTimeUnit), c.end / int64(c.originalTimeUnit)
 	}
 	return c.start, c.end
 }
 
 // OriginalTimeUnit .
-func (c *Context) OriginalTimeUnit() tsql2.TimeUnit { return c.originalTimeUnit }
+func (c *Context) OriginalTimeUnit() tsql.TimeUnit { return c.originalTimeUnit }
 
 // TargetTimeUnit .
-func (c *Context) TargetTimeUnit() tsql2.TimeUnit { return c.targetTimeUnit }
+func (c *Context) TargetTimeUnit() tsql.TimeUnit { return c.targetTimeUnit }
 
 // TimeKey .
 func (c *Context) TimeKey() string { return c.timeKey }
@@ -133,11 +133,11 @@ func (c *Context) HandleScopeAgg(scope string, aggs elastic.Aggregations, expr i
 }
 
 func mustCallArgsNum(call *influxql.Call, num int) error {
-	return tsql2.MustFuncArgsNum(call.Name, len(call.Args), num)
+	return tsql.MustFuncArgsNum(call.Name, len(call.Args), num)
 }
 
 func mustCallArgsMinNum(call *influxql.Call, num int) error {
-	return tsql2.MustFuncArgsMinNum(call.Name, len(call.Args), num)
+	return tsql.MustFuncArgsMinNum(call.Name, len(call.Args), num)
 }
 
 // FuncFlag .
@@ -172,7 +172,7 @@ func IsFunction(name string) bool {
 	if ok {
 		return true
 	}
-	return tsql2.IsFunction(name)
+	return tsql.IsFunction(name)
 }
 
 // AggFuncDefine .
@@ -399,10 +399,10 @@ var AggFunctions = map[string]*AggFuncDefine{
 					}
 					if next, ok := next.(elastic.Aggregations); ok {
 						if next, ok := next.Min(id); ok && next != nil && next.Value != nil {
-							if ctx.targetTimeUnit == tsql2.UnsetTimeUnit {
-								ctx.targetTimeUnit = tsql2.Nanosecond
+							if ctx.targetTimeUnit == tsql.UnsetTimeUnit {
+								ctx.targetTimeUnit = tsql.Nanosecond
 							}
-							seconds := float64(ctx.interval*int64(ctx.targetTimeUnit)) / float64(tsql2.Second)
+							seconds := float64(ctx.interval*int64(ctx.targetTimeUnit)) / float64(tsql.Second)
 							return (*next.Value - *min.Value) / seconds, true
 						}
 					}
@@ -430,17 +430,17 @@ var AggFunctions = map[string]*AggFuncDefine{
 				if sum.Value == nil {
 					return 0, true
 				}
-				if ctx.targetTimeUnit == tsql2.UnsetTimeUnit {
-					ctx.targetTimeUnit = tsql2.Nanosecond
+				if ctx.targetTimeUnit == tsql.UnsetTimeUnit {
+					ctx.targetTimeUnit = tsql.Nanosecond
 				}
-				seconds := float64(ctx.interval*int64(ctx.targetTimeUnit)) / float64(tsql2.Second)
+				seconds := float64(ctx.interval*int64(ctx.targetTimeUnit)) / float64(tsql.Second)
 				return *sum.Value / seconds, true
 			},
 		),
 	},
-	"first": newSourceFieldAggFunction("first", tsql2.TimestampKey, true),
-	"last":  newSourceFieldAggFunction("last", tsql2.TimestampKey, false),
-	"value": newSourceFieldAggFunction("value", tsql2.TimestampKey, false),
+	"first": newSourceFieldAggFunction("first", tsql.TimestampKey, true),
+	"last":  newSourceFieldAggFunction("last", tsql.TimestampKey, false),
+	"value": newSourceFieldAggFunction("value", tsql.TimestampKey, false),
 }
 
 func newSourceFieldAggFunction(name, sort string, ascending bool) *AggFuncDefine {
@@ -452,8 +452,8 @@ func newSourceFieldAggFunction(name, sort string, ascending bool) *AggFuncDefine
 				if script != nil {
 					return nil, fmt.Errorf("not support script")
 				}
-				key := tsql2.TimestampKey
-				if sort == tsql2.TimestampKey {
+				key := tsql.TimestampKey
+				if sort == tsql.TimestampKey {
 					key = ctx.TimeKey()
 				}
 				return elastic.NewTopHitsAggregation().Size(1).Sort(key, ascending).

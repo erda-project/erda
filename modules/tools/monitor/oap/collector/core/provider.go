@@ -24,7 +24,7 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/modules/tools/monitor/oap/collector/core/config"
-	model2 "github.com/erda-project/erda/modules/tools/monitor/oap/collector/core/model"
+	"github.com/erda-project/erda/modules/tools/monitor/oap/collector/core/model"
 	"github.com/erda-project/erda/modules/tools/monitor/oap/collector/core/model/odata"
 	"github.com/erda-project/erda/modules/tools/monitor/oap/collector/core/pipeline"
 	"github.com/erda-project/erda/modules/tools/monitor/oap/collector/lib/common/unmarshalwork"
@@ -162,22 +162,22 @@ func startPipeline(ctx context.Context, pipes []*pipeline.Pipeline) {
 	}
 }
 
-func findComponents(ctx servicehub.Context, components []string) ([]model2.ComponentUnit, error) {
-	res := make([]model2.ComponentUnit, 0)
+func findComponents(ctx servicehub.Context, components []string) ([]model.ComponentUnit, error) {
+	res := make([]model.ComponentUnit, 0)
 	for _, item := range components {
 		obj := ctx.Service(item)
 		if obj == nil {
 			return nil, fmt.Errorf("component %s not found", item)
 		}
-		com, ok := obj.(model2.Component)
+		com, ok := obj.(model.Component)
 		if !ok {
 			return nil, fmt.Errorf("%s is not a Component", item)
 		}
-		f, err := model2.NewDataFilter(extractFilterConfig(com.ComponentConfig()))
+		f, err := model.NewDataFilter(extractFilterConfig(com.ComponentConfig()))
 		if err != nil {
 			return nil, fmt.Errorf("create data filter: %w", err)
 		}
-		res = append(res, model2.ComponentUnit{
+		res = append(res, model.ComponentUnit{
 			Component: com,
 			Name:      item,
 			Filter:    f,
@@ -186,7 +186,7 @@ func findComponents(ctx servicehub.Context, components []string) ([]model2.Compo
 	return res, nil
 }
 
-func extractFilterConfig(cfg interface{}) model2.FilterConfig {
+func extractFilterConfig(cfg interface{}) model.FilterConfig {
 	t, v := reflect.TypeOf(cfg), reflect.ValueOf(cfg)
 	if t.Kind() == reflect.Ptr || t.Kind() == reflect.Interface {
 		t = t.Elem()
@@ -197,14 +197,14 @@ func extractFilterConfig(cfg interface{}) model2.FilterConfig {
 		return extractFromStruct(t, v)
 	case reflect.Map:
 		// TODO
-		return model2.FilterConfig{}
+		return model.FilterConfig{}
 	default:
-		return model2.FilterConfig{}
+		return model.FilterConfig{}
 	}
 }
 
-func extractFromStruct(t reflect.Type, v reflect.Value) model2.FilterConfig {
-	target := model2.FilterConfig{}
+func extractFromStruct(t reflect.Type, v reflect.Value) model.FilterConfig {
+	target := model.FilterConfig{}
 	typeTarget, valueTarget := reflect.TypeOf(&target).Elem(), reflect.ValueOf(&target).Elem()
 	fieldmap := make(map[string]reflect.Value)
 	for i := 0; i < typeTarget.NumField(); i++ {

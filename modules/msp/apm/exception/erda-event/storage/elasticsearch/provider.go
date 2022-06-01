@@ -27,7 +27,7 @@ import (
 	"github.com/erda-project/erda/modules/msp/apm/exception/erda-event/storage"
 	"github.com/erda-project/erda/modules/msp/apm/exception/model"
 	"github.com/erda-project/erda/modules/tools/monitor/core/settings/retention-strategy"
-	storekit2 "github.com/erda-project/erda/modules/tools/monitor/core/storekit"
+	"github.com/erda-project/erda/modules/tools/monitor/core/storekit"
 	"github.com/erda-project/erda/modules/tools/monitor/core/storekit/elasticsearch/index/creator"
 	"github.com/erda-project/erda/modules/tools/monitor/core/storekit/elasticsearch/index/loader"
 )
@@ -73,7 +73,7 @@ func (p *provider) Init(ctx servicehub.Context) (err error) {
 
 var _ storage.Storage = (*provider)(nil)
 
-func (p *provider) NewWriter(ctx context.Context) (storekit2.BatchWriter, error) {
+func (p *provider) NewWriter(ctx context.Context) (storekit.BatchWriter, error) {
 	if p.Creator == nil || p.Retention == nil {
 		return nil, fmt.Errorf("elasticsearch.index.creator@error_event and storage-retention-strategy@error_event is required for Writer")
 	}
@@ -87,7 +87,7 @@ func (p *provider) NewWriter(ctx context.Context) (storekit2.BatchWriter, error)
 				select {
 				case <-wait:
 				case <-ctx.Done():
-					return "", "", "", nil, storekit2.ErrExitConsume
+					return "", "", "", nil, storekit.ErrExitConsume
 				}
 			}
 			return index, data.EventId, p.Cfg.IndexType, data, nil

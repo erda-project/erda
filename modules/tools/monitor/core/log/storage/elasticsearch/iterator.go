@@ -30,7 +30,7 @@ import (
 	"github.com/erda-project/erda-proto-go/core/monitor/log/query/pb"
 	"github.com/erda-project/erda/modules/tools/monitor/core/log"
 	"github.com/erda-project/erda/modules/tools/monitor/core/log/storage"
-	storekit2 "github.com/erda-project/erda/modules/tools/monitor/core/storekit"
+	"github.com/erda-project/erda/modules/tools/monitor/core/storekit"
 	"github.com/erda-project/erda/modules/tools/monitor/core/storekit/elasticsearch"
 	"github.com/erda-project/erda/modules/tools/monitor/core/storekit/elasticsearch/index/loader"
 )
@@ -38,7 +38,7 @@ import (
 const useScrollQuery = false
 const useInMemContentFilter = false
 
-func (p *provider) Iterator(ctx context.Context, sel *storage.Selector) (storekit2.Iterator, error) {
+func (p *provider) Iterator(ctx context.Context, sel *storage.Selector) (storekit.Iterator, error) {
 	// TODO check org
 	var keyPaths []loader.KeyPath
 	for _, orgName := range sel.Meta.OrgNames {
@@ -68,7 +68,7 @@ func (p *provider) Iterator(ctx context.Context, sel *storage.Selector) (storeki
 				regex, err := regexp.Compile(val)
 				if err != nil {
 					p.Log.Debugf("invalid regexp %q", val)
-					return storekit2.EmptyIterator{}, nil
+					return storekit.EmptyIterator{}, nil
 				}
 				matcher = func(data *pb.LogItem) bool {
 					return regex.MatchString(data.Content)

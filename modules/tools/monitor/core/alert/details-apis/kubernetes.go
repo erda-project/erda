@@ -23,7 +23,7 @@ import (
 	"github.com/olivere/elastic"
 
 	"github.com/erda-project/erda/modules/tools/monitor/core/metric/query/query"
-	utils2 "github.com/erda-project/erda/modules/tools/monitor/utils"
+	util "github.com/erda-project/erda/modules/tools/monitor/utils"
 )
 
 // PodInfoSummary .
@@ -81,14 +81,14 @@ func (p *provider) getPodInfo(clusterName, podName string, start, end int64) (*P
 		var source map[string]interface{}
 		err := json.Unmarshal([]byte(*topHis.Hits.Hits[0].Source), &source)
 		if err == nil {
-			info.Summary.ClusterName = utils2.GetMapValue(query.TagKey+".cluster_name", source)
-			info.Summary.NodeName = utils2.GetMapValue(query.TagKey+".node_name", source)
-			info.Summary.HostIP = utils2.GetMapValue(query.TagKey+".host_ip", source)
-			info.Summary.Namespace = utils2.GetMapValue(query.TagKey+".namespace", source)
-			info.Summary.PodName = utils2.GetMapValue(query.TagKey+".pod_name", source)
-			info.Summary.StateCode = utils2.GetMapValue(query.FieldKey+".state_code", source)
-			info.Summary.RestartTotal = utils2.GetMapValue(query.FieldKey+".restarts_total", source)
-			info.Summary.TerminatedReason = utils2.GetMapValue(query.FieldKey+".terminated_reason", source)
+			info.Summary.ClusterName = util.GetMapValue(query.TagKey+".cluster_name", source)
+			info.Summary.NodeName = util.GetMapValue(query.TagKey+".node_name", source)
+			info.Summary.HostIP = util.GetMapValue(query.TagKey+".host_ip", source)
+			info.Summary.Namespace = util.GetMapValue(query.TagKey+".namespace", source)
+			info.Summary.PodName = util.GetMapValue(query.TagKey+".pod_name", source)
+			info.Summary.StateCode = util.GetMapValue(query.FieldKey+".state_code", source)
+			info.Summary.RestartTotal = util.GetMapValue(query.FieldKey+".restarts_total", source)
+			info.Summary.TerminatedReason = util.GetMapValue(query.FieldKey+".terminated_reason", source)
 		}
 	}
 	err = p.getContainers(clusterName, podName, start, end, &info)
@@ -135,11 +135,11 @@ func (p *provider) getContainers(clusterName, podName string, start, end int64, 
 				if err == nil {
 					inst := &PodInfoInstanse{
 						ContainerID: b.Key,
-						HostIP:      utils2.GetMapValue(query.TagKey+".host_ip", source),
-						StartedAt:   formatDate(utils2.GetMapValue(query.FieldKey+".started_at", source)),
-						FinishedAt:  formatDate(utils2.GetMapValue(query.FieldKey+".finished_at", source)),
-						ExitCode:    utils2.GetMapValue(query.FieldKey+".exitcode", source),
-						OomKilled:   utils2.GetMapValue(query.FieldKey+".oomkilled", source),
+						HostIP:      util.GetMapValue(query.TagKey+".host_ip", source),
+						StartedAt:   formatDate(util.GetMapValue(query.FieldKey+".started_at", source)),
+						FinishedAt:  formatDate(util.GetMapValue(query.FieldKey+".finished_at", source)),
+						ExitCode:    util.GetMapValue(query.FieldKey+".exitcode", source),
+						OomKilled:   util.GetMapValue(query.FieldKey+".oomkilled", source),
 					}
 					info.Instances = append(info.Instances, inst)
 				}
@@ -150,7 +150,7 @@ func (p *provider) getContainers(clusterName, podName string, start, end int64, 
 }
 
 func formatDate(date interface{}) interface{} {
-	val, ok := utils2.ConvertInt64(date)
+	val, ok := util.ConvertInt64(date)
 	if !ok {
 		return date
 	}

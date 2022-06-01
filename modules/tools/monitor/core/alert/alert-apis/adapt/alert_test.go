@@ -31,7 +31,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/pkg/bundle-ex/cmdb"
 	"github.com/erda-project/erda/modules/tools/monitor/core/alert/alert-apis/cql"
-	db2 "github.com/erda-project/erda/modules/tools/monitor/core/alert/alert-apis/db"
+	"github.com/erda-project/erda/modules/tools/monitor/core/alert/alert-apis/db"
 	block "github.com/erda-project/erda/modules/tools/monitor/core/dataview/v1-chart-block"
 	"github.com/erda-project/erda/modules/tools/monitor/core/event/storage"
 	"github.com/erda-project/erda/modules/tools/monitor/core/expression"
@@ -46,7 +46,7 @@ func TestAdapt_newTicketAlertNotify(t *testing.T) {
 		l logs.Logger
 		// metricq                Queryer
 		t    i18n.Translator
-		db   *db2.DB
+		db   *db.DB
 		cql  *cql.Cql
 		bdl  *bundle.Bundle
 		cmdb *cmdb.Cmdb
@@ -63,7 +63,7 @@ func TestAdapt_newTicketAlertNotify(t *testing.T) {
 		name   string
 		fields fields
 		args   args
-		want   *db2.AlertNotify
+		want   *db.AlertNotify
 	}{
 		// {
 		//	name: "test_newTicketAlertNotify",
@@ -110,7 +110,7 @@ func TestAdapt_compareNotify(t *testing.T) {
 		l logs.Logger
 		// metricq                Queryer
 		t    i18n.Translator
-		db   *db2.DB
+		db   *db.DB
 		cql  *cql.Cql
 		bdl  *bundle.Bundle
 		cmdb *cmdb.Cmdb
@@ -120,8 +120,8 @@ func TestAdapt_compareNotify(t *testing.T) {
 		silencePolicies        map[string]bool
 	}
 	type args struct {
-		a *db2.AlertNotify
-		b *db2.AlertNotify
+		a *db.AlertNotify
+		b *db.AlertNotify
 	}
 	tests := []struct {
 		name   string
@@ -133,10 +133,10 @@ func TestAdapt_compareNotify(t *testing.T) {
 			name:   "test_compareNotify",
 			fields: fields{},
 			args: args{
-				a: &db2.AlertNotify{
+				a: &db.AlertNotify{
 					NotifyTarget: jsonmap.JSONMap{},
 				},
-				b: &db2.AlertNotify{
+				b: &db.AlertNotify{
 					NotifyTarget: jsonmap.JSONMap{},
 				},
 			},
@@ -184,40 +184,40 @@ func TestAdapt_UpdateOrgAlert(t *testing.T) {
 
 	pdb := &gorm.DB{}
 	pdb.SetLogger(&pLog{})
-	monkey.Patch((*db2.DB).Begin, func(_ *db2.DB) *db2.DB {
-		return &db2.DB{
+	monkey.Patch((*db.DB).Begin, func(_ *db.DB) *db.DB {
+		return &db.DB{
 			DB: pdb,
-			CustomizeAlert: db2.CustomizeAlertDB{
+			CustomizeAlert: db.CustomizeAlertDB{
 				pdb,
 			},
-			CustomizeAlertRule: db2.CustomizeAlertRuleDB{
+			CustomizeAlertRule: db.CustomizeAlertRuleDB{
 				pdb,
 			},
-			CustomizeAlertNotifyTemplate: db2.CustomizeAlertNotifyTemplateDB{
+			CustomizeAlertNotifyTemplate: db.CustomizeAlertNotifyTemplateDB{
 				pdb,
 			},
-			Alert: db2.AlertDB{
+			Alert: db.AlertDB{
 				pdb,
 			},
-			AlertExpression: db2.AlertExpressionDB{
+			AlertExpression: db.AlertExpressionDB{
 				pdb,
 			},
-			AlertNotify: db2.AlertNotifyDB{
+			AlertNotify: db.AlertNotifyDB{
 				pdb,
 			},
-			AlertNotifyTemplate: db2.AlertNotifyTemplateDB{
+			AlertNotifyTemplate: db.AlertNotifyTemplateDB{
 				pdb,
 			},
-			AlertRule: db2.AlertRuleDB{
+			AlertRule: db.AlertRuleDB{
 				pdb,
 			},
-			AlertRecord: db2.AlertRecordDB{
+			AlertRecord: db.AlertRecordDB{
 				pdb,
 			},
 		}
 	})
-	monkey.Patch((*db2.AlertDB).GetByScopeAndScopeIDAndName, func(_ *db2.AlertDB, _, _, _ string) (*db2.Alert, error) {
-		return &db2.Alert{
+	monkey.Patch((*db.AlertDB).GetByScopeAndScopeIDAndName, func(_ *db.AlertDB, _, _, _ string) (*db.Alert, error) {
+		return &db.Alert{
 			ID:           20,
 			Name:         "wwwwwww",
 			AlertScope:   "micro_service",
@@ -242,8 +242,8 @@ func TestAdapt_UpdateOrgAlert(t *testing.T) {
 			Updated: time.Now(),
 		}, nil
 	})
-	monkey.Patch((*db2.AlertDB).GetByID, func(_ *db2.AlertDB, _ uint64) (*db2.Alert, error) {
-		return &db2.Alert{
+	monkey.Patch((*db.AlertDB).GetByID, func(_ *db.AlertDB, _ uint64) (*db.Alert, error) {
+		return &db.Alert{
 			ID:           20,
 			Name:         "wwwwwww",
 			AlertScope:   "micro_service",
@@ -268,11 +268,11 @@ func TestAdapt_UpdateOrgAlert(t *testing.T) {
 			Updated: time.Now(),
 		}, nil
 	})
-	monkey.Patch((*db2.AlertDB).Update, func(_ *db2.AlertDB, _ *db2.Alert) error {
+	monkey.Patch((*db.AlertDB).Update, func(_ *db.AlertDB, _ *db.Alert) error {
 		return nil
 	})
-	monkey.Patch(ToDBAlertModel, func(_ *pb.Alert) *db2.Alert {
-		return &db2.Alert{
+	monkey.Patch(ToDBAlertModel, func(_ *pb.Alert) *db.Alert {
+		return &db.Alert{
 			ID:           20,
 			Name:         "wwwwwww",
 			AlertScope:   "micro_service",
@@ -320,8 +320,8 @@ func TestAdapt_UpdateOrgAlert(t *testing.T) {
 			},
 		}, nil
 	})
-	monkey.Patch((*Adapt).getAlertExpressionsMapByAlertID, func(_ *Adapt, _ uint64) (map[uint64]*db2.AlertExpression, error) {
-		return map[uint64]*db2.AlertExpression{
+	monkey.Patch((*Adapt).getAlertExpressionsMapByAlertID, func(_ *Adapt, _ uint64) (map[uint64]*db.AlertExpression, error) {
+		return map[uint64]*db.AlertExpression{
 			29: {
 				ID:      29,
 				AlertID: 20,
@@ -341,8 +341,8 @@ func TestAdapt_UpdateOrgAlert(t *testing.T) {
 			},
 		}, nil
 	})
-	monkey.Patch(ToDBAlertExpressionModel, func(_ *pb.AlertExpression, _ string, _ *pb.Alert, _ *pb.AlertRule) (*db2.AlertExpression, error) {
-		return &db2.AlertExpression{
+	monkey.Patch(ToDBAlertExpressionModel, func(_ *pb.AlertExpression, _ string, _ *pb.Alert, _ *pb.AlertRule) (*db.AlertExpression, error) {
+		return &db.AlertExpression{
 			ID:      29,
 			AlertID: 20,
 			Attributes: jsonmap.JSONMap{
@@ -360,16 +360,16 @@ func TestAdapt_UpdateOrgAlert(t *testing.T) {
 			Updated: time.Now(),
 		}, nil
 	})
-	monkey.Patch((*db2.AlertExpressionDB).Update, func(_ *db2.AlertExpressionDB, _ *db2.AlertExpression) error {
+	monkey.Patch((*db.AlertExpressionDB).Update, func(_ *db.AlertExpressionDB, _ *db.AlertExpression) error {
 		return nil
 	})
-	monkey.Patch((*db2.AlertExpressionDB).Insert, func(_ *db2.AlertExpressionDB, _ *db2.AlertExpression) error {
+	monkey.Patch((*db.AlertExpressionDB).Insert, func(_ *db.AlertExpressionDB, _ *db.AlertExpression) error {
 		return nil
 	})
-	monkey.Patch((*db2.AlertExpressionDB).DeleteByIDs, func(_ *db2.AlertExpressionDB, ids []uint64) error {
+	monkey.Patch((*db.AlertExpressionDB).DeleteByIDs, func(_ *db.AlertExpressionDB, ids []uint64) error {
 		return nil
 	})
-	monkey.Patch((*db2.AlertNotifyDB).DeleteByIDs, func(_ *db2.AlertNotifyDB, _ []uint64) error {
+	monkey.Patch((*db.AlertNotifyDB).DeleteByIDs, func(_ *db.AlertNotifyDB, _ []uint64) error {
 		return nil
 	})
 	monkey.Patch((*Adapt).getEnabledAlertRulesByScopeAndIndices, func(_ *Adapt, lang i18n.LanguageCodes, scope, scopeID string, indices []string) (map[string]*pb.AlertRule, error) {
@@ -392,8 +392,8 @@ func TestAdapt_UpdateOrgAlert(t *testing.T) {
 			},
 		}, nil
 	})
-	monkey.Patch((*Adapt).getAlertExpressionsMapByAlertID, func(_ *Adapt, alertID uint64) (map[uint64]*db2.AlertExpression, error) {
-		return map[uint64]*db2.AlertExpression{
+	monkey.Patch((*Adapt).getAlertExpressionsMapByAlertID, func(_ *Adapt, alertID uint64) (map[uint64]*db.AlertExpression, error) {
+		return map[uint64]*db.AlertExpression{
 			29: {
 				ID:         29,
 				AlertID:    29,
@@ -406,8 +406,8 @@ func TestAdapt_UpdateOrgAlert(t *testing.T) {
 			},
 		}, nil
 	})
-	monkey.Patch(ToDBAlertExpressionModel, func(e *pb.AlertExpression, orgName string, alert *pb.Alert, rule *pb.AlertRule) (*db2.AlertExpression, error) {
-		return &db2.AlertExpression{
+	monkey.Patch(ToDBAlertExpressionModel, func(e *pb.AlertExpression, orgName string, alert *pb.Alert, rule *pb.AlertRule) (*db.AlertExpression, error) {
+		return &db.AlertExpression{
 			ID:      29,
 			AlertID: 20,
 			Attributes: jsonmap.JSONMap{
@@ -425,8 +425,8 @@ func TestAdapt_UpdateOrgAlert(t *testing.T) {
 			Updated: time.Now(),
 		}, nil
 	})
-	monkey.Patch((*Adapt).getAlertNotifysMapByAlertID, func(_ *Adapt, alertID uint64) (map[uint64]*db2.AlertNotify, error) {
-		return map[uint64]*db2.AlertNotify{
+	monkey.Patch((*Adapt).getAlertNotifysMapByAlertID, func(_ *Adapt, alertID uint64) (map[uint64]*db.AlertNotify, error) {
+		return map[uint64]*db.AlertNotify{
 			48: {
 				ID:        48,
 				AlertID:   20,
@@ -459,7 +459,7 @@ func TestAdapt_UpdateOrgAlert(t *testing.T) {
 			},
 		}, nil
 	})
-	monkey.Patch((*db2.AlertNotifyDB).Update, func(_ *db2.AlertNotifyDB, _ *db2.AlertNotify) error {
+	monkey.Patch((*db.AlertNotifyDB).Update, func(_ *db.AlertNotifyDB, _ *db.AlertNotify) error {
 		return nil
 	})
 
@@ -467,33 +467,33 @@ func TestAdapt_UpdateOrgAlert(t *testing.T) {
 		l:       logsss,
 		metricq: NewMockQueryer(ctrl),
 		t:       NewMockTranslator(ctrl),
-		db: &db2.DB{
+		db: &db.DB{
 			DB: pdb,
-			CustomizeAlert: db2.CustomizeAlertDB{
+			CustomizeAlert: db.CustomizeAlertDB{
 				pdb,
 			},
-			CustomizeAlertRule: db2.CustomizeAlertRuleDB{
+			CustomizeAlertRule: db.CustomizeAlertRuleDB{
 				pdb,
 			},
-			CustomizeAlertNotifyTemplate: db2.CustomizeAlertNotifyTemplateDB{
+			CustomizeAlertNotifyTemplate: db.CustomizeAlertNotifyTemplateDB{
 				pdb,
 			},
-			Alert: db2.AlertDB{
+			Alert: db.AlertDB{
 				pdb,
 			},
-			AlertExpression: db2.AlertExpressionDB{
+			AlertExpression: db.AlertExpressionDB{
 				pdb,
 			},
-			AlertNotify: db2.AlertNotifyDB{
+			AlertNotify: db.AlertNotifyDB{
 				pdb,
 			},
-			AlertNotifyTemplate: db2.AlertNotifyTemplateDB{
+			AlertNotifyTemplate: db.AlertNotifyTemplateDB{
 				pdb,
 			},
-			AlertRule: db2.AlertRuleDB{
+			AlertRule: db.AlertRuleDB{
 				pdb,
 			},
-			AlertRecord: db2.AlertRecordDB{
+			AlertRecord: db.AlertRecordDB{
 				pdb,
 			},
 		},
@@ -643,7 +643,7 @@ func TestAdapt_getEnabledAlertRulesByScopeAndIndices(t *testing.T) {
 		metricq                     metricq.Queryer
 		eventStorage                storage.Storage
 		t                           i18n.Translator
-		db                          *db2.DB
+		db                          *db.DB
 		cql                         *cql.Cql
 		bdl                         *bundle.Bundle
 		cmdb                        *cmdb.Cmdb
@@ -672,33 +672,33 @@ func TestAdapt_getEnabledAlertRulesByScopeAndIndices(t *testing.T) {
 				metricq:      nil,
 				eventStorage: nil,
 				t:            nil,
-				db: &db2.DB{
+				db: &db.DB{
 					DB: &gorm.DB{},
-					CustomizeAlert: db2.CustomizeAlertDB{
+					CustomizeAlert: db.CustomizeAlertDB{
 						&gorm.DB{},
 					},
-					CustomizeAlertRule: db2.CustomizeAlertRuleDB{
+					CustomizeAlertRule: db.CustomizeAlertRuleDB{
 						&gorm.DB{},
 					},
-					CustomizeAlertNotifyTemplate: db2.CustomizeAlertNotifyTemplateDB{
+					CustomizeAlertNotifyTemplate: db.CustomizeAlertNotifyTemplateDB{
 						&gorm.DB{},
 					},
-					Alert: db2.AlertDB{
+					Alert: db.AlertDB{
 						&gorm.DB{},
 					},
-					AlertExpression: db2.AlertExpressionDB{
+					AlertExpression: db.AlertExpressionDB{
 						&gorm.DB{},
 					},
-					AlertNotify: db2.AlertNotifyDB{
+					AlertNotify: db.AlertNotifyDB{
 						&gorm.DB{},
 					},
-					AlertNotifyTemplate: db2.AlertNotifyTemplateDB{
+					AlertNotifyTemplate: db.AlertNotifyTemplateDB{
 						&gorm.DB{},
 					},
-					AlertRule: db2.AlertRuleDB{
+					AlertRule: db.AlertRuleDB{
 						&gorm.DB{},
 					},
-					AlertRecord: db2.AlertRecordDB{
+					AlertRecord: db.AlertRecordDB{
 						&gorm.DB{},
 					},
 				},
@@ -735,9 +735,9 @@ func TestAdapt_getEnabledAlertRulesByScopeAndIndices(t *testing.T) {
 			AlertType:  "app_status",
 			Attributes: map[string]interface{}{},
 		}
-		var adb *db2.CustomizeAlertRuleDB
-		ruleIndices := monkey.PatchInstanceMethod(reflect.TypeOf(adb), "QueryEnabledByScopeAndIndices", func(sdb *db2.CustomizeAlertRuleDB, scope, scopeID string, indices []string) ([]*db2.CustomizeAlertRule, error) {
-			return []*db2.CustomizeAlertRule{
+		var adb *db.CustomizeAlertRuleDB
+		ruleIndices := monkey.PatchInstanceMethod(reflect.TypeOf(adb), "QueryEnabledByScopeAndIndices", func(sdb *db.CustomizeAlertRuleDB, scope, scopeID string, indices []string) ([]*db.CustomizeAlertRule, error) {
+			return []*db.CustomizeAlertRule{
 				{
 					ID:               1,
 					Name:             "test",
@@ -755,7 +755,7 @@ func TestAdapt_getEnabledAlertRulesByScopeAndIndices(t *testing.T) {
 			}, nil
 		})
 		defer ruleIndices.Unpatch()
-		ruleModel := monkey.Patch(FromPBAlertRuleModel, func(lang i18n.LanguageCodes, t i18n.Translator, m *db2.AlertRule) *pb.AlertRule {
+		ruleModel := monkey.Patch(FromPBAlertRuleModel, func(lang i18n.LanguageCodes, t i18n.Translator, m *db.AlertRule) *pb.AlertRule {
 			return &pb.AlertRule{
 				Id:         12,
 				Name:       "test",
@@ -774,7 +774,7 @@ func TestAdapt_getEnabledAlertRulesByScopeAndIndices(t *testing.T) {
 			}
 		})
 		defer ruleModel.Unpatch()
-		customizeRule := monkey.Patch(FromCustomizeAlertRule, func(lang i18n.LanguageCodes, t i18n.Translator, cr *db2.CustomizeAlertRule) (*pb.AlertRule, error) {
+		customizeRule := monkey.Patch(FromCustomizeAlertRule, func(lang i18n.LanguageCodes, t i18n.Translator, cr *db.CustomizeAlertRule) (*pb.AlertRule, error) {
 			return &pb.AlertRule{
 				Id:         11,
 				Name:       "test",

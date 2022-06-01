@@ -23,7 +23,7 @@ import (
 
 	"github.com/erda-project/erda-proto-go/core/monitor/log/query/pb"
 	"github.com/erda-project/erda/modules/tools/monitor/core/log/storage"
-	storekit2 "github.com/erda-project/erda/modules/tools/monitor/core/storekit"
+	"github.com/erda-project/erda/modules/tools/monitor/core/storekit"
 )
 
 func Test_toQuerySelector(t *testing.T) {
@@ -164,7 +164,7 @@ func Test_getIterator(t *testing.T) {
 		name    string
 		sel     *storage.Selector
 		service *logQueryService
-		want    storekit2.Iterator
+		want    storekit.Iterator
 		wantErr bool
 	}{
 		{
@@ -192,7 +192,7 @@ func Test_getIterator(t *testing.T) {
 			service: &logQueryService{
 				storageReader: &mockStorage{},
 			},
-			want:    storekit2.NewListIterator(1, 2, 3),
+			want:    storekit.NewListIterator(1, 2, 3),
 			wantErr: false,
 		},
 	}
@@ -535,11 +535,11 @@ func Test_isRequestUseFallBack(t *testing.T) {
 type mockStorage struct {
 }
 
-func (m mockStorage) NewWriter(ctx context.Context) (storekit2.BatchWriter, error) {
+func (m mockStorage) NewWriter(ctx context.Context) (storekit.BatchWriter, error) {
 	panic("implement me")
 }
 
-func (m mockStorage) Iterator(ctx context.Context, sel *storage.Selector) (storekit2.Iterator, error) {
-	it := storekit2.NewListIterator(1, 2, 3)
+func (m mockStorage) Iterator(ctx context.Context, sel *storage.Selector) (storekit.Iterator, error) {
+	it := storekit.NewListIterator(1, 2, 3)
 	return it, nil
 }

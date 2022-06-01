@@ -19,7 +19,7 @@ import (
 	"strconv"
 	"strings"
 
-	tsql2 "github.com/erda-project/erda/modules/tools/monitor/core/metric/query/es-tsql"
+	tsql "github.com/erda-project/erda/modules/tools/monitor/core/metric/query/es-tsql"
 )
 
 type aggData struct {
@@ -28,7 +28,7 @@ type aggData struct {
 	Data []interface{} `json:"data"`
 }
 
-func (f *Formater) formatLineChart(q tsql2.Query, rs *tsql2.ResultSet, params map[string]interface{}) (interface{}, error) {
+func (f *Formater) formatLineChart(q tsql.Query, rs *tsql.ResultSet, params map[string]interface{}) (interface{}, error) {
 	timeIdx, _, dims, vals := getGroupColumns(rs.Columns)
 	var list []interface{}
 	var times []int64
@@ -50,8 +50,8 @@ func (f *Formater) formatLineChart(q tsql2.Query, rs *tsql2.ResultSet, params ma
 			list = append(list, data)
 		}
 		if timeIdx >= 0 && len(groups) <= 1 {
-			ts, _ := tsql2.GetTimestampValue(row[timeIdx])
-			ts = tsql2.ConvertTimestamp(ts, q.Context().TargetTimeUnit(), tsql2.Millisecond) // 强制转换成 ms
+			ts, _ := tsql.GetTimestampValue(row[timeIdx])
+			ts = tsql.ConvertTimestamp(ts, q.Context().TargetTimeUnit(), tsql.Millisecond) // 强制转换成 ms
 			times = append(times, ts)
 		}
 		for _, val := range vals {
@@ -91,13 +91,13 @@ func (f *Formater) getGroupKey(idxs []int, row []interface{}) string {
 	return strings.Join(group, ",")
 }
 
-func getGroupColumns(cols []*tsql2.Column) (ti, rngs int, dims, vals []int) {
+func getGroupColumns(cols []*tsql.Column) (ti, rngs int, dims, vals []int) {
 	rngs, ti = -1, -1
 	for i, c := range cols {
-		if c.Flag&tsql2.ColumnFlagGroupBy == tsql2.ColumnFlagGroupBy {
-			if c.Flag&tsql2.ColumnFlagGroupByInterval == tsql2.ColumnFlagGroupByInterval {
+		if c.Flag&tsql.ColumnFlagGroupBy == tsql.ColumnFlagGroupBy {
+			if c.Flag&tsql.ColumnFlagGroupByInterval == tsql.ColumnFlagGroupByInterval {
 				ti = i
-			} else if c.Flag&tsql2.ColumnFlagGroupByRange == tsql2.ColumnFlagGroupByRange {
+			} else if c.Flag&tsql.ColumnFlagGroupByRange == tsql.ColumnFlagGroupByRange {
 				rngs = i
 			} else {
 				dims = append(dims, i)

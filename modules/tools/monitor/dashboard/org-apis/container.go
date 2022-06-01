@@ -27,7 +27,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	queryv1 "github.com/erda-project/erda/modules/tools/monitor/core/metric/query/query/v1"
-	utils2 "github.com/erda-project/erda/modules/tools/monitor/utils"
+	util "github.com/erda-project/erda/modules/tools/monitor/utils"
 	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
 
@@ -71,7 +71,7 @@ func (p *provider) queryContainers(cluster string, hostIPs []string, instanceTyp
 	query := elastic.NewBoolQuery().
 		Filter(elastic.NewTermQuery(tagsClusterName, cluster)).
 		Filter(elastic.NewRangeQuery(timestamp).Gte(start * int64(time.Millisecond)).Lt(end * int64(time.Millisecond))).
-		Filter(elastic.NewTermsQuery(tagsHostIP, utils2.ConvertStringArrToInterfaceArr(hostIPs)...)).
+		Filter(elastic.NewTermsQuery(tagsHostIP, util.ConvertStringArrToInterfaceArr(hostIPs)...)).
 		MustNot(elastic.NewTermQuery("tags.container", "POD")).
 		MustNot(elastic.NewTermQuery("tags.podsandbox", "true"))
 	if instanceType != instanceTypeAll {
@@ -84,7 +84,7 @@ func (p *provider) queryContainers(cluster string, hostIPs []string, instanceTyp
 				query.Filter(elastic.NewTermQuery(fieldsLabels, v))
 			}
 		} else {
-			query.Filter(elastic.NewTermsQuery(key, utils2.ConvertStringArrToInterfaceArr(filter.Values)...))
+			query.Filter(elastic.NewTermsQuery(key, util.ConvertStringArrToInterfaceArr(filter.Values)...))
 		}
 	}
 
@@ -191,7 +191,7 @@ func wrapContainerData(src *containerData, topHits *elastic.AggregationTopHitsMe
 			continue
 		}
 
-		tags, ok := utils2.GetMapValueMap(m, tags)
+		tags, ok := util.GetMapValueMap(m, tags)
 		if !ok {
 			continue
 		}
@@ -200,40 +200,40 @@ func wrapContainerData(src *containerData, topHits *elastic.AggregationTopHitsMe
 		// 	continue
 		// }
 
-		isDeleted, _ := utils2.GetMapValueString(tags, isDeleted)
+		isDeleted, _ := util.GetMapValueString(tags, isDeleted)
 		if isDeleted == "true" {
 			continue
 		}
-		if _, ok := utils2.GetMapValueString(tags, image, "container_image"); !ok {
+		if _, ok := util.GetMapValueString(tags, image, "container_image"); !ok {
 			continue
 		}
 
-		if val, ok := utils2.GetMapValueString(tags, image, "container_image"); ok {
+		if val, ok := util.GetMapValueString(tags, image, "container_image"); ok {
 			src.Image = val
 		}
 
-		src.ClusterName, _ = utils2.GetMapValueString(tags, clusterName)
-		src.HostIP, _ = utils2.GetMapValueString(tags, hostIP)
-		src.ContainerID, _ = utils2.GetMapValueString(tags, containerID)
-		src.InstanceType, _ = utils2.GetMapValueString(tags, instanceType)
-		src.InstanceID, _ = utils2.GetMapValueString(tags, instanceID)
-		src.OrgID, _ = utils2.GetMapValueString(tags, orgID)
-		src.OrgName, _ = utils2.GetMapValueString(tags, orgName)
-		src.ProjectID, _ = utils2.GetMapValueString(tags, projectID)
-		src.ProjectName, _ = utils2.GetMapValueString(tags, projectName)
-		src.ApplicationID, _ = utils2.GetMapValueString(tags, applicationID)
-		src.ApplicationName, _ = utils2.GetMapValueString(tags, applicationName)
-		src.Workspace, _ = utils2.GetMapValueString(tags, workspace)
-		src.RuntimeID, _ = utils2.GetMapValueString(tags, runtimeID)
-		src.RuntimeName, _ = utils2.GetMapValueString(tags, runtimeName)
-		src.ServiceID, _ = utils2.GetMapValueString(tags, serviceID)
-		src.ServiceName, _ = utils2.GetMapValueString(tags, serviceName)
-		src.JobID, _ = utils2.GetMapValueString(tags, jobID)
+		src.ClusterName, _ = util.GetMapValueString(tags, clusterName)
+		src.HostIP, _ = util.GetMapValueString(tags, hostIP)
+		src.ContainerID, _ = util.GetMapValueString(tags, containerID)
+		src.InstanceType, _ = util.GetMapValueString(tags, instanceType)
+		src.InstanceID, _ = util.GetMapValueString(tags, instanceID)
+		src.OrgID, _ = util.GetMapValueString(tags, orgID)
+		src.OrgName, _ = util.GetMapValueString(tags, orgName)
+		src.ProjectID, _ = util.GetMapValueString(tags, projectID)
+		src.ProjectName, _ = util.GetMapValueString(tags, projectName)
+		src.ApplicationID, _ = util.GetMapValueString(tags, applicationID)
+		src.ApplicationName, _ = util.GetMapValueString(tags, applicationName)
+		src.Workspace, _ = util.GetMapValueString(tags, workspace)
+		src.RuntimeID, _ = util.GetMapValueString(tags, runtimeID)
+		src.RuntimeName, _ = util.GetMapValueString(tags, runtimeName)
+		src.ServiceID, _ = util.GetMapValueString(tags, serviceID)
+		src.ServiceName, _ = util.GetMapValueString(tags, serviceName)
+		src.JobID, _ = util.GetMapValueString(tags, jobID)
 
-		src.Container, _ = utils2.GetMapValueString(tags, "container")
-		src.PodUid, _ = utils2.GetMapValueString(tags, "pod_uid")
-		src.PodName, _ = utils2.GetMapValueString(tags, "pod_name")
-		src.PodNamespace, _ = utils2.GetMapValueString(tags, "pod_namespace")
+		src.Container, _ = util.GetMapValueString(tags, "container")
+		src.PodUid, _ = util.GetMapValueString(tags, "pod_uid")
+		src.PodName, _ = util.GetMapValueString(tags, "pod_name")
+		src.PodNamespace, _ = util.GetMapValueString(tags, "pod_namespace")
 	}
 	return
 }
@@ -412,7 +412,7 @@ func (p *provider) parseContainerGroup(resp *queryv1.Response) *resourceChart {
 		},
 	}
 
-	chart.Title, _ = utils2.GetMapValueString(data, "title")
+	chart.Title, _ = util.GetMapValueString(data, "title")
 	chart.Time, _ = t.([]int64)
 	return chart
 }

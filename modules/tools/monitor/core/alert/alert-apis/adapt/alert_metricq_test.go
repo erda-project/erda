@@ -13,7 +13,7 @@ import (
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/modules/tools/monitor/core/metric/query/chartmeta"
 	"github.com/erda-project/erda/modules/tools/monitor/core/metric/query/metricq"
-	query2 "github.com/erda-project/erda/modules/tools/monitor/core/metric/query/query"
+	query "github.com/erda-project/erda/modules/tools/monitor/core/metric/query/query"
 	queryv1 "github.com/erda-project/erda/modules/tools/monitor/core/metric/query/query/v1"
 
 	"github.com/golang/mock/gomock"
@@ -223,10 +223,10 @@ func (mr *MockQueryerMockRecorder) MetricNames(arg0, arg1, arg2 interface{}) *go
 }
 
 // Query mocks base method.
-func (m *MockQueryer) Query(arg0, arg1 string, arg2 map[string]interface{}, arg3 url.Values) (*query2.ResultSet, error) {
+func (m *MockQueryer) Query(arg0, arg1 string, arg2 map[string]interface{}, arg3 url.Values) (*query.ResultSet, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Query", arg0, arg1, arg2, arg3)
-	ret0, _ := ret[0].(*query2.ResultSet)
+	ret0, _ := ret[0].(*query.ResultSet)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -253,10 +253,10 @@ func (mr *MockQueryerMockRecorder) QueryRaw(arg0, arg1, arg2, arg3, arg4 interfa
 }
 
 // QueryWithFormat mocks base method.
-func (m *MockQueryer) QueryWithFormat(arg0, arg1, arg2 string, arg3 i18n.LanguageCodes, arg4 map[string]interface{}, arg5 []*query2.Filter, arg6 url.Values) (*query2.ResultSet, interface{}, error) {
+func (m *MockQueryer) QueryWithFormat(arg0, arg1, arg2 string, arg3 i18n.LanguageCodes, arg4 map[string]interface{}, arg5 []*query.Filter, arg6 url.Values) (*query.ResultSet, interface{}, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "QueryWithFormat", arg0, arg1, arg2, arg3, arg4, arg5, arg6)
-	ret0, _ := ret[0].(*query2.ResultSet)
+	ret0, _ := ret[0].(*query.ResultSet)
 	ret1, _ := ret[1].(interface{})
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2

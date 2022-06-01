@@ -27,7 +27,7 @@ import (
 
 	"github.com/erda-project/erda-proto-go/core/monitor/log/query/pb"
 	"github.com/erda-project/erda/modules/tools/monitor/core/log/storage"
-	storekit2 "github.com/erda-project/erda/modules/tools/monitor/core/storekit"
+	"github.com/erda-project/erda/modules/tools/monitor/core/storekit"
 )
 
 var columns = map[string]string{
@@ -37,7 +37,7 @@ var columns = map[string]string{
 	"stream":          "stream",
 }
 
-func (p *provider) Iterator(ctx context.Context, sel *storage.Selector) (_ storekit2.Iterator, err error) {
+func (p *provider) Iterator(ctx context.Context, sel *storage.Selector) (_ storekit.Iterator, err error) {
 	var cmps []qb.Cmp
 	values := make(qb.M)
 	matcher := func(data *pb.LogItem) bool { return true }
@@ -89,7 +89,7 @@ func (p *provider) Iterator(ctx context.Context, sel *storage.Selector) (_ store
 			}
 			col, ok := columns[filter.Key]
 			if !ok {
-				return storekit2.EmptyIterator{}, nil
+				return storekit.EmptyIterator{}, nil
 			}
 			cmps = append(cmps, qb.Eq(col))
 			values[col] = filter.Value
@@ -124,10 +124,10 @@ func (p *provider) Iterator(ctx context.Context, sel *storage.Selector) (_ store
 		}
 		if source == "container" {
 			if meta == nil {
-				return storekit2.EmptyIterator{}, nil
+				return storekit.EmptyIterator{}, nil
 			}
 			if meta.Tags["dice_application_id"] != applicationID {
-				return storekit2.EmptyIterator{}, nil
+				return storekit.EmptyIterator{}, nil
 			}
 		}
 		table = p.getTableName(meta)
@@ -140,10 +140,10 @@ func (p *provider) Iterator(ctx context.Context, sel *storage.Selector) (_ store
 			return nil, err
 		}
 		if meta == nil {
-			return storekit2.EmptyIterator{}, nil
+			return storekit.EmptyIterator{}, nil
 		}
 		if meta.Tags["dice_cluster_name"] != clusterName {
-			return storekit2.EmptyIterator{}, nil
+			return storekit.EmptyIterator{}, nil
 		}
 		table = p.getTableName(meta)
 	} else {
@@ -171,7 +171,7 @@ func (p *provider) Iterator(ctx context.Context, sel *storage.Selector) (_ store
 	}, nil
 }
 
-func (p *provider) queryAllLogs(table string, cmps []qb.Cmp, values qb.M, matcher func(data *pb.LogItem) bool) (storekit2.Iterator, error) {
+func (p *provider) queryAllLogs(table string, cmps []qb.Cmp, values qb.M, matcher func(data *pb.LogItem) bool) (storekit.Iterator, error) {
 	var list []*SavedLog
 	err := p.queryFunc(
 		qb.Select(table).Where(cmps...),
@@ -184,7 +184,7 @@ func (p *provider) queryAllLogs(table string, cmps []qb.Cmp, values qb.M, matche
 	if err != nil {
 		return nil, err
 	}
-	return storekit2.NewListIterator(logs...), nil
+	return storekit.NewListIterator(logs...), nil
 }
 
 type iteratorDir int8
@@ -246,7 +246,7 @@ func (it *logsIterator) Next() bool {
 		return false
 	}
 	if it.dir == iteratorBackward {
-		it.err = storekit2.ErrOpNotSupported
+		it.err = storekit.ErrOpNotSupported
 		return false
 	}
 	if it.yield() {
@@ -261,7 +261,7 @@ func (it *logsIterator) Prev() bool {
 		return false
 	}
 	if it.dir == iteratorForward {
-		it.err = storekit2.ErrOpNotSupported
+		it.err = storekit.ErrOpNotSupported
 		return false
 	}
 	if it.yield() {
@@ -271,7 +271,7 @@ func (it *logsIterator) Prev() bool {
 	return it.yield()
 }
 
-func (it *logsIterator) Value() storekit2.Data { return it.value }
+func (it *logsIterator) Value() storekit.Data { return it.value }
 func (it *logsIterator) Error() error {
 	if it.err == io.EOF {
 		return nil
@@ -296,14 +296,14 @@ func (it *logsIterator) Close() error {
 func (it *logsIterator) checkClosed() bool {
 	if it.closed {
 		if it.err == nil {
-			it.err = storekit2.ErrIteratorClosed
+			it.err = storekit.ErrIteratorClosed
 		}
 		return true
 	}
 	select {
 	case <-it.ctx.Done():
 		if it.err == nil {
-			it.err = storekit2.ErrIteratorClosed
+			it.err = storekit.ErrIteratorClosed
 		}
 		return true
 	default:

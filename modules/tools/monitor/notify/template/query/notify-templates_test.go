@@ -20,7 +20,7 @@ import (
 
 	"github.com/jinzhu/gorm"
 
-	db2 "github.com/erda-project/erda/modules/tools/monitor/notify/template/db"
+	"github.com/erda-project/erda/modules/tools/monitor/notify/template/db"
 	"github.com/erda-project/erda/modules/tools/monitor/notify/template/model"
 )
 
@@ -28,7 +28,7 @@ var p *provider
 
 func TestMain(t *testing.M) {
 	p = new(provider)
-	p.N = new(db2.NotifyDB)
+	p.N = new(db.NotifyDB)
 	p.N.DB, _ = gorm.Open("mysql", "localhost:3306")
 	p.N.DB.LogMode(true)
 	p.C = new(config)
@@ -105,7 +105,7 @@ func TestToNotifyConfig(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    *db2.NotifyConfig
+		want    *db.NotifyConfig
 		wantErr bool
 	}{
 		{

@@ -20,7 +20,7 @@ import (
 	"github.com/erda-project/erda-infra/pkg/transport"
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 	"github.com/erda-project/erda-proto-go/oap/collector/receiver/jaeger/pb"
-	model2 "github.com/erda-project/erda/modules/tools/monitor/oap/collector/core/model"
+	"github.com/erda-project/erda/modules/tools/monitor/oap/collector/core/model"
 	"github.com/erda-project/erda/modules/tools/monitor/oap/collector/interceptor"
 	"github.com/erda-project/erda/modules/tools/monitor/oap/collector/plugins"
 )
@@ -43,18 +43,18 @@ type provider struct {
 	Register      transport.Register       `autowired:"service-register" optional:"true"`
 	Interceptors  interceptor.Interceptors `autowired:"erda.oap.collector.interceptor.Interceptor"`
 
-	consumer model2.ObservableDataConsumerFunc
+	consumer model.ObservableDataConsumerFunc
 }
 
 func (p *provider) ComponentConfig() interface{} {
 	return p.Cfg
 }
 
-func (p *provider) ComponentID() model2.ComponentID {
-	return model2.ComponentID(providerName)
+func (p *provider) ComponentID() model.ComponentID {
+	return model.ComponentID(providerName)
 }
 
-func (p *provider) RegisterConsumer(consumer model2.ObservableDataConsumerFunc) {
+func (p *provider) RegisterConsumer(consumer model.ObservableDataConsumerFunc) {
 	p.consumer = consumer
 }
 

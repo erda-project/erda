@@ -26,7 +26,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	db2 "github.com/erda-project/erda/modules/tools/monitor/core/dataview/db"
+	"github.com/erda-project/erda/modules/tools/monitor/core/dataview/db"
 	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
 
@@ -95,15 +95,15 @@ func Test_provider_ExportTask(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var erdaDashboardHistoryDB db2.ErdaDashboardHistoryDB
-			monkey.PatchInstanceMethod(reflect.TypeOf(&erdaDashboardHistoryDB), "FindById", func(erdaDashboardHistoryDB *db2.ErdaDashboardHistoryDB, id string) (*db2.ErdaDashboardHistory, error) {
+			var erdaDashboardHistoryDB db.ErdaDashboardHistoryDB
+			monkey.PatchInstanceMethod(reflect.TypeOf(&erdaDashboardHistoryDB), "FindById", func(erdaDashboardHistoryDB *db.ErdaDashboardHistoryDB, id string) (*db.ErdaDashboardHistory, error) {
 				if id == "error" {
 					return nil, errors.New("error")
 				}
-				return &db2.ErdaDashboardHistory{ID: id, Scope: "test", ScopeId: "test"}, nil
+				return &db.ErdaDashboardHistory{ID: id, Scope: "test", ScopeId: "test"}, nil
 			})
 
-			monkey.PatchInstanceMethod(reflect.TypeOf(&erdaDashboardHistoryDB), "UpdateStatusAndFileUUID", func(erdaDashboardHistoryDB *db2.ErdaDashboardHistoryDB, id, status, fileUUID, errorMessage string) error {
+			monkey.PatchInstanceMethod(reflect.TypeOf(&erdaDashboardHistoryDB), "UpdateStatusAndFileUUID", func(erdaDashboardHistoryDB *db.ErdaDashboardHistoryDB, id, status, fileUUID, errorMessage string) error {
 				if id == "error" {
 					return errors.New("error")
 				}

@@ -26,8 +26,8 @@ import (
 	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda/bundle"
-	db2 "github.com/erda-project/erda/modules/msp/instance/db"
-	db3 "github.com/erda-project/erda/modules/tools/monitor/extensions/loghub/index/query/db"
+	"github.com/erda-project/erda/modules/msp/instance/db"
+	db2 "github.com/erda-project/erda/modules/tools/monitor/extensions/loghub/index/query/db"
 )
 
 func TestReloadAllIndices_Should_Success(t *testing.T) {
@@ -43,10 +43,10 @@ func TestReloadAllIndices_Should_Success(t *testing.T) {
 		L:     logger,
 		C:     &config{},
 		mysql: &gorm.DB{},
-		db: &db3.DB{
-			LogDeployment:        db3.LogDeploymentDB{},
-			LogServiceInstanceDB: db3.LogServiceInstanceDB{},
-			LogInstanceDB:        db3.LogInstanceDB{},
+		db: &db2.DB{
+			LogDeployment:        db2.LogDeploymentDB{},
+			LogServiceInstanceDB: db2.LogServiceInstanceDB{},
+			LogInstanceDB:        db2.LogInstanceDB{},
 		},
 		bdl:        bundle.New(),
 		timeRanges: make(map[string]map[string]*timeRange),
@@ -54,9 +54,9 @@ func TestReloadAllIndices_Should_Success(t *testing.T) {
 	}
 
 	defer monkey.UnpatchInstanceMethod(reflect.TypeOf(&p.db.LogDeployment), "List")
-	monkey.PatchInstanceMethod(reflect.TypeOf(&p.db.LogDeployment), "List", func(_ *db3.LogDeploymentDB) ([]*db3.LogDeployment, error) {
-		return []*db3.LogDeployment{
-			&db3.LogDeployment{
+	monkey.PatchInstanceMethod(reflect.TypeOf(&p.db.LogDeployment), "List", func(_ *db2.LogDeploymentDB) ([]*db2.LogDeployment, error) {
+		return []*db2.LogDeployment{
+			&db2.LogDeployment{
 				ClusterName:  "cluster-1",
 				ClusterType:  0,
 				ESURL:        "http://localhost:9200",
@@ -67,23 +67,23 @@ func TestReloadAllIndices_Should_Success(t *testing.T) {
 	})
 
 	defer monkey.UnpatchInstanceMethod(reflect.TypeOf(&p.db.LogDeployment), "QueryByOrgIDAndClusters")
-	monkey.PatchInstanceMethod(reflect.TypeOf(&p.db.LogDeployment), "QueryByOrgIDAndClusters", func(_ *db3.LogDeploymentDB, orgID int64, clusters ...string) ([]*db3.LogDeployment, error) {
-		return []*db3.LogDeployment{
-			{LogType: string(db2.LogTypeLogService), ESURL: "http://localhost:9200"},
+	monkey.PatchInstanceMethod(reflect.TypeOf(&p.db.LogDeployment), "QueryByOrgIDAndClusters", func(_ *db2.LogDeploymentDB, orgID int64, clusters ...string) ([]*db2.LogDeployment, error) {
+		return []*db2.LogDeployment{
+			{LogType: string(db.LogTypeLogService), ESURL: "http://localhost:9200"},
 		}, nil
 	})
 
 	defer monkey.UnpatchInstanceMethod(reflect.TypeOf(&p.db.LogInstanceDB), "GetByLogKey")
-	monkey.PatchInstanceMethod(reflect.TypeOf(&p.db.LogInstanceDB), "GetByLogKey", func(_ *db3.LogInstanceDB, logKey string) (*db3.LogInstance, error) {
-		return &db3.LogInstance{LogType: string(db2.LogTypeLogAnalytics), LogKey: "logKey-1", Config: `{"MSP_ENV_ID":"msp_env_id_1"}`}, nil
+	monkey.PatchInstanceMethod(reflect.TypeOf(&p.db.LogInstanceDB), "GetByLogKey", func(_ *db2.LogInstanceDB, logKey string) (*db2.LogInstance, error) {
+		return &db2.LogInstance{LogType: string(db.LogTypeLogAnalytics), LogKey: "logKey-1", Config: `{"MSP_ENV_ID":"msp_env_id_1"}`}, nil
 	})
 
 	defer monkey.UnpatchInstanceMethod(reflect.TypeOf(&p.db.LogInstanceDB), "GetListByClusterAndProjectIdAndWorkspace")
-	monkey.PatchInstanceMethod(reflect.TypeOf(&p.db.LogInstanceDB), "GetListByClusterAndProjectIdAndWorkspace", func(_ *db3.LogInstanceDB, clusterName, projectId, workspace string) ([]db3.LogInstance, error) {
-		return []db3.LogInstance{
-			{LogType: string(db2.LogTypeLogService), LogKey: "logKey-3", Config: `{"MSP_ENV_ID":"msp_env_id_1"}`},
-			{LogType: string(db2.LogTypeLogService), LogKey: "logKey-2", Config: `{"MSP_ENV_ID":"msp_env_id_1"}`},
-			{LogType: string(db2.LogTypeLogAnalytics), LogKey: "logKey-1", Config: `{"MSP_ENV_ID":"msp_env_id_1"}`},
+	monkey.PatchInstanceMethod(reflect.TypeOf(&p.db.LogInstanceDB), "GetListByClusterAndProjectIdAndWorkspace", func(_ *db2.LogInstanceDB, clusterName, projectId, workspace string) ([]db2.LogInstance, error) {
+		return []db2.LogInstance{
+			{LogType: string(db.LogTypeLogService), LogKey: "logKey-3", Config: `{"MSP_ENV_ID":"msp_env_id_1"}`},
+			{LogType: string(db.LogTypeLogService), LogKey: "logKey-2", Config: `{"MSP_ENV_ID":"msp_env_id_1"}`},
+			{LogType: string(db.LogTypeLogAnalytics), LogKey: "logKey-1", Config: `{"MSP_ENV_ID":"msp_env_id_1"}`},
 		}, nil
 	})
 

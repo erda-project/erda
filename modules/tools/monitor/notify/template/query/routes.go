@@ -25,7 +25,7 @@ import (
 	"github.com/erda-project/erda/modules/tools/monitor/common"
 	"github.com/erda-project/erda/modules/tools/monitor/common/permission"
 	"github.com/erda-project/erda/modules/tools/monitor/notify/template/db"
-	model2 "github.com/erda-project/erda/modules/tools/monitor/notify/template/model"
+	"github.com/erda-project/erda/modules/tools/monitor/notify/template/model"
 	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
 
@@ -67,22 +67,22 @@ func (p *provider) getAllNotifyTemplates(r *http.Request) interface{} {
 		return err
 	}
 	for _, v := range *userDefineTemplate {
-		metaData := model2.Metadata{}
+		metaData := model.Metadata{}
 		err = yaml.Unmarshal([]byte(v.Metadata), &metaData)
 		if err != nil {
 			return api.Errors.Internal(err)
 		}
-		behavior := model2.Behavior{}
+		behavior := model.Behavior{}
 		err = yaml.Unmarshal([]byte(v.Behavior), &behavior)
 		if err != nil {
 			return api.Errors.Internal(err)
 		}
-		templates := make([]model2.Templates, 0)
+		templates := make([]model.Templates, 0)
 		err = yaml.Unmarshal([]byte(v.Templates), &templates)
 		if err != nil {
 			return api.Errors.Internal(err)
 		}
-		model := model2.Model{
+		model := model.Model{
 			ID:        v.NotifyID,
 			Metadata:  metaData,
 			Behavior:  behavior,
@@ -100,7 +100,7 @@ func (p *provider) getNotifyTemplate(r *http.Request, params struct {
 	Name    string `query:"name"`
 	NType   string `query:"type"`
 }) interface{} {
-	data := make([]*model2.GetNotifyRes, 0)
+	data := make([]*model.GetNotifyRes, 0)
 	//filter system notify templates
 	sysNotify := getNotifyTemplateList(params.Scope, params.Name, params.NType)
 	//filter user define templates
@@ -113,7 +113,7 @@ func (p *provider) getNotifyTemplate(r *http.Request, params struct {
 	return api.Success(data)
 }
 
-func (p *provider) createNotify(r *http.Request, params model2.CreateNotifyReq) interface{} {
+func (p *provider) createNotify(r *http.Request, params model.CreateNotifyReq) interface{} {
 	err := params.CheckNotify()
 	if err != nil {
 		return api.Errors.Internal(err)
@@ -129,16 +129,16 @@ func (p *provider) createNotify(r *http.Request, params model2.CreateNotifyReq) 
 	if err != nil {
 		return api.Errors.Internal(err)
 	}
-	var targetData []model2.NotifyTarget
+	var targetData []model.NotifyTarget
 	err = json.Unmarshal([]byte(groupDetail.TargetData), &targetData)
 	if err != nil {
 		return api.Errors.Internal(err)
 	}
-	t := model2.Target{
+	t := model.Target{
 		GroupID:  params.NotifyGroupID,
 		Channels: params.Channels,
 	}
-	if targetData[0].Type == model2.DingDingTarget {
+	if targetData[0].Type == model.DingDingTarget {
 		t.DingDingUrl = targetData[0].Values[0].Receiver
 	}
 	target, err := json.Marshal(t)
@@ -182,18 +182,18 @@ func (p *provider) deleteNotify(r *http.Request, params struct {
 	return api.Success(params.ID)
 }
 
-func (p *provider) updateNotify(r *http.Request, params model2.UpdateNotifyReq) interface{} {
+func (p *provider) updateNotify(r *http.Request, params model.UpdateNotifyReq) interface{} {
 	err := params.CheckNotify()
 	if err != nil {
 		return api.Errors.Internal(err)
 	}
 	_, err = p.N.GetNotify(params.ID)
 	if err != nil {
-		return model2.ErrUpdateNotify.InternalError(err).ToResp()
+		return model.ErrUpdateNotify.InternalError(err).ToResp()
 	}
 	notify, err := ToNotify(&params)
 	if err != nil {
-		return model2.ErrUpdateNotify.InternalError(err).ToResp()
+		return model.ErrUpdateNotify.InternalError(err).ToResp()
 	}
 	err = p.N.UpdateNotify(notify)
 	if err != nil {
@@ -207,7 +207,7 @@ func (p *provider) getUserNotifyList(r *http.Request, params struct {
 	Scope   string `query:"scope" validate:"required"`
 	ScopeID string `query:"scopeId" validate:"required"`
 }) interface{} {
-	queryList := &model2.QueryNotifyListReq{
+	queryList := &model.QueryNotifyListReq{
 		Scope:   params.Scope,
 		ScopeID: params.ScopeID,
 	}
@@ -215,9 +215,9 @@ func (p *provider) getUserNotifyList(r *http.Request, params struct {
 	if err != nil {
 		return api.Errors.Internal(err)
 	}
-	resp := model2.QueryNotifyListRes{}
+	resp := model.QueryNotifyListRes{}
 	for _, v := range notifies {
-		notifyInfo := model2.NotifyRes{
+		notifyInfo := model.NotifyRes{
 			CreatedAt:  v.CreatedAt,
 			Id:         int64(v.ID),
 			NotifyID:   v.NotifyID,
@@ -226,7 +226,7 @@ func (p *provider) getUserNotifyList(r *http.Request, params struct {
 			NotifyName: v.NotifyName,
 		}
 		//get groupId from target
-		var target model2.Target
+		var target model.Target
 		err = json.Unmarshal([]byte(v.Target), &target)
 		if err != nil {
 			return api.Errors.Internal(err)
@@ -247,7 +247,7 @@ func (p *provider) getUserNotifyList(r *http.Request, params struct {
 				if err != nil {
 					return api.Errors.Internal(err)
 				}
-				metaData := model2.Metadata{}
+				metaData := model.Metadata{}
 				err = yaml.Unmarshal([]byte(userDefine.Metadata), &metaData)
 				if err != nil {
 					return api.Errors.Internal(err)
@@ -260,7 +260,7 @@ func (p *provider) getUserNotifyList(r *http.Request, params struct {
 		if err != nil {
 			return api.Errors.Internal(err)
 		}
-		var targetData []model2.NotifyTarget
+		var targetData []model.NotifyTarget
 		err = json.Unmarshal([]byte(notifyGroup.TargetData), &targetData)
 		if err != nil {
 			return api.Errors.Internal(err)
@@ -284,7 +284,7 @@ func (p *provider) notifyEnable(r *http.Request, params struct {
 	return api.Success(nil)
 }
 
-func (p *provider) createUserDefineNotifyTemplate(r *http.Request, params model2.CreateUserDefineNotifyTemplate) interface{} {
+func (p *provider) createUserDefineNotifyTemplate(r *http.Request, params model.CreateUserDefineNotifyTemplate) interface{} {
 	templates, err := p.N.CheckNotifyTemplateExist(params.Scope, params.ScopeID)
 	if err != nil {
 		return api.Errors.Internal(err)
@@ -292,7 +292,7 @@ func (p *provider) createUserDefineNotifyTemplate(r *http.Request, params model2
 	templateArr := *templates
 	if len(templateArr) > 0 {
 		for _, v := range templateArr {
-			metadata := model2.Metadata{}
+			metadata := model.Metadata{}
 			err := yaml.Unmarshal([]byte(v.Metadata), &metadata)
 			if err != nil {
 				return api.Errors.Internal(err)
@@ -320,7 +320,7 @@ func (p *provider) getNotifyDetail(r *http.Request, params struct {
 	if err != nil {
 		return api.Errors.Internal(err)
 	}
-	var target model2.Target
+	var target model.Target
 	err = json.Unmarshal([]byte(data.Target), &target)
 	if err != nil {
 		return api.Errors.Internal(err)
@@ -329,12 +329,12 @@ func (p *provider) getNotifyDetail(r *http.Request, params struct {
 	if err != nil {
 		return api.Errors.Internal(err)
 	}
-	notifyTarget := make([]model2.NotifyTarget, 0)
+	notifyTarget := make([]model.NotifyTarget, 0)
 	err = json.Unmarshal([]byte(notifyGroup.TargetData), &notifyTarget)
 	if err != nil {
 		return api.Errors.Internal(err)
 	}
-	notifyDetailResponse := model2.NotifyDetailResponse{
+	notifyDetailResponse := model.NotifyDetailResponse{
 		Id:         int64(data.ID),
 		NotifyID:   data.NotifyID,
 		NotifyName: data.NotifyName,
@@ -350,7 +350,7 @@ func (p *provider) getAllGroups(r *http.Request, params struct {
 }) interface{} {
 	orgID, err := strconv.ParseInt(r.Header.Get("Org-ID"), 10, 64)
 	if err != nil {
-		return model2.ErrCreateNotify.InvalidParameter(err.Error()).ToResp()
+		return model.ErrCreateNotify.InvalidParameter(err.Error()).ToResp()
 	}
 	data, err := p.N.GetAllNotifyGroup(params.Scope, params.ScopeId, orgID)
 	if err != nil {

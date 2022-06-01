@@ -26,7 +26,7 @@ import (
 
 	"github.com/erda-project/erda-proto-go/core/monitor/dataview/pb"
 	"github.com/erda-project/erda/cmd/monitor/monitor/conf"
-	db2 "github.com/erda-project/erda/modules/tools/monitor/core/dataview/db"
+	"github.com/erda-project/erda/modules/tools/monitor/core/dataview/db"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
 	"github.com/erda-project/erda/providers/audit"
@@ -34,9 +34,9 @@ import (
 
 type dataViewService struct {
 	p       *provider
-	sys     *db2.SystemViewDB
-	custom  *db2.CustomViewDB
-	history *db2.ErdaDashboardHistoryDB
+	sys     *db.SystemViewDB
+	custom  *db.CustomViewDB
+	history *db.ErdaDashboardHistoryDB
 }
 
 func (s *dataViewService) parseViewBlocks(view *pb.View, config, data string) *pb.View {
@@ -228,7 +228,7 @@ func (s *dataViewService) CreateCustomView(ctx context.Context, req *pb.CreateCu
 	data, _ := json.Marshal(req.Data)
 	now := time.Now()
 	userId := apis.GetUserID(ctx)
-	model := &db2.CustomView{
+	model := &db.CustomView{
 		ID:         req.Id,
 		Name:       req.Name,
 		Version:    req.Version,
@@ -309,7 +309,7 @@ func (s *dataViewService) DeleteCustomView(ctx context.Context, req *pb.DeleteCu
 	if err != nil {
 		return nil, errors.NewDatabaseError(err)
 	}
-	err = s.custom.DB.Where("id=?", req.Id).Delete(&db2.CustomView{}).Error
+	err = s.custom.DB.Where("id=?", req.Id).Delete(&db.CustomView{}).Error
 	if err != nil {
 		return nil, errors.NewDatabaseError(err)
 	}

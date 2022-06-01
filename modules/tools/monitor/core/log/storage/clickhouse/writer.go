@@ -21,11 +21,11 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/clickhouse"
 	"github.com/erda-project/erda/modules/tools/monitor/core/log"
-	storekit2 "github.com/erda-project/erda/modules/tools/monitor/core/storekit"
+	"github.com/erda-project/erda/modules/tools/monitor/core/storekit"
 	tablepkg "github.com/erda-project/erda/modules/tools/monitor/core/storekit/clickhouse/table"
 )
 
-func (p *provider) NewWriter(ctx context.Context) (storekit2.BatchWriter, error) {
+func (p *provider) NewWriter(ctx context.Context) (storekit.BatchWriter, error) {
 	return p.clickhouse.NewWriter(&clickhouse.WriterOptions{
 		Encoder: func(data interface{}) (item *clickhouse.WriteItem, err error) {
 			logData := data.(*log.LabeledLog)
@@ -51,7 +51,7 @@ func (p *provider) NewWriter(ctx context.Context) (storekit2.BatchWriter, error)
 				select {
 				case <-wait:
 				case <-ctx.Done():
-					return nil, storekit2.ErrExitConsume
+					return nil, storekit.ErrExitConsume
 				}
 			}
 			p.fillLogInfo(&logData.Log)

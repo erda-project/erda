@@ -27,7 +27,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/modules/tools/monitor/core/metric/query/chartmeta"
 	"github.com/erda-project/erda/modules/tools/monitor/core/metric/query/metricmeta"
-	query2 "github.com/erda-project/erda/modules/tools/monitor/core/metric/query/query"
+	"github.com/erda-project/erda/modules/tools/monitor/core/metric/query/query"
 	queryv1 "github.com/erda-project/erda/modules/tools/monitor/core/metric/query/query/v1"
 	indexloader "github.com/erda-project/erda/modules/tools/monitor/core/storekit/elasticsearch/index/loader"
 
@@ -63,8 +63,8 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	}
 
 	p.q = &Metricq{
-		Queryer:   query2.New(&query2.MetricIndexLoader{Interface: p.Index}),
-		queryv1:   queryv1.New(&query2.MetricIndexLoader{Interface: p.Index}, charts, p.Meta, p.ChartTrans),
+		Queryer:   query.New(&query.MetricIndexLoader{Interface: p.Index}),
+		queryv1:   queryv1.New(&query.MetricIndexLoader{Interface: p.Index}, charts, p.Meta, p.ChartTrans),
 		index:     p.Index,
 		meta:      p.Meta,
 		charts:    charts,

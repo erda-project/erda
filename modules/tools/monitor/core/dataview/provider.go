@@ -29,7 +29,7 @@ import (
 	"github.com/erda-project/erda-proto-go/core/monitor/dataview/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	db2 "github.com/erda-project/erda/modules/tools/monitor/core/dataview/db"
+	"github.com/erda-project/erda/modules/tools/monitor/core/dataview/db"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/providers/audit"
 )
@@ -58,9 +58,9 @@ type provider struct {
 	Tran            i18n.Translator `translator:"charts"`
 	bdl             *bundle.Bundle
 	audit           audit.Auditor
-	sys             *db2.SystemViewDB
-	custom          *db2.CustomViewDB
-	history         *db2.ErdaDashboardHistoryDB
+	sys             *db.SystemViewDB
+	custom          *db.CustomViewDB
+	history         *db.ErdaDashboardHistoryDB
 
 	ExportChannel chan string
 }
@@ -69,14 +69,14 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.audit = audit.GetAuditor(ctx)
 	p.bdl = bundle.New(bundle.WithScheduler(), bundle.WithCoreServices())
 	if len(p.Cfg.Tables.SystemBlock) > 0 {
-		db2.TableSystemView = p.Cfg.Tables.SystemBlock
+		db.TableSystemView = p.Cfg.Tables.SystemBlock
 	}
 	if len(p.Cfg.Tables.UserBlock) > 0 {
-		db2.TableCustomView = p.Cfg.Tables.UserBlock
+		db.TableCustomView = p.Cfg.Tables.UserBlock
 	}
-	p.sys = &db2.SystemViewDB{DB: p.DB}
-	p.custom = &db2.CustomViewDB{DB: p.DB}
-	p.history = &db2.ErdaDashboardHistoryDB{DB: p.DB}
+	p.sys = &db.SystemViewDB{DB: p.DB}
+	p.custom = &db.CustomViewDB{DB: p.DB}
+	p.history = &db.ErdaDashboardHistoryDB{DB: p.DB}
 
 	p.dataViewService = &dataViewService{
 		p:       p,

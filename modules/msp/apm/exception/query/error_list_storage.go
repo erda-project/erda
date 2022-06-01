@@ -19,7 +19,7 @@ import (
 
 	"github.com/erda-project/erda/modules/msp/apm/exception/erda-error/storage"
 	"github.com/erda-project/erda/modules/msp/apm/exception/model"
-	storekit2 "github.com/erda-project/erda/modules/tools/monitor/core/storekit"
+	"github.com/erda-project/erda/modules/tools/monitor/core/storekit"
 )
 
 // Error .
@@ -33,7 +33,7 @@ type ErrorListIterator struct {
 }
 
 // NewErrorListIterator .
-func NewErrorListIterator(list ...Error) storekit2.Iterator {
+func NewErrorListIterator(list ...Error) storekit.Iterator {
 	return &ErrorListIterator{list: list, i: -1}
 }
 
@@ -97,14 +97,14 @@ type errorListStorage struct {
 	exception *model.Error
 }
 
-func (s *errorListStorage) NewWriter(ctx context.Context) (storekit2.BatchWriter, error) {
-	return storekit2.DefaultNopWriter, nil
+func (s *errorListStorage) NewWriter(ctx context.Context) (storekit.BatchWriter, error) {
+	return storekit.DefaultNopWriter, nil
 }
 
 //func (s *errorListStorage) Count(ctx context.Context, traceId string) int64 {
 //	return int64(1)
 //}
 
-func (s *errorListStorage) Iterator(ctx context.Context, sel *storage.Selector) (storekit2.Iterator, error) {
+func (s *errorListStorage) Iterator(ctx context.Context, sel *storage.Selector) (storekit.Iterator, error) {
 	return NewErrorListIterator(s.exception), nil
 }

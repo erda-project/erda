@@ -23,12 +23,12 @@ import (
 	"github.com/influxdata/influxql"
 	"github.com/olivere/elastic"
 
-	tsql2 "github.com/erda-project/erda/modules/tools/monitor/core/metric/query/es-tsql"
+	tsql "github.com/erda-project/erda/modules/tools/monitor/core/metric/query/es-tsql"
 )
 
 // Query .
 type Query struct {
-	sources      []*tsql2.Source
+	sources      []*tsql.Source
 	searchSource *elastic.SearchSource
 	boolQuery    *elastic.BoolQuery
 	stmt         *influxql.SelectStatement
@@ -36,7 +36,7 @@ type Query struct {
 	flag         queryFlag
 	aggs         map[string]elastic.Aggregation
 	ctx          *Context
-	allColumnsFn func(start, end int64, sources []*tsql2.Source) ([]*tsql2.Column, error)
+	allColumnsFn func(start, end int64, sources []*tsql.Source) ([]*tsql.Column, error)
 }
 
 type queryFlag int32
@@ -53,7 +53,7 @@ const (
 )
 
 // Columns .
-type Columns []*tsql2.Column
+type Columns []*tsql.Column
 
 func (cs Columns) Len() int { return len(cs) }
 func (cs Columns) Less(i, j int) bool {
@@ -65,7 +65,7 @@ func (cs Columns) Less(i, j int) bool {
 func (cs Columns) Swap(i, j int) { cs[i], cs[j] = cs[j], cs[i] }
 
 // Sources .
-func (q *Query) Sources() []*tsql2.Source { return q.sources }
+func (q *Query) Sources() []*tsql.Source { return q.sources }
 
 // SearchSource .
 func (q *Query) SearchSource() *elastic.SearchSource { return q.searchSource }
@@ -74,19 +74,19 @@ func (q *Query) SearchSource() *elastic.SearchSource { return q.searchSource }
 func (q *Query) BoolQuery() *elastic.BoolQuery { return q.boolQuery }
 
 // SetAllColumnsCallback .
-func (q *Query) SetAllColumnsCallback(fn func(start, end int64, sources []*tsql2.Source) ([]*tsql2.Column, error)) {
+func (q *Query) SetAllColumnsCallback(fn func(start, end int64, sources []*tsql.Source) ([]*tsql.Column, error)) {
 	q.allColumnsFn = fn
 }
 
 // Context .
-func (q *Query) Context() tsql2.Context { return q.ctx }
+func (q *Query) Context() tsql.Context { return q.ctx }
 
 // ParseResult .
-func (q *Query) ParseResult(resp *elastic.SearchResult) (*tsql2.ResultSet, error) {
+func (q *Query) ParseResult(resp *elastic.SearchResult) (*tsql.ResultSet, error) {
 	if resp != nil {
 		q.ctx.aggregations = resp.Aggregations
 	}
-	rs := &tsql2.ResultSet{
+	rs := &tsql.ResultSet{
 		Interval: q.ctx.Interval(),
 	}
 	if resp != nil {
@@ -98,11 +98,11 @@ func (q *Query) ParseResult(resp *elastic.SearchResult) (*tsql2.ResultSet, error
 	return q.parseRawData(resp, rs)
 }
 
-func (q *Query) parseRawData(resp *elastic.SearchResult, rs *tsql2.ResultSet) (*tsql2.ResultSet, error) {
+func (q *Query) parseRawData(resp *elastic.SearchResult, rs *tsql.ResultSet) (*tsql.ResultSet, error) {
 	if q.flag == queryFlagNone {
 		for _, c := range q.columns {
 			if c.col == nil {
-				c.col = &tsql2.Column{
+				c.col = &tsql.Column{
 					Name: getColumnName(c.field),
 				}
 			}
@@ -156,21 +156,21 @@ func (q *Query) parseRawData(resp *elastic.SearchResult, rs *tsql2.ResultSet) (*
 				if strings.HasPrefix(c, "@") || strings.HasPrefix(c, "tags._") {
 					continue
 				}
-				col := &tsql2.Column{
+				col := &tsql.Column{
 					Key:  c,
 					Name: c,
 				}
-				if strings.HasPrefix(c, tsql2.FieldsKey) {
-					col.Flag = tsql2.ColumnFlagField
-					col.Name = c[len(tsql2.FieldsKey):] + "::field"
-				} else if strings.HasPrefix(c, tsql2.TagsKey) {
-					col.Flag = tsql2.ColumnFlagTag
-					col.Name = c[len(tsql2.TagsKey):] + "::tag"
+				if strings.HasPrefix(c, tsql.FieldsKey) {
+					col.Flag = tsql.ColumnFlagField
+					col.Name = c[len(tsql.FieldsKey):] + "::field"
+				} else if strings.HasPrefix(c, tsql.TagsKey) {
+					col.Flag = tsql.ColumnFlagTag
+					col.Name = c[len(tsql.TagsKey):] + "::tag"
 				} else {
-					if c == tsql2.NameKey {
-						col.Flag = tsql2.ColumnFlagName
+					if c == tsql.NameKey {
+						col.Flag = tsql.ColumnFlagName
 					} else if c == q.ctx.TimeKey() {
-						col.Flag = tsql2.ColumnFlagTimestamp
+						col.Flag = tsql.ColumnFlagTimestamp
 					}
 				}
 				columns = append(columns, col)
@@ -183,7 +183,7 @@ func (q *Query) parseRawData(resp *elastic.SearchResult, rs *tsql2.ResultSet) (*
 			rs.Columns = append(rs.Columns, columns...)
 		} else {
 			if c.col == nil {
-				c.col = &tsql2.Column{
+				c.col = &tsql.Column{
 					Name: getColumnName(c.field),
 				}
 			}
@@ -212,19 +212,19 @@ func (q *Query) parseRawData(resp *elastic.SearchResult, rs *tsql2.ResultSet) (*
 	return rs, nil
 }
 
-func (q *Query) parseAggData(resp *elastic.SearchResult, rs *tsql2.ResultSet) (*tsql2.ResultSet, error) {
+func (q *Query) parseAggData(resp *elastic.SearchResult, rs *tsql.ResultSet) (*tsql.ResultSet, error) {
 	for _, c := range q.columns {
 		if c.AllColumns() {
 			return nil, fmt.Errorf("not support field * if has aggregation function or group by")
 		}
 		if c.col == nil {
-			c.col = &tsql2.Column{
+			c.col = &tsql.Column{
 				Name: getColumnName(c.field),
 			}
 			key, flag := getExprStringAndFlag(c.field.Expr, influxql.AnyField)
 			c.col.Flag = flag
 			if q.ctx.dimensions[key] {
-				c.col.Flag |= tsql2.ColumnFlagGroupBy
+				c.col.Flag |= tsql.ColumnFlagGroupBy
 			}
 		}
 		rs.Columns = append(rs.Columns, c.col)
@@ -250,7 +250,7 @@ func (q *Query) parseAggData(resp *elastic.SearchResult, rs *tsql2.ResultSet) (*
 	return rs, nil
 }
 
-func (q *Query) parseDimensionsAggsData(rs *tsql2.ResultSet, aggs elastic.Aggregations, buckets []interface{}) error {
+func (q *Query) parseDimensionsAggsData(rs *tsql.ResultSet, aggs elastic.Aggregations, buckets []interface{}) error {
 	if terms, ok := aggs.Terms("term"); ok {
 		if len(terms.Buckets) > q.stmt.Offset {
 			// In the case of groupings, offset is used to skip how many groupings
@@ -321,7 +321,7 @@ func (q *Query) parseDimensionsAggsData(rs *tsql2.ResultSet, aggs elastic.Aggreg
 
 type columnHandler struct {
 	field *influxql.Field
-	col   *tsql2.Column
+	col   *tsql.Column
 	ctx   *Context
 	fns   map[string]AggHandler
 }
@@ -340,16 +340,16 @@ func (c *columnHandler) getRawValue(source map[string]interface{}) (interface{},
 
 func (c *columnHandler) getAggValue(source map[string]interface{}, buckets []interface{}, aggs elastic.Aggregations) (interface{}, error) {
 	if c.field == nil {
-		if c.col.Flag&tsql2.ColumnFlagGroupByInterval == tsql2.ColumnFlagGroupByInterval {
-			if fn, ok := tsql2.BuildInFunctions["time"]; ok {
+		if c.col.Flag&tsql.ColumnFlagGroupByInterval == tsql.ColumnFlagGroupByInterval {
+			if fn, ok := tsql.BuildInFunctions["time"]; ok {
 				v, err := fn(c.ctx, buckets...)
 				if err != nil {
 					return nil, err
 				}
 				return v, nil
 			}
-		} else if c.col.Flag&tsql2.ColumnFlagGroupByRange == tsql2.ColumnFlagGroupByRange {
-			if fn, ok := tsql2.BuildInFunctions["range"]; ok {
+		} else if c.col.Flag&tsql.ColumnFlagGroupByRange == tsql.ColumnFlagGroupByRange {
+			if fn, ok := tsql.BuildInFunctions["range"]; ok {
 				v, err := fn(c.ctx, buckets...)
 				if err != nil {
 					return nil, err
@@ -365,8 +365,8 @@ func (c *columnHandler) getAggValue(source map[string]interface{}, buckets []int
 func (c *columnHandler) getAggFieldExprValue(source map[string]interface{}, buckets []interface{}, aggs elastic.Aggregations, expr influxql.Expr) (interface{}, error) {
 	switch expr := expr.(type) {
 	case *influxql.Call:
-		if fn, ok := tsql2.LiteralFunctions[expr.Name]; ok {
-			c.col.Flag |= tsql2.ColumnFlagFunc | tsql2.ColumnFlagLiteral
+		if fn, ok := tsql.LiteralFunctions[expr.Name]; ok {
+			c.col.Flag |= tsql.ColumnFlagFunc | tsql.ColumnFlagLiteral
 			var args []interface{}
 			for _, arg := range expr.Args {
 				arg, err := c.getAggFieldExprValue(source, buckets, aggs, arg)
@@ -380,15 +380,15 @@ func (c *columnHandler) getAggFieldExprValue(source map[string]interface{}, buck
 				return nil, err
 			}
 			return v, nil
-		} else if fn, ok := tsql2.BuildInFunctions[expr.Name]; ok {
-			c.col.Flag |= tsql2.ColumnFlagFunc
+		} else if fn, ok := tsql.BuildInFunctions[expr.Name]; ok {
+			c.col.Flag |= tsql.ColumnFlagFunc
 			var args []interface{}
 			if expr.Name == "time" || expr.Name == "timestamp" {
 				args = buckets
-				c.col.Flag |= tsql2.ColumnFlagGroupByInterval
+				c.col.Flag |= tsql.ColumnFlagGroupByInterval
 			} else if expr.Name == "range" {
 				args = buckets
-				c.col.Flag |= tsql2.ColumnFlagGroupByRange
+				c.col.Flag |= tsql.ColumnFlagGroupByRange
 			} else if expr.Name == "scope" {
 				if len(expr.Args) <= 0 {
 					return nil, fmt.Errorf("invalid function 'scope' args")
@@ -416,7 +416,7 @@ func (c *columnHandler) getAggFieldExprValue(source map[string]interface{}, buck
 			}
 			return v, nil
 		} else if _, ok := AggFunctions[expr.Name]; ok {
-			c.col.Flag |= tsql2.ColumnFlagFunc | tsql2.ColumnFlagAgg
+			c.col.Flag |= tsql.ColumnFlagFunc | tsql.ColumnFlagAgg
 			id := c.ctx.GetFuncID(expr, influxql.AnyField)
 			fn, ok := c.fns[id]
 			if ok {
@@ -439,7 +439,7 @@ func (c *columnHandler) getAggFieldExprValue(source map[string]interface{}, buck
 		if err != nil {
 			return nil, err
 		}
-		v, err := tsql2.OperateValues(lv, toOperator(expr.Op), rv)
+		v, err := tsql.OperateValues(lv, toOperator(expr.Op), rv)
 		if err != nil {
 			return nil, err
 		}
@@ -459,7 +459,7 @@ func (c *columnHandler) getAggFieldExprValue(source map[string]interface{}, buck
 			return nil, err
 		}
 		if ok {
-			c.col.Flag |= tsql2.ColumnFlagLiteral
+			c.col.Flag |= tsql.ColumnFlagLiteral
 			return v, nil
 		}
 	}
@@ -509,7 +509,7 @@ func parseSourceColumns(prefix string, source map[string]interface{}, cols map[s
 }
 
 // SortResultSet .
-func SortResultSet(rs *tsql2.ResultSet, sorts influxql.SortFields) {
+func SortResultSet(rs *tsql.ResultSet, sorts influxql.SortFields) {
 	type sortitem struct {
 		ascending bool
 		idx       int
@@ -532,7 +532,7 @@ func SortResultSet(rs *tsql2.ResultSet, sorts influxql.SortFields) {
 				if a[s.idx] == b[s.idx] {
 					continue
 				}
-				cmp, err := tsql2.OperateValues(a[s.idx], tsql2.LT, b[s.idx])
+				cmp, err := tsql.OperateValues(a[s.idx], tsql.LT, b[s.idx])
 				if err != nil {
 					continue
 				}

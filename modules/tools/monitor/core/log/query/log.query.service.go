@@ -27,7 +27,7 @@ import (
 
 	"github.com/erda-project/erda-proto-go/core/monitor/log/query/pb"
 	"github.com/erda-project/erda/modules/tools/monitor/core/log/storage"
-	storekit2 "github.com/erda-project/erda/modules/tools/monitor/core/storekit"
+	"github.com/erda-project/erda/modules/tools/monitor/core/storekit"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
 )
@@ -343,7 +343,7 @@ func (s *logQueryService) queryRealLogItems(ctx context.Context, req Request, fn
 	}
 	defer it.Close()
 
-	if _, ok := it.(storekit2.EmptyIterator); ok {
+	if _, ok := it.(storekit.EmptyIterator); ok {
 		return nil, false, nil
 	}
 
@@ -362,7 +362,7 @@ func (s *logQueryService) queryLogItems(ctx context.Context, req Request, fn fun
 	if fn != nil {
 		sel = fn(sel)
 	}
-	var it storekit2.Iterator
+	var it storekit.Iterator
 	if withTotal {
 		it, err = s.getIterator(ctx, sel)
 	} else {
@@ -381,7 +381,7 @@ func (s *logQueryService) queryLogItems(ctx context.Context, req Request, fn fun
 	if !withTotal {
 		return items, 0, nil
 	}
-	counter, ok := it.(storekit2.Counter)
+	counter, ok := it.(storekit.Counter)
 	if !ok {
 		return items, 0, fmt.Errorf("failed to get total: %T not implement %T", it, counter)
 	}
@@ -481,8 +481,8 @@ func (s *logQueryService) splitSelectors(sel *storage.Selector, initialInterval 
 	return reversed
 }
 
-func (s *logQueryService) getOrderedIterator(ctx context.Context, sels []*storage.Selector) (storekit2.Iterator, error) {
-	var its []storekit2.Iterator
+func (s *logQueryService) getOrderedIterator(ctx context.Context, sels []*storage.Selector) (storekit.Iterator, error) {
+	var its []storekit.Iterator
 	for _, item := range sels {
 		it, err := s.getIterator(ctx, item)
 		if err != nil {
@@ -491,13 +491,13 @@ func (s *logQueryService) getOrderedIterator(ctx context.Context, sels []*storag
 		its = append(its, it)
 	}
 
-	return storekit2.OrderedIterator(its...), nil
+	return storekit.OrderedIterator(its...), nil
 }
 
-func (s *logQueryService) getIterator(ctx context.Context, sel *storage.Selector) (storekit2.Iterator, error) {
+func (s *logQueryService) getIterator(ctx context.Context, sel *storage.Selector) (storekit.Iterator, error) {
 	if sel.Scheme == "advanced" {
 		if s.storageReader == nil && s.ckStorageReader == nil {
-			return storekit2.EmptyIterator{}, nil
+			return storekit.EmptyIterator{}, nil
 		}
 		return s.tryGetIterator(ctx, sel, s.ckStorageReader, s.storageReader)
 	}
@@ -507,8 +507,8 @@ func (s *logQueryService) getIterator(ctx context.Context, sel *storage.Selector
 	return s.tryGetIterator(ctx, sel, s.ckStorageReader, s.storageReader, s.frozenStorageReader)
 }
 
-func (s *logQueryService) tryGetIterator(ctx context.Context, sel *storage.Selector, storages ...storage.Storage) (it storekit2.Iterator, err error) {
-	var its []storekit2.Iterator
+func (s *logQueryService) tryGetIterator(ctx context.Context, sel *storage.Selector, storages ...storage.Storage) (it storekit.Iterator, err error) {
+	var its []storekit.Iterator
 	for _, stor := range storages {
 		if stor == nil {
 			continue
@@ -525,11 +525,11 @@ func (s *logQueryService) tryGetIterator(ctx context.Context, sel *storage.Selec
 		if err != nil {
 			return nil, err
 		}
-		return storekit2.EmptyIterator{}, nil
+		return storekit.EmptyIterator{}, nil
 	} else if len(its) == 1 {
 		return its[0], nil
 	}
-	return storekit2.MergedHeadOverlappedIterator(storage.DefaultComparer, its...), nil
+	return storekit.MergedHeadOverlappedIterator(storage.DefaultComparer, its...), nil
 }
 
 // Request .
@@ -694,7 +694,7 @@ func toQuerySelector(req Request) (*storage.Selector, error) {
 	return sel, nil
 }
 
-func toLogItems(ctx context.Context, it storekit2.Iterator, forward bool, limit int, ascendingResult bool) (list []*pb.LogItem, err error) {
+func toLogItems(ctx context.Context, it storekit.Iterator, forward bool, limit int, ascendingResult bool) (list []*pb.LogItem, err error) {
 	if limit <= 0 {
 		return nil, nil
 	}

@@ -29,7 +29,7 @@ import (
 
 	"github.com/erda-project/erda/modules/tools/monitor/core/metric/query/chartmeta"
 	tsql "github.com/erda-project/erda/modules/tools/monitor/core/metric/query/es-tsql"
-	query2 "github.com/erda-project/erda/modules/tools/monitor/core/metric/query/query"
+	"github.com/erda-project/erda/modules/tools/monitor/core/metric/query/query"
 	queryv12 "github.com/erda-project/erda/modules/tools/monitor/core/metric/query/query/v1"
 )
 
@@ -78,13 +78,13 @@ func (p *Parser) Parse(statement string) (*queryv12.Request, error) {
 
 	req.Name = mparts[0]
 	req.Metrics = strings.Split(mparts[0], ",")
-	req.Where, _ = query2.ParseFilters(params)
+	req.Where, _ = query.ParseFilters(params)
 	for key, vals := range params {
 		if key == "group" {
 			for _, val := range vals {
 				var script string
 				if val, ok := getScript(val); ok {
-					script, _, err = parseScript(val, query2.TagKey)
+					script, _, err = parseScript(val, query.TagKey)
 					if err != nil {
 						return nil, fmt.Errorf("invalid script %s", val)
 					}
@@ -154,7 +154,7 @@ func (p *Parser) Parse(statement string) (*queryv12.Request, error) {
 				var script string
 				if s, ok := getScript(val); ok {
 					var keys map[string]struct{}
-					script, keys, err = parseScript(s, query2.FieldKey)
+					script, keys, err = parseScript(s, query.FieldKey)
 					if err != nil {
 						return nil, fmt.Errorf("invalid script %s", val)
 					}
@@ -215,7 +215,7 @@ func (p *Parser) Parse(statement string) (*queryv12.Request, error) {
 					var script string
 					if s, ok := getScript(val); ok {
 						var keys map[string]struct{}
-						script, keys, err = parseScript(s, query2.FieldKey)
+						script, keys, err = parseScript(s, query.FieldKey)
 						if err != nil {
 							return nil, fmt.Errorf("invalid script %s", val)
 						}
@@ -391,7 +391,7 @@ func getScript(script string) (string, bool) {
 
 func parseScript(script, keyType string) (string, map[string]struct{}, error) {
 	if strings.HasPrefix(script, "(") && strings.HasSuffix(script, ")") {
-		if keyType == query2.TagKey {
+		if keyType == query.TagKey {
 			if match, _ := regexp.Match("doc\\[\\'[a-zA-Z0-9_.]+\\'\\]", reflectx.StringToBytes(script)); match {
 				// As the original es script
 				return script, nil, nil

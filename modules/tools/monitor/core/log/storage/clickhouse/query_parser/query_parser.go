@@ -23,7 +23,7 @@ import (
 	"github.com/antlr/antlr4/runtime/Go/antlr"
 
 	"github.com/erda-project/erda/modules/tools/monitor/core/log/storage/clickhouse/converter"
-	parser2 "github.com/erda-project/erda/modules/tools/monitor/core/log/storage/clickhouse/query_parser/parser"
+	"github.com/erda-project/erda/modules/tools/monitor/core/log/storage/clickhouse/query_parser/parser"
 )
 
 type EsqsParser interface {
@@ -54,9 +54,9 @@ type esqsParser struct {
 
 func (ep *esqsParser) Parse(esqsExpr string) EsqsParseResult {
 	is := antlr.NewInputStream(esqsExpr)
-	lexer := parser2.NewEsQueryStringLexer(is)
+	lexer := parser.NewEsQueryStringLexer(is)
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-	p := parser2.NewEsQueryStringParser(stream)
+	p := parser.NewEsQueryStringParser(stream)
 
 	listener := &esqsListener{
 		defaultOp:          ep.defaultOp,
@@ -71,7 +71,7 @@ func (ep *esqsParser) Parse(esqsExpr string) EsqsParseResult {
 }
 
 type esqsListener struct {
-	*parser2.BaseEsQueryStringListener
+	*parser.BaseEsQueryStringListener
 	*antlr.DefaultErrorListener
 
 	defaultOp          string
@@ -106,7 +106,7 @@ func (l *esqsListener) SyntaxError(recognizer antlr.Recognizer, offendingSymbol 
 	l.errs = append(l.errs, fmt.Errorf("line "+strconv.Itoa(line)+":"+strconv.Itoa(column)+" "+msg))
 }
 
-func (l *esqsListener) ExitGroupExpression(c *parser2.GroupExpressionContext) {
+func (l *esqsListener) ExitGroupExpression(c *parser.GroupExpressionContext) {
 	if len(l.stack) < 1 {
 		return
 	}
@@ -114,7 +114,7 @@ func (l *esqsListener) ExitGroupExpression(c *parser2.GroupExpressionContext) {
 	l.push(fmt.Sprintf("(%s)", expr))
 }
 
-func (l *esqsListener) ExitNotExpression(c *parser2.NotExpressionContext) {
+func (l *esqsListener) ExitNotExpression(c *parser.NotExpressionContext) {
 	if len(l.stack) < 1 {
 		return
 	}
@@ -122,7 +122,7 @@ func (l *esqsListener) ExitNotExpression(c *parser2.NotExpressionContext) {
 	l.push(fmt.Sprintf("(NOT %s)", expr))
 }
 
-func (l *esqsListener) ExitAndExpression(c *parser2.AndExpressionContext) {
+func (l *esqsListener) ExitAndExpression(c *parser.AndExpressionContext) {
 	if len(l.stack) < 2 {
 		return
 	}
@@ -130,7 +130,7 @@ func (l *esqsListener) ExitAndExpression(c *parser2.AndExpressionContext) {
 	l.push(fmt.Sprintf("%s AND %s", left, right))
 }
 
-func (l *esqsListener) ExitOrExpression(c *parser2.OrExpressionContext) {
+func (l *esqsListener) ExitOrExpression(c *parser.OrExpressionContext) {
 	if len(l.stack) < 2 {
 		return
 	}
@@ -138,7 +138,7 @@ func (l *esqsListener) ExitOrExpression(c *parser2.OrExpressionContext) {
 	l.push(fmt.Sprintf("%s OR %s", left, right))
 }
 
-func (l *esqsListener) ExitDefaultOpExpression(c *parser2.DefaultOpExpressionContext) {
+func (l *esqsListener) ExitDefaultOpExpression(c *parser.DefaultOpExpressionContext) {
 	if len(l.stack) < 2 {
 		return
 	}
@@ -146,28 +146,28 @@ func (l *esqsListener) ExitDefaultOpExpression(c *parser2.DefaultOpExpressionCon
 	l.push(fmt.Sprintf("%s %s %s", left, l.defaultOp, right))
 }
 
-func (l *esqsListener) ExitNamedPhraseFieldQuery(c *parser2.NamedPhraseFieldQueryContext) {
+func (l *esqsListener) ExitNamedPhraseFieldQuery(c *parser.NamedPhraseFieldQueryContext) {
 	l.push(l.formatExpression(
 		strings.TrimRight(c.FIELD().GetText(), ":"),
 		strings.Trim(c.PHRASE().GetText(), `"`)),
 	)
 }
 
-func (l *esqsListener) ExitNamedTermFieldQuery(c *parser2.NamedTermFieldQueryContext) {
+func (l *esqsListener) ExitNamedTermFieldQuery(c *parser.NamedTermFieldQueryContext) {
 	l.push(l.formatExpression(
 		strings.TrimRight(c.FIELD().GetText(), ":"),
 		c.TERM().GetText()),
 	)
 }
 
-func (l *esqsListener) ExitPhraseFieldQuery(c *parser2.PhraseFieldQueryContext) {
+func (l *esqsListener) ExitPhraseFieldQuery(c *parser.PhraseFieldQueryContext) {
 	l.push(l.formatExpression(
 		l.defaultField,
 		strings.Trim(c.PHRASE().GetText(), `"`)),
 	)
 }
 
-func (l *esqsListener) ExitTermFieldQuery(c *parser2.TermFieldQueryContext) {
+func (l *esqsListener) ExitTermFieldQuery(c *parser.TermFieldQueryContext) {
 	l.push(l.formatExpression(
 		l.defaultField,
 		c.TERM().GetText()),

@@ -28,7 +28,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 	"github.com/erda-project/erda/modules/tools/monitor/core/alert/alert-apis/db"
-	utils2 "github.com/erda-project/erda/modules/tools/monitor/utils"
+	util "github.com/erda-project/erda/modules/tools/monitor/utils"
 	"github.com/erda-project/erda/pkg/encoding/jsonmap"
 )
 
@@ -425,7 +425,7 @@ func CustomizeAlertRuleFromModel(m *db.CustomizeAlertRule) (*pb.CustomizeAlertRu
 
 	if len(m.Attributes) != 0 {
 		if v, ok := m.Attributes["active_metric_groups"]; ok {
-			if slice, ok := utils2.ConvertStringArr(v); !ok {
+			if slice, ok := util.ConvertStringArr(v); !ok {
 				logrus.Error("fail to convert active_metric_groups to string slice")
 			} else {
 				r.ActivedMetricGroups = slice
@@ -487,8 +487,8 @@ func (a *Adapt) FromModelWithDetail(m *db.CustomizeAlert, rules []*pb.CustomizeA
 		Enable:       m.Enable,
 		Rules:        rules,
 		Notifies:     []*pb.CustomizeAlertNotifyTemplates{templates},
-		CreateTime:   utils2.ConvertTimeToMS(m.CreateTime),
-		UpdateTime:   utils2.ConvertTimeToMS(m.UpdateTime),
+		CreateTime:   util.ConvertTimeToMS(m.CreateTime),
+		UpdateTime:   util.ConvertTimeToMS(m.UpdateTime),
 	}
 	return customizeAlertDetail
 }
@@ -679,7 +679,7 @@ func (a *Adapt) UpdateCustomizeAlert(alertDetail *pb.CustomizeAlertDetail) (err 
 	if alert == nil {
 		return nil
 	}
-	index, ok := utils2.GetMapValueString(alert.Attributes, "alert_index")
+	index, ok := util.GetMapValueString(alert.Attributes, "alert_index")
 	if !ok {
 		return fmt.Errorf("no alert index attributes")
 	}

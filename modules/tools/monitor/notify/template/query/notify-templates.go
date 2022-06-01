@@ -22,7 +22,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"gopkg.in/yaml.v2"
 
-	db2 "github.com/erda-project/erda/modules/tools/monitor/notify/template/db"
+	"github.com/erda-project/erda/modules/tools/monitor/notify/template/db"
 	"github.com/erda-project/erda/modules/tools/monitor/notify/template/model"
 )
 
@@ -61,7 +61,7 @@ func getNotifyTemplateList(scope, name, nType string) (list []*model.GetNotifyRe
 	return
 }
 
-func ToNotifyConfig(c *model.CreateUserDefineNotifyTemplate) (*db2.NotifyConfig, error) {
+func ToNotifyConfig(c *model.CreateUserDefineNotifyTemplate) (*db.NotifyConfig, error) {
 	//generate template_id
 	templateID := uuid.NewV4().String()
 	metadata := model.Metadata{
@@ -110,7 +110,7 @@ func ToNotifyConfig(c *model.CreateUserDefineNotifyTemplate) (*db2.NotifyConfig,
 	if err != nil {
 		return nil, err
 	}
-	customize := &db2.NotifyConfig{
+	customize := &db.NotifyConfig{
 		NotifyID:  templateID,
 		Metadata:  string(metadataStr),
 		Behavior:  string(behaviorStr),
@@ -121,8 +121,8 @@ func ToNotifyConfig(c *model.CreateUserDefineNotifyTemplate) (*db2.NotifyConfig,
 	return customize, nil
 }
 
-func ToNotify(u *model.UpdateNotifyReq) (*db2.Notify, error) {
-	var notify db2.Notify
+func ToNotify(u *model.UpdateNotifyReq) (*db.Notify, error) {
+	var notify db.Notify
 	notify.ID = uint(u.ID)
 	notifyId, err := json.Marshal(u.TemplateId)
 	if err != nil {
@@ -146,8 +146,8 @@ func ToNotify(u *model.UpdateNotifyReq) (*db2.Notify, error) {
 	return &notify, nil
 }
 
-func ToNotifyRecord(n *model.NotifyRecord) *db2.NotifyRecord {
-	record := &db2.NotifyRecord{}
+func ToNotifyRecord(n *model.NotifyRecord) *db.NotifyRecord {
+	record := &db.NotifyRecord{}
 	record.NotifyId = n.NotifyId
 	record.NotifyName = n.NotifyName
 	record.ScopeType = n.ScopeType

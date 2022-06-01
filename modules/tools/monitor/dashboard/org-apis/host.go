@@ -25,7 +25,7 @@ import (
 
 	"github.com/olivere/elastic"
 
-	utils2 "github.com/erda-project/erda/modules/tools/monitor/utils"
+	util "github.com/erda-project/erda/modules/tools/monitor/utils"
 	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
 
@@ -555,57 +555,57 @@ func wrapHostsData(topHits *elastic.AggregationTopHitsMetric, vfs []*resourceVal
 			continue
 		}
 
-		tags, ok := utils2.GetMapValueMap(m, tags)
+		tags, ok := util.GetMapValueMap(m, tags)
 		if !ok {
 			continue
 		}
-		fields, ok := utils2.GetMapValueMap(m, fields)
+		fields, ok := util.GetMapValueMap(m, fields)
 		if !ok {
 			continue
 		}
 
 		hostData := new(hostData)
-		hostData.ClusterName, _ = utils2.GetMapValueString(tags, clusterName)
-		hostData.IP, _ = utils2.GetMapValueString(tags, hostIP)
-		hostData.Hostname, _ = utils2.GetMapValueString(tags, host)
-		hostData.Labels, _ = utils2.GetMapValueString(tags, labels)
+		hostData.ClusterName, _ = util.GetMapValueString(tags, clusterName)
+		hostData.IP, _ = util.GetMapValueString(tags, hostIP)
+		hostData.Hostname, _ = util.GetMapValueString(tags, host)
+		hostData.Labels, _ = util.GetMapValueString(tags, labels)
 		if idx := strings.Index(hostData.Labels, "="); idx >= 0 {
 			hostData.Labels = hostData.Labels[idx+1:]
 			if idx = strings.Index(hostData.Labels, ":"); idx >= 0 {
 				hostData.Labels = hostData.Labels[idx+1:]
 			}
 		}
-		hostData.OS, _ = utils2.GetMapValueString(tags, os)
-		hostData.KernelVersion, _ = utils2.GetMapValueString(tags, kernelVersion)
-		hostData.Tasks, _ = utils2.GetMapValueFloat64(fields, tasks)
+		hostData.OS, _ = util.GetMapValueString(tags, os)
+		hostData.KernelVersion, _ = util.GetMapValueString(tags, kernelVersion)
+		hostData.Tasks, _ = util.GetMapValueFloat64(fields, tasks)
 
-		hostData.CPUUsage, _ = utils2.GetMapValueFloat64(fields, cpuUsage)
-		hostData.CPURequest, _ = utils2.GetMapValueFloat64(fields, cpuRequest)
-		hostData.CPULimit, _ = utils2.GetMapValueFloat64(fields, cpuLimit)
-		hostData.CPUOrigin, _ = utils2.GetMapValueFloat64(fields, cpuOrigin)
-		hostData.CPUTotal, _ = utils2.GetMapValueFloat64(fields, cpuTotal)
-		hostData.CPUAllocatable, _ = utils2.GetMapValueFloat64(fields, "cpu_allocatable")
-		hostData.CPUUsagePercent, _ = utils2.GetMapValueFloat64(fields, cpuUsagePercent)
-		hostData.CPUDispPercent, _ = utils2.GetMapValueFloat64(fields, cpuDispPercent)
+		hostData.CPUUsage, _ = util.GetMapValueFloat64(fields, cpuUsage)
+		hostData.CPURequest, _ = util.GetMapValueFloat64(fields, cpuRequest)
+		hostData.CPULimit, _ = util.GetMapValueFloat64(fields, cpuLimit)
+		hostData.CPUOrigin, _ = util.GetMapValueFloat64(fields, cpuOrigin)
+		hostData.CPUTotal, _ = util.GetMapValueFloat64(fields, cpuTotal)
+		hostData.CPUAllocatable, _ = util.GetMapValueFloat64(fields, "cpu_allocatable")
+		hostData.CPUUsagePercent, _ = util.GetMapValueFloat64(fields, cpuUsagePercent)
+		hostData.CPUDispPercent, _ = util.GetMapValueFloat64(fields, cpuDispPercent)
 
-		hostData.MemUsage, _ = utils2.GetMapValueFloat64(fields, memUsage)
-		hostData.MemRequest, _ = utils2.GetMapValueFloat64(fields, memRequest)
-		hostData.MemLimit, _ = utils2.GetMapValueFloat64(fields, memLimit)
-		hostData.MemOrigin, _ = utils2.GetMapValueFloat64(fields, memOrigin)
-		hostData.MemTotal, _ = utils2.GetMapValueFloat64(fields, memTotal)
-		hostData.MemAllocatable, _ = utils2.GetMapValueFloat64(fields, "mem_allocatable")
-		hostData.MemUsagePercent, _ = utils2.GetMapValueFloat64(fields, memUsagePercent)
-		hostData.MemDispPercent, _ = utils2.GetMapValueFloat64(fields, memDispPercent)
+		hostData.MemUsage, _ = util.GetMapValueFloat64(fields, memUsage)
+		hostData.MemRequest, _ = util.GetMapValueFloat64(fields, memRequest)
+		hostData.MemLimit, _ = util.GetMapValueFloat64(fields, memLimit)
+		hostData.MemOrigin, _ = util.GetMapValueFloat64(fields, memOrigin)
+		hostData.MemTotal, _ = util.GetMapValueFloat64(fields, memTotal)
+		hostData.MemAllocatable, _ = util.GetMapValueFloat64(fields, "mem_allocatable")
+		hostData.MemUsagePercent, _ = util.GetMapValueFloat64(fields, memUsagePercent)
+		hostData.MemDispPercent, _ = util.GetMapValueFloat64(fields, memDispPercent)
 
-		hostData.DiskUsage, _ = utils2.GetMapValueFloat64(fields, diskUsage)
-		hostData.DiskLimit, _ = utils2.GetMapValueFloat64(fields, diskLimit)
-		hostData.DiskTotal, _ = utils2.GetMapValueFloat64(fields, diskTotal)
-		hostData.DiskUsagePercent, _ = utils2.GetMapValueFloat64(fields, diskUsagePercent)
+		hostData.DiskUsage, _ = util.GetMapValueFloat64(fields, diskUsage)
+		hostData.DiskLimit, _ = util.GetMapValueFloat64(fields, diskLimit)
+		hostData.DiskTotal, _ = util.GetMapValueFloat64(fields, diskTotal)
+		hostData.DiskUsagePercent, _ = util.GetMapValueFloat64(fields, diskUsagePercent)
 
-		hostData.Load1, _ = utils2.GetMapValueFloat64(fields, load1)
-		hostData.Load5, _ = utils2.GetMapValueFloat64(fields, load5)
-		hostData.Load15, _ = utils2.GetMapValueFloat64(fields, load15)
-		hostData.LoadPercent, _ = utils2.GetMapValueFloat64(fields, loadPercent)
+		hostData.Load1, _ = util.GetMapValueFloat64(fields, load1)
+		hostData.Load5, _ = util.GetMapValueFloat64(fields, load5)
+		hostData.Load15, _ = util.GetMapValueFloat64(fields, load15)
+		hostData.LoadPercent, _ = util.GetMapValueFloat64(fields, loadPercent)
 
 		if ok := checkHostValue(fields, vfs); ok {
 			hostsData = append(hostsData, hostData)
@@ -620,7 +620,7 @@ func checkHostValue(m map[string]interface{}, vfs []*resourceValueFilter) bool {
 	}
 
 	for _, vf := range vfs {
-		value, ok := utils2.GetMapValueFloat64(m, vf.key)
+		value, ok := util.GetMapValueFloat64(m, vf.key)
 		if !ok {
 			return false
 		}
@@ -654,7 +654,7 @@ func (p *provider) getHostStatus(req hostRequest) interface{} {
 func (p *provider) offlineHost(req offlineHostRequest) interface{} {
 	query := elastic.NewBoolQuery().
 		Filter(elastic.NewTermQuery(tagsClusterName, req.ClusterName)).
-		Filter(elastic.NewTermsQuery(tagsHostIP, utils2.ConvertStringArrToInterfaceArr(req.HostIPs)...)).
+		Filter(elastic.NewTermsQuery(tagsHostIP, util.ConvertStringArrToInterfaceArr(req.HostIPs)...)).
 		Filter(elastic.NewRangeQuery(timestamp).Lte(time.Now().UnixNano())).
 		MustNot(elastic.NewTermQuery(fieldsLabels, offline))
 
@@ -687,12 +687,12 @@ func (p *provider) doOfflineHost(query elastic.Query) {
 				p.L.Errorf("offline host: json unmarshal hit source error: %s\n", err)
 				continue
 			}
-			fields, ok := utils2.GetMapValueMap(m, fields)
+			fields, ok := util.GetMapValueMap(m, fields)
 			if !ok {
 				p.L.Errorf("offline host: source has no fields map\n")
 				continue
 			}
-			labelList, ok := utils2.GetMapValueArr(fields, labels)
+			labelList, ok := util.GetMapValueArr(fields, labels)
 			if !ok {
 				p.L.Errorf("offline host: fields has labels arr\n")
 				continue

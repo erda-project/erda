@@ -24,7 +24,7 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	election "github.com/erda-project/erda-infra/providers/etcd-election"
-	db2 "github.com/erda-project/erda/modules/tools/monitor/core/alert/alert-apis/db"
+	"github.com/erda-project/erda/modules/tools/monitor/core/alert/alert-apis/db"
 	"github.com/erda-project/erda/providers/metrics/report"
 )
 
@@ -40,13 +40,13 @@ type provider struct {
 	Election election.Interface  `autowired:"etcd-election@alert-event-metrics"`
 	Report   report.MetricReport `autowired:"metric-report-client" `
 
-	alertEventDB *db2.AlertEventDB
-	alertDB      *db2.AlertDB
+	alertEventDB *db.AlertEventDB
+	alertDB      *db.AlertDB
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.alertEventDB = &db2.AlertEventDB{DB: p.DB}
-	p.alertDB = &db2.AlertDB{DB: p.DB}
+	p.alertEventDB = &db.AlertEventDB{DB: p.DB}
+	p.alertDB = &db.AlertDB{DB: p.DB}
 	p.Election.OnLeader(func(ctx context.Context) {
 		timer := time.NewTicker(p.Cfg.Interval)
 		defer timer.Stop()
@@ -85,13 +85,13 @@ func (p *provider) statisticAlertEvents(ctx context.Context) {
 	}
 }
 
-func (p *provider) kickOutDisabledAlertsAndRollupByScopeId(stats []*db2.AlertEventScopeCountResult, availableAlertIds []uint64) []*db2.AlertEventScopeCountResult {
+func (p *provider) kickOutDisabledAlertsAndRollupByScopeId(stats []*db.AlertEventScopeCountResult, availableAlertIds []uint64) []*db.AlertEventScopeCountResult {
 	idMap := map[uint64]bool{}
 	for _, id := range availableAlertIds {
 		idMap[id] = true
 	}
 
-	scopeLevelStats := map[string]*db2.AlertEventScopeCountResult{}
+	scopeLevelStats := map[string]*db.AlertEventScopeCountResult{}
 	for _, stat := range stats {
 		if _, ok := idMap[stat.AlertId]; !ok {
 			continue
@@ -106,14 +106,14 @@ func (p *provider) kickOutDisabledAlertsAndRollupByScopeId(stats []*db2.AlertEve
 		scopeStat.Count += stat.Count
 	}
 
-	var list []*db2.AlertEventScopeCountResult
+	var list []*db.AlertEventScopeCountResult
 	for _, result := range scopeLevelStats {
 		list = append(list, result)
 	}
 	return list
 }
 
-func (p *provider) convertToMetrics(batchSize int, stats ...*db2.AlertEventScopeCountResult) [][]*report.Metric {
+func (p *provider) convertToMetrics(batchSize int, stats ...*db.AlertEventScopeCountResult) [][]*report.Metric {
 	var groups [][]*report.Metric
 	var metrics []*report.Metric
 	for _, item := range stats {

@@ -32,7 +32,7 @@ import (
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	dicestructs "github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pkg/mysql"
-	block2 "github.com/erda-project/erda/modules/tools/monitor/core/dataview/v1-chart-block"
+	block "github.com/erda-project/erda/modules/tools/monitor/core/dataview/v1-chart-block"
 	"github.com/erda-project/erda/modules/tools/monitor/utils"
 	"github.com/erda-project/erda/modules/tools/pipeline/providers/cron/crontypes"
 	api "github.com/erda-project/erda/pkg/common/httpapi"
@@ -56,7 +56,7 @@ func (p *provider) creatOrgReportTask(obj *reportTask) interface{} {
 			tx.Commit()
 		}
 	}()
-	_, err = tx.systemBlock.Get(&block2.DashboardBlockQuery{ID: obj.DashboardId})
+	_, err = tx.systemBlock.Get(&block.DashboardBlockQuery{ID: obj.DashboardId})
 	if err != nil && gorm.IsRecordNotFoundError(err) {
 		return api.Errors.NotFound("dashboard block")
 	}
@@ -278,7 +278,7 @@ func (p *provider) getOrgReportTask(params struct {
 		Scope:   obj.Scope,
 		ScopeID: obj.ScopeID,
 		Type:    obj.Type,
-		DashboardBlockTemplate: &block2.DashboardBlockDTO{
+		DashboardBlockTemplate: &block.DashboardBlockDTO{
 			ID:         obj.DashboardBlock.ID,
 			Name:       obj.DashboardBlock.Name,
 			Desc:       obj.DashboardBlock.Desc,

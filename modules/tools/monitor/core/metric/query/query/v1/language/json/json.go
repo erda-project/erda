@@ -24,7 +24,7 @@ import (
 
 	"github.com/recallsong/go-utils/reflectx"
 
-	query2 "github.com/erda-project/erda/modules/tools/monitor/core/metric/query/query"
+	"github.com/erda-project/erda/modules/tools/monitor/core/metric/query/query"
 	queryv12 "github.com/erda-project/erda/modules/tools/monitor/core/metric/query/query/v1"
 )
 
@@ -147,16 +147,16 @@ func (p *Parser) Parse(statement string) (*queryv12.Request, error) {
 	}
 
 	for key, val := range form.Filter {
-		req.Where = append(req.Where, &query2.Filter{
-			Key:      queryv12.NormalizeKey(key, query2.TagKey),
+		req.Where = append(req.Where, &query.Filter{
+			Key:      queryv12.NormalizeKey(key, query.TagKey),
 			Operator: "=",
 			Value:    val,
 		})
 	}
 
 	for key, val := range form.Match {
-		req.Where = append(req.Where, &query2.Filter{
-			Key:      queryv12.NormalizeKey(key, query2.TagKey),
+		req.Where = append(req.Where, &query.Filter{
+			Key:      queryv12.NormalizeKey(key, query.TagKey),
 			Operator: "match",
 			Value:    val,
 		})
@@ -168,8 +168,8 @@ func (p *Parser) Parse(statement string) (*queryv12.Request, error) {
 		if err != nil {
 			return nil, fmt.Errorf("invalid params field_%s=%s", key, val)
 		}
-		req.Where = append(req.Where, &query2.Filter{
-			Key:      queryv12.NormalizeKey(key, query2.TagKey),
+		req.Where = append(req.Where, &query.Filter{
+			Key:      queryv12.NormalizeKey(key, query.TagKey),
 			Operator: "field",
 			Value:    value,
 		})
@@ -181,8 +181,8 @@ func (p *Parser) Parse(statement string) (*queryv12.Request, error) {
 			for _, val := range vals {
 				values = append(values, val)
 			}
-			req.Where = append(req.Where, &query2.Filter{
-				Key:      queryv12.NormalizeKey(key, query2.TagKey),
+			req.Where = append(req.Where, &query.Filter{
+				Key:      queryv12.NormalizeKey(key, query.TagKey),
 				Operator: "in",
 				Value:    values,
 			})
@@ -193,7 +193,7 @@ func (p *Parser) Parse(statement string) (*queryv12.Request, error) {
 		var script string
 		if s, ok := getScript(val.Name); ok {
 			var keys map[string]struct{}
-			script, keys, err = parseScript(s, query2.FieldKey)
+			script, keys, err = parseScript(s, query.FieldKey)
 			if err != nil {
 				return nil, fmt.Errorf("invalid script %v", val)
 			}
@@ -225,7 +225,7 @@ func (p *Parser) Parse(statement string) (*queryv12.Request, error) {
 				var script string
 				if s, ok := getScript(val); ok {
 					var keys map[string]struct{}
-					script, keys, err = parseScript(s, query2.FieldKey)
+					script, keys, err = parseScript(s, query.FieldKey)
 					if err != nil {
 						return nil, fmt.Errorf("invalid script %s", val)
 					}
@@ -315,7 +315,7 @@ func getScript(script string) (string, bool) {
 
 func parseScript(script, keyType string) (string, map[string]struct{}, error) {
 	if strings.HasPrefix(script, "(") && strings.HasSuffix(script, ")") {
-		if keyType == query2.TagKey {
+		if keyType == query.TagKey {
 			if match, _ := regexp.Match("doc\\[\\'[a-zA-Z0-9_.]+\\'\\]", reflectx.StringToBytes(script)); match {
 				// As the original elasticsearch script.
 				return script, nil, nil

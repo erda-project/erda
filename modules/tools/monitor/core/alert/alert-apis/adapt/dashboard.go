@@ -24,8 +24,8 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
-	block2 "github.com/erda-project/erda/modules/tools/monitor/core/dataview/v1-chart-block"
-	utils2 "github.com/erda-project/erda/modules/tools/monitor/utils"
+	block "github.com/erda-project/erda/modules/tools/monitor/core/dataview/v1-chart-block"
+	util "github.com/erda-project/erda/modules/tools/monitor/utils"
 	"github.com/erda-project/erda/pkg/common/errors"
 )
 
@@ -68,7 +68,7 @@ func (d *dashgen) GenerateDashboardPreView(alertDetail *pb.CustomizeAlertDetail)
 	return result, nil
 }
 
-func (d *dashgen) ToPBView(v *block2.View) (*pb.View, error) {
+func (d *dashgen) ToPBView(v *block.View) (*pb.View, error) {
 	controls, err := structpb.NewValue(v.Controls)
 	if err != nil {
 		return nil, err
@@ -154,8 +154,8 @@ func (d *dashgen) init(alertDetail *pb.CustomizeAlertDetail) {
 	}
 }
 
-func (d *dashgen) generateDashboard(alertDetail *pb.CustomizeAlertDetail) (res *block2.UserBlock, err error) {
-	block := &block2.UserBlock{
+func (d *dashgen) generateDashboard(alertDetail *pb.CustomizeAlertDetail) (res *block.UserBlock, err error) {
+	block := &block.UserBlock{
 		Name:    "",
 		Scope:   fmt.Sprintf("%s:alert", d.scope),
 		ScopeID: d.scopeID,
@@ -169,8 +169,8 @@ func (d *dashgen) generateDashboard(alertDetail *pb.CustomizeAlertDetail) (res *
 	return block, nil
 }
 
-func (d *dashgen) createViewConfig(rules []*pb.CustomizeAlertRule) (vc block2.ViewConfigDTO, err error) {
-	res := []*block2.ViewConfigItem{}
+func (d *dashgen) createViewConfig(rules []*pb.CustomizeAlertRule) (vc block.ViewConfigDTO, err error) {
+	res := []*block.ViewConfigItem{}
 	for _, rule := range rules {
 		vci, err := d.generateViewConfigItems(rule)
 		if err != nil {
@@ -181,8 +181,8 @@ func (d *dashgen) createViewConfig(rules []*pb.CustomizeAlertRule) (vc block2.Vi
 	return res, nil
 }
 
-func (d *dashgen) generateViewConfigItems(r *pb.CustomizeAlertRule) (res []*block2.ViewConfigItem, err error) {
-	res = []*block2.ViewConfigItem{}
+func (d *dashgen) generateViewConfigItems(r *pb.CustomizeAlertRule) (res []*block.ViewConfigItem, err error) {
+	res = []*block.ViewConfigItem{}
 	heigth := 10
 	for idx, f := range r.Functions {
 		ct, err := d.getChartType(f)
@@ -203,10 +203,10 @@ func (d *dashgen) generateViewConfigItems(r *pb.CustomizeAlertRule) (res []*bloc
 		if err != nil {
 			return nil, errors.NewInternalServerError(err)
 		}
-		view := &block2.View{
+		view := &block.View{
 			Title:     "",
 			ChartType: ct,
-			API: &block2.API{
+			API: &block.API{
 				URL:       _url,
 				Query:     query,
 				Body:      nil,
@@ -214,12 +214,12 @@ func (d *dashgen) generateViewConfigItems(r *pb.CustomizeAlertRule) (res []*bloc
 				ExtraData: d.generateExtraData(query, alertRuleFunction, r.ActivedMetricGroups, r.Metric),
 			},
 		}
-		vci := &block2.ViewConfigItem{
+		vci := &block.ViewConfigItem{
 			W:    24,
 			H:    int64(heigth * (idx + 1)),
 			X:    0,
 			Y:    int64(heigth * idx),
-			I:    fmt.Sprintf("view-%s", utils2.RandomString(8)),
+			I:    fmt.Sprintf("view-%s", util.RandomString(8)),
 			View: view,
 		}
 		res = append(res, vci)
@@ -288,7 +288,7 @@ func (d *dashgen) generateExtraData(query map[string]interface{}, f *CustomizeAl
 		method, tag := k[:idx], k[idx+1:]
 		if strings.HasPrefix(tag, "tags.") {
 			filters = append(filters, map[string]string{
-				"key":    utils2.RandomString(1),
+				"key":    util.RandomString(1),
 				"method": method,
 				"tag":    tag,
 				"value":  v.(string),
@@ -310,8 +310,8 @@ func (d *dashgen) generateQuery(rule *pb.CustomizeAlertRule) (map[string]interfa
 	}
 	metric := metrics[0]
 	res := make(map[string]interface{})
-	res["start"] = utils2.ConvertTimeToMS(time.Now().Add(-1 * time.Hour))
-	res["end"] = utils2.ConvertTimeToMS(time.Now())
+	res["start"] = util.ConvertTimeToMS(time.Now().Add(-1 * time.Hour))
+	res["end"] = util.ConvertTimeToMS(time.Now())
 
 	// transform group
 	if len(rule.Group) > 0 {
