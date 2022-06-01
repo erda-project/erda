@@ -19,8 +19,8 @@ import (
 
 	"github.com/erda-project/erda-infra/base/version"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/ecp/dbclient"
-	"github.com/erda-project/erda/modules/ecp/endpoints"
+	"github.com/erda-project/erda/modules/apps/ecp/dbclient"
+	"github.com/erda-project/erda/modules/apps/ecp/endpoints"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/dumpstack"
 	"github.com/erda-project/erda/pkg/http/httpserver"

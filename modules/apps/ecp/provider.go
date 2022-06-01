@@ -19,7 +19,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
-	"github.com/erda-project/erda/modules/ecp/conf"
+	"github.com/erda-project/erda/modules/apps/ecp/conf"
 )
 
 type provider struct {
