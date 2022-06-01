@@ -18,8 +18,8 @@ package kms
 import (
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda/modules/kms/conf"
-	"github.com/erda-project/erda/modules/kms/endpoints"
+	"github.com/erda-project/erda/modules/tools/kms/conf"
+	"github.com/erda-project/erda/modules/tools/kms/endpoints"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/kms"
 	"github.com/erda-project/erda/pkg/kms/stores/etcd"

@@ -18,7 +18,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/erda-project/erda/modules/kms/endpoints/apierrors"
+	"github.com/erda-project/erda/modules/tools/kms/endpoints/apierrors"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/kms/kmstypes"
 )
