@@ -21,7 +21,7 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/erda-project/erda-proto-go/dop/issue/pb"
+	"github.com/erda-project/erda-proto-go/dop/issue/stream/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/tools/cli/command"
 	"github.com/erda-project/erda/tools/cli/utils"

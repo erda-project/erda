@@ -21,9 +21,9 @@ import (
 	"github.com/go-echarts/go-echarts/v2/charts"
 	"github.com/go-echarts/go-echarts/v2/opts"
 
-	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/issue-dashboard/common/stackhandlers"
-	"github.com/erda-project/erda/internal/apps/dop/dao"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 )
 
 func FixEmptyWord(em string) string {
@@ -54,7 +54,7 @@ func GroupToPieData(ctx context.Context, issueList []dao.IssueItem, stackHandler
 	indexer := stackHandler.GetIndexer()
 
 	for _, i := range issueList {
-		if i.Type != apistructs.IssueTypeBug {
+		if i.Type != pb.IssueTypeEnum_BUG.String() {
 			continue
 		}
 		counter[FixEmptyWord(indexer(&i))]++

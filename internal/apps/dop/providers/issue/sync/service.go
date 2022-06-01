@@ -21,10 +21,11 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-infra/base/logs"
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	"github.com/erda-project/erda-proto-go/dop/issue/sync/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/internal/apps/dop/dao"
-	"github.com/erda-project/erda/internal/apps/dop/services/issue"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 
@@ -32,11 +33,7 @@ type IssueSyncService struct {
 	logger logs.Logger
 
 	db    *dao.DBClient
-	issue *issue.Issue
-}
-
-func (s *IssueSyncService) WithIssue(issue *issue.Issue) {
-	s.issue = issue
+	query query.Interface
 }
 
 func (s *IssueSyncService) IssueSync(ctx context.Context, req *pb.IssueSyncRequest) (*pb.IssueSyncResponse, error) {
@@ -47,7 +44,7 @@ func (s *IssueSyncService) IssueSync(ctx context.Context, req *pb.IssueSyncReque
 	if req.Id == 0 {
 		return nil, nil
 	}
-	issue, err := s.issue.GetIssue(apistructs.IssueGetRequest{ID: uint64(req.Id), IdentityInfo: apistructs.IdentityInfo{UserID: userID}})
+	issue, err := s.query.GetIssue(req.Id, &commonpb.IdentityInfo{UserID: userID})
 	if err != nil {
 		return nil, err
 	}
@@ -63,12 +60,12 @@ func (s *IssueSyncService) IssueSync(ctx context.Context, req *pb.IssueSyncReque
 			if i.Value != nil {
 				add, delete = removeIntersectionInTwoNumberLists(i.Value.Addition, i.Value.Deletion)
 			}
-			if err := s.issue.SyncLabels(&pb.Value{Addition: add, Deletion: delete}, relatingIssueIDs); err != nil {
+			if err := s.query.SyncLabels(&pb.Value{Addition: add, Deletion: delete}, relatingIssueIDs); err != nil {
 				return nil, err
 			}
 		case "iterationID":
 			iterationID := int64(i.Value.Content.GetNumberValue())
-			if err := s.issue.SyncIssueChildrenIteration(issue, iterationID); err != nil {
+			if err := s.query.SyncIssueChildrenIteration(issue, iterationID); err != nil {
 				return nil, err
 			}
 		}

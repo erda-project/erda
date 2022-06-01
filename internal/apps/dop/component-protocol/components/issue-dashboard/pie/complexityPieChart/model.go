@@ -18,14 +18,12 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/issue-dashboard/common"
-	"github.com/erda-project/erda/internal/apps/dop/services/issuestate"
 )
 
 type ComponentAction struct {
-	sdk           *cptype.SDK
-	bdl           *bundle.Bundle
-	issueStateSvc *issuestate.IssueState
-	State         State `json:"state,omitempty"`
+	sdk   *cptype.SDK
+	bdl   *bundle.Bundle
+	State State `json:"state,omitempty"`
 	// InParams      InParams `json:"-"`
 
 }
