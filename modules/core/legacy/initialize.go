@@ -29,7 +29,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/core/legacy/cache/project"
+	projectCache "github.com/erda-project/erda/modules/core/legacy/cache/project"
 	"github.com/erda-project/erda/modules/core/legacy/conf"
 	"github.com/erda-project/erda/modules/core/legacy/dao"
 	"github.com/erda-project/erda/modules/core/legacy/endpoints"
