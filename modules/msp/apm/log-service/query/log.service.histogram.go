@@ -24,7 +24,7 @@ import (
 
 	monitorpb "github.com/erda-project/erda-proto-go/core/monitor/log/query/pb"
 	"github.com/erda-project/erda-proto-go/msp/apm/log-service/pb"
-	"github.com/erda-project/erda/modules/extensions/loghub/index/query"
+	"github.com/erda-project/erda/modules/tools/monitor/extensions/loghub/index/query"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 

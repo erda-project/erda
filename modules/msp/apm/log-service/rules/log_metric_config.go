@@ -23,10 +23,10 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
-	"github.com/erda-project/erda/modules/core/monitor/metric"
 	"github.com/erda-project/erda/modules/msp/apm/log-service/analysis/processors"
 	"github.com/erda-project/erda/modules/msp/apm/log-service/rules/db"
 	"github.com/erda-project/erda/modules/pkg/mysql"
+	"github.com/erda-project/erda/modules/tools/monitor/core/metric"
 )
 
 // ListLogMetricConfig .

@@ -17,9 +17,9 @@ package query
 import (
 	"context"
 
-	"github.com/erda-project/erda/modules/core/monitor/storekit"
 	"github.com/erda-project/erda/modules/msp/apm/exception/erda-event/storage"
 	"github.com/erda-project/erda/modules/msp/apm/exception/model"
+	storekit2 "github.com/erda-project/erda/modules/tools/monitor/core/storekit"
 )
 
 // ErrorEvent .
@@ -33,7 +33,7 @@ type ErrorEventListIterator struct {
 }
 
 // NewErrorEventErrorListIterator .
-func NewErrorEventErrorListIterator(list ...ErrorEvent) storekit.Iterator {
+func NewErrorEventErrorListIterator(list ...ErrorEvent) storekit2.Iterator {
 	return &ErrorEventListIterator{list: list, i: -1}
 }
 
@@ -97,14 +97,14 @@ type errorEventListStorage struct {
 	exceptionEvent *model.Event
 }
 
-func (s *errorEventListStorage) NewWriter(ctx context.Context) (storekit.BatchWriter, error) {
-	return storekit.DefaultNopWriter, nil
+func (s *errorEventListStorage) NewWriter(ctx context.Context) (storekit2.BatchWriter, error) {
+	return storekit2.DefaultNopWriter, nil
 }
 
 func (s *errorEventListStorage) Count(ctx context.Context, sel *storage.Selector) int64 {
 	return int64(1)
 }
 
-func (s *errorEventListStorage) Iterator(ctx context.Context, sel *storage.Selector) (storekit.Iterator, error) {
+func (s *errorEventListStorage) Iterator(ctx context.Context, sel *storage.Selector) (storekit2.Iterator, error) {
 	return NewErrorEventErrorListIterator(s.exceptionEvent), nil
 }

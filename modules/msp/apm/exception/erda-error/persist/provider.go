@@ -22,8 +22,8 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/kafka"
-	"github.com/erda-project/erda/modules/core/monitor/storekit"
 	"github.com/erda-project/erda/modules/msp/apm/exception/erda-error/storage"
+	"github.com/erda-project/erda/modules/tools/monitor/core/storekit"
 )
 
 type (

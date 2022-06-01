@@ -24,12 +24,12 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/elasticsearch"
-	retention "github.com/erda-project/erda/modules/core/monitor/settings/retention-strategy"
-	"github.com/erda-project/erda/modules/core/monitor/storekit"
-	"github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/creator"
-	"github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/loader"
 	"github.com/erda-project/erda/modules/msp/apm/trace"
 	"github.com/erda-project/erda/modules/msp/apm/trace/storage"
+	"github.com/erda-project/erda/modules/tools/monitor/core/settings/retention-strategy"
+	storekit2 "github.com/erda-project/erda/modules/tools/monitor/core/storekit"
+	"github.com/erda-project/erda/modules/tools/monitor/core/storekit/elasticsearch/index/creator"
+	"github.com/erda-project/erda/modules/tools/monitor/core/storekit/elasticsearch/index/loader"
 )
 
 type (
@@ -73,7 +73,7 @@ func (p *provider) Init(ctx servicehub.Context) (err error) {
 
 var _ storage.Storage = (*provider)(nil)
 
-func (p *provider) NewWriter(ctx context.Context) (storekit.BatchWriter, error) {
+func (p *provider) NewWriter(ctx context.Context) (storekit2.BatchWriter, error) {
 	if p.Creator == nil || p.Retention == nil {
 		return nil, fmt.Errorf("elasticsearch.index.creator@span and storage-retention-strategy@span is required for Writer")
 	}
@@ -87,7 +87,7 @@ func (p *provider) NewWriter(ctx context.Context) (storekit.BatchWriter, error) 
 				select {
 				case <-wait:
 				case <-ctx.Done():
-					return "", "", "", nil, storekit.ErrExitConsume
+					return "", "", "", nil, storekit2.ErrExitConsume
 				}
 			}
 			return index, data.SpanId, p.Cfg.IndexType, &Document{

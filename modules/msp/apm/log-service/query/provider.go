@@ -21,15 +21,15 @@ import (
 	"github.com/jinzhu/gorm"
 	"gopkg.in/yaml.v3"
 
-	logs "github.com/erda-project/erda-infra/base/logs"
-	servicehub "github.com/erda-project/erda-infra/base/servicehub"
-	transport "github.com/erda-project/erda-infra/pkg/transport"
+	"github.com/erda-project/erda-infra/base/logs"
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	monitorpb "github.com/erda-project/erda-proto-go/core/monitor/log/query/pb"
-	pb "github.com/erda-project/erda-proto-go/msp/apm/log-service/pb"
-	"github.com/erda-project/erda/modules/extensions/loghub/index/query"
+	"github.com/erda-project/erda-proto-go/msp/apm/log-service/pb"
 	"github.com/erda-project/erda/modules/msp/instance/db"
+	"github.com/erda-project/erda/modules/tools/monitor/extensions/loghub/index/query"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 

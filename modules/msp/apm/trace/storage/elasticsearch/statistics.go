@@ -20,7 +20,7 @@ import (
 
 	"github.com/olivere/elastic"
 
-	"github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/loader"
+	"github.com/erda-project/erda/modules/tools/monitor/core/storekit/elasticsearch/index/loader"
 )
 
 func (p *provider) Count(ctx context.Context, traceId string) int64 {

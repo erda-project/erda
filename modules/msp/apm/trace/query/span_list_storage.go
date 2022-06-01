@@ -17,9 +17,9 @@ package query
 import (
 	"context"
 
-	"github.com/erda-project/erda/modules/core/monitor/storekit"
 	"github.com/erda-project/erda/modules/msp/apm/trace"
 	"github.com/erda-project/erda/modules/msp/apm/trace/storage"
+	storekit2 "github.com/erda-project/erda/modules/tools/monitor/core/storekit"
 )
 
 // Data .
@@ -33,7 +33,7 @@ type ListIterator struct {
 }
 
 // NewListIterator .
-func NewListIterator(list ...Data) storekit.Iterator {
+func NewListIterator(list ...Data) storekit2.Iterator {
 	return &ListIterator{list: list, i: -1}
 }
 
@@ -97,14 +97,14 @@ type listStorage struct {
 	span *trace.Span
 }
 
-func (s *listStorage) NewWriter(ctx context.Context) (storekit.BatchWriter, error) {
-	return storekit.DefaultNopWriter, nil
+func (s *listStorage) NewWriter(ctx context.Context) (storekit2.BatchWriter, error) {
+	return storekit2.DefaultNopWriter, nil
 }
 
 func (s *listStorage) Count(ctx context.Context, traceId string) int64 {
 	return int64(1)
 }
 
-func (s *listStorage) Iterator(ctx context.Context, sel *storage.Selector) (storekit.Iterator, error) {
+func (s *listStorage) Iterator(ctx context.Context, sel *storage.Selector) (storekit2.Iterator, error) {
 	return NewListIterator(s.span), nil
 }

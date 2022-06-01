@@ -19,7 +19,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
-	"github.com/erda-project/erda/modules/extensions/loghub"
+	"github.com/erda-project/erda/modules/tools/monitor/extensions/loghub"
 	"github.com/erda-project/erda/pkg/common"
 
 	// modules and providers
@@ -39,11 +39,6 @@ import (
 	_ "github.com/erda-project/erda-proto-go/core/monitor/settings/client"
 	_ "github.com/erda-project/erda-proto-go/core/token/client"
 
-	_ "github.com/erda-project/erda/modules/core/monitor/settings/retention-strategy"
-	_ "github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/cleaner"
-	_ "github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/loader"
-	_ "github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/retention-strategy"
-	_ "github.com/erda-project/erda/modules/extensions/loghub/index/query"
 	_ "github.com/erda-project/erda/modules/msp/apm/adapter"
 	_ "github.com/erda-project/erda/modules/msp/apm/alert"
 	_ "github.com/erda-project/erda/modules/msp/apm/checker/apis"
@@ -95,6 +90,11 @@ import (
 	_ "github.com/erda-project/erda/modules/msp/resource/deploy/handlers/zookeeper"
 	_ "github.com/erda-project/erda/modules/msp/tenant"
 	_ "github.com/erda-project/erda/modules/msp/tenant/project"
+	_ "github.com/erda-project/erda/modules/tools/monitor/core/settings/retention-strategy"
+	_ "github.com/erda-project/erda/modules/tools/monitor/core/storekit/elasticsearch/index/cleaner"
+	_ "github.com/erda-project/erda/modules/tools/monitor/core/storekit/elasticsearch/index/loader"
+	_ "github.com/erda-project/erda/modules/tools/monitor/core/storekit/elasticsearch/index/retention-strategy"
+	_ "github.com/erda-project/erda/modules/tools/monitor/extensions/loghub/index/query"
 	_ "github.com/erda-project/erda/pkg/common/permission"
 	_ "github.com/erda-project/erda/providers/audit"
 

@@ -22,7 +22,7 @@ import (
 
 	"github.com/olivere/elastic"
 
-	apm "github.com/erda-project/erda/modules/monitor/apm/common"
+	"github.com/erda-project/erda/modules/tools/monitor/apm/common"
 )
 
 const ApplicationServiceNode = "application_service_node"
