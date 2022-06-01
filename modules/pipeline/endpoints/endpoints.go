@@ -32,8 +32,6 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/providers/run"
 	"github.com/erda-project/erda/modules/pipeline/services/actionagentsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/appsvc"
-	"github.com/erda-project/erda/modules/pipeline/services/buildartifactsvc"
-	"github.com/erda-project/erda/modules/pipeline/services/buildcachesvc"
 	"github.com/erda-project/erda/modules/pipeline/services/permissionsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/pipelinesvc"
 	"github.com/erda-project/erda/modules/pipeline/services/queuemanage"
@@ -43,15 +41,13 @@ import (
 
 // Endpoints 定义 endpoint 方法
 type Endpoints struct {
-	appSvc           *appsvc.AppSvc
-	permissionSvc    *permissionsvc.PermissionSvc
-	pipelineSvc      *pipelinesvc.PipelineSvc
-	crondSvc         daemon.Interface
-	buildArtifactSvc *buildartifactsvc.BuildArtifactSvc
-	buildCacheSvc    *buildcachesvc.BuildCacheSvc
-	actionAgentSvc   *actionagentsvc.ActionAgentSvc
-	reportSvc        *reportsvc.ReportSvc
-	queueManage      *queuemanage.QueueManage
+	appSvc         *appsvc.AppSvc
+	permissionSvc  *permissionsvc.PermissionSvc
+	pipelineSvc    *pipelinesvc.PipelineSvc
+	crondSvc       daemon.Interface
+	actionAgentSvc *actionagentsvc.ActionAgentSvc
+	reportSvc      *reportsvc.ReportSvc
+	queueManage    *queuemanage.QueueManage
 
 	dbClient           *dbclient.Client
 	queryStringDecoder *schema.Decoder
@@ -88,18 +84,6 @@ func WithDBClient(dbClient *dbclient.Client) Option {
 func WithAppSvc(svc *appsvc.AppSvc) Option {
 	return func(e *Endpoints) {
 		e.appSvc = svc
-	}
-}
-
-func WithBuildArtifactSvc(svc *buildartifactsvc.BuildArtifactSvc) Option {
-	return func(e *Endpoints) {
-		e.buildArtifactSvc = svc
-	}
-}
-
-func WithBuildCacheSvc(svc *buildcachesvc.BuildCacheSvc) Option {
-	return func(e *Endpoints) {
-		e.buildCacheSvc = svc
 	}
 }
 
@@ -237,13 +221,6 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/pipeline-queues/{queueID}", Method: http.MethodPut, Handler: e.updatePipelineQueue},
 		{Path: "/api/pipeline-queues/{queueID}", Method: http.MethodDelete, Handler: e.deletePipelineQueue},
 		{Path: "/api/pipeline-queues/actions/batch-upgrade-pipeline-priority", Method: http.MethodPut, Handler: e.batchUpgradePipelinePriority},
-
-		// build artifact
-		{Path: "/api/build-artifacts/{sha}", Method: http.MethodGet, Handler: e.queryBuildArtifact},
-		{Path: "/api/build-artifacts", Method: http.MethodPost, Handler: e.registerBuildArtifact},
-
-		// build cache
-		{Path: "/api/build-caches", Method: http.MethodPost, Handler: e.reportBuildCache},
 
 		// platform callback
 		{Path: "/api/pipelines/actions/callback", Method: http.MethodPost, Handler: e.pipelineCallback},

@@ -12,23 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pipeline
+package db
 
-import (
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/openapi/api/apis"
-)
+import "github.com/erda-project/erda-infra/providers/mysqlxorm"
 
-var PIPELINE_BUILD_CACHE_REPORT = apis.ApiSpec{
-	Path:         "/api/build-caches",
-	BackendPath:  "/api/build-caches",
-	Host:         "pipeline.marathon.l4lb.thisdcos.directory:3081",
-	Scheme:       "http",
-	Method:       "POST",
-	IsOpenAPI:    true,
-	CheckLogin:   true,
-	CheckToken:   true,
-	RequestType:  apistructs.BuildCacheImageReportRequest{},
-	ResponseType: apistructs.BuildCacheImageReportResponse{},
-	Doc:          "summary: 上报缓存镜像使用情况",
+type Client struct {
+	mysqlxorm.Interface
 }

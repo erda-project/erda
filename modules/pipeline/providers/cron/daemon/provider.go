@@ -27,6 +27,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/etcd"
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/pipeline/providers/build"
 	"github.com/erda-project/erda/modules/pipeline/providers/cron/db"
 	"github.com/erda-project/erda/modules/pipeline/providers/edgepipeline_register"
 	"github.com/erda-project/erda/modules/pipeline/providers/leaderworker"
@@ -52,6 +53,7 @@ type provider struct {
 	crond                *cron.Cron
 	mu                   *sync.Mutex
 	EdgePipelineRegister edgepipeline_register.Interface
+	BuildSvc             build.Interface
 }
 
 func (p *provider) WithPipelineFunc(createPipelineFunc CreatePipelineFunc) {
