@@ -17,7 +17,7 @@ package ucauth
 import (
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda/modules/openapi/conf"
+	"github.com/erda-project/erda/modules/tools/openapi/legacy/conf"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
