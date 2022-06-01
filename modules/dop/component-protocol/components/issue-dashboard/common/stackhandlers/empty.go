@@ -17,7 +17,7 @@ package stackhandlers
 import (
 	"context"
 
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/filter"
+	"github.com/erda-project/erda/modules/tools/openapi/legacy/component-protocol/components/filter"
 )
 
 type DefaultStackHandler struct {

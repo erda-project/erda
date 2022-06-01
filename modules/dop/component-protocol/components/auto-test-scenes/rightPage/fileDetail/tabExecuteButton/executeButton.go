@@ -31,7 +31,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/common/gshelper"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	autotestv2 "github.com/erda-project/erda/modules/dop/services/autotest_v2"
-	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	protocol "github.com/erda-project/erda/modules/tools/openapi/legacy/component-protocol"
 )
 
 type ComponentAction struct {

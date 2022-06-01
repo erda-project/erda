@@ -33,7 +33,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/dop/services/issue"
 	"github.com/erda-project/erda/modules/dop/services/issuestate"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/filter"
+	"github.com/erda-project/erda/modules/tools/openapi/legacy/component-protocol/components/filter"
 	"github.com/erda-project/erda/providers/component-protocol/issueFilter"
 )
 

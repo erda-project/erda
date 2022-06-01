@@ -27,7 +27,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/dop/services/code_coverage"
-	"github.com/erda-project/erda/modules/openapi/hooks/posthandle"
+	"github.com/erda-project/erda/modules/tools/openapi/legacy/hooks/posthandle"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 

@@ -19,7 +19,7 @@ import (
 	"encoding/json"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/filter"
+	"github.com/erda-project/erda/modules/tools/openapi/legacy/component-protocol/components/filter"
 )
 
 type Filter struct {
