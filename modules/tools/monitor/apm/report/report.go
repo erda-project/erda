@@ -20,7 +20,7 @@ import (
 	"time"
 
 	"github.com/erda-project/erda-infra/providers/httpserver"
-	"github.com/erda-project/erda/modules/tools/monitor/apm/common"
+	apm "github.com/erda-project/erda/modules/tools/monitor/apm/common"
 	"github.com/erda-project/erda/modules/tools/monitor/common/permission"
 )
 

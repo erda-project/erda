@@ -19,7 +19,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/erda-project/erda/modules/tools/monitor/core/metric/query/es-tsql"
+	tsql "github.com/erda-project/erda/modules/tools/monitor/core/metric/query/es-tsql"
 )
 
 func (f *Formater) formatListChart(q tsql.Query, rs *tsql.ResultSet, params map[string]interface{}) (interface{}, error) {

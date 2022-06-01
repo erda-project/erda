@@ -22,7 +22,7 @@ import (
 	"github.com/olivere/elastic"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
-	"github.com/erda-project/erda/modules/tools/monitor/core/metric/query/es-tsql"
+	tsql "github.com/erda-project/erda/modules/tools/monitor/core/metric/query/es-tsql"
 	indexloader "github.com/erda-project/erda/modules/tools/monitor/core/storekit/elasticsearch/index/loader"
 )
 

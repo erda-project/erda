@@ -14,7 +14,7 @@ import (
 	"github.com/erda-project/erda/modules/tools/monitor/core/metric/query/chartmeta"
 	"github.com/erda-project/erda/modules/tools/monitor/core/metric/query/metricq"
 	query2 "github.com/erda-project/erda/modules/tools/monitor/core/metric/query/query"
-	"github.com/erda-project/erda/modules/tools/monitor/core/metric/query/query/v1"
+	queryv1 "github.com/erda-project/erda/modules/tools/monitor/core/metric/query/query/v1"
 
 	"github.com/golang/mock/gomock"
 	"github.com/olivere/elastic"

@@ -26,7 +26,7 @@ import (
 	"github.com/olivere/elastic"
 	"github.com/recallsong/go-utils/encoding/jsonx"
 
-	"github.com/erda-project/erda/modules/tools/monitor/core/metric/query/es-tsql"
+	tsql "github.com/erda-project/erda/modules/tools/monitor/core/metric/query/es-tsql"
 	_ "github.com/erda-project/erda/modules/tools/monitor/core/metric/query/es-tsql/influxql"
 )
 

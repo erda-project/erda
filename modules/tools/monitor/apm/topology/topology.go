@@ -36,7 +36,7 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/i18n"
-	"github.com/erda-project/erda/modules/tools/monitor/apm/common"
+	apm "github.com/erda-project/erda/modules/tools/monitor/apm/common"
 	"github.com/erda-project/erda/modules/tools/monitor/common/db"
 	"github.com/erda-project/erda/modules/tools/monitor/common/permission"
 	"github.com/erda-project/erda/modules/tools/monitor/core/metric/query/metricq"

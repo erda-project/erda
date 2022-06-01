@@ -20,7 +20,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
-	"github.com/erda-project/erda/modules/tools/monitor/core/metric/query/es-tsql"
+	tsql "github.com/erda-project/erda/modules/tools/monitor/core/metric/query/es-tsql"
 	"github.com/erda-project/erda/modules/tools/monitor/core/metric/query/es-tsql/formats"
 	"github.com/erda-project/erda/pkg/common/errors"
 	api "github.com/erda-project/erda/pkg/common/httpapi"

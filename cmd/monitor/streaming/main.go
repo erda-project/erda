@@ -25,6 +25,7 @@ import (
 	_ "github.com/erda-project/erda/modules/msp/apm/trace/storage/cassandra_v1"
 	_ "github.com/erda-project/erda/modules/msp/apm/trace/storage/elasticsearch"
 	_ "github.com/erda-project/erda/modules/tools/monitor/notify/storage/notify-record"
+
 	// modules
 	_ "github.com/erda-project/erda/modules/tools/monitor/core/alert/storage/alert-event"
 	_ "github.com/erda-project/erda/modules/tools/monitor/core/alert/storage/alert-record"

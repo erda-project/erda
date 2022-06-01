@@ -22,7 +22,7 @@ import (
 	"github.com/olivere/elastic"
 
 	"github.com/erda-project/erda-infra/providers/httpserver"
-	"github.com/erda-project/erda/modules/tools/monitor/apm/common"
+	apm "github.com/erda-project/erda/modules/tools/monitor/apm/common"
 	db2 "github.com/erda-project/erda/modules/tools/monitor/common/db"
 	"github.com/erda-project/erda/modules/tools/monitor/common/permission"
 )

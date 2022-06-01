@@ -22,7 +22,7 @@ import (
 	"github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/tools/monitor/core/alert/alert-apis/adapt"
-	"github.com/erda-project/erda/modules/tools/monitor/core/dataview/v1-chart-block"
+	block "github.com/erda-project/erda/modules/tools/monitor/core/dataview/v1-chart-block"
 	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
 

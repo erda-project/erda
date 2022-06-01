@@ -21,7 +21,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/modules/pkg/mysql"
-	"github.com/erda-project/erda/modules/tools/monitor/core/dataview/v1-chart-block"
+	block "github.com/erda-project/erda/modules/tools/monitor/core/dataview/v1-chart-block"
 )
 
 // tables name

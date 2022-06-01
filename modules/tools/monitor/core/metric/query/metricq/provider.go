@@ -28,7 +28,7 @@ import (
 	"github.com/erda-project/erda/modules/tools/monitor/core/metric/query/chartmeta"
 	"github.com/erda-project/erda/modules/tools/monitor/core/metric/query/metricmeta"
 	query2 "github.com/erda-project/erda/modules/tools/monitor/core/metric/query/query"
-	"github.com/erda-project/erda/modules/tools/monitor/core/metric/query/query/v1"
+	queryv1 "github.com/erda-project/erda/modules/tools/monitor/core/metric/query/query/v1"
 	indexloader "github.com/erda-project/erda/modules/tools/monitor/core/storekit/elasticsearch/index/loader"
 
 	_ "github.com/erda-project/erda/modules/tools/monitor/core/metric/query/query/v1/formats/chart"   //

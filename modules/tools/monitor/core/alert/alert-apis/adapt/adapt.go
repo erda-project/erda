@@ -23,7 +23,7 @@ import (
 	"github.com/erda-project/erda/modules/pkg/bundle-ex/cmdb"
 	"github.com/erda-project/erda/modules/tools/monitor/core/alert/alert-apis/cql"
 	"github.com/erda-project/erda/modules/tools/monitor/core/alert/alert-apis/db"
-	"github.com/erda-project/erda/modules/tools/monitor/core/dataview/v1-chart-block"
+	block "github.com/erda-project/erda/modules/tools/monitor/core/dataview/v1-chart-block"
 	"github.com/erda-project/erda/modules/tools/monitor/core/event/storage"
 	"github.com/erda-project/erda/modules/tools/monitor/core/metric/query/metricq"
 )

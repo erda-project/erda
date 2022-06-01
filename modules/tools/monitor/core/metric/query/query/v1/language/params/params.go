@@ -28,7 +28,7 @@ import (
 	"github.com/recallsong/go-utils/reflectx"
 
 	"github.com/erda-project/erda/modules/tools/monitor/core/metric/query/chartmeta"
-	"github.com/erda-project/erda/modules/tools/monitor/core/metric/query/es-tsql"
+	tsql "github.com/erda-project/erda/modules/tools/monitor/core/metric/query/es-tsql"
 	query2 "github.com/erda-project/erda/modules/tools/monitor/core/metric/query/query"
 	queryv12 "github.com/erda-project/erda/modules/tools/monitor/core/metric/query/query/v1"
 )
