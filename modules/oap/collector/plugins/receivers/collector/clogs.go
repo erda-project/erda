@@ -55,19 +55,3 @@ func (p *provider) collectLogs(ctx echo.Context) error {
 
 	return ctx.NoContent(http.StatusNoContent)
 }
-
-func (p *provider) sendRaw(name string, value []byte) error {
-	return nil
-	// od := odata.NewRaw(value)
-	//
-	// if p.Cfg.MetadataKeyOfTopic != "" {
-	// 	topic, err := p.getTopic(name)
-	// 	if err != nil {
-	// 		return fmt.Errorf("getTopic with name: %s, err: %w", name, err)
-	// 	}
-	// 	od.Metadata().Add(p.Cfg.MetadataKeyOfTopic, topic)
-	// }
-	//
-	// p.consumer(od)
-	// return nil
-}

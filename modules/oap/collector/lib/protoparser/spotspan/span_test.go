@@ -28,9 +28,10 @@ func Test_unmarshalWork_Unmarshal(t *testing.T) {
 		err error
 	}
 	tests := []struct {
-		name   string
-		fields fields
-		want   *trace.Span
+		name    string
+		fields  fields
+		want    *trace.Span
+		wantErr bool
 	}{
 		{
 			name: "",
@@ -50,6 +51,25 @@ func Test_unmarshalWork_Unmarshal(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "parse error",
+			fields: fields{
+				buf: []byte(`"name":"aaa","timestamp":1652756014793553000,"tags":{"operation_name":"GET /","org_name":"erda","parent_span_id":"","span_id":"aaa","trace_id":"bbb"},"fields":{"end_time":1652756014793553000,"start_time":1652756014793553000}}`),
+			},
+			want: &trace.Span{
+				SpanId:       "aaa",
+				TraceId:      "bbb",
+				ParentSpanId: "",
+				OrgName:      "erda",
+				StartTime:    int64(1652756014793552896),
+				EndTime:      int64(1652756014793552896),
+				Tags: map[string]string{
+					"operation_name": "GET /",
+					"org_name":       "erda",
+				},
+			},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -61,7 +81,14 @@ func Test_unmarshalWork_Unmarshal(t *testing.T) {
 					return nil
 				},
 			}
+			uw.wg.Add(1)
 			uw.Unmarshal()
+			uw.wg.Wait()
+			if !tt.wantErr {
+				assert.Nil(t, uw.err)
+			} else {
+				assert.NotNil(t, uw.err)
+			}
 		})
 	}
 }
