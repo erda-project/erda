@@ -26,7 +26,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/core/legacy/dao"
 	"github.com/erda-project/erda/modules/core/legacy/services/apierrors"
-	security2 "github.com/erda-project/erda/modules/core/legacy/services/security"
+	"github.com/erda-project/erda/modules/core/legacy/services/security"
 	"github.com/erda-project/erda/modules/core/legacy/types"
 	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/http/httpserver"
@@ -291,7 +291,7 @@ func (e *Endpoints) getPermission(userID string, scopeType apistructs.ScopeType,
 	}, nil
 }
 
-var permissionAdaptor security2.PermissionAdaptor
+var permissionAdaptor security.PermissionAdaptor
 
 // 获取权限
 func (e *Endpoints) getPermissionList(userID string, scopeType apistructs.ScopeType, scopeID int64) (apistructs.PermissionList, error) {
@@ -299,9 +299,9 @@ func (e *Endpoints) getPermissionList(userID string, scopeType apistructs.ScopeT
 	permissionAdaptor.Once.Do(func() {
 		permissionAdaptor.Db = e.db
 		permissionAdaptor.Bdl = e.bdl
-		permissionAdaptor.RegisterHandler(security2.AdminUserPermissionHandler{Adaptor: &permissionAdaptor})
-		permissionAdaptor.RegisterHandler(security2.SupportUserPermissionHandler{Adaptor: &permissionAdaptor})
-		permissionAdaptor.RegisterHandler(security2.NormalUserPermissionHandler{Adaptor: &permissionAdaptor})
+		permissionAdaptor.RegisterHandler(security.AdminUserPermissionHandler{Adaptor: &permissionAdaptor})
+		permissionAdaptor.RegisterHandler(security.SupportUserPermissionHandler{Adaptor: &permissionAdaptor})
+		permissionAdaptor.RegisterHandler(security.NormalUserPermissionHandler{Adaptor: &permissionAdaptor})
 	})
 
 	return permissionAdaptor.PermissionList(userID, scopeType, scopeID)

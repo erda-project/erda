@@ -18,7 +18,7 @@ import (
 	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda/apistructs"
-	model2 "github.com/erda-project/erda/modules/core/legacy/model"
+	"github.com/erda-project/erda/modules/core/legacy/model"
 )
 
 func (client *DBClient) QueryAppPublishItemRelations(req apistructs.QueryAppPublishItemRelationRequest) ([]apistructs.AppPublishItemRelation, error) {
@@ -46,12 +46,12 @@ func (client *DBClient) QueryAppPublishItemRelations(req apistructs.QueryAppPubl
 }
 
 func (client *DBClient) RemovePublishItemRelations(request *apistructs.RemoveAppPublishItemRelationsRequest) error {
-	return client.Where("publish_item_id=?", request.PublishItemId).Delete(&model2.ApplicationPublishItemRelation{}).Error
+	return client.Where("publish_item_id=?", request.PublishItemId).Delete(&model.ApplicationPublishItemRelation{}).Error
 }
 
 func (client *DBClient) UpdateAppPublishItemRelations(request *apistructs.UpdateAppPublishItemRelationRequest) error {
 	if request.DEVItemID > 0 {
-		r := &model2.ApplicationPublishItemRelation{
+		r := &model.ApplicationPublishItemRelation{
 			Env:           apistructs.DevWorkspace,
 			AppID:         request.AppID,
 			PublishItemID: request.DEVItemID,
@@ -61,7 +61,7 @@ func (client *DBClient) UpdateAppPublishItemRelations(request *apistructs.Update
 		if ok {
 			r.AK, r.AI = mk.AK, mk.AI
 		}
-		if client.Model(model2.ApplicationPublishItemRelation{}).Where("app_id = ? and env = ?",
+		if client.Model(model.ApplicationPublishItemRelation{}).Where("app_id = ? and env = ?",
 			request.AppID, apistructs.DevWorkspace).Updates(r).RowsAffected == 0 {
 			if err := client.Create(r).Error; err != nil {
 				return err
@@ -70,7 +70,7 @@ func (client *DBClient) UpdateAppPublishItemRelations(request *apistructs.Update
 	}
 
 	if request.TESTItemID > 0 {
-		r := &model2.ApplicationPublishItemRelation{
+		r := &model.ApplicationPublishItemRelation{
 			Env:           apistructs.TestWorkspace,
 			AppID:         request.AppID,
 			PublishItemID: request.TESTItemID,
@@ -80,7 +80,7 @@ func (client *DBClient) UpdateAppPublishItemRelations(request *apistructs.Update
 		if ok {
 			r.AK, r.AI = mk.AK, mk.AI
 		}
-		if client.Model(model2.ApplicationPublishItemRelation{}).Where("app_id = ? and env = ?",
+		if client.Model(model.ApplicationPublishItemRelation{}).Where("app_id = ? and env = ?",
 			request.AppID, apistructs.TestWorkspace).Updates(r).RowsAffected == 0 {
 			if err := client.Create(r).Error; err != nil {
 				return err
@@ -89,7 +89,7 @@ func (client *DBClient) UpdateAppPublishItemRelations(request *apistructs.Update
 	}
 
 	if request.STAGINGItemID > 0 {
-		r := &model2.ApplicationPublishItemRelation{
+		r := &model.ApplicationPublishItemRelation{
 			Env:           apistructs.StagingWorkspace,
 			AppID:         request.AppID,
 			PublishItemID: request.STAGINGItemID,
@@ -99,7 +99,7 @@ func (client *DBClient) UpdateAppPublishItemRelations(request *apistructs.Update
 		if ok {
 			r.AK, r.AI = mk.AK, mk.AI
 		}
-		if client.Model(model2.ApplicationPublishItemRelation{}).Where("app_id = ? and env = ?",
+		if client.Model(model.ApplicationPublishItemRelation{}).Where("app_id = ? and env = ?",
 			request.AppID, apistructs.StagingWorkspace).Updates(r).RowsAffected == 0 {
 			if err := client.Create(r).Error; err != nil {
 				return err
@@ -108,7 +108,7 @@ func (client *DBClient) UpdateAppPublishItemRelations(request *apistructs.Update
 	}
 
 	if request.ProdItemID > 0 {
-		r := &model2.ApplicationPublishItemRelation{
+		r := &model.ApplicationPublishItemRelation{
 			Env:           apistructs.WORKSPACE_PROD,
 			AppID:         request.AppID,
 			PublishItemID: request.ProdItemID,
@@ -118,7 +118,7 @@ func (client *DBClient) UpdateAppPublishItemRelations(request *apistructs.Update
 		if ok {
 			r.AK, r.AI = mk.AK, mk.AI
 		}
-		if client.Model(model2.ApplicationPublishItemRelation{}).Where("app_id = ? and env = ?",
+		if client.Model(model.ApplicationPublishItemRelation{}).Where("app_id = ? and env = ?",
 			request.AppID, apistructs.WORKSPACE_PROD).Updates(r).RowsAffected == 0 {
 			if err := client.Create(r).Error; err != nil {
 				return err
@@ -128,8 +128,8 @@ func (client *DBClient) UpdateAppPublishItemRelations(request *apistructs.Update
 	return nil
 }
 
-func (client *DBClient) GetApplicationByID(applicationID int64) (model2.Application, error) {
-	var application model2.Application
+func (client *DBClient) GetApplicationByID(applicationID int64) (model.Application, error) {
+	var application model.Application
 	if err := client.Where("id = ?", applicationID).Find(&application).Error; err != nil {
 		if gorm.IsRecordNotFoundError(err) {
 			return application, ErrNotFoundApplication

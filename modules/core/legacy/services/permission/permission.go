@@ -22,7 +22,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/core/legacy/dao"
-	security2 "github.com/erda-project/erda/modules/core/legacy/services/security"
+	"github.com/erda-project/erda/modules/core/legacy/services/security"
 	"github.com/erda-project/erda/modules/core/legacy/types"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -166,7 +166,7 @@ func (p *Permission) CheckPublicScope(userId string, scopeType apistructs.ScopeT
 	return true, nil
 }
 
-var checkAdaptor security2.PermissionAdaptor
+var checkAdaptor security.PermissionAdaptor
 
 // CheckPermission 鉴权Z
 func (p *Permission) CheckPermission(req *apistructs.PermissionCheckRequest) (bool, error) {
@@ -175,10 +175,10 @@ func (p *Permission) CheckPermission(req *apistructs.PermissionCheckRequest) (bo
 	checkAdaptor.Once.Do(func() {
 		checkAdaptor.Db = p.db
 		checkAdaptor.Bdl = p.Bdl
-		checkAdaptor.RegisterHandler(security2.InternalUserPermissionHandler{Adaptor: &checkAdaptor})
-		checkAdaptor.RegisterHandler(security2.AdminUserPermissionHandler{Adaptor: &checkAdaptor})
-		checkAdaptor.RegisterHandler(security2.SupportUserPermissionHandler{Adaptor: &checkAdaptor})
-		checkAdaptor.RegisterHandler(security2.NormalUserPermissionHandler{Adaptor: &checkAdaptor})
+		checkAdaptor.RegisterHandler(security.InternalUserPermissionHandler{Adaptor: &checkAdaptor})
+		checkAdaptor.RegisterHandler(security.AdminUserPermissionHandler{Adaptor: &checkAdaptor})
+		checkAdaptor.RegisterHandler(security.SupportUserPermissionHandler{Adaptor: &checkAdaptor})
+		checkAdaptor.RegisterHandler(security.NormalUserPermissionHandler{Adaptor: &checkAdaptor})
 	})
 
 	return checkAdaptor.CheckPermission(*req)
