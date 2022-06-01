@@ -112,9 +112,9 @@ func queryClusterManagerIP(clusterKey interface{}) (interface{}, bool) {
 	log := logrus.WithField("func", "NetPortal NewRequest")
 	log.Debug("start querying clusterManager IP in netPortal NewRequest...")
 
-	splits := strings.Split(discover.ClusterManager(), ":")
+	splits := strings.Split(discover.ClusterDialer(), ":")
 	if len(splits) != 2 {
-		log.Errorf("invalid clusterManager addr: %s", discover.ClusterManager())
+		log.Errorf("invalid clusterManager addr: %s", discover.ClusterDialer())
 		return "", false
 	}
 	addr := splits[0]

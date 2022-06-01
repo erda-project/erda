@@ -31,8 +31,8 @@ import (
 	"github.com/sirupsen/logrus"
 
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
-	"github.com/erda-project/erda/internal/core/cluster-manager/conf"
 	"github.com/erda-project/erda/internal/core/cluster-manager/dialer/auth"
+	"github.com/erda-project/erda/internal/core/cluster-manager/dialer/config"
 	clusteragent "github.com/erda-project/erda/internal/tools/cluster-agent/client"
 	clientconfig "github.com/erda-project/erda/internal/tools/cluster-agent/config"
 	"github.com/erda-project/erda/pkg/clusterdialer"
@@ -47,7 +47,7 @@ const (
 
 func startServer(etcd *clientv3.Client) (context.Context, context.CancelFunc) {
 	ctx, cancel := context.WithCancel(context.Background())
-	go Start(ctx, &fakeClusterSvc{}, nil, &conf.Conf{
+	go Start(ctx, &fakeClusterSvc{}, nil, &config.Config{
 		Listen:          fmt.Sprintf("%s:%s", dialerListenAddr, dialerListenPort),
 		NeedClusterInfo: false,
 	}, etcd)
@@ -115,7 +115,7 @@ func Test_DialerContext(t *testing.T) {
 		time.Sleep(1 * time.Second)
 	}
 
-	os.Setenv(discover.EnvClusterManager, fmt.Sprintf("%s:%s", dialerListenAddr, dialerListenPort))
+	os.Setenv(discover.EnvClusterDialer, fmt.Sprintf("%s:%s", dialerListenAddr, dialerListenPort))
 	hc := http.Client{
 		Transport: &http.Transport{
 			DialContext: clusterdialer.DialContext(fakeClusterKey),

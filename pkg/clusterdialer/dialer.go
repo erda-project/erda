@@ -78,9 +78,9 @@ func queryClusterManagerIP(clusterKey interface{}) (interface{}, bool) {
 	log := logrus.WithField("func", "DialContext")
 	log.Debugf("start querying clusterManager IP in dialContext...")
 
-	splits := strings.Split(discover.ClusterManager(), ":")
+	splits := strings.Split(discover.ClusterDialer(), ":")
 	if len(splits) != 2 {
-		log.Errorf("invalid clusterManager addr: %s", discover.ClusterManager())
+		log.Errorf("invalid clusterManager addr: %s", discover.ClusterDialer())
 		return "", false
 	}
 	addr := splits[0]

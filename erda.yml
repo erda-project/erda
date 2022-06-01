@@ -33,6 +33,7 @@ envs:
   OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://collector:7076/api/otlp/v1/traces
   OTEL_TRACES_SAMPLER_ARG: 0.1
   CLUSTER_MANAGER_ADDR: cluster-manager:9094
+  CLUSTER_DIALER_ADDR: cluster-manager:80
 services:
   dop:
     binds:
@@ -148,12 +149,15 @@ services:
   cluster-manager:
     cmd: /erda/cmd/cluster-manager/bin
     ports:
+      - port: 80
+        protocol: TCP
+        l4_protocol: TCP
       - port: 9094
-        protocol: "TCP"
-        l4_protocol: "TCP"
+        protocol: TCP
+        l4_protocol: TCP
       - port: 9095
-        protocol: "TCP"
-        l4_protocol: "TCP"
+        protocol: TCP
+        l4_protocol: TCP
     envs:
       DEBUG: "false"
     resources:

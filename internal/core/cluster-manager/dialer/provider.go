@@ -12,13 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cluster_manager
+package dialer
 
 import (
 	"context"
 
 	"github.com/coreos/etcd/clientv3"
-	"github.com/jinzhu/gorm"
 	"github.com/rancher/remotedialer"
 	"github.com/sirupsen/logrus"
 
@@ -27,29 +26,26 @@ import (
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/internal/core/cluster-manager/cluster"
-	"github.com/erda-project/erda/internal/core/cluster-manager/cluster/db"
-	"github.com/erda-project/erda/internal/core/cluster-manager/conf"
+	"github.com/erda-project/erda/internal/core/cluster-manager/dialer/config"
 	"github.com/erda-project/erda/internal/core/cluster-manager/dialer/server"
 )
 
+// +provider
 type provider struct {
-	Cfg        *conf.Conf
 	Bdl        *bundle.Bundle
-	DB         *gorm.DB                   `autowired:"mysql-client"`
-	Router     httpserver.Router          `autowired:"http-router"`
-	Credential tokenpb.TokenServiceServer `autowired:"erda.core.token.TokenService" optional:"true"`
-	Etcd       *clientv3.Client           `autowired:"etcd"`
-	Cluster    clusterpb.ClusterServiceServer
+	Cfg        *config.Config
+	Router     httpserver.Router              `autowired:"http-server@cluster-dialer"`
+	Credential tokenpb.TokenServiceServer     `autowired:"erda.core.token.TokenService" optional:"true"`
+	Etcd       *clientv3.Client               `autowired:"etcd"`
+	Cluster    clusterpb.ClusterServiceServer `autowired:"erda.core.clustermanager.cluster.ClusterService" required:"true"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.Bdl = bundle.New(bundle.WithCoreServices())
 	if p.Cfg.Debug {
 		logrus.SetLevel(logrus.DebugLevel)
 		remotedialer.PrintTunnelData = true
 	}
-	p.Cluster = cluster.NewClusterService(cluster.WithDB(&db.ClusterDB{DB: p.DB}), cluster.WithBundle(p.Bdl))
+	p.Bdl = bundle.New(bundle.WithCoreServices())
 	return nil
 }
 
@@ -59,11 +55,12 @@ func (p *provider) Run(ctx context.Context) error {
 }
 
 func init() {
-	servicehub.Register("cluster-manager", &servicehub.Spec{
-		Services:    []string{"cluster-manager"},
-		Description: "cluster manager",
+	servicehub.Register("cluster-dialer", &servicehub.Spec{
+		Services: []string{
+			"cluster-dialer-service",
+		},
 		ConfigFunc: func() interface{} {
-			return &conf.Conf{}
+			return &config.Config{}
 		},
 		Creator: func() servicehub.Provider {
 			return &provider{}
