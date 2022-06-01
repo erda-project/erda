@@ -24,7 +24,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	_ "github.com/erda-project/erda-infra/base/version"
-	actionrunner "github.com/erda-project/erda/modules/pipeline/action-runner"
+	actionrunner "github.com/erda-project/erda/modules/tools/pipeline/action-runner"
 )
 
 var config = flag.String("config", "./config.json", "file path")

@@ -32,7 +32,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/model"
 	"github.com/erda-project/erda/modules/dop/services/certificate"
 	"github.com/erda-project/erda/modules/dop/utils"
-	"github.com/erda-project/erda/modules/pipeline/providers/cms"
+	"github.com/erda-project/erda/modules/tools/pipeline/providers/cms"
 )
 
 // AppCertificate 资源对象操作封装

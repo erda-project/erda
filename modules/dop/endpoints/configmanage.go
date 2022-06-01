@@ -26,9 +26,9 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/modules/dop/utils"
-	"github.com/erda-project/erda/modules/pipeline/providers/cms"
 	"github.com/erda-project/erda/modules/pkg/gitflowutil"
 	"github.com/erda-project/erda/modules/pkg/user"
+	"github.com/erda-project/erda/modules/tools/pipeline/providers/cms"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 )

@@ -33,8 +33,8 @@ import (
 	dicestructs "github.com/erda-project/erda/apistructs"
 	block "github.com/erda-project/erda/modules/core/monitor/dataview/v1-chart-block"
 	"github.com/erda-project/erda/modules/monitor/utils"
-	"github.com/erda-project/erda/modules/pipeline/providers/cron/crontypes"
 	"github.com/erda-project/erda/modules/pkg/mysql"
+	"github.com/erda-project/erda/modules/tools/pipeline/providers/cron/crontypes"
 	api "github.com/erda-project/erda/pkg/common/httpapi"
 	"github.com/erda-project/erda/pkg/discover"
 )
