@@ -21,8 +21,8 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/modules/cluster/cluster-agent/client"
-	"github.com/erda-project/erda/modules/cluster/cluster-agent/config"
+	"github.com/erda-project/erda/modules/tools/cluster-agent/client"
+	"github.com/erda-project/erda/modules/tools/cluster-agent/config"
 )
 
 type provider struct {
