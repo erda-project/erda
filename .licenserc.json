@@ -9,7 +9,7 @@
     "pkg/k8s/spdy",
     "pkg/pipe.v2/pipe.go",
     "modules/tools/admin-tools/statik/statik.go",
-    "modules/gittar/pkg/gitmodule",
+    "modules/tools/gittar/pkg/gitmodule",
     "api",
     "modules/core/monitor/log/storage/clickhouse/query_parser/parser"
   ]

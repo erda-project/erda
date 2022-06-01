@@ -20,7 +20,7 @@ import (
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/utils"
-	"github.com/erda-project/erda/modules/pipeline/providers/cms"
+	"github.com/erda-project/erda/modules/tools/pipeline/providers/cms"
 	"github.com/erda-project/erda/pkg/nexus"
 )
 

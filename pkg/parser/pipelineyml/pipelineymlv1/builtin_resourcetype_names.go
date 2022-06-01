@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // DO NOT EDIT!!!
-// See go:generate at github.com/erda-project/erda/modules/pipeline/pipelineyml/builtin_resourcetype.go
+// See go:generate at github.com/erda-project/erda/modules/tools/pipeline/pipelineyml/builtin_resourcetype.go
 
 package pipelineymlv1
 
