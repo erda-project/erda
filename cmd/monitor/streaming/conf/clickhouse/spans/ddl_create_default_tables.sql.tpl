@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS <database>.spans_series ON CLUSTER '{cluster}'
 	`parent_span_id` String,
   `start_time` DateTime64(9,'Asia/Shanghai') CODEC(DoubleDelta),
   `end_time` DateTime64(9,'Asia/Shanghai') CODEC(DoubleDelta),
+  `tags` Map(String,String),
   INDEX idx_trace_id(trace_id) TYPE minmax GRANULARITY 1
 )
 ENGINE = ReplicatedMergeTree('/clickhouse/tables/{cluster}-{shard}/{database}/spans_series', '{replica}')

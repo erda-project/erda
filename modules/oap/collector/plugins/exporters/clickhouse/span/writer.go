@@ -19,42 +19,45 @@ import (
 	"fmt"
 	"hash/fnv"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 
-	"github.com/erda-project/erda/modules/oap/collector/lib"
-
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda/modules/msp/apm/trace"
+	"github.com/erda-project/erda/modules/oap/collector/lib"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
 type Config struct {
-	Database string
-	Retry    int
-	Logger   logs.Logger
-	Client   clickhouse.Conn
+	RetryNum      int    `file:"retry_num" default:"5" ENV:"EXPORTER_CH_SPAN_RETRY_NUM"`
+	SeriesTagKeys string `file:"series_tag_keys"`
 }
 
 type WriteSpan struct {
-	db          string
-	retryCnt    int
-	logger      logs.Logger
-	client      clickhouse.Conn
-	seriesBatch driver.Batch
-
-	itemsCh chan []*trace.Span
+	db                  string
+	retryCnt            int
+	highCardinalityKeys map[string]struct{}
+	logger              logs.Logger
+	client              clickhouse.Conn
+	itemsCh             chan []*trace.Span
 }
 
-func NewWriteSpan(cfg Config) *WriteSpan {
+func NewWriteSpan(cli clickhouse.Conn, logger logs.Logger, db string, cfg *Config) *WriteSpan {
+	hk := make(map[string]struct{})
+	for _, k := range strings.Split(cfg.SeriesTagKeys, ",") {
+		hk[strings.TrimSpace(k)] = struct{}{}
+	}
+
 	return &WriteSpan{
-		db:       cfg.Database,
-		retryCnt: cfg.Retry,
-		logger:   cfg.Logger,
-		client:   cfg.Client,
+		db:                  db,
+		retryCnt:            cfg.RetryNum,
+		highCardinalityKeys: hk,
+		logger:              logger,
+		client:              cli,
 	}
 }
 
@@ -67,7 +70,6 @@ func (ws *WriteSpan) Start(ctx context.Context) {
 }
 
 func (ws *WriteSpan) handleSpan(ctx context.Context) {
-begin:
 	for items := range ws.itemsCh {
 		// nolint
 		metaBatch, err := ws.client.PrepareBatch(ctx, "INSERT INTO "+ws.db+"."+trace.CH_TABLE_META)
@@ -82,46 +84,10 @@ begin:
 			continue
 		}
 
-		for _, data := range items {
-			metas := getMetaBuf()
-			for k, v := range data.Tags {
-				metas = append(metas, trace.Meta{Key: k, Value: v, OrgName: data.OrgName, CreateAt: data.EndTime})
-			}
-			sort.Slice(metas, func(i, j int) bool {
-				return metas[i].Key < metas[j].Key
-			})
-			sid := hashTagsList(metas)
-
-			if !seriesIDExisted(sid) {
-				for i := range metas {
-					metas[i].SeriesID = sid
-					err := metaBatch.AppendStruct(&metas[i])
-					if err != nil { // TODO. Data may lost when encounter error
-						ws.logger.Errorf("metaBatch append: %s", err)
-						_ = metaBatch.Abort()
-						putMetaBuf(metas)
-						goto begin
-					}
-				}
-			}
-			putMetaBuf(metas)
-
-			series := getSeriesBuf()
-			series.OrgName = data.OrgName
-			series.TraceId = data.TraceId
-			series.SpanId = data.SpanId
-			series.ParentSpanId = data.ParentSpanId
-			series.StartTime = data.StartTime
-			series.EndTime = data.EndTime
-			series.SeriesID = sid
-			err = seriesBatch.AppendStruct(&series)
-			if err != nil { // TODO. Data may lost when encounter error
-				ws.logger.Errorf("seriesBatch: %s", err)
-				_ = seriesBatch.Abort()
-				putSeriesBuf(series)
-				goto begin
-			}
-			putSeriesBuf(series)
+		err = ws.enrichBatch(metaBatch, seriesBatch, items)
+		if err != nil {
+			ws.logger.Errorf("failed enrichBatch: %w", err)
+			continue
 		}
 
 		ws.sendBatch(ctx, metaBatch)
@@ -163,6 +129,63 @@ func (ws *WriteSpan) sendBatch(ctx context.Context, b driver.Batch) {
 		}
 		<-currencyLimiter
 	}()
+}
+
+func (ws *WriteSpan) enrichBatch(metaBatch driver.Batch, seriesBatch driver.Batch, items []*trace.Span) error {
+	for _, data := range items {
+		var seriesTags map[string]string
+		if len(ws.highCardinalityKeys) > 0 {
+			seriesTags = make(map[string]string, len(ws.highCardinalityKeys))
+		}
+
+		// enrich metabatch
+		metas := getMetaBuf()
+		for k, v := range data.Tags {
+			if len(ws.highCardinalityKeys) > 0 {
+				if _, ok := ws.highCardinalityKeys[k]; ok {
+					seriesTags[k] = v
+					continue
+				}
+			}
+			metas = append(metas, trace.Meta{Key: k, Value: v, OrgName: data.OrgName, CreateAt: data.EndTime})
+		}
+		sort.Slice(metas, func(i, j int) bool {
+			return metas[i].Key < metas[j].Key
+		})
+		sid := hashTagsList(metas)
+
+		if !seriesIDExisted(sid) {
+			for i := range metas {
+				metas[i].SeriesID = sid
+				err := metaBatch.AppendStruct(&metas[i])
+				if err != nil { // TODO. Data may lost when encounter error
+					_ = metaBatch.Abort()
+					putMetaBuf(metas)
+					return fmt.Errorf("metaBatch append: %w", err)
+				}
+			}
+		}
+		putMetaBuf(metas)
+
+		// enrich series batch
+		series := getSeriesBuf()
+		series.OrgName = data.OrgName
+		series.TraceId = data.TraceId
+		series.SpanId = data.SpanId
+		series.ParentSpanId = data.ParentSpanId
+		series.StartTime = data.StartTime
+		series.EndTime = data.EndTime
+		series.SeriesID = sid
+		series.Tags = seriesTags
+		err := seriesBatch.AppendStruct(&series)
+		if err != nil { // TODO. Data may lost when encounter error
+			_ = seriesBatch.Abort()
+			putSeriesBuf(series)
+			return fmt.Errorf("seriesBatch: %w", err)
+		}
+		putSeriesBuf(series)
+	}
+	return nil
 }
 
 func hashTagsList(list []trace.Meta) uint64 {
@@ -209,6 +232,7 @@ func putSeriesBuf(buf trace.Series) {
 	buf.TraceId = ""
 	buf.SpanId = ""
 	buf.ParentSpanId = ""
+	buf.Tags = nil
 	seriesBufPool.Put(buf)
 }
 

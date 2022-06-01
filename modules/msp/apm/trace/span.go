@@ -45,13 +45,14 @@ func (s *Span) GetTags() map[string]string {
 }
 
 type Series struct {
-	StartTime    int64  `ch:"start_time"`
-	EndTime      int64  `ch:"end_time"`
-	SeriesID     uint64 `ch:"series_id"`
-	OrgName      string `ch:"org_name"`
-	TraceId      string `ch:"trace_id"`
-	SpanId       string `ch:"span_id"`
-	ParentSpanId string `ch:"parent_span_id"`
+	StartTime    int64             `ch:"start_time"`
+	EndTime      int64             `ch:"end_time"`
+	SeriesID     uint64            `ch:"series_id"`
+	OrgName      string            `ch:"org_name"`
+	TraceId      string            `ch:"trace_id"`
+	SpanId       string            `ch:"span_id"`
+	ParentSpanId string            `ch:"parent_span_id"`
+	Tags         map[string]string `ch:"tags"`
 }
 
 type Meta struct {
