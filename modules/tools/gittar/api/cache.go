@@ -12,25 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package api
 
 import (
-	_ "embed"
-
-	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/pkg/common"
-
-	// providers and modules
-	_ "github.com/erda-project/erda-infra/providers/grpcclient"
-	_ "github.com/erda-project/erda-proto-go/core/token/client"
-	_ "github.com/erda-project/erda/modules/tools/gittar"
+	"github.com/erda-project/erda/modules/tools/gittar/pkg/gitmodule"
+	"github.com/erda-project/erda/modules/tools/gittar/webcontext"
 )
 
-//go:embed bootstrap.yaml
-var bootstrapCfg string
+func ShowCacheStats(context *webcontext.Context) {
 
-func main() {
-	common.Run(&servicehub.RunOptions{
-		Content: bootstrapCfg,
+	context.Success(Map{
+		"commit":     gitmodule.Setting.CommitCache.Status(),
+		"pathCommit": gitmodule.Setting.PathCommitCache.Status(),
+		"repoStats":  gitmodule.Setting.RepoStatsCache.Status(),
+		"objectSize": gitmodule.Setting.ObjectSizeCache.Status(),
 	})
+
 }

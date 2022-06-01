@@ -12,25 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package api
 
 import (
-	_ "embed"
-
-	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/pkg/common"
-
-	// providers and modules
-	_ "github.com/erda-project/erda-infra/providers/grpcclient"
-	_ "github.com/erda-project/erda-proto-go/core/token/client"
-	_ "github.com/erda-project/erda/modules/tools/gittar"
+	"github.com/erda-project/erda/modules/tools/gittar/migration"
+	"github.com/erda-project/erda/modules/tools/gittar/webcontext"
 )
 
-//go:embed bootstrap.yaml
-var bootstrapCfg string
-
-func main() {
-	common.Run(&servicehub.RunOptions{
-		Content: bootstrapCfg,
-	})
+func MigrationNewAuth(ctx *webcontext.Context) {
+	err := migration.NewAuth()
+	if err != nil {
+		ctx.Abort(err)
+		return
+	}
+	ctx.Success("")
 }
