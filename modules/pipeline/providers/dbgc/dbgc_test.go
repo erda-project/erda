@@ -19,10 +19,12 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
+	"time"
 
 	"bou.ke/monkey"
 	"github.com/alecthomas/assert"
 
+	"github.com/erda-project/erda-infra/base/logs/logrusx"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/providers/dbgc/db"
@@ -136,12 +138,29 @@ func TestGetPipelineIDFromDBGCWatchedKey(t *testing.T) {
 
 func TestPipelineDatabaseGC(t *testing.T) {
 	var r provider
-	pm := monkey.PatchInstanceMethod(reflect.TypeOf(&r), "PipelineDatabaseGC", func(r *provider, ctx context.Context) {
-		return
+	DB := &dbclient.Client{}
+
+	pm := monkey.PatchInstanceMethod(reflect.TypeOf(DB), "PageListPipelines", func(client *dbclient.Client, req apistructs.PipelinePageListRequest, ops ...dbclient.SessionOption) (*dbclient.PageListPipelinesResult, error) {
+		return &dbclient.PageListPipelinesResult{Pipelines: nil}, nil
 	})
 	defer pm.Unpatch()
+
+	pm1 := monkey.PatchInstanceMethod(reflect.TypeOf(r.dbClient), "DeletePipelineArchives", func(client *db.Client, req db.ArchiveDeleteRequest, ops ...dbclient.SessionOption) error {
+		return nil
+	})
+	defer pm1.Unpatch()
+	r.dbClient = &db.Client{Client: *DB}
+	r.Cfg = &config{
+		PipelineDBGCDuration: 3 * time.Second,
+	}
+	r.Log = logrusx.New()
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		time.Sleep(time.Second)
+		cancel()
+	}()
 	t.Run("PipelineDatabaseGC", func(t *testing.T) {
-		r.PipelineDatabaseGC(context.Background())
+		r.PipelineDatabaseGC(ctx)
 	})
 }
 
