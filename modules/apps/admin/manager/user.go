@@ -21,7 +21,7 @@ import (
 	"github.com/gorilla/schema"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/core-services/services/apierrors"
+	"github.com/erda-project/erda/modules/core/legacy/services/apierrors"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 

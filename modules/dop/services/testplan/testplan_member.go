@@ -16,10 +16,10 @@ package testplan
 
 import (
 	"github.com/erda-project/erda/apistructs"
-	dao2 "github.com/erda-project/erda/modules/dop/dao"
+	"github.com/erda-project/erda/modules/dop/dao"
 )
 
-func (t *TestPlan) ConvertMember(dbMem dao2.TestPlanMember) apistructs.TestPlanMember {
+func (t *TestPlan) ConvertMember(dbMem dao.TestPlanMember) apistructs.TestPlanMember {
 	return apistructs.TestPlanMember{
 		ID:         uint64(dbMem.ID),
 		TestPlanID: dbMem.TestPlanID,
@@ -30,7 +30,7 @@ func (t *TestPlan) ConvertMember(dbMem dao2.TestPlanMember) apistructs.TestPlanM
 	}
 }
 
-func (t *TestPlan) BatchConvertMembers(dbMems []dao2.TestPlanMember) []apistructs.TestPlanMember {
+func (t *TestPlan) BatchConvertMembers(dbMems []dao.TestPlanMember) []apistructs.TestPlanMember {
 	var results []apistructs.TestPlanMember
 	for _, dbMem := range dbMems {
 		results = append(results, t.ConvertMember(dbMem))
