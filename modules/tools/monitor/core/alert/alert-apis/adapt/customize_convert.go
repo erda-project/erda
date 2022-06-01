@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 	"github.com/erda-project/erda/modules/tools/monitor/core/alert/alert-apis/db"
+	"github.com/erda-project/erda/modules/tools/monitor/utils"
 )
 
 // FromModel .
@@ -70,8 +71,8 @@ func (a *CustomizeAlertDetail) FromModelWithDetail(m *db.CustomizeAlert,
 	a.Enable = m.Enable
 	a.Rules = rules
 	a.Notifies = []*CustomizeAlertNotifyTemplates{templates}
-	a.CreateTime = util.ConvertTimeToMS(m.CreateTime)
-	a.UpdateTime = util.ConvertTimeToMS(m.UpdateTime)
+	a.CreateTime = utils.ConvertTimeToMS(m.CreateTime)
+	a.UpdateTime = utils.ConvertTimeToMS(m.UpdateTime)
 
 	return a
 }
@@ -112,7 +113,7 @@ func (r *CustomizeAlertRule) FromModel(m *db.CustomizeAlertRule) (*CustomizeAler
 
 	if len(m.Attributes) != 0 {
 		if v, ok := m.Attributes["active_metric_groups"]; ok {
-			if slice, ok := util.ConvertStringArr(v); !ok {
+			if slice, ok := utils.ConvertStringArr(v); !ok {
 				logrus.Error("fail to convert active_metric_groups to string slice")
 			} else {
 				r.ActivedMetricGroups = slice
@@ -191,7 +192,7 @@ func (a *Adapt) ToModel(r *pb.CustomizeAlertRule, alert *pb.CustomizeAlertDetail
 		AlertIndex:       index,
 		AlertScope:       alert.AlertScope,
 		AlertScopeID:     alert.AlertScopeId,
-		Template:         util.ConvertStructToMap(template),
+		Template:         utils.ConvertStructToMap(template),
 		Attributes:       attributeData,
 		Enable:           alert.Enable,
 	}

@@ -184,17 +184,17 @@ func Test_provider_deleteByQuery(t *testing.T) {
 	}{
 		{
 			"case1", fields{
-			Cfg:                      nil,
-			Log:                      nil,
-			election:                 nil,
-			loader:                   nil,
-			retentions:               nil,
-			clearCh:                  nil,
-			minIndicesStoreInDisk:    0,
-			rolloverBodyForDiskClean: "",
-			rolloverAliasPatterns:    nil,
-			ttlTaskCh:                nil,
-		},
+				Cfg:                      nil,
+				Log:                      nil,
+				election:                 nil,
+				loader:                   nil,
+				retentions:               nil,
+				clearCh:                  nil,
+				minIndicesStoreInDisk:    0,
+				rolloverBodyForDiskClean: "",
+				rolloverAliasPatterns:    nil,
+				ttlTaskCh:                nil,
+			},
 		},
 	}
 	for _, tt := range tests {

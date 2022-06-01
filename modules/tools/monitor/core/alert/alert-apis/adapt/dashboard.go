@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 	block "github.com/erda-project/erda/modules/tools/monitor/core/dataview/v1-chart-block"
+	"github.com/erda-project/erda/modules/tools/monitor/utils"
 	"github.com/erda-project/erda/pkg/common/errors"
 )
 
@@ -218,7 +219,7 @@ func (d *dashgen) generateViewConfigItems(r *pb.CustomizeAlertRule) (res []*bloc
 			H:    int64(heigth * (idx + 1)),
 			X:    0,
 			Y:    int64(heigth * idx),
-			I:    fmt.Sprintf("view-%s", util.RandomString(8)),
+			I:    fmt.Sprintf("view-%s", utils.RandomString(8)),
 			View: view,
 		}
 		res = append(res, vci)
@@ -287,7 +288,7 @@ func (d *dashgen) generateExtraData(query map[string]interface{}, f *CustomizeAl
 		method, tag := k[:idx], k[idx+1:]
 		if strings.HasPrefix(tag, "tags.") {
 			filters = append(filters, map[string]string{
-				"key":    util.RandomString(1),
+				"key":    utils.RandomString(1),
 				"method": method,
 				"tag":    tag,
 				"value":  v.(string),
@@ -309,8 +310,8 @@ func (d *dashgen) generateQuery(rule *pb.CustomizeAlertRule) (map[string]interfa
 	}
 	metric := metrics[0]
 	res := make(map[string]interface{})
-	res["start"] = util.ConvertTimeToMS(time.Now().Add(-1 * time.Hour))
-	res["end"] = util.ConvertTimeToMS(time.Now())
+	res["start"] = utils.ConvertTimeToMS(time.Now().Add(-1 * time.Hour))
+	res["end"] = utils.ConvertTimeToMS(time.Now())
 
 	// transform group
 	if len(rule.Group) > 0 {

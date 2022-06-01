@@ -26,6 +26,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 	"github.com/erda-project/erda/modules/tools/monitor/core/alert/alert-apis/db"
+	"github.com/erda-project/erda/modules/tools/monitor/utils"
 	"github.com/erda-project/erda/pkg/encoding/jsonmap"
 )
 
@@ -107,12 +108,12 @@ func (r *AlertRule) FromModel(lang i18n.LanguageCodes, t i18n.Translator, m *db.
 	r.Enable = m.Enable
 	r.CreateTime = m.CreateTime.UnixNano() / int64(time.Millisecond)
 	r.UpdateTime = m.UpdateTime.UnixNano() / int64(time.Millisecond)
-	window, ok := util.GetMapValueInt64(m.Template, "window")
+	window, ok := utils.GetMapValueInt64(m.Template, "window")
 	if !ok {
 		return nil
 	}
 	r.Window = window
-	functions, ok := util.GetMapValueArr(m.Template, "functions")
+	functions, ok := utils.GetMapValueArr(m.Template, "functions")
 	if !ok {
 		return nil
 	}
@@ -122,15 +123,15 @@ func (r *AlertRule) FromModel(lang i18n.LanguageCodes, t i18n.Translator, m *db.
 			continue
 		}
 
-		field, ok := util.GetMapValueString(function, "field")
+		field, ok := utils.GetMapValueString(function, "field")
 		if !ok {
 			continue
 		}
-		aggregator, ok := util.GetMapValueString(function, "aggregator")
+		aggregator, ok := utils.GetMapValueString(function, "aggregator")
 		if !ok {
 			continue
 		}
-		operator, ok := util.GetMapValueString(function, "operator")
+		operator, ok := utils.GetMapValueString(function, "operator")
 		if !ok {
 			continue
 		}
@@ -138,7 +139,7 @@ func (r *AlertRule) FromModel(lang i18n.LanguageCodes, t i18n.Translator, m *db.
 		if !ok {
 			continue
 		}
-		unit, _ := util.GetMapValueString(function, "unit")
+		unit, _ := utils.GetMapValueString(function, "unit")
 		dataType := TypeOf(value)
 		if dataType == "" {
 			continue
@@ -189,12 +190,12 @@ func FromPBAlertRuleModel(lang i18n.LanguageCodes, t i18n.Translator, m *db.Aler
 	}
 	r.Version = m.Version
 	r.Enable = m.Enable
-	window, ok := util.GetMapValueInt64(m.Template, "window")
+	window, ok := utils.GetMapValueInt64(m.Template, "window")
 	if !ok {
 		return nil
 	}
 	r.Window = window
-	functions, ok := util.GetMapValueArr(m.Template, "functions")
+	functions, ok := utils.GetMapValueArr(m.Template, "functions")
 	if !ok {
 		return nil
 	}
@@ -204,15 +205,15 @@ func FromPBAlertRuleModel(lang i18n.LanguageCodes, t i18n.Translator, m *db.Aler
 			continue
 		}
 
-		field, ok := util.GetMapValueString(function, "field")
+		field, ok := utils.GetMapValueString(function, "field")
 		if !ok {
 			continue
 		}
-		aggregator, ok := util.GetMapValueString(function, "aggregator")
+		aggregator, ok := utils.GetMapValueString(function, "aggregator")
 		if !ok {
 			continue
 		}
-		operator, ok := util.GetMapValueString(function, "operator")
+		operator, ok := utils.GetMapValueString(function, "operator")
 		if !ok {
 			continue
 		}
@@ -220,7 +221,7 @@ func FromPBAlertRuleModel(lang i18n.LanguageCodes, t i18n.Translator, m *db.Aler
 		if !ok {
 			continue
 		}
-		unit, _ := util.GetMapValueString(function, "unit")
+		unit, _ := utils.GetMapValueString(function, "unit")
 		dataType := TypeOf(value)
 		if dataType == "" {
 			continue
@@ -253,29 +254,29 @@ func ToPBAlertNotify(m *db.AlertNotify, notifyGroupMap map[int64]*pb.NotifyGroup
 	n.CreateTime = m.Created.UnixNano() / int64(time.Millisecond)
 	n.UpdateTime = m.Updated.UnixNano() / int64(time.Millisecond)
 	// fill in the alarm notification target
-	notifyType, ok := util.GetMapValueString(m.NotifyTarget, "type")
+	notifyType, ok := utils.GetMapValueString(m.NotifyTarget, "type")
 	if !ok {
 		return nil
 	}
 	if notifyType == "notify_group" {
 		// notify group ID
-		groupID, ok := util.GetMapValueInt64(m.NotifyTarget, "group_id")
+		groupID, ok := utils.GetMapValueInt64(m.NotifyTarget, "group_id")
 		if !ok {
 			return nil
 		}
 		// notify group method
-		groupType, ok := util.GetMapValueString(m.NotifyTarget, "group_type")
+		groupType, ok := utils.GetMapValueString(m.NotifyTarget, "group_type")
 		if !ok {
 			return nil
 		}
-		groupLevel, _ := util.GetMapValueString(m.NotifyTarget, "level")
+		groupLevel, _ := utils.GetMapValueString(m.NotifyTarget, "level")
 		n.Type = notifyType
 		n.GroupId = groupID
 		n.GroupType = groupType
 		n.NotifyGroup = notifyGroupMap[groupID]
 		n.Level = groupLevel
 	} else if notifyType == "dingding" {
-		dingdingURL, ok := util.GetMapValueString(m.NotifyTarget, "dingding_url")
+		dingdingURL, ok := utils.GetMapValueString(m.NotifyTarget, "dingding_url")
 		if !ok {
 			return nil
 		}
@@ -360,7 +361,7 @@ func ToPBAlertExpressionModel(expression *db.AlertExpression) *pb.AlertExpressio
 	e.Id = expression.ID
 	e.CreateTime = expression.Created.Unix()
 	e.UpdateTime = expression.Updated.Unix()
-	ruleIDStr, ok := util.GetMapValueString(expression.Attributes, "rule_id")
+	ruleIDStr, ok := utils.GetMapValueString(expression.Attributes, "rule_id")
 	if !ok {
 		return nil
 	}
@@ -369,24 +370,24 @@ func ToPBAlertExpressionModel(expression *db.AlertExpression) *pb.AlertExpressio
 		return nil
 	}
 	e.RuleId = ruleID
-	alertIndex, ok := util.GetMapValueString(expression.Attributes, "alert_index")
+	alertIndex, ok := utils.GetMapValueString(expression.Attributes, "alert_index")
 	if !ok {
 		return nil
 	}
 	e.AlertIndex = alertIndex
 	e.IsRecover = getRecoverFromAttributes(expression.Attributes)
-	window, ok := util.GetMapValueInt64(expression.Expression, "window")
+	window, ok := utils.GetMapValueInt64(expression.Expression, "window")
 	if !ok {
 		return nil
 	}
 	e.Window = window
-	level, ok := util.GetMapValueString(expression.Attributes, "level")
+	level, ok := utils.GetMapValueString(expression.Attributes, "level")
 	if !ok {
 		return nil
 	}
 	e.Level = strings.Title(strings.ToLower(level))
 
-	functions, ok := util.GetMapValueArr(expression.Expression, "functions")
+	functions, ok := utils.GetMapValueArr(expression.Expression, "functions")
 	if !ok {
 		return nil
 	}
@@ -395,15 +396,15 @@ func ToPBAlertExpressionModel(expression *db.AlertExpression) *pb.AlertExpressio
 		if !ok {
 			continue
 		}
-		field, ok := util.GetMapValueString(function, "field")
+		field, ok := utils.GetMapValueString(function, "field")
 		if !ok {
 			continue
 		}
-		aggregator, ok := util.GetMapValueString(function, "aggregator")
+		aggregator, ok := utils.GetMapValueString(function, "aggregator")
 		if !ok {
 			continue
 		}
-		operator, ok := util.GetMapValueString(function, "operator")
+		operator, ok := utils.GetMapValueString(function, "operator")
 		if !ok {
 			continue
 		}
@@ -454,17 +455,17 @@ func ToDBAlertExpressionModel(e *pb.AlertExpression, orgName string, alert *pb.A
 	expression["window"] = window
 	// fill expression filters
 	expressionMap := (&Adapt{}).ValueMapToInterfaceMap(expression)
-	filters, _ := util.GetMapValueArr(expressionMap, "filters")
+	filters, _ := utils.GetMapValueArr(expressionMap, "filters")
 	for index, filterValue := range filters {
 		filterMap, ok := filterValue.(map[string]interface{})
 		if !ok {
 			continue
 		}
-		tag, ok := util.GetMapValueString(filterMap, "tag")
+		tag, ok := utils.GetMapValueString(filterMap, "tag")
 		if !ok {
 			continue
 		}
-		operator, ok := util.GetMapValueString(filterMap, "operator")
+		operator, ok := utils.GetMapValueString(filterMap, "operator")
 		if !ok {
 			continue
 		}
@@ -481,7 +482,7 @@ func ToDBAlertExpressionModel(e *pb.AlertExpression, orgName string, alert *pb.A
 			tag = terminusKey
 		}
 		if attr, ok := attributes[tag]; ok {
-			val, err := formatOperatorValue(opType, util.StringType, attr)
+			val, err := formatOperatorValue(opType, utils.StringType, attr)
 			if err != nil {
 				return nil, err
 			}
@@ -498,7 +499,7 @@ func ToDBAlertExpressionModel(e *pb.AlertExpression, orgName string, alert *pb.A
 		}
 		value := v.Values
 		opType := filterOperatorRel[operator]
-		val, err := formatOperatorValue(opType, util.StringType, value)
+		val, err := formatOperatorValue(opType, utils.StringType, value)
 		if err != nil {
 			return nil, err
 		}
@@ -520,17 +521,17 @@ func ToDBAlertExpressionModel(e *pb.AlertExpression, orgName string, alert *pb.A
 	for _, function := range e.Functions {
 		functionMap[function.Aggregator+"-"+function.Field] = function
 	}
-	functions, _ := util.GetMapValueArr(expressionMap, "functions")
+	functions, _ := utils.GetMapValueArr(expressionMap, "functions")
 	for _, functionValue := range functions {
 		function, ok := functionValue.(map[string]interface{})
 		if !ok {
 			continue
 		}
-		field, ok := util.GetMapValueString(function, "field")
+		field, ok := utils.GetMapValueString(function, "field")
 		if !ok {
 			continue
 		}
-		aggregator, _ := util.GetMapValueString(function, "aggregator")
+		aggregator, _ := utils.GetMapValueString(function, "aggregator")
 		if !ok {
 			continue
 		}
@@ -538,7 +539,7 @@ func ToDBAlertExpressionModel(e *pb.AlertExpression, orgName string, alert *pb.A
 		if !ok {
 			continue
 		}
-		operator, _ := util.GetMapValueString(function, "operator")
+		operator, _ := utils.GetMapValueString(function, "operator")
 		if operator != "" && newFunction.Operator != "" {
 			operator = newFunction.Operator
 		}
@@ -547,7 +548,7 @@ func ToDBAlertExpressionModel(e *pb.AlertExpression, orgName string, alert *pb.A
 		value, _ := function["value"]
 		if value != nil && newFunction.Value != nil {
 			opType := functionOperatorRel[operator]
-			dataType := util.TypeOf(value)
+			dataType := utils.TypeOf(value)
 			val, err := formatOperatorValue(opType, dataType, newFunction.Value.AsInterface())
 			if err != nil {
 				return nil, err
@@ -565,7 +566,7 @@ func ToDBAlertExpressionModel(e *pb.AlertExpression, orgName string, alert *pb.A
 	// transform alert url
 	alertDomain := alert.Domain
 	if alertDomain == "" {
-		if s, ok := util.GetMapValueString(attributes, "alert_domain"); ok {
+		if s, ok := utils.GetMapValueString(attributes, "alert_domain"); ok {
 			alertDomain = s
 		}
 	}
@@ -573,17 +574,17 @@ func ToDBAlertExpressionModel(e *pb.AlertExpression, orgName string, alert *pb.A
 		alertDomain = alertDomain[0 : len(alertDomain)-1]
 	}
 	ruleAttributesMap := (&Adapt{}).ValueMapToInterfaceMap(rule.Attributes)
-	if routeID, ok := util.GetMapValueString(ruleAttributesMap, "display_url_id"); ok {
+	if routeID, ok := utils.GetMapValueString(ruleAttributesMap, "display_url_id"); ok {
 		if alertURL := convertAlertURL(alertDomain, orgName, routeID, attributes); alertURL != "" {
 			attributes["display_url"] = alertURL
 		}
 	}
 	alertAttributesMap := (&Adapt{}).ValueMapToInterfaceMap(alert.Attributes)
-	if dashboardID, ok := util.GetMapValueString(ruleAttributesMap, "alert_dashboard_id"); ok {
-		if dashboardPath, ok := util.GetMapValueString(alertAttributesMap, "alert_dashboard_path"); ok {
+	if dashboardID, ok := utils.GetMapValueString(ruleAttributesMap, "alert_dashboard_id"); ok {
+		if dashboardPath, ok := utils.GetMapValueString(alertAttributesMap, "alert_dashboard_path"); ok {
 			// get group's value
 			var groups []string
-			group, _ := util.GetMapValueArr(expressionMap, "group")
+			group, _ := utils.GetMapValueArr(expressionMap, "group")
 			for _, item := range group {
 				groups = append(groups, item.(string))
 			}
@@ -592,7 +593,7 @@ func ToDBAlertExpressionModel(e *pb.AlertExpression, orgName string, alert *pb.A
 	}
 
 	// transform record url
-	if recordPath, ok := util.GetMapValueString(alertAttributesMap, "alert_record_path"); ok {
+	if recordPath, ok := utils.GetMapValueString(alertAttributesMap, "alert_record_path"); ok {
 		attributes["record_url"] = convertRecordURL(alertDomain, orgName, recordPath)
 	}
 	expressionJsonMap := jsonmap.JSONMap{}
@@ -727,7 +728,7 @@ func ToDBAlertModel(a *pb.Alert) *db.Alert {
 }
 
 func getRecoverFromAttributes(m map[string]interface{}) bool {
-	if s, ok := util.GetMapValueString(m, "recover"); ok {
+	if s, ok := utils.GetMapValueString(m, "recover"); ok {
 		if v, err := strconv.ParseBool(s); err == nil {
 			return v
 		}
