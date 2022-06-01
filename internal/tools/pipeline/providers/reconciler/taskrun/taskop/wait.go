@@ -99,14 +99,21 @@ func (w *wait) WhenDone(data interface{}) error {
 	if data == nil {
 		return nil
 	}
-	endStatus := data.(apistructs.PipelineStatusDesc).Status
+	statusDesc := data.(apistructs.PipelineStatusDesc)
+	endStatus := statusDesc.Status
 	if endStatus.IsFailedStatus() {
 		if inspect, err := w.Executor.Inspect(w.Ctx, w.Task); err != nil {
-			logrus.Errorf("failed to inspect task, pipelineID:%d, taskID: %d, err: %v", w.P.ID, w.Task.ID, err)
+			logrus.Errorf("failed to inspect task, pipelineID: %d, taskID: %d, err: %v", w.P.ID, w.Task.ID, err)
 		} else {
 			if inspect.Desc != "" {
 				_ = w.TaskRun().UpdateTaskInspect(inspect.Desc)
 			}
+		}
+	}
+	if statusDesc.Desc != "" {
+		if err := w.TaskRun().AppendLastMsg(statusDesc.Desc); err != nil {
+			logrus.Errorf("failed to append last msg, pipelineID: %d, taskID: %d, msg: %s, err: %v",
+				w.P.ID, w.Task.ID, statusDesc.Desc, err)
 		}
 	}
 	w.Task.Status = endStatus

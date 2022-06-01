@@ -883,6 +883,9 @@ func parseFailedReason(message string) (string, error) {
 	// Invalid image
 	case strings.Contains(message, "ImagePullBackOff"):
 		return errPullImage, nil
+	// oomkilled
+	case strings.Contains(message, "OOMKilled"):
+		return errOomKilled, nil
 	default:
 		// TODO: Analyze the reason for the failure
 		return "", errors.New("unexpected")
@@ -970,6 +973,15 @@ func generateKubeJobStatus(job *batchv1.Job, jobpods *corev1.PodList, lastMsg st
 	for _, pod := range jobpods.Items {
 		if pod.Status.Phase == corev1.PodPending {
 			podsPending = true
+		}
+		for _, status := range pod.Status.ContainerStatuses {
+			// if job's containers contain the specific error msg, use reason instead of lastMsg
+			if terminatedState := status.State.Terminated; terminatedState != nil && terminatedState.ExitCode != 0 {
+				reasonMsg, err := parseFailedReason(terminatedState.Reason)
+				if err == nil {
+					lastMsg = reasonMsg
+				}
+			}
 		}
 	}
 
