@@ -229,6 +229,7 @@ jobs:
       - name: Handle coverage reports
         run: |
           rm -fr ./coverage/proto-go
+          rm -fr ./coverage/pure-coverage
       - name: Upload coverage to Codecov
         run: |
           curl -s https://codecov.io/bash | bash -s - -s ./coverage/
