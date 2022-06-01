@@ -108,7 +108,7 @@ func (t *TransactionTableBuilder) GetTable(ctx context.Context) (*Table, error) 
 	statement = fmt.Sprintf("SELECT "+
 		"%s,"+
 		"sum(elapsed_count::field),"+
-		"count(error::tag),"+
+		"sum(if(eq(error::tag, 'true'),elapsed_count::field,0)),"+
 		"format_duration(avg(elapsed_mean::field),'',2) "+
 		"FROM %s "+
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) "+
