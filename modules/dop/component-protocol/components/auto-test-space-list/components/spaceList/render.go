@@ -29,7 +29,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-space-list/i18n"
 	text "github.com/erda-project/erda/modules/dop/component-protocol/components/common"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
-	spec "github.com/erda-project/erda/modules/openapi/component-protocol/component_spec/table"
+	spec "github.com/erda-project/erda/modules/tools/openapi/legacy/component-protocol/component_spec/table"
 )
 
 type ComponentSpaceList struct {

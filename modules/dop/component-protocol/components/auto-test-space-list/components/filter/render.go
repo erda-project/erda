@@ -25,7 +25,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-space-list/common"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-space-list/i18n"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/filter"
+	"github.com/erda-project/erda/modules/tools/openapi/legacy/component-protocol/components/filter"
 )
 
 type ComponentFilter struct {

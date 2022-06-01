@@ -32,7 +32,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/common/gshelper"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/util"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/pkg/component_key"
+	"github.com/erda-project/erda/modules/tools/openapi/legacy/component-protocol/pkg/component_key"
 )
 
 type ExecuteTaskTable struct {

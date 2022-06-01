@@ -31,8 +31,8 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/common/gshelper"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/pkg/autotest/step"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/pkg/type_conversion"
+	"github.com/erda-project/erda/modules/tools/openapi/legacy/component-protocol/pkg/autotest/step"
+	"github.com/erda-project/erda/modules/tools/openapi/legacy/component-protocol/pkg/type_conversion"
 	"github.com/erda-project/erda/pkg/expression"
 )
 

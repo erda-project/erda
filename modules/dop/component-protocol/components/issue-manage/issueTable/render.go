@@ -36,8 +36,8 @@ import (
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-manage/common/gshelper"
 	"github.com/erda-project/erda/pkg/strutil"
 
-	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
-	"github.com/erda-project/erda/modules/openapi/hooks/posthandle"
+	protocol "github.com/erda-project/erda/modules/tools/openapi/legacy/component-protocol"
+	"github.com/erda-project/erda/modules/tools/openapi/legacy/hooks/posthandle"
 )
 
 type ProgressBlock struct {

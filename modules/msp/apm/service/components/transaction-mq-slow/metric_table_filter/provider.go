@@ -28,7 +28,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-kanban/common/gshelper"
 	slow_transaction "github.com/erda-project/erda/modules/msp/apm/service/common/slow-transaction"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/filter"
+	"github.com/erda-project/erda/modules/tools/openapi/legacy/component-protocol/components/filter"
 )
 
 type ComponentFilter struct {

@@ -31,7 +31,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/services/issue"
-	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	protocol "github.com/erda-project/erda/modules/tools/openapi/legacy/component-protocol"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
