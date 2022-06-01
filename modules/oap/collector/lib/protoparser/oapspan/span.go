@@ -16,18 +16,21 @@ package oapspan
 
 import (
 	"fmt"
+	"sync"
 
 	oap "github.com/erda-project/erda-proto-go/oap/trace/pb"
 	"github.com/erda-project/erda/modules/msp/apm/trace"
-	"github.com/erda-project/erda/modules/oap/collector/lib/protoparser/common"
-	"github.com/erda-project/erda/modules/oap/collector/lib/protoparser/common/unmarshalwork"
+	"github.com/erda-project/erda/modules/oap/collector/lib/common"
+	"github.com/erda-project/erda/modules/oap/collector/lib/common/unmarshalwork"
 )
 
 func ParseOapSpan(buf []byte, callback func(span *trace.Span) error) error {
 	uw := newUnmarshalWork(buf, callback)
+	uw.wg.Add(1)
 	unmarshalwork.Schedule(uw)
+	uw.wg.Wait()
 	if uw.err != nil {
-		return fmt.Errorf("unmarshal err: %w", uw.err)
+		return fmt.Errorf("parse oapSpan err: %w", uw.err)
 	}
 	return nil
 }
@@ -35,6 +38,7 @@ func ParseOapSpan(buf []byte, callback func(span *trace.Span) error) error {
 type unmarshalWork struct {
 	buf      []byte
 	err      error
+	wg       sync.WaitGroup
 	callback func(span *trace.Span) error
 }
 
@@ -44,11 +48,13 @@ func newUnmarshalWork(buf []byte, callback func(span *trace.Span) error) *unmars
 
 // TODO. Better error handle
 func (uw *unmarshalWork) Unmarshal() {
+	defer uw.wg.Done()
 	data := &oap.Span{}
 	if err := common.JsonDecoder.Unmarshal(uw.buf, data); err != nil {
 		uw.err = fmt.Errorf("json umarshal failed: %w", err)
 		return
 	}
+
 	span := &trace.Span{
 		StartTime:    int64(data.StartTimeUnixNano),
 		EndTime:      int64(data.EndTimeUnixNano),
@@ -62,10 +68,10 @@ func (uw *unmarshalWork) Unmarshal() {
 		span.OrgName = v
 	} else {
 		uw.err = fmt.Errorf("must have %q", trace.OrgNameKey)
+		return
 	}
 
 	if err := uw.callback(span); err != nil {
 		uw.err = err
 	}
-	return
 }

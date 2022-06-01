@@ -16,14 +16,13 @@ package jaeger
 
 import (
 	"context"
-	"encoding/json"
+	"fmt"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	common "github.com/erda-project/erda-proto-go/common/pb"
 	jaegerpb "github.com/erda-project/erda-proto-go/oap/collector/receiver/jaeger/pb"
-	"github.com/erda-project/erda-proto-go/oap/trace/pb"
 	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
-	"github.com/erda-project/erda/modules/oap/collector/lib/protoparser/common/unmarshalwork"
+	"github.com/erda-project/erda/modules/oap/collector/lib/protoparser/jsonmarshal"
 )
 
 type jaegerServiceImpl struct {
@@ -34,34 +33,14 @@ type jaegerServiceImpl struct {
 func (s *jaegerServiceImpl) SpansWithThrift(ctx context.Context, req *jaegerpb.PostSpansRequest) (*common.VoidResponse, error) {
 	if req.Spans != nil {
 		for i := range req.Spans {
-			uw := &unmarshalCtx{
-				logger: s.Log,
-				span:   req.Spans[i],
-				callback: func(buf []byte) error {
-					s.p.consumer(odata.NewRaw(buf))
-					return nil
-				},
+			err := jsonmarshal.ParseInterface(req.Spans[i], func(buf []byte) error {
+				s.p.consumer(odata.NewRaw(buf))
+				return nil
+			})
+			if err != nil {
+				return nil, fmt.Errorf("parse failed: %w", err)
 			}
-			unmarshalwork.Schedule(uw)
 		}
 	}
 	return &common.VoidResponse{}, nil
-}
-
-type unmarshalCtx struct {
-	logger   logs.Logger
-	span     *pb.Span
-	callback func([]byte) error
-}
-
-func (uc *unmarshalCtx) Unmarshal() {
-	buf, err := json.Marshal(uc.span)
-	if err != nil {
-		uc.logger.Errorf("unmarshal uc.span: %s", err)
-		return
-	}
-	if err := uc.callback(buf); err != nil {
-		uc.logger.Errorf("callback buf: %s", err)
-		return
-	}
 }

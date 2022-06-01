@@ -29,9 +29,9 @@ import (
 )
 
 type config struct {
-	CurrencyNum int    `file:"currency_num" default:"20" ENV:"EXPORTER_CH_CURRENCY_NUM"`
-	RetryNum    int    `file:"retry_num" default:"5" ENV:"EXPORTER_CH_RETRY_NUM"`
-	Database    string `file:"database" default:"monitor"`
+	CurrencyNum int          `file:"currency_num" default:"20" ENV:"EXPORTER_CH_CURRENCY_NUM"`
+	Database    string       `file:"database" default:"monitor"`
+	Span        *span.Config `file:"span"`
 }
 
 // +provider
@@ -75,13 +75,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.ch = svc.(clickhouse.Interface)
 	p.ctx, p.cancelFunc = context.WithCancel(context.Background())
 
-	p.spanWriter = span.NewWriteSpan(span.Config{
-		Database: p.Cfg.Database,
-		Retry:    p.Cfg.RetryNum,
-		Logger:   p.Log.Sub("spanWriter"),
-		Client:   p.ch.Client(),
-	})
-
+	p.spanWriter = span.NewWriteSpan(p.ch.Client(), p.Log.Sub("spanWriter"), p.Cfg.Database, p.Cfg.Span)
 	return nil
 }
 

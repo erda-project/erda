@@ -27,7 +27,7 @@ import (
 	"github.com/erda-project/erda/modules/oap/collector/core/model"
 	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
 	"github.com/erda-project/erda/modules/oap/collector/core/pipeline"
-	"github.com/erda-project/erda/modules/oap/collector/lib/protoparser/common/unmarshalwork"
+	"github.com/erda-project/erda/modules/oap/collector/lib/common/unmarshalwork"
 )
 
 func init() {

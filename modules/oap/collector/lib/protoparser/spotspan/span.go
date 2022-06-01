@@ -18,19 +18,21 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"sync"
 
 	"github.com/erda-project/erda/modules/core/monitor/metric"
 	"github.com/erda-project/erda/modules/msp/apm/trace"
-	"github.com/erda-project/erda/modules/oap/collector/lib/protoparser/common"
-	"github.com/erda-project/erda/modules/oap/collector/lib/protoparser/common/unmarshalwork"
+	"github.com/erda-project/erda/modules/oap/collector/lib/common"
+	"github.com/erda-project/erda/modules/oap/collector/lib/common/unmarshalwork"
 )
 
 func ParseSpotSpan(buf []byte, callback func(span *trace.Span) error) error {
 	uw := newUnmarshalWork(buf, callback)
+	uw.wg.Add(1)
 	unmarshalwork.Schedule(uw)
+	uw.wg.Wait()
 	if uw.err != nil {
-		// TODO. Cannot caught error
-		return fmt.Errorf("unmarshal err: %w", uw.err)
+		return fmt.Errorf("parse spotSpan err: %w", uw.err)
 	}
 	return nil
 }
@@ -124,6 +126,7 @@ type unmarshalWork struct {
 	buf      []byte
 	err      error
 	callback func(span *trace.Span) error
+	wg       sync.WaitGroup
 }
 
 func newUnmarshalWork(buf []byte, callback func(span *trace.Span) error) *unmarshalWork {
@@ -131,22 +134,22 @@ func newUnmarshalWork(buf []byte, callback func(span *trace.Span) error) *unmars
 }
 
 func (uw *unmarshalWork) Unmarshal() {
+	defer uw.wg.Done()
 	data := &metric.Metric{}
 	if err := common.JsonDecoder.Unmarshal(uw.buf, data); err != nil {
 		uw.err = fmt.Errorf("json umarshal failed: %w", err)
-		fmt.Printf("caught err: %s", uw.err)
 		return
 	}
 	span, err := metricToSpan(data)
 	if err != nil {
 		uw.err = fmt.Errorf("cannot convert metric to span: %w", err)
-		fmt.Printf("caught err: %s", uw.err)
 		return
 	}
 	if v, ok := span.Tags[trace.OrgNameKey]; ok {
 		span.OrgName = v
 	} else {
 		uw.err = fmt.Errorf("must have %q", trace.OrgNameKey)
+		return
 	}
 
 	if err := uw.callback(span); err != nil {

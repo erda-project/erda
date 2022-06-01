@@ -15,7 +15,11 @@
 package collector
 
 import (
+	"fmt"
+
 	"github.com/go-errors/errors"
+
+	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
 )
 
 var (
@@ -45,4 +49,19 @@ func (p *provider) getTopic(typ string) (string, error) {
 		return topic, nil
 	}
 	return "", errors.Errorf("not support type")
+}
+
+func (p *provider) sendRaw(name string, value []byte) error {
+	od := odata.NewRaw(value)
+
+	if p.Cfg.MetadataKeyOfTopic != "" {
+		topic, err := p.getTopic(name)
+		if err != nil {
+			return fmt.Errorf("getTopic with name: %s, err: %w", name, err)
+		}
+		od.Meta[p.Cfg.MetadataKeyOfTopic] = topic
+	}
+
+	p.consumer(od)
+	return nil
 }
