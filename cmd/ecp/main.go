@@ -23,7 +23,7 @@ import (
 	// providers and modules
 	_ "github.com/erda-project/erda-infra/providers/grpcclient"
 	_ "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/client"
-	_ "github.com/erda-project/erda/modules/ecp"
+	_ "github.com/erda-project/erda/modules/apps/ecp"
 )
 
 //go:embed bootstrap.yaml
