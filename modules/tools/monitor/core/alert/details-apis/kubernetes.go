@@ -136,8 +136,8 @@ func (p *provider) getContainers(clusterName, podName string, start, end int64, 
 					inst := &PodInfoInstanse{
 						ContainerID: b.Key,
 						HostIP:      utils.GetMapValue(query.TagKey+".host_ip", source),
-						StartedAt:   formatDate(util.GetMapValue(query.FieldKey+".started_at", source)),
-						FinishedAt:  formatDate(util.GetMapValue(query.FieldKey+".finished_at", source)),
+						StartedAt:   formatDate(utils.GetMapValue(query.FieldKey+".started_at", source)),
+						FinishedAt:  formatDate(utils.GetMapValue(query.FieldKey+".finished_at", source)),
 						ExitCode:    utils.GetMapValue(query.FieldKey+".exitcode", source),
 						OomKilled:   utils.GetMapValue(query.FieldKey+".oomkilled", source),
 					}
