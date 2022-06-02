@@ -20,10 +20,10 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/pkg/common"
 
-	_ "github.com/erda-project/erda/modules/msp/apm/browser"
-	_ "github.com/erda-project/erda/modules/msp/apm/trace/persist"
-	_ "github.com/erda-project/erda/modules/msp/apm/trace/storage/cassandra_v1"
-	_ "github.com/erda-project/erda/modules/msp/apm/trace/storage/elasticsearch"
+	_ "github.com/erda-project/erda/modules/apps/msp/apm/browser"
+	_ "github.com/erda-project/erda/modules/apps/msp/apm/trace/persist"
+	_ "github.com/erda-project/erda/modules/apps/msp/apm/trace/storage/cassandra_v1"
+	_ "github.com/erda-project/erda/modules/apps/msp/apm/trace/storage/elasticsearch"
 	_ "github.com/erda-project/erda/modules/tools/monitor/notify/storage/notify-record"
 
 	// modules

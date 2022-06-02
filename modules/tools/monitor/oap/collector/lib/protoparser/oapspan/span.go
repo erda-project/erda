@@ -19,7 +19,7 @@ import (
 	"sync"
 
 	oap "github.com/erda-project/erda-proto-go/oap/trace/pb"
-	"github.com/erda-project/erda/modules/msp/apm/trace"
+	"github.com/erda-project/erda/modules/apps/msp/apm/trace"
 	"github.com/erda-project/erda/modules/tools/monitor/oap/collector/lib/common"
 	"github.com/erda-project/erda/modules/tools/monitor/oap/collector/lib/common/unmarshalwork"
 )

@@ -24,7 +24,7 @@ import (
 	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/msp/instance/db"
+	"github.com/erda-project/erda/modules/apps/msp/instance/db"
 	db2 "github.com/erda-project/erda/modules/tools/monitor/extensions/loghub/index/query/db"
 )
 

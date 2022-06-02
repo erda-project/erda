@@ -21,7 +21,7 @@ import (
 	"github.com/erda-project/erda/modules/tools/monitor/extensions/loghub"
 	"github.com/erda-project/erda/pkg/common"
 
-	_ "github.com/erda-project/erda/modules/msp/apm/log-service/analysis"
+	_ "github.com/erda-project/erda/modules/apps/msp/apm/log-service/analysis"
 	_ "github.com/erda-project/erda/modules/tools/monitor/extensions/cloud/aliyun/metrics/cloudcat"
 	_ "github.com/erda-project/erda/modules/tools/monitor/extensions/loghub/sls-import"
 
