@@ -23,7 +23,7 @@ import (
 var RUNNER_TASK_FETCH = apis.ApiSpec{
 	Path:        "/api/runner/fetch-task",
 	BackendPath: "/api/runner/fetch-task",
-	Host:        "action-runner-scheduler.marathon.l4lb.thisdcos.directory:9500",
+	Host:        "pipeline.marathon.l4lb.thisdcos.directory:9500",
 	Scheme:      "http",
 	Method:      http.MethodGet,
 	IsOpenAPI:   true,

@@ -26,6 +26,7 @@ import (
 	_ "github.com/erda-project/erda-infra/providers/prometheus"
 	_ "github.com/erda-project/erda-infra/providers/serviceregister"
 	_ "github.com/erda-project/erda/modules/tools/pipeline"
+	_ "github.com/erda-project/erda/modules/tools/pipeline/action-runner-scheduler"
 	_ "github.com/erda-project/erda/modules/tools/pipeline/aop"
 	_ "github.com/erda-project/erda/modules/tools/pipeline/providers/actionmgr"
 	_ "github.com/erda-project/erda/modules/tools/pipeline/providers/build"
