@@ -232,10 +232,20 @@ func (pc PluginConfig) ToPluginReqDto() *kongDto.KongPluginReqDto {
 		Enabled: &pc.Switch,
 		Config: map[string]interface{}{
 			"access_control_api": pc.AccessControlAPI,
-			"patterns":           pc.Patterns,
 			"with_body":          pc.WithBody,
 		},
 	}
+	// adjust "patterns"
+	var patterns []string
+	for _, pat := range pc.Patterns {
+		if len(pat) > 0 {
+			patterns = append(patterns, pat)
+		}
+	}
+	if len(patterns) > 0 {
+		req.Config["patterns"] = patterns
+	}
+
 	// adjust "methods"
 	var methods = make(map[string]bool)
 	for _, method := range pc.Methods {
