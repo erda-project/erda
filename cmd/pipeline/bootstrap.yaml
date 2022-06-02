@@ -1,4 +1,5 @@
 pipeline:
+action_runner_scheduler:
 
 service-register:
 
