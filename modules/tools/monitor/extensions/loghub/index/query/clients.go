@@ -25,7 +25,7 @@ import (
 	"github.com/recallsong/go-utils/encoding/jsonx"
 	"github.com/recallsong/go-utils/reflectx"
 
-	mspDb "github.com/erda-project/erda/modules/msp/instance/db"
+	mspDb "github.com/erda-project/erda/modules/apps/msp/instance/db"
 	"github.com/erda-project/erda/modules/tools/monitor/extensions/loghub/index/query/db"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )

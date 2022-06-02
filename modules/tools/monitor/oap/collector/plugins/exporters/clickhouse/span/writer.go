@@ -27,7 +27,7 @@ import (
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 
 	"github.com/erda-project/erda-infra/base/logs"
-	"github.com/erda-project/erda/modules/msp/apm/trace"
+	"github.com/erda-project/erda/modules/apps/msp/apm/trace"
 	"github.com/erda-project/erda/modules/tools/monitor/oap/collector/lib"
 	"github.com/erda-project/erda/pkg/strutil"
 )
