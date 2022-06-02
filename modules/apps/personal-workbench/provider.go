@@ -24,10 +24,10 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/apps/dop/conf"
 	_ "github.com/erda-project/erda/modules/apps/personal-workbench/component-protocol/components"
 	"github.com/erda-project/erda/modules/apps/personal-workbench/services/workbench"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
-	"github.com/erda-project/erda/modules/dop/conf"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 

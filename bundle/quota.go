@@ -22,7 +22,7 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/dop/services/apierrors"
+	"github.com/erda-project/erda/modules/apps/dop/services/apierrors"
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
