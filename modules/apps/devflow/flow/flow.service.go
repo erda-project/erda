@@ -15,20 +15,20 @@
 package flow
 
 import (
-	context "context"
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
 
-	pb "github.com/erda-project/erda-proto-go/apps/devflow/flow/pb"
+	"github.com/erda-project/erda-proto-go/apps/devflow/flow/pb"
 	issuerelationpb "github.com/erda-project/erda-proto-go/apps/devflow/issuerelation/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/dop/services/apierrors"
-	"github.com/erda-project/erda/modules/dop/services/branchrule"
-	"github.com/erda-project/erda/modules/dop/services/filetree"
-	"github.com/erda-project/erda/modules/dop/services/permission"
+	"github.com/erda-project/erda/modules/apps/dop/services/apierrors"
+	"github.com/erda-project/erda/modules/apps/dop/services/branchrule"
+	"github.com/erda-project/erda/modules/apps/dop/services/filetree"
+	"github.com/erda-project/erda/modules/apps/dop/services/permission"
 	"github.com/erda-project/erda/modules/pkg/diceworkspace"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/encoding/jsonparse"
