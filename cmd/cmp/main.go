@@ -32,9 +32,9 @@ import (
 	_ "github.com/erda-project/erda-proto-go/core/pipeline/cron/client"
 	_ "github.com/erda-project/erda-proto-go/core/token/client"
 
+	_ "github.com/erda-project/erda/modules/apps/msp/configcenter"
+	_ "github.com/erda-project/erda/modules/apps/msp/registercenter"
 	_ "github.com/erda-project/erda/modules/cmp"
-	_ "github.com/erda-project/erda/modules/msp/configcenter"
-	_ "github.com/erda-project/erda/modules/msp/registercenter"
 
 	// components
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components"

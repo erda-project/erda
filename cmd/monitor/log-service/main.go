@@ -23,9 +23,9 @@ import (
 	"github.com/erda-project/erda/pkg/common/addon"
 
 	// providers and modules
-	_ "github.com/erda-project/erda/modules/msp/apm/log-service/analysis"
+	_ "github.com/erda-project/erda/modules/apps/msp/apm/log-service/analysis"
 
-	_ "github.com/erda-project/erda/modules/msp/apm/log-service/metastore"
+	_ "github.com/erda-project/erda/modules/apps/msp/apm/log-service/metastore"
 	// log export outputs
 	_ "github.com/erda-project/erda/modules/tools/monitor/extensions/loghub/exporter"
 	_ "github.com/erda-project/erda/modules/tools/monitor/extensions/loghub/exporter/output/elasticsearch"
