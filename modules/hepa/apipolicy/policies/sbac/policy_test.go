@@ -64,6 +64,7 @@ func TestPluginConfig_ToPluginReqDto(t *testing.T) {
 		"global":false,
 		"switch":true,
 		"accessControlAPI":"https://my-server.com/access-control",
+		"patterns": [".*", "/api", ""],
 		"methods":["post", "GET","HEAD","OPTIONS","TRACE"],
 		"withHeaders":["x-control-key"],
 		"withBody":true,
