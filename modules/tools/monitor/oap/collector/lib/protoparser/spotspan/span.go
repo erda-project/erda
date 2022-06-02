@@ -20,7 +20,7 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/erda-project/erda/modules/msp/apm/trace"
+	"github.com/erda-project/erda/modules/apps/msp/apm/trace"
 	"github.com/erda-project/erda/modules/tools/monitor/core/metric"
 	"github.com/erda-project/erda/modules/tools/monitor/oap/collector/lib/common"
 	"github.com/erda-project/erda/modules/tools/monitor/oap/collector/lib/common/unmarshalwork"

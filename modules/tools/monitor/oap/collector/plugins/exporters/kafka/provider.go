@@ -21,7 +21,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	writer "github.com/erda-project/erda-infra/pkg/parallel-writer"
 	"github.com/erda-project/erda-infra/providers/kafka"
-	"github.com/erda-project/erda/modules/msp/apm/trace"
+	"github.com/erda-project/erda/modules/apps/msp/apm/trace"
 	"github.com/erda-project/erda/modules/tools/monitor/core/log"
 	"github.com/erda-project/erda/modules/tools/monitor/core/metric"
 	"github.com/erda-project/erda/modules/tools/monitor/oap/collector/core/model/odata"

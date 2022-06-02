@@ -19,7 +19,7 @@ import (
 	"strings"
 
 	"github.com/erda-project/erda-proto-go/oap/common/pb"
-	"github.com/erda-project/erda/modules/msp/apm/trace"
+	"github.com/erda-project/erda/modules/apps/msp/apm/trace"
 	"github.com/erda-project/erda/modules/tools/monitor/core/log"
 	"github.com/erda-project/erda/modules/tools/monitor/core/metric"
 )

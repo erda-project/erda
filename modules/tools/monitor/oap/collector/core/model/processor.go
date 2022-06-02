@@ -15,7 +15,7 @@
 package model
 
 import (
-	"github.com/erda-project/erda/modules/msp/apm/trace"
+	"github.com/erda-project/erda/modules/apps/msp/apm/trace"
 	"github.com/erda-project/erda/modules/tools/monitor/core/log"
 	"github.com/erda-project/erda/modules/tools/monitor/core/metric"
 	odata2 "github.com/erda-project/erda/modules/tools/monitor/oap/collector/core/model/odata"
