@@ -12,11 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package components
 
 import (
-	_ "github.com/erda-project/erda/modules/apps/admin"
-	_ "github.com/erda-project/erda/modules/apps/admin/personal-workbench"
-	_ "github.com/erda-project/erda/modules/apps/gallery"
-	_ "github.com/erda-project/erda/modules/pkg/dingtalktest"
+	_ "github.com/erda-project/erda/modules/apps/admin/personal-workbench/component-protocol/components/personal-workbench"
 )
