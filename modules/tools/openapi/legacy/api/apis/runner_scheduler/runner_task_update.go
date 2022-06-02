@@ -23,7 +23,7 @@ import (
 var RUNNER_TASK_UPDATE = apis.ApiSpec{
 	Path:        "/api/runner/tasks/<runnerTaskID>",
 	BackendPath: "/api/runner/tasks/<runnerTaskID>",
-	Host:        "action-runner-scheduler.marathon.l4lb.thisdcos.directory:9500",
+	Host:        "pipeline.marathon.l4lb.thisdcos.directory:9500",
 	Scheme:      "http",
 	Method:      http.MethodPut,
 	IsOpenAPI:   true,
