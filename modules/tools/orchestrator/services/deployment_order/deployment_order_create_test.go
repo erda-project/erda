@@ -27,7 +27,7 @@ import (
 	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	release2 "github.com/erda-project/erda/modules/dicehub/release"
+	release2 "github.com/erda-project/erda/modules/apps/dop/dicehub/release"
 	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/tools/orchestrator/services/runtime"
