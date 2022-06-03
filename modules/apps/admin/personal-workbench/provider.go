@@ -26,8 +26,8 @@ import (
 	"github.com/erda-project/erda/bundle"
 	_ "github.com/erda-project/erda/modules/apps/admin/personal-workbench/component-protocol/components"
 	"github.com/erda-project/erda/modules/apps/admin/personal-workbench/services/workbench"
+	"github.com/erda-project/erda/modules/apps/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/apps/dop/conf"
-	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
