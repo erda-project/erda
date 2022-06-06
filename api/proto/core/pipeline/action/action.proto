@@ -88,4 +88,3 @@ message PipelineActionDeleteRequest {
 message PipelineActionDeleteResponse {
 
 }
-
