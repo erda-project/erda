@@ -25,7 +25,6 @@ on:
       - '!**.go'
       - '!**/go.mod'
       - '!**/go.sum'
-      - '!api/proto/**/*.proto'
       - '!**/*.proto'
   pull_request:
     paths:
