@@ -30,9 +30,9 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
-	"github.com/erda-project/erda/modules/apps/msp/apm/trace/db"
-	"github.com/erda-project/erda/modules/apps/msp/apm/trace/query/source"
-	"github.com/erda-project/erda/modules/apps/msp/apm/trace/storage"
+	"github.com/erda-project/erda/internal/apps/msp/apm/trace/db"
+	"github.com/erda-project/erda/internal/apps/msp/apm/trace/query/source"
+	"github.com/erda-project/erda/internal/apps/msp/apm/trace/storage"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 

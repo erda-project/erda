@@ -15,10 +15,10 @@
 package actionexecutor
 
 import (
-	_ "github.com/erda-project/erda/modules/tools/pipeline/pipengine/actionexecutor/plugins/apitest"
-	_ "github.com/erda-project/erda/modules/tools/pipeline/pipengine/actionexecutor/plugins/demo"
-	_ "github.com/erda-project/erda/modules/tools/pipeline/pipengine/actionexecutor/plugins/k8sflink"
-	_ "github.com/erda-project/erda/modules/tools/pipeline/pipengine/actionexecutor/plugins/k8sjob"
-	_ "github.com/erda-project/erda/modules/tools/pipeline/pipengine/actionexecutor/plugins/k8sspark"
-	_ "github.com/erda-project/erda/modules/tools/pipeline/pipengine/actionexecutor/plugins/wait"
+	_ "github.com/erda-project/erda/internal/tools/pipeline/pipengine/actionexecutor/plugins/apitest"
+	_ "github.com/erda-project/erda/internal/tools/pipeline/pipengine/actionexecutor/plugins/demo"
+	_ "github.com/erda-project/erda/internal/tools/pipeline/pipengine/actionexecutor/plugins/k8sflink"
+	_ "github.com/erda-project/erda/internal/tools/pipeline/pipengine/actionexecutor/plugins/k8sjob"
+	_ "github.com/erda-project/erda/internal/tools/pipeline/pipengine/actionexecutor/plugins/k8sspark"
+	_ "github.com/erda-project/erda/internal/tools/pipeline/pipengine/actionexecutor/plugins/wait"
 )

@@ -21,7 +21,7 @@ import (
 
 	"github.com/olivere/elastic"
 
-	"github.com/erda-project/erda/modules/tools/monitor/core/storekit/elasticsearch/index/loader"
+	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/elasticsearch/index/loader"
 )
 
 type clearRequest struct {

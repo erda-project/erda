@@ -33,7 +33,7 @@ import (
 	k8sschema "k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
 
-	cmpproxy "github.com/erda-project/erda/modules/apps/cmp/steve/proxy"
+	cmpproxy "github.com/erda-project/erda/internal/apps/cmp/steve/proxy"
 )
 
 func DefaultSchemas(baseSchema *types.APISchemas) {

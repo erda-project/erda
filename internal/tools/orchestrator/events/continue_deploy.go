@@ -19,7 +19,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda/modules/tools/orchestrator/queue"
+	"github.com/erda-project/erda/internal/tools/orchestrator/queue"
 )
 
 type DeployPusher struct {

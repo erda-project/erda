@@ -15,13 +15,13 @@
 package impl
 
 import (
-	_ "github.com/erda-project/erda/modules/tools/orchestrator/hepa/apipolicy/policies/built-in"
-	_ "github.com/erda-project/erda/modules/tools/orchestrator/hepa/apipolicy/policies/cors"
-	_ "github.com/erda-project/erda/modules/tools/orchestrator/hepa/apipolicy/policies/csrf"
-	_ "github.com/erda-project/erda/modules/tools/orchestrator/hepa/apipolicy/policies/custom"
-	_ "github.com/erda-project/erda/modules/tools/orchestrator/hepa/apipolicy/policies/ip"
-	_ "github.com/erda-project/erda/modules/tools/orchestrator/hepa/apipolicy/policies/proxy"
-	_ "github.com/erda-project/erda/modules/tools/orchestrator/hepa/apipolicy/policies/sbac"
-	_ "github.com/erda-project/erda/modules/tools/orchestrator/hepa/apipolicy/policies/server-guard"
-	_ "github.com/erda-project/erda/modules/tools/orchestrator/hepa/apipolicy/policies/waf"
+	_ "github.com/erda-project/erda/internal/tools/orchestrator/hepa/apipolicy/policies/built-in"
+	_ "github.com/erda-project/erda/internal/tools/orchestrator/hepa/apipolicy/policies/cors"
+	_ "github.com/erda-project/erda/internal/tools/orchestrator/hepa/apipolicy/policies/csrf"
+	_ "github.com/erda-project/erda/internal/tools/orchestrator/hepa/apipolicy/policies/custom"
+	_ "github.com/erda-project/erda/internal/tools/orchestrator/hepa/apipolicy/policies/ip"
+	_ "github.com/erda-project/erda/internal/tools/orchestrator/hepa/apipolicy/policies/proxy"
+	_ "github.com/erda-project/erda/internal/tools/orchestrator/hepa/apipolicy/policies/sbac"
+	_ "github.com/erda-project/erda/internal/tools/orchestrator/hepa/apipolicy/policies/server-guard"
+	_ "github.com/erda-project/erda/internal/tools/orchestrator/hepa/apipolicy/policies/waf"
 )

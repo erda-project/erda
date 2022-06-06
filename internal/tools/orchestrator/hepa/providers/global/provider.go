@@ -20,9 +20,9 @@ import (
 	"github.com/erda-project/erda-infra/pkg/transport"
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda-proto-go/core/hepa/global/pb"
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/common"
-	apiI "github.com/erda-project/erda/modules/tools/orchestrator/hepa/services/endpoint_api/impl"
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/services/global/impl"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common"
+	apiI "github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/endpoint_api/impl"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/global/impl"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 

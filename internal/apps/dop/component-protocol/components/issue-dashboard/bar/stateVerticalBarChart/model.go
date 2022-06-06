@@ -15,7 +15,7 @@
 package stateVerticalBarChart
 
 import (
-	"github.com/erda-project/erda/modules/apps/dop/component-protocol/components/issue-dashboard/common"
+	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/issue-dashboard/common"
 )
 
 type ComponentAction struct {

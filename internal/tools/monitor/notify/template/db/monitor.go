@@ -15,7 +15,7 @@
 package db
 
 import (
-	"github.com/erda-project/erda/modules/tools/monitor/common/db"
+	"github.com/erda-project/erda/internal/tools/monitor/common/db"
 )
 
 func (n *NotifyDB) GetProjectByScopeID(scopeID string) (projectID string, err error) {

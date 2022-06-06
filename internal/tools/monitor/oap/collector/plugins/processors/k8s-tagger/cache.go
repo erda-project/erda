@@ -20,7 +20,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/erda-project/erda/modules/tools/monitor/oap/collector/plugins/processors/k8s-tagger/metadata/pod"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/processors/k8s-tagger/metadata/pod"
 )
 
 func (p *provider) initCache(ctx context.Context) error {

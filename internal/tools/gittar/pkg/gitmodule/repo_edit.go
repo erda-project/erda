@@ -29,7 +29,7 @@ import (
 	git "github.com/libgit2/git2go/v30"
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda/modules/tools/gittar/conf"
+	"github.com/erda-project/erda/internal/tools/gittar/conf"
 )
 
 type EditAction string

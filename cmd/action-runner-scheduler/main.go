@@ -21,7 +21,7 @@ import (
 	"github.com/erda-project/erda/pkg/common"
 
 	// providers and modules
-	_ "github.com/erda-project/erda/modules/tools/pipeline/action-runner-scheduler"
+	_ "github.com/erda-project/erda/internal/tools/pipeline/action-runner-scheduler"
 )
 
 //go:embed bootstrap.yaml

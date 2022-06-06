@@ -22,7 +22,7 @@ import (
 	"strconv"
 
 	"github.com/erda-project/erda/apistructs"
-	openapiauth "github.com/erda-project/erda/modules/tools/openapi/openapi-ng/auth"
+	openapiauth "github.com/erda-project/erda/internal/tools/openapi/openapi-ng/auth"
 )
 
 type loginChecker struct {

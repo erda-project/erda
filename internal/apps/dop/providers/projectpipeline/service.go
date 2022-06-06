@@ -27,11 +27,11 @@ import (
 	guidepb "github.com/erda-project/erda-proto-go/dop/guide/pb"
 	"github.com/erda-project/erda-proto-go/dop/projectpipeline/pb"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/apps/dop/dao"
-	"github.com/erda-project/erda/modules/apps/dop/providers/projectpipeline/deftype"
-	"github.com/erda-project/erda/modules/apps/dop/services/branchrule"
-	"github.com/erda-project/erda/modules/apps/dop/services/permission"
-	"github.com/erda-project/erda/modules/apps/dop/services/pipeline"
+	"github.com/erda-project/erda/internal/apps/dop/dao"
+	"github.com/erda-project/erda/internal/apps/dop/providers/projectpipeline/deftype"
+	"github.com/erda-project/erda/internal/apps/dop/services/branchrule"
+	"github.com/erda-project/erda/internal/apps/dop/services/permission"
+	"github.com/erda-project/erda/internal/apps/dop/services/pipeline"
 )
 
 type ProjectPipelineService struct {

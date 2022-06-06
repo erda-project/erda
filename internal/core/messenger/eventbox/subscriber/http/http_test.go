@@ -17,8 +17,8 @@ package http
 import (
 	"testing"
 
-	"github.com/erda-project/erda/modules/core/messenger/eventbox/constant"
-	"github.com/erda-project/erda/modules/core/messenger/eventbox/types"
+	"github.com/erda-project/erda/internal/core/messenger/eventbox/constant"
+	"github.com/erda-project/erda/internal/core/messenger/eventbox/types"
 )
 
 func Test_getUserID(t *testing.T) {

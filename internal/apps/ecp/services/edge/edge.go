@@ -27,8 +27,8 @@ import (
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/apps/ecp/dbclient"
-	"github.com/erda-project/erda/modules/apps/ecp/services/kubernetes"
+	"github.com/erda-project/erda/internal/apps/ecp/dbclient"
+	"github.com/erda-project/erda/internal/apps/ecp/services/kubernetes"
 	"github.com/erda-project/erda/pkg/clientgo/apis/openyurt/v1alpha1"
 	"github.com/erda-project/erda/pkg/http/httputil"
 )

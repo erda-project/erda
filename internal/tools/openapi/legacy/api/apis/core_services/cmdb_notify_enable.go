@@ -17,8 +17,8 @@ package core_services
 import (
 	"github.com/erda-project/erda/apistructs"
 
-	"github.com/erda-project/erda/modules/tools/openapi/legacy/api/apis"
-	"github.com/erda-project/erda/modules/tools/openapi/legacy/api/spec"
+	"github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
+	"github.com/erda-project/erda/internal/tools/openapi/legacy/api/spec"
 )
 
 var CMDB_NOTIFY_ENABLE = apis.ApiSpec{

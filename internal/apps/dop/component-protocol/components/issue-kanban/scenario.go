@@ -15,5 +15,5 @@
 package issue_kanban
 
 import (
-	_ "github.com/erda-project/erda/modules/apps/dop/component-protocol/components/issue-kanban/issueKanbanV2"
+	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/issue-kanban/issueKanbanV2"
 )

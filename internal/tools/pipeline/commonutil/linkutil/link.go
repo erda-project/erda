@@ -20,8 +20,8 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/tools/pipeline/providers/clusterinfo"
-	"github.com/erda-project/erda/modules/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/clusterinfo"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 func GetPipelineLink(bdl *bundle.Bundle, p spec.Pipeline) (bool, string) {

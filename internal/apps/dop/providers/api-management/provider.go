@@ -26,9 +26,9 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-proto-go/dop/apim/pb"
-	orgCache "github.com/erda-project/erda/modules/apps/dop/cache/org"
-	"github.com/erda-project/erda/modules/apps/dop/providers/api-management/apierr"
-	"github.com/erda-project/erda/modules/apps/dop/providers/api-management/model"
+	orgCache "github.com/erda-project/erda/internal/apps/dop/cache/org"
+	"github.com/erda-project/erda/internal/apps/dop/providers/api-management/apierr"
+	"github.com/erda-project/erda/internal/apps/dop/providers/api-management/model"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 

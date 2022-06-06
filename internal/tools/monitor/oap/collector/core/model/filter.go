@@ -17,8 +17,8 @@ package model
 import (
 	"fmt"
 
-	"github.com/erda-project/erda/modules/tools/monitor/oap/collector/core/model/odata"
-	"github.com/erda-project/erda/modules/tools/monitor/oap/collector/lib/filter"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model/odata"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/filter"
 )
 
 // semantic same as https://github.com/influxdata/telegraf/blob/master/docs/CONFIGURATION.md#metric-filtering

@@ -14,7 +14,7 @@
 
 package dop
 
-import "github.com/erda-project/erda/modules/tools/openapi/legacy/api/apis"
+import "github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
 
 var PUBLISH_ITEM_ERR_EFFACTS = apis.ApiSpec{
 	Path:        "/api/publish-items/<publishItemId>/err/effacts",

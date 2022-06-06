@@ -27,7 +27,7 @@ import (
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/sig-storage-lib-external-provisioner/v6/controller"
 
-	"github.com/erda-project/erda/modules/tools/volume-provisioner/exec"
+	"github.com/erda-project/erda/internal/tools/volume-provisioner/exec"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 

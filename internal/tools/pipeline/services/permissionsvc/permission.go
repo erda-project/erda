@@ -19,8 +19,8 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/pkg/gitflowutil"
-	"github.com/erda-project/erda/modules/tools/pipeline/services/apierrors"
+	"github.com/erda-project/erda/internal/pkg/gitflowutil"
+	"github.com/erda-project/erda/internal/tools/pipeline/services/apierrors"
 )
 
 type PermissionSvc struct {

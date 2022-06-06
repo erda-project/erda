@@ -22,9 +22,9 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/apps/dop/services/apierrors"
-	"github.com/erda-project/erda/modules/apps/dop/services/websocket"
-	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/cache/org"
+	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
+	"github.com/erda-project/erda/internal/apps/dop/services/websocket"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/cache/org"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 )

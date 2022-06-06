@@ -23,7 +23,7 @@ import (
 	"github.com/influxdata/influxql"
 	"github.com/olivere/elastic"
 
-	tsql "github.com/erda-project/erda/modules/tools/monitor/core/metric/query/es-tsql"
+	tsql "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql"
 )
 
 // Query .

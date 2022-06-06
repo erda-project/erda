@@ -33,9 +33,9 @@ import (
 	dicehubpb "github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	cmpTypes "github.com/erda-project/erda/modules/apps/cmp/component-protocol/types"
-	"github.com/erda-project/erda/modules/apps/dop/component-protocol/components/release-manage/access"
-	"github.com/erda-project/erda/modules/apps/dop/component-protocol/types"
+	cmpTypes "github.com/erda-project/erda/internal/apps/cmp/component-protocol/types"
+	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/release-manage/access"
+	"github.com/erda-project/erda/internal/apps/dop/component-protocol/types"
 )
 
 func init() {

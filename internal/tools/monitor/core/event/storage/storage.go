@@ -17,8 +17,8 @@ package storage
 import (
 	"context"
 
-	"github.com/erda-project/erda/modules/tools/monitor/core/event"
-	"github.com/erda-project/erda/modules/tools/monitor/core/storekit"
+	"github.com/erda-project/erda/internal/tools/monitor/core/event"
+	"github.com/erda-project/erda/internal/tools/monitor/core/storekit"
 )
 
 type (

@@ -22,11 +22,11 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/tools/pipeline/providers/cancel"
-	"github.com/erda-project/erda/modules/tools/pipeline/providers/edgepipeline_register"
-	"github.com/erda-project/erda/modules/tools/pipeline/providers/edgereporter"
-	"github.com/erda-project/erda/modules/tools/pipeline/providers/run"
-	"github.com/erda-project/erda/modules/tools/pipeline/services/pipelinesvc"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/cancel"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/edgepipeline_register"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/edgereporter"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/run"
+	"github.com/erda-project/erda/internal/tools/pipeline/services/pipelinesvc"
 )
 
 type config struct {

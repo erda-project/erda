@@ -24,7 +24,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	protocol "github.com/erda-project/erda/modules/tools/openapi/legacy/component-protocol"
+	protocol "github.com/erda-project/erda/internal/tools/openapi/legacy/component-protocol"
 	"github.com/erda-project/erda/pkg/i18n"
 )
 

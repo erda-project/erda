@@ -8,8 +8,8 @@ import (
 	"context"
 	"reflect"
 
-	"github.com/erda-project/erda/modules/apps/msp/apm/trace/storage"
-	"github.com/erda-project/erda/modules/tools/monitor/core/storekit"
+	"github.com/erda-project/erda/internal/apps/msp/apm/trace/storage"
+	"github.com/erda-project/erda/internal/tools/monitor/core/storekit"
 
 	"github.com/golang/mock/gomock"
 )

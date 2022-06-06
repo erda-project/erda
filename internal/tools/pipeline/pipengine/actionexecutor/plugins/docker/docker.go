@@ -30,11 +30,11 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/pipeline/actionagent"
-	logic2 "github.com/erda-project/erda/modules/tools/pipeline/pipengine/actionexecutor/logic"
-	"github.com/erda-project/erda/modules/tools/pipeline/pipengine/actionexecutor/types"
-	"github.com/erda-project/erda/modules/tools/pipeline/pkg/task_uuid"
-	"github.com/erda-project/erda/modules/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/actionagent"
+	logic2 "github.com/erda-project/erda/internal/tools/pipeline/pipengine/actionexecutor/logic"
+	"github.com/erda-project/erda/internal/tools/pipeline/pipengine/actionexecutor/types"
+	"github.com/erda-project/erda/internal/tools/pipeline/pkg/task_uuid"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 

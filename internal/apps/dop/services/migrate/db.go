@@ -17,7 +17,7 @@ package migrate
 import (
 	"github.com/jinzhu/gorm"
 
-	"github.com/erda-project/erda/modules/apps/dop/dao"
+	"github.com/erda-project/erda/internal/apps/dop/dao"
 )
 
 // listProjectRootSets 获取所有项目测试集根节点

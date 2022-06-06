@@ -15,10 +15,10 @@
 package browser_overview
 
 import (
-	_ "github.com/erda-project/erda/modules/apps/msp/apm/browser/components/browser-overview/charts/api_resources_req_count"
-	_ "github.com/erda-project/erda/modules/apps/msp/apm/browser/components/browser-overview/charts/api_resources_req_duration"
-	_ "github.com/erda-project/erda/modules/apps/msp/apm/browser/components/browser-overview/charts/page_req_duration_distribution"
-	_ "github.com/erda-project/erda/modules/apps/msp/apm/browser/components/browser-overview/charts/pv_uv_count"
-	_ "github.com/erda-project/erda/modules/apps/msp/apm/browser/components/browser-overview/kv_card"
-	_ "github.com/erda-project/erda/modules/apps/msp/apm/browser/components/browser-overview/top_n"
+	_ "github.com/erda-project/erda/internal/apps/msp/apm/browser/components/browser-overview/charts/api_resources_req_count"
+	_ "github.com/erda-project/erda/internal/apps/msp/apm/browser/components/browser-overview/charts/api_resources_req_duration"
+	_ "github.com/erda-project/erda/internal/apps/msp/apm/browser/components/browser-overview/charts/page_req_duration_distribution"
+	_ "github.com/erda-project/erda/internal/apps/msp/apm/browser/components/browser-overview/charts/pv_uv_count"
+	_ "github.com/erda-project/erda/internal/apps/msp/apm/browser/components/browser-overview/kv_card"
+	_ "github.com/erda-project/erda/internal/apps/msp/apm/browser/components/browser-overview/top_n"
 )

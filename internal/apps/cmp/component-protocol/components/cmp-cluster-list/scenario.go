@@ -15,5 +15,5 @@
 package cmp_cluster_list
 
 import (
-	_ "github.com/erda-project/erda/modules/apps/cmp/component-protocol/components/cmp-cluster-list/list"
+	_ "github.com/erda-project/erda/internal/apps/cmp/component-protocol/components/cmp-cluster-list/list"
 )

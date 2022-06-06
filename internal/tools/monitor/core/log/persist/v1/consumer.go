@@ -22,7 +22,7 @@ import (
 	jsoniter "github.com/json-iterator/go"
 	"github.com/sirupsen/logrus"
 
-	logmodule "github.com/erda-project/erda/modules/tools/monitor/core/log"
+	logmodule "github.com/erda-project/erda/internal/tools/monitor/core/log"
 )
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary

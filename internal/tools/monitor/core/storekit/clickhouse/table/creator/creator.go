@@ -25,7 +25,7 @@ import (
 
 	cfgpkg "github.com/recallsong/go-utils/config"
 
-	"github.com/erda-project/erda/modules/tools/monitor/core/storekit/clickhouse/table"
+	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/clickhouse/table"
 )
 
 func (p *provider) Ensure(ctx context.Context, tenant, key string, ttlDays int64) (_ <-chan error, writeTableName string) {

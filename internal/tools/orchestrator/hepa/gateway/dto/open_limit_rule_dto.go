@@ -16,7 +16,7 @@ package dto
 
 import (
 	"github.com/erda-project/erda-proto-go/core/hepa/openapi_rule/pb"
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/gateway/exdto"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/exdto"
 )
 
 type OpenLimitRuleDto struct {

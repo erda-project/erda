@@ -25,10 +25,10 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/tools/pipeline/dbclient"
-	"github.com/erda-project/erda/modules/tools/pipeline/providers/edgepipeline_register"
-	"github.com/erda-project/erda/modules/tools/pipeline/providers/edgereporter/db"
-	spec2 "github.com/erda-project/erda/modules/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/edgepipeline_register"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/edgereporter/db"
+	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 func Test_pipelineFilterIn(t *testing.T) {

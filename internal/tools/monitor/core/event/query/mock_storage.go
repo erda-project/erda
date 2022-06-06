@@ -10,9 +10,9 @@ import (
 
 	"github.com/golang/mock/gomock"
 
-	"github.com/erda-project/erda/modules/tools/monitor/core/event"
-	"github.com/erda-project/erda/modules/tools/monitor/core/event/storage"
-	"github.com/erda-project/erda/modules/tools/monitor/core/storekit"
+	"github.com/erda-project/erda/internal/tools/monitor/core/event"
+	"github.com/erda-project/erda/internal/tools/monitor/core/event/storage"
+	"github.com/erda-project/erda/internal/tools/monitor/core/storekit"
 )
 
 // MockStorage is a mock of Storage interface.

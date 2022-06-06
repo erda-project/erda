@@ -17,8 +17,8 @@ package block
 import (
 	"fmt"
 
-	"github.com/erda-project/erda/modules/pkg/mysql"
-	"github.com/erda-project/erda/modules/tools/monitor/utils"
+	"github.com/erda-project/erda/internal/pkg/mysql"
+	"github.com/erda-project/erda/internal/tools/monitor/utils"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 )
 

@@ -26,13 +26,13 @@ import (
 	monitorpb "github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/apps/msp/apm/alert/components/common"
+	"github.com/erda-project/erda/internal/apps/msp/apm/alert/components/common"
 
-	_ "github.com/erda-project/erda/modules/apps/msp/apm/alert/components/msp-alert-event-detail"
-	_ "github.com/erda-project/erda/modules/apps/msp/apm/alert/components/msp-alert-event-list"
-	_ "github.com/erda-project/erda/modules/apps/msp/apm/alert/components/msp-alert-overview"
-	_ "github.com/erda-project/erda/modules/apps/msp/apm/alert/components/msp-notify-detail"
-	_ "github.com/erda-project/erda/modules/apps/msp/apm/alert/components/msp-notify-list"
+	_ "github.com/erda-project/erda/internal/apps/msp/apm/alert/components/msp-alert-event-detail"
+	_ "github.com/erda-project/erda/internal/apps/msp/apm/alert/components/msp-alert-event-list"
+	_ "github.com/erda-project/erda/internal/apps/msp/apm/alert/components/msp-alert-overview"
+	_ "github.com/erda-project/erda/internal/apps/msp/apm/alert/components/msp-notify-detail"
+	_ "github.com/erda-project/erda/internal/apps/msp/apm/alert/components/msp-notify-list"
 )
 
 //go:embed scenarios

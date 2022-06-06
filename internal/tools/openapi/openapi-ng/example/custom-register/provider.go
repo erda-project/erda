@@ -18,7 +18,7 @@ import (
 	"net/http"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/modules/tools/openapi/openapi-ng"
+	"github.com/erda-project/erda/internal/tools/openapi/openapi-ng"
 )
 
 type provider struct {

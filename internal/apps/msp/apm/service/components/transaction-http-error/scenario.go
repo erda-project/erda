@@ -15,7 +15,7 @@
 package transaction_http_slow
 
 import (
-	_ "github.com/erda-project/erda/modules/apps/msp/apm/service/components/transaction-http-error/error_req_distribution"
-	_ "github.com/erda-project/erda/modules/apps/msp/apm/service/components/transaction-http-error/metric_table"
-	_ "github.com/erda-project/erda/modules/apps/msp/apm/service/components/transaction-http-error/metric_table_filter"
+	_ "github.com/erda-project/erda/internal/apps/msp/apm/service/components/transaction-http-error/error_req_distribution"
+	_ "github.com/erda-project/erda/internal/apps/msp/apm/service/components/transaction-http-error/metric_table"
+	_ "github.com/erda-project/erda/internal/apps/msp/apm/service/components/transaction-http-error/metric_table_filter"
 )

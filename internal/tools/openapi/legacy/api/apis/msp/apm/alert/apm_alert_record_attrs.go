@@ -14,7 +14,7 @@
 
 package alert
 
-import "github.com/erda-project/erda/modules/tools/openapi/legacy/api/apis"
+import "github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
 
 var APM_ALERT_RECORD_ATTRS = apis.ApiSpec{
 	Path:        "/api/tmc/tenantGroup/<tenantGroup>/alert-record-attrs",

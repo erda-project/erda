@@ -24,8 +24,8 @@ import (
 	addonmysqlpb "github.com/erda-project/erda-proto-go/orchestrator/addon/mysql/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/apps/dop/component-protocol/types"
-	"github.com/erda-project/erda/modules/tools/monitor/utils"
+	"github.com/erda-project/erda/internal/apps/dop/component-protocol/types"
+	"github.com/erda-project/erda/internal/tools/monitor/utils"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 

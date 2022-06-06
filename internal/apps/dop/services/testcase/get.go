@@ -18,7 +18,7 @@ import (
 	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/apps/dop/services/apierrors"
+	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 )
 
 // GetTestCase 获取测试用例详情

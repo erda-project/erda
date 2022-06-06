@@ -17,7 +17,7 @@ package assetsvc_test
 import (
 	"testing"
 
-	"github.com/erda-project/erda/modules/apps/dop/services/assetsvc"
+	"github.com/erda-project/erda/internal/apps/dop/services/assetsvc"
 )
 
 const spec = `

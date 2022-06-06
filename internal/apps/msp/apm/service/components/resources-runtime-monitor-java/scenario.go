@@ -15,5 +15,5 @@
 package resources_runtime_monitor_java
 
 import (
-	_ "github.com/erda-project/erda/modules/apps/msp/apm/service/components/resources-runtime-monitor-java/runtime"
+	_ "github.com/erda-project/erda/internal/apps/msp/apm/service/components/resources-runtime-monitor-java/runtime"
 )

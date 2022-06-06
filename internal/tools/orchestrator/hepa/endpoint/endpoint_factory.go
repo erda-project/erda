@@ -15,7 +15,7 @@
 package endpoint
 
 import (
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/k8s"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/k8s"
 )
 
 type Route struct {

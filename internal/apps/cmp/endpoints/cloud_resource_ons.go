@@ -28,11 +28,11 @@ import (
 	"golang.org/x/text/message"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/apps/cmp/dbclient"
-	aliyun_resources "github.com/erda-project/erda/modules/apps/cmp/impl/aliyun-resources"
-	"github.com/erda-project/erda/modules/apps/cmp/impl/aliyun-resources/ons"
-	"github.com/erda-project/erda/modules/apps/cmp/impl/aliyun-resources/vpc"
-	resource_factory "github.com/erda-project/erda/modules/apps/cmp/impl/resource-factory"
+	"github.com/erda-project/erda/internal/apps/cmp/dbclient"
+	aliyun_resources "github.com/erda-project/erda/internal/apps/cmp/impl/aliyun-resources"
+	"github.com/erda-project/erda/internal/apps/cmp/impl/aliyun-resources/ons"
+	"github.com/erda-project/erda/internal/apps/cmp/impl/aliyun-resources/vpc"
+	resource_factory "github.com/erda-project/erda/internal/apps/cmp/impl/resource-factory"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/strutil"
 )

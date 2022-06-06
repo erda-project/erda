@@ -28,7 +28,7 @@ import (
 
 	git "github.com/libgit2/git2go/v30"
 
-	"github.com/erda-project/erda/modules/tools/gittar/pkg/gitmodule/tool"
+	"github.com/erda-project/erda/internal/tools/gittar/pkg/gitmodule/tool"
 )
 
 const REMOTE_PREFIX = "refs/remotes/"

@@ -14,7 +14,7 @@
 
 package orchestrator
 
-import "github.com/erda-project/erda/modules/tools/openapi/legacy/api/apis"
+import "github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
 
 var ORCHESTRATOR_TERMINAL = apis.ApiSpec{
 	Path:        "/api/terminal",

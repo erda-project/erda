@@ -23,7 +23,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/list"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
-	"github.com/erda-project/erda/modules/apps/admin/personal-workbench/component-protocol/components/personal-workbench/common"
+	"github.com/erda-project/erda/internal/apps/admin/personal-workbench/component-protocol/components/personal-workbench/common"
 	"github.com/erda-project/erda/pkg/arrays"
 )
 

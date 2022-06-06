@@ -18,7 +18,7 @@ import (
 	"errors"
 
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/tools/monitor/core/log"
+	"github.com/erda-project/erda/internal/tools/monitor/core/log"
 )
 
 // Validator .

@@ -15,7 +15,7 @@
 package dto
 
 import (
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/repository/orm"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
 )
 
 type CreateConsumerResp struct {

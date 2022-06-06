@@ -23,7 +23,7 @@ import (
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"gotest.tools/assert"
 
-	"github.com/erda-project/erda/modules/tools/monitor/core/log/storage"
+	"github.com/erda-project/erda/internal/tools/monitor/core/log/storage"
 )
 
 func Test_Iterator_Should_Success(t *testing.T) {

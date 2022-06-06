@@ -28,7 +28,7 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	tenantpb "github.com/erda-project/erda-proto-go/msp/tenant/pb"
-	"github.com/erda-project/erda/modules/tools/monitor/common/permission"
+	"github.com/erda-project/erda/internal/tools/monitor/common/permission"
 	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
 

@@ -16,22 +16,22 @@ package all
 
 import (
 	// receivers
-	_ "github.com/erda-project/erda/modules/tools/monitor/oap/collector/plugins/receivers/collector"
-	_ "github.com/erda-project/erda/modules/tools/monitor/oap/collector/plugins/receivers/dummy"
-	_ "github.com/erda-project/erda/modules/tools/monitor/oap/collector/plugins/receivers/jaeger"
-	_ "github.com/erda-project/erda/modules/tools/monitor/oap/collector/plugins/receivers/kafka"
-	_ "github.com/erda-project/erda/modules/tools/monitor/oap/collector/plugins/receivers/opentelemetry"
-	_ "github.com/erda-project/erda/modules/tools/monitor/oap/collector/plugins/receivers/promremotewrite"
+	_ "github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/receivers/collector"
+	_ "github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/receivers/dummy"
+	_ "github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/receivers/jaeger"
+	_ "github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/receivers/kafka"
+	_ "github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/receivers/opentelemetry"
+	_ "github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/receivers/promremotewrite"
 
 	// processors
-	_ "github.com/erda-project/erda/modules/tools/monitor/oap/collector/plugins/processors/aggregator"
-	_ "github.com/erda-project/erda/modules/tools/monitor/oap/collector/plugins/processors/k8s-tagger"
-	_ "github.com/erda-project/erda/modules/tools/monitor/oap/collector/plugins/processors/modifier"
-	_ "github.com/erda-project/erda/modules/tools/monitor/oap/collector/plugins/processors/stdout"
+	_ "github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/processors/aggregator"
+	_ "github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/processors/k8s-tagger"
+	_ "github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/processors/modifier"
+	_ "github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/processors/stdout"
 
 	// exporters
-	_ "github.com/erda-project/erda/modules/tools/monitor/oap/collector/plugins/exporters/clickhouse"
-	_ "github.com/erda-project/erda/modules/tools/monitor/oap/collector/plugins/exporters/collector"
-	_ "github.com/erda-project/erda/modules/tools/monitor/oap/collector/plugins/exporters/kafka"
-	_ "github.com/erda-project/erda/modules/tools/monitor/oap/collector/plugins/exporters/stdout"
+	_ "github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/exporters/clickhouse"
+	_ "github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/exporters/collector"
+	_ "github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/exporters/kafka"
+	_ "github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/exporters/stdout"
 )

@@ -24,8 +24,8 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	messengerpb "github.com/erda-project/erda-proto-go/core/messenger/notify/pb"
-	"github.com/erda-project/erda/modules/apps/msp/apm/alert/components/msp-alert-overview/common"
-	"github.com/erda-project/erda/modules/tools/monitor/utils"
+	"github.com/erda-project/erda/internal/apps/msp/apm/alert/components/msp-alert-overview/common"
+	"github.com/erda-project/erda/internal/tools/monitor/utils"
 	"github.com/erda-project/erda/pkg/common/errors"
 )
 

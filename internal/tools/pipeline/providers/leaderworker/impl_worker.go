@@ -20,8 +20,8 @@ import (
 
 	"github.com/coreos/etcd/clientv3"
 
-	"github.com/erda-project/erda/modules/tools/pipeline/providers/leaderworker/lwctx"
-	worker2 "github.com/erda-project/erda/modules/tools/pipeline/providers/leaderworker/worker"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/leaderworker/lwctx"
+	worker2 "github.com/erda-project/erda/internal/tools/pipeline/providers/leaderworker/worker"
 )
 
 func (p *provider) RegisterCandidateWorker(ctx context.Context, w worker2.Worker) error {

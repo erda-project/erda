@@ -19,7 +19,7 @@ import (
 	"reflect"
 
 	common "github.com/erda-project/erda-proto-go/common/pb"
-	"github.com/erda-project/erda/modules/tools/openapi/openapi-ng/auth"
+	"github.com/erda-project/erda/internal/tools/openapi/openapi-ng/auth"
 )
 
 // GetAuthOption .

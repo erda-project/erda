@@ -15,7 +15,7 @@
 package list
 
 import (
-	protocol "github.com/erda-project/erda/modules/tools/openapi/legacy/component-protocol"
+	protocol "github.com/erda-project/erda/internal/tools/openapi/legacy/component-protocol"
 )
 
 type ComponentList struct {

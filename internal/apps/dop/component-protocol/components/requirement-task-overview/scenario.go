@@ -15,12 +15,12 @@
 package requirement_task_overview
 
 import (
-	_ "github.com/erda-project/erda/modules/apps/dop/component-protocol/components/requirement-task-overview/chartBlock"
-	_ "github.com/erda-project/erda/modules/apps/dop/component-protocol/components/requirement-task-overview/chartBlock/burnoutChart"
-	_ "github.com/erda-project/erda/modules/apps/dop/component-protocol/components/requirement-task-overview/chartBlock/burnoutChartFilter"
-	_ "github.com/erda-project/erda/modules/apps/dop/component-protocol/components/requirement-task-overview/container/info"
-	_ "github.com/erda-project/erda/modules/apps/dop/component-protocol/components/requirement-task-overview/container/simpleChart"
-	_ "github.com/erda-project/erda/modules/apps/dop/component-protocol/components/requirement-task-overview/distributePage/topFilter"
-	_ "github.com/erda-project/erda/modules/apps/dop/component-protocol/components/requirement-task-overview/stackChartBlock/stackChart"
-	_ "github.com/erda-project/erda/modules/apps/dop/component-protocol/components/requirement-task-overview/stackChartBlock/stackChartFilter"
+	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/requirement-task-overview/chartBlock"
+	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/requirement-task-overview/chartBlock/burnoutChart"
+	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/requirement-task-overview/chartBlock/burnoutChartFilter"
+	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/requirement-task-overview/container/info"
+	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/requirement-task-overview/container/simpleChart"
+	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/requirement-task-overview/distributePage/topFilter"
+	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/requirement-task-overview/stackChartBlock/stackChart"
+	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/requirement-task-overview/stackChartBlock/stackChartFilter"
 )

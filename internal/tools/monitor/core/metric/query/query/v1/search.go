@@ -25,9 +25,9 @@ import (
 	"github.com/recallsong/go-utils/encoding/jsonx"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
-	"github.com/erda-project/erda/modules/tools/monitor/core/metric/query/chartmeta"
-	"github.com/erda-project/erda/modules/tools/monitor/core/metric/query/metricmeta"
-	"github.com/erda-project/erda/modules/tools/monitor/core/metric/query/query"
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/chartmeta"
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/metricmeta"
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/query"
 )
 
 type queryer struct {

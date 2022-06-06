@@ -15,9 +15,9 @@
 package transaction_db_analysis
 
 import (
-	_ "github.com/erda-project/erda/modules/apps/msp/apm/service/components/transaction-db-analysis/avg_duration"
-	_ "github.com/erda-project/erda/modules/apps/msp/apm/service/components/transaction-db-analysis/req_distribution"
-	_ "github.com/erda-project/erda/modules/apps/msp/apm/service/components/transaction-db-analysis/rps"
-	_ "github.com/erda-project/erda/modules/apps/msp/apm/service/components/transaction-db-analysis/table"
-	_ "github.com/erda-project/erda/modules/apps/msp/apm/service/components/transaction-db-analysis/table_filter"
+	_ "github.com/erda-project/erda/internal/apps/msp/apm/service/components/transaction-db-analysis/avg_duration"
+	_ "github.com/erda-project/erda/internal/apps/msp/apm/service/components/transaction-db-analysis/req_distribution"
+	_ "github.com/erda-project/erda/internal/apps/msp/apm/service/components/transaction-db-analysis/rps"
+	_ "github.com/erda-project/erda/internal/apps/msp/apm/service/components/transaction-db-analysis/table"
+	_ "github.com/erda-project/erda/internal/apps/msp/apm/service/components/transaction-db-analysis/table_filter"
 )

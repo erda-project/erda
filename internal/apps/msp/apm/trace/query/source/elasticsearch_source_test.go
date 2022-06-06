@@ -23,8 +23,8 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
-	"github.com/erda-project/erda/modules/apps/msp/apm/trace"
-	"github.com/erda-project/erda/modules/apps/msp/apm/trace/storage"
+	"github.com/erda-project/erda/internal/apps/msp/apm/trace"
+	"github.com/erda-project/erda/internal/apps/msp/apm/trace/storage"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 

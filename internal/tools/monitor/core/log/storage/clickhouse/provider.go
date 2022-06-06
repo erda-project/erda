@@ -21,10 +21,10 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/clickhouse"
-	"github.com/erda-project/erda/modules/tools/monitor/core/log/storage"
-	"github.com/erda-project/erda/modules/tools/monitor/core/settings/retention-strategy"
-	"github.com/erda-project/erda/modules/tools/monitor/core/storekit/clickhouse/table/creator"
-	"github.com/erda-project/erda/modules/tools/monitor/core/storekit/clickhouse/table/loader"
+	"github.com/erda-project/erda/internal/tools/monitor/core/log/storage"
+	"github.com/erda-project/erda/internal/tools/monitor/core/settings/retention-strategy"
+	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/clickhouse/table/creator"
+	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/clickhouse/table/loader"
 )
 
 type config struct {

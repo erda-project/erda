@@ -14,7 +14,7 @@
 
 package block
 
-import "github.com/erda-project/erda/modules/tools/openapi/legacy/api/apis"
+import "github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
 
 var GET_BLOCK = apis.ApiSpec{
 	Path:        "/api/tmc/dashboard/blocks/<id>",

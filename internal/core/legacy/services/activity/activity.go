@@ -16,8 +16,8 @@ package activity
 
 import (
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/core/legacy/dao"
-	"github.com/erda-project/erda/modules/core/legacy/model"
+	"github.com/erda-project/erda/internal/core/legacy/dao"
+	"github.com/erda-project/erda/internal/core/legacy/model"
 )
 
 // Activity 活动操作封装

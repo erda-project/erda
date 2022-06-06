@@ -17,9 +17,9 @@ package odata
 import (
 	"sync"
 
-	"github.com/erda-project/erda/modules/apps/msp/apm/trace"
-	"github.com/erda-project/erda/modules/tools/monitor/core/log"
-	"github.com/erda-project/erda/modules/tools/monitor/core/metric"
+	"github.com/erda-project/erda/internal/apps/msp/apm/trace"
+	"github.com/erda-project/erda/internal/tools/monitor/core/log"
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric"
 )
 
 // Buffer. Store ObservableData

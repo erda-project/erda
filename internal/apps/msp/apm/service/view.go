@@ -19,7 +19,7 @@ import (
 	"strings"
 
 	"github.com/erda-project/erda-proto-go/msp/apm/service/pb"
-	"github.com/erda-project/erda/modules/apps/msp/apm/service/view/chart"
+	"github.com/erda-project/erda/internal/apps/msp/apm/service/view/chart"
 )
 
 func Selector(viewType string, config *config, baseChart *chart.BaseChart, ctx context.Context) ([]*pb.ServiceChart, error) {

@@ -21,9 +21,9 @@ import (
 	jsoniter "github.com/json-iterator/go"
 	"github.com/recallsong/go-utils/errorx"
 
-	"github.com/erda-project/erda/modules/apps/msp/apm/log-service/analysis/processors"
-	logs "github.com/erda-project/erda/modules/tools/monitor/core/log"
-	metrics "github.com/erda-project/erda/modules/tools/monitor/core/metric"
+	"github.com/erda-project/erda/internal/apps/msp/apm/log-service/analysis/processors"
+	logs "github.com/erda-project/erda/internal/tools/monitor/core/log"
+	metrics "github.com/erda-project/erda/internal/tools/monitor/core/metric"
 )
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary

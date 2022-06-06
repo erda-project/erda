@@ -19,7 +19,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/modules/apps/msp/resource/deploy/handlers"
+	"github.com/erda-project/erda/internal/apps/msp/resource/deploy/handlers"
 )
 
 type config struct {

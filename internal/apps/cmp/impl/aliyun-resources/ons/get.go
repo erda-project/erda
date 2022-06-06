@@ -23,7 +23,7 @@ import (
 	"golang.org/x/text/message"
 
 	"github.com/erda-project/erda/apistructs"
-	aliyun_resources "github.com/erda-project/erda/modules/apps/cmp/impl/aliyun-resources"
+	aliyun_resources "github.com/erda-project/erda/internal/apps/cmp/impl/aliyun-resources"
 )
 
 func GetInstanceDetailInfo(ctx aliyun_resources.Context, instanceID string) (ons.InstanceBaseInfo, error) {

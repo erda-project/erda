@@ -21,7 +21,7 @@ import (
 	"github.com/erda-project/erda/pkg/common"
 
 	_ "github.com/erda-project/erda-infra/providers"
-	_ "github.com/erda-project/erda/modules/tools/cluster-ops"
+	_ "github.com/erda-project/erda/internal/tools/cluster-ops"
 )
 
 //go:embed bootstrap.yaml

@@ -23,10 +23,10 @@ import (
 	"github.com/erda-project/erda-proto-go/msp/registercenter/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/apps/msp/instance"
-	instancedb "github.com/erda-project/erda/modules/apps/msp/instance/db"
-	"github.com/erda-project/erda/modules/apps/msp/registercenter/nacos"
-	"github.com/erda-project/erda/modules/apps/msp/registercenter/zkproxy"
+	"github.com/erda-project/erda/internal/apps/msp/instance"
+	instancedb "github.com/erda-project/erda/internal/apps/msp/instance/db"
+	"github.com/erda-project/erda/internal/apps/msp/registercenter/nacos"
+	"github.com/erda-project/erda/internal/apps/msp/registercenter/zkproxy"
 	"github.com/erda-project/erda/pkg/common/errors"
 )
 

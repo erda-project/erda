@@ -22,9 +22,9 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
-	"github.com/erda-project/erda/modules/tools/orchestrator/services/apierrors"
-	"github.com/erda-project/erda/modules/tools/orchestrator/utils"
+	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
+	"github.com/erda-project/erda/internal/tools/orchestrator/services/apierrors"
+	"github.com/erda-project/erda/internal/tools/orchestrator/utils"
 )
 
 func (d *DeploymentOrder) Get(userId string, orderId string) (*apistructs.DeploymentOrderDetail, error) {

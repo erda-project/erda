@@ -18,7 +18,7 @@ import (
 	"context"
 
 	"github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
-	"github.com/erda-project/erda/modules/apps/msp/apm/trace/query/commom/custom"
+	"github.com/erda-project/erda/internal/apps/msp/apm/trace/query/commom/custom"
 )
 
 type TraceSource interface {

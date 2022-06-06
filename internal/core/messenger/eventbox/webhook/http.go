@@ -27,8 +27,8 @@ import (
 
 	"github.com/erda-project/erda-proto-go/core/messenger/eventbox/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/core/legacy"
-	"github.com/erda-project/erda/modules/core/legacy/types"
+	"github.com/erda-project/erda/internal/core/legacy"
+	"github.com/erda-project/erda/internal/core/legacy/types"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 

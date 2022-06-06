@@ -23,7 +23,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/apps/dop/conf"
+	"github.com/erda-project/erda/internal/apps/dop/conf"
 )
 
 func Test_sendIssueEventToSpecificRecipient(t *testing.T) {

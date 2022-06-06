@@ -15,7 +15,7 @@
 package cmp
 
 import (
-	"github.com/erda-project/erda/modules/tools/openapi/legacy/api/apis"
+	"github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
 )
 
 var CMP_CLUSTER_INIT_RETRY = apis.ApiSpec{

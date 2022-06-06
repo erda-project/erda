@@ -16,7 +16,7 @@ package dao
 
 import (
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/core/legacy/model"
+	"github.com/erda-project/erda/internal/core/legacy/model"
 )
 
 func (client *DBClient) GetNotifySourcesByNotifyID(notifyID int64) ([]*apistructs.NotifySource, error) {

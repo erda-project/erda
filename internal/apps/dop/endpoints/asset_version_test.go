@@ -17,7 +17,7 @@ package endpoints_test
 import (
 	"testing"
 
-	"github.com/erda-project/erda/modules/apps/dop/endpoints"
+	"github.com/erda-project/erda/internal/apps/dop/endpoints"
 )
 
 func TestAttachment(t *testing.T) {

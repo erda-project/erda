@@ -19,7 +19,7 @@ import (
 	"encoding/json"
 
 	"github.com/erda-project/erda/apistructs"
-	protocol "github.com/erda-project/erda/modules/tools/openapi/legacy/component-protocol"
+	protocol "github.com/erda-project/erda/internal/tools/openapi/legacy/component-protocol"
 )
 
 func (i *ComponentPage) marshal(c *apistructs.Component) error {

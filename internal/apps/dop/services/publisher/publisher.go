@@ -25,9 +25,9 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/apps/dop/dao"
-	"github.com/erda-project/erda/modules/apps/dop/model"
-	"github.com/erda-project/erda/modules/apps/dop/services/nexussvc"
+	"github.com/erda-project/erda/internal/apps/dop/dao"
+	"github.com/erda-project/erda/internal/apps/dop/model"
+	"github.com/erda-project/erda/internal/apps/dop/services/nexussvc"
 	"github.com/erda-project/erda/pkg/nexus"
 	"github.com/erda-project/erda/pkg/ucauth"
 )

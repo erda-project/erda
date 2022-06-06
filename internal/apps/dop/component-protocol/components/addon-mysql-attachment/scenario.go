@@ -15,11 +15,11 @@
 package addon_account_manage
 
 import (
-	_ "github.com/erda-project/erda/modules/apps/dop/component-protocol/components/addon-mysql-attachment/attachmentTable"
-	_ "github.com/erda-project/erda/modules/apps/dop/component-protocol/components/addon-mysql-attachment/config/configCopyParams"
-	_ "github.com/erda-project/erda/modules/apps/dop/component-protocol/components/addon-mysql-attachment/config/configDrawer"
-	_ "github.com/erda-project/erda/modules/apps/dop/component-protocol/components/addon-mysql-attachment/config/configPanel"
-	_ "github.com/erda-project/erda/modules/apps/dop/component-protocol/components/addon-mysql-attachment/editFormModal"
-	_ "github.com/erda-project/erda/modules/apps/dop/component-protocol/components/addon-mysql-attachment/filter"
-	_ "github.com/erda-project/erda/modules/apps/dop/component-protocol/components/addon-mysql-attachment/root"
+	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/addon-mysql-attachment/attachmentTable"
+	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/addon-mysql-attachment/config/configCopyParams"
+	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/addon-mysql-attachment/config/configDrawer"
+	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/addon-mysql-attachment/config/configPanel"
+	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/addon-mysql-attachment/editFormModal"
+	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/addon-mysql-attachment/filter"
+	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/addon-mysql-attachment/root"
 )

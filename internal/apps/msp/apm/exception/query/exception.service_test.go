@@ -23,7 +23,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda-proto-go/msp/apm/exception/pb"
-	"github.com/erda-project/erda/modules/apps/msp/apm/exception/query/source"
+	"github.com/erda-project/erda/internal/apps/msp/apm/exception/query/source"
 )
 
 func Test_exceptionService_GetExceptions_cassandra(t *testing.T) {

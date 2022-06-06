@@ -20,7 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	priorityqueue2 "github.com/erda-project/erda/modules/tools/pipeline/providers/queuemanager/pkg/queue/priorityqueue"
+	priorityqueue2 "github.com/erda-project/erda/internal/tools/pipeline/providers/queuemanager/pkg/queue/priorityqueue"
 )
 
 func TestPriorityQueue_Snapshot(t *testing.T) {

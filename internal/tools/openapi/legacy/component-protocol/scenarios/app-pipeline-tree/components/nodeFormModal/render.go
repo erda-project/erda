@@ -23,8 +23,8 @@ import (
 	"strings"
 
 	"github.com/erda-project/erda/apistructs"
-	protocol "github.com/erda-project/erda/modules/tools/openapi/legacy/component-protocol"
-	"github.com/erda-project/erda/modules/tools/openapi/legacy/component-protocol/scenarios/app-pipeline-tree/components/fileTree"
+	protocol "github.com/erda-project/erda/internal/tools/openapi/legacy/component-protocol"
+	"github.com/erda-project/erda/internal/tools/openapi/legacy/component-protocol/scenarios/app-pipeline-tree/components/fileTree"
 )
 
 var (

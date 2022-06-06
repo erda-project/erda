@@ -21,7 +21,7 @@ import (
 	"testing"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/erda-project/erda/modules/apps/dop/component-protocol/components/util"
+	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/util"
 )
 
 func getPair() (Values, string) {

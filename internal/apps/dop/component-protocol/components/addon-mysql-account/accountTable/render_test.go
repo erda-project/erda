@@ -25,8 +25,8 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	addonmysqlpb "github.com/erda-project/erda-proto-go/orchestrator/addon/mysql/pb"
-	"github.com/erda-project/erda/modules/apps/dop/component-protocol/components/addon-mysql-account/accountTable/table"
-	"github.com/erda-project/erda/modules/apps/dop/component-protocol/components/addon-mysql-account/common"
+	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/addon-mysql-account/accountTable/table"
+	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/addon-mysql-account/common"
 )
 
 func Test_comp_getDatum(t *testing.T) {

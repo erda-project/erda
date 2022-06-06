@@ -21,7 +21,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda/modules/apps/dop/dicehub/errcode"
+	"github.com/erda-project/erda/internal/apps/dop/dicehub/errcode"
 )
 
 // Response 内部约定的Resposne格式, 更多，请参考: https://yuque.antfin-inc.com/terminus_paas_dev/paas/fozwef

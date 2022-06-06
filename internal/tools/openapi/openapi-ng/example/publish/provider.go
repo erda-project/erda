@@ -18,8 +18,8 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
-	"github.com/erda-project/erda/modules/tools/openapi/openapi-ng"
-	"github.com/erda-project/erda/modules/tools/openapi/openapi-ng/proxy"
+	"github.com/erda-project/erda/internal/tools/openapi/openapi-ng"
+	"github.com/erda-project/erda/internal/tools/openapi/openapi-ng/proxy"
 	discover "github.com/erda-project/erda/providers/service-discover"
 )
 

@@ -23,8 +23,8 @@ import (
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/common/wrapper"
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/config"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/wrapper"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/config"
 )
 
 func DoCommonRequest(client *http.Client, method, url string, data interface{}, headers ...map[string]string) (int, []byte, error) {

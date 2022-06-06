@@ -19,8 +19,8 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/tools/pipeline/action-runner-scheduler/conf"
-	"github.com/erda-project/erda/modules/tools/pipeline/action-runner-scheduler/dbclient"
+	"github.com/erda-project/erda/internal/tools/pipeline/action-runner-scheduler/conf"
+	"github.com/erda-project/erda/internal/tools/pipeline/action-runner-scheduler/dbclient"
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
 

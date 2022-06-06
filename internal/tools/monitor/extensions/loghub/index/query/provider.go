@@ -31,7 +31,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-infra/providers/mysql"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/tools/monitor/extensions/loghub/index/query/db"
+	"github.com/erda-project/erda/internal/tools/monitor/extensions/loghub/index/query/db"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 

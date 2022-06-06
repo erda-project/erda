@@ -20,7 +20,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/erda-project/erda/modules/tools/monitor/core/metric"
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric"
 )
 
 // Skip .

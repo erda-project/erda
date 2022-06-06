@@ -20,7 +20,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/mysql"
 	"github.com/erda-project/erda-proto-go/core/messenger/notify/pb"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/core/messenger/notify/db"
+	"github.com/erda-project/erda/internal/core/messenger/notify/db"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 

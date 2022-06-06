@@ -15,7 +15,7 @@
 package dao
 
 import (
-	"github.com/erda-project/erda/modules/core/legacy/model"
+	"github.com/erda-project/erda/internal/core/legacy/model"
 )
 
 // GetActivitiesByRuntime 根据runtimeID获取活动列表

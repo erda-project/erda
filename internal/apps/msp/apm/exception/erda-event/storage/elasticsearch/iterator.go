@@ -24,10 +24,10 @@ import (
 	"github.com/olivere/elastic"
 
 	"github.com/erda-project/erda-infra/base/logs"
-	"github.com/erda-project/erda/modules/apps/msp/apm/exception/erda-event/storage"
-	"github.com/erda-project/erda/modules/apps/msp/apm/exception/model"
-	"github.com/erda-project/erda/modules/tools/monitor/core/storekit"
-	"github.com/erda-project/erda/modules/tools/monitor/core/storekit/elasticsearch/index/loader"
+	"github.com/erda-project/erda/internal/apps/msp/apm/exception/erda-event/storage"
+	"github.com/erda-project/erda/internal/apps/msp/apm/exception/model"
+	"github.com/erda-project/erda/internal/tools/monitor/core/storekit"
+	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/elasticsearch/index/loader"
 )
 
 func (p *provider) getSearchSource(sel *storage.Selector) *elastic.SearchSource {

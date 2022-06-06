@@ -17,7 +17,7 @@ package metrics
 import (
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda/modules/apps/cmp/cache"
+	"github.com/erda-project/erda/internal/apps/cmp/cache"
 )
 
 type MetricsRequest struct {

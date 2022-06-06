@@ -14,7 +14,7 @@
 
 package monitor
 
-import "github.com/erda-project/erda/modules/tools/openapi/legacy/api/apis"
+import "github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
 
 var SPOT_JVM_PROFILER_THREAD_DUMP = apis.ApiSpec{
 	Path:        "/api/monitor/jvmprofiler/<addonID>/profiling/<profilingID>/thread-snapshots",

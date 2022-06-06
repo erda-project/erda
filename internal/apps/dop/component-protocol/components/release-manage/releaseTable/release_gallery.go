@@ -24,7 +24,7 @@ import (
 	"github.com/erda-project/erda-infra/pkg/transport"
 	gallerypb "github.com/erda-project/erda-proto-go/apps/gallery/pb"
 	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
-	"github.com/erda-project/erda/modules/apps/gallery/types"
+	"github.com/erda-project/erda/internal/apps/gallery/types"
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
 

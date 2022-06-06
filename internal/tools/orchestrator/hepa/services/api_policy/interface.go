@@ -17,9 +17,9 @@ package api_policy
 import (
 	"context"
 
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/apipolicy"
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/repository/orm"
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/repository/service"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/apipolicy"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/service"
 )
 
 var Service GatewayApiPolicyService

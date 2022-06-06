@@ -26,7 +26,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/tools/monitor/core/dataview/db"
+	"github.com/erda-project/erda/internal/tools/monitor/core/dataview/db"
 	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
 

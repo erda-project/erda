@@ -26,10 +26,10 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/gittar/event"
-	"github.com/erda-project/erda/modules/tools/gittar/models"
-	"github.com/erda-project/erda/modules/tools/gittar/pkg/gitmodule"
-	"github.com/erda-project/erda/modules/tools/gittar/webcontext"
+	"github.com/erda-project/erda/internal/tools/gittar/event"
+	"github.com/erda-project/erda/internal/tools/gittar/models"
+	"github.com/erda-project/erda/internal/tools/gittar/pkg/gitmodule"
+	"github.com/erda-project/erda/internal/tools/gittar/webcontext"
 )
 
 // protect branch

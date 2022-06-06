@@ -22,10 +22,10 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	dashboardPb "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/apps/dop/dao"
-	"github.com/erda-project/erda/modules/apps/dop/services/nexussvc"
-	"github.com/erda-project/erda/modules/apps/dop/services/org"
-	"github.com/erda-project/erda/modules/apps/dop/services/publisher"
+	"github.com/erda-project/erda/internal/apps/dop/dao"
+	"github.com/erda-project/erda/internal/apps/dop/services/nexussvc"
+	"github.com/erda-project/erda/internal/apps/dop/services/org"
+	"github.com/erda-project/erda/internal/apps/dop/services/publisher"
 	"github.com/erda-project/erda/pkg/ucauth"
 )
 

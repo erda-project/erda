@@ -24,9 +24,9 @@ import (
 	"github.com/erda-project/erda-infra/pkg/strutil"
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/apps/msp/apm/log-service/analysis/processors"
-	_ "github.com/erda-project/erda/modules/apps/msp/apm/log-service/analysis/processors/regex" //
-	metrics "github.com/erda-project/erda/modules/tools/monitor/core/metric"
+	"github.com/erda-project/erda/internal/apps/msp/apm/log-service/analysis/processors"
+	_ "github.com/erda-project/erda/internal/apps/msp/apm/log-service/analysis/processors/regex" //
+	metrics "github.com/erda-project/erda/internal/tools/monitor/core/metric"
 	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
 

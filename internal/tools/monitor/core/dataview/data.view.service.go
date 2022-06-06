@@ -26,7 +26,7 @@ import (
 
 	"github.com/erda-project/erda-proto-go/core/monitor/dataview/pb"
 	"github.com/erda-project/erda/cmd/monitor/monitor/conf"
-	"github.com/erda-project/erda/modules/tools/monitor/core/dataview/db"
+	"github.com/erda-project/erda/internal/tools/monitor/core/dataview/db"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
 	"github.com/erda-project/erda/providers/audit"

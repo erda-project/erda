@@ -23,7 +23,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
 	"github.com/erda-project/erda-infra/providers/i18n"
 
-	_ "github.com/erda-project/erda/modules/apps/msp/apm/browser/components/browser-overview"
+	_ "github.com/erda-project/erda/internal/apps/msp/apm/browser/components/browser-overview"
 )
 
 //go:embed scenarios

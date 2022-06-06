@@ -15,8 +15,8 @@
 package issue_manage
 
 import (
-	_ "github.com/erda-project/erda/modules/apps/dop/component-protocol/components/issue-manage/issueFilter"
-	_ "github.com/erda-project/erda/modules/apps/dop/component-protocol/components/issue-manage/issueImport"
-	_ "github.com/erda-project/erda/modules/apps/dop/component-protocol/components/issue-manage/issueTable"
-	_ "github.com/erda-project/erda/modules/apps/dop/component-protocol/components/issue-manage/reset"
+	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/issue-manage/issueFilter"
+	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/issue-manage/issueImport"
+	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/issue-manage/issueTable"
+	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/issue-manage/reset"
 )

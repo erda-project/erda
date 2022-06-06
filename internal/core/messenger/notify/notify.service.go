@@ -27,9 +27,9 @@ import (
 	"github.com/erda-project/erda-proto-go/core/messenger/notify/pb"
 	monitor "github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/core/messenger/common"
-	"github.com/erda-project/erda/modules/core/messenger/notify/db"
-	"github.com/erda-project/erda/modules/core/messenger/notify/model"
+	"github.com/erda-project/erda/internal/core/messenger/common"
+	"github.com/erda-project/erda/internal/core/messenger/notify/db"
+	"github.com/erda-project/erda/internal/core/messenger/notify/model"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
 )

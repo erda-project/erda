@@ -23,7 +23,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/core/user/uc-adaptor/service/adaptor"
+	"github.com/erda-project/erda/internal/core/user/uc-adaptor/service/adaptor"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 

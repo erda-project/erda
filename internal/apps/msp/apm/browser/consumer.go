@@ -26,8 +26,8 @@ import (
 	jsoniter "github.com/json-iterator/go"
 	"github.com/varstr/uaparser"
 
-	"github.com/erda-project/erda/modules/apps/msp/apm/browser/timing"
-	metrics "github.com/erda-project/erda/modules/tools/monitor/core/metric"
+	"github.com/erda-project/erda/internal/apps/msp/apm/browser/timing"
+	metrics "github.com/erda-project/erda/internal/tools/monitor/core/metric"
 )
 
 var (

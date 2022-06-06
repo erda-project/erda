@@ -25,7 +25,7 @@ import (
 
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/core/cluster-manager/conf"
+	"github.com/erda-project/erda/internal/core/cluster-manager/conf"
 )
 
 const (

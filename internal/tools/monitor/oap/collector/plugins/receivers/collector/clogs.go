@@ -21,7 +21,7 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/labstack/echo"
 
-	"github.com/erda-project/erda/modules/tools/monitor/oap/collector/lib"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib"
 )
 
 func (p *provider) collectLogs(ctx echo.Context) error {

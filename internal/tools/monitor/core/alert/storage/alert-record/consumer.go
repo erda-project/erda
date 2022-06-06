@@ -20,8 +20,8 @@ import (
 
 	"github.com/jinzhu/gorm"
 
-	"github.com/erda-project/erda/modules/tools/monitor/core/alert/alert-apis/adapt"
-	"github.com/erda-project/erda/modules/tools/monitor/core/alert/alert-apis/db"
+	"github.com/erda-project/erda/internal/tools/monitor/core/alert/alert-apis/adapt"
+	"github.com/erda-project/erda/internal/tools/monitor/core/alert/alert-apis/db"
 )
 
 func (p *provider) invoke(key []byte, value []byte, topic *string, timestamp time.Time) error {

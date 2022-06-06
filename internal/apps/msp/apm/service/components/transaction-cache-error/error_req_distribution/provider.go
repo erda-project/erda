@@ -24,9 +24,9 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
-	error_transaction "github.com/erda-project/erda/modules/apps/msp/apm/service/common/error-transaction"
-	"github.com/erda-project/erda/modules/apps/msp/apm/service/datasources"
-	"github.com/erda-project/erda/modules/apps/msp/apm/service/view/common"
+	error_transaction "github.com/erda-project/erda/internal/apps/msp/apm/service/common/error-transaction"
+	"github.com/erda-project/erda/internal/apps/msp/apm/service/datasources"
+	"github.com/erda-project/erda/internal/apps/msp/apm/service/view/common"
 )
 
 type provider struct {

@@ -15,6 +15,6 @@
 package cmp_dashboard_events_list
 
 import (
-	_ "github.com/erda-project/erda/modules/apps/cmp/component-protocol/components/cmp-dashboard-events-list/eventTable"
-	_ "github.com/erda-project/erda/modules/apps/cmp/component-protocol/components/cmp-dashboard-events-list/filter"
+	_ "github.com/erda-project/erda/internal/apps/cmp/component-protocol/components/cmp-dashboard-events-list/eventTable"
+	_ "github.com/erda-project/erda/internal/apps/cmp/component-protocol/components/cmp-dashboard-events-list/filter"
 )

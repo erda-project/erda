@@ -24,8 +24,8 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/cassandra"
-	"github.com/erda-project/erda/modules/apps/msp/apm/trace/storage"
-	"github.com/erda-project/erda/modules/tools/monitor/core/storekit"
+	"github.com/erda-project/erda/internal/apps/msp/apm/trace/storage"
+	"github.com/erda-project/erda/internal/tools/monitor/core/storekit"
 )
 
 type (

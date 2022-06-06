@@ -18,9 +18,9 @@ import (
 	model "github.com/erda-project/erda-infra/providers/component-protocol/components/filter/models"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/apps/dop/component-protocol/components/project-pipeline/common"
-	"github.com/erda-project/erda/modules/apps/dop/component-protocol/components/util"
-	"github.com/erda-project/erda/modules/apps/dop/providers/projectpipeline/deftype"
+	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/project-pipeline/common"
+	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/util"
+	"github.com/erda-project/erda/internal/apps/dop/providers/projectpipeline/deftype"
 	"github.com/erda-project/erda/pkg/limit_sync_group"
 	"github.com/erda-project/erda/providers/component-protocol/condition"
 )

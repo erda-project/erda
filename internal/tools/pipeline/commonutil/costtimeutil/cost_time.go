@@ -18,7 +18,7 @@ import (
 	"math"
 	"time"
 
-	spec2 "github.com/erda-project/erda/modules/tools/pipeline/spec"
+	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 func CalculateTaskCostTimeSec(task *spec2.PipelineTask) (cost int64) {

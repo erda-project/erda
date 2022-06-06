@@ -37,7 +37,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	apierrors2 "github.com/erda-project/erda/bundle/apierrors"
-	"github.com/erda-project/erda/modules/apps/cmp/steve/predefined"
+	"github.com/erda-project/erda/internal/apps/cmp/steve/predefined"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/k8sclient"
 	"github.com/erda-project/erda/pkg/k8sclient/config"

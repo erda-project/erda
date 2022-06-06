@@ -24,8 +24,8 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/erda-project/erda-infra/providers/httpserver"
-	"github.com/erda-project/erda/modules/tools/monitor/notify/template/db"
-	"github.com/erda-project/erda/modules/tools/monitor/notify/template/model"
+	"github.com/erda-project/erda/internal/tools/monitor/notify/template/db"
+	"github.com/erda-project/erda/internal/tools/monitor/notify/template/model"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -34,7 +34,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-infra/providers/mysql"
 	"github.com/erda-project/erda/bundle"
-	bundlecmdb "github.com/erda-project/erda/modules/pkg/bundle-ex/cmdb"
+	bundlecmdb "github.com/erda-project/erda/internal/pkg/bundle-ex/cmdb"
 )
 
 type define struct{}

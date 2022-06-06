@@ -22,9 +22,9 @@ package endpoints
 // 	"github.com/pkg/errors"
 // 	"github.com/sirupsen/logrus"
 //
-// 	"github.com/erda-project/erda/modules/core/legacy/conf"
-// 	"github.com/erda-project/erda/modules/core/legacy/model"
-// 	"github.com/erda-project/erda/modules/core/legacy/types"
+// 	"github.com/erda-project/erda/internal/core/legacy/conf"
+// 	"github.com/erda-project/erda/internal/core/legacy/model"
+// 	"github.com/erda-project/erda/internal/core/legacy/types"
 // 	"github.com/erda-project/erda/pkg/strutil"
 // )
 //

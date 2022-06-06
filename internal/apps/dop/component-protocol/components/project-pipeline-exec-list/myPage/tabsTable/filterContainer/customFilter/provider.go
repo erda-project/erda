@@ -25,10 +25,10 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/apps/dop/component-protocol/components/project-pipeline-exec-list/common"
-	"github.com/erda-project/erda/modules/apps/dop/component-protocol/components/project-pipeline-exec-list/common/gshelper"
-	"github.com/erda-project/erda/modules/apps/dop/component-protocol/components/util"
-	"github.com/erda-project/erda/modules/apps/dop/component-protocol/types"
+	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/project-pipeline-exec-list/common"
+	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/project-pipeline-exec-list/common/gshelper"
+	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/util"
+	"github.com/erda-project/erda/internal/apps/dop/component-protocol/types"
 )
 
 type CustomFilter struct {

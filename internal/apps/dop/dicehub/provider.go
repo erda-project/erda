@@ -22,7 +22,7 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/httpserver"
-	image "github.com/erda-project/erda/modules/apps/dop/dicehub/image/db"
+	image "github.com/erda-project/erda/internal/apps/dop/dicehub/image/db"
 )
 
 type provider struct {

@@ -15,7 +15,7 @@
 package transaction_db_slow
 
 import (
-	_ "github.com/erda-project/erda/modules/apps/msp/apm/service/components/transaction-db-slow/metric_table"
-	_ "github.com/erda-project/erda/modules/apps/msp/apm/service/components/transaction-db-slow/metric_table_filter"
-	_ "github.com/erda-project/erda/modules/apps/msp/apm/service/components/transaction-db-slow/slow_req_distribution"
+	_ "github.com/erda-project/erda/internal/apps/msp/apm/service/components/transaction-db-slow/metric_table"
+	_ "github.com/erda-project/erda/internal/apps/msp/apm/service/components/transaction-db-slow/metric_table_filter"
+	_ "github.com/erda-project/erda/internal/apps/msp/apm/service/components/transaction-db-slow/slow_req_distribution"
 )

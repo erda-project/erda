@@ -19,7 +19,7 @@ import (
 	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/apps/dop/dicehub/dbclient"
+	"github.com/erda-project/erda/internal/apps/dop/dicehub/dbclient"
 )
 
 func (i *PublishItem) GetMonitorkeys(req *apistructs.QueryAppPublishItemRelationRequest) ([]apistructs.MonitorKeys, error) {

@@ -25,7 +25,7 @@ import (
 	"github.com/olivere/elastic"
 	"github.com/recallsong/go-utils/encoding/md5x"
 
-	tsql "github.com/erda-project/erda/modules/tools/monitor/core/metric/query/es-tsql"
+	tsql "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql"
 )
 
 // Context .

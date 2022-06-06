@@ -20,7 +20,7 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
-	metricpkg "github.com/erda-project/erda/modules/tools/monitor/core/metric"
+	metricpkg "github.com/erda-project/erda/internal/tools/monitor/core/metric"
 )
 
 // GroupMetricMap .

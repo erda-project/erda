@@ -23,7 +23,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/apps/ecp/dbclient"
+	"github.com/erda-project/erda/internal/apps/ecp/dbclient"
 )
 
 const (

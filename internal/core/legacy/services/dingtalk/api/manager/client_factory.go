@@ -15,8 +15,8 @@
 package manager
 
 import (
-	"github.com/erda-project/erda/modules/core/legacy/services/dingtalk/api/client"
-	"github.com/erda-project/erda/modules/core/legacy/services/dingtalk/api/interfaces"
+	"github.com/erda-project/erda/internal/core/legacy/services/dingtalk/api/client"
+	"github.com/erda-project/erda/internal/core/legacy/services/dingtalk/api/interfaces"
 )
 
 func (m *Manager) GetClient(appKey, appSecret string, agentId int64) interfaces.DingtalkApiClient {

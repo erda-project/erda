@@ -21,7 +21,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	writer "github.com/erda-project/erda-infra/pkg/parallel-writer"
 	"github.com/erda-project/erda-infra/providers/kafka"
-	"github.com/erda-project/erda/modules/apps/msp/apm/browser/ipdb"
+	"github.com/erda-project/erda/internal/apps/msp/apm/browser/ipdb"
 )
 
 type config struct {

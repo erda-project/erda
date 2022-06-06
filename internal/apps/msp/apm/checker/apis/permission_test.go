@@ -25,7 +25,7 @@ import (
 
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	projectpb "github.com/erda-project/erda-proto-go/msp/tenant/project/pb"
-	"github.com/erda-project/erda/modules/apps/msp/apm/checker/storage/db"
+	"github.com/erda-project/erda/internal/apps/msp/apm/checker/storage/db"
 )
 
 func Test_checkerV1Service_GetProjectFromMetricID(t *testing.T) {

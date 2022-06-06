@@ -27,9 +27,9 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/elasticsearch"
 	"github.com/erda-project/erda-proto-go/oap/entity/pb"
-	"github.com/erda-project/erda/modules/tools/monitor/core/entity/storage"
-	"github.com/erda-project/erda/modules/tools/monitor/core/storekit"
-	"github.com/erda-project/erda/modules/tools/monitor/core/storekit/elasticsearch/index"
+	"github.com/erda-project/erda/internal/tools/monitor/core/entity/storage"
+	"github.com/erda-project/erda/internal/tools/monitor/core/storekit"
+	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/elasticsearch/index"
 )
 
 type (

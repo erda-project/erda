@@ -25,11 +25,11 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/apps/dop/component-protocol/components/auto-test-space-list/common"
-	"github.com/erda-project/erda/modules/apps/dop/component-protocol/components/auto-test-space-list/i18n"
-	text "github.com/erda-project/erda/modules/apps/dop/component-protocol/components/common"
-	"github.com/erda-project/erda/modules/apps/dop/component-protocol/types"
-	spec "github.com/erda-project/erda/modules/tools/openapi/legacy/component-protocol/component_spec/table"
+	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/auto-test-space-list/common"
+	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/auto-test-space-list/i18n"
+	text "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/common"
+	"github.com/erda-project/erda/internal/apps/dop/component-protocol/types"
+	spec "github.com/erda-project/erda/internal/tools/openapi/legacy/component-protocol/component_spec/table"
 )
 
 type ComponentSpaceList struct {

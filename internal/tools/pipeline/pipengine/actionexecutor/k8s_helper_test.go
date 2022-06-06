@@ -17,13 +17,13 @@ package actionexecutor
 import (
 	"testing"
 
-	"github.com/erda-project/erda/modules/tools/pipeline/pipengine/actionexecutor/plugins/apitest"
-	"github.com/erda-project/erda/modules/tools/pipeline/pipengine/actionexecutor/plugins/k8sflink"
-	"github.com/erda-project/erda/modules/tools/pipeline/pipengine/actionexecutor/plugins/k8sjob"
-	"github.com/erda-project/erda/modules/tools/pipeline/pipengine/actionexecutor/plugins/k8sspark"
-	"github.com/erda-project/erda/modules/tools/pipeline/pipengine/actionexecutor/plugins/wait"
-	"github.com/erda-project/erda/modules/tools/pipeline/pipengine/actionexecutor/types"
-	"github.com/erda-project/erda/modules/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/pipengine/actionexecutor/plugins/apitest"
+	"github.com/erda-project/erda/internal/tools/pipeline/pipengine/actionexecutor/plugins/k8sflink"
+	"github.com/erda-project/erda/internal/tools/pipeline/pipengine/actionexecutor/plugins/k8sjob"
+	"github.com/erda-project/erda/internal/tools/pipeline/pipengine/actionexecutor/plugins/k8sspark"
+	"github.com/erda-project/erda/internal/tools/pipeline/pipengine/actionexecutor/plugins/wait"
+	"github.com/erda-project/erda/internal/tools/pipeline/pipengine/actionexecutor/types"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 func TestGetKindByExecutorName(t *testing.T) {

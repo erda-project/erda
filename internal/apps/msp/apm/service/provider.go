@@ -25,7 +25,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda-proto-go/msp/apm/service/pb"
-	_ "github.com/erda-project/erda/modules/apps/msp/apm/service/components"
+	_ "github.com/erda-project/erda/internal/apps/msp/apm/service/components"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 

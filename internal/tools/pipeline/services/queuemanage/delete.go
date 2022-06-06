@@ -15,7 +15,7 @@
 package queuemanage
 
 import (
-	"github.com/erda-project/erda/modules/tools/pipeline/services/apierrors"
+	"github.com/erda-project/erda/internal/tools/pipeline/services/apierrors"
 )
 
 // DeletePipelineQueue delete a pipeline queue by id.

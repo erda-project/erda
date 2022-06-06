@@ -20,8 +20,8 @@ import (
 
 	"github.com/scylladb/gocqlx/qb"
 
-	"github.com/erda-project/erda/modules/apps/msp/apm/trace/storage"
-	"github.com/erda-project/erda/modules/tools/monitor/core/storekit"
+	"github.com/erda-project/erda/internal/apps/msp/apm/trace/storage"
+	"github.com/erda-project/erda/internal/tools/monitor/core/storekit"
 )
 
 func (p *provider) Iterator(ctx context.Context, sel *storage.Selector) (storekit.Iterator, error) {

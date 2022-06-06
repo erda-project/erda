@@ -30,7 +30,7 @@ import (
 	"github.com/rakyll/statik/fs"
 
 	"github.com/erda-project/erda-infra/providers/httpserver"
-	_ "github.com/erda-project/erda/modules/tools/monitor/core/collector/statik" // include static files
+	_ "github.com/erda-project/erda/internal/tools/monitor/core/collector/statik" // include static files
 )
 
 //go:generate statik -src=./ -ns "monitor/metrics-collector" -include=*.jpg,*.txt,*.html,*.css,*.js

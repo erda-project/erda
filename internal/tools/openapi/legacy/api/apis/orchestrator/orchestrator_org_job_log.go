@@ -14,7 +14,7 @@
 
 package orchestrator
 
-import "github.com/erda-project/erda/modules/tools/openapi/legacy/api/apis"
+import "github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
 
 var ORCHESTRATOR_ORG_JOB_LOG = apis.ApiSpec{
 	Path:        "/api/orgCenter/job/logs",

@@ -20,8 +20,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda/modules/core/messenger/eventbox/subscriber"
-	"github.com/erda-project/erda/modules/core/messenger/eventbox/types"
+	"github.com/erda-project/erda/internal/core/messenger/eventbox/subscriber"
+	"github.com/erda-project/erda/internal/core/messenger/eventbox/types"
 )
 
 const (

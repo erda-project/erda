@@ -28,14 +28,14 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/protobuf/proto-go/cp/pb"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/apps/dop/providers/autotest/testplan"
-	"github.com/erda-project/erda/modules/apps/dop/providers/cms"
-	"github.com/erda-project/erda/modules/apps/dop/providers/guide"
-	"github.com/erda-project/erda/modules/apps/dop/providers/issue/stream"
-	"github.com/erda-project/erda/modules/apps/dop/providers/issue/sync"
-	"github.com/erda-project/erda/modules/apps/dop/providers/projectpipeline"
-	"github.com/erda-project/erda/modules/apps/dop/providers/taskerror"
-	"github.com/erda-project/erda/modules/apps/dop/services/cdp"
+	"github.com/erda-project/erda/internal/apps/dop/providers/autotest/testplan"
+	"github.com/erda-project/erda/internal/apps/dop/providers/cms"
+	"github.com/erda-project/erda/internal/apps/dop/providers/guide"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/stream"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/sync"
+	"github.com/erda-project/erda/internal/apps/dop/providers/projectpipeline"
+	"github.com/erda-project/erda/internal/apps/dop/providers/taskerror"
+	"github.com/erda-project/erda/internal/apps/dop/services/cdp"
 )
 
 type MockCP struct {

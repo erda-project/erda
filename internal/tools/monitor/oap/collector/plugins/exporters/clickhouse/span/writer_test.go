@@ -21,7 +21,7 @@ import (
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/erda-project/erda/modules/apps/msp/apm/trace"
+	"github.com/erda-project/erda/internal/apps/msp/apm/trace"
 )
 
 func TestMain(m *testing.M) {

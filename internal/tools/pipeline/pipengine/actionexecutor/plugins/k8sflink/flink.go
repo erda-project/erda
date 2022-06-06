@@ -28,11 +28,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/erda-project/erda/apistructs"
-	logic2 "github.com/erda-project/erda/modules/tools/pipeline/pipengine/actionexecutor/logic"
-	"github.com/erda-project/erda/modules/tools/pipeline/pipengine/actionexecutor/types"
-	"github.com/erda-project/erda/modules/tools/pipeline/pkg/container_provider"
-	"github.com/erda-project/erda/modules/tools/pipeline/providers/clusterinfo"
-	"github.com/erda-project/erda/modules/tools/pipeline/spec"
+	logic2 "github.com/erda-project/erda/internal/tools/pipeline/pipengine/actionexecutor/logic"
+	"github.com/erda-project/erda/internal/tools/pipeline/pipengine/actionexecutor/types"
+	"github.com/erda-project/erda/internal/tools/pipeline/pkg/container_provider"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/clusterinfo"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 

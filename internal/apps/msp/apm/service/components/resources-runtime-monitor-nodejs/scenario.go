@@ -15,5 +15,5 @@
 package resources_runtime_monitor_nodejs
 
 import (
-	_ "github.com/erda-project/erda/modules/apps/msp/apm/service/components/resources-runtime-monitor-nodejs/runtime"
+	_ "github.com/erda-project/erda/internal/apps/msp/apm/service/components/resources-runtime-monitor-nodejs/runtime"
 )

@@ -16,7 +16,7 @@ package events
 
 import (
 	"github.com/erda-project/erda/apistructs"
-	spec2 "github.com/erda-project/erda/modules/tools/pipeline/spec"
+	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 func EmitPipelineInstanceEvent(p *spec2.Pipeline, userID string) {

@@ -18,8 +18,8 @@ import (
 	"path"
 	"strings"
 
-	"github.com/erda-project/erda/modules/tools/gittar/helper"
-	"github.com/erda-project/erda/modules/tools/gittar/webcontext"
+	"github.com/erda-project/erda/internal/tools/gittar/helper"
+	"github.com/erda-project/erda/internal/tools/gittar/webcontext"
 )
 
 // GetRepoHead function

@@ -20,11 +20,11 @@ import (
 	"github.com/gorilla/schema"
 
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/apps/dop/dicehub/dbclient"
-	"github.com/erda-project/erda/modules/apps/dop/dicehub/endpoints"
-	"github.com/erda-project/erda/modules/apps/dop/dicehub/service/publish_item"
-	release2 "github.com/erda-project/erda/modules/apps/dop/dicehub/service/release"
-	"github.com/erda-project/erda/modules/apps/dop/dicehub/service/release_rule"
+	"github.com/erda-project/erda/internal/apps/dop/dicehub/dbclient"
+	"github.com/erda-project/erda/internal/apps/dop/dicehub/endpoints"
+	"github.com/erda-project/erda/internal/apps/dop/dicehub/service/publish_item"
+	release2 "github.com/erda-project/erda/internal/apps/dop/dicehub/service/release"
+	"github.com/erda-project/erda/internal/apps/dop/dicehub/service/release_rule"
 )
 
 func TestNew(t *testing.T) {

@@ -14,7 +14,7 @@
 
 package core_services
 
-import "github.com/erda-project/erda/modules/tools/openapi/legacy/api/apis"
+import "github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
 
 // 仅图片存储于网盘时使用
 var CMDB_IMAGE_FETCH = apis.ApiSpec{

@@ -15,7 +15,7 @@
 package dao
 
 import (
-	"github.com/erda-project/erda/modules/apps/gallery/model"
+	"github.com/erda-project/erda/internal/apps/gallery/model"
 )
 
 func ListOpuses(tx *TX, options ...Option) (int64, []*model.Opus, error) {

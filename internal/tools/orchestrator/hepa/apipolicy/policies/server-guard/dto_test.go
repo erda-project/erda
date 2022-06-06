@@ -17,7 +17,7 @@ package serverguard_test
 import (
 	"testing"
 
-	serverguard "github.com/erda-project/erda/modules/tools/orchestrator/hepa/apipolicy/policies/server-guard"
+	serverguard "github.com/erda-project/erda/internal/tools/orchestrator/hepa/apipolicy/policies/server-guard"
 )
 
 func TestPolicyDto_ApplicationJson(t *testing.T) {

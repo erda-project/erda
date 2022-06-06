@@ -27,9 +27,9 @@ import (
 	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda-proto-go/msp/apm/service/pb"
-	servicecommon "github.com/erda-project/erda/modules/apps/msp/apm/service/common"
-	"github.com/erda-project/erda/modules/apps/msp/apm/service/view/chart"
-	"github.com/erda-project/erda/modules/apps/msp/apm/service/view/common"
+	servicecommon "github.com/erda-project/erda/internal/apps/msp/apm/service/common"
+	"github.com/erda-project/erda/internal/apps/msp/apm/service/view/chart"
+	"github.com/erda-project/erda/internal/apps/msp/apm/service/view/common"
 	"github.com/erda-project/erda/pkg/common/errors"
 	"github.com/erda-project/erda/pkg/math"
 )

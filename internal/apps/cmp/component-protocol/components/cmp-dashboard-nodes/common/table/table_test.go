@@ -22,7 +22,7 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/i18n"
-	"github.com/erda-project/erda/modules/apps/cmp"
+	"github.com/erda-project/erda/internal/apps/cmp"
 )
 
 type NopTranslator struct{}

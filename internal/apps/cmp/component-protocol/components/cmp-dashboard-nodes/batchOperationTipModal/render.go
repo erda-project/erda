@@ -27,9 +27,9 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/apps/cmp"
-	"github.com/erda-project/erda/modules/apps/cmp/component-protocol/components/cmp-dashboard-nodes/common"
-	"github.com/erda-project/erda/modules/apps/cmp/component-protocol/types"
+	"github.com/erda-project/erda/internal/apps/cmp"
+	"github.com/erda-project/erda/internal/apps/cmp/component-protocol/components/cmp-dashboard-nodes/common"
+	"github.com/erda-project/erda/internal/apps/cmp/component-protocol/types"
 )
 
 var steveServer cmp.SteveServer
