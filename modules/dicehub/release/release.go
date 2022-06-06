@@ -953,15 +953,25 @@ func (s *ReleaseService) parseReleaseFile(req *pb.ReleaseUploadRequest, file io.
 	now := time.Now()
 
 	var appReleases []db.Release
+	appVersion2ID := make(map[string]string)
 	modes := make(map[string]apistructs.ReleaseDeployMode)
 	for name := range metadata.Modes {
 		appReleaseList := make([][]string, len(metadata.Modes[name].AppList))
 		for i := 0; i < len(metadata.Modes[name].AppList); i++ {
 			appReleaseList[i] = make([]string, len(metadata.Modes[name].AppList[i]))
 			for j := 0; j < len(metadata.Modes[name].AppList[i]); j++ {
-				id := uuid.UUID()
-				appName := metadata.Modes[name].AppList[i][j].AppName
 				version := metadata.Modes[name].AppList[i][j].Version
+				appName := metadata.Modes[name].AppList[i][j].AppName
+				if version == "" {
+					return nil, nil, errors.New("version can not be empty")
+				}
+				if id, ok := appVersion2ID[appName+"_"+version]; ok {
+					appReleaseList[i][j] = id
+					continue
+				}
+				id := uuid.UUID()
+				appVersion2ID[appName+"_"+version] = id
+
 				gitBranch := metadata.Modes[name].AppList[i][j].GitBranch
 				gitCommitID := metadata.Modes[name].AppList[i][j].GitCommitID
 				gitCommitMsg := metadata.Modes[name].AppList[i][j].GitCommitMessage
