@@ -43,7 +43,6 @@ cmd/**/bin
 /.env
 /.env.*
 /conf/**/*.local.yaml
-modules/local/
 internal/local/
 cmd/local
 conf/local
