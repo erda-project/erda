@@ -37,8 +37,8 @@ github_checks:
 
 ignore:
   # ignore the boilerplate code
-  - "modules/*/conf"
-  - "modules/*/dbclient"
-  - "modules/*/dao"
+  - "internal/*/conf"
+  - "internal/*/dbclient"
+  - "internal/*/dao"
   - "bundle"
   - "api/proto-go"

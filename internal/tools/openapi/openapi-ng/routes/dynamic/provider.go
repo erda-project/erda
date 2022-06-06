@@ -73,7 +73,7 @@ func (p *provider) Init(ctx servicehub.Context) (err error) {
 	if p.Cfg.UseEmbedStaticFiles {
 		p.Router.Static("/openapi/static", "/static", httpserver.WithFileSystem(http.FS(webfs)))
 	} else {
-		p.Router.Static("/openapi/static", "modules/core/openapi-ng/routes/dynamic/static")
+		p.Router.Static("/openapi/static", "internal/tools/openapi/openapi-ng/routes/dynamic/static")
 	}
 
 	return p.initRemoteForward(ctx)
