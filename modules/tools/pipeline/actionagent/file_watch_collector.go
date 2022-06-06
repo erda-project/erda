@@ -49,8 +49,6 @@ const (
 
 // asyncPushCollectorLog async push log to collector
 func (agent *Agent) asyncPushCollectorLog() {
-	agent.FileWatcher.Wait.Add(1)
-
 	// pushLogic do push logic
 	pushLogic := func(logs *[]apistructs.LogPushLine, lock *sync.Mutex, _type string) {
 		lock.Lock()
@@ -70,10 +68,6 @@ func (agent *Agent) asyncPushCollectorLog() {
 		*logs = nil
 	}
 
-	// gracefulDoneC is a channel to represent all push done
-	chanCapacity := 2 // stdout + stderr
-	gracefulDoneC := make(chan struct{}, chanCapacity)
-
 	// rangePush range push log to collector
 	rangePush := func(logs *[]apistructs.LogPushLine, lock *sync.Mutex, _type string) {
 		ticker := time.NewTicker(asyncPushInterval)
@@ -89,7 +83,6 @@ func (agent *Agent) asyncPushCollectorLog() {
 				logrus.Debugf("collector: recevied agent exit channel, wait %s and push %s directly", waitTail.String(), _type)
 				time.Sleep(waitTail)
 				pushLogic(logs, lock, _type)
-				gracefulDoneC <- struct{}{}
 				return
 			}
 		}
@@ -99,15 +92,6 @@ func (agent *Agent) asyncPushCollectorLog() {
 	go rangePush(stdoutLogs, &stdoutLock, "stdout")
 	go rangePush(stderrLogs, &stderrLock, "stderr")
 
-	// send to graceful doneC when all rangePush done
-	receivedNum := 0
-	for range gracefulDoneC {
-		receivedNum++
-		if receivedNum == 2 {
-			agent.FileWatcher.Wait.Done()
-			break
-		}
-	}
 }
 
 func (agent *Agent) pushCollectorLog(logLines *[]apistructs.LogPushLine) error {

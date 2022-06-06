@@ -65,7 +65,7 @@ func (agent *Agent) Execute(r io.Reader) {
 		return
 	}
 	defer func() {
-		// defer write flag end line for tail
+		// it's not necessary to write flag end line for tail, because tail watcher listen context to end
 		agent.writeEndFlagLine()
 	}()
 
