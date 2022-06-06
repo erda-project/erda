@@ -44,6 +44,7 @@ cmd/**/bin
 /.env.*
 /conf/**/*.local.yaml
 modules/local/
+internal/local/
 cmd/local
 conf/local
 .env*
