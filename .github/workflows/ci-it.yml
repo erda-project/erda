@@ -24,11 +24,13 @@ on:
       - '**.go'
       - '**/go.mod'
       - '**/go.sum'
+      - '**/*.proto'
   pull_request:
     paths:
       - '**.go'
       - '**/go.mod'
       - '**/go.sum'
+      - '**/*.proto'
 
 jobs:
   PREPARE:
