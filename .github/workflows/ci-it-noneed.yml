@@ -25,12 +25,15 @@ on:
       - '!**.go'
       - '!**/go.mod'
       - '!**/go.sum'
+      - '!api/proto/**/*.proto'
+      - '!**/*.proto'
   pull_request:
     paths:
       - '**'
       - '!**.go'
       - '!**/go.mod'
       - '!**/go.sum'
+      - '!**/*.proto'
 
 jobs:
   CHECK-CHANGED-FILES:
@@ -51,6 +54,9 @@ jobs:
             echo "::set-output name=have-${ext}::true"
             base_filename=$(basename "${file}")
             if [[ "${base_filename}" == "go.mod" || "${base_filename}" == "go.sum" ]]; then
+              echo "::set-output name=have-go::true"
+            fi
+            if [[ "$ext" == "proto" ]]; then
               echo "::set-output name=have-go::true"
             fi
           done
