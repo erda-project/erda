@@ -24,15 +24,24 @@ service BuildService {
     option (google.api.http) = {
       get: "/api/build-artifacts/{sha}",
     };
+    option(erda.common.openapi) = {
+      path : "/api/build-artifacts/{sha}",
+    };
   }
   rpc RegisterBuildArtifact (BuildArtifactRegisterRequest) returns (BuildArtifactRegisterResponse) {
     option (google.api.http) = {
       post: "/api/build-artifacts",
     };
+    option(erda.common.openapi) = {
+      path : "/api/build-artifacts",
+    };
   }
   rpc ReportBuildCache (BuildCacheReportRequest) returns (BuildCacheReportResponse) {
     option (google.api.http) = {
       post: "/api/build-caches",
+    };
+    option(erda.common.openapi) = {
+      path : "/api/build-caches",
     };
   }
 }
