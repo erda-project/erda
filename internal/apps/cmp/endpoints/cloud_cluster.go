@@ -23,9 +23,9 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	aliyun_resources "github.com/erda-project/erda/modules/apps/cmp/impl/aliyun-resources"
-	"github.com/erda-project/erda/modules/apps/cmp/impl/aliyun-resources/nat"
-	"github.com/erda-project/erda/modules/apps/cmp/impl/aliyun-resources/vpc"
+	aliyun_resources "github.com/erda-project/erda/internal/apps/cmp/impl/aliyun-resources"
+	"github.com/erda-project/erda/internal/apps/cmp/impl/aliyun-resources/nat"
+	"github.com/erda-project/erda/internal/apps/cmp/impl/aliyun-resources/vpc"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 )

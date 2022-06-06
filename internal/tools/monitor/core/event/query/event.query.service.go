@@ -20,7 +20,7 @@ import (
 	"github.com/erda-project/erda-proto-go/core/monitor/event/pb"
 	commonPb "github.com/erda-project/erda-proto-go/oap/common/pb"
 	oapPb "github.com/erda-project/erda-proto-go/oap/event/pb"
-	"github.com/erda-project/erda/modules/tools/monitor/core/event/storage"
+	"github.com/erda-project/erda/internal/tools/monitor/core/event/storage"
 )
 
 type eventQueryService struct {

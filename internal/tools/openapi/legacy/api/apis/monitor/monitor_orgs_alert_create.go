@@ -16,8 +16,8 @@ package monitor
 
 import (
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/openapi/legacy/api/apis"
-	"github.com/erda-project/erda/modules/tools/openapi/legacy/api/spec"
+	"github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
+	"github.com/erda-project/erda/internal/tools/openapi/legacy/api/spec"
 )
 
 var MONITOR_ORGS_ALERT_CREATE = apis.ApiSpec{

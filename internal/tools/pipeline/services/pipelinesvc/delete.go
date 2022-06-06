@@ -15,7 +15,7 @@
 package pipelinesvc
 
 import (
-	"github.com/erda-project/erda/modules/tools/pipeline/services/apierrors"
+	"github.com/erda-project/erda/internal/tools/pipeline/services/apierrors"
 )
 
 func (s *PipelineSvc) Delete(pipelineID uint64) error {

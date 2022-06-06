@@ -15,15 +15,15 @@
 package cmp_dashboard_podDetail
 
 import (
-	_ "github.com/erda-project/erda/modules/apps/cmp/component-protocol/components/cmp-dashboard-podDetail/containerTable"
-	_ "github.com/erda-project/erda/modules/apps/cmp/component-protocol/components/cmp-dashboard-podDetail/containerTitle"
-	_ "github.com/erda-project/erda/modules/apps/cmp/component-protocol/components/cmp-dashboard-podDetail/eventTable"
-	_ "github.com/erda-project/erda/modules/apps/cmp/component-protocol/components/cmp-dashboard-podDetail/eventTitle"
-	_ "github.com/erda-project/erda/modules/apps/cmp/component-protocol/components/cmp-dashboard-podDetail/operationButton"
-	_ "github.com/erda-project/erda/modules/apps/cmp/component-protocol/components/cmp-dashboard-podDetail/podInfo"
-	_ "github.com/erda-project/erda/modules/apps/cmp/component-protocol/components/cmp-dashboard-podDetail/podInfoTitle"
-	_ "github.com/erda-project/erda/modules/apps/cmp/component-protocol/components/cmp-dashboard-podDetail/podStatus"
-	_ "github.com/erda-project/erda/modules/apps/cmp/component-protocol/components/cmp-dashboard-podDetail/podTitle"
-	_ "github.com/erda-project/erda/modules/apps/cmp/component-protocol/components/cmp-dashboard-podDetail/yamlDrawer"
-	_ "github.com/erda-project/erda/modules/apps/cmp/component-protocol/components/cmp-dashboard-podDetail/yamlFileEditor"
+	_ "github.com/erda-project/erda/internal/apps/cmp/component-protocol/components/cmp-dashboard-podDetail/containerTable"
+	_ "github.com/erda-project/erda/internal/apps/cmp/component-protocol/components/cmp-dashboard-podDetail/containerTitle"
+	_ "github.com/erda-project/erda/internal/apps/cmp/component-protocol/components/cmp-dashboard-podDetail/eventTable"
+	_ "github.com/erda-project/erda/internal/apps/cmp/component-protocol/components/cmp-dashboard-podDetail/eventTitle"
+	_ "github.com/erda-project/erda/internal/apps/cmp/component-protocol/components/cmp-dashboard-podDetail/operationButton"
+	_ "github.com/erda-project/erda/internal/apps/cmp/component-protocol/components/cmp-dashboard-podDetail/podInfo"
+	_ "github.com/erda-project/erda/internal/apps/cmp/component-protocol/components/cmp-dashboard-podDetail/podInfoTitle"
+	_ "github.com/erda-project/erda/internal/apps/cmp/component-protocol/components/cmp-dashboard-podDetail/podStatus"
+	_ "github.com/erda-project/erda/internal/apps/cmp/component-protocol/components/cmp-dashboard-podDetail/podTitle"
+	_ "github.com/erda-project/erda/internal/apps/cmp/component-protocol/components/cmp-dashboard-podDetail/yamlDrawer"
+	_ "github.com/erda-project/erda/internal/apps/cmp/component-protocol/components/cmp-dashboard-podDetail/yamlFileEditor"
 )

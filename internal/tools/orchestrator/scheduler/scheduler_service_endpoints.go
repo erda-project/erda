@@ -24,11 +24,11 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/orchestrator/conf"
-	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/executor"
-	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/executor/executortypes"
-	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/impl/cluster/clusterutil"
-	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/task"
+	"github.com/erda-project/erda/internal/tools/orchestrator/conf"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/executortypes"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/impl/cluster/clusterutil"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/task"
 )
 
 func (s *Scheduler) handleRuntime(ctx context.Context, runtime *apistructs.ServiceGroup, taskAction task.Action) (task.TaskResponse, error) {

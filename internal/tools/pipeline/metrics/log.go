@@ -17,7 +17,7 @@ package metrics
 import (
 	"github.com/sirupsen/logrus"
 
-	spec2 "github.com/erda-project/erda/modules/tools/pipeline/spec"
+	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 func taskErrorLog(task spec2.PipelineTask, format string, args ...interface{}) {

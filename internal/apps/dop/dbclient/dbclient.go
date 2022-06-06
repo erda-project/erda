@@ -22,7 +22,7 @@ import (
 	"github.com/jinzhu/gorm"
 	gormbulk "github.com/t-tiger/gorm-bulk-insert"
 
-	"github.com/erda-project/erda/modules/apps/dop/conf"
+	"github.com/erda-project/erda/internal/apps/dop/conf"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 )
 

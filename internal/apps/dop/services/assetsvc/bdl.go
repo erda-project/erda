@@ -20,9 +20,9 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/apps/dop/bdl"
-	"github.com/erda-project/erda/modules/apps/dop/dbclient"
-	"github.com/erda-project/erda/modules/apps/dop/services/uc"
+	"github.com/erda-project/erda/internal/apps/dop/bdl"
+	"github.com/erda-project/erda/internal/apps/dop/dbclient"
+	"github.com/erda-project/erda/internal/apps/dop/services/uc"
 )
 
 // 通知消息中的 action 参数

@@ -18,8 +18,8 @@ import (
 	"context"
 
 	"github.com/erda-project/erda/apistructs"
-	protocol "github.com/erda-project/erda/modules/tools/openapi/legacy/component-protocol"
-	"github.com/erda-project/erda/modules/tools/openapi/legacy/component-protocol/scenarios/edge-site/i18n"
+	protocol "github.com/erda-project/erda/internal/tools/openapi/legacy/component-protocol"
+	"github.com/erda-project/erda/internal/tools/openapi/legacy/component-protocol/scenarios/edge-site/i18n"
 )
 
 func (c *ComponentSiteAddDrawer) Render(ctx context.Context, component *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {

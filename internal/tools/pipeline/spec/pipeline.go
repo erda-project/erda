@@ -21,9 +21,9 @@ import (
 	"time"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/pipeline/conf"
-	definitiondb "github.com/erda-project/erda/modules/tools/pipeline/providers/definition/db"
-	sourcedb "github.com/erda-project/erda/modules/tools/pipeline/providers/source/db"
+	"github.com/erda-project/erda/internal/tools/pipeline/conf"
+	definitiondb "github.com/erda-project/erda/internal/tools/pipeline/providers/definition/db"
+	sourcedb "github.com/erda-project/erda/internal/tools/pipeline/providers/source/db"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 

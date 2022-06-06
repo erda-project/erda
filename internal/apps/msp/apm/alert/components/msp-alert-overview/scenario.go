@@ -15,11 +15,11 @@
 package msp_alert_overview
 
 import (
-	_ "github.com/erda-project/erda/modules/apps/msp/apm/alert/components/msp-alert-overview/alert-duration-analysis/alert-duration-distribution"
-	_ "github.com/erda-project/erda/modules/apps/msp/apm/alert/components/msp-alert-overview/alert-event-charts/groupby-level-count"
-	_ "github.com/erda-project/erda/modules/apps/msp/apm/alert/components/msp-alert-overview/alert-event-charts/groupby-type-count"
-	_ "github.com/erda-project/erda/modules/apps/msp/apm/alert/components/msp-alert-overview/alert-notify-charts/groupby-status-count"
-	_ "github.com/erda-project/erda/modules/apps/msp/apm/alert/components/msp-alert-overview/alert-notify-charts/groupby-type-count"
-	_ "github.com/erda-project/erda/modules/apps/msp/apm/alert/components/msp-alert-overview/composite-header/cards"
-	_ "github.com/erda-project/erda/modules/apps/msp/apm/alert/components/msp-alert-overview/composite-header/unrecover-alert-chart"
+	_ "github.com/erda-project/erda/internal/apps/msp/apm/alert/components/msp-alert-overview/alert-duration-analysis/alert-duration-distribution"
+	_ "github.com/erda-project/erda/internal/apps/msp/apm/alert/components/msp-alert-overview/alert-event-charts/groupby-level-count"
+	_ "github.com/erda-project/erda/internal/apps/msp/apm/alert/components/msp-alert-overview/alert-event-charts/groupby-type-count"
+	_ "github.com/erda-project/erda/internal/apps/msp/apm/alert/components/msp-alert-overview/alert-notify-charts/groupby-status-count"
+	_ "github.com/erda-project/erda/internal/apps/msp/apm/alert/components/msp-alert-overview/alert-notify-charts/groupby-type-count"
+	_ "github.com/erda-project/erda/internal/apps/msp/apm/alert/components/msp-alert-overview/composite-header/cards"
+	_ "github.com/erda-project/erda/internal/apps/msp/apm/alert/components/msp-alert-overview/composite-header/unrecover-alert-chart"
 )

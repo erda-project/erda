@@ -19,7 +19,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/erda-project/erda/modules/apps/msp/apm/trace"
+	"github.com/erda-project/erda/internal/apps/msp/apm/trace"
 )
 
 func Test_unmarshalWork_Unmarshal(t *testing.T) {

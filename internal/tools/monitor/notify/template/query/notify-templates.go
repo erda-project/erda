@@ -22,8 +22,8 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"gopkg.in/yaml.v2"
 
-	"github.com/erda-project/erda/modules/tools/monitor/notify/template/db"
-	"github.com/erda-project/erda/modules/tools/monitor/notify/template/model"
+	"github.com/erda-project/erda/internal/tools/monitor/notify/template/db"
+	"github.com/erda-project/erda/internal/tools/monitor/notify/template/model"
 )
 
 var (

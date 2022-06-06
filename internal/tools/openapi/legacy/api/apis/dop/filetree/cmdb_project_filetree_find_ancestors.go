@@ -14,7 +14,7 @@
 
 package filetree
 
-import "github.com/erda-project/erda/modules/tools/openapi/legacy/api/apis"
+import "github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
 
 var CMDB_PROJECT_FILETREE_FIND_ANCESTORS = apis.ApiSpec{
 	Path:        "/api/project-pipeline/filetree/<inode>/actions/find-ancestors",

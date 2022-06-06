@@ -17,8 +17,8 @@ package throttler
 import (
 	"sync"
 
-	"github.com/erda-project/erda/modules/tools/pipeline/providers/queuemanager/pkg/queue/enhancedqueue"
-	"github.com/erda-project/erda/modules/tools/pipeline/providers/queuemanager/pkg/queue/snapshot"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/queuemanager/pkg/queue/enhancedqueue"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/queuemanager/pkg/queue/snapshot"
 )
 
 type Throttler interface {

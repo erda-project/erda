@@ -19,7 +19,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
-	"github.com/erda-project/erda/modules/pkg/diceworkspace"
+	"github.com/erda-project/erda/internal/pkg/diceworkspace"
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
 

@@ -14,7 +14,7 @@
 
 package config_manage
 
-import "github.com/erda-project/erda/modules/tools/openapi/legacy/api/apis"
+import "github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
 
 var CONFIG_MANAGE_MULTI_NS_CONFIG_GET = apis.ApiSpec{
 	Path:        "/api/configmanage/multinamespace/configs",

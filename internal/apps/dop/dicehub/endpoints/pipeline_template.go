@@ -26,7 +26,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/apps/dop/dicehub/service/apierrors"
+	"github.com/erda-project/erda/internal/apps/dop/dicehub/service/apierrors"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/strutil"

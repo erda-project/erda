@@ -19,7 +19,7 @@ import (
 	"time"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/core/legacy/model"
+	"github.com/erda-project/erda/internal/core/legacy/model"
 )
 
 func (client *DBClient) CreateNotifyHistory(request *apistructs.CreateNotifyHistoryRequest) (int64, error) {

@@ -20,8 +20,8 @@ import (
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	"github.com/erda-project/erda-proto-go/core/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/pipeline/services/pipelinesvc"
-	"github.com/erda-project/erda/modules/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/services/pipelinesvc"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 type Interface interface {

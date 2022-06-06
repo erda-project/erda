@@ -18,8 +18,8 @@ import (
 	"time"
 
 	"github.com/erda-project/erda/apistructs"
-	definitiondb "github.com/erda-project/erda/modules/tools/pipeline/providers/definition/db"
-	sourcedb "github.com/erda-project/erda/modules/tools/pipeline/providers/source/db"
+	definitiondb "github.com/erda-project/erda/internal/tools/pipeline/providers/definition/db"
+	sourcedb "github.com/erda-project/erda/internal/tools/pipeline/providers/source/db"
 )
 
 // PipelineBase represents `pipeline_bases` table.

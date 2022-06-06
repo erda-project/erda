@@ -24,7 +24,7 @@ import (
 	"github.com/coreos/etcd/clientv3"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/pipeline/events"
+	"github.com/erda-project/erda/internal/tools/pipeline/events"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 

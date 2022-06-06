@@ -18,11 +18,11 @@ import (
 	_ "embed"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/modules/tools/monitor/core/diagnotor/agent/bootstrap"
+	"github.com/erda-project/erda/internal/tools/monitor/core/diagnotor/agent/bootstrap"
 	"github.com/erda-project/erda/pkg/common"
 
 	// modules
-	_ "github.com/erda-project/erda/modules/tools/monitor/core/diagnotor/agent"
+	_ "github.com/erda-project/erda/internal/tools/monitor/core/diagnotor/agent"
 	// providers
 	_ "github.com/erda-project/erda-infra/providers"
 )

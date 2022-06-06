@@ -22,8 +22,8 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/version"
-	"github.com/erda-project/erda/modules/tools/pipeline/dbclient"
-	spec2 "github.com/erda-project/erda/modules/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
+	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 type ArchiveDeleteRequest struct {

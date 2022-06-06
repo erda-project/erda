@@ -14,7 +14,7 @@
 
 package monitor
 
-import "github.com/erda-project/erda/modules/tools/openapi/legacy/api/apis"
+import "github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
 
 var SPOT_RUNTIME_LOGS_DOWNLOAD = apis.ApiSpec{
 	Path:        "/api/runtime/logs/actions/download",

@@ -17,7 +17,7 @@ package pipeline
 import (
 	"net/http"
 
-	"github.com/erda-project/erda/modules/tools/openapi/legacy/api/apis"
+	"github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
 )
 
 var PIPELINE_TASK_GET_BOOTSTRAP_INFO = apis.ApiSpec{

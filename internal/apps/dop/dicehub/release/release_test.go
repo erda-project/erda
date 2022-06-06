@@ -23,7 +23,7 @@ import (
 
 	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/apps/dop/dicehub/release/db"
+	"github.com/erda-project/erda/internal/apps/dop/dicehub/release/db"
 )
 
 func TestConvertToListReleaseResponse(t *testing.T) {

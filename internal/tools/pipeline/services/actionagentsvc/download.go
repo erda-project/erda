@@ -18,7 +18,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/pipeline/services/apierrors"
+	"github.com/erda-project/erda/internal/tools/pipeline/services/apierrors"
 )
 
 const agentDownloadScript = "download_file_from_image"

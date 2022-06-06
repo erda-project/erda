@@ -15,12 +15,12 @@
 package issuerelation
 
 import (
-	context "context"
+	"context"
 	"fmt"
 	"time"
 
-	pb "github.com/erda-project/erda-proto-go/apps/devflow/issuerelation/pb"
-	"github.com/erda-project/erda/modules/apps/devflow/issuerelation/db"
+	"github.com/erda-project/erda-proto-go/apps/devflow/issuerelation/pb"
+	"github.com/erda-project/erda/internal/apps/devflow/issuerelation/db"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 )

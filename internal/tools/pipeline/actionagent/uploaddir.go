@@ -24,7 +24,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/pipeline/actionagent/agenttool"
+	"github.com/erda-project/erda/internal/tools/pipeline/actionagent/agenttool"
 	"github.com/erda-project/erda/pkg/filehelper"
 	"github.com/erda-project/erda/pkg/retry"
 )

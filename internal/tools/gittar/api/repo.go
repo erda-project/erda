@@ -30,13 +30,13 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/gittar/conf"
-	"github.com/erda-project/erda/modules/tools/gittar/helper"
-	"github.com/erda-project/erda/modules/tools/gittar/models"
-	"github.com/erda-project/erda/modules/tools/gittar/pkg/gitmodule"
-	"github.com/erda-project/erda/modules/tools/gittar/pkg/gitmodule/tool"
-	"github.com/erda-project/erda/modules/tools/gittar/pkg/util"
-	"github.com/erda-project/erda/modules/tools/gittar/webcontext"
+	"github.com/erda-project/erda/internal/tools/gittar/conf"
+	"github.com/erda-project/erda/internal/tools/gittar/helper"
+	"github.com/erda-project/erda/internal/tools/gittar/models"
+	"github.com/erda-project/erda/internal/tools/gittar/pkg/gitmodule"
+	"github.com/erda-project/erda/internal/tools/gittar/pkg/gitmodule/tool"
+	"github.com/erda-project/erda/internal/tools/gittar/pkg/util"
+	"github.com/erda-project/erda/internal/tools/gittar/webcontext"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 

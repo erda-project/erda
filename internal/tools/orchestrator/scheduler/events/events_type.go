@@ -21,7 +21,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/events/eventtypes"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/events/eventtypes"
 	"github.com/erda-project/erda/pkg/jsonstore"
 )
 

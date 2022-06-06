@@ -23,8 +23,8 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/apps/admin/personal-workbench/component-protocol/components/personal-workbench/common"
-	"github.com/erda-project/erda/modules/apps/admin/personal-workbench/component-protocol/components/personal-workbench/i18n"
+	"github.com/erda-project/erda/internal/apps/admin/personal-workbench/component-protocol/components/personal-workbench/common"
+	"github.com/erda-project/erda/internal/apps/admin/personal-workbench/component-protocol/components/personal-workbench/i18n"
 )
 
 // GenAppKvInfo show: mr num, runtime num

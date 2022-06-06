@@ -18,7 +18,7 @@ import (
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 
-	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/executor/executortypes"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/executortypes"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/labelconfig"
 	"github.com/erda-project/erda/pkg/strutil"
 )

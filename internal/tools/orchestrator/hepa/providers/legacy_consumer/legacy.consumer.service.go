@@ -20,8 +20,8 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda-proto-go/core/hepa/consumer/pb"
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/common/vars"
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/services/legacy_consumer"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/vars"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/legacy_consumer"
 	erdaErr "github.com/erda-project/erda/pkg/common/errors"
 )
 

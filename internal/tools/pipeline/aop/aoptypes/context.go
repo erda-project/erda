@@ -18,9 +18,9 @@ import (
 	"context"
 
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/tools/pipeline/dbclient"
-	"github.com/erda-project/erda/modules/tools/pipeline/services/reportsvc"
-	spec2 "github.com/erda-project/erda/modules/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
+	"github.com/erda-project/erda/internal/tools/pipeline/services/reportsvc"
+	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 type TuneContext struct {

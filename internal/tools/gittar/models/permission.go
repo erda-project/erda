@@ -19,7 +19,7 @@ import (
 	"strings"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/gittar/pkg/gitmodule"
+	"github.com/erda-project/erda/internal/tools/gittar/pkg/gitmodule"
 )
 
 func (svc *Service) CheckPermission(repo *gitmodule.Repository, user *User, permission Permission, resourceRoleList []string) error {

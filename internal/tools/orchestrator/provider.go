@@ -22,8 +22,8 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	dicehubpb "github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
-	"github.com/erda-project/erda/modules/tools/orchestrator/events"
-	"github.com/erda-project/erda/modules/tools/orchestrator/queue"
+	"github.com/erda-project/erda/internal/tools/orchestrator/events"
+	"github.com/erda-project/erda/internal/tools/orchestrator/queue"
 )
 
 type provider struct {

@@ -27,7 +27,7 @@ import (
 	"github.com/olivere/elastic"
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/erda-project/erda/modules/tools/monitor/core/metric/query/metricq"
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/metricq"
 )
 
 const tsqlMetric = `SELECT count(%s) AS doc_cnt, %s AS doc_label FROM %s GROUP BY %s`

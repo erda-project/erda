@@ -20,7 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda/apistructs"
-	prechecktype2 "github.com/erda-project/erda/modules/tools/pipeline/precheck/prechecktype"
+	prechecktype2 "github.com/erda-project/erda/internal/tools/pipeline/precheck/prechecktype"
 )
 
 func TestPrecheck(t *testing.T) {

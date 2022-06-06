@@ -25,7 +25,7 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/legacy/httpendpoints/i18n"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/apps/cmp/resource"
+	"github.com/erda-project/erda/internal/apps/cmp/resource"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httputil"
 )

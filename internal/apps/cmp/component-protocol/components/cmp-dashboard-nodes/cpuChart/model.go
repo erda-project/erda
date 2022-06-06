@@ -15,7 +15,7 @@
 package cpuChart
 
 import (
-	"github.com/erda-project/erda/modules/apps/cmp/component-protocol/components/cmp-dashboard-nodes/common/chart"
+	"github.com/erda-project/erda/internal/apps/cmp/component-protocol/components/cmp-dashboard-nodes/common/chart"
 )
 
 type CpuChart struct {

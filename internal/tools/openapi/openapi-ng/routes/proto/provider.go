@@ -19,9 +19,9 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 	common "github.com/erda-project/erda-proto-go/common/pb"
-	"github.com/erda-project/erda/modules/tools/openapi/openapi-ng"
-	"github.com/erda-project/erda/modules/tools/openapi/openapi-ng/auth"
-	"github.com/erda-project/erda/modules/tools/openapi/openapi-ng/proxy"
+	"github.com/erda-project/erda/internal/tools/openapi/openapi-ng"
+	"github.com/erda-project/erda/internal/tools/openapi/openapi-ng/auth"
+	"github.com/erda-project/erda/internal/tools/openapi/openapi-ng/proxy"
 	discover "github.com/erda-project/erda/providers/service-discover"
 )
 

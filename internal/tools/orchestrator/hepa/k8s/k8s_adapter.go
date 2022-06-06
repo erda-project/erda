@@ -32,9 +32,9 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/common/util"
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/common/vars"
-	kErrors "github.com/erda-project/erda/modules/tools/orchestrator/hepa/errors"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/util"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/vars"
+	kErrors "github.com/erda-project/erda/internal/tools/orchestrator/hepa/errors"
 	"github.com/erda-project/erda/pkg/k8s/interface_factory"
 	"github.com/erda-project/erda/pkg/k8s/union_interface"
 	"github.com/erda-project/erda/pkg/k8sclient"

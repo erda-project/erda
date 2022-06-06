@@ -21,7 +21,7 @@ import (
 
 	"github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/core/cluster-manager/cluster/db"
+	"github.com/erda-project/erda/internal/core/cluster-manager/cluster/db"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/strutil"

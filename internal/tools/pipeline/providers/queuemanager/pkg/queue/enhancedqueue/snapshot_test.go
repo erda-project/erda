@@ -21,7 +21,7 @@ package enhancedqueue_test
 //
 //	"github.com/stretchr/testify/assert"
 //
-//	"github.com/erda-project/erda/modules/tools/pipeline/pipengine/queue/enhancedqueue"
+//	"github.com/erda-project/erda/internal/tools/pipeline/pipengine/queue/enhancedqueue"
 //)
 //
 //func TestEnhancedQueue_Snapshot(t *testing.T) {

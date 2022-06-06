@@ -20,8 +20,8 @@ import (
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/repository/orm"
-	db "github.com/erda-project/erda/modules/tools/orchestrator/hepa/repository/service"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
+	db "github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/service"
 )
 
 type DiceArgsDto struct {

@@ -28,8 +28,8 @@ import (
 	"github.com/erda-project/erda-proto-go/msp/menu/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/apps/msp/instance/db"
-	mdb "github.com/erda-project/erda/modules/apps/msp/menu/db"
+	"github.com/erda-project/erda/internal/apps/msp/instance/db"
+	mdb "github.com/erda-project/erda/internal/apps/msp/menu/db"
 )
 
 ////go:generate mockgen -destination=./menu_register_test.go -package exporter github.com/erda-project/erda-infra/pkg/transport Register

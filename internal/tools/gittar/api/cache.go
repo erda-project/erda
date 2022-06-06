@@ -15,8 +15,8 @@
 package api
 
 import (
-	"github.com/erda-project/erda/modules/tools/gittar/pkg/gitmodule"
-	"github.com/erda-project/erda/modules/tools/gittar/webcontext"
+	"github.com/erda-project/erda/internal/tools/gittar/pkg/gitmodule"
+	"github.com/erda-project/erda/internal/tools/gittar/webcontext"
 )
 
 func ShowCacheStats(context *webcontext.Context) {

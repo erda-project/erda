@@ -31,7 +31,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	messenger "github.com/erda-project/erda-proto-go/core/messenger/notify/pb"
 	monitor "github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
-	"github.com/erda-project/erda/modules/apps/msp/apm/alert/components/msp-notify-list/common"
+	"github.com/erda-project/erda/internal/apps/msp/apm/alert/components/msp-notify-list/common"
 )
 
 type provider struct {

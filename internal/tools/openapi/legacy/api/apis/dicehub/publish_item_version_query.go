@@ -16,7 +16,7 @@ package dicehub
 
 import (
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/openapi/legacy/api/apis"
+	"github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
 )
 
 var PUBLISH_ITEM_VERSION_QUERY = apis.ApiSpec{

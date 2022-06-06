@@ -14,7 +14,7 @@
 
 package metric
 
-import "github.com/erda-project/erda/modules/tools/openapi/legacy/api/apis"
+import "github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
 
 var POST_TSQL_QUERY_METRIC = apis.ApiSpec{
 	Path:        "/api/tmc/metrics-query",

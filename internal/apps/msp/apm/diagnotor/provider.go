@@ -23,7 +23,7 @@ import (
 	basepb "github.com/erda-project/erda-proto-go/core/monitor/diagnotor/pb"
 	"github.com/erda-project/erda-proto-go/msp/apm/diagnotor/pb"
 	"github.com/erda-project/erda/bundle"
-	monitordb "github.com/erda-project/erda/modules/apps/msp/instance/db/monitor"
+	monitordb "github.com/erda-project/erda/internal/apps/msp/instance/db/monitor"
 	"github.com/erda-project/erda/pkg/common/apis"
 	perm "github.com/erda-project/erda/pkg/common/permission"
 )

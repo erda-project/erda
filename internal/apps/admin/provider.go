@@ -25,9 +25,9 @@ import (
 	hs "github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
-	"github.com/erda-project/erda/modules/apps/admin/dao"
-	"github.com/erda-project/erda/modules/apps/admin/manager"
-	"github.com/erda-project/erda/modules/apps/dop/conf"
+	"github.com/erda-project/erda/internal/apps/admin/dao"
+	"github.com/erda-project/erda/internal/apps/admin/manager"
+	"github.com/erda-project/erda/internal/apps/dop/conf"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 )

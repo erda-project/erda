@@ -27,11 +27,11 @@ import (
 
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/pipeline/conf"
-	"github.com/erda-project/erda/modules/tools/pipeline/pkg/container_provider"
-	"github.com/erda-project/erda/modules/tools/pipeline/providers/cron/crontypes"
-	"github.com/erda-project/erda/modules/tools/pipeline/services/apierrors"
-	spec2 "github.com/erda-project/erda/modules/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/conf"
+	"github.com/erda-project/erda/internal/tools/pipeline/pkg/container_provider"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/cron/crontypes"
+	"github.com/erda-project/erda/internal/tools/pipeline/services/apierrors"
+	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 

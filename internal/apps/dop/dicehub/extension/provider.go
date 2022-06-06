@@ -32,7 +32,7 @@ import (
 	gallerypb "github.com/erda-project/erda-proto-go/apps/gallery/pb"
 	"github.com/erda-project/erda-proto-go/core/dicehub/extension/pb"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/apps/dop/dicehub/extension/db"
+	"github.com/erda-project/erda/internal/apps/dop/dicehub/extension/db"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/i18n"
 )

@@ -15,9 +15,9 @@
 package assembler
 
 import (
-	gw "github.com/erda-project/erda/modules/tools/orchestrator/hepa/gateway/dto"
-	kong "github.com/erda-project/erda/modules/tools/orchestrator/hepa/kong/dto"
-	db "github.com/erda-project/erda/modules/tools/orchestrator/hepa/repository/orm"
+	gw "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
+	kong "github.com/erda-project/erda/internal/tools/orchestrator/hepa/kong/dto"
+	db "github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
 )
 
 type PluginParams struct {

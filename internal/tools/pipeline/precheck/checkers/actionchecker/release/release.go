@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"strconv"
 
-	prechecktype2 "github.com/erda-project/erda/modules/tools/pipeline/precheck/prechecktype"
+	prechecktype2 "github.com/erda-project/erda/internal/tools/pipeline/precheck/prechecktype"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )

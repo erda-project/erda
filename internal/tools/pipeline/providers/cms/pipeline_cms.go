@@ -30,7 +30,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	"github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	"github.com/erda-project/erda/apistructs"
-	db2 "github.com/erda-project/erda/modules/tools/pipeline/providers/cms/db"
+	db2 "github.com/erda-project/erda/internal/tools/pipeline/providers/cms/db"
 	"github.com/erda-project/erda/pkg/crypto/encryption"
 	"github.com/erda-project/erda/pkg/limit_sync_group"
 	"github.com/erda-project/erda/pkg/strutil"

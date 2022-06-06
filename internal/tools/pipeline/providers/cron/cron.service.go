@@ -26,8 +26,8 @@ import (
 	"github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	common "github.com/erda-project/erda-proto-go/core/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
-	db2 "github.com/erda-project/erda/modules/tools/pipeline/providers/cron/db"
-	"github.com/erda-project/erda/modules/tools/pipeline/services/apierrors"
+	db2 "github.com/erda-project/erda/internal/tools/pipeline/providers/cron/db"
+	"github.com/erda-project/erda/internal/tools/pipeline/services/apierrors"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 	"github.com/erda-project/erda/pkg/strutil"
 )

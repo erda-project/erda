@@ -25,9 +25,9 @@ import (
 	"bou.ke/monkey"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/core/legacy/dao"
-	"github.com/erda-project/erda/modules/core/legacy/services/permission"
-	"github.com/erda-project/erda/modules/pkg/user"
+	"github.com/erda-project/erda/internal/core/legacy/dao"
+	"github.com/erda-project/erda/internal/core/legacy/services/permission"
+	"github.com/erda-project/erda/internal/pkg/user"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 

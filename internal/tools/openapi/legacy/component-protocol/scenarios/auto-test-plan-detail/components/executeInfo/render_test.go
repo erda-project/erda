@@ -25,8 +25,8 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/apps/dop/services/autotest"
-	protocol "github.com/erda-project/erda/modules/tools/openapi/legacy/component-protocol"
+	"github.com/erda-project/erda/internal/apps/dop/services/autotest"
+	protocol "github.com/erda-project/erda/internal/tools/openapi/legacy/component-protocol"
 )
 
 func Test_convertReportToConfig(t *testing.T) {

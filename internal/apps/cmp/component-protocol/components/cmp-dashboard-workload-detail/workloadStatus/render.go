@@ -26,8 +26,8 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	cputil2 "github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/apps/cmp"
-	"github.com/erda-project/erda/modules/apps/cmp/component-protocol/cputil"
+	"github.com/erda-project/erda/internal/apps/cmp"
+	"github.com/erda-project/erda/internal/apps/cmp/component-protocol/cputil"
 )
 
 func init() {

@@ -26,8 +26,8 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-proto-go/core/messenger/notify/pb"
-	"github.com/erda-project/erda/modules/core/messenger/notify/db"
-	"github.com/erda-project/erda/modules/core/messenger/notify/model"
+	"github.com/erda-project/erda/internal/core/messenger/notify/db"
+	"github.com/erda-project/erda/internal/core/messenger/notify/model"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 

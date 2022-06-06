@@ -22,7 +22,7 @@ import (
 	"github.com/appscode/go/strings"
 	"github.com/sirupsen/logrus"
 
-	aliyun_resources "github.com/erda-project/erda/modules/apps/cmp/impl/aliyun-resources"
+	aliyun_resources "github.com/erda-project/erda/internal/apps/cmp/impl/aliyun-resources"
 )
 
 func ListByCluster(ctx aliyun_resources.Context, page aliyun_resources.PageOption, cluster string) (*vpc.DescribeEipAddressesResponse, error) {

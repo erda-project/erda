@@ -19,9 +19,9 @@ import (
 	"sync"
 
 	oap "github.com/erda-project/erda-proto-go/oap/trace/pb"
-	"github.com/erda-project/erda/modules/apps/msp/apm/trace"
-	"github.com/erda-project/erda/modules/tools/monitor/oap/collector/lib/common"
-	"github.com/erda-project/erda/modules/tools/monitor/oap/collector/lib/common/unmarshalwork"
+	"github.com/erda-project/erda/internal/apps/msp/apm/trace"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/common"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/common/unmarshalwork"
 )
 
 func ParseOapSpan(buf []byte, callback func(span *trace.Span) error) error {

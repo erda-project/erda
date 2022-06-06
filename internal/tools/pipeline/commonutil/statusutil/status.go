@@ -16,7 +16,7 @@ package statusutil
 
 import (
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 // CalculatePipelineStatusV2

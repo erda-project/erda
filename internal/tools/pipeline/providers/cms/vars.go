@@ -15,7 +15,7 @@
 package cms
 
 import (
-	"github.com/erda-project/erda/modules/tools/pipeline/providers/cms/db"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/cms/db"
 )
 
 // operations

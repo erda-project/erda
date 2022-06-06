@@ -8,7 +8,7 @@ import (
 	reflect "reflect"
 
 	apistructs "github.com/erda-project/erda/apistructs"
-	dao "github.com/erda-project/erda/modules/apps/dop/dao"
+	dao "github.com/erda-project/erda/internal/apps/dop/dao"
 	gomock "github.com/golang/mock/gomock"
 )
 

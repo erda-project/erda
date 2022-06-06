@@ -20,8 +20,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda/modules/tools/pipeline/pkg/pipelinefunc"
-	"github.com/erda-project/erda/modules/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/pkg/pipelinefunc"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 func TestWriteMetaFile(t *testing.T) {

@@ -20,7 +20,7 @@ import (
 	"time"
 
 	"github.com/erda-project/erda-infra/base/logs"
-	"github.com/erda-project/erda/modules/apps/msp/apm/checker/storage"
+	"github.com/erda-project/erda/internal/apps/msp/apm/checker/storage"
 )
 
 // Scheduler .

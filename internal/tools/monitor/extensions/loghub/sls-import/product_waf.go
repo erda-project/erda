@@ -23,8 +23,8 @@ import (
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 
 	"github.com/erda-project/erda-infra/providers/elasticsearch"
-	logs "github.com/erda-project/erda/modules/tools/monitor/core/log"
-	metrics "github.com/erda-project/erda/modules/tools/monitor/core/metric"
+	logs "github.com/erda-project/erda/internal/tools/monitor/core/log"
+	metrics "github.com/erda-project/erda/internal/tools/monitor/core/metric"
 )
 
 // __topic__	日志主题，固定为waf_access_log。

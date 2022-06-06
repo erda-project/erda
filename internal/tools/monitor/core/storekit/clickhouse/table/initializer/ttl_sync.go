@@ -21,8 +21,8 @@ import (
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 
-	"github.com/erda-project/erda/modules/tools/monitor/core/storekit/clickhouse/table"
-	"github.com/erda-project/erda/modules/tools/monitor/core/storekit/clickhouse/table/loader"
+	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/clickhouse/table"
+	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/clickhouse/table/loader"
 )
 
 func (p *provider) syncTTL(ctx context.Context) {

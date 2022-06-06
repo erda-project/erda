@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/erda-project/erda/modules/tools/monitor/oap/collector/lib/common/unmarshalwork"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/common/unmarshalwork"
 )
 
 func ParseInterface(src interface{}, callback func(buf []byte) error) error {

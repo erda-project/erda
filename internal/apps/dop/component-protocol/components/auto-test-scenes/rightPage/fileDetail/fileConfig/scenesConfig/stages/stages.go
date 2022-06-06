@@ -19,7 +19,7 @@ import (
 	"strconv"
 
 	"github.com/erda-project/erda/apistructs"
-	st "github.com/erda-project/erda/modules/tools/openapi/legacy/component-protocol/pkg/autotest/step"
+	st "github.com/erda-project/erda/internal/tools/openapi/legacy/component-protocol/pkg/autotest/step"
 )
 
 type MU struct {

@@ -15,6 +15,6 @@
 package components
 
 import (
-	_ "github.com/erda-project/erda/modules/tools/orchestrator/components/addon/mysql"
-	_ "github.com/erda-project/erda/modules/tools/orchestrator/components/runtime"
+	_ "github.com/erda-project/erda/internal/tools/orchestrator/components/addon/mysql"
+	_ "github.com/erda-project/erda/internal/tools/orchestrator/components/runtime"
 )

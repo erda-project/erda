@@ -22,9 +22,9 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/apps/cmp/dbclient"
-	aliyun_resources "github.com/erda-project/erda/modules/apps/cmp/impl/aliyun-resources"
-	resource_factory "github.com/erda-project/erda/modules/apps/cmp/impl/resource-factory"
+	"github.com/erda-project/erda/internal/apps/cmp/dbclient"
+	aliyun_resources "github.com/erda-project/erda/internal/apps/cmp/impl/aliyun-resources"
+	resource_factory "github.com/erda-project/erda/internal/apps/cmp/impl/resource-factory"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 )
 

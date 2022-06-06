@@ -22,8 +22,8 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/core/legacy/dao"
-	"github.com/erda-project/erda/modules/core/legacy/services/apierrors"
+	"github.com/erda-project/erda/internal/core/legacy/dao"
+	"github.com/erda-project/erda/internal/core/legacy/services/apierrors"
 )
 
 // Label 标签封装

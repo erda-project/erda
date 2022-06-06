@@ -25,7 +25,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/apps/admin/personal-workbench/services/workbench"
+	"github.com/erda-project/erda/internal/apps/admin/personal-workbench/services/workbench"
 )
 
 type NopTranslator struct{}

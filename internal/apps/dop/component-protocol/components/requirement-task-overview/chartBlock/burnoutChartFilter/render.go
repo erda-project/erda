@@ -22,9 +22,9 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/apps/dop/component-protocol/components/requirement-task-overview/common"
-	"github.com/erda-project/erda/modules/apps/dop/component-protocol/components/requirement-task-overview/common/gshelper"
-	"github.com/erda-project/erda/modules/tools/openapi/legacy/component-protocol/components/filter"
+	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/requirement-task-overview/common"
+	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/requirement-task-overview/common/gshelper"
+	"github.com/erda-project/erda/internal/tools/openapi/legacy/component-protocol/components/filter"
 )
 
 func init() {

@@ -26,7 +26,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
-	"github.com/erda-project/erda/modules/apps/cmp/component-protocol/components/cmp-dashboard-nodeDetail/common"
+	"github.com/erda-project/erda/internal/apps/cmp/component-protocol/components/cmp-dashboard-nodeDetail/common"
 )
 
 func (infoMapTable *InfoMapTable) Render(ctx context.Context, c *cptype.Component, s cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {

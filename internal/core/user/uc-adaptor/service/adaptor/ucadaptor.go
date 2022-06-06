@@ -23,9 +23,9 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/core/user/uc-adaptor/conf"
-	"github.com/erda-project/erda/modules/core/user/uc-adaptor/dao"
-	"github.com/erda-project/erda/modules/core/user/uc-adaptor/ucclient"
+	"github.com/erda-project/erda/internal/core/user/uc-adaptor/conf"
+	"github.com/erda-project/erda/internal/core/user/uc-adaptor/dao"
+	"github.com/erda-project/erda/internal/core/user/uc-adaptor/ucclient"
 	"github.com/erda-project/erda/pkg/cron"
 	"github.com/erda-project/erda/pkg/dlock"
 	"github.com/erda-project/erda/pkg/strutil"

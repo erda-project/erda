@@ -25,8 +25,8 @@ import (
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 	"github.com/erda-project/erda-infra/pkg/transport/http/encoding"
 	"github.com/erda-project/erda-proto-go/msp/configcenter/pb"
-	instancedb "github.com/erda-project/erda/modules/apps/msp/instance/db"
-	mperm "github.com/erda-project/erda/modules/apps/msp/instance/permission"
+	instancedb "github.com/erda-project/erda/internal/apps/msp/instance/db"
+	mperm "github.com/erda-project/erda/internal/apps/msp/instance/permission"
 	"github.com/erda-project/erda/pkg/common/apis"
 	perm "github.com/erda-project/erda/pkg/common/permission"
 )

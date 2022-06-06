@@ -20,12 +20,12 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/pkg/bundle-ex/cmdb"
-	"github.com/erda-project/erda/modules/tools/monitor/core/alert/alert-apis/cql"
-	"github.com/erda-project/erda/modules/tools/monitor/core/alert/alert-apis/db"
-	block "github.com/erda-project/erda/modules/tools/monitor/core/dataview/v1-chart-block"
-	"github.com/erda-project/erda/modules/tools/monitor/core/event/storage"
-	"github.com/erda-project/erda/modules/tools/monitor/core/metric/query/metricq"
+	"github.com/erda-project/erda/internal/pkg/bundle-ex/cmdb"
+	"github.com/erda-project/erda/internal/tools/monitor/core/alert/alert-apis/cql"
+	"github.com/erda-project/erda/internal/tools/monitor/core/alert/alert-apis/db"
+	block "github.com/erda-project/erda/internal/tools/monitor/core/dataview/v1-chart-block"
+	"github.com/erda-project/erda/internal/tools/monitor/core/event/storage"
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/metricq"
 )
 
 const (

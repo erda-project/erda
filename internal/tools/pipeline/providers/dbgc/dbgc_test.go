@@ -26,9 +26,9 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs/logrusx"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/pipeline/dbclient"
-	db2 "github.com/erda-project/erda/modules/tools/pipeline/providers/dbgc/db"
-	spec2 "github.com/erda-project/erda/modules/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
+	db2 "github.com/erda-project/erda/internal/tools/pipeline/providers/dbgc/db"
+	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 func TestReconciler_doPipelineDatabaseGC(t *testing.T) {

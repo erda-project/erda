@@ -29,11 +29,11 @@ import (
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/pkg/diceworkspace"
-	"github.com/erda-project/erda/modules/pkg/user"
-	"github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
-	"github.com/erda-project/erda/modules/tools/orchestrator/services/apierrors"
-	"github.com/erda-project/erda/modules/tools/orchestrator/utils"
+	"github.com/erda-project/erda/internal/pkg/diceworkspace"
+	"github.com/erda-project/erda/internal/pkg/user"
+	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
+	"github.com/erda-project/erda/internal/tools/orchestrator/services/apierrors"
+	"github.com/erda-project/erda/internal/tools/orchestrator/utils"
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
 

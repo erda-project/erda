@@ -26,7 +26,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/erda-project/erda-proto-go/dop/guide/pb"
-	"github.com/erda-project/erda/modules/apps/dop/dao"
+	"github.com/erda-project/erda/internal/apps/dop/dao"
 )
 
 type GuideDB struct {

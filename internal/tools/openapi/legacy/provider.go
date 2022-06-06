@@ -22,8 +22,8 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/base/version"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
-	"github.com/erda-project/erda/modules/tools/openapi/legacy/component-protocol/types"
-	"github.com/erda-project/erda/modules/tools/openapi/legacy/conf"
+	"github.com/erda-project/erda/internal/tools/openapi/legacy/component-protocol/types"
+	"github.com/erda-project/erda/internal/tools/openapi/legacy/conf"
 )
 
 type config struct {

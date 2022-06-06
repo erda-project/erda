@@ -23,8 +23,8 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/erda-project/erda-proto-go/msp/configcenter/pb"
-	"github.com/erda-project/erda/modules/apps/msp/configcenter/nacos"
-	instancedb "github.com/erda-project/erda/modules/apps/msp/instance/db"
+	"github.com/erda-project/erda/internal/apps/msp/configcenter/nacos"
+	instancedb "github.com/erda-project/erda/internal/apps/msp/instance/db"
 	"github.com/erda-project/erda/pkg/common/errors"
 )
 

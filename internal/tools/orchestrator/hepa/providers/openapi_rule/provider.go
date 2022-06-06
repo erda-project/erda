@@ -19,9 +19,9 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-proto-go/core/hepa/openapi_rule/pb"
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/common"
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/services/openapi_rule/impl"
-	zoneI "github.com/erda-project/erda/modules/tools/orchestrator/hepa/services/zone/impl"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/openapi_rule/impl"
+	zoneI "github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/zone/impl"
 	"github.com/erda-project/erda/pkg/common/apis"
 	perm "github.com/erda-project/erda/pkg/common/permission"
 )

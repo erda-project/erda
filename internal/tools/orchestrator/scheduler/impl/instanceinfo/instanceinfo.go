@@ -20,7 +20,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	insinfo "github.com/erda-project/erda/modules/tools/orchestrator/scheduler/instanceinfo"
+	insinfo "github.com/erda-project/erda/internal/tools/orchestrator/scheduler/instanceinfo"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/strutil"
 )

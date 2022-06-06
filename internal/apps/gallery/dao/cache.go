@@ -17,7 +17,7 @@ package dao
 import (
 	"time"
 
-	"github.com/erda-project/erda/modules/apps/gallery/model"
+	"github.com/erda-project/erda/internal/apps/gallery/model"
 	"github.com/erda-project/erda/pkg/cache"
 )
 

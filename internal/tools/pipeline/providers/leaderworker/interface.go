@@ -19,7 +19,7 @@ import (
 
 	"github.com/coreos/etcd/clientv3"
 
-	worker2 "github.com/erda-project/erda/modules/tools/pipeline/providers/leaderworker/worker"
+	worker2 "github.com/erda-project/erda/internal/tools/pipeline/providers/leaderworker/worker"
 )
 
 type Interface interface {

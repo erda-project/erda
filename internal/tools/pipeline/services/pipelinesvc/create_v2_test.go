@@ -21,7 +21,7 @@ import (
 
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	"github.com/erda-project/erda-proto-go/core/pipeline/pb"
-	spec2 "github.com/erda-project/erda/modules/tools/pipeline/spec"
+	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 

@@ -18,8 +18,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"gopkg.in/igm/sockjs-go.v2/sockjs"
 
-	"github.com/erda-project/erda/modules/core/messenger/eventbox/input"
-	"github.com/erda-project/erda/modules/pkg/websocket"
+	"github.com/erda-project/erda/internal/core/messenger/eventbox/input"
+	"github.com/erda-project/erda/internal/pkg/websocket"
 )
 
 type WebsocketHTTP struct {

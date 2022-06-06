@@ -25,13 +25,13 @@ import (
 	"golang.org/x/text/message"
 
 	"github.com/erda-project/erda/apistructs"
-	aliyun_resources "github.com/erda-project/erda/modules/apps/cmp/impl/aliyun-resources"
-	"github.com/erda-project/erda/modules/apps/cmp/impl/aliyun-resources/ecs"
-	"github.com/erda-project/erda/modules/apps/cmp/impl/aliyun-resources/ons"
-	"github.com/erda-project/erda/modules/apps/cmp/impl/aliyun-resources/oss"
-	"github.com/erda-project/erda/modules/apps/cmp/impl/aliyun-resources/rds"
-	"github.com/erda-project/erda/modules/apps/cmp/impl/aliyun-resources/redis"
-	"github.com/erda-project/erda/modules/apps/cmp/impl/aliyun-resources/vpc"
+	aliyun_resources "github.com/erda-project/erda/internal/apps/cmp/impl/aliyun-resources"
+	"github.com/erda-project/erda/internal/apps/cmp/impl/aliyun-resources/ecs"
+	"github.com/erda-project/erda/internal/apps/cmp/impl/aliyun-resources/ons"
+	"github.com/erda-project/erda/internal/apps/cmp/impl/aliyun-resources/oss"
+	"github.com/erda-project/erda/internal/apps/cmp/impl/aliyun-resources/rds"
+	"github.com/erda-project/erda/internal/apps/cmp/impl/aliyun-resources/redis"
+	"github.com/erda-project/erda/internal/apps/cmp/impl/aliyun-resources/vpc"
 )
 
 type CachedCloudResourceOverview struct {

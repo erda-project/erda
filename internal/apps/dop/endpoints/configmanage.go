@@ -24,11 +24,11 @@ import (
 
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/apps/dop/services/apierrors"
-	"github.com/erda-project/erda/modules/apps/dop/utils"
-	"github.com/erda-project/erda/modules/pkg/gitflowutil"
-	"github.com/erda-project/erda/modules/pkg/user"
-	"github.com/erda-project/erda/modules/tools/pipeline/providers/cms"
+	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
+	"github.com/erda-project/erda/internal/apps/dop/utils"
+	"github.com/erda-project/erda/internal/pkg/gitflowutil"
+	"github.com/erda-project/erda/internal/pkg/user"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/cms"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 )

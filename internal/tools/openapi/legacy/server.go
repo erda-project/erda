@@ -21,7 +21,7 @@ import (
 	"time"
 
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
-	"github.com/erda-project/erda/modules/tools/openapi/legacy/conf"
+	"github.com/erda-project/erda/internal/tools/openapi/legacy/conf"
 )
 
 func NewServer(token tokenpb.TokenServiceServer) (*http.Server, error) {

@@ -22,7 +22,7 @@ import (
 	"time"
 
 	"github.com/erda-project/erda-infra/providers/kafka"
-	"github.com/erda-project/erda/modules/tools/monitor/extensions/cloud/aliyun/metrics/cloudcat/globals"
+	"github.com/erda-project/erda/internal/tools/monitor/extensions/cloud/aliyun/metrics/cloudcat/globals"
 )
 
 func TestMain(m *testing.M) {

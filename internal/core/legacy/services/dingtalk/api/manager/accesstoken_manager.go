@@ -21,8 +21,8 @@ import (
 
 	"github.com/go-redis/redis"
 
-	"github.com/erda-project/erda/modules/core/legacy/services/dingtalk/api/interfaces"
-	"github.com/erda-project/erda/modules/core/legacy/services/dingtalk/api/native"
+	"github.com/erda-project/erda/internal/core/legacy/services/dingtalk/api/interfaces"
+	"github.com/erda-project/erda/internal/core/legacy/services/dingtalk/api/native"
 )
 
 var appKeySecrets = &sync.Map{}

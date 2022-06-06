@@ -16,7 +16,7 @@ package testplan
 
 import (
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/apps/dop/dao"
+	"github.com/erda-project/erda/internal/apps/dop/dao"
 )
 
 func (t *TestPlan) ConvertMember(dbMem dao.TestPlanMember) apistructs.TestPlanMember {

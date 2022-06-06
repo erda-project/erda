@@ -25,9 +25,9 @@ import (
 	"github.com/pkg/errors"
 
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
-	"github.com/erda-project/erda/modules/tools/openapi/legacy/api/spec"
-	"github.com/erda-project/erda/modules/tools/openapi/legacy/conf"
-	"github.com/erda-project/erda/modules/tools/openapi/legacy/monitor"
+	"github.com/erda-project/erda/internal/tools/openapi/legacy/api/spec"
+	"github.com/erda-project/erda/internal/tools/openapi/legacy/conf"
+	"github.com/erda-project/erda/internal/tools/openapi/legacy/monitor"
 	"github.com/erda-project/erda/pkg/oauth2"
 	"github.com/erda-project/erda/pkg/ucauth"
 )

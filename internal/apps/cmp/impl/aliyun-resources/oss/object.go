@@ -22,7 +22,7 @@ import (
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/sirupsen/logrus"
 
-	aliyun_resources "github.com/erda-project/erda/modules/apps/cmp/impl/aliyun-resources"
+	aliyun_resources "github.com/erda-project/erda/internal/apps/cmp/impl/aliyun-resources"
 )
 
 type BucketInfo struct {

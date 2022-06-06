@@ -17,7 +17,7 @@ package cmp
 import (
 	"net/http"
 
-	"github.com/erda-project/erda/modules/tools/openapi/legacy/api/apis"
+	"github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
 )
 
 var CMP_RESOURCE_OVERVIEW_PROJECT_TREND = apis.ApiSpec{

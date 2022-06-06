@@ -21,7 +21,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 
-	"github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
+	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
 )
 
 func Test_initCron(t *testing.T) {

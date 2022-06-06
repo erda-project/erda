@@ -25,8 +25,8 @@ import (
 	"github.com/pkg/errors"
 	batchv1 "k8s.io/api/batch/v1"
 
-	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/executor/plugins/k8s/k8sapi"
-	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/executor/plugins/k8s/k8serror"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8sapi"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8serror"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 

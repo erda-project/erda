@@ -19,7 +19,7 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/list"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/apps/admin/personal-workbench/services/workbench"
+	"github.com/erda-project/erda/internal/apps/admin/personal-workbench/services/workbench"
 )
 
 func TestWorkList_GenProjKvColumnInfo(t *testing.T) {

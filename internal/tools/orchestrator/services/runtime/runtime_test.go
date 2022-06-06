@@ -27,8 +27,8 @@ import (
 	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
-	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/impl/clusterinfo"
+	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/impl/clusterinfo"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 )

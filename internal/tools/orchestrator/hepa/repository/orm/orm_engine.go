@@ -24,8 +24,8 @@ import (
 	"github.com/xormplus/core"
 	"github.com/xormplus/xorm"
 
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/common"
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/config"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/config"
 )
 
 type OrmEngineInterface interface {

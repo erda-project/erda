@@ -18,7 +18,7 @@ import (
 	"encoding/json"
 	"os"
 
-	"github.com/erda-project/erda/modules/tools/openapi/legacy/api/generate/apistruct"
+	"github.com/erda-project/erda/internal/tools/openapi/legacy/api/generate/apistruct"
 )
 
 var eventDocJSON = make(apistruct.JSON)

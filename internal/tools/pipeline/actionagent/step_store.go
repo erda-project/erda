@@ -23,9 +23,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	agenttool2 "github.com/erda-project/erda/modules/tools/pipeline/actionagent/agenttool"
-	"github.com/erda-project/erda/modules/tools/pipeline/pipengine/pvolumes"
-	"github.com/erda-project/erda/modules/tools/pipeline/spec"
+	agenttool2 "github.com/erda-project/erda/internal/tools/pipeline/actionagent/agenttool"
+	"github.com/erda-project/erda/internal/tools/pipeline/pipengine/pvolumes"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/filehelper"
 )
 

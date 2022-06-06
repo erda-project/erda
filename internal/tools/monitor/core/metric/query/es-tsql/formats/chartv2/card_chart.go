@@ -14,7 +14,7 @@
 
 package chartv2
 
-import tsql "github.com/erda-project/erda/modules/tools/monitor/core/metric/query/es-tsql"
+import tsql "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql"
 
 func (f *Formater) formatCardChart(q tsql.Query, rs *tsql.ResultSet, params map[string]interface{}) (interface{}, error) {
 	var list []map[string]interface{}

@@ -21,7 +21,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/erda-project/erda/modules/apps/msp/apm/checker/plugins"
+	"github.com/erda-project/erda/internal/apps/msp/apm/checker/plugins"
 	"github.com/erda-project/erda/providers/metrics/report"
 )
 

@@ -20,7 +20,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/modules/tools/openapi/openapi-ng/interceptors"
+	"github.com/erda-project/erda/internal/tools/openapi/openapi-ng/interceptors"
 )
 
 type config struct {

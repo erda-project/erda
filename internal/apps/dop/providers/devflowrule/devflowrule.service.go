@@ -22,9 +22,9 @@ import (
 	"github.com/erda-project/erda-proto-go/dop/devflowrule/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/apps/dop/providers/devflowrule/db"
-	"github.com/erda-project/erda/modules/apps/dop/services/apierrors"
-	"github.com/erda-project/erda/modules/pkg/diceworkspace"
+	"github.com/erda-project/erda/internal/apps/dop/providers/devflowrule/db"
+	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
+	"github.com/erda-project/erda/internal/pkg/diceworkspace"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 

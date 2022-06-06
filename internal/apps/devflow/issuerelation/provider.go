@@ -17,12 +17,12 @@ package issuerelation
 import (
 	"github.com/jinzhu/gorm"
 
-	logs "github.com/erda-project/erda-infra/base/logs"
-	servicehub "github.com/erda-project/erda-infra/base/servicehub"
-	transport "github.com/erda-project/erda-infra/pkg/transport"
-	pb "github.com/erda-project/erda-proto-go/apps/devflow/issuerelation/pb"
+	"github.com/erda-project/erda-infra/base/logs"
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/pkg/transport"
+	"github.com/erda-project/erda-proto-go/apps/devflow/issuerelation/pb"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/apps/devflow/issuerelation/db"
+	"github.com/erda-project/erda/internal/apps/devflow/issuerelation/db"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 )
 

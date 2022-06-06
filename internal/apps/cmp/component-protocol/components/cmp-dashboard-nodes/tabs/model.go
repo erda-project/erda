@@ -16,7 +16,7 @@ package tabs
 
 import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	table2 "github.com/erda-project/erda/modules/apps/cmp/component-protocol/components/cmp-dashboard-nodes/common/table"
+	table2 "github.com/erda-project/erda/internal/apps/cmp/component-protocol/components/cmp-dashboard-nodes/common/table"
 )
 
 type Tabs struct {

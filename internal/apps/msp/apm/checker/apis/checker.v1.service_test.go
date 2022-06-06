@@ -27,7 +27,7 @@ import (
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	checkerpb "github.com/erda-project/erda-proto-go/msp/apm/checker/pb"
-	"github.com/erda-project/erda/modules/apps/msp/apm/checker/storage/db"
+	"github.com/erda-project/erda/internal/apps/msp/apm/checker/storage/db"
 )
 
 func Test_checkerV1Service_DescribeCheckersV1(t *testing.T) {

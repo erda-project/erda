@@ -19,8 +19,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/erda-project/erda/modules/tools/pipeline/providers/leaderworker"
-	worker2 "github.com/erda-project/erda/modules/tools/pipeline/providers/leaderworker/worker"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/leaderworker"
+	worker2 "github.com/erda-project/erda/internal/tools/pipeline/providers/leaderworker/worker"
 )
 
 func (p *provider) reconcileOnePipeline(ctx context.Context, logicTask worker2.LogicTask) {

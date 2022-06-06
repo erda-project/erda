@@ -23,8 +23,8 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/apps/dop/dicehub/dbclient"
-	"github.com/erda-project/erda/modules/apps/dop/dicehub/service/apierrors"
+	"github.com/erda-project/erda/internal/apps/dop/dicehub/dbclient"
+	"github.com/erda-project/erda/internal/apps/dop/dicehub/service/apierrors"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 

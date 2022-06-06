@@ -27,7 +27,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
 	election "github.com/erda-project/erda-infra/providers/etcd-election"
-	worker2 "github.com/erda-project/erda/modules/tools/pipeline/providers/leaderworker/worker"
+	worker2 "github.com/erda-project/erda/internal/tools/pipeline/providers/leaderworker/worker"
 )
 
 type provider struct {

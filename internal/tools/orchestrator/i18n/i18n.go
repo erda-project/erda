@@ -21,7 +21,7 @@ import (
 	"golang.org/x/text/message"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
-	orgCache "github.com/erda-project/erda/modules/tools/orchestrator/cache/org"
+	orgCache "github.com/erda-project/erda/internal/tools/orchestrator/cache/org"
 )
 
 var (

@@ -16,7 +16,7 @@ package monitor
 
 import (
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/openapi/legacy/api/apis"
+	"github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
 )
 
 var MSP_ADDON_LOGS_RULES_UPDATE = apis.ApiSpec{

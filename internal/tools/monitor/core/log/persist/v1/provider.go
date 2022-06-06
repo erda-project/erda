@@ -27,8 +27,8 @@ import (
 	"github.com/erda-project/erda-infra/providers/cassandra"
 	mutex "github.com/erda-project/erda-infra/providers/etcd-mutex"
 	"github.com/erda-project/erda-infra/providers/kafka"
-	"github.com/erda-project/erda/modules/tools/monitor/core/log/persist/v1/schema"
-	"github.com/erda-project/erda/modules/tools/monitor/core/settings/retention-strategy"
+	"github.com/erda-project/erda/internal/tools/monitor/core/log/persist/v1/schema"
+	"github.com/erda-project/erda/internal/tools/monitor/core/settings/retention-strategy"
 )
 
 type config struct {

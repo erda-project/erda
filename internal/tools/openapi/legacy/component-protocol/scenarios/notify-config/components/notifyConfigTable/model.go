@@ -15,8 +15,8 @@
 package notifyConfigTable
 
 import (
-	protocol "github.com/erda-project/erda/modules/tools/openapi/legacy/component-protocol"
-	"github.com/erda-project/erda/modules/tools/openapi/legacy/component-protocol/components/table"
+	protocol "github.com/erda-project/erda/internal/tools/openapi/legacy/component-protocol"
+	"github.com/erda-project/erda/internal/tools/openapi/legacy/component-protocol/components/table"
 )
 
 var (

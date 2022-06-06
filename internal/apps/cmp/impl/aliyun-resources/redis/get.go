@@ -27,8 +27,8 @@ import (
 	"golang.org/x/text/message"
 
 	"github.com/erda-project/erda/apistructs"
-	aliyun_resources "github.com/erda-project/erda/modules/apps/cmp/impl/aliyun-resources"
-	"github.com/erda-project/erda/modules/apps/cmp/impl/aliyun-resources/vswitch"
+	aliyun_resources "github.com/erda-project/erda/internal/apps/cmp/impl/aliyun-resources"
+	"github.com/erda-project/erda/internal/apps/cmp/impl/aliyun-resources/vswitch"
 )
 
 func GetInstanceFullDetailInfo(c context.Context, ctx aliyun_resources.Context, instanceID string) ([]apistructs.CloudResourceDetailInfo, error) {

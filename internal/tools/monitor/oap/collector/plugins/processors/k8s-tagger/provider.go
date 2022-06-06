@@ -22,12 +22,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 
-	"github.com/erda-project/erda/modules/apps/msp/apm/trace"
-	"github.com/erda-project/erda/modules/tools/monitor/core/log"
-	"github.com/erda-project/erda/modules/tools/monitor/core/metric"
-	"github.com/erda-project/erda/modules/tools/monitor/oap/collector/core/model/odata"
-	"github.com/erda-project/erda/modules/tools/monitor/oap/collector/plugins"
-	pod2 "github.com/erda-project/erda/modules/tools/monitor/oap/collector/plugins/processors/k8s-tagger/metadata/pod"
+	"github.com/erda-project/erda/internal/apps/msp/apm/trace"
+	"github.com/erda-project/erda/internal/tools/monitor/core/log"
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model/odata"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins"
+	pod2 "github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/processors/k8s-tagger/metadata/pod"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"

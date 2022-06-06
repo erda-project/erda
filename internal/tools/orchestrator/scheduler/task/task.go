@@ -22,8 +22,8 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/executor/executortypes"
-	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/impl/volume"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/executortypes"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/impl/volume"
 )
 
 type Action int

@@ -21,9 +21,9 @@ import (
 	"strings"
 
 	"github.com/erda-project/erda-infra/providers/httpserver"
-	"github.com/erda-project/erda/modules/apps/msp/instance"
-	instancedb "github.com/erda-project/erda/modules/apps/msp/instance/db"
-	httpperm "github.com/erda-project/erda/modules/tools/monitor/common/permission"
+	"github.com/erda-project/erda/internal/apps/msp/instance"
+	instancedb "github.com/erda-project/erda/internal/apps/msp/instance/db"
+	httpperm "github.com/erda-project/erda/internal/tools/monitor/common/permission"
 	"github.com/erda-project/erda/pkg/common/errors"
 	"github.com/erda-project/erda/pkg/common/permission"
 )

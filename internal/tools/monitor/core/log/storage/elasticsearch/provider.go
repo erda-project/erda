@@ -25,12 +25,12 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/elasticsearch"
-	"github.com/erda-project/erda/modules/tools/monitor/core/log"
-	"github.com/erda-project/erda/modules/tools/monitor/core/log/storage"
-	"github.com/erda-project/erda/modules/tools/monitor/core/settings/retention-strategy"
-	"github.com/erda-project/erda/modules/tools/monitor/core/storekit"
-	"github.com/erda-project/erda/modules/tools/monitor/core/storekit/elasticsearch/index/creator"
-	"github.com/erda-project/erda/modules/tools/monitor/core/storekit/elasticsearch/index/loader"
+	"github.com/erda-project/erda/internal/tools/monitor/core/log"
+	"github.com/erda-project/erda/internal/tools/monitor/core/log/storage"
+	"github.com/erda-project/erda/internal/tools/monitor/core/settings/retention-strategy"
+	"github.com/erda-project/erda/internal/tools/monitor/core/storekit"
+	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/elasticsearch/index/creator"
+	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/elasticsearch/index/loader"
 )
 
 type (

@@ -20,9 +20,9 @@ import (
 	"github.com/erda-project/erda-infra/pkg/transport"
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 	"github.com/erda-project/erda-proto-go/oap/collector/receiver/jaeger/pb"
-	"github.com/erda-project/erda/modules/tools/monitor/oap/collector/core/model"
-	"github.com/erda-project/erda/modules/tools/monitor/oap/collector/interceptor"
-	"github.com/erda-project/erda/modules/tools/monitor/oap/collector/plugins"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/interceptor"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins"
 )
 
 var providerName = plugins.WithPrefixReceiver("jaeger")

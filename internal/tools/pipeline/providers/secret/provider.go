@@ -23,11 +23,11 @@ import (
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/tools/pipeline/dbclient"
-	"github.com/erda-project/erda/modules/tools/pipeline/providers/cache"
-	"github.com/erda-project/erda/modules/tools/pipeline/providers/cancel"
-	"github.com/erda-project/erda/modules/tools/pipeline/providers/clusterinfo"
-	"github.com/erda-project/erda/modules/tools/pipeline/providers/user"
+	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/cache"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/cancel"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/clusterinfo"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/user"
 )
 
 type config struct {

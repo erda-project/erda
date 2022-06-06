@@ -24,8 +24,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/executor/util"
-	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/instanceinfo"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/util"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/instanceinfo"
 )
 
 //Synchronization strategy:

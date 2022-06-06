@@ -29,8 +29,8 @@ import (
 	tenantpb "github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	"github.com/erda-project/erda-proto-go/msp/tenant/project/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/apps/msp/instance/db/monitor"
-	"github.com/erda-project/erda/modules/apps/msp/tenant/db"
+	"github.com/erda-project/erda/internal/apps/msp/instance/db/monitor"
+	"github.com/erda-project/erda/internal/apps/msp/tenant/db"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 

@@ -23,9 +23,9 @@ import (
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/common/util"
-	. "github.com/erda-project/erda/modules/tools/orchestrator/hepa/common/vars"
-	. "github.com/erda-project/erda/modules/tools/orchestrator/hepa/kong/dto"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/util"
+	. "github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/vars"
+	. "github.com/erda-project/erda/internal/tools/orchestrator/hepa/kong/dto"
 )
 
 const (

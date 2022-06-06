@@ -17,7 +17,7 @@ package orm_test
 import (
 	"testing"
 
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/repository/orm"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
 )
 
 func TestGatewayZone_HasIngress(t *testing.T) {

@@ -17,7 +17,7 @@ package migrate
 import (
 	"fmt"
 
-	"github.com/erda-project/erda/modules/apps/dop/dao"
+	"github.com/erda-project/erda/internal/apps/dop/dao"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 	"github.com/erda-project/erda/pkg/strutil"

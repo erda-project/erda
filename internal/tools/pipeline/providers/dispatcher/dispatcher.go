@@ -20,7 +20,7 @@ import (
 
 	"github.com/erda-project/erda-infra/pkg/safe"
 	"github.com/erda-project/erda-infra/pkg/strutil"
-	worker2 "github.com/erda-project/erda/modules/tools/pipeline/providers/leaderworker/worker"
+	worker2 "github.com/erda-project/erda/internal/tools/pipeline/providers/leaderworker/worker"
 )
 
 func (p *provider) continueDispatcher(ctx context.Context) {

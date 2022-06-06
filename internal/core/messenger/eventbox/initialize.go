@@ -19,7 +19,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/erda-project/erda/modules/core/messenger/eventbox/dispatcher"
+	"github.com/erda-project/erda/internal/core/messenger/eventbox/dispatcher"
 )
 
 func Initialize(p *provider) error {

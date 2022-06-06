@@ -23,7 +23,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	"github.com/erda-project/erda-proto-go/core/pipeline/build/pb"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/tools/pipeline/providers/build/db"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/build/db"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 

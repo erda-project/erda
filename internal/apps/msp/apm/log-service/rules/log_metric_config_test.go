@@ -19,7 +19,7 @@ import (
 
 	"gotest.tools/assert"
 
-	"github.com/erda-project/erda/modules/apps/msp/apm/log-service/rules/db"
+	"github.com/erda-project/erda/internal/apps/msp/apm/log-service/rules/db"
 )
 
 func Test_convertToMetricMeta(t *testing.T) {

@@ -18,7 +18,7 @@ import (
 	"net/http"
 
 	"github.com/erda-project/erda-infra/base/version"
-	"github.com/erda-project/erda/modules/tools/openapi/legacy/api/apis"
+	"github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
 )
 
 var OPENAPI_VERSION = apis.ApiSpec{

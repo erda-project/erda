@@ -24,8 +24,8 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/apps/dop/dbclient"
-	"github.com/erda-project/erda/modules/apps/dop/services/apierrors"
+	"github.com/erda-project/erda/internal/apps/dop/dbclient"
+	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 )
 
 func (svc *Service) createOrUpdateAPIs(caseID, projectID uint64, apis []*apistructs.ApiTestInfo) error {

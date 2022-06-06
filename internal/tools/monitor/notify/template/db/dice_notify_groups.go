@@ -21,7 +21,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/monitor/notify/template/model"
+	"github.com/erda-project/erda/internal/tools/monitor/notify/template/model"
 )
 
 type BaseModel struct {

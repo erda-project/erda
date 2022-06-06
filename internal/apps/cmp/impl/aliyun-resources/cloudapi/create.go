@@ -28,8 +28,8 @@ import (
 	aliyun_errors "github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors"
 
 	"github.com/erda-project/erda/apistructs"
-	aliyun_resources "github.com/erda-project/erda/modules/apps/cmp/impl/aliyun-resources"
-	"github.com/erda-project/erda/modules/apps/cmp/impl/aliyun-resources/slb"
+	aliyun_resources "github.com/erda-project/erda/internal/apps/cmp/impl/aliyun-resources"
+	"github.com/erda-project/erda/internal/apps/cmp/impl/aliyun-resources/slb"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 )
 

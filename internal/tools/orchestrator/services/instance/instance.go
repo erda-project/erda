@@ -19,8 +19,8 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/impl/instanceinfo"
-	"github.com/erda-project/erda/modules/tools/orchestrator/utils"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/impl/instanceinfo"
+	"github.com/erda-project/erda/internal/tools/orchestrator/utils"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 

@@ -18,7 +18,7 @@ import (
 	"context"
 
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
-	"github.com/erda-project/erda/modules/tools/monitor/core/metric/query/metricmeta"
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/metricmeta"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 

@@ -15,7 +15,7 @@
 package pexpr_params
 
 import (
-	"github.com/erda-project/erda/modules/tools/pipeline/dbclient"
+	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
 )
 
 var dbClient *dbclient.Client

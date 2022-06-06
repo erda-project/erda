@@ -25,8 +25,8 @@ import (
 	"github.com/recallsong/go-utils/encoding/jsonx"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
-	tsql "github.com/erda-project/erda/modules/tools/monitor/core/metric/query/es-tsql"
-	"github.com/erda-project/erda/modules/tools/monitor/core/metric/query/es-tsql/formats"
+	tsql "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql"
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql/formats"
 )
 
 type queryer struct {

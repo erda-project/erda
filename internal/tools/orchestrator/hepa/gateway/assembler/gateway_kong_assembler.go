@@ -20,12 +20,12 @@ import (
 
 	"github.com/pkg/errors"
 
-	. "github.com/erda-project/erda/modules/tools/orchestrator/hepa/common/vars"
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/config"
-	gw "github.com/erda-project/erda/modules/tools/orchestrator/hepa/gateway/dto"
-	kongConst "github.com/erda-project/erda/modules/tools/orchestrator/hepa/kong"
-	kong "github.com/erda-project/erda/modules/tools/orchestrator/hepa/kong/dto"
-	db "github.com/erda-project/erda/modules/tools/orchestrator/hepa/repository/orm"
+	. "github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/vars"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/config"
+	gw "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
+	kongConst "github.com/erda-project/erda/internal/tools/orchestrator/hepa/kong"
+	kong "github.com/erda-project/erda/internal/tools/orchestrator/hepa/kong/dto"
+	db "github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
 )
 
 type GatewayKongAssemblerImpl struct {

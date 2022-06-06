@@ -26,8 +26,8 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/events/eventtypes"
-	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/executor/executortypes"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/events/eventtypes"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/executortypes"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/dlock"
 	"github.com/erda-project/erda/pkg/jsonstore"

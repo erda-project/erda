@@ -24,8 +24,8 @@ import (
 
 	"github.com/recallsong/go-utils/reflectx"
 
-	"github.com/erda-project/erda/modules/tools/monitor/core/metric/query/query"
-	queryv1 "github.com/erda-project/erda/modules/tools/monitor/core/metric/query/query/v1"
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/query"
+	queryv1 "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/query/v1"
 )
 
 // Form .

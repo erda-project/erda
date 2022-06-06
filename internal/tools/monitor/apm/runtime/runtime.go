@@ -22,9 +22,9 @@ import (
 	"github.com/olivere/elastic"
 
 	"github.com/erda-project/erda-infra/providers/httpserver"
-	apm "github.com/erda-project/erda/modules/tools/monitor/apm/common"
-	"github.com/erda-project/erda/modules/tools/monitor/common/db"
-	"github.com/erda-project/erda/modules/tools/monitor/common/permission"
+	apm "github.com/erda-project/erda/internal/tools/monitor/apm/common"
+	"github.com/erda-project/erda/internal/tools/monitor/common/db"
+	"github.com/erda-project/erda/internal/tools/monitor/common/permission"
 )
 
 type Vo struct {

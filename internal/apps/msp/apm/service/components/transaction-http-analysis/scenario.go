@@ -15,9 +15,9 @@
 package transaction_http_analysis
 
 import (
-	_ "github.com/erda-project/erda/modules/apps/msp/apm/service/components/transaction-http-analysis/avg_duration"
-	_ "github.com/erda-project/erda/modules/apps/msp/apm/service/components/transaction-http-analysis/req_distribution"
-	_ "github.com/erda-project/erda/modules/apps/msp/apm/service/components/transaction-http-analysis/rps"
-	_ "github.com/erda-project/erda/modules/apps/msp/apm/service/components/transaction-http-analysis/table"
-	_ "github.com/erda-project/erda/modules/apps/msp/apm/service/components/transaction-http-analysis/table_filter"
+	_ "github.com/erda-project/erda/internal/apps/msp/apm/service/components/transaction-http-analysis/avg_duration"
+	_ "github.com/erda-project/erda/internal/apps/msp/apm/service/components/transaction-http-analysis/req_distribution"
+	_ "github.com/erda-project/erda/internal/apps/msp/apm/service/components/transaction-http-analysis/rps"
+	_ "github.com/erda-project/erda/internal/apps/msp/apm/service/components/transaction-http-analysis/table"
+	_ "github.com/erda-project/erda/internal/apps/msp/apm/service/components/transaction-http-analysis/table_filter"
 )

@@ -15,7 +15,7 @@
 package dao
 
 import (
-	"github.com/erda-project/erda/modules/apps/dop/model"
+	"github.com/erda-project/erda/internal/apps/dop/model"
 )
 
 // CreateComment 创建工单评论

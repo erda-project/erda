@@ -23,7 +23,7 @@ import (
 
 	"github.com/erda-project/erda-proto-go/core/pipeline/queue/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/pipeline/providers/queuemanager/queue"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/queuemanager/queue"
 )
 
 func MakeQueueUsageBackupKey(qID string) string {

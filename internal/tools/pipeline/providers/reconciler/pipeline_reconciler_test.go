@@ -23,7 +23,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs/logrusx"
 	"github.com/erda-project/erda/apistructs"
-	spec2 "github.com/erda-project/erda/modules/tools/pipeline/spec"
+	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 func Test_defaultPipelineReconciler_IsReconcileDone(t *testing.T) {

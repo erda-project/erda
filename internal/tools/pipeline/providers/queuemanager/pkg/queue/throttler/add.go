@@ -15,7 +15,7 @@
 package throttler
 
 import (
-	"github.com/erda-project/erda/modules/tools/pipeline/providers/queuemanager/pkg/queue/enhancedqueue"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/queuemanager/pkg/queue/enhancedqueue"
 )
 
 const defaultQueueWindow = 100

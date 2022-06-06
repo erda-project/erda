@@ -25,8 +25,8 @@ import (
 	"github.com/xormplus/builder"
 	"github.com/xormplus/xorm"
 
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/common"
-	. "github.com/erda-project/erda/modules/tools/orchestrator/hepa/common/vars"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common"
+	. "github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/vars"
 )
 
 // type IntBool bool

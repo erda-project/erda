@@ -21,8 +21,8 @@ import (
 	"net/url"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/openapi/legacy/api/apis"
-	"github.com/erda-project/erda/modules/tools/orchestrator/utils"
+	"github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
+	"github.com/erda-project/erda/internal/tools/orchestrator/utils"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )

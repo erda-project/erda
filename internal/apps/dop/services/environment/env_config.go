@@ -22,9 +22,9 @@ import (
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/apps/dop/dao"
-	"github.com/erda-project/erda/modules/apps/dop/model"
-	"github.com/erda-project/erda/modules/apps/dop/services/permission"
+	"github.com/erda-project/erda/internal/apps/dop/dao"
+	"github.com/erda-project/erda/internal/apps/dop/model"
+	"github.com/erda-project/erda/internal/apps/dop/services/permission"
 	"github.com/erda-project/erda/pkg/arrays"
 )
 

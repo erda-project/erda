@@ -19,7 +19,7 @@ import (
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	"github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
-	"github.com/erda-project/erda/modules/tools/pipeline/providers/definition/db"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/definition/db"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 

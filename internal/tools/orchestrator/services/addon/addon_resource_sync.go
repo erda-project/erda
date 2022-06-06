@@ -20,7 +20,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
+	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
 )
 
 func (a *Addon) SyncAddonResources() {

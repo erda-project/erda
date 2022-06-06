@@ -20,8 +20,8 @@ import (
 	"github.com/jinzhu/gorm"
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda/modules/pkg/mysql"
-	block "github.com/erda-project/erda/modules/tools/monitor/core/dataview/v1-chart-block"
+	"github.com/erda-project/erda/internal/pkg/mysql"
+	block "github.com/erda-project/erda/internal/tools/monitor/core/dataview/v1-chart-block"
 )
 
 // tables name

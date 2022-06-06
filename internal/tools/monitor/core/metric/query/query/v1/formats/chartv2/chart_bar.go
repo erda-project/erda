@@ -15,8 +15,8 @@
 package chartv2
 
 import (
-	"github.com/erda-project/erda/modules/tools/monitor/core/metric/query/chartmeta"
-	query "github.com/erda-project/erda/modules/tools/monitor/core/metric/query/query/v1"
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/chartmeta"
+	query "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/query/v1"
 )
 
 func (f *Formater) isChartBarReq(ctx *query.Context) bool {

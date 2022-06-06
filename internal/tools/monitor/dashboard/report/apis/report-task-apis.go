@@ -31,10 +31,10 @@ import (
 
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	dicestructs "github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/pkg/mysql"
-	block "github.com/erda-project/erda/modules/tools/monitor/core/dataview/v1-chart-block"
-	"github.com/erda-project/erda/modules/tools/monitor/utils"
-	"github.com/erda-project/erda/modules/tools/pipeline/providers/cron/crontypes"
+	"github.com/erda-project/erda/internal/pkg/mysql"
+	block "github.com/erda-project/erda/internal/tools/monitor/core/dataview/v1-chart-block"
+	"github.com/erda-project/erda/internal/tools/monitor/utils"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/cron/crontypes"
 	api "github.com/erda-project/erda/pkg/common/httpapi"
 	"github.com/erda-project/erda/pkg/discover"
 )

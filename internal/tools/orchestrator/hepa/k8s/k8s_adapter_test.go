@@ -25,7 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/common/util"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/util"
 	"github.com/erda-project/erda/pkg/k8s/union_interface"
 )
 

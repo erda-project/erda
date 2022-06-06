@@ -20,9 +20,9 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda-proto-go/core/hepa/runtime_service/pb"
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/common/vars"
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/gateway/dto"
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/services/runtime_service"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/vars"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/runtime_service"
 	"github.com/erda-project/erda/pkg/common/apis"
 	erdaErr "github.com/erda-project/erda/pkg/common/errors"
 )

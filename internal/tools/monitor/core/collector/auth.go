@@ -24,7 +24,7 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/monitor/oap/collector/authentication"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/authentication"
 )
 
 type Option func(authenticator *Authenticator)

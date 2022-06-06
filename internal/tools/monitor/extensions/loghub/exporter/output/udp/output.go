@@ -20,7 +20,7 @@ import (
 	"time"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/modules/tools/monitor/extensions/loghub/exporter"
+	"github.com/erda-project/erda/internal/tools/monitor/extensions/loghub/exporter"
 )
 
 type config struct {

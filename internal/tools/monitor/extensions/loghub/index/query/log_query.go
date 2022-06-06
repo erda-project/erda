@@ -26,7 +26,7 @@ import (
 	"github.com/recallsong/go-utils/encoding/jsonx"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
-	logs "github.com/erda-project/erda/modules/tools/monitor/core/log"
+	logs "github.com/erda-project/erda/internal/tools/monitor/core/log"
 )
 
 type LoghubService interface {

@@ -14,7 +14,7 @@
 
 package log_service
 
-import "github.com/erda-project/erda/modules/tools/openapi/legacy/api/apis"
+import "github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
 
 var MSP_ADDON_LOGS_FIELDS = apis.ApiSpec{
 	Path:        "/api/log-analytics/<addon>/fields",

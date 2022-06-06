@@ -23,7 +23,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-proto-go/core/monitor/event/pb"
-	"github.com/erda-project/erda/modules/tools/monitor/core/event"
+	"github.com/erda-project/erda/internal/tools/monitor/core/event"
 )
 
 // -go:generate mockgen -destination=./mock_storage.go -package query -source=../storage/storage.go Storage

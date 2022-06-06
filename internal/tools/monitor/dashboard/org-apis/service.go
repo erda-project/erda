@@ -21,7 +21,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 
-	"github.com/erda-project/erda/modules/tools/monitor/core/metric/query/metricq"
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/metricq"
 )
 
 var (

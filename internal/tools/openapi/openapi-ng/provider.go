@@ -24,7 +24,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 	"github.com/erda-project/erda-infra/providers/httpserver"
-	"github.com/erda-project/erda/modules/tools/openapi/openapi-ng/interceptors"
+	"github.com/erda-project/erda/internal/tools/openapi/openapi-ng/interceptors"
 )
 
 type (

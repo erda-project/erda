@@ -22,7 +22,7 @@ import (
 	spb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
 	"github.com/erda-project/erda-proto-go/dop/projectpipeline/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/apps/dop/providers/projectpipeline/deftype"
+	"github.com/erda-project/erda/internal/apps/dop/providers/projectpipeline/deftype"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 

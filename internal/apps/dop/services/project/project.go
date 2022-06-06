@@ -23,8 +23,8 @@ import (
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/apps/dop/dbclient"
-	"github.com/erda-project/erda/modules/apps/dop/services/namespace"
+	"github.com/erda-project/erda/internal/apps/dop/dbclient"
+	"github.com/erda-project/erda/internal/apps/dop/services/namespace"
 	"github.com/erda-project/erda/pkg/cache"
 )
 

@@ -35,7 +35,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/providers/metrics/report"
 )
 

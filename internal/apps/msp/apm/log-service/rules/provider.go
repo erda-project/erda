@@ -26,7 +26,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-infra/providers/mysql"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/apps/msp/apm/log-service/rules/db"
+	"github.com/erda-project/erda/internal/apps/msp/apm/log-service/rules/db"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 

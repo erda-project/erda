@@ -18,9 +18,9 @@ import (
 	"sync"
 
 	"github.com/erda-project/erda/bundle"
-	aoptypes2 "github.com/erda-project/erda/modules/tools/pipeline/aop/aoptypes"
-	"github.com/erda-project/erda/modules/tools/pipeline/dbclient"
-	"github.com/erda-project/erda/modules/tools/pipeline/services/reportsvc"
+	aoptypes2 "github.com/erda-project/erda/internal/tools/pipeline/aop/aoptypes"
+	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
+	"github.com/erda-project/erda/internal/tools/pipeline/services/reportsvc"
 )
 
 // tuneGroup 保存所有 tune chain

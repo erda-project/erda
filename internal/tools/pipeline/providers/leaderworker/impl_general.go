@@ -22,7 +22,7 @@ import (
 	"github.com/coreos/etcd/mvcc/mvccpb"
 	"github.com/pkg/errors"
 
-	worker2 "github.com/erda-project/erda/modules/tools/pipeline/providers/leaderworker/worker"
+	worker2 "github.com/erda-project/erda/internal/tools/pipeline/providers/leaderworker/worker"
 )
 
 func (p *provider) ListWorkers(ctx context.Context, workerTypes ...worker2.Type) ([]worker2.Worker, error) {

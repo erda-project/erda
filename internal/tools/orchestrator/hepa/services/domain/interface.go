@@ -18,11 +18,11 @@ import (
 	"context"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/common"
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/endpoint"
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/gateway/dto"
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/repository/orm"
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/repository/service"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/endpoint"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/service"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
 

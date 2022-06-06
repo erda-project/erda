@@ -18,9 +18,9 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/erda-project/erda/modules/tools/pipeline/dbclient"
-	"github.com/erda-project/erda/modules/tools/pipeline/providers/queuemanager/pkg/queue/enhancedqueue"
-	"github.com/erda-project/erda/modules/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/queuemanager/pkg/queue/enhancedqueue"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 
 	"github.com/erda-project/erda/apistructs"
 )

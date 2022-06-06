@@ -25,8 +25,8 @@ import (
 	"unsafe"
 
 	"github.com/erda-project/erda-infra/providers/cassandra"
-	logmodule "github.com/erda-project/erda/modules/tools/monitor/core/log"
-	"github.com/erda-project/erda/modules/tools/monitor/core/log/persist/v1/schema"
+	logmodule "github.com/erda-project/erda/internal/tools/monitor/core/log"
+	"github.com/erda-project/erda/internal/tools/monitor/core/log/persist/v1/schema"
 )
 
 func (p *provider) createLogStatementBuilder() cassandra.StatementBuilder {

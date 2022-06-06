@@ -21,9 +21,9 @@ import (
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	common "github.com/erda-project/erda-proto-go/core/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/pipeline/providers/cron/crontypes"
-	"github.com/erda-project/erda/modules/tools/pipeline/services/apierrors"
-	"github.com/erda-project/erda/modules/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/cron/crontypes"
+	"github.com/erda-project/erda/internal/tools/pipeline/services/apierrors"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 // Rerun commit 不变

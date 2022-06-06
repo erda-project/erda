@@ -28,11 +28,11 @@ import (
 	"github.com/erda-project/erda-proto-go/apps/gallery/pb"
 	commonPb "github.com/erda-project/erda-proto-go/common/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/apps/gallery/apierr"
-	"github.com/erda-project/erda/modules/apps/gallery/cache"
-	"github.com/erda-project/erda/modules/apps/gallery/dao"
-	"github.com/erda-project/erda/modules/apps/gallery/model"
-	"github.com/erda-project/erda/modules/apps/gallery/types"
+	"github.com/erda-project/erda/internal/apps/gallery/apierr"
+	"github.com/erda-project/erda/internal/apps/gallery/cache"
+	"github.com/erda-project/erda/internal/apps/gallery/dao"
+	"github.com/erda-project/erda/internal/apps/gallery/model"
+	"github.com/erda-project/erda/internal/apps/gallery/types"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 

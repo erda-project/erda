@@ -23,9 +23,9 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/apps/dop/bdl"
-	"github.com/erda-project/erda/modules/apps/dop/conf"
-	"github.com/erda-project/erda/modules/apps/dop/services/uc"
+	"github.com/erda-project/erda/internal/apps/dop/bdl"
+	"github.com/erda-project/erda/internal/apps/dop/conf"
+	"github.com/erda-project/erda/internal/apps/dop/services/uc"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 

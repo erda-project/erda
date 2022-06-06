@@ -18,7 +18,7 @@ import (
 	"fmt"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/apps/dop/dao"
+	"github.com/erda-project/erda/internal/apps/dop/dao"
 )
 
 // SceneBaseInfo 场景基础信息

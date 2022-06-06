@@ -23,8 +23,8 @@ import (
 	"gotest.tools/assert"
 
 	"github.com/erda-project/erda-infra/providers/clickhouse"
-	"github.com/erda-project/erda/modules/tools/monitor/core/log/storage"
-	"github.com/erda-project/erda/modules/tools/monitor/core/storekit/clickhouse/table/loader"
+	"github.com/erda-project/erda/internal/tools/monitor/core/log/storage"
+	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/clickhouse/table/loader"
 )
 
 func Test_Aggregate(t *testing.T) {

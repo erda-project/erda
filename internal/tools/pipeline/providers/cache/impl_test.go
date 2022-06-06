@@ -20,8 +20,8 @@ import (
 
 	"bou.ke/monkey"
 
-	"github.com/erda-project/erda/modules/tools/pipeline/dbclient"
-	spec2 "github.com/erda-project/erda/modules/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
+	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 

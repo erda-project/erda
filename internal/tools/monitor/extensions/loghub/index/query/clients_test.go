@@ -24,8 +24,8 @@ import (
 	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/apps/msp/instance/db"
-	db2 "github.com/erda-project/erda/modules/tools/monitor/extensions/loghub/index/query/db"
+	"github.com/erda-project/erda/internal/apps/msp/instance/db"
+	db2 "github.com/erda-project/erda/internal/tools/monitor/extensions/loghub/index/query/db"
 )
 
 func TestNewESClient(t *testing.T) {

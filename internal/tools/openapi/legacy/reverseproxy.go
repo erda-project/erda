@@ -31,15 +31,15 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/tools/openapi/legacy/api"
-	apispec "github.com/erda-project/erda/modules/tools/openapi/legacy/api/spec"
-	"github.com/erda-project/erda/modules/tools/openapi/legacy/auth"
-	"github.com/erda-project/erda/modules/tools/openapi/legacy/hooks"
-	"github.com/erda-project/erda/modules/tools/openapi/legacy/hooks/posthandle"
-	"github.com/erda-project/erda/modules/tools/openapi/legacy/monitor"
-	"github.com/erda-project/erda/modules/tools/openapi/legacy/proxy"
-	phttp "github.com/erda-project/erda/modules/tools/openapi/legacy/proxy/http"
-	"github.com/erda-project/erda/modules/tools/openapi/legacy/proxy/ws"
+	"github.com/erda-project/erda/internal/tools/openapi/legacy/api"
+	apispec "github.com/erda-project/erda/internal/tools/openapi/legacy/api/spec"
+	"github.com/erda-project/erda/internal/tools/openapi/legacy/auth"
+	"github.com/erda-project/erda/internal/tools/openapi/legacy/hooks"
+	"github.com/erda-project/erda/internal/tools/openapi/legacy/hooks/posthandle"
+	"github.com/erda-project/erda/internal/tools/openapi/legacy/monitor"
+	"github.com/erda-project/erda/internal/tools/openapi/legacy/proxy"
+	phttp "github.com/erda-project/erda/internal/tools/openapi/legacy/proxy/http"
+	"github.com/erda-project/erda/internal/tools/openapi/legacy/proxy/ws"
 )
 
 type ReverseProxyWithAuth struct {

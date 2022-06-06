@@ -24,8 +24,8 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/pkg/bundle-ex/cmdb"
-	"github.com/erda-project/erda/modules/tools/monitor/core/metric/query/metricq"
+	"github.com/erda-project/erda/internal/pkg/bundle-ex/cmdb"
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/metricq"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 

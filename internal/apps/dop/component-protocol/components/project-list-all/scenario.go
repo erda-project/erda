@@ -15,12 +15,12 @@
 package project_list_all
 
 import (
-	_ "github.com/erda-project/erda/modules/apps/dop/component-protocol/components/project-list-all/components/alert"
-	_ "github.com/erda-project/erda/modules/apps/dop/component-protocol/components/project-list-all/components/bannerImage"
-	_ "github.com/erda-project/erda/modules/apps/dop/component-protocol/components/project-list-all/components/browsePublicProjects"
-	_ "github.com/erda-project/erda/modules/apps/dop/component-protocol/components/project-list-all/components/createProject"
-	_ "github.com/erda-project/erda/modules/apps/dop/component-protocol/components/project-list-all/components/emptyText"
-	_ "github.com/erda-project/erda/modules/apps/dop/component-protocol/components/project-list-all/components/filter"
-	_ "github.com/erda-project/erda/modules/apps/dop/component-protocol/components/project-list-all/components/list"
-	_ "github.com/erda-project/erda/modules/apps/dop/component-protocol/components/project-list-all/components/tabs"
+	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/project-list-all/components/alert"
+	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/project-list-all/components/bannerImage"
+	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/project-list-all/components/browsePublicProjects"
+	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/project-list-all/components/createProject"
+	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/project-list-all/components/emptyText"
+	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/project-list-all/components/filter"
+	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/project-list-all/components/list"
+	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/project-list-all/components/tabs"
 )

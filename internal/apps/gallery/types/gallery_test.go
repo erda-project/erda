@@ -17,7 +17,7 @@ package types_test
 import (
 	"testing"
 
-	"github.com/erda-project/erda/modules/apps/gallery/types"
+	"github.com/erda-project/erda/internal/apps/gallery/types"
 )
 
 func TestOpusType_String(t *testing.T) {

@@ -22,8 +22,8 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/tools/pipeline/dbclient"
-	"github.com/erda-project/erda/modules/tools/pipeline/providers/actionmgr"
+	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/actionmgr"
 )
 
 type config struct {

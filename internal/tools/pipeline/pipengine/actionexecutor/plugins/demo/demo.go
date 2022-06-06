@@ -21,8 +21,8 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/pipeline/pipengine/actionexecutor/types"
-	"github.com/erda-project/erda/modules/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/pipengine/actionexecutor/types"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 const (

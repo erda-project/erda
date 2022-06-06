@@ -23,7 +23,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	manager2 "github.com/erda-project/erda/modules/tools/pipeline/providers/queuemanager/manager"
+	manager2 "github.com/erda-project/erda/internal/tools/pipeline/providers/queuemanager/manager"
 )
 
 const logPrefixContinueBackupQueueUsage = "[queue usage backup]"

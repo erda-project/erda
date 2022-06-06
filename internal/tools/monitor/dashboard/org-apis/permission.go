@@ -28,7 +28,7 @@ import (
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
-	"github.com/erda-project/erda/modules/tools/monitor/common/permission"
+	"github.com/erda-project/erda/internal/tools/monitor/common/permission"
 	api "github.com/erda-project/erda/pkg/common/httpapi"
 	"github.com/erda-project/erda/pkg/http/httputil"
 )

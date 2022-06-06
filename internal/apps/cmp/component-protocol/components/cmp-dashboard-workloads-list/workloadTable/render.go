@@ -39,12 +39,12 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/bundle/apierrors"
-	"github.com/erda-project/erda/modules/apps/cmp"
-	"github.com/erda-project/erda/modules/apps/cmp/component-protocol/components/cmp-dashboard-workloads-list/filter"
-	cmpcputil "github.com/erda-project/erda/modules/apps/cmp/component-protocol/cputil"
-	cmpTypes "github.com/erda-project/erda/modules/apps/cmp/component-protocol/types"
-	"github.com/erda-project/erda/modules/apps/cmp/steve"
-	"github.com/erda-project/erda/modules/apps/cmp/steve/middleware"
+	"github.com/erda-project/erda/internal/apps/cmp"
+	"github.com/erda-project/erda/internal/apps/cmp/component-protocol/components/cmp-dashboard-workloads-list/filter"
+	cmpcputil "github.com/erda-project/erda/internal/apps/cmp/component-protocol/cputil"
+	cmpTypes "github.com/erda-project/erda/internal/apps/cmp/component-protocol/types"
+	"github.com/erda-project/erda/internal/apps/cmp/steve"
+	"github.com/erda-project/erda/internal/apps/cmp/steve/middleware"
 )
 
 func init() {

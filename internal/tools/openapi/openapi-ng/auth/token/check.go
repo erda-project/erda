@@ -18,8 +18,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/erda-project/erda/modules/tools/openapi/legacy/auth"
-	openapiauth "github.com/erda-project/erda/modules/tools/openapi/openapi-ng/auth"
+	"github.com/erda-project/erda/internal/tools/openapi/legacy/auth"
+	openapiauth "github.com/erda-project/erda/internal/tools/openapi/openapi-ng/auth"
 )
 
 func (p *provider) Weight() int64 { return p.Cfg.Weight }

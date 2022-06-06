@@ -17,7 +17,7 @@ package dao
 import (
 	"github.com/jinzhu/gorm"
 
-	"github.com/erda-project/erda/modules/core/legacy/model"
+	"github.com/erda-project/erda/internal/core/legacy/model"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 

@@ -25,7 +25,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/apps/dop/dicehub/dbclient"
+	"github.com/erda-project/erda/internal/apps/dop/dicehub/dbclient"
 )
 
 func TestUnmarshalApplicationReleaseList(t *testing.T) {

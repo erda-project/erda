@@ -15,7 +15,7 @@
 package model
 
 import (
-	"github.com/erda-project/erda/modules/tools/monitor/oap/collector/core/model/odata"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model/odata"
 )
 
 type ObservableDataConsumerFunc func(data odata.ObservableData)

@@ -16,7 +16,7 @@ package dto
 
 import (
 	"github.com/erda-project/erda-proto-go/core/hepa/openapi_consumer/pb"
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/repository/orm"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
 )
 
 type EndPoint struct {

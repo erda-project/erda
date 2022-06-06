@@ -19,8 +19,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/erda-project/erda/modules/tools/gittar/conf"
-	"github.com/erda-project/erda/modules/tools/gittar/webcontext"
+	"github.com/erda-project/erda/internal/tools/gittar/conf"
+	"github.com/erda-project/erda/internal/tools/gittar/webcontext"
 )
 
 func GetGoImportMeta(ctx *webcontext.Context) {

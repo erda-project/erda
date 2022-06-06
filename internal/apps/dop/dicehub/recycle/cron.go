@@ -22,7 +22,7 @@ import (
 	v3 "github.com/coreos/etcd/clientv3"
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda/modules/apps/dop/dicehub/service/release"
+	"github.com/erda-project/erda/internal/apps/dop/dicehub/service/release"
 )
 
 // ImageGCCron 每天00:00:00执行一次, Release回收入口

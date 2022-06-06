@@ -20,7 +20,7 @@ import (
 	"strings"
 
 	"github.com/erda-project/erda/apistructs"
-	protocol "github.com/erda-project/erda/modules/tools/openapi/legacy/component-protocol"
+	protocol "github.com/erda-project/erda/internal/tools/openapi/legacy/component-protocol"
 )
 
 type ComponentViewGroup struct {

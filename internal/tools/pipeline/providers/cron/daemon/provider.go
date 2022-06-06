@@ -27,10 +27,10 @@ import (
 	"github.com/erda-project/erda-infra/providers/etcd"
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/tools/pipeline/providers/build"
-	db2 "github.com/erda-project/erda/modules/tools/pipeline/providers/cron/db"
-	"github.com/erda-project/erda/modules/tools/pipeline/providers/edgepipeline_register"
-	"github.com/erda-project/erda/modules/tools/pipeline/providers/leaderworker"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/build"
+	db2 "github.com/erda-project/erda/internal/tools/pipeline/providers/cron/db"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/edgepipeline_register"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/leaderworker"
 	"github.com/erda-project/erda/pkg/cron"
 )
 

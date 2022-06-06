@@ -18,7 +18,7 @@ import (
 	"context"
 
 	"github.com/erda-project/erda-proto-go/oap/entity/pb"
-	"github.com/erda-project/erda/modules/tools/monitor/core/storekit"
+	"github.com/erda-project/erda/internal/tools/monitor/core/storekit"
 )
 
 type (

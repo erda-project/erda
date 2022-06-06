@@ -19,8 +19,8 @@ import (
 	"io/ioutil"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/openapi/legacy/api/apis"
-	"github.com/erda-project/erda/modules/tools/openapi/legacy/api/spec"
+	"github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
+	"github.com/erda-project/erda/internal/tools/openapi/legacy/api/spec"
 )
 
 var MONITOR_ORG_LOGS_RULES_CREATE = apis.ApiSpec{

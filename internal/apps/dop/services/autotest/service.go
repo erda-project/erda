@@ -17,7 +17,7 @@ package autotest
 import (
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/apps/dop/dao"
+	"github.com/erda-project/erda/internal/apps/dop/dao"
 )
 
 // Service autotest 实例对象封装

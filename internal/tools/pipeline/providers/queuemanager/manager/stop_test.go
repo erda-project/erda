@@ -18,7 +18,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/erda-project/erda/modules/tools/pipeline/providers/queuemanager/types"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/queuemanager/types"
 )
 
 func Test_defaultManager_Stop(t *testing.T) {

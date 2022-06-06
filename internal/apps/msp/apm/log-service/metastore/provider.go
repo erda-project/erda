@@ -21,7 +21,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/modules/apps/msp/instance/db"
+	"github.com/erda-project/erda/internal/apps/msp/instance/db"
 )
 
 type config struct {

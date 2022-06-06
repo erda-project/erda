@@ -21,7 +21,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/erda-project/erda/modules/tools/monitor/core/alert/alert-apis/db"
+	"github.com/erda-project/erda/internal/tools/monitor/core/alert/alert-apis/db"
 	"github.com/erda-project/erda/pkg/database/gormutil"
 )
 

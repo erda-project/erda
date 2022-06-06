@@ -24,7 +24,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/events/eventtypes"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/events/eventtypes"
 	"github.com/erda-project/erda/pkg/jsonstore/storetypes"
 )
 

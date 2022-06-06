@@ -26,8 +26,8 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	aliyun_resources "github.com/erda-project/erda/modules/apps/cmp/impl/aliyun-resources"
-	"github.com/erda-project/erda/modules/apps/cmp/impl/aliyun-resources/ecs"
+	aliyun_resources "github.com/erda-project/erda/internal/apps/cmp/impl/aliyun-resources"
+	"github.com/erda-project/erda/internal/apps/cmp/impl/aliyun-resources/ecs"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 

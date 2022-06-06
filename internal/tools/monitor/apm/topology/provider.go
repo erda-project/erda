@@ -24,8 +24,8 @@ import (
 	"github.com/erda-project/erda-infra/providers/httpserver/interceptors"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-infra/providers/mysql"
-	"github.com/erda-project/erda/modules/tools/monitor/common/db"
-	"github.com/erda-project/erda/modules/tools/monitor/core/metric/query/metricq"
+	"github.com/erda-project/erda/internal/tools/monitor/common/db"
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/metricq"
 )
 
 type provider struct {

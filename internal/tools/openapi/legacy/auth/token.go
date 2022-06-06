@@ -25,8 +25,8 @@ import (
 
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/openapi/legacy/api/spec"
-	"github.com/erda-project/erda/modules/tools/openapi/legacy/conf"
+	"github.com/erda-project/erda/internal/tools/openapi/legacy/api/spec"
+	"github.com/erda-project/erda/internal/tools/openapi/legacy/conf"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/oauth2"

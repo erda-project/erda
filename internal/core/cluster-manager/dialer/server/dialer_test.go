@@ -31,10 +31,10 @@ import (
 	"github.com/sirupsen/logrus"
 
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
-	"github.com/erda-project/erda/modules/core/cluster-manager/conf"
-	"github.com/erda-project/erda/modules/core/cluster-manager/dialer/auth"
-	clusteragent "github.com/erda-project/erda/modules/tools/cluster-agent/client"
-	clientconfig "github.com/erda-project/erda/modules/tools/cluster-agent/config"
+	"github.com/erda-project/erda/internal/core/cluster-manager/conf"
+	"github.com/erda-project/erda/internal/core/cluster-manager/dialer/auth"
+	clusteragent "github.com/erda-project/erda/internal/tools/cluster-agent/client"
+	clientconfig "github.com/erda-project/erda/internal/tools/cluster-agent/config"
 	"github.com/erda-project/erda/pkg/clusterdialer"
 	"github.com/erda-project/erda/pkg/discover"
 )

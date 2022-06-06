@@ -15,5 +15,5 @@
 package resources_container_monitor
 
 import (
-	_ "github.com/erda-project/erda/modules/apps/msp/apm/service/components/resources-container-monitor/container"
+	_ "github.com/erda-project/erda/internal/apps/msp/apm/service/components/resources-container-monitor/container"
 )

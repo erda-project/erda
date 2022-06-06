@@ -27,11 +27,11 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/core/legacy/conf"
-	"github.com/erda-project/erda/modules/core/legacy/dao"
-	"github.com/erda-project/erda/modules/core/legacy/model"
-	"github.com/erda-project/erda/modules/core/legacy/services/member"
-	"github.com/erda-project/erda/modules/core/legacy/utils"
+	"github.com/erda-project/erda/internal/core/legacy/conf"
+	"github.com/erda-project/erda/internal/core/legacy/dao"
+	"github.com/erda-project/erda/internal/core/legacy/model"
+	"github.com/erda-project/erda/internal/core/legacy/services/member"
+	"github.com/erda-project/erda/internal/core/legacy/utils"
 	"github.com/erda-project/erda/pkg/strutil"
 	"github.com/erda-project/erda/pkg/ucauth"
 )

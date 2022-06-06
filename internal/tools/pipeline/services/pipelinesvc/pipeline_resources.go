@@ -16,8 +16,8 @@ package pipelinesvc
 
 import (
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/pipeline/pkg/action_info"
-	"github.com/erda-project/erda/modules/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/pkg/action_info"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/numeral"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )

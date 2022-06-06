@@ -22,7 +22,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda/modules/tools/openapi/legacy/api"
+	"github.com/erda-project/erda/internal/tools/openapi/legacy/api"
 	util "github.com/erda-project/erda/pkg/http/httputil"
 )
 

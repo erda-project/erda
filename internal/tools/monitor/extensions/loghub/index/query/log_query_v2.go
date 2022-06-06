@@ -22,7 +22,7 @@ import (
 
 	"github.com/olivere/elastic"
 
-	logs "github.com/erda-project/erda/modules/tools/monitor/core/log"
+	logs "github.com/erda-project/erda/internal/tools/monitor/core/log"
 )
 
 func (c *ESClient) getBoolQueryV2(req *LogRequest) *elastic.BoolQuery {

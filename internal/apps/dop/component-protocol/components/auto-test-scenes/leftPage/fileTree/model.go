@@ -17,7 +17,7 @@ package fileTree
 import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/apps/dop/component-protocol/components/auto-test-scenes/common/gshelper"
+	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/auto-test-scenes/common/gshelper"
 )
 
 type ComponentFileTree struct {

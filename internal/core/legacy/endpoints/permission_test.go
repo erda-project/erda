@@ -21,9 +21,9 @@ import (
 	"bou.ke/monkey"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/core/legacy/model"
-	"github.com/erda-project/erda/modules/core/legacy/services/application"
-	"github.com/erda-project/erda/modules/core/legacy/services/project"
+	"github.com/erda-project/erda/internal/core/legacy/model"
+	"github.com/erda-project/erda/internal/core/legacy/services/application"
+	"github.com/erda-project/erda/internal/core/legacy/services/project"
 )
 
 func TestEndpoints_buildScopeInfo(t *testing.T) {

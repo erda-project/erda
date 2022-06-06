@@ -15,16 +15,16 @@
 package cmp_dashboard_nodeDetail
 
 import (
-	_ "github.com/erda-project/erda/modules/apps/cmp/component-protocol/components/cmp-dashboard-nodeDetail/addLabelModal"
-	_ "github.com/erda-project/erda/modules/apps/cmp/component-protocol/components/cmp-dashboard-nodeDetail/header"
-	_ "github.com/erda-project/erda/modules/apps/cmp/component-protocol/components/cmp-dashboard-nodeDetail/infoDetail"
-	_ "github.com/erda-project/erda/modules/apps/cmp/component-protocol/components/cmp-dashboard-nodeDetail/infoMapTable"
-	_ "github.com/erda-project/erda/modules/apps/cmp/component-protocol/components/cmp-dashboard-nodeDetail/infoTitle"
-	_ "github.com/erda-project/erda/modules/apps/cmp/component-protocol/components/cmp-dashboard-nodeDetail/nodeStatus"
-	_ "github.com/erda-project/erda/modules/apps/cmp/component-protocol/components/cmp-dashboard-nodeDetail/nodeTitle"
-	_ "github.com/erda-project/erda/modules/apps/cmp/component-protocol/components/cmp-dashboard-nodeDetail/operationButton"
-	_ "github.com/erda-project/erda/modules/apps/cmp/component-protocol/components/cmp-dashboard-nodeDetail/statusBadge"
-	_ "github.com/erda-project/erda/modules/apps/cmp/component-protocol/components/cmp-dashboard-nodeDetail/statusTitle"
-	_ "github.com/erda-project/erda/modules/apps/cmp/component-protocol/components/cmp-dashboard-nodeDetail/yamlDrawer"
-	_ "github.com/erda-project/erda/modules/apps/cmp/component-protocol/components/cmp-dashboard-nodeDetail/yamlFileEditor"
+	_ "github.com/erda-project/erda/internal/apps/cmp/component-protocol/components/cmp-dashboard-nodeDetail/addLabelModal"
+	_ "github.com/erda-project/erda/internal/apps/cmp/component-protocol/components/cmp-dashboard-nodeDetail/header"
+	_ "github.com/erda-project/erda/internal/apps/cmp/component-protocol/components/cmp-dashboard-nodeDetail/infoDetail"
+	_ "github.com/erda-project/erda/internal/apps/cmp/component-protocol/components/cmp-dashboard-nodeDetail/infoMapTable"
+	_ "github.com/erda-project/erda/internal/apps/cmp/component-protocol/components/cmp-dashboard-nodeDetail/infoTitle"
+	_ "github.com/erda-project/erda/internal/apps/cmp/component-protocol/components/cmp-dashboard-nodeDetail/nodeStatus"
+	_ "github.com/erda-project/erda/internal/apps/cmp/component-protocol/components/cmp-dashboard-nodeDetail/nodeTitle"
+	_ "github.com/erda-project/erda/internal/apps/cmp/component-protocol/components/cmp-dashboard-nodeDetail/operationButton"
+	_ "github.com/erda-project/erda/internal/apps/cmp/component-protocol/components/cmp-dashboard-nodeDetail/statusBadge"
+	_ "github.com/erda-project/erda/internal/apps/cmp/component-protocol/components/cmp-dashboard-nodeDetail/statusTitle"
+	_ "github.com/erda-project/erda/internal/apps/cmp/component-protocol/components/cmp-dashboard-nodeDetail/yamlDrawer"
+	_ "github.com/erda-project/erda/internal/apps/cmp/component-protocol/components/cmp-dashboard-nodeDetail/yamlFileEditor"
 )

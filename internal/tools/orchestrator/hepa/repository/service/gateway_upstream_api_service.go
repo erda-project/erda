@@ -19,9 +19,9 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/xormplus/xorm"
 
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/common"
-	. "github.com/erda-project/erda/modules/tools/orchestrator/hepa/common/vars"
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/repository/orm"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common"
+	. "github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/vars"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
 )
 
 type GatewayUpstreamApiServiceImpl struct {

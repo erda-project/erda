@@ -16,8 +16,8 @@ package errorbox
 
 import (
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/core/legacy/dao"
-	"github.com/erda-project/erda/modules/core/legacy/model"
+	"github.com/erda-project/erda/internal/core/legacy/dao"
+	"github.com/erda-project/erda/internal/core/legacy/model"
 )
 
 // ErrorBox 错误日志操作封装

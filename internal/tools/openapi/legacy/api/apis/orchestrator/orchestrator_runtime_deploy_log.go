@@ -14,7 +14,7 @@
 
 package orchestrator
 
-import "github.com/erda-project/erda/modules/tools/openapi/legacy/api/apis"
+import "github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
 
 var ORCHESTRATOR_RUNTIME_DEPLOY_LOG = apis.ApiSpec{
 	Path:        "/api/runtimes/deploy/logs",

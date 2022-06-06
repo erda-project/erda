@@ -36,8 +36,8 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/bundle/apierrors"
-	"github.com/erda-project/erda/modules/apps/cmp"
-	"github.com/erda-project/erda/modules/apps/cmp/cache"
+	"github.com/erda-project/erda/internal/apps/cmp"
+	"github.com/erda-project/erda/internal/apps/cmp/cache"
 	"github.com/erda-project/erda/pkg/k8sclient"
 	"github.com/erda-project/erda/pkg/k8sclient/scheme"
 )

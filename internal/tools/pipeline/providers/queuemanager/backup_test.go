@@ -23,7 +23,7 @@ import (
 
 	"bou.ke/monkey"
 
-	"github.com/erda-project/erda/modules/tools/pipeline/providers/queuemanager/manager"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/queuemanager/manager"
 	"github.com/erda-project/erda/pkg/jsonstore/etcd"
 )
 

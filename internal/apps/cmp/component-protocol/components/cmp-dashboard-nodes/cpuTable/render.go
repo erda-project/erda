@@ -21,11 +21,11 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/erda-project/erda/modules/apps/cmp"
-	"github.com/erda-project/erda/modules/apps/cmp/cache"
-	"github.com/erda-project/erda/modules/apps/cmp/component-protocol/components/cmp-dashboard-nodes/common"
-	"github.com/erda-project/erda/modules/apps/cmp/component-protocol/components/cmp-dashboard-nodes/common/table"
-	"github.com/erda-project/erda/modules/apps/cmp/metrics"
+	"github.com/erda-project/erda/internal/apps/cmp"
+	"github.com/erda-project/erda/internal/apps/cmp/cache"
+	"github.com/erda-project/erda/internal/apps/cmp/component-protocol/components/cmp-dashboard-nodes/common"
+	"github.com/erda-project/erda/internal/apps/cmp/component-protocol/components/cmp-dashboard-nodes/common/table"
+	"github.com/erda-project/erda/internal/apps/cmp/metrics"
 )
 
 func (ct *CpuInfoTable) Init(sdk *cptype.SDK) {

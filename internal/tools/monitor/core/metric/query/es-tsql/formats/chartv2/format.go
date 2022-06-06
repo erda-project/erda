@@ -15,8 +15,8 @@
 package chartv2
 
 import (
-	tsql "github.com/erda-project/erda/modules/tools/monitor/core/metric/query/es-tsql"
-	"github.com/erda-project/erda/modules/tools/monitor/core/metric/query/es-tsql/formats"
+	tsql "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql"
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql/formats"
 )
 
 // Formater .

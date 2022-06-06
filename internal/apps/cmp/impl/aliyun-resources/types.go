@@ -18,7 +18,7 @@ import (
 	"fmt"
 
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/apps/cmp/dbclient"
+	"github.com/erda-project/erda/internal/apps/cmp/dbclient"
 	"github.com/erda-project/erda/pkg/jsonstore"
 )
 

@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"time"
 
-	worker2 "github.com/erda-project/erda/modules/tools/pipeline/providers/leaderworker/worker"
+	worker2 "github.com/erda-project/erda/internal/tools/pipeline/providers/leaderworker/worker"
 )
 
 func (p *provider) OnLeader(h func(ctx context.Context)) {

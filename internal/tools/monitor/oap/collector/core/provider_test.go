@@ -18,7 +18,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/erda-project/erda/modules/tools/monitor/oap/collector/core/model"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model"
 )
 
 func Test_extractFilterConfig(t *testing.T) {

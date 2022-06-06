@@ -20,15 +20,15 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/tools/pipeline/aop/aoptypes"
-	"github.com/erda-project/erda/modules/tools/pipeline/commonutil/costtimeutil"
-	"github.com/erda-project/erda/modules/tools/pipeline/dbclient"
-	"github.com/erda-project/erda/modules/tools/pipeline/pipengine/actionexecutor/types"
-	"github.com/erda-project/erda/modules/tools/pipeline/providers/actionmgr"
-	"github.com/erda-project/erda/modules/tools/pipeline/providers/clusterinfo"
-	"github.com/erda-project/erda/modules/tools/pipeline/providers/edgepipeline_register"
-	"github.com/erda-project/erda/modules/tools/pipeline/services/actionagentsvc"
-	spec2 "github.com/erda-project/erda/modules/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/aop/aoptypes"
+	"github.com/erda-project/erda/internal/tools/pipeline/commonutil/costtimeutil"
+	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
+	"github.com/erda-project/erda/internal/tools/pipeline/pipengine/actionexecutor/types"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/actionmgr"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/clusterinfo"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/edgepipeline_register"
+	"github.com/erda-project/erda/internal/tools/pipeline/services/actionagentsvc"
+	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 // TaskRun represents task runtime.

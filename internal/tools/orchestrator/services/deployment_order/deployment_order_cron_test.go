@@ -25,7 +25,7 @@ import (
 
 	releasepb "github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
+	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
 )
 
 func TestInspectDeploymentStatusDetail(t *testing.T) {

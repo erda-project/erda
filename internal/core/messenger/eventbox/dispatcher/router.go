@@ -19,9 +19,9 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda/modules/core/messenger/eventbox/dispatcher/errors"
-	"github.com/erda-project/erda/modules/core/messenger/eventbox/dispatcher/filters"
-	"github.com/erda-project/erda/modules/core/messenger/eventbox/types"
+	"github.com/erda-project/erda/internal/core/messenger/eventbox/dispatcher/errors"
+	"github.com/erda-project/erda/internal/core/messenger/eventbox/dispatcher/filters"
+	"github.com/erda-project/erda/internal/core/messenger/eventbox/types"
 )
 
 // dispatcher 内部处理 message 的相关逻辑

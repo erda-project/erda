@@ -23,8 +23,8 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/apps/dop/dicehub/registry"
-	"github.com/erda-project/erda/modules/pkg/colonyutil"
+	"github.com/erda-project/erda/internal/apps/dop/dicehub/registry"
+	"github.com/erda-project/erda/internal/pkg/colonyutil"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/http/httpserver"

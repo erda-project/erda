@@ -21,7 +21,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
-	"github.com/erda-project/erda/modules/tools/monitor/core/metric/query/query"
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/query"
 )
 
 func convertOptions(start, end string, options map[string]string) url.Values {

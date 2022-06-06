@@ -18,7 +18,7 @@ import (
 	"sync"
 	"time"
 
-	priorityqueue2 "github.com/erda-project/erda/modules/tools/pipeline/providers/queuemanager/pkg/queue/priorityqueue"
+	priorityqueue2 "github.com/erda-project/erda/internal/tools/pipeline/providers/queuemanager/pkg/queue/priorityqueue"
 )
 
 // EnhancedQueue 在优先队列基础上进行了封装，功能增强

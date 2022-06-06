@@ -19,7 +19,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/modules/tools/monitor/oap/collector/authentication"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/authentication"
 )
 
 var InterceptorType = reflect.TypeOf((*Interceptors)(nil)).Elem()

@@ -20,7 +20,7 @@ import (
 	"strconv"
 
 	monitorpb "github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
-	"github.com/erda-project/erda/modules/apps/msp/apm/alert/components/msp-alert-event-detail/common"
+	"github.com/erda-project/erda/internal/apps/msp/apm/alert/components/msp-alert-event-detail/common"
 )
 
 func (cp *ComponentPauseModalFormInfo) GetAlertEvent(ctx context.Context) (*monitorpb.AlertEventItem, error) {

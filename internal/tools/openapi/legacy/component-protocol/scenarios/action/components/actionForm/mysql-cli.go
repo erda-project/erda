@@ -22,7 +22,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/i18n"
 
-	protocol "github.com/erda-project/erda/modules/tools/openapi/legacy/component-protocol"
+	protocol "github.com/erda-project/erda/internal/tools/openapi/legacy/component-protocol"
 )
 
 func mysqlCliRender(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, globalStateData *apistructs.GlobalStateData) (err error) {

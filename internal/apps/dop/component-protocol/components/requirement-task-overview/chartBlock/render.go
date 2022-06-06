@@ -16,7 +16,7 @@ package chartBlock
 
 import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
-	"github.com/erda-project/erda/modules/apps/dop/component-protocol/components/requirement-task-overview/common"
+	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/requirement-task-overview/common"
 )
 
 func init() {

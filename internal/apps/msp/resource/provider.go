@@ -22,8 +22,8 @@ import (
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/elasticsearch"
 	"github.com/erda-project/erda-proto-go/msp/resource/pb"
-	monitordb "github.com/erda-project/erda/modules/apps/msp/instance/db/monitor"
-	"github.com/erda-project/erda/modules/apps/msp/resource/deploy/coordinator"
+	monitordb "github.com/erda-project/erda/internal/apps/msp/instance/db/monitor"
+	"github.com/erda-project/erda/internal/apps/msp/resource/deploy/coordinator"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 

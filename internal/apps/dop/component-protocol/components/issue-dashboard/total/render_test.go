@@ -18,8 +18,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/erda-project/erda/modules/apps/dop/component-protocol/components/issue-dashboard/common"
-	"github.com/erda-project/erda/modules/apps/dop/dao"
+	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/issue-dashboard/common"
+	"github.com/erda-project/erda/internal/apps/dop/dao"
 )
 
 // ExpireTypeUndefined      ExpireType = "Undefined"

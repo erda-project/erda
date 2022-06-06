@@ -23,11 +23,11 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
-	"github.com/erda-project/erda/modules/tools/monitor/core/metric/query/chartmeta"
-	"github.com/erda-project/erda/modules/tools/monitor/core/metric/query/metricmeta"
-	"github.com/erda-project/erda/modules/tools/monitor/core/metric/query/query"
-	queryv1 "github.com/erda-project/erda/modules/tools/monitor/core/metric/query/query/v1"
-	indexloader "github.com/erda-project/erda/modules/tools/monitor/core/storekit/elasticsearch/index/loader"
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/chartmeta"
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/metricmeta"
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/query"
+	queryv1 "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/query/v1"
+	indexloader "github.com/erda-project/erda/internal/tools/monitor/core/storekit/elasticsearch/index/loader"
 )
 
 // InfluxQL tsql

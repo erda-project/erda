@@ -29,9 +29,9 @@ import (
 
 	dwfpb "github.com/erda-project/erda-proto-go/dop/devflowrule/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/apps/dop/conf"
-	"github.com/erda-project/erda/modules/apps/dop/services/apierrors"
-	"github.com/erda-project/erda/modules/pkg/user"
+	"github.com/erda-project/erda/internal/apps/dop/conf"
+	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
+	"github.com/erda-project/erda/internal/pkg/user"
 	"github.com/erda-project/erda/pkg/cron"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"

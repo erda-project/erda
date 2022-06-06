@@ -21,7 +21,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/instanceinfo"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/instanceinfo"
 )
 
 // updateStatelessServiceDeploymentService Update stateless-service type deployment to db

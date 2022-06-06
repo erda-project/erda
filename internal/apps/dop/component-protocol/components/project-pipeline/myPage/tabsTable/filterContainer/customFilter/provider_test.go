@@ -18,7 +18,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/erda-project/erda/modules/apps/dop/component-protocol/components/project-pipeline/common"
+	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/project-pipeline/common"
 )
 
 func TestCustomFilter_MakeDefaultAppSelect(t *testing.T) {

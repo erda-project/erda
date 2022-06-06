@@ -21,10 +21,10 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/pipeline/events"
-	"github.com/erda-project/erda/modules/tools/pipeline/providers/queuemanager/queue"
-	"github.com/erda-project/erda/modules/tools/pipeline/providers/reconciler/rlog"
-	"github.com/erda-project/erda/modules/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/events"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/queuemanager/queue"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/reconciler/rlog"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/loop"
 )
 

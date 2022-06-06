@@ -22,8 +22,8 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/apps/cmp/cmp_interface"
-	"github.com/erda-project/erda/modules/apps/cmp/dbclient"
+	"github.com/erda-project/erda/internal/apps/cmp/cmp_interface"
+	"github.com/erda-project/erda/internal/apps/cmp/dbclient"
 )
 
 const Lang = "Lang"

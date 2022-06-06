@@ -34,7 +34,7 @@ import (
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/strutil"
 
-	"github.com/erda-project/erda/modules/apps/cmp/dbclient"
+	"github.com/erda-project/erda/internal/apps/cmp/dbclient"
 )
 
 type Nodes struct {

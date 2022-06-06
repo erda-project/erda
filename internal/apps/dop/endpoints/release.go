@@ -28,9 +28,9 @@ import (
 	definitionpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
 	sourcepb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/apps/dop/services/apierrors"
-	"github.com/erda-project/erda/modules/apps/dop/services/pipeline"
-	"github.com/erda-project/erda/modules/pkg/diceworkspace"
+	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
+	"github.com/erda-project/erda/internal/apps/dop/services/pipeline"
+	"github.com/erda-project/erda/internal/pkg/diceworkspace"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )

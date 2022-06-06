@@ -26,9 +26,9 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/orchestrator/conf"
-	"github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
-	"github.com/erda-project/erda/modules/tools/orchestrator/i18n"
+	"github.com/erda-project/erda/internal/tools/orchestrator/conf"
+	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
+	"github.com/erda-project/erda/internal/tools/orchestrator/i18n"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/mysqlhelper"
 	"github.com/erda-project/erda/pkg/parser/diceyml"

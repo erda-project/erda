@@ -14,7 +14,7 @@
 
 package filetree
 
-import "github.com/erda-project/erda/modules/tools/openapi/legacy/api/apis"
+import "github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
 
 var CMDB_PROJECT_FILETREE_FUZZY_SEARCH = apis.ApiSpec{
 	Path:        "/api/project-pipeline/filetree/actions/fuzzy-search",

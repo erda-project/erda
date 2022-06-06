@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda-proto-go/core/pipeline/lifecycle_hook_client/pb"
-	"github.com/erda-project/erda/modules/tools/pipeline/dbclient"
+	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
 )
 
 func Test_loadLifecycleHookClient(t *testing.T) {

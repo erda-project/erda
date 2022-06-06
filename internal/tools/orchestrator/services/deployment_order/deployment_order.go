@@ -21,11 +21,11 @@ import (
 	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
-	"github.com/erda-project/erda/modules/tools/orchestrator/queue"
-	"github.com/erda-project/erda/modules/tools/orchestrator/services/deployment"
-	"github.com/erda-project/erda/modules/tools/orchestrator/services/environment"
-	"github.com/erda-project/erda/modules/tools/orchestrator/services/runtime"
+	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
+	"github.com/erda-project/erda/internal/tools/orchestrator/queue"
+	"github.com/erda-project/erda/internal/tools/orchestrator/services/deployment"
+	"github.com/erda-project/erda/internal/tools/orchestrator/services/environment"
+	"github.com/erda-project/erda/internal/tools/orchestrator/services/runtime"
 )
 
 const (

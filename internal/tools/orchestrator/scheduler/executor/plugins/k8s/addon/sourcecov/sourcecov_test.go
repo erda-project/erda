@@ -20,8 +20,8 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
-	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/executor/plugins/k8s/addon/sourcecov/mock"
-	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/executor/plugins/k8s/k8serror"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/addon/sourcecov/mock"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8serror"
 )
 
 func Test_CreateNSIfNotExists(t *testing.T) {

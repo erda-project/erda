@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/erda-project/erda/modules/tools/monitor/core/storekit/clickhouse/table"
+	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/clickhouse/table"
 )
 
 type Interface interface {

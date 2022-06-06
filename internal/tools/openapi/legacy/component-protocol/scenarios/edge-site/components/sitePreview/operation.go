@@ -19,9 +19,9 @@ import (
 	"fmt"
 
 	"github.com/erda-project/erda/apistructs"
-	protocol "github.com/erda-project/erda/modules/tools/openapi/legacy/component-protocol"
-	edgesite "github.com/erda-project/erda/modules/tools/openapi/legacy/component-protocol/scenarios/edge-site"
-	"github.com/erda-project/erda/modules/tools/openapi/legacy/component-protocol/scenarios/edge-site/i18n"
+	protocol "github.com/erda-project/erda/internal/tools/openapi/legacy/component-protocol"
+	edgesite "github.com/erda-project/erda/internal/tools/openapi/legacy/component-protocol/scenarios/edge-site"
+	"github.com/erda-project/erda/internal/tools/openapi/legacy/component-protocol/scenarios/edge-site/i18n"
 )
 
 type InfoData struct {

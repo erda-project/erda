@@ -25,11 +25,11 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/pipeline/pipengine/pvolumes"
-	"github.com/erda-project/erda/modules/tools/pipeline/precheck/checkers/actionchecker/api_register"
-	"github.com/erda-project/erda/modules/tools/pipeline/precheck/checkers/actionchecker/buildpack"
-	"github.com/erda-project/erda/modules/tools/pipeline/precheck/checkers/actionchecker/release"
-	"github.com/erda-project/erda/modules/tools/pipeline/precheck/prechecktype"
+	"github.com/erda-project/erda/internal/tools/pipeline/pipengine/pvolumes"
+	"github.com/erda-project/erda/internal/tools/pipeline/precheck/checkers/actionchecker/api_register"
+	"github.com/erda-project/erda/internal/tools/pipeline/precheck/checkers/actionchecker/buildpack"
+	"github.com/erda-project/erda/internal/tools/pipeline/precheck/checkers/actionchecker/release"
+	"github.com/erda-project/erda/internal/tools/pipeline/precheck/prechecktype"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 	"github.com/erda-project/erda/pkg/strutil"
 )

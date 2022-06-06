@@ -14,7 +14,7 @@
 
 package testplan
 
-import "github.com/erda-project/erda/modules/tools/openapi/legacy/api/apis"
+import "github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
 
 var DELETE = apis.ApiSpec{
 	Path:        "/api/testplans/<id>",

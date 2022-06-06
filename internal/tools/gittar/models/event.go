@@ -20,7 +20,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/gittar/pkg/gitmodule"
+	"github.com/erda-project/erda/internal/tools/gittar/pkg/gitmodule"
 )
 
 func (svc *Service) TriggerEvent(repository *gitmodule.Repository, eventName string, contentData interface{}) {

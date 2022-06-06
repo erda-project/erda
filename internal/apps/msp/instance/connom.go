@@ -19,7 +19,7 @@ import (
 
 	"github.com/jinzhu/gorm"
 
-	"github.com/erda-project/erda/modules/apps/msp/instance/db"
+	"github.com/erda-project/erda/internal/apps/msp/instance/db"
 )
 
 // Instance .

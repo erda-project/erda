@@ -19,8 +19,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/erda-project/erda/modules/tools/monitor/core/metric"
-	"github.com/erda-project/erda/modules/tools/monitor/oap/collector/core/model/odata"
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model/odata"
 )
 
 func TestDataFilter_Selected(t *testing.T) {

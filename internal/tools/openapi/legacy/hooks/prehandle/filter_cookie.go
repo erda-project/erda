@@ -22,8 +22,8 @@ import (
 
 	"github.com/go-redis/redis"
 
-	"github.com/erda-project/erda/modules/tools/openapi/legacy/auth"
-	"github.com/erda-project/erda/modules/tools/openapi/legacy/conf"
+	"github.com/erda-project/erda/internal/tools/openapi/legacy/auth"
+	"github.com/erda-project/erda/internal/tools/openapi/legacy/conf"
 )
 
 var filterCookieLock sync.Once

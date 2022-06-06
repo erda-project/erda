@@ -19,7 +19,7 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	monitorpb "github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
-	"github.com/erda-project/erda/modules/apps/msp/apm/alert/components/msp-alert-event-detail/common"
+	"github.com/erda-project/erda/internal/apps/msp/apm/alert/components/msp-alert-event-detail/common"
 )
 
 type ComponentPauseModalFormInfo struct {

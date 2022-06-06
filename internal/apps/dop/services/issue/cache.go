@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/erda-project/erda/modules/apps/dop/dao"
+	"github.com/erda-project/erda/internal/apps/dop/dao"
 	"github.com/erda-project/erda/pkg/cache"
 )
 

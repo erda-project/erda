@@ -17,9 +17,9 @@ package servicemesh
 import (
 	"fmt"
 
-	"github.com/erda-project/erda/modules/apps/msp/instance/db"
-	"github.com/erda-project/erda/modules/apps/msp/resource/deploy/handlers"
-	"github.com/erda-project/erda/modules/apps/msp/resource/utils"
+	"github.com/erda-project/erda/internal/apps/msp/instance/db"
+	"github.com/erda-project/erda/internal/apps/msp/resource/deploy/handlers"
+	"github.com/erda-project/erda/internal/apps/msp/resource/utils"
 )
 
 func (p *provider) IsMatch(tmc *db.Tmc) bool {

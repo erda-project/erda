@@ -15,9 +15,9 @@
 package registercenter
 
 import (
-	"github.com/erda-project/erda/modules/apps/msp/instance/db"
-	"github.com/erda-project/erda/modules/apps/msp/resource/deploy/handlers"
-	"github.com/erda-project/erda/modules/apps/msp/resource/utils"
+	"github.com/erda-project/erda/internal/apps/msp/instance/db"
+	"github.com/erda-project/erda/internal/apps/msp/resource/deploy/handlers"
+	"github.com/erda-project/erda/internal/apps/msp/resource/utils"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
 

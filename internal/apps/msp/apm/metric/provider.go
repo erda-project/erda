@@ -22,8 +22,8 @@ import (
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	tenantpb "github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	"github.com/erda-project/erda/bundle"
-	monitordb "github.com/erda-project/erda/modules/apps/msp/instance/db/monitor"
-	mperm "github.com/erda-project/erda/modules/apps/msp/instance/permission"
+	monitordb "github.com/erda-project/erda/internal/apps/msp/instance/db/monitor"
+	mperm "github.com/erda-project/erda/internal/apps/msp/instance/permission"
 )
 
 type config struct {

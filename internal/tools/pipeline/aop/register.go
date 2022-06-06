@@ -18,7 +18,7 @@ import (
 	"errors"
 	"strings"
 
-	. "github.com/erda-project/erda/modules/tools/pipeline/aop/aoptypes"
+	. "github.com/erda-project/erda/internal/tools/pipeline/aop/aoptypes"
 )
 
 var pluginsMap = map[TuneType]map[string]TunePoint{}

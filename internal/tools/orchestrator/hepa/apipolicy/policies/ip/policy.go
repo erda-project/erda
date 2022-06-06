@@ -22,8 +22,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/apipolicy"
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/k8s"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/apipolicy"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/k8s"
 )
 
 type Policy struct {

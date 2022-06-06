@@ -52,11 +52,11 @@ func main() {
 	buf.WriteString("\t\"gopkg.in/yaml.v3\"\n")
 	buf.WriteString("\n")
 	buf.WriteString("\t\"github.com/erda-project/erda/apistructs\"\n")
-	buf.WriteString("\tprotocol \"github.com/erda-project/erda/modules/tools/openapi/legacy/component-protocol\"\n")
+	buf.WriteString("\tprotocol \"github.com/erda-project/erda/internal/tools/openapi/legacy/component-protocol\"\n")
 	for s, v := range comps {
 		for _, c := range v {
 			buf.WriteString(fmt.Sprintf(
-				"\t%s \"github.com/erda-project/erda/modules/tools/openapi/legacy/component-protocol/scenarios/%s/components/%s\"\n",
+				"\t%s \"github.com/erda-project/erda/internal/tools/openapi/legacy/component-protocol/scenarios/%s/components/%s\"\n",
 				strings.Replace(s, "-", "", -1)+c, s, c))
 		}
 	}

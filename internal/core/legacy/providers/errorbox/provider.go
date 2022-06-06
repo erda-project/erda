@@ -21,7 +21,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-proto-go/core/services/errorbox/pb"
-	"github.com/erda-project/erda/modules/core/legacy/dao"
+	"github.com/erda-project/erda/internal/core/legacy/dao"
 )
 
 type config struct {

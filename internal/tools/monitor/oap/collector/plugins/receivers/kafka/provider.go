@@ -21,10 +21,10 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	kafkaInf "github.com/erda-project/erda-infra/providers/kafka"
-	"github.com/erda-project/erda/modules/apps/msp/apm/trace"
-	"github.com/erda-project/erda/modules/tools/monitor/oap/collector/core/model"
-	"github.com/erda-project/erda/modules/tools/monitor/oap/collector/lib/protoparser/oapspan"
-	"github.com/erda-project/erda/modules/tools/monitor/oap/collector/lib/protoparser/spotspan"
+	"github.com/erda-project/erda/internal/apps/msp/apm/trace"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/protoparser/oapspan"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/protoparser/spotspan"
 )
 
 type parserName string

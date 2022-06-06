@@ -21,7 +21,7 @@ import (
 
 	"github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/apps/cmp/metrics"
+	"github.com/erda-project/erda/internal/apps/cmp/metrics"
 )
 
 type Provider interface {

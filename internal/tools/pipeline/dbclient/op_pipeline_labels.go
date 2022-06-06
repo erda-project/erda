@@ -22,7 +22,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/apistructs"
-	spec2 "github.com/erda-project/erda/modules/tools/pipeline/spec"
+	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/retry"
 	"github.com/erda-project/erda/pkg/strutil"

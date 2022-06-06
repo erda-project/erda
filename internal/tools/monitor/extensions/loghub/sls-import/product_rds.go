@@ -23,8 +23,8 @@ import (
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 
 	"github.com/erda-project/erda-infra/providers/elasticsearch"
-	logs2 "github.com/erda-project/erda/modules/tools/monitor/core/log"
-	metrics "github.com/erda-project/erda/modules/tools/monitor/core/metric"
+	logs2 "github.com/erda-project/erda/internal/tools/monitor/core/log"
+	metrics "github.com/erda-project/erda/internal/tools/monitor/core/metric"
 )
 
 // // RDS审计日志

@@ -28,7 +28,7 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/elasticsearch"
 	"github.com/erda-project/erda-proto-go/oap/entity/pb"
-	"github.com/erda-project/erda/modules/tools/monitor/core/entity/storage"
+	"github.com/erda-project/erda/internal/tools/monitor/core/entity/storage"
 )
 
 func (p *provider) SetEntities(ctx context.Context, list []*pb.Entity) (int, error) {

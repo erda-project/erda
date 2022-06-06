@@ -17,7 +17,7 @@ package cms
 import (
 	"fmt"
 
-	"github.com/erda-project/erda/modules/pkg/gitflowutil"
+	"github.com/erda-project/erda/internal/pkg/gitflowutil"
 )
 
 const PipelineAppConfigNameSpacePrefix = "pipeline-secrets-app"

@@ -21,9 +21,9 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-proto-go/core/hepa/legacy_upstream/pb"
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/common/vars"
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/gateway/dto"
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/services/legacy_upstream"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/vars"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/legacy_upstream"
 	erdaErr "github.com/erda-project/erda/pkg/common/errors"
 )
 

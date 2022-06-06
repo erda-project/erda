@@ -15,7 +15,7 @@
 package nodeFilter
 
 import (
-	"github.com/erda-project/erda/modules/apps/cmp/component-protocol/components/cmp-dashboard-nodes/common/filter"
+	"github.com/erda-project/erda/internal/apps/cmp/component-protocol/components/cmp-dashboard-nodes/common/filter"
 )
 
 type NodeFilter struct {

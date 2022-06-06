@@ -23,7 +23,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	_ "github.com/erda-project/erda-infra/base/version"
-	"github.com/erda-project/erda/modules/tools/pipeline/actionagent"
+	"github.com/erda-project/erda/internal/tools/pipeline/actionagent"
 )
 
 type PlatformLogFormatter struct {

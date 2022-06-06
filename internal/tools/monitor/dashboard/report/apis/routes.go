@@ -16,8 +16,8 @@ package apis
 
 import (
 	"github.com/erda-project/erda-infra/providers/httpserver"
-	"github.com/erda-project/erda/modules/tools/monitor/common"
-	"github.com/erda-project/erda/modules/tools/monitor/common/permission"
+	"github.com/erda-project/erda/internal/tools/monitor/common"
+	"github.com/erda-project/erda/internal/tools/monitor/common/permission"
 )
 
 // permission resources

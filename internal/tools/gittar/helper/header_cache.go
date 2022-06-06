@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/erda-project/erda/modules/tools/gittar/webcontext"
+	"github.com/erda-project/erda/internal/tools/gittar/webcontext"
 )
 
 // HeaderNoCache writing function

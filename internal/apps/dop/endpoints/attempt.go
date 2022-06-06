@@ -32,10 +32,10 @@ import (
 	"golang.org/x/net/publicsuffix"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/apps/dop/dbclient"
-	"github.com/erda-project/erda/modules/apps/dop/services/apierrors"
-	"github.com/erda-project/erda/modules/apps/dop/services/signauth"
-	"github.com/erda-project/erda/modules/pkg/user"
+	"github.com/erda-project/erda/internal/apps/dop/dbclient"
+	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
+	"github.com/erda-project/erda/internal/apps/dop/services/signauth"
+	"github.com/erda-project/erda/internal/pkg/user"
 	"github.com/erda-project/erda/pkg/apitestsv2"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 )

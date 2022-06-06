@@ -19,7 +19,7 @@ import (
 
 	"github.com/jinzhu/gorm"
 
-	"github.com/erda-project/erda/modules/pkg/mysql"
+	"github.com/erda-project/erda/internal/pkg/mysql"
 )
 
 // table names

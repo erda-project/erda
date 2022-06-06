@@ -16,8 +16,8 @@ package queue
 
 import (
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/pipeline/providers/queuemanager/types"
-	"github.com/erda-project/erda/modules/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/queuemanager/types"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 func (q *defaultQueue) validatePipeline(p *spec.Pipeline) apistructs.PipelineQueueValidateResult {

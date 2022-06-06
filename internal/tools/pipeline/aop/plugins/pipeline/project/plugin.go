@@ -22,8 +22,8 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/pipeline/aop"
-	aoptypes2 "github.com/erda-project/erda/modules/tools/pipeline/aop/aoptypes"
+	"github.com/erda-project/erda/internal/tools/pipeline/aop"
+	aoptypes2 "github.com/erda-project/erda/internal/tools/pipeline/aop/aoptypes"
 )
 
 // +provider

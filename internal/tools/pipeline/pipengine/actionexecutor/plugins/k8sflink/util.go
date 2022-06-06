@@ -26,8 +26,8 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/erda-project/erda/apistructs"
-	logic2 "github.com/erda-project/erda/modules/tools/pipeline/pipengine/actionexecutor/logic"
-	"github.com/erda-project/erda/modules/tools/pipeline/pkg/containers"
+	logic2 "github.com/erda-project/erda/internal/tools/pipeline/pipengine/actionexecutor/logic"
+	"github.com/erda-project/erda/internal/tools/pipeline/pkg/containers"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders"
 )
 

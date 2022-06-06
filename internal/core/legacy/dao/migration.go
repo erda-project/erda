@@ -17,7 +17,7 @@ package dao
 import (
 	"strconv"
 
-	"github.com/erda-project/erda/modules/core/legacy/model"
+	"github.com/erda-project/erda/internal/core/legacy/model"
 )
 
 var joinMap = "LEFT OUTER JOIN kratos_uc_userid_mapping on kratos_uc_userid_mapping.id = uc_user.id"

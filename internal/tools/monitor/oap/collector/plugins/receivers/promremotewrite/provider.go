@@ -25,10 +25,10 @@ import (
 	pmodel "github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/prompb"
 
-	"github.com/erda-project/erda/modules/tools/monitor/core/metric"
-	"github.com/erda-project/erda/modules/tools/monitor/oap/collector/core/model"
-	"github.com/erda-project/erda/modules/tools/monitor/oap/collector/lib"
-	"github.com/erda-project/erda/modules/tools/monitor/oap/collector/plugins"
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"

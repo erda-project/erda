@@ -22,8 +22,8 @@ import (
 	"github.com/erda-project/erda-infra/pkg/transport"
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda-proto-go/orchestrator/runtime/pb"
-	"github.com/erda-project/erda/modules/tools/orchestrator/events"
-	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/impl/servicegroup"
+	"github.com/erda-project/erda/internal/tools/orchestrator/events"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/impl/servicegroup"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 

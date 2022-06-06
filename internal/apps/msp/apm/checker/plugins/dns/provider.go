@@ -20,7 +20,7 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-proto-go/msp/apm/checker/pb"
-	"github.com/erda-project/erda/modules/apps/msp/apm/checker/plugins"
+	"github.com/erda-project/erda/internal/apps/msp/apm/checker/plugins"
 )
 
 type config struct{}

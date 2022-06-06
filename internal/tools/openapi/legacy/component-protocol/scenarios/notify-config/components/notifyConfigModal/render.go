@@ -23,7 +23,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	protocol "github.com/erda-project/erda/modules/tools/openapi/legacy/component-protocol"
+	protocol "github.com/erda-project/erda/internal/tools/openapi/legacy/component-protocol"
 )
 
 func (m *ComponentModel) Render(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, _ *apistructs.GlobalStateData) error {

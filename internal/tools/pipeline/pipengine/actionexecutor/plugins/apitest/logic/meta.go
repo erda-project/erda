@@ -21,9 +21,9 @@ import (
 	"time"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/pipeline/actionagent"
-	"github.com/erda-project/erda/modules/tools/pipeline/pkg/pipelinefunc"
-	"github.com/erda-project/erda/modules/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/actionagent"
+	"github.com/erda-project/erda/internal/tools/pipeline/pkg/pipelinefunc"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/apitestsv2"
 	"github.com/erda-project/erda/pkg/apitestsv2/cookiejar"
 	"github.com/erda-project/erda/pkg/encoding/jsonparse"

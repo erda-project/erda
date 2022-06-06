@@ -20,9 +20,9 @@ import (
 
 	"github.com/jinzhu/gorm"
 
-	"github.com/erda-project/erda/modules/tools/monitor/notify/template/db"
-	"github.com/erda-project/erda/modules/tools/monitor/notify/template/model"
-	"github.com/erda-project/erda/modules/tools/monitor/notify/template/query"
+	"github.com/erda-project/erda/internal/tools/monitor/notify/template/db"
+	"github.com/erda-project/erda/internal/tools/monitor/notify/template/model"
+	"github.com/erda-project/erda/internal/tools/monitor/notify/template/query"
 )
 
 func (p *provider) invoke(key []byte, value []byte, topic *string, timestamp time.Time) error {

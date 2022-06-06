@@ -21,10 +21,10 @@ import (
 
 	"github.com/pkg/errors"
 
-	. "github.com/erda-project/erda/modules/tools/orchestrator/hepa/common/vars"
-	gw "github.com/erda-project/erda/modules/tools/orchestrator/hepa/gateway/dto"
-	kong "github.com/erda-project/erda/modules/tools/orchestrator/hepa/kong/dto"
-	db "github.com/erda-project/erda/modules/tools/orchestrator/hepa/repository/orm"
+	. "github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/vars"
+	gw "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
+	kong "github.com/erda-project/erda/internal/tools/orchestrator/hepa/kong/dto"
+	db "github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
 )
 
 type GatewayDbAssemblerImpl struct {

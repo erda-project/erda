@@ -24,10 +24,10 @@ import (
 	v3 "github.com/coreos/etcd/clientv3"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/pipeline/pipengine/actionexecutor"
-	"github.com/erda-project/erda/modules/tools/pipeline/pipengine/actionexecutor/types"
-	"github.com/erda-project/erda/modules/tools/pipeline/pkg/task_uuid"
-	"github.com/erda-project/erda/modules/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/pipengine/actionexecutor"
+	"github.com/erda-project/erda/internal/tools/pipeline/pipengine/actionexecutor/types"
+	"github.com/erda-project/erda/internal/tools/pipeline/pkg/task_uuid"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/jsonstore/storetypes"
 	"github.com/erda-project/erda/pkg/strutil"
 )

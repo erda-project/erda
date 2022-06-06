@@ -20,7 +20,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	messenger "github.com/erda-project/erda-proto-go/core/messenger/notify/pb"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/apps/msp/apm/alert/components/common"
+	"github.com/erda-project/erda/internal/apps/msp/apm/alert/components/common"
 )
 
 func SetNotifyIndexToGlobalState(gs cptype.GlobalStateData, alertIndex *messenger.AlertNotifyDetail) {

@@ -22,8 +22,8 @@ import (
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/core/monitor/expression/pb"
-	"github.com/erda-project/erda/modules/core/legacy/dao"
-	alertdb "github.com/erda-project/erda/modules/tools/monitor/core/alert/alert-apis/db"
+	"github.com/erda-project/erda/internal/core/legacy/dao"
+	alertdb "github.com/erda-project/erda/internal/tools/monitor/core/alert/alert-apis/db"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 

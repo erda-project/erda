@@ -26,11 +26,11 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/tealeg/xlsx/v3"
 
-	"github.com/erda-project/erda/modules/apps/dop/conf"
+	"github.com/erda-project/erda/internal/apps/dop/conf"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/apps/dop/dao"
-	"github.com/erda-project/erda/modules/apps/dop/services/i18n"
+	"github.com/erda-project/erda/internal/apps/dop/dao"
+	"github.com/erda-project/erda/internal/apps/dop/services/i18n"
 	"github.com/erda-project/erda/pkg/excel"
 	"github.com/erda-project/erda/pkg/strutil"
 )

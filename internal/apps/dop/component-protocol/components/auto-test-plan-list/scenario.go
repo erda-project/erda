@@ -15,8 +15,8 @@
 package auto_test_plan_list
 
 import (
-	_ "github.com/erda-project/erda/modules/apps/dop/component-protocol/components/auto-test-plan-list/components/addButton"
-	_ "github.com/erda-project/erda/modules/apps/dop/component-protocol/components/auto-test-plan-list/components/filter"
-	_ "github.com/erda-project/erda/modules/apps/dop/component-protocol/components/auto-test-plan-list/components/formModal"
-	_ "github.com/erda-project/erda/modules/apps/dop/component-protocol/components/auto-test-plan-list/components/table"
+	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/auto-test-plan-list/components/addButton"
+	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/auto-test-plan-list/components/filter"
+	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/auto-test-plan-list/components/formModal"
+	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/auto-test-plan-list/components/table"
 )

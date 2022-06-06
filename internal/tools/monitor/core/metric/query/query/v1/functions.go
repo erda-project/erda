@@ -24,8 +24,8 @@ import (
 	"github.com/olivere/elastic"
 	"github.com/recallsong/go-utils/conv"
 
-	"github.com/erda-project/erda/modules/tools/monitor/core/metric/query/query"
-	"github.com/erda-project/erda/modules/tools/monitor/utils"
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/query"
+	"github.com/erda-project/erda/internal/tools/monitor/utils"
 )
 
 // Functions .

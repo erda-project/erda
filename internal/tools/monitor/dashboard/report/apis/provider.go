@@ -25,7 +25,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/mysql"
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/pkg/bundle-ex/cmdb"
+	"github.com/erda-project/erda/internal/pkg/bundle-ex/cmdb"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 

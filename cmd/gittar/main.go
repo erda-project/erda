@@ -23,7 +23,7 @@ import (
 	// providers and modules
 	_ "github.com/erda-project/erda-infra/providers/grpcclient"
 	_ "github.com/erda-project/erda-proto-go/core/token/client"
-	_ "github.com/erda-project/erda/modules/tools/gittar"
+	_ "github.com/erda-project/erda/internal/tools/gittar"
 )
 
 //go:embed bootstrap.yaml

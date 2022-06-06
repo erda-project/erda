@@ -25,14 +25,14 @@ import (
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda-proto-go/orchestrator/runtime/pb"
 	"github.com/erda-project/erda/apistructs"
-	mock2 "github.com/erda-project/erda/modules/tools/orchestrator/components/runtime/mock"
-	"github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
-	"github.com/erda-project/erda/modules/tools/orchestrator/events"
+	mock2 "github.com/erda-project/erda/internal/tools/orchestrator/components/runtime/mock"
+	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
+	"github.com/erda-project/erda/internal/tools/orchestrator/events"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
 
-////go:generate mockgen -destination=./mock/mock_sg.go -package mock github.com/erda-project/erda/modules/tools/orchestrator/scheduler/impl/servicegroup ServiceGroup
+////go:generate mockgen -destination=./mock/mock_sg.go -package mock github.com/erda-project/erda/internal/tools/orchestrator/scheduler/impl/servicegroup ServiceGroup
 
 type fakeClusterServiceServer struct {
 	clusterpb.ClusterServiceServer

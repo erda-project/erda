@@ -26,8 +26,8 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
-	"github.com/erda-project/erda/modules/apps/msp/apm/trace/query"
-	"github.com/erda-project/erda/modules/apps/msp/apm/trace/query/commom/custom"
+	"github.com/erda-project/erda/internal/apps/msp/apm/trace/query"
+	"github.com/erda-project/erda/internal/apps/msp/apm/trace/query/commom/custom"
 )
 
 type provider struct {

@@ -20,8 +20,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/erda-project/erda/modules/tools/openapi/openapi-ng"
-	"github.com/erda-project/erda/modules/tools/openapi/openapi-ng/common"
+	"github.com/erda-project/erda/internal/tools/openapi/openapi-ng"
+	"github.com/erda-project/erda/internal/tools/openapi/openapi-ng/common"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/ucauth"
 )

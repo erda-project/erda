@@ -27,7 +27,7 @@ import (
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/apps/cmp/dbclient"
+	"github.com/erda-project/erda/internal/apps/cmp/dbclient"
 )
 
 const (

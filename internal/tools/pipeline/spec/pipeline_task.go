@@ -20,7 +20,7 @@ import (
 	"time"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/pipeline/conf"
+	"github.com/erda-project/erda/internal/tools/pipeline/conf"
 	"github.com/erda-project/erda/pkg/encoding/jsonparse"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )

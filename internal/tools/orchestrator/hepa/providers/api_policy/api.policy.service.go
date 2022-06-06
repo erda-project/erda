@@ -21,9 +21,9 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-proto-go/core/hepa/api_policy/pb"
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/common/util"
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/common/vars"
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/services/api_policy"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/util"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/vars"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/api_policy"
 	erdaErr "github.com/erda-project/erda/pkg/common/errors"
 )
 

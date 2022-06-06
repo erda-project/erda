@@ -14,7 +14,7 @@
 
 package core_services
 
-import "github.com/erda-project/erda/modules/tools/openapi/legacy/api/apis"
+import "github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
 
 var CMDB_PROJECT_METRICS_HISTOGRAM = apis.ApiSpec{
 	Path:        "/api/projects/resource/<resourceType>/actions/list-usage-histogram",

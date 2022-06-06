@@ -22,7 +22,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda/modules/tools/openapi/legacy/i18n"
+	"github.com/erda-project/erda/internal/tools/openapi/legacy/i18n"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/envconf"
 	"github.com/erda-project/erda/pkg/strutil"

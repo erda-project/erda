@@ -28,9 +28,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/events"
-	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/executor/plugins/k8s/configmap"
-	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/instanceinfo"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/events"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/configmap"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/instanceinfo"
 	"github.com/erda-project/erda/pkg/clientgo/kubernetes"
 	"github.com/erda-project/erda/pkg/dlock"
 	"github.com/erda-project/erda/pkg/http/httpclient"

@@ -23,8 +23,8 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/clickhouse"
 	election "github.com/erda-project/erda-infra/providers/etcd-election"
-	"github.com/erda-project/erda/modules/tools/monitor/core/settings/retention-strategy"
-	"github.com/erda-project/erda/modules/tools/monitor/core/storekit/clickhouse/table/loader"
+	"github.com/erda-project/erda/internal/tools/monitor/core/settings/retention-strategy"
+	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/clickhouse/table/loader"
 )
 
 type ddlFile struct {

@@ -25,7 +25,7 @@ import (
 
 	"github.com/erda-project/erda-proto-go/core/messenger/notify/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/core/messenger/notify/model"
+	"github.com/erda-project/erda/internal/core/messenger/notify/model"
 )
 
 type NotifyHistoryDB struct {

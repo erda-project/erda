@@ -31,7 +31,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/bundle/apierrors"
-	cmpTypes "github.com/erda-project/erda/modules/apps/cmp/component-protocol/types"
+	cmpTypes "github.com/erda-project/erda/internal/apps/cmp/component-protocol/types"
 )
 
 type ReleaseFilter struct {

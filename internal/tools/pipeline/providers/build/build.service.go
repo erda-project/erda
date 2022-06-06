@@ -26,8 +26,8 @@ import (
 
 	"github.com/erda-project/erda-proto-go/core/pipeline/build/pb"
 	"github.com/erda-project/erda/apistructs"
-	db2 "github.com/erda-project/erda/modules/tools/pipeline/providers/build/db"
-	"github.com/erda-project/erda/modules/tools/pipeline/services/apierrors"
+	db2 "github.com/erda-project/erda/internal/tools/pipeline/providers/build/db"
+	"github.com/erda-project/erda/internal/tools/pipeline/services/apierrors"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/strutil"

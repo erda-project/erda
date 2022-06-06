@@ -29,9 +29,9 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/apps/dop/bdl"
-	atv2 "github.com/erda-project/erda/modules/apps/dop/services/autotest_v2"
-	"github.com/erda-project/erda/modules/pkg/user"
+	"github.com/erda-project/erda/internal/apps/dop/bdl"
+	atv2 "github.com/erda-project/erda/internal/apps/dop/services/autotest_v2"
+	"github.com/erda-project/erda/internal/pkg/user"
 )
 
 func TestCopyAutoTestSpaceV2(t *testing.T) {

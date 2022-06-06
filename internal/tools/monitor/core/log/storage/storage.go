@@ -23,7 +23,7 @@ import (
 	"github.com/ahmetb/go-linq/v3"
 
 	"github.com/erda-project/erda-proto-go/core/monitor/log/query/pb"
-	"github.com/erda-project/erda/modules/tools/monitor/core/storekit"
+	"github.com/erda-project/erda/internal/tools/monitor/core/storekit"
 )
 
 const (

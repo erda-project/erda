@@ -22,10 +22,10 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/pipeline/aop/aoptypes"
-	pvolumes2 "github.com/erda-project/erda/modules/tools/pipeline/pipengine/pvolumes"
-	"github.com/erda-project/erda/modules/tools/pipeline/providers/reconciler/taskrun"
-	"github.com/erda-project/erda/modules/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/aop/aoptypes"
+	pvolumes2 "github.com/erda-project/erda/internal/tools/pipeline/pipengine/pvolumes"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/reconciler/taskrun"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
 

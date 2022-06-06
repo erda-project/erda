@@ -18,7 +18,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-proto-go/core/hepa/openapi_consumer/pb"
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/common/util"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/util"
 )
 
 type KongCredentialListDto struct {

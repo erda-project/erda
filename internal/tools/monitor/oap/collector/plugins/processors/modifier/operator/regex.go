@@ -17,8 +17,8 @@ package operator
 import (
 	"regexp"
 
-	"github.com/erda-project/erda/modules/tools/monitor/oap/collector/core/model/odata"
-	"github.com/erda-project/erda/modules/tools/monitor/oap/collector/lib"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model/odata"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib"
 )
 
 type Regex struct {

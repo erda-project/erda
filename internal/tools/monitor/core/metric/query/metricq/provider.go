@@ -25,17 +25,17 @@ import (
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/httpserver/interceptors"
 	"github.com/erda-project/erda-infra/providers/i18n"
-	"github.com/erda-project/erda/modules/tools/monitor/core/metric/query/chartmeta"
-	"github.com/erda-project/erda/modules/tools/monitor/core/metric/query/metricmeta"
-	"github.com/erda-project/erda/modules/tools/monitor/core/metric/query/query"
-	queryv1 "github.com/erda-project/erda/modules/tools/monitor/core/metric/query/query/v1"
-	indexloader "github.com/erda-project/erda/modules/tools/monitor/core/storekit/elasticsearch/index/loader"
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/chartmeta"
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/metricmeta"
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/query"
+	queryv1 "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/query/v1"
+	indexloader "github.com/erda-project/erda/internal/tools/monitor/core/storekit/elasticsearch/index/loader"
 
-	_ "github.com/erda-project/erda/modules/tools/monitor/core/metric/query/query/v1/formats/chart"   //
-	_ "github.com/erda-project/erda/modules/tools/monitor/core/metric/query/query/v1/formats/chartv2" //
-	_ "github.com/erda-project/erda/modules/tools/monitor/core/metric/query/query/v1/formats/raw"     //
-	_ "github.com/erda-project/erda/modules/tools/monitor/core/metric/query/query/v1/language/json"   //
-	_ "github.com/erda-project/erda/modules/tools/monitor/core/metric/query/query/v1/language/params" //
+	_ "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/query/v1/formats/chart"   //
+	_ "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/query/v1/formats/chartv2" //
+	_ "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/query/v1/formats/raw"     //
+	_ "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/query/v1/language/json"   //
+	_ "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/query/v1/language/params" //
 )
 
 type config struct {

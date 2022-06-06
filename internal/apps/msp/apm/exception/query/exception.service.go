@@ -18,7 +18,7 @@ import (
 	"context"
 
 	"github.com/erda-project/erda-proto-go/msp/apm/exception/pb"
-	"github.com/erda-project/erda/modules/apps/msp/apm/exception/query/source"
+	"github.com/erda-project/erda/internal/apps/msp/apm/exception/query/source"
 )
 
 type exceptionService struct {

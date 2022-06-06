@@ -24,7 +24,7 @@ import (
 	"github.com/docker/docker/client"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 func TestDockerJobStatus(t *testing.T) {

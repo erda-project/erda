@@ -24,8 +24,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/pipeline/dbclient"
-	spec2 "github.com/erda-project/erda/modules/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
+	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 func Test_SimplePipelineBaseDetail(t *testing.T) {

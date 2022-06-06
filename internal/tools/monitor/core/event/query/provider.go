@@ -19,7 +19,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-proto-go/core/monitor/event/pb"
-	"github.com/erda-project/erda/modules/tools/monitor/core/event/storage"
+	"github.com/erda-project/erda/internal/tools/monitor/core/event/storage"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 

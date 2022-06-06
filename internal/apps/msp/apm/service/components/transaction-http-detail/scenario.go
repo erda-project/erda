@@ -15,9 +15,9 @@
 package transaction_http_detail
 
 import (
-	_ "github.com/erda-project/erda/modules/apps/msp/apm/service/components/transaction-http-detail/avg_duration"
-	_ "github.com/erda-project/erda/modules/apps/msp/apm/service/components/transaction-http-detail/error_count"
-	_ "github.com/erda-project/erda/modules/apps/msp/apm/service/components/transaction-http-detail/kv_grid"
-	_ "github.com/erda-project/erda/modules/apps/msp/apm/service/components/transaction-http-detail/rps"
-	_ "github.com/erda-project/erda/modules/apps/msp/apm/service/components/transaction-http-detail/slow_count"
+	_ "github.com/erda-project/erda/internal/apps/msp/apm/service/components/transaction-http-detail/avg_duration"
+	_ "github.com/erda-project/erda/internal/apps/msp/apm/service/components/transaction-http-detail/error_count"
+	_ "github.com/erda-project/erda/internal/apps/msp/apm/service/components/transaction-http-detail/kv_grid"
+	_ "github.com/erda-project/erda/internal/apps/msp/apm/service/components/transaction-http-detail/rps"
+	_ "github.com/erda-project/erda/internal/apps/msp/apm/service/components/transaction-http-detail/slow_count"
 )

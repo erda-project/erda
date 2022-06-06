@@ -21,8 +21,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda/modules/tools/pipeline/dbclient"
-	types2 "github.com/erda-project/erda/modules/tools/pipeline/providers/queuemanager/types"
+	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
+	types2 "github.com/erda-project/erda/internal/tools/pipeline/providers/queuemanager/types"
 	"github.com/erda-project/erda/pkg/jsonstore"
 	"github.com/erda-project/erda/pkg/jsonstore/etcd"
 )

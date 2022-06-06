@@ -17,7 +17,7 @@ package workbench
 import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/apps/dop/services/issue"
+	"github.com/erda-project/erda/internal/apps/dop/services/issue"
 )
 
 // personal workbench issue expire days,Not specified, Expired, Due today , Due tomorrow, Due within 7 days, Expires within 30 days, Future: 0

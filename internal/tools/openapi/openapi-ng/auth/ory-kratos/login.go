@@ -19,7 +19,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/erda-project/erda/modules/tools/openapi/openapi-ng/common"
+	"github.com/erda-project/erda/internal/tools/openapi/openapi-ng/common"
 )
 
 func (p *provider) LoginURL(rw http.ResponseWriter, r *http.Request) {

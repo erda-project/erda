@@ -18,7 +18,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/erda-project/erda/modules/tools/pipeline/services/apierrors"
+	"github.com/erda-project/erda/internal/tools/pipeline/services/apierrors"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 

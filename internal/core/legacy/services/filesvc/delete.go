@@ -15,8 +15,8 @@
 package filesvc
 
 import (
-	"github.com/erda-project/erda/modules/core/legacy/dao"
-	"github.com/erda-project/erda/modules/core/legacy/services/apierrors"
+	"github.com/erda-project/erda/internal/core/legacy/dao"
+	"github.com/erda-project/erda/internal/core/legacy/services/apierrors"
 )
 
 func (svc *FileService) DeleteFile(file dao.File) error {

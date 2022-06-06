@@ -14,7 +14,7 @@
 
 package dicehub
 
-import "github.com/erda-project/erda/modules/tools/openapi/legacy/api/apis"
+import "github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
 
 var DICEHUB_PIPELINE_TEMPLATE_QUERY = apis.ApiSpec{
 	Path:        "/api/pipeline-templates",

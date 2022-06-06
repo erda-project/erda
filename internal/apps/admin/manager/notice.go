@@ -23,7 +23,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/apps/admin/apierrors"
+	"github.com/erda-project/erda/internal/apps/admin/apierrors"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 

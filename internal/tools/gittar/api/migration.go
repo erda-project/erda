@@ -15,8 +15,8 @@
 package api
 
 import (
-	"github.com/erda-project/erda/modules/tools/gittar/migration"
-	"github.com/erda-project/erda/modules/tools/gittar/webcontext"
+	"github.com/erda-project/erda/internal/tools/gittar/migration"
+	"github.com/erda-project/erda/internal/tools/gittar/webcontext"
 )
 
 func MigrationNewAuth(ctx *webcontext.Context) {

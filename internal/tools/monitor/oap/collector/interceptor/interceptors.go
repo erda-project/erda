@@ -23,7 +23,7 @@ import (
 	"github.com/erda-project/erda-infra/pkg/transport"
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 	"github.com/erda-project/erda-infra/pkg/transport/interceptor"
-	"github.com/erda-project/erda/modules/tools/monitor/oap/collector/authentication"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/authentication"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/maps"
 )

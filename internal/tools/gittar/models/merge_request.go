@@ -24,9 +24,9 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/pkg/diceworkspace"
-	"github.com/erda-project/erda/modules/tools/gittar/pkg/gitmodule"
-	"github.com/erda-project/erda/modules/tools/gittar/uc"
+	"github.com/erda-project/erda/internal/pkg/diceworkspace"
+	"github.com/erda-project/erda/internal/tools/gittar/pkg/gitmodule"
+	"github.com/erda-project/erda/internal/tools/gittar/uc"
 )
 
 var (

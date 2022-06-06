@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/erda-project/erda/modules/tools/monitor/core/storekit/clickhouse/table/loader"
+	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/clickhouse/table/loader"
 )
 
 type FieldNameConverter interface {
