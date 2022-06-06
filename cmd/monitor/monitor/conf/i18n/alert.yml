@@ -281,3 +281,13 @@ en:
     mbox: Site message
     webhook: "Webhook"
     ticket: "Ticket"
+    cluster_name: Cluster name
+    host_ip: Host IP
+    component_name: Component
+    dice_component: Platform component
+    custom_addon: Custom addon
+    org_customize: Organization customization
+    kubernetes: Kubernetes
+    dice_addon: Platform addon
+    machine: Machine
+    addon: Project addon
