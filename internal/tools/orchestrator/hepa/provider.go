@@ -26,12 +26,12 @@ import (
 	_ "github.com/erda-project/erda-infra/providers/health"
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/i18n"
-	"github.com/erda-project/erda/modules/tools/monitor/common/permission"
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/common"
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/common/util"
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/config"
-	hepaI18n "github.com/erda-project/erda/modules/tools/orchestrator/hepa/i18n"
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/repository/orm"
+	"github.com/erda-project/erda/internal/tools/monitor/common/permission"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/util"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/config"
+	hepaI18n "github.com/erda-project/erda/internal/tools/orchestrator/hepa/i18n"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
 	"github.com/erda-project/erda/pkg/discover"
 )
 

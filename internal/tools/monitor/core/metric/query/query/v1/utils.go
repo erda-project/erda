@@ -24,8 +24,8 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 
-	tsql "github.com/erda-project/erda/modules/tools/monitor/core/metric/query/es-tsql"
-	"github.com/erda-project/erda/modules/tools/monitor/core/metric/query/query"
+	tsql "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql"
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/query"
 )
 
 // NormalizeColumn .

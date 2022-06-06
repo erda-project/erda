@@ -18,7 +18,7 @@ package assetsvc
 import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/apps/dop/services/branchrule"
+	"github.com/erda-project/erda/internal/apps/dop/services/branchrule"
 )
 
 type Service struct {

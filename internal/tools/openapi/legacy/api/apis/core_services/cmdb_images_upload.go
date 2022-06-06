@@ -14,7 +14,7 @@
 
 package core_services
 
-import "github.com/erda-project/erda/modules/tools/openapi/legacy/api/apis"
+import "github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
 
 var CMDB_IMAGE_UPLOAD = apis.ApiSpec{
 	Path:        "/api/images/actions/upload",

@@ -18,7 +18,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/erda-project/erda/modules/apps/msp/apm/exception/model"
+	"github.com/erda-project/erda/internal/apps/msp/apm/exception/model"
 )
 
 func (p *provider) decodeError(key, value []byte, topic *string, timestamp time.Time) (interface{}, error) {

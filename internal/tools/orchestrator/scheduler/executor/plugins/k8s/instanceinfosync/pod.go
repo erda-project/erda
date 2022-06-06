@@ -25,9 +25,9 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/tools/orchestrator/i18n"
-	orgCache "github.com/erda-project/erda/modules/tools/orchestrator/scheduler/cache/org"
-	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/instanceinfo"
+	"github.com/erda-project/erda/internal/tools/orchestrator/i18n"
+	orgCache "github.com/erda-project/erda/internal/tools/orchestrator/scheduler/cache/org"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/instanceinfo"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 

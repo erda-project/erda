@@ -16,7 +16,7 @@ package dop
 
 import (
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/openapi/legacy/api/apis"
+	"github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
 )
 
 var QA_SONAR_METRIC_RULES_UPDATE = apis.ApiSpec{

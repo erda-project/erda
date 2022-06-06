@@ -21,7 +21,7 @@ import (
 	"github.com/xormplus/xorm"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/pipeline/dbclient"
+	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 )
 

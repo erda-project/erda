@@ -23,7 +23,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/httpserver/interceptors"
 	"github.com/erda-project/erda-infra/providers/kafka"
-	"github.com/erda-project/erda/modules/tools/monitor/oap/collector/authentication"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/authentication"
 )
 
 type config struct {

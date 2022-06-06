@@ -28,9 +28,9 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/apps/dop/component-protocol/components/common"
-	"github.com/erda-project/erda/modules/apps/dop/component-protocol/types"
-	"github.com/erda-project/erda/modules/apps/dop/services/issue"
+	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/common"
+	"github.com/erda-project/erda/internal/apps/dop/component-protocol/types"
+	"github.com/erda-project/erda/internal/apps/dop/services/issue"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 

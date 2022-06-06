@@ -18,7 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/erda-project/erda/modules/tools/pipeline/providers/queuemanager/pkg/queue/priorityqueue"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/queuemanager/pkg/queue/priorityqueue"
 )
 
 type SnapshotObj struct {

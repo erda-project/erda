@@ -27,7 +27,7 @@ import (
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/apps/cmp/steve/predefined"
+	"github.com/erda-project/erda/internal/apps/cmp/steve/predefined"
 	"github.com/erda-project/erda/pkg/k8sclient"
 )
 

@@ -17,7 +17,7 @@ package dicehub
 import (
 	"net/http"
 
-	"github.com/erda-project/erda/modules/tools/openapi/legacy/api/apis"
+	"github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
 )
 
 var PUBLISH_ITEM_CREATE_OFFLINE_VERSION = apis.ApiSpec{

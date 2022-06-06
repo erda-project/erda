@@ -19,8 +19,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/erda-project/erda/modules/tools/pipeline/pkg/task_uuid"
-	"github.com/erda-project/erda/modules/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/pkg/task_uuid"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 var (

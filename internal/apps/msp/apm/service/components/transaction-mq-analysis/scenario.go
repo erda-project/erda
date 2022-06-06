@@ -15,9 +15,9 @@
 package transaction_mq_analysis
 
 import (
-	_ "github.com/erda-project/erda/modules/apps/msp/apm/service/components/transaction-mq-analysis/avg_duration"
-	_ "github.com/erda-project/erda/modules/apps/msp/apm/service/components/transaction-mq-analysis/req_distribution"
-	_ "github.com/erda-project/erda/modules/apps/msp/apm/service/components/transaction-mq-analysis/rps"
-	_ "github.com/erda-project/erda/modules/apps/msp/apm/service/components/transaction-mq-analysis/table"
-	_ "github.com/erda-project/erda/modules/apps/msp/apm/service/components/transaction-mq-analysis/table_filter"
+	_ "github.com/erda-project/erda/internal/apps/msp/apm/service/components/transaction-mq-analysis/avg_duration"
+	_ "github.com/erda-project/erda/internal/apps/msp/apm/service/components/transaction-mq-analysis/req_distribution"
+	_ "github.com/erda-project/erda/internal/apps/msp/apm/service/components/transaction-mq-analysis/rps"
+	_ "github.com/erda-project/erda/internal/apps/msp/apm/service/components/transaction-mq-analysis/table"
+	_ "github.com/erda-project/erda/internal/apps/msp/apm/service/components/transaction-mq-analysis/table_filter"
 )

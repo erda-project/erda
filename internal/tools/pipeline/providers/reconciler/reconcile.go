@@ -20,10 +20,10 @@ import (
 	"sync"
 
 	"github.com/erda-project/erda-infra/pkg/safe"
-	"github.com/erda-project/erda/modules/tools/pipeline/providers/leaderworker/lwctx"
-	"github.com/erda-project/erda/modules/tools/pipeline/providers/reconciler/rutil"
-	"github.com/erda-project/erda/modules/tools/pipeline/providers/reconciler/schedulabletask"
-	spec2 "github.com/erda-project/erda/modules/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/leaderworker/lwctx"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/reconciler/rutil"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/reconciler/schedulabletask"
+	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 func (r *provider) ReconcileOnePipeline(ctx context.Context, pipelineID uint64) {

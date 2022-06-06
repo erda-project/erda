@@ -18,10 +18,10 @@ import (
 	"time"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/pipeline/conf"
-	"github.com/erda-project/erda/modules/tools/pipeline/pipengine/actionexecutor/logic"
-	types2 "github.com/erda-project/erda/modules/tools/pipeline/pipengine/actionexecutor/types"
-	"github.com/erda-project/erda/modules/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/conf"
+	"github.com/erda-project/erda/internal/tools/pipeline/pipengine/actionexecutor/logic"
+	types2 "github.com/erda-project/erda/internal/tools/pipeline/pipengine/actionexecutor/types"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/k8sclient"
 )
 

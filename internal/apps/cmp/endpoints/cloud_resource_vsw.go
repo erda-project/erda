@@ -26,9 +26,9 @@ import (
 	"golang.org/x/text/message"
 
 	"github.com/erda-project/erda/apistructs"
-	aliyun_resources "github.com/erda-project/erda/modules/apps/cmp/impl/aliyun-resources"
-	"github.com/erda-project/erda/modules/apps/cmp/impl/aliyun-resources/vswitch"
-	libzone "github.com/erda-project/erda/modules/apps/cmp/impl/aliyun-resources/zone"
+	aliyun_resources "github.com/erda-project/erda/internal/apps/cmp/impl/aliyun-resources"
+	"github.com/erda-project/erda/internal/apps/cmp/impl/aliyun-resources/vswitch"
+	libzone "github.com/erda-project/erda/internal/apps/cmp/impl/aliyun-resources/zone"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/strutil"

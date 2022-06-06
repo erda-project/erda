@@ -29,10 +29,10 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/apps/dop/component-protocol/components/auto-test-scenes/common/gshelper"
-	"github.com/erda-project/erda/modules/apps/dop/component-protocol/types"
-	"github.com/erda-project/erda/modules/tools/openapi/legacy/component-protocol/pkg/autotest/step"
-	"github.com/erda-project/erda/modules/tools/openapi/legacy/component-protocol/pkg/type_conversion"
+	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/auto-test-scenes/common/gshelper"
+	"github.com/erda-project/erda/internal/apps/dop/component-protocol/types"
+	"github.com/erda-project/erda/internal/tools/openapi/legacy/component-protocol/pkg/autotest/step"
+	"github.com/erda-project/erda/internal/tools/openapi/legacy/component-protocol/pkg/type_conversion"
 	"github.com/erda-project/erda/pkg/expression"
 )
 

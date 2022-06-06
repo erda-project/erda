@@ -19,7 +19,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/erda-project/erda/modules/core/messenger/eventbox/types"
+	"github.com/erda-project/erda/internal/core/messenger/eventbox/types"
 )
 
 func TestUnifyLabels(t *testing.T) {

@@ -21,7 +21,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/apps/dop/component-protocol/components/common"
+	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/common"
 )
 
 func (l *List) GenAppKvInfo(item apistructs.ApplicationDTO, mrCount int) (kvs []list.KvInfo) {

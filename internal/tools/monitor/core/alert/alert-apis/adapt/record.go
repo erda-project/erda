@@ -23,8 +23,8 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/monitor/core/event/storage"
-	"github.com/erda-project/erda/modules/tools/monitor/core/expression"
+	"github.com/erda-project/erda/internal/tools/monitor/core/event/storage"
+	"github.com/erda-project/erda/internal/tools/monitor/core/expression"
 )
 
 type (

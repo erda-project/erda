@@ -22,7 +22,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	writer "github.com/erda-project/erda-infra/pkg/parallel-writer"
 	"github.com/erda-project/erda-infra/providers/elasticsearch"
-	"github.com/erda-project/erda/modules/tools/monitor/extensions/loghub/exporter"
+	"github.com/erda-project/erda/internal/tools/monitor/extensions/loghub/exporter"
 )
 
 type config struct {

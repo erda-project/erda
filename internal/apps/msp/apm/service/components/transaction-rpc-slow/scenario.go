@@ -15,7 +15,7 @@
 package transaction_rpc_slow
 
 import (
-	_ "github.com/erda-project/erda/modules/apps/msp/apm/service/components/transaction-rpc-slow/metric_table"
-	_ "github.com/erda-project/erda/modules/apps/msp/apm/service/components/transaction-rpc-slow/metric_table_filter"
-	_ "github.com/erda-project/erda/modules/apps/msp/apm/service/components/transaction-rpc-slow/slow_req_distribution"
+	_ "github.com/erda-project/erda/internal/apps/msp/apm/service/components/transaction-rpc-slow/metric_table"
+	_ "github.com/erda-project/erda/internal/apps/msp/apm/service/components/transaction-rpc-slow/metric_table_filter"
+	_ "github.com/erda-project/erda/internal/apps/msp/apm/service/components/transaction-rpc-slow/slow_req_distribution"
 )

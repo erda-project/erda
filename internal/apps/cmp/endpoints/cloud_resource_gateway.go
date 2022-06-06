@@ -27,10 +27,10 @@ import (
 	"golang.org/x/text/message"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/apps/cmp/dbclient"
-	aliyun_resources "github.com/erda-project/erda/modules/apps/cmp/impl/aliyun-resources"
-	_ "github.com/erda-project/erda/modules/apps/cmp/impl/aliyun-resources/cloudapi"
-	resource_factory "github.com/erda-project/erda/modules/apps/cmp/impl/resource-factory"
+	"github.com/erda-project/erda/internal/apps/cmp/dbclient"
+	aliyun_resources "github.com/erda-project/erda/internal/apps/cmp/impl/aliyun-resources"
+	_ "github.com/erda-project/erda/internal/apps/cmp/impl/aliyun-resources/cloudapi"
+	resource_factory "github.com/erda-project/erda/internal/apps/cmp/impl/resource-factory"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 )

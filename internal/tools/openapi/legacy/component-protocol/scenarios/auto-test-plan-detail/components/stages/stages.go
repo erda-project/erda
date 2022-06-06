@@ -20,7 +20,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/openapi/legacy/component-protocol/scenarios/auto-test-plan-detail/i18n"
+	"github.com/erda-project/erda/internal/tools/openapi/legacy/component-protocol/scenarios/auto-test-plan-detail/i18n"
 )
 
 func (i *ComponentStageForm) RenderStage(step apistructs.TestPlanV2Step) (StageData, error) {

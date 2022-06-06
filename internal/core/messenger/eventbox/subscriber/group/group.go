@@ -22,9 +22,9 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/core/messenger/eventbox/conf"
-	dispatchererror "github.com/erda-project/erda/modules/core/messenger/eventbox/dispatcher/errors"
-	"github.com/erda-project/erda/modules/core/messenger/eventbox/types"
+	"github.com/erda-project/erda/internal/core/messenger/eventbox/conf"
+	dispatchererror "github.com/erda-project/erda/internal/core/messenger/eventbox/dispatcher/errors"
+	"github.com/erda-project/erda/internal/core/messenger/eventbox/types"
 	"github.com/erda-project/erda/pkg/strutil"
 	"github.com/erda-project/erda/pkg/template"
 )

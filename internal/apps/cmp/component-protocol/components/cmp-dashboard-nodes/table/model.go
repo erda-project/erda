@@ -15,7 +15,7 @@
 package table
 
 import (
-	table2 "github.com/erda-project/erda/modules/apps/cmp/component-protocol/components/cmp-dashboard-nodes/common/table"
+	table2 "github.com/erda-project/erda/internal/apps/cmp/component-protocol/components/cmp-dashboard-nodes/common/table"
 )
 
 type Table struct {

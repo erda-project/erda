@@ -14,7 +14,7 @@
 
 package dop
 
-import "github.com/erda-project/erda/modules/tools/openapi/legacy/api/apis"
+import "github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
 
 var ADAPTOR_CICD_TASK_LOG = apis.ApiSpec{
 	Path:        "/api/cicd/<pipelineID>/tasks/<taskID>/logs",

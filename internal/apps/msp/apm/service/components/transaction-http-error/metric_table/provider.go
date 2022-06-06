@@ -26,10 +26,10 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
-	error_transaction "github.com/erda-project/erda/modules/apps/msp/apm/service/common/error-transaction"
-	"github.com/erda-project/erda/modules/apps/msp/apm/service/datasources"
-	"github.com/erda-project/erda/modules/apps/msp/apm/service/view/common"
-	viewtable "github.com/erda-project/erda/modules/apps/msp/apm/service/view/table"
+	error_transaction "github.com/erda-project/erda/internal/apps/msp/apm/service/common/error-transaction"
+	"github.com/erda-project/erda/internal/apps/msp/apm/service/datasources"
+	"github.com/erda-project/erda/internal/apps/msp/apm/service/view/common"
+	viewtable "github.com/erda-project/erda/internal/apps/msp/apm/service/view/table"
 )
 
 type provider struct {

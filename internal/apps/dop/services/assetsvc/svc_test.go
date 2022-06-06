@@ -18,7 +18,7 @@ import (
 	"testing"
 
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/apps/dop/services/assetsvc"
+	"github.com/erda-project/erda/internal/apps/dop/services/assetsvc"
 )
 
 func TestNew(t *testing.T) {

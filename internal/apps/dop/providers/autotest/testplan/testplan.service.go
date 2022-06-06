@@ -26,9 +26,9 @@ import (
 	"github.com/erda-project/erda-proto-go/core/dop/autotest/testplan/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/apps/dop/providers/autotest/testplan/db"
-	"github.com/erda-project/erda/modules/apps/dop/services/apierrors"
-	autotestv2 "github.com/erda-project/erda/modules/apps/dop/services/autotest_v2"
+	"github.com/erda-project/erda/internal/apps/dop/providers/autotest/testplan/db"
+	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
+	autotestv2 "github.com/erda-project/erda/internal/apps/dop/services/autotest_v2"
 	"github.com/erda-project/erda/pkg/time/mysql_time"
 )
 

@@ -18,7 +18,7 @@ import (
 	"fmt"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/apps/dop/services/apierrors"
+	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 )
 
 // BatchCleanFromRecycleBin 从回收站彻底删除测试用例

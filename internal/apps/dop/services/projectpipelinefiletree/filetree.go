@@ -20,9 +20,9 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/apps/dop/services/apierrors"
-	"github.com/erda-project/erda/modules/apps/dop/services/autotest"
-	"github.com/erda-project/erda/modules/apps/dop/services/filetree"
+	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
+	"github.com/erda-project/erda/internal/apps/dop/services/autotest"
+	"github.com/erda-project/erda/internal/apps/dop/services/filetree"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 

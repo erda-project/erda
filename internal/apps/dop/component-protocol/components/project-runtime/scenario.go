@@ -15,9 +15,9 @@
 package project_runtime
 
 import (
-	_ "github.com/erda-project/erda/modules/apps/dop/component-protocol/components/project-runtime/advanceFilter"
-	_ "github.com/erda-project/erda/modules/apps/dop/component-protocol/components/project-runtime/cleanData"
-	_ "github.com/erda-project/erda/modules/apps/dop/component-protocol/components/project-runtime/filterContainer"
-	_ "github.com/erda-project/erda/modules/apps/dop/component-protocol/components/project-runtime/list"
-	_ "github.com/erda-project/erda/modules/apps/dop/component-protocol/components/project-runtime/page"
+	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/project-runtime/advanceFilter"
+	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/project-runtime/cleanData"
+	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/project-runtime/filterContainer"
+	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/project-runtime/list"
+	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/project-runtime/page"
 )

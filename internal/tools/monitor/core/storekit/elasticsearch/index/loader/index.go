@@ -26,7 +26,7 @@ import (
 	"github.com/recallsong/go-utils/encoding/jsonx"
 	"github.com/recallsong/go-utils/lang/size"
 
-	"github.com/erda-project/erda/modules/tools/monitor/core/storekit/elasticsearch/index"
+	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/elasticsearch/index"
 )
 
 func (p *provider) catIndices(ctx context.Context, prefix ...string) (elastic.CatIndicesResponse, error) {

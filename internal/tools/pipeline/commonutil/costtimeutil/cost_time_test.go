@@ -20,7 +20,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	spec2 "github.com/erda-project/erda/modules/tools/pipeline/spec"
+	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 func TestCalculateTaskCostTimeSec(t *testing.T) {

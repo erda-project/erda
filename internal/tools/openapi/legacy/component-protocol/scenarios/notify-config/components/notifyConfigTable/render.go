@@ -22,8 +22,8 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	protocol "github.com/erda-project/erda/modules/tools/openapi/legacy/component-protocol"
-	"github.com/erda-project/erda/modules/tools/openapi/legacy/component-protocol/components/table"
+	protocol "github.com/erda-project/erda/internal/tools/openapi/legacy/component-protocol"
+	"github.com/erda-project/erda/internal/tools/openapi/legacy/component-protocol/components/table"
 )
 
 func (n *Notify) Import(c *apistructs.Component) error {

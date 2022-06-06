@@ -19,7 +19,7 @@ import (
 	"time"
 
 	"github.com/erda-project/erda-proto-go/oap/event/pb"
-	"github.com/erda-project/erda/modules/tools/monitor/core/event"
+	"github.com/erda-project/erda/internal/tools/monitor/core/event"
 )
 
 func (p *provider) decode(key, value []byte, topic *string, timestamp time.Time) (interface{}, error) {

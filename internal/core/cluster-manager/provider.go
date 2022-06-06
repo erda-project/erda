@@ -27,10 +27,10 @@ import (
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/core/cluster-manager/cluster"
-	"github.com/erda-project/erda/modules/core/cluster-manager/cluster/db"
-	"github.com/erda-project/erda/modules/core/cluster-manager/conf"
-	"github.com/erda-project/erda/modules/core/cluster-manager/dialer/server"
+	"github.com/erda-project/erda/internal/core/cluster-manager/cluster"
+	"github.com/erda-project/erda/internal/core/cluster-manager/cluster/db"
+	"github.com/erda-project/erda/internal/core/cluster-manager/conf"
+	"github.com/erda-project/erda/internal/core/cluster-manager/dialer/server"
 )
 
 type provider struct {

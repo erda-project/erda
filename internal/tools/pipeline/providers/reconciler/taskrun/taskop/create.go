@@ -21,8 +21,8 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/pipeline/aop/aoptypes"
-	"github.com/erda-project/erda/modules/tools/pipeline/providers/reconciler/taskrun"
+	"github.com/erda-project/erda/internal/tools/pipeline/aop/aoptypes"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/reconciler/taskrun"
 )
 
 type create taskrun.TaskRun

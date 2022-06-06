@@ -27,9 +27,9 @@ import (
 	"github.com/erda-project/erda-proto-go/core/pipeline/action/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/tools/pipeline/providers/actionmgr/db"
-	"github.com/erda-project/erda/modules/tools/pipeline/providers/clusterinfo"
-	"github.com/erda-project/erda/modules/tools/pipeline/providers/edgepipeline_register"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/actionmgr/db"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/clusterinfo"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/edgepipeline_register"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/goroutinepool"
 )

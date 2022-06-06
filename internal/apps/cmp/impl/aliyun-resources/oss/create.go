@@ -22,9 +22,9 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/apps/cmp/dbclient"
-	aliyun_resources "github.com/erda-project/erda/modules/apps/cmp/impl/aliyun-resources"
-	"github.com/erda-project/erda/modules/apps/cmp/impl/aliyun-resources/vpc"
+	"github.com/erda-project/erda/internal/apps/cmp/dbclient"
+	aliyun_resources "github.com/erda-project/erda/internal/apps/cmp/impl/aliyun-resources"
+	"github.com/erda-project/erda/internal/apps/cmp/impl/aliyun-resources/vpc"
 )
 
 func CreateBucketWithRecord(ctx aliyun_resources.Context, req apistructs.CreateCloudResourceOssRequest, record *dbclient.Record) {

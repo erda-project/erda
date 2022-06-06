@@ -18,7 +18,7 @@ import (
 	"errors"
 
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/apps/msp/apm/exception/model"
+	"github.com/erda-project/erda/internal/apps/msp/apm/exception/model"
 )
 
 // Validator .

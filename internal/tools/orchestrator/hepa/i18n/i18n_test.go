@@ -19,7 +19,7 @@ import (
 	"testing"
 
 	providersI18n "github.com/erda-project/erda-infra/providers/i18n"
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/i18n"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/i18n"
 )
 
 type mockTranslator struct {

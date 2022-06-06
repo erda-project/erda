@@ -21,9 +21,9 @@ import (
 
 	apiv1 "k8s.io/api/core/v1"
 
-	"github.com/erda-project/erda/modules/tools/monitor/oap/collector/lib"
-	"github.com/erda-project/erda/modules/tools/monitor/oap/collector/lib/filter"
-	"github.com/erda-project/erda/modules/tools/monitor/oap/collector/plugins/processors/k8s-tagger/metadata"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/filter"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/processors/k8s-tagger/metadata"
 )
 
 const (

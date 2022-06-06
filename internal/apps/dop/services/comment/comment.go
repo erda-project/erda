@@ -19,9 +19,9 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/apps/dop/dao"
-	"github.com/erda-project/erda/modules/apps/dop/model"
-	"github.com/erda-project/erda/modules/pkg/user"
+	"github.com/erda-project/erda/internal/apps/dop/dao"
+	"github.com/erda-project/erda/internal/apps/dop/model"
+	"github.com/erda-project/erda/internal/pkg/user"
 )
 
 // Comment 工单评论操作封装

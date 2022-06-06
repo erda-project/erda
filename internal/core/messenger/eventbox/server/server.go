@@ -26,8 +26,8 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda/modules/core/messenger/eventbox/conf"
-	"github.com/erda-project/erda/modules/core/messenger/eventbox/server/types"
+	"github.com/erda-project/erda/internal/core/messenger/eventbox/conf"
+	"github.com/erda-project/erda/internal/core/messenger/eventbox/server/types"
 )
 
 type Server struct {

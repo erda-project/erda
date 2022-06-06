@@ -21,9 +21,9 @@ import (
 	"github.com/olivere/elastic"
 
 	"github.com/erda-project/erda-proto-go/msp/resource/pb"
-	monitordb "github.com/erda-project/erda/modules/apps/msp/instance/db/monitor"
-	"github.com/erda-project/erda/modules/apps/msp/resource/deploy/coordinator"
-	"github.com/erda-project/erda/modules/apps/msp/resource/deploy/handlers"
+	monitordb "github.com/erda-project/erda/internal/apps/msp/instance/db/monitor"
+	"github.com/erda-project/erda/internal/apps/msp/resource/deploy/coordinator"
+	"github.com/erda-project/erda/internal/apps/msp/resource/deploy/handlers"
 )
 
 type resourceService struct {

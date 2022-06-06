@@ -17,7 +17,7 @@ package issue
 import (
 	"time"
 
-	"github.com/erda-project/erda/modules/apps/dop/dao"
+	"github.com/erda-project/erda/internal/apps/dop/dao"
 )
 
 type condition func() bool

@@ -24,9 +24,9 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	protocol "github.com/erda-project/erda/modules/tools/openapi/legacy/component-protocol"
-	_ "github.com/erda-project/erda/modules/tools/openapi/legacy/component-protocol/scenarios/action/components/actionForm"
-	"github.com/erda-project/erda/modules/tools/openapi/legacy/i18n"
+	protocol "github.com/erda-project/erda/internal/tools/openapi/legacy/component-protocol"
+	_ "github.com/erda-project/erda/internal/tools/openapi/legacy/component-protocol/scenarios/action/components/actionForm"
+	"github.com/erda-project/erda/internal/tools/openapi/legacy/i18n"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 

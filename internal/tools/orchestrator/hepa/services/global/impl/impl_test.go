@@ -19,9 +19,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/repository/service"
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/services/endpoint_api"
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/services/global"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/service"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/endpoint_api"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/global"
 )
 
 func Test_encodeTenantGroup(t *testing.T) {

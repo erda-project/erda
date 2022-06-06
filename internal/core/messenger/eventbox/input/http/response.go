@@ -17,7 +17,7 @@ package http
 import (
 	"fmt"
 
-	"github.com/erda-project/erda/modules/core/messenger/eventbox/dispatcher/errors"
+	"github.com/erda-project/erda/internal/core/messenger/eventbox/dispatcher/errors"
 )
 
 func genResponse(dispatchErrs *errors.DispatchError) error {

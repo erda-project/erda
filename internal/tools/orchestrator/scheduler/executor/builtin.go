@@ -15,8 +15,8 @@
 package executor
 
 import (
-	_ "github.com/erda-project/erda/modules/tools/orchestrator/scheduler/executor/plugins/demo"
-	_ "github.com/erda-project/erda/modules/tools/orchestrator/scheduler/executor/plugins/edas"
-	_ "github.com/erda-project/erda/modules/tools/orchestrator/scheduler/executor/plugins/flink"
-	_ "github.com/erda-project/erda/modules/tools/orchestrator/scheduler/executor/plugins/k8s"
+	_ "github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/demo"
+	_ "github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/edas"
+	_ "github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/flink"
+	_ "github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s"
 )

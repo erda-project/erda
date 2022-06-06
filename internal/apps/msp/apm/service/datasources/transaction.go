@@ -30,10 +30,10 @@ import (
 	stdtable "github.com/erda-project/erda-infra/providers/component-protocol/components/table"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/msp/apm/service/pb"
-	"github.com/erda-project/erda/modules/apps/msp/apm/service/view/card"
-	"github.com/erda-project/erda/modules/apps/msp/apm/service/view/chart"
-	"github.com/erda-project/erda/modules/apps/msp/apm/service/view/common"
-	"github.com/erda-project/erda/modules/apps/msp/apm/service/view/table"
+	"github.com/erda-project/erda/internal/apps/msp/apm/service/view/card"
+	"github.com/erda-project/erda/internal/apps/msp/apm/service/view/chart"
+	"github.com/erda-project/erda/internal/apps/msp/apm/service/view/common"
+	"github.com/erda-project/erda/internal/apps/msp/apm/service/view/table"
 	"github.com/erda-project/erda/pkg/math"
 )
 

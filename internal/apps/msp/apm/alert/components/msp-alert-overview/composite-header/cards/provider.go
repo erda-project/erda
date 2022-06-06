@@ -28,7 +28,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	messengerpb "github.com/erda-project/erda-proto-go/core/messenger/notify/pb"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
-	"github.com/erda-project/erda/modules/apps/msp/apm/alert/components/msp-alert-overview/common"
+	"github.com/erda-project/erda/internal/apps/msp/apm/alert/components/msp-alert-overview/common"
 )
 
 const (

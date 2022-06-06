@@ -24,9 +24,9 @@ import (
 
 	"github.com/olivere/elastic"
 
-	"github.com/erda-project/erda/modules/tools/monitor/core/event"
-	"github.com/erda-project/erda/modules/tools/monitor/core/event/storage"
-	"github.com/erda-project/erda/modules/tools/monitor/core/storekit/elasticsearch/index/loader"
+	"github.com/erda-project/erda/internal/tools/monitor/core/event"
+	"github.com/erda-project/erda/internal/tools/monitor/core/event/storage"
+	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/elasticsearch/index/loader"
 )
 
 func (p *provider) QueryPaged(ctx context.Context, sel *storage.Selector, pageNo, pageSize int) ([]*event.Event, error) {

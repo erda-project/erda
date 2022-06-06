@@ -18,7 +18,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/erda-project/erda/modules/tools/monitor/oap/collector/plugins/processors/k8s-tagger/metadata/pod"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/processors/k8s-tagger/metadata/pod"
 )
 
 var matcherPattern = regexp.MustCompile("%{([^%{}]*)}")

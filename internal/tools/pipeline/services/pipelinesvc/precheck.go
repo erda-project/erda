@@ -18,11 +18,11 @@ import (
 	"context"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/pipeline/precheck"
-	prechecktype2 "github.com/erda-project/erda/modules/tools/pipeline/precheck/prechecktype"
-	"github.com/erda-project/erda/modules/tools/pipeline/providers/cache"
-	"github.com/erda-project/erda/modules/tools/pipeline/services/apierrors"
-	spec2 "github.com/erda-project/erda/modules/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/precheck"
+	prechecktype2 "github.com/erda-project/erda/internal/tools/pipeline/precheck/prechecktype"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/cache"
+	"github.com/erda-project/erda/internal/tools/pipeline/services/apierrors"
+	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 

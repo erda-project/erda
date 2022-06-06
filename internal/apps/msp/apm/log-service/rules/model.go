@@ -22,7 +22,7 @@ import (
 	"github.com/recallsong/go-utils/reflectx"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/apps/msp/apm/log-service/rules/db"
+	"github.com/erda-project/erda/internal/apps/msp/apm/log-service/rules/db"
 )
 
 // LogMetricConfig .

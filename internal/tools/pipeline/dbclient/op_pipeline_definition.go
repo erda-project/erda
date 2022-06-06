@@ -17,7 +17,7 @@ package dbclient
 import (
 	"fmt"
 
-	"github.com/erda-project/erda/modules/tools/pipeline/providers/definition/db"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/definition/db"
 )
 
 func (client *Client) GetPipelineDefinition(id string, ops ...SessionOption) (*db.PipelineDefinition, error) {

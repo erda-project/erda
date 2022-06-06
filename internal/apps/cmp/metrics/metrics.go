@@ -28,7 +28,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
-	"github.com/erda-project/erda/modules/apps/cmp/cache"
+	"github.com/erda-project/erda/internal/apps/cmp/cache"
 )
 
 type ResourceType string

@@ -27,8 +27,8 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda-proto-go/msp/apm/service/pb"
-	"github.com/erda-project/erda/modules/apps/msp/apm/service/datasources"
-	"github.com/erda-project/erda/modules/apps/msp/apm/service/view/common"
+	"github.com/erda-project/erda/internal/apps/msp/apm/service/datasources"
+	"github.com/erda-project/erda/internal/apps/msp/apm/service/view/common"
 )
 
 type provider struct {

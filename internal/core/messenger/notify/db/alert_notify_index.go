@@ -20,7 +20,7 @@ import (
 
 	"github.com/jinzhu/gorm"
 
-	"github.com/erda-project/erda/modules/core/messenger/notify/model"
+	"github.com/erda-project/erda/internal/core/messenger/notify/model"
 )
 
 type AlertNotifyIndexDB struct {

@@ -34,10 +34,10 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/i18n"
-	"github.com/erda-project/erda/modules/tools/monitor/common/db"
-	tsql "github.com/erda-project/erda/modules/tools/monitor/core/metric/query/es-tsql"
-	"github.com/erda-project/erda/modules/tools/monitor/core/metric/query/metricq"
-	"github.com/erda-project/erda/modules/tools/monitor/core/metric/query/query"
+	"github.com/erda-project/erda/internal/tools/monitor/common/db"
+	tsql "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql"
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/metricq"
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/query"
 	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
 

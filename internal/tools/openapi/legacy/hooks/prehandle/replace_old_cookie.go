@@ -19,7 +19,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/erda-project/erda/modules/tools/openapi/legacy/conf"
+	"github.com/erda-project/erda/internal/tools/openapi/legacy/conf"
 )
 
 func ReplaceOldCookie(ctx context.Context, rw http.ResponseWriter, req *http.Request) {

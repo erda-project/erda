@@ -15,7 +15,7 @@
 package runtime
 
 import (
-	"github.com/erda-project/erda/modules/tools/orchestrator/events"
+	"github.com/erda-project/erda/internal/tools/orchestrator/events"
 )
 
 type EventManagerService interface {

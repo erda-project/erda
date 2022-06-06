@@ -19,9 +19,9 @@ import (
 	"net/http"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/pkg/user"
-	"github.com/erda-project/erda/modules/tools/pipeline/services/apierrors"
-	"github.com/erda-project/erda/modules/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/pkg/user"
+	"github.com/erda-project/erda/internal/tools/pipeline/services/apierrors"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 

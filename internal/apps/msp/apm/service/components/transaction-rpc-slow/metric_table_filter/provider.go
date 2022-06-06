@@ -26,9 +26,9 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda-infra/providers/i18n"
-	"github.com/erda-project/erda/modules/apps/dop/component-protocol/components/issue-kanban/common/gshelper"
-	slow_transaction "github.com/erda-project/erda/modules/apps/msp/apm/service/common/slow-transaction"
-	"github.com/erda-project/erda/modules/tools/openapi/legacy/component-protocol/components/filter"
+	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/issue-kanban/common/gshelper"
+	slow_transaction "github.com/erda-project/erda/internal/apps/msp/apm/service/common/slow-transaction"
+	"github.com/erda-project/erda/internal/tools/openapi/legacy/component-protocol/components/filter"
 )
 
 type ComponentFilter struct {

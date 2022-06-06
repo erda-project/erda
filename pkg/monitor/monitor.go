@@ -29,7 +29,7 @@ package monitor
 // 	"github.com/sirupsen/logrus"
 
 // 	"github.com/erda-project/erda/apistructs"
-// 	"github.com/erda-project/erda/modules/eventbox/api"
+// 	"github.com/erda-project/erda/internal/eventbox/api"
 // 	"github.com/erda-project/erda/pkg/strutil"
 // )
 

@@ -20,7 +20,7 @@ import (
 	"time"
 
 	"github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
-	db2 "github.com/erda-project/erda/modules/tools/pipeline/providers/source/db"
+	db2 "github.com/erda-project/erda/internal/tools/pipeline/providers/source/db"
 )
 
 type pipelineSource struct {

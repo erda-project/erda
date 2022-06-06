@@ -15,8 +15,8 @@
 package factories
 
 import (
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/endpoint"
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/k8s"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/endpoint"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/k8s"
 )
 
 type K8SFactory struct {

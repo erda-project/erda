@@ -20,7 +20,7 @@ import (
 
 	"google.golang.org/protobuf/types/known/structpb"
 
-	"github.com/erda-project/erda/modules/apps/msp/apm/service/view/common"
+	"github.com/erda-project/erda/internal/apps/msp/apm/service/view/common"
 	"github.com/erda-project/erda/pkg/time"
 )
 

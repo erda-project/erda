@@ -19,5 +19,5 @@ import (
 	_ "github.com/erda-project/erda-infra/providers/httpserver"
 	_ "github.com/erda-project/erda-infra/providers/mysql/v2"
 	_ "github.com/erda-project/erda-infra/providers/serviceregister"
-	_ "github.com/erda-project/erda/modules/apps/gallery/cache"
+	_ "github.com/erda-project/erda/internal/apps/gallery/cache"
 )

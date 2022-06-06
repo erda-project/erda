@@ -14,7 +14,7 @@
 
 package monitor
 
-import "github.com/erda-project/erda/modules/tools/openapi/legacy/api/apis"
+import "github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
 
 var MONITOR_APM_TOPOLOGY_SEARCH_TAGV_GET = apis.ApiSpec{
 	Path:        "/api/apm/topology/search/tagv",

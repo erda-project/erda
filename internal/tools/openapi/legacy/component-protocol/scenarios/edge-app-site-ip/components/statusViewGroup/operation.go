@@ -19,8 +19,8 @@ import (
 	"fmt"
 
 	"github.com/erda-project/erda/apistructs"
-	protocol "github.com/erda-project/erda/modules/tools/openapi/legacy/component-protocol"
-	siteiplist "github.com/erda-project/erda/modules/tools/openapi/legacy/component-protocol/scenarios/edge-app-site-ip/components/siteIpList"
+	protocol "github.com/erda-project/erda/internal/tools/openapi/legacy/component-protocol"
+	siteiplist "github.com/erda-project/erda/internal/tools/openapi/legacy/component-protocol/scenarios/edge-app-site-ip/components/siteIpList"
 )
 
 const (

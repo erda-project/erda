@@ -19,8 +19,8 @@ import (
 	"fmt"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/pkg/websocket"
-	spec2 "github.com/erda-project/erda/modules/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/pkg/websocket"
+	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 type PipelineTaskRuntimeEvent struct {

@@ -29,7 +29,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs/logrusx"
 	"github.com/erda-project/erda-proto-go/core/monitor/log/query/pb"
-	"github.com/erda-project/erda/modules/tools/monitor/core/log/storage"
+	"github.com/erda-project/erda/internal/tools/monitor/core/log/storage"
 )
 
 type logTestItem struct {

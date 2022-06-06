@@ -15,10 +15,10 @@
 package addon_mysql_account
 
 import (
-	_ "github.com/erda-project/erda/modules/apps/dop/component-protocol/components/addon-mysql-account/accountTable"
-	_ "github.com/erda-project/erda/modules/apps/dop/component-protocol/components/addon-mysql-account/addAccountButton"
-	_ "github.com/erda-project/erda/modules/apps/dop/component-protocol/components/addon-mysql-account/filter"
-	_ "github.com/erda-project/erda/modules/apps/dop/component-protocol/components/addon-mysql-account/root"
-	_ "github.com/erda-project/erda/modules/apps/dop/component-protocol/components/addon-mysql-account/viewPassword"
-	_ "github.com/erda-project/erda/modules/apps/dop/component-protocol/components/addon-mysql-account/viewPasswordModal"
+	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/addon-mysql-account/accountTable"
+	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/addon-mysql-account/addAccountButton"
+	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/addon-mysql-account/filter"
+	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/addon-mysql-account/root"
+	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/addon-mysql-account/viewPassword"
+	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/addon-mysql-account/viewPasswordModal"
 )

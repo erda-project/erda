@@ -20,8 +20,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/erda-project/erda/modules/tools/openapi/legacy/auth"
-	openapiauth "github.com/erda-project/erda/modules/tools/openapi/openapi-ng/auth"
+	"github.com/erda-project/erda/internal/tools/openapi/legacy/auth"
+	openapiauth "github.com/erda-project/erda/internal/tools/openapi/openapi-ng/auth"
 )
 
 type loginChecker struct {

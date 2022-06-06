@@ -20,8 +20,8 @@ import (
 	"strconv"
 
 	"github.com/erda-project/erda/apistructs"
-	protocol "github.com/erda-project/erda/modules/tools/openapi/legacy/component-protocol"
-	appconfigform "github.com/erda-project/erda/modules/tools/openapi/legacy/component-protocol/scenarios/edge-application/components/appConfigForm"
+	protocol "github.com/erda-project/erda/internal/tools/openapi/legacy/component-protocol"
+	appconfigform "github.com/erda-project/erda/internal/tools/openapi/legacy/component-protocol/scenarios/edge-application/components/appConfigForm"
 )
 
 type ComponentList struct {

@@ -23,11 +23,11 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/pipeline/aop/aoptypes"
-	"github.com/erda-project/erda/modules/tools/pipeline/commonutil/costtimeutil"
-	"github.com/erda-project/erda/modules/tools/pipeline/conf"
-	"github.com/erda-project/erda/modules/tools/pipeline/metrics"
-	"github.com/erda-project/erda/modules/tools/pipeline/providers/reconciler/taskrun"
+	"github.com/erda-project/erda/internal/tools/pipeline/aop/aoptypes"
+	"github.com/erda-project/erda/internal/tools/pipeline/commonutil/costtimeutil"
+	"github.com/erda-project/erda/internal/tools/pipeline/conf"
+	"github.com/erda-project/erda/internal/tools/pipeline/metrics"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/reconciler/taskrun"
 )
 
 var err4EnableDeclineRatio = errors.New("enable decline ratio")

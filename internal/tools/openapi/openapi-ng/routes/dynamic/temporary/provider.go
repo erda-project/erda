@@ -29,7 +29,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	fclient "github.com/erda-project/erda-infra/providers/remote-forward/client"
 	common "github.com/erda-project/erda-proto-go/common/pb"
-	"github.com/erda-project/erda/modules/tools/openapi/openapi-ng/routes/dynamic"
+	"github.com/erda-project/erda/internal/tools/openapi/openapi-ng/routes/dynamic"
 	httpapi "github.com/erda-project/erda/pkg/common/httpapi"
 )
 

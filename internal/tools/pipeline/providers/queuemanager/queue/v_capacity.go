@@ -18,9 +18,9 @@ import (
 	"fmt"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/pipeline/providers/queuemanager/pkg/queue/priorityqueue"
-	types2 "github.com/erda-project/erda/modules/tools/pipeline/providers/queuemanager/types"
-	"github.com/erda-project/erda/modules/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/queuemanager/pkg/queue/priorityqueue"
+	types2 "github.com/erda-project/erda/internal/tools/pipeline/providers/queuemanager/types"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 

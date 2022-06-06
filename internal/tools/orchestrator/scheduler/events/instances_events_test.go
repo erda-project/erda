@@ -21,8 +21,8 @@ import (
 
 	"bou.ke/monkey"
 
-	"github.com/erda-project/erda/modules/tools/orchestrator/conf"
-	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/events/eventtypes"
+	"github.com/erda-project/erda/internal/tools/orchestrator/conf"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/events/eventtypes"
 	"github.com/erda-project/erda/pkg/schedule/executorconfig"
 )
 

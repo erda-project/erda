@@ -14,7 +14,7 @@
 
 package dop
 
-import "github.com/erda-project/erda/modules/tools/openapi/legacy/api/apis"
+import "github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
 
 var CMDB_CERTIFICATE_APP_CANCEL = apis.ApiSpec{
 	Path:        "/api/certificates/actions/application-cancel-quote",

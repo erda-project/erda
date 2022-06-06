@@ -25,11 +25,11 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
-	"github.com/erda-project/erda/modules/apps/cmp"
-	"github.com/erda-project/erda/modules/apps/cmp/component-protocol/components/cmp-dashboard-nodes/common"
-	"github.com/erda-project/erda/modules/apps/cmp/component-protocol/components/cmp-dashboard-nodes/common/chart"
-	cputil2 "github.com/erda-project/erda/modules/apps/cmp/component-protocol/cputil"
-	"github.com/erda-project/erda/modules/apps/cmp/metrics"
+	"github.com/erda-project/erda/internal/apps/cmp"
+	"github.com/erda-project/erda/internal/apps/cmp/component-protocol/components/cmp-dashboard-nodes/common"
+	"github.com/erda-project/erda/internal/apps/cmp/component-protocol/components/cmp-dashboard-nodes/common/chart"
+	cputil2 "github.com/erda-project/erda/internal/apps/cmp/component-protocol/cputil"
+	"github.com/erda-project/erda/internal/apps/cmp/metrics"
 )
 
 var steveServer cmp.SteveServer

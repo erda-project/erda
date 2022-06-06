@@ -25,7 +25,7 @@ import (
 	"github.com/olivere/elastic"
 	"github.com/recallsong/go-utils/encoding/jsonx"
 
-	logs "github.com/erda-project/erda/modules/tools/monitor/core/log"
+	logs "github.com/erda-project/erda/internal/tools/monitor/core/log"
 )
 
 func Example_mergeLogSearch() {

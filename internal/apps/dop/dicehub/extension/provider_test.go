@@ -24,7 +24,7 @@ import (
 	"bou.ke/monkey"
 	"github.com/alecthomas/assert"
 
-	"github.com/erda-project/erda/modules/apps/dop/dicehub/extension/db"
+	"github.com/erda-project/erda/internal/apps/dop/dicehub/extension/db"
 )
 
 func Test_provider(t *testing.T) {

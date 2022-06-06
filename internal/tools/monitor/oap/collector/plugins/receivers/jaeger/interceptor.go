@@ -29,7 +29,7 @@ import (
 	"github.com/erda-project/erda-oap-thirdparty-protocol/jaeger-thrift/jaeger"
 	jaegerpb "github.com/erda-project/erda-proto-go/oap/collector/receiver/jaeger/pb"
 	tracing "github.com/erda-project/erda-proto-go/oap/trace/pb"
-	"github.com/erda-project/erda/modules/tools/monitor/oap/collector/interceptor"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/interceptor"
 )
 
 var (

@@ -23,11 +23,11 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/modules/tools/monitor/oap/collector/core/config"
-	"github.com/erda-project/erda/modules/tools/monitor/oap/collector/core/model"
-	"github.com/erda-project/erda/modules/tools/monitor/oap/collector/core/model/odata"
-	"github.com/erda-project/erda/modules/tools/monitor/oap/collector/core/pipeline"
-	"github.com/erda-project/erda/modules/tools/monitor/oap/collector/lib/common/unmarshalwork"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/config"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model/odata"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/pipeline"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/common/unmarshalwork"
 )
 
 func init() {

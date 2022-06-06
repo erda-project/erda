@@ -17,7 +17,7 @@ package cmp
 import (
 	"github.com/rancher/apiserver/pkg/types"
 
-	"github.com/erda-project/erda/modules/tools/openapi/legacy/api/apis"
+	"github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
 )
 
 var CMP_STEVE_UPDATE = apis.ApiSpec{

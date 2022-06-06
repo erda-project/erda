@@ -24,8 +24,8 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	election "github.com/erda-project/erda-infra/providers/etcd-election"
-	"github.com/erda-project/erda/modules/apps/msp/apm/checker/storage/cache"
-	"github.com/erda-project/erda/modules/apps/msp/apm/checker/storage/db"
+	"github.com/erda-project/erda/internal/apps/msp/apm/checker/storage/cache"
+	"github.com/erda-project/erda/internal/apps/msp/apm/checker/storage/db"
 )
 
 type config struct {

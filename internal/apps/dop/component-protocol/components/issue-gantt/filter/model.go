@@ -18,7 +18,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/filter/impl"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/apps/dop/services/issue"
+	"github.com/erda-project/erda/internal/apps/dop/services/issue"
 )
 
 type ComponentFilter struct {

@@ -17,7 +17,7 @@ package api
 import (
 	"github.com/erda-project/erda-infra/base/version"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/gittar/webcontext"
+	"github.com/erda-project/erda/internal/tools/gittar/webcontext"
 )
 
 const (

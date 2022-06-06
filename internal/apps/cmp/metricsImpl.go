@@ -17,7 +17,7 @@ package cmp
 import (
 	"context"
 
-	"github.com/erda-project/erda/modules/apps/cmp/metrics"
+	"github.com/erda-project/erda/internal/apps/cmp/metrics"
 )
 
 func (p *provider) NodeMetrics(ctx context.Context, req *metrics.MetricsRequest) (map[string]*metrics.MetricsData, error) {

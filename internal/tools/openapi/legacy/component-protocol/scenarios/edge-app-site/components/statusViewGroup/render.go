@@ -19,8 +19,8 @@ import (
 	"fmt"
 
 	"github.com/erda-project/erda/apistructs"
-	protocol "github.com/erda-project/erda/modules/tools/openapi/legacy/component-protocol"
-	"github.com/erda-project/erda/modules/tools/openapi/legacy/component-protocol/scenarios/edge-app-site/i18n"
+	protocol "github.com/erda-project/erda/internal/tools/openapi/legacy/component-protocol"
+	"github.com/erda-project/erda/internal/tools/openapi/legacy/component-protocol/scenarios/edge-app-site/i18n"
 	i18r "github.com/erda-project/erda/pkg/i18n"
 )
 

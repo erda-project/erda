@@ -31,7 +31,7 @@ import (
 
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/apps/ecp/dbclient"
+	"github.com/erda-project/erda/internal/apps/ecp/dbclient"
 	"github.com/erda-project/erda/pkg/clientgo/apis/openyurt/v1alpha1"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/database/dbengine"

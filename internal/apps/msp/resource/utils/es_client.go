@@ -25,7 +25,7 @@ import (
 	"github.com/olivere/elastic"
 	"github.com/recallsong/go-utils/reflectx"
 
-	"github.com/erda-project/erda/modules/apps/msp/instance/db"
+	"github.com/erda-project/erda/internal/apps/msp/instance/db"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 

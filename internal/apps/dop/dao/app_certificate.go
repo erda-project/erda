@@ -18,7 +18,7 @@ import (
 	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/apps/dop/model"
+	"github.com/erda-project/erda/internal/apps/dop/model"
 )
 
 // QuoteCertificate 创建应用Certificate

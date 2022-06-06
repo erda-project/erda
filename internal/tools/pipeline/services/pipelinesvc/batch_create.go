@@ -18,8 +18,8 @@ import (
 	"context"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/pipeline/services/apierrors"
-	spec2 "github.com/erda-project/erda/modules/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/services/apierrors"
+	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 func (s *PipelineSvc) BatchCreate(ctx context.Context, batchReq *apistructs.PipelineBatchCreateRequest) (

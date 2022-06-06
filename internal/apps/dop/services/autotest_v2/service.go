@@ -18,9 +18,9 @@ import (
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/apps/dop/dao"
-	"github.com/erda-project/erda/modules/apps/dop/services/autotest"
-	"github.com/erda-project/erda/modules/apps/dop/services/sceneset"
+	"github.com/erda-project/erda/internal/apps/dop/dao"
+	"github.com/erda-project/erda/internal/apps/dop/services/autotest"
+	"github.com/erda-project/erda/internal/apps/dop/services/sceneset"
 )
 
 // Service autotestv2 实例对象封装

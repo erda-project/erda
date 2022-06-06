@@ -20,8 +20,8 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
-	"github.com/erda-project/erda/modules/tools/openapi/openapi-ng"
-	openapiauth "github.com/erda-project/erda/modules/tools/openapi/openapi-ng/auth"
+	"github.com/erda-project/erda/internal/tools/openapi/openapi-ng"
+	openapiauth "github.com/erda-project/erda/internal/tools/openapi/openapi-ng/auth"
 	"github.com/erda-project/erda/pkg/oauth2"
 )
 

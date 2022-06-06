@@ -26,7 +26,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/dop/devflowrule/pb"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/apps/dop/providers/devflowrule/db"
+	"github.com/erda-project/erda/internal/apps/dop/providers/devflowrule/db"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 

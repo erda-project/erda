@@ -23,9 +23,9 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/orchestrator/dbclient"
-	"github.com/erda-project/erda/modules/tools/orchestrator/queue"
-	"github.com/erda-project/erda/modules/tools/orchestrator/utils"
+	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
+	"github.com/erda-project/erda/internal/tools/orchestrator/queue"
+	"github.com/erda-project/erda/internal/tools/orchestrator/utils"
 )
 
 func (d *DeploymentOrder) PushOnDeploymentOrderPolling() (abort bool, err0 error) {

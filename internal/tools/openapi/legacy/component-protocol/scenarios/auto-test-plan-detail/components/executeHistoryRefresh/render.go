@@ -18,8 +18,8 @@ import (
 	"context"
 
 	"github.com/erda-project/erda/apistructs"
-	protocol "github.com/erda-project/erda/modules/tools/openapi/legacy/component-protocol"
-	"github.com/erda-project/erda/modules/tools/openapi/legacy/component-protocol/scenarios/auto-test-plan-detail/i18n"
+	protocol "github.com/erda-project/erda/internal/tools/openapi/legacy/component-protocol"
+	"github.com/erda-project/erda/internal/tools/openapi/legacy/component-protocol/scenarios/auto-test-plan-detail/i18n"
 )
 
 type ComponentAction struct{}

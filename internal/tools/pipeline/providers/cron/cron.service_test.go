@@ -31,9 +31,9 @@ import (
 	. "github.com/erda-project/erda-proto-go/core/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/tools/pipeline/providers/cron/daemon"
-	db2 "github.com/erda-project/erda/modules/tools/pipeline/providers/cron/db"
-	"github.com/erda-project/erda/modules/tools/pipeline/providers/edgepipeline_register"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/cron/daemon"
+	db2 "github.com/erda-project/erda/internal/tools/pipeline/providers/cron/db"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/edgepipeline_register"
 )
 
 type daemonInterface struct {

@@ -23,7 +23,7 @@ import (
 	"sync"
 	"syscall"
 
-	containerruntime "github.com/erda-project/erda/modules/tools/monitor/core/diagnotor/agent/container-runtime"
+	containerruntime "github.com/erda-project/erda/internal/tools/monitor/core/diagnotor/agent/container-runtime"
 )
 
 // Run .

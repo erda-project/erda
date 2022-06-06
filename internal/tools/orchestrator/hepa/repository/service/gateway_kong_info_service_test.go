@@ -19,7 +19,7 @@ import (
 
 	"github.com/xormplus/xorm"
 
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/repository/orm"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
 )
 
 func TestGatewayKongInfoServiceImpl_acquireKongAddr(t *testing.T) {

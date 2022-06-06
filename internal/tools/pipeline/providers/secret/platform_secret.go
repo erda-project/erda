@@ -24,9 +24,9 @@ import (
 
 	"github.com/erda-project/erda-infra/base/version"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/pipeline/conf"
-	"github.com/erda-project/erda/modules/tools/pipeline/services/apierrors"
-	"github.com/erda-project/erda/modules/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/conf"
+	"github.com/erda-project/erda/internal/tools/pipeline/services/apierrors"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpclientutil"
 )

@@ -16,7 +16,7 @@ package hepa
 
 import (
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/openapi/legacy/api/apis"
+	"github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
 )
 
 var HEPA_RUNTIME_DOMAIN_GET = apis.ApiSpec{

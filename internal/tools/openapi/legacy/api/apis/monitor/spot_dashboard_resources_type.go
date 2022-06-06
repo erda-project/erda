@@ -14,7 +14,7 @@
 
 package monitor
 
-import "github.com/erda-project/erda/modules/tools/openapi/legacy/api/apis"
+import "github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
 
 var SPOT_DASHBOARD_RESOURCES_TYPES = apis.ApiSpec{
 	Path:        "/api/cluster/resources/types",

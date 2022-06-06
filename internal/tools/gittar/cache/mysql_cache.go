@@ -21,8 +21,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/erda-project/erda/modules/tools/gittar/models"
-	"github.com/erda-project/erda/modules/tools/gittar/pkg/gitmodule"
+	"github.com/erda-project/erda/internal/tools/gittar/models"
+	"github.com/erda-project/erda/internal/tools/gittar/pkg/gitmodule"
 )
 
 type AtomicInt int64

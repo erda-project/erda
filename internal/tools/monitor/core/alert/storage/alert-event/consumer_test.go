@@ -20,7 +20,7 @@ import (
 
 	"gotest.tools/assert"
 
-	"github.com/erda-project/erda/modules/tools/monitor/core/alert/alert-apis/db"
+	"github.com/erda-project/erda/internal/tools/monitor/core/alert/alert-apis/db"
 )
 
 func Test_calcNeedUpdateFields_Should_Success(t *testing.T) {

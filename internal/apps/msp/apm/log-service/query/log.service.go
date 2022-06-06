@@ -23,7 +23,7 @@ import (
 	"strings"
 
 	"github.com/erda-project/erda-proto-go/msp/apm/log-service/pb"
-	"github.com/erda-project/erda/modules/apps/msp/instance/db"
+	"github.com/erda-project/erda/internal/apps/msp/instance/db"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 

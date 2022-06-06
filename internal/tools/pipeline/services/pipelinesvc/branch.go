@@ -15,9 +15,9 @@
 package pipelinesvc
 
 import (
-	"github.com/erda-project/erda/modules/pkg/diceworkspace"
-	"github.com/erda-project/erda/modules/tools/pipeline/commonutil/thirdparty/gittarutil"
-	"github.com/erda-project/erda/modules/tools/pipeline/services/apierrors"
+	"github.com/erda-project/erda/internal/pkg/diceworkspace"
+	"github.com/erda-project/erda/internal/tools/pipeline/commonutil/thirdparty/gittarutil"
+	"github.com/erda-project/erda/internal/tools/pipeline/services/apierrors"
 	"github.com/erda-project/erda/pkg/discover"
 )
 

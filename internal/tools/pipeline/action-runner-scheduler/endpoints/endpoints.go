@@ -18,7 +18,7 @@ import (
 	"net/http"
 
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/tools/pipeline/action-runner-scheduler/services/runnertask"
+	"github.com/erda-project/erda/internal/tools/pipeline/action-runner-scheduler/services/runnertask"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 

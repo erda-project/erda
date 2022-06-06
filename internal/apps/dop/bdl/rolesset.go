@@ -19,7 +19,7 @@ import (
 	"strings"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/apps/dop/dbclient"
+	"github.com/erda-project/erda/internal/apps/dop/dbclient"
 )
 
 const (

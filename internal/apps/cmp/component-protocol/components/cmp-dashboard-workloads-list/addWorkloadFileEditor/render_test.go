@@ -19,7 +19,7 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/i18n"
-	"github.com/erda-project/erda/modules/apps/cmp/component-protocol/cputil"
+	"github.com/erda-project/erda/internal/apps/cmp/component-protocol/cputil"
 )
 
 func TestComponentAddWorkloadFileEditor_GenComponentState(t *testing.T) {

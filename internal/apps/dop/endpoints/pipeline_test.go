@@ -23,7 +23,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/apps/dop/services/permission"
+	"github.com/erda-project/erda/internal/apps/dop/services/permission"
 )
 
 func Test_shouldCheckPermission(t *testing.T) {

@@ -17,7 +17,7 @@ package dbclient
 import (
 	"github.com/jinzhu/gorm"
 
-	"github.com/erda-project/erda/modules/apps/dop/conf"
+	"github.com/erda-project/erda/internal/apps/dop/conf"
 )
 
 type TX struct {

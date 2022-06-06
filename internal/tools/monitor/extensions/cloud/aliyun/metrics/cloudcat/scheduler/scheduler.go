@@ -26,9 +26,9 @@ import (
 
 	writer "github.com/erda-project/erda-infra/pkg/parallel-writer"
 	"github.com/erda-project/erda-infra/providers/kafka"
-	"github.com/erda-project/erda/modules/tools/monitor/extensions/cloud/aliyun/metrics/cloudcat/api"
-	"github.com/erda-project/erda/modules/tools/monitor/extensions/cloud/aliyun/metrics/cloudcat/globals"
-	"github.com/erda-project/erda/modules/tools/monitor/extensions/cloud/aliyun/metrics/cloudcat/grabber"
+	"github.com/erda-project/erda/internal/tools/monitor/extensions/cloud/aliyun/metrics/cloudcat/api"
+	"github.com/erda-project/erda/internal/tools/monitor/extensions/cloud/aliyun/metrics/cloudcat/globals"
+	"github.com/erda-project/erda/internal/tools/monitor/extensions/cloud/aliyun/metrics/cloudcat/grabber"
 )
 
 var topic = "spot-telemetry"

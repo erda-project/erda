@@ -25,7 +25,7 @@ import (
 	"github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 	monitorpb "github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
-	"github.com/erda-project/erda/modules/apps/msp/apm/alert/components/common"
+	"github.com/erda-project/erda/internal/apps/msp/apm/alert/components/common"
 )
 
 func SetAlertEventToGlobalState(gs cptype.GlobalStateData, alertEvent *pb.AlertEventItem) {

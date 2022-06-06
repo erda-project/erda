@@ -19,7 +19,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/erda-project/erda/modules/tools/monitor/core/log"
+	"github.com/erda-project/erda/internal/tools/monitor/core/log"
 )
 
 func (p *provider) decodeLog(key, value []byte, topic *string, timestamp time.Time) (interface{}, error) {

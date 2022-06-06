@@ -23,8 +23,8 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/erda-project/erda/modules/pkg/innerdomain"
-	"github.com/erda-project/erda/modules/tools/openapi/legacy/api/apis"
+	"github.com/erda-project/erda/internal/pkg/innerdomain"
+	"github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -152,8 +152,8 @@ func trivialBegin(w io.Writer) {
 	io.WriteString(w, "import (\n")
 
 	importLines := []string{
-		`. "github.com/erda-project/erda/modules/tools/openapi/legacy/api/apis"`,
-		`. "github.com/erda-project/erda/modules/tools/openapi/legacy/api/spec"`,
+		`. "github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"`,
+		`. "github.com/erda-project/erda/internal/tools/openapi/legacy/api/spec"`,
 	}
 	for _, pkgPath := range PkgPaths {
 		importLines = append(importLines, pkgPath)

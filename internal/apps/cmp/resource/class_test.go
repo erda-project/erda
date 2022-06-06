@@ -22,7 +22,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	"github.com/erda-project/erda/apistructs"
-	_interface "github.com/erda-project/erda/modules/apps/cmp/cmp_interface"
+	_interface "github.com/erda-project/erda/internal/apps/cmp/cmp_interface"
 )
 
 func TestResource_GetClusterPie(t *testing.T) {

@@ -24,7 +24,7 @@ import (
 	"golang.org/x/text/message"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/apps/cmp/impl/aliyun-resources/overview"
+	"github.com/erda-project/erda/internal/apps/cmp/impl/aliyun-resources/overview"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 )

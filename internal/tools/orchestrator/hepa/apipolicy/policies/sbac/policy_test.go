@@ -18,7 +18,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/apipolicy/policies/sbac"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/apipolicy/policies/sbac"
 )
 
 // need not do unit test

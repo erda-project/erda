@@ -19,7 +19,7 @@ import (
 	"strings"
 
 	"github.com/erda-project/erda-proto-go/msp/registercenter/pb"
-	"github.com/erda-project/erda/modules/apps/msp/registercenter/zkproxy"
+	"github.com/erda-project/erda/internal/apps/msp/registercenter/zkproxy"
 	"github.com/erda-project/erda/pkg/common/errors"
 )
 

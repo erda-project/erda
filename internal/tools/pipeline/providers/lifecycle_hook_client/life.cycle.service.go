@@ -25,7 +25,7 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-proto-go/core/pipeline/lifecycle_hook_client/pb"
 	"github.com/erda-project/erda/bundle/apierrors"
-	"github.com/erda-project/erda/modules/tools/pipeline/dbclient"
+	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/http/httputil"
 )

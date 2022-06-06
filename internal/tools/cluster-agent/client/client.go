@@ -33,7 +33,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/cluster-agent/config"
+	"github.com/erda-project/erda/internal/tools/cluster-agent/config"
 	"github.com/erda-project/erda/pkg/discover"
 )
 

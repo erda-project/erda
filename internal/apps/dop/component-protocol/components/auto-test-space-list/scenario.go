@@ -15,12 +15,12 @@
 package auto_test_plan_list
 
 import (
-	_ "github.com/erda-project/erda/modules/apps/dop/component-protocol/components/auto-test-space-list/components/filter"
-	_ "github.com/erda-project/erda/modules/apps/dop/component-protocol/components/auto-test-space-list/components/moreButton"
-	_ "github.com/erda-project/erda/modules/apps/dop/component-protocol/components/auto-test-space-list/components/recordDrawer"
-	_ "github.com/erda-project/erda/modules/apps/dop/component-protocol/components/auto-test-space-list/components/recordTable"
-	_ "github.com/erda-project/erda/modules/apps/dop/component-protocol/components/auto-test-space-list/components/refreshButton"
-	_ "github.com/erda-project/erda/modules/apps/dop/component-protocol/components/auto-test-space-list/components/spaceAddButton"
-	_ "github.com/erda-project/erda/modules/apps/dop/component-protocol/components/auto-test-space-list/components/spaceFormModal"
-	_ "github.com/erda-project/erda/modules/apps/dop/component-protocol/components/auto-test-space-list/components/spaceList"
+	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/auto-test-space-list/components/filter"
+	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/auto-test-space-list/components/moreButton"
+	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/auto-test-space-list/components/recordDrawer"
+	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/auto-test-space-list/components/recordTable"
+	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/auto-test-space-list/components/refreshButton"
+	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/auto-test-space-list/components/spaceAddButton"
+	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/auto-test-space-list/components/spaceFormModal"
+	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/auto-test-space-list/components/spaceList"
 )

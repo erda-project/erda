@@ -29,9 +29,9 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/events"
-	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/events/eventtypes"
-	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/executor/executortypes"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/events"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/events/eventtypes"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/executortypes"
 	"github.com/erda-project/erda/pkg/jsonstore/storetypes"
 	"github.com/erda-project/erda/pkg/loop"
 	"github.com/erda-project/erda/pkg/strutil"

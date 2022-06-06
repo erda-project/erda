@@ -31,7 +31,7 @@ import (
 
 	"github.com/erda-project/erda-proto-go/oap/collector/receiver/opentelemetry/pb"
 	tracepb "github.com/erda-project/erda-proto-go/oap/trace/pb"
-	"github.com/erda-project/erda/modules/tools/monitor/oap/collector/interceptor"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/interceptor"
 )
 
 var (

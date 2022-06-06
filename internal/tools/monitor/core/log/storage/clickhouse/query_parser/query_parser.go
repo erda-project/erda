@@ -22,8 +22,8 @@ import (
 
 	"github.com/antlr/antlr4/runtime/Go/antlr"
 
-	"github.com/erda-project/erda/modules/tools/monitor/core/log/storage/clickhouse/converter"
-	"github.com/erda-project/erda/modules/tools/monitor/core/log/storage/clickhouse/query_parser/parser"
+	"github.com/erda-project/erda/internal/tools/monitor/core/log/storage/clickhouse/converter"
+	"github.com/erda-project/erda/internal/tools/monitor/core/log/storage/clickhouse/query_parser/parser"
 )
 
 type EsqsParser interface {

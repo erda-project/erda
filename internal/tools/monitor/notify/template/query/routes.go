@@ -22,10 +22,10 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/erda-project/erda-infra/providers/httpserver"
-	"github.com/erda-project/erda/modules/tools/monitor/common"
-	"github.com/erda-project/erda/modules/tools/monitor/common/permission"
-	"github.com/erda-project/erda/modules/tools/monitor/notify/template/db"
-	"github.com/erda-project/erda/modules/tools/monitor/notify/template/model"
+	"github.com/erda-project/erda/internal/tools/monitor/common"
+	"github.com/erda-project/erda/internal/tools/monitor/common/permission"
+	"github.com/erda-project/erda/internal/tools/monitor/notify/template/db"
+	"github.com/erda-project/erda/internal/tools/monitor/notify/template/model"
 	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
 

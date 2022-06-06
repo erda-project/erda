@@ -24,9 +24,9 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
-	"github.com/erda-project/erda/modules/tools/pipeline/dbclient"
-	leaderworker2 "github.com/erda-project/erda/modules/tools/pipeline/providers/leaderworker"
-	"github.com/erda-project/erda/modules/tools/pipeline/providers/reconciler"
+	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
+	leaderworker2 "github.com/erda-project/erda/internal/tools/pipeline/providers/leaderworker"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/reconciler"
 )
 
 type provider struct {

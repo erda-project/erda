@@ -26,16 +26,16 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/xormplus/xorm"
 
-	. "github.com/erda-project/erda/modules/tools/orchestrator/hepa/common/vars"
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/config"
-	gw "github.com/erda-project/erda/modules/tools/orchestrator/hepa/gateway/dto"
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/kong"
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/repository/orm"
-	db "github.com/erda-project/erda/modules/tools/orchestrator/hepa/repository/service"
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/services/legacy_consumer"
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/services/legacy_upstream"
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/services/micro_api"
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/services/zone"
+	. "github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/vars"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/config"
+	gw "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/kong"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
+	db "github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/service"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/legacy_consumer"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/legacy_upstream"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/micro_api"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/zone"
 )
 
 type GatewayUpstreamServiceImpl struct {

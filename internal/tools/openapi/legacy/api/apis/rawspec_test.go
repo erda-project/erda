@@ -18,8 +18,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/erda-project/erda/modules/tools/openapi/legacy/api/apis"
-	"github.com/erda-project/erda/modules/tools/openapi/legacy/api/apis/dop"
+	"github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
+	"github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis/dop"
 	"github.com/erda-project/erda/pkg/swagger/oas3"
 )
 

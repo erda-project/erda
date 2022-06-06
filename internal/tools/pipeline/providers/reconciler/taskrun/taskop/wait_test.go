@@ -19,7 +19,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/erda-project/erda/modules/tools/pipeline/providers/reconciler/taskrun"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/reconciler/taskrun"
 )
 
 func TestCalculateNextLoopTimeDuration(t *testing.T) {

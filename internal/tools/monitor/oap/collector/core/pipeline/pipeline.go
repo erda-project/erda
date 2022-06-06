@@ -21,13 +21,13 @@ import (
 	"time"
 
 	"github.com/erda-project/erda-infra/base/logs"
-	"github.com/erda-project/erda/modules/apps/msp/apm/trace"
-	"github.com/erda-project/erda/modules/tools/monitor/core/log"
-	"github.com/erda-project/erda/modules/tools/monitor/core/metric"
-	"github.com/erda-project/erda/modules/tools/monitor/oap/collector/core/config"
-	"github.com/erda-project/erda/modules/tools/monitor/oap/collector/core/model"
-	odata2 "github.com/erda-project/erda/modules/tools/monitor/oap/collector/core/model/odata"
-	"github.com/erda-project/erda/modules/tools/monitor/oap/collector/lib"
+	"github.com/erda-project/erda/internal/apps/msp/apm/trace"
+	"github.com/erda-project/erda/internal/tools/monitor/core/log"
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/config"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model"
+	odata2 "github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model/odata"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib"
 )
 
 type Pipeline struct {

@@ -21,7 +21,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-proto-go/core/dicehub/image/pb"
-	"github.com/erda-project/erda/modules/apps/dop/dicehub/image/db"
+	"github.com/erda-project/erda/internal/apps/dop/dicehub/image/db"
 )
 
 type config struct {

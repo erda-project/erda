@@ -33,7 +33,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/pkg/diceworkspace"
+	"github.com/erda-project/erda/internal/pkg/diceworkspace"
 )
 
 // Repository represents a Git repository.

@@ -18,7 +18,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/erda-project/erda/modules/tools/monitor/core/log/storage"
+	"github.com/erda-project/erda/internal/tools/monitor/core/log/storage"
 )
 
 func (p *provider) Aggregate(ctx context.Context, req *storage.Aggregation) (*storage.AggregationResponse, error) {

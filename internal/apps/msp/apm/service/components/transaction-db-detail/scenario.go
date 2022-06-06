@@ -15,9 +15,9 @@
 package transaction_db_detail
 
 import (
-	_ "github.com/erda-project/erda/modules/apps/msp/apm/service/components/transaction-db-detail/avg_duration"
-	_ "github.com/erda-project/erda/modules/apps/msp/apm/service/components/transaction-db-detail/error_count"
-	_ "github.com/erda-project/erda/modules/apps/msp/apm/service/components/transaction-db-detail/kv_grid"
-	_ "github.com/erda-project/erda/modules/apps/msp/apm/service/components/transaction-db-detail/rps"
-	_ "github.com/erda-project/erda/modules/apps/msp/apm/service/components/transaction-db-detail/slow_count"
+	_ "github.com/erda-project/erda/internal/apps/msp/apm/service/components/transaction-db-detail/avg_duration"
+	_ "github.com/erda-project/erda/internal/apps/msp/apm/service/components/transaction-db-detail/error_count"
+	_ "github.com/erda-project/erda/internal/apps/msp/apm/service/components/transaction-db-detail/kv_grid"
+	_ "github.com/erda-project/erda/internal/apps/msp/apm/service/components/transaction-db-detail/rps"
+	_ "github.com/erda-project/erda/internal/apps/msp/apm/service/components/transaction-db-detail/slow_count"
 )

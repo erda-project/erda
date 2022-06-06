@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/errors"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/errors"
 )
 
 func TestIsRouteOptionAlreadyDefinedInIngressError(t *testing.T) {

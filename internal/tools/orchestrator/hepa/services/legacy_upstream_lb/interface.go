@@ -17,7 +17,7 @@ package legacy_upstream_lb
 import (
 	"context"
 
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/gateway/dto"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
 )
 
 var Service GatewayUpstreamLbService

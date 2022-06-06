@@ -18,9 +18,9 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/pkg/websocket"
-	"github.com/erda-project/erda/modules/tools/pipeline/dbclient"
-	"github.com/erda-project/erda/modules/tools/pipeline/providers/edgepipeline_register"
+	"github.com/erda-project/erda/internal/pkg/websocket"
+	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/edgepipeline_register"
 )
 
 type EventManager struct {

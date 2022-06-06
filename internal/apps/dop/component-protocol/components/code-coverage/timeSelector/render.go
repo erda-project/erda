@@ -26,7 +26,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
-	"github.com/erda-project/erda/modules/apps/dop/component-protocol/components/code-coverage/common"
+	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/code-coverage/common"
 )
 
 type ComponentAction struct {

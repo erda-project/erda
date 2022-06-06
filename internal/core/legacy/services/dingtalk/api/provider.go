@@ -19,8 +19,8 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/modules/core/legacy/services/dingtalk/api/caches"
-	"github.com/erda-project/erda/modules/core/legacy/services/dingtalk/api/manager"
+	"github.com/erda-project/erda/internal/core/legacy/services/dingtalk/api/caches"
+	"github.com/erda-project/erda/internal/core/legacy/services/dingtalk/api/manager"
 )
 
 type config struct {

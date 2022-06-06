@@ -19,9 +19,9 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
-	instancedb "github.com/erda-project/erda/modules/apps/msp/instance/db"
-	monitordb "github.com/erda-project/erda/modules/apps/msp/instance/db/monitor"
-	tenantdb "github.com/erda-project/erda/modules/apps/msp/tenant/db"
+	instancedb "github.com/erda-project/erda/internal/apps/msp/instance/db"
+	monitordb "github.com/erda-project/erda/internal/apps/msp/instance/db/monitor"
+	tenantdb "github.com/erda-project/erda/internal/apps/msp/tenant/db"
 )
 
 // +provider

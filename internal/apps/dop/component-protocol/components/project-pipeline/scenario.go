@@ -15,7 +15,7 @@
 package project_pipeline
 
 import (
-	_ "github.com/erda-project/erda/modules/apps/dop/component-protocol/components/project-pipeline/myPage/pageHeader/addPipelineBtn"
-	_ "github.com/erda-project/erda/modules/apps/dop/component-protocol/components/project-pipeline/myPage/tabsTable/filterContainer/customFilter"
-	_ "github.com/erda-project/erda/modules/apps/dop/component-protocol/components/project-pipeline/myPage/tabsTable/pipelineTable"
+	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/project-pipeline/myPage/pageHeader/addPipelineBtn"
+	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/project-pipeline/myPage/tabsTable/filterContainer/customFilter"
+	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/project-pipeline/myPage/tabsTable/pipelineTable"
 )

@@ -20,7 +20,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/orchestrator/scheduler/impl/volume"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/impl/volume"
 	"github.com/erda-project/erda/pkg/jsonstore"
 )
 

@@ -22,8 +22,8 @@ import (
 	"time"
 
 	"github.com/erda-project/erda-proto-go/core/monitor/log/query/pb"
-	"github.com/erda-project/erda/modules/tools/monitor/core/log/storage"
-	"github.com/erda-project/erda/modules/tools/monitor/core/storekit"
+	"github.com/erda-project/erda/internal/tools/monitor/core/log/storage"
+	"github.com/erda-project/erda/internal/tools/monitor/core/storekit"
 )
 
 func Test_toQuerySelector(t *testing.T) {

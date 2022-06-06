@@ -17,9 +17,9 @@ package service
 import (
 	"github.com/xormplus/xorm"
 
-	. "github.com/erda-project/erda/modules/tools/orchestrator/hepa/common"
-	"github.com/erda-project/erda/modules/tools/orchestrator/hepa/repository/orm"
-	. "github.com/erda-project/erda/modules/tools/orchestrator/hepa/repository/orm"
+	. "github.com/erda-project/erda/internal/tools/orchestrator/hepa/common"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
+	. "github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
 )
 
 const (

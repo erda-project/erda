@@ -19,8 +19,8 @@ import (
 	"strings"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/tools/openapi/legacy/api/apis"
-	"github.com/erda-project/erda/modules/tools/openapi/legacy/api/spec"
+	"github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
+	"github.com/erda-project/erda/internal/tools/openapi/legacy/api/spec"
 )
 
 var CMP_CLOUD_RESOURCE_ECS_AUTO_RENEW = apis.ApiSpec{

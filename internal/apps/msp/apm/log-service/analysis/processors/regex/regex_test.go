@@ -19,7 +19,7 @@ import (
 	"testing"
 
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
-	"github.com/erda-project/erda/modules/apps/msp/apm/log-service/analysis/processors"
+	"github.com/erda-project/erda/internal/apps/msp/apm/log-service/analysis/processors"
 )
 
 func Test_Process_With_ValidParams_Should_Success(t *testing.T) {

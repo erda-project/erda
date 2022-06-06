@@ -15,16 +15,16 @@
 package cmp_dashboard_nodes
 
 import (
-	_ "github.com/erda-project/erda/modules/apps/cmp/component-protocol/components/cmp-dashboard-nodes/addLabelModal"
-	_ "github.com/erda-project/erda/modules/apps/cmp/component-protocol/components/cmp-dashboard-nodes/batchOperationTipModal"
-	_ "github.com/erda-project/erda/modules/apps/cmp/component-protocol/components/cmp-dashboard-nodes/charts"
-	_ "github.com/erda-project/erda/modules/apps/cmp/component-protocol/components/cmp-dashboard-nodes/chartsContainer"
-	_ "github.com/erda-project/erda/modules/apps/cmp/component-protocol/components/cmp-dashboard-nodes/cleanData"
-	_ "github.com/erda-project/erda/modules/apps/cmp/component-protocol/components/cmp-dashboard-nodes/cpuChart"
-	_ "github.com/erda-project/erda/modules/apps/cmp/component-protocol/components/cmp-dashboard-nodes/memChart"
-	_ "github.com/erda-project/erda/modules/apps/cmp/component-protocol/components/cmp-dashboard-nodes/nodeFilter"
-	_ "github.com/erda-project/erda/modules/apps/cmp/component-protocol/components/cmp-dashboard-nodes/page"
-	_ "github.com/erda-project/erda/modules/apps/cmp/component-protocol/components/cmp-dashboard-nodes/podChart"
-	_ "github.com/erda-project/erda/modules/apps/cmp/component-protocol/components/cmp-dashboard-nodes/table"
-	_ "github.com/erda-project/erda/modules/apps/cmp/component-protocol/components/cmp-dashboard-nodes/tabs"
+	_ "github.com/erda-project/erda/internal/apps/cmp/component-protocol/components/cmp-dashboard-nodes/addLabelModal"
+	_ "github.com/erda-project/erda/internal/apps/cmp/component-protocol/components/cmp-dashboard-nodes/batchOperationTipModal"
+	_ "github.com/erda-project/erda/internal/apps/cmp/component-protocol/components/cmp-dashboard-nodes/charts"
+	_ "github.com/erda-project/erda/internal/apps/cmp/component-protocol/components/cmp-dashboard-nodes/chartsContainer"
+	_ "github.com/erda-project/erda/internal/apps/cmp/component-protocol/components/cmp-dashboard-nodes/cleanData"
+	_ "github.com/erda-project/erda/internal/apps/cmp/component-protocol/components/cmp-dashboard-nodes/cpuChart"
+	_ "github.com/erda-project/erda/internal/apps/cmp/component-protocol/components/cmp-dashboard-nodes/memChart"
+	_ "github.com/erda-project/erda/internal/apps/cmp/component-protocol/components/cmp-dashboard-nodes/nodeFilter"
+	_ "github.com/erda-project/erda/internal/apps/cmp/component-protocol/components/cmp-dashboard-nodes/page"
+	_ "github.com/erda-project/erda/internal/apps/cmp/component-protocol/components/cmp-dashboard-nodes/podChart"
+	_ "github.com/erda-project/erda/internal/apps/cmp/component-protocol/components/cmp-dashboard-nodes/table"
+	_ "github.com/erda-project/erda/internal/apps/cmp/component-protocol/components/cmp-dashboard-nodes/tabs"
 )
