@@ -47,7 +47,7 @@ stages:
   - stage:
       - custom-script:
           alias: erda
-          image: registry.erda.cloud/erda/gohub:latest
+          image: registry.erda.cloud/erda/gohub:1.0.5
           commands:
             - cp -a ${{ dirs.raw-erda }}/. .
             - make proto-go-in-local
