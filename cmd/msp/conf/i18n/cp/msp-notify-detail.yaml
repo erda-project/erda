@@ -6,15 +6,15 @@ en:
   Rule: Related alert rule
   EventOverview: Overview
   NotifyContent: Notification content
-  success: success
-  failed: failed
-  dingding: dingding
-  webhook: webhook
-  email: email
-  mbox: mbox
-  vms: voice notify
-  sms: short message notify
-  dingtalk_work_notice: dingding work notify
+  success: Succeeded
+  failed: Failed
+  dingding: DingTalk
+  webhook: Webhook
+  email: Email
+  mbox: Site message
+  vms: Phone
+  sms: SMS
+  dingtalk_work_notice: DingTalk Work Notice
 
 zh:
   Channel: 通知方式
