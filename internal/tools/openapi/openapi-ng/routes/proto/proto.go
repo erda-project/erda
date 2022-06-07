@@ -27,9 +27,14 @@ import (
 	common "github.com/erda-project/erda-proto-go/common/pb"
 )
 
+type (
+	OneOpenAPIProxyHandler = func(method, publishPath, backendPath, serviceName string, opt *common.OpenAPIOption) error
+	OneOpenAPIHandler      = func(serviceName, method, backendPath string, opt *common.OpenAPIOption) error
+)
+
 // RangeOpenAPIsProxy .
-func RangeOpenAPIsProxy(handler func(method, publishPath, backendPath, serviceName string, opt *common.OpenAPIOption) error) error {
-	return RangeOpenAPIs("erda.", func(serviceName, method, backendPath string, opt *common.OpenAPIOption) error {
+func RangeOpenAPIsProxy(proxyHandler OneOpenAPIProxyHandler) error {
+	var oneOpenAPIHandler OneOpenAPIHandler = func(serviceName, method, backendPath string, opt *common.OpenAPIOption) error {
 		if opt.Private {
 			return nil
 		}
@@ -60,12 +65,13 @@ func RangeOpenAPIsProxy(handler func(method, publishPath, backendPath, serviceNa
 			publishPath = strings.TrimRight(prefix, "/") + "/" + strings.TrimLeft(publishPath, "/")
 		}
 
-		return handler(method, publishPath, backendPath, service, opt)
-	})
+		return proxyHandler(method, publishPath, backendPath, service, opt)
+	}
+	return RangeOpenAPIs("erda.", oneOpenAPIHandler)
 }
 
 // RangeOpenAPIs .
-func RangeOpenAPIs(pkgPrefix string, handler func(serviceName, method, path string, opt *common.OpenAPIOption) error) (err error) {
+func RangeOpenAPIs(pkgPrefix string, handler OneOpenAPIHandler) (err error) {
 	files := protoregistry.GlobalFiles
 	files.RangeFiles(func(fd protoreflect.FileDescriptor) bool {
 		pkgName := string(fd.Package())
