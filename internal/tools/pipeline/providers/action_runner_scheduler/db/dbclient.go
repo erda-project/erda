@@ -12,21 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package runner_scheduler
+package db
 
 import (
-	"net/http"
-
-	"github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
+	"github.com/erda-project/erda/pkg/database/dbengine"
 )
 
-var RUNNER_TASK_GET = apis.ApiSpec{
-	Path:        "/api/runner/tasks/<runnerTaskID>",
-	BackendPath: "/api/runner/tasks/<runnerTaskID>",
-	Host:        "pipeline.marathon.l4lb.thisdcos.directory:9500",
-	Scheme:      "http",
-	Method:      http.MethodGet,
-	IsOpenAPI:   true,
-	CheckLogin:  true,
-	CheckToken:  true,
+type DBClient struct {
+	*dbengine.DBEngine
 }

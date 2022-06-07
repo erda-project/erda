@@ -12,11 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dbclient
+package db
 
 import (
 	"encoding/json"
 
+	"github.com/erda-project/erda-proto-go/core/pipeline/action_runner_scheduler/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 )
@@ -55,7 +56,24 @@ func (task RunnerTask) ToApiData() *apistructs.RunnerTask {
 	return result
 }
 
-func (db *DBClient) CreateRunnerTask(request apistructs.CreateRunnerTaskRequest) (uint64, error) {
+func (task RunnerTask) ToPbData() *pb.RunnerTask {
+	result := &pb.RunnerTask{
+		ID:             task.ID,
+		JobID:          task.JobID,
+		Status:         task.Status,
+		ContextDataUrl: task.ContextDataUrl,
+		OpenApiToken:   task.OpenApiToken,
+		ResultDataUrl:  task.ResultDataUrl,
+		Workdir:        task.WorkDir,
+		Commands:       []string{},
+		Targets:        []string{},
+	}
+	json.Unmarshal([]byte(task.Commands), &result.Commands)
+	json.Unmarshal([]byte(task.Targets), &result.Targets)
+	return result
+}
+
+func (db *DBClient) CreateRunnerTask(request *pb.RunnerTaskCreateRequest) (uint64, error) {
 	commands, _ := json.Marshal(request.Commands)
 	targets, _ := json.Marshal(request.Targets)
 	task := &RunnerTask{
@@ -65,7 +83,7 @@ func (db *DBClient) CreateRunnerTask(request apistructs.CreateRunnerTaskRequest)
 		ResultDataUrl:  "",
 		Commands:       string(commands),
 		Targets:        string(targets),
-		WorkDir:        request.WorkDir,
+		WorkDir:        request.Workdir,
 	}
 	err := db.Save(task).Error
 	if err != nil {

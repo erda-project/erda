@@ -34,35 +34,6 @@ envs:
   OTEL_TRACES_SAMPLER_ARG: 0.1
   CLUSTER_MANAGER_ADDR: cluster-manager:9094
 services:
-  action-runner-scheduler:
-    cmd: /erda/cmd/action-runner-scheduler/bin
-    ports:
-      - port: 9500
-        protocol: "TCP"
-        l4_protocol: "TCP"
-    resources:
-      cpu: ${request_cpu:0.3}
-      max_cpu: 0.3
-      mem: 128
-      network:
-        mode: "container"
-    binds:
-      - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-ca.pem:/certs/etcd-ca.pem:ro"
-      - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client.pem:/certs/etcd-client.pem:ro"
-      - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client-key.pem:/certs/etcd-client-key.pem:ro"
-    deployments:
-      replicas: 1
-      labels:
-        GROUP: "devops"
-    health_check:
-      http:
-        port: 9500
-        path: "/healthz"
-        duration: 120
-      exec: { }
-    expose: [ ]
-    hosts: [ ]
-    envs: { }
   dop:
     binds:
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-ca.pem:/certs/etcd-ca.pem:ro"

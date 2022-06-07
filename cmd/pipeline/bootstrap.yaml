@@ -1,5 +1,4 @@
 pipeline:
-action_runner_scheduler:
 
 service-register:
 
@@ -12,6 +11,13 @@ grpc-server:
   addr: "${PIPELINE_LISTEN_GRPC_ADDR::30810}"
 
 mysql-xorm:
+  host: "${MYSQL_HOST:localhost}"
+  port: "${MYSQL_PORT:3306}"
+  username: "${MYSQL_USERNAME:root}"
+  password: "${MYSQL_PASSWORD:123456}"
+  database: "${MYSQL_DATABASE:test}"
+
+mysql:
   host: "${MYSQL_HOST:localhost}"
   port: "${MYSQL_PORT:3306}"
   username: "${MYSQL_USERNAME:root}"
@@ -72,6 +78,7 @@ erda.core.pipeline.definition:
 erda.core.pipeline.lifecycle_hook_client:
 erda.core.pipeline.cron:
 erda.core.pipeline.build:
+erda.core.pipeline.action_runner_scheduler:
 cron-daemon:
 cron-compensator:
 erda.core.pipeline.source:
