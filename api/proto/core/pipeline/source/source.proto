@@ -5,7 +5,7 @@ package erda.core.pipeline.source;
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/struct.proto";
-import "github.com/mwitkow/go-proto-validators/validator.proto";
+import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 import "common/identity.proto";
 import "common/commit.proto";
 

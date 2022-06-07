@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package erda.msp.menu;
 option go_package = "github.com/erda-project/erda-proto-go/msp/menu/pb";
-import "github.com/mwitkow/go-proto-validators/validator.proto";
+import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 import "google/api/annotations.proto";
 import "common/openapi.proto";
 
@@ -35,8 +35,8 @@ service MenuService {
 }
 
 message GetMenuRequest {
-  string tenantId = 1 [(validator.field) = {string_not_empty: true}];
-  string type     = 2 [(validator.field) = {string_not_empty: true}];
+  string tenantId = 1 [(validate.rules).string.min_len = 1];
+  string type     = 2 [(validate.rules).string.min_len = 1];
 }
 
 message GetMenuResponse {
@@ -65,7 +65,7 @@ message MenuItem {
 }
 
 message GetSettingRequest {
-  string tenantGroup = 1 [(validator.field) = {string_not_empty: true}];
+  string tenantGroup = 1 [(validate.rules).string.min_len = 1];
   string tenantId    = 2;
 }
 

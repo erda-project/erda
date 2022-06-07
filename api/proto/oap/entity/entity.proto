@@ -4,15 +4,15 @@ package erda.oap.entity;
 option go_package = "github.com/erda-project/erda-proto-go/oap/entity/pb";
 import "google/protobuf/struct.proto";
 import "google/api/annotations.proto";
-import "github.com/mwitkow/go-proto-validators/validator.proto";
+import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 
 // The Entity data model of the observability analysis platform.
 // Unlike time series data, entity data has a unique ID,
 // and data can be inserted, updated, and deleted according to the unique ID.
 message Entity {
   string                             id                 = 1;
-  string                             type               = 2 [(validator.field) = {string_not_empty : true}];
-  string                             key                = 3 [(validator.field) = {string_not_empty : true}];
+  string                             type               = 2 [(validate.rules).string.min_len = 1];
+  string                             key                = 3 [(validate.rules).string.min_len = 1];
   map<string, google.protobuf.Value> values             = 4;
   map<string, string>                labels             = 5;
   int64                              createTimeUnixNano = 6;
@@ -47,7 +47,7 @@ service EntityService {
 }
 
 message SetEntityRequest {
-  Entity data = 1 [(validator.field) = {msg_exists : true}];
+  Entity data = 1 [(validate.rules).message.required = true];
 }
 
 message SetEntityResponse {
@@ -55,8 +55,8 @@ message SetEntityResponse {
 }
 
 message RemoveEntityRequest {
-  string type = 1 [(validator.field) = {string_not_empty : true}];
-  string key  = 2 [(validator.field) = {string_not_empty : true}];
+  string type = 1 [(validate.rules).string.min_len = 1];
+  string key  = 2 [(validate.rules).string.min_len = 1];
 }
 
 message RemoveEntityResponse {
@@ -64,8 +64,8 @@ message RemoveEntityResponse {
 }
 
 message GetEntityRequest {
-  string type = 1 [(validator.field) = {string_not_empty : true}];
-  string key  = 2 [(validator.field) = {string_not_empty : true}];
+  string type = 1 [(validate.rules).string.min_len = 1];
+  string key  = 2 [(validate.rules).string.min_len = 1];
 }
 
 message GetEntityResponse {
