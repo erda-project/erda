@@ -83,7 +83,7 @@ func (repo *Repository) GetCommit(commitId string) (*Commit, error) {
 func (repo *Repository) GetBranchCommit(name string) (*Commit, error) {
 	commitID, err := repo.GetBranchCommitID(name)
 	if err != nil {
-		return nil, errors.New("branch [" + name + "] not exist ")
+		return nil, err
 	}
 	return repo.GetCommit(commitID)
 }

@@ -137,7 +137,7 @@ func (svc *GittarFileTree) ListFileTreeNodes(req apistructs.UnifiedFileTreeNodeL
 
 	// 根据 / 分割判定长度为 2 的时候，代表需要查询分支列表
 	if length == 2 {
-		branchs, err := svc.bdl.GetGittarBranchesV2(gittarPrefixOpenApi+realPinode, strconv.Itoa(int(orgID)), true, req.UserID)
+		branchs, err := svc.bdl.GetGittarBranchNamesV2(gittarPrefixOpenApi+realPinode, strconv.Itoa(int(orgID)), req.UserID)
 		if err != nil {
 			return nil, apierrors.ErrListGittarFileTreeNodes.InternalError(err)
 		}
@@ -720,7 +720,7 @@ func (svc *GittarFileTree) searchBranch(app apistructs.ApplicationDTO, orgID uin
 	var results []apistructs.UnifiedFileTreeNode
 	var realPinode = projectName + "/" + app.Name
 	// 查询应用下的分支
-	branchs, err := svc.bdl.GetGittarBranchesV2(gittarPrefixOpenApi+realPinode, strconv.Itoa(int(orgID)), true, userID)
+	branchs, err := svc.bdl.GetGittarBranchNamesV2(gittarPrefixOpenApi+realPinode, strconv.Itoa(int(orgID)), userID)
 	if err != nil {
 		return nil, err
 	}

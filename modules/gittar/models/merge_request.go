@@ -91,6 +91,7 @@ type MergeRequest struct {
 	Score                int    `gorm:"size:150;index:idx_score"`
 	ScoreNum             int    `gorm:"size:150;index:idx_score_num"`
 	JoinTempBranchStatus string `gorm:"join_temp_branch_status"`
+	IsJoinTempBranch     bool   `gorm:"is_join_temp_branch"`
 }
 
 type MrCheckRun struct {
@@ -125,6 +126,7 @@ func (mergeRequest *MergeRequest) ToInfo(repo *gitmodule.Repository) *apistructs
 	result.Score = mergeRequest.Score
 	result.ScoreNum = mergeRequest.ScoreNum
 	result.JoinTempBranchStatus = mergeRequest.JoinTempBranchStatus
+	result.IsJoinTempBranch = mergeRequest.IsJoinTempBranch
 
 	if mergeRequest.SourceBranch != "" && mergeRequest.TargetBranch != "" {
 		result.DefaultCommitMessage = fmt.Sprintf("Merge branch '%s' into '%s'", mergeRequest.SourceBranch, mergeRequest.TargetBranch)
@@ -653,4 +655,14 @@ func (svc *Service) QueryMergeRequestsStats(repo *gitmodule.Repository, queryCon
 	}
 
 	return &QueryMergeRequestsStatsResult{Stats: stats}, nil
+}
+
+func (svc *Service) UpdateJoinTempBranchStatus(id int, status string, isJoinTempStatus *bool) error {
+	m := make(map[string]interface{})
+	m["join_temp_branch_status"] = status
+	if isJoinTempStatus != nil {
+		m["is_join_temp_branch"] = *isJoinTempStatus
+	}
+	err := svc.db.Model(&MergeRequest{}).Where("id = ? ", id).Updates(m).Error
+	return err
 }

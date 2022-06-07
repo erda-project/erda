@@ -2,59 +2,65 @@ syntax = "proto3";
 
 package erda.apps.devflow.flow;
 
-option go_package = "github.com/erda-project/erda-proto-go/apps/devflow/flow/pb";
-
-import "google/api/annotations.proto";
 import "common/openapi.proto";
+import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/wrappers.proto";
 
+option go_package = "github.com/erda-project/erda-proto-go/apps/devflow/flow/pb";
+
 service FlowService {
     option(erda.common.openapi_service) = {
-        service : "dop",
-        auth : {
-            check_login : true,
+        service: "dop",
+        auth: {
+            check_login: true,
             check_token: true,
         }
     };
-    rpc CreateFlowNode (CreateFlowNodeRequest) returns(CreateFlowNodeResponse) {
+    rpc CreateFlowNode(CreateFlowNodeRequest) returns (CreateFlowNodeResponse) {
         option(google.api.http) = {
-            post : "/api/devflow",
+            post: "/api/devflow",
         };
         option(erda.common.openapi) = {
-            path : "/api/devflow",
+            path: "/api/devflow",
         };
     }
-    rpc operationDeploy (OperationDeployRequest) returns (OperationDeployResponse) {
+    rpc OperationMerge(OperationMergeRequest) returns (OperationMergeResponse) {
         option(google.api.http) = {
-            put : "/api/devflow/{mergeID}/actions/operation-deploy",
+            put: "/api/devflow/{mergeID}/actions/operation-merge",
         };
         option(erda.common.openapi) = {
-            path : "/api/devflow/{mergeID}/actions/operation-deploy",
+            path: "/api/devflow/{mergeID}/actions/operation-merge",
         };
     }
-    rpc DeleteFlowNode (DeleteFlowNodeRequest) returns (DeleteFlowNodeResponse) {
+    rpc DeleteFlowNode(DeleteFlowNodeRequest) returns (DeleteFlowNodeResponse) {
         option(google.api.http) = {
-            delete : "/api/devflow/{mergeID}",
+            delete: "/api/devflow/{mergeID}",
         };
         option(erda.common.openapi) = {
-            path : "/api/devflow/{mergeID}",
+            path: "/api/devflow/{mergeID}",
         };
     }
-    rpc Reconstruction (ReconstructionRequest) returns (ReconstructionResponse) {
+    rpc Reconstruction(ReconstructionRequest) returns (ReconstructionResponse) {
         option(google.api.http) = {
-            post : "/api/devflow/actions/reconstruction",
+            post: "/api/devflow/actions/reconstruction",
         };
         option(erda.common.openapi) = {
-            path : "/api/devflow/actions/reconstruction",
+            path: "/api/devflow/actions/reconstruction",
         };
     }
-    rpc GetDevFlowInfo (GetDevFlowInfoRequest) returns (GetDevFlowInfoResponse) {
+    rpc GetDevFlowInfo(GetDevFlowInfoRequest) returns (GetDevFlowInfoResponse) {
         option(google.api.http) = {
-            get : "/api/devflow/actions/info",
+            get: "/api/devflow/actions/info",
         };
         option(erda.common.openapi) = {
-            path : "/api/devflow/actions/info",
+            path: "/api/devflow/actions/info",
+        };
+    }
+    rpc JoinTempBranchByGittarPushHook(GittarPushPayloadEvent)
+            returns (JoinTempBranchByGittarPushHookResponse) {
+        option(google.api.http) = {
+            post: "/api/devflow/actions/actions/join-by-gittar-push-hook",
         };
     }
 }
@@ -75,6 +81,9 @@ message DevFlowNode {
     uint64 issueID = 8;
     uint64 mergeID = 9;
     string appName = 10;
+    Commit commit = 11;
+    Commit baseCommit = 12;
+    bool canJoin = 13;
 }
 
 // CreateFlow
@@ -90,13 +99,12 @@ message CreateFlowNodeResponse {
     uint64 mergeID = 2;
 }
 
-// operationDeploy
-message OperationDeployRequest {
+message OperationMergeRequest {
     uint64 mergeID = 1;
     google.protobuf.BoolValue enable = 2;
 }
 
-message OperationDeployResponse {
+message OperationMergeResponse {
 }
 
 // DeleteFlowNode
@@ -129,7 +137,7 @@ message GetDevFlowInfoRequest {
 }
 
 message ChangeBranch {
-    string commit = 1;
+    Commit commit = 1;
     string branchName = 2;
     string status = 3;
     uint64 repoMergeID = 4;
@@ -137,6 +145,7 @@ message ChangeBranch {
 
 message DevFlowInfo {
     DevFlowNode devFlowNode = 1;
+
     repeated ChangeBranch changeBranch = 2;
     repeated PipelineStepInfo pipelineStepInfos = 3;
     string commit = 4;
@@ -146,4 +155,47 @@ message DevFlowInfo {
 message GetDevFlowInfoResponse {
     string status = 1;
     repeated DevFlowInfo devFlowInfos = 2;
+}
+
+message GittarPushPayloadEvent {
+    string event = 1;
+    string action = 2;
+    string orgID = 3;
+    string projectID = 4;
+    string applicationID = 5;
+    string env = 6;
+    string timeStamp = 7;
+    Content content = 8;
+}
+
+message Content {
+    string ref = 1;
+    string after = 2;
+    string before = 3;
+    Pusher pusher = 4;
+}
+
+message Pusher {
+    string ID = 1 [json_name = "id"];
+    string name = 2;
+    string nickName = 3 [json_name = "nickname"];
+    string email = 4;
+}
+
+message JoinTempBranchByGittarPushHookResponse {
+
+}
+
+message Commit {
+    string ID = 1 [json_name = "id"];
+    Signature author = 2;
+    Signature committer = 3;
+    string commitMessage = 4;
+    string parentSha = 5;
+}
+
+message Signature {
+    string email = 1;
+    string name = 2;
+    google.protobuf.Timestamp When = 3;
 }

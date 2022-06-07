@@ -27,6 +27,7 @@ import (
 	"strings"
 	"time"
 
+	git "github.com/libgit2/git2go/v30"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
@@ -83,17 +84,17 @@ func CreateRepo(context *webcontext.Context) {
 func GetRepoBranches(context *webcontext.Context) {
 	onlyBranchNames := context.GetQueryBool("onlyBranchNames", false)
 	findBranch := context.Query("findBranch")
+	baseBranch := context.Query("baseBranch")
 	repository := context.Repository
-	branches, err := context.Repository.GetDetailBranches(onlyBranchNames, findBranch)
+	branches, err := context.Repository.GetDetailBranches(onlyBranchNames, findBranch, baseBranch)
 	if err != nil {
 		logrus.Errorf("repo:%v branch error %v", repository.DiskPath(), err)
 		context.Abort(errors.New("branch error"))
-	} else {
-
-		b := gitmodule.Branches(branches)
-		sort.Sort(b)
-		context.Success(b)
+		return
 	}
+	b := gitmodule.Branches(branches)
+	sort.Sort(b)
+	context.Success(b)
 }
 
 // SetRepoDefaultBranch 设置默认分支
@@ -152,16 +153,24 @@ func CreateRepoBranch(context *webcontext.Context) {
 	context.Success("")
 }
 
-// GetRepoBranches function
+// GetRepoBranchDetail .
 func GetRepoBranchDetail(context *webcontext.Context) {
 	ref := context.Param("*")
 	commit, err := context.Repository.GetBranchCommit(ref)
 	if err != nil {
+		if git.IsErrorCode(err, git.ErrNotFound) {
+			context.Success(Map{
+				"commit": commit,
+				"has":    false,
+			})
+			return
+		}
 		context.Abort(err)
 		return
 	}
 	context.Success(Map{
 		"commit": commit,
+		"has":    true,
 	})
 }
 

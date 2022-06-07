@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/coreos/etcd/clientv3"
+	"github.com/erda-project/erda/modules/dop/providers/devflowrule"
 	"github.com/jinzhu/gorm"
 	"github.com/sirupsen/logrus"
 
@@ -39,7 +40,6 @@ import (
 	sourcepb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
 	errboxpb "github.com/erda-project/erda-proto-go/core/services/errorbox/pb"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
-	dwfpb "github.com/erda-project/erda-proto-go/dop/devflowrule/pb"
 	addonmysqlpb "github.com/erda-project/erda-proto-go/orchestrator/addon/mysql/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/apps/devflow/flow"
@@ -84,10 +84,10 @@ type provider struct {
 	DicehubReleaseSvc     dicehubpb.ReleaseServiceServer          `autowired:"erda.core.dicehub.release.ReleaseService"`
 	CICDCmsSvc            *cms.CICDCmsService                     `autowired:"erda.dop.cms.CICDCmsService"`
 	UnitTestService       *unittest.UnitTestService               `autowired:"erda.dop.qa.unittest.UnitTestService"`
-	DevFlowRule           dwfpb.DevFlowRuleServiceServer          `autowired:"erda.dop.devflowrule.DevFlowRuleService" required:"true"`
-	TokenService          tokenpb.TokenServiceServer              `autowired:"erda.core.token.TokenService"`
-	ClusterSvc            clusterpb.ClusterServiceServer          `autowired:"erda.core.clustermanager.cluster.ClusterService"`
-	DevFlowSvc            *flow.Service                           `autowired:"erda.apps.devflow.flow.FlowService"`
+	DevFlowRule           devflowrule.Interface
+	TokenService          tokenpb.TokenServiceServer     `autowired:"erda.core.token.TokenService"`
+	ClusterSvc            clusterpb.ClusterServiceServer `autowired:"erda.core.clustermanager.cluster.ClusterService"`
+	DevFlowSvc            *flow.Service                  `autowired:"erda.apps.devflow.flow.FlowService"`
 
 	Protocol      componentprotocol.Interface
 	CPTran        i18n.I18n        `autowired:"i18n@cp"`

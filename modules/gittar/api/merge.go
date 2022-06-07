@@ -16,6 +16,7 @@ package api
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -504,4 +505,80 @@ func GetMergeRequestsStats(ctx *webcontext.Context) {
 		return
 	}
 	ctx.Success(response)
+}
+
+func OperationTempBranch(ctx *webcontext.Context) {
+	id := ctx.ParamInt32("id", 0)
+	if id == 0 {
+		ctx.Abort(ERROR_ARG_ID)
+		return
+	}
+
+	req := apistructs.GittarMergeOperationTempBranchRequest{}
+	err := ctx.BindJSON(&req)
+	if err != nil {
+		ctx.Abort(err)
+		return
+	}
+
+	err = ctx.Service.UpdateJoinTempBranchStatus(id, req.JoinTempBranchStatus, req.IsJoinTempBranch)
+	if err != nil {
+		ctx.Abort(err)
+		return
+	}
+	ctx.Success(nil)
+}
+
+func MergeWithBranch(ctx *webcontext.Context) {
+	isLocked, err := ctx.Service.GetRepoLocked(ctx.Repository.ProjectId, ctx.Repository.ApplicationId)
+	if err != nil {
+		ctx.Abort(err)
+		return
+	}
+	if isLocked {
+		ctx.Abort(ERROR_REPO_LOCKED)
+		return
+	}
+	var req apistructs.GittarMergeWithBranchRequest
+	if err = ctx.BindJSON(&req); err != nil {
+		ctx.Abort(err)
+		return
+	}
+
+	if req.TargetBranch == "" || req.SourceBranch == "" {
+		ctx.Abort(fmt.Errorf("the targetBranch or targetBranch is empty"))
+		return
+	}
+
+	commitMessage := fmt.Sprintf("Merge branch '%s' into '%s'", req.SourceBranch, req.TargetBranch)
+	commit, err := ctx.Repository.Merge(req.SourceBranch, req.TargetBranch, ctx.User.ToGitSignature(), commitMessage)
+	if err != nil {
+		ctx.Abort(err)
+		return
+	}
+	ctx.Success(commit)
+}
+
+func MergeBase(ctx *webcontext.Context) {
+	sourceBranch := ctx.Query("sourceBranch")
+	targetBranch := ctx.Query("targetBranch")
+
+	ourCommit, err := ctx.Repository.GetBranchCommit(sourceBranch)
+	if err != nil {
+		ctx.Abort(err)
+		return
+	}
+	theirCommit, err := ctx.Repository.GetBranchCommit(targetBranch)
+	if err != nil {
+		ctx.Abort(err)
+		return
+	}
+	baseCommit, err := ctx.Repository.GetMergeBase(ourCommit, theirCommit)
+	if err != nil {
+		ctx.Abort(err)
+		return
+	}
+
+	ctx.Success(baseCommit)
+
 }

@@ -24,14 +24,11 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/i18n"
-	"github.com/erda-project/erda-proto-go/dop/devflowrule/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/providers/devflowrule/db"
-	"github.com/erda-project/erda/pkg/common/apis"
 )
 
-type config struct {
-}
+type config struct{}
 
 type provider struct {
 	Cfg      *config
@@ -41,7 +38,7 @@ type provider struct {
 	Register transport.Register `autowired:"service-register" required:"true"`
 	Trans    i18n.Translator    `translator:"project-pipeline" required:"true"`
 
-	WorkflowSvc *ServiceImplement
+	dbClient *db.Client
 }
 
 func (p *provider) Run(ctx context.Context) error {
@@ -50,32 +47,16 @@ func (p *provider) Run(ctx context.Context) error {
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.bundle = bundle.New(bundle.WithGittar())
-	p.WorkflowSvc = &ServiceImplement{
-		db:  &db.Client{DB: p.DB},
-		bdl: p.bundle,
-	}
-	if p.Register != nil {
-		pb.RegisterDevFlowRuleServiceImp(p.Register, p.WorkflowSvc, apis.Options())
-	}
+	p.dbClient = &db.Client{DB: p.DB}
 	return nil
-}
-
-func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
-	switch {
-	case ctx.Service() == "erda.dop.devFlowRule.DevFlowRuleServiceMethod" || ctx.Type() == reflect.TypeOf(reflect.TypeOf((*Service)(nil)).Elem()):
-		return p.WorkflowSvc
-	case ctx.Service() == "erda.dop.devFlowRule.DevFlowRuleService" || ctx.Type() == pb.DevFlowRuleServiceServerType() || ctx.Type() == pb.DevFlowRuleServiceHandlerType():
-		return p.WorkflowSvc
-	}
-	return p
 }
 
 func init() {
 	servicehub.Register("erda.dop.devFlowRule", &servicehub.Spec{
-		Services:             pb.ServiceNames(),
-		Types:                append(pb.Types()),
-		OptionalDependencies: []string{"service-register"},
-		Description:          "",
+		Services:     []string{"erda.dop.devFlowRule"},
+		Types:        []reflect.Type{reflect.TypeOf((*Interface)(nil)).Elem()},
+		Dependencies: nil,
+		Description:  "devFlowRule",
 		ConfigFunc: func() interface{} {
 			return &config{}
 		},

@@ -88,7 +88,7 @@ func (repo *Repository) GetBranches() ([]string, error) {
 }
 
 // GetDetailBranches 获取分支详情列表
-func (repo *Repository) GetDetailBranches(onlyBranchNames bool, findBranch string) ([]*Branch, error) {
+func (repo *Repository) GetDetailBranches(onlyBranchNames bool, findBranch, baseBranch string) ([]*Branch, error) {
 	rawrepo, err := repo.GetRawRepo()
 	if err != nil {
 		return nil, err
@@ -113,13 +113,17 @@ func (repo *Repository) GetDetailBranches(onlyBranchNames bool, findBranch strin
 	if err != nil {
 		return nil, err
 	}
-	mergedBranchMap, err := repo.GetMergedBranches(defaultBranch)
+	if baseBranch == "" {
+		baseBranch = defaultBranch
+	}
+
+	mergedBranchMap, err := repo.GetMergedBranches(baseBranch)
 	if err != nil {
 		return nil, err
 	}
 
 	iter, _ := rawrepo.NewBranchIterator(git.BranchLocal)
-	branches := []*Branch{}
+	var branches []*Branch
 	rules, _ := repo.Bundle.GetAppBranchRules(uint64(repo.ApplicationId))
 	err = iter.ForEach(func(b *git.Branch, t git.BranchType) error {
 		branchName, err := b.Name()
@@ -197,4 +201,9 @@ func (repo *Repository) AddRemote(name, url string, fetch bool) error {
 func (repo *Repository) RemoveRemote(name string) error {
 	_, err := NewCommand("remote", "remove", name).RunInDir(repo.DiskPath())
 	return err
+}
+
+func GetMergedBranched(repoPath, branch string) bool {
+	_, err := NewCommand("branch", "--merged", branch).RunInDir(repoPath)
+	return err == nil
 }
