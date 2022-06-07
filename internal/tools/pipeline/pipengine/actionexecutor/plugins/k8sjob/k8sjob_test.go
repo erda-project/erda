@@ -148,3 +148,42 @@ func TestCheckLabels(t *testing.T) {
 	}
 
 }
+
+func Test_parseFailedReason(t *testing.T) {
+	type args struct {
+		reason string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "invalid image name",
+			args: args{
+				reason: "InvalidImageName",
+			},
+			want: errInvalidImageName,
+		},
+		{
+			name: "image pull back off",
+			args: args{
+				reason: "ImagePullBackOff",
+			},
+			want: errPullImage,
+		},
+		{
+			name: "out of memory",
+			args: args{
+				reason: "OOMKilled",
+			},
+			want: errOomKilled,
+		},
+	}
+	for _, tt := range tests {
+		msg, _ := parseFailedReason(tt.args.reason)
+		if msg != tt.want {
+			t.Errorf("parseFailedScheduling() got = %v, want %v", msg, tt.want)
+		}
+	}
+}
