@@ -5,7 +5,7 @@ option go_package = "github.com/erda-project/erda-proto-go/core/monitor/alert/pb
 import "google/api/annotations.proto";
 import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
-import "github.com/mwitkow/go-proto-validators/validator.proto";
+import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 
 service AlertService {
   rpc QueryCustomizeMetric (QueryCustomizeMetricRequest) returns (QueryCustomizeMetricResponse) {
@@ -446,8 +446,8 @@ message QueryOrgCustomizeNotifyTargetResponse {
 message QueryCustomizeAlertRequest {
   string scope    = 1;
   string scopeId  = 2;
-  int64  pageNo   = 3 [(validator.field) = {int_gt: 0}];
-  int64  pageSize = 4 [(validator.field) = {int_gt: 0,int_lt: 101}];
+  int64  pageNo   = 3 [(validate.rules).int64.gt = 0];
+  int64  pageSize = 4 [(validate.rules).int64 = {gt: 0, lt: 101}];
   string name     = 5;
 }
 
@@ -475,7 +475,7 @@ message CustomizeAlertOverview {
 }
 
 message GetCustomizeAlertRequest {
-  uint64 id = 1 [(validator.field) = {int_gt: 0}];
+  uint64 id = 1 [(validate.rules).uint64.gt = 0];
 }
 
 message GetCustomizeAlertResponse {
@@ -543,7 +543,7 @@ message CustomizeAlertNotifyTemplates {
 }
 
 message GetCustomizeAlertDetailRequest {
-  uint64 id = 1 [(validator.field) = {int_gt: 0}];
+  uint64 id = 1 [(validate.rules).uint64.gt = 0];
 }
 
 message GetCustomizeAlertDetailResponse {
@@ -570,7 +570,7 @@ message CreateCustomizeAlertResponse {
 }
 
 message UpdateCustomizeAlertRequest {
-  uint64                                 id           = 1 [(validator.field) = {int_gt: 0}];
+  uint64                                 id           = 1 [(validate.rules).uint64.gt = 0];
   string                                 clusterName  = 2;
   string                                 name         = 3;
   string                                 alertType    = 4;
@@ -589,7 +589,7 @@ message UpdateCustomizeAlertResponse {
 }
 
 message UpdateCustomizeAlertEnableRequest {
-  uint64 id     = 1 [(validator.field) = {int_gt: 0}];
+  uint64 id     = 1 [(validate.rules).uint64.gt = 0];
   bool   enable = 2;
 }
 
@@ -597,7 +597,7 @@ message UpdateCustomizeAlertEnableResponse{
 }
 
 message DeleteCustomizeAlertRequest {
-  uint64 id = 1 [(validator.field) = {int_gt: 0}];
+  uint64 id = 1 [(validate.rules).uint64.gt = 0];
 }
 
 message DeleteCustomizeAlertResponse {
@@ -612,8 +612,8 @@ message QueryOrgCustomizeMetricResponse {
 }
 
 message QueryOrgCustomizeAlertsRequest {
-  int64  pageNo   = 1 [(validator.field) = {int_gt: 0}];
-  int64  pageSize = 2 [(validator.field) = {int_gt: 0,int_lt: 101}];
+  int64  pageNo   = 1 [(validate.rules).int64.gt = 0];
+  int64  pageSize = 2 [(validate.rules).int64 = {gt: 0, lt: 101}];
   string name     = 3;
 }
 
@@ -629,7 +629,7 @@ message QueryOrgCustomizeAlertsData {
 }
 
 message GetOrgCustomizeAlertDetailRequest {
-  uint64 id = 1 [(validator.field) = {int_gt: 0}];
+  uint64 id = 1 [(validate.rules).uint64.gt = 0];
 }
 
 message GetOrgCustomizeAlertDetailResponse {
@@ -652,11 +652,11 @@ message CreateOrgCustomizeAlertRequest {
 }
 
 message CreateOrgCustomizeAlertResponse {
-  uint64 id = 1 [(validator.field) = {int_gt: 0}];
+  uint64 id = 1 [(validate.rules).uint64.gt = 0];
 }
 
 message UpdateOrgCustomizeAlertRequest {
-  uint64                                 id           = 1 [(validator.field) = {int_gt: 0}];
+  uint64                                 id           = 1 [(validate.rules).uint64.gt = 0];
   string                                 clusterName  = 2;
   string                                 name         = 3;
   string                                 alertType    = 4;
@@ -675,7 +675,7 @@ message UpdateOrgCustomizeAlertResponse {
 }
 
 message UpdateOrgCustomizeAlertEnableRequest {
-  int64 id     = 1 [(validator.field) = {int_gt: 0}];
+  int64 id     = 1 [(validate.rules).int64.gt = 0];
   bool  enable = 2;
 }
 
@@ -683,7 +683,7 @@ message UpdateOrgCustomizeAlertEnableResponse {
 }
 
 message DeleteOrgCustomizeAlertRequest {
-  uint64 id = 1 [(validator.field) = {int_gt: 0}];
+  uint64 id = 1 [(validate.rules).uint64.gt = 0];
 }
 
 message DeleteOrgCustomizeAlertResponse {
@@ -810,8 +810,8 @@ message NotifySilence {
 message QueryAlertRequest {
   string scope    = 1;
   string scopeId  = 2;
-  int64  pageNo   = 3 [(validator.field) = {int_gt: 0}];
-  int64  pageSize = 4 [(validator.field) = {int_gt: 0}];
+  int64  pageNo   = 3 [(validate.rules).int64.gt = 0];
+  int64  pageSize = 4 [(validate.rules).int64.gt = 0];
   string name     = 5;
 }
 
@@ -903,7 +903,7 @@ message AlertNotifySilence {
 }
 
 message GetAlertRequest {
-  int64 id = 1 [(validator.field) = {int_gt: 0}];
+  int64 id = 1 [(validate.rules).int64.gt = 0];
 }
 
 message GetAlertResponse {
@@ -911,7 +911,7 @@ message GetAlertResponse {
 }
 
 message GetAlertDetailRequest {
-  int64 id = 1 [(validator.field) = {int_gt: 0}];
+  int64 id = 1 [(validate.rules).int64.gt = 0];
 }
 
 message GetAlertDetailResponse {
@@ -940,7 +940,7 @@ message CreateAlertResponse {
 }
 
 message UpdateAlertRequest {
-  uint64                             id               = 1 [(validator.field) = {int_gt: 0}];
+  uint64                             id               = 1 [(validate.rules).uint64.gt = 0];
   string                             name             = 2;
   string                             alertScope       = 3;
   string                             alertScopeId     = 4;
@@ -960,7 +960,7 @@ message UpdateAlertResponse {
 }
 
 message UpdateAlertEnableRequest {
-  int64 id     = 1 [(validator.field) = {int_gt: 0}];
+  int64 id     = 1 [(validate.rules).int64.gt = 0];
   bool  enable = 2;
 }
 
@@ -968,7 +968,7 @@ message UpdateAlertEnableResponse {
 }
 
 message DeleteAlertRequest {
-  int64 id = 1 [(validator.field) = {int_gt: 0}];
+  int64 id = 1 [(validate.rules).int64.gt = 0];
 }
 
 message DeleteAlertResponse {
@@ -983,8 +983,8 @@ message QueryOrgAlertRuleResponse {
 }
 
 message QueryOrgAlertRequest {
-  int64  pageNo   = 1 [(validator.field) = {int_gt: 0}];
-  int64  pageSize = 2 [(validator.field) = {int_gt: 0,int_lt: 101}];
+  int64  pageNo   = 1 [(validate.rules).int64.gt = 0];
+  int64  pageSize = 2 [(validate.rules).int64 = {gt: 0, lt: 101}];
   string name     = 3;
 }
 
@@ -999,7 +999,7 @@ message QueryOrgAlertData {
 }
 
 message GetOrgAlertDetailRequest {
-  int64 id = 1 [(validator.field) = {int_gt: 0}];
+  int64 id = 1 [(validate.rules).int64.gt = 0];
 }
 
 message GetOrgAlertDetailResponse {
@@ -1030,11 +1030,11 @@ message TriggerCondition {
 }
 
 message CreateOrgAlertResponse {
-  uint64 id = 1 [(validator.field) = {int_gt: 0}];
+  uint64 id = 1 [(validate.rules).uint64.gt = 0];
 }
 
 message UpdateOrgAlertRequest {
-  uint64                             id               = 1 [(validator.field) = {int_gt: 0}];
+  uint64                             id               = 1 [(validate.rules).uint64.gt = 0];
   string                             name             = 2;
   string                             alertScope       = 3;
   string                             alertScopeId     = 4;
@@ -1054,7 +1054,7 @@ message UpdateOrgAlertResponse {
 }
 
 message UpdateOrgAlertEnableRequest {
-  int64 id     = 1 [(validator.field) = {int_gt: 0}];
+  int64 id     = 1 [(validate.rules).int64.gt = 0];
   bool  enable = 2;
 }
 
@@ -1062,7 +1062,7 @@ message UpdateOrgAlertEnableResponse {
 }
 
 message DeleteOrgAlertRequest {
-  int64 id = 1 [(validator.field) = {int_gt: 0}];
+  int64 id = 1 [(validate.rules).int64.gt = 0];
 }
 
 message DeleteOrgAlertResponse {
@@ -1091,8 +1091,8 @@ message QueryAlertRecordRequest {
   repeated string alertType   = 5;
   repeated string handleState = 6;
   repeated string handlerId   = 7;
-  uint64          pageNo      = 8 [(validator.field) = {int_gt: 0}];
-  uint64          pageSize    = 9 [(validator.field) = {int_gt: 0,int_lt: 101}];
+  uint64          pageNo      = 8 [(validate.rules).uint64.gt = 0];
+  uint64          pageSize    = 9 [(validate.rules).uint64 = {gt: 0, lt: 101}];
 }
 
 message QueryAlertRecordResponse {
@@ -1137,8 +1137,8 @@ message GetAlertRecordResponse {
 
 message QueryAlertHistoryRequest {
   string groupId = 1;
-  int64  start   = 2 [(validator.field) = {int_gt: 0}];
-  int64  end     = 3 [(validator.field) = {int_gt: 0}];
+  int64  start   = 2 [(validate.rules).int64.gt = 0];
+  int64  end     = 3 [(validate.rules).int64.gt = 0];
   uint64 limit   = 4;
 }
 
@@ -1238,8 +1238,8 @@ message QueryOrgAlertRecordRequest {
   repeated string alertType   = 3;
   repeated string handleState = 4;
   repeated string handlerId   = 5;
-  uint64          pageNo      = 6 [(validator.field) = {int_gt: 0}];
-  uint64          pageSize    = 7 [(validator.field) = {int_gt: 0,int_lt: 101}];
+  uint64          pageNo      = 6 [(validate.rules).uint64.gt = 0];
+  uint64          pageSize    = 7 [(validate.rules).uint64 = {gt: 0, lt: 101}];
 
 }
 
@@ -1250,8 +1250,8 @@ message QueryOrgHostsAlertRecordRequest {
   repeated string     alertType   = 4;
   repeated string     handleState = 5;
   repeated string     handlerId   = 6;
-  uint64              pageNo      = 7 [(validator.field) = {int_gt: 0}];
-  uint64              pageSize    = 8 [(validator.field) = {int_gt: 0,int_lt: 101}];
+  uint64              pageNo      = 7 [(validate.rules).uint64.gt = 0];
+  uint64              pageSize    = 8 [(validate.rules).uint64 = {gt: 0, lt: 101}];
 
 }
 
@@ -1274,8 +1274,8 @@ message GetOrgAlertRecordResponse {
 
 message QueryOrgAlertHistoryRequest {
   string groupId = 1;
-  int64  start   = 2 [(validator.field) = {int_gt: 0}];
-  int64  end     = 3 [(validator.field) = {int_gt: 0}];
+  int64  start   = 2 [(validate.rules).int64.gt = 0];
+  int64  end     = 3 [(validate.rules).int64.gt = 0];
   uint64 limit   = 4;
 }
 

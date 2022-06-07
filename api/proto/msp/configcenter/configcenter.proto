@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package erda.msp.configcenter;
 option go_package = "github.com/erda-project/erda-proto-go/msp/configcenter/pb";
-import "github.com/mwitkow/go-proto-validators/validator.proto";
+import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 import "google/api/annotations.proto";
 import "common/openapi.proto";
 
@@ -46,10 +46,10 @@ service ConfigCenterService {
 
 // GetGroups
 message GetGroupRequest {
-  string tenantID = 1 [(validator.field) = {string_not_empty: true}];
+  string tenantID = 1 [(validate.rules).string.min_len = 1];
   string keyword  = 2;
-  int64  pageNum  = 3 [(validator.field) = {int_gt: 0}];
-  int64  pageSize = 4 [(validator.field) = {int_gt: 0}];
+  int64  pageNum  = 3 [(validate.rules).int64.gt = 0];
+  int64  pageSize = 4 [(validate.rules).int64.gt = 0];
 }
 
 message GetGroupResponse {
@@ -63,8 +63,8 @@ message Groups {
 
 // GetGroupProperties
 message GetGroupPropertiesRequest {
-  string tenantID = 1 [(validator.field) = {string_not_empty: true}];
-  string groupID  = 2 [(validator.field) = {string_not_empty: true}];
+  string tenantID = 1 [(validate.rules).string.min_len = 1];
+  string groupID  = 2 [(validate.rules).string.min_len = 1];
 }
 
 message GetGroupPropertiesResponse {
@@ -73,8 +73,8 @@ message GetGroupPropertiesResponse {
 
 // SaveGroupProperties
 message SaveGroupPropertiesRequest {
-  string            tenantID   = 1 [(validator.field) = {string_not_empty: true}];
-  string            groupID    = 2 [(validator.field) = {string_not_empty: true}];
+  string            tenantID   = 1 [(validate.rules).string.min_len = 1];
+  string            groupID    = 2 [(validate.rules).string.min_len = 1];
   repeated Property properties = 3;
 }
 

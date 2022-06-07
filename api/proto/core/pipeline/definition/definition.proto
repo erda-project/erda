@@ -5,7 +5,7 @@ package erda.core.pipeline.definition;
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/struct.proto";
-import "github.com/mwitkow/go-proto-validators/validator.proto";
+import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 import "common/identity.proto";
 import "common/commit.proto";
 
@@ -205,7 +205,7 @@ message PipelineDefinitionListResponse {
 }
 
 message PipelineDefinitionUsedRefListRequest {
-  string location = 1 [(validator.field) = {string_not_empty: true}];
+  string location = 1 [(validate.rules).string.min_len = 1];
   repeated string remotes = 2;
 }
 

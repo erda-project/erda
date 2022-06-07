@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package erda.core.monitor.metric;
 option go_package = "github.com/erda-project/erda-proto-go/core/monitor/metric/pb";
-import "github.com/mwitkow/go-proto-validators/validator.proto";
+import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 import "google/protobuf/descriptor.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/struct.proto";
@@ -61,8 +61,8 @@ service MetricMetaService {
 
 // ListMetricNames
 message ListMetricNamesRequest {
-  string scope   = 1 [(validator.field) = {string_not_empty : true}];
-  string scopeID = 2 [(validator.field) = {string_not_empty : true}];
+  string scope   = 1 [(validate.rules).string.min_len = 1];
+  string scopeID = 2 [(validate.rules).string.min_len = 1];
 }
 
 message ListMetricNamesResponse {
@@ -93,8 +93,8 @@ message UnRegisterMetricMetaResponse {
 
 // ListMetricMeta
 message ListMetricMetaRequest {
-  string          scope   = 1 [(validator.field) = {string_not_empty : true}];
-  string          scopeID = 2 [(validator.field) = {string_not_empty : true}];
+  string          scope   = 1 [(validate.rules).string.min_len = 1];
+  string          scopeID = 2 [(validate.rules).string.min_len = 1];
   repeated string metrics = 3;
 }
 
@@ -104,8 +104,8 @@ message ListMetricMetaResponse {
 
 // ListMetricGroups
 message ListMetricGroupsRequest {
-  string scope   = 1 [(validator.field) = {string_not_empty : true}];
-  string scopeID = 2 [(validator.field) = {string_not_empty : true}];
+  string scope   = 1 [(validate.rules).string.min_len = 1];
+  string scopeID = 2 [(validate.rules).string.min_len = 1];
   string mode    = 3;
 }
 
@@ -115,9 +115,9 @@ message ListMetricGroupsResponse {
 
 // GetMetricGroup
 message GetMetricGroupRequest {
-  string scope      = 1 [(validator.field) = {string_not_empty : true}];
-  string scopeID    = 2 [(validator.field) = {string_not_empty : true}];
-  string id         = 3  [(validator.field) = {string_not_empty : true}];
+  string scope      = 1 [(validate.rules).string.min_len = 1];
+  string scopeID    = 2 [(validate.rules).string.min_len = 1];
+  string id         = 3  [(validate.rules).string.min_len = 1];
   string mode       = 4;
   string version    = 5;
   string format     = 6;

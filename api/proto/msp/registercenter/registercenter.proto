@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package erda.msp.registercenter;
 option go_package = "github.com/erda-project/erda-proto-go/msp/registercenter/pb";
-import "github.com/mwitkow/go-proto-validators/validator.proto";
+import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 import "google/api/annotations.proto";
 import "common/openapi.proto";
 
@@ -135,12 +135,12 @@ service RegisterCenterService {
 
 // ListInterface
 message ListInterfaceRequest {
-  string projectID   = 1 [(validator.field) = {string_not_empty: true}];
-  string env         = 2 [(validator.field) = {string_not_empty: true}];
+  string projectID   = 1 [(validate.rules).string.min_len = 1];
+  string env         = 2 [(validate.rules).string.min_len = 1];
   string clusterName = 3;
   string appID       = 4;
   string tenantID    = 5;
-  string tenantGroup = 6 [(validator.field) = {string_not_empty: true}];
+  string tenantGroup = 6 [(validate.rules).string.min_len = 1];
   string runtimeID   = 7;
 }
 
@@ -150,12 +150,12 @@ message ListInterfaceResponse {
 
 // GetHTTPServices 
 message GetHTTPServicesRequest {
-  string projectID   = 1 [(validator.field) = {string_not_empty: true}];
-  string env         = 2 [(validator.field) = {string_not_empty: true}];
-  string clusterName = 3 [(validator.field) = {string_not_empty: true}];
+  string projectID   = 1 [(validate.rules).string.min_len = 1];
+  string env         = 2 [(validate.rules).string.min_len = 1];
+  string clusterName = 3 [(validate.rules).string.min_len = 1];
   string nacosID     = 4;
   string appID       = 5;
-  string tenantGroup = 6 [(validator.field) = {string_not_empty: true}];
+  string tenantGroup = 6 [(validate.rules).string.min_len = 1];
 }
 
 message GetHTTPServicesResponse {
@@ -164,12 +164,12 @@ message GetHTTPServicesResponse {
 
 // EnableHTTPService
 message EnableHTTPServiceRequest {
-  string            projectID   = 1 [(validator.field) = {string_not_empty: true}];
-  string            env         = 2 [(validator.field) = {string_not_empty: true}];
-  string            clusterName = 3 [(validator.field) = {string_not_empty: true}];
+  string            projectID   = 1 [(validate.rules).string.min_len = 1];
+  string            env         = 2 [(validate.rules).string.min_len = 1];
+  string            clusterName = 3 [(validate.rules).string.min_len = 1];
   string            nacosID     = 4;
-  string            tenantGroup = 5 [(validator.field) = {string_not_empty: true}];
-  EnableHTTPService service     = 6 [(validator.field) = {msg_exists : true}];
+  string            tenantGroup = 5 [(validate.rules).string.min_len = 1];
+  EnableHTTPService service     = 6 [(validate.rules).message.required = true];
 }
 
 message EnableHTTPServiceResponse {
@@ -184,9 +184,9 @@ message EnableHTTPService {
 
 // GetRouteRule
 message GetRouteRuleRequest {
-  string interfaceName = 1 [(validator.field) = {string_not_empty: true}];
-  string projectID     = 2 [(validator.field) = {string_not_empty: true}];
-  string env           = 3 [(validator.field) = {string_not_empty: true}];
+  string interfaceName = 1 [(validate.rules).string.min_len = 1];
+  string projectID     = 2 [(validate.rules).string.min_len = 1];
+  string env           = 3 [(validate.rules).string.min_len = 1];
   string clusterName   = 4;
   string appID         = 5;
   string tenantID      = 6;
@@ -199,14 +199,14 @@ message GetRouteRuleResponse {
 
 // CreateRouteRule
 message CreateRouteRuleRequest {
-  string      interfaceName = 1 [(validator.field) = {string_not_empty: true}];
-  string      projectID     = 2 [(validator.field) = {string_not_empty: true}];
-  string      env           = 3 [(validator.field) = {string_not_empty: true}];
+  string      interfaceName = 1 [(validate.rules).string.min_len = 1];
+  string      projectID     = 2 [(validate.rules).string.min_len = 1];
+  string      env           = 3 [(validate.rules).string.min_len = 1];
   string      clusterName   = 4;
   string      appID         = 5;
   string      tenantID      = 6;
   string      runtimeID     = 7;
-  RequestRule rule          = 8 [(validator.field) = {msg_exists : true}];
+  RequestRule rule          = 8 [(validate.rules).message.required = true];
 }
 
 message CreateRouteRuleResponse {
@@ -215,9 +215,9 @@ message CreateRouteRuleResponse {
 
 // DeleteRouteRule
 message DeleteRouteRuleRequest {
-  string interfaceName = 1 [(validator.field) = {string_not_empty: true}];
-  string projectID     = 2 [(validator.field) = {string_not_empty: true}];
-  string env           = 3 [(validator.field) = {string_not_empty: true}];
+  string interfaceName = 1 [(validate.rules).string.min_len = 1];
+  string projectID     = 2 [(validate.rules).string.min_len = 1];
+  string env           = 3 [(validate.rules).string.min_len = 1];
   string clusterName   = 4;
   string appID         = 5;
   string tenantID      = 6;
@@ -230,8 +230,8 @@ message DeleteRouteRuleResponse {
 
 // GetHostRule
 message CetHostRuleRequest {
-  string projectID   = 1 [(validator.field) = {string_not_empty: true}];
-  string env         = 2 [(validator.field) = {string_not_empty: true}];
+  string projectID   = 1 [(validate.rules).string.min_len = 1];
+  string env         = 2 [(validate.rules).string.min_len = 1];
   string clusterName = 3;
   string appID       = 4;
   string tenantID    = 5;
@@ -244,13 +244,13 @@ message CetHostRuleResponse {
 
 // CreateHostRule
 message CreateHostRuleRequest {
-  string    projectID   = 1 [(validator.field) = {string_not_empty: true}];
-  string    env         = 2 [(validator.field) = {string_not_empty: true}];
+  string    projectID   = 1 [(validate.rules).string.min_len = 1];
+  string    env         = 2 [(validate.rules).string.min_len = 1];
   string    clusterName = 3;
   string    appID       = 4;
   string    tenantID    = 5;
   string    runtimeID   = 6;
-  HostRules rules       = 7 [(validator.field) = {msg_exists : true}];
+  HostRules rules       = 7 [(validate.rules).message.required = true];
 }
 
 message CreateHostRuleResponse {
@@ -259,8 +259,8 @@ message CreateHostRuleResponse {
 
 // DeleteHostRule
 message DeleteHostRuleRequest {
-  string projectID   = 1 [(validator.field) = {string_not_empty: true}];
-  string env         = 2 [(validator.field) = {string_not_empty: true}];
+  string projectID   = 1 [(validate.rules).string.min_len = 1];
+  string env         = 2 [(validate.rules).string.min_len = 1];
   string clusterName = 3;
   string appID       = 4;
   string tenantID    = 5;
@@ -273,9 +273,9 @@ message DeleteHostRuleResponse {
 
 // GetHostRuntimeRule
 message GetHostRuntimeRuleRequest {
-  string projectID   = 1 [(validator.field) = {string_not_empty: true}];
-  string env         = 2 [(validator.field) = {string_not_empty: true}];
-  string host        = 3 [(validator.field) = {string_not_empty: true}];
+  string projectID   = 1 [(validate.rules).string.min_len = 1];
+  string env         = 2 [(validate.rules).string.min_len = 1];
+  string host        = 3 [(validate.rules).string.min_len = 1];
   string clusterName = 4;
   string tenantID    = 5;
   string runtimeID   = 6;
@@ -287,13 +287,13 @@ message GetHostRuntimeRuleResponse {
 
 // CreateHostRuntimeRule
 message CreateHostRuntimeRuleRequest {
-  string           projectID   = 1 [(validator.field) = {string_not_empty: true}];
-  string           env         = 2 [(validator.field) = {string_not_empty: true}];
-  string           host        = 3 [(validator.field) = {string_not_empty: true}];
+  string           projectID   = 1 [(validate.rules).string.min_len = 1];
+  string           env         = 2 [(validate.rules).string.min_len = 1];
+  string           host        = 3 [(validate.rules).string.min_len = 1];
   string           clusterName = 4;
   string           tenantID    = 5;
   string           runtimeID   = 6;
-  HostRuntimeRules rules       = 7 [(validator.field) = {msg_exists : true}];
+  HostRuntimeRules rules       = 7 [(validate.rules).message.required = true];
 }
 
 message CreateHostRuntimeRuleResponse {
@@ -302,8 +302,8 @@ message CreateHostRuntimeRuleResponse {
 
 // GetAllHostRuntimeRules
 message GetAllHostRuntimeRulesRequest {
-  string projectID   = 1 [(validator.field) = {string_not_empty: true}];
-  string env         = 2 [(validator.field) = {string_not_empty: true}];
+  string projectID   = 1 [(validate.rules).string.min_len = 1];
+  string env         = 2 [(validate.rules).string.min_len = 1];
   string clusterName = 3;
   string appID       = 4;
   string tenantID    = 5;
@@ -316,9 +316,9 @@ message GetAllHostRuntimeRulesResponse {
 
 // GetDubboInterfaceTime
 message GetDubboInterfaceTimeRequest {
-  string interfaceName = 1 [(validator.field) = {string_not_empty: true}];
-  string projectID     = 2 [(validator.field) = {string_not_empty: true}];
-  string env           = 3 [(validator.field) = {string_not_empty: true}];
+  string interfaceName = 1 [(validate.rules).string.min_len = 1];
+  string projectID     = 2 [(validate.rules).string.min_len = 1];
+  string env           = 3 [(validate.rules).string.min_len = 1];
   string clusterName   = 4;
   string appID         = 5;
   string tenantID      = 6;
@@ -335,9 +335,9 @@ message DubboInterfaceTime {
 
 // GetDubboInterfaceQPS
 message GetDubboInterfaceQPSRequest {
-  string interfaceName = 1 [(validator.field) = {string_not_empty: true}];
-  string projectID     = 2 [(validator.field) = {string_not_empty: true}];
-  string env           = 3 [(validator.field) = {string_not_empty: true}];
+  string interfaceName = 1 [(validate.rules).string.min_len = 1];
+  string projectID     = 2 [(validate.rules).string.min_len = 1];
+  string env           = 3 [(validate.rules).string.min_len = 1];
   string start         = 4;
   string end           = 5;
   string point         = 6;
@@ -352,9 +352,9 @@ message GetDubboInterfaceQPSResponse {
 
 // GetDubboInterfaceFailed
 message GetDubboInterfaceFailedRequest {
-  string interfaceName = 1 [(validator.field) = {string_not_empty: true}];
-  string projectID     = 2 [(validator.field) = {string_not_empty: true}];
-  string env           = 3 [(validator.field) = {string_not_empty: true}];
+  string interfaceName = 1 [(validate.rules).string.min_len = 1];
+  string projectID     = 2 [(validate.rules).string.min_len = 1];
+  string env           = 3 [(validate.rules).string.min_len = 1];
   string start         = 4;
   string end           = 5;
   string point         = 6;
@@ -369,9 +369,9 @@ message GetDubboInterfaceFailedResponse {
 
 // GetDubboInterfaceAvgTime
 message GetDubboInterfaceAvgTimeRequest {
-  string interfaceName = 1 [(validator.field) = {string_not_empty: true}];
-  string projectID     = 2  [(validator.field) = {string_not_empty: true}];
-  string env           = 3  [(validator.field) = {string_not_empty: true}];
+  string interfaceName = 1 [(validate.rules).string.min_len = 1];
+  string projectID     = 2  [(validate.rules).string.min_len = 1];
+  string env           = 3  [(validate.rules).string.min_len = 1];
   string start         = 4;
   string end           = 5;
   string point         = 6;

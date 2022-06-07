@@ -3,7 +3,7 @@ syntax = "proto3";
 package erda.msp.resource;
 option go_package = "github.com/erda-project/erda-proto-go/msp/resource/pb";
 import "google/api/annotations.proto";
-import "github.com/mwitkow/go-proto-validators/validator.proto";
+import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 
 service ResourceService {
   rpc CreateResource(CreateResourceRequest) returns (CreateResourceResponse) {
@@ -33,13 +33,13 @@ service ResourceService {
 
 message CreateResourceRequest {
   // 资源类型
-  string              engine   = 1 [(validator.field) = {string_not_empty: true}];
+  string              engine   = 1 [(validate.rules).string.min_len = 1];
   // 请求资源ID
-  string              uuid     = 2 [(validator.field) = {string_not_empty: true}];
+  string              uuid     = 2 [(validate.rules).string.min_len = 1];
   // 规格
   string              plan     = 3;
   // 资源所在可用区
-  string              az       = 4 [(validator.field) = {string_not_empty: true}];
+  string              az       = 4 [(validate.rules).string.min_len = 1];
   // 资源相关配置项
   map<string, string> options  = 5;
   // 回调
@@ -67,9 +67,9 @@ message ResourceCreateResult {
 
 message DeleteResourceRequest {
   // 资源类型
-  string engine = 1 [(validator.field) = {string_not_empty: true}];
+  string engine = 1 [(validate.rules).string.min_len = 1];
   // 资源id
-  string id     = 2 [(validator.field) = {string_not_empty: true}];
+  string id     = 2 [(validate.rules).string.min_len = 1];
 }
 
 message DeleteResourceResponse {
@@ -100,7 +100,7 @@ message MonitorRuntime {
 }
 
 message GetMonitorInstanceRequest {
-  string terminusKey = 1 [(validator.field) = {string_not_empty: true}];
+  string terminusKey = 1 [(validate.rules).string.min_len = 1];
 }
 
 message GetMonitorInstanceResponse {
