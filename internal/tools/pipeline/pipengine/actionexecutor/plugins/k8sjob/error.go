@@ -26,4 +26,5 @@ var (
 	errMountVolume             = "存储卷挂载失败"
 	errAlreadyMountedVolume    = "存储卷已经被挂载过"
 	errNodeRebooted            = "节点重启"
+	errOomKilled               = "OOM(Out Of Memory)故障，请合理配置内存配额"
 )

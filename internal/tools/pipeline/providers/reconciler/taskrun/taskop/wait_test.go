@@ -15,11 +15,15 @@
 package taskop
 
 import (
+	"reflect"
 	"testing"
 
+	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/reconciler/taskrun"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 func TestCalculateNextLoopTimeDuration(t *testing.T) {
@@ -73,4 +77,27 @@ func TestCalculateNextLoopTimeDuration(t *testing.T) {
 	for i := range tt {
 		assert.Equal(t, tt[i].want, w.calculateNextLoopTimeDuration(tt[i].loopedTimes).String())
 	}
+}
+
+func Test_waitWhenDone(t *testing.T) {
+	taskRun := &taskrun.TaskRun{
+		Task: &spec.PipelineTask{},
+		P: &spec.Pipeline{
+			PipelineBase: spec.PipelineBase{
+				ID: 1,
+			},
+		},
+	}
+	pm1 := monkey.PatchInstanceMethod(reflect.TypeOf(taskRun), "AppendLastMsg", func(tr *taskrun.TaskRun, msg string) error {
+		t.Logf("task AppendLastMsg taskID: %d, msg: %s", tr.Task.ID, msg)
+		return nil
+	})
+	defer pm1.Unpatch()
+	w := NewWait(taskRun)
+	statusWithDesc := apistructs.PipelineStatusDesc{
+		Status: apistructs.PipelineStatusSuccess,
+		Desc:   "success",
+	}
+	err := w.WhenDone(statusWithDesc)
+	assert.NoError(t, err)
 }
