@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package erda.msp.apm.diagnotor;
 option go_package = "github.com/erda-project/erda-proto-go/msp/apm/diagnotor/pb";
-import "github.com/mwitkow/go-proto-validators/validator.proto";
+import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 import "google/protobuf/descriptor.proto";
 import "google/api/annotations.proto";
 import "common/openapi.proto";
@@ -62,7 +62,7 @@ service DiagnotorService {
 }
 
 message ListServicesRequest {
-  string terminusKey = 1 [(validator.field) = {string_not_empty: true}];
+  string terminusKey = 1 [(validate.rules).string.min_len = 1];
 }
 
 message ListServicesResponse {
@@ -91,8 +91,8 @@ message InstanceInfo {
 }
 
 message StartDiagnosisRequest {
-  string terminusKey = 1 [(validator.field) = {string_not_empty: true}];
-  string instanceIP = 2 [(validator.field) = {string_not_empty: true}];
+  string terminusKey = 1 [(validate.rules).string.min_len = 1];
+  string instanceIP = 2 [(validate.rules).string.min_len = 1];
   string clusterName = 3;
 }
 
@@ -101,8 +101,8 @@ message StartDiagnosisResponse {
 }
 
 message QueryDiagnosisStatusRequest {
-  string terminusKey = 1 [(validator.field) = {string_not_empty: true}];
-  string instanceIP = 2 [(validator.field) = {string_not_empty: true}];
+  string terminusKey = 1 [(validate.rules).string.min_len = 1];
+  string instanceIP = 2 [(validate.rules).string.min_len = 1];
   string clusterName = 3;
 }
 
@@ -111,8 +111,8 @@ message QueryDiagnosisStatusResponse {
 }
 
 message StopDiagnosisRequest {
-  string terminusKey = 1 [(validator.field) = {string_not_empty: true}];
-  string instanceIP = 2 [(validator.field) = {string_not_empty: true}];
+  string terminusKey = 1 [(validate.rules).string.min_len = 1];
+  string instanceIP = 2 [(validate.rules).string.min_len = 1];
   string clusterName = 3;
 }
 
@@ -121,8 +121,8 @@ message StopDiagnosisResponse {
 }
 
 message ListProcessesRequest {
-  string terminusKey = 1 [(validator.field) = {string_not_empty: true}];
-  string instanceIP = 2 [(validator.field) = {string_not_empty: true}];
+  string terminusKey = 1 [(validate.rules).string.min_len = 1];
+  string instanceIP = 2 [(validate.rules).string.min_len = 1];
   string clusterName = 3;
 }
 

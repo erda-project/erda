@@ -22,8 +22,6 @@ import (
 	"reflect"
 	"strconv"
 
-	validator "github.com/mwitkow/go-proto-validators"
-
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
 	transgrpc "github.com/erda-project/erda-infra/pkg/transport/grpc"
@@ -77,15 +75,12 @@ func init() {
 	})
 }
 
-var validateErrorType = reflect.TypeOf(validator.FieldError("", nil))
-
 func encodeError(w http.ResponseWriter, r *http.Request, err error) {
 	var status int
 	if e, ok := err.(transhttp.Error); ok {
 		status = e.HTTPStatus()
 	} else {
-		typ := reflect.TypeOf(err)
-		if typ == validateErrorType {
+		if _, ok := err.(ValidationError); ok {
 			status = http.StatusBadRequest
 		} else {
 			status = http.StatusInternalServerError
@@ -183,12 +178,24 @@ func wrapResponse(h interceptor.Handler) interceptor.Handler {
 	}
 }
 
+type Validator interface {
+	Validate() error
+}
+
+type ValidationError interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+}
+
 func validRequest(h interceptor.Handler) interceptor.Handler {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
-		if v, ok := req.(validator.Validator); ok {
+		if v, ok := req.(Validator); ok {
 			err := v.Validate()
 			if err != nil {
-				return nil, errors.ParseValidateError(err)
+				return nil, err
 			}
 		}
 		return h(ctx, req)

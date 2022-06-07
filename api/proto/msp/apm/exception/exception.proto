@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package erda.msp.apm.exception;
 option go_package = "github.com/erda-project/erda-proto-go/msp/apm/exception/pb";
-import "github.com/mwitkow/go-proto-validators/validator.proto";
+import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/descriptor.proto";
 import "google/protobuf/struct.proto";
@@ -28,9 +28,9 @@ service ExceptionService {
 }
 
 message GetExceptionsRequest {
-  int64  startTime = 1 [(validator.field) = {string_not_empty: true}];
-  int64  endTime   = 2 [(validator.field) = {string_not_empty: true}];
-  string scopeID   = 3 [(validator.field) = {string_not_empty: true}];
+  int64  startTime = 1 [(validate.rules).int64.gt = 0];
+  int64  endTime   = 2 [(validate.rules).int64.gt = 0];
+  string scopeID   = 3 [(validate.rules).string.min_len = 1];
   bool   debug     = 4;
 }
 
@@ -39,8 +39,8 @@ message GetExceptionsResponse {
 }
 
 message GetExceptionEventIdsRequest {
-  string exceptionID = 1 [(validator.field) = {string_not_empty: true}];
-  string scopeID     = 2 [(validator.field) = {string_not_empty: true}];
+  string exceptionID = 1 [(validate.rules).string.min_len = 1];
+  string scopeID     = 2 [(validate.rules).string.min_len = 1];
 }
 
 message GetExceptionEventIdsResponse {
@@ -48,8 +48,8 @@ message GetExceptionEventIdsResponse {
 }
 
 message GetExceptionEventRequest {
-  string exceptionEventID = 1 [(validator.field) = {string_not_empty: true}];
-  string scopeID          = 2 [(validator.field) = {string_not_empty: true}];
+  string exceptionEventID = 1 [(validate.rules).string.min_len = 1];
+  string scopeID          = 2 [(validate.rules).string.min_len = 1];
 }
 
 message GetExceptionEventResponse {

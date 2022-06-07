@@ -4,7 +4,7 @@ package erda.core.monitor.expression;
 option go_package = "github.com/erda-project/erda-proto-go/core/monitor/expression/pb";
 import "google/api/annotations.proto";
 import "google/protobuf/struct.proto";
-import "github.com/mwitkow/go-proto-validators/validator.proto";
+import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 import "common/openapi.proto";
 import "core/monitor/alert/alert.proto";
 

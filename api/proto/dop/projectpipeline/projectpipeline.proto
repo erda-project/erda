@@ -3,7 +3,7 @@ syntax = "proto3";
 package erda.dop.projectpipeline;
 
 import "common/openapi.proto";
-import "github.com/mwitkow/go-proto-validators/validator.proto";
+import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
@@ -189,11 +189,11 @@ message CancelProjectPipelineRequest {
 message CancelProjectPipelineResponse {}
 
 message CreateProjectPipelineSourcePreCheckRequest {
-    uint64 appID = 1 [(validator.field) = {int_gt: 0}];
-    string sourceType = 2 [(validator.field) = {string_not_empty: true}];
-    string ref = 3 [(validator.field) = {string_not_empty: true}];
+    uint64 appID = 1 [(validate.rules).uint64.gt = 0];
+    string sourceType = 2 [(validate.rules).string.min_len = 1];
+    string ref = 3 [(validate.rules).string.min_len = 1];
     string path = 4;
-    string fileName = 5 [(validator.field) = {string_not_empty: true}];
+    string fileName = 5 [(validate.rules).string.min_len = 1];
 }
 
 message CreateProjectPipelineSourcePreCheckResponse {
@@ -202,8 +202,8 @@ message CreateProjectPipelineSourcePreCheckResponse {
 }
 
 message CreateProjectPipelineNamePreCheckRequest {
-    uint64 projectID = 1 [(validator.field) = {int_gt: 0}];
-    string name = 2 [(validator.field) = {string_not_empty: true}];
+    uint64 projectID = 1 [(validate.rules).uint64.gt = 0];
+    string name = 2 [(validate.rules).string.min_len = 1];
 }
 
 message CreateProjectPipelineNamePreCheckResponse {
@@ -226,7 +226,7 @@ message ListAppPipelineYmlResponse {
 }
 
 message ListAppRequest {
-    uint64 projectID = 1 [(validator.field) = {int_gt: 0}];
+    uint64 projectID = 1 [(validate.rules).uint64.gt = 0];
     string name = 2;
 }
 
@@ -257,13 +257,13 @@ message Application {
 }
 
 message CreateProjectPipelineRequest {
-    uint64 projectID = 1 [(validator.field) = {int_gt: 0}];
-    string name = 2 [(validator.field) = {string_not_empty: true}];
+    uint64 projectID = 1 [(validate.rules).uint64.gt = 0];
+    string name = 2 [(validate.rules).string.min_len = 1];
     uint64 appID = 3;
-    string sourceType = 4 [(validator.field) = {string_not_empty: true}];
-    string ref = 5 [(validator.field) = {string_not_empty: true}];
+    string sourceType = 4 [(validate.rules).string.min_len = 1];
+    string ref = 5 [(validate.rules).string.min_len = 1];
     string path = 6;
-    string fileName = 7 [(validator.field) = {string_not_empty: true}];
+    string fileName = 7 [(validate.rules).string.min_len = 1];
 }
 
 message CreateProjectPipelineResponse {
@@ -286,7 +286,7 @@ message ProjectPipeline {
 }
 
 message ListPipelineCategoryRequest {
-    uint64 projectID = 1 [(validator.field) = {int_gt: 0}];
+    uint64 projectID = 1 [(validate.rules).uint64.gt = 0];
     uint64 appID = 2;
 }
 
@@ -304,9 +304,9 @@ message pipelineCategory {
 }
 
 message UpdateProjectPipelineRequest {
-    string pipelineDefinitionID = 1 [(validator.field) = {string_not_empty: true}];
-    uint64 projectID = 2 [(validator.field) = {int_gt: 0}];
-    string name = 3 [(validator.field) = {string_not_empty: true}];
+    string pipelineDefinitionID = 1 [(validate.rules).string.min_len = 1];
+    uint64 projectID = 2 [(validate.rules).uint64.gt = 0];
+    string name = 3 [(validate.rules).string.min_len = 1];
     ProjectPipelineSource projectPipelineSource = 4;
 }
 
@@ -315,10 +315,10 @@ message UpdateProjectPipelineResponse {
 }
 
 message OneClickCreateProjectPipelineRequest {
-    uint64 projectID = 1 [(validator.field) = {int_gt: 0}];
+    uint64 projectID = 1 [(validate.rules).uint64.gt = 0];
     uint64 appID = 2;
-    string sourceType = 3 [(validator.field) = {string_not_empty: true}];
-    string ref = 4 [(validator.field) = {string_not_empty: true}];
+    string sourceType = 3 [(validate.rules).string.min_len = 1];
+    string ref = 4 [(validate.rules).string.min_len = 1];
     repeated string pipelineYmls = 5;
 }
 
@@ -328,11 +328,11 @@ message OneClickCreateProjectPipelineResponse {
 }
 
 message ProjectPipelineSource {
-    uint64 appID = 1 [(validator.field) = {int_gt: 0}];
-    string sourceType = 2 [(validator.field) = {string_not_empty: true}];
-    string ref = 3 [(validator.field) = {string_not_empty: true}];
+    uint64 appID = 1 [(validate.rules).uint64.gt = 0];
+    string sourceType = 2 [(validate.rules).string.min_len = 1];
+    string ref = 3 [(validate.rules).string.min_len = 1];
     string path = 4;
-    string fileName = 5 [(validator.field) = {string_not_empty: true}];
+    string fileName = 5 [(validate.rules).string.min_len = 1];
 }
 
 message GittarPushPayloadEvent {

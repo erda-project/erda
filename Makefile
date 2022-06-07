@@ -202,4 +202,4 @@ proto-go-in-ci:
 	cd api/proto-go && make build-use-docker-image
 
 proto-go-in-local:
-	cd api/proto-go && make build
+	cd api/proto-go && make clean && make build

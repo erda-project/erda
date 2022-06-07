@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package erda.core.monitor.diagnotor;
 option go_package = "github.com/erda-project/erda-proto-go/core/monitor/diagnotor/pb";
-import "github.com/mwitkow/go-proto-validators/validator.proto";
+import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 import "google/protobuf/descriptor.proto";
 import "google/api/annotations.proto";
 
@@ -35,9 +35,9 @@ service DiagnotorService {
 }
 
 message StartDiagnosisRequest {
-  string clusterName = 1 [(validator.field) = {string_not_empty: true}];
-  string namespace = 2 [(validator.field) = {string_not_empty: true}];
-  string podName = 3 [(validator.field) = {string_not_empty: true}];
+  string clusterName = 1 [(validate.rules).string.min_len = 1];
+  string namespace = 2 [(validate.rules).string.min_len = 1];
+  string podName = 3 [(validate.rules).string.min_len = 1];
   map<string, string> labels = 4;
 }
 
@@ -46,9 +46,9 @@ message StartDiagnosisResponse {
 }
 
 message QueryDiagnosisStatusRequest {
-  string clusterName = 1 [(validator.field) = {string_not_empty: true}];
-  string namespace = 2 [(validator.field) = {string_not_empty: true}];
-  string podName = 3 [(validator.field) = {string_not_empty: true}];
+  string clusterName = 1 [(validate.rules).string.min_len = 1];
+  string namespace = 2 [(validate.rules).string.min_len = 1];
+  string podName = 3 [(validate.rules).string.min_len = 1];
 }
 
 message QueryDiagnosisStatusResponse {
@@ -66,9 +66,9 @@ message DiagnosisInstance {
 }
 
 message StopDiagnosisRequest {
-  string clusterName = 1 [(validator.field) = {string_not_empty: true}];
-  string namespace = 2 [(validator.field) = {string_not_empty: true}];
-  string podName = 3 [(validator.field) = {string_not_empty: true}];
+  string clusterName = 1 [(validate.rules).string.min_len = 1];
+  string namespace = 2 [(validate.rules).string.min_len = 1];
+  string podName = 3 [(validate.rules).string.min_len = 1];
 }
 
 message StopDiagnosisResponse {
@@ -76,10 +76,10 @@ message StopDiagnosisResponse {
 }
 
 message ListProcessesRequest {
-  string clusterName = 1 [(validator.field) = {string_not_empty: true}];
-  string namespace = 2 [(validator.field) = {string_not_empty: true}];
-  string podName = 3 [(validator.field) = {string_not_empty: true}];
-  string podIP = 4 [(validator.field) = {string_not_empty: true}];
+  string clusterName = 1 [(validate.rules).string.min_len = 1];
+  string namespace = 2 [(validate.rules).string.min_len = 1];
+  string podName = 3 [(validate.rules).string.min_len = 1];
+  string podIP = 4 [(validate.rules).string.min_len = 1];
 }
 
 message ListProcessesResponse {

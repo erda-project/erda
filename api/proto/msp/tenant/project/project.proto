@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package erda.msp.tenant.project;
 option go_package = "github.com/erda-project/erda-proto-go/msp/tenant/project/pb";
-import "github.com/mwitkow/go-proto-validators/validator.proto";
+import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/descriptor.proto";
 import "common/openapi.proto";
@@ -101,7 +101,7 @@ message ProjectOverview{
 
 
 message GetProjectRequest {
-  string projectID = 1 [(validator.field) = {string_not_empty: true}, json_name = "projectId"];
+  string projectID = 1 [(validate.rules).string.min_len = 1, json_name = "projectId"];
 }
 
 message GetProjectResponse {

@@ -5,7 +5,7 @@ package erda.core.pipeline.base;
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/struct.proto";
-import "github.com/mwitkow/go-proto-validators/validator.proto";
+import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 import "common/identity.proto";
 import "common/commit.proto";
 import "common/md.proto";
@@ -578,11 +578,11 @@ message PipelineTaskActionDetail {
 message PipelineCreateRequest {
   // PipelineYml is pipeline yaml content.
   // +required
-  string pipelineYml = 1 [(validator.field) = {string_not_empty: true}];
+  string pipelineYml = 1 [(validate.rules).string.min_len = 1];
 
   // ClusterName represents the cluster the pipeline will be executed.
   // +required
-  string clusterName = 2 [(validator.field) = {string_not_empty: true}];
+  string clusterName = 2 [(validate.rules).string.min_len = 1];
 
   // Namespace upper layer could customize pipeline running in which namespace
   // +optional
@@ -592,12 +592,12 @@ message PipelineCreateRequest {
   // Equal to `Name`.
   // Default is `pipeline.yml`.
   // +optional
-  string pipelineYmlName = 4 [(validator.field) = {string_not_empty: true}];
+  string pipelineYmlName = 4 [(validate.rules).string.min_len = 1];
 
   // PipelineSource represents the source where pipeline created from.
   // Equal to `Namespace`.
   // +required
-  string pipelineSource = 5 [(validator.field) = {string_not_empty: true}];
+  string pipelineSource = 5 [(validate.rules).string.min_len = 1];
 
   // Labels is Map of string keys and values, can be used to filter pipeline.
   // If label key or value is too long, it will be moved to NormalLabels automatically and overwrite value if key already exists in NormalLabels.

@@ -4,7 +4,7 @@ package erda.msp.apm.expression;
 option go_package = "github.com/erda-project/erda-proto-go/msp/apm/expression/pb";
 import "google/api/annotations.proto";
 import "google/protobuf/struct.proto";
-import "github.com/mwitkow/go-proto-validators/validator.proto";
+import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 
 service ExpressionService {
   rpc GetExpression (GetExpressionRequest) returns (GetExpressionResponse)  {
@@ -15,7 +15,7 @@ service ExpressionService {
 }
 
 message GetExpressionRequest{
-  string type = 1 [(validator.field) = {string_not_empty: true}];
+  string type = 1 [(validate.rules).string.min_len = 1];
 }
 
 message GetExpressionResponse{

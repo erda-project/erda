@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package erda.core.services.filemanager;
 option go_package = "github.com/erda-project/erda-proto-go/core/services/filemanager/pb";
-import "github.com/mwitkow/go-proto-validators/validator.proto";
+import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 import "google/protobuf/descriptor.proto";
 import "google/api/annotations.proto";
 import "common/openapi.proto";
@@ -73,9 +73,9 @@ service FileManagerService {
 }
 
 message ListFilesRequest {
-  string containerID  = 1 [(validator.field) = {string_not_empty: true}];
-  string hostIP = 2 [(validator.field) = {string_not_empty: true}];
-  string scope = 3 [(validator.field) = {string_not_empty: true}];
+  string containerID  = 1 [(validate.rules).string.min_len = 1];
+  string hostIP = 2 [(validate.rules).string.min_len = 1];
+  string scope = 3 [(validate.rules).string.min_len = 1];
   string path = 4;
 }
 
@@ -100,10 +100,10 @@ message FileInfo {
 }
 
 message ReadFileRequest {
-  string containerID  = 1 [(validator.field) = {string_not_empty: true}];
-  string hostIP = 2 [(validator.field) = {string_not_empty: true}];
-  string scope = 3 [(validator.field) = {string_not_empty: true}];
-  string path = 4 [(validator.field) = {string_not_empty: true}];
+  string containerID  = 1 [(validate.rules).string.min_len = 1];
+  string hostIP = 2 [(validate.rules).string.min_len = 1];
+  string scope = 3 [(validate.rules).string.min_len = 1];
+  string path = 4 [(validate.rules).string.min_len = 1];
 }
 
 message ReadFileResponse {
@@ -119,9 +119,9 @@ message FileData {
 }
 
 message WriteFileRequest {
-  string containerID  = 1 [(validator.field) = {string_not_empty: true}];
-  string hostIP = 2 [(validator.field) = {string_not_empty: true}];
-  string scope = 3 [(validator.field) = {string_not_empty: true}];
+  string containerID  = 1 [(validate.rules).string.min_len = 1];
+  string hostIP = 2 [(validate.rules).string.min_len = 1];
+  string scope = 3 [(validate.rules).string.min_len = 1];
   string path = 4;
   string encoding = 5;
   string content = 6;
@@ -133,9 +133,9 @@ message WriteFileResponse {
 }
 
 message MakeDirectoryRequest {
-  string containerID  = 1 [(validator.field) = {string_not_empty: true}];
-  string hostIP = 2 [(validator.field) = {string_not_empty: true}];
-  string scope = 3 [(validator.field) = {string_not_empty: true}];
+  string containerID  = 1 [(validate.rules).string.min_len = 1];
+  string hostIP = 2 [(validate.rules).string.min_len = 1];
+  string scope = 3 [(validate.rules).string.min_len = 1];
   bool all = 4;
   string path = 5;
 }
@@ -145,9 +145,9 @@ message MakeDirectoryResponse {
 }
 
 message MoveFileRequest {
-  string containerID  = 1 [(validator.field) = {string_not_empty: true}];
-  string hostIP = 2 [(validator.field) = {string_not_empty: true}];
-  string scope = 3 [(validator.field) = {string_not_empty: true}];
+  string containerID  = 1 [(validate.rules).string.min_len = 1];
+  string hostIP = 2 [(validate.rules).string.min_len = 1];
+  string scope = 3 [(validate.rules).string.min_len = 1];
   string source = 4;
   string destination = 5;
 }
@@ -157,9 +157,9 @@ message MoveFileResponse {
 }
 
 message DeleteFileRequest {
-  string containerID  = 1 [(validator.field) = {string_not_empty: true}];
-  string hostIP = 2 [(validator.field) = {string_not_empty: true}];
-  string scope = 3 [(validator.field) = {string_not_empty: true}];
+  string containerID  = 1 [(validate.rules).string.min_len = 1];
+  string hostIP = 2 [(validate.rules).string.min_len = 1];
+  string scope = 3 [(validate.rules).string.min_len = 1];
   string path = 4;
 }
 

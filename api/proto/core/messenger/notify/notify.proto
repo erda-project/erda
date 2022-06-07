@@ -7,7 +7,7 @@ option go_package = "github.com/erda-project/erda-proto-go/core/messenger/notify
 import "google/api/annotations.proto";
 import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
-import "github.com/mwitkow/go-proto-validators/validator.proto";
+import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 
 service NotifyService {
   rpc CreateNotifyHistory (CreateNotifyHistoryRequest) returns (CreateNotifyHistoryResponse) {
