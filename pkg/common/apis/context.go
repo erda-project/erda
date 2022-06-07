@@ -32,6 +32,12 @@ func WithInternalClientContext(ctx context.Context, internalClient string) conte
 	return transport.WithHeader(ctx, header)
 }
 
+func WithUserIDContext(ctx context.Context, userID string) context.Context {
+	header := transport.Header{}
+	header.Set("user-id", userID)
+	return transport.WithHeader(ctx, header)
+}
+
 // GetClientIP
 func GetClientIP(ctx context.Context) string {
 	header := transport.ContextHeader(ctx)
