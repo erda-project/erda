@@ -26,7 +26,7 @@ jobs:
   PREPARE:
     runs-on: ubuntu-latest
     container:
-      image: registry.erda.cloud/erda/gohub:latest
+      image: registry.erda.cloud/erda/gohub:1.0.5
     steps:
       - name: Clone repo
         uses: actions/checkout@v3
