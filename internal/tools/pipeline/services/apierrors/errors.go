@@ -126,6 +126,13 @@ var (
 	ErrDeletePipelineAction = err("ErrDeletePipelineAction", "删除流水线任务定义失败")
 	ErrGetPipelineAction    = err("ErrGetPipelineAction", "获取流水线任务定义失败")
 	ErrListPipelineAction   = err("ErrListPipelineAction", "列出流水线任务定义失败")
+
+	// action-runner-scheduler
+	ErrCreateRunnerTask  = err("ErrCreateRunnerTask", "创建runner任务失败")
+	ErrGetRunnerTask     = err("ErrGetRunnerTask", "获取runner任务失败")
+	ErrUpdateRunnerTask  = err("ErrUpdateRunnerTask", "更新runner任务失败")
+	ErrFetchRunnerTask   = err("ErrFetchRunnerTask", "获取runner任务失败")
+	ErrCollectRunnerLogs = err("ErrCollectRunnerLogs", "收集runner日志失败")
 )
 
 func err(template, defaultValue string) *errorresp.APIError {
