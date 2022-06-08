@@ -19,8 +19,7 @@ import (
 	"net/url"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/pkg/discover"
-	servicediscover "github.com/erda-project/erda/providers/service-discover"
+	servicediscover "github.com/erda-project/erda/internal/pkg/service-discover"
 )
 
 type config struct {
@@ -55,7 +54,7 @@ func (p *provider) Endpoint(scheme, service string) (string, error) {
 			return u.Host, nil
 		}
 	}
-	return discover.GetEndpoint(service)
+	return "", fmt.Errorf("not found endpoint %q", service)
 }
 
 func (p *provider) ServiceURL(scheme, service string) (string, error) {
@@ -64,20 +63,14 @@ func (p *provider) ServiceURL(scheme, service string) (string, error) {
 			return u.String(), nil
 		}
 	}
-	addr, err := discover.GetEndpoint(service)
-	if err != nil {
-		return "", err
-	}
-	return fmt.Sprintf("%s://%s", scheme, addr), nil
+	return "", fmt.Errorf("not found %s url for service %q", scheme, service)
 }
 
 func init() {
-	servicehub.Register("erda-discover", &servicehub.Spec{
+	servicehub.Register("fixed-discover", &servicehub.Spec{
 		Services:    []string{"discover"},
 		Description: "discover all services",
 		ConfigFunc:  func() interface{} { return &config{} },
-		Creator: func() servicehub.Provider {
-			return &provider{}
-		},
+		Creator:     func() servicehub.Provider { return &provider{} },
 	})
 }

@@ -34,6 +34,7 @@ import (
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/pkg/audit"
 	"github.com/erda-project/erda/internal/pkg/bundle-ex/cmdb"
 	"github.com/erda-project/erda/internal/tools/monitor/core/alert/alert-apis/adapt"
 	"github.com/erda-project/erda/internal/tools/monitor/core/alert/alert-apis/cql"
@@ -44,7 +45,6 @@ import (
 	"github.com/erda-project/erda/pkg/common/apis"
 	perm "github.com/erda-project/erda/pkg/common/permission"
 	"github.com/erda-project/erda/pkg/http/httpclient"
-	"github.com/erda-project/erda/providers/audit"
 )
 
 type config struct {

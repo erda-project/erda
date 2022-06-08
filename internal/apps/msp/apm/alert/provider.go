@@ -30,10 +30,10 @@ import (
 	"github.com/erda-project/erda/bundle"
 	mperm "github.com/erda-project/erda/internal/apps/msp/instance/permission"
 	db2 "github.com/erda-project/erda/internal/apps/msp/tenant/db"
+	"github.com/erda-project/erda/internal/pkg/audit"
 	"github.com/erda-project/erda/internal/tools/monitor/common/db"
 	"github.com/erda-project/erda/pkg/common/apis"
 	perm "github.com/erda-project/erda/pkg/common/permission"
-	"github.com/erda-project/erda/providers/audit"
 )
 
 type provider struct {

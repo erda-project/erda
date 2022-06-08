@@ -33,7 +33,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/types"
 	"github.com/erda-project/erda/internal/apps/dop/dao"
 	"github.com/erda-project/erda/internal/apps/dop/services/issuestate"
-	"github.com/erda-project/erda/providers/component-protocol/issueFilter"
+	"github.com/erda-project/erda/internal/pkg/component-protocol/issueFilter"
 )
 
 func init() {

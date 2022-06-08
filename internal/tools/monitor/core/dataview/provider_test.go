@@ -28,9 +28,9 @@ import (
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/pkg/audit"
 	"github.com/erda-project/erda/internal/tools/monitor/core/dataview/db"
 	"github.com/erda-project/erda/pkg/mock"
-	"github.com/erda-project/erda/providers/audit"
 )
 
 func Test_provider_ExportTaskExecutor(t *testing.T) {

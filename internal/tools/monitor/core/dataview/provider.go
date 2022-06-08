@@ -29,9 +29,9 @@ import (
 	"github.com/erda-project/erda-proto-go/core/monitor/dataview/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/pkg/audit"
 	"github.com/erda-project/erda/internal/tools/monitor/core/dataview/db"
 	"github.com/erda-project/erda/pkg/common/apis"
-	"github.com/erda-project/erda/providers/audit"
 )
 
 func (p *provider) initRoutes(routes httpserver.Router) error {

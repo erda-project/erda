@@ -28,9 +28,9 @@ import (
 	"github.com/erda-project/erda/bundle"
 	instancedb "github.com/erda-project/erda/internal/apps/msp/instance/db"
 	"github.com/erda-project/erda/internal/apps/msp/tenant/db"
+	"github.com/erda-project/erda/internal/pkg/audit"
 	db2 "github.com/erda-project/erda/internal/tools/monitor/common/db"
 	"github.com/erda-project/erda/pkg/common/apis"
-	"github.com/erda-project/erda/providers/audit"
 )
 
 type config struct {

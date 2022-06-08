@@ -30,8 +30,8 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/dao"
 	"github.com/erda-project/erda/internal/apps/dop/services/issuefilterbm"
 	"github.com/erda-project/erda/internal/apps/dop/services/issuestate"
+	"github.com/erda-project/erda/internal/pkg/component-protocol/issueFilter/gshelper"
 	"github.com/erda-project/erda/pkg/strutil"
-	"github.com/erda-project/erda/providers/component-protocol/issueFilter/gshelper"
 )
 
 type IssueFilter struct {

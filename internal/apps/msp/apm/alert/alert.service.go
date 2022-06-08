@@ -29,12 +29,12 @@ import (
 	alert "github.com/erda-project/erda-proto-go/msp/apm/alert/pb"
 	tenantpb "github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/pkg/audit"
 	"github.com/erda-project/erda/internal/tools/monitor/core/alert/alert-apis/adapt"
 	"github.com/erda-project/erda/internal/tools/monitor/utils"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
 	api "github.com/erda-project/erda/pkg/common/httpapi"
-	"github.com/erda-project/erda/providers/audit"
 )
 
 type alertService struct {

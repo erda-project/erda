@@ -19,10 +19,10 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 	common "github.com/erda-project/erda-proto-go/common/pb"
+	discover "github.com/erda-project/erda/internal/pkg/service-discover"
 	"github.com/erda-project/erda/internal/tools/openapi/openapi-ng"
 	"github.com/erda-project/erda/internal/tools/openapi/openapi-ng/auth"
 	"github.com/erda-project/erda/internal/tools/openapi/openapi-ng/proxy"
-	discover "github.com/erda-project/erda/providers/service-discover"
 )
 
 // +provider

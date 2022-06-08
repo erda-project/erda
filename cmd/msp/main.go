@@ -90,13 +90,13 @@ import (
 	_ "github.com/erda-project/erda/internal/apps/msp/resource/deploy/handlers/zookeeper"
 	_ "github.com/erda-project/erda/internal/apps/msp/tenant"
 	_ "github.com/erda-project/erda/internal/apps/msp/tenant/project"
+	_ "github.com/erda-project/erda/internal/pkg/audit"
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/settings/retention-strategy"
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/storekit/elasticsearch/index/cleaner"
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/storekit/elasticsearch/index/loader"
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/storekit/elasticsearch/index/retention-strategy"
 	_ "github.com/erda-project/erda/internal/tools/monitor/extensions/loghub/index/query"
 	_ "github.com/erda-project/erda/pkg/common/permission"
-	_ "github.com/erda-project/erda/providers/audit"
 
 	_ "github.com/erda-project/erda-infra/providers/component-protocol"
 	// components

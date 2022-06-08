@@ -24,7 +24,7 @@ import (
 	"github.com/recallsong/go-utils/encoding/md5x"
 
 	"github.com/erda-project/erda-infra/base/logs"
-	"github.com/erda-project/erda/providers/metrics/report"
+	"github.com/erda-project/erda/internal/pkg/metrics/report"
 )
 
 // Consumer .

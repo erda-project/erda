@@ -15,14 +15,14 @@
 package cms
 
 import (
-	logs "github.com/erda-project/erda-infra/base/logs"
-	servicehub "github.com/erda-project/erda-infra/base/servicehub"
-	transport "github.com/erda-project/erda-infra/pkg/transport"
+	"github.com/erda-project/erda-infra/base/logs"
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/pkg/transport"
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
-	pb "github.com/erda-project/erda-proto-go/dop/cms/pb"
+	"github.com/erda-project/erda-proto-go/dop/cms/pb"
 	. "github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/pkg/audit"
 	"github.com/erda-project/erda/pkg/common/apis"
-	"github.com/erda-project/erda/providers/audit"
 )
 
 type config struct {

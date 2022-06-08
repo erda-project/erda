@@ -30,7 +30,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/app-runtime/common"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/types"
-	"github.com/erda-project/erda/providers/component-protocol/condition"
+	"github.com/erda-project/erda/internal/pkg/component-protocol/condition"
 )
 
 // todo placeholder

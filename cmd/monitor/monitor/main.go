@@ -66,7 +66,7 @@ import (
 	_ "github.com/erda-project/erda/internal/tools/monitor/monitoring"
 	_ "github.com/erda-project/erda/internal/tools/monitor/notify/template/query"
 	_ "github.com/erda-project/erda/pkg/common/permission"
-	_ "github.com/erda-project/erda/providers/k8s-client-manager"
+	_ "github.com/erda-project/erda/pkg/k8s-client-manager"
 
 	// providers
 	_ "github.com/erda-project/erda-infra/providers"

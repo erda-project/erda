@@ -29,9 +29,9 @@ import (
 	projectpb "github.com/erda-project/erda-proto-go/msp/tenant/project/pb"
 	"github.com/erda-project/erda/internal/apps/msp/apm/checker/storage/cache"
 	"github.com/erda-project/erda/internal/apps/msp/apm/checker/storage/db"
+	"github.com/erda-project/erda/internal/pkg/audit"
 	"github.com/erda-project/erda/pkg/common/apis"
 	perm "github.com/erda-project/erda/pkg/common/permission"
-	"github.com/erda-project/erda/providers/audit"
 )
 
 type config struct {

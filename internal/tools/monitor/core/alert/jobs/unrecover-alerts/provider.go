@@ -24,8 +24,8 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	election "github.com/erda-project/erda-infra/providers/etcd-election"
+	"github.com/erda-project/erda/internal/pkg/metrics/report"
 	"github.com/erda-project/erda/internal/tools/monitor/core/alert/alert-apis/db"
-	"github.com/erda-project/erda/providers/metrics/report"
 )
 
 type config struct {

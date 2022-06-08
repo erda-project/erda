@@ -27,7 +27,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/monitor/common/permission"
 	"github.com/erda-project/erda/pkg/common/apis"
 	perm "github.com/erda-project/erda/pkg/common/permission"
-	k8sclient "github.com/erda-project/erda/providers/k8s-client-manager"
+	k8sclient "github.com/erda-project/erda/pkg/k8s-client-manager"
 )
 
 //go:embed upload.html

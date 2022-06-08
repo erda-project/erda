@@ -28,8 +28,8 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/metrics"
+	"github.com/erda-project/erda/internal/pkg/metrics/query"
 	"github.com/erda-project/erda/pkg/discover"
-	"github.com/erda-project/erda/providers/metrics/query"
 )
 
 // GetStatisticsTrend 获取统计大盘，整体趋势
