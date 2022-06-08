@@ -40,9 +40,6 @@ func (tr *TaskRun) Do(itr TaskOp) error {
 
 	// define op handle func
 	handleProcessingResult := func(data interface{}, err error) {
-		// fetchLatestTask for task update after processing
-		_ = loop.New(loop.WithDeclineRatio(2), loop.WithDeclineLimit(time.Minute)).
-			Do(func() (bool, error) { return tr.fetchLatestTask() == nil, nil })
 
 		if tr.Task.Status.IsEndStatus() {
 			o.ExitCh <- struct{}{}
