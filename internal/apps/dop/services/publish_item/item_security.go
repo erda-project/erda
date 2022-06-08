@@ -25,7 +25,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/metrics"
-	"github.com/erda-project/erda/providers/metrics/query"
+	"github.com/erda-project/erda/internal/pkg/metrics/query"
 )
 
 // GetCertificationlist 获取验证列表

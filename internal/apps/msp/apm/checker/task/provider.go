@@ -24,7 +24,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/internal/apps/msp/apm/checker/plugins"
 	"github.com/erda-project/erda/internal/apps/msp/apm/checker/task/fetcher"
-	"github.com/erda-project/erda/providers/metrics/report"
+	"github.com/erda-project/erda/internal/pkg/metrics/report"
 )
 
 type config struct {

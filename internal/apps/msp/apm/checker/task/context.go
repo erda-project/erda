@@ -22,7 +22,7 @@ import (
 	"time"
 
 	"github.com/erda-project/erda/internal/apps/msp/apm/checker/plugins"
-	"github.com/erda-project/erda/providers/metrics/report"
+	"github.com/erda-project/erda/internal/pkg/metrics/report"
 )
 
 type reportContext struct {
