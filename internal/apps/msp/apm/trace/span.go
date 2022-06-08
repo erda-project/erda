@@ -17,13 +17,16 @@ package trace
 const (
 	CH_TABLE_SERIES = "spans_series"
 	CH_TABLE_META   = "spans_meta"
+	// distributed table
+	CH_TABLE_SERIES_ALL = "spans_series_all"
+	CH_TABLE_META_ALL   = "spans_meta_all"
 
 	OrgNameKey = "org_name"
 )
 
 type Span struct {
-	StartTime    int64  `json:"start_time"`
-	EndTime      int64  `json:"end_time"`
+	StartTime    int64  `json:"start_time"` // timestamp nano
+	EndTime      int64  `json:"end_time"`   // timestamp nano
 	OrgName      string `json:"org_name"`
 	TraceId      string `json:"trace_id"`
 	SpanId       string `json:"span_id"`

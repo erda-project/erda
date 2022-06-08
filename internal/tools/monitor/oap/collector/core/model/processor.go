@@ -32,7 +32,7 @@ type Processor interface {
 	ProcessMetric(item *metric.Metric) (*metric.Metric, error)
 	ProcessLog(item *log.Log) (*log.Log, error)
 	ProcessSpan(item *trace.Span) (*trace.Span, error)
-	ProcessorRaw(item *odata2.Raw) (*odata2.Raw, error)
+	ProcessRaw(item *odata2.Raw) (*odata2.Raw, error)
 }
 
 type RunningProcessor interface {

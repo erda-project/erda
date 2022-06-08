@@ -26,80 +26,141 @@ import (
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 
+	"github.com/erda-project/erda-infra/base/servicehub"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda/internal/apps/msp/apm/trace"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
+const activeCacheDuration = 24 * time.Hour
+
 type Config struct {
-	RetryNum      int    `file:"retry_num" default:"5" ENV:"EXPORTER_CH_SPAN_RETRY_NUM"`
-	SeriesTagKeys string `file:"series_tag_keys"`
+	CurrencyNum      int           `file:"currency_num" default:"3" ENV:"EXPORTER_CH_SPAN_CURRENCY_NUM"`
+	RetryNum         int           `file:"retry_num" default:"5" ENV:"EXPORTER_CH_SPAN_RETRY_NUM"`
+	TTLCheckInterval time.Duration `file:"ttl_check_interval" default:"12h"`
+	SeriesTagKeys    string        `file:"series_tag_keys"`
 }
 
-type WriteSpan struct {
+type Storage struct {
 	db                  string
-	retryCnt            int
-	highCardinalityKeys map[string]struct{}
 	logger              logs.Logger
 	client              clickhouse.Conn
+	cfg                 *Config
+	sidSet              *seriesIDSet
+	currencyLimiter     chan struct{}
+	highCardinalityKeys map[string]struct{}
 	itemsCh             chan []*trace.Span
 }
 
-func NewWriteSpan(cli clickhouse.Conn, logger logs.Logger, db string, cfg *Config) *WriteSpan {
+func NewStorage(cli clickhouse.Conn, logger logs.Logger, db string, cfg *Config) *Storage {
 	hk := make(map[string]struct{})
 	for _, k := range strings.Split(cfg.SeriesTagKeys, ",") {
 		hk[strings.TrimSpace(k)] = struct{}{}
 	}
 
-	return &WriteSpan{
+	return &Storage{
 		db:                  db,
-		retryCnt:            cfg.RetryNum,
+		cfg:                 cfg,
 		highCardinalityKeys: hk,
 		logger:              logger,
 		client:              cli,
+		sidSet:              newSeriesIDSet(1024),
+		currencyLimiter:     make(chan struct{}, cfg.CurrencyNum),
 	}
 }
 
-func (ws *WriteSpan) Start(ctx context.Context) {
+func (st *Storage) Init(ctx servicehub.Context) error {
+	return nil
+}
+
+func (st *Storage) Start(ctx context.Context) error {
+	err := st.initSeriesIDSet()
+	if err != nil {
+		return fmt.Errorf("initSeriesIDSet: %w", err)
+	}
+
 	maxprocs := lib.AvailableCPUs()
-	ws.itemsCh = make(chan []*trace.Span, maxprocs)
+	st.itemsCh = make(chan []*trace.Span, maxprocs)
 	for i := 0; i < maxprocs; i++ {
-		go ws.handleSpan(ctx)
+		go st.handleSpan(ctx)
+	}
+
+	go st.syncSeriesIDSet(ctx)
+	return nil
+}
+
+func (st *Storage) WriteBatch(items []*trace.Span) {
+	st.itemsCh <- items
+}
+
+func (st *Storage) initSeriesIDSet() error {
+	now := time.Now()
+retry:
+	// nolint
+	rows, err := st.client.Query(context.TODO(), fmt.Sprintf("SELECT distinct(series_id) FROM %s.spans_meta_all WHERE create_at > fromUnixTimestamp64Nano(cast(%d,'Int64'))", st.db, now.Add(-activeCacheDuration).UnixNano()))
+	if err != nil {
+		if exp, ok := err.(*clickhouse.Exception); ok && validExp(exp) {
+			time.Sleep(time.Second)
+			goto retry
+		} else {
+			return err
+		}
+	}
+
+	sids := make([]uint64, 0, 1024)
+	for rows.Next() {
+		var sid uint64
+		if err := rows.Scan(&sid); err != nil {
+			return fmt.Errorf("scan: %w", err)
+		}
+		sids = append(sids, sid)
+	}
+	st.sidSet.AddBatch(sids)
+	return rows.Close()
+}
+
+func (st *Storage) syncSeriesIDSet(ctx context.Context) {
+	ticker := time.NewTicker(st.cfg.TTLCheckInterval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			st.sidSet.CleanOldPart()
+		}
 	}
 }
 
-func (ws *WriteSpan) handleSpan(ctx context.Context) {
-	for items := range ws.itemsCh {
+func (st *Storage) handleSpan(ctx context.Context) {
+	for items := range st.itemsCh {
 		// nolint
-		metaBatch, err := ws.client.PrepareBatch(ctx, "INSERT INTO "+ws.db+"."+trace.CH_TABLE_META)
+		metaBatch, err := st.client.PrepareBatch(ctx, "INSERT INTO "+st.db+"."+trace.CH_TABLE_META)
 		if err != nil {
-			ws.logger.Errorf("prepare metaBatch: %s", err)
+			st.logger.Errorf("prepare metaBatch: %s", err)
 			continue
 		}
 		// nolint
-		seriesBatch, err := ws.client.PrepareBatch(ctx, "INSERT INTO "+ws.db+"."+trace.CH_TABLE_SERIES)
+		seriesBatch, err := st.client.PrepareBatch(ctx, "INSERT INTO "+st.db+"."+trace.CH_TABLE_SERIES)
 		if err != nil {
-			ws.logger.Errorf("prepare seriesBatch: %s", err)
+			st.logger.Errorf("prepare seriesBatch: %s", err)
 			continue
 		}
 
-		err = ws.enrichBatch(metaBatch, seriesBatch, items)
+		err = st.enrichBatch(metaBatch, seriesBatch, items)
 		if err != nil {
-			ws.logger.Errorf("failed enrichBatch: %w", err)
+			st.logger.Errorf("failed enrichBatch: %w", err)
 			continue
 		}
 
-		ws.sendBatch(ctx, metaBatch)
-		ws.sendBatch(ctx, seriesBatch)
+		st.sendBatch(ctx, metaBatch)
+		st.sendBatch(ctx, seriesBatch)
 	}
 }
 
-func (ws *WriteSpan) AddBatch(items []*trace.Span) {
-	ws.itemsCh <- items
-}
-
-func (ws *WriteSpan) sendBatch(ctx context.Context, b driver.Batch) {
+func (st *Storage) sendBatch(ctx context.Context, b driver.Batch) {
 	select {
 	case <-ctx.Done():
 		return
@@ -116,33 +177,33 @@ func (ws *WriteSpan) sendBatch(ctx context.Context, b driver.Batch) {
 		}
 	}
 
-	currencyLimiter <- struct{}{}
+	st.currencyLimiter <- struct{}{}
 	go func() {
-		for i := 0; i < ws.retryCnt; i++ {
+		for i := 0; i < st.cfg.RetryNum; i++ {
 			if err := b.Send(); err != nil {
-				ws.logger.Errorf("send bactch to clickhouse: %s, retry after: %s\n", err, backoffDelay)
+				st.logger.Errorf("send bactch to clickhouse: %s, retry after: %s\n", err, backoffDelay)
 				backoffSleep()
 				continue
 			} else {
 				break
 			}
 		}
-		<-currencyLimiter
+		<-st.currencyLimiter
 	}()
 }
 
-func (ws *WriteSpan) enrichBatch(metaBatch driver.Batch, seriesBatch driver.Batch, items []*trace.Span) error {
+func (st *Storage) enrichBatch(metaBatch driver.Batch, seriesBatch driver.Batch, items []*trace.Span) error {
 	for _, data := range items {
 		var seriesTags map[string]string
-		if len(ws.highCardinalityKeys) > 0 {
-			seriesTags = make(map[string]string, len(ws.highCardinalityKeys))
+		if len(st.highCardinalityKeys) > 0 {
+			seriesTags = make(map[string]string, len(st.highCardinalityKeys))
 		}
 
 		// enrich metabatch
 		metas := getMetaBuf()
 		for k, v := range data.Tags {
-			if len(ws.highCardinalityKeys) > 0 {
-				if _, ok := ws.highCardinalityKeys[k]; ok {
+			if len(st.highCardinalityKeys) > 0 {
+				if _, ok := st.highCardinalityKeys[k]; ok {
 					seriesTags[k] = v
 					continue
 				}
@@ -154,7 +215,7 @@ func (ws *WriteSpan) enrichBatch(metaBatch driver.Batch, seriesBatch driver.Batc
 		})
 		sid := hashTagsList(metas)
 
-		if !seriesIDExisted(sid) {
+		if !st.sidSet.Has(sid) {
 			for i := range metas {
 				metas[i].SeriesID = sid
 				err := metaBatch.AppendStruct(&metas[i])
@@ -164,6 +225,7 @@ func (ws *WriteSpan) enrichBatch(metaBatch driver.Batch, seriesBatch driver.Batc
 					return fmt.Errorf("metaBatch append: %w", err)
 				}
 			}
+			st.sidSet.Add(sid)
 		}
 		putMetaBuf(metas)
 
@@ -181,7 +243,7 @@ func (ws *WriteSpan) enrichBatch(metaBatch driver.Batch, seriesBatch driver.Batc
 		if err != nil { // TODO. Data may lost when encounter error
 			_ = seriesBatch.Abort()
 			putSeriesBuf(series)
-			return fmt.Errorf("seriesBatch: %w", err)
+			return fmt.Errorf("seriesBatch append: %w", err)
 		}
 		putSeriesBuf(series)
 	}
@@ -234,59 +296,6 @@ func putSeriesBuf(buf trace.Series) {
 	buf.ParentSpanId = ""
 	buf.Tags = nil
 	seriesBufPool.Put(buf)
-}
-
-// currency limiter
-var currencyLimiter chan struct{}
-
-func InitCurrencyLimiter(currency int) {
-	currencyLimiter = make(chan struct{}, currency)
-}
-
-// seriesIDMap
-var (
-	seriesIDMap map[uint64]struct{} // TODO. Need refresh with certain interval
-	simMutex    *sync.RWMutex
-)
-
-func seriesIDExisted(sid uint64) bool {
-	simMutex.RLock()
-	_, ok := seriesIDMap[sid]
-	simMutex.RUnlock()
-	if ok {
-		return true
-	}
-
-	simMutex.Lock()
-	seriesIDMap[sid] = struct{}{}
-	simMutex.Unlock()
-	return false
-}
-
-func InitSeriesIDMap(client clickhouse.Conn, db string) error {
-	simMutex = &sync.RWMutex{}
-
-retry:
-	// nolint
-	rows, err := client.Query(context.TODO(), "select distinct(series_id) from "+db+".spans_meta_all")
-	if err != nil {
-		if exp, ok := err.(*clickhouse.Exception); ok && validExp(exp) {
-			time.Sleep(time.Second)
-			goto retry
-		} else {
-			return err
-		}
-	}
-
-	seriesIDMap = make(map[uint64]struct{}, 50000)
-	for rows.Next() {
-		var sid uint64
-		if err := rows.Scan(&sid); err != nil {
-			return fmt.Errorf("scan: %w", err)
-		}
-		seriesIDMap[sid] = struct{}{}
-	}
-	return rows.Close()
 }
 
 func validExp(exp *clickhouse.Exception) bool {

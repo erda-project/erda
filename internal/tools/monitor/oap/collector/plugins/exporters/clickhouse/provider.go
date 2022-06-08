@@ -29,9 +29,8 @@ import (
 )
 
 type config struct {
-	CurrencyNum int          `file:"currency_num" default:"20" ENV:"EXPORTER_CH_CURRENCY_NUM"`
-	Database    string       `file:"database" default:"monitor"`
-	Span        *span.Config `file:"span"`
+	Database string       `file:"database" default:"monitor"`
+	Span     *span.Config `file:"span"`
 }
 
 // +provider
@@ -42,7 +41,7 @@ type provider struct {
 	ctx        context.Context
 	cancelFunc context.CancelFunc
 
-	spanWriter *span.WriteSpan
+	spanStorage *span.Storage
 }
 
 func (p *provider) ExportRaw(items ...*odata.Raw) error        { return nil }
@@ -51,7 +50,7 @@ func (p *provider) ExportLog(items ...*log.Log) error          { return nil }
 
 // TODO currency
 func (p *provider) ExportSpan(items ...*trace.Span) error {
-	p.spanWriter.AddBatch(items)
+	p.spanStorage.WriteBatch(items)
 	return nil
 }
 
@@ -75,16 +74,17 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.ch = svc.(clickhouse.Interface)
 	p.ctx, p.cancelFunc = context.WithCancel(context.Background())
 
-	p.spanWriter = span.NewWriteSpan(p.ch.Client(), p.Log.Sub("spanWriter"), p.Cfg.Database, p.Cfg.Span)
+	p.spanStorage = span.NewStorage(p.ch.Client(), p.Log.Sub("spanStorage"), p.Cfg.Database, p.Cfg.Span)
+	if err := p.spanStorage.Init(ctx); err != nil {
+		return fmt.Errorf("init spanStorage: %w", err)
+	}
 	return nil
 }
 
 func (p *provider) Start() error {
-	span.InitCurrencyLimiter(p.Cfg.CurrencyNum)
-	if err := span.InitSeriesIDMap(p.ch.Client(), p.Cfg.Database); err != nil {
-		return fmt.Errorf("cannot init seriesIDMap: %w", err)
+	if err := p.spanStorage.Start(p.ctx); err != nil {
+		return fmt.Errorf("start span: %w", err)
 	}
-	p.spanWriter.Start(p.ctx)
 	return nil
 }
 
