@@ -69,6 +69,7 @@ clickhouse:
   conn_open_strategy: "round_robin"
 
 clickhouse.table.initializer@span:
+  _enable: ${WRITE_SPAN_TO_CLICKHOUSE_ENABLE:false}
   table_prefix: "spans"
   ttl_sync_interval: "${CLICKHOUSE_TABLE_TTL_SYNC_INTERVAL:24h}"
   default_ddl_files:
@@ -78,8 +79,12 @@ clickhouse.table.initializer@span:
       ignore_err: "false"
 
 clickhouse.table.loader@span:
+  _enable: ${WRITE_SPAN_TO_CLICKHOUSE_ENABLE:false}
   table_prefix: "spans"
   default_search_table: "spans_all"
+
+storage-retention-strategy@span:
+  default_ttl: "${SPAN_TTL:168h}"
 
 clickhouse.table.initializer@log:
   _enable: ${CLICKHOUSE_ENABLE:false}
@@ -392,11 +397,6 @@ elasticsearch.index.rollover@span:
     - index: "erda-spans-<org>.<key>-{number}"
       alias: "erda-spans-<org>.<key>-rollover"
 
-storage-retention-strategy@span:
-  _enable: ${WRITE_SPAN_TO_ES_ENABLE:true}
-  load_from_database: true
-  ttl_reload_interval: "3m"
-  default_ttl: "${LOG_TTL:168h}"
 
 span-storage-elasticsearch:
   _enable: ${WRITE_SPAN_TO_ES_ENABLE:true}

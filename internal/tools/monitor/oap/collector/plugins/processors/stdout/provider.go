@@ -55,7 +55,7 @@ func (p *provider) ProcessSpan(item *trace.Span) (*trace.Span, error) {
 	printJSON(item)
 	return item, nil
 }
-func (p *provider) ProcessorRaw(item *odata.Raw) (*odata.Raw, error) {
+func (p *provider) ProcessRaw(item *odata.Raw) (*odata.Raw, error) {
 	printJSON(item)
 	return item, nil
 }
