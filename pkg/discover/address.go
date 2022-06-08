@@ -139,7 +139,6 @@ func APIM() string           { return getURL(SvcAPIM) }
 func UC() string             { return getURL(SvcUC) }
 func DOP() string            { return getURL(SvcDOP) }
 func CoreServices() string   { return getURL(SvcCoreServices) }
-func ECP() string            { return getURL(SvcECP) }
 func ClusterManager() string { return getURL(SvcClusterManager) }
 
 func getURL(srvName string) string {

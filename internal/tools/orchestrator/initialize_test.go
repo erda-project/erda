@@ -21,7 +21,9 @@ import (
 
 	"github.com/golang/mock/gomock"
 
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
+	"github.com/erda-project/erda/pkg/database/dbengine"
 )
 
 func Test_initCron(t *testing.T) {
@@ -60,4 +62,8 @@ func TestAddonsFilterIn(t *testing.T) {
 	if len(newAddons) != 2 {
 		t.Error("fail")
 	}
+}
+
+func Test_registerEcpEp(t *testing.T) {
+	registerEcpRouter(bundle.New(), &dbengine.DBEngine{}, nil)
 }
