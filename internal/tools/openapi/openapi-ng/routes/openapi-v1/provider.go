@@ -22,6 +22,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
+	discover "github.com/erda-project/erda/internal/pkg/service-discover"
 	openapiv1 "github.com/erda-project/erda/internal/tools/openapi/legacy"
 	apiv1 "github.com/erda-project/erda/internal/tools/openapi/legacy/api"
 	"github.com/erda-project/erda/internal/tools/openapi/legacy/component-protocol/types"
@@ -29,7 +30,6 @@ import (
 	"github.com/erda-project/erda/internal/tools/openapi/legacy/hooks"
 	"github.com/erda-project/erda/internal/tools/openapi/openapi-ng"
 	"github.com/erda-project/erda/internal/tools/openapi/openapi-ng/proxy"
-	discover "github.com/erda-project/erda/providers/service-discover"
 )
 
 type config struct {

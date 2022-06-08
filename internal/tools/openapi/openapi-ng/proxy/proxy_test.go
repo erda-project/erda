@@ -23,7 +23,7 @@ import (
 	"testing"
 
 	"github.com/erda-project/erda-infra/base/logs/logrusx"
-	discover "github.com/erda-project/erda/providers/service-discover"
+	discover "github.com/erda-project/erda/internal/pkg/service-discover"
 )
 
 func Test_buildPathToSegments(t *testing.T) {

@@ -24,6 +24,8 @@ import (
 	_ "github.com/erda-project/erda-infra/providers"
 	_ "github.com/erda-project/erda-proto-go/core/token/client"
 	_ "github.com/erda-project/erda/internal/pkg/audit"
+	_ "github.com/erda-project/erda/internal/pkg/service-discover/erda-discover"
+	_ "github.com/erda-project/erda/internal/pkg/service-discover/fixed-discover"
 	_ "github.com/erda-project/erda/internal/tools/openapi/legacy"
 	_ "github.com/erda-project/erda/internal/tools/openapi/openapi-ng"
 	_ "github.com/erda-project/erda/internal/tools/openapi/openapi-ng/auth"
@@ -45,8 +47,6 @@ import (
 	_ "github.com/erda-project/erda/internal/tools/openapi/openapi-ng/routes/dynamic/temporary"
 	_ "github.com/erda-project/erda/internal/tools/openapi/openapi-ng/routes/openapi-v1"
 	_ "github.com/erda-project/erda/internal/tools/openapi/openapi-ng/routes/proto"
-	_ "github.com/erda-project/erda/providers/service-discover/erda-discover"
-	_ "github.com/erda-project/erda/providers/service-discover/fixed-discover"
 )
 
 //go:embed bootstrap.yaml

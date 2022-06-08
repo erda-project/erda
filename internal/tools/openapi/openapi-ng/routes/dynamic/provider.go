@@ -28,11 +28,11 @@ import (
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	fserver "github.com/erda-project/erda-infra/providers/remote-forward/server"
+	discover "github.com/erda-project/erda/internal/pkg/service-discover"
 	"github.com/erda-project/erda/internal/tools/openapi/openapi-ng"
 	"github.com/erda-project/erda/internal/tools/openapi/openapi-ng/auth"
 	"github.com/erda-project/erda/internal/tools/openapi/openapi-ng/proxy"
 	"github.com/erda-project/erda/internal/tools/openapi/openapi-ng/routes/proto"
-	discover "github.com/erda-project/erda/providers/service-discover"
 )
 
 //go:embed static

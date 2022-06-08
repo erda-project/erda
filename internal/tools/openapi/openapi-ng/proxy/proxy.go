@@ -23,7 +23,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/pkg/transport/http/runtime"
-	discover "github.com/erda-project/erda/providers/service-discover"
+	discover "github.com/erda-project/erda/internal/pkg/service-discover"
 )
 
 // Proxy .
