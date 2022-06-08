@@ -24,7 +24,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
-	k8sclient "github.com/erda-project/erda/providers/k8s-client-manager"
+	k8sclient "github.com/erda-project/erda/pkg/k8s-client-manager"
 )
 
 type (
