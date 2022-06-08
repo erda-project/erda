@@ -26,10 +26,10 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	"github.com/erda-project/erda/internal/apps/dop/services/permission"
 	"github.com/erda-project/erda/internal/apps/dop/utils"
+	"github.com/erda-project/erda/internal/pkg/audit"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/cms"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/cms/db"
 	"github.com/erda-project/erda/pkg/common/apis"
-	"github.com/erda-project/erda/providers/audit"
 )
 
 type CICDCmsService struct {
