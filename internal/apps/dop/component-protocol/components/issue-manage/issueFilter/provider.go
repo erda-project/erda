@@ -17,8 +17,8 @@ package issueFilter
 import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	issueFilter "github.com/erda-project/erda/providers/component-protocol/issueFilter"
-	"github.com/erda-project/erda/providers/component-protocol/issueFilter/gshelper"
+	"github.com/erda-project/erda/internal/pkg/component-protocol/issueFilter"
+	"github.com/erda-project/erda/internal/pkg/component-protocol/issueFilter/gshelper"
 )
 
 type provider struct {

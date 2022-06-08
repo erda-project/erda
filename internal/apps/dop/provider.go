@@ -55,10 +55,10 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/providers/projectpipeline"
 	"github.com/erda-project/erda/internal/apps/dop/providers/qa/unittest"
 	"github.com/erda-project/erda/internal/apps/dop/providers/taskerror"
+	"github.com/erda-project/erda/internal/pkg/metrics/query"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/dumpstack"
 	"github.com/erda-project/erda/pkg/http/httpclient"
-	"github.com/erda-project/erda/providers/metrics/query"
 )
 
 //go:embed component-protocol/scenarios

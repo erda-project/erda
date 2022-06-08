@@ -27,8 +27,8 @@ import (
 	tenantpb "github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/pkg/audit"
 	"github.com/erda-project/erda/pkg/common/apis"
-	"github.com/erda-project/erda/providers/audit"
 )
 
 type config struct {

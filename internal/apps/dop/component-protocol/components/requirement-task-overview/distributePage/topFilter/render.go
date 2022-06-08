@@ -33,8 +33,8 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/types"
 	"github.com/erda-project/erda/internal/apps/dop/services/issue"
 	"github.com/erda-project/erda/internal/apps/dop/services/issuestate"
+	"github.com/erda-project/erda/internal/pkg/component-protocol/issueFilter"
 	"github.com/erda-project/erda/internal/tools/openapi/legacy/component-protocol/components/filter"
-	"github.com/erda-project/erda/providers/component-protocol/issueFilter"
 )
 
 func init() {

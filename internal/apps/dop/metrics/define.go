@@ -14,6 +14,6 @@
 
 package metrics
 
-import "github.com/erda-project/erda/providers/metrics/query"
+import "github.com/erda-project/erda/internal/pkg/metrics/query"
 
 var Client query.MetricQuery
