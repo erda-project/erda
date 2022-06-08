@@ -61,7 +61,7 @@ func (p *provider) ProcessMetric(item *metric.Metric) (*metric.Metric, error) {
 
 func (p *provider) ProcessLog(item *log.Log) (*log.Log, error)        { return item, nil }
 func (p *provider) ProcessSpan(item *trace.Span) (*trace.Span, error) { return item, nil }
-func (p *provider) ProcessorRaw(item *odata.Raw) (*odata.Raw, error)  { return item, nil }
+func (p *provider) ProcessRaw(item *odata.Raw) (*odata.Raw, error)    { return item, nil }
 
 func (p *provider) add(item *metric.Metric) *metric.Metric {
 	id := item.Hash()

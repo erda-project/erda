@@ -15,7 +15,6 @@
 package span
 
 import (
-	"sync"
 	"testing"
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
@@ -25,9 +24,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	simMutex = &sync.RWMutex{}
-	seriesIDMap = map[uint64]struct{}{}
-	InitCurrencyLimiter(1)
+
 	m.Run()
 }
 
@@ -158,8 +155,9 @@ func TestWriteSpan_enrichBatch(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ws := &WriteSpan{
+			ws := &Storage{
 				highCardinalityKeys: tt.fields.highCardinalityKeys,
+				sidSet:              newSeriesIDSet(0),
 			}
 			if err := ws.enrichBatch(tt.args.metaBatch, tt.args.seriesBatch, tt.args.items); (err != nil) != tt.wantErr {
 				t.Errorf("enrichBatch() error = %v, wantErr %v", err, tt.wantErr)

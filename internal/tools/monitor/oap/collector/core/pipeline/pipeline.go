@@ -205,7 +205,7 @@ func (p *Pipeline) startProcessors(ctx context.Context, in <-chan odata2.Observa
 					}
 					data = tmp
 				case odata2.RawType:
-					tmp, err := pr.Processor.ProcessorRaw(data.(*odata2.Raw))
+					tmp, err := pr.Processor.ProcessRaw(data.(*odata2.Raw))
 					if err != nil {
 						p.Log.Errorf("Processor<%s> process data error: %s", pr.Name, err)
 						continue
