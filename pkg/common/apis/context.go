@@ -34,7 +34,7 @@ func WithInternalClientContext(ctx context.Context, internalClient string) conte
 
 func WithUserIDContext(ctx context.Context, userID string) context.Context {
 	header := transport.Header{}
-	header.Set("user-id", userID)
+	header.Set(headerUserID, userID)
 	return transport.WithHeader(ctx, header)
 }
 

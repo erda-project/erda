@@ -380,8 +380,8 @@ message ListPipelineExecHistoryRequest {
     repeated string statuses = 4;
     uint64 pageNo = 5;
     uint64 pageSize = 6;
-    google.protobuf.Timestamp StartTimeBegin = 7;
-    google.protobuf.Timestamp StartTimeEnd = 8;
+    google.protobuf.Timestamp startTimeBegin = 7;
+    google.protobuf.Timestamp startTimeEnd = 8;
     repeated string descCols = 9;
     repeated string ascCols = 10;
     uint64 projectID = 11;
