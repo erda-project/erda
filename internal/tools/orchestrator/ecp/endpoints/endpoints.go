@@ -19,9 +19,10 @@ import (
 
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/internal/apps/ecp/dbclient"
-	"github.com/erda-project/erda/internal/apps/ecp/services/edge"
-	"github.com/erda-project/erda/internal/apps/ecp/services/kubernetes"
+	"github.com/erda-project/erda/internal/tools/orchestrator/ecp/dbclient"
+	"github.com/erda-project/erda/internal/tools/orchestrator/ecp/services/edge"
+	"github.com/erda-project/erda/internal/tools/orchestrator/ecp/services/kubernetes"
+	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 
@@ -34,20 +35,26 @@ type Endpoints struct {
 
 type Option func(*Endpoints)
 
-func New(db *dbclient.DBClient, options ...Option) *Endpoints {
+func New(options ...Option) *Endpoints {
 	e := &Endpoints{}
 
 	for _, op := range options {
 		op(e)
 	}
-	e.dbClient = db
+
 	e.edge = edge.New(
-		edge.WithDBClient(db),
+		edge.WithDBClient(e.dbClient),
 		edge.WithBundle(e.bdl),
 		edge.WithKubernetes(kubernetes.New()),
 		edge.WithClusterSvc(e.clusterSvc),
 	)
 	return e
+}
+
+func WithDBEngine(dbEngine *dbengine.DBEngine) Option {
+	return func(e *Endpoints) {
+		e.dbClient = dbclient.Open(dbEngine)
+	}
 }
 
 // WithBundle With bundle module.

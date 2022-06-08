@@ -24,8 +24,8 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/internal/apps/ecp/dbclient"
-	"github.com/erda-project/erda/internal/apps/ecp/services/apierrors"
+	"github.com/erda-project/erda/internal/tools/orchestrator/ecp/dbclient"
+	"github.com/erda-project/erda/internal/tools/orchestrator/ecp/services/apierrors"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/strutil"
 )

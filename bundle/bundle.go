@@ -288,15 +288,6 @@ func WithDialContext(dialContext func(ctx context.Context, network string, addre
 	}
 }
 
-// WithECP create ecp client with CLUSTER_MANAGER
-func WithECP() Option {
-	return func(b *Bundle) {
-		k := discover.EnvECP
-		v := os.Getenv(k)
-		b.urls.Put(k, v)
-	}
-}
-
 // WithAllAvailableClients 将环境变量中所有可以拿到的客户端均注入
 func WithAllAvailableClients() Option {
 	return func(b *Bundle) {
