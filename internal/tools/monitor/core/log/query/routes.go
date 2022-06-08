@@ -113,7 +113,6 @@ func (p *provider) downloadLog(w http.ResponseWriter, r *http.Request, req *LogR
 					Op:    storage.EQ,
 					Value: req.ClusterName,
 				})
-				sel.Options[storage.ClusterName] = req.ClusterName
 			}
 			if len(req.ApplicationID) > 0 {
 				sel.Filters = append(sel.Filters, &storage.Filter{
@@ -121,6 +120,9 @@ func (p *provider) downloadLog(w http.ResponseWriter, r *http.Request, req *LogR
 					Op:    storage.EQ,
 					Value: req.ApplicationID,
 				})
+			}
+			if len(req.ClusterName) > 0 {
+				sel.Options[storage.ClusterName] = req.ClusterName
 			}
 			if len(req.PodName) > 0 {
 				sel.Options[storage.PodName] = req.PodName
