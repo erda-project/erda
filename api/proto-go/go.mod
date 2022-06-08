@@ -3,10 +3,12 @@ module github.com/erda-project/erda-proto-go
 go 1.14
 
 require (
-	github.com/erda-project/erda-infra v0.0.0-20220523073052-c060bd3219db
+	github.com/erda-project/erda-infra v0.0.0-20220607095148-d7ee28ba8e73
+	github.com/erda-project/erda-infra/tools v0.0.0-20220607095148-d7ee28ba8e73 // indirect
 	github.com/golang/protobuf v1.5.2
 	github.com/mitchellh/mapstructure v1.4.3 // indirect
 	github.com/mwitkow/go-proto-validators v0.3.2
+	github.com/spf13/cobra v1.4.0 // indirect
 	golang.org/x/sys v0.0.0-20211205182925-97ca703d548d // indirect
 	google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa
 	google.golang.org/grpc v1.42.0

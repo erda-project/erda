@@ -75,4 +75,13 @@ func TestPluginConfig_ToPluginReqDto(t *testing.T) {
 		t.Fatal(err)
 	}
 	pc.ToPluginReqDto()
+	pc.Switch = false
+	if err := pc.IsValidDto(); err != nil {
+		t.Fatal(err)
+	}
+	pc.Switch = true
+	pc.AccessControlAPI = ""
+	if err := pc.IsValidDto(); err == nil {
+		t.Fatal("should be err")
+	}
 }

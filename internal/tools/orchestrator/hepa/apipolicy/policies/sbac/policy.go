@@ -222,6 +222,9 @@ type PluginConfig struct {
 }
 
 func (pc PluginConfig) IsValidDto() error {
+	if !pc.BaseDto.Switch {
+		return nil
+	}
 	_, err := url.ParseRequestURI(pc.AccessControlAPI)
 	return err
 }
