@@ -812,3 +812,91 @@ func TestProjectPipelineService_GetRemotesByAppID(t *testing.T) {
 		})
 	}
 }
+
+func Test_getApplicationNameFromDefinitionRemote(t *testing.T) {
+	type args struct {
+		remote string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "test with remote",
+			args: args{remote: "terminus/erda/ui"},
+			want: "ui",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := getApplicationNameFromDefinitionRemote(tt.args.remote); got != tt.want {
+				t.Errorf("getApplicationNameFromDefinitionRemote() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_makeListPipelineExecHistoryResponse(t *testing.T) {
+	type args struct {
+		data *apistructs.PipelinePageListData
+	}
+	tests := []struct {
+		name string
+		args args
+		want *pb.ListPipelineExecHistoryResponse
+	}{
+		{
+			name: "test with make ListPipelineExecHistory",
+			args: args{
+				data: &apistructs.PipelinePageListData{
+					Pipelines: []apistructs.PagePipeline{
+						{
+							ID:          10001,
+							Status:      "Success",
+							CostTimeSec: 100,
+							TimeBegin:   nil,
+							DefinitionPageInfo: &apistructs.DefinitionPageInfo{
+								Name:         "deploy",
+								Creator:      "1",
+								Executor:     "1",
+								SourceRemote: "terminus/erda/ui",
+								SourceRef:    "master",
+							},
+							Extra: apistructs.PipelineExtra{
+								RunUser: &apistructs.PipelineUser{
+									ID: 1,
+								},
+							},
+						},
+					},
+					Total:           1,
+					CurrentPageSize: 1,
+				},
+			},
+			want: &pb.ListPipelineExecHistoryResponse{
+				Total:           1,
+				CurrentPageSize: 1,
+				ExecHistories: []*pb.PipelineExecHistory{
+					{
+						PipelineName:   "deploy",
+						PipelineStatus: "Success",
+						CostTimeSec:    100,
+						AppName:        "ui",
+						Branch:         "master",
+						Executor:       "1",
+						TimeBegin:      nil,
+						PipelineID:     10001,
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := makeListPipelineExecHistoryResponse(tt.args.data); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("makeListPipelineExecHistoryResponse() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
