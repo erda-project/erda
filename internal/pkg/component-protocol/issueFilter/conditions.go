@@ -21,7 +21,7 @@ import (
 	model "github.com/erda-project/erda-infra/providers/component-protocol/components/filter/models"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/providers/component-protocol/condition"
+	"github.com/erda-project/erda/internal/pkg/component-protocol/condition"
 )
 
 const (
