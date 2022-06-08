@@ -74,7 +74,10 @@ func (c *ClusterService) ListCluster(ctx context.Context, req *pb.ListClusterReq
 	}
 
 	if req.OrgID == 0 {
-		return &pb.ListClusterResponse{Data: clusters}, nil
+		return &pb.ListClusterResponse{
+			Success: true,
+			Data:    clusters,
+		}, nil
 	}
 
 	clusterRelation, err := c.bdl.GetOrgClusterRelationsByOrg(uint64(req.OrgID))
