@@ -35,7 +35,9 @@ func Test_downloadLog(t *testing.T) {
 	}
 
 	monkey.Patch((*logQueryService).walkLogItems, func(s *logQueryService, ctx context.Context, req Request, fn func(sel *storage.Selector) (*storage.Selector, error), walk func(item *pb.LogItem) error) error {
-		sel := &storage.Selector{}
+		sel := &storage.Selector{
+			Options: map[string]interface{}{},
+		}
 		fn(sel)
 		return nil
 	})
