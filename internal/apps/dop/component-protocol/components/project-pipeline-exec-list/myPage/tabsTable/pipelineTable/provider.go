@@ -23,6 +23,7 @@ import (
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/commodel"
@@ -31,6 +32,8 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+
+	"github.com/erda-project/erda-proto-go/dop/projectpipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/project-pipeline-exec-list/common"
@@ -38,8 +41,8 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/util"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/types"
 	"github.com/erda-project/erda/internal/apps/dop/providers/projectpipeline"
-	"github.com/erda-project/erda/internal/apps/dop/providers/projectpipeline/deftype"
 	protocol "github.com/erda-project/erda/internal/tools/openapi/legacy/component-protocol"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -104,15 +107,12 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			}
 		}
 
-		var req = deftype.ProjectPipelineListExecHistory{
+		var req = &pb.ListPipelineExecHistoryRequest{
 			DescCols:  descCols,
 			AscCols:   ascCols,
 			PageNo:    uint64(pageNo),
 			PageSize:  uint64(pageSize),
 			ProjectID: projectID,
-			IdentityInfo: apistructs.IdentityInfo{
-				UserID: sdk.Identity.UserID,
-			},
 		}
 		helper := gshelper.NewGSHelper(sdk.GlobalState)
 		req.AppNames = GetAppNames(helper)
@@ -126,17 +126,17 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			req.Statuses = helper.GetStatuesFilter()
 		}
 		if helper.GetBeginTimeStartFilter() != nil {
-			req.StartTimeBegin = *helper.GetBeginTimeStartFilter()
+			req.StartTimeBegin = timestamppb.New(*helper.GetBeginTimeStartFilter())
 		}
 		if helper.GetBeginTimeEndFilter() != nil {
-			req.StartTimeEnd = *helper.GetBeginTimeEndFilter()
+			req.StartTimeEnd = timestamppb.New(*helper.GetBeginTimeEndFilter())
 		}
 
 		tableValue := p.InitTable()
 		tableValue.PageSize = uint64(pageSize)
 		tableValue.PageNo = uint64(pageNo)
 
-		result, err := p.ProjectPipeline.ListExecHistory(context.Background(), req)
+		result, err := p.ProjectPipeline.ListExecHistory(apis.WithUserIDContext(context.Background(), sdk.Identity.UserID), req)
 		if err != nil {
 			logrus.Errorf("failed to get table data, err: %v", err)
 			p.StdDataPtr = &table.Data{
@@ -149,13 +149,10 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 		}
 
 		userIDs := make([]string, 0)
-		tableValue.Total = uint64(result.Data.Total)
-		for _, pipeline := range result.Data.Pipelines {
-			if pipeline.DefinitionPageInfo == nil {
-				continue
-			}
-			userIDs = append(userIDs, pipeline.GetUserID())
-			tableValue.Rows = append(tableValue.Rows, p.pipelineToRow(pipeline))
+		tableValue.Total = uint64(result.Total)
+		for _, exec := range result.ExecHistories {
+			userIDs = append(userIDs, exec.Executor)
+			tableValue.Rows = append(tableValue.Rows, p.pipelineToRow(exec))
 		}
 
 		p.StdDataPtr = &table.Data{
@@ -207,23 +204,23 @@ func GetPagingFromGlobalState(globalState cptype.GlobalStateData) (pageNo int, p
 	return pageNo, pageSize
 }
 
-func (p *provider) pipelineToRow(pipeline apistructs.PagePipeline) table.Row {
+func (p *provider) pipelineToRow(exec *pb.PipelineExecHistory) table.Row {
 	return table.Row{
-		ID:         table.RowID(fmt.Sprintf("%v", pipeline.ID)),
+		ID:         table.RowID(fmt.Sprintf("%v", exec.PipelineID)),
 		Selectable: true,
 		Selected:   false,
 		CellsMap: map[table.ColumnKey]table.Cell{
-			ColumnPipelineName: table.NewTextCell(pipeline.DefinitionPageInfo.Name).Build(),
+			ColumnPipelineName: table.NewTextCell(exec.PipelineName).Build(),
 			ColumnPipelineStatus: table.NewCompleteTextCell(commodel.Text{
-				Text: util.DisplayStatusText(p.sdk.Ctx, pipeline.Status.String()),
+				Text: util.DisplayStatusText(p.sdk.Ctx, exec.PipelineStatus),
 				Status: func() commodel.UnifiedStatus {
-					if pipeline.Status.IsRunningStatus() {
+					if apistructs.PipelineStatus(exec.PipelineStatus).IsRunningStatus() {
 						return commodel.ProcessingStatus
 					}
-					if pipeline.Status.IsFailedStatus() {
+					if apistructs.PipelineStatus(exec.PipelineStatus).IsFailedStatus() {
 						return commodel.ErrorStatus
 					}
-					if pipeline.Status.IsSuccessStatus() {
+					if apistructs.PipelineStatus(exec.PipelineStatus).IsSuccessStatus() {
 						return commodel.SuccessStatus
 					}
 					return commodel.DefaultStatus
@@ -231,21 +228,21 @@ func (p *provider) pipelineToRow(pipeline apistructs.PagePipeline) table.Row {
 			}).Build(),
 			ColumnCostTimeOrder: table.NewDurationCell(commodel.Duration{
 				Value: func() int64 {
-					if !pipeline.Status.IsRunningStatus() &&
-						!pipeline.Status.IsEndStatus() {
+					if !apistructs.PipelineStatus(exec.PipelineStatus).IsRunningStatus() &&
+						!apistructs.PipelineStatus(exec.PipelineStatus).IsEndStatus() {
 						return -1
 					}
-					return pipeline.CostTimeSec
+					return exec.CostTimeSec
 				}(),
 			}).Build(),
-			ColumnApplicationName: table.NewTextCell(getApplicationNameFromDefinitionRemote(pipeline.DefinitionPageInfo.SourceRemote)).Build(),
-			ColumnBranch:          table.NewTextCell(pipeline.DefinitionPageInfo.SourceRef).Build(),
-			ColumnExecutor:        table.NewUserCell(commodel.User{ID: pipeline.GetUserID()}).Build(),
+			ColumnApplicationName: table.NewTextCell(exec.AppName).Build(),
+			ColumnBranch:          table.NewTextCell(exec.Branch).Build(),
+			ColumnExecutor:        table.NewUserCell(commodel.User{ID: exec.Executor}).Build(),
 			ColumnStartTimeOrder: table.NewTextCell(func() string {
-				if pipeline.TimeBegin == nil || pipeline.TimeBegin.Unix() <= 0 {
+				if exec.TimeBegin == nil || exec.TimeBegin.AsTime().Unix() <= 0 {
 					return "-"
 				}
-				return pipeline.TimeBegin.Format("2006-01-02 15:04:05")
+				return exec.TimeBegin.AsTime().Format("2006-01-02 15:04:05")
 			}()).Build(),
 		},
 		Operations: map[cptype.OperationKey]cptype.Operation{

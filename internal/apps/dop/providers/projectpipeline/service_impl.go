@@ -781,7 +781,18 @@ func (p *ProjectPipelineService) EndCron(ctx context.Context, params deftype.Pro
 	}, nil
 }
 
-func (p *ProjectPipelineService) ListExecHistory(ctx context.Context, params deftype.ProjectPipelineListExecHistory) (*deftype.ProjectPipelineListExecHistoryResult, error) {
+func (p *ProjectPipelineService) ListExecHistory(ctx context.Context, params *pb.ListPipelineExecHistoryRequest) (*pb.ListPipelineExecHistoryResponse, error) {
+	// Check project permission
+	req := apistructs.PermissionCheckRequest{
+		UserID:   apis.GetUserID(ctx),
+		Scope:    apistructs.ProjectScope,
+		ScopeID:  params.ProjectID,
+		Resource: apistructs.ProjectResource,
+		Action:   apistructs.GetAction,
+	}
+	if access, err := p.bundle.CheckPermission(&req); err != nil || !access.Access {
+		return nil, apierrors.ErrListExecHistoryProjectPipeline.AccessDenied()
+	}
 	var pipelineDefinition = apistructs.PipelineDefinitionRequest{}
 	pipelineDefinition.Name = params.Name
 
@@ -810,13 +821,20 @@ func (p *ProjectPipelineService) ListExecHistory(ctx context.Context, params def
 		return nil, apierrors.ErrListExecHistoryProjectPipeline.InternalError(err)
 	}
 
+	var startTime, endTime int64
+	if params.StartTimeBegin != nil {
+		startTime = (*params.StartTimeBegin).AsTime().Unix()
+	}
+	if params.StartTimeEnd != nil {
+		endTime = (*params.StartTimeEnd).AsTime().Unix()
+	}
 	var pipelinePageListRequest = apistructs.PipelinePageListRequest{
 		PageNum:                             int(params.PageNo),
 		PageSize:                            int(params.PageSize),
 		Statuses:                            params.Statuses,
 		AllSources:                          true,
-		StartTimeBeginTimestamp:             params.StartTimeBegin.Unix(),
-		EndTimeBeginTimestamp:               params.StartTimeEnd.Unix(),
+		StartTimeBeginTimestamp:             startTime,
+		EndTimeBeginTimestamp:               endTime,
 		PipelineDefinitionRequestJSONBase64: base64.StdEncoding.EncodeToString(jsonValue),
 		DescCols:                            params.DescCols,
 		AscCols:                             params.AscCols,
@@ -831,9 +849,50 @@ func (p *ProjectPipelineService) ListExecHistory(ctx context.Context, params def
 	if err != nil {
 		return nil, apierrors.ErrListExecHistoryProjectPipeline.InternalError(err)
 	}
-	return &deftype.ProjectPipelineListExecHistoryResult{
-		Data: data,
-	}, nil
+	return makeListPipelineExecHistoryResponse(data), nil
+}
+
+func makeListPipelineExecHistoryResponse(data *apistructs.PipelinePageListData) *pb.ListPipelineExecHistoryResponse {
+	execHistories := make([]*pb.PipelineExecHistory, 0)
+	for _, pipeline := range data.Pipelines {
+		if pipeline.DefinitionPageInfo == nil {
+			continue
+		}
+		var timeBegin *timestamppb.Timestamp
+		if pipeline.TimeBegin != nil {
+			timeBegin = timestamppb.New((*pipeline.TimeBegin).UTC())
+		}
+
+		execHistories = append(execHistories, &pb.PipelineExecHistory{
+			PipelineName:   pipeline.DefinitionPageInfo.Name,
+			PipelineStatus: pipeline.Status.String(),
+			CostTimeSec: func() int64 {
+				if !pipeline.Status.IsRunningStatus() &&
+					!pipeline.Status.IsEndStatus() {
+					return -1
+				}
+				return pipeline.CostTimeSec
+			}(),
+			AppName:    getApplicationNameFromDefinitionRemote(pipeline.DefinitionPageInfo.SourceRemote),
+			Branch:     pipeline.DefinitionPageInfo.SourceRef,
+			Executor:   pipeline.GetUserID(),
+			TimeBegin:  timeBegin,
+			PipelineID: pipeline.ID,
+		})
+	}
+	return &pb.ListPipelineExecHistoryResponse{
+		Total:           data.Total,
+		CurrentPageSize: data.CurrentPageSize,
+		ExecHistories:   execHistories,
+	}
+}
+
+func getApplicationNameFromDefinitionRemote(remote string) string {
+	values := strings.Split(remote, string(filepath.Separator))
+	if len(values) != 3 {
+		return remote
+	}
+	return values[2]
 }
 
 func (p *ProjectPipelineService) BatchRun(ctx context.Context, params deftype.ProjectPipelineBatchRun) (*deftype.ProjectPipelineBatchRunResult, error) {

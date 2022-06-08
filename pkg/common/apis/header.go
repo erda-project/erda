@@ -26,6 +26,7 @@ import (
 
 const (
 	headerInternalClient = "internal-client"
+	headerUserID         = "user-id"
 )
 
 var langKeys = []string{"lang", "accept-language"}
