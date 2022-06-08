@@ -138,10 +138,6 @@ func (u urls) ClusterManager() (string, error) {
 	return u.getURL(discover.EnvClusterManager, discover.SvcClusterManager)
 }
 
-func (u urls) ECP() (string, error) {
-	return u.getURL(discover.EnvECP, discover.SvcECP)
-}
-
 func (u urls) getURL(k, srvName string) (string, error) {
 	v, ok := u[k]
 	if ok {

@@ -24,10 +24,12 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	infrahttpserver "github.com/erda-project/erda-infra/providers/httpserver"
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/tools/orchestrator/components/addon/mysql"
 	"github.com/erda-project/erda/internal/tools/orchestrator/conf"
 	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
+	ecpednpoints "github.com/erda-project/erda/internal/tools/orchestrator/ecp/endpoints"
 	"github.com/erda-project/erda/internal/tools/orchestrator/endpoints"
 	"github.com/erda-project/erda/internal/tools/orchestrator/i18n"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler"
@@ -48,7 +50,6 @@ import (
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/loop"
-	// "terminus.io/dice/telemetry/promxp"
 )
 
 // Initialize 初始化应用启动服务.
@@ -76,6 +77,9 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 	server.WithLocaleLoader(bdl.GetLocaleLoader())
 	// server.Router().Path("/metrics").Methods(http.MethodGet).Handler(promxp.Handler("orchestrator"))
 	server.RegisterEndpoint(ep.Routes())
+
+	// register ecp router
+	server.RegisterEndpoint(registerEcpRouter(bdl, db.DBEngine, p.ClusterSvc))
 
 	ctx.Service("http-server").(infrahttpserver.Router).Any("/**", server.Router())
 
@@ -363,4 +367,11 @@ func addonsFilterIn(addons []dbclient.AddonInstance, fn func(addon *dbclient.Add
 		}
 	}
 	return
+}
+
+func registerEcpRouter(bdl *bundle.Bundle, dbEngine *dbengine.DBEngine, clusterSvc clusterpb.ClusterServiceServer) []httpserver.Endpoint {
+	return ecpednpoints.New(
+		ecpednpoints.WithDBEngine(dbEngine),
+		ecpednpoints.WithBundle(bdl),
+		ecpednpoints.WithClusterSvc(clusterSvc)).Routes()
 }

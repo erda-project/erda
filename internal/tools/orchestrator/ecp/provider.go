@@ -17,26 +17,35 @@ package ecp
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda-infra/base/servicehub"
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
-	"github.com/erda-project/erda/internal/apps/ecp/conf"
 )
 
-type provider struct {
-	Cfg        *conf.Conf
-	clusterSvc clusterpb.ClusterServiceServer `autowired:"erda.core.clustermanager.cluster.ClusterService"`
+// Conf Define the configuration
+type Conf struct {
+	Debug bool `env:"DEBUG" default:"false"`
 }
 
-// Run Run the provider
+type provider struct {
+	Cfg        *Conf
+	ClusterSvc clusterpb.ClusterServiceServer `autowired:"erda.core.clustermanager.cluster.ClusterService"`
+}
+
+// Run
 func (p *provider) Run(ctx context.Context) error {
-	return p.initialize()
+	if p.Cfg.Debug {
+		logrus.SetLevel(logrus.DebugLevel)
+	}
+	return nil
 }
 
 func init() {
 	servicehub.Register("ecp", &servicehub.Spec{
 		Services:    []string{"ecp"},
 		Description: "Core components of edge computing platform.",
-		ConfigFunc:  func() interface{} { return &conf.Conf{} },
+		ConfigFunc:  func() interface{} { return &Conf{} },
 		Creator:     func() servicehub.Provider { return &provider{} },
 	})
 }

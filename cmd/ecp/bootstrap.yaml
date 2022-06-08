@@ -1,5 +1,0 @@
-ecp:
-
-grpc-client@erda.core.clustermanager.cluster:
-  addr: "${CLUSTER_MANAGER_GRPC_ADDR:cluster-manager:9095}"
-erda.core.clustermanager.cluster-client: {}
