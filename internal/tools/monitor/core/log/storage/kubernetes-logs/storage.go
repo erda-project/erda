@@ -137,27 +137,19 @@ func (s *cStorage) Iterator(ctx context.Context, sel *storage.Selector) (storeki
 					}
 				}
 			}
-		case "container_name":
-			containerName, _ = filter.Value.(string)
-			if len(containerName) <= 0 {
-				return storekit.EmptyIterator{}, nil
-			}
-		case "pod_name":
-			podName, _ = filter.Value.(string)
-			if len(podName) <= 0 {
-				return storekit.EmptyIterator{}, nil
-			}
-		case "pod_namespace":
-			namespace, _ = filter.Value.(string)
-			if len(namespace) <= 0 {
-				return storekit.EmptyIterator{}, nil
-			}
-		case "cluster_name":
-			clusterName, _ = filter.Value.(string)
-			if len(clusterName) <= 0 {
-				return storekit.EmptyIterator{}, nil
-			}
 		}
+	}
+	if containerName, ok = sel.Options[storage.ContainerName].(string); !ok || len(containerName) <= 0 {
+		return storekit.EmptyIterator{}, nil
+	}
+	if podName, ok = sel.Options[storage.PodName].(string); !ok || len(containerName) <= 0 {
+		return storekit.EmptyIterator{}, nil
+	}
+	if namespace, ok = sel.Options[storage.PodNamespace].(string); !ok || len(namespace) <= 0 {
+		return storekit.EmptyIterator{}, nil
+	}
+	if clusterName, ok = sel.Options[storage.ClusterName].(string); !ok || len(clusterName) <= 0 {
+		return storekit.EmptyIterator{}, nil
 	}
 
 	queryFunc, err := s.getQueryFunc(clusterName)
@@ -177,6 +169,7 @@ func (s *cStorage) Iterator(ctx context.Context, sel *storage.Selector) (storeki
 	return &logsIterator{
 		ctx:           ctx,
 		sel:           sel,
+		debug:         sel.Debug,
 		id:            id,
 		podNamespace:  namespace,
 		podName:       podName,
@@ -200,6 +193,7 @@ const (
 type logsIterator struct {
 	ctx           context.Context
 	sel           *storage.Selector
+	debug         bool
 	id            string
 	podNamespace  string
 	podName       string

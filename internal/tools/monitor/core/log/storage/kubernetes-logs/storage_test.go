@@ -52,33 +52,17 @@ var (
 		{Timestamp: 19, Content: "9999"},
 	}
 	commonTestOptions = map[string]interface{}{
-		storage.IsLive: true,
+		storage.IsLive:        true,
+		storage.ContainerName: "container_name1",
+		storage.PodNamespace:  "namespace1",
+		storage.PodName:       "name1",
+		storage.ClusterName:   "cluster_name1",
 	}
 	commonTestFilters = []*storage.Filter{
 		{
 			Key:   "id",
 			Op:    storage.EQ,
 			Value: "test_id",
-		},
-		{
-			Key:   "pod_namespace",
-			Op:    storage.EQ,
-			Value: "namespace1",
-		},
-		{
-			Key:   "pod_name",
-			Op:    storage.EQ,
-			Value: "name1",
-		},
-		{
-			Key:   "container_name",
-			Op:    storage.EQ,
-			Value: "container_name1",
-		},
-		{
-			Key:   "cluster_name",
-			Op:    storage.EQ,
-			Value: "cluster_name1",
 		},
 	}
 )
@@ -421,7 +405,32 @@ func Test_cStorage_Iterator_Next(t *testing.T) {
 				End:     13,
 				Scheme:  kubernetesLogScheme,
 				Filters: commonTestFilters,
-				Options: map[string]interface{}{},
+				Options: map[string]interface{}{
+					storage.IsLive:        false,
+					storage.ContainerName: "container_name1",
+					storage.PodNamespace:  "namespace1",
+					storage.PodName:       "name1",
+					storage.ClusterName:   "cluster_name1",
+				},
+			},
+			want: nil,
+		},
+		{
+			name:        "No_Pod_Meta",
+			source:      commonLogTestItems,
+			bufferLines: 1,
+			sel: &storage.Selector{
+				Start:   11,
+				End:     13,
+				Scheme:  kubernetesLogScheme,
+				Filters: commonTestFilters,
+				Options: map[string]interface{}{
+					storage.IsLive:        true,
+					storage.ContainerName: "",
+					storage.PodNamespace:  "",
+					storage.PodName:       "",
+					storage.ClusterName:   "",
+				},
 			},
 			want: nil,
 		},
@@ -429,17 +438,10 @@ func Test_cStorage_Iterator_Next(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tt = tt
-			var namespace, name, container string
-			for _, v := range tt.sel.Filters {
-				switch v.Key {
-				case "pod_namespace":
-					namespace = v.Value.(string)
-				case "pod_name":
-					name = v.Value.(string)
-				case "container_name":
-					container = v.Value.(string)
-				}
-			}
+			namespace := tt.sel.Options[storage.PodNamespace].(string)
+			name := tt.sel.Options[storage.PodName].(string)
+			container := tt.sel.Options[storage.ContainerName].(string)
+
 			s := &cStorage{
 				log: logrusx.New(),
 				getQueryFunc: func(clusterName string) (func(it *logsIterator, opts *v1.PodLogOptions) (io.ReadCloser, error), error) {
@@ -778,17 +780,9 @@ func Test_cStorage_Iterator_Prev(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var namespace, name, container string
-			for _, v := range tt.sel.Filters {
-				switch v.Key {
-				case "pod_namespace":
-					namespace = v.Value.(string)
-				case "pod_name":
-					name = v.Value.(string)
-				case "container_name":
-					container = v.Value.(string)
-				}
-			}
+			namespace := tt.sel.Options[storage.PodNamespace].(string)
+			name := tt.sel.Options[storage.PodName].(string)
+			container := tt.sel.Options[storage.ContainerName].(string)
 			s := &cStorage{
 				log: logrusx.New(),
 				getQueryFunc: func(clusterName string) (func(it *logsIterator, opts *v1.PodLogOptions) (io.ReadCloser, error), error) {
@@ -897,17 +891,9 @@ func Test_cStorage_Iterator_FirstNext(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var namespace, name, container string
-			for _, v := range tt.sel.Filters {
-				switch v.Key {
-				case "pod_namespace":
-					namespace = v.Value.(string)
-				case "pod_name":
-					name = v.Value.(string)
-				case "container_name":
-					container = v.Value.(string)
-				}
-			}
+			namespace := tt.sel.Options[storage.PodNamespace].(string)
+			name := tt.sel.Options[storage.PodName].(string)
+			container := tt.sel.Options[storage.ContainerName].(string)
 			s := &cStorage{
 				log: logrusx.New(),
 				getQueryFunc: func(clusterName string) (func(it *logsIterator, opts *v1.PodLogOptions) (io.ReadCloser, error), error) {
@@ -1012,24 +998,22 @@ func Test_cStorage_Iterator_LastPrev(t *testing.T) {
 				End:     11,
 				Scheme:  kubernetesLogScheme,
 				Filters: commonTestFilters,
-				Options: commonTestOptions,
+				Options: map[string]interface{}{
+					storage.IsLive:        false,
+					storage.ContainerName: "container_name1",
+					storage.PodNamespace:  "namespace1",
+					storage.PodName:       "name1",
+					storage.ClusterName:   "cluster_name1",
+				},
 			},
 			want: nil,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var namespace, name, container string
-			for _, v := range tt.sel.Filters {
-				switch v.Key {
-				case "pod_namespace":
-					namespace = v.Value.(string)
-				case "pod_name":
-					name = v.Value.(string)
-				case "container_name":
-					container = v.Value.(string)
-				}
-			}
+			namespace := tt.sel.Options[storage.PodNamespace].(string)
+			name := tt.sel.Options[storage.PodName].(string)
+			container := tt.sel.Options[storage.ContainerName].(string)
 			s := &cStorage{
 				log: logrusx.New(),
 				getQueryFunc: func(clusterName string) (func(it *logsIterator, opts *v1.PodLogOptions) (io.ReadCloser, error), error) {
