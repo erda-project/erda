@@ -1407,10 +1407,6 @@ func (p *ProjectPipelineService) autoRunPipeline(identityInfo apistructs.Identit
 	createV2.DefinitionID = definition.ID
 	createV2.UserID = identityInfo.UserID
 
-	// add run,create userID label for history list search
-	createV2.Labels[apistructs.LabelRunUserID] = identityInfo.UserID
-	createV2.Labels[apistructs.LabelCreateUserID] = identityInfo.UserID
-
 	// run params
 	var pipelineRunParams apistructs.PipelineRunParams
 	for _, runParams := range params.runParams {
