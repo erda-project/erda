@@ -545,7 +545,7 @@ erda.oap.collector.core:
           - "erda.oap.collector.processor.modifier@span"
         exporters:
           - "erda.oap.collector.exporter.clickhouse@span"
-        batch_size: ${EXPORTER_CLICKHOUSE_SPAN_BATCH_SIZE:3000}
+        batch_size: ${EXPORTER_CLICKHOUSE_SPAN_BATCH_SIZE:81920}
         _enable: ${WRITE_SPAN_TO_CLICKHOUSE_ENABLE:false}
 
 # ************* receivers *************
@@ -587,8 +587,8 @@ erda.oap.collector.processor.modifier@span:
 # ************* exporters *************
 erda.oap.collector.exporter.clickhouse@span:
   _enable: ${WRITE_SPAN_TO_CLICKHOUSE_ENABLE:false}
-  currency_num: ${EXPORTER_CLICKHOUSE_CURRENCY_NUM:3}
   span:
+    currency_num: ${EXPORTER_CH_SPAN_CURRENCY_NUM:2}
     series_tag_keys: ${EXPORTER_CH_SPAN_SERIES_TAG_KEYS:db_statement}
 # ************* exporters *************
 

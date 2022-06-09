@@ -48,7 +48,6 @@ func (p *provider) ExportRaw(items ...*odata.Raw) error        { return nil }
 func (p *provider) ExportMetric(items ...*metric.Metric) error { return nil }
 func (p *provider) ExportLog(items ...*log.Log) error          { return nil }
 
-// TODO currency
 func (p *provider) ExportSpan(items ...*trace.Span) error {
 	p.spanStorage.WriteBatch(items)
 	return nil
