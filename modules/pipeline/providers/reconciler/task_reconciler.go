@@ -307,6 +307,11 @@ func (tr *defaultTaskReconciler) TeardownAfterReconcileDone(ctx context.Context,
 	tr.log.Infof("begin teardown task, pipelineID: %d, taskID: %d, taskName: %s", p.ID, task.ID, task.Name)
 	defer tr.log.Infof("end teardown task, pipelineID: %d, taskID: %d, taskName: %s", p.ID, task.ID, task.Name)
 
+	// overwrite current task with latest, otherwise aop will lose result information and so on
+	if err := tr.overwriteTaskWithLatest(task); err != nil {
+		tr.log.Errorf("failed to overwrite task with latest(continue teardown), pipelineID: %d, taskID: %d, err: %v", p.ID, task.ID, err)
+	}
+
 	// handle aop synchronously, then do subsequent tasks
 	_ = aop.Handle(aop.NewContextForTask(*task, *p, aoptypes.TuneTriggerTaskAfterExec))
 
@@ -426,5 +431,16 @@ func (tr *defaultTaskReconciler) judgeIfExpression(ctx context.Context, p *spec.
 		tr.log.Infof("set task status to %s (calculatedStatusForTaskUse: %s, action if expression is empty), pipelineID: %d, taskID: %d, taskName: %s",
 			apistructs.PipelineStatusNoNeedBySystem, tr.pr.calculatedStatusForTaskUse, p.ID, task.ID, task.Name)
 	}
+	return nil
+}
+
+// overwriteTaskWithLatest overwrite current task with latest
+// the same as taskrun.fetchlatesttask, use one later when refactored
+func (tr *defaultTaskReconciler) overwriteTaskWithLatest(task *spec.PipelineTask) error {
+	latest, err := tr.dbClient.GetPipelineTask(task.ID)
+	if err != nil {
+		return err
+	}
+	*(task) = *(&latest)
 	return nil
 }
