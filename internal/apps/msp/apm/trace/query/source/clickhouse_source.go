@@ -321,10 +321,13 @@ func (chs *ClickhouseSource) GetSpans(ctx context.Context, req *pb.GetSpansReque
 		}
 		for _, sm := range sms {
 			if "operation_name" == sm.Key {
-				cs.OperationName = sm.Key
+				cs.OperationName = sm.Value
 				continue
 			}
 			tags[sm.Key] = sm.Value
+		}
+		if len(cs.Tags) > 0 {
+			fmt.Printf("===== cs.Tags: %+v\n", cs.Tags)
 		}
 		// merge high cardinality tag
 		for k, v := range cs.Tags {
