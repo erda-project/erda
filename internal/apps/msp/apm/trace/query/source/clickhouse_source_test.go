@@ -15,53 +15,65 @@
 package source
 
 import (
+	"reflect"
 	"testing"
 	"time"
 
 	"github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
+	"github.com/erda-project/erda/internal/apps/msp/apm/trace"
 )
 
-func Test_chSpanCovertToSpan(t *testing.T) {
+func Test_mergeAsSpan(t *testing.T) {
 	type args struct {
-		span *pb.Span
-		cs   spanSeries
+		cs  trace.Series
+		sms []trace.Meta
 	}
 	tests := []struct {
 		name string
 		args args
+		want *pb.Span
 	}{
-		{"case1", args{span: &pb.Span{}, cs: spanSeries{
-			SpanId:        "test",
-			TraceId:       "test",
-			OperationName: "test",
-			StartTime:     2,
-			EndTime:       2,
-			ParentSpanId:  "test_p",
-			Tags: map[string]string{
-				"db_statement": "select * from abc where id=aaa",
+		{
+			args: args{
+				cs: trace.Series{
+					SpanId:       "aaa",
+					TraceId:      "bbb",
+					StartTime:    2,
+					EndTime:      2,
+					ParentSpanId: "ppp",
+					Tags: map[string]string{
+						"db_statement": "select * from abc where id=aaa",
+					},
+				},
+				sms: []trace.Meta{
+					{
+						Key:   "operation_name",
+						Value: "query",
+					},
+					{
+						Key:   "org_name",
+						Value: "erda",
+					},
+				},
 			},
-		}}},
+			want: &pb.Span{
+				Id:            "aaa",
+				TraceId:       "bbb",
+				ParentSpanId:  "ppp",
+				StartTime:     2,
+				EndTime:       2,
+				OperationName: "query",
+				Tags: map[string]string{
+					"db_statement": "select * from abc where id=aaa",
+					"org_name":     "erda",
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			chSpanCovertToSpan(tt.args.span, tt.args.cs)
-			if tt.args.span.Id != tt.args.cs.SpanId {
-				t.Errorf("SpanId id not equal. span.Id: %s, cs.SpanId: %s", tt.args.span.Id, tt.args.cs.SpanId)
-			}
-			if tt.args.span.TraceId != tt.args.cs.TraceId {
-				t.Errorf("TraceId not equal. span.TraceId: %s, cs.TraceId: %s", tt.args.span.TraceId, tt.args.cs.TraceId)
-			}
-			if tt.args.span.OperationName != tt.args.cs.OperationName {
-				t.Errorf("OperationName not equal. span.OperationName: %s, cs.OperationName: %s", tt.args.span.OperationName, tt.args.cs.OperationName)
-			}
-			if tt.args.span.StartTime != tt.args.cs.StartTime {
-				t.Errorf("StartTime not equal. StartTime: %v, cs.StartTime: %v", tt.args.span.StartTime, tt.args.cs.StartTime)
-			}
-			if tt.args.span.EndTime != tt.args.cs.EndTime {
-				t.Errorf("EndTime not equal. span.EndTime: %v, cs.EndTime: %v", tt.args.span.EndTime, tt.args.cs.EndTime)
-			}
-			if tt.args.span.ParentSpanId != tt.args.cs.ParentSpanId {
-				t.Errorf("ParentSpanId not equal. span.ParentSpanId: %s, cs.ParentSpanId: %s", tt.args.span.ParentSpanId, tt.args.cs.ParentSpanId)
+			if got := mergeAsSpan(tt.args.cs, tt.args.sms); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("mergeAsSpan() = %v, want %v", got, tt.want)
 			}
 		})
 	}

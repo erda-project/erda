@@ -24,6 +24,7 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/providers/clickhouse"
 	"github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
+	"github.com/erda-project/erda/internal/apps/msp/apm/trace"
 	"github.com/erda-project/erda/internal/apps/msp/apm/trace/query/commom/custom"
 	"github.com/erda-project/erda/pkg/math"
 )
@@ -36,21 +37,21 @@ type ClickhouseSource struct {
 }
 
 type (
-	spanSeries struct {
-		OrgName       string            `ch:"org_name"`
-		SeriesId      uint64            `ch:"series_id"`
-		TraceId       string            `ch:"trace_id"`
-		SpanId        string            `ch:"span_id"`
-		ParentSpanId  string            `ch:"parent_span_id"`
-		OperationName string            `ch:"operation_name"`
-		StartTime     int64             `ch:"start_time"`
-		EndTime       int64             `ch:"end_time"`
-		Tags          map[string]string `ch:"tags"`
-	}
-	spanMeta struct {
-		Key   string `ch:"key"`
-		Value string `ch:"value"`
-	}
+	// spanSeries struct {
+	// 	OrgName       string            `ch:"org_name"`
+	// 	SeriesId      uint64            `ch:"series_id"`
+	// 	TraceId       string            `ch:"trace_id"`
+	// 	SpanId        string            `ch:"span_id"`
+	// 	ParentSpanId  string            `ch:"parent_span_id"`
+	// 	OperationName string            `ch:"operation_name"`
+	// 	StartTime     int64             `ch:"start_time"`
+	// 	EndTime       int64             `ch:"end_time"`
+	// 	Tags          map[string]string `ch:"tags"`
+	// }
+	// spanMeta struct {
+	// 	Key   string `ch:"key"`
+	// 	Value string `ch:"value"`
+	// }
 	tracing struct {
 		TraceId   string   `ch:"trace_id"`
 		StartTime int64    `ch:"min_start_time"`
@@ -297,8 +298,18 @@ func (chs *ClickhouseSource) GetSpans(ctx context.Context, req *pb.GetSpansReque
 		}
 	}
 
-	sql := fmt.Sprintf("SELECT org_name,series_id,trace_id,span_id,parent_span_id,toUnixTimestamp64Nano(start_time) AS"+
-		" start_time,toUnixTimestamp64Nano(end_time) AS end_time,tags FROM %s WHERE trace_id = $1 ORDER BY %s LIMIT %v",
+	sql := fmt.Sprintf(`
+SELECT org_name,
+       series_id,
+       trace_id,
+       span_id,
+       parent_span_id,
+       toUnixTimestamp64Nano(start_time) AS start_time,
+       toUnixTimestamp64Nano(end_time)   AS end_time,
+       tags
+FROM %s
+WHERE trace_id = $1
+ORDER BY %s LIMIT %v`,
 		SpanSeriesTable, "start_time", req.Limit)
 
 	rows, err := chs.Clickhouse.Client().Query(ctx, sql, req.TraceID)
@@ -308,61 +319,70 @@ func (chs *ClickhouseSource) GetSpans(ctx context.Context, req *pb.GetSpansReque
 	defer rows.Close()
 
 	for rows.Next() {
-		span := &pb.Span{}
-		var cs spanSeries
+		var cs trace.Series
 		if err := rows.ScanStruct(&cs); err != nil {
 			return nil
 		}
 
-		tags := make(map[string]string, 10)
 		sms, err := chs.getSpanMeta(ctx, cs)
 		if err != nil {
 			return nil
 		}
-		for _, sm := range sms {
-			if "operation_name" == sm.Key {
-				cs.OperationName = sm.Value
-				continue
-			}
-			tags[sm.Key] = sm.Value
-		}
-		// merge high cardinality tag
-		for k, v := range cs.Tags {
-			tags[k] = v
-		}
-		chSpanCovertToSpan(span, cs)
 
-		span.Tags = tags
-		spans = append(spans, span)
+		spans = append(spans, mergeAsSpan(cs, sms))
 	}
 	return spans
 }
 
-func (chs *ClickhouseSource) getSpanMeta(ctx context.Context, cs spanSeries) ([]*spanMeta, error) {
-	sms := make([]*spanMeta, 0, 10)
+func (chs *ClickhouseSource) getSpanMeta(ctx context.Context, cs trace.Series) ([]trace.Meta, error) {
+	sms := make([]trace.Meta, 0, 10)
 	sql := fmt.Sprintf("SELECT key,value FROM %s WHERE series_id = $1", SpanMetaTable)
-	rows, err := chs.Clickhouse.Client().Query(ctx, sql, cs.SeriesId)
+	rows, err := chs.Clickhouse.Client().Query(ctx, sql, cs.SeriesID)
 	if err != nil {
 		return nil, err
 	}
 	for rows.Next() {
-		var sm spanMeta
+		var sm trace.Meta
 		if err := rows.ScanStruct(&sm); err != nil {
 			return nil, err
 		}
-		sms = append(sms, &sm)
+		sms = append(sms, sm)
 	}
 	return sms, nil
 }
 
-func chSpanCovertToSpan(span *pb.Span, cs spanSeries) {
+func mergeAsSpan(cs trace.Series, sms []trace.Meta) *pb.Span {
+	span := &pb.Span{}
+	tags := make(map[string]string, 10)
+	for _, sm := range sms {
+		if "operation_name" == sm.Key {
+			span.OperationName = sm.Value
+			continue
+		}
+		tags[sm.Key] = sm.Value
+	}
+	// merge high cardinality tag
+	for k, v := range cs.Tags {
+		tags[k] = v
+	}
 	span.Id = cs.SpanId
 	span.TraceId = cs.TraceId
 	span.ParentSpanId = cs.ParentSpanId
-	span.OperationName = cs.OperationName
 	span.StartTime = cs.StartTime
 	span.EndTime = cs.EndTime
+	span.Tags = tags
+	return span
 }
+
+//
+// func chSpanCovertToSpan(span *pb.Span, cs spanSeries) {
+// 	span.Id = cs.SpanId
+// 	span.TraceId = cs.TraceId
+// 	span.ParentSpanId = cs.ParentSpanId
+// 	span.OperationName = cs.OperationName
+// 	span.StartTime = cs.StartTime
+// 	span.EndTime = cs.EndTime
+// }
 
 func (chs *ClickhouseSource) GetSpanCount(ctx context.Context, traceID string) int64 {
 	var count uint64
