@@ -702,18 +702,18 @@ func (s *ReleaseService) List(ctx context.Context, orgID int64, req *pb.ReleaseL
 	}
 
 	releaseList := make([]*pb.ReleaseData, 0, len(releases))
-	projects, err := s.bdl.GetAllProjects()
-	if err != nil {
-		return nil, errors.Errorf("failed to list projects, %v", err)
-	}
-
-	id2DisplayName := make(map[uint64]string)
-	for i := range projects {
-		id2DisplayName[projects[i].ID] = projects[i].DisplayName
-	}
+	//projects, err := s.bdl.GetAllProjects()
+	//if err != nil {
+	//	return nil, errors.Errorf("failed to list projects, %v", err)
+	//}
+	//
+	//id2DisplayName := make(map[uint64]string)
+	//for i := range projects {
+	//	id2DisplayName[projects[i].ID] = projects[i].DisplayName
+	//}
 
 	for _, v := range releases {
-		release, err := convertToListReleaseResponse(&v, releaseTagMap[v.ReleaseID], tagMap, opuses.Data, id2DisplayName)
+		release, err := convertToListReleaseResponse(&v, releaseTagMap[v.ReleaseID], tagMap, opuses.Data)
 		if err != nil {
 			logrus.WithField("func", "*ReleaseList").Errorln("failed to convertToListReleaseResponse")
 			continue
@@ -727,7 +727,7 @@ func (s *ReleaseService) List(ctx context.Context, orgID int64, req *pb.ReleaseL
 	}, nil
 }
 
-func convertToListReleaseResponse(release *db.Release, tagIDs []uint64, tagsMap map[int64]*apistructs.ProjectLabel, opusMap map[string]*pb.ListArtifactsRespItem, projectsDisplayName map[uint64]string) (*pb.ReleaseData, error) {
+func convertToListReleaseResponse(release *db.Release, tagIDs []uint64, tagsMap map[int64]*apistructs.ProjectLabel, opusMap map[string]*pb.ListArtifactsRespItem) (*pb.ReleaseData, error) {
 	var labels map[string]string
 	err := json.Unmarshal([]byte(release.Labels), &labels)
 	if err != nil {
@@ -785,7 +785,7 @@ func convertToListReleaseResponse(release *db.Release, tagIDs []uint64, tagsMap 
 		ProjectID:          release.ProjectID,
 		ApplicationID:      release.ApplicationID,
 		ProjectName:        release.ProjectName,
-		ProjectDisplayName: projectsDisplayName[uint64(release.ProjectID)],
+		ProjectDisplayName: release.ProjectName,
 		ApplicationName:    release.ApplicationName,
 		UserID:             release.UserID,
 		ClusterName:        release.ClusterName,
