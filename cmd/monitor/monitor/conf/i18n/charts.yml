@@ -10,7 +10,7 @@ en:
     "建立tcp连接": "TCP Connecting"
     "访问次数": "Visits"
     "GRPC完成请求数": "GRPC Request Handled Total"
-    "CPU使用率": "CPU Used Percent"
+    "CPU使用率": "CPU Usage"
     "Refresh次数": "Refresh Total"
     "替代语句的个数": "Commands Replace"
     "磁盘": "Disk"
