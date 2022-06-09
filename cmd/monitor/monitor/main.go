@@ -26,9 +26,9 @@ import (
 	// modules
 	_ "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/client"
 	_ "github.com/erda-project/erda-proto-go/core/messenger/notifychannel/client"
+	_ "github.com/erda-project/erda-proto-go/core/messenger/notifygroup/client"
 	_ "github.com/erda-project/erda-proto-go/core/pipeline/cron/client"
 	_ "github.com/erda-project/erda/internal/core/file-manager"
-	_ "github.com/erda-project/erda/internal/tools/monitor/apm/report"
 	_ "github.com/erda-project/erda/internal/tools/monitor/apm/runtime"
 	_ "github.com/erda-project/erda/internal/tools/monitor/apm/topology"
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/alert/alert-apis"
@@ -61,6 +61,7 @@ import (
 	_ "github.com/erda-project/erda/internal/tools/monitor/dashboard/org-apis"
 	_ "github.com/erda-project/erda/internal/tools/monitor/dashboard/project-apis"
 	_ "github.com/erda-project/erda/internal/tools/monitor/dashboard/report/apis"
+	_ "github.com/erda-project/erda/internal/tools/monitor/dashboard/report/apis/v1"
 	_ "github.com/erda-project/erda/internal/tools/monitor/dashboard/runtime-apis"
 	_ "github.com/erda-project/erda/internal/tools/monitor/dashboard/template"
 	_ "github.com/erda-project/erda/internal/tools/monitor/monitoring"

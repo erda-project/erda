@@ -277,7 +277,7 @@ node-topo:
 #apm providers
 apm-runtime:
 apm-topology:
-apm-report:
+#apm-report:
 
 erda.core.monitor.alert:
   #  micro_service_filter_tags: "${MICRO_SERVICE_FILTER_TAGS:metric_name,_metric_name,metric_scope,_metric_scope,metric_scope_id,_metric_scope_id,cluster_name,host_ip,org_id,org_name,project_id,project_name,application_id,application_name,runtime_id,runtime_name,service_id,service_name,component_name,addon_name,workspace,cpu_request,cpu_limit,cpu_origin,mem_request,mem_limit,mem_origin,job_id,addon_id,instance_id,instance_type,edas_app_id,edas_app_name,edas_group_id,pod_name,pod_namespace,pod_ip,terminus_key}"
@@ -295,6 +295,17 @@ erda.core.monitor.alert:
     gc_grace_seconds: 86400
 
 report-apis:
+  pipeline:
+    version: "1.1"
+    action_type: "reportengine"
+    action_version: "2.0"
+  report_cron:
+    daily_cron: "0 9 * * *"
+    weekly_cron: "0 9 * * 1"
+    monthly_cron: "0 20 * * *"
+  cluster_name: "${DICE_CLUSTER_NAME}"
+
+monitor.dashboard.report.apis.v1:
   pipeline:
     version: "1.1"
     action_type: "reportengine"
@@ -385,3 +396,7 @@ erda.core.pipeline.cron-client:
 grpc-client@erda.core.clustermanager.cluster:
   addr: "${CLUSTER_MANAGER_GRPC_ADDR:cluster-manager:9095}"
 erda.core.clustermanager.cluster-client: {}
+
+grpc-client@erda.core.messenger.notifygroup:
+  addr: "${CORE_SERVICES_GRPC_ADDR:core-services:9537}"
+erda.core.messenger.notifygroup-client:
