@@ -81,7 +81,7 @@ func (p *provider) AddIntoPipelineCrond(cron *db2.PipelineCron) error {
 		return nil
 	}
 
-	_, err := p.EtcdClient.Put(context.Background(), etcdCronPrefixAddKey+strconv.FormatUint(cron.ID, 10), "")
+	_, err := p.EtcdClient.Put(context.Background(), etcdCronPrefixAddKey+strconv.FormatUint(cron.ID, 10), cron.CronExpr)
 	return err
 }
 
@@ -98,7 +98,7 @@ func (p *provider) DeleteFromPipelineCrond(cron *db2.PipelineCron) error {
 		return nil
 	}
 
-	_, err := p.EtcdClient.Put(context.Background(), etcdCronPrefixDeleteKey+strconv.FormatUint(cron.ID, 10), "")
+	_, err := p.EtcdClient.Put(context.Background(), etcdCronPrefixDeleteKey+strconv.FormatUint(cron.ID, 10), cron.CronExpr)
 	return err
 }
 

@@ -197,44 +197,43 @@ func (s *provider) listenCrond(ctx context.Context) {
 
 		s.Log.Infof("crond: watched update etcd key: %s, changeType: %d", key, t)
 
-		if _, err := s.EtcdClient.Delete(ctx, key); err != nil {
-			s.Log.Errorf("crond: failed to delete key: %s", key)
-			return
-		}
 		cronID, err := parseCronIDFromWatchedKey(key)
 		if err != nil {
 			s.Log.Errorf("crond: failed to parse cronID from watched key, key: %s, err: %v", key, err)
 			return
 		}
 
+		cronExpr, err := s.getCronExprFromEtcd(ctx, key)
+		if err != nil {
+			s.Log.Errorf("crond: failed to getCronExprFromEtcd, key: %s, err: %v", key, err)
+			return
+		}
+
+		if _, err := s.EtcdClient.Delete(ctx, key); err != nil {
+			s.Log.Errorf("crond: failed to delete key: %s", key)
+			return
+		}
+
 		if strings.HasPrefix(key, etcdCronPrefixAddKey) {
-			pc, found, err := s.dbClient.GetPipelineCron(cronID)
-			if err != nil {
-				s.Log.Errorf("crond: failed to get cron cronID: %v error: %v", cronID, err)
-				return
-			}
-			if !found {
-				s.Log.Errorf("crond: failed to get cron cronID: %v error: %v", cronID, fmt.Errorf("not found"))
-				return
-			}
+			s.Log.Infof("crond: add cron, cronID: %d, cronExpr: %s", cronID, cronExpr)
 			// why delete it first, because crond.AddFunc cannot add a scheduled task with the same name
 			err = s.crond.Remove(makePipelineCronName(cronID))
 			if err != nil {
 				s.Log.Errorf("crond: failed to remove cron cronID: %v error: %v", cronID, err)
 				return
 			}
-
 			// determine whether there is a scheduled task
-			if pc.Enable != nil && *pc.Enable && pc.CronExpr != "" {
-				err = s.crond.AddFunc(pc.CronExpr, func() {
-					s.runCronPipelineFunc(ctx, pc.ID)
-				}, makePipelineCronName(pc.ID))
+			if cronExpr != "" {
+				err = s.crond.AddFunc(cronExpr, func() {
+					s.runCronPipelineFunc(ctx, cronID)
+				}, makePipelineCronName(cronID))
 				if err != nil {
-					s.Log.Errorf("crond: failed to update cron cronID: %v cronExpr: %v  error: %v", cronID, pc.CronExpr, err)
+					s.Log.Errorf("crond: failed to update cron cronID: %v cronExpr: %v  error: %v", cronID, cronExpr, err)
 					return
 				}
 			}
 		} else if strings.HasPrefix(key, etcdCronPrefixDeleteKey) {
+			s.Log.Infof("crond: delete cron, cronID: %d, cronExpr: %s", cronID, cronExpr)
 			err = s.crond.Remove(makePipelineCronName(cronID))
 			if err != nil {
 				s.Log.Errorf("crond: failed to remove cron cronID: %v error: %v", cronID, err)
@@ -243,6 +242,17 @@ func (s *provider) listenCrond(ctx context.Context) {
 		}
 		s.Log.Infof("crond: watched and reload successfully")
 	}, nil)
+}
+
+func (s *provider) getCronExprFromEtcd(ctx context.Context, key string) (string, error) {
+	getResp, err := s.EtcdClient.Get(ctx, key)
+	if err != nil {
+		return "", err
+	}
+	if len(getResp.Kvs) != 1 {
+		return "", fmt.Errorf("the kvs'len is not 1")
+	}
+	return string(getResp.Kvs[0].Value), nil
 }
 
 // ReloadCrond triggers the current crond instance update task.
@@ -375,9 +385,9 @@ func makeCleanBuildCacheJobName(cronExpr string) string {
 	return fmt.Sprintf("clean-build-cache-image-[%s]", cronExpr)
 }
 
-// Remove the prefix of the key and get the cronid
+// Remove the prefix of the key and get the cronID
 func parseCronIDFromWatchedKey(key string) (uint64, error) {
-	pipelineIDStr := strutil.TrimPrefixes(key, etcdCronPrefixDeleteKey)
-	pipelineIDStr = strutil.TrimPrefixes(pipelineIDStr, etcdCronPrefixAddKey)
-	return strconv.ParseUint(pipelineIDStr, 10, 64)
+	cronIDStr := strutil.TrimPrefixes(key, etcdCronPrefixDeleteKey)
+	cronIDStr = strutil.TrimPrefixes(cronIDStr, etcdCronPrefixAddKey)
+	return strconv.ParseUint(cronIDStr, 10, 64)
 }

@@ -644,6 +644,8 @@ func Test_provider_update(t *testing.T) {
 
 			var dbClient db2.Client
 			patch2 := monkey.PatchInstanceMethod(reflect.TypeOf(&dbClient), "UpdatePipelineCronWillUseDefault", func(dbClient *db2.Client, id interface{}, cron *db2.PipelineCron, columns []string, ops ...mysqlxorm.SessionOption) error {
+				enable := false
+				cron.Enable = &enable
 				return nil
 			})
 			defer patch2.Unpatch()

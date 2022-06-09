@@ -51,7 +51,7 @@ func Test_makeClusterAccessEtcdKey(t *testing.T) {
 
 func Test_storeClusterAccessKey(t *testing.T) {
 	etcdClient := &clientv3.Client{
-		KV: &mockKV{},
+		KV: &MockKV{},
 	}
 	p := &provider{
 		Cfg: &Config{

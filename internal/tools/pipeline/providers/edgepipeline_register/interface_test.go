@@ -15,8 +15,6 @@
 package edgepipeline_register
 
 import (
-	"context"
-	"fmt"
 	"net/http"
 	"reflect"
 	"testing"
@@ -148,30 +146,6 @@ func TestGetOAuth2Token(t *testing.T) {
 	assert.Equal(t, p.Cfg.ClusterAccessKey, oauth2Token.AccessToken)
 }
 
-type mockKV struct{}
-
-func (o mockKV) Put(ctx context.Context, key, val string, opts ...clientv3.OpOption) (*clientv3.PutResponse, error) {
-	return nil, nil
-}
-func (o mockKV) Get(ctx context.Context, key string, opts ...clientv3.OpOption) (*clientv3.GetResponse, error) {
-	if key == "/xxx" {
-		return nil, nil
-	}
-	return nil, fmt.Errorf("not found")
-}
-func (o mockKV) Delete(ctx context.Context, key string, opts ...clientv3.OpOption) (*clientv3.DeleteResponse, error) {
-	panic("implement me")
-}
-func (o mockKV) Compact(ctx context.Context, rev int64, opts ...clientv3.CompactOption) (*clientv3.CompactResponse, error) {
-	panic("implement me")
-}
-func (o mockKV) Do(ctx context.Context, op clientv3.Op) (clientv3.OpResponse, error) {
-	panic("implement me")
-}
-func (o mockKV) Txn(ctx context.Context) clientv3.Txn {
-	panic("implement me")
-}
-
 func TestCheckAccessToken(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -190,7 +164,7 @@ func TestCheckAccessToken(t *testing.T) {
 		},
 	}
 	etcdClient := &clientv3.Client{
-		KV: &mockKV{},
+		KV: &MockKV{},
 	}
 	p := &provider{
 		Cfg: &Config{
@@ -226,7 +200,7 @@ func TestGetEdgePipelineEnvs(t *testing.T) {
 
 func TestCheckAccessTokenFromHttpRequest(t *testing.T) {
 	etcdClient := &clientv3.Client{
-		KV: &mockKV{},
+		KV: &MockKV{},
 	}
 	p := &provider{
 		Cfg: &Config{

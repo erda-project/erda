@@ -215,10 +215,6 @@ func (s *provider) operate(cronID uint64, enable bool) (*common.Cron, error) {
 			return apierrors.ErrOperatePipeline.InternalError(err)
 		}
 
-		if err := s.Daemon.AddIntoPipelineCrond(&cron); err != nil {
-			return apierrors.ErrReloadCrond.InternalError(err)
-		}
-
 		toEdge := s.EdgePipelineRegister.CanProxyToEdge(cron.PipelineSource, cron.Extra.ClusterName)
 
 		if toEdge {
@@ -242,6 +238,17 @@ func (s *provider) operate(cronID uint64, enable bool) (*common.Cron, error) {
 				return err
 			}
 		}
+
+		if enable {
+			if err := s.Daemon.AddIntoPipelineCrond(&cron); err != nil {
+				return apierrors.ErrReloadCrond.InternalError(err)
+			}
+		} else {
+			if err := s.Daemon.DeleteFromPipelineCrond(&cron); err != nil {
+				return apierrors.ErrReloadCrond.InternalError(err)
+			}
+		}
+
 		return nil
 	})
 	if err != nil {
@@ -364,10 +371,6 @@ func (s *provider) update(req *pb.CronUpdateRequest, cron db2.PipelineCron, fiel
 		return apierrors.ErrUpdatePipelineCron.InternalError(err)
 	}
 
-	if err := s.Daemon.AddIntoPipelineCrond(&cron); err != nil {
-		return apierrors.ErrUpdatePipelineCron.InternalError(err)
-	}
-
 	if toEdge {
 		bdl, err := s.EdgePipelineRegister.GetEdgeBundleByClusterName(cron.Extra.ClusterName)
 		if err != nil {
@@ -379,6 +382,12 @@ func (s *provider) update(req *pb.CronUpdateRequest, cron db2.PipelineCron, fiel
 		if err != nil {
 			s.Log.Errorf("edge bdl CronUpdate error %v", err)
 			return err
+		}
+	}
+
+	if *cron.Enable {
+		if err := s.Daemon.AddIntoPipelineCrond(&cron); err != nil {
+			return apierrors.ErrUpdatePipelineCron.InternalError(err)
 		}
 	}
 	return nil
