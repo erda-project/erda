@@ -37,14 +37,15 @@ type ClickhouseSource struct {
 
 type (
 	spanSeries struct {
-		OrgName       string `ch:"org_name"`
-		SeriesId      uint64 `ch:"series_id"`
-		TraceId       string `ch:"trace_id"`
-		SpanId        string `ch:"span_id"`
-		ParentSpanId  string `ch:"parent_span_id"`
-		OperationName string `ch:"operation_name"`
-		StartTime     int64  `ch:"start_time"`
-		EndTime       int64  `ch:"end_time"`
+		OrgName       string            `ch:"org_name"`
+		SeriesId      uint64            `ch:"series_id"`
+		TraceId       string            `ch:"trace_id"`
+		SpanId        string            `ch:"span_id"`
+		ParentSpanId  string            `ch:"parent_span_id"`
+		OperationName string            `ch:"operation_name"`
+		StartTime     int64             `ch:"start_time"`
+		EndTime       int64             `ch:"end_time"`
+		Tags          map[string]string `ch:"tags"`
 	}
 	spanMeta struct {
 		Key   string `ch:"key"`
@@ -324,6 +325,10 @@ func (chs *ClickhouseSource) GetSpans(ctx context.Context, req *pb.GetSpansReque
 				continue
 			}
 			tags[sm.Key] = sm.Value
+		}
+		// merge high cardinality tag
+		for k, v := range cs.Tags {
+			tags[k] = v
 		}
 		chSpanCovertToSpan(span, cs)
 

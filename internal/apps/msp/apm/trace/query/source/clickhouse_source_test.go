@@ -37,6 +37,9 @@ func Test_chSpanCovertToSpan(t *testing.T) {
 			StartTime:     2,
 			EndTime:       2,
 			ParentSpanId:  "test_p",
+			Tags: map[string]string{
+				"db_statement": "select * from abc where id=aaa",
+			},
 		}}},
 	}
 	for _, tt := range tests {
