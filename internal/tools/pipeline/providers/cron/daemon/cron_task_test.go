@@ -15,7 +15,10 @@
 package daemon
 
 import (
+	"context"
 	"testing"
+
+	"github.com/coreos/etcd/clientv3"
 )
 
 func Test_parseCronIDFromWatchedKey(t *testing.T) {
@@ -62,6 +65,79 @@ func Test_parseCronIDFromWatchedKey(t *testing.T) {
 			}
 			if got != tt.want {
 				t.Errorf("parseCronIDFromWatchedKey() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_provider_getCronExprFromEtcd(t *testing.T) {
+	type fields struct {
+		EtcdClient *clientv3.Client
+	}
+	type args struct {
+		ctx context.Context
+		key string
+	}
+
+	etcd := clientv3.Client{
+		KV: mockKV{},
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    string
+		wantErr bool
+	}{
+		{
+			name: "test with error",
+			fields: fields{
+				EtcdClient: &etcd,
+			},
+			args: args{
+				ctx: context.Background(),
+				key: "1000",
+			},
+			want:    "",
+			wantErr: true,
+		},
+		{
+			name: "test with error2",
+			fields: fields{
+				EtcdClient: &etcd,
+			},
+			args: args{
+				ctx: context.Background(),
+				key: "1001",
+			},
+			want:    "",
+			wantErr: true,
+		},
+		{
+			name: "test with correct",
+			fields: fields{
+				EtcdClient: &etcd,
+			},
+			args: args{
+				ctx: context.Background(),
+				key: "1002",
+			},
+			want:    "*/1 * * * *",
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &provider{
+				EtcdClient: tt.fields.EtcdClient,
+			}
+			got, err := s.getCronExprFromEtcd(tt.args.ctx, tt.args.key)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("getCronExprFromEtcd() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("getCronExprFromEtcd() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

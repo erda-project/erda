@@ -203,16 +203,11 @@ func (s *provider) listenCrond(ctx context.Context) {
 			return
 		}
 
-		getResp, err := s.EtcdClient.Get(ctx, key)
+		cronExpr, err := s.getCronExprFromEtcd(ctx, key)
 		if err != nil {
-			s.Log.Errorf("crond: failed to get key, key: %s, err: %v", key, err)
+			s.Log.Errorf("crond: failed to getCronExprFromEtcd, key: %s, err: %v", key, err)
 			return
 		}
-		if len(getResp.Kvs) != 1 {
-			s.Log.Errorf("crond: failed to get key, kvs' len is not 1, key: %s", key)
-			return
-		}
-		cronExpr := string(getResp.Kvs[0].Value)
 
 		if _, err := s.EtcdClient.Delete(ctx, key); err != nil {
 			s.Log.Errorf("crond: failed to delete key: %s", key)
@@ -247,6 +242,17 @@ func (s *provider) listenCrond(ctx context.Context) {
 		}
 		s.Log.Infof("crond: watched and reload successfully")
 	}, nil)
+}
+
+func (s *provider) getCronExprFromEtcd(ctx context.Context, key string) (string, error) {
+	getResp, err := s.EtcdClient.Get(ctx, key)
+	if err != nil {
+		return "", err
+	}
+	if len(getResp.Kvs) != 1 {
+		return "", fmt.Errorf("the kvs'len is not 1")
+	}
+	return string(getResp.Kvs[0].Value), nil
 }
 
 // ReloadCrond triggers the current crond instance update task.

@@ -16,10 +16,12 @@ package daemon
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"testing"
 
 	"github.com/coreos/etcd/clientv3"
+	"github.com/coreos/etcd/mvcc/mvccpb"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
@@ -88,7 +90,25 @@ func (o mockKV) Put(ctx context.Context, key, val string, opts ...clientv3.OpOpt
 	return nil, nil
 }
 func (o mockKV) Get(ctx context.Context, key string, opts ...clientv3.OpOption) (*clientv3.GetResponse, error) {
-	panic("implement me")
+	if key == "1000" {
+		return nil, fmt.Errorf("not found")
+	}
+	if key == "1001" {
+		return &clientv3.GetResponse{
+			Kvs:                  nil,
+			Count:                0,
+		},nil
+	}
+	return &clientv3.GetResponse{
+		Kvs:                  []*mvccpb.KeyValue{
+			{
+				Key:                  nil,
+				Value:                []byte("*/1 * * * *"),
+				Lease:                0,
+			},
+		},
+		Count:                1,
+	},nil
 }
 func (o mockKV) Delete(ctx context.Context, key string, opts ...clientv3.OpOption) (*clientv3.DeleteResponse, error) {
 	panic("implement me")
