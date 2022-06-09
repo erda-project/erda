@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/go-redis/redis"
+	"github.com/recallsong/go-utils/encoding/jsonx"
 	v1 "k8s.io/api/core/v1"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -59,6 +60,9 @@ func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}
 				return nil, fmt.Errorf("not found clientset")
 			}
 			return func(it *logsIterator, opts *v1.PodLogOptions) (io.ReadCloser, error) {
+				if it.debug {
+					fmt.Printf("namespace: %v,podname: %v, opts: %s \n", it.podNamespace, it.podName, jsonx.MarshalAndIndent(opts))
+				}
 				return client.CoreV1().Pods(it.podNamespace).GetLogs(it.podName, opts).Stream(it.ctx)
 			}, nil
 		},

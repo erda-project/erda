@@ -30,6 +30,15 @@ const (
 	IsLive           = "is_live"
 	SelectorKeyCount = "count"
 	IsFirstQuery     = "is_first_query"
+
+	// container meta
+	ContainerName = "container_name"
+	PodName       = "pod_name"
+	PodNamespace  = "pod_namespace"
+	ClusterName   = "cluster_name"
+
+	// fall back
+	IsFallBack = "is_fall_back"
 )
 
 type (

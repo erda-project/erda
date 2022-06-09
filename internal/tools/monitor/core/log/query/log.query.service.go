@@ -83,17 +83,20 @@ func (s *logQueryService) isRequestUseFallBack(req *pb.GetLogByRuntimeRequest) b
 	if req.IsFirstQuery {
 		return true
 	}
+	return s.validQueryTime(req.Start, req.End)
+}
 
+func (s *logQueryService) validQueryTime(startTime, endTime int64) bool {
 	sBackoffTime := timeNow().Add(s.p.Cfg.DelayBackoffStartTime).UnixNano()
 	eBackoffTime := timeNow().Add(s.p.Cfg.DelayBackoffEndTime).UnixNano()
 
 	// start is 0, end is [DelayBackoffTime,3)
-	if req.GetStart() == 0 && req.End >= sBackoffTime && req.End < eBackoffTime {
+	if startTime == 0 && endTime >= sBackoffTime && endTime < eBackoffTime {
 		return true
 	}
 
 	// [DelayBackoffTime,now + 3)
-	if req.GetStart() >= sBackoffTime && req.GetStart() < eBackoffTime {
+	if startTime >= sBackoffTime && startTime < eBackoffTime {
 		return true
 	}
 	return false
@@ -107,37 +110,17 @@ func (s *logQueryService) GetLogByRealtime(ctx context.Context, req *pb.GetLogBy
 		sel.Options[storage.IsFirstQuery] = req.GetIsFirstQuery()
 
 		if len(req.GetContainerName()) > 0 {
-			sel.Filters = append(sel.Filters, &storage.Filter{
-				Key:   "container_name",
-				Op:    storage.EQ,
-				Value: req.GetContainerName(),
-			})
+			sel.Options[storage.ContainerName] = req.GetContainerName()
 		}
-
 		if len(req.GetPodName()) > 0 {
-			sel.Filters = append(sel.Filters, &storage.Filter{
-				Key:   "pod_name",
-				Op:    storage.EQ,
-				Value: req.GetPodName(),
-			})
+			sel.Options[storage.PodName] = req.GetPodName()
 		}
-
 		if len(req.GetPodNamespace()) > 0 {
-			sel.Filters = append(sel.Filters, &storage.Filter{
-				Key:   "pod_namespace",
-				Op:    storage.EQ,
-				Value: req.GetPodNamespace(),
-			})
+			sel.Options[storage.PodNamespace] = req.GetPodNamespace()
 		}
-
 		if len(req.GetClusterName()) > 0 {
-			sel.Filters = append(sel.Filters, &storage.Filter{
-				Key:   "cluster_name",
-				Op:    storage.EQ,
-				Value: req.GetClusterName(),
-			})
+			sel.Options[storage.ClusterName] = req.GetClusterName()
 		}
-
 		return sel
 	}, true)
 	if err != nil {
@@ -501,6 +484,12 @@ func (s *logQueryService) getIterator(ctx context.Context, sel *storage.Selector
 		}
 		return s.tryGetIterator(ctx, sel, s.ckStorageReader, s.storageReader)
 	}
+	if s.k8sReader != nil {
+		if isFallBack, ok := sel.Options[storage.IsFallBack].(bool); ok && isFallBack {
+			return s.tryGetIterator(ctx, sel, s.ckStorageReader, s.storageReader, s.frozenStorageReader, s.k8sReader)
+		}
+	}
+
 	if (s.storageReader != nil || s.ckStorageReader != nil) && (sel.Start > s.startTime || s.frozenStorageReader == nil) {
 		return s.tryGetIterator(ctx, sel, s.ckStorageReader, s.storageReader)
 	}

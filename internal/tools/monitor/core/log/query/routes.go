@@ -64,8 +64,11 @@ type LogRequest struct {
 	Offset        int64  `from:"offset"`
 	Live          bool   `from:"live"`
 	Debug         bool   `from:"debug"`
-
-	regexp *regexp.Regexp
+	PodName       string `form:"podName"`
+	PodNamespace  string `form:"podNamespace"`
+	ContainerName string `form:"containerName"`
+	IsFallBack    bool   `form:"isFallBack"`
+	regexp        *regexp.Regexp
 }
 
 func (r *LogRequest) GetStart() int64      { return r.Start }
@@ -117,6 +120,21 @@ func (p *provider) downloadLog(w http.ResponseWriter, r *http.Request, req *LogR
 					Op:    storage.EQ,
 					Value: req.ApplicationID,
 				})
+			}
+			if len(req.ClusterName) > 0 {
+				sel.Options[storage.ClusterName] = req.ClusterName
+			}
+			if len(req.PodName) > 0 {
+				sel.Options[storage.PodName] = req.PodName
+			}
+			if len(req.PodNamespace) > 0 {
+				sel.Options[storage.PodNamespace] = req.PodNamespace
+			}
+			if len(req.ContainerName) > 0 {
+				sel.Options[storage.ContainerName] = req.ContainerName
+			}
+			if req.IsFallBack {
+				sel.Options[storage.IsFallBack] = true
 			}
 			p.logQueryService.tryFillQueryMeta(r.Context(), sel, r.Header.Get("org"))
 			return sel, nil
