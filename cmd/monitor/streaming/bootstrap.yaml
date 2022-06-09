@@ -545,7 +545,7 @@ erda.oap.collector.core:
           - "erda.oap.collector.processor.modifier@span"
         exporters:
           - "erda.oap.collector.exporter.clickhouse@span"
-        batch_size: ${EXPORTER_CLICKHOUSE_SPAN_BATCH_SIZE:80920}
+        batch_size: ${EXPORTER_CLICKHOUSE_SPAN_BATCH_SIZE:81920}
         _enable: ${WRITE_SPAN_TO_CLICKHOUSE_ENABLE:false}
 
 # ************* receivers *************
