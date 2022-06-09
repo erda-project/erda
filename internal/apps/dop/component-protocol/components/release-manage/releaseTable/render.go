@@ -161,11 +161,11 @@ func (r *ComponentReleaseTable) DecodeURLQuery() error {
 }
 
 func (r *ComponentReleaseTable) EncodeURLQuery() error {
-	urlQuery := make(map[string]interface{})
-	urlQuery["pageNo"] = r.State.PageNo
-	urlQuery["pageSize"] = r.State.PageSize
-	urlQuery["sorterData"] = r.State.Sorter
-	data, err := json.Marshal(urlQuery)
+	query := make(map[string]interface{})
+	query["pageNo"] = r.State.PageNo
+	query["pageSize"] = r.State.PageSize
+	query["sorterData"] = r.State.Sorter
+	data, err := json.Marshal(query)
 	if err != nil {
 		return err
 	}
