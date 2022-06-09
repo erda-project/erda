@@ -298,7 +298,7 @@ func (chs *ClickhouseSource) GetSpans(ctx context.Context, req *pb.GetSpansReque
 	}
 
 	sql := fmt.Sprintf("SELECT org_name,series_id,trace_id,span_id,parent_span_id,toUnixTimestamp64Nano(start_time) AS"+
-		" start_time,toUnixTimestamp64Nano(end_time) AS end_time FROM %s WHERE trace_id = $1 ORDER BY %s LIMIT %v",
+		" start_time,toUnixTimestamp64Nano(end_time) AS end_time,tags FROM %s WHERE trace_id = $1 ORDER BY %s LIMIT %v",
 		SpanSeriesTable, "start_time", req.Limit)
 
 	rows, err := chs.Clickhouse.Client().Query(ctx, sql, req.TraceID)
@@ -325,9 +325,6 @@ func (chs *ClickhouseSource) GetSpans(ctx context.Context, req *pb.GetSpansReque
 				continue
 			}
 			tags[sm.Key] = sm.Value
-		}
-		if len(cs.Tags) > 0 {
-			fmt.Printf("===== cs.Tags: %+v\n", cs.Tags)
 		}
 		// merge high cardinality tag
 		for k, v := range cs.Tags {
