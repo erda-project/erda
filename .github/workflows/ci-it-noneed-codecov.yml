@@ -11,7 +11,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-name: CI AND IT
+name: codecov
 on:
   push:
     tags:
@@ -61,60 +61,15 @@ jobs:
           done
     outputs:
       have-go: ${{ steps.check.outputs.have-go }}
-
-  #  PATCH-PR-CHECK-STATUS:
-  #    runs-on: ubuntu-latest
-  #    needs: CHECK-CHANGED-FILES
-  #    if: needs.CHECK-CHANGED-FILES.outputs.have-go != 'true'
-  #    env:
-  #      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  #    steps:
-  #      - run: echo "No CODE-TEST required"
-  #      - name: Fetch check run ids
-  #        id: fetch
-  #        uses: octokit/request-action@v2.x
-  #        with:
-  #          repo: ${{ github.repository }}
-  #          run_id: ${{ github.run_id }}
-  #          route: GET /repos/{repo}/actions/runs/{run_id}/jobs
-  #      - name: Echo check run ids
-  #        run: |
-  #          echo '${{ toJSON(fromJSON(steps.fetch.outputs.data)) }}'
-  #          for run_id in $(jq '.[]' <<< '${{ toJSON(fromJSON(steps.fetch.outputs.data).jobs.*.id) }}'); do
-  #            echo ${run_id}
-  #          done
-
-  PREPARE:
-    runs-on: ubuntu-latest
-    needs: CHECK-CHANGED-FILES
-    if: ${{ needs.CHECK-CHANGED-FILES.outputs.have-go != 'true' }}
-    steps:
-      - run: echo "No PREPARE required"
-
-  CI:
-    runs-on: ubuntu-latest
-    needs: CHECK-CHANGED-FILES
-    if: ${{ needs.CHECK-CHANGED-FILES.outputs.have-go != 'true' }}
-    steps:
-      - run: echo "No CI required"
-
-  CODE-CHECK:
-    runs-on: ubuntu-latest
-    needs: CHECK-CHANGED-FILES
-    if: ${{ needs.CHECK-CHANGED-FILES.outputs.have-go != 'true' }}
-    steps:
-      - run: echo "No CODE-CHECK required"
-
-  CODE-TEST:
-    runs-on: ubuntu-latest
-    needs: CHECK-CHANGED-FILES
-    if: ${{ needs.CHECK-CHANGED-FILES.outputs.have-go != 'true' }}
-    steps:
-      - run: echo "No CODE-TEST required"
-
-  CODE-COV:
+  patch:
     runs-on: ubuntu-latest
     needs: CHECK-CHANGED-FILES
     if: needs.CHECK-CHANGED-FILES.outputs.have-go != 'true'
     steps:
-      - run: echo "No CODE-COV required"
+      - run: echo "No codecov/patch required"
+  project:
+    runs-on: ubuntu-latest
+    needs: CHECK-CHANGED-FILES
+    if: needs.CHECK-CHANGED-FILES.outputs.have-go != 'true'
+    steps:
+      - run: echo "No codecov/project required"
