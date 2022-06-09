@@ -22,3 +22,6 @@ en:
     kubernetes: Kubernetes Status
     dice_component: Cluster Component Status
     dice_addon: Cluster Middleware Status
+    cluster: Cluster
+    cpus: CPU
+    mem: Memory
