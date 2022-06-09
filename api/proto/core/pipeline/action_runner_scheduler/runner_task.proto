@@ -11,10 +11,6 @@ option go_package = "github.com/erda-project/erda-proto-go/core/pipeline/action_
 service RunnerTaskService {
   option (erda.common.openapi_service) = {
     service: "pipeline",
-    auth: {
-      check_login: false,
-      check_token: false,
-    }
   };
 
   rpc CreateRunnerTask (RunnerTaskCreateRequest) returns (RunnerTaskCreateResponse) {
@@ -32,10 +28,13 @@ service RunnerTaskService {
 
   rpc UpdateRunnerTask (RunnerTaskUpdateRequest) returns (RunnerTaskUpdateResponse) {
     option (google.api.http) = {
-      post: "/api/runner/tasks/{id}",
+      put: "/api/runner/tasks/{id}",
     };
     option (erda.common.openapi) = {
       path: "/api/runner/tasks/{id}",
+      auth: {
+        no_check: true,
+      }
     };
   }
 
@@ -58,6 +57,9 @@ service RunnerTaskService {
     };
     option (erda.common.openapi) = {
       path: "/api/runner/fetch-task",
+      auth: {
+        no_check: true,
+      }
     };
   }
 
@@ -68,6 +70,9 @@ service RunnerTaskService {
     };
     option (erda.common.openapi) = {
       path: "/api/runner/collect/logs/{source}",
+      auth: {
+        no_check: true,
+      }
     };
   }
 }
