@@ -17,110 +17,55 @@ package daemon
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"testing"
 
 	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/mvcc/mvccpb"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/bundle"
-	db2 "github.com/erda-project/erda/internal/tools/pipeline/providers/cron/db"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/cron/db"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/edgepipeline_register"
 )
 
-type EdgePipelineRegister struct {
+type CronMockEdgeRegister struct {
+	edgepipeline_register.MockEdgeRegister
 }
 
-func (e EdgePipelineRegister) ClusterAccessKey() string {
-	panic("implement me")
-}
-
-func (e EdgePipelineRegister) GetAccessToken(req apistructs.OAuth2TokenGetRequest) (*apistructs.OAuth2Token, error) {
-	panic("implement me")
-}
-
-func (e EdgePipelineRegister) GetOAuth2Token(req apistructs.OAuth2TokenGetRequest) (*apistructs.OAuth2Token, error) {
-	panic("implement me")
-}
-
-func (e EdgePipelineRegister) GetEdgePipelineEnvs() apistructs.ClusterManagerClientDetail {
-	panic("implement me")
-}
-
-func (e EdgePipelineRegister) CheckAccessToken(token string) error {
-	panic("implement me")
-}
-
-func (e EdgePipelineRegister) CheckAccessTokenFromHttpRequest(req *http.Request) error {
-	panic("implement me")
-}
-
-func (e EdgePipelineRegister) IsEdge() bool {
+func (e *CronMockEdgeRegister) IsEdge() bool {
 	return false
 }
 
-func (e EdgePipelineRegister) IsCenter() bool {
-	panic("implement me")
-}
-
-func (e EdgePipelineRegister) CanProxyToEdge(source apistructs.PipelineSource, clusterName string) bool {
+func (e *CronMockEdgeRegister) CanProxyToEdge(source apistructs.PipelineSource, clusterName string) bool {
 	return false
 }
 
-func (e EdgePipelineRegister) GetEdgeBundleByClusterName(clusterName string) (*bundle.Bundle, error) {
-	panic("implement me")
+type CronMockKV struct {
+	edgepipeline_register.MockKV
 }
 
-func (e EdgePipelineRegister) ClusterIsEdge(clusterName string) (bool, error) {
-	panic("implement me")
-}
-
-func (e EdgePipelineRegister) OnEdge(f func(context.Context)) {
-	panic("implement me")
-}
-
-func (e EdgePipelineRegister) OnCenter(f func(context.Context)) {
-	panic("implement me")
-}
-
-type mockKV struct{}
-
-func (o mockKV) Put(ctx context.Context, key, val string, opts ...clientv3.OpOption) (*clientv3.PutResponse, error) {
+func (o CronMockKV) Put(ctx context.Context, key, val string, opts ...clientv3.OpOption) (*clientv3.PutResponse, error) {
 	return nil, nil
 }
-func (o mockKV) Get(ctx context.Context, key string, opts ...clientv3.OpOption) (*clientv3.GetResponse, error) {
+func (o CronMockKV) Get(ctx context.Context, key string, opts ...clientv3.OpOption) (*clientv3.GetResponse, error) {
 	if key == "1000" {
 		return nil, fmt.Errorf("not found")
 	}
 	if key == "1001" {
 		return &clientv3.GetResponse{
-			Kvs:                  nil,
-			Count:                0,
-		},nil
+			Kvs:   nil,
+			Count: 0,
+		}, nil
 	}
 	return &clientv3.GetResponse{
-		Kvs:                  []*mvccpb.KeyValue{
+		Kvs: []*mvccpb.KeyValue{
 			{
-				Key:                  nil,
-				Value:                []byte("*/1 * * * *"),
-				Lease:                0,
+				Key:   nil,
+				Value: []byte("*/1 * * * *"),
+				Lease: 0,
 			},
 		},
-		Count:                1,
-	},nil
-}
-func (o mockKV) Delete(ctx context.Context, key string, opts ...clientv3.OpOption) (*clientv3.DeleteResponse, error) {
-	panic("implement me")
-}
-func (o mockKV) Compact(ctx context.Context, rev int64, opts ...clientv3.CompactOption) (*clientv3.CompactResponse, error) {
-	panic("implement me")
-}
-func (o mockKV) Do(ctx context.Context, op clientv3.Op) (clientv3.OpResponse, error) {
-	panic("implement me")
-}
-func (o mockKV) Txn(ctx context.Context) clientv3.Txn {
-	panic("implement me")
+		Count: 1,
+	}, nil
 }
 
 func Test_provider_AddIntoPipelineCrond(t *testing.T) {
@@ -129,13 +74,13 @@ func Test_provider_AddIntoPipelineCrond(t *testing.T) {
 		EdgePipelineRegister edgepipeline_register.Interface
 	}
 	type args struct {
-		cron *db2.PipelineCron
+		cron *db.PipelineCron
 	}
 
 	etcdClient := &clientv3.Client{
-		KV: mockKV{},
+		KV: CronMockKV{},
 	}
-	edgePipelineRegister := EdgePipelineRegister{}
+	edgePipelineRegister := CronMockEdgeRegister{}
 	enable := false
 	tests := []struct {
 		name    string
@@ -147,10 +92,10 @@ func Test_provider_AddIntoPipelineCrond(t *testing.T) {
 			name: "test with add",
 			fields: fields{
 				EtcdClient:           etcdClient,
-				EdgePipelineRegister: edgePipelineRegister,
+				EdgePipelineRegister: &edgePipelineRegister,
 			},
 			args: args{
-				cron: &db2.PipelineCron{
+				cron: &db.PipelineCron{
 					ID:       1,
 					CronExpr: "*/1 * * * *",
 					Enable:   &enable,
@@ -178,11 +123,11 @@ func Test_provider_DeleteFromPipelineCrond(t *testing.T) {
 		EdgePipelineRegister edgepipeline_register.Interface
 	}
 	type args struct {
-		cron *db2.PipelineCron
+		cron *db.PipelineCron
 	}
 
-	etcdClient := &clientv3.Client{KV: mockKV{}}
-	edgePipelineRegister := EdgePipelineRegister{}
+	etcdClient := &clientv3.Client{KV: CronMockKV{}}
+	edgePipelineRegister := CronMockEdgeRegister{}
 	enable := false
 	tests := []struct {
 		name    string
@@ -194,10 +139,10 @@ func Test_provider_DeleteFromPipelineCrond(t *testing.T) {
 			name: "test with delete",
 			fields: fields{
 				EtcdClient:           etcdClient,
-				EdgePipelineRegister: edgePipelineRegister,
+				EdgePipelineRegister: &edgePipelineRegister,
 			},
 			args: args{
-				cron: &db2.PipelineCron{
+				cron: &db.PipelineCron{
 					ID:       1,
 					CronExpr: "*/1 * * * *",
 					Enable:   &enable,

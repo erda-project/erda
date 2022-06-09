@@ -80,7 +80,7 @@ func Test_provider_getCronExprFromEtcd(t *testing.T) {
 	}
 
 	etcd := clientv3.Client{
-		KV: mockKV{},
+		KV: CronMockKV{},
 	}
 	tests := []struct {
 		name    string
