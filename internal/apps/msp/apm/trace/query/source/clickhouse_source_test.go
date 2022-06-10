@@ -21,9 +21,10 @@ import (
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/erda-project/erda-infra/providers/clickhouse"
 	"github.com/erda-project/erda/internal/apps/msp/apm/trace/query/commom/custom"
-	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
 	"github.com/erda-project/erda/internal/apps/msp/apm/trace"
