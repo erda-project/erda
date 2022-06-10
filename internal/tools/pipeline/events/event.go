@@ -50,6 +50,13 @@ func (*DefaultEvent) HandleDingDing() error  { return nil }
 func (*DefaultEvent) HandleHTTP() error      { return nil }
 func (*DefaultEvent) HandleDB() error        { return nil }
 
+func (ev *DefaultEvent) CreateEvent(req *apistructs.EventCreateRequest) error {
+	if !ev.edgeRegister.IsEdge() {
+		return ev.bdl.CreateEvent(req)
+	}
+	return ev.edgeRegister.CreateMessageEvent(req)
+}
+
 const (
 	SenderPipeline = "pipeline"
 )

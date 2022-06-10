@@ -123,10 +123,6 @@ func New(dingtalk interfaces.DingTalkApiClientFactory, messenger pb.NotifyServic
 	dispatcher.RegisterSubscriber(groupS)
 	dispatcher.RegisterSubscriber(dingWorkNotice)
 
-	for name := range dispatcher.subscribers {
-		dispatcher.subscriberspool[name] = goroutinepool.New(conf.PoolSize())
-	}
-
 	reg, err := register.New()
 	if err != nil {
 		return nil, err
@@ -145,10 +141,31 @@ func New(dingtalk interfaces.DingTalkApiClientFactory, messenger pb.NotifyServic
 	if err != nil {
 		return nil, err
 	}
+	dispatcher.SetRouter(router)
 	groupS.SetRoute(router)
-	dispatcher.router = router
 
 	return &dispatcher, nil
+}
+
+func NewImpl() (*DispatcherImpl, error) {
+	dispatcher := &DispatcherImpl{
+		subscribers:     make(map[string]subscriber.Subscriber),
+		subscriberspool: make(map[string]*goroutinepool.GoroutinePool),
+	}
+
+	reg, err := register.New()
+	if err != nil {
+		return nil, err
+	}
+	dispatcher.register = reg
+
+	server, err := server.New()
+	if err != nil {
+		return nil, err
+	}
+	dispatcher.httpserver = server
+
+	return dispatcher, nil
 }
 
 func (d *DispatcherImpl) GetRegister() register.Register {
@@ -166,11 +183,16 @@ func (d *DispatcherImpl) GetSubscribersPool() map[string]*goroutinepool.Goroutin
 func (d *DispatcherImpl) RegisterSubscriber(s subscriber.Subscriber) {
 	logrus.Infof("Dispatcher: register subscriber [%s]", s.Name())
 	d.subscribers[s.Name()] = s
+	d.subscriberspool[s.Name()] = goroutinepool.New(conf.PoolSize())
 }
 
 func (d *DispatcherImpl) RegisterInput(i input.Input) {
 	logrus.Infof("Dispatcher: register input [%s]", i.Name())
 	d.inputs = append(d.inputs, i)
+}
+
+func (d *DispatcherImpl) SetRouter(r *Router) {
+	d.router = r
 }
 
 func (d *DispatcherImpl) Start() {
