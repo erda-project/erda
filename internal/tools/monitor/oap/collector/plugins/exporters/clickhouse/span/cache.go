@@ -54,7 +54,6 @@ func (ss *seriesIDSet) AddBatch(batch []uint64) {
 	ss.mu.Unlock()
 }
 
-// TODO. LRU clean
 func (ss *seriesIDSet) CleanOldPart() {
 	ss.mu.Lock()
 	n := len(ss.seriesIDList) / 2
