@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS <database>.spans_meta ON CLUSTER '{cluster}'
   `series_id` UInt64,
   `key` LowCardinality(String),
   `value` String,
-  `create_at` DateTime64(9,'Asia/Shanghai') CODEC(DoubleDelta)
+  `create_at` DateTime64(9,'Asia/Shanghai') CODEC(DoubleDelta),
   INDEX idx_series_id(series_id) TYPE bloom_filter GRANULARITY 1
 )
 ENGINE = ReplicatedReplacingMergeTree('/clickhouse/tables/{cluster}-{shard}/{database}/spans_meta', '{replica}')
