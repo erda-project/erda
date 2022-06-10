@@ -293,6 +293,7 @@ func (impl *KongAdapterImpl) GetCredentialList(consumerId, pluginName string) (*
 			return nil, errors.Wrapf(err, "json unmashal failed, body:%s", body)
 		}
 		for i := 0; i < len(respDto.Data); i++ {
+			respDto.Data[i].AdjustCreatedAt()
 			respDto.Data[i].Compatiable()
 			if pluginName == "hmac-auth" {
 				respDto.Data[i].ToHmacResp()

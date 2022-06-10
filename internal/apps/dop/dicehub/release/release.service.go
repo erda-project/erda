@@ -588,7 +588,7 @@ func (s *ReleaseService) ListRelease(ctx context.Context, req *pb.ReleaseListReq
 	}
 	params := req
 
-	orgID, err := getPermissionHeader(ctx)
+	orgID, _ := getPermissionHeader(ctx)
 
 	if !identityInfo.IsInternalClient() {
 		if orgID == 0 {
