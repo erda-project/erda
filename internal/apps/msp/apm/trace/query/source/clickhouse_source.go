@@ -40,21 +40,6 @@ type ClickhouseSource struct {
 }
 
 type (
-	// spanSeries struct {
-	// 	OrgName       string            `ch:"org_name"`
-	// 	SeriesId      uint64            `ch:"series_id"`
-	// 	TraceId       string            `ch:"trace_id"`
-	// 	SpanId        string            `ch:"span_id"`
-	// 	ParentSpanId  string            `ch:"parent_span_id"`
-	// 	OperationName string            `ch:"operation_name"`
-	// 	StartTime     int64             `ch:"start_time"`
-	// 	EndTime       int64             `ch:"end_time"`
-	// 	Tags          map[string]string `ch:"tags"`
-	// }
-	// spanMeta struct {
-	// 	Key   string `ch:"key"`
-	// 	Value string `ch:"value"`
-	// }
 	tracing struct {
 		TraceId   string   `ch:"trace_id"`
 		StartTime int64    `ch:"min_start_time"`
@@ -66,6 +51,11 @@ type (
 		AvgDuration float64   `ch:"avg_duration"`
 		Count       uint64    `ch:"trace_count"`
 		Date        time.Time `ch:"date"`
+	}
+	keysValues struct {
+		Keys     []string `ch:"keys"`
+		Values   []string `ch:"values"`
+		SeriesID uint64   `ch:"series_id"`
 	}
 )
 
@@ -302,7 +292,8 @@ func (chs *ClickhouseSource) GetSpans(ctx context.Context, req *pb.GetSpansReque
 		}
 	}
 
-	sql := fmt.Sprintf(`
+	// series block
+	seriesSQL := fmt.Sprintf(`
 SELECT org_name,
        series_id,
        trace_id,
@@ -313,56 +304,83 @@ SELECT org_name,
        tags
 FROM %s
 WHERE trace_id = $1
-ORDER BY %s LIMIT %v`,
-		SpanSeriesTable, "start_time", req.Limit)
-
-	rows, err := chs.querySQL(ctx, sql, req.TraceID)
+ORDER BY %s LIMIT %v`, SpanSeriesTable, "start_time", req.Limit)
+	rows, err := chs.querySQL(ctx, seriesSQL, req.TraceID)
 	if err != nil {
 		chs.Log.Errorf("querySQL: %s", err)
 		return nil
 	}
 	defer rows.Close()
-
-	metaCache := make(map[uint64][]trace.Meta, 1)
+	metaCache := make(map[uint64][]trace.Meta, 3)
+	series := make([]trace.Series, 0, 10)
 	for rows.Next() {
 		var cs trace.Series
 		if err := rows.ScanStruct(&cs); err != nil {
 			chs.Log.Errorf("scan series: %s", err)
 			return nil
 		}
-
-		sms, ok := metaCache[cs.SeriesID]
-		if !ok {
-			tmp, err := chs.getSpanMeta(ctx, cs)
-			if err != nil {
-				chs.Log.Errorf("scan meta: %s", err)
-				return nil
-			}
-			metaCache[cs.SeriesID] = tmp
-			sms = tmp
-		}
-
-		spans = append(spans, mergeAsSpan(cs, sms))
+		series = append(series, cs)
+		metaCache[cs.SeriesID] = nil
 	}
+
+	// meta block
+	metaSQL := fmt.Sprintf(`
+select groupArray(key) as keys, groupArray(value) as values, series_id
+from %s 
+where series_id in
+      ($1)
+group by series_id`, SpanMetaTable)
+
+	sids := make([]uint64, 0, len(metaCache))
+	for k, _ := range metaCache {
+		sids = append(sids, k)
+	}
+	metarows, err := chs.querySQL(ctx, metaSQL, sids)
+	if err != nil {
+		chs.Log.Errorf("query meta: %s", err)
+		return nil
+	}
+	defer metarows.Close()
+
+	for metarows.Next() {
+		var kvs keysValues
+		if err := metarows.ScanStruct(&kvs); err != nil {
+			continue
+		}
+		sms := make([]trace.Meta, len(kvs.Keys))
+		for i := range sms {
+			sms[i] = trace.Meta{
+				Key:   kvs.Keys[i],
+				Value: kvs.Values[i],
+			}
+		}
+		metaCache[kvs.SeriesID] = sms
+	}
+
+	for _, s := range series {
+		spans = append(spans, mergeAsSpan(s, metaCache[s.SeriesID]))
+	}
+
 	return spans
 }
 
-func (chs *ClickhouseSource) getSpanMeta(ctx context.Context, cs trace.Series) ([]trace.Meta, error) {
-	sms := make([]trace.Meta, 0, 10)
-	sql := fmt.Sprintf("SELECT key,value FROM %s WHERE series_id = $1", SpanMetaTable)
-	rows, err := chs.Clickhouse.Client().Query(ctx, sql, cs.SeriesID)
-	if err != nil {
-		return nil, err
-	}
-	for rows.Next() {
-		var sm trace.Meta
-		if err := rows.ScanStruct(&sm); err != nil {
-			return nil, err
-		}
-		sms = append(sms, sm)
-	}
-	return sms, nil
-}
+//
+// func (chs *ClickhouseSource) getSpanMeta(ctx context.Context, cs trace.Series) ([]trace.Meta, error) {
+// 	sms := make([]trace.Meta, 0, 10)
+// 	sql := fmt.Sprintf("SELECT key,value FROM %s WHERE series_id = $1", SpanMetaTable)
+// 	rows, err := chs.Clickhouse.Client().Query(ctx, sql, cs.SeriesID)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	for rows.Next() {
+// 		var sm trace.Meta
+// 		if err := rows.ScanStruct(&sm); err != nil {
+// 			return nil, err
+// 		}
+// 		sms = append(sms, sm)
+// 	}
+// 	return sms, nil
+// }
 
 func mergeAsSpan(cs trace.Series, sms []trace.Meta) *pb.Span {
 	span := &pb.Span{}
