@@ -364,24 +364,6 @@ group by series_id`, SpanMetaTable)
 	return spans
 }
 
-//
-// func (chs *ClickhouseSource) getSpanMeta(ctx context.Context, cs trace.Series) ([]trace.Meta, error) {
-// 	sms := make([]trace.Meta, 0, 10)
-// 	sql := fmt.Sprintf("SELECT key,value FROM %s WHERE series_id = $1", SpanMetaTable)
-// 	rows, err := chs.Clickhouse.Client().Query(ctx, sql, cs.SeriesID)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	for rows.Next() {
-// 		var sm trace.Meta
-// 		if err := rows.ScanStruct(&sm); err != nil {
-// 			return nil, err
-// 		}
-// 		sms = append(sms, sm)
-// 	}
-// 	return sms, nil
-// }
-
 func mergeAsSpan(cs trace.Series, sms []trace.Meta) *pb.Span {
 	span := &pb.Span{}
 	tags := make(map[string]string, 10)
