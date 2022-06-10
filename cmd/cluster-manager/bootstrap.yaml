@@ -1,20 +1,16 @@
-cluster-manager:
+cluster-dialer:
   timeout: "${TIMEOUT:60s}"
   debug: ${DEBUG:false}
   authWhitelist: ${AUTH_WHITELIST}
+
+http-server@cluster-dialer:
+  addr: ":80"
 
 pprof:
 http-server@admin:
   addr: ":9093"
 
 service-register: {}
-
-http-server:
-  addr: ":9094"
-  allow_cors: "true"
-
-grpc-server:
-  addr: ":9095"
 
 mysql:
   host: "${MYSQL_HOST}"
@@ -24,6 +20,13 @@ mysql:
   database: "${MYSQL_DATABASE}"
 
 erda.core.clustermanager.cluster:
+
+http-server:
+  addr: ":9094"
+  allow_cors: "true"
+
+grpc-server:
+  addr: ":9095"
 
 # core service credential
 grpc-client@erda.core.token:

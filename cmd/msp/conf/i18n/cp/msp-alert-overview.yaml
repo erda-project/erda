@@ -8,7 +8,7 @@ en:
   alertNotifyGroupByStatusCountLine: By status
   alertNotifyGroupByTypeCountLine: By notification method
   unRecoverAlertChart: UnRecover Alerts
-  alertTriggerCount: Alert Events
+  alertTriggerCount: Alert events
   alertRecoverCount: Recovered events
   alertReduceCount: Reduced events
   alertSilenceCount: Silenced events

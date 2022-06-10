@@ -18,6 +18,12 @@ mysql:
   password: "${MYSQL_PASSWORD:123456}"
   database: "${MYSQL_DATABASE:dice}"
 
+clickhouse:
+  _enable: ${CLICKHOUSE_ENABLE:false}
+  addr: "${CLICKHOUSE_ADDR:localhost:9000}"
+  username: "${CLICKHOUSE_USERNAME:default}"
+  password: "${CLICKHOUSE_PASSWORD:default}"
+
 elasticsearch:
   urls: "${ES_URL:http://localhost:9200}"
   security: ${ES_SECURITY_ENABLE:false}
@@ -222,6 +228,8 @@ erda.msp.apm.trace.query:
   query_source:
     elasticsearch: "${QUERY_SPAN_FROM_ES_ENABLE:true}"
     cassandra: "${QUERY_SPAN_FROM_CASSANDRA_ENABLE:false}"
+    clickhouse: "${QUERY_SPAN_FROM_CLICKHOUSE_ENABLE:false}"
+  compatible_enable: "${QUERY_SPAN_COMPATIBLE_ENABLE:true}"
   cassandra:
     keyspace:
       name: "spot_prod"
@@ -323,3 +331,7 @@ erda.core.messenger.notify-client:
 grpc-client@erda.core.messenger.notifygroup:
   addr: "${CORE_SERVICES_GRPC_ADDR:core-services:9537}"
 erda.core.messenger.notifygroup-client:
+
+grpc-client@erda.core.monitor.settings:
+  addr: "${MONITOR_GRPC_ADDR:monitor:7080}"
+erda.core.monitor.settings-client:

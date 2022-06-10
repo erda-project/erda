@@ -48,7 +48,7 @@ require (
 	github.com/dustin/go-humanize v1.0.0
 	github.com/elastic/cloud-on-k8s v0.0.0-20210205172912-5ce0eca90c60
 	github.com/elazarl/goproxy v0.0.0-20200421181703-e76ad31c14f6
-	github.com/erda-project/erda-infra v0.0.0-20220523073052-c060bd3219db
+	github.com/erda-project/erda-infra v0.0.0-20220607095148-d7ee28ba8e73
 	github.com/erda-project/erda-oap-thirdparty-protocol v0.0.0-20210907135609-15886a136d5b
 	github.com/erda-project/erda-proto-go v0.0.0
 	github.com/erda-project/erda-sourcecov v0.1.0
@@ -113,7 +113,6 @@ require (
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/mitchellh/mapstructure v1.4.3
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826
-	github.com/mwitkow/go-proto-validators v0.3.2
 	github.com/nwaples/rardecode v1.1.0 // indirect
 	github.com/olivere/elastic v6.2.35+incompatible
 	github.com/otiai10/copy v1.5.0
@@ -149,11 +148,12 @@ require (
 	github.com/spf13/afero v1.6.0
 	github.com/spf13/cast v1.3.1
 	github.com/spf13/cobra v1.4.0
-	github.com/stretchr/testify v1.7.0
+	github.com/stretchr/testify v1.7.1
 	github.com/t-tiger/gorm-bulk-insert v1.3.0
 	github.com/tealeg/xlsx v1.0.5
 	github.com/tealeg/xlsx/v3 v3.2.4-0.20210615062226-d5ce25722f69
 	github.com/tebeka/strftime v0.1.5 // indirect
+	github.com/tidwall/gjson v1.14.1 // indirect
 	github.com/tmc/grpc-websocket-proxy v0.0.0-20201229170055-e5319fda7802 // indirect
 	github.com/ulikunitz/xz v0.5.10 // indirect
 	github.com/varstr/uaparser v0.0.0-20170929040706-6aabb7c4e98c
@@ -166,6 +166,7 @@ require (
 	go.opentelemetry.io/otel/sdk v1.2.0
 	go.opentelemetry.io/proto/otlp v0.11.0
 	go.uber.org/atomic v1.8.0 // indirect
+	go.uber.org/automaxprocs v1.5.1
 	go.uber.org/multierr v1.7.0 // indirect
 	go.uber.org/ratelimit v0.2.0
 	golang.org/x/net v0.0.0-20210917221730-978cfadd31cf

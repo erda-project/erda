@@ -34,7 +34,7 @@ import (
 
 var (
 	sessions = sync.Map{}
-	ipCache  = cache.New("clusterManagerEndpoint", time.Second*30, queryClusterManagerIP, cache.WithSync())
+	ipCache  = cache.New("clusterManagerEndpoint", time.Second*30, queryClusterManagerIP)
 )
 
 type DialContextFunc func(ctx context.Context, network, address string) (net.Conn, error)
@@ -78,9 +78,9 @@ func queryClusterManagerIP(clusterKey interface{}) (interface{}, bool) {
 	log := logrus.WithField("func", "DialContext")
 	log.Debugf("start querying clusterManager IP in dialContext...")
 
-	splits := strings.Split(discover.ClusterManager(), ":")
+	splits := strings.Split(discover.ClusterDialer(), ":")
 	if len(splits) != 2 {
-		log.Errorf("invalid clusterManager addr: %s", discover.ClusterManager())
+		log.Errorf("invalid clusterManager addr: %s", discover.ClusterDialer())
 		return "", false
 	}
 	addr := splits[0]
@@ -115,7 +115,7 @@ func queryClusterManagerIP(clusterKey interface{}) (interface{}, bool) {
 }
 
 func getSession(clusterKey string) (*TunnelSession, error) {
-	clusterManagerEndpoint, ok := ipCache.LoadWithUpdate(clusterKey)
+	clusterManagerEndpoint, ok := ipCache.LoadWithUpdateSync(clusterKey)
 	if !ok {
 		logrus.Errorf("failed to get clusterManager endpoint for clusterKey %s", clusterKey)
 		return nil, errors.Errorf("failed to get clusterManager endpoint for clusterKey %s", clusterKey)

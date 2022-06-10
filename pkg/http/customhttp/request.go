@@ -31,7 +31,7 @@ import (
 
 var (
 	ErrInvalidAddr = Error{"customhttp: invalid inetaddr"}
-	ipCache        = cache.New("clusterManagerEndpoint", time.Second*30, queryClusterManagerIP, cache.WithSync())
+	ipCache        = cache.New("clusterManagerEndpoint", time.Second*30, queryClusterManagerIP)
 )
 
 type Error struct {
@@ -91,7 +91,7 @@ func NewRequest(method, url string, body io.Reader) (*http.Request, error) {
 		return nil, err
 	}
 
-	clusterManagerEndpoint, ok := ipCache.LoadWithUpdate(portalHost)
+	clusterManagerEndpoint, ok := ipCache.LoadWithUpdateSync(portalHost)
 	if !ok {
 		logrus.Errorf("failed to get clusterManager endpoint for portal host %s", portalHost)
 		return nil, errors.Errorf("failed to get clusterManager endpoint for portal host %s", portalHost)
@@ -112,9 +112,9 @@ func queryClusterManagerIP(clusterKey interface{}) (interface{}, bool) {
 	log := logrus.WithField("func", "NetPortal NewRequest")
 	log.Debug("start querying clusterManager IP in netPortal NewRequest...")
 
-	splits := strings.Split(discover.ClusterManager(), ":")
+	splits := strings.Split(discover.ClusterDialer(), ":")
 	if len(splits) != 2 {
-		log.Errorf("invalid clusterManager addr: %s", discover.ClusterManager())
+		log.Errorf("invalid clusterManager addr: %s", discover.ClusterDialer())
 		return "", false
 	}
 	addr := splits[0]

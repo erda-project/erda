@@ -32,12 +32,12 @@ import (
 	_ "github.com/erda-project/erda-proto-go/core/pipeline/cron/client"
 	_ "github.com/erda-project/erda-proto-go/core/token/client"
 
-	_ "github.com/erda-project/erda/modules/cmp"
-	_ "github.com/erda-project/erda/modules/msp/configcenter"
-	_ "github.com/erda-project/erda/modules/msp/registercenter"
+	_ "github.com/erda-project/erda/internal/apps/cmp"
+	_ "github.com/erda-project/erda/internal/apps/msp/configcenter"
+	_ "github.com/erda-project/erda/internal/apps/msp/registercenter"
 
 	// components
-	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components"
+	_ "github.com/erda-project/erda/internal/apps/cmp/component-protocol/components"
 )
 
 //go:embed bootstrap.yaml

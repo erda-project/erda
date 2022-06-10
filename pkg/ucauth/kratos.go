@@ -21,7 +21,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/erda-project/erda/modules/openapi/conf"
+	"github.com/erda-project/erda/internal/tools/openapi/legacy/conf"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 

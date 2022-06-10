@@ -19,7 +19,8 @@ import "fmt"
 // PipelineStatus 表示流水线或任务状态
 type PipelineStatus string
 
-// PipelineStatusDesc 包装状态和简单描述
+// PipelineStatusDesc action status and simple description
+// desc is an optional filed that describes the reason for the failure and should be empty on success
 type PipelineStatusDesc struct {
 	Status PipelineStatus `json:"status"`
 	Desc   string         `json:"desc"`

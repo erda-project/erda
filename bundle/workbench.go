@@ -19,7 +19,7 @@ import (
 	"strconv"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/dop/services/apierrors"
+	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
 

@@ -14,7 +14,9 @@
 
 package discover
 
-import "sort"
+import (
+	"sort"
+)
 
 // 定义各个服务地址的环境变量配置名字.
 const (
@@ -42,6 +44,7 @@ const (
 	EnvDOP            = "DOP_ADDR"
 	EnvECP            = "ECP_ADDR"
 	EnvClusterManager = "CLUSTER_MANAGER_ADDR"
+	EnvClusterDialer  = "CLUSTER_DIALER_ADDR"
 	EnvCoreServices   = "CORE_SERVICES_ADDR"
 	EnvFDPMaster      = "FDP_MASTER_ADDR"
 	EnvErdaServer     = "ERDA_SERVER_ADDR"
@@ -73,6 +76,7 @@ const (
 	SvcDOP            = "dop"
 	SvcECP            = "ecp"
 	SvcClusterManager = "cluster-manager"
+	SvcClusterDialer  = "cluster-dialer"
 	SvcCoreServices   = "core-services"
 	SvcFDPMaster      = "fdp-master"
 	SvcErdaServer     = "erda-server"
@@ -102,6 +106,7 @@ var ServicesEnvKeys = map[string]string{
 	SvcDOP:            EnvDOP,
 	SvcECP:            EnvECP,
 	SvcClusterManager: EnvClusterManager,
+	SvcClusterDialer:  EnvClusterDialer,
 	SvcCoreServices:   EnvCoreServices,
 	SvcFDPMaster:      EnvFDPMaster,
 	SvcErdaServer:     EnvErdaServer,
@@ -139,8 +144,8 @@ func APIM() string           { return getURL(SvcAPIM) }
 func UC() string             { return getURL(SvcUC) }
 func DOP() string            { return getURL(SvcDOP) }
 func CoreServices() string   { return getURL(SvcCoreServices) }
-func ECP() string            { return getURL(SvcECP) }
 func ClusterManager() string { return getURL(SvcClusterManager) }
+func ClusterDialer() string  { return getURL(SvcClusterDialer) }
 
 func getURL(srvName string) string {
 	url, _ := GetEndpoint(srvName)

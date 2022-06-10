@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package erda.core.monitor.settings;
 option go_package = "github.com/erda-project/erda-proto-go/core/monitor/settings/pb";
-import "github.com/mwitkow/go-proto-validators/validator.proto";
+import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 import "google/protobuf/descriptor.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/struct.proto";
@@ -46,7 +46,7 @@ service SettingsService {
 
 // GetSettings
 message GetSettingsRequest {
-  int64 orgID = 1 [(validator.field) = {int_gt: 0}];
+  int64 orgID = 1 [(validate.rules).int64.gt = 0];
   string workspace = 2;
 }
   
@@ -57,7 +57,7 @@ message GetSettingsResponse {
 // PutSettings
 message PutSettingsRequest {
   map<string, ConfigGroups> data = 1;
-  int64 orgID = 2 [(validator.field) = {int_gt: 0}];
+  int64 orgID = 2 [(validate.rules).int64.gt = 0];
 }
   
 message PutSettingsResponse {

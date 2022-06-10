@@ -43,20 +43,20 @@ cmd/**/bin
 /.env
 /.env.*
 /conf/**/*.local.yaml
-modules/local/
+internal/local/
 cmd/local
 conf/local
 .env*
 
 # generated files
 # openapi
-modules/openapi/api/api.go
-modules/openapi/api/generate/collectAPIs.go
-modules/openapi/api/swagger.json
-modules/openapi/api/swagger_all.json
-modules/openapi/api/generate/collectEvents.go
-modules/openapi/api/events_all.json
-modules/openapi/component-protocol/generate/auto_register/auto_register.go
+**/openapi/legacy/api/api.go
+**/openapi/legacy/api/generate/collectAPIs.go
+**/openapi/legacy/api/swagger.json
+**/openapi/legacy/api/swagger_all.json
+**/openapi/legacy/api/generate/
+**/openapi/legacy/api/events_all.json
+**/openapi/legacy/component-protocol/generate/auto_register/auto_register.go
 # cli
 tools/cli/generated_cmd
 tools/cli/command/generate/collectCMDs.go
@@ -66,7 +66,6 @@ apistructs/generated_desc.go
 # temp data of quickstart
 quick-start/data
 
-modules/openapi/api/generate
 /fake_subscriber.txt
 
 # deploy related temp dir
@@ -81,3 +80,6 @@ modules/openapi/api/generate
 http-client.env.json
 
 api/proto-go
+
+# go test
+/coverage*

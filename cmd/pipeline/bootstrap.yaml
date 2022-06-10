@@ -17,6 +17,13 @@ mysql-xorm:
   password: "${MYSQL_PASSWORD:123456}"
   database: "${MYSQL_DATABASE:test}"
 
+mysql:
+  host: "${MYSQL_HOST:localhost}"
+  port: "${MYSQL_PORT:3306}"
+  username: "${MYSQL_USERNAME:root}"
+  password: "${MYSQL_PASSWORD:123456}"
+  database: "${MYSQL_DATABASE:test}"
+
 etcd:
   endpoints: "${ETCD_ENDPOINTS:https://localhost:2379}"
   tls:
@@ -70,6 +77,8 @@ metric-report-client:
 erda.core.pipeline.definition:
 erda.core.pipeline.lifecycle_hook_client:
 erda.core.pipeline.cron:
+erda.core.pipeline.build:
+erda.core.pipeline.action_runner_scheduler:
 cron-daemon:
 cron-compensator:
 erda.core.pipeline.source:

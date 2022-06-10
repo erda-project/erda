@@ -193,8 +193,8 @@ prepare:
 ifeq "$(SKIP_PREPARE)" ""
 	cd "${PROJ_PATH}" && \
 	${GO_BUILD_ENV} go generate ./apistructs && \
-	${GO_BUILD_ENV} go generate ./modules/openapi/api/generate && \
-	${GO_BUILD_ENV} go generate ./modules/openapi/component-protocol/generate
+	${GO_BUILD_ENV} go generate ./internal/tools/openapi/legacy/api/generate && \
+	${GO_BUILD_ENV} go generate ./internal/tools/openapi/legacy/component-protocol/generate
 	make prepare-cli
 endif
 
@@ -202,4 +202,4 @@ proto-go-in-ci:
 	cd api/proto-go && make build-use-docker-image
 
 proto-go-in-local:
-	cd api/proto-go && make build
+	cd api/proto-go && make clean && make build

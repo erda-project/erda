@@ -1,0 +1,141 @@
+# Copyright (c) 2021 Terminus, Inc.
+#
+# This program is free software: you can use, redistribute, and/or modify
+# it under the terms of the GNU Affero General Public License, version 3
+# or later ("AGPL"), as published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+name: CI AND IT
+on:
+  push:
+    tags:
+      - v*
+    branches:
+      - develop
+      - master
+      - release/*
+    paths:
+      - '**'
+      - '!**.go'
+      - '!**/go.mod'
+      - '!**/go.sum'
+      - '!**/*.proto'
+  pull_request:
+    paths:
+      - '**'
+      - '!**.go'
+      - '!**/go.mod'
+      - '!**/go.sum'
+      - '!**/*.proto'
+
+jobs:
+  CHECK-CHANGED-FILES:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # OR "2" -> To retrieve the preceding commit.
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v21
+      - name: List all changed files
+        id: check
+        run: |
+          for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
+            ext="${file##*.}"
+            echo "file: $file, ext: $ext"
+            echo "::set-output name=have-${ext}::true"
+            base_filename=$(basename "${file}")
+            if [[ "${base_filename}" == "go.mod" || "${base_filename}" == "go.sum" ]]; then
+              echo "::set-output name=have-go::true"
+            fi
+            if [[ "$ext" == "proto" ]]; then
+              echo "::set-output name=have-go::true"
+            fi
+          done
+    outputs:
+      have-go: ${{ steps.check.outputs.have-go }}
+
+#  PATCH-PR-CHECK-STATUS:
+#    runs-on: ubuntu-latest
+#    needs: CHECK-CHANGED-FILES
+#    if: needs.CHECK-CHANGED-FILES.outputs.have-go != 'true'
+#    env:
+#      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#    steps:
+#      - run: echo "No CODE-TEST required"
+#      - name: Fetch check run ids
+#        id: fetch
+#        uses: octokit/request-action@v2.x
+#        with:
+#          repo: ${{ github.repository }}
+#          run_id: ${{ github.run_id }}
+#          route: GET /repos/{repo}/actions/runs/{run_id}/jobs
+#      - name: Echo check run ids
+#        run: |
+#          echo '${{ toJSON(fromJSON(steps.fetch.outputs.data)) }}'
+#          for run_id in $(jq '.[]' <<< '${{ toJSON(fromJSON(steps.fetch.outputs.data).jobs.*.id) }}'); do
+#            echo ${run_id}
+#          done
+
+  PREPARE:
+    runs-on: ubuntu-latest
+    needs: CHECK-CHANGED-FILES
+    if: ${{ needs.CHECK-CHANGED-FILES.outputs.have-go != 'true' }}
+    steps:
+      - run: echo "No PREPARE required"
+
+  CI:
+    runs-on: ubuntu-latest
+    needs: CHECK-CHANGED-FILES
+    if: ${{ needs.CHECK-CHANGED-FILES.outputs.have-go != 'true' }}
+    steps:
+      - run: echo "No CI required"
+
+  CODE-CHECK:
+    runs-on: ubuntu-latest
+    needs: CHECK-CHANGED-FILES
+    if: ${{ needs.CHECK-CHANGED-FILES.outputs.have-go != 'true' }}
+    steps:
+      - run: echo "No CODE-CHECK required"
+
+  CODE-TEST:
+    runs-on: ubuntu-latest
+    needs: CHECK-CHANGED-FILES
+    if: ${{ needs.CHECK-CHANGED-FILES.outputs.have-go != 'true' }}
+    steps:
+      - run: echo "No CODE-TEST required"
+
+  CODE-COV:
+    runs-on: ubuntu-latest
+    needs: CHECK-CHANGED-FILES
+    if: needs.CHECK-CHANGED-FILES.outputs.have-go != 'true'
+    steps:
+      - run: echo "No CODE-COV required"
+      - uses: actions/checkout@v3
+      - name: Download codecov reports from another workflow
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          workflow: ci-it.yml
+          workflow_conclusion: success
+          name: pure-coverage
+          path: ./coverage/
+          search_artifacts: true
+      - name: very quick codecov
+        shell: bash
+        run: |
+          rm codecov.yml
+          cat <<-EOF >codecov.yml
+          coverage:
+            status:
+              project: off
+              patch: off
+          EOF
+          cat codecov.yml
+          curl -s https://codecov.io/bash | bash -s - -s ./coverage/

@@ -68,6 +68,24 @@ clickhouse:
   password: "${CLICKHOUSE_PASSWORD:default}"
   conn_open_strategy: "round_robin"
 
+clickhouse.table.initializer@span:
+  _enable: ${WRITE_SPAN_TO_CLICKHOUSE_ENABLE:false}
+  table_prefix: "spans"
+  ttl_sync_interval: "${CLICKHOUSE_TABLE_TTL_SYNC_INTERVAL:24h}"
+  default_ddl_files:
+    - path: "conf/clickhouse/spans/ddl_create_db.sql.tpl"
+      ignore_err: "false"
+    - path: "conf/clickhouse/spans/ddl_create_default_tables.sql.tpl"
+      ignore_err: "false"
+
+clickhouse.table.loader@span:
+  _enable: ${WRITE_SPAN_TO_CLICKHOUSE_ENABLE:false}
+  table_prefix: "spans"
+  default_search_table: "spans_all"
+
+storage-retention-strategy@span:
+  default_ttl: "${SPAN_TTL:168h}"
+
 clickhouse.table.initializer@log:
   _enable: ${CLICKHOUSE_ENABLE:false}
   table_prefix: "logs"
@@ -379,11 +397,6 @@ elasticsearch.index.rollover@span:
     - index: "erda-spans-<org>.<key>-{number}"
       alias: "erda-spans-<org>.<key>-rollover"
 
-storage-retention-strategy@span:
-  _enable: ${WRITE_SPAN_TO_ES_ENABLE:true}
-  load_from_database: true
-  ttl_reload_interval: "3m"
-  default_ttl: "${LOG_TTL:168h}"
 
 span-storage-elasticsearch:
   _enable: ${WRITE_SPAN_TO_ES_ENABLE:true}
@@ -520,6 +533,66 @@ notify-storage:
     options:
       auto.offset.reset: "${KAFKA_AUTO_OFFSET_RESET:latest}"
       auto.commit.interval.ms: "${KAFKA_AUTO_COMMIT_INTERVAL_MS:1000}"
+
+# --- data pipeline block ---
+erda.oap.collector.core:
+  pipelines:
+    spans:
+      - receivers:
+          - "erda.oap.collector.receiver.kafka@spotspan"
+          - "erda.oap.collector.receiver.kafka@oapspan"
+        processors:
+          - "erda.oap.collector.processor.modifier@span"
+        exporters:
+          - "erda.oap.collector.exporter.clickhouse@span"
+        batch_size: ${EXPORTER_CLICKHOUSE_SPAN_BATCH_SIZE:81920}
+        _enable: ${WRITE_SPAN_TO_CLICKHOUSE_ENABLE:false}
+
+# ************* receivers *************
+erda.oap.collector.receiver.kafka@spotspan:
+  _enable: ${WRITE_SPAN_TO_CLICKHOUSE_ENABLE:false}
+  proto_parser: spotspan
+  consumer:
+    topics: "${SPOT_TRACE_TOPICS:spot-trace}"
+    group: "${TRACE_GROUP_ID:spot-monitor-trace-dev}"
+    parallelism: ${SPOT_SPOTSPAN_CONSUMERS:9}
+    options:
+      auto.offset.reset: "${KAFKA_AUTO_OFFSET_RESET:latest}"
+      auto.commit.interval.ms: "${KAFKA_AUTO_COMMIT_INTERVAL_MS:1000}"
+
+erda.oap.collector.receiver.kafka@oapspan:
+  _enable: ${WRITE_SPAN_TO_CLICKHOUSE_ENABLE:false}
+  proto_parser: oapspan
+  consumer:
+    topics: "${OAP_TRACE_TOPICS:msp-jaeger-trace,erda-spans}"
+    group: "${TRACE_GROUP_ID:spot-monitor-trace-dev}"
+    parallelism: ${SPOT_OAPSPAN_CONSUMERS:9}
+    options:
+      auto.offset.reset: "${KAFKA_AUTO_OFFSET_RESET:earliest}"
+      auto.commit.interval.ms: "${KAFKA_AUTO_COMMIT_INTERVAL_MS:1000}"
+# ************* receivers *************
+
+# ************* processors *************
+erda.oap.collector.processor.modifier@span:
+  _enable: ${WRITE_SPAN_TO_CLICKHOUSE_ENABLE:false}
+  rules:
+    - action: drop
+      key: tags.http_read_bytes
+    - action: drop
+      key: tags.http_request_content_length
+    - action: drop
+      key: tags.http_wrote_bytes
+# ************* processors *************
+
+# ************* exporters *************
+erda.oap.collector.exporter.clickhouse@span:
+  _enable: ${WRITE_SPAN_TO_CLICKHOUSE_ENABLE:false}
+  span:
+    currency_num: ${EXPORTER_CH_SPAN_CURRENCY_NUM:2}
+    series_tag_keys: ${EXPORTER_CH_SPAN_SERIES_TAG_KEYS:db_statement}
+# ************* exporters *************
+
+# --- data pipeline block ---
 
 i18n@metric:
 

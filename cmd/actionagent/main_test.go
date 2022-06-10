@@ -23,7 +23,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/erda-project/erda/modules/pipeline/actionagent"
+	"github.com/erda-project/erda/internal/tools/pipeline/actionagent"
 )
 
 func TestGenerateArg(t *testing.T) {

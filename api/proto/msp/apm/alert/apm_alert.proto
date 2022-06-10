@@ -2,7 +2,7 @@ syntax = "proto3";
 package erda.msp.apm.alert;
 option go_package = "github.com/erda-project/erda-proto-go/msp/apm/alert/pb";
 
-import "github.com/mwitkow/go-proto-validators/validator.proto";
+import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/struct.proto";
 import "core/monitor/alert/alert.proto";
@@ -155,8 +155,8 @@ message QueryAlertRuleResponse {
 
 message QueryAlertRequest {
   string tenantGroup = 1;
-  int64  pageNo      = 2 [(validator.field) = {int_gt: 0}];
-  int64  pageSize    = 3 [(validator.field) = {int_gt: 0, int_lt: 101}];
+  int64  pageNo      = 2 [(validate.rules).int64.gt = 0];
+  int64  pageSize    = 3 [(validate.rules).int64 = {gt: 0, lt: 101}];
   string name        = 4;
 }
 
@@ -172,7 +172,7 @@ message QueryAlertData {
 
 message GetAlertRequest {
   string tenantGroup = 1;
-  int64  id          = 2 [(validator.field) = {int_gt: 0}];
+  int64  id          = 2 [(validate.rules).int64.gt = 0];
 }
 
 message GetAlertResponse {
@@ -244,7 +244,7 @@ message UpdateAlertResponse {
 }
 
 message UpdateAlertEnableRequest {
-  int64  id          = 1 [(validator.field) = {int_gt: 0}];
+  int64  id          = 1 [(validate.rules).int64.gt = 0];
   string tenantGroup = 2;
   bool   enable      = 3;
 }
@@ -254,7 +254,7 @@ message UpdateAlertEnableResponse {
 }
 
 message DeleteAlertRequest {
-  int64  id          = 1 [(validator.field) = {int_gt: 0}];
+  int64  id          = 1 [(validate.rules).int64.gt = 0];
   string tenantGroup = 2;
 }
 
@@ -286,8 +286,8 @@ message QueryCustomizeNotifyTargetResponse {
 
 message QueryCustomizeAlertsRequest {
   string tenantGroup = 1;
-  int64  pageNo      = 2 [(validator.field) = {int_gt: 0}];
-  int64  pageSize    = 3 [(validator.field) = {int_gt: 0,int_lt: 101}];
+  int64  pageNo      = 2 [(validate.rules).int64.gt = 0];
+  int64  pageSize    = 3 [(validate.rules).int64 = {gt: 0, lt: 101}];
   string name        = 4;
 }
 
@@ -297,7 +297,7 @@ message QueryCustomizeAlertsResponse {
 }
 
 message GetCustomizeAlertRequest {
-  uint64 id          = 1 [(validator.field) = {int_gt: 0}];
+  uint64 id          = 1 [(validate.rules).uint64.gt = 0];
   string tenantGroup = 2;
 }
 
@@ -331,7 +331,7 @@ message CreateCustomizeAlertData {
 }
 
 message UpdateCustomizeAlertRequest {
-  uint64                                                         id           = 1 [(validator.field) = {int_gt: 0}];
+  uint64                                                         id           = 1 [(validate.rules).uint64.gt = 0];
   string                                                         tenantGroup  = 2;
   string                                                         clusterName  = 3;
   string                                                         name         = 4;
@@ -351,7 +351,7 @@ message UpdateCustomizeAlertResponse {
 }
 
 message UpdateCustomizeAlertEnableRequest {
-  uint64 id          = 1 [(validator.field) = {int_gt: 0}];
+  uint64 id          = 1 [(validate.rules).uint64.gt = 0];
   string tenantGroup = 2;
   bool   enable      = 3;
 }
@@ -360,7 +360,7 @@ message UpdateCustomizeAlertEnableResponse {
 }
 
 message DeleteCustomizeAlertRequest {
-  uint64 id          = 1 [(validator.field) = {int_gt: 0}];
+  uint64 id          = 1 [(validate.rules).uint64.gt = 0];
   string tenantGroup = 2;
 }
 

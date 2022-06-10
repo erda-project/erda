@@ -20,7 +20,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/pkg/common"
 
-	_ "github.com/erda-project/erda/modules/monitor/dashboard/report/engine"
+	_ "github.com/erda-project/erda/internal/tools/monitor/dashboard/report/engine"
 )
 
 //go:embed bootstrap.yaml

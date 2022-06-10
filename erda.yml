@@ -33,36 +33,8 @@ envs:
   OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://collector:7076/api/otlp/v1/traces
   OTEL_TRACES_SAMPLER_ARG: 0.1
   CLUSTER_MANAGER_ADDR: cluster-manager:9094
+  CLUSTER_DIALER_ADDR: cluster-manager:80
 services:
-  action-runner-scheduler:
-    cmd: /erda/cmd/action-runner-scheduler/bin
-    ports:
-      - port: 9500
-        protocol: "TCP"
-        l4_protocol: "TCP"
-    resources:
-      cpu: ${request_cpu:0.3}
-      max_cpu: 0.3
-      mem: 128
-      network:
-        mode: "container"
-    binds:
-      - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-ca.pem:/certs/etcd-ca.pem:ro"
-      - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client.pem:/certs/etcd-client.pem:ro"
-      - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client-key.pem:/certs/etcd-client-key.pem:ro"
-    deployments:
-      replicas: 1
-      labels:
-        GROUP: "devops"
-    health_check:
-      http:
-        port: 9500
-        path: "/healthz"
-        duration: 120
-      exec: { }
-    expose: [ ]
-    hosts: [ ]
-    envs: { }
   dop:
     binds:
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-ca.pem:/certs/etcd-ca.pem:ro"
@@ -177,12 +149,15 @@ services:
   cluster-manager:
     cmd: /erda/cmd/cluster-manager/bin
     ports:
+      - port: 80
+        protocol: TCP
+        l4_protocol: TCP
       - port: 9094
-        protocol: "TCP"
-        l4_protocol: "TCP"
+        protocol: TCP
+        l4_protocol: TCP
       - port: 9095
-        protocol: "TCP"
-        l4_protocol: "TCP"
+        protocol: TCP
+        l4_protocol: TCP
     envs:
       DEBUG: "false"
     resources:
@@ -500,25 +475,6 @@ services:
         port: 9529
         path: "/health"
         duration: 120
-      exec: { }
-  ecp:
-    cmd: /erda/cmd/ecp/bin
-    ports:
-      - port: 9029
-        protocol: "TCP"
-        l4_protocol: "TCP"
-    resources:
-      cpu: ${request_cpu:0.2}
-      max_cpu: 0.2
-      mem: 128
-      network:
-        mode: "container"
-    deployments:
-      replicas: 1
-      labels:
-        GROUP: "dice"
-    health_check:
-      http: { }
       exec: { }
   cmp:
     cmd: /erda/cmd/cmp/bin

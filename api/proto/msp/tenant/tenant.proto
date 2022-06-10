@@ -3,7 +3,7 @@ syntax = "proto3";
 package erda.msp.tenant;
 option go_package = "github.com/erda-project/erda-proto-go/msp/tenant/pb";
 import "google/api/annotations.proto";
-import "github.com/mwitkow/go-proto-validators/validator.proto";
+import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 import "google/protobuf/descriptor.proto";
 
 service TenantService {
@@ -33,9 +33,9 @@ service TenantService {
 }
 
 message CreateTenantRequest {
-  string          projectID  = 1 [(validator.field) = {string_not_empty: true}, json_name = "projectId"];
-  string          tenantType = 2 [(validator.field) = {string_not_empty: true}];
-  repeated string workspaces = 3 [(validator.field) = {string_not_empty: true}];
+  string          projectID  = 1 [(validate.rules).string.min_len = 1, json_name = "projectId"];
+  string          tenantType = 2 [(validate.rules).string.min_len = 1];
+  repeated string workspaces = 3 [(validate.rules).repeated.items.string.min_len = 1];
 }
 
 message CreateTenantResponse {
@@ -43,9 +43,9 @@ message CreateTenantResponse {
 }
 
 message GetTenantRequest {
-  string projectID  = 1 [(validator.field) = {string_not_empty: true}, json_name = "projectId"];
-  string tenantType = 2 [(validator.field) = {string_not_empty: true}];
-  string workspace  = 3 [(validator.field) = {string_not_empty: true}];
+  string projectID  = 1 [(validate.rules).string.min_len = 1, json_name = "projectId"];
+  string tenantType = 2 [(validate.rules).string.min_len = 1];
+  string workspace  = 3 [(validate.rules).string.min_len = 1];
 }
 
 message GetTenantResponse {
@@ -53,9 +53,9 @@ message GetTenantResponse {
 }
 
 message DeleteTenantRequest {
-  string projectID  = 1 [(validator.field) = {string_not_empty: true}, json_name = "projectId"];
-  string tenantType = 2 [(validator.field) = {string_not_empty: true}];
-  string workspace  = 3 [(validator.field) = {string_not_empty: true}];
+  string projectID  = 1 [(validate.rules).string.min_len = 1, json_name = "projectId"];
+  string tenantType = 2 [(validate.rules).string.min_len = 1];
+  string workspace  = 3 [(validate.rules).string.min_len = 1];
 }
 
 message DeleteTenantResponse {
