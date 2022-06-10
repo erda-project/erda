@@ -70,3 +70,10 @@ func (p *PagePipeline) GetUserID() string {
 	}
 	return ""
 }
+
+func (p *PagePipeline) GetRunUserID() string {
+	if p.Extra.RunUser != nil && p.Extra.RunUser.ID != nil {
+		return fmt.Sprintf("%v", p.Extra.RunUser.ID)
+	}
+	return ""
+}

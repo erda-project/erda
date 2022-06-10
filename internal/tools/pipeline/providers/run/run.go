@@ -29,6 +29,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/definition/db"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/apierrors"
 	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/expression"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -147,6 +148,11 @@ func (s *provider) RunOnePipeline(ctx context.Context, req *apistructs.PipelineR
 		return nil, apierrors.ErrRunPipeline.InternalError(err)
 	}
 
+	// create pipeline labels
+	if err = s.createPipelineRunLabels(p, req); err != nil {
+		return nil, apierrors.ErrRunPipeline.InternalError(err)
+	}
+
 	// aop
 	_ = aop2.Handle(aop2.NewContextForPipeline(p, aoptypes.TuneTriggerPipelineBeforeExec))
 
@@ -159,6 +165,25 @@ func (s *provider) RunOnePipeline(ctx context.Context, req *apistructs.PipelineR
 	}
 
 	return &p, nil
+}
+
+func (s *provider) createPipelineRunLabels(p spec2.Pipeline, req *apistructs.PipelineRunRequest) (err error) {
+	labels := make([]spec2.PipelineLabel, 0)
+	if req.UserID != "" {
+		labels = append(labels, spec2.PipelineLabel{
+			ID:              uuid.SnowFlakeIDUint64(),
+			Type:            apistructs.PipelineLabelTypeInstance,
+			TargetID:        p.ID,
+			PipelineSource:  p.PipelineSource,
+			PipelineYmlName: p.PipelineYmlName,
+			Key:             apistructs.LabelRunUserID,
+			Value:           req.UserID,
+		})
+	}
+	if len(labels) > 0 {
+		err = s.dbClient.BatchInsertLabels(labels)
+	}
+	return err
 }
 
 func (s *provider) updatePipelineDefinition(p spec2.Pipeline) error {

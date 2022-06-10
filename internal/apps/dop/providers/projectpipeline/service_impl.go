@@ -875,7 +875,7 @@ func makeListPipelineExecHistoryResponse(data *apistructs.PipelinePageListData) 
 			}(),
 			AppName:    getApplicationNameFromDefinitionRemote(pipeline.DefinitionPageInfo.SourceRemote),
 			Branch:     pipeline.DefinitionPageInfo.SourceRef,
-			Executor:   pipeline.GetUserID(),
+			Executor:   pipeline.GetRunUserID(),
 			TimeBegin:  timeBegin,
 			PipelineID: pipeline.ID,
 		})
@@ -1406,10 +1406,6 @@ func (p *ProjectPipelineService) autoRunPipeline(identityInfo apistructs.Identit
 	createV2.AutoRunAtOnce = true
 	createV2.DefinitionID = definition.ID
 	createV2.UserID = identityInfo.UserID
-
-	// add run,create userID label for history list search
-	createV2.Labels[apistructs.LabelRunUserID] = identityInfo.UserID
-	createV2.Labels[apistructs.LabelCreateUserID] = identityInfo.UserID
 
 	// run params
 	var pipelineRunParams apistructs.PipelineRunParams
