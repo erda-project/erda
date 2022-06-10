@@ -17,17 +17,17 @@ format:
 		goimports -w -l $${path}; \
 	done;
 
-auto-update-infra-for-master:
+auto-update-gohub-for-master:
 	@if [[ "$$(git rev-parse --abbrev-ref HEAD)" == "master" ]]; then \
-		make update-infra; \
+		make update-gohub; \
 	fi;
 
-update-infra:
+update-gohub:
 	echo "update infra and gohub"
 	go env -w GO111MODULE=on
 	go env -w GOPROXY="$(GOPROXY)"
 	go get -u github.com/erda-project/erda-infra
-	go get -u github.com/erda-project/erda-infra/tools/gohub
+	go install github.com/erda-project/erda-infra/tools/gohub
 	gohub tools install -v --goproxy="$(GOPROXY)" --ghproxy="$(GHPROXY)"
 
 build-use-docker-image:
