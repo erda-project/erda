@@ -20,6 +20,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
+	"github.com/erda-project/erda-infra/providers/clickhouse"
 	"github.com/erda-project/erda/internal/apps/msp/apm/trace/query/commom/custom"
 	"github.com/stretchr/testify/assert"
 
@@ -250,10 +252,17 @@ func Test_convertToMetas(t *testing.T) {
 func TestClickhouseSource_GetSpans(t *testing.T) {
 	chs := ClickhouseSource{
 		CompatibleSource: &mockCS{},
+		Clickhouse:       &mockclickhouseInf{cli: &mockconn{}},
 	}
 	spans := chs.GetSpans(context.TODO(), &pb.GetSpansRequest{})
 	ass := assert.New(t)
 	ass.Equal(1, len(spans))
+
+	chs = ClickhouseSource{
+		Clickhouse: &mockclickhouseInf{cli: &mockconn{}},
+	}
+	spans = chs.GetSpans(context.TODO(), &pb.GetSpansRequest{})
+	ass.Equal(0, len(spans))
 }
 
 type mockCS struct {
@@ -273,4 +282,98 @@ func (m *mockCS) GetTraceReqDistribution(ctx context.Context, model custom.Model
 
 func (m *mockCS) GetTraces(ctx context.Context, req *pb.GetTracesRequest) (*pb.GetTracesResponse, error) {
 	return nil, nil
+}
+
+type mockclickhouseInf struct {
+	cli driver.Conn
+}
+
+func (m *mockclickhouseInf) Client() driver.Conn {
+	return m.cli
+}
+
+func (m mockclickhouseInf) NewWriter(opts *clickhouse.WriterOptions) *clickhouse.Writer {
+	return nil
+}
+
+type mockconn struct {
+}
+
+func (m mockconn) Contributors() []string {
+	return nil
+}
+
+func (m mockconn) ServerVersion() (*driver.ServerVersion, error) {
+	return nil, nil
+}
+
+func (m mockconn) Select(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
+	return nil
+}
+
+type mockRows struct {
+}
+
+func (m mockRows) Next() bool {
+	return false
+}
+
+func (m mockRows) Scan(dest ...interface{}) error {
+	return nil
+}
+
+func (m mockRows) ScanStruct(dest interface{}) error {
+	return nil
+}
+
+func (m mockRows) ColumnTypes() []driver.ColumnType {
+	return nil
+}
+
+func (m mockRows) Totals(dest ...interface{}) error {
+	return nil
+}
+
+func (m mockRows) Columns() []string {
+	return nil
+}
+
+func (m mockRows) Close() error {
+	return nil
+}
+
+func (m mockRows) Err() error {
+	return nil
+}
+
+func (m mockconn) Query(ctx context.Context, query string, args ...interface{}) (driver.Rows, error) {
+	return &mockRows{}, nil
+}
+
+func (m mockconn) QueryRow(ctx context.Context, query string, args ...interface{}) driver.Row {
+	return nil
+}
+
+func (m mockconn) PrepareBatch(ctx context.Context, query string) (driver.Batch, error) {
+	return nil, nil
+}
+
+func (m mockconn) Exec(ctx context.Context, query string, args ...interface{}) error {
+	return nil
+}
+
+func (m mockconn) AsyncInsert(ctx context.Context, query string, wait bool) error {
+	return nil
+}
+
+func (m mockconn) Ping(ctx context.Context) error {
+	return nil
+}
+
+func (m mockconn) Stats() driver.Stats {
+	return driver.Stats{}
+}
+
+func (m mockconn) Close() error {
+	return nil
 }
