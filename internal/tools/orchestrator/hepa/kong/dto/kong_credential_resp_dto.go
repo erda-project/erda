@@ -116,3 +116,7 @@ func (dto *KongCredentialDto) Compatiable() {
 	}
 	dto.RedirectUrl = dto.RedirectUrls
 }
+
+func (dto *KongCredentialDto) AdjustCreatedAt() {
+	dto.CreatedAt *= 1000
+}
