@@ -65,3 +65,24 @@ func (b *Bundle) GetClusterManagerClientData(clientType apistructs.ClusterManage
 	}
 	return getResp, nil
 }
+
+func (b *Bundle) ListClusterManagerClientByType(clientType apistructs.ClusterManagerClientType) ([]apistructs.ClusterManagerClientDetail, error) {
+	host, err := b.urls.ClusterManager()
+	if err != nil {
+		return []apistructs.ClusterManagerClientDetail{}, err
+	}
+	hc := b.hc
+
+	var getResp []apistructs.ClusterManagerClientDetail
+	resp, err := hc.Get(host).
+		Path(fmt.Sprintf("/clusteragent/client-detail/%s", clientType)).
+		Do().
+		JSON(&getResp)
+	if err != nil {
+		return []apistructs.ClusterManagerClientDetail{}, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() {
+		return []apistructs.ClusterManagerClientDetail{}, apierrors.ErrInvoke.InternalError(fmt.Errorf("%s", resp.Body()))
+	}
+	return getResp, nil
+}

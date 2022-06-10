@@ -16,16 +16,26 @@ package server
 
 import (
 	"sync"
+	"time"
+
+	"github.com/mohae/deepcopy"
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 )
 
 var (
 	clientMutex sync.Mutex
 	clientDatas = map[apistructs.ClusterManagerClientType]apistructs.ClusterManagerClientMap{}
+	bdl         *bundle.Bundle
 )
 
-func updateClientDetail(clientType apistructs.ClusterManagerClientType, clusterKey string, data apistructs.ClusterManagerClientDetail) {
+func initClientData(b *bundle.Bundle) {
+	bdl = b
+}
+
+func updateClientDetailWithEvent(clientType apistructs.ClusterManagerClientType, clusterKey string, data apistructs.ClusterManagerClientDetail) {
 	clientMutex.Lock()
 	defer clientMutex.Unlock()
 	if clusterKey == "" || clientType == "" {
@@ -35,6 +45,19 @@ func updateClientDetail(clientType apistructs.ClusterManagerClientType, clusterK
 		clientDatas[clientType] = apistructs.ClusterManagerClientMap{}
 	}
 	clientDatas[clientType][clusterKey] = data
+	if err := bdl.CreateEvent(&apistructs.EventCreateRequest{
+		EventHeader: apistructs.EventHeader{
+			Event:     clientType.GenEventName(apistructs.ClusterManagerClientEventRegister),
+			Action:    bundle.UpdateAction,
+			OrgID:     "-1",
+			ProjectID: "-1",
+			TimeStamp: time.Now().Format("2006-01-02 15:04:05"),
+		},
+		Sender:  bundle.SenderClusterManager,
+		Content: data,
+	}); err != nil {
+		logrus.Errorf("[cluster-manager] create event failed: %v", err)
+	}
 }
 
 func getClientDetail(clientType apistructs.ClusterManagerClientType, clusterKey string) (apistructs.ClusterManagerClientDetail, bool) {
@@ -46,4 +69,21 @@ func getClientDetail(clientType apistructs.ClusterManagerClientType, clusterKey 
 		}
 	}
 	return apistructs.ClusterManagerClientDetail{}, false
+}
+
+func listClientDetailByType(clientType apistructs.ClusterManagerClientType) []apistructs.ClusterManagerClientDetail {
+	clientMutex.Lock()
+	defer clientMutex.Unlock()
+	if data, existed := clientDatas[clientType]; existed {
+		var clientDetails []apistructs.ClusterManagerClientDetail
+		for _, clientData := range data {
+			clientDataDup, ok := deepcopy.Copy(clientData).(apistructs.ClusterManagerClientDetail)
+			if !ok {
+				continue
+			}
+			clientDetails = append(clientDetails, clientDataDup)
+		}
+		return clientDetails
+	}
+	return []apistructs.ClusterManagerClientDetail{}
 }

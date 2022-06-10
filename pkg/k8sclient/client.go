@@ -52,6 +52,10 @@ func New(clusterName string, ops ...Option) (*K8sClient, error) {
 	inClusterName := os.Getenv(string(apistructs.DICE_CLUSTER_NAME))
 	if inClusterName == clusterName && kc.priorityUseInCluster {
 		rc, err = config.GetInClusterRestConfig()
+		// if get config from /var/sericeaccount failed, try cluster-manager again
+		if err != nil {
+			rc, err = GetRestConfig(clusterName)
+		}
 	} else {
 		rc, err = GetRestConfig(clusterName)
 	}

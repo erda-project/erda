@@ -50,7 +50,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 }
 
 func (p *provider) Run(ctx context.Context) error {
-	p.Router.Any("/**", server.NewDialerRouter(ctx, p.Cluster, p.Credential, p.Cfg, p.Etcd).ServeHTTP)
+	p.Router.Any("/**", server.NewDialerRouter(ctx, p.Cluster, p.Credential, p.Cfg, p.Etcd, p.Bdl).ServeHTTP)
 	return nil
 }
 

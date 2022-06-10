@@ -31,6 +31,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/core/cluster-manager/dialer/auth"
 	"github.com/erda-project/erda/internal/core/cluster-manager/dialer/config"
 	clusteragent "github.com/erda-project/erda/internal/tools/cluster-agent/client"
@@ -50,7 +51,7 @@ func startServer(etcd *clientv3.Client) (context.Context, context.CancelFunc) {
 	go Start(ctx, &fakeClusterSvc{}, nil, &config.Config{
 		Listen:          fmt.Sprintf("%s:%s", dialerListenAddr, dialerListenPort),
 		NeedClusterInfo: false,
-	}, etcd)
+	}, etcd, &bundle.Bundle{})
 	return ctx, cancel
 }
 

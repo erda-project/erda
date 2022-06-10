@@ -28,6 +28,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/core/cluster-manager/dialer/auth"
 	"github.com/erda-project/erda/internal/core/cluster-manager/dialer/config"
 	clusteragent "github.com/erda-project/erda/internal/tools/cluster-agent/client"
@@ -59,7 +60,7 @@ func Test_netportal(t *testing.T) {
 	go Start(context.Background(), &fakeClusterSvc{}, nil, &config.Config{
 		Listen:          dialerListenAddr2,
 		NeedClusterInfo: false,
-	}, &clientv3.Client{KV: &fakeKV{}})
+	}, &clientv3.Client{KV: &fakeKV{}}, bundle.New())
 
 	helloHandler := func(w http.ResponseWriter, req *http.Request) {
 		io.WriteString(w, "Hello, world!")

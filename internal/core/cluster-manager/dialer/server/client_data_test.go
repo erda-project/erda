@@ -19,10 +19,17 @@ import (
 	"sync"
 	"testing"
 
+	"bou.ke/monkey"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 )
 
 func TestGetUpdateClientData(t *testing.T) {
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "CreateEvent", func(_ *bundle.Bundle, ev *apistructs.EventCreateRequest) error {
+		return nil
+	})
 	type args struct {
 		clusterKey string
 		clientType apistructs.ClusterManagerClientType
@@ -92,7 +99,7 @@ func TestGetUpdateClientData(t *testing.T) {
 	wait.Add(len(tests))
 	for _, tt := range tests {
 		go func(t test) {
-			updateClientDetail(t.args.clientType, t.args.clusterKey, t.args.data)
+			updateClientDetailWithEvent(t.args.clientType, t.args.clusterKey, t.args.data)
 			wait.Done()
 		}(tt)
 	}
@@ -109,4 +116,65 @@ func TestGetUpdateClientData(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_listClientDetailByType(t *testing.T) {
+	clientDatas = map[apistructs.ClusterManagerClientType]apistructs.ClusterManagerClientMap{}
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "CreateEvent", func(_ *bundle.Bundle, ev *apistructs.EventCreateRequest) error {
+		return nil
+	})
+	type args struct {
+		clusterKey string
+		clientType apistructs.ClusterManagerClientType
+		data       apistructs.ClusterManagerClientDetail
+	}
+	type test struct {
+		name string
+		args args
+	}
+	tests := []test{
+		{
+			name: "test pipeline client data",
+			args: args{
+				clusterKey: "erda-dev",
+				clientType: apistructs.ClusterManagerClientTypePipeline,
+				data: apistructs.ClusterManagerClientDetail{
+					"host": "localhost",
+				},
+			},
+		},
+		{
+			name: "test cluster agent client data",
+			args: args{
+				clusterKey: "erda-dev",
+				clientType: apistructs.ClusterManagerClientTypeCluster,
+				data: apistructs.ClusterManagerClientDetail{
+					"namespace": "erda-dev",
+				},
+			},
+		},
+		{
+			name: "test empty cluster key",
+			args: args{
+				clusterKey: "",
+				clientType: apistructs.ClusterManagerClientTypeCluster,
+				data:       apistructs.ClusterManagerClientDetail{},
+			},
+		},
+	}
+	wait := sync.WaitGroup{}
+	wait.Add(len(tests))
+	for _, tt := range tests {
+		go func(t test) {
+			updateClientDetailWithEvent(t.args.clientType, t.args.clusterKey, t.args.data)
+			wait.Done()
+		}(tt)
+	}
+	wait.Wait()
+	got := listClientDetailByType(apistructs.ClusterManagerClientTypePipeline)
+	assert.Equal(t, got, []apistructs.ClusterManagerClientDetail{
+		{
+			"host": "localhost",
+		},
+	})
 }
