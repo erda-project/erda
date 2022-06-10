@@ -347,14 +347,7 @@ group by series_id`, SpanMetaTable)
 		if err := metarows.ScanStruct(&kvs); err != nil {
 			continue
 		}
-		sms := make([]trace.Meta, len(kvs.Keys))
-		for i := range sms {
-			sms[i] = trace.Meta{
-				Key:   kvs.Keys[i],
-				Value: kvs.Values[i],
-			}
-		}
-		metaCache[kvs.SeriesID] = sms
+		metaCache[kvs.SeriesID] = convertToMetas(kvs)
 	}
 
 	for _, s := range series {
@@ -362,6 +355,17 @@ group by series_id`, SpanMetaTable)
 	}
 
 	return spans
+}
+
+func convertToMetas(kvs keysValues) []trace.Meta {
+	sms := make([]trace.Meta, len(kvs.Keys))
+	for i := range sms {
+		sms[i] = trace.Meta{
+			Key:   kvs.Keys[i],
+			Value: kvs.Values[i],
+		}
+	}
+	return sms
 }
 
 func mergeAsSpan(cs trace.Series, sms []trace.Meta) *pb.Span {

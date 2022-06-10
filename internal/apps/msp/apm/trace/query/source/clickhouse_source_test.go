@@ -208,3 +208,39 @@ func TestClickhouseSource_sortConditionStrategy1(t *testing.T) {
 		})
 	}
 }
+
+func Test_convertToMetas(t *testing.T) {
+	type args struct {
+		kvs keysValues
+	}
+	tests := []struct {
+		name string
+		args args
+		want []trace.Meta
+	}{
+		{
+			args: args{kvs: keysValues{
+				Keys:     []string{"hello", "hello2"},
+				Values:   []string{"world", "world2"},
+				SeriesID: 1024,
+			}},
+			want: []trace.Meta{
+				{
+					Key:   "hello",
+					Value: "world",
+				},
+				{
+					Key:   "hello2",
+					Value: "world2",
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := convertToMetas(tt.args.kvs); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("convertToMetas() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
