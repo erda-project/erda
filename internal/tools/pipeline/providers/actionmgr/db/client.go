@@ -26,9 +26,9 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	"github.com/erda-project/erda-proto-go/core/pipeline/action/pb"
-	"github.com/erda-project/erda/internal/tools/pipeline/pexpr"
 	"github.com/erda-project/erda/pkg/expression"
 	"github.com/erda-project/erda/pkg/i18n"
+	"github.com/erda-project/erda/pkg/parser/pipelineyml/pexpr"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
