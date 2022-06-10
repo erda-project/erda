@@ -193,7 +193,7 @@ func (chs *ClickhouseSource) GetTraces(ctx context.Context, req *pb.GetTracesReq
 			"AND (toUnixTimestamp64Nano(end_time) - toUnixTimestamp64Nano(start_time)) <= %v)", req.DurationMin, req.DurationMax))
 	}
 
-	where.WriteString(fmt.Sprintf("AND series_id IN (%s)", chs.composeFilter(req)))
+	where.WriteString(fmt.Sprintf("AND series_id GLOBAL IN (%s)", chs.composeFilter(req)))
 
 	sql := fmt.Sprintf(specSql, SpanSeriesTable, where.String(), chs.sortConditionStrategy(req.Sort), req.PageSize, (req.PageNo-1)*req.PageSize)
 
@@ -224,24 +224,22 @@ func (chs *ClickhouseSource) GetTraces(ctx context.Context, req *pb.GetTracesReq
 
 func (chs *ClickhouseSource) composeFilter(req *pb.GetTracesRequest) string {
 	var subSqlBuf bytes.Buffer
-	subSqlBuf.WriteString(fmt.Sprintf("SELECT distinct(series_id) FROM %s WHERE (series_id in (select distinct(series_id) from %s where (key = 'terminus_key' AND value = '%s')) AND ", SpanMetaTable, SpanMetaTable, req.TenantID))
+	subSqlBuf.WriteString(fmt.Sprintf("SELECT distinct(series_id) FROM %s WHERE (series_id global in (select distinct(series_id) from %s where (key = 'terminus_key' AND value = '%s')) AND ", SpanMetaTable, SpanMetaTable, req.TenantID))
 
 	if req.ServiceName != "" {
-		subSqlBuf.WriteString("(key='service_name' AND value LIKE concat('%','" + req.ServiceName + "','%')) OR ")
+		subSqlBuf.WriteString("(key='service_name' AND value LIKE concat('%','" + req.ServiceName + "','%')) AND ")
 	}
 
 	if req.RpcMethod != "" {
-		subSqlBuf.WriteString("(key='rpc_method' AND value LIKE concat('%','" + req.RpcMethod + "','%')) OR ")
+		subSqlBuf.WriteString("(key='rpc_method' AND value LIKE concat('%','" + req.RpcMethod + "','%')) AND ")
 	}
 
 	if req.HttpPath != "" {
-		subSqlBuf.WriteString("(key='http_path' AND value LIKE concat('%','" + req.HttpPath + "','%')) OR ")
+		subSqlBuf.WriteString("(key='http_path' AND value LIKE concat('%','" + req.HttpPath + "','%')) AND ")
 	}
 
 	subSql := subSqlBuf.String()
-	if strings.HasSuffix(subSql, "OR ") {
-		subSql = subSql[:len(subSql)-4] + ")"
-	} else if strings.HasSuffix(subSql, "AND ") {
+	if strings.HasSuffix(subSql, "AND ") {
 		subSql = subSql[:len(subSql)-4] + ")"
 	}
 	return subSql
