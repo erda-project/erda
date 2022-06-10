@@ -39,6 +39,7 @@ import (
 type config struct {
 	Cassandra        cassandra.SessionConfig `file:"cassandra"`
 	QuerySource      querySource             `file:"query_source"`
+	DebugSQL         bool                    `file:"debug_sql"`
 	CompatibleEnable bool                    `file:"compatible_enable"`
 }
 
@@ -105,7 +106,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		if p.Clickhouse == nil {
 			panic("clickhouse provider autowired failed.")
 		}
-		p.Source = &source.ClickhouseSource{Clickhouse: p.Clickhouse, Log: p.Log, CompatibleSource: p.CompatibleSource}
+		p.Source = &source.ClickhouseSource{Clickhouse: p.Clickhouse, Log: p.Log, CompatibleSource: p.CompatibleSource, DebugSQL: p.Cfg.DebugSQL}
 	}
 
 	p.traceService = &TraceService{

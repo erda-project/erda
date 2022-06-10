@@ -21,6 +21,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/providers/clickhouse"
 	"github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
@@ -32,26 +34,12 @@ import (
 type ClickhouseSource struct {
 	Clickhouse clickhouse.Interface
 	Log        logs.Logger
+	DebugSQL   bool
 
 	CompatibleSource TraceSource
 }
 
 type (
-	// spanSeries struct {
-	// 	OrgName       string            `ch:"org_name"`
-	// 	SeriesId      uint64            `ch:"series_id"`
-	// 	TraceId       string            `ch:"trace_id"`
-	// 	SpanId        string            `ch:"span_id"`
-	// 	ParentSpanId  string            `ch:"parent_span_id"`
-	// 	OperationName string            `ch:"operation_name"`
-	// 	StartTime     int64             `ch:"start_time"`
-	// 	EndTime       int64             `ch:"end_time"`
-	// 	Tags          map[string]string `ch:"tags"`
-	// }
-	// spanMeta struct {
-	// 	Key   string `ch:"key"`
-	// 	Value string `ch:"value"`
-	// }
 	tracing struct {
 		TraceId   string   `ch:"trace_id"`
 		StartTime int64    `ch:"min_start_time"`
@@ -63,6 +51,11 @@ type (
 		AvgDuration float64   `ch:"avg_duration"`
 		Count       uint64    `ch:"trace_count"`
 		Date        time.Time `ch:"date"`
+	}
+	keysValues struct {
+		Keys     []string `ch:"keys"`
+		Values   []string `ch:"values"`
+		SeriesID uint64   `ch:"series_id"`
 	}
 )
 
@@ -146,7 +139,7 @@ func (chs *ClickhouseSource) GetTraceReqDistribution(ctx context.Context, model 
 
 	tracingSql = fmt.Sprintf(tracingSql, SpanSeriesTable, where.String())
 	sql := fmt.Sprintf(specSql, n, unit, tracingSql, interval)
-	rows, err := chs.Clickhouse.Client().Query(ctx, sql)
+	rows, err := chs.querySQL(ctx, sql)
 	if err != nil {
 		chs.Log.Error(err)
 		return []*TraceDistributionItem{}, err
@@ -197,7 +190,8 @@ func (chs *ClickhouseSource) GetTraces(ctx context.Context, req *pb.GetTracesReq
 
 	sql := fmt.Sprintf(specSql, SpanSeriesTable, where.String(), chs.sortConditionStrategy(req.Sort), req.PageSize, (req.PageNo-1)*req.PageSize)
 
-	rows, err := chs.Clickhouse.Client().Query(ctx, sql)
+	// rows, err := chs.Clickhouse.Client().Query(ctx, sql)
+	rows, err := chs.querySQL(ctx, sql)
 	if err != nil {
 		return &pb.GetTracesResponse{}, err
 	}
@@ -296,7 +290,8 @@ func (chs *ClickhouseSource) GetSpans(ctx context.Context, req *pb.GetSpansReque
 		}
 	}
 
-	sql := fmt.Sprintf(`
+	// series block
+	seriesSQL := fmt.Sprintf(`
 SELECT org_name,
        series_id,
        trace_id,
@@ -307,46 +302,68 @@ SELECT org_name,
        tags
 FROM %s
 WHERE trace_id = $1
-ORDER BY %s LIMIT %v`,
-		SpanSeriesTable, "start_time", req.Limit)
-
-	rows, err := chs.Clickhouse.Client().Query(ctx, sql, req.TraceID)
+ORDER BY %s LIMIT %v`, SpanSeriesTable, "start_time", req.Limit)
+	rows, err := chs.querySQL(ctx, seriesSQL, req.TraceID)
 	if err != nil {
+		chs.Log.Errorf("querySQL: %s", err)
 		return nil
 	}
 	defer rows.Close()
-
+	metaCache := make(map[uint64][]trace.Meta, 3)
+	series := make([]trace.Series, 0, 10)
 	for rows.Next() {
 		var cs trace.Series
 		if err := rows.ScanStruct(&cs); err != nil {
+			chs.Log.Errorf("scan series: %s", err)
 			return nil
 		}
-
-		sms, err := chs.getSpanMeta(ctx, cs)
-		if err != nil {
-			return nil
-		}
-
-		spans = append(spans, mergeAsSpan(cs, sms))
+		series = append(series, cs)
+		metaCache[cs.SeriesID] = nil
 	}
+
+	// meta block
+	metaSQL := fmt.Sprintf(`
+select groupArray(key) as keys, groupArray(value) as values, series_id
+from %s 
+where series_id in
+      ($1)
+group by series_id`, SpanMetaTable)
+
+	sids := make([]uint64, 0, len(metaCache))
+	for k := range metaCache {
+		sids = append(sids, k)
+	}
+	metarows, err := chs.querySQL(ctx, metaSQL, sids)
+	if err != nil {
+		chs.Log.Errorf("query meta: %s", err)
+		return nil
+	}
+	defer metarows.Close()
+
+	for metarows.Next() {
+		var kvs keysValues
+		if err := metarows.ScanStruct(&kvs); err != nil {
+			continue
+		}
+		metaCache[kvs.SeriesID] = convertToMetas(kvs)
+	}
+
+	for _, s := range series {
+		spans = append(spans, mergeAsSpan(s, metaCache[s.SeriesID]))
+	}
+
 	return spans
 }
 
-func (chs *ClickhouseSource) getSpanMeta(ctx context.Context, cs trace.Series) ([]trace.Meta, error) {
-	sms := make([]trace.Meta, 0, 10)
-	sql := fmt.Sprintf("SELECT key,value FROM %s WHERE series_id = $1", SpanMetaTable)
-	rows, err := chs.Clickhouse.Client().Query(ctx, sql, cs.SeriesID)
-	if err != nil {
-		return nil, err
-	}
-	for rows.Next() {
-		var sm trace.Meta
-		if err := rows.ScanStruct(&sm); err != nil {
-			return nil, err
+func convertToMetas(kvs keysValues) []trace.Meta {
+	sms := make([]trace.Meta, len(kvs.Keys))
+	for i := range sms {
+		sms[i] = trace.Meta{
+			Key:   kvs.Keys[i],
+			Value: kvs.Values[i],
 		}
-		sms = append(sms, sm)
 	}
-	return sms, nil
+	return sms
 }
 
 func mergeAsSpan(cs trace.Series, sms []trace.Meta) *pb.Span {
@@ -372,16 +389,6 @@ func mergeAsSpan(cs trace.Series, sms []trace.Meta) *pb.Span {
 	return span
 }
 
-//
-// func chSpanCovertToSpan(span *pb.Span, cs spanSeries) {
-// 	span.Id = cs.SpanId
-// 	span.TraceId = cs.TraceId
-// 	span.ParentSpanId = cs.ParentSpanId
-// 	span.OperationName = cs.OperationName
-// 	span.StartTime = cs.StartTime
-// 	span.EndTime = cs.EndTime
-// }
-
 func (chs *ClickhouseSource) GetSpanCount(ctx context.Context, traceID string) int64 {
 	var count uint64
 	sql := fmt.Sprintf("SELECT COUNT(span_id) FROM %s WHERE trace_id = $1", SpanSeriesTable)
@@ -398,4 +405,11 @@ func (chs *ClickhouseSource) GetTraceCount(ctx context.Context, where string) in
 		return 0
 	}
 	return int64(count)
+}
+
+func (chs *ClickhouseSource) querySQL(ctx context.Context, sql string, args ...interface{}) (driver.Rows, error) {
+	if chs.DebugSQL {
+		fmt.Printf("===Tracing Clickhouse SQL:\n%s\n%+v\n===Tracing Clickhouse SQL\n", sql, args)
+	}
+	return chs.Clickhouse.Client().Query(ctx, sql, args...)
 }
