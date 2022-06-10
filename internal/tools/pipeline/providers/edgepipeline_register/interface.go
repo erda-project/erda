@@ -198,8 +198,8 @@ func (p *provider) parseDialerEndpoint() (string, error) {
 	}
 
 	//inCluster, visit dialer inner service first.
-	if !p.Cfg.IsEdge && discover.ClusterManager() != "" {
-		return "ws://" + discover.ClusterManager() + u.Path, nil
+	if !p.Cfg.IsEdge && discover.ClusterDialer() != "" {
+		return "ws://" + discover.ClusterDialer() + u.Path, nil
 	}
 
 	switch u.Scheme {
