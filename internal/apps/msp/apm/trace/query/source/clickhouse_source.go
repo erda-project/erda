@@ -332,7 +332,7 @@ where series_id in
 group by series_id`, SpanMetaTable)
 
 	sids := make([]uint64, 0, len(metaCache))
-	for k, _ := range metaCache {
+	for k := range metaCache {
 		sids = append(sids, k)
 	}
 	metarows, err := chs.querySQL(ctx, metaSQL, sids)
