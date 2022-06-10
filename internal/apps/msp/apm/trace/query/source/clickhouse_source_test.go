@@ -19,9 +19,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
 	"github.com/erda-project/erda/internal/apps/msp/apm/trace"
-	"github.com/stretchr/testify/assert"
 )
 
 func Test_mergeAsSpan(t *testing.T) {
