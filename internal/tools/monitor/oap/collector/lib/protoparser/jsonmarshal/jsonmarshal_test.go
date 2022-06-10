@@ -18,8 +18,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/common/unmarshalwork"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/common/unmarshalwork"
 )
 
 func TestMain(m *testing.M) {
