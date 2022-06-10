@@ -19,7 +19,9 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 
+	"bou.ke/monkey"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/stretchr/testify/assert"
 
@@ -189,6 +191,95 @@ func TestHandleOneRefOpOutput(t *testing.T) {
 	}
 	v.handleOneRefOp(noExistEx)
 	assert.Equal(t, 1, len(v.result.Errs))
+}
+
+func Test_handleRefEx(t *testing.T) {
+	tests := []struct {
+		name string
+		arg  string
+		ex   string
+		want string
+	}{
+		{
+			name: "single quote",
+			arg:  "aaa",
+			ex:   RefOpExWrapSingleQuotes,
+			want: `'aaa'`,
+		},
+		{
+			name: "double quote",
+			arg:  "aaa",
+			ex:   RefOpExWrapDoubleQuotes,
+			want: `"aaa"`,
+		},
+	}
+	v := &RefOpVisitor{}
+	for _, tt := range tests {
+		got := v.handleRefEx(tt.arg, RefOp{Ex: tt.ex})
+		if got != tt.want {
+			t.Errorf("got : %s but want: %s", got, tt.want)
+		}
+	}
+}
+
+func Test_handleOneParamOrCmdV2(t *testing.T) {
+	yml := `version: "1.1"
+stages:
+  - stage:
+      - api-test:
+          alias: "8231"
+          version: "2.0"
+          params:
+            headers: []
+            id: ""
+            method: GET
+            params:
+              - desc: ""
+                key: scope
+                value: project-app
+              - desc: ""
+                key: scopeID
+                value: "2"
+			  - desc: ""
+				key: start
+				value: ${{ random.datetime_hour.wrap_double_quotes }}
+            url: /api/pipelines
+`
+	want := `version: "1.1"
+stages:
+  - stage:
+      - api-test:
+          alias: "8231"
+          version: "2.0"
+          params:
+            headers: []
+            id: ""
+            method: GET
+            params:
+              - desc: ""
+                key: scope
+                value: project-app
+              - desc: ""
+                key: scopeID
+                value: "2"
+			  - desc: ""
+				key: start
+				value: %s
+            url: /api/pipelines
+`
+	now := time.Now()
+	nowSubtractHourStr := now.Add(-1 * time.Hour).Format("2006-01-02 15:04:05")
+	pm1 := monkey.Patch(time.Now, func() time.Time {
+		return now
+	})
+	defer pm1.Unpatch()
+	visitor := &RefOpVisitor{
+		currentAction: &indexedAction{
+			stageIndex: 1,
+		},
+	}
+	replaced := visitor.handleOneParamOrCmdV2(yml)
+	assert.Equal(t, fmt.Sprintf(want, fmt.Sprintf(`"%s"`, nowSubtractHourStr)), replaced)
 }
 
 //func TestRef(t *testing.T) {
