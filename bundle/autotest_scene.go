@@ -116,6 +116,7 @@ func (b *Bundle) UpdateAutoTestScene(req apistructs.AutotestSceneSceneUpdateRequ
 	var rsp apistructs.AutotestCreateSceneResponse
 	httpResp, err := hc.Put(host).Path(fmt.Sprintf("/api/autotests/scenes/"+strconv.FormatInt(int64(req.SceneID), 10))).
 		Header(httputil.UserHeader, req.UserID).
+		Header(httputil.InternalHeader, "bundle").
 		JSONBody(&req).
 		Do().JSON(&rsp)
 	if err != nil {
@@ -179,6 +180,7 @@ func (b *Bundle) GetAutoTestScene(req apistructs.AutotestSceneRequest) (*apistru
 	var rsp apistructs.AutotestGetSceneResponse
 	httpResp, err := hc.Get(host).Path(fmt.Sprintf("/api/autotests/scenes/"+strconv.FormatInt(int64(req.SceneID), 10))).
 		Header(httputil.UserHeader, req.UserID).
+		Header(httputil.InternalHeader, "bundle").
 		Params(req.URLQueryString()).
 		Do().JSON(&rsp)
 	if err != nil {
