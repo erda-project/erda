@@ -19,9 +19,9 @@ import (
 )
 
 type seriesIDSet struct {
+	mu           sync.RWMutex
 	seriesIDSet  map[uint64]struct{}
 	seriesIDList []uint64
-	mu           sync.RWMutex
 }
 
 func newSeriesIDSet(initCap int) *seriesIDSet {
