@@ -317,19 +317,28 @@ ORDER BY %s LIMIT %v`,
 
 	rows, err := chs.querySQL(ctx, sql, req.TraceID)
 	if err != nil {
+		chs.Log.Errorf("querySQL: %s", err)
 		return nil
 	}
 	defer rows.Close()
 
+	metaCache := make(map[uint64][]trace.Meta, 1)
 	for rows.Next() {
 		var cs trace.Series
 		if err := rows.ScanStruct(&cs); err != nil {
+			chs.Log.Errorf("scan series: %s", err)
 			return nil
 		}
 
-		sms, err := chs.getSpanMeta(ctx, cs)
-		if err != nil {
-			return nil
+		sms, ok := metaCache[cs.SeriesID]
+		if !ok {
+			tmp, err := chs.getSpanMeta(ctx, cs)
+			if err != nil {
+				chs.Log.Errorf("scan meta: %s", err)
+				return nil
+			}
+			metaCache[cs.SeriesID] = tmp
+			sms = tmp
 		}
 
 		spans = append(spans, mergeAsSpan(cs, sms))
@@ -376,16 +385,6 @@ func mergeAsSpan(cs trace.Series, sms []trace.Meta) *pb.Span {
 	span.Tags = tags
 	return span
 }
-
-//
-// func chSpanCovertToSpan(span *pb.Span, cs spanSeries) {
-// 	span.Id = cs.SpanId
-// 	span.TraceId = cs.TraceId
-// 	span.ParentSpanId = cs.ParentSpanId
-// 	span.OperationName = cs.OperationName
-// 	span.StartTime = cs.StartTime
-// 	span.EndTime = cs.EndTime
-// }
 
 func (chs *ClickhouseSource) GetSpanCount(ctx context.Context, traceID string) int64 {
 	var count uint64

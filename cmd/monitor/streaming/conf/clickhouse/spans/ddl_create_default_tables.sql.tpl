@@ -23,10 +23,11 @@ CREATE TABLE IF NOT EXISTS <database>.spans_meta ON CLUSTER '{cluster}'
   `key` LowCardinality(String),
   `value` String,
   `create_at` DateTime64(9,'Asia/Shanghai') CODEC(DoubleDelta)
+  INDEX idx_series_id(series_id) TYPE bloom_filter GRANULARITY 1
 )
 ENGINE = ReplicatedReplacingMergeTree('/clickhouse/tables/{cluster}-{shard}/{database}/spans_meta', '{replica}')
 PARTITION BY toYYYYMMDD(create_at)
-ORDER BY (org_name, series_id, key)
+ORDER BY (org_name, key, value, series_id)
 TTL toDateTime(create_at) + INTERVAL <ttl_in_days> DAY;
 
 // create distributed table
