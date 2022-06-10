@@ -60,8 +60,9 @@ type (
 )
 
 const (
-	SpanSeriesTable = "monitor.spans_series_all"
-	SpanMetaTable   = "monitor.spans_meta_all"
+	SpanSeriesTable    = "monitor.spans_series_all"
+	SpanMetaTable      = "monitor.spans_meta_all"
+	SpanMetaTableLocal = "monitor.spans_meta"
 )
 
 const (
@@ -186,7 +187,7 @@ func (chs *ClickhouseSource) GetTraces(ctx context.Context, req *pb.GetTracesReq
 			"AND (toUnixTimestamp64Nano(end_time) - toUnixTimestamp64Nano(start_time)) <= %v)", req.DurationMin, req.DurationMax))
 	}
 
-	where.WriteString(fmt.Sprintf("AND series_id GLOBAL IN (%s)", chs.composeFilter(req)))
+	where.WriteString(fmt.Sprintf("AND series_id IN (%s)", chs.composeFilter(req)))
 
 	sql := fmt.Sprintf(specSql, SpanSeriesTable, where.String(), chs.sortConditionStrategy(req.Sort), req.PageSize, (req.PageNo-1)*req.PageSize)
 
@@ -218,18 +219,18 @@ func (chs *ClickhouseSource) GetTraces(ctx context.Context, req *pb.GetTracesReq
 
 func (chs *ClickhouseSource) composeFilter(req *pb.GetTracesRequest) string {
 	var subSqlBuf bytes.Buffer
-	subSqlBuf.WriteString(fmt.Sprintf("SELECT distinct(series_id) FROM %s WHERE (series_id in (select distinct(series_id) from %s where (key = 'terminus_key' AND value = '%s'))) AND ", SpanMetaTable, SpanMetaTable, req.TenantID))
+	subSqlBuf.WriteString(fmt.Sprintf("SELECT distinct(series_id) FROM %s WHERE (series_id in (select distinct(series_id) from %s where (key = 'terminus_key' AND value = '%s'))) AND ", SpanMetaTableLocal, SpanMetaTableLocal, req.TenantID))
 
 	if req.ServiceName != "" {
-		subSqlBuf.WriteString("(series_id in (select distinct(series_id) from " + SpanMetaTable + " where (key='service_name' AND value LIKE concat('%','" + req.ServiceName + "','%')))) AND ")
+		subSqlBuf.WriteString("(series_id in (select distinct(series_id) from " + SpanMetaTableLocal + " where (key='service_name' AND value LIKE concat('%','" + req.ServiceName + "','%')))) AND ")
 	}
 
 	if req.RpcMethod != "" {
-		subSqlBuf.WriteString("(series_id in (select distinct(series_id) from " + SpanMetaTable + " where (key='rpc_method' AND value LIKE concat('%','" + req.RpcMethod + "','%')))) AND ")
+		subSqlBuf.WriteString("(series_id in (select distinct(series_id) from " + SpanMetaTableLocal + " where (key='rpc_method' AND value LIKE concat('%','" + req.RpcMethod + "','%')))) AND ")
 	}
 
 	if req.HttpPath != "" {
-		subSqlBuf.WriteString("(series_id in (select distinct(series_id) from " + SpanMetaTable + " where (key='http_path' AND value LIKE concat('%','" + req.HttpPath + "','%')))) AND ")
+		subSqlBuf.WriteString("(series_id in (select distinct(series_id) from " + SpanMetaTableLocal + " where (key='http_path' AND value LIKE concat('%','" + req.HttpPath + "','%')))) AND ")
 	}
 
 	subSql := subSqlBuf.String()
@@ -370,16 +371,14 @@ func mergeAsSpan(cs trace.Series, sms []trace.Meta) *pb.Span {
 	span := &pb.Span{}
 	tags := make(map[string]string, 10)
 	for _, sm := range sms {
-		if "operation_name" == sm.Key {
-			span.OperationName = sm.Value
-			continue
-		}
 		tags[sm.Key] = sm.Value
 	}
 	// merge high cardinality tag
 	for k, v := range cs.Tags {
 		tags[k] = v
 	}
+	span.OperationName = tags["operation_name"]
+
 	span.Id = cs.SpanId
 	span.TraceId = cs.TraceId
 	span.ParentSpanId = cs.ParentSpanId
