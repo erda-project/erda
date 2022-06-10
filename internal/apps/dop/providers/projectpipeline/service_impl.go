@@ -875,7 +875,7 @@ func makeListPipelineExecHistoryResponse(data *apistructs.PipelinePageListData) 
 			}(),
 			AppName:    getApplicationNameFromDefinitionRemote(pipeline.DefinitionPageInfo.SourceRemote),
 			Branch:     pipeline.DefinitionPageInfo.SourceRef,
-			Executor:   pipeline.GetUserID(),
+			Executor:   pipeline.GetRunUserID(),
 			TimeBegin:  timeBegin,
 			PipelineID: pipeline.ID,
 		})

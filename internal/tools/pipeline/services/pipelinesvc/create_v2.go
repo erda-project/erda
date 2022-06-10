@@ -175,8 +175,6 @@ func (s *PipelineSvc) makePipelineFromRequestV2(req *apistructs.PipelineCreateRe
 	if p.Labels == nil {
 		p.Labels = make(map[string]string)
 	}
-	// add run,create userID label for history list search
-	p.Labels[apistructs.LabelRunUserID] = req.UserID
 	p.Labels[apistructs.LabelCreateUserID] = req.UserID
 
 	// envs
