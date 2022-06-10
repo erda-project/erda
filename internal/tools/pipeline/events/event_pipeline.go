@@ -77,8 +77,7 @@ func (e *PipelineEvent) HandleWebhook() error {
 	req.Sender = SenderPipeline
 	req.EventHeader = e.Header()
 	req.Content = e.Content()
-
-	return e.DefaultEvent.bdl.CreateEvent(req)
+	return e.DefaultEvent.CreateEvent(req)
 }
 
 const (
