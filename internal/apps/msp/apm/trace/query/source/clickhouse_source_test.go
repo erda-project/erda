@@ -15,10 +15,12 @@
 package source
 
 import (
+	"context"
 	"reflect"
 	"testing"
 	"time"
 
+	"github.com/erda-project/erda/internal/apps/msp/apm/trace/query/commom/custom"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
@@ -243,4 +245,32 @@ func Test_convertToMetas(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestClickhouseSource_GetSpans(t *testing.T) {
+	chs := ClickhouseSource{
+		CompatibleSource: &mockCS{},
+	}
+	spans := chs.GetSpans(context.TODO(), &pb.GetSpansRequest{})
+	ass := assert.New(t)
+	ass.Equal(1, len(spans))
+}
+
+type mockCS struct {
+}
+
+func (m *mockCS) GetSpans(ctx context.Context, req *pb.GetSpansRequest) []*pb.Span {
+	return []*pb.Span{{}}
+}
+
+func (m *mockCS) GetSpanCount(ctx context.Context, traceID string) int64 {
+	return 0
+}
+
+func (m *mockCS) GetTraceReqDistribution(ctx context.Context, model custom.Model) ([]*TraceDistributionItem, error) {
+	return nil, nil
+}
+
+func (m *mockCS) GetTraces(ctx context.Context, req *pb.GetTracesRequest) (*pb.GetTracesResponse, error) {
+	return nil, nil
 }
