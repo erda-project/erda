@@ -21,6 +21,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/providers/clickhouse"
 	"github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
@@ -31,6 +32,7 @@ import (
 type ClickhouseSource struct {
 	Clickhouse clickhouse.Interface
 	Log        logs.Logger
+	DebugSQL   bool
 
 	CompatibleSource TraceSource
 }
@@ -144,7 +146,7 @@ func (chs *ClickhouseSource) GetTraceReqDistribution(ctx context.Context, model 
 
 	tracingSql = fmt.Sprintf(tracingSql, SpanSeriesTable, where.String())
 	sql := fmt.Sprintf(specSql, n, unit, tracingSql, interval)
-	rows, err := chs.Clickhouse.Client().Query(ctx, sql)
+	rows, err := chs.querySQL(ctx, sql)
 	if err != nil {
 		chs.Log.Error(err)
 		return []*TraceDistributionItem{}, err
@@ -195,7 +197,8 @@ func (chs *ClickhouseSource) GetTraces(ctx context.Context, req *pb.GetTracesReq
 
 	sql := fmt.Sprintf(specSql, SpanSeriesTable, where.String(), chs.sortConditionStrategy(req.Sort), req.PageSize, (req.PageNo-1)*req.PageSize)
 
-	rows, err := chs.Clickhouse.Client().Query(ctx, sql)
+	// rows, err := chs.Clickhouse.Client().Query(ctx, sql)
+	rows, err := chs.querySQL(ctx, sql)
 	if err != nil {
 		return &pb.GetTracesResponse{}, err
 	}
@@ -300,7 +303,7 @@ func (chs *ClickhouseSource) GetSpans(ctx context.Context, req *pb.GetSpansReque
 		" start_time,toUnixTimestamp64Nano(end_time) AS end_time FROM %s WHERE trace_id = $1 ORDER BY %s LIMIT %v",
 		SpanSeriesTable, "start_time", req.Limit)
 
-	rows, err := chs.Clickhouse.Client().Query(ctx, sql, req.TraceID)
+	rows, err := chs.querySQL(ctx, sql, req.TraceID)
 	if err != nil {
 		return nil
 	}
@@ -375,4 +378,11 @@ func (chs *ClickhouseSource) GetTraceCount(ctx context.Context, where string) in
 		return 0
 	}
 	return int64(count)
+}
+
+func (chs *ClickhouseSource) querySQL(ctx context.Context, sql string, args ...interface{}) (driver.Rows, error) {
+	if chs.DebugSQL {
+		fmt.Printf("===Tracing Clickhouse SQL:\n%s\n%+v\n===Tracing Clickhouse SQL\n", sql, args)
+	}
+	return chs.Clickhouse.Client().Query(ctx, sql, args...)
 }
