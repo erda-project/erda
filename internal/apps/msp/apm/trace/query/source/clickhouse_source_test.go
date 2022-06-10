@@ -21,6 +21,7 @@ import (
 
 	"github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
 	"github.com/erda-project/erda/internal/apps/msp/apm/trace"
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_mergeAsSpan(t *testing.T) {
@@ -157,6 +158,52 @@ func TestClickhouseSource_composeFilter(t *testing.T) {
 			if got := chs.composeFilter(tt.args.req); got != tt.want {
 				t.Errorf("composeFilter() = %v, want %v", got, tt.want)
 			}
+		})
+	}
+}
+
+func TestClickhouseSource_sortConditionStrategy1(t *testing.T) {
+	type args struct {
+		sort string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			args: args{sort: "span_count_desc"},
+			want: "ORDER BY span_count DESC",
+		},
+		{
+			args: args{sort: "span_count_asc"},
+			want: "ORDER BY span_count ASC",
+		},
+		{
+			args: args{sort: "trace_duration_desc"},
+			want: "ORDER BY duration DESC",
+		},
+		{
+			args: args{sort: "trace_duration_asc"},
+			want: "ORDER BY duration ASC",
+		},
+		{
+			args: args{sort: "trace_time_desc"},
+			want: "ORDER BY min_start_time DESC",
+		},
+		{
+			args: args{sort: "trace_time_asc"},
+			want: "ORDER BY min_start_time ASC",
+		},
+		{
+			args: args{sort: "xxx"},
+			want: "ORDER BY min_start_time DESC",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			chs := &ClickhouseSource{}
+			assert.Equal(t, tt.want, chs.sortConditionStrategy(tt.args.sort))
 		})
 	}
 }
