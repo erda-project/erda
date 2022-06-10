@@ -26,6 +26,7 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/core/messenger/eventbox/dispatcher"
 	httpinput "github.com/erda-project/erda/internal/core/messenger/eventbox/input/http"
@@ -44,6 +45,7 @@ type Config struct {
 	ClusterAccessKey             string        `file:"cluster_access_key" desc:"cluster access key, if specified will doesn't start watcher"`
 	RetryConnectDialerInterval   time.Duration `file:"retry_cluster_hook_interval" default:"1s"`
 	EtcdPrefixOfClusterAccessKey string        `file:"cluster_access_key_etcd_prefix" env:"EDGE_PIPELINE_CLUSTER_ACCESS_KEY_ETCD_PREFIX"`
+	UpdateClientInterval         time.Duration `file:"update_client_interval" env:"UPDATE_CLIENT_INTERVAL" default:"60s"`
 }
 
 type provider struct {
@@ -60,6 +62,8 @@ type provider struct {
 	forCenterUse       forCenterUse
 	forEdgeUse         forEdgeUse
 	queryStringDecoder *schema.Decoder
+	eventHandlers      []EventHandler
+	edgeClients        map[string]apistructs.ClusterManagerClientDetail
 
 	webHookHTTP     *webhook.WebHookHTTP
 	httpI           *httpinput.HttpInput
@@ -73,6 +77,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	if err := p.checkEtcdPrefixKey(p.Cfg.EtcdPrefixOfClusterAccessKey); err != nil {
 		return err
 	}
+	p.bdl = bundle.New(bundle.WithClusterManager(), bundle.WithCoreServices())
 	p.bdl = bundle.New(bundle.WithClusterManager())
 	p.queryStringDecoder = schema.NewDecoder()
 	webHookHTTP, err := webhook.NewWebHookHTTP()
@@ -92,11 +97,15 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.eventDispatcher = eventDispatcher
 	p.forEdgeUse.handlersOnEdge = make(chan func(context.Context), 0)
 	p.forCenterUse.handlersOnCenter = make(chan func(context.Context), 0)
+	p.eventHandlers = make([]EventHandler, 0)
+	p.edgeClients = make(map[string]apistructs.ClusterManagerClientDetail)
 	p.startEdgeCenterUse(ctx)
 	p.OnEdge(p.watchClusterCredential)
 	p.OnEdge(p.initWebHookEndpoints)
 	p.OnEdge(p.startEventDispatcher)
 	p.waitingEdgeReady(ctx)
+	p.OnCenter(p.registerClientHookUntilSuccess)
+	p.OnCenter(p.continuousUpdateClient)
 	return nil
 }
 

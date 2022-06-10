@@ -249,3 +249,8 @@ type GittarPushPayloadEvent struct {
 		} `json:"pusher"`
 	} `json:"content"`
 }
+
+type ClusterManagerClientEvent struct {
+	EventHeader
+	Content ClusterManagerClientDetail `json:"content"`
+}

@@ -112,7 +112,7 @@ func (p *provider) watchClusterCredential(ctx context.Context) {
 }
 
 func (p *provider) getInClusterRetryWatcher(ns string) (*watch.RetryWatcher, error) {
-	cs, err := k8sclient.New(p.Cfg.ClusterName)
+	cs, err := k8sclient.New(p.Cfg.ClusterName, k8sclient.WithPreferredToUseInClusterConfig())
 	if err != nil {
 		return nil, fmt.Errorf("create clientset error: %v", err)
 	}

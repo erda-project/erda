@@ -41,6 +41,7 @@ import (
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/core/cluster-manager/dialer/auth"
 	"github.com/erda-project/erda/internal/core/cluster-manager/dialer/config"
 	"github.com/erda-project/erda/pkg/http/httputil"
@@ -199,7 +200,8 @@ func clusterRegister(ctx context.Context, server *remotedialer.Server, rw http.R
 					clientType, clusterKey, err)
 				goto register
 			}
-			updateClientDetail(clientType, clusterKey, clientData)
+			clientData[apistructs.ClusterManagerDataKeyClusterKey] = req.Header.Get(apistructs.ClusterManagerHeaderKeyClusterKey.String())
+			updateClientDetailWithEvent(clientType, clusterKey, clientData)
 		}
 		logrus.Infof("client type [%s]", clientType)
 	}
@@ -345,6 +347,18 @@ func getClusterClientData(server *remotedialer.Server, rw http.ResponseWriter, r
 	rw.Write(clientByteData)
 }
 
+func listClusterClientsByType(server *remotedialer.Server, rw http.ResponseWriter, req *http.Request) {
+	clientType := apistructs.ClusterManagerClientType(mux.Vars(req)["clientType"])
+	clientDetails := listClientDetailByType(clientType)
+	clientDetailBytes, err := json.Marshal(clientDetails)
+	if err != nil {
+		remotedialer.DefaultErrorWriter(rw, req, 500, err)
+		return
+	}
+	rw.Header().Set("Content-Type", "application/json")
+	rw.Write(clientDetailBytes)
+}
+
 func getClusterClient(server *remotedialer.Server, clusterKey string, timeout time.Duration) *http.Client {
 	l.Lock()
 	defer l.Unlock()
@@ -370,12 +384,13 @@ func getClusterClient(server *remotedialer.Server, clusterKey string, timeout ti
 	return client
 }
 
-func NewDialerRouter(ctx context.Context, clusterSvc clusterpb.ClusterServiceServer, credential tokenpb.TokenServiceServer, cfg *config.Config, etcd *clientv3.Client) *mux.Router {
+func NewDialerRouter(ctx context.Context, clusterSvc clusterpb.ClusterServiceServer, credential tokenpb.TokenServiceServer, cfg *config.Config, etcd *clientv3.Client, bdl *bundle.Bundle) *mux.Router {
 	authorizer := auth.New(
 		auth.WithCredentialClient(credential),
 		auth.WithConfig(cfg),
 	)
 
+	initClientData(bdl)
 	handler := remotedialer.New(authorizer.Authorizer, remotedialer.DefaultErrorWriter)
 	handler.ClientConnectAuthorizer = func(proto, address string) bool {
 		if strings.HasSuffix(proto, "::tcp") {
@@ -407,6 +422,10 @@ func NewDialerRouter(ctx context.Context, clusterSvc clusterpb.ClusterServiceSer
 		req *http.Request) {
 		getClusterClientData(handler, rw, req)
 	})
+	router.HandleFunc("/clusteragent/client-detail/{clientType}", func(rw http.ResponseWriter,
+		req *http.Request) {
+		listClusterClientsByType(handler, rw, req)
+	})
 	router.PathPrefix("/").HandlerFunc(func(rw http.ResponseWriter,
 		req *http.Request) {
 		netportal(handler, rw, req, cfg.Timeout)
@@ -414,13 +433,13 @@ func NewDialerRouter(ctx context.Context, clusterSvc clusterpb.ClusterServiceSer
 	return router
 }
 
-func Start(ctx context.Context, clusterSvc clusterpb.ClusterServiceServer, credential tokenpb.TokenServiceServer, cfg *config.Config, etcd *clientv3.Client) error {
+func Start(ctx context.Context, clusterSvc clusterpb.ClusterServiceServer, credential tokenpb.TokenServiceServer, cfg *config.Config, etcd *clientv3.Client, bdl *bundle.Bundle) error {
 	server := &http.Server{
 		BaseContext: func(net.Listener) context.Context {
 			return ctx
 		},
 		Addr:    cfg.Listen,
-		Handler: NewDialerRouter(ctx, clusterSvc, nil, cfg, etcd),
+		Handler: NewDialerRouter(ctx, clusterSvc, nil, cfg, etcd, bdl),
 	}
 	return server.ListenAndServe()
 }

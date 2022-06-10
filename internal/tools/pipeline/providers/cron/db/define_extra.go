@@ -86,25 +86,14 @@ func (client *Client) PagingPipelineCron(req *pb.CronPagingRequest, ops ...mysql
 		limitSQL.Where("cluster_name = ?", req.ClusterName)
 	}
 
-	// total
-	totalSQL := *limitSQL
-	var totalIDs []PipelineCron
-	if err := totalSQL.Find(&totalIDs); err != nil {
-		return nil, -1, err
-	}
-	total = int64(len(totalIDs))
-
 	// LIMIT ${pageSize} OFFSET ${pageNo}
-	var limitIDs []PipelineCron
-	if err := limitSQL.Limit(int(req.PageSize), int((req.PageNo-1)*req.PageSize)).Find(&limitIDs); err != nil {
-		return nil, -1, err
+	var err error
+	if req.GetAll {
+		total, err = limitSQL.FindAndCount(&result)
+	} else {
+		total, err = limitSQL.Limit(int(req.PageSize), int((req.PageNo-1)*req.PageSize)).FindAndCount(&result)
 	}
-	// get pipeline by header
-	var ids []uint64
-	for i := range limitIDs {
-		ids = append(ids, limitIDs[i].ID)
-	}
-	if err := session.In("id", ids).Desc("id").Find(&result); err != nil {
+	if err != nil {
 		return nil, -1, err
 	}
 
