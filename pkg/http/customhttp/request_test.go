@@ -146,7 +146,7 @@ func TestQueryClusterManagerIP(t *testing.T) {
 	go http.ListenAndServe(targetEndpoint, nil)
 
 	time.Sleep(1 * time.Second)
-	os.Setenv(discover.EnvClusterManager, targetEndpoint)
+	os.Setenv(discover.EnvClusterDialer, targetEndpoint)
 	res, ok := queryClusterManagerIP("")
 	if !ok {
 		t.Error("failed to get cluster manager ip")

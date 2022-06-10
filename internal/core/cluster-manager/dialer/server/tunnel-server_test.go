@@ -28,8 +28,8 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda/internal/core/cluster-manager/conf"
 	"github.com/erda-project/erda/internal/core/cluster-manager/dialer/auth"
+	"github.com/erda-project/erda/internal/core/cluster-manager/dialer/config"
 	clusteragent "github.com/erda-project/erda/internal/tools/cluster-agent/client"
 	clientconfig "github.com/erda-project/erda/internal/tools/cluster-agent/config"
 )
@@ -56,7 +56,7 @@ func Test_netportal(t *testing.T) {
 		ClusterAccessKey:       fakeClusterAccessKey,
 	}))
 
-	go Start(context.Background(), &fakeClusterSvc{}, nil, &conf.Conf{
+	go Start(context.Background(), &fakeClusterSvc{}, nil, &config.Config{
 		Listen:          dialerListenAddr2,
 		NeedClusterInfo: false,
 	}, &clientv3.Client{KV: &fakeKV{}})

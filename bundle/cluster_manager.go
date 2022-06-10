@@ -23,7 +23,7 @@ import (
 )
 
 func (b *Bundle) IsClusterManagerClientRegistered(clientType apistructs.ClusterManagerClientType, clusterKey string) (bool, error) {
-	host, err := b.urls.ClusterManager()
+	host, err := b.urls.ClusterDialer()
 	if err != nil {
 		return false, err
 	}
@@ -46,7 +46,7 @@ func (b *Bundle) IsClusterManagerClientRegistered(clientType apistructs.ClusterM
 }
 
 func (b *Bundle) GetClusterManagerClientData(clientType apistructs.ClusterManagerClientType, clusterKey string) (apistructs.ClusterManagerClientDetail, error) {
-	host, err := b.urls.ClusterManager()
+	host, err := b.urls.ClusterDialer()
 	if err != nil {
 		return apistructs.ClusterManagerClientDetail{}, err
 	}

@@ -21,7 +21,7 @@ import (
 var CLUSTER_MANAGER_CONNECT = apis.ApiSpec{
 	Path:        "/clusteragent/connect",
 	BackendPath: "/clusteragent/connect",
-	Host:        "cluster-manager.marathon.l4lb.thisdcos.directory:9094",
+	Host:        "cluster-manager.marathon.l4lb.thisdcos.directory:80",
 	Scheme:      "ws",
 	Method:      "GET",
 	Doc:         "cluster-agent向cluster-manager注册",

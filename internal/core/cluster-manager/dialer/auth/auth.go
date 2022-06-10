@@ -25,7 +25,7 @@ import (
 
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/internal/core/cluster-manager/conf"
+	"github.com/erda-project/erda/internal/core/cluster-manager/dialer/config"
 )
 
 const (
@@ -36,7 +36,7 @@ type Option func(authorizer *Authorizer)
 
 type Authorizer struct {
 	Credential tokenpb.TokenServiceServer
-	cfg        *conf.Conf
+	cfg        *config.Config
 }
 
 func New(opts ...Option) *Authorizer {
@@ -57,7 +57,7 @@ func WithCredentialClient(credential tokenpb.TokenServiceServer) Option {
 }
 
 // WithConfig with dialer config
-func WithConfig(cfg *conf.Conf) Option {
+func WithConfig(cfg *config.Config) Option {
 	return func(a *Authorizer) {
 		a.cfg = cfg
 	}

@@ -41,8 +41,8 @@ import (
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/internal/core/cluster-manager/conf"
 	"github.com/erda-project/erda/internal/core/cluster-manager/dialer/auth"
+	"github.com/erda-project/erda/internal/core/cluster-manager/dialer/config"
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
@@ -370,7 +370,7 @@ func getClusterClient(server *remotedialer.Server, clusterKey string, timeout ti
 	return client
 }
 
-func NewDialerRouter(ctx context.Context, clusterSvc clusterpb.ClusterServiceServer, credential tokenpb.TokenServiceServer, cfg *conf.Conf, etcd *clientv3.Client) *mux.Router {
+func NewDialerRouter(ctx context.Context, clusterSvc clusterpb.ClusterServiceServer, credential tokenpb.TokenServiceServer, cfg *config.Config, etcd *clientv3.Client) *mux.Router {
 	authorizer := auth.New(
 		auth.WithCredentialClient(credential),
 		auth.WithConfig(cfg),
@@ -414,7 +414,7 @@ func NewDialerRouter(ctx context.Context, clusterSvc clusterpb.ClusterServiceSer
 	return router
 }
 
-func Start(ctx context.Context, clusterSvc clusterpb.ClusterServiceServer, credential tokenpb.TokenServiceServer, cfg *conf.Conf, etcd *clientv3.Client) error {
+func Start(ctx context.Context, clusterSvc clusterpb.ClusterServiceServer, credential tokenpb.TokenServiceServer, cfg *config.Config, etcd *clientv3.Client) error {
 	server := &http.Server{
 		BaseContext: func(net.Listener) context.Context {
 			return ctx

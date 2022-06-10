@@ -138,6 +138,10 @@ func (u urls) ClusterManager() (string, error) {
 	return u.getURL(discover.EnvClusterManager, discover.SvcClusterManager)
 }
 
+func (u urls) ClusterDialer() (string, error) {
+	return u.getURL(discover.EnvClusterDialer, discover.SvcClusterDialer)
+}
+
 func (u urls) getURL(k, srvName string) (string, error) {
 	v, ok := u[k]
 	if ok {

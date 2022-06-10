@@ -12,18 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dbclient
+package main
 
 import (
-	_ "github.com/jinzhu/gorm/dialects/mysql"
-
-	"github.com/erda-project/erda/pkg/database/dbengine"
+	_ "github.com/erda-project/erda/internal/core/cluster-manager/cluster"
+	_ "github.com/erda-project/erda/internal/core/cluster-manager/dialer"
 )
-
-type DBClient struct {
-	*dbengine.DBEngine
-}
-
-func Open() *DBClient {
-	return &DBClient{DBEngine: dbengine.MustOpen()}
-}

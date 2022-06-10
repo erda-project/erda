@@ -186,8 +186,8 @@ func parseDialerEndpoint(endpoint string) (string, error) {
 	}
 
 	//inCluster, visit dialer inner service first.
-	if os.Getenv(string(apistructs.DICE_IS_EDGE)) == "false" && discover.ClusterManager() != "" {
-		return "ws://" + discover.ClusterManager() + u.Path, nil
+	if os.Getenv(string(apistructs.DICE_IS_EDGE)) == "false" && discover.ClusterDialer() != "" {
+		return "ws://" + discover.ClusterDialer() + u.Path, nil
 	}
 
 	switch u.Scheme {
