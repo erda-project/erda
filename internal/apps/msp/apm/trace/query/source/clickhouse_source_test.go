@@ -71,8 +71,9 @@ func Test_mergeAsSpan(t *testing.T) {
 				EndTime:       2,
 				OperationName: "query",
 				Tags: map[string]string{
-					"db_statement": "select * from abc where id=aaa",
-					"org_name":     "erda",
+					"db_statement":   "select * from abc where id=aaa",
+					"org_name":       "erda",
+					"operation_name": "query",
 				},
 			},
 		},
