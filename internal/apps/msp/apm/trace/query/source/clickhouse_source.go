@@ -136,7 +136,7 @@ func (chs *ClickhouseSource) GetTraceReqDistribution(ctx context.Context, model 
 		where.WriteString(fmt.Sprintf("AND ((toUnixTimestamp64Nano(end_time) - toUnixTimestamp64Nano(start_time)) >= %v "+
 			"AND (toUnixTimestamp64Nano(end_time) - toUnixTimestamp64Nano(start_time)) <= %v)", model.DurationMin, model.DurationMax))
 	}
-	where.WriteString(fmt.Sprintf("AND series_id IN (%s)", chs.composeFilter(&pb.GetTracesRequest{TenantID: model.TenantId, ServiceName: model.ServiceName, RpcMethod: model.RpcMethod, HttpPath: model.HttpPath})))
+	where.WriteString(fmt.Sprintf("AND series_id GLOBAL IN (%s)", chs.composeFilter(&pb.GetTracesRequest{TenantID: model.TenantId, ServiceName: model.ServiceName, RpcMethod: model.RpcMethod, HttpPath: model.HttpPath})))
 
 	tracingSql = fmt.Sprintf(tracingSql, SpanSeriesTable, where.String())
 	sql := fmt.Sprintf(specSql, n, unit, tracingSql, interval)
@@ -187,7 +187,7 @@ func (chs *ClickhouseSource) GetTraces(ctx context.Context, req *pb.GetTracesReq
 			"AND (toUnixTimestamp64Nano(end_time) - toUnixTimestamp64Nano(start_time)) <= %v)", req.DurationMin, req.DurationMax))
 	}
 
-	where.WriteString(fmt.Sprintf("AND series_id IN (%s)", chs.composeFilter(req)))
+	where.WriteString(fmt.Sprintf("AND series_id GLOBAL IN (%s)", chs.composeFilter(req)))
 
 	sql := fmt.Sprintf(specSql, SpanSeriesTable, where.String(), chs.sortConditionStrategy(req.Sort), req.PageSize, (req.PageNo-1)*req.PageSize)
 
@@ -219,7 +219,7 @@ func (chs *ClickhouseSource) GetTraces(ctx context.Context, req *pb.GetTracesReq
 
 func (chs *ClickhouseSource) composeFilter(req *pb.GetTracesRequest) string {
 	var subSqlBuf bytes.Buffer
-	subSqlBuf.WriteString(fmt.Sprintf("SELECT distinct(series_id) FROM %s WHERE (series_id in (select distinct(series_id) from %s where (key = 'terminus_key' AND value = '%s'))) AND ", SpanMetaTableLocal, SpanMetaTableLocal, req.TenantID))
+	subSqlBuf.WriteString(fmt.Sprintf("SELECT distinct(series_id) FROM %s WHERE (series_id in (select distinct(series_id) from %s where (key = 'terminus_key' AND value = '%s'))) AND ", SpanMetaTable, SpanMetaTableLocal, req.TenantID))
 
 	if req.ServiceName != "" {
 		subSqlBuf.WriteString("(series_id in (select distinct(series_id) from " + SpanMetaTableLocal + " where (key='service_name' AND value LIKE concat('%','" + req.ServiceName + "','%')))) AND ")
