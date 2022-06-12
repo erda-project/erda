@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS <database>.spans_meta ON CLUSTER '{cluster}'
 ENGINE = ReplicatedReplacingMergeTree('/clickhouse/tables/{cluster}-{shard}/{database}/spans_meta', '{replica}')
 PARTITION BY toYYYYMMDD(create_at)
 ORDER BY (org_name, key, value, series_id)
-TTL toDateTime(create_at) + INTERVAL <ttl_in_days> DAY;
+TTL toDateTime(create_at) + INTERVAL <ttl_in_days>*2 DAY;
 
 // create distributed table
 // notice: ddls to the <table> table should be synced to the <table>_all table
