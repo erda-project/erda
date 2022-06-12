@@ -589,7 +589,7 @@ erda.oap.collector.exporter.clickhouse@span:
   _enable: ${WRITE_SPAN_TO_CLICKHOUSE_ENABLE:false}
   span:
     currency_num: ${EXPORTER_CH_SPAN_CURRENCY_NUM:2}
-    series_tag_keys: ${EXPORTER_CH_SPAN_SERIES_TAG_KEYS:db_statement,operation_name,http_url,http_target,terminus_logid,db_host,peer_address,http_write_error,net_peer_port}
+    series_tag_keys: ${EXPORTER_CH_SPAN_SERIES_TAG_KEYS:db_statement,operation_name,http_url,http_path,http_target,terminus_logid,db_host,peer_address,http_write_error,net_peer_port}
 # ************* exporters *************
 
 # --- data pipeline block ---
