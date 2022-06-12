@@ -136,6 +136,11 @@ func (chs *ClickhouseSource) GetTraceReqDistribution(ctx context.Context, model 
 		where.WriteString(fmt.Sprintf("AND ((toUnixTimestamp64Nano(end_time) - toUnixTimestamp64Nano(start_time)) >= %v "+
 			"AND (toUnixTimestamp64Nano(end_time) - toUnixTimestamp64Nano(start_time)) <= %v)", model.DurationMin, model.DurationMax))
 	}
+	// http_path filter. TODO. need a more common query
+	if model.HttpPath != "" {
+		where.WriteString("AND tags.http_path LIKE concat('%','" + model.HttpPath + "','%') ")
+	}
+
 	where.WriteString(fmt.Sprintf("AND series_id GLOBAL IN (%s)", chs.composeFilter(&pb.GetTracesRequest{TenantID: model.TenantId, ServiceName: model.ServiceName, RpcMethod: model.RpcMethod, HttpPath: model.HttpPath})))
 
 	tracingSql = fmt.Sprintf(tracingSql, SpanSeriesTable, where.String())
@@ -186,6 +191,9 @@ func (chs *ClickhouseSource) GetTraces(ctx context.Context, req *pb.GetTracesReq
 		where.WriteString(fmt.Sprintf("AND ((toUnixTimestamp64Nano(end_time) - toUnixTimestamp64Nano(start_time)) >= %v "+
 			"AND (toUnixTimestamp64Nano(end_time) - toUnixTimestamp64Nano(start_time)) <= %v)", req.DurationMin, req.DurationMax))
 	}
+	if req.HttpPath != "" {
+		where.WriteString("AND tags.http_path LIKE concat('%','" + req.HttpPath + "','%') ")
+	}
 
 	where.WriteString(fmt.Sprintf("AND series_id GLOBAL IN (%s)", chs.composeFilter(req)))
 
@@ -227,10 +235,6 @@ func (chs *ClickhouseSource) composeFilter(req *pb.GetTracesRequest) string {
 
 	if req.RpcMethod != "" {
 		subSqlBuf.WriteString("(series_id in (select distinct(series_id) from " + SpanMetaTableLocal + " where (key='rpc_method' AND value LIKE concat('%','" + req.RpcMethod + "','%')))) AND ")
-	}
-
-	if req.HttpPath != "" {
-		subSqlBuf.WriteString("(series_id in (select distinct(series_id) from " + SpanMetaTableLocal + " where (key='http_path' AND value LIKE concat('%','" + req.HttpPath + "','%')))) AND ")
 	}
 
 	subSql := subSqlBuf.String()
