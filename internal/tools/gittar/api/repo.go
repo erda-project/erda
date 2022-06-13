@@ -84,9 +84,8 @@ func CreateRepo(context *webcontext.Context) {
 func GetRepoBranches(context *webcontext.Context) {
 	onlyBranchNames := context.GetQueryBool("onlyBranchNames", false)
 	findBranch := context.Query("findBranch")
-	baseBranch := context.Query("baseBranch")
 	repository := context.Repository
-	branches, err := context.Repository.GetDetailBranches(onlyBranchNames, findBranch, baseBranch)
+	branches, err := context.Repository.GetDetailBranches(onlyBranchNames, findBranch)
 	if err != nil {
 		logrus.Errorf("repo:%v branch error %v", repository.DiskPath(), err)
 		context.Abort(errors.New("branch error"))

@@ -558,13 +558,17 @@ func (s *Service) GetDevFlowInfo(ctx context.Context, req *pb.GetDevFlowInfoRequ
 		return nil, work.Error()
 	}
 
-	var appTempBranchChangeBranchListMap = map[uint64]map[string][]*pb.ChangeBranch{}
-	var sourceBranchBaseCommitMap = make(map[string]*apistructs.Commit)
+	var (
+		appTempBranchChangeBranchListMap = map[uint64]map[string][]*pb.ChangeBranch{}
+		appTempBranchCommitMap           = map[uint64]map[string]*apistructs.Commit{}
+		sourceBranchBaseCommitMap        = make(map[string]*apistructs.Commit)
+	)
 	for _, appID := range needQueryTempBranchAppMap {
 		work.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
 			appID := i[0].(uint64)
 			appDto := appInfoMap[appID]
 			appTempBranchChangeBranchListMap[appID] = make(map[string][]*pb.ChangeBranch)
+			appTempBranchCommitMap[appID] = make(map[string]*apistructs.Commit)
 			for _, v := range appMergeInfoMap[appID] {
 				tempBranch := targetBranchTempBranchMap[v.TargetBranch]
 				if !v.IsJoinTempBranch {
@@ -578,8 +582,20 @@ func (s *Service) GetDevFlowInfo(ctx context.Context, req *pb.GetDevFlowInfoRequ
 				if err != nil {
 					return err
 				}
-				sourceBranchBaseCommitMap[v.SourceBranch] = baseCommit
+
+				if _, ok := appTempBranchCommitMap[appID][tempBranch]; !ok {
+					var repoPath = fmt.Sprintf(gittarPrefixOpenApi + appDto.ProjectName + "/" + appDto.Name)
+					commit, err := s.p.bdl.ListGittarCommit(repoPath, tempBranch, apis.GetUserID(ctx), apis.GetOrgID(ctx))
+					if err != nil {
+						return err
+					}
+					locker.Lock()
+					appTempBranchCommitMap[appID][tempBranch] = commit
+					locker.Unlock()
+				}
+
 				locker.Lock()
+				sourceBranchBaseCommitMap[v.SourceBranch] = baseCommit
 				appTempBranchChangeBranchListMap[appID][v.TargetBranch] = append(appTempBranchChangeBranchListMap[appID][v.TargetBranch], &pb.ChangeBranch{
 					Commit:      CommitConvert(baseCommit),
 					BranchName:  v.SourceBranch,
@@ -610,6 +626,14 @@ func (s *Service) GetDevFlowInfo(ctx context.Context, req *pb.GetDevFlowInfoRequ
 			var infos []*pb.PipelineStepInfo
 
 			changeBranches = appTempBranchChangeBranchListMap[appDto.ID][mrInfo.TargetBranch]
+
+			if mrInfo.IsJoinTempBranch {
+				branch = targetBranchTempBranchMap[mrInfo.TargetBranch]
+				commitID = appTempBranchCommitMap[appDto.ID][branch].ID
+			} else {
+				branch = mrInfo.SourceBranch
+				commitID = mrInfo.SourceSha
+			}
 			infos, err = s.listPipelineStepInfo(ctx, &appDto, branch, diceworkspace.GetValidBranchByGitReference(branch, rules).Workspace, commitID)
 			if err != nil {
 				return err
@@ -713,27 +737,6 @@ func CommitConvert(commit *apistructs.Commit) *pb.Commit {
 		CommitMessage: commit.CommitMessage,
 		ParentSha:     commit.ParentSha,
 	}
-}
-
-func (s *Service) FindBranchesWithMergedToTempBranch(ctx context.Context, repoPath, tempBranch string) ([]apistructs.Branch, error) {
-	branches, err := s.p.bdl.GetGittarBranchesV2(repoPath, apis.GetOrgID(ctx), apis.GetUserID(ctx), tempBranch)
-	if err != nil {
-		return nil, err
-	}
-	mergedBranches := BranchFilterIn(branches, func(branch apistructs.Branch) bool {
-		return branch.IsMerged
-	})
-	return mergedBranches, nil
-}
-
-func BranchFilterIn(branches []apistructs.Branch, fn func(branch apistructs.Branch) bool) []apistructs.Branch {
-	newBranches := make([]apistructs.Branch, 0)
-	for _, v := range branches {
-		if fn(v) {
-			newBranches = append(newBranches, v)
-		}
-	}
-	return newBranches
 }
 
 func (s *Service) queryAllPipelineYmlAndDoFunc(ctx context.Context, appDto *apistructs.ApplicationDTO, branch string,

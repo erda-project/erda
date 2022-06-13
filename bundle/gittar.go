@@ -380,8 +380,8 @@ func (b *Bundle) GetGittarBranches(repo, userID string) ([]string, error) {
 	return branches, nil
 }
 
-// GetGittarBranchNamesV2 获取指定应用的所有分支名称
-func (b *Bundle) GetGittarBranchNamesV2(repo string, orgID string, userID string) ([]string, error) {
+// GetGittarBranchesV2 获取指定应用的所有分支
+func (b *Bundle) GetGittarBranchesV2(repo string, orgID string, onlyBranchNames bool, userID string) ([]string, error) {
 	var (
 		host       string
 		err        error
@@ -397,7 +397,7 @@ func (b *Bundle) GetGittarBranchNamesV2(repo string, orgID string, userID string
 		Path(repo+"/branches").
 		Header("Org-ID", orgID).
 		Header(httputil.UserHeader, userID).
-		Param("onlyBranchNames", strconv.FormatBool(true)).
+		Param("onlyBranchNames", strconv.FormatBool(onlyBranchNames)).
 		Do().JSON(&branchResp)
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)
@@ -411,37 +411,6 @@ func (b *Bundle) GetGittarBranchNamesV2(repo string, orgID string, userID string
 		branches = append(branches, branch.Name)
 	}
 	return branches, nil
-}
-
-// GetGittarBranchesV2 .
-// baseBranch means to find branches that are merged to baseBranch, just set isMerged=true, use `git branch --merged baseBranch`
-// if baseBranch is empty means to find branches that are merged to defaultBranch
-func (b *Bundle) GetGittarBranchesV2(repo, orgID, userID, baseBranch string) ([]apistructs.Branch, error) {
-	var (
-		host       string
-		err        error
-		branchResp apistructs.GittarBranchesResponse
-	)
-	hc := b.hc
-	host, err = b.urls.Gittar()
-	if err != nil {
-		return nil, err
-	}
-
-	resp, err := hc.Get(host).
-		Path(repo+"/branches").
-		Header("Org-ID", orgID).
-		Header(httputil.UserHeader, userID).
-		Param("baseBranch", baseBranch).
-		Do().JSON(&branchResp)
-	if err != nil {
-		return nil, apierrors.ErrInvoke.InternalError(err)
-	}
-	if !resp.IsOK() || !branchResp.Success {
-		return nil, toAPIError(resp.StatusCode(), branchResp.Error)
-	}
-
-	return branchResp.Data, nil
 }
 
 func (b *Bundle) GetGittarBranchDetail(repo, orgID, branch, userID string) (*apistructs.BranchDetail, error) {
