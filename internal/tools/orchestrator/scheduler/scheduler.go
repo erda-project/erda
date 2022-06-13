@@ -36,8 +36,8 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/impl/labelmanager"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/impl/resourceinfo"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/impl/servicegroup"
-	volume2 "github.com/erda-project/erda/internal/tools/orchestrator/scheduler/impl/volume"
-	driver2 "github.com/erda-project/erda/internal/tools/orchestrator/scheduler/impl/volume/driver"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/impl/volume"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/impl/volume/driver"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/task"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpserver"
@@ -75,16 +75,16 @@ func NewScheduler(instanceinfoImpl instanceinfo.InstanceInfo, clusterSvc cluster
 		panic(err)
 	}
 
-	volumeStore, err := jsonstore.New(jsonstore.UseMemEtcdStore(context.Background(), volume2.ETCDVolumeMetadataDir, nil, nil))
+	volumeStore, err := jsonstore.New(jsonstore.UseMemEtcdStore(context.Background(), volume.ETCDVolumeMetadataDir, nil, nil))
 	if err != nil {
 		panic(err)
 	}
-	drivers := map[apistructs.VolumeType]volume2.Volume{
-		apistructs.LocalVolume: driver2.NewLocalVolumeDriver(volumeStore),
-		apistructs.NasVolume:   driver2.NewNasVolumeDriver(volumeStore),
+	drivers := map[apistructs.VolumeType]volume.Volume{
+		apistructs.LocalVolume: driver.NewLocalVolumeDriver(volumeStore),
+		apistructs.NasVolume:   driver.NewNasVolumeDriver(volumeStore),
 	}
 	js, err := jsonstore.New()
-	volumeImpl := volume2.NewVolumeImpl(drivers)
+	volumeImpl := volume.NewVolumeImpl(drivers)
 	//metricImpl := metric.New()
 	clusterImpl := cluster.NewClusterImpl(store)
 	clusterinfoImpl := clusterinfo.NewClusterInfoImpl(js)

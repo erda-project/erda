@@ -20,20 +20,20 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/conf"
 	"github.com/erda-project/erda/internal/tools/pipeline/pipengine/actionexecutor/logic"
-	types2 "github.com/erda-project/erda/internal/tools/pipeline/pipengine/actionexecutor/types"
+	"github.com/erda-project/erda/internal/tools/pipeline/pipengine/actionexecutor/types"
 	"github.com/erda-project/erda/pkg/k8sclient"
 )
 
 type K8sFlink struct {
-	*types2.K8sExecutor
-	name        types2.Name
+	*types.K8sExecutor
+	name        types.Name
 	client      *k8sclient.K8sClient
 	clusterName string
 	cluster     apistructs.ClusterInfo
 	errWrapper  *logic.ErrorWrapper
 }
 
-func New(name types2.Name, clusterName string, cluster apistructs.ClusterInfo) (*K8sFlink, error) {
+func New(name types.Name, clusterName string, cluster apistructs.ClusterInfo) (*K8sFlink, error) {
 	// we could operate normal resources (job, pod, deploy,pvc,pv,crd and so on) by default config permissions(injected by kubernetes, /var/run/secrets/kubernetes.io/serviceaccount)
 	// so WithPreferredToUseInClusterConfig it's enough for pipeline and orchestrator
 	client, err := k8sclient.New(clusterName, k8sclient.WithTimeout(time.Duration(conf.K8SExecutorMaxInitializationSec())*time.Second), k8sclient.WithPreferredToUseInClusterConfig())
@@ -47,14 +47,14 @@ func New(name types2.Name, clusterName string, cluster apistructs.ClusterInfo) (
 		cluster:     cluster,
 		errWrapper:  logic.NewErrorWrapper(name.String()),
 	}
-	k8sFlink.K8sExecutor = types2.NewK8sExecutor(k8sFlink)
+	k8sFlink.K8sExecutor = types.NewK8sExecutor(k8sFlink)
 	return k8sFlink, nil
 }
 
-func (k *K8sFlink) Kind() types2.Kind {
+func (k *K8sFlink) Kind() types.Kind {
 	return Kind
 }
 
-func (k *K8sFlink) Name() types2.Name {
+func (k *K8sFlink) Name() types.Name {
 	return k.name
 }

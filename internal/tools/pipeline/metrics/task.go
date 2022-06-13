@@ -22,7 +22,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/pkg/metrics/report"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 const (
@@ -41,7 +41,7 @@ var (
 )
 
 // TaskCounterTotalAdd 某时间段内累计执行次数、成功次数、失败次数
-var TaskCounterTotalAdd = func(task spec2.PipelineTask, value float64) {
+var TaskCounterTotalAdd = func(task spec.PipelineTask, value float64) {
 	if disableMetrics {
 		return
 	}
@@ -60,7 +60,7 @@ var taskCounterTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
 }, taskCounterLabels)
 
 // TaskGaugeProcessingAdd 正在处理中的个数
-var TaskGaugeProcessingAdd = func(task spec2.PipelineTask, value float64) {
+var TaskGaugeProcessingAdd = func(task spec.PipelineTask, value float64) {
 	if disableMetrics {
 		return
 	}
@@ -80,7 +80,7 @@ var taskGaugeProcessing = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 }, taskProcessingLabels)
 
 // TaskEndEvent 终态时推送事件
-var TaskEndEvent = func(task spec2.PipelineTask, p *spec2.Pipeline) {
+var TaskEndEvent = func(task spec.PipelineTask, p *spec.Pipeline) {
 	if disableMetrics {
 		return
 	}
@@ -100,7 +100,7 @@ var TaskEndEvent = func(task spec2.PipelineTask, p *spec2.Pipeline) {
 	taskDebugLog(task, "send task end event success")
 }
 
-func generateActionEventTags(task spec2.PipelineTask, p *spec2.Pipeline) map[string]string {
+func generateActionEventTags(task spec.PipelineTask, p *spec.Pipeline) map[string]string {
 	tags := map[string]string{
 		labelMeta:               "true",
 		labelMetricScope:        "org",
@@ -120,7 +120,7 @@ func generateActionEventTags(task spec2.PipelineTask, p *spec2.Pipeline) map[str
 	return tags
 }
 
-func generateActionEventFields(task spec2.PipelineTask) map[string]interface{} {
+func generateActionEventFields(task spec.PipelineTask) map[string]interface{} {
 	return map[string]interface{}{
 		num: 1,
 	}

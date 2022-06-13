@@ -23,7 +23,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/commonutil/costtimeutil"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 func Test_queue_WhenDone(t *testing.T) {
@@ -35,13 +35,13 @@ func Test_queue_WhenDone(t *testing.T) {
 		{
 			name: "test_reset_time_begin",
 			q: queue{
-				P: &spec2.Pipeline{
-					PipelineBase: spec2.PipelineBase{
+				P: &spec.Pipeline{
+					PipelineBase: spec.PipelineBase{
 						ID: 1,
 					},
 				},
-				Task: &spec2.PipelineTask{
-					Extra: spec2.PipelineTaskExtra{
+				Task: &spec.PipelineTask{
+					Extra: spec.PipelineTaskExtra{
 						LoopOptions: &apistructs.PipelineTaskLoopOptions{},
 					},
 					TimeBegin: time.Date(2009, 11, 17, 20, 34, 58, 651387237, time.UTC),
@@ -52,7 +52,7 @@ func Test_queue_WhenDone(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			patch := monkey.Patch(costtimeutil.CalculateTaskQueueTimeSec, func(task *spec2.PipelineTask) (cost int64) {
+			patch := monkey.Patch(costtimeutil.CalculateTaskQueueTimeSec, func(task *spec.PipelineTask) (cost int64) {
 				return 0
 			})
 			defer patch.Unpatch()

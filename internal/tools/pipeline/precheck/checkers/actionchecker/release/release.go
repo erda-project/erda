@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"strconv"
 
-	prechecktype2 "github.com/erda-project/erda/internal/tools/pipeline/precheck/prechecktype"
+	"github.com/erda-project/erda/internal/tools/pipeline/precheck/prechecktype"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
@@ -40,7 +40,7 @@ func (r *release) ActionType() pipelineyml.ActionType {
 	return ActionType
 }
 
-func (r *release) Check(ctx context.Context, data interface{}, itemsForCheck prechecktype2.ItemsForCheck) (abort bool, messages []string) {
+func (r *release) Check(ctx context.Context, data interface{}, itemsForCheck prechecktype.ItemsForCheck) (abort bool, messages []string) {
 	// data type: pipelineyml.Action
 	actualAction, ok := data.(pipelineyml.Action)
 	if !ok {
@@ -112,7 +112,7 @@ func (r *release) Check(ctx context.Context, data interface{}, itemsForCheck pre
 			}
 		}
 	}
-	prechecktype2.PutContextResult(ctx, prechecktype2.CtxResultKeyCrossCluster, crossCluster)
+	prechecktype.PutContextResult(ctx, prechecktype.CtxResultKeyCrossCluster, crossCluster)
 
 	return
 }

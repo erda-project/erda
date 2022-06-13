@@ -28,7 +28,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/build"
-	db2 "github.com/erda-project/erda/internal/tools/pipeline/providers/cron/db"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/cron/db"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/edgepipeline_register"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/leaderworker"
 	"github.com/erda-project/erda/pkg/cron"
@@ -49,7 +49,7 @@ type provider struct {
 
 	createPipelineFunc   CreatePipelineFunc
 	bdl                  *bundle.Bundle
-	dbClient             *db2.Client
+	dbClient             *db.Client
 	crond                *cron.Cron
 	mu                   *sync.Mutex
 	EdgePipelineRegister edgepipeline_register.Interface
@@ -68,7 +68,7 @@ func (p *provider) CrondSnapshot() []string {
 	return p.crondSnapshot()
 }
 
-func (p *provider) AddIntoPipelineCrond(cron *db2.PipelineCron) error {
+func (p *provider) AddIntoPipelineCrond(cron *db.PipelineCron) error {
 	if cron.ID <= 0 {
 		return nil
 	}
@@ -85,7 +85,7 @@ func (p *provider) AddIntoPipelineCrond(cron *db2.PipelineCron) error {
 	return err
 }
 
-func (p *provider) DeleteFromPipelineCrond(cron *db2.PipelineCron) error {
+func (p *provider) DeleteFromPipelineCrond(cron *db.PipelineCron) error {
 	if cron.ID <= 0 {
 		return nil
 	}
@@ -104,7 +104,7 @@ func (p *provider) DeleteFromPipelineCrond(cron *db2.PipelineCron) error {
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.bdl = bundle.New(bundle.WithCMP())
-	p.dbClient = &db2.Client{Interface: p.MySQL}
+	p.dbClient = &db.Client{Interface: p.MySQL}
 	p.crond = cron.New()
 	p.mu = &sync.Mutex{}
 	return nil

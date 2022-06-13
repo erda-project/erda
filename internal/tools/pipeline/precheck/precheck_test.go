@@ -20,11 +20,11 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda/apistructs"
-	prechecktype2 "github.com/erda-project/erda/internal/tools/pipeline/precheck/prechecktype"
+	"github.com/erda-project/erda/internal/tools/pipeline/precheck/prechecktype"
 )
 
 func TestPrecheck(t *testing.T) {
-	ctx := prechecktype2.InitContext()
+	ctx := prechecktype.InitContext()
 	yamlByte := []byte(`
 version: 1.1
 stages:
@@ -33,7 +33,7 @@ stages:
       params:
         cross_cluster: false
 `)
-	items := prechecktype2.ItemsForCheck{
+	items := prechecktype.ItemsForCheck{
 		PipelineYml: "",
 		Files: map[string]string{
 			"dice.yml": `
@@ -64,5 +64,5 @@ services:
 		},
 	}
 	_, _ = PreCheck(ctx, yamlByte, items)
-	assert.False(t, prechecktype2.GetContextResult(ctx, prechecktype2.CtxResultKeyCrossCluster).(bool))
+	assert.False(t, prechecktype.GetContextResult(ctx, prechecktype.CtxResultKeyCrossCluster).(bool))
 }

@@ -24,7 +24,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs/logrusx"
 	"github.com/erda-project/erda/apistructs"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 func Test_defaultPipelineReconciler_internalNextLoopLogic(t *testing.T) {
@@ -42,7 +42,7 @@ func Test_defaultPipelineReconciler_internalNextLoopLogic(t *testing.T) {
 	pr.processedTasks.Store("task-1", struct{}{})
 
 	monkey.PatchInstanceMethod(reflect.TypeOf(pr), "UpdateCalculatedPipelineStatusForTaskUseField",
-		func(pr *defaultPipelineReconciler, ctx context.Context, p *spec2.Pipeline) error {
+		func(pr *defaultPipelineReconciler, ctx context.Context, p *spec.Pipeline) error {
 			time.Sleep(500 * time.Millisecond)
 			pr.calculatedStatusForTaskUse = apistructs.PipelineStatusRunning
 			return nil
@@ -50,23 +50,23 @@ func Test_defaultPipelineReconciler_internalNextLoopLogic(t *testing.T) {
 	defer monkey.UnpatchAll()
 
 	monkey.PatchInstanceMethod(reflect.TypeOf(pr), "GetTasksCanBeConcurrentlyScheduled",
-		func(pr *defaultPipelineReconciler, ctx context.Context, p *spec2.Pipeline) ([]*spec2.PipelineTask, error) {
+		func(pr *defaultPipelineReconciler, ctx context.Context, p *spec.Pipeline) ([]*spec.PipelineTask, error) {
 			return nil, nil
 		})
 
 	monkey.PatchInstanceMethod(reflect.TypeOf(pr), "UpdateCurrentReconcileStatusIfNecessary",
-		func(pr *defaultPipelineReconciler, ctx context.Context, p *spec2.Pipeline) error {
+		func(pr *defaultPipelineReconciler, ctx context.Context, p *spec.Pipeline) error {
 			return nil
 		})
 
 	go func() {
 		time.Sleep(500 * time.Millisecond)
-		pr.releaseTaskAfterReconciled(ctx, nil, &spec2.PipelineTask{
+		pr.releaseTaskAfterReconciled(ctx, nil, &spec.PipelineTask{
 			Name: "task-2",
 		})
 	}()
 	go func() {
-		err := pr.internalNextLoopLogic(ctx, &spec2.Pipeline{})
+		err := pr.internalNextLoopLogic(ctx, &spec.Pipeline{})
 		if err != nil {
 			t.Error(err)
 			return

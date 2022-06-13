@@ -18,7 +18,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	aop2 "github.com/erda-project/erda/internal/tools/pipeline/aop"
+	"github.com/erda-project/erda/internal/tools/pipeline/aop"
 	"github.com/erda-project/erda/internal/tools/pipeline/aop/aoptypes"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -28,7 +28,7 @@ func (tr *TaskRun) Teardown() {
 	logrus.Infof("reconciler: pipelineID: %d, task %q begin tear down", tr.P.ID, tr.Task.Name)
 	defer logrus.Infof("reconciler: pipelineID: %d, taskID: %d, taskName: %s, end tear down", tr.P.ID, tr.Task.ID, tr.Task.Name)
 	// handle aop synchronously, then do subsequent tasks
-	_ = aop2.Handle(aop2.NewContextForTask(*tr.Task, *tr.P, aoptypes.TuneTriggerTaskAfterExec))
+	_ = aop.Handle(aop.NewContextForTask(*tr.Task, *tr.P, aoptypes.TuneTriggerTaskAfterExec))
 
 	// invalidate openapi oauth2 token
 	tokens := strutil.DedupSlice([]string{

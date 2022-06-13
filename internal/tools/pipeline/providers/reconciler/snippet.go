@@ -24,11 +24,11 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-func (tr *defaultTaskReconciler) CreateSnippetPipeline(ctx context.Context, p *spec2.Pipeline, task *spec2.PipelineTask) (snippetPipeline *spec2.Pipeline, err error) {
+func (tr *defaultTaskReconciler) CreateSnippetPipeline(ctx context.Context, p *spec.Pipeline, task *spec.PipelineTask) (snippetPipeline *spec.Pipeline, err error) {
 	var failedError error
 	defer func() {
 		if failedError != nil {
@@ -63,7 +63,7 @@ func (tr *defaultTaskReconciler) CreateSnippetPipeline(ctx context.Context, p *s
 	if err != nil {
 		return nil, err
 	}
-	var stages []spec2.PipelineStage
+	var stages []spec.PipelineStage
 	if stages, err = tr.pipelineSvcFuncs.CreatePipelineGraph(snippetPipeline); err != nil {
 		return nil, err
 	}
@@ -79,7 +79,7 @@ func (tr *defaultTaskReconciler) CreateSnippetPipeline(ctx context.Context, p *s
 }
 
 // fulfillParentSnippetTask 填充 parent snippet task 信息
-func (tr *defaultTaskReconciler) fulfillParentSnippetTask(p *spec2.Pipeline, task *spec2.PipelineTask) error {
+func (tr *defaultTaskReconciler) fulfillParentSnippetTask(p *spec.Pipeline, task *spec.PipelineTask) error {
 	if !p.IsSnippet || p.ParentTaskID == nil {
 		return nil
 	}
@@ -118,7 +118,7 @@ func (tr *defaultTaskReconciler) fulfillParentSnippetTask(p *spec2.Pipeline, tas
 // handleParentSnippetTaskOutputs 处理 parentSnippetTask 的 outputs
 // 1. task 的 snippetPipelineDetail.Outputs 用于记录
 // 2. task 的 result.metadata 用于作为普通任务值引用
-func (tr *defaultTaskReconciler) handleParentSnippetTaskOutputs(snippetPipeline *spec2.Pipeline, outputValues []apistructs.PipelineOutputWithValue) error {
+func (tr *defaultTaskReconciler) handleParentSnippetTaskOutputs(snippetPipeline *spec.Pipeline, outputValues []apistructs.PipelineOutputWithValue) error {
 	parentTaskID := *snippetPipeline.ParentTaskID
 
 	// update snippetPipelineDetail.Outputs, not overwrite
@@ -157,7 +157,7 @@ func (tr *defaultTaskReconciler) handleParentSnippetTaskOutputs(snippetPipeline 
 }
 
 // calculatePipelineOutputs 计算 pipeline
-func (tr *defaultTaskReconciler) calculateAndUpdatePipelineOutputValues(p *spec2.Pipeline, tasks []*spec2.PipelineTask) ([]apistructs.PipelineOutputWithValue, error) {
+func (tr *defaultTaskReconciler) calculateAndUpdatePipelineOutputValues(p *spec.Pipeline, tasks []*spec.PipelineTask) ([]apistructs.PipelineOutputWithValue, error) {
 	// 所有任务的输出
 	allTaskOutputs := make(map[string]map[string]interface{})
 	for _, task := range tasks {
@@ -227,7 +227,7 @@ func parsePipelineOutputRefV2(ref string) (string, string, error) {
 }
 
 // copyParentPipelineRunInfo 从父流水线拷贝执行信息
-func (tr *defaultTaskReconciler) copyParentPipelineRunInfo(snippetPipeline *spec2.Pipeline, session ...dbclient.SessionOption) error {
+func (tr *defaultTaskReconciler) copyParentPipelineRunInfo(snippetPipeline *spec.Pipeline, session ...dbclient.SessionOption) error {
 	// 从根流水线拷贝执行信息到嵌套流水线
 	rootPipelineID := snippetPipeline.Extra.SnippetChain[0]
 	rootPipeline, err := tr.dbClient.GetPipeline(rootPipelineID)

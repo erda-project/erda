@@ -22,7 +22,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 func Test_fulfillParentSnippetTask(t *testing.T) {
@@ -32,14 +32,14 @@ func Test_fulfillParentSnippetTask(t *testing.T) {
 	monkey.PatchInstanceMethod(reflect.TypeOf(dbClient), "UpdatePipelineTaskStatus", func(_ *dbclient.Client, id uint64, status apistructs.PipelineStatus, ops ...dbclient.SessionOption) error {
 		return nil
 	})
-	monkey.PatchInstanceMethod(reflect.TypeOf(dbClient), "UpdatePipelineTaskTime", func(_ *dbclient.Client, p *spec2.Pipeline, ops ...dbclient.SessionOption) error {
+	monkey.PatchInstanceMethod(reflect.TypeOf(dbClient), "UpdatePipelineTaskTime", func(_ *dbclient.Client, p *spec.Pipeline, ops ...dbclient.SessionOption) error {
 		return nil
 	})
-	monkey.PatchInstanceMethod(reflect.TypeOf(dbClient), "UpdatePipelineExtraSnapshot", func(_ *dbclient.Client, pipelineID uint64, snapshot spec2.Snapshot, ops ...dbclient.SessionOption) error {
+	monkey.PatchInstanceMethod(reflect.TypeOf(dbClient), "UpdatePipelineExtraSnapshot", func(_ *dbclient.Client, pipelineID uint64, snapshot spec.Snapshot, ops ...dbclient.SessionOption) error {
 		return nil
 	})
-	monkey.PatchInstanceMethod(reflect.TypeOf(dbClient), "GetPipelineTask", func(_ *dbclient.Client, id interface{}) (spec2.PipelineTask, error) {
-		return spec2.PipelineTask{ID: 1}, nil
+	monkey.PatchInstanceMethod(reflect.TypeOf(dbClient), "GetPipelineTask", func(_ *dbclient.Client, id interface{}) (spec.PipelineTask, error) {
+		return spec.PipelineTask{ID: 1}, nil
 	})
 	monkey.PatchInstanceMethod(reflect.TypeOf(dbClient), "UpdatePipelineTaskSnippetDetail", func(_ *dbclient.Client, id uint64, snippetDetail apistructs.PipelineTaskSnippetDetail, ops ...dbclient.SessionOption) error {
 		return nil
@@ -50,32 +50,32 @@ func Test_fulfillParentSnippetTask(t *testing.T) {
 	defer monkey.UnpatchAll()
 	tests := []struct {
 		name           string
-		p              *spec2.Pipeline
-		task           *spec2.PipelineTask
+		p              *spec.Pipeline
+		task           *spec.PipelineTask
 		wantTaskStatus apistructs.PipelineStatus
 	}{
 		{
 			name: "success snippet pipeline",
-			p: &spec2.Pipeline{
-				PipelineBase: spec2.PipelineBase{
+			p: &spec.Pipeline{
+				PipelineBase: spec.PipelineBase{
 					IsSnippet:    true,
 					ParentTaskID: &[]uint64{1}[0],
 					Status:       apistructs.PipelineStatusSuccess,
 				},
 			},
-			task:           &spec2.PipelineTask{},
+			task:           &spec.PipelineTask{},
 			wantTaskStatus: apistructs.PipelineStatusSuccess,
 		},
 		{
 			name: "success snippet pipeline",
-			p: &spec2.Pipeline{
-				PipelineBase: spec2.PipelineBase{
+			p: &spec.Pipeline{
+				PipelineBase: spec.PipelineBase{
 					IsSnippet:    true,
 					ParentTaskID: &[]uint64{2}[0],
 					Status:       apistructs.PipelineStatusFailed,
 				},
 			},
-			task:           &spec2.PipelineTask{},
+			task:           &spec.PipelineTask{},
 			wantTaskStatus: apistructs.PipelineStatusFailed,
 		},
 	}
@@ -88,16 +88,16 @@ func Test_fulfillParentSnippetTask(t *testing.T) {
 	//})
 	for _, tt := range tests {
 		monkey.PatchInstanceMethod(reflect.TypeOf(dbClient), "GetPipelineWithTasks",
-			func(_ *dbclient.Client, id uint64) (*spec2.PipelineWithTasks, error) {
-				return &spec2.PipelineWithTasks{
-					Pipeline: &spec2.Pipeline{
-						PipelineBase: spec2.PipelineBase{
+			func(_ *dbclient.Client, id uint64) (*spec.PipelineWithTasks, error) {
+				return &spec.PipelineWithTasks{
+					Pipeline: &spec.Pipeline{
+						PipelineBase: spec.PipelineBase{
 							ID:           1,
 							Status:       tt.p.Status,
 							ParentTaskID: &[]uint64{1}[0],
 						},
 					},
-					Tasks: []*spec2.PipelineTask{
+					Tasks: []*spec.PipelineTask{
 						{
 							ID: 1,
 						},

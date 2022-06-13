@@ -21,13 +21,13 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda/apistructs"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
 func Test_prepare_generateOpenapiTokenForPullBootstrapInfo(t *testing.T) {
 	type args struct {
-		task *spec2.PipelineTask
+		task *spec.PipelineTask
 	}
 	tests := []struct {
 		name    string
@@ -39,7 +39,7 @@ func Test_prepare_generateOpenapiTokenForPullBootstrapInfo(t *testing.T) {
 			name: "test_api-test",
 			pre:  prepare{},
 			args: args{
-				task: &spec2.PipelineTask{
+				task: &spec.PipelineTask{
 					Type: apistructs.ActionTypeAPITest,
 				},
 			},
@@ -49,7 +49,7 @@ func Test_prepare_generateOpenapiTokenForPullBootstrapInfo(t *testing.T) {
 			name: "test_wait",
 			pre:  prepare{},
 			args: args{
-				task: &spec2.PipelineTask{
+				task: &spec.PipelineTask{
 					Type: apistructs.ActionTypeWait,
 				},
 			},
@@ -59,7 +59,7 @@ func Test_prepare_generateOpenapiTokenForPullBootstrapInfo(t *testing.T) {
 			name: "test_snippet",
 			pre:  prepare{},
 			args: args{
-				task: &spec2.PipelineTask{
+				task: &spec.PipelineTask{
 					Type: apistructs.ActionTypeSnippet,
 				},
 			},
@@ -76,7 +76,7 @@ func Test_prepare_generateOpenapiTokenForPullBootstrapInfo(t *testing.T) {
 }
 
 func Test_condition(t *testing.T) {
-	task := &spec2.PipelineTask{Extra: spec2.PipelineTaskExtra{Action: pipelineyml.Action{If: "${{   1 == 1   }}"}}}
+	task := &spec.PipelineTask{Extra: spec.PipelineTaskExtra{Action: pipelineyml.Action{If: "${{   1 == 1   }}"}}}
 	b := condition(task)
 	assert.Equal(t, false, b)
 }
@@ -153,8 +153,8 @@ func Test_handleAccessTokenExpiredIn(t *testing.T) {
 			expect:  "1830s",
 		},
 	}
-	task := &spec2.PipelineTask{
-		Extra: spec2.PipelineTaskExtra{},
+	task := &spec.PipelineTask{
+		Extra: spec.PipelineTaskExtra{},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -168,9 +168,9 @@ func Test_handleAccessTokenExpiredIn(t *testing.T) {
 }
 
 func Test_handleInternalClient(t *testing.T) {
-	p := &spec2.Pipeline{
-		PipelineExtra: spec2.PipelineExtra{
-			Extra: spec2.PipelineExtraInfo{
+	p := &spec.Pipeline{
+		PipelineExtra: spec.PipelineExtra{
+			Extra: spec.PipelineExtraInfo{
 				InternalClient: "bundle",
 			},
 		},
@@ -183,7 +183,7 @@ func Test_handleInternalClient(t *testing.T) {
 }
 
 func Test_generateTaskCMDs(t *testing.T) {
-	cmd, args, err := generateTaskCMDs(&pipelineyml.Action{}, spec2.PipelineTaskContext{}, 1, 1)
+	cmd, args, err := generateTaskCMDs(&pipelineyml.Action{}, spec.PipelineTaskContext{}, 1, 1)
 	assert.NoError(t, err)
 	assert.Equal(t, "agent", cmd)
 	assert.Equal(t, "eyJwdWxsQm9vdHN0cmFwSW5mbyI6dHJ1ZSwiY29udGV4dCI6e30sInBpcGVsaW5lSUQiOjEsInBpcGVsaW5lVGFza0lEIjoxLCJlbmNyeXB0U2VjcmV0S2V5cyI6bnVsbH0=", args[0])
@@ -195,7 +195,7 @@ func Test_getActionAgentTypeVersion(t *testing.T) {
 }
 
 func Test_contextVolumes(t *testing.T) {
-	taskContext := spec2.PipelineTaskContext{
+	taskContext := spec.PipelineTaskContext{
 		InStorages:  apistructs.Metadata{{Name: "in1"}},
 		OutStorages: apistructs.Metadata{{Name: "out1"}},
 	}

@@ -18,10 +18,10 @@ import (
 	"math"
 	"time"
 
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
-func CalculateTaskCostTimeSec(task *spec2.PipelineTask) (cost int64) {
+func CalculateTaskCostTimeSec(task *spec.PipelineTask) (cost int64) {
 	if task.CostTimeSec >= 0 {
 		return task.CostTimeSec
 	}
@@ -37,7 +37,7 @@ func CalculateTaskCostTimeSec(task *spec2.PipelineTask) (cost int64) {
 	return int64(math.Round(float64(task.TimeEnd.UnixNano()-task.TimeBegin.UnixNano()) / (1000 * 1000 * 1000)))
 }
 
-func CalculateTaskQueueTimeSec(task *spec2.PipelineTask) (cost int64) {
+func CalculateTaskQueueTimeSec(task *spec.PipelineTask) (cost int64) {
 	defer func() {
 		if task.Status.IsEndStatus() && cost < 0 {
 			cost = 0
@@ -55,7 +55,7 @@ func CalculateTaskQueueTimeSec(task *spec2.PipelineTask) (cost int64) {
 	return int64(task.Extra.TimeEndQueue.Sub(task.Extra.TimeBeginQueue).Seconds())
 }
 
-func CalculatePipelineCostTimeSec(p *spec2.Pipeline) (cost int64) {
+func CalculatePipelineCostTimeSec(p *spec.Pipeline) (cost int64) {
 	defer func() {
 		if p.Status.IsEndStatus() && cost < 0 {
 			cost = 0

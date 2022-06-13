@@ -19,14 +19,14 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/precheck"
-	prechecktype2 "github.com/erda-project/erda/internal/tools/pipeline/precheck/prechecktype"
+	"github.com/erda-project/erda/internal/tools/pipeline/precheck/prechecktype"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/cache"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/apierrors"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
-func (s *PipelineSvc) PreCheck(p *spec2.Pipeline, stages []spec2.PipelineStage, userID string, autoRun bool) error {
+func (s *PipelineSvc) PreCheck(p *spec.Pipeline, stages []spec.PipelineStage, userID string, autoRun bool) error {
 	pipelineYml, err := pipelineyml.New(
 		[]byte(p.PipelineYml),
 	)
@@ -40,7 +40,7 @@ func (s *PipelineSvc) PreCheck(p *spec2.Pipeline, stages []spec2.PipelineStage, 
 	}
 
 	// ItemsForCheck
-	itemsForCheck := prechecktype2.ItemsForCheck{
+	itemsForCheck := prechecktype.ItemsForCheck{
 		PipelineYml:               p.PipelineYml,
 		Files:                     make(map[string]string),
 		ActionSpecs:               make(map[string]apistructs.ActionSpec),
@@ -106,7 +106,7 @@ func (s *PipelineSvc) PreCheck(p *spec2.Pipeline, stages []spec2.PipelineStage, 
 		itemsForCheck.Secrets[k] = v
 	}
 
-	precheckCtx := prechecktype2.InitContext()
+	precheckCtx := prechecktype.InitContext()
 	abort, showMessage := precheck.PreCheck(precheckCtx, []byte(p.PipelineYml), itemsForCheck)
 	if len(showMessage.Stacks) > 0 {
 		if err := s.dbClient.UpdatePipelineShowMessage(p.ID, showMessage); err != nil {
@@ -117,7 +117,7 @@ func (s *PipelineSvc) PreCheck(p *spec2.Pipeline, stages []spec2.PipelineStage, 
 		return apierrors.ErrPreCheckPipeline.InvalidParameter("precheck failed")
 	}
 
-	analyzedCrossCluster, ok := prechecktype2.GetContextResult(precheckCtx, prechecktype2.CtxResultKeyCrossCluster).(bool)
+	analyzedCrossCluster, ok := prechecktype.GetContextResult(precheckCtx, prechecktype.CtxResultKeyCrossCluster).(bool)
 	if ok {
 		p.Snapshot.AnalyzedCrossCluster = &analyzedCrossCluster
 		if err := s.dbClient.StoreAnalyzedCrossCluster(p.ID, analyzedCrossCluster); err != nil {

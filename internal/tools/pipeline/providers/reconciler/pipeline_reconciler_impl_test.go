@@ -23,12 +23,12 @@ import (
 	"bou.ke/monkey"
 
 	"github.com/erda-project/erda/apistructs"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 func Test_defaultPipelineReconciler_setTotalTaskNumberBeforeReconcilePipeline(t *testing.T) {
-	p := &spec2.Pipeline{
-		PipelineBase: spec2.PipelineBase{
+	p := &spec.Pipeline{
+		PipelineBase: spec.PipelineBase{
 			Status: apistructs.PipelineStatusRunning,
 		},
 	}
@@ -38,9 +38,9 @@ func Test_defaultPipelineReconciler_setTotalTaskNumberBeforeReconcilePipeline(t 
 
 	// two tasks
 	monkey.PatchInstanceMethod(reflect.TypeOf(r), "YmlTaskMergeDBTasks",
-		func(_ *provider, pipeline *spec2.Pipeline) ([]*spec2.PipelineTask, error) {
+		func(_ *provider, pipeline *spec.Pipeline) ([]*spec.PipelineTask, error) {
 			// two tasks
-			tasks := []*spec2.PipelineTask{
+			tasks := []*spec.PipelineTask{
 				{Name: "s1c1"},
 				{Name: "s2c1"},
 			}
@@ -56,7 +56,7 @@ func Test_defaultPipelineReconciler_setTotalTaskNumberBeforeReconcilePipeline(t 
 
 	// none tasks
 	monkey.PatchInstanceMethod(reflect.TypeOf(r), "YmlTaskMergeDBTasks",
-		func(_ *provider, pipeline *spec2.Pipeline) ([]*spec2.PipelineTask, error) {
+		func(_ *provider, pipeline *spec.Pipeline) ([]*spec.PipelineTask, error) {
 			// none tasks
 			return nil, nil
 		})
@@ -70,9 +70,9 @@ func Test_defaultPipelineReconciler_setTotalTaskNumberBeforeReconcilePipeline(t 
 
 	// one disabled task and one running task
 	monkey.PatchInstanceMethod(reflect.TypeOf(r), "YmlTaskMergeDBTasks",
-		func(_ *provider, pipeline *spec2.Pipeline) ([]*spec2.PipelineTask, error) {
+		func(_ *provider, pipeline *spec.Pipeline) ([]*spec.PipelineTask, error) {
 			// none tasks
-			return []*spec2.PipelineTask{
+			return []*spec.PipelineTask{
 				{
 					Name:   "disabled task",
 					ID:     0,
@@ -98,8 +98,8 @@ func Test_defaultPipelineReconciler_setTotalTaskNumberBeforeReconcilePipeline(t 
 }
 
 func Test_defaultPipelineReconciler_updateCalculatedPipelineStatusForTaskUseField(t *testing.T) {
-	p := &spec2.Pipeline{
-		PipelineBase: spec2.PipelineBase{
+	p := &spec.Pipeline{
+		PipelineBase: spec.PipelineBase{
 			Status: apistructs.PipelineStatusRunning,
 		},
 	}
@@ -131,7 +131,7 @@ func Test_defaultPipelineReconciler_updateCalculatedPipelineStatusForTaskUseFiel
 
 	// running
 	pr = &defaultPipelineReconciler{r: r}
-	pr.processedTasks.Store("s1c1", &spec2.PipelineTask{ID: 1, Name: "s1c1", Status: apistructs.PipelineStatusSuccess})
+	pr.processedTasks.Store("s1c1", &spec.PipelineTask{ID: 1, Name: "s1c1", Status: apistructs.PipelineStatusSuccess})
 	p.Status = apistructs.PipelineStatusRunning
 	err = pr.UpdateCalculatedPipelineStatusForTaskUseField(ctx, p)
 	if err != nil {
@@ -143,8 +143,8 @@ func Test_defaultPipelineReconciler_updateCalculatedPipelineStatusForTaskUseFiel
 }
 
 func Test_defaultPipelineReconciler_calculateNewStatusByReconciledTasks(t *testing.T) {
-	p := &spec2.Pipeline{
-		PipelineBase: spec2.PipelineBase{
+	p := &spec.Pipeline{
+		PipelineBase: spec.PipelineBase{
 			Status: apistructs.PipelineStatusRunning,
 		},
 	}
@@ -167,8 +167,8 @@ func Test_defaultPipelineReconciler_calculateNewStatusByReconciledTasks(t *testi
 	}
 
 	// three task and two scheduled (one success, one running) => running
-	pr.processedTasks.Store("s1c1", &spec2.PipelineTask{ID: 1, Name: "s1c1", Status: apistructs.PipelineStatusSuccess})
-	pr.processedTasks.Store("s2c1", &spec2.PipelineTask{ID: 2, Name: "s2c1", Status: apistructs.PipelineStatusRunning})
+	pr.processedTasks.Store("s1c1", &spec.PipelineTask{ID: 1, Name: "s1c1", Status: apistructs.PipelineStatusSuccess})
+	pr.processedTasks.Store("s2c1", &spec.PipelineTask{ID: 2, Name: "s2c1", Status: apistructs.PipelineStatusRunning})
 	pr.totalTaskNumber = &[]int{3}[0]
 	newStatus = pr.calculatePipelineStatusForTaskUseField(ctx, p)
 	if newStatus != apistructs.PipelineStatusRunning {
@@ -177,8 +177,8 @@ func Test_defaultPipelineReconciler_calculateNewStatusByReconciledTasks(t *testi
 
 	// three task and two scheduled (one success, one failed) => failed
 	pr.processedTasks = sync.Map{}
-	pr.processedTasks.Store("s1c1", &spec2.PipelineTask{ID: 1, Name: "s1c1", Status: apistructs.PipelineStatusSuccess})
-	pr.processedTasks.Store("s2c1", &spec2.PipelineTask{ID: 2, Name: "s2c1", Status: apistructs.PipelineStatusFailed})
+	pr.processedTasks.Store("s1c1", &spec.PipelineTask{ID: 1, Name: "s1c1", Status: apistructs.PipelineStatusSuccess})
+	pr.processedTasks.Store("s2c1", &spec.PipelineTask{ID: 2, Name: "s2c1", Status: apistructs.PipelineStatusFailed})
 	pr.totalTaskNumber = &[]int{3}[0]
 	newStatus = pr.calculatePipelineStatusForTaskUseField(ctx, p)
 	if newStatus != apistructs.PipelineStatusFailed {
@@ -187,8 +187,8 @@ func Test_defaultPipelineReconciler_calculateNewStatusByReconciledTasks(t *testi
 
 	// three task and two scheduled (one running, one failed) => running
 	pr.processedTasks = sync.Map{}
-	pr.processedTasks.Store("s1c1", &spec2.PipelineTask{ID: 1, Name: "s1c1", Status: apistructs.PipelineStatusRunning})
-	pr.processingTasks.Store("s2c1", &spec2.PipelineTask{ID: 1, Name: "s1c1", Status: apistructs.PipelineStatusFailed})
+	pr.processedTasks.Store("s1c1", &spec.PipelineTask{ID: 1, Name: "s1c1", Status: apistructs.PipelineStatusRunning})
+	pr.processingTasks.Store("s2c1", &spec.PipelineTask{ID: 1, Name: "s1c1", Status: apistructs.PipelineStatusFailed})
 	pr.totalTaskNumber = &[]int{3}[0]
 	newStatus = pr.calculatePipelineStatusForTaskUseField(ctx, p)
 	if newStatus != apistructs.PipelineStatusRunning {
@@ -198,9 +198,9 @@ func Test_defaultPipelineReconciler_calculateNewStatusByReconciledTasks(t *testi
 	// three tasks are all disabled => success
 	pr.totalTaskNumber = &[]int{3}[0]
 	pr.processedTasks = sync.Map{}
-	pr.processedTasks.Store("task-1", &spec2.PipelineTask{ID: 1, Name: "s1c1", Status: apistructs.PipelineStatusDisabled})
-	pr.processedTasks.Store("task-2", &spec2.PipelineTask{ID: 2, Name: "s1c1", Status: apistructs.PipelineStatusDisabled})
-	pr.processedTasks.Store("task-3", &spec2.PipelineTask{ID: 1, Name: "s1c1", Status: apistructs.PipelineStatusDisabled})
+	pr.processedTasks.Store("task-1", &spec.PipelineTask{ID: 1, Name: "s1c1", Status: apistructs.PipelineStatusDisabled})
+	pr.processedTasks.Store("task-2", &spec.PipelineTask{ID: 2, Name: "s1c1", Status: apistructs.PipelineStatusDisabled})
+	pr.processedTasks.Store("task-3", &spec.PipelineTask{ID: 1, Name: "s1c1", Status: apistructs.PipelineStatusDisabled})
 	newStatus = pr.calculatePipelineStatusForTaskUseField(ctx, p)
 	if newStatus != apistructs.PipelineStatusSuccess {
 		t.Fatalf("should be success")

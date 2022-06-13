@@ -28,23 +28,23 @@ import (
 	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/edgepipeline_register"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/edgereporter/db"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 func Test_pipelineFilterIn(t *testing.T) {
 	type args struct {
-		pipelines []spec2.PipelineBase
-		fn        func(p *spec2.PipelineBase) bool
+		pipelines []spec.PipelineBase
+		fn        func(p *spec.PipelineBase) bool
 	}
 	tests := []struct {
 		name string
 		args args
-		want []spec2.PipelineBase
+		want []spec.PipelineBase
 	}{
 		{
 			name: "",
 			args: args{
-				pipelines: []spec2.PipelineBase{
+				pipelines: []spec.PipelineBase{
 					{
 						ID:     1,
 						Status: "Success",
@@ -62,11 +62,11 @@ func Test_pipelineFilterIn(t *testing.T) {
 						Status: "Failed",
 					},
 				},
-				fn: func(p *spec2.PipelineBase) bool {
+				fn: func(p *spec.PipelineBase) bool {
 					return p.Status.IsEndStatus()
 				},
 			},
-			want: []spec2.PipelineBase{
+			want: []spec.PipelineBase{
 				{
 					ID:     1,
 					Status: "Success",
@@ -104,8 +104,8 @@ func Test_provider_doTaskReporter(t *testing.T) {
 			return nil
 		})
 	monkey.PatchInstanceMethod(reflect.TypeOf(dbClient), "GetPipelineTask",
-		func(_ *dbclient.Client, _ interface{}) (spec2.PipelineTask, error) {
-			return spec2.PipelineTask{ID: 1}, nil
+		func(_ *dbclient.Client, _ interface{}) (spec.PipelineTask, error) {
+			return spec.PipelineTask{ID: 1}, nil
 		})
 	defer monkey.UnpatchAll()
 
@@ -173,16 +173,16 @@ func Test_provider_doPipelineReporter(t *testing.T) {
 			return nil
 		})
 	monkey.PatchInstanceMethod(reflect.TypeOf(dbClient), "GetPipeline",
-		func(_ *dbclient.Client, _ interface{}, _ ...dbclient.SessionOption) (spec2.Pipeline, error) {
-			return spec2.Pipeline{}, nil
+		func(_ *dbclient.Client, _ interface{}, _ ...dbclient.SessionOption) (spec.Pipeline, error) {
+			return spec.Pipeline{}, nil
 		})
 	monkey.PatchInstanceMethod(reflect.TypeOf(dbClient), "ListPipelineStageByPipelineID",
-		func(_ *dbclient.Client, _ uint64, _ ...dbclient.SessionOption) ([]spec2.PipelineStage, error) {
-			return []spec2.PipelineStage{}, nil
+		func(_ *dbclient.Client, _ uint64, _ ...dbclient.SessionOption) ([]spec.PipelineStage, error) {
+			return []spec.PipelineStage{}, nil
 		})
 	monkey.PatchInstanceMethod(reflect.TypeOf(dbClient), "ListPipelineTasksByPipelineID",
-		func(_ *dbclient.Client, _ uint64, _ ...dbclient.SessionOption) ([]spec2.PipelineTask, error) {
-			return []spec2.PipelineTask{}, nil
+		func(_ *dbclient.Client, _ uint64, _ ...dbclient.SessionOption) ([]spec.PipelineTask, error) {
+			return []spec.PipelineTask{}, nil
 		})
 	monkey.PatchInstanceMethod(reflect.TypeOf(DB), "UpdatePipelineEdgeReportStatus",
 		func(_ *db.Client, _ uint64, _ apistructs.EdgeReportStatus) error {

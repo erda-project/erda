@@ -27,7 +27,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/tools/pipeline/aop/aoptypes"
 	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
@@ -35,10 +35,10 @@ func Test_filterPipelineTask(t *testing.T) {
 	id1 := uint64(1)
 	id2 := uint64(2)
 
-	alltasks := []*spec2.PipelineTask{
+	alltasks := []*spec.PipelineTask{
 		{
 			Type: apistructs.ActionTypeAPITest,
-			Extra: spec2.PipelineTaskExtra{
+			Extra: spec.PipelineTaskExtra{
 				Action: pipelineyml.Action{
 					Version: "2.0",
 				},
@@ -46,7 +46,7 @@ func Test_filterPipelineTask(t *testing.T) {
 		},
 		{
 			Type: apistructs.ActionTypeAPITest,
-			Extra: spec2.PipelineTaskExtra{
+			Extra: spec.PipelineTaskExtra{
 				Action: pipelineyml.Action{
 					Version: "1.0",
 				},
@@ -77,7 +77,7 @@ func Test_convertReport(t *testing.T) {
 		ApiTotalNum:   2,
 		ApiSuccessNum: 1,
 	}
-	meta, err := convertReport(uint64(1), spec2.PipelineReport{
+	meta, err := convertReport(uint64(1), spec.PipelineReport{
 		Meta: map[string]interface{}{
 			"apiTotalNum":   2,
 			"apiSuccessNum": 1,
@@ -129,17 +129,17 @@ func Test_sendMessage(t *testing.T) {
 func TestStatistics(t *testing.T) {
 	var db *dbclient.Client
 
-	monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetPipelineWithTasks", func(*dbclient.Client, uint64) (*spec2.PipelineWithTasks, error) {
+	monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetPipelineWithTasks", func(*dbclient.Client, uint64) (*spec.PipelineWithTasks, error) {
 		var id uint64 = 2
-		return &spec2.PipelineWithTasks{
+		return &spec.PipelineWithTasks{
 			Pipeline: nil,
-			Tasks: []*spec2.PipelineTask{
+			Tasks: []*spec.PipelineTask{
 				{
 					ID:     1,
 					Name:   "1",
 					Type:   "api-test",
 					Status: "Success",
-					Extra: spec2.PipelineTaskExtra{
+					Extra: spec.PipelineTaskExtra{
 						Action: pipelineyml.Action{
 							Version: "2.0",
 						},
@@ -150,7 +150,7 @@ func TestStatistics(t *testing.T) {
 					Name:   "2",
 					Type:   "api-test",
 					Status: "fail",
-					Extra: spec2.PipelineTaskExtra{
+					Extra: spec.PipelineTaskExtra{
 						Action: pipelineyml.Action{
 							Version: "2.0",
 						},
@@ -168,11 +168,11 @@ func TestStatistics(t *testing.T) {
 	})
 
 	defer monkey.UnpatchAll()
-	monkey.PatchInstanceMethod(reflect.TypeOf(db), "BatchListPipelineReportsByPipelineID", func(*dbclient.Client, []uint64, []string, ...dbclient.SessionOption) (map[uint64][]spec2.PipelineReport, error) {
+	monkey.PatchInstanceMethod(reflect.TypeOf(db), "BatchListPipelineReportsByPipelineID", func(*dbclient.Client, []uint64, []string, ...dbclient.SessionOption) (map[uint64][]spec.PipelineReport, error) {
 		meta := apistructs.PipelineReportMeta{}
 		meta["apiTotalNum"] = 2
 		meta["apiSuccessNum"] = 1
-		return map[uint64][]spec2.PipelineReport{
+		return map[uint64][]spec.PipelineReport{
 			1: {{
 				Meta: meta,
 			}},

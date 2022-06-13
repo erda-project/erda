@@ -24,7 +24,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/pipeline/aop/aoptypes"
 	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/reportsvc"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 func init() {
@@ -36,13 +36,13 @@ func init() {
 }
 
 func TestHandlePipeline(t *testing.T) {
-	ctx := NewContextForTask(spec2.PipelineTask{ID: 1}, spec2.Pipeline{}, aoptypes.TuneTriggerTaskBeforeWait)
+	ctx := NewContextForTask(spec.PipelineTask{ID: 1}, spec.Pipeline{}, aoptypes.TuneTriggerTaskBeforeWait)
 	err := Handle(ctx)
 	assert.NoError(t, err)
 
 	// pipeline end
-	ctx = NewContextForPipeline(spec2.Pipeline{
-		PipelineBase: spec2.PipelineBase{ID: 1},
+	ctx = NewContextForPipeline(spec.Pipeline{
+		PipelineBase: spec.PipelineBase{ID: 1},
 	}, aoptypes.TuneTriggerPipelineAfterExec)
 	err = Handle(ctx)
 	assert.NoError(t, err)
@@ -51,9 +51,9 @@ func TestHandlePipeline(t *testing.T) {
 func TestHandleTask(t *testing.T) {
 	// task end
 	ctx := NewContextForTask(
-		spec2.PipelineTask{ID: 1, Status: apistructs.PipelineStatusSuccess},
-		spec2.Pipeline{
-			PipelineBase: spec2.PipelineBase{ID: 1},
+		spec.PipelineTask{ID: 1, Status: apistructs.PipelineStatusSuccess},
+		spec.Pipeline{
+			PipelineBase: spec.PipelineBase{ID: 1},
 		}, aoptypes.TuneTriggerTaskAfterExec,
 	)
 	err := Handle(ctx)

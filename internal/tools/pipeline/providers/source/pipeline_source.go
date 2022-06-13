@@ -20,15 +20,15 @@ import (
 	"time"
 
 	"github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
-	db2 "github.com/erda-project/erda/internal/tools/pipeline/providers/source/db"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/source/db"
 )
 
 type pipelineSource struct {
-	dbClient *db2.Client
+	dbClient *db.Client
 }
 
 func (p pipelineSource) Create(ctx context.Context, request *pb.PipelineSourceCreateRequest) (*pb.PipelineSourceCreateResponse, error) {
-	unique := &db2.PipelineSourceUnique{
+	unique := &db.PipelineSourceUnique{
 		SourceType: request.SourceType,
 		Remote:     request.Remote,
 		Ref:        request.Ref,
@@ -37,7 +37,7 @@ func (p pipelineSource) Create(ctx context.Context, request *pb.PipelineSourceCr
 	}
 
 	var (
-		source *db2.PipelineSource
+		source *db.PipelineSource
 		err    error
 	)
 
@@ -53,7 +53,7 @@ func (p pipelineSource) Create(ctx context.Context, request *pb.PipelineSourceCr
 		return &pb.PipelineSourceCreateResponse{PipelineSource: sources[0].Convert()}, nil
 	}
 
-	source = &db2.PipelineSource{
+	source = &db.PipelineSource{
 		SourceType:  request.SourceType,
 		Remote:      request.Remote,
 		Ref:         request.Ref,
@@ -105,7 +105,7 @@ func (p pipelineSource) Get(ctx context.Context, request *pb.PipelineSourceGetRe
 }
 
 func (p pipelineSource) List(ctx context.Context, request *pb.PipelineSourceListRequest) (*pb.PipelineSourceListResponse, error) {
-	unique := &db2.PipelineSourceUnique{
+	unique := &db.PipelineSourceUnique{
 		SourceType: request.SourceType,
 		Remote:     request.Remote,
 		Ref:        request.Ref,
@@ -114,7 +114,7 @@ func (p pipelineSource) List(ctx context.Context, request *pb.PipelineSourceList
 		IDList:     request.IdList,
 	}
 
-	var sources []db2.PipelineSource
+	var sources []db.PipelineSource
 	var err error
 	if request.IdList != nil {
 		sources, err = p.dbClient.ListPipelineSource(request.IdList)

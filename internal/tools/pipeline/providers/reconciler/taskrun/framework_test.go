@@ -25,7 +25,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/aop/aoptypes"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 type testOp TaskRun
@@ -144,14 +144,14 @@ func Test_waitOpForLoopNetWorkError(t *testing.T) {
 			pointerClosed := &[]bool{false}[0]
 			ctx = context.WithValue(ctx, ctxKeyTaskCancelChanClosed, pointerClosed)
 			tr := &TaskRun{
-				P:   &spec2.Pipeline{},
+				P:   &spec.Pipeline{},
 				Ctx: ctx,
-				Task: &spec2.PipelineTask{
+				Task: &spec.PipelineTask{
 					Name:    "test",
 					Status:  tt.args.taskStatus,
 					Inspect: tt.args.inspect,
 				},
-				ExecutorDoneCh: make(chan spec2.ExecutorDoneChanData, 1),
+				ExecutorDoneCh: make(chan spec.ExecutorDoneChanData, 1),
 			}
 			pm := monkey.PatchInstanceMethod(reflect.TypeOf(tr), "Update", func(_ *TaskRun) {
 				return

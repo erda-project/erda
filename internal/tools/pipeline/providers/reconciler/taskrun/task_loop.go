@@ -21,7 +21,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/pexpr/pexpr_params"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/reconciler/rlog"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/loop"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml/pexpr"
 )
@@ -80,7 +80,7 @@ func (tr *TaskRun) reportTaskForLoop() error {
 	meta := map[string]interface{}{
 		fmt.Sprintf("task-%d-loop-%d", tr.Task.ID, tr.Task.Extra.LoopOptions.LoopedTimes): *tr.Task,
 	}
-	return tr.DBClient.CreatePipelineReport(&spec2.PipelineReport{
+	return tr.DBClient.CreatePipelineReport(&spec.PipelineReport{
 		PipelineID: tr.P.ID,
 		Type:       apistructs.PipelineReportLoopMetaKey,
 		Meta:       meta,
@@ -108,7 +108,7 @@ func (tr *TaskRun) resetTaskForLoop() {
 	tr.Task.Extra.TimeEndQueue = time.Time{}
 	tr.Task.TimeEnd = time.Time{}
 	// reset volume
-	tr.Task.Context = spec2.PipelineTaskContext{}
+	tr.Task.Context = spec.PipelineTaskContext{}
 	tr.Task.Extra.Volumes = nil
 	// reset tr flag
 	tr.FakeTimeout = false

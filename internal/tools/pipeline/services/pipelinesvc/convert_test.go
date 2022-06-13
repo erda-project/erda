@@ -21,27 +21,27 @@ import (
 	"github.com/bmizerany/assert"
 
 	"github.com/erda-project/erda/apistructs"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 func Test_ConvertPipeline(t *testing.T) {
 	var tables = []struct {
-		pipeline spec2.Pipeline
+		pipeline spec.Pipeline
 	}{
 		{
-			pipeline: spec2.Pipeline{
-				PipelineBase: spec2.PipelineBase{
+			pipeline: spec.Pipeline{
+				PipelineBase: spec.PipelineBase{
 					TriggerMode: apistructs.PipelineTriggerModeCron,
 				},
 			},
 		},
 		{
-			pipeline: spec2.Pipeline{
-				PipelineBase: spec2.PipelineBase{
+			pipeline: spec.Pipeline{
+				PipelineBase: spec.PipelineBase{
 					TriggerMode: apistructs.PipelineTriggerModeCron,
 				},
-				PipelineExtra: spec2.PipelineExtra{
-					Extra: spec2.PipelineExtraInfo{
+				PipelineExtra: spec.PipelineExtra{
+					Extra: spec.PipelineExtraInfo{
 						CronTriggerTime: &[]time.Time{time.Date(2020, 3, 16, 14, 0, 0, 0, time.UTC)}[0],
 					},
 				},

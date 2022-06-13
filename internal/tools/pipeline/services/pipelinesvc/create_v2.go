@@ -31,11 +31,11 @@ import (
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/container_provider"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/cron/crontypes"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/apierrors"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
-func (s *PipelineSvc) CreateV2(ctx context.Context, req *apistructs.PipelineCreateRequestV2) (*spec2.Pipeline, error) {
+func (s *PipelineSvc) CreateV2(ctx context.Context, req *apistructs.PipelineCreateRequestV2) (*spec.Pipeline, error) {
 	// validate
 	if err := s.validateCreateRequest(req); err != nil {
 		return nil, err
@@ -48,7 +48,7 @@ func (s *PipelineSvc) CreateV2(ctx context.Context, req *apistructs.PipelineCrea
 		return nil, err
 	}
 
-	var stages []spec2.PipelineStage
+	var stages []spec.PipelineStage
 	if stages, err = s.CreatePipelineGraph(p); err != nil {
 		logrus.Errorf("failed to create pipeline graph, pipelineID: %d, err: %v", p.ID, err)
 		return nil, err
@@ -151,8 +151,8 @@ func logCompatibleFailed(key, value string, err error) {
 	logrus.Errorf("compatible from labels failed, key: %s, value: %s, err: %v", key, value, err)
 }
 
-func (s *PipelineSvc) makePipelineFromRequestV2(req *apistructs.PipelineCreateRequestV2) (*spec2.Pipeline, error) {
-	p := &spec2.Pipeline{}
+func (s *PipelineSvc) makePipelineFromRequestV2(req *apistructs.PipelineCreateRequestV2) (*spec.Pipeline, error) {
+	p := &spec.Pipeline{}
 
 	// 解析 pipeline yml 文件，生成最终 pipeline yml 文件
 	// 只解析最外层，获取 storage 和 cron 信息
@@ -350,7 +350,7 @@ func (s *PipelineSvc) makePipelineFromRequestV2(req *apistructs.PipelineCreateRe
 				customPriority = _customPriority
 			}
 		}
-		p.Extra.QueueInfo = &spec2.QueueInfo{
+		p.Extra.QueueInfo = &spec.QueueInfo{
 			QueueID:          req.BindQueue.ID,
 			CustomPriority:   customPriority,
 			EnqueueCondition: apistructs.EnqueueConditionType(p.MergeLabels()[apistructs.LabelBindPipelineQueueEnqueueCondition]),
@@ -362,7 +362,7 @@ func (s *PipelineSvc) makePipelineFromRequestV2(req *apistructs.PipelineCreateRe
 
 // 非定时触发的，如果有定时配置，需要插入或更新 pipeline_crons enable 配置
 // 不管是定时还是非定时，只要定时配置是空的，就将pipeline_crons disable
-func (s *PipelineSvc) UpdatePipelineCron(p *spec2.Pipeline, cronStartFrom *time.Time, configManageNamespaces []string, cronCompensator *pipelineyml.CronCompensator) error {
+func (s *PipelineSvc) UpdatePipelineCron(p *spec.Pipeline, cronStartFrom *time.Time, configManageNamespaces []string, cronCompensator *pipelineyml.CronCompensator) error {
 	if p.TriggerMode == apistructs.PipelineTriggerModeCron {
 		return nil
 	}
@@ -388,7 +388,7 @@ func (s *PipelineSvc) UpdatePipelineCron(p *spec2.Pipeline, cronStartFrom *time.
 	return nil
 }
 
-func constructToCreateCronRequest(p *spec2.Pipeline, cronStartFrom *time.Time, configManageNamespaces []string) *cronpb.CronCreateRequest {
+func constructToCreateCronRequest(p *spec.Pipeline, cronStartFrom *time.Time, configManageNamespaces []string) *cronpb.CronCreateRequest {
 	createReq := &cronpb.CronCreateRequest{
 		PipelineSource:         p.PipelineSource.String(),
 		PipelineYmlName:        p.PipelineYmlName,

@@ -21,7 +21,7 @@ import (
 
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	"github.com/erda-project/erda/apistructs"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 var (
@@ -102,7 +102,7 @@ func (p *provider) doPipelineReporter(ctx context.Context, pipelineID uint64) er
 	if err != nil {
 		return err
 	}
-	pipelineWithStageAndTask := spec2.PipelineWithStageAndTask{Pipeline: pipeline}
+	pipelineWithStageAndTask := spec.PipelineWithStageAndTask{Pipeline: pipeline}
 
 	stages, err := p.dbClient.ListPipelineStageByPipelineID(pipelineID)
 	if err != nil {
@@ -205,7 +205,7 @@ func (p *provider) doCompensatorPipelineReporter(ctx context.Context) {
 	}
 
 	// Only end status can be reported
-	newPipelines := pipelineFilterIn(pipelines, func(p *spec2.PipelineBase) bool {
+	newPipelines := pipelineFilterIn(pipelines, func(p *spec.PipelineBase) bool {
 		return p.Status.IsEndStatus()
 	})
 
@@ -217,8 +217,8 @@ func (p *provider) doCompensatorPipelineReporter(ctx context.Context) {
 	return
 }
 
-func pipelineFilterIn(pipelines []spec2.PipelineBase, fn func(p *spec2.PipelineBase) bool) []spec2.PipelineBase {
-	newPipelines := make([]spec2.PipelineBase, 0)
+func pipelineFilterIn(pipelines []spec.PipelineBase, fn func(p *spec.PipelineBase) bool) []spec.PipelineBase {
+	newPipelines := make([]spec.PipelineBase, 0)
 	for i := range pipelines {
 		if fn(&pipelines[i]) {
 			newPipelines = append(newPipelines, pipelines[i])

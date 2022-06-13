@@ -31,7 +31,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/actionagent"
-	logic2 "github.com/erda-project/erda/internal/tools/pipeline/pipengine/actionexecutor/logic"
+	"github.com/erda-project/erda/internal/tools/pipeline/pipengine/actionexecutor/logic"
 	"github.com/erda-project/erda/internal/tools/pipeline/pipengine/actionexecutor/types"
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/task_uuid"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
@@ -70,14 +70,14 @@ func New(name types.Name) (*DockerJob, error) {
 	return &DockerJob{
 		name:       name,
 		client:     cli,
-		errWrapper: logic2.NewErrorWrapper(name.String()),
+		errWrapper: logic.NewErrorWrapper(name.String()),
 	}, nil
 }
 
 type DockerJob struct {
 	client     *client.Client
 	name       types.Name
-	errWrapper *logic2.ErrorWrapper
+	errWrapper *logic.ErrorWrapper
 }
 
 func (d *DockerJob) Kind() types.Kind {
@@ -89,10 +89,10 @@ func (d *DockerJob) Name() types.Name {
 }
 
 func (d *DockerJob) Status(ctx context.Context, task *spec.PipelineTask) (desc apistructs.PipelineStatusDesc, err error) {
-	if err := logic2.ValidateAction(task); err != nil {
+	if err := logic.ValidateAction(task); err != nil {
 		return desc, err
 	}
-	jobName := logic2.MakeJobName(task)
+	jobName := logic.MakeJobName(task)
 	container, err := d.client.ContainerInspect(ctx, jobName)
 	if err != nil {
 		return desc, err
@@ -140,7 +140,7 @@ func (d *DockerJob) Exist(ctx context.Context, task *spec.PipelineTask) (created
 
 func (d *DockerJob) Create(ctx context.Context, task *spec.PipelineTask) (data interface{}, err error) {
 	defer d.errWrapper.WrapTaskError(&err, "create job", task)
-	if err := logic2.ValidateAction(task); err != nil {
+	if err := logic.ValidateAction(task); err != nil {
 		return nil, err
 	}
 	created, _, err := d.Exist(ctx, task)
@@ -148,14 +148,14 @@ func (d *DockerJob) Create(ctx context.Context, task *spec.PipelineTask) (data i
 		return nil, err
 	}
 	if created {
-		logrus.Warnf("%s: task already created, taskInfo: %s", d.Kind().String(), logic2.PrintTaskInfo(task))
+		logrus.Warnf("%s: task already created, taskInfo: %s", d.Kind().String(), logic.PrintTaskInfo(task))
 	}
 	return nil, nil
 }
 
 func (d *DockerJob) Start(ctx context.Context, task *spec.PipelineTask) (data interface{}, err error) {
 	defer d.errWrapper.WrapTaskError(&err, "start job", task)
-	if err := logic2.ValidateAction(task); err != nil {
+	if err := logic.ValidateAction(task); err != nil {
 		return nil, err
 	}
 	created, started, err := d.Exist(ctx, task)
@@ -163,18 +163,18 @@ func (d *DockerJob) Start(ctx context.Context, task *spec.PipelineTask) (data in
 		return nil, err
 	}
 	if !created {
-		logrus.Warnf("%s: task not created(auto try to create), taskInfo: %s", d.Kind().String(), logic2.PrintTaskInfo(task))
+		logrus.Warnf("%s: task not created(auto try to create), taskInfo: %s", d.Kind().String(), logic.PrintTaskInfo(task))
 		_, err = d.Create(ctx, task)
 		if err != nil {
 			return nil, err
 		}
-		logrus.Warnf("dockerjob: action created, continue to start, taskInfo: %s", logic2.PrintTaskInfo(task))
+		logrus.Warnf("dockerjob: action created, continue to start, taskInfo: %s", logic.PrintTaskInfo(task))
 	}
 	if started {
-		logrus.Warnf("%s: task already started, taskInfo: %s", d.Kind().String(), logic2.PrintTaskInfo(task))
+		logrus.Warnf("%s: task already started, taskInfo: %s", d.Kind().String(), logic.PrintTaskInfo(task))
 		return nil, nil
 	}
-	job, err := logic2.TransferToSchedulerJob(task)
+	job, err := logic.TransferToSchedulerJob(task)
 	if err != nil {
 		return nil, err
 	}
@@ -221,7 +221,7 @@ func (d *DockerJob) Update(ctx context.Context, task *spec.PipelineTask) (interf
 
 func (d *DockerJob) Cancel(ctx context.Context, task *spec.PipelineTask) (data interface{}, err error) {
 	defer d.errWrapper.WrapTaskError(&err, "cancel job", task)
-	if err := logic2.ValidateAction(task); err != nil {
+	if err := logic.ValidateAction(task); err != nil {
 		return nil, err
 	}
 	oldUUID := task.Extra.UUID
@@ -233,7 +233,7 @@ func (d *DockerJob) Cancel(ctx context.Context, task *spec.PipelineTask) (data i
 
 func (d *DockerJob) Remove(ctx context.Context, task *spec.PipelineTask) (data interface{}, err error) {
 	defer d.errWrapper.WrapTaskError(&err, "remove job", task)
-	if err := logic2.ValidateAction(task); err != nil {
+	if err := logic.ValidateAction(task); err != nil {
 		return nil, err
 	}
 	task.Extra.UUID = task_uuid.MakeJobID(task)
@@ -259,7 +259,7 @@ func (d *DockerJob) BatchDelete(ctx context.Context, tasks []*spec.PipelineTask)
 }
 
 func (d *DockerJob) Delete(ctx context.Context, task *spec.PipelineTask) (data interface{}, err error) {
-	job, err := logic2.TransferToSchedulerJob(task)
+	job, err := logic.TransferToSchedulerJob(task)
 	if err != nil {
 		return nil, err
 	}
@@ -267,7 +267,7 @@ func (d *DockerJob) Delete(ctx context.Context, task *spec.PipelineTask) (data i
 	jobContainer, err := d.client.ContainerInspect(ctx, name)
 	if err != nil {
 		if client.IsErrNotFound(err) {
-			logrus.Warnf("%s: task not exist, taskInfo: %s", d.Kind().String(), logic2.PrintTaskInfo(task))
+			logrus.Warnf("%s: task not exist, taskInfo: %s", d.Kind().String(), logic.PrintTaskInfo(task))
 			return nil, nil
 		}
 		return nil, err
@@ -290,7 +290,7 @@ func (d *DockerJob) Delete(ctx context.Context, task *spec.PipelineTask) (data i
 }
 
 func (d *DockerJob) Inspect(ctx context.Context, task *spec.PipelineTask) (apistructs.TaskInspect, error) {
-	jobName := logic2.MakeJobName(task)
+	jobName := logic.MakeJobName(task)
 	inspect, err := d.client.ContainerInspect(ctx, jobName)
 	if err != nil {
 		return apistructs.TaskInspect{}, err

@@ -23,7 +23,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/leaderworker/lwctx"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/reconciler/rutil"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/reconciler/schedulabletask"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 func (r *provider) ReconcileOnePipeline(ctx context.Context, pipelineID uint64) {
@@ -76,7 +76,7 @@ func (r *provider) generatePipelineReconcilerForEachPipelineID() *defaultPipelin
 		defaultRetryInterval:       r.Cfg.RetryInterval,
 		calculatedStatusForTaskUse: "",
 		chanToTriggerNextLoop:      make(chan struct{}),
-		schedulableTaskChan:        make(chan *spec2.PipelineTask),
+		schedulableTaskChan:        make(chan *spec.PipelineTask),
 		doneChan:                   make(chan struct{}),
 		flagCanceling:              false,
 		totalTaskNumber:            nil,
@@ -86,14 +86,14 @@ func (r *provider) generatePipelineReconcilerForEachPipelineID() *defaultPipelin
 	return pr
 }
 
-func (pr *defaultPipelineReconciler) releaseTaskAfterReconciled(ctx context.Context, p *spec2.Pipeline, task *spec2.PipelineTask) {
+func (pr *defaultPipelineReconciler) releaseTaskAfterReconciled(ctx context.Context, p *spec.Pipeline, task *spec.PipelineTask) {
 	pr.lock.Lock()
 	defer pr.lock.Unlock()
 	pr.processingTasks.Delete(task.NodeName())
 	pr.processedTasks.Store(task.NodeName(), task)
 }
 
-func (pr *defaultPipelineReconciler) waitPipelineDoneAndDoTeardown(ctx context.Context, p *spec2.Pipeline) {
+func (pr *defaultPipelineReconciler) waitPipelineDoneAndDoTeardown(ctx context.Context, p *spec.Pipeline) {
 	select {
 	case <-ctx.Done():
 		return
@@ -114,7 +114,7 @@ func (pr *defaultPipelineReconciler) waitPipelineDoneAndDoTeardown(ctx context.C
 	}
 }
 
-func (pr *defaultPipelineReconciler) continuePushSchedulableTasks(ctx context.Context, p *spec2.Pipeline) {
+func (pr *defaultPipelineReconciler) continuePushSchedulableTasks(ctx context.Context, p *spec.Pipeline) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -125,7 +125,7 @@ func (pr *defaultPipelineReconciler) continuePushSchedulableTasks(ctx context.Co
 	}
 }
 
-func (pr *defaultPipelineReconciler) continueScheduleTasks(ctx context.Context, p *spec2.Pipeline) {
+func (pr *defaultPipelineReconciler) continueScheduleTasks(ctx context.Context, p *spec.Pipeline) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -139,7 +139,7 @@ func (pr *defaultPipelineReconciler) continueScheduleTasks(ctx context.Context, 
 	}
 }
 
-func (pr *defaultPipelineReconciler) doNextLoop(ctx context.Context, p *spec2.Pipeline) {
+func (pr *defaultPipelineReconciler) doNextLoop(ctx context.Context, p *spec.Pipeline) {
 	rutil.ContinueWorking(ctx, pr.log, func(ctx context.Context) rutil.WaitDuration {
 		if err := pr.internalNextLoopLogic(ctx, p); err != nil {
 			return rutil.ContinueWorkingWithDefaultInterval
@@ -148,7 +148,7 @@ func (pr *defaultPipelineReconciler) doNextLoop(ctx context.Context, p *spec2.Pi
 	}, rutil.WithContinueWorkingDefaultRetryInterval(pr.defaultRetryInterval))
 }
 
-func (pr *defaultPipelineReconciler) internalNextLoopLogic(ctx context.Context, p *spec2.Pipeline) error {
+func (pr *defaultPipelineReconciler) internalNextLoopLogic(ctx context.Context, p *spec.Pipeline) error {
 	pr.lock.Lock()
 	defer pr.lock.Unlock()
 

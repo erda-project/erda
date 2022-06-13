@@ -23,7 +23,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/version"
 	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 type ArchiveDeleteRequest struct {
@@ -32,7 +32,7 @@ type ArchiveDeleteRequest struct {
 	EndTimeCreated time.Time
 }
 
-func (client *Client) CreatePipelineArchive(archive *spec2.PipelineArchive, ops ...dbclient.SessionOption) error {
+func (client *Client) CreatePipelineArchive(archive *spec.PipelineArchive, ops ...dbclient.SessionOption) error {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
@@ -40,38 +40,38 @@ func (client *Client) CreatePipelineArchive(archive *spec2.PipelineArchive, ops 
 	return err
 }
 
-func (client *Client) GetPipelineArchiveByPipelineID(pipelineID uint64, ops ...dbclient.SessionOption) (spec2.PipelineArchive, bool, error) {
+func (client *Client) GetPipelineArchiveByPipelineID(pipelineID uint64, ops ...dbclient.SessionOption) (spec.PipelineArchive, bool, error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
-	archive := spec2.PipelineArchive{PipelineID: pipelineID}
+	archive := spec.PipelineArchive{PipelineID: pipelineID}
 	exist, err := session.Get(&archive)
 	return archive, exist, err
 }
 
-func (client *Client) GetPipelineFromArchive(pipelineID uint64, ops ...dbclient.SessionOption) (spec2.Pipeline, bool, error) {
+func (client *Client) GetPipelineFromArchive(pipelineID uint64, ops ...dbclient.SessionOption) (spec.Pipeline, bool, error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
 	archive, exist, err := client.GetPipelineArchiveByPipelineID(pipelineID, ops...)
 	if err != nil {
-		return spec2.Pipeline{}, false, err
+		return spec.Pipeline{}, false, err
 	}
 	if !exist {
-		return spec2.Pipeline{}, false, nil
+		return spec.Pipeline{}, false, nil
 	}
 
 	return archive.Content.Pipeline, true, nil
 }
 
 // GetPipelineIncludeArchived return: pipeline, exist, findFromArchive, error
-func (client *Client) GetPipelineIncludeArchived(pipelineID uint64, ops ...dbclient.SessionOption) (spec2.Pipeline, bool, bool, error) {
+func (client *Client) GetPipelineIncludeArchived(pipelineID uint64, ops ...dbclient.SessionOption) (spec.Pipeline, bool, bool, error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
 	p, exist, err := client.GetPipelineWithExistInfo(pipelineID, ops...)
 	if err != nil {
-		return spec2.Pipeline{}, false, false, err
+		return spec.Pipeline{}, false, false, err
 	}
 	if exist {
 		return p, true, false, nil
@@ -80,12 +80,12 @@ func (client *Client) GetPipelineIncludeArchived(pipelineID uint64, ops ...dbcli
 	// find from archive
 	ap, findFromArchive, err := client.GetPipelineFromArchive(pipelineID, ops...)
 	if err != nil {
-		return spec2.Pipeline{}, false, false, err
+		return spec.Pipeline{}, false, false, err
 	}
 	return ap, findFromArchive, findFromArchive, err
 }
 
-func (client *Client) GetPipelineTasksFromArchive(pipelineID uint64, ops ...dbclient.SessionOption) ([]spec2.PipelineTask, error) {
+func (client *Client) GetPipelineTasksFromArchive(pipelineID uint64, ops ...dbclient.SessionOption) ([]spec.PipelineTask, error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
@@ -94,7 +94,7 @@ func (client *Client) GetPipelineTasksFromArchive(pipelineID uint64, ops ...dbcl
 }
 
 // GetPipelineTasksIncludeArchived return: tasks, findFromArchive, error
-func (client *Client) GetPipelineTasksIncludeArchived(pipelineID uint64, ops ...dbclient.SessionOption) ([]spec2.PipelineTask, bool, error) {
+func (client *Client) GetPipelineTasksIncludeArchived(pipelineID uint64, ops ...dbclient.SessionOption) ([]spec.PipelineTask, bool, error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
@@ -170,13 +170,13 @@ func (client *Client) ArchivePipeline(pipelineID uint64) (_ uint64, err error) {
 		return 0, err
 	}
 
-	archive := spec2.PipelineArchive{
+	archive := spec.PipelineArchive{
 		PipelineID:      pipelineID,
 		PipelineSource:  p.PipelineSource,
 		PipelineYmlName: p.PipelineYmlName,
 		Status:          p.Status,
 		DiceVersion:     version.Version,
-		Content: spec2.PipelineArchiveContent{
+		Content: spec.PipelineArchiveContent{
 			Pipeline:        p,
 			PipelineLabels:  labels,
 			PipelineStages:  stages,
@@ -221,15 +221,15 @@ func (client *Client) DeletePipelineArchives(req ArchiveDeleteRequest, ops ...db
 	if req.EndTimeCreated.IsZero() {
 		return errors.New("invalid param: endTimeCreated")
 	}
-	baseSQL := session.Table(&spec2.PipelineArchive{}).
-		Where(tableFieldName((&spec2.PipelineArchive{}).TableName(), "time_created")+" <= ?", req.EndTimeCreated)
+	baseSQL := session.Table(&spec.PipelineArchive{}).
+		Where(tableFieldName((&spec.PipelineArchive{}).TableName(), "time_created")+" <= ?", req.EndTimeCreated)
 	if len(req.Statuses) > 0 {
-		baseSQL = baseSQL.In(tableFieldName((&spec2.PipelineArchive{}).TableName(), "status"), req.Statuses)
+		baseSQL = baseSQL.In(tableFieldName((&spec.PipelineArchive{}).TableName(), "status"), req.Statuses)
 	}
 	if len(req.NotStatuses) > 0 {
-		baseSQL = baseSQL.NotIn(tableFieldName((&spec2.PipelineArchive{}).TableName(), "status"), req.NotStatuses)
+		baseSQL = baseSQL.NotIn(tableFieldName((&spec.PipelineArchive{}).TableName(), "status"), req.NotStatuses)
 	}
-	if _, err := baseSQL.Delete(&spec2.PipelineArchive{}); err != nil {
+	if _, err := baseSQL.Delete(&spec.PipelineArchive{}); err != nil {
 		return err
 	}
 	return nil
