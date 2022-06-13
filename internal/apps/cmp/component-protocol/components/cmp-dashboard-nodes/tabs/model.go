@@ -16,7 +16,7 @@ package tabs
 
 import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	table2 "github.com/erda-project/erda/internal/apps/cmp/component-protocol/components/cmp-dashboard-nodes/common/table"
+	"github.com/erda-project/erda/internal/apps/cmp/component-protocol/components/cmp-dashboard-nodes/common/table"
 )
 
 type Tabs struct {
@@ -35,13 +35,13 @@ type Props struct {
 }
 
 type MenuPair struct {
-	Key  table2.TableType `json:"key"`
-	Text string           `json:"text"`
+	Key  table.TableType `json:"key"`
+	Text string          `json:"text"`
 }
 
 type State struct {
-	Value             table2.TableType `json:"value"`
-	TableTabsURLQuery string           `json:"tableTabs__urlQuery,omitempty"`
+	Value             table.TableType `json:"value"`
+	TableTabsURLQuery string          `json:"tableTabs__urlQuery,omitempty"`
 }
 
 type Meta struct {

@@ -23,7 +23,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/aop"
-	aoptypes2 "github.com/erda-project/erda/internal/tools/pipeline/aop/aoptypes"
+	"github.com/erda-project/erda/internal/tools/pipeline/aop/aoptypes"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
@@ -44,19 +44,19 @@ type ApiReportMeta struct {
 
 // +provider
 type provider struct {
-	aoptypes2.PipelineBaseTunePoint
+	aoptypes.PipelineBaseTunePoint
 }
 
 func (p *provider) Name() string { return "apitest-report" }
 
-func (p *provider) Handle(ctx *aoptypes2.TuneContext) error {
+func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 	// source = autotest
 	if ctx.SDK.Pipeline.PipelineSource != apistructs.PipelineSourceAutoTest {
 		return nil
 	}
 	var allTasks []*spec.PipelineTask
 	// 尝试从上下文中获取，减少不必要的网络、数据库请求
-	tasks, ok := ctx.TryGet(aoptypes2.CtxKeyTasks)
+	tasks, ok := ctx.TryGet(aoptypes.CtxKeyTasks)
 	if ok {
 		if _tasks, ok := tasks.([]*spec.PipelineTask); ok {
 			allTasks = _tasks

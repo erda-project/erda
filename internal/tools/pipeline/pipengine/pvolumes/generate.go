@@ -19,15 +19,15 @@ import (
 	"strconv"
 
 	"github.com/erda-project/erda/apistructs"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
-func GenerateTaskVolume(task spec2.PipelineTask, namespace string, volumeID *string) apistructs.MetadataField {
+func GenerateTaskVolume(task spec.PipelineTask, namespace string, volumeID *string) apistructs.MetadataField {
 	volumeMountPath := MakeTaskContainerVolumeMountDir(namespace)
 	vo := apistructs.MetadataField{
 		Name:  namespace,
 		Value: volumeMountPath,
-		Type:  string(spec2.StoreTypeDiceVolumeNFS),
+		Type:  string(spec.StoreTypeDiceVolumeNFS),
 		Labels: map[string]string{
 			VoLabelKeyContextPath:   volumeMountPath,
 			VoLabelKeyContainerPath: MakeTaskContainerWorkdir(namespace),
@@ -44,7 +44,7 @@ func GenerateLocalVolume(namespace string, volumeID *string) apistructs.Metadata
 	vo := apistructs.MetadataField{
 		Name:  namespace,
 		Value: ContainerContextDir,
-		Type:  string(spec2.StoreTypeDiceVolumeLocal),
+		Type:  string(spec.StoreTypeDiceVolumeLocal),
 		Labels: map[string]string{
 			VoLabelKeyShareVolume: strconv.FormatBool(true),
 		},
@@ -59,7 +59,7 @@ func GenerateFakeVolume(namespace string, mountPath string, volumeID *string) ap
 	vo := apistructs.MetadataField{
 		Name:  namespace,
 		Value: mountPath,
-		Type:  string(spec2.StoreTypeDiceVolumeFake),
+		Type:  string(spec.StoreTypeDiceVolumeFake),
 		Labels: map[string]string{
 			VoLabelKeyContextPath:   mountPath,
 			VoLabelKeyContainerPath: mountPath,

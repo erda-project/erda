@@ -19,7 +19,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/apierrors"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 func (s *PipelineSvc) BatchCreate(ctx context.Context, batchReq *apistructs.PipelineBatchCreateRequest) (
@@ -47,7 +47,7 @@ func (s *PipelineSvc) BatchCreate(ctx context.Context, batchReq *apistructs.Pipe
 		if err != nil {
 			return nil, apierrors.ErrBatchCreatePipeline.InternalError(err)
 		}
-		var stages []spec2.PipelineStage
+		var stages []spec.PipelineStage
 		if stages, err = s.CreatePipelineGraph(p); err != nil {
 			return nil, apierrors.ErrBatchCreatePipeline.InternalError(err)
 		}
@@ -74,7 +74,7 @@ func (s *PipelineSvc) BatchCreate(ctx context.Context, batchReq *apistructs.Pipe
 }
 
 // getSecrets Compatible with bigdata application
-func getSecrets(p *spec2.Pipeline) map[string]string {
+func getSecrets(p *spec.Pipeline) map[string]string {
 	return map[string]string{
 		"gittar.repo":   p.CommitDetail.Repo,
 		"gittar.branch": p.Labels[apistructs.LabelBranch],

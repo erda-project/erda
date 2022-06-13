@@ -28,13 +28,13 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/tools/pipeline/aop"
-	aoptypes2 "github.com/erda-project/erda/internal/tools/pipeline/aop/aoptypes"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/aop/aoptypes"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 // +provider
 type provider struct {
-	aoptypes2.PipelineBaseTunePoint
+	aoptypes.PipelineBaseTunePoint
 	Bundle *bundle.Bundle
 }
 
@@ -57,7 +57,7 @@ func init() {
 
 func (p *provider) Name() string { return "testplan-after" }
 
-func (p *provider) Handle(ctx *aoptypes2.TuneContext) error {
+func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 	// source = autotest
 	if ctx.SDK.Pipeline.PipelineSource != apistructs.PipelineSourceAutoTest {
 		return nil
@@ -163,7 +163,7 @@ func (p *provider) Handle(ctx *aoptypes2.TuneContext) error {
 	return nil
 }
 
-func (p *provider) getSubContents(ctx *aoptypes2.TuneContext, testPlanID, sceneID, sceneSetID, iterationID, parentPipelineID uint64, userID string) (contents []*testplanpb.Content, err error) {
+func (p *provider) getSubContents(ctx *aoptypes.TuneContext, testPlanID, sceneID, sceneSetID, iterationID, parentPipelineID uint64, userID string) (contents []*testplanpb.Content, err error) {
 	result, err := ctx.SDK.DBClient.GetPipelineWithTasks(ctx.SDK.Pipeline.PipelineID)
 	if err != nil {
 		return nil, err
@@ -229,7 +229,7 @@ type ApiNumStatistics struct {
 	ApiRefSuccessNum int
 }
 
-func getExecApiNum(ctx *aoptypes2.TuneContext, pipelineID uint64) (*ApiNumStatistics, error) {
+func getExecApiNum(ctx *aoptypes.TuneContext, pipelineID uint64) (*ApiNumStatistics, error) {
 	snippetReports, err := ctx.SDK.DBClient.BatchListPipelineReportsByPipelineID(
 		[]uint64{pipelineID},
 		[]string{string(apistructs.PipelineReportTypeAPITest)},
@@ -262,12 +262,12 @@ func getExecApiNum(ctx *aoptypes2.TuneContext, pipelineID uint64) (*ApiNumStatis
 	}, nil
 }
 
-func statistics(ctx *aoptypes2.TuneContext, pipelineID uint64) (*ApiNumStatistics, error) {
-	var allTasks []*spec2.PipelineTask
+func statistics(ctx *aoptypes.TuneContext, pipelineID uint64) (*ApiNumStatistics, error) {
+	var allTasks []*spec.PipelineTask
 	// get tasks from ctx
-	tasks, ok := ctx.TryGet(aoptypes2.CtxKeyTasks)
+	tasks, ok := ctx.TryGet(aoptypes.CtxKeyTasks)
 	if ok {
-		if _tasks, ok := tasks.([]*spec2.PipelineTask); ok {
+		if _tasks, ok := tasks.([]*spec.PipelineTask); ok {
 			allTasks = _tasks
 		}
 	} else {
@@ -320,8 +320,8 @@ func statistics(ctx *aoptypes2.TuneContext, pipelineID uint64) (*ApiNumStatistic
 
 }
 
-func filterPipelineTask(allTasks []*spec2.PipelineTask) ([]*spec2.PipelineTask, []uint64) {
-	var apiTestTasks []*spec2.PipelineTask
+func filterPipelineTask(allTasks []*spec.PipelineTask) ([]*spec.PipelineTask, []uint64) {
+	var apiTestTasks []*spec.PipelineTask
 	var snippetTaskPipelineIDs []uint64
 	for _, task := range allTasks {
 		if task.Type == apistructs.ActionTypeAPITest && task.Extra.Action.Version == "2.0" {
@@ -345,7 +345,7 @@ type ApiReportMeta struct {
 	ApiRefSuccessNum int `json:"apiRefSuccessNum"`
 }
 
-func convertReport(pipelineID uint64, report spec2.PipelineReport) (ApiReportMeta, error) {
+func convertReport(pipelineID uint64, report spec.PipelineReport) (ApiReportMeta, error) {
 	b, err := json.Marshal(report.Meta)
 	if err != nil {
 		logrus.Warnf("failed to marshal api-test report, snippet pipelineID: %d, reportID: %d, err: %v",
@@ -361,7 +361,7 @@ func convertReport(pipelineID uint64, report spec2.PipelineReport) (ApiReportMet
 	return meta, nil
 }
 
-func (p *provider) sendMessage(req testplanpb.Content, ctx *aoptypes2.TuneContext) error {
+func (p *provider) sendMessage(req testplanpb.Content, ctx *aoptypes.TuneContext) error {
 	ev2 := &apistructs.EventCreateRequest{
 		EventHeader: apistructs.EventHeader{
 			Event:         bundle.AutoTestPlanExecuteEvent,

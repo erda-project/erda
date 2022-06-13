@@ -25,14 +25,14 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
-	leaderworker2 "github.com/erda-project/erda/internal/tools/pipeline/providers/leaderworker"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/leaderworker"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/reconciler"
 )
 
 type provider struct {
 	Log        logs.Logger
 	Cfg        *config
-	LW         leaderworker2.Interface
+	LW         leaderworker.Interface
 	Reconciler reconciler.Interface
 
 	MySQL    mysqlxorm.Interface
@@ -53,7 +53,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 func (p *provider) Run(ctx context.Context) error {
 	// just register handler, and leader-worker provider will handle properly
-	p.LW.RegisterLeaderListener(&leaderworker2.DefaultListener{
+	p.LW.RegisterLeaderListener(&leaderworker.DefaultListener{
 		BeforeExecOnLeaderFunc: p.initConsistentUntilSuccess,
 	})
 	p.LW.OnLeader(p.continueDispatcher)

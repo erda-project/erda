@@ -27,16 +27,16 @@ import (
 	"github.com/erda-project/erda-infra/base/logs/logrusx"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
-	db2 "github.com/erda-project/erda/internal/tools/pipeline/providers/dbgc/db"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/dbgc/db"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 func TestReconciler_doPipelineDatabaseGC(t *testing.T) {
 
-	var pipelineMaps = map[uint64]spec2.Pipeline{
+	var pipelineMaps = map[uint64]spec.Pipeline{
 		1: {
-			PipelineBase: spec2.PipelineBase{ID: 1},
-			PipelineExtra: spec2.PipelineExtra{Extra: spec2.PipelineExtraInfo{
+			PipelineBase: spec.PipelineBase{ID: 1},
+			PipelineExtra: spec.PipelineExtra{Extra: spec.PipelineExtraInfo{
 				GC: apistructs.PipelineGC{
 					DatabaseGC: apistructs.PipelineDatabaseGC{
 						Analyzed: apistructs.PipelineDBGCItem{
@@ -52,8 +52,8 @@ func TestReconciler_doPipelineDatabaseGC(t *testing.T) {
 			}},
 		},
 		2: {
-			PipelineBase: spec2.PipelineBase{ID: 2},
-			PipelineExtra: spec2.PipelineExtra{Extra: spec2.PipelineExtraInfo{
+			PipelineBase: spec.PipelineBase{ID: 2},
+			PipelineExtra: spec.PipelineExtra{Extra: spec.PipelineExtraInfo{
 				GC: apistructs.PipelineGC{
 					DatabaseGC: apistructs.PipelineDatabaseGC{
 						Analyzed: apistructs.PipelineDBGCItem{
@@ -76,7 +76,7 @@ func TestReconciler_doPipelineDatabaseGC(t *testing.T) {
 		assert.True(t, req.PageNum <= 2, "PageNum > 2")
 		if req.PageNum == 1 {
 			return &dbclient.PageListPipelinesResult{
-				Pipelines:         []spec2.Pipeline{pipelineMaps[1], pipelineMaps[0]},
+				Pipelines:         []spec.Pipeline{pipelineMaps[1], pipelineMaps[0]},
 				PagingPipelineIDs: nil,
 				Total:             2,
 				CurrentPageSize:   2,
@@ -93,7 +93,7 @@ func TestReconciler_doPipelineDatabaseGC(t *testing.T) {
 	defer pm.Unpatch()
 
 	var r provider
-	r.dbClient = &db2.Client{Client: *DB}
+	r.dbClient = &db.Client{Client: *DB}
 
 	var gcNum = 1
 	var addCountNum = func() {
@@ -145,11 +145,11 @@ func TestPipelineDatabaseGC(t *testing.T) {
 	})
 	defer pm.Unpatch()
 
-	pm1 := monkey.PatchInstanceMethod(reflect.TypeOf(r.dbClient), "DeletePipelineArchives", func(client *db2.Client, req db2.ArchiveDeleteRequest, ops ...dbclient.SessionOption) error {
+	pm1 := monkey.PatchInstanceMethod(reflect.TypeOf(r.dbClient), "DeletePipelineArchives", func(client *db.Client, req db.ArchiveDeleteRequest, ops ...dbclient.SessionOption) error {
 		return nil
 	})
 	defer pm1.Unpatch()
-	r.dbClient = &db2.Client{Client: *DB}
+	r.dbClient = &db.Client{Client: *DB}
 	r.Cfg = &config{
 		PipelineDBGCDuration: 3 * time.Second,
 	}
@@ -168,7 +168,7 @@ func TestReconciler_doPipelineDatabaseGC1(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		DB := &dbclient.Client{}
 		var r provider
-		r.dbClient = &db2.Client{Client: *DB}
+		r.dbClient = &db.Client{Client: *DB}
 		patch := monkey.PatchInstanceMethod(reflect.TypeOf(DB), "PageListPipelines", func(client *dbclient.Client, req apistructs.PipelinePageListRequest, ops ...dbclient.SessionOption) (*dbclient.PageListPipelinesResult, error) {
 			switch req.PageNum {
 			case 1:
@@ -180,10 +180,10 @@ func TestReconciler_doPipelineDatabaseGC1(t *testing.T) {
 				}, nil
 			case 2:
 				return &dbclient.PageListPipelinesResult{
-					Pipelines: []spec2.Pipeline{
+					Pipelines: []spec.Pipeline{
 						{
-							PipelineBase: spec2.PipelineBase{},
-							PipelineExtra: spec2.PipelineExtra{
+							PipelineBase: spec.PipelineBase{},
+							PipelineExtra: spec.PipelineExtra{
 								PipelineID: 1,
 							},
 						}},
@@ -193,7 +193,7 @@ func TestReconciler_doPipelineDatabaseGC1(t *testing.T) {
 				}, nil
 			default:
 				return &dbclient.PageListPipelinesResult{
-					Pipelines:         []spec2.Pipeline{},
+					Pipelines:         []spec.Pipeline{},
 					PagingPipelineIDs: nil,
 					Total:             0,
 					CurrentPageSize:   0,

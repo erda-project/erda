@@ -29,7 +29,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/erda-project/erda/apistructs"
-	logic2 "github.com/erda-project/erda/internal/tools/pipeline/pipengine/actionexecutor/logic"
+	"github.com/erda-project/erda/internal/tools/pipeline/pipengine/actionexecutor/logic"
 	"github.com/erda-project/erda/internal/tools/pipeline/pipengine/actionexecutor/types"
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/container_provider"
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/containers"
@@ -61,7 +61,7 @@ func init() {
 
 func (k *K8sSpark) Start(ctx context.Context, task *spec.PipelineTask) (data interface{}, err error) {
 	defer k.errWrapper.WrapTaskError(&err, "start job", task)
-	if err := logic2.ValidateAction(task); err != nil {
+	if err := logic.ValidateAction(task); err != nil {
 		return nil, err
 	}
 	created, started, err := k.Exist(ctx, task)
@@ -69,18 +69,18 @@ func (k *K8sSpark) Start(ctx context.Context, task *spec.PipelineTask) (data int
 		return nil, err
 	}
 	if !created {
-		logrus.Warnf("%s: task not created(auto try to create), taskInfo: %s", k.Kind().String(), logic2.PrintTaskInfo(task))
+		logrus.Warnf("%s: task not created(auto try to create), taskInfo: %s", k.Kind().String(), logic.PrintTaskInfo(task))
 		_, err = k.Create(ctx, task)
 		if err != nil {
 			return nil, err
 		}
-		logrus.Warnf("k8sspark: action created, continue to start, taskInfo: %s", logic2.PrintTaskInfo(task))
+		logrus.Warnf("k8sspark: action created, continue to start, taskInfo: %s", logic.PrintTaskInfo(task))
 	}
 	if started {
-		logrus.Warnf("%s: task already started, taskInfo: %s", k.Kind().String(), logic2.PrintTaskInfo(task))
+		logrus.Warnf("%s: task already started, taskInfo: %s", k.Kind().String(), logic.PrintTaskInfo(task))
 		return nil, nil
 	}
-	job, err := logic2.TransferToSchedulerJob(task)
+	job, err := logic.TransferToSchedulerJob(task)
 	if err != nil {
 		return nil, fmt.Errorf("invalid job spec")
 	}
@@ -121,7 +121,7 @@ func (k *K8sSpark) Start(ctx context.Context, task *spec.PipelineTask) (data int
 		return nil, fmt.Errorf("failed to create spark rolebinding, namespace: %s, err: %v", job.Namespace, err)
 	}
 
-	_, _, pvcs := logic2.GenerateK8SVolumes(&job, clusterCM)
+	_, _, pvcs := logic.GenerateK8SVolumes(&job, clusterCM)
 	for _, pvc := range pvcs {
 		if pvc == nil {
 			continue
@@ -141,7 +141,7 @@ func (k *K8sSpark) Start(ctx context.Context, task *spec.PipelineTask) (data int
 		job.Volumes[i].ID = &(pvcs[i].Name)
 	}
 
-	conf, err := logic2.GetBigDataConf(task)
+	conf, err := logic.GetBigDataConf(task)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get big data conf, err: %v", err)
 	}
@@ -170,7 +170,7 @@ func (k *K8sSpark) Start(ctx context.Context, task *spec.PipelineTask) (data int
 
 func (k *K8sSpark) Status(ctx context.Context, task *spec.PipelineTask) (desc apistructs.PipelineStatusDesc, err error) {
 	defer k.errWrapper.WrapTaskError(&err, "status job", task)
-	if err := logic2.ValidateAction(task); err != nil {
+	if err := logic.ValidateAction(task); err != nil {
 		return apistructs.PipelineStatusDesc{}, err
 	}
 
@@ -181,7 +181,7 @@ func (k *K8sSpark) Status(ctx context.Context, task *spec.PipelineTask) (desc ap
 		logrus.Warningf(errMsg)
 
 		if k8serrors.IsNotFound(err) {
-			desc.Status = logic2.TransferStatus(string(apistructs.StatusNotFoundInCluster))
+			desc.Status = logic.TransferStatus(string(apistructs.StatusNotFoundInCluster))
 			return desc, nil
 		}
 
@@ -209,7 +209,7 @@ func (k *K8sSpark) Status(ctx context.Context, task *spec.PipelineTask) (desc ap
 	logrus.Debugf("succedd to get spark application status, namespace: %s, name: %s, status: %v",
 		task.Extra.Namespace, task.Extra.UUID, statusDesc)
 
-	desc.Status = logic2.TransferStatus(string(statusDesc.Status))
+	desc.Status = logic.TransferStatus(string(statusDesc.Status))
 	desc.Desc = statusDesc.LastMessage
 	return desc, nil
 }
@@ -483,7 +483,7 @@ func (k *K8sSpark) generateKubeSparkJob(job *apistructs.JobFromUser, conf *apist
 	}
 	sparkApp.Spec.MainApplicationFile = &jarPath
 
-	vols, volMounts, _ := logic2.GenerateK8SVolumes(job)
+	vols, volMounts, _ := logic.GenerateK8SVolumes(job)
 
 	if job.PreFetcher != nil && job.PreFetcher.FileFromHost != "" {
 		clusterInfo, err := clusterinfo.GetClusterInfoByName(job.ClusterName)
@@ -491,7 +491,7 @@ func (k *K8sSpark) generateKubeSparkJob(job *apistructs.JobFromUser, conf *apist
 		if err != nil {
 			return nil, errors.Errorf("failed to get cluster info, cluster name: %s, err: %v", k.clusterName, err)
 		}
-		hostPath, err := logic2.ParseJobHostBindTemplate(job.PreFetcher.FileFromHost, clusterCM)
+		hostPath, err := logic.ParseJobHostBindTemplate(job.PreFetcher.FileFromHost, clusterCM)
 		if err != nil {
 			return nil, err
 		}
@@ -517,7 +517,7 @@ func (k *K8sSpark) generateKubeSparkJob(job *apistructs.JobFromUser, conf *apist
 
 	sparkApp.Spec.Executor.SparkPodSpec = k.composePodSpec(job, conf, sparkExecutorType, volMounts)
 	sparkApp.Spec.Executor.Instances = int32ptr(conf.Spec.SparkConf.ExecutorResource.Replica)
-	scheduleInfo2, _, _ := logic2.GetScheduleInfo(k.cluster, string(k.Name()), string(Kind), *job)
+	scheduleInfo2, _, _ := logic.GetScheduleInfo(k.cluster, string(k.Name()), string(Kind), *job)
 
 	// spark-submit doesn't support affinity, so transfer affinity to node selector
 	// in-the-feature, spark-submit will support affinity, and just need to set podSpec.Affinity = &constraintbuilders.K8S(&scheduleInfo2, nil, nil, nil).Affinity

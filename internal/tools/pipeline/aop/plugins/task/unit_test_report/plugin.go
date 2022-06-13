@@ -21,7 +21,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/aop"
-	aoptypes2 "github.com/erda-project/erda/internal/tools/pipeline/aop/aoptypes"
+	"github.com/erda-project/erda/internal/tools/pipeline/aop/aoptypes"
 )
 
 const taskType = "unit-test"
@@ -29,12 +29,12 @@ const actionTypeUnitTest = "unit-test"
 
 // +provider
 type provider struct {
-	aoptypes2.TaskBaseTunePoint
+	aoptypes.TaskBaseTunePoint
 }
 
 func (p *provider) Name() string { return "unit-test-report" }
 
-func (p *provider) Handle(ctx *aoptypes2.TuneContext) error {
+func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 
 	if ctx.SDK.Task.Type != taskType {
 		return nil

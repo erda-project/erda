@@ -23,7 +23,7 @@ import (
 
 	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
 	"github.com/erda-project/erda/internal/tools/pipeline/events"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 
 	"github.com/erda-project/erda/apistructs"
 )
@@ -38,7 +38,7 @@ func TestAppendPipelineTaskResult(t *testing.T) {
 		},
 	}
 
-	task := &spec2.PipelineTask{
+	task := &spec.PipelineTask{
 		Inspect: apistructs.PipelineTaskInspect{
 			Errors: []*apistructs.PipelineTaskErrResponse{
 				&apistructs.PipelineTaskErrResponse{Msg: "a"},
@@ -60,13 +60,13 @@ func TestAppendPipelineTaskResult(t *testing.T) {
 func TestDealPipelineCallbackOfAction(t *testing.T) {
 	db := &dbclient.Client{}
 
-	m1 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetPipelineTask", func(_ *dbclient.Client, id interface{}) (spec2.PipelineTask, error) {
-		return spec2.PipelineTask{PipelineID: 1}, nil
+	m1 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetPipelineTask", func(_ *dbclient.Client, id interface{}) (spec.PipelineTask, error) {
+		return spec.PipelineTask{PipelineID: 1}, nil
 	})
 	defer m1.Unpatch()
 
-	m2 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetPipeline", func(_ *dbclient.Client, id interface{}, ops ...dbclient.SessionOption) (spec2.Pipeline, error) {
-		return spec2.Pipeline{PipelineBase: spec2.PipelineBase{ID: 1}}, nil
+	m2 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetPipeline", func(_ *dbclient.Client, id interface{}, ops ...dbclient.SessionOption) (spec.Pipeline, error) {
+		return spec.Pipeline{PipelineBase: spec.PipelineBase{ID: 1}}, nil
 	})
 	defer m2.Unpatch()
 
@@ -80,7 +80,7 @@ func TestDealPipelineCallbackOfAction(t *testing.T) {
 	})
 	defer m4.Unpatch()
 
-	m5 := monkey.Patch(events.EmitTaskEvent, func(task *spec2.PipelineTask, p *spec2.Pipeline) {
+	m5 := monkey.Patch(events.EmitTaskEvent, func(task *spec.PipelineTask, p *spec.Pipeline) {
 		return
 	})
 	defer m5.Unpatch()

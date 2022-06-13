@@ -24,21 +24,21 @@ import (
 	"github.com/alecthomas/assert"
 
 	"github.com/erda-project/erda/apistructs"
-	actionmgr2 "github.com/erda-project/erda/internal/tools/pipeline/providers/actionmgr"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/actionmgr"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
 func Test_passedDataWhenCreate_putPassedDataByPipelineYml(t *testing.T) {
 	type fields struct {
-		actionMgr        actionmgr2.Interface
+		actionMgr        actionmgr.Interface
 		actionJobDefines map[string]*diceyml.Job
 		actionJobSpecs   map[string]*apistructs.ActionSpec
 	}
 	type args struct {
 		pipelineYml string
-		p           *spec2.Pipeline
+		p           *spec.Pipeline
 	}
 	tests := []struct {
 		name                 string
@@ -56,8 +56,8 @@ func Test_passedDataWhenCreate_putPassedDataByPipelineYml(t *testing.T) {
 			},
 			args: args{
 				pipelineYml: "version: \"1.1\"\nstages:\n  - stage:\n      - git-checkout:\n          alias: git-checkout\n          description: 代码仓库克隆\n  - stage:\n      - java:\n          alias: java-demo\n          description: 针对 java 工程的编译打包任务，产出可运行镜像\n          version: \"1.0\"\n          params:\n            build_type: maven\n            container_type: spring-boot\n            jdk_version: \"11\"\n            target: ./target/docker-java-app-example.jar\n            workdir: ${git-checkout}\n  - stage:\n      - release:\n          alias: release\n          description: 用于打包完成时，向dicehub 提交完整可部署的dice.yml。用户若没在pipeline.yml里定义该action，CI会自动在pipeline.yml里插入该action\n          params:\n            dice_yml: ${git-checkout}/dice.yml\n            image:\n              java-demo: ${java-demo:OUTPUT:image}\n  - stage:\n      - dice:\n          alias: dice\n          description: 用于 dice 平台部署应用服务\n          params:\n            release_id: ${release:OUTPUT:releaseID}\n",
-				p: &spec2.Pipeline{
-					PipelineBase: spec2.PipelineBase{
+				p: &spec.Pipeline{
+					PipelineBase: spec.PipelineBase{
 						PipelineSource: apistructs.PipelineSourceDice,
 					},
 				},
@@ -73,8 +73,8 @@ func Test_passedDataWhenCreate_putPassedDataByPipelineYml(t *testing.T) {
 			},
 			args: args{
 				pipelineYml: "version: \"1.1\"\nstages:\n  - stage:\n      - git-checkout:\n          alias: git-checkout\n          description: 代码仓库克隆\n  - stage:\n      - java:\n          alias: java-demo\n          description: 针对 java 工程的编译打包任务，产出可运行镜像\n          version: \"1.0\"\n          params:\n            build_type: maven\n            container_type: spring-boot\n            jdk_version: \"11\"\n            target: ./target/docker-java-app-example.jar\n            workdir: ${git-checkout}\n  - stage:\n      - release:\n          alias: release\n          description: 用于打包完成时，向dicehub 提交完整可部署的dice.yml。用户若没在pipeline.yml里定义该action，CI会自动在pipeline.yml里插入该action\n          params:\n            dice_yml: ${git-checkout}/dice.yml\n            image:\n              java-demo: ${java-demo:OUTPUT:image}\n  - stage:\n      - dice:\n          alias: dice\n          description: 用于 dice 平台部署应用服务\n          params:\n            release_id: ${release:OUTPUT:releaseID}\n",
-				p: &spec2.Pipeline{
-					PipelineBase: spec2.PipelineBase{
+				p: &spec.Pipeline{
+					PipelineBase: spec.PipelineBase{
 						PipelineSource: apistructs.PipelineSourceDice,
 					},
 				},
@@ -91,8 +91,8 @@ func Test_passedDataWhenCreate_putPassedDataByPipelineYml(t *testing.T) {
 			},
 			args: args{
 				pipelineYml: "version: '1.1'\nstages:\n  - - alias: api-test\n      type: api-test\n      description: 执行单个接口测试。上层可以通过 pipeline.yml 编排一组接口测试的执行顺序。\n      version: '1.0'\n      params:\n        body:\n          type: none\n        method: GET\n        url: /api/user\n      resources: {}\n      displayName: 接口测试\n      logoUrl: >-\n        //terminus-paas.oss-cn-hangzhou.aliyuncs.com/paas-doc/2020/10/10/24195384-07b7-4203-93e1-666373639af4.png\n  - - alias: api-test1\n      type: api-test\n      description: 执行单个接口测试。上层可以通过 pipeline.yml 编排一组接口测试的执行顺序。\n      version: '1.0'\n      params:\n        body:\n          type: none\n        method: GET\n        url: /api/user\n      resources: {}\n      displayName: 接口测试\n      logoUrl: >-\n        //terminus-paas.oss-cn-hangzhou.aliyuncs.com/paas-doc/2020/10/10/24195384-07b7-4203-93e1-666373639af4.png\nflatActions: null\nlifecycle: null\n",
-				p: &spec2.Pipeline{
-					PipelineBase: spec2.PipelineBase{
+				p: &spec.Pipeline{
+					PipelineBase: spec.PipelineBase{
 						PipelineSource: apistructs.PipelineSourceDice,
 					},
 				},
@@ -108,8 +108,8 @@ func Test_passedDataWhenCreate_putPassedDataByPipelineYml(t *testing.T) {
 			},
 			args: args{
 				pipelineYml: "version: '1.1'\nstages:\n  - - alias: api-test\n      type: api-test\n      description: 执行单个接口测试。上层可以通过 pipeline.yml 编排一组接口测试的执行顺序。\n      version: '2.0'\n      params:\n        body:\n          type: none\n        method: GET\n        url: /api/user\n      resources: {}\n      displayName: 接口测试\n      logoUrl: >-\n        //terminus-paas.oss-cn-hangzhou.aliyuncs.com/paas-doc/2020/10/10/24195384-07b7-4203-93e1-666373639af4.png\n  - - alias: api-test1\n      type: api-test\n      description: 执行单个接口测试。上层可以通过 pipeline.yml 编排一组接口测试的执行顺序。\n      version: '1.0'\n      params:\n        body:\n          type: none\n        method: GET\n        url: /api/user\n      resources: {}\n      displayName: 接口测试\n      logoUrl: >-\n        //terminus-paas.oss-cn-hangzhou.aliyuncs.com/paas-doc/2020/10/10/24195384-07b7-4203-93e1-666373639af4.png\nflatActions: null\nlifecycle: null\n",
-				p: &spec2.Pipeline{
-					PipelineBase: spec2.PipelineBase{
+				p: &spec.Pipeline{
+					PipelineBase: spec.PipelineBase{
 						PipelineSource: apistructs.PipelineSourceDice,
 					},
 				},
@@ -125,8 +125,8 @@ func Test_passedDataWhenCreate_putPassedDataByPipelineYml(t *testing.T) {
 			},
 			args: args{
 				pipelineYml: "version: '1.1'\nstages:\n  - - alias: api-test\n      type: api-test\n      description: 执行单个接口测试。上层可以通过 pipeline.yml 编排一组接口测试的执行顺序。\n      version: '1.0'\n      params:\n        body:\n          type: none\n        method: GET\n        url: /api/user\n      resources: {}\n      displayName: 接口测试\n      logoUrl: >-\n        //terminus-paas.oss-cn-hangzhou.aliyuncs.com/paas-doc/2020/10/10/24195384-07b7-4203-93e1-666373639af4.png\n  - - alias: snippet\n      type: snippet\n      description: 嵌套流水线可以声明嵌套的其他 pipeline.yml\n      resources: {}\n      displayName: 嵌套流水线\n      logoUrl: >-\n        http://terminus-paas.oss-cn-hangzhou.aliyuncs.com/paas-doc/2020/10/22/410935c6-e399-463a-b87b-0b774240d12e.png\nflatActions: null\nlifecycle: null\n",
-				p: &spec2.Pipeline{
-					PipelineBase: spec2.PipelineBase{
+				p: &spec.Pipeline{
+					PipelineBase: spec.PipelineBase{
 						PipelineSource: apistructs.PipelineSourceDice,
 					},
 				},
@@ -156,9 +156,9 @@ func Test_passedDataWhenCreate_putPassedDataByPipelineYml(t *testing.T) {
 			yml, err := pipelineyml.New([]byte(tt.args.pipelineYml))
 			assert.NoError(t, err)
 
-			mockActionMgr := &actionmgr2.MockActionMgr{}
+			mockActionMgr := &actionmgr.MockActionMgr{}
 			that.actionMgr = mockActionMgr
-			patch := monkey.PatchInstanceMethod(reflect.TypeOf(mockActionMgr), "SearchActions", func(_ *actionmgr2.MockActionMgr, items []string, location []string, ops ...actionmgr2.OpOption) (map[string]*diceyml.Job, map[string]*apistructs.ActionSpec, error) {
+			patch := monkey.PatchInstanceMethod(reflect.TypeOf(mockActionMgr), "SearchActions", func(_ *actionmgr.MockActionMgr, items []string, location []string, ops ...actionmgr.OpOption) (map[string]*diceyml.Job, map[string]*apistructs.ActionSpec, error) {
 				actionJobMap := make(map[string]*diceyml.Job)
 				actionSpecMap := make(map[string]*apistructs.ActionSpec)
 				for _, item := range items {
@@ -223,7 +223,7 @@ func TestPassedDataWhenCreate_InitData(t *testing.T) {
 	}
 
 	d = &PassedDataWhenCreate{}
-	actionMgr := &actionmgr2.MockActionMgr{}
+	actionMgr := &actionmgr.MockActionMgr{}
 	d.InitData(nil, actionMgr)
 	if d.actionMgr == nil {
 		t.Fatalf("actionMgr should not be nil")

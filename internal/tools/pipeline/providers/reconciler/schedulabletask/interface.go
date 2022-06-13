@@ -17,9 +17,9 @@ package schedulabletask
 import (
 	"context"
 
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 type Interface interface {
-	GetSchedulableTasks(ctx context.Context, p *spec2.Pipeline, tasks []*spec2.PipelineTask) ([]*spec2.PipelineTask, error)
+	GetSchedulableTasks(ctx context.Context, p *spec.Pipeline, tasks []*spec.PipelineTask) ([]*spec.PipelineTask, error)
 }

@@ -26,7 +26,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/pipeline/events"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/cron/db"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/apierrors"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 func (s *PipelineSvc) DealPipelineCallbackOfAction(data []byte) (err error) {
@@ -82,7 +82,7 @@ func (s *PipelineSvc) DealPipelineCallbackOfAction(data []byte) (err error) {
 	return nil
 }
 
-func (s *PipelineSvc) appendPipelineTaskInspect(p *spec2.Pipeline, task *spec2.PipelineTask, cb apistructs.ActionCallback) error {
+func (s *PipelineSvc) appendPipelineTaskInspect(p *spec.Pipeline, task *spec.PipelineTask, cb apistructs.ActionCallback) error {
 	if len(cb.Errors) == 0 && cb.MachineStat == nil {
 		return nil
 	}
@@ -105,7 +105,7 @@ func (s *PipelineSvc) appendPipelineTaskInspect(p *spec2.Pipeline, task *spec2.P
 	return nil
 }
 
-func (s *PipelineSvc) appendPipelineTaskMetadata(p *spec2.Pipeline, task *spec2.PipelineTask, cb apistructs.ActionCallback) error {
+func (s *PipelineSvc) appendPipelineTaskMetadata(p *spec.Pipeline, task *spec.PipelineTask, cb apistructs.ActionCallback) error {
 	if len(cb.Metadata) == 0 {
 		return nil
 	}
@@ -125,7 +125,7 @@ func (s *PipelineSvc) appendPipelineTaskMetadata(p *spec2.Pipeline, task *spec2.
 }
 
 // doCallbackOfRuntimeID 发送 websocket 消息，及时更新页面 link
-func (s *PipelineSvc) doCallbackOfRuntimeID(p *spec2.Pipeline, task *spec2.PipelineTask, cb apistructs.ActionCallback) error {
+func (s *PipelineSvc) doCallbackOfRuntimeID(p *spec.Pipeline, task *spec.PipelineTask, cb apistructs.ActionCallback) error {
 	for _, meta := range cb.Metadata {
 		if meta.Type == apistructs.ActionCallbackTypeLink &&
 			meta.Name == apistructs.ActionCallbackRuntimeID {
@@ -137,7 +137,7 @@ func (s *PipelineSvc) doCallbackOfRuntimeID(p *spec2.Pipeline, task *spec2.Pipel
 }
 
 // doCallbackOfJarResource 获取 flink/spark 任务需要的 jar resource
-func (s *PipelineSvc) doCallbackOfJarResource(p *spec2.Pipeline, task *spec2.PipelineTask, cb apistructs.ActionCallback) error {
+func (s *PipelineSvc) doCallbackOfJarResource(p *spec.Pipeline, task *spec.PipelineTask, cb apistructs.ActionCallback) error {
 	for _, meta := range cb.Metadata {
 		if meta.Name != "bigdataJarResource" {
 			continue
@@ -158,12 +158,12 @@ func (s *PipelineSvc) doCallbackOfJarResource(p *spec2.Pipeline, task *spec2.Pip
 }
 
 // findFlinkSparkTasks 寻找 depend 为指定值的 task
-func (s *PipelineSvc) findFlinkSparkTasks(p *spec2.Pipeline, depend string) ([]spec2.PipelineTask, error) {
+func (s *PipelineSvc) findFlinkSparkTasks(p *spec.Pipeline, depend string) ([]spec.PipelineTask, error) {
 	tasks, err := s.dbClient.ListPipelineTasksByPipelineID(p.ID)
 	if err != nil {
 		return nil, err
 	}
-	var result []spec2.PipelineTask
+	var result []spec.PipelineTask
 	for i := range tasks {
 		task := tasks[i]
 		if isFlinkSparkAction(task.Type) && task.Extra.FlinkSparkConf.Depend == depend && len(task.Extra.FlinkSparkConf.JarResource) == 0 {
@@ -178,7 +178,7 @@ func isFlinkSparkAction(action string) bool {
 }
 
 func (s *PipelineSvc) DealPipelineCallbackOfTask(data []byte) error {
-	var pt spec2.PipelineTask
+	var pt spec.PipelineTask
 	if err := json.Unmarshal(data, &pt); err != nil {
 		return err
 	}
@@ -187,7 +187,7 @@ func (s *PipelineSvc) DealPipelineCallbackOfTask(data []byte) error {
 }
 
 func (s *PipelineSvc) DealPipelineCallbackOfPipeline(data []byte) error {
-	var pst spec2.PipelineWithStageAndTask
+	var pst spec.PipelineWithStageAndTask
 	if err := json.Unmarshal(data, &pst); err != nil {
 		return err
 	}
@@ -222,8 +222,8 @@ func (s *PipelineSvc) DealPipelineCallbackOfCron(data []byte) error {
 	return s.CreateOrUpdatePipelineCron(&pc)
 }
 
-func (s *PipelineSvc) CreateOrUpdatePipeline(pipeline *spec2.Pipeline) error {
-	var baseDao spec2.PipelineBase
+func (s *PipelineSvc) CreateOrUpdatePipeline(pipeline *spec.Pipeline) error {
+	var baseDao spec.PipelineBase
 	exist, err := s.dbClient.ID(pipeline.ID).Get(&baseDao)
 	if err != nil {
 		return err
@@ -251,8 +251,8 @@ func (s *PipelineSvc) CreateOrUpdatePipeline(pipeline *spec2.Pipeline) error {
 	return s.dbClient.CreatePipelineLabels(pipeline)
 }
 
-func (s *PipelineSvc) CreateOrUpdatePipelineTask(pt *spec2.PipelineTask) error {
-	var dao spec2.PipelineTask
+func (s *PipelineSvc) CreateOrUpdatePipelineTask(pt *spec.PipelineTask) error {
+	var dao spec.PipelineTask
 	exist, err := s.dbClient.ID(pt.ID).Get(&dao)
 	if err != nil {
 		return err

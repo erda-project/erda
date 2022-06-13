@@ -33,14 +33,14 @@ import (
 	"github.com/erda-project/erda/internal/tools/pipeline/aop/aoptypes"
 	"github.com/erda-project/erda/internal/tools/pipeline/conf"
 	"github.com/erda-project/erda/internal/tools/pipeline/pipengine/actionexecutor/plugins/k8sjob"
-	pvolumes2 "github.com/erda-project/erda/internal/tools/pipeline/pipengine/pvolumes"
+	"github.com/erda-project/erda/internal/tools/pipeline/pipengine/pvolumes"
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/container_provider"
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/containers"
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/errorsx"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/actionmgr"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/reconciler/taskrun"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/apierrors"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/expression"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
@@ -137,7 +137,7 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 
 	// 解析 pipeline yml
 	refs := pipelineyml.Refs{}
-	workdirs := pvolumes2.GetAvailableTaskContainerWorkdirs(tasks, *task)
+	workdirs := pvolumes.GetAvailableTaskContainerWorkdirs(tasks, *task)
 	for k, v := range workdirs {
 		refs[k] = v
 	}
@@ -161,10 +161,10 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 	for fileName, fileUUID := range p.Snapshot.CmsDiceFiles {
 		// cmsDiceFiles 生成容器内的路径
 		// ((a.cert)) -> /.pipeline/container/cms/dice_files/a.cert
-		fileContainerPath := pvolumes2.MakeTaskContainerDiceFilesPath(fileName)
+		fileContainerPath := pvolumes.MakeTaskContainerDiceFilesPath(fileName)
 		allSecrets[fileName] = fileContainerPath
 		// 作为特殊上下文，由 agent 处理
-		task.Context.CmsDiceFiles = append(task.Context.CmsDiceFiles, pvolumes2.GenerateTaskDiceFileVolume(fileName, fileUUID, fileContainerPath))
+		task.Context.CmsDiceFiles = append(task.Context.CmsDiceFiles, pvolumes.GenerateTaskDiceFileVolume(fileName, fileUUID, fileContainerPath))
 	}
 	pipelineYml, err := pipelineyml.New(
 		[]byte(p.PipelineYml),
@@ -265,11 +265,11 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 	task.Extra.PublicEnvs["PIPELINE_TASK_NAME"] = task.Name
 	task.Extra.PublicEnvs[PipelineTaskLogID] = task.Extra.UUID
 	task.Extra.PublicEnvs[PipelineDebugMode] = "false"
-	task.Extra.PrivateEnvs[actionagent.CONTEXTDIR] = pvolumes2.ContainerContextDir
-	task.Extra.PrivateEnvs[actionagent.WORKDIR] = pvolumes2.MakeTaskContainerWorkdir(task.Name)
-	task.Extra.PrivateEnvs[actionagent.METAFILE] = pvolumes2.MakeTaskContainerMetafilePath(task.Name)
-	task.Extra.PrivateEnvs[actionagent.UPLOADDIR] = pvolumes2.ContainerUploadDir
-	task.Extra.PublicEnvs[pvolumes2.EnvKeyMesosFetcherURI] = pvolumes2.MakeMesosFetcherURI4AliyunRegistrySecret(mountPoint)
+	task.Extra.PrivateEnvs[actionagent.CONTEXTDIR] = pvolumes.ContainerContextDir
+	task.Extra.PrivateEnvs[actionagent.WORKDIR] = pvolumes.MakeTaskContainerWorkdir(task.Name)
+	task.Extra.PrivateEnvs[actionagent.METAFILE] = pvolumes.MakeTaskContainerMetafilePath(task.Name)
+	task.Extra.PrivateEnvs[actionagent.UPLOADDIR] = pvolumes.ContainerUploadDir
+	task.Extra.PublicEnvs[pvolumes.EnvKeyMesosFetcherURI] = pvolumes.MakeMesosFetcherURI4AliyunRegistrySecret(mountPoint)
 	task.Extra.PublicEnvs[PipelineTimeBegin] = strconv.FormatInt(time.Now().Unix(), 10)
 	if p.TimeBegin != nil {
 		task.Extra.PublicEnvs[PipelineTimeBegin] = strconv.FormatInt(p.TimeBegin.Unix(), 10)
@@ -370,7 +370,7 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 		// --- cmd ---
 		// task.Context.InStorages
 	continueContextVolumes:
-		for _, out := range pvolumes2.GetAvailableTaskOutStorages(tasks) {
+		for _, out := range pvolumes.GetAvailableTaskOutStorages(tasks) {
 			name := out.Name
 			// 如果在 task 的 output 中存在，则不需要注入上次结果
 			for _, output := range task.Extra.Action.Namespaces {
@@ -433,7 +433,7 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 	}
 
 	// task.Context.OutStorages
-	if p.Extra.StorageConfig.EnableShareVolume() && task.ExecutorKind == spec2.PipelineTaskExecutorKindK8sJob {
+	if p.Extra.StorageConfig.EnableShareVolume() && task.ExecutorKind == spec.PipelineTaskExecutorKindK8sJob {
 		// only k8sjob support create job volume
 		k8sjobExecutor, ok := pre.Executor.(*k8sjob.K8sJob)
 		if !ok {
@@ -460,30 +460,30 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 			}
 		}
 		task.Context.OutStorages = append(task.Context.OutStorages,
-			pvolumes2.GenerateLocalVolume(p.Extra.Namespace, &p.Extra.ShareVolumeID))
+			pvolumes.GenerateLocalVolume(p.Extra.Namespace, &p.Extra.ShareVolumeID))
 		isNewWorkspace := false
 		if specYmlJob != nil {
 			_, isNewWorkspace = specYmlJob.Labels["new_workspace"]
 		}
 		if isNewWorkspace {
 			// action带有new_workspace标签,使用独立目录
-			task.Extra.PrivateEnvs[actionagent.WORKDIR] = pvolumes2.MakeTaskContainerWorkdir(task.Name)
+			task.Extra.PrivateEnvs[actionagent.WORKDIR] = pvolumes.MakeTaskContainerWorkdir(task.Name)
 		} else {
 			if len(p.Extra.TaskWorkspaces) > 0 {
 				// 使用现有目录
-				task.Extra.PrivateEnvs[actionagent.WORKDIR] = pvolumes2.MakeTaskContainerWorkdir(p.Extra.TaskWorkspaces[0])
+				task.Extra.PrivateEnvs[actionagent.WORKDIR] = pvolumes.MakeTaskContainerWorkdir(p.Extra.TaskWorkspaces[0])
 			} else {
 				// 没有有效的workspace,使用根目录
-				task.Extra.PrivateEnvs[actionagent.WORKDIR] = pvolumes2.MakeTaskContainerWorkdir("")
+				task.Extra.PrivateEnvs[actionagent.WORKDIR] = pvolumes.MakeTaskContainerWorkdir("")
 			}
 		}
 		if task.Extra.Action.Workspace != "" {
 			// 显式定义了workdir,使用指定值
-			task.Extra.PrivateEnvs[actionagent.WORKDIR] = pvolumes2.MakeTaskContainerWorkdir(task.Extra.Action.Workspace)
+			task.Extra.PrivateEnvs[actionagent.WORKDIR] = pvolumes.MakeTaskContainerWorkdir(task.Extra.Action.Workspace)
 		}
 
 		for _, namespace := range task.Extra.Action.Namespaces {
-			task.Context.OutStorages = append(task.Context.OutStorages, pvolumes2.GenerateFakeVolume(
+			task.Context.OutStorages = append(task.Context.OutStorages, pvolumes.GenerateFakeVolume(
 				namespace,
 				task.Extra.PrivateEnvs[actionagent.WORKDIR],
 				&p.Extra.ShareVolumeID))
@@ -496,7 +496,7 @@ makeOutStorages:
 		!p.Extra.StorageConfig.EnableShareVolume() &&
 		task.ExecutorKind.IsK8sKind() {
 		for _, namespace := range task.Extra.Action.Namespaces {
-			task.Context.OutStorages = append(task.Context.OutStorages, pvolumes2.GenerateTaskVolume(*task, namespace, nil))
+			task.Context.OutStorages = append(task.Context.OutStorages, pvolumes.GenerateTaskVolume(*task, namespace, nil))
 		}
 	}
 
@@ -522,10 +522,10 @@ makeOutStorages:
 
 	if (p.Extra.StorageConfig.EnableNFSVolume() || p.Extra.StorageConfig.EnableShareVolume()) && task.ExecutorKind.IsK8sKind() {
 		// 处理 task caches
-		pvolumes2.HandleTaskCacheVolumes(p, task, diceYmlJob, mountPoint)
+		pvolumes.HandleTaskCacheVolumes(p, task, diceYmlJob, mountPoint)
 		// --- binds ---
-		task.Extra.Binds = pvolumes2.GenerateTaskCommonBinds(mountPoint)
-		jobBinds, err := pvolumes2.ParseDiceYmlJobBinds(diceYmlJob)
+		task.Extra.Binds = pvolumes.GenerateTaskCommonBinds(mountPoint)
+		jobBinds, err := pvolumes.ParseDiceYmlJobBinds(diceYmlJob)
 		if err != nil {
 			return false, apierrors.ErrRunPipeline.InternalError(err)
 		}
@@ -571,7 +571,7 @@ func existContinuePrivateEnv(privateEnvs map[string]string, key string) bool {
 	return false
 }
 
-func handleAccessTokenExpiredIn(task *spec2.PipelineTask) string {
+func handleAccessTokenExpiredIn(task *spec.PipelineTask) string {
 	if task.Extra.Timeout == -1 {
 		return "0"
 	}
@@ -581,14 +581,14 @@ func handleAccessTokenExpiredIn(task *spec2.PipelineTask) string {
 	return fmt.Sprintf("%ds", task.Extra.Timeout/time.Duration(math.Pow10(9))+30) // 增加 30s 用于 agent 结束信号处理
 }
 
-func handleInternalClient(p *spec2.Pipeline) string {
+func handleInternalClient(p *spec.Pipeline) string {
 	if p.Extra.InternalClient != "" {
 		return p.Extra.InternalClient
 	}
 	return "pipeline-signed-openapi-token"
 }
 
-func generateTaskCMDs(action *pipelineyml.Action, taskCtx spec2.PipelineTaskContext,
+func generateTaskCMDs(action *pipelineyml.Action, taskCtx spec.PipelineTaskContext,
 	pipelineID, pipelineTaskID uint64) (cmd string, args []string, err error) {
 	// --- cmd ---
 	// action agent 作为启动命令
@@ -611,7 +611,7 @@ func getActionAgentTypeVersion() string {
 	return "agent@1.0"
 }
 
-func contextVolumes(context spec2.PipelineTaskContext) []apistructs.MetadataField {
+func contextVolumes(context spec.PipelineTaskContext) []apistructs.MetadataField {
 	vos := make([]apistructs.MetadataField, 0)
 	for _, vo := range append(context.InStorages, context.OutStorages...) {
 		vos = append(vos, vo)
@@ -619,7 +619,7 @@ func contextVolumes(context spec2.PipelineTaskContext) []apistructs.MetadataFiel
 	return vos
 }
 
-func (pre *prepare) generateOpenapiTokenForPullBootstrapInfo(task *spec2.PipelineTask) error {
+func (pre *prepare) generateOpenapiTokenForPullBootstrapInfo(task *spec.PipelineTask) error {
 
 	if task.Type == apistructs.ActionTypeWait || task.Type == apistructs.ActionTypeAPITest || task.Type == apistructs.ActionTypeSnippet {
 		return nil
@@ -727,7 +727,7 @@ func getLoopOptions(actionSpec apistructs.ActionSpec, taskLoop *apistructs.Pipel
 	return &opt
 }
 
-func condition(task *spec2.PipelineTask) bool {
+func condition(task *spec.PipelineTask) bool {
 
 	// 条件判断不存在就跳过
 	if task.Extra.Action.If == "" {

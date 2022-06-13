@@ -18,17 +18,17 @@ import (
 	"sync"
 
 	"github.com/erda-project/erda/bundle"
-	aoptypes2 "github.com/erda-project/erda/internal/tools/pipeline/aop/aoptypes"
+	"github.com/erda-project/erda/internal/tools/pipeline/aop/aoptypes"
 	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/reportsvc"
 )
 
 // tuneGroup 保存所有 tune chain
 // 根据 类型、触发时机 初始化所有场景下的调用链
-var tuneGroup aoptypes2.TuneGroup
+var tuneGroup aoptypes.TuneGroup
 var once sync.Once
 var initialized bool
-var globalSDK aoptypes2.SDK
+var globalSDK aoptypes.SDK
 
 func Initialize(bdl *bundle.Bundle, dbClient *dbclient.Client, report *reportsvc.ReportSvc) {
 	once.Do(func() {

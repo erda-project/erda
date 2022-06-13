@@ -24,7 +24,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
@@ -228,14 +228,14 @@ func Test_calculateNormalTaskRequestResource(t *testing.T) {
 
 func TestPipelineSvc_judgeTaskExecutor(t *testing.T) {
 	type args struct {
-		action     *spec2.PipelineTask
+		action     *spec.PipelineTask
 		actionSpec *apistructs.ActionSpec
 	}
 	tests := []struct {
 		name    string
 		args    args
-		want    spec2.PipelineTaskExecutorKind
-		want1   spec2.PipelineTaskExecutorName
+		want    spec.PipelineTaskExecutorKind
+		want1   spec.PipelineTaskExecutorName
 		wantErr bool
 	}{
 		{
@@ -244,27 +244,27 @@ func TestPipelineSvc_judgeTaskExecutor(t *testing.T) {
 				actionSpec: &apistructs.ActionSpec{
 					Executor: nil,
 				},
-				action: &spec2.PipelineTask{
-					Extra: spec2.PipelineTaskExtra{
+				action: &spec.PipelineTask{
+					Extra: spec.PipelineTaskExtra{
 						ClusterName: "terminus-dev",
 					},
 				},
 			},
-			want:    spec2.PipelineTaskExecutorKindK8sJob,
-			want1:   spec2.PipelineTaskExecutorName(fmt.Sprintf("%s-%s", spec2.PipelineTaskExecutorNameK8sJobDefault, "terminus-dev")),
+			want:    spec.PipelineTaskExecutorKindK8sJob,
+			want1:   spec.PipelineTaskExecutorName(fmt.Sprintf("%s-%s", spec.PipelineTaskExecutorNameK8sJobDefault, "terminus-dev")),
 			wantErr: false,
 		},
 		{
 			name: "empty spec",
 			args: args{
-				action: &spec2.PipelineTask{
-					Extra: spec2.PipelineTaskExtra{
+				action: &spec.PipelineTask{
+					Extra: spec.PipelineTaskExtra{
 						ClusterName: "terminus-dev",
 					},
 				},
 			},
-			want:    spec2.PipelineTaskExecutorKindK8sJob,
-			want1:   spec2.PipelineTaskExecutorName(fmt.Sprintf("%s-%s", spec2.PipelineTaskExecutorNameK8sJobDefault, "terminus-dev")),
+			want:    spec.PipelineTaskExecutorKindK8sJob,
+			want1:   spec.PipelineTaskExecutorName(fmt.Sprintf("%s-%s", spec.PipelineTaskExecutorNameK8sJobDefault, "terminus-dev")),
 			wantErr: false,
 		},
 		{
@@ -272,18 +272,18 @@ func TestPipelineSvc_judgeTaskExecutor(t *testing.T) {
 			args: args{
 				actionSpec: &apistructs.ActionSpec{
 					Executor: &apistructs.ActionExecutor{
-						Name: spec2.PipelineTaskExecutorNameEmpty.String(),
+						Name: spec.PipelineTaskExecutorNameEmpty.String(),
 						Kind: "__other",
 					},
 				},
-				action: &spec2.PipelineTask{
-					Extra: spec2.PipelineTaskExtra{
+				action: &spec.PipelineTask{
+					Extra: spec.PipelineTaskExtra{
 						ClusterName: "erda-op",
 					},
 				},
 			},
-			want:    spec2.PipelineTaskExecutorKindK8sJob,
-			want1:   spec2.PipelineTaskExecutorName(fmt.Sprintf("%s-%s", spec2.PipelineTaskExecutorNameK8sJobDefault, "erda-op")),
+			want:    spec.PipelineTaskExecutorKindK8sJob,
+			want1:   spec.PipelineTaskExecutorName(fmt.Sprintf("%s-%s", spec.PipelineTaskExecutorNameK8sJobDefault, "erda-op")),
 			wantErr: false,
 		},
 		{
@@ -291,14 +291,14 @@ func TestPipelineSvc_judgeTaskExecutor(t *testing.T) {
 			args: args{
 				actionSpec: &apistructs.ActionSpec{
 					Executor: &apistructs.ActionExecutor{
-						Kind: string(spec2.PipelineTaskExecutorKindMemory),
+						Kind: string(spec.PipelineTaskExecutorKindMemory),
 						Name: "__other",
 					},
 				},
-				action: &spec2.PipelineTask{Extra: spec2.PipelineTaskExtra{ClusterName: "terminus-dev"}},
+				action: &spec.PipelineTask{Extra: spec.PipelineTaskExtra{ClusterName: "terminus-dev"}},
 			},
-			want:    spec2.PipelineTaskExecutorKindK8sJob,
-			want1:   spec2.PipelineTaskExecutorName(fmt.Sprintf("%s-%s", spec2.PipelineTaskExecutorNameK8sJobDefault, "terminus-dev")),
+			want:    spec.PipelineTaskExecutorKindK8sJob,
+			want1:   spec.PipelineTaskExecutorName(fmt.Sprintf("%s-%s", spec.PipelineTaskExecutorNameK8sJobDefault, "terminus-dev")),
 			wantErr: false,
 		},
 		{
@@ -306,16 +306,16 @@ func TestPipelineSvc_judgeTaskExecutor(t *testing.T) {
 			args: args{
 				actionSpec: &apistructs.ActionSpec{
 					Executor: &apistructs.ActionExecutor{
-						Kind: string(spec2.PipelineTaskExecutorKindAPITest),
-						Name: spec2.PipelineTaskExecutorNameSchedulerDefault.String(),
+						Kind: string(spec.PipelineTaskExecutorKindAPITest),
+						Name: spec.PipelineTaskExecutorNameSchedulerDefault.String(),
 					},
 				},
-				action: &spec2.PipelineTask{
-					Extra: spec2.PipelineTaskExtra{},
+				action: &spec.PipelineTask{
+					Extra: spec.PipelineTaskExtra{},
 				},
 			},
-			want:    spec2.PipelineTaskExecutorKindAPITest,
-			want1:   spec2.PipelineTaskExecutorNameSchedulerDefault,
+			want:    spec.PipelineTaskExecutorKindAPITest,
+			want1:   spec.PipelineTaskExecutorNameSchedulerDefault,
 			wantErr: false,
 		},
 		{
@@ -327,21 +327,21 @@ func TestPipelineSvc_judgeTaskExecutor(t *testing.T) {
 						Name: "__test_name",
 					},
 				},
-				action: &spec2.PipelineTask{
-					Extra: spec2.PipelineTaskExtra{
+				action: &spec.PipelineTask{
+					Extra: spec.PipelineTaskExtra{
 						ClusterName: "erda-op",
 					},
 				},
 			},
-			want:    spec2.PipelineTaskExecutorKindK8sJob,
-			want1:   spec2.PipelineTaskExecutorName(fmt.Sprintf("%s-%s", spec2.PipelineTaskExecutorNameK8sJobDefault, "erda-op")),
+			want:    spec.PipelineTaskExecutorKindK8sJob,
+			want1:   spec.PipelineTaskExecutorName(fmt.Sprintf("%s-%s", spec.PipelineTaskExecutorNameK8sJobDefault, "erda-op")),
 			wantErr: false,
 		},
 		{
 			name: "k8s flink job",
 			args: args{
-				action: &spec2.PipelineTask{
-					Extra: spec2.PipelineTaskExtra{
+				action: &spec.PipelineTask{
+					Extra: spec.PipelineTaskExtra{
 						ClusterName: "erda-op",
 						Action: pipelineyml.Action{
 							Params: map[string]interface{}{
@@ -351,15 +351,15 @@ func TestPipelineSvc_judgeTaskExecutor(t *testing.T) {
 					},
 				},
 			},
-			want:    spec2.PipelineTaskExecutorKindK8sFlink,
-			want1:   spec2.PipelineTaskExecutorName(fmt.Sprintf("%s-%s", spec2.PipelineTaskExecutorNameK8sFlinkDefault, "erda-op")),
+			want:    spec.PipelineTaskExecutorKindK8sFlink,
+			want1:   spec.PipelineTaskExecutorName(fmt.Sprintf("%s-%s", spec.PipelineTaskExecutorNameK8sFlinkDefault, "erda-op")),
 			wantErr: false,
 		},
 		{
 			name: "k8s spark job",
 			args: args{
-				action: &spec2.PipelineTask{
-					Extra: spec2.PipelineTaskExtra{
+				action: &spec.PipelineTask{
+					Extra: spec.PipelineTaskExtra{
 						ClusterName: "erda-op",
 						Action: pipelineyml.Action{
 							Params: map[string]interface{}{
@@ -369,8 +369,8 @@ func TestPipelineSvc_judgeTaskExecutor(t *testing.T) {
 					},
 				},
 			},
-			want:    spec2.PipelineTaskExecutorKindK8sSpark,
-			want1:   spec2.PipelineTaskExecutorName(fmt.Sprintf("%s-%s", spec2.PipelineTaskExecutorNameK8sSparkDefault, "erda-op")),
+			want:    spec.PipelineTaskExecutorKindK8sSpark,
+			want1:   spec.PipelineTaskExecutorName(fmt.Sprintf("%s-%s", spec.PipelineTaskExecutorNameK8sSparkDefault, "erda-op")),
 			wantErr: false,
 		},
 	}
@@ -395,10 +395,10 @@ func TestGenSnippetTaskExtra(t *testing.T) {
 			bundle.WithScheduler(),
 		),
 	}
-	p := &spec2.Pipeline{
-		PipelineBase: spec2.PipelineBase{},
-		PipelineExtra: spec2.PipelineExtra{
-			Extra: spec2.PipelineExtraInfo{
+	p := &spec.Pipeline{
+		PipelineBase: spec.PipelineBase{},
+		PipelineExtra: spec.PipelineExtra{
+			Extra: spec.PipelineExtraInfo{
 				Namespace:               "custom-namespace",
 				NotPipelineControlledNs: true,
 			},

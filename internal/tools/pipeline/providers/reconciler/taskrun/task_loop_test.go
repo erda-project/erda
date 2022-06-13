@@ -24,13 +24,13 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
 	"github.com/erda-project/erda/internal/tools/pipeline/pexpr/pexpr_params"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 func TestTaskRun_handleTaskLoop(t *testing.T) {
 	type fields struct {
-		Task         *spec2.PipelineTask
-		P            *spec2.Pipeline
+		Task         *spec.PipelineTask
+		P            *spec.Pipeline
 		assertStatus apistructs.PipelineStatus
 	}
 	tests := []struct {
@@ -41,7 +41,7 @@ func TestTaskRun_handleTaskLoop(t *testing.T) {
 		{
 			name: "test_not_end_status",
 			fields: fields{
-				Task: &spec2.PipelineTask{
+				Task: &spec.PipelineTask{
 					Status: apistructs.PipelineStatusRunning,
 				},
 			},
@@ -50,12 +50,12 @@ func TestTaskRun_handleTaskLoop(t *testing.T) {
 		{
 			name: "test_not_end_status",
 			fields: fields{
-				Task: &spec2.PipelineTask{
+				Task: &spec.PipelineTask{
 					ID:     1,
 					Status: apistructs.PipelineStatusFailed,
 				},
-				P: &spec2.Pipeline{
-					PipelineBase: spec2.PipelineBase{
+				P: &spec.Pipeline{
+					PipelineBase: spec.PipelineBase{
 						ID: 1,
 					},
 				},
@@ -65,12 +65,12 @@ func TestTaskRun_handleTaskLoop(t *testing.T) {
 		{
 			name: "test_loop_was_empty",
 			fields: fields{
-				Task: &spec2.PipelineTask{
+				Task: &spec.PipelineTask{
 					ID:     1,
 					Status: apistructs.PipelineStatusFailed,
 				},
-				P: &spec2.Pipeline{
-					PipelineBase: spec2.PipelineBase{
+				P: &spec.Pipeline{
+					PipelineBase: spec.PipelineBase{
 						ID: 1,
 					},
 				},
@@ -80,10 +80,10 @@ func TestTaskRun_handleTaskLoop(t *testing.T) {
 		{
 			name: "test_loop_break_false",
 			fields: fields{
-				Task: &spec2.PipelineTask{
+				Task: &spec.PipelineTask{
 					ID:     1,
 					Status: apistructs.PipelineStatusFailed,
-					Extra: spec2.PipelineTaskExtra{
+					Extra: spec.PipelineTaskExtra{
 						LoopOptions: &apistructs.PipelineTaskLoopOptions{
 							CalculatedLoop: &apistructs.PipelineTaskLoop{
 								Break: "asd",
@@ -91,8 +91,8 @@ func TestTaskRun_handleTaskLoop(t *testing.T) {
 						},
 					},
 				},
-				P: &spec2.Pipeline{
-					PipelineBase: spec2.PipelineBase{
+				P: &spec.Pipeline{
+					PipelineBase: spec.PipelineBase{
 						ID: 1,
 					},
 				},
@@ -105,7 +105,7 @@ func TestTaskRun_handleTaskLoop(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var client *dbclient.Client
 			var patch1 *monkey.PatchGuard
-			patch1 = monkey.PatchInstanceMethod(reflect.TypeOf(client), "CreatePipelineReport", func(client *dbclient.Client, report *spec2.PipelineReport, ops ...dbclient.SessionOption) error {
+			patch1 = monkey.PatchInstanceMethod(reflect.TypeOf(client), "CreatePipelineReport", func(client *dbclient.Client, report *spec.PipelineReport, ops ...dbclient.SessionOption) error {
 				return nil
 			})
 

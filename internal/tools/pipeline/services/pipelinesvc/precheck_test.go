@@ -27,7 +27,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/actionmgr"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
@@ -52,11 +52,11 @@ func (m *mockActionAgent) SearchActions(items []string, locations []string, ops 
 
 type mockSecret struct{}
 
-func (m *mockSecret) FetchSecrets(ctx context.Context, p *spec2.Pipeline) (secrets, cmsDiceFiles map[string]string, holdOnKeys, encryptSecretKeys []string, err error) {
+func (m *mockSecret) FetchSecrets(ctx context.Context, p *spec.Pipeline) (secrets, cmsDiceFiles map[string]string, holdOnKeys, encryptSecretKeys []string, err error) {
 	return nil, nil, nil, nil, nil
 }
 
-func (m *mockSecret) FetchPlatformSecrets(ctx context.Context, p *spec2.Pipeline, ignoreKeys []string) (map[string]string, error) {
+func (m *mockSecret) FetchPlatformSecrets(ctx context.Context, p *spec.Pipeline, ignoreKeys []string) (map[string]string, error) {
 	return nil, nil
 }
 
@@ -69,8 +69,8 @@ func (m *mockActionAgent) MakeActionLocationsBySource(source apistructs.Pipeline
 }
 
 func TestPreCheck(t *testing.T) {
-	pWithDisableTasks := &spec2.Pipeline{
-		PipelineExtra: spec2.PipelineExtra{
+	pWithDisableTasks := &spec.Pipeline{
+		PipelineExtra: spec.PipelineExtra{
 			PipelineYml: `version: "1.1"
 stages:
   - stage:
@@ -98,7 +98,7 @@ stages:
             target: web-server`,
 		},
 	}
-	stages := []spec2.PipelineStage{
+	stages := []spec.PipelineStage{
 		{
 			ID: 1,
 		},

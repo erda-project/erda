@@ -23,7 +23,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
-	logic2 "github.com/erda-project/erda/internal/tools/pipeline/pipengine/actionexecutor/plugins/apitest/logic"
+	"github.com/erda-project/erda/internal/tools/pipeline/pipengine/actionexecutor/plugins/apitest/logic"
 	"github.com/erda-project/erda/internal/tools/pipeline/pipengine/actionexecutor/types"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
@@ -92,7 +92,7 @@ func (d *define) Start(ctx context.Context, task *spec.PipelineTask) (interface{
 			d.runningAPIs.Delete(d.makeRunningApiKey(task))
 		}()
 
-		logic2.Do(ctx, task)
+		logic.Do(ctx, task)
 
 		latestTask, err := d.dbClient.GetPipelineTask(task.ID)
 		if err != nil {
@@ -102,8 +102,8 @@ func (d *define) Start(ctx context.Context, task *spec.PipelineTask) (interface{
 
 		meta := latestTask.GetMetadata()
 		for _, metaField := range meta {
-			if metaField.Name == logic2.MetaKeyResult {
-				if metaField.Value == logic2.ResultSuccess {
+			if metaField.Name == logic.MetaKeyResult {
+				if metaField.Value == logic.ResultSuccess {
 					status = apistructs.PipelineStatusSuccess
 				}
 			}
@@ -144,11 +144,11 @@ func (d *define) Status(ctx context.Context, task *spec.PipelineTask) (apistruct
 	// status according to api success or not
 	var status = apistructs.PipelineStatusFailed
 	for _, metaField := range meta {
-		if metaField.Name == logic2.MetaKeyResult {
-			if metaField.Value == logic2.ResultSuccess {
+		if metaField.Name == logic.MetaKeyResult {
+			if metaField.Value == logic.ResultSuccess {
 				status = apistructs.PipelineStatusSuccess
 			}
-			if metaField.Value == logic2.ResultFailed {
+			if metaField.Value == logic.ResultFailed {
 				status = apistructs.PipelineStatusFailed
 			}
 			return apistructs.PipelineStatusDesc{Status: status}, nil

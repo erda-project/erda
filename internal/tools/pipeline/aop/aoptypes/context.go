@@ -20,7 +20,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/reportsvc"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 type TuneContext struct {
@@ -36,8 +36,8 @@ type SDK struct {
 	TuneType    TuneType
 	TuneTrigger TuneTrigger
 
-	Pipeline spec2.Pipeline
-	Task     spec2.PipelineTask
+	Pipeline spec.Pipeline
+	Task     spec.PipelineTask
 }
 
 func (sdk SDK) Clone() SDK {

@@ -22,13 +22,13 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/apistructs"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/retry"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-func (client *Client) GetLabel(id uint64) (label *spec2.PipelineLabel, err error) {
+func (client *Client) GetLabel(id uint64) (label *spec.PipelineLabel, err error) {
 	defer func() {
 		if err != nil {
 			err = errors.Wrapf(err, "failed to get pipeline label by id: %v", id)
@@ -44,7 +44,7 @@ func (client *Client) GetLabel(id uint64) (label *spec2.PipelineLabel, err error
 	return label, nil
 }
 
-func (client *Client) BatchInsertLabels(labels []spec2.PipelineLabel, ops ...SessionOption) (err error) {
+func (client *Client) BatchInsertLabels(labels []spec.PipelineLabel, ops ...SessionOption) (err error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
 	defer func() { err = errors.Wrap(err, "failed to create pipeline label") }()
@@ -52,14 +52,14 @@ func (client *Client) BatchInsertLabels(labels []spec2.PipelineLabel, ops ...Ses
 	return err
 }
 
-func (client *Client) CreatePipelineLabels(p *spec2.Pipeline, ops ...SessionOption) (err error) {
+func (client *Client) CreatePipelineLabels(p *spec.Pipeline, ops ...SessionOption) (err error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
 	defer func() { err = errors.Wrap(err, "failed to create pipeline label") }()
-	labels := make([]spec2.PipelineLabel, 0, len(p.Labels))
+	labels := make([]spec.PipelineLabel, 0, len(p.Labels))
 	for k, v := range p.Labels {
-		label := spec2.PipelineLabel{
+		label := spec.PipelineLabel{
 			Type:            apistructs.PipelineLabelTypeInstance,
 			PipelineSource:  p.PipelineSource,
 			PipelineYmlName: p.PipelineYmlName,
@@ -74,12 +74,12 @@ func (client *Client) CreatePipelineLabels(p *spec2.Pipeline, ops ...SessionOpti
 	return err
 }
 
-func (client *Client) ListPipelineLabels(req *apistructs.PipelineLabelListRequest, ops ...SessionOption) ([]spec2.PipelineLabel, int64, error) {
+func (client *Client) ListPipelineLabels(req *apistructs.PipelineLabelListRequest, ops ...SessionOption) ([]spec.PipelineLabel, int64, error) {
 	sqlSession := client.NewSession(ops...)
 	defer sqlSession.Close()
 
-	var labels []spec2.PipelineLabel
-	sql := sqlSession.Table(spec2.PipelineLabel{}.TableName())
+	var labels []spec.PipelineLabel
+	sql := sqlSession.Table(spec.PipelineLabel{}.TableName())
 
 	if len(req.PipelineSource) > 0 {
 		sql = sql.Where("pipeline_source = ?", req.PipelineSource)
@@ -106,12 +106,12 @@ func (client *Client) ListPipelineLabels(req *apistructs.PipelineLabelListReques
 }
 
 // ListLabelsByPipelineID 根据 pipelineID 获取 labels
-func (client *Client) ListLabelsByPipelineID(pipelineID uint64, ops ...SessionOption) ([]spec2.PipelineLabel, error) {
+func (client *Client) ListLabelsByPipelineID(pipelineID uint64, ops ...SessionOption) ([]spec.PipelineLabel, error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
-	var labels []spec2.PipelineLabel
-	if err := session.Find(&labels, spec2.PipelineLabel{Type: apistructs.PipelineLabelTypeInstance, TargetID: pipelineID}); err != nil {
+	var labels []spec.PipelineLabel
+	if err := session.Find(&labels, spec.PipelineLabel{Type: apistructs.PipelineLabelTypeInstance, TargetID: pipelineID}); err != nil {
 		return nil, err
 	}
 	return labels, nil
@@ -235,7 +235,7 @@ func (client *Client) DeletePipelineLabelsByPipelineID(pipelineID uint64, ops ..
 	defer session.Close()
 
 	return retry.DoWithInterval(func() error {
-		_, err := session.Delete(&spec2.PipelineLabel{Type: apistructs.PipelineLabelTypeInstance, TargetID: pipelineID})
+		_, err := session.Delete(&spec.PipelineLabel{Type: apistructs.PipelineLabelTypeInstance, TargetID: pipelineID})
 		return err
 	}, 3, time.Second)
 }
@@ -326,20 +326,20 @@ func questionMarks(length int) string {
 	return strutil.Join(result, ",")
 }
 
-func (client *Client) ListPipelineLabelsByTypeAndTargetIDs(_type apistructs.PipelineLabelType, targetIDs []uint64, ops ...SessionOption) (map[uint64][]spec2.PipelineLabel, error) {
+func (client *Client) ListPipelineLabelsByTypeAndTargetIDs(_type apistructs.PipelineLabelType, targetIDs []uint64, ops ...SessionOption) (map[uint64][]spec.PipelineLabel, error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
-	var labels []spec2.PipelineLabel
+	var labels []spec.PipelineLabel
 	if err := session.Where("type = ?", _type).In("target_id", targetIDs).Find(&labels); err != nil {
 		return nil, err
 	}
 
-	pipelineLabelsMap := make(map[uint64][]spec2.PipelineLabel)
+	pipelineLabelsMap := make(map[uint64][]spec.PipelineLabel)
 	for _, label := range labels {
 		_, ok := pipelineLabelsMap[label.TargetID]
 		if !ok {
-			pipelineLabelsMap[label.TargetID] = make([]spec2.PipelineLabel, 0)
+			pipelineLabelsMap[label.TargetID] = make([]spec.PipelineLabel, 0)
 		}
 		pipelineLabelsMap[label.TargetID] = append(pipelineLabelsMap[label.TargetID], label)
 	}

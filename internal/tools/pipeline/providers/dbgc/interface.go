@@ -17,10 +17,10 @@ package dbgc
 import (
 	"context"
 
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 type Interface interface {
-	GetPipelineIncludeArchived(ctx context.Context, pipelineID uint64) (pipeline spec2.Pipeline, exit bool, findFromArchive bool, err error)
-	GetPipelineTasksIncludeArchived(ctx context.Context, pipelineID uint64) (tasks []spec2.PipelineTask, findFromArchive bool, err error)
+	GetPipelineIncludeArchived(ctx context.Context, pipelineID uint64) (pipeline spec.Pipeline, exit bool, findFromArchive bool, err error)
+	GetPipelineTasksIncludeArchived(ctx context.Context, pipelineID uint64) (tasks []spec.PipelineTask, findFromArchive bool, err error)
 }

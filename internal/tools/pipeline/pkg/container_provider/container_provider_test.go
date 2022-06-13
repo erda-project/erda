@@ -21,7 +21,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/actionagent"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 func TestConstructContainerProvider(t *testing.T) {
@@ -61,12 +61,12 @@ func TestConstructContainerProvider(t *testing.T) {
 }
 
 func TestDealPipelineProviderBeforeRun(t *testing.T) {
-	p := &spec2.Pipeline{
-		PipelineBase: spec2.PipelineBase{
+	p := &spec.Pipeline{
+		PipelineBase: spec.PipelineBase{
 			ID: 1,
 		},
-		PipelineExtra: spec2.PipelineExtra{
-			Extra: spec2.PipelineExtraInfo{
+		PipelineExtra: spec.PipelineExtra{
+			Extra: spec.PipelineExtraInfo{
 				ContainerInstanceProvider: nil,
 			},
 		},

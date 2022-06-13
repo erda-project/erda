@@ -27,7 +27,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
 	election "github.com/erda-project/erda-infra/providers/etcd-election"
-	worker2 "github.com/erda-project/erda/internal/tools/pipeline/providers/leaderworker/worker"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/leaderworker/worker"
 )
 
 type provider struct {
@@ -45,11 +45,11 @@ type provider struct {
 }
 
 type forLeaderUse struct {
-	allWorkers map[worker2.ID]worker2.Worker
+	allWorkers map[worker.ID]worker.Worker
 
 	initialized      bool
-	findWorkerByTask map[worker2.LogicTaskID]worker2.ID
-	findTaskByWorker map[worker2.ID]map[worker2.LogicTaskID]struct{}
+	findWorkerByTask map[worker.LogicTaskID]worker.ID
+	findTaskByWorker map[worker.ID]map[worker.LogicTaskID]struct{}
 
 	listeners []Listener
 
@@ -58,21 +58,21 @@ type forLeaderUse struct {
 	handlersOnWorkerDelete []WorkerDeleteHandler
 }
 type forWorkerUse struct {
-	myWorkers map[worker2.ID]workerWithCancel
+	myWorkers map[worker.ID]workerWithCancel
 
 	handlersOnWorkerDelete []WorkerDeleteHandler
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	// leader
-	p.forLeaderUse.allWorkers = make(map[worker2.ID]worker2.Worker)
+	p.forLeaderUse.allWorkers = make(map[worker.ID]worker.Worker)
 	if len(p.Cfg.Leader.EtcdKeyPrefixWithSlash) == 0 {
 		return fmt.Errorf("failed to find config: leader.etcd_key_prefix_with_slash")
 	}
 	p.Cfg.Leader.EtcdKeyPrefixWithSlash = filepath.Clean(p.Cfg.Leader.EtcdKeyPrefixWithSlash) + "/"
 
 	// worker
-	p.forWorkerUse.myWorkers = make(map[worker2.ID]workerWithCancel)
+	p.forWorkerUse.myWorkers = make(map[worker.ID]workerWithCancel)
 	if len(p.Cfg.Worker.EtcdKeyPrefixWithSlash) == 0 {
 		return fmt.Errorf("failed to find config: worker.etcd_key_prefix_with_slash")
 	}
@@ -81,19 +81,19 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	return nil
 }
 
-func (p *provider) addToTaskWorkerAssignMap(logicTaskID worker2.LogicTaskID, workerID worker2.ID) {
+func (p *provider) addToTaskWorkerAssignMap(logicTaskID worker.LogicTaskID, workerID worker.ID) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 	// findWorkerByTask
 	p.forLeaderUse.findWorkerByTask[logicTaskID] = workerID
 	// findTaskByWorker
 	if p.forLeaderUse.findTaskByWorker[workerID] == nil {
-		p.forLeaderUse.findTaskByWorker[workerID] = make(map[worker2.LogicTaskID]struct{})
+		p.forLeaderUse.findTaskByWorker[workerID] = make(map[worker.LogicTaskID]struct{})
 	}
 	p.forLeaderUse.findTaskByWorker[workerID][logicTaskID] = struct{}{}
 }
 
-func (p *provider) removeFromTaskWorkerAssignMap(logicTaskID worker2.LogicTaskID, workerID worker2.ID) {
+func (p *provider) removeFromTaskWorkerAssignMap(logicTaskID worker.LogicTaskID, workerID worker.ID) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 	// findWorkerByTask
@@ -107,14 +107,14 @@ func (p *provider) removeFromTaskWorkerAssignMap(logicTaskID worker2.LogicTaskID
 	}
 }
 
-func (p *provider) leaderUseDeleteInvalidWorker(workerID worker2.ID) {
+func (p *provider) leaderUseDeleteInvalidWorker(workerID worker.ID) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 	// all workers
 	delete(p.forLeaderUse.allWorkers, workerID)
 }
 
-func (p *provider) leaderUseDeleteWorkerTaskAssign(deleteWorkerID worker2.ID) {
+func (p *provider) leaderUseDeleteWorkerTaskAssign(deleteWorkerID worker.ID) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 	delete(p.forLeaderUse.findTaskByWorker, deleteWorkerID)

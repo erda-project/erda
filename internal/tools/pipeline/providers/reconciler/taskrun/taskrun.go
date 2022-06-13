@@ -28,16 +28,16 @@ import (
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/clusterinfo"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/edgepipeline_register"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/actionagentsvc"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 // TaskRun represents task runtime.
 type TaskRun struct {
-	Task *spec2.PipelineTask
+	Task *spec.PipelineTask
 
 	Ctx      context.Context
 	Executor types.ActionExecutor
-	P        *spec2.Pipeline
+	P        *spec.Pipeline
 
 	ClusterInfo  clusterinfo.Interface
 	EdgeRegister edgepipeline_register.Interface
@@ -50,7 +50,7 @@ type TaskRun struct {
 	StopQueueLoop bool
 	StopWaitLoop  bool
 
-	ExecutorDoneCh chan spec2.ExecutorDoneChanData
+	ExecutorDoneCh chan spec.ExecutorDoneChanData
 
 	// 轮训状态间隔期间可能任务已经是终态，FakeTimeout = true
 	FakeTimeout bool
@@ -64,16 +64,16 @@ type TaskRun struct {
 
 // New returns a TaskRun.
 // TODO refactored into task reconciler.
-func New(ctx context.Context, task *spec2.PipelineTask,
-	executor types.ActionExecutor, p *spec2.Pipeline, bdl *bundle.Bundle, dbClient *dbclient.Client,
+func New(ctx context.Context, task *spec.PipelineTask,
+	executor types.ActionExecutor, p *spec.Pipeline, bdl *bundle.Bundle, dbClient *dbclient.Client,
 	actionAgentSvc *actionagentsvc.ActionAgentSvc,
 	actionMgr actionmgr.Interface, clusterInfo clusterinfo.Interface, edgeRegister edgepipeline_register.Interface,
 	retryInterval time.Duration,
 ) *TaskRun {
 	// make executor has buffer, don't block task framework
-	executorCh := make(chan spec2.ExecutorDoneChanData, 1)
+	executorCh := make(chan spec.ExecutorDoneChanData, 1)
 	return &TaskRun{
-		Ctx:      context.WithValue(ctx, spec2.MakeTaskExecutorCtxKey(task), executorCh),
+		Ctx:      context.WithValue(ctx, spec.MakeTaskExecutorCtxKey(task), executorCh),
 		Task:     task,
 		Executor: executor,
 		P:        p,

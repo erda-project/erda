@@ -15,12 +15,12 @@
 package table
 
 import (
-	table2 "github.com/erda-project/erda/internal/apps/cmp/component-protocol/components/cmp-dashboard-nodes/common/table"
+	"github.com/erda-project/erda/internal/apps/cmp/component-protocol/components/cmp-dashboard-nodes/common/table"
 )
 
 type Table struct {
-	table2.Table
-	cpuTable table2.GetTable
-	memTable table2.GetTable
-	podTable table2.GetTable
+	table.Table
+	cpuTable table.GetTable
+	memTable table.GetTable
+	podTable table.GetTable
 }

@@ -22,7 +22,7 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	aop2 "github.com/erda-project/erda/internal/tools/pipeline/aop"
+	"github.com/erda-project/erda/internal/tools/pipeline/aop"
 	"github.com/erda-project/erda/internal/tools/pipeline/aop/aoptypes"
 	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
 	"github.com/erda-project/erda/internal/tools/pipeline/pipengine/actionexecutor"
@@ -36,9 +36,9 @@ import (
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/reconciler/rutil"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/reconciler/taskpolicy"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/reconciler/taskrun"
-	taskop2 "github.com/erda-project/erda/internal/tools/pipeline/providers/reconciler/taskrun/taskop"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/reconciler/taskrun/taskop"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/actionagentsvc"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/loop"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -46,15 +46,15 @@ import (
 type TaskReconciler interface {
 	// ReconcileOneTaskUntilDone reconcile one task until done.
 	// done means end status, include success, failed and others.
-	ReconcileOneTaskUntilDone(ctx context.Context, p *spec2.Pipeline, task *spec2.PipelineTask)
+	ReconcileOneTaskUntilDone(ctx context.Context, p *spec.Pipeline, task *spec.PipelineTask)
 
-	IdempotentSaveTask(ctx context.Context, p *spec2.Pipeline, task *spec2.PipelineTask) error
-	NeedReconcile(ctx context.Context, p *spec2.Pipeline, task *spec2.PipelineTask) bool
-	ReconcileSnippetTask(ctx context.Context, p *spec2.Pipeline, task *spec2.PipelineTask) error
-	ReconcileNormalTask(ctx context.Context, p *spec2.Pipeline, task *spec2.PipelineTask) error
-	TeardownAfterReconcileDone(ctx context.Context, p *spec2.Pipeline, task *spec2.PipelineTask)
-	CreateSnippetPipeline(ctx context.Context, p *spec2.Pipeline, task *spec2.PipelineTask) (snippetPipeline *spec2.Pipeline, err error)
-	PrepareBeforeReconcileSnippetPipeline(ctx context.Context, snippetPipeline *spec2.Pipeline, snippetTask *spec2.PipelineTask) error
+	IdempotentSaveTask(ctx context.Context, p *spec.Pipeline, task *spec.PipelineTask) error
+	NeedReconcile(ctx context.Context, p *spec.Pipeline, task *spec.PipelineTask) bool
+	ReconcileSnippetTask(ctx context.Context, p *spec.Pipeline, task *spec.PipelineTask) error
+	ReconcileNormalTask(ctx context.Context, p *spec.Pipeline, task *spec.PipelineTask) error
+	TeardownAfterReconcileDone(ctx context.Context, p *spec.Pipeline, task *spec.PipelineTask)
+	CreateSnippetPipeline(ctx context.Context, p *spec.Pipeline, task *spec.PipelineTask) (snippetPipeline *spec.Pipeline, err error)
+	PrepareBeforeReconcileSnippetPipeline(ctx context.Context, snippetPipeline *spec.Pipeline, snippetTask *spec.PipelineTask) error
 }
 
 type defaultTaskReconciler struct {
@@ -78,7 +78,7 @@ type defaultTaskReconciler struct {
 	actionMgr        actionmgr.Interface
 }
 
-func (tr *defaultTaskReconciler) ReconcileOneTaskUntilDone(ctx context.Context, p *spec2.Pipeline, task *spec2.PipelineTask) {
+func (tr *defaultTaskReconciler) ReconcileOneTaskUntilDone(ctx context.Context, p *spec.Pipeline, task *spec.PipelineTask) {
 	rutil.ContinueWorking(ctx, tr.log, func(ctx context.Context) rutil.WaitDuration {
 		// save task idempotently firstly
 		if err := tr.IdempotentSaveTask(ctx, p, task); err != nil {
@@ -114,11 +114,11 @@ func (tr *defaultTaskReconciler) ReconcileOneTaskUntilDone(ctx context.Context, 
 	}, rutil.WithContinueWorkingDefaultRetryInterval(tr.defaultRetryInterval))
 }
 
-func (tr *defaultTaskReconciler) NeedReconcile(ctx context.Context, p *spec2.Pipeline, task *spec2.PipelineTask) bool {
+func (tr *defaultTaskReconciler) NeedReconcile(ctx context.Context, p *spec.Pipeline, task *spec.PipelineTask) bool {
 	return !task.Status.IsEndStatus()
 }
 
-func (tr *defaultTaskReconciler) IdempotentSaveTask(ctx context.Context, p *spec2.Pipeline, task *spec2.PipelineTask) error {
+func (tr *defaultTaskReconciler) IdempotentSaveTask(ctx context.Context, p *spec.Pipeline, task *spec.PipelineTask) error {
 	if task.ID > 0 {
 		return nil
 	}
@@ -159,9 +159,9 @@ func (tr *defaultTaskReconciler) IdempotentSaveTask(ctx context.Context, p *spec
 	return nil
 }
 
-func (tr *defaultTaskReconciler) ReconcileSnippetTask(ctx context.Context, p *spec2.Pipeline, task *spec2.PipelineTask) (err error) {
+func (tr *defaultTaskReconciler) ReconcileSnippetTask(ctx context.Context, p *spec.Pipeline, task *spec.PipelineTask) (err error) {
 	// generate corresponding snippet pipeline
-	var snippetPipeline *spec2.Pipeline
+	var snippetPipeline *spec.Pipeline
 	if task.SnippetPipelineID != nil && *task.SnippetPipelineID > 0 {
 		snippetPipelineValue, err := tr.dbClient.GetPipeline(task.SnippetPipelineID)
 		if err != nil {
@@ -192,7 +192,7 @@ func (tr *defaultTaskReconciler) ReconcileSnippetTask(ctx context.Context, p *sp
 	return nil
 }
 
-func (tr *defaultTaskReconciler) ReconcileNormalTask(ctx context.Context, p *spec2.Pipeline, task *spec2.PipelineTask) error {
+func (tr *defaultTaskReconciler) ReconcileNormalTask(ctx context.Context, p *spec.Pipeline, task *spec.PipelineTask) error {
 	var platformErrRetryTimes int
 	var onceCorrected bool
 	var framework *taskrun.TaskRun
@@ -240,15 +240,15 @@ func (tr *defaultTaskReconciler) ReconcileNormalTask(ctx context.Context, p *spe
 		var taskOp taskrun.TaskOp
 		switch task.Status {
 		case apistructs.PipelineStatusAnalyzed:
-			taskOp = taskop2.NewPrepare(framework)
+			taskOp = taskop.NewPrepare(framework)
 		case apistructs.PipelineStatusBorn:
-			taskOp = taskop2.NewCreate(framework)
+			taskOp = taskop.NewCreate(framework)
 		case apistructs.PipelineStatusCreated:
-			taskOp = taskop2.NewStart(framework)
+			taskOp = taskop.NewStart(framework)
 		case apistructs.PipelineStatusQueue:
-			taskOp = taskop2.NewQueue(framework)
+			taskOp = taskop.NewQueue(framework)
 		case apistructs.PipelineStatusRunning:
-			taskOp = taskop2.NewWait(framework)
+			taskOp = taskop.NewWait(framework)
 		default:
 			if task.Status.IsEndStatus() {
 				return rutil.ContinueWorkingAbort
@@ -312,7 +312,7 @@ func (tr *defaultTaskReconciler) calculateRetryIntervalForAbnormalRetry(framewor
 	return interval
 }
 
-func (tr *defaultTaskReconciler) TeardownAfterReconcileDone(ctx context.Context, p *spec2.Pipeline, task *spec2.PipelineTask) {
+func (tr *defaultTaskReconciler) TeardownAfterReconcileDone(ctx context.Context, p *spec.Pipeline, task *spec.PipelineTask) {
 	tr.log.Infof("begin teardown task, pipelineID: %d, taskID: %d, taskName: %s", p.ID, task.ID, task.Name)
 	defer tr.log.Infof("end teardown task, pipelineID: %d, taskID: %d, taskName: %s", p.ID, task.ID, task.Name)
 
@@ -322,7 +322,7 @@ func (tr *defaultTaskReconciler) TeardownAfterReconcileDone(ctx context.Context,
 	}
 
 	// handle aop synchronously, then do subsequent tasks
-	_ = aop2.Handle(aop2.NewContextForTask(*task, *p, aoptypes.TuneTriggerTaskAfterExec))
+	_ = aop.Handle(aop.NewContextForTask(*task, *p, aoptypes.TuneTriggerTaskAfterExec))
 	// report task in edge cluster
 	if tr.edgeRegister.IsEdge() {
 		tr.edgeReporter.TriggerOnceTaskReport(task.ID)
@@ -342,7 +342,7 @@ func (tr *defaultTaskReconciler) TeardownAfterReconcileDone(ctx context.Context,
 	}
 }
 
-func (tr *defaultTaskReconciler) PrepareBeforeReconcileSnippetPipeline(ctx context.Context, snippetPipeline *spec2.Pipeline, snippetTask *spec2.PipelineTask) error {
+func (tr *defaultTaskReconciler) PrepareBeforeReconcileSnippetPipeline(ctx context.Context, snippetPipeline *spec.Pipeline, snippetTask *spec.PipelineTask) error {
 	sp := snippetPipeline
 	// snippet pipeline first run
 	if sp.Status != apistructs.PipelineStatusAnalyzed {
@@ -363,7 +363,7 @@ func (tr *defaultTaskReconciler) PrepareBeforeReconcileSnippetPipeline(ctx conte
 	}
 
 	// set snippetDetail for snippetTask
-	var snippetPipelineTasks []*spec2.PipelineTask
+	var snippetPipelineTasks []*spec.PipelineTask
 	snippetPipelineTasks, err := tr.r.YmlTaskMergeDBTasks(sp)
 	if err != nil {
 		return err
@@ -390,7 +390,7 @@ func (tr *defaultTaskReconciler) PrepareBeforeReconcileSnippetPipeline(ctx conte
 	//return nil
 }
 
-func (tr *defaultTaskReconciler) tryCorrectFromExecutorBeforeReconcile(ctx context.Context, p *spec2.Pipeline, task *spec2.PipelineTask, framework *taskrun.TaskRun) error {
+func (tr *defaultTaskReconciler) tryCorrectFromExecutorBeforeReconcile(ctx context.Context, p *spec.Pipeline, task *spec.PipelineTask, framework *taskrun.TaskRun) error {
 	// not created yet, no need to correct status from executor
 	if len(task.Extra.UUID) == 0 {
 		return nil
@@ -422,7 +422,7 @@ func (tr *defaultTaskReconciler) tryCorrectFromExecutorBeforeReconcile(ctx conte
 	return nil
 }
 
-func (tr *defaultTaskReconciler) judgeIfExpression(ctx context.Context, p *spec2.Pipeline, task *spec2.PipelineTask) error {
+func (tr *defaultTaskReconciler) judgeIfExpression(ctx context.Context, p *spec.Pipeline, task *spec.PipelineTask) error {
 	// if calculated pipeline status is failed and current task have no if expression(cannot must run), set task no-need-run
 	if tr.pr.calculatedStatusForTaskUse.IsFailedStatus() {
 		needSetToNoNeedBySystem := false
@@ -449,7 +449,7 @@ func (tr *defaultTaskReconciler) judgeIfExpression(ctx context.Context, p *spec2
 
 // overwriteTaskWithLatest overwrite current task with latest
 // the same as taskrun.fetchlatesttask, use one later when refactored
-func (tr *defaultTaskReconciler) overwriteTaskWithLatest(task *spec2.PipelineTask) error {
+func (tr *defaultTaskReconciler) overwriteTaskWithLatest(task *spec.PipelineTask) error {
 	latest, err := tr.dbClient.GetPipelineTask(task.ID)
 	if err != nil {
 		return err

@@ -20,7 +20,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/action_info"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/actionagentsvc"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
@@ -33,11 +33,11 @@ type Interface interface {
 
 type PipelineSvcFuncs struct {
 	CronNotExecuteCompensate                func(id uint64) error
-	MergePipelineYmlTasks                   func(pipelineYml *pipelineyml.PipelineYml, dbTasks []spec2.PipelineTask, p *spec2.Pipeline, dbStages []spec2.PipelineStage, passedDataWhenCreate *action_info.PassedDataWhenCreate) (mergeTasks []spec2.PipelineTask, err error)
+	MergePipelineYmlTasks                   func(pipelineYml *pipelineyml.PipelineYml, dbTasks []spec.PipelineTask, p *spec.Pipeline, dbStages []spec.PipelineStage, passedDataWhenCreate *action_info.PassedDataWhenCreate) (mergeTasks []spec.PipelineTask, err error)
 	HandleQueryPipelineYamlBySnippetConfigs func(sourceSnippetConfigs []apistructs.SnippetConfig) (map[string]string, error)
-	MakeSnippetPipeline4Create              func(p *spec2.Pipeline, snippetTask *spec2.PipelineTask, yamlContent string) (*spec2.Pipeline, error)
-	CreatePipelineGraph                     func(p *spec2.Pipeline) (stages []spec2.PipelineStage, err error)
-	PreCheck                                func(p *spec2.Pipeline, stages []spec2.PipelineStage, userID string, autoRun bool) error
+	MakeSnippetPipeline4Create              func(p *spec.Pipeline, snippetTask *spec.PipelineTask, yamlContent string) (*spec.Pipeline, error)
+	CreatePipelineGraph                     func(p *spec.Pipeline) (stages []spec.PipelineStage, err error)
+	PreCheck                                func(p *spec.Pipeline, stages []spec.PipelineStage, userID string, autoRun bool) error
 }
 
 func (r *provider) InjectLegacyFields(f *PipelineSvcFuncs, actionAgentSvc *actionagentsvc.ActionAgentSvc) {

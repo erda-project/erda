@@ -26,7 +26,7 @@ import (
 
 	"github.com/erda-project/erda-proto-go/core/pipeline/build/pb"
 	"github.com/erda-project/erda/apistructs"
-	db2 "github.com/erda-project/erda/internal/tools/pipeline/providers/build/db"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/build/db"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/apierrors"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpclient"
@@ -35,7 +35,7 @@ import (
 
 type buildService struct {
 	p        *provider
-	dbClient *db2.Client
+	dbClient *db.Client
 }
 
 func (s *buildService) QueryBuildArtifact(ctx context.Context, req *pb.BuildArtifactQueryRequest) (*pb.BuildArtifactQueryResponse, error) {
@@ -102,7 +102,7 @@ func (s *buildService) DeleteArtifactsByImages(ctx context.Context, req *pb.Buil
 }
 
 func (s *buildService) ReportBuildCache(ctx context.Context, req *pb.BuildCacheReportRequest) (*pb.BuildCacheReportResponse, error) {
-	cacheImage := &db2.CIV3BuildCache{
+	cacheImage := &db.CIV3BuildCache{
 		Name:        req.Name,
 		ClusterName: req.ClusterName,
 	}

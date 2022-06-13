@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"time"
 
-	types2 "github.com/rancher/apiserver/pkg/types"
+	"github.com/rancher/apiserver/pkg/types"
 	"github.com/rancher/wrangler/pkg/data"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -139,7 +139,7 @@ const (
 
 // GetNamespaceAllocatedRes get nodes allocated resource from cache, and update cache in goroutine
 func GetNamespaceAllocatedRes(ctx context.Context, server SteveServer, noAuthentication bool, clusterName, userID, orgID string, namespaces []string) (map[string]AllocatedRes, error) {
-	var pods []types2.APIObject
+	var pods []types.APIObject
 	hasExpired := false
 	nsAllocatedRes := make(map[string]AllocatedRes)
 	for _, namespace := range namespaces {
@@ -231,7 +231,7 @@ func GetNamespaceAllocatedRes(ctx context.Context, server SteveServer, noAuthent
 }
 
 // CalculateNamespaceAllocatedRes calculate allocated cpu, memory and pods for target namespaces
-func CalculateNamespaceAllocatedRes(name string, pods []types2.APIObject) (cpu, mem, podNum int64) {
+func CalculateNamespaceAllocatedRes(name string, pods []types.APIObject) (cpu, mem, podNum int64) {
 	cpuQty := resource.NewQuantity(0, resource.DecimalSI)
 	memQty := resource.NewQuantity(0, resource.BinarySI)
 	for _, obj := range pods {
@@ -276,7 +276,7 @@ func IsVirtualNode(node data.Object) bool {
 
 // GetNodesAllocatedRes get nodes allocated resource from cache, and update cache in goroutine
 func GetNodesAllocatedRes(ctx context.Context, server SteveServer, noAuthentication bool, clusterName, userID, orgID string, nodes []data.Object) (map[string]AllocatedRes, error) {
-	var pods []types2.APIObject
+	var pods []types.APIObject
 	hasExpired := false
 	nodesAllocatedRes := make(map[string]AllocatedRes)
 	for _, node := range nodes {
@@ -376,7 +376,7 @@ func GetNodesAllocatedRes(ctx context.Context, server SteveServer, noAuthenticat
 }
 
 // CalculateNodeAllocatedRes calculate allocated cpu, memory and pods for target node
-func CalculateNodeAllocatedRes(nodeName string, pods []types2.APIObject) (cpu, mem, podNum int64) {
+func CalculateNodeAllocatedRes(nodeName string, pods []types.APIObject) (cpu, mem, podNum int64) {
 	cpuQty := resource.NewQuantity(0, resource.DecimalSI)
 	memQty := resource.NewQuantity(0, resource.BinarySI)
 	for _, obj := range pods {

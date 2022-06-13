@@ -23,7 +23,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	agenttool2 "github.com/erda-project/erda/internal/tools/pipeline/actionagent/agenttool"
+	"github.com/erda-project/erda/internal/tools/pipeline/actionagent/agenttool"
 	"github.com/erda-project/erda/internal/tools/pipeline/pipengine/pvolumes"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/filehelper"
@@ -36,7 +36,7 @@ func (agent *Agent) store() {
 		case string(spec.StoreTypeNFS):
 			tarFile := strings.TrimPrefix(out.Value, spec.StoreTypeNFSProto)
 			tarDir := filepath.Join(agent.EasyUse.ContainerContext, out.Name)
-			err := agenttool2.Tar(tarFile, tarDir)
+			err := agenttool.Tar(tarFile, tarDir)
 			if err != nil {
 				agent.AppendError(err)
 			}
@@ -49,7 +49,7 @@ func (agent *Agent) store() {
 		case string(spec.StoreTypeDiceVolumeNFS):
 			tarFile := filepath.Join(out.Value, "data")
 			tarDir := filepath.Join(agent.EasyUse.ContainerContext, out.Name)
-			err := agenttool2.Tar(tarFile, tarDir)
+			err := agenttool.Tar(tarFile, tarDir)
 			if err != nil {
 				agent.AppendError(err)
 			}
@@ -79,10 +79,10 @@ func (agent *Agent) storeCache(tarFile, cachePath string) (err error) {
 	if err != nil {
 		return err
 	}
-	if err = agenttool2.Tar(tmpFile.Name(), cachePath); err != nil {
+	if err = agenttool.Tar(tmpFile.Name(), cachePath); err != nil {
 		return err
 	}
-	if err = agenttool2.Mv(tmpFile.Name(), tarFile); err != nil {
+	if err = agenttool.Mv(tmpFile.Name(), tarFile); err != nil {
 		return err
 	}
 	return nil

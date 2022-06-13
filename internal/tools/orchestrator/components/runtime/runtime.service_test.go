@@ -25,7 +25,7 @@ import (
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda-proto-go/orchestrator/runtime/pb"
 	"github.com/erda-project/erda/apistructs"
-	mock2 "github.com/erda-project/erda/internal/tools/orchestrator/components/runtime/mock"
+	"github.com/erda-project/erda/internal/tools/orchestrator/components/runtime/mock"
 	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/internal/tools/orchestrator/events"
 	"github.com/erda-project/erda/pkg/database/dbengine"
@@ -49,9 +49,9 @@ func TestService_GetRuntime(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	bdlSvc := mock2.NewMockBundleService(ctrl)
-	dbSvc := mock2.NewMockDBService(ctrl)
-	sgiSvc := mock2.NewMockServiceGroup(ctrl)
+	bdlSvc := mock.NewMockBundleService(ctrl)
+	dbSvc := mock.NewMockDBService(ctrl)
+	sgiSvc := mock.NewMockServiceGroup(ctrl)
 	svc := NewRuntimeService(WithBundleService(bdlSvc), WithDBService(dbSvc), WithServiceGroupImpl(sgiSvc), WithClusterSvc(&fakeClusterServiceServer{}))
 
 	md := metadata.New(map[string]string{
@@ -195,9 +195,9 @@ func Test_DeleteRuntime(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	bdlSvc := mock2.NewMockBundleService(ctrl)
-	dbSvc := mock2.NewMockDBService(ctrl)
-	evMgr := mock2.NewMockEventManagerService(ctrl)
+	bdlSvc := mock.NewMockBundleService(ctrl)
+	dbSvc := mock.NewMockDBService(ctrl)
+	evMgr := mock.NewMockEventManagerService(ctrl)
 	svc := NewRuntimeService(WithBundleService(bdlSvc), WithDBService(dbSvc), WithEventManagerService(evMgr))
 
 	md := metadata.New(map[string]string{

@@ -19,13 +19,13 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/queuemanager/pkg/queue/priorityqueue"
-	types2 "github.com/erda-project/erda/internal/tools/pipeline/providers/queuemanager/types"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/queuemanager/types"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
 type CapacityValidator struct {
-	mgr types2.QueueManager
+	mgr types.QueueManager
 }
 
 func (q *defaultQueue) ValidateCapacity(tryPopP *spec.Pipeline) apistructs.PipelineQueueValidateResult {
@@ -43,5 +43,5 @@ func (q *defaultQueue) ValidateCapacity(tryPopP *spec.Pipeline) apistructs.Pipel
 				strutil.Join(processItems, ", ", true)),
 		}
 	}
-	return types2.SuccessValidateResult
+	return types.SuccessValidateResult
 }

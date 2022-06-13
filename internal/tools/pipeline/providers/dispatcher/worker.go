@@ -20,13 +20,13 @@ import (
 	"strconv"
 
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/leaderworker"
-	worker2 "github.com/erda-project/erda/internal/tools/pipeline/providers/leaderworker/worker"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/leaderworker/worker"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
 func (p *provider) onWorkerAdd(ctx context.Context, ev leaderworker.Event) {
 	p.Log.Infof("worker added, refresh consistent, workerID: %s", ev.WorkerID)
-	p.consistent.Add(worker2.New(worker2.WithID(ev.WorkerID)))
+	p.consistent.Add(worker.New(worker.WithID(ev.WorkerID)))
 	// no need to relocate tasks which already dispatched
 }
 
@@ -46,7 +46,7 @@ func (p *provider) onWorkerDelete(ctx context.Context, ev leaderworker.Event) {
 	}
 }
 
-func (p *provider) pickOneWorker(ctx context.Context, pipelineID uint64) (worker2.ID, error) {
+func (p *provider) pickOneWorker(ctx context.Context, pipelineID uint64) (worker.ID, error) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 	var members []string
@@ -57,6 +57,6 @@ func (p *provider) pickOneWorker(ctx context.Context, pipelineID uint64) (worker
 	if locateMember == nil {
 		return "", fmt.Errorf("failed to find proper worker, pipelineID: %d, consistent members: %v", pipelineID, members)
 	}
-	workerID := worker2.ID(locateMember.String())
+	workerID := worker.ID(locateMember.String())
 	return workerID, nil
 }

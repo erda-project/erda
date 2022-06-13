@@ -24,7 +24,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/actionagent"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/k8s/elastic/vk"
 )
 
@@ -79,7 +79,7 @@ func WithExtensions(extensions map[string]*apistructs.ActionSpec) Option {
 	}
 }
 
-func DealPipelineProviderBeforeRun(p *spec2.Pipeline, clusterInfo apistructs.ClusterInfoData) {
+func DealPipelineProviderBeforeRun(p *spec.Pipeline, clusterInfo apistructs.ClusterInfoData) {
 	provider := p.Extra.ContainerInstanceProvider
 	if provider != nil && provider.IsDisabled {
 		return
@@ -169,8 +169,8 @@ func GenNamespaceByJob(job *apistructs.JobFromUser) *corev1.Namespace {
 	return ns
 }
 
-func DealTaskRuntimeResource(task *spec2.PipelineTask) {
-	task.Extra.RuntimeResource = spec2.RuntimeResource{
+func DealTaskRuntimeResource(task *spec.PipelineTask) {
+	task.Extra.RuntimeResource = spec.RuntimeResource{
 		CPU:       task.Extra.AppliedResources.Requests.CPU,
 		Memory:    task.Extra.AppliedResources.Requests.MemoryMB,
 		MaxCPU:    task.Extra.AppliedResources.Limits.CPU,

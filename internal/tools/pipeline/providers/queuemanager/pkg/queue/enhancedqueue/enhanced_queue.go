@@ -18,17 +18,17 @@ import (
 	"sync"
 	"time"
 
-	priorityqueue2 "github.com/erda-project/erda/internal/tools/pipeline/providers/queuemanager/pkg/queue/priorityqueue"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/queuemanager/pkg/queue/priorityqueue"
 )
 
 // EnhancedQueue 在优先队列基础上进行了封装，功能增强
 type EnhancedQueue struct {
 	// pending 等待处理的优先队列
 	// 该队列可以无限追加，没有大小限制
-	pending *priorityqueue2.PriorityQueue
+	pending *priorityqueue.PriorityQueue
 
 	// processing 处理中的优先队列
-	processing *priorityqueue2.PriorityQueue
+	processing *priorityqueue.PriorityQueue
 	// processingWindow 处理中的优先队列窗口大小，即同时处理的并发度
 	// window 大小可以调整，不影响当前正在处理中的任务
 	// 例如之前 window=2，且有两个任务正在处理中，此时缩小 window=1，不会影响已经在处理中的两个任务
@@ -39,21 +39,21 @@ type EnhancedQueue struct {
 
 func NewEnhancedQueue(window int64) *EnhancedQueue {
 	return &EnhancedQueue{
-		pending:          priorityqueue2.NewPriorityQueue(),
-		processing:       priorityqueue2.NewPriorityQueue(),
+		pending:          priorityqueue.NewPriorityQueue(),
+		processing:       priorityqueue.NewPriorityQueue(),
 		processingWindow: window,
 		lock:             sync.RWMutex{},
 	}
 }
 
-func (eq *EnhancedQueue) PendingQueue() *priorityqueue2.PriorityQueue {
+func (eq *EnhancedQueue) PendingQueue() *priorityqueue.PriorityQueue {
 	eq.lock.Lock()
 	defer eq.lock.Unlock()
 
 	return eq.pending
 }
 
-func (eq *EnhancedQueue) ProcessingQueue() *priorityqueue2.PriorityQueue {
+func (eq *EnhancedQueue) ProcessingQueue() *priorityqueue.PriorityQueue {
 	eq.lock.Lock()
 	defer eq.lock.Unlock()
 
@@ -89,7 +89,7 @@ func (eq *EnhancedQueue) Add(key string, priority int64, creationTime time.Time)
 	eq.lock.Lock()
 	defer eq.lock.Unlock()
 
-	eq.pending.Add(priorityqueue2.NewItem(key, priority, creationTime))
+	eq.pending.Add(priorityqueue.NewItem(key, priority, creationTime))
 }
 
 // PopPending 将 pending 中的第一个 key 推进到 processing
@@ -169,7 +169,7 @@ func (eq *EnhancedQueue) SetProcessingWindow(newWindow int64) {
 	eq.processingWindow = newWindow
 }
 
-func (eq *EnhancedQueue) RangePending(f func(priorityqueue2.Item) bool) {
+func (eq *EnhancedQueue) RangePending(f func(priorityqueue.Item) bool) {
 	eq.lock.Lock()
 	defer eq.lock.Unlock()
 

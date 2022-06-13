@@ -22,14 +22,14 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
-	types2 "github.com/erda-project/erda/internal/tools/pipeline/providers/queuemanager/types"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/queuemanager/types"
 	"github.com/erda-project/erda/pkg/jsonstore"
 	"github.com/erda-project/erda/pkg/jsonstore/etcd"
 )
 
 // defaultManager is the default manager.
 type defaultManager struct {
-	queueByID         map[string]types2.Queue  // key: pq id
+	queueByID         map[string]types.Queue   // key: pq id
 	queueStopChanByID map[string]chan struct{} // key: pq id
 	qLock             sync.RWMutex
 
@@ -42,10 +42,10 @@ type defaultManager struct {
 }
 
 // New return a new queue manager.
-func New(ctx context.Context, ops ...Option) types2.QueueManager {
+func New(ctx context.Context, ops ...Option) types.QueueManager {
 	var mgr defaultManager
 
-	mgr.queueByID = make(map[string]types2.Queue)
+	mgr.queueByID = make(map[string]types.Queue)
 	mgr.queueStopChanByID = make(map[string]chan struct{})
 
 	//mgr.pipelineCaches = make(map[uint64]*spec.Pipeline)

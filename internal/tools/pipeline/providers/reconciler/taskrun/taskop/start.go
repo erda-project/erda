@@ -23,7 +23,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/aop/aoptypes"
-	pvolumes2 "github.com/erda-project/erda/internal/tools/pipeline/pipengine/pvolumes"
+	"github.com/erda-project/erda/internal/tools/pipeline/pipengine/pvolumes"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/reconciler/taskrun"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
@@ -147,9 +147,9 @@ func injectVolumeID(tr *taskrun.TaskRun, data interface{}) error {
 		// 写入 volumeID
 		// 若 label 为空，说明是老数据，重新生成一个
 		if len(declaredVolume.Labels) == 0 {
-			declaredVolume = pvolumes2.GenerateTaskVolume(*tr.Task, declaredVolume.Name, diceVolume.ID)
+			declaredVolume = pvolumes.GenerateTaskVolume(*tr.Task, declaredVolume.Name, diceVolume.ID)
 		} else {
-			declaredVolume.Labels[pvolumes2.VoLabelKeyVolumeID] = *diceVolume.ID
+			declaredVolume.Labels[pvolumes.VoLabelKeyVolumeID] = *diceVolume.ID
 		}
 		// store to db
 		tr.Task.Context.OutStorages[i] = declaredVolume

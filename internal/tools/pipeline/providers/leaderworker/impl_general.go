@@ -22,10 +22,10 @@ import (
 	"github.com/coreos/etcd/mvcc/mvccpb"
 	"github.com/pkg/errors"
 
-	worker2 "github.com/erda-project/erda/internal/tools/pipeline/providers/leaderworker/worker"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/leaderworker/worker"
 )
 
-func (p *provider) ListWorkers(ctx context.Context, workerTypes ...worker2.Type) ([]worker2.Worker, error) {
+func (p *provider) ListWorkers(ctx context.Context, workerTypes ...worker.Type) ([]worker.Worker, error) {
 	return p.listWorkers(ctx, workerTypes...)
 }
 
@@ -73,10 +73,10 @@ func (p *provider) Start() {
 	p.started = true
 }
 
-func (p *provider) listWorkers(ctx context.Context, workerTypes ...worker2.Type) ([]worker2.Worker, error) {
-	var workers []worker2.Worker
+func (p *provider) listWorkers(ctx context.Context, workerTypes ...worker.Type) ([]worker.Worker, error) {
+	var workers []worker.Worker
 	if len(workerTypes) == 0 {
-		workerTypes = worker2.AllTypes
+		workerTypes = worker.AllTypes
 	}
 	for _, typ := range workerTypes {
 		typeWorkers, err := p.listWorkersByType(ctx, typ)
@@ -86,14 +86,14 @@ func (p *provider) listWorkers(ctx context.Context, workerTypes ...worker2.Type)
 		workers = append(workers, typeWorkers...)
 	}
 	// remove invalid workers
-	var validWorkers []worker2.Worker
+	var validWorkers []worker.Worker
 	for _, w := range workers {
 		checkErr := p.checkWorkerIsReady(ctx, w)
 		if checkErr == nil {
 			validWorkers = append(validWorkers, w)
 			continue
 		}
-		go func(w worker2.Worker, reason string) {
+		go func(w worker.Worker, reason string) {
 			if deleteErr := p.deleteWorker(ctx, w); deleteErr != nil {
 				p.Log.Errorf("failed to delete invalid worker while list workers, workerID: %s, typ: %s, deleteReason: %s, err: %v", w.GetID(), w.GetType(), reason, deleteErr)
 			} else {
@@ -102,7 +102,7 @@ func (p *provider) listWorkers(ctx context.Context, workerTypes ...worker2.Type)
 		}(w, checkErr.Error())
 	}
 	p.lock.Lock()
-	p.forLeaderUse.allWorkers = make(map[worker2.ID]worker2.Worker, len(validWorkers))
+	p.forLeaderUse.allWorkers = make(map[worker.ID]worker.Worker, len(validWorkers))
 	for _, w := range validWorkers {
 		p.forLeaderUse.allWorkers[w.GetID()] = w
 	}
@@ -110,14 +110,14 @@ func (p *provider) listWorkers(ctx context.Context, workerTypes ...worker2.Type)
 	return validWorkers, nil
 }
 
-func (p *provider) listWorkersByType(ctx context.Context, typ worker2.Type) ([]worker2.Worker, error) {
+func (p *provider) listWorkersByType(ctx context.Context, typ worker.Type) ([]worker.Worker, error) {
 	getResp, err := p.EtcdClient.Get(ctx, p.makeEtcdWorkerKeyPrefix(typ), clientv3.WithPrefix())
 	if err != nil {
 		return nil, err
 	}
-	var workers []worker2.Worker
+	var workers []worker.Worker
 	for _, kv := range getResp.Kvs {
-		w, err := worker2.NewFromBytes(kv.Value)
+		w, err := worker.NewFromBytes(kv.Value)
 		if err != nil {
 			return nil, err
 		}
@@ -127,7 +127,7 @@ func (p *provider) listWorkersByType(ctx context.Context, typ worker2.Type) ([]w
 	return workers, nil
 }
 
-func (p *provider) checkWorkerIsReady(ctx context.Context, w worker2.Worker) error {
+func (p *provider) checkWorkerIsReady(ctx context.Context, w worker.Worker) error {
 	if err := p.checkWorkerFields(w); err != nil {
 		return err
 	}
@@ -138,25 +138,25 @@ func (p *provider) checkWorkerIsReady(ctx context.Context, w worker2.Worker) err
 	return nil
 }
 
-func (p *provider) checkWorkerFields(w worker2.Worker) error {
+func (p *provider) checkWorkerFields(w worker.Worker) error {
 	if w == nil {
-		return worker2.ErrNilWorker
+		return worker.ErrNilWorker
 	}
 	if len(w.GetID().String()) == 0 {
-		return worker2.ErrNoWorkerID
+		return worker.ErrNoWorkerID
 	}
 	if len(w.GetType().String()) == 0 {
-		return worker2.ErrNoWorkerType
+		return worker.ErrNoWorkerType
 	}
 	if !w.GetType().Valid() {
-		return worker2.ErrInvalidWorkerType
+		return worker.ErrInvalidWorkerType
 	}
 	if w.GetCreatedAt().IsZero() {
-		return worker2.ErrNoCreatedTime
+		return worker.ErrNoCreatedTime
 	}
 	// try to marshal
 	if _, err := w.MarshalJSON(); err != nil {
-		return errors.Wrap(err, worker2.ErrMarshal.Error())
+		return errors.Wrap(err, worker.ErrMarshal.Error())
 	}
 	return nil
 }

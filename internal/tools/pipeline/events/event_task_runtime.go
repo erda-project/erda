@@ -20,15 +20,15 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/pkg/websocket"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 type PipelineTaskRuntimeEvent struct {
 	DefaultEvent
 	IdentityInfo
 	EventHeader apistructs.EventHeader
-	Task        *spec2.PipelineTask
-	Pipeline    *spec2.Pipeline
+	Task        *spec.PipelineTask
+	Pipeline    *spec.Pipeline
 	RuntimeID   string
 }
 

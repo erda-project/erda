@@ -24,7 +24,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/aop"
-	aoptypes2 "github.com/erda-project/erda/internal/tools/pipeline/aop/aoptypes"
+	"github.com/erda-project/erda/internal/tools/pipeline/aop/aoptypes"
 	"github.com/erda-project/erda/internal/tools/pipeline/aop/plugins/task/autotest_cookie_keep_after"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/reconciler/rlog"
 	"github.com/erda-project/erda/pkg/apitestsv2"
@@ -34,12 +34,12 @@ const taskType = "api-test"
 
 // +provider
 type provider struct {
-	aoptypes2.TaskBaseTunePoint
+	aoptypes.TaskBaseTunePoint
 }
 
 func (p *provider) Name() string { return "autotest-cookie-keep-before" }
 
-func (p *provider) Handle(ctx *aoptypes2.TuneContext) error {
+func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 	// task not api-test type return
 	if ctx.SDK.Task.Type != taskType {
 		return nil

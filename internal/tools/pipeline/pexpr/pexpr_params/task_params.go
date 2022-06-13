@@ -22,7 +22,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/pipengine/pvolumes"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/expression"
 	"github.com/erda-project/erda/pkg/loop"
 )
@@ -42,9 +42,9 @@ import (
 func GenerateParamsFromTask(pipelineID uint64, taskID uint64, taskStatus apistructs.PipelineStatus) map[string]string {
 	// get data from db
 	var (
-		p           *spec2.Pipeline
-		tasks       []*spec2.PipelineTask
-		currentTask *spec2.PipelineTask
+		p           *spec.Pipeline
+		tasks       []*spec.PipelineTask
+		currentTask *spec.PipelineTask
 	)
 	_ = loop.New(loop.WithDeclineRatio(2), loop.WithDeclineLimit(time.Second*10)).Do(func() (abort bool, err error) {
 		pWithTasks, err := dbClient.GetPipelineWithTasks(pipelineID)
@@ -94,7 +94,7 @@ func GenerateParamsFromTask(pipelineID uint64, taskID uint64, taskStatus apistru
 }
 
 // outputs: outputs.preTaskName.key
-func generateOutputs(tasks []*spec2.PipelineTask) map[string]string {
+func generateOutputs(tasks []*spec.PipelineTask) map[string]string {
 	makePhKeyFunc := func(taskName, metaKey string) string {
 		return fmt.Sprintf(expression.Outputs+".%s.%s", taskName, metaKey)
 	}
@@ -108,7 +108,7 @@ func generateOutputs(tasks []*spec2.PipelineTask) map[string]string {
 }
 
 // configs: configs.key
-func generateConfigs(p *spec2.Pipeline) map[string]string {
+func generateConfigs(p *spec.Pipeline) map[string]string {
 	makePhKeyFunc := func(key string) string { return fmt.Sprintf(expression.Configs+".%s", key) }
 	configs := make(map[string]string)
 	for k, v := range p.Snapshot.Secrets {
@@ -123,7 +123,7 @@ func generateConfigs(p *spec2.Pipeline) map[string]string {
 // workdirs:
 //   - workdirs.preTaskName           只渲染到 workdir
 //   - workdirs.preTaskName.filepath  workdir 后拼接用户指定的路径
-func generateWorkdirs(tasks []spec2.PipelineTask, currentTask spec2.PipelineTask) map[string]string {
+func generateWorkdirs(tasks []spec.PipelineTask, currentTask spec.PipelineTask) map[string]string {
 	makePhKeyFunc := func(taskName string) string { return fmt.Sprintf("workdirs.%s", taskName) }
 	workdirs := make(map[string]string)
 	for taskName, workdir := range pvolumes.GetAvailableTaskContainerWorkdirs(tasks, currentTask) {

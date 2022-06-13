@@ -25,8 +25,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	agenttool2 "github.com/erda-project/erda/internal/tools/pipeline/actionagent/agenttool"
-	pvolumes2 "github.com/erda-project/erda/internal/tools/pipeline/pipengine/pvolumes"
+	"github.com/erda-project/erda/internal/tools/pipeline/actionagent/agenttool"
+	"github.com/erda-project/erda/internal/tools/pipeline/pipengine/pvolumes"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/filehelper"
 )
@@ -43,7 +43,7 @@ func (agent *Agent) restore() {
 		case string(spec.StoreTypeNFS):
 			tarFile := strings.TrimPrefix(in.Value, spec.StoreTypeNFSProto)
 			tarDir := agent.EasyUse.ContainerContext
-			err := agenttool2.UnTar(tarFile, tarDir)
+			err := agenttool.UnTar(tarFile, tarDir)
 			if err != nil {
 				if in.Optional {
 					logrus.Printf("[restore] ignore optional restore, type: %s, (prepare to untar [%s] into [%s]).\n",
@@ -61,7 +61,7 @@ func (agent *Agent) restore() {
 		case string(spec.StoreTypeDiceVolumeNFS):
 			tarFile := filepath.Join(in.Value, "data")
 			tarDir := agent.EasyUse.ContainerContext
-			err := agenttool2.UnTar(tarFile, tarDir)
+			err := agenttool.UnTar(tarFile, tarDir)
 			if err != nil {
 				if in.Optional {
 					logrus.Printf("[restore] ignore optional restore, type: %s, (prepare to untar [%s] into [%s]).\n",
@@ -71,17 +71,17 @@ func (agent *Agent) restore() {
 				agent.AppendError(err)
 			}
 		case string(spec.StoreTypeDiceCacheNFS):
-			tarExecPath := in.Labels[pvolumes2.TaskCachePath]
-			tarFile := in.Value + "/" + in.Labels[pvolumes2.TaskCacheHashName] + pvolumes2.TaskCacheCompressionSuffix
+			tarExecPath := in.Labels[pvolumes.TaskCachePath]
+			tarFile := in.Value + "/" + in.Labels[pvolumes.TaskCacheHashName] + pvolumes.TaskCacheCompressionSuffix
 			if filehelper.CheckExist(tarFile, false) != nil {
-				logrus.Printf("not get action cache: %s", in.Labels[pvolumes2.TaskCachePath])
+				logrus.Printf("not get action cache: %s", in.Labels[pvolumes.TaskCachePath])
 				continue
 			}
 			if err := agent.restoreCache(tarFile, tarExecPath); err != nil {
 				logrus.Debugf("failed to untar cache file: %s to exec dir: %s, err: %v", tarFile, tarExecPath, err)
 				continue
 			}
-			logrus.Printf("get action cache: %s success", in.Labels[pvolumes2.TaskCachePath])
+			logrus.Printf("get action cache: %s success", in.Labels[pvolumes.TaskCachePath])
 		default:
 			agent.AppendError(errors.Errorf("[restore] unsupported store type: %s", in.Type))
 		}
@@ -89,7 +89,7 @@ func (agent *Agent) restore() {
 
 	for _, f := range agent.Arg.Context.CmsDiceFiles {
 		// invoke openapi /api/files?file=${uuid} to download files
-		if err := agent.CallbackReporter.GetCmsFile(f.Labels[pvolumes2.VoLabelKeyDiceFileUUID], f.Value); err != nil {
+		if err := agent.CallbackReporter.GetCmsFile(f.Labels[pvolumes.VoLabelKeyDiceFileUUID], f.Value); err != nil {
 			agent.AppendError(err)
 			continue
 		}
@@ -105,18 +105,18 @@ func (agent *Agent) restoreCache(tarFile, tarExecPath string) (err error) {
 	if err != nil {
 		return err
 	}
-	if err = agenttool2.UnTar(tarFile, tmpDir); err != nil {
+	if err = agenttool.UnTar(tarFile, tmpDir); err != nil {
 		return err
 	}
 	// if tarExecDir exist, move tarExecDir to a temp directory
 	if err = filehelper.CheckExist(tarExecPath, true); err == nil {
 		tmpExecDir := fmt.Sprintf("%s%d", tarExecPath, time.Now().Unix())
-		if err = agenttool2.Mv(tarExecPath, tmpExecDir); err != nil {
+		if err = agenttool.Mv(tarExecPath, tmpExecDir); err != nil {
 			return err
 		}
 	}
 	tarExecDir := filepath.Dir(tarExecPath)
-	if err = agenttool2.Mv(filepath.Join(tmpDir, filepath.Base(tarExecPath)), tarExecDir); err != nil {
+	if err = agenttool.Mv(filepath.Join(tmpDir, filepath.Base(tarExecPath)), tarExecDir); err != nil {
 		return err
 	}
 	return err
@@ -124,7 +124,7 @@ func (agent *Agent) restoreCache(tarFile, tarExecPath string) (err error) {
 
 // isCacheFileExceedLimit return path size and is-exceed-limit-size
 func (agent *Agent) isCachePathExceedLimit(tarFile string) (datasize.ByteSize, bool) {
-	size, err := agenttool2.GetDiskSize(tarFile)
+	size, err := agenttool.GetDiskSize(tarFile)
 	if err != nil {
 		return 0, false
 	}

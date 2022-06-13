@@ -17,7 +17,7 @@ package schedulabletask
 import (
 	"context"
 
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/dag"
 )
 
@@ -26,7 +26,7 @@ type DagImpl struct {
 
 // GetSchedulableTasks return the list of schedulable tasks.
 // tasks in list can be schedule concurrently.
-func (d *DagImpl) GetSchedulableTasks(ctx context.Context, p *spec2.Pipeline, tasks []*spec2.PipelineTask) ([]*spec2.PipelineTask, error) {
+func (d *DagImpl) GetSchedulableTasks(ctx context.Context, p *spec.Pipeline, tasks []*spec.PipelineTask) ([]*spec.PipelineTask, error) {
 
 	// construct DAG
 	dagNodes := make([]dag.NamedNode, 0, len(tasks))
@@ -44,17 +44,17 @@ func (d *DagImpl) GetSchedulableTasks(ctx context.Context, p *spec2.Pipeline, ta
 	}
 
 	// calculate schedulable nodes according to dag and current done tasks
-	schedulableNodeFromDAG, err := _dag.GetSchedulable((&spec2.PipelineWithTasks{Tasks: tasks}).DoneTasks()...)
+	schedulableNodeFromDAG, err := _dag.GetSchedulable((&spec.PipelineWithTasks{Tasks: tasks}).DoneTasks()...)
 	if err != nil {
 		return nil, err
 	}
 
 	// transfer schedulable nodes to tasks
-	taskMap := make(map[string]*spec2.PipelineTask)
+	taskMap := make(map[string]*spec.PipelineTask)
 	for _, task := range tasks {
 		taskMap[task.NodeName()] = task
 	}
-	var schedulableTasks []*spec2.PipelineTask
+	var schedulableTasks []*spec.PipelineTask
 	for nodeName := range schedulableNodeFromDAG {
 		// get task by nodeName
 		task := taskMap[nodeName]

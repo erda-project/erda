@@ -21,7 +21,7 @@ import (
 	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/mvcc/mvccpb"
 
-	worker2 "github.com/erda-project/erda/internal/tools/pipeline/providers/leaderworker/worker"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/leaderworker/worker"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/reconciler/rutil"
 )
 
@@ -49,12 +49,12 @@ func (p *provider) leaderListenOfficialWorkerChange(ctx context.Context) {
 			}
 		}
 	}()
-	p.ListenPrefix(ctx, p.makeEtcdWorkerKeyPrefix(worker2.Official),
+	p.ListenPrefix(ctx, p.makeEtcdWorkerKeyPrefix(worker.Official),
 		func(ctx context.Context, ev *clientv3.Event) {
-			notify <- Event{Type: mvccpb.PUT, WorkerID: p.getWorkerIDFromEtcdWorkerKey(string(ev.Kv.Key), worker2.Official)}
+			notify <- Event{Type: mvccpb.PUT, WorkerID: p.getWorkerIDFromEtcdWorkerKey(string(ev.Kv.Key), worker.Official)}
 		},
 		func(ctx context.Context, ev *clientv3.Event) {
-			workerID := p.getWorkerIDFromEtcdWorkerKey(string(ev.Kv.Key), worker2.Official)
+			workerID := p.getWorkerIDFromEtcdWorkerKey(string(ev.Kv.Key), worker.Official)
 			p.leaderUseDeleteInvalidWorker(workerID)
 			logicTaskIDs, err := p.getWorkerLogicTaskIDs(ctx, workerID)
 			if err == nil {
@@ -106,8 +106,8 @@ func (p *provider) leaderListenLogicTaskChange(ctx context.Context) {
 func (p *provider) leaderInitTaskWorkerAssignMap(ctx context.Context) {
 	p.lock.Lock()
 	p.forLeaderUse.initialized = false
-	p.forLeaderUse.findWorkerByTask = make(map[worker2.LogicTaskID]worker2.ID)
-	p.forLeaderUse.findTaskByWorker = make(map[worker2.ID]map[worker2.LogicTaskID]struct{})
+	p.forLeaderUse.findWorkerByTask = make(map[worker.LogicTaskID]worker.ID)
+	p.forLeaderUse.findTaskByWorker = make(map[worker.ID]map[worker.LogicTaskID]struct{})
 	p.lock.Unlock()
 
 outLoop:
@@ -126,7 +126,7 @@ outLoop:
 				continue outLoop
 			}
 			p.lock.Lock()
-			p.forLeaderUse.findTaskByWorker[w.GetID()] = make(map[worker2.LogicTaskID]struct{}, len(tasks))
+			p.forLeaderUse.findTaskByWorker[w.GetID()] = make(map[worker.LogicTaskID]struct{}, len(tasks))
 			p.lock.Unlock()
 			for _, task := range tasks {
 				p.addToTaskWorkerAssignMap(task.GetLogicID(), w.GetID())
@@ -140,10 +140,10 @@ outLoop:
 	}
 }
 
-func (p *provider) getWorkerLogicTaskIDs(ctx context.Context, workerID worker2.ID) ([]worker2.LogicTaskID, error) {
+func (p *provider) getWorkerLogicTaskIDs(ctx context.Context, workerID worker.ID) ([]worker.LogicTaskID, error) {
 	logicTasks, err := p.listWorkerTasks(ctx, workerID)
 	if err == nil {
-		logicTaskIDMap := make(map[worker2.LogicTaskID]struct{})
+		logicTaskIDMap := make(map[worker.LogicTaskID]struct{})
 		for _, task := range logicTasks {
 			logicTaskIDMap[task.GetLogicID()] = struct{}{}
 		}
@@ -152,7 +152,7 @@ func (p *provider) getWorkerLogicTaskIDs(ctx context.Context, workerID worker2.I
 			logicTaskIDMap[logicTaskID] = struct{}{}
 		}
 		p.lock.Unlock()
-		var logicTaskIDs []worker2.LogicTaskID
+		var logicTaskIDs []worker.LogicTaskID
 		for logicTaskID := range logicTaskIDMap {
 			logicTaskIDs = append(logicTaskIDs, logicTaskID)
 		}
@@ -161,17 +161,17 @@ func (p *provider) getWorkerLogicTaskIDs(ctx context.Context, workerID worker2.I
 	return nil, err
 }
 
-func (p *provider) listWorkerTasks(ctx context.Context, workerID worker2.ID) ([]worker2.LogicTask, error) {
+func (p *provider) listWorkerTasks(ctx context.Context, workerID worker.ID) ([]worker.LogicTask, error) {
 	prefix := p.makeEtcdWorkerLogicTaskListenPrefix(workerID)
 	resp, err := p.EtcdClient.Get(ctx, prefix, clientv3.WithPrefix())
 	if err != nil {
 		return nil, err
 	}
-	var tasks []worker2.LogicTask
+	var tasks []worker.LogicTask
 	for _, kv := range resp.Kvs {
 		logicTaskID := p.getWorkerLogicTaskIDFromIncomingKey(workerID, string(kv.Key))
 		logicTaskData := kv.Value
-		task := worker2.NewLogicTask(logicTaskID, logicTaskData)
+		task := worker.NewLogicTask(logicTaskID, logicTaskData)
 		tasks = append(tasks, task)
 	}
 	return tasks, nil

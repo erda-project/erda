@@ -19,7 +19,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/apierrors"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 func (svc *ReportSvc) Create(req apistructs.PipelineReportCreateRequest) (*apistructs.PipelineReport, error) {
@@ -36,7 +36,7 @@ func (svc *ReportSvc) Create(req apistructs.PipelineReportCreateRequest) (*apist
 		return nil, apierrors.ErrCreatePipelineReport.InvalidParameter(fmt.Errorf("pipeline not exist"))
 	}
 	// 插入数据库
-	dbReport := spec2.PipelineReport{
+	dbReport := spec.PipelineReport{
 		PipelineID: req.PipelineID,
 		Type:       req.Type,
 		Meta:       req.Meta,
@@ -48,8 +48,8 @@ func (svc *ReportSvc) Create(req apistructs.PipelineReportCreateRequest) (*apist
 	}
 	// 插入 label 作用于分页查询
 	reportLabelKey, reportLabelValue := svc.dbClient.MakePipelineReportTypeLabelKey(req.Type)
-	if err := svc.dbClient.CreatePipelineLabels(&spec2.Pipeline{
-		PipelineBase: spec2.PipelineBase{ID: p.ID, PipelineSource: p.PipelineSource, PipelineYmlName: p.PipelineYmlName},
+	if err := svc.dbClient.CreatePipelineLabels(&spec.Pipeline{
+		PipelineBase: spec.PipelineBase{ID: p.ID, PipelineSource: p.PipelineSource, PipelineYmlName: p.PipelineYmlName},
 		Labels:       map[string]string{reportLabelKey: reportLabelValue},
 	}); err != nil {
 		return nil, apierrors.ErrCreatePipelineReport.InternalError(fmt.Errorf("failed to create related pipeline labels, err: %v", err))
@@ -91,7 +91,7 @@ func (svc *ReportSvc) PagingPipelineReportSets(req apistructs.PipelineReportSetP
 	return &result, nil
 }
 
-func convert(dbReport spec2.PipelineReport) apistructs.PipelineReport {
+func convert(dbReport spec.PipelineReport) apistructs.PipelineReport {
 	return apistructs.PipelineReport{
 		ID:         dbReport.ID,
 		PipelineID: dbReport.PipelineID,

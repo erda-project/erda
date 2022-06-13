@@ -20,24 +20,24 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 func TestCalculateTaskCostTimeSec(t *testing.T) {
-	require.True(t, CalculateTaskCostTimeSec(&spec2.PipelineTask{CostTimeSec: 100}) == 100)
-	require.True(t, CalculateTaskCostTimeSec(&spec2.PipelineTask{CostTimeSec: -1, TimeBegin: time.Time{}}) == -1)
+	require.True(t, CalculateTaskCostTimeSec(&spec.PipelineTask{CostTimeSec: 100}) == 100)
+	require.True(t, CalculateTaskCostTimeSec(&spec.PipelineTask{CostTimeSec: -1, TimeBegin: time.Time{}}) == -1)
 	begin := time.Now()
 	time.Sleep(time.Second * 1)
-	require.True(t, CalculateTaskCostTimeSec(&spec2.PipelineTask{CostTimeSec: -1, TimeBegin: begin}) > 0)
-	require.True(t, CalculateTaskCostTimeSec(&spec2.PipelineTask{CostTimeSec: -1, TimeBegin: begin, TimeEnd: begin.Add(time.Second * 2)}) == 2)
+	require.True(t, CalculateTaskCostTimeSec(&spec.PipelineTask{CostTimeSec: -1, TimeBegin: begin}) > 0)
+	require.True(t, CalculateTaskCostTimeSec(&spec.PipelineTask{CostTimeSec: -1, TimeBegin: begin, TimeEnd: begin.Add(time.Second * 2)}) == 2)
 }
 
 func TestCalculatePipelineCostTimeSec(t *testing.T) {
-	require.True(t, CalculatePipelineCostTimeSec(&spec2.Pipeline{PipelineBase: spec2.PipelineBase{CostTimeSec: 100}}) == 100)
-	require.True(t, CalculatePipelineCostTimeSec(&spec2.Pipeline{PipelineBase: spec2.PipelineBase{CostTimeSec: -1, TimeBegin: &time.Time{}}}) == -1)
+	require.True(t, CalculatePipelineCostTimeSec(&spec.Pipeline{PipelineBase: spec.PipelineBase{CostTimeSec: 100}}) == 100)
+	require.True(t, CalculatePipelineCostTimeSec(&spec.Pipeline{PipelineBase: spec.PipelineBase{CostTimeSec: -1, TimeBegin: &time.Time{}}}) == -1)
 	begin := time.Now()
 	time.Sleep(time.Second * 1)
-	require.True(t, CalculatePipelineCostTimeSec(&spec2.Pipeline{PipelineBase: spec2.PipelineBase{CostTimeSec: -1, TimeBegin: &begin}}) > 0)
+	require.True(t, CalculatePipelineCostTimeSec(&spec.Pipeline{PipelineBase: spec.PipelineBase{CostTimeSec: -1, TimeBegin: &begin}}) > 0)
 	end := begin.Add(time.Minute * 2)
-	require.Equal(t, int64(time.Minute*2/time.Second), CalculatePipelineCostTimeSec(&spec2.Pipeline{PipelineBase: spec2.PipelineBase{CostTimeSec: -1, TimeBegin: &begin, TimeEnd: &end}}))
+	require.Equal(t, int64(time.Minute*2/time.Second), CalculatePipelineCostTimeSec(&spec.Pipeline{PipelineBase: spec.PipelineBase{CostTimeSec: -1, TimeBegin: &begin, TimeEnd: &end}}))
 }

@@ -20,18 +20,18 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	priorityqueue2 "github.com/erda-project/erda/internal/tools/pipeline/providers/queuemanager/pkg/queue/priorityqueue"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/queuemanager/pkg/queue/priorityqueue"
 )
 
 func TestPriorityQueue_Snapshot(t *testing.T) {
-	pq := priorityqueue2.NewPriorityQueue()
+	pq := priorityqueue.NewPriorityQueue()
 
 	now := time.Now().Round(0)
-	pq.Add(priorityqueue2.NewItem("k1", 10, now))
-	pq.Add(priorityqueue2.NewItem("k2", 20, now.Add(time.Second)))
+	pq.Add(priorityqueue.NewItem("k1", 10, now))
+	pq.Add(priorityqueue.NewItem("k2", 20, now.Add(time.Second)))
 	backup := pq.Export()
 
-	npq := priorityqueue2.NewPriorityQueue()
+	npq := priorityqueue.NewPriorityQueue()
 	err := npq.Import(backup)
 	assert.NoError(t, err, "import from export data")
 	assert.Equal(t, 2, npq.Len())

@@ -26,15 +26,15 @@ import (
 	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/action_info"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/actionmgr"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
 func TestPipelineSvc_OperateTask(t *testing.T) {
 	type args struct {
-		p                *spec2.Pipeline
-		task             *spec2.PipelineTask
-		stage            *spec2.PipelineStage
+		p                *spec.Pipeline
+		task             *spec.PipelineTask
+		stage            *spec.PipelineStage
 		searchStageError error
 	}
 	tests := []struct {
@@ -46,13 +46,13 @@ func TestPipelineSvc_OperateTask(t *testing.T) {
 		{
 			name: "empty pipeline TaskOperates empty",
 			args: args{
-				p: &spec2.Pipeline{
-					PipelineBase: spec2.PipelineBase{},
-					PipelineExtra: spec2.PipelineExtra{
-						Extra: spec2.PipelineExtraInfo{},
+				p: &spec.Pipeline{
+					PipelineBase: spec.PipelineBase{},
+					PipelineExtra: spec.PipelineExtra{
+						Extra: spec.PipelineExtraInfo{},
 					},
 				},
-				task:  &spec2.PipelineTask{},
+				task:  &spec.PipelineTask{},
 				stage: nil,
 			},
 			wantErr: false,
@@ -60,10 +60,10 @@ func TestPipelineSvc_OperateTask(t *testing.T) {
 		{
 			name: "not find match taskAlias",
 			args: args{
-				p: &spec2.Pipeline{
-					PipelineBase: spec2.PipelineBase{},
-					PipelineExtra: spec2.PipelineExtra{
-						Extra: spec2.PipelineExtraInfo{
+				p: &spec.Pipeline{
+					PipelineBase: spec.PipelineBase{},
+					PipelineExtra: spec.PipelineExtra{
+						Extra: spec.PipelineExtraInfo{
 							TaskOperates: []apistructs.PipelineTaskOperateRequest{
 								{
 									TaskAlias: "git-checkout",
@@ -74,7 +74,7 @@ func TestPipelineSvc_OperateTask(t *testing.T) {
 						},
 					},
 				},
-				task: &spec2.PipelineTask{
+				task: &spec.PipelineTask{
 					Name: "dice",
 				},
 				searchStageError: fmt.Errorf("error"),
@@ -85,10 +85,10 @@ func TestPipelineSvc_OperateTask(t *testing.T) {
 		{
 			name: "task have id",
 			args: args{
-				p: &spec2.Pipeline{
-					PipelineBase: spec2.PipelineBase{},
-					PipelineExtra: spec2.PipelineExtra{
-						Extra: spec2.PipelineExtraInfo{
+				p: &spec.Pipeline{
+					PipelineBase: spec.PipelineBase{},
+					PipelineExtra: spec.PipelineExtra{
+						Extra: spec.PipelineExtraInfo{
 							TaskOperates: []apistructs.PipelineTaskOperateRequest{
 								{
 									TaskAlias: "git-checkout",
@@ -99,7 +99,7 @@ func TestPipelineSvc_OperateTask(t *testing.T) {
 						},
 					},
 				},
-				task: &spec2.PipelineTask{
+				task: &spec.PipelineTask{
 					Name: "git-checkout",
 					ID:   1,
 				},
@@ -111,10 +111,10 @@ func TestPipelineSvc_OperateTask(t *testing.T) {
 		{
 			name: "disable paused task",
 			args: args{
-				p: &spec2.Pipeline{
-					PipelineBase: spec2.PipelineBase{},
-					PipelineExtra: spec2.PipelineExtra{
-						Extra: spec2.PipelineExtraInfo{
+				p: &spec.Pipeline{
+					PipelineBase: spec.PipelineBase{},
+					PipelineExtra: spec.PipelineExtra{
+						Extra: spec.PipelineExtraInfo{
 							TaskOperates: []apistructs.PipelineTaskOperateRequest{
 								{
 									TaskAlias: "git-checkout",
@@ -125,7 +125,7 @@ func TestPipelineSvc_OperateTask(t *testing.T) {
 						},
 					},
 				},
-				task: &spec2.PipelineTask{
+				task: &spec.PipelineTask{
 					Name:   "git-checkout",
 					Status: apistructs.PipelineStatusPaused,
 				},
@@ -136,10 +136,10 @@ func TestPipelineSvc_OperateTask(t *testing.T) {
 		{
 			name: "paused Analyzed task",
 			args: args{
-				p: &spec2.Pipeline{
-					PipelineBase: spec2.PipelineBase{},
-					PipelineExtra: spec2.PipelineExtra{
-						Extra: spec2.PipelineExtraInfo{
+				p: &spec.Pipeline{
+					PipelineBase: spec.PipelineBase{},
+					PipelineExtra: spec.PipelineExtra{
+						Extra: spec.PipelineExtraInfo{
 							TaskOperates: []apistructs.PipelineTaskOperateRequest{
 								{
 									TaskAlias: "git-checkout",
@@ -149,7 +149,7 @@ func TestPipelineSvc_OperateTask(t *testing.T) {
 						},
 					},
 				},
-				task: &spec2.PipelineTask{
+				task: &spec.PipelineTask{
 					Name:   "git-checkout",
 					Status: apistructs.PipelineStatusRunning,
 				},
@@ -160,10 +160,10 @@ func TestPipelineSvc_OperateTask(t *testing.T) {
 		{
 			name: "not paused Analyzed task",
 			args: args{
-				p: &spec2.Pipeline{
-					PipelineBase: spec2.PipelineBase{},
-					PipelineExtra: spec2.PipelineExtra{
-						Extra: spec2.PipelineExtraInfo{
+				p: &spec.Pipeline{
+					PipelineBase: spec.PipelineBase{},
+					PipelineExtra: spec.PipelineExtra{
+						Extra: spec.PipelineExtraInfo{
 							TaskOperates: []apistructs.PipelineTaskOperateRequest{
 								{
 									TaskAlias: "git-checkout",
@@ -173,11 +173,11 @@ func TestPipelineSvc_OperateTask(t *testing.T) {
 						},
 					},
 				},
-				task: &spec2.PipelineTask{
+				task: &spec.PipelineTask{
 					Name:   "git-checkout",
 					Status: apistructs.PipelineStatusAnalyzed,
 				},
-				stage:            &spec2.PipelineStage{},
+				stage:            &spec.PipelineStage{},
 				searchStageError: fmt.Errorf("error"),
 			},
 			wantErr: true,
@@ -185,10 +185,10 @@ func TestPipelineSvc_OperateTask(t *testing.T) {
 		{
 			name: "disable task",
 			args: args{
-				p: &spec2.Pipeline{
-					PipelineBase: spec2.PipelineBase{},
-					PipelineExtra: spec2.PipelineExtra{
-						Extra: spec2.PipelineExtraInfo{
+				p: &spec.Pipeline{
+					PipelineBase: spec.PipelineBase{},
+					PipelineExtra: spec.PipelineExtra{
+						Extra: spec.PipelineExtraInfo{
 							TaskOperates: []apistructs.PipelineTaskOperateRequest{
 								{
 									TaskAlias: "git-checkout",
@@ -198,11 +198,11 @@ func TestPipelineSvc_OperateTask(t *testing.T) {
 						},
 					},
 				},
-				task: &spec2.PipelineTask{
+				task: &spec.PipelineTask{
 					Name:   "git-checkout",
 					Status: apistructs.PipelineStatusAnalyzed,
 				},
-				stage: &spec2.PipelineStage{},
+				stage: &spec.PipelineStage{},
 			},
 			wantErr:    false,
 			wantStatus: apistructs.PipelineStatusDisabled,
@@ -210,10 +210,10 @@ func TestPipelineSvc_OperateTask(t *testing.T) {
 		{
 			name: "paused task",
 			args: args{
-				p: &spec2.Pipeline{
-					PipelineBase: spec2.PipelineBase{},
-					PipelineExtra: spec2.PipelineExtra{
-						Extra: spec2.PipelineExtraInfo{
+				p: &spec.Pipeline{
+					PipelineBase: spec.PipelineBase{},
+					PipelineExtra: spec.PipelineExtra{
+						Extra: spec.PipelineExtraInfo{
 							TaskOperates: []apistructs.PipelineTaskOperateRequest{
 								{
 									TaskAlias: "git-checkout",
@@ -223,11 +223,11 @@ func TestPipelineSvc_OperateTask(t *testing.T) {
 						},
 					},
 				},
-				task: &spec2.PipelineTask{
+				task: &spec.PipelineTask{
 					Name:   "git-checkout",
 					Status: apistructs.PipelineStatusAnalyzed,
 				},
-				stage: &spec2.PipelineStage{},
+				stage: &spec.PipelineStage{},
 			},
 			wantErr:    false,
 			wantStatus: apistructs.PipelineStatusPaused,
@@ -236,7 +236,7 @@ func TestPipelineSvc_OperateTask(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var client *dbclient.Client
-			patch := monkey.PatchInstanceMethod(reflect.TypeOf(client), "GetPipelineStage", func(client *dbclient.Client, id interface{}, ops ...dbclient.SessionOption) (spec2.PipelineStage, error) {
+			patch := monkey.PatchInstanceMethod(reflect.TypeOf(client), "GetPipelineStage", func(client *dbclient.Client, id interface{}, ops ...dbclient.SessionOption) (spec.PipelineStage, error) {
 				return *tt.args.stage, tt.args.searchStageError
 			})
 			s := &PipelineSvc{
@@ -258,14 +258,14 @@ func TestPipelineSvc_OperateTask(t *testing.T) {
 func TestPipelineSvc_getYmlActionTasks(t *testing.T) {
 	type args struct {
 		pipelineYml          *string
-		p                    *spec2.Pipeline
-		dbStages             []spec2.PipelineStage
+		p                    *spec.Pipeline
+		dbStages             []spec.PipelineStage
 		passedDataWhenCreate *action_info.PassedDataWhenCreate
 	}
 	tests := []struct {
 		name    string
 		args    args
-		want    []spec2.PipelineTask
+		want    []spec.PipelineTask
 		wantErr bool
 	}{
 		{
@@ -281,18 +281,18 @@ func TestPipelineSvc_getYmlActionTasks(t *testing.T) {
 			name: "get yml actions",
 			args: args{
 				pipelineYml: &[]string{"version: \"1.1\"\nstages:\n  - stage:\n      - git-checkout:\n          alias: git-checkout\n          description: 代码仓库克隆\n  - stage:\n      - java:\n          alias: java-demo\n          description: 针对 java 工程的编译打包任务，产出可运行镜像\n          params:\n            build_type: maven\n            container_type: spring-boot\n            target: ./target/docker-java-app-example.jar\n            workdir: ${git-checkout}\n          caches:\n            - path: /root/.m2/repository\n  - stage:\n      - release:\n          alias: release\n          description: 用于打包完成时，向dicehub 提交完整可部署的dice.yml。用户若没在pipeline.yml里定义该action，CI会自动在pipeline.yml里插入该action\n          params:\n            dice_yml: ${git-checkout}/dice.yml\n            image:\n              java-demo: ${java-demo:OUTPUT:image}\n  - stage:\n      - dice:\n          alias: dice\n          description: 用于 dice 平台部署应用服务\n          params:\n            release_id: ${release:OUTPUT:releaseID}\n  - stage:\n      - snippet:\n          alias: snippet\n"}[0],
-				p: &spec2.Pipeline{
-					PipelineBase: spec2.PipelineBase{
+				p: &spec.Pipeline{
+					PipelineBase: spec.PipelineBase{
 						ID:          1,
 						ClusterName: "erda",
 					},
-					PipelineExtra: spec2.PipelineExtra{
-						Extra: spec2.PipelineExtraInfo{
+					PipelineExtra: spec.PipelineExtra{
+						Extra: spec.PipelineExtraInfo{
 							Namespace: "pipeline-1",
 						},
 					},
 				},
-				dbStages: []spec2.PipelineStage{
+				dbStages: []spec.PipelineStage{
 					{
 						ID: 1,
 					},
@@ -310,7 +310,7 @@ func TestPipelineSvc_getYmlActionTasks(t *testing.T) {
 					},
 				},
 			},
-			want: []spec2.PipelineTask{
+			want: []spec.PipelineTask{
 				{
 					Name:       "git-checkout",
 					StageID:    1,
@@ -370,18 +370,18 @@ func TestPipelineSvc_getYmlActionTasks(t *testing.T) {
 
 func Test_ymlTasksMergeDBTasks(t *testing.T) {
 	type args struct {
-		actionTasks []spec2.PipelineTask
-		dbTasks     []spec2.PipelineTask
+		actionTasks []spec.PipelineTask
+		dbTasks     []spec.PipelineTask
 	}
 	tests := []struct {
 		name string
 		args args
-		want []spec2.PipelineTask
+		want []spec.PipelineTask
 	}{
 		{
 			name: "empty dbTask",
 			args: args{
-				actionTasks: []spec2.PipelineTask{
+				actionTasks: []spec.PipelineTask{
 					{
 						Name: "git-checkout",
 					},
@@ -389,9 +389,9 @@ func Test_ymlTasksMergeDBTasks(t *testing.T) {
 						Name: "dice",
 					},
 				},
-				dbTasks: []spec2.PipelineTask{},
+				dbTasks: []spec.PipelineTask{},
 			},
-			want: []spec2.PipelineTask{
+			want: []spec.PipelineTask{
 				{
 					Name: "git-checkout",
 				},
@@ -403,7 +403,7 @@ func Test_ymlTasksMergeDBTasks(t *testing.T) {
 		{
 			name: "merge dbTask",
 			args: args{
-				actionTasks: []spec2.PipelineTask{
+				actionTasks: []spec.PipelineTask{
 					{
 						Name:       "git-checkout",
 						PipelineID: 1,
@@ -415,7 +415,7 @@ func Test_ymlTasksMergeDBTasks(t *testing.T) {
 						StageID:    2,
 					},
 				},
-				dbTasks: []spec2.PipelineTask{
+				dbTasks: []spec.PipelineTask{
 					{
 						ID:         1,
 						Name:       "git-checkout",
@@ -430,7 +430,7 @@ func Test_ymlTasksMergeDBTasks(t *testing.T) {
 					},
 				},
 			},
-			want: []spec2.PipelineTask{
+			want: []spec.PipelineTask{
 				{
 					ID:         1,
 					Name:       "git-checkout",
@@ -461,9 +461,9 @@ func Test_ymlTasksMergeDBTasks(t *testing.T) {
 func TestPipelineSvc_MergePipelineYmlTasks(t *testing.T) {
 	type args struct {
 		pipelineYml          string
-		dbTasks              []spec2.PipelineTask
-		p                    *spec2.Pipeline
-		dbStages             []spec2.PipelineStage
+		dbTasks              []spec.PipelineTask
+		p                    *spec.Pipeline
+		dbStages             []spec.PipelineStage
 		passedDataWhenCreate *action_info.PassedDataWhenCreate
 	}
 	tests := []struct {
@@ -476,13 +476,13 @@ func TestPipelineSvc_MergePipelineYmlTasks(t *testing.T) {
 			args: args{
 				pipelineYml: "version: \"1.1\"\nstages:\n  - stage:\n      - git-checkout:\n          alias: git-checkout\n          description: 代码仓库克隆\n  - stage:\n      - java:\n          alias: java-demo\n          description: 针对 java 工程的编译打包任务，产出可运行镜像\n          params:\n            build_type: maven\n            container_type: spring-boot\n            target: ./target/docker-java-app-example.jar\n            workdir: ${git-checkout}\n          caches:\n            - path: /root/.m2/repository\n  - stage:\n      - release:\n          alias: release\n          description: 用于打包完成时，向dicehub 提交完整可部署的dice.yml。用户若没在pipeline.yml里定义该action，CI会自动在pipeline.yml里插入该action\n          params:\n            dice_yml: ${git-checkout}/dice.yml\n            image:\n              java-demo: ${java-demo:OUTPUT:image}\n  - stage:\n      - dice:\n          alias: dice\n          description: 用于 dice 平台部署应用服务\n          params:\n            release_id: ${release:OUTPUT:releaseID}\n  - stage:\n      - snippet:\n          alias: snippet\n",
 				dbTasks:     nil,
-				p: &spec2.Pipeline{
-					PipelineBase: spec2.PipelineBase{
+				p: &spec.Pipeline{
+					PipelineBase: spec.PipelineBase{
 						ID: 1,
 					},
-					PipelineExtra: spec2.PipelineExtra{},
+					PipelineExtra: spec.PipelineExtra{},
 				},
-				dbStages: []spec2.PipelineStage{
+				dbStages: []spec.PipelineStage{
 					{
 						ID: 1,
 					},
@@ -518,7 +518,7 @@ func TestPipelineSvc_MergePipelineYmlTasks(t *testing.T) {
 
 func TestPipelineSvc_createPipelineAndCheckNotEndStatus(t *testing.T) {
 	type args struct {
-		p *spec2.Pipeline
+		p *spec.Pipeline
 	}
 	tests := []struct {
 		name    string
@@ -528,9 +528,9 @@ func TestPipelineSvc_createPipelineAndCheckNotEndStatus(t *testing.T) {
 		{
 			name: "test_end_status_error",
 			args: args{
-				p: &spec2.Pipeline{
-					PipelineExtra: spec2.PipelineExtra{
-						Extra: spec2.PipelineExtraInfo{
+				p: &spec.Pipeline{
+					PipelineExtra: spec.PipelineExtra{
+						Extra: spec.PipelineExtraInfo{
 							SnippetChain: []uint64{1},
 						},
 						PipelineYml: "version: \"1.1\"\nstages:\n  - stage:\n      - git-checkout:\n          alias: git-checkout\n          description: 代码仓库克隆\n  - stage:\n      - java:\n          alias: java-demo\n          description: 针对 java 工程的编译打包任务，产出可运行镜像\n          params:\n            build_type: maven\n            container_type: spring-boot\n            target: ./target/docker-java-app-example.jar\n            workdir: ${git-checkout}\n          caches:\n            - path: /root/.m2/repository\n  - stage:\n      - release:\n          alias: release\n          description: 用于打包完成时，向dicehub 提交完整可部署的dice.yml。用户若没在pipeline.yml里定义该action，CI会自动在pipeline.yml里插入该action\n          params:\n            dice_yml: ${git-checkout}/dice.yml\n            image:\n              java-demo: ${java-demo:OUTPUT:image}\n  - stage:\n      - dice:\n          alias: dice\n          description: 用于 dice 平台部署应用服务\n          params:\n            release_id: ${release:OUTPUT:releaseID}\n  - stage:\n      - snippet:\n          alias: snippet\n",
@@ -545,8 +545,8 @@ func TestPipelineSvc_createPipelineAndCheckNotEndStatus(t *testing.T) {
 			s := &PipelineSvc{}
 
 			var db = &dbclient.Client{}
-			patch2 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetPipelineBase", func(db *dbclient.Client, id uint64, ops ...dbclient.SessionOption) (spec2.PipelineBase, bool, error) {
-				return spec2.PipelineBase{
+			patch2 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetPipelineBase", func(db *dbclient.Client, id uint64, ops ...dbclient.SessionOption) (spec.PipelineBase, bool, error) {
+				return spec.PipelineBase{
 					Status: apistructs.PipelineStatusSuccess,
 				}, true, nil
 			})

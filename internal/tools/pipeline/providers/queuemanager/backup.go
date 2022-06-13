@@ -23,7 +23,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	manager2 "github.com/erda-project/erda/internal/tools/pipeline/providers/queuemanager/manager"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/queuemanager/manager"
 )
 
 const logPrefixContinueBackupQueueUsage = "[queue usage backup]"
@@ -39,14 +39,14 @@ func (q *provider) continueBackupQueueUsage(ctx context.Context) {
 			backup := q.QueueManager.Export()
 			end := time.Now()
 			costTime = end.Sub(begin)
-			queueSnapshot := manager2.SnapshotObj{}
+			queueSnapshot := manager.SnapshotObj{}
 			if err := json.Unmarshal(backup, &queueSnapshot); err != nil {
 				errDone <- err
 				return
 			}
 			errs := []string{}
 			for qID, qMsg := range queueSnapshot.QueueUsageByID {
-				if _, err := q.EtcdClient.Put(ctx, manager2.MakeQueueUsageBackupKey(qID), string(qMsg)); err != nil {
+				if _, err := q.EtcdClient.Put(ctx, manager.MakeQueueUsageBackupKey(qID), string(qMsg)); err != nil {
 					errs = append(errs, fmt.Sprintf("%v", err))
 					continue
 				}

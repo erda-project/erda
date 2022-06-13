@@ -25,7 +25,7 @@ import (
 
 	"github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
 	"github.com/erda-project/erda/apistructs"
-	db2 "github.com/erda-project/erda/internal/tools/pipeline/providers/definition/db"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/definition/db"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/apierrors"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/encoding/jsonparse"
@@ -33,7 +33,7 @@ import (
 )
 
 type pipelineDefinition struct {
-	dbClient *db2.Client
+	dbClient *db.Client
 }
 
 func GetExtraValue(definition *pb.PipelineDefinition) (*apistructs.PipelineDefinitionExtraValue, error) {
@@ -50,7 +50,7 @@ func (p pipelineDefinition) Create(ctx context.Context, request *pb.PipelineDefi
 		return nil, err
 	}
 
-	var pipelineDefinition db2.PipelineDefinition
+	var pipelineDefinition db.PipelineDefinition
 	pipelineDefinition.Location = request.Location
 	pipelineDefinition.Name = request.Name
 	pipelineDefinition.PipelineSourceId = request.PipelineSourceID
@@ -66,7 +66,7 @@ func (p pipelineDefinition) Create(ctx context.Context, request *pb.PipelineDefi
 		return nil, err
 	}
 
-	var pipelineDefinitionExtra db2.PipelineDefinitionExtra
+	var pipelineDefinitionExtra db.PipelineDefinitionExtra
 	pipelineDefinitionExtra.ID = uuid.New()
 	var extra apistructs.PipelineDefinitionExtraValue
 	err = json.Unmarshal([]byte(request.Extra.Extra), &extra)
@@ -202,7 +202,7 @@ func (p pipelineDefinition) List(ctx context.Context, request *pb.PipelineDefini
 		data = append(data, v.Convert())
 	}
 
-	var extrasMap = map[string]db2.PipelineDefinitionExtra{}
+	var extrasMap = map[string]db.PipelineDefinitionExtra{}
 	extras, err := p.dbClient.ListPipelineDefinitionExtraByDefinitionIDList(definitionIDList)
 	if err != nil {
 		return nil, err
@@ -224,7 +224,7 @@ func (p pipelineDefinition) List(ctx context.Context, request *pb.PipelineDefini
 	}, nil
 }
 
-func PipelineDefinitionToPb(pipelineDefinition *db2.PipelineDefinition) *pb.PipelineDefinition {
+func PipelineDefinitionToPb(pipelineDefinition *db.PipelineDefinition) *pb.PipelineDefinition {
 	de := &pb.PipelineDefinition{
 		ID:               pipelineDefinition.ID,
 		Location:         pipelineDefinition.Location,
@@ -244,7 +244,7 @@ func PipelineDefinitionToPb(pipelineDefinition *db2.PipelineDefinition) *pb.Pipe
 	return de
 }
 
-func PipelineDefinitionExtraToPb(pipelineDefinitionExtra *db2.PipelineDefinitionExtra) *pb.PipelineDefinitionExtra {
+func PipelineDefinitionExtraToPb(pipelineDefinitionExtra *db.PipelineDefinitionExtra) *pb.PipelineDefinitionExtra {
 	de := &pb.PipelineDefinitionExtra{
 		ID:    pipelineDefinitionExtra.ID,
 		Extra: jsonparse.JsonOneLine(pipelineDefinitionExtra.Extra),

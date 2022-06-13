@@ -17,21 +17,21 @@ package metrics
 import (
 	"github.com/sirupsen/logrus"
 
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
-func taskErrorLog(task spec2.PipelineTask, format string, args ...interface{}) {
+func taskErrorLog(task spec.PipelineTask, format string, args ...interface{}) {
 	logrus.WithField("type", "metrics").WithField("pipelineID", task.PipelineID).WithField("taskID", task.ID).Errorf(format, args...)
 }
 
-func taskDebugLog(task spec2.PipelineTask, format string, args ...interface{}) {
+func taskDebugLog(task spec.PipelineTask, format string, args ...interface{}) {
 	logrus.WithField("type", "metrics").WithField("pipelineID", task.PipelineID).WithField("taskID", task.ID).Debugf(format, args...)
 }
 
-func pipelineErrorLog(p spec2.Pipeline, format string, args ...interface{}) {
+func pipelineErrorLog(p spec.Pipeline, format string, args ...interface{}) {
 	logrus.WithField("type", "metrics").WithField("pipelineID", p.ID).Errorf(format, args...)
 }
 
-func pipelineDebugLog(p spec2.Pipeline, format string, args ...interface{}) {
+func pipelineDebugLog(p spec.Pipeline, format string, args ...interface{}) {
 	logrus.WithField("type", "metrics").WithField("pipelineID", p.ID).Debugf(format, args...)
 }

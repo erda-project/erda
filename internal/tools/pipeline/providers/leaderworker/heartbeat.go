@@ -22,11 +22,11 @@ import (
 
 	"github.com/coreos/etcd/clientv3"
 
-	worker2 "github.com/erda-project/erda/internal/tools/pipeline/providers/leaderworker/worker"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/leaderworker/worker"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-func (p *provider) workerContinueReportHeartbeat(ctx context.Context, w worker2.Worker) {
+func (p *provider) workerContinueReportHeartbeat(ctx context.Context, w worker.Worker) {
 	ticker := time.NewTicker(p.Cfg.Worker.Heartbeat.ReportInterval)
 	defer ticker.Stop()
 	for {
@@ -43,7 +43,7 @@ func (p *provider) workerContinueReportHeartbeat(ctx context.Context, w worker2.
 	}
 }
 
-func (p *provider) workerOnceReportHeartbeat(ctx context.Context, w worker2.Worker) error {
+func (p *provider) workerOnceReportHeartbeat(ctx context.Context, w worker.Worker) error {
 	hctx, hcancel := context.WithTimeout(ctx, p.Cfg.Worker.Heartbeat.ReportInterval)
 	defer hcancel()
 	alive := w.DetectHeartbeat(hctx)
@@ -62,7 +62,7 @@ func (p *provider) workerOnceReportHeartbeat(ctx context.Context, w worker2.Work
 // alive: false means dead
 // reason: dead reason
 // retryableErr: non-empty means invoker need retry this error
-func (p *provider) probeOneWorkerLiveness(ctx context.Context, w worker2.Worker) (alive bool, reason string, retryableErr error) {
+func (p *provider) probeOneWorkerLiveness(ctx context.Context, w worker.Worker) (alive bool, reason string, retryableErr error) {
 	lastHeartbeatUnixTime, err, needRetry := p.getWorkerLastHeartbeatUnixTime(ctx, w.GetID())
 	if needRetry {
 		return false, "", err
@@ -84,7 +84,7 @@ func (p *provider) probeOneWorkerLiveness(ctx context.Context, w worker2.Worker)
 	return true, "", nil
 }
 
-func (p *provider) getWorkerLastHeartbeatUnixTime(ctx context.Context, workerID worker2.ID) (lastHeartbeatUnitTime int64, err error, needRetry bool) {
+func (p *provider) getWorkerLastHeartbeatUnixTime(ctx context.Context, workerID worker.ID) (lastHeartbeatUnitTime int64, err error, needRetry bool) {
 	getResp, err := p.EtcdClient.Get(ctx, p.makeEtcdWorkerHeartbeatKey(workerID))
 	if err != nil {
 		return 0, err, true
@@ -116,7 +116,7 @@ func (p *provider) leaderSideWorkerLivenessProber(ctx context.Context) {
 				continue
 			}
 			for _, w := range workers {
-				go func(w worker2.Worker) {
+				go func(w worker.Worker) {
 					alive, deadReason, err := p.probeOneWorkerLiveness(ctx, w)
 					if err != nil {
 						p.Log.Errorf("failed to probe worker liveness(auto retry), workerID: %s, err: %v", w.GetID(), err)
@@ -127,8 +127,8 @@ func (p *provider) leaderSideWorkerLivenessProber(ctx context.Context) {
 					}
 					// dead, delete key
 					_, err = p.EtcdClient.Txn(ctx).Then(
-						clientv3.OpDelete(p.makeEtcdWorkerKey(w.GetID(), worker2.Candidate)),
-						clientv3.OpDelete(p.makeEtcdWorkerKey(w.GetID(), worker2.Official)),
+						clientv3.OpDelete(p.makeEtcdWorkerKey(w.GetID(), worker.Candidate)),
+						clientv3.OpDelete(p.makeEtcdWorkerKey(w.GetID(), worker.Official)),
 					).Commit()
 					if err != nil {
 						p.Log.Errorf("failed to delete dead worker related keys(auto retry), workerID: %s, dead reason: %s, err: %v", w.GetID(), deadReason, err)

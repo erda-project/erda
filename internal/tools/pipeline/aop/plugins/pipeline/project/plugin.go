@@ -23,17 +23,17 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/aop"
-	aoptypes2 "github.com/erda-project/erda/internal/tools/pipeline/aop/aoptypes"
+	"github.com/erda-project/erda/internal/tools/pipeline/aop/aoptypes"
 )
 
 // +provider
 type provider struct {
-	aoptypes2.PipelineBaseTunePoint
+	aoptypes.PipelineBaseTunePoint
 }
 
 func (p *provider) Name() string { return "project" }
 
-func (p *provider) Handle(ctx *aoptypes2.TuneContext) error {
+func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 	// 更新项目活跃时间
 	pipeline := ctx.SDK.Pipeline
 	projectID, err := strconv.ParseUint(pipeline.Labels[apistructs.LabelProjectID], 10, 64)

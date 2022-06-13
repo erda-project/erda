@@ -25,7 +25,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 func Test_SimplePipelineBaseDetail(t *testing.T) {
@@ -53,11 +53,11 @@ func Test_SimplePipelineBaseDetail(t *testing.T) {
 
 	for _, data := range tables {
 		var client = &dbclient.Client{}
-		guard := monkey.PatchInstanceMethod(reflect.TypeOf(client), "GetPipelineBase", func(client *dbclient.Client, id uint64, ops ...dbclient.SessionOption) (spec2.PipelineBase, bool, error) {
+		guard := monkey.PatchInstanceMethod(reflect.TypeOf(client), "GetPipelineBase", func(client *dbclient.Client, id uint64, ops ...dbclient.SessionOption) (spec.PipelineBase, bool, error) {
 			if data.error {
-				return spec2.PipelineBase{}, data.find, fmt.Errorf("")
+				return spec.PipelineBase{}, data.find, fmt.Errorf("")
 			}
-			return spec2.PipelineBase{}, data.find, fmt.Errorf("")
+			return spec.PipelineBase{}, data.find, fmt.Errorf("")
 		})
 		p := PipelineSvc{dbClient: client}
 		_, err := p.SimplePipelineBaseDetail(uint64(0))
@@ -69,37 +69,37 @@ func Test_SimplePipelineBaseDetail(t *testing.T) {
 }
 
 func TestCanCancel(t *testing.T) {
-	require.False(t, canCancel(spec2.Pipeline{PipelineBase: spec2.PipelineBase{Status: apistructs.PipelineStatusInitializing}}))
-	require.False(t, canCancel(spec2.Pipeline{PipelineBase: spec2.PipelineBase{Status: apistructs.PipelineStatusAnalyzeFailed}}))
-	require.False(t, canCancel(spec2.Pipeline{PipelineBase: spec2.PipelineBase{Status: apistructs.PipelineStatusAnalyzed}}))
-	require.True(t, canCancel(spec2.Pipeline{PipelineBase: spec2.PipelineBase{Status: apistructs.PipelineStatusBorn}}))
-	require.True(t, canCancel(spec2.Pipeline{PipelineBase: spec2.PipelineBase{Status: apistructs.PipelineStatusQueue}}))
-	require.True(t, canCancel(spec2.Pipeline{PipelineBase: spec2.PipelineBase{Status: apistructs.PipelineStatusRunning}}))
-	require.False(t, canCancel(spec2.Pipeline{PipelineBase: spec2.PipelineBase{Status: apistructs.PipelineStatusTimeout}}))
+	require.False(t, canCancel(spec.Pipeline{PipelineBase: spec.PipelineBase{Status: apistructs.PipelineStatusInitializing}}))
+	require.False(t, canCancel(spec.Pipeline{PipelineBase: spec.PipelineBase{Status: apistructs.PipelineStatusAnalyzeFailed}}))
+	require.False(t, canCancel(spec.Pipeline{PipelineBase: spec.PipelineBase{Status: apistructs.PipelineStatusAnalyzed}}))
+	require.True(t, canCancel(spec.Pipeline{PipelineBase: spec.PipelineBase{Status: apistructs.PipelineStatusBorn}}))
+	require.True(t, canCancel(spec.Pipeline{PipelineBase: spec.PipelineBase{Status: apistructs.PipelineStatusQueue}}))
+	require.True(t, canCancel(spec.Pipeline{PipelineBase: spec.PipelineBase{Status: apistructs.PipelineStatusRunning}}))
+	require.False(t, canCancel(spec.Pipeline{PipelineBase: spec.PipelineBase{Status: apistructs.PipelineStatusTimeout}}))
 }
 
 func TestCanForceCancel(t *testing.T) {
-	require.False(t, canForceCancel(spec2.Pipeline{}))
+	require.False(t, canForceCancel(spec.Pipeline{}))
 }
 
 func TestCanRerun(t *testing.T) {
-	require.False(t, canRerun(spec2.Pipeline{PipelineBase: spec2.PipelineBase{Status: apistructs.PipelineStatusInitializing}}))
-	require.False(t, canRerun(spec2.Pipeline{PipelineBase: spec2.PipelineBase{Status: apistructs.PipelineStatusAnalyzed}}))
-	require.True(t, canRerun(spec2.Pipeline{PipelineBase: spec2.PipelineBase{Status: apistructs.PipelineStatusAnalyzeFailed}}))
-	require.False(t, canRerun(spec2.Pipeline{PipelineBase: spec2.PipelineBase{Status: apistructs.PipelineStatusQueue}}))
-	require.False(t, canRerun(spec2.Pipeline{PipelineBase: spec2.PipelineBase{Status: apistructs.PipelineStatusRunning}}))
-	require.True(t, canRerun(spec2.Pipeline{PipelineBase: spec2.PipelineBase{Status: apistructs.PipelineStatusSuccess}}))
-	require.True(t, canRerun(spec2.Pipeline{PipelineBase: spec2.PipelineBase{Status: apistructs.PipelineStatusFailed}}))
+	require.False(t, canRerun(spec.Pipeline{PipelineBase: spec.PipelineBase{Status: apistructs.PipelineStatusInitializing}}))
+	require.False(t, canRerun(spec.Pipeline{PipelineBase: spec.PipelineBase{Status: apistructs.PipelineStatusAnalyzed}}))
+	require.True(t, canRerun(spec.Pipeline{PipelineBase: spec.PipelineBase{Status: apistructs.PipelineStatusAnalyzeFailed}}))
+	require.False(t, canRerun(spec.Pipeline{PipelineBase: spec.PipelineBase{Status: apistructs.PipelineStatusQueue}}))
+	require.False(t, canRerun(spec.Pipeline{PipelineBase: spec.PipelineBase{Status: apistructs.PipelineStatusRunning}}))
+	require.True(t, canRerun(spec.Pipeline{PipelineBase: spec.PipelineBase{Status: apistructs.PipelineStatusSuccess}}))
+	require.True(t, canRerun(spec.Pipeline{PipelineBase: spec.PipelineBase{Status: apistructs.PipelineStatusFailed}}))
 }
 
 func TestCanRerunFailed(t *testing.T) {
-	require.False(t, canRerunFailed(spec2.Pipeline{PipelineBase: spec2.PipelineBase{Status: apistructs.PipelineStatusInitializing}}))
-	require.False(t, canRerunFailed(spec2.Pipeline{PipelineBase: spec2.PipelineBase{Status: apistructs.PipelineStatusAnalyzed}}))
-	require.True(t, canRerunFailed(spec2.Pipeline{PipelineBase: spec2.PipelineBase{Status: apistructs.PipelineStatusAnalyzeFailed}}))
-	require.False(t, canRerunFailed(spec2.Pipeline{PipelineBase: spec2.PipelineBase{Status: apistructs.PipelineStatusQueue}}))
-	require.False(t, canRerunFailed(spec2.Pipeline{PipelineBase: spec2.PipelineBase{Status: apistructs.PipelineStatusRunning}}))
-	require.False(t, canRerunFailed(spec2.Pipeline{PipelineBase: spec2.PipelineBase{Status: apistructs.PipelineStatusSuccess}}))
-	require.True(t, canRerunFailed(spec2.Pipeline{PipelineBase: spec2.PipelineBase{Status: apistructs.PipelineStatusFailed}}))
+	require.False(t, canRerunFailed(spec.Pipeline{PipelineBase: spec.PipelineBase{Status: apistructs.PipelineStatusInitializing}}))
+	require.False(t, canRerunFailed(spec.Pipeline{PipelineBase: spec.PipelineBase{Status: apistructs.PipelineStatusAnalyzed}}))
+	require.True(t, canRerunFailed(spec.Pipeline{PipelineBase: spec.PipelineBase{Status: apistructs.PipelineStatusAnalyzeFailed}}))
+	require.False(t, canRerunFailed(spec.Pipeline{PipelineBase: spec.PipelineBase{Status: apistructs.PipelineStatusQueue}}))
+	require.False(t, canRerunFailed(spec.Pipeline{PipelineBase: spec.PipelineBase{Status: apistructs.PipelineStatusRunning}}))
+	require.False(t, canRerunFailed(spec.Pipeline{PipelineBase: spec.PipelineBase{Status: apistructs.PipelineStatusSuccess}}))
+	require.True(t, canRerunFailed(spec.Pipeline{PipelineBase: spec.PipelineBase{Status: apistructs.PipelineStatusFailed}}))
 }
 
 // func TestCanStartCron(t *testing.T) {
@@ -115,20 +115,20 @@ func TestCanRerunFailed(t *testing.T) {
 // }
 
 func TestCanPause(t *testing.T) {
-	require.False(t, canPause(spec2.Pipeline{}))
+	require.False(t, canPause(spec.Pipeline{}))
 }
 
 func TestCanUnpause(t *testing.T) {
-	require.False(t, canUnpause(spec2.Pipeline{}))
+	require.False(t, canUnpause(spec.Pipeline{}))
 }
 
 func TestFindRunningStageID(t *testing.T) {
-	p := spec2.Pipeline{PipelineBase: spec2.PipelineBase{Status: apistructs.PipelineStatusRunning}}
+	p := spec.Pipeline{PipelineBase: spec.PipelineBase{Status: apistructs.PipelineStatusRunning}}
 
 	// 1 R
 	// 2 S => 3
 	// 3 S
-	id1 := findRunningStageID(p, []spec2.PipelineTask{
+	id1 := findRunningStageID(p, []spec.PipelineTask{
 		{StageID: 1, Status: apistructs.PipelineStatusRunning},
 		{StageID: 2, Status: apistructs.PipelineStatusSuccess},
 		{StageID: 3, Status: apistructs.PipelineStatusSuccess},
@@ -138,7 +138,7 @@ func TestFindRunningStageID(t *testing.T) {
 	// 1 R
 	// 2 A => 1
 	// 3 A
-	id2 := findRunningStageID(p, []spec2.PipelineTask{
+	id2 := findRunningStageID(p, []spec.PipelineTask{
 		{StageID: 1, Status: apistructs.PipelineStatusRunning},
 		{StageID: 2, Status: apistructs.PipelineStatusAnalyzed},
 		{StageID: 3, Status: apistructs.PipelineStatusAnalyzed},

@@ -19,7 +19,7 @@ import (
 
 	"github.com/coreos/etcd/clientv3"
 
-	worker2 "github.com/erda-project/erda/internal/tools/pipeline/providers/leaderworker/worker"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/leaderworker/worker"
 )
 
 type Interface interface {
@@ -45,10 +45,10 @@ type ForLeaderUseInterface interface {
 	LeaderHookOnWorkerDelete(WorkerDeleteHandler)
 
 	// AssignLogicTaskToWorker assign one logic task to one concrete worker.
-	AssignLogicTaskToWorker(ctx context.Context, workerID worker2.ID, logicTask worker2.LogicTask) error
+	AssignLogicTaskToWorker(ctx context.Context, workerID worker.ID, logicTask worker.LogicTask) error
 
 	// IsTaskBeingProcessed check if one task is being processed and the corresponding worker id.
-	IsTaskBeingProcessed(ctx context.Context, logicTaskID worker2.LogicTaskID) (bool, worker2.ID)
+	IsTaskBeingProcessed(ctx context.Context, logicTaskID worker.LogicTaskID) (bool, worker.ID)
 
 	// RegisterLeaderListener provide more hook ability to customize leader behaviours.
 	// See DefaultListener to simply your code.
@@ -61,7 +61,7 @@ type ForLeaderUseInterface interface {
 
 type ForWorkerUseInterface interface {
 	// RegisterCandidateWorker register candidate worker, and will be promoted to official automatically.
-	RegisterCandidateWorker(ctx context.Context, w worker2.Worker) error
+	RegisterCandidateWorker(ctx context.Context, w worker.Worker) error
 
 	// WorkerHookOnWorkerDelete register hook which will be invoked on worker delete if you are worker.
 	// You can register multiple hooks as you need.
@@ -71,7 +71,7 @@ type ForWorkerUseInterface interface {
 
 type GeneralInterface interface {
 	// ListWorkers list active workers by types, default list all types.
-	ListWorkers(ctx context.Context, workerTypes ...worker2.Type) ([]worker2.Worker, error)
+	ListWorkers(ctx context.Context, workerTypes ...worker.Type) ([]worker.Worker, error)
 
 	// ListenPrefix continuously listen key prefix until context done.
 	ListenPrefix(ctx context.Context, prefix string, putHandler, deleteHandler func(context.Context, *clientv3.Event))
@@ -80,5 +80,5 @@ type GeneralInterface interface {
 	Start()
 
 	// CancelLogicTask cancel logic task.
-	CancelLogicTask(ctx context.Context, logicTaskID worker2.LogicTaskID) error
+	CancelLogicTask(ctx context.Context, logicTaskID worker.LogicTaskID) error
 }

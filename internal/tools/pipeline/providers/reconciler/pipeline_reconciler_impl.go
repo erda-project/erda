@@ -19,13 +19,13 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/commonutil/statusutil"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 // updateCalculatedPipelineStatusForTaskUseField by:
 // 1. other flags (higher priority)
 // 2. all reconciled tasks
-func (pr *defaultPipelineReconciler) UpdateCalculatedPipelineStatusForTaskUseField(ctx context.Context, p *spec2.Pipeline) error {
+func (pr *defaultPipelineReconciler) UpdateCalculatedPipelineStatusForTaskUseField(ctx context.Context, p *spec.Pipeline) error {
 	newStatus := p.Status
 	defer func() {
 		pr.calculatedStatusForTaskUse = newStatus
@@ -48,11 +48,11 @@ func (pr *defaultPipelineReconciler) UpdateCalculatedPipelineStatusForTaskUseFie
 	return nil
 }
 
-func (pr *defaultPipelineReconciler) calculatePipelineStatusForTaskUseField(ctx context.Context, p *spec2.Pipeline) apistructs.PipelineStatus {
+func (pr *defaultPipelineReconciler) calculatePipelineStatusForTaskUseField(ctx context.Context, p *spec.Pipeline) apistructs.PipelineStatus {
 	// get all reconciled tasks
-	var reconciledTasks []*spec2.PipelineTask
+	var reconciledTasks []*spec.PipelineTask
 	pr.processedTasks.Range(func(key, value interface{}) bool {
-		t, ok := value.(*spec2.PipelineTask)
+		t, ok := value.(*spec.PipelineTask)
 		if !ok {
 			pr.log.Panicf("invalid type of value in processedTasks, key: %v, value: %v, pipelineID: %d",
 				key, value, p.ID)
@@ -92,7 +92,7 @@ func (pr *defaultPipelineReconciler) setTotalTaskNumber(num int) {
 	pr.totalTaskNumber = &num
 }
 
-func (pr *defaultPipelineReconciler) setTotalTaskNumberBeforeReconcilePipeline(ctx context.Context, p *spec2.Pipeline) error {
+func (pr *defaultPipelineReconciler) setTotalTaskNumberBeforeReconcilePipeline(ctx context.Context, p *spec.Pipeline) error {
 	allTasks, err := pr.r.YmlTaskMergeDBTasks(p)
 	if err != nil {
 		return err

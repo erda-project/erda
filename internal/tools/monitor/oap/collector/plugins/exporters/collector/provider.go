@@ -27,9 +27,9 @@ import (
 	"github.com/erda-project/erda/internal/tools/monitor/core/log"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model/odata"
-	compressor2 "github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/compressor"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/compressor"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins"
-	auth2 "github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/exporters/collector/auth"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/exporters/collector/auth"
 )
 
 var providerName = plugins.WithPrefixExporter("collector")
@@ -54,8 +54,8 @@ type provider struct {
 	Log logs.Logger
 
 	client *http.Client
-	au     auth2.Authenticator
-	cp     compressor2.Compressor
+	au     auth.Authenticator
+	cp     compressor.Compressor
 }
 
 func (p *provider) ExportMetric(items ...*metric.Metric) error {
@@ -126,15 +126,15 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 func (p *provider) createAuthenticator() error {
 	cfg := p.Cfg.Authentication.Options
-	switch auth2.AuthenticationType(p.Cfg.Authentication.Type) {
-	case auth2.Basic:
-		au, err := auth2.NewBasicAuth(cfg)
+	switch auth.AuthenticationType(p.Cfg.Authentication.Type) {
+	case auth.Basic:
+		au, err := auth.NewBasicAuth(cfg)
 		if err != nil {
 			return err
 		}
 		p.au = au
-	case auth2.Token:
-		au, err := auth2.NewTokenAuth(cfg)
+	case auth.Token:
+		au, err := auth.NewTokenAuth(cfg)
 		if err != nil {
 			return err
 		}
@@ -148,7 +148,7 @@ func (p *provider) createAuthenticator() error {
 func (p *provider) createCompressor() error {
 	switch p.Cfg.ContentEncoding {
 	case GZIPEncoding:
-		p.cp = compressor2.NewGzipEncoder(3)
+		p.cp = compressor.NewGzipEncoder(3)
 	default:
 		return fmt.Errorf("invalid ContentEncoding: %q", p.Cfg.ContentEncoding)
 	}

@@ -29,7 +29,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/pipeline/conf"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/dbgc/db"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/reconciler/rutil"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/jsonstore/storetypes"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -63,7 +63,7 @@ func (p *provider) PipelineDatabaseGC(ctx context.Context) {
 // doPipelineDatabaseGC query the data in the database according to req paging to perform gc
 func (p *provider) doPipelineDatabaseGC(req apistructs.PipelinePageListRequest) {
 	var pageNum = req.PageNum
-	pipelines := make([]spec2.Pipeline, 0)
+	pipelines := make([]spec.Pipeline, 0)
 	for {
 		req.PageNum = pageNum
 		result, err := p.dbClient.PageListPipelines(req)
@@ -90,7 +90,7 @@ func (p *provider) doPipelineDatabaseGC(req apistructs.PipelinePageListRequest) 
 	}
 }
 
-func needArchive(p spec2.Pipeline) bool {
+func needArchive(p spec.Pipeline) bool {
 	if p.Status == apistructs.PipelineStatusAnalyzed {
 		if p.Extra.GC.DatabaseGC.Analyzed.NeedArchive != nil {
 			return *p.Extra.GC.DatabaseGC.Analyzed.NeedArchive
@@ -418,18 +418,18 @@ func (p *provider) handleOldNonDBGCPipelines(checkPointDBGCKey string) {
 		return
 	}
 	// fetch only id and status is enough
-	var oldPipelineBases []spec2.PipelineBase
+	var oldPipelineBases []spec.PipelineBase
 	if err := p.dbClient.Cols(`id`, `status`).Where("id < ?", checkPointPID).Find(&oldPipelineBases); err != nil {
 		p.Log.Errorf("failed to query pipelines before check point, err: %v", err)
 		return
 	}
 	// transfer to pipeline for default ensureGC options
-	var oldPipelines []spec2.Pipeline
+	var oldPipelines []spec.Pipeline
 	for _, oldBase := range oldPipelineBases {
-		oldPipelines = append(oldPipelines, spec2.Pipeline{
+		oldPipelines = append(oldPipelines, spec.Pipeline{
 			PipelineBase: oldBase,
-			PipelineExtra: spec2.PipelineExtra{
-				Extra: spec2.PipelineExtraInfo{
+			PipelineExtra: spec.PipelineExtra{
+				Extra: spec.PipelineExtraInfo{
 					GC: apistructs.PipelineGC{},
 				},
 			},
@@ -448,10 +448,10 @@ func (p *provider) handleOldNonDBGCPipelines(checkPointDBGCKey string) {
 	}
 }
 
-func (p *provider) GetPipelineIncludeArchived(ctx context.Context, pipelineID uint64) (spec2.Pipeline, bool, bool, error) {
+func (p *provider) GetPipelineIncludeArchived(ctx context.Context, pipelineID uint64) (spec.Pipeline, bool, bool, error) {
 	return p.dbClient.GetPipelineIncludeArchived(pipelineID)
 }
 
-func (p *provider) GetPipelineTasksIncludeArchived(ctx context.Context, pipelineID uint64) ([]spec2.PipelineTask, bool, error) {
+func (p *provider) GetPipelineTasksIncludeArchived(ctx context.Context, pipelineID uint64) ([]spec.PipelineTask, bool, error) {
 	return p.dbClient.GetPipelineTasksIncludeArchived(pipelineID)
 }

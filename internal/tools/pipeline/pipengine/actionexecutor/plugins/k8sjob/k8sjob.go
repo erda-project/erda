@@ -35,8 +35,8 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/conf"
-	logic2 "github.com/erda-project/erda/internal/tools/pipeline/pipengine/actionexecutor/logic"
-	types2 "github.com/erda-project/erda/internal/tools/pipeline/pipengine/actionexecutor/types"
+	"github.com/erda-project/erda/internal/tools/pipeline/pipengine/actionexecutor/logic"
+	"github.com/erda-project/erda/internal/tools/pipeline/pipengine/actionexecutor/types"
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/container_provider"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/clusterinfo"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
@@ -46,7 +46,7 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-var Kind = types2.Kind(spec.PipelineTaskExecutorKindK8sJob)
+var Kind = types.Kind(spec.PipelineTaskExecutorKindK8sJob)
 
 var (
 	defaultParallelism int32 = 1
@@ -70,7 +70,7 @@ var (
 )
 
 func init() {
-	types2.MustRegister(Kind, func(name types2.Name, options map[string]string) (types2.ActionExecutor, error) {
+	types.MustRegister(Kind, func(name types.Name, options map[string]string) (types.ActionExecutor, error) {
 		clusterName, err := Kind.GetClusterNameByExecutorName(name)
 		if err != nil {
 			return nil, err
@@ -84,15 +84,15 @@ func init() {
 }
 
 type K8sJob struct {
-	*types2.K8sExecutor
-	name        types2.Name
+	*types.K8sExecutor
+	name        types.Name
 	client      *k8sclient.K8sClient
 	clusterName string
 	cluster     apistructs.ClusterInfo
-	errWrapper  *logic2.ErrorWrapper
+	errWrapper  *logic.ErrorWrapper
 }
 
-func New(name types2.Name, clusterName string, cluster apistructs.ClusterInfo) (*K8sJob, error) {
+func New(name types.Name, clusterName string, cluster apistructs.ClusterInfo) (*K8sJob, error) {
 	// we could operate normal resources (job, pod, deploy,pvc,pv,crd and so on) by default config permissions(injected by kubernetes, /var/run/secrets/kubernetes.io/serviceaccount)
 	// so WithPreferredToUseInClusterConfig it's enough for pipeline and orchestrator
 	client, err := k8sclient.New(clusterName, k8sclient.WithTimeout(time.Duration(conf.K8SExecutorMaxInitializationSec())*time.Second), k8sclient.WithPreferredToUseInClusterConfig())
@@ -104,34 +104,34 @@ func New(name types2.Name, clusterName string, cluster apistructs.ClusterInfo) (
 		client:      client,
 		clusterName: clusterName,
 		cluster:     cluster,
-		errWrapper:  logic2.NewErrorWrapper(name.String()),
+		errWrapper:  logic.NewErrorWrapper(name.String()),
 	}
-	k8sJob.K8sExecutor = types2.NewK8sExecutor(k8sJob)
+	k8sJob.K8sExecutor = types.NewK8sExecutor(k8sJob)
 	return k8sJob, nil
 }
 
-func (k *K8sJob) Kind() types2.Kind {
+func (k *K8sJob) Kind() types.Kind {
 	return Kind
 }
 
-func (k *K8sJob) Name() types2.Name {
+func (k *K8sJob) Name() types.Name {
 	return k.name
 }
 
 func (k *K8sJob) Status(ctx context.Context, task *spec.PipelineTask) (desc apistructs.PipelineStatusDesc, err error) {
 	defer k.errWrapper.WrapTaskError(&err, "status job", task)
-	if err := logic2.ValidateAction(task); err != nil {
+	if err := logic.ValidateAction(task); err != nil {
 		return apistructs.PipelineStatusDesc{}, err
 	}
 	var (
 		job     *batchv1.Job
 		jobPods *corev1.PodList
 	)
-	jobName := logic2.MakeJobName(task)
+	jobName := logic.MakeJobName(task)
 	job, err = k.client.ClientSet.BatchV1().Jobs(task.Extra.Namespace).Get(ctx, jobName, metav1.GetOptions{})
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
-			desc.Status = logic2.TransferStatus(string(apistructs.StatusNotFoundInCluster))
+			desc.Status = logic.TransferStatus(string(apistructs.StatusNotFoundInCluster))
 			return desc, nil
 		}
 		return
@@ -162,13 +162,13 @@ func (k *K8sJob) Status(ctx context.Context, task *spec.PipelineTask) (desc apis
 		return desc, errors.Errorf("get empty status from k8sjob, statusCode: %s, lastMsg: %s", status.Status, status.LastMessage)
 	}
 	return apistructs.PipelineStatusDesc{
-		Status: logic2.TransferStatus(string(status.Status)),
+		Status: logic.TransferStatus(string(status.Status)),
 		Desc:   status.LastMessage}, nil
 }
 
 func (k *K8sJob) Start(ctx context.Context, task *spec.PipelineTask) (data interface{}, err error) {
 	defer k.errWrapper.WrapTaskError(&err, "start job", task)
-	if err := logic2.ValidateAction(task); err != nil {
+	if err := logic.ValidateAction(task); err != nil {
 		return nil, err
 	}
 	created, started, err := k.Exist(ctx, task)
@@ -176,18 +176,18 @@ func (k *K8sJob) Start(ctx context.Context, task *spec.PipelineTask) (data inter
 		return nil, err
 	}
 	if !created {
-		logrus.Warnf("%s: task not created(auto try to create), taskInfo: %s", k.Kind().String(), logic2.PrintTaskInfo(task))
+		logrus.Warnf("%s: task not created(auto try to create), taskInfo: %s", k.Kind().String(), logic.PrintTaskInfo(task))
 		_, err = k.Create(ctx, task)
 		if err != nil {
 			return nil, err
 		}
-		logrus.Warnf("k8sjob: action created, continue to start, taskInfo: %s", logic2.PrintTaskInfo(task))
+		logrus.Warnf("k8sjob: action created, continue to start, taskInfo: %s", logic.PrintTaskInfo(task))
 	}
 	if started {
-		logrus.Warnf("%s: task already started, taskInfo: %s", k.Kind().String(), logic2.PrintTaskInfo(task))
+		logrus.Warnf("%s: task already started, taskInfo: %s", k.Kind().String(), logic.PrintTaskInfo(task))
 		return nil, nil
 	}
-	job, err := logic2.TransferToSchedulerJob(task)
+	job, err := logic.TransferToSchedulerJob(task)
 	if err != nil {
 		return nil, err
 	}
@@ -210,7 +210,7 @@ func (k *K8sJob) Start(ctx context.Context, task *spec.PipelineTask) (data inter
 	}
 
 	if len(job.Volumes) != 0 {
-		_, _, pvcs := logic2.GenerateK8SVolumes(&job, clusterCM)
+		_, _, pvcs := logic.GenerateK8SVolumes(&job, clusterCM)
 		for _, pvc := range pvcs {
 			if pvc == nil {
 				continue
@@ -249,7 +249,7 @@ func (k *K8sJob) Start(ctx context.Context, task *spec.PipelineTask) (data inter
 }
 
 func (k *K8sJob) Delete(ctx context.Context, task *spec.PipelineTask) (data interface{}, err error) {
-	job, err := logic2.TransferToSchedulerJob(task)
+	job, err := logic.TransferToSchedulerJob(task)
 	if err != nil {
 		return nil, err
 	}
@@ -347,13 +347,13 @@ func (k *K8sJob) Delete(ctx context.Context, task *spec.PipelineTask) (data inte
 // Inspect use kubectl describe pod information, return latest pod description for current job
 func (k *K8sJob) Inspect(ctx context.Context, task *spec.PipelineTask) (apistructs.TaskInspect, error) {
 	jobPods, err := k.client.ClientSet.CoreV1().Pods(task.Extra.Namespace).List(ctx, metav1.ListOptions{
-		LabelSelector: logic2.MakeJobLabelSelector(task),
+		LabelSelector: logic.MakeJobLabelSelector(task),
 	})
 	if err != nil {
 		return apistructs.TaskInspect{}, err
 	}
 	if len(jobPods.Items) == 0 {
-		return apistructs.TaskInspect{}, errors.Errorf("get empty pods in job: %s", logic2.MakeJobName(task))
+		return apistructs.TaskInspect{}, errors.Errorf("get empty pods in job: %s", logic.MakeJobName(task))
 	}
 	d := describe.PodDescriber{k.client.ClientSet}
 	s, err := d.Describe(task.Extra.Namespace, jobPods.Items[len(jobPods.Items)-1].Name, describe.DescriberSettings{
@@ -374,7 +374,7 @@ func (k *K8sJob) JobVolumeCreate(ctx context.Context, jobVolume apistructs.JobVo
 		return "", err
 	}
 
-	sc := logic2.WhichStorageClass(jobVolume.Type, "")
+	sc := logic.WhichStorageClass(jobVolume.Type, "")
 	id := fmt.Sprintf("%s-%s", jobVolume.Namespace, jobVolume.Name)
 	pvc := corev1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
@@ -478,10 +478,10 @@ func (k *K8sJob) generateKubeJob(specObj interface{}, clusterInfo apistructs.Clu
 	)
 
 	if len(job.Volumes) != 0 {
-		vols, volMounts, _ = logic2.GenerateK8SVolumes(&job)
+		vols, volMounts, _ = logic.GenerateK8SVolumes(&job)
 	}
 
-	scheduleInfo2, _, err := logic2.GetScheduleInfo(k.cluster, string(k.Name()), string(Kind), job)
+	scheduleInfo2, _, err := logic.GetScheduleInfo(k.cluster, string(k.Name()), string(Kind), job)
 	if err != nil {
 		return nil, err
 	}
@@ -513,7 +513,7 @@ func (k *K8sJob) generateKubeJob(specObj interface{}, clusterInfo apistructs.Clu
 					Labels:    jobLabels(),
 				},
 				Spec: corev1.PodSpec{
-					Tolerations:      logic2.GenTolerations(),
+					Tolerations:      logic.GenTolerations(),
 					ImagePullSecrets: []corev1.LocalObjectReference{{Name: apistructs.AliyunRegistry}},
 					Affinity:         &constraintbuilders.K8S(&scheduleInfo2, nil, nil, nil).Affinity,
 					Containers: []corev1.Container{
@@ -532,7 +532,7 @@ func (k *K8sJob) generateKubeJob(specObj interface{}, clusterInfo apistructs.Clu
 									//corev1.ResourceStorage: resource.MustParse(strconv.Itoa(int(job.Disk)) + "M"),
 								},
 							},
-							ImagePullPolicy: logic2.GetPullImagePolicy(),
+							ImagePullPolicy: logic.GetPullImagePolicy(),
 							VolumeMounts:    volMounts,
 						},
 					},
@@ -645,7 +645,7 @@ func (k *K8sJob) generateKubeJob(specObj interface{}, clusterInfo apistructs.Clu
 					//corev1.ResourceStorage: resource.MustParse(strconv.Itoa(int(job.Disk)) + "M"),
 				},
 			},
-			ImagePullPolicy: logic2.GetPullImagePolicy(),
+			ImagePullPolicy: logic.GetPullImagePolicy(),
 		}
 
 		volumeMount := corev1.VolumeMount{
@@ -681,7 +681,7 @@ func (k *K8sJob) setBinds(pod *corev1.PodTemplateSpec, binds []apistructs.Bind, 
 			continue
 		}
 
-		hostPath, err := logic2.ParseJobHostBindTemplate(bind.HostPath, clusterInfo)
+		hostPath, err := logic.ParseJobHostBindTemplate(bind.HostPath, clusterInfo)
 		if err != nil {
 			return err
 		}

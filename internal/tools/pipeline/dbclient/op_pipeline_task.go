@@ -23,12 +23,12 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/commonutil/statusutil"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/retry"
 )
 
-func (client *Client) CreatePipelineTask(pt *spec2.PipelineTask, ops ...SessionOption) (err error) {
+func (client *Client) CreatePipelineTask(pt *spec.PipelineTask, ops ...SessionOption) (err error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
@@ -40,20 +40,20 @@ func (client *Client) CreatePipelineTask(pt *spec2.PipelineTask, ops ...SessionO
 }
 
 // FindCauseFailedPipelineTasks 寻找导致失败的节点
-func (client *Client) FindCauseFailedPipelineTasks(pipelineID uint64) (spec2.RerunFailedDetail, error) {
+func (client *Client) FindCauseFailedPipelineTasks(pipelineID uint64) (spec.RerunFailedDetail, error) {
 	var failedStageIndex int
 	failedTasks := make(map[string]uint64, 0)
 	successTasks := make(map[string]uint64, 0)
 	notExecuteTasks := make(map[string]uint64, 0)
 	stages, err := client.ListPipelineStageByPipelineID(pipelineID)
 	if err != nil {
-		return spec2.RerunFailedDetail{}, err
+		return spec.RerunFailedDetail{}, err
 	}
 	var foundFailedStage bool
 	for si, stage := range stages {
 		tasks, err := client.ListPipelineTasksByStageID(stage.ID)
 		if err != nil {
-			return spec2.RerunFailedDetail{}, err
+			return spec.RerunFailedDetail{}, err
 		}
 		if !foundFailedStage {
 			// 存在 stage 状态与 task 状态不一致的情况，比如：
@@ -87,9 +87,9 @@ func (client *Client) FindCauseFailedPipelineTasks(pipelineID uint64) (spec2.Rer
 		}
 	}
 	if len(failedTasks) == 0 {
-		return spec2.RerunFailedDetail{}, errors.New("no failed-tasks need to rerun-failed, please check")
+		return spec.RerunFailedDetail{}, errors.New("no failed-tasks need to rerun-failed, please check")
 	}
-	return spec2.RerunFailedDetail{
+	return spec.RerunFailedDetail{
 		RerunPipelineID: pipelineID,
 		StageIndex:      failedStageIndex,
 		SuccessTasks:    successTasks,
@@ -98,54 +98,54 @@ func (client *Client) FindCauseFailedPipelineTasks(pipelineID uint64) (spec2.Rer
 	}, nil
 }
 
-func (client *Client) GetPipelineTask(id interface{}) (spec2.PipelineTask, error) {
-	var pa spec2.PipelineTask
+func (client *Client) GetPipelineTask(id interface{}) (spec.PipelineTask, error) {
+	var pa spec.PipelineTask
 	exist, err := client.ID(id).Get(&pa)
 	if err != nil {
-		return spec2.PipelineTask{}, errors.Wrapf(err, "failed to get pipeline task by id [%v]", id)
+		return spec.PipelineTask{}, errors.Wrapf(err, "failed to get pipeline task by id [%v]", id)
 	}
 	if !exist {
-		return spec2.PipelineTask{}, errors.Errorf("not found pipeline task by id [%v]", id)
+		return spec.PipelineTask{}, errors.Errorf("not found pipeline task by id [%v]", id)
 	}
 	return pa, nil
 }
 
-func (client *Client) FindPipelineTaskByName(pipelineID uint64, name string) (spec2.PipelineTask, error) {
-	var pa = spec2.PipelineTask{
+func (client *Client) FindPipelineTaskByName(pipelineID uint64, name string) (spec.PipelineTask, error) {
+	var pa = spec.PipelineTask{
 		PipelineID: pipelineID,
 		Name:       name,
 	}
 	exist, err := client.Get(&pa)
 	if err != nil {
-		return spec2.PipelineTask{}, errors.Wrapf(err, "failed to get pipeline task, pipelineID [%d], name [%s]", pipelineID, name)
+		return spec.PipelineTask{}, errors.Wrapf(err, "failed to get pipeline task, pipelineID [%d], name [%s]", pipelineID, name)
 	}
 	if !exist {
-		return spec2.PipelineTask{}, errors.Errorf("not found pipeline task, pipelineID [%d], name [%s]", pipelineID, name)
+		return spec.PipelineTask{}, errors.Errorf("not found pipeline task, pipelineID [%d], name [%s]", pipelineID, name)
 	}
 	return pa, nil
 }
 
-func (client *Client) ListPipelineTasksByStageID(stageID uint64) ([]*spec2.PipelineTask, error) {
-	var actions []*spec2.PipelineTask
-	if err := client.Find(&actions, spec2.PipelineTask{StageID: stageID}); err != nil {
+func (client *Client) ListPipelineTasksByStageID(stageID uint64) ([]*spec.PipelineTask, error) {
+	var actions []*spec.PipelineTask
+	if err := client.Find(&actions, spec.PipelineTask{StageID: stageID}); err != nil {
 		return nil, errors.Wrapf(err, "failed to list pipeline tasks by stageID [%d]", stageID)
 	}
 	return actions, nil
 }
 
-func (client *Client) ListPipelineTasksByPipelineID(pipelineID uint64, ops ...SessionOption) ([]spec2.PipelineTask, error) {
+func (client *Client) ListPipelineTasksByPipelineID(pipelineID uint64, ops ...SessionOption) ([]spec.PipelineTask, error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
-	var tasks []spec2.PipelineTask
-	if err := session.Find(&tasks, spec2.PipelineTask{PipelineID: pipelineID}); err != nil {
+	var tasks []spec.PipelineTask
+	if err := session.Find(&tasks, spec.PipelineTask{PipelineID: pipelineID}); err != nil {
 		return nil, errors.Wrapf(err, "failed to list pipeline tasks by pipelineID [%d]", pipelineID)
 	}
 	return tasks, nil
 }
 
 func (client *Client) UpdatePipelineTaskMetadata(id uint64, result *apistructs.PipelineTaskResult) error {
-	_, err := client.ID(id).Cols("result").Update(&spec2.PipelineTask{Result: result})
+	_, err := client.ID(id).Cols("result").Update(&spec.PipelineTask{Result: result})
 	if err != nil {
 		b, _ := json.Marshal(&result)
 		return errors.Errorf("failed to update pipeline task result, taskID: %d, result: %s, err: %v", id, string(b), err)
@@ -154,7 +154,7 @@ func (client *Client) UpdatePipelineTaskMetadata(id uint64, result *apistructs.P
 }
 
 func (client *Client) UpdatePipelineTaskInspect(id uint64, inspect apistructs.PipelineTaskInspect) error {
-	_, err := client.ID(id).Cols("inspect").Update(&spec2.PipelineTask{Inspect: inspect})
+	_, err := client.ID(id).Cols("inspect").Update(&spec.PipelineTask{Inspect: inspect})
 	if err != nil {
 		b, _ := json.Marshal(&inspect)
 		return errors.Errorf("failed to update pipeline task inspect, taskID: %d, inspect: %s, err: %v", id, string(b), err)
@@ -162,7 +162,7 @@ func (client *Client) UpdatePipelineTaskInspect(id uint64, inspect apistructs.Pi
 	return nil
 }
 
-func (client *Client) UpdatePipelineTask(id uint64, task *spec2.PipelineTask, ops ...SessionOption) error {
+func (client *Client) UpdatePipelineTask(id uint64, task *spec.PipelineTask, ops ...SessionOption) error {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
@@ -192,12 +192,12 @@ func (client *Client) UpdatePipelineTaskStatus(id uint64, status apistructs.Pipe
 	session := client.NewSession(ops...)
 	defer session.Close()
 
-	_, err := session.ID(id).Cols("status").Update(&spec2.PipelineTask{Status: status})
+	_, err := session.ID(id).Cols("status").Update(&spec.PipelineTask{Status: status})
 	return err
 }
 
 // UpdatePipelineTaskTime update the costTime,timeBegin and timeEnd of pipeline task
-func (client *Client) UpdatePipelineTaskTime(p *spec2.Pipeline, ops ...SessionOption) error {
+func (client *Client) UpdatePipelineTaskTime(p *spec.Pipeline, ops ...SessionOption) error {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
@@ -214,27 +214,27 @@ func (client *Client) UpdatePipelineTaskTime(p *spec2.Pipeline, ops ...SessionOp
 		costTimeSec = int64(timeEnd.Sub(timeBegin).Seconds())
 	}
 	_, err := session.ID(p.ParentTaskID).Cols("cost_time_sec", "time_begin", "time_end").
-		Update(&spec2.PipelineTask{CostTimeSec: costTimeSec, TimeBegin: timeBegin, TimeEnd: timeEnd})
+		Update(&spec.PipelineTask{CostTimeSec: costTimeSec, TimeBegin: timeBegin, TimeEnd: timeEnd})
 	return err
 }
 
-func (client *Client) UpdatePipelineTaskContext(id uint64, ctx spec2.PipelineTaskContext, ops ...SessionOption) error {
+func (client *Client) UpdatePipelineTaskContext(id uint64, ctx spec.PipelineTaskContext, ops ...SessionOption) error {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
-	_, err := session.ID(id).Cols("context").Update(&spec2.PipelineTask{Context: ctx})
+	_, err := session.ID(id).Cols("context").Update(&spec.PipelineTask{Context: ctx})
 	return err
 }
 
-func (client *Client) UpdatePipelineTaskExtra(id uint64, extra spec2.PipelineTaskExtra, ops ...SessionOption) error {
+func (client *Client) UpdatePipelineTaskExtra(id uint64, extra spec.PipelineTaskExtra, ops ...SessionOption) error {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
-	_, err := session.ID(id).Cols("extra").Update(&spec2.PipelineTask{Extra: extra})
+	_, err := session.ID(id).Cols("extra").Update(&spec.PipelineTask{Extra: extra})
 	return err
 }
 
-func (client *Client) RefreshPipelineTask(task *spec2.PipelineTask) error {
+func (client *Client) RefreshPipelineTask(task *spec.PipelineTask) error {
 	r, err := client.GetPipelineTask(task.ID)
 	if err != nil {
 		return err
@@ -243,8 +243,8 @@ func (client *Client) RefreshPipelineTask(task *spec2.PipelineTask) error {
 	return nil
 }
 
-func (client *Client) ListPipelineTasksByTypeStatuses(typ string, statuses ...apistructs.PipelineStatus) ([]spec2.PipelineTask, error) {
-	var actionList []spec2.PipelineTask
+func (client *Client) ListPipelineTasksByTypeStatuses(typ string, statuses ...apistructs.PipelineStatus) ([]spec.PipelineTask, error) {
+	var actionList []spec.PipelineTask
 	if err := client.Where("type = ?", typ).In("status", statuses).Find(&actionList); err != nil {
 		return nil, err
 	}
@@ -256,7 +256,7 @@ func (client *Client) DeletePipelineTasksByPipelineID(pipelineID uint64, ops ...
 	defer session.Close()
 
 	return retry.DoWithInterval(func() error {
-		_, err := session.Delete(&spec2.PipelineTask{PipelineID: pipelineID})
+		_, err := session.Delete(&spec.PipelineTask{PipelineID: pipelineID})
 		return err
 	}, 3, time.Second)
 }
@@ -266,17 +266,17 @@ func (client *Client) CleanPipelineTaskResult(id uint64, ops ...SessionOption) e
 	defer session.Close()
 
 	if _, err := session.Table("pipeline_tasks").
-		Where("id = ?", id).Cols("result").Update(&spec2.PipelineTask{Result: nil}); err != nil {
+		Where("id = ?", id).Cols("result").Update(&spec.PipelineTask{Result: nil}); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (client *Client) BatchCreatePipelineTasks(pts []spec2.PipelineTask, ops ...SessionOption) (err error) {
+func (client *Client) BatchCreatePipelineTasks(pts []spec.PipelineTask, ops ...SessionOption) (err error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
-	task := &spec2.PipelineTask{}
+	task := &spec.PipelineTask{}
 	_, err = session.Table(task.TableName()).InsertMulti(&pts)
 	return err
 }
