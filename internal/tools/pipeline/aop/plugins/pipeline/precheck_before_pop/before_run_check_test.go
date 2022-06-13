@@ -26,7 +26,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/lifecycle_hook_client"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
@@ -87,7 +87,7 @@ func TestCheckRun(t *testing.T) {
 		haveError             bool
 		matchOtherLabel       string
 		httpBeforeCheckRun    HttpBeforeCheckRun
-		mockPipelineWithTasks *spec2.PipelineWithTasks
+		mockPipelineWithTasks *spec.PipelineWithTasks
 	}{
 		{
 			CheckResult: CheckRunResult{
@@ -99,14 +99,14 @@ func TestCheckRun(t *testing.T) {
 				PipelineID:      1000,
 				LifeCycleClient: &lifecycle_hook_client.LifeCycleService{},
 			},
-			mockPipelineWithTasks: &spec2.PipelineWithTasks{
-				Pipeline: &spec2.Pipeline{
-					PipelineBase: spec2.PipelineBase{
+			mockPipelineWithTasks: &spec.PipelineWithTasks{
+				Pipeline: &spec.Pipeline{
+					PipelineBase: spec.PipelineBase{
 						ID:              1000,
 						PipelineSource:  "FDP",
 						PipelineYmlName: "230",
 					},
-					PipelineExtra: spec2.PipelineExtra{
+					PipelineExtra: spec.PipelineExtra{
 						PipelineYml: `
 version: 1.1
 lifecycle:
@@ -116,7 +116,7 @@ lifecycle:
 `,
 					},
 				},
-				Tasks: []*spec2.PipelineTask{},
+				Tasks: []*spec.PipelineTask{},
 			},
 		},
 		{
@@ -128,14 +128,14 @@ lifecycle:
 			httpBeforeCheckRun: HttpBeforeCheckRun{
 				PipelineID: 1000,
 			},
-			mockPipelineWithTasks: &spec2.PipelineWithTasks{
-				Pipeline: &spec2.Pipeline{
-					PipelineBase: spec2.PipelineBase{
+			mockPipelineWithTasks: &spec.PipelineWithTasks{
+				Pipeline: &spec.Pipeline{
+					PipelineBase: spec.PipelineBase{
 						ID:              1000,
 						PipelineSource:  "FDP",
 						PipelineYmlName: "230",
 					},
-					PipelineExtra: spec2.PipelineExtra{
+					PipelineExtra: spec.PipelineExtra{
 						PipelineYml: `
 version: 1.1
 lifecycle:
@@ -148,7 +148,7 @@ lifecycle:
 `,
 					},
 				},
-				Tasks: []*spec2.PipelineTask{},
+				Tasks: []*spec.PipelineTask{},
 			},
 		},
 		{
@@ -161,14 +161,14 @@ lifecycle:
 				PipelineID:      10001,
 				LifeCycleClient: &lifecycle_hook_client.LifeCycleService{},
 			},
-			mockPipelineWithTasks: &spec2.PipelineWithTasks{
-				Pipeline: &spec2.Pipeline{
-					PipelineBase: spec2.PipelineBase{
+			mockPipelineWithTasks: &spec.PipelineWithTasks{
+				Pipeline: &spec.Pipeline{
+					PipelineBase: spec.PipelineBase{
 						ID:              10001,
 						PipelineSource:  "FDP",
 						PipelineYmlName: "230",
 					},
-					PipelineExtra: spec2.PipelineExtra{
+					PipelineExtra: spec.PipelineExtra{
 						PipelineYml: `
 version: 1.1
 lifecycle:
@@ -178,7 +178,7 @@ lifecycle:
 `,
 					},
 				},
-				Tasks: []*spec2.PipelineTask{},
+				Tasks: []*spec.PipelineTask{},
 			},
 		},
 
@@ -194,14 +194,14 @@ lifecycle:
 			httpBeforeCheckRun: HttpBeforeCheckRun{
 				PipelineID: 10001,
 			},
-			mockPipelineWithTasks: &spec2.PipelineWithTasks{
-				Pipeline: &spec2.Pipeline{
-					PipelineBase: spec2.PipelineBase{
+			mockPipelineWithTasks: &spec.PipelineWithTasks{
+				Pipeline: &spec.Pipeline{
+					PipelineBase: spec.PipelineBase{
 						ID:              10001,
 						PipelineSource:  "FDP",
 						PipelineYmlName: "230",
 					},
-					PipelineExtra: spec2.PipelineExtra{
+					PipelineExtra: spec.PipelineExtra{
 						PipelineYml: `
 version: 1.1
 lifecycle:
@@ -211,7 +211,7 @@ lifecycle:
 `,
 					},
 				},
-				Tasks: []*spec2.PipelineTask{},
+				Tasks: []*spec.PipelineTask{},
 			},
 		},
 
@@ -238,15 +238,15 @@ lifecycle:
 			httpBeforeCheckRun: HttpBeforeCheckRun{
 				PipelineID: 10001,
 			},
-			mockPipelineWithTasks: &spec2.PipelineWithTasks{
-				Pipeline: &spec2.Pipeline{
-					PipelineBase: spec2.PipelineBase{
+			mockPipelineWithTasks: &spec.PipelineWithTasks{
+				Pipeline: &spec.Pipeline{
+					PipelineBase: spec.PipelineBase{
 						ID:              10001,
 						PipelineSource:  "FDP",
 						PipelineYmlName: "230",
 						Status:          apistructs.PipelineStatusStopByUser,
 					},
-					PipelineExtra: spec2.PipelineExtra{
+					PipelineExtra: spec.PipelineExtra{
 						PipelineYml: `
 version: 1.1
 lifecycle:
@@ -256,17 +256,17 @@ lifecycle:
 `,
 					},
 				},
-				Tasks: []*spec2.PipelineTask{},
+				Tasks: []*spec.PipelineTask{},
 			},
 		},
 	}
 
 	for _, v := range table {
 		var e dbclient.Client
-		guard := monkey.PatchInstanceMethod(reflect.TypeOf(&e), "GetPipelineWithTasks", func(client *dbclient.Client, id uint64) (*spec2.PipelineWithTasks, error) {
+		guard := monkey.PatchInstanceMethod(reflect.TypeOf(&e), "GetPipelineWithTasks", func(client *dbclient.Client, id uint64) (*spec.PipelineWithTasks, error) {
 			return v.mockPipelineWithTasks, nil
 		})
-		guard1 := monkey.PatchInstanceMethod(reflect.TypeOf(&e), "ListLabelsByPipelineID", func(client *dbclient.Client, pipelineID uint64, ops ...dbclient.SessionOption) ([]spec2.PipelineLabel, error) {
+		guard1 := monkey.PatchInstanceMethod(reflect.TypeOf(&e), "ListLabelsByPipelineID", func(client *dbclient.Client, pipelineID uint64, ops ...dbclient.SessionOption) ([]spec.PipelineLabel, error) {
 			return nil, nil
 		})
 		guard2 := monkey.PatchInstanceMethod(reflect.TypeOf(v.httpBeforeCheckRun.LifeCycleClient), "PostLifecycleHookHttpClient", func(_ *lifecycle_hook_client.LifeCycleService, source string, req interface{}, resp interface{}) error {

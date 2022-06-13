@@ -25,7 +25,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/executortypes"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/impl/volume"
-	driver2 "github.com/erda-project/erda/internal/tools/orchestrator/scheduler/impl/volume/driver"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/impl/volume/driver"
 	"github.com/erda-project/erda/pkg/jsonstore"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/labelconfig"
@@ -43,8 +43,8 @@ func NewSched() (*Sched, error) {
 	}
 
 	volumeDrivers := map[apistructs.VolumeType]volume.Volume{
-		apistructs.LocalVolume: driver2.NewLocalVolumeDriver(js),
-		apistructs.NasVolume:   driver2.NewNasVolumeDriver(js),
+		apistructs.LocalVolume: driver.NewLocalVolumeDriver(js),
+		apistructs.NasVolume:   driver.NewNasVolumeDriver(js),
 	}
 
 	s := &Sched{

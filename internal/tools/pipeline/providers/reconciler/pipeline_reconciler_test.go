@@ -23,12 +23,12 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs/logrusx"
 	"github.com/erda-project/erda/apistructs"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 func Test_defaultPipelineReconciler_IsReconcileDone(t *testing.T) {
-	p := &spec2.Pipeline{
-		PipelineBase: spec2.PipelineBase{
+	p := &spec.Pipeline{
+		PipelineBase: spec.PipelineBase{
 			Status: apistructs.PipelineStatusRunning,
 		},
 	}
@@ -89,21 +89,21 @@ func Test_defaultPipelineReconciler_PrepareBeforeReconcile(t *testing.T) {
 		}
 	}()
 	monkey.PatchInstanceMethod(reflect.TypeOf(pr), "UpdatePipelineToRunning",
-		func(_ *defaultPipelineReconciler, ctx context.Context, p *spec2.Pipeline) {
+		func(_ *defaultPipelineReconciler, ctx context.Context, p *spec.Pipeline) {
 			p.Status = apistructs.PipelineStatusRunning
 		})
 
 	// pipeline in queue status
 	// two tasks
-	p := &spec2.Pipeline{
-		PipelineBase: spec2.PipelineBase{
+	p := &spec.Pipeline{
+		PipelineBase: spec.PipelineBase{
 			Status: apistructs.PipelineStatusQueue,
 		},
 	}
 	monkey.PatchInstanceMethod(reflect.TypeOf(r), "YmlTaskMergeDBTasks",
-		func(_ *provider, pipeline *spec2.Pipeline) ([]*spec2.PipelineTask, error) {
+		func(_ *provider, pipeline *spec.Pipeline) ([]*spec.PipelineTask, error) {
 			// two tasks
-			tasks := []*spec2.PipelineTask{
+			tasks := []*spec.PipelineTask{
 				{Name: "s1c1"},
 				{Name: "s2c1"},
 			}
@@ -122,15 +122,15 @@ func Test_defaultPipelineReconciler_PrepareBeforeReconcile(t *testing.T) {
 
 	// pipeline already in running status
 	// two tasks
-	p = &spec2.Pipeline{
-		PipelineBase: spec2.PipelineBase{
+	p = &spec.Pipeline{
+		PipelineBase: spec.PipelineBase{
 			Status: apistructs.PipelineStatusRunning,
 		},
 	}
 	monkey.PatchInstanceMethod(reflect.TypeOf(r), "YmlTaskMergeDBTasks",
-		func(_ *provider, pipeline *spec2.Pipeline) ([]*spec2.PipelineTask, error) {
+		func(_ *provider, pipeline *spec.Pipeline) ([]*spec.PipelineTask, error) {
 			// two tasks
-			tasks := []*spec2.PipelineTask{
+			tasks := []*spec.PipelineTask{
 				{Name: "s1c1"},
 				{Name: "s2c1"},
 			}

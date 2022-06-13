@@ -18,11 +18,11 @@ import (
 	"strconv"
 
 	"github.com/erda-project/erda/apistructs"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/numeral"
 )
 
-func (s *PipelineSvc) convertPipelineBase(p spec2.PipelineBase) apistructs.PipelineDTO {
+func (s *PipelineSvc) convertPipelineBase(p spec.PipelineBase) apistructs.PipelineDTO {
 	var result apistructs.PipelineDTO
 	result.ID = p.ID
 	result.CronID = p.CronID
@@ -40,7 +40,7 @@ func (s *PipelineSvc) convertPipelineBase(p spec2.PipelineBase) apistructs.Pipel
 	return result
 }
 
-func (s *PipelineSvc) ConvertPipeline(p *spec2.Pipeline) *apistructs.PipelineDTO {
+func (s *PipelineSvc) ConvertPipeline(p *spec.Pipeline) *apistructs.PipelineDTO {
 	if p == nil {
 		return nil
 	}
@@ -90,7 +90,7 @@ func (s *PipelineSvc) ConvertPipeline(p *spec2.Pipeline) *apistructs.PipelineDTO
 	return &result
 }
 
-func (s *PipelineSvc) Convert2PagePipeline(p *spec2.Pipeline) *apistructs.PagePipeline {
+func (s *PipelineSvc) Convert2PagePipeline(p *spec.Pipeline) *apistructs.PagePipeline {
 	result := apistructs.PagePipeline{
 		ID:      p.ID,
 		CronID:  p.CronID,
@@ -146,7 +146,7 @@ func (s *PipelineSvc) Convert2PagePipeline(p *spec2.Pipeline) *apistructs.PagePi
 	return &result
 }
 
-func (s *PipelineSvc) BatchConvert2PagePipeline(pipelines []spec2.Pipeline) []apistructs.PagePipeline {
+func (s *PipelineSvc) BatchConvert2PagePipeline(pipelines []spec.Pipeline) []apistructs.PagePipeline {
 	result := make([]apistructs.PagePipeline, 0, len(pipelines))
 	for _, p := range pipelines {
 		result = append(result, *s.Convert2PagePipeline(&p))
@@ -156,7 +156,7 @@ func (s *PipelineSvc) BatchConvert2PagePipeline(pipelines []spec2.Pipeline) []ap
 
 // input  progress: int
 // output progress: float64
-func (s *PipelineSvc) convertProgress(p spec2.Pipeline) float64 {
+func (s *PipelineSvc) convertProgress(p spec.Pipeline) float64 {
 	progress, err := s.calculateProgress(p)
 	if err != nil {
 		return 0

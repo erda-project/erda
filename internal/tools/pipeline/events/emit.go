@@ -16,10 +16,10 @@ package events
 
 import (
 	"github.com/erda-project/erda/apistructs"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
-func EmitPipelineInstanceEvent(p *spec2.Pipeline, userID string) {
+func EmitPipelineInstanceEvent(p *spec.Pipeline, userID string) {
 	event := &PipelineEvent{DefaultEvent: defaultEvent}
 
 	// EventHeader
@@ -56,7 +56,7 @@ func EmitPipelineStreamEvent(pipelineID uint64, events []*apistructs.PipelineEve
 	mgr.ch <- event
 }
 
-func EmitTaskEvent(task *spec2.PipelineTask, p *spec2.Pipeline) {
+func EmitTaskEvent(task *spec.PipelineTask, p *spec.Pipeline) {
 	event := &PipelineTaskEvent{DefaultEvent: defaultEvent}
 
 	// EventHeader
@@ -81,7 +81,7 @@ func EmitTaskEvent(task *spec2.PipelineTask, p *spec2.Pipeline) {
 	mgr.ch <- event
 }
 
-func EmitTaskRuntimeEvent(task *spec2.PipelineTask, p *spec2.Pipeline) {
+func EmitTaskRuntimeEvent(task *spec.PipelineTask, p *spec.Pipeline) {
 	event := &PipelineTaskRuntimeEvent{DefaultEvent: defaultEvent}
 
 	// EventHeader

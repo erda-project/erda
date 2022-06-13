@@ -31,13 +31,13 @@ import (
 	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/cron/crontypes"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/apierrors"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/i18n"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-func (s *PipelineSvc) Get(pipelineID uint64) (*spec2.Pipeline, error) {
+func (s *PipelineSvc) Get(pipelineID uint64) (*spec.Pipeline, error) {
 	p, err := s.dbClient.GetPipeline(pipelineID)
 	if err != nil {
 		return nil, apierrors.ErrGetPipeline.InternalError(err)
@@ -341,7 +341,7 @@ func (s *PipelineSvc) Statistic(source, clusterName string) (*apistructs.Pipelin
 }
 
 // 设置按钮状态
-func (s *PipelineSvc) setPipelineButtons(p spec2.Pipeline, pc *common.Cron) (button apistructs.PipelineButton, err error) {
+func (s *PipelineSvc) setPipelineButtons(p spec.Pipeline, pc *common.Cron) (button apistructs.PipelineButton, err error) {
 	defer func() {
 		err = errors.Wrap(err, "failed to set pipeline button")
 	}()
@@ -362,22 +362,22 @@ func (s *PipelineSvc) setPipelineButtons(p spec2.Pipeline, pc *common.Cron) (but
 	return
 }
 
-func canCancel(p spec2.Pipeline) bool {
+func canCancel(p spec.Pipeline) bool {
 	return p.Status.IsReconcilerRunningStatus()
 }
 
 // TODO 强制取消
-func canForceCancel(p spec2.Pipeline) bool {
+func canForceCancel(p spec.Pipeline) bool {
 	return false
 }
 
 // canRerun 重试全流程
-func canRerun(p spec2.Pipeline) bool {
+func canRerun(p spec.Pipeline) bool {
 	return p.Status.IsEndStatus()
 }
 
 // canRerunFailed 重试失败节点
-func canRerunFailed(p spec2.Pipeline) bool {
+func canRerunFailed(p spec.Pipeline) bool {
 	// pipeline 状态为失败，且未被 gc 前，可以重试失败节点
 	if p.Status.IsFailedStatus() && !p.Extra.CompleteReconcilerGC {
 		return true
@@ -386,26 +386,26 @@ func canRerunFailed(p spec2.Pipeline) bool {
 }
 
 // canStartCron p.cronID = pc.id
-func canStartCron(p spec2.Pipeline, pc *common.Cron) bool {
+func canStartCron(p spec.Pipeline, pc *common.Cron) bool {
 	return pc != nil && pc.Enable != nil && !pc.Enable.Value
 }
 
 // canStopCron p.cronID = pc.id
-func canStopCron(p spec2.Pipeline, pc *common.Cron) bool {
+func canStopCron(p spec.Pipeline, pc *common.Cron) bool {
 	return pc != nil && pc.Enable != nil && pc.Enable.Value
 }
 
 // canPause TODO 需要关心所有节点运行状态，如果所有节点都在运行中，则不能暂停
-func canPause(p spec2.Pipeline) bool {
+func canPause(p spec.Pipeline) bool {
 	return false
 }
 
 // canUnpause TODO
-func canUnpause(p spec2.Pipeline) bool {
+func canUnpause(p spec.Pipeline) bool {
 	return p.Status.CanUnpause()
 }
 
-func canDelete(p spec2.Pipeline) (bool, string) {
+func canDelete(p spec.Pipeline) (bool, string) {
 	// status
 	if !p.Status.CanDelete() {
 		return false, fmt.Sprintf("invalid status: %s", p.Status)
@@ -419,7 +419,7 @@ func canDelete(p spec2.Pipeline) (bool, string) {
 	return true, ""
 }
 
-func polishTask(p *spec2.Pipeline, task *spec2.PipelineTask, runningStageID uint64, dbClient *dbclient.Client) {
+func polishTask(p *spec.Pipeline, task *spec.PipelineTask, runningStageID uint64, dbClient *dbclient.Client) {
 	changed := false
 	defer func() {
 		if changed {
@@ -459,7 +459,7 @@ func polishTask(p *spec2.Pipeline, task *spec2.PipelineTask, runningStageID uint
 // 1 R       1 R
 // 2 S => 3  2 A => 1
 // 3 S       3 A
-func findRunningStageID(p spec2.Pipeline, tasks []spec2.PipelineTask) uint64 {
+func findRunningStageID(p spec.Pipeline, tasks []spec.PipelineTask) uint64 {
 	if p.Status.IsEndStatus() {
 		return 0
 	}

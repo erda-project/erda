@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"time"
 
-	worker2 "github.com/erda-project/erda/internal/tools/pipeline/providers/leaderworker/worker"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/leaderworker/worker"
 )
 
 func (p *provider) OnLeader(h func(ctx context.Context)) {
@@ -43,7 +43,7 @@ func (p *provider) LeaderHookOnWorkerDelete(h WorkerDeleteHandler) {
 	p.forLeaderUse.handlersOnWorkerDelete = append(p.forLeaderUse.handlersOnWorkerDelete, h)
 }
 
-func (p *provider) AssignLogicTaskToWorker(ctx context.Context, workerID worker2.ID, task worker2.LogicTask) error {
+func (p *provider) AssignLogicTaskToWorker(ctx context.Context, workerID worker.ID, task worker.LogicTask) error {
 	p.mustBeLeader()
 	_, err := p.EtcdClient.Put(ctx, p.makeEtcdWorkerTaskDispatchKey(workerID, task.GetLogicID()), string(task.GetData()))
 	if err != nil {
@@ -53,7 +53,7 @@ func (p *provider) AssignLogicTaskToWorker(ctx context.Context, workerID worker2
 	return nil
 }
 
-func (p *provider) CancelLogicTask(ctx context.Context, logicTaskID worker2.LogicTaskID) error {
+func (p *provider) CancelLogicTask(ctx context.Context, logicTaskID worker.LogicTaskID) error {
 	_, err := p.EtcdClient.Put(ctx, p.makeEtcdLeaderLogicTaskCancelKey(logicTaskID), "")
 	if err != nil {
 		return err
@@ -61,7 +61,7 @@ func (p *provider) CancelLogicTask(ctx context.Context, logicTaskID worker2.Logi
 	return nil
 }
 
-func (p *provider) IsTaskBeingProcessed(ctx context.Context, logicTaskID worker2.LogicTaskID) (bool, worker2.ID) {
+func (p *provider) IsTaskBeingProcessed(ctx context.Context, logicTaskID worker.LogicTaskID) (bool, worker.ID) {
 	p.mustBeLeader()
 	for {
 		p.lock.Lock()

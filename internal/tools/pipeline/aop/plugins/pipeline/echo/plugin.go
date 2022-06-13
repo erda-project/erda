@@ -19,17 +19,17 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/internal/tools/pipeline/aop"
-	aoptypes2 "github.com/erda-project/erda/internal/tools/pipeline/aop/aoptypes"
+	"github.com/erda-project/erda/internal/tools/pipeline/aop/aoptypes"
 )
 
 // +provider
 type provider struct {
-	aoptypes2.PipelineBaseTunePoint
+	aoptypes.PipelineBaseTunePoint
 }
 
 func (p *provider) Name() string { return "echo" }
 
-func (p *provider) Handle(ctx *aoptypes2.TuneContext) error {
+func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 	logrus.Debugf("say hello to pipeline AOP, type: %s, trigger: %s, pipelineID: %d, status: %s",
 		ctx.SDK.TuneType, ctx.SDK.TuneTrigger, ctx.SDK.Pipeline.ID, ctx.SDK.Pipeline.Status)
 	return nil

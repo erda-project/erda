@@ -23,16 +23,16 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/conf"
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/action_info"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/numeral"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
 // makeNormalPipelineTask 生成普通流水线任务
-func (s *PipelineSvc) makeNormalPipelineTask(p *spec2.Pipeline, ps *spec2.PipelineStage, action *pipelineyml.Action, passedDataWhenCreate *action_info.PassedDataWhenCreate) *spec2.PipelineTask {
+func (s *PipelineSvc) makeNormalPipelineTask(p *spec.Pipeline, ps *spec.PipelineStage, action *pipelineyml.Action, passedDataWhenCreate *action_info.PassedDataWhenCreate) *spec.PipelineTask {
 
-	task := &spec2.PipelineTask{}
+	task := &spec.PipelineTask{}
 	task.PipelineID = p.ID
 	task.StageID = ps.ID
 	task.Name = action.Alias.String()
@@ -60,7 +60,7 @@ func (s *PipelineSvc) makeNormalPipelineTask(p *spec2.Pipeline, ps *spec2.Pipeli
 	task.Extra.ExecutorName = executorName
 
 	// default task resource limit
-	task.Extra.RuntimeResource = spec2.RuntimeResource{
+	task.Extra.RuntimeResource = spec.RuntimeResource{
 		CPU:    conf.TaskDefaultCPU(),
 		Memory: conf.TaskDefaultMEM(),
 		Disk:   0,
@@ -68,7 +68,7 @@ func (s *PipelineSvc) makeNormalPipelineTask(p *spec2.Pipeline, ps *spec2.Pipeli
 	// task.Extra.SelfInputs
 	// task.Extra.SelfOutputs
 	if isFlinkSparkAction(action.Type.String()) {
-		task.Extra.FlinkSparkConf = spec2.FlinkSparkConf{
+		task.Extra.FlinkSparkConf = spec.FlinkSparkConf{
 			Depend:    getString(action.Params["depends"]),
 			MainClass: getString(action.Params["main_class"]),
 			MainArgs:  []string{getString(action.Params["main_args"])},
@@ -118,13 +118,13 @@ func (s *PipelineSvc) makeNormalPipelineTask(p *spec2.Pipeline, ps *spec2.Pipeli
 // action: 从 yaml 解析出来的 action 信息
 // p: 当前层的 pipeline，已先于 task 创建好
 // stage: stage 信息，已先于 task 创建好
-func (s *PipelineSvc) makeSnippetPipelineTask(p *spec2.Pipeline, stage *spec2.PipelineStage, action *pipelineyml.Action) *spec2.PipelineTask {
-	var task spec2.PipelineTask
+func (s *PipelineSvc) makeSnippetPipelineTask(p *spec.Pipeline, stage *spec.PipelineStage, action *pipelineyml.Action) *spec.PipelineTask {
+	var task spec.PipelineTask
 	task.PipelineID = p.ID
 	task.StageID = stage.ID
 	task.Name = action.Alias.String()
 	task.Type = apistructs.ActionTypeSnippet
-	task.ExecutorKind = spec2.PipelineTaskExecutorKindScheduler
+	task.ExecutorKind = spec.PipelineTaskExecutorKindScheduler
 	task.Status = apistructs.PipelineStatusAnalyzed
 
 	// if snippet action is disabled, set task status disabled directly
@@ -146,11 +146,11 @@ func (s *PipelineSvc) makeSnippetPipelineTask(p *spec2.Pipeline, stage *spec2.Pi
 	return &task
 }
 
-func (s *PipelineSvc) genSnippetTaskExtra(p *spec2.Pipeline, action *pipelineyml.Action) spec2.PipelineTaskExtra {
-	var ex spec2.PipelineTaskExtra
+func (s *PipelineSvc) genSnippetTaskExtra(p *spec.Pipeline, action *pipelineyml.Action) spec.PipelineTaskExtra {
+	var ex spec.PipelineTaskExtra
 	ex.Namespace = p.Extra.Namespace
 	ex.NotPipelineControlledNs = p.Extra.NotPipelineControlledNs
-	ex.ExecutorName = spec2.PipelineTaskExecutorNameEmpty
+	ex.ExecutorName = spec.PipelineTaskExecutorNameEmpty
 	ex.ClusterName = p.ClusterName
 	ex.AllowFailure = false
 	ex.Pause = false
@@ -158,7 +158,7 @@ func (s *PipelineSvc) genSnippetTaskExtra(p *spec2.Pipeline, action *pipelineyml
 	ex.PrivateEnvs = nil
 	ex.PublicEnvs = nil
 	ex.Labels = nil
-	ex.RuntimeResource = spec2.GenDefaultTaskResource()
+	ex.RuntimeResource = spec.GenDefaultTaskResource()
 	ex.RunAfter = s.calculateTaskRunAfter(action)
 	ex.Action = *action
 	ex.ContainerInstanceProvider = p.Extra.ContainerInstanceProvider
@@ -181,33 +181,33 @@ func (s *PipelineSvc) calculateTaskRunAfter(action *pipelineyml.Action) []string
 }
 
 // judgeTaskExecutor judge task executor by action info
-func (s *PipelineSvc) judgeTaskExecutor(task *spec2.PipelineTask, actionSpec *apistructs.ActionSpec) (spec2.PipelineTaskExecutorKind, spec2.PipelineTaskExecutorName) {
+func (s *PipelineSvc) judgeTaskExecutor(task *spec.PipelineTask, actionSpec *apistructs.ActionSpec) (spec.PipelineTaskExecutorKind, spec.PipelineTaskExecutorName) {
 	if actionSpec == nil ||
 		actionSpec.Executor == nil ||
 		len(actionSpec.Executor.Kind) <= 0 ||
 		len(actionSpec.Executor.Name) <= 0 ||
-		!spec2.PipelineTaskExecutorKind(actionSpec.Executor.Kind).Check() ||
-		!spec2.PipelineTaskExecutorName(actionSpec.Executor.Name).Check() {
-		kind := spec2.PipelineTaskExecutorKindK8sJob
+		!spec.PipelineTaskExecutorKind(actionSpec.Executor.Kind).Check() ||
+		!spec.PipelineTaskExecutorName(actionSpec.Executor.Name).Check() {
+		kind := spec.PipelineTaskExecutorKindK8sJob
 		if bigData, err := task.GetBigDataConf(); err == nil {
 			if bigData.FlinkConf != nil {
-				kind = spec2.PipelineTaskExecutorKindK8sFlink
+				kind = spec.PipelineTaskExecutorKindK8sFlink
 			}
 			if bigData.SparkConf != nil {
-				kind = spec2.PipelineTaskExecutorKindK8sSpark
+				kind = spec.PipelineTaskExecutorKindK8sSpark
 			}
 		}
 		return kind, kind.GenExecutorNameByClusterName(task.Extra.ClusterName)
 	}
 	// if specify executor k8s kind, add the cluster name to executor name
-	if actionSpec.Executor.Kind == spec2.PipelineTaskExecutorKindK8sJob.String() ||
-		actionSpec.Executor.Kind == spec2.PipelineTaskExecutorKindK8sFlink.String() ||
-		actionSpec.Executor.Kind == spec2.PipelineTaskExecutorKindK8sSpark.String() {
-		kind := spec2.PipelineTaskExecutorKind(actionSpec.Executor.Kind)
+	if actionSpec.Executor.Kind == spec.PipelineTaskExecutorKindK8sJob.String() ||
+		actionSpec.Executor.Kind == spec.PipelineTaskExecutorKindK8sFlink.String() ||
+		actionSpec.Executor.Kind == spec.PipelineTaskExecutorKindK8sSpark.String() {
+		kind := spec.PipelineTaskExecutorKind(actionSpec.Executor.Kind)
 		return kind, kind.GenExecutorNameByClusterName(task.Extra.ClusterName)
 	}
 
-	return spec2.PipelineTaskExecutorKind(actionSpec.Executor.Kind), spec2.PipelineTaskExecutorName(actionSpec.Executor.Name)
+	return spec.PipelineTaskExecutorKind(actionSpec.Executor.Kind), spec.PipelineTaskExecutorName(actionSpec.Executor.Name)
 }
 
 func calculateNormalTaskResources(action *pipelineyml.Action, actionDefine *diceyml.Job) apistructs.PipelineAppliedResources {

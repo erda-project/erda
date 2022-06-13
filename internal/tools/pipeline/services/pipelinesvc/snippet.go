@@ -25,7 +25,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/apierrors"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/expression"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 	"github.com/erda-project/erda/pkg/pipeline_snippet_client"
@@ -275,7 +275,7 @@ func (s *PipelineSvc) batchQueryPipelineYAMLBySnippetConfigs(snippetConfigs []ap
 }
 
 // createSnippetPipeline4Create 为 snippetTask 创建流水线对象
-func (s *PipelineSvc) MakeSnippetPipeline4Create(p *spec2.Pipeline, snippetTask *spec2.PipelineTask, yamlContent string) (*spec2.Pipeline, error) {
+func (s *PipelineSvc) MakeSnippetPipeline4Create(p *spec.Pipeline, snippetTask *spec.PipelineTask, yamlContent string) (*spec.Pipeline, error) {
 	snippetConfig := snippetTask.Extra.Action.SnippetConfig
 	// runParams
 	var runParams []apistructs.PipelineRunParam

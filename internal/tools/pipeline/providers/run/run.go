@@ -23,12 +23,12 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	aop2 "github.com/erda-project/erda/internal/tools/pipeline/aop"
+	"github.com/erda-project/erda/internal/tools/pipeline/aop"
 	"github.com/erda-project/erda/internal/tools/pipeline/aop/aoptypes"
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/container_provider"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/definition/db"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/apierrors"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/expression"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
@@ -36,7 +36,7 @@ import (
 	"github.com/erda-project/erda/pkg/time/mysql_time"
 )
 
-func (s *provider) RunOnePipeline(ctx context.Context, req *apistructs.PipelineRunRequest) (*spec2.Pipeline, error) {
+func (s *provider) RunOnePipeline(ctx context.Context, req *apistructs.PipelineRunRequest) (*spec.Pipeline, error) {
 	p, err := s.dbClient.GetPipeline(req.PipelineID)
 	if err != nil {
 		return nil, apierrors.ErrGetPipeline.InvalidParameter(err)
@@ -154,7 +154,7 @@ func (s *provider) RunOnePipeline(ctx context.Context, req *apistructs.PipelineR
 	}
 
 	// aop
-	_ = aop2.Handle(aop2.NewContextForPipeline(p, aoptypes.TuneTriggerPipelineBeforeExec))
+	_ = aop.Handle(aop.NewContextForPipeline(p, aoptypes.TuneTriggerPipelineBeforeExec))
 
 	// send to pipengine reconciler
 	s.Engine.DistributedSendPipeline(context.Background(), p.ID)
@@ -167,10 +167,10 @@ func (s *provider) RunOnePipeline(ctx context.Context, req *apistructs.PipelineR
 	return &p, nil
 }
 
-func (s *provider) createPipelineRunLabels(p spec2.Pipeline, req *apistructs.PipelineRunRequest) (err error) {
-	labels := make([]spec2.PipelineLabel, 0)
+func (s *provider) createPipelineRunLabels(p spec.Pipeline, req *apistructs.PipelineRunRequest) (err error) {
+	labels := make([]spec.PipelineLabel, 0)
 	if req.UserID != "" {
-		labels = append(labels, spec2.PipelineLabel{
+		labels = append(labels, spec.PipelineLabel{
 			ID:              uuid.SnowFlakeIDUint64(),
 			Type:            apistructs.PipelineLabelTypeInstance,
 			TargetID:        p.ID,
@@ -186,7 +186,7 @@ func (s *provider) createPipelineRunLabels(p spec2.Pipeline, req *apistructs.Pip
 	return err
 }
 
-func (s *provider) updatePipelineDefinition(p spec2.Pipeline) error {
+func (s *provider) updatePipelineDefinition(p spec.Pipeline) error {
 	if p.PipelineDefinitionID == "" {
 		return nil
 	}
@@ -269,7 +269,7 @@ func getRealRunParams(runParams []apistructs.PipelineRunParam, yml string) (resu
 
 // limitParallelRunningPipelines 判断在 pipelineSource + pipelineYmlName 下只能有一个在运行
 // 被嵌套的流水线跳过校验
-func (s *provider) limitParallelRunningPipelines(p *spec2.Pipeline) error {
+func (s *provider) limitParallelRunningPipelines(p *spec.Pipeline) error {
 	if p.CanSkipRunningCheck() {
 		logrus.Infof("pipeline: %d skiped limit parallel running, enqueue condition: %s",
 			p.ID, p.GetLabel(apistructs.LabelBindPipelineQueueEnqueueCondition))
@@ -280,10 +280,10 @@ func (s *provider) limitParallelRunningPipelines(p *spec2.Pipeline) error {
 		return nil
 	}
 	var runningPipelineIDs []uint64
-	err := s.dbClient.Table(&spec2.PipelineBase{}).
+	err := s.dbClient.Table(&spec.PipelineBase{}).
 		Select("id").In("status", apistructs.ReconcilerRunningStatuses()).
 		Where("is_snippet = ?", false).
-		Find(&runningPipelineIDs, &spec2.PipelineBase{
+		Find(&runningPipelineIDs, &spec.PipelineBase{
 			PipelineSource:  p.PipelineSource,
 			PipelineYmlName: p.PipelineYmlName,
 		})

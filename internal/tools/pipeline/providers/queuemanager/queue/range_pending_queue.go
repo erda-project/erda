@@ -23,7 +23,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	aop2 "github.com/erda-project/erda/internal/tools/pipeline/aop"
+	"github.com/erda-project/erda/internal/tools/pipeline/aop"
 	"github.com/erda-project/erda/internal/tools/pipeline/aop/aoptypes"
 	"github.com/erda-project/erda/internal/tools/pipeline/events"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/queuemanager/pkg/queue/priorityqueue"
@@ -102,8 +102,8 @@ func (q *defaultQueue) RangePendingQueue() {
 
 		// precheck before run
 		customKVsOfAOP := map[interface{}]interface{}{}
-		ctx := aop2.NewContextForPipeline(*p, aoptypes.TuneTriggerPipelineInQueuePrecheckBeforePop, customKVsOfAOP)
-		_ = aop2.Handle(ctx)
+		ctx := aop.NewContextForPipeline(*p, aoptypes.TuneTriggerPipelineInQueuePrecheckBeforePop, customKVsOfAOP)
+		_ = aop.Handle(ctx)
 		checkResultI, ok := ctx.TryGet(apistructs.PipelinePreCheckResultContextKey)
 		if !ok {
 			// no result, log and wait for another retry

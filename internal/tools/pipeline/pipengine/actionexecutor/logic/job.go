@@ -30,7 +30,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/conf"
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/task_uuid"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/k8s/storage"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml/pipelineymlv1"
@@ -135,11 +135,11 @@ func WhichStorageClass(tp string, vendor string) string {
 	return sc
 }
 
-func MakeJobName(task *spec2.PipelineTask) string {
+func MakeJobName(task *spec.PipelineTask) string {
 	return strutil.Concat(task.Extra.Namespace, ".", task_uuid.MakeJobID(task))
 }
 
-func TransferToSchedulerJob(task *spec2.PipelineTask) (job apistructs.JobFromUser, err error) {
+func TransferToSchedulerJob(task *spec.PipelineTask) (job apistructs.JobFromUser, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = errors.Errorf("%v", r)
@@ -188,10 +188,10 @@ func TransferToSchedulerJob(task *spec2.PipelineTask) (job apistructs.JobFromUse
 	}, nil
 }
 
-func MakeVolume(task *spec2.PipelineTask) []diceyml.Volume {
+func MakeVolume(task *spec.PipelineTask) []diceyml.Volume {
 	diceVolumes := make([]diceyml.Volume, 0)
 	for _, vo := range task.Extra.Volumes {
-		if vo.Type == string(spec2.StoreTypeDiceVolumeFake) || vo.Type == string(spec2.StoreTypeDiceCacheNFS) {
+		if vo.Type == string(spec.StoreTypeDiceVolumeFake) || vo.Type == string(spec.StoreTypeDiceCacheNFS) {
 			// fake volume,没有实际挂载行为,不传给scheduler
 			continue
 		}
@@ -199,9 +199,9 @@ func MakeVolume(task *spec2.PipelineTask) []diceyml.Volume {
 			Path: vo.Value,
 			Storage: func() string {
 				switch vo.Type {
-				case string(spec2.StoreTypeDiceVolumeNFS):
+				case string(spec.StoreTypeDiceVolumeNFS):
 					return "nfs"
-				case string(spec2.StoreTypeDiceVolumeLocal):
+				case string(spec.StoreTypeDiceVolumeLocal):
 					return "local"
 				default:
 					panic(errors.Errorf("%q has not supported volume type: %s", vo.Name, vo.Type))
@@ -225,7 +225,7 @@ func MakeVolume(task *spec2.PipelineTask) []diceyml.Volume {
 	return diceVolumes
 }
 
-func GetBigDataConf(task *spec2.PipelineTask) (apistructs.BigdataConf, error) {
+func GetBigDataConf(task *spec.PipelineTask) (apistructs.BigdataConf, error) {
 	conf := apistructs.BigdataConf{
 		BigdataMetadata: apistructs.BigdataMetadata{
 			Name:      task.Extra.UUID,
@@ -260,6 +260,6 @@ func GetPullImagePolicy() corev1.PullPolicy {
 }
 
 // MakeJobLabelSelector return LabelSelector like job-name=pipeline-1.pipeline-task-1
-func MakeJobLabelSelector(task *spec2.PipelineTask) string {
+func MakeJobLabelSelector(task *spec.PipelineTask) string {
 	return fmt.Sprintf("job-name=%s", MakeJobName(task))
 }

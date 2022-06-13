@@ -19,24 +19,24 @@ import (
 
 	"github.com/coreos/etcd/mvcc/mvccpb"
 
-	worker2 "github.com/erda-project/erda/internal/tools/pipeline/providers/leaderworker/worker"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/leaderworker/worker"
 )
 
 type Event struct {
 	Type         mvccpb.Event_EventType
-	WorkerID     worker2.ID
-	LogicTaskIDs []worker2.LogicTaskID
+	WorkerID     worker.ID
+	LogicTaskIDs []worker.LogicTaskID
 }
 
 type workerWithCancel struct {
-	Worker     worker2.Worker
+	Worker     worker.Worker
 	Ctx        context.Context
 	CancelFunc context.CancelFunc
-	LogicTasks map[worker2.LogicTaskID]logicTaskWithCtx
+	LogicTasks map[worker.LogicTaskID]logicTaskWithCtx
 }
 
 type logicTaskWithCtx struct {
-	LogicTask worker2.LogicTask
+	LogicTask worker.LogicTask
 	Ctx       context.Context
 }
 

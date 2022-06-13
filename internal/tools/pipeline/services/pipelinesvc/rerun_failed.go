@@ -20,10 +20,10 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/apierrors"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
-func (s *PipelineSvc) RerunFailed(ctx context.Context, req *apistructs.PipelineRerunFailedRequest) (*spec2.Pipeline, error) {
+func (s *PipelineSvc) RerunFailed(ctx context.Context, req *apistructs.PipelineRerunFailedRequest) (*spec.Pipeline, error) {
 	// base pipeline
 	origin, err := s.dbClient.GetPipeline(req.PipelineID)
 	if err != nil {
@@ -61,7 +61,7 @@ func (s *PipelineSvc) RerunFailed(ctx context.Context, req *apistructs.PipelineR
 	}
 	p.Type = apistructs.PipelineTypeRerunFailed
 
-	var stages []spec2.PipelineStage
+	var stages []spec.PipelineStage
 	if stages, err = s.CreatePipelineGraph(p); err != nil {
 		return nil, apierrors.ErrRerunFailedPipeline.InternalError(err)
 	}

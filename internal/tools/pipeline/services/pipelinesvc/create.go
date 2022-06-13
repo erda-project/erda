@@ -33,18 +33,18 @@ import (
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/action_info"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/cms"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/apierrors"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
 // Deprecated
-func (s *PipelineSvc) Create(req *apistructs.PipelineCreateRequest) (*spec2.Pipeline, error) {
+func (s *PipelineSvc) Create(req *apistructs.PipelineCreateRequest) (*spec.Pipeline, error) {
 	p, err := s.makePipelineFromRequest(req)
 	if err != nil {
 		return nil, err
 	}
-	var stages []spec2.PipelineStage
+	var stages []spec.PipelineStage
 	if stages, err = s.CreatePipelineGraph(p); err != nil {
 		return nil, err
 	}
@@ -53,11 +53,11 @@ func (s *PipelineSvc) Create(req *apistructs.PipelineCreateRequest) (*spec2.Pipe
 	return p, nil
 }
 
-func (s *PipelineSvc) makePipelineFromRequest(req *apistructs.PipelineCreateRequest) (*spec2.Pipeline, error) {
-	p := &spec2.Pipeline{
-		PipelineExtra: spec2.PipelineExtra{
+func (s *PipelineSvc) makePipelineFromRequest(req *apistructs.PipelineCreateRequest) (*spec.Pipeline, error) {
+	p := &spec.Pipeline{
+		PipelineExtra: spec.PipelineExtra{
 			NormalLabels: make(map[string]string),
-			Extra: spec2.PipelineExtraInfo{
+			Extra: spec.PipelineExtraInfo{
 				// --- empty user ---
 				SubmitUser: &apistructs.PipelineUser{},
 				RunUser:    &apistructs.PipelineUser{},
@@ -194,16 +194,16 @@ func (s *PipelineSvc) makePipelineFromRequest(req *apistructs.PipelineCreateRequ
 }
 
 // traverse the stage of yml and save it to the database
-func (s *PipelineSvc) createPipelineGraphStage(p *spec2.Pipeline, pipelineYml *pipelineyml.PipelineYml, ops ...dbclient.SessionOption) (stages []*spec2.PipelineStage, err error) {
-	var dbStages []*spec2.PipelineStage
+func (s *PipelineSvc) createPipelineGraphStage(p *spec.Pipeline, pipelineYml *pipelineyml.PipelineYml, ops ...dbclient.SessionOption) (stages []*spec.PipelineStage, err error) {
+	var dbStages []*spec.PipelineStage
 
 	for si := range pipelineYml.Spec().Stages {
-		ps := &spec2.PipelineStage{
+		ps := &spec.PipelineStage{
 			PipelineID:  p.ID,
 			Name:        "",
 			Status:      apistructs.PipelineStatusAnalyzed,
 			CostTimeSec: -1,
-			Extra:       spec2.PipelineStageExtra{StageOrder: si},
+			Extra:       spec.PipelineStageExtra{StageOrder: si},
 		}
 		if err := s.dbClient.CreatePipelineStage(ps, ops...); err != nil {
 			return nil, apierrors.ErrCreatePipelineGraph.InternalError(err)
@@ -214,12 +214,12 @@ func (s *PipelineSvc) createPipelineGraphStage(p *spec2.Pipeline, pipelineYml *p
 }
 
 // replace the tasks parsed by yml and tasks in the database with the same name
-func (s *PipelineSvc) MergePipelineYmlTasks(pipelineYml *pipelineyml.PipelineYml, dbTasks []spec2.PipelineTask, p *spec2.Pipeline, dbStages []spec2.PipelineStage, passedDataWhenCreate *action_info.PassedDataWhenCreate) (mergeTasks []spec2.PipelineTask, err error) {
+func (s *PipelineSvc) MergePipelineYmlTasks(pipelineYml *pipelineyml.PipelineYml, dbTasks []spec.PipelineTask, p *spec.Pipeline, dbStages []spec.PipelineStage, passedDataWhenCreate *action_info.PassedDataWhenCreate) (mergeTasks []spec.PipelineTask, err error) {
 	// loop yml actions to make actionTasks
 	actionTasks := s.getYmlActionTasks(pipelineYml, p, dbStages, passedDataWhenCreate)
 
 	// determine whether the task status was disabled or Paused according to the TaskOperates of the pipeline
-	var operateActionTasks []spec2.PipelineTask
+	var operateActionTasks []spec.PipelineTask
 	for _, actionTask := range actionTasks {
 		operateTask, err := s.OperateTask(p, &actionTask)
 		if err != nil {
@@ -233,15 +233,15 @@ func (s *PipelineSvc) MergePipelineYmlTasks(pipelineYml *pipelineyml.PipelineYml
 }
 
 // generate task array according to yml structure
-func (s *PipelineSvc) getYmlActionTasks(pipelineYml *pipelineyml.PipelineYml, p *spec2.Pipeline, dbStages []spec2.PipelineStage, passedDataWhenCreate *action_info.PassedDataWhenCreate) []spec2.PipelineTask {
+func (s *PipelineSvc) getYmlActionTasks(pipelineYml *pipelineyml.PipelineYml, p *spec.Pipeline, dbStages []spec.PipelineStage, passedDataWhenCreate *action_info.PassedDataWhenCreate) []spec.PipelineTask {
 	if pipelineYml == nil || p == nil || len(dbStages) <= 0 {
 		return nil
 	}
 
 	// loop yml actions to make actionTasks
-	var actionTasks []spec2.PipelineTask
+	var actionTasks []spec.PipelineTask
 	pipelineYml.Spec().LoopStagesActions(func(stageIndex int, action *pipelineyml.Action) {
-		var task *spec2.PipelineTask
+		var task *spec.PipelineTask
 		if action.Type.IsSnippet() {
 			task = s.makeSnippetPipelineTask(p, &dbStages[stageIndex], action)
 		} else {
@@ -254,12 +254,12 @@ func (s *PipelineSvc) getYmlActionTasks(pipelineYml *pipelineyml.PipelineYml, p 
 }
 
 // combine the task converted from yml with the task in the database
-func ymlTasksMergeDBTasks(actionTasks []spec2.PipelineTask, dbTasks []spec2.PipelineTask) []spec2.PipelineTask {
-	var mergeTasks []spec2.PipelineTask
+func ymlTasksMergeDBTasks(actionTasks []spec.PipelineTask, dbTasks []spec.PipelineTask) []spec.PipelineTask {
+	var mergeTasks []spec.PipelineTask
 	for actionIndex := range actionTasks {
 		var actionTask = actionTasks[actionIndex]
 		// actionTask the same dbTask pipelineID,stagesID,type and name replace with dbTask
-		var mergeTask *spec2.PipelineTask
+		var mergeTask *spec.PipelineTask
 		for index := range dbTasks {
 			var dbTask = dbTasks[index]
 			if actionTask.PipelineID != dbTask.PipelineID || actionTask.StageID != dbTask.StageID {
@@ -280,7 +280,7 @@ func ymlTasksMergeDBTasks(actionTasks []spec2.PipelineTask, dbTasks []spec2.Pipe
 }
 
 // determine whether the task status is disabled according to the TaskOperates of the pipeline and task extra disable field
-func (s *PipelineSvc) OperateTask(p *spec2.Pipeline, task *spec2.PipelineTask) (*spec2.PipelineTask, error) {
+func (s *PipelineSvc) OperateTask(p *spec.Pipeline, task *spec.PipelineTask) (*spec.PipelineTask, error) {
 	for _, taskOp := range p.Extra.TaskOperates {
 		// the name of the disabled task matches the task name
 		if taskOp.TaskAlias != task.Name {
@@ -343,7 +343,7 @@ func (s *PipelineSvc) OperateTask(p *spec2.Pipeline, task *spec2.PipelineTask) (
 }
 
 // CreatePipelineGraph recursively create pipeline graph.
-func (s *PipelineSvc) CreatePipelineGraph(p *spec2.Pipeline) (newStages []spec2.PipelineStage, err error) {
+func (s *PipelineSvc) CreatePipelineGraph(p *spec.Pipeline) (newStages []spec.PipelineStage, err error) {
 	// parse yml
 	pipelineYml, err := pipelineyml.New(
 		[]byte(p.PipelineYml),
@@ -356,7 +356,7 @@ func (s *PipelineSvc) CreatePipelineGraph(p *spec2.Pipeline) (newStages []spec2.
 	p.EnsureGC()
 
 	// only create pipeline and stages, tasks waiting pipeline run
-	var stages []*spec2.PipelineStage
+	var stages []*spec.PipelineStage
 	_, err = s.dbClient.Transaction(func(session *xorm.Session) (interface{}, error) {
 		// create pipeline
 		if err := s.createPipelineAndCheckNotEndStatus(p, session); err != nil {
@@ -397,7 +397,7 @@ func (s *PipelineSvc) CreatePipelineGraph(p *spec2.Pipeline) (newStages []spec2.
 	return newStages, nil
 }
 
-func (s *PipelineSvc) createPipelineAndCheckNotEndStatus(p *spec2.Pipeline, session *xorm.Session) error {
+func (s *PipelineSvc) createPipelineAndCheckNotEndStatus(p *spec.Pipeline, session *xorm.Session) error {
 	// Check whether the parent pipeline has an end state
 	for _, parentPipelineID := range p.Extra.SnippetChain {
 		parentPipeline, _, err := s.dbClient.GetPipelineBase(parentPipelineID, dbclient.WithTxSession(session))
@@ -427,9 +427,9 @@ func getString(v interface{}) string {
 	return fmt.Sprintf("%v", v)
 }
 
-func (s *PipelineSvc) makePipelineFromCopy(o *spec2.Pipeline) (p *spec2.Pipeline, err error) {
+func (s *PipelineSvc) makePipelineFromCopy(o *spec.Pipeline) (p *spec.Pipeline, err error) {
 	r := deepcopy.Copy(o)
-	p, ok := r.(*spec2.Pipeline)
+	p, ok := r.(*spec.Pipeline)
 	if !ok {
 		return nil, errors.New("failed to copy pipeline")
 	}
@@ -440,7 +440,7 @@ func (s *PipelineSvc) makePipelineFromCopy(o *spec2.Pipeline) (p *spec2.Pipeline
 	p.ID = 0
 	p.Status = apistructs.PipelineStatusAnalyzed
 	p.PipelineExtra.PipelineID = 0
-	p.Snapshot = spec2.Snapshot{}
+	p.Snapshot = spec.Snapshot{}
 	p.Snapshot.Envs = o.Snapshot.Envs
 	p.Snapshot.RunPipelineParams = o.Snapshot.RunPipelineParams
 	p.Extra.Namespace = o.Extra.Namespace

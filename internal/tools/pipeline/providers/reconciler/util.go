@@ -19,10 +19,10 @@ import (
 	"time"
 
 	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
-func (r *provider) mustFetchPipelineDetail(ctx context.Context, pipelineID uint64) *spec2.Pipeline {
+func (r *provider) mustFetchPipelineDetail(ctx context.Context, pipelineID uint64) *spec.Pipeline {
 	for {
 		select {
 		case <-ctx.Done():
@@ -47,7 +47,7 @@ func (r *provider) mustFetchPipelineDetail(ctx context.Context, pipelineID uint6
 // YmlTaskMergeDBTasks .
 // parse out tasks according to the yml structure, and then query the created tasks from the database,
 // and replace the tasks that already exist in the database with yml tasks
-func (r *provider) YmlTaskMergeDBTasks(pipeline *spec2.Pipeline) ([]*spec2.PipelineTask, error) {
+func (r *provider) YmlTaskMergeDBTasks(pipeline *spec.Pipeline) ([]*spec.PipelineTask, error) {
 	// get pipeline tasks from db
 	tasks, err := r.dbClient.ListPipelineTasksByPipelineID(pipeline.ID)
 	if err != nil {
@@ -76,7 +76,7 @@ func (r *provider) YmlTaskMergeDBTasks(pipeline *spec2.Pipeline) ([]*spec2.Pipel
 		return nil, err
 	}
 
-	var newTasks []*spec2.PipelineTask
+	var newTasks []*spec.PipelineTask
 	for index := range tasks {
 		task := tasks[index]
 		newTasks = append(newTasks, &task)

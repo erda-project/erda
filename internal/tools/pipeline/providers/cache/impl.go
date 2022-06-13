@@ -20,7 +20,7 @@ import (
 	"fmt"
 
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/action_info"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
@@ -60,7 +60,7 @@ func (p *provider) getInterfaceValueByKey(pipelineID uint64, key string) interfa
 // GetOrSetStagesFromContext
 // get value from caches map
 // if not exist search value from db and save to caches map
-func (p *provider) GetOrSetStagesFromContext(pipelineID uint64) (stages []spec2.PipelineStage, err error) {
+func (p *provider) GetOrSetStagesFromContext(pipelineID uint64) (stages []spec.PipelineStage, err error) {
 	stages = p.getStagesCachesFromContextByPipelineID(pipelineID)
 	if stages != nil {
 		return stages, nil
@@ -76,12 +76,12 @@ func (p *provider) GetOrSetStagesFromContext(pipelineID uint64) (stages []spec2.
 }
 
 // get stages from context caches map by pipelineID
-func (p *provider) getStagesCachesFromContextByPipelineID(pipelineID uint64) []spec2.PipelineStage {
+func (p *provider) getStagesCachesFromContextByPipelineID(pipelineID uint64) []spec.PipelineStage {
 	value := p.getInterfaceValueByKey(pipelineID, pipelineStagesContextCachesPrefixKey)
 	if value == nil {
 		return nil
 	}
-	stages, ok := value.([]spec2.PipelineStage)
+	stages, ok := value.([]spec.PipelineStage)
 	if !ok {
 		return nil
 	}
@@ -89,7 +89,7 @@ func (p *provider) getStagesCachesFromContextByPipelineID(pipelineID uint64) []s
 	return stages
 }
 
-func (p *provider) setStagesCachesToContextByPipelineID(stages []spec2.PipelineStage, pipelineID uint64) {
+func (p *provider) setStagesCachesToContextByPipelineID(stages []spec.PipelineStage, pipelineID uint64) {
 	p.cacheMap.Store(makeMapKey(pipelineID, pipelineStagesContextCachesPrefixKey), stages)
 }
 
@@ -140,7 +140,7 @@ func (p *provider) setPipelineYmlCachesToContextByPipelineID(yml *pipelineyml.Pi
 // GetOrSetPipelineRerunSuccessTasksFromContext
 // get value from caches map
 // if not exist search value from db and save to caches map
-func (p *provider) GetOrSetPipelineRerunSuccessTasksFromContext(pipelineID uint64) (successTasks map[string]*spec2.PipelineTask, err error) {
+func (p *provider) GetOrSetPipelineRerunSuccessTasksFromContext(pipelineID uint64) (successTasks map[string]*spec.PipelineTask, err error) {
 	successTasks = p.getPipelineRerunSuccessTasksFromContextByPipelineID(pipelineID)
 	if successTasks != nil {
 		return successTasks, nil
@@ -157,12 +157,12 @@ func (p *provider) GetOrSetPipelineRerunSuccessTasksFromContext(pipelineID uint6
 	return lastSuccessTaskMap, nil
 }
 
-func (p *provider) getPipelineRerunSuccessTasksFromContextByPipelineID(pipelineID uint64) map[string]*spec2.PipelineTask {
+func (p *provider) getPipelineRerunSuccessTasksFromContextByPipelineID(pipelineID uint64) map[string]*spec.PipelineTask {
 	value := p.getInterfaceValueByKey(pipelineID, pipelineRerunSuccessTaskContextCachesPrefixKey)
 	if value == nil {
 		return nil
 	}
-	successTasks, ok := value.(map[string]*spec2.PipelineTask)
+	successTasks, ok := value.(map[string]*spec.PipelineTask)
 	if !ok {
 		return nil
 	}
@@ -170,7 +170,7 @@ func (p *provider) getPipelineRerunSuccessTasksFromContextByPipelineID(pipelineI
 	return successTasks
 }
 
-func (p *provider) setPipelineRerunSuccessTasksToContextByPipelineID(successTasks map[string]*spec2.PipelineTask, pipelineID uint64) {
+func (p *provider) setPipelineRerunSuccessTasksToContextByPipelineID(successTasks map[string]*spec.PipelineTask, pipelineID uint64) {
 	p.cacheMap.Store(makeMapKey(pipelineID, pipelineRerunSuccessTaskContextCachesPrefixKey), successTasks)
 }
 
@@ -179,7 +179,7 @@ func (p *provider) setPipelineRerunSuccessTasksToContextByPipelineID(successTask
 // GetOrSetPassedDataWhenCreateFromContext
 // get value from caches map
 // if not exist search value from db and save to caches map
-func (p *provider) GetOrSetPassedDataWhenCreateFromContext(pipelineYml *pipelineyml.PipelineYml, pipeline *spec2.Pipeline) (passedDataWhenCreate *action_info.PassedDataWhenCreate, err error) {
+func (p *provider) GetOrSetPassedDataWhenCreateFromContext(pipelineYml *pipelineyml.PipelineYml, pipeline *spec.Pipeline) (passedDataWhenCreate *action_info.PassedDataWhenCreate, err error) {
 	pipelineID := pipeline.ID
 	passedDataWhenCreate = p.getPassedDataWhenCreateFromContextByPipelineID(pipelineID)
 	if passedDataWhenCreate != nil {

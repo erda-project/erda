@@ -26,7 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/erda-project/erda/apistructs"
-	logic2 "github.com/erda-project/erda/internal/tools/pipeline/pipengine/actionexecutor/logic"
+	"github.com/erda-project/erda/internal/tools/pipeline/pipengine/actionexecutor/logic"
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/containers"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders"
 )
@@ -122,7 +122,7 @@ func composeEnvs(envs map[string]string) []corev1.EnvVar {
 
 func (k *K8sFlink) ComposeFlinkCluster(job apistructs.JobFromUser, data apistructs.BigdataConf, hostURL string) *flinkoperatorv1beta1.FlinkCluster {
 
-	scheduleInfo2, _, _ := logic2.GetScheduleInfo(k.cluster, string(k.Name()), string(Kind), job)
+	scheduleInfo2, _, _ := logic.GetScheduleInfo(k.cluster, string(k.Name()), string(Kind), job)
 	affinity := &constraintbuilders.K8S(&scheduleInfo2, nil, nil, nil).Affinity
 	flinkCluster := flinkoperatorv1beta1.FlinkCluster{
 		TypeMeta: metav1.TypeMeta{
@@ -138,7 +138,7 @@ func (k *K8sFlink) ComposeFlinkCluster(job apistructs.JobFromUser, data apistruc
 		Spec: flinkoperatorv1beta1.FlinkClusterSpec{
 			Image: flinkoperatorv1beta1.ImageSpec{
 				Name:       data.Spec.Image,
-				PullPolicy: logic2.GetPullImagePolicy(),
+				PullPolicy: logic.GetPullImagePolicy(),
 				PullSecrets: []corev1.LocalObjectReference{
 					{
 						Name: apistructs.AliyunRegistry,
@@ -200,7 +200,7 @@ func (k *K8sFlink) ComposeFlinkCluster(job apistructs.JobFromUser, data apistruc
 }
 
 func (k *K8sFlink) composeFlinkJob(job apistructs.JobFromUser, data apistructs.BigdataConf) *flinkoperatorv1beta1.JobSpec {
-	scheduleInfo2, _, _ := logic2.GetScheduleInfo(k.cluster, string(k.Name()), string(Kind), job)
+	scheduleInfo2, _, _ := logic.GetScheduleInfo(k.cluster, string(k.Name()), string(Kind), job)
 	return &flinkoperatorv1beta1.JobSpec{
 		JarFile:           data.Spec.Resource,
 		ClassName:         &data.Spec.Class,

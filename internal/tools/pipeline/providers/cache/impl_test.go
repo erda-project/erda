@@ -21,30 +21,30 @@ import (
 	"bou.ke/monkey"
 
 	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
 func Test_getOrSetStagesFromContext(t *testing.T) {
 	type args struct {
-		stages []spec2.PipelineStage
+		stages []spec.PipelineStage
 	}
 	tests := []struct {
 		name       string
 		args       args
-		wantStages []spec2.PipelineStage
+		wantStages []spec.PipelineStage
 		wantErr    bool
 	}{
 		{
 			name: "get caches stages",
 			args: args{
-				stages: []spec2.PipelineStage{
+				stages: []spec.PipelineStage{
 					{
 						ID: 1,
 					},
 				},
 			},
-			wantStages: []spec2.PipelineStage{
+			wantStages: []spec.PipelineStage{
 				{
 					ID: 1,
 				},
@@ -55,7 +55,7 @@ func Test_getOrSetStagesFromContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var client *dbclient.Client
-			patch := monkey.PatchInstanceMethod(reflect.TypeOf(client), "ListPipelineStageByPipelineID", func(client *dbclient.Client, pipelineID uint64, ops ...dbclient.SessionOption) ([]spec2.PipelineStage, error) {
+			patch := monkey.PatchInstanceMethod(reflect.TypeOf(client), "ListPipelineStageByPipelineID", func(client *dbclient.Client, pipelineID uint64, ops ...dbclient.SessionOption) ([]spec.PipelineStage, error) {
 				return tt.args.stages, nil
 			})
 
@@ -83,24 +83,24 @@ func Test_getOrSetStagesFromContext(t *testing.T) {
 
 func Test_getOrSetPipelineRerunSuccessTasksFromContext(t *testing.T) {
 	type args struct {
-		tasks map[string]*spec2.PipelineTask
+		tasks map[string]*spec.PipelineTask
 	}
 	tests := []struct {
 		name                          string
 		args                          args
-		wantPipelineRerunSuccessTasks map[string]*spec2.PipelineTask
+		wantPipelineRerunSuccessTasks map[string]*spec.PipelineTask
 		wantErr                       bool
 	}{
 		{
 			name: "get caches stages",
 			args: args{
-				tasks: map[string]*spec2.PipelineTask{
+				tasks: map[string]*spec.PipelineTask{
 					"git-checkout": {
 						ID: 1,
 					},
 				},
 			},
-			wantPipelineRerunSuccessTasks: map[string]*spec2.PipelineTask{
+			wantPipelineRerunSuccessTasks: map[string]*spec.PipelineTask{
 				"git-checkout": {
 					ID: 1,
 				},
@@ -111,11 +111,11 @@ func Test_getOrSetPipelineRerunSuccessTasksFromContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var client *dbclient.Client
-			patch := monkey.PatchInstanceMethod(reflect.TypeOf(client), "GetPipeline", func(client *dbclient.Client, id interface{}, ops ...dbclient.SessionOption) (spec2.Pipeline, error) {
-				return spec2.Pipeline{}, nil
+			patch := monkey.PatchInstanceMethod(reflect.TypeOf(client), "GetPipeline", func(client *dbclient.Client, id interface{}, ops ...dbclient.SessionOption) (spec.Pipeline, error) {
+				return spec.Pipeline{}, nil
 			})
 
-			patch1 := monkey.PatchInstanceMethod(reflect.TypeOf(client), "ParseRerunFailedDetail", func(client *dbclient.Client, detail *spec2.RerunFailedDetail) (map[string]*spec2.PipelineTask, map[string]*spec2.PipelineTask, error) {
+			patch1 := monkey.PatchInstanceMethod(reflect.TypeOf(client), "ParseRerunFailedDetail", func(client *dbclient.Client, detail *spec.RerunFailedDetail) (map[string]*spec.PipelineTask, map[string]*spec.PipelineTask, error) {
 				return tt.args.tasks, nil, nil
 			})
 
@@ -165,9 +165,9 @@ func Test_getOrSetPipelineYmlFromContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var client *dbclient.Client
-			patch := monkey.PatchInstanceMethod(reflect.TypeOf(client), "GetPipeline", func(client *dbclient.Client, id interface{}, ops ...dbclient.SessionOption) (spec2.Pipeline, error) {
-				var pipeline = spec2.Pipeline{
-					PipelineExtra: spec2.PipelineExtra{
+			patch := monkey.PatchInstanceMethod(reflect.TypeOf(client), "GetPipeline", func(client *dbclient.Client, id interface{}, ops ...dbclient.SessionOption) (spec.Pipeline, error) {
+				var pipeline = spec.Pipeline{
+					PipelineExtra: spec.PipelineExtra{
 						PipelineYml: tt.args.yml,
 					},
 				}

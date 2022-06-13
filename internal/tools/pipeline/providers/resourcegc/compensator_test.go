@@ -27,13 +27,13 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/jsonstore"
 )
 
 func TestReconciler_getNeedGCPipeline(t *testing.T) {
 	type args struct {
-		pipelines []spec2.Pipeline
+		pipelines []spec.Pipeline
 		err       error
 	}
 
@@ -69,17 +69,17 @@ func TestReconciler_getNeedGCPipeline(t *testing.T) {
 		{
 			name: "completeReconcilerGC_pipeline",
 			args: args{
-				pipelines: []spec2.Pipeline{
+				pipelines: []spec.Pipeline{
 					{
-						PipelineBase: spec2.PipelineBase{
+						PipelineBase: spec.PipelineBase{
 							Status: apistructs.PipelineStatusSuccess,
 							TimeEnd: func() *time.Time {
 								now := now.Add(-190*time.Second - bufferTime*time.Second)
 								return &now
 							}(),
 						},
-						PipelineExtra: spec2.PipelineExtra{
-							Extra: spec2.PipelineExtraInfo{
+						PipelineExtra: spec.PipelineExtra{
+							Extra: spec.PipelineExtraInfo{
 								CompleteReconcilerGC:       true,
 								CompleteReconcilerTeardown: false,
 								GC: apistructs.PipelineGC{
@@ -99,17 +99,17 @@ func TestReconciler_getNeedGCPipeline(t *testing.T) {
 		{
 			name: "completeReconcilerTeardown_pipeline",
 			args: args{
-				pipelines: []spec2.Pipeline{
+				pipelines: []spec.Pipeline{
 					{
-						PipelineBase: spec2.PipelineBase{
+						PipelineBase: spec.PipelineBase{
 							Status: apistructs.PipelineStatusSuccess,
 							TimeEnd: func() *time.Time {
 								now := time.Now().Add(-190*time.Second - bufferTime*time.Second)
 								return &now
 							}(),
 						},
-						PipelineExtra: spec2.PipelineExtra{
-							Extra: spec2.PipelineExtraInfo{
+						PipelineExtra: spec.PipelineExtra{
+							Extra: spec.PipelineExtraInfo{
 								CompleteReconcilerGC:       false,
 								CompleteReconcilerTeardown: true,
 								GC: apistructs.PipelineGC{
@@ -129,17 +129,17 @@ func TestReconciler_getNeedGCPipeline(t *testing.T) {
 		{
 			name: "completeReconcilerTeardownNotFoundInETCD_pipeline",
 			args: args{
-				pipelines: []spec2.Pipeline{
+				pipelines: []spec.Pipeline{
 					{
-						PipelineBase: spec2.PipelineBase{
+						PipelineBase: spec.PipelineBase{
 							Status: apistructs.PipelineStatusSuccess,
 							TimeEnd: func() *time.Time {
 								now := time.Now().Add(-300*time.Second - bufferTime*time.Second)
 								return &now
 							}(),
 						},
-						PipelineExtra: spec2.PipelineExtra{
-							Extra: spec2.PipelineExtraInfo{
+						PipelineExtra: spec.PipelineExtra{
+							Extra: spec.PipelineExtraInfo{
 								CompleteReconcilerGC:       false,
 								CompleteReconcilerTeardown: true,
 								GC: apistructs.PipelineGC{
@@ -160,17 +160,17 @@ func TestReconciler_getNeedGCPipeline(t *testing.T) {
 		{
 			name: "time_over_gc",
 			args: args{
-				pipelines: []spec2.Pipeline{
+				pipelines: []spec.Pipeline{
 					{
-						PipelineBase: spec2.PipelineBase{
+						PipelineBase: spec.PipelineBase{
 							Status: apistructs.PipelineStatusSuccess,
 							TimeEnd: func() *time.Time {
 								addTime := now.Add(-300*time.Second - bufferTime*time.Second)
 								return &addTime
 							}(),
 						},
-						PipelineExtra: spec2.PipelineExtra{
-							Extra: spec2.PipelineExtraInfo{
+						PipelineExtra: spec.PipelineExtra{
+							Extra: spec.PipelineExtraInfo{
 								CompleteReconcilerGC:       false,
 								CompleteReconcilerTeardown: false,
 								GC: apistructs.PipelineGC{
@@ -190,17 +190,17 @@ func TestReconciler_getNeedGCPipeline(t *testing.T) {
 		{
 			name: "time_not_over_gc",
 			args: args{
-				pipelines: []spec2.Pipeline{
+				pipelines: []spec.Pipeline{
 					{
-						PipelineBase: spec2.PipelineBase{
+						PipelineBase: spec.PipelineBase{
 							Status: apistructs.PipelineStatusFailed,
 							TimeEnd: func() *time.Time {
 								now := now.Add(-190*time.Second - bufferTime*time.Second)
 								return &now
 							}(),
 						},
-						PipelineExtra: spec2.PipelineExtra{
-							Extra: spec2.PipelineExtraInfo{
+						PipelineExtra: spec.PipelineExtra{
+							Extra: spec.PipelineExtraInfo{
 								CompleteReconcilerGC:       false,
 								CompleteReconcilerTeardown: false,
 								GC: apistructs.PipelineGC{
@@ -220,17 +220,17 @@ func TestReconciler_getNeedGCPipeline(t *testing.T) {
 		{
 			name: "over_default_gc_time",
 			args: args{
-				pipelines: []spec2.Pipeline{
+				pipelines: []spec.Pipeline{
 					{
-						PipelineBase: spec2.PipelineBase{
+						PipelineBase: spec.PipelineBase{
 							Status: apistructs.PipelineStatusStopByUser,
 							TimeEnd: func() *time.Time {
 								now := now.Add(-time.Duration(gcTime())*time.Second - bufferTime*time.Second - 20*time.Second)
 								return &now
 							}(),
 						},
-						PipelineExtra: spec2.PipelineExtra{
-							Extra: spec2.PipelineExtraInfo{
+						PipelineExtra: spec.PipelineExtra{
+							Extra: spec.PipelineExtraInfo{
 								CompleteReconcilerGC:       false,
 								CompleteReconcilerTeardown: false,
 								GC: apistructs.PipelineGC{
@@ -250,17 +250,17 @@ func TestReconciler_getNeedGCPipeline(t *testing.T) {
 		{
 			name: "not_over_default_gc_time",
 			args: args{
-				pipelines: []spec2.Pipeline{
+				pipelines: []spec.Pipeline{
 					{
-						PipelineBase: spec2.PipelineBase{
+						PipelineBase: spec.PipelineBase{
 							Status: apistructs.PipelineStatusStopByUser,
 							TimeEnd: func() *time.Time {
 								now := now.Add(-time.Duration(gcTime())*time.Second - bufferTime*time.Second + 20*time.Second)
 								return &now
 							}(),
 						},
-						PipelineExtra: spec2.PipelineExtra{
-							Extra: spec2.PipelineExtraInfo{
+						PipelineExtra: spec.PipelineExtra{
+							Extra: spec.PipelineExtraInfo{
 								CompleteReconcilerGC:       false,
 								CompleteReconcilerTeardown: false,
 								GC: apistructs.PipelineGC{
@@ -280,17 +280,17 @@ func TestReconciler_getNeedGCPipeline(t *testing.T) {
 		{
 			name: "not_end_status",
 			args: args{
-				pipelines: []spec2.Pipeline{
+				pipelines: []spec.Pipeline{
 					{
-						PipelineBase: spec2.PipelineBase{
+						PipelineBase: spec.PipelineBase{
 							Status: apistructs.PipelineStatusAnalyzed,
 							TimeEnd: func() *time.Time {
 								now := now.Add(-time.Duration(gcTime())*time.Second - 20*time.Second - bufferTime*time.Second)
 								return &now
 							}(),
 						},
-						PipelineExtra: spec2.PipelineExtra{
-							Extra: spec2.PipelineExtraInfo{
+						PipelineExtra: spec.PipelineExtra{
+							Extra: spec.PipelineExtraInfo{
 								CompleteReconcilerGC:       false,
 								CompleteReconcilerTeardown: false,
 							},
@@ -345,7 +345,7 @@ func TestReconciler_doWaitGCCompensate(t *testing.T) {
 
 	pm := monkey.PatchInstanceMethod(reflect.TypeOf(db), "PageListPipelines", func(client *dbclient.Client, req apistructs.PipelinePageListRequest, ops ...dbclient.SessionOption) (*dbclient.PageListPipelinesResult, error) {
 		return &dbclient.PageListPipelinesResult{
-			Pipelines:         []spec2.Pipeline{},
+			Pipelines:         []spec.Pipeline{},
 			PagingPipelineIDs: []uint64{},
 			Total:             0,
 			CurrentPageSize:   0,

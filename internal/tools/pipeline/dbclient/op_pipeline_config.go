@@ -17,74 +17,74 @@ package dbclient
 import (
 	"github.com/mitchellh/mapstructure"
 
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 // defaultAPITestActionExecutor provide api-test action-executor
-var defaultAPITestActionExecutor = spec2.PipelineConfig{
-	Type: spec2.PipelineConfigTypeActionExecutor,
-	Value: spec2.ActionExecutorConfig{
-		Kind:    string(spec2.PipelineTaskExecutorKindAPITest),
-		Name:    spec2.PipelineTaskExecutorNameAPITestDefault.String(),
+var defaultAPITestActionExecutor = spec.PipelineConfig{
+	Type: spec.PipelineConfigTypeActionExecutor,
+	Value: spec.ActionExecutorConfig{
+		Kind:    string(spec.PipelineTaskExecutorKindAPITest),
+		Name:    spec.PipelineTaskExecutorNameAPITestDefault.String(),
 		Options: nil,
 	},
 }
 
-var defaultWaitActionExecutor = spec2.PipelineConfig{
-	Type: spec2.PipelineConfigTypeActionExecutor,
-	Value: spec2.ActionExecutorConfig{
-		Kind:    string(spec2.PipelineTaskExecutorKindWait),
-		Name:    spec2.PipelineTaskExecutorNameWaitDefault.String(),
+var defaultWaitActionExecutor = spec.PipelineConfig{
+	Type: spec.PipelineConfigTypeActionExecutor,
+	Value: spec.ActionExecutorConfig{
+		Kind:    string(spec.PipelineTaskExecutorKindWait),
+		Name:    spec.PipelineTaskExecutorNameWaitDefault.String(),
 		Options: nil,
 	},
 }
 
-var defaultK8sJobActionExecutor = spec2.PipelineConfig{
-	Type: spec2.PipelineConfigTypeActionExecutor,
-	Value: spec2.ActionExecutorConfig{
-		Kind:    string(spec2.PipelineTaskExecutorKindK8sJob),
-		Name:    spec2.PipelineTaskExecutorNameK8sJobDefault.String(),
+var defaultK8sJobActionExecutor = spec.PipelineConfig{
+	Type: spec.PipelineConfigTypeActionExecutor,
+	Value: spec.ActionExecutorConfig{
+		Kind:    string(spec.PipelineTaskExecutorKindK8sJob),
+		Name:    spec.PipelineTaskExecutorNameK8sJobDefault.String(),
 		Options: nil,
 	},
 }
 
-var defaultK8sFlinkActionExecutor = spec2.PipelineConfig{
-	Type: spec2.PipelineConfigTypeActionExecutor,
-	Value: spec2.ActionExecutorConfig{
-		Kind:    string(spec2.PipelineTaskExecutorKindK8sFlink),
-		Name:    spec2.PipelineTaskExecutorNameK8sFlinkDefault.String(),
+var defaultK8sFlinkActionExecutor = spec.PipelineConfig{
+	Type: spec.PipelineConfigTypeActionExecutor,
+	Value: spec.ActionExecutorConfig{
+		Kind:    string(spec.PipelineTaskExecutorKindK8sFlink),
+		Name:    spec.PipelineTaskExecutorNameK8sFlinkDefault.String(),
 		Options: nil,
 	},
 }
 
-var defaultK8sSparkActionExecutor = spec2.PipelineConfig{
-	Type: spec2.PipelineConfigTypeActionExecutor,
-	Value: spec2.ActionExecutorConfig{
-		Kind:    string(spec2.PipelineTaskExecutorKindK8sSpark),
-		Name:    spec2.PipelineTaskExecutorNameK8sSparkDefault.String(),
+var defaultK8sSparkActionExecutor = spec.PipelineConfig{
+	Type: spec.PipelineConfigTypeActionExecutor,
+	Value: spec.ActionExecutorConfig{
+		Kind:    string(spec.PipelineTaskExecutorKindK8sSpark),
+		Name:    spec.PipelineTaskExecutorNameK8sSparkDefault.String(),
 		Options: nil,
 	},
 }
 
-var defaultDockerActionExecutor = spec2.PipelineConfig{
-	Type: spec2.PipelineConfigTypeActionExecutor,
-	Value: spec2.ActionExecutorConfig{
-		Kind:    string(spec2.PipelineTaskExecutorKindDocker),
-		Name:    spec2.PipelineTaskExecutorNameDockerDefault.String(),
+var defaultDockerActionExecutor = spec.PipelineConfig{
+	Type: spec.PipelineConfigTypeActionExecutor,
+	Value: spec.ActionExecutorConfig{
+		Kind:    string(spec.PipelineTaskExecutorKindDocker),
+		Name:    spec.PipelineTaskExecutorNameDockerDefault.String(),
 		Options: nil,
 	},
 }
 
-func (client *Client) ListPipelineConfigsOfActionExecutor() (configs []spec2.PipelineConfig, cfgChan chan spec2.ActionExecutorConfig, err error) {
-	if err := client.Find(&configs, spec2.PipelineConfig{Type: spec2.PipelineConfigTypeActionExecutor}); err != nil {
+func (client *Client) ListPipelineConfigsOfActionExecutor() (configs []spec.PipelineConfig, cfgChan chan spec.ActionExecutorConfig, err error) {
+	if err := client.Find(&configs, spec.PipelineConfig{Type: spec.PipelineConfigTypeActionExecutor}); err != nil {
 		return nil, nil, err
 	}
 	// add default api-test wait k8sjob k8sflink k8sspark action executor
 	configs = append(configs, defaultAPITestActionExecutor, defaultWaitActionExecutor,
 		defaultK8sJobActionExecutor, defaultK8sFlinkActionExecutor, defaultK8sSparkActionExecutor)
-	cfgChan = make(chan spec2.ActionExecutorConfig, 100)
+	cfgChan = make(chan spec.ActionExecutorConfig, 100)
 	for _, c := range configs {
-		var r spec2.ActionExecutorConfig
+		var r spec.ActionExecutorConfig
 		d, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{Result: &r, ErrorUnused: true, TagName: "json"})
 		if err != nil {
 			return nil, nil, err

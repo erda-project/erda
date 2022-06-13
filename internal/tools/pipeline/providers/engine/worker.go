@@ -20,10 +20,10 @@ import (
 	"time"
 
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/leaderworker"
-	worker2 "github.com/erda-project/erda/internal/tools/pipeline/providers/leaderworker/worker"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/leaderworker/worker"
 )
 
-func (p *provider) reconcileOnePipeline(ctx context.Context, logicTask worker2.LogicTask) {
+func (p *provider) reconcileOnePipeline(ctx context.Context, logicTask worker.LogicTask) {
 	if logicTask == nil {
 		p.Log.Warnf("logic task is nil, skip reconcile pipeline")
 		return
@@ -40,7 +40,7 @@ func (p *provider) reconcileOnePipeline(ctx context.Context, logicTask worker2.L
 
 func (p *provider) workerHandlerOnWorkerDelete(ctx context.Context, ev leaderworker.Event) {
 	for {
-		err := p.LW.RegisterCandidateWorker(ctx, worker2.New(worker2.WithHandler(p.reconcileOnePipeline)))
+		err := p.LW.RegisterCandidateWorker(ctx, worker.New(worker.WithHandler(p.reconcileOnePipeline)))
 		if err == nil {
 			return
 		}

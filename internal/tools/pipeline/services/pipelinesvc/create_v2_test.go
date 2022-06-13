@@ -21,7 +21,7 @@ import (
 
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	"github.com/erda-project/erda-proto-go/core/pipeline/pb"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
@@ -59,7 +59,7 @@ func (c CronServiceServerTestImpl) CronUpdate(ctx context.Context, request *cron
 
 func TestPipelineSvc_UpdatePipelineCron(t *testing.T) {
 	type args struct {
-		p                      *spec2.Pipeline
+		p                      *spec.Pipeline
 		cronStartFrom          *time.Time
 		configManageNamespaces []string
 		cronCompensator        *pipelineyml.CronCompensator
@@ -72,18 +72,18 @@ func TestPipelineSvc_UpdatePipelineCron(t *testing.T) {
 		{
 			name: "test id > 0",
 			args: args{
-				p: &spec2.Pipeline{
-					PipelineBase: spec2.PipelineBase{
+				p: &spec.Pipeline{
+					PipelineBase: spec.PipelineBase{
 						PipelineSource:  "test",
 						PipelineYmlName: "test",
 						ClusterName:     "test",
 					},
-					PipelineExtra: spec2.PipelineExtra{
-						Extra: spec2.PipelineExtraInfo{
+					PipelineExtra: spec.PipelineExtra{
+						Extra: spec.PipelineExtraInfo{
 							CronExpr: "test",
 						},
 						PipelineYml: "test",
-						Snapshot: spec2.Snapshot{
+						Snapshot: spec.Snapshot{
 							Envs: map[string]string{
 								"test": "test",
 							},

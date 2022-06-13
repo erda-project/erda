@@ -21,7 +21,7 @@ import (
 	"strings"
 
 	"github.com/erda-project/erda/apistructs"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
 
@@ -35,7 +35,7 @@ const (
 	TaskCachePathEndPath       = "{{endPath}}"
 )
 
-func HandleTaskCacheVolumes(p *spec2.Pipeline, task *spec2.PipelineTask, diceYmlJob *diceyml.Job, mountPoint string) {
+func HandleTaskCacheVolumes(p *spec.Pipeline, task *spec.PipelineTask, diceYmlJob *diceyml.Job, mountPoint string) {
 	caches := task.Extra.Action.Caches
 	if len(caches) == 0 {
 		return
@@ -77,7 +77,7 @@ func HandleTaskCacheVolumes(p *spec2.Pipeline, task *spec2.PipelineTask, diceYml
 		labels[TaskCachePath] = cache.Path
 		var storage = apistructs.MetadataField{
 			Name:   TaskCacheMame + "_" + hash,
-			Type:   string(spec2.StoreTypeDiceCacheNFS),
+			Type:   string(spec.StoreTypeDiceCacheNFS),
 			Value:  key,
 			Labels: labels,
 		}

@@ -21,15 +21,15 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/pkg/websocket"
 	"github.com/erda-project/erda/internal/tools/pipeline/commonutil/costtimeutil"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 type PipelineTaskEvent struct {
 	DefaultEvent
 	IdentityInfo
 	EventHeader apistructs.EventHeader
-	Task        *spec2.PipelineTask
-	Pipeline    *spec2.Pipeline
+	Task        *spec.PipelineTask
+	Pipeline    *spec.Pipeline
 }
 
 func (e *PipelineTaskEvent) Kind() EventKind {

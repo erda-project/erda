@@ -16,17 +16,17 @@ package cache
 
 import (
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/action_info"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
 // TODO the cache should be standardized
 
 type Interface interface {
-	GetOrSetPipelineRerunSuccessTasksFromContext(pipelineID uint64) (successTasks map[string]*spec2.PipelineTask, err error)
-	GetOrSetStagesFromContext(pipelineID uint64) (stages []spec2.PipelineStage, err error)
+	GetOrSetPipelineRerunSuccessTasksFromContext(pipelineID uint64) (successTasks map[string]*spec.PipelineTask, err error)
+	GetOrSetStagesFromContext(pipelineID uint64) (stages []spec.PipelineStage, err error)
 	GetOrSetPipelineYmlFromContext(pipelineID uint64) (yml *pipelineyml.PipelineYml, err error)
-	GetOrSetPassedDataWhenCreateFromContext(pipelineYml *pipelineyml.PipelineYml, pipeline *spec2.Pipeline) (passedDataWhenCreate *action_info.PassedDataWhenCreate, err error)
+	GetOrSetPassedDataWhenCreateFromContext(pipelineYml *pipelineyml.PipelineYml, pipeline *spec.Pipeline) (passedDataWhenCreate *action_info.PassedDataWhenCreate, err error)
 	ClearReconcilerPipelineContextCaches(pipelineID uint64)
 	SetPipelineSecretByPipelineID(pipelineID uint64, secret *SecretCache)
 	GetPipelineSecretByPipelineID(pipelineID uint64) (secret *SecretCache)

@@ -20,7 +20,7 @@ import (
 
 	"github.com/erda-project/erda-infra/pkg/safe"
 	"github.com/erda-project/erda-infra/pkg/strutil"
-	worker2 "github.com/erda-project/erda/internal/tools/pipeline/providers/leaderworker/worker"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/leaderworker/worker"
 )
 
 func (p *provider) continueDispatcher(ctx context.Context) {
@@ -50,9 +50,9 @@ func (p *provider) dispatchOnePipelineUntilSuccess(ctx context.Context, pipeline
 		return
 	}
 	// assign lock task to the picked worker
-	logicTaskID := worker2.LogicTaskID(strutil.String(pipelineID))
+	logicTaskID := worker.LogicTaskID(strutil.String(pipelineID))
 	logicTaskData := []byte(nil)
-	if err := p.LW.AssignLogicTaskToWorker(ctx, workerID, worker2.NewLogicTask(logicTaskID, logicTaskData)); err != nil {
+	if err := p.LW.AssignLogicTaskToWorker(ctx, workerID, worker.NewLogicTask(logicTaskID, logicTaskData)); err != nil {
 		p.Log.Errorf("failed to assign pipeline to worker(need retry after %s), pipelineID: %d, workerID: %s, err: %v", p.Cfg.RetryInterval, pipelineID, workerID, err)
 		time.Sleep(p.Cfg.RetryInterval)
 		p.Dispatch(ctx, pipelineID)

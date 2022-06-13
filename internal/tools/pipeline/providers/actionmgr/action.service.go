@@ -29,7 +29,7 @@ import (
 	"github.com/erda-project/erda-proto-go/core/pipeline/action/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	db2 "github.com/erda-project/erda/internal/tools/pipeline/providers/actionmgr/db"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/actionmgr/db"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/clusterinfo"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/edgepipeline_register"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/apierrors"
@@ -40,7 +40,7 @@ import (
 
 type actionService struct {
 	p            *provider
-	dbClient     *db2.Client
+	dbClient     *db.Client
 	edgeRegister edgepipeline_register.Interface
 	clusterInfo  clusterinfo.Interface
 }
@@ -125,7 +125,7 @@ func (s *actionService) Save(ctx context.Context, req *pb.PipelineActionSaveRequ
 		return nil, apierrors.ErrSavePipelineAction.InvalidParameter("spec version was empty")
 	}
 
-	var saveActionResult *db2.PipelineAction
+	var saveActionResult *db.PipelineAction
 	err = Transaction(s.dbClient, func(option mysqlxorm.SessionOption) error {
 		saveActionResult, err = s.saveAction(saveAction, req, option)
 		if err != nil {
@@ -181,7 +181,7 @@ func (s *actionService) syncActionToEdge(do func(bdl *bundle.Bundle) error) erro
 	return wait.Do().Error()
 }
 
-func (s *actionService) saveAction(saveAction *db2.PipelineAction, req *pb.PipelineActionSaveRequest, option mysqlxorm.SessionOption) (*db2.PipelineAction, error) {
+func (s *actionService) saveAction(saveAction *db.PipelineAction, req *pb.PipelineActionSaveRequest, option mysqlxorm.SessionOption) (*db.PipelineAction, error) {
 	actions, err := s.dbClient.ListPipelineAction(&pb.PipelineActionListRequest{
 		Locations: []string{req.Location},
 		ActionNameWithVersionQuery: []*pb.ActionNameWithVersionQuery{
@@ -220,14 +220,14 @@ func (s *actionService) saveAction(saveAction *db2.PipelineAction, req *pb.Pipel
 	return saveAction, nil
 }
 
-func PipelineActionSaveRequestToAction(req *pb.PipelineActionSaveRequest) (saveAction *db2.PipelineAction, err error) {
+func PipelineActionSaveRequestToAction(req *pb.PipelineActionSaveRequest) (saveAction *db.PipelineAction, err error) {
 	var specInfo apistructs.Spec
 	err = yaml.Unmarshal([]byte(req.Spec), &specInfo)
 	if err != nil {
 		return nil, err
 	}
 
-	saveAction = &db2.PipelineAction{}
+	saveAction = &db.PipelineAction{}
 
 	saveAction.VersionInfo = specInfo.Version
 	saveAction.Name = specInfo.Name
@@ -292,7 +292,7 @@ func (s *actionService) deleteAction(req *pb.PipelineActionDeleteRequest) error 
 		return apierrors.ErrSavePipelineAction.InternalError(err)
 	}
 
-	var deleteAction *db2.PipelineAction
+	var deleteAction *db.PipelineAction
 	for _, action := range actions {
 		if action.Location == req.Location {
 			deleteAction = &action
@@ -313,7 +313,7 @@ func (s *actionService) deleteAction(req *pb.PipelineActionDeleteRequest) error 
 	return nil
 }
 
-func Transaction(dbClient *db2.Client, do func(option mysqlxorm.SessionOption) error) error {
+func Transaction(dbClient *db.Client, do func(option mysqlxorm.SessionOption) error) error {
 	txSession := dbClient.NewSession()
 	defer txSession.Close()
 	if err := txSession.Begin(); err != nil {

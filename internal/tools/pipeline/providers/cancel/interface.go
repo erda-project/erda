@@ -20,12 +20,12 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/apierrors"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 type Interface interface {
 	CancelOnePipeline(ctx context.Context, req *apistructs.PipelineCancelRequest) error
-	StopRelatedRunningPipelinesOfOnePipeline(ctx context.Context, p *spec2.Pipeline, identityInfo apistructs.IdentityInfo) error
+	StopRelatedRunningPipelinesOfOnePipeline(ctx context.Context, p *spec.Pipeline, identityInfo apistructs.IdentityInfo) error
 }
 
 func (s *provider) CancelOnePipeline(ctx context.Context, req *apistructs.PipelineCancelRequest) error {
@@ -55,12 +55,12 @@ func (s *provider) CancelOnePipeline(ctx context.Context, req *apistructs.Pipeli
 	return s.Engine.DistributedStopPipeline(ctx, p.ID)
 }
 
-func (s *provider) StopRelatedRunningPipelinesOfOnePipeline(ctx context.Context, p *spec2.Pipeline, identityInfo apistructs.IdentityInfo) error {
+func (s *provider) StopRelatedRunningPipelinesOfOnePipeline(ctx context.Context, p *spec.Pipeline, identityInfo apistructs.IdentityInfo) error {
 	var runningPipelineIDs []uint64
-	err := s.dbClient.Table(&spec2.PipelineBase{}).
+	err := s.dbClient.Table(&spec.PipelineBase{}).
 		Select("id").In("status", apistructs.ReconcilerRunningStatuses()).
 		Where("is_snippet = ?", false).
-		Find(&runningPipelineIDs, &spec2.PipelineBase{
+		Find(&runningPipelineIDs, &spec.PipelineBase{
 			PipelineSource:  p.PipelineSource,
 			PipelineYmlName: p.PipelineYmlName,
 		})

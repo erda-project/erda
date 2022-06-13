@@ -28,7 +28,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/erda-project/erda/apistructs"
-	logic2 "github.com/erda-project/erda/internal/tools/pipeline/pipengine/actionexecutor/logic"
+	"github.com/erda-project/erda/internal/tools/pipeline/pipengine/actionexecutor/logic"
 	"github.com/erda-project/erda/internal/tools/pipeline/pipengine/actionexecutor/types"
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/container_provider"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/clusterinfo"
@@ -59,11 +59,11 @@ func init() {
 
 func (k *K8sFlink) Status(ctx context.Context, task *spec.PipelineTask) (statusDesc apistructs.PipelineStatusDesc, err error) {
 	defer k.errWrapper.WrapTaskError(&err, "status job", task)
-	if err := logic2.ValidateAction(task); err != nil {
+	if err := logic.ValidateAction(task); err != nil {
 		return apistructs.PipelineStatusDesc{}, err
 	}
 
-	bigDataConf, err := logic2.GetBigDataConf(task)
+	bigDataConf, err := logic.GetBigDataConf(task)
 	if err != nil {
 		return statusDesc, err
 	}
@@ -74,16 +74,16 @@ func (k *K8sFlink) Status(ctx context.Context, task *spec.PipelineTask) (statusD
 		logrus.Errorf("get status err %v", err)
 
 		if strings.Contains(err.Error(), "not found") {
-			statusDesc.Status = logic2.TransferStatus(string(apistructs.StatusNotFoundInCluster))
+			statusDesc.Status = logic.TransferStatus(string(apistructs.StatusNotFoundInCluster))
 			return statusDesc, nil
 		}
-		statusDesc.Status = logic2.TransferStatus(string(apistructs.StatusError))
+		statusDesc.Status = logic.TransferStatus(string(apistructs.StatusError))
 		statusDesc.Desc = err.Error()
 		return statusDesc, err
 	}
 
 	status := composeStatusDesc(flinkCluster.Status)
-	statusDesc.Status = logic2.TransferStatus(string(status.Status))
+	statusDesc.Status = logic.TransferStatus(string(status.Status))
 	statusDesc.Desc = status.Reason
 
 	return statusDesc, nil
@@ -91,7 +91,7 @@ func (k *K8sFlink) Status(ctx context.Context, task *spec.PipelineTask) (statusD
 
 func (k *K8sFlink) Start(ctx context.Context, task *spec.PipelineTask) (data interface{}, err error) {
 	defer k.errWrapper.WrapTaskError(&err, "start job", task)
-	if err := logic2.ValidateAction(task); err != nil {
+	if err := logic.ValidateAction(task); err != nil {
 		return nil, err
 	}
 	created, started, err := k.Exist(ctx, task)
@@ -99,24 +99,24 @@ func (k *K8sFlink) Start(ctx context.Context, task *spec.PipelineTask) (data int
 		return nil, err
 	}
 	if !created {
-		logrus.Warnf("%s: task not created(auto try to create), taskInfo: %s", k.Kind().String(), logic2.PrintTaskInfo(task))
+		logrus.Warnf("%s: task not created(auto try to create), taskInfo: %s", k.Kind().String(), logic.PrintTaskInfo(task))
 		_, err = k.Create(ctx, task)
 		if err != nil {
 			return nil, err
 		}
-		logrus.Warnf("k8sflink: action created, continue to start, taskInfo: %s", logic2.PrintTaskInfo(task))
+		logrus.Warnf("k8sflink: action created, continue to start, taskInfo: %s", logic.PrintTaskInfo(task))
 	}
 	if started {
-		logrus.Warnf("%s: task already started, taskInfo: %s", k.Kind().String(), logic2.PrintTaskInfo(task))
+		logrus.Warnf("%s: task already started, taskInfo: %s", k.Kind().String(), logic.PrintTaskInfo(task))
 		return nil, nil
 	}
 
-	job, err := logic2.TransferToSchedulerJob(task)
+	job, err := logic.TransferToSchedulerJob(task)
 	if err != nil {
 		return nil, err
 	}
 
-	bigDataConf, err := logic2.GetBigDataConf(task)
+	bigDataConf, err := logic.GetBigDataConf(task)
 	if err != nil {
 		return nil, err
 	}
@@ -163,7 +163,7 @@ func (k *K8sFlink) Start(ctx context.Context, task *spec.PipelineTask) (data int
 		}, err
 	}
 
-	_, _, pvcs := logic2.GenerateK8SVolumes(&job, clusterCM)
+	_, _, pvcs := logic.GenerateK8SVolumes(&job, clusterCM)
 	for _, pvc := range pvcs {
 		if pvc == nil {
 			continue
@@ -213,7 +213,7 @@ func (k *K8sFlink) Start(ctx context.Context, task *spec.PipelineTask) (data int
 }
 
 func (k *K8sFlink) Delete(ctx context.Context, task *spec.PipelineTask) (data interface{}, err error) {
-	bigDataConf, err := logic2.GetBigDataConf(task)
+	bigDataConf, err := logic.GetBigDataConf(task)
 
 	flinkCluster, err := k.GetFlinkClusterInfo(ctx, bigDataConf)
 	if err != nil {

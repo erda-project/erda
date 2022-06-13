@@ -24,12 +24,12 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	definitiondb "github.com/erda-project/erda/internal/tools/pipeline/providers/definition/db"
 	sourcedb "github.com/erda-project/erda/internal/tools/pipeline/providers/source/db"
-	spec2 "github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
 // CreatePipeline: base + extra + labels
-func (client *Client) CreatePipeline(p *spec2.Pipeline, ops ...SessionOption) error {
+func (client *Client) CreatePipeline(p *spec.Pipeline, ops ...SessionOption) error {
 	// base
 	// TODO the edge pipeline should add init report status
 	p.PipelineBase.EdgeReportStatus = apistructs.InitEdgeReportStatus
@@ -63,39 +63,39 @@ func (e dbError) Is(target error) bool { return target != nil && target.Error() 
 var NotFoundBaseError = dbError{msg: "not found base"}
 
 // GetPipeline: base + extra + labels
-func (client *Client) GetPipeline(id interface{}, ops ...SessionOption) (spec2.Pipeline, error) {
+func (client *Client) GetPipeline(id interface{}, ops ...SessionOption) (spec.Pipeline, error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
-	var base spec2.PipelineBase
+	var base spec.PipelineBase
 	found, err := session.ID(id).Get(&base)
 	if err != nil {
-		return spec2.Pipeline{}, err
+		return spec.Pipeline{}, err
 	}
 	if !found {
-		return spec2.Pipeline{}, NotFoundBaseError
+		return spec.Pipeline{}, NotFoundBaseError
 	}
 
-	var extra spec2.PipelineExtra
-	var labels []spec2.PipelineLabel
+	var extra spec.PipelineExtra
+	var labels []spec.PipelineLabel
 
 	result, found, err := client.GetPipelineExtraByPipelineID(base.ID, ops...)
 	if err != nil {
-		return spec2.Pipeline{}, err
+		return spec.Pipeline{}, err
 	}
 	if !found {
-		return spec2.Pipeline{}, errors.New("not found extra")
+		return spec.Pipeline{}, errors.New("not found extra")
 	}
 	extra = result
 
 	labelsResult, err := client.ListLabelsByPipelineID(base.ID, ops...)
 	if err != nil {
-		return spec2.Pipeline{}, err
+		return spec.Pipeline{}, err
 	}
 	labels = labelsResult
 
 	// combine pipeline
-	var p spec2.Pipeline
+	var p spec.Pipeline
 	p.PipelineBase = base
 	p.PipelineExtra = extra
 	p.Labels = make(map[string]string, len(labels))
@@ -107,16 +107,16 @@ func (client *Client) GetPipeline(id interface{}, ops ...SessionOption) (spec2.P
 }
 
 // GetPipelineWithExistInfo 当 id 对应的流水线记录不存在时，error = nil, found = false
-func (client *Client) GetPipelineWithExistInfo(id interface{}, ops ...SessionOption) (spec2.Pipeline, bool, error) {
+func (client *Client) GetPipelineWithExistInfo(id interface{}, ops ...SessionOption) (spec.Pipeline, bool, error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
 	p, err := client.GetPipeline(id, ops...)
 	if err != nil {
 		if strutil.Contains(err.Error(), "not found") {
-			return spec2.Pipeline{}, false, nil
+			return spec.Pipeline{}, false, nil
 		}
-		return spec2.Pipeline{}, false, err
+		return spec.Pipeline{}, false, err
 	}
 	return p, true, nil
 }
@@ -161,7 +161,7 @@ func (client *Client) StoreAnalyzedCrossCluster(pipelineID uint64, analyzedCross
 }
 
 // RefreshPipeline 更新 pipeline
-func (client *Client) RefreshPipeline(p *spec2.Pipeline) error {
+func (client *Client) RefreshPipeline(p *spec.Pipeline) error {
 	r, err := client.GetPipeline(p.ID)
 	if err != nil {
 		return err
@@ -222,7 +222,7 @@ func (client *Client) UpdateWholeStatusBorn(pipelineID uint64, ops ...SessionOpt
 }
 
 type PageListPipelinesResult struct {
-	Pipelines         []spec2.Pipeline
+	Pipelines         []spec.Pipeline
 	PagingPipelineIDs []uint64
 	Total             int64
 	CurrentPageSize   int64
@@ -293,7 +293,7 @@ func (client *Client) PageListPipelines(req apistructs.PipelinePageListRequest, 
 	}()
 
 	// 基础信息表获取到的 pipelineIDs
-	baseSQL := session.Table(&spec2.PipelineBase{}).Where("").Cols(tableFieldName((&spec2.PipelineBase{}).TableName(), "id"))
+	baseSQL := session.Table(&spec.PipelineBase{}).Where("").Cols(tableFieldName((&spec.PipelineBase{}).TableName(), "id"))
 
 	// FORCE INDEX
 	var forceIndexes []string
@@ -311,17 +311,17 @@ func (client *Client) PageListPipelines(req apistructs.PipelinePageListRequest, 
 	// idx_id_source_cluster_status_timebegin_timeend
 	// 使用 alias 注入实现 xorm 插入 FORCE INDEX
 	if len(forceIndexes) > 0 {
-		baseSQL.Alias(fmt.Sprintf("`%s` USE INDEX (%s)", (&spec2.PipelineBase{}).TableName(), strings.Join(forceIndexes, ",")))
+		baseSQL.Alias(fmt.Sprintf("`%s` USE INDEX (%s)", (&spec.PipelineBase{}).TableName(), strings.Join(forceIndexes, ",")))
 	}
 
 	if req.PipelineDefinitionRequest != nil {
 		var definitionReq = req.PipelineDefinitionRequest
 		needQueryDefinition = true
 
-		baseSQL.Where(tableFieldName((&spec2.PipelineBase{}).TableName(), "pipeline_definition_id") + " is not null ")
-		baseSQL.Where(tableFieldName((&spec2.PipelineBase{}).TableName(), "pipeline_definition_id") + " != '' ")
+		baseSQL.Where(tableFieldName((&spec.PipelineBase{}).TableName(), "pipeline_definition_id") + " is not null ")
+		baseSQL.Where(tableFieldName((&spec.PipelineBase{}).TableName(), "pipeline_definition_id") + " != '' ")
 		if !definitionReq.IsEmptyValue() {
-			baseSQL.Join("INNER", definitiondb.PipelineDefinition{}.TableName(), fmt.Sprintf("%v.id = %v.pipeline_definition_id", definitiondb.PipelineDefinition{}.TableName(), (&spec2.PipelineBase{}).TableName()))
+			baseSQL.Join("INNER", definitiondb.PipelineDefinition{}.TableName(), fmt.Sprintf("%v.id = %v.pipeline_definition_id", definitiondb.PipelineDefinition{}.TableName(), (&spec.PipelineBase{}).TableName()))
 			baseSQL.Join("INNER", sourcedb.PipelineSource{}.TableName(), fmt.Sprintf("%v.id = %v.pipeline_source_id", sourcedb.PipelineSource{}.TableName(), definitiondb.PipelineDefinition{}.TableName()))
 			if len(definitionReq.Name) > 0 {
 				baseSQL.Where(fmt.Sprintf("%v.name like ?", definitiondb.PipelineDefinition{}.TableName()), "%"+definitionReq.Name+"%")
@@ -339,50 +339,50 @@ func (client *Client) PageListPipelines(req apistructs.PipelinePageListRequest, 
 	}
 
 	if !req.AllSources && len(req.Sources) > 0 {
-		baseSQL.In(tableFieldName((&spec2.PipelineBase{}).TableName(), "pipeline_source"), req.Sources)
+		baseSQL.In(tableFieldName((&spec.PipelineBase{}).TableName(), "pipeline_source"), req.Sources)
 	}
 	if len(req.YmlNames) > 0 {
-		baseSQL.In(tableFieldName((&spec2.PipelineBase{}).TableName(), "pipeline_yml_name"), req.YmlNames)
+		baseSQL.In(tableFieldName((&spec.PipelineBase{}).TableName(), "pipeline_yml_name"), req.YmlNames)
 	}
 	if len(req.Statuses) > 0 {
-		baseSQL.In(tableFieldName((&spec2.PipelineBase{}).TableName(), "status"), req.Statuses)
+		baseSQL.In(tableFieldName((&spec.PipelineBase{}).TableName(), "status"), req.Statuses)
 	}
 	if len(req.NotStatuses) > 0 {
-		baseSQL.NotIn(tableFieldName((&spec2.PipelineBase{}).TableName(), "status"), req.NotStatuses)
+		baseSQL.NotIn(tableFieldName((&spec.PipelineBase{}).TableName(), "status"), req.NotStatuses)
 	}
 	if len(req.TriggerModes) > 0 {
-		baseSQL.In(tableFieldName((&spec2.PipelineBase{}).TableName(), "trigger_mode"), req.TriggerModes)
+		baseSQL.In(tableFieldName((&spec.PipelineBase{}).TableName(), "trigger_mode"), req.TriggerModes)
 	}
 	if len(req.ClusterNames) > 0 {
-		baseSQL.In(tableFieldName((&spec2.PipelineBase{}).TableName(), "cluster_name"), req.ClusterNames)
+		baseSQL.In(tableFieldName((&spec.PipelineBase{}).TableName(), "cluster_name"), req.ClusterNames)
 	}
-	baseSQL.Where(tableFieldName((&spec2.PipelineBase{}).TableName(), "is_snippet")+" = ?", req.IncludeSnippet)
+	baseSQL.Where(tableFieldName((&spec.PipelineBase{}).TableName(), "is_snippet")+" = ?", req.IncludeSnippet)
 	if !req.StartTimeBegin.IsZero() {
-		baseSQL.Where(tableFieldName((&spec2.PipelineBase{}).TableName(), "time_begin")+" >= ? ", req.StartTimeBegin)
+		baseSQL.Where(tableFieldName((&spec.PipelineBase{}).TableName(), "time_begin")+" >= ? ", req.StartTimeBegin)
 	}
 	if !req.EndTimeBegin.IsZero() {
-		baseSQL.Where(tableFieldName((&spec2.PipelineBase{}).TableName(), "time_begin")+" <= ?", req.EndTimeBegin)
+		baseSQL.Where(tableFieldName((&spec.PipelineBase{}).TableName(), "time_begin")+" <= ?", req.EndTimeBegin)
 	}
 	if !req.StartTimeCreated.IsZero() {
-		baseSQL.Where(tableFieldName((&spec2.PipelineBase{}).TableName(), "time_created")+" >= ?", req.StartTimeCreated)
+		baseSQL.Where(tableFieldName((&spec.PipelineBase{}).TableName(), "time_created")+" >= ?", req.StartTimeCreated)
 	}
 	if !req.EndTimeCreated.IsZero() {
-		baseSQL.Where(tableFieldName((&spec2.PipelineBase{}).TableName(), "time_created")+" <= ?", req.EndTimeCreated)
+		baseSQL.Where(tableFieldName((&spec.PipelineBase{}).TableName(), "time_created")+" <= ?", req.EndTimeCreated)
 	}
 	if len(req.AscCols) == 0 && len(req.DescCols) == 0 {
-		baseSQL.Desc(tableFieldName((&spec2.PipelineBase{}).TableName(), "id"))
+		baseSQL.Desc(tableFieldName((&spec.PipelineBase{}).TableName(), "id"))
 	}
 	if len(req.AscCols) > 0 {
 		var newAsc []string
 		for _, v := range req.AscCols {
-			newAsc = append(newAsc, tableFieldName((&spec2.PipelineBase{}).TableName(), v))
+			newAsc = append(newAsc, tableFieldName((&spec.PipelineBase{}).TableName(), v))
 		}
 		baseSQL.Asc(newAsc...)
 	}
 	if len(req.DescCols) > 0 {
 		var newDesc []string
 		for _, v := range req.DescCols {
-			newDesc = append(newDesc, tableFieldName((&spec2.PipelineBase{}).TableName(), v))
+			newDesc = append(newDesc, tableFieldName((&spec.PipelineBase{}).TableName(), v))
 		}
 		baseSQL.Desc(newDesc...)
 	}
@@ -452,7 +452,7 @@ func tableFieldName(tableName string, field string) string {
 // ListPipelineIDsByStatuses
 func (client *Client) ListPipelineIDsByStatuses(status ...apistructs.PipelineStatus) ([]uint64, error) {
 	var ids []uint64
-	err := client.Table(&spec2.PipelineBase{}).Cols("id").Where("is_snippet = ?", false).In("status", status).Find(&ids)
+	err := client.Table(&spec.PipelineBase{}).Cols("id").Where("is_snippet = ?", false).In("status", status).Find(&ids)
 	if err != nil {
 		return nil, err
 	}
@@ -460,7 +460,7 @@ func (client *Client) ListPipelineIDsByStatuses(status ...apistructs.PipelineSta
 }
 
 // GetPipelineWithTasks
-func (client *Client) GetPipelineWithTasks(id uint64) (*spec2.PipelineWithTasks, error) {
+func (client *Client) GetPipelineWithTasks(id uint64) (*spec.PipelineWithTasks, error) {
 	p, err := client.GetPipeline(id)
 	if err != nil {
 		return nil, err
@@ -471,27 +471,27 @@ func (client *Client) GetPipelineWithTasks(id uint64) (*spec2.PipelineWithTasks,
 		return nil, err
 	}
 
-	taskResult := make([]*spec2.PipelineTask, 0, len(tasks))
+	taskResult := make([]*spec.PipelineTask, 0, len(tasks))
 	for i := range tasks {
 		taskResult = append(taskResult, &tasks[i])
 	}
 
-	return &spec2.PipelineWithTasks{
+	return &spec.PipelineWithTasks{
 		Pipeline: &p,
 		Tasks:    taskResult,
 	}, nil
 }
 
-func (client *Client) ParseRerunFailedDetail(detail *spec2.RerunFailedDetail) (
-	map[string]*spec2.PipelineTask, map[string]*spec2.PipelineTask, error) {
+func (client *Client) ParseRerunFailedDetail(detail *spec.RerunFailedDetail) (
+	map[string]*spec.PipelineTask, map[string]*spec.PipelineTask, error) {
 
 	if detail == nil {
 		return nil, nil, nil
 	}
 
 	batchParseID2Task := func(in map[string]uint64, optionalOutput bool) (
-		map[string]*spec2.PipelineTask, error) {
-		result := make(map[string]*spec2.PipelineTask)
+		map[string]*spec.PipelineTask, error) {
+		result := make(map[string]*spec.PipelineTask)
 		for name, taskID := range in {
 			task, err := client.GetPipelineTask(taskID)
 			if err != nil {
@@ -522,7 +522,7 @@ func (client *Client) PipelineStatistic(source, clusterName string) (*apistructs
 		err        error
 	)
 
-	forceIndexSQL := fmt.Sprintf("`%s` FORCE INDEX (`idx_source_status_cluster_timebegin_timeend_id`)", (&spec2.PipelineBase{}).TableName())
+	forceIndexSQL := fmt.Sprintf("`%s` FORCE INDEX (`idx_source_status_cluster_timebegin_timeend_id`)", (&spec.PipelineBase{}).TableName())
 
 	successSQL := client.Alias(forceIndexSQL).Where("pipeline_source = ?", source).Where("status = ?", apistructs.PipelineStatusSuccess)
 	processingSQL := client.Alias(forceIndexSQL).Where("pipeline_source = ?", source).In("status", []string{string(apistructs.PipelineStatusQueue), string(apistructs.PipelineStatusRunning)})
@@ -534,17 +534,17 @@ func (client *Client) PipelineStatistic(source, clusterName string) (*apistructs
 		failedSQL = failedSQL.Where("cluster_name = ?", clusterName)
 	}
 
-	success, err = successSQL.Count(&spec2.PipelineBase{})
+	success, err = successSQL.Count(&spec.PipelineBase{})
 	if err != nil {
 		return nil, err
 	}
 
-	processing, err = processingSQL.Count(&spec2.PipelineBase{})
+	processing, err = processingSQL.Count(&spec.PipelineBase{})
 	if err != nil {
 		return nil, err
 	}
 
-	failed, err = failedSQL.Count(&spec2.PipelineBase{})
+	failed, err = failedSQL.Count(&spec.PipelineBase{})
 	if err != nil {
 		return nil, err
 	}
@@ -562,12 +562,12 @@ func (client *Client) DeletePipeline(id uint64, ops ...SessionOption) error {
 	defer session.Close()
 
 	// base
-	if _, err := session.ID(id).Delete(&spec2.PipelineBase{}); err != nil {
+	if _, err := session.ID(id).Delete(&spec.PipelineBase{}); err != nil {
 		return err
 	}
 
 	// extra
-	if _, err := session.Where("pipeline_id = ?", id).Delete(&spec2.PipelineExtra{}); err != nil {
+	if _, err := session.Where("pipeline_id = ?", id).Delete(&spec.PipelineExtra{}); err != nil {
 		return err
 	}
 
@@ -576,7 +576,7 @@ func (client *Client) DeletePipeline(id uint64, ops ...SessionOption) error {
 
 func (client *Client) ListPipelineSources() ([]apistructs.PipelineSource, error) {
 	result := make([]apistructs.PipelineSource, 0)
-	err := client.Table(&spec2.PipelineBase{}).Distinct("pipeline_source").Select("pipeline_source").Find(&result)
+	err := client.Table(&spec.PipelineBase{}).Distinct("pipeline_source").Select("pipeline_source").Find(&result)
 	return result, err
 }
 
@@ -601,7 +601,7 @@ func (client *Client) GetPipelineOutputs(pipelineID uint64) (map[string]map[stri
 	return outputs, nil
 }
 
-func (client *Client) ListPipelinesByIDs(pipelineIDs []uint64, needQueryDefinition bool, ops ...SessionOption) ([]spec2.Pipeline, error) {
+func (client *Client) ListPipelinesByIDs(pipelineIDs []uint64, needQueryDefinition bool, ops ...SessionOption) ([]spec.Pipeline, error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
@@ -610,10 +610,10 @@ func (client *Client) ListPipelinesByIDs(pipelineIDs []uint64, needQueryDefiniti
 
 	var errs []string
 
-	basesMap := make(map[uint64]spec2.PipelineBase, len(pipelineIDs))
-	baseWithDefinitionMap := make(map[uint64]spec2.PipelineBaseWithDefinition, len(pipelineIDs))
-	extrasMap := make(map[uint64]spec2.PipelineExtra, len(pipelineIDs))
-	labelsMap := make(map[uint64][]spec2.PipelineLabel, len(pipelineIDs))
+	basesMap := make(map[uint64]spec.PipelineBase, len(pipelineIDs))
+	baseWithDefinitionMap := make(map[uint64]spec.PipelineBaseWithDefinition, len(pipelineIDs))
+	extrasMap := make(map[uint64]spec.PipelineExtra, len(pipelineIDs))
+	labelsMap := make(map[uint64][]spec.PipelineLabel, len(pipelineIDs))
 
 	// pipeline_base
 	wg.Add(1)
@@ -669,9 +669,9 @@ func (client *Client) ListPipelinesByIDs(pipelineIDs []uint64, needQueryDefiniti
 	}
 
 	// combine pipelines
-	var pipelines []spec2.Pipeline
+	var pipelines []spec.Pipeline
 	for _, pipelineID := range pipelineIDs {
-		var pipeline spec2.Pipeline
+		var pipeline spec.Pipeline
 		if needQueryDefinition {
 			if baseWithDefinition, ok := baseWithDefinitionMap[pipelineID]; !ok {
 				continue

@@ -30,7 +30,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	"github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	"github.com/erda-project/erda/apistructs"
-	db2 "github.com/erda-project/erda/internal/tools/pipeline/providers/cms/db"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/cms/db"
 	"github.com/erda-project/erda/pkg/crypto/encryption"
 	"github.com/erda-project/erda/pkg/limit_sync_group"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -42,11 +42,11 @@ const (
 )
 
 type pipelineCm struct {
-	dbClient *db2.Client
+	dbClient *db.Client
 	rsaCrypt *encryption.RsaCrypt
 }
 
-func NewPipelineCms(dbClient *db2.Client, rsaCrypt *encryption.RsaCrypt) *pipelineCm {
+func NewPipelineCms(dbClient *db.Client, rsaCrypt *encryption.RsaCrypt) *pipelineCm {
 	var cm pipelineCm
 	cm.dbClient = dbClient
 	cm.rsaCrypt = rsaCrypt
@@ -116,7 +116,7 @@ func (c *pipelineCm) UpdateConfigs(ctx context.Context, ns string, kvs map[strin
 		}
 		cmsNsID = newCmsNs.ID
 	}
-	var configs []db2.PipelineCmsConfig
+	var configs []db.PipelineCmsConfig
 	for k, v := range kvs {
 		vv, err := c.encryptValueIfNeeded(v.EncryptInDB, v.Value)
 		if err != nil {
@@ -126,13 +126,13 @@ func (c *pipelineCm) UpdateConfigs(ctx context.Context, ns string, kvs map[strin
 		if err := validateConfigWhenUpdate(k, v); err != nil {
 			return errors.Errorf("config key: %s, err: %v", k, err)
 		}
-		configs = append(configs, db2.PipelineCmsConfig{
+		configs = append(configs, db.PipelineCmsConfig{
 			NsID:    cmsNsID,
 			Key:     k,
 			Value:   vv,
 			Encrypt: &[]bool{v.EncryptInDB}[0],
 			Type:    v.Type,
-			Extra: db2.PipelineCmsConfigExtra{
+			Extra: db.PipelineCmsConfigExtra{
 				Operations: v.Operations,
 				Comment:    v.Comment,
 				From:       v.From,
@@ -233,7 +233,7 @@ func (c *pipelineCm) GetConfigs(ctx context.Context, ns string, globalDecrypt bo
 	wait := limit_sync_group.NewSemaphore(10)
 	for _, config := range configs {
 		wait.Add(1)
-		go func(config db2.PipelineCmsConfig) {
+		go func(config db.PipelineCmsConfig) {
 			defer wait.Done()
 			vv, err := c.DecryptConfigValue(globalDecrypt, config, reqConfigKeyMap)
 			if err != nil {
@@ -259,7 +259,7 @@ func (c *pipelineCm) GetConfigs(ctx context.Context, ns string, globalDecrypt bo
 	return result, nil
 }
 
-func (c *pipelineCm) DecryptConfigValue(globalDecrypt bool, config db2.PipelineCmsConfig, reqConfigKeyMap map[string]*pb.PipelineCmsConfigKey) (string, error) {
+func (c *pipelineCm) DecryptConfigValue(globalDecrypt bool, config db.PipelineCmsConfig, reqConfigKeyMap map[string]*pb.PipelineCmsConfigKey) (string, error) {
 	// Global decryption settings are used by default
 	needDecrypt := globalDecrypt
 	// Configure item level decryption settings to override global decryption settings
@@ -297,7 +297,7 @@ func (c *pipelineCm) BatchGetConfigs(ctx context.Context, req *pb.CmsNsConfigsBa
 	}
 
 	var cmsNsIDList []uint64
-	var cmsNsIDMap = map[uint64]db2.PipelineCmsNs{}
+	var cmsNsIDMap = map[uint64]db.PipelineCmsNs{}
 	for _, ns := range cmsNsList {
 		cmsNsIDList = append(cmsNsIDList, ns.ID)
 		cmsNsIDMap[ns.ID] = ns
@@ -313,7 +313,7 @@ func (c *pipelineCm) BatchGetConfigs(ctx context.Context, req *pb.CmsNsConfigsBa
 	wait := limit_sync_group.NewSemaphore(10)
 	for _, config := range configs {
 		wait.Add(1)
-		go func(config db2.PipelineCmsConfig) {
+		go func(config db.PipelineCmsConfig) {
 			defer wait.Done()
 			var newConfig = pb.PipelineCmsConfig{
 				Key:         config.Key,

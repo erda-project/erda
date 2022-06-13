@@ -21,10 +21,10 @@ import (
 	"github.com/coreos/etcd/clientv3"
 
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/leaderworker/lwctx"
-	worker2 "github.com/erda-project/erda/internal/tools/pipeline/providers/leaderworker/worker"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/leaderworker/worker"
 )
 
-func (p *provider) RegisterCandidateWorker(ctx context.Context, w worker2.Worker) error {
+func (p *provider) RegisterCandidateWorker(ctx context.Context, w worker.Worker) error {
 	p.Log.Infof("begin register candidate worker, workerID: %s", w.GetID())
 
 	// check leader can be worker
@@ -40,13 +40,13 @@ func (p *provider) RegisterCandidateWorker(ctx context.Context, w worker2.Worker
 	}
 
 	// register worker
-	if err := p.registerWorker(ctx, w, worker2.Candidate); err != nil {
+	if err := p.registerWorker(ctx, w, worker.Candidate); err != nil {
 		return err
 	}
 
 	p.lock.Lock()
 	wctx, wcancel := context.WithCancel(ctx)
-	p.forWorkerUse.myWorkers[w.GetID()] = workerWithCancel{Worker: w, Ctx: wctx, CancelFunc: wcancel, LogicTasks: make(map[worker2.LogicTaskID]logicTaskWithCtx)}
+	p.forWorkerUse.myWorkers[w.GetID()] = workerWithCancel{Worker: w, Ctx: wctx, CancelFunc: wcancel, LogicTasks: make(map[worker.LogicTaskID]logicTaskWithCtx)}
 	p.lock.Unlock()
 
 	// promote to official
@@ -73,7 +73,7 @@ func (p *provider) WorkerHookOnWorkerDelete(h WorkerDeleteHandler) {
 	p.forWorkerUse.handlersOnWorkerDelete = append(p.forWorkerUse.handlersOnWorkerDelete, h)
 }
 
-func (p *provider) promoteCandidateWorker(ctx context.Context, w worker2.Worker) {
+func (p *provider) promoteCandidateWorker(ctx context.Context, w worker.Worker) {
 	ticker := time.NewTicker(p.Cfg.Worker.Candidate.ThresholdToBecomeOfficial)
 	defer ticker.Stop()
 	for {
@@ -81,7 +81,7 @@ func (p *provider) promoteCandidateWorker(ctx context.Context, w worker2.Worker)
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			w.SetType(worker2.Official)
+			w.SetType(worker.Official)
 			if err := p.registerWorker(ctx, w, w.GetType()); err != nil {
 				p.Log.Errorf("failed to promote worker to official(auto retry), workerID: %s, err: %v", w.GetID(), err)
 				continue
@@ -92,7 +92,7 @@ func (p *provider) promoteCandidateWorker(ctx context.Context, w worker2.Worker)
 	}
 }
 
-func (p *provider) registerWorker(ctx context.Context, w worker2.Worker, typ worker2.Type) error {
+func (p *provider) registerWorker(ctx context.Context, w worker.Worker, typ worker.Type) error {
 	workerBytes, err := w.MarshalJSON()
 	if err != nil {
 		return err
@@ -105,14 +105,14 @@ func (p *provider) registerWorker(ctx context.Context, w worker2.Worker, typ wor
 
 	var ops []clientv3.Op
 	switch typ {
-	case worker2.Candidate:
+	case worker.Candidate:
 		ops = append(ops,
-			clientv3.OpPut(p.makeEtcdWorkerKey(w.GetID(), worker2.Candidate), string(workerBytes)),
+			clientv3.OpPut(p.makeEtcdWorkerKey(w.GetID(), worker.Candidate), string(workerBytes)),
 		)
-	case worker2.Official:
+	case worker.Official:
 		ops = append(ops,
-			clientv3.OpDelete(p.makeEtcdWorkerKey(w.GetID(), worker2.Candidate)),
-			clientv3.OpPut(p.makeEtcdWorkerKey(w.GetID(), worker2.Official), string(workerBytes)),
+			clientv3.OpDelete(p.makeEtcdWorkerKey(w.GetID(), worker.Candidate)),
+			clientv3.OpPut(p.makeEtcdWorkerKey(w.GetID(), worker.Official), string(workerBytes)),
 		)
 	}
 
@@ -125,9 +125,9 @@ func (p *provider) registerWorker(ctx context.Context, w worker2.Worker, typ wor
 	return nil
 }
 
-func (p *provider) workerListenOfficialWorkerSelfDelete(ctx context.Context, w worker2.Worker) {
+func (p *provider) workerListenOfficialWorkerSelfDelete(ctx context.Context, w worker.Worker) {
 	p.forWorkerUse.handlersOnWorkerDelete = append(p.forWorkerUse.handlersOnWorkerDelete, p.workerIntervalCleanupOnDelete)
-	key := p.makeEtcdWorkerKey(w.GetID(), worker2.Official)
+	key := p.makeEtcdWorkerKey(w.GetID(), worker.Official)
 	p.ListenPrefix(ctx, key, nil, func(ctx context.Context, event *clientv3.Event) {
 		if string(event.Kv.Key) != key {
 			return
@@ -168,7 +168,7 @@ func (p *provider) workerIntervalCleanupOnDelete(ctx context.Context, ev Event) 
 	}()
 }
 
-func (p *provider) workerListenIncomingLogicTask(ctx context.Context, w worker2.Worker) {
+func (p *provider) workerListenIncomingLogicTask(ctx context.Context, w worker.Worker) {
 	prefix := p.makeEtcdWorkerLogicTaskListenPrefix(w.GetID())
 	p.Log.Infof("worker begin listen incoming logic task, workerID: %s", w.GetID())
 	defer p.Log.Infof("worker stop listen incoming logic task, workerID: %s", w.GetID())
@@ -179,7 +179,7 @@ func (p *provider) workerListenIncomingLogicTask(ctx context.Context, w worker2.
 			key := string(event.Kv.Key)
 			logicTaskID := p.getWorkerLogicTaskIDFromIncomingKey(w.GetID(), key)
 			taskData := event.Kv.Value
-			logicTask := worker2.NewLogicTask(logicTaskID, taskData)
+			logicTask := worker.NewLogicTask(logicTaskID, taskData)
 			p.Log.Infof("logic task received and begin handle it, workerID: %s, logicTaskID: %s", w.GetID(), logicTaskID)
 			// add cancel-chan for each logic task's context
 			ctx := lwctx.MakeCtxWithTaskCancelChan(ctx)
@@ -228,7 +228,7 @@ func (p *provider) workerListenIncomingLogicTask(ctx context.Context, w worker2.
 	)
 }
 
-func (p *provider) workerListenCancelingLogicTask(ctx context.Context, w worker2.Worker) {
+func (p *provider) workerListenCancelingLogicTask(ctx context.Context, w worker.Worker) {
 	prefix := p.makeEtcdWorkerLogicTaskCancelListenPrefix(w.GetID())
 	p.Log.Infof("worker begin listen canceling logic task, workerID: %s", w.GetID())
 	defer p.Log.Infof("worker stop listen canceling logic task, workerID: %s", w.GetID())
