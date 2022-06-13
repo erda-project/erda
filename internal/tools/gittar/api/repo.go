@@ -27,7 +27,6 @@ import (
 	"strings"
 	"time"
 
-	git "github.com/libgit2/git2go/v30"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
@@ -157,19 +156,11 @@ func GetRepoBranchDetail(context *webcontext.Context) {
 	ref := context.Param("*")
 	commit, err := context.Repository.GetBranchCommit(ref)
 	if err != nil {
-		if git.IsErrorCode(err, git.ErrNotFound) {
-			context.Success(Map{
-				"commit": commit,
-				"has":    false,
-			})
-			return
-		}
 		context.Abort(err)
 		return
 	}
 	context.Success(Map{
 		"commit": commit,
-		"has":    true,
 	})
 }
 

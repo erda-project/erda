@@ -81,13 +81,12 @@ func (s *Service) CreateFlowNode(ctx context.Context, req *pb.CreateFlowNodeRequ
 	}
 
 	var repoPath = gittarPrefixOpenApi + app.ProjectName + "/" + app.Name
-	branchDetail, err := s.p.bdl.GetGittarBranchDetail(repoPath, apis.GetOrgID(ctx), req.SourceBranch, apis.GetUserID(ctx))
+	exists, err := s.JudgeBranchIsExists(ctx, repoPath, req.SourceBranch)
 	if err != nil {
 		return nil, err
 	}
-
 	// auto create sourceBranch
-	if !branchDetail.Has {
+	if !exists {
 		err := s.p.bdl.CreateGittarBranch(repoPath, apistructs.GittarCreateBranchRequest{
 			Name: req.SourceBranch,
 			Ref:  req.TargetBranch,
@@ -195,9 +194,12 @@ func (s *Service) OperationMerge(ctx context.Context, req *pb.OperationMergeRequ
 	}
 
 	operationReq := apistructs.GittarMergeOperationTempBranchRequest{
-		MergeID:          req.MergeID,
-		TempBranch:       tempBranch,
-		IsJoinTempBranch: &req.Enable.Value,
+		MergeID:    req.MergeID,
+		TempBranch: tempBranch,
+	}
+	// Merged into tempBranch success will set isJoinTempBranch = true
+	if !req.Enable.Value {
+		operationReq.IsJoinTempBranch = &req.Enable.Value
 	}
 	err = s.p.bdl.OperationTempBranch(extra.AppID, apis.GetUserID(ctx), operationReq)
 	if err != nil {
@@ -326,16 +328,16 @@ func (s *Service) MergeToTempBranch(ctx context.Context, tempBranch string, appI
 		AppID:        appID,
 	})
 
-	var joinTempBranchStatus string
-	if err != nil {
-		joinTempBranchStatus = apistructs.JoinTempBranchFailedStatus + err.Error()
-	} else {
-		joinTempBranchStatus = apistructs.JoinTempBranchSuccessStatus
+	req := apistructs.GittarMergeOperationTempBranchRequest{
+		MergeID: uint64(mrInfo.Id),
 	}
-	operationErr := s.p.bdl.OperationTempBranch(appID, apis.GetUserID(ctx), apistructs.GittarMergeOperationTempBranchRequest{
-		MergeID:              uint64(mrInfo.Id),
-		JoinTempBranchStatus: joinTempBranchStatus,
-	})
+	if err != nil {
+		req.JoinTempBranchStatus = apistructs.JoinTempBranchFailedStatus + err.Error()
+	} else {
+		req.JoinTempBranchStatus = apistructs.JoinTempBranchSuccessStatus
+		*req.IsJoinTempBranch = true
+	}
+	operationErr := s.p.bdl.OperationTempBranch(appID, apis.GetUserID(ctx), req)
 	if operationErr != nil {
 		s.p.Log.Errorf("failed to OperationTempBranch, err: %v", operationErr.Error())
 	}
@@ -370,11 +372,17 @@ func (s *Service) IdempotentDeleteBranch(ctx context.Context, repoPath, branch s
 }
 
 func (s *Service) JudgeBranchIsExists(ctx context.Context, repoPath, branch string) (has bool, err error) {
-	branchDetail, err := s.p.bdl.GetGittarBranchDetail(repoPath, apis.GetOrgID(ctx), branch, apis.GetUserID(ctx))
+	branches, err := s.p.bdl.GetGittarBranchesV2(repoPath, apis.GetOrgID(ctx), true, apis.GetUserID(ctx))
 	if err != nil {
 		return false, err
 	}
-	return branchDetail.Has, nil
+
+	for _, v := range branches {
+		if v == branch {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 func (s *Service) DeleteFlowNode(ctx context.Context, req *pb.DeleteFlowNodeRequest) (*pb.DeleteFlowNodeResponse, error) {

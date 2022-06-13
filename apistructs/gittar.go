@@ -254,11 +254,8 @@ const JoinToTempBranch MergeOperationTempBranchOperationType = "joinToTempBranch
 const RemoveFromTempBranch MergeOperationTempBranchOperationType = "removeFromTempBranch"
 const ReJoinAllBranchToTempBranch MergeOperationTempBranchOperationType = "reJoinAllBranchToTempBranch"
 
-const JoinTempBranchDefaultStatus = "init"
 const JoinTempBranchSuccessStatus = "success"
 const JoinTempBranchFailedStatus = "failed"
-const RemoveFromTempBranchStatus = "removed"
-const JoinTempBranchMergingStatus = "merging"
 
 type GittarMergeOperationTempBranchRequest struct {
 	MergeID              uint64 `json:"mergeID"`
@@ -712,7 +709,6 @@ type GittarBranchDetailResponse struct {
 
 type BranchDetail struct {
 	Commit *Commit `json:"commit"`
-	Has    bool    `json:"has"`
 }
 
 type GitRepoConfig struct {
