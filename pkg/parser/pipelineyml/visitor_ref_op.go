@@ -30,8 +30,8 @@ const (
 	RefOpOutput = "OUTPUT"
 
 	RefOpExEscape           = "escape"
-	RefOpExWrapDoubleQuotes = "wrap_single_quotes"
-	RefOpExWrapSingleQuotes = "wrap_double_quotes"
+	RefOpExWrapDoubleQuotes = "wrap_double_quotes"
+	RefOpExWrapSingleQuotes = "wrap_single_quotes"
 )
 
 // RefOp split from ${alias:OPERATION:key}
@@ -168,7 +168,10 @@ func (v *RefOpVisitor) handleOneParamOrCmdV2(ori string) string {
 		case expression.Random:
 			typeValue := ss[1]
 			value := mock.MockValue(typeValue)
-			return fmt.Sprintf("%v", value)
+			if len(ss) >= 3 {
+				refOp.Ex = ss[2]
+			}
+			return v.handleRefEx(fmt.Sprintf("%v", value), refOp)
 		case expression.Base64Decode:
 			// - base64-decode.xxxxx
 			baseValue := ss[1]
