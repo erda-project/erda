@@ -234,7 +234,7 @@ func (p *provider) GetFlowByRule(ctx context.Context, request GetFlowByRuleReque
 		return nil, err
 	}
 	for _, v := range flows {
-		if diceworkspace.IsRefPatternMatch(request.TargetBranch, []string{v.TargetBranch}) {
+		if request.FlowType == v.FlowType && diceworkspace.IsRefPatternMatch(request.TargetBranch, []string{v.TargetBranch}) {
 			return v.Convert(), nil
 		}
 	}

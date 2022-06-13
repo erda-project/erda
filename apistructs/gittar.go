@@ -314,13 +314,6 @@ type MergeRequestInfo struct {
 	IsJoinTempBranch     bool         `json:"isJoinTempBranch"`
 }
 
-func (that MergeRequestInfo) IsJoinTempBranch2() bool {
-	if that.JoinTempBranchStatus == "" || that.JoinTempBranchStatus == RemoveFromTempBranchStatus {
-		return false
-	}
-	return true
-}
-
 type MergeStatusInfo struct {
 	HasConflict bool   `json:"hasConflict"`
 	IsMerged    bool   `json:"isMerged"`

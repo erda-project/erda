@@ -482,7 +482,7 @@ func (b *Bundle) DeleteGittarBranch(repo, orgID, branch, userID string) error {
 		return err
 	}
 
-	resp, err := hc.Get(host).
+	resp, err := hc.Delete(host).
 		Path(repo+"/branches/"+branch).
 		Header("Org-ID", orgID).
 		Header(httputil.UserHeader, userID).
@@ -833,7 +833,7 @@ func (b *Bundle) ListMergeRequest(appID uint64, userID string, req apistructs.Gi
 	return &rsp.Data, nil
 }
 
-// ListMergeRequest list mrs
+// GetMergeRequestDetail get mr derails
 func (b *Bundle) GetMergeRequestDetail(appID uint64, userID string, mrID uint64) (*apistructs.MergeRequestInfo, error) {
 	var (
 		host string
