@@ -33,6 +33,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/pipeline/services/apierrors"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/i18n"
+	"github.com/erda-project/erda/pkg/metadata"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -115,11 +116,11 @@ func (s *PipelineSvc) Detail(pipelineID uint64) (*apistructs.PipelineDetailDTO, 
 			task.CostTimeSec = costtimeutil.CalculateTaskCostTimeSec(&task)
 			if task.Result == nil {
 				task.Result = &apistructs.PipelineTaskResult{}
-				task.Result.Metadata = make([]apistructs.MetadataField, 0)
+				task.Result.Metadata = make([]metadata.MetadataField, 0)
 			}
 			// add task events to result metadata if task status isn`t success and events it`s failed
 			if !task.Status.IsSuccessStatus() && task.Inspect.Events != "" && !isEventsLatestNormal(task.Inspect.Events) {
-				task.Result.Metadata = append(task.Result.Metadata, apistructs.MetadataField{
+				task.Result.Metadata = append(task.Result.Metadata, metadata.MetadataField{
 					Name:  "task-events",
 					Value: task.Inspect.Events,
 				})

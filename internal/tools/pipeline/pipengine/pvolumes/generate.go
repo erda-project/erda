@@ -18,13 +18,13 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/pkg/metadata"
 )
 
-func GenerateTaskVolume(task spec.PipelineTask, namespace string, volumeID *string) apistructs.MetadataField {
+func GenerateTaskVolume(task spec.PipelineTask, namespace string, volumeID *string) metadata.MetadataField {
 	volumeMountPath := MakeTaskContainerVolumeMountDir(namespace)
-	vo := apistructs.MetadataField{
+	vo := metadata.MetadataField{
 		Name:  namespace,
 		Value: volumeMountPath,
 		Type:  string(spec.StoreTypeDiceVolumeNFS),
@@ -40,8 +40,8 @@ func GenerateTaskVolume(task spec.PipelineTask, namespace string, volumeID *stri
 	return vo
 }
 
-func GenerateLocalVolume(namespace string, volumeID *string) apistructs.MetadataField {
-	vo := apistructs.MetadataField{
+func GenerateLocalVolume(namespace string, volumeID *string) metadata.MetadataField {
+	vo := metadata.MetadataField{
 		Name:  namespace,
 		Value: ContainerContextDir,
 		Type:  string(spec.StoreTypeDiceVolumeLocal),
@@ -55,8 +55,8 @@ func GenerateLocalVolume(namespace string, volumeID *string) apistructs.Metadata
 	return vo
 }
 
-func GenerateFakeVolume(namespace string, mountPath string, volumeID *string) apistructs.MetadataField {
-	vo := apistructs.MetadataField{
+func GenerateFakeVolume(namespace string, mountPath string, volumeID *string) metadata.MetadataField {
+	vo := metadata.MetadataField{
 		Name:  namespace,
 		Value: mountPath,
 		Type:  string(spec.StoreTypeDiceVolumeFake),

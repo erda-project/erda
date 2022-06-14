@@ -43,6 +43,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/expression"
 	"github.com/erda-project/erda/pkg/http/httputil"
+	"github.com/erda-project/erda/pkg/metadata"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/labelconfig"
 )
@@ -611,8 +612,8 @@ func getActionAgentTypeVersion() string {
 	return "agent@1.0"
 }
 
-func contextVolumes(context spec.PipelineTaskContext) []apistructs.MetadataField {
-	vos := make([]apistructs.MetadataField, 0)
+func contextVolumes(context spec.PipelineTaskContext) []metadata.MetadataField {
+	vos := make([]metadata.MetadataField, 0)
 	for _, vo := range append(context.InStorages, context.OutStorages...) {
 		vos = append(vos, vo)
 	}

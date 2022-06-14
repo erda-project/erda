@@ -19,6 +19,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/erda-project/erda/pkg/metadata"
 )
 
 const (
@@ -71,7 +73,7 @@ type TaskContainer struct {
 
 // PipelineTaskResult spec.pipeline task only use metadata, task dto has all fields
 type PipelineTaskResult struct {
-	Metadata    Metadata                   `json:"metadata,omitempty"`
+	Metadata    metadata.Metadata          `json:"metadata,omitempty"`
 	Errors      []*PipelineTaskErrResponse `json:"errors,omitempty"`
 	MachineStat *PipelineTaskMachineStat   `json:"machineStat,omitempty"`
 	Inspect     string                     `json:"inspect,omitempty"`

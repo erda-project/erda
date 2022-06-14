@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/pkg/metadata"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -142,9 +143,9 @@ func (tr *defaultTaskReconciler) handleParentSnippetTaskOutputs(snippetPipeline 
 	// update result.metadata for value-context reference
 	for _, outputValue := range snippetPipeline.Snapshot.OutputValues {
 		if parentTask.Result == nil {
-			parentTask.Result = &apistructs.PipelineTaskResult{Metadata: apistructs.Metadata{}}
+			parentTask.Result = &apistructs.PipelineTaskResult{Metadata: metadata.Metadata{}}
 		}
-		parentTask.Result.Metadata = append(parentTask.Result.Metadata, apistructs.MetadataField{
+		parentTask.Result.Metadata = append(parentTask.Result.Metadata, metadata.MetadataField{
 			Name:  outputValue.Name,
 			Value: strutil.String(outputValue.Value),
 		})

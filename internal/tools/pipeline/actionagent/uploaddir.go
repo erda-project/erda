@@ -26,11 +26,14 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/actionagent/agenttool"
 	"github.com/erda-project/erda/pkg/filehelper"
+	"github.com/erda-project/erda/pkg/metadata"
 	"github.com/erda-project/erda/pkg/retry"
 )
 
 const (
 	logUploadFilePrefix = "[upload files] "
+
+	MetadataTypeDiceFile = "DiceFile"
 )
 
 func (agent *Agent) uploadDir() {
@@ -125,15 +128,15 @@ func (agent *Agent) uploadDir() {
 		uploadedFiles = append(uploadedFiles, diceFile)
 	}
 	// put into metafile
-	var metadata apistructs.Metadata
+	var meta metadata.Metadata
 	for _, f := range uploadedFiles {
-		metadata = append(metadata, apistructs.MetadataField{
+		meta = append(meta, metadata.MetadataField{
 			Name:  f.DisplayName,
 			Value: f.UUID,
-			Type:  apistructs.MetadataTypeDiceFile,
+			Type:  MetadataTypeDiceFile,
 		})
 	}
-	err = agent.callbackToPipelinePlatform(&Callback{Metadata: metadata})
+	err = agent.callbackToPipelinePlatform(&Callback{Metadata: meta})
 	if err != nil {
 		agent.AppendError(err)
 	}

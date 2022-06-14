@@ -15,11 +15,11 @@
 package pvolumes
 
 import (
-	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/pkg/metadata"
 )
 
-func GenerateTaskDiceFileVolume(fileName, fileUUID, fileContainerPath string) apistructs.MetadataField {
-	vo := apistructs.MetadataField{
+func GenerateTaskDiceFileVolume(fileName, fileUUID, fileContainerPath string) metadata.MetadataField {
+	vo := metadata.MetadataField{
 		Name:  fileName,
 		Value: fileContainerPath,
 		Labels: map[string]string{

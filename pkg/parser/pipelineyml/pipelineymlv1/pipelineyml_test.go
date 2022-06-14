@@ -97,7 +97,7 @@ package pipelineymlv1
 //
 //func TestPipelineYml_GenerateTemplateEnvs(t *testing.T) {
 //	y := New([]byte("version: '1.0'"))
-//	err := y.Parse(WithPlaceholders([]apistructs.MetadataField{{Name: "A", Value: "B"}, {Name: "C", Value: "D"}}))
+//	err := y.Parse(WithPlaceholders([]metadata.MetadataField{{Name: "A", Value: "B"}, {Name: "C", Value: "D"}}))
 //	require.NoError(t, err)
 //	require.True(t, len(y.metadata.PlaceHolderEnvs) == 2)
 //}

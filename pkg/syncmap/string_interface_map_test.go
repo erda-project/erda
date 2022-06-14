@@ -21,13 +21,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/pkg/metadata"
 )
 
 func TestStringInterfaceMap_MarshalJSON(t *testing.T) {
 	jstr := `{"1":{"name":"name1","value":"value1"},"2":2}`
 	var m StringInterfaceMap
-	m.Store("1", apistructs.MetadataField{Name: "name1", Value: "value1"})
+	m.Store("1", metadata.MetadataField{Name: "name1", Value: "value1"})
 	m.Store("2", 2)
 	b, err := json.Marshal(&m)
 	assert.NoError(t, err)
@@ -40,7 +40,7 @@ func TestStringInterfaceMap_UnmarshalJSON(t *testing.T) {
 	err := json.Unmarshal([]byte(jstr), &m)
 	assert.NoError(t, err)
 
-	var o apistructs.MetadataField
+	var o metadata.MetadataField
 	err = m.Get("1", &o)
 	assert.NoError(t, err)
 	assert.Equal(t, "name1", o.Name)
@@ -60,8 +60,8 @@ func TestStringInterfaceMap_MarshalJSON2(t *testing.T) {
 	var e extra
 	e.Name = "name"
 	e.Volumes = StringInterfaceMap{}
-	e.Volumes.Store("k1", apistructs.MetadataField{Name: "n1"})
-	e.Volumes.Store("k2", apistructs.MetadataField{Name: "n2"})
+	e.Volumes.Store("k1", metadata.MetadataField{Name: "n1"})
+	e.Volumes.Store("k2", metadata.MetadataField{Name: "n2"})
 
 	b, err := json.Marshal(&e)
 	assert.NoError(t, err)
@@ -70,10 +70,10 @@ func TestStringInterfaceMap_MarshalJSON2(t *testing.T) {
 
 func TestStringInterfaceMap_GetMap(t *testing.T) {
 	var m StringInterfaceMap
-	m.Store("1", apistructs.MetadataField{Name: "name1", Value: "value1"})
+	m.Store("1", metadata.MetadataField{Name: "name1", Value: "value1"})
 	m.Store("2", 2)
 	tmpMap := m.GetMap()
 	assert.Equal(t, 2, len(tmpMap))
-	assert.Equal(t, tmpMap["1"], apistructs.MetadataField{Name: "name1", Value: "value1"})
+	assert.Equal(t, tmpMap["1"], metadata.MetadataField{Name: "name1", Value: "value1"})
 	assert.Equal(t, tmpMap["2"], 2)
 }

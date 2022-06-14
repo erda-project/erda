@@ -24,6 +24,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/pkg/metadata"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
@@ -39,12 +40,12 @@ func TestRuntimeID(t *testing.T) {
 
 func TestTaskContextDedup(t *testing.T) {
 	ctx := PipelineTaskContext{
-		InStorages: apistructs.Metadata{
+		InStorages: metadata.Metadata{
 			{Name: "in1", Value: "v1"},
 			{Name: "in2", Value: "v2"},
 			{Name: "in1", Value: "v1_2"},
 		},
-		OutStorages: apistructs.Metadata{
+		OutStorages: metadata.Metadata{
 			{Name: "out1", Value: "v1"},
 			{Name: "out2", Value: "v2"},
 			{Name: "out1", Value: "v1_2"},
