@@ -15,8 +15,11 @@
 package taskinspect
 
 import (
+	"strings"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/taskerror"
 )
@@ -61,5 +64,61 @@ func TestIsErrorsExceed(t *testing.T) {
 		if got != tt.want {
 			t.Errorf("%s want: %v, but got: %v", tt.name, tt.want, got)
 		}
+	}
+}
+
+func TestPipelineTaskInspect_ConvertErrors(t1 *testing.T) {
+	type fields struct {
+		Inspect     string
+		Events      string
+		MachineStat *PipelineTaskMachineStat
+		Errors      []*taskerror.PipelineTaskErrResponse
+	}
+	tests := []struct {
+		name      string
+		fields    fields
+		converted bool
+	}{
+		{
+			name: "count = 1",
+			fields: fields{
+				Errors: []*taskerror.PipelineTaskErrResponse{
+					{
+						Msg: "count = 1",
+						Ctx: taskerror.PipelineTaskErrCtx{
+							Count: 1,
+						},
+					},
+				},
+			},
+			converted: false,
+		},
+		{
+			name: "count = 2",
+			fields: fields{
+				Errors: []*taskerror.PipelineTaskErrResponse{
+					{
+						Msg: "count = 2",
+						Ctx: taskerror.PipelineTaskErrCtx{
+							Count: 2,
+						},
+					},
+				},
+			},
+			converted: true,
+		},
+	}
+	for _, tt := range tests {
+		t1.Run(tt.name, func(t1 *testing.T) {
+			t := &PipelineTaskInspect{
+				Inspect:     tt.fields.Inspect,
+				Events:      tt.fields.Events,
+				MachineStat: tt.fields.MachineStat,
+				Errors:      tt.fields.Errors,
+			}
+			t.ConvertErrors()
+			resp := t.Errors[0]
+			assert.Equal(t1, tt.converted, strings.Contains(resp.Msg, "startTime: "))
+		})
 	}
 }

@@ -28,10 +28,10 @@ const (
 )
 
 type PipelineTaskInspect struct {
-	Errors      []*taskerror.PipelineTaskErrResponse `json:"errors,omitempty"`
-	MachineStat *PipelineTaskMachineStat             `json:"machineStat,omitempty"`
 	Inspect     string                               `json:"inspect,omitempty"`
 	Events      string                               `json:"events,omitempty"`
+	MachineStat *PipelineTaskMachineStat             `json:"machineStat,omitempty"`
+	Errors      []*taskerror.PipelineTaskErrResponse `json:"errors,omitempty"`
 }
 
 func (t *PipelineTaskInspect) ConvertErrors() {
