@@ -61,7 +61,7 @@ func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}
 			}
 			return func(it *logsIterator, opts *v1.PodLogOptions) (io.ReadCloser, error) {
 				if it.debug {
-					fmt.Printf("namespace: %v,podname: %v, opts: %s \n", it.podNamespace, it.podName, jsonx.MarshalAndIndent(opts))
+					fmt.Printf("[%v] namespace: %v,podname: %v, opts: %s \n", opts.SinceTime.UnixNano(), it.podNamespace, it.podName, jsonx.MarshalAndIndent(opts))
 				}
 				return client.CoreV1().Pods(it.podNamespace).GetLogs(it.podName, opts).Stream(it.ctx)
 			}, nil

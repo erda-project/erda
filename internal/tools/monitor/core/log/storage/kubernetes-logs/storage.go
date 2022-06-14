@@ -271,10 +271,21 @@ func (it *logsIterator) Next() bool {
 	}
 	if it.lastEndTime != 0 {
 		if it.lastEndTime <= it.sel.End {
+			originLastEndTime := it.lastEndTime
 			it.fetch(it.lastEndTime, it.pageSize, false)
+			if it.lastEndTime == originLastEndTime {
+				it.log.Infof("timespan :%v is no data, skip [%v]", it.lastEndTime, it.timeSpan)
+				// May return ineligible data, maybe data is too long, or time format is failed, skip timespan
+				it.lastEndTime = it.lastEndTime + it.timeSpan
+			}
 		}
 	} else {
 		it.fetch(it.sel.Start, it.pageSize, false)
+		if it.lastEndTime == 0 {
+			it.log.Infof("timespan :%v is no data, skip [%v]", it.sel.Start, it.timeSpan)
+			// May return ineligible data, maybe data is too long, or time format is failed, skip timespan
+			it.lastEndTime = it.sel.Start + it.timeSpan
+		}
 	}
 	if it.offset >= 0 && it.offset < len(it.buffer) {
 		it.value = it.buffer[it.offset]
