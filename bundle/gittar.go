@@ -413,6 +413,58 @@ func (b *Bundle) GetGittarBranchesV2(repo string, orgID string, onlyBranchNames 
 	return branches, nil
 }
 
+func (b *Bundle) GetGittarBranchDetail(repo, orgID, branch, userID string) (*apistructs.BranchDetail, error) {
+	var (
+		host       string
+		err        error
+		branchResp apistructs.GittarBranchDetailResponse
+	)
+	hc := b.hc
+	host, err = b.urls.Gittar()
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := hc.Get(host).
+		Path(repo+"/branches/"+branch).
+		Header("Org-ID", orgID).
+		Header(httputil.UserHeader, userID).
+		Do().JSON(&branchResp)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() || !branchResp.Success {
+		return nil, toAPIError(resp.StatusCode(), branchResp.Error)
+	}
+	return branchResp.Data, nil
+}
+
+func (b *Bundle) DeleteGittarBranch(repo, orgID, branch, userID string) error {
+	var (
+		host       string
+		err        error
+		branchResp apistructs.GittarDeleteBranchResponse
+	)
+	hc := b.hc
+	host, err = b.urls.Gittar()
+	if err != nil {
+		return err
+	}
+
+	resp, err := hc.Delete(host).
+		Path(repo+"/branches/"+branch).
+		Header("Org-ID", orgID).
+		Header(httputil.UserHeader, userID).
+		Do().JSON(&branchResp)
+	if err != nil {
+		return apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() || !branchResp.Success {
+		return toAPIError(resp.StatusCode(), branchResp.Error)
+	}
+	return nil
+}
+
 // GetGittarBranchesV2 获取指定应用的所有分支
 func (b *Bundle) CreateGittarBranch(repo string, branchInfo apistructs.GittarCreateBranchRequest, orgID string, userID string) error {
 	var (
@@ -665,7 +717,7 @@ func (b *Bundle) CloseMergeRequest(appID int64, mrID int, userID string) error {
 	return nil
 }
 
-// operation mr temp branch
+// OperationTempBranch operation mr temp branch
 func (b *Bundle) OperationTempBranch(appID uint64, userID string, req apistructs.GittarMergeOperationTempBranchRequest) error {
 	var (
 		host string
@@ -688,7 +740,7 @@ func (b *Bundle) OperationTempBranch(appID uint64, userID string, req apistructs
 	}
 
 	if !resp.IsOK() {
-		return apierrors.ErrInvoke.InternalError(errors.Errorf("failed to list Mr"))
+		return apierrors.ErrInvoke.InternalError(errors.Errorf("failed to operationTempBranch"))
 	}
 	return nil
 }
@@ -750,7 +802,7 @@ func (b *Bundle) ListMergeRequest(appID uint64, userID string, req apistructs.Gi
 	return &rsp.Data, nil
 }
 
-// ListMergeRequest list mrs
+// GetMergeRequestDetail get mr derails
 func (b *Bundle) GetMergeRequestDetail(appID uint64, userID string, mrID uint64) (*apistructs.MergeRequestInfo, error) {
 	var (
 		host string
@@ -877,4 +929,61 @@ func (b *Bundle) GetArchive(userID string, req apistructs.GittarArchiveRequest, 
 	}
 
 	return zipfile, nil
+}
+
+func (b *Bundle) MergeWithBranch(userID string, req apistructs.GittarMergeWithBranchRequest) (*apistructs.Commit, error) {
+	var (
+		host string
+		err  error
+		rsp  apistructs.MergeWithBranchResponse
+	)
+	hc := b.hc
+	host, err = b.urls.Gittar()
+	if err != nil {
+		return nil, err
+	}
+
+	path := fmt.Sprintf("/app-repo/%d/merge-with-branch", req.AppID)
+	resp, err := hc.Post(host).
+		Header(httputil.UserHeader, userID).
+		Path(path).
+		JSONBody(req).
+		Do().JSON(&rsp)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+
+	if !resp.IsOK() {
+		return nil, apierrors.ErrInvoke.InternalError(errors.Errorf(rsp.Header.Error.Msg))
+	}
+	return rsp.Data, nil
+}
+
+func (b *Bundle) GetMergeBase(userID string, req apistructs.GittarMergeBaseRequest) (*apistructs.Commit, error) {
+	var (
+		host string
+		err  error
+		rsp  apistructs.MergeBaseResponse
+	)
+	hc := b.hc
+	host, err = b.urls.Gittar()
+	if err != nil {
+		return nil, err
+	}
+
+	path := fmt.Sprintf("/app-repo/%d/merge-base", req.AppID)
+	resp, err := hc.Get(host).
+		Header(httputil.UserHeader, userID).
+		Path(path).
+		Param("sourceBranch", req.SourceBranch).
+		Param("targetBranch", req.TargetBranch).
+		Do().JSON(&rsp)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+
+	if !resp.IsOK() {
+		return nil, apierrors.ErrInvoke.InternalError(errors.Errorf("failed to merge base"))
+	}
+	return rsp.Data, nil
 }

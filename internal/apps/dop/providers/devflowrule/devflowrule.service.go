@@ -21,7 +21,6 @@ import (
 
 	"github.com/erda-project/erda-proto-go/dop/devflowrule/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/providers/devflowrule/db"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	"github.com/erda-project/erda/internal/pkg/diceworkspace"
@@ -37,30 +36,22 @@ type GetFlowByRuleRequest struct {
 	TargetBranch string
 }
 
-type Service interface {
-	CreateDevFlowRule(context.Context, *pb.CreateDevFlowRuleRequest) (*pb.CreateDevFlowRuleResponse, error)
-	DeleteDevFlowRule(context.Context, *pb.DeleteDevFlowRuleRequest) (*pb.DeleteDevFlowRuleResponse, error)
-	UpdateDevFlowRule(context.Context, *pb.UpdateDevFlowRuleRequest) (*pb.UpdateDevFlowRuleResponse, error)
-	GetDevFlowRulesByProjectID(context.Context, *pb.GetDevFlowRuleRequest) (*pb.GetDevFlowRuleResponse, error)
+type Interface interface {
+	pb.DevFlowRuleServiceServer
 	GetFlowByRule(context.Context, GetFlowByRuleRequest) (*pb.Flow, error)
 }
 
-type ServiceImplement struct {
-	db  *db.Client
-	bdl *bundle.Bundle
-}
-
-func (s *ServiceImplement) CreateDevFlowRule(ctx context.Context, request *pb.CreateDevFlowRuleRequest) (*pb.CreateDevFlowRuleResponse, error) {
-	project, err := s.bdl.GetProject(request.ProjectID)
+func (p *provider) CreateDevFlowRule(ctx context.Context, request *pb.CreateDevFlowRuleRequest) (*pb.CreateDevFlowRuleResponse, error) {
+	project, err := p.bundle.GetProject(request.ProjectID)
 	if err != nil {
 		return nil, apierrors.ErrCreateDevFlowRule.InternalError(err)
 	}
-	org, err := s.bdl.GetOrg(project.OrgID)
+	org, err := p.bundle.GetOrg(project.OrgID)
 	if err != nil {
 		return nil, apierrors.ErrCreateDevFlowRule.InternalError(err)
 	}
 
-	flows := s.InitFlows()
+	flows := p.InitFlows()
 	b, err := json.Marshal(&flows)
 	if err != nil {
 		return nil, apierrors.ErrCreateDevFlowRule.InternalError(err)
@@ -78,14 +69,14 @@ func (s *ServiceImplement) CreateDevFlowRule(ctx context.Context, request *pb.Cr
 		},
 		Flows: b,
 	}
-	err = s.db.CreateDevFlowRule(&devFlow)
+	err = p.dbClient.CreateDevFlowRule(&devFlow)
 	if err != nil {
 		return nil, apierrors.ErrCreateDevFlowRule.InternalError(err)
 	}
 	return &pb.CreateDevFlowRuleResponse{Data: devFlow.Convert()}, nil
 }
 
-func (s *ServiceImplement) InitFlows() db.Flows {
+func (p *provider) InitFlows() db.Flows {
 	return db.Flows{
 		{
 			Name:             "DEV",
@@ -94,7 +85,7 @@ func (s *ServiceImplement) InitFlows() db.Flows {
 			ChangeFromBranch: "develop",
 			ChangeBranch:     "feature/*,bugfix/*",
 			EnableAutoMerge:  false,
-			AutoMergeBranch:  "dev",
+			AutoMergeBranch:  "next_develop",
 			Artifact:         "alpha",
 			Environment:      "DEV",
 			StartWorkflowHints: []db.StartWorkflowHint{
@@ -148,17 +139,17 @@ func (s *ServiceImplement) InitFlows() db.Flows {
 
 }
 
-func (s *ServiceImplement) UpdateDevFlowRule(ctx context.Context, request *pb.UpdateDevFlowRuleRequest) (*pb.UpdateDevFlowRuleResponse, error) {
+func (p *provider) UpdateDevFlowRule(ctx context.Context, request *pb.UpdateDevFlowRuleRequest) (*pb.UpdateDevFlowRuleResponse, error) {
 	if err := request.Validate(); err != nil {
 		return nil, apierrors.ErrUpdateDevFlowRule.InvalidParameter(err)
 	}
 
-	devFlow, err := s.db.GetDevFlowRule(request.ID)
+	devFlow, err := p.dbClient.GetDevFlowRule(request.ID)
 	if err != nil {
 		return nil, apierrors.ErrUpdateDevFlowRule.InternalError(err)
 	}
 
-	access, err := s.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+	access, err := p.bundle.CheckPermission(&apistructs.PermissionCheckRequest{
 		UserID:   apis.GetUserID(ctx),
 		Scope:    apistructs.ProjectScope,
 		ScopeID:  devFlow.ProjectID,
@@ -172,7 +163,7 @@ func (s *ServiceImplement) UpdateDevFlowRule(ctx context.Context, request *pb.Up
 		return nil, apierrors.ErrUpdateDevFlowRule.AccessDenied()
 	}
 
-	if err = s.CheckFlow(request.Flows); err != nil {
+	if err = p.CheckFlow(request.Flows); err != nil {
 		return nil, apierrors.ErrUpdateDevFlowRule.InternalError(err)
 	}
 
@@ -182,14 +173,14 @@ func (s *ServiceImplement) UpdateDevFlowRule(ctx context.Context, request *pb.Up
 	}
 	devFlow.Flows = b
 	devFlow.Operator.Updater = apis.GetUserID(ctx)
-	if err = s.db.UpdateDevFlowRule(devFlow); err != nil {
+	if err = p.dbClient.UpdateDevFlowRule(devFlow); err != nil {
 		return nil, apierrors.ErrUpdateDevFlowRule.InternalError(err)
 	}
 
 	return &pb.UpdateDevFlowRuleResponse{Data: devFlow.Convert()}, nil
 }
 
-func (s *ServiceImplement) CheckFlow(flows []*pb.Flow) error {
+func (p *provider) CheckFlow(flows []*pb.Flow) error {
 	nameMap := make(map[string]struct{})
 	for _, v := range flows {
 		if _, ok := nameMap[v.Name]; ok {
@@ -201,9 +192,9 @@ func (s *ServiceImplement) CheckFlow(flows []*pb.Flow) error {
 	return nil
 }
 
-func (s *ServiceImplement) GetDevFlowRulesByProjectID(ctx context.Context, request *pb.GetDevFlowRuleRequest) (*pb.GetDevFlowRuleResponse, error) {
+func (p *provider) GetDevFlowRulesByProjectID(ctx context.Context, request *pb.GetDevFlowRuleRequest) (*pb.GetDevFlowRuleResponse, error) {
 	if !apis.IsInternalClient(ctx) {
-		access, err := s.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+		access, err := p.bundle.CheckPermission(&apistructs.PermissionCheckRequest{
 			UserID:   apis.GetUserID(ctx),
 			Scope:    apistructs.ProjectScope,
 			ScopeID:  request.ProjectID,
@@ -218,7 +209,7 @@ func (s *ServiceImplement) GetDevFlowRulesByProjectID(ctx context.Context, reque
 		}
 	}
 
-	wfs, err := s.db.GetDevFlowRuleByProjectID(request.ProjectID)
+	wfs, err := p.dbClient.GetDevFlowRuleByProjectID(request.ProjectID)
 	if err != nil {
 		return nil, apierrors.ErrGetDevFlowRule.InternalError(err)
 	}
@@ -226,15 +217,15 @@ func (s *ServiceImplement) GetDevFlowRulesByProjectID(ctx context.Context, reque
 	return &pb.GetDevFlowRuleResponse{Data: wfs.Convert()}, nil
 }
 
-func (s *ServiceImplement) DeleteDevFlowRule(ctx context.Context, request *pb.DeleteDevFlowRuleRequest) (*pb.DeleteDevFlowRuleResponse, error) {
-	if err := s.db.DeleteDevFlowRuleByProjectID(request.ProjectID); err != nil {
+func (p *provider) DeleteDevFlowRule(ctx context.Context, request *pb.DeleteDevFlowRuleRequest) (*pb.DeleteDevFlowRuleResponse, error) {
+	if err := p.dbClient.DeleteDevFlowRuleByProjectID(request.ProjectID); err != nil {
 		return nil, apierrors.ErrDeleteDevFlowRule.InternalError(err)
 	}
 	return &pb.DeleteDevFlowRuleResponse{}, nil
 }
 
-func (s *ServiceImplement) GetFlowByRule(ctx context.Context, request GetFlowByRuleRequest) (*pb.Flow, error) {
-	wfs, err := s.db.GetDevFlowRuleByProjectID(request.ProjectID)
+func (p *provider) GetFlowByRule(ctx context.Context, request GetFlowByRuleRequest) (*pb.Flow, error) {
+	wfs, err := p.dbClient.GetDevFlowRuleByProjectID(request.ProjectID)
 	if err != nil {
 		return nil, err
 	}
@@ -243,20 +234,7 @@ func (s *ServiceImplement) GetFlowByRule(ctx context.Context, request GetFlowByR
 		return nil, err
 	}
 	for _, v := range flows {
-		if v.FlowType != request.FlowType {
-			continue
-		}
-		if request.FlowType == "single_branch" {
-			if diceworkspace.IsRefPatternMatch(request.TargetBranch, []string{v.TargetBranch}) {
-				return v.Convert(), nil
-			}
-		} else if request.FlowType == "multi_branch" {
-			if !diceworkspace.IsRefPatternMatch(request.TargetBranch, []string{v.TargetBranch}) {
-				continue
-			}
-			if !diceworkspace.IsRefPatternMatch(request.ChangeBranch, []string{v.ChangeBranch}) {
-				continue
-			}
+		if request.FlowType == v.FlowType && diceworkspace.IsRefPatternMatch(request.TargetBranch, []string{v.TargetBranch}) {
 			return v.Convert(), nil
 		}
 	}

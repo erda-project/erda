@@ -88,12 +88,11 @@ func GetRepoBranches(context *webcontext.Context) {
 	if err != nil {
 		logrus.Errorf("repo:%v branch error %v", repository.DiskPath(), err)
 		context.Abort(errors.New("branch error"))
-	} else {
-
-		b := gitmodule.Branches(branches)
-		sort.Sort(b)
-		context.Success(b)
+		return
 	}
+	b := gitmodule.Branches(branches)
+	sort.Sort(b)
+	context.Success(b)
 }
 
 // SetRepoDefaultBranch 设置默认分支
@@ -152,7 +151,7 @@ func CreateRepoBranch(context *webcontext.Context) {
 	context.Success("")
 }
 
-// GetRepoBranches function
+// GetRepoBranchDetail .
 func GetRepoBranchDetail(context *webcontext.Context) {
 	ref := context.Param("*")
 	commit, err := context.Repository.GetBranchCommit(ref)
