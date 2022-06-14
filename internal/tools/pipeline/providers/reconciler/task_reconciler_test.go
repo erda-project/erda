@@ -21,8 +21,8 @@ import (
 	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
+	"github.com/erda-project/erda/internal/tools/pipeline/pkg/taskresult"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/metadata"
 )
@@ -32,7 +32,7 @@ func Test_overwriteTaskWithLatest(t *testing.T) {
 	pm1 := monkey.PatchInstanceMethod(reflect.TypeOf(client), "GetPipelineTask", func(_ *dbclient.Client, id interface{}) (spec.PipelineTask, error) {
 		return spec.PipelineTask{
 			ID: 1,
-			Result: &apistructs.PipelineTaskResult{
+			Result: &taskresult.PipelineTaskResult{
 				Metadata: metadata.Metadata{
 					{
 						Name:  "result",

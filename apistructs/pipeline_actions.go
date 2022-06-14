@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/erda-project/erda-proto-go/core/pipeline/action/pb"
+	"github.com/erda-project/erda/internal/tools/pipeline/pkg/taskinspect"
 	"github.com/erda-project/erda/pkg/metadata"
 )
 
@@ -33,7 +34,7 @@ type ActionCallback struct {
 	Errors []ErrorResponse `json:"errors"`
 
 	// machine stat
-	MachineStat *PipelineTaskMachineStat `json:"machineStat,omitempty"`
+	MachineStat *taskinspect.PipelineTaskMachineStat `json:"machineStat,omitempty"`
 
 	// behind
 	PipelineID     uint64 `json:"pipelineID"`

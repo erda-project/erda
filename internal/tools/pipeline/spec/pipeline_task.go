@@ -21,6 +21,8 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/conf"
+	"github.com/erda-project/erda/internal/tools/pipeline/pkg/taskinspect"
+	"github.com/erda-project/erda/internal/tools/pipeline/pkg/taskresult"
 	"github.com/erda-project/erda/pkg/encoding/jsonparse"
 	"github.com/erda-project/erda/pkg/metadata"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
@@ -36,15 +38,15 @@ type PipelineTask struct {
 	PipelineID uint64 `json:"pipelineID"`
 	StageID    uint64 `json:"stageID"`
 
-	Name         string                         `json:"name"`
-	OpType       PipelineTaskOpType             `json:"opType"`         // Deprecated: get, put, task
-	Type         string                         `json:"type,omitempty"` // git, buildpack, release, dice ... 当 OpType 为自定义任务时为空
-	ExecutorKind PipelineTaskExecutorKind       `json:"executorKind"`   // scheduler, memory
-	Status       apistructs.PipelineStatus      `json:"status"`
-	Extra        PipelineTaskExtra              `json:"extra" xorm:"json"`
-	Context      PipelineTaskContext            `json:"context" xorm:"json"`
-	Result       *apistructs.PipelineTaskResult `json:"result" xorm:"json"`
-	Inspect      apistructs.PipelineTaskInspect `json:"inspect" xorm:"json"`
+	Name         string                          `json:"name"`
+	OpType       PipelineTaskOpType              `json:"opType"`         // Deprecated: get, put, task
+	Type         string                          `json:"type,omitempty"` // git, buildpack, release, dice ... 当 OpType 为自定义任务时为空
+	ExecutorKind PipelineTaskExecutorKind        `json:"executorKind"`   // scheduler, memory
+	Status       apistructs.PipelineStatus       `json:"status"`
+	Extra        PipelineTaskExtra               `json:"extra" xorm:"json"`
+	Context      PipelineTaskContext             `json:"context" xorm:"json"`
+	Result       *taskresult.PipelineTaskResult  `json:"result" xorm:"json"`
+	Inspect      taskinspect.PipelineTaskInspect `json:"inspect" xorm:"json"`
 
 	IsSnippet             bool                                  `json:"isSnippet"`                         // 该节点是否是嵌套流水线节点
 	SnippetPipelineID     *uint64                               `json:"snippetPipelineID"`                 // 嵌套的流水线 id

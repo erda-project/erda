@@ -24,6 +24,8 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
 	"github.com/erda-project/erda/internal/tools/pipeline/events"
+	"github.com/erda-project/erda/internal/tools/pipeline/pkg/taskerror"
+	"github.com/erda-project/erda/internal/tools/pipeline/pkg/taskresult"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/cron/db"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/apierrors"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
@@ -88,9 +90,9 @@ func (s *PipelineSvc) appendPipelineTaskInspect(p *spec.Pipeline, task *spec.Pip
 		return nil
 	}
 	// TODO action agent should add err start time and end time
-	newTaskErrors := make([]*apistructs.PipelineTaskErrResponse, 0)
+	newTaskErrors := make([]*taskerror.PipelineTaskErrResponse, 0)
 	for _, e := range cb.Errors {
-		newTaskErrors = append(newTaskErrors, &apistructs.PipelineTaskErrResponse{
+		newTaskErrors = append(newTaskErrors, &taskerror.PipelineTaskErrResponse{
 			Msg: e.Msg,
 		})
 	}
@@ -111,7 +113,7 @@ func (s *PipelineSvc) appendPipelineTaskMetadata(p *spec.Pipeline, task *spec.Pi
 		return nil
 	}
 	if task.Result == nil {
-		task.Result = &apistructs.PipelineTaskResult{Metadata: metadata.Metadata{}}
+		task.Result = &taskresult.PipelineTaskResult{Metadata: metadata.Metadata{}}
 	}
 
 	task.Result.Metadata = append(task.Result.Metadata, cb.Metadata...)

@@ -24,13 +24,15 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/tools/pipeline/pkg/taskerror"
+	"github.com/erda-project/erda/internal/tools/pipeline/pkg/taskresult"
 	"github.com/erda-project/erda/pkg/metadata"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
 func TestRuntimeID(t *testing.T) {
 	s := `{"metadata":[{"name":"runtimeID","value":"9","type":"link"},{"name":"operatorID","value":"2"}]}`
-	r := apistructs.PipelineTaskResult{}
+	r := taskresult.PipelineTaskResult{}
 	if err := json.Unmarshal([]byte(s), &r); err != nil {
 		logrus.Fatal(err)
 	}
@@ -139,18 +141,18 @@ func TestMakeTaskExecutorCtxKey(t *testing.T) {
 
 func TestPipelineTaskAppendError(t *testing.T) {
 	task := PipelineTask{}
-	task.Inspect.Errors = task.Inspect.AppendError(&apistructs.PipelineTaskErrResponse{Msg: "a"})
-	task.Inspect.Errors = task.Inspect.AppendError(&apistructs.PipelineTaskErrResponse{Msg: "a"})
+	task.Inspect.Errors = task.Inspect.AppendError(&taskerror.PipelineTaskErrResponse{Msg: "a"})
+	task.Inspect.Errors = task.Inspect.AppendError(&taskerror.PipelineTaskErrResponse{Msg: "a"})
 	assert.Equal(t, 1, len(task.Inspect.Errors))
-	task.Inspect.Errors = task.Inspect.AppendError(&apistructs.PipelineTaskErrResponse{Msg: "b"})
+	task.Inspect.Errors = task.Inspect.AppendError(&taskerror.PipelineTaskErrResponse{Msg: "b"})
 	assert.Equal(t, 2, len(task.Inspect.Errors))
 	startA := time.Date(2021, 8, 19, 10, 10, 0, 0, time.Local)
 	endA := time.Date(2021, 8, 19, 10, 30, 0, 0, time.Local)
-	task.Inspect.Errors = task.Inspect.AppendError(&apistructs.PipelineTaskErrResponse{Msg: "a", Ctx: apistructs.PipelineTaskErrCtx{StartTime: startA, EndTime: endA}})
+	task.Inspect.Errors = task.Inspect.AppendError(&taskerror.PipelineTaskErrResponse{Msg: "a", Ctx: taskerror.PipelineTaskErrCtx{StartTime: startA, EndTime: endA}})
 	assert.Equal(t, 3, len(task.Inspect.Errors))
 	start := time.Date(2021, 8, 19, 10, 9, 0, 0, time.Local)
 	end := time.Date(2021, 8, 19, 10, 29, 0, 0, time.Local)
-	task.Inspect.Errors = task.Inspect.AppendError(&apistructs.PipelineTaskErrResponse{Msg: "a", Ctx: apistructs.PipelineTaskErrCtx{StartTime: start, EndTime: end}})
+	task.Inspect.Errors = task.Inspect.AppendError(&taskerror.PipelineTaskErrResponse{Msg: "a", Ctx: taskerror.PipelineTaskErrCtx{StartTime: start, EndTime: end}})
 	taskDto := task.Convert2DTO()
 	assert.Equal(t, uint64(2), taskDto.Result.Errors[2].Ctx.Count)
 	assert.Equal(t, 3, len(taskDto.Result.Errors))
@@ -162,7 +164,7 @@ func TestConvertErrors(t *testing.T) {
 	task := PipelineTask{}
 	start := time.Date(2021, 8, 24, 9, 45, 1, 1, time.Local)
 	end := time.Date(2021, 8, 24, 9, 46, 1, 1, time.Local)
-	task.Inspect.Errors = task.Inspect.AppendError(&apistructs.PipelineTaskErrResponse{Msg: "err", Ctx: apistructs.PipelineTaskErrCtx{
+	task.Inspect.Errors = task.Inspect.AppendError(&taskerror.PipelineTaskErrResponse{Msg: "err", Ctx: taskerror.PipelineTaskErrCtx{
 		StartTime: start,
 		EndTime:   end,
 		Count:     2,

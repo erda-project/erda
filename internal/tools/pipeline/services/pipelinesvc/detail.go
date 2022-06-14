@@ -29,6 +29,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/commonutil/costtimeutil"
 	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
+	"github.com/erda-project/erda/internal/tools/pipeline/pkg/taskresult"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/cron/crontypes"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/apierrors"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
@@ -115,7 +116,7 @@ func (s *PipelineSvc) Detail(pipelineID uint64) (*apistructs.PipelineDetailDTO, 
 			}
 			task.CostTimeSec = costtimeutil.CalculateTaskCostTimeSec(&task)
 			if task.Result == nil {
-				task.Result = &apistructs.PipelineTaskResult{}
+				task.Result = &taskresult.PipelineTaskResult{}
 				task.Result.Metadata = make([]metadata.MetadataField, 0)
 			}
 			// add task events to result metadata if task status isn`t success and events it`s failed
