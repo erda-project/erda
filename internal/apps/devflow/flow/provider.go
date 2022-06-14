@@ -20,13 +20,12 @@ import (
 	transport "github.com/erda-project/erda-infra/pkg/transport"
 	pb "github.com/erda-project/erda-proto-go/apps/devflow/flow/pb"
 	issuerelationpb "github.com/erda-project/erda-proto-go/apps/devflow/issuerelation/pb"
-	dwfpb "github.com/erda-project/erda-proto-go/dop/devflowrule/pb"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/apps/dop/providers/devflowrule"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 
-type config struct {
-}
+type config struct{}
 
 // +provider
 type provider struct {
@@ -36,7 +35,7 @@ type provider struct {
 
 	devFlowService *Service
 	IssueRelation  issuerelationpb.IssueRelationServiceServer `autowired:"erda.apps.devflow.issuerelation.IssueRelationService"`
-	DevFlowRule    dwfpb.DevFlowRuleServiceServer             `autowired:"erda.dop.devflowrule.DevFlowRuleService" required:"true"`
+	DevFlowRule    devflowrule.Interface
 	bdl            *bundle.Bundle
 }
 

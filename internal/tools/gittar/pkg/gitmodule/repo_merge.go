@@ -227,5 +227,4 @@ func (repo *Repository) Merge(ourBranch string, theirBranch string, signature *S
 		return nil, err
 	}
 	return repo.GetCommit(newOid.String())
-
 }

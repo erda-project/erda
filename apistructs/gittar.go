@@ -256,13 +256,12 @@ const ReJoinAllBranchToTempBranch MergeOperationTempBranchOperationType = "reJoi
 
 const JoinTempBranchSuccessStatus = "success"
 const JoinTempBranchFailedStatus = "failed"
-const RemoveFromTempBranchStatus = "remove"
 
-// GittarCreateMergeRequest POST /<projectName>/<appName>/merge-requests 创建merge request
 type GittarMergeOperationTempBranchRequest struct {
-	MergeID    uint64                                `json:"mergeID"`
-	TempBranch string                                `json:"tempBranch"`
-	Operation  MergeOperationTempBranchOperationType `json:"operation"`
+	MergeID              uint64 `json:"mergeID"`
+	TempBranch           string `json:"tempBranch"`
+	JoinTempBranchStatus string `json:"joinTempBranchStatus"`
+	IsJoinTempBranch     *bool  `json:"isJoinTempBranch"`
 }
 
 type GittarMergeOperationTempBranchResponse struct {
@@ -309,13 +308,7 @@ type MergeRequestInfo struct {
 	EventName            string       `json:"eventName"`
 	CheckRuns            CheckRuns    `json:"checkRuns,omitempty"`
 	JoinTempBranchStatus string       `json:"joinTempBranchStatus"`
-}
-
-func (that MergeRequestInfo) IsJoinTempBranch() bool {
-	if that.JoinTempBranchStatus == "" || that.JoinTempBranchStatus == RemoveFromTempBranchStatus {
-		return false
-	}
-	return true
+	IsJoinTempBranch     bool         `json:"isJoinTempBranch"`
 }
 
 type MergeStatusInfo struct {
@@ -518,9 +511,12 @@ type RepoBranchEvent struct {
 
 // Branch 分支
 type Branch struct {
-	ID     string  `json:"id"`
-	Name   string  `json:"name"`
-	Commit *Commit `json:"commit"`
+	ID        string  `json:"id"`
+	Name      string  `json:"name"`
+	Commit    *Commit `json:"commit"`
+	IsDefault bool    `json:"isDefault"`
+	IsProtect bool    `json:"isProtect"`
+	IsMerged  bool    `json:"isMerged"`
 }
 
 // BranchInfo 分支详情
@@ -706,6 +702,15 @@ type GittarCommitsListResponse struct {
 	Data []Commit `json:"data"`
 }
 
+type GittarBranchDetailResponse struct {
+	Header
+	Data *BranchDetail `json:"data"`
+}
+
+type BranchDetail struct {
+	Commit *Commit `json:"commit"`
+}
+
 type GitRepoConfig struct {
 	// 类型, 支持类型:general
 	Type string `json:"type"`
@@ -809,4 +814,26 @@ type GittarArchiveRequest struct {
 	Project     string `json:"project"`
 	Application string `json:"application"`
 	Ref         string `json:"ref"`
+}
+
+type GittarMergeWithBranchRequest struct {
+	SourceBranch string `json:"sourceBranch"`
+	TargetBranch string `json:"targetBranch"`
+	AppID        uint64 `json:"appID"`
+}
+
+type MergeWithBranchResponse struct {
+	Header
+	Data *Commit `json:"data"`
+}
+
+type GittarMergeBaseRequest struct {
+	SourceBranch string `json:"sourceBranch"`
+	TargetBranch string `json:"targetBranch"`
+	AppID        uint64 `json:"appID"`
+}
+
+type MergeBaseResponse struct {
+	Header
+	Data *Commit `json:"data"`
 }
