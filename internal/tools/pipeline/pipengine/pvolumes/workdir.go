@@ -15,8 +15,8 @@
 package pvolumes
 
 import (
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/pkg/metadata"
 )
 
 // GetAvailableTaskContainerWorkdirs 查询当前存在的所有 Workdir
@@ -66,8 +66,8 @@ func GetAvailableTaskContainerPaths(tasks []spec.PipelineTask, currentTask spec.
 	return containerPaths
 }
 
-func GetAvailableTaskOutStorages(tasks []spec.PipelineTask) []apistructs.MetadataField {
-	var volumes []apistructs.MetadataField
+func GetAvailableTaskOutStorages(tasks []spec.PipelineTask) []metadata.MetadataField {
+	var volumes []metadata.MetadataField
 	for _, task := range tasks {
 		for _, out := range task.Context.OutStorages {
 			volumes = append(volumes, out)

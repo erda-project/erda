@@ -21,7 +21,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/pkg/metadata"
 )
 
 func TestRegexp(t *testing.T) {
@@ -63,7 +63,7 @@ func TestMap2MetadataFields(t *testing.T) {
 }
 
 func TestMetadataFields2Map(t *testing.T) {
-	metas := []apistructs.MetadataField{
+	metas := []metadata.MetadataField{
 		{Name: "oss.access.key", Value: "1"},
 		{Name: "OSS_ACCESS_KEY", Value: "2"},
 	}

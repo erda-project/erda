@@ -22,6 +22,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/pkg/metadata"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
@@ -196,8 +197,8 @@ func Test_getActionAgentTypeVersion(t *testing.T) {
 
 func Test_contextVolumes(t *testing.T) {
 	taskContext := spec.PipelineTaskContext{
-		InStorages:  apistructs.Metadata{{Name: "in1"}},
-		OutStorages: apistructs.Metadata{{Name: "out1"}},
+		InStorages:  metadata.Metadata{{Name: "in1"}},
+		OutStorages: metadata.Metadata{{Name: "out1"}},
 	}
 	fields := contextVolumes(taskContext)
 	assert.Equal(t, 2, len(fields))

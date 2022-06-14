@@ -22,6 +22,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/pkg/metadata"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
 
@@ -45,7 +46,7 @@ func HandleTaskCacheVolumes(p *spec.Pipeline, task *spec.PipelineTask, diceYmlJo
 	projectID := p.GetLabel(apistructs.LabelProjectID)
 	appID := p.GetLabel(apistructs.LabelAppID)
 
-	var volumes []apistructs.MetadataField
+	var volumes []metadata.MetadataField
 	var binds diceyml.Binds
 	for _, cache := range caches {
 		// 根据指定的绝对目录名生成一个 hash 的文件名
@@ -75,7 +76,7 @@ func HandleTaskCacheVolumes(p *spec.Pipeline, task *spec.PipelineTask, diceYmlJo
 		labels[VoLabelKeyContextPath] = key
 		labels[TaskCacheHashName] = hash
 		labels[TaskCachePath] = cache.Path
-		var storage = apistructs.MetadataField{
+		var storage = metadata.MetadataField{
 			Name:   TaskCacheMame + "_" + hash,
 			Type:   string(spec.StoreTypeDiceCacheNFS),
 			Value:  key,

@@ -18,6 +18,8 @@ import (
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
+
+	"github.com/erda-project/erda/pkg/metadata"
 )
 
 type ElfMetadata struct {
@@ -38,7 +40,7 @@ type ListMetadata struct {
 }
 
 type Notebook struct {
-	Metadata
+	metadata.Metadata
 	NotebookSpec
 	NotebookStatus
 }

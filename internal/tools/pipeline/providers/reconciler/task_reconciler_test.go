@@ -24,6 +24,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/pkg/metadata"
 )
 
 func Test_overwriteTaskWithLatest(t *testing.T) {
@@ -32,7 +33,7 @@ func Test_overwriteTaskWithLatest(t *testing.T) {
 		return spec.PipelineTask{
 			ID: 1,
 			Result: &apistructs.PipelineTaskResult{
-				Metadata: apistructs.Metadata{
+				Metadata: metadata.Metadata{
 					{
 						Name:  "result",
 						Value: "success",

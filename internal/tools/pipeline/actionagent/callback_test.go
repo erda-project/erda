@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/pkg/metadata"
 )
 
 func TestHandleMetaFile(t *testing.T) {
@@ -69,9 +70,9 @@ bbb`,
 		},
 	}
 
-	var fields []*apistructs.MetadataField
+	var fields []*metadata.MetadataField
 	for _, value := range kvs {
-		fields = append(fields, &apistructs.MetadataField{Name: value.key, Value: value.value})
+		fields = append(fields, &metadata.MetadataField{Name: value.key, Value: value.value})
 	}
 
 	cb := Callback{}

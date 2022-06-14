@@ -27,6 +27,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/cron/db"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/apierrors"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/pkg/metadata"
 )
 
 func (s *PipelineSvc) DealPipelineCallbackOfAction(data []byte) (err error) {
@@ -110,7 +111,7 @@ func (s *PipelineSvc) appendPipelineTaskMetadata(p *spec.Pipeline, task *spec.Pi
 		return nil
 	}
 	if task.Result == nil {
-		task.Result = &apistructs.PipelineTaskResult{Metadata: apistructs.Metadata{}}
+		task.Result = &apistructs.PipelineTaskResult{Metadata: metadata.Metadata{}}
 	}
 
 	task.Result.Metadata = append(task.Result.Metadata, cb.Metadata...)
