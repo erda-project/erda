@@ -32,7 +32,7 @@ func Test_overwriteTaskWithLatest(t *testing.T) {
 		return spec.PipelineTask{
 			ID: 1,
 			Result: &apistructs.PipelineTaskResult{
-				Metadata: apistructs.Metadata{
+				Metadata: metadata.Metadata{
 					{
 						Name:  "result",
 						Value: "success",

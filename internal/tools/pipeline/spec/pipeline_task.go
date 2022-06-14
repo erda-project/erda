@@ -22,6 +22,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/conf"
 	"github.com/erda-project/erda/pkg/encoding/jsonparse"
+	"github.com/erda-project/erda/pkg/metadata"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
@@ -121,13 +122,13 @@ type PipelineTaskExtra struct {
 	TaskContainers          []apistructs.TaskContainer `json:"taskContainers"`
 	// Volumes 创建 task 时的 volumes 快照
 	// 若一开始 volume 无 volumeID，启动 task 后返回的 volumeID 不会在这里更新，只会更新到 task.Context.OutStorages 里
-	Volumes         []apistructs.MetadataField `json:"volumes,omitempty"` //
-	PreFetcher      *apistructs.PreFetcher     `json:"preFetcher,omitempty"`
-	RuntimeResource RuntimeResource            `json:"runtimeResource,omitempty"`
-	UUID            string                     `json:"uuid"` // 用于查询日志等，pipeline 开始执行时才会赋值 // 对接多个 executor，不一定每个 executor 都能自定义 UUID，所以这个 uuid 实际上是目标系统的 uuid
-	TimeBeginQueue  time.Time                  `json:"timeBeginQueue"`
-	TimeEndQueue    time.Time                  `json:"timeEndQueue"`
-	StageOrder      int                        `json:"stageOrder"` // 0,1,2,...
+	Volumes         []metadata.MetadataField `json:"volumes,omitempty"` //
+	PreFetcher      *apistructs.PreFetcher   `json:"preFetcher,omitempty"`
+	RuntimeResource RuntimeResource          `json:"runtimeResource,omitempty"`
+	UUID            string                   `json:"uuid"` // 用于查询日志等，pipeline 开始执行时才会赋值 // 对接多个 executor，不一定每个 executor 都能自定义 UUID，所以这个 uuid 实际上是目标系统的 uuid
+	TimeBeginQueue  time.Time                `json:"timeBeginQueue"`
+	TimeEndQueue    time.Time                `json:"timeEndQueue"`
+	StageOrder      int                      `json:"stageOrder"` // 0,1,2,...
 
 	// RunAfter indicates the tasks this task depends.
 	RunAfter []string `json:"runAfter"`
@@ -161,10 +162,10 @@ type FlinkSparkConf struct {
 }
 
 type PipelineTaskContext struct {
-	InStorages  apistructs.Metadata `json:"inStorages,omitempty"`
-	OutStorages apistructs.Metadata `json:"outStorages,omitempty"`
+	InStorages  metadata.Metadata `json:"inStorages,omitempty"`
+	OutStorages metadata.Metadata `json:"outStorages,omitempty"`
 
-	CmsDiceFiles apistructs.Metadata `json:"cmsDiceFiles,omitempty"`
+	CmsDiceFiles metadata.Metadata `json:"cmsDiceFiles,omitempty"`
 }
 
 func (c *PipelineTaskContext) Dedup() {
@@ -348,9 +349,9 @@ func (pt *PipelineTask) ReleaseID() string {
 	return ""
 }
 
-func (pt *PipelineTask) GetMetadata() apistructs.Metadata {
+func (pt *PipelineTask) GetMetadata() metadata.Metadata {
 	if pt.Result == nil {
-		return apistructs.Metadata{}
+		return metadata.Metadata{}
 	}
 	return pt.Result.Metadata
 }

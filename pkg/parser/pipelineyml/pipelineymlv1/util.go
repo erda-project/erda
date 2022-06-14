@@ -24,7 +24,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/pkg/metadata"
 )
 
 func (y *PipelineYml) FindDockerImageByResourceName(name string) (repository, tag string, err error) {
@@ -311,7 +311,7 @@ func ApplyKVsWithPriority(kvs ...map[string]string) map[string]string {
 	return result
 }
 
-func MetadataFields2Map(metas []apistructs.MetadataField) map[string]string {
+func MetadataFields2Map(metas []metadata.MetadataField) map[string]string {
 	m := make(map[string]string, len(metas))
 	for _, meta := range metas {
 		m[meta.Name] = meta.Value
@@ -319,10 +319,10 @@ func MetadataFields2Map(metas []apistructs.MetadataField) map[string]string {
 	return m
 }
 
-func Map2MetadataFields(m map[string]string) []apistructs.MetadataField {
-	var metas []apistructs.MetadataField
+func Map2MetadataFields(m map[string]string) []metadata.MetadataField {
+	var metas []metadata.MetadataField
 	for k, v := range m {
-		metas = append(metas, apistructs.MetadataField{Name: k, Value: v})
+		metas = append(metas, metadata.MetadataField{Name: k, Value: v})
 	}
 	return metas
 }

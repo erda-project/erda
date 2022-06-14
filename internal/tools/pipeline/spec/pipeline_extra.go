@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/pkg/metadata"
 )
 
 // PipelineExtra represents `pipeline_extras` table.
@@ -159,10 +160,10 @@ func (s *Snapshot) FromDB(b []byte) error {
 		return nil
 	}
 
-	// 用老数据结构 []apistructs.MetadataField 进行解析，并赋值回 s
+	// 用老数据结构 []metadata.MetadataField 进行解析，并赋值回 s
 	so := struct {
-		PipelineYml string                     `json:"pipeline_yml,omitempty"`
-		Secrets     []apistructs.MetadataField `json:"secrets,omitempty"`
+		PipelineYml string                   `json:"pipeline_yml,omitempty"`
+		Secrets     []metadata.MetadataField `json:"secrets,omitempty"`
 	}{}
 	if err := json.Unmarshal(b, &so); err == nil {
 		s.PipelineYml = so.PipelineYml

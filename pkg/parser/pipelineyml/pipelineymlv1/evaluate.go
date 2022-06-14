@@ -20,10 +20,10 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/pkg/metadata"
 )
 
-func (y *PipelineYml) evaluate(variables []apistructs.MetadataField) error {
+func (y *PipelineYml) evaluate(variables []metadata.MetadataField) error {
 	rendered, err := RenderPlaceholders(string(y.byteData), variables)
 	if err != nil {
 		return err
@@ -65,7 +65,7 @@ func removeComment(line string) (string, string) {
 	return line[:i], line[i:]
 }
 
-func RenderPlaceholders(input string, placeholders []apistructs.MetadataField) (string, error) {
+func RenderPlaceholders(input string, placeholders []metadata.MetadataField) (string, error) {
 	lines := strings.Split(input, "\n")
 
 	m := make(map[string]string, len(placeholders))
