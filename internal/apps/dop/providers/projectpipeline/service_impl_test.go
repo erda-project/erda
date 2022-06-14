@@ -20,6 +20,7 @@ import (
 	"reflect"
 	"sort"
 	"testing"
+	"time"
 
 	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
@@ -841,6 +842,8 @@ func Test_makeListPipelineExecHistoryResponse(t *testing.T) {
 	type args struct {
 		data *apistructs.PipelinePageListData
 	}
+
+	date := time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC)
 	tests := []struct {
 		name string
 		args args
@@ -855,7 +858,7 @@ func Test_makeListPipelineExecHistoryResponse(t *testing.T) {
 							ID:          10001,
 							Status:      "Success",
 							CostTimeSec: 100,
-							TimeBegin:   nil,
+							TimeBegin:   &date,
 							DefinitionPageInfo: &apistructs.DefinitionPageInfo{
 								Name:         "deploy",
 								Creator:      "1",

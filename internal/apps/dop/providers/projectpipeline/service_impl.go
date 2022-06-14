@@ -862,6 +862,9 @@ func makeListPipelineExecHistoryResponse(data *apistructs.PipelinePageListData) 
 		if pipeline.TimeBegin != nil {
 			timeBegin = timestamppb.New((*pipeline.TimeBegin).UTC())
 		}
+		if timeBegin != nil && timeBegin.AsTime().Unix() <= 0 {
+			timeBegin = nil
+		}
 
 		execHistories = append(execHistories, &pb.PipelineExecHistory{
 			PipelineName:   pipeline.DefinitionPageInfo.Name,
