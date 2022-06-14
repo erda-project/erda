@@ -25,7 +25,7 @@ import (
 	"github.com/shirou/gopsutil/v3/mem"
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/tools/pipeline/pkg/taskinspect"
 )
 
 // validate
@@ -142,7 +142,7 @@ func (agent *Agent) reportMachineStat() {
 		}
 	}()
 
-	var stat apistructs.PipelineTaskMachineStat
+	var stat taskinspect.PipelineTaskMachineStat
 
 	// host
 	hostIP := os.Getenv("HOST_IP")
@@ -150,7 +150,7 @@ func (agent *Agent) reportMachineStat() {
 	if err != nil {
 		logrus.Warnf("[Ignore] failed to collect host stat, err: %v", err)
 	} else {
-		stat.Host = apistructs.PipelineTaskMachineHostStat{
+		stat.Host = taskinspect.PipelineTaskMachineHostStat{
 			HostIP:          hostIP,
 			Hostname:        hostStat.Hostname,
 			UptimeSec:       hostStat.Uptime,
@@ -164,7 +164,7 @@ func (agent *Agent) reportMachineStat() {
 	}
 
 	// pod
-	stat.Pod = apistructs.PipelineTaskMachinePodStat{
+	stat.Pod = taskinspect.PipelineTaskMachinePodStat{
 		PodIP: os.Getenv("POD_IP"),
 	}
 
@@ -173,7 +173,7 @@ func (agent *Agent) reportMachineStat() {
 	if err != nil {
 		logrus.Warnf("[Ignore] failed to collect load avg, err: %v", err)
 	} else {
-		stat.Load = apistructs.PipelineTaskMachineLoadStat{
+		stat.Load = taskinspect.PipelineTaskMachineLoadStat{
 			Load1:  loadAvg.Load1,
 			Load5:  loadAvg.Load5,
 			Load15: loadAvg.Load15,
@@ -185,7 +185,7 @@ func (agent *Agent) reportMachineStat() {
 	if err != nil {
 		logrus.Warnf("[Ignore] failed to collect mem stat, err: %v", err)
 	} else {
-		stat.Mem = apistructs.PipelineTaskMachineMemStat{
+		stat.Mem = taskinspect.PipelineTaskMachineMemStat{
 			Total:       vm.Total,
 			Available:   vm.Available,
 			Used:        vm.Used,
@@ -201,7 +201,7 @@ func (agent *Agent) reportMachineStat() {
 	if err != nil {
 		logrus.Warnf("[Ignore] failed to collect swap stat, err: %v", err)
 	} else {
-		stat.Swap = apistructs.PipelineTaskMachineSwapStat{
+		stat.Swap = taskinspect.PipelineTaskMachineSwapStat{
 			Total:       swap.Total,
 			Used:        swap.Used,
 			Free:        swap.Free,

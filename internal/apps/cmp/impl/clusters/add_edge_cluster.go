@@ -30,6 +30,7 @@ import (
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/cmp/dbclient"
+	"github.com/erda-project/erda/internal/tools/pipeline/pkg/taskresult"
 	"github.com/erda-project/erda/pkg/envconf"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -301,7 +302,7 @@ func (c *Clusters) processFailedPipeline(ctx context.Context, record dbclient.Re
 	return nil
 }
 
-func (c *Clusters) processSuccessPipeline(pTaskResult apistructs.PipelineTaskResult, record dbclient.Record) error {
+func (c *Clusters) processSuccessPipeline(pTaskResult taskresult.PipelineTaskResult, record dbclient.Record) error {
 	req := &clusterpb.CreateClusterRequest{}
 	// get cluster info from pipeline result
 	for _, m := range pTaskResult.Metadata {

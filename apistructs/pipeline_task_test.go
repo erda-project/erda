@@ -17,7 +17,6 @@ package apistructs
 import (
 	"fmt"
 	"testing"
-	"time"
 )
 
 func TestPipelineTaskLoop_Duplicate(t *testing.T) {
@@ -94,48 +93,5 @@ func TestPipelineTaskLoop_IsEmpty(t *testing.T) {
 				t.Errorf("IsEmpty() = %v, want %v", got, tt.want)
 			}
 		})
-	}
-}
-
-func TestIsErrorsExceed(t *testing.T) {
-	tests := []struct {
-		name    string
-		inspect *PipelineTaskInspect
-		want    bool
-	}{
-		{
-			name: "less than one hour and count less than 180",
-			inspect: &PipelineTaskInspect{
-				Errors: []*PipelineTaskErrResponse{&PipelineTaskErrResponse{Msg: "xxx", Ctx: PipelineTaskErrCtx{StartTime: time.Now().Add(-59 * time.Minute), Count: 179, EndTime: time.Now()}}},
-			},
-			want: false,
-		},
-		{
-			name: "less than one hour but count more than 180",
-			inspect: &PipelineTaskInspect{
-				Errors: []*PipelineTaskErrResponse{&PipelineTaskErrResponse{Msg: "xxx", Ctx: PipelineTaskErrCtx{StartTime: time.Now().Add(-59 * time.Minute), Count: 181, EndTime: time.Now()}}},
-			},
-			want: true,
-		},
-		{
-			name: "more than one hour ans count less than 180 per hour",
-			inspect: &PipelineTaskInspect{
-				Errors: []*PipelineTaskErrResponse{&PipelineTaskErrResponse{Msg: "xxx", Ctx: PipelineTaskErrCtx{StartTime: time.Now().Add(-61 * time.Minute), Count: 180, EndTime: time.Now()}}},
-			},
-			want: false,
-		},
-		{
-			name: "more than one hour ans count more than 180 per hour",
-			inspect: &PipelineTaskInspect{
-				Errors: []*PipelineTaskErrResponse{&PipelineTaskErrResponse{Msg: "xxx", Ctx: PipelineTaskErrCtx{StartTime: time.Now().Add(-61 * time.Minute), Count: 185, EndTime: time.Now()}}},
-			},
-			want: true,
-		},
-	}
-	for _, tt := range tests {
-		got, _ := tt.inspect.IsErrorsExceed()
-		if got != tt.want {
-			t.Errorf("%s want: %v, but got: %v", tt.name, tt.want, got)
-		}
 	}
 }

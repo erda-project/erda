@@ -23,6 +23,8 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/commonutil/statusutil"
+	"github.com/erda-project/erda/internal/tools/pipeline/pkg/taskinspect"
+	"github.com/erda-project/erda/internal/tools/pipeline/pkg/taskresult"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/retry"
@@ -144,7 +146,7 @@ func (client *Client) ListPipelineTasksByPipelineID(pipelineID uint64, ops ...Se
 	return tasks, nil
 }
 
-func (client *Client) UpdatePipelineTaskMetadata(id uint64, result *apistructs.PipelineTaskResult) error {
+func (client *Client) UpdatePipelineTaskMetadata(id uint64, result *taskresult.PipelineTaskResult) error {
 	_, err := client.ID(id).Cols("result").Update(&spec.PipelineTask{Result: result})
 	if err != nil {
 		b, _ := json.Marshal(&result)
@@ -153,7 +155,7 @@ func (client *Client) UpdatePipelineTaskMetadata(id uint64, result *apistructs.P
 	return nil
 }
 
-func (client *Client) UpdatePipelineTaskInspect(id uint64, inspect apistructs.PipelineTaskInspect) error {
+func (client *Client) UpdatePipelineTaskInspect(id uint64, inspect taskinspect.PipelineTaskInspect) error {
 	_, err := client.ID(id).Cols("inspect").Update(&spec.PipelineTask{Inspect: inspect})
 	if err != nil {
 		b, _ := json.Marshal(&inspect)

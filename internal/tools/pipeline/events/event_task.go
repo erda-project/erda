@@ -21,6 +21,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/pkg/websocket"
 	"github.com/erda-project/erda/internal/tools/pipeline/commonutil/costtimeutil"
+	"github.com/erda-project/erda/internal/tools/pipeline/pkg/taskresult"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
@@ -86,7 +87,7 @@ type WSPipelineTaskStatusUpdatePayload struct {
 	wsHeader
 	PipelineTaskID uint64                        `json:"pipelineTaskID"`
 	Status         apistructs.PipelineStatus     `json:"status"`
-	Result         apistructs.PipelineTaskResult `json:"result"`
+	Result         taskresult.PipelineTaskResult `json:"result"`
 
 	CostTimeSec int64 `json:"costTimeSec"`
 }

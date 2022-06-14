@@ -22,10 +22,10 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/aop"
 	"github.com/erda-project/erda/internal/tools/pipeline/conf"
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/errorsx"
+	"github.com/erda-project/erda/internal/tools/pipeline/pkg/taskerror"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/leaderworker/lwctx"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/reconciler/rlog"
 	"github.com/erda-project/erda/pkg/loop"
@@ -95,9 +95,9 @@ func (tr *TaskRun) waitOp(itr TaskOp, o *Elem) (result error) {
 		}
 		resultErrMsg = append(resultErrMsg, errs...)
 		if len(resultErrMsg) > 0 {
-			tr.Task.Inspect.Errors = tr.Task.Inspect.AppendError(&apistructs.PipelineTaskErrResponse{
+			tr.Task.Inspect.Errors = tr.Task.Inspect.AppendError(&taskerror.PipelineTaskErrResponse{
 				Msg: strutil.Join(resultErrMsg, "\n", true),
-				Ctx: apistructs.PipelineTaskErrCtx{
+				Ctx: taskerror.PipelineTaskErrCtx{
 					StartTime: startTime,
 					EndTime:   time.Now(),
 					Count:     1,

@@ -24,6 +24,8 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
+	"github.com/erda-project/erda/internal/tools/pipeline/pkg/taskerror"
+	"github.com/erda-project/erda/internal/tools/pipeline/pkg/taskresult"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/metadata"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -34,7 +36,7 @@ func (tr *defaultTaskReconciler) CreateSnippetPipeline(ctx context.Context, p *s
 	defer func() {
 		if failedError != nil {
 			err = failedError
-			task.Inspect.Errors = append(task.Inspect.Errors, &apistructs.PipelineTaskErrResponse{
+			task.Inspect.Errors = append(task.Inspect.Errors, &taskerror.PipelineTaskErrResponse{
 				Msg: err.Error(),
 			})
 			task.Status = apistructs.PipelineStatusFailed
@@ -143,7 +145,7 @@ func (tr *defaultTaskReconciler) handleParentSnippetTaskOutputs(snippetPipeline 
 	// update result.metadata for value-context reference
 	for _, outputValue := range snippetPipeline.Snapshot.OutputValues {
 		if parentTask.Result == nil {
-			parentTask.Result = &apistructs.PipelineTaskResult{Metadata: metadata.Metadata{}}
+			parentTask.Result = &taskresult.PipelineTaskResult{Metadata: metadata.Metadata{}}
 		}
 		parentTask.Result.Metadata = append(parentTask.Result.Metadata, metadata.MetadataField{
 			Name:  outputValue.Name,
