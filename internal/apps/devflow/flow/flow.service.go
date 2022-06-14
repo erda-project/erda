@@ -19,6 +19,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -582,7 +583,7 @@ func (s *Service) GetDevFlowInfo(ctx context.Context, req *pb.GetDevFlowInfoRequ
 				if !v.IsJoinTempBranch {
 					continue
 				}
-				baseCommit, err := s.p.bdl.MergeBase(apis.GetUserID(ctx), apistructs.GittarMergeBaseRequest{
+				baseCommit, err := s.p.bdl.GetMergeBase(apis.GetUserID(ctx), apistructs.GittarMergeBaseRequest{
 					SourceBranch: v.SourceBranch,
 					TargetBranch: tempBranch,
 					AppID:        appDto.ID,
@@ -626,7 +627,7 @@ func (s *Service) GetDevFlowInfo(ctx context.Context, req *pb.GetDevFlowInfoRequ
 			extra := relationExtraMap[relationID]
 			mrInfo := relationMergeInfoMap[relationID]
 			appDto := appInfoMap[extra.AppID]
-			repoPath := gittarPrefixOpenApi + appDto.ProjectName + "/" + appDto.Name
+			repoPath := filepath.Join(gittarPrefixOpenApi, appDto.ProjectName, appDto.Name)
 
 			var branch string
 			var commitID string
@@ -997,54 +998,4 @@ func (s *Service) getRelationExtra(ctx context.Context, mergeID uint64) (*pb.Iss
 		return nil, fmt.Errorf("unmarshal extra %v error %v", resp.Data[0].Extra, err)
 	}
 	return &extra, nil
-}
-
-func (s *Service) JoinTempBranchByGittarPushHook(ctx context.Context, req *pb.GittarPushPayloadEvent) (*pb.JoinTempBranchByGittarPushHookResponse, error) {
-	projectID, err := strconv.ParseUint(req.ProjectID, 10, 64)
-	if err != nil {
-		return nil, err
-	}
-	appID, err := strconv.ParseUint(req.ApplicationID, 10, 64)
-	if err != nil {
-		return nil, err
-	}
-	appDto, err := s.p.bdl.GetApp(appID)
-	if err != nil {
-		return nil, err
-	}
-	// List merge requests
-	result, err := s.p.bdl.ListMergeRequest(appDto.ID, apis.GetUserID(ctx), apistructs.GittarQueryMrRequest{
-		Page: 1,
-		Size: 999,
-	})
-	if err != nil {
-		return nil, err
-	}
-	mrList := result.List
-
-	// Find mrInfo
-	var mrInfo *apistructs.MergeRequestInfo
-	for _, v := range mrList {
-		if v.State != mrOpenState {
-			continue
-		}
-		if v.SourceBranch == req.Content.Ref {
-			mrInfo = v
-			break
-		}
-	}
-	if mrInfo == nil {
-		return &pb.JoinTempBranchByGittarPushHookResponse{}, nil
-	}
-
-	tempBranch, err := s.GetTempBranchFromDevFlowRules(ctx, mrInfo.TargetBranch, projectID)
-	if err != nil {
-		return nil, err
-	}
-
-	err = s.JoinTempBranch(ctx, tempBranch, appDto, mrInfo)
-	if err != nil {
-		return nil, err
-	}
-	return &pb.JoinTempBranchByGittarPushHookResponse{}, nil
 }

@@ -559,7 +559,7 @@ func MergeWithBranch(ctx *webcontext.Context) {
 	ctx.Success(commit)
 }
 
-func MergeBase(ctx *webcontext.Context) {
+func GetMergeBase(ctx *webcontext.Context) {
 	sourceBranch := ctx.Query("sourceBranch")
 	targetBranch := ctx.Query("targetBranch")
 

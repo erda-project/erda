@@ -210,7 +210,7 @@ func addApiRoutes(g *echo.Group) {
 	g.POST("/check-runs", webcontext.WrapHandler(api.CreateCheckRun))
 	g.GET("/check-runs", webcontext.WrapHandler(api.QueryCheckRuns))
 	g.POST("/merge-with-branch", webcontext.WrapHandler(api.MergeWithBranch))
-	g.GET("/merge-base", webcontext.WrapHandler(api.MergeBase))
+	g.GET("/merge-base", webcontext.WrapHandler(api.GetMergeBase))
 
 	// web hooks
 	g.GET("/hooks", webcontext.WrapHandler(api.GetHooks))

@@ -959,7 +959,7 @@ func (b *Bundle) MergeWithBranch(userID string, req apistructs.GittarMergeWithBr
 	return rsp.Data, nil
 }
 
-func (b *Bundle) MergeBase(userID string, req apistructs.GittarMergeBaseRequest) (*apistructs.Commit, error) {
+func (b *Bundle) GetMergeBase(userID string, req apistructs.GittarMergeBaseRequest) (*apistructs.Commit, error) {
 	var (
 		host string
 		err  error

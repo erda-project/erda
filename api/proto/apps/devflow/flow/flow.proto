@@ -57,12 +57,6 @@ service FlowService {
             path: "/api/devflow/actions/info",
         };
     }
-    rpc JoinTempBranchByGittarPushHook(GittarPushPayloadEvent)
-            returns (JoinTempBranchByGittarPushHookResponse) {
-        option(google.api.http) = {
-            post: "/api/devflow/actions/actions/join-by-gittar-push-hook",
-        };
-    }
 }
 
 message IssueRelationExtra {
@@ -155,35 +149,6 @@ message DevFlowInfo {
 message GetDevFlowInfoResponse {
     string status = 1;
     repeated DevFlowInfo devFlowInfos = 2;
-}
-
-message GittarPushPayloadEvent {
-    string event = 1;
-    string action = 2;
-    string orgID = 3;
-    string projectID = 4;
-    string applicationID = 5;
-    string env = 6;
-    string timeStamp = 7;
-    Content content = 8;
-}
-
-message Content {
-    string ref = 1;
-    string after = 2;
-    string before = 3;
-    Pusher pusher = 4;
-}
-
-message Pusher {
-    string ID = 1 [json_name = "id"];
-    string name = 2;
-    string nickName = 3 [json_name = "nickname"];
-    string email = 4;
-}
-
-message JoinTempBranchByGittarPushHookResponse {
-
 }
 
 message Commit {
