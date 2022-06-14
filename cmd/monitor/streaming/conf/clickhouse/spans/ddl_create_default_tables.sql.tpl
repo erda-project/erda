@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS <database>.spans_series ON CLUSTER '{cluster}'
 )
 ENGINE = ReplicatedMergeTree('/clickhouse/tables/{cluster}-{shard}/{database}/spans_series', '{replica}')
 PARTITION BY toYYYYMMDD(end_time)
-ORDER BY (org_name, series_id, end_time)
+ORDER BY (org_name, start_time, end_time, series_id)
 TTL toDateTime(end_time) + INTERVAL <ttl_in_days> DAY;
 
 // add materialized column&index for high cardinality tag
