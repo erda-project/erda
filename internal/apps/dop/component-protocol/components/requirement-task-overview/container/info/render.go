@@ -31,8 +31,8 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/requirement-task-overview/common/gshelper"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/requirement-task-overview/container/simpleChart"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/types"
-	"github.com/erda-project/erda/internal/apps/dop/dao"
-	"github.com/erda-project/erda/internal/apps/dop/services/issuestate"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	"github.com/erda-project/erda/internal/pkg/component-protocol/issueFilter"
 )
 
@@ -51,12 +51,12 @@ func (i *Info) Render(ctx context.Context, c *cptype.Component, scenario cptype.
 	i.Issues = h.GetIssueList()
 
 	conditions := h.GetIssueCondtions()
-	issueStateSvc := ctx.Value(types.IssueStateService).(*issuestate.IssueState)
+	issueSvc := ctx.Value(types.IssueService).(query.Interface)
 	projectID, err := strconv.ParseUint(cputil.GetInParamByKey(ctx, "projectId").(string), 10, 64)
 	if err != nil {
 		return err
 	}
-	stateIDs, err := issueStateSvc.GetIssueStateIDsByTypes(&apistructs.IssueStatesRequest{
+	stateIDs, err := issueSvc.GetIssueStateIDsByTypes(&apistructs.IssueStatesRequest{
 		ProjectID:    projectID,
 		IssueType:    []apistructs.IssueType{apistructs.IssueTypeTask, apistructs.IssueTypeRequirement},
 		StateBelongs: []apistructs.IssueStateBelong{apistructs.IssueStateBelongOpen, apistructs.IssueStateBelongWorking},

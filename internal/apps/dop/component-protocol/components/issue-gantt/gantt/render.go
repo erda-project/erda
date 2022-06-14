@@ -25,12 +25,15 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
+	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/common"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/types"
-	"github.com/erda-project/erda/internal/apps/dop/dao"
-	"github.com/erda-project/erda/internal/apps/dop/services/issue"
+	issuecommon "github.com/erda-project/erda/internal/apps/dop/providers/issue/core/common"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	protocol "github.com/erda-project/erda/internal/tools/openapi/legacy/component-protocol"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -43,7 +46,7 @@ func init() {
 func (f *ComponentGantt) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	f.sdk = cputil.SDK(ctx)
 	f.bdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
-	f.issueSvc = ctx.Value(types.IssueService).(*issue.Issue)
+	f.issueSvc = ctx.Value(types.IssueService).(query.Interface)
 	f.users = make([]string, 0)
 	f.Data.Refresh = false
 	inParamsBytes, err := json.Marshal(cputil.SDK(ctx).InParams)
@@ -121,11 +124,11 @@ func (f *ComponentGantt) Render(ctx context.Context, c *cptype.Component, scenar
 		}
 	case cptype.OperationKey(apistructs.Update):
 		id := op.Meta.Nodes.Key
-		if err := f.issueSvc.UpdateIssue(apistructs.IssueUpdateRequest{
-			ID:             id,
-			PlanStartedAt:  apistructs.IssueTime(timeFromMilli(op.Meta.Nodes.Start)),
-			PlanFinishedAt: apistructs.IssueTime(timeFromMilli(op.Meta.Nodes.End)),
-			IdentityInfo: apistructs.IdentityInfo{
+		if err := f.issueSvc.UpdateIssue(&pb.UpdateIssueRequest{
+			Id:             id,
+			PlanStartedAt:  timeFromMilli(op.Meta.Nodes.Start),
+			PlanFinishedAt: timeFromMilli(op.Meta.Nodes.End),
+			IdentityInfo: &commonpb.IdentityInfo{
 				UserID: f.sdk.Identity.UserID,
 			},
 		}); err != nil {
@@ -152,27 +155,25 @@ func (f *ComponentGantt) Render(ctx context.Context, c *cptype.Component, scenar
 }
 
 func (f *ComponentGantt) issueChildrenRetriever(id uint64) ([]dao.IssueItem, error) {
-	stateBelongs := []apistructs.IssueStateBelong{apistructs.IssueStateBelongOpen, apistructs.IssueStateBelongWorking}
-	req := apistructs.IssuePagingRequest{
-		IssueListRequest: apistructs.IssueListRequest{
-			ProjectID:    f.projectID,
-			Type:         []apistructs.IssueType{apistructs.IssueTypeRequirement, apistructs.IssueTypeTask, apistructs.IssueTypeBug},
-			IterationIDs: f.State.Values.IterationIDs,
-			Label:        f.State.Values.LabelIDs,
-			Assignees:    f.State.Values.AssigneeIDs,
-			StateBelongs: apistructs.UnfinishedStateBelongs,
-		},
-		PageNo:   1,
-		PageSize: 500,
+	stateBelongs := []string{pb.IssueStateBelongEnum_OPEN.String(), pb.IssueStateBelongEnum_WORKING.String()}
+	req := pb.PagingIssueRequest{
+		ProjectID:    f.projectID,
+		Type:         []string{pb.IssueTypeEnum_REQUIREMENT.String(), pb.IssueTypeEnum_TASK.String(), pb.IssueTypeEnum_BUG.String()},
+		IterationIDs: f.State.Values.IterationIDs,
+		Label:        f.State.Values.LabelIDs,
+		Assignee:     f.State.Values.AssigneeIDs,
+		StateBelongs: issuecommon.UnfinishedStateBelongs,
 	}
 	if id > 0 {
-		req.IssueListRequest = apistructs.IssueListRequest{
+		req = pb.PagingIssueRequest{
 			ProjectID:    f.projectID,
-			Type:         []apistructs.IssueType{apistructs.IssueTypeTask},
-			Assignees:    f.State.Values.AssigneeIDs,
+			Assignee:     f.State.Values.AssigneeIDs,
+			Type:         []string{pb.IssueTypeEnum_TASK.String()},
 			StateBelongs: stateBelongs,
 		}
 	}
+	req.PageNo = 1
+	req.PageSize = 500
 	issues, _, err := f.issueSvc.GetIssueChildren(id, req)
 	if err != nil {
 		return nil, err
@@ -197,7 +198,7 @@ func convertIssueItem(issue *dao.IssueItem) *Item {
 		Start:  issue.PlanStartedAt,
 		End:    issue.PlanFinishedAt,
 		Extra: Extra{
-			Type: issue.Type.String(),
+			Type: issue.Type,
 			User: issue.Assignee,
 			Status: Status{
 				Text:   issue.Name,
@@ -209,10 +210,11 @@ func convertIssueItem(issue *dao.IssueItem) *Item {
 	}
 }
 
-func timeFromMilli(millis int64) time.Time {
+func timeFromMilli(millis int64) *string {
 	// use seconds, ignore ms
 	t := time.Unix(millis/1000, 0)
-	return t
+	s := t.Format(time.RFC3339)
+	return &s
 }
 
 func milliFromTime(t *time.Time) int64 {

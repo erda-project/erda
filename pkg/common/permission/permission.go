@@ -64,11 +64,12 @@ const (
 
 // Permission .
 type Permission struct {
-	method   string
-	scope    ValueGetter
-	resource ValueGetter
-	action   Action
-	id       ValueGetter
+	method                 string
+	scope                  ValueGetter
+	resource               ValueGetter
+	action                 Action
+	id                     ValueGetter
+	skipPermInternalClient bool
 	// for String
 	originalMethod   interface{}
 	originalScope    interface{}
@@ -77,6 +78,14 @@ type Permission struct {
 
 func (p *Permission) String() string {
 	return fmt.Sprintf("%s {scope=%v resource=%v action=%s}", getMethodFullName(p.originalMethod), p.originalScope, p.originalResource, p.action)
+}
+
+type Option func(*Permission)
+
+func WithSkipPermInternalClient(skip bool) Option {
+	return func(p *Permission) {
+		p.skipPermInternalClient = skip
+	}
 }
 
 // ValueGetter .
@@ -105,6 +114,9 @@ func (p *provider) Check(perms ...*Permission) transport.ServiceOption {
 			perm := methods[info.Method()]
 			if perm == nil {
 				return nil, errors.NewPermissionError(info.Service()+"/"+info.Method(), "", "permission undefined")
+			}
+			if perm.skipPermInternalClient && apis.IsInternalClient(ctx) {
+				return h(ctx, req)
 			}
 			if perm.resource != nil {
 				ctx = WithPermissionDataContext(ctx)
@@ -146,8 +158,8 @@ func (p *provider) Check(perms ...*Permission) transport.ServiceOption {
 }
 
 // Method .
-func Method(method interface{}, scope, resource interface{}, action Action, id ValueGetter) *Permission {
-	return &Permission{
+func Method(method interface{}, scope, resource interface{}, action Action, id ValueGetter, options ...Option) *Permission {
+	p := &Permission{
 		method:           getMethodName(method),
 		scope:            toValueGetter(scope),
 		resource:         toValueGetter(resource),
@@ -157,6 +169,10 @@ func Method(method interface{}, scope, resource interface{}, action Action, id V
 		originalScope:    scope,
 		originalResource: resource,
 	}
+	for _, op := range options {
+		op(p)
+	}
+	return p
 }
 
 // NoPermMethod 。

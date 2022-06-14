@@ -89,7 +89,10 @@ erda.core.dop.autotest.testplan: {}
 erda.dop.projecthome: {}
 erda.dop.contribution: {}
 erda.dop.projectpipeline: {}
+erda.dop.issue.core: {}
+erda.dop.issue.core.query: {}
 erda.dop.issue.stream: {}
+erda.dop.issue.stream.core: {}
 erda.dop.issue.sync: {}
 erda.dop.apim: {}
 erda.dop.guide: {}
@@ -97,6 +100,8 @@ erda.dop.cms: {}
 erda.apps.devflow.flow: {}
 erda.apps.devflow.issuerelation: {}
 erda.dop.devFlowRule: {}
+
+permission: {}
 
 # component-protocol framework
 component-protocol: {}

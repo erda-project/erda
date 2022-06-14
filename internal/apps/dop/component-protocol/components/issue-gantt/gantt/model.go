@@ -21,13 +21,13 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/issue-gantt/filter"
-	"github.com/erda-project/erda/internal/apps/dop/services/issue"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query"
 )
 
 type ComponentGantt struct {
 	sdk      *cptype.SDK
 	bdl      *bundle.Bundle
-	issueSvc *issue.Issue
+	issueSvc query.Interface
 
 	Data       Data                                  `json:"data,omitempty"`
 	Operations map[apistructs.OperationKey]Operation `json:"operations,omitempty"`

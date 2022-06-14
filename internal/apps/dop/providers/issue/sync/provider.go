@@ -21,7 +21,8 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-proto-go/dop/issue/sync/pb"
-	"github.com/erda-project/erda/internal/apps/dop/dao"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 )
@@ -36,6 +37,7 @@ type provider struct {
 	DB       *gorm.DB           `autowired:"mysql-client"`
 
 	issueSyncService *IssueSyncService
+	Query            query.Interface
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -46,6 +48,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 			},
 		},
 		logger: p.Log,
+		query:  p.Query,
 	}
 
 	if p.Register != nil {

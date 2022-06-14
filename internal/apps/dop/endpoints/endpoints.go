@@ -49,11 +49,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/services/environment"
 	"github.com/erda-project/erda/internal/apps/dop/services/filetree"
 	"github.com/erda-project/erda/internal/apps/dop/services/issue"
-	"github.com/erda-project/erda/internal/apps/dop/services/issuepanel"
-	"github.com/erda-project/erda/internal/apps/dop/services/issueproperty"
-	"github.com/erda-project/erda/internal/apps/dop/services/issuerelated"
 	"github.com/erda-project/erda/internal/apps/dop/services/issuestate"
-	"github.com/erda-project/erda/internal/apps/dop/services/issuestream"
 	"github.com/erda-project/erda/internal/apps/dop/services/iteration"
 	"github.com/erda-project/erda/internal/apps/dop/services/libreference"
 	"github.com/erda-project/erda/internal/apps/dop/services/migrate"
@@ -495,58 +491,6 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		// 以前的dice_config_namespace表数据不全，里面很多name没有了，导致check ns exist时报错，用这个接口修复
 		{Path: "/api/config/namespace/fix-namespace-data-err", Method: http.MethodGet, Handler: e.FixDataErr},
 
-		// issue 管理
-		{Path: "/api/issues", Method: http.MethodPost, Handler: e.CreateIssue},
-		{Path: "/api/issues", Method: http.MethodGet, Handler: e.PagingIssues},
-		{Path: "/api/issues/{id}", Method: http.MethodGet, Handler: e.GetIssue},
-		{Path: "/api/issues/{id}", Method: http.MethodPut, Handler: e.UpdateIssue},
-		{Path: "/api/issues/{id}", Method: http.MethodDelete, Handler: e.DeleteIssue},
-		{Path: "/api/issues/actions/batch-update", Method: http.MethodPut, Handler: e.BatchUpdateIssue},
-		{Path: "/api/issues/actions/export-excel", Method: http.MethodGet, WriterHandler: e.ExportExcelIssue},
-		{Path: "/api/issues/actions/import-excel", Method: http.MethodPost, Handler: e.ImportExcelIssue},
-		{Path: "/api/issues/actions/man-hour", Method: http.MethodGet, Handler: e.GetIssueManHourSum},
-		{Path: "/api/issues/actions/bug-percentage", Method: http.MethodGet, Handler: e.GetIssueBugPercentage},
-		{Path: "/api/issues/actions/bug-status-percentage", Method: http.MethodGet, Handler: e.GetIssueBugStatusPercentage},
-		{Path: "/api/issues/actions/bug-severity-percentage", Method: http.MethodGet, Handler: e.GetIssueBugSeverityPercentage},
-		{Path: "/api/issues/{id}/streams", Method: http.MethodPost, Handler: e.CreateCommentIssueStream},
-		{Path: "/api/issues/{id}/streams", Method: http.MethodGet, Handler: e.PagingIssueStreams},
-		{Path: "/api/issues/{id}/relations", Method: http.MethodPost, Handler: e.AddIssueRelation},
-		{Path: "/api/issues/{id}/relations/{relatedIssueID}", Method: http.MethodDelete, Handler: e.DeleteIssueRelation},
-		{Path: "/api/issues/{id}/relations", Method: http.MethodGet, Handler: e.GetIssueRelations},
-		{Path: "/api/issues/actions/update-issue-type", Method: http.MethodPut, Handler: e.UpdateIssueType},
-		{Path: "/api/issues/{id}/actions/subscribe", Method: http.MethodPost, Handler: e.SubscribeIssue},
-		{Path: "/api/issues/{id}/actions/unsubscribe", Method: http.MethodPost, Handler: e.UnsubscribeIssue},
-		{Path: "/api/issues/{id}/actions/batch-update-subscriber", Method: http.MethodPut, Handler: e.BatchUpdateIssueSubscriber},
-		// issue state
-		{Path: "/api/issues/actions/create-state", Method: http.MethodPost, Handler: e.CreateIssueState},
-		{Path: "/api/issues/actions/delete-state", Method: http.MethodDelete, Handler: e.DeleteIssueState},
-		{Path: "/api/issues/actions/update-state-relation", Method: http.MethodPut, Handler: e.UpdateIssueStateRelation},
-		{Path: "/api/issues/actions/get-states", Method: http.MethodGet, Handler: e.GetIssueStates},
-		{Path: "/api/issues/actions/get-state-relations", Method: http.MethodGet, Handler: e.GetIssueStateRelation},
-		{Path: "/api/issues/actions/get-state-belong", Method: http.MethodGet, Handler: e.GetIssueStatesBelong},
-		{Path: "/api/issues/actions/get-state-name", Method: http.MethodGet, Handler: e.GetIssueStatesByIDs},
-		// issue property
-		{Path: "/api/issues/actions/create-property", Method: http.MethodPost, Handler: e.CreateIssueProperty},
-		{Path: "/api/issues/actions/delete-property", Method: http.MethodDelete, Handler: e.DeleteIssueProperty},
-		{Path: "/api/issues/actions/update-property", Method: http.MethodPut, Handler: e.UpdateIssueProperty},
-		{Path: "/api/issues/actions/get-properties", Method: http.MethodGet, Handler: e.GetIssueProperties},
-		{Path: "/api/issues/actions/update-properties-index", Method: http.MethodPut, Handler: e.UpdateIssuePropertiesIndex},
-		{Path: "/api/issues/actions/get-properties-time", Method: http.MethodGet, Handler: e.GetIssuePropertyUpdateTime},
-		// issue panel
-		{Path: "/api/issues/actions/create-panel", Method: http.MethodPost, Handler: e.CreateIssuePanel},
-		{Path: "/api/issues/actions/delete-panel", Method: http.MethodDelete, Handler: e.DeleteIssuePanel},
-		{Path: "/api/issues/actions/update-panel-issue", Method: http.MethodPut, Handler: e.UpdateIssuePanelIssue},
-		{Path: "/api/issues/actions/update-panel", Method: http.MethodPut, Handler: e.UpdateIssuePanel},
-		{Path: "/api/issues/actions/get-panel", Method: http.MethodGet, Handler: e.GetIssuePanel},
-		{Path: "/api/issues/actions/get-panel-issue", Method: http.MethodGet, Handler: e.GetIssuePanelIssue},
-		// issue instance
-		{Path: "/api/issues/actions/create-property-instance", Method: http.MethodPost, Handler: e.CreateIssuePropertyInstance},
-		{Path: "/api/issues/actions/update-property-instance", Method: http.MethodPut, Handler: e.UpdateIssuePropertyInstance},
-		{Path: "/api/issues/actions/get-property-instance", Method: http.MethodGet, Handler: e.GetIssuePropertyInstance},
-		// issue stage
-		{Path: "/api/issues/action/update-stage", Method: http.MethodPut, Handler: e.CreateIssueStage},
-		{Path: "/api/issues/action/get-stage", Method: http.MethodGet, Handler: e.GetIssueStage},
-
 		{Path: "/api/iterations", Method: http.MethodPost, Handler: e.CreateIteration},
 		{Path: "/api/iterations/{id}", Method: http.MethodPut, Handler: e.UpdateIteration},
 		{Path: "/api/iterations/{id}", Method: http.MethodDelete, Handler: e.DeleteIteration},
@@ -719,11 +663,7 @@ type Endpoints struct {
 	namespace       *namespace.Namespace
 	envConfig       *environment.EnvConfig
 	issue           *issue.Issue
-	issueStream     *issuestream.IssueStream
-	issueRelated    *issuerelated.IssueRelated
-	issueProperty   *issueproperty.IssueProperty
 	issueState      *issuestate.IssueState
-	issuePanel      *issuepanel.IssuePanel
 	workBench       *workbench.Workbench
 	uc              *ucauth.UCClient
 	iteration       *iteration.Iteration
@@ -998,35 +938,9 @@ func WithIssue(issue *issue.Issue) Option {
 	}
 }
 
-func WithIssueRelated(ir *issuerelated.IssueRelated) Option {
-	return func(e *Endpoints) {
-		e.issueRelated = ir
-	}
-}
-
 func WithIssueState(state *issuestate.IssueState) Option {
 	return func(e *Endpoints) {
 		e.issueState = state
-	}
-}
-
-func WithIssuePanel(panel *issuepanel.IssuePanel) Option {
-	return func(e *Endpoints) {
-		e.issuePanel = panel
-	}
-}
-
-// WithIssueStream 配置 issueStream
-func WithIssueStream(stream *issuestream.IssueStream) Option {
-	return func(e *Endpoints) {
-		e.issueStream = stream
-	}
-}
-
-// WithIssueProperty 配置 issueStream
-func WithIssueProperty(property *issueproperty.IssueProperty) Option {
-	return func(e *Endpoints) {
-		e.issueProperty = property
 	}
 }
 

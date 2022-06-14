@@ -31,6 +31,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/providers/autotest/testplan"
 	"github.com/erda-project/erda/internal/apps/dop/providers/cms"
 	"github.com/erda-project/erda/internal/apps/dop/providers/guide"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/stream"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/sync"
 	"github.com/erda-project/erda/internal/apps/dop/providers/projectpipeline"
@@ -100,6 +101,7 @@ func Test_initEndpoints(t *testing.T) {
 		ProjectPipelineSvc:    &projectpipeline.ProjectPipelineService{},
 		GuideSvc:              &guide.GuideService{},
 		CICDCmsSvc:            &cms.CICDCmsService{},
+		IssueCoreSvc:          &core.IssueService{},
 	}
 
 	_, err := p.initEndpoints(nil)

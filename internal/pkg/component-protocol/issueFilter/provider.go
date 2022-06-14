@@ -24,12 +24,14 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/types"
 	"github.com/erda-project/erda/internal/apps/dop/dao"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/common"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query"
 	"github.com/erda-project/erda/internal/apps/dop/services/issuefilterbm"
-	"github.com/erda-project/erda/internal/apps/dop/services/issuestate"
 	"github.com/erda-project/erda/internal/pkg/component-protocol/issueFilter/gshelper"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -38,7 +40,7 @@ type IssueFilter struct {
 	impl.DefaultFilter
 
 	bdl              *bundle.Bundle
-	issueStateSvc    *issuestate.IssueState
+	issueSvc         query.Interface
 	issueFilterBmSvc *issuefilterbm.IssueFilterBookmark
 	gsHelper         *gshelper.GSHelper
 	sdk              *cptype.SDK
@@ -67,7 +69,7 @@ func init() {
 func (f *IssueFilter) Initial(sdk *cptype.SDK) {
 	f.bdl = sdk.Ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 	f.issueFilterBmSvc = sdk.Ctx.Value(types.IssueFilterBmService).(*issuefilterbm.IssueFilterBookmark)
-	f.issueStateSvc = sdk.Ctx.Value(types.IssueStateService).(*issuestate.IssueState)
+	f.issueSvc = sdk.Ctx.Value(types.IssueService).(query.Interface)
 	f.gsHelper = gshelper.NewGSHelper(sdk.GlobalState)
 	f.sdk = sdk
 	if err := f.setInParams(); err != nil {
@@ -288,26 +290,26 @@ func (f *IssueFilter) generateIssuePagingRequest() apistructs.IssuePagingRequest
 }
 
 func (f *IssueFilter) setDefaultState() error {
-	stateBelongs := map[string][]apistructs.IssueStateBelong{
-		"TASK":        {apistructs.IssueStateBelongOpen, apistructs.IssueStateBelongWorking},
-		"REQUIREMENT": {apistructs.IssueStateBelongOpen, apistructs.IssueStateBelongWorking},
-		"BUG":         {apistructs.IssueStateBelongOpen, apistructs.IssueStateBelongWorking, apistructs.IssueStateBelongWontfix, apistructs.IssueStateBelongReopen, apistructs.IssueStateBelongResolved},
-		"ALL":         {apistructs.IssueStateBelongOpen, apistructs.IssueStateBelongWorking, apistructs.IssueStateBelongWontfix, apistructs.IssueStateBelongReopen, apistructs.IssueStateBelongResolved},
+	stateBelongs := map[string][]string{
+		"TASK":        {pb.IssueStateBelongEnum_OPEN.String(), pb.IssueStateBelongEnum_WORKING.String()},
+		"REQUIREMENT": {pb.IssueStateBelongEnum_OPEN.String(), pb.IssueStateBelongEnum_WORKING.String()},
+		"BUG":         common.UnfinishedStateBelongs,
+		"ALL":         common.UnfinishedStateBelongs,
 	}[f.InParams.FrontendFixedIssueType]
-	types := []apistructs.IssueType{apistructs.IssueTypeRequirement, apistructs.IssueTypeTask, apistructs.IssueTypeBug}
+	types := []string{pb.IssueTypeEnum_REQUIREMENT.String(), pb.IssueTypeEnum_TASK.String(), pb.IssueTypeEnum_BUG.String()}
 	res := make(map[string][]int64)
 	res["ALL"] = make([]int64, 0)
 	for _, v := range types {
-		req := &apistructs.IssueStatesGetRequest{
+		req := &pb.GetIssueStatesRequest{
 			ProjectID:    f.InParams.ProjectID,
 			StateBelongs: stateBelongs,
 			IssueType:    v,
 		}
-		ids, err := f.issueStateSvc.GetIssueStateIDs(req)
+		ids, err := f.issueSvc.GetIssueStateIDs(req)
 		if err != nil {
 			return err
 		}
-		res[v.String()] = ids
+		res[v] = ids
 		res["ALL"] = append(res["ALL"], ids...)
 	}
 	f.State.FrontendConditionValues.States = res[f.InParams.FrontendFixedIssueType]

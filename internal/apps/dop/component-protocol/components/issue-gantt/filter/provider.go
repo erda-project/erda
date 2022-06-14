@@ -30,7 +30,6 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/common"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/types"
-	"github.com/erda-project/erda/internal/apps/dop/services/issue"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -42,7 +41,6 @@ func (f *ComponentFilter) BeforeHandleOp(sdk *cptype.SDK) {
 	f.bdl = sdk.Ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 	f.sdk = sdk
 	cputil.MustObjJSONTransfer(&f.StdStatePtr, &f.State)
-	f.issueSvc = sdk.Ctx.Value(types.IssueService).(*issue.Issue)
 	projectID, err := strconv.ParseUint(cputil.GetInParamByKey(sdk.Ctx, "projectId").(string), 10, 64)
 	if err != nil {
 		panic(err)

@@ -56,11 +56,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/services/filetree"
 	"github.com/erda-project/erda/internal/apps/dop/services/issue"
 	"github.com/erda-project/erda/internal/apps/dop/services/issuefilterbm"
-	"github.com/erda-project/erda/internal/apps/dop/services/issuepanel"
-	"github.com/erda-project/erda/internal/apps/dop/services/issueproperty"
-	"github.com/erda-project/erda/internal/apps/dop/services/issuerelated"
 	"github.com/erda-project/erda/internal/apps/dop/services/issuestate"
-	"github.com/erda-project/erda/internal/apps/dop/services/issuestream"
 	"github.com/erda-project/erda/internal/apps/dop/services/iteration"
 	"github.com/erda-project/erda/internal/apps/dop/services/libreference"
 	"github.com/erda-project/erda/internal/apps/dop/services/migrate"
@@ -131,12 +127,11 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 		return err
 	}
 
-	p.Protocol.WithContextValue(types.IssueStateService, ep.IssueStateService())
 	p.Protocol.WithContextValue(types.IssueFilterBmService, issuefilterbm.New(
 		issuefilterbm.WithDBClient(db),
 	))
 	p.Protocol.WithContextValue(types.CodeCoverageService, ep.CodeCoverageService())
-	p.Protocol.WithContextValue(types.IssueService, ep.IssueService())
+	p.Protocol.WithContextValue(types.IssueService, p.Query)
 	p.Protocol.WithContextValue(types.IterationService, ep.IterationService())
 	p.Protocol.WithContextValue(types.ManualTestCaseService, ep.ManualTestCaseService())
 	p.Protocol.WithContextValue(types.ManualTestPlanService, ep.ManualTestPlanService())
@@ -171,9 +166,9 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 		for {
 			select {
 			case <-ticker.C:
-				exportTestFileTask(ep)
+				p.exportTestFileTask(ep)
 			case <-ep.ExportChannel:
-				exportTestFileTask(ep)
+				p.exportTestFileTask(ep)
 			}
 		}
 	}()
@@ -184,9 +179,9 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 		for {
 			select {
 			case <-ticker.C:
-				importTestFileTask(ep)
+				p.importTestFileTask(ep)
 			case <-ep.ImportChannel:
-				importTestFileTask(ep)
+				p.importTestFileTask(ep)
 			}
 		}
 	}()
@@ -406,6 +401,8 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		uc.SetDBClient(db.DB)
 	}
 
+	p.IssueCoreSvc.WithUc(uc)
+
 	// init ticket service
 	t := ticket.New(ticket.WithDBClient(db),
 		ticket.WithBundle(bdl.Bdl),
@@ -449,46 +446,16 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		environment.WithBundle(bdl.Bdl),
 	)
 
-	issueStream := issuestream.New(
-		issuestream.WithDBClient(db),
-		issuestream.WithBundle(bdl.Bdl),
-		issuestream.WithTranslator(p.IssueTran),
-	)
-
-	issueRelated := issuerelated.New(
-		issuerelated.WithDBClient(db),
-		issuerelated.WithBundle(bdl.Bdl),
-		issuerelated.WithIssueStream(issueStream),
-	)
-
-	issueproperty := issueproperty.New(
-		issueproperty.WithDBClient(db),
-		issueproperty.WithBundle(bdl.Bdl),
-	)
-
 	issue := issue.New(
 		issue.WithDBClient(db),
 		issue.WithBundle(bdl.Bdl),
-		issue.WithIssueStream(issueStream),
 		issue.WithUCClient(uc),
 		issue.WithTranslator(p.IssueTran),
-		issue.WithIssueRelated(issueRelated),
-		issue.WithIssueProperty(issueproperty),
 	)
-	issue.CreateFileRecord = testCaseSvc.CreateFileRecord
-	issue.UpdateFileRecord = testCaseSvc.UpdateFileRecord
-	p.CommentIssueStreamSvc.WithIssue(issue)
-	p.IssueSyncSvc.WithIssue(issue)
 
 	issueState := issuestate.New(
 		issuestate.WithDBClient(db),
 		issuestate.WithBundle(bdl.Bdl),
-	)
-
-	issuePanel := issuepanel.New(
-		issuepanel.WithDBClient(db),
-		issuepanel.WithBundle(bdl.Bdl),
-		issuepanel.WithIssue(issue),
 	)
 
 	itr := iteration.New(
@@ -506,6 +473,9 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		testplan.WithIssueState(issueState),
 		testplan.WithIterationSvc(itr),
 	)
+
+	p.IssueCoreSvc.WithTestplan(testPlan)
+	p.IssueCoreSvc.WithTestcase(testCaseSvc)
 
 	workBench := workbench.New(
 		workbench.WithBundle(bdl.Bdl),
@@ -664,11 +634,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		endpoints.WithNamespace(ns),
 		endpoints.WithEnvConfig(env),
 		endpoints.WithIssue(issue),
-		endpoints.WithIssueRelated(issueRelated),
-		endpoints.WithIssueStream(issueStream),
-		endpoints.WithIssueProperty(issueproperty),
 		endpoints.WithIssueState(issueState),
-		endpoints.WithIssuePanel(issuePanel),
 		endpoints.WithIteration(itr),
 		endpoints.WithPublisher(pub),
 		endpoints.WithCertificate(cer),
@@ -688,6 +654,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 	ep.ImportChannel = make(chan uint64)
 	ep.ExportChannel = make(chan uint64)
 	ep.CopyChannel = make(chan uint64)
+	p.IssueCoreSvc.WithChannel(ep.ExportChannel, ep.ImportChannel)
 	return ep, nil
 }
 
@@ -765,7 +732,7 @@ func registerWebHook(bdl *bundle.Bundle) {
 	}
 }
 
-func exportTestFileTask(ep *endpoints.Endpoints) {
+func (p *provider) exportTestFileTask(ep *endpoints.Endpoints) {
 	svc := ep.TestCaseService()
 	ok, record, err := svc.GetFirstFileReady(apistructs.FileActionTypeExport,
 		apistructs.FileSpaceActionTypeExport,
@@ -796,14 +763,13 @@ func exportTestFileTask(ep *endpoints.Endpoints) {
 		pro := ep.ProjectService()
 		pro.ExportProjectPackage(record)
 	case apistructs.FileIssueActionTypeExport:
-		issueSvc := ep.IssueService()
-		issueSvc.ExportExcelAsync(record)
+		p.IssueCoreSvc.ExportExcelAsync(record)
 	default:
 
 	}
 }
 
-func importTestFileTask(ep *endpoints.Endpoints) {
+func (p *provider) importTestFileTask(ep *endpoints.Endpoints) {
 	svc := ep.TestCaseService()
 	ok, record, err := svc.GetFirstFileReady(apistructs.FileActionTypeImport,
 		apistructs.FileSpaceActionTypeImport,
@@ -834,8 +800,7 @@ func importTestFileTask(ep *endpoints.Endpoints) {
 		pro := ep.ProjectService()
 		pro.ImportProjectPackage(record)
 	case apistructs.FileIssueActionTypeImport:
-		issueSvc := ep.IssueService()
-		issueSvc.ImportExcel(record)
+		p.IssueCoreSvc.ImportExcel(record)
 	default:
 
 	}

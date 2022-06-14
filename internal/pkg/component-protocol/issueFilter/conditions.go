@@ -20,6 +20,7 @@ import (
 
 	model "github.com/erda-project/erda-infra/providers/component-protocol/components/filter/models"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/pkg/component-protocol/condition"
 )
@@ -150,7 +151,7 @@ func (f *IssueFilter) ConditionRetriever() ([]interface{}, error) {
 
 	var status interface{}
 	if f.State.WithStateCondition {
-		statesMap, err := f.issueStateSvc.GetIssueStatesMap(&apistructs.IssueStatesGetRequest{
+		statesMap, err := f.issueSvc.GetIssueStatesMap(&pb.GetIssueStatesRequest{
 			ProjectID: f.InParams.ProjectID,
 		})
 		if err != nil {
@@ -162,13 +163,13 @@ func (f *IssueFilter) ConditionRetriever() ([]interface{}, error) {
 			case "ALL":
 				return model.NewSelectConditionWithChildren(PropConditionKeyStates, cputil.I18n(f.sdk.Ctx, "state"), convertAllConditions(f.sdk.Ctx, statesMap))
 			case apistructs.IssueTypeRequirement.String():
-				return model.NewSelectCondition(PropConditionKeyStates, cputil.I18n(f.sdk.Ctx, "state"), convertConditions(statesMap[apistructs.IssueTypeRequirement]))
+				return model.NewSelectCondition(PropConditionKeyStates, cputil.I18n(f.sdk.Ctx, "state"), convertConditions(statesMap[pb.IssueTypeEnum_REQUIREMENT.String()]))
 			case apistructs.IssueTypeTask.String():
-				return model.NewSelectCondition(PropConditionKeyStates, cputil.I18n(f.sdk.Ctx, "state"), convertConditions(statesMap[apistructs.IssueTypeTask]))
+				return model.NewSelectCondition(PropConditionKeyStates, cputil.I18n(f.sdk.Ctx, "state"), convertConditions(statesMap[pb.IssueTypeEnum_TASK.String()]))
 			case apistructs.IssueTypeBug.String():
-				return model.NewSelectCondition(PropConditionKeyStates, cputil.I18n(f.sdk.Ctx, "state"), convertConditions(statesMap[apistructs.IssueTypeBug]))
+				return model.NewSelectCondition(PropConditionKeyStates, cputil.I18n(f.sdk.Ctx, "state"), convertConditions(statesMap[pb.IssueTypeEnum_BUG.String()]))
 			case apistructs.IssueTypeTicket.String():
-				return model.NewSelectCondition(PropConditionKeyStates, cputil.I18n(f.sdk.Ctx, "state"), convertConditions(statesMap[apistructs.IssueTypeTicket]))
+				return model.NewSelectCondition(PropConditionKeyStates, cputil.I18n(f.sdk.Ctx, "state"), convertConditions(statesMap[pb.IssueTypeEnum_TICKET.String()]))
 			}
 			return nil
 		}()
@@ -214,7 +215,7 @@ func Zigzag(l1, l2 []interface{}) []interface{} {
 	return res
 }
 
-func convertConditions(status []apistructs.IssueStatus) []model.SelectOption {
+func convertConditions(status []pb.IssueStatus) []model.SelectOption {
 	options := make([]model.SelectOption, 0, len(status))
 	for _, i := range status {
 		options = append(options, *model.NewSelectOption(i.StateName, i.StateID))
@@ -222,11 +223,11 @@ func convertConditions(status []apistructs.IssueStatus) []model.SelectOption {
 	return options
 }
 
-func convertAllConditions(ctx context.Context, stateMap map[apistructs.IssueType][]apistructs.IssueStatus) []model.SelectOptionWithChildren {
+func convertAllConditions(ctx context.Context, stateMap map[string][]pb.IssueStatus) []model.SelectOptionWithChildren {
 	options := make([]model.SelectOptionWithChildren, 0, len(stateMap))
 	for i, v := range stateMap {
 		options = append(options, model.SelectOptionWithChildren{
-			SelectOption: *model.NewSelectOption(cputil.I18n(ctx, strings.ToLower(i.String())), i.String()),
+			SelectOption: *model.NewSelectOption(cputil.I18n(ctx, strings.ToLower(i)), i),
 			Children:     convertConditions(v),
 		})
 	}

@@ -179,21 +179,6 @@ func (t IssueType) GetCorrespondingResource() string {
 		panic(fmt.Sprintf("invalid issue type: %s", string(t)))
 	}
 }
-func (t IssueType) GetStateBelongIndex() []IssueStateBelong {
-	switch t {
-	case IssueTypeRequirement:
-		return []IssueStateBelong{IssueStateBelongOpen, IssueStateBelongWorking, IssueStateBelongDone}
-	case IssueTypeTask:
-		return []IssueStateBelong{IssueStateBelongOpen, IssueStateBelongWorking, IssueStateBelongDone}
-	case IssueTypeEpic:
-		return []IssueStateBelong{IssueStateBelongOpen, IssueStateBelongWorking, IssueStateBelongDone}
-	case IssueTypeBug:
-		return []IssueStateBelong{IssueStateBelongOpen, IssueStateBelongWontfix, IssueStateBelongReopen, IssueStateBelongResolved, IssueStateBelongClosed}
-	default:
-		panic(fmt.Sprintf("invalid issue type: %s", string(t)))
-	}
-
-}
 
 type IssueState string // 事件状态
 

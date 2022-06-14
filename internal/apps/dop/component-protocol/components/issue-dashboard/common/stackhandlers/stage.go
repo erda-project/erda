@@ -17,7 +17,7 @@ package stackhandlers
 import (
 	"context"
 
-	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/issue-dashboard/common/model"
 	"github.com/erda-project/erda/internal/apps/dop/dao"
 	"github.com/erda-project/erda/internal/tools/openapi/legacy/component-protocol/components/filter"
@@ -25,10 +25,10 @@ import (
 
 type StageStackHandler struct {
 	reverse        bool
-	issueStageList []apistructs.IssueStage
+	issueStageList []*pb.IssueStage
 }
 
-func NewStageStackHandler(reverse bool, issueStageList []apistructs.IssueStage) *StageStackHandler {
+func NewStageStackHandler(reverse bool, issueStageList []*pb.IssueStage) *StageStackHandler {
 	return &StageStackHandler{
 		reverse:        reverse,
 		issueStageList: issueStageList,

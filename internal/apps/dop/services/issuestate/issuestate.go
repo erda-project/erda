@@ -218,46 +218,6 @@ func (is *IssueState) GetIssuesStatesByID(id int64) (*apistructs.IssueStatus, er
 	return status, nil
 }
 
-func (is *IssueState) GetIssueStateIDsByTypes(req *apistructs.IssueStatesRequest) ([]int64, error) {
-	st, err := is.db.GetIssuesStatesByTypes(req)
-	if err != nil {
-		return nil, err
-	}
-	res := make([]int64, 0)
-	for _, v := range st {
-		res = append(res, int64(v.ID))
-	}
-	return res, nil
-}
-
-func (is *IssueState) GetIssueStatesBelong(req *apistructs.IssueStateRelationGetRequest) ([]apistructs.IssueStateState, error) {
-	var states []apistructs.IssueStateState
-	st, err := is.db.GetIssuesStatesByProjectID(req.ProjectID, req.IssueType)
-	if err != nil {
-		return nil, err
-	}
-	BelongMap := make(map[apistructs.IssueStateBelong][]apistructs.IssueStateName)
-	for _, s := range st {
-		BelongMap[s.Belong] = append(BelongMap[s.Belong], apistructs.IssueStateName{
-			Name: s.Name,
-			ID:   int64(s.ID),
-		})
-	}
-	stateIndex := req.IssueType.GetStateBelongIndex()
-	for _, state := range stateIndex {
-		for key, value := range BelongMap {
-			if key != state {
-				continue
-			}
-			states = append(states, apistructs.IssueStateState{
-				StateBelong: key,
-				States:      value,
-			})
-		}
-	}
-	return states, nil
-}
-
 func (is *IssueState) GetIssuesStatesNameByID(id []int64) ([]apistructs.IssueStatus, error) {
 	state, err := is.db.GetIssueStateByIDs(id)
 	if err != nil {

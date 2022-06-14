@@ -14,7 +14,7 @@
 
 package model
 
-import "github.com/erda-project/erda/internal/apps/dop/dao"
+import "github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 
 type LabelIssueItem struct {
 	LabelRel *dao.IssueLabel

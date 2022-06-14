@@ -19,7 +19,7 @@ import (
 	"encoding/json"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/erda-project/erda/internal/apps/dop/dao"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 )
 
 type BurnoutChart struct {

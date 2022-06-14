@@ -18,6 +18,8 @@ import (
 	"net/url"
 	"strconv"
 	"time"
+
+	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 )
 
 type TestFileRecord struct {
@@ -66,8 +68,8 @@ type TestFileExtra struct {
 const TestFileRecordErrorMaxLength = 2048
 
 type IssueFileExtraInfo struct {
-	ImportRequest *IssueImportExcelRequest `json:"importRequest,omitempty"`
-	ExportRequest *IssueExportExcelRequest `json:"exportRequest,omitempty"`
+	ImportRequest *pb.ImportExcelIssueRequest `json:"importRequest,omitempty"`
+	ExportRequest *pb.ExportExcelIssueRequest `json:"exportRequest,omitempty"`
 }
 
 type ManualTestFileExtraInfo struct {

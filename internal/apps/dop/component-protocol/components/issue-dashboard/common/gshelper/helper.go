@@ -18,8 +18,9 @@ import (
 	"github.com/mitchellh/mapstructure"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/internal/apps/dop/dao"
+	issuedao "github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 )
 
 type GSHelper struct {
@@ -62,50 +63,50 @@ func (h *GSHelper) GetMembers() []apistructs.Member {
 	return res
 }
 
-func (h *GSHelper) SetIssueList(l []dao.IssueItem) {
+func (h *GSHelper) SetIssueList(l []issuedao.IssueItem) {
 	if h.gs == nil {
 		return
 	}
 	(*h.gs)["IssueList"] = l
 }
 
-func (h *GSHelper) GetIssueList() []dao.IssueItem {
+func (h *GSHelper) GetIssueList() []issuedao.IssueItem {
 	if h.gs == nil {
 		return nil
 	}
-	res := make([]dao.IssueItem, 0)
+	res := make([]issuedao.IssueItem, 0)
 	_ = assign((*h.gs)["IssueList"], &res)
 	return res
 }
 
-func (h *GSHelper) SetIssueStateList(l []dao.IssueState) {
+func (h *GSHelper) SetIssueStateList(l []issuedao.IssueState) {
 	if h.gs == nil {
 		return
 	}
 	(*h.gs)["IssueStateList"] = l
 }
 
-func (h *GSHelper) GetIssueStateList() []dao.IssueState {
+func (h *GSHelper) GetIssueStateList() []issuedao.IssueState {
 	if h.gs == nil {
 		return nil
 	}
-	res := make([]dao.IssueState, 0)
+	res := make([]issuedao.IssueState, 0)
 	_ = assign((*h.gs)["IssueStateList"], &res)
 	return res
 }
 
-func (h *GSHelper) SetIssueStageList(l []apistructs.IssueStage) {
+func (h *GSHelper) SetIssueStageList(l []*pb.IssueStage) {
 	if h.gs == nil {
 		return
 	}
 	(*h.gs)["IssueStageList"] = l
 }
 
-func (h *GSHelper) GetIssueStageList() []apistructs.IssueStage {
+func (h *GSHelper) GetIssueStageList() []*pb.IssueStage {
 	if h.gs == nil {
 		return nil
 	}
-	res := make([]apistructs.IssueStage, 0)
+	res := make([]*pb.IssueStage, 0)
 	_ = assign((*h.gs)["IssueStageList"], &res)
 	return res
 }
