@@ -98,6 +98,20 @@ func (client *DBClient) GetApplicationCountByProjectID(projectID int64) (int64, 
 	return total, nil
 }
 
+type AppCount struct {
+	ProjectID int64
+	Count     int
+}
+
+func (client *DBClient) GetApplicationCountByProjectIDs(projectIDs []int64) ([]AppCount, error) {
+	var counts []AppCount
+	if err := client.Table(model.Application{}.TableName()).Select("project_id, COUNT(id) as count").Where("project_id IN (?)", projectIDs).
+		Group("project_id").Find(&counts).Error; err != nil {
+		return nil, err
+	}
+	return counts, nil
+}
+
 // GetApplicationsByIDs 根据applicationIDs & 名称模糊匹配获取应用列表
 func (client *DBClient) GetApplicationsByIDs(orgID *int64, projectID *int64, applicationIDs []uint64, request *apistructs.ApplicationListRequest) (
 	int, []model.Application, error) {
