@@ -37,6 +37,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/container_provider"
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/containers"
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/errorsx"
+	"github.com/erda-project/erda/internal/tools/pipeline/pkg/taskerror"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/actionmgr"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/reconciler/taskrun"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/apierrors"
@@ -78,7 +79,7 @@ func (pre *prepare) WhenDone(data interface{}) error {
 	// no need retry
 	if err != nil {
 		pre.Task.Status = apistructs.PipelineStatusAnalyzeFailed
-		pre.Task.Inspect.Errors = pre.Task.Inspect.AppendError(&apistructs.PipelineTaskErrResponse{Msg: err.Error()})
+		pre.Task.Inspect.Errors = pre.Task.Inspect.AppendError(&taskerror.PipelineTaskErrResponse{Msg: err.Error()})
 		return nil
 	}
 
@@ -739,13 +740,13 @@ func condition(task *spec.PipelineTask) bool {
 	if sign.Err != nil {
 		task.Status = apistructs.PipelineStatusFailed
 		if sign.Err != nil {
-			task.Inspect.Errors = task.Inspect.AppendError(&apistructs.PipelineTaskErrResponse{
+			task.Inspect.Errors = task.Inspect.AppendError(&taskerror.PipelineTaskErrResponse{
 				Msg: sign.Err.Error(),
 			})
 		}
 
 		if sign.Msg != "" {
-			task.Inspect.Errors = task.Inspect.AppendError(&apistructs.PipelineTaskErrResponse{
+			task.Inspect.Errors = task.Inspect.AppendError(&taskerror.PipelineTaskErrResponse{
 				Msg: sign.Msg,
 			})
 		}
@@ -755,13 +756,13 @@ func condition(task *spec.PipelineTask) bool {
 	if sign.Sign == expression.TaskJumpOver {
 		task.Status = apistructs.PipelineStatusNoNeedBySystem
 		if sign.Err != nil {
-			task.Inspect.Errors = task.Inspect.AppendError(&apistructs.PipelineTaskErrResponse{
+			task.Inspect.Errors = task.Inspect.AppendError(&taskerror.PipelineTaskErrResponse{
 				Msg: sign.Err.Error(),
 			})
 		}
 
 		if sign.Msg != "" {
-			task.Inspect.Errors = task.Inspect.AppendError(&apistructs.PipelineTaskErrResponse{
+			task.Inspect.Errors = task.Inspect.AppendError(&taskerror.PipelineTaskErrResponse{
 				Msg: sign.Msg,
 			})
 		}

@@ -25,6 +25,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/aop/aoptypes"
+	"github.com/erda-project/erda/internal/tools/pipeline/pkg/taskinspect"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
@@ -82,7 +83,7 @@ func Test_waitOpForLoopNetWorkError(t *testing.T) {
 		op         string
 		taskStatus apistructs.PipelineStatus
 		loop       *apistructs.PipelineTaskLoopOptions
-		inspect    apistructs.PipelineTaskInspect
+		inspect    taskinspect.PipelineTaskInspect
 	}
 	tests := []struct {
 		name           string
@@ -97,7 +98,7 @@ func Test_waitOpForLoopNetWorkError(t *testing.T) {
 				op:         "wait",
 				taskStatus: apistructs.PipelineStatusRunning,
 				loop:       nil,
-				inspect:    apistructs.PipelineTaskInspect{},
+				inspect:    taskinspect.PipelineTaskInspect{},
 			},
 			executeErr:     nil,
 			expectedStatus: apistructs.PipelineStatusSuccess,
@@ -109,7 +110,7 @@ func Test_waitOpForLoopNetWorkError(t *testing.T) {
 				op:         "wait",
 				taskStatus: apistructs.PipelineStatusRunning,
 				loop:       nil,
-				inspect:    apistructs.PipelineTaskInspect{},
+				inspect:    taskinspect.PipelineTaskInspect{},
 			},
 			executeErr:     fmt.Errorf("failed to find session"),
 			expectedStatus: apistructs.PipelineStatusRunning,

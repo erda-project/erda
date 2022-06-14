@@ -20,9 +20,9 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/events"
 	"github.com/erda-project/erda/internal/tools/pipeline/metrics"
+	"github.com/erda-project/erda/internal/tools/pipeline/pkg/taskerror"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/reconciler/rlog"
 	"github.com/erda-project/erda/pkg/loop"
 )
@@ -70,7 +70,7 @@ func (tr *TaskRun) AppendLastMsg(msg string) error {
 	if err := tr.fetchLatestTask(); err != nil {
 		return err
 	}
-	tr.Task.Inspect.Errors = tr.Task.Inspect.AppendError(&apistructs.PipelineTaskErrResponse{Msg: msg})
+	tr.Task.Inspect.Errors = tr.Task.Inspect.AppendError(&taskerror.PipelineTaskErrResponse{Msg: msg})
 	if err := tr.DBClient.UpdatePipelineTaskInspect(tr.Task.ID, tr.Task.Inspect); err != nil {
 		logrus.Errorf("[alert] reconciler: pipelineID: %d, task %q append last message failed, err: %v",
 			tr.P.ID, tr.Task.Name, err)

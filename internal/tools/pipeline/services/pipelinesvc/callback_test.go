@@ -23,6 +23,9 @@ import (
 
 	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
 	"github.com/erda-project/erda/internal/tools/pipeline/events"
+	"github.com/erda-project/erda/internal/tools/pipeline/pkg/taskerror"
+	"github.com/erda-project/erda/internal/tools/pipeline/pkg/taskinspect"
+	"github.com/erda-project/erda/internal/tools/pipeline/pkg/taskresult"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 
 	"github.com/erda-project/erda/apistructs"
@@ -39,16 +42,16 @@ func TestAppendPipelineTaskResult(t *testing.T) {
 	}
 
 	task := &spec.PipelineTask{
-		Inspect: apistructs.PipelineTaskInspect{
-			Errors: []*apistructs.PipelineTaskErrResponse{
-				&apistructs.PipelineTaskErrResponse{Msg: "a"},
+		Inspect: taskinspect.PipelineTaskInspect{
+			Errors: []*taskerror.PipelineTaskErrResponse{
+				&taskerror.PipelineTaskErrResponse{Msg: "a"},
 			},
 		},
 	}
 
-	newTaskErrors := make([]*apistructs.PipelineTaskErrResponse, 0)
+	newTaskErrors := make([]*taskerror.PipelineTaskErrResponse, 0)
 	for _, e := range cb.Errors {
-		newTaskErrors = append(newTaskErrors, &apistructs.PipelineTaskErrResponse{
+		newTaskErrors = append(newTaskErrors, &taskerror.PipelineTaskErrResponse{
 			Msg: e.Msg,
 		})
 	}
@@ -70,12 +73,12 @@ func TestDealPipelineCallbackOfAction(t *testing.T) {
 	})
 	defer m2.Unpatch()
 
-	m3 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "UpdatePipelineTaskMetadata", func(_ *dbclient.Client, id uint64, result *apistructs.PipelineTaskResult) error {
+	m3 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "UpdatePipelineTaskMetadata", func(_ *dbclient.Client, id uint64, result *taskresult.PipelineTaskResult) error {
 		return nil
 	})
 	defer m3.Unpatch()
 
-	m4 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "UpdatePipelineTaskInspect", func(_ *dbclient.Client, id uint64, inspect apistructs.PipelineTaskInspect) error {
+	m4 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "UpdatePipelineTaskInspect", func(_ *dbclient.Client, id uint64, inspect taskinspect.PipelineTaskInspect) error {
 		return nil
 	})
 	defer m4.Unpatch()

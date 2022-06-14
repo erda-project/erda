@@ -25,6 +25,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/actionagent/filewatch"
+	"github.com/erda-project/erda/internal/tools/pipeline/pkg/taskinspect"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
@@ -107,7 +108,7 @@ type EasyUse struct {
 	TaskLogID               string // 日志 ID，推送和查询时需要一致
 
 	// Machine stat
-	MachineStat apistructs.PipelineTaskMachineStat
+	MachineStat taskinspect.PipelineTaskMachineStat
 
 	FileStreamTimeoutSec time.Duration // download or upload file stream timeout
 }

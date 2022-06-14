@@ -22,6 +22,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
+	"github.com/erda-project/erda/internal/tools/pipeline/pkg/taskresult"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
@@ -44,7 +45,7 @@ func Test_fulfillParentSnippetTask(t *testing.T) {
 	monkey.PatchInstanceMethod(reflect.TypeOf(dbClient), "UpdatePipelineTaskSnippetDetail", func(_ *dbclient.Client, id uint64, snippetDetail apistructs.PipelineTaskSnippetDetail, ops ...dbclient.SessionOption) error {
 		return nil
 	})
-	monkey.PatchInstanceMethod(reflect.TypeOf(dbClient), "UpdatePipelineTaskMetadata", func(_ *dbclient.Client, id uint64, result *apistructs.PipelineTaskResult) error {
+	monkey.PatchInstanceMethod(reflect.TypeOf(dbClient), "UpdatePipelineTaskMetadata", func(_ *dbclient.Client, id uint64, result *taskresult.PipelineTaskResult) error {
 		return nil
 	})
 	defer monkey.UnpatchAll()

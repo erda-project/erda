@@ -14,7 +14,11 @@
 
 package apistructs
 
-import "time"
+import (
+	"time"
+
+	"github.com/erda-project/erda/internal/tools/pipeline/pkg/taskinspect"
+)
 
 type PipelineBasicReport struct {
 	ID               uint64         `json:"id"`
@@ -31,19 +35,19 @@ type PipelineBasicReport struct {
 }
 
 type TaskReportInfo struct {
-	ID               uint64                   `json:"id"`
-	Status           PipelineStatus           `json:"status"`
-	Name             string                   `json:"name"`
-	ActionType       string                   `json:"actionType"`
-	ActionVersion    string                   `json:"actionVersion"`
-	ExecutorType     string                   `json:"executorType"`
-	ClusterName      string                   `json:"clusterName"`
-	TimeBegin        *time.Time               `json:"timeBegin,omitempty"`
-	TimeEnd          *time.Time               `json:"timeEnd,omitempty"`
-	TimeBeginQueue   *time.Time               `json:"timeBeginQueue,omitempty"`
-	TimeEndQueue     *time.Time               `json:"timeEndQueue,omitempty"`
-	QueueCostTimeSec int64                    `json:"queueCostTimeSec"`
-	RunCostTimeSec   int64                    `json:"runCostTimeSec"`
-	MachineStat      *PipelineTaskMachineStat `json:"machineStat,omitempty"`
-	Meta             map[string]string        `json:"meta"`
+	ID               uint64                               `json:"id"`
+	Status           PipelineStatus                       `json:"status"`
+	Name             string                               `json:"name"`
+	ActionType       string                               `json:"actionType"`
+	ActionVersion    string                               `json:"actionVersion"`
+	ExecutorType     string                               `json:"executorType"`
+	ClusterName      string                               `json:"clusterName"`
+	TimeBegin        *time.Time                           `json:"timeBegin,omitempty"`
+	TimeEnd          *time.Time                           `json:"timeEnd,omitempty"`
+	TimeBeginQueue   *time.Time                           `json:"timeBeginQueue,omitempty"`
+	TimeEndQueue     *time.Time                           `json:"timeEndQueue,omitempty"`
+	QueueCostTimeSec int64                                `json:"queueCostTimeSec"`
+	RunCostTimeSec   int64                                `json:"runCostTimeSec"`
+	MachineStat      *taskinspect.PipelineTaskMachineStat `json:"machineStat,omitempty"`
+	Meta             map[string]string                    `json:"meta"`
 }
