@@ -20,6 +20,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/erda-project/erda/pkg/metadata"
 )
 
 func TestRegexp(t *testing.T) {
