@@ -17,7 +17,7 @@ package common
 import (
 	"time"
 
-	"github.com/erda-project/erda/internal/apps/dop/dao"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 )
 
 func DateTime(t time.Time) time.Time {

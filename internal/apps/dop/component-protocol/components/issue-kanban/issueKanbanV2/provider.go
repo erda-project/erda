@@ -27,12 +27,13 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
+	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/issue-kanban/common/gshelper"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/types"
-	issuesvc "github.com/erda-project/erda/internal/apps/dop/services/issue"
-	"github.com/erda-project/erda/internal/apps/dop/services/issuestate"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -50,9 +51,8 @@ type Kanban struct {
 
 	filterReq apistructs.IssuePagingRequest
 
-	bdl           *bundle.Bundle
-	issueSvc      *issuesvc.Issue
-	issueStateSvc *issuestate.IssueState
+	bdl      *bundle.Bundle
+	issueSvc query.Interface
 }
 
 type IssueCardExtra struct {
@@ -87,8 +87,7 @@ func (k *Kanban) Finalize(sdk *cptype.SDK) {
 
 func (k *Kanban) BeforeHandleOp(sdk *cptype.SDK) {
 	k.bdl = sdk.Ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
-	k.issueSvc = sdk.Ctx.Value(types.IssueService).(*issuesvc.Issue)
-	k.issueStateSvc = sdk.Ctx.Value(types.IssueStateService).(*issuestate.IssueState)
+	k.issueSvc = sdk.Ctx.Value(types.IssueService).(query.Interface)
 	gh := gshelper.NewGSHelper(sdk.GlobalState)
 	filterCond, ok := gh.GetIssuePagingRequest()
 	if !ok {
@@ -123,11 +122,11 @@ func (k *Kanban) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 
 func (k *Kanban) doFilter(specificBoardIDs ...string) *kanban.Data {
 	// statuses
-	stateByIssueType, err := k.issueStateSvc.GetIssueStatesMap(&apistructs.IssueStatesGetRequest{ProjectID: k.filterReq.ProjectID})
+	stateByIssueType, err := k.issueSvc.GetIssueStatesMap(&pb.GetIssueStatesRequest{ProjectID: k.filterReq.ProjectID})
 	if err != nil {
 		panic(err)
 	}
-	stateByStateID := make(map[int64]apistructs.IssueStatus)
+	stateByStateID := make(map[int64]pb.IssueStatus)
 	for _, statuses := range stateByIssueType {
 		for _, status := range statuses {
 			stateByStateID[status.StateID] = status
@@ -136,7 +135,7 @@ func (k *Kanban) doFilter(specificBoardIDs ...string) *kanban.Data {
 
 	// get specific project-level issue states
 	issueType := k.filterReq.Type[0]
-	stateBelong, err := k.issueStateSvc.GetIssueStatesBelong(&apistructs.IssueStateRelationGetRequest{ProjectID: k.filterReq.ProjectID, IssueType: issueType})
+	stateBelong, err := k.issueSvc.GetIssueStatesBelong(&pb.GetIssueStateRelationRequest{ProjectID: k.filterReq.ProjectID, IssueType: issueType.String()})
 	if err != nil {
 		panic(fmt.Errorf("failed to get issue state belong, err: %v", err))
 	}
@@ -304,10 +303,10 @@ func (k *Kanban) RegisterCardMoveToOp(opData kanban.OpCardMoveTo) (opFunc cptype
 		if err != nil {
 			panic(fmt.Errorf("invalid state id: %s, err: %v", opData.ClientData.TargetBoardID, err))
 		}
-		if err := k.issueSvc.UpdateIssue(apistructs.IssueUpdateRequest{
-			ID:    issueID,
+		if err := k.issueSvc.UpdateIssue(&pb.UpdateIssueRequest{
+			Id:    issueID,
 			State: &targetStateID,
-			IdentityInfo: apistructs.IdentityInfo{
+			IdentityInfo: &commonpb.IdentityInfo{
 				UserID: sdk.Identity.UserID,
 			},
 		}); err != nil {

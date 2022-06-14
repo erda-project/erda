@@ -18,9 +18,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/issue-dashboard/common/model"
-	"github.com/erda-project/erda/internal/apps/dop/dao"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	"github.com/erda-project/erda/internal/tools/openapi/legacy/component-protocol/components/filter"
 )
 
@@ -36,26 +36,26 @@ func NewStateStackHandler(reverse bool, issueStateList []dao.IssueState) *StateS
 	}
 }
 
-var stateColorMap = map[apistructs.IssueStateBelong][]string{
+var stateColorMap = map[string][]string{
 	// 待处理
-	apistructs.IssueStateBelongOpen: {"yellow"},
+	pb.IssueStateBelongEnum_OPEN.String(): {"yellow"},
 	// 进行中
-	apistructs.IssueStateBelongWorking: {"blue", "steelblue", "darkslategray", "darkslateblue"},
+	pb.IssueStateBelongEnum_WORKING.String(): {"blue", "steelblue", "darkslategray", "darkslateblue"},
 	// 已解决
-	apistructs.IssueStateBelongResolved: {"green"},
+	pb.IssueStateBelongEnum_RESOLVED.String(): {"green"},
 	// 已完成
-	apistructs.IssueStateBelongDone: {"green"},
+	pb.IssueStateBelongEnum_DONE.String(): {"green"},
 	// 重新打开
-	apistructs.IssueStateBelongReopen: {"red"},
+	pb.IssueStateBelongEnum_REOPEN.String(): {"red"},
 	// 无需修复
-	apistructs.IssueStateBelongWontfix: {"orange", "grey"},
+	pb.IssueStateBelongEnum_WONTFIX.String(): {"orange", "grey"},
 	// 已关闭
-	apistructs.IssueStateBelongClosed: {"darkseagreen"},
+	pb.IssueStateBelongEnum_CLOSED.String(): {"darkseagreen"},
 }
 
 func (h *StateStackHandler) GetStacks(ctx context.Context) []Stack {
 	var stacks []Stack
-	belongCounter := make(map[apistructs.IssueStateBelong]int)
+	belongCounter := make(map[string]int)
 	for _, i := range h.issueStateList {
 		color := stateColorMap[i.Belong][belongCounter[i.Belong]%len(stateColorMap[i.Belong])]
 		belongCounter[i.Belong]++

@@ -25,10 +25,10 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
-	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/requirement-task-overview/common"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/requirement-task-overview/common/gshelper"
-	"github.com/erda-project/erda/internal/apps/dop/dao"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -194,11 +194,11 @@ func (f *StackChart) setDateMap() {
 }
 
 func (f *StackChart) setIssueStates(h *gshelper.GSHelper) error {
-	t := apistructs.IssueTypeRequirement
+	t := pb.IssueTypeEnum_REQUIREMENT
 	if h.GetStackChartType() == "task" {
-		t = apistructs.IssueTypeTask
+		t = pb.IssueTypeEnum_TASK
 	}
-	states, err := f.issueSvc.GetIssuesStatesByProjectID(f.InParams.ProjectID, t)
+	states, err := f.issueSvc.GetIssuesStatesByProjectID(f.InParams.ProjectID, t.String())
 	if err != nil {
 		return err
 	}
@@ -208,7 +208,7 @@ func (f *StackChart) setIssueStates(h *gshelper.GSHelper) error {
 
 func (f *StackChart) setIssues(h *gshelper.GSHelper) {
 	for _, issue := range h.GetIssueList() {
-		if strings.ToLower(issue.Type.String()) != h.GetStackChartType() {
+		if strings.ToLower(issue.Type) != h.GetStackChartType() {
 			continue
 		}
 		f.Issues = append(f.Issues, issue)

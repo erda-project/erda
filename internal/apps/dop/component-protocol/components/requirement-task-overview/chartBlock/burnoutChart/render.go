@@ -29,7 +29,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/requirement-task-overview/common"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/requirement-task-overview/common/gshelper"
-	"github.com/erda-project/erda/internal/apps/dop/dao"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -71,7 +71,7 @@ func (f *BurnoutChart) Render(ctx context.Context, c *cptype.Component, scenario
 		types = []string{"requirement", "task"}
 	}
 	for _, issue := range h.GetIssueList() {
-		if !strutil.InSlice(strings.ToLower(issue.Type.String()), types) {
+		if !strutil.InSlice(strings.ToLower(issue.Type), types) {
 			continue
 		}
 		if issue.FinishTime != nil {

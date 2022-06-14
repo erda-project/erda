@@ -165,198 +165,12 @@ func (b *Bundle) UpdateIssueTicketUser(UserID string, updateReq apistructs.Issue
 	return nil
 }
 
-func (b *Bundle) GetIssueStateBelong(req apistructs.IssueStateRelationGetRequest) ([]apistructs.IssueStateState, error) {
-	host, err := b.urls.DOP()
-	if err != nil {
-		return nil, err
-	}
-	hc := b.hc
-
-	var isp apistructs.IssueStateTypeBelongResponse
-	resp, err := hc.Get(host).Path("/api/issues/actions/get-state-belong").
-		Header(httputil.InternalHeader, "bundle").
-		Param("projectID", strconv.FormatUint(req.ProjectID, 10)).
-		Param("issueType", string(req.IssueType)).
-		Do().JSON(&isp)
-	if err != nil {
-		return nil, apierrors.ErrInvoke.InternalError(err)
-	}
-	if !resp.IsOK() || !isp.Success {
-		return nil, toAPIError(resp.StatusCode(), isp.Error)
-	}
-	return isp.Data, nil
-}
-
-func (b *Bundle) GetIssueStatesByID(req []int64) ([]apistructs.IssueStatus, error) {
-	host, err := b.urls.DOP()
-	if err != nil {
-		return nil, err
-	}
-	hc := b.hc
-
-	var isp apistructs.IssueStateNameGetResponse
-	resp, err := hc.Get(host).Path("/api/issues/actions/get-state-name").
-		Header(httputil.InternalHeader, "bundle").JSONBody(&req).
-		Do().JSON(&isp)
-	if err != nil {
-		return nil, apierrors.ErrInvoke.InternalError(err)
-	}
-	if !resp.IsOK() || !isp.Success {
-		return nil, toAPIError(resp.StatusCode(), isp.Error)
-	}
-
-	return isp.Data, nil
-}
-
-// UpdateIssuePanelIssue 更新事件所属看板
-func (b *Bundle) UpdateIssuePanelIssue(userID string, panelID, issueID, projectID int64) error {
-	host, err := b.urls.DOP()
-	if err != nil {
-		return err
-	}
-	hc := b.hc
-
-	var panel apistructs.IssuePanelIssuesCreateResponse
-	resp, err := hc.Put(host).Path("/api/issues/actions/update-panel-issue").
-		Header(httputil.InternalHeader, "bundle").
-		Header("User-ID", userID).
-		Param("panelID", strconv.FormatInt(panelID, 10)).
-		Param("issueID", strconv.FormatInt(issueID, 10)).
-		Param("projectID", strconv.FormatInt(projectID, 10)).
-		Do().JSON(&panel)
-	if err != nil {
-		return apierrors.ErrInvoke.InternalError(err)
-	}
-	if !resp.IsOK() || !panel.Success {
-		return toAPIError(resp.StatusCode(), panel.Error)
-	}
-
-	return nil
-}
-func (b *Bundle) GetIssuePanel(req apistructs.IssuePanelRequest) ([]apistructs.IssuePanelIssues, error) {
-	host, err := b.urls.DOP()
-	if err != nil {
-		return nil, err
-	}
-	hc := b.hc
-
-	var isp apistructs.IssuePanelGetResponse
-	resp, err := hc.Get(host).Path("/api/issues/actions/get-panel").
-		Param("projectID", strconv.FormatUint(req.ProjectID, 10)).
-		Header("User-ID", req.UserID).
-		Header(httputil.InternalHeader, "bundle").
-		Do().JSON(&isp)
-	if err != nil {
-		return nil, apierrors.ErrInvoke.InternalError(err)
-	}
-	if !resp.IsOK() || !isp.Success {
-		return nil, toAPIError(resp.StatusCode(), isp.Error)
-	}
-
-	return isp.Data, nil
-}
-
-func (b *Bundle) GetIssuePanelIssue(req apistructs.IssuePanelRequest) (*apistructs.IssuePanelIssueIDs, error) {
-	host, err := b.urls.DOP()
-	if err != nil {
-		return nil, err
-	}
-	hc := b.hc
-
-	var isp apistructs.IssuePanelIssuesGetResponse
-	resp, err := hc.Get(host).Path("/api/issues/actions/get-panel-issue").
-		Param("panelID", strconv.FormatInt(req.PanelID, 10)).
-		Params(req.UrlQueryString()).
-		Header(httputil.InternalHeader, "bundle").
-		Header("User-ID", req.UserID).
-		Do().JSON(&isp)
-	if err != nil {
-		return nil, apierrors.ErrInvoke.InternalError(err)
-	}
-	if !resp.IsOK() || !isp.Success {
-		return nil, toAPIError(resp.StatusCode(), isp.Error)
-	}
-
-	return isp.Data, nil
-}
-
-func (b *Bundle) CreateIssuePanel(req apistructs.IssuePanelRequest) (int64, error) {
-	host, err := b.urls.DOP()
-	if err != nil {
-		return 0, err
-	}
-	hc := b.hc
-
-	var isp apistructs.IssuePanelIssuesCreateResponse
-	resp, err := hc.Post(host).Path("/api/issues/actions/create-panel").
-		Header("User-ID", req.UserID).
-		Header(httputil.InternalHeader, "bundle").JSONBody(&req).
-		Do().JSON(&isp)
-	if err != nil {
-		return 0, apierrors.ErrInvoke.InternalError(err)
-	}
-	if !resp.IsOK() || !isp.Success {
-		return 0, toAPIError(resp.StatusCode(), isp.Error)
-	}
-
-	return isp.Data, nil
-}
-
-func (b *Bundle) DeleteIssuePanel(req apistructs.IssuePanelRequest) (*apistructs.IssuePanel, error) {
-	host, err := b.urls.DOP()
-	if err != nil {
-		return nil, err
-	}
-	hc := b.hc
-
-	var isp apistructs.IssuePanelDeleteResponse
-	resp, err := hc.Delete(host).Path("/api/issues/actions/delete-panel").
-		Header(httputil.InternalHeader, "bundle").
-		Header("User-ID", req.UserID).
-		Param("panelID", strconv.FormatInt(req.PanelID, 10)).
-		Param("projectID", strconv.FormatUint(req.ProjectID, 10)).
-		Do().JSON(&isp)
-	if err != nil {
-		return nil, apierrors.ErrInvoke.InternalError(err)
-	}
-	if !resp.IsOK() || !isp.Success {
-		return nil, toAPIError(resp.StatusCode(), isp.Error)
-	}
-
-	return isp.Data, nil
-}
-
-func (b *Bundle) UpdateIssuePanel(req apistructs.IssuePanelRequest) (int64, error) {
-	host, err := b.urls.DOP()
-	if err != nil {
-		return 0, err
-	}
-	hc := b.hc
-
-	var isp apistructs.IssuePanelIssuesCreateResponse
-	resp, err := hc.Put(host).Path("/api/issues/actions/update-panel").
-		Header(httputil.InternalHeader, "bundle").
-		Header("User-ID", req.UserID).
-		Param("panelID", strconv.FormatInt(req.PanelID, 10)).
-		Param("PanelName", req.PanelName).
-		Param("projectID", strconv.FormatUint(req.ProjectID, 10)).
-		Do().JSON(&isp)
-	if err != nil {
-		return 0, apierrors.ErrInvoke.InternalError(err)
-	}
-	if !resp.IsOK() || !isp.Success {
-		return 0, toAPIError(resp.StatusCode(), isp.Error)
-	}
-
-	return isp.Data, nil
-}
 func (b *Bundle) GetIssueStage(orgID int64, issueType apistructs.IssueType) ([]apistructs.IssueStage, error) {
 	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
 	}
 	hc := b.hc
-
 	var isp apistructs.IssueStageResponse
 	resp, err := hc.Get(host).Path("/api/issues/action/get-stage").
 		Header(httputil.InternalHeader, "bundle").
@@ -369,7 +183,6 @@ func (b *Bundle) GetIssueStage(orgID int64, issueType apistructs.IssueType) ([]a
 	if !resp.IsOK() || !isp.Success {
 		return nil, toAPIError(resp.StatusCode(), isp.Error)
 	}
-
 	return isp.Data, nil
 }
 
@@ -380,7 +193,6 @@ func (b *Bundle) GetIssueStreams(req apistructs.IssueStreamPagingRequest) (data 
 		return
 	}
 	hc := b.hc
-
 	var isp apistructs.IssueStreamPagingResponse
 	resp, err := hc.Get(host).Path(fmt.Sprintf("/api/issues/%v/streams", req.IssueID)).
 		Header(httputil.InternalHeader, "bundle").
@@ -395,7 +207,6 @@ func (b *Bundle) GetIssueStreams(req apistructs.IssueStreamPagingRequest) (data 
 		err = toAPIError(resp.StatusCode(), isp.Error)
 		return
 	}
-
 	data = isp.Data
 	return
 }

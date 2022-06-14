@@ -26,13 +26,13 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/requirement-task-overview/common"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/requirement-task-overview/common/gshelper"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/types"
-	"github.com/erda-project/erda/internal/apps/dop/services/issue"
-	"github.com/erda-project/erda/internal/apps/dop/services/issuestate"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query"
 	"github.com/erda-project/erda/internal/pkg/component-protocol/issueFilter"
 	"github.com/erda-project/erda/internal/tools/openapi/legacy/component-protocol/components/filter"
 )
@@ -55,8 +55,7 @@ func (f *ComponentFilter) InitFromProtocol(ctx context.Context, c *cptype.Compon
 	// sdk
 	f.sdk = cputil.SDK(ctx)
 	f.bdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
-	f.issueSvc = ctx.Value(types.IssueService).(*issue.Issue)
-	f.issueStateSvc = ctx.Value(types.IssueStateService).(*issuestate.IssueState)
+	f.issueSvc = ctx.Value(types.IssueService).(query.Interface)
 	return f.setInParams(ctx)
 }
 
@@ -107,14 +106,14 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 	if f.InParams.IterationID != 0 {
 		f.State.Values.IterationID = f.InParams.IterationID
 	}
-	data, err := f.issueSvc.GetAllIssuesByProject(apistructs.IssueListRequest{
-		Type: []apistructs.IssueType{
-			apistructs.IssueTypeRequirement,
-			apistructs.IssueTypeTask,
+	data, err := f.issueSvc.GetAllIssuesByProject(pb.IssueListRequest{
+		Type: []string{
+			pb.IssueTypeEnum_REQUIREMENT.String(),
+			pb.IssueTypeEnum_TASK.String(),
 		},
 		ProjectID:    f.InParams.ProjectID,
 		IterationIDs: []int64{f.State.Values.IterationID},
-		Assignees:    f.State.Values.AssigneeIDs,
+		Assignee:     f.State.Values.AssigneeIDs,
 		Label:        f.State.Values.LabelIDs,
 	})
 	if err != nil {
@@ -167,7 +166,7 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 	}
 
 	f.IssueList = data
-	stateIDs, err := f.issueStateSvc.GetIssueStateIDsByTypes(&apistructs.IssueStatesRequest{
+	stateIDs, err := f.issueSvc.GetIssueStateIDsByTypes(&apistructs.IssueStatesRequest{
 		ProjectID: f.InParams.ProjectID,
 		IssueType: []apistructs.IssueType{apistructs.IssueTypeTask, apistructs.IssueTypeRequirement},
 	})
@@ -180,26 +179,12 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 		LabelIDs:     f.State.Values.LabelIDs,
 		States:       stateIDs,
 	}
-	orgID, err := strconv.Atoi(f.sdk.Identity.OrgID)
-	if err != nil {
-		return err
-	}
-
-	stages, err := f.issueSvc.GetIssueStage(&apistructs.IssueStageRequest{
-		OrgID:     int64(orgID),
-		IssueType: apistructs.IssueTypeBug,
-	})
-	if err != nil {
-		return err
-	}
-	f.Stages = stages
 
 	helper := gshelper.NewGSHelper(gs)
 	helper.SetIteration(iterations[f.State.Values.IterationID])
 	helper.SetMembers(f.Members)
 	helper.SetIssueList(f.IssueList)
 	helper.SetIssueConditions(conditions)
-	helper.SetIssueStageList(f.Stages)
 
 	urlParam, err := f.generateUrlQueryParams()
 	if err != nil {

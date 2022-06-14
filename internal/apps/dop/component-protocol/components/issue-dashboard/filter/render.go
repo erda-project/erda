@@ -25,12 +25,13 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/issue-dashboard/common"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/issue-dashboard/common/gshelper"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/types"
-	"github.com/erda-project/erda/internal/apps/dop/services/issue"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query"
 	"github.com/erda-project/erda/internal/tools/openapi/legacy/component-protocol/components/filter"
 )
 
@@ -52,7 +53,7 @@ func (f *ComponentFilter) InitFromProtocol(ctx context.Context, c *cptype.Compon
 	// sdk
 	f.sdk = cputil.SDK(ctx)
 	f.bdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
-	f.issueSvc = ctx.Value(types.IssueService).(*issue.Issue)
+	f.issueSvc = ctx.Value(types.IssueService).(query.Interface)
 	if err := f.setInParams(ctx); err != nil {
 		return err
 	}
@@ -139,13 +140,13 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 	if f.InParams.IterationID != 0 {
 		f.State.Values.IterationIDs = []int64{f.InParams.IterationID}
 	}
-	data, err := f.issueSvc.GetAllIssuesByProject(apistructs.IssueListRequest{
-		Type: []apistructs.IssueType{
-			apistructs.IssueTypeBug,
+	data, err := f.issueSvc.GetAllIssuesByProject(pb.IssueListRequest{
+		Type: []string{
+			pb.IssueTypeEnum_BUG.String(),
 		},
 		ProjectID:    f.InParams.ProjectID,
 		IterationIDs: f.State.Values.IterationIDs,
-		Assignees:    f.State.Values.AssigneeIDs,
+		Assignee:     f.State.Values.AssigneeIDs,
 		// StateBelongs: []apistructs.IssueStateBelong{apistructs.IssueStateBelongOpen, apistructs.IssueStateBelongWorking, apistructs.IssueStateBelongWontfix, apistructs.IssueStateBelongReopen, apistructs.IssueStateBelongResolved},
 	})
 	if err != nil {
@@ -186,7 +187,7 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 	// todo modify data format
 	f.IssueList = data
 
-	states, err := f.issueSvc.GetIssuesStatesByProjectID(f.InParams.ProjectID, apistructs.IssueTypeBug)
+	states, err := f.issueSvc.GetIssuesStatesByProjectID(f.InParams.ProjectID, pb.IssueTypeEnum_BUG.String())
 	if err != nil {
 		return err
 	}
@@ -197,9 +198,9 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 		return err
 	}
 
-	stages, err := f.issueSvc.GetIssueStage(&apistructs.IssueStageRequest{
+	stages, err := f.issueSvc.GetIssueStage(&pb.IssueStageRequest{
 		OrgID:     int64(orgID),
-		IssueType: apistructs.IssueTypeBug,
+		IssueType: pb.IssueTypeEnum_BUG.String(),
 	})
 	if err != nil {
 		return err

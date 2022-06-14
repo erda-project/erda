@@ -31,8 +31,8 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/issue-dashboard/common/model"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/issue-dashboard/common/stackhandlers"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/types"
-	"github.com/erda-project/erda/internal/apps/dop/dao"
-	issue_svc "github.com/erda-project/erda/internal/apps/dop/services/issue"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 )
 
 func init() {
@@ -62,8 +62,7 @@ func (f *ComponentAction) getState(c *cptype.Component) error {
 }
 
 func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
-
-	f.issueSvc = ctx.Value(types.IssueService).(*issue_svc.Issue)
+	f.issueSvc = ctx.Value(types.IssueService).(query.Interface)
 	if err := f.setInParams(ctx); err != nil {
 		return err
 	}

@@ -50,6 +50,8 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/providers/cms"
 	"github.com/erda-project/erda/internal/apps/dop/providers/devflowrule"
 	"github.com/erda-project/erda/internal/apps/dop/providers/guide"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core"
+	issuequery "github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/stream"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/sync"
 	"github.com/erda-project/erda/internal/apps/dop/providers/projectpipeline"
@@ -77,7 +79,7 @@ type provider struct {
 	ProjectPipelineSvc    *projectpipeline.ProjectPipelineService `autowired:"erda.dop.projectpipeline.ProjectPipelineService"`
 	PipelineCron          cronpb.CronServiceServer                `autowired:"erda.core.pipeline.cron.CronService" required:"true"`
 	QueryClient           query.MetricQuery                       `autowired:"metricq-client"`
-	CommentIssueStreamSvc *stream.CommentIssueStreamService       `autowired:"erda.dop.issue.CommentIssueStreamService"`
+	CommentIssueStreamSvc *stream.CommentIssueStreamService       `autowired:"erda.dop.issue.stream.CommentIssueStreamService"`
 	IssueSyncSvc          *sync.IssueSyncService                  `autowired:"erda.dop.issue.sync.IssueSyncService"`
 	GuideSvc              *guide.GuideService                     `autowired:"erda.dop.guide.GuideService"`
 	AddonMySQLSvc         addonmysqlpb.AddonMySQLServiceServer    `autowired:"erda.orchestrator.addon.mysql.AddonMySQLService"`
@@ -88,6 +90,8 @@ type provider struct {
 	TokenService          tokenpb.TokenServiceServer     `autowired:"erda.core.token.TokenService"`
 	ClusterSvc            clusterpb.ClusterServiceServer `autowired:"erda.core.clustermanager.cluster.ClusterService"`
 	DevFlowSvc            *flow.Service                  `autowired:"erda.apps.devflow.flow.FlowService"`
+	IssueCoreSvc          *core.IssueService             `autowired:"erda.dop.issue.core.IssueCoreService"`
+	Query                 issuequery.Interface
 
 	Protocol      componentprotocol.Interface
 	CPTran        i18n.I18n        `autowired:"i18n@cp"`

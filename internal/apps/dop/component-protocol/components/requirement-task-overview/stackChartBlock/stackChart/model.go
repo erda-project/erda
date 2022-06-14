@@ -24,12 +24,12 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/types"
-	"github.com/erda-project/erda/internal/apps/dop/dao"
-	"github.com/erda-project/erda/internal/apps/dop/services/issue"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 )
 
 type StackChart struct {
-	issueSvc       *issue.Issue
+	issueSvc       query.Interface
 	InParams       InParams                                 `json:"-"`
 	Type           string                                   `json:"type"`
 	Props          Props                                    `json:"props"`
@@ -121,7 +121,7 @@ func (f *StackChart) InitFromProtocol(ctx context.Context, c *cptype.Component) 
 		return err
 	}
 
-	f.issueSvc = ctx.Value(types.IssueService).(*issue.Issue)
+	f.issueSvc = ctx.Value(types.IssueService).(query.Interface)
 	f.DateMap = make(map[time.Time]map[uint64]int, 0)
 	f.Dates = make([]time.Time, 0)
 	return f.setInParams(ctx)

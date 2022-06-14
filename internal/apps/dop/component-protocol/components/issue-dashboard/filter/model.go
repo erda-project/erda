@@ -16,28 +16,29 @@ package filter
 
 import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/issue-dashboard/common"
-	"github.com/erda-project/erda/internal/apps/dop/dao"
-	"github.com/erda-project/erda/internal/apps/dop/services/issue"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	"github.com/erda-project/erda/internal/tools/openapi/legacy/component-protocol/components/filter"
 )
 
 type ComponentFilter struct {
 	sdk      *cptype.SDK
 	bdl      *bundle.Bundle
-	issueSvc *issue.Issue
+	issueSvc query.Interface
 	filter.CommonFilter
 	State    State    `json:"state,omitempty"`
 	InParams InParams `json:"-"`
 
 	// local vars
-	Iterations     []apistructs.Iteration  `json:"-"`
-	Members        []apistructs.Member     `json:"-"`
-	IssueList      []dao.IssueItem         `json:"-"`
-	IssueStateList []dao.IssueState        `json:"-"`
-	Stages         []apistructs.IssueStage `json:"-"`
+	Iterations     []apistructs.Iteration `json:"-"`
+	Members        []apistructs.Member    `json:"-"`
+	IssueList      []dao.IssueItem        `json:"-"`
+	IssueStateList []dao.IssueState       `json:"-"`
+	Stages         []*pb.IssueStage       `json:"-"`
 }
 
 type State struct {

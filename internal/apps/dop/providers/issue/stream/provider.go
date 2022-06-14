@@ -20,9 +20,12 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
-	"github.com/erda-project/erda-proto-go/dop/issue/pb"
+	"github.com/erda-project/erda-infra/providers/i18n"
+	"github.com/erda-project/erda-proto-go/dop/issue/stream/pb"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/internal/apps/dop/dao"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/stream/core"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 )
@@ -36,6 +39,9 @@ type provider struct {
 	Register transport.Register `autowired:"service-register" required:"true"`
 	DB       *gorm.DB           `autowired:"mysql-client"`
 	bundle   *bundle.Bundle
+	Stream   core.Interface
+	I18n     i18n.Translator `translator:"issue-manage"`
+	Query    query.Interface
 
 	commentIssueStreamService *CommentIssueStreamService
 }
@@ -49,6 +55,10 @@ func (p *provider) Init(ctx servicehub.Context) error {
 			},
 		},
 		logger: p.Log,
+		bdl:    bundle.New(bundle.WithCoreServices()),
+		stream: p.Stream,
+		tran:   p.I18n,
+		query:  p.Query,
 	}
 
 	if p.Register != nil {
@@ -59,7 +69,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
 	switch {
-	case ctx.Service() == "erda.dop.issue.CommentIssueStreamService" || ctx.Type() == pb.CommentIssueStreamServiceServerType() || ctx.Type() == pb.CommentIssueStreamServiceHandlerType():
+	case ctx.Service() == "erda.dop.issue.stream.CommentIssueStreamService" || ctx.Type() == pb.CommentIssueStreamServiceServerType() || ctx.Type() == pb.CommentIssueStreamServiceHandlerType():
 		return p.commentIssueStreamService
 	}
 	return p
