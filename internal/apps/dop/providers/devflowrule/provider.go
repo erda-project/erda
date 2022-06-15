@@ -24,8 +24,10 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/i18n"
+	"github.com/erda-project/erda-proto-go/dop/devflowrule/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/providers/devflowrule/db"
+	"github.com/erda-project/erda/pkg/common/apis"
 )
 
 type config struct{}
@@ -48,6 +50,9 @@ func (p *provider) Run(ctx context.Context) error {
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.bundle = bundle.New(bundle.WithGittar())
 	p.dbClient = &db.Client{DB: p.DB}
+	if p.Register != nil {
+		pb.RegisterDevFlowRuleServiceImp(p.Register, p, apis.Options())
+	}
 	return nil
 }
 
