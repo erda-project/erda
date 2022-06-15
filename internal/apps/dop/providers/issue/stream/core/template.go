@@ -29,7 +29,6 @@ import (
 type StreamTemplateRequest struct {
 	StreamType   string
 	StreamParams common.ISTParam
-	Tran         i18n.Translator
 	Locale       string
 	Lang         i18n.LanguageCodes
 }
@@ -71,7 +70,7 @@ func getIssueStreamTemplateForMsgSending(locale string, ist string) (string, err
 }
 
 // getDefaultContent get rendered msg
-func GetDefaultContent(req StreamTemplateRequest) (string, error) {
+func (p *provider) GetDefaultContent(req StreamTemplateRequest) (string, error) {
 	locale := req.Locale
 	if strings.Contains(locale, "zh") {
 		locale = "zh"
@@ -84,12 +83,12 @@ func GetDefaultContent(req StreamTemplateRequest) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	content, err := renderTemplate(ct, req.StreamParams, req.Tran, req.Lang)
+	content, err := renderTemplate(ct, req.StreamParams, p.commonTran, req.Lang)
 	if err != nil {
 		return "", err
 	}
 	if req.StreamParams.ReasonDetail != "" {
-		return fmt.Sprintf("%v %v", content, req.Tran.Text(req.Lang, req.StreamParams.ReasonDetail)), nil
+		return fmt.Sprintf("%v %v", content, p.commonTran.Text(req.Lang, req.StreamParams.ReasonDetail)), nil
 	}
 	return content, nil
 }

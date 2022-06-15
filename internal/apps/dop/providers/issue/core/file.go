@@ -355,7 +355,7 @@ func (i *IssueService) storeExcel2DB(request *pb.ImportExcelIssueRequest, issues
 		memberMap[m.Nick] = m.UserID
 	}
 	for index, req := range issues {
-		if string(req.Type) != string(request.Type) {
+		if req.Type.String() != request.Type {
 			falseIssue = append(falseIssue, excelIndex[index])
 			falseReason = append(falseReason, "创建任务失败, err:事件类型不符合")
 			continue
@@ -372,9 +372,8 @@ func (i *IssueService) storeExcel2DB(request *pb.ImportExcelIssueRequest, issues
 				falseReason = append(falseReason, fmt.Sprintf("issue : %s not belong to project: %d", req.Title, request.ProjectID))
 				continue
 			}
-			planStartedAt, planFinishedAt := req.PlanStartedAt.AsTime(), req.PlanFinishedAt.AsTime()
-			issue.PlanStartedAt = &planStartedAt
-			issue.PlanFinishedAt = &planFinishedAt
+			issue.PlanStartedAt = common.ToIssueTime(req.PlanStartedAt)
+			issue.PlanFinishedAt = common.ToIssueTime(req.PlanFinishedAt)
 			issue.IterationID = req.IterationID
 			issue.Type = req.Type.String()
 			issue.Title = req.Title
@@ -388,7 +387,7 @@ func (i *IssueService) storeExcel2DB(request *pb.ImportExcelIssueRequest, issues
 			issue.Source = req.Source
 			issue.Stage = common.GetStage(&req)
 			issue.Owner = memberMap[req.Owner]
-			if req.IssueManHour.EstimateTime > 0 {
+			if req.IssueManHour != nil && req.IssueManHour.EstimateTime > 0 {
 				var oldManHour apistructs.IssueManHour
 				json.Unmarshal([]byte(issue.ManHour), &oldManHour)
 				oldManHour.EstimateTime = req.IssueManHour.EstimateTime
@@ -459,7 +458,7 @@ func (i *IssueService) storeExcel2DB(request *pb.ImportExcelIssueRequest, issues
 			}
 		} else {
 			create := importIssueBuilder(req, request, memberMap)
-			if string(create.Type) != string(request.Type) {
+			if create.Type != request.Type {
 				falseIssue = append(falseIssue, excelIndex[index])
 				falseReason = append(falseReason, "创建任务失败, err:事件类型不符合")
 				continue
@@ -514,10 +513,9 @@ func (i *IssueService) storeExcel2DB(request *pb.ImportExcelIssueRequest, issues
 }
 
 func importIssueBuilder(issue pb.Issue, request *pb.ImportExcelIssueRequest, memberMap map[string]string) dao.Issue {
-	planStartedAt, planFinishedAt := issue.PlanStartedAt.AsTime(), issue.PlanFinishedAt.AsTime()
 	create := dao.Issue{
-		PlanStartedAt:  &planStartedAt,
-		PlanFinishedAt: &planFinishedAt,
+		PlanStartedAt:  common.ToIssueTime(issue.PlanStartedAt),
+		PlanFinishedAt: common.ToIssueTime(issue.PlanFinishedAt),
 		ProjectID:      uint64(request.ProjectID),
 		IterationID:    issue.IterationID,
 		AppID:          &issue.AppID,

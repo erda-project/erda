@@ -15,13 +15,15 @@
 package gshelper
 
 import (
+	model "github.com/erda-project/erda-infra/providers/component-protocol/components/filter/models"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 )
 
 const (
 	KeyIssuePagingRequestKanban = "IssuePagingRequestKanban"
 	KeyIssuePagingRequest       = "IssuePagingRequest"
+	KeyIterationOptions         = "IterationOptions"
 )
 
 type GSHelper struct {
@@ -32,9 +34,16 @@ func NewGSHelper(gs *cptype.GlobalStateData) *GSHelper {
 	return &GSHelper{gs}
 }
 
-func (h *GSHelper) SetIssuePagingRequest(key string, req apistructs.IssuePagingRequest) {
+func (h *GSHelper) SetIssuePagingRequest(key string, req pb.PagingIssueRequest) {
 	if h.gs == nil {
 		return
 	}
 	(*h.gs)[key] = req
+}
+
+func (h *GSHelper) SetIterationOptions(key string, options []model.SelectOption) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)[key] = options
 }
