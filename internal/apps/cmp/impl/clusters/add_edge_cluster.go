@@ -269,7 +269,7 @@ func (c *Clusters) MonitorCloudCluster() (abort bool, err error) {
 					break
 				}
 				if task.Status.IsSuccessStatus() && task.Name == "diceInstall" {
-					_ = c.processSuccessPipeline(task.Result, record)
+					_ = c.processSuccessPipeline(task.Result.Result, record)
 				}
 			}
 		}
