@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/erda-project/erda-proto-go/core/pipeline/action/pb"
+	"github.com/erda-project/erda/internal/tools/pipeline/pkg/taskerror"
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/taskinspect"
 	"github.com/erda-project/erda/pkg/metadata"
 )
@@ -31,7 +32,7 @@ type ActionCallback struct {
 	// show in stdout
 	Metadata metadata.Metadata `json:"metadata"`
 
-	Errors []ErrorResponse `json:"errors"`
+	Errors taskerror.OrderedErrors `json:"errors"`
 
 	// machine stat
 	MachineStat *taskinspect.PipelineTaskMachineStat `json:"machineStat,omitempty"`

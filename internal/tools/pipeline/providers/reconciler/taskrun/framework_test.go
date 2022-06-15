@@ -83,7 +83,7 @@ func Test_waitOpForLoopNetWorkError(t *testing.T) {
 		op         string
 		taskStatus apistructs.PipelineStatus
 		loop       *apistructs.PipelineTaskLoopOptions
-		inspect    taskinspect.PipelineTaskInspect
+		inspect    taskinspect.Inspect
 	}
 	tests := []struct {
 		name           string
@@ -98,7 +98,7 @@ func Test_waitOpForLoopNetWorkError(t *testing.T) {
 				op:         "wait",
 				taskStatus: apistructs.PipelineStatusRunning,
 				loop:       nil,
-				inspect:    taskinspect.PipelineTaskInspect{},
+				inspect:    taskinspect.Inspect{},
 			},
 			executeErr:     nil,
 			expectedStatus: apistructs.PipelineStatusSuccess,
@@ -110,7 +110,7 @@ func Test_waitOpForLoopNetWorkError(t *testing.T) {
 				op:         "wait",
 				taskStatus: apistructs.PipelineStatusRunning,
 				loop:       nil,
-				inspect:    taskinspect.PipelineTaskInspect{},
+				inspect:    taskinspect.Inspect{},
 			},
 			executeErr:     fmt.Errorf("failed to find session"),
 			expectedStatus: apistructs.PipelineStatusRunning,

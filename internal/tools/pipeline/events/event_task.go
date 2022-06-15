@@ -85,9 +85,9 @@ const (
 
 type WSPipelineTaskStatusUpdatePayload struct {
 	wsHeader
-	PipelineTaskID uint64                        `json:"pipelineTaskID"`
-	Status         apistructs.PipelineStatus     `json:"status"`
-	Result         taskresult.PipelineTaskResult `json:"result"`
+	PipelineTaskID uint64                    `json:"pipelineTaskID"`
+	Status         apistructs.PipelineStatus `json:"status"`
+	Result         taskresult.Result         `json:"result"`
 
 	CostTimeSec int64 `json:"costTimeSec"`
 }

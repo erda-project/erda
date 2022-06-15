@@ -86,17 +86,9 @@ func (s *PipelineSvc) DealPipelineCallbackOfAction(data []byte) (err error) {
 }
 
 func (s *PipelineSvc) appendPipelineTaskInspect(p *spec.Pipeline, task *spec.PipelineTask, cb apistructs.ActionCallback) error {
-	if len(cb.Errors) == 0 && cb.MachineStat == nil {
+	if cb.MachineStat == nil {
 		return nil
 	}
-	// TODO action agent should add err start time and end time
-	newTaskErrors := make([]*taskerror.PipelineTaskErrResponse, 0)
-	for _, e := range cb.Errors {
-		newTaskErrors = append(newTaskErrors, &taskerror.PipelineTaskErrResponse{
-			Msg: e.Msg,
-		})
-	}
-	task.Inspect.Errors = task.Inspect.AppendError(newTaskErrors...)
 	// machine stat
 	if cb.MachineStat != nil {
 		task.Inspect.MachineStat = cb.MachineStat
@@ -109,14 +101,15 @@ func (s *PipelineSvc) appendPipelineTaskInspect(p *spec.Pipeline, task *spec.Pip
 }
 
 func (s *PipelineSvc) appendPipelineTaskMetadata(p *spec.Pipeline, task *spec.PipelineTask, cb apistructs.ActionCallback) error {
-	if len(cb.Metadata) == 0 {
+	if len(cb.Metadata) == 0 && len(cb.Errors) == 0 {
 		return nil
 	}
 	if task.Result == nil {
-		task.Result = &taskresult.PipelineTaskResult{Metadata: metadata.Metadata{}}
+		task.Result = &taskresult.Result{Metadata: metadata.Metadata{}, Errors: taskerror.OrderedErrors{}}
 	}
 
 	task.Result.Metadata = append(task.Result.Metadata, cb.Metadata...)
+	task.Result.Errors = task.Result.Errors.AppendError(cb.Errors...)
 	if err := s.dbClient.UpdatePipelineTaskMetadata(task.ID, task.Result); err != nil {
 		return err
 	}

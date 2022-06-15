@@ -95,9 +95,9 @@ func (tr *TaskRun) waitOp(itr TaskOp, o *Elem) (result error) {
 		}
 		resultErrMsg = append(resultErrMsg, errs...)
 		if len(resultErrMsg) > 0 {
-			tr.Task.Inspect.Errors = tr.Task.Inspect.AppendError(&taskerror.PipelineTaskErrResponse{
+			tr.Task.Inspect.Errors = tr.Task.Inspect.Errors.AppendError(&taskerror.Error{
 				Msg: strutil.Join(resultErrMsg, "\n", true),
-				Ctx: taskerror.PipelineTaskErrCtx{
+				Ctx: taskerror.ErrorContext{
 					StartTime: startTime,
 					EndTime:   time.Now(),
 					Count:     1,

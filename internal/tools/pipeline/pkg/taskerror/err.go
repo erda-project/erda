@@ -18,19 +18,19 @@ import (
 	"time"
 )
 
-type PipelineTaskErrResponse struct {
-	Code string             `json:"code"`
-	Msg  string             `json:"msg"`
-	Ctx  PipelineTaskErrCtx `json:"ctx"`
+type Error struct {
+	Code string       `json:"code"`
+	Msg  string       `json:"msg"`
+	Ctx  ErrorContext `json:"ctx"`
 }
 
-type PipelineTaskErrCtx struct {
+type ErrorContext struct {
 	StartTime time.Time `json:"startTime"`
 	EndTime   time.Time `json:"endTime"`
 	Count     uint64    `json:"count"`
 }
 
-func (c *PipelineTaskErrCtx) CalculateFrequencyPerHour() uint64 {
+func (c *ErrorContext) CalculateFrequencyPerHour() uint64 {
 	if c.StartTime.IsZero() || c.EndTime.IsZero() || c.EndTime.Sub(c.StartTime) <= time.Hour {
 		return c.Count
 	}

@@ -32,7 +32,7 @@ func Test_overwriteTaskWithLatest(t *testing.T) {
 	pm1 := monkey.PatchInstanceMethod(reflect.TypeOf(client), "GetPipelineTask", func(_ *dbclient.Client, id interface{}) (spec.PipelineTask, error) {
 		return spec.PipelineTask{
 			ID: 1,
-			Result: &taskresult.PipelineTaskResult{
+			Result: &taskresult.Result{
 				Metadata: metadata.Metadata{
 					{
 						Name:  "result",
