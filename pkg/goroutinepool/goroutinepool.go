@@ -45,7 +45,6 @@ type worker struct {
 }
 
 func (w *worker) run() {
-	w.pool.Add(1)
 	for {
 		w.pool.addIdleWorker(w)
 		select {
@@ -98,11 +97,13 @@ func (p *GoroutinePool) Start() {
 		for i := 0; i < p.cap; i++ {
 			w := &worker{pool: p, job: make(chan func()), stop: make(chan struct{}, 1)}
 			p.allWorkers = append(p.allWorkers, w)
+			w.pool.Add(1)
 			go w.run()
 		}
 	} else {
 		p.workers = make(chan *worker, p.cap)
 		for _, w := range p.allWorkers {
+			w.pool.Add(1)
 			go w.run()
 		}
 	}
