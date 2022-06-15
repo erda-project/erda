@@ -23,8 +23,8 @@ import (
 
 	"github.com/c2h5oh/datasize"
 
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/actionagent/filewatch"
+	"github.com/erda-project/erda/internal/tools/pipeline/pkg/taskerror"
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/taskinspect"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
@@ -133,14 +133,14 @@ func (agent *Agent) AppendError(err error) {
 	agent.Errs = append(agent.Errs, err)
 }
 
-func (agent *Agent) MergeErrors() []apistructs.ErrorResponse {
+func (agent *Agent) MergeErrors() taskerror.OrderedErrors {
 	if len(agent.Errs) == 0 {
 		return nil
 	}
 	agent.ExitCode = 1
-	var errs []apistructs.ErrorResponse
+	var errs taskerror.OrderedErrors
 	for _, err := range agent.Errs {
-		errs = append(errs, apistructs.ErrorResponse{Msg: err.Error()})
+		errs = append(errs, &taskerror.Error{Msg: err.Error()})
 	}
 	return errs
 }

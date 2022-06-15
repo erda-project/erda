@@ -33,29 +33,29 @@ import (
 
 func TestAppendPipelineTaskResult(t *testing.T) {
 	cb := apistructs.ActionCallback{
-		Errors: []apistructs.ErrorResponse{
-			apistructs.ErrorResponse{Msg: "a"},
-			apistructs.ErrorResponse{Msg: "b"},
-			apistructs.ErrorResponse{Msg: "a"},
-			apistructs.ErrorResponse{Msg: "a"},
+		Errors: taskerror.OrderedErrors{
+			&taskerror.Error{Msg: "a"},
+			&taskerror.Error{Msg: "b"},
+			&taskerror.Error{Msg: "a"},
+			&taskerror.Error{Msg: "a"},
 		},
 	}
 
 	task := &spec.PipelineTask{
-		Inspect: taskinspect.PipelineTaskInspect{
-			Errors: []*taskerror.PipelineTaskErrResponse{
-				&taskerror.PipelineTaskErrResponse{Msg: "a"},
+		Inspect: taskinspect.Inspect{
+			Errors: []*taskerror.Error{
+				&taskerror.Error{Msg: "a"},
 			},
 		},
 	}
 
-	newTaskErrors := make([]*taskerror.PipelineTaskErrResponse, 0)
+	newTaskErrors := make([]*taskerror.Error, 0)
 	for _, e := range cb.Errors {
-		newTaskErrors = append(newTaskErrors, &taskerror.PipelineTaskErrResponse{
+		newTaskErrors = append(newTaskErrors, &taskerror.Error{
 			Msg: e.Msg,
 		})
 	}
-	task.Inspect.Errors = task.Inspect.AppendError(newTaskErrors...)
+	task.Inspect.Errors = task.Inspect.Errors.AppendError(newTaskErrors...)
 
 	assert.Equal(t, 3, len(task.Inspect.Errors))
 }
@@ -73,12 +73,12 @@ func TestDealPipelineCallbackOfAction(t *testing.T) {
 	})
 	defer m2.Unpatch()
 
-	m3 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "UpdatePipelineTaskMetadata", func(_ *dbclient.Client, id uint64, result *taskresult.PipelineTaskResult) error {
+	m3 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "UpdatePipelineTaskMetadata", func(_ *dbclient.Client, id uint64, result *taskresult.Result) error {
 		return nil
 	})
 	defer m3.Unpatch()
 
-	m4 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "UpdatePipelineTaskInspect", func(_ *dbclient.Client, id uint64, inspect taskinspect.PipelineTaskInspect) error {
+	m4 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "UpdatePipelineTaskInspect", func(_ *dbclient.Client, id uint64, inspect taskinspect.Inspect) error {
 		return nil
 	})
 	defer m4.Unpatch()

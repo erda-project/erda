@@ -116,7 +116,7 @@ func (s *PipelineSvc) Detail(pipelineID uint64) (*apistructs.PipelineDetailDTO, 
 			}
 			task.CostTimeSec = costtimeutil.CalculateTaskCostTimeSec(&task)
 			if task.Result == nil {
-				task.Result = &taskresult.PipelineTaskResult{}
+				task.Result = &taskresult.Result{}
 				task.Result.Metadata = make([]metadata.MetadataField, 0)
 			}
 			// add task events to result metadata if task status isn`t success and events it`s failed

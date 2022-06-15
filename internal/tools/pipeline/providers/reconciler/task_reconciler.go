@@ -204,7 +204,7 @@ func (tr *defaultTaskReconciler) ReconcileNormalTask(ctx context.Context, p *spe
 		if err != nil {
 			msg := fmt.Sprintf("failed to get task executor(auto retry), pipelineID: %d, taskID: %d, taskName: %s, err: %v", p.ID, task.ID, task.Name, err)
 			tr.log.Error(msg)
-			task.Inspect.Errors = task.Inspect.AppendError(&taskerror.PipelineTaskErrResponse{Msg: msg})
+			task.Inspect.Errors = task.Inspect.Errors.AppendError(&taskerror.Error{Msg: msg})
 			if err := tr.dbClient.UpdatePipelineTaskInspect(task.ID, task.Inspect); err != nil {
 				tr.log.Errorf("failed to append last message while get executor failed(auto retry), pipelineID: %d, taskID: %d, taskName: %s, err: %v", p.ID, task.ID, task.Name, err)
 			}

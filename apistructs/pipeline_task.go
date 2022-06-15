@@ -36,13 +36,13 @@ type PipelineTaskDTO struct {
 	PipelineID uint64 `json:"pipelineID"`
 	StageID    uint64 `json:"stageID"`
 
-	Name   string                        `json:"name"`
-	OpType string                        `json:"opType"`         // get, put, task
-	Type   string                        `json:"type,omitempty"` // git, buildpack, release, dice ... 当 OpType 为自定义任务时为空
-	Status PipelineStatus                `json:"status"`
-	Extra  PipelineTaskExtra             `json:"extra"`
-	Labels map[string]string             `json:"labels"`
-	Result taskresult.PipelineTaskResult `json:"result"`
+	Name   string                  `json:"name"`
+	OpType string                  `json:"opType"`         // get, put, task
+	Type   string                  `json:"type,omitempty"` // git, buildpack, release, dice ... 当 OpType 为自定义任务时为空
+	Status PipelineStatus          `json:"status"`
+	Extra  PipelineTaskExtra       `json:"extra"`
+	Labels map[string]string       `json:"labels"`
+	Result taskresult.LegacyResult `json:"result"`
 
 	IsSnippet             bool                       `json:"isSnippet"`
 	SnippetPipelineID     *uint64                    `json:"snippetPipelineID,omitempty"`

@@ -21,6 +21,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/conf"
+	"github.com/erda-project/erda/internal/tools/pipeline/pkg/taskerror"
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/taskinspect"
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/taskresult"
 	"github.com/erda-project/erda/pkg/encoding/jsonparse"
@@ -38,15 +39,15 @@ type PipelineTask struct {
 	PipelineID uint64 `json:"pipelineID"`
 	StageID    uint64 `json:"stageID"`
 
-	Name         string                          `json:"name"`
-	OpType       PipelineTaskOpType              `json:"opType"`         // Deprecated: get, put, task
-	Type         string                          `json:"type,omitempty"` // git, buildpack, release, dice ... 当 OpType 为自定义任务时为空
-	ExecutorKind PipelineTaskExecutorKind        `json:"executorKind"`   // scheduler, memory
-	Status       apistructs.PipelineStatus       `json:"status"`
-	Extra        PipelineTaskExtra               `json:"extra" xorm:"json"`
-	Context      PipelineTaskContext             `json:"context" xorm:"json"`
-	Result       *taskresult.PipelineTaskResult  `json:"result" xorm:"json"`
-	Inspect      taskinspect.PipelineTaskInspect `json:"inspect" xorm:"json"`
+	Name         string                    `json:"name"`
+	OpType       PipelineTaskOpType        `json:"opType"`         // Deprecated: get, put, task
+	Type         string                    `json:"type,omitempty"` // git, buildpack, release, dice ... 当 OpType 为自定义任务时为空
+	ExecutorKind PipelineTaskExecutorKind  `json:"executorKind"`   // scheduler, memory
+	Status       apistructs.PipelineStatus `json:"status"`
+	Extra        PipelineTaskExtra         `json:"extra" xorm:"json"`
+	Context      PipelineTaskContext       `json:"context" xorm:"json"`
+	Result       *taskresult.Result        `json:"result" xorm:"json"`
+	Inspect      taskinspect.Inspect       `json:"inspect" xorm:"json"`
 
 	IsSnippet             bool                                  `json:"isSnippet"`                         // 该节点是否是嵌套流水线节点
 	SnippetPipelineID     *uint64                               `json:"snippetPipelineID"`                 // 嵌套的流水线 id
@@ -308,11 +309,10 @@ func (pt *PipelineTask) Convert2DTO() *apistructs.PipelineTaskDTO {
 		SnippetPipelineDetail: pt.SnippetPipelineDetail,
 	}
 	task.Result.Metadata = pt.GetMetadata()
-	pt.Inspect.ConvertErrors()
 	task.Result.MachineStat = pt.Inspect.MachineStat
 	task.Result.Inspect = pt.Inspect.Inspect
 	task.Result.Events = pt.Inspect.Events
-	task.Result.Errors = pt.Inspect.Errors
+	task.Result.Errors = pt.MergeErrors()
 	// handle metadata
 	for _, field := range task.Result.Metadata {
 		field.Level = field.GetLevel()
@@ -356,6 +356,16 @@ func (pt *PipelineTask) GetMetadata() metadata.Metadata {
 		return metadata.Metadata{}
 	}
 	return pt.Result.Metadata
+}
+
+func (pt *PipelineTask) MergeErrors() taskerror.OrderedErrors {
+	o := make(taskerror.OrderedErrors, 0)
+	o = append(o, pt.Inspect.Errors...)
+	if pt.Result != nil {
+		o = append(o, pt.Result.Errors...)
+	}
+	o.ConvertErrors()
+	return o
 }
 
 type ExecutorDoneChanData struct {
