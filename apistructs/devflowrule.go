@@ -77,6 +77,17 @@ func (f *DevFlowRule) MakeBranchRules() ([]*BranchRule, error) {
 			Workspace:         v.Environment,
 			ArtifactWorkspace: "",
 		})
+		if v.AutoMergeBranch != "" {
+			rules = append(rules, &BranchRule{
+				ScopeType:         "project",
+				ScopeID:           int64(f.ProjectID),
+				Rule:              v.AutoMergeBranch,
+				IsProtect:         false,
+				IsTriggerPipeline: false,
+				NeedApproval:      false,
+				Workspace:         v.Environment,
+			})
+		}
 	}
 	return rules, nil
 }

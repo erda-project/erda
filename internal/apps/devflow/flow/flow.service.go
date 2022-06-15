@@ -336,7 +336,8 @@ func (s *Service) MergeToTempBranch(ctx context.Context, tempBranch string, appI
 		req.JoinTempBranchStatus = apistructs.JoinTempBranchFailedStatus + err.Error()
 	} else {
 		req.JoinTempBranchStatus = apistructs.JoinTempBranchSuccessStatus
-		*req.IsJoinTempBranch = true
+		isJoinTempBranch := true
+		req.IsJoinTempBranch = &isJoinTempBranch
 	}
 	operationErr := s.p.bdl.OperationTempBranch(appID, apis.GetUserID(ctx), req)
 	if operationErr != nil {
@@ -629,23 +630,24 @@ func (s *Service) GetDevFlowInfo(ctx context.Context, req *pb.GetDevFlowInfoRequ
 			appDto := appInfoMap[extra.AppID]
 			repoPath := filepath.Join(gittarPrefixOpenApi, appDto.ProjectName, appDto.Name)
 
-			var branch string
-			var commitID string
-			var changeBranches []*pb.ChangeBranch
-			var infos []*pb.PipelineStepInfo
+			var (
+				branch          string
+				commitID        string
+				changeBranches  []*pb.ChangeBranch
+				infos           []*pb.PipelineStepInfo
+				node            *apistructs.UnifiedFileTreeNode
+				hasOnPushBranch bool
+			)
 
 			changeBranches = appTempBranchChangeBranchListMap[appDto.ID][mrInfo.TargetBranch]
 
 			if mrInfo.IsJoinTempBranch {
 				branch = targetBranchTempBranchMap[mrInfo.TargetBranch]
 				commitID = appTempBranchCommitMap[appDto.ID][branch].ID
-			} else {
-				branch = mrInfo.SourceBranch
-				commitID = mrInfo.SourceSha
-			}
-			infos, err = s.listPipelineStepInfo(ctx, &appDto, branch, diceworkspace.GetValidBranchByGitReference(branch, rules).Workspace, commitID)
-			if err != nil {
-				return err
+				infos, node, hasOnPushBranch, err = s.listPipelineStepInfo(ctx, &appDto, branch, diceworkspace.GetValidBranchByGitReference(branch, rules).Workspace, commitID)
+				if err != nil {
+					return err
+				}
 			}
 			branchDetail, err := s.p.bdl.GetGittarBranchDetail(repoPath, apis.GetOrgID(ctx), mrInfo.SourceBranch, apis.GetUserID(ctx))
 			if err != nil {
@@ -657,6 +659,13 @@ func (s *Service) GetDevFlowInfo(ctx context.Context, req *pb.GetDevFlowInfoRequ
 			devFlowInfo.Commit = commitID
 			devFlowInfo.PipelineStepInfos = infos
 			devFlowInfo.HasPermission = true
+			if mrInfo.IsJoinTempBranch {
+				devFlowInfo.PInode = base64.URLEncoding.EncodeToString([]byte(fmt.Sprintf("%v/%v/tree/%v", appInfoMap[extra.AppID].ProjectID, extra.AppID, targetBranchTempBranchMap[mrInfo.TargetBranch])))
+			}
+			if node != nil {
+				devFlowInfo.Inode = node.Inode
+			}
+			devFlowInfo.HasOnPushBranch = hasOnPushBranch
 
 			devFlowInfo.DevFlowNode = &pb.DevFlowNode{
 				RepoMergeID:          extra.RepoMergeID,
@@ -773,8 +782,12 @@ func (s *Service) queryAllPipelineYmlAndDoFunc(ctx context.Context, appDto *apis
 	return worker.Do().Error()
 }
 
-func (s *Service) listPipelineStepInfo(ctx context.Context, appDto *apistructs.ApplicationDTO, branch string, workSpace string, commit string) ([]*pb.PipelineStepInfo, error) {
-	var infos []*pb.PipelineStepInfo
+func (s *Service) listPipelineStepInfo(ctx context.Context, appDto *apistructs.ApplicationDTO, branch string, workSpace string, commit string) ([]*pb.PipelineStepInfo, *apistructs.UnifiedFileTreeNode, bool, error) {
+	var (
+		infos           []*pb.PipelineStepInfo
+		treeNode        *apistructs.UnifiedFileTreeNode
+		HasOnPushBranch bool
+	)
 	err := s.queryAllPipelineYmlAndDoFunc(ctx, appDto, branch, func(ctx context.Context, locker *limit_sync_group.Locker, content string, node *apistructs.UnifiedFileTreeNode) error {
 		pipelineYml, err := pipelineyml.New([]byte(content))
 		if err != nil {
@@ -782,7 +795,9 @@ func (s *Service) listPipelineStepInfo(ctx context.Context, appDto *apistructs.A
 			return nil
 		}
 
-		if !pipelineYml.HasOnPushBranch(branch) {
+		treeNode = node
+		HasOnPushBranch = pipelineYml.HasOnPushBranch(branch)
+		if !HasOnPushBranch {
 			return nil
 		}
 
@@ -822,9 +837,9 @@ func (s *Service) listPipelineStepInfo(ctx context.Context, appDto *apistructs.A
 		return nil
 	})
 	if err != nil {
-		return nil, err
+		return nil, nil, false, err
 	}
-	return infos, nil
+	return infos, treeNode, HasOnPushBranch, nil
 }
 
 func getFullYmlName(parseInode string, ymlName string) string {
