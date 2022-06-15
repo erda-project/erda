@@ -85,7 +85,7 @@ func (p *provider) InitFlows() db.Flows {
 			ChangeFromBranch: "develop",
 			ChangeBranch:     "feature/*,bugfix/*",
 			EnableAutoMerge:  false,
-			AutoMergeBranch:  "next_develop",
+			AutoMergeBranch:  "next/develop",
 			Artifact:         "alpha",
 			Environment:      "DEV",
 			StartWorkflowHints: []db.StartWorkflowHint{
