@@ -33,11 +33,11 @@ import (
 
 func TestAppendPipelineTaskResult(t *testing.T) {
 	cb := apistructs.ActionCallback{
-		Errors: []apistructs.ErrorResponse{
-			apistructs.ErrorResponse{Msg: "a"},
-			apistructs.ErrorResponse{Msg: "b"},
-			apistructs.ErrorResponse{Msg: "a"},
-			apistructs.ErrorResponse{Msg: "a"},
+		Errors: taskerror.OrderedErrors{
+			&taskerror.Error{Msg: "a"},
+			&taskerror.Error{Msg: "b"},
+			&taskerror.Error{Msg: "a"},
+			&taskerror.Error{Msg: "a"},
 		},
 	}
 
@@ -55,7 +55,7 @@ func TestAppendPipelineTaskResult(t *testing.T) {
 			Msg: e.Msg,
 		})
 	}
-	task.Inspect.Errors = task.Inspect.AppendError(newTaskErrors...)
+	task.Inspect.Errors = task.Inspect.Errors.AppendError(newTaskErrors...)
 
 	assert.Equal(t, 3, len(task.Inspect.Errors))
 }

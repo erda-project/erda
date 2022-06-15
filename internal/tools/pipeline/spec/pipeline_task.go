@@ -361,7 +361,9 @@ func (pt *PipelineTask) GetMetadata() metadata.Metadata {
 func (pt *PipelineTask) MergeErrors() taskerror.OrderedErrors {
 	o := make(taskerror.OrderedErrors, 0)
 	o = append(o, pt.Inspect.Errors...)
-	o = append(o, pt.Result.Errors...)
+	if pt.Result != nil {
+		o = append(o, pt.Result.Errors...)
+	}
 	o.ConvertErrors()
 	return o
 }
