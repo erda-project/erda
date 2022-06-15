@@ -19,6 +19,7 @@ import (
 
 	"github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
 	"github.com/erda-project/erda/internal/apps/msp/apm/trace/query/commom/custom"
+	"github.com/erda-project/erda/pkg/common/apis"
 )
 
 type TraceSource interface {
@@ -35,3 +36,7 @@ type (
 		Count       uint64  `ch:"trace_count"`
 	}
 )
+
+func getOrgName(ctx context.Context) string {
+	return apis.GetHeader(ctx, "org")
+}

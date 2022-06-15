@@ -133,7 +133,10 @@ func (chs *ClickhouseSource) GetTraceReqDistribution(ctx context.Context, model 
 
 	var where bytes.Buffer
 	// trace id condition
-	where.WriteString(fmt.Sprintf("WHERE toUnixTimestamp64Milli(start_time) >= %v AND toUnixTimestamp64Milli(end_time) <= %v ", model.StartTime, model.EndTime))
+	where.WriteString(fmt.Sprintf("WHERE start_time >= fromUnixTimestamp64Milli(toInt64(%d)) AND end_time <= fromUnixTimestamp64Milli(toInt64(%d)) ", model.StartTime, model.EndTime))
+	if v := getOrgName(ctx); v != "" {
+		where.WriteString(fmt.Sprintf("AND org_name='%s' ", v))
+	}
 
 	if model.TraceId != "" {
 		where.WriteString("AND trace_id LIKE concat('%','" + model.TraceId + "','%') ")
@@ -183,7 +186,11 @@ func (chs *ClickhouseSource) GetTraces(ctx context.Context, req *pb.GetTracesReq
 		"GROUP BY trace_id %s LIMIT %v OFFSET %v"
 	var where bytes.Buffer
 	// trace id condition
-	where.WriteString(fmt.Sprintf("WHERE toUnixTimestamp64Milli(start_time) >= %v AND toUnixTimestamp64Milli(end_time) <= %v ", req.StartTime, req.EndTime))
+	where.WriteString(fmt.Sprintf("WHERE start_time >= fromUnixTimestamp64Milli(toInt64(%d)) AND end_time <= fromUnixTimestamp64Milli(toInt64(%d)) ", req.StartTime, req.EndTime))
+
+	if v := getOrgName(ctx); v != "" {
+		where.WriteString(fmt.Sprintf("AND org_name='%s' ", v))
+	}
 
 	if req.TraceID != "" {
 		where.WriteString("AND trace_id LIKE concat('%','" + req.TraceID + "','%') ")
