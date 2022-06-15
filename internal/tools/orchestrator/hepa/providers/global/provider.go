@@ -20,6 +20,7 @@ import (
 	"github.com/erda-project/erda-infra/pkg/transport"
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda-proto-go/core/hepa/global/pb"
+	tenantpb "github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common"
 	apiI "github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/endpoint_api/impl"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/global/impl"
@@ -35,6 +36,7 @@ type provider struct {
 	Log           logs.Logger
 	Register      transport.Register
 	ClusterSvc    clusterpb.ClusterServiceServer `autowired:"erda.core.clustermanager.cluster.ClusterService"`
+	TenantSvc     tenantpb.TenantServiceServer   `autowired:"erda.msp.tenant.TenantService"`
 	globalService *globalService
 }
 
@@ -44,7 +46,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	if err != nil {
 		return err
 	}
-	err = impl.NewGatewayGlobalServiceImpl(p.ClusterSvc)
+	err = impl.NewGatewayGlobalServiceImpl(p.ClusterSvc, p.TenantSvc)
 	if err != nil {
 		return err
 	}

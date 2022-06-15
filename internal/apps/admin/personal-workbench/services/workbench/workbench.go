@@ -16,12 +16,16 @@ package workbench
 
 import (
 	"github.com/erda-project/erda-infra/providers/i18n"
+	menupb "github.com/erda-project/erda-proto-go/msp/menu/pb"
+	projectpb "github.com/erda-project/erda-proto-go/msp/tenant/project/pb"
 	"github.com/erda-project/erda/bundle"
 )
 
 type Workbench struct {
-	bdl  *bundle.Bundle
-	tran i18n.Translator
+	bdl              *bundle.Bundle
+	tran             i18n.Translator
+	tenantProjectSvc projectpb.ProjectServiceServer
+	menuSvc          menupb.MenuServiceServer
 }
 
 type Option func(bench *Workbench)
@@ -44,5 +48,17 @@ func WithBundle(bdl *bundle.Bundle) Option {
 func WithTranslator(tran i18n.Translator) Option {
 	return func(w *Workbench) {
 		w.tran = tran
+	}
+}
+
+func WithProjectSvc(tenantProjectSvc projectpb.ProjectServiceServer) Option {
+	return func(w *Workbench) {
+		w.tenantProjectSvc = tenantProjectSvc
+	}
+}
+
+func WithMenuSvc(menuSvc menupb.MenuServiceServer) Option {
+	return func(w *Workbench) {
+		w.menuSvc = menuSvc
 	}
 }

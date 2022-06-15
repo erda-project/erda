@@ -23,6 +23,8 @@ import (
 	componentprotocol "github.com/erda-project/erda-infra/providers/component-protocol"
 	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
 	"github.com/erda-project/erda-infra/providers/i18n"
+	menupb "github.com/erda-project/erda-proto-go/msp/menu/pb"
+	projectpb "github.com/erda-project/erda-proto-go/msp/tenant/project/pb"
 	"github.com/erda-project/erda/bundle"
 	_ "github.com/erda-project/erda/internal/apps/admin/personal-workbench/component-protocol/components"
 	"github.com/erda-project/erda/internal/apps/admin/personal-workbench/services/workbench"
@@ -44,10 +46,12 @@ type Config struct {
 type provider struct {
 	Config Config
 
-	Log      logs.Logger
-	Protocol componentprotocol.Interface
-	CPTran   i18n.I18n       `autowired:"i18n@personal-workbench"`
-	Tran     i18n.Translator `translator:"common"`
+	Log              logs.Logger
+	Protocol         componentprotocol.Interface
+	CPTran           i18n.I18n                      `autowired:"i18n@personal-workbench"`
+	Tran             i18n.Translator                `translator:"common"`
+	TenantProjectSvc projectpb.ProjectServiceServer `autowired:"erda.msp.tenant.project.ProjectService"`
+	MenuSvc          menupb.MenuServiceServer       `autowired:"erda.msp.menu.MenuService"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -76,7 +80,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		return err
 	}
 	p.Protocol.SetI18nTran(p.CPTran)
-	wb := workbench.New(workbench.WithBundle(bdl))
+	wb := workbench.New(workbench.WithBundle(bdl), workbench.WithProjectSvc(p.TenantProjectSvc), workbench.WithMenuSvc(p.MenuSvc))
 	p.Protocol.WithContextValue(types.Workbench, wb)
 	p.Protocol.WithContextValue(types.GlobalCtxKeyBundle, bdl)
 	protocol.MustRegisterProtocolsFromFS(scenarioFS)
