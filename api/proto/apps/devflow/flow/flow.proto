@@ -144,6 +144,9 @@ message DevFlowInfo {
     repeated PipelineStepInfo pipelineStepInfos = 3;
     string commit = 4;
     bool hasPermission = 5;
+    string inode = 6;
+    string pInode = 7;
+    bool hasOnPushBranch = 8;
 }
 
 message GetDevFlowInfoResponse {
