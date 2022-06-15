@@ -28,7 +28,6 @@ import (
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/taskerror"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/leaderworker/lwctx"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/reconciler/rlog"
-	"github.com/erda-project/erda/pkg/loop"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -170,10 +169,6 @@ func (tr *TaskRun) waitOp(itr TaskOp, o *Elem) (result error) {
 		}
 
 	case <-o.TimeoutCh:
-		// 超时需要手动更新 task
-		_ = loop.New(loop.WithDeclineRatio(2), loop.WithDeclineLimit(time.Minute)).
-			Do(func() (bool, error) { return tr.fetchLatestTask() == nil, nil })
-
 		tr.LogStep(itr.Op(), "begin do WhenTimeout")
 		defer tr.LogStep(itr.Op(), "end do WhenTimeout")
 		if err := itr.WhenTimeout(); err != nil {
