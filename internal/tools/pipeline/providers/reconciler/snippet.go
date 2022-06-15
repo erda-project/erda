@@ -36,7 +36,7 @@ func (tr *defaultTaskReconciler) CreateSnippetPipeline(ctx context.Context, p *s
 	defer func() {
 		if failedError != nil {
 			err = failedError
-			task.Inspect.Errors = append(task.Inspect.Errors, &taskerror.PipelineTaskErrResponse{
+			task.Inspect.Errors = append(task.Inspect.Errors, &taskerror.Error{
 				Msg: err.Error(),
 			})
 			task.Status = apistructs.PipelineStatusFailed
@@ -145,7 +145,7 @@ func (tr *defaultTaskReconciler) handleParentSnippetTaskOutputs(snippetPipeline 
 	// update result.metadata for value-context reference
 	for _, outputValue := range snippetPipeline.Snapshot.OutputValues {
 		if parentTask.Result == nil {
-			parentTask.Result = &taskresult.PipelineTaskResult{Metadata: metadata.Metadata{}}
+			parentTask.Result = &taskresult.Result{Metadata: metadata.Metadata{}}
 		}
 		parentTask.Result.Metadata = append(parentTask.Result.Metadata, metadata.MetadataField{
 			Name:  outputValue.Name,

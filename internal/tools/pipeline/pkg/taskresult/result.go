@@ -20,11 +20,25 @@ import (
 	"github.com/erda-project/erda/pkg/metadata"
 )
 
-// PipelineTaskResult spec.pipeline task only use metadata, task dto has all fields
-type PipelineTaskResult struct {
-	Metadata    metadata.Metadata                    `json:"metadata,omitempty"`
-	Errors      []*taskerror.PipelineTaskErrResponse `json:"errors,omitempty"`
+type Result struct {
+	// Metadata stores meta from callback.
+	Metadata metadata.Metadata `json:"metadata,omitempty"`
+
+	// Errors stores from callback, not pipeline internal(like reconciler).
+	// For internal errors, use taskinspect.Inspect.Errors.
+	Errors taskerror.OrderedErrors `json:"errors,omitempty"`
+}
+
+type LegacyResult struct {
+	Result
+
+	// Below fields combined from task inspect now.
+	// Exists just for exhibition.
+
+	// Deprecated
 	MachineStat *taskinspect.PipelineTaskMachineStat `json:"machineStat,omitempty"`
-	Inspect     string                               `json:"inspect,omitempty"`
-	Events      string                               `json:"events,omitempty"`
+	// Deprecated
+	Inspect string `json:"inspect,omitempty"`
+	// Deprecated
+	Events string `json:"events,omitempty"`
 }

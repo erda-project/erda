@@ -79,7 +79,7 @@ func (pre *prepare) WhenDone(data interface{}) error {
 	// no need retry
 	if err != nil {
 		pre.Task.Status = apistructs.PipelineStatusAnalyzeFailed
-		pre.Task.Inspect.Errors = pre.Task.Inspect.AppendError(&taskerror.PipelineTaskErrResponse{Msg: err.Error()})
+		pre.Task.Inspect.Errors = pre.Task.Inspect.Errors.AppendError(&taskerror.Error{Msg: err.Error()})
 		return nil
 	}
 
@@ -740,13 +740,13 @@ func condition(task *spec.PipelineTask) bool {
 	if sign.Err != nil {
 		task.Status = apistructs.PipelineStatusFailed
 		if sign.Err != nil {
-			task.Inspect.Errors = task.Inspect.AppendError(&taskerror.PipelineTaskErrResponse{
+			task.Inspect.Errors = task.Inspect.Errors.AppendError(&taskerror.Error{
 				Msg: sign.Err.Error(),
 			})
 		}
 
 		if sign.Msg != "" {
-			task.Inspect.Errors = task.Inspect.AppendError(&taskerror.PipelineTaskErrResponse{
+			task.Inspect.Errors = task.Inspect.Errors.AppendError(&taskerror.Error{
 				Msg: sign.Msg,
 			})
 		}
@@ -756,13 +756,13 @@ func condition(task *spec.PipelineTask) bool {
 	if sign.Sign == expression.TaskJumpOver {
 		task.Status = apistructs.PipelineStatusNoNeedBySystem
 		if sign.Err != nil {
-			task.Inspect.Errors = task.Inspect.AppendError(&taskerror.PipelineTaskErrResponse{
+			task.Inspect.Errors = task.Inspect.Errors.AppendError(&taskerror.Error{
 				Msg: sign.Err.Error(),
 			})
 		}
 
 		if sign.Msg != "" {
-			task.Inspect.Errors = task.Inspect.AppendError(&taskerror.PipelineTaskErrResponse{
+			task.Inspect.Errors = task.Inspect.Errors.AppendError(&taskerror.Error{
 				Msg: sign.Msg,
 			})
 		}

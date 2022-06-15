@@ -269,7 +269,7 @@ func (c *Clusters) MonitorCloudCluster() (abort bool, err error) {
 					break
 				}
 				if task.Status.IsSuccessStatus() && task.Name == "diceInstall" {
-					_ = c.processSuccessPipeline(task.Result, record)
+					_ = c.processSuccessPipeline(task.Result.Result, record)
 				}
 			}
 		}
@@ -302,7 +302,7 @@ func (c *Clusters) processFailedPipeline(ctx context.Context, record dbclient.Re
 	return nil
 }
 
-func (c *Clusters) processSuccessPipeline(pTaskResult taskresult.PipelineTaskResult, record dbclient.Record) error {
+func (c *Clusters) processSuccessPipeline(pTaskResult taskresult.Result, record dbclient.Record) error {
 	req := &clusterpb.CreateClusterRequest{}
 	// get cluster info from pipeline result
 	for _, m := range pTaskResult.Metadata {

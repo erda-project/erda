@@ -146,7 +146,7 @@ func (client *Client) ListPipelineTasksByPipelineID(pipelineID uint64, ops ...Se
 	return tasks, nil
 }
 
-func (client *Client) UpdatePipelineTaskMetadata(id uint64, result *taskresult.PipelineTaskResult) error {
+func (client *Client) UpdatePipelineTaskMetadata(id uint64, result *taskresult.Result) error {
 	_, err := client.ID(id).Cols("result").Update(&spec.PipelineTask{Result: result})
 	if err != nil {
 		b, _ := json.Marshal(&result)
@@ -155,7 +155,7 @@ func (client *Client) UpdatePipelineTaskMetadata(id uint64, result *taskresult.P
 	return nil
 }
 
-func (client *Client) UpdatePipelineTaskInspect(id uint64, inspect taskinspect.PipelineTaskInspect) error {
+func (client *Client) UpdatePipelineTaskInspect(id uint64, inspect taskinspect.Inspect) error {
 	_, err := client.ID(id).Cols("inspect").Update(&spec.PipelineTask{Inspect: inspect})
 	if err != nil {
 		b, _ := json.Marshal(&inspect)

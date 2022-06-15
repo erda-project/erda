@@ -45,7 +45,7 @@ func Test_fulfillParentSnippetTask(t *testing.T) {
 	monkey.PatchInstanceMethod(reflect.TypeOf(dbClient), "UpdatePipelineTaskSnippetDetail", func(_ *dbclient.Client, id uint64, snippetDetail apistructs.PipelineTaskSnippetDetail, ops ...dbclient.SessionOption) error {
 		return nil
 	})
-	monkey.PatchInstanceMethod(reflect.TypeOf(dbClient), "UpdatePipelineTaskMetadata", func(_ *dbclient.Client, id uint64, result *taskresult.PipelineTaskResult) error {
+	monkey.PatchInstanceMethod(reflect.TypeOf(dbClient), "UpdatePipelineTaskMetadata", func(_ *dbclient.Client, id uint64, result *taskresult.Result) error {
 		return nil
 	})
 	defer monkey.UnpatchAll()
