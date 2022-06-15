@@ -35,6 +35,12 @@ func (tr *TaskRun) Update() {
 	// db
 	rlog.TDebugf(tr.Task.PipelineID, tr.Task.ID, "taskRun: start update task to db")
 	_ = loop.New(loop.WithDeclineRatio(2), loop.WithDeclineLimit(time.Second*10)).Do(func() (abort bool, err error) {
+		// task.Result is for external use, ignore this field for update.
+		// case:
+		//   - taskA continuously append meta pre 10s, and have 2 meta now.
+		//   - reconciler reboot, fetch the latest taskA with 2 meta and reconcile
+		//   - update task with 2 meta when reconcile done, and lose new meta between reconciler-reboot and task-reconcile-done
+		tr.Task.Result = nil
 		if err := tr.DBClient.UpdatePipelineTask(tr.Task.ID, tr.Task); err != nil {
 			rlog.TWarnf(tr.P.ID, tr.Task.ID, "failed to update taskRun, err: %v, will continue until update success", err)
 			return false, err
