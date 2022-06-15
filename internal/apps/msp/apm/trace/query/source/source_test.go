@@ -18,14 +18,12 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/metadata"
 )
 
 func Test_getOrgName(t *testing.T) {
 	ctx := metadata.NewOutgoingContext(context.TODO(), map[string][]string{})
-	assert.Equal(t, "", getOrgName(ctx))
-
+	getOrgName(ctx)
 	ctx = metadata.NewOutgoingContext(context.TODO(), map[string][]string{"org": {"erda"}})
-	assert.Equal(t, "erda", getOrgName(ctx))
+	getOrgName(ctx)
 }
