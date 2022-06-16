@@ -31,6 +31,7 @@ import (
 
 	"github.com/erda-project/erda-infra/pkg/transport"
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
+	tenantpb "github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/tools/orchestrator/components/addon/mysql"
@@ -83,6 +84,7 @@ type Addon struct {
 	instanceinfoImpl *instanceinfo.InstanceInfoImpl
 	clusterinfoImpl  clusterinfo.ClusterInfo
 	clusterSvc       clusterpb.ClusterServiceServer
+	tenantSvc        tenantpb.TenantServiceServer
 }
 
 // Option addon 实例对象配置选项
@@ -169,6 +171,12 @@ func WithClusterInfoImpl(instanceinfoImpl clusterinfo.ClusterInfo) Option {
 func WithClusterSvc(clusterSvc clusterpb.ClusterServiceServer) Option {
 	return func(a *Addon) {
 		a.clusterSvc = clusterSvc
+	}
+}
+
+func WithTenantSvc(tenantSvc tenantpb.TenantServiceServer) Option {
+	return func(a *Addon) {
+		a.tenantSvc = tenantSvc
 	}
 }
 

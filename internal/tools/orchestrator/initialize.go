@@ -174,6 +174,7 @@ func (p *provider) initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, e
 		addon.WithInstanceinfoImpl(instanceinfoImpl),
 		addon.WithClusterInfoImpl(scheduler.Httpendpoints.ClusterinfoImpl),
 		addon.WithClusterSvc(p.ClusterSvc),
+		addon.WithTenantSvc(p.TenantSvc),
 	)
 
 	// init runtime service
