@@ -108,7 +108,7 @@ func GetClusterStatus(kc *k8sclient.K8sClient, meta *clusterpb.ClusterInfo) (str
 	)
 
 	for _, selfLink := range checkCRDs {
-		res, err = kc.ClientSet.RESTClient().Get().
+		res, err = kc.ClientSet.Discovery().RESTClient().Get().
 			AbsPath(fmt.Sprintf(selfLink, conf.ErdaNamespace())).
 			DoRaw(context.Background())
 		if err != nil {

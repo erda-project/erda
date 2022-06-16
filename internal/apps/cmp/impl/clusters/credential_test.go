@@ -26,6 +26,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"k8s.io/client-go/kubernetes"
+	fakeclientset "k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/rest"
 
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
@@ -77,10 +78,7 @@ func (f *fakeClusterServiceServer) CreateCluster(context.Context, *clusterpb.Cre
 	return &clusterpb.CreateClusterResponse{}, nil
 }
 
-////go:generate mockgen -destination=./credential_ak_test.go -package clusters github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb AccessKeyServiceServer
-func Test_GetOrCreateAccessKey_Create(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+func getMockTokenServiceServer(ctrl *gomock.Controller) *MockTokenServiceServer {
 	akService := NewMockTokenServiceServer(ctrl)
 
 	akService.EXPECT().QueryTokens(gomock.Any(), gomock.Any()).AnyTimes().Return(&tokenpb.QueryTokensResponse{
@@ -90,7 +88,15 @@ func Test_GetOrCreateAccessKey_Create(t *testing.T) {
 	akService.EXPECT().CreateToken(gomock.Any(), gomock.Any()).AnyTimes().Return(&tokenpb.CreateTokenResponse{
 		Data: fakeAkItem,
 	}, nil)
+	return akService
+}
 
+////go:generate mockgen -destination=./credential_ak_test.go -package clusters github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb AccessKeyServiceServer
+func Test_GetOrCreateAccessKey_Create(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	akService := getMockTokenServiceServer(ctrl)
 	c := New(db, bdl, akService, &fakeClusterServiceServer{})
 
 	monkey.PatchInstanceMethod(reflect.TypeOf(c), "CheckCluster", func(_ *Clusters, _ context.Context, _ string) error {
@@ -168,4 +174,15 @@ func Test_ResetAccessKey_InCluster_Error(t *testing.T) {
 	c := New(db, bdl, nil, &fakeClusterServiceServer{})
 	_, err := c.ResetAccessKey(context.Background(), emptyClusterName)
 	assert.Equal(t, err, fmt.Errorf("get inCluster kubernetes client error: %s", csErr.Error()))
+}
+
+func Test_ResetAccessKeyWithClientSet(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	akService := getMockTokenServiceServer(ctrl)
+	c := New(db, bdl, akService, &fakeClusterServiceServer{})
+
+	_, err := c.ResetAccessKeyWithClientSet(context.Background(), fakeCluster, fakeclientset.NewSimpleClientset())
+	assert.NoError(t, err)
 }

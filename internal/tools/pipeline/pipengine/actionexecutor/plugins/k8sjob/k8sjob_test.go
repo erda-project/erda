@@ -25,6 +25,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/tools/pipeline/conf"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/clusterinfo"
 	"github.com/erda-project/erda/pkg/k8sclient"
 )
@@ -71,7 +72,7 @@ func Test_generateKubeJob(t *testing.T) {
 			ClientSet: fake.NewSimpleClientset(&corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      apistructs.BuildkitClientSecret,
-					Namespace: metav1.NamespaceDefault,
+					Namespace: conf.ErdaNamespace(),
 				},
 			}),
 		}, nil
