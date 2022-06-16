@@ -15,15 +15,20 @@
 package workbench
 
 import (
+	"context"
 	"fmt"
 	"runtime/debug"
 	"strconv"
 	"sync"
 
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc/metadata"
 
+	"github.com/erda-project/erda-infra/pkg/transport"
+	menupb "github.com/erda-project/erda-proto-go/msp/menu/pb"
 	projpb "github.com/erda-project/erda-proto-go/msp/tenant/project/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 type UrlParams struct {
@@ -247,24 +252,41 @@ func (w *Workbench) ListQueryProjWbData(identity apistructs.Identity, page apist
 // GetUrlCommonParams get url params used by icon
 func (w *Workbench) GetUrlCommonParams(userID, orgID string, projectIDs []uint64) (urlParams []UrlParams, err error) {
 	urlParams = make([]UrlParams, len(projectIDs))
-	projectDTO, err := w.bdl.GetMSPTenantProjects(userID, orgID, false, projectIDs)
+	ctx := transport.WithHeader(context.Background(), metadata.New(map[string]string{
+		httputil.InternalHeader: "admin",
+		httputil.UserHeader:     userID,
+		httputil.OrgHeader:      orgID,
+	}))
+	var pidList []string
+	for _, p := range projectIDs {
+		pidList = append(pidList, strconv.Itoa(int(p)))
+	}
+	resp, err := w.tenantProjectSvc.GetProjects(ctx, &projpb.GetProjectsRequest{
+		ProjectId: pidList,
+		WithStats: false,
+	})
 	if err != nil {
 		logrus.Errorf("failed to get msp tenant project , err: %v", err)
 		return
 	}
+	projectDTO := resp.Data
 	for i, project := range projectDTO {
-		var menues []*apistructs.MenuItem
+		var menues []*menupb.MenuItem
 		urlParams[i].Env = project.Relationship[len(project.Relationship)-1].Workspace
 		tenantId := project.Relationship[len(project.Relationship)-1].TenantID
 		urlParams[i].TenantGroup = tenantId
 		urlParams[i].AddonId = tenantId
 		pType := project.Type
 
-		menues, err = w.bdl.ListProjectsEnvAndTenantId(userID, orgID, tenantId, pType)
-		if err != nil || len(menues) == 0 {
+		resp, err := w.menuSvc.GetMenu(ctx, &menupb.GetMenuRequest{
+			TenantId: tenantId,
+			Type:     pType,
+		})
+		if err != nil || len(resp.Data) == 0 {
 			logrus.Errorf("failed to get env and tenant id ,err: %v", err)
 			continue
 		}
+		menues = resp.Data
 		if tg, ok := menues[len(menues)-1].Params["tenantGroup"]; ok {
 			urlParams[i].TenantGroup = tg
 		}
@@ -341,7 +363,7 @@ func (w *Workbench) GetMspUrlParamsMap(identity apistructs.Identity, projectIDs 
 
 // GetMspUrlParams get url params used by icon
 func (w *Workbench) GetMspUrlParams(userID, orgID string, project *projpb.Project) (urlParams UrlParams, err error) {
-	var menues []*apistructs.MenuItem
+	var menues []*menupb.MenuItem
 
 	urlParams.Env = project.Relationship[len(project.Relationship)-1].Workspace
 	tenantId := project.Relationship[len(project.Relationship)-1].TenantID
@@ -349,11 +371,20 @@ func (w *Workbench) GetMspUrlParams(userID, orgID string, project *projpb.Projec
 	urlParams.AddonId = tenantId
 	pType := project.Type
 
-	menues, err = w.bdl.ListProjectsEnvAndTenantId(userID, orgID, tenantId, pType)
-	if err != nil || len(menues) == 0 {
+	ctx := transport.WithHeader(context.Background(), metadata.New(map[string]string{
+		httputil.InternalHeader: "admin",
+		httputil.UserHeader:     userID,
+		httputil.OrgHeader:      orgID,
+	}))
+	resp, err := w.menuSvc.GetMenu(ctx, &menupb.GetMenuRequest{
+		TenantId: tenantId,
+		Type:     pType,
+	})
+	if err != nil || len(resp.Data) == 0 {
 		logrus.Errorf("failed to get env and tenant id ,err: %v", err)
 		return
 	}
+	menues = resp.Data
 	if tg, ok := menues[len(menues)-1].Params["tenantGroup"]; ok {
 		urlParams.TenantGroup = tg
 	}

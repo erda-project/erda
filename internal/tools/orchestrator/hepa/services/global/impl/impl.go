@@ -51,13 +51,14 @@ type GatewayGlobalServiceImpl struct {
 	packageBiz *endpoint_api.GatewayOpenapiService
 	reqCtx     context.Context
 	clusterSvc clusterpb.ClusterServiceServer
+	tenantSvc  pb.TenantServiceServer
 }
 
 var diceHealth *gw.DiceHealthDto = &gw.DiceHealthDto{Status: gw.DiceHealthOK}
 
 var once sync.Once
 
-func NewGatewayGlobalServiceImpl(clusterSvc clusterpb.ClusterServiceServer) (e error) {
+func NewGatewayGlobalServiceImpl(clusterSvc clusterpb.ClusterServiceServer, tenantSvc pb.TenantServiceServer) (e error) {
 	once.Do(
 		func() {
 			azDb, err := db.NewGatewayAzInfoServiceImpl()
@@ -75,6 +76,7 @@ func NewGatewayGlobalServiceImpl(clusterSvc clusterpb.ClusterServiceServer) (e e
 				packageBiz: &endpoint_api.Service,
 				kongDb:     kongDb,
 				clusterSvc: clusterSvc,
+				tenantSvc:  tenantSvc,
 			}
 			global.Service = &impl
 			go func() {
@@ -327,12 +329,19 @@ func encodeTenantGroup(projectId, env, clusterName, tenantGroupKey string) strin
 
 func (impl *GatewayGlobalServiceImpl) GenTenantGroup(projectId, env, clusterName string) (string, error) {
 	tenantGroup := encodeTenantGroup(projectId, env, clusterName, config.ServerConf.TenantGroupKey)
-	tenantID, err := bundle.Bundle.CreateMSPTenant(projectId, env, pb.Type_DOP.String(), tenantGroup)
+	resp, err := impl.tenantSvc.CreateTenant(context.Background(), &pb.CreateTenantRequest{
+		ProjectID:  projectId,
+		TenantType: pb.Type_DOP.String(),
+		Workspaces: []string{env},
+	})
 	if err != nil {
 		log.Errorf("error happened: %+v", err)
 		return "", err
 	}
-	return tenantID, nil
+	if len(resp.Data) <= 0 {
+		return tenantGroup, nil
+	}
+	return resp.Data[0].Id, nil
 }
 
 func (impl *GatewayGlobalServiceImpl) GetTenantGroup(projectId, env string) (res string, err error) {

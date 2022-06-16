@@ -15,6 +15,7 @@
 package addon
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"math/rand"
@@ -445,11 +446,19 @@ func (a *Addon) buildRealCreate(addonSpec *apistructs.AddonExtension, params *ap
 		params.ShareScope = addonSpec.ShareScopes[0]
 	}
 	tenantGroup := md5V(params.ProjectID + "_" + params.Workspace + "_" + params.ClusterName + conf.TenantGroupKey())
-	tenantID, err := a.bdl.CreateMSPTenant(params.ProjectID, params.Workspace, pb.Type_DOP.String(), tenantGroup)
+	resp, err := a.tenantSvc.CreateTenant(context.Background(), &pb.CreateTenantRequest{
+		ProjectID:  params.ProjectID,
+		TenantType: pb.Type_DOP.String(),
+		Workspaces: []string{params.Workspace},
+	})
 	if err != nil {
 		return err
 	}
-	params.Options["tenantGroup"] = tenantID
+	if len(resp.Data) <= 0 {
+		params.Options["tenantGroup"] = tenantGroup
+	} else {
+		params.Options["tenantGroup"] = resp.Data[0].Id
+	}
 	return nil
 }
 

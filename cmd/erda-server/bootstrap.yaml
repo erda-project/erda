@@ -42,3 +42,11 @@ gorm.v2:
   database: "${MYSQL_DATABASE}"
 
 erda.apps.gallery.easy-memory-cache:
+
+grpc-client@erda.msp.tanant.project:
+  addr: "${MSP_GRPC_ADDR:msp:7080}"
+erda.msp.tenant.project-client: {}
+
+grpc-client@erda.msp.menu:
+  addr: "${MSP_GRPC_ADDR:msp:7080}"
+erda.msp.menu-client: {}
