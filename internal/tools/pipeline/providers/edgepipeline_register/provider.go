@@ -34,6 +34,11 @@ import (
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/leaderworker"
 )
 
+const (
+	EnvIsEdgePipeline   = "IS_EDGE_PIPELINE"
+	EnvEdgePipelineAddr = "PIPELINE_ADDR"
+)
+
 type Config struct {
 	IsEdge                       bool          `env:"DICE_IS_EDGE" default:"false"`
 	ErdaNamespace                string        `env:"DICE_NAMESPACE"`

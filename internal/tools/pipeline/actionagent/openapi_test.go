@@ -19,7 +19,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/edgepipeline_register"
 )
 
 func Test_getOpenAPIInfo(t *testing.T) {
@@ -67,9 +67,9 @@ func Test_getOpenAPIInfo(t *testing.T) {
 			Errs: make([]error, 0),
 		}
 		os.Setenv(EnvDiceIsEdge, tt.envIsEdgeCluster)
-		os.Setenv(apistructs.EnvIsEdgePipeline, tt.envIsEdgePipeline)
+		os.Setenv(edgepipeline_register.EnvIsEdgePipeline, tt.envIsEdgePipeline)
 		os.Setenv(EnvDiceOpenapiAddr, tt.envOpenapiAddr)
-		os.Setenv(apistructs.EnvPipelineAddr, tt.envPipelineAddr)
+		os.Setenv(edgepipeline_register.EnvEdgePipelineAddr, tt.envPipelineAddr)
 		getOpenAPILock = sync.Once{}
 		agent.getOpenAPIInfo()
 		if (len(agent.Errs) != 0) != tt.wantErr {
@@ -102,7 +102,7 @@ func TestIsEdgePipeline(t *testing.T) {
 	}
 	agent := &Agent{}
 	for _, tt := range tests {
-		os.Setenv(apistructs.EnvIsEdgePipeline, tt.env)
+		os.Setenv(edgepipeline_register.EnvIsEdgePipeline, tt.env)
 		agent.isEdgePipeline()
 		if agent.EasyUse.IsEdgePipeline != tt.want {
 			t.Errorf("%s: isEdgePipeline = %v, want %v", tt.name, agent.EasyUse.IsEdgePipeline, tt.want)

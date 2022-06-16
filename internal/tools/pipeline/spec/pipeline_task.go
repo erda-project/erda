@@ -32,6 +32,7 @@ import (
 const (
 	CtxExecutorChKeyPrefix         = "executor-done-chan"
 	CtxExecutorChDataVersionPrefix = "executor-done-chan-data-version"
+	EncryptedValueDisplay          = "********"
 )
 
 type PipelineTask struct {
@@ -329,6 +330,60 @@ func (pt *PipelineTask) Convert2DTO() *apistructs.PipelineTaskDTO {
 	}
 
 	return &task
+}
+
+func (pt *PipelineTask) MergeTaskParamDetailToDisplay(action apistructs.ActionSpec, ymlTask PipelineTask, snapshot Snapshot) (params []*apistructs.TaskParamDetail) {
+	secrets := make(map[string]string)
+	for key := range snapshot.Secrets {
+		secrets[key] = EncryptedValueDisplay
+	}
+	for key := range snapshot.PlatformSecrets {
+		secrets[key] = EncryptedValueDisplay
+	}
+	for _, specParam := range action.Params {
+		// if user write the param in action, use it
+		param := &apistructs.TaskParamDetail{
+			Name: specParam.Name,
+		}
+		if value, ok := pt.Extra.Action.Params[specParam.Name]; ok {
+			param.Value = jsonparse.JsonOneLine(value)
+			param.Source = apistructs.UserTaskParamSource
+			pt.filterSecretParam(param, ymlTask, secrets)
+			params = append(params, param)
+			continue
+		}
+		// if action has a default value, use it and replace the encrypted value
+		if specParam.Default != nil {
+			defaultValue := jsonparse.JsonOneLine(specParam.Default)
+			param.Value = jsonparse.JsonOneLine(defaultValue)
+			param.Source = apistructs.DefaultTaskParamSource
+			pt.filterSecretParam(param, ymlTask, secrets)
+			params = append(params, param)
+		}
+	}
+	return
+}
+
+func (pt *PipelineTask) filterSecretParam(param *apistructs.TaskParamDetail, ymlAction PipelineTask, secrets map[string]string) {
+	replacedValue, err := pipelineyml.RenderSecrets([]byte(param.Value), secrets)
+	if err != nil {
+		return
+	}
+	if string(replacedValue) == EncryptedValueDisplay {
+		param.Value = EncryptedValueDisplay
+		return
+	}
+	ymlParamValue, ok := ymlAction.Extra.Action.Params[param.Name]
+	if !ok {
+		return
+	}
+	ymlParamValueStr := jsonparse.JsonOneLine(ymlParamValue)
+	replacedYmlValue, err := pipelineyml.RenderSecrets([]byte(ymlParamValueStr), secrets)
+	if string(replacedYmlValue) == EncryptedValueDisplay {
+		param.Value = EncryptedValueDisplay
+		return
+	}
+	return
 }
 
 func (pt *PipelineTask) RuntimeID() string {

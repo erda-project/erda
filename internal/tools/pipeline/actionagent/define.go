@@ -29,13 +29,6 @@ import (
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
-const (
-	CONTEXTDIR = "CONTEXTDIR"
-	WORKDIR    = "WORKDIR"
-	METAFILE   = "METAFILE"
-	UPLOADDIR  = "UPLOADDIR"
-)
-
 type Agent struct {
 	Arg *AgentArg
 

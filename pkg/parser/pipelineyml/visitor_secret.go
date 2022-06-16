@@ -66,7 +66,7 @@ func (v *SecretVisitor) Visit(s *Spec) {
 	}
 }
 
-func unwrapSecret(wrappedSecret string) string {
+func UnwrapSecret(wrappedSecret string) string {
 	return strutil.TrimSuffixes(strutil.TrimPrefixes(wrappedSecret, "(("), "))")
 }
 
@@ -99,7 +99,7 @@ func RenderSecrets(input []byte, secrets map[string]string) ([]byte, error) {
 
 	// replace (())
 	replaced := validSecretRegexp.ReplaceAllStringFunc(string(input), func(wrappedSec string) string {
-		value, ok := secrets[unwrapSecret(wrappedSec)]
+		value, ok := secrets[UnwrapSecret(wrappedSec)]
 		if !ok {
 			tmpS.appendError(errors.Errorf("secret not found: %s", wrappedSec))
 			return wrappedSec

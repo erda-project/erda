@@ -17,8 +17,8 @@ package pipelinesvc
 import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/action_info"
+	"github.com/erda-project/erda/internal/tools/pipeline/pkg/resource"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
-	"github.com/erda-project/erda/pkg/numeral"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
@@ -46,65 +46,9 @@ func (s *PipelineSvc) calculatePipelineResources(pipelineYml *pipelineyml.Pipeli
 
 	// merge result
 	pipelineResource := apistructs.PipelineAppliedResources{
-		Limits:   calculatePipelineLimitResource(stagesPipelineAppliedResources),
-		Requests: calculatePipelineRequestResource(stagesPipelineAppliedResources),
+		Limits:   resource.CalculatePipelineLimitResource(stagesPipelineAppliedResources),
+		Requests: resource.CalculatePipelineRequestResource(stagesPipelineAppliedResources),
 	}
 
 	return &pipelineResource, nil
-}
-
-// calculatePipelineLimitResource calculate pipeline limit resource according to all tasks grouped by stages.
-//
-// calculate maxResource
-// 1 2 (3)
-// 2 3 (5)
-// 4   (4)
-// => max((1+2), (2+3), (4)) = 5
-func calculatePipelineLimitResource(resources [][]*apistructs.PipelineAppliedResources) apistructs.PipelineAppliedResource {
-	var (
-		allStageCPU   []float64
-		allStageMemMB []float64
-	)
-	for _, stagesResources := range resources {
-		var (
-			stageCPU   float64 = 0
-			stageMemMB float64 = 0
-		)
-		for _, taskResources := range stagesResources {
-			stageCPU += taskResources.Limits.CPU
-			stageMemMB += taskResources.Limits.MemoryMB
-		}
-		allStageCPU = append(allStageCPU, stageCPU)
-		allStageMemMB = append(allStageMemMB, stageMemMB)
-	}
-	maxStageResource := apistructs.PipelineAppliedResource{
-		CPU:      numeral.MaxFloat64(allStageCPU),
-		MemoryMB: numeral.MaxFloat64(allStageMemMB),
-	}
-
-	return maxStageResource
-}
-
-// calculatePipelineRequestResource calculate pipeline request resource according to all tasks grouped by stages.
-//
-// calculate minResource
-// 1 2 (2)
-// 2 3 (3)
-// 4   (4)
-// => max(1,2,2,3,4) = 4
-func calculatePipelineRequestResource(resources [][]*apistructs.PipelineAppliedResources) apistructs.PipelineAppliedResource {
-	var allMinTaskCPUs []float64
-	var allMinTaskMemMBs []float64
-	for _, stagesResources := range resources {
-		for _, taskResources := range stagesResources {
-			allMinTaskCPUs = append(allMinTaskCPUs, taskResources.Requests.CPU)
-			allMinTaskMemMBs = append(allMinTaskMemMBs, taskResources.Requests.MemoryMB)
-		}
-	}
-	minStageResource := apistructs.PipelineAppliedResource{
-		CPU:      numeral.MaxFloat64(allMinTaskCPUs),
-		MemoryMB: numeral.MaxFloat64(allMinTaskMemMBs),
-	}
-
-	return minStageResource
 }

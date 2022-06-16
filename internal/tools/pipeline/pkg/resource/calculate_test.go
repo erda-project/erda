@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pipelinesvc
+package resource
 
 import (
 	"reflect"
@@ -75,8 +75,8 @@ func Test_calculatePipelineLimitResource(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := calculatePipelineLimitResource(tt.args.allStagedTasksResources); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("calculatePipelineLimitResource() = %v, want %v", got, tt.want)
+			if got := CalculatePipelineLimitResource(tt.args.allStagedTasksResources); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("CalculatePipelineLimitResource() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -132,8 +132,8 @@ func Test_calculatePipelineRequestResource(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := calculatePipelineRequestResource(tt.args.allStagedTasksResources); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("calculatePipelineRequestResource() = %v, want %v", got, tt.want)
+			if got := CalculatePipelineRequestResource(tt.args.allStagedTasksResources); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("CalculatePipelineRequestResource() = %v, want %v", got, tt.want)
 			}
 		})
 	}

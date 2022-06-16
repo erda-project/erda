@@ -36,7 +36,6 @@ import (
 	"github.com/erda-project/erda/pkg/i18n"
 	"github.com/erda-project/erda/pkg/metadata"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
-	"github.com/erda-project/erda/pkg/strutil"
 )
 
 func (s *PipelineSvc) Get(pipelineID uint64) (*spec.Pipeline, error) {
@@ -76,9 +75,6 @@ func (s *PipelineSvc) Detail(pipelineID uint64) (*apistructs.PipelineDetailDTO, 
 		p.TimeCreated = p.Extra.CronTriggerTime
 	}
 
-	// 不展示 secret
-	p.Snapshot.Secrets = nil
-
 	stages, err := s.dbClient.ListPipelineStageByPipelineID(p.ID)
 	if err != nil {
 		return nil, apierrors.ErrGetPipelineDetail.InternalError(err)
@@ -102,8 +98,14 @@ func (s *PipelineSvc) Detail(pipelineID uint64) (*apistructs.PipelineDetailDTO, 
 		return nil, apierrors.ErrGetPipelineDetail.InternalError(err)
 	}
 
+	actionMap, err := s.getPipelineActionMap(tasks)
+	if err != nil {
+		return nil, apierrors.ErrGetPipelineDetail.InternalError(err)
+	}
+
 	var needApproval bool
 	var stageDetailDTO []apistructs.PipelineStageDetailDTO
+	actionTasks := s.getYmlActionTasks(pipelineYml, &p, stages, nil)
 
 	for _, stage := range stages {
 		var taskDTOs []apistructs.PipelineTaskDTO
@@ -130,11 +132,30 @@ func (s *PipelineSvc) Detail(pipelineID uint64) (*apistructs.PipelineDetailDTO, 
 			if p.Status.IsStopByUser() && task.Status == apistructs.PipelineStatusAnalyzed {
 				task.Status = apistructs.PipelineStatusNoNeedBySystem
 			}
-			taskDTOs = append(taskDTOs, *task.Convert2DTO())
+			taskDTO := *task.Convert2DTO()
+			if action, ok := actionMap[task.Type]; ok {
+				if specYmlStr, ok := action.Spec.(string); ok {
+					var actionSpec apistructs.ActionSpec
+					if err := yaml.Unmarshal([]byte(specYmlStr), &actionSpec); err == nil {
+						var ymlTask spec.PipelineTask
+						for _, actionTask := range actionTasks {
+							if actionTask.Name == task.Name {
+								ymlTask = actionTask
+								break
+							}
+						}
+						taskDTO.Extra.Params = task.MergeTaskParamDetailToDisplay(actionSpec, ymlTask, p.Snapshot)
+					}
+				}
+			}
+			taskDTOs = append(taskDTOs, taskDTO)
 		}
 		stageDetailDTO = append(stageDetailDTO,
 			apistructs.PipelineStageDetailDTO{PipelineStageDTO: *stage.Convert2DTO(), PipelineTasks: taskDTOs})
 	}
+
+	// 不展示 secret
+	p.Snapshot.Secrets = nil
 
 	var pc *common.Cron
 	// CronExpr 不为空，则 cron 必须存在
@@ -195,7 +216,7 @@ func (s *PipelineSvc) Detail(pipelineID uint64) (*apistructs.PipelineDetailDTO, 
 
 	detail.PipelineButton = buttons
 
-	s.setPipelineTaskActionDetail(&detail)
+	s.setPipelineTaskActionDetail(&detail, actionMap)
 
 	pipelineParams, err := getPipelineParams(p.PipelineYml, p.Snapshot.RunPipelineParams)
 	if err != nil {
@@ -262,28 +283,9 @@ func (s *PipelineSvc) getPipelineEvents(pipelineID uint64) []*apistructs.Pipelin
 }
 
 // 给 pipelineTask 设置 action 的 logo 和 displayName 给前端展示
-func (s *PipelineSvc) setPipelineTaskActionDetail(detail *apistructs.PipelineDetailDTO) {
+func (s *PipelineSvc) setPipelineTaskActionDetail(detail *apistructs.PipelineDetailDTO, actionMap map[string]apistructs.ExtensionVersion) {
 	stageDetails := detail.PipelineStages
 
-	var extensionSearchRequest = apistructs.ExtensionSearchRequest{}
-	extensionSearchRequest.YamlFormat = true
-	// 循环 stageDetails 数组，获取里面的 task 并设置到 Extensions 中
-	loopStageDetails(stageDetails, func(task apistructs.PipelineTaskDTO) {
-		if task.Type == apistructs.ActionTypeSnippet {
-			return
-		}
-		extensionSearchRequest.Extensions = append(extensionSearchRequest.Extensions, task.Type)
-	})
-	if extensionSearchRequest.Extensions != nil {
-		extensionSearchRequest.Extensions = strutil.DedupSlice(extensionSearchRequest.Extensions, true)
-	}
-
-	// 根据 Extensions 数组批量查询详情
-	resultMap, err := s.bdl.SearchExtensions(extensionSearchRequest)
-	if err != nil {
-		logrus.Errorf("pipeline Detail to SearchExtensions error: %v", err)
-		return
-	}
 	// 遍历 stageDetails 数组，根据 task 的 name 获取其 extension 详情
 	var actionDetails = make(map[string]apistructs.PipelineTaskActionDetail)
 	loopStageDetails(stageDetails, func(task apistructs.PipelineTaskDTO) {
@@ -297,7 +299,7 @@ func (s *PipelineSvc) setPipelineTaskActionDetail(detail *apistructs.PipelineDet
 			return
 		}
 
-		version, ok := resultMap[task.Type]
+		version, ok := actionMap[task.Type]
 		if !ok {
 			return
 		}
@@ -319,6 +321,23 @@ func (s *PipelineSvc) setPipelineTaskActionDetail(detail *apistructs.PipelineDet
 		}
 	})
 	detail.PipelineTaskActionDetails = actionDetails
+}
+
+func (s *PipelineSvc) getPipelineActionMap(tasks []spec.PipelineTask) (map[string]apistructs.ExtensionVersion, error) {
+	var extensionSearchRequest = apistructs.ExtensionSearchRequest{}
+	extensionSearchRequest.YamlFormat = true
+	for _, task := range tasks {
+		if task.Type == apistructs.ActionTypeSnippet {
+			continue
+		}
+		extensionSearchRequest.Extensions = append(extensionSearchRequest.Extensions, task.Type)
+	}
+	resultMap, err := s.bdl.SearchExtensions(extensionSearchRequest)
+	if err != nil {
+		logrus.Errorf("pipeline Detail to SearchExtensions error: %v", err)
+		return map[string]apistructs.ExtensionVersion{}, err
+	}
+	return resultMap, nil
 }
 
 // 遍历 stageDetails 数组，内部的每个 task 都执行一遍 doing 函数
