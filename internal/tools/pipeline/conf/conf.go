@@ -28,6 +28,7 @@ type Conf struct {
 	Debug           bool   `env:"DEBUG" default:"false"`
 	DiceClusterName string `env:"DICE_CLUSTER_NAME" default:"local"` // 服务所在集群
 	DiceIsEdge      bool   `env:"DICE_IS_EDGE" default:"false"`      // is edge cluster
+	ErdaNamespace   string `env:"DICE_NAMESPACE" default:"default"`  // erda installed namespace
 
 	// task level
 	TaskDefaultCPU             float64       `env:"TASK_DEFAULT_CPU" default:"0.5"`
@@ -140,6 +141,11 @@ func Debug() bool {
 // DiceClusterName return the cluster where pipeline belong to
 func DiceClusterName() string {
 	return cfg.DiceClusterName
+}
+
+// ErdaNamespace return the namespace which erda instaleld
+func ErdaNamespace() string {
+	return cfg.ErdaNamespace
 }
 
 // DiceIsEdge return if the cluster is edge
