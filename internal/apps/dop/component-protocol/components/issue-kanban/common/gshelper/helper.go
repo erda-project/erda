@@ -17,7 +17,7 @@ package gshelper
 import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
-	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 )
 
 const (
@@ -40,14 +40,7 @@ func assign(src, dst interface{}) error {
 	return cputil.ObjJSONTransfer(src, dst)
 }
 
-func (h *GSHelper) SetIssuePagingRequest(req apistructs.IssuePagingRequest) {
-	if h.gs == nil {
-		return
-	}
-	(*h.gs)[keyIssuePagingRequestKanban] = req
-}
-
-func (h *GSHelper) GetIssuePagingRequest() (*apistructs.IssuePagingRequest, bool) {
+func (h *GSHelper) GetIssuePagingRequest() (*pb.PagingIssueRequest, bool) {
 	if h.gs == nil {
 		return nil, false
 	}
@@ -55,7 +48,7 @@ func (h *GSHelper) GetIssuePagingRequest() (*apistructs.IssuePagingRequest, bool
 	if !ok {
 		return nil, false
 	}
-	var req apistructs.IssuePagingRequest
+	var req pb.PagingIssueRequest
 	cputil.MustObjJSONTransfer(v, &req)
 	return &req, true
 }

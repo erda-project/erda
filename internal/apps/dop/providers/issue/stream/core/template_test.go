@@ -38,7 +38,6 @@ func TestGetDefaultContent(t *testing.T) {
 					StreamType:   common.ISTComment,
 					StreamParams: common.ISTParam{Comment: "hello world"},
 					Locale:       "zh",
-					Tran:         &mockTranslator{},
 				},
 			},
 			want:    `hello world`,
@@ -53,7 +52,6 @@ func TestGetDefaultContent(t *testing.T) {
 						CurrentContent: "old",
 						NewContent:     "new",
 					},
-					Tran:   &mockTranslator{},
 					Locale: "zh",
 				},
 			},
@@ -61,9 +59,11 @@ func TestGetDefaultContent(t *testing.T) {
 			wantErr: false,
 		},
 	}
+
+	p := &provider{commonTran: &mockTranslator{}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetDefaultContent(tt.args.req)
+			got, err := p.GetDefaultContent(tt.args.req)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("getDefaultContent() error = %v, wantErr %v", err, tt.wantErr)
 				return

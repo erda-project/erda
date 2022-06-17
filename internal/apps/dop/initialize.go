@@ -449,8 +449,6 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 	issue := issue.New(
 		issue.WithDBClient(db),
 		issue.WithBundle(bdl.Bdl),
-		issue.WithUCClient(uc),
-		issue.WithTranslator(p.IssueTran),
 	)
 
 	issueState := issuestate.New(
@@ -603,7 +601,6 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		endpoints.WithGittarFileTree(gittarFileTreeSvc),
 		endpoints.WithProjectPipelineFileTree(pFileTree),
 
-		endpoints.WithQueryStringDecoder(queryStringDecoder),
 		endpoints.WithAssetSvc(assetsvc.New(
 			assetsvc.WithBranchRuleSvc(branchRule),
 			assetsvc.WithI18n(p.APIMTrans),

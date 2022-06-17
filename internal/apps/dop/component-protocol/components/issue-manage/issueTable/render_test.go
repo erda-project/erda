@@ -22,7 +22,7 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/i18n"
-	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 )
 
 func TestGetTotalPage(t *testing.T) {
@@ -43,7 +43,7 @@ func TestGetTotalPage(t *testing.T) {
 
 func Test_resetPageInfo(t *testing.T) {
 	type args struct {
-		req   *apistructs.IssuePagingRequest
+		req   *pb.PagingIssueRequest
 		state map[string]interface{}
 	}
 	tests := []struct {
@@ -53,7 +53,7 @@ func Test_resetPageInfo(t *testing.T) {
 		{
 			name: "reset",
 			args: args{
-				req: &apistructs.IssuePagingRequest{},
+				req: &pb.PagingIssueRequest{},
 				state: map[string]interface{}{
 					"pageNo":   float64(1),
 					"pageSize": float64(2),
@@ -62,7 +62,7 @@ func Test_resetPageInfo(t *testing.T) {
 		},
 	}
 
-	expected := []*apistructs.IssuePagingRequest{
+	expected := []*pb.PagingIssueRequest{
 		{
 			PageNo:   1,
 			PageSize: 2,
@@ -106,6 +106,6 @@ func (m *MockTran) Sprintf(lang i18n.LanguageCodes, key string, args ...interfac
 func Test_buildTableItem(t *testing.T) {
 	ctx := context.WithValue(context.Background(), cptype.GlobalInnerKeyCtxSDK, &cptype.SDK{Tran: &MockTran{}})
 	ca := ComponentAction{}
-	i := ca.buildTableItem(ctx, &apistructs.Issue{})
+	i := ca.buildTableItem(ctx, &pb.Issue{}, nil)
 	assert.NotNil(t, i)
 }

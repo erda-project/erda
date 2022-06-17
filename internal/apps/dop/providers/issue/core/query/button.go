@@ -28,7 +28,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 )
 
-func (p *provider) GenrateButtonMap(projectID uint64, issueTypes []string) (map[string]map[int64][]*pb.IssueStateButton, error) {
+func (p *provider) GenerateButtonMap(projectID uint64, issueTypes []string) (map[string]map[int64][]*pb.IssueStateButton, error) {
 	result := make(map[string]map[int64][]*pb.IssueStateButton, 0)
 
 	relations := make(map[dao.IssueStateRelation]bool)
@@ -69,10 +69,16 @@ func (p *provider) GenrateButtonMap(projectID uint64, issueTypes []string) (map[
 				var button []*pb.IssueStateButton
 				// 遍历一个起始状态到所有的终态
 				for _, r := range issueTypeState[iType] {
+					var permission = true
 					if relations[dao.IssueStateRelation{StartStateID: startState, EndStateID: r.StateID}] != true {
-						r.Permission = false
+						permission = false
 					}
-					button = append(button, &r)
+					button = append(button, &pb.IssueStateButton{
+						StateID:     r.StateID,
+						StateName:   r.StateName,
+						StateBelong: r.StateBelong,
+						Permission:  permission,
+					})
 				}
 				// 存入所有的状态结果
 				if _, ok := result[iType]; !ok {

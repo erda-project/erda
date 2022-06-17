@@ -24,27 +24,6 @@ import (
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
-func (b *Bundle) PageIssues(req apistructs.IssuePagingRequest) (*apistructs.IssuePagingResponse, error) {
-	host, err := b.urls.DOP()
-	if err != nil {
-		return nil, err
-	}
-	hc := b.hc
-	var rsp apistructs.IssuePagingResponse
-	httpResp, err := hc.Get(host).Path(fmt.Sprintf("/api/issues")).
-		Header(httputil.UserHeader, req.UserID).
-		Params(req.UrlQueryString()).
-		Do().JSON(&rsp)
-	if err != nil {
-		return nil, apierrors.ErrInvoke.InternalError(err)
-	}
-	if !httpResp.IsOK() || !rsp.Success {
-		return nil, toAPIError(httpResp.StatusCode(), rsp.Error)
-	}
-
-	return &rsp, nil
-}
-
 // https://terminus-test-org.test.terminus.io/api/labels?type=issue&projectID=1&pageNo=1&pageSize=300
 func (b *Bundle) Labels(tp string, projectID uint64, userID string) (*apistructs.ProjectLabelListResponseData, error) {
 	host, err := b.urls.CoreServices()

@@ -178,6 +178,8 @@ func wrapResponse(h interceptor.Handler) interceptor.Handler {
 	}
 }
 
+// Define validator and error interface as all related struct in protoc-gen-validate are defined as text templates.
+// i.e. https://github.com/envoyproxy/protoc-gen-validate/blob/main/templates/go/message.go
 type Validator interface {
 	Validate() error
 }

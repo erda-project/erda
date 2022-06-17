@@ -20,7 +20,6 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
-	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/dop/issue/stream/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query"
@@ -40,7 +39,6 @@ type provider struct {
 	DB       *gorm.DB           `autowired:"mysql-client"`
 	bundle   *bundle.Bundle
 	Stream   core.Interface
-	I18n     i18n.Translator `translator:"issue-manage"`
 	Query    query.Interface
 
 	commentIssueStreamService *CommentIssueStreamService
@@ -57,7 +55,6 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		logger: p.Log,
 		bdl:    bundle.New(bundle.WithCoreServices()),
 		stream: p.Stream,
-		tran:   p.I18n,
 		query:  p.Query,
 	}
 
