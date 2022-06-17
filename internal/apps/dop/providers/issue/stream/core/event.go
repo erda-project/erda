@@ -56,9 +56,9 @@ func (p *provider) CreateIssueEvent(req *common.IssueStreamCreateRequest) error 
 		return err
 	}
 	if len(req.StreamTypes) == 0 {
-		content, err = getDefaultContentForMsgSending(req.StreamType, req.StreamParams, req.Tran, orgModel.Locale)
+		content, err = getDefaultContentForMsgSending(req.StreamType, req.StreamParams, p.commonTran, orgModel.Locale)
 	} else {
-		content, err = groupEventContent(req.StreamTypes, req.StreamParams, req.Tran, orgModel.Locale)
+		content, err = groupEventContent(req.StreamTypes, req.StreamParams, p.commonTran, orgModel.Locale)
 	}
 	if err != nil {
 		logrus.Errorf("get issue %d content error: %v, content will be empty", req.IssueID, err)
