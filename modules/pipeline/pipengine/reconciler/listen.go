@@ -209,6 +209,7 @@ func makeContextForPipelineReconcile(pipelineID uint64) context.Context {
 	go func() {
 		select {
 		case <-exitCh:
+			pCancel()
 			// default receiver to prevent send block
 		}
 	}()
