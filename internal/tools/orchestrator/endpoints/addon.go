@@ -574,7 +574,7 @@ func (e *Endpoints) RemoveAddons() (bool, error) {
 				continue
 			}
 			// schedule删除
-			if err := e.scheduler.Httpendpoints.ServiceGroupImpl.Delete(insItem.Namespace, insItem.ScheduleName, "false"); err != nil {
+			if err := e.scheduler.Httpendpoints.ServiceGroupImpl.Delete(insItem.Namespace, insItem.ScheduleName, "false", nil); err != nil {
 				logrus.Errorf("failed to delete addon: %s/%s", insItem.Namespace, insItem.ScheduleName)
 				continue
 			}

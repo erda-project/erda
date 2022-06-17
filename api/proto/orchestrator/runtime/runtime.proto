@@ -35,6 +35,7 @@ message Service {
   repeated string expose = 6;
   repeated ErrorResponse errors = 7;
   string type = 8;
+  string autoscalerEnabled =9 [json_name ="autoscalerEnabled"];
 }
 
 message StatusMap {
