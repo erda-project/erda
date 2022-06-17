@@ -132,7 +132,7 @@ func (s *diagnotorService) ListProcesses(ctx context.Context, req *pb.ListProces
 	return resp, err
 }
 
-func (s *diagnotorService) getClient(clusterName string) (*kubernetes.Clientset, error) {
+func (s *diagnotorService) getClient(clusterName string) (kubernetes.Interface, error) {
 	client, _, err := s.p.Clients.GetClient(clusterName)
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {

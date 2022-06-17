@@ -32,7 +32,7 @@ import (
 
 // Interface .
 type Interface interface {
-	GetClient(clusterName string) (*kubernetes.Clientset, *rest.Config, error)
+	GetClient(clusterName string) (kubernetes.Interface, *rest.Config, error)
 	GetCRClient(clusterName string) (*client.Client, *rest.Config, error)
 }
 
