@@ -25,7 +25,6 @@ import (
 	// modules and providers
 	_ "github.com/erda-project/erda-infra/providers"
 	_ "github.com/erda-project/erda-infra/providers/cassandra"
-	_ "github.com/erda-project/erda-proto-go/core/dicehub/release/client"
 	_ "github.com/erda-project/erda-proto-go/core/messenger/notify/client"
 	_ "github.com/erda-project/erda-proto-go/core/messenger/notifygroup/client"
 	_ "github.com/erda-project/erda-proto-go/core/monitor/alert/client"
@@ -71,7 +70,6 @@ import (
 	_ "github.com/erda-project/erda/internal/apps/msp/resource/deploy/handlers/apigateway"
 	_ "github.com/erda-project/erda/internal/apps/msp/resource/deploy/handlers/configcenter"
 	_ "github.com/erda-project/erda/internal/apps/msp/resource/deploy/handlers/etcd"
-	_ "github.com/erda-project/erda/internal/apps/msp/resource/deploy/handlers/generalability"
 	_ "github.com/erda-project/erda/internal/apps/msp/resource/deploy/handlers/jvmprofiler"
 	_ "github.com/erda-project/erda/internal/apps/msp/resource/deploy/handlers/loganalytics"
 	_ "github.com/erda-project/erda/internal/apps/msp/resource/deploy/handlers/loges"
