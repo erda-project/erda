@@ -408,3 +408,54 @@ func TestRunningPodCond(t *testing.T) {
 		t.Fatal("error")
 	}
 }
+
+func TestProject_BatchConvertProjectDTO(t *testing.T) {
+	type args struct {
+		joined   map[int64]bool
+		projects []model.Project
+	}
+
+	projects := []model.Project{
+		{
+			BaseModel: model.BaseModel{ID: 1},
+		},
+	}
+
+	var db *dao.DBClient
+	p1 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetApplicationCountByProjectIDs",
+		func(d *dao.DBClient, projectIDs []int64) ([]dao.AppCount, error) {
+			return []dao.AppCount{
+				{
+					ProjectID: 1,
+					Count:     2,
+				},
+			}, nil
+		},
+	)
+	defer p1.Unpatch()
+
+	p2 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetMemberCountByScopeIDs",
+		func(d *dao.DBClient, scopeType apistructs.ScopeType, scopeIDs []int64) ([]dao.MemberCount, error) {
+			return []dao.MemberCount{
+				{
+					ScopeID: 1,
+					Count:   2,
+				},
+			}, nil
+		},
+	)
+	defer p2.Unpatch()
+	p := &Project{
+		db: db,
+	}
+
+	got := p.BatchConvertProjectDTO(map[int64]bool{
+		1: false,
+		2: true,
+	}, projects)
+	assert.Equal(t, got[0].Stats.CountApplications, 2)
+	assert.Equal(t, got[0].Stats.CountMembers, 2)
+	assert.Equal(t, got[0].Joined, false)
+	got = p.BatchConvertProjectDTO(nil, projects)
+	assert.Equal(t, got[0].Joined, true)
+}
