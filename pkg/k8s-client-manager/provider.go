@@ -33,7 +33,7 @@ import (
 // Interface .
 type Interface interface {
 	GetClient(clusterName string) (kubernetes.Interface, *rest.Config, error)
-	GetCRClient(clusterName string) (*client.Client, *rest.Config, error)
+	GetCRClient(clusterName string) (client.Client, *rest.Config, error)
 }
 
 type (
@@ -49,7 +49,7 @@ type (
 	cacheItem struct {
 		Config    *rest.Config
 		Clientset kubernetes.Interface
-		CRClient  *client.Client
+		CRClient  client.Client
 	}
 )
 
@@ -66,7 +66,7 @@ func (p *provider) Init(ctx servicehub.Context) (err error) {
 		return &cacheItem{
 			Config:    rc,
 			Clientset: client.ClientSet,
-			CRClient:  &client.CRClient,
+			CRClient:  client.CRClient,
 		}, nil
 	}).Build()
 	return nil
@@ -84,7 +84,7 @@ func (p *provider) GetClient(clusterName string) (kubernetes.Interface, *rest.Co
 	return item.Clientset, item.Config, nil
 }
 
-func (p *provider) GetCRClient(clusterName string) (*client.Client, *rest.Config, error) {
+func (p *provider) GetCRClient(clusterName string) (client.Client, *rest.Config, error) {
 	val, err := p.cache.Get(clusterName)
 	if err != nil {
 		return nil, nil, err
