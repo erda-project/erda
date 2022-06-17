@@ -106,7 +106,7 @@ func (i *IssueService) CreateIssue(ctx context.Context, req *pb.IssueCreateReque
 	if req.Creator != "" {
 		req.IdentityInfo.UserID = req.Creator
 	}
-	planStartedAt, planFinishedAt := req.PlanStartedAt.AsTime(), req.PlanFinishedAt.AsTime()
+	planStartedAt, planFinishedAt := common.ToIssueTime(req.PlanStartedAt), common.ToIssueTime(req.PlanFinishedAt)
 	// 初始状态为排序级最高的状态
 	initState, err := i.db.GetIssuesStatesByProjectID(req.ProjectID, req.Type.String())
 	if err != nil {
@@ -118,8 +118,8 @@ func (i *IssueService) CreateIssue(ctx context.Context, req *pb.IssueCreateReque
 	now := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.Now().Location())
 	// 创建 issue
 	create := dao.Issue{
-		PlanStartedAt:  &planStartedAt,
-		PlanFinishedAt: &planFinishedAt,
+		PlanStartedAt:  planStartedAt,
+		PlanFinishedAt: planFinishedAt,
 		ProjectID:      req.ProjectID,
 		IterationID:    req.IterationID,
 		AppID:          req.AppID,
@@ -137,7 +137,7 @@ func (i *IssueService) CreateIssue(ctx context.Context, req *pb.IssueCreateReque
 		External:       req.External,
 		Stage:          getStage(req),
 		Owner:          req.Owner,
-		ExpiryStatus:   dao.GetExpiryStatus(&planFinishedAt, now),
+		ExpiryStatus:   dao.GetExpiryStatus(planFinishedAt, now),
 	}
 	if err := i.db.CreateIssue(&create); err != nil {
 		return nil, apierrors.ErrCreateIssue.InternalError(err)
@@ -189,8 +189,8 @@ func (i *IssueService) CreateIssue(ctx context.Context, req *pb.IssueCreateReque
 	u := &query.IssueUpdated{
 		Id:             create.ID,
 		IterationID:    req.IterationID,
-		PlanStartedAt:  &planStartedAt,
-		PlanFinishedAt: &planFinishedAt,
+		PlanStartedAt:  planStartedAt,
+		PlanFinishedAt: planFinishedAt,
 	}
 
 	if err := i.query.AfterIssueUpdate(u); err != nil {

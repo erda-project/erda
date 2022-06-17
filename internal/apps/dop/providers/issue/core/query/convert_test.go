@@ -212,7 +212,7 @@ func Test_provider_BatchConvert(t *testing.T) {
 	)
 	defer p3.Unpatch()
 
-	p4 := monkey.PatchInstanceMethod(reflect.TypeOf(p), "GenrateButtonMap",
+	p4 := monkey.PatchInstanceMethod(reflect.TypeOf(p), "GenerateButtonMap",
 		func(p *provider, projectID uint64, issueTypes []string) (map[string]map[int64][]*pb.IssueStateButton, error) {
 			return nil, nil
 		},

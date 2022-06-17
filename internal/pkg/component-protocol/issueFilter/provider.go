@@ -202,7 +202,7 @@ func (f *IssueFilter) Finalize(sdk *cptype.SDK) {
 	f.gsHelper.SetIssuePagingRequest(f.State.IssueRequestKey, issuePagingRequest)
 }
 
-func (f *IssueFilter) generateIssuePagingRequest() apistructs.IssuePagingRequest {
+func (f *IssueFilter) generateIssuePagingRequest() pb.PagingIssueRequest {
 	var (
 		startCreatedAt, endCreatedAt, startFinishedAt, endFinishedAt, startClosedAt, endClosedAt int64
 	)
@@ -246,45 +246,41 @@ func (f *IssueFilter) generateIssuePagingRequest() apistructs.IssuePagingRequest
 		}
 	}
 
-	req := apistructs.IssuePagingRequest{
-		PageNo:   1, // 每次走 filter，都需要重新查询，调整 pageNo 为 1
-		PageSize: 0,
-		OrgID:    int64(f.InParams.OrgID),
-		IssueListRequest: apistructs.IssueListRequest{
-			Title:           f.State.FrontendConditionValues.Title,
-			Type:            f.InParams.IssueTypes,
-			ProjectID:       f.InParams.ProjectID,
-			IterationID:     f.InParams.IterationID,
-			IterationIDs:    f.State.FrontendConditionValues.IterationIDs,
-			AppID:           nil,
-			RequirementID:   nil,
-			State:           f.State.FrontendConditionValues.States,
-			StateBelongs:    nil,
-			Creators:        f.State.FrontendConditionValues.CreatorIDs,
-			Assignees:       f.State.FrontendConditionValues.AssigneeIDs,
-			Label:           f.State.FrontendConditionValues.LabelIDs,
-			StartCreatedAt:  startCreatedAt,
-			EndCreatedAt:    endCreatedAt,
-			StartFinishedAt: startFinishedAt,
-			EndFinishedAt:   endFinishedAt,
-			StartClosedAt:   startClosedAt,
-			EndClosedAt:     endClosedAt,
-			Priority:        f.State.FrontendConditionValues.Priorities,
-			Complexity:      f.State.FrontendConditionValues.Complexities,
-			Severity:        f.State.FrontendConditionValues.Severities,
-			RelatedIssueIDs: nil,
-			Source:          "",
-			OrderBy:         "updated_at",
-			TaskType:        nil,
-			BugStage:        f.State.FrontendConditionValues.BugStages,
-			Owner:           f.State.FrontendConditionValues.OwnerIDs,
-			Asc:             false,
-			IDs:             nil,
-			IdentityInfo:    apistructs.IdentityInfo{UserID: f.sdk.Identity.UserID},
-			External:        false,
-
-			WithProcessSummary: f.InParams.FrontendFixedIssueType == apistructs.IssueTypeRequirement.String(),
-		},
+	req := pb.PagingIssueRequest{
+		PageNo:             1, // 每次走 filter，都需要重新查询，调整 pageNo 为 1
+		PageSize:           0,
+		OrgID:              int64(f.InParams.OrgID),
+		Title:              f.State.FrontendConditionValues.Title,
+		Type:               f.InParams.IssueTypes,
+		ProjectID:          f.InParams.ProjectID,
+		IterationID:        f.InParams.IterationID,
+		IterationIDs:       f.State.FrontendConditionValues.IterationIDs,
+		AppID:              nil,
+		RequirementID:      nil,
+		State:              f.State.FrontendConditionValues.States,
+		StateBelongs:       nil,
+		Creator:            f.State.FrontendConditionValues.CreatorIDs,
+		Assignee:           f.State.FrontendConditionValues.AssigneeIDs,
+		Label:              f.State.FrontendConditionValues.LabelIDs,
+		StartCreatedAt:     startCreatedAt,
+		EndCreatedAt:       endCreatedAt,
+		StartFinishedAt:    startFinishedAt,
+		EndFinishedAt:      endFinishedAt,
+		StartClosedAt:      startClosedAt,
+		EndClosedAt:        endClosedAt,
+		Priority:           f.State.FrontendConditionValues.Priorities,
+		Complexity:         f.State.FrontendConditionValues.Complexities,
+		Severity:           f.State.FrontendConditionValues.Severities,
+		RelatedIssueId:     nil,
+		Source:             "",
+		OrderBy:            "updated_at",
+		TaskType:           nil,
+		BugStage:           f.State.FrontendConditionValues.BugStages,
+		Owner:              f.State.FrontendConditionValues.OwnerIDs,
+		Asc:                false,
+		IDs:                nil,
+		External:           true,
+		WithProcessSummary: f.InParams.FrontendFixedIssueType == apistructs.IssueTypeRequirement.String(),
 	}
 	return req
 }

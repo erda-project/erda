@@ -68,7 +68,7 @@ func (p *provider) BatchConvert(models []dao.Issue, issueTypes []string) ([]*pb.
 	// 	return nil, err
 	// }
 
-	buttons, err := p.GenrateButtonMap(models[0].ProjectID, issueTypes)
+	buttons, err := p.GenerateButtonMap(models[0].ProjectID, issueTypes)
 	if err != nil {
 		return nil, err
 	}

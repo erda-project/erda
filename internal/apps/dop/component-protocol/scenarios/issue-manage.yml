@@ -35,8 +35,6 @@ components:
     type: Custom
   issueTable:
     type: Table
-  reset:
-    type: Container
 
 rendering:
   issueFilter:

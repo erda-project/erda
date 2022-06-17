@@ -12,10 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package issue_manage
+package common
 
 import (
-	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/issue-manage/issueFilter"
-	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/issue-manage/issueImport"
-	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/issue-manage/issueTable"
+	"time"
+
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
+
+func ToIssueTime(t *timestamppb.Timestamp) *time.Time {
+	if t == nil {
+		return nil
+	}
+	it := t.AsTime()
+	return &it
+}

@@ -22,21 +22,17 @@ import (
 	"github.com/jinzhu/gorm"
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/dao"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	"github.com/erda-project/erda/pkg/strutil"
-	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 // Issue 事件操作封装
 type Issue struct {
-	db   *dao.DBClient
-	bdl  *bundle.Bundle
-	uc   *ucauth.UCClient
-	tran i18n.Translator
+	db  *dao.DBClient
+	bdl *bundle.Bundle
 }
 
 // Option 定义 Issue 配置选项
@@ -62,19 +58,6 @@ func WithDBClient(db *dao.DBClient) Option {
 func WithBundle(bdl *bundle.Bundle) Option {
 	return func(issue *Issue) {
 		issue.bdl = bdl
-	}
-}
-
-// WithUCClient 配置 uc client
-func WithUCClient(uc *ucauth.UCClient) Option {
-	return func(issue *Issue) {
-		issue.uc = uc
-	}
-}
-
-func WithTranslator(tran i18n.Translator) Option {
-	return func(issue *Issue) {
-		issue.tran = tran
 	}
 }
 

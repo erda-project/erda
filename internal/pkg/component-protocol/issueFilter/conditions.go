@@ -23,6 +23,7 @@ import (
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/pkg/component-protocol/condition"
+	"github.com/erda-project/erda/internal/pkg/component-protocol/issueFilter/gshelper"
 )
 
 const (
@@ -45,22 +46,22 @@ const (
 )
 
 type FrontendConditions struct {
-	FilterID           string                        `json:"filterID,omitempty"`
-	IterationIDs       []int64                       `json:"iterationIDs,omitempty"`
-	Title              string                        `json:"title,omitempty"`
-	StateBelongs       []apistructs.IssueStateBelong `json:"stateBelongs,omitempty"`
-	States             []int64                       `json:"states,omitempty"`
-	LabelIDs           []uint64                      `json:"labelIDs,omitempty"`
-	Priorities         []apistructs.IssuePriority    `json:"priorities,omitempty"`
-	Severities         []apistructs.IssueSeverity    `json:"severities,omitempty"`
-	CreatorIDs         []string                      `json:"creatorIDs,omitempty"`
-	AssigneeIDs        []string                      `json:"assigneeIDs,omitempty"`
-	OwnerIDs           []string                      `json:"ownerIDs,omitempty"`
-	BugStages          []string                      `json:"bugStages,omitempty"`
-	CreatedAtStartEnd  []*int64                      `json:"createdAtStartEnd,omitempty"`
-	FinishedAtStartEnd []*int64                      `json:"finishedAtStartEnd,omitempty"`
-	ClosedAtStartEnd   []*int64                      `json:"closedAtStartEnd,omitempty"`
-	Complexities       []apistructs.IssueComplexity  `json:"complexities,omitempty"`
+	FilterID           string   `json:"filterID,omitempty"`
+	IterationIDs       []int64  `json:"iterationIDs,omitempty"`
+	Title              string   `json:"title,omitempty"`
+	StateBelongs       []string `json:"stateBelongs,omitempty"`
+	States             []int64  `json:"states,omitempty"`
+	LabelIDs           []uint64 `json:"labelIDs,omitempty"`
+	Priorities         []string `json:"priorities,omitempty"`
+	Severities         []string `json:"severities,omitempty"`
+	CreatorIDs         []string `json:"creatorIDs,omitempty"`
+	AssigneeIDs        []string `json:"assigneeIDs,omitempty"`
+	OwnerIDs           []string `json:"ownerIDs,omitempty"`
+	BugStages          []string `json:"bugStages,omitempty"`
+	CreatedAtStartEnd  []*int64 `json:"createdAtStartEnd,omitempty"`
+	FinishedAtStartEnd []*int64 `json:"finishedAtStartEnd,omitempty"`
+	ClosedAtStartEnd   []*int64 `json:"closedAtStartEnd,omitempty"`
+	Complexities       []string `json:"complexities,omitempty"`
 }
 
 func (f *IssueFilter) ConditionRetriever() ([]interface{}, error) {
@@ -74,6 +75,7 @@ func (f *IssueFilter) ConditionRetriever() ([]interface{}, error) {
 		if err != nil {
 			return nil, err
 		}
+		f.gsHelper.SetIterationOptions(gshelper.KeyIterationOptions, iterationOptions)
 		iterations = model.NewSelectCondition(PropConditionKeyIterationIDs, cputil.I18n(f.sdk.Ctx, "sprint"), iterationOptions).WithPlaceHolder(cputil.I18n(f.sdk.Ctx, "choose-sprint"))
 	}
 

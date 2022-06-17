@@ -18,7 +18,6 @@ import (
 	"time"
 
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/stream/common"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
@@ -137,13 +136,13 @@ func (p *provider) AfterIssueInclusionRelationChange(id uint64) error {
 	}
 	if start != nil && issue.PlanStartedAt != nil && !start.Equal(*issue.PlanStartedAt) {
 		fields["plan_started_at"] = start
-		streamFields["plan_started_at"] = []interface{}{issue.PlanStartedAt, start, apistructs.ChildrenPlanUpdated}
+		streamFields["plan_started_at"] = []interface{}{issue.PlanStartedAt, start, common.ChildrenPlanUpdated}
 	}
 	if end != nil && issue.PlanFinishedAt != nil && !end.Equal(*issue.PlanFinishedAt) {
 		now := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.Now().Location())
 		fields["expiry_status"] = dao.GetExpiryStatus(end, now)
 		fields["plan_finished_at"] = end
-		streamFields["plan_finished_at"] = []interface{}{issue.PlanFinishedAt, end, apistructs.ChildrenPlanUpdated}
+		streamFields["plan_finished_at"] = []interface{}{issue.PlanFinishedAt, end, common.ChildrenPlanUpdated}
 	}
 	if len(fields) > 0 {
 		if err := p.db.UpdateIssue(id, fields); err != nil {

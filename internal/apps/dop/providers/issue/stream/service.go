@@ -24,7 +24,6 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/erda-project/erda-infra/base/logs"
-	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/dop/issue/stream/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
@@ -43,7 +42,6 @@ type CommentIssueStreamService struct {
 	db     *dao.DBClient
 	bdl    *bundle.Bundle
 	stream core.Interface
-	tran   i18n.Translator
 	query  query.Interface
 }
 
@@ -210,10 +208,9 @@ func (s *CommentIssueStreamService) PagingIssueStreams(ctx context.Context, req 
 		if v.StreamType == common.ISTRelateMR {
 			is.MrInfo = &v.StreamParams.MRInfo
 		} else {
-			content, err := core.GetDefaultContent(core.StreamTemplateRequest{
+			content, err := s.stream.GetDefaultContent(core.StreamTemplateRequest{
 				StreamType:   v.StreamType,
 				StreamParams: v.StreamParams,
-				Tran:         s.tran,
 				Locale:       apis.GetLang(ctx),
 				Lang:         apis.Language(ctx),
 			})

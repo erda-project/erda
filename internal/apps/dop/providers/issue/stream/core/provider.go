@@ -36,13 +36,15 @@ type config struct {
 }
 
 type provider struct {
-	Cfg  *config
-	Log  logs.Logger
-	DB   *gorm.DB `autowired:"mysql-client"`
-	bdl  *bundle.Bundle
-	db   *dao.DBClient
-	I18n i18n.Translator `translator:"issue-manage"`
-	uc   *ucauth.UCClient
+	Cfg        *config
+	Log        logs.Logger
+	DB         *gorm.DB `autowired:"mysql-client"`
+	bdl        *bundle.Bundle
+	db         *dao.DBClient
+	I18n       i18n.Translator `translator:"issue-manage"`
+	CPTran     i18n.I18n       `autowired:"i18n@cp"`
+	commonTran i18n.Translator
+	uc         *ucauth.UCClient
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -52,6 +54,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 			DB: p.DB,
 		},
 	}
+	p.commonTran = p.CPTran.Translator("")
 	uc := ucauth.NewUCClient(discover.UC(), conf.UCClientID(), conf.UCClientSecret())
 	if conf.OryEnabled() {
 		uc = ucauth.NewUCClient(conf.OryKratosPrivateAddr(), conf.OryCompatibleClientID(), conf.OryCompatibleClientSecret())
@@ -65,6 +68,7 @@ type Interface interface {
 	CreateIssueEvent(req *common.IssueStreamCreateRequest) error
 	CreateIssueStreamBySystem(id uint64, streamFields map[string][]interface{}) error
 	CreateStream(updateReq *pb.UpdateIssueRequest, streamFields map[string][]interface{}) error
+	GetDefaultContent(req StreamTemplateRequest) (string, error)
 }
 
 func (p *provider) Create(req *common.IssueStreamCreateRequest) (int64, error) {

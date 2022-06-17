@@ -24,6 +24,7 @@ import (
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/stream/common"
 )
 
 func (p *provider) AfterIssueUpdate(u *IssueUpdated) error {
@@ -63,7 +64,7 @@ func (p *provider) AfterIssueUpdate(u *IssueUpdated) error {
 					return err
 				}
 				if err := p.Stream.CreateIssueStreamBySystem(parent.ID, map[string][]interface{}{
-					"state": {parent.State, stateButton.StateID, apistructs.ChildrenInProgress},
+					"state": {parent.State, stateButton.StateID, common.ChildrenInProgress},
 				}); err != nil {
 					return err
 				}
@@ -105,7 +106,7 @@ func (p *provider) UpdateIssuePlanTimeByIteration(u *IssueUpdated, c *issueValid
 			return nil
 		}
 		fields["iteration_id"] = u.IterationID
-		streamFields["iteration_id"] = []interface{}{u.iterationOld, u.IterationID, apistructs.ParentIterationChanged}
+		streamFields["iteration_id"] = []interface{}{u.iterationOld, u.IterationID, common.ParentIterationChanged}
 	}
 
 	if err := v.validateTimeWithInIteration(c, u.PlanFinishedAt); err != nil {
@@ -115,7 +116,7 @@ func (p *provider) UpdateIssuePlanTimeByIteration(u *IssueUpdated, c *issueValid
 		if finishedAt != nil {
 			fields["expiry_status"] = dao.GetExpiryStatus(finishedAt, now)
 			fields["plan_finished_at"] = finishedAt
-			streamFields["plan_finished_at"] = []interface{}{u.PlanFinishedAt, finishedAt, apistructs.IterationChanged}
+			streamFields["plan_finished_at"] = []interface{}{u.PlanFinishedAt, finishedAt, common.IterationChanged}
 			u.PlanFinishedAt = finishedAt
 		}
 	}
@@ -124,7 +125,7 @@ func (p *provider) UpdateIssuePlanTimeByIteration(u *IssueUpdated, c *issueValid
 	}, u.PlanFinishedAt)
 	if startedAt != nil {
 		fields["plan_started_at"] = startedAt
-		streamFields["plan_started_at"] = []interface{}{u.PlanStartedAt, u.PlanFinishedAt, apistructs.PlanFinishedAtChanged}
+		streamFields["plan_started_at"] = []interface{}{u.PlanStartedAt, u.PlanFinishedAt, common.PlanFinishedAtChanged}
 	}
 	if len(fields) > 0 {
 		if err := p.db.UpdateIssue(u.Id, fields); err != nil {
@@ -135,7 +136,7 @@ func (p *provider) UpdateIssuePlanTimeByIteration(u *IssueUpdated, c *issueValid
 }
 
 func (p *provider) GetNextAvailableState(issue *dao.Issue) (*pb.IssueStateButton, error) {
-	button, err := p.GenerateButton(*issue, &commonpb.IdentityInfo{InternalClient: apistructs.SystemOperator}, nil, nil, nil, nil)
+	button, err := p.GenerateButton(*issue, &commonpb.IdentityInfo{InternalClient: common.SystemOperator}, nil, nil, nil, nil)
 	if err != nil {
 		return nil, err
 	}

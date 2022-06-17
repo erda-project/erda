@@ -17,9 +17,11 @@ package gshelper
 import (
 	"github.com/mitchellh/mapstructure"
 
+	model "github.com/erda-project/erda-infra/providers/component-protocol/components/filter/models"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
-	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
+	"github.com/erda-project/erda/internal/pkg/component-protocol/issueFilter/gshelper"
 )
 
 const (
@@ -42,14 +44,7 @@ func assign(src, dst interface{}) error {
 	return mapstructure.Decode(src, dst)
 }
 
-func (h *GSHelper) SetIssuePagingRequest(req apistructs.IssuePagingRequest) {
-	if h.gs == nil {
-		return
-	}
-	(*h.gs)[keyIssuePagingRequest] = req
-}
-
-func (h *GSHelper) GetIssuePagingRequest() (*apistructs.IssuePagingRequest, bool) {
+func (h *GSHelper) GetIssuePagingRequest() (*pb.PagingIssueRequest, bool) {
 	if h.gs == nil {
 		return nil, false
 	}
@@ -57,7 +52,20 @@ func (h *GSHelper) GetIssuePagingRequest() (*apistructs.IssuePagingRequest, bool
 	if !ok {
 		return nil, false
 	}
-	var req apistructs.IssuePagingRequest
+	var req pb.PagingIssueRequest
 	cputil.MustObjJSONTransfer(v, &req)
 	return &req, true
+}
+
+func (h *GSHelper) GetIterationOptions() ([]model.SelectOption, bool) {
+	if h.gs == nil {
+		return nil, false
+	}
+	v, ok := (*h.gs)[gshelper.KeyIterationOptions]
+	if !ok {
+		return nil, false
+	}
+	var res []model.SelectOption
+	cputil.MustObjJSONTransfer(v, &res)
+	return res, true
 }

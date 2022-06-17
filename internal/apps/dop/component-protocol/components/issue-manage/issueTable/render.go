@@ -25,15 +25,20 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/bdl"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/common"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/issue-manage/common/gshelper"
+	"github.com/erda-project/erda/internal/apps/dop/component-protocol/types"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query"
+	"github.com/erda-project/erda/internal/pkg/component-protocol/issueFilter"
 	"github.com/erda-project/erda/pkg/strutil"
 
 	protocol "github.com/erda-project/erda/internal/tools/openapi/legacy/component-protocol"
@@ -116,6 +121,7 @@ type Assignee struct {
 	Disabled    bool                   `json:"disabled"`
 	DisabledTip string                 `json:"disabledTip"`
 }
+
 type TableItem struct {
 	//Assignee    map[string]string `json:"assignee"`
 	Id          string     `json:"id"`
@@ -126,13 +132,17 @@ type TableItem struct {
 	Complexity  Complexity `json:"complexity,omitempty"`
 	State       State      `json:"state"`
 	// Title       Title      `json:"title"`
-	Type        string    `json:"type"`
-	Deadline    Deadline  `json:"deadline"`
-	Assignee    Assignee  `json:"assignee"`
-	ClosedAt    ClosedAt  `json:"closedAt"`
-	Name        Name      `json:"name"`
-	ReopenCount TextBlock `json:"reopenCount,omitempty"`
-	CreatedAt   CreatedAt `json:"createdAt"`
+	Type          string    `json:"type"`
+	Deadline      Deadline  `json:"deadline"`
+	Assignee      Assignee  `json:"assignee"`
+	ClosedAt      Time      `json:"closedAt"`
+	Name          Name      `json:"name"`
+	ReopenCount   TextBlock `json:"reopenCount,omitempty"`
+	CreatedAt     Time      `json:"createdAt"`
+	Owner         Assignee  `json:"owner"`
+	Creator       Assignee  `json:"creator"`
+	PlanStartedAt Time      `json:"planStartedAt"`
+	Iteration     TextBlock `json:"iteration"`
 }
 
 type TextBlock struct {
@@ -164,13 +174,11 @@ type Complexity struct {
 	Value      string `json:"value"`
 }
 
-type ClosedAt struct {
+type Time struct {
 	RenderType string `json:"renderType"`
 	Value      string `json:"value"`
 	NoBorder   bool   `json:"noBorder"`
 }
-
-type CreatedAt ClosedAt
 
 type PriorityOperationData struct {
 	Meta struct {
@@ -232,12 +240,17 @@ var (
 
 func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	sdk := cputil.SDK(ctx)
-
+	issueSvc := ctx.Value(types.IssueService).(query.Interface)
 	isGuest, err := ca.CheckUserPermission(ctx)
 	if err != nil {
 		return err
 	}
 	ca.isGuest = isGuest
+
+	fixedIssueType := sdk.InParams.String("fixedIssueType")
+	if _, ok := issueFilter.CpIssueTypes[fixedIssueType]; !ok {
+		return fmt.Errorf("invalid paging request type %v", fixedIssueType)
+	}
 
 	projectid, err := strconv.ParseUint(sdk.InParams["projectId"].(string), 10, 64)
 	orgid, err := strconv.ParseUint(sdk.Identity.OrgID, 10, 64)
@@ -374,23 +387,20 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		}
 	}
 	userids := []string{}
-	cond := apistructs.IssuePagingRequest{}
+	cond := pb.PagingIssueRequest{}
 	gh := gshelper.NewGSHelper(gs)
 	filterCond, ok := gh.GetIssuePagingRequest()
 	if ok {
 		cond = *filterCond
 		resetPageInfo(&cond, c.State)
 	} else {
-		issuetype := sdk.InParams["fixedIssueType"].(string)
-		switch issuetype {
-		case string(apistructs.IssueTypeRequirement):
-			cond.Type = []apistructs.IssueType{apistructs.IssueTypeRequirement}
-		case string(apistructs.IssueTypeTask):
-			cond.Type = []apistructs.IssueType{apistructs.IssueTypeTask}
-		case string(apistructs.IssueTypeBug):
-			cond.Type = []apistructs.IssueType{apistructs.IssueTypeBug}
-		default:
-			cond.Type = []apistructs.IssueType{apistructs.IssueTypeRequirement, apistructs.IssueTypeTask, apistructs.IssueTypeBug, apistructs.IssueTypeEpic}
+		issueType := sdk.InParams["fixedIssueType"].(string)
+		if _, ok := issueFilter.CpIssueTypes[issueType]; ok {
+			if issueType == "ALL" {
+				cond.Type = []string{pb.IssueTypeEnum_BUG.String(), pb.IssueTypeEnum_REQUIREMENT.String(), pb.IssueTypeEnum_TASK.String()}
+			} else {
+				cond.Type = []string{issueType}
+			}
 		}
 		cond.OrgID = int64(orgid)
 		cond.PageNo = 1
@@ -401,7 +411,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		}
 		cond.PageSize = 10
 		cond.ProjectID = projectid
-		cond.IssueListRequest.IdentityInfo.UserID = sdk.Identity.UserID
+		cond.IdentityInfo.UserID = sdk.Identity.UserID
 	}
 	if event.Operation.String() == "changePageNo" {
 		cond.PageNo = 1
@@ -440,26 +450,22 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		}
 	}
 
-	var (
-		pageTotal uint64
-		r         *apistructs.IssuePagingResponse
-	)
-	r, err = bdl.Bdl.PageIssues(cond)
+	issues, total, err := issueSvc.Paging(cond)
 	if err != nil {
 		return err
 	}
 	// if pageTotal < cond.PageNo, to reset the cond.PageNo = 1,
 	// and return the first page of data
-	pageTotal = getTotalPage(r.Data.Total, cond.PageSize)
+	pageTotal := getTotalPage(total, cond.PageSize)
 	if pageTotal < cond.PageNo {
 		cond.PageNo = 1
-		r, err = bdl.Bdl.PageIssues(cond)
+		issues, total, err = issueSvc.Paging(cond)
 		if err != nil {
 			return err
 		}
 	}
 
-	for _, p := range r.Data.List {
+	for _, p := range issues {
 		userids = append(userids, p.Assignee)
 	}
 	// 获取全部用户
@@ -478,76 +484,21 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		return err
 	}
 	ca.labels = labels.List
+
+	iterations, _ := gh.GetIterationOptions()
+	iterationTitleMap := make(map[int64]string)
+	for _, i := range iterations {
+		key := int64(i.Value.(float64))
+		iterationTitleMap[key] = i.Label
+	}
+
 	var l []TableItem
-	for _, data := range r.Data.List {
-		l = append(l, *ca.buildTableItem(ctx, &data))
+	for _, data := range issues {
+		l = append(l, *ca.buildTableItem(ctx, data, iterationTitleMap))
 	}
 	c.Data = map[string]interface{}{}
 	c.Data["list"] = l
-	progressCol := ""
-	if len(cond.Type) == 1 && cond.Type[0] == apistructs.IssueTypeRequirement {
-		progressCol = `{
-            "dataIndex": "progress",
-            "title": "` + cputil.I18n(ctx, "progress") + `"
-        },`
-	}
-
-	severityCol, closedAtCol := "", ""
-	reopenCountCol := ""
-	if len(cond.Type) == 1 && cond.Type[0] == apistructs.IssueTypeBug {
-		severityCol = `{ "title": "` + cputil.I18n(ctx, "severity") + `", "dataIndex": "severity", "hidden": false },`
-		closedAtCol = `,{ "title": "` + cputil.I18n(ctx, "closed-at") + `", "dataIndex": "closedAt", "hidden": true }`
-		reopenCountCol = `,{ "title": "` + cputil.I18n(ctx, "reopenCount") + `", "dataIndex": "reopenCount", "hidden": true }`
-	}
-	var createdAtCol string
-	if len(cond.Type) == 1 && cond.Type[0] == apistructs.IssueTypeTicket {
-		severityCol = `{ "title": "` + cputil.I18n(ctx, "severity") + `", "dataIndex": "severity", "hidden": false },`
-		createdAtCol = `,{ "title": "` + cputil.I18n(ctx, "created-at") + `", "dataIndex": "createdAt", "hidden": false }`
-	}
-	props := `{
-    "columns": [
-		{
-			"dataIndex": "id",
-			"title": "ID",
-			"hidden": true
-        },
-        {
-            "dataIndex": "name",
-            "title": "` + cputil.I18n(ctx, "title") + `"
-        },` +
-		progressCol +
-		severityCol +
-		`{
-            "dataIndex": "complexity",
-            "title": "` + cputil.I18n(ctx, "complexity") + `",
-			"hidden": true
-        },
-        {
-            "dataIndex": "priority",
-            "title": "` + cputil.I18n(ctx, "priority") + `"
-        },
-        {
-            "dataIndex": "state",
-            "title": "` + cputil.I18n(ctx, "state") + `"
-        },
-        {
-            "dataIndex": "assignee",
-            "title": "` + cputil.I18n(ctx, "assignee") + `"
-        },
-        {
-            "dataIndex": "deadline",
-            "title": "` + cputil.I18n(ctx, "deadline") + `"
-        }` +
-		closedAtCol + reopenCountCol + createdAtCol +
-		`],
-    "rowKey": "id",
-	"pageSizeOptions": ["10", "20", "50", "100"]
-}`
-	var propsI cptype.ComponentProps
-	if err := json.Unmarshal([]byte(props), &propsI); err != nil {
-		return err
-	}
-	c.Props = propsI
+	c.Props = buildTableColumnProps(ctx, fixedIssueType)
 	c.Operations = map[string]interface{}{
 		"changePageNo": map[string]interface{}{
 			"key":    "changePageNo",
@@ -562,7 +513,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 	if c.State == nil {
 		c.State = map[string]interface{}{}
 	}
-	c.State["total"] = r.Data.Total
+	c.State["total"] = total
 	c.State["pageNo"] = cond.PageNo
 	c.State["pageSize"] = cond.PageSize
 	urlquery := fmt.Sprintf(`{"pageNo":%d, "pageSize":%d}`, cond.PageNo, cond.PageSize)
@@ -570,11 +521,11 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 	return nil
 }
 
-func (ca *ComponentAction) buildTableItem(ctx context.Context, data *apistructs.Issue) *TableItem {
-	var issuestate *apistructs.IssueStateButton
+func (ca *ComponentAction) buildTableItem(ctx context.Context, data *pb.Issue, iterations map[int64]string) *TableItem {
+	var issuestate *pb.IssueStateButton
 	for _, s := range data.IssueButton {
 		if s.StateID == data.State {
-			issuestate = &s
+			issuestate = s
 			break
 		}
 	}
@@ -583,9 +534,9 @@ func (ca *ComponentAction) buildTableItem(ctx context.Context, data *apistructs.
 		RenderType: "multiple",
 		Direction:  "row",
 	}
-	if data.Type == apistructs.IssueTypeRequirement {
+	if data.Type == pb.IssueTypeEnum_REQUIREMENT {
 		if data.IssueSummary == nil {
-			data.IssueSummary = &apistructs.IssueSummary{}
+			data.IssueSummary = &pb.IssueSummary{}
 		}
 		s := data.IssueSummary.DoneCount + data.IssueSummary.ProcessingCount
 		progressPercentage := ProgressBlock{
@@ -630,15 +581,15 @@ func (ca *ComponentAction) buildTableItem(ctx context.Context, data *apistructs.
 			"text":       cputil.I18n(ctx, s.GetI18nKeyAlias()),
 			"prefixIcon": "ISSUE_ICON.severity." + string(s),
 			"meta": map[string]string{
-				"id":       strconv.FormatInt(data.ID, 10),
+				"id":       strconv.FormatInt(data.Id, 10),
 				"severity": string(s),
 			},
 		}
 	}
 	severity := Severity{
 		RenderType: "operationsDropdownMenu",
-		Value:      cputil.I18n(ctx, data.Severity.GetI18nKeyAlias()),
-		PrefixIcon: "ISSUE_ICON.severity." + string(data.Severity),
+		Value:      cputil.I18n(ctx, GetI18nKeyAlias(data.Severity)),
+		PrefixIcon: "ISSUE_ICON.severity." + data.Severity.String(),
 		Operations: severityOps,
 		Disabled:   ca.isGuest,
 		DisabledTip: map[bool]string{
@@ -657,11 +608,11 @@ func (ca *ComponentAction) buildTableItem(ctx context.Context, data *apistructs.
 		menu := map[string]interface{}{
 			"meta": map[string]string{
 				"state": strconv.FormatInt(s.StateID, 10),
-				"id":    strconv.FormatInt(data.ID, 10),
+				"id":    strconv.FormatInt(data.Id, 10),
 			},
 			"id": s.StateName,
 			// "prefixIcon": stateIcon[string(s.StateBelong)],
-			"status":   common.GetUIIssueState(s.StateBelong),
+			"status":   common.GetUIIssueState(apistructs.IssueStateBelong(s.StateBelong.String())),
 			"text":     s.StateName,
 			"reload":   true,
 			"key":      "changeStateTo" + strconv.Itoa(i) + s.StateName,
@@ -679,7 +630,7 @@ func (ca *ComponentAction) buildTableItem(ctx context.Context, data *apistructs.
 	AssigneeMapOperations["onChange"] = map[string]interface{}{
 		"meta": map[string]string{
 			"assignee": "",
-			"id":       strconv.FormatInt(data.ID, 10),
+			"id":       strconv.FormatInt(data.Id, 10),
 		},
 		"text":     ca.userMap[data.Assignee].Nick,
 		"reload":   true,
@@ -698,31 +649,21 @@ func (ca *ComponentAction) buildTableItem(ctx context.Context, data *apistructs.
 				"disabled": false,
 				"fillMeta": "deadlineValue",
 				"meta": map[string]string{
-					"id":            strconv.FormatInt(data.ID, 10),
+					"id":            strconv.FormatInt(data.Id, 10),
 					"deadlineValue": "",
 				},
 			},
 		},
 	}
 	if data.PlanFinishedAt != nil {
-		deadline.Value = data.PlanFinishedAt.Format(time.RFC3339)
+		deadline.Value = data.PlanFinishedAt.AsTime().Format(time.RFC3339)
 	}
 	if data.PlanStartedAt != nil {
-		deadline.DisabledBefore = data.PlanStartedAt.Format(time.RFC3339)
+		deadline.DisabledBefore = data.PlanStartedAt.AsTime().Format(time.RFC3339)
 	}
-	closedAt := ClosedAt{
-		RenderType: "datePicker",
-		Value:      "",
-		NoBorder:   true,
-	}
-	if data.FinishTime != nil {
-		closedAt.Value = data.FinishTime.Format(time.RFC3339)
-	}
-	createdAt := CreatedAt{
-		RenderType: "datePicker",
-		Value:      data.CreatedAt.Format(time.RFC3339),
-		NoBorder:   true,
-	}
+	closedAt := buildTime(data.FinishTime)
+	createdAt := buildTime(data.CreatedAt)
+	planStartedAt := buildTime(data.PlanStartedAt)
 	state := State{
 		// Operations: stateOperations,
 		RenderType: "dropdownMenu",
@@ -736,26 +677,36 @@ func (ca *ComponentAction) buildTableItem(ctx context.Context, data *apistructs.
 		// state.PrefixIcon = stateIcon[string(issuestate.StateBelong)]
 		state.Value = issuestate.StateName
 	}
+	iteration := TextBlock{
+		RenderType: "text",
+		Value:      "",
+	}
+
+	if iterations != nil {
+		if v, ok := iterations[data.IterationID]; ok {
+			iteration.Value = v
+		}
+	}
 	return &TableItem{
 		//Assignee:    map[string]string{"value": data.Assignee, "renderType": "userAvatar"},
-		Id:          strconv.FormatInt(data.ID, 10),
+		Id:          strconv.FormatInt(data.Id, 10),
 		IterationID: data.IterationID,
-		Type:        string(data.Type),
+		Type:        data.Type.String(),
 		Progress:    progress,
 		Severity:    severity,
 		Complexity: Complexity{
 			RenderType: "textWithIcon",
-			PrefixIcon: "ISSUE_ICON.complexity." + string(data.Complexity),
-			Value:      cputil.I18n(ctx, string(data.Complexity)),
+			PrefixIcon: "ISSUE_ICON.complexity." + data.Complexity.String(),
+			Value:      cputil.I18n(ctx, data.Complexity.String()),
 		},
 		Priority: Priority{
-			Value:      cputil.I18n(ctx, strings.ToLower(string(data.Priority))),
+			Value:      cputil.I18n(ctx, strings.ToLower(data.Priority.String())),
 			RenderType: "operationsDropdownMenu",
-			PrefixIcon: priorityIcon[data.Priority],
+			PrefixIcon: priorityIcon[apistructs.IssuePriority(data.Priority.String())],
 			Operations: map[string]interface{}{
 				"changePriorityTodLOW": map[string]interface{}{
 					"meta": map[string]string{
-						"id":       strconv.FormatInt(data.ID, 10),
+						"id":       strconv.FormatInt(data.Id, 10),
 						"priority": "LOW",
 					},
 					"prefixIcon": priorityIcon[apistructs.IssuePriorityLow],
@@ -764,7 +715,7 @@ func (ca *ComponentAction) buildTableItem(ctx context.Context, data *apistructs.
 					"key":        "changePriorityTodLOW",
 				}, "changePriorityTocNORMAL": map[string]interface{}{
 					"meta": map[string]string{
-						"id":       strconv.FormatInt(data.ID, 10),
+						"id":       strconv.FormatInt(data.Id, 10),
 						"priority": "NORMAL",
 					},
 					"prefixIcon": priorityIcon[apistructs.IssuePriorityNormal],
@@ -773,7 +724,7 @@ func (ca *ComponentAction) buildTableItem(ctx context.Context, data *apistructs.
 					"key":        "changePriorityTocNORMAL",
 				}, "changePriorityTobHIGH": map[string]interface{}{
 					"meta": map[string]string{
-						"id":       strconv.FormatInt(data.ID, 10),
+						"id":       strconv.FormatInt(data.Id, 10),
 						"priority": "HIGH",
 					},
 					"prefixIcon": priorityIcon[apistructs.IssuePriorityHigh],
@@ -783,7 +734,7 @@ func (ca *ComponentAction) buildTableItem(ctx context.Context, data *apistructs.
 				},
 				"changePriorityToaURGENT": map[string]interface{}{
 					"meta": map[string]string{
-						"id":       strconv.FormatInt(data.ID, 10),
+						"id":       strconv.FormatInt(data.Id, 10),
 						"priority": "URGENT",
 					},
 					"prefixIcon": priorityIcon[apistructs.IssuePriorityUrgent],
@@ -816,10 +767,20 @@ func (ca *ComponentAction) buildTableItem(ctx context.Context, data *apistructs.
 			RenderType: "text",
 			Value:      fmt.Sprintf("%d", data.ReopenCount),
 		},
+		Creator: Assignee{
+			Value:      data.Creator,
+			RenderType: "userAvatar",
+		},
+		Owner: Assignee{
+			Value:      data.Owner,
+			RenderType: "userAvatar",
+		},
+		PlanStartedAt: planStartedAt,
+		Iteration:     iteration,
 	}
 }
 
-func (ca *ComponentAction) getNameColumn(issue *apistructs.Issue) Name {
+func (ca *ComponentAction) getNameColumn(issue *pb.Issue) Name {
 	var tags []Label
 	for _, label := range issue.Labels {
 		for _, labelDef := range ca.labels {
@@ -830,7 +791,7 @@ func (ca *ComponentAction) getNameColumn(issue *apistructs.Issue) Name {
 	}
 	return Name{
 		RenderType: "doubleRowWithIcon",
-		PrefixIcon: getPrefixIcon(string(issue.Type)),
+		PrefixIcon: getPrefixIcon(issue.Type.String()),
 		Value:      issue.Title,
 		ExtraContent: ExtraContent{
 			RenderType: "tags",
@@ -895,7 +856,7 @@ func init() {
 	})
 }
 
-func resetPageInfo(req *apistructs.IssuePagingRequest, state map[string]interface{}) {
+func resetPageInfo(req *pb.PagingIssueRequest, state map[string]interface{}) {
 	req.PageSize = 10
 	if _, ok := state["pageNo"]; ok {
 		req.PageNo = uint64(state["pageNo"].(float64))
@@ -903,4 +864,23 @@ func resetPageInfo(req *apistructs.IssuePagingRequest, state map[string]interfac
 	if _, ok := state["pageSize"]; ok {
 		req.PageSize = uint64(state["pageSize"].(float64))
 	}
+}
+
+func GetI18nKeyAlias(is pb.IssueSeverityEnum_Severity) string {
+	if is == pb.IssueSeverityEnum_NORMAL {
+		return "ordinary"
+	}
+	return strings.ToLower(is.String())
+}
+
+func buildTime(t *timestamppb.Timestamp) Time {
+	res := Time{
+		RenderType: "datePicker",
+		Value:      "",
+		NoBorder:   true,
+	}
+	if t != nil {
+		res.Value = t.AsTime().Format(time.RFC3339)
+	}
+	return res
 }

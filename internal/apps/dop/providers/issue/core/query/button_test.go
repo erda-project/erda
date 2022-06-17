@@ -28,7 +28,7 @@ import (
 	"github.com/erda-project/erda/pkg/i18n"
 )
 
-func Test_provider_genrateButtonMap(t *testing.T) {
+func Test_provider_generateButtonMap(t *testing.T) {
 	var db *dao.DBClient
 	p1 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetIssuesStateRelations",
 		func(d *dao.DBClient, projectID uint64, issueType string) ([]dao.IssueStateJoinSQL, error) {
@@ -55,7 +55,7 @@ func Test_provider_genrateButtonMap(t *testing.T) {
 	defer p2.Unpatch()
 
 	p := &provider{db: db}
-	_, err := p.GenrateButtonMap(1, []string{"TASK"})
+	_, err := p.GenerateButtonMap(1, []string{"TASK"})
 	assert.NoError(t, err)
 }
 
@@ -114,8 +114,8 @@ func Test_provider_StateCheckPermission(t *testing.T) {
 	p2 := monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "StateCheckPermission",
 		func(bdl *bundle.Bundle, req *apistructs.PermissionCheckRequest) (*apistructs.StatePermissionCheckResponseData, error) {
 			return &apistructs.StatePermissionCheckResponseData{
-				true,
-				[]string{"DEV"},
+				Access: true,
+				Roles:  []string{"DEV"},
 			}, nil
 		})
 	defer p2.Unpatch()

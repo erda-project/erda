@@ -18,7 +18,7 @@ import (
 	"encoding/json"
 	"strconv"
 
-	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 )
 
 type InParams struct {
@@ -29,9 +29,9 @@ type InParams struct {
 	FrontendFixedIteration string `json:"fixedIteration,omitempty"`
 	FrontendUrlQuery       string `json:"issueFilter__urlQuery,omitempty"`
 
-	ProjectID   uint64                 `json:"-"`
-	IssueTypes  []apistructs.IssueType `json:"-"`
-	IterationID int64                  `json:"-"`
+	ProjectID   uint64   `json:"-"`
+	IssueTypes  []string `json:"-"`
+	IterationID int64    `json:"-"`
 }
 
 func (f *IssueFilter) setInParams() error {
@@ -55,20 +55,12 @@ func (f *IssueFilter) setInParams() error {
 			return err
 		}
 	}
-	if f.InParams.FrontendFixedIssueType != "" {
-		switch f.InParams.FrontendFixedIssueType {
-		case "ALL":
-			f.InParams.IssueTypes = []apistructs.IssueType{apistructs.IssueTypeEpic, apistructs.IssueTypeRequirement, apistructs.IssueTypeTask, apistructs.IssueTypeBug}
-		case apistructs.IssueTypeEpic.String():
-			f.InParams.IssueTypes = []apistructs.IssueType{apistructs.IssueTypeEpic}
-		case apistructs.IssueTypeRequirement.String():
-			f.InParams.IssueTypes = []apistructs.IssueType{apistructs.IssueTypeRequirement}
-		case apistructs.IssueTypeTask.String():
-			f.InParams.IssueTypes = []apistructs.IssueType{apistructs.IssueTypeTask}
-		case apistructs.IssueTypeBug.String():
-			f.InParams.IssueTypes = []apistructs.IssueType{apistructs.IssueTypeBug}
-		case apistructs.IssueTypeTicket.String():
-			f.InParams.IssueTypes = []apistructs.IssueType{apistructs.IssueTypeTicket}
+
+	if _, ok := CpIssueTypes[f.InParams.FrontendFixedIssueType]; ok {
+		if f.InParams.FrontendFixedIssueType == "ALL" {
+			f.InParams.IssueTypes = []string{pb.IssueTypeEnum_BUG.String(), pb.IssueTypeEnum_REQUIREMENT.String(), pb.IssueTypeEnum_TASK.String()}
+		} else {
+			f.InParams.IssueTypes = []string{f.InParams.FrontendFixedIssueType}
 		}
 	}
 	if f.InParams.FrontendFixedIteration != "" {
@@ -79,4 +71,11 @@ func (f *IssueFilter) setInParams() error {
 	}
 
 	return nil
+}
+
+var CpIssueTypes = map[string]bool{
+	"ALL":                                 true,
+	pb.IssueTypeEnum_BUG.String():         true,
+	pb.IssueTypeEnum_REQUIREMENT.String(): true,
+	pb.IssueTypeEnum_TASK.String():        true,
 }

@@ -30,7 +30,6 @@ import (
 	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/issue-kanban/common/gshelper"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/types"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query"
@@ -49,9 +48,8 @@ const (
 type Kanban struct {
 	impl.DefaultKanban
 
-	filterReq apistructs.IssuePagingRequest
+	filterReq pb.PagingIssueRequest
 
-	bdl      *bundle.Bundle
 	issueSvc query.Interface
 }
 
@@ -86,7 +84,6 @@ func (k *Kanban) Finalize(sdk *cptype.SDK) {
 }
 
 func (k *Kanban) BeforeHandleOp(sdk *cptype.SDK) {
-	k.bdl = sdk.Ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 	k.issueSvc = sdk.Ctx.Value(types.IssueService).(query.Interface)
 	gh := gshelper.NewGSHelper(sdk.GlobalState)
 	filterCond, ok := gh.GetIssuePagingRequest()
@@ -95,9 +92,9 @@ func (k *Kanban) BeforeHandleOp(sdk *cptype.SDK) {
 	}
 	k.filterReq = *filterCond
 	// issue type
-	issueType := apistructs.IssueType(k.StdInParamsPtr.String(inParamsKeyFixedIssueType))
+	issueType := k.StdInParamsPtr.String(inParamsKeyFixedIssueType)
 	if issueType != "" {
-		k.filterReq.Type = []apistructs.IssueType{issueType}
+		k.filterReq.Type = []string{issueType}
 	}
 	if issueType == "ALL" {
 		panic("status kanban only support one issue type")
@@ -135,7 +132,7 @@ func (k *Kanban) doFilter(specificBoardIDs ...string) *kanban.Data {
 
 	// get specific project-level issue states
 	issueType := k.filterReq.Type[0]
-	stateBelong, err := k.issueSvc.GetIssueStatesBelong(&pb.GetIssueStateRelationRequest{ProjectID: k.filterReq.ProjectID, IssueType: issueType.String()})
+	stateBelong, err := k.issueSvc.GetIssueStatesBelong(&pb.GetIssueStateRelationRequest{ProjectID: k.filterReq.ProjectID, IssueType: issueType})
 	if err != nil {
 		panic(fmt.Errorf("failed to get issue state belong, err: %v", err))
 	}
@@ -164,8 +161,8 @@ func (k *Kanban) doFilter(specificBoardIDs ...string) *kanban.Data {
 
 			r := k.filterReq
 			r.State = []int64{state.ID}
-			resp, err := k.bdl.PageIssues(r)
-			if err != nil || !resp.Success {
+			issues, total, err := k.issueSvc.Paging(r)
+			if err != nil {
 				panic(fmt.Errorf("failed to paging issue, err: %v", err))
 			}
 
@@ -173,9 +170,9 @@ func (k *Kanban) doFilter(specificBoardIDs ...string) *kanban.Data {
 				ID:    boardID,
 				Title: state.Name,
 				Cards: func() (cards []kanban.Card) {
-					for _, issue := range resp.Data.List {
+					for _, issue := range issues {
 						cards = append(cards, kanban.Card{
-							ID:    strutil.String(issue.ID),
+							ID:    strutil.String(issue.Id),
 							Title: issue.Title,
 							Operations: map[cptype.OperationKey]cptype.Operation{
 								kanban.OpCardMoveTo{}.OpKey(): cputil.NewOpBuilder().
@@ -193,7 +190,7 @@ func (k *Kanban) doFilter(specificBoardIDs ...string) *kanban.Data {
 									}).
 									Build(),
 							},
-							Extra: IssueCardExtra{Type: issue.Type, Priority: issue.Priority, AssigneeID: issue.Assignee, IterationID: issue.IterationID}.ToExtra(),
+							Extra: IssueCardExtra{Type: apistructs.IssueType(issue.Type.String()), Priority: apistructs.IssuePriority(issue.Priority.String()), AssigneeID: issue.Assignee, IterationID: issue.IterationID}.ToExtra(),
 						})
 						data.UserIDs = append(data.UserIDs, issue.Assignee)
 					}
@@ -201,7 +198,7 @@ func (k *Kanban) doFilter(specificBoardIDs ...string) *kanban.Data {
 				}(),
 				PageNo:   k.filterReq.PageNo,
 				PageSize: k.filterReq.PageSize,
-				Total:    resp.Data.Total,
+				Total:    total,
 				Operations: map[cptype.OperationKey]cptype.Operation{
 					kanban.OpBoardLoadMore{}.OpKey(): cputil.NewOpBuilder().Build(),
 				},
