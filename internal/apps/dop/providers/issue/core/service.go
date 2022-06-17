@@ -74,6 +74,10 @@ func (i *IssueService) WithChannel(export, im chan uint64) {
 	i.ImportChannel = im
 }
 
+func (i *IssueService) DBClient() *dao.DBClient {
+	return i.db
+}
+
 func (i *IssueService) CreateIssue(ctx context.Context, req *pb.IssueCreateRequest) (*pb.IssueCreateResponse, error) {
 	req.IdentityInfo = apis.GetIdentityInfo(ctx)
 	if req.IdentityInfo == nil {
