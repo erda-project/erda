@@ -102,7 +102,6 @@ func closePipelineExitChannel(ctx context.Context, pipelineID uint64) {
 	if !ok {
 		return
 	}
-	exitCh <- struct{}{}
 	close(exitCh)
 }
 
