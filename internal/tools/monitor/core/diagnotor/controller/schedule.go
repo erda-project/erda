@@ -29,7 +29,7 @@ import (
 
 var errNotReady = errors.New("target pod is not ready")
 
-func (s *diagnotorService) createAgent(ctx context.Context, client *kubernetes.Clientset, clusterName, namespace, podName string, labels map[string]string) (*corev1.Pod, *corev1.Pod, error) {
+func (s *diagnotorService) createAgent(ctx context.Context, client kubernetes.Interface, clusterName, namespace, podName string, labels map[string]string) (*corev1.Pod, *corev1.Pod, error) {
 	pod, err := client.CoreV1().Pods(namespace).Get(ctx, podName, metav1.GetOptions{})
 	if err != nil {
 		return nil, nil, err
