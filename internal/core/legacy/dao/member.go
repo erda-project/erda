@@ -343,6 +343,20 @@ func (client *DBClient) GetMembersWithoutExtraByScope(scopeType apistructs.Scope
 	return total, members, nil
 }
 
+type MemberCount struct {
+	ScopeID int64
+	Count   int
+}
+
+func (client *DBClient) GetMemberCountByScopeIDs(scopeType apistructs.ScopeType, scopeIDs []int64) ([]MemberCount, error) {
+	var counts []MemberCount
+	if err := client.Table(model.Member{}.TableName()).Select("scope_id, COUNT(scope_id) as count").Where("scope_type = ? AND scope_id IN (?)", scopeType, scopeIDs).
+		Group("scope_id").Find(&counts).Error; err != nil {
+		return nil, err
+	}
+	return counts, nil
+}
+
 // GetMembersByScope 查询指定scope和role的用户，todo delete
 func (client *DBClient) GetMembersByScope(scopeType apistructs.ScopeType, scopeIDs []string, roles []string) ([]model.Member, error) {
 	var members []model.Member

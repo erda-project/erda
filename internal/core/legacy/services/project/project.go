@@ -666,7 +666,19 @@ func (p *Project) Get(ctx context.Context, projectID int64, withQuota bool) (*ap
 	if err != nil {
 		return nil, err
 	}
-	projectDTO := p.convertToProjectDTO(true, &project)
+	totalApp, err := p.db.GetApplicationCountByProjectID(project.ID)
+	if err != nil {
+		return nil, err
+	}
+	totalMember, _, err := p.db.GetMembersWithoutExtraByScope(apistructs.ProjectScope, project.ID)
+	if err != nil {
+		return nil, err
+	}
+	stats := apistructs.ProjectStats{
+		CountApplications: int(totalApp),
+		CountMembers:      totalMember,
+	}
+	projectDTO := p.convertToProjectDTO(true, &project, stats)
 
 	owners, err := p.db.GetMemberByScopeAndRole(apistructs.ProjectScope, []uint64{uint64(projectID)}, []string{"owner"})
 	if err != nil {
@@ -862,10 +874,7 @@ func (p *Project) GetAllProjects() ([]apistructs.ProjectDTO, error) {
 	if err != nil {
 		return nil, err
 	}
-	projectsDTO := make([]apistructs.ProjectDTO, 0, len(projects))
-	for _, v := range projects {
-		projectsDTO = append(projectsDTO, p.convertToProjectDTO(true, &v))
-	}
+	projectsDTO := p.BatchConvertProjectDTO(nil, projects)
 	return projectsDTO, nil
 }
 
@@ -882,20 +891,18 @@ func (p *Project) ListAllProjects(userID string, params *apistructs.ProjectListR
 	}
 
 	// 转换成所需格式
-	projectDTOs := make([]apistructs.ProjectDTO, 0, len(projects))
 	projectIDs := make([]uint64, 0, len(projects))
+	flags := make(map[int64]bool)
 	for i := range projects {
 		// 找出企业管理员已加入的项目
-		flag := params.Joined
 		for j := range members {
 			if projects[i].ID == members[j].ScopeID {
-				flag = true
+				flags[projects[i].ID] = true
 			}
 		}
-		projectDTOs = append(projectDTOs, p.convertToProjectDTO(flag, &projects[i]))
 		projectIDs = append(projectIDs, uint64(projects[i].ID))
 	}
-
+	projectDTOs := p.BatchConvertProjectDTO(flags, projects)
 	projectOwnerMap := make(map[uint64][]string)
 	owners, err := p.db.GetMemberByScopeAndRole(apistructs.ProjectScope, projectIDs, []string{types.RoleProjectOwner})
 	if err != nil {
@@ -928,10 +935,10 @@ func (p *Project) ListPublicProjects(userID string, params *apistructs.ProjectLi
 
 	projectIDs := make([]uint64, 0, len(members))
 	isManager := map[uint64]bool{} // 是否有管理权限
-	isJoined := map[uint64]bool{}  // 是否加入了项目
+	isJoined := map[int64]bool{}   // 是否加入了项目
 	for i := range members {
 		if members[i].ResourceKey == apistructs.RoleResourceKey {
-			isJoined[uint64(members[i].ScopeID)] = true
+			isJoined[members[i].ScopeID] = true
 			if members[i].ResourceValue == types.RoleProjectOwner ||
 				members[i].ResourceValue == types.RoleProjectLead ||
 				members[i].ResourceValue == types.RoleProjectPM {
@@ -976,12 +983,11 @@ func (p *Project) ListPublicProjects(userID string, params *apistructs.ProjectLi
 	}
 
 	// 转换成所需格式
-	projectDTOs := make([]apistructs.ProjectDTO, 0, len(projects))
 	projectIDs = make([]uint64, 0, len(projects))
 	for i := range projects {
-		projectDTOs = append(projectDTOs, p.convertToProjectDTO(isJoined[uint64(projects[i].ID)], &projects[i]))
 		projectIDs = append(projectIDs, uint64(projects[i].ID))
 	}
+	projectDTOs := p.BatchConvertProjectDTO(isJoined, projects)
 
 	unblockAppCounts, err := p.ListUnblockAppCountsByProjectIDS(projectIDs)
 	if err != nil {
@@ -1090,12 +1096,13 @@ func (p *Project) ListJoinedProjects(orgID int64, userID string, params *apistru
 	}
 
 	// 转换成所需格式
-	projectDTOs := make([]apistructs.ProjectDTO, 0, len(projects))
+	isJoined := map[int64]bool{}
 	projectIDs = make([]uint64, 0, len(projects))
 	for i := range projects {
-		projectDTOs = append(projectDTOs, p.convertToProjectDTO(params.Joined, &projects[i]))
+		isJoined[projects[i].ID] = params.Joined
 		projectIDs = append(projectIDs, uint64(projects[i].ID))
 	}
+	projectDTOs := p.BatchConvertProjectDTO(isJoined, projects)
 
 	projectOwnerMap := make(map[uint64][]string)
 	owners, err := p.db.GetMemberByScopeAndRole(apistructs.ProjectScope, projectIDs, []string{"owner"})
@@ -1228,7 +1235,7 @@ func initRollbackConfig(rollbackConfig *map[string]int) error {
 	return checkRollbackConfig(rollbackConfig)
 }
 
-func (p *Project) convertToProjectDTO(joined bool, project *model.Project) apistructs.ProjectDTO {
+func (p *Project) convertToProjectDTO(joined bool, project *model.Project, stats apistructs.ProjectStats) apistructs.ProjectDTO {
 	l := logrus.WithField("func", "convertToProjectDTO")
 	var rollbackConfig map[string]int
 	if err := json.Unmarshal([]byte(project.RollbackConfig), &rollbackConfig); err != nil {
@@ -1240,30 +1247,17 @@ func (p *Project) convertToProjectDTO(joined bool, project *model.Project) apist
 		l.WithError(err).Errorln("failed to Unmarshal project.ClusterConfig")
 	}
 
-	totalApp, err := p.db.GetApplicationCountByProjectID(project.ID)
-	if err != nil {
-		l.WithError(err).Errorln("failed to count app")
-	}
-
-	totalMember, _, err := p.db.GetMembersWithoutExtraByScope(apistructs.ProjectScope, project.ID)
-	if err != nil {
-		l.WithError(err).Errorln("failed to count member")
-	}
-
 	projectDto := apistructs.ProjectDTO{
-		ID:          uint64(project.ID),
-		Name:        project.Name,
-		DisplayName: project.DisplayName,
-		Desc:        project.Desc,
-		Logo:        filehelper.APIFileUrlRetriever(project.Logo),
-		OrgID:       uint64(project.OrgID),
-		Joined:      joined,
-		Creator:     project.UserID,
-		DDHook:      project.DDHook,
-		Stats: apistructs.ProjectStats{
-			CountApplications: int(totalApp),
-			CountMembers:      totalMember,
-		},
+		ID:             uint64(project.ID),
+		Name:           project.Name,
+		DisplayName:    project.DisplayName,
+		Desc:           project.Desc,
+		Logo:           filehelper.APIFileUrlRetriever(project.Logo),
+		OrgID:          uint64(project.OrgID),
+		Joined:         joined,
+		Creator:        project.UserID,
+		DDHook:         project.DDHook,
+		Stats:          stats,
 		ClusterConfig:  clusterConfig,
 		RollbackConfig: rollbackConfig,
 		CpuQuota:       project.CpuQuota,
@@ -1280,6 +1274,45 @@ func (p *Project) convertToProjectDTO(joined bool, project *model.Project) apist
 	}
 
 	return projectDto
+}
+
+func (p *Project) BatchConvertProjectDTO(joined map[int64]bool, projects []model.Project) []apistructs.ProjectDTO {
+	l := logrus.WithField("func", "BatchConvertProjectDTO")
+
+	projectIDs := make([]int64, 0, len(projects))
+	for _, i := range projects {
+		projectIDs = append(projectIDs, i.ID)
+	}
+	appCount, err := p.db.GetApplicationCountByProjectIDs(projectIDs)
+	if err != nil {
+		l.WithError(err).Errorln("failed to count app")
+	}
+	appCountMap := make(map[int64]int)
+	for _, i := range appCount {
+		appCountMap[i.ProjectID] = i.Count
+	}
+
+	memberCount, err := p.db.GetMemberCountByScopeIDs(apistructs.ProjectScope, projectIDs)
+	if err != nil {
+		l.WithError(err).Errorln("failed to count app")
+	}
+	memberCountMap := make(map[int64]int)
+	for _, i := range memberCount {
+		memberCountMap[i.ScopeID] = i.Count
+	}
+	res := make([]apistructs.ProjectDTO, 0, len(projects))
+	for _, project := range projects {
+		var join = true
+		if joined != nil {
+			join = joined[project.ID]
+		}
+		stats := apistructs.ProjectStats{
+			CountApplications: appCountMap[project.ID],
+			CountMembers:      memberCountMap[project.ID],
+		}
+		res = append(res, p.convertToProjectDTO(join, &project, stats))
+	}
+	return res
 }
 
 // GetProjectStats 获取项目状态
@@ -1349,10 +1382,7 @@ func (p *Project) GetProjectIDListByStates(req apistructs.IssuePagingRequest, pr
 	if err != nil {
 		return total, res, err
 	}
-	for _, v := range pros {
-		proDTO := p.convertToProjectDTO(true, &v)
-		res = append(res, proDTO)
-	}
+	res = p.BatchConvertProjectDTO(nil, pros)
 	return total, res, nil
 }
 
