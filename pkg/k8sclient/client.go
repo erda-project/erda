@@ -36,7 +36,7 @@ type K8sClient struct {
 	schemes              []func(scheme *runtime.Scheme) error
 
 	// client for kubernetes
-	ClientSet *kubernetes.Clientset
+	ClientSet kubernetes.Interface
 	CRClient  client.Client
 }
 

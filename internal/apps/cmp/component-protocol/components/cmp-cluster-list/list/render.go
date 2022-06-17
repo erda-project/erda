@@ -402,7 +402,7 @@ func (l *List) GetVersion(clusterName string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	info, err := client.ClientSet.ServerVersion()
+	info, err := client.ClientSet.Discovery().ServerVersion()
 	if err != nil {
 		return "", err
 	}

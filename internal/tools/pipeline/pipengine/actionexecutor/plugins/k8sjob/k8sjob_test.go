@@ -15,13 +15,17 @@
 package k8sjob
 
 import (
+	"strconv"
 	"testing"
 
 	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes/fake"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/tools/pipeline/conf"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/clusterinfo"
 	"github.com/erda-project/erda/pkg/k8sclient"
 )
@@ -64,12 +68,19 @@ func Test_generateKubeJob(t *testing.T) {
 	defer monkey.UnpatchAll()
 
 	monkey.Patch(k8sclient.New, func(_ string, _ ...k8sclient.Option) (*k8sclient.K8sClient, error) {
-		return nil, nil
+		return &k8sclient.K8sClient{
+			ClientSet: fake.NewSimpleClientset(&corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      apistructs.BuildkitClientSecret,
+					Namespace: conf.ErdaNamespace(),
+				},
+			}),
+		}, nil
 	})
 
 	monkey.Patch(clusterinfo.GetClusterInfoByName, func(clusterName string) (apistructs.ClusterInfo, error) {
 		return apistructs.ClusterInfo{CM: apistructs.ClusterInfoData{
-			"BUILDKIT_ENABLE": "false",
+			apistructs.BuildkitEnable: strconv.FormatBool(false),
 		}}, nil
 	})
 
@@ -81,6 +92,9 @@ func Test_generateKubeJob(t *testing.T) {
 		Name:      "fake-job",
 		Namespace: metav1.NamespaceDefault,
 	}, nil)
+	assert.NoError(t, err)
+
+	err = j.createInnerSecretIfNotExist(metav1.NamespaceDefault, apistructs.BuildkitClientSecret)
 	assert.NoError(t, err)
 }
 

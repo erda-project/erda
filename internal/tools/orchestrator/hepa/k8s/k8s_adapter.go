@@ -89,7 +89,7 @@ type K8SAdapter interface {
 }
 
 type K8SAdapterImpl struct {
-	client          *kubernetes.Clientset
+	client          kubernetes.Interface
 	ingressesHelper union_interface.IngressesHelper
 	pool            *util.GPool
 }

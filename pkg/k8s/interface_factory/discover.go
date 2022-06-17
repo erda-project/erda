@@ -20,7 +20,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-func IsResourceExist(client *kubernetes.Clientset, resourceKind, groupVersion string) (bool, error) {
+func IsResourceExist(client kubernetes.Interface, resourceKind, groupVersion string) (bool, error) {
 	groups, err := client.Discovery().ServerResourcesForGroupVersion(groupVersion)
 	if err != nil {
 		return false, err

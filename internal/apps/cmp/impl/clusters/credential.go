@@ -181,7 +181,7 @@ func (c *Clusters) ResetAccessKey(ctx context.Context, clusterName string) (*tok
 }
 
 // ResetAccessKeyWithClientSet reset access key with specified clientSet
-func (c *Clusters) ResetAccessKeyWithClientSet(ctx context.Context, clusterName string, cs *kubernetes.Clientset) (*tokenpb.Token, error) {
+func (c *Clusters) ResetAccessKeyWithClientSet(ctx context.Context, clusterName string, cs kubernetes.Interface) (*tokenpb.Token, error) {
 	// Get worker namespace
 	workerNs := getWorkerNamespace()
 

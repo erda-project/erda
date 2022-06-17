@@ -904,7 +904,7 @@ func (k *K8sJob) createInnerSecretIfNotExist(namespace, secretName string) error
 	}
 
 	// When the cluster is initialized, a secret to pull the mirror will be created in the default namespace
-	s, err := k.client.ClientSet.CoreV1().Secrets(metav1.NamespaceDefault).Get(context.Background(), secretName, metav1.GetOptions{})
+	s, err := k.client.ClientSet.CoreV1().Secrets(conf.ErdaNamespace()).Get(context.Background(), secretName, metav1.GetOptions{})
 	if err != nil {
 		if !k8serrors.IsNotFound(err) {
 			return nil
