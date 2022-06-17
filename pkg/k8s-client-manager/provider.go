@@ -48,7 +48,7 @@ type (
 	}
 	cacheItem struct {
 		Config    *rest.Config
-		Clientset *kubernetes.Clientset
+		Clientset kubernetes.Interface
 		CRClient  *client.Client
 	}
 )
@@ -72,7 +72,7 @@ func (p *provider) Init(ctx servicehub.Context) (err error) {
 	return nil
 }
 
-func (p *provider) GetClient(clusterName string) (*kubernetes.Clientset, *rest.Config, error) {
+func (p *provider) GetClient(clusterName string) (kubernetes.Interface, *rest.Config, error) {
 	val, err := p.cache.Get(clusterName)
 	if err != nil {
 		return nil, nil, err

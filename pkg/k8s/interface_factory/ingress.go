@@ -28,7 +28,7 @@ import (
 
 const IngressKind = "Ingress"
 
-func CreateIngressesHelper(client *kubernetes.Clientset) (union_interface.IngressesHelper, error) {
+func CreateIngressesHelper(client kubernetes.Interface) (union_interface.IngressesHelper, error) {
 	// k8s version >=1.19
 	exist, err := IsResourceExist(client, IngressKind, v1.SchemeGroupVersion.String())
 	if err != nil {
