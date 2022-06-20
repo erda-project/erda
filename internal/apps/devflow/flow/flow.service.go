@@ -504,6 +504,24 @@ func (s *Service) GetDevFlowInfo(ctx context.Context, req *pb.GetDevFlowInfoRequ
 				return fmt.Errorf("unmarshal extra %v error %v", relation.Extra, err)
 			}
 
+			err = s.permission.CheckAppAction(apistructs.IdentityInfo{UserID: apis.GetUserID(ctx)}, extra.AppID, apistructs.GetAction)
+			if err != nil {
+				var devFlowInfo = &pb.DevFlowInfo{}
+				devFlowInfo.DevFlowNode = &pb.DevFlowNode{
+					RepoMergeID: extra.RepoMergeID,
+					AppID:       extra.AppID,
+					AppName:     appInfoMap[extra.AppID].Name,
+					TempBranch:  "",
+					IssueID:     relation.IssueID,
+				}
+				devFlowInfo.HasPermission = false
+
+				locker.Lock()
+				devFlowInfos = append(devFlowInfos, devFlowInfo)
+				locker.Unlock()
+				return nil
+			}
+
 			mrInfo, err := s.p.bdl.GetMergeRequestDetail(extra.AppID, apis.GetUserID(ctx), extra.RepoMergeID)
 			if err != nil {
 				return err
@@ -529,24 +547,6 @@ func (s *Service) GetDevFlowInfo(ctx context.Context, req *pb.GetDevFlowInfoRequ
 					return err
 				}
 				targetBranchTempBranchMap[mrInfo.TargetBranch] = rule.AutoMergeBranch
-			}
-
-			err = s.permission.CheckAppAction(apistructs.IdentityInfo{UserID: apis.GetUserID(ctx)}, extra.AppID, apistructs.GetAction)
-			if err != nil {
-				var devFlowInfo = &pb.DevFlowInfo{}
-				devFlowInfo.DevFlowNode = &pb.DevFlowNode{
-					RepoMergeID: extra.RepoMergeID,
-					AppID:       extra.AppID,
-					AppName:     appInfoMap[extra.AppID].Name,
-					TempBranch:  targetBranchTempBranchMap[relationMergeInfoMap[relation.ID].TargetBranch],
-					IssueID:     relation.IssueID,
-				}
-				devFlowInfo.HasPermission = false
-
-				locker.Lock()
-				devFlowInfos = append(devFlowInfos, devFlowInfo)
-				locker.Unlock()
-				return nil
 			}
 
 			locker.Lock()
