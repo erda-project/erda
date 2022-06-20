@@ -77,7 +77,7 @@ stages:
               decline_limit_sec: 60
               interval_sec: 5
           resources:
-            cpu: 2
+            cpu: 1
             mem: 2048
       - custom-script:
           alias: build-erda-cli
@@ -94,7 +94,7 @@ stages:
               decline_limit_sec: 60
               interval_sec: 5
           resources:
-            cpu: 2
+            cpu: 1
             mem: 2048
       - custom-script:
           alias: build-erda-dicehub-ee
@@ -116,7 +116,7 @@ stages:
               decline_limit_sec: 60
               interval_sec: 5
           resources:
-            cpu: 2
+            cpu: 1
             mem: 2048
       - custom-script:
           alias: build-agent
@@ -132,7 +132,7 @@ stages:
               decline_limit_sec: 60
               interval_sec: 5
           resources:
-            cpu: 2
+            cpu: 1
             mem: 2048
       - custom-script:
           alias: build-monitor-injector
@@ -169,7 +169,7 @@ stages:
             - export CLI_VERSION=$(echo ${{ outputs.extract-repo-version.version }} | sed "s/\+.*//g")
             - 'echo action meta: version=${CLI_VERSION}'
           resources:
-            cpu: 2
+            cpu: 1
             mem: 2048
       - custom-script:
           alias: build-erda-cli-mac
@@ -186,7 +186,7 @@ stages:
             - export CLI_VERSION=$(echo ${{ outputs.extract-repo-version.version }} | sed "s/\+.*//g")
             - 'echo action meta: version=${CLI_VERSION}'
           resources:
-            cpu: 2
+            cpu: 1
             mem: 2048
   - stage:
       - oss-upload:
