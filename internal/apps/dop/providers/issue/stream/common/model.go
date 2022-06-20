@@ -119,7 +119,6 @@ type IssueStreamCreateRequest struct {
 	StreamType   string   `json:"streamType"`
 	StreamParams ISTParam `json:"streamParams"`
 	StreamTypes  []string `json:"streamTypes"`
-	Tran         i18n.Translator
 	// internal use, get from *http.Request
 	// IdentityInfo
 }
