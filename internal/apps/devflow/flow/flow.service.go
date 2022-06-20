@@ -932,7 +932,7 @@ func (s *Service) getAllPipelineYml(ctx context.Context, app *apistructs.Applica
 		},
 	}, uint64(orgID))
 	if err != nil {
-		s.p.Log.Debug("failed to get %v path yml error %v", apistructs.DefaultPipelineYmlName, err)
+		s.p.Log.Errorf("failed to get %v path yml error %v", apistructs.DefaultPipelineYmlName, err)
 		return nil, err
 	}
 
