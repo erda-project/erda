@@ -29,7 +29,7 @@ type Column struct {
 }
 
 func buildTableColumnProps(ctx context.Context, issueType string) cptype.ComponentProps {
-	id := Column{"ID", "id", true}
+	id := Column{"ID", "id", false}
 	name := Column{cputil.I18n(ctx, "title"), "name", false}
 	progress := Column{cputil.I18n(ctx, "progress"), "progress", false}
 	severity := Column{cputil.I18n(ctx, "severity"), "severity", false}
@@ -43,23 +43,23 @@ func buildTableColumnProps(ctx context.Context, issueType string) cptype.Compone
 	createdAt := Column{cputil.I18n(ctx, "created-at"), "createdAt", true}
 
 	iteration := Column{cputil.I18n(ctx, "iteration"), "iteration", true}
-	planStartedAt := Column{cputil.I18n(ctx, "startTime"), "planStartedAt", true}
+	planStartedAt := Column{cputil.I18n(ctx, "started-at"), "planStartedAt", true}
 	creator := Column{cputil.I18n(ctx, "creator"), "creator", true}
 	owner := Column{cputil.I18n(ctx, "responsible-person"), "owner", true}
 
 	var columns []Column
 	switch issueType {
 	case pb.IssueTypeEnum_REQUIREMENT.String():
-		columns = []Column{id, name, progress, complexity, priority, state, assignee, deadline, iteration, planStartedAt, creator, createdAt}
+		columns = []Column{id, name, progress, complexity, priority, iteration, state, assignee, planStartedAt, deadline, creator, createdAt}
 	case pb.IssueTypeEnum_TASK.String():
-		columns = []Column{id, name, complexity, priority, state, assignee, deadline, iteration, planStartedAt, creator, createdAt}
+		columns = []Column{id, name, complexity, priority, iteration, state, assignee, planStartedAt, deadline, creator, createdAt}
 	case pb.IssueTypeEnum_BUG.String():
-		columns = []Column{id, name, severity, complexity, priority, state, assignee, deadline, closedAt, reopenCount, iteration, planStartedAt, owner, creator, createdAt}
+		columns = []Column{id, name, severity, complexity, priority, iteration, state, reopenCount, assignee, planStartedAt, deadline, owner, closedAt, creator, createdAt}
 	case pb.IssueTypeEnum_TICKET.String():
 		createdAt.Hidden = false
-		columns = []Column{id, name, severity, complexity, priority, state, assignee, deadline, creator, createdAt}
+		columns = []Column{id, name, severity, complexity, priority, state, assignee, planStartedAt, deadline, creator, createdAt}
 	default:
-		columns = []Column{id, name, complexity, priority, state, assignee, deadline, iteration, planStartedAt, creator, createdAt}
+		columns = []Column{id, name, complexity, priority, iteration, state, assignee, planStartedAt, deadline, creator, createdAt}
 	}
 	return map[string]interface{}{
 		"columns":         columns,

@@ -150,7 +150,6 @@ func (p *provider) CreateStream(updateReq *pb.UpdateIssueRequest, streamFields m
 		Operator:     updateReq.IdentityInfo.UserID,
 		StreamTypes:  make([]string, 0),
 		StreamParams: common.ISTParam{},
-		Tran:         p.I18n,
 	}
 	for field, v := range streamFields {
 		streamReq := common.IssueStreamCreateRequest{

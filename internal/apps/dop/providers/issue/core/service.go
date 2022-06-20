@@ -27,7 +27,6 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/erda-project/erda-infra/base/logs"
-	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
@@ -54,7 +53,6 @@ type IssueService struct {
 	query         query.Interface
 	mttestPlan    *mttestplan.TestPlan
 	testcase      *testcase.Service
-	tran          i18n.Translator
 	ExportChannel chan uint64
 	ImportChannel chan uint64
 }
@@ -168,7 +166,6 @@ func (i *IssueService) CreateIssue(ctx context.Context, req *pb.IssueCreateReque
 		Operator:     req.IdentityInfo.UserID,
 		StreamType:   stream.ISTCreate,
 		StreamParams: stream.ISTParam{UserName: users[0].Nick},
-		Tran:         i.tran,
 	}
 	// create stream and send issue create event
 	if _, err := i.stream.Create(&streamReq); err != nil {

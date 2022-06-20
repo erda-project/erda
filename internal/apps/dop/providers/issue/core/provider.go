@@ -30,7 +30,6 @@ import (
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 	"github.com/erda-project/erda-infra/pkg/transport/http/encoding"
 	"github.com/erda-project/erda-infra/pkg/transport/interceptor"
-	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query"
@@ -53,7 +52,6 @@ type provider struct {
 	Register transport.Register `autowired:"service-register" required:"true"`
 	DB       *gorm.DB           `autowired:"mysql-client"`
 	Perm     perm.Interface     `autowired:"permission"`
-	I18n     i18n.Translator    `translator:"issue-manage"`
 
 	issueService *IssueService
 	Stream       stream.Interface
@@ -73,7 +71,6 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		bdl:    bundle.New(bundle.WithCoreServices()),
 		stream: p.Stream,
 		query:  p.Query,
-		tran:   p.I18n,
 	}
 
 	if p.Register != nil {
@@ -88,10 +85,13 @@ func (p *provider) Init(ctx servicehub.Context) error {
 			perm.Method(IssueService.UpdateIssueType, perm.ScopeProject, "issue-type", perm.ActionUpdate, ScopeID, perm.WithSkipPermInternalClient(true)),
 			perm.NoPermMethod(IssueService.SubscribeIssue),
 			perm.NoPermMethod(IssueService.UnsubscribeIssue),
+			perm.NoPermMethod(IssueService.BatchUpdateIssueSubscriber),
 			perm.NoPermMethod(IssueService.CreateIssueProperty),
 			perm.NoPermMethod(IssueService.DeleteIssueProperty),
 			perm.NoPermMethod(IssueService.UpdateIssueProperty),
 			perm.NoPermMethod(IssueService.GetIssueProperty),
+			perm.NoPermMethod(IssueService.UpdateIssuePropertiesIndex),
+			perm.NoPermMethod(IssueService.GetIssuePropertyUpdateTime),
 			perm.NoPermMethod(IssueService.CreateIssuePropertyInstance),
 			perm.NoPermMethod(IssueService.GetIssuePropertyInstance),
 			perm.NoPermMethod(IssueService.GetIssueStage),

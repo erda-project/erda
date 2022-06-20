@@ -33,6 +33,9 @@ import (
 )
 
 type config struct {
+	UCClientID           string `default:"dice" file:"UC_CLIENT_ID"`
+	UCClientSecret       string `default:"secret" file:"UC_CLIENT_SECRET"`
+	OryKratosPrivateAddr string `default:"kratos-admin" file:"ORY_KRATOS_ADMIN_ADDR"`
 }
 
 type provider struct {
@@ -55,11 +58,12 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		},
 	}
 	p.commonTran = p.CPTran.Translator("")
-	uc := ucauth.NewUCClient(discover.UC(), conf.UCClientID(), conf.UCClientSecret())
+	uc := ucauth.NewUCClient(discover.UC(), p.Cfg.UCClientID, p.Cfg.UCClientSecret)
 	if conf.OryEnabled() {
-		uc = ucauth.NewUCClient(conf.OryKratosPrivateAddr(), conf.OryCompatibleClientID(), conf.OryCompatibleClientSecret())
+		uc = ucauth.NewUCClient(p.Cfg.OryKratosPrivateAddr, conf.OryCompatibleClientID(), conf.OryCompatibleClientSecret())
 		uc.SetDBClient(p.DB)
 	}
+	p.uc = uc
 	return nil
 }
 
@@ -102,8 +106,9 @@ func (p *provider) Create(req *common.IssueStreamCreateRequest) (int64, error) {
 
 func init() {
 	servicehub.Register("erda.dop.issue.stream.core", &servicehub.Spec{
-		Services: []string{"erda.dop.issue.stream.CoreService"},
-		Types:    []reflect.Type{reflect.TypeOf((*Interface)(nil)).Elem()},
+		Services:   []string{"erda.dop.issue.stream.CoreService"},
+		Types:      []reflect.Type{reflect.TypeOf((*Interface)(nil)).Elem()},
+		ConfigFunc: func() interface{} { return &config{} },
 		Creator: func() servicehub.Provider {
 			return &provider{}
 		},
