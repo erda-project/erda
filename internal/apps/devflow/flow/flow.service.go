@@ -577,8 +577,10 @@ func (s *Service) GetDevFlowInfo(ctx context.Context, req *pb.GetDevFlowInfoRequ
 		work.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
 			appID := i[0].(uint64)
 			appDto := appInfoMap[appID]
+			locker.Lock()
 			appTempBranchChangeBranchListMap[appID] = make(map[string][]*pb.ChangeBranch)
 			appTempBranchCommitMap[appID] = make(map[string]*apistructs.Commit)
+			locker.Unlock()
 			for _, v := range appMergeInfoMap[appID] {
 				tempBranch := targetBranchTempBranchMap[v.TargetBranch]
 				if !v.IsJoinTempBranch {
@@ -765,6 +767,9 @@ func (s *Service) queryAllPipelineYmlAndDoFunc(ctx context.Context, appDto *apis
 		return err
 	}
 
+	if len(ymlNodes) > 0 {
+		ymlNodes = ymlNodes[:1]
+	}
 	worker := limit_sync_group.NewWorker(5)
 	for index := range ymlNodes {
 		worker.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
@@ -917,79 +922,26 @@ func (s *Service) getAllPipelineYml(ctx context.Context, app *apistructs.Applica
 	}
 	var nodes []*apistructs.UnifiedFileTreeNode
 
-	worker := limit_sync_group.NewWorker(3)
-	worker.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
-		var defaultYmlPath = fmt.Sprintf("%v/%v/tree/%v", app.ProjectID, app.ID, branch)
-		pipelineTreeData, err := s.fileTree.ListFileTreeNodes(apistructs.UnifiedFileTreeNodeListRequest{
-			Scope:   apistructs.FileTreeScopeProjectApp,
-			ScopeID: strconv.FormatUint(app.ProjectID, 10),
-			Pinode:  base64.URLEncoding.EncodeToString([]byte(defaultYmlPath)),
-			IdentityInfo: apistructs.IdentityInfo{
-				UserID: apis.GetUserID(ctx),
-			},
-		}, uint64(orgID))
-		if err != nil {
-			s.p.Log.Debug("failed to get %v path yml error %v", apistructs.DefaultPipelineYmlName, err)
-			return nil
-		}
-
-		locker.Lock()
-		defer locker.Unlock()
-		for _, node := range pipelineTreeData {
-			if node.Name == apistructs.DefaultPipelineYmlName {
-				nodes = append(nodes, node)
-				break
-			}
-		}
-		return nil
-	})
-
-	worker.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
-		var diceYmlPath = fmt.Sprintf("%v/%v/tree/%v/%v", app.ProjectID, app.ID, branch, apistructs.DicePipelinePath)
-		diceTreeData, err := s.fileTree.ListFileTreeNodes(apistructs.UnifiedFileTreeNodeListRequest{
-			Scope:   apistructs.FileTreeScopeProjectApp,
-			ScopeID: strconv.FormatUint(app.ProjectID, 10),
-			Pinode:  base64.URLEncoding.EncodeToString([]byte(diceYmlPath)),
-			IdentityInfo: apistructs.IdentityInfo{
-				UserID: apis.GetUserID(ctx),
-			},
-		}, uint64(orgID))
-		if err != nil {
-			s.p.Log.Debug("failed to get %v path yml error %v", apistructs.DicePipelinePath, err)
-			return nil
-		}
-
-		locker.Lock()
-		defer locker.Unlock()
-		nodes = append(nodes, diceTreeData...)
-		return nil
-	})
-
-	worker.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
-		var erdaYmlPath = fmt.Sprintf("%v/%v/tree/%v/%v", app.ProjectID, app.ID, branch, apistructs.ErdaPipelinePath)
-		erdaTreeData, err := s.fileTree.ListFileTreeNodes(apistructs.UnifiedFileTreeNodeListRequest{
-			Scope:   apistructs.FileTreeScopeProjectApp,
-			ScopeID: strconv.FormatUint(app.ProjectID, 10),
-			Pinode:  base64.URLEncoding.EncodeToString([]byte(erdaYmlPath)),
-			IdentityInfo: apistructs.IdentityInfo{
-				UserID: apis.GetUserID(ctx),
-			},
-		}, uint64(orgID))
-		if err != nil {
-			s.p.Log.Debug("failed to get %v path yml error %v", apistructs.ErdaPipelinePath, err)
-			return nil
-		}
-
-		locker.Lock()
-		defer locker.Unlock()
-		nodes = append(nodes, erdaTreeData...)
-		return nil
-	})
-	err = worker.Do().Error()
+	var defaultYmlPath = fmt.Sprintf("%v/%v/tree/%v", app.ProjectID, app.ID, branch)
+	pipelineTreeData, err := s.fileTree.ListFileTreeNodes(apistructs.UnifiedFileTreeNodeListRequest{
+		Scope:   apistructs.FileTreeScopeProjectApp,
+		ScopeID: strconv.FormatUint(app.ProjectID, 10),
+		Pinode:  base64.URLEncoding.EncodeToString([]byte(defaultYmlPath)),
+		IdentityInfo: apistructs.IdentityInfo{
+			UserID: apis.GetUserID(ctx),
+		},
+	}, uint64(orgID))
 	if err != nil {
+		s.p.Log.Debug("failed to get %v path yml error %v", apistructs.DefaultPipelineYmlName, err)
 		return nil, err
 	}
 
+	for _, node := range pipelineTreeData {
+		if node.Name == apistructs.DefaultPipelineYmlName {
+			nodes = append(nodes, node)
+			break
+		}
+	}
 	return nodes, nil
 }
 
