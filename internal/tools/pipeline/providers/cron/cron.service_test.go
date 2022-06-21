@@ -669,3 +669,82 @@ func Test_provider_update(t *testing.T) {
 		})
 	}
 }
+
+type MockDaemon struct {
+}
+
+func (m MockDaemon) AddIntoPipelineCrond(cron *db.PipelineCron) error {
+	return nil
+}
+
+func (m MockDaemon) DeleteFromPipelineCrond(cron *db.PipelineCron) error {
+	panic("implement me")
+}
+
+func (m MockDaemon) ReloadCrond(ctx context.Context) ([]string, error) {
+	panic("implement me")
+}
+
+func (m MockDaemon) CrondSnapshot() []string {
+	panic("implement me")
+}
+
+func (m MockDaemon) WithPipelineFunc(createPipelineFunc daemon.CreatePipelineFunc) {
+	panic("implement me")
+}
+
+func Test_provider_addIntoPipelineCrond(t *testing.T) {
+	type fields struct {
+		Daemon daemon.Interface
+	}
+	type args struct {
+		cron *db.PipelineCron
+	}
+	enable := true
+	mockDaemon := &MockDaemon{}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "test with enable",
+			fields: fields{
+				Daemon: mockDaemon,
+			},
+			args: args{
+				cron: &db.PipelineCron{
+					ID:       1,
+					CronExpr: "*/1 * * * *",
+					Enable:   &enable,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "test with disable",
+			fields: fields{
+				Daemon: mockDaemon,
+			},
+			args: args{
+				cron: &db.PipelineCron{
+					ID:       1,
+					CronExpr: "*/1 * * * *",
+					Enable:   new(bool),
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &provider{
+				Daemon: tt.fields.Daemon,
+			}
+			if err := s.addIntoPipelineCrond(tt.args.cron); (err != nil) != tt.wantErr {
+				t.Errorf("addIntoPipelineCrond() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
