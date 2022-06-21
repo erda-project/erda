@@ -556,6 +556,20 @@ func MergeWithBranch(ctx *webcontext.Context) {
 		ctx.Abort(err)
 		return
 	}
+
+	targetCommit, err := ctx.Repository.GetBranchCommit(req.TargetBranch)
+	if err != nil {
+		ctx.Abort(err)
+		return
+	}
+	pushEvent := &models.PayloadPushEvent{
+		Before: targetCommit.ID,
+		After:  commit.ID,
+		Ref:    gitmodule.BRANCH_PREFIX + req.TargetBranch,
+		IsTag:  false,
+		Pusher: ctx.User,
+	}
+	go helper.PostReceiveHook([]*models.PayloadPushEvent{pushEvent}, ctx)
 	ctx.Success(commit)
 }
 
