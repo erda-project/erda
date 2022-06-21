@@ -44,3 +44,4 @@ ignore:
   - "internal/**/dao"
   - "bundle"
   - "api/proto-go"
+  - "internal/tools/openapi/legacy/api/apis/**/*.go"
