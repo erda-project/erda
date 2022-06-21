@@ -78,4 +78,5 @@ var CpIssueTypes = map[string]bool{
 	pb.IssueTypeEnum_BUG.String():         true,
 	pb.IssueTypeEnum_REQUIREMENT.String(): true,
 	pb.IssueTypeEnum_TASK.String():        true,
+	pb.IssueTypeEnum_TICKET.String():      true,
 }
