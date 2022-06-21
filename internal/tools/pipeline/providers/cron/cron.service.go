@@ -106,9 +106,6 @@ func (s *provider) CronCreate(ctx context.Context, req *pb.CronCreateRequest) (*
 		}
 
 		req.ID = createCron.ID
-		if err := s.Daemon.AddIntoPipelineCrond(createCron); err != nil {
-			return err
-		}
 
 		if toEdge {
 			bdl, err := s.EdgePipelineRegister.GetEdgeBundleByClusterName(createCron.Extra.ClusterName)
@@ -122,7 +119,11 @@ func (s *provider) CronCreate(ctx context.Context, req *pb.CronCreateRequest) (*
 				return err
 			}
 		}
-
+		if *createCron.Enable && createCron.CronExpr != "" {
+			if err := s.Daemon.AddIntoPipelineCrond(createCron); err != nil {
+				return err
+			}
+		}
 		return nil
 	})
 	if err != nil {
