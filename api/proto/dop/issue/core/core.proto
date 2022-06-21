@@ -606,6 +606,7 @@ message IssuePropertyInstance {
   repeated int64 values = 13;
   repeated string relatedIssue = 14;
   google.protobuf.Value arbitraryValue = 15;
+  repeated PropertyEnumerate propertyEnumeratedValues = 16;
 }
 
 message IssuePropertyIndex {
