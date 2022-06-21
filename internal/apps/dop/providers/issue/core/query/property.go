@@ -143,10 +143,11 @@ func (pr *provider) CreatePropertyRelation(req *pb.CreateIssuePropertyInstanceRe
 				})
 			}
 		} else {
-			if p.Required == true && p.ArbitraryValue.GetStringValue() == "" {
+			arbValue := GetArb(p)
+			if p.Required == true && arbValue == "" {
 				return apierrors.ErrCreateIssue.MissingParameter(fmt.Sprintf("必填字段\"%v\"未填写", p.PropertyID))
 			}
-			if p.ArbitraryValue.GetStringValue() == "" {
+			if arbValue == "" {
 				continue
 			}
 			propertyInstances = append(propertyInstances, dao.IssuePropertyRelation{
@@ -154,7 +155,7 @@ func (pr *provider) CreatePropertyRelation(req *pb.CreateIssuePropertyInstanceRe
 				ProjectID:      req.ProjectID,
 				IssueID:        req.IssueID,
 				PropertyID:     p.PropertyID,
-				ArbitraryValue: GetArb(p),
+				ArbitraryValue: arbValue,
 			})
 		}
 	}

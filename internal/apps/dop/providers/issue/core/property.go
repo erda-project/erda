@@ -479,8 +479,8 @@ func (i *IssueService) GetIssuePropertyInstance(ctx context.Context, req *pb.Get
 			instances[mp[v.PropertyID]].ArbitraryValue = structpb.NewStringValue(v.ArbitraryValue)
 			continue
 		}
-		instances[mp[v.PropertyID]].EnumeratedValues = append(
-			instances[mp[v.PropertyID]].EnumeratedValues, &pb.Enumerate{Id: v.PropertyValueID})
+		instances[mp[v.PropertyID]].PropertyEnumeratedValues = append(
+			instances[mp[v.PropertyID]].PropertyEnumeratedValues, &pb.PropertyEnumerate{Id: v.PropertyValueID})
 	}
 
 	res, err := ConvertRelations(req.IssueID, instances)
@@ -499,13 +499,10 @@ func ConvertRelations(issueID int64, relations []pb.IssuePropertyInstance) (*pb.
 		var arbitraryValue interface{}
 		// 判断出参应该是数字还是字符串
 		if v.PropertyType == pb.PropertyTypeEnum_Number && v.ArbitraryValue != nil {
-			s := v.ArbitraryValue.AsInterface()
-			// 空字符串无法转成数字
-			if str, ok := s.(string); ok && str == "" {
-				arbitraryValue = ""
+			if val := v.ArbitraryValue.GetNumberValue(); val > 0 {
+				arbitraryValue = val
 			} else {
-				// 数字类型
-				arbitraryValue = v.ArbitraryValue.GetNumberValue()
+				arbitraryValue = v.ArbitraryValue.GetStringValue()
 			}
 		} else {
 			arbitraryValue = v.ArbitraryValue
@@ -534,7 +531,7 @@ func ConvertRelations(issueID int64, relations []pb.IssuePropertyInstance) (*pb.
 			ArbitraryValue:   arbi,
 			EnumeratedValues: v.EnumeratedValues,
 		})
-		for _, val := range v.EnumeratedValues {
+		for _, val := range v.PropertyEnumeratedValues {
 			res.Property[i].Values = append(res.Property[i].Values, val.Id)
 		}
 	}
