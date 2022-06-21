@@ -16,6 +16,7 @@ package cron
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"testing"
 	"time"
@@ -671,26 +672,14 @@ func Test_provider_update(t *testing.T) {
 }
 
 type MockDaemon struct {
+	daemonInterface
 }
 
 func (m MockDaemon) AddIntoPipelineCrond(cron *db.PipelineCron) error {
-	return nil
-}
-
-func (m MockDaemon) DeleteFromPipelineCrond(cron *db.PipelineCron) error {
-	panic("implement me")
-}
-
-func (m MockDaemon) ReloadCrond(ctx context.Context) ([]string, error) {
-	panic("implement me")
-}
-
-func (m MockDaemon) CrondSnapshot() []string {
-	panic("implement me")
-}
-
-func (m MockDaemon) WithPipelineFunc(createPipelineFunc daemon.CreatePipelineFunc) {
-	panic("implement me")
+	if cron.ID == 1 {
+		return nil
+	}
+	return fmt.Errorf("failed to add")
 }
 
 func Test_provider_addIntoPipelineCrond(t *testing.T) {
@@ -735,6 +724,20 @@ func Test_provider_addIntoPipelineCrond(t *testing.T) {
 				},
 			},
 			wantErr: false,
+		},
+		{
+			name: "test with error",
+			fields: fields{
+				Daemon: mockDaemon,
+			},
+			args: args{
+				cron: &db.PipelineCron{
+					ID:       2,
+					CronExpr: "*/1 * * * *",
+					Enable:   &enable,
+				},
+			},
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {

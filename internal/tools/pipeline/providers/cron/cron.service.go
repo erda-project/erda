@@ -119,6 +119,7 @@ func (s *provider) CronCreate(ctx context.Context, req *pb.CronCreateRequest) (*
 				return err
 			}
 		}
+
 		return s.addIntoPipelineCrond(createCron)
 	})
 	if err != nil {
