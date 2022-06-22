@@ -2,6 +2,8 @@
 
 set -o errexit -o pipefail
 
+cd "$(dirname "${BASH_SOURCE[0]}")"
+
 # check parameters and print usage if need
 usage() {
     echo "protoc.sh ACTION"
@@ -70,17 +72,7 @@ build_protocol() {
 
 # clean result files of building
 clean_result() {
-    MODULES=$(find "../proto" -type d);
-    for path in ${MODULES}; do
-        HAS_PROTO_FILE=$(eval echo $(bash -c "find "${path}" -maxdepth 1 -name *.proto 2>/dev/null" | wc -l));
-        if [ ${HAS_PROTO_FILE} -gt 0 ]; then
-            if [ -z "$(echo ${path#../proto})" ]; then
-                continue; # skip ../proto
-            fi
-            MODULE_PATH=${path#../proto/};
-            rm -rf ${MODULE_PATH}
-        fi;
-    done;
+    find . -type d -maxdepth 1 -mindepth 1 -exec rm -rf {} \;
     rm -rf all.go
 }
 
