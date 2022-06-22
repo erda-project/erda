@@ -40,6 +40,8 @@ jobs:
     steps:
       - name: Clone repo
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
       - name: Calculate Go Cache Path
         id: go-cache-paths
         run: |
