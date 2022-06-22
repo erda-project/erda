@@ -18,10 +18,9 @@ import (
 	"context"
 
 	"github.com/erda-project/erda-infra/base/logs"
+	"github.com/erda-project/erda-proto-go/pkg/dingtalktest/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-
-	pb "github.com/erda-project/erda-proto-go/admin/pb"
 )
 
 type dingTalkTestService struct {

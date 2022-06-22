@@ -1,7 +1,7 @@
 service.admin:
   debug: ${DEBUG:false}
 service.personal-workbench:
-service.dingtalk-test:
+erda.pkg.dingtalktest:
 erda.apps.gallery:
 
 mysql:
