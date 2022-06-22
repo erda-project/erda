@@ -195,7 +195,8 @@ func (s *CommentIssueStreamService) PagingIssueStreams(ctx context.Context, req 
 		return nil, err
 	}
 	iss := make([]*pb.IssueStream, 0, len(issueStreams))
-	for _, v := range issueStreams {
+	for i := range issueStreams {
+		v := issueStreams[i]
 		is := &pb.IssueStream{
 			Id:         int64(v.ID),
 			IssueID:    v.IssueID,
@@ -218,7 +219,6 @@ func (s *CommentIssueStreamService) PagingIssueStreams(ctx context.Context, req 
 				return nil, err
 			}
 			is.Content = content
-
 		}
 		iss = append(iss, is)
 	}

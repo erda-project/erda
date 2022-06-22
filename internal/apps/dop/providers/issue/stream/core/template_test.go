@@ -58,9 +58,25 @@ func TestGetDefaultContent(t *testing.T) {
 			want:    `内容发生变更`,
 			wantErr: false,
 		},
+		{
+			name: "change content by system",
+			args: args{
+				req: StreamTemplateRequest{
+					StreamType: common.ISTTransferState,
+					StreamParams: common.ISTParam{
+						CurrentState: "old",
+						NewState:     "new",
+						ReasonDetail: "mrCreated",
+					},
+					Locale: "zh",
+				},
+			},
+			want:    `状态自 "old" 迁移至 "new" mrCreated`,
+			wantErr: false,
+		},
 	}
 
-	p := &provider{commonTran: &mockTranslator{}}
+	p := &provider{commonTran: &mockTranslator{}, I18n: &mockTranslator{}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := p.GetDefaultContent(tt.args.req)

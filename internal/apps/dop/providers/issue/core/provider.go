@@ -156,14 +156,23 @@ type IssuePermType interface {
 	GetType() pb.IssueTypeEnum_Type
 }
 
-type IssuePermProjectID interface {
+type IssuePermRequestWithUint64ProjectID interface {
 	GetProjectID() uint64
 }
 
+type IssuePermRequestWithInt64ProjectID interface {
+	GetProjectID() int64
+}
+
 func ScopeID(ctx context.Context, req interface{}) (string, error) {
-	r, ok := req.(IssuePermProjectID)
+	r, ok := req.(IssuePermRequestWithUint64ProjectID)
 	if !ok {
-		return "", errors.NewMissingParameterError("projectID")
+		v, ok := req.(IssuePermRequestWithInt64ProjectID)
+		if !ok {
+			return "", errors.NewMissingParameterError("projectID")
+		}
+		id := v.GetProjectID()
+		return strconv.FormatInt(id, 10), nil
 	}
 	id := r.GetProjectID()
 	return strconv.FormatUint(id, 10), nil
