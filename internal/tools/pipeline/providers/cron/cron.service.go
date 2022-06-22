@@ -106,9 +106,6 @@ func (s *provider) CronCreate(ctx context.Context, req *pb.CronCreateRequest) (*
 		}
 
 		req.ID = createCron.ID
-		if err := s.Daemon.AddIntoPipelineCrond(createCron); err != nil {
-			return err
-		}
 
 		if toEdge {
 			bdl, err := s.EdgePipelineRegister.GetEdgeBundleByClusterName(createCron.Extra.ClusterName)
@@ -123,7 +120,7 @@ func (s *provider) CronCreate(ctx context.Context, req *pb.CronCreateRequest) (*
 			}
 		}
 
-		return nil
+		return s.addIntoPipelineCrond(createCron)
 	})
 	if err != nil {
 		return nil, err
@@ -132,6 +129,13 @@ func (s *provider) CronCreate(ctx context.Context, req *pb.CronCreateRequest) (*
 	return &pb.CronCreateResponse{
 		Data: createCron.Convert2DTO(),
 	}, nil
+}
+
+func (s *provider) addIntoPipelineCrond(cron *db.PipelineCron) error {
+	if *cron.Enable && cron.CronExpr != "" {
+		return s.Daemon.AddIntoPipelineCrond(cron)
+	}
+	return nil
 }
 
 func Transaction(dbClient *db.Client, do func(option mysqlxorm.SessionOption) error) error {

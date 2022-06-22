@@ -16,6 +16,7 @@ package cron
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"testing"
 	"time"
@@ -665,6 +666,87 @@ func Test_provider_update(t *testing.T) {
 
 			if err := s.update(tt.args.req, tt.args.cron, tt.args.fields, tt.args.option); (err != nil) != tt.wantErr {
 				t.Errorf("update() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+type MockDaemon struct {
+	daemonInterface
+}
+
+func (m MockDaemon) AddIntoPipelineCrond(cron *db.PipelineCron) error {
+	if cron.ID == 1 {
+		return nil
+	}
+	return fmt.Errorf("failed to add")
+}
+
+func Test_provider_addIntoPipelineCrond(t *testing.T) {
+	type fields struct {
+		Daemon daemon.Interface
+	}
+	type args struct {
+		cron *db.PipelineCron
+	}
+	enable := true
+	mockDaemon := &MockDaemon{}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "test with enable",
+			fields: fields{
+				Daemon: mockDaemon,
+			},
+			args: args{
+				cron: &db.PipelineCron{
+					ID:       1,
+					CronExpr: "*/1 * * * *",
+					Enable:   &enable,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "test with disable",
+			fields: fields{
+				Daemon: mockDaemon,
+			},
+			args: args{
+				cron: &db.PipelineCron{
+					ID:       1,
+					CronExpr: "*/1 * * * *",
+					Enable:   new(bool),
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "test with error",
+			fields: fields{
+				Daemon: mockDaemon,
+			},
+			args: args{
+				cron: &db.PipelineCron{
+					ID:       2,
+					CronExpr: "*/1 * * * *",
+					Enable:   &enable,
+				},
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &provider{
+				Daemon: tt.fields.Daemon,
+			}
+			if err := s.addIntoPipelineCrond(tt.args.cron); (err != nil) != tt.wantErr {
+				t.Errorf("addIntoPipelineCrond() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
