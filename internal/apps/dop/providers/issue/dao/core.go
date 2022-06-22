@@ -163,7 +163,7 @@ func (client *DBClient) UpdateIssueType(issue *Issue) error {
 // GetBatchUpdateIssues 获取待批量更新记录，生成活动记录
 func (client *DBClient) GetBatchUpdateIssues(req *pb.BatchUpdateIssueRequest) ([]Issue, error) {
 	var issues []Issue
-	sql := client.Model(Issue{}).Where("type = ?", req.Type).Where("deleted = 0")
+	sql := client.Model(Issue{}).Where("type = ?", req.Type.String()).Where("deleted = 0")
 	if len(req.CurrentIterationIDs) > 0 {
 		sql = sql.Where("iteration_id in (?)", req.CurrentIterationIDs)
 	}
@@ -182,7 +182,7 @@ func (client *DBClient) GetBatchUpdateIssues(req *pb.BatchUpdateIssueRequest) ([
 
 // BatchUpdateIssues 批量更新 issue
 func (client *DBClient) BatchUpdateIssues(req *pb.BatchUpdateIssueRequest) error {
-	sql := client.Model(Issue{}).Where("type = ?", req.Type)
+	sql := client.Model(Issue{}).Where("type = ?", req.Type.String())
 	if len(req.CurrentIterationIDs) > 0 {
 		sql = sql.Where("iteration_id in (?)", req.CurrentIterationIDs)
 	}
