@@ -195,7 +195,8 @@ func (s *CommentIssueStreamService) PagingIssueStreams(ctx context.Context, req 
 		return nil, err
 	}
 	iss := make([]*pb.IssueStream, 0, len(issueStreams))
-	for i, v := range issueStreams {
+	for i := range issueStreams {
+		v := issueStreams[i]
 		is := &pb.IssueStream{
 			Id:         int64(v.ID),
 			IssueID:    v.IssueID,
@@ -206,7 +207,7 @@ func (s *CommentIssueStreamService) PagingIssueStreams(ctx context.Context, req 
 			MrInfo:     &pb.MRCommentInfo{},
 		}
 		if v.StreamType == common.ISTRelateMR {
-			is.MrInfo = &issueStreams[i].StreamParams.MRInfo
+			is.MrInfo = &v.StreamParams.MRInfo
 		} else {
 			content, err := s.stream.GetDefaultContent(core.StreamTemplateRequest{
 				StreamType:   v.StreamType,
