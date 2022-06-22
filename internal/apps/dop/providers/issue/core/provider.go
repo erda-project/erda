@@ -160,10 +160,19 @@ type IssuePermProjectID interface {
 	GetProjectID() uint64
 }
 
+type IssuePermProjectIDint64 interface {
+	GetProjectID() int64
+}
+
 func ScopeID(ctx context.Context, req interface{}) (string, error) {
 	r, ok := req.(IssuePermProjectID)
 	if !ok {
-		return "", errors.NewMissingParameterError("projectID")
+		v, ok := req.(IssuePermProjectIDint64)
+		if !ok {
+			return "", errors.NewMissingParameterError("projectID")
+		}
+		id := v.GetProjectID()
+		return strconv.FormatInt(id, 10), nil
 	}
 	id := r.GetProjectID()
 	return strconv.FormatUint(id, 10), nil
