@@ -143,24 +143,24 @@ func (r *DevFlowRule) Convert() *pb.DevFlowRule {
 	}
 }
 
-func (db Client) CreateDevFlowRule(f *DevFlowRule) error {
+func (db *Client) CreateDevFlowRule(f *DevFlowRule) error {
 	return db.Create(f).Error
 }
 
-func (db Client) GetDevFlowRule(id string) (f *DevFlowRule, err error) {
+func (db *Client) GetDevFlowRule(id string) (f *DevFlowRule, err error) {
 	err = db.Where("id = ?", id).First(&f).Error
 	return
 }
 
-func (db Client) GetDevFlowRuleByProjectID(proID uint64) (fs *DevFlowRule, err error) {
+func (db *Client) GetDevFlowRuleByProjectID(proID uint64) (fs *DevFlowRule, err error) {
 	err = db.Model(&DevFlowRule{}).Where("project_id = ?", proID).First(&fs).Error
 	return
 }
 
-func (db Client) UpdateDevFlowRule(f *DevFlowRule) error {
+func (db *Client) UpdateDevFlowRule(f *DevFlowRule) error {
 	return db.Save(f).Error
 }
 
-func (db Client) DeleteDevFlowRuleByProjectID(projectID uint64) error {
+func (db *Client) DeleteDevFlowRuleByProjectID(projectID uint64) error {
 	return db.Where("project_id = ?", projectID).Delete(&DevFlowRule{}).Error
 }
