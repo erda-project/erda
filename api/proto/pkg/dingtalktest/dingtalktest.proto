@@ -8,6 +8,7 @@ import "common/openapi.proto";
 
 service DingTalkTestService {
   option (erda.common.openapi_service) = {
+    service: "erda-server",
     auth: {
       check_login: true,
       check_token: true,
