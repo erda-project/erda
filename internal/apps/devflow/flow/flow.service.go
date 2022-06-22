@@ -220,12 +220,10 @@ func (s *Service) OperationMerge(ctx context.Context, req *pb.OperationMergeRequ
 	if !mrInfo.IsJoinTempBranch {
 		return &pb.OperationMergeResponse{}, nil
 	}
-	go func() {
-		err = s.RejoinTempBranch(ctx, tempBranch, mrInfo.TargetBranch, appDto)
-		if err != nil {
-			s.p.Log.Errorf("failed to RejoinTempBranch, err: %v", err)
-		}
-	}()
+	err = s.RejoinTempBranch(ctx, tempBranch, mrInfo.TargetBranch, appDto)
+	if err != nil {
+		return nil, err
+	}
 
 	return &pb.OperationMergeResponse{}, nil
 }
@@ -528,7 +526,6 @@ func (s *Service) GetDevFlowInfo(ctx context.Context, req *pb.GetDevFlowInfoRequ
 
 			locker.Lock()
 			defer locker.Unlock()
-
 			relationMap[relation.ID] = relation
 			relationExtraMap[relation.ID] = &extra
 			relationMergeInfoMap[relation.ID] = mrInfo
@@ -557,10 +554,9 @@ func (s *Service) GetDevFlowInfo(ctx context.Context, req *pb.GetDevFlowInfoRequ
 				if err != nil {
 					return err
 				}
-				mrTempBranchMap[v.Id] = tempBranch
 				var baseCommit *apistructs.Commit
 				if tempBranch != "" {
-					if err := s.IdempotentCreateBranch(ctx, repoPath, v.TargetBranch, tempBranch); err != nil {
+					if err = s.IdempotentCreateBranch(ctx, repoPath, v.TargetBranch, tempBranch); err != nil {
 						return err
 					}
 					if v.IsJoinTempBranch {
@@ -590,6 +586,7 @@ func (s *Service) GetDevFlowInfo(ctx context.Context, req *pb.GetDevFlowInfoRequ
 				}
 
 				locker.Lock()
+				mrTempBranchMap[v.Id] = tempBranch
 				sourceBranchBaseCommitMap[fmt.Sprintf("%d%s", appID, v.SourceBranch)] = baseCommit
 				if tempBranch != "" && v.IsJoinTempBranch {
 					appTempBranchChangeBranchListMap[fmt.Sprintf("%d%s", appID, tempBranch)] = append(appTempBranchChangeBranchListMap[fmt.Sprintf("%d%s", appID, tempBranch)], &pb.ChangeBranch{
