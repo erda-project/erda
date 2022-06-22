@@ -88,7 +88,7 @@ func (p *provider) GetDefaultContent(req StreamTemplateRequest) (string, error) 
 		return "", err
 	}
 	if req.StreamParams.ReasonDetail != "" {
-		return fmt.Sprintf("%v %v", content, p.commonTran.Text(req.Lang, req.StreamParams.ReasonDetail)), nil
+		return fmt.Sprintf("%v %v", content, p.I18n.Text(req.Lang, req.StreamParams.ReasonDetail)), nil
 	}
 	return content, nil
 }
