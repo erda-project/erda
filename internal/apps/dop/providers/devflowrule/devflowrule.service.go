@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/erda-project/erda-proto-go/dop/devflowrule/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -234,7 +235,11 @@ func (p *provider) GetFlowByRule(ctx context.Context, request GetFlowByRuleReque
 		return nil, err
 	}
 	for _, v := range flows {
-		if request.FlowType == v.FlowType && diceworkspace.IsRefPatternMatch(request.TargetBranch, []string{v.TargetBranch}) {
+		targetBranches := strings.Split(v.TargetBranch, ",")
+		changeBranches := strings.Split(v.ChangeBranch, ",")
+		if request.FlowType == v.FlowType &&
+			diceworkspace.IsRefPatternMatch(request.TargetBranch, targetBranches) &&
+			diceworkspace.IsRefPatternMatch(request.ChangeBranch, changeBranches) {
 			return v.Convert(), nil
 		}
 	}
