@@ -720,7 +720,7 @@ func (i *IssueService) decodeFromExcelFile(req *pb.ImportExcelIssueRequest, r io
 			finishedTime, err := time.Parse("2006-01-02 15:04:05", row[14])
 			if err != nil {
 				falseExcel = append(falseExcel, i+1)
-				falseReason = append(falseReason, "无法解析任务结束时间")
+				falseReason = append(falseReason, "无法解析任务截止时间, 正确格式: 2006-01-02 15:04:05")
 				continue
 			}
 			issue.PlanFinishedAt = timestamppb.New(finishedTime)
