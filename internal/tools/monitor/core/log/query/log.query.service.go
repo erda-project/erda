@@ -334,6 +334,10 @@ func (s *logQueryService) queryRealLogItems(ctx context.Context, req Request, fn
 	if err != nil {
 		return nil, true, errors.NewInternalServerError(err)
 	}
+
+	if len(items) <= 0 {
+		return items, false, nil
+	}
 	return items, true, nil
 }
 
