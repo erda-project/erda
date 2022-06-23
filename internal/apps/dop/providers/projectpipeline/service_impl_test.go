@@ -903,3 +903,85 @@ func Test_makeListPipelineExecHistoryResponse(t *testing.T) {
 		})
 	}
 }
+
+func Test_makePipelinePageListRequest(t *testing.T) {
+	type args struct {
+		params    *pb.ListPipelineExecHistoryRequest
+		jsonValue []byte
+	}
+	tests := []struct {
+		name string
+		args args
+		want apistructs.PipelinePageListRequest
+	}{
+		{
+			name: "test with make",
+			args: args{
+				params: &pb.ListPipelineExecHistoryRequest{
+					Name:           "pipeline.yml",
+					Executors:      nil,
+					AppNames:       []string{"erda"},
+					Statuses:       []string{"Success"},
+					PageNo:         1,
+					PageSize:       10,
+					StartTimeBegin: nil,
+					StartTimeEnd:   nil,
+					DescCols:       nil,
+					AscCols:        nil,
+					ProjectID:      0,
+					Branches:       []string{"master"},
+				},
+				jsonValue: nil,
+			},
+			want: apistructs.PipelinePageListRequest{
+				CommaBranches:                       "",
+				CommaSources:                        "",
+				CommaYmlNames:                       "",
+				CommaStatuses:                       "",
+				AppID:                               uint64(0),
+				Branches:                            nil,
+				Sources:                             nil,
+				AllSources:                          true,
+				YmlNames:                            nil,
+				Statuses:                            []string{"Success"},
+				NotStatuses:                         nil,
+				TriggerModes:                        nil,
+				ClusterNames:                        nil,
+				IncludeSnippet:                      false,
+				StartTimeBegin:                      time.Time{},
+				StartTimeBeginTimestamp:             int64(0),
+				StartTimeBeginCST:                   "",
+				EndTimeBegin:                        time.Time{},
+				EndTimeBeginTimestamp:               int64(0),
+				EndTimeBeginCST:                     "",
+				StartTimeCreated:                    time.Time{},
+				StartTimeCreatedTimestamp:           int64(0),
+				EndTimeCreated:                      time.Time{},
+				EndTimeCreatedTimestamp:             int64(0),
+				MustMatchLabelsJSON:                 "",
+				MustMatchLabelsQueryParams:          []string{"branch=master"},
+				MustMatchLabels:                     nil,
+				AnyMatchLabelsJSON:                  "",
+				AnyMatchLabelsQueryParams:           nil,
+				AnyMatchLabels:                      nil,
+				PageNum:                             1,
+				PageNo:                              0,
+				PageSize:                            10,
+				LargePageSize:                       false,
+				CountOnly:                           false,
+				SelectCols:                          nil,
+				AscCols:                             nil,
+				DescCols:                            nil,
+				PipelineDefinitionRequest:           nil,
+				PipelineDefinitionRequestJSONBase64: "",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := makePipelinePageListRequest(tt.args.params, tt.args.jsonValue); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("makePipelinePageListRequest() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
