@@ -94,14 +94,14 @@ func (s *cStorage) Iterator(ctx context.Context, sel *storage.Selector) (storeki
 		if filter.Value == nil {
 			continue
 		}
-		if filter.Key != "content" && filter.Op != storage.EQ {
-			s.log.Debugf("%s only support EQ filter, ignore kubernetes logs query", filter.Key)
-			return storekit.EmptyIterator{}, nil
-		}
 		switch filter.Key {
 		case "id":
 			if len(id) <= 0 {
 				id, _ = filter.Value.(string)
+			}
+		case "stream":
+			if filter.Value != nil {
+				return storekit.EmptyIterator{}, nil
 			}
 		case "source":
 			source, _ := filter.Value.(string)

@@ -30,6 +30,7 @@ import (
 	"github.com/erda-project/erda-infra/base/logs/logrusx"
 	"github.com/erda-project/erda-proto-go/core/monitor/log/query/pb"
 	"github.com/erda-project/erda/internal/tools/monitor/core/log/storage"
+	"github.com/erda-project/erda/internal/tools/monitor/core/storekit"
 )
 
 type logTestItem struct {
@@ -112,11 +113,12 @@ const (
 
 func Test_cStorage_Iterator_Next(t *testing.T) {
 	tests := []struct {
-		name        string
-		source      []logTestItem
-		bufferLines int64
-		sel         *storage.Selector
-		want        []interface{}
+		name            string
+		source          []logTestItem
+		bufferLines     int64
+		sel             *storage.Selector
+		isEmptyIterator bool
+		want            []interface{}
 	}{
 		{
 			source:      commonLogTestItems,
@@ -434,6 +436,31 @@ func Test_cStorage_Iterator_Next(t *testing.T) {
 			},
 			want: nil,
 		},
+		{
+			name:        "Stream_Error",
+			source:      commonLogTestItems,
+			bufferLines: 1,
+			sel: &storage.Selector{
+				Start:  11,
+				End:    13,
+				Scheme: kubernetesLogScheme,
+				Filters: []*storage.Filter{
+					{
+						Key:   "id",
+						Op:    storage.EQ,
+						Value: "test_id",
+					},
+					{
+						Key:   "stream",
+						Op:    storage.EQ,
+						Value: "error",
+					},
+				},
+				Options: commonTestOptions,
+			},
+			isEmptyIterator: true,
+			want:            nil,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -453,6 +480,11 @@ func Test_cStorage_Iterator_Next(t *testing.T) {
 			if err != nil {
 				t.Errorf("cStorage.Iterator() got error: %s", it.Error())
 				return
+			}
+			if tt.isEmptyIterator {
+				if _, ok := it.(storekit.EmptyIterator); !ok {
+					t.Errorf("Iterator should be empty iterator")
+				}
 			}
 			var got []interface{}
 			for it.Next() {
