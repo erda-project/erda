@@ -133,7 +133,7 @@ func (p *provider) GenerateButton(issueModel dao.Issue, identityInfo *commonpb.I
 
 		var access bool
 		// 调用鉴权服务，判断当前用户是否有推进到某个状态的权限
-		if identityInfo.InternalClient == "" {
+		if identityInfo != nil && identityInfo.InternalClient == "" {
 			pcr := &apistructs.PermissionCheckRequest{
 				UserID:  identityInfo.UserID,
 				Scope:   apistructs.ProjectScope,

@@ -18,9 +18,11 @@ import (
 	"context"
 	"testing"
 
+	gomock "github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	idpb "github.com/erda-project/erda-infra/providers/component-protocol/protobuf/proto-go/cp/pb"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 )
@@ -108,4 +110,47 @@ func Test_buildTableItem(t *testing.T) {
 	ca := ComponentAction{}
 	i := ca.buildTableItem(ctx, &pb.Issue{}, nil)
 	assert.NotNil(t, i)
+}
+
+func Test_eventHandler(t *testing.T) {
+	type args struct {
+		ctx   context.Context
+		event cptype.ComponentEvent
+	}
+	ctx := context.WithValue(context.Background(), cptype.GlobalInnerKeyCtxSDK, &cptype.SDK{Identity: &idpb.IdentityInfo{UserID: "2"}})
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	issueService := NewMockInterface(ctrl)
+	issueService.EXPECT().UpdateIssue(gomock.Any()).AnyTimes().Return(nil)
+	ctx = context.WithValue(ctx, "issue", issueService)
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			args: args{ctx, cptype.ComponentEvent{
+				Operation: "changePriorityToaURGENT", OperationData: map[string]interface{}{
+					"meta": map[string]interface{}{
+						"id": "1",
+					},
+				}}},
+		},
+		{
+			args: args{ctx, cptype.ComponentEvent{
+				Operation: "changeStateToWorking", OperationData: map[string]interface{}{
+					"meta": map[string]interface{}{
+						"id":    "1",
+						"state": "2",
+					},
+				}}},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := eventHandler(tt.args.ctx, tt.args.event); (err != nil) != tt.wantErr {
+				t.Errorf("eventHandler() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
 }
