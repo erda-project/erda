@@ -87,7 +87,7 @@ spec:
           command:
             - sh
             - -c
-            - /app/cluster-ops
+            - /erda/cmd/cluster-ops/bin
           image: {{ .JobImage }}
           imagePullPolicy: Always
 `

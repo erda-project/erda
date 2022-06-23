@@ -1,5 +1,12 @@
 cluster-agent:
   debug: ${DEBUG:false}
+  leaderElection: "${LEADER_ELECTION:true}"
+  leaderElectionID: "${LEADER_ELECTION_ID:cluster-agent.erda.cloud}"
+  leasesResourceLockType: "${LEASES_RESOURCE_LOCK_TYPE:leases}"
+  leaseDuration: "${LEASE_DURATION:15}"
+  renewDeadline: "${RENEW_DEADLINE:10}"
+  retryPeriod: "${RETRY_PERIOD:5}"
+  conRetryInterval: "${CON_RETRY_INTERVAL:10}"
   clusterManagerEndpoint: "${OPENAPI_PUBLIC_URL}/clusteragent/connect"
   clusterKey: "${DICE_CLUSTER_NAME}"
   erdaNamespace: "${DICE_NAMESPACE}"

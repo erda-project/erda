@@ -16,13 +16,17 @@ package cluster_agent
 
 import (
 	"context"
+	"os"
+	"time"
 
 	"github.com/rancher/remotedialer"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/internal/tools/cluster-agent/client"
 	"github.com/erda-project/erda/internal/tools/cluster-agent/config"
+	"github.com/erda-project/erda/internal/tools/cluster-agent/pkg/client"
+	"github.com/erda-project/erda/internal/tools/cluster-agent/pkg/leaderelection"
+	k8sclientconfig "github.com/erda-project/erda/pkg/k8sclient/config"
 )
 
 type provider struct {
@@ -30,6 +34,7 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
+	logrus.Infof("load configuration: %+v", p.Cfg)
 	if p.Cfg.Debug {
 		logrus.SetLevel(logrus.DebugLevel)
 		remotedialer.PrintTunnelData = true
@@ -39,7 +44,43 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 func (p *provider) Run(ctx context.Context) error {
 	c := client.New(client.WithConfig(p.Cfg))
-	return c.Start(ctx)
+
+	if !p.Cfg.LeaderElection {
+		return c.Start(ctx)
+	}
+	rc, err := k8sclientconfig.GetInClusterRestConfig()
+	if err != nil {
+		return err
+	}
+
+	identity, err := leaderelection.GenIdentity()
+	if err != nil {
+		return err
+	}
+
+	logrus.Infof("instance identity: %s", identity)
+
+	return leaderelection.Start(ctx, rc, leaderelection.Options{
+		Identity:                   identity,
+		LeaderElectionResourceLock: p.Cfg.LeasesResourceLockType,
+		LeaderElectionNamespace:    p.Cfg.ErdaNamespace,
+		LeaderElectionID:           p.Cfg.LeaderElectionID,
+		LeaseDuration:              time.Duration(p.Cfg.LeaseDuration) * time.Second,
+		RenewDeadline:              time.Duration(p.Cfg.RenewDeadline) * time.Second,
+		RetryPeriod:                time.Duration(p.Cfg.RetryPeriod) * time.Second,
+		OnStartedLeading: func(ctx context.Context) {
+			if err := c.Start(ctx); err != nil {
+				logrus.Errorf("failed to start cluster agent: %v", err)
+			}
+		},
+		OnNewLeaderFun: func(newLeaderIdentity string) {
+			logrus.Infof("%s became leader", newLeaderIdentity)
+		},
+		OnStoppedLeading: func() {
+			logrus.Info("leader lost")
+			os.Exit(0)
+		},
+	})
 }
 
 func init() {

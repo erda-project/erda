@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"math/rand"
 	"net/http"
 	"net/url"
 	"os"
@@ -66,6 +65,13 @@ func WithConfig(cfg *config.Config) Option {
 	return func(c *Client) {
 		c.cfg = cfg
 	}
+}
+
+func (c *Client) DisConnect() {
+	if !c.IsConnected() {
+		return
+	}
+	c.disconnect <- struct{}{}
 }
 
 func (c *Client) Start(ctx context.Context) error {
@@ -126,8 +132,7 @@ func (c *Client) Start(ctx context.Context) error {
 		select {
 		case <-ctx.Done():
 			return nil
-		case <-time.After(time.Duration(rand.Int()%10) * time.Second):
-			// retry connect after sleep a random time
+		case <-time.After(time.Duration(c.cfg.ConRetryInterval) * time.Second):
 		}
 	}
 }

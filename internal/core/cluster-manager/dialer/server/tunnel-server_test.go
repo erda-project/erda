@@ -31,8 +31,8 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/core/cluster-manager/dialer/auth"
 	"github.com/erda-project/erda/internal/core/cluster-manager/dialer/config"
-	clusteragent "github.com/erda-project/erda/internal/tools/cluster-agent/client"
 	clientconfig "github.com/erda-project/erda/internal/tools/cluster-agent/config"
+	clusteragent "github.com/erda-project/erda/internal/tools/cluster-agent/pkg/client"
 )
 
 const (
