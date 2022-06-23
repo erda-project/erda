@@ -821,6 +821,16 @@ func (p *ProjectPipelineService) ListExecHistory(ctx context.Context, params *pb
 		return nil, apierrors.ErrListExecHistoryProjectPipeline.InternalError(err)
 	}
 
+	pipelinePageListRequest := makePipelinePageListRequest(params, jsonValue)
+
+	data, err := p.bundle.PageListPipeline(pipelinePageListRequest)
+	if err != nil {
+		return nil, apierrors.ErrListExecHistoryProjectPipeline.InternalError(err)
+	}
+	return makeListPipelineExecHistoryResponse(data), nil
+}
+
+func makePipelinePageListRequest(params *pb.ListPipelineExecHistoryRequest, jsonValue []byte) apistructs.PipelinePageListRequest {
 	var startTime, endTime int64
 	if params.StartTimeBegin != nil {
 		startTime = (*params.StartTimeBegin).AsTime().Unix()
@@ -828,6 +838,7 @@ func (p *ProjectPipelineService) ListExecHistory(ctx context.Context, params *pb
 	if params.StartTimeEnd != nil {
 		endTime = (*params.StartTimeEnd).AsTime().Unix()
 	}
+
 	var pipelinePageListRequest = apistructs.PipelinePageListRequest{
 		PageNum:                             int(params.PageNo),
 		PageSize:                            int(params.PageSize),
@@ -844,17 +855,12 @@ func (p *ProjectPipelineService) ListExecHistory(ctx context.Context, params *pb
 			pipelinePageListRequest.MustMatchLabelsQueryParams = append(pipelinePageListRequest.MustMatchLabelsQueryParams, fmt.Sprintf("%v=%v", apistructs.LabelRunUserID, v))
 		}
 	}
-	if len(params.Branches) > 0  {
+	if len(params.Branches) > 0 {
 		for _, v := range params.Branches {
 			pipelinePageListRequest.MustMatchLabelsQueryParams = append(pipelinePageListRequest.MustMatchLabelsQueryParams, fmt.Sprintf("%v=%v", apistructs.LabelBranch, v))
 		}
 	}
-
-	data, err := p.bundle.PageListPipeline(pipelinePageListRequest)
-	if err != nil {
-		return nil, apierrors.ErrListExecHistoryProjectPipeline.InternalError(err)
-	}
-	return makeListPipelineExecHistoryResponse(data), nil
+	return pipelinePageListRequest
 }
 
 func makeListPipelineExecHistoryResponse(data *apistructs.PipelinePageListData) *pb.ListPipelineExecHistoryResponse {
