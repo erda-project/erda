@@ -37,6 +37,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/container_provider"
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/containers"
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/errorsx"
+	"github.com/erda-project/erda/internal/tools/pipeline/pkg/resource"
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/taskerror"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/actionmgr"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/reconciler/taskrun"
@@ -349,12 +350,12 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 	}
 
 	// resource 相关环境变量
-	task.Extra.PublicEnvs["PIPELINE_LIMITED_CPU"] = fmt.Sprintf("%g", task.Extra.RuntimeResource.MaxCPU)
-	task.Extra.PublicEnvs["PIPELINE_LIMITED_MEM"] = fmt.Sprintf("%g", task.Extra.RuntimeResource.MaxMemory)
-	task.Extra.PublicEnvs["PIPELINE_LIMITED_DISK"] = fmt.Sprintf("%g", task.Extra.RuntimeResource.Disk)
-	task.Extra.PublicEnvs["PIPELINE_REQUESTED_CPU"] = fmt.Sprintf("%g", task.Extra.RuntimeResource.CPU)
-	task.Extra.PublicEnvs["PIPELINE_REQUESTED_MEM"] = fmt.Sprintf("%g", task.Extra.RuntimeResource.Memory)
-	task.Extra.PublicEnvs["PIPELINE_REQUESTED_DISK"] = fmt.Sprintf("%g", task.Extra.RuntimeResource.Disk)
+	task.Extra.PublicEnvs[resource.EnvPipelineLimitedCPU] = fmt.Sprintf("%g", task.Extra.RuntimeResource.MaxCPU)
+	task.Extra.PublicEnvs[resource.EnvPipelineLimitedMem] = fmt.Sprintf("%g", task.Extra.RuntimeResource.MaxMemory)
+	task.Extra.PublicEnvs[resource.EnvPipelineLimitedDisk] = fmt.Sprintf("%g", task.Extra.RuntimeResource.Disk)
+	task.Extra.PublicEnvs[resource.EnvPipelineRequestedCPU] = fmt.Sprintf("%g", task.Extra.RuntimeResource.CPU)
+	task.Extra.PublicEnvs[resource.EnvPipelineRequestedMem] = fmt.Sprintf("%g", task.Extra.RuntimeResource.Memory)
+	task.Extra.PublicEnvs[resource.EnvPipelineRequestedDisk] = fmt.Sprintf("%g", task.Extra.RuntimeResource.Disk)
 
 	// edge pipeline envs
 	edgePipelineEnvs := pre.EdgeRegister.GetEdgePipelineEnvs()
