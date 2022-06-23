@@ -31,6 +31,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/bdl"
@@ -39,10 +40,9 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/types"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query"
 	"github.com/erda-project/erda/internal/pkg/component-protocol/issueFilter"
-	"github.com/erda-project/erda/pkg/strutil"
-
 	protocol "github.com/erda-project/erda/internal/tools/openapi/legacy/component-protocol"
 	"github.com/erda-project/erda/internal/tools/openapi/legacy/hooks/posthandle"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 type ProgressBlock struct {
@@ -254,137 +254,9 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 
 	projectid, err := strconv.ParseUint(sdk.InParams["projectId"].(string), 10, 64)
 	orgid, err := strconv.ParseUint(sdk.Identity.OrgID, 10, 64)
-	if strutil.HasPrefixes(event.Operation.String(), "changePriorityTo") {
-		priority := apistructs.IssuePriorityLow
-		switch event.Operation.String() {
-		case "changePriorityToaURGENT":
-			priority = apistructs.IssuePriorityUrgent
-		case "changePriorityTobHIGH":
-			priority = apistructs.IssuePriorityHigh
-		case "changePriorityTocNORMAL":
-			priority = apistructs.IssuePriorityNormal
-		case "changePriorityTodLOW":
-			priority = apistructs.IssuePriorityLow
-		}
-		od, _ := json.Marshal(event.OperationData)
-		operationData := PriorityOperationData{}
-		if err := json.Unmarshal(od, &operationData); err != nil {
-			return err
-		}
-		id, err := strconv.ParseUint(operationData.Meta.ID, 10, 64)
-		if err != nil {
-			return err
-		}
-		is, err := bdl.Bdl.GetIssue(id)
-		if err != nil {
-			logrus.Errorf("get issue failed, id:%v, err:%v", id, err)
-			return err
-		}
-		is.Priority = priority
-		err = bdl.Bdl.UpdateIssueTicketUser(sdk.Identity.UserID, is.ConvertToIssueUpdateReq(), uint64(is.ID))
-		if err != nil {
-			logrus.Errorf("update issue failed, id:%v, err:%v", id, err)
-			return err
-		}
-	}
-	if event.Operation.String() == "changeDeadline" {
-		od, _ := json.Marshal(event.OperationData)
-		operationData := DeadlineOperationData{}
-		if err := json.Unmarshal(od, &operationData); err != nil {
-			return err
-		}
-		id, err := strconv.ParseUint(operationData.Meta.ID, 10, 64)
-		if err != nil {
-			return err
-		}
-		deadline, err := time.Parse(time.RFC3339, operationData.Meta.DeadlineValue)
-		if err != nil {
-			return err
-		}
-		is, err := bdl.Bdl.GetIssue(id)
-		if err != nil {
-			logrus.Errorf("get issue failed, id:%v, err:%v", id, err)
-			return err
-		}
-		is.PlanFinishedAt = &deadline
-		err = bdl.Bdl.UpdateIssueTicketUser(sdk.Identity.UserID, is.ConvertToIssueUpdateReq(), uint64(is.ID))
-		if err != nil {
-			logrus.Errorf("update issue failed, id:%v, err:%v", id, err)
-			return err
-		}
-	}
 
-	if strutil.HasPrefixes(event.Operation.String(), "changeStateTo") {
-		od, _ := json.Marshal(event.OperationData)
-		operationData := StateOperationData{}
-		if err := json.Unmarshal(od, &operationData); err != nil {
-			return err
-		}
-		id, err := strconv.ParseUint(operationData.Meta.ID, 10, 64)
-		if err != nil {
-			return err
-		}
-		stateid, err := strconv.ParseInt(operationData.Meta.State, 10, 64)
-		if err != nil {
-			return err
-		}
-		is, err := bdl.Bdl.GetIssue(id)
-		if err != nil {
-			logrus.Errorf("get issue failed, id:%v, err:%v", id, err)
-			return err
-		}
-		is.State = stateid
-		err = bdl.Bdl.UpdateIssueTicketUser(sdk.Identity.UserID, is.ConvertToIssueUpdateReq(), uint64(is.ID))
-		if err != nil {
-			logrus.Errorf("update issue failed, id:%v, err:%v", id, err)
-			return err
-		}
-	}
-	if strutil.HasPrefixes(event.Operation.String(), "changeSeverityTo") {
-		od, _ := json.Marshal(event.OperationData)
-		operationData := SeverityOperationData{}
-		if err := json.Unmarshal(od, &operationData); err != nil {
-			return err
-		}
-		id, err := strconv.ParseUint(operationData.Meta.ID, 10, 64)
-		if err != nil {
-			return err
-		}
-		severity := apistructs.IssueSeverity(operationData.Meta.Severity)
-		is, err := bdl.Bdl.GetIssue(id)
-		if err != nil {
-			logrus.Errorf("get issue failed, id:%v, err:%v", id, err)
-			return err
-		}
-		is.Severity = severity
-		err = bdl.Bdl.UpdateIssueTicketUser(sdk.Identity.UserID, is.ConvertToIssueUpdateReq(), uint64(is.ID))
-		if err != nil {
-			logrus.Errorf("update issue failed, id:%v, err:%v", id, err)
-			return err
-		}
-	}
-	if strutil.HasPrefixes(event.Operation.String(), "updateAssignee") {
-		od, _ := json.Marshal(event.OperationData)
-		operationData := AssigneeOperationData{}
-		if err := json.Unmarshal(od, &operationData); err != nil {
-			return err
-		}
-		id, err := strconv.ParseUint(operationData.Meta.ID, 10, 64)
-		if err != nil {
-			return err
-		}
-		assgignee := operationData.Meta.Assignee
-		is, err := bdl.Bdl.GetIssue(id)
-		if err != nil {
-			logrus.Errorf("get issue failed, id:%v, err:%v", id, err)
-			return err
-		}
-		is.Assignee = assgignee
-		err = bdl.Bdl.UpdateIssueTicketUser(sdk.Identity.UserID, is.ConvertToIssueUpdateReq(), uint64(is.ID))
-		if err != nil {
-			logrus.Errorf("update issue failed, id:%v, err:%v", id, err)
-			return err
-		}
+	if err := eventHandler(ctx, event); err != nil {
+		return err
 	}
 	userids := []string{}
 	cond := pb.PagingIssueRequest{}
@@ -883,4 +755,139 @@ func buildTime(t *timestamppb.Timestamp) Time {
 		res.Value = t.AsTime().Format(time.RFC3339)
 	}
 	return res
+}
+
+func eventHandler(ctx context.Context, event cptype.ComponentEvent) error {
+	sdk := cputil.SDK(ctx)
+	issueSvc := ctx.Value(types.IssueService).(query.Interface)
+	if strutil.HasPrefixes(event.Operation.String(), "changePriorityTo") {
+		priority := apistructs.IssuePriorityLow
+		switch event.Operation.String() {
+		case "changePriorityToaURGENT":
+			priority = apistructs.IssuePriorityUrgent
+		case "changePriorityTobHIGH":
+			priority = apistructs.IssuePriorityHigh
+		case "changePriorityTocNORMAL":
+			priority = apistructs.IssuePriorityNormal
+		case "changePriorityTodLOW":
+			priority = apistructs.IssuePriorityLow
+		}
+		od, _ := json.Marshal(event.OperationData)
+		operationData := PriorityOperationData{}
+		if err := json.Unmarshal(od, &operationData); err != nil {
+			return err
+		}
+		id, err := strconv.ParseUint(operationData.Meta.ID, 10, 64)
+		if err != nil {
+			return err
+		}
+		p := string(priority)
+		err = issueSvc.UpdateIssue(&pb.UpdateIssueRequest{
+			Id:       id,
+			Priority: &p,
+			IdentityInfo: &commonpb.IdentityInfo{
+				UserID: sdk.Identity.UserID,
+			},
+		})
+		if err != nil {
+			logrus.Errorf("update issue failed, id:%v, err:%v", id, err)
+			return err
+		}
+	}
+	if event.Operation.String() == "changeDeadline" {
+		od, _ := json.Marshal(event.OperationData)
+		operationData := DeadlineOperationData{}
+		if err := json.Unmarshal(od, &operationData); err != nil {
+			return err
+		}
+		id, err := strconv.ParseUint(operationData.Meta.ID, 10, 64)
+		if err != nil {
+			return err
+		}
+		err = issueSvc.UpdateIssue(&pb.UpdateIssueRequest{
+			Id:             id,
+			PlanFinishedAt: &operationData.Meta.DeadlineValue,
+			IdentityInfo: &commonpb.IdentityInfo{
+				UserID: sdk.Identity.UserID,
+			},
+		})
+		if err != nil {
+			logrus.Errorf("update issue failed, id:%v, err:%v", id, err)
+			return err
+		}
+	}
+
+	if strutil.HasPrefixes(event.Operation.String(), "changeStateTo") {
+		od, _ := json.Marshal(event.OperationData)
+		operationData := StateOperationData{}
+		if err := json.Unmarshal(od, &operationData); err != nil {
+			return err
+		}
+		id, err := strconv.ParseUint(operationData.Meta.ID, 10, 64)
+		if err != nil {
+			return err
+		}
+		stateid, err := strconv.ParseInt(operationData.Meta.State, 10, 64)
+		if err != nil {
+			return err
+		}
+		err = issueSvc.UpdateIssue(&pb.UpdateIssueRequest{
+			Id:    id,
+			State: &stateid,
+			IdentityInfo: &commonpb.IdentityInfo{
+				UserID: sdk.Identity.UserID,
+			},
+		})
+		if err != nil {
+			logrus.Errorf("update issue failed, id:%v, err:%v", id, err)
+			return err
+		}
+	}
+	if strutil.HasPrefixes(event.Operation.String(), "changeSeverityTo") {
+		od, _ := json.Marshal(event.OperationData)
+		operationData := SeverityOperationData{}
+		if err := json.Unmarshal(od, &operationData); err != nil {
+			return err
+		}
+		id, err := strconv.ParseUint(operationData.Meta.ID, 10, 64)
+		if err != nil {
+			return err
+		}
+		severity := operationData.Meta.Severity
+		err = issueSvc.UpdateIssue(&pb.UpdateIssueRequest{
+			Id:       id,
+			Severity: &severity,
+			IdentityInfo: &commonpb.IdentityInfo{
+				UserID: sdk.Identity.UserID,
+			},
+		})
+		if err != nil {
+			logrus.Errorf("update issue failed, id:%v, err:%v", id, err)
+			return err
+		}
+	}
+	if strutil.HasPrefixes(event.Operation.String(), "updateAssignee") {
+		od, _ := json.Marshal(event.OperationData)
+		operationData := AssigneeOperationData{}
+		if err := json.Unmarshal(od, &operationData); err != nil {
+			return err
+		}
+		id, err := strconv.ParseUint(operationData.Meta.ID, 10, 64)
+		if err != nil {
+			return err
+		}
+		assignee := operationData.Meta.Assignee
+		err = issueSvc.UpdateIssue(&pb.UpdateIssueRequest{
+			Id:       id,
+			Assignee: &assignee,
+			IdentityInfo: &commonpb.IdentityInfo{
+				UserID: sdk.Identity.UserID,
+			},
+		})
+		if err != nil {
+			logrus.Errorf("update issue failed, id:%v, err:%v", id, err)
+			return err
+		}
+	}
+	return nil
 }
