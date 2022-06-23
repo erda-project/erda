@@ -219,7 +219,7 @@ func (wc *WorkCards) getProjTextMeta(sdk *cptype.SDK, project apistructs.Workben
 		lastDayWarning["projectId"] = project.ProjectDTO.ID
 
 		serviceOp := common.Operation{
-			Target: "mspServiceList",
+			Target: common.OpValTargetMspOverview,
 			Params: serviceCnt,
 		}
 		lastDayOp := common.Operation{
@@ -294,7 +294,7 @@ func (wc *WorkCards) getProjectCardOps(sdk *cptype.SDK, params workbench.UrlPara
 	case common.DevOpsProject, common.DefaultProject:
 		target = "project"
 	case common.MspProject:
-		target = "mspServiceList"
+		target = common.OpValTargetMspOverview
 	}
 	serviceOp.Target = target
 	serviceOp.Params["projectId"] = project.ProjectDTO.ID
@@ -400,7 +400,7 @@ func (wc *WorkCards) getProjIconOps(sdk *cptype.SDK, project apistructs.Workbenc
 		common.Transfer(gotoData, &monitorServerData)
 		common.Transfer(gotoData, &traceServerData)
 		common.Transfer(gotoData, &logAnalysisServerData)
-		serviceListServerData["target"] = "mspServiceList"
+		serviceListServerData["target"] = common.OpValTargetMspOverview
 		monitorServerData["target"] = "mspMonitorServiceAnalyze"
 		traceServerData["target"] = "microTrace"
 		logAnalysisServerData["target"] = "mspLogAnalyze"
@@ -457,7 +457,7 @@ func (wc *WorkCards) getProjIconOps(sdk *cptype.SDK, project apistructs.Workbenc
 		projectManageServerData["target"] = "projectAllIssue"
 		appDevelopServerData["target"] = "projectApps"
 		testManageServerData["target"] = "projectTestDashboard"
-		serviceMonitorServerData["target"] = "mspServiceList"
+		serviceMonitorServerData["target"] = common.OpValTargetMspOverview
 		projectSettingServerData["target"] = "projectSetting"
 		ios := []cardlist.IconOperations{
 			{
