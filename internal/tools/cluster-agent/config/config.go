@@ -17,6 +17,13 @@ package config
 type Config struct {
 	Debug                  bool   `default:"false" desc:"enable debug logging"`
 	CollectClusterInfo     bool   `default:"true" desc:"enable collect cluster info"`
+	LeaderElection         bool   `default:"true" desc:"leader election"`
+	LeaderElectionID       string `default:"cluster-agent.erda.cloud" desc:"leader election id"`
+	LeasesResourceLockType string `default:"leases" desc:"leases resource lock type"`
+	LeaseDuration          int    `desc:"lease duration"`
+	RenewDeadline          int    `desc:"renew deadline"`
+	RetryPeriod            int    `desc:"retry period"`
+	ConRetryInterval       int    `desc:"agent connection retry interval"`
 	ClusterManagerEndpoint string `desc:"cluster manager endpoint"`
 	ClusterKey             string `desc:"cluster key"`
 	ErdaNamespace          string `desc:"erda namespace"`

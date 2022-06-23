@@ -42,7 +42,7 @@ type Conf struct {
 	CacheSegSize int64 `default:"16777216" env:"CMP_CACHE_SEG_SIZE"`
 
 	ReleaseRegistry    string `env:"RELEASE_REGISTRY" default:"registry.erda.cloud/erda"`
-	ClusterInitVersion string `env:"CLUSTER_INIT_VERSION" default:"0.1"`
+	ClusterInitVersion string `env:"CLUSTER_INIT_VERSION" default:"0.2"`
 
 	HelmChartRepoURL      string `env:"HELM_REPO_URL"`
 	HelmChartRepoUserName string `env:"HELM_REPO_USERNAME"`
