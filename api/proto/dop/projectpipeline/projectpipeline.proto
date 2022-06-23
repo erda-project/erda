@@ -385,6 +385,7 @@ message ListPipelineExecHistoryRequest {
     repeated string descCols = 9;
     repeated string ascCols = 10;
     uint64 projectID = 11;
+    repeated string branches = 12;
 }
 
 message ListPipelineExecHistoryResponse {
