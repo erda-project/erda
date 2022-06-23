@@ -220,7 +220,7 @@ func (i *IssueService) ValidIssueRelationTypes(ids []uint64, issueTypes []string
 	if err != nil {
 		return err
 	}
-	if len(issues) > 0 {
+	if len(issues) != len(ids) {
 		return fmt.Errorf("issue ids %v contains invalid type", ids)
 	}
 	return nil
@@ -234,7 +234,7 @@ func (i *IssueService) validateAddIssueRelation(req *pb.AddIssueRelationRequest)
 		if err := i.ValidIssueRelationType(req.IssueID, pb.IssueTypeEnum_REQUIREMENT.String()); err != nil {
 			return err
 		}
-		if err := i.ValidIssueRelationTypes(req.RelatedIssues, []string{pb.IssueTypeEnum_REQUIREMENT.String()}); err != nil {
+		if err := i.ValidIssueRelationTypes(req.RelatedIssues, []string{pb.IssueTypeEnum_TASK.String(), pb.IssueTypeEnum_BUG.String()}); err != nil {
 			return err
 		}
 	}
