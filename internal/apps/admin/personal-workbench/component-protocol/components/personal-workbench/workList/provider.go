@@ -331,7 +331,7 @@ func (l *WorkList) doFilterProj() (data *list.Data) {
 		case common.DevOpsProject, common.DefaultProject:
 			target = "project"
 		case common.MspProject:
-			target = "mspServiceList"
+			target = common.OpValTargetMspOverview
 		}
 
 		ts, _ := l.GenProjTitleState(p.ProjectDTO.Type)
