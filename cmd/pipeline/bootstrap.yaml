@@ -58,6 +58,7 @@ secret: {}
 run: {}
 user: {}
 cancel: {}
+resource: {}
 edge-reporter:
   target:
     url: "${OPENAPI_PUBLIC_URL}"

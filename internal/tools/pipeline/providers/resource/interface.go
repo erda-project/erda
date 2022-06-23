@@ -12,25 +12,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pipelinesvc
+package resource
 
 import (
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/tools/pipeline/conf"
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/action_info"
-	"github.com/erda-project/erda/internal/tools/pipeline/pkg/resource"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
-// calculatePipelineResources calculate pipeline resources according to all tasks grouped by stages.
-func (s *PipelineSvc) calculatePipelineResources(pipelineYml *pipelineyml.PipelineYml, p *spec.Pipeline) (*apistructs.PipelineAppliedResources, error) {
+type Interface interface {
+	// CalculatePipelineResources calculate pipeline resources according to all tasks grouped by stages.
+	CalculatePipelineResources(pipelineYml *pipelineyml.PipelineYml, p *spec.Pipeline) (*apistructs.PipelineAppliedResources, error)
+	CalculateNormalTaskResources(action *pipelineyml.Action, actionDefine *diceyml.Job) apistructs.PipelineAppliedResources
+}
+
+func (s *provider) CalculatePipelineResources(pipelineYml *pipelineyml.PipelineYml, p *spec.Pipeline) (*apistructs.PipelineAppliedResources, error) {
 	if pipelineYml.Spec() == nil || len(pipelineYml.Spec().Stages) <= 0 {
 		return nil, nil
 	}
 
 	// load pipelineYml all action define and spec
 	var passedDataWhenCreate action_info.PassedDataWhenCreate
-	passedDataWhenCreate.InitData(s.bdl, s.actionMgr)
+	passedDataWhenCreate.InitData(s.ActionMgr)
 	if err := passedDataWhenCreate.PutPassedDataByPipelineYml(pipelineYml, p); err != nil {
 		return nil, err
 	}
@@ -39,16 +45,25 @@ func (s *PipelineSvc) calculatePipelineResources(pipelineYml *pipelineyml.Pipeli
 	var stagesPipelineAppliedResources = make([][]*apistructs.PipelineAppliedResources, len(pipelineYml.Spec().Stages))
 	pipelineYml.Spec().LoopStagesActions(func(stage int, action *pipelineyml.Action) {
 		if !action.Type.IsSnippet() {
-			resources := calculateNormalTaskResources(action, passedDataWhenCreate.GetActionJobDefine(s.actionMgr.MakeActionTypeVersion(action)))
+			resources := s.CalculateNormalTaskResources(action, passedDataWhenCreate.GetActionJobDefine(s.ActionMgr.MakeActionTypeVersion(action)))
 			stagesPipelineAppliedResources[stage] = append(stagesPipelineAppliedResources[stage], &resources)
 		}
 	})
 
 	// merge result
 	pipelineResource := apistructs.PipelineAppliedResources{
-		Limits:   resource.CalculatePipelineLimitResource(stagesPipelineAppliedResources),
-		Requests: resource.CalculatePipelineRequestResource(stagesPipelineAppliedResources),
+		Limits:   calculatePipelineLimitResource(stagesPipelineAppliedResources),
+		Requests: calculatePipelineRequestResource(stagesPipelineAppliedResources),
 	}
 
 	return &pipelineResource, nil
+}
+
+func (s *provider) CalculateNormalTaskResources(action *pipelineyml.Action, actionDefine *diceyml.Job) apistructs.PipelineAppliedResources {
+	defaultRes := apistructs.PipelineAppliedResource{CPU: conf.TaskDefaultCPU(), MemoryMB: conf.TaskDefaultMEM()}
+	overSoldRes := apistructs.PipelineOverSoldResource{CPURate: conf.TaskDefaultCPUOverSoldRate(), MaxCPU: conf.TaskMaxAllowedOverSoldCPU()}
+	return apistructs.PipelineAppliedResources{
+		Limits:   calculateOversoldTaskLimitResource(calculateNormalTaskLimitResource(action, actionDefine, defaultRes), overSoldRes),
+		Requests: calculateNormalTaskRequestResource(action, actionDefine, defaultRes),
+	}
 }
