@@ -166,7 +166,7 @@ func (l *WorkList) GenProjMspKvInfo(proj apistructs.WorkbenchProjOverviewItem, q
 					WithServerDataPtr(list.OpItemClickGotoServerData{
 						OpItemBasicServerData: list.OpItemBasicServerData{
 							Params: mspParams,
-							Target: common.OpValTargetMspServiceList,
+							Target: common.OpValTargetMspOverview,
 						},
 					}).
 					Build(),
@@ -286,7 +286,7 @@ func (l *WorkList) GenProjDopColumnInfo(proj apistructs.WorkbenchProjOverviewIte
 					WithServerDataPtr(list.OpItemClickGotoServerData{
 						OpItemBasicServerData: list.OpItemBasicServerData{
 							Params: mspParams,
-							Target: common.OpValTargetMspServiceList,
+							Target: common.OpValTargetMspOverview,
 						},
 					}).
 					Build(),
@@ -312,7 +312,7 @@ func (l *WorkList) GenProjMspColumnInfo(proj apistructs.WorkbenchProjOverviewIte
 					WithServerDataPtr(list.OpItemClickGotoServerData{
 						OpItemBasicServerData: list.OpItemBasicServerData{
 							Params: mspParams,
-							Target: common.OpValTargetMspServiceList,
+							Target: common.OpValTargetMspOverview,
 						},
 					}).
 					Build(),
