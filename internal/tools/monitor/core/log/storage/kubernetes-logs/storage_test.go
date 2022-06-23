@@ -24,6 +24,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/erda-project/erda/internal/tools/monitor/core/storekit"
 	"github.com/recallsong/go-utils/encoding/jsonx"
 	v1 "k8s.io/api/core/v1"
 
@@ -112,11 +113,12 @@ const (
 
 func Test_cStorage_Iterator_Next(t *testing.T) {
 	tests := []struct {
-		name        string
-		source      []logTestItem
-		bufferLines int64
-		sel         *storage.Selector
-		want        []interface{}
+		name            string
+		source          []logTestItem
+		bufferLines     int64
+		sel             *storage.Selector
+		isEmptyIterator bool
+		want            []interface{}
 	}{
 		{
 			source:      commonLogTestItems,
@@ -434,6 +436,20 @@ func Test_cStorage_Iterator_Next(t *testing.T) {
 			},
 			want: nil,
 		},
+		{
+			name:        "Stream_Error",
+			source:      commonLogTestItems,
+			bufferLines: 1,
+			sel: &storage.Selector{
+				Start:   11,
+				End:     13,
+				Scheme:  kubernetesLogScheme,
+				Filters: commonTestFilters,
+				Options: commonTestOptions,
+			},
+			isEmptyIterator: true,
+			want:            nil,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -453,6 +469,11 @@ func Test_cStorage_Iterator_Next(t *testing.T) {
 			if err != nil {
 				t.Errorf("cStorage.Iterator() got error: %s", it.Error())
 				return
+			}
+			if tt.isEmptyIterator {
+				if _, ok := it.(storekit.EmptyIterator); !ok {
+					t.Errorf("Iterator should be empty iterator")
+				}
 			}
 			var got []interface{}
 			for it.Next() {
