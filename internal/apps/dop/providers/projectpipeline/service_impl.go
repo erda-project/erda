@@ -844,6 +844,11 @@ func (p *ProjectPipelineService) ListExecHistory(ctx context.Context, params *pb
 			pipelinePageListRequest.MustMatchLabelsQueryParams = append(pipelinePageListRequest.MustMatchLabelsQueryParams, fmt.Sprintf("%v=%v", apistructs.LabelRunUserID, v))
 		}
 	}
+	if len(params.Branches) > 0  {
+		for _, v := range params.Branches {
+			pipelinePageListRequest.MustMatchLabelsQueryParams = append(pipelinePageListRequest.MustMatchLabelsQueryParams, fmt.Sprintf("%v=%v", apistructs.LabelBranch, v))
+		}
+	}
 
 	data, err := p.bundle.PageListPipeline(pipelinePageListRequest)
 	if err != nil {
