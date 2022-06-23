@@ -70,12 +70,12 @@ func (f *IssueFilter) ConditionRetriever() ([]interface{}, error) {
 		needIterationCond = false
 	}
 	var iterations *model.SelectCondition
+	iterationOptions, err := f.getPropIterationsOptions()
+	if err != nil {
+		return nil, err
+	}
+	f.gsHelper.SetIterationOptions(gshelper.KeyIterationOptions, iterationOptions)
 	if needIterationCond {
-		iterationOptions, err := f.getPropIterationsOptions()
-		if err != nil {
-			return nil, err
-		}
-		f.gsHelper.SetIterationOptions(gshelper.KeyIterationOptions, iterationOptions)
 		iterations = model.NewSelectCondition(PropConditionKeyIterationIDs, cputil.I18n(f.sdk.Ctx, "sprint"), iterationOptions).WithPlaceHolder(cputil.I18n(f.sdk.Ctx, "choose-sprint"))
 	}
 
