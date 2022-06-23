@@ -120,30 +120,6 @@ func (b *Bundle) UpdateIssueTicket(updateReq apistructs.IssueUpdateRequest, issu
 	return nil
 }
 
-// UpdateIssueTicketUser 更新ticket，带User-ID
-func (b *Bundle) UpdateIssueTicketUser(UserID string, updateReq apistructs.IssueUpdateRequest, issueID uint64) error {
-	host, err := b.urls.DOP()
-	if err != nil {
-		return err
-	}
-	hc := b.hc
-	var buf bytes.Buffer
-	resp, err := hc.Put(host).Path("/api/issues/"+strconv.FormatInt(int64(issueID), 10)).
-		Header(httputil.UserHeader, UserID).JSONBody(&updateReq).Do().Body(&buf)
-	if err != nil {
-		return apierrors.ErrInvoke.InternalError(err)
-	}
-	if !resp.IsOK() {
-		return apierrors.ErrInvoke.InternalError(
-			fmt.Errorf("failed to update Ticket, status code: %d, body: %v",
-				resp.StatusCode(),
-				buf.String(),
-			))
-	}
-
-	return nil
-}
-
 func (b *Bundle) GetIssueStage(orgID int64, issueType apistructs.IssueType) ([]apistructs.IssueStage, error) {
 	host, err := b.urls.DOP()
 	if err != nil {
