@@ -24,13 +24,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/erda-project/erda/internal/tools/monitor/core/storekit"
 	"github.com/recallsong/go-utils/encoding/jsonx"
 	v1 "k8s.io/api/core/v1"
 
 	"github.com/erda-project/erda-infra/base/logs/logrusx"
 	"github.com/erda-project/erda-proto-go/core/monitor/log/query/pb"
 	"github.com/erda-project/erda/internal/tools/monitor/core/log/storage"
+	"github.com/erda-project/erda/internal/tools/monitor/core/storekit"
 )
 
 type logTestItem struct {
@@ -441,10 +441,21 @@ func Test_cStorage_Iterator_Next(t *testing.T) {
 			source:      commonLogTestItems,
 			bufferLines: 1,
 			sel: &storage.Selector{
-				Start:   11,
-				End:     13,
-				Scheme:  kubernetesLogScheme,
-				Filters: commonTestFilters,
+				Start:  11,
+				End:    13,
+				Scheme: kubernetesLogScheme,
+				Filters: []*storage.Filter{
+					{
+						Key:   "id",
+						Op:    storage.EQ,
+						Value: "test_id",
+					},
+					{
+						Key:   "stream",
+						Op:    storage.EQ,
+						Value: "error",
+					},
+				},
 				Options: commonTestOptions,
 			},
 			isEmptyIterator: true,
