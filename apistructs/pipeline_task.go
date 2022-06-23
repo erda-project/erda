@@ -31,6 +31,19 @@ const (
 	PipelineTaskMaxRetryDuration = 24 * time.Hour
 )
 
+type TaskParamSource string
+
+const (
+	DefaultTaskParamSource TaskParamSource = "default"
+	UserTaskParamSource    TaskParamSource = "user"
+	MergedTaskParamSource  TaskParamSource = "merged"
+)
+
+type TaskParamDetail struct {
+	Name   string                     `json:"name"`
+	Values map[TaskParamSource]string `json:"values"`
+}
+
 type PipelineTaskDTO struct {
 	ID         uint64 `json:"id"`
 	PipelineID uint64 `json:"pipelineID"`
@@ -57,9 +70,10 @@ type PipelineTaskDTO struct {
 }
 
 type PipelineTaskExtra struct {
-	UUID           string          `json:"uuid"`
-	AllowFailure   bool            `json:"allowFailure"`
-	TaskContainers []TaskContainer `json:"taskContainers"`
+	UUID           string             `json:"uuid"`
+	AllowFailure   bool               `json:"allowFailure"`
+	TaskContainers []TaskContainer    `json:"taskContainers"`
+	Params         []*TaskParamDetail `json:"params"`
 }
 
 type TaskContainer struct {

@@ -32,6 +32,7 @@ import (
 const (
 	CtxExecutorChKeyPrefix         = "executor-done-chan"
 	CtxExecutorChDataVersionPrefix = "executor-done-chan-data-version"
+	EncryptedValueDisplay          = "********"
 )
 
 type PipelineTask struct {
@@ -329,6 +330,88 @@ func (pt *PipelineTask) Convert2DTO() *apistructs.PipelineTaskDTO {
 	}
 
 	return &task
+}
+
+func (pt *PipelineTask) MergeTaskParamDetailToDisplay(action apistructs.ActionSpec, ymlTask PipelineTask, snapshot Snapshot) (params []*apistructs.TaskParamDetail) {
+	secrets := make(map[string]string)
+	for key := range snapshot.Secrets {
+		secrets[key] = EncryptedValueDisplay
+	}
+	for key := range snapshot.PlatformSecrets {
+		secrets[key] = EncryptedValueDisplay
+	}
+	if pt.Extra.Action.Params == nil {
+		pt.Extra.Action.Params = make(map[string]interface{})
+	}
+
+	for _, specParam := range action.Params {
+		// if user write the param in action, use it
+		param := &apistructs.TaskParamDetail{
+			Name: specParam.Name,
+			Values: map[apistructs.TaskParamSource]string{
+				apistructs.DefaultTaskParamSource: jsonparse.JsonOneLine(specParam.Default),
+				apistructs.UserTaskParamSource:    jsonparse.JsonOneLine(ymlTask.Extra.Action.Params[specParam.Name]),
+				apistructs.MergedTaskParamSource:  jsonparse.JsonOneLine(pt.Extra.Action.Params[specParam.Name]),
+			},
+		}
+		if value, ok := pt.Extra.Action.Params[specParam.Name]; ok {
+			param.Values[apistructs.MergedTaskParamSource] = jsonparse.JsonOneLine(value)
+			pt.filterSecretParam(apistructs.UserTaskParamSource, param, ymlTask, secrets)
+			params = append(params, param)
+			continue
+		}
+		// if action has a default value, use it and replace the encrypted value
+		if specParam.Default != nil {
+			defaultValue := jsonparse.JsonOneLine(specParam.Default)
+			param.Values[apistructs.MergedTaskParamSource] = defaultValue
+			pt.filterSecretParam(apistructs.DefaultTaskParamSource, param, ymlTask, secrets)
+			params = append(params, param)
+		}
+	}
+	for name := range pt.Extra.Action.Params {
+		var find bool
+		for _, mergedParam := range params {
+			if mergedParam.Name == name {
+				find = true
+				break
+			}
+		}
+		if !find {
+			param := &apistructs.TaskParamDetail{
+				Name: name,
+				Values: map[apistructs.TaskParamSource]string{
+					apistructs.DefaultTaskParamSource: "",
+					apistructs.UserTaskParamSource:    jsonparse.JsonOneLine(ymlTask.Extra.Action.Params[name]),
+					apistructs.MergedTaskParamSource:  jsonparse.JsonOneLine(pt.Extra.Action.Params[name]),
+				},
+			}
+			pt.filterSecretParam(apistructs.UserTaskParamSource, param, ymlTask, secrets)
+			params = append(params, param)
+		}
+	}
+	return
+}
+
+func (pt *PipelineTask) filterSecretParam(source apistructs.TaskParamSource, param *apistructs.TaskParamDetail, ymlAction PipelineTask, secrets map[string]string) {
+	replacedValue, err := pipelineyml.RenderSecrets([]byte(param.Values[source]), secrets)
+	if err != nil {
+		return
+	}
+	if string(replacedValue) == EncryptedValueDisplay {
+		param.Values[apistructs.MergedTaskParamSource] = EncryptedValueDisplay
+		return
+	}
+	ymlParamValue, ok := ymlAction.Extra.Action.Params[param.Name]
+	if !ok {
+		return
+	}
+	ymlParamValueStr := jsonparse.JsonOneLine(ymlParamValue)
+	replacedYmlValue, err := pipelineyml.RenderSecrets([]byte(ymlParamValueStr), secrets)
+	if string(replacedYmlValue) == EncryptedValueDisplay {
+		param.Values[apistructs.MergedTaskParamSource] = EncryptedValueDisplay
+		return
+	}
+	return
 }
 
 func (pt *PipelineTask) RuntimeID() string {
