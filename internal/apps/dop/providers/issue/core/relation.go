@@ -216,12 +216,14 @@ func (i *IssueService) ValidIssueRelationTypes(ids []uint64, issueTypes []string
 	for _, i := range ids {
 		issueIDs = append(issueIDs, int64(i))
 	}
-	issues, err := i.db.ListIssue(pb.IssueListRequest{IDs: issueIDs, Type: issueTypes})
+	issues, err := i.db.ListIssue(pb.IssueListRequest{IDs: issueIDs})
 	if err != nil {
 		return err
 	}
-	if len(issues) != len(ids) {
-		return fmt.Errorf("issue ids %v contains invalid type", ids)
+	for _, i := range issues {
+		if !strutil.Exist(issueTypes, i.Type) {
+			return fmt.Errorf("issue ids %v contains id %v invalid type %s", ids, i.ID, i.Type)
+		}
 	}
 	return nil
 }
