@@ -43,6 +43,7 @@ func (agent *Agent) watchFiles() {
 		return
 	}
 	agent.FileWatcher = watcher
+	agent.FileWatcher.EndLineForTail = agent.EasyUse.FlagEndLineForTail
 
 	// ${METAFILE}
 	watcher.RegisterFullHandler(agent.EasyUse.ContainerMetaFile, metaFileFullHandler(agent))

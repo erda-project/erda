@@ -21,6 +21,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"sync"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/hpcloud/tail"
@@ -46,6 +47,12 @@ type Watcher struct {
 	fullFileHandlerMap map[string]FullHandler
 	fullFsWatcher      *fsnotify.Watcher
 	errs               []error
+
+	// tail
+	EndLineForTail string
+
+	// wait all fw things done
+	Wait sync.WaitGroup
 }
 
 const logPrefix = "[Platform Log] [file watcher]"
@@ -106,6 +113,8 @@ func New(ctx context.Context) (*Watcher, error) {
 }
 
 func (w *Watcher) Close() {
+	w.Wait.Wait()
+
 	if w.fullFsWatcher != nil {
 		_ = w.fullFsWatcher.Close()
 	}
@@ -129,6 +138,7 @@ func (w *Watcher) RegisterFullHandler(fullpath string, handler FullHandler) {
 }
 
 func (w *Watcher) RegisterTailHandler(fullpath string, handler TailHandler) {
+	w.Wait.Add(1)
 
 	tailIO, err := tail.TailFile(fullpath, tail.Config{ReOpen: true, MustExist: false, Follow: true, Poll: true})
 	if err != nil {
@@ -138,17 +148,15 @@ func (w *Watcher) RegisterTailHandler(fullpath string, handler TailHandler) {
 
 	var allLines []string
 	go func(fullpath string) {
-		for {
-			select {
-			case <-w.ctx.Done():
+		for line := range tailIO.Lines {
+			if line.Text == w.EndLineForTail {
 				logrus.Debugln(fullpath + " tail done")
-				return
-			case line := <-tailIO.Lines:
-				allLines = append(allLines, line.Text)
-				if err := handler(line.Text, allLines); err != nil {
-					logger.Printf("failed to handle a tailed line of %s, err: %v\n", fullpath, err)
-				}
-
+				w.Wait.Done()
+				break
+			}
+			allLines = append(allLines, line.Text)
+			if err := handler(line.Text, allLines); err != nil {
+				logger.Printf("failed to handle a tailed line of %s, err: %v\n", fullpath, err)
 			}
 		}
 	}(fullpath)
