@@ -15,7 +15,12 @@
 package core
 
 import (
+	"errors"
+	"reflect"
 	"testing"
+
+	"bou.ke/monkey"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 )
@@ -78,4 +83,24 @@ func TestCheck(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestIssueService_validateAddIssueRelation(t *testing.T) {
+	var i *IssueService
+	p1 := monkey.PatchInstanceMethod(reflect.TypeOf(i), "ValidIssueRelationType",
+		func(d *IssueService, id uint64, issueType string) error {
+			return nil
+		},
+	)
+	defer p1.Unpatch()
+
+	p2 := monkey.PatchInstanceMethod(reflect.TypeOf(i), "ValidIssueRelationTypes",
+		func(d *IssueService, ids []uint64, issueTypes []string) error {
+			return errors.New("invalid states")
+		},
+	)
+	defer p2.Unpatch()
+	assert.Error(t, i.validateAddIssueRelation(&pb.AddIssueRelationRequest{Type: "inclusion", IssueID: 1, RelatedIssues: []uint64{2, 3}}))
+	assert.NoError(t, i.validateAddIssueRelation(&pb.AddIssueRelationRequest{Type: "connection", IssueID: 1, RelatedIssues: []uint64{2, 3}}))
+	assert.Error(t, i.validateAddIssueRelation(nil))
 }

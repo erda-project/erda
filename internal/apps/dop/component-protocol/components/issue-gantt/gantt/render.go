@@ -168,7 +168,7 @@ func (f *ComponentGantt) issueChildrenRetriever(id uint64) ([]dao.IssueItem, err
 		req = pb.PagingIssueRequest{
 			ProjectID:    f.projectID,
 			Assignee:     f.State.Values.AssigneeIDs,
-			Type:         []string{pb.IssueTypeEnum_TASK.String()},
+			Type:         []string{pb.IssueTypeEnum_TASK.String(), pb.IssueTypeEnum_BUG.String()},
 			StateBelongs: stateBelongs,
 		}
 	}
