@@ -415,19 +415,15 @@ func (p *ProjectPipelineService) createCronIfNotExist(definition *dpb.PipelineDe
 	if err != nil {
 		return err
 	}
+	if len(crons.Data) == 1 && crons.Data[0].PipelineDefinitionID == definition.ID {
+		return nil
+	}
 
-	for _, cron := range crons.Data {
-		if cron.PipelineDefinitionID == definition.ID {
-			continue
-		}
-
-		createV2 := extra.CreateRequest
-		createV2.DefinitionID = definition.ID
-		_, err = p.bundle.CreatePipeline(createV2)
-		if err != nil {
-			return fmt.Errorf("CreatePipeline  error %v req %v", err, createV2)
-		}
-		break
+	createV2 := extra.CreateRequest
+	createV2.DefinitionID = definition.ID
+	_, err = p.bundle.CreatePipeline(createV2)
+	if err != nil {
+		return fmt.Errorf("failed to CreatePipeline, err: %v", err)
 	}
 
 	return nil
