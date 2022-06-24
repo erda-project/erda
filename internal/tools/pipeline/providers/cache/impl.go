@@ -187,7 +187,7 @@ func (p *provider) GetOrSetPassedDataWhenCreateFromContext(pipelineYml *pipeline
 	}
 
 	passedDataWhenCreate = &action_info.PassedDataWhenCreate{}
-	passedDataWhenCreate.InitData(p.bdl, p.ActionMgr)
+	passedDataWhenCreate.InitData(p.ActionMgr)
 	if err := passedDataWhenCreate.PutPassedDataByPipelineYml(pipelineYml, pipeline); err != nil {
 		return nil, err
 	}

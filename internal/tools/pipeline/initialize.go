@@ -122,7 +122,7 @@ func (p *provider) do() error {
 
 	// init services
 	pipelineSvc := pipelinesvc.New(appSvc, p.CronDaemon, actionAgentSvc, p.CronService,
-		permissionSvc, queueManage, dbClient, bdl, publisher, p.Engine, js, etcdctl, p.ClusterInfo, p.EdgeRegister, p.Cache)
+		permissionSvc, queueManage, dbClient, bdl, publisher, p.Engine, js, etcdctl, p.ClusterInfo, p.EdgeRegister, p.Cache, p.Resource)
 	pipelineSvc.WithCmsService(p.CmsService)
 	pipelineSvc.WithSecret(p.Secret)
 	pipelineSvc.WithUser(p.User)

@@ -42,6 +42,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/leaderworker"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/queuemanager"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/reconciler"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/resource"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/resourcegc"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/run"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/secret"
@@ -73,6 +74,7 @@ type provider struct {
 	User         user.Interface
 	Secret       secret.Interface
 	ActionMgr    actionmgr.Interface
+	Resource     resource.Interface
 }
 
 func (p *provider) Run(ctx context.Context) error {

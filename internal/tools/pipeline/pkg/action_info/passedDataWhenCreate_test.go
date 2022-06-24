@@ -208,13 +208,13 @@ func Test_passedDataWhenCreate_putPassedDataByPipelineYml(t *testing.T) {
 
 func TestPassedDataWhenCreate_InitData(t *testing.T) {
 	var d *PassedDataWhenCreate
-	d.InitData(nil, nil)
+	d.InitData(nil)
 	if d != nil {
 		t.Fatalf("should be nil")
 	}
 
 	d = &PassedDataWhenCreate{}
-	d.InitData(nil, nil)
+	d.InitData(nil)
 	if d.actionJobDefines == nil {
 		t.Fatalf("actionJobDefines should be initialized")
 	}
@@ -224,7 +224,7 @@ func TestPassedDataWhenCreate_InitData(t *testing.T) {
 
 	d = &PassedDataWhenCreate{}
 	actionMgr := &actionmgr.MockActionMgr{}
-	d.InitData(nil, actionMgr)
+	d.InitData(actionMgr)
 	if d.actionMgr == nil {
 		t.Fatalf("actionMgr should not be nil")
 	}

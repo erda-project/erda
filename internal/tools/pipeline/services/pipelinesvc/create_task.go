@@ -24,8 +24,6 @@ import (
 	"github.com/erda-project/erda/internal/tools/pipeline/conf"
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/action_info"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
-	"github.com/erda-project/erda/pkg/numeral"
-	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
@@ -109,7 +107,7 @@ func (s *PipelineSvc) makeNormalPipelineTask(p *spec.Pipeline, ps *spec.Pipeline
 	}
 
 	// applied resources
-	task.Extra.AppliedResources = calculateNormalTaskResources(action, passedDataWhenCreate.GetActionJobDefine(s.actionMgr.MakeActionTypeVersion(action)))
+	task.Extra.AppliedResources = s.resource.CalculateNormalTaskResources(action, passedDataWhenCreate.GetActionJobDefine(s.actionMgr.MakeActionTypeVersion(action)))
 
 	return task
 }
@@ -208,87 +206,4 @@ func (s *PipelineSvc) judgeTaskExecutor(task *spec.PipelineTask, actionSpec *api
 	}
 
 	return spec.PipelineTaskExecutorKind(actionSpec.Executor.Kind), spec.PipelineTaskExecutorName(actionSpec.Executor.Name)
-}
-
-func calculateNormalTaskResources(action *pipelineyml.Action, actionDefine *diceyml.Job) apistructs.PipelineAppliedResources {
-	defaultRes := apistructs.PipelineAppliedResource{CPU: conf.TaskDefaultCPU(), MemoryMB: conf.TaskDefaultMEM()}
-	overSoldRes := apistructs.PipelineOverSoldResource{CPURate: conf.TaskDefaultCPUOverSoldRate(), MaxCPU: conf.TaskMaxAllowedOverSoldCPU()}
-	return apistructs.PipelineAppliedResources{
-		Limits:   calculateOversoldTaskLimitResource(calculateNormalTaskLimitResource(action, actionDefine, defaultRes), overSoldRes),
-		Requests: calculateNormalTaskRequestResource(action, actionDefine, defaultRes),
-	}
-}
-
-// calculateOversoldTaskLimitResource cpu multiply the default oversold rate. if larger than max cpu default,use default max cpu
-// TODO memory oversold
-func calculateOversoldTaskLimitResource(limits apistructs.PipelineAppliedResource, overSoldRes apistructs.PipelineOverSoldResource) apistructs.PipelineAppliedResource {
-	maxCPU := limits.CPU
-	maxMemoryMB := limits.MemoryMB
-	// Cpu is usually be wasted, if action and action define cpu is lower than default, use default cpu
-	maxCPU = maxCPU * float64(overSoldRes.CPURate)
-	if maxCPU > overSoldRes.MaxCPU {
-		maxCPU = overSoldRes.MaxCPU
-	}
-	return apistructs.PipelineAppliedResource{
-		CPU:      maxCPU,
-		MemoryMB: maxMemoryMB,
-	}
-}
-
-func calculateNormalTaskLimitResource(action *pipelineyml.Action, actionDefine *diceyml.Job, defaultRes apistructs.PipelineAppliedResource) apistructs.PipelineAppliedResource {
-	// Calculate if actionDefine not empty
-	var maxCPU, maxMemoryMB float64
-	if actionDefine != nil {
-		maxCPU = numeral.MaxFloat64([]float64{
-			actionDefine.Resources.MaxCPU, actionDefine.Resources.CPU,
-			action.Resources.MaxCPU, action.Resources.CPU,
-		})
-		maxMemoryMB = numeral.MaxFloat64([]float64{
-			float64(actionDefine.Resources.MaxMem), float64(actionDefine.Resources.Mem),
-			float64(action.Resources.Mem),
-		})
-	}
-
-	// use default if is empty
-	if maxCPU == 0 {
-		maxCPU = defaultRes.CPU
-	}
-	if maxMemoryMB == 0 {
-		maxMemoryMB = defaultRes.MemoryMB
-	}
-
-	return apistructs.PipelineAppliedResource{
-		CPU:      maxCPU,
-		MemoryMB: maxMemoryMB,
-	}
-}
-
-func calculateNormalTaskRequestResource(action *pipelineyml.Action, actionDefine *diceyml.Job, defaultRes apistructs.PipelineAppliedResource) apistructs.PipelineAppliedResource {
-	// calculate if requestCPU not empty
-	var requestCPU, requestMemoryMB float64
-	if actionDefine != nil {
-		requestCPU = numeral.MinFloat64([]float64{actionDefine.Resources.MaxCPU, actionDefine.Resources.CPU}, true)
-		requestMemoryMB = numeral.MinFloat64([]float64{float64(actionDefine.Resources.MaxMem), float64(actionDefine.Resources.Mem)}, true)
-	}
-
-	// user explicit declaration has the highest priority, overwrite value from actionDefine
-	if c := numeral.MinFloat64([]float64{action.Resources.MaxCPU, action.Resources.CPU}, true); c > 0 {
-		requestCPU = c
-	}
-	if m := action.Resources.Mem; m > 0 {
-		requestMemoryMB = float64(m)
-	}
-
-	// use default if is empty
-	if requestCPU == 0 {
-		requestCPU = defaultRes.CPU
-	}
-	if requestMemoryMB == 0 {
-		requestMemoryMB = defaultRes.MemoryMB
-	}
-
-	return apistructs.PipelineAppliedResource{
-		CPU:      requestCPU,
-		MemoryMB: requestMemoryMB,
-	}
 }

@@ -26,6 +26,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/action_info"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/actionmgr"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/resource"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
@@ -347,7 +348,7 @@ func TestPipelineSvc_getYmlActionTasks(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := &PipelineSvc{actionMgr: &actionmgr.MockActionMgr{}}
+			s := &PipelineSvc{actionMgr: &actionmgr.MockActionMgr{}, resource: &resource.MockResource{}}
 
 			var pipelineYml *pipelineyml.PipelineYml
 			var err error
@@ -505,7 +506,7 @@ func TestPipelineSvc_MergePipelineYmlTasks(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := &PipelineSvc{actionMgr: &actionmgr.MockActionMgr{}}
+			s := &PipelineSvc{actionMgr: &actionmgr.MockActionMgr{}, resource: &resource.MockResource{}}
 			yml, _ := pipelineyml.New([]byte(tt.args.pipelineYml))
 			_, err := s.MergePipelineYmlTasks(yml, tt.args.dbTasks, tt.args.p, tt.args.dbStages, tt.args.passedDataWhenCreate)
 			if (err != nil) != tt.wantErr {
