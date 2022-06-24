@@ -916,7 +916,7 @@ func (m MockPipelineCron) CronCreate(ctx context.Context, request *cronpb.CronCr
 }
 
 func (m MockPipelineCron) CronPaging(ctx context.Context, request *cronpb.CronPagingRequest) (*cronpb.CronPagingResponse, error) {
-	if strutil.InSlice("9/DEV/feature/888/pipeline.yml", request.YmlNames) {
+	if strutil.InSlice("pipeline1.yml", request.YmlNames) {
 		return &cronpb.CronPagingResponse{
 			Total: 1,
 			Data: []*ppb.Cron{{
@@ -924,7 +924,7 @@ func (m MockPipelineCron) CronPaging(ctx context.Context, request *cronpb.CronPa
 				PipelineDefinitionID: "1",
 			}},
 		}, nil
-	} else if strutil.InSlice("10/DEV/feature/888/pipeline.yml", request.YmlNames) {
+	} else if strutil.InSlice("pipeline2.yml", request.YmlNames) {
 		return &cronpb.CronPagingResponse{
 			Total: 0,
 			Data:  nil,
@@ -973,11 +973,32 @@ func TestProjectPipelineService_createCronIfNotExist(t *testing.T) {
 	defer monkey.UnpatchAll()
 
 	sourceType1 := NewProjectSourceType(deftype.ErdaProjectPipelineType.String())
-	sourceType1.(*ErdaProjectSourceType).PipelineCreateRequestV2 = `{"createRequest":{"pipelineYml":"version: \"1.1\"\ncron: 0 0/1 * * * ?\nstages:\n  - stage:\n      - git-checkout:\n          alias: git-checkout\n          description: 代码仓库克隆\n","clusterName":"terminus-dev","namespace":"","pipelineYmlName":"9/DEV/feature/888/pipeline.yml","pipelineSource":"dice","labels":{"appID":"9","branch":"feature/888","commitDetail":"{\"commitID\":\"f349e5be5d2477c7de356265fc4d786202d89bdc\",\"repo\":\"https://gittar.dev.terminus.io/erda-go-demo/go-web\",\"repoAbbr\":\"erda-go-demo/go-web\",\"author\":\"dice\",\"email\":\"dice@dice.terminus.io\",\"time\":\"2022-04-20T17:56:31+08:00\",\"comment\":\"Update pipeline-yml\"}","diceWorkspace":"DEV","orgID":"1","projectID":"5"},"normalLabels":{"appName":"go-web","orgName":"erda","projectName":"go-demo"},"envs":null,"configManageNamespaces":["pipeline-secrets-app-9-default","pipeline-secrets-app-9-feature","app-9-default","app-9-dev","user-2-org-1"],"autoRun":false,"forceRun":false,"autoRunAtOnce":false,"autoStartCron":false,"cronStartFrom":null,"gc":{"resourceGC":{},"databaseGC":{"analyzed":{},"finished":{}}},"runParams":null,"definitionID":"","secrets":{"gittar.author":"dice","gittar.branch":"feature/888","gittar.commit":"f349e5be5d2477c7de356265fc4d786202d89bdc","gittar.commit.abbrev":"f349e5be","gittar.message":"Update pipeline-yml","gittar.repo":"http://gittar.project-387-dev.svc.cluster.local:5566/erda-go-demo/go-web"},"userID":"2"},"runParams":null}`
+	sourceType1.(*ErdaProjectSourceType).PipelineCreateRequestV2 = `
+{
+    "createRequest": {
+        "pipelineYmlName": "pipeline1.yml",
+        "pipelineSource": "dice"
+    },
+    "runParams": null
+}`
 	sourceType2 := NewProjectSourceType(deftype.ErdaProjectPipelineType.String())
-	sourceType2.(*ErdaProjectSourceType).PipelineCreateRequestV2 = `{"createRequest":{"pipelineYml":"version: \"1.1\"\ncron: 0 0/1 * * * ?\nstages:\n  - stage:\n      - git-checkout:\n          alias: git-checkout\n          description: 代码仓库克隆\n","clusterName":"terminus-dev","namespace":"","pipelineYmlName":"10/DEV/feature/888/pipeline.yml","pipelineSource":"dice","labels":{"appID":"9","branch":"feature/888","commitDetail":"{\"commitID\":\"f349e5be5d2477c7de356265fc4d786202d89bdc\",\"repo\":\"https://gittar.dev.terminus.io/erda-go-demo/go-web\",\"repoAbbr\":\"erda-go-demo/go-web\",\"author\":\"dice\",\"email\":\"dice@dice.terminus.io\",\"time\":\"2022-04-20T17:56:31+08:00\",\"comment\":\"Update pipeline-yml\"}","diceWorkspace":"DEV","orgID":"1","projectID":"5"},"normalLabels":{"appName":"go-web","orgName":"erda","projectName":"go-demo"},"envs":null,"configManageNamespaces":["pipeline-secrets-app-9-default","pipeline-secrets-app-9-feature","app-9-default","app-9-dev","user-2-org-1"],"autoRun":false,"forceRun":false,"autoRunAtOnce":false,"autoStartCron":false,"cronStartFrom":null,"gc":{"resourceGC":{},"databaseGC":{"analyzed":{},"finished":{}}},"runParams":null,"definitionID":"","secrets":{"gittar.author":"dice","gittar.branch":"feature/888","gittar.commit":"f349e5be5d2477c7de356265fc4d786202d89bdc","gittar.commit.abbrev":"f349e5be","gittar.message":"Update pipeline-yml","gittar.repo":"http://gittar.project-387-dev.svc.cluster.local:5566/erda-go-demo/go-web"},"userID":"2"},"runParams":null}`
+	sourceType2.(*ErdaProjectSourceType).PipelineCreateRequestV2 = `
+{
+    "createRequest": {
+        "pipelineYmlName": "pipeline2.yml",
+        "pipelineSource": "dice"
+    },
+    "runParams": null
+}`
 	sourceType3 := NewProjectSourceType(deftype.ErdaProjectPipelineType.String())
-	sourceType3.(*ErdaProjectSourceType).PipelineCreateRequestV2 = `{"createRequest":{"pipelineYml":"version: \"1.1\"\ncron: 0 0/1 * * * ?\nstages:\n  - stage:\n      - git-checkout:\n          alias: git-checkout\n          description: 代码仓库克隆\n","clusterName":"terminus-dev","namespace":"","pipelineYmlName":"11/DEV/feature/888/pipeline.yml","pipelineSource":"dice","labels":{"appID":"9","branch":"feature/888","commitDetail":"{\"commitID\":\"f349e5be5d2477c7de356265fc4d786202d89bdc\",\"repo\":\"https://gittar.dev.terminus.io/erda-go-demo/go-web\",\"repoAbbr\":\"erda-go-demo/go-web\",\"author\":\"dice\",\"email\":\"dice@dice.terminus.io\",\"time\":\"2022-04-20T17:56:31+08:00\",\"comment\":\"Update pipeline-yml\"}","diceWorkspace":"DEV","orgID":"1","projectID":"5"},"normalLabels":{"appName":"go-web","orgName":"erda","projectName":"go-demo"},"envs":null,"configManageNamespaces":["pipeline-secrets-app-9-default","pipeline-secrets-app-9-feature","app-9-default","app-9-dev","user-2-org-1"],"autoRun":false,"forceRun":false,"autoRunAtOnce":false,"autoStartCron":false,"cronStartFrom":null,"gc":{"resourceGC":{},"databaseGC":{"analyzed":{},"finished":{}}},"runParams":null,"definitionID":"","secrets":{"gittar.author":"dice","gittar.branch":"feature/888","gittar.commit":"f349e5be5d2477c7de356265fc4d786202d89bdc","gittar.commit.abbrev":"f349e5be","gittar.message":"Update pipeline-yml","gittar.repo":"http://gittar.project-387-dev.svc.cluster.local:5566/erda-go-demo/go-web"},"userID":"2"},"runParams":null}`
+	sourceType3.(*ErdaProjectSourceType).PipelineCreateRequestV2 = `
+{
+    "createRequest": {
+        "pipelineYmlName": "pipeline3.yml",
+        "pipelineSource": "dice"
+    },
+    "runParams": null
+}`
 	tests := []struct {
 		name    string
 		fields  fields

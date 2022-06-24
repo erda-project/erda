@@ -423,7 +423,7 @@ func (p *ProjectPipelineService) createCronIfNotExist(definition *dpb.PipelineDe
 	createV2.DefinitionID = definition.ID
 	_, err = p.bundle.CreatePipeline(createV2)
 	if err != nil {
-		return fmt.Errorf("CreatePipeline  error %v req %v", err, createV2)
+		return fmt.Errorf("failed to CreatePipeline, err: %v", err)
 	}
 
 	return nil
