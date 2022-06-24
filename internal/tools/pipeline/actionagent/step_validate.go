@@ -33,25 +33,25 @@ func (agent *Agent) validate() {
 
 	// easy use
 
-	contextDir := os.Getenv(CONTEXTDIR)
+	contextDir := os.Getenv(EnvContextDir)
 	if contextDir == "" {
-		agent.AppendError(errors.Errorf("missing %s", CONTEXTDIR))
+		agent.AppendError(errors.Errorf("missing %s", EnvContextDir))
 	}
 	agent.EasyUse.ContainerContext = contextDir
 
-	workDir := os.Getenv(WORKDIR)
+	workDir := os.Getenv(EnvWorkDir)
 	if workDir == "" {
-		agent.AppendError(errors.Errorf("missing %s", WORKDIR))
+		agent.AppendError(errors.Errorf("missing %s", EnvWorkDir))
 	}
 	agent.EasyUse.ContainerWd = workDir
 
-	metaFile := os.Getenv(METAFILE)
+	metaFile := os.Getenv(EnvMetaFile)
 	if metaFile == "" {
-		agent.AppendError(errors.Errorf("missing %s", METAFILE))
+		agent.AppendError(errors.Errorf("missing %s", EnvMetaFile))
 	}
 	agent.EasyUse.ContainerMetaFile = metaFile
 
-	uploadDir := os.Getenv(UPLOADDIR)
+	uploadDir := os.Getenv(EnvUploadDir)
 	agent.EasyUse.ContainerUploadDir = uploadDir
 	agent.EasyUse.ContainerTempTarUploadDir = "/tmp/tar-upload"
 

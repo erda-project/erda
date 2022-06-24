@@ -30,10 +30,13 @@ import (
 )
 
 const (
-	CONTEXTDIR = "CONTEXTDIR"
-	WORKDIR    = "WORKDIR"
-	METAFILE   = "METAFILE"
-	UPLOADDIR  = "UPLOADDIR"
+	EnvContextDir = "CONTEXTDIR"
+	EnvWorkDir    = "WORKDIR"
+	EnvMetaFile   = "METAFILE"
+	EnvUploadDir  = "UPLOADDIR"
+
+	EnvPrefix            = "ACTIONAGENT_"
+	EnvActionParamPrefix = "ACTION_"
 )
 
 type Agent struct {
