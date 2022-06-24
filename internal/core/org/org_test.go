@@ -23,40 +23,24 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/erda-project/erda-infra/providers/i18n"
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/internal/core/legacy/dao"
-	"github.com/erda-project/erda/internal/core/legacy/model"
+	"github.com/erda-project/erda-proto-go/core/org/pb"
+	"github.com/erda-project/erda/internal/core/org/db"
 )
 
-// func TestShouldGetOrgByName(t *testing.T) {
-// 	db, mock, err := sqlmock.New()
-// 	require.NoError(t, err)
-// 	connection, err := gorm.Open("mysql", db)
-// 	require.NoError(t, err)
-// 	client := &dao.DBClient{
-// 		connection,
-// 	}
-
-// 	const sql = `SELECT * FROM "dice_org" WHERE (name = ?)`
-// 	const sql1 = ` ORDER BY "dice_org"."id" ASC LIMIT 1`
-// 	str := regexp.QuoteMeta(sql + sql1)
-// 	mock.ExpectQuery(str).
-// 		WithArgs("org1").
-// 		WillReturnRows(sqlmock.NewRows([]string{"id", "name"}).
-// 			AddRow(1, "org1"))
-
-// 	org, err := client.GetOrgByName("org1")
-// 	require.NoError(t, err)
-// 	assert.Equal(t, org.ID, 1)
-
-// 	require.NoError(t, mock.ExpectationsWereMet())
-// }
-
 func TestGetOrgByDomainAndOrgName(t *testing.T) {
-	o := &Org{}
-	org := &model.Org{Name: "org0"}
-	orgByDomain := monkey.PatchInstanceMethod(reflect.TypeOf(o), "GetOrgByDomain", func(_ *Org, domain string) (*model.Org, error) {
+	org := &db.Org{Name: "org0"}
+	dbClient := &db.DBClient{}
+	orgByName := monkey.PatchInstanceMethod(reflect.TypeOf(dbClient), "GetOrgByName", func(_ *db.DBClient, orgName string) (*db.Org, error) {
+		if orgName == "org0" {
+			return org, nil
+		} else {
+			return nil, db.ErrNotFoundOrg
+		}
+	})
+	defer orgByName.Unpatch()
+
+	p := &provider{dbClient: dbClient}
+	orgByDomain := monkey.PatchInstanceMethod(reflect.TypeOf(p), "GetOrgByDomainFromDB", func(_ *provider, domain string) (*db.Org, error) {
 		if domain == "org0" {
 			return org, nil
 		} else {
@@ -64,25 +48,16 @@ func TestGetOrgByDomainAndOrgName(t *testing.T) {
 		}
 	})
 	defer orgByDomain.Unpatch()
-	db := &dao.DBClient{}
-	orgByName := monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetOrgByName", func(_ *dao.DBClient, orgName string) (*model.Org, error) {
-		if orgName == "org0" {
-			return org, nil
-		} else {
-			return nil, dao.ErrNotFoundOrg
-		}
-	})
-	defer orgByName.Unpatch()
 
-	res, err := o.GetOrgByDomainAndOrgName("org0", "")
+	res, err := p.GetOrgByDomainAndOrgName("org0", "")
 	require.NoError(t, err)
 	assert.Equal(t, org, res)
-	res, err = o.GetOrgByDomainAndOrgName("org0", "org1")
+	res, err = p.GetOrgByDomainAndOrgName("org0", "org1")
 	require.NoError(t, err)
 	assert.Equal(t, org, res)
-	res, err = o.GetOrgByDomainAndOrgName("org2", "org1")
+	res, err = p.GetOrgByDomainAndOrgName("org2", "org1")
 	require.NoError(t, err)
-	assert.Equal(t, (*model.Org)(nil), res)
+	assert.Equal(t, (*db.Org)(nil), res)
 }
 
 func TestOrgNameRetriever(t *testing.T) {
@@ -93,29 +68,24 @@ func TestOrgNameRetriever(t *testing.T) {
 	assert.Equal(t, "", orgNameRetriever(domains[2], domainRoots[0]))
 }
 
-func TestWithI18n(t *testing.T) {
-	var trans i18n.Translator
-	New(WithI18n(trans))
-}
-
 func TestOrg_ListOrgs(t *testing.T) {
 	type args struct {
 		orgIDs []int64
-		req    *apistructs.OrgSearchRequest
+		req    *pb.ListOrgRequest
 		all    bool
 	}
 	tests := []struct {
 		name    string
 		args    args
 		want    int
-		want1   []model.Org
+		want1   []db.Org
 		wantErr bool
 	}{
 		{
 			name: "test_return_error",
 			args: args{
 				orgIDs: []int64{1},
-				req:    &apistructs.OrgSearchRequest{},
+				req:    &pb.ListOrgRequest{},
 				all:    false,
 			},
 			want:    0,
@@ -126,11 +96,11 @@ func TestOrg_ListOrgs(t *testing.T) {
 			name: "test_all",
 			args: args{
 				orgIDs: []int64{1},
-				req:    &apistructs.OrgSearchRequest{},
+				req:    &pb.ListOrgRequest{},
 				all:    true,
 			},
 			want: 1,
-			want1: []model.Org{
+			want1: []db.Org{
 				{
 					Name: "1",
 				},
@@ -141,11 +111,11 @@ func TestOrg_ListOrgs(t *testing.T) {
 			name: "test_not_all",
 			args: args{
 				orgIDs: []int64{1},
-				req:    &apistructs.OrgSearchRequest{},
+				req:    &pb.ListOrgRequest{},
 				all:    false,
 			},
 			want: 2,
-			want1: []model.Org{
+			want1: []db.Org{
 				{
 					Name: "2",
 				},
@@ -155,9 +125,8 @@ func TestOrg_ListOrgs(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			o := &Org{}
-
-			patch1 := monkey.PatchInstanceMethod(reflect.TypeOf(o), "SearchByName", func(o *Org, name string, pageNo, pageSize int) (int, []model.Org, error) {
+			p := &provider{}
+			patch1 := monkey.PatchInstanceMethod(reflect.TypeOf(p), "SearchByName", func(p *provider, name string, pageNo, pageSize int) (int, []db.Org, error) {
 				if tt.wantErr {
 					return 0, nil, fmt.Errorf("error")
 				}
@@ -165,7 +134,7 @@ func TestOrg_ListOrgs(t *testing.T) {
 			})
 			defer patch1.Unpatch()
 
-			patch2 := monkey.PatchInstanceMethod(reflect.TypeOf(o), "ListByIDsAndName", func(o *Org, orgIDs []int64, name string, pageNo, pageSize int) (int, []model.Org, error) {
+			patch2 := monkey.PatchInstanceMethod(reflect.TypeOf(p), "ListByIDsAndName", func(p *provider, orgIDs []int64, name string, pageNo, pageSize int) (int, []db.Org, error) {
 				if tt.wantErr {
 					return 0, nil, fmt.Errorf("error")
 				}
@@ -173,7 +142,7 @@ func TestOrg_ListOrgs(t *testing.T) {
 			})
 			defer patch2.Unpatch()
 
-			got, got1, err := o.ListOrgs(tt.args.orgIDs, tt.args.req, tt.args.all)
+			got, got1, err := p.ListOrgs(tt.args.orgIDs, tt.args.req, tt.args.all)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ListOrgs() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -190,91 +159,91 @@ func TestOrg_ListOrgs(t *testing.T) {
 
 func TestGetAuditMessage(t *testing.T) {
 	tt := []struct {
-		org  model.Org
-		req  apistructs.OrgUpdateRequestBody
-		want apistructs.AuditMessage
+		org  db.Org
+		req  pb.UpdateOrgRequest
+		want *pb.AuditMessage
 	}{
 		{
-			model.Org{DisplayName: "dice"},
-			apistructs.OrgUpdateRequestBody{DisplayName: "erda"},
-			apistructs.AuditMessage{
+			db.Org{DisplayName: "dice"},
+			pb.UpdateOrgRequest{DisplayName: "erda"},
+			&pb.AuditMessage{
 				MessageZH: "组织名称由 dice 改为 erda ",
 				MessageEN: "org name updated from dice to erda ",
 			},
 		},
 		{
-			model.Org{Locale: "en-US"},
-			apistructs.OrgUpdateRequestBody{Locale: "zh-CN"},
-			apistructs.AuditMessage{
+			db.Org{Locale: "en-US"},
+			pb.UpdateOrgRequest{Locale: "zh-CN"},
+			&pb.AuditMessage{
 				MessageZH: "通知语言改为中文 ",
 				MessageEN: "language updated to zh-CN ",
 			},
 		},
 		{
-			model.Org{IsPublic: true},
-			apistructs.OrgUpdateRequestBody{IsPublic: false},
-			apistructs.AuditMessage{
+			db.Org{IsPublic: true},
+			pb.UpdateOrgRequest{IsPublic: false},
+			&pb.AuditMessage{
 				MessageZH: "改为私有组织 ",
 				MessageEN: "org updated to private ",
 			},
 		},
 		{
-			model.Org{Logo: ""},
-			apistructs.OrgUpdateRequestBody{Logo: "foo.png"},
-			apistructs.AuditMessage{
+			db.Org{Logo: ""},
+			pb.UpdateOrgRequest{Logo: "foo.png"},
+			&pb.AuditMessage{
 				MessageZH: "组织Logo发生变更 ",
 				MessageEN: "org Logo changed ",
 			},
 		},
 		{
-			model.Org{Desc: ""},
-			apistructs.OrgUpdateRequestBody{Desc: "bar"},
-			apistructs.AuditMessage{
+			db.Org{Desc: ""},
+			pb.UpdateOrgRequest{Desc: "bar"},
+			&pb.AuditMessage{
 				MessageZH: "组织描述信息发生变更 ",
 				MessageEN: "org desc changed ",
 			},
 		},
 		{
-			model.Org{BlockoutConfig: model.BlockoutConfig{
+			db.Org{BlockoutConfig: db.BlockoutConfig{
 				BlockDEV:   false,
 				BlockTEST:  false,
 				BlockStage: true,
 				BlockProd:  true,
 			}},
-			apistructs.OrgUpdateRequestBody{BlockoutConfig: &apistructs.BlockoutConfig{
-				BlockDEV:   true,
-				BlockTEST:  true,
+			pb.UpdateOrgRequest{BlockoutConfig: &pb.BlockoutConfig{
+				BlockDev:   true,
+				BlockTest:  true,
 				BlockStage: false,
 				BlockProd:  false,
 			}},
-			apistructs.AuditMessage{
+			&pb.AuditMessage{
 				MessageZH: "开发环境开启封网 测试环境开启封网 预发环境关闭封网 生产环境关闭封网 ",
 				MessageEN: "block network opened in dev environment block network opened in test environment block network closed in staging environment block network closed in prod environment ",
 			},
 		},
 		{
-			model.Org{BlockoutConfig: model.BlockoutConfig{
+			db.Org{BlockoutConfig: db.BlockoutConfig{
 				BlockDEV:   true,
 				BlockTEST:  true,
 				BlockStage: true,
 				BlockProd:  true,
 			},
 				DisplayName: "dice", Locale: "en-US", IsPublic: true, Logo: "", Desc: ""},
-			apistructs.OrgUpdateRequestBody{BlockoutConfig: &apistructs.BlockoutConfig{
-				BlockDEV:   true,
-				BlockTEST:  true,
+			pb.UpdateOrgRequest{BlockoutConfig: &pb.BlockoutConfig{
+				BlockDev:   true,
+				BlockTest:  true,
 				BlockStage: true,
 				BlockProd:  true,
 			},
 				DisplayName: "dice", Locale: "en-US", IsPublic: true, Logo: "", Desc: ""},
-			apistructs.AuditMessage{
+			&pb.AuditMessage{
 				MessageZH: "无信息变更",
 				MessageEN: "no message changed",
 			},
 		},
 	}
 	for _, v := range tt {
-		message := getAuditMessage(v.org, v.req)
+		message := getAuditMessage(v.org, &v.req)
 		if v.want.MessageEN != message.MessageEN {
 			t.Error("fail")
 		}
