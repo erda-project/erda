@@ -267,3 +267,52 @@ func TestGetExecutorName(t *testing.T) {
 		})
 	}
 }
+
+func TestMergeTaskParamDetailToDisplay(t *testing.T) {
+	task := &PipelineTask{
+		Extra: PipelineTaskExtra{
+			Action: pipelineyml.Action{
+				Params: map[string]interface{}{
+					"normal-param":    "xxx",
+					"encrypted-param": "encrypted-value",
+					"platform-param":  "platform-value",
+				},
+			},
+		},
+	}
+	action := apistructs.ActionSpec{
+		Params: []apistructs.ActionSpecParam{
+			{
+				Name: "normal-param",
+			},
+			{
+				Name: "encrypted-param",
+			},
+			{
+				Name:    "platform-param",
+				Default: "((gittar.password))",
+			},
+		},
+	}
+	ymlTask := PipelineTask{
+		Extra: PipelineTaskExtra{
+			Action: pipelineyml.Action{
+				Params: map[string]interface{}{
+					"normal-param":    "xxx",
+					"encrypted-param": "${{ configs.encrypted-param }}",
+					"platform-param":  "((gittar.password))",
+				},
+			},
+		},
+	}
+	snapshot := Snapshot{
+		Secrets: map[string]string{
+			"encrypted-param": "encrypted-value",
+			"gittar.password": "platform-value",
+		},
+	}
+	params := task.MergeTaskParamDetailToDisplay(action, ymlTask, snapshot)
+	assert.Equal(t, len(params), 3)
+	assert.Equal(t, params[1].Values[apistructs.MergedTaskParamSource], EncryptedValueDisplay)
+	assert.Equal(t, params[2].Values[apistructs.MergedTaskParamSource], EncryptedValueDisplay)
+}
