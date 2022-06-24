@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/uintset"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda/internal/apps/msp/apm/trace"
@@ -155,9 +156,9 @@ func TestWriteSpan_enrichBatch(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ws := &Storage{
+			ws := &Builder{
 				highCardinalityKeys: tt.fields.highCardinalityKeys,
-				sidSet:              newSeriesIDSet(0),
+				sidSet:              uintset.NewUint64Set(0),
 			}
 			if err := ws.enrichBatch(tt.args.metaBatch, tt.args.seriesBatch, tt.args.items); (err != nil) != tt.wantErr {
 				t.Errorf("enrichBatch() error = %v, wantErr %v", err, tt.wantErr)

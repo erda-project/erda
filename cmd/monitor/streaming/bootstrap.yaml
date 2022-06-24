@@ -68,20 +68,6 @@ clickhouse:
   password: "${CLICKHOUSE_PASSWORD:default}"
   conn_open_strategy: "round_robin"
 
-clickhouse.table.initializer@span:
-  _enable: ${WRITE_SPAN_TO_CLICKHOUSE_ENABLE:false}
-  table_prefix: "spans"
-  ttl_sync_interval: "${CLICKHOUSE_TABLE_TTL_SYNC_INTERVAL:24h}"
-  default_ddl_files:
-    - path: "conf/clickhouse/spans/ddl_create_db.sql.tpl"
-      ignore_err: "false"
-    - path: "conf/clickhouse/spans/ddl_create_default_tables.sql.tpl"
-      ignore_err: "false"
-
-clickhouse.table.loader@span:
-  _enable: ${WRITE_SPAN_TO_CLICKHOUSE_ENABLE:false}
-  table_prefix: "spans"
-  default_search_table: "spans_all"
 
 storage-retention-strategy@span:
   default_ttl: "${SPAN_TTL:168h}"
@@ -547,6 +533,15 @@ erda.oap.collector.core:
           - "erda.oap.collector.exporter.clickhouse@span"
         batch_size: ${EXPORTER_CLICKHOUSE_SPAN_BATCH_SIZE:81920}
         _enable: ${WRITE_SPAN_TO_CLICKHOUSE_ENABLE:false}
+    metrics:
+      - receivers:
+          - "erda.oap.collector.receiver.kafka@spotmetric"
+        processors:
+          - "erda.oap.collector.processor.modifier@metric"
+        exporters:
+          - "erda.oap.collector.exporter.clickhouse@metric"
+        batch_size: ${EXPORTER_CLICKHOUSE_METRIC_BATCH_SIZE:81920}
+        _enable: ${WRITE_METRIC_TO_CLICKHOUSE_ENABLE:false}
 
 # ************* receivers *************
 erda.oap.collector.receiver.kafka@spotspan:
@@ -570,6 +565,17 @@ erda.oap.collector.receiver.kafka@oapspan:
     options:
       auto.offset.reset: "${KAFKA_AUTO_OFFSET_RESET:earliest}"
       auto.commit.interval.ms: "${KAFKA_AUTO_COMMIT_INTERVAL_MS:1000}"
+
+erda.oap.collector.receiver.kafka@spotmetric:
+  _enable: ${WRITE_METRIC_TO_CLICKHOUSE_ENABLE:false}
+  proto_parser: spotmetric
+  consumer:
+    topics: "${METRIC_TOPICS:spot-metrics}"
+    group: "${METRIC_GROUP_ID:spot-monitor-metrics-dev}"
+    parallelism: ${SPOT_METRICS_CONSUMERS:9}
+    options:
+      auto.offset.reset: "${KAFKA_AUTO_OFFSET_RESET:latest}"
+      auto.commit.interval.ms: "${KAFKA_AUTO_COMMIT_INTERVAL_MS:1000}"
 # ************* receivers *************
 
 # ************* processors *************
@@ -582,17 +588,78 @@ erda.oap.collector.processor.modifier@span:
       key: tags.http_request_content_length
     - action: drop
       key: tags.http_wrote_bytes
+
+erda.oap.collector.processor.modifier@metric:
+  _enable: ${WRITE_METRIC_TO_CLICKHOUSE_ENABLE:false}
+  rules:
+    - action: drop
+      key: tags._meta
+    - action: drop
+      key: tags._metric_scope
+    - action: drop
+      key: tags._metric_scope_id
 # ************* processors *************
 
 # ************* exporters *************
 erda.oap.collector.exporter.clickhouse@span:
   _enable: ${WRITE_SPAN_TO_CLICKHOUSE_ENABLE:false}
-  span:
+  storage:
     currency_num: ${EXPORTER_CH_SPAN_CURRENCY_NUM:2}
+  builder:
+    data_type: span
     series_tag_keys: ${EXPORTER_CH_SPAN_SERIES_TAG_KEYS:db_statement,operation_name,http_url,http_path,http_target,terminus_logid,db_host,peer_address,http_write_error,net_peer_port}
-# ************* exporters *************
 
+erda.oap.collector.exporter.clickhouse@metric:
+  _enable: ${WRITE_METRIC_TO_CLICKHOUSE_ENABLE:false}
+  keypass:
+    name: ["kubernetes_*", "etcd"]
+  storage:
+    currency_num: ${EXPORTER_CH_METRIC_CURRENCY_NUM:2}
+  builder:
+    data_type: metric
+# ************* exporters *************
 # --- data pipeline block ---
+
+# -- ClickHouse table manager ---
+clickhouse.table.initializer@span:
+  _enable: ${WRITE_SPAN_TO_CLICKHOUSE_ENABLE:false}
+  table_prefix: "spans"
+  ttl_sync_interval: "${CLICKHOUSE_TABLE_TTL_SYNC_INTERVAL:24h}"
+  default_ddl_files:
+    - path: "conf/clickhouse/spans/ddl_create_db.sql.tpl"
+      ignore_err: "false"
+    - path: "conf/clickhouse/spans/ddl_create_default_tables.sql.tpl"
+      ignore_err: "false"
+
+clickhouse.table.loader@span:
+  _enable: ${WRITE_SPAN_TO_CLICKHOUSE_ENABLE:false}
+  table_prefix: "spans"
+  default_search_table: "spans_all"
+
+clickhouse.table.initializer@metric:
+  _enable: ${WRITE_SPAN_TO_CLICKHOUSE_ENABLE:false}
+  table_prefix: "metrics"
+  ttl_sync_interval: "${CLICKHOUSE_TABLE_TTL_SYNC_INTERVAL:24h}"
+  default_ddl_files:
+    - path: "conf/clickhouse/metrics/ddl_create_db.sql.tpl"
+      ignore_err: "false"
+    - path: "conf/clickhouse/metrics/ddl_create_default_tables.sql.tpl"
+      ignore_err: "false"
+  tenant_ddl_files:
+    - path: "conf/clickhouse/metrics/ddl_create_tenant_tables.sql.tpl"
+      ignore_err: "true"
+
+clickhouse.table.creator@metric:
+  _enable: ${WRITE_SPAN_TO_CLICKHOUSE_ENABLE:false}
+  ddl_template: "conf/clickhouse/metrics/ddl_create_tenant_tables.sql.tpl"
+  default_write_table: "metrics"
+  table_prefix: "metrics"
+
+clickhouse.table.loader@metric:
+  _enable: ${WRITE_SPAN_TO_CLICKHOUSE_ENABLE:false}
+  table_prefix: "metrics"
+  default_search_table: "metrics_all"
+# -- ClickHouse table manager ---
 
 i18n@metric:
 

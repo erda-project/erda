@@ -23,7 +23,7 @@ import (
 
 // semantic same as https://github.com/influxdata/telegraf/blob/master/docs/CONFIGURATION.md#metric-filtering
 // key* <=> tag*
-// TODO. infra's config parser don't supported embed config
+// TODO. infra's config parser don't supported embed config. So you must copy the four fields of FilterConfig into plugin's config:(
 type FilterConfig struct {
 	// Selectors
 	Keypass    map[string][]string `file:"keypass"`
@@ -41,27 +41,23 @@ type DataFilter struct {
 
 // https://github.com/influxdata/telegraf/blob/master/docs/CONFIGURATION.md#selectors
 func (df *DataFilter) Selected(od odata.ObservableData) bool {
-	if df.Keypass != nil {
-		for k, subf := range df.Keypass {
-			val, ok := odata.GetKeyValue(od, k)
-			if !ok {
-				continue
-			}
-			if !subf.Match(val.(string)) {
-				return false
-			}
+	for k, subf := range df.Keypass {
+		val, ok := odata.GetKeyValue(od, k)
+		if !ok {
+			continue
+		}
+		if !subf.Match(val.(string)) {
+			return false
 		}
 	}
 
-	if df.Keydrop != nil {
-		for k, subf := range df.Keydrop {
-			val, ok := odata.GetKeyValue(od, k)
-			if !ok {
-				continue
-			}
-			if subf.Match(val.(string)) {
-				return false
-			}
+	for k, subf := range df.Keydrop {
+		val, ok := odata.GetKeyValue(od, k)
+		if !ok {
+			continue
+		}
+		if subf.Match(val.(string)) {
+			return false
 		}
 	}
 

@@ -12,23 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package span
+package uintset
 
 import (
 	"sync"
 )
 
-type seriesIDSet struct {
+type Uint64Set struct {
 	mu           sync.RWMutex
 	seriesIDSet  map[uint64]struct{}
 	seriesIDList []uint64
 }
 
-func newSeriesIDSet(initCap int) *seriesIDSet {
-	return &seriesIDSet{seriesIDSet: make(map[uint64]struct{}, initCap), seriesIDList: make([]uint64, 0, initCap)}
+func NewUint64Set(initCap int) *Uint64Set {
+	return &Uint64Set{seriesIDSet: make(map[uint64]struct{}, initCap), seriesIDList: make([]uint64, 0, initCap)}
 }
 
-func (ss *seriesIDSet) Has(x uint64) bool {
+func (ss *Uint64Set) Has(x uint64) bool {
 	ss.mu.RLock()
 	_, ok := ss.seriesIDSet[x]
 	ss.mu.RUnlock()
@@ -38,14 +38,14 @@ func (ss *seriesIDSet) Has(x uint64) bool {
 	return false
 }
 
-func (ss *seriesIDSet) Add(x uint64) {
+func (ss *Uint64Set) Add(x uint64) {
 	ss.mu.Lock()
 	ss.seriesIDSet[x] = struct{}{}
 	ss.seriesIDList = append(ss.seriesIDList, x)
 	ss.mu.Unlock()
 }
 
-func (ss *seriesIDSet) AddBatch(batch []uint64) {
+func (ss *Uint64Set) AddBatch(batch []uint64) {
 	ss.mu.Lock()
 	for _, x := range batch {
 		ss.seriesIDSet[x] = struct{}{}
@@ -54,7 +54,7 @@ func (ss *seriesIDSet) AddBatch(batch []uint64) {
 	ss.mu.Unlock()
 }
 
-func (ss *seriesIDSet) CleanOldPart() {
+func (ss *Uint64Set) CleanOldPart() {
 	ss.mu.Lock()
 	n := len(ss.seriesIDList) / 2
 	toDelete := ss.seriesIDList[:n]

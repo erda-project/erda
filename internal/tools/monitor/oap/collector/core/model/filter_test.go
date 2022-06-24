@@ -48,6 +48,18 @@ func TestDataFilter_Selected(t *testing.T) {
 			want: true,
 		},
 		{
+			name: "keypass",
+			fields: fields{cfg: FilterConfig{
+				Keypass: map[string][]string{"tags.container": {"POD"}},
+			}},
+			args: args{od: &metric.Metric{
+				Name: "abcd",
+				Tags: map[string]string{},
+			}},
+			want: true,
+		},
+		{
+			name: "keypass",
 			fields: fields{cfg: FilterConfig{
 				Keypass: map[string][]string{"name": {".*"}},
 			}},
