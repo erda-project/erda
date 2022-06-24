@@ -26,11 +26,9 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/dop/guide/pb"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/internal/apps/dop/conf"
 	"github.com/erda-project/erda/internal/apps/dop/dao"
 	"github.com/erda-project/erda/internal/apps/dop/providers/guide/db"
 	"github.com/erda-project/erda/pkg/common/apis"
-	"github.com/erda-project/erda/pkg/cron"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 )
 
@@ -49,17 +47,6 @@ type provider struct {
 }
 
 func (p *provider) Run(ctx context.Context) error {
-	cron := cron.New()
-	err := cron.AddFunc(conf.UpdateGuideExpiryStatusCron(), func() {
-		p.Log.Infof("begin update guide...")
-		if err := p.GuideService.BatchUpdateGuideExpiryStatus(); err != nil {
-			p.Log.Errorf("failed to BatchUpdateGuideExpiryStatus, err: %v", err)
-		}
-	})
-	if err != nil {
-		panic(err)
-	}
-	cron.Start()
 	return nil
 }
 
