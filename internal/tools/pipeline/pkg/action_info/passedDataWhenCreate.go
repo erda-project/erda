@@ -20,7 +20,6 @@ import (
 	"sync"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/actionmgr"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/apierrors"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
@@ -31,7 +30,6 @@ import (
 
 // passedDataWhenCreate stores data passed recursively when create graph.
 type PassedDataWhenCreate struct {
-	bdl              *bundle.Bundle
 	actionJobDefines *sync.Map
 	actionJobSpecs   *sync.Map
 	actionMgr        actionmgr.Interface
@@ -70,7 +68,7 @@ func (that *PassedDataWhenCreate) GetActionJobSpecs(actionTypeVersion string) *a
 	return nil
 }
 
-func (that *PassedDataWhenCreate) InitData(bdl *bundle.Bundle, actionMgr actionmgr.Interface) {
+func (that *PassedDataWhenCreate) InitData(actionMgr actionmgr.Interface) {
 	if that == nil {
 		return
 	}
@@ -82,7 +80,6 @@ func (that *PassedDataWhenCreate) InitData(bdl *bundle.Bundle, actionMgr actionm
 		that.actionJobSpecs = &sync.Map{}
 	}
 	that.actionMgr = actionMgr
-	that.bdl = bdl
 }
 
 func (that *PassedDataWhenCreate) PutPassedDataByPipelineYml(pipelineYml *pipelineyml.PipelineYml, p *spec.Pipeline) error {

@@ -28,6 +28,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/edgepipeline_register"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/edgereporter"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/engine"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/resource"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/run"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/secret"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/user"
@@ -67,6 +68,7 @@ type PipelineSvc struct {
 	run          run.Interface
 	actionMgr    actionmgr.Interface
 	mysql        mysqlxorm.Interface
+	resource     resource.Interface
 }
 
 func New(appSvc *appsvc.AppSvc, crondSvc daemon.Interface,
@@ -74,7 +76,8 @@ func New(appSvc *appsvc.AppSvc, crondSvc daemon.Interface,
 	pipelineCronSvc cronpb.CronServiceServer, permissionSvc *permissionsvc.PermissionSvc,
 	queueManage *queuemanage.QueueManage,
 	dbClient *dbclient.Client, bdl *bundle.Bundle, publisher *websocket.Publisher,
-	engine engine.Interface, js jsonstore.JsonStore, etcd *etcd.Store, clusterInfo clusterinfo.Interface, edgeRegister edgepipeline_register.Interface, cache cache.Interface) *PipelineSvc {
+	engine engine.Interface, js jsonstore.JsonStore, etcd *etcd.Store, clusterInfo clusterinfo.Interface,
+	edgeRegister edgepipeline_register.Interface, cache cache.Interface, resource resource.Interface) *PipelineSvc {
 
 	s := PipelineSvc{}
 	s.appSvc = appSvc
@@ -92,6 +95,7 @@ func New(appSvc *appsvc.AppSvc, crondSvc daemon.Interface,
 	s.clusterInfo = clusterInfo
 	s.edgeRegister = edgeRegister
 	s.cache = cache
+	s.resource = resource
 	return &s
 }
 
