@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"bou.ke/monkey"
+	gomock "github.com/golang/mock/gomock"
 	"github.com/jinzhu/copier"
 	"google.golang.org/protobuf/types/known/structpb"
 
@@ -32,9 +33,9 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/core/messenger/notify-channel/db"
+	identity "github.com/erda-project/erda/internal/core/user/common"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/kms/kmstypes"
-	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 func Test_notifyChannelService_CreateNotifyChannel(t *testing.T) {
@@ -55,6 +56,11 @@ func Test_notifyChannelService_CreateNotifyChannel(t *testing.T) {
 		{"case5", args{req: &pb.CreateNotifyChannelRequest{Name: "test", Type: "aliyun_sms", Config: nil}}, true},
 		{"case6", args{req: &pb.CreateNotifyChannelRequest{Name: "create", Type: "sms", ChannelProviderType: "aliyun_sms", Config: map[string]*structpb.Value{"AccessKeyId": structpb.NewStringValue("xx"), "AccessKeySecret": structpb.NewStringValue("xx"), "SignName": structpb.NewStringValue("xx"), "TemplateCode": structpb.NewStringValue("xx")}}}, false},
 	}
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	identitySvc := NewMockInterface(ctrl)
+	identitySvc.EXPECT().GetUser(gomock.Any()).AnyTimes().Return(&identity.User{ID: "1", Name: "a", Nick: "a"}, nil)
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var ncs *notifyChannelService
@@ -96,11 +102,6 @@ func Test_notifyChannelService_CreateNotifyChannel(t *testing.T) {
 				return &kmstypes.EncryptResponse{KeyID: req.KeyID, CiphertextBase64: "test"}, nil
 			})
 			defer KMSEncrypt.Unpatch()
-			var uc *ucauth.UCClient
-			GetUser := monkey.PatchInstanceMethod(reflect.TypeOf(uc), "GetUser", func(uc *ucauth.UCClient, userID string) (*ucauth.User, error) {
-				return &ucauth.User{ID: "test"}, nil
-			})
-			defer GetUser.Unpatch()
 
 			GetUserID := monkey.Patch(apis.GetUserID, func(ctx context.Context) string {
 				return "1"
@@ -116,7 +117,7 @@ func Test_notifyChannelService_CreateNotifyChannel(t *testing.T) {
 			defer Language.Unpatch()
 
 			s := &notifyChannelService{
-				p: &provider{bdl: bundle.New(), uc: ucauth.NewUCClient("test", "ucClientId", "ucClientSecret")},
+				p: &provider{bdl: bundle.New(), Identity: identitySvc},
 			}
 			_, err := s.CreateNotifyChannel(tt.args.ctx, tt.args.req)
 			if (err != nil) != tt.wantErr {
@@ -186,7 +187,7 @@ func Test_notifyChannelService_GetNotifyChannels(t *testing.T) {
 			defer KMSDecrypt.Unpatch()
 
 			s := &notifyChannelService{
-				p: &provider{bdl: bundle.New(), uc: ucauth.NewUCClient("test", "ucClientId", "ucClientSecret")},
+				p: &provider{bdl: bundle.New()},
 			}
 			_, err := s.GetNotifyChannels(tt.args.ctx, tt.args.req)
 			if (err != nil) != tt.wantErr {
@@ -275,7 +276,7 @@ func Test_notifyChannelService_UpdateNotifyChannel(t *testing.T) {
 			defer KMSEncrypt.Unpatch()
 
 			s := &notifyChannelService{
-				p: &provider{bdl: bundle.New(), uc: ucauth.NewUCClient("test", "ucClientId", "ucClientSecret")},
+				p: &provider{bdl: bundle.New()},
 			}
 			_, err := s.UpdateNotifyChannel(tt.args.ctx, tt.args.req)
 			if (err != nil) != tt.wantErr {
@@ -341,7 +342,7 @@ func Test_notifyChannelService_GetNotifyChannel(t *testing.T) {
 			})
 			defer KMSDecrypt.Unpatch()
 			s := &notifyChannelService{
-				p: &provider{bdl: bundle.New(), uc: ucauth.NewUCClient("test", "ucClientId", "ucClientSecret")},
+				p: &provider{bdl: bundle.New()},
 			}
 			_, err := s.GetNotifyChannel(tt.args.ctx, tt.args.req)
 			if (err != nil) != tt.wantErr {
@@ -469,7 +470,7 @@ func Test_notifyChannelService_GetNotifyChannelEnabled(t *testing.T) {
 			})
 			defer KMSDecrypt.Unpatch()
 			s := &notifyChannelService{
-				p: &provider{bdl: bundle.New(), uc: ucauth.NewUCClient("test", "ucClientId", "ucClientSecret")},
+				p: &provider{bdl: bundle.New()},
 			}
 			_, err := s.GetNotifyChannelEnabled(tt.args.ctx, tt.args.req)
 			if (err != nil) != tt.wantErr {
@@ -703,7 +704,7 @@ func Test_notifyChannelService_GetNotifyChannelsEnabled(t *testing.T) {
 				Cfg:                 nil,
 				Log:                 nil,
 				Register:            nil,
-				uc:                  nil,
+				Identity:            nil,
 				notifyChanelService: nil,
 				bdl:                 &bundle.Bundle{},
 				DB:                  nil,
@@ -769,18 +770,16 @@ func Test_notifyChannelService_CovertToPbNotifyChannel(t *testing.T) {
 				UpdateAt:            "0001-01-01 00:00:00",
 			}},
 	}
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	identitySvc := NewMockInterface(ctrl)
+	identitySvc.EXPECT().GetUser(gomock.Eq("not_nick")).AnyTimes().Return(&identity.User{Name: "test"}, nil)
+	identitySvc.EXPECT().GetUser(gomock.Not("not_nick")).AnyTimes().Return(&identity.User{Name: "test", Nick: "test_nick"}, nil)
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var uc *ucauth.UCClient
-			GetUser := monkey.PatchInstanceMethod(reflect.TypeOf(uc), "GetUser", func(uc *ucauth.UCClient, userID string) (*ucauth.User, error) {
-				if userID == "not_nick" {
-					return &ucauth.User{Name: "test"}, nil
-				}
-				return &ucauth.User{Name: "test", Nick: "test_nick"}, nil
-			})
-			defer GetUser.Unpatch()
 			s := &notifyChannelService{
-				p: &provider{I18n: &MockTran{}, uc: &ucauth.UCClient{}},
+				p: &provider{I18n: &MockTran{}, Identity: identitySvc},
 			}
 			got := s.CovertToPbNotifyChannel(tt.args.lang, tt.args.channel, tt.args.needConfig)
 			if !reflect.DeepEqual(got, tt.want) {

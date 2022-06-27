@@ -20,6 +20,7 @@ import (
 
 	"bou.ke/monkey"
 	"github.com/alecthomas/assert"
+	gomock "github.com/golang/mock/gomock"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
 	commonpb "github.com/erda-project/erda-proto-go/common/pb"
@@ -28,10 +29,10 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/stream/common"
+	identity "github.com/erda-project/erda/internal/core/user/common"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/strutil"
-	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 func Test_provider_CreateStream(t *testing.T) {
@@ -56,11 +57,10 @@ func Test_provider_CreateStream(t *testing.T) {
 	})
 	defer pm1.Unpatch()
 
-	uc := &ucauth.UCClient{}
-	pm2 := monkey.PatchInstanceMethod(reflect.TypeOf(uc), "FindUsers", func(c *ucauth.UCClient, ids []string) ([]ucauth.User, error) {
-		return []ucauth.User{{Name: "a", Nick: "a"}, {Name: "b", Nick: "b"}}, nil
-	})
-	defer pm2.Unpatch()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	identitySvc := NewMockInterface(ctrl)
+	identitySvc.EXPECT().FindUsers(gomock.Any()).AnyTimes().Return([]identity.User{{Name: "a", Nick: "a"}, {Name: "b", Nick: "b"}}, nil)
 
 	pm3 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetIssue", func(client *dao.DBClient, id int64) (dao.Issue, error) {
 		return dao.Issue{Type: "TASK"}, nil
@@ -83,7 +83,7 @@ func Test_provider_CreateStream(t *testing.T) {
 	})
 	defer pm6.Unpatch()
 
-	p := &provider{db: db, bdl: bdl, uc: uc}
+	p := &provider{db: db, bdl: bdl, Identity: identitySvc}
 	pm7 := monkey.PatchInstanceMethod(reflect.TypeOf(p), "Create", func(s *provider, req *common.IssueStreamCreateRequest) (int64, error) {
 		return 1, nil
 	})

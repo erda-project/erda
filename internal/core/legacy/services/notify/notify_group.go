@@ -29,16 +29,15 @@ import (
 	"github.com/erda-project/erda/internal/core/legacy/conf"
 	"github.com/erda-project/erda/internal/core/legacy/dao"
 	"github.com/erda-project/erda/internal/core/legacy/model"
+	"github.com/erda-project/erda/internal/core/user/uc"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/i18n"
 	"github.com/erda-project/erda/pkg/strutil"
-	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 type NotifyGroup struct {
 	db  *dao.DBClient
-	uc  *ucauth.UCClient
 	bdl *bundle.Bundle
 }
 
@@ -232,7 +231,7 @@ func uniqueTargetList(list []apistructs.Target) []apistructs.Target {
 
 var (
 	once      sync.Once
-	tokenAuth *ucauth.UCTokenAuth
+	tokenAuth *uc.UCTokenAuth
 	client    *httpclient.HTTPClient
 )
 
@@ -285,7 +284,7 @@ func getNotifyUsersByIDs(userIds []string) ([]apistructs.NotifyUser, error) {
 func getUsers(IDs []string) (map[string]apistructs.UserInfo, error) {
 	once.Do(func() {
 		var err error
-		tokenAuth, err = ucauth.NewUCTokenAuth(discover.UC(), conf.UCClientID(), conf.UCClientSecret())
+		tokenAuth, err = uc.NewUCTokenAuth(discover.UC(), conf.UCClientID(), conf.UCClientSecret())
 		if err != nil {
 			panic(err)
 		}
@@ -293,7 +292,7 @@ func getUsers(IDs []string) (map[string]apistructs.UserInfo, error) {
 	})
 	var (
 		err   error
-		token ucauth.OAuthToken
+		token uc.OAuthToken
 	)
 	if token, err = tokenAuth.GetServerToken(false); err != nil {
 		return nil, err

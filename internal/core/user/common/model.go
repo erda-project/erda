@@ -12,105 +12,71 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ucauth
+package common
 
 import (
-	"fmt"
+	"encoding/json"
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/pkg/errors"
-
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/pkg/discover"
-	"github.com/erda-project/erda/pkg/http/httpclient"
-	"github.com/erda-project/erda/pkg/strutil"
 )
 
-func HandlePagingUsers(req *apistructs.UserPagingRequest, token OAuthToken) (*userPaging, error) {
-	if token.TokenType == OryCompatibleClientId {
-		users, total, err := getUserList(token.AccessToken, req)
-		if err != nil {
-			return nil, err
-		}
-		var p userPaging
-		p.Total = total
-		for _, u := range users {
-			p.Data = append(p.Data, userToUserInPaging(u))
-		}
-		return &p, nil
-	}
-	v := httpclient.New().Get(discover.UC()).Path("/api/user/admin/paging").
-		Header("Authorization", strutil.Concat("Bearer ", token.AccessToken))
-	if req.Name != "" {
-		v.Param("username", req.Name)
-	}
-	if req.Nick != "" {
-		v.Param("nickname", req.Nick)
-	}
-	if req.Phone != "" {
-		v.Param("mobile", req.Phone)
-	}
-	if req.Email != "" {
-		v.Param("email", req.Email)
-	}
-	if req.Locked != nil {
-		v.Param("locked", strconv.Itoa(*req.Locked))
-	}
-	if req.Source != "" {
-		v.Param("source", req.Source)
-	}
-	if req.PageNo > 0 {
-		v.Param("pageNo", strconv.Itoa(req.PageNo))
-	}
-	if req.PageSize > 0 {
-		v.Param("pageSize", strconv.Itoa(req.PageSize))
-	}
-	// 批量查询用户
-	var resp struct {
-		Success bool        `json:"success"`
-		Result  *userPaging `json:"result"`
-		Error   string      `json:"error"`
-	}
-	r, err := v.Do().JSON(&resp)
-	if err != nil {
-		return nil, err
-	}
-	if !r.IsOK() {
-		return nil, fmt.Errorf("internal status code: %v", r.StatusCode())
-	}
-	if !resp.Success {
-		return nil, errors.New(resp.Error)
-	}
-	return resp.Result, nil
+type User struct {
+	ID        string `json:"user_id"`
+	Name      string `json:"username"`
+	Nick      string `json:"nickname"`
+	AvatarURL string `json:"avatar_url"`
+	Phone     string `json:"phone_number"`
+	Email     string `json:"email"`
+	State     string `json:"state"`
 }
 
-func ConvertToUserInfoExt(user *userPaging) *apistructs.UserPagingData {
-	var ret apistructs.UserPagingData
-	ret.Total = user.Total
-	ret.List = make([]apistructs.UserInfoExt, 0)
-	for _, u := range user.Data {
-		ret.List = append(ret.List, apistructs.UserInfoExt{
-			UserInfo: apistructs.UserInfo{
-				ID:          strutil.String(u.Id),
-				Name:        u.Username,
-				Nick:        u.Nickname,
-				Avatar:      u.Avatar,
-				Phone:       u.Mobile,
-				Email:       u.Email,
-				LastLoginAt: time.Time(u.LastLoginAt).Format("2006-01-02 15:04:05"),
-				PwdExpireAt: time.Time(u.PwdExpireAt).Format("2006-01-02 15:04:05"),
-				Source:      u.Source,
-			},
-			Locked: u.Locked,
-		})
+type UserInfo struct {
+	ID               USERID `json:"id"`
+	Token            string `json:"token"`
+	Email            string `json:"email"`
+	EmailExist       bool   `json:"emailExist"`
+	PasswordExist    bool   `json:"passwordExist"`
+	PhoneExist       bool   `json:"phoneExist"`
+	Birthday         string `json:"birthday"`
+	PasswordStrength int    `json:"passwordStrength"`
+	Phone            string `json:"phone"`
+	AvatarUrl        string `json:"avatarUrl"`
+	UserName         string `json:"username"`
+	NickName         string `json:"nickName"`
+	Enabled          bool   `json:"enabled"`
+	CreatedAt        string `json:"createdAt"`
+	UpdatedAt        string `json:"updatedAt"`
+	LastLoginAt      string `json:"lastLoginAt"`
+	KratosID         string `json:"kratosId"`
+}
+
+type USERID string
+
+func (u USERID) String() string { return string(u) }
+
+// maybe int or string, unmarshal them to string(USERID)
+func (u *USERID) UnmarshalJSON(b []byte) error {
+	var intid int
+	if err := json.Unmarshal(b, &intid); err != nil {
+		var stringid string
+		if err := json.Unmarshal(b, &stringid); err != nil {
+			return err
+		}
+		*u = USERID(stringid)
+		return nil
 	}
-	return &ret
+	*u = USERID(strconv.Itoa(intid))
+	return nil
+}
+
+type UserPaging struct {
+	Data  []UserInPaging `json:"data"`
+	Total int            `json:"total"`
 }
 
 // userInPaging 用户中心分页用户数据结构
-type userInPaging struct {
+type UserInPaging struct {
 	Id            interface{} `json:"id"`            // 主键
 	Avatar        string      `json:"avatar"`        // 头像
 	Username      string      `json:"username"`      // 用户名
@@ -155,7 +121,10 @@ func (t *timestamp) UnmarshalJSON(s []byte) (err error) {
 	return
 }
 
-type userPaging struct {
-	Data  []userInPaging `json:"data"`
-	Total int            `json:"total"`
+const SystemOperator = "system"
+
+var SystemUser = User{
+	ID:   SystemOperator,
+	Name: SystemOperator,
+	Nick: SystemOperator,
 }

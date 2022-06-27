@@ -23,13 +23,14 @@ import (
 
 	"github.com/erda-project/erda/internal/core/legacy/conf"
 	"github.com/erda-project/erda/internal/core/legacy/dao"
+	"github.com/erda-project/erda/internal/core/user"
+	"github.com/erda-project/erda/internal/core/user/kratos"
 	"github.com/erda-project/erda/pkg/strutil"
-	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 type User struct {
 	db *dao.DBClient
-	uc *ucauth.UCClient
+	uc user.Interface
 }
 
 type Option func(*User)
@@ -48,7 +49,7 @@ func WithDBClient(db *dao.DBClient) Option {
 	}
 }
 
-func WithUCClient(uc *ucauth.UCClient) Option {
+func WithUCClient(uc user.Interface) Option {
 	return func(o *User) {
 		o.uc = uc
 	}
@@ -67,9 +68,9 @@ func (m *User) MigrateUser() error {
 		if _, err := mail.ParseAddress(u.Email); err != nil && strutil.Exist(innerUser, u.Username) {
 			u.Email = u.Username + innerUserEmailDomain
 		}
-		req := ucauth.OryKratosCreateIdentitiyRequest{
+		req := kratos.OryKratosCreateIdentitiyRequest{
 			SchemaID: "default",
-			Traits: ucauth.OryKratosIdentityTraits{
+			Traits: kratos.OryKratosIdentityTraits{
 				Email:  u.Email,
 				Name:   u.Username,
 				Nick:   u.Nickname,
@@ -78,16 +79,16 @@ func (m *User) MigrateUser() error {
 			},
 		}
 		if u.Password != "" && u.Password != "no pass" {
-			req.Credentials = ucauth.OryKratosAdminIdentityImportCredentials{
-				Password: &ucauth.OryKratosAdminIdentityImportCredentialsPassword{
-					Config: ucauth.OryKratosIdentityCredentialsPasswordConfig{
+			req.Credentials = kratos.OryKratosAdminIdentityImportCredentials{
+				Password: &kratos.OryKratosAdminIdentityImportCredentialsPassword{
+					Config: kratos.OryKratosIdentityCredentialsPasswordConfig{
 						HashedPassword: u.Password,
 					},
 				},
 			}
 		}
 
-		uuid, err := m.uc.UserMigration(req)
+		uuid, err := kratos.UserMigration(req)
 		if err != nil {
 			logrus.Errorf("fail to migrate user: %v, err: %v", u.ID, err)
 			continue
@@ -108,7 +109,7 @@ func (m *User) UcUserMigration() {
 	for {
 		select {
 		case <-ticker.C:
-			if m.uc.MigrationReady() {
+			if kratos.MigrationReady() {
 				if err := m.MigrateUser(); err != nil {
 					logrus.Errorf("fail to migrate user, %v", err)
 				}

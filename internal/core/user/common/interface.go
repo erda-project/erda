@@ -12,28 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ucauth
+package common
 
-import (
-	"strings"
-)
+import "github.com/erda-project/erda/apistructs"
 
-const (
-	UnassignedUserID USERID = "unassigned"
-	emptyUserID      USERID = ""
-)
-
-func (u USERID) IsUnassigned() bool {
-	return strings.EqualFold(u.String(), UnassignedUserID.String())
-}
-
-func PolishUnassignedAsEmptyStr(userIDs []string) (result []string) {
-	for _, userID := range userIDs {
-		polishedUserID := userID
-		if USERID(userID).IsUnassigned() {
-			polishedUserID = emptyUserID.String()
-		}
-		result = append(result, polishedUserID)
-	}
-	return result
+type Interface interface {
+	FindUsers(ids []string) ([]User, error)
+	FindUsersByKey(key string) ([]User, error)
+	GetUser(userID string) (*User, error)
+	GetUsers(IDs []string, needDesensitize bool) (map[string]apistructs.UserInfo, error)
 }

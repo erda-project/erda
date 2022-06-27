@@ -24,11 +24,11 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+	identity "github.com/erda-project/erda/internal/core/user/common"
 	"github.com/erda-project/erda/internal/tools/openapi/legacy/auth"
 	"github.com/erda-project/erda/internal/tools/openapi/openapi-ng"
 	openapiauth "github.com/erda-project/erda/internal/tools/openapi/openapi-ng/auth"
 	"github.com/erda-project/erda/internal/tools/openapi/openapi-ng/common"
-	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 type config struct {
@@ -88,7 +88,7 @@ func (p *provider) Login(rw http.ResponseWriter, r *http.Request) {
 	}
 	common.ResponseJSON(rw, &struct {
 		SessionID string `json:"sessionid"`
-		ucauth.UserInfo
+		identity.UserInfo
 	}{
 		SessionID: sessionID,
 		UserInfo:  info,

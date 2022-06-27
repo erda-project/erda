@@ -24,16 +24,16 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/pkg/ucauth"
+	"github.com/erda-project/erda/internal/core/user/uc"
 )
 
 func TestGetLoginMethodMap(t *testing.T) {
-	monkey.Patch(handleListLoginMethod, func(ucauth.OAuthToken) (*listLoginTypeResult, error) {
+	monkey.Patch(handleListLoginMethod, func(uc.OAuthToken) (*listLoginTypeResult, error) {
 		return &listLoginTypeResult{RegistryType: []string{"mobile"}}, nil
 	})
 	defer monkey.UnpatchAll()
 
-	logM, err := getLoginMethodMap(ucauth.OAuthToken{}, "zh-CN")
+	logM, err := getLoginMethodMap(uc.OAuthToken{}, "zh-CN")
 	assert.NoError(t, err)
 	assert.Equal(t, "默认登录方式", logM[""])
 }
@@ -67,11 +67,11 @@ var fakeUserData = []apistructs.UserInfoExt{{
 
 func TestConvertUserToExcelList(t *testing.T) {
 	defer monkey.UnpatchAll()
-	monkey.Patch(handleListLoginMethod, func(ucauth.OAuthToken) (*listLoginTypeResult, error) {
+	monkey.Patch(handleListLoginMethod, func(uc.OAuthToken) (*listLoginTypeResult, error) {
 		return &listLoginTypeResult{RegistryType: []string{"mobile"}}, nil
 	})
 
-	logM, err := getLoginMethodMap(ucauth.OAuthToken{}, "zh-CN")
+	logM, err := getLoginMethodMap(uc.OAuthToken{}, "zh-CN")
 
 	result := convertUserToExcelList(fakeUserData, logM)
 
@@ -102,11 +102,11 @@ func TestConvertUserToExcelListWithRoles(t *testing.T) {
 			return &organizationalResp, nil
 		},
 	)
-	monkey.Patch(handleListLoginMethod, func(ucauth.OAuthToken) (*listLoginTypeResult, error) {
+	monkey.Patch(handleListLoginMethod, func(uc.OAuthToken) (*listLoginTypeResult, error) {
 		return &listLoginTypeResult{RegistryType: []string{"mobile"}}, nil
 	})
 
-	logM, err := getLoginMethodMap(ucauth.OAuthToken{}, "zh-CN")
+	logM, err := getLoginMethodMap(uc.OAuthToken{}, "zh-CN")
 
 	result, err := convertUserToExcelListWithRoles(fakeUserData, logM)
 	var expectUserToExcelList = [][]string{

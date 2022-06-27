@@ -12,38 +12,32 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ucauth
+package kratos
 
 import (
-	"bytes"
-	"fmt"
+	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda/internal/core/legacy/conf"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
-func UpdateIdentity(kratosPrivateAddr string, userID string, req OryKratosUpdateIdentitiyRequest) error {
-	var body bytes.Buffer
-	r, err := httpclient.New(httpclient.WithCompleteRedirect()).
-		Put(kratosPrivateAddr).
-		Path("/identities/" + userID).
-		JSONBody(req).
-		Do().Body(&body)
-	if err != nil {
-		return err
-	}
-	if !r.IsOK() {
-		return fmt.Errorf("update identity: statuscode: %d, body: %v", r.StatusCode(), body.String())
-	}
-	return nil
+func UserMigration(req OryKratosCreateIdentitiyRequest) (string, error) {
+	return CreateUser(req)
 }
 
-func ChangeUserState(kratosPrivateAddr string, userID string, state string) error {
-	i, err := getIdentity(kratosPrivateAddr, userID)
+func MigrationReady() bool {
+	var rsp OryKratosReadyResponse
+	r, err := httpclient.New(httpclient.WithCompleteRedirect()).
+		Get(conf.OryKratosPrivateAddr()).
+		Path("/health/ready").
+		Do().JSON(&rsp)
 	if err != nil {
-		return err
+		logrus.Errorf("get kratos user info error: %v", err)
+		return false
 	}
-	return UpdateIdentity(kratosPrivateAddr, userID, OryKratosUpdateIdentitiyRequest{
-		State:  state,
-		Traits: i.Traits,
-	})
+	if !r.IsOK() {
+		logrus.Errorf("get kratos user info error, statusCode: %d, err: %s", r.StatusCode(), r.Body())
+		return false
+	}
+	return rsp.Status == "ok"
 }

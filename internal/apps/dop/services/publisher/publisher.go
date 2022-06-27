@@ -28,14 +28,14 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/dao"
 	"github.com/erda-project/erda/internal/apps/dop/model"
 	"github.com/erda-project/erda/internal/apps/dop/services/nexussvc"
+	"github.com/erda-project/erda/internal/core/user"
 	"github.com/erda-project/erda/pkg/nexus"
-	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 // Publisher 资源对象操作封装
 type Publisher struct {
 	db       *dao.DBClient
-	uc       *ucauth.UCClient
+	uc       user.Interface
 	bdl      *bundle.Bundle
 	nexusSvc *nexussvc.NexusSvc
 }
@@ -60,9 +60,9 @@ func WithDBClient(db *dao.DBClient) Option {
 }
 
 // WithUCClient 配置 uc client
-func WithUCClient(uc *ucauth.UCClient) Option {
+func WithUCClient(identity user.Interface) Option {
 	return func(p *Publisher) {
-		p.uc = uc
+		p.uc = identity
 	}
 }
 

@@ -12,7 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ucauth
+package kratos
+
+import "github.com/erda-project/erda/internal/core/user/common"
 
 type OryKratosSession struct {
 	ID       string            `json:"id"`
@@ -21,7 +23,7 @@ type OryKratosSession struct {
 }
 
 type OryKratosIdentity struct {
-	ID       USERID                  `json:"id"`
+	ID       common.USERID           `json:"id"`
 	SchemaID string                  `json:"schema_id"`
 	State    string                  `json:"state"`
 	Traits   OryKratosIdentityTraits `json:"traits"`
@@ -92,8 +94,8 @@ var oryKratosStateMap = map[int]string{
 	1: UserInActive,
 }
 
-func identityToUser(i OryKratosIdentity) User {
-	return User{
+func identityToUser(i OryKratosIdentity) common.User {
+	return common.User{
 		ID:        string(i.ID),
 		Name:      i.Traits.Name,
 		Nick:      i.Traits.Nick,
@@ -104,24 +106,25 @@ func identityToUser(i OryKratosIdentity) User {
 	}
 }
 
-func IdentityToUserInfo(i OryKratosIdentity) UserInfo {
+func IdentityToUserInfo(i OryKratosIdentity) common.UserInfo {
 	return userToUserInfo(identityToUser(i))
 }
 
-func userToUserInfo(u User) UserInfo {
-	return UserInfo{
-		ID:        USERID(u.ID),
+func userToUserInfo(u common.User) common.UserInfo {
+	return common.UserInfo{
+		ID:        common.USERID(u.ID),
 		Email:     u.Email,
 		Phone:     u.Phone,
 		AvatarUrl: u.AvatarURL,
 		UserName:  u.Name,
 		NickName:  u.Nick,
 		Enabled:   true,
+		KratosID:  u.ID,
 	}
 }
 
-func userToUserInPaging(u User) userInPaging {
-	return userInPaging{
+func userToUserInPaging(u common.User) common.UserInPaging {
+	return common.UserInPaging{
 		Id:       u.ID,
 		Avatar:   u.AvatarURL,
 		Username: u.Name,

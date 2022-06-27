@@ -12,31 +12,38 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ucauth
+package kratos
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
-func getIdentity(kratosPrivateAddr string, userID string) (*OryKratosIdentity, error) {
+func UpdateIdentity(kratosPrivateAddr string, userID string, req OryKratosUpdateIdentitiyRequest) error {
 	var body bytes.Buffer
 	r, err := httpclient.New(httpclient.WithCompleteRedirect()).
-		Get(kratosPrivateAddr).
+		Put(kratosPrivateAddr).
 		Path("/identities/" + userID).
+		JSONBody(req).
 		Do().Body(&body)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if !r.IsOK() {
-		return nil, fmt.Errorf("get identity: statuscode: %d, body: %v", r.StatusCode(), body.String())
+		return fmt.Errorf("update identity: statuscode: %d, body: %v", r.StatusCode(), body.String())
 	}
-	var i OryKratosIdentity
-	if err := json.Unmarshal(body.Bytes(), &i); err != nil {
-		return nil, err
+	return nil
+}
+
+func ChangeUserState(kratosPrivateAddr string, userID string, state string) error {
+	i, err := getIdentity(kratosPrivateAddr, userID)
+	if err != nil {
+		return err
 	}
-	return &i, nil
+	return UpdateIdentity(kratosPrivateAddr, userID, OryKratosUpdateIdentitiyRequest{
+		State:  state,
+		Traits: i.Traits,
+	})
 }

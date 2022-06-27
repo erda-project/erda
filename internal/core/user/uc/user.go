@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ucauth
+package uc
 
 import (
 	"bytes"
@@ -22,52 +22,16 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"strconv"
 	"time"
 
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/core/user/common"
+	"github.com/erda-project/erda/internal/core/user/kratos"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
-type USERID string
-
-func (u USERID) String() string { return string(u) }
-
-// maybe int or string, unmarshal them to string(USERID)
-func (u *USERID) UnmarshalJSON(b []byte) error {
-	var intid int
-	if err := json.Unmarshal(b, &intid); err != nil {
-		var stringid string
-		if err := json.Unmarshal(b, &stringid); err != nil {
-			return err
-		}
-		*u = USERID(stringid)
-		return nil
-	}
-	*u = USERID(strconv.Itoa(intid))
-	return nil
-}
-
-type UserInfo struct {
-	ID               USERID `json:"id"`
-	Token            string `json:"token"`
-	Email            string `json:"email"`
-	EmailExist       bool   `json:"emailExist"`
-	PasswordExist    bool   `json:"passwordExist"`
-	PhoneExist       bool   `json:"phoneExist"`
-	Birthday         string `json:"birthday"`
-	PasswordStrength int    `json:"passwordStrength"`
-	Phone            string `json:"phone"`
-	AvatarUrl        string `json:"avatarUrl"`
-	UserName         string `json:"username"`
-	NickName         string `json:"nickName"`
-	Enabled          bool   `json:"enabled"`
-	CreatedAt        string `json:"createdAt"`
-	UpdatedAt        string `json:"updatedAt"`
-	LastLoginAt      string `json:"lastLoginAt"`
-}
 type OAuthToken struct {
 	AccessToken  string `json:"access_token"`
 	TokenType    string `json:"token_type"`
@@ -180,10 +144,10 @@ func (a *UCUserAuth) PwdAuth(username, password string) (OAuthToken, error) {
 }
 
 //
-func (a *UCUserAuth) GetUserInfo(oauthToken OAuthToken) (UserInfo, error) {
+func (a *UCUserAuth) GetUserInfo(oauthToken OAuthToken) (common.UserInfo, error) {
 	if a.oryEnabled() {
 		// sessionID as token
-		userInfo, err := whoami(a.oryKratosAddr(), oauthToken.AccessToken)
+		userInfo, err := kratos.Whoami(a.oryKratosAddr(), oauthToken.AccessToken)
 		if err != nil {
 			return userInfo, err
 		}
@@ -192,7 +156,7 @@ func (a *UCUserAuth) GetUserInfo(oauthToken OAuthToken) (UserInfo, error) {
 			return userInfo, err
 		}
 		if ucUserID != "" {
-			userInfo.ID = USERID(ucUserID)
+			userInfo.ID = common.USERID(ucUserID)
 		}
 		return userInfo, err
 	}
@@ -204,16 +168,16 @@ func (a *UCUserAuth) GetUserInfo(oauthToken OAuthToken) (UserInfo, error) {
 		Header("Authorization", bearer).Do().Body(&me)
 	if err != nil {
 		err := errors.Wrap(err, "GetUserInfo: /api/oauth/me fail")
-		return UserInfo{}, err
+		return common.UserInfo{}, err
 	}
 	if !r.IsOK() {
 		err := fmt.Errorf("GetUserInfo: /api/oauth/me statuscode: %d, body: %v", r.StatusCode(), me.String())
-		return UserInfo{}, err
+		return common.UserInfo{}, err
 	}
-	var info UserInfo
+	var info common.UserInfo
 	if err := json.NewDecoder(&me).Decode(&info); err != nil {
 		err := errors.Wrap(err, "GetUserInfo: decode fail")
-		return UserInfo{}, err
+		return common.UserInfo{}, err
 	}
 	return info, nil
 }
@@ -254,17 +218,17 @@ func (a *UCUserAuth) GetUserInfo(oauthToken OAuthToken) (UserInfo, error) {
 type CurrentUser struct {
 	Success bool `json:"success"`
 	Result  struct {
-		ID          USERID `json:"id"`
-		Email       string `json:"email"`
-		Mobile      string `json:"mobile"`
-		Username    string `json:"username"`
-		Nickname    string `json:"nickname"`
-		LastLoginAt uint64 `json:"lastLoginAt"`
+		ID          common.USERID `json:"id"`
+		Email       string        `json:"email"`
+		Mobile      string        `json:"mobile"`
+		Username    string        `json:"username"`
+		Nickname    string        `json:"nickname"`
+		LastLoginAt uint64        `json:"lastLoginAt"`
 	} `json:"result"`
 	Error interface{} `json:"error"`
 }
 
-func (a *UCUserAuth) GetCurrentUser(headers http.Header) (UserInfo, error) {
+func (a *UCUserAuth) GetCurrentUser(headers http.Header) (common.UserInfo, error) {
 	var me bytes.Buffer
 	r, err := httpclient.New(httpclient.WithCompleteRedirect()).
 		Get(a.UCHost).
@@ -272,24 +236,24 @@ func (a *UCUserAuth) GetCurrentUser(headers http.Header) (UserInfo, error) {
 		Headers(headers).Do().Body(&me)
 	if err != nil {
 		err := errors.Wrapf(err, "GetCurrentUser: /api/user/web/current-user: %+v", err)
-		return UserInfo{}, err
+		return common.UserInfo{}, err
 	}
 	if !r.IsOK() {
 		err := fmt.Errorf("GetCurrentUser: /api/user/web/current-user statuscode: %d, body: %v", r.StatusCode(), me.String())
-		return UserInfo{}, err
+		return common.UserInfo{}, err
 	}
 	var info CurrentUser
 	d := json.NewDecoder(&me)
 	if err := d.Decode(&info); err != nil {
 		buffered, _ := ioutil.ReadAll(d.Buffered())
 		err := errors.Wrapf(err, "GetCurrentUser: decode fail: %v", string(buffered))
-		return UserInfo{}, err
+		return common.UserInfo{}, err
 	}
 	if info.Result.ID == "" {
-		return UserInfo{}, fmt.Errorf("not login")
+		return common.UserInfo{}, fmt.Errorf("not login")
 	}
 	t := time.Unix(int64(info.Result.LastLoginAt/1e3), 0).Format("2006-01-02 15:04:05")
-	return UserInfo{
+	return common.UserInfo{
 		ID:          info.Result.ID,
 		Email:       info.Result.Email,
 		Phone:       info.Result.Mobile,

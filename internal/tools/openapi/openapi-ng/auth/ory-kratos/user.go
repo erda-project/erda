@@ -20,10 +20,11 @@ import (
 
 	"github.com/pkg/errors"
 
+	identity "github.com/erda-project/erda/internal/core/user/common"
+	"github.com/erda-project/erda/internal/core/user/kratos"
 	"github.com/erda-project/erda/internal/tools/openapi/openapi-ng"
 	"github.com/erda-project/erda/internal/tools/openapi/openapi-ng/common"
 	"github.com/erda-project/erda/pkg/http/httpclient"
-	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 const SessionCookieName = "ory_kratos_session"
@@ -58,6 +59,7 @@ func (p *provider) GetUserInfo(rw http.ResponseWriter, r *http.Request) {
 			"email":    info.Email,
 			"token":    info.Token,
 			"userType": "new",
+			"kratosId": info.KratosID,
 		},
 	})
 }
@@ -70,8 +72,8 @@ func (p *provider) getSession(r *http.Request) string {
 	return ""
 }
 
-func (p *provider) getUserInfo(sessionID string) (*ucauth.UserInfo, error) {
-	var s ucauth.OryKratosSession
+func (p *provider) getUserInfo(sessionID string) (*identity.UserInfo, error) {
+	var s kratos.OryKratosSession
 	r, err := httpclient.New(httpclient.WithCompleteRedirect()).
 		Get(p.Cfg.OryKratosAddr).
 		Cookie(&http.Cookie{
@@ -87,13 +89,13 @@ func (p *provider) getUserInfo(sessionID string) (*ucauth.UserInfo, error) {
 		return nil, errors.Errorf("get kratos user info error, statusCode: %d", r.StatusCode())
 	}
 
-	info := ucauth.IdentityToUserInfo(s.Identity)
+	info := kratos.IdentityToUserInfo(s.Identity)
 	ucUserID, err := p.bundle.GetUcUserID(string(info.ID))
 	if err != nil {
 		return nil, err
 	}
 	if ucUserID != "" {
-		info.ID = ucauth.USERID(ucUserID)
+		info.ID = identity.USERID(ucUserID)
 	}
 	return &info, nil
 }

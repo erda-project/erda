@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ucauth
+package uc
 
 import (
 	"bytes"
@@ -77,6 +77,11 @@ func NewUCTokenAuth(UCHost, ClientID, ClientSecret string) (*UCTokenAuth, error)
 func (a *UCTokenAuth) ExpireServerToken() {
 	_ = a.serverToken
 	a.serverToken = nil
+}
+
+// InvalidateServerToken 使 server token 失效
+func (p *provider) InvalidateServerToken() {
+	p.ucTokenAuth.ExpireServerToken()
 }
 
 func (a *UCTokenAuth) GetServerToken(refresh bool) (OAuthToken, error) {

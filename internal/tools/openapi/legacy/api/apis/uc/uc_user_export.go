@@ -22,6 +22,8 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/core/user/handler"
+	"github.com/erda-project/erda/internal/core/user/uc"
 	"github.com/erda-project/erda/internal/pkg/user"
 	"github.com/erda-project/erda/internal/tools/openapi/legacy/api/apierrors"
 	"github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
@@ -31,7 +33,6 @@ import (
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/i18n"
 	"github.com/erda-project/erda/pkg/strutil"
-	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 var UC_USER_EXPORT = apis.ApiSpec{
@@ -84,12 +85,12 @@ func exportUsers(w http.ResponseWriter, r *http.Request) {
 
 	var users []apistructs.UserInfoExt
 	for i := 0; i < 100; i++ {
-		data, err := ucauth.HandlePagingUsers(req, token)
+		data, err := handler.HandlePagingUsers(req, token)
 		if err != nil {
 			errorresp.ErrWrite(err, w)
 			return
 		}
-		u := ucauth.ConvertToUserInfoExt(data)
+		u := handler.ConvertToUserInfoExt(data)
 		users = append(users, u.List...)
 		if len(u.List) < 1024 {
 			break
@@ -127,7 +128,7 @@ func exportUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 // getLoginMethodMap get the mapping relationship between login mode value and display name
-func getLoginMethodMap(token ucauth.OAuthToken, local string) (map[string]string, error) {
+func getLoginMethodMap(token uc.OAuthToken, local string) (map[string]string, error) {
 	res, err := handleListLoginMethod(token)
 	if err != nil {
 		return nil, err

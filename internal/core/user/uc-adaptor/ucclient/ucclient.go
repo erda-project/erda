@@ -26,11 +26,11 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/core/user/uc"
 	"github.com/erda-project/erda/internal/core/user/uc-adaptor/conf"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/strutil"
-	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 // User 用户中心用户数据结构
@@ -47,7 +47,7 @@ type User struct {
 type UCClient struct {
 	baseURL     string
 	client      *httpclient.HTTPClient
-	ucTokenAuth *ucauth.UCTokenAuth
+	ucTokenAuth *uc.UCTokenAuth
 }
 
 // NewUCClient 初始化UC客户端
@@ -58,7 +58,7 @@ func NewUCClient() *UCClient {
 
 	logrus.Debugf("initialize uc client, addr: %s, clientID: %s, secret: %s", endpoint, clientID, secret)
 
-	tokenAuth, err := ucauth.NewUCTokenAuth(endpoint, clientID, secret)
+	tokenAuth, err := uc.NewUCTokenAuth(endpoint, clientID, secret)
 	if err != nil {
 		panic(err)
 	}

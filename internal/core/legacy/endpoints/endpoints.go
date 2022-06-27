@@ -41,12 +41,12 @@ import (
 	"github.com/erda-project/erda/internal/core/legacy/services/subscribe"
 	"github.com/erda-project/erda/internal/core/legacy/services/user"
 	"github.com/erda-project/erda/internal/core/org"
+	identity "github.com/erda-project/erda/internal/core/user"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/i18n"
 	"github.com/erda-project/erda/pkg/jsonstore"
 	"github.com/erda-project/erda/pkg/jsonstore/etcd"
 	"github.com/erda-project/erda/pkg/license"
-	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 // Endpoints 定义 endpoint 方法
@@ -55,7 +55,7 @@ type Endpoints struct {
 	etcdStore          *etcd.Store
 	ossClient          *oss.Client
 	db                 *dao.DBClient
-	uc                 *ucauth.UCClient
+	uc                 identity.Interface
 	bdl                *bundle.Bundle
 	project            *project.Project
 	approve            *approve.Approve
@@ -114,7 +114,7 @@ func WithBundle(bdl *bundle.Bundle) Option {
 }
 
 // WithUCClient 配置 UC Client
-func WithUCClient(uc *ucauth.UCClient) Option {
+func WithUCClient(uc identity.Interface) Option {
 	return func(e *Endpoints) {
 		e.uc = uc
 	}

@@ -26,13 +26,13 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/services/nexussvc"
 	"github.com/erda-project/erda/internal/apps/dop/services/org"
 	"github.com/erda-project/erda/internal/apps/dop/services/publisher"
-	"github.com/erda-project/erda/pkg/ucauth"
+	"github.com/erda-project/erda/internal/core/user"
 )
 
 func TestNew(t *testing.T) {
 	var (
 		db    *dao.DBClient
-		uc    *ucauth.UCClient
+		uc    user.Interface
 		bdl   *bundle.Bundle
 		pub   *publisher.Publisher
 		nexus *nexussvc.NexusSvc

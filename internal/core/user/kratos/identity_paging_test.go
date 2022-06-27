@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ucauth
+package kratos
 
 import (
 	"reflect"
@@ -21,6 +21,7 @@ import (
 	"bou.ke/monkey"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/core/user/common"
 )
 
 var isLock = 0
@@ -56,7 +57,7 @@ func Test_getUserList(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    []User
+		want    []common.User
 		want1   int
 		wantErr bool
 	}{
@@ -69,7 +70,7 @@ func Test_getUserList(t *testing.T) {
 					Name:     "a",
 				},
 			},
-			want: []User{
+			want: []common.User{
 				{
 					ID:    "1",
 					Name:  "a1",
@@ -94,7 +95,7 @@ func Test_getUserList(t *testing.T) {
 					Locked:   &isLock,
 				},
 			},
-			want: []User{
+			want: []common.User{
 				{
 					ID:    "1",
 					Name:  "a1",

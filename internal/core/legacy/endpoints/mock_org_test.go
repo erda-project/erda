@@ -21,8 +21,8 @@ import (
 	"github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/internal/core/legacy/services/member"
 	"github.com/erda-project/erda/internal/core/legacy/services/permission"
+	"github.com/erda-project/erda/internal/core/user"
 	"github.com/erda-project/erda/pkg/common/apis"
-	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 type MockOrg struct{}
@@ -95,7 +95,7 @@ func (m MockOrg) DereferenceCluster(ctx context.Context, request *pb.Dereference
 	panic("implement me")
 }
 
-func (m MockOrg) WithUc(uc *ucauth.UCClient) {
+func (m MockOrg) WithUc(uc user.Interface) {
 	panic("implement me")
 }
 

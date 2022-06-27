@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ucauth
+package kratos
 
 import (
 	"reflect"
@@ -21,6 +21,8 @@ import (
 	"bou.ke/monkey"
 	"github.com/jinzhu/gorm"
 
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/core/user/common"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
@@ -56,11 +58,10 @@ func Test_filterUserIDs(t *testing.T) {
 
 func TestUCClient_ConvertUserIDs(t *testing.T) {
 	type fields struct {
-		baseURL     string
-		isOry       bool
-		client      *httpclient.HTTPClient
-		ucTokenAuth *UCTokenAuth
-		db          *gorm.DB
+		baseURL string
+		isOry   bool
+		client  *httpclient.HTTPClient
+		db      *gorm.DB
 	}
 	type args struct {
 		ids []string
@@ -86,8 +87,8 @@ func TestUCClient_ConvertUserIDs(t *testing.T) {
 		},
 	}
 
-	client := &UCClient{}
-	pm := monkey.PatchInstanceMethod(reflect.TypeOf(client), "GetUserIDMapping", func(c *UCClient, ids []string) ([]UserIDModel, error) {
+	client := &provider{}
+	pm := monkey.PatchInstanceMethod(reflect.TypeOf(client), "GetUserIDMapping", func(p *provider, ids []string) ([]UserIDModel, error) {
 		return []UserIDModel{
 			{
 				ID:     "2",
@@ -109,6 +110,72 @@ func TestUCClient_ConvertUserIDs(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got1, tt.want1) {
 				t.Errorf("UCClient.ConvertUserIDs() got1 = %v, want %v", got1, tt.want1)
+			}
+		})
+	}
+}
+
+func Test_provider_GetUsers(t *testing.T) {
+	type args struct {
+		IDs             []string
+		needDesensitize bool
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    map[string]apistructs.UserInfo
+		wantErr bool
+	}{
+		{
+			args: args{
+				IDs:             []string{"1"},
+				needDesensitize: true,
+			},
+			want: map[string]apistructs.UserInfo{
+				"1": {
+					Email: "te*t@test.com",
+				},
+			},
+		},
+		{
+			args: args{
+				IDs: []string{"1", "2"},
+			},
+			want: map[string]apistructs.UserInfo{
+				"1": {
+					ID:    "1",
+					Email: "test@test.com",
+				},
+				"2": {
+					ID:   "2",
+					Name: "用户已注销",
+					Nick: "用户已注销",
+				},
+			},
+		},
+	}
+
+	p := &provider{}
+	monkey.PatchInstanceMethod(reflect.TypeOf(p), "FindUsers",
+		func(p *provider, ids []string) ([]common.User, error) {
+			return []common.User{
+				{
+					ID:    "1",
+					Email: "test@test.com",
+				},
+			}, nil
+		})
+	defer monkey.UnpatchAll()
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := p.GetUsers(tt.args.IDs, tt.args.needDesensitize)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("provider.GetUsers() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("provider.GetUsers() = %v, want %v", got, tt.want)
 			}
 		})
 	}

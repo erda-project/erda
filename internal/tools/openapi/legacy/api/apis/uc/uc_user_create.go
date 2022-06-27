@@ -23,6 +23,8 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/core/user/kratos"
+	"github.com/erda-project/erda/internal/core/user/uc"
 	"github.com/erda-project/erda/internal/pkg/user"
 	"github.com/erda-project/erda/internal/tools/openapi/legacy/api/apierrors"
 	"github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
@@ -32,7 +34,6 @@ import (
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/strutil"
-	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 var UC_USER_CREATE = apis.ApiSpec{
@@ -96,20 +97,20 @@ func createUsers(w http.ResponseWriter, r *http.Request) {
 	httpserver.WriteData(w, nil)
 }
 
-func handleCreateUsers(req *apistructs.UserCreateRequest, operatorID string, token ucauth.OAuthToken) error {
-	if token.TokenType == ucauth.OryCompatibleClientId {
+func handleCreateUsers(req *apistructs.UserCreateRequest, operatorID string, token uc.OAuthToken) error {
+	if token.TokenType == uc.OryCompatibleClientId {
 		for _, u := range req.Users {
-			if _, err := ucauth.CreateUser(ucauth.OryKratosCreateIdentitiyRequest{
+			if _, err := kratos.CreateUser(kratos.OryKratosCreateIdentitiyRequest{
 				SchemaID: "default",
-				Traits: ucauth.OryKratosIdentityTraits{
+				Traits: kratos.OryKratosIdentityTraits{
 					Email: u.Email,
 					Name:  u.Name,
 					Nick:  u.Nick,
 					Phone: u.Phone,
 				},
-				Credentials: ucauth.OryKratosAdminIdentityImportCredentials{
-					Password: &ucauth.OryKratosAdminIdentityImportCredentialsPassword{
-						Config: ucauth.OryKratosIdentityCredentialsPasswordConfig{
+				Credentials: kratos.OryKratosAdminIdentityImportCredentials{
+					Password: &kratos.OryKratosAdminIdentityImportCredentialsPassword{
+						Config: kratos.OryKratosIdentityCredentialsPasswordConfig{
 							Password: u.Password,
 						},
 					},

@@ -23,6 +23,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/core/user/uc"
 	"github.com/erda-project/erda/internal/pkg/user"
 	"github.com/erda-project/erda/internal/tools/openapi/legacy/api/apierrors"
 	"github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
@@ -32,7 +33,6 @@ import (
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/strutil"
-	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 var UC_PWD_SECURITY_CONFIG_UPDATE = apis.ApiSpec{
@@ -88,7 +88,7 @@ func updatePwdSecurityConfig(w http.ResponseWriter, r *http.Request) {
 	httpserver.WriteData(w, nil)
 }
 
-func handleUpdatePwdSecurityConfig(config *apistructs.PwdSecurityConfig, token ucauth.OAuthToken) error {
+func handleUpdatePwdSecurityConfig(config *apistructs.PwdSecurityConfig, token uc.OAuthToken) error {
 	var resp struct {
 		Success bool   `json:"success"`
 		Error   string `json:"error"`

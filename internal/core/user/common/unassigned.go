@@ -12,17 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ucauth
+package common
 
 import (
-	"encoding/json"
-	"testing"
-
-	"github.com/stretchr/testify/assert"
+	"strings"
 )
 
-func TestUnmarshalUSERID(t *testing.T) {
-	ui := UserInfo{}
-	assert.Nil(t, json.Unmarshal([]byte(`{"id":"dehu"}`), &ui))
-	assert.Nil(t, json.Unmarshal([]byte(`{"id": 123}`), &ui))
+const (
+	UnassignedUserID USERID = "unassigned"
+	emptyUserID      USERID = ""
+)
+
+func (u USERID) IsUnassigned() bool {
+	return strings.EqualFold(u.String(), UnassignedUserID.String())
+}
+
+func PolishUnassignedAsEmptyStr(userIDs []string) (result []string) {
+	for _, userID := range userIDs {
+		polishedUserID := userID
+		if USERID(userID).IsUnassigned() {
+			polishedUserID = emptyUserID.String()
+		}
+		result = append(result, polishedUserID)
+	}
+	return result
 }

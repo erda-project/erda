@@ -24,19 +24,14 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/internal/apps/dop/conf"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/stream/common"
 	"github.com/erda-project/erda/internal/core/org"
+	"github.com/erda-project/erda/internal/core/user"
 	"github.com/erda-project/erda/pkg/database/dbengine"
-	"github.com/erda-project/erda/pkg/discover"
-	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 type config struct {
-	UCClientID           string `default:"dice" file:"UC_CLIENT_ID"`
-	UCClientSecret       string `default:"secret" file:"UC_CLIENT_SECRET"`
-	OryKratosPrivateAddr string `default:"kratos-admin" file:"ORY_KRATOS_ADMIN_ADDR"`
 }
 
 type provider struct {
@@ -48,7 +43,7 @@ type provider struct {
 	I18n       i18n.Translator `translator:"issue-manage"`
 	CPTran     i18n.I18n       `autowired:"i18n@cp"`
 	commonTran i18n.Translator
-	uc         *ucauth.UCClient
+	Identity   user.Interface
 	Org        org.ClientInterface
 }
 
@@ -60,12 +55,6 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		},
 	}
 	p.commonTran = p.CPTran.Translator("")
-	uc := ucauth.NewUCClient(discover.UC(), p.Cfg.UCClientID, p.Cfg.UCClientSecret)
-	if conf.OryEnabled() {
-		uc = ucauth.NewUCClient(p.Cfg.OryKratosPrivateAddr, conf.OryCompatibleClientID(), conf.OryCompatibleClientSecret())
-		uc.SetDBClient(p.DB)
-	}
-	p.uc = uc
 	return nil
 }
 

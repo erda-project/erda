@@ -28,10 +28,11 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	identity "github.com/erda-project/erda/internal/core/user/common"
+	"github.com/erda-project/erda/internal/core/user/uc"
 	"github.com/erda-project/erda/internal/tools/openapi/legacy/conf"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/strutil"
-	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 type GetUserState int
@@ -65,12 +66,12 @@ type ScopeInfo struct {
 
 type User struct {
 	sessionID  string
-	token      ucauth.OAuthToken
-	info       ucauth.UserInfo
+	token      uc.OAuthToken
+	info       identity.UserInfo
 	scopeInfo  ScopeInfo
 	state      GetUserState
 	redisCli   *redis.Client
-	ucUserAuth *ucauth.UCUserAuth
+	ucUserAuth *uc.UCUserAuth
 
 	bundle *bundle.Bundle
 }
@@ -78,7 +79,7 @@ type User struct {
 var client = bundle.New(bundle.WithErdaServer(), bundle.WithDOP())
 
 func NewUser(redisCli *redis.Client) *User {
-	ucUserAuth := ucauth.NewUCUserAuth(conf.UCAddrFront(), discover.UC(), "http://"+conf.UCRedirectHost()+"/logincb", conf.UCClientID(), conf.UCClientSecret())
+	ucUserAuth := uc.NewUCUserAuth(conf.UCAddrFront(), discover.UC(), "http://"+conf.UCRedirectHost()+"/logincb", conf.UCClientID(), conf.UCClientSecret())
 	if conf.OryEnabled() {
 		ucUserAuth.ClientID = conf.OryCompatibleClientID()
 		ucUserAuth.UCHost = conf.OryKratosAddr()
@@ -110,7 +111,7 @@ func (u *User) get(req *http.Request, state GetUserState) (interface{}, AuthResu
 			return nil, AuthResult{InternalAuthErr,
 				errors.Wrap(err, "User:GetInfo:GotSessionID").Error()}
 		}
-		u.token = ucauth.OAuthToken{AccessToken: token}
+		u.token = uc.OAuthToken{AccessToken: token}
 		u.state = GotToken
 		fallthrough
 	case GotToken:
@@ -118,7 +119,7 @@ func (u *User) get(req *http.Request, state GetUserState) (interface{}, AuthResu
 			return nil, AuthResult{AuthSucc, ""}
 		}
 		cookieExtract := req.Header[textproto.CanonicalMIMEHeaderKey("cookie")]
-		var info ucauth.UserInfo
+		var info identity.UserInfo
 		var err error
 		//useToken, _ := strconv.ParseBool(req.Header.Get("USE-TOKEN"))
 		// if len(cookieExtract) > 0 && !useToken {
@@ -194,12 +195,12 @@ func (u *User) IsLogin(req *http.Request) AuthResult {
 }
 
 // 获取用户信息
-func (u *User) GetInfo(req *http.Request) (ucauth.UserInfo, AuthResult) {
+func (u *User) GetInfo(req *http.Request) (identity.UserInfo, AuthResult) {
 	info, authr := u.get(req, GotInfo)
 	if authr.Code != AuthSucc {
-		return ucauth.UserInfo{}, authr
+		return identity.UserInfo{}, authr
 	}
-	return info.(ucauth.UserInfo), authr
+	return info.(identity.UserInfo), authr
 }
 
 // 获取用户orgID

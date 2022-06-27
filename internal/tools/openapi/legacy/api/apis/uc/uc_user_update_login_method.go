@@ -23,6 +23,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/core/user/uc"
 	"github.com/erda-project/erda/internal/pkg/user"
 	"github.com/erda-project/erda/internal/tools/openapi/legacy/api/apierrors"
 	"github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
@@ -32,7 +33,6 @@ import (
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/strutil"
-	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 var UC_USER_UPDATE_LOGIN_METHOD = apis.ApiSpec{
@@ -89,7 +89,7 @@ func updateLoginMethod(w http.ResponseWriter, r *http.Request) {
 	httpserver.WriteData(w, nil)
 }
 
-func handleUpdateLoginMethod(req apistructs.UserUpdateLoginMethodRequest, operatorID string, token ucauth.OAuthToken) error {
+func handleUpdateLoginMethod(req apistructs.UserUpdateLoginMethodRequest, operatorID string, token uc.OAuthToken) error {
 	var resp struct {
 		Success bool   `json:"success"`
 		Result  bool   `json:"result"`

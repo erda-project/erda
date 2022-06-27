@@ -61,6 +61,9 @@ erda.core.messenger.notifygroup: {}
 erda.core.messenger.notifychannel: {}
 erda.core.token: {}
 erda.core.org: {}
+erda.core.user: {}
+erda.core.user.kratos: {}
+erda.core.user.uc: {}
 
 ############# dicehub
 dicehub: {}

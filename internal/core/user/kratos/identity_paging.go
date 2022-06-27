@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ucauth
+package kratos
 
 import (
 	"bytes"
@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/core/user/common"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -46,7 +47,7 @@ func getIdentityPage(kratosPrivateAddr string, page, perPage int) ([]*OryKratosI
 	return i, nil
 }
 
-func getUserList(kratosPrivateAddr string, req *apistructs.UserPagingRequest) ([]User, int, error) {
+func getUserList(kratosPrivateAddr string, req *apistructs.UserPagingRequest) ([]common.User, int, error) {
 	if req.PageNo < 1 {
 		req.PageNo = 1
 	}
@@ -79,7 +80,7 @@ func getUserList(kratosPrivateAddr string, req *apistructs.UserPagingRequest) ([
 		}
 	}
 
-	var users []User
+	var users []common.User
 	for _, u := range paginate(identities, req.PageNo, req.PageSize) {
 		users = append(users, identityToUser(*u))
 	}
@@ -97,4 +98,17 @@ func paginate(i []*OryKratosIdentity, pageNo int, pageSize int) []*OryKratosIden
 		return i[start:]
 	}
 	return i[start:end]
+}
+
+func HandlePagingUsers(req *apistructs.UserPagingRequest, token string) (*common.UserPaging, error) {
+	users, total, err := getUserList(token, req)
+	if err != nil {
+		return nil, err
+	}
+	var p common.UserPaging
+	p.Total = total
+	for _, u := range users {
+		p.Data = append(p.Data, userToUserInPaging(u))
+	}
+	return &p, nil
 }

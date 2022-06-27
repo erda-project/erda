@@ -12,20 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ucauth
+package kratos
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
 
 	"github.com/pkg/errors"
 
+	"github.com/erda-project/erda/internal/core/user/common"
 	"github.com/erda-project/erda/internal/tools/openapi/legacy/conf"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
-func whoami(kratosPublicAddr string, sessionID string) (UserInfo, error) {
+func Whoami(kratosPublicAddr string, sessionID string) (common.UserInfo, error) {
 	var s OryKratosSession
 	r, err := httpclient.New(httpclient.WithCompleteRedirect()).
 		Get(kratosPublicAddr).
@@ -36,15 +39,15 @@ func whoami(kratosPublicAddr string, sessionID string) (UserInfo, error) {
 		Path("/sessions/whoami").
 		Do().JSON(&s)
 	if err != nil {
-		return UserInfo{}, err
+		return common.UserInfo{}, err
 	}
 	if !r.IsOK() {
-		return UserInfo{}, fmt.Errorf("bad session")
+		return common.UserInfo{}, fmt.Errorf("bad session")
 	}
 	return IdentityToUserInfo(s.Identity), nil
 }
 
-func getUserByID(kratosPrivateAddr string, userID string) (*User, error) {
+func getUserByID(kratosPrivateAddr string, userID string) (*common.User, error) {
 	i, err := getIdentity(kratosPrivateAddr, userID)
 	if err != nil {
 		return nil, err
@@ -53,8 +56,8 @@ func getUserByID(kratosPrivateAddr string, userID string) (*User, error) {
 	return &u, nil
 }
 
-func getUserByIDs(kratosPrivateAddr string, userIDs []string) ([]User, error) {
-	var users []User
+func getUserByIDs(kratosPrivateAddr string, userIDs []string) ([]common.User, error) {
+	var users []common.User
 	for _, id := range userIDs {
 		u, err := getUserByID(kratosPrivateAddr, id)
 		if err != nil {
@@ -65,23 +68,23 @@ func getUserByIDs(kratosPrivateAddr string, userIDs []string) ([]User, error) {
 	return users, nil
 }
 
-func getUserPage(kratosPrivateAddr string, page, perPage int) ([]User, error) {
+func getUserPage(kratosPrivateAddr string, page, perPage int) ([]common.User, error) {
 	i, err := getIdentityPage(kratosPrivateAddr, page, perPage)
 	if err != nil {
 		return nil, err
 	}
-	var users []User
+	var users []common.User
 	for _, u := range i {
 		users = append(users, identityToUser(*u))
 	}
 	return users, nil
 }
 
-func getUserByKey(kratosPrivateAddr string, key string) ([]User, error) {
+func getUserByKey(kratosPrivateAddr string, key string) ([]common.User, error) {
 	p := 1
 	size := 100
 	cnt := 0
-	var users []User
+	var users []common.User
 	for {
 		ul, err := getUserPage(kratosPrivateAddr, p, size)
 		if err != nil {
@@ -117,4 +120,23 @@ func CreateUser(req OryKratosCreateIdentitiyRequest) (string, error) {
 		return "", errors.Errorf("get kratos user info error, statusCode: %d, err: %s", r.StatusCode(), r.Body())
 	}
 	return rsp.ID, nil
+}
+
+func getIdentity(kratosPrivateAddr string, userID string) (*OryKratosIdentity, error) {
+	var body bytes.Buffer
+	r, err := httpclient.New(httpclient.WithCompleteRedirect()).
+		Get(kratosPrivateAddr).
+		Path("/identities/" + userID).
+		Do().Body(&body)
+	if err != nil {
+		return nil, err
+	}
+	if !r.IsOK() {
+		return nil, fmt.Errorf("get identity: statuscode: %d, body: %v", r.StatusCode(), body.String())
+	}
+	var i OryKratosIdentity
+	if err := json.Unmarshal(body.Bytes(), &i); err != nil {
+		return nil, err
+	}
+	return &i, nil
 }
