@@ -36,11 +36,11 @@ import (
 	"github.com/erda-project/erda/internal/core/legacy/services/member"
 	"github.com/erda-project/erda/internal/core/legacy/services/notice"
 	"github.com/erda-project/erda/internal/core/legacy/services/notify"
-	"github.com/erda-project/erda/internal/core/legacy/services/org"
 	"github.com/erda-project/erda/internal/core/legacy/services/permission"
 	"github.com/erda-project/erda/internal/core/legacy/services/project"
 	"github.com/erda-project/erda/internal/core/legacy/services/subscribe"
 	"github.com/erda-project/erda/internal/core/legacy/services/user"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/i18n"
 	"github.com/erda-project/erda/pkg/jsonstore"
@@ -57,7 +57,6 @@ type Endpoints struct {
 	db                 *dao.DBClient
 	uc                 *ucauth.UCClient
 	bdl                *bundle.Bundle
-	org                *org.Org
 	project            *project.Project
 	approve            *approve.Approve
 	app                *application.Application
@@ -77,6 +76,7 @@ type Endpoints struct {
 	user               *user.User
 	subscribe          *subscribe.Subscribe
 	tokenService       tokenpb.TokenServiceServer
+	org                org.Interface
 }
 
 type Option func(*Endpoints)
@@ -131,13 +131,6 @@ func WithJSONStore(store jsonstore.JsonStore) Option {
 func WithEtcdStore(etcdStore *etcd.Store) Option {
 	return func(e *Endpoints) {
 		e.etcdStore = etcdStore
-	}
-}
-
-// WithOrg 配置 org service
-func WithOrg(org *org.Org) Option {
-	return func(e *Endpoints) {
-		e.org = org
 	}
 }
 
@@ -268,6 +261,12 @@ func WithTokenSvc(tokenService tokenpb.TokenServiceServer) Option {
 	}
 }
 
+func WithOrg(org org.Interface) Option {
+	return func(e *Endpoints) {
+		e.org = org
+	}
+}
+
 // DBClient 获取db client
 func (e *Endpoints) DBClient() *dao.DBClient {
 	return e.db
@@ -287,25 +286,6 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 	return []httpserver.Endpoint{
 		// health check
 		{Path: "/_api/health", Method: http.MethodGet, Handler: e.Health},
-
-		// the interface of org
-		{Path: "/api/orgs", Method: http.MethodPost, Handler: e.CreateOrg},
-		{Path: "/api/orgs/{orgID}", Method: http.MethodPut, Handler: e.UpdateOrg},
-		{Path: "/api/orgs/{idOrName}", Method: http.MethodGet, Handler: e.GetOrg},
-		{Path: "/api/orgs/{idOrName}", Method: http.MethodDelete, Handler: e.DeleteOrg},
-		{Path: "/api/orgs", Method: http.MethodGet, Handler: e.ListOrg},
-		{Path: "/api/orgs/actions/list-public", Method: http.MethodGet, Handler: e.ListPublicOrg},
-		// {Path: "/api/orgs/ingress/{orgID}/actions/update-ingress", Method: http.MethodGet, Handler: e.UpdateOrgIngress},
-		{Path: "/api/orgs/actions/get-by-domain", Method: http.MethodGet, Handler: e.GetOrgByDomain},
-		{Path: "/api/orgs/actions/switch", Method: http.MethodPost, Handler: e.ChangeCurrentOrg},
-		{Path: "/api/orgs/actions/relate-cluster", Method: http.MethodPost, Handler: e.CreateOrgClusterRelation},
-		{Path: "/api/orgs/clusters/relations", Method: http.MethodGet, Handler: e.ListOrgClusterRelation},
-		{Path: "/api/orgs/{orgID}/actions/set-release-cross-cluster", Method: http.MethodPost, Handler: e.SetReleaseCrossCluster},
-		{Path: "/api/orgs/actions/gen-verify-code", Method: http.MethodPost, Handler: e.GenVerifiCode},
-		{Path: "/api/orgs/{orgID}/actions/set-notify-config", Method: http.MethodPost, Handler: e.SetNotifyConfig},
-		{Path: "/api/orgs/{orgID}/actions/get-notify-config", Method: http.MethodGet, Handler: e.GetNotifyConfig},
-		{Path: "/api/orgs/clusters/relations/{orgID}", Method: http.MethodGet, Handler: e.GetOrgClusterRelationsByOrg},
-		{Path: "/api/clusters/actions/dereference", Method: http.MethodPut, Handler: e.DereferenceCluster},
 
 		// the interface of project
 		{Path: "/api/projects", Method: http.MethodPost, Handler: e.CreateProject},

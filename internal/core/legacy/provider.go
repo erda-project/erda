@@ -26,6 +26,7 @@ import (
 	"github.com/erda-project/erda/internal/core/legacy/dao"
 	"github.com/erda-project/erda/internal/core/legacy/providers/errorbox"
 	"github.com/erda-project/erda/internal/core/legacy/services/permission"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/pkg/oauth2"
 )
 
@@ -38,6 +39,7 @@ type provider struct {
 	perm          *permission.Permission
 	DB            *gorm.DB                   `autowired:"mysql-client"`
 	TokenService  tokenpb.TokenServiceServer `autowired:"erda.core.token.TokenService"`
+	Org           org.Interface
 }
 
 func (p *provider) Init(ctx servicehub.Context) (err error) {

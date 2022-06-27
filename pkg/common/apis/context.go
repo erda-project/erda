@@ -38,6 +38,12 @@ func WithUserIDContext(ctx context.Context, userID string) context.Context {
 	return transport.WithHeader(ctx, header)
 }
 
+func WithOrgIDContext(ctx context.Context, orgID string) context.Context {
+	header := transport.Header{}
+	header.Set(headerOrgID, orgID)
+	return transport.WithHeader(ctx, header)
+}
+
 // GetClientIP
 func GetClientIP(ctx context.Context) string {
 	header := transport.ContextHeader(ctx)

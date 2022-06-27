@@ -1,0 +1,371 @@
+syntax = "proto3";
+
+package erda.core.org;
+
+import "common/openapi.proto";
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/erda-project/erda-proto-go/core/org/pb";
+
+service OrgService {
+    option(erda.common.openapi_service) = {
+        service: "org",
+        auth: {
+            check_login: true,
+            check_token: true,
+        }
+    };
+    rpc CreateOrg(CreateOrgRequest) returns (CreateOrgResponse) {
+        option(google.api.http) = {
+            post: "/api/orgs",
+        };
+        option(erda.common.openapi) = {
+            path: "/api/orgs",
+        };
+    }
+    rpc UpdateOrg(UpdateOrgRequest) returns (UpdateOrgResponse) {
+        option(google.api.http) = {
+            put: "/api/orgs/{orgID}",
+        };
+        option(erda.common.openapi) = {
+            path: "/api/orgs/{orgID}",
+        };
+    }
+    rpc GetOrg(GetOrgRequest) returns (GetOrgResponse) {
+        option(google.api.http) = {
+            get: "/api/orgs/{idOrName}",
+        };
+        option(erda.common.openapi) = {
+            path: "/api/orgs/{idOrName}",
+        };
+    }
+    rpc DeleteOrg(DeleteOrgRequest) returns (DeleteOrgResponse) {
+        option(google.api.http) = {
+            delete: "/api/orgs/{idOrName}",
+        };
+        option(erda.common.openapi) = {
+            path: "/api/orgs/{idOrName}",
+        };
+    }
+    rpc ListOrg(ListOrgRequest) returns (ListOrgResponse) {
+        option(google.api.http) = {
+            get: "/api/orgs",
+        };
+        option(erda.common.openapi) = {
+            path: "/api/orgs",
+        };
+    }
+    rpc ListPublicOrg(ListOrgRequest) returns (ListOrgResponse) {
+        option(google.api.http) = {
+            get: "/api/orgs/actions/list-public",
+        };
+        option(erda.common.openapi) = {
+            path: "/api/orgs/actions/list-public",
+        };
+    }
+    rpc GetOrgByDomain(GetOrgByDomainRequest) returns (GetOrgByDomainResponse) {
+        option(google.api.http) = {
+            get: "/api/orgs/actions/get-by-domain",
+        };
+        option(erda.common.openapi) = {
+            path: "/api/orgs/actions/get-by-domain",
+        };
+    }
+    rpc ChangeCurrentOrg(ChangeCurrentOrgRequest) returns (ChangeCurrentOrgResponse) {
+        option(google.api.http) = {
+            post: "/api/orgs/actions/switch",
+        };
+        option(erda.common.openapi) = {
+            path: "/api/orgs/actions/switch",
+        };
+    }
+    rpc CreateOrgClusterRelation(OrgClusterRelationCreateRequest) returns (OrgClusterRelationCreateResponse) {
+        option(google.api.http) = {
+            post: "/api/orgs/actions/relate-cluster",
+        };
+        option(erda.common.openapi) = {
+            path: "/api/orgs/actions/relate-cluster",
+        };
+    }
+    rpc ListOrgClusterRelation(ListOrgClusterRelationRequest) returns (ListOrgClusterRelationResponse) {
+        option(google.api.http) = {
+            get: "/api/orgs/clusters/relations",
+        };
+        option(erda.common.openapi) = {
+            path: "/api/orgs/clusters/relations",
+        };
+    }
+    rpc SetReleaseCrossCluster(SetReleaseCrossClusterRequest) returns (SetReleaseCrossClusterResponse) {
+        option(google.api.http) = {
+            post: "/api/orgs/{orgID}/actions/set-release-cross-cluster",
+        };
+        option(erda.common.openapi) = {
+            path: "/api/orgs/{orgID}/actions/set-release-cross-cluster",
+        };
+    }
+    rpc GenVerifyCode(GenVerifyCodeRequest) returns (GenVerifyCodeResponse) {
+        option(google.api.http) = {
+            post: "/api/orgs/actions/gen-verify-code",
+        };
+        option(erda.common.openapi) = {
+            path: "/api/orgs/actions/gen-verify-code",
+        };
+    }
+    rpc SetNotifyConfig(SetNotifyConfigRequest) returns (SetNotifyConfigResponse) {
+        option(google.api.http) = {
+            post: "/api/orgs/{orgID}/actions/set-notify-config",
+        };
+        option(erda.common.openapi) = {
+            path: "/api/orgs/{orgID}/actions/set-notify-config",
+        };
+    }
+    rpc GetNotifyConfig(GetNotifyConfigRequest) returns (GetNotifyConfigResponse) {
+        option(google.api.http) = {
+            get: "/api/orgs/{orgID}/actions/get-notify-config",
+        };
+        option(erda.common.openapi) = {
+            path: "/api/orgs/{orgID}/actions/set-notify-config",
+        };
+    }
+    rpc GetOrgClusterRelationsByOrg(GetOrgClusterRelationsByOrgRequest) returns (GetOrgClusterRelationsByOrgResponse) {
+        option(google.api.http) = {
+            get: "/api/orgs/clusters/relations/{orgID}",
+        };
+        option(erda.common.openapi) = {
+            path: "/api/orgs/clusters/relations/{orgID}",
+        };
+    }
+    rpc DereferenceCluster(DereferenceClusterRequest) returns (DereferenceClusterResponse) {
+        option(google.api.http) = {
+            put: "/api/clusters/actions/dereference",
+        };
+        option(erda.common.openapi) = {
+            path: "/api/clusters/actions/dereference",
+        };
+    }
+}
+
+message CreateOrgRequest {
+    string logo = 1;
+    string name = 2;
+    string displayName = 3;
+    string desc = 4;
+    string locale = 5;
+    repeated string admins = 6;
+    string publisherName = 7;
+    bool isPublic = 8;
+    string type = 9;
+}
+
+message CreateOrgResponse {
+    Org data = 1;
+}
+
+message UpdateOrgRequest {
+    string logo = 1;
+    string name = 2;
+    string displayName = 3;
+    string desc = 4;
+    string locale = 5;
+    uint64 ID = 6 [json_name = "id"];
+    string publisherName = 7;
+    OrgConfig config = 8;
+    BlockoutConfig blockoutConfig = 9;
+    bool isPublic = 10;
+    string orgID = 11;
+}
+
+message UpdateOrgResponse {
+    Org data = 1;
+}
+
+message GetOrgRequest {
+    string idOrName = 1;
+}
+
+message GetOrgResponse {
+    Org data = 1;
+}
+
+message DeleteOrgRequest {
+    string idOrName = 1;
+}
+
+message DeleteOrgResponse {
+    Org data = 1;
+}
+
+message ListOrgRequest {
+    string q = 1;
+    string key = 2;
+    int64 pageNo = 3;
+    int64 pageSize = 4;
+    // The header passed by the org front end is used as the admin account to distinguish the management interface and the user interface
+	// In the case of the user interface, the front end will pass org
+	// The management interface admin needs all org so pass-
+	// The backend determines whether the admin account queries all orgs according to whether org has a value
+    string org = 5;
+}
+
+message ListOrgResponse {
+    repeated Org list = 1;
+    int64 total = 2;
+}
+
+message GetOrgByDomainRequest {
+    string domain = 1;
+    string orgName = 2;
+}
+
+message GetOrgByDomainResponse {
+    Org data = 1;
+}
+
+message ChangeCurrentOrgRequest {
+    uint64 orgID = 1 [json_name = "orgId"];
+    string userID = 2 [json_name = "orgId"];
+}
+
+message ChangeCurrentOrgResponse {
+    bool Data = 1;
+}
+
+message OrgClusterRelationCreateRequest {
+    uint64 orgID = 1;
+    string orgName = 2;
+    string clusterName = 3;
+}
+
+message OrgClusterRelationCreateResponse {
+    string data = 1;
+}
+
+message ListOrgClusterRelationRequest {
+    string cluster = 1;
+}
+
+message ListOrgClusterRelationResponse {
+    repeated OrgClusterRelation data = 1;
+}
+
+message OrgClusterRelation {
+    uint64 ID = 1 [json_name = "id"];
+    uint64 orgId = 2;
+    string orgName = 3;
+    uint64 clusterID = 4 [json_name = "clusterId"];
+    string clusterName = 5;
+    string creator = 6;
+    google.protobuf.Timestamp createdAt = 7;
+    google.protobuf.Timestamp updatedAt = 8;
+}
+
+message SetReleaseCrossClusterRequest {
+    bool enable = 1;
+    string orgID = 2;
+}
+
+message SetReleaseCrossClusterResponse {
+}
+
+message GenVerifyCodeRequest {
+
+}
+
+message GenVerifyCodeResponse {
+    map<string, string> data = 1;
+}
+
+message SetNotifyConfigRequest {
+    OrgConfig config = 1;
+    string orgID = 2;
+}
+
+message SetNotifyConfigResponse {
+    string data = 1;
+}
+
+message GetNotifyConfigRequest {
+    string orgID = 1;
+}
+
+message GetNotifyConfigResponse {
+    NotifyConfig data = 1;
+}
+
+message NotifyConfig {
+    OrgConfig config = 1;
+}
+
+message GetOrgClusterRelationsByOrgRequest {
+    string orgID = 1;
+}
+
+message GetOrgClusterRelationsByOrgResponse {
+    repeated OrgClusterRelation data = 1;
+}
+
+message OrgConfig {
+    bool enablePersonalMessageEmail = 1;
+    bool enableMS = 2;
+    string smtpHost = 3;
+    string smtpUser = 4;
+    string smtpPassword = 5;
+    int64 smtpPort = 6;
+    bool smtpIsSSL = 7;
+    string smsKeyID = 8;
+    string smsKeySecret = 9;
+    string smsSignName = 10;
+    string smsMonitorTemplateCode = 11;
+    string vmsKeyID = 12;
+    string vmsKeySecret = 13;
+    string vmsMonitorTtsCode = 14;
+    string vmsMonitorCalledShowNumber = 15;
+    uint64 auditInterval = 16;
+}
+
+message DereferenceClusterRequest {
+    string orgID = 1;
+    string clusterName = 2;
+}
+
+message DereferenceClusterResponse {
+    string data = 1;
+}
+
+message AuditMessage {
+    string messageZH = 1;
+    string messageEN = 2;
+}
+
+message BlockoutConfig {
+    bool blockDev = 1;
+    bool blockTest = 2;
+    bool blockStage = 3;
+    bool blockProd = 4;
+}
+
+message Org {
+    uint64 ID = 1 [json_name = "id"];
+    string creator = 2;
+    string desc = 3;
+    string logo = 4;
+    string name = 5;
+    string displayName = 6;
+    string locale = 7;
+    OrgConfig config = 8;
+    bool isPublic = 9;
+    BlockoutConfig blockoutConfig = 10;
+    bool enableReleaseCrossCluster = 11;
+    bool selected = 12;
+    string operation = 13;
+    string status = 14;
+    string type = 15;
+    int64 publisherID = 16 [json_name = "publisherId"];
+    string domain = 17;
+    bool openFdp = 18;
+    int64 version = 19 ;
+    google.protobuf.Timestamp createdAt = 20;
+    google.protobuf.Timestamp updatedAt = 21;
+    AuditMessage auditMessage = 22;
+}

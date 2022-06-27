@@ -12,53 +12,71 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package endpoints
+package org
 
 import (
-	"net/http"
-	"net/url"
+	"context"
 	"reflect"
 	"testing"
 
 	"bou.ke/monkey"
 
+	"github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/internal/core/legacy/services/member"
+	"github.com/erda-project/erda/pkg/common/apis"
 )
 
-func TestEndpoints_getOrgPermissions(t *testing.T) {
-	type args struct {
-		r *http.Request
+func Test_provider_getOrgPermissions(t *testing.T) {
+	type fields struct {
+		member *member.Member
 	}
+	type args struct {
+		ctx context.Context
+		req *pb.ListOrgRequest
+	}
+
+	var me = &member.Member{}
+	patch1 := monkey.PatchInstanceMethod(reflect.TypeOf(me), "IsAdmin", func(mem *member.Member, userID string) bool {
+		return true
+	})
+	defer patch1.Unpatch()
+
 	tests := []struct {
 		name    string
+		fields  fields
 		args    args
 		want    bool
 		want1   []int64
 		wantErr bool
 	}{
 		{
-			name: "",
+			name: "test with getOrgPermissions",
+			fields: fields{
+				member: me,
+			},
 			args: args{
-				r: &http.Request{
-					URL: &url.URL{},
+				ctx: apis.WithUserIDContext(context.Background(), "1"),
+				req: &pb.ListOrgRequest{
+					Q:        "",
+					Key:      "",
+					PageNo:   0,
+					PageSize: 0,
+					Org:      "",
 				},
 			},
-			want1:   nil,
 			want:    true,
+			want1:   nil,
 			wantErr: false,
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			e := &Endpoints{}
-			var me = &member.Member{}
-			patch1 := monkey.PatchInstanceMethod(reflect.TypeOf(me), "IsAdmin", func(mem *member.Member, userID string) bool {
-				return true
-			})
-			defer patch1.Unpatch()
-			e.member = me
+			p := &provider{
+				member: tt.fields.member,
+			}
 
-			got, got1, err := e.getOrgPermissions(tt.args.r)
+			got, got1, err := p.getOrgPermissions(tt.args.ctx, tt.args.req)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("getOrgPermissions() error = %v, wantErr %v", err, tt.wantErr)
 				return
