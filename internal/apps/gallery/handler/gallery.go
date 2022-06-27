@@ -439,6 +439,7 @@ func (p *GalleryHandler) putOnArtifactsCreateVersion(tx *dao.TX, opusID string, 
 	var version = model.OpusVersion{
 		Common:  common,
 		OpusID:  opusID,
+		Name:    req.GetName(),
 		Version: req.GetVersion(),
 		Summary: req.GetSummary(),
 		Labels:  string(labels),
@@ -649,6 +650,7 @@ func (p *GalleryHandler) createExtensions(ctx context.Context, l *logrus.Entry, 
 	labels, _ := json.Marshal(req.GetLabels())
 	var version = model.OpusVersion{
 		Common:      common,
+		Name:        req.GetName(),
 		OpusID:      opus.ID.String,
 		Version:     req.GetVersion(),
 		Summary:     req.GetSummary(),
