@@ -45,7 +45,6 @@ import (
 	"github.com/erda-project/erda/internal/core/legacy/services/member"
 	"github.com/erda-project/erda/internal/core/legacy/services/notice"
 	"github.com/erda-project/erda/internal/core/legacy/services/notify"
-	"github.com/erda-project/erda/internal/core/legacy/services/org"
 	"github.com/erda-project/erda/internal/core/legacy/services/permission"
 	"github.com/erda-project/erda/internal/core/legacy/services/project"
 	"github.com/erda-project/erda/internal/core/legacy/services/subscribe"
@@ -181,16 +180,6 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 	}
 	bdl := bundle.New(bundleOpts...)
 
-	// init org service
-	o := org.New(
-		org.WithDBClient(db),
-		org.WithUCClient(uc),
-		org.WithBundle(bdl),
-		org.WithRedisClient(redisCli),
-		org.WithI18n(p.Tran),
-		org.WithTokenSvc(p.TokenService),
-	)
-
 	// init project service
 	proj := project.New(
 		project.WithDBClient(db),
@@ -287,6 +276,8 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 	// cache setting
 	projectCache.New(db)
 
+	p.Org.WithMember(m).WithUc(uc).WithPermission(pm)
+
 	// compose endpoints
 	ep := endpoints.New(
 		endpoints.WithJSONStore(store),
@@ -295,7 +286,6 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 		endpoints.WithDBClient(db),
 		endpoints.WithUCClient(uc),
 		endpoints.WithBundle(bdl),
-		endpoints.WithOrg(o),
 		endpoints.WithManualReview(mr),
 		endpoints.WithProject(proj),
 		endpoints.WithApp(app),
@@ -315,6 +305,7 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 		endpoints.WithUserSvc(user),
 		endpoints.WithSubscribe(sub),
 		endpoints.WithTokenSvc(p.TokenService),
+		endpoints.WithOrg(p.Org),
 	)
 	return ep, nil
 }
