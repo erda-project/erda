@@ -21,6 +21,7 @@ import (
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric"
@@ -39,7 +40,7 @@ const (
 	chTableRetention = "storage-retention-strategy@metric"
 )
 
-type Storage struct {
+type Builder struct {
 	logger    logs.Logger
 	client    clickhouse.Conn
 	Creator   creator.Interface
@@ -48,21 +49,21 @@ type Storage struct {
 	batchCh   chan []*metric.Metric
 }
 
-func (st *Storage) BuildBatch(ctx context.Context, sourceBatch interface{}) ([]driver.Batch, error) {
+func (bu *Builder) BuildBatch(ctx context.Context, sourceBatch interface{}) ([]driver.Batch, error) {
 	items, ok := sourceBatch.([]*metric.Metric)
 	if !ok {
 		return nil, fmt.Errorf("soureBatch<%T> must be []*metric.Metric", sourceBatch)
 	}
 
-	batches, err := st.buildBatches(ctx, items)
+	batches, err := bu.buildBatches(ctx, items)
 	if err != nil {
 		return nil, fmt.Errorf("failed buildBatches: %w", err)
 	}
 	return batches, nil
 }
 
-func NewBuilder(ctx servicehub.Context, logger logs.Logger, cfg *builder.BuilderConfig) (*Storage, error) {
-	st := &Storage{
+func NewBuilder(ctx servicehub.Context, logger logs.Logger, cfg *builder.BuilderConfig) (*Builder, error) {
+	bu := &Builder{
 		cfg:    cfg,
 		logger: logger,
 	}
@@ -71,38 +72,38 @@ func NewBuilder(ctx servicehub.Context, logger logs.Logger, cfg *builder.Builder
 	if err != nil {
 		return nil, fmt.Errorf("get clickhouse interface: %w", err)
 	}
-	st.client = ch.Client()
+	bu.client = ch.Client()
 
 	if svc, ok := ctx.Service(chTableCreator).(creator.Interface); !ok {
 		return nil, fmt.Errorf("service %q must existed", chTableCreator)
 	} else {
-		st.Creator = svc
+		bu.Creator = svc
 	}
 
 	if svc, ok := ctx.Service(chTableRetention).(retention.Interface); !ok {
 		return nil, fmt.Errorf("service %q must existed", chTableRetention)
 	} else {
-		st.Retention = svc
+		bu.Retention = svc
 	}
 
-	return st, nil
+	return bu, nil
 }
 
-func (st *Storage) Start(_ context.Context) error {
+func (bu *Builder) Start(_ context.Context) error {
 	return nil
 }
 
-func (st *Storage) buildBatches(ctx context.Context, items []*metric.Metric) ([]driver.Batch, error) {
+func (bu *Builder) buildBatches(ctx context.Context, items []*metric.Metric) ([]driver.Batch, error) {
 	tablebatch := make(map[string]driver.Batch)
 	for _, data := range items {
-		table, err := st.getOrCreateTenantTable(ctx, data)
+		table, err := bu.getOrCreateTenantTable(ctx, data)
 		if err != nil {
 			return nil, fmt.Errorf("cannot get tenant table: %w", err)
 		}
 
 		if _, ok := tablebatch[table]; !ok {
 			// nolint
-			batch, err := st.client.PrepareBatch(ctx, "INSERT INTO "+table)
+			batch, err := bu.client.PrepareBatch(ctx, "INSERT INTO "+table)
 			if err != nil {
 				return nil, err
 			}
@@ -176,17 +177,17 @@ func (st *Storage) buildBatches(ctx context.Context, items []*metric.Metric) ([]
 	return batches, nil
 }
 
-func (st *Storage) getOrCreateTenantTable(ctx context.Context, data *metric.Metric) (string, error) {
-	key := st.Retention.GetConfigKey(data.Name, data.Tags)
-	ttl := st.Retention.GetTTL(key)
+func (bu *Builder) getOrCreateTenantTable(ctx context.Context, data *metric.Metric) (string, error) {
+	key := bu.Retention.GetConfigKey(data.Name, data.Tags)
+	ttl := bu.Retention.GetTTL(key)
 	var (
 		wait  <-chan error
 		table string
 	)
 	if len(key) > 0 {
-		wait, table = st.Creator.Ensure(ctx, data.Tags[lib.OrgNameKey], key, tablepkg.FormatTTLToDays(ttl))
+		wait, table = bu.Creator.Ensure(ctx, data.Tags[lib.OrgNameKey], key, tablepkg.FormatTTLToDays(ttl))
 	} else {
-		wait, table = st.Creator.Ensure(ctx, data.Tags[lib.OrgNameKey], "", tablepkg.FormatTTLToDays(ttl))
+		wait, table = bu.Creator.Ensure(ctx, data.Tags[lib.OrgNameKey], "", tablepkg.FormatTTLToDays(ttl))
 	}
 	if wait != nil {
 		select {

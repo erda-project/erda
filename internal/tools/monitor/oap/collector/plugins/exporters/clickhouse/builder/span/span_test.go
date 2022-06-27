@@ -18,8 +18,9 @@ import (
 	"testing"
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
-	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/uintset"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/uintset"
 
 	"github.com/erda-project/erda/internal/apps/msp/apm/trace"
 )

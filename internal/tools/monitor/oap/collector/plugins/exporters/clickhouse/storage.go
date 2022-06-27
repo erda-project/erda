@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib"
 )

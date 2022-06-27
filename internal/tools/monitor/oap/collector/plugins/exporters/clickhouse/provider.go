@@ -21,7 +21,6 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda-infra/providers/clickhouse"
 	"github.com/erda-project/erda/internal/apps/msp/apm/trace"
 	"github.com/erda-project/erda/internal/tools/monitor/core/log"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric"
@@ -43,10 +42,8 @@ type config struct {
 
 // +provider
 type provider struct {
-	Cfg *config
-	Log logs.Logger
-	ch  clickhouse.Interface
-
+	Cfg     *config
+	Log     logs.Logger
 	storage *Storage
 }
 
@@ -84,7 +81,11 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	var batchBuilder BatchBuilder
 	switch dt {
 	case odata.SpanType:
-		batchBuilder = span.NewBuilder(p.ch.Client(), p.Log.Sub("span-builder"), p.Cfg.BuilderCfg)
+		tmp, err := span.NewBuilder(ctx, p.Log.Sub("span-builder"), p.Cfg.BuilderCfg)
+		if err != nil {
+			return fmt.Errorf("span build: %w", err)
+		}
+		batchBuilder = tmp
 	case odata.MetricType:
 		tmp, err := metricstore.NewBuilder(ctx, p.Log.Sub("metric-builder"), p.Cfg.BuilderCfg)
 		if err != nil {
