@@ -81,6 +81,8 @@ func Test_asTime(t *testing.T) {
 		s *string
 	}
 	s1, s2 := "", "1234"
+	s3, s4 := "2022-06-24T00:00:00+08:00", "2022-06-23T16:00:00Z"
+	t1 := time.Date(2022, 6, 24, 0, 0, 0, 0, time.Now().Location())
 	tests := []struct {
 		name string
 		args args
@@ -97,6 +99,14 @@ func Test_asTime(t *testing.T) {
 		{
 			args: args{&s2},
 			want: nil,
+		},
+		{
+			args: args{&s3},
+			want: &t1,
+		},
+		{
+			args: args{&s4},
+			want: &t1,
 		},
 	}
 	for _, tt := range tests {
