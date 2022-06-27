@@ -291,12 +291,13 @@ message ListOpusVersionsRespData {
 
   string level = 8;
   string type = 9;
-  string name = 10;
-  string displayName = 11;
-  string catalog = 12;
-  string defaultVersionID = 13;
-  string latestVersionID = 14;
-  repeated ListOpusVersionRespDataVersion versions = 15;
+  string typeName = 10;
+  string name = 11;
+  string displayName = 12;
+  string catalog = 13;
+  string defaultVersionID = 14;
+  string latestVersionID = 15;
+  repeated ListOpusVersionRespDataVersion versions = 16;
 }
 
 message ListOpusVersionRespDataVersion {
