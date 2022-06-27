@@ -39,7 +39,7 @@ type Interface interface {
 	WithUc(uc *ucauth.UCClient) *provider
 	WithMember(member *member.Member) *provider
 	WithPermission(permission *permission.Permission) *provider
-	ListOrgs(orgIDs []int64, req *pb.ListOrgRequest, all bool) (int, []*pb.Org, error)
+	ListOrgs(ctx context.Context, orgIDs []int64, req *pb.ListOrgRequest, all bool) (int, []*pb.Org, error)
 }
 
 // CreateOrg 创建企业
@@ -247,7 +247,7 @@ func (p *provider) ListOrg(ctx context.Context, req *pb.ListOrgRequest) (*pb.Lis
 		total int
 		orgs  []*pb.Org
 	)
-	total, orgs, err = p.ListOrgs(orgIDs, req, all)
+	total, orgs, err = p.ListOrgs(ctx, orgIDs, req, all)
 	if err != nil {
 		logrus.Warnf("failed to get orgs, (%v)", err)
 		return nil, apierrors.ErrListOrg.InternalError(err)

@@ -406,7 +406,7 @@ func (e *Endpoints) listApplications(ctx context.Context, r *http.Request, isMin
 	}
 
 	// 转换成所需格式
-	applicationDTOs, err := e.transferAppsToApplicationDTOS(params.IsSimple, applications, blockStatusMap, memberMap)
+	applicationDTOs, err := e.transferAppsToApplicationDTOS(ctx, params.IsSimple, applications, blockStatusMap, memberMap)
 	if err != nil {
 		return apierrors.ErrInitApplication.InternalError(err).ToResp(), nil
 	}
@@ -414,7 +414,7 @@ func (e *Endpoints) listApplications(ctx context.Context, r *http.Request, isMin
 	return httpserver.OkResp(apistructs.ApplicationListResponseData{Total: total, List: applicationDTOs})
 }
 
-func (e Endpoints) transferAppsToApplicationDTOS(isSimple bool, applications []model.Application, blockStatusMap map[uint64]string, memberMap map[int64][]string) ([]apistructs.ApplicationDTO, error) {
+func (e Endpoints) transferAppsToApplicationDTOS(ctx context.Context, isSimple bool, applications []model.Application, blockStatusMap map[uint64]string, memberMap map[int64][]string) ([]apistructs.ApplicationDTO, error) {
 	projectIDs := make([]uint64, 0, len(applications))
 	appIDS := make([]int64, 0)
 	orgSet := make(map[int64]struct{})
@@ -428,7 +428,7 @@ func (e Endpoints) transferAppsToApplicationDTOS(isSimple bool, applications []m
 		orgIDS = append(orgIDS, orgID)
 	}
 
-	_, orgs, err := e.org.ListOrgs(orgIDS, &orgpb.ListOrgRequest{PageSize: 999, PageNo: 1}, false)
+	_, orgs, err := e.org.ListOrgs(ctx, orgIDS, &orgpb.ListOrgRequest{PageSize: 999, PageNo: 1}, false)
 	if err != nil {
 		return nil, err
 	}

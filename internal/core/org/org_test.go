@@ -15,6 +15,7 @@
 package org
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"testing"
@@ -25,6 +26,7 @@ import (
 
 	"github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/internal/core/org/db"
+	"github.com/erda-project/erda/pkg/common/apis"
 )
 
 func TestGetOrgByDomainAndOrgName(t *testing.T) {
@@ -102,6 +104,9 @@ func TestOrg_ListOrgs(t *testing.T) {
 			want: 1,
 			want1: []db.Org{
 				{
+					BaseModel: db.BaseModel{
+						ID: 1,
+					},
 					Name: "1",
 				},
 			},
@@ -117,15 +122,22 @@ func TestOrg_ListOrgs(t *testing.T) {
 			want: 2,
 			want1: []db.Org{
 				{
+					BaseModel: db.BaseModel{
+						ID: 1,
+					},
 					Name: "2",
 				},
 			},
 			wantErr: false,
 		},
 	}
+	ctx := apis.WithOrgIDContext(apis.WithUserIDContext(context.Background(), "1"), "1")
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := &provider{}
+			p := &provider{
+				Cfg: &config{},
+			}
 			patch1 := monkey.PatchInstanceMethod(reflect.TypeOf(p), "SearchByName", func(p *provider, name string, pageNo, pageSize int) (int, []db.Org, error) {
 				if tt.wantErr {
 					return 0, nil, fmt.Errorf("error")
@@ -142,7 +154,7 @@ func TestOrg_ListOrgs(t *testing.T) {
 			})
 			defer patch2.Unpatch()
 
-			got, got1, err := p.ListOrgs(tt.args.orgIDs, tt.args.req, tt.args.all)
+			got, got1, err := p.ListOrgs(ctx, tt.args.orgIDs, tt.args.req, tt.args.all)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ListOrgs() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -150,7 +162,11 @@ func TestOrg_ListOrgs(t *testing.T) {
 			if got != tt.want {
 				t.Errorf("ListOrgs() got = %v, want %v", got, tt.want)
 			}
-			if !reflect.DeepEqual(got1, tt.want1) {
+			dto, err := p.coverOrgsToDto(ctx, tt.want1)
+			if err != nil {
+				t.Errorf(err.Error())
+			}
+			if !reflect.DeepEqual(got1, dto) {
 				t.Errorf("ListOrgs() got1 = %v, want %v", got1, tt.want1)
 			}
 		})

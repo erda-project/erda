@@ -317,7 +317,7 @@ func (p *provider) ListByIDsAndName(orgIDs []int64, name string, pageNo, pageSiz
 	return p.dbClient.GetOrgsByIDsAndName(orgIDs, name, pageNo, pageSize)
 }
 
-func (p *provider) ListOrgs(orgIDs []int64, req *pb.ListOrgRequest, all bool) (int, []*pb.Org, error) {
+func (p *provider) ListOrgs(ctx context.Context, orgIDs []int64, req *pb.ListOrgRequest, all bool) (int, []*pb.Org, error) {
 	var (
 		total int
 		orgs  []db.Org
@@ -332,7 +332,8 @@ func (p *provider) ListOrgs(orgIDs []int64, req *pb.ListOrgRequest, all bool) (i
 		logrus.Warnf("failed to get orgs, (%v)", err)
 		return 0, nil, err
 	}
-	dtos, err := p.coverOrgsToDto(context.Background(), orgs)
+
+	dtos, err := p.coverOrgsToDto(ctx, orgs)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -774,6 +775,9 @@ func getAuditMessage(org db.Org, req *pb.UpdateOrgRequest) *pb.AuditMessage {
 }
 
 func (p *provider) coverOrgsToDto(ctx context.Context, orgs []db.Org) ([]*pb.Org, error) {
+	if len(orgs) == 0 {
+		return nil, nil
+	}
 	var currentOrgID int64
 	var err error
 	v := apis.GetOrgID(ctx)
