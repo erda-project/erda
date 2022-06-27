@@ -21,12 +21,14 @@ import (
 	"strings"
 	"time"
 
-	v1 "k8s.io/api/core/v1"
+	"github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	watch2 "k8s.io/apimachinery/pkg/watch"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/client-go/tools/watch"
+	watchtools "k8s.io/client-go/tools/watch"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/k8sclient"
@@ -39,7 +41,7 @@ func (p *provider) watchClusterCredential(ctx context.Context) {
 	}
 
 	var (
-		retryWatcher *watch.RetryWatcher
+		retryWatcher *watchtools.RetryWatcher
 		err          error
 	)
 
@@ -67,19 +69,20 @@ func (p *provider) watchClusterCredential(ctx context.Context) {
 	for {
 		select {
 		case event := <-retryWatcher.ResultChan():
-			sec, ok := event.Object.(*v1.Secret)
+			sec, ok := event.Object.(*corev1.Secret)
 			if !ok {
 				p.Log.Errorf("illegal secret object, igonre")
+				time.Sleep(time.Second)
 				continue
 			}
 
 			p.Log.Debugf("event type: %v, object: %+v", event.Type, sec)
 
 			switch event.Type {
-			case watch2.Deleted:
+			case watch.Deleted:
 				// ignore delete event, if cluster offline, reconnect will be failed.
 				continue
-			case watch2.Added, watch2.Modified:
+			case watch.Added, watch.Modified:
 				ak, ok := sec.Data[apistructs.ClusterAccessKey]
 				// If accidentally deleted credential key, use the latest access key
 				if !ok {
@@ -111,35 +114,43 @@ func (p *provider) watchClusterCredential(ctx context.Context) {
 	}
 }
 
-func (p *provider) getInClusterRetryWatcher(ns string) (*watch.RetryWatcher, error) {
+func (p *provider) getInClusterRetryWatcher(ns string) (*watchtools.RetryWatcher, error) {
 	cs, err := k8sclient.New(p.Cfg.ClusterName, k8sclient.WithPreferredToUseInClusterConfig())
 	if err != nil {
 		return nil, fmt.Errorf("create clientset error: %v", err)
 	}
 
-	// Get or create secret
-	secInit, err := cs.ClientSet.CoreV1().Secrets(ns).Get(context.Background(), apistructs.ErdaClusterCredential, v12.GetOptions{})
+	selector, err := fields.ParseSelector(fmt.Sprintf("metadata.name=%s", apistructs.ErdaClusterCredential))
 	if err != nil {
-		if !errors.IsNotFound(err) {
-			return nil, fmt.Errorf("get secret error: %v", err)
-		}
-		// try to create init cluster credential secret
-		secInit, err = cs.ClientSet.CoreV1().Secrets(ns).Create(context.Background(), &v1.Secret{
-			ObjectMeta: v12.ObjectMeta{Name: apistructs.ErdaClusterCredential},
-			Data:       map[string][]byte{apistructs.ClusterAccessKey: []byte("init")},
-		}, v12.CreateOptions{})
+		return nil, err
+	}
 
-		if err != nil {
-			return nil, fmt.Errorf("create init cluster credential secret error: %v", err)
+	// Get or create secret
+	secInit, err := cs.ClientSet.CoreV1().Secrets(ns).List(context.Background(), metav1.ListOptions{
+		FieldSelector: selector.String(),
+	})
+	if err != nil && !errors.IsNotFound(err) {
+		return nil, fmt.Errorf("get secret error: %v", err)
+	}
+
+	// load initial secret
+	if secInit != nil && len(secInit.Items) > 0 {
+		initData, ok := secInit.Items[0].Data[apistructs.ClusterAccessKey]
+		if !ok {
+			logrus.Warn("no valid cluster access key was got")
+		} else {
+			logrus.Infof("load initial cluster access key, content %s", string(initData))
+			p.setAccessKey(string(initData))
 		}
+	} else {
+		logrus.Warn("no valid cluster access key was got")
 	}
 
 	// create retry watcher
-	retryWatcher, err := watch.NewRetryWatcher(secInit.ResourceVersion, &cache.ListWatch{
-		WatchFunc: func(options v12.ListOptions) (watch2.Interface, error) {
-			return cs.ClientSet.CoreV1().Secrets(ns).Watch(context.Background(), v12.ListOptions{
-				FieldSelector: fmt.Sprintf("metadata.name=%s", apistructs.ErdaClusterCredential),
-			})
+	retryWatcher, err := watchtools.NewRetryWatcher(secInit.ResourceVersion, &cache.ListWatch{
+		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
+			options.FieldSelector = selector.String()
+			return cs.ClientSet.CoreV1().Secrets(ns).Watch(context.Background(), options)
 		},
 	})
 

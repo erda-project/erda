@@ -297,7 +297,7 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 	)
 	cluster, err := bdl.GetCluster(clusterName)
 	if err != nil {
-		logrus.Errorf("get cluster error: %v", cluster)
+		logrus.Errorf("get cluster %s error: %v", clusterName, err)
 		return nil, err
 	}
 
