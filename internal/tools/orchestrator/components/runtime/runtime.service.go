@@ -293,6 +293,10 @@ func (r *Service) GetRuntime(ctx context.Context, request *pb.GetRuntimeRequest)
 	return ri, nil
 }
 
+func (r *Service) GetRuntimeByID(ctx context.Context, req *pb.GetRuntimeByIDReq) (*pb.GetRuntimeByIDResp, error) {
+
+}
+
 func updateStatusWhenDeploying(runtime *pb.RuntimeInspect) {
 	if runtime == nil {
 		return

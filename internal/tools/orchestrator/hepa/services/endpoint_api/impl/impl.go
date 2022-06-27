@@ -468,6 +468,10 @@ func (impl GatewayOpenapiServiceImpl) GetPackages(args *gw.GetPackagesDto) (res 
 	return
 }
 
+func (impl GatewayOpenapiServiceImpl) ListAllPackages() ([]orm.GatewayPackage, error) {
+	return impl.packageDb.SelectByAny(new(orm.GatewayPackage))
+}
+
 func (impl GatewayOpenapiServiceImpl) packageDto(dao *orm.GatewayPackage, domains []string) *gw.PackageInfoDto {
 	res := &gw.PackageInfoDto{
 		Id:       dao.Id,
@@ -1701,6 +1705,10 @@ func (impl GatewayOpenapiServiceImpl) GetPackageApis(id string, args *gw.GetOpen
 	}
 	result = common.NewPages(list, pageInfo.TotalNum)
 	return
+}
+
+func (impl GatewayOpenapiServiceImpl) ListPackageAllApis(id string) ([]orm.GatewayPackageApi, error) {
+	return impl.packageApiDb.SelectByAny(&orm.GatewayPackageApi{PackageId: id})
 }
 
 func (impl GatewayOpenapiServiceImpl) UpdatePackageApi(packageId, apiId string, dto *gw.OpenapiDto) (result *gw.OpenapiInfoDto, exist bool, err error) {

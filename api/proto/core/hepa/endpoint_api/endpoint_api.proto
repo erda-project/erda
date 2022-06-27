@@ -5,6 +5,7 @@ option go_package = "github.com/erda-project/erda-proto-go/core/hepa/endpoint_ap
 import "google/api/annotations.proto";
 import "google/protobuf/struct.proto";
 import "core/hepa/hepa.proto";
+import "common/http.proto";
 
 // +publish service:"hepa"
 service EndpointApiService {
@@ -90,6 +91,7 @@ service EndpointApiService {
     };
   }
 
+  rpc ClearInvalidEndpointApi(common.VoidRequest) returns (common.VoidResponse) {}
 }
 
 message ChangeEndpointRootResponse {
@@ -129,7 +131,7 @@ message EndpointApi {
   string redirectType = 2;
   string redirectAddr = 3;
   string redirectPath = 4;
-  string redirectApp = 5;  
+  string redirectApp = 5;
   string redirectService = 6;
   string redirectRuntimeId = 7;
   string redirectRuntimeName = 8;

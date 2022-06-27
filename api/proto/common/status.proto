@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package erda.common;
+
+option go_package = "github.com/erda-project/erda-proto-go/common/pb";
+
+enum StatusEnum {
+  unknown_status = 0;
+  not_found = 404000;
+}
+
+message Status {
+  bool success = 1;
+  StatusEnum status = 2;
+  string message = 3;
+}

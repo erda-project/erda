@@ -16,19 +16,31 @@ package endpoint_api
 
 import (
 	"context"
+	"path/filepath"
+	"strconv"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 
+	commonPb "github.com/erda-project/erda-proto-go/common/pb"
 	"github.com/erda-project/erda-proto-go/core/hepa/endpoint_api/pb"
+	projPb "github.com/erda-project/erda-proto-go/core/services/project/pb"
+	runtimePb "github.com/erda-project/erda-proto-go/orchestrator/runtime/pb"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/vars"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
+	repositoryService "github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/service"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/endpoint_api"
 	"github.com/erda-project/erda/pkg/common/apis"
 	erdaErr "github.com/erda-project/erda/pkg/common/errors"
 )
 
 type endpointApiService struct {
-	p *provider
+	projCli            projPb.ProjectServer
+	runtimeCli         runtimePb.RuntimeServiceServer
+	gatewayApiService  repositoryService.GatewayApiService
+	upstreamApiService repositoryService.GatewayUpstreamApiService
+	upstreamService    repositoryService.GatewayUpstreamService
 }
 
 func (s *endpointApiService) GetEndpointsName(ctx context.Context, req *pb.GetEndpointsNameRequest) (resp *pb.GetEndpointsNameResponse, err error) {
@@ -248,4 +260,124 @@ func (s *endpointApiService) ChangeEndpointRoot(ctx context.Context, req *pb.Cha
 		Data: result,
 	}
 	return
+}
+
+func (s *endpointApiService) ClearInvalidEndpointApi(ctx context.Context, _ *commonPb.VoidRequest) (*commonPb.VoidResponse, error) {
+	l := logrus.WithField("func", "*endpointApiService.ClearInvalidEndpointApi")
+	// list all packages
+	service := endpoint_api.Service.Clone(ctx)
+	packages, err := service.ListAllPackages()
+	if err != nil {
+		l.Warnln("failed to ListAllPackages")
+		return nil, err
+	}
+	if len(packages) == 0 {
+		l.Warnln("no packages found")
+		return new(commonPb.VoidResponse), nil
+	}
+
+	// delete the package if it's project is invalid
+	var projectPackages = make(map[string][]orm.GatewayPackage)
+	for _, package_ := range packages {
+		if package_.DiceProjectId != "" {
+			projectPackages[package_.DiceProjectId] = append(projectPackages[package_.DiceProjectId], package_)
+		}
+	}
+	for projectID := range projectPackages {
+		l = l.WithField("projectID", projectID)
+		id, err := strconv.ParseUint(projectID, 10, 32)
+		if err != nil {
+			l.WithError(err).Warnln("projectID can not be parsed to uint")
+			continue
+		}
+		projResp, err := s.projCli.GetProjectByID(ctx, &projPb.GetProjectByIDReq{Id: id})
+		if err != nil {
+			l.WithError(err).Warnln("failed to GetProjectByID")
+			continue
+		}
+		if projResp.Status == nil {
+			l.Warnln("invalid response: projResp.Status is nil")
+			continue
+		}
+		if !projResp.Status.Success {
+			if projResp.Status.Status == commonPb.StatusEnum_not_found {
+				for _, package_ := range projectPackages[projectID] {
+					deleteEndpointResp, err := s.DeleteEndpoint(ctx, &pb.DeleteEndpointRequest{PackageId: package_.Id})
+					l.WithError(err).WithField("packageID", package_.Id).
+						WithField("deleteEndpointResp.Data", deleteEndpointResp.Data).
+						Infoln("DeleteEndpoint because that the project dose not exist.")
+				}
+			}
+			continue
+		}
+
+		// join on tb_gateway_package_api.dice_api_id = tb_gateway_api.id
+		//         tb_gateway_api.upstream_api_id = tb_gateway_upstream_api.id
+		//         tb_gateway_upstream_api.upstream_id = tb_gateway_api.id
+		//         runtimeID = filepath.base(tb_gateway_api.upstream_name)
+		for _, package_ := range projectPackages[projectID] {
+			l = l.WithField("tb_gateway_package_api", package_.Id)
+			packageApis, err := service.ListPackageAllApis(package_.Id)
+			if err != nil {
+				l.WithError(err).Warnln("failed to ListPackageAllApis")
+				continue
+			}
+			for _, packageApi := range packageApis {
+				l = l.WithField("tb_gateway_package_api.dice_api_id", packageApi.DiceApiId)
+				if packageApi.DiceApiId == "" {
+					l.Warnln("packageApi.DiceApiId is empty")
+					continue
+				}
+				l = l.WithField("tb_gateway_api.id", packageApi.DiceApiId)
+				gatewayApi, err := s.gatewayApiService.GetById(packageApi.DiceApiId)
+				if err != nil {
+					l.WithError(err).Warnf("failed to gatewayApiService.GetById(%s)", packageApi.DiceApiId)
+					continue
+				}
+				// todo: if gatewayApi.redirect_addr is invalid inner address, delete the package_api
+				if gatewayApi.UpstreamApiId == "" {
+					l.Warnln("gatewayApi.UpstreamApiID is empty")
+					continue
+				}
+				l = l.WithField("tb_gateway_upstream_api.id", gatewayApi.UpstreamApiId)
+				upstreamApi, err := s.upstreamApiService.GetById(gatewayApi.UpstreamApiId)
+				if err != nil {
+					l.WithError(err).Warnf("failed to upstreamApiService.GetById(%s)", gatewayApi.UpstreamApiId)
+					continue
+				}
+				l = l.WithField("tb_gateway_upstream.id", gatewayApi.Id)
+				var cond orm.GatewayUpstream
+				cond.Id = upstreamApi.UpstreamId
+				upstreams, err := s.upstreamService.SelectByAny(&cond)
+				if err != nil {
+					l.WithError(err).Warnf("failed to upstreamService.SelectByAny(%+v)", cond)
+					continue
+				}
+				if len(upstreams) == 0 {
+					l.Warnln("not found any upstreams")
+					continue
+				}
+				upstreamName := upstreams[0].UpstreamName
+				l = l.WithField("upstreamName", upstreamName)
+				runtimeID, err := strconv.ParseUint(filepath.Base(upstreamName), 10, 32)
+				if err != nil || runtimeID == 0 {
+					l.WithError(err).Warnln("failed to parse runtime id from upstream name")
+					continue
+				}
+				l = l.WithField("runtimeID", runtimeID)
+				runtimeResp, err := s.runtimeCli.GetRuntimeByID(ctx, &runtimePb.GetRuntimeByIDReq{Id: runtimeID})
+				if err != nil {
+					l.WithError(err).Warnln("failed to GetRuntimeByID")
+					continue
+				}
+				if !runtimeResp.Status.GetSuccess() && runtimeResp.GetStatus().GetStatus() == commonPb.StatusEnum_not_found {
+					if _, err := s.DeleteEndpointApi(ctx, &pb.DeleteEndpointApiRequest{ApiId: packageApi.Id}); err != nil {
+						l.WithError(err).Warnln("failed to DeleteEndpointApi")
+					}
+					continue
+				}
+			}
+		}
+	}
+	return new(commonPb.VoidResponse), nil
 }
