@@ -119,6 +119,7 @@ func (s *endpointApiService) GetEndpoint(ctx context.Context, req *pb.GetEndpoin
 	}
 	return
 }
+
 func (s *endpointApiService) CreateEndpoint(ctx context.Context, req *pb.CreateEndpointRequest) (resp *pb.CreateEndpointResponse, err error) {
 	service := endpoint_api.Service.Clone(ctx)
 	if req.Endpoint == nil {
@@ -282,10 +283,7 @@ func (s *endpointApiService) ListInvalidEndpointApi(ctx context.Context, _ *comm
 		return new(pb.ListInvalidEndpointApiResp), nil
 	}
 
-	var result = pb.ListInvalidEndpointApiResp{Data: map[string]*pb.ListInvalidEndpointApiList{
-		invalidProject: {},
-		invalidRuntime: {},
-	}}
+	var result pb.ListInvalidEndpointApiResp
 	var projectPackages = make(map[string][]orm.GatewayPackage)
 	for _, package_ := range packages {
 		if package_.DiceProjectId != "" {
@@ -306,11 +304,12 @@ func (s *endpointApiService) ListInvalidEndpointApi(ctx context.Context, _ *comm
 		if err == nil && !resp.GetOk() {
 			for _, package_ := range packages {
 				item := &pb.ListInvalidEndpointApiItem{
-					Type:      "package",
-					ProjectID: projectID,
-					PackageID: package_.Id,
+					InvalidReason: invalidProject,
+					Type:          "package",
+					ProjectID:     projectID,
+					PackageID:     package_.Id,
 				}
-				result.Data[invalidProject].List = append(result.Data[invalidProject].List, item)
+				result.List = append(result.List, item)
 			}
 			continue
 		}
@@ -319,7 +318,7 @@ func (s *endpointApiService) ListInvalidEndpointApi(ctx context.Context, _ *comm
 		//
 		// join on tb_gateway_package_api.dice_api_id = tb_gateway_api.id
 		//         tb_gateway_api.upstream_api_id = tb_gateway_upstream_api.id
-		//         tb_gateway_upstream_api.upstream_id = tb_gateway_api.id
+		//         tb_gateway_upstream_api.upstream_id = tb_gateway_upstream.id
 		//         runtimeID = filepath.base(tb_gateway_api.upstream_name)
 		for _, package_ := range packages {
 			l := l.WithField("tb_gateway_package_api.id", package_.Id)
@@ -378,12 +377,17 @@ func (s *endpointApiService) ListInvalidEndpointApi(ctx context.Context, _ *comm
 					resp, err := s.runtimeCli.CheckRuntimeExist(ctx, &runtimePb.CheckRuntimeExistReq{Id: runtimeID})
 					if err == nil && !resp.GetOk() {
 						item := &pb.ListInvalidEndpointApiItem{
-							Type:         "package_api",
-							ProjectID:    projectID,
-							PackageID:    package_.Id,
-							PackageApiID: packageApi.Id,
+							InvalidReason: invalidRuntime,
+							Type:          "package_api",
+							ProjectID:     projectID,
+							PackageID:     package_.Id,
+							PackageApiID:  packageApi.Id,
+							UpstreamApiID: upstreamApi.Id,
+							UpstreamID:    upstream.Id,
+							UpstreamName:  upstream.UpstreamName,
+							RuntimeID:     filepath.Base(upstream.UpstreamName),
 						}
-						result.Data[invalidRuntime].List = append(result.Data[invalidProject].List, item)
+						result.List = append(result.List, item)
 					}
 				}
 			}
@@ -399,27 +403,24 @@ func (s *endpointApiService) ClearInvalidEndpointApi(ctx context.Context, _ *com
 	if err != nil {
 		return nil, err
 	}
-	packages := resp.Data["project not found"]
-	if packages != nil {
-		for _, package_ := range packages.List {
+	for _, item := range resp.List {
+		if item.GetType() == "package" {
+			l.Infof("delete package: %+v", item)
 			if _, err := s.DeleteEndpoint(ctx, &pb.DeleteEndpointRequest{
-				PackageId: package_.GetPackageID(),
+				PackageId: item.GetPackageID(),
 			}); err != nil {
-				l.WithError(err).WithField("package id", package_.GetPackageID()).Warnln("failed to DeleteEndpoint")
+				l.WithError(err).WithField("package id", item.GetPackageID()).Warnln("failed to DeleteEndpoint")
 			}
 		}
-	}
-
-	packageApis := resp.Data["runtime not found"]
-	if packageApis != nil {
-		for _, api := range packageApis.List {
+		if item.GetType() == "package_api" {
+			l.Infof("delete package api: %+v", item)
 			if _, err := s.DeleteEndpointApi(ctx, &pb.DeleteEndpointApiRequest{
-				PackageId: api.GetPackageID(),
-				ApiId:     api.GetPackageApiID(),
+				PackageId: item.GetPackageID(),
+				ApiId:     item.GetPackageApiID(),
 			}); err != nil {
 				l.WithError(err).
-					WithField("package id", api.GetPackageID()).
-					WithField("package api id", api.GetPackageApiID()).
+					WithField("package id", item.GetPackageID()).
+					WithField("package api id", item.GetPackageApiID()).
 					Warnln("failed to DeleteEndpointApi")
 			}
 		}

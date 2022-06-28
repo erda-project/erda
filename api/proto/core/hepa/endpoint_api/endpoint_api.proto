@@ -101,7 +101,14 @@ service EndpointApiService {
     };
   }
 
-  rpc ClearInvalidEndpointApi(common.VoidRequest) returns (common.VoidResponse) {}
+  rpc ClearInvalidEndpointApi(common.VoidRequest) returns (common.VoidResponse) {
+    option(google.api.http) = {
+      delete: "/api/gateway/openapi/invalid-endpoints",
+    };
+    option(erda.common.openapi) = {
+      path: "/api/gateway/openapi/invalid-endpoints",
+    };
+  }
 }
 
 message ChangeEndpointRootResponse {
@@ -249,15 +256,17 @@ message GetEndpointResponse {
 }
 
 message ListInvalidEndpointApiResp {
-  map<string, ListInvalidEndpointApiList> data = 1;
-}
-
-message ListInvalidEndpointApiList {
   repeated ListInvalidEndpointApiItem list = 1;
 }
+
 message ListInvalidEndpointApiItem {
-  string type = 1;
-  string projectID = 2;
-  string packageID = 3;
-  string packageApiID = 4;
+  string invalidReason = 1;
+  string type = 2;
+  string projectID = 3;
+  string packageID = 4;
+  string packageApiID = 5;
+  string upstreamApiID = 6;
+  string upstreamID = 7;
+  string upstreamName = 8;
+  string runtimeID = 9;
 }
