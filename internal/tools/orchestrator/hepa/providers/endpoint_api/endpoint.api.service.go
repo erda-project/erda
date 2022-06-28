@@ -18,6 +18,7 @@ import (
 	"context"
 	"path/filepath"
 	"strconv"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -38,6 +39,7 @@ import (
 var (
 	invalidProject = "project not found"
 	invalidRuntime = "runtime not found"
+	clearC         = make(chan struct{}, 1)
 )
 
 // endpointApiService implements pb.EndpointApiServiceServer
@@ -397,7 +399,23 @@ func (s *endpointApiService) ListInvalidEndpointApi(ctx context.Context, _ *comm
 	return &result, nil
 }
 
-func (s *endpointApiService) ClearInvalidEndpointApi(ctx context.Context, _ *commonPb.VoidRequest) (*commonPb.VoidResponse, error) {
+func (s *endpointApiService) ClearInvalidEndpointApi(ctx context.Context, req *commonPb.VoidRequest) (*commonPb.VoidResponse, error) {
+	timer := time.NewTimer(time.Second * 2)
+	defer timer.Stop()
+	select {
+	case <-timer.C:
+		return nil, errors.New("task in process")
+	case clearC <- struct{}{}:
+		go func() {
+			s.clearInvalidEndpointApi(ctx, req)
+			<-clearC
+		}()
+
+	}
+	return new(commonPb.VoidResponse), nil
+}
+
+func (s *endpointApiService) clearInvalidEndpointApi(ctx context.Context, _ *commonPb.VoidRequest) (*commonPb.VoidResponse, error) {
 	l := logrus.WithField("func", "*endpointApiService.ClearInvalidEndpointApi")
 	resp, err := s.ListInvalidEndpointApi(ctx, nil)
 	if err != nil {
