@@ -896,13 +896,12 @@ func (e *Endpoints) convertToApplicationDTO(ctx context.Context, application mod
 		orgDisplayName string
 		org            *orgpb.Org
 	)
-	orgResp, err := e.org.GetOrg(apis.WithInternalClientContext(ctx, "legacy"), &orgpb.GetOrgRequest{IdOrName: strconv.FormatInt(application.OrgID, 10)})
-	if err == nil {
-		org = orgResp.Data
+	org, err = e.getOrg(apis.WithInternalClientContext(ctx, "legacy"), application.OrgID)
+	if err != nil {
+		logrus.Error(err)
+	} else {
 		orgName = org.Name
 		orgDisplayName = org.DisplayName
-	} else {
-		logrus.Error(err)
 	}
 
 	// TODO 应用表新增reference字段，提供API供orchestrator调用
@@ -980,6 +979,14 @@ func (e *Endpoints) convertToApplicationDTO(ctx context.Context, application mod
 		UpdatedAt:      application.UpdatedAt,
 		Extra:          application.Extra,
 	}
+}
+
+func (e Endpoints) getOrg(ctx context.Context, orgID int64) (*orgpb.Org, error) {
+	orgResp, err := e.org.GetOrg(ctx, &orgpb.GetOrgRequest{IdOrName: strconv.FormatInt(orgID, 10)})
+	if err != nil {
+		return nil, err
+	}
+	return orgResp.Data, nil
 }
 
 // CountAppByProID count app by proID

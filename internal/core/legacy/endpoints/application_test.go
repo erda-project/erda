@@ -15,10 +15,15 @@
 package endpoints
 
 import (
+	"context"
 	"net/http"
 	"net/url"
+	"reflect"
 	"testing"
 
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
+	"github.com/erda-project/erda/internal/core/org"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/gorilla/schema"
 	"github.com/stretchr/testify/assert"
 )
@@ -74,4 +79,74 @@ func TestGetAppParams(t *testing.T) {
 	parsedReq, err := getListApplicationsParam(ep, req)
 	assert.NoError(t, err)
 	assert.Equal(t, parsedReq.ApplicationID, []uint64{1, 2})
+}
+
+func TestEndpoints_getOrg(t *testing.T) {
+	type fields struct {
+		org org.Interface
+	}
+	type args struct {
+		ctx   context.Context
+		orgID int64
+	}
+	mockOrg := MockOrg{}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    *orgpb.Org
+		wantErr bool
+	}{
+		{
+			name: "test with userID",
+			fields: fields{
+				org: mockOrg,
+			},
+			args: args{
+				ctx:   apis.WithUserIDContext(context.Background(), "1"),
+				orgID: 1,
+			},
+			want:    &orgpb.Org{},
+			wantErr: false,
+		},
+		{
+			name: "test with internal-client",
+			fields: fields{
+				org: mockOrg,
+			},
+			args: args{
+				ctx:   apis.WithInternalClientContext(context.Background(), "legacy"),
+				orgID: 1,
+			},
+			want:    &orgpb.Org{},
+			wantErr: false,
+		},
+		{
+			name: "test with error",
+			fields: fields{
+				org: mockOrg,
+			},
+			args: args{
+				ctx:   context.Background(),
+				orgID: 1,
+			},
+			want:    nil,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := Endpoints{
+				org: tt.fields.org,
+			}
+			got, err := e.getOrg(tt.args.ctx, tt.args.orgID)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("getOrg() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("getOrg() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
