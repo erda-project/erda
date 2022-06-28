@@ -61,6 +61,12 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to NewGatewayUpstreamServiceImpl")
 	}
+	if p.projCli == nil {
+		p.Log.Fatal("projCli is nil")
+	}
+	if p.runtimeCli == nil {
+		p.Log.Fatal("runtimeCli is nil")
+	}
 	p.endpointApiService = &endpointApiService{
 		projCli:            p.projCli,
 		runtimeCli:         p.runtimeCli,
@@ -125,6 +131,8 @@ func init() {
 			"erda.core.hepa.api_policy.ApiPolicyService",
 			"erda.core.hepa.domain.DomainService",
 			"erda.core.hepa.global.GlobalService",
+			"erda.core.project.Project",
+			"erda.orchestrator.runtime.RuntimeService",
 		},
 		Description: "",
 		ConfigFunc: func() interface{} {
