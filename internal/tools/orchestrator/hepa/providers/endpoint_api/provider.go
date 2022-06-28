@@ -21,7 +21,6 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-proto-go/core/hepa/endpoint_api/pb"
-
 	_ "github.com/erda-project/erda-proto-go/core/project/client"
 	projPb "github.com/erda-project/erda-proto-go/core/project/pb"
 	_ "github.com/erda-project/erda-proto-go/orchestrator/runtime/client"
@@ -44,8 +43,8 @@ type provider struct {
 	Register           transport.Register
 	endpointApiService *endpointApiService
 	Perm               perm.Interface                 `autowired:"permission"`
-	projCli            projPb.ProjectServer           `autowired:"erda.core.project.Project"`
-	runtimeCli         runtimePb.RuntimeServiceServer `autowired:"erda.orchestrator.runtime.RuntimeService"`
+	ProjCli            projPb.ProjectServer           `autowired:"erda.core.project.Project"`
+	RuntimeCli         runtimePb.RuntimeServiceServer `autowired:"erda.orchestrator.runtime.RuntimeService"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -61,15 +60,15 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to NewGatewayUpstreamServiceImpl")
 	}
-	if p.projCli == nil {
+	if p.ProjCli == nil {
 		p.Log.Fatal("projCli is nil")
 	}
-	if p.runtimeCli == nil {
+	if p.RuntimeCli == nil {
 		p.Log.Fatal("runtimeCli is nil")
 	}
 	p.endpointApiService = &endpointApiService{
-		projCli:            p.projCli,
-		runtimeCli:         p.runtimeCli,
+		projCli:            p.ProjCli,
+		runtimeCli:         p.RuntimeCli,
 		gatewayApiService:  gatewayApiService,
 		upstreamApiService: upstreamApiService,
 		upstreamService:    upstreamService,
