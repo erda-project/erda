@@ -3,10 +3,10 @@ CREATE TABLE IF NOT EXISTS <database>.metrics ON CLUSTER '{cluster}'
     `org_name`            LowCardinality(String),
     `metric_group`        LowCardinality(String),
     `timestamp`           DateTime64(9,'Asia/Shanghai') CODEC (DoubleDelta),
-    `number.field_keys`   Array(LowCardinality(String)),
-    `number.field_values` Array(Float64),
-    `string.field_keys`   Array(LowCardinality(String)),
-    `string.field_values` Array(String),
+    `number_field_keys`   Array(LowCardinality(String)),
+    `number_field_values` Array(Float64),
+    `string_field_keys`   Array(LowCardinality(String)),
+    `string_field_values` Array(String),
     `tag_keys`            Array(LowCardinality(String)),
     `tag_values`          Array(LowCardinality(String))
 )

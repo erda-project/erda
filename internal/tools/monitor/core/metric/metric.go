@@ -96,10 +96,10 @@ type TableMetrics struct {
 	OrgName           string    `ch:"org_name"`
 	MetricGroup       string    `ch:"metric_group"`
 	Timestamp         int64     `ch:"timestamp"`
-	NumberFieldKeys   []string  `ch:"number.field_keys"`
-	NumberFieldValues []float64 `ch:"number.field_values"`
-	StringFieldKeys   []string  `ch:"string.field_keys"`
-	StringFieldValues []string  `ch:"string.field_values"`
+	NumberFieldKeys   []string  `ch:"number_field_keys"`
+	NumberFieldValues []float64 `ch:"number_field_values"`
+	StringFieldKeys   []string  `ch:"string_field_keys"`
+	StringFieldValues []string  `ch:"string_field_values"`
 	TagKeys           []string  `ch:"tag_keys"`
 	TagValues         []string  `ch:"tag_values"`
 }
