@@ -292,43 +292,18 @@ erda.oap.collector.exporter.stdout:
 
 erda.oap.collector.exporter.kafka@collector:
   metadata_key_of_topic: "KAFKA-TOPIC"
-  producer:
-    shared: "false"
-    batch:
-      size: 1 # already batch in third client
-    options:
-      # channel size in Go Library
-      go.produce.channel.size: 1
-      # queue size in C Library
-      queue.buffering.max.kbytes: 204800 # 200MB
 
 erda.oap.collector.exporter.kafka@spot-metrics:
   producer:
-    shared: "false"
     topic: "spot-metrics"
-    batch:
-      size: 1 # already batch in third library
-    options:
-      # channel size in Go Library
-      go.produce.channel.size: 1
-      # queue size in C Library
-      queue.buffering.max.kbytes: 51200 # 50MB
-
 
 erda.oap.collector.exporter.kafka@erda-spans:
   producer:
-    shared: "false"
     topic: "erda-spans"
-    batch:
-      size: 1 # already batch in third library
-    options:
-      # channel size in Go Library
-      go.produce.channel.size: 1
-      # queue size in C Library
-      queue.buffering.max.kbytes: 204800 # 200MB
-
 
 # ************* exporters *************
+kafka-v2:
+  servers: ${BOOTSTRAP_SERVERS:localhost:9092}
 
 kubernetes:
   master_url: ${MASTER_VIP_URL:https://kubernetes.default.svc:443}
