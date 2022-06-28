@@ -12,20 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package project
 
 import (
-	_ "embed"
-
-	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/pkg/common"
+	_ "github.com/erda-project/erda-infra/providers/mysql/v2"
 )
-
-//go:embed bootstrap.yaml
-var bootstrapCfg string
-
-func main() {
-	common.Run(&servicehub.RunOptions{
-		Content: bootstrapCfg,
-	})
-}
