@@ -41,6 +41,7 @@ require (
 	github.com/coreos/etcd v3.3.25+incompatible
 	github.com/coreos/go-systemd v0.0.0-20191104093116-d3cd4ed1dbcf // indirect
 	github.com/davecgh/go-spew v1.1.1
+	github.com/dlclark/regexp2 v1.4.0 // indirect
 	github.com/docker/docker v20.10.2+incompatible
 	github.com/docker/spdystream v0.2.0
 	github.com/doug-martin/goqu/v9 v9.18.0
