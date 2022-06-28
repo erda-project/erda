@@ -115,3 +115,18 @@ func TestSetCollectorAddress(t *testing.T) {
 	agent.CallbackReporter.SetCollectorAddress("addr")
 	assert.Equal(t, "addr", reporter.CollectorAddr)
 }
+
+func Test_validate(t *testing.T) {
+	os.Setenv(EnvContextDir, "contextdir")
+	os.Setenv(EnvWorkDir, "workdir")
+	os.Setenv(EnvMetaFile, "metafile")
+	os.Setenv(EnvUploadDir, "uploaddir")
+	agent := &Agent{
+		Arg: &AgentArg{},
+	}
+	agent.validate()
+	assert.Equal(t, "contextdir", agent.EasyUse.ContainerContext)
+	assert.Equal(t, "workdir", agent.EasyUse.ContainerWd)
+	assert.Equal(t, "metafile", agent.EasyUse.ContainerMetaFile)
+	assert.Equal(t, "uploaddir", agent.EasyUse.ContainerUploadDir)
+}

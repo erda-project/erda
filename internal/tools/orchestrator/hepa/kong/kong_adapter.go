@@ -17,6 +17,7 @@ package kong
 import (
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -68,7 +69,7 @@ func newKongAdapter(kongAddr string, client *http.Client) KongAdapter {
 }
 
 func NewKongAdapter(kongAddr string) KongAdapter {
-	client := &http.Client{}
+	client := &http.Client{Timeout: time.Second * 30}
 	if config.ServerConf.KongDebug {
 		return newKongAdapter(config.ServerConf.KongDebugAddr, client)
 	}

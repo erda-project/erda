@@ -12,23 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package core_services
+package resource
 
 import (
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/pkg/parser/diceyml"
+	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
-var CMDB_ORG_CHANGE = apis.ApiSpec{
-	Path:         "/api/orgs/actions/change-current-org",
-	BackendPath:  "/api/orgs/actions/switch",
-	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
-	Scheme:       "http",
-	Method:       "POST",
-	CheckLogin:   true,
-	CheckToken:   true,
-	IsOpenAPI:    true,
-	RequestType:  apistructs.OrgChangeRequest{},
-	ResponseType: apistructs.OrgChangeResponse{},
-	Doc:          "summary: 切换组织",
+type MockResource struct{}
+
+func (m *MockResource) CalculatePipelineResources(pipelineYml *pipelineyml.PipelineYml, p *spec.Pipeline) (*apistructs.PipelineAppliedResources, error) {
+	return &apistructs.PipelineAppliedResources{}, nil
+}
+
+func (m *MockResource) CalculateNormalTaskResources(action *pipelineyml.Action, actionDefine *diceyml.Job) apistructs.PipelineAppliedResources {
+	return apistructs.PipelineAppliedResources{}
 }

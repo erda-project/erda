@@ -23,7 +23,8 @@ import (
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -34,14 +35,21 @@ import (
 )
 
 func (c *Client) watchClusterCredential(ctx context.Context) error {
-	var (
-		retryWatcher *watchtools.RetryWatcher
-		err          error
-	)
+	var retryWatcher *watchtools.RetryWatcher
+
+	rc, err := rest.InClusterConfig()
+	if err != nil {
+		return fmt.Errorf("get incluster config error: %v", err)
+	}
+
+	cs, err := kubernetes.NewForConfig(rc)
+	if err != nil {
+		return fmt.Errorf("create clientset error: %v", err)
+	}
 
 	// Wait cluster credential secret ready.
 	for {
-		retryWatcher, err = getInClusterRetryWatcher(c.cfg.ErdaNamespace)
+		retryWatcher, err = c.getRetryWatcher(cs, c.cfg.ErdaNamespace)
 		if err != nil {
 			logrus.Errorf("get retry warcher, %v", err)
 		} else if retryWatcher != nil {
@@ -65,7 +73,8 @@ func (c *Client) watchClusterCredential(ctx context.Context) error {
 		case event := <-retryWatcher.ResultChan():
 			sec, ok := event.Object.(*corev1.Secret)
 			if !ok {
-				logrus.Errorf("illegal secret object, igonre")
+				logrus.Errorf("illegal secret object, igonre, content: %+v", event.Object)
+				time.Sleep(time.Second)
 				continue
 			}
 
@@ -118,40 +127,38 @@ func (c *Client) getAccessKey() string {
 	return c.accessKey
 }
 
-func getInClusterRetryWatcher(ns string) (*watchtools.RetryWatcher, error) {
-	rc, err := rest.InClusterConfig()
+func (c *Client) getRetryWatcher(cs kubernetes.Interface, ns string) (*watchtools.RetryWatcher, error) {
+	selector, err := fields.ParseSelector(fmt.Sprintf("metadata.name=%s", apistructs.ErdaClusterCredential))
 	if err != nil {
-		return nil, fmt.Errorf("get incluster config error: %v", err)
-	}
-
-	cs, err := kubernetes.NewForConfig(rc)
-	if err != nil {
-		return nil, fmt.Errorf("create clientset error: %v", err)
+		return nil, fmt.Errorf("parse selector error: %v", err)
 	}
 
 	// Get or create secret
-	secInit, err := cs.CoreV1().Secrets(ns).Get(context.Background(), apistructs.ErdaClusterCredential, v1.GetOptions{})
-	if err != nil {
-		if !k8serrors.IsNotFound(err) {
-			return nil, fmt.Errorf("get secret error: %v", err)
-		}
-		// try to create init cluster credential secret
-		secInit, err = cs.CoreV1().Secrets(ns).Create(context.Background(), &corev1.Secret{
-			ObjectMeta: v1.ObjectMeta{Name: apistructs.ErdaClusterCredential},
-			Data:       map[string][]byte{apistructs.ClusterAccessKey: []byte("init")},
-		}, v1.CreateOptions{})
+	secInit, err := cs.CoreV1().Secrets(ns).List(context.Background(), metav1.ListOptions{
+		FieldSelector: selector.String(),
+	})
+	if err != nil && !k8serrors.IsNotFound(err) {
+		return nil, fmt.Errorf("get init secret list error: %v", err)
+	}
 
-		if err != nil {
-			return nil, fmt.Errorf("create init cluster credential secret error: %v", err)
+	// load initial secret
+	if secInit != nil && len(secInit.Items) > 0 {
+		initData, ok := secInit.Items[0].Data[apistructs.ClusterAccessKey]
+		if !ok {
+			logrus.Warn("no valid cluster access key was got")
+		} else {
+			logrus.Infof("load initial cluster access key, content %s", string(initData))
+			c.setAccessKey(string(initData))
 		}
+	} else {
+		logrus.Warn("no valid cluster access key was got")
 	}
 
 	// create retry watcher
 	retryWatcher, err := watchtools.NewRetryWatcher(secInit.ResourceVersion, &cache.ListWatch{
-		WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
-			return cs.CoreV1().Secrets(ns).Watch(context.Background(), v1.ListOptions{
-				FieldSelector: fmt.Sprintf("metadata.name=%s", apistructs.ErdaClusterCredential),
-			})
+		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
+			options.FieldSelector = selector.String()
+			return cs.CoreV1().Secrets(ns).Watch(context.Background(), options)
 		},
 	})
 

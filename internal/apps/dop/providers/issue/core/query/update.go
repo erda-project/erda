@@ -260,6 +260,7 @@ func validPlanTime(req *pb.UpdateIssueRequest, issue *dao.Issue) error {
 	return nil
 }
 
+// Convert to local time for comparing date without location, timestamppb uses UTC different with db global time zone.
 func asTime(s *string) *time.Time {
 	if s == nil || *s == "" {
 		return nil
@@ -268,7 +269,8 @@ func asTime(s *string) *time.Time {
 	if err != nil {
 		return nil
 	}
-	return &t
+	localTime := t.Local()
+	return &localTime
 }
 
 // GetChangedFields 从 IssueUpdateRequest 中找出需要更新(不为空)的字段

@@ -53,13 +53,8 @@ func (i *IssueService) AddIssueRelation(ctx context.Context, req *pb.AddIssueRel
 		return nil, apierrors.ErrCreateIssueRelation.AlreadyExists()
 	}
 
-	if req.Type == IssueRelationInclusion {
-		if err := i.ValidIssueRelationType(req.IssueID, pb.IssueTypeEnum_REQUIREMENT.String()); err != nil {
-			return nil, err
-		}
-		if err := i.ValidIssueRelationTypes(req.RelatedIssues, []string{pb.IssueTypeEnum_REQUIREMENT.String(), pb.IssueTypeEnum_BUG.String()}); err != nil {
-			return nil, err
-		}
+	if err := i.validateAddIssueRelation(req); err != nil {
+		return nil, err
 	}
 	issueRels := make([]dao.IssueRelation, 0, len(req.RelatedIssues))
 	for _, i := range req.RelatedIssues {
@@ -221,12 +216,29 @@ func (i *IssueService) ValidIssueRelationTypes(ids []uint64, issueTypes []string
 	for _, i := range ids {
 		issueIDs = append(issueIDs, int64(i))
 	}
-	issues, err := i.db.ListIssue(pb.IssueListRequest{IDs: issueIDs, Type: issueTypes})
+	issues, err := i.db.ListIssue(pb.IssueListRequest{IDs: issueIDs})
 	if err != nil {
 		return err
 	}
-	if len(issues) > 0 {
-		return fmt.Errorf("issue ids %v contains invalid type", ids)
+	for _, i := range issues {
+		if !strutil.Exist(issueTypes, i.Type) {
+			return fmt.Errorf("issue ids %v contains id %v invalid type %s", ids, i.ID, i.Type)
+		}
+	}
+	return nil
+}
+
+func (i *IssueService) validateAddIssueRelation(req *pb.AddIssueRelationRequest) error {
+	if req == nil {
+		return fmt.Errorf("empty relation request")
+	}
+	if req.Type == IssueRelationInclusion {
+		if err := i.ValidIssueRelationType(req.IssueID, pb.IssueTypeEnum_REQUIREMENT.String()); err != nil {
+			return err
+		}
+		if err := i.ValidIssueRelationTypes(req.RelatedIssues, []string{pb.IssueTypeEnum_TASK.String(), pb.IssueTypeEnum_BUG.String()}); err != nil {
+			return err
+		}
 	}
 	return nil
 }

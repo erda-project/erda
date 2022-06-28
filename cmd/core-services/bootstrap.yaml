@@ -47,3 +47,5 @@ erda.core.messenger.notifychannel:
 audit:
 
 erda.core.token:
+
+erda.core.org:

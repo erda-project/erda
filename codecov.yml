@@ -3,12 +3,12 @@ codecov:
   notify:
     wait_for_ci: false
 
-comment:                  # this is a top-level key
+comment: # this is a top-level key
   layout: "reach, diff, flags, files"
   behavior: default
-  require_changes: false  # if true: only post the comment if coverage changes
-  require_base: no        # [yes :: must have a base report to post]
-  require_head: yes       # [yes :: must have a head report to post]
+  require_changes: false   # if true: only post the comment if coverage changes
+  require_base: false      # [yes :: must have a base report to post]
+  require_head: false      # [yes :: must have a head report to post]
 #  branches:               # branch names that can post comment
 
 coverage:
@@ -44,3 +44,4 @@ ignore:
   - "internal/**/dao"
   - "bundle"
   - "api/proto-go"
+  - "internal/tools/openapi/legacy/api/apis/**/*.go"

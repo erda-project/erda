@@ -12,21 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package monitor
+package db
 
 import (
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
+	"github.com/pkg/errors"
+
+	"github.com/erda-project/erda/internal/core/legacy/dao"
 )
 
-var MONITOR_ORG_REPORT_TASK_DELETE = apis.ApiSpec{
-	Path:        "/api/org/report/tasks/<id>",
-	BackendPath: "/api/org/report/tasks/<id>",
-	Host:        "monitor.marathon.l4lb.thisdcos.directory:7096",
-	Scheme:      "http",
-	Method:      "DELETE",
-	CheckLogin:  true,
-	CheckToken:  true,
-	Doc:         "summary: 删除企业报表任务详情",
-	Audit:       auditOperateOrgReportTask(apistructs.DeleteOrgReportTasks, "delete"),
+type DBClient struct {
+	*dao.DBClient
 }
+
+var (
+	ErrNotFoundOrg = errors.New("org not found")
+)

@@ -27,6 +27,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/actionmgr"
+	resourcemgr "github.com/erda-project/erda/internal/tools/pipeline/providers/resource"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
@@ -111,7 +112,7 @@ stages:
 		return nil
 	})
 	defer pm.Unpatch()
-	svc := &PipelineSvc{actionMgr: &mockActionAgent{}, secret: &mockSecret{}, dbClient: dbClient}
+	svc := &PipelineSvc{actionMgr: &mockActionAgent{}, secret: &mockSecret{}, dbClient: dbClient, resource: &resourcemgr.MockResource{}}
 	err := svc.PreCheck(pWithDisableTasks, stages, "1", false)
 	assert.NoError(t, err)
 }

@@ -61,6 +61,7 @@ type OpusVersion struct {
 	Common
 
 	OpusID        string `gorm:"opus_id"`
+	Name          string `gorm:"name"`
 	Version       string `gorm:"version"`
 	Summary       string `gorm:"summary"`
 	SummaryI18n   string `gorm:"summary_i18n"`

@@ -36,10 +36,13 @@ import (
 	"github.com/erda-project/erda/internal/tools/pipeline/pipengine/pvolumes"
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/container_provider"
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/containers"
+	"github.com/erda-project/erda/internal/tools/pipeline/pkg/env"
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/errorsx"
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/taskerror"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/actionmgr"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/edgepipeline_register"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/reconciler/taskrun"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/resource"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/apierrors"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/expression"
@@ -218,13 +221,6 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 	task.Extra.UUID = fmt.Sprintf("pipeline-task-%d", task.ID)
 	task.Extra.EncryptSecretKeys = p.Snapshot.EncryptSecretKeys
 
-	const (
-		PipelineTaskLogID = "PIPELINE_TASK_LOG_ID"
-		PipelineDebugMode = "PIPELINE_DEBUG_MODE"
-		AgentEnvPrefix    = "ACTIONAGENT_"
-		PipelineTimeBegin = "PIPELINE_TIME_BEGIN_TIMESTAMP"
-	)
-
 	// --- envs ---
 	if task.Extra.PrivateEnvs == nil {
 		task.Extra.PrivateEnvs = make(map[string]string)
@@ -238,18 +234,16 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 	}
 	// action params -> envs
 	for k, v := range action.Params {
-		newK := strings.Replace(strings.Replace(strings.ToUpper(k), ".", "_", -1), "-", "_", -1)
-		task.Extra.PrivateEnvs["ACTION_"+newK] = fmt.Sprintf("%v", v)
+		task.Extra.PrivateEnvs[env.GenEnvKeyWithPrefix(actionagent.EnvActionParamPrefix, k)] = fmt.Sprintf("%v", v)
 	}
 	// secrets -> envs
 	for k, v := range p.Snapshot.Secrets {
-		newK := strings.Replace(strings.Replace(strings.ToUpper(k), ".", "_", -1), "-", "_", -1)
-		task.Extra.PrivateEnvs["PIPELINE_SECRET_"+newK] = v
-		task.Extra.PrivateEnvs[newK] = v
+		task.Extra.PrivateEnvs[env.GenEnvKey(k)] = v
+		task.Extra.PrivateEnvs[env.GenEnvKeyWithPrefix(env.EnvPipelineSecretPrefix, k)] = v
 	}
 	// platform secrets -> envs
 	for k, v := range p.Snapshot.PlatformSecrets {
-		newK := strings.Replace(strings.Replace(strings.ToUpper(k), ".", "_", -1), "-", "_", -1)
+		newK := env.GenEnvKey(k)
 		// snippet 逻辑，可能之前 task 创建的时候给自己设置了 appID 和 appName
 		if existContinuePrivateEnv(task.Extra.PrivateEnvs, newK) {
 			continue
@@ -260,21 +254,21 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 	for k, v := range agentDiceYmlJob.Envs {
 		// enable agent debug mode at dice.yml envs.
 		// If set to privateEnvs, cannot set to debug mode if agent invoke platform to fetch privateEnvs failed.
-		task.Extra.PublicEnvs[AgentEnvPrefix+k] = v
+		task.Extra.PublicEnvs[actionagent.EnvPrefix+k] = v
 	}
-	task.Extra.PublicEnvs["PIPELINE_ID"] = strconv.FormatUint(p.ID, 10)
-	task.Extra.PublicEnvs["PIPELINE_TASK_ID"] = fmt.Sprintf("%v", task.ID)
-	task.Extra.PublicEnvs["PIPELINE_TASK_NAME"] = task.Name
-	task.Extra.PublicEnvs[PipelineTaskLogID] = task.Extra.UUID
-	task.Extra.PublicEnvs[PipelineDebugMode] = "false"
-	task.Extra.PrivateEnvs[actionagent.CONTEXTDIR] = pvolumes.ContainerContextDir
-	task.Extra.PrivateEnvs[actionagent.WORKDIR] = pvolumes.MakeTaskContainerWorkdir(task.Name)
-	task.Extra.PrivateEnvs[actionagent.METAFILE] = pvolumes.MakeTaskContainerMetafilePath(task.Name)
-	task.Extra.PrivateEnvs[actionagent.UPLOADDIR] = pvolumes.ContainerUploadDir
-	task.Extra.PublicEnvs[pvolumes.EnvKeyMesosFetcherURI] = pvolumes.MakeMesosFetcherURI4AliyunRegistrySecret(mountPoint)
-	task.Extra.PublicEnvs[PipelineTimeBegin] = strconv.FormatInt(time.Now().Unix(), 10)
+	task.Extra.PublicEnvs[env.PublicEnvPipelineID] = strconv.FormatUint(p.ID, 10)
+	task.Extra.PublicEnvs[env.PublicEnvTaskID] = fmt.Sprintf("%v", task.ID)
+	task.Extra.PublicEnvs[env.PublicEnvTaskName] = task.Name
+	task.Extra.PublicEnvs[env.PublicEnvTaskLogID] = task.Extra.UUID
+	task.Extra.PublicEnvs[env.PublicEnvPipelineDebugMode] = "false"
+	task.Extra.PrivateEnvs[actionagent.EnvContextDir] = pvolumes.ContainerContextDir
+	task.Extra.PrivateEnvs[actionagent.EnvWorkDir] = pvolumes.MakeTaskContainerWorkdir(task.Name)
+	task.Extra.PrivateEnvs[actionagent.EnvMetaFile] = pvolumes.MakeTaskContainerMetafilePath(task.Name)
+	task.Extra.PrivateEnvs[actionagent.EnvUploadDir] = pvolumes.ContainerUploadDir
+	task.Extra.PublicEnvs[pvolumes.EnvMesosFetcherURI] = pvolumes.MakeMesosFetcherURI4AliyunRegistrySecret(mountPoint)
+	task.Extra.PublicEnvs[env.PublicEnvPipelineTimeBegin] = strconv.FormatInt(time.Now().Unix(), 10)
 	if p.TimeBegin != nil {
-		task.Extra.PublicEnvs[PipelineTimeBegin] = strconv.FormatInt(p.TimeBegin.Unix(), 10)
+		task.Extra.PublicEnvs[env.PublicEnvPipelineTimeBegin] = strconv.FormatInt(p.TimeBegin.Unix(), 10)
 	}
 	// handle dice openapi
 	for k, v := range task.Extra.PrivateEnvs {
@@ -349,17 +343,17 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 	}
 
 	// resource 相关环境变量
-	task.Extra.PublicEnvs["PIPELINE_LIMITED_CPU"] = fmt.Sprintf("%g", task.Extra.RuntimeResource.MaxCPU)
-	task.Extra.PublicEnvs["PIPELINE_LIMITED_MEM"] = fmt.Sprintf("%g", task.Extra.RuntimeResource.MaxMemory)
-	task.Extra.PublicEnvs["PIPELINE_LIMITED_DISK"] = fmt.Sprintf("%g", task.Extra.RuntimeResource.Disk)
-	task.Extra.PublicEnvs["PIPELINE_REQUESTED_CPU"] = fmt.Sprintf("%g", task.Extra.RuntimeResource.CPU)
-	task.Extra.PublicEnvs["PIPELINE_REQUESTED_MEM"] = fmt.Sprintf("%g", task.Extra.RuntimeResource.Memory)
-	task.Extra.PublicEnvs["PIPELINE_REQUESTED_DISK"] = fmt.Sprintf("%g", task.Extra.RuntimeResource.Disk)
+	task.Extra.PublicEnvs[resource.EnvPipelineLimitedCPU] = fmt.Sprintf("%g", task.Extra.RuntimeResource.MaxCPU)
+	task.Extra.PublicEnvs[resource.EnvPipelineLimitedMem] = fmt.Sprintf("%g", task.Extra.RuntimeResource.MaxMemory)
+	task.Extra.PublicEnvs[resource.EnvPipelineLimitedDisk] = fmt.Sprintf("%g", task.Extra.RuntimeResource.Disk)
+	task.Extra.PublicEnvs[resource.EnvPipelineRequestedCPU] = fmt.Sprintf("%g", task.Extra.RuntimeResource.CPU)
+	task.Extra.PublicEnvs[resource.EnvPipelineRequestedMem] = fmt.Sprintf("%g", task.Extra.RuntimeResource.Memory)
+	task.Extra.PublicEnvs[resource.EnvPipelineRequestedDisk] = fmt.Sprintf("%g", task.Extra.RuntimeResource.Disk)
 
 	// edge pipeline envs
 	edgePipelineEnvs := pre.EdgeRegister.GetEdgePipelineEnvs()
-	task.Extra.PublicEnvs[apistructs.EnvIsEdgePipeline] = strconv.FormatBool(pre.EdgeRegister.IsEdge())
-	task.Extra.PublicEnvs[apistructs.EnvPipelineAddr] = edgePipelineEnvs.Get(apistructs.ClusterManagerDataKeyPipelineAddr)
+	task.Extra.PublicEnvs[edgepipeline_register.EnvIsEdgePipeline] = strconv.FormatBool(pre.EdgeRegister.IsEdge())
+	task.Extra.PublicEnvs[edgepipeline_register.EnvEdgePipelineAddr] = edgePipelineEnvs.Get(apistructs.ClusterManagerDataKeyPipelineAddr)
 
 	// 条件表达式存在
 	if jump := condition(task); jump {
@@ -469,25 +463,25 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 		}
 		if isNewWorkspace {
 			// action带有new_workspace标签,使用独立目录
-			task.Extra.PrivateEnvs[actionagent.WORKDIR] = pvolumes.MakeTaskContainerWorkdir(task.Name)
+			task.Extra.PrivateEnvs[actionagent.EnvWorkDir] = pvolumes.MakeTaskContainerWorkdir(task.Name)
 		} else {
 			if len(p.Extra.TaskWorkspaces) > 0 {
 				// 使用现有目录
-				task.Extra.PrivateEnvs[actionagent.WORKDIR] = pvolumes.MakeTaskContainerWorkdir(p.Extra.TaskWorkspaces[0])
+				task.Extra.PrivateEnvs[actionagent.EnvWorkDir] = pvolumes.MakeTaskContainerWorkdir(p.Extra.TaskWorkspaces[0])
 			} else {
 				// 没有有效的workspace,使用根目录
-				task.Extra.PrivateEnvs[actionagent.WORKDIR] = pvolumes.MakeTaskContainerWorkdir("")
+				task.Extra.PrivateEnvs[actionagent.EnvWorkDir] = pvolumes.MakeTaskContainerWorkdir("")
 			}
 		}
 		if task.Extra.Action.Workspace != "" {
 			// 显式定义了workdir,使用指定值
-			task.Extra.PrivateEnvs[actionagent.WORKDIR] = pvolumes.MakeTaskContainerWorkdir(task.Extra.Action.Workspace)
+			task.Extra.PrivateEnvs[actionagent.EnvWorkDir] = pvolumes.MakeTaskContainerWorkdir(task.Extra.Action.Workspace)
 		}
 
 		for _, namespace := range task.Extra.Action.Namespaces {
 			task.Context.OutStorages = append(task.Context.OutStorages, pvolumes.GenerateFakeVolume(
 				namespace,
-				task.Extra.PrivateEnvs[actionagent.WORKDIR],
+				task.Extra.PrivateEnvs[actionagent.EnvWorkDir],
 				&p.Extra.ShareVolumeID))
 		}
 

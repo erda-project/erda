@@ -18,7 +18,7 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
-	"github.com/erda-project/erda-proto-go/admin/pb"
+	"github.com/erda-project/erda-proto-go/pkg/dingtalktest/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
@@ -46,16 +46,8 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	return nil
 }
 
-func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
-	switch {
-	case ctx.Service() == "erda.admin.DingTalkTestService" || ctx.Type() == pb.DingTalkTestServiceServerType() || ctx.Type() == pb.DingTalkTestServiceHandlerType():
-		return p.dingTalkTestService
-	}
-	return p
-}
-
 func init() {
-	servicehub.Register("service.dingtalk-test", &servicehub.Spec{
+	servicehub.Register("erda.pkg.dingtalktest", &servicehub.Spec{
 		Services:             pb.ServiceNames(),
 		Types:                pb.Types(),
 		OptionalDependencies: []string{"service-register"},

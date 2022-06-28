@@ -415,19 +415,15 @@ func (p *ProjectPipelineService) createCronIfNotExist(definition *dpb.PipelineDe
 	if err != nil {
 		return err
 	}
+	if len(crons.Data) == 1 && crons.Data[0].PipelineDefinitionID == definition.ID {
+		return nil
+	}
 
-	for _, cron := range crons.Data {
-		if cron.PipelineDefinitionID == definition.ID {
-			continue
-		}
-
-		createV2 := extra.CreateRequest
-		createV2.DefinitionID = definition.ID
-		_, err = p.bundle.CreatePipeline(createV2)
-		if err != nil {
-			return fmt.Errorf("CreatePipeline  error %v req %v", err, createV2)
-		}
-		break
+	createV2 := extra.CreateRequest
+	createV2.DefinitionID = definition.ID
+	_, err = p.bundle.CreatePipeline(createV2)
+	if err != nil {
+		return fmt.Errorf("failed to CreatePipeline, err: %v", err)
 	}
 
 	return nil
@@ -821,6 +817,16 @@ func (p *ProjectPipelineService) ListExecHistory(ctx context.Context, params *pb
 		return nil, apierrors.ErrListExecHistoryProjectPipeline.InternalError(err)
 	}
 
+	pipelinePageListRequest := makePipelinePageListRequest(params, jsonValue)
+
+	data, err := p.bundle.PageListPipeline(pipelinePageListRequest)
+	if err != nil {
+		return nil, apierrors.ErrListExecHistoryProjectPipeline.InternalError(err)
+	}
+	return makeListPipelineExecHistoryResponse(data), nil
+}
+
+func makePipelinePageListRequest(params *pb.ListPipelineExecHistoryRequest, jsonValue []byte) apistructs.PipelinePageListRequest {
 	var startTime, endTime int64
 	if params.StartTimeBegin != nil {
 		startTime = (*params.StartTimeBegin).AsTime().Unix()
@@ -828,6 +834,7 @@ func (p *ProjectPipelineService) ListExecHistory(ctx context.Context, params *pb
 	if params.StartTimeEnd != nil {
 		endTime = (*params.StartTimeEnd).AsTime().Unix()
 	}
+
 	var pipelinePageListRequest = apistructs.PipelinePageListRequest{
 		PageNum:                             int(params.PageNo),
 		PageSize:                            int(params.PageSize),
@@ -844,12 +851,12 @@ func (p *ProjectPipelineService) ListExecHistory(ctx context.Context, params *pb
 			pipelinePageListRequest.MustMatchLabelsQueryParams = append(pipelinePageListRequest.MustMatchLabelsQueryParams, fmt.Sprintf("%v=%v", apistructs.LabelRunUserID, v))
 		}
 	}
-
-	data, err := p.bundle.PageListPipeline(pipelinePageListRequest)
-	if err != nil {
-		return nil, apierrors.ErrListExecHistoryProjectPipeline.InternalError(err)
+	if len(params.Branches) > 0 {
+		for _, v := range params.Branches {
+			pipelinePageListRequest.MustMatchLabelsQueryParams = append(pipelinePageListRequest.MustMatchLabelsQueryParams, fmt.Sprintf("%v=%v", apistructs.LabelBranch, v))
+		}
 	}
-	return makeListPipelineExecHistoryResponse(data), nil
+	return pipelinePageListRequest
 }
 
 func makeListPipelineExecHistoryResponse(data *apistructs.PipelinePageListData) *pb.ListPipelineExecHistoryResponse {

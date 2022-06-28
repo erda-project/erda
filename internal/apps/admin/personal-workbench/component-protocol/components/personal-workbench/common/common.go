@@ -62,6 +62,7 @@ const (
 	OpValTargetProjAllIssue             = "projectAllIssue"
 	OpValTargetProjApps                 = "projectApps"
 	OpValTargetMspServiceList           = "mspServiceList"
+	OpValTargetMspOverview              = "mspOverview"
 	OpValTargetMspMonitorServiceAnalyze = "mspMonitorServiceAnalyze"
 	OpValTargetMicroTrace               = "microTrace"
 	OpValTargetMspLogAnalyze            = "mspLogAnalyze"

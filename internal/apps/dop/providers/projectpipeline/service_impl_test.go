@@ -26,10 +26,14 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda-infra/base/logs"
+	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
+	dpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
+	ppb "github.com/erda-project/erda-proto-go/core/pipeline/pb"
 	spb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
 	"github.com/erda-project/erda-proto-go/dop/projectpipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/apps/dop/providers/projectpipeline/deftype"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -899,6 +903,241 @@ func Test_makeListPipelineExecHistoryResponse(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := makeListPipelineExecHistoryResponse(tt.args.data); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("makeListPipelineExecHistoryResponse() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+type MockPipelineCron struct {
+}
+
+func (m MockPipelineCron) CronCreate(ctx context.Context, request *cronpb.CronCreateRequest) (*cronpb.CronCreateResponse, error) {
+	panic("implement me")
+}
+
+func (m MockPipelineCron) CronPaging(ctx context.Context, request *cronpb.CronPagingRequest) (*cronpb.CronPagingResponse, error) {
+	if strutil.InSlice("pipeline1.yml", request.YmlNames) {
+		return &cronpb.CronPagingResponse{
+			Total: 1,
+			Data: []*ppb.Cron{{
+				ID:                   1,
+				PipelineDefinitionID: "1",
+			}},
+		}, nil
+	} else if strutil.InSlice("pipeline2.yml", request.YmlNames) {
+		return &cronpb.CronPagingResponse{
+			Total: 0,
+			Data:  nil,
+		}, nil
+	}
+
+	return nil, fmt.Errorf("failed")
+}
+
+func (m MockPipelineCron) CronStart(ctx context.Context, request *cronpb.CronStartRequest) (*cronpb.CronStartResponse, error) {
+	panic("implement me")
+}
+
+func (m MockPipelineCron) CronStop(ctx context.Context, request *cronpb.CronStopRequest) (*cronpb.CronStopResponse, error) {
+	panic("implement me")
+}
+
+func (m MockPipelineCron) CronDelete(ctx context.Context, request *cronpb.CronDeleteRequest) (*cronpb.CronDeleteResponse, error) {
+	panic("implement me")
+}
+
+func (m MockPipelineCron) CronGet(ctx context.Context, request *cronpb.CronGetRequest) (*cronpb.CronGetResponse, error) {
+	panic("implement me")
+}
+
+func (m MockPipelineCron) CronUpdate(ctx context.Context, request *cronpb.CronUpdateRequest) (*cronpb.CronUpdateResponse, error) {
+	panic("implement me")
+}
+
+func TestProjectPipelineService_createCronIfNotExist(t *testing.T) {
+	type fields struct {
+		bundle       *bundle.Bundle
+		PipelineCron cronpb.CronServiceServer
+	}
+	type args struct {
+		definition          *dpb.PipelineDefinition
+		projectPipelineType ProjectSourceType
+	}
+
+	mockPipelineCron := &MockPipelineCron{}
+
+	bdl := &bundle.Bundle{}
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "CreatePipeline", func(dbl *bundle.Bundle, req interface{}) (*apistructs.PipelineDTO, error) {
+		return nil, nil
+	})
+	defer monkey.UnpatchAll()
+
+	sourceType1 := NewProjectSourceType(deftype.ErdaProjectPipelineType.String())
+	sourceType1.(*ErdaProjectSourceType).PipelineCreateRequestV2 = `
+{
+    "createRequest": {
+        "pipelineYmlName": "pipeline1.yml",
+        "pipelineSource": "dice"
+    },
+    "runParams": null
+}`
+	sourceType2 := NewProjectSourceType(deftype.ErdaProjectPipelineType.String())
+	sourceType2.(*ErdaProjectSourceType).PipelineCreateRequestV2 = `
+{
+    "createRequest": {
+        "pipelineYmlName": "pipeline2.yml",
+        "pipelineSource": "dice"
+    },
+    "runParams": null
+}`
+	sourceType3 := NewProjectSourceType(deftype.ErdaProjectPipelineType.String())
+	sourceType3.(*ErdaProjectSourceType).PipelineCreateRequestV2 = `
+{
+    "createRequest": {
+        "pipelineYmlName": "pipeline3.yml",
+        "pipelineSource": "dice"
+    },
+    "runParams": null
+}`
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "test with exist",
+			fields: fields{
+				bundle:       bdl,
+				PipelineCron: mockPipelineCron,
+			},
+			args: args{
+				definition: &dpb.PipelineDefinition{
+					ID: "1",
+				},
+				projectPipelineType: sourceType1,
+			},
+			wantErr: false,
+		},
+		{
+			name: "test with not exist",
+			fields: fields{
+				bundle:       bdl,
+				PipelineCron: mockPipelineCron,
+			},
+			args: args{
+				definition: &dpb.PipelineDefinition{
+					ID: "1",
+				},
+				projectPipelineType: sourceType2,
+			},
+			wantErr: false,
+		},
+		{
+			name: "test with error",
+			fields: fields{
+				bundle:       bdl,
+				PipelineCron: mockPipelineCron,
+			},
+			args: args{
+				definition: &dpb.PipelineDefinition{
+					ID: "1",
+				},
+				projectPipelineType: sourceType3,
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &ProjectPipelineService{
+				bundle:       tt.fields.bundle,
+				PipelineCron: tt.fields.PipelineCron,
+			}
+			if err := p.createCronIfNotExist(tt.args.definition, tt.args.projectPipelineType); (err != nil) != tt.wantErr {
+				t.Errorf("createCronIfNotExist() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func Test_makePipelinePageListRequest(t *testing.T) {
+	type args struct {
+		params    *pb.ListPipelineExecHistoryRequest
+		jsonValue []byte
+	}
+	tests := []struct {
+		name string
+		args args
+		want apistructs.PipelinePageListRequest
+	}{
+		{
+			name: "test with make",
+			args: args{
+				params: &pb.ListPipelineExecHistoryRequest{
+					Name:           "pipeline.yml",
+					Executors:      nil,
+					AppNames:       []string{"erda"},
+					Statuses:       []string{"Success"},
+					PageNo:         1,
+					PageSize:       10,
+					StartTimeBegin: nil,
+					StartTimeEnd:   nil,
+					DescCols:       nil,
+					AscCols:        nil,
+					ProjectID:      0,
+					Branches:       []string{"master"},
+				},
+				jsonValue: nil,
+			},
+			want: apistructs.PipelinePageListRequest{
+				CommaBranches:                       "",
+				CommaSources:                        "",
+				CommaYmlNames:                       "",
+				CommaStatuses:                       "",
+				AppID:                               uint64(0),
+				Branches:                            nil,
+				Sources:                             nil,
+				AllSources:                          true,
+				YmlNames:                            nil,
+				Statuses:                            []string{"Success"},
+				NotStatuses:                         nil,
+				TriggerModes:                        nil,
+				ClusterNames:                        nil,
+				IncludeSnippet:                      false,
+				StartTimeBegin:                      time.Time{},
+				StartTimeBeginTimestamp:             int64(0),
+				StartTimeBeginCST:                   "",
+				EndTimeBegin:                        time.Time{},
+				EndTimeBeginTimestamp:               int64(0),
+				EndTimeBeginCST:                     "",
+				StartTimeCreated:                    time.Time{},
+				StartTimeCreatedTimestamp:           int64(0),
+				EndTimeCreated:                      time.Time{},
+				EndTimeCreatedTimestamp:             int64(0),
+				MustMatchLabelsJSON:                 "",
+				MustMatchLabelsQueryParams:          []string{"branch=master"},
+				MustMatchLabels:                     nil,
+				AnyMatchLabelsJSON:                  "",
+				AnyMatchLabelsQueryParams:           nil,
+				AnyMatchLabels:                      nil,
+				PageNum:                             1,
+				PageNo:                              0,
+				PageSize:                            10,
+				LargePageSize:                       false,
+				CountOnly:                           false,
+				SelectCols:                          nil,
+				AscCols:                             nil,
+				DescCols:                            nil,
+				PipelineDefinitionRequest:           nil,
+				PipelineDefinitionRequestJSONBase64: "",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := makePipelinePageListRequest(tt.args.params, tt.args.jsonValue); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("makePipelinePageListRequest() = %v, want %v", got, tt.want)
 			}
 		})
 	}
