@@ -21,6 +21,7 @@ import (
 	"bou.ke/monkey"
 	"github.com/alecthomas/assert"
 
+	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
@@ -69,6 +70,7 @@ func Test_provider_CreateIssueEvent(t *testing.T) {
 				BaseModel: dbengine.BaseModel{
 					ID: 1,
 				},
+				Type: "TASK",
 			}, nil
 		},
 	)
@@ -116,9 +118,21 @@ func Test_provider_CreateIssueEvent(t *testing.T) {
 	)
 	defer p6.Unpatch()
 
+	p7 := monkey.Patch(getDefaultContentForMsgSending,
+		func(ist string, param common.ISTParam, tran i18n.Translator, locale string) (string, error) {
+			return "1", nil
+		},
+	)
+	defer p7.Unpatch()
+
 	p := &provider{db: db, bdl: bdl}
 	err := p.CreateIssueEvent(&common.IssueStreamCreateRequest{
 		IssueID: 1,
+	})
+	assert.NoError(t, err)
+	err = p.CreateIssueEvent(&common.IssueStreamCreateRequest{
+		IssueID:    1,
+		StreamType: common.ISTChangeContent,
 	})
 	assert.NoError(t, err)
 }

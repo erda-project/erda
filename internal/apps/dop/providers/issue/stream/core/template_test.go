@@ -74,6 +74,20 @@ func TestGetDefaultContent(t *testing.T) {
 			want:    `状态自 "old" 迁移至 "new" mrCreated`,
 			wantErr: false,
 		},
+		{
+			args: args{
+				req: StreamTemplateRequest{
+					StreamType: common.ISTTransferState,
+					StreamParams: common.ISTParam{
+						CurrentState: "old",
+						NewState:     "new",
+						ReasonDetail: "mrCreated",
+					},
+				},
+			},
+			want:    `状态自 "old" 迁移至 "new" mrCreated`,
+			wantErr: false,
+		},
 	}
 
 	p := &provider{commonTran: &mockTranslator{}, I18n: &mockTranslator{}}
