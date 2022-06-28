@@ -6,6 +6,7 @@ import "google/api/annotations.proto";
 import "google/protobuf/struct.proto";
 import "core/hepa/hepa.proto";
 import "common/http.proto";
+import "common/openapi.proto";
 
 // +publish service:"hepa"
 service EndpointApiService {
@@ -94,6 +95,9 @@ service EndpointApiService {
   rpc ListInvalidEndpointApi(common.VoidRequest) returns(ListInvalidEndpointApiResp) {
     option(google.api.http) = {
       get: "/api/gateway/openapi/invalid-endpoints",
+    };
+    option(erda.common.openapi) = {
+      path: "/api/gateway/openapi/invalid-endpoints",
     };
   }
 
