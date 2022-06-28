@@ -99,13 +99,12 @@ message Runtime {
   repeated ErrorResponse errors = 13;
 }
 
-message GetRuntimeByIDReq {
+message CheckRuntimeExistReq {
   uint64 id = 1;
 }
 
-message GetRuntimeByIDResp {
-  common.Status status = 1;
-  RuntimeInspect data = 2;
+message CheckRuntimeExistResp {
+  bool ok = 1;
 }
 
 service RuntimeService {
@@ -115,7 +114,7 @@ service RuntimeService {
     };
   }
 
-  rpc GetRuntimeByID (GetRuntimeByIDReq) returns (GetRuntimeByIDResp) {}
+  rpc CheckRuntimeExist (CheckRuntimeExistReq) returns (CheckRuntimeExistResp) {}
 
   rpc DelRuntime (DelRuntimeRequest) returns (Runtime) {
     option (google.api.http) = {

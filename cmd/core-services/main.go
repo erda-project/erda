@@ -19,25 +19,6 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/pkg/common"
-
-	// providers
-	_ "github.com/erda-project/erda-infra/providers/grpcclient"
-	_ "github.com/erda-project/erda-infra/providers/pprof"
-	_ "github.com/erda-project/erda-infra/providers/redis"
-	_ "github.com/erda-project/erda-proto-go/core/pipeline/cms/client"
-	_ "github.com/erda-project/erda/internal/core/legacy"
-	_ "github.com/erda-project/erda/internal/core/legacy/providers/token"
-	_ "github.com/erda-project/erda/internal/core/legacy/services/dingtalk/api"
-	_ "github.com/erda-project/erda/internal/core/messenger/eventbox"
-	_ "github.com/erda-project/erda/internal/core/messenger/notify"
-	_ "github.com/erda-project/erda/internal/core/messenger/notify-channel"
-	_ "github.com/erda-project/erda/internal/core/messenger/notifygroup"
-
-	// infra
-	_ "github.com/erda-project/erda-infra/providers/grpcserver"
-	_ "github.com/erda-project/erda-infra/providers/httpserver"
-	_ "github.com/erda-project/erda-infra/providers/mysql"
-	_ "github.com/erda-project/erda-infra/providers/serviceregister"
 )
 
 //go:embed bootstrap.yaml

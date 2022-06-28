@@ -15,18 +15,16 @@
 package endpoint_api
 
 import (
-	"context"
-	"time"
-
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
-	commonPb "github.com/erda-project/erda-proto-go/common/pb"
 	"github.com/erda-project/erda-proto-go/core/hepa/endpoint_api/pb"
 
-	projPb "github.com/erda-project/erda-proto-go/core/services/project/pb"
+	_ "github.com/erda-project/erda-proto-go/core/project/client"
+	projPb "github.com/erda-project/erda-proto-go/core/project/pb"
+	_ "github.com/erda-project/erda-proto-go/orchestrator/runtime/client"
 	runtimePb "github.com/erda-project/erda-proto-go/orchestrator/runtime/pb"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common"
 	repositoryService "github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/service"
@@ -34,7 +32,6 @@ import (
 	zoneI "github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/zone/impl"
 	"github.com/erda-project/erda/pkg/common/apis"
 	perm "github.com/erda-project/erda/pkg/common/permission"
-	"github.com/erda-project/erda/pkg/time/ticker"
 )
 
 type config struct {
@@ -47,8 +44,8 @@ type provider struct {
 	Register           transport.Register
 	endpointApiService *endpointApiService
 	Perm               perm.Interface                 `autowired:"permission"`
-	projCli            projPb.ProjectServer           `autowired:"erda.core.service.project.Project"`        // todo: implement
-	runtimeCli         runtimePb.RuntimeServiceServer `autowired:"erda.orchestrator.runtime.RuntimeService"` // todo: implement
+	projCli            projPb.ProjectServer           `autowired:"erda.core.project.Project"`
+	runtimeCli         runtimePb.RuntimeServiceServer `autowired:"erda.orchestrator.runtime.RuntimeService"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -71,7 +68,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		upstreamApiService: upstreamApiService,
 		upstreamService:    upstreamService,
 	}
-	err := zoneI.NewGatewayZoneServiceImpl()
+	err = zoneI.NewGatewayZoneServiceImpl()
 	if err != nil {
 		return err
 	}
@@ -98,13 +95,13 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	return nil
 }
 
-func (p *provider) Run(ctx context.Context) error {
-	go ticker.New(time.Hour*24, func() (bool, error) {
-		_, err := p.endpointApiService.ClearInvalidEndpointApi(ctx, new(commonPb.VoidRequest))
-		return false, err
-	}).Run()
-	return nil
-}
+//func (p *provider) Run(ctx context.Context) error {
+//	go ticker.New(time.Hour*24, func() (bool, error) {
+//		_, err := p.endpointApiService.ClearInvalidEndpointApi(ctx, new(commonPb.VoidRequest))
+//		return false, err
+//	}).Run()
+//	return nil
+//}
 
 func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
 	switch {

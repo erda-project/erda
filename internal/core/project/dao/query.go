@@ -12,4 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package project
+package dao
+
+import (
+	"github.com/erda-project/erda/internal/core/project/model"
+)
+
+func GetProject(tx *TX, options ...Option) (*model.ErdaProject, bool, error) {
+	var project model.ErdaProject
+	options = append(options, NotSoftDeleted)
+	ok, err := tx.Get(&project, options...)
+	return &project, ok, err
+}

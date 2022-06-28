@@ -12,19 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package project
+package model
 
 import (
-	"context"
-
-	"github.com/erda-project/erda-proto-go/core/services/project/pb"
-	proj "github.com/erda-project/erda/internal/core/legacy/services/project"
+	"time"
 )
 
-type project struct {
-	service proj.Project
-}
-
-func (p project) GetProjectByID(ctx context.Context, req *pb.GetProjectByIDReq) (*pb.GetProjectByIDResp, error) {
-	panic("not implement")
+// BaseModel contains base fields for all models
+type BaseModel struct {
+	ID        int64     `json:"id" gorm:"primary_key"`
+	CreatedAt time.Time `json:"createdAt" gorm:"created_at"`
+	UpdatedAt time.Time `json:"updatedAt" gorm:"updated_at"`
 }

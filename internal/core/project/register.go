@@ -15,9 +15,5 @@
 package project
 
 import (
-	"github.com/erda-project/erda-infra/providers/mysql/v2"
+	_ "github.com/erda-project/erda-infra/providers/mysql/v2"
 )
-
-func GetProjectByID(id uint64)  {
-	v2.
-}

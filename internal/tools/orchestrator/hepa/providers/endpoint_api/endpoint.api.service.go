@@ -24,7 +24,7 @@ import (
 
 	commonPb "github.com/erda-project/erda-proto-go/common/pb"
 	"github.com/erda-project/erda-proto-go/core/hepa/endpoint_api/pb"
-	projPb "github.com/erda-project/erda-proto-go/core/services/project/pb"
+	projPb "github.com/erda-project/erda-proto-go/core/project/pb"
 	runtimePb "github.com/erda-project/erda-proto-go/orchestrator/runtime/pb"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/vars"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
@@ -35,6 +35,12 @@ import (
 	erdaErr "github.com/erda-project/erda/pkg/common/errors"
 )
 
+var (
+	invalidProject = "project not found"
+	invalidRuntime = "runtime not found"
+)
+
+// endpointApiService implements pb.EndpointApiServiceServer
 type endpointApiService struct {
 	projCli            projPb.ProjectServer
 	runtimeCli         runtimePb.RuntimeServiceServer
@@ -262,21 +268,24 @@ func (s *endpointApiService) ChangeEndpointRoot(ctx context.Context, req *pb.Cha
 	return
 }
 
-func (s *endpointApiService) ClearInvalidEndpointApi(ctx context.Context, _ *commonPb.VoidRequest) (*commonPb.VoidResponse, error) {
-	l := logrus.WithField("func", "*endpointApiService.ClearInvalidEndpointApi")
+func (s *endpointApiService) ListInvalidEndpointApi(ctx context.Context, _ *commonPb.VoidRequest) (*pb.ListInvalidEndpointApiResp, error) {
+	l := logrus.WithField("func", "ListInvalidEndpointApi")
 	// list all packages
-	service := endpoint_api.Service.Clone(ctx)
-	packages, err := service.ListAllPackages()
+	eas := endpoint_api.Service.Clone(ctx)
+	packages, err := eas.ListAllPackages()
 	if err != nil {
 		l.Warnln("failed to ListAllPackages")
 		return nil, err
 	}
 	if len(packages) == 0 {
 		l.Warnln("no packages found")
-		return new(commonPb.VoidResponse), nil
+		return new(pb.ListInvalidEndpointApiResp), nil
 	}
 
-	// delete the package if it's project is invalid
+	var result = pb.ListInvalidEndpointApiResp{Data: map[string]*pb.ListInvalidEndpointApiList{
+		invalidProject: {},
+		invalidRuntime: {},
+	}}
 	var projectPackages = make(map[string][]orm.GatewayPackage)
 	for _, package_ := range packages {
 		if package_.DiceProjectId != "" {
@@ -287,43 +296,39 @@ func (s *endpointApiService) ClearInvalidEndpointApi(ctx context.Context, _ *com
 		l = l.WithField("projectID", projectID)
 		id, err := strconv.ParseUint(projectID, 10, 32)
 		if err != nil {
-			l.WithError(err).Warnln("projectID can not be parsed to uint")
+			l.WithError(err).Warnln("projectI can not be parsed to uint")
 			continue
 		}
-		projResp, err := s.projCli.GetProjectByID(ctx, &projPb.GetProjectByIDReq{Id: id})
-		if err != nil {
-			l.WithError(err).Warnln("failed to GetProjectByID")
-			continue
-		}
-		if projResp.Status == nil {
-			l.Warnln("invalid response: projResp.Status is nil")
-			continue
-		}
-		if !projResp.Status.Success {
-			if projResp.Status.Status == commonPb.StatusEnum_not_found {
-				for _, package_ := range projectPackages[projectID] {
-					deleteEndpointResp, err := s.DeleteEndpoint(ctx, &pb.DeleteEndpointRequest{PackageId: package_.Id})
-					l.WithError(err).WithField("packageID", package_.Id).
-						WithField("deleteEndpointResp.Data", deleteEndpointResp.Data).
-						Infoln("DeleteEndpoint because that the project dose not exist.")
+
+		packages := projectPackages[projectID]
+		// collect the package if it's project is invalid
+		resp, err := s.projCli.CheckProjectExist(ctx, &projPb.CheckProjectExistReq{Id: id})
+		if err == nil && !resp.GetOk() {
+			for _, package_ := range packages {
+				item := &pb.ListInvalidEndpointApiItem{
+					Type:      "package",
+					PackageID: package_.Id,
 				}
+				result.Data[invalidProject].List = append(result.Data[invalidProject].List, item)
 			}
 			continue
 		}
 
+		// collect the package_api if it's relation runtime is invalid
+		//
 		// join on tb_gateway_package_api.dice_api_id = tb_gateway_api.id
 		//         tb_gateway_api.upstream_api_id = tb_gateway_upstream_api.id
 		//         tb_gateway_upstream_api.upstream_id = tb_gateway_api.id
 		//         runtimeID = filepath.base(tb_gateway_api.upstream_name)
-		for _, package_ := range projectPackages[projectID] {
-			l = l.WithField("tb_gateway_package_api", package_.Id)
-			packageApis, err := service.ListPackageAllApis(package_.Id)
+		for _, package_ := range packages {
+			l := l.WithField("tb_gateway_package_api.id", package_.Id)
+			packageApis, err := eas.ListPackageAllApis(package_.Id)
 			if err != nil {
 				l.WithError(err).Warnln("failed to ListPackageAllApis")
 				continue
 			}
 			for _, packageApi := range packageApis {
-				l = l.WithField("tb_gateway_package_api.dice_api_id", packageApi.DiceApiId)
+				l := l.WithField("tb_gateway_package_api.dice_api_id", packageApi.DiceApiId)
 				if packageApi.DiceApiId == "" {
 					l.Warnln("packageApi.DiceApiId is empty")
 					continue
@@ -334,7 +339,7 @@ func (s *endpointApiService) ClearInvalidEndpointApi(ctx context.Context, _ *com
 					l.WithError(err).Warnf("failed to gatewayApiService.GetById(%s)", packageApi.DiceApiId)
 					continue
 				}
-				// todo: if gatewayApi.redirect_addr is invalid inner address, delete the package_api
+				// todo: if gatewayApi.redirect_addr is invalid inner address, collect the package_api
 				if gatewayApi.UpstreamApiId == "" {
 					l.Warnln("gatewayApi.UpstreamApiID is empty")
 					continue
@@ -342,10 +347,10 @@ func (s *endpointApiService) ClearInvalidEndpointApi(ctx context.Context, _ *com
 				l = l.WithField("tb_gateway_upstream_api.id", gatewayApi.UpstreamApiId)
 				upstreamApi, err := s.upstreamApiService.GetById(gatewayApi.UpstreamApiId)
 				if err != nil {
-					l.WithError(err).Warnf("failed to upstreamApiService.GetById(%s)", gatewayApi.UpstreamApiId)
+					l.WithError(err).Warnln("failed to upstreamApiService.GetById")
 					continue
 				}
-				l = l.WithField("tb_gateway_upstream.id", gatewayApi.Id)
+				l = l.WithField("tb_gateway_upstream.id", upstreamApi.UpstreamId)
 				var cond orm.GatewayUpstream
 				cond.Id = upstreamApi.UpstreamId
 				upstreams, err := s.upstreamService.SelectByAny(&cond)
@@ -357,27 +362,62 @@ func (s *endpointApiService) ClearInvalidEndpointApi(ctx context.Context, _ *com
 					l.Warnln("not found any upstreams")
 					continue
 				}
-				upstreamName := upstreams[0].UpstreamName
-				l = l.WithField("upstreamName", upstreamName)
-				runtimeID, err := strconv.ParseUint(filepath.Base(upstreamName), 10, 32)
-				if err != nil || runtimeID == 0 {
-					l.WithError(err).Warnln("failed to parse runtime id from upstream name")
-					continue
-				}
-				l = l.WithField("runtimeID", runtimeID)
-				runtimeResp, err := s.runtimeCli.GetRuntimeByID(ctx, &runtimePb.GetRuntimeByIDReq{Id: runtimeID})
-				if err != nil {
-					l.WithError(err).Warnln("failed to GetRuntimeByID")
-					continue
-				}
-				if !runtimeResp.Status.GetSuccess() && runtimeResp.GetStatus().GetStatus() == commonPb.StatusEnum_not_found {
-					if _, err := s.DeleteEndpointApi(ctx, &pb.DeleteEndpointApiRequest{ApiId: packageApi.Id}); err != nil {
-						l.WithError(err).Warnln("failed to DeleteEndpointApi")
+				for _, upstream := range upstreams {
+					l := l.WithField("upstreamName", upstream.UpstreamName)
+					runtimeID, err := strconv.ParseUint(filepath.Base(upstream.UpstreamName), 10, 32)
+					if err != nil {
+						l.WithError(err).Warnln("failed to parse runtime id from upstream name")
+						continue
 					}
-					continue
+					if runtimeID == 0 {
+						l.Warnln("runtime id is 0 parsed from upstream name")
+						continue
+					}
+					l = l.WithField("runtimeID", runtimeID)
+					resp, err := s.runtimeCli.CheckRuntimeExist(ctx, &runtimePb.CheckRuntimeExistReq{Id: runtimeID})
+					if err == nil && !resp.GetOk() {
+						item := &pb.ListInvalidEndpointApiItem{Type: "package_api", PackageID: package_.Id, PackageApiID: packageApi.Id}
+						result.Data[invalidRuntime].List = append(result.Data[invalidProject].List, item)
+					}
 				}
 			}
 		}
 	}
+
+	return &result, nil
+}
+
+func (s *endpointApiService) ClearInvalidEndpointApi(ctx context.Context, _ *commonPb.VoidRequest) (*commonPb.VoidResponse, error) {
+	l := logrus.WithField("func", "*endpointApiService.ClearInvalidEndpointApi")
+	resp, err := s.ListInvalidEndpointApi(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	packages := resp.Data["project not found"]
+	if packages != nil {
+		for _, package_ := range packages.List {
+			if _, err := s.DeleteEndpoint(ctx, &pb.DeleteEndpointRequest{
+				PackageId: package_.GetPackageID(),
+			}); err != nil {
+				l.WithError(err).WithField("package id", package_.GetPackageID()).Warnln("failed to DeleteEndpoint")
+			}
+		}
+	}
+
+	packageApis := resp.Data["runtime not found"]
+	if packageApis != nil {
+		for _, api := range packageApis.List {
+			if _, err := s.DeleteEndpointApi(ctx, &pb.DeleteEndpointApiRequest{
+				PackageId: api.GetPackageID(),
+				ApiId:     api.GetPackageApiID(),
+			}); err != nil {
+				l.WithError(err).
+					WithField("package id", api.GetPackageID()).
+					WithField("package api id", api.GetPackageApiID()).
+					Warnln("failed to DeleteEndpointApi")
+			}
+		}
+	}
+
 	return new(commonPb.VoidResponse), nil
 }

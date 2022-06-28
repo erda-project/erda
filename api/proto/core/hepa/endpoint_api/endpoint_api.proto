@@ -91,6 +91,12 @@ service EndpointApiService {
     };
   }
 
+  rpc ListInvalidEndpointApi(common.VoidRequest) returns(ListInvalidEndpointApiResp) {
+    option(google.api.http) = {
+      get: "/api/gateway/openapi/invalid-endpoints",
+    };
+  }
+
   rpc ClearInvalidEndpointApi(common.VoidRequest) returns (common.VoidResponse) {}
 }
 
@@ -236,4 +242,17 @@ message GetEndpointRequest {
 
 message GetEndpointResponse {
   Endpoint data = 1;
+}
+
+message ListInvalidEndpointApiResp {
+  map<string, ListInvalidEndpointApiList> data = 1;
+}
+
+message ListInvalidEndpointApiList {
+  repeated ListInvalidEndpointApiItem list = 1;
+}
+message ListInvalidEndpointApiItem {
+  string type = 1;
+  string packageID = 2;
+  string packageApiID = 3;
 }

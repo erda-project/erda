@@ -17,12 +17,14 @@ package errors
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
 )
 
 // NotFoundError .
 type NotFoundError struct {
+	Status   int
 	Resource string
 }
 
@@ -30,7 +32,11 @@ var _ Error = (*NotFoundError)(nil)
 
 // NewNotFoundError .
 func NewNotFoundError(resource string) *NotFoundError {
-	return &NotFoundError{Resource: resource}
+	return &NotFoundError{Status: http.StatusNotFound, Resource: resource}
+}
+
+func IsNotFoundError(err error) bool {
+	return err != nil && strings.HasSuffix(err.Error(), "not found")
 }
 
 func (e *NotFoundError) Error() string {
