@@ -17,9 +17,9 @@ package regex
 import (
 	"encoding/json"
 	"fmt"
-	"regexp"
 
-	"github.com/recallsong/go-utils/reflectx"
+	"github.com/dlclark/regexp2"
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/internal/apps/msp/apm/log-service/analysis/processors"
@@ -35,7 +35,7 @@ type config struct {
 
 type processor struct {
 	metric     string
-	reg        *regexp.Regexp
+	reg        *regexp2.Regexp
 	keys       []*pb.FieldDefine
 	appendTags map[string]string
 	replaceKey map[string]string
@@ -49,7 +49,7 @@ func New(metric string, cfg []byte) (processors.Processor, error) {
 	if err != nil {
 		return nil, fmt.Errorf("fail to unmarshal regexp config: %s", err)
 	}
-	reg, err := regexp.Compile(c.Pattern)
+	reg, err := regexp2.Compile(c.Pattern, 0)
 	if err != nil {
 		return nil, fmt.Errorf("fail to compile regexp pattern: %s", err)
 	}
@@ -79,29 +79,27 @@ var ErrNotMatch = fmt.Errorf("not match regexp")
 
 // Process .
 func (p *processor) Process(content string) (string, map[string]interface{}, map[string]string, map[string]string, error) {
-	match := p.reg.FindAllSubmatch(reflectx.StringToBytes(content), 1)
-	if len(match) <= 0 {
+	match, err := p.reg.FindStringMatch(content) // 只处理第一次匹配
+	if err != nil {
+		logrus.Errorf("failed to find string match, %v", err)
 		return "", nil, nil, nil, ErrNotMatch
 	}
-	fields := make(map[string]interface{})
-	for _, parts := range match {
-		if len(parts) != len(p.keys)+1 {
-			return "", nil, nil, nil, ErrNotMatch
-		}
-		for i, byts := range parts[1:] {
-			if i < len(p.keys) {
-				key := p.keys[i]
-				convert := p.converts[i]
-				val, err := convert(reflectx.BytesToString(byts))
-				if err != nil {
-					return "", nil, nil, nil, ErrNotMatch
-				}
-				fields[key.Key] = val
-			}
-		}
-		break // 只处理第一次匹配
+	if match == nil || match.GroupCount() <= 0 {
+		return "", nil, nil, nil, ErrNotMatch
 	}
 
+	fields := make(map[string]interface{})
+	for i, group := range match.Groups()[1:] {
+		if i < len(p.keys) {
+			key := p.keys[i]
+			convert := p.converts[i]
+			val, err := convert(group.String())
+			if err != nil {
+				return "", nil, nil, nil, ErrNotMatch
+			}
+			fields[key.Key] = val
+		}
+	}
 	return p.metric, fields, p.appendTags, p.replaceKey, nil
 }
 
