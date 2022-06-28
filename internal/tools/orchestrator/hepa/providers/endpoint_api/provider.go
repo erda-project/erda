@@ -63,7 +63,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	}
 	p.endpointApiService = &endpointApiService{
 		projCli:            p.projCli,
-		runtimeCli:         nil,
+		runtimeCli:         p.runtimeCli,
 		gatewayApiService:  gatewayApiService,
 		upstreamApiService: upstreamApiService,
 		upstreamService:    upstreamService,
