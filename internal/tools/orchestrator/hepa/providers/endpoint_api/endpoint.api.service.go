@@ -307,6 +307,7 @@ func (s *endpointApiService) ListInvalidEndpointApi(ctx context.Context, _ *comm
 			for _, package_ := range packages {
 				item := &pb.ListInvalidEndpointApiItem{
 					Type:      "package",
+					ProjectID: projectID,
 					PackageID: package_.Id,
 				}
 				result.Data[invalidProject].List = append(result.Data[invalidProject].List, item)
@@ -376,7 +377,12 @@ func (s *endpointApiService) ListInvalidEndpointApi(ctx context.Context, _ *comm
 					l = l.WithField("runtimeID", runtimeID)
 					resp, err := s.runtimeCli.CheckRuntimeExist(ctx, &runtimePb.CheckRuntimeExistReq{Id: runtimeID})
 					if err == nil && !resp.GetOk() {
-						item := &pb.ListInvalidEndpointApiItem{Type: "package_api", PackageID: package_.Id, PackageApiID: packageApi.Id}
+						item := &pb.ListInvalidEndpointApiItem{
+							Type:         "package_api",
+							ProjectID:    projectID,
+							PackageID:    package_.Id,
+							PackageApiID: packageApi.Id,
+						}
 						result.Data[invalidRuntime].List = append(result.Data[invalidProject].List, item)
 					}
 				}

@@ -253,6 +253,7 @@ message ListInvalidEndpointApiList {
 }
 message ListInvalidEndpointApiItem {
   string type = 1;
-  string packageID = 2;
-  string packageApiID = 3;
+  string projectID = 2;
+  string packageID = 3;
+  string packageApiID = 4;
 }
