@@ -17,6 +17,7 @@ package metric
 import (
 	"context"
 	"fmt"
+	"sort"
 	"sync"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
@@ -118,10 +119,18 @@ func (bu *Builder) buildBatches(ctx context.Context, items []*metric.Metric) ([]
 		tagKeys := gettagKeysBuf()
 		tagValues := gettagValuesBuf()
 
+		pairs := getpairsBuf()
 		for k, v := range data.Tags {
-			tagKeys = append(tagKeys, k)
-			tagValues = append(tagValues, v)
+			pairs = append(pairs, odata.Tag{Key: k, Value: v})
 		}
+		sort.Slice(pairs, func(i, j int) bool {
+			return pairs[i].Key < pairs[j].Key
+		})
+		for i := range pairs {
+			tagKeys = append(tagKeys, pairs[i].Key)
+			tagValues = append(tagValues, pairs[i].Value)
+		}
+		putpairsBuf(pairs)
 
 		for k, v := range data.Fields {
 			switch vv := v.(type) {
@@ -201,7 +210,21 @@ func (bu *Builder) getOrCreateTenantTable(ctx context.Context, data *metric.Metr
 
 var (
 	numFieldKeysBuf, numFieldValuesBuf, strFieldKeysBuf, strFieldValuesBuf, tagKeysBuf, tagValuesBuf sync.Pool
+	pairsBuf                                                                                         sync.Pool
 )
+
+func getpairsBuf() []odata.Tag {
+	v := pairsBuf.Get()
+	if v == nil {
+		return []odata.Tag{}
+	}
+	return v.([]odata.Tag)
+}
+
+func putpairsBuf(buf []odata.Tag) {
+	buf = buf[:0]
+	pairsBuf.Put(buf)
+}
 
 func getnumFieldKeysBuf() []string {
 	v := numFieldKeysBuf.Get()
