@@ -57,19 +57,16 @@ type provider struct {
 	TokenService tokenpb.TokenServiceServer
 }
 
-func (p *provider) WithMember(member *member.Member) *provider {
+func (p *provider) WithMember(member *member.Member) {
 	p.member = member
-	return p
 }
 
-func (p *provider) WithUc(uc *ucauth.UCClient) *provider {
+func (p *provider) WithUc(uc *ucauth.UCClient) {
 	p.uc = uc
-	return p
 }
 
-func (p *provider) WithPermission(permission *permission.Permission) *provider {
+func (p *provider) WithPermission(permission *permission.Permission) {
 	p.permission = permission
-	return p
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {

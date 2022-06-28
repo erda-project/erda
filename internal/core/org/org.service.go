@@ -36,9 +36,9 @@ import (
 
 type Interface interface {
 	pb.OrgServiceServer
-	WithUc(uc *ucauth.UCClient) *provider
-	WithMember(member *member.Member) *provider
-	WithPermission(permission *permission.Permission) *provider
+	WithUc(uc *ucauth.UCClient)
+	WithMember(member *member.Member)
+	WithPermission(permission *permission.Permission)
 	ListOrgs(ctx context.Context, orgIDs []int64, req *pb.ListOrgRequest, all bool) (int, []*pb.Org, error)
 }
 
