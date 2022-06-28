@@ -21,11 +21,12 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/gorilla/schema"
+	"github.com/stretchr/testify/assert"
+
 	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/pkg/common/apis"
-	"github.com/gorilla/schema"
-	"github.com/stretchr/testify/assert"
 )
 
 //func Test_transferAppsToApplicationDTOS(t *testing.T) {
