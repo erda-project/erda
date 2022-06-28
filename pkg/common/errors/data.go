@@ -24,7 +24,6 @@ import (
 
 // NotFoundError .
 type NotFoundError struct {
-	Status   int
 	Resource string
 }
 
@@ -32,7 +31,7 @@ var _ Error = (*NotFoundError)(nil)
 
 // NewNotFoundError .
 func NewNotFoundError(resource string) *NotFoundError {
-	return &NotFoundError{Status: http.StatusNotFound, Resource: resource}
+	return &NotFoundError{Resource: resource}
 }
 
 func IsNotFoundError(err error) bool {
