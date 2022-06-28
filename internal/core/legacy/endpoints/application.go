@@ -33,6 +33,7 @@ import (
 	"github.com/erda-project/erda/internal/core/legacy/model"
 	"github.com/erda-project/erda/internal/core/legacy/services/apierrors"
 	"github.com/erda-project/erda/internal/pkg/user"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/filehelper"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httputil"
@@ -895,7 +896,7 @@ func (e *Endpoints) convertToApplicationDTO(ctx context.Context, application mod
 		orgDisplayName string
 		org            *orgpb.Org
 	)
-	orgResp, err := e.org.GetOrg(ctx, &orgpb.GetOrgRequest{IdOrName: strconv.FormatInt(application.OrgID, 10)})
+	orgResp, err := e.org.GetOrg(apis.WithInternalClientContext(ctx, "legacy"), &orgpb.GetOrgRequest{IdOrName: strconv.FormatInt(application.OrgID, 10)})
 	if err == nil {
 		org = orgResp.Data
 		orgName = org.Name
