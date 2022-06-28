@@ -16,7 +16,6 @@ package clickhouse
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
@@ -26,7 +25,6 @@ import (
 )
 
 type BatchBuilder interface {
-	Start(ctx context.Context) error
 	BuildBatch(ctx context.Context, sourceBatch interface{}) (batches []driver.Batch, err error)
 }
 
@@ -44,10 +42,6 @@ type Storage struct {
 }
 
 func (st *Storage) Start(ctx context.Context) error {
-	if err := st.sqlBuilder.Start(ctx); err != nil {
-		return fmt.Errorf("start sqlBuilder: %w", err)
-	}
-
 	maxprocs := lib.AvailableCPUs()
 	st.batchCh = make(chan interface{}, maxprocs)
 	for i := 0; i < maxprocs; i++ {

@@ -94,6 +94,7 @@ func (m *Metric) Copy() *Metric {
 
 type TableMetrics struct {
 	OrgName           string    `ch:"org_name"`
+	TenantId          string    `ch:"tenant_id"`
 	MetricGroup       string    `ch:"metric_group"`
 	Timestamp         int64     `ch:"timestamp"`
 	NumberFieldKeys   []string  `ch:"number_field_keys"`

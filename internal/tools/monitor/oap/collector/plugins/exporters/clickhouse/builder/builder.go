@@ -17,7 +17,6 @@ package builder
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/clickhouse"
@@ -25,10 +24,9 @@ import (
 )
 
 type BuilderConfig struct {
-	Database         string        `file:"database" default:"monitor"`
-	DataType         string        `file:"data_type"`
-	TTLCheckInterval time.Duration `file:"ttl_check_interval" default:"12h"`
-	SeriesTagKeys    string        `file:"series_tag_keys"`
+	DataType string `file:"data_type"`
+	// could be org_name, cluster_name, terminus_key
+	TenantIdKey string `file:"tenant_id_key"`
 }
 
 func GetClickHouseInf(ctx servicehub.Context, dt odata.DataType) (clickhouse.Interface, error) {

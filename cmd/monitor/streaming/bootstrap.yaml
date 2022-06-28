@@ -583,12 +583,13 @@ erda.oap.collector.exporter.clickhouse@span:
     currency_num: ${EXPORTER_CH_SPAN_CURRENCY_NUM:2}
   builder:
     data_type: span
-    series_tag_keys: ${EXPORTER_CH_SPAN_SERIES_TAG_KEYS:db_statement,operation_name,http_url,http_path,http_target,terminus_logid,db_host,peer_address,http_write_error,net_peer_port}
+    tenant_id_key: terminus_key
 
 clickhouse.table.initializer@span:
   _enable: ${WRITE_SPAN_TO_CLICKHOUSE_ENABLE:false}
   table_prefix: "spans"
   ttl_sync_interval: "${CLICKHOUSE_TABLE_TTL_SYNC_INTERVAL:24h}"
+  database: jwmdebug
   default_ddl_files:
     - path: "conf/clickhouse/spans/ddl_create_db.sql.tpl"
       ignore_err: "false"
@@ -597,8 +598,16 @@ clickhouse.table.initializer@span:
 
 clickhouse.table.loader@span:
   _enable: ${WRITE_SPAN_TO_CLICKHOUSE_ENABLE:false}
+  database: jwmdebug
   table_prefix: "spans"
   default_search_table: "spans_all"
+
+clickhouse.table.creator@span:
+  _enable: ${WRITE_SPAN_TO_CLICKHOUSE_ENABLE:false}
+  database: jwmdebug
+  default_write_table: "spans"
+  table_prefix: "spans"
+
 # --- span to clickhouse block ---
 
 # --- metric to clickhouse block ---
@@ -614,17 +623,6 @@ erda.oap.collector.receiver.kafka@spotmetric:
       auto.offset.reset: "${KAFKA_AUTO_OFFSET_RESET:latest}"
       auto.commit.interval.ms: "${KAFKA_AUTO_COMMIT_INTERVAL_MS:1000}"
 
-# TODO. 元数据生成方式待定
-erda.oap.collector.processor.modifier@metric:
-  _enable: ${WRITE_METRIC_TO_CLICKHOUSE_ENABLE:false}
-  rules:
-    - action: drop
-      key: tags._meta
-    - action: drop
-      key: tags._metric_scope
-    - action: drop
-      key: tags._metric_scope_id
-
 erda.oap.collector.exporter.clickhouse@metric:
   _enable: ${WRITE_METRIC_TO_CLICKHOUSE_ENABLE:false}
   keypass:
@@ -633,6 +631,7 @@ erda.oap.collector.exporter.clickhouse@metric:
     currency_num: ${EXPORTER_CH_METRIC_CURRENCY_NUM:2}
   builder:
     data_type: metric
+    tenant_id_key: _metric_scope_id
 
 clickhouse.table.initializer@metric:
   _enable: ${WRITE_METRIC_TO_CLICKHOUSE_ENABLE:false}

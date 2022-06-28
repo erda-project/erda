@@ -16,7 +16,6 @@ package source
 
 import (
 	"context"
-	"reflect"
 	"testing"
 	"time"
 
@@ -27,65 +26,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/msp/apm/trace/query/commom/custom"
 
 	"github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
-	"github.com/erda-project/erda/internal/apps/msp/apm/trace"
 )
-
-func Test_mergeAsSpan(t *testing.T) {
-	type args struct {
-		cs  trace.Series
-		sms []trace.Meta
-	}
-	tests := []struct {
-		name string
-		args args
-		want *pb.Span
-	}{
-		{
-			args: args{
-				cs: trace.Series{
-					SpanId:       "aaa",
-					TraceId:      "bbb",
-					StartTime:    2,
-					EndTime:      2,
-					ParentSpanId: "ppp",
-					Tags: map[string]string{
-						"db_statement": "select * from abc where id=aaa",
-					},
-				},
-				sms: []trace.Meta{
-					{
-						Key:   "operation_name",
-						Value: "query",
-					},
-					{
-						Key:   "org_name",
-						Value: "erda",
-					},
-				},
-			},
-			want: &pb.Span{
-				Id:            "aaa",
-				TraceId:       "bbb",
-				ParentSpanId:  "ppp",
-				StartTime:     2,
-				EndTime:       2,
-				OperationName: "query",
-				Tags: map[string]string{
-					"db_statement":   "select * from abc where id=aaa",
-					"org_name":       "erda",
-					"operation_name": "query",
-				},
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := mergeAsSpan(tt.args.cs, tt.args.sms); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("mergeAsSpan() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
 
 func Test_GetInterval(t *testing.T) {
 	type args struct {
@@ -209,42 +150,6 @@ func TestClickhouseSource_sortConditionStrategy1(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			chs := &ClickhouseSource{}
 			assert.Equal(t, tt.want, chs.sortConditionStrategy(tt.args.sort))
-		})
-	}
-}
-
-func Test_convertToMetas(t *testing.T) {
-	type args struct {
-		kvs keysValues
-	}
-	tests := []struct {
-		name string
-		args args
-		want []trace.Meta
-	}{
-		{
-			args: args{kvs: keysValues{
-				Keys:     []string{"hello", "hello2"},
-				Values:   []string{"world", "world2"},
-				SeriesID: 1024,
-			}},
-			want: []trace.Meta{
-				{
-					Key:   "hello",
-					Value: "world",
-				},
-				{
-					Key:   "hello2",
-					Value: "world2",
-				},
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := convertToMetas(tt.args.kvs); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("convertToMetas() = %v, want %v", got, tt.want)
-			}
 		})
 	}
 }
