@@ -37,6 +37,14 @@ grpc-client@erda.core.clustermanager.cluster:
   addr: "${CLUSTER_MANAGER_GRPC_ADDR:cluster-manager:9095}"
 erda.core.clustermanager.cluster-client: {}
 
+grpc-client@erda.core.project:
+  addr: "${CORE_SERVICES_GRPC_ADDR:core-services:9537}"
+erda.core.project-client: {}
+
+grpc-client@erda.orchestrator.runtime:
+  addr: "${ORCHESTRATOR_GRPC_ADDR:orchestrator:7080}"
+erda.orchestrator.runtime-client: {}
+
 grpc-client@erda.msp.tenant:
   addr: "${MSP_GRPC_ADDR:msp:7080}"
 erda.msp.tenant-client: {}

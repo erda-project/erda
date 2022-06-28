@@ -12,20 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package dao
 
 import (
-	_ "embed"
-
-	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/pkg/common"
+	"github.com/erda-project/erda/internal/core/project/model"
 )
 
-//go:embed bootstrap.yaml
-var bootstrapCfg string
-
-func main() {
-	common.Run(&servicehub.RunOptions{
-		Content: bootstrapCfg,
-	})
+func GetProject(tx *TX, options ...Option) (*model.ErdaProject, bool, error) {
+	var project model.ErdaProject
+	options = append(options, NotSoftDeleted)
+	ok, err := tx.Get(&project, options...)
+	return &project, ok, err
 }

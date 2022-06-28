@@ -12,20 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package model
 
 import (
-	_ "embed"
-
-	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/pkg/common"
+	"time"
 )
 
-//go:embed bootstrap.yaml
-var bootstrapCfg string
-
-func main() {
-	common.Run(&servicehub.RunOptions{
-		Content: bootstrapCfg,
-	})
+// BaseModel contains base fields for all models
+type BaseModel struct {
+	ID        int64     `json:"id" gorm:"primary_key"`
+	CreatedAt time.Time `json:"createdAt" gorm:"created_at"`
+	UpdatedAt time.Time `json:"updatedAt" gorm:"updated_at"`
 }
