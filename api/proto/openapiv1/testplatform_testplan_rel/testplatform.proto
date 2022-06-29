@@ -16,6 +16,55 @@ import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 import "common/openapi.proto";
 import "common/identity.proto";
 
+message TestPlanCaseRelBatchUpdateRequest {
+    bool delete = 1;
+    string executorID = 2;
+    string execStatus = 3;
+    uint64 testPlanID = 4 [json_name = "-"];
+    optional uint64 testSetID = 5;
+    repeated uint64 relationIDs = 6;
+    uint64 projectID = 7 [json_name = "-"];
+}
+message TestPlanCaseRelCreateRequest {
+    uint64 testPlanID = 1;
+    repeated uint64 testCaseIDs = 2;
+    repeated uint64 testSetIDs = 3;
+}
+message TestPlanCaseRelCreateResponse {
+    optional google.protobuf.Value data = 1;
+}
+message TestPlanCaseRelExportRequest {
+    google.protobuf.Value testPlanCaseRelPagingRequest = 1;
+    string locale = 2;
+    string fileType = 3;
+    string testPlanID = 4; // generated from path variable: testPlanID. You should change the proto type if necessary.
+}
+message TestPlanCaseRelExportResponse {
+    int64 data = 1;
+}
+message TestPlanCaseRelGetRequest {
+    uint64 relationID = 1;
+    string testPlanID = 2; // generated from path variable: testPlanID. You should change the proto type if necessary.
+}
+message TestPlanCaseRelGetResponse {
+    optional google.protobuf.Value data = 1;
+}
+message TestPlanCaseRelIssueRelationAddRequest {
+    repeated uint64 issueIDs = 1;
+    uint64 testPlanID = 2 [json_name = "-"];
+    uint64 testPlanCaseRelID = 3 [json_name = "-"];
+    string relationID = 4; // generated from path variable: relationID. You should change the proto type if necessary.
+}
+message TestPlanCaseRelIssueRelationAddResponse {
+}
+message TestPlanCaseRelIssueRelationRemoveRequest {
+    repeated uint64 issueTestCaseRelationIDs = 1;
+    uint64 testPlanID = 2 [json_name = "-"];
+    uint64 testPlanCaseRelID = 3 [json_name = "-"];
+    string relationID = 4; // generated from path variable: relationID. You should change the proto type if necessary.
+}
+message TestPlanCaseRelIssueRelationRemoveResponse {
+}
 message TestPlanCaseRelPagingRequest {
     int64 pageNo = 1;
     int64 pageSize = 2;
@@ -46,57 +95,8 @@ message TestPlanCaseRelPagingRequest {
     optional bool orderByTestSetNameDesc = 27;
     optional google.protobuf.Value testPlan = 28;
 }
-message TestPlanCaseRelExportRequest {
-    google.protobuf.Value testPlanCaseRelPagingRequest = 1;
-    string locale = 2;
-    string fileType = 3;
-    string testPlanID = 4; // generated from path variable: testPlanID. You should change the proto type if necessary
-}
-message TestPlanCaseRelExportResponse {
-    int64 data = 1;
-}
-message TestPlanCaseRelGetResponse {
-    optional google.protobuf.Value data = 1;
-}
 message TestPlanCaseRelPagingResponse {
     optional google.protobuf.Value data = 1;
-}
-message TestPlanCaseRelIssueRelationRemoveResponse {
-}
-message TestPlanCaseRelIssueRelationAddRequest {
-    repeated uint64 issueIDs = 1;
-    uint64 testPlanID = 2 [json_name = "-"];
-    uint64 testPlanCaseRelID = 3 [json_name = "-"];
-    string relationID = 4; // generated from path variable: relationID. You should change the proto type if necessary
-}
-message TestPlanCaseRelCreateRequest {
-    uint64 testPlanID = 1;
-    repeated uint64 testCaseIDs = 2;
-    repeated uint64 testSetIDs = 3;
-}
-message TestPlanCaseRelCreateResponse {
-    optional google.protobuf.Value data = 1;
-}
-message TestPlanCaseRelGetRequest {
-    uint64 relationID = 1;
-    string testPlanID = 2; // generated from path variable: testPlanID. You should change the proto type if necessary
-}
-message TestPlanCaseRelIssueRelationRemoveRequest {
-    repeated uint64 issueTestCaseRelationIDs = 1;
-    uint64 testPlanID = 2 [json_name = "-"];
-    uint64 testPlanCaseRelID = 3 [json_name = "-"];
-    string relationID = 4; // generated from path variable: relationID. You should change the proto type if necessary
-}
-message TestPlanCaseRelIssueRelationAddResponse {
-}
-message TestPlanCaseRelBatchUpdateRequest {
-    bool delete = 1;
-    string executorID = 2;
-    string execStatus = 3;
-    uint64 testPlanID = 4 [json_name = "-"];
-    optional uint64 testSetID = 5;
-    repeated uint64 relationIDs = 6;
-    uint64 projectID = 7 [json_name = "-"];
 }
 // generate service from openapi spec: testplatform_testplan_rel
 service testplatform_testplan_rel {

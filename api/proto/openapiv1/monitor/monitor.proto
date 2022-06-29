@@ -16,408 +16,408 @@ import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 import "common/openapi.proto";
 import "common/identity.proto";
 
-message MONITOR_ORGS_CUSTOMIZE_ALERT_UPDATE_Request {
-    string id = 1; // generated from path variable: id. You should change the proto type if necessary
-}
-message MONITOR_ORG_LOGS_RULES_TEMPLATES_Request {
-}
-message MONITOR_APM_TOPOLOGY_SERVICES_LIST_Request {
-}
-message MONITOR_DASHBOARD_TEMPLATE_CREATE_Request {
-}
-message SPOT_DASHBOARD_ALARM_NOTIFIES_CREATE_Request {
-}
-message SPOT_JVM_PROFILER_JVM_INFO_Request {
-    string addonID = 1; // generated from path variable: addonID. You should change the proto type if necessary
-    string profilingID = 2; // generated from path variable: profilingID. You should change the proto type if necessary
-}
-message SPOT_ORG_LOGS_DOWNLOAD_Request {
-}
-message MONITOR_APM_CUSTOMIZE_ALERT_METRICS_GET_Request {
-}
-message MONITOR_APM_TRACE_ID_GET_Request {
-    string id = 1; // generated from path variable: id. You should change the proto type if necessary
-}
-message MONITOR_DASHBOARD_TEMPLATES_Request {
-}
-message MONITOR_NOTIFY_DELETE_Request {
-    string id = 1; // generated from path variable: id. You should change the proto type if necessary
-}
-message SPOT_DASHBOARD_SYSTEM_METRICS_HISTOGRAM_Request {
-    string scope = 1; // generated from path variable: scope. You should change the proto type if necessary
-}
-message SPOT_JVM_PROFILER_HEAP_GC_STATE_Request {
-    string addonID = 1; // generated from path variable: addonID. You should change the proto type if necessary
-    string profilingID = 2; // generated from path variable: profilingID. You should change the proto type if necessary
-    string heapGCID = 3; // generated from path variable: heapGCID. You should change the proto type if necessary
-}
-message SPOT_RUNTIME_LOGS_DOWNLOAD_Request {
-}
-message MONITOR_APM_ALERT_ID_DELETE_Request {
-    string id = 1; // generated from path variable: id. You should change the proto type if necessary
-}
-message MONITOR_APM_TOPOLOGY_PROCESS_NETIO_Request {
-}
-message MONITOR_NOTIFY_UPDATE_Request {
-    string id = 1; // generated from path variable: id. You should change the proto type if necessary
-}
-message MONITOR_ORGS_CUSTOMIZE_ALERT_CREATE_Request {
-}
-message MONITOR_ORG_ALERT_RECORD_Request {
-    string groupId = 1; // generated from path variable: groupId. You should change the proto type if necessary
-}
-message MSP_ADDON_LOGS_RULES_Request {
-}
-message SPOT_JVM_PROFILER_FINISH_Request {
-    string addonID = 1; // generated from path variable: addonID. You should change the proto type if necessary
-    string profilingID = 2; // generated from path variable: profilingID. You should change the proto type if necessary
-}
-message SPOT_JVM_PROFILER_STATE_Request {
-    string addonID = 1; // generated from path variable: addonID. You should change the proto type if necessary
-    string profilingID = 2; // generated from path variable: profilingID. You should change the proto type if necessary
-}
-message MONITOR_APM_TOPOLOGY_PROCESS_INSTANCE_IDS_GET_Request {
-}
-message MONITOR_DASHBOARD_IMPORT_Request {
-}
-message SPOT_DASHBOARD_CHART_META_Request {
-}
-message SPOT_DASHBOARD_RUNTIME_METRICS_QUERY_Request {
-}
-message MONITOR_APM_TOPOLOGY_GLOBAL_OVERVIEW_GET_Request {
-}
-message MONITOR_ORG_ALERT_RECORD_ISSUE_CREATE_Request {
-    string groupId = 1; // generated from path variable: groupId. You should change the proto type if necessary
-}
-message SPOT_DASHBOARD_PROJECT_METRICS_Request {
-    string scope = 1; // generated from path variable: scope. You should change the proto type if necessary
-}
-message MONITOR_ORGS_CUSTOMIZE_ALERTS_Request {
-}
-message MSP_ADDON_LOGS_RULES_TEMPLATES_Request {
-}
-message MONITOR_ORG_LOGS_RULES_UPDATE_Request {
-    string id = 1; // generated from path variable: id. You should change the proto type if necessary
-}
-message SPOT_ORG_LOGS_Request {
-}
-message MONITOR_APM_CUSTOMIZE_ALERT_NOTIFIES_TARGETS_GET_Request {
-}
-message MONITOR_NOTIFY_ENABLE_Request {
-    string id = 1; // generated from path variable: id. You should change the proto type if necessary
-}
-message MONITOR_ORG_LOGS_RULES_DELETE_Request {
-    string id = 1; // generated from path variable: id. You should change the proto type if necessary
-}
-message MONITOR_ORG_REPORT_HISTORY_CREATE_Request {
-}
-message SPOT_DASHBOARD_ORG_METRICS_Request {
-    string scope = 1; // generated from path variable: scope. You should change the proto type if necessary
-}
-message SPOT_DASHBOARD_PROJECT_METRICS_QUERY_POST_Request {
-}
-message MONITOR_APM_CUSTOMIZE_ALERT_POST_Request {
-}
-message MONITOR_FILEMANAGER_DOWNLOAD_Request {
-    string containerID = 1; // generated from path variable: containerID. You should change the proto type if necessary
-}
-message MONITOR_APM_CUSTOMIZE_ALERT_ID_PUT_Request {
-    string id = 1; // generated from path variable: id. You should change the proto type if necessary
-}
-message MONITOR_FILEMANAGER_UPLOAD_Request {
-    string containerID = 1; // generated from path variable: containerID. You should change the proto type if necessary
-}
-message MONITOR_ORGS_CUSTOMIZE_ALERT_NOTIFY_TARGET_Request {
-}
-message SPOT_JVM_PROFILER_START_Request {
-    string addonID = 1; // generated from path variable: addonID. You should change the proto type if necessary
-}
-message MONITOR_APM_ALERT_ID_GET_Request {
-    string id = 1; // generated from path variable: id. You should change the proto type if necessary
-}
-message MONITOR_APM_CUSTOMIZE_ALERT_ID_GET_Request {
-    string id = 1; // generated from path variable: id. You should change the proto type if necessary
-}
-message MONITOR_ORGS_CUSTOMIZE_ALERT_METRICS_Request {
-}
-message MSP_ADDON_LOGS_RULE_Request {
-    string id = 1; // generated from path variable: id. You should change the proto type if necessary
-}
-message SPOT_DASHBOARD_ALARM_NOTIFIES_DELETE_Request {
-    string id = 1; // generated from path variable: id. You should change the proto type if necessary
-}
-message SPOT_DASHBOARD_ALERT_METRICS_HISTOGRAM_Request {
-    string scope = 1; // generated from path variable: scope. You should change the proto type if necessary
-}
-message SPOT_RUNTIME_LOGS_Request {
-}
-message MONITOR_ADDON_LOGS_TAGS_TREE_Request {
-}
-message MONITOR_APM_TOPOLOGY_SEARCH_TAGV_GET_Request {
-}
-message MONITOR_NOTIFY_CUSTOMIZE_Request {
-}
-message MONITOR_ORGS_ALERTS_RULES_Request {
-}
-message MONITOR_ORG_REPORT_HISTORY_Request {
-    string id = 1; // generated from path variable: id. You should change the proto type if necessary
-}
-message MONITOR_APM_TOPOLOGY_TRANSLATION_Request {
-}
-message MONITOR_CLUSTER_STATUS_GET_Request {
-}
-message MONITOR_ADDON_LOGS_SEARCH_Request {
-    string addon = 1; // generated from path variable: addon. You should change the proto type if necessary
-}
-message MONITOR_APM_TOPOLOGY_GET_Request {
-}
-message SPOT_JVM_PROFILER_THREAD_SNAPSHOT_LIST_Request {
-    string addonID = 1; // generated from path variable: addonID. You should change the proto type if necessary
-    string profilingID = 2; // generated from path variable: profilingID. You should change the proto type if necessary
-}
-message MONITOR_DASHBOARD_TEMPLATE_Request {
-    string id = 1; // generated from path variable: id. You should change the proto type if necessary
-}
-message SPOT_DASHBOARD_ORG_METRICS_QUERY_POST_Request {
-}
-message MONITOR_ORGS_CUSTOMIZE_ALERT_DASH_PREVIEW_Request {
-}
-message SPOT_DASHBOARD_ALARM_NOTIFIES_EDIT_Request {
-    string id = 1; // generated from path variable: id. You should change the proto type if necessary
-}
-message SPOT_DASHBOARD_RUNTIME_METRICS_Request {
-    string scope = 1; // generated from path variable: scope. You should change the proto type if necessary
-}
-message SPOT_DASHBOARD_RUNTIME_METRICS_HISTOGRAM_Request {
-    string scope = 1; // generated from path variable: scope. You should change the proto type if necessary
-}
-message MONITOR_NOTIFY_TEMPALTES_Request {
-}
-message MONITOR_ORGS_ALERT_SWITCH_Request {
-    string id = 1; // generated from path variable: id. You should change the proto type if necessary
-}
-message HostStatusListResponse {
-    repeated google.protobuf.Value data = 1;
-}
-message MONITOR_NOTIFY_CREATE_Request {
-}
-message MONITOR_ORGS_ALERT_UPDATE_Request {
-    string id = 1; // generated from path variable: id. You should change the proto type if necessary
-}
-message MONITOR_ORG_LOGS_RULES_TEST_Request {
-}
-message MONITOR_ORG_LOGS_SEARCH_Request {
-}
-message SPOT_DASHBOARD_RESOURCES_CONTAINERS_Request {
-    string instanceType = 1; // generated from path variable: instanceType. You should change the proto type if necessary
-}
-message MONITOR_APM_RUNTIME_GET_Request {
-}
 message HostStatusListData {
     string hostIP = 1 [json_name = "host_ip"];
     string statusLevel = 2 [json_name = "status_level"];
     string abnormalMsg = 3 [json_name = "abnormal_msg"];
 }
-message MONITOR_APM_TOPOLOGY_SERVICE_OVERVIEW_GET_Request {
-}
-message MONITOR_DASHBOARD_EXPORT_Request {
-}
-message MONITOR_ORGS_CUSTOMIZE_ALERT_DELETE_Request {
-    string id = 1; // generated from path variable: id. You should change the proto type if necessary
-}
-message MONITOR_ORG_ALERT_RECORDS_Request {
-}
-message MONITOR_ORG_LOGS_RULES_ENABLE_Request {
-    string id = 1; // generated from path variable: id. You should change the proto type if necessary
-}
-message MONITOR_ORG_LOGS_RULES_TEMPLATE_Request {
-    string name = 1; // generated from path variable: name. You should change the proto type if necessary
-}
-message MONITOR_APM_CUSTOMIZE_ALERT_ID_SWITCH_PUT_Request {
-    string id = 1; // generated from path variable: id. You should change the proto type if necessary
-}
-message MONITOR_APM_TOPOLOGY_EXCEPTION_TYPES_GET_Request {
-}
-message MSP_ADDON_LOGS_RULES_UPDATE_Request {
-    string id = 1; // generated from path variable: id. You should change the proto type if necessary
-}
-message SPOT_RUNTIME_REALTIME_LOGS_Request {
-}
-message SPOT_DASHBOARD_ALERT_METRICS_Request {
-    string scope = 1; // generated from path variable: scope. You should change the proto type if necessary
-}
-message SPOT_JVM_PROFILER_THREAD_SNAPSHOT_GET_Request {
-    string addonID = 1; // generated from path variable: addonID. You should change the proto type if necessary
-    string profilingID = 2; // generated from path variable: profilingID. You should change the proto type if necessary
-    string snapshotsID = 3; // generated from path variable: snapshotsID. You should change the proto type if necessary
-}
 message HostStatusListRequest {
     string orgName = 1 [json_name = "org_name"];
     repeated string hosts = 2;
 }
-message MONITOR_ORG_LOGS_RULE_Request {
-    string id = 1; // generated from path variable: id. You should change the proto type if necessary
+message HostStatusListResponse {
+    repeated google.protobuf.Value data = 1;
 }
-message MONITOR_ORG_ALERT_RECORD_ATTRS_Request {
+message MONITOR_ADDON_LOGS_SEARCH_Request {
+    string addon = 1; // generated from path variable: addon. You should change the proto type if necessary.
 }
-message MONITOR_ORG_LOGS_RULES_CREATE_Request {
+message MONITOR_ADDON_LOGS_TAGS_TREE_Request {
 }
-message MONITOR_ORG_LOGS_STATISTIC_Request {
+message MONITOR_APM_ALERT_ID_DELETE_Request {
+    string id = 1; // generated from path variable: id. You should change the proto type if necessary.
 }
-message SPOT_DASHBOARD_PROJECT_METRICS_QUERY_Request {
+message MONITOR_APM_ALERT_ID_GET_Request {
+    string id = 1; // generated from path variable: id. You should change the proto type if necessary.
 }
-message SPOT_JVM_PROFILER_SERVICES_Request {
-    string addonID = 1; // generated from path variable: addonID. You should change the proto type if necessary
+message MONITOR_APM_ALERT_ID_PUT_Request {
+    string id = 1; // generated from path variable: id. You should change the proto type if necessary.
 }
-message MONITOR_APM_CUSTOMIZE_ALERT_LIST_Request {
-}
-message MONITOR_APM_TOPOLOGY_SERVICE_REQUESTS_GET_Request {
-}
-message MONITOR_ORG_LOGS_TAGS_TREE_Request {
-}
-message MONITOR_ORG_REPORT_TASK_Request {
-    string id = 1; // generated from path variable: id. You should change the proto type if necessary
-}
-message SPOT_JVM_PROFILER_THREAD_SNAPSHOT_STATE_Request {
-    string addonID = 1; // generated from path variable: addonID. You should change the proto type if necessary
-    string profilingID = 2; // generated from path variable: profilingID. You should change the proto type if necessary
-    string snapshotsID = 3; // generated from path variable: snapshotsID. You should change the proto type if necessary
-}
-message MONITOR_ORGS_ALERT_Request {
-    string id = 1; // generated from path variable: id. You should change the proto type if necessary
-}
-message MONITOR_ORGS_CUSTOMIZE_ALERT_SWITCH_Request {
-    string id = 1; // generated from path variable: id. You should change the proto type if necessary
+message MONITOR_APM_ALERT_ID_SWITCH_PUT_Request {
+    string id = 1; // generated from path variable: id. You should change the proto type if necessary.
 }
 message MONITOR_APM_ALERT_LIST_Request {
 }
-message MONITOR_ORGS_ALERT_CREATE_Request {
-}
-message SPOT_JVM_PROFILER_HEAP_GC_Request {
-    string addonID = 1; // generated from path variable: addonID. You should change the proto type if necessary
-    string profilingID = 2; // generated from path variable: profilingID. You should change the proto type if necessary
-}
-message SPOT_JVM_PROFILER_LIST_Request {
-    string addonID = 1; // generated from path variable: addonID. You should change the proto type if necessary
-}
-message MONITOR_ORGS_ALERT_DELETE_Request {
-    string id = 1; // generated from path variable: id. You should change the proto type if necessary
-}
-message SPOT_DASHBOARD_SYSTEM_POD_METRICS_Request {
-}
-message SPOT_DASHBOARD_RESOURCES_CONTAINERS_LIST_Request {
-}
-message SPOT_DASHBOARD_ORG_METRICS_QUERY_Request {
-}
-message SPOT_DASHBOARD_RESOURCES_CONTAINERS_ALLOCATION_Request {
-    string metricType = 1; // generated from path variable: metricType. You should change the proto type if necessary
-}
-message SPOT_DASHBOARD_RESOURCES_CONTAINERS_COUNT_Request {
-}
-message SPOT_DASHBOARD_RESOURCES_TYPES_Request {
-}
-message MONITOR_APM_TOPOLOGY_SEARCH_TAGS_GET_Request {
-}
-message MSP_ADDON_LOGS_RULES_TEST_Request {
-}
-message MONITOR_ORGS_ALERTS_Request {
-}
-message SPOT_DASHBOARD_ALARM_NOTIFIES_Request {
-}
-message MONITOR_APM_TOPOLOGY_EXCEPTION_MESSAGE_GET_Request {
-}
-message MONITOR_APM_TOPOLOGY_TRANSLATION_DB_Request {
-}
-message MONITOR_DASHBOARD_TEMPLATE_UPDATE_Request {
-    string id = 1; // generated from path variable: id. You should change the proto type if necessary
-}
-message SPOT_DASHBOARD_RESOURCES_GROUP_Request {
-}
-message MONITOR_APM_CUSTOMIZE_ALERT_ID_DELETE_Request {
-    string id = 1; // generated from path variable: id. You should change the proto type if necessary
-}
-message MONITOR_APM_INSTANCE_GET_Request {
-}
-message MONITOR_NOTIFY_LIST_Request {
-}
-message MONITOR_ORG_HOSTS_ALERT_RECORDS_Request {
-}
-message MONITOR_ORG_REPORT_TASK_CREATE_Request {
-}
-message MONITOR_APM_ALERT_ID_PUT_Request {
-    string id = 1; // generated from path variable: id. You should change the proto type if necessary
-}
-message MONITOR_DASHBOARD_TEMPLATE_DELETE_Request {
-    string id = 1; // generated from path variable: id. You should change the proto type if necessary
-}
-message MSP_ADDON_LOGS_RULES_CREATE_Request {
-}
-message MSP_ADDON_LOGS_RULES_TEMPLATE_Request {
-    string name = 1; // generated from path variable: name. You should change the proto type if necessary
-}
-message SPOT_JVM_PROFILER_HEAP_STAT_Request {
-    string addonID = 1; // generated from path variable: addonID. You should change the proto type if necessary
-    string profilingID = 2; // generated from path variable: profilingID. You should change the proto type if necessary
-}
-message SPOT_JVM_PROFILER_THREAD_DUMP_Request {
-    string addonID = 1; // generated from path variable: addonID. You should change the proto type if necessary
-    string profilingID = 2; // generated from path variable: profilingID. You should change the proto type if necessary
-}
-message MONITOR_ORG_ALERT_RECORD_ISSUE_UPDATE_Request {
-    string groupId = 1; // generated from path variable: groupId. You should change the proto type if necessary
-    string issueId = 2; // generated from path variable: issueId. You should change the proto type if necessary
-}
-message MONITOR_ORG_LOGS_RULES_Request {
-}
-message MSP_ADDON_LOGS_RULES_DELETE_Request {
-    string id = 1; // generated from path variable: id. You should change the proto type if necessary
-}
-message MSP_ADDON_LOGS_RULES_ENABLE_Request {
-    string id = 1; // generated from path variable: id. You should change the proto type if necessary
-}
-message SPOT_DASHBOARD_ALARM_TYPES_Request {
-}
-message SPOT_DASHBOARD_ORG_METRICS_HISTOGRAM_Request {
-    string scope = 1; // generated from path variable: scope. You should change the proto type if necessary
-}
-message SPOT_JVM_PROFILER_HEAP_SNAPSHOT_LIST_Request {
-    string addonID = 1; // generated from path variable: addonID. You should change the proto type if necessary
-    string profilingID = 2; // generated from path variable: profilingID. You should change the proto type if necessary
-}
-message MONITOR_DASHBOARD_PARSE_Request {
-}
-message MONITOR_ORG_ALERT_RECORD_HISTORIES_Request {
-    string groupId = 1; // generated from path variable: groupId. You should change the proto type if necessary
-}
-message SPOT_DASHBOARD_PROJECT_METRICS_HISTOGRAM_Request {
-    string scope = 1; // generated from path variable: scope. You should change the proto type if necessary
-}
-message SPOT_DASHBOARD_RUNTIME_METRICS_QUERY_POST_Request {
-}
-message MONITOR_APM_ALERT_ID_SWITCH_PUT_Request {
-    string id = 1; // generated from path variable: id. You should change the proto type if necessary
+message MONITOR_APM_ALERT_POST_Request {
 }
 message MONITOR_APM_ALERT_RULE_LIST_Request {
 }
-message MONITOR_APM_TRACE_LIST_Request {
+message MONITOR_APM_CUSTOMIZE_ALERT_ID_DELETE_Request {
+    string id = 1; // generated from path variable: id. You should change the proto type if necessary.
 }
-message MONITOR_APM_ALERT_POST_Request {
+message MONITOR_APM_CUSTOMIZE_ALERT_ID_GET_Request {
+    string id = 1; // generated from path variable: id. You should change the proto type if necessary.
 }
-message MONITOR_APM_TOPOLOGY_TRANSLATION_SLOW_Request {
+message MONITOR_APM_CUSTOMIZE_ALERT_ID_PUT_Request {
+    string id = 1; // generated from path variable: id. You should change the proto type if necessary.
 }
-message MONITOR_ORGS_CUSTOMIZE_ALERT_Request {
-    string id = 1; // generated from path variable: id. You should change the proto type if necessary
+message MONITOR_APM_CUSTOMIZE_ALERT_ID_SWITCH_PUT_Request {
+    string id = 1; // generated from path variable: id. You should change the proto type if necessary.
 }
-message SPOT_DASHBOARD_ALARM_NOTIFIES_SWITCH_Request {
-    string id = 1; // generated from path variable: id. You should change the proto type if necessary
+message MONITOR_APM_CUSTOMIZE_ALERT_LIST_Request {
 }
-message SPOT_JVM_PROFILER_THREAD_STAT_Request {
-    string addonID = 1; // generated from path variable: addonID. You should change the proto type if necessary
-    string profilingID = 2; // generated from path variable: profilingID. You should change the proto type if necessary
+message MONITOR_APM_CUSTOMIZE_ALERT_METRICS_GET_Request {
+}
+message MONITOR_APM_CUSTOMIZE_ALERT_NOTIFIES_TARGETS_GET_Request {
+}
+message MONITOR_APM_CUSTOMIZE_ALERT_POST_Request {
+}
+message MONITOR_APM_INSTANCE_GET_Request {
+}
+message MONITOR_APM_RUNTIME_GET_Request {
+}
+message MONITOR_APM_TOPOLOGY_EXCEPTION_MESSAGE_GET_Request {
+}
+message MONITOR_APM_TOPOLOGY_EXCEPTION_TYPES_GET_Request {
+}
+message MONITOR_APM_TOPOLOGY_GET_Request {
+}
+message MONITOR_APM_TOPOLOGY_GLOBAL_OVERVIEW_GET_Request {
 }
 message MONITOR_APM_TOPOLOGY_PROCESS_DISKIO_Request {
 }
+message MONITOR_APM_TOPOLOGY_PROCESS_INSTANCE_IDS_GET_Request {
+}
+message MONITOR_APM_TOPOLOGY_PROCESS_NETIO_Request {
+}
+message MONITOR_APM_TOPOLOGY_SEARCH_TAGS_GET_Request {
+}
+message MONITOR_APM_TOPOLOGY_SEARCH_TAGV_GET_Request {
+}
+message MONITOR_APM_TOPOLOGY_SERVICES_LIST_Request {
+}
 message MONITOR_APM_TOPOLOGY_SERVICE_INSTANCES_LIST_Request {
+}
+message MONITOR_APM_TOPOLOGY_SERVICE_OVERVIEW_GET_Request {
+}
+message MONITOR_APM_TOPOLOGY_SERVICE_REQUESTS_GET_Request {
+}
+message MONITOR_APM_TOPOLOGY_TRANSLATION_DB_Request {
+}
+message MONITOR_APM_TOPOLOGY_TRANSLATION_Request {
+}
+message MONITOR_APM_TOPOLOGY_TRANSLATION_SLOW_Request {
+}
+message MONITOR_APM_TRACE_ID_GET_Request {
+    string id = 1; // generated from path variable: id. You should change the proto type if necessary.
+}
+message MONITOR_APM_TRACE_LIST_Request {
+}
+message MONITOR_CLUSTER_STATUS_GET_Request {
+}
+message MONITOR_DASHBOARD_EXPORT_Request {
+}
+message MONITOR_DASHBOARD_IMPORT_Request {
+}
+message MONITOR_DASHBOARD_PARSE_Request {
+}
+message MONITOR_DASHBOARD_TEMPLATES_Request {
+}
+message MONITOR_DASHBOARD_TEMPLATE_CREATE_Request {
+}
+message MONITOR_DASHBOARD_TEMPLATE_DELETE_Request {
+    string id = 1; // generated from path variable: id. You should change the proto type if necessary.
+}
+message MONITOR_DASHBOARD_TEMPLATE_Request {
+    string id = 1; // generated from path variable: id. You should change the proto type if necessary.
+}
+message MONITOR_DASHBOARD_TEMPLATE_UPDATE_Request {
+    string id = 1; // generated from path variable: id. You should change the proto type if necessary.
+}
+message MONITOR_FILEMANAGER_DOWNLOAD_Request {
+    string containerID = 1; // generated from path variable: containerID. You should change the proto type if necessary.
+}
+message MONITOR_FILEMANAGER_UPLOAD_Request {
+    string containerID = 1; // generated from path variable: containerID. You should change the proto type if necessary.
+}
+message MONITOR_NOTIFY_CREATE_Request {
+}
+message MONITOR_NOTIFY_CUSTOMIZE_Request {
+}
+message MONITOR_NOTIFY_DELETE_Request {
+    string id = 1; // generated from path variable: id. You should change the proto type if necessary.
+}
+message MONITOR_NOTIFY_ENABLE_Request {
+    string id = 1; // generated from path variable: id. You should change the proto type if necessary.
+}
+message MONITOR_NOTIFY_LIST_Request {
+}
+message MONITOR_NOTIFY_TEMPALTES_Request {
+}
+message MONITOR_NOTIFY_UPDATE_Request {
+    string id = 1; // generated from path variable: id. You should change the proto type if necessary.
+}
+message MONITOR_ORGS_ALERTS_RULES_Request {
+}
+message MONITOR_ORGS_ALERTS_Request {
+}
+message MONITOR_ORGS_ALERT_CREATE_Request {
+}
+message MONITOR_ORGS_ALERT_DELETE_Request {
+    string id = 1; // generated from path variable: id. You should change the proto type if necessary.
+}
+message MONITOR_ORGS_ALERT_Request {
+    string id = 1; // generated from path variable: id. You should change the proto type if necessary.
+}
+message MONITOR_ORGS_ALERT_SWITCH_Request {
+    string id = 1; // generated from path variable: id. You should change the proto type if necessary.
+}
+message MONITOR_ORGS_ALERT_UPDATE_Request {
+    string id = 1; // generated from path variable: id. You should change the proto type if necessary.
+}
+message MONITOR_ORGS_CUSTOMIZE_ALERTS_Request {
+}
+message MONITOR_ORGS_CUSTOMIZE_ALERT_CREATE_Request {
+}
+message MONITOR_ORGS_CUSTOMIZE_ALERT_DASH_PREVIEW_Request {
+}
+message MONITOR_ORGS_CUSTOMIZE_ALERT_DELETE_Request {
+    string id = 1; // generated from path variable: id. You should change the proto type if necessary.
+}
+message MONITOR_ORGS_CUSTOMIZE_ALERT_METRICS_Request {
+}
+message MONITOR_ORGS_CUSTOMIZE_ALERT_NOTIFY_TARGET_Request {
+}
+message MONITOR_ORGS_CUSTOMIZE_ALERT_Request {
+    string id = 1; // generated from path variable: id. You should change the proto type if necessary.
+}
+message MONITOR_ORGS_CUSTOMIZE_ALERT_SWITCH_Request {
+    string id = 1; // generated from path variable: id. You should change the proto type if necessary.
+}
+message MONITOR_ORGS_CUSTOMIZE_ALERT_UPDATE_Request {
+    string id = 1; // generated from path variable: id. You should change the proto type if necessary.
+}
+message MONITOR_ORG_ALERT_RECORDS_Request {
+}
+message MONITOR_ORG_ALERT_RECORD_ATTRS_Request {
+}
+message MONITOR_ORG_ALERT_RECORD_HISTORIES_Request {
+    string groupId = 1; // generated from path variable: groupId. You should change the proto type if necessary.
+}
+message MONITOR_ORG_ALERT_RECORD_ISSUE_CREATE_Request {
+    string groupId = 1; // generated from path variable: groupId. You should change the proto type if necessary.
+}
+message MONITOR_ORG_ALERT_RECORD_ISSUE_UPDATE_Request {
+    string groupId = 1; // generated from path variable: groupId. You should change the proto type if necessary.
+    string issueId = 2; // generated from path variable: issueId. You should change the proto type if necessary.
+}
+message MONITOR_ORG_ALERT_RECORD_Request {
+    string groupId = 1; // generated from path variable: groupId. You should change the proto type if necessary.
+}
+message MONITOR_ORG_HOSTS_ALERT_RECORDS_Request {
+}
+message MONITOR_ORG_LOGS_RULES_CREATE_Request {
+}
+message MONITOR_ORG_LOGS_RULES_DELETE_Request {
+    string id = 1; // generated from path variable: id. You should change the proto type if necessary.
+}
+message MONITOR_ORG_LOGS_RULES_ENABLE_Request {
+    string id = 1; // generated from path variable: id. You should change the proto type if necessary.
+}
+message MONITOR_ORG_LOGS_RULES_Request {
+}
+message MONITOR_ORG_LOGS_RULES_TEMPLATES_Request {
+}
+message MONITOR_ORG_LOGS_RULES_TEMPLATE_Request {
+    string name = 1; // generated from path variable: name. You should change the proto type if necessary.
+}
+message MONITOR_ORG_LOGS_RULES_TEST_Request {
+}
+message MONITOR_ORG_LOGS_RULES_UPDATE_Request {
+    string id = 1; // generated from path variable: id. You should change the proto type if necessary.
+}
+message MONITOR_ORG_LOGS_RULE_Request {
+    string id = 1; // generated from path variable: id. You should change the proto type if necessary.
+}
+message MONITOR_ORG_LOGS_SEARCH_Request {
+}
+message MONITOR_ORG_LOGS_STATISTIC_Request {
+}
+message MONITOR_ORG_LOGS_TAGS_TREE_Request {
+}
+message MONITOR_ORG_REPORT_HISTORY_CREATE_Request {
+}
+message MONITOR_ORG_REPORT_HISTORY_Request {
+    string id = 1; // generated from path variable: id. You should change the proto type if necessary.
+}
+message MONITOR_ORG_REPORT_TASK_CREATE_Request {
+}
+message MONITOR_ORG_REPORT_TASK_Request {
+    string id = 1; // generated from path variable: id. You should change the proto type if necessary.
+}
+message MSP_ADDON_LOGS_RULES_CREATE_Request {
+}
+message MSP_ADDON_LOGS_RULES_DELETE_Request {
+    string id = 1; // generated from path variable: id. You should change the proto type if necessary.
+}
+message MSP_ADDON_LOGS_RULES_ENABLE_Request {
+    string id = 1; // generated from path variable: id. You should change the proto type if necessary.
+}
+message MSP_ADDON_LOGS_RULES_Request {
+}
+message MSP_ADDON_LOGS_RULES_TEMPLATES_Request {
+}
+message MSP_ADDON_LOGS_RULES_TEMPLATE_Request {
+    string name = 1; // generated from path variable: name. You should change the proto type if necessary.
+}
+message MSP_ADDON_LOGS_RULES_TEST_Request {
+}
+message MSP_ADDON_LOGS_RULES_UPDATE_Request {
+    string id = 1; // generated from path variable: id. You should change the proto type if necessary.
+}
+message MSP_ADDON_LOGS_RULE_Request {
+    string id = 1; // generated from path variable: id. You should change the proto type if necessary.
+}
+message SPOT_DASHBOARD_ALARM_NOTIFIES_CREATE_Request {
+}
+message SPOT_DASHBOARD_ALARM_NOTIFIES_DELETE_Request {
+    string id = 1; // generated from path variable: id. You should change the proto type if necessary.
+}
+message SPOT_DASHBOARD_ALARM_NOTIFIES_EDIT_Request {
+    string id = 1; // generated from path variable: id. You should change the proto type if necessary.
+}
+message SPOT_DASHBOARD_ALARM_NOTIFIES_Request {
+}
+message SPOT_DASHBOARD_ALARM_NOTIFIES_SWITCH_Request {
+    string id = 1; // generated from path variable: id. You should change the proto type if necessary.
+}
+message SPOT_DASHBOARD_ALARM_TYPES_Request {
+}
+message SPOT_DASHBOARD_ALERT_METRICS_HISTOGRAM_Request {
+    string scope = 1; // generated from path variable: scope. You should change the proto type if necessary.
+}
+message SPOT_DASHBOARD_ALERT_METRICS_Request {
+    string scope = 1; // generated from path variable: scope. You should change the proto type if necessary.
+}
+message SPOT_DASHBOARD_CHART_META_Request {
+}
+message SPOT_DASHBOARD_ORG_METRICS_HISTOGRAM_Request {
+    string scope = 1; // generated from path variable: scope. You should change the proto type if necessary.
+}
+message SPOT_DASHBOARD_ORG_METRICS_QUERY_POST_Request {
+}
+message SPOT_DASHBOARD_ORG_METRICS_QUERY_Request {
+}
+message SPOT_DASHBOARD_ORG_METRICS_Request {
+    string scope = 1; // generated from path variable: scope. You should change the proto type if necessary.
+}
+message SPOT_DASHBOARD_PROJECT_METRICS_HISTOGRAM_Request {
+    string scope = 1; // generated from path variable: scope. You should change the proto type if necessary.
+}
+message SPOT_DASHBOARD_PROJECT_METRICS_QUERY_POST_Request {
+}
+message SPOT_DASHBOARD_PROJECT_METRICS_QUERY_Request {
+}
+message SPOT_DASHBOARD_PROJECT_METRICS_Request {
+    string scope = 1; // generated from path variable: scope. You should change the proto type if necessary.
+}
+message SPOT_DASHBOARD_RESOURCES_CONTAINERS_ALLOCATION_Request {
+    string metricType = 1; // generated from path variable: metricType. You should change the proto type if necessary.
+}
+message SPOT_DASHBOARD_RESOURCES_CONTAINERS_COUNT_Request {
+}
+message SPOT_DASHBOARD_RESOURCES_CONTAINERS_LIST_Request {
+}
+message SPOT_DASHBOARD_RESOURCES_CONTAINERS_Request {
+    string instanceType = 1; // generated from path variable: instanceType. You should change the proto type if necessary.
+}
+message SPOT_DASHBOARD_RESOURCES_GROUP_Request {
+}
+message SPOT_DASHBOARD_RESOURCES_TYPES_Request {
+}
+message SPOT_DASHBOARD_RUNTIME_METRICS_HISTOGRAM_Request {
+    string scope = 1; // generated from path variable: scope. You should change the proto type if necessary.
+}
+message SPOT_DASHBOARD_RUNTIME_METRICS_QUERY_POST_Request {
+}
+message SPOT_DASHBOARD_RUNTIME_METRICS_QUERY_Request {
+}
+message SPOT_DASHBOARD_RUNTIME_METRICS_Request {
+    string scope = 1; // generated from path variable: scope. You should change the proto type if necessary.
+}
+message SPOT_DASHBOARD_SYSTEM_METRICS_HISTOGRAM_Request {
+    string scope = 1; // generated from path variable: scope. You should change the proto type if necessary.
+}
+message SPOT_DASHBOARD_SYSTEM_POD_METRICS_Request {
+}
+message SPOT_JVM_PROFILER_FINISH_Request {
+    string addonID = 1; // generated from path variable: addonID. You should change the proto type if necessary.
+    string profilingID = 2; // generated from path variable: profilingID. You should change the proto type if necessary.
+}
+message SPOT_JVM_PROFILER_HEAP_GC_Request {
+    string addonID = 1; // generated from path variable: addonID. You should change the proto type if necessary.
+    string profilingID = 2; // generated from path variable: profilingID. You should change the proto type if necessary.
+}
+message SPOT_JVM_PROFILER_HEAP_GC_STATE_Request {
+    string addonID = 1; // generated from path variable: addonID. You should change the proto type if necessary.
+    string profilingID = 2; // generated from path variable: profilingID. You should change the proto type if necessary.
+    string heapGCID = 3; // generated from path variable: heapGCID. You should change the proto type if necessary.
+}
+message SPOT_JVM_PROFILER_HEAP_SNAPSHOT_LIST_Request {
+    string addonID = 1; // generated from path variable: addonID. You should change the proto type if necessary.
+    string profilingID = 2; // generated from path variable: profilingID. You should change the proto type if necessary.
+}
+message SPOT_JVM_PROFILER_HEAP_STAT_Request {
+    string addonID = 1; // generated from path variable: addonID. You should change the proto type if necessary.
+    string profilingID = 2; // generated from path variable: profilingID. You should change the proto type if necessary.
+}
+message SPOT_JVM_PROFILER_JVM_INFO_Request {
+    string addonID = 1; // generated from path variable: addonID. You should change the proto type if necessary.
+    string profilingID = 2; // generated from path variable: profilingID. You should change the proto type if necessary.
+}
+message SPOT_JVM_PROFILER_LIST_Request {
+    string addonID = 1; // generated from path variable: addonID. You should change the proto type if necessary.
+}
+message SPOT_JVM_PROFILER_SERVICES_Request {
+    string addonID = 1; // generated from path variable: addonID. You should change the proto type if necessary.
+}
+message SPOT_JVM_PROFILER_START_Request {
+    string addonID = 1; // generated from path variable: addonID. You should change the proto type if necessary.
+}
+message SPOT_JVM_PROFILER_STATE_Request {
+    string addonID = 1; // generated from path variable: addonID. You should change the proto type if necessary.
+    string profilingID = 2; // generated from path variable: profilingID. You should change the proto type if necessary.
+}
+message SPOT_JVM_PROFILER_THREAD_DUMP_Request {
+    string addonID = 1; // generated from path variable: addonID. You should change the proto type if necessary.
+    string profilingID = 2; // generated from path variable: profilingID. You should change the proto type if necessary.
+}
+message SPOT_JVM_PROFILER_THREAD_SNAPSHOT_GET_Request {
+    string addonID = 1; // generated from path variable: addonID. You should change the proto type if necessary.
+    string profilingID = 2; // generated from path variable: profilingID. You should change the proto type if necessary.
+    string snapshotsID = 3; // generated from path variable: snapshotsID. You should change the proto type if necessary.
+}
+message SPOT_JVM_PROFILER_THREAD_SNAPSHOT_LIST_Request {
+    string addonID = 1; // generated from path variable: addonID. You should change the proto type if necessary.
+    string profilingID = 2; // generated from path variable: profilingID. You should change the proto type if necessary.
+}
+message SPOT_JVM_PROFILER_THREAD_SNAPSHOT_STATE_Request {
+    string addonID = 1; // generated from path variable: addonID. You should change the proto type if necessary.
+    string profilingID = 2; // generated from path variable: profilingID. You should change the proto type if necessary.
+    string snapshotsID = 3; // generated from path variable: snapshotsID. You should change the proto type if necessary.
+}
+message SPOT_JVM_PROFILER_THREAD_STAT_Request {
+    string addonID = 1; // generated from path variable: addonID. You should change the proto type if necessary.
+    string profilingID = 2; // generated from path variable: profilingID. You should change the proto type if necessary.
+}
+message SPOT_ORG_LOGS_DOWNLOAD_Request {
+}
+message SPOT_ORG_LOGS_Request {
+}
+message SPOT_RUNTIME_LOGS_DOWNLOAD_Request {
+}
+message SPOT_RUNTIME_LOGS_Request {
+}
+message SPOT_RUNTIME_REALTIME_LOGS_Request {
 }
 // generate service from openapi spec: monitor
 service monitor {

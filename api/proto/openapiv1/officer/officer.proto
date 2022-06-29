@@ -16,18 +16,18 @@ import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 import "common/openapi.proto";
 import "common/identity.proto";
 
+message OFFICER_FETCH_SCRIPT_Request {
+    string name = 1; // generated from path variable: name. You should change the proto type if necessary.
+}
 message OFFICER_GET_PRICE_Request {
+}
+message OFFICER_GET_SCRIPT_INFO_Request {
 }
 message ScriptInfo {
     string md5 = 1;
     string name = 2;
     int64 size = 3;
     repeated string scriptBlackList = 4 [json_name = "blackList"];
-}
-message OFFICER_GET_SCRIPT_INFO_Request {
-}
-message OFFICER_FETCH_SCRIPT_Request {
-    string name = 1; // generated from path variable: name. You should change the proto type if necessary
 }
 // generate service from openapi spec: officer
 service officer {

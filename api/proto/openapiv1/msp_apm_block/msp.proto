@@ -16,18 +16,18 @@ import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 import "common/openapi.proto";
 import "common/identity.proto";
 
-message LIST_BLOCKS_Request {
-}
-message TMC_METRIC_DASHBOARD_UPDATE_Request {
-    string id = 1; // generated from path variable: id. You should change the proto type if necessary
-}
 message CREATE_BLOCK_Request {
 }
 message DELETE_BLOCK_Request {
-    string id = 1; // generated from path variable: id. You should change the proto type if necessary
+    string id = 1; // generated from path variable: id. You should change the proto type if necessary.
 }
 message GET_BLOCK_Request {
-    string id = 1; // generated from path variable: id. You should change the proto type if necessary
+    string id = 1; // generated from path variable: id. You should change the proto type if necessary.
+}
+message LIST_BLOCKS_Request {
+}
+message TMC_METRIC_DASHBOARD_UPDATE_Request {
+    string id = 1; // generated from path variable: id. You should change the proto type if necessary.
 }
 // generate service from openapi spec: msp_apm_block
 service msp_apm_block {
