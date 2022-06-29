@@ -93,9 +93,6 @@ func Test_generateKubeJob(t *testing.T) {
 		Namespace: metav1.NamespaceDefault,
 	}, nil)
 	assert.NoError(t, err)
-
-	err = j.createInnerSecretIfNotExist(metav1.NamespaceDefault, apistructs.BuildkitClientSecret)
-	assert.NoError(t, err)
 }
 
 func TestCheckLabels(t *testing.T) {

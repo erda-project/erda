@@ -19,7 +19,6 @@ import (
 )
 
 const (
-	AliyunRegistry                 = "aliyun-registry"
 	ENABLE_SPECIFIED_K8S_NAMESPACE = "ENABLE_SPECIFIED_K8S_NAMESPACE"
 )
 

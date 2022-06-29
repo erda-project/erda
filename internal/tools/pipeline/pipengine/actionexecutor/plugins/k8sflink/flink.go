@@ -28,12 +28,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/tools/pipeline/conf"
 	"github.com/erda-project/erda/internal/tools/pipeline/pipengine/actionexecutor/logic"
 	"github.com/erda-project/erda/internal/tools/pipeline/pipengine/actionexecutor/types"
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/container_provider"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/clusterinfo"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
-	"github.com/erda-project/erda/pkg/strutil"
 )
 
 const (
@@ -157,12 +157,6 @@ func (k *K8sFlink) Start(ctx context.Context, task *spec.PipelineTask) (data int
 		}
 	}
 
-	if err := k.createImageSecretIfNotExist(job.Namespace); err != nil {
-		return apistructs.Job{
-			JobFromUser: job,
-		}, err
-	}
-
 	_, _, pvcs := logic.GenerateK8SVolumes(&job, clusterCM)
 	for _, pvc := range pvcs {
 		if pvc == nil {
@@ -191,6 +185,20 @@ func (k *K8sFlink) Start(ctx context.Context, task *spec.PipelineTask) (data int
 	flinkCluster.ObjectMeta.OwnerReferences = []metav1.OwnerReference{
 		composeOwnerReferences("v1", "Namespace", ns.Name, ns.UID),
 	}
+
+	isMount, err := logic.CreateInnerSecretIfNotExist(k.client.ClientSet, conf.ErdaNamespace(), job.Namespace,
+		conf.CustomRegCredSecret())
+	if err != nil {
+		return apistructs.Job{
+			JobFromUser: job,
+		}, err
+	}
+	if isMount {
+		flinkCluster.Spec.Image.PullSecrets = []corev1.LocalObjectReference{
+			{Name: conf.CustomRegCredSecret()},
+		}
+	}
+
 	if err := k.client.CRClient.Create(ctx, flinkCluster); err != nil {
 		if k8serrors.IsAlreadyExists(err) {
 			return apistructs.Job{
@@ -291,36 +299,4 @@ func (k *K8sFlink) GetFlinkClusterInfo(ctx context.Context, data apistructs.Bigd
 	}
 
 	return &flinkCluster, nil
-}
-
-func (k *K8sFlink) createImageSecretIfNotExist(namespace string) error {
-	if _, err := k.client.ClientSet.CoreV1().Secrets(namespace).Get(context.Background(), apistructs.AliyunRegistry, metav1.GetOptions{}); err == nil {
-		return nil
-	}
-
-	s, err := k.client.ClientSet.CoreV1().Secrets(metav1.NamespaceDefault).Get(context.Background(), apistructs.AliyunRegistry, metav1.GetOptions{})
-	if err != nil {
-		return err
-	}
-	mySecret := &corev1.Secret{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v1",
-			Kind:       "Secret",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      s.Name,
-			Namespace: namespace,
-		},
-		Data:       s.Data,
-		StringData: s.StringData,
-		Type:       s.Type,
-	}
-
-	if _, err := k.client.ClientSet.CoreV1().Secrets(namespace).Create(context.Background(), mySecret, metav1.CreateOptions{}); err != nil {
-		if strutil.Contains(err.Error(), "AlreadyExists") {
-			return nil
-		}
-		return err
-	}
-	return nil
 }

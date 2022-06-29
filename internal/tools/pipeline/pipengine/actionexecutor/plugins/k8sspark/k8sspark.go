@@ -29,6 +29,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/erda-project/erda/apistructs"
+	pipelineconf "github.com/erda-project/erda/internal/tools/pipeline/conf"
 	"github.com/erda-project/erda/internal/tools/pipeline/pipengine/actionexecutor/logic"
 	"github.com/erda-project/erda/internal/tools/pipeline/pipengine/actionexecutor/types"
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/container_provider"
@@ -103,10 +104,6 @@ func (k *K8sSpark) Start(ctx context.Context, task *spec.PipelineTask) (data int
 		if _, err = k.client.ClientSet.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{}); err != nil {
 			return nil, fmt.Errorf("create namespace err: %v", err)
 		}
-	}
-
-	if err := k.createImageSecretIfNotExist(job.Namespace); err != nil {
-		return nil, fmt.Errorf("failed to create aliyun-registry image secrets, namespace: %s, err: %v", job.Namespace, err)
 	}
 
 	if err := k.createSparkServiceAccountIfNotExist(job.Namespace); err != nil {
@@ -301,39 +298,6 @@ func (k *K8sSpark) removePipelineJobs(ns string) error {
 	return nil
 }
 
-func (k *K8sSpark) createImageSecretIfNotExist(ns string) error {
-	if _, err := k.client.ClientSet.CoreV1().Secrets(ns).Get(context.Background(), apistructs.AliyunRegistry, metav1.GetOptions{}); err == nil {
-		return nil
-	}
-
-	s, err := k.client.ClientSet.CoreV1().Secrets(metav1.NamespaceDefault).Get(context.Background(), apistructs.AliyunRegistry, metav1.GetOptions{})
-	if err != nil {
-		return err
-	}
-	mySecret := &corev1.Secret{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v1",
-			Kind:       "Secret",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      s.Name,
-			Namespace: ns,
-		},
-		Data:       s.Data,
-		StringData: s.StringData,
-		Type:       s.Type,
-	}
-
-	if _, err := k.client.ClientSet.CoreV1().Secrets(ns).Create(context.Background(), mySecret, metav1.CreateOptions{}); err != nil {
-		if k8serrors.IsAlreadyExists(err) {
-			return nil
-		}
-		return err
-	}
-
-	return nil
-}
-
 func (k *K8sSpark) createSparkServiceAccountIfNotExist(ns string) error {
 	if _, err := k.client.ClientSet.CoreV1().ServiceAccounts(ns).Get(context.Background(), sparkServiceAccountName, metav1.GetOptions{}); err == nil {
 		return nil
@@ -450,19 +414,27 @@ func (k *K8sSpark) generateKubeSparkJob(job *apistructs.JobFromUser, conf *apist
 			},
 		},
 		Spec: sparkv1beta2.SparkApplicationSpec{
-			Type:             sparkv1beta2.SparkApplicationType(conf.Spec.SparkConf.Type),
-			Image:            &conf.Spec.Image,
-			SparkVersion:     sparkVersion,
-			Mode:             sparkv1beta2.DeployMode(conf.Spec.SparkConf.Kind),
-			ImagePullPolicy:  stringptr(imagePullPolicyAlways),
-			ImagePullSecrets: []string{apistructs.AliyunRegistry},
-			MainClass:        stringptr(conf.Spec.Class),
-			Arguments:        conf.Spec.Args,
+			Type:            sparkv1beta2.SparkApplicationType(conf.Spec.SparkConf.Type),
+			Image:           &conf.Spec.Image,
+			SparkVersion:    sparkVersion,
+			Mode:            sparkv1beta2.DeployMode(conf.Spec.SparkConf.Kind),
+			ImagePullPolicy: stringptr(imagePullPolicyAlways),
+			MainClass:       stringptr(conf.Spec.Class),
+			Arguments:       conf.Spec.Args,
 			RestartPolicy: sparkv1beta2.RestartPolicy{
 				Type: sparkv1beta2.Never,
 			},
 			SparkConf: conf.Spec.Properties,
 		},
+	}
+
+	isMount, err := logic.CreateInnerSecretIfNotExist(k.client.ClientSet, pipelineconf.ErdaNamespace(), job.Namespace,
+		pipelineconf.CustomRegCredSecret())
+	if err != nil {
+		return nil, err
+	}
+	if isMount {
+		sparkApp.Spec.ImagePullSecrets = []string{pipelineconf.CustomRegCredSecret()}
 	}
 
 	// add deps pyFiles

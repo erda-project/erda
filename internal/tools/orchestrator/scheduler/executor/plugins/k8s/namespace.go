@@ -19,6 +19,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/tools/orchestrator/conf"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8serror"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -47,7 +48,7 @@ func (k *Kubernetes) CreateNamespace(ns string, sg *apistructs.ServiceGroup) err
 		registryInfos := k.composeRegistryInfos(sg)
 		err := k.UpdateImageSecret(ns, registryInfos)
 		if err != nil {
-			logrus.Errorf("failed to update secret %s on namespace %s, err: %v", AliyunRegistry, ns, err)
+			logrus.Errorf("failed to update secret %s on namespace %s, err: %v", conf.CustomRegCredSecret(), ns, err)
 			return err
 		}
 		if sg.ProjectNamespace != "" {

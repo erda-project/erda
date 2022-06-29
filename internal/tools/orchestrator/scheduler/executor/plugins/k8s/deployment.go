@@ -45,7 +45,6 @@ const (
 	shardDirSuffix          = "-shard-dir"
 	sidecarNamePrefix       = "sidecar-"
 	EnableServiceLinks      = "ENABLE_SERVICE_LINKS"
-	RegistrySecretName      = "REGISTRY_SECRET_NAME"
 
 	LabelKeyPrefix          = "annotations/"
 	ECIPodSidecarConfigPath = "/etc/sidecarconf"

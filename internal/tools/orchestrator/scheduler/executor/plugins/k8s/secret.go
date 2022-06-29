@@ -15,6 +15,7 @@
 package k8s
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -23,9 +24,11 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/tools/orchestrator/conf"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -34,7 +37,7 @@ import (
 // 2, put this secret into serviceaccount of the namespace
 func (k *Kubernetes) NewImageSecret(namespace string) error {
 	// When the cluster is initialized, a secret to pull the mirror will be created in the default namespace
-	s, err := k.secret.Get(metav1.NamespaceDefault, AliyunRegistry)
+	s, err := k.secret.Get(conf.ErdaNamespace(), conf.CustomRegCredSecret())
 	if err != nil {
 		return errors.Errorf("failed to get default image secret, err: %v", err)
 	}
@@ -66,7 +69,7 @@ func (k *Kubernetes) NewImageSecret(namespace string) error {
 // 3, put this secret into serviceaccount of the namespace
 func (k *Kubernetes) NewRuntimeImageSecret(namespace string, sg *apistructs.ServiceGroup) error {
 	// When the cluster is initialized, a secret to pull the mirror will be created in the default namespace
-	s, err := k.secret.Get("default", AliyunRegistry)
+	s, err := k.secret.Get(conf.ErdaNamespace(), conf.CustomRegCredSecret())
 	if err != nil {
 		return err
 	}
@@ -111,22 +114,33 @@ func (k *Kubernetes) NewRuntimeImageSecret(namespace string, sg *apistructs.Serv
 }
 
 func (k *Kubernetes) UpdateImageSecret(namespace string, infos []apistructs.RegistryInfo) error {
-	logrus.Infof("start to update secret %s on namespace %s", AliyunRegistry, namespace)
-	aliYunSecret, err := k.secret.Get(namespace, AliyunRegistry)
+	secretName := conf.CustomRegCredSecret()
+	logrus.Infof("start to update secret %s on namespace %s", secretName, namespace)
+	regCred, err := k.secret.Get(namespace, secretName)
 	// TODO: user k8serrors.IsNotFound() instead after rewrite with client-go.
 	if err != nil && err.Error() != "not found" {
 		return errors.Errorf("get image secret when update, err: %v", err)
 	}
 
-	nSecret, err := parseImageSecret(namespace, infos, aliYunSecret)
+	curSecret := regCred
+
+	if regCred == nil {
+		sourceSec, err := k.secret.Get(conf.ErdaNamespace(), secretName)
+		if err != nil && err.Error() != "not found" {
+			return errors.Errorf("get image secret source %s from %s, err: %v", secretName, conf.ErdaNamespace(), err)
+		}
+		curSecret = sourceSec
+	}
+
+	nSecret, err := parseImageSecret(namespace, infos, curSecret)
 	if err != nil {
 		return errors.Errorf("parse image secret, err: %v", err)
 	}
 
 	// secret doesn't exist in project namespace
-	if aliYunSecret == nil {
+	if regCred == nil {
 		if err := k.secret.Create(nSecret); err != nil {
-			logrus.Errorf("create secret %s, err: %v", AliyunRegistry, err)
+			logrus.Errorf("create secret %s, err: %v", secretName, err)
 		}
 	} else {
 		if err := k.secret.Update(nSecret); err != nil {
@@ -194,7 +208,7 @@ func parseImageSecret(namespace string, infos []apistructs.RegistryInfo, curSecr
 	if curSecret == nil {
 		curSecret = &apiv1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      AliyunRegistry,
+				Name:      conf.CustomRegCredSecret(),
 				Namespace: namespace,
 			},
 			Data: map[string][]byte{},
@@ -222,4 +236,44 @@ func parseImageSecret(namespace string, infos []apistructs.RegistryInfo, curSecr
 	curSecret.Data[apiv1.DockerConfigJsonKey] = sData
 
 	return curSecret, nil
+}
+
+func (k *Kubernetes) createImageSecretIfNotExist(targetNs string) error {
+	secretName := conf.CustomRegCredSecret()
+	sourceNs := conf.ErdaNamespace()
+
+	cs := k.k8sClient.ClientSet
+	if cs == nil {
+		return errors.New("k8s client set is nil")
+	}
+
+	if _, err := cs.CoreV1().Secrets(targetNs).Get(context.Background(), secretName, metav1.GetOptions{}); err == nil {
+		return nil
+	}
+
+	s, err := cs.CoreV1().Secrets(sourceNs).Get(context.Background(), secretName, metav1.GetOptions{})
+	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+
+	targetSec := &apiv1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: s.Name,
+		},
+		Data:       s.Data,
+		StringData: s.StringData,
+		Type:       s.Type,
+	}
+
+	if _, err = cs.CoreV1().Secrets(targetNs).Create(context.Background(), targetSec, metav1.CreateOptions{}); err != nil {
+		if k8serrors.IsAlreadyExists(err) {
+			return nil
+		}
+		return err
+	}
+
+	return nil
 }
