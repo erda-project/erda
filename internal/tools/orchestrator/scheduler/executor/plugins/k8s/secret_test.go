@@ -26,6 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/tools/orchestrator/conf"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/secret"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
@@ -130,7 +131,7 @@ func TestParseImageSecret(t *testing.T) {
 			args: args{
 				s: &apiv1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      AliyunRegistry,
+						Name:      conf.CustomRegCredSecret(),
 						Namespace: "erda-system",
 					},
 					Data: map[string][]byte{
@@ -139,7 +140,7 @@ func TestParseImageSecret(t *testing.T) {
 			},
 			want: &apiv1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      AliyunRegistry,
+					Name:      conf.CustomRegCredSecret(),
 					Namespace: "erda-system",
 				},
 				Data: map[string][]byte{
@@ -155,7 +156,7 @@ func TestParseImageSecret(t *testing.T) {
 			},
 			want: &apiv1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      AliyunRegistry,
+					Name:      conf.CustomRegCredSecret(),
 					Namespace: apiv1.NamespaceDefault,
 				},
 				Data: map[string][]byte{
