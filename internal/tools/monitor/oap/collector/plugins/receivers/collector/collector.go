@@ -23,9 +23,10 @@ import (
 	"strings"
 
 	"github.com/buger/jsonparser"
+	"github.com/labstack/echo"
+
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/protoparser/rawparser"
-	"github.com/labstack/echo"
 )
 
 const (

@@ -18,8 +18,9 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/compressor"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/compressor"
 )
 
 func TestParseStream(t *testing.T) {

@@ -22,6 +22,7 @@ import (
 	"log"
 
 	"github.com/buger/jsonparser"
+
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/compressor"
 )
