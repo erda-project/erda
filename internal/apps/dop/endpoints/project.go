@@ -27,6 +27,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	defpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
+	sourcepd "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
 	dwfpb "github.com/erda-project/erda-proto-go/dop/devflowrule/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/conf"
@@ -189,7 +191,38 @@ func (e *Endpoints) DeleteProject(ctx context.Context, r *http.Request, vars map
 		logrus.Warnf("failed to DeleteDevFlowRule, (%v)", err)
 	}
 
+	// delete pipeline source and definition
+	if err = e.deletePipelineSourceAndDefinition(ctx, project, nil); err != nil {
+		logrus.Errorf("failed to DeletePipelineSourceAndDefinition, err: %v", err)
+	}
+
 	return httpserver.OkResp(project)
+}
+
+func (e *Endpoints) deletePipelineSourceAndDefinition(ctx context.Context, project *apistructs.ProjectDTO, app *apistructs.ApplicationDTO) error {
+	var remote string
+	if project != nil {
+		org, err := e.bdl.GetOrg(project.OrgID)
+		if err != nil {
+			return err
+		}
+		remote = fmt.Sprintf("%s/%s", org.Name, project.Name)
+	} else if app != nil {
+		remote = fmt.Sprintf("%s/%s/%s", app.OrgName, app.ProjectName, app.Name)
+	}
+	if remote == "" {
+		return fmt.Errorf("the remote is empty")
+	}
+
+	_, err := e.PipelineSource.DeleteByRemote(ctx, &sourcepd.PipelineSourceDeleteByRemoteRequest{Remote: remote})
+	if err != nil {
+		return err
+	}
+	_, err = e.PipelineDefinition.DeleteByRemote(ctx, &defpb.PipelineDefinitionDeleteByRemoteRequest{Remote: remote})
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // cleanupNonBasicAddon Clean up non-basic addon

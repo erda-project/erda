@@ -47,6 +47,7 @@ type PipelineDefinition struct {
 	TotalActionNum    int64     `json:"totalActionNum"`
 	ExecutedActionNum int64     `json:"executedActionNum"`
 	Ref               string    `json:"ref"`
+	Remote            string    `json:"remote"`
 }
 
 func (PipelineDefinition) TableName() string {
@@ -74,6 +75,16 @@ func (client *Client) DeletePipelineDefinition(id string, ops ...mysqlxorm.Sessi
 	defer session.Close()
 
 	_, err := session.Table(new(PipelineDefinition)).ID(id).Update(map[string]interface{}{"soft_deleted_at": time.Now().UnixNano() / 1e6})
+	return err
+}
+
+func (client *Client) DeletePipelineDefinitionByRemote(remote string, ops ...mysqlxorm.SessionOption) error {
+	session := client.NewSession(ops...)
+	defer session.Close()
+
+	_, err := session.Table(new(PipelineDefinition)).
+		Where("remote LIKE ?", remote+"%").Where("soft_deleted_at = 0").
+		Update(map[string]interface{}{"soft_deleted_at": time.Now().UnixNano() / 1e6})
 	return err
 }
 
@@ -237,14 +248,13 @@ func (client *Client) StatisticsGroupByRemote(req *pb.PipelineDefinitionStatisti
 		list []PipelineDefinitionStatistics
 		err  error
 	)
-	err = session.Table("pipeline_definition").Alias("d").
-		Select(fmt.Sprintf("s.remote AS `group`,COUNT(*) AS total_num,COUNT( IF ( d.`status` = '%s' , 1, NULL) ) AS running_num,"+
-			"COUNT(IF(DATE_SUB(CURDATE(), INTERVAL 1 DAY) <= d.started_at AND d.`status` = '%s',1,NULL)) AS failed_num",
+	err = session.Table("pipeline_definition").
+		Select(fmt.Sprintf("remote AS `group`,COUNT(*) AS total_num,COUNT( IF ( `status` = '%s' , 1, NULL) ) AS running_num,"+
+			"COUNT(IF(DATE_SUB(CURDATE(), INTERVAL 1 DAY) <= started_at AND `status` = '%s',1,NULL)) AS failed_num",
 			apistructs.PipelineStatusRunning, apistructs.PipelineStatusFailed)).
-		Join("LEFT", []string{"pipeline_source", "s"}, "d.pipeline_source_id = s.id AND s.soft_deleted_at = 0").
-		Where("d.soft_deleted_at = 0").
-		Where("d.location = ?", req.GetLocation()).
-		GroupBy("s.remote").
+		Where("soft_deleted_at = 0").
+		Where("location = ?", req.GetLocation()).
+		GroupBy("remote").
 		Find(&list)
 	return list, err
 }
@@ -300,14 +310,13 @@ func (p *PipelineDefinitionSource) Convert() *pb.PipelineDefinition {
 func (client *Client) ListUsedRef(req *pb.PipelineDefinitionUsedRefListRequest, ops ...mysqlxorm.SessionOption) (refs []string, err error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
-	engine := session.Table(PipelineDefinition{}.TableName()).Alias("d").
-		Join("LEFT", []string{"pipeline_source", "s"}, "d.pipeline_source_id = s.id AND s.soft_deleted_at = 0").
-		Cols("d.ref").
-		Where("d.soft_deleted_at = 0").
-		Where("d.location = ?", req.Location).
-		GroupBy("d.ref")
+	engine := session.Table(PipelineDefinition{}.TableName()).
+		Cols("ref").
+		Where("soft_deleted_at = 0").
+		Where("location = ?", req.Location).
+		GroupBy("ref")
 	if len(req.GetRemotes()) != 0 {
-		engine = engine.In("s.remote", req.GetRemotes())
+		engine = engine.In("remote", req.GetRemotes())
 	}
 	err = engine.Find(&refs)
 	return

@@ -336,13 +336,13 @@ func (p *ProjectPipelineService) CreateOne(ctx context.Context, params *pb.Creat
 		return nil, err
 	}
 
-	location, err := p.makeLocationByAppID(params.AppID)
+	app, err := p.bundle.GetApp(params.AppID)
 	if err != nil {
 		return nil, err
 	}
 
 	definitionRsp, err := p.PipelineDefinition.Create(ctx, &dpb.PipelineDefinitionCreateRequest{
-		Location:         location,
+		Location:         apistructs.MakeLocation(app, apistructs.PipelineTypeCICD),
 		Name:             makePipelineName(params, sourceReq.PipelineYml),
 		Creator:          apis.GetUserID(ctx),
 		PipelineSourceID: sourceRsp.PipelineSource.ID,
@@ -350,7 +350,8 @@ func (p *ProjectPipelineService) CreateOne(ctx context.Context, params *pb.Creat
 		Extra: &dpb.PipelineDefinitionExtra{
 			Extra: pipelineSourceType.GetPipelineCreateRequestV2(),
 		},
-		Ref: sourceRsp.PipelineSource.Ref,
+		Ref:    sourceRsp.PipelineSource.Ref,
+		Remote: makeRemote(app),
 	})
 	if err != nil {
 		return nil, err

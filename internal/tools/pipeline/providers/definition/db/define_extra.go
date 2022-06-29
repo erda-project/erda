@@ -27,6 +27,7 @@ type PipelineDefinitionExtra struct {
 	TimeCreated          *time.Time                              `json:"timeCreated,omitempty" xorm:"created_at created"`
 	TimeUpdated          *time.Time                              `json:"timeUpdated,omitempty" xorm:"updated_at updated"`
 	PipelineDefinitionID string                                  `json:"pipelineDefinitionID"`
+	Remote               string                                  `json:"remote"`
 }
 
 func (PipelineDefinitionExtra) TableName() string {
@@ -54,6 +55,16 @@ func (client *Client) DeletePipelineDefinitionExtraExtra(id string, ops ...mysql
 	defer session.Close()
 
 	_, err := session.ID(id).Delete(new(PipelineDefinitionExtra))
+	return err
+}
+
+func (client *Client) DeletePipelineDefinitionExtraByRemote(remote string, ops ...mysqlxorm.SessionOption) error {
+	session := client.NewSession(ops...)
+	defer session.Close()
+
+	_, err := session.Table(new(PipelineDefinitionExtra)).
+		Where("remote LIKE ?", remote+"%").Where("soft_deleted_at = 0").
+		Update(map[string]interface{}{"soft_deleted_at": time.Now().UnixNano() / 1e6})
 	return err
 }
 

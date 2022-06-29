@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	"github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/source/db"
 )
@@ -94,6 +95,32 @@ func (p pipelineSource) Delete(ctx context.Context, request *pb.PipelineSourceDe
 	source.SoftDeletedAt = uint64(time.Now().UnixNano() / 1e6)
 
 	return &pb.PipelineSourceDeleteResponse{}, p.dbClient.DeletePipelineSource(request.PipelineSourceID, source)
+}
+
+func (p pipelineSource) DeleteByRemote(ctx context.Context, request *pb.PipelineSourceDeleteByRemoteRequest) (*pb.PipelineSourceDeleteResponse, error) {
+	if request.Remote == "" {
+		return nil, fmt.Errorf("the remote is empty")
+	}
+
+	sources, err := p.dbClient.ListPipelineSourceByRemote(request.Remote)
+	if err != nil {
+		return nil, err
+	}
+	session := p.dbClient.NewSession()
+	defer session.Close()
+	session.Begin()
+
+	for _, v := range sources {
+		v.SoftDeletedAt = uint64(time.Now().UnixNano() / 1e6)
+		err = p.dbClient.DeletePipelineSource(v.ID, &v, mysqlxorm.WithSession(session))
+		if err != nil {
+			session.Rollback()
+			return nil, err
+		}
+	}
+	session.Commit()
+
+	return &pb.PipelineSourceDeleteResponse{}, nil
 }
 
 func (p pipelineSource) Get(ctx context.Context, request *pb.PipelineSourceGetRequest) (*pb.PipelineSourceGetResponse, error) {

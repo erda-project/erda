@@ -187,6 +187,11 @@ func (e *Endpoints) DeleteApplication(ctx context.Context, r *http.Request, vars
 		logrus.Warnf("failed to delete app branch rules, (%v)", err)
 	}
 
+	// delete pipeline source and definition
+	if err = e.deletePipelineSourceAndDefinition(ctx, nil, appDto); err != nil {
+		logrus.Errorf("failed to deletePipelineSourceAndDefinition, err: %v", err)
+	}
+
 	return httpserver.OkResp(appDto)
 }
 

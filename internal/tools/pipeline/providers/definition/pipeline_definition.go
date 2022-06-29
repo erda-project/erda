@@ -17,12 +17,14 @@ package definition
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 	"unicode/utf8"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	"github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/definition/db"
@@ -61,6 +63,7 @@ func (p pipelineDefinition) Create(ctx context.Context, request *pb.PipelineDefi
 	pipelineDefinition.EndedAt = *mysql_time.GetMysqlDefaultTime()
 	pipelineDefinition.CostTime = -1
 	pipelineDefinition.Ref = request.Ref
+	pipelineDefinition.Remote = request.Remote
 	err := p.dbClient.CreatePipelineDefinition(&pipelineDefinition)
 	if err != nil {
 		return nil, err
@@ -75,6 +78,7 @@ func (p pipelineDefinition) Create(ctx context.Context, request *pb.PipelineDefi
 	}
 	pipelineDefinitionExtra.PipelineDefinitionID = pipelineDefinition.ID
 	pipelineDefinitionExtra.Extra = extra
+	pipelineDefinitionExtra.Remote = request.Remote
 	err = p.dbClient.CreatePipelineDefinitionExtra(&pipelineDefinitionExtra)
 	if err != nil {
 		return nil, err
@@ -166,6 +170,30 @@ func (p pipelineDefinition) Delete(ctx context.Context, request *pb.PipelineDefi
 	if err != nil {
 		return nil, err
 	}
+
+	return &pb.PipelineDefinitionDeleteResponse{}, nil
+}
+
+func (p pipelineDefinition) DeleteByRemote(ctx context.Context, request *pb.PipelineDefinitionDeleteByRemoteRequest) (*pb.PipelineDefinitionDeleteResponse, error) {
+	if request.Remote == "" {
+		return nil, fmt.Errorf("the remote is empty")
+	}
+
+	session := p.dbClient.NewSession()
+	defer session.Close()
+	session.Begin()
+
+	err := p.dbClient.DeletePipelineDefinitionByRemote(request.Remote, mysqlxorm.WithSession(session))
+	if err != nil {
+		session.Rollback()
+		return nil, err
+	}
+	err = p.dbClient.DeletePipelineDefinitionExtraByRemote(request.Remote, mysqlxorm.WithSession(session))
+	if err != nil {
+		session.Rollback()
+		return nil, err
+	}
+	session.Commit()
 
 	return &pb.PipelineDefinitionDeleteResponse{}, nil
 }
