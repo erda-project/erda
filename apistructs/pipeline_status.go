@@ -159,7 +159,7 @@ func (status PipelineStatus) IsReconcilerRunningStatus() bool {
 
 func (status PipelineStatus) IsBeforePressRunButton() bool {
 	switch status {
-	case PipelineStatusInitializing, PipelineStatusAnalyzed, PipelineStatusAnalyzeFailed:
+	case PipelineStatusInitializing, PipelineStatusAnalyzed:
 		return true
 	default:
 		return false

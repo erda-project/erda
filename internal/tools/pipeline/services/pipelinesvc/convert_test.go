@@ -57,3 +57,54 @@ func Test_ConvertPipeline(t *testing.T) {
 		}
 	}
 }
+
+func Test_transferStatusToAnalyzedFailedIfNeed(t *testing.T) {
+	tests := []struct {
+		name string
+		p    spec.Pipeline
+		want apistructs.PipelineStatus
+	}{
+		{
+			name: "analyzed and not abort pipeline",
+			p: spec.Pipeline{
+				PipelineBase: spec.PipelineBase{
+					Status: apistructs.PipelineStatusAnalyzed,
+				},
+			},
+			want: apistructs.PipelineStatusAnalyzed,
+		},
+		{
+			name: "analyzed and abort pipeline",
+			p: spec.Pipeline{
+				PipelineBase: spec.PipelineBase{
+					Status: apistructs.PipelineStatusAnalyzed,
+				},
+				PipelineExtra: spec.PipelineExtra{
+					Extra: spec.PipelineExtraInfo{
+						ShowMessage: &apistructs.ShowMessage{
+							AbortRun: true,
+						},
+					},
+				},
+			},
+			want: apistructs.PipelineStatusAnalyzeFailed,
+		},
+		{
+			name: "normal pipeline",
+			p: spec.Pipeline{
+				PipelineBase: spec.PipelineBase{
+					Status: apistructs.PipelineStatusRunning,
+				},
+			},
+			want: apistructs.PipelineStatusRunning,
+		},
+	}
+	s := PipelineSvc{}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := s.transferStatusToAnalyzedFailedIfNeed(&tt.p); got != tt.want {
+				t.Errorf("transferStatusToAnalyzedFailedIfNeed() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

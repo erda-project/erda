@@ -57,6 +57,7 @@ func (s *PipelineSvc) ConvertPipeline(p *spec.Pipeline) *apistructs.PipelineDTO 
 			result.TimeBegin = p.Extra.CronTriggerTime
 		}
 	}
+	result.Status = s.transferStatusToAnalyzedFailedIfNeed(p)
 	result.Namespace = p.Extra.Namespace
 	result.OrgName = p.GetOrgName()
 	result.ProjectName = p.GetLabel(apistructs.LabelProjectName)
@@ -90,6 +91,17 @@ func (s *PipelineSvc) ConvertPipeline(p *spec.Pipeline) *apistructs.PipelineDTO 
 	return &result
 }
 
+// transferStatusToAnalyzedIfNeed transfer status to analyzed failed if pipeline is abort run
+func (s *PipelineSvc) transferStatusToAnalyzedFailedIfNeed(p *spec.Pipeline) apistructs.PipelineStatus {
+	status := p.Status
+	if status == apistructs.PipelineStatusAnalyzed {
+		if p.Extra.ShowMessage != nil && p.Extra.ShowMessage.AbortRun {
+			status = apistructs.PipelineStatusAnalyzeFailed
+		}
+	}
+	return status
+}
+
 func (s *PipelineSvc) Convert2PagePipeline(p *spec.Pipeline) *apistructs.PagePipeline {
 	result := apistructs.PagePipeline{
 		ID:      p.ID,
@@ -115,7 +127,7 @@ func (s *PipelineSvc) Convert2PagePipeline(p *spec.Pipeline) *apistructs.PagePip
 		Type:             p.Type.String(),
 		TriggerMode:      p.TriggerMode.String(),
 		ClusterName:      p.ClusterName,
-		Status:           p.Status,
+		Status:           s.transferStatusToAnalyzedFailedIfNeed(p),
 		Progress:         s.convertProgress(*p),
 		IsSnippet:        p.IsSnippet,
 		ParentPipelineID: p.ParentPipelineID,
