@@ -20,8 +20,8 @@ import (
 )
 
 var CMP_CLOUD_RESOURCE_REDIS_DETAIL_INFO = apis.ApiSpec{
-	Path:         "/api/cloud-redis/<instance_id>",
-	BackendPath:  "/api/cloud-redis/<instance_id>",
+	Path:         "/api/cloud-redis/<instanceID>",
+	BackendPath:  "/api/cloud-redis/<instanceID>",
 	Host:         "cmp.marathon.l4lb.thisdcos.directory:9027",
 	Scheme:       "http",
 	Method:       "GET",

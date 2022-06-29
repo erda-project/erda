@@ -21,14 +21,14 @@ import (
 )
 
 var ValidateSwagger = apis.ApiSpec{
-	Path:         "/api/apim/validate-swagger",
-	BackendPath:  "/api/apim/validate-swagger",
-	Host:         APIMAddr,
-	Scheme:       "http",
-	Method:       http.MethodPost,
-	CheckLogin:   false,
-	CheckToken:   false,
-	RequestType:  map[string]string{"content": ""},
+	Path:        "/api/apim/validate-swagger",
+	BackendPath: "/api/apim/validate-swagger",
+	Host:        APIMAddr,
+	Scheme:      "http",
+	Method:      http.MethodPost,
+	CheckLogin:  false,
+	CheckToken:  false,
+	//RequestType:  apistructs.APIValidateSwaggerRequest{},
 	ResponseType: nil,
 	Doc:          "validate swagger",
 }

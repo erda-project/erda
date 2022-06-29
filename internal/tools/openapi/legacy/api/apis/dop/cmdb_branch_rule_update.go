@@ -23,8 +23,8 @@ import (
 )
 
 var CMDB_BRANCH_RULE_UPDATE = apis.ApiSpec{
-	Path:         "/api/branch-rules/<id>",
-	BackendPath:  "/api/branch-rules/<id>",
+	Path:         "/api/branch-rules/<ID>",
+	BackendPath:  "/api/branch-rules/<ID>",
 	Host:         "dop.marathon.l4lb.thisdcos.directory:9527",
 	Scheme:       "http",
 	Method:       "PUT",

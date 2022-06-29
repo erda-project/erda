@@ -20,8 +20,8 @@ import (
 )
 
 var QA_SONAR_METRIC_RULES_DELETE = apis.ApiSpec{
-	Path:        "/api/sonar-metric-rules/<id>",
-	BackendPath: "/api/sonar-metric-rules/<id>",
+	Path:        "/api/sonar-metric-rules/<ID>",
+	BackendPath: "/api/sonar-metric-rules/<ID>",
 	Host:        "dop.marathon.l4lb.thisdcos.directory:9527",
 	Scheme:      "http",
 	Method:      "DELETE",

@@ -24,8 +24,8 @@ import (
 migration
 */
 var CMDB_PROJECT_DELETE = apis.ApiSpec{
-	Path:         "/api/projects/<projectId>",
-	BackendPath:  "/api/projects/<projectId>",
+	Path:         "/api/projects/<projectID>",
+	BackendPath:  "/api/projects/<projectID>",
 	Host:         "dop.marathon.l4lb.thisdcos.directory:9527",
 	Scheme:       "http",
 	Method:       "DELETE",

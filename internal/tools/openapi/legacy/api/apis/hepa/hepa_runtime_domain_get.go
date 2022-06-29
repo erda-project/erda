@@ -20,8 +20,8 @@ import (
 )
 
 var HEPA_RUNTIME_DOMAIN_GET = apis.ApiSpec{
-	Path:         "/api/runtimes/<runtimeId>/k8s-domains",
-	BackendPath:  "/api/gateway/openapi/runtimes/<runtimeId>/domains",
+	Path:         "/api/runtimes/<runtimeID>/k8s-domains",
+	BackendPath:  "/api/gateway/openapi/runtimes/<runtimeID>/domains",
 	Host:         "hepa.marathon.l4lb.thisdcos.directory:8080",
 	K8SHost:      "hepa.default.svc.cluster.local:8080",
 	Scheme:       "http",

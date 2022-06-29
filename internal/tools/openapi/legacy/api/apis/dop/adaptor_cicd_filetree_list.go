@@ -22,14 +22,14 @@ import (
 )
 
 var ADAPTOR_CICD_FILETREE_LIST = apis.ApiSpec{
-	Path:         "/api/cicd-pipeline/filetree",
-	BackendPath:  "/api/cicd-pipeline/filetree",
-	Host:         "dop.marathon.l4lb.thisdcos.directory:9527",
-	Scheme:       "http",
-	Method:       http.MethodGet,
-	IsOpenAPI:    true,
-	CheckLogin:   true,
-	CheckToken:   true,
-	ResponseType: apistructs.UnifiedFileTreeNodeListRequest{},
-	Doc:          "summary: 查询子节点列表",
+	Path:        "/api/cicd-pipeline/filetree",
+	BackendPath: "/api/cicd-pipeline/filetree",
+	Host:        "dop.marathon.l4lb.thisdcos.directory:9527",
+	Scheme:      "http",
+	Method:      http.MethodGet,
+	IsOpenAPI:   true,
+	CheckLogin:  true,
+	CheckToken:  true,
+	RequestType: apistructs.UnifiedFileTreeNodeListRequest{},
+	Doc:         "summary: 查询子节点列表",
 }

@@ -20,8 +20,8 @@ import (
 )
 
 var PUBLISH_ITEM_VERSION_CREATE = apis.ApiSpec{
-	Path:         "/api/publish-items/<publishItemId>/versions",
-	BackendPath:  "/api/publish-items/<publishItemId>/versions",
+	Path:         "/api/publish-items/<publishItemID>/versions",
+	BackendPath:  "/api/publish-items/<publishItemID>/versions",
 	Host:         "dicehub.marathon.l4lb.thisdcos.directory:10000",
 	Scheme:       "http",
 	Method:       "POST",

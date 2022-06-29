@@ -20,8 +20,8 @@ import (
 )
 
 var CMP_CLOUD_RESOURCE_ONS_DETAIL_INFO = apis.ApiSpec{
-	Path:         "/api/cloud-ons/<instance_id>",
-	BackendPath:  "/api/cloud-ons/<instance_id>",
+	Path:         "/api/cloud-ons/<instanceID>",
+	BackendPath:  "/api/cloud-ons/<instanceID>",
 	Host:         "cmp.marathon.l4lb.thisdcos.directory:9027",
 	Scheme:       "http",
 	Method:       "GET",

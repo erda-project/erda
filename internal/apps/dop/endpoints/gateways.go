@@ -44,7 +44,7 @@ func (e *Endpoints) ListAPIGateways(ctx context.Context, r *http.Request, vars m
 	if apiError != nil {
 		return apiError.ToResp(), nil
 	}
-	return httpserver.OkResp(map[string]interface{}{"total": len(list), "list": list})
+	return httpserver.OkResp(apistructs.ListAPIGatewayRespData{Total: len(list), List: list})
 }
 
 func (e *Endpoints) ListProjectAPIGateways(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {

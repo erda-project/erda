@@ -23,8 +23,8 @@ import (
 )
 
 var ADMIN_NOTICE_UPDATE = apis.ApiSpec{
-	Path:         "/api/notices/<id>",
-	BackendPath:  "/api/notices/<id>",
+	Path:         "/api/notices/<ID>",
+	BackendPath:  "/api/notices/<ID>",
 	Host:         "erda-server.marathon.l4lb.thisdcos.directory:9095",
 	Scheme:       "http",
 	Method:       http.MethodPut,

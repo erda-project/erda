@@ -30,6 +30,6 @@ var ListAPIGateways = apis.ApiSpec{
 	CheckLogin:   true,
 	CheckToken:   true,
 	RequestType:  apistructs.ListAPIGatewaysReq{},
-	ResponseType: map[string]interface{}{"total": 0, "list": nil},
+	ResponseType: apistructs.ListAPIGatewaysResp{},
 	Doc:          "list api-gateways",
 }
