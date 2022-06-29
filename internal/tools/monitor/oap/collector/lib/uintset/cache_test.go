@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package span
+package uintset
 
 import (
 	"testing"
@@ -21,7 +21,7 @@ import (
 )
 
 func Test_seriesIDSet_Has(t *testing.T) {
-	st := newSeriesIDSet(10)
+	st := NewUint64Set(10)
 	st.Add(1)
 	st.Add(2)
 	st.Add(3)
