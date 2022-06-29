@@ -17,13 +17,14 @@ package spotspan
 import (
 	"errors"
 	"fmt"
-	"strconv"
 	"sync"
 
 	"github.com/erda-project/erda/internal/apps/msp/apm/trace"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/common"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/common/unmarshalwork"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/typeconvert"
 )
 
 func ParseSpotSpan(buf []byte, callback func(span *trace.Span) error) error {
@@ -64,7 +65,7 @@ func metricToSpan(metric *metric.Metric) (*trace.Span, error) {
 	if !ok {
 		return nil, errors.New("start_time cannot be null")
 	}
-	startTime, err := toInt64(value)
+	startTime, err := typeconvert.ToInt64(value)
 	if err != nil {
 		return nil, fmt.Errorf("invalid start_time: %s", value)
 	}
@@ -75,7 +76,7 @@ func metricToSpan(metric *metric.Metric) (*trace.Span, error) {
 	if !ok {
 		return nil, errors.New("end_time cannot be null")
 	}
-	endTime, err := toInt64(value)
+	endTime, err := typeconvert.ToInt64(value)
 	if err != nil {
 		return nil, fmt.Errorf("invalid end_time: %s", value)
 	}
@@ -83,43 +84,6 @@ func metricToSpan(metric *metric.Metric) (*trace.Span, error) {
 	delete(metric.Tags, "end_time")
 
 	return &span, nil
-}
-
-// toInt64 .
-func toInt64(obj interface{}) (int64, error) {
-	switch val := obj.(type) {
-	case int:
-		return int64(val), nil
-	case int8:
-		return int64(val), nil
-	case int16:
-		return int64(val), nil
-	case int32:
-		return int64(val), nil
-	case int64:
-		return val, nil
-	case uint:
-		return int64(val), nil
-	case uint8:
-		return int64(val), nil
-	case uint16:
-		return int64(val), nil
-	case uint32:
-		return int64(val), nil
-	case uint64:
-		return int64(val), nil
-	case float32:
-		return int64(val), nil
-	case float64:
-		return int64(val), nil
-	case string:
-		v, err := strconv.ParseInt(val, 10, 64)
-		if err != nil {
-			return 0, err
-		}
-		return v, nil
-	}
-	return 0, fmt.Errorf("invalid type")
 }
 
 type unmarshalWork struct {
@@ -145,10 +109,10 @@ func (uw *unmarshalWork) Unmarshal() {
 		uw.err = fmt.Errorf("cannot convert metric to span: %w", err)
 		return
 	}
-	if v, ok := span.Tags[trace.OrgNameKey]; ok {
+	if v, ok := span.Tags[lib.OrgNameKey]; ok {
 		span.OrgName = v
 	} else {
-		uw.err = fmt.Errorf("must have %q", trace.OrgNameKey)
+		uw.err = fmt.Errorf("must have %q", lib.OrgNameKey)
 		return
 	}
 

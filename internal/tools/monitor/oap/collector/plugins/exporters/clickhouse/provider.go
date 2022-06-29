@@ -17,39 +17,46 @@ package clickhouse
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda-infra/providers/clickhouse"
 	"github.com/erda-project/erda/internal/apps/msp/apm/trace"
 	"github.com/erda-project/erda/internal/tools/monitor/core/log"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model/odata"
-	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/exporters/clickhouse/span"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/exporters/clickhouse/builder"
+	metricstore "github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/exporters/clickhouse/builder/metric"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/exporters/clickhouse/builder/span"
 )
 
 type config struct {
-	Database string       `file:"database" default:"monitor"`
-	Span     *span.Config `file:"span"`
+	Keypass    map[string][]string `file:"keypass"`
+	Keydrop    map[string][]string `file:"keydrop"`
+	Keyinclude []string            `file:"keyinclude"`
+	Keyexclude []string            `file:"keyexclude"`
+
+	StorageCfg *StorageConfig         `file:"storage"`
+	BuilderCfg *builder.BuilderConfig `file:"builder"`
 }
 
 // +provider
 type provider struct {
-	Cfg        *config
-	Log        logs.Logger
-	ch         clickhouse.Interface
-	ctx        context.Context
-	cancelFunc context.CancelFunc
-
-	spanStorage *span.Storage
+	Cfg     *config
+	Log     logs.Logger
+	storage *Storage
 }
 
-func (p *provider) ExportRaw(items ...*odata.Raw) error        { return nil }
-func (p *provider) ExportMetric(items ...*metric.Metric) error { return nil }
-func (p *provider) ExportLog(items ...*log.Log) error          { return nil }
+func (p *provider) ExportRaw(items ...*odata.Raw) error { return nil }
+func (p *provider) ExportLog(items ...*log.Log) error   { return nil }
+
+func (p *provider) ExportMetric(items ...*metric.Metric) error {
+	p.storage.WriteBatchAsync(items)
+	return nil
+}
 
 func (p *provider) ExportSpan(items ...*trace.Span) error {
-	p.spanStorage.WriteBatch(items)
+	p.storage.WriteBatchAsync(items)
 	return nil
 }
 
@@ -63,33 +70,42 @@ func (p *provider) Connect() error {
 
 // Run this is optional
 func (p *provider) Init(ctx servicehub.Context) error {
-	svc := ctx.Service("clickhouse@span")
-	if svc == nil {
-		svc = ctx.Service("clickhouse")
+	dt := odata.DataType(strings.ToUpper(p.Cfg.BuilderCfg.DataType))
+	switch dt {
+	case odata.SpanType:
+	case odata.MetricType:
+	default:
+		return fmt.Errorf("invalid builder for data_type: %q", p.Cfg.BuilderCfg.DataType)
 	}
-	if svc == nil {
-		return fmt.Errorf("service clickhouse is required")
-	}
-	p.ch = svc.(clickhouse.Interface)
-	p.ctx, p.cancelFunc = context.WithCancel(context.Background())
 
-	p.spanStorage = span.NewStorage(p.ch.Client(), p.Log.Sub("spanStorage"), p.Cfg.Database, p.Cfg.Span)
-	if err := p.spanStorage.Init(ctx); err != nil {
-		return fmt.Errorf("init spanStorage: %w", err)
+	var batchBuilder BatchBuilder
+	switch dt {
+	case odata.SpanType:
+		tmp, err := span.NewBuilder(ctx, p.Log.Sub("span-builder"), p.Cfg.BuilderCfg)
+		if err != nil {
+			return fmt.Errorf("span build: %w", err)
+		}
+		batchBuilder = tmp
+	case odata.MetricType:
+		tmp, err := metricstore.NewBuilder(ctx, p.Log.Sub("metric-builder"), p.Cfg.BuilderCfg)
+		if err != nil {
+			return fmt.Errorf("metrics build: %w", err)
+		}
+		batchBuilder = tmp
+	default:
+		return fmt.Errorf("invalid data_type: %q", p.Cfg.BuilderCfg.DataType)
+	}
+	p.storage = &Storage{
+		cfg:             p.Cfg.StorageCfg,
+		logger:          p.Log.Sub("storage"),
+		currencyLimiter: make(chan struct{}, p.Cfg.StorageCfg.CurrencyNum),
+		sqlBuilder:      batchBuilder,
 	}
 	return nil
 }
 
-func (p *provider) Start() error {
-	if err := p.spanStorage.Start(p.ctx); err != nil {
-		return fmt.Errorf("start span: %w", err)
-	}
-	return nil
-}
-
-func (p *provider) Close() error {
-	p.cancelFunc()
-	return nil
+func (p *provider) Run(ctx context.Context) error {
+	return p.storage.Start(ctx)
 }
 
 func init() {
@@ -98,7 +114,7 @@ func init() {
 			"erda.oap.collector.exporter.clickhouse",
 		},
 		Description:  "here is description of erda.oap.collector.exporter.clickhouse",
-		Dependencies: []string{"clickhouse", "clickhouse.table.initializer@span"},
+		Dependencies: []string{"clickhouse", "clickhouse.table.initializer"},
 		ConfigFunc: func() interface{} {
 			return &config{}
 		},

@@ -35,6 +35,11 @@ import (
 var providerName = plugins.WithPrefixExporter("collector")
 
 type config struct {
+	Keypass    map[string][]string `file:"keypass"`
+	Keydrop    map[string][]string `file:"keydrop"`
+	Keyinclude []string            `file:"keyinclude"`
+	Keyexclude []string            `file:"keyexclude"`
+
 	URL             string        `file:"url"`
 	Timeout         time.Duration `file:"timeout" default:"3s"`
 	Serializer      string        `file:"serializer" default:"json"`

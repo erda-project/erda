@@ -27,79 +27,88 @@ import (
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model/odata"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda/internal/apps/msp/apm/trace"
-	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/uintset"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/exporters/clickhouse/builder"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
 const activeCacheDuration = 24 * time.Hour
 
-type Config struct {
-	CurrencyNum      int           `file:"currency_num" default:"3" ENV:"EXPORTER_CH_SPAN_CURRENCY_NUM"`
-	RetryNum         int           `file:"retry_num" default:"5" ENV:"EXPORTER_CH_SPAN_RETRY_NUM"`
-	TTLCheckInterval time.Duration `file:"ttl_check_interval" default:"12h"`
-	SeriesTagKeys    string        `file:"series_tag_keys"`
-}
-
-type Storage struct {
+type Builder struct {
 	db                  string
 	logger              logs.Logger
 	client              clickhouse.Conn
-	cfg                 *Config
-	sidSet              *seriesIDSet
-	currencyLimiter     chan struct{}
+	sidSet              *uintset.Uint64Set
+	cfg                 *builder.BuilderConfig
 	highCardinalityKeys map[string]struct{}
-	itemsCh             chan []*trace.Span
 }
 
-func NewStorage(cli clickhouse.Conn, logger logs.Logger, db string, cfg *Config) *Storage {
+func NewBuilder(ctx servicehub.Context, logger logs.Logger, cfg *builder.BuilderConfig) (*Builder, error) {
+	bu := &Builder{
+		db:     cfg.Database,
+		cfg:    cfg,
+		logger: logger,
+		sidSet: uintset.NewUint64Set(1024),
+	}
+	ch, err := builder.GetClickHouseInf(ctx, odata.SpanType)
+	if err != nil {
+		return nil, fmt.Errorf("get clickhouse interface: %w", err)
+	}
+	bu.client = ch.Client()
+
 	hk := make(map[string]struct{})
 	for _, k := range strings.Split(cfg.SeriesTagKeys, ",") {
 		hk[strings.TrimSpace(k)] = struct{}{}
 	}
+	bu.highCardinalityKeys = hk
 
-	return &Storage{
-		db:                  db,
-		cfg:                 cfg,
-		highCardinalityKeys: hk,
-		logger:              logger,
-		client:              cli,
-		sidSet:              newSeriesIDSet(1024),
-		currencyLimiter:     make(chan struct{}, cfg.CurrencyNum),
-	}
+	return bu, nil
 }
 
-func (st *Storage) Init(ctx servicehub.Context) error {
-	return nil
-}
-
-func (st *Storage) Start(ctx context.Context) error {
-	err := st.initSeriesIDSet()
+func (bu *Builder) Start(ctx context.Context) error {
+	err := bu.initSeriesIDSet()
 	if err != nil {
 		return fmt.Errorf("initSeriesIDSet: %w", err)
 	}
 
-	maxprocs := lib.AvailableCPUs()
-	st.itemsCh = make(chan []*trace.Span, maxprocs)
-	for i := 0; i < maxprocs; i++ {
-		go st.handleSpan(ctx)
-	}
-
-	go st.syncSeriesIDSet(ctx)
+	go bu.syncSeriesIDSet(ctx)
 	return nil
 }
 
-func (st *Storage) WriteBatch(items []*trace.Span) {
-	st.itemsCh <- items
+func (bu *Builder) BuildBatch(ctx context.Context, sourceBatch interface{}) ([]driver.Batch, error) {
+	items, ok := sourceBatch.([]*trace.Span)
+	if !ok {
+		return nil, fmt.Errorf("soureBatch<%T> must be []*trace.Span", sourceBatch)
+	}
+	// nolint
+	metaBatch, err := bu.client.PrepareBatch(ctx, "INSERT INTO "+bu.db+"."+trace.CH_TABLE_META)
+	if err != nil {
+		return nil, fmt.Errorf("prepare metaBatch: %s", err)
+
+	}
+	// nolint
+	seriesBatch, err := bu.client.PrepareBatch(ctx, "INSERT INTO "+bu.db+"."+trace.CH_TABLE_SERIES)
+	if err != nil {
+		return nil, fmt.Errorf("prepare seriesBatch: %s", err)
+	}
+
+	err = bu.enrichBatch(metaBatch, seriesBatch, items)
+	if err != nil {
+		return nil, fmt.Errorf("failed enrichBatch: %w", err)
+	}
+
+	return []driver.Batch{metaBatch, seriesBatch}, nil
 }
 
-func (st *Storage) initSeriesIDSet() error {
+func (bu *Builder) initSeriesIDSet() error {
 	now := time.Now()
 retry:
 	// nolint
-	rows, err := st.client.Query(context.TODO(), fmt.Sprintf("SELECT distinct(series_id) FROM %s.spans_meta_all WHERE create_at > fromUnixTimestamp64Nano(cast(%d,'Int64'))", st.db, now.Add(-activeCacheDuration).UnixNano()))
+	rows, err := bu.client.Query(context.TODO(), fmt.Sprintf("SELECT distinct(series_id) FROM %s.spans_meta_all WHERE create_at > fromUnixTimestamp64Nano(cast(%d,'Int64'))", bu.db, now.Add(-activeCacheDuration).UnixNano()))
 	if err != nil {
 		if exp, ok := err.(*clickhouse.Exception); ok && validExp(exp) {
 			time.Sleep(time.Second)
@@ -117,93 +126,35 @@ retry:
 		}
 		sids = append(sids, sid)
 	}
-	st.sidSet.AddBatch(sids)
+	bu.sidSet.AddBatch(sids)
 	return rows.Close()
 }
 
-func (st *Storage) syncSeriesIDSet(ctx context.Context) {
-	ticker := time.NewTicker(st.cfg.TTLCheckInterval)
+func (bu *Builder) syncSeriesIDSet(ctx context.Context) {
+	ticker := time.NewTicker(bu.cfg.TTLCheckInterval)
 	defer ticker.Stop()
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			st.sidSet.CleanOldPart()
+			bu.sidSet.CleanOldPart()
 		}
 	}
 }
 
-func (st *Storage) handleSpan(ctx context.Context) {
-	for items := range st.itemsCh {
-		// nolint
-		metaBatch, err := st.client.PrepareBatch(ctx, "INSERT INTO "+st.db+"."+trace.CH_TABLE_META)
-		if err != nil {
-			st.logger.Errorf("prepare metaBatch: %s", err)
-			continue
-		}
-		// nolint
-		seriesBatch, err := st.client.PrepareBatch(ctx, "INSERT INTO "+st.db+"."+trace.CH_TABLE_SERIES)
-		if err != nil {
-			st.logger.Errorf("prepare seriesBatch: %s", err)
-			continue
-		}
-
-		err = st.enrichBatch(metaBatch, seriesBatch, items)
-		if err != nil {
-			st.logger.Errorf("failed enrichBatch: %w", err)
-			continue
-		}
-
-		st.sendBatch(ctx, metaBatch)
-		st.sendBatch(ctx, seriesBatch)
-	}
-}
-
-func (st *Storage) sendBatch(ctx context.Context, b driver.Batch) {
-	select {
-	case <-ctx.Done():
-		return
-	default:
-	}
-
-	backoffDelay := time.Second
-	maxBackoffDelay := 30 * time.Second
-	backoffSleep := func() {
-		time.Sleep(backoffDelay)
-		backoffDelay *= 2
-		if backoffDelay > maxBackoffDelay {
-			backoffDelay = maxBackoffDelay
-		}
-	}
-
-	st.currencyLimiter <- struct{}{}
-	go func() {
-		for i := 0; i < st.cfg.RetryNum; i++ {
-			if err := b.Send(); err != nil {
-				st.logger.Errorf("send bactch to clickhouse: %s, retry after: %s\n", err, backoffDelay)
-				backoffSleep()
-				continue
-			} else {
-				break
-			}
-		}
-		<-st.currencyLimiter
-	}()
-}
-
-func (st *Storage) enrichBatch(metaBatch driver.Batch, seriesBatch driver.Batch, items []*trace.Span) error {
+func (bu *Builder) enrichBatch(metaBatch driver.Batch, seriesBatch driver.Batch, items []*trace.Span) error {
 	for _, data := range items {
 		var seriesTags map[string]string
-		if len(st.highCardinalityKeys) > 0 {
-			seriesTags = make(map[string]string, len(st.highCardinalityKeys))
+		if len(bu.highCardinalityKeys) > 0 {
+			seriesTags = make(map[string]string, len(bu.highCardinalityKeys))
 		}
 
 		// enrich metabatch
 		metas := getMetaBuf()
 		for k, v := range data.Tags {
-			if len(st.highCardinalityKeys) > 0 {
-				if _, ok := st.highCardinalityKeys[k]; ok {
+			if len(bu.highCardinalityKeys) > 0 {
+				if _, ok := bu.highCardinalityKeys[k]; ok {
 					seriesTags[k] = v
 					continue
 				}
@@ -215,7 +166,7 @@ func (st *Storage) enrichBatch(metaBatch driver.Batch, seriesBatch driver.Batch,
 		})
 		sid := hashTagsList(metas)
 
-		if !st.sidSet.Has(sid) {
+		if !bu.sidSet.Has(sid) {
 			for i := range metas {
 				metas[i].SeriesID = sid
 				err := metaBatch.AppendStruct(&metas[i])
@@ -225,7 +176,7 @@ func (st *Storage) enrichBatch(metaBatch driver.Batch, seriesBatch driver.Batch,
 					return fmt.Errorf("metaBatch append: %w", err)
 				}
 			}
-			st.sidSet.Add(sid)
+			bu.sidSet.Add(sid)
 		}
 		putMetaBuf(metas)
 

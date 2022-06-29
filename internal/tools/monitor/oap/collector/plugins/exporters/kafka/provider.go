@@ -31,6 +31,11 @@ import (
 var providerName = plugins.WithPrefixExporter("kafka")
 
 type config struct {
+	Keypass    map[string][]string `file:"keypass"`
+	Keydrop    map[string][]string `file:"keydrop"`
+	Keyinclude []string            `file:"keyinclude"`
+	Keyexclude []string            `file:"keyexclude"`
+
 	MetadataKeyOfTopic string               `file:"metadata_key_of_topic"`
 	Producer           kafka.ProducerConfig `file:"producer"`
 	// capability of old data format

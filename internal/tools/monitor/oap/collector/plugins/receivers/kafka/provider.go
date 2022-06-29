@@ -22,16 +22,19 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	kafkaInf "github.com/erda-project/erda-infra/providers/kafka"
 	"github.com/erda-project/erda/internal/apps/msp/apm/trace"
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/protoparser/oapspan"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/protoparser/spotmetric"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/protoparser/spotspan"
 )
 
 type parserName string
 
 const (
-	oapSpan  parserName = "oapspan"
-	spotSpan parserName = "spotspan"
+	oapSpan    parserName = "oapspan"
+	spotSpan   parserName = "spotspan"
+	spotMetric parserName = "spotmetric"
 )
 
 type config struct {
@@ -56,6 +59,7 @@ func (p *provider) ComponentConfig() interface{} {
 }
 
 func (p *provider) RegisterConsumer(consumer model.ObservableDataConsumerFunc) {
+	p.Log.Infof("register consumer: %+v", consumer)
 	p.consumer = consumer
 }
 
@@ -73,6 +77,8 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		invokeFunc = p.parseOapSpan()
 	case spotSpan:
 		invokeFunc = p.parseSpotSpan()
+	case spotMetric:
+		invokeFunc = p.parseSpotMetric()
 	default:
 		return fmt.Errorf("invalide parser: %q", p.parser)
 	}
@@ -98,6 +104,15 @@ func (p *provider) parseSpotSpan() kafkaInf.ConsumerFunc {
 	return func(key []byte, value []byte, topic *string, timestamp time.Time) error {
 		return spotspan.ParseSpotSpan(value, func(span *trace.Span) error {
 			p.consumer(span)
+			return nil
+		})
+	}
+}
+
+func (p *provider) parseSpotMetric() kafkaInf.ConsumerFunc {
+	return func(key []byte, value []byte, topic *string, timestamp time.Time) error {
+		return spotmetric.ParseSpotMetric(value, func(m *metric.Metric) error {
+			p.consumer(m)
 			return nil
 		})
 	}

@@ -48,11 +48,11 @@ func (uc *unmarshalCtx) Unmarshal() {
 	defer uc.wg.Done()
 	buf, err := json.Marshal(uc.src)
 	if err != nil {
-		uc.err = fmt.Errorf("unmarshal uc.span: %s", err)
+		uc.err = fmt.Errorf("unmarshal src<%T>: %w", uc.src, err)
 		return
 	}
 	if err := uc.callback(buf); err != nil {
-		uc.err = fmt.Errorf("callback buf: %s", err)
+		uc.err = fmt.Errorf("callback buf src<%T>: %w", uc.src, err)
 		return
 	}
 }

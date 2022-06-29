@@ -20,8 +20,6 @@ const (
 	// distributed table
 	CH_TABLE_SERIES_ALL = "spans_series_all"
 	CH_TABLE_META_ALL   = "spans_meta_all"
-
-	OrgNameKey = "org_name"
 )
 
 type Span struct {

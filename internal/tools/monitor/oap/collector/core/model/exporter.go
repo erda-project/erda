@@ -39,8 +39,11 @@ type RuntimeExporter struct {
 }
 
 func (re *RuntimeExporter) Add(od odata2.ObservableData) {
-	re.Buffer.Push(od)
+	if !re.Filter.Selected(od) {
+		return
+	}
 
+	re.Buffer.Push(od)
 	if re.Buffer.Full() {
 		if err := re.flushOnce(); err != nil {
 			re.Logger.Errorf("event limited, but flush err: %s", err)

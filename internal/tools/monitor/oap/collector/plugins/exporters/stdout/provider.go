@@ -30,6 +30,10 @@ import (
 var providerName = plugins.WithPrefixExporter("stdout")
 
 type config struct {
+	Keypass    map[string][]string `file:"keypass"`
+	Keydrop    map[string][]string `file:"keydrop"`
+	Keyinclude []string            `file:"keyinclude"`
+	Keyexclude []string            `file:"keyexclude"`
 }
 
 // +provider
