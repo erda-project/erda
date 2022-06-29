@@ -16,170 +16,31 @@ import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 import "common/openapi.proto";
 import "common/identity.proto";
 
-message AddonListRequest {
-    string type = 1;
-    string value = 2;
+message ADDON_METRICS_HISTOGRAM_Request {
+    string scope = 1; // generated from path variable: scope. You should change the proto type if necessary.
 }
-message ORCHESTRATOR_ADDON_MENU_Request {
-}
-message AppWorkspaceReleasesGetResponse {
-    map<string,  google.protobuf.Value> data = 1;
-}
-message K8sInstanceMetaInfo {
-    string podUid = 1;
-    string podName = 2;
-    string podNamespace = 3;
-    string containerName = 4;
-}
-message AddonTenantCreateRequest {
-    string addonInstanceRoutingID = 1 [json_name = "addonInstanceRoutingId"];
-    string name = 2;
-    map<string, string> configs = 3;
-}
-message RuntimeInspectRequest {
-    string IDOrName = 1 [json_name = "idOrName"];
+message AddonAvailableRequest {
+    string projectID = 1;
     string workspace = 2;
-    uint64 applicationID = 3;
 }
-message RuntimeServiceResourceDTO {
-    double cPU = 1 [json_name = "cpu"];
-    int64 mem = 2;
-    int64 disk = 3;
+message AddonAvailableResponse {
+    repeated google.protobuf.Value data = 1;
 }
-message MiddlewareFetchResponse {
+message AddonDirectCreateRequest {
+    string clusterName = 1;
+    uint64 orgID = 2 [json_name = "orgId"];
+    uint64 projectID = 3 [json_name = "projectId"];
+    uint64 applicationID = 4 [json_name = "applicationId"];
+    string workspace = 5;
+    string operator = 6 [json_name = "operatorId"];
+    string shareScope = 7;
+    map<string,  google.protobuf.Value> addons = 8;
+}
+message AddonExtensionResponse {
+    repeated google.protobuf.Value data = 1;
+}
+message AddonFetchResponse {
     google.protobuf.Value data = 1;
-}
-message ORCHESTRATOR_DEPLOYMENT_ORDER_CANCEL_Request {
-    string deploymentOrderID = 1; // generated from path variable: deploymentOrderID. You should change the proto type if necessary
-}
-message MiddlewareListResponse {
-    google.protobuf.Value data = 1;
-}
-message ORCHESTRATOR_MIDDLEWARE_FETCH_Request {
-    string addonId = 1; // generated from path variable: addonId. You should change the proto type if necessary
-}
-message RuntimeReleaseCreatePipelineResponse {
-    uint64 pipelineID = 1 [json_name = "pipelineId"];
-}
-message ORCHESTRATOR_RUNTIME_BULK_GET_STATUS_Request {
-}
-message RuntimeInspectDTO {
-    uint64 ID = 1 [json_name = "id"];
-    string name = 2;
-    string serviceGroupName = 3;
-    string serviceGroupNamespace = 4;
-    string source = 5;
-    string status = 6;
-    string deployStatus = 7;
-    string deleteStatus = 8;
-    string releaseID = 9 [json_name = "releaseId"];
-    uint64 clusterID = 10 [json_name = "clusterId"];
-    string clusterName = 11;
-    string clusterType = 12;
-    google.protobuf.Value resources = 13;
-    map<string, google.protobuf.Value> extra = 14;
-    uint64 projectID = 15;
-    map<string,  google.protobuf.Value> services = 16;
-    map<string, google.protobuf.Value> moduleErrMsg = 17 [json_name = "lastMessage"];
-    google.protobuf.Timestamp timeCreated = 18;
-    google.protobuf.Timestamp createdAt = 19;
-    google.protobuf.Timestamp updatedAt = 20;
-    google.protobuf.Timestamp deployAt = 21;
-    repeated google.protobuf.Value errors = 22;
-    string creator = 23;
-    uint64 applicationID = 24 [json_name = "applicationId"];
-    string applicationName = 25;
-    string deploymentOrderId = 26;
-    string deploymentOrderName = 27;
-    string releaseVersion = 28;
-    string rawStatus = 29;
-    string rawDeploymentStatus = 30;
-}
-message MiddlewareListResponseData {
-    int64 total = 1;
-    google.protobuf.Value overview = 2;
-    repeated google.protobuf.Value list = 3;
-}
-message Pod {
-    string uid = 1;
-    string iPAddress = 2 [json_name = "ipAddress"];
-    string host = 3;
-    string phase = 4;
-    string message = 5;
-    string startedAt = 6;
-    string service = 7;
-    string clusterName = 8;
-    string podName = 9;
-    string k8sNamespace = 10;
-}
-message ORCHESTRATOR_ADDON_EXTENSION_Request {
-}
-message DeploymentCancelResponse {
-}
-message ORCHESTRATOR_DEPLOYMENT_ORDER_LIST_Request {
-}
-message MicroServiceProjectResponseData {
-    string projectID = 1 [json_name = "projectId"];
-    string projectName = 2;
-    string projectDesc = 3;
-    string logoURL = 4 [json_name = "logoUrl"];
-    repeated string envs = 5;
-    repeated string tenantGroups = 6;
-    map<string, string> workspaces = 7;
-    google.protobuf.Timestamp createTime = 8;
-}
-message MiddlewareFetchResponseData {
-    string name = 1;
-    bool isOperator = 2;
-    string instanceID = 3 [json_name = "instanceId"];
-    string addonName = 4;
-    string logoURL = 5 [json_name = "logoUrl"];
-    string plan = 6;
-    string version = 7;
-    string projectID = 8 [json_name = "projectId"];
-    string projectName = 9;
-    string category = 10;
-    string workspace = 11;
-    string status = 12;
-    int64 attachCount = 13;
-    map<string, google.protobuf.Value> config = 14;
-    repeated google.protobuf.Value referenceInfos = 15;
-    string cluster = 16;
-    google.protobuf.Timestamp createdAt = 17;
-    google.protobuf.Timestamp updatedAt = 18;
-}
-message ORCHESTRATOR_ADDON_REFERENCES_Request {
-    string addonID = 1; // generated from path variable: addonID. You should change the proto type if necessary
-}
-message ORCHESTRATOR_MICRO_SERVICE_MENUS_Request {
-    string projectID = 1; // generated from path variable: projectID. You should change the proto type if necessary
-}
-message MiddlewareListItem {
-    string instanceID = 1 [json_name = "instanceId"];
-    string addonName = 2;
-    string projectID = 3 [json_name = "projectId"];
-    string projectName = 4;
-    string env = 5;
-    string clusterName = 6;
-    string name = 7;
-    double cPU = 8 [json_name = "cpu"];
-    uint64 mem = 9;
-    int64 nodes = 10;
-    int64 attachCount = 11;
-    bool isOperator = 12;
-}
-message ORCHESTRATOR_RUNTIME_LIST_MY_RUNTIMES_Request {
-}
-message ORCHESTRATOR_DEPLOYMENT_ORDER_RENDER_DETAIL_Request {
-}
-message ScheduleLabelSetResponse {
-}
-message ORCHESTRATOR_RUNTIMES_BATCH_SCALE_Request {
-}
-message ErrorResponse {
-    string code = 1;
-    string msg = 2;
-    google.protobuf.Value ctx = 3;
 }
 message AddonFetchResponseData {
     string ID = 1 [json_name = "instanceId"];
@@ -215,24 +76,36 @@ message AddonFetchResponseData {
     string tenantOwner = 31;
     string isInsideAddon = 32;
 }
-message DeploymentApproveResponse {
+message AddonListRequest {
+    string type = 1;
+    string value = 2;
 }
-message ORCHESTRATOR_DEPLOYMENT_ORDER_CREATE_Request {
+message AddonListResponse {
+    repeated google.protobuf.Value data = 1;
 }
-message ORCHESTRATOR_ADDON_FETCH_Request {
-    string addonId = 1; // generated from path variable: addonId. You should change the proto type if necessary
+message AddonReferenceInfo {
+    uint64 orgID = 1 [json_name = "orgId"];
+    uint64 projectID = 2 [json_name = "projectId"];
+    string projectName = 3;
+    uint64 appID = 4 [json_name = "applicationId"];
+    string appName = 5 [json_name = "applicationName"];
+    uint64 runtimeID = 6 [json_name = "runtimeId"];
+    string runtimeName = 7;
 }
-message DeploymentApproveRequest {
-    uint64 ID = 1 [json_name = "id"];
-    bool reject = 2;
-    string reason = 3;
+message AddonReferencesResponse {
+    repeated google.protobuf.Value data = 1;
 }
-message ORCHESTRATOR_DEPLOYMENT_ORDER_DEPLOY_Request {
-    string deploymentOrderID = 1; // generated from path variable: deploymentOrderID. You should change the proto type if necessary
+message AddonTenantCreateRequest {
+    string addonInstanceRoutingID = 1 [json_name = "addonInstanceRoutingId"];
+    string name = 2;
+    map<string, string> configs = 3;
 }
-message DomainUpdateRequest {
-    uint64 runtimeID = 1 [json_name = "runtimeId"];
-    map<string, google.protobuf.Value> body = 2;
+message AppWorkspaceReleasesGetRequest {
+    uint64 appID = 1;
+    string workspace = 2;
+}
+message AppWorkspaceReleasesGetResponse {
+    map<string,  google.protobuf.Value> data = 1;
 }
 message Container {
     google.protobuf.Value k8sInstanceMetaInfo = 1;
@@ -253,55 +126,79 @@ message Container {
     string service = 16;
     string clusterName = 17;
 }
-message ScheduleLabelListData {
-    map<string, bool> labels = 1;
+message ContainerListRequest {
+    string type = 1;
+    int64 runtimeID = 2;
+    string serviceName = 3;
+    string status = 4;
 }
-message ScheduleLabelListResponse {
-    google.protobuf.Value data = 1;
-}
-message ORCHESTRATOR_PRE_DICE_OVERLAY_UPDATE_Request {
-}
-message AddonAvailableResponse {
+message ContainerListResponse {
     repeated google.protobuf.Value data = 1;
 }
-message AddonReferencesResponse {
-    repeated google.protobuf.Value data = 1;
-}
-message DeploymentCancelRequest {
-    string runtimeID = 1 [json_name = "runtimeId"];
-    string operator = 2;
-    string deploymentId = 3; // generated from path variable: deploymentId. You should change the proto type if necessary
-}
-message DeploymentListResponse {
-    optional google.protobuf.Value data = 1;
-}
-message ORCHESTRATOR_MIDDLEWARE_FETCH_RESOURCE_Request {
-    string addonId = 1; // generated from path variable: addonId. You should change the proto type if necessary
-}
-message RuntimeDeleteResponse {
-    google.protobuf.Value data = 1;
-}
-message ORCHESTRATOR_CLUSTER_INSTANCES_USAGE_Request {
-    string cluster = 1; // generated from path variable: cluster. You should change the proto type if necessary
-}
-message RuntimeInspectResponse {
-    google.protobuf.Value data = 1;
-}
-message ORCHESTRATOR_ADDON_CUSTOM_Request {
-}
-message ORCHESTRATOR_DEPLOYMENT_QUERY_STATUS_Request {
-    string deploymentId = 1; // generated from path variable: deploymentId. You should change the proto type if necessary
+message CustomAddonCreateRequest {
+    string name = 1;
+    string addonName = 2;
+    uint64 projectID = 3 [json_name = "projectId"];
+    string workspace = 4;
+    string tag = 5;
+    string operatorID = 6;
+    string customAddonType = 7;
+    map<string, google.protobuf.Value> configs = 8;
+    map<string, google.protobuf.Value> options = 9 [json_name = "extra"];
 }
 message CustomAddonUpdateRequest {
     map<string, google.protobuf.Value> configs = 1;
     map<string, google.protobuf.Value> options = 2 [json_name = "extra"];
-    string addonId = 3; // generated from path variable: addonId. You should change the proto type if necessary
+    string addonId = 3; // generated from path variable: addonId. You should change the proto type if necessary.
 }
-message ORCHESTRATOR_RUNTIME_INSPECT_SERVICEGROUP_Request {
-    string runtimeId = 1; // generated from path variable: runtimeId. You should change the proto type if necessary
+message DeploymentApproveRequest {
+    uint64 ID = 1 [json_name = "id"];
+    bool reject = 2;
+    string reason = 3;
 }
-message ORCHESTRATOR_RUNTIME_ROLLBACK_ACTION_Request {
-    string runtimeId = 1; // generated from path variable: runtimeId. You should change the proto type if necessary
+message DeploymentApproveResponse {
+}
+message DeploymentCancelRequest {
+    string runtimeID = 1 [json_name = "runtimeId"];
+    string operator = 2;
+    string deploymentId = 3; // generated from path variable: deploymentId. You should change the proto type if necessary.
+}
+message DeploymentCancelResponse {
+}
+message DeploymentCreateResponseDTO {
+    uint64 deploymentID = 1 [json_name = "deploymentId"];
+    uint64 applicationID = 2 [json_name = "applicationId"];
+    uint64 runtimeID = 3 [json_name = "runtimeId"];
+}
+message DeploymentDetailListResponse {
+    optional google.protobuf.Value data = 1;
+}
+message DeploymentListRequest {
+    google.protobuf.Value pageInfo = 1;
+    uint64 runtimeID = 2;
+    uint64 orgID = 3;
+    string statusIn = 4;
+}
+message DeploymentListResponse {
+    optional google.protobuf.Value data = 1;
+}
+message DomainListRequest {
+    uint64 runtimeID = 1 [json_name = "runtimeId"];
+}
+message DomainListResponse {
+    map<string, google.protobuf.Value> data = 1;
+}
+message DomainUpdateRequest {
+    uint64 runtimeID = 1 [json_name = "runtimeId"];
+    map<string, google.protobuf.Value> body = 2;
+}
+message DomainUpdateResponse {
+    map<string, google.protobuf.Value> data = 1;
+}
+message ErrorResponse {
+    string code = 1;
+    string msg = 2;
+    google.protobuf.Value ctx = 3;
 }
 message Extension {
     uint64 ID = 1 [json_name = "id"];
@@ -315,25 +212,253 @@ message Extension {
     google.protobuf.Timestamp createdAt = 9;
     google.protobuf.Timestamp updatedAt = 10;
 }
-message DeploymentDetailListResponse {
-    optional google.protobuf.Value data = 1;
+message K8sInstanceMetaInfo {
+    string podUid = 1;
+    string podName = 2;
+    string podNamespace = 3;
+    string containerName = 4;
 }
-message DeploymentCreateResponseDTO {
-    uint64 deploymentID = 1 [json_name = "deploymentId"];
-    uint64 applicationID = 2 [json_name = "applicationId"];
-    uint64 runtimeID = 3 [json_name = "runtimeId"];
-}
-message RuntimeCreateResponse {
-    google.protobuf.Value data = 1;
-}
-message AppWorkspaceReleasesGetRequest {
-    uint64 appID = 1;
-    string workspace = 2;
+message MicroServiceMenuResponseData {
+    string addonName = 1;
+    string addonDisplayName = 2;
+    string instanceId = 3;
+    string terminusKey = 4;
+    string consoleUrl = 5;
+    string projectName = 6;
 }
 message MicroServiceProjectResponse {
     repeated google.protobuf.Value data = 1;
 }
+message MicroServiceProjectResponseData {
+    string projectID = 1 [json_name = "projectId"];
+    string projectName = 2;
+    string projectDesc = 3;
+    string logoURL = 4 [json_name = "logoUrl"];
+    repeated string envs = 5;
+    repeated string tenantGroups = 6;
+    map<string, string> workspaces = 7;
+    google.protobuf.Timestamp createTime = 8;
+}
+message MiddlewareFetchResponse {
+    google.protobuf.Value data = 1;
+}
+message MiddlewareFetchResponseData {
+    string name = 1;
+    bool isOperator = 2;
+    string instanceID = 3 [json_name = "instanceId"];
+    string addonName = 4;
+    string logoURL = 5 [json_name = "logoUrl"];
+    string plan = 6;
+    string version = 7;
+    string projectID = 8 [json_name = "projectId"];
+    string projectName = 9;
+    string category = 10;
+    string workspace = 11;
+    string status = 12;
+    int64 attachCount = 13;
+    map<string, google.protobuf.Value> config = 14;
+    repeated google.protobuf.Value referenceInfos = 15;
+    string cluster = 16;
+    google.protobuf.Timestamp createdAt = 17;
+    google.protobuf.Timestamp updatedAt = 18;
+}
+message MiddlewareListItem {
+    string instanceID = 1 [json_name = "instanceId"];
+    string addonName = 2;
+    string projectID = 3 [json_name = "projectId"];
+    string projectName = 4;
+    string env = 5;
+    string clusterName = 6;
+    string name = 7;
+    double cPU = 8 [json_name = "cpu"];
+    uint64 mem = 9;
+    int64 nodes = 10;
+    int64 attachCount = 11;
+    bool isOperator = 12;
+}
+message MiddlewareListRequest {
+    uint64 projectID = 1;
+    string addonName = 2;
+    string workspace = 3;
+    string instanceID = 4;
+    string instanceIP = 5;
+    int64 pageNo = 6;
+    int64 pageSize = 7;
+    optional google.protobuf.Timestamp endTime = 8;
+}
+message MiddlewareListResponse {
+    google.protobuf.Value data = 1;
+}
+message MiddlewareListResponseData {
+    int64 total = 1;
+    google.protobuf.Value overview = 2;
+    repeated google.protobuf.Value list = 3;
+}
+message MiddlewareResourceFetchResponse {
+    repeated google.protobuf.Value data = 1;
+}
+message MiddlewareResourceFetchResponseData {
+    string instanceID = 1 [json_name = "instanceId"];
+    string containerID = 2 [json_name = "containerId"];
+    string containerIP = 3;
+    string clusterName = 4;
+    string hostIP = 5;
+    string image = 6;
+    double cPURequest = 7 [json_name = "cpuRequest"];
+    double cPULimit = 8 [json_name = "cpuLimit"];
+    uint64 memRequest = 9;
+    uint64 memLimit = 10;
+    string status = 11;
+    google.protobuf.Timestamp startedAt = 12;
+}
+message ORCHESTRATOR_ADDONS_SCALE_Request {
+}
+message ORCHESTRATOR_ADDON_CUSTOM_Request {
+}
+message ORCHESTRATOR_ADDON_DELETE_Request {
+    string addonId = 1; // generated from path variable: addonId. You should change the proto type if necessary.
+}
+message ORCHESTRATOR_ADDON_EXPORT_Request {
+}
+message ORCHESTRATOR_ADDON_EXTENSION_Request {
+}
+message ORCHESTRATOR_ADDON_FETCH_Request {
+    string addonId = 1; // generated from path variable: addonId. You should change the proto type if necessary.
+}
+message ORCHESTRATOR_ADDON_IMPORT_Request {
+}
+message ORCHESTRATOR_ADDON_LOGS_Request {
+    string instanceId = 1; // generated from path variable: instanceId. You should change the proto type if necessary.
+}
+message ORCHESTRATOR_ADDON_MENU_Request {
+}
+message ORCHESTRATOR_ADDON_REFERENCES_Request {
+    string addonID = 1; // generated from path variable: addonID. You should change the proto type if necessary.
+}
+message ORCHESTRATOR_CLUSTER_INSTANCES_USAGE_Request {
+    string cluster = 1; // generated from path variable: cluster. You should change the proto type if necessary.
+}
+message ORCHESTRATOR_DEPLOYMENT_ADDONS_Request {
+    string deploymentID = 1; // generated from path variable: deploymentID. You should change the proto type if necessary.
+}
+message ORCHESTRATOR_DEPLOYMENT_DOMAINS_Request {
+    string deploymentID = 1; // generated from path variable: deploymentID. You should change the proto type if necessary.
+}
+message ORCHESTRATOR_DEPLOYMENT_LIST_APPROVED_Request {
+}
+message ORCHESTRATOR_DEPLOYMENT_LIST_LAUNCHED_APPROVAL_Request {
+}
+message ORCHESTRATOR_DEPLOYMENT_LIST_PENDING_APPROVAL_Request {
+}
+message ORCHESTRATOR_DEPLOYMENT_ORDER_CANCEL_Request {
+    string deploymentOrderID = 1; // generated from path variable: deploymentOrderID. You should change the proto type if necessary.
+}
+message ORCHESTRATOR_DEPLOYMENT_ORDER_CREATE_Request {
+}
+message ORCHESTRATOR_DEPLOYMENT_ORDER_DEPLOY_Request {
+    string deploymentOrderID = 1; // generated from path variable: deploymentOrderID. You should change the proto type if necessary.
+}
+message ORCHESTRATOR_DEPLOYMENT_ORDER_GET_Request {
+    string deploymentOrderID = 1; // generated from path variable: deploymentOrderID. You should change the proto type if necessary.
+}
+message ORCHESTRATOR_DEPLOYMENT_ORDER_LIST_Request {
+}
+message ORCHESTRATOR_DEPLOYMENT_ORDER_RENDER_DETAIL_Request {
+}
+message ORCHESTRATOR_DEPLOYMENT_QUERY_STATUS_Request {
+    string deploymentId = 1; // generated from path variable: deploymentId. You should change the proto type if necessary.
+}
+message ORCHESTRATOR_DEPLOYMENT_SERVICES_Request {
+    string deploymentID = 1; // generated from path variable: deploymentID. You should change the proto type if necessary.
+}
+message ORCHESTRATOR_INSTANCES_USAGE_Request {
+}
+message ORCHESTRATOR_MICRO_SERVICE_MENUS_Request {
+    string projectID = 1; // generated from path variable: projectID. You should change the proto type if necessary.
+}
+message ORCHESTRATOR_MICRO_SERVICE_PROJECTS_Request {
+}
+message ORCHESTRATOR_MIDDLEWARE_FETCH_RESOURCE_Request {
+    string addonId = 1; // generated from path variable: addonId. You should change the proto type if necessary.
+}
+message ORCHESTRATOR_MIDDLEWARE_FETCH_Request {
+    string addonId = 1; // generated from path variable: addonId. You should change the proto type if necessary.
+}
+message ORCHESTRATOR_MIGRATION_LOG_Request {
+    string migrationId = 1; // generated from path variable: migrationId. You should change the proto type if necessary.
+}
+message ORCHESTRATOR_ORG_JOB_LOG_Request {
+}
+message ORCHESTRATOR_PRE_DICE_OVERLAY_UPDATE_Request {
+}
+message ORCHESTRATOR_PROJECT_RUNTIME_COUNT_Request {
+}
+message ORCHESTRATOR_RUNTIMES_BATCH_SCALE_Request {
+}
 message ORCHESTRATOR_RUNTIME_BATCH_SERVICES_Request {
+}
+message ORCHESTRATOR_RUNTIME_BULK_GET_STATUS_Request {
+}
+message ORCHESTRATOR_RUNTIME_CREATE_Request {
+}
+message ORCHESTRATOR_RUNTIME_DELETE_Request {
+    string runtimeId = 1; // generated from path variable: runtimeId. You should change the proto type if necessary.
+}
+message ORCHESTRATOR_RUNTIME_DEPLOY_LOG_Request {
+}
+message ORCHESTRATOR_RUNTIME_GROUP_BY_APPS_Request {
+}
+message ORCHESTRATOR_RUNTIME_INSPECT_SERVICEGROUP_Request {
+    string runtimeId = 1; // generated from path variable: runtimeId. You should change the proto type if necessary.
+}
+message ORCHESTRATOR_RUNTIME_LIST_MY_RUNTIMES_Request {
+}
+message ORCHESTRATOR_RUNTIME_REDEPLOY_ACTION_Request {
+    string runtimeId = 1; // generated from path variable: runtimeId. You should change the proto type if necessary.
+}
+message ORCHESTRATOR_RUNTIME_REDEPLOY_Request {
+    string runtimeId = 1; // generated from path variable: runtimeId. You should change the proto type if necessary.
+}
+message ORCHESTRATOR_RUNTIME_ROLLBACK_ACTION_Request {
+    string runtimeId = 1; // generated from path variable: runtimeId. You should change the proto type if necessary.
+}
+message ORCHESTRATOR_RUNTIME_ROLLBACK_Request {
+    string runtimeId = 1; // generated from path variable: runtimeId. You should change the proto type if necessary.
+}
+message ORCHESTRATOR_RUNTIME_SEARCH_Request {
+}
+message ORCHESTRATOR_TERMINAL_Request {
+}
+message Overview {
+    double cPU = 1 [json_name = "cpu"];
+    double mem = 2;
+    int64 nodes = 3;
+}
+message PageInfo {
+    int64 pageNO = 1;
+    int64 pageSize = 2;
+}
+message Pod {
+    string uid = 1;
+    string iPAddress = 2 [json_name = "ipAddress"];
+    string host = 3;
+    string phase = 4;
+    string message = 5;
+    string startedAt = 6;
+    string service = 7;
+    string clusterName = 8;
+    string podName = 9;
+    string k8sNamespace = 10;
+}
+message PodListRequest {
+    int64 runtimeID = 1;
+    string serviceName = 2;
+}
+message PodListResponse {
+    repeated google.protobuf.Value data = 1;
+}
+message RuntimeCreateResponse {
+    google.protobuf.Value data = 1;
 }
 message RuntimeDTO {
     uint64 ID = 1 [json_name = "id"];
@@ -350,159 +475,74 @@ message RuntimeDTO {
     uint64 orgID = 12 [json_name = "orgId"];
     repeated google.protobuf.Value errors = 13;
 }
+message RuntimeDeleteResponse {
+    google.protobuf.Value data = 1;
+}
+message RuntimeInspectDTO {
+    uint64 ID = 1 [json_name = "id"];
+    string name = 2;
+    string serviceGroupName = 3;
+    string serviceGroupNamespace = 4;
+    string source = 5;
+    string status = 6;
+    string deployStatus = 7;
+    string deleteStatus = 8;
+    string releaseID = 9 [json_name = "releaseId"];
+    uint64 clusterID = 10 [json_name = "clusterId"];
+    string clusterName = 11;
+    string clusterType = 12;
+    google.protobuf.Value resources = 13;
+    map<string, google.protobuf.Value> extra = 14;
+    uint64 projectID = 15;
+    map<string,  google.protobuf.Value> services = 16;
+    map<string, google.protobuf.Value> moduleErrMsg = 17 [json_name = "lastMessage"];
+    google.protobuf.Timestamp timeCreated = 18;
+    google.protobuf.Timestamp createdAt = 19;
+    google.protobuf.Timestamp updatedAt = 20;
+    google.protobuf.Timestamp deployAt = 21;
+    repeated google.protobuf.Value errors = 22;
+    string creator = 23;
+    uint64 applicationID = 24 [json_name = "applicationId"];
+    string applicationName = 25;
+    string deploymentOrderId = 26;
+    string deploymentOrderName = 27;
+    string releaseVersion = 28;
+    string rawStatus = 29;
+    string rawDeploymentStatus = 30;
+}
+message RuntimeInspectRequest {
+    string IDOrName = 1 [json_name = "idOrName"];
+    string workspace = 2;
+    uint64 applicationID = 3;
+}
+message RuntimeInspectResponse {
+    google.protobuf.Value data = 1;
+}
+message RuntimeKillPodRequest {
+    uint64 runtimeID = 1;
+    string podName = 2;
+}
+message RuntimeReleaseCreatePipelineResponse {
+    uint64 pipelineID = 1 [json_name = "pipelineId"];
+}
 message RuntimeReleaseCreateRequest {
     string releaseID = 1 [json_name = "releaseId"];
     string workspace = 2;
     uint64 projectID = 3 [json_name = "projectId"];
     uint64 applicationID = 4 [json_name = "applicationId"];
 }
-message AddonDirectCreateRequest {
-    string clusterName = 1;
-    uint64 orgID = 2 [json_name = "orgId"];
-    uint64 projectID = 3 [json_name = "projectId"];
-    uint64 applicationID = 4 [json_name = "applicationId"];
-    string workspace = 5;
-    string operator = 6 [json_name = "operatorId"];
-    string shareScope = 7;
-    map<string,  google.protobuf.Value> addons = 8;
-}
-message CustomAddonCreateRequest {
-    string name = 1;
-    string addonName = 2;
-    uint64 projectID = 3 [json_name = "projectId"];
-    string workspace = 4;
-    string tag = 5;
-    string operatorID = 6;
-    string customAddonType = 7;
-    map<string, google.protobuf.Value> configs = 8;
-    map<string, google.protobuf.Value> options = 9 [json_name = "extra"];
-}
-message PodListRequest {
-    int64 runtimeID = 1;
-    string serviceName = 2;
-}
-message AddonExtensionResponse {
-    repeated google.protobuf.Value data = 1;
-}
-message DeploymentListRequest {
-    google.protobuf.Value pageInfo = 1;
-    uint64 runtimeID = 2;
-    uint64 orgID = 3;
-    string statusIn = 4;
-}
-message RuntimeKillPodRequest {
-    uint64 runtimeID = 1;
-    string podName = 2;
-}
-message ORCHESTRATOR_RUNTIME_CREATE_Request {
-}
-message DomainListRequest {
-    uint64 runtimeID = 1 [json_name = "runtimeId"];
-}
-message ORCHESTRATOR_ADDONS_SCALE_Request {
-}
-message AddonFetchResponse {
-    google.protobuf.Value data = 1;
-}
-message ORCHESTRATOR_INSTANCES_USAGE_Request {
-}
-message MicroServiceMenuResponseData {
-    string addonName = 1;
-    string addonDisplayName = 2;
-    string instanceId = 3;
-    string terminusKey = 4;
-    string consoleUrl = 5;
-    string projectName = 6;
-}
-message Overview {
+message RuntimeServiceResourceDTO {
     double cPU = 1 [json_name = "cpu"];
-    double mem = 2;
-    int64 nodes = 3;
+    int64 mem = 2;
+    int64 disk = 3;
 }
-message ORCHESTRATOR_ORG_JOB_LOG_Request {
+message ScheduleLabelListData {
+    map<string, bool> labels = 1;
 }
-message ADDON_METRICS_HISTOGRAM_Request {
-    string scope = 1; // generated from path variable: scope. You should change the proto type if necessary
+message ScheduleLabelListRequest {
 }
-message ORCHESTRATOR_ADDON_IMPORT_Request {
-}
-message ORCHESTRATOR_DEPLOYMENT_ADDONS_Request {
-    string deploymentID = 1; // generated from path variable: deploymentID. You should change the proto type if necessary
-}
-message ORCHESTRATOR_DEPLOYMENT_ORDER_GET_Request {
-    string deploymentOrderID = 1; // generated from path variable: deploymentOrderID. You should change the proto type if necessary
-}
-message DomainListResponse {
-    map<string, google.protobuf.Value> data = 1;
-}
-message ORCHESTRATOR_DEPLOYMENT_LIST_APPROVED_Request {
-}
-message DomainUpdateResponse {
-    map<string, google.protobuf.Value> data = 1;
-}
-message ORCHESTRATOR_RUNTIME_REDEPLOY_ACTION_Request {
-    string runtimeId = 1; // generated from path variable: runtimeId. You should change the proto type if necessary
-}
-message ContainerListResponse {
-    repeated google.protobuf.Value data = 1;
-}
-message ORCHESTRATOR_DEPLOYMENT_SERVICES_Request {
-    string deploymentID = 1; // generated from path variable: deploymentID. You should change the proto type if necessary
-}
-message ContainerListRequest {
-    string type = 1;
-    int64 runtimeID = 2;
-    string serviceName = 3;
-    string status = 4;
-}
-message AddonReferenceInfo {
-    uint64 orgID = 1 [json_name = "orgId"];
-    uint64 projectID = 2 [json_name = "projectId"];
-    string projectName = 3;
-    uint64 appID = 4 [json_name = "applicationId"];
-    string appName = 5 [json_name = "applicationName"];
-    uint64 runtimeID = 6 [json_name = "runtimeId"];
-    string runtimeName = 7;
-}
-message MiddlewareResourceFetchResponse {
-    repeated google.protobuf.Value data = 1;
-}
-message ORCHESTRATOR_RUNTIME_ROLLBACK_Request {
-    string runtimeId = 1; // generated from path variable: runtimeId. You should change the proto type if necessary
-}
-message AddonAvailableRequest {
-    string projectID = 1;
-    string workspace = 2;
-}
-message ORCHESTRATOR_ADDON_LOGS_Request {
-    string instanceId = 1; // generated from path variable: instanceId. You should change the proto type if necessary
-}
-message PageInfo {
-    int64 pageNO = 1;
-    int64 pageSize = 2;
-}
-message ORCHESTRATOR_RUNTIME_SEARCH_Request {
-}
-message ORCHESTRATOR_DEPLOYMENT_DOMAINS_Request {
-    string deploymentID = 1; // generated from path variable: deploymentID. You should change the proto type if necessary
-}
-message ORCHESTRATOR_RUNTIME_REDEPLOY_Request {
-    string runtimeId = 1; // generated from path variable: runtimeId. You should change the proto type if necessary
-}
-message ORCHESTRATOR_MICRO_SERVICE_PROJECTS_Request {
-}
-message MiddlewareListRequest {
-    uint64 projectID = 1;
-    string addonName = 2;
-    string workspace = 3;
-    string instanceID = 4;
-    string instanceIP = 5;
-    int64 pageNo = 6;
-    int64 pageSize = 7;
-    optional google.protobuf.Timestamp endTime = 8;
-}
-message ORCHESTRATOR_MIGRATION_LOG_Request {
-    string migrationId = 1; // generated from path variable: migrationId. You should change the proto type if necessary
+message ScheduleLabelListResponse {
+    google.protobuf.Value data = 1;
 }
 message ScheduleLabelSetRequest {
     map<string, string> tags = 1 [json_name = "tag"];
@@ -511,47 +551,7 @@ message ScheduleLabelSetRequest {
     string clusterType = 4 [json_name = "clustertype"];
     string soldierURL = 5;
 }
-message ORCHESTRATOR_RUNTIME_GROUP_BY_APPS_Request {
-}
-message MiddlewareResourceFetchResponseData {
-    string instanceID = 1 [json_name = "instanceId"];
-    string containerID = 2 [json_name = "containerId"];
-    string containerIP = 3;
-    string clusterName = 4;
-    string hostIP = 5;
-    string image = 6;
-    double cPURequest = 7 [json_name = "cpuRequest"];
-    double cPULimit = 8 [json_name = "cpuLimit"];
-    uint64 memRequest = 9;
-    uint64 memLimit = 10;
-    string status = 11;
-    google.protobuf.Timestamp startedAt = 12;
-}
-message ORCHESTRATOR_PROJECT_RUNTIME_COUNT_Request {
-}
-message ORCHESTRATOR_RUNTIME_DEPLOY_LOG_Request {
-}
-message ORCHESTRATOR_ADDON_EXPORT_Request {
-}
-message ORCHESTRATOR_ADDON_DELETE_Request {
-    string addonId = 1; // generated from path variable: addonId. You should change the proto type if necessary
-}
-message ORCHESTRATOR_DEPLOYMENT_LIST_PENDING_APPROVAL_Request {
-}
-message ORCHESTRATOR_RUNTIME_DELETE_Request {
-    string runtimeId = 1; // generated from path variable: runtimeId. You should change the proto type if necessary
-}
-message PodListResponse {
-    repeated google.protobuf.Value data = 1;
-}
-message AddonListResponse {
-    repeated google.protobuf.Value data = 1;
-}
-message ORCHESTRATOR_DEPLOYMENT_LIST_LAUNCHED_APPROVAL_Request {
-}
-message ScheduleLabelListRequest {
-}
-message ORCHESTRATOR_TERMINAL_Request {
+message ScheduleLabelSetResponse {
 }
 // generate service from openapi spec: orchestrator
 service orchestrator {

@@ -16,232 +16,274 @@ import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 import "common/openapi.proto";
 import "common/identity.proto";
 
+message AADAPTOR_CICD_CRON_LIST_Request {
+}
+message ADAPTOR_CICD_BRANCHES_ALL_VALID_Request {
+}
+message ADAPTOR_CICD_CANCEL_Request {
+    string pipelineID = 1; // generated from path variable: pipelineID. You should change the proto type if necessary.
+}
+message ADAPTOR_CICD_CONFIG_GET_Request {
+}
+message ADAPTOR_CICD_CONFIG_NAMESPACES_Request {
+}
+message ADAPTOR_CICD_CONFIG_WORKSPACES_Request {
+}
 message ADAPTOR_CICD_CRON_START_Request {
-    string cronID = 1; // generated from path variable: cronID. You should change the proto type if necessary
+    string cronID = 1; // generated from path variable: cronID. You should change the proto type if necessary.
 }
-message IterationPagingResponse {
+message ADAPTOR_CICD_CRON_STOP_Request {
+    string cronID = 1; // generated from path variable: cronID. You should change the proto type if necessary.
+}
+message ADAPTOR_CICD_FETCH_PIPELINE_ID_Request {
+}
+message ADAPTOR_CICD_FILETREE_GET_PIPELINE_FILETREE_Request {
+}
+message ADAPTOR_CICD_GET_BRANCH_RULE_Request {
+    string pipelineid = 1; // generated from path variable: pipelineid. You should change the proto type if necessary.
+}
+message ADAPTOR_CICD_PIPELINE_DETAIL_Request {
+}
+message ADAPTOR_CICD_PROJECT_CREATE_Request {
+}
+message ADAPTOR_CICD_PROJECT_DETAIL_Request {
+}
+message ADAPTOR_CICD_RERUN_Request {
+    string pipelineID = 1; // generated from path variable: pipelineID. You should change the proto type if necessary.
+}
+message ADAPTOR_CICD_RUN_Request {
+    string pipelineID = 1; // generated from path variable: pipelineID. You should change the proto type if necessary.
+}
+message ADAPTOR_CICD_TASK_LOG_DOWNLOAD_Request {
+    string pipelineID = 1; // generated from path variable: pipelineID. You should change the proto type if necessary.
+    string taskID = 2; // generated from path variable: taskID. You should change the proto type if necessary.
+}
+message ADAPTOR_CICD_TASK_LOG_Request {
+    string pipelineID = 1; // generated from path variable: pipelineID. You should change the proto type if necessary.
+    string taskID = 2; // generated from path variable: taskID. You should change the proto type if necessary.
+}
+message APIAssetCreateRequest {
+    string assetID = 1;
+    string assetName = 2;
+    string desc = 3;
+    string logo = 4;
+    string source = 5;
+    repeated google.protobuf.Value versions = 6;
+    uint64 orgID = 7;
+    uint64 projectID = 8;
+    uint64 appID = 9;
+}
+message APIAssetGetResponse {
     optional google.protobuf.Value data = 1;
 }
-message PublisherDTO {
-    uint64 ID = 1 [json_name = "id"];
-    string name = 2;
-    string publisherType = 3 [json_name = "publishType"];
-    string publisherKey = 4 [json_name = "publishKey"];
-    uint64 orgID = 5 [json_name = "orgId"];
-    string creator = 6;
-    string logo = 7;
-    string desc = 8;
-    bool joined = 9;
-    google.protobuf.Timestamp createdAt = 10;
-    google.protobuf.Timestamp updatedAt = 11;
-    repeated google.protobuf.Value nexusRepositories = 12;
-    repeated string pipelineCmNamespaces = 13;
+message APIAssetPagingResponse {
+    uint64 total = 1;
+    repeated google.protobuf.Value list = 2;
+    repeated string userIDs = 3;
 }
-message TicketReopenResponse {
-    int64 data = 1;
-}
-message CertificateListRequest {
+message APIAssetVersionCreateRequest {
     uint64 orgID = 1;
-    string query = 2;
-    string name = 3;
-    string type = 4;
-    string status = 5;
-    int64 pageNo = 6;
-    int64 pageSize = 7;
+    string aPIAssetID = 2 [json_name = "apiAssetID"];
+    uint64 major = 3;
+    uint64 minor = 4;
+    uint64 patch = 5;
+    string desc = 6;
+    string specProtocol = 7;
+    string specDiceFileUUID = 8;
+    string spec = 9;
+    string inode = 10;
+    repeated google.protobuf.Value instances = 11;
+    string source = 12;
+    uint64 appID = 13;
+    string branch = 14;
+    string serviceName = 15;
+    string assetID = 16; // generated from path variable: assetID. You should change the proto type if necessary.
 }
-message CommentUpdateResponse {
-    int64 data = 1;
+message APIAssetVersionInstanceCreateRequest {
+    string name = 1;
+    string instanceType = 2;
+    uint64 runtimeID = 3;
+    string serviceName = 4;
+    string endpointID = 5;
+    string uRL = 6 [json_name = "url"];
+    string assetID = 7 [json_name = "-"];
+    uint64 versionID = 8 [json_name = "-"];
 }
-message BaseModel {
-    uint64 ID = 1 [json_name = "id"];
-    google.protobuf.Timestamp createdAt = 2;
-    google.protobuf.Timestamp updatedAt = 3;
-    string creatorID = 4;
-    string updaterID = 5;
-}
-message SonarIssueResponse {
-    google.protobuf.Value data = 1;
-}
-message PipelineRerunResponse {
-    optional google.protobuf.Value data = 1;
-}
-message PipelineRerunFailedResponse {
-    optional google.protobuf.Value data = 1;
-    string pipelineID = 2; // generated from path variable: pipelineID. You should change the proto type if necessary
+message APIDocCreateNodeReq {
+    uint64 orgID = 1;
+    optional google.protobuf.Value identity = 2;
+    optional google.protobuf.Value uRIParams = 3;
+    optional google.protobuf.Value body = 4;
+    string treeName = 5; // generated from path variable: treeName. You should change the proto type if necessary.
 }
 message APIDocWebsocket_Request {
-    string inode = 1; // generated from path variable: inode. You should change the proto type if necessary
+    string inode = 1; // generated from path variable: inode. You should change the proto type if necessary.
+}
+message APITestEnvCreateRequest {
+    google.protobuf.Value aPITestEnvData = 1;
+}
+message APITestEnvData {
+    int64 ID = 1 [json_name = "id"];
+    int64 envID = 2;
+    string envType = 3;
+    string name = 4;
+    string domain = 5;
+    map<string, string> header = 6;
+    map<string,  google.protobuf.Value> global = 7;
+}
+message APITestEnvDeleteResponse {
+    optional google.protobuf.Value data = 1;
+}
+message APITestEnvGetResponse {
+    optional google.protobuf.Value data = 1;
+}
+message APITestEnvListResponse {
+    repeated google.protobuf.Value data = 1;
+}
+message APITestEnvUpdateRequest {
+    google.protobuf.Value aPITestEnvData = 1;
+    string id = 2; // generated from path variable: id. You should change the proto type if necessary.
+}
+message APITestEnvUpdateResponse {
+    int64 data = 1;
+}
+message APITestReq {
+    string clientID = 1;
+    string clientSecret = 2;
+    repeated google.protobuf.Value aPIs = 3 [json_name = "apis"];
+    string assetID = 4; // generated from path variable: assetID. You should change the proto type if necessary.
+    string swaggerVersion = 5; // generated from path variable: swaggerVersion. You should change the proto type if necessary.
 }
 message APITestsAttemptRequest {
     int64 projectTestEnvID = 1;
     int64 usecaseTestEnvID = 2;
     repeated google.protobuf.Value aPIs = 3 [json_name = "apis"];
 }
-message QA_SONAR_ISSUES_Request {
-}
-message PipelineDetailResponse {
-    optional google.protobuf.Value data = 1;
-}
-message ProjectPackageParse_Request {
-}
-message UpdateBranchRuleRequest {
-    int64 ID = 1 [json_name = "-"];
-    string rule = 2;
-    bool isProtect = 3;
-    bool needApproval = 4;
-    bool isTriggerPipeline = 5;
-    string desc = 6;
-    string workspace = 7;
-    string artifactWorkspace = 8;
-}
-message CertificateUpdateRequest {
-    string uUID = 1 [json_name = "uuid"];
-    string desc = 2;
-    string filename = 3;
-    string certificateID = 4; // generated from path variable: certificateID. You should change the proto type if necessary
-}
-message PublisherUpdateResponse {
-    google.protobuf.Value data = 1;
-}
-message CreateSLAReq {
-    uint64 orgID = 1;
-    optional google.protobuf.Value identity = 2;
-    optional google.protobuf.Value uRIParams = 3;
-    optional google.protobuf.Value body = 4;
-    string assetID = 5; // generated from path variable: assetID. You should change the proto type if necessary
-    string swaggerVersion = 6; // generated from path variable: swaggerVersion. You should change the proto type if necessary
-}
-message PagingProjectDTO {
-    int64 total = 1;
-    repeated google.protobuf.Value list = 2;
-}
-message BaseResponse {
-    bool success = 1;
-    optional google.protobuf.Value err = 2;
-    repeated uint32 data = 3;
-}
-message ListSwaggerVersionRsp {
-    uint64 total = 1;
-    repeated google.protobuf.Value list = 2;
-}
-message PUBLISH_ITEM_CERTIFICATION_GET_Request {
-    string publishItemId = 1; // generated from path variable: publishItemId. You should change the proto type if necessary
-}
-message ADAPTOR_CICD_BRANCHES_ALL_VALID_Request {
-}
-message PipelineInvokedComboResponse {
-    repeated google.protobuf.Value data = 1;
-}
-message OrgNexusShowPasswordResponse {
-    map<uint64, string> data = 1;
-}
-message CMDB_ORG_PUBLISHER_CREATE_GET_Request {
-    string orgID = 1; // generated from path variable: orgID. You should change the proto type if necessary
-}
-message PublishItemStatisticsErrTrendResponse {
-    uint64 crashTimes = 1;
-    string crashRate = 2;
-    double crashRateGrowth = 3;
-    uint64 affectUsers = 4;
-    string affectUsersProportion = 5;
-    double affectUsersProportionGrowth = 6;
-}
-message PagingAPIAssetsReq {
-    uint64 orgID = 1;
-    optional google.protobuf.Value identity = 2;
-    optional google.protobuf.Value queryParams = 3;
-}
-message QA_SONAR_METRIC_RULES_GET_Request {
-    string id = 1; // generated from path variable: id. You should change the proto type if necessary
-}
-message TicketReopenRequest {
-    int64 ticketID = 1;
-}
-message CreateContractReq {
-    uint64 orgID = 1;
-    optional google.protobuf.Value identity = 2;
-    optional google.protobuf.Value uRIParams = 3;
-    optional google.protobuf.Value body = 4;
-    string clientID = 5; // generated from path variable: clientID. You should change the proto type if necessary
-}
-message SLAModel {
-    google.protobuf.Value baseModel = 1;
-    string name = 2;
-    string desc = 3;
-    string approval = 4;
-    uint64 accessID = 5;
-    string source = 6;
-}
-message PipelineTaskOperateRequest {
-    uint64 taskID = 1;
-    string taskAlias = 2;
-    optional bool disable = 3;
-    optional bool pause = 4;
-}
-message ADAPTOR_CICD_PROJECT_DETAIL_Request {
-}
-message OrgGetByDomainResponse {
-    optional google.protobuf.Value data = 1;
-}
-message TicketFetchRequest {
-    int64 ticketID = 1;
-}
-message ListAPIGatewaysReq {
-    uint64 orgID = 1;
-    optional google.protobuf.Value identity = 2;
-    optional google.protobuf.Value uRIParams = 3;
-    string assetID = 4; // generated from path variable: assetID. You should change the proto type if necessary
-}
-message UpdateContract_Request {
-    string clientID = 1; // generated from path variable: clientID. You should change the proto type if necessary
-    string contractID = 2; // generated from path variable: contractID. You should change the proto type if necessary
-}
 message APITestsAttemptResponse {
     repeated google.protobuf.Value data = 1;
 }
-message CertificateUpdateResponse {
-    google.protobuf.Value data = 1;
+message APPLICATIONS_RESOURCES_LIST_Request {
+    string projectID = 1; // generated from path variable: projectID. You should change the proto type if necessary.
 }
-message IterationUpdateRequest {
-    string title = 1;
-    string content = 2;
-    optional google.protobuf.Timestamp startedAt = 3;
-    optional google.protobuf.Timestamp finishedAt = 4;
-    string state = 5;
-    string id = 6; // generated from path variable: id. You should change the proto type if necessary
+message APP_PUBLISH_ITEM_RELATION_GET_Request {
+    string application = 1; // generated from path variable: application. You should change the proto type if necessary.
 }
-message DeleteSLAReq {
-    uint64 orgID = 1;
-    optional google.protobuf.Value identity = 2;
-    optional google.protobuf.Value uRIParams = 3;
-    string assetID = 4; // generated from path variable: assetID. You should change the proto type if necessary
-    string swaggerVersion = 5; // generated from path variable: swaggerVersion. You should change the proto type if necessary
-    string slaID = 6; // generated from path variable: slaID. You should change the proto type if necessary
+message AndroidCertificateAutoDTO {
+    string name = 1;
+    string oU = 2 [json_name = "ou"];
+    string org = 3;
+    string city = 4;
+    string province = 5;
+    string state = 6;
+    google.protobuf.Value debugKeyStore = 7;
+    google.protobuf.Value releaseKeyStore = 8;
 }
-message PublisherDetailResponse {
-    google.protobuf.Value data = 1;
+message AndroidCertificateDTO {
+    bool isManualCreate = 1 [json_name = "manualCreate"];
+    google.protobuf.Value manualInfo = 2;
+    google.protobuf.Value autoInfo = 3;
 }
-message GetAddonInstanceDetailResponse {
-    google.protobuf.Value data = 1;
+message AndroidCertificateKeyDTO {
+    string debugKeyStoreFile = 1;
+    string debugKeyStoreAlias = 2;
+    string debugKeyPassword = 3;
+    string debugStorePassword = 4;
+    string releaseKeyStoreFile = 5;
+    string releaseKeyStoreAlias = 6;
+    string releaseKeyPassword = 7;
+    string releaseStorePassword = 8;
 }
-message GetTestFileRecordResponse {
-    google.protobuf.Value data = 1;
+message AndroidCertificateKeyStoreDTO {
+    string alias = 1;
+    string keyPassword = 2;
+    string storePassword = 3;
 }
-message QA_TESTENV_CREATE_Request {
+message AndroidCertificateManualDTO {
+    google.protobuf.Value debugKeyStore = 1;
+    google.protobuf.Value releaseKeyStore = 2;
 }
-message PipelineRunResponse {
+message AndroidCertificateManualKeyStoreDTO {
+    google.protobuf.Value certificateFileDTO = 1;
+    google.protobuf.Value androidCertificateKeyStoreDTO = 2;
 }
-message ProjectListResponse {
-    google.protobuf.Value data = 1;
+message ApiTestCancelRequest {
+    uint64 pipelineID = 1 [json_name = "pipelineId"];
 }
-message ProxyMetrics_Request {
+message ApiTestCancelResponse {
+    string data = 1;
 }
-message ListTestFileRecordsResponse {
+message ApiTestInfo {
+    int64 apiID = 1;
+    int64 usecaseID = 2;
+    int64 usecaseOrder = 3;
+    int64 projectID = 4;
+    string status = 5;
+    string apiInfo = 6;
+    string apiRequest = 7;
+    string apiResponse = 8;
+    string assertResult = 9;
+}
+message ApiTestsGetResponse {
     optional google.protobuf.Value data = 1;
 }
-message ADAPTOR_CICD_TASK_LOG_DOWNLOAD_Request {
-    string pipelineID = 1; // generated from path variable: pipelineID. You should change the proto type if necessary
-    string taskID = 2; // generated from path variable: taskID. You should change the proto type if necessary
+message ApiTestsUpdateRequest {
+    google.protobuf.Value apiTestInfo = 1;
+    bool isResult = 2;
+    string id = 3; // generated from path variable: id. You should change the proto type if necessary.
+}
+message ApiTestsUpdateResponse {
+    google.protobuf.Value data = 1;
+}
+message AppCertificateListRequest {
+    uint64 appID = 1;
+    string status = 2;
+    int64 pageNo = 3;
+    int64 pageSize = 4;
+}
+message AppPublishItemRelation {
+    string env = 1;
+    int64 orgID = 2 [json_name = "-"];
+    int64 appID = 3 [json_name = "appId"];
+    int64 publishItemID = 4 [json_name = "publishItemId"];
+    string publishItemName = 5;
+    int64 publisherID = 6 [json_name = "publisherId"];
+    string publisherName = 7;
+    repeated string publishItemNs = 8;
+    string aK = 9 [json_name = "ak"];
+    string aI = 10 [json_name = "ai"];
+}
+message ApplicationCertificateDTO {
+    uint64 ID = 1 [json_name = "id"];
+    uint64 appID = 2 [json_name = "appId"];
+    uint64 certificateID = 3 [json_name = "certificateId"];
+    uint64 approvalID = 4 [json_name = "approvalId"];
+    string name = 5;
+    string type = 6;
+    uint64 orgID = 7 [json_name = "orgId"];
+    string status = 8;
+    string creator = 9;
+    string operator = 10;
+    string desc = 11;
+    google.protobuf.Value androidInfo = 12;
+    google.protobuf.Value iOSInfo = 13 [json_name = "iosInfo"];
+    google.protobuf.Value messageInfo = 14;
+    google.protobuf.Value pushConfig = 15;
+    google.protobuf.Timestamp createdAt = 16;
+}
+message ApplicationCreateRequest {
+    string name = 1;
+    string displayName = 2;
+    string logo = 3;
+    string desc = 4;
+    uint64 projectID = 5 [json_name = "projectId"];
+    string mode = 6;
+    map<string, google.protobuf.Value> config = 7;
+    bool isExternalRepo = 8;
+    optional google.protobuf.Value repoConfig = 9;
+    optional google.protobuf.Value sonarConfig = 10;
+}
+message ApplicationCreateResponse {
+    google.protobuf.Value data = 1;
 }
 message ApplicationDTO {
     uint64 ID = 1 [json_name = "id"];
@@ -277,51 +319,123 @@ message ApplicationDTO {
     google.protobuf.Timestamp updatedAt = 31;
     string extra = 32 [json_name = "-"];
 }
-message TicketFetchResponse {
+message ApplicationDeleteRequest {
+    string projectID = 1 [json_name = "projectId"];
+    string applicationId = 2; // generated from path variable: applicationId. You should change the proto type if necessary.
+}
+message ApplicationDeleteResponse {
     google.protobuf.Value data = 1;
 }
-message QA_APITESTS_GET_Request {
-    string id = 1; // generated from path variable: id. You should change the proto type if necessary
+message ApplicationInitRequest {
+    uint64 applicationID = 1 [json_name = "-"];
+    string mobileAppName = 2;
+    string mobileDisplayName = 3;
+    string bundleID = 4;
+    string packageName = 5;
 }
-message APITestEnvGetResponse {
+message ApplicationStats {
+    uint64 countRuntimes = 1;
+    uint64 countMembers = 2;
+    string timeLastModified = 3;
+}
+message ApplicationUpdateRequest {
+    int64 applicationID = 1 [json_name = "-"];
+    google.protobuf.Value body = 2;
+}
+message ApplicationUpdateRequestBody {
+    string logo = 1;
+    string desc = 2;
+    string displayName = 3;
+    map<string, google.protobuf.Value> config = 4;
+    optional google.protobuf.Value repoConfig = 5;
+    bool isPublic = 6;
+    optional google.protobuf.Value sonarConfig = 7;
+}
+message ApplicationUpdateResponse {
+    google.protobuf.Value data = 1;
+}
+message ApplicationWorkspace {
+    string clusterName = 1;
+    string workspace = 2;
+    string configNamespace = 3;
+}
+message Artifact {
+    string type = 1;
+    string name = 2;
+    string version = 3;
+}
+message AuditMessage {
+    string messageZH = 1;
+    string messageEN = 2;
+}
+message AutoTestSpaceResponse {
     optional google.protobuf.Value data = 1;
 }
-message ImportProjectTemplateRequest {
-    uint64 projectID = 1;
-    string projectName = 2;
-    string projectDisplayName = 3;
-    int64 orgID = 4;
+message BaseModel {
+    uint64 ID = 1 [json_name = "id"];
+    google.protobuf.Timestamp createdAt = 2;
+    google.protobuf.Timestamp updatedAt = 3;
+    string creatorID = 4;
+    string updaterID = 5;
 }
-message QA_AUTOTEST_SPACE_GET_Request {
-    string id = 1; // generated from path variable: id. You should change the proto type if necessary
+message BaseResponse {
+    bool success = 1;
+    optional google.protobuf.Value err = 2;
+    repeated uint32 data = 3;
 }
-message UpdateClientReq {
-    uint64 orgID = 1;
-    optional google.protobuf.Value identity = 2;
-    optional google.protobuf.Value uRIParams = 3;
-    optional google.protobuf.Value queryParams = 4;
-    optional google.protobuf.Value body = 5;
-    string clientID = 6; // generated from path variable: clientID. You should change the proto type if necessary
+message BlockoutConfig {
+    bool blockDEV = 1 [json_name = "blockDev"];
+    bool blockTEST = 2 [json_name = "blockTest"];
+    bool blockStage = 3;
+    bool blockProd = 4;
 }
-message MonitorKeys {
-    string aK = 1 [json_name = "ak"];
-    string aI = 2 [json_name = "ai"];
-    string env = 3;
-    int64 appID = 4 [json_name = "appId"];
+message CICDPipelineYmlListRequest {
+    int64 appID = 1;
+    string branch = 2;
 }
-message CertificateFileDTO {
-    string uUID = 1 [json_name = "uuid"];
-    string fileName = 2;
+message CICDPipelineYmlListResponse {
+    repeated string data = 1;
 }
-message IterationCreateResponse {
-    optional google.protobuf.Value data = 1;
+message CMDB_BRANCH_RULE_DELETE_Request {
+    string id = 1; // generated from path variable: id. You should change the proto type if necessary.
 }
-message ListContractsReq {
-    uint64 orgID = 1;
-    optional google.protobuf.Value identity = 2;
-    optional google.protobuf.Value uRIParams = 3;
-    optional google.protobuf.Value queryParams = 4;
-    string clientID = 5; // generated from path variable: clientID. You should change the proto type if necessary
+message CMDB_CERTIFICATE_APP_CANCEL_Request {
+}
+message CMDB_CERTIFICATE_DELETE_Request {
+    string certificatesID = 1; // generated from path variable: certificatesID. You should change the proto type if necessary.
+}
+message CMDB_CERTIFICATE_GET_Request {
+    string certificateID = 1; // generated from path variable: certificateID. You should change the proto type if necessary.
+}
+message CMDB_ITERATION_DELETE_Request {
+    string id = 1; // generated from path variable: id. You should change the proto type if necessary.
+}
+message CMDB_ITERATION_GET_Request {
+    string id = 1; // generated from path variable: id. You should change the proto type if necessary.
+}
+message CMDB_LIBREFERENCE_DELETE_Request {
+    string id = 1; // generated from path variable: id. You should change the proto type if necessary.
+}
+message CMDB_LIBREFERENCE_LIST_VERSION_Request {
+}
+message CMDB_ORG_DELETE_Request {
+    string orgID = 1; // generated from path variable: orgID. You should change the proto type if necessary.
+}
+message CMDB_ORG_PUBLISHER_CREATE_GET_Request {
+    string orgID = 1; // generated from path variable: orgID. You should change the proto type if necessary.
+}
+message CMDB_ORG_PUBLISHER_CREATE_Request {
+    string orgID = 1; // generated from path variable: orgID. You should change the proto type if necessary.
+}
+message CMDB_ORG_RESOURCE_GET_Request {
+}
+message CMDB_PUBLISHER_DELETE_Request {
+    string publisherID = 1; // generated from path variable: publisherID. You should change the proto type if necessary.
+}
+message CMDB_PUBLISHER_GET_Request {
+    string publisherID = 1; // generated from path variable: publisherID. You should change the proto type if necessary.
+}
+message CMDB_ROLES_LIST_Request {
 }
 message CertificateCreateRequest {
     uint64 orgID = 1 [json_name = "orgId"];
@@ -332,73 +446,8 @@ message CertificateCreateRequest {
     google.protobuf.Value iOSInfo = 6 [json_name = "iosInfo"];
     google.protobuf.Value messageInfo = 7;
 }
-message CMDB_LIBREFERENCE_DELETE_Request {
-    string id = 1; // generated from path variable: id. You should change the proto type if necessary
-}
-message ListSwaggerVersionClientsReq {
-    uint64 orgID = 1;
-    optional google.protobuf.Value identity = 2;
-    optional google.protobuf.Value uRIParams = 3;
-    optional google.protobuf.Value queryParams = 4;
-    string assetID = 5; // generated from path variable: assetID. You should change the proto type if necessary
-    string swaggerVersion = 6; // generated from path variable: swaggerVersion. You should change the proto type if necessary
-}
-message AutoTestSpaceResponse {
-    optional google.protobuf.Value data = 1;
-}
-message UnifiedFileTreeNodeGetRequest {
-    string inode = 1;
-    string scope = 2;
-    string scopeID = 3;
-}
-message PipelineOperateRequest {
-    repeated google.protobuf.Value taskOperates = 1;
-    string pipelineID = 2; // generated from path variable: pipelineID. You should change the proto type if necessary
-}
-message ADAPTOR_CICD_RUN_Request {
-    string pipelineID = 1; // generated from path variable: pipelineID. You should change the proto type if necessary
-}
-message IOSCertificateKeyDTO {
-    string keyChainP12File = 1;
-    string keyChainP12Password = 2;
-    string debugMobileProvision = 3;
-    string releaseMobileProvision = 4;
-}
-message QueryBranchRuleRequest {
-    int64 projectID = 1;
-    int64 appID = 2;
-}
-message TicketUpdateRequestBody {
-    string title = 1;
-    string content = 2;
-    string type = 3;
-    string priority = 4;
-}
-message SonarMetricRuleDto {
-    int64 ID = 1 [json_name = "id"];
-    google.protobuf.Timestamp createdAt = 2;
-    google.protobuf.Timestamp updatedAt = 3;
-    string description = 4;
-    string scopeType = 5;
-    string scopeID = 6 [json_name = "scopeId"];
-    string metricKey = 7;
-    int64 metricKeyID = 8 [json_name = "metricKeyId"];
-    string operational = 9;
-    string metricValue = 10;
-    string metricKeyDesc = 11;
-    int64 decimalScale = 12;
-    string valueType = 13;
-}
-message SonarCredentialGetResponse {
-    optional google.protobuf.Value data = 1;
-}
-message QA_TESTENV_LIST_Request {
-}
-message PipelineCreateResponse {
-    optional google.protobuf.Value data = 1;
-}
-message ADAPTOR_CICD_CRON_STOP_Request {
-    string cronID = 1; // generated from path variable: cronID. You should change the proto type if necessary
+message CertificateCreateResponse {
+    google.protobuf.Value data = 1;
 }
 message CertificateDTO {
     uint64 ID = 1 [json_name = "id"];
@@ -414,117 +463,39 @@ message CertificateDTO {
     google.protobuf.Timestamp createdAt = 11;
     google.protobuf.Timestamp updatedAt = 12;
 }
-message PushCertificateConfigsRequest {
-    bool enable = 1;
+message CertificateDeleteResponse {
+    google.protobuf.Value data = 1;
+}
+message CertificateDetailResponse {
+    google.protobuf.Value certificateDTO = 1 [json_name = "data"];
+}
+message CertificateFileDTO {
+    string uUID = 1 [json_name = "uuid"];
+    string fileName = 2;
+}
+message CertificateListRequest {
+    uint64 orgID = 1;
+    string query = 2;
+    string name = 3;
+    string type = 4;
+    string status = 5;
+    int64 pageNo = 6;
+    int64 pageSize = 7;
+}
+message CertificateListResponse {
+    google.protobuf.Value data = 1;
+}
+message CertificateQuoteRequest {
+    uint64 certificateID = 1 [json_name = "certificateId"];
     uint64 appID = 2 [json_name = "appId"];
-    uint64 certificateID = 3 [json_name = "certificateId"];
-    string certificateType = 4;
-    repeated string envs = 5;
-    google.protobuf.Value iOSKey = 6 [json_name = "iosKey"];
-    google.protobuf.Value androidKey = 7;
-    google.protobuf.Value messageKey = 8;
 }
-message ListSwaggerVersionsReq {
-    uint64 orgID = 1;
-    optional google.protobuf.Value identity = 2;
-    optional google.protobuf.Value uRIParams = 3;
-    optional google.protobuf.Value queryParams = 4;
-    string assetID = 5; // generated from path variable: assetID. You should change the proto type if necessary
+message CertificateUpdateRequest {
+    string uUID = 1 [json_name = "uuid"];
+    string desc = 2;
+    string filename = 3;
+    string certificateID = 4; // generated from path variable: certificateID. You should change the proto type if necessary.
 }
-message TestIssuesStatistics {
-    string bugs = 1;
-    string coverage = 2;
-    string vulnerabilities = 3;
-    string codeSmells = 4;
-    string duplications = 5;
-    optional google.protobuf.Value rating = 6;
-    string sonarKey = 7;
-    string path = 8;
-    string uT = 9 [json_name = "ut"];
-    string commitID = 10 [json_name = "commitId"];
-    string branch = 11;
-    google.protobuf.Timestamp time = 12;
-}
-message TicketListRequest {
-    repeated string type = 1;
-    string priority = 2;
-    string status = 3;
-    string targetType = 4;
-    string targetID = 5;
-    string key = 6;
-    int64 orgID = 7;
-    string metric = 8;
-    repeated string metricID = 9;
-    int64 startTime = 10;
-    int64 endTime = 11;
-    bool comment = 12;
-    string q = 13;
-    int64 pageNo = 14;
-    int64 pageSize = 15;
-}
-message GetOperationReq {
-    uint64 orgID = 1;
-    optional google.protobuf.Value identity = 2;
-    google.protobuf.Value uRIParams = 3;
-    string id = 4; // generated from path variable: id. You should change the proto type if necessary
-}
-message ListProjectAPIGatewaysReq {
-    uint64 orgID = 1;
-    optional google.protobuf.Value identity = 2;
-    optional google.protobuf.Value uRIParams = 3;
-    string projectID = 4; // generated from path variable: projectID. You should change the proto type if necessary
-}
-message TicketDeleteResponse {
-    int64 data = 1;
-}
-message GetAPIAssetVersionReq {
-    uint64 orgID = 1;
-    optional google.protobuf.Value identity = 2;
-    optional google.protobuf.Value uRIParams = 3;
-    optional google.protobuf.Value queryParams = 4;
-    string assetID = 5; // generated from path variable: assetID. You should change the proto type if necessary
-    string versionID = 6; // generated from path variable: versionID. You should change the proto type if necessary
-}
-message ApiTestsGetResponse {
-    optional google.protobuf.Value data = 1;
-}
-message APITestEnvData {
-    int64 ID = 1 [json_name = "id"];
-    int64 envID = 2;
-    string envType = 3;
-    string name = 4;
-    string domain = 5;
-    map<string, string> header = 6;
-    map<string,  google.protobuf.Value> global = 7;
-}
-message ApplicationUpdateRequest {
-    int64 applicationID = 1 [json_name = "-"];
-    google.protobuf.Value body = 2;
-}
-message AppCertificateListRequest {
-    uint64 appID = 1;
-    string status = 2;
-    int64 pageNo = 3;
-    int64 pageSize = 4;
-}
-message ISummary {
-    google.protobuf.Value requirement = 1;
-    google.protobuf.Value task = 2;
-    google.protobuf.Value bug = 3;
-}
-message OrgSearchRequest {
-    string q = 1;
-    int64 pageNo = 2;
-    int64 pageSize = 3;
-    string org = 4;
-}
-message PUBLISH_ITEM_USERS_Request {
-    string publishItemId = 1; // generated from path variable: publishItemId. You should change the proto type if necessary
-}
-message PipelineGetBranchRuleResponse {
-    optional google.protobuf.Value data = 1;
-}
-message OrgCreateResponse {
+message CertificateUpdateResponse {
     google.protobuf.Value data = 1;
 }
 message CodeCoverageUpdateRequest {
@@ -533,307 +504,6 @@ message CodeCoverageUpdateRequest {
     string msg = 3;
     string reportXmlUUID = 4;
     string reportTarUrl = 5;
-}
-message PublishItemStatisticsDetailRequest {
-    uint64 endTime = 1;
-    string publishItemId = 2; // generated from path variable: publishItemId. You should change the proto type if necessary
-}
-message IterationCreateRequest {
-    optional google.protobuf.Timestamp startedAt = 1;
-    optional google.protobuf.Timestamp finishedAt = 2;
-    uint64 projectID = 3;
-    string title = 4;
-    string content = 5;
-}
-message ProjectResourceUsage {
-    double cpuServiceUsed = 1;
-    double memServiceUsed = 2;
-    double cpuAddonUsed = 3;
-    double memAddonUsed = 4;
-}
-message LibReference {
-    uint64 ID = 1 [json_name = "id"];
-    uint64 appID = 2;
-    uint64 libID = 3;
-    string libName = 4;
-    string libDesc = 5;
-    uint64 approvalID = 6;
-    string approvalStatus = 7;
-    string creator = 8;
-    optional google.protobuf.Timestamp createdAt = 9;
-    optional google.protobuf.Timestamp updatedAt = 10;
-}
-message BlockoutConfig {
-    bool blockDEV = 1 [json_name = "blockDev"];
-    bool blockTEST = 2 [json_name = "blockTest"];
-    bool blockStage = 3;
-    bool blockProd = 4;
-}
-message APIAssetVersionCreateRequest {
-    uint64 orgID = 1;
-    string aPIAssetID = 2 [json_name = "apiAssetID"];
-    uint64 major = 3;
-    uint64 minor = 4;
-    uint64 patch = 5;
-    string desc = 6;
-    string specProtocol = 7;
-    string specDiceFileUUID = 8;
-    string spec = 9;
-    string inode = 10;
-    repeated google.protobuf.Value instances = 11;
-    string source = 12;
-    uint64 appID = 13;
-    string branch = 14;
-    string serviceName = 15;
-    string assetID = 16; // generated from path variable: assetID. You should change the proto type if necessary
-}
-message DeleteClient_Request {
-    string clientID = 1; // generated from path variable: clientID. You should change the proto type if necessary
-}
-message GetAssetVersionRsp {
-    optional google.protobuf.Value asset = 1;
-    optional google.protobuf.Value version = 2;
-    optional google.protobuf.Value spec = 3;
-    bool hasInstantiation = 4;
-    bool hasAccess = 5;
-    optional google.protobuf.Value access = 6;
-}
-message ListContractRecordsReq {
-    uint64 orgID = 1;
-    optional google.protobuf.Value identity = 2;
-    optional google.protobuf.Value uRIParams = 3;
-    string clientID = 4; // generated from path variable: clientID. You should change the proto type if necessary
-    string contractID = 5; // generated from path variable: contractID. You should change the proto type if necessary
-}
-message UpdateAPIAssetReq {
-    uint64 orgID = 1;
-    optional google.protobuf.Value identity = 2;
-    optional google.protobuf.Value uRIParams = 3;
-    map<string, google.protobuf.Value> keys = 4;
-    string assetID = 5; // generated from path variable: assetID. You should change the proto type if necessary
-}
-message ProjectCreateResponse {
-    uint64 data = 1;
-}
-message PublisherCreateRequest {
-    string name = 1;
-    string publisherType = 2;
-    string logo = 3;
-    string desc = 4;
-    uint64 orgID = 5 [json_name = "orgId"];
-}
-message APIAssetVersionInstanceCreateRequest {
-    string name = 1;
-    string instanceType = 2;
-    uint64 runtimeID = 3;
-    string serviceName = 4;
-    string endpointID = 5;
-    string uRL = 6 [json_name = "url"];
-    string assetID = 7 [json_name = "-"];
-    uint64 versionID = 8 [json_name = "-"];
-}
-message DownloadSpecTextReq {
-    uint64 orgID = 1;
-    optional google.protobuf.Value identity = 2;
-    optional google.protobuf.Value uRIParams = 3;
-    optional google.protobuf.Value queryParams = 4;
-    string assetID = 5; // generated from path variable: assetID. You should change the proto type if necessary
-    string versionID = 6; // generated from path variable: versionID. You should change the proto type if necessary
-}
-message APP_PUBLISH_ITEM_RELATION_GET_Request {
-    string application = 1; // generated from path variable: application. You should change the proto type if necessary
-}
-message CertificateCreateResponse {
-    google.protobuf.Value data = 1;
-}
-message CommentUpdateRequest {
-    int64 commentID = 1 [json_name = "-"];
-    google.protobuf.Value body = 2;
-}
-message CMDB_ORG_RESOURCE_GET_Request {
-}
-message APIAssetPagingResponse {
-    uint64 total = 1;
-    repeated google.protobuf.Value list = 2;
-    repeated string userIDs = 3;
-}
-message UpdateBranchRuleResponse {
-    optional google.protobuf.Value data = 1;
-}
-message PagingAppCertificateDTO {
-    int64 total = 1;
-    repeated google.protobuf.Value list = 2;
-}
-message OrgUpdateRequestBody {
-    string logo = 1;
-    string name = 2;
-    string displayName = 3;
-    string desc = 4;
-    string locale = 5;
-    uint64 ID = 6 [json_name = "id"];
-    string publisherName = 7;
-    optional google.protobuf.Value config = 8;
-    optional google.protobuf.Value blockoutConfig = 9;
-    bool isPublic = 10;
-}
-message CreateClientReq {
-    uint64 orgID = 1;
-    optional google.protobuf.Value identity = 2;
-    optional google.protobuf.Value body = 3;
-}
-message PipelineCronStopResponse {
-    optional google.protobuf.Value data = 1;
-}
-message ADAPTOR_CICD_GET_BRANCH_RULE_Request {
-    string pipelineid = 1; // generated from path variable: pipelineid. You should change the proto type if necessary
-}
-message PipelineOperateResponse {
-}
-message SonarStoreResponse {
-    google.protobuf.Value data = 1;
-}
-message PUBLISH_ITEM_METIRCS_HISTOGRAM_COMMON_Request {
-    string publishItemId = 1; // generated from path variable: publishItemId. You should change the proto type if necessary
-    string metricName = 2; // generated from path variable: metricName. You should change the proto type if necessary
-}
-message ApiTestsUpdateRequest {
-    google.protobuf.Value apiTestInfo = 1;
-    bool isResult = 2;
-    string id = 3; // generated from path variable: id. You should change the proto type if necessary
-}
-message CommentCreateRequest {
-    int64 ticketID = 1;
-    string commentType = 2;
-    string content = 3;
-    google.protobuf.Value iRComment = 4 [json_name = "irComment"];
-    string userID = 5;
-}
-message CommentListResponseData {
-    int64 total = 1;
-    repeated google.protobuf.Value comments = 2;
-}
-message QueryPublishItemData {
-    repeated google.protobuf.Value list = 1;
-    int64 total = 2;
-}
-message ListSLAsReq {
-    uint64 orgID = 1;
-    optional google.protobuf.Value identity = 2;
-    optional google.protobuf.Value uRIParams = 3;
-    optional google.protobuf.Value queryParams = 4;
-    string assetID = 5; // generated from path variable: assetID. You should change the proto type if necessary
-    string swaggerVersion = 6; // generated from path variable: swaggerVersion. You should change the proto type if necessary
-    string slaID = 7; // generated from path variable: slaID. You should change the proto type if necessary
-}
-message ADAPTOR_CICD_FETCH_PIPELINE_ID_Request {
-}
-message UnifiedFileTreeNodeListRequest {
-    string scope = 1;
-    string scopeID = 2;
-    string pinode = 3;
-    string pipelineCategoryKey = 4;
-}
-message PipelineInvokedComboRequest {
-    uint64 appID = 1;
-    string branches = 2;
-    string sources = 3;
-    string ymlNames = 4;
-}
-message FileTreeDeleteNode_Request {
-    string treeName = 1; // generated from path variable: treeName. You should change the proto type if necessary
-    string inode = 2; // generated from path variable: inode. You should change the proto type if necessary
-}
-message PagingPublisherDTO {
-    int64 total = 1;
-    repeated google.protobuf.Value list = 2;
-}
-message MemberRoleListResponse {
-    google.protobuf.Value data = 1;
-}
-message TicketUpdateResponse {
-    int64 data = 1;
-}
-message CreateBranchRuleResponse {
-    optional google.protobuf.Value data = 1;
-}
-message TicketCreateResponse {
-    int64 data = 1;
-}
-message PUBLISH_ITEM_METIRCS_COMMON_Request {
-    string publishItemId = 1; // generated from path variable: publishItemId. You should change the proto type if necessary
-    string metricName = 2; // generated from path variable: metricName. You should change the proto type if necessary
-}
-message OrgGetByDomainRequest {
-    string domain = 1;
-    string orgName = 2;
-}
-message DeleteAccess_Request {
-    string accessID = 1; // generated from path variable: accessID. You should change the proto type if necessary
-}
-message ListInstantiations_Request {
-}
-message PipelineCronDTO {
-    uint64 ID = 1 [json_name = "id"];
-    google.protobuf.Timestamp timeCreated = 2;
-    google.protobuf.Timestamp timeUpdated = 3;
-    uint64 applicationID = 4;
-    string branch = 5;
-    string cronExpr = 6;
-    optional google.protobuf.Timestamp cronStartTime = 7;
-    string pipelineYmlName = 8;
-    uint64 basePipelineID = 9;
-    optional bool enable = 10;
-    string pipelineYml = 11;
-    repeated string configManageNamespaces = 12;
-    map<string, string> secrets = 13;
-    string userID = 14;
-    uint64 orgID = 15;
-    string pipelineDefinitionID = 16;
-    string pipelineSource = 17;
-    string clusterName = 18;
-}
-message QueryAppPublishItemRelationResponse {
-    repeated google.protobuf.Value data = 1;
-}
-message ApplicationDeleteResponse {
-    google.protobuf.Value data = 1;
-}
-message OrgSearchResponse {
-    google.protobuf.Value data = 1;
-}
-message GetAPIAssetReq {
-    uint64 orgID = 1;
-    optional google.protobuf.Value identity = 2;
-    optional google.protobuf.Value uRIParams = 3;
-    string assetID = 4; // generated from path variable: assetID. You should change the proto type if necessary
-}
-message DashboardSpotLogLine {
-    string ID = 1 [json_name = "id"];
-    string source = 2;
-    string stream = 3;
-    string timeStamp = 4 [json_name = "timestamp"];
-    string content = 5;
-    int64 offset = 6;
-    string level = 7;
-    string requestID = 8 [json_name = "requestId"];
-}
-message PipelineCronListResponse {
-    repeated google.protobuf.Value data = 1;
-}
-message ApplicationDeleteRequest {
-    string projectID = 1 [json_name = "projectId"];
-    string applicationId = 2; // generated from path variable: applicationId. You should change the proto type if necessary
-}
-message TicketUpdateRequest {
-    int64 ticketID = 1 [json_name = "-"];
-    google.protobuf.Value body = 2;
-}
-message APITestReq {
-    string clientID = 1;
-    string clientSecret = 2;
-    repeated google.protobuf.Value aPIs = 3 [json_name = "apis"];
-    string assetID = 4; // generated from path variable: assetID. You should change the proto type if necessary
-    string swaggerVersion = 5; // generated from path variable: swaggerVersion. You should change the proto type if necessary
 }
 message Comment {
     int64 commentID = 1 [json_name = "id"];
@@ -845,461 +515,273 @@ message Comment {
     google.protobuf.Timestamp createdAt = 7;
     google.protobuf.Timestamp updatedAt = 8;
 }
-message CMDB_ORG_DELETE_Request {
-    string orgID = 1; // generated from path variable: orgID. You should change the proto type if necessary
-}
-message ProjectDetailResponse {
-    google.protobuf.Value data = 1;
-}
-message TicketCloseRequest {
+message CommentCreateRequest {
     int64 ticketID = 1;
+    string commentType = 2;
+    string content = 3;
+    google.protobuf.Value iRComment = 4 [json_name = "irComment"];
+    string userID = 5;
 }
-message ADAPTOR_CICD_FILETREE_GET_PIPELINE_FILETREE_Request {
+message CommentCreateResponse {
+    int64 data = 1;
 }
-message ADAPTOR_CICD_RERUN_Request {
-    string pipelineID = 1; // generated from path variable: pipelineID. You should change the proto type if necessary
-}
-message ApplicationUpdateResponse {
-    google.protobuf.Value data = 1;
-}
-message AndroidCertificateDTO {
-    bool isManualCreate = 1 [json_name = "manualCreate"];
-    google.protobuf.Value manualInfo = 2;
-    google.protobuf.Value autoInfo = 3;
-}
-message QA_TESTPLAN_PIPELINE_DETAIL_Request {
-    string pipelineId = 1; // generated from path variable: pipelineId. You should change the proto type if necessary
-}
-message APIDocCreateNodeReq {
-    uint64 orgID = 1;
-    optional google.protobuf.Value identity = 2;
-    optional google.protobuf.Value uRIParams = 3;
-    optional google.protobuf.Value body = 4;
-    string treeName = 5; // generated from path variable: treeName. You should change the proto type if necessary
-}
-message FileTreeListNodes_Request {
-    string treeName = 1; // generated from path variable: treeName. You should change the proto type if necessary
-}
-message ListContractRecordsRsp {
-    uint64 total = 1;
-    repeated google.protobuf.Value list = 2;
-}
-message TestFileRecord {
-    uint64 ID = 1 [json_name = "id"];
-    string fileName = 2 [json_name = "name"];
-    string description = 3;
-    string projectName = 4;
-    string projectDisplayName = 5;
-    uint64 orgID = 6;
-    uint64 projectID = 7;
-    uint64 testSetID = 8;
-    string apiFileUUID = 9;
-    uint64 spaceID = 10;
-    string type = 11;
-    string state = 12;
-    string errorInfo = 13;
-    google.protobuf.Timestamp createdAt = 14;
-    google.protobuf.Timestamp updatedAt = 15;
-    string operatorID = 16;
-}
-message CMDB_ORG_PUBLISHER_CREATE_Request {
-    string orgID = 1; // generated from path variable: orgID. You should change the proto type if necessary
-}
-message ListSLAsRsp {
-    uint64 total = 1;
-    repeated google.protobuf.Value list = 2;
-}
-message ListAPIGatewaysResp {
-    google.protobuf.Value data = 1;
-}
-message ADAPTOR_CICD_CONFIG_WORKSPACES_Request {
-}
-message ApplicationCreateRequest {
-    string name = 1;
-    string displayName = 2;
-    string logo = 3;
-    string desc = 4;
-    uint64 projectID = 5 [json_name = "projectId"];
-    string mode = 6;
-    map<string, google.protobuf.Value> config = 7;
-    bool isExternalRepo = 8;
-    optional google.protobuf.Value repoConfig = 9;
-    optional google.protobuf.Value sonarConfig = 10;
-}
-message ApplicationInitRequest {
-    uint64 applicationID = 1 [json_name = "-"];
-    string mobileAppName = 2;
-    string mobileDisplayName = 3;
-    string bundleID = 4;
-    string packageName = 5;
-}
-message DeleteBranchRuleResponse {
-    optional google.protobuf.Value data = 1;
-}
-message TicketListResponse {
-    google.protobuf.Value data = 1;
-}
-message PublishItemStatisticsTrendData {
-    google.protobuf.Value data = 1;
-}
-message SonarMetricRulesDefinitionListRequest {
-    string scopeType = 1;
-    string scopeID = 2 [json_name = "scopeId"];
-}
-message UpdateAssetVersionReq {
-    uint64 orgID = 1;
-    optional google.protobuf.Value identity = 2;
-    optional google.protobuf.Value uRIParams = 3;
-    optional google.protobuf.Value body = 4;
-    string assetID = 5; // generated from path variable: assetID. You should change the proto type if necessary
-    string versionID = 6; // generated from path variable: versionID. You should change the proto type if necessary
-}
-message UpdateAppPublishItemRelationRequest {
-    int64 appID = 1 [json_name = "-"];
-    string userID = 2 [json_name = "-"];
-    int64 prodItemID = 3 [json_name = "PROD"];
-    int64 sTAGINGItemID = 4 [json_name = "STAGING"];
-    int64 tESTItemID = 5 [json_name = "TEST"];
-    int64 dEVItemID = 6 [json_name = "DEV"];
-    map<string, google.protobuf.Value> aKAIMap = 7 [json_name = "-"];
-    string application = 8; // generated from path variable: application. You should change the proto type if necessary
-}
-message PagingCertificateDTO {
-    int64 total = 1;
-    repeated google.protobuf.Value list = 2;
+message CommentListRequest {
+    int64 ticketID = 1;
 }
 message CommentListResponse {
     google.protobuf.Value data = 1;
 }
-message IterationPagingRequest {
-    uint64 pageNo = 1;
-    uint64 pageSize = 2;
-    string deadline = 3;
-    uint64 projectID = 4;
-    string state = 5;
-    bool withoutIssueSummary = 6;
-    repeated uint64 IDs = 7 [json_name = "ids"];
+message CommentListResponseData {
+    int64 total = 1;
+    repeated google.protobuf.Value comments = 2;
 }
-message PUBLISH_ITEM_ERR_EFFACTS_Request {
-    string publishItemId = 1; // generated from path variable: publishItemId. You should change the proto type if necessary
-}
-message ProjectPackageRequest {
-    uint64 projectID = 1;
-    string projectName = 2;
-    string projectDisplayName = 3;
-    uint64 orgID = 4;
-    string orgName = 5;
-}
-message APITestEnvCreateRequest {
-    google.protobuf.Value aPITestEnvData = 1;
-}
-message APITestEnvListResponse {
-    repeated google.protobuf.Value data = 1;
-}
-message CICDPipelineYmlListRequest {
-    int64 appID = 1;
-    string branch = 2;
-}
-message ApplicationUpdateRequestBody {
-    string logo = 1;
-    string desc = 2;
-    string displayName = 3;
-    map<string, google.protobuf.Value> config = 4;
-    optional google.protobuf.Value repoConfig = 5;
-    bool isPublic = 6;
-    optional google.protobuf.Value sonarConfig = 7;
-}
-message ProjectDetailRequest {
-    string projectIDOrName = 1 [json_name = "projectIdOrName"];
-    uint64 orgID = 2;
-    uint64 orgName = 3;
-}
-message ListRuntimeServices_Request {
-    string appID = 1; // generated from path variable: appID. You should change the proto type if necessary
-}
-message UnifiedFileTreeNodeCreateRequest {
-    string type = 1;
-    string scope = 2;
-    string scopeID = 3;
-    string pinode = 4;
-    string name = 5;
-    string desc = 6;
-}
-message OrgUpdateRequest {
-    int64 orgID = 1 [json_name = "-"];
+message CommentUpdateRequest {
+    int64 commentID = 1 [json_name = "-"];
     google.protobuf.Value body = 2;
 }
-message GetContractReq {
-    uint64 orgID = 1;
-    optional google.protobuf.Value identity = 2;
-    optional google.protobuf.Value uRIParams = 3;
-    string clientID = 4; // generated from path variable: clientID. You should change the proto type if necessary
-    string contractID = 5; // generated from path variable: contractID. You should change the proto type if necessary
+message CommentUpdateRequestBody {
+    string content = 1;
 }
-message FileTreeUpdateNode_Request {
-    string treeName = 1; // generated from path variable: treeName. You should change the proto type if necessary
-    string inode = 2; // generated from path variable: inode. You should change the proto type if necessary
-}
-message PipelineAppAllValidBranchWorkspaceResponse {
-    repeated google.protobuf.Value data = 1;
-}
-message ProjectStats {
-    int64 countApplications = 1;
-    int64 countMembers = 2;
-    int64 totalApplicationsCount = 3;
-    int64 totalMembersCount = 4;
-    int64 totalIterationsCount = 5;
-    int64 runningIterationsCount = 6;
-    int64 planningIterationsCount = 7;
-    double totalManHourCount = 8;
-    double usedManHourCount = 9;
-    double planningManHourCount = 10;
-    int64 doneBugCount = 11;
-    int64 totalBugCount = 12;
-    double doneBugPercent = 13;
-}
-message PublishItemStatisticsErrListData {
-    repeated google.protobuf.Value data = 1;
-}
-message APITestEnvUpdateResponse {
+message CommentUpdateResponse {
     int64 data = 1;
 }
-message FileTreeMvCpNode_Request {
-    string treeName = 1; // generated from path variable: treeName. You should change the proto type if necessary
-    string inode = 2; // generated from path variable: inode. You should change the proto type if necessary
-    string action = 3; // generated from path variable: action. You should change the proto type if necessary
+message CreateAPIAssetVersionBody {
+    string assetID = 1;
+    uint64 major = 2;
+    uint64 minor = 3;
+    uint64 patch = 4;
+    string specProtocol = 5;
+    string specDiceFileUUID = 6;
 }
-message SonarMetricRulesUpdateRequest {
-    int64 ID = 1 [json_name = "id"];
-    string description = 2;
-    string metricValue = 3;
-    string scopeType = 4;
-    string scopeID = 5 [json_name = "scopeId"];
+message CreateAccessReq {
+    uint64 orgID = 1;
+    optional google.protobuf.Value identity = 2;
+    optional google.protobuf.Value body = 3;
 }
-message PublisherUpdateRequest {
-    uint64 ID = 1 [json_name = "id"];
-    string logo = 2;
-    string desc = 3;
+message CreateBranchRuleRequest {
+    string scopeType = 1;
+    int64 scopeID = 2 [json_name = "scopeId"];
+    string rule = 3;
+    bool isProtect = 4;
+    bool needApproval = 5;
+    bool isTriggerPipeline = 6;
+    string workspace = 7;
+    string artifactWorkspace = 8;
+    string desc = 9;
 }
-message TicketListResponseData {
-    int64 total = 1;
-    repeated google.protobuf.Value tickets = 2;
-}
-message QueryBranchRuleResponse {
-    repeated google.protobuf.Value data = 1;
-}
-message IterationUpdateResponse {
-    uint64 data = 1;
-}
-message OrgResourceInfo {
-    double totalCpu = 1;
-    double totalMem = 2;
-    double availableCpu = 3;
-    double availableMem = 4;
-}
-message PublisherDeleteResponse {
-    uint64 data = 1;
-}
-message APITestEnvDeleteResponse {
+message CreateBranchRuleResponse {
     optional google.protobuf.Value data = 1;
 }
-message UpdateSLAReq {
+message CreateClientReq {
+    uint64 orgID = 1;
+    optional google.protobuf.Value identity = 2;
+    optional google.protobuf.Value body = 3;
+}
+message CreateContractReq {
     uint64 orgID = 1;
     optional google.protobuf.Value identity = 2;
     optional google.protobuf.Value uRIParams = 3;
     optional google.protobuf.Value body = 4;
-    string assetID = 5; // generated from path variable: assetID. You should change the proto type if necessary
-    string swaggerVersion = 6; // generated from path variable: swaggerVersion. You should change the proto type if necessary
-    string slaID = 7; // generated from path variable: slaID. You should change the proto type if necessary
+    string clientID = 5; // generated from path variable: clientID. You should change the proto type if necessary.
 }
-message AndroidCertificateManualKeyStoreDTO {
-    google.protobuf.Value certificateFileDTO = 1;
-    google.protobuf.Value androidCertificateKeyStoreDTO = 2;
+message CreateInstantiationReq {
+    uint64 orgID = 1;
+    optional google.protobuf.Value identity = 2;
+    optional google.protobuf.Value uRIParams = 3;
+    optional google.protobuf.Value body = 4;
+    string assetID = 5; // generated from path variable: assetID. You should change the proto type if necessary.
+    string swaggerVersion = 6; // generated from path variable: swaggerVersion. You should change the proto type if necessary.
+    string minor = 7; // generated from path variable: minor. You should change the proto type if necessary.
 }
-message TicketDeleteRequest {
-    int64 ticketID = 1;
+message CreateSLAReq {
+    uint64 orgID = 1;
+    optional google.protobuf.Value identity = 2;
+    optional google.protobuf.Value uRIParams = 3;
+    optional google.protobuf.Value body = 4;
+    string assetID = 5; // generated from path variable: assetID. You should change the proto type if necessary.
+    string swaggerVersion = 6; // generated from path variable: swaggerVersion. You should change the proto type if necessary.
+}
+message DashboardSpotLogData {
+    repeated google.protobuf.Value lines = 1;
+}
+message DashboardSpotLogLine {
+    string ID = 1 [json_name = "id"];
+    string source = 2;
+    string stream = 3;
+    string timeStamp = 4 [json_name = "timestamp"];
+    string content = 5;
+    int64 offset = 6;
+    string level = 7;
+    string requestID = 8 [json_name = "requestId"];
+}
+message DashboardSpotLogResponse {
+    google.protobuf.Value data = 1;
+}
+message DeleteAPIAssetVersion_Request {
+    string assetID = 1; // generated from path variable: assetID. You should change the proto type if necessary.
+    string versionID = 2; // generated from path variable: versionID. You should change the proto type if necessary.
+}
+message DeleteAPIAssets_Request {
+    string assetID = 1; // generated from path variable: assetID. You should change the proto type if necessary.
+}
+message DeleteAccess_Request {
+    string accessID = 1; // generated from path variable: accessID. You should change the proto type if necessary.
+}
+message DeleteBranchRuleResponse {
+    optional google.protobuf.Value data = 1;
+}
+message DeleteClient_Request {
+    string clientID = 1; // generated from path variable: clientID. You should change the proto type if necessary.
+}
+message DeleteSLAReq {
+    uint64 orgID = 1;
+    optional google.protobuf.Value identity = 2;
+    optional google.protobuf.Value uRIParams = 3;
+    string assetID = 4; // generated from path variable: assetID. You should change the proto type if necessary.
+    string swaggerVersion = 5; // generated from path variable: swaggerVersion. You should change the proto type if necessary.
+    string slaID = 6; // generated from path variable: slaID. You should change the proto type if necessary.
+}
+message DownloadSpecTextReq {
+    uint64 orgID = 1;
+    optional google.protobuf.Value identity = 2;
+    optional google.protobuf.Value uRIParams = 3;
+    optional google.protobuf.Value queryParams = 4;
+    string assetID = 5; // generated from path variable: assetID. You should change the proto type if necessary.
+    string versionID = 6; // generated from path variable: versionID. You should change the proto type if necessary.
+}
+message ErrorResponse {
+    string code = 1;
+    string msg = 2;
+    google.protobuf.Value ctx = 3;
+}
+message ExportProjectPackageRequest {
+    google.protobuf.Value projectPackageRequest = 1;
+    repeated google.protobuf.Value artifacts = 2;
+    string orgID = 3; // generated from path variable: orgID. You should change the proto type if necessary.
+    string projectID = 4; // generated from path variable: projectID. You should change the proto type if necessary.
+}
+message ExportProjectTemplateRequest {
+    uint64 projectID = 1;
+    string projectName = 2;
+    string projectDisplayName = 3;
+    int64 orgID = 4;
+}
+message FileTreeDeleteNode_Request {
+    string treeName = 1; // generated from path variable: treeName. You should change the proto type if necessary.
+    string inode = 2; // generated from path variable: inode. You should change the proto type if necessary.
+}
+message FileTreeGetNode_Request {
+    string treeName = 1; // generated from path variable: treeName. You should change the proto type if necessary.
+    string inode = 2; // generated from path variable: inode. You should change the proto type if necessary.
+}
+message FileTreeListNodes_Request {
+    string treeName = 1; // generated from path variable: treeName. You should change the proto type if necessary.
+}
+message FileTreeMvCpNode_Request {
+    string treeName = 1; // generated from path variable: treeName. You should change the proto type if necessary.
+    string inode = 2; // generated from path variable: inode. You should change the proto type if necessary.
+    string action = 3; // generated from path variable: action. You should change the proto type if necessary.
+}
+message FileTreeUpdateNode_Request {
+    string treeName = 1; // generated from path variable: treeName. You should change the proto type if necessary.
+    string inode = 2; // generated from path variable: inode. You should change the proto type if necessary.
+}
+message GetAPIAssetReq {
+    uint64 orgID = 1;
+    optional google.protobuf.Value identity = 2;
+    optional google.protobuf.Value uRIParams = 3;
+    string assetID = 4; // generated from path variable: assetID. You should change the proto type if necessary.
+}
+message GetAPIAssetVersionReq {
+    uint64 orgID = 1;
+    optional google.protobuf.Value identity = 2;
+    optional google.protobuf.Value uRIParams = 3;
+    optional google.protobuf.Value queryParams = 4;
+    string assetID = 5; // generated from path variable: assetID. You should change the proto type if necessary.
+    string versionID = 6; // generated from path variable: versionID. You should change the proto type if necessary.
+}
+message GetAccess_Request {
+    string accessID = 1; // generated from path variable: accessID. You should change the proto type if necessary.
+}
+message GetAddonInstanceDetailResponse {
+    google.protobuf.Value data = 1;
+}
+message GetAssetVersionRsp {
+    optional google.protobuf.Value asset = 1;
+    optional google.protobuf.Value version = 2;
+    optional google.protobuf.Value spec = 3;
+    bool hasInstantiation = 4;
+    bool hasAccess = 5;
+    optional google.protobuf.Value access = 6;
 }
 message GetClientReq {
     uint64 orgID = 1;
     optional google.protobuf.Value identity = 2;
     optional google.protobuf.Value uRIParams = 3;
-    string clientID = 4; // generated from path variable: clientID. You should change the proto type if necessary
+    string clientID = 4; // generated from path variable: clientID. You should change the proto type if necessary.
+}
+message GetContractReq {
+    uint64 orgID = 1;
+    optional google.protobuf.Value identity = 2;
+    optional google.protobuf.Value uRIParams = 3;
+    string clientID = 4; // generated from path variable: clientID. You should change the proto type if necessary.
+    string contractID = 5; // generated from path variable: contractID. You should change the proto type if necessary.
+}
+message GetInstantiationsReq {
+    uint64 orgID = 1;
+    optional google.protobuf.Value identity = 2;
+    optional google.protobuf.Value uRIParams = 3;
+    string assetID = 4; // generated from path variable: assetID. You should change the proto type if necessary.
+    string swaggerVersion = 5; // generated from path variable: swaggerVersion. You should change the proto type if necessary.
+    string minor = 6; // generated from path variable: minor. You should change the proto type if necessary.
+}
+message GetOperationReq {
+    uint64 orgID = 1;
+    optional google.protobuf.Value identity = 2;
+    google.protobuf.Value uRIParams = 3;
+    string id = 4; // generated from path variable: id. You should change the proto type if necessary.
+}
+message GetOperationURIParameters {
+    uint64 ID = 1;
 }
 message GetSLAReq {
     uint64 orgID = 1;
     optional google.protobuf.Value identity = 2;
     optional google.protobuf.Value uRIParams = 3;
-    string assetID = 4; // generated from path variable: assetID. You should change the proto type if necessary
-    string swaggerVersion = 5; // generated from path variable: swaggerVersion. You should change the proto type if necessary
+    string assetID = 4; // generated from path variable: assetID. You should change the proto type if necessary.
+    string swaggerVersion = 5; // generated from path variable: swaggerVersion. You should change the proto type if necessary.
 }
-message ListTestFileRecordsRequest {
-    uint64 projectID = 1;
-    repeated uint64 projectIDs = 2 [json_name = "-"];
-    string projectName = 3;
-    string projectDisplayName = 4;
-    uint64 orgID = 5;
-    uint64 spaceID = 6;
-    repeated string types = 7;
-    string locale = 8;
-    int64 pageNo = 9;
-    int64 pageSize = 10;
-    bool asc = 11;
+message GetSLARsp {
+    google.protobuf.Value sLAModel = 1;
+    repeated google.protobuf.Value limits = 2;
+    string assetID = 3;
+    string assetName = 4;
+    string swaggerVersion = 5;
+    string userTo = 6;
+    bool default = 7;
+    uint64 clientCount = 8;
 }
-message UpdateInstantiationReq {
-    uint64 orgID = 1;
-    optional google.protobuf.Value identity = 2;
-    optional google.protobuf.Value uRIParams = 3;
-    optional google.protobuf.Value body = 4;
-    string assetID = 5; // generated from path variable: assetID. You should change the proto type if necessary
-    string swaggerVersion = 6; // generated from path variable: swaggerVersion. You should change the proto type if necessary
-    string minor = 7; // generated from path variable: minor. You should change the proto type if necessary
-    string instantiationID = 8; // generated from path variable: instantiationID. You should change the proto type if necessary
-}
-message PipelineCancelResponse {
-}
-message CMDB_CERTIFICATE_GET_Request {
-    string certificateID = 1; // generated from path variable: certificateID. You should change the proto type if necessary
-}
-message Ticket {
-    int64 ticketID = 1 [json_name = "id"];
-    string title = 2;
-    string content = 3;
-    string type = 4;
-    string priority = 5;
-    string status = 6;
-    string key = 7;
-    string orgID = 8;
-    string metric = 9;
-    string metricID = 10;
-    int64 count = 11;
-    string creator = 12;
-    string lastOperator = 13;
-    map<string, google.protobuf.Value> label = 14;
-    string targetType = 15;
-    optional google.protobuf.Value lastComment = 16;
-    string targetID = 17;
-    google.protobuf.Timestamp createdAt = 18;
-    google.protobuf.Timestamp updatedAt = 19;
-    google.protobuf.Timestamp closedAt = 20;
-    google.protobuf.Timestamp triggeredAt = 21;
-}
-message PublishItemStatisticsErrTrendData {
+message GetTestFileRecordResponse {
     google.protobuf.Value data = 1;
-}
-message PipelineConfigNamespacesFetchResponse {
-    optional google.protobuf.Value data = 1;
-}
-message ProjectDTO {
-    uint64 ID = 1 [json_name = "id"];
-    string name = 2;
-    string displayName = 3;
-    string dDHook = 4 [json_name = "ddHook"];
-    uint64 orgID = 5 [json_name = "orgId"];
-    string creator = 6;
-    string logo = 7;
-    string desc = 8;
-    repeated string owners = 9;
-    string activeTime = 10;
-    bool joined = 11;
-    optional bool canUnblock = 12;
-    string blockStatus = 13;
-    bool canManage = 14 [json_name = "CanManage"];
-    bool isPublic = 15;
-    google.protobuf.Value stats = 16;
-    google.protobuf.Value projectResourceUsage = 17;
-    map<string, string> clusterConfig = 18;
-    optional google.protobuf.Value resourceConfig = 19;
-    map<string, int64> rollbackConfig = 20;
-    double cpuQuota = 21;
-    double memQuota = 22;
-    google.protobuf.Timestamp createdAt = 23;
-    google.protobuf.Timestamp updatedAt = 24;
-    string type = 25;
-}
-message APIAssetGetResponse {
-    optional google.protobuf.Value data = 1;
-}
-message DashboardSpotLogData {
-    repeated google.protobuf.Value lines = 1;
-}
-message RoleList {
-    repeated google.protobuf.Value list = 1;
-    int64 total = 2;
-}
-message ListContractsRsp {
-    uint64 total = 1;
-    repeated google.protobuf.Value list = 2;
-}
-message PublishItemStatisticsErrListResponse {
-    string errSummary = 1;
-    string appVersion = 2;
-    google.protobuf.Timestamp timeOfFirst = 3;
-    google.protobuf.Timestamp timeOfRecent = 4;
-    uint64 totalErr = 5;
-    uint64 affectUsers = 6;
-}
-message SonarMetricRulesDeleteRequest {
-    int64 ID = 1 [json_name = "id"];
-    string scopeType = 2;
-    string scopeID = 3 [json_name = "scopeId"];
-}
-message ADAPTOR_CICD_PIPELINE_DETAIL_Request {
-}
-message AndroidCertificateKeyDTO {
-    string debugKeyStoreFile = 1;
-    string debugKeyStoreAlias = 2;
-    string debugKeyPassword = 3;
-    string debugStorePassword = 4;
-    string releaseKeyStoreFile = 5;
-    string releaseKeyStoreAlias = 6;
-    string releaseKeyPassword = 7;
-    string releaseStorePassword = 8;
-}
-message CertificateDetailResponse {
-    google.protobuf.Value certificateDTO = 1 [json_name = "data"];
-}
-message ProjectDeleteResponse {
-    google.protobuf.Value data = 1;
-}
-message GetOperationURIParameters {
-    uint64 ID = 1;
-}
-message ListAccessRsp {
-    uint64 orgID = 1;
-    repeated google.protobuf.Value list = 2;
-    uint64 total = 3;
-}
-message ApiTestsUpdateResponse {
-    google.protobuf.Value data = 1;
-}
-message QA_SONAR_GET_CREDENTIAL_Request {
-}
-message CMDB_CERTIFICATE_APP_CANCEL_Request {
-}
-message CertificateQuoteRequest {
-    uint64 certificateID = 1 [json_name = "certificateId"];
-    uint64 appID = 2 [json_name = "appId"];
-}
-message CMDB_ITERATION_GET_Request {
-    string id = 1; // generated from path variable: id. You should change the proto type if necessary
 }
 message Header {
     bool success = 1;
     google.protobuf.Value error = 2 [json_name = "err"];
 }
-message SonarMetricRulesPagingRequest {
-    string scopeType = 1;
-    string scopeID = 2 [json_name = "scopeId"];
-    int64 pageNo = 3;
-    int64 pageSize = 4;
+message IOSCertificateDTO {
+    google.protobuf.Value debugProvisionFile = 1 [json_name = "debugProvision"];
+    google.protobuf.Value releaseProvisionFile = 2 [json_name = "releaseProvision"];
+    google.protobuf.Value keyChainP12 = 3;
 }
-message QA_PIPELINE_TASK_LOGS_Request {
-    string pipelineID = 1; // generated from path variable: pipelineID. You should change the proto type if necessary
-    string taskID = 2; // generated from path variable: taskID. You should change the proto type if necessary
+message IOSCertificateKeyChainP12DTO {
+    google.protobuf.Value certificateFileDTO = 1;
+    string password = 2;
 }
-message SPOT_APITESTS_LOGS_DOWNLOAD_Request {
-}
-message ValidateSwagger_Request {
+message IOSCertificateKeyDTO {
+    string keyChainP12File = 1;
+    string keyChainP12Password = 2;
+    string debugMobileProvision = 3;
+    string releaseMobileProvision = 4;
 }
 message IRComment {
     uint64 iterationID = 1;
@@ -1308,59 +790,53 @@ message IRComment {
     string issueType = 4;
     uint64 projectID = 5;
 }
-message ProjectListRequest {
-    uint64 orgID = 1;
-    string query = 2;
-    string name = 3;
-    string orderBy = 4;
-    bool asc = 5;
-    bool joined = 6;
-    int64 pageNo = 7;
-    int64 pageSize = 8;
-    repeated uint64 projectIDs = 9;
-    bool keepMsp = 10;
-    bool isPublic = 11;
+message ISummary {
+    google.protobuf.Value requirement = 1;
+    google.protobuf.Value task = 2;
+    google.protobuf.Value bug = 3;
+}
+message ISummaryState {
+    int64 done = 1;
+    int64 unDone = 2 [json_name = "undone"];
 }
 message ImportProjectPackageRequest {
     google.protobuf.Value projectPackageRequest = 1;
-    string orgID = 2; // generated from path variable: orgID. You should change the proto type if necessary
-    string projectID = 3; // generated from path variable: projectID. You should change the proto type if necessary
+    string orgID = 2; // generated from path variable: orgID. You should change the proto type if necessary.
+    string projectID = 3; // generated from path variable: projectID. You should change the proto type if necessary.
 }
-message ExportProjectTemplateRequest {
+message ImportProjectTemplateRequest {
     uint64 projectID = 1;
     string projectName = 2;
     string projectDisplayName = 3;
     int64 orgID = 4;
 }
-message TicketCreateRequest {
-    string title = 1;
-    string content = 2;
-    string type = 3;
-    string priority = 4;
-    string key = 5;
-    string orgID = 6;
-    string metric = 7;
-    string metricID = 8;
-    string userID = 9;
-    map<string, google.protobuf.Value> label = 10;
-    string targetType = 11;
-    string targetID = 12;
-    int64 triggeredAt = 13;
-    int64 closedAt = 14;
+message InstanceDetailRes {
+    string instanceName = 1;
+    string addonName = 2;
+    string projectName = 3;
+    string logoURL = 4 [json_name = "logoUrl"];
+    string status = 5;
+    string clusterName = 6;
+    string env = 7;
+    string envCn = 8;
+    string version = 9;
+    int64 attachCount = 10;
+    string planCnName = 11;
+    string createAt = 12;
+    bool platform = 13;
+    string projectID = 14 [json_name = "projectId"];
+    map<string, string> config = 15;
+    repeated google.protobuf.Value referenceInfo = 16;
+    bool canDel = 17;
 }
-message DeleteAPIAssets_Request {
-    string assetID = 1; // generated from path variable: assetID. You should change the proto type if necessary
-}
-message ValidBranch {
-    string name = 1;
-    bool isProtect = 2;
-    bool needApproval = 3;
-    bool isTriggerPipeline = 4;
-    string workspace = 5;
-    string artifactWorkspace = 6;
-}
-message ApplicationCreateResponse {
-    google.protobuf.Value data = 1;
+message InstanceReferenceRes {
+    string orgID = 1 [json_name = "orgId"];
+    string projectID = 2 [json_name = "projectId"];
+    string projectName = 3;
+    string applicationID = 4 [json_name = "applicationId"];
+    string applicationName = 5;
+    string runtimeID = 6 [json_name = "runtimeId"];
+    string runtimeName = 7;
 }
 message Iteration {
     int64 ID = 1 [json_name = "id"];
@@ -1375,22 +851,213 @@ message Iteration {
     string state = 10;
     google.protobuf.Value issueSummary = 11;
 }
-message RoleInfo {
-    string role = 1;
+message IterationCreateRequest {
+    optional google.protobuf.Timestamp startedAt = 1;
+    optional google.protobuf.Timestamp finishedAt = 2;
+    uint64 projectID = 3;
+    string title = 4;
+    string content = 5;
+}
+message IterationCreateResponse {
+    optional google.protobuf.Value data = 1;
+}
+message IterationGetResponse {
+    google.protobuf.Value data = 1;
+}
+message IterationPagingRequest {
+    uint64 pageNo = 1;
+    uint64 pageSize = 2;
+    string deadline = 3;
+    uint64 projectID = 4;
+    string state = 5;
+    bool withoutIssueSummary = 6;
+    repeated uint64 IDs = 7 [json_name = "ids"];
+}
+message IterationPagingResponse {
+    optional google.protobuf.Value data = 1;
+}
+message IterationUpdateRequest {
+    string title = 1;
+    string content = 2;
+    optional google.protobuf.Timestamp startedAt = 3;
+    optional google.protobuf.Timestamp finishedAt = 4;
+    string state = 5;
+    string id = 6; // generated from path variable: id. You should change the proto type if necessary.
+}
+message IterationUpdateResponse {
+    uint64 data = 1;
+}
+message LibReference {
+    uint64 ID = 1 [json_name = "id"];
+    uint64 appID = 2;
+    uint64 libID = 3;
+    string libName = 4;
+    string libDesc = 5;
+    uint64 approvalID = 6;
+    string approvalStatus = 7;
+    string creator = 8;
+    optional google.protobuf.Timestamp createdAt = 9;
+    optional google.protobuf.Timestamp updatedAt = 10;
+}
+message LibReferenceCreateRequest {
+    uint64 appID = 1;
+    string appName = 2;
+    uint64 libID = 3;
+    string libName = 4;
+    string libDesc = 5;
+    uint64 orgID = 6;
+}
+message LibReferenceCreateResponse {
+    uint64 data = 1;
+}
+message LibReferenceListRequest {
+    uint64 appID = 1;
+    uint64 libID = 2;
+    string approvalStatus = 3;
+    uint64 pageNo = 4;
+    uint64 pageSize = 5;
+}
+message LibReferenceListResponse {
+    google.protobuf.Value data = 1;
+}
+message LibReferenceListResponseData {
+    uint64 total = 1;
+    repeated google.protobuf.Value list = 2;
+}
+message ListAPIGatewayRespData {
+    int64 total = 1;
+    repeated google.protobuf.Value list = 2;
+}
+message ListAPIGatewaysReq {
+    uint64 orgID = 1;
+    optional google.protobuf.Value identity = 2;
+    optional google.protobuf.Value uRIParams = 3;
+    string assetID = 4; // generated from path variable: assetID. You should change the proto type if necessary.
+}
+message ListAPIGatewaysResp {
+    google.protobuf.Value data = 1;
+}
+message ListAccessReq {
+    uint64 orgID = 1;
+    optional google.protobuf.Value identity = 2;
+    optional google.protobuf.Value queryParams = 3;
+}
+message ListAccessRsp {
+    uint64 orgID = 1;
+    repeated google.protobuf.Value list = 2;
+    uint64 total = 3;
+}
+message ListContractRecordsReq {
+    uint64 orgID = 1;
+    optional google.protobuf.Value identity = 2;
+    optional google.protobuf.Value uRIParams = 3;
+    string clientID = 4; // generated from path variable: clientID. You should change the proto type if necessary.
+    string contractID = 5; // generated from path variable: contractID. You should change the proto type if necessary.
+}
+message ListContractRecordsRsp {
+    uint64 total = 1;
+    repeated google.protobuf.Value list = 2;
+}
+message ListContractsReq {
+    uint64 orgID = 1;
+    optional google.protobuf.Value identity = 2;
+    optional google.protobuf.Value uRIParams = 3;
+    optional google.protobuf.Value queryParams = 4;
+    string clientID = 5; // generated from path variable: clientID. You should change the proto type if necessary.
+}
+message ListContractsRsp {
+    uint64 total = 1;
+    repeated google.protobuf.Value list = 2;
+}
+message ListInstantiations_Request {
+}
+message ListMyClientsReq {
+    uint64 orgID = 1;
+    optional google.protobuf.Value identity = 2;
+    optional google.protobuf.Value queryParams = 3;
+}
+message ListProjectAPIGatewaysReq {
+    uint64 orgID = 1;
+    optional google.protobuf.Value identity = 2;
+    optional google.protobuf.Value uRIParams = 3;
+    string projectID = 4; // generated from path variable: projectID. You should change the proto type if necessary.
+}
+message ListRuntimeServices_Request {
+    string appID = 1; // generated from path variable: appID. You should change the proto type if necessary.
+}
+message ListSLAsReq {
+    uint64 orgID = 1;
+    optional google.protobuf.Value identity = 2;
+    optional google.protobuf.Value uRIParams = 3;
+    optional google.protobuf.Value queryParams = 4;
+    string assetID = 5; // generated from path variable: assetID. You should change the proto type if necessary.
+    string swaggerVersion = 6; // generated from path variable: swaggerVersion. You should change the proto type if necessary.
+    string slaID = 7; // generated from path variable: slaID. You should change the proto type if necessary.
+}
+message ListSLAsRsp {
+    uint64 total = 1;
+    repeated google.protobuf.Value list = 2;
+}
+message ListSwaggerVersionClientsReq {
+    uint64 orgID = 1;
+    optional google.protobuf.Value identity = 2;
+    optional google.protobuf.Value uRIParams = 3;
+    optional google.protobuf.Value queryParams = 4;
+    string assetID = 5; // generated from path variable: assetID. You should change the proto type if necessary.
+    string swaggerVersion = 6; // generated from path variable: swaggerVersion. You should change the proto type if necessary.
+}
+message ListSwaggerVersionRsp {
+    uint64 total = 1;
+    repeated google.protobuf.Value list = 2;
+}
+message ListSwaggerVersionsReq {
+    uint64 orgID = 1;
+    optional google.protobuf.Value identity = 2;
+    optional google.protobuf.Value uRIParams = 3;
+    optional google.protobuf.Value queryParams = 4;
+    string assetID = 5; // generated from path variable: assetID. You should change the proto type if necessary.
+}
+message ListTestFileRecordsRequest {
+    uint64 projectID = 1;
+    repeated uint64 projectIDs = 2 [json_name = "-"];
+    string projectName = 3;
+    string projectDisplayName = 4;
+    uint64 orgID = 5;
+    uint64 spaceID = 6;
+    repeated string types = 7;
+    string locale = 8;
+    int64 pageNo = 9;
+    int64 pageSize = 10;
+    bool asc = 11;
+}
+message ListTestFileRecordsResponse {
+    optional google.protobuf.Value data = 1;
+}
+message MemberRoleListResponse {
+    google.protobuf.Value data = 1;
+}
+message MessageCertificateKeyDTO {
+    string key = 1;
+}
+message MonitorKeys {
+    string aK = 1 [json_name = "ak"];
+    string aI = 2 [json_name = "ai"];
+    string env = 3;
+    int64 appID = 4 [json_name = "appId"];
+}
+message OrgCreateRequest {
+    string logo = 1;
     string name = 2;
+    string displayName = 3;
+    string desc = 4;
+    string locale = 5;
+    repeated string admins = 6;
+    string publisherName = 7;
+    bool isPublic = 8;
+    string type = 9;
 }
-message PUBLISH_ITEM_ERR_LIST_Request {
-    string publishItemId = 1; // generated from path variable: publishItemId. You should change the proto type if necessary
-}
-message AndroidCertificateAutoDTO {
-    string name = 1;
-    string oU = 2 [json_name = "ou"];
-    string org = 3;
-    string city = 4;
-    string province = 5;
-    string state = 6;
-    google.protobuf.Value debugKeyStore = 7;
-    google.protobuf.Value releaseKeyStore = 8;
+message OrgCreateResponse {
+    google.protobuf.Value data = 1;
 }
 message OrgDTO {
     uint64 ID = 1 [json_name = "id"];
@@ -1416,99 +1083,174 @@ message OrgDTO {
     google.protobuf.Timestamp updatedAt = 21;
     google.protobuf.Value auditMessage = 22;
 }
+message OrgFetchRequest {
+    string IDOrName = 1 [json_name = "idOrName"];
+    string orgID = 2; // generated from path variable: orgID. You should change the proto type if necessary.
+}
+message OrgGetByDomainRequest {
+    string domain = 1;
+    string orgName = 2;
+}
+message OrgGetByDomainResponse {
+    optional google.protobuf.Value data = 1;
+}
 message OrgNexusGetRequest {
     repeated string formats = 1;
     repeated string types = 2;
-    string orgID = 3; // generated from path variable: orgID. You should change the proto type if necessary
+    string orgID = 3; // generated from path variable: orgID. You should change the proto type if necessary.
+}
+message OrgNexusGetResponse {
+    optional google.protobuf.Value data = 1;
 }
 message OrgNexusShowPasswordRequest {
     uint64 orgID = 1;
     repeated uint64 nexusUserIDs = 2;
 }
-message UnifiedFileTreeNodeFindAncestorsRequest {
-    string inode = 1;
-    string scope = 2;
-    string scopeID = 3;
+message OrgNexusShowPasswordResponse {
+    map<uint64, string> data = 1;
 }
-message AppPublishItemRelation {
-    string env = 1;
-    int64 orgID = 2 [json_name = "-"];
-    int64 appID = 3 [json_name = "appId"];
-    int64 publishItemID = 4 [json_name = "publishItemId"];
-    string publishItemName = 5;
-    int64 publisherID = 6 [json_name = "publisherId"];
+message OrgResourceInfo {
+    double totalCpu = 1;
+    double totalMem = 2;
+    double availableCpu = 3;
+    double availableMem = 4;
+}
+message OrgSearchRequest {
+    string q = 1;
+    int64 pageNo = 2;
+    int64 pageSize = 3;
+    string org = 4;
+}
+message OrgSearchResponse {
+    google.protobuf.Value data = 1;
+}
+message OrgUpdateRequest {
+    int64 orgID = 1 [json_name = "-"];
+    google.protobuf.Value body = 2;
+}
+message OrgUpdateRequestBody {
+    string logo = 1;
+    string name = 2;
+    string displayName = 3;
+    string desc = 4;
+    string locale = 5;
+    uint64 ID = 6 [json_name = "id"];
     string publisherName = 7;
-    repeated string publishItemNs = 8;
-    string aK = 9 [json_name = "ak"];
-    string aI = 10 [json_name = "ai"];
+    optional google.protobuf.Value config = 8;
+    optional google.protobuf.Value blockoutConfig = 9;
+    bool isPublic = 10;
 }
-message IOSCertificateKeyChainP12DTO {
-    google.protobuf.Value certificateFileDTO = 1;
-    string password = 2;
+message PUBLISH_ITEM_CERTIFICATION_GET_Request {
+    string publishItemId = 1; // generated from path variable: publishItemId. You should change the proto type if necessary.
 }
-message QA_TESTENV_GET_Request {
-    string id = 1; // generated from path variable: id. You should change the proto type if necessary
+message PUBLISH_ITEM_ERR_EFFACTS_Request {
+    string publishItemId = 1; // generated from path variable: publishItemId. You should change the proto type if necessary.
 }
-message CMDB_PUBLISHER_DELETE_Request {
-    string publisherID = 1; // generated from path variable: publisherID. You should change the proto type if necessary
-}
-message GetAccess_Request {
-    string accessID = 1; // generated from path variable: accessID. You should change the proto type if necessary
-}
-message QA_RECORDS_GET_Request {
-    string id = 1; // generated from path variable: id. You should change the proto type if necessary
-}
-message SonarMetricRulesBatchDeleteRequest {
-    string scopeType = 1;
-    string scopeID = 2 [json_name = "scopeId"];
-    repeated int64 IDs = 3 [json_name = "ids"];
-}
-message ADAPTOR_CICD_CANCEL_Request {
-    string pipelineID = 1; // generated from path variable: pipelineID. You should change the proto type if necessary
-}
-message ISummaryState {
-    int64 done = 1;
-    int64 unDone = 2 [json_name = "undone"];
-}
-message PublisherListRequest {
-    uint64 orgID = 1;
-    bool joined = 2;
-    string query = 3;
-    string name = 4;
-    int64 pageNo = 5;
-    int64 pageSize = 6;
-}
-message OrgFetchRequest {
-    string IDOrName = 1 [json_name = "idOrName"];
-    string orgID = 2; // generated from path variable: orgID. You should change the proto type if necessary
-}
-message OrgNexusGetResponse {
-    optional google.protobuf.Value data = 1;
-}
-message ProjectCreateRequest {
-    string name = 1;
-    string displayName = 2;
-    string logo = 3;
-    string ddHook = 4;
-    string desc = 5;
-    string creator = 6;
-    uint64 orgID = 7 [json_name = "orgId"];
-    uint64 clusterID = 8 [json_name = "clusterId"];
-    string clusterName = 9;
-    map<string, string> clusterConfig = 10;
-    optional google.protobuf.Value resourceConfigs = 11 [json_name = "resourceConfig"];
-    map<string, int64> rollbackConfig = 12;
-    double cpuQuota = 13;
-    double memQuota = 14;
-    string template = 15;
+message PUBLISH_ITEM_ERR_LIST_Request {
+    string publishItemId = 1; // generated from path variable: publishItemId. You should change the proto type if necessary.
 }
 message PUBLISH_ITEM_ERR_RATE_Request {
-    string publishItemId = 1; // generated from path variable: publishItemId. You should change the proto type if necessary
+    string publishItemId = 1; // generated from path variable: publishItemId. You should change the proto type if necessary.
 }
-message Artifact {
-    string type = 1;
-    string name = 2;
-    string version = 3;
+message PUBLISH_ITEM_ERR_TREND_Request {
+    string publishItemId = 1; // generated from path variable: publishItemId. You should change the proto type if necessary.
+}
+message PUBLISH_ITEM_METIRCS_COMMON_Request {
+    string publishItemId = 1; // generated from path variable: publishItemId. You should change the proto type if necessary.
+    string metricName = 2; // generated from path variable: metricName. You should change the proto type if necessary.
+}
+message PUBLISH_ITEM_METIRCS_HISTOGRAM_COMMON_Request {
+    string publishItemId = 1; // generated from path variable: publishItemId. You should change the proto type if necessary.
+    string metricName = 2; // generated from path variable: metricName. You should change the proto type if necessary.
+}
+message PUBLISH_ITEM_STATISTICS_TREND_Request {
+    string publishItemId = 1; // generated from path variable: publishItemId. You should change the proto type if necessary.
+}
+message PUBLISH_ITEM_USERS_Request {
+    string publishItemId = 1; // generated from path variable: publishItemId. You should change the proto type if necessary.
+}
+message PagingAPIAssetsReq {
+    uint64 orgID = 1;
+    optional google.protobuf.Value identity = 2;
+    optional google.protobuf.Value queryParams = 3;
+}
+message PagingAppCertificateDTO {
+    int64 total = 1;
+    repeated google.protobuf.Value list = 2;
+}
+message PagingCertificateDTO {
+    int64 total = 1;
+    repeated google.protobuf.Value list = 2;
+}
+message PagingOrgDTO {
+    repeated google.protobuf.Value list = 1;
+    int64 total = 2;
+}
+message PagingProjectDTO {
+    int64 total = 1;
+    repeated google.protobuf.Value list = 2;
+}
+message PagingPublisherDTO {
+    int64 total = 1;
+    repeated google.protobuf.Value list = 2;
+}
+message PipelineAppAllValidBranchWorkspaceResponse {
+    repeated google.protobuf.Value data = 1;
+}
+message PipelineCancelResponse {
+}
+message PipelineConfigNamespacesFetchResponse {
+    optional google.protobuf.Value data = 1;
+}
+message PipelineCreateRequest {
+    uint64 appID = 1;
+    string branch = 2;
+    string source = 3;
+    string pipelineYmlSource = 4;
+    string pipelineYmlName = 5;
+    string pipelineYmlContent = 6;
+    bool autoRun = 7;
+    repeated string callbackURLs = 8;
+    string userID = 9;
+    bool isCronTriggered = 10;
+}
+message PipelineCreateResponse {
+    optional google.protobuf.Value data = 1;
+}
+message PipelineCronDTO {
+    uint64 ID = 1 [json_name = "id"];
+    google.protobuf.Timestamp timeCreated = 2;
+    google.protobuf.Timestamp timeUpdated = 3;
+    uint64 applicationID = 4;
+    string branch = 5;
+    string cronExpr = 6;
+    optional google.protobuf.Timestamp cronStartTime = 7;
+    string pipelineYmlName = 8;
+    uint64 basePipelineID = 9;
+    optional bool enable = 10;
+    string pipelineYml = 11;
+    repeated string configManageNamespaces = 12;
+    map<string, string> secrets = 13;
+    string userID = 14;
+    uint64 orgID = 15;
+    string pipelineDefinitionID = 16;
+    string pipelineSource = 17;
+    string clusterName = 18;
+}
+message PipelineCronListResponse {
+    repeated google.protobuf.Value data = 1;
+}
+message PipelineCronStartResponse {
+    optional google.protobuf.Value data = 1;
+}
+message PipelineCronStopResponse {
+    optional google.protobuf.Value data = 1;
+}
+message PipelineDetailResponse {
+    optional google.protobuf.Value data = 1;
+}
+message PipelineGetBranchRuleResponse {
+    optional google.protobuf.Value data = 1;
 }
 message PipelineInvokedCombo {
     string branch = 1;
@@ -1523,48 +1265,20 @@ message PipelineInvokedCombo {
     string triggerMode = 10;
     string workspace = 11;
 }
-message ADAPTOR_CICD_PROJECT_CREATE_Request {
+message PipelineInvokedComboRequest {
+    uint64 appID = 1;
+    string branches = 2;
+    string sources = 3;
+    string ymlNames = 4;
 }
-message CMDB_BRANCH_RULE_DELETE_Request {
-    string id = 1; // generated from path variable: id. You should change the proto type if necessary
+message PipelineInvokedComboResponse {
+    repeated google.protobuf.Value data = 1;
 }
-message CertificateDeleteResponse {
-    google.protobuf.Value data = 1;
+message PipelineOperateRequest {
+    repeated google.protobuf.Value taskOperates = 1;
+    string pipelineID = 2; // generated from path variable: pipelineID. You should change the proto type if necessary.
 }
-message SonarMetricRulesBatchInsertRequest {
-    string scopeType = 1;
-    string scopeID = 2 [json_name = "scopeId"];
-    repeated google.protobuf.Value metrics = 3;
-}
-message ExportProjectPackageRequest {
-    google.protobuf.Value projectPackageRequest = 1;
-    repeated google.protobuf.Value artifacts = 2;
-    string orgID = 3; // generated from path variable: orgID. You should change the proto type if necessary
-    string projectID = 4; // generated from path variable: projectID. You should change the proto type if necessary
-}
-message ADAPTOR_CICD_CONFIG_NAMESPACES_Request {
-}
-message CMDB_CERTIFICATE_DELETE_Request {
-    string certificatesID = 1; // generated from path variable: certificatesID. You should change the proto type if necessary
-}
-message GetInstantiationsReq {
-    uint64 orgID = 1;
-    optional google.protobuf.Value identity = 2;
-    optional google.protobuf.Value uRIParams = 3;
-    string assetID = 4; // generated from path variable: assetID. You should change the proto type if necessary
-    string swaggerVersion = 5; // generated from path variable: swaggerVersion. You should change the proto type if necessary
-    string minor = 6; // generated from path variable: minor. You should change the proto type if necessary
-}
-message QueryPublishItemRequest {
-    int64 pageNo = 1;
-    int64 pageSize = 2;
-    int64 publisherId = 3;
-    string name = 4;
-    string type = 5;
-    string public = 6;
-    string q = 7;
-    string ids = 8;
-    int64 orgID = 9 [json_name = "-"];
+message PipelineOperateResponse {
 }
 message PipelinePageListRequest {
     string commaBranches = 1;
@@ -1608,271 +1322,139 @@ message PipelinePageListRequest {
     optional google.protobuf.Value pipelineDefinitionRequest = 39;
     string pipelineDefinitionRequestJSONBase64 = 40;
 }
-message FileTreeGetNode_Request {
-    string treeName = 1; // generated from path variable: treeName. You should change the proto type if necessary
-    string inode = 2; // generated from path variable: inode. You should change the proto type if necessary
-}
-message DashboardSpotLogResponse {
-    google.protobuf.Value data = 1;
-}
-message PipelineCronStartResponse {
-    optional google.protobuf.Value data = 1;
-}
-message LibReferenceCreateResponse {
-    uint64 data = 1;
-}
-message DeleteAPIAssetVersion_Request {
-    string assetID = 1; // generated from path variable: assetID. You should change the proto type if necessary
-    string versionID = 2; // generated from path variable: versionID. You should change the proto type if necessary
-}
-message InstanceDetailRes {
-    string instanceName = 1;
-    string addonName = 2;
-    string projectName = 3;
-    string logoURL = 4 [json_name = "logoUrl"];
-    string status = 5;
-    string clusterName = 6;
-    string env = 7;
-    string envCn = 8;
-    string version = 9;
-    int64 attachCount = 10;
-    string planCnName = 11;
-    string createAt = 12;
-    bool platform = 13;
-    string projectID = 14 [json_name = "projectId"];
-    map<string, string> config = 15;
-    repeated google.protobuf.Value referenceInfo = 16;
-    bool canDel = 17;
-}
-message SearchOperationQueryParameters {
-    string keyword = 1;
-}
-message UnifiedFileTreeNodeFuzzySearchRequest {
-    string scope = 1;
-    string scopeID = 2;
-    string fromPinode = 3;
-    bool recursive = 4;
-    string prefixFuzzy = 5;
-    string suffixFuzzy = 6;
-    string fuzzy = 7;
-    string creatorID = 8;
-}
-message CICDPipelineYmlListResponse {
-    repeated string data = 1;
-}
-message APIAssetCreateRequest {
-    string assetID = 1;
-    string assetName = 2;
-    string desc = 3;
-    string logo = 4;
-    string source = 5;
-    repeated google.protobuf.Value versions = 6;
-    uint64 orgID = 7;
-    uint64 projectID = 8;
-    uint64 appID = 9;
-}
-message ErrorResponse {
-    string code = 1;
-    string msg = 2;
-    google.protobuf.Value ctx = 3;
-}
-message CMDB_ROLES_LIST_Request {
-}
-message ApiTestCancelResponse {
-    string data = 1;
-}
 message PipelinePageListResponse {
     optional google.protobuf.Value data = 1;
 }
-message UpdateAppPublishItemRelationResponse {
+message PipelineRerunFailedResponse {
+    optional google.protobuf.Value data = 1;
+    string pipelineID = 2; // generated from path variable: pipelineID. You should change the proto type if necessary.
 }
-message CMDB_ITERATION_DELETE_Request {
-    string id = 1; // generated from path variable: id. You should change the proto type if necessary
+message PipelineRerunResponse {
+    optional google.protobuf.Value data = 1;
 }
-message LibReferenceListResponseData {
-    uint64 total = 1;
-    repeated google.protobuf.Value list = 2;
+message PipelineRunResponse {
 }
-message ApplicationWorkspace {
-    string clusterName = 1;
-    string workspace = 2;
-    string configNamespace = 3;
+message PipelineTaskOperateRequest {
+    uint64 taskID = 1;
+    string taskAlias = 2;
+    optional bool disable = 3;
+    optional bool pause = 4;
 }
-message AuditMessage {
-    string messageZH = 1;
-    string messageEN = 2;
+message ProjectCreateRequest {
+    string name = 1;
+    string displayName = 2;
+    string logo = 3;
+    string ddHook = 4;
+    string desc = 5;
+    string creator = 6;
+    uint64 orgID = 7 [json_name = "orgId"];
+    uint64 clusterID = 8 [json_name = "clusterId"];
+    string clusterName = 9;
+    map<string, string> clusterConfig = 10;
+    optional google.protobuf.Value resourceConfigs = 11 [json_name = "resourceConfig"];
+    map<string, int64> rollbackConfig = 12;
+    double cpuQuota = 13;
+    double memQuota = 14;
+    string template = 15;
 }
-message PublisherCreateResponse {
+message ProjectCreateResponse {
     uint64 data = 1;
 }
-message CreateAPIAssetVersionBody {
-    string assetID = 1;
-    uint64 major = 2;
-    uint64 minor = 3;
-    uint64 patch = 4;
-    string specProtocol = 5;
-    string specDiceFileUUID = 6;
-}
-message CreateAccessReq {
-    uint64 orgID = 1;
-    optional google.protobuf.Value identity = 2;
-    optional google.protobuf.Value body = 3;
-}
-message QueryPublishItemResponse {
-    google.protobuf.Value data = 1;
-}
-message SearchOperationsReq {
-    uint64 orgID = 1;
-    optional google.protobuf.Value identity = 2;
-    google.protobuf.Value queryParams = 3;
-}
-message ADAPTOR_CICD_CONFIG_GET_Request {
-}
-message ApplicationStats {
-    uint64 countRuntimes = 1;
-    uint64 countMembers = 2;
-    string timeLastModified = 3;
-}
-message PublisherListResponse {
-    google.protobuf.Value data = 1;
-}
-message PagingOrgDTO {
-    repeated google.protobuf.Value list = 1;
-    int64 total = 2;
-}
-message ApplicationCertificateDTO {
+message ProjectDTO {
     uint64 ID = 1 [json_name = "id"];
-    uint64 appID = 2 [json_name = "appId"];
-    uint64 certificateID = 3 [json_name = "certificateId"];
-    uint64 approvalID = 4 [json_name = "approvalId"];
-    string name = 5;
-    string type = 6;
-    uint64 orgID = 7 [json_name = "orgId"];
-    string status = 8;
-    string creator = 9;
-    string operator = 10;
-    string desc = 11;
-    google.protobuf.Value androidInfo = 12;
-    google.protobuf.Value iOSInfo = 13 [json_name = "iosInfo"];
-    google.protobuf.Value messageInfo = 14;
-    google.protobuf.Value pushConfig = 15;
-    google.protobuf.Timestamp createdAt = 16;
-}
-message LibReferenceListRequest {
-    uint64 appID = 1;
-    uint64 libID = 2;
-    string approvalStatus = 3;
-    uint64 pageNo = 4;
-    uint64 pageSize = 5;
-}
-message ListAccessReq {
-    uint64 orgID = 1;
-    optional google.protobuf.Value identity = 2;
-    optional google.protobuf.Value queryParams = 3;
-}
-message APITestEnvUpdateRequest {
-    google.protobuf.Value aPITestEnvData = 1;
-    string id = 2; // generated from path variable: id. You should change the proto type if necessary
-}
-message AndroidCertificateManualDTO {
-    google.protobuf.Value debugKeyStore = 1;
-    google.protobuf.Value releaseKeyStore = 2;
-}
-message QA_TESTENV_DELETE_Request {
-    string id = 1; // generated from path variable: id. You should change the proto type if necessary
-}
-message LibReferenceCreateRequest {
-    uint64 appID = 1;
-    string appName = 2;
-    uint64 libID = 3;
-    string libName = 4;
-    string libDesc = 5;
-    uint64 orgID = 6;
-}
-message PUBLISH_ITEM_STATISTICS_TREND_Request {
-    string publishItemId = 1; // generated from path variable: publishItemId. You should change the proto type if necessary
-}
-message ApiTestInfo {
-    int64 apiID = 1;
-    int64 usecaseID = 2;
-    int64 usecaseOrder = 3;
-    int64 projectID = 4;
-    string status = 5;
-    string apiInfo = 6;
-    string apiRequest = 7;
-    string apiResponse = 8;
-    string assertResult = 9;
-}
-message CommentCreateResponse {
-    int64 data = 1;
-}
-message CreateInstantiationReq {
-    uint64 orgID = 1;
-    optional google.protobuf.Value identity = 2;
-    optional google.protobuf.Value uRIParams = 3;
-    optional google.protobuf.Value body = 4;
-    string assetID = 5; // generated from path variable: assetID. You should change the proto type if necessary
-    string swaggerVersion = 6; // generated from path variable: swaggerVersion. You should change the proto type if necessary
-    string minor = 7; // generated from path variable: minor. You should change the proto type if necessary
-}
-message ListAPIGatewayRespData {
-    int64 total = 1;
-    repeated google.protobuf.Value list = 2;
-}
-message PUBLISH_ITEM_ERR_TREND_Request {
-    string publishItemId = 1; // generated from path variable: publishItemId. You should change the proto type if necessary
-}
-message ADAPTOR_CICD_TASK_LOG_Request {
-    string pipelineID = 1; // generated from path variable: pipelineID. You should change the proto type if necessary
-    string taskID = 2; // generated from path variable: taskID. You should change the proto type if necessary
-}
-message APPLICATIONS_RESOURCES_LIST_Request {
-    string projectID = 1; // generated from path variable: projectID. You should change the proto type if necessary
-}
-message IOSCertificateDTO {
-    google.protobuf.Value debugProvisionFile = 1 [json_name = "debugProvision"];
-    google.protobuf.Value releaseProvisionFile = 2 [json_name = "releaseProvision"];
-    google.protobuf.Value keyChainP12 = 3;
-}
-message MessageCertificateKeyDTO {
-    string key = 1;
-}
-message CreateBranchRuleRequest {
-    string scopeType = 1;
-    int64 scopeID = 2 [json_name = "scopeId"];
-    string rule = 3;
-    bool isProtect = 4;
-    bool needApproval = 5;
-    bool isTriggerPipeline = 6;
-    string workspace = 7;
-    string artifactWorkspace = 8;
-    string desc = 9;
+    string name = 2;
+    string displayName = 3;
+    string dDHook = 4 [json_name = "ddHook"];
+    uint64 orgID = 5 [json_name = "orgId"];
+    string creator = 6;
+    string logo = 7;
+    string desc = 8;
+    repeated string owners = 9;
+    string activeTime = 10;
+    bool joined = 11;
+    optional bool canUnblock = 12;
+    string blockStatus = 13;
+    bool canManage = 14 [json_name = "CanManage"];
+    bool isPublic = 15;
+    google.protobuf.Value stats = 16;
+    google.protobuf.Value projectResourceUsage = 17;
+    map<string, string> clusterConfig = 18;
+    optional google.protobuf.Value resourceConfig = 19;
+    map<string, int64> rollbackConfig = 20;
+    double cpuQuota = 21;
+    double memQuota = 22;
+    google.protobuf.Timestamp createdAt = 23;
+    google.protobuf.Timestamp updatedAt = 24;
+    string type = 25;
 }
 message ProjectDeleteRequest {
     uint64 projectID = 1 [json_name = "projectId"];
 }
-message GetSLARsp {
-    google.protobuf.Value sLAModel = 1;
-    repeated google.protobuf.Value limits = 2;
-    string assetID = 3;
-    string assetName = 4;
-    string swaggerVersion = 5;
-    string userTo = 6;
-    bool default = 7;
-    uint64 clientCount = 8;
+message ProjectDeleteResponse {
+    google.protobuf.Value data = 1;
 }
-message UpdateAccess_Request {
-    string accessID = 1; // generated from path variable: accessID. You should change the proto type if necessary
+message ProjectDetailRequest {
+    string projectIDOrName = 1 [json_name = "projectIdOrName"];
+    uint64 orgID = 2;
+    uint64 orgName = 3;
 }
-message CMDB_LIBREFERENCE_LIST_VERSION_Request {
+message ProjectDetailResponse {
+    google.protobuf.Value data = 1;
 }
-message TicketCloseResponse {
-    int64 data = 1;
-}
-message ListMyClientsReq {
+message ProjectListRequest {
     uint64 orgID = 1;
-    optional google.protobuf.Value identity = 2;
-    optional google.protobuf.Value queryParams = 3;
+    string query = 2;
+    string name = 3;
+    string orderBy = 4;
+    bool asc = 5;
+    bool joined = 6;
+    int64 pageNo = 7;
+    int64 pageSize = 8;
+    repeated uint64 projectIDs = 9;
+    bool keepMsp = 10;
+    bool isPublic = 11;
+}
+message ProjectListResponse {
+    google.protobuf.Value data = 1;
+}
+message ProjectPackageParse_Request {
+}
+message ProjectPackageRequest {
+    uint64 projectID = 1;
+    string projectName = 2;
+    string projectDisplayName = 3;
+    uint64 orgID = 4;
+    string orgName = 5;
+}
+message ProjectResourceUsage {
+    double cpuServiceUsed = 1;
+    double memServiceUsed = 2;
+    double cpuAddonUsed = 3;
+    double memAddonUsed = 4;
+}
+message ProjectStats {
+    int64 countApplications = 1;
+    int64 countMembers = 2;
+    int64 totalApplicationsCount = 3;
+    int64 totalMembersCount = 4;
+    int64 totalIterationsCount = 5;
+    int64 runningIterationsCount = 6;
+    int64 planningIterationsCount = 7;
+    double totalManHourCount = 8;
+    double usedManHourCount = 9;
+    double planningManHourCount = 10;
+    int64 doneBugCount = 11;
+    int64 totalBugCount = 12;
+    double doneBugPercent = 13;
+}
+message ProxyMetrics_Request {
+}
+message PublishItemStatisticsDetailData {
+    repeated google.protobuf.Value data = 1;
+}
+message PublishItemStatisticsDetailRequest {
+    uint64 endTime = 1;
+    string publishItemId = 2; // generated from path variable: publishItemId. You should change the proto type if necessary.
 }
 message PublishItemStatisticsDetailResponse {
     string key = 1 [json_name = "versionOrChannel"];
@@ -1884,12 +1466,260 @@ message PublishItemStatisticsDetailResponse {
     uint64 launches = 7;
     uint64 upgradeUser = 8;
 }
-message AADAPTOR_CICD_CRON_LIST_Request {
+message PublishItemStatisticsErrListData {
+    repeated google.protobuf.Value data = 1;
 }
-message UnifiedFileTreeNodeDeleteRequest {
-    string inode = 1;
-    string scope = 2;
-    string scopeID = 3;
+message PublishItemStatisticsErrListResponse {
+    string errSummary = 1;
+    string appVersion = 2;
+    google.protobuf.Timestamp timeOfFirst = 3;
+    google.protobuf.Timestamp timeOfRecent = 4;
+    uint64 totalErr = 5;
+    uint64 affectUsers = 6;
+}
+message PublishItemStatisticsErrTrendData {
+    google.protobuf.Value data = 1;
+}
+message PublishItemStatisticsErrTrendResponse {
+    uint64 crashTimes = 1;
+    string crashRate = 2;
+    double crashRateGrowth = 3;
+    uint64 affectUsers = 4;
+    string affectUsersProportion = 5;
+    double affectUsersProportionGrowth = 6;
+}
+message PublishItemStatisticsTrendData {
+    google.protobuf.Value data = 1;
+}
+message PublishItemStatisticsTrendResponse {
+    uint64 sevenDayAvgNewUsers = 1 [json_name = "7dAvgNewUsers"];
+    double sevenDayAvgNewUsersGrowth = 2 [json_name = "7dAvgNewUsersGrowth"];
+    uint64 sevenDayAvgActiveUsers = 3 [json_name = "7dAvgActiveUsers"];
+    double sevenDayAvgActiveUsersGrowth = 4 [json_name = "7dAvgActiveUsersGrowth"];
+    string sevenDayAvgNewUsersRetention = 5 [json_name = "7dAvgNewUsersRetention"];
+    double sevenDayAvgNewUsersRetentionGrowth = 6 [json_name = "7dAvgNewUsersRetentionGrowth"];
+    string sevenDayAvgDuration = 7 [json_name = "7dAvgDuration"];
+    double sevenDayAvgDurationGrowth = 8 [json_name = "7dAvgDurationGrowth"];
+    uint64 sevenDayTotalActiveUsers = 9 [json_name = "7dTotalActiveUsers"];
+    double sevenDayTotalActiveUsersGrowth = 10 [json_name = "7dTotalActiveUsersGrowth"];
+    uint64 monthTotalActiveUsers = 11;
+    double monthTotalActiveUsersGrowth = 12;
+    uint64 totalUsers = 13;
+    string totalCrashRate = 14;
+}
+message PublisherCreateRequest {
+    string name = 1;
+    string publisherType = 2;
+    string logo = 3;
+    string desc = 4;
+    uint64 orgID = 5 [json_name = "orgId"];
+}
+message PublisherCreateResponse {
+    uint64 data = 1;
+}
+message PublisherDTO {
+    uint64 ID = 1 [json_name = "id"];
+    string name = 2;
+    string publisherType = 3 [json_name = "publishType"];
+    string publisherKey = 4 [json_name = "publishKey"];
+    uint64 orgID = 5 [json_name = "orgId"];
+    string creator = 6;
+    string logo = 7;
+    string desc = 8;
+    bool joined = 9;
+    google.protobuf.Timestamp createdAt = 10;
+    google.protobuf.Timestamp updatedAt = 11;
+    repeated google.protobuf.Value nexusRepositories = 12;
+    repeated string pipelineCmNamespaces = 13;
+}
+message PublisherDeleteResponse {
+    uint64 data = 1;
+}
+message PublisherDetailResponse {
+    google.protobuf.Value data = 1;
+}
+message PublisherListRequest {
+    uint64 orgID = 1;
+    bool joined = 2;
+    string query = 3;
+    string name = 4;
+    int64 pageNo = 5;
+    int64 pageSize = 6;
+}
+message PublisherListResponse {
+    google.protobuf.Value data = 1;
+}
+message PublisherUpdateRequest {
+    uint64 ID = 1 [json_name = "id"];
+    string logo = 2;
+    string desc = 3;
+}
+message PublisherUpdateResponse {
+    google.protobuf.Value data = 1;
+}
+message PushCertificateConfigs {
+    bool enable = 1;
+    repeated string envs = 2;
+    string certificateType = 3;
+    google.protobuf.Value iOSKey = 4 [json_name = "iosKey"];
+    google.protobuf.Value androidKey = 5;
+    google.protobuf.Value messageKey = 6;
+}
+message PushCertificateConfigsRequest {
+    bool enable = 1;
+    uint64 appID = 2 [json_name = "appId"];
+    uint64 certificateID = 3 [json_name = "certificateId"];
+    string certificateType = 4;
+    repeated string envs = 5;
+    google.protobuf.Value iOSKey = 6 [json_name = "iosKey"];
+    google.protobuf.Value androidKey = 7;
+    google.protobuf.Value messageKey = 8;
+}
+message QA_APITESTS_GET_Request {
+    string id = 1; // generated from path variable: id. You should change the proto type if necessary.
+}
+message QA_AUTOTEST_SPACE_GET_Request {
+    string id = 1; // generated from path variable: id. You should change the proto type if necessary.
+}
+message QA_PIPELINE_TASK_LOGS_Request {
+    string pipelineID = 1; // generated from path variable: pipelineID. You should change the proto type if necessary.
+    string taskID = 2; // generated from path variable: taskID. You should change the proto type if necessary.
+}
+message QA_RECORDS_GET_Request {
+    string id = 1; // generated from path variable: id. You should change the proto type if necessary.
+}
+message QA_SONAR_GET_CREDENTIAL_Request {
+}
+message QA_SONAR_ISSUES_Request {
+}
+message QA_SONAR_METRIC_RULES_GET_Request {
+    string id = 1; // generated from path variable: id. You should change the proto type if necessary.
+}
+message QA_TESTENV_CREATE_Request {
+}
+message QA_TESTENV_DELETE_Request {
+    string id = 1; // generated from path variable: id. You should change the proto type if necessary.
+}
+message QA_TESTENV_GET_Request {
+    string id = 1; // generated from path variable: id. You should change the proto type if necessary.
+}
+message QA_TESTENV_LIST_Request {
+}
+message QA_TESTPLAN_PIPELINE_DETAIL_Request {
+    string pipelineId = 1; // generated from path variable: pipelineId. You should change the proto type if necessary.
+}
+message QueryAppPublishItemRelationResponse {
+    repeated google.protobuf.Value data = 1;
+}
+message QueryBranchRuleRequest {
+    int64 projectID = 1;
+    int64 appID = 2;
+}
+message QueryBranchRuleResponse {
+    repeated google.protobuf.Value data = 1;
+}
+message QueryPublishItemData {
+    repeated google.protobuf.Value list = 1;
+    int64 total = 2;
+}
+message QueryPublishItemRequest {
+    int64 pageNo = 1;
+    int64 pageSize = 2;
+    int64 publisherId = 3;
+    string name = 4;
+    string type = 5;
+    string public = 6;
+    string q = 7;
+    string ids = 8;
+    int64 orgID = 9 [json_name = "-"];
+}
+message QueryPublishItemResponse {
+    google.protobuf.Value data = 1;
+}
+message RoleInfo {
+    string role = 1;
+    string name = 2;
+}
+message RoleList {
+    repeated google.protobuf.Value list = 1;
+    int64 total = 2;
+}
+message SLAModel {
+    google.protobuf.Value baseModel = 1;
+    string name = 2;
+    string desc = 3;
+    string approval = 4;
+    uint64 accessID = 5;
+    string source = 6;
+}
+message SPOT_APITESTS_LOGS_DOWNLOAD_Request {
+}
+message SPOT_APITESTS_LOGS_Request {
+}
+message SearchOperationQueryParameters {
+    string keyword = 1;
+}
+message SearchOperationsReq {
+    uint64 orgID = 1;
+    optional google.protobuf.Value identity = 2;
+    google.protobuf.Value queryParams = 3;
+}
+message SonarCredentialGetResponse {
+    optional google.protobuf.Value data = 1;
+}
+message SonarIssueResponse {
+    google.protobuf.Value data = 1;
+}
+message SonarMetricRuleDto {
+    int64 ID = 1 [json_name = "id"];
+    google.protobuf.Timestamp createdAt = 2;
+    google.protobuf.Timestamp updatedAt = 3;
+    string description = 4;
+    string scopeType = 5;
+    string scopeID = 6 [json_name = "scopeId"];
+    string metricKey = 7;
+    int64 metricKeyID = 8 [json_name = "metricKeyId"];
+    string operational = 9;
+    string metricValue = 10;
+    string metricKeyDesc = 11;
+    int64 decimalScale = 12;
+    string valueType = 13;
+}
+message SonarMetricRulesBatchDeleteRequest {
+    string scopeType = 1;
+    string scopeID = 2 [json_name = "scopeId"];
+    repeated int64 IDs = 3 [json_name = "ids"];
+}
+message SonarMetricRulesBatchInsertRequest {
+    string scopeType = 1;
+    string scopeID = 2 [json_name = "scopeId"];
+    repeated google.protobuf.Value metrics = 3;
+}
+message SonarMetricRulesDefinitionListRequest {
+    string scopeType = 1;
+    string scopeID = 2 [json_name = "scopeId"];
+}
+message SonarMetricRulesDeleteRequest {
+    int64 ID = 1 [json_name = "id"];
+    string scopeType = 2;
+    string scopeID = 3 [json_name = "scopeId"];
+}
+message SonarMetricRulesListRequest {
+    string scopeType = 1;
+    string scopeID = 2 [json_name = "scopeId"];
+}
+message SonarMetricRulesPagingRequest {
+    string scopeType = 1;
+    string scopeID = 2 [json_name = "scopeId"];
+    int64 pageNo = 3;
+    int64 pageSize = 4;
+}
+message SonarMetricRulesUpdateRequest {
+    int64 ID = 1 [json_name = "id"];
+    string description = 2;
+    string metricValue = 3;
+    string scopeType = 4;
+    string scopeID = 5 [json_name = "scopeId"];
 }
 message SonarStoreRequest {
     int64 applicationID = 1 [json_name = "applicationId"];
@@ -1910,96 +1740,266 @@ message SonarStoreRequest {
     repeated google.protobuf.Value duplications = 16;
     google.protobuf.Value issuesStatistics = 17 [json_name = "issues_statistics"];
 }
-message CommentUpdateRequestBody {
-    string content = 1;
-}
-message PipelineCreateRequest {
-    uint64 appID = 1;
-    string branch = 2;
-    string source = 3;
-    string pipelineYmlSource = 4;
-    string pipelineYmlName = 5;
-    string pipelineYmlContent = 6;
-    bool autoRun = 7;
-    repeated string callbackURLs = 8;
-    string userID = 9;
-    bool isCronTriggered = 10;
-}
-message CertificateListResponse {
+message SonarStoreResponse {
     google.protobuf.Value data = 1;
 }
-message IterationGetResponse {
-    google.protobuf.Value data = 1;
+message TestFileRecord {
+    uint64 ID = 1 [json_name = "id"];
+    string fileName = 2 [json_name = "name"];
+    string description = 3;
+    string projectName = 4;
+    string projectDisplayName = 5;
+    uint64 orgID = 6;
+    uint64 projectID = 7;
+    uint64 testSetID = 8;
+    string apiFileUUID = 9;
+    uint64 spaceID = 10;
+    string type = 11;
+    string state = 12;
+    string errorInfo = 13;
+    google.protobuf.Timestamp createdAt = 14;
+    google.protobuf.Timestamp updatedAt = 15;
+    string operatorID = 16;
 }
-message PublishItemStatisticsTrendResponse {
-    uint64 sevenDayAvgNewUsers = 1 [json_name = "7dAvgNewUsers"];
-    double sevenDayAvgNewUsersGrowth = 2 [json_name = "7dAvgNewUsersGrowth"];
-    uint64 sevenDayAvgActiveUsers = 3 [json_name = "7dAvgActiveUsers"];
-    double sevenDayAvgActiveUsersGrowth = 4 [json_name = "7dAvgActiveUsersGrowth"];
-    string sevenDayAvgNewUsersRetention = 5 [json_name = "7dAvgNewUsersRetention"];
-    double sevenDayAvgNewUsersRetentionGrowth = 6 [json_name = "7dAvgNewUsersRetentionGrowth"];
-    string sevenDayAvgDuration = 7 [json_name = "7dAvgDuration"];
-    double sevenDayAvgDurationGrowth = 8 [json_name = "7dAvgDurationGrowth"];
-    uint64 sevenDayTotalActiveUsers = 9 [json_name = "7dTotalActiveUsers"];
-    double sevenDayTotalActiveUsersGrowth = 10 [json_name = "7dTotalActiveUsersGrowth"];
-    uint64 monthTotalActiveUsers = 11;
-    double monthTotalActiveUsersGrowth = 12;
-    uint64 totalUsers = 13;
-    string totalCrashRate = 14;
+message TestIssuesStatistics {
+    string bugs = 1;
+    string coverage = 2;
+    string vulnerabilities = 3;
+    string codeSmells = 4;
+    string duplications = 5;
+    optional google.protobuf.Value rating = 6;
+    string sonarKey = 7;
+    string path = 8;
+    string uT = 9 [json_name = "ut"];
+    string commitID = 10 [json_name = "commitId"];
+    string branch = 11;
+    google.protobuf.Timestamp time = 12;
 }
-message LibReferenceListResponse {
-    google.protobuf.Value data = 1;
+message Ticket {
+    int64 ticketID = 1 [json_name = "id"];
+    string title = 2;
+    string content = 3;
+    string type = 4;
+    string priority = 5;
+    string status = 6;
+    string key = 7;
+    string orgID = 8;
+    string metric = 9;
+    string metricID = 10;
+    int64 count = 11;
+    string creator = 12;
+    string lastOperator = 13;
+    map<string, google.protobuf.Value> label = 14;
+    string targetType = 15;
+    optional google.protobuf.Value lastComment = 16;
+    string targetID = 17;
+    google.protobuf.Timestamp createdAt = 18;
+    google.protobuf.Timestamp updatedAt = 19;
+    google.protobuf.Timestamp closedAt = 20;
+    google.protobuf.Timestamp triggeredAt = 21;
 }
-message CMDB_PUBLISHER_GET_Request {
-    string publisherID = 1; // generated from path variable: publisherID. You should change the proto type if necessary
-}
-message PublishItemStatisticsDetailData {
-    repeated google.protobuf.Value data = 1;
-}
-message SonarMetricRulesListRequest {
-    string scopeType = 1;
-    string scopeID = 2 [json_name = "scopeId"];
-}
-message CommentListRequest {
+message TicketCloseRequest {
     int64 ticketID = 1;
 }
-message OrgCreateRequest {
-    string logo = 1;
-    string name = 2;
-    string displayName = 3;
-    string desc = 4;
-    string locale = 5;
-    repeated string admins = 6;
-    string publisherName = 7;
-    bool isPublic = 8;
-    string type = 9;
+message TicketCloseResponse {
+    int64 data = 1;
 }
-message InstanceReferenceRes {
-    string orgID = 1 [json_name = "orgId"];
-    string projectID = 2 [json_name = "projectId"];
-    string projectName = 3;
-    string applicationID = 4 [json_name = "applicationId"];
-    string applicationName = 5;
-    string runtimeID = 6 [json_name = "runtimeId"];
-    string runtimeName = 7;
+message TicketCreateRequest {
+    string title = 1;
+    string content = 2;
+    string type = 3;
+    string priority = 4;
+    string key = 5;
+    string orgID = 6;
+    string metric = 7;
+    string metricID = 8;
+    string userID = 9;
+    map<string, google.protobuf.Value> label = 10;
+    string targetType = 11;
+    string targetID = 12;
+    int64 triggeredAt = 13;
+    int64 closedAt = 14;
 }
-message ApiTestCancelRequest {
-    uint64 pipelineID = 1 [json_name = "pipelineId"];
+message TicketCreateResponse {
+    int64 data = 1;
 }
-message AndroidCertificateKeyStoreDTO {
-    string alias = 1;
-    string keyPassword = 2;
-    string storePassword = 3;
+message TicketDeleteRequest {
+    int64 ticketID = 1;
 }
-message PushCertificateConfigs {
-    bool enable = 1;
-    repeated string envs = 2;
-    string certificateType = 3;
-    google.protobuf.Value iOSKey = 4 [json_name = "iosKey"];
-    google.protobuf.Value androidKey = 5;
-    google.protobuf.Value messageKey = 6;
+message TicketDeleteResponse {
+    int64 data = 1;
 }
-message SPOT_APITESTS_LOGS_Request {
+message TicketFetchRequest {
+    int64 ticketID = 1;
+}
+message TicketFetchResponse {
+    google.protobuf.Value data = 1;
+}
+message TicketListRequest {
+    repeated string type = 1;
+    string priority = 2;
+    string status = 3;
+    string targetType = 4;
+    string targetID = 5;
+    string key = 6;
+    int64 orgID = 7;
+    string metric = 8;
+    repeated string metricID = 9;
+    int64 startTime = 10;
+    int64 endTime = 11;
+    bool comment = 12;
+    string q = 13;
+    int64 pageNo = 14;
+    int64 pageSize = 15;
+}
+message TicketListResponse {
+    google.protobuf.Value data = 1;
+}
+message TicketListResponseData {
+    int64 total = 1;
+    repeated google.protobuf.Value tickets = 2;
+}
+message TicketReopenRequest {
+    int64 ticketID = 1;
+}
+message TicketReopenResponse {
+    int64 data = 1;
+}
+message TicketUpdateRequest {
+    int64 ticketID = 1 [json_name = "-"];
+    google.protobuf.Value body = 2;
+}
+message TicketUpdateRequestBody {
+    string title = 1;
+    string content = 2;
+    string type = 3;
+    string priority = 4;
+}
+message TicketUpdateResponse {
+    int64 data = 1;
+}
+message UnifiedFileTreeNodeCreateRequest {
+    string type = 1;
+    string scope = 2;
+    string scopeID = 3;
+    string pinode = 4;
+    string name = 5;
+    string desc = 6;
+}
+message UnifiedFileTreeNodeDeleteRequest {
+    string inode = 1;
+    string scope = 2;
+    string scopeID = 3;
+}
+message UnifiedFileTreeNodeFindAncestorsRequest {
+    string inode = 1;
+    string scope = 2;
+    string scopeID = 3;
+}
+message UnifiedFileTreeNodeFuzzySearchRequest {
+    string scope = 1;
+    string scopeID = 2;
+    string fromPinode = 3;
+    bool recursive = 4;
+    string prefixFuzzy = 5;
+    string suffixFuzzy = 6;
+    string fuzzy = 7;
+    string creatorID = 8;
+}
+message UnifiedFileTreeNodeGetRequest {
+    string inode = 1;
+    string scope = 2;
+    string scopeID = 3;
+}
+message UnifiedFileTreeNodeListRequest {
+    string scope = 1;
+    string scopeID = 2;
+    string pinode = 3;
+    string pipelineCategoryKey = 4;
+}
+message UpdateAPIAssetReq {
+    uint64 orgID = 1;
+    optional google.protobuf.Value identity = 2;
+    optional google.protobuf.Value uRIParams = 3;
+    map<string, google.protobuf.Value> keys = 4;
+    string assetID = 5; // generated from path variable: assetID. You should change the proto type if necessary.
+}
+message UpdateAccess_Request {
+    string accessID = 1; // generated from path variable: accessID. You should change the proto type if necessary.
+}
+message UpdateAppPublishItemRelationRequest {
+    int64 appID = 1 [json_name = "-"];
+    string userID = 2 [json_name = "-"];
+    int64 prodItemID = 3 [json_name = "PROD"];
+    int64 sTAGINGItemID = 4 [json_name = "STAGING"];
+    int64 tESTItemID = 5 [json_name = "TEST"];
+    int64 dEVItemID = 6 [json_name = "DEV"];
+    map<string, google.protobuf.Value> aKAIMap = 7 [json_name = "-"];
+    string application = 8; // generated from path variable: application. You should change the proto type if necessary.
+}
+message UpdateAppPublishItemRelationResponse {
+}
+message UpdateAssetVersionReq {
+    uint64 orgID = 1;
+    optional google.protobuf.Value identity = 2;
+    optional google.protobuf.Value uRIParams = 3;
+    optional google.protobuf.Value body = 4;
+    string assetID = 5; // generated from path variable: assetID. You should change the proto type if necessary.
+    string versionID = 6; // generated from path variable: versionID. You should change the proto type if necessary.
+}
+message UpdateBranchRuleRequest {
+    int64 ID = 1 [json_name = "-"];
+    string rule = 2;
+    bool isProtect = 3;
+    bool needApproval = 4;
+    bool isTriggerPipeline = 5;
+    string desc = 6;
+    string workspace = 7;
+    string artifactWorkspace = 8;
+}
+message UpdateBranchRuleResponse {
+    optional google.protobuf.Value data = 1;
+}
+message UpdateClientReq {
+    uint64 orgID = 1;
+    optional google.protobuf.Value identity = 2;
+    optional google.protobuf.Value uRIParams = 3;
+    optional google.protobuf.Value queryParams = 4;
+    optional google.protobuf.Value body = 5;
+    string clientID = 6; // generated from path variable: clientID. You should change the proto type if necessary.
+}
+message UpdateContract_Request {
+    string clientID = 1; // generated from path variable: clientID. You should change the proto type if necessary.
+    string contractID = 2; // generated from path variable: contractID. You should change the proto type if necessary.
+}
+message UpdateInstantiationReq {
+    uint64 orgID = 1;
+    optional google.protobuf.Value identity = 2;
+    optional google.protobuf.Value uRIParams = 3;
+    optional google.protobuf.Value body = 4;
+    string assetID = 5; // generated from path variable: assetID. You should change the proto type if necessary.
+    string swaggerVersion = 6; // generated from path variable: swaggerVersion. You should change the proto type if necessary.
+    string minor = 7; // generated from path variable: minor. You should change the proto type if necessary.
+    string instantiationID = 8; // generated from path variable: instantiationID. You should change the proto type if necessary.
+}
+message UpdateSLAReq {
+    uint64 orgID = 1;
+    optional google.protobuf.Value identity = 2;
+    optional google.protobuf.Value uRIParams = 3;
+    optional google.protobuf.Value body = 4;
+    string assetID = 5; // generated from path variable: assetID. You should change the proto type if necessary.
+    string swaggerVersion = 6; // generated from path variable: swaggerVersion. You should change the proto type if necessary.
+    string slaID = 7; // generated from path variable: slaID. You should change the proto type if necessary.
+}
+message ValidBranch {
+    string name = 1;
+    bool isProtect = 2;
+    bool needApproval = 3;
+    bool isTriggerPipeline = 4;
+    string workspace = 5;
+    string artifactWorkspace = 6;
+}
+message ValidateSwagger_Request {
 }
 // generate service from openapi spec: dop
 service dop {

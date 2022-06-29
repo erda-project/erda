@@ -18,11 +18,17 @@ import "common/identity.proto";
 
 message CONFIG_MANAGE_CONFIG_DEL_Request {
 }
+message CONFIG_MANAGE_CONFIG_EXPORT_Request {
+}
 message CONFIG_MANAGE_CONFIG_GET_Request {
+}
+message CONFIG_MANAGE_CONFIG_IMPORT_Request {
 }
 message CONFIG_MANAGE_CONFIG_POST_Request {
 }
-message CONFIG_MANAGE_NAMESPACE_POST_Request {
+message CONFIG_MANAGE_CONFIG_PUT_Request {
+}
+message CONFIG_MANAGE_DEPLOY_CONFIG_GET_Request {
 }
 message CONFIG_MANAGE_MULTI_NS_CONFIG_GET_Request {
 }
@@ -30,13 +36,7 @@ message CONFIG_MANAGE_NAMESPACE_DEL_Request {
 }
 message CONFIG_MANAGE_NAMESPACE_FIX_Request {
 }
-message CONFIG_MANAGE_CONFIG_EXPORT_Request {
-}
-message CONFIG_MANAGE_CONFIG_IMPORT_Request {
-}
-message CONFIG_MANAGE_CONFIG_PUT_Request {
-}
-message CONFIG_MANAGE_DEPLOY_CONFIG_GET_Request {
+message CONFIG_MANAGE_NAMESPACE_POST_Request {
 }
 // generate service from openapi spec: dop_config_manage
 service dop_config_manage {

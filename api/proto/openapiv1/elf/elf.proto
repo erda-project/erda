@@ -16,6 +16,71 @@ import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 import "common/openapi.proto";
 import "common/identity.proto";
 
+message DependencyPackageList {
+    google.protobuf.Value listMetadata = 1;
+    google.protobuf.Value dependencyPackageSpec = 2;
+}
+message DependencyPackageListResponse {
+    google.protobuf.Value data = 1;
+}
+message DependencyPackageSpec {
+    repeated google.protobuf.Value items = 1 [json_name = "data"];
+}
+message DependencyPackageType {
+    string type = 1;
+    repeated google.protobuf.Value packages = 2;
+}
+message DependencyPackageTypeItem {
+    string name = 1;
+    repeated string version = 2;
+}
+message ELF_ENVIROMENT_DELETE_Request {
+}
+message ELF_ENVIROMENT_GET_Request {
+}
+message ELF_ENVIROMENT_LIST_Request {
+}
+message ELF_NOTEBOOK_DELETE_Request {
+}
+message ELF_NOTEBOOK_GET_Request {
+}
+message ELF_NOTEBOOK_LIST_Request {
+}
+message ELF_PACKAGE_LIST_Request {
+}
+message ElfMetadata {
+    uint64 ID = 1 [json_name = "id"];
+    string name = 2;
+    string description = 3;
+    string workspace = 4;
+    string ownerName = 5;
+    uint64 ownerID = 6;
+    uint64 organizationID = 7;
+    string organizationName = 8;
+    google.protobuf.Timestamp createdAt = 9;
+    google.protobuf.Timestamp updatedAt = 10;
+}
+message ElfResource {
+    double cPU = 1 [json_name = "cpu"];
+    int64 memory = 2;
+}
+message Environment {
+    google.protobuf.Value elfMetadata = 1;
+    google.protobuf.Value environmentSpec = 2;
+}
+message EnvironmentList {
+    google.protobuf.Value listMetadata = 1;
+    google.protobuf.Value environmentListSpec = 2;
+}
+message EnvironmentListResponse {
+    google.protobuf.Value data = 1;
+}
+message EnvironmentListSpec {
+    repeated google.protobuf.Value items = 1 [json_name = "data"];
+}
+message EnvironmentResponse {
+    google.protobuf.Value data = 1;
+}
 message EnvironmentSpec {
     repeated google.protobuf.Value requires = 1;
     string dBRequires = 2 [json_name = "-"];
@@ -26,16 +91,31 @@ message EnvironmentSpec {
 message ListMetadata {
     int64 total = 1;
 }
-message ElfResource {
-    double cPU = 1 [json_name = "cpu"];
-    int64 memory = 2;
+message MetadataField {
+    string name = 1;
+    string value = 2;
+    string type = 3;
+    bool optional = 4;
+    map<string, string> labels = 5;
+    string level = 6;
+}
+message NoteBookList {
+    google.protobuf.Value listMetadata = 1;
+    google.protobuf.Value noteBookListSpec = 2;
 }
 message NoteBookListSpec {
     repeated google.protobuf.Value items = 1 [json_name = "data"];
 }
-message DependencyPackageType {
-    string type = 1;
-    repeated google.protobuf.Value packages = 2;
+message Notebook {
+    repeated google.protobuf.Value metadata = 1;
+    google.protobuf.Value notebookSpec = 2;
+    google.protobuf.Value notebookStatus = 3;
+}
+message NotebookListResponse {
+    google.protobuf.Value data = 1;
+}
+message NotebookResponse {
+    google.protobuf.Value data = 1;
 }
 message NotebookSpec {
     repeated google.protobuf.Value envs = 1;
@@ -50,97 +130,17 @@ message NotebookSpec {
     string clusterDomain = 10;
     google.protobuf.Value elfResource = 11 [json_name = "resource"];
 }
-message ELF_NOTEBOOK_GET_Request {
-}
-message ELF_PACKAGE_LIST_Request {
-}
-message Environment {
-    google.protobuf.Value elfMetadata = 1;
-    google.protobuf.Value environmentSpec = 2;
-}
-message ELF_ENVIROMENT_LIST_Request {
-}
 message NotebookStatus {
     google.protobuf.Timestamp startedAt = 1;
     string state = 2;
-}
-message Notebook {
-    repeated google.protobuf.Value metadata = 1;
-    google.protobuf.Value notebookSpec = 2;
-    google.protobuf.Value notebookStatus = 3;
-}
-message NotebookListResponse {
-    google.protobuf.Value data = 1;
-}
-message EnvironmentResponse {
-    google.protobuf.Value data = 1;
-}
-message MetadataField {
-    string name = 1;
-    string value = 2;
-    string type = 3;
-    bool optional = 4;
-    map<string, string> labels = 5;
-    string level = 6;
-}
-message NoteBookList {
-    google.protobuf.Value listMetadata = 1;
-    google.protobuf.Value noteBookListSpec = 2;
-}
-message DependencyPackageSpec {
-    repeated google.protobuf.Value items = 1 [json_name = "data"];
-}
-message DependencyPackageListResponse {
-    google.protobuf.Value data = 1;
-}
-message EnvironmentListSpec {
-    repeated google.protobuf.Value items = 1 [json_name = "data"];
-}
-message NotebookResponse {
-    google.protobuf.Value data = 1;
-}
-message ELF_NOTEBOOK_LIST_Request {
 }
 message Package {
     string name = 1;
     string version = 2;
 }
-message EnvironmentList {
-    google.protobuf.Value listMetadata = 1;
-    google.protobuf.Value environmentListSpec = 2;
-}
-message DependencyPackageTypeItem {
-    string name = 1;
-    repeated string version = 2;
-}
-message EnvironmentListResponse {
-    google.protobuf.Value data = 1;
-}
-message ElfMetadata {
-    uint64 ID = 1 [json_name = "id"];
-    string name = 2;
-    string description = 3;
-    string workspace = 4;
-    string ownerName = 5;
-    uint64 ownerID = 6;
-    uint64 organizationID = 7;
-    string organizationName = 8;
-    google.protobuf.Timestamp createdAt = 9;
-    google.protobuf.Timestamp updatedAt = 10;
-}
 message Require {
     string type = 1;
     repeated google.protobuf.Value packages = 2;
-}
-message ELF_ENVIROMENT_DELETE_Request {
-}
-message ELF_ENVIROMENT_GET_Request {
-}
-message ELF_NOTEBOOK_DELETE_Request {
-}
-message DependencyPackageList {
-    google.protobuf.Value listMetadata = 1;
-    google.protobuf.Value dependencyPackageSpec = 2;
 }
 // generate service from openapi spec: elf
 service elf {

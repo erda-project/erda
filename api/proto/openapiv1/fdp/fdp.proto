@@ -16,10 +16,6 @@ import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 import "common/openapi.proto";
 import "common/identity.proto";
 
-message CDP_PUT_Request {
-}
-message FDP_WEBSOCKET_Request {
-}
 message CDP_DELETE_Request {
 }
 message CDP_GET_Request {
@@ -27,6 +23,10 @@ message CDP_GET_Request {
 message CDP_PATCH_Request {
 }
 message CDP_POST_Request {
+}
+message CDP_PUT_Request {
+}
+message FDP_WEBSOCKET_Request {
 }
 // generate service from openapi spec: fdp
 service fdp {
