@@ -24,11 +24,12 @@ import (
 
 // Conf 定义配置对象.
 type Conf struct {
-	ListenAddr      string `env:"LISTEN_ADDR" default:":3081"`
-	Debug           bool   `env:"DEBUG" default:"false"`
-	DiceClusterName string `env:"DICE_CLUSTER_NAME" default:"local"` // 服务所在集群
-	DiceIsEdge      bool   `env:"DICE_IS_EDGE" default:"false"`      // is edge cluster
-	ErdaNamespace   string `env:"DICE_NAMESPACE" default:"default"`  // erda installed namespace
+	ListenAddr          string `env:"LISTEN_ADDR" default:":3081"`
+	Debug               bool   `env:"DEBUG" default:"false"`
+	DiceClusterName     string `env:"DICE_CLUSTER_NAME" default:"local"` // 服务所在集群
+	DiceIsEdge          bool   `env:"DICE_IS_EDGE" default:"false"`      // is edge cluster
+	ErdaNamespace       string `env:"DICE_NAMESPACE" default:"default"`  // erda installed namespace
+	CustomRegCredSecret string `env:"CUSTOM_REGCRED_SECRET" default:"regcred"`
 
 	// task level
 	TaskDefaultCPU             float64       `env:"TASK_DEFAULT_CPU" default:"0.5"`
@@ -146,6 +147,10 @@ func DiceClusterName() string {
 // ErdaNamespace return the namespace which erda instaleld
 func ErdaNamespace() string {
 	return cfg.ErdaNamespace
+}
+
+func CustomRegCredSecret() string {
+	return cfg.CustomRegCredSecret
 }
 
 // DiceIsEdge return if the cluster is edge

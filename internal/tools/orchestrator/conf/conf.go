@@ -56,6 +56,8 @@ type Conf struct {
 	WsDiceRootDomain      string `env:"WS_DICE_ROOT_DOMAIN" default:"app.terminus.io,erda.cloud"`
 	TerminalSecurity      bool   `env:"TERMINAL_SECURITY" default:"false"`
 	ExecutorClientTimeout int    `env:"EXECUTOR_CLIENT_TIMEOUT" default:"10"`
+	CustomRegCredSecret   string `env:"CUSTOM_REGCRED_SECRET" default:"regcred"`
+	ErdaNamespace         string `env:"DICE_NAMESPACE" default:"default"`
 }
 
 var cfg Conf
@@ -196,4 +198,12 @@ func TerminalSecurity() bool {
 
 func ExecutorClientTimeout() time.Duration {
 	return time.Duration(cfg.ExecutorClientTimeout) * time.Second
+}
+
+func CustomRegCredSecret() string {
+	return cfg.CustomRegCredSecret
+}
+
+func ErdaNamespace() string {
+	return cfg.ErdaNamespace
 }
