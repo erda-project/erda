@@ -22,13 +22,13 @@ import (
 )
 
 var ADAPTOR_CICD_FILETREE_DELETE = apis.ApiSpec{
-	Path:         "/api/cicd-pipeline/filetree/<inode>",
-	BackendPath:  "/api/cicd-pipeline/filetree/<inode>",
-	Host:         "dop.marathon.l4lb.thisdcos.directory:9527",
-	Scheme:       "http",
-	Method:       http.MethodDelete,
-	IsOpenAPI:    true,
-	CheckLogin:   true,
-	ResponseType: apistructs.UnifiedFileTreeNodeDeleteRequest{},
-	Doc:          "summary: 删除节点",
+	Path:        "/api/cicd-pipeline/filetree/<inode>",
+	BackendPath: "/api/cicd-pipeline/filetree/<inode>",
+	Host:        "dop.marathon.l4lb.thisdcos.directory:9527",
+	Scheme:      "http",
+	Method:      http.MethodDelete,
+	IsOpenAPI:   true,
+	CheckLogin:  true,
+	RequestType: apistructs.UnifiedFileTreeNodeDeleteRequest{},
+	Doc:         "summary: 删除节点",
 }
