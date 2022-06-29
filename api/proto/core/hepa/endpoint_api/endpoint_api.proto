@@ -97,6 +97,7 @@ service EndpointApiService {
       get: "/api/gateway/openapi/invalid-endpoints",
     };
     option(erda.common.openapi) = {
+      service: "hepa",
       path: "/api/gateway/openapi/invalid-endpoints",
     };
   }
@@ -106,6 +107,7 @@ service EndpointApiService {
       delete: "/api/gateway/openapi/invalid-endpoints",
     };
     option(erda.common.openapi) = {
+      service: "hepa",
       path: "/api/gateway/openapi/invalid-endpoints",
     };
   }

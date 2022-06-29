@@ -18,7 +18,6 @@ import (
 	"context"
 	"path/filepath"
 	"strconv"
-	"time"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -39,7 +38,6 @@ import (
 var (
 	invalidProject = "project not found"
 	invalidRuntime = "runtime not found"
-	clearC         = make(chan struct{}, 1)
 )
 
 // endpointApiService implements pb.EndpointApiServiceServer
@@ -272,20 +270,35 @@ func (s *endpointApiService) ChangeEndpointRoot(ctx context.Context, req *pb.Cha
 }
 
 func (s *endpointApiService) ListInvalidEndpointApi(ctx context.Context, _ *commonPb.VoidRequest) (*pb.ListInvalidEndpointApiResp, error) {
-	l := logrus.WithField("func", "ListInvalidEndpointApi")
+	var result pb.ListInvalidEndpointApiResp
+	err := s.rangeInvalidEndpointApi(ctx, func(item *pb.ListInvalidEndpointApiItem) {
+		result.List = append(result.List, item)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &result, nil
+}
+
+func (s *endpointApiService) ClearInvalidEndpointApi(ctx context.Context, req *commonPb.VoidRequest) (*commonPb.VoidResponse, error) {
+	return s.clearInvalidEndpointApi(ctx, req)
+}
+
+func (s *endpointApiService) rangeInvalidEndpointApi(ctx context.Context, f func(item *pb.ListInvalidEndpointApiItem)) error {
+	l := logrus.WithField("func", "rangeInvalidEndpointApi")
 	// list all packages
 	eas := endpoint_api.Service.Clone(ctx)
 	packages, err := eas.ListAllPackages()
 	if err != nil {
-		l.Warnln("failed to ListAllPackages")
-		return nil, err
+		l.WithError(err).Errorln("failed to ListAllPackages")
+		return err
 	}
 	if len(packages) == 0 {
 		l.Warnln("no packages found")
-		return new(pb.ListInvalidEndpointApiResp), nil
+		return nil
 	}
 
-	var result pb.ListInvalidEndpointApiResp
 	var projectPackages = make(map[string][]orm.GatewayPackage)
 	for _, package_ := range packages {
 		if package_.DiceProjectId != "" {
@@ -311,7 +324,7 @@ func (s *endpointApiService) ListInvalidEndpointApi(ctx context.Context, _ *comm
 					ProjectID:     projectID,
 					PackageID:     package_.Id,
 				}
-				result.List = append(result.List, item)
+				f(item)
 			}
 			continue
 		}
@@ -339,6 +352,9 @@ func (s *endpointApiService) ListInvalidEndpointApi(ctx context.Context, _ *comm
 				gatewayApi, err := s.gatewayApiService.GetById(packageApi.DiceApiId)
 				if err != nil {
 					l.WithError(err).Warnf("failed to gatewayApiService.GetById(%s)", packageApi.DiceApiId)
+					continue
+				}
+				if gatewayApi == nil {
 					continue
 				}
 				// todo: if gatewayApi.redirect_addr is invalid inner address, collect the package_api
@@ -389,39 +405,19 @@ func (s *endpointApiService) ListInvalidEndpointApi(ctx context.Context, _ *comm
 							UpstreamName:  upstream.UpstreamName,
 							RuntimeID:     filepath.Base(upstream.UpstreamName),
 						}
-						result.List = append(result.List, item)
+						f(item)
 					}
 				}
 			}
 		}
 	}
 
-	return &result, nil
-}
-
-func (s *endpointApiService) ClearInvalidEndpointApi(ctx context.Context, req *commonPb.VoidRequest) (*commonPb.VoidResponse, error) {
-	timer := time.NewTimer(time.Second * 2)
-	defer timer.Stop()
-	select {
-	case <-timer.C:
-		return nil, errors.New("task in process")
-	case clearC <- struct{}{}:
-		go func() {
-			s.clearInvalidEndpointApi(ctx, req)
-			<-clearC
-		}()
-
-	}
-	return new(commonPb.VoidResponse), nil
+	return nil
 }
 
 func (s *endpointApiService) clearInvalidEndpointApi(ctx context.Context, _ *commonPb.VoidRequest) (*commonPb.VoidResponse, error) {
-	l := logrus.WithField("func", "*endpointApiService.ClearInvalidEndpointApi")
-	resp, err := s.ListInvalidEndpointApi(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	for _, item := range resp.List {
+	l := logrus.WithField("func", "clearInvalidEndpointApi")
+	err := s.rangeInvalidEndpointApi(ctx, func(item *pb.ListInvalidEndpointApiItem) {
 		if item.GetType() == "package" {
 			l.Infof("delete package: %+v", item)
 			if _, err := s.DeleteEndpoint(ctx, &pb.DeleteEndpointRequest{
@@ -442,6 +438,9 @@ func (s *endpointApiService) clearInvalidEndpointApi(ctx context.Context, _ *com
 					Warnln("failed to DeleteEndpointApi")
 			}
 		}
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	return new(commonPb.VoidResponse), nil

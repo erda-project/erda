@@ -17,7 +17,6 @@ package errors
 import (
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
 )
@@ -32,10 +31,6 @@ var _ Error = (*NotFoundError)(nil)
 // NewNotFoundError .
 func NewNotFoundError(resource string) *NotFoundError {
 	return &NotFoundError{Resource: resource}
-}
-
-func IsNotFoundError(err error) bool {
-	return err != nil && strings.HasSuffix(err.Error(), "not found")
 }
 
 func (e *NotFoundError) Error() string {
