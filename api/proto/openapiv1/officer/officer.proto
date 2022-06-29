@@ -2,7 +2,7 @@
 
 syntax = "proto3";
 
-package erda.officer;
+package erda.openapiv1.officer; // remove 'openapiv1.' when you make this proto file effective
 
 option go_package = "github.com/erda-project/erda-proto-go/openapiv1/officer/pb";
 

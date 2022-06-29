@@ -2,7 +2,7 @@
 
 syntax = "proto3";
 
-package erda.msp;
+package erda.openapiv1.msp; // remove 'openapiv1.' when you make this proto file effective
 
 option go_package = "github.com/erda-project/erda-proto-go/openapiv1/msp/apm/metric/pb";
 

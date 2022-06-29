@@ -78,6 +78,10 @@ func RangeOpenAPIs(pkgPrefix string, handler OneOpenAPIHandler) (err error) {
 		if !strings.HasPrefix(pkgName, pkgPrefix) {
 			return true
 		}
+		// do not register openapiv1 apis to router
+		if strings.HasPrefix(pkgName, "erda.openapiv1.") {
+			return true
+		}
 		services := fd.Services()
 		for i, n := 0, services.Len(); i < n; i++ {
 			service := services.Get(i)
