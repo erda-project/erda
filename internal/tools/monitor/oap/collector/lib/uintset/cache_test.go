@@ -12,6 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package metric
+package uintset
 
-// todo.
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
+
+func Test_seriesIDSet_Has(t *testing.T) {
+	st := NewUint64Set(10)
+	st.Add(1)
+	st.Add(2)
+	st.Add(3)
+	ass := assert.New(t)
+	ass.Equal(3, len(st.seriesIDList))
+
+	st.AddBatch([]uint64{4, 5, 6})
+	ass.Equal(6, len(st.seriesIDList))
+
+	st.CleanOldPart()
+	ass.Equal(3, len(st.seriesIDList))
+	ass.Equal(uint64(4), st.seriesIDList[0])
+
+	ass.Equal(false, st.Has(uint64(1)))
+	ass.Equal(true, st.Has(uint64(5)))
+}

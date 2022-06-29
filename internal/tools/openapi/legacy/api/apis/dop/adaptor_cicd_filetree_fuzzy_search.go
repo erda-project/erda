@@ -22,14 +22,14 @@ import (
 )
 
 var ADAPTOR_CICD_FILETREE_FUZZY_SEARCH = apis.ApiSpec{
-	Path:         "/api/cicd-pipeline/filetree/actions/fuzzy-search",
-	BackendPath:  "/api/cicd-pipeline/filetree/actions/fuzzy-search",
-	Host:         "dop.marathon.l4lb.thisdcos.directory:9527",
-	Scheme:       "http",
-	Method:       http.MethodGet,
-	IsOpenAPI:    true,
-	CheckLogin:   true,
-	CheckToken:   true,
-	ResponseType: apistructs.UnifiedFileTreeNodeFuzzySearchRequest{},
-	Doc:          "summary: 模糊搜索节点",
+	Path:        "/api/cicd-pipeline/filetree/actions/fuzzy-search",
+	BackendPath: "/api/cicd-pipeline/filetree/actions/fuzzy-search",
+	Host:        "dop.marathon.l4lb.thisdcos.directory:9527",
+	Scheme:      "http",
+	Method:      http.MethodGet,
+	IsOpenAPI:   true,
+	CheckLogin:  true,
+	CheckToken:  true,
+	RequestType: apistructs.UnifiedFileTreeNodeFuzzySearchRequest{},
+	Doc:         "summary: 模糊搜索节点",
 }

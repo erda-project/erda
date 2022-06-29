@@ -276,7 +276,9 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 	// cache setting
 	projectCache.New(db)
 
-	p.Org.WithMember(m).WithUc(uc).WithPermission(pm)
+	p.Org.WithMember(m)
+	p.Org.WithUc(uc)
+	p.Org.WithPermission(pm)
 
 	// compose endpoints
 	ep := endpoints.New(

@@ -20,8 +20,8 @@ import (
 )
 
 var CMDB_PROJECT_DETAIL = apis.ApiSpec{
-	Path:         "/api/projects/<projectIdOrName>",
-	BackendPath:  "/api/projects/<projectIdOrName>",
+	Path:         "/api/projects/<projectIDOrName>",
+	BackendPath:  "/api/projects/<projectIDOrName>",
 	Host:         "dop.marathon.l4lb.thisdcos.directory:9527",
 	Scheme:       "http",
 	Method:       "GET",

@@ -42,6 +42,7 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
+// Service implements pb.RuntimeServiceServer
 type Service struct {
 	logger logs.Logger
 
@@ -291,6 +292,14 @@ func (r *Service) GetRuntime(ctx context.Context, request *pb.GetRuntimeRequest)
 	}
 
 	return ri, nil
+}
+
+func (r *Service) CheckRuntimeExist(ctx context.Context, req *pb.CheckRuntimeExistReq) (*pb.CheckRuntimeExistResp, error) {
+	runtime, err := r.db.GetRuntimeAllowNil(req.GetId())
+	if err != nil {
+		return nil, err
+	}
+	return &pb.CheckRuntimeExistResp{Ok: runtime != nil}, nil
 }
 
 func updateStatusWhenDeploying(runtime *pb.RuntimeInspect) {

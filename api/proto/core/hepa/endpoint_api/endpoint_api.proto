@@ -5,6 +5,8 @@ option go_package = "github.com/erda-project/erda-proto-go/core/hepa/endpoint_ap
 import "google/api/annotations.proto";
 import "google/protobuf/struct.proto";
 import "core/hepa/hepa.proto";
+import "common/http.proto";
+import "common/openapi.proto";
 
 // +publish service:"hepa"
 service EndpointApiService {
@@ -90,6 +92,25 @@ service EndpointApiService {
     };
   }
 
+  rpc ListInvalidEndpointApi(common.VoidRequest) returns(ListInvalidEndpointApiResp) {
+    option(google.api.http) = {
+      get: "/api/gateway/openapi/invalid-endpoints",
+    };
+    option(erda.common.openapi) = {
+      service: "hepa",
+      path: "/api/gateway/openapi/invalid-endpoints",
+    };
+  }
+
+  rpc ClearInvalidEndpointApi(common.VoidRequest) returns (common.VoidResponse) {
+    option(google.api.http) = {
+      delete: "/api/gateway/openapi/invalid-endpoints",
+    };
+    option(erda.common.openapi) = {
+      service: "hepa",
+      path: "/api/gateway/openapi/invalid-endpoints",
+    };
+  }
 }
 
 message ChangeEndpointRootResponse {
@@ -129,7 +150,7 @@ message EndpointApi {
   string redirectType = 2;
   string redirectAddr = 3;
   string redirectPath = 4;
-  string redirectApp = 5;  
+  string redirectApp = 5;
   string redirectService = 6;
   string redirectRuntimeId = 7;
   string redirectRuntimeName = 8;
@@ -234,4 +255,20 @@ message GetEndpointRequest {
 
 message GetEndpointResponse {
   Endpoint data = 1;
+}
+
+message ListInvalidEndpointApiResp {
+  repeated ListInvalidEndpointApiItem list = 1;
+}
+
+message ListInvalidEndpointApiItem {
+  string invalidReason = 1;
+  string type = 2;
+  string projectID = 3;
+  string packageID = 4;
+  string packageApiID = 5;
+  string upstreamApiID = 6;
+  string upstreamID = 7;
+  string upstreamName = 8;
+  string runtimeID = 9;
 }

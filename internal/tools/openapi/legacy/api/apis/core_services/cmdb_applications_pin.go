@@ -14,7 +14,9 @@
 
 package core_services
 
-import "github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
+import (
+	"github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
+)
 
 var CMDB_APPLICATION_PIN = apis.ApiSpec{
 	Path:        "/api/applications/<applicationId>/actions/pin",

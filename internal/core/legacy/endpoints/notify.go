@@ -27,6 +27,7 @@ import (
 	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/core/legacy/services/apierrors"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 
@@ -337,7 +338,7 @@ func (e *Endpoints) QueryNotifiesBySource(ctx context.Context, r *http.Request, 
 	}
 	localeName := ""
 	var orgInfo *orgpb.Org
-	orgResp, err := e.org.GetOrg(ctx, &orgpb.GetOrgRequest{IdOrName: orgIdStr})
+	orgResp, err := e.org.GetOrg(apis.WithInternalClientContext(ctx, "legacy"), &orgpb.GetOrgRequest{IdOrName: orgIdStr})
 	if err == nil {
 		orgInfo = orgResp.Data
 		localeName = orgInfo.Locale
@@ -361,7 +362,7 @@ func (e *Endpoints) FuzzyQueryNotifiesBySource(ctx context.Context, r *http.Requ
 	}
 	localeName := ""
 	var orgInfo *orgpb.Org
-	orgResp, err := e.org.GetOrg(ctx, &orgpb.GetOrgRequest{IdOrName: orgIDStr})
+	orgResp, err := e.org.GetOrg(apis.WithInternalClientContext(ctx, "legacy"), &orgpb.GetOrgRequest{IdOrName: orgIDStr})
 	if err == nil {
 		orgInfo = orgResp.Data
 		localeName = orgInfo.Locale

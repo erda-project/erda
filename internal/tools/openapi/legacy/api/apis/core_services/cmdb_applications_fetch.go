@@ -20,8 +20,8 @@ import (
 )
 
 var CMDB_APPLICATION_FETCH = apis.ApiSpec{
-	Path:         "/api/applications/<applicationId>",
-	BackendPath:  "/api/applications/<applicationId>",
+	Path:         "/api/applications/<applicationIDOrName>",
+	BackendPath:  "/api/applications/<applicationIDOrName>",
 	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
 	Scheme:       "http",
 	Method:       "GET",
