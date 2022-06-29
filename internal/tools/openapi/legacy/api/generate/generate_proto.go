@@ -333,7 +333,7 @@ func (pf *protoFile) writeProtoHeader(apiName string) {
 	pf.writeline(`syntax = "proto3";`)
 	pf.newline(1)
 
-	pf.writeline("package " + getProtoPackageByAPIName(apiName) + ";")
+	pf.writeline("package " + getProtoPackageByAPIName(apiName) + ";" + ` // remove 'openapiv1.' when you make this proto file effective`)
 	pf.newline(1)
 
 	pf.writeline(`option go_package = "` + getProtoGoPackageByAPIName(apiName) + `";`)
@@ -369,7 +369,7 @@ func getCompAndSubDirsByAPIName(apiName string) (compName string, subDirs []stri
 
 func getProtoPackageByAPIName(apiName string) string {
 	compName := getCompNameByAPIName(apiName)
-	return "erda." + compName
+	return "erda.openapiv1." + compName
 }
 
 func getProtoGoPackageByAPIName(apiName string) string {
