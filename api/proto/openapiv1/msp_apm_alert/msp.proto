@@ -16,84 +16,84 @@ import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 import "common/openapi.proto";
 import "common/identity.proto";
 
-message APM_ALERT_CREATE_Request {
-    string tenantGroup = 1;
-}
 message APM_ALERT_RECORD_ISSUE_CREATE_Request {
-    string tenantGroup = 1;
-    string groupId = 2;
-}
-message APM_ALERT_SWITCH_Request {
-    string tenantGroup = 1;
-    string id = 2;
-}
-message APM_CUSTOMIZE_ALERT_Request {
-    string tenantGroup = 1;
-    string id = 2;
-}
-message APM_CUSTOMIZE_ALERTS_Request {
-    string tenantGroup = 1;
-}
-message APM_CUSTOMIZE_ALERT_UPDATE_Request {
-    string tenantGroup = 1;
-    string id = 2;
-}
-message APM_ALERTS_Request {
-    string tenantGroup = 1;
-}
-message APM_ALERT_DELETE_Request {
-    string tenantGroup = 1;
-    string id = 2;
-}
-message APM_ALERT_RECORD_Request {
-    string tenantGroup = 1;
-    string groupId = 2;
+    string tenantGroup = 1; // generated from path variable: tenantGroup. You should change the proto type if necessary
+    string groupId = 2; // generated from path variable: groupId. You should change the proto type if necessary
 }
 message APM_ALERT_UPDATE_Request {
-    string tenantGroup = 1;
-    string id = 2;
+    string tenantGroup = 1; // generated from path variable: tenantGroup. You should change the proto type if necessary
+    string id = 2; // generated from path variable: id. You should change the proto type if necessary
 }
-message APM_CUSTOMIZE_ALERT_NOTIFY_TARGET_Request {
-    string tenantGroup = 1;
-}
-message APM_ALERT_Request {
-    string tenantGroup = 1;
-    string id = 2;
-}
-message APM_ALERTS_RULES_Request {
-    string tenantGroup = 1;
-}
-message APM_ALERT_RECORD_HISTORIES_Request {
-    string tenantGroup = 1;
-    string groupId = 2;
-}
-message APM_CUSTOMIZE_ALERT_CREATE_Request {
-    string tenantGroup = 1;
-}
-message APM_CUSTOMIZE_ALERT_DASH_PREVIEW_Request {
-    string tenantGroup = 1;
-}
-message APM_CUSTOMIZE_ALERT_DELETE_Request {
-    string tenantGroup = 1;
-    string id = 2;
-}
-message APM_ALERT_RECORDS_Request {
-    string tenantGroup = 1;
-}
-message APM_ALERT_RECORD_ATTRS_Request {
-    string tenantGroup = 1;
-}
-message APM_ALERT_RECORD_ISSUE_UPDATE_Request {
-    string tenantGroup = 1;
-    string groupId = 2;
-    string issueId = 3;
-}
-message APM_CUSTOMIZE_ALERT_METRICS_Request {
-    string tenantGroup = 1;
+message APM_CUSTOMIZE_ALERTS_Request {
+    string tenantGroup = 1; // generated from path variable: tenantGroup. You should change the proto type if necessary
 }
 message APM_CUSTOMIZE_ALERT_SWITCH_Request {
-    string tenantGroup = 1;
-    string id = 2;
+    string tenantGroup = 1; // generated from path variable: tenantGroup. You should change the proto type if necessary
+    string id = 2; // generated from path variable: id. You should change the proto type if necessary
+}
+message APM_CUSTOMIZE_ALERT_UPDATE_Request {
+    string tenantGroup = 1; // generated from path variable: tenantGroup. You should change the proto type if necessary
+    string id = 2; // generated from path variable: id. You should change the proto type if necessary
+}
+message APM_ALERTS_Request {
+    string tenantGroup = 1; // generated from path variable: tenantGroup. You should change the proto type if necessary
+}
+message APM_ALERT_SWITCH_Request {
+    string tenantGroup = 1; // generated from path variable: tenantGroup. You should change the proto type if necessary
+    string id = 2; // generated from path variable: id. You should change the proto type if necessary
+}
+message APM_CUSTOMIZE_ALERT_DELETE_Request {
+    string tenantGroup = 1; // generated from path variable: tenantGroup. You should change the proto type if necessary
+    string id = 2; // generated from path variable: id. You should change the proto type if necessary
+}
+message APM_ALERTS_RULES_Request {
+    string tenantGroup = 1; // generated from path variable: tenantGroup. You should change the proto type if necessary
+}
+message APM_ALERT_CREATE_Request {
+    string tenantGroup = 1; // generated from path variable: tenantGroup. You should change the proto type if necessary
+}
+message APM_ALERT_RECORD_Request {
+    string tenantGroup = 1; // generated from path variable: tenantGroup. You should change the proto type if necessary
+    string groupId = 2; // generated from path variable: groupId. You should change the proto type if necessary
+}
+message APM_ALERT_RECORD_ATTRS_Request {
+    string tenantGroup = 1; // generated from path variable: tenantGroup. You should change the proto type if necessary
+}
+message APM_ALERT_RECORD_ISSUE_UPDATE_Request {
+    string tenantGroup = 1; // generated from path variable: tenantGroup. You should change the proto type if necessary
+    string groupId = 2; // generated from path variable: groupId. You should change the proto type if necessary
+    string issueId = 3; // generated from path variable: issueId. You should change the proto type if necessary
+}
+message APM_CUSTOMIZE_ALERT_DASH_PREVIEW_Request {
+    string tenantGroup = 1; // generated from path variable: tenantGroup. You should change the proto type if necessary
+}
+message APM_ALERT_Request {
+    string tenantGroup = 1; // generated from path variable: tenantGroup. You should change the proto type if necessary
+    string id = 2; // generated from path variable: id. You should change the proto type if necessary
+}
+message APM_ALERT_RECORDS_Request {
+    string tenantGroup = 1; // generated from path variable: tenantGroup. You should change the proto type if necessary
+}
+message APM_ALERT_RECORD_HISTORIES_Request {
+    string tenantGroup = 1; // generated from path variable: tenantGroup. You should change the proto type if necessary
+    string groupId = 2; // generated from path variable: groupId. You should change the proto type if necessary
+}
+message APM_CUSTOMIZE_ALERT_Request {
+    string tenantGroup = 1; // generated from path variable: tenantGroup. You should change the proto type if necessary
+    string id = 2; // generated from path variable: id. You should change the proto type if necessary
+}
+message APM_CUSTOMIZE_ALERT_CREATE_Request {
+    string tenantGroup = 1; // generated from path variable: tenantGroup. You should change the proto type if necessary
+}
+message APM_CUSTOMIZE_ALERT_METRICS_Request {
+    string tenantGroup = 1; // generated from path variable: tenantGroup. You should change the proto type if necessary
+}
+message APM_CUSTOMIZE_ALERT_NOTIFY_TARGET_Request {
+    string tenantGroup = 1; // generated from path variable: tenantGroup. You should change the proto type if necessary
+}
+message APM_ALERT_DELETE_Request {
+    string tenantGroup = 1; // generated from path variable: tenantGroup. You should change the proto type if necessary
+    string id = 2; // generated from path variable: id. You should change the proto type if necessary
 }
 // generate service from openapi spec: msp_apm_alert
 service msp_apm_alert {

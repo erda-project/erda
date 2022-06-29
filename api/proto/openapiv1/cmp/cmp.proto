@@ -16,10 +16,392 @@ import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 import "common/openapi.proto";
 import "common/identity.proto";
 
+message CloudResourceMysqlAccount {
+    string account = 1;
+    string password = 2;
+    string accountPrivilege = 3;
+}
+message CreateCloudResourceOnsRequest {
+    optional google.protobuf.Value createCloudResourceBaseInfo = 1;
+    string name = 2;
+    string remark = 3;
+    repeated google.protobuf.Value topics = 4;
+}
+message CloudResourceRedisDetailInfoResponse {
+    repeated google.protobuf.Value data = 1;
+}
+message HandleCloudResourceECSDataResult {
+    string message = 1;
+    string instanceId = 2;
+}
+message ListCloudResourceGatewayResponse {
+    google.protobuf.Value data = 1;
+}
+message UpdateLabelsRequest {
+    string clusterName = 1;
+    uint64 orgID = 2;
+    repeated string hosts = 3;
+    repeated string labels = 4;
+    map<string, string> labelsWithValue = 5;
+}
+message CMP_RESOURCE_OVERVIEW_PROJECT_TREND_Request {
+}
+message ListCloudResourceOssResponse {
+    google.protobuf.Value data = 1;
+}
+message OpsAddonStatusResponse {
+    google.protobuf.Value data = 1;
+}
+message CloudClusterHostsInfo {
+    string hostIps = 1;
+    string device = 2;
+    string dataPath = 3;
+}
+message CloudResourceRedisDetailInfoRequest {
+    string vendor = 1;
+    string region = 2;
+    string instanceID = 3;
+}
+message CMP_STEVE_PATCH_Request {
+}
+message CMP_CLOUD_RESOURCE_LIST_Request {
+}
+message ListCloudAccountData {
+    int64 total = 1;
+    repeated google.protobuf.Value list = 2;
+}
+message CloudResourceMysqlListAccountResponse {
+    google.protobuf.Value data = 1;
+}
+message CloudResourceMysqlBasicData {
+    string ID = 1 [json_name = "id"];
+    string name = 2;
+    string region = 3;
+    string category = 4;
+    string spec = 5;
+    string version = 6;
+    string status = 7;
+    string chargeType = 8;
+    string createTime = 9;
+    string expireTime = 10;
+    map<string, string> tag = 11;
+}
+message ListCloudResourceECSData {
+    int64 total = 1;
+    repeated google.protobuf.Value list = 2;
+}
+message CreateCloudResourceBaseInfo {
+    string vendor = 1;
+    string region = 2;
+    string vpcID = 3;
+    string vSwitchID = 4;
+    string zoneID = 5;
+    string orgID = 6;
+    string userID = 7;
+    string clusterName = 8;
+    string projectID = 9;
+    string source = 10;
+    string clientToken = 11;
+}
+message CMP_CREDENTIAL_ACCESSKEY_RESET_Request {
+}
+message CMP_RECORDTYPES_Request {
+}
+message OrgClusterInfoBasicData {
+    string clusterName = 1;
+    uint64 orgID = 2;
+    string orgName = 3;
+    string orgDisplayName = 4;
+    string clusterType = 5;
+    string version = 6;
+    string createTime = 7;
+    bool isCentralCluster = 8;
+}
+message CloudAddonResourceDeleteRequest {
+    string source = 1;
+    string recordID = 2;
+    string projectID = 3;
+    string addonID = 4;
+    string instanceID = 5;
+    string vendor = 6;
+    string region = 7;
+}
+message CreateCloudResourceOnsGroupRequest {
+    string vendor = 1;
+    string region = 2;
+    string instanceID = 3;
+    repeated google.protobuf.Value groups = 4;
+}
+message ListCloudResourceRedisResponse {
+    google.protobuf.Value data = 1;
+}
+message CloudNodesRequest {
+    string clusterName = 1;
+    uint64 orgID = 2;
+    string cloudVendor = 3;
+    string availabilityZone = 4;
+    string region = 5;
+    string chargeType = 6;
+    int64 chargePeriod = 7;
+    string accessKey = 8;
+    string secretKey = 9;
+    string cloudResource = 10;
+    string instancePassword = 11;
+    int64 instanceNum = 12;
+    string instanceType = 13;
+    string diskType = 14;
+    int64 diskSize = 15;
+    repeated string securityGroupIds = 16;
+    string vSwitchId = 17;
+    repeated string labels = 18;
+    string terraform = 19;
+}
+message CreateCloudAccountRequest {
+    string vendor = 1;
+    string accessKey = 2 [json_name = "accessKeyID"];
+    string secret = 3 [json_name = "accessKeySecret"];
+    string description = 4;
+}
+message OrgRunningTasksData {
+    int64 total = 1;
+    repeated google.protobuf.Value tasks = 2;
+}
+message ListCloudResourceVSWResponse {
+    google.protobuf.Value data = 1;
+}
+message ClusterUpdateRequest {
+    string name = 1;
+    string displayName = 2;
+    string type = 3;
+    string cloudVendor = 4;
+    string logo = 5;
+    string description = 6;
+    string wildcardDomain = 7;
+    optional google.protobuf.Value schedulerConfig = 8 [json_name = "scheduler"];
+    optional google.protobuf.Value opsConfig = 9;
+    optional google.protobuf.Value sysConfig = 10;
+    optional google.protobuf.Value manageConfig = 11;
+    int64 orgID = 12;
+    map<string, string> uRLs = 13 [json_name = "urls"];
+}
+message CloudResourceOnsTopicInfoRequest {
+    google.protobuf.Value cloudResourceMysqlDetailInfoRequest = 1;
+    string topicName = 2;
+}
+message ClustersData {
+    repeated string ready = 1;
+    repeated string unReady = 2;
+}
+message ListCloudResourceECSRequest {
+    string vendor = 1;
+    string region = 2;
+    string cluster = 3;
+    string innerIpAddress = 4;
+    int64 pageNo = 5;
+    int64 pageSize = 6;
+}
+message CloudResourceOnsDetailInfoResponse {
+    repeated google.protobuf.Value data = 1;
+}
+message UpgradeClusterInfo {
+    uint64 orgID = 1;
+    string clusterName = 2;
+    string clusterType = 3;
+    string version = 4;
+    bool isCentralCluster = 5;
+}
+message ListCloudResourceRegionResponse {
+    repeated google.protobuf.Value data = 1;
+}
+message CloudResourceTagItem {
+    string vendor = 1;
+    string region = 2;
+    string resourceID = 3;
+    repeated string oldTags = 4;
+}
+message ListCloudResourceVSWRequest {
+    string vendor = 1;
+    string region = 2;
+    string cluster = 3;
+    string innerIpAddress = 4;
+    int64 pageNo = 5;
+    int64 pageSize = 6;
+}
+message ListCloudResourceMysqlResponse {
+    google.protobuf.Value data = 1;
+}
+message ListCloudResourceZoneRequest {
+    string vendor = 1;
+    string region = 2;
+}
+message UpdateLabelsResponse {
+    google.protobuf.Value data = 1;
+}
+message MonthAddTrendData_0 {
+    repeated google.protobuf.Value data = 1;
+}
+message CreateCloudResourceMysqlDBResponse {
+    google.protobuf.Value data = 1;
+}
+message CloudResourceDetailItem {
+    string name = 1;
+    string value = 2;
+}
+message OrgRunningTasksListResponse {
+    google.protobuf.Value data = 1;
+}
+message CMP_CLUSTER_INIT_RETRY_Request {
+}
+message OrgClusterInfoResponse {
+    google.protobuf.Value data = 1;
+}
+message CMP_ALERT_CONDITIONS_Request {
+}
+message CloudResourceOnsGroupInfoRequest {
+    string vendor = 1;
+    string region = 2;
+    string instanceID = 3;
+    string groupID = 4;
+    string groupType = 5;
+}
+message ListCloudResourceOssRequest {
+    string vendor = 1;
+    string name = 2;
+}
+message CMP_RESOURCE_OVERVIEW_REPORT_Request {
+}
+message RmNodesRequest {
+    string clusterName = 1;
+    uint64 orgID = 2;
+    repeated string hosts = 3;
+    string password = 4;
+    bool force = 5;
+}
+message CloudResourceMysqlListAccountItem {
+    string accountName = 1;
+    string accountStatus = 2;
+    string accountType = 3;
+    string accountDescription = 4;
+    repeated google.protobuf.Value databasePrivileges = 5;
+}
+message ListCloudResourceRedisData {
+    int64 total = 1;
+    repeated google.protobuf.Value list = 2;
+}
+message ListCloudResourceZoneResponse {
+    repeated google.protobuf.Value data = 1;
+}
+message MysqlDataBaseInfo {
+    string dBName = 1 [json_name = "dbName"];
+    string addonID = 2;
+    string characterSetName = 3;
+    string description = 4;
+    google.protobuf.Value cloudResourceMysqlAccount = 5;
+}
+message RmNodesResponse {
+    google.protobuf.Value data = 1;
+}
+message ListCloudResourceECSResponse {
+    google.protobuf.Value data = 1;
+}
+message CreateCloudResourceOssRequest {
+    optional google.protobuf.Value createCloudResourceBaseInfo = 1;
+    repeated google.protobuf.Value buckets = 2;
+}
+message UpgradeEdgeClusterData {
+    uint64 recordID = 1;
+    int64 status = 2;
+    string precheckHint = 3;
+}
+message CreateCloudResourceVSW {
+    string vSWID = 1 [json_name = "vswID"];
+}
+message ListCloudResourceZone {
+    string zoneID = 1;
+    string localName = 2;
+}
+message CloudResourceMysqlDBInfo {
+    int64 total = 1;
+    string instanceID = 2;
+    repeated google.protobuf.Value list = 3;
+}
+message CloudResourceOssDetailInfoRequest {
+    string vendor = 1;
+    string region = 2;
+    string name = 3;
+    string bucketname = 4; // generated from path variable: bucketname. You should change the proto type if necessary
+}
+message CloudResourceOssData {
+    int64 total = 1;
+    repeated google.protobuf.Value list = 2;
+}
+message CloudResourceMysqlDetailInfoResponse {
+    google.protobuf.Value data = 1;
+}
+message DeleteCloudResourceOnsRequest {
+    string source = 1;
+    string recordID = 2;
+    string projectID = 3;
+    string addonID = 4;
+    string instanceID = 5;
+    string vendor = 6;
+    string region = 7;
+}
 message PrivateSlbInfo {
     string ID = 1 [json_name = "instanceID"];
     string name = 2;
     int64 port = 3;
+}
+message OfflineEdgeClusterRequest {
+    uint64 orgID = 1;
+    string clusterName = 2;
+    bool preCheck = 3;
+    bool force = 4;
+}
+message AddNodesRequest {
+    string clusterName = 1;
+    uint64 orgID = 2;
+    repeated string hosts = 3;
+    repeated string labels = 4;
+    int64 port = 5;
+    string user = 6;
+    string password = 7;
+    string sudoHasPassword = 8;
+    string dataDiskDevice = 9;
+    string source = 10;
+    string detail = 11;
+}
+message CMP_NODE_LABELS_LIST_Request {
+}
+message CloudResourceMysqlListAccountData {
+    repeated google.protobuf.Value list = 1;
+}
+message CreateCloudResourceVSWRequest {
+    string vendor = 1;
+    string region = 2;
+    string vSWName = 3 [json_name = "vswName"];
+    string vPCID = 4 [json_name = "vpcID"];
+    string cidrBlock = 5;
+    string zoneID = 6;
+    string description = 7;
+}
+message CMP_STEVE_CREATE_Request {
+}
+message DeleteCloudAccountResponse {
+}
+message HandleCloudResourceECSData {
+    repeated google.protobuf.Value failedInstances = 1;
+}
+message CloudResourceOnsDetailInfoRequest {
+    string vendor = 1;
+    string region = 2;
+    string instanceID = 3;
+}
+message AddonConfigUpdateRequest {
+    google.protobuf.Value addonOpsBaseRequest = 1;
+    map<string, string> config = 2;
+}
+message CMP_RESOURCE_OVERVIEW_CLUSTER_TREND_Request {
 }
 message OrgRunningTasks {
     uint64 orgID = 1;
@@ -41,254 +423,23 @@ message OrgRunningTasks {
     string runtimeID = 17;
     string releaseID = 18;
 }
-message AddonConfigRequest {
-    string addonID = 1;
+message CreateCloudResourceBaseResponseData {
+    uint64 recordID = 1;
 }
-message CloudNodesResponse {
-    google.protobuf.Value data = 1;
-}
-message CreateCloudAccountResponse {
-}
-message DeleteCloudResourceMysqlDBRequest {
-    google.protobuf.Value cloudAddonResourceDeleteRequest = 1;
-    string databaseName = 2;
-}
-message CloudResourceRedisBasicData {
+message CloudResourceMysqlDetailInfoData {
     string ID = 1 [json_name = "id"];
     string name = 2;
-    string region = 3;
-    string spec = 4;
-    string version = 5;
-    string capacity = 6;
-    string status = 7;
-    map<string, string> tags = 8;
-    string chargeType = 9;
-    string expireTime = 10;
-    string createTime = 11;
-}
-message CMP_CLUSTER_INIT_COMMAND_Request {
-}
-message CloudResourceOssDetailInfoData {
-    string bucketName = 1;
-    string internetEndpoint = 2;
-    string intranetEndpoint = 3;
-    string location = 4;
-    string acl = 5;
-}
-message ListCloudAccountData {
-    int64 total = 1;
-    repeated google.protobuf.Value list = 2;
-}
-message CloudResourceMysqlDBRequest {
-    google.protobuf.Value cloudResourceMysqlDetailInfoRequest = 1;
-    string dBName = 2;
-    string instanceID = 3;
-}
-message CloudResourceSetTagRequest {
-    repeated string tags = 1;
-    string resourceType = 2;
-    string instanceID = 3;
-    repeated google.protobuf.Value items = 4;
-}
-message OfflineEdgeClusterRequest {
-    uint64 orgID = 1;
-    string clusterName = 2;
-    bool preCheck = 3;
-    bool force = 4;
-}
-message CloudResourceOverviewRequest {
-    string vendor = 1;
-    string region = 2;
-}
-message CreateCloudResourceMysqlRequest {
-    optional google.protobuf.Value createCloudResourceBaseRequest = 1;
-    string version = 2;
-    string specType = 3;
-    string specSize = 4 [json_name = "spec"];
-    string storageType = 5;
-    int64 storageSize = 6;
-    string securityIPList = 7;
-    repeated google.protobuf.Value databases = 8;
-}
-message CMP_RECORDS_Request {
-}
-message ListCloudAccountResponse {
-    google.protobuf.Value data = 1;
-}
-message CloudResourceOnsTopicAndGroup {
-    google.protobuf.Value cloudResourceOnsGroupBaseInfo = 1;
-    string topicName = 2;
-    string addonID = 3;
-    int64 messageType = 4;
-    string remark = 5;
-}
-message OssBucketInfo {
-    string addonID = 1;
-    string name = 2;
-    string acl = 3;
-}
-message ListCloudResourceOssResponse {
-    google.protobuf.Value data = 1;
-}
-message CreateCloudResourceRedisRequest {
-    optional google.protobuf.Value createCloudResourceBaseRequest = 1;
-    string version = 2;
-    string spec = 3;
-    string password = 4;
-    string addonID = 5;
-}
-message CloudResourceOverviewResponse {
-    map<string,  google.protobuf.Value> data = 1;
-}
-message RmNodesRequest {
-    string clusterName = 1;
-    uint64 orgID = 2;
-    repeated string hosts = 3;
-    string password = 4;
-    bool force = 5;
-}
-message OrgClusterInfoResponse {
-    google.protobuf.Value data = 1;
-}
-message CloudClusterContainerInfo {
-    string dockerRoot = 1;
-    string execRoot = 2;
-    string serviceCIDR = 3;
-    string podCIDR = 4;
-    string dockerCIDR = 5;
-    string dockerBip = 6;
-}
-message CreateCloudResourceOnsResponse {
-    google.protobuf.Value data = 1;
-}
-message OfflineEdgeClusterResponse {
-    google.protobuf.Value data = 1;
-}
-message DeleteCloudAccountResponse {
-}
-message CloudResourceOnsTopicInfo {
-    int64 total = 1;
-    repeated google.protobuf.Value list = 2;
-}
-message DeleteCloudResourceOssRequest {
-    string source = 1;
-    string recordID = 2;
-    string projectID = 3;
-    string addonID = 4;
-    string instanceID = 5;
-    string vendor = 6;
-    string region = 7;
-}
-message MonthAddTrendData_0 {
-    repeated google.protobuf.Value data = 1;
-}
-message CloudResourceOnsGroupBaseInfo {
-    string groupId = 1 [json_name = "groupID"];
-    string groupType = 2;
-    string remark = 3;
-}
-message CreateCloudResourceOnsGroupRequest {
-    string vendor = 1;
-    string region = 2;
-    string instanceID = 3;
-    repeated google.protobuf.Value groups = 4;
-}
-message CloudClusterGlusterfs {
-    string glusterfsIps = 1;
-}
-message CMP_CLOUD_RESOURCE_ACCOUNT_LIST_Request {
-}
-message ListCloudResourceVPCData {
-    int64 total = 1;
-    repeated google.protobuf.Value list = 2;
-}
-message CMP_STEVE_UPDATE_Request {
-}
-message CMP_STEVE_WS_Request {
-}
-message AddonScaleRequest {
-    google.protobuf.Value addonOpsBaseRequest = 1;
-    double cPU = 2 [json_name = "cpu"];
-    uint64 mem = 3;
-    int64 nodes = 4;
-}
-message CreateCloudResourceOnsGroupResponse {
-}
-message OpsAddonStatusData {
-    string status = 1;
-}
-message ListCloudResourceVSWData {
-    int64 total = 1;
-    repeated google.protobuf.Value list = 2;
-}
-message UpgradeEdgeClusterRequest {
-    uint64 orgID = 1;
-    string clusterName = 2;
-    bool preCheck = 3 [json_name = "precheck"];
-}
-message CMP_CREDENTIAL_ACCESSKEY_CREATE_Request {
-}
-message CMP_CREDENTIAL_ACCESSKEY_GET_Request {
-}
-message CloudClusterInfo {
-    string clusterName = 1;
-    string clusterAccessKey = 2;
-    string displayName = 3;
-    string rootDomain = 4;
-    bool enableHttps = 5;
-    string clusterSize = 6;
-    string nameservers = 7;
-    string collectorURL = 8;
-    string openAPI = 9 [json_name = "openapi"];
-    string clusterDialer = 10;
-}
-message CloudResourceMysqlListAccountRequest {
-    string vendor = 1;
-    string region = 2;
-    string instanceID = 3;
-}
-message CloudResourceMysqlListAccountResponse {
-    google.protobuf.Value data = 1;
-}
-message CloudResourceOnsBasicData {
-    string region = 1;
-    string ID = 2 [json_name = "id"];
-    string name = 3;
-    string instanceType = 4;
-    string status = 5;
-    map<string, string> tags = 6;
-}
-message AddonConfigUpdateResponse {
-    bool success = 1;
-    google.protobuf.Value error = 2 [json_name = "err"];
-}
-message CloudClusterResponse {
-    google.protobuf.Value data = 1;
-}
-message HandleCloudResourceEcsRequest {
-    string vendor = 1;
-    string region = 2;
-    repeated string instanceIds = 3;
-}
-message UpdateLabelsRequest {
-    string clusterName = 1;
-    uint64 orgID = 2;
-    repeated string hosts = 3;
-    repeated string labels = 4;
-    map<string, string> labelsWithValue = 5;
-}
-message CMP_ALERT_CONDITIONS_VALUE_Request {
-}
-message CloudResourceDetailItem {
-    string name = 1;
-    string value = 2;
-}
-message ListCloudResourceRedisRequest {
-    string vendor = 1;
-    string region = 2;
-    string vpcID = 3;
-    string projectID = 4;
-    string workspace = 5;
+    string category = 3;
+    string regionId = 4 [json_name = "regionID"];
+    string vpcId = 5 [json_name = "vpcID"];
+    string vSwitchId = 6 [json_name = "vSwitchID"];
+    string zoneId = 7 [json_name = "zoneID"];
+    string host = 8;
+    string port = 9;
+    string memory = 10;
+    string storageSize = 11;
+    string storageType = 12;
+    string status = 13;
 }
 message OrgRunningTasksListRequest {
     string cluster = 1;
@@ -304,53 +455,22 @@ message OrgRunningTasksListRequest {
     int64 pageNo = 11;
     int64 pageSize = 12;
 }
-message CreateCloudResourceBaseInfo {
-    string vendor = 1;
-    string region = 2;
-    string vpcID = 3;
-    string vSwitchID = 4;
-    string zoneID = 5;
-    string orgID = 6;
-    string userID = 7;
-    string clusterName = 8;
-    string projectID = 9;
-    string source = 10;
-    string clientToken = 11;
+message CloudClusterRequest {
+    uint64 orgID = 1;
+    string orgName = 2;
+    string diceVersion = 3;
+    string centralClusterName = 4;
+    string centralRootDomain = 5;
+    string centralDiceProtocol = 6;
+    google.protobuf.Value cloudClusterInfo = 7;
+    google.protobuf.Value cloudClusterContainerInfo = 8;
+    google.protobuf.Value cloudClusterNewCreateInfo = 9;
+    google.protobuf.Value cloudClusterInstaller = 10;
+    google.protobuf.Value cloudClusterNas = 11;
+    google.protobuf.Value cloudClusterGlusterfs = 12;
+    google.protobuf.Value cloudClusterHostsInfo = 13;
 }
-message OrgClusterInfoBasicData {
-    string clusterName = 1;
-    uint64 orgID = 2;
-    string orgName = 3;
-    string orgDisplayName = 4;
-    string clusterType = 5;
-    string version = 6;
-    string createTime = 7;
-    bool isCentralCluster = 8;
-}
-message CMP_STEVE_PATCH_Request {
-}
-message ApiGatewayInfo {
-    string ID = 1 [json_name = "instanceID"];
-    string name = 2;
-}
-message AddNodesData {
-    uint64 recordID = 1;
-}
-message CloudResourceSetTagResponse {
-}
-message CMP_CREDENTIAL_ACCESSKEY_RESET_Request {
-}
-message RmNodesResponse {
-    google.protobuf.Value data = 1;
-}
-message ListCloudResourceGatewayRequest {
-    string vendor = 1;
-    string region = 2;
-    string vpcID = 3;
-    string projectID = 4;
-    string workspace = 5;
-}
-message DeleteCloudResourceOnsRequest {
+message DeleteCloudResourceMysqlRequest {
     string source = 1;
     string recordID = 2;
     string projectID = 3;
@@ -359,48 +479,146 @@ message DeleteCloudResourceOnsRequest {
     string vendor = 6;
     string region = 7;
 }
-message CloudResourceDetailInfo {
-    string label = 1;
-    repeated google.protobuf.Value items = 2;
-}
-message CloudResourceOnsTopicInfoRequest {
-    google.protobuf.Value cloudResourceMysqlDetailInfoRequest = 1;
-    string topicName = 2;
-}
-message CloudResourceMysqlListAccountData {
-    repeated google.protobuf.Value list = 1;
-}
-message CloudResourceMysqlDB {
-    string dBName = 1 [json_name = "dbName"];
-    string addonID = 2;
-    repeated google.protobuf.Value accounts = 3;
-}
-message CloudResourceOnsTopicInfoResponse {
+message CloudResourceOnsGroupInfoResponse {
     google.protobuf.Value data = 1;
 }
-message CloudResourceRedisDetailInfoResponse {
-    repeated google.protobuf.Value data = 1;
+message ListCloudResourceVSWData {
+    int64 total = 1;
+    repeated google.protobuf.Value list = 2;
 }
-message ListCloudResourceZone {
-    string zoneID = 1;
-    string localName = 2;
+message CMP_RECORDS_Request {
 }
-message CMP_CLUSTER_PREVIEW_Request {
+message ListCloudGateway {
+    repeated google.protobuf.Value slbs = 1;
+    repeated google.protobuf.Value gateways = 2;
+}
+message CloudResourceMysqlListAccountRequest {
+    string vendor = 1;
+    string region = 2;
+    string instanceID = 3;
+}
+message MysqlAccountPrivilege {
+    string dBName = 1 [json_name = "dbName"];
+    string accountPrivilege = 2;
+}
+message ListCloudResourceVPCRequest {
+    string vendor = 1;
+    string region = 2;
+    string cluster = 3;
+}
+message ListCloudResourceVPC {
+    string vendor = 1;
+    string status = 2;
+    string regionID = 3;
+    string regionName = 4;
+    string vpcID = 5;
+    string vpcName = 6;
+    string cidrBlock = 7;
+    int64 vswNum = 8;
+    map<string, string> tags = 9;
+}
+message DeleteCloudResourceMysqlDBRequest {
+    google.protobuf.Value cloudAddonResourceDeleteRequest = 1;
+    string databaseName = 2;
+}
+message CloudResourceMysqlData {
+    int64 total = 1;
+    repeated google.protobuf.Value list = 2;
+}
+message CreateCloudResourceOnsTopicRequest {
+    google.protobuf.Value createCloudResourceBaseInfo = 1;
+    string instanceID = 2;
+    repeated google.protobuf.Value topics = 3;
+}
+message OrgClusterInfoRequest {
+    int64 pageNo = 1;
+    int64 pageSize = 2;
+    string orgName = 3;
+    string clusterType = 4;
+}
+message CMP_STEVE_GET_Request {
+}
+message CloudResourceOverviewRequest {
+    string vendor = 1;
+    string region = 2;
+}
+message CreateCloudResourceVPCRequest {
+    string vendor = 1;
+    string region = 2;
+    string vPCName = 3 [json_name = "vpcName"];
+    string cidrBlock = 4;
+    string description = 5;
+}
+message CMP_CREDENTIAL_ACCESSKEY_CREATE_Request {
+}
+message AddonOpsBaseRequest {
+    string clusterName = 1;
+    string projectName = 2;
+    string projectID = 3;
+    string addonID = 4;
+    string addonName = 5;
+}
+message AddNodesData {
+    uint64 recordID = 1;
+}
+message CreateCloudResourceOnsGroupResponse {
+}
+message CreateCloudResourceRedisRequest {
+    optional google.protobuf.Value createCloudResourceBaseRequest = 1;
+    string version = 2;
+    string spec = 3;
+    string password = 4;
+    string addonID = 5;
+}
+message OpsAddonStatusData {
+    string status = 1;
+}
+message GrantMysqlAccountPrivilegeRequest {
+    string vendor = 1;
+    string region = 2;
+    string instanceID = 3;
+    string account = 4;
+    repeated google.protobuf.Value accountPrivileges = 5;
+}
+message CreateCloudResourceVPCResponse {
+    google.protobuf.Value data = 1;
 }
 message CMP_K8S_CLUSTERS_Request {
 }
-message CMP_RESOURCE_OVERVIEW_REPORT_Request {
+message AddonScaleResponse {
+    bool success = 1;
+    google.protobuf.Value error = 2 [json_name = "err"];
 }
-message ListCloudResourceRegion {
-    string regionID = 1;
-    string localName = 2;
+message CreateCloudResourceVPC {
+    string vPCID = 1 [json_name = "vpcID"];
 }
-message ClusterUpdateResponse {
+message OfflineEdgeClusterResponse {
     google.protobuf.Value data = 1;
 }
-message AddonConfigUpdateRequest {
-    google.protobuf.Value addonOpsBaseRequest = 1;
-    map<string, string> config = 2;
+message EdgeHostOffline {
+    string siteIP = 1;
+    string ID = 2; // generated from path variable: ID. You should change the proto type if necessary
+}
+message CloudClusterNas {
+    string nasDomain = 1;
+    string nasPath = 2;
+}
+message CloudClusterResponse {
+    google.protobuf.Value data = 1;
+}
+message CloudResourceOnsTopicInfo {
+    int64 total = 1;
+    repeated google.protobuf.Value list = 2;
+}
+message ListCloudResourceRedisRequest {
+    string vendor = 1;
+    string region = 2;
+    string vpcID = 3;
+    string projectID = 4;
+    string workspace = 5;
+}
+message UpdateLabelsData {
+    uint64 recordID = 1;
 }
 message CloudClusterInstaller {
     string installerIp = 1;
@@ -408,9 +626,117 @@ message CloudClusterInstaller {
     string password = 3;
     string port = 4;
 }
-message CloudClusterNas {
-    string nasDomain = 1;
-    string nasPath = 2;
+message CloudResourceOnsGroupInfoData {
+    int64 total = 1;
+    repeated google.protobuf.Value list = 2;
+}
+message CMP_RESOURCE_OVERVIEW_GAUGE_Request {
+}
+message AddonScaleRequest {
+    google.protobuf.Value addonOpsBaseRequest = 1;
+    double cPU = 2 [json_name = "cpu"];
+    uint64 mem = 3;
+    int64 nodes = 4;
+}
+message HandleCloudResourceEcsRequest {
+    string vendor = 1;
+    string region = 2;
+    repeated string instanceIds = 3;
+}
+message CloudResourceOnsGroupBaseInfo {
+    string groupId = 1 [json_name = "groupID"];
+    string groupType = 2;
+    string remark = 3;
+}
+message CMP_CLUSTER_PREVIEW_Request {
+}
+message CloudResourceMysqlDBResponse {
+    google.protobuf.Value data = 1;
+}
+message CreateCloudResourceOnsTopicResponse {
+    google.protobuf.Value data = 1;
+}
+message CloudResourceSetTagRequest {
+    repeated string tags = 1;
+    string resourceType = 2;
+    string instanceID = 3;
+    repeated google.protobuf.Value items = 4;
+}
+message CMP_CLUSTER_IMPORT_Request {
+}
+message GrantMysqlAccountPrivilegeResponse {
+    google.protobuf.Value data = 1;
+}
+message CloudResourceOnsData {
+    int64 total = 1;
+    repeated google.protobuf.Value list = 2;
+}
+message AddNodesResponse {
+    google.protobuf.Value data = 1;
+}
+message CloudNodesResponse {
+    google.protobuf.Value data = 1;
+}
+message CloudResourceMysqlDBRequest {
+    google.protobuf.Value cloudResourceMysqlDetailInfoRequest = 1;
+    string dBName = 2;
+    string instanceID = 3; // generated from path variable: instanceID. You should change the proto type if necessary
+}
+message CloudResourceOnsGroupBasicData {
+    string groupId = 1;
+    string remark = 2;
+    string instanceId = 3;
+    string groupType = 4;
+    string createTime = 5;
+    map<string, string> tags = 6;
+}
+message ListCloudResourceRegion {
+    string regionID = 1;
+    string localName = 2;
+}
+message CreateCloudResourceMysqlDBRequest {
+    google.protobuf.Value createCloudResourceBaseInfo = 1;
+    string instanceID = 2;
+    repeated google.protobuf.Value databases = 3;
+}
+message OpsAddonStatusQueryRequest {
+    string addonName = 1;
+    string addonID = 2;
+}
+message CreateCloudResourceMysqlResponse {
+    google.protobuf.Value data = 1;
+}
+message AddonConfigRequest {
+    string addonID = 1;
+}
+message AddonConfigResponse {
+    optional google.protobuf.Value data = 1;
+}
+message CreateCloudResourceMysqlRequest {
+    optional google.protobuf.Value createCloudResourceBaseRequest = 1;
+    string version = 2;
+    string specType = 3;
+    string specSize = 4 [json_name = "spec"];
+    string storageType = 5;
+    int64 storageSize = 6;
+    string securityIPList = 7;
+    repeated google.protobuf.Value databases = 8;
+}
+message CloudResourceOnsTopicAndGroup {
+    google.protobuf.Value cloudResourceOnsGroupBaseInfo = 1;
+    string topicName = 2;
+    string addonID = 3;
+    int64 messageType = 4;
+    string remark = 5;
+}
+message DeleteCloudResourceOssRequest {
+    string source = 1;
+    string recordID = 2;
+    string projectID = 3;
+    string addonID = 4;
+    string instanceID = 5;
+    string vendor = 6;
+    string region = 7;
 }
 message ListCloudAccount {
     string orgID = 1;
@@ -418,8 +744,83 @@ message ListCloudAccount {
     string accessKey = 3 [json_name = "accessKeyID"];
     string description = 4;
 }
-message BatchUpgradeEdgeClusterRequest {
-    repeated google.protobuf.Value clusters = 1;
+message ListCloudResourceOnsRequest {
+    string vendor = 1;
+    string region = 2;
+    string vpcID = 3;
+    string projectID = 4;
+    string workspace = 5;
+}
+message CloudResourceOnsBasicData {
+    string region = 1;
+    string ID = 2 [json_name = "id"];
+    string name = 3;
+    string instanceType = 4;
+    string status = 5;
+    map<string, string> tags = 6;
+}
+message CloudResourceRedisBasicData {
+    string ID = 1 [json_name = "id"];
+    string name = 2;
+    string region = 3;
+    string spec = 4;
+    string version = 5;
+    string capacity = 6;
+    string status = 7;
+    map<string, string> tags = 8;
+    string chargeType = 9;
+    string expireTime = 10;
+    string createTime = 11;
+}
+message CMP_RESOURCE_OVERVIEW_CLASS_Request {
+}
+message CloudClusterContainerInfo {
+    string dockerRoot = 1;
+    string execRoot = 2;
+    string serviceCIDR = 3;
+    string podCIDR = 4;
+    string dockerCIDR = 5;
+    string dockerBip = 6;
+}
+message CMP_CLOUD_RESOURCE_Request {
+}
+message CloudResourceMysqlDetailInfoRequest {
+    string vendor = 1;
+    string region = 2;
+    string instanceID = 3;
+    string idorname = 4; // generated from path variable: idorname. You should change the proto type if necessary
+}
+message DeleteCloudResourceRedisRequest {
+    string source = 1;
+    string recordID = 2;
+    string projectID = 3;
+    string addonID = 4;
+    string instanceID = 5;
+    string vendor = 6;
+    string region = 7;
+}
+message CloudResourceSetTagResponse {
+}
+message CMP_CLUSTER_INIT_COMMAND_Request {
+}
+message CloudResourceMysqlAccountPrivileges {
+    string dBName = 1;
+    string accountPrivilege = 2;
+}
+message CloudResourceDetailInfo {
+    string label = 1;
+    repeated google.protobuf.Value items = 2;
+}
+message OssBucketInfo {
+    string addonID = 1;
+    string name = 2;
+    string acl = 3;
+}
+message CloudResourceOnsTopicInfoResponse {
+    google.protobuf.Value data = 1;
+}
+message CreateCloudResourceRedisResponse {
+    google.protobuf.Value data = 1;
 }
 message CloudClusterNewCreateInfo {
     string cloudVendor = 1;
@@ -444,167 +845,39 @@ message CloudClusterNewCreateInfo {
     string ecsInstType = 20;
     string terraform = 21;
 }
-message HandleCloudResourceECSDataResult {
-    string message = 1;
-    string instanceId = 2;
+message CloudClusterGlusterfs {
+    string glusterfsIps = 1;
 }
-message ListCloudResourceOnsResponse {
-    google.protobuf.Value data = 1;
-}
-message ListCloudResourceVPCRequest {
-    string vendor = 1;
-    string region = 2;
-    string cluster = 3;
-}
-message CMP_CLUSTER_INFO_Request {
-}
-message CreateCloudResourceVPC {
-    string vPCID = 1 [json_name = "vpcID"];
-}
-message EdgeHostOffline {
-    string siteIP = 1;
-    string ID = 2;
-}
-message ListCloudResourceRedisData {
-    int64 total = 1;
-    repeated google.protobuf.Value list = 2;
-}
-message CMP_RECORDTYPES_Request {
-}
-message CloudResourceMysqlDetailInfoRequest {
+message CreateCloudResourceMysqlAccountRequest {
     string vendor = 1;
     string region = 2;
     string instanceID = 3;
-    string idorname = 4;
-}
-message CloudResourceMysqlData {
-    int64 total = 1;
-    repeated google.protobuf.Value list = 2;
-}
-message CreateCloudResourceOssResponse {
-    google.protobuf.Value data = 1;
-}
-message AddonOpsBaseRequest {
-    string clusterName = 1;
-    string projectName = 2;
-    string projectID = 3;
-    string addonID = 4;
-    string addonName = 5;
-}
-message CloudClusterHostsInfo {
-    string hostIps = 1;
-    string device = 2;
-    string dataPath = 3;
-}
-message ListCloudResourceGatewayResponse {
-    google.protobuf.Value data = 1;
+    string account = 4;
+    string password = 5;
+    string description = 6;
 }
 message CloudAddonResourceDeleteRespnse {
 }
-message ClustersData {
-    repeated string ready = 1;
-    repeated string unReady = 2;
-}
-message CMP_STEVE_DELETE_Request {
-}
-message ListCloudResourceECSRequest {
-    string vendor = 1;
-    string region = 2;
-    string cluster = 3;
-    string innerIpAddress = 4;
-    int64 pageNo = 5;
-    int64 pageSize = 6;
-}
-message DeleteCloudResourceRedisRequest {
-    string source = 1;
-    string recordID = 2;
-    string projectID = 3;
-    string addonID = 4;
-    string instanceID = 5;
-    string vendor = 6;
-    string region = 7;
-}
-message ListCloudResourceRegionResponse {
-    repeated google.protobuf.Value data = 1;
-}
-message ListCloudResourceVSWRequest {
-    string vendor = 1;
-    string region = 2;
-    string cluster = 3;
-    string innerIpAddress = 4;
-    int64 pageNo = 5;
-    int64 pageSize = 6;
-}
-message AddNodesRequest {
-    string clusterName = 1;
-    uint64 orgID = 2;
-    repeated string hosts = 3;
-    repeated string labels = 4;
-    int64 port = 5;
-    string user = 6;
-    string password = 7;
-    string sudoHasPassword = 8;
-    string dataDiskDevice = 9;
-    string source = 10;
-    string detail = 11;
-}
-message ListCloudResourceECSData {
-    int64 total = 1;
-    repeated google.protobuf.Value list = 2;
-}
-message DeleteCloudResourceMysqlRequest {
-    string source = 1;
-    string recordID = 2;
-    string projectID = 3;
-    string addonID = 4;
-    string instanceID = 5;
-    string vendor = 6;
-    string region = 7;
-}
-message CloudResourceOnsGroupInfoResponse {
+message CloudResourceOssDetailInfoResponse {
     google.protobuf.Value data = 1;
+}
+message AutoRenewCloudResourceEcsRequest {
+    string vendor = 1;
+    string region = 2;
+    repeated string instanceIds = 3;
+    int64 duration = 4;
+    bool switch = 5;
 }
 message GetCloudResourceECSTrendResponse {
     google.protobuf.Value data = 1;
 }
-message CreateCloudResourceRedisResponse {
-    google.protobuf.Value data = 1;
-}
-message CMP_STEVE_GET_Request {
-}
-message OpsAddonStatusResponse {
-    google.protobuf.Value data = 1;
-}
-message MonthAddTrend {
-    repeated int64 time = 1;
-    repeated google.protobuf.Value results = 2;
-    int64 total = 3;
-    string title = 4;
-}
-message CloudResourceMysqlAccount {
-    string account = 1;
-    string password = 2;
-    string accountPrivilege = 3;
-}
-message CloudResourceMysqlDBResponse {
-    google.protobuf.Value data = 1;
-}
-message CreateCloudResourceOnsRequest {
-    optional google.protobuf.Value createCloudResourceBaseInfo = 1;
+message ApiGatewayInfo {
+    string ID = 1 [json_name = "instanceID"];
     string name = 2;
-    string remark = 3;
-    repeated google.protobuf.Value topics = 4;
 }
-message CMP_CLUSTER_INIT_RETRY_Request {
-}
-message OfflineEdgeClusterData {
-    uint64 recordID = 1;
-    string preCheckHint = 2;
-}
-message CMP_NODE_LOGS_Request {
-}
-message HandleCloudResourceECSData {
-    repeated google.protobuf.Value failedInstances = 1;
+message OrgClusterInfoData {
+    int64 total = 1;
+    repeated google.protobuf.Value list = 2;
 }
 message ListCloudResourceMysqlRequest {
     string vendor = 1;
@@ -613,12 +886,50 @@ message ListCloudResourceMysqlRequest {
     string projectID = 4;
     string workspace = 5;
 }
-message CreateCloudResourceOnsTopicResponse {
+message ClusterUpdateResponse {
     google.protobuf.Value data = 1;
 }
-message OrgRunningTasksData {
-    int64 total = 1;
-    repeated google.protobuf.Value tasks = 2;
+message K8SClusters {
+    google.protobuf.Value data = 1;
+}
+message CMP_STEVE_UPDATE_Request {
+}
+message AddonConfigUpdateResponse {
+    bool success = 1;
+    google.protobuf.Value error = 2 [json_name = "err"];
+}
+message HandleCloudResourceECSResponse {
+    google.protobuf.Value data = 1;
+}
+message OnsTopic {
+    string topicName = 1;
+    string messageType = 2;
+    int64 relation = 3;
+    string relationName = 4;
+    string remark = 5;
+    string createTime = 6;
+    map<string, string> tags = 7;
+}
+message CloudResourceOssDetailInfoData {
+    string bucketName = 1;
+    string internetEndpoint = 2;
+    string intranetEndpoint = 3;
+    string location = 4;
+    string acl = 5;
+}
+message CreateCloudResourceVSWResponse {
+    google.protobuf.Value data = 1;
+}
+message BatchUpgradeEdgeClusterResponse {
+}
+message CloudResourceOverviewResponse {
+    map<string,  google.protobuf.Value> data = 1;
+}
+message ListCloudResourceVPCResponse {
+    google.protobuf.Value data = 1;
+}
+message ListCloudAccountResponse {
+    google.protobuf.Value data = 1;
 }
 message ListCloudResourceECS {
     string ID = 1 [json_name = "id"];
@@ -636,228 +947,21 @@ message ListCloudResourceECS {
     string status = 13;
     map<string, string> tag = 14;
 }
-message CloudResourceOnsDetailInfoRequest {
+message ListCloudResourceRegionRequest {
     string vendor = 1;
-    string region = 2;
-    string instanceID = 3;
 }
-message CloudResourceOssDetailInfoRequest {
-    string vendor = 1;
-    string region = 2;
-    string name = 3;
-    string bucketname = 4;
-}
-message CMP_NODE_LABELS_LIST_Request {
-}
-message CMP_RESOURCE_OVERVIEW_CLASS_Request {
+message UpgradeEdgeClusterRequest {
+    uint64 orgID = 1;
+    string clusterName = 2;
+    bool preCheck = 3 [json_name = "precheck"];
 }
 message UpgradeEdgeClusterResponse {
     google.protobuf.Value data = 1;
 }
-message ListCloudGateway {
-    repeated google.protobuf.Value slbs = 1;
-    repeated google.protobuf.Value gateways = 2;
+message CMP_STEVE_WS_Request {
 }
-message ListCloudResourceMysqlResponse {
+message CreateCloudResourceOnsResponse {
     google.protobuf.Value data = 1;
-}
-message CreateCloudAccountRequest {
-    string vendor = 1;
-    string accessKey = 2 [json_name = "accessKeyID"];
-    string secret = 3 [json_name = "accessKeySecret"];
-    string description = 4;
-}
-message MysqlAccountPrivilege {
-    string dBName = 1 [json_name = "dbName"];
-    string accountPrivilege = 2;
-}
-message CreateCloudResourceMysqlDBRequest {
-    google.protobuf.Value createCloudResourceBaseInfo = 1;
-    string instanceID = 2;
-    repeated google.protobuf.Value databases = 3;
-}
-message CreateCloudResourceVPCResponse {
-    google.protobuf.Value data = 1;
-}
-message CloudResourceOnsGroupInfoRequest {
-    string vendor = 1;
-    string region = 2;
-    string instanceID = 3;
-    string groupID = 4;
-    string groupType = 5;
-}
-message AddNodesResponse {
-    google.protobuf.Value data = 1;
-}
-message DeleteCloudAccountRequest {
-    string vendor = 1;
-    string accessKey = 2 [json_name = "accessKeyID"];
-}
-message CMP_CLOUD_RESOURCE_LIST_Request {
-}
-message CreateCloudResourceMysqlAccountRequest {
-    string vendor = 1;
-    string region = 2;
-    string instanceID = 3;
-    string account = 4;
-    string password = 5;
-    string description = 6;
-}
-message CloudResourceOnsDetailInfoResponse {
-    repeated google.protobuf.Value data = 1;
-}
-message CloudResourceMysqlListAccountItem {
-    string accountName = 1;
-    string accountStatus = 2;
-    string accountType = 3;
-    string accountDescription = 4;
-    repeated google.protobuf.Value databasePrivileges = 5;
-}
-message CloudResourceMysqlBasicData {
-    string ID = 1 [json_name = "id"];
-    string name = 2;
-    string region = 3;
-    string category = 4;
-    string spec = 5;
-    string version = 6;
-    string status = 7;
-    string chargeType = 8;
-    string createTime = 9;
-    string expireTime = 10;
-    map<string, string> tag = 11;
-}
-message CloudResourceOssBasicData {
-    string name = 1;
-    string location = 2;
-    string createDate = 3;
-    string storageClass = 4;
-    map<string, string> tags = 5;
-}
-message ListCloudResourceECSResponse {
-    google.protobuf.Value data = 1;
-}
-message CreateCloudResourceMysqlResponse {
-    google.protobuf.Value data = 1;
-}
-message CMP_CLUSTER_IMPORT_Request {
-}
-message ClusterUpdateRequest {
-    string name = 1;
-    string displayName = 2;
-    string type = 3;
-    string cloudVendor = 4;
-    string logo = 5;
-    string description = 6;
-    string wildcardDomain = 7;
-    optional google.protobuf.Value schedulerConfig = 8 [json_name = "scheduler"];
-    optional google.protobuf.Value opsConfig = 9;
-    optional google.protobuf.Value sysConfig = 10;
-    optional google.protobuf.Value manageConfig = 11;
-    int64 orgID = 12;
-    map<string, string> uRLs = 13 [json_name = "urls"];
-}
-message CloudAddonResourceDeleteRequest {
-    string source = 1;
-    string recordID = 2;
-    string projectID = 3;
-    string addonID = 4;
-    string instanceID = 5;
-    string vendor = 6;
-    string region = 7;
-}
-message CMP_CLOUD_RESOURCE_ECS_TREND_Request {
-}
-message CMP_ALERT_CONDITIONS_Request {
-}
-message CMP_CLOUD_RESOURCE_Request {
-}
-message CreateCloudResourceBaseResponseData {
-    uint64 recordID = 1;
-}
-message CreateCloudResourceOssRequest {
-    optional google.protobuf.Value createCloudResourceBaseInfo = 1;
-    repeated google.protobuf.Value buckets = 2;
-}
-message UpgradeEdgeClusterData {
-    uint64 recordID = 1;
-    int64 status = 2;
-    string precheckHint = 3;
-}
-message CloudResourceMysqlDBInfo {
-    int64 total = 1;
-    string instanceID = 2;
-    repeated google.protobuf.Value list = 3;
-}
-message AddonConfigResponse {
-    optional google.protobuf.Value data = 1;
-}
-message CreateCloudResourceVSWRequest {
-    string vendor = 1;
-    string region = 2;
-    string vSWName = 3 [json_name = "vswName"];
-    string vPCID = 4 [json_name = "vpcID"];
-    string cidrBlock = 5;
-    string zoneID = 6;
-    string description = 7;
-}
-message CreateCloudResourceMysqlAccountResponse {
-    google.protobuf.Value data = 1;
-}
-message CloudResourceOnsGroupBasicData {
-    string groupId = 1;
-    string remark = 2;
-    string instanceId = 3;
-    string groupType = 4;
-    string createTime = 5;
-    map<string, string> tags = 6;
-}
-message MysqlDataBaseInfo {
-    string dBName = 1 [json_name = "dbName"];
-    string addonID = 2;
-    string characterSetName = 3;
-    string description = 4;
-    google.protobuf.Value cloudResourceMysqlAccount = 5;
-}
-message AddonScaleResponse {
-    bool success = 1;
-    google.protobuf.Value error = 2 [json_name = "err"];
-}
-message ListCloudResourceOnsRequest {
-    string vendor = 1;
-    string region = 2;
-    string vpcID = 3;
-    string projectID = 4;
-    string workspace = 5;
-}
-message CMP_STEVE_CREATE_Request {
-}
-message ErrorResponse {
-    string code = 1;
-    string msg = 2;
-    google.protobuf.Value ctx = 3;
-}
-message OpsAddonStatusQueryRequest {
-    string addonName = 1;
-    string addonID = 2;
-}
-message HandleCloudResourceECSResponse {
-    google.protobuf.Value data = 1;
-}
-message CloudResourceMysqlAccountPrivileges {
-    string dBName = 1;
-    string accountPrivilege = 2;
-}
-message CreateCloudResourceOnsTopicRequest {
-    google.protobuf.Value createCloudResourceBaseInfo = 1;
-    string instanceID = 2;
-    repeated google.protobuf.Value topics = 3;
-}
-message OrgClusterInfoData {
-    int64 total = 1;
-    repeated google.protobuf.Value list = 2;
-}
-message ListCloudResourceRegionRequest {
-    string vendor = 1;
 }
 message ListCloudResourceVSW {
     string vswName = 1;
@@ -870,194 +974,90 @@ message ListCloudResourceVSW {
     string zoneName = 8;
     map<string, string> tags = 9;
 }
-message CloudResourceMysqlDetailInfoData {
-    string ID = 1 [json_name = "id"];
-    string name = 2;
-    string category = 3;
-    string regionId = 4 [json_name = "regionID"];
-    string vpcId = 5 [json_name = "vpcID"];
-    string vSwitchId = 6 [json_name = "vSwitchID"];
-    string zoneId = 7 [json_name = "zoneID"];
-    string host = 8;
-    string port = 9;
-    string memory = 10;
-    string storageSize = 11;
-    string storageType = 12;
-    string status = 13;
+message ListCloudResourceGatewayRequest {
+    string vendor = 1;
+    string region = 2;
+    string vpcID = 3;
+    string projectID = 4;
+    string workspace = 5;
 }
-message CloudResourceOnsGroupInfoData {
+message ErrorResponse {
+    string code = 1;
+    string msg = 2;
+    google.protobuf.Value ctx = 3;
+}
+message CloudResourceOssBasicData {
+    string name = 1;
+    string location = 2;
+    string createDate = 3;
+    string storageClass = 4;
+    map<string, string> tags = 5;
+}
+message CloudResourceMysqlDB {
+    string dBName = 1 [json_name = "dbName"];
+    string addonID = 2;
+    repeated google.protobuf.Value accounts = 3;
+}
+message ListCloudResourceVPCData {
     int64 total = 1;
     repeated google.protobuf.Value list = 2;
 }
-message BatchUpgradeEdgeClusterResponse {
+message CloudClusterInfo {
+    string clusterName = 1;
+    string clusterAccessKey = 2;
+    string displayName = 3;
+    string rootDomain = 4;
+    bool enableHttps = 5;
+    string clusterSize = 6;
+    string nameservers = 7;
+    string collectorURL = 8;
+    string openAPI = 9 [json_name = "openapi"];
+    string clusterDialer = 10;
 }
-message AutoRenewCloudResourceEcsRequest {
+message DeleteCloudAccountRequest {
     string vendor = 1;
-    string region = 2;
-    repeated string instanceIds = 3;
-    int64 duration = 4;
-    bool switch = 5;
+    string accessKey = 2 [json_name = "accessKeyID"];
 }
-message ListCloudResourceZoneResponse {
-    repeated google.protobuf.Value data = 1;
+message MonthAddTrend {
+    repeated int64 time = 1;
+    repeated google.protobuf.Value results = 2;
+    int64 total = 3;
+    string title = 4;
 }
-message CloudClusterRequest {
-    uint64 orgID = 1;
-    string orgName = 2;
-    string diceVersion = 3;
-    string centralClusterName = 4;
-    string centralRootDomain = 5;
-    string centralDiceProtocol = 6;
-    google.protobuf.Value cloudClusterInfo = 7;
-    google.protobuf.Value cloudClusterContainerInfo = 8;
-    google.protobuf.Value cloudClusterNewCreateInfo = 9;
-    google.protobuf.Value cloudClusterInstaller = 10;
-    google.protobuf.Value cloudClusterNas = 11;
-    google.protobuf.Value cloudClusterGlusterfs = 12;
-    google.protobuf.Value cloudClusterHostsInfo = 13;
+message CMP_ALERT_CONDITIONS_VALUE_Request {
 }
-message CreateCloudResourceVSWResponse {
-    google.protobuf.Value data = 1;
+message CreateCloudAccountResponse {
 }
-message ListCloudResourceVSWResponse {
-    google.protobuf.Value data = 1;
-}
-message UpdateLabelsResponse {
-    google.protobuf.Value data = 1;
-}
-message CloudResourceTagItem {
-    string vendor = 1;
-    string region = 2;
-    string resourceID = 3;
-    repeated string oldTags = 4;
-}
-message CreateCloudResourceVSW {
-    string vSWID = 1 [json_name = "vswID"];
-}
-message CMP_RESOURCE_OVERVIEW_CLUSTER_TREND_Request {
-}
-message CMP_RESOURCE_OVERVIEW_PROJECT_TREND_Request {
-}
-message OnsTopic {
-    string topicName = 1;
-    string messageType = 2;
-    int64 relation = 3;
-    string relationName = 4;
-    string remark = 5;
-    string createTime = 6;
-    map<string, string> tags = 7;
-}
-message ListCloudResourceZoneRequest {
-    string vendor = 1;
-    string region = 2;
-}
-message UpdateLabelsData {
+message OfflineEdgeClusterData {
     uint64 recordID = 1;
+    string preCheckHint = 2;
 }
-message OrgClusterInfoRequest {
-    int64 pageNo = 1;
-    int64 pageSize = 2;
-    string orgName = 3;
-    string clusterType = 4;
+message CMP_STEVE_DELETE_Request {
 }
-message CreateCloudResourceMysqlDBResponse {
-    google.protobuf.Value data = 1;
+message CMP_CLOUD_RESOURCE_ECS_TREND_Request {
 }
-message CreateCloudResourceVPCRequest {
-    string vendor = 1;
-    string region = 2;
-    string vPCName = 3 [json_name = "vpcName"];
-    string cidrBlock = 4;
-    string description = 5;
-}
-message ListCloudResourceVPCResponse {
-    google.protobuf.Value data = 1;
+message CMP_CREDENTIAL_ACCESSKEY_GET_Request {
 }
 message RmNodesData {
     uint64 recordID = 1;
 }
-message CMP_RESOURCE_OVERVIEW_GAUGE_Request {
-}
-message ListCloudResourceVPC {
-    string vendor = 1;
-    string status = 2;
-    string regionID = 3;
-    string regionName = 4;
-    string vpcID = 5;
-    string vpcName = 6;
-    string cidrBlock = 7;
-    int64 vswNum = 8;
-    map<string, string> tags = 9;
-}
-message CloudNodesRequest {
-    string clusterName = 1;
-    uint64 orgID = 2;
-    string cloudVendor = 3;
-    string availabilityZone = 4;
-    string region = 5;
-    string chargeType = 6;
-    int64 chargePeriod = 7;
-    string accessKey = 8;
-    string secretKey = 9;
-    string cloudResource = 10;
-    string instancePassword = 11;
-    int64 instanceNum = 12;
-    string instanceType = 13;
-    string diskType = 14;
-    int64 diskSize = 15;
-    repeated string securityGroupIds = 16;
-    string vSwitchId = 17;
-    repeated string labels = 18;
-    string terraform = 19;
-}
-message CloudResourceMysqlDetailInfoResponse {
+message CreateCloudResourceMysqlAccountResponse {
     google.protobuf.Value data = 1;
 }
-message CloudResourceRedisDetailInfoRequest {
-    string vendor = 1;
-    string region = 2;
-    string instanceID = 3;
+message BatchUpgradeEdgeClusterRequest {
+    repeated google.protobuf.Value clusters = 1;
 }
-message CloudResourceOssData {
-    int64 total = 1;
-    repeated google.protobuf.Value list = 2;
+message CMP_CLUSTER_INFO_Request {
 }
-message UpgradeClusterInfo {
-    uint64 orgID = 1;
-    string clusterName = 2;
-    string clusterType = 3;
-    string version = 4;
-    bool isCentralCluster = 5;
-}
-message ListCloudResourceOssRequest {
-    string vendor = 1;
-    string name = 2;
-}
-message GrantMysqlAccountPrivilegeRequest {
-    string vendor = 1;
-    string region = 2;
-    string instanceID = 3;
-    string account = 4;
-    repeated google.protobuf.Value accountPrivileges = 5;
-}
-message GrantMysqlAccountPrivilegeResponse {
+message ListCloudResourceOnsResponse {
     google.protobuf.Value data = 1;
 }
-message CloudResourceOnsData {
-    int64 total = 1;
-    repeated google.protobuf.Value list = 2;
+message CMP_NODE_LOGS_Request {
 }
-message CloudResourceOssDetailInfoResponse {
+message CreateCloudResourceOssResponse {
     google.protobuf.Value data = 1;
 }
-message ListCloudResourceRedisResponse {
-    google.protobuf.Value data = 1;
-}
-message K8SClusters {
-    google.protobuf.Value data = 1;
-}
-message OrgRunningTasksListResponse {
-    google.protobuf.Value data = 1;
+message CMP_CLOUD_RESOURCE_ACCOUNT_LIST_Request {
 }
 // generate service from openapi spec: cmp
 service cmp {

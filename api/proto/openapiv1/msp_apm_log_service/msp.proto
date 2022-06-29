@@ -16,23 +16,23 @@ import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 import "common/openapi.proto";
 import "common/identity.proto";
 
-message MSP_ADDON_LOGS_AGGREGATION_Request {
-    string addon = 1;
-}
-message MSP_ADDON_LOGS_DOWNLOAD_Request {
-    string addon = 1;
-}
-message MSP_ADDON_LOGS_FIELDS_Request {
-    string addon = 1;
-}
-message MSP_ADDON_LOGS_SEARCH_GET_Request {
-    string addon = 1;
-}
 message MSP_ADDON_LOGS_SEARCH_SEQUENTIAL_Request {
-    string addon = 1;
+    string addon = 1; // generated from path variable: addon. You should change the proto type if necessary
 }
 message MSP_ADDON_LOGS_STATISTIC_Request {
-    string addon = 1;
+    string addon = 1; // generated from path variable: addon. You should change the proto type if necessary
+}
+message MSP_ADDON_LOGS_AGGREGATION_Request {
+    string addon = 1; // generated from path variable: addon. You should change the proto type if necessary
+}
+message MSP_ADDON_LOGS_DOWNLOAD_Request {
+    string addon = 1; // generated from path variable: addon. You should change the proto type if necessary
+}
+message MSP_ADDON_LOGS_FIELDS_Request {
+    string addon = 1; // generated from path variable: addon. You should change the proto type if necessary
+}
+message MSP_ADDON_LOGS_SEARCH_GET_Request {
+    string addon = 1; // generated from path variable: addon. You should change the proto type if necessary
 }
 // generate service from openapi spec: msp_apm_log_service
 service msp_apm_log_service {

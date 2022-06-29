@@ -16,11 +16,11 @@ import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 import "common/openapi.proto";
 import "common/identity.proto";
 
-message MONITOR_INSTANCES_Request {
-    string terminusKey = 1;
-}
 message MONITOR_RUNTIME_Request {
-    string runtimeId = 1;
+    string runtimeId = 1; // generated from path variable: runtimeId. You should change the proto type if necessary
+}
+message MONITOR_INSTANCES_Request {
+    string terminusKey = 1; // generated from path variable: terminusKey. You should change the proto type if necessary
 }
 // generate service from openapi spec: msp
 service msp {

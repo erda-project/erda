@@ -16,25 +16,25 @@ import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 import "common/openapi.proto";
 import "common/identity.proto";
 
+message PUT_TRACE_DEBUG_HISTORY_STOP_Request {
+    string requestId = 1; // generated from path variable: requestId. You should change the proto type if necessary
+}
+message GET_SPANS_Request {
+    string traceID = 1; // generated from path variable: traceID. You should change the proto type if necessary
+}
+message GET_TRACE_CONDITIONS_LIST_Request {
+}
+message GET_TRACE_DEBUG_HISTORIES_Request {
+    string requestId = 1; // generated from path variable: requestId. You should change the proto type if necessary
+}
 message GET_TRACE_DEBUG_HISTORY_STATUS_Request {
-    string requestId = 1;
+    string requestId = 1; // generated from path variable: requestId. You should change the proto type if necessary
 }
 message GET_TRACE_LIST_Request {
 }
 message LIST_TRACE_DEBUG_HISTORIES_Request {
 }
 message POST_TRACE_DEBUG_HISTORIES_Request {
-}
-message PUT_TRACE_DEBUG_HISTORY_STOP_Request {
-    string requestId = 1;
-}
-message GET_SPANS_Request {
-    string traceID = 1;
-}
-message GET_TRACE_CONDITIONS_LIST_Request {
-}
-message GET_TRACE_DEBUG_HISTORIES_Request {
-    string requestId = 1;
 }
 // generate service from openapi spec: msp_apm_trace
 service msp_apm_trace {

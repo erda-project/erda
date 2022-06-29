@@ -16,6 +16,61 @@ import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 import "common/openapi.proto";
 import "common/identity.proto";
 
+message TestPlanUpdateRequest {
+    string name = 1;
+    string ownerID = 2;
+    repeated string partnerIDs = 3;
+    string status = 4;
+    string summary = 5;
+    optional google.protobuf.Duration timestampSecStartedAt = 6;
+    optional google.protobuf.Duration timestampSecEndedAt = 7;
+    uint64 testPlanID = 8 [json_name = "-"];
+    optional bool isArchived = 9;
+    uint64 iterationID = 10;
+}
+message TestPlanCreateRequest {
+    string name = 1;
+    string ownerID = 2;
+    repeated string partnerIDs = 3;
+    uint64 projectID = 4;
+    uint64 iterationID = 5;
+    bool isAutoTest = 6;
+}
+message TestPlanTestSetsListRequest {
+    uint64 testPlanID = 1;
+    uint64 parentTestSetID = 2;
+}
+message GENERATE_REPORT_Request {
+    string testPlanID = 1; // generated from path variable: testPlanID. You should change the proto type if necessary
+}
+message TestPlanRelsCount {
+    uint64 total = 1;
+    uint64 init = 2;
+    uint64 succ = 3;
+    uint64 fail = 4;
+    uint64 block = 5;
+}
+message TestPlanGetResponse {
+    google.protobuf.Value data = 1;
+}
+message TestPlanPagingRequest {
+    string name = 1;
+    repeated string statuses = 2;
+    uint64 projectID = 3;
+    repeated uint64 iterationIDs = 4;
+    string type = 5;
+    optional bool isArchived = 6;
+    repeated string ownerIDs = 7;
+    repeated string partnerIDs = 8;
+    repeated string userIDs = 9;
+    uint64 pageNo = 10;
+    uint64 pageSize = 11;
+}
+message TestPlanPagingResponseData {
+    uint64 total = 1;
+    repeated google.protobuf.Value list = 2;
+    repeated string userIDs = 3;
+}
 message TestSet {
     uint64 ID = 1 [json_name = "id"];
     string name = 2;
@@ -27,21 +82,27 @@ message TestSet {
     string creatorID = 8;
     string updaterID = 9;
 }
-message AUTOTESTS_TESTPLAN_EXECUTE_Request {
-    string testPlanID = 1;
+message CANCEL_APITEST_Request {
+    string testPlanID = 1; // generated from path variable: testPlanID. You should change the proto type if necessary
+    string pipelineID = 2; // generated from path variable: pipelineID. You should change the proto type if necessary
+}
+message EXECUTE_APITEST_Request {
+    string testPlanID = 1; // generated from path variable: testPlanID. You should change the proto type if necessary
+}
+message TestPlanTestSetListResponse {
+    repeated google.protobuf.Value data = 1;
 }
 message DELETE_Request {
-    string id = 1;
+    string id = 1; // generated from path variable: id. You should change the proto type if necessary
 }
-message GENERATE_REPORT_Request {
-    string testPlanID = 1;
+message GET_Request {
+    string id = 1; // generated from path variable: id. You should change the proto type if necessary
 }
-message TestPlanRelsCount {
-    uint64 total = 1;
-    uint64 init = 2;
-    uint64 succ = 3;
-    uint64 fail = 4;
-    uint64 block = 5;
+message TestPlanCreateResponse {
+    uint64 data = 1;
+}
+message TestPlanReportGenerateResponse {
+    optional google.protobuf.Value data = 1;
 }
 message TestPlan {
     uint64 ID = 1 [json_name = "id"];
@@ -64,74 +125,13 @@ message TestPlan {
     uint64 iterationID = 18;
     string iterationName = 19;
 }
-message TestPlanCreateResponse {
-    uint64 data = 1;
-}
-message TestPlanGetResponse {
-    google.protobuf.Value data = 1;
-}
-message TestPlanPagingRequest {
-    string name = 1;
-    repeated string statuses = 2;
-    uint64 projectID = 3;
-    repeated uint64 iterationIDs = 4;
-    string type = 5;
-    optional bool isArchived = 6;
-    repeated string ownerIDs = 7;
-    repeated string partnerIDs = 8;
-    repeated string userIDs = 9;
-    uint64 pageNo = 10;
-    uint64 pageSize = 11;
-}
-message TestPlanUpdateRequest {
-    string name = 1;
-    string ownerID = 2;
-    repeated string partnerIDs = 3;
-    string status = 4;
-    string summary = 5;
-    optional google.protobuf.Duration timestampSecStartedAt = 6;
-    optional google.protobuf.Duration timestampSecEndedAt = 7;
-    uint64 testPlanID = 8 [json_name = "-"];
-    optional bool isArchived = 9;
-    uint64 iterationID = 10;
-}
-message CANCEL_APITEST_Request {
-    string testPlanID = 1;
-    string pipelineID = 2;
-}
-message TestPlanPagingResponseData {
-    uint64 total = 1;
-    repeated google.protobuf.Value list = 2;
-    repeated string userIDs = 3;
-}
 message TestPlanPagingResponse {
     google.protobuf.Value data = 1;
 }
-message TestPlanTestSetsListRequest {
-    uint64 testPlanID = 1;
-    uint64 parentTestSetID = 2;
-}
-message TestPlanTestSetListResponse {
-    repeated google.protobuf.Value data = 1;
+message AUTOTESTS_TESTPLAN_EXECUTE_Request {
+    string testPlanID = 1; // generated from path variable: testPlanID. You should change the proto type if necessary
 }
 message AUTOTESTS_TESTPLAN_PAGING_Request {
-}
-message TestPlanCreateRequest {
-    string name = 1;
-    string ownerID = 2;
-    repeated string partnerIDs = 3;
-    uint64 projectID = 4;
-    uint64 iterationID = 5;
-    bool isAutoTest = 6;
-}
-message EXECUTE_APITEST_Request {
-    string testPlanID = 1;
-}
-message TestPlanReportGenerateResponse {
-    optional google.protobuf.Value data = 1;
-}
-message GET_Request {
-    string id = 1;
 }
 // generate service from openapi spec: testplatform_testplan
 service testplatform_testplan {

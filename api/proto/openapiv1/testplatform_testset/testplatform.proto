@@ -16,41 +16,8 @@ import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 import "common/openapi.proto";
 import "common/identity.proto";
 
-message TestSetCleanFromRecycleBinResponse {
-}
-message TestSetCopyResponse {
-    uint64 data = 1;
-}
-message TestSetCreateResponse {
-    optional google.protobuf.Value data = 1;
-}
-message TestSetListResponse {
-    repeated google.protobuf.Value data = 1;
-}
-message TestSetCreateRequest {
-    optional uint64 projectID = 1;
-    optional uint64 parentID = 2;
-    string name = 3;
-}
-message TestSetRecoverFromRecycleBinResponse {
-}
-message TestSetRecycleRequest {
-    uint64 testSetID = 1 [json_name = "-"];
-    bool isRoot = 2 [json_name = "-"];
-}
-message TestSetRecycleResponse {
-}
-message TestSetUpdateRequest {
-    uint64 testSetID = 1 [json_name = "testsetID"];
-    optional string name = 2;
-    optional uint64 moveToParentID = 3;
-}
 message TestSetCleanFromRecycleBinRequest {
     uint64 testSetID = 1 [json_name = "-"];
-}
-message TestSetCopyRequest {
-    uint64 copyToTestSetID = 1;
-    uint64 testSetID = 2 [json_name = "-"];
 }
 message TestSet {
     uint64 ID = 1 [json_name = "id"];
@@ -67,11 +34,14 @@ message TestSetRecoverFromRecycleBinRequest {
     uint64 testSetID = 1 [json_name = "-"];
     optional uint64 recoverToTestSetID = 2;
 }
-message TestSetGetResponse {
+message TestSetCopyResponse {
+    uint64 data = 1;
+}
+message TestSetCreateResponse {
     optional google.protobuf.Value data = 1;
 }
-message GET_Request {
-    string testSetID = 1;
+message TestSetGetResponse {
+    optional google.protobuf.Value data = 1;
 }
 message TestSetListRequest {
     bool recycled = 1;
@@ -79,6 +49,36 @@ message TestSetListRequest {
     optional uint64 projectID = 3;
     repeated uint64 testSetIDs = 4;
     bool noSubTestSets = 5;
+}
+message TestSetRecoverFromRecycleBinResponse {
+}
+message TestSetRecycleResponse {
+}
+message TestSetUpdateRequest {
+    uint64 testSetID = 1 [json_name = "testsetID"];
+    optional string name = 2;
+    optional uint64 moveToParentID = 3;
+}
+message TestSetCleanFromRecycleBinResponse {
+}
+message TestSetCopyRequest {
+    uint64 copyToTestSetID = 1;
+    uint64 testSetID = 2 [json_name = "-"];
+}
+message TestSetListResponse {
+    repeated google.protobuf.Value data = 1;
+}
+message TestSetRecycleRequest {
+    uint64 testSetID = 1 [json_name = "-"];
+    bool isRoot = 2 [json_name = "-"];
+}
+message TestSetCreateRequest {
+    optional uint64 projectID = 1;
+    optional uint64 parentID = 2;
+    string name = 3;
+}
+message GET_Request {
+    string testSetID = 1; // generated from path variable: testSetID. You should change the proto type if necessary
 }
 // generate service from openapi spec: testplatform_testset
 service testplatform_testset {

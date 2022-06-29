@@ -16,10 +16,28 @@ import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 import "common/openapi.proto";
 import "common/identity.proto";
 
-message GittarCommitResponse {
-    google.protobuf.Value data = 1;
+message GittarCreateCommitResponse {
 }
-message GittarMergeStatusResponse {
+message GittarCreateTagResponse {
+}
+message GittarCreateBranchRequest {
+    string name = 1;
+    string ref = 2;
+    string org = 3; // generated from path variable: org. You should change the proto type if necessary
+    string repo = 4; // generated from path variable: repo. You should change the proto type if necessary
+}
+message CheckRuns {
+    repeated google.protobuf.Value checkRun = 1 [json_name = "checkrun"];
+    string result = 2;
+    bool mergable = 3;
+}
+message GittarCreateBranchResponse {
+}
+message GITTAR_MR_TEMPLATES_Request {
+    string org = 1; // generated from path variable: org. You should change the proto type if necessary
+    string repo = 2; // generated from path variable: repo. You should change the proto type if necessary
+}
+message GittarStatsResponse {
     google.protobuf.Value data = 1;
 }
 message Tag {
@@ -29,7 +47,24 @@ message Tag {
     optional google.protobuf.Value tagger = 4;
     string message = 5;
 }
-message GittarDeleteBranchResponse {
+message GittarBranchesResponse {
+    repeated google.protobuf.Value data = 1;
+}
+message Commit {
+    string ID = 1 [json_name = "id"];
+    optional google.protobuf.Value author = 2 [json_name = "-"];
+    optional google.protobuf.Value committer = 3;
+    string commitMessage = 4;
+    string parentSha = 5;
+}
+message GittarMergeStatusRequest {
+    string sourceBranch = 1;
+    string targetBranch = 2;
+    string org = 3; // generated from path variable: org. You should change the proto type if necessary
+    string repo = 4; // generated from path variable: repo. You should change the proto type if necessary
+}
+message GittarQueryMrDetailResponse {
+    google.protobuf.Value data = 1;
 }
 message GittarCompareData {
     string from = 1;
@@ -37,38 +72,22 @@ message GittarCompareData {
     repeated google.protobuf.Value commits = 3;
     google.protobuf.Value diff = 4;
 }
-message GITTAR_MERGE_ACTION_QUERY_Request {
-    string org = 1;
-    string repo = 2;
-    string id = 3;
-    string action = 4;
-}
-message GittarQueryMrDetailResponse {
+message GittarCompareResponse {
     google.protobuf.Value data = 1;
 }
+message GITTAR_MERGE_ACTION_POST_Request {
+    string org = 1; // generated from path variable: org. You should change the proto type if necessary
+    string repo = 2; // generated from path variable: repo. You should change the proto type if necessary
+    string id = 3; // generated from path variable: id. You should change the proto type if necessary
+    string action = 4; // generated from path variable: action. You should change the proto type if necessary
+}
 message GITTAR_REPO_STATS_Request {
-    string org = 1;
-    string repo = 2;
+    string org = 1; // generated from path variable: org. You should change the proto type if necessary
+    string repo = 2; // generated from path variable: repo. You should change the proto type if necessary
 }
-message GittarCreateBranchRequest {
-    string name = 1;
-    string ref = 2;
-    string org = 3;
-    string repo = 4;
-}
-message GittarMergeStatusRequest {
-    string sourceBranch = 1;
-    string targetBranch = 2;
-    string org = 3;
-    string repo = 4;
-}
-message GITTAR_RAW_Request {
-    string org = 1;
-    string repo = 2;
-}
-message GITTAR_TREE_Request {
-    string org = 1;
-    string repo = 2;
+message GITTAR_BRANCH_DELETE_Request {
+    string org = 1; // generated from path variable: org. You should change the proto type if necessary
+    string repo = 2; // generated from path variable: repo. You should change the proto type if necessary
 }
 message CheckRun {
     int64 ID = 1 [json_name = "id"];
@@ -84,96 +103,41 @@ message CheckRun {
     optional google.protobuf.Timestamp completedAt = 11;
     google.protobuf.Timestamp createdAt = 12;
     int64 repoID = 13 [json_name = "repoId"];
-    string org = 14;
-    string repo = 15;
-}
-message GITTAR_COMPARE_Request {
-    string org = 1;
-    string repo = 2;
-}
-message GittarCreateMergeResponse {
-    optional google.protobuf.Value data = 1;
-}
-message GittarQueryMrRequest {
-    string state = 1;
-    string query = 2;
-    string authorId = 3;
-    string assigneeId = 4;
-    int64 score = 5;
-    int64 page = 6;
-    int64 size = 7;
-    string targetBranch = 8;
-    string sourceBranch = 9;
-    string org = 10;
-    string repo = 11;
-}
-message GittarQueryMrResponse {
-    google.protobuf.Value data = 1;
-}
-message GittarStatsResponse {
-    google.protobuf.Value data = 1;
-}
-message GITTAR_TAG_DELETE_Request {
-    string org = 1;
-    string repo = 2;
-}
-message GITTAR_BLAME_Request {
-    string org = 1;
-    string repo = 2;
-}
-message GITTAR_BLOB_Request {
-    string org = 1;
-    string repo = 2;
-}
-message CreateCheckRunResponse {
-    optional google.protobuf.Value data = 1;
-}
-message GittarCreateCommitResponse {
-}
-message GITTAR_MERGE_GET_Request {
-    string org = 1;
-    string repo = 2;
-    string id = 3;
-}
-message GittarMergeStatusData {
-    bool hasConflict = 1;
-    bool isMerged = 2;
-    bool hasError = 3;
-    string errorMsg = 4;
-}
-message GITTAR_ARCHIVE_Request {
-    string org = 1;
-    string repo = 2;
-}
-message Commit {
-    string ID = 1 [json_name = "id"];
-    optional google.protobuf.Value author = 2 [json_name = "-"];
-    optional google.protobuf.Value committer = 3;
-    string commitMessage = 4;
-    string parentSha = 5;
-}
-message CheckRuns {
-    repeated google.protobuf.Value checkRun = 1 [json_name = "checkrun"];
-    string result = 2;
-    bool mergable = 3;
-}
-message QueryMergeRequestsData {
-    repeated google.protobuf.Value list = 1;
-    int64 total = 2;
-}
-message GittarTreeSearchResponse {
-    repeated google.protobuf.Value data = 1;
-}
-message GITTAR_BRANCH_Request {
-    string org = 1;
-    string repo = 2;
+    string org = 14; // generated from path variable: org. You should change the proto type if necessary
+    string repo = 15; // generated from path variable: repo. You should change the proto type if necessary
 }
 message GittarCreateCommitRequest {
     string message = 1;
     repeated google.protobuf.Value actions = 2;
     string branch = 3;
-    string org = 4;
-    string repo = 5;
+    string org = 4; // generated from path variable: org. You should change the proto type if necessary
+    string repo = 5; // generated from path variable: repo. You should change the proto type if necessary
+}
+message GittarCreateTagRequest {
+    string name = 1;
+    string message = 2;
+    string ref = 3;
+    string org = 4; // generated from path variable: org. You should change the proto type if necessary
+    string repo = 5; // generated from path variable: repo. You should change the proto type if necessary
+}
+message CreateCheckRunResponse {
+    optional google.protobuf.Value data = 1;
+}
+message GittarCommitResponse {
+    google.protobuf.Value data = 1;
+}
+message GittarCreateMergeRequest {
+    string title = 1;
+    string description = 2;
+    string assigneeID = 3 [json_name = "assigneeId"];
+    string sourceBranch = 4;
+    string targetBranch = 5;
+    bool removeSourceBranch = 6;
+    string org = 7; // generated from path variable: org. You should change the proto type if necessary
+    string repo = 8; // generated from path variable: repo. You should change the proto type if necessary
+}
+message GittarMergeTemplatesResponse {
+    google.protobuf.Value data = 1;
 }
 message GittarStatsData {
     int64 commitsCount = 1;
@@ -189,25 +153,69 @@ message GittarStatsData {
     int64 applicationID = 11;
     uint64 projectID = 12;
 }
-message REPO_GET_Request {
+message DeleteEvent {
+    string event = 1;
+    string appName = 2;
+    string name = 3;
+    int64 appID = 4 [json_name = "appId"];
+    int64 projectID = 5 [json_name = "projectId"];
 }
-message GittarCreateBranchResponse {
+message REPO_PUT_Request {
 }
-message GittarTagsResponse {
-    repeated google.protobuf.Value data = 1;
+message GittarDeleteBranchResponse {
 }
-message GittarCreateTagRequest {
-    string name = 1;
-    string message = 2;
-    string ref = 3;
-    string org = 4;
-    string repo = 5;
+message GittarCommitsRequest {
+    string search = 1;
+    int64 pageNo = 2;
+    int64 pageSize = 3;
+    string org = 4; // generated from path variable: org. You should change the proto type if necessary
+    string repo = 5; // generated from path variable: repo. You should change the proto type if necessary
 }
-message GittarDeleteResponse {
+message GittarQueryMrResponse {
     google.protobuf.Value data = 1;
 }
-message GittarBranchesResponse {
-    repeated google.protobuf.Value data = 1;
+message REPO_GET_Request {
+}
+message GITTAR_ARCHIVE_Request {
+    string org = 1; // generated from path variable: org. You should change the proto type if necessary
+    string repo = 2; // generated from path variable: repo. You should change the proto type if necessary
+}
+message GITTAR_MERGE_ACTION_QUERY_Request {
+    string org = 1; // generated from path variable: org. You should change the proto type if necessary
+    string repo = 2; // generated from path variable: repo. You should change the proto type if necessary
+    string id = 3; // generated from path variable: id. You should change the proto type if necessary
+    string action = 4; // generated from path variable: action. You should change the proto type if necessary
+}
+message GITTAR_TAG_Request {
+    string org = 1; // generated from path variable: org. You should change the proto type if necessary
+    string repo = 2; // generated from path variable: repo. You should change the proto type if necessary
+}
+message GittarQueryMrRequest {
+    string state = 1;
+    string query = 2;
+    string authorId = 3;
+    string assigneeId = 4;
+    int64 score = 5;
+    int64 page = 6;
+    int64 size = 7;
+    string targetBranch = 8;
+    string sourceBranch = 9;
+    string org = 10; // generated from path variable: org. You should change the proto type if necessary
+    string repo = 11; // generated from path variable: repo. You should change the proto type if necessary
+}
+message GITTAR_RAW_Request {
+    string org = 1; // generated from path variable: org. You should change the proto type if necessary
+    string repo = 2; // generated from path variable: repo. You should change the proto type if necessary
+}
+message REPO_DELETE_Request {
+}
+message GittarBlobData {
+    bool binary = 1;
+    string content = 2;
+}
+message GittarDiffData {
+    google.protobuf.Value commit = 1;
+    google.protobuf.Value diff = 2;
 }
 message MergeRequestInfo {
     int64 id = 1;
@@ -246,22 +254,65 @@ message MergeRequestInfo {
     string joinTempBranchStatus = 34;
     bool isJoinTempBranch = 35;
 }
-message GittarBlobResponse {
+message GittarBlameResponse {
+    repeated google.protobuf.Value data = 1;
+}
+message GITTAR_MERGE_GET_Request {
+    string org = 1; // generated from path variable: org. You should change the proto type if necessary
+    string repo = 2; // generated from path variable: repo. You should change the proto type if necessary
+    string id = 3; // generated from path variable: id. You should change the proto type if necessary
+}
+message GITTAR_REPO_STATS_DEFAULT_Request {
+    string org = 1; // generated from path variable: org. You should change the proto type if necessary
+    string repo = 2; // generated from path variable: repo. You should change the proto type if necessary
+}
+message GittarDeleteResponse {
     google.protobuf.Value data = 1;
 }
-message GITTAR_MERGE_ACTION_POST_Request {
-    string org = 1;
-    string repo = 2;
-    string id = 3;
-    string action = 4;
+message GittarTreeSearchResponse {
+    repeated google.protobuf.Value data = 1;
+}
+message Diff {
+    int64 filesChanged = 1;
+    int64 totalAddition = 2;
+    int64 totalDeletion = 3;
+    repeated google.protobuf.Value files = 4;
+    bool isFinish = 5;
+}
+message GittarCreateMergeResponse {
+    optional google.protobuf.Value data = 1;
+}
+message MergeTemplatesResponseData {
+    string branch = 1;
+    string path = 2;
+    repeated string names = 3;
+}
+message GITTAR_COMMIT_Request {
+    string org = 1; // generated from path variable: org. You should change the proto type if necessary
+    string repo = 2; // generated from path variable: repo. You should change the proto type if necessary
+}
+message GITTAR_COMPARE_Request {
+    string org = 1; // generated from path variable: org. You should change the proto type if necessary
+    string repo = 2; // generated from path variable: repo. You should change the proto type if necessary
+}
+message GittarMergeStatusResponse {
+    google.protobuf.Value data = 1;
+}
+message GittarTagsResponse {
+    repeated google.protobuf.Value data = 1;
 }
 message GittarTreeSearchRequest {
     string ref = 1;
     string pattern = 2;
-    string org = 3;
-    string repo = 4;
+    string org = 3; // generated from path variable: org. You should change the proto type if necessary
+    string repo = 4; // generated from path variable: repo. You should change the proto type if necessary
 }
-message REPO_POST_Request {
+message GITTAR_BLAME_Request {
+    string org = 1; // generated from path variable: org. You should change the proto type if necessary
+    string repo = 2; // generated from path variable: repo. You should change the proto type if necessary
+}
+message GittarBlobResponse {
+    google.protobuf.Value data = 1;
 }
 message Branch {
     string ID = 1 [json_name = "id"];
@@ -271,93 +322,42 @@ message Branch {
     bool isProtect = 5;
     bool isMerged = 6;
 }
-message GittarMergeTemplatesResponse {
-    google.protobuf.Value data = 1;
+message REPO_POST_Request {
 }
-message GITTAR_TAG_Request {
-    string org = 1;
-    string repo = 2;
+message GittarCommitsResponse {
+    repeated google.protobuf.Value data = 1;
 }
-message GittarCreateTagResponse {
+message QueryMergeRequestsData {
+    repeated google.protobuf.Value list = 1;
+    int64 total = 2;
 }
-message REPO_PUT_Request {
+message GittarMergeStatusData {
+    bool hasConflict = 1;
+    bool isMerged = 2;
+    bool hasError = 3;
+    string errorMsg = 4;
 }
-message MergeTemplatesResponseData {
-    string branch = 1;
-    string path = 2;
-    repeated string names = 3;
+message GITTAR_TAG_DELETE_Request {
+    string org = 1; // generated from path variable: org. You should change the proto type if necessary
+    string repo = 2; // generated from path variable: repo. You should change the proto type if necessary
+}
+message GITTAR_TREE_Request {
+    string org = 1; // generated from path variable: org. You should change the proto type if necessary
+    string repo = 2; // generated from path variable: repo. You should change the proto type if necessary
+}
+message GITTAR_BLOB_Request {
+    string org = 1; // generated from path variable: org. You should change the proto type if necessary
+    string repo = 2; // generated from path variable: repo. You should change the proto type if necessary
+}
+message GITTAR_BRANCH_Request {
+    string org = 1; // generated from path variable: org. You should change the proto type if necessary
+    string repo = 2; // generated from path variable: repo. You should change the proto type if necessary
 }
 message EditActionItem {
     string action = 1;
     string content = 2;
     string path = 3;
     string pathType = 4;
-}
-message GITTAR_MR_TEMPLATES_Request {
-    string org = 1;
-    string repo = 2;
-}
-message GITTAR_REPO_STATS_DEFAULT_Request {
-    string org = 1;
-    string repo = 2;
-}
-message GittarBlobData {
-    bool binary = 1;
-    string content = 2;
-}
-message GittarDiffData {
-    google.protobuf.Value commit = 1;
-    google.protobuf.Value diff = 2;
-}
-message DeleteEvent {
-    string event = 1;
-    string appName = 2;
-    string name = 3;
-    int64 appID = 4 [json_name = "appId"];
-    int64 projectID = 5 [json_name = "projectId"];
-}
-message GITTAR_BRANCH_DELETE_Request {
-    string org = 1;
-    string repo = 2;
-}
-message GITTAR_COMMIT_Request {
-    string org = 1;
-    string repo = 2;
-}
-message GittarCommitsResponse {
-    repeated google.protobuf.Value data = 1;
-}
-message GittarCompareResponse {
-    google.protobuf.Value data = 1;
-}
-message GittarCreateMergeRequest {
-    string title = 1;
-    string description = 2;
-    string assigneeID = 3 [json_name = "assigneeId"];
-    string sourceBranch = 4;
-    string targetBranch = 5;
-    bool removeSourceBranch = 6;
-    string org = 7;
-    string repo = 8;
-}
-message GittarBlameResponse {
-    repeated google.protobuf.Value data = 1;
-}
-message GittarCommitsRequest {
-    string search = 1;
-    int64 pageNo = 2;
-    int64 pageSize = 3;
-    string org = 4;
-    string repo = 5;
-}
-message REPO_DELETE_Request {
-}
-message Diff {
-    int64 filesChanged = 1;
-    int64 totalAddition = 2;
-    int64 totalDeletion = 3;
-    repeated google.protobuf.Value files = 4;
-    bool isFinish = 5;
 }
 // generate service from openapi spec: gittar
 service gittar {

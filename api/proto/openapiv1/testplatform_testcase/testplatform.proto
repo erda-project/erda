@@ -18,39 +18,51 @@ import "common/identity.proto";
 
 message TestCaseBatchCleanFromRecycleBinResponse {
 }
-message TestCaseBatchUpdateResponse {
-    bool data = 1;
-}
 message TestCaseStepAndResult {
     string step = 1;
     string result = 2;
 }
+message TestCaseExportRequest {
+    google.protobuf.Value testCasePagingRequest = 1;
+    string fileType = 2;
+    string locale = 3;
+}
+message TestCaseImportResponse {
+    optional google.protobuf.Value data = 1;
+}
+message TestCasePagingResponse {
+    optional google.protobuf.Value data = 1;
+}
+message TestCaseBatchCleanFromRecycleBinRequest {
+    repeated uint64 testCaseIDs = 1;
+}
+message TestCaseBatchCopyResponse {
+    repeated uint64 data = 1;
+}
+message TestCaseBatchUpdateResponse {
+    bool data = 1;
+}
 message TestCaseCreateResponse {
     uint64 data = 1;
+}
+message GET_Request {
+    string testCaseID = 1; // generated from path variable: testCaseID. You should change the proto type if necessary
 }
 message TestCaseImportRequest {
     uint64 testSetID = 1;
     uint64 projectID = 2;
     string fileType = 3;
 }
-message TestCaseUpdateRequest {
-    uint64 ID = 1 [json_name = "-"];
-    string name = 2;
-    string priority = 3;
-    string preCondition = 4;
-    repeated google.protobuf.Value stepAndResults = 5;
-    repeated google.protobuf.Value aPIs = 6 [json_name = "apis"];
-    string desc = 7;
-    repeated uint64 labelIDs = 8;
-    string testCaseID = 9;
-}
-message TestCaseBatchCleanFromRecycleBinRequest {
-    repeated uint64 testCaseIDs = 1;
-}
 message TestCaseBatchCopyRequest {
     uint64 copyToTestSetID = 1;
     uint64 projectID = 2;
     repeated uint64 testCaseIDs = 3;
+}
+message TestCaseBatchUpdateRequest {
+    string priority = 1;
+    optional bool recycled = 2;
+    optional uint64 moveToTestSetID = 3;
+    repeated uint64 testCaseIDs = 4;
 }
 message TestCasePagingRequest {
     int64 pageNo = 1;
@@ -88,25 +100,10 @@ message TestCasePagingRequest {
 message TestCaseExportResponse {
     uint64 data = 1;
 }
-message GET_Request {
-    string testCaseID = 1;
-}
-message TestCaseImportResponse {
-    optional google.protobuf.Value data = 1;
-}
-message TestCasePagingResponse {
+message TestCaseGetResponse {
     optional google.protobuf.Value data = 1;
 }
 message TestCaseUpdateResponse {
-}
-message TestCaseBatchCopyResponse {
-    repeated uint64 data = 1;
-}
-message TestCaseBatchUpdateRequest {
-    string priority = 1;
-    optional bool recycled = 2;
-    optional uint64 moveToTestSetID = 3;
-    repeated uint64 testCaseIDs = 4;
 }
 message TestCaseCreateRequest {
     uint64 projectID = 1;
@@ -119,13 +116,16 @@ message TestCaseCreateRequest {
     string priority = 8;
     repeated uint64 labelIDs = 9;
 }
-message TestCaseExportRequest {
-    google.protobuf.Value testCasePagingRequest = 1;
-    string fileType = 2;
-    string locale = 3;
-}
-message TestCaseGetResponse {
-    optional google.protobuf.Value data = 1;
+message TestCaseUpdateRequest {
+    uint64 ID = 1 [json_name = "-"];
+    string name = 2;
+    string priority = 3;
+    string preCondition = 4;
+    repeated google.protobuf.Value stepAndResults = 5;
+    repeated google.protobuf.Value aPIs = 6 [json_name = "apis"];
+    string desc = 7;
+    repeated uint64 labelIDs = 8;
+    string testCaseID = 9; // generated from path variable: testCaseID. You should change the proto type if necessary
 }
 // generate service from openapi spec: testplatform_testcase
 service testplatform_testcase {

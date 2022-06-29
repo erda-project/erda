@@ -16,6 +16,12 @@ import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 import "common/openapi.proto";
 import "common/identity.proto";
 
+message MSP_PROJECT_GET_Request {
+}
+message MSP_PROJECT_LIST_Request {
+}
+message MSP_PROJECT_OVERVIEW_Request {
+}
 message UPDATE_MSP_PROJECT_Request {
 }
 message CREATE_MSP_PROJECT_Request {
@@ -23,12 +29,6 @@ message CREATE_MSP_PROJECT_Request {
 message MSP_METRIC_PROJECT_OVERVIEW_Request {
 }
 message MSP_PROJECT_DELETE_Request {
-}
-message MSP_PROJECT_GET_Request {
-}
-message MSP_PROJECT_LIST_Request {
-}
-message MSP_PROJECT_OVERVIEW_Request {
 }
 // generate service from openapi spec: msp_tenant_project
 service msp_tenant_project {

@@ -16,42 +16,136 @@ import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 import "common/openapi.proto";
 import "common/identity.proto";
 
-message PIPELINE_CONFIG_NAMESPACE_Request {
+message PipelineYmlParseGraphResponse {
+    optional google.protobuf.Value data = 1;
 }
-message PipelineCreateRequest {
-    uint64 appID = 1;
-    string branch = 2;
-    string source = 3;
-    string pipelineYmlSource = 4;
-    string pipelineYmlName = 5;
-    string pipelineYmlContent = 6;
-    bool autoRun = 7;
-    repeated string callbackURLs = 8;
-    string userID = 9;
-    bool isCronTriggered = 10;
+message PIPELINE_ACTIONS_LIST_Request {
+}
+message PipelineDTO {
+    uint64 ID = 1 [json_name = "id"];
+    optional uint64 cronID = 2;
+    uint64 orgID = 3;
+    string orgName = 4;
+    uint64 projectID = 5;
+    string projectName = 6;
+    uint64 applicationID = 7;
+    string applicationName = 8;
+    string branch = 9;
+    string commit = 10;
+    google.protobuf.Value commitDetail = 11;
+    map<string, string> labels = 12;
+    string source = 13;
+    string ymlSource = 14;
+    string ymlName = 15;
+    string ymlNameV1 = 16;
+    string ymlContent = 17;
+    google.protobuf.Value extra = 18;
+    string namespace = 19;
+    string type = 20;
+    string triggerMode = 21;
+    string clusterName = 22;
+    string status = 23;
+    double progress = 24;
+    int64 costTimeSec = 25;
+    optional google.protobuf.Timestamp timeBegin = 26;
+    optional google.protobuf.Timestamp timeEnd = 27;
+    optional google.protobuf.Timestamp timeCreated = 28;
+    optional google.protobuf.Timestamp timeUpdated = 29;
+}
+message ValidBranch {
+    string name = 1;
+    bool isProtect = 2;
+    bool needApproval = 3;
+    bool isTriggerPipeline = 4;
+    string workspace = 5;
+    string artifactWorkspace = 6;
 }
 message PIPELINE_CRON_LIST_Request {
 }
-message ActionSetStatusResponse {
+message PIPELINE_DETAIL_Request {
+    string pipelineID = 1; // generated from path variable: pipelineID. You should change the proto type if necessary
 }
-message PIPELINE_PUBLIC_ACTION_SET_DEFAULT_Request {
+message PipelineTaskOperateRequest {
+    uint64 taskID = 1;
+    string taskAlias = 2;
+    optional bool disable = 3;
+    optional bool pause = 4;
+}
+message PipelineOperateRequest {
+    repeated google.protobuf.Value taskOperates = 1;
+    string pipelineID = 2; // generated from path variable: pipelineID. You should change the proto type if necessary
+}
+message PIPELINE_ACTIONS_DETAIL_Request {
+    string actionType = 1; // generated from path variable: actionType. You should change the proto type if necessary
+}
+message PipelineAppAllValidBranchWorkspaceResponse {
+    repeated google.protobuf.Value data = 1;
+}
+message PipelineCronDTO {
+    uint64 ID = 1 [json_name = "id"];
+    google.protobuf.Timestamp timeCreated = 2;
+    google.protobuf.Timestamp timeUpdated = 3;
+    uint64 applicationID = 4;
+    string branch = 5;
+    string cronExpr = 6;
+    optional google.protobuf.Timestamp cronStartTime = 7;
+    string pipelineYmlName = 8;
+    uint64 basePipelineID = 9;
+    optional bool enable = 10;
+    string pipelineYml = 11;
+    repeated string configManageNamespaces = 12;
+    map<string, string> secrets = 13;
+    string userID = 14;
+    uint64 orgID = 15;
+    string pipelineDefinitionID = 16;
+    string pipelineSource = 17;
+    string clusterName = 18;
+}
+message PipelineQueueCreateRequest {
     string name = 1;
-    string version = 2;
+    string pipelineSource = 2;
+    string clusterName = 3;
+    string scheduleStrategy = 4;
+    string mode = 5;
+    int64 priority = 6;
+    int64 concurrency = 7;
+    double maxCPU = 8;
+    double maxMemoryMB = 9;
+    map<string, string> labels = 10;
 }
-message PIPELINE_BRANCHES_ALL_VALID_Request {
-}
-message PipelineCancelResponse {
-}
-message PipelineDetailResponse {
-    optional google.protobuf.Value data = 1;
-}
-message PIPELINE_PUBLIC_ACTIONS_LIST_Request {
-}
-message PIPELINE_QUEUE_GET_Request {
-    string queueID = 1;
+message PIPELINE_PUBLIC_ACTION_REPUBLISH_Request {
+    string name = 1; // generated from path variable: name. You should change the proto type if necessary
+    string version = 2; // generated from path variable: version. You should change the proto type if necessary
 }
 message PipelineQueueListResponse {
     optional google.protobuf.Value data = 1;
+}
+message ActionListResponse {
+    google.protobuf.Value data = 1;
+}
+message CommitDetail {
+    string commitID = 1;
+    string repo = 2;
+    string repoAbbr = 3;
+    string author = 4;
+    string email = 5;
+    optional google.protobuf.Timestamp time = 6;
+    string comment = 7;
+}
+message PIPELINE_CANCEL_Request {
+    string pipelineID = 1; // generated from path variable: pipelineID. You should change the proto type if necessary
+}
+message PIPELINE_CRON_START_Request {
+    string cronID = 1; // generated from path variable: cronID. You should change the proto type if necessary
+}
+message ActionQueryResponse {
+    repeated google.protobuf.Value data = 1;
+}
+message PipelineRunResponse {
+}
+message PipelineDBGCItem {
+    optional bool needArchive = 1;
+    optional uint64 tTLSecond = 2 [json_name = "ttlSecond"];
 }
 message PipelineExtra {
     string diceWorkspace = 1;
@@ -66,26 +160,150 @@ message PipelineExtra {
     bool isAutoRun = 10;
     repeated string callbackURLs = 11;
 }
-message PipelineCallbackRequest {
-    string type = 1;
-    repeated uint32 data = 2;
+message PIPELINE_PUBLIC_ACTION_UNSET_DEFAULT_Request {
+    string name = 1; // generated from path variable: name. You should change the proto type if necessary
+    string version = 2; // generated from path variable: version. You should change the proto type if necessary
 }
-message PipelineDBGCItem {
-    optional bool needArchive = 1;
-    optional uint64 tTLSecond = 2 [json_name = "ttlSecond"];
-}
-message PIPELINE_ACTIONS_LIST_Request {
-}
-message ValidBranch {
+message PipelineQueuePagingRequest {
     string name = 1;
-    bool isProtect = 2;
-    bool needApproval = 3;
-    bool isTriggerPipeline = 4;
-    string workspace = 5;
-    string artifactWorkspace = 6;
+    repeated string pipelineSources = 2;
+    string clusterName = 3;
+    string scheduleStrategy = 4;
+    int64 priority = 5;
+    int64 concurrency = 6;
+    repeated string mustMatchLabels = 7;
+    repeated string anyMatchLabels = 8;
+    bool allowNoPipelineSources = 9;
+    bool orderByTargetIDAsc = 10;
+    int64 pageNo = 11;
+    int64 pageSize = 12;
 }
-message PIPELINE_CRON_START_Request {
-    string cronID = 1;
+message PipelineGC {
+    google.protobuf.Value resourceGC = 1;
+    google.protobuf.Value databaseGC = 2;
+}
+message PipelineBatchCreateResponse {
+    map<string, google.protobuf.Value> data = 1;
+}
+message PIPELINE_CONFIG_NAMESPACE_Request {
+}
+message PipelineCronListResponse {
+    repeated google.protobuf.Value data = 1;
+}
+message PIPELINE_PUBLIC_ACTIONS_LIST_BY_NAME_Request {
+    string name = 1; // generated from path variable: name. You should change the proto type if necessary
+}
+message PipelineDatabaseGC {
+    google.protobuf.Value analyzed = 1;
+    google.protobuf.Value finished = 2;
+}
+message PipelineYmlParseGraphRequest {
+    string pipelineYmlContent = 1;
+    map<string, string> globalSnippetConfigLabels = 2;
+    optional google.protobuf.Value snippetConfig = 3;
+}
+message ActionDetailResponse {
+    google.protobuf.Value data = 1;
+}
+message PipelineCronStartResponse {
+    optional google.protobuf.Value data = 1;
+}
+message PipelineQueueUpdateRequest {
+    uint64 ID = 1 [json_name = "-"];
+    google.protobuf.Value pipelineQueueCreateRequest = 2;
+    string queueID = 3; // generated from path variable: queueID. You should change the proto type if necessary
+}
+message PipelineRerunFailedResponse {
+    optional google.protobuf.Value data = 1;
+    string pipelineID = 2; // generated from path variable: pipelineID. You should change the proto type if necessary
+}
+message PipelineInvokedComboRequest {
+    uint64 appID = 1;
+    string branches = 2;
+    string sources = 3;
+    string ymlNames = 4;
+}
+message PipelinePageListResponse {
+    optional google.protobuf.Value data = 1;
+}
+message PipelineQueueCreateResponse {
+    optional google.protobuf.Value data = 1;
+}
+message PIPELINE_QUEUE_GET_Request {
+    string queueID = 1; // generated from path variable: queueID. You should change the proto type if necessary
+}
+message PIPELINE_SNIPPET_QUERY_OUTPUTS_Request {
+}
+message PIPELINE_TASK_GET_BOOTSTRAP_INFO_Request {
+    string pipelineID = 1; // generated from path variable: pipelineID. You should change the proto type if necessary
+    string taskID = 2; // generated from path variable: taskID. You should change the proto type if necessary
+}
+message PipelineCronStopResponse {
+    optional google.protobuf.Value data = 1;
+}
+message ActionSetStatusResponse {
+}
+message PIPELINE_PUBLIC_ACTION_SET_DEFAULT_Request {
+    string name = 1; // generated from path variable: name. You should change the proto type if necessary
+    string version = 2; // generated from path variable: version. You should change the proto type if necessary
+}
+message PIPELINE_RUN_Request {
+    string pipelineID = 1; // generated from path variable: pipelineID. You should change the proto type if necessary
+}
+message PipelineCreateRequestV2 {
+    string pipelineYml = 1;
+    string clusterName = 2;
+    string namespace = 3;
+    string pipelineYmlName = 4;
+    string pipelineSource = 5;
+    map<string, string> labels = 6;
+    map<string, string> normalLabels = 7;
+    map<string, string> envs = 8;
+    repeated string configManageNamespaces = 9;
+    bool autoRun = 10;
+    bool forceRun = 11;
+    bool autoRunAtOnce = 12;
+    bool autoStartCron = 13;
+    optional google.protobuf.Timestamp cronStartFrom = 14;
+    google.protobuf.Value gC = 15 [json_name = "gc"];
+    repeated google.protobuf.Value runParams = 16;
+    optional google.protobuf.Value bindQueue = 17 [json_name = "-"];
+    string definitionID = 18;
+    map<string, string> secrets = 19;
+}
+message PipelineCreateRequest {
+    uint64 appID = 1;
+    string branch = 2;
+    string source = 3;
+    string pipelineYmlSource = 4;
+    string pipelineYmlName = 5;
+    string pipelineYmlContent = 6;
+    bool autoRun = 7;
+    repeated string callbackURLs = 8;
+    string userID = 9;
+    bool isCronTriggered = 10;
+}
+message ActionCreateRequest {
+    string name = 1;
+    string version = 2;
+    string specSrc = 3;
+    string imageSrc = 4;
+}
+message ActionCreateResponse {
+    optional google.protobuf.Value data = 1;
+}
+message PipelineResourceGC {
+    optional uint64 successTTLSecond = 1;
+    optional uint64 failedTTLSecond = 2;
+}
+message PipelineBatchCreateRequest {
+    uint64 appID = 1;
+    string branch = 2;
+    string source = 3;
+    repeated string batchPipelineYmlPaths = 4;
+    bool autoRun = 5;
+    repeated string callbackURLs = 6;
+    string userID = 7;
 }
 message PipelinePageListRequest {
     string commaBranches = 1;
@@ -129,27 +347,32 @@ message PipelinePageListRequest {
     optional google.protobuf.Value pipelineDefinitionRequest = 39;
     string pipelineDefinitionRequestJSONBase64 = 40;
 }
-message PipelineRerunFailedResponse {
+message PipelineOperateResponse {
+}
+message PipelineRunParam {
+    string name = 1;
+    google.protobuf.Value value = 2;
+}
+message PIPELINE_BRANCHES_ALL_VALID_Request {
+}
+message PipelineCancelResponse {
+}
+message PIPELINE_CRON_STOP_Request {
+    string cronID = 1; // generated from path variable: cronID. You should change the proto type if necessary
+}
+message PipelineInvokedComboResponse {
+    repeated google.protobuf.Value data = 1;
+}
+message PipelineCallbackResponse {
+}
+message PIPELINE_PUBLIC_ACTIONS_LIST_Request {
+}
+message PipelinePriorityBatchUpgradeRequest {
+    repeated uint64 pipelineIDsOrderByPriorityFromHighToLow = 1;
+    uint64 queueID = 2;
+}
+message PipelineConfigNamespacesFetchResponse {
     optional google.protobuf.Value data = 1;
-    string pipelineID = 2;
-}
-message PipelineRunResponse {
-}
-message PIPELINE_QUEUE_DELETE_Request {
-    string queueID = 1;
-}
-message PipelineYmlParseGraphRequest {
-    string pipelineYmlContent = 1;
-    map<string, string> globalSnippetConfigLabels = 2;
-    optional google.protobuf.Value snippetConfig = 3;
-}
-message CI_PING_Request {
-}
-message PipelineCreateResponse {
-    optional google.protobuf.Value data = 1;
-}
-message PIPELINE_DETAIL_Request {
-    string pipelineID = 1;
 }
 message PipelineInvokedCombo {
     string branch = 1;
@@ -164,249 +387,26 @@ message PipelineInvokedCombo {
     string triggerMode = 10;
     string workspace = 11;
 }
-message PipelineTaskOperateRequest {
-    uint64 taskID = 1;
-    string taskAlias = 2;
-    optional bool disable = 3;
-    optional bool pause = 4;
+message PIPELINE_QUEUE_DELETE_Request {
+    string queueID = 1; // generated from path variable: queueID. You should change the proto type if necessary
 }
-message PipelineOperateRequest {
-    repeated google.protobuf.Value taskOperates = 1;
-    string pipelineID = 2;
-}
-message PIPELINE_PUBLIC_ACTION_REPUBLISH_Request {
-    string name = 1;
-    string version = 2;
-}
-message PipelineRunParam {
-    string name = 1;
-    google.protobuf.Value value = 2;
-}
-message PipelineCronListResponse {
-    repeated google.protobuf.Value data = 1;
-}
-message PIPELINE_CRON_STOP_Request {
-    string cronID = 1;
-}
-message PipelinePageListResponse {
+message PipelineCreateResponse {
     optional google.protobuf.Value data = 1;
 }
-message PipelineGC {
-    google.protobuf.Value resourceGC = 1;
-    google.protobuf.Value databaseGC = 2;
-}
-message PipelineBatchCreateRequest {
-    uint64 appID = 1;
-    string branch = 2;
-    string source = 3;
-    repeated string batchPipelineYmlPaths = 4;
-    bool autoRun = 5;
-    repeated string callbackURLs = 6;
-    string userID = 7;
-}
-message PipelineBatchCreateResponse {
-    map<string, google.protobuf.Value> data = 1;
-}
-message PipelineQueueUpdateRequest {
-    uint64 ID = 1 [json_name = "-"];
-    google.protobuf.Value pipelineQueueCreateRequest = 2;
-    string queueID = 3;
-}
-message PipelineResourceGC {
-    optional uint64 successTTLSecond = 1;
-    optional uint64 failedTTLSecond = 2;
-}
-message PipelineDatabaseGC {
-    google.protobuf.Value analyzed = 1;
-    google.protobuf.Value finished = 2;
-}
-message ActionListResponse {
-    google.protobuf.Value data = 1;
-}
-message PipelineDTO {
-    uint64 ID = 1 [json_name = "id"];
-    optional uint64 cronID = 2;
-    uint64 orgID = 3;
-    string orgName = 4;
-    uint64 projectID = 5;
-    string projectName = 6;
-    uint64 applicationID = 7;
-    string applicationName = 8;
-    string branch = 9;
-    string commit = 10;
-    google.protobuf.Value commitDetail = 11;
-    map<string, string> labels = 12;
-    string source = 13;
-    string ymlSource = 14;
-    string ymlName = 15;
-    string ymlNameV1 = 16;
-    string ymlContent = 17;
-    google.protobuf.Value extra = 18;
-    string namespace = 19;
-    string type = 20;
-    string triggerMode = 21;
-    string clusterName = 22;
-    string status = 23;
-    double progress = 24;
-    int64 costTimeSec = 25;
-    optional google.protobuf.Timestamp timeBegin = 26;
-    optional google.protobuf.Timestamp timeEnd = 27;
-    optional google.protobuf.Timestamp timeCreated = 28;
-    optional google.protobuf.Timestamp timeUpdated = 29;
-}
-message PipelineCronStartResponse {
-    optional google.protobuf.Value data = 1;
-}
-message ActionCreateResponse {
-    optional google.protobuf.Value data = 1;
-}
-message PipelineQueueCreateResponse {
-    optional google.protobuf.Value data = 1;
-}
-message PIPELINE_SNIPPET_QUERY_OUTPUTS_Request {
-}
-message PipelineQueueCreateRequest {
-    string name = 1;
-    string pipelineSource = 2;
-    string clusterName = 3;
-    string scheduleStrategy = 4;
-    string mode = 5;
-    int64 priority = 6;
-    int64 concurrency = 7;
-    double maxCPU = 8;
-    double maxMemoryMB = 9;
-    map<string, string> labels = 10;
-}
-message PipelineAppAllValidBranchWorkspaceResponse {
-    repeated google.protobuf.Value data = 1;
-}
-message PipelineCallbackResponse {
-}
-message PIPELINE_PUBLIC_ACTIONS_LIST_BY_NAME_Request {
-    string name = 1;
-}
-message PIPELINE_PUBLIC_ACTION_UNSET_DEFAULT_Request {
-    string name = 1;
-    string version = 2;
-}
-message PipelinePriorityBatchUpgradeRequest {
-    repeated uint64 pipelineIDsOrderByPriorityFromHighToLow = 1;
-    uint64 queueID = 2;
-}
-message PIPELINE_CANCEL_Request {
-    string pipelineID = 1;
-}
-message PipelineCronDTO {
-    uint64 ID = 1 [json_name = "id"];
-    google.protobuf.Timestamp timeCreated = 2;
-    google.protobuf.Timestamp timeUpdated = 3;
-    uint64 applicationID = 4;
-    string branch = 5;
-    string cronExpr = 6;
-    optional google.protobuf.Timestamp cronStartTime = 7;
-    string pipelineYmlName = 8;
-    uint64 basePipelineID = 9;
-    optional bool enable = 10;
-    string pipelineYml = 11;
-    repeated string configManageNamespaces = 12;
-    map<string, string> secrets = 13;
-    string userID = 14;
-    uint64 orgID = 15;
-    string pipelineDefinitionID = 16;
-    string pipelineSource = 17;
-    string clusterName = 18;
-}
-message PipelineCronStopResponse {
-    optional google.protobuf.Value data = 1;
-}
-message PipelineOperateResponse {
-}
-message PIPELINE_RUN_Request {
-    string pipelineID = 1;
-}
-message PipelineYmlParseGraphResponse {
-    optional google.protobuf.Value data = 1;
-}
-message PIPELINE_ACTIONS_DETAIL_Request {
-    string actionType = 1;
-}
-message CommitDetail {
-    string commitID = 1;
-    string repo = 2;
-    string repoAbbr = 3;
-    string author = 4;
-    string email = 5;
-    optional google.protobuf.Timestamp time = 6;
-    string comment = 7;
-}
-message PipelineQueuePagingRequest {
-    string name = 1;
-    repeated string pipelineSources = 2;
-    string clusterName = 3;
-    string scheduleStrategy = 4;
-    int64 priority = 5;
-    int64 concurrency = 6;
-    repeated string mustMatchLabels = 7;
-    repeated string anyMatchLabels = 8;
-    bool allowNoPipelineSources = 9;
-    bool orderByTargetIDAsc = 10;
-    int64 pageNo = 11;
-    int64 pageSize = 12;
+message PipelineCallbackRequest {
+    string type = 1;
+    repeated uint32 data = 2;
 }
 message PipelineRerunResponse {
     optional google.protobuf.Value data = 1;
 }
-message PIPELINE_RERUN_Request {
-    string pipelineID = 1;
+message CI_PING_Request {
 }
-message PIPELINE_TASK_GET_BOOTSTRAP_INFO_Request {
-    string pipelineID = 1;
-    string taskID = 2;
-}
-message PipelineCreateRequestV2 {
-    string pipelineYml = 1;
-    string clusterName = 2;
-    string namespace = 3;
-    string pipelineYmlName = 4;
-    string pipelineSource = 5;
-    map<string, string> labels = 6;
-    map<string, string> normalLabels = 7;
-    map<string, string> envs = 8;
-    repeated string configManageNamespaces = 9;
-    bool autoRun = 10;
-    bool forceRun = 11;
-    bool autoRunAtOnce = 12;
-    bool autoStartCron = 13;
-    optional google.protobuf.Timestamp cronStartFrom = 14;
-    google.protobuf.Value gC = 15 [json_name = "gc"];
-    repeated google.protobuf.Value runParams = 16;
-    optional google.protobuf.Value bindQueue = 17 [json_name = "-"];
-    string definitionID = 18;
-    map<string, string> secrets = 19;
-}
-message ActionDetailResponse {
-    google.protobuf.Value data = 1;
-}
-message PipelineConfigNamespacesFetchResponse {
+message PipelineDetailResponse {
     optional google.protobuf.Value data = 1;
 }
-message PipelineInvokedComboRequest {
-    uint64 appID = 1;
-    string branches = 2;
-    string sources = 3;
-    string ymlNames = 4;
-}
-message PipelineInvokedComboResponse {
-    repeated google.protobuf.Value data = 1;
-}
-message ActionQueryResponse {
-    repeated google.protobuf.Value data = 1;
-}
-message ActionCreateRequest {
-    string name = 1;
-    string version = 2;
-    string specSrc = 3;
-    string imageSrc = 4;
+message PIPELINE_RERUN_Request {
+    string pipelineID = 1; // generated from path variable: pipelineID. You should change the proto type if necessary
 }
 // generate service from openapi spec: pipeline
 service pipeline {

@@ -25,8 +25,8 @@ message DomainListResponse {
     map<string, google.protobuf.Value> data = 1;
 }
 message HEPA_RUNTIME_SERVICE_DOMAIN_UPDATE_Request {
-    string runtimeId = 1;
-    string serviceName = 2;
+    string runtimeId = 1; // generated from path variable: runtimeId. You should change the proto type if necessary
+    string serviceName = 2; // generated from path variable: serviceName. You should change the proto type if necessary
 }
 // generate service from openapi spec: hepa
 service hepa {

@@ -16,20 +16,20 @@ import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 import "common/openapi.proto";
 import "common/identity.proto";
 
+message CMDB_PROJECT_FILETREE_DELETE_Request {
+    string inode = 1; // generated from path variable: inode. You should change the proto type if necessary
+}
 message CMDB_PROJECT_FILETREE_FIND_ANCESTORS_Request {
-    string inode = 1;
+    string inode = 1; // generated from path variable: inode. You should change the proto type if necessary
 }
 message CMDB_PROJECT_FILETREE_FUZZY_SEARCH_Request {
 }
 message CMDB_PROJECT_FILETREE_GET_Request {
-    string inode = 1;
+    string inode = 1; // generated from path variable: inode. You should change the proto type if necessary
 }
 message CMDB_PROJECT_FILETREE_LIST_Request {
 }
 message CMDB_PROJECT_FILETREE_CREATE_Request {
-}
-message CMDB_PROJECT_FILETREE_DELETE_Request {
-    string inode = 1;
 }
 // generate service from openapi spec: dop_filetree
 service dop_filetree {

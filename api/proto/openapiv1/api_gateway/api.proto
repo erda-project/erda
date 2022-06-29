@@ -16,86 +16,86 @@ import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 import "common/openapi.proto";
 import "common/identity.proto";
 
-message API_GATEWAY_PUBLISH_SWAGGER_GET_Request {
-    string apiPublishId = 1;
-}
-message API_GATEWAY_REGISTER_PUBLISH_Request {
-    string apiRegisterId = 1;
-}
-message API_GATEWAY_REGISTER_STATUS_GET_Request {
-    string apiRegisterId = 1;
-}
-message API_GATEWAY_CATEGORY_CREATE_OR_UPDATE_Request {
-    string category = 1;
-}
-message API_GATEWAY_CATEGORY_UPDATE_Request {
-    string category = 1;
-    string policyId = 2;
+message API_GATEWAY_CONSUMER_EDIT_Request {
 }
 message API_GATEWAY_CONSUMER_DELETE_Request {
-    string consumerId = 1;
-}
-message API_GATEWAY_DOMAIN_CREATE_OR_UPDATE_Request {
-}
-message API_GATEWAY_CONSUMER_API_INFO_Request {
-}
-message API_GATEWAY_OPENAPI_CREATE_Request {
-}
-message API_GATEWAY_UI_TYPE_INFO_Request {
-}
-message API_GATEWAY_API_UPDATE_Request {
-    string apiId = 1;
-}
-message API_GATEWAY_CATEGORY_CREATE_Request {
-    string category = 1;
+    string consumerId = 1; // generated from path variable: consumerId. You should change the proto type if necessary
 }
 message API_GATEWAY_OPENAPI_GET_Request {
 }
-message API_GATEWAY_OPENAPI_UPDATE_Request {
-}
-message API_GATEWAY_CONSUMER_EDIT_Request {
-}
-message API_GATEWAY_CONSUMER_INFO_Request {
-    string consumerId = 1;
+message API_GATEWAY_REGISTER_PUBLISH_Request {
+    string apiRegisterId = 1; // generated from path variable: apiRegisterId. You should change the proto type if necessary
 }
 message API_GATEWAY_DOMAIN_INFO_Request {
 }
-message API_GATEWAY_OPENAPI_DELETE_Request {
+message API_GATEWAY_CATEGORY_UPDATE_Request {
+    string category = 1; // generated from path variable: category. You should change the proto type if necessary
+    string policyId = 2; // generated from path variable: policyId. You should change the proto type if necessary
 }
-message API_GATEWAY_CONSUMER_API_EDIT_Request {
+message API_GATEWAY_CONSUMER_INFO_Request {
+    string consumerId = 1; // generated from path variable: consumerId. You should change the proto type if necessary
 }
-message API_GATEWAY_CONSUMER_LIST_Request {
+message API_GATEWAY_DOMAIN_CREATE_OR_UPDATE_Request {
 }
-message API_GATEWAY_PUBLISH_AUTHN_GET_Request {
-    string apiPublishId = 1;
-}
-message API_GATEWAY_API_DELETE_Request {
-    string apiId = 1;
-}
-message API_GATEWAY_CHECK_COMPAT_Request {
-}
-message API_GATEWAY_CONSUMER_INFO_UPDATE_Request {
-    string consumerId = 1;
-}
-message API_GATEWAY_PUBLISH_SUBSCRIBE_Request {
-    string apiPublishId = 1;
+message API_GATEWAY_PUBLISH_SWAGGER_GET_Request {
+    string apiPublishId = 1; // generated from path variable: apiPublishId. You should change the proto type if necessary
 }
 message API_GATEWAY_REGISTER_Request {
 }
 message API_GATEWAY_API_CREATE_Request {
 }
-message API_GATEWAY_API_LIST_Request {
+message API_GATEWAY_CONSUMER_API_INFO_Request {
 }
-message API_GATEWAY_CATEGORY_DELETE_Request {
-    string category = 1;
-    string policyId = 2;
-}
-message API_GATEWAY_CATEGORY_INFO_Request {
-    string category = 1;
+message API_GATEWAY_API_DELETE_Request {
+    string apiId = 1; // generated from path variable: apiId. You should change the proto type if necessary
 }
 message API_GATEWAY_CONSUMER_CREATE_Request {
 }
+message API_GATEWAY_CONSUMER_LIST_Request {
+}
 message API_GATEWAY_REGISTER_APPS_INFO_Request {
+}
+message API_GATEWAY_UI_TYPE_INFO_Request {
+}
+message API_GATEWAY_CATEGORY_CREATE_Request {
+    string category = 1; // generated from path variable: category. You should change the proto type if necessary
+}
+message API_GATEWAY_CATEGORY_CREATE_OR_UPDATE_Request {
+    string category = 1; // generated from path variable: category. You should change the proto type if necessary
+}
+message API_GATEWAY_CATEGORY_DELETE_Request {
+    string category = 1; // generated from path variable: category. You should change the proto type if necessary
+    string policyId = 2; // generated from path variable: policyId. You should change the proto type if necessary
+}
+message API_GATEWAY_CONSUMER_API_EDIT_Request {
+}
+message API_GATEWAY_CONSUMER_INFO_UPDATE_Request {
+    string consumerId = 1; // generated from path variable: consumerId. You should change the proto type if necessary
+}
+message API_GATEWAY_OPENAPI_DELETE_Request {
+}
+message API_GATEWAY_PUBLISH_AUTHN_GET_Request {
+    string apiPublishId = 1; // generated from path variable: apiPublishId. You should change the proto type if necessary
+}
+message API_GATEWAY_PUBLISH_SUBSCRIBE_Request {
+    string apiPublishId = 1; // generated from path variable: apiPublishId. You should change the proto type if necessary
+}
+message API_GATEWAY_API_LIST_Request {
+}
+message API_GATEWAY_OPENAPI_UPDATE_Request {
+}
+message API_GATEWAY_OPENAPI_CREATE_Request {
+}
+message API_GATEWAY_CATEGORY_INFO_Request {
+    string category = 1; // generated from path variable: category. You should change the proto type if necessary
+}
+message API_GATEWAY_CHECK_COMPAT_Request {
+}
+message API_GATEWAY_REGISTER_STATUS_GET_Request {
+    string apiRegisterId = 1; // generated from path variable: apiRegisterId. You should change the proto type if necessary
+}
+message API_GATEWAY_API_UPDATE_Request {
+    string apiId = 1; // generated from path variable: apiId. You should change the proto type if necessary
 }
 // generate service from openapi spec: api_gateway
 service api_gateway {

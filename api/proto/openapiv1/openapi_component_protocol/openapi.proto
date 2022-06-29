@@ -16,6 +16,10 @@ import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 import "common/openapi.proto";
 import "common/identity.proto";
 
+message ComponentProtocolResponseData {
+    google.protobuf.Value scenario = 1;
+    google.protobuf.Value protocol = 2;
+}
 message UserInfo {
     string ID = 1 [json_name = "id"];
     string name = 2;
@@ -28,12 +32,15 @@ message UserInfo {
     string pwdExpireAt = 9;
     string source = 10;
 }
-message ComponentProtocolRequest {
-    google.protobuf.Value scenario = 1;
-    google.protobuf.Value event = 2;
-    map<string, google.protobuf.Value> inParams = 3;
-    optional google.protobuf.Value protocol = 4;
-    optional google.protobuf.Value debugOptions = 5;
+message ComponentEvent {
+    string component = 1;
+    string operation = 2;
+    map<string, google.protobuf.Value> operationData = 3;
+}
+message Hierarchy {
+    string version = 1;
+    string root = 2;
+    map<string, google.protobuf.Value> structure = 3;
 }
 message RendingState {
     string name = 1;
@@ -47,10 +54,6 @@ message ComponentProtocol {
     map<string,  google.protobuf.Value> components = 5;
     map<string, google.protobuf.Value> rendering = 6;
 }
-message ComponentProtocolResponseData {
-    google.protobuf.Value scenario = 1;
-    google.protobuf.Value protocol = 2;
-}
 message ComponentProtocolResponse {
     google.protobuf.Value data = 1;
     repeated string userIDs = 2;
@@ -60,15 +63,12 @@ message ComponentProtocolScenario {
     string scenarioType = 1;
     string scenarioKey = 2;
 }
-message ComponentEvent {
-    string component = 1;
-    string operation = 2;
-    map<string, google.protobuf.Value> operationData = 3;
-}
-message Hierarchy {
-    string version = 1;
-    string root = 2;
-    map<string, google.protobuf.Value> structure = 3;
+message ComponentProtocolRequest {
+    google.protobuf.Value scenario = 1;
+    google.protobuf.Value event = 2;
+    map<string, google.protobuf.Value> inParams = 3;
+    optional google.protobuf.Value protocol = 4;
+    optional google.protobuf.Value debugOptions = 5;
 }
 message RendingItem {
     string name = 1;

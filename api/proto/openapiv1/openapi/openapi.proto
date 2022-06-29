@@ -16,25 +16,25 @@ import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 import "common/openapi.proto";
 import "common/identity.proto";
 
+message OPENAPI_EVENT_DOC_Request {
+}
+message OPENAPI_GEN_CLIENT_TOKEN_Request {
+}
+message OPENAPI_VERSION_Request {
+}
+message DICE_METADATA_Request {
+}
+message OPENAPI_DOC_Request {
+}
+message OPENAPI_LIST_CLIENT_Request {
+}
+message OPENAPI_METRICS_Request {
+}
 message OPENAPI_NEW_CLIENT_Request {
 }
 message OPENAPI_STAT_Request {
 }
-message DICE_METADATA_Request {
-}
 message DOC_JSON_Request {
-}
-message OPENAPI_DOC_Request {
-}
-message OPENAPI_GEN_CLIENT_TOKEN_Request {
-}
-message OPENAPI_LIST_CLIENT_Request {
-}
-message OPENAPI_EVENT_DOC_Request {
-}
-message OPENAPI_METRICS_Request {
-}
-message OPENAPI_VERSION_Request {
 }
 // generate service from openapi spec: openapi
 service openapi {
