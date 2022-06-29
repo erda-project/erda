@@ -139,11 +139,6 @@ func (k *K8sFlink) ComposeFlinkCluster(job apistructs.JobFromUser, data apistruc
 			Image: flinkoperatorv1beta1.ImageSpec{
 				Name:       data.Spec.Image,
 				PullPolicy: logic.GetPullImagePolicy(),
-				PullSecrets: []corev1.LocalObjectReference{
-					{
-						Name: apistructs.AliyunRegistry,
-					},
-				},
 			},
 			JobManager: flinkoperatorv1beta1.JobManagerSpec{
 				Ingress: &flinkoperatorv1beta1.JobManagerIngressSpec{
