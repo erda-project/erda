@@ -16,17 +16,17 @@ import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 import "common/openapi.proto";
 import "common/identity.proto";
 
-message HEPA_DOMAINS_GET_Request {
-}
 message DomainListRequest {
     uint64 runtimeID = 1 [json_name = "runtimeId"];
 }
 message DomainListResponse {
     map<string, google.protobuf.Value> data = 1;
 }
+message HEPA_DOMAINS_GET_Request {
+}
 message HEPA_RUNTIME_SERVICE_DOMAIN_UPDATE_Request {
-    string runtimeId = 1; // generated from path variable: runtimeId. You should change the proto type if necessary
-    string serviceName = 2; // generated from path variable: serviceName. You should change the proto type if necessary
+    string runtimeId = 1; // generated from path variable: runtimeId. You should change the proto type if necessary.
+    string serviceName = 2; // generated from path variable: serviceName. You should change the proto type if necessary.
 }
 // generate service from openapi spec: hepa
 service hepa {

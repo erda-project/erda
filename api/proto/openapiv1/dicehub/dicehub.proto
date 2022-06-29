@@ -16,38 +16,177 @@ import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 import "common/openapi.proto";
 import "common/identity.proto";
 
-message DICEHUB_PIPELINE_TEMPLATE_VERSION_RENDER_Request {
-    string name = 1; // generated from path variable: name. You should change the proto type if necessary
+message CreateBranchRuleResponse {
+    optional google.protobuf.Value data = 1;
 }
-message ReleaseListResponse {
-    google.protobuf.Value data = 1;
+message CreatePublishItemRequest {
+    string name = 1;
+    string displayName = 2;
+    int64 publisherID = 3 [json_name = "publisherId"];
+    string type = 4;
+    string logo = 5;
+    bool public = 6;
+    string desc = 7;
+    int64 orgID = 8 [json_name = "-"];
+    string creator = 9 [json_name = "-"];
+    bool noJailbreak = 10;
+    double geofenceLon = 11;
+    double geofenceLat = 12;
+    double geofenceRadius = 13;
+    int64 grayLevelPercent = 14;
+    repeated string previewImages = 15;
+    string backgroundImage = 16;
 }
 message CreatePublishItemResponse {
     google.protobuf.Value data = 1;
 }
+message CreatePublishItemVersionRequest {
+    string version = 1;
+    string buildID = 2;
+    string packageName = 3 [json_name = "package_name"];
+    bool public = 4;
+    bool isDefault = 5 [json_name = "is_default"];
+    string logo = 6;
+    string desc = 7;
+    string readme = 8;
+    string spec = 9;
+    string swagger = 10;
+    string releaseID = 11 [json_name = "releaseId"];
+    string mobileType = 12;
+    google.protobuf.Value h5VersionInfo = 13;
+    int64 publishItemID = 14 [json_name = "-"];
+    int64 orgID = 15 [json_name = "-"];
+    uint64 appID = 16;
+    string creator = 17 [json_name = "-"];
+}
+message CreatePublishItemVersionResponse {
+    google.protobuf.Value data = 1;
+    google.protobuf.Value publishItem = 2;
+}
+message CreateUpdateDeleteReleaseRuleRequest {
+    uint64 orgID = 1;
+    uint64 projectID = 2;
+    uint64 userID = 3;
+    string ruleID = 4;
+    optional google.protobuf.Value body = 5;
+}
+message DICEHUB_PIPELINE_TEMPLATE_APPLY_Request {
+}
+message DICEHUB_PIPELINE_TEMPLATE_QUERY_Request {
+}
+message DICEHUB_PIPELINE_TEMPLATE_VERSION_GET_Request {
+    string name = 1; // generated from path variable: name. You should change the proto type if necessary.
+}
+message DICEHUB_PIPELINE_TEMPLATE_VERSION_QUERY_Request {
+    string name = 1; // generated from path variable: name. You should change the proto type if necessary.
+}
+message DICEHUB_PIPELINE_TEMPLATE_VERSION_RENDER_Request {
+    string name = 1; // generated from path variable: name. You should change the proto type if necessary.
+}
+message DICEHUB_PIPELINE_TEMPLATE_VERSION_RENDER_SPEC_Request {
+}
+message DICEHUB_PUBLISH_ITEM_BLACKLIST_DELETE_Request {
+    string publishItemId = 1; // generated from path variable: publishItemId. You should change the proto type if necessary.
+    string blacklistId = 2; // generated from path variable: blacklistId. You should change the proto type if necessary.
+}
+message DICEHUB_PUBLISH_ITEM_BLACKLIST_GET_Request {
+    string publishItemId = 1; // generated from path variable: publishItemId. You should change the proto type if necessary.
+}
 message DICEHUB_PUBLISH_ITEM_ERASE_CREATE_Request {
-    string publishItemId = 1; // generated from path variable: publishItemId. You should change the proto type if necessary
+    string publishItemId = 1; // generated from path variable: publishItemId. You should change the proto type if necessary.
+}
+message DICEHUB_PUBLISH_ITEM_ERASE_GET_Request {
+    string publishItemId = 1; // generated from path variable: publishItemId. You should change the proto type if necessary.
+}
+message DICEHUB_PUBLISH_ITEM_MONITOR_KEYS_LIST_Request {
+    string publishItemId = 1; // generated from path variable: publishItemId. You should change the proto type if necessary.
 }
 message DICEHUB_RELEASES_DOWNLOAD_Request {
-    string releaseId = 1; // generated from path variable: releaseId. You should change the proto type if necessary
-}
-message ReleaseResource {
-    string type = 1;
-    string name = 2;
-    string uRL = 3 [json_name = "url"];
-    map<string, google.protobuf.Value> meta = 4;
-}
-message ReleaseTag {
-    google.protobuf.Timestamp createdAt = 1;
-    google.protobuf.Timestamp updatedAt = 2;
-    string creator = 3;
-    int64 id = 4;
-    string color = 5;
-    string name = 6;
-    string type = 7;
-    int64 projectID = 8;
+    string releaseId = 1; // generated from path variable: releaseId. You should change the proto type if necessary.
 }
 message DeletePublishItemResponse {
+    google.protobuf.Value data = 1;
+}
+message GetPublishItemLatestVersionData {
+    optional google.protobuf.Value appVersion = 1 [json_name = "appVerison"];
+    map<string,  google.protobuf.Value> h5Versions = 2;
+}
+message GetPublishItemLatestVersionRequest {
+    string aK = 1 [json_name = "ak"];
+    string aI = 2 [json_name = "ai"];
+    google.protobuf.Value currentAppInfo = 3;
+    repeated google.protobuf.Value currentH5Info = 4;
+    string mobileType = 5;
+    bool forceBetaH5 = 6;
+    bool check = 7;
+}
+message GetPublishItemLatestVersionResponse {
+    google.protobuf.Value data = 1;
+}
+message H5VersionInfo {
+    google.protobuf.Value versionInfo = 1;
+    map<string, google.protobuf.Value> targetMobiles = 2;
+}
+message PUBLISH_ITEM_CREATE_OFFLINE_VERSION_Request {
+    string publishItemId = 1; // generated from path variable: publishItemId. You should change the proto type if necessary.
+}
+message PUBLISH_ITEM_DELETE_Request {
+    string publishItemId = 1; // generated from path variable: publishItemId. You should change the proto type if necessary.
+}
+message PUBLISH_ITEM_DISTRIBUTION_Request {
+    string publishItemId = 1; // generated from path variable: publishItemId. You should change the proto type if necessary.
+}
+message PUBLISH_ITEM_GET_H5_PACKAGENAME_Request {
+    string publishItemId = 1; // generated from path variable: publishItemId. You should change the proto type if necessary.
+}
+message PUBLISH_ITEM_GET_Request {
+    string id = 1; // generated from path variable: id. You should change the proto type if necessary.
+}
+message PUBLISH_ITEM_VERSION_GET_PUBLIC_Request {
+    string publishItemId = 1; // generated from path variable: publishItemId. You should change the proto type if necessary.
+}
+message PUBLISH_ITEM_VERSION_SET_STATUS_Request {
+    string publishItemId = 1; // generated from path variable: publishItemId. You should change the proto type if necessary.
+    string versionID = 2; // generated from path variable: versionID. You should change the proto type if necessary.
+    string action = 3; // generated from path variable: action. You should change the proto type if necessary.
+}
+message PublicItemAddEraseData {
+    google.protobuf.Value data = 1;
+    string deviceNo = 2;
+}
+message PublicItemAddEraseResponse {
+    google.protobuf.Value data = 1;
+}
+message PublishItem {
+    int64 ID = 1 [json_name = "id"];
+    string name = 2;
+    string displayName = 3;
+    string logo = 4;
+    int64 publisherID = 5 [json_name = "publisherId"];
+    string aK = 6 [json_name = "ak"];
+    string aI = 7 [json_name = "ai"];
+    string type = 8;
+    bool public = 9;
+    int64 orgID = 10 [json_name = "orgId"];
+    string desc = 11;
+    string creator = 12;
+    string downloadUrl = 13;
+    google.protobuf.Timestamp createdAt = 14;
+    google.protobuf.Timestamp updatedAt = 15;
+    bool noJailbreak = 16;
+    double geofenceLon = 17;
+    double geofenceLat = 18;
+    double geofenceRadius = 19;
+    int64 grayLevelPercent = 20;
+    string latestVersion = 21;
+    uint64 refCount = 22;
+    repeated string previewImages = 23;
+    string backgroundImage = 24;
+}
+message PublishItemAddBlacklistResponse {
+    google.protobuf.Value data = 1;
+}
+message PublishItemDeleteBlacklistResponse {
     google.protobuf.Value data = 1;
 }
 message PublishItemDistributionData {
@@ -61,17 +200,93 @@ message PublishItemDistributionData {
     repeated string previewImages = 8;
     string backgroundImage = 9;
 }
-message CreateUpdateDeleteReleaseRuleRequest {
-    uint64 orgID = 1;
-    uint64 projectID = 2;
-    uint64 userID = 3;
-    string ruleID = 4;
-    optional google.protobuf.Value body = 5;
+message PublishItemDistributionResponse {
+    google.protobuf.Value data = 1;
 }
-message DICEHUB_PIPELINE_TEMPLATE_QUERY_Request {
+message PublishItemUserListResponse {
+    uint64 ID = 1 [json_name = "id"];
+    string userID = 2 [json_name = "userId"];
+    string userName = 3;
+    string eraseStatus = 4;
+    string deviceNo = 5;
+    uint64 publishItemID = 6 [json_name = "publishItemId"];
+    google.protobuf.Timestamp createdAt = 7;
+    string publishItemName = 8;
 }
-message DICEHUB_PUBLISH_ITEM_MONITOR_KEYS_LIST_Request {
-    string publishItemId = 1; // generated from path variable: publishItemId. You should change the proto type if necessary
+message PublishItemUserlistRequest {
+    uint64 pageNo = 1;
+    uint64 pageSize = 2;
+    string userID = 3 [json_name = "userId"];
+    string userName = 4;
+    string deviceNo = 5;
+    uint64 publishItemID = 6 [json_name = "publishItemId"];
+    string operator = 7;
+}
+message PublishItemVersion {
+    uint64 ID = 1 [json_name = "id"];
+    string version = 2;
+    string buildID = 3 [json_name = "buildId"];
+    string packageName = 4;
+    bool public = 5;
+    bool isDefault = 6;
+    string desc = 7;
+    string logo = 8;
+    google.protobuf.Value resources = 9;
+    google.protobuf.Value meta = 10;
+    google.protobuf.Value swagger = 11;
+    int64 orgID = 12 [json_name = "orgId"];
+    google.protobuf.Timestamp createdAt = 13;
+    google.protobuf.Timestamp updatedAt = 14;
+    string spec = 15;
+    string readme = 16;
+    string mobileType = 17;
+    map<string, google.protobuf.Value> targetMobiles = 18;
+    string versionStates = 19;
+    int64 grayLevelPercent = 20;
+}
+message QueryPublishItemData {
+    repeated google.protobuf.Value list = 1;
+    int64 total = 2;
+}
+message QueryPublishItemRequest {
+    int64 pageNo = 1;
+    int64 pageSize = 2;
+    int64 publisherId = 3;
+    string name = 4;
+    string type = 5;
+    string public = 6;
+    string q = 7;
+    string ids = 8;
+    int64 orgID = 9 [json_name = "-"];
+}
+message QueryPublishItemResponse {
+    google.protobuf.Value data = 1;
+}
+message QueryPublishItemVersionData {
+    repeated google.protobuf.Value list = 1;
+    int64 total = 2;
+}
+message QueryPublishItemVersionRequest {
+    string public = 1;
+    int64 pageNo = 2;
+    int64 pageSize = 3;
+    string mobileType = 4;
+    string packageName = 5;
+    int64 itemID = 6 [json_name = "-"];
+    int64 orgID = 7 [json_name = "-"];
+    string isDefault = 8 [json_name = "-"];
+    string publishItemId = 9; // generated from path variable: publishItemId. You should change the proto type if necessary.
+}
+message QueryPublishItemVersionResponse {
+    google.protobuf.Value data = 1;
+}
+message RELEASE_RULE_LIST_Request {
+}
+message RELEASE_RULE_UPDATE_Request {
+    string id = 1; // generated from path variable: id. You should change the proto type if necessary.
+}
+message RELEASE_RULE_delete_Request {
+    string id = 1; // generated from path variable: id. You should change the proto type if necessary.
 }
 message ReleaseData {
     string releaseID = 1 [json_name = "releaseId"];
@@ -103,169 +318,8 @@ message ReleaseData {
     google.protobuf.Timestamp updatedAt = 27;
     bool isLatest = 28;
 }
-message GetPublishItemLatestVersionRequest {
-    string aK = 1 [json_name = "ak"];
-    string aI = 2 [json_name = "ai"];
-    google.protobuf.Value currentAppInfo = 3;
-    repeated google.protobuf.Value currentH5Info = 4;
-    string mobileType = 5;
-    bool forceBetaH5 = 6;
-    bool check = 7;
-}
-message GetPublishItemLatestVersionData {
-    optional google.protobuf.Value appVersion = 1 [json_name = "appVerison"];
-    map<string,  google.protobuf.Value> h5Versions = 2;
-}
-message PUBLISH_ITEM_GET_H5_PACKAGENAME_Request {
-    string publishItemId = 1; // generated from path variable: publishItemId. You should change the proto type if necessary
-}
-message DICEHUB_PUBLISH_ITEM_BLACKLIST_GET_Request {
-    string publishItemId = 1; // generated from path variable: publishItemId. You should change the proto type if necessary
-}
-message PublishItemDistributionResponse {
-    google.protobuf.Value data = 1;
-}
-message RELEASE_RULE_LIST_Request {
-}
-message CreatePublishItemVersionResponse {
-    google.protobuf.Value data = 1;
-    google.protobuf.Value publishItem = 2;
-}
-message QueryPublishItemVersionData {
-    repeated google.protobuf.Value list = 1;
-    int64 total = 2;
-}
-message QueryPublishItemVersionRequest {
-    string public = 1;
-    int64 pageNo = 2;
-    int64 pageSize = 3;
-    string mobileType = 4;
-    string packageName = 5;
-    int64 itemID = 6 [json_name = "-"];
-    int64 orgID = 7 [json_name = "-"];
-    string isDefault = 8 [json_name = "-"];
-    string publishItemId = 9; // generated from path variable: publishItemId. You should change the proto type if necessary
-}
-message CreateBranchRuleResponse {
-    optional google.protobuf.Value data = 1;
-}
-message DICEHUB_PIPELINE_TEMPLATE_VERSION_QUERY_Request {
-    string name = 1; // generated from path variable: name. You should change the proto type if necessary
-}
-message PublicItemAddEraseResponse {
-    google.protobuf.Value data = 1;
-}
-message DICEHUB_PUBLISH_ITEM_ERASE_GET_Request {
-    string publishItemId = 1; // generated from path variable: publishItemId. You should change the proto type if necessary
-}
-message UpdatePublishItemRequest {
-    int64 ID = 1 [json_name = "-"];
-    string displayName = 2;
-    string logo = 3;
-    bool public = 4;
-    string desc = 5;
-    bool noJailbreak = 6;
-    double geofenceLon = 7;
-    double geofenceLat = 8;
-    double geofenceRadius = 9;
-    int64 grayLevelPercent = 10;
-    repeated string previewImages = 11;
-    string backgroundImage = 12;
-    string publishItemId = 13; // generated from path variable: publishItemId. You should change the proto type if necessary
-}
-message QueryPublishItemData {
-    repeated google.protobuf.Value list = 1;
-    int64 total = 2;
-}
-message PUBLISH_ITEM_VERSION_GET_PUBLIC_Request {
-    string publishItemId = 1; // generated from path variable: publishItemId. You should change the proto type if necessary
-}
-message UpdatePublishItemVersionStatesRequset {
-    int64 publishItemID = 1;
-    int64 publishItemVersionID = 2;
-    string packageName = 3;
-    string versionStates = 4;
-    int64 grayLevelPercent = 5;
-    bool public = 6 [json_name = "-"];
-    string action = 7; // generated from path variable: action. You should change the proto type if necessary
-}
-message PUBLISH_ITEM_DISTRIBUTION_Request {
-    string publishItemId = 1; // generated from path variable: publishItemId. You should change the proto type if necessary
-}
-message QueryPublishItemRequest {
-    int64 pageNo = 1;
-    int64 pageSize = 2;
-    int64 publisherId = 3;
-    string name = 4;
-    string type = 5;
-    string public = 6;
-    string q = 7;
-    string ids = 8;
-    int64 orgID = 9 [json_name = "-"];
-}
-message H5VersionInfo {
-    google.protobuf.Value versionInfo = 1;
-    map<string, google.protobuf.Value> targetMobiles = 2;
-}
-message DICEHUB_PIPELINE_TEMPLATE_VERSION_GET_Request {
-    string name = 1; // generated from path variable: name. You should change the proto type if necessary
-}
-message DICEHUB_PIPELINE_TEMPLATE_VERSION_RENDER_SPEC_Request {
-}
-message PublishItem {
-    int64 ID = 1 [json_name = "id"];
-    string name = 2;
-    string displayName = 3;
-    string logo = 4;
-    int64 publisherID = 5 [json_name = "publisherId"];
-    string aK = 6 [json_name = "ak"];
-    string aI = 7 [json_name = "ai"];
-    string type = 8;
-    bool public = 9;
-    int64 orgID = 10 [json_name = "orgId"];
-    string desc = 11;
-    string creator = 12;
-    string downloadUrl = 13;
-    google.protobuf.Timestamp createdAt = 14;
-    google.protobuf.Timestamp updatedAt = 15;
-    bool noJailbreak = 16;
-    double geofenceLon = 17;
-    double geofenceLat = 18;
-    double geofenceRadius = 19;
-    int64 grayLevelPercent = 20;
-    string latestVersion = 21;
-    uint64 refCount = 22;
-    repeated string previewImages = 23;
-    string backgroundImage = 24;
-}
-message PublishItemUserListResponse {
-    uint64 ID = 1 [json_name = "id"];
-    string userID = 2 [json_name = "userId"];
-    string userName = 3;
-    string eraseStatus = 4;
-    string deviceNo = 5;
-    uint64 publishItemID = 6 [json_name = "publishItemId"];
-    google.protobuf.Timestamp createdAt = 7;
-    string publishItemName = 8;
-}
-message PublicItemAddEraseData {
-    google.protobuf.Value data = 1;
-    string deviceNo = 2;
-}
-message DICEHUB_PIPELINE_TEMPLATE_APPLY_Request {
-}
-message PUBLISH_ITEM_GET_Request {
-    string id = 1; // generated from path variable: id. You should change the proto type if necessary
-}
-message RELEASE_RULE_UPDATE_Request {
-    string id = 1; // generated from path variable: id. You should change the proto type if necessary
-}
-message PublishItemDeleteBlacklistResponse {
-    google.protobuf.Value data = 1;
-}
-message DICEHUB_PUBLISH_ITEM_BLACKLIST_DELETE_Request {
-    string publishItemId = 1; // generated from path variable: publishItemId. You should change the proto type if necessary
-    string blacklistId = 2; // generated from path variable: blacklistId. You should change the proto type if necessary
+message ReleaseGetDiceYmlRequest {
+    string releaseID = 1 [json_name = "-"];
 }
 message ReleaseListRequest {
     string query = 1 [json_name = "-"];
@@ -293,114 +347,60 @@ message ReleaseListRequest {
     string orderBy = 23;
     string order = 24 [json_name = "descOrder"];
 }
-message CreatePublishItemRequest {
-    string name = 1;
-    string displayName = 2;
-    int64 publisherID = 3 [json_name = "publisherId"];
-    string type = 4;
-    string logo = 5;
-    bool public = 6;
-    string desc = 7;
-    int64 orgID = 8 [json_name = "-"];
-    string creator = 9 [json_name = "-"];
-    bool noJailbreak = 10;
-    double geofenceLon = 11;
-    double geofenceLat = 12;
-    double geofenceRadius = 13;
-    int64 grayLevelPercent = 14;
-    repeated string previewImages = 15;
-    string backgroundImage = 16;
-}
-message PUBLISH_ITEM_CREATE_OFFLINE_VERSION_Request {
-    string publishItemId = 1; // generated from path variable: publishItemId. You should change the proto type if necessary
-}
-message QueryPublishItemVersionResponse {
-    google.protobuf.Value data = 1;
-}
-message PublishItemUserlistRequest {
-    uint64 pageNo = 1;
-    uint64 pageSize = 2;
-    string userID = 3 [json_name = "userId"];
-    string userName = 4;
-    string deviceNo = 5;
-    uint64 publishItemID = 6 [json_name = "publishItemId"];
-    string operator = 7;
-}
-message PUBLISH_ITEM_DELETE_Request {
-    string publishItemId = 1; // generated from path variable: publishItemId. You should change the proto type if necessary
-}
-message UpdatePublishItemResponse {
-    google.protobuf.Value data = 1;
-}
-message VersionInfo {
-    string packageName = 1;
-    string version = 2;
-    string buildID = 3 [json_name = "buildId"];
-}
-message CreatePublishItemVersionRequest {
-    string version = 1;
-    string buildID = 2;
-    string packageName = 3 [json_name = "package_name"];
-    bool public = 4;
-    bool isDefault = 5 [json_name = "is_default"];
-    string logo = 6;
-    string desc = 7;
-    string readme = 8;
-    string spec = 9;
-    string swagger = 10;
-    string releaseID = 11 [json_name = "releaseId"];
-    string mobileType = 12;
-    google.protobuf.Value h5VersionInfo = 13;
-    int64 publishItemID = 14 [json_name = "-"];
-    int64 orgID = 15 [json_name = "-"];
-    uint64 appID = 16;
-    string creator = 17 [json_name = "-"];
-}
-message ReleaseGetDiceYmlRequest {
-    string releaseID = 1 [json_name = "-"];
-}
-message RELEASE_RULE_delete_Request {
-    string id = 1; // generated from path variable: id. You should change the proto type if necessary
-}
-message PublishItemAddBlacklistResponse {
+message ReleaseListResponse {
     google.protobuf.Value data = 1;
 }
 message ReleaseListResponseData {
     int64 total = 1;
     repeated google.protobuf.Value releases = 2 [json_name = "list"];
 }
-message QueryPublishItemResponse {
+message ReleaseResource {
+    string type = 1;
+    string name = 2;
+    string uRL = 3 [json_name = "url"];
+    map<string, google.protobuf.Value> meta = 4;
+}
+message ReleaseTag {
+    google.protobuf.Timestamp createdAt = 1;
+    google.protobuf.Timestamp updatedAt = 2;
+    string creator = 3;
+    int64 id = 4;
+    string color = 5;
+    string name = 6;
+    string type = 7;
+    int64 projectID = 8;
+}
+message UpdatePublishItemRequest {
+    int64 ID = 1 [json_name = "-"];
+    string displayName = 2;
+    string logo = 3;
+    bool public = 4;
+    string desc = 5;
+    bool noJailbreak = 6;
+    double geofenceLon = 7;
+    double geofenceLat = 8;
+    double geofenceRadius = 9;
+    int64 grayLevelPercent = 10;
+    repeated string previewImages = 11;
+    string backgroundImage = 12;
+    string publishItemId = 13; // generated from path variable: publishItemId. You should change the proto type if necessary.
+}
+message UpdatePublishItemResponse {
     google.protobuf.Value data = 1;
 }
-message PublishItemVersion {
-    uint64 ID = 1 [json_name = "id"];
+message UpdatePublishItemVersionStatesRequset {
+    int64 publishItemID = 1;
+    int64 publishItemVersionID = 2;
+    string packageName = 3;
+    string versionStates = 4;
+    int64 grayLevelPercent = 5;
+    bool public = 6 [json_name = "-"];
+    string action = 7; // generated from path variable: action. You should change the proto type if necessary.
+}
+message VersionInfo {
+    string packageName = 1;
     string version = 2;
     string buildID = 3 [json_name = "buildId"];
-    string packageName = 4;
-    bool public = 5;
-    bool isDefault = 6;
-    string desc = 7;
-    string logo = 8;
-    google.protobuf.Value resources = 9;
-    google.protobuf.Value meta = 10;
-    google.protobuf.Value swagger = 11;
-    int64 orgID = 12 [json_name = "orgId"];
-    google.protobuf.Timestamp createdAt = 13;
-    google.protobuf.Timestamp updatedAt = 14;
-    string spec = 15;
-    string readme = 16;
-    string mobileType = 17;
-    map<string, google.protobuf.Value> targetMobiles = 18;
-    string versionStates = 19;
-    int64 grayLevelPercent = 20;
-}
-message GetPublishItemLatestVersionResponse {
-    google.protobuf.Value data = 1;
-}
-message PUBLISH_ITEM_VERSION_SET_STATUS_Request {
-    string publishItemId = 1; // generated from path variable: publishItemId. You should change the proto type if necessary
-    string versionID = 2; // generated from path variable: versionID. You should change the proto type if necessary
-    string action = 3; // generated from path variable: action. You should change the proto type if necessary
 }
 // generate service from openapi spec: dicehub
 service dicehub {

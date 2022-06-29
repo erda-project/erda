@@ -16,9 +16,9 @@ import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 import "common/openapi.proto";
 import "common/identity.proto";
 
-message EXCEPTION_EVENT_Request {
-}
 message EXCEPTION_EVENT_ID_LIST_Request {
+}
+message EXCEPTION_EVENT_Request {
 }
 message EXCEPTION_LIST_Request {
 }

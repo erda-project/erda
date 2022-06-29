@@ -16,65 +16,24 @@ import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 import "common/openapi.proto";
 import "common/identity.proto";
 
-message UnifiedFileTreeNodeListRequest {
-    string scope = 1;
-    string scopeID = 2;
-    string pinode = 3;
-    string pipelineCategoryKey = 4;
-}
-message UnifiedFileTreeNodeListResponse {
-    repeated google.protobuf.Value data = 1;
-}
-message UnifiedFileTreeNodeMoveRequest {
-    string inode = 1;
-    string pinode = 2;
-}
-message UnifiedFileTreeNodeUpdateBasicInfoRequest {
-    string inode = 1;
-    optional string name = 2;
-    optional string desc = 3;
+message ACTION_LOG_DOWNLOAD_Request {
+    string inode = 1; // generated from path variable: inode. You should change the proto type if necessary.
 }
 message ACTION_LOG_GET_Request {
-    string inode = 1; // generated from path variable: inode. You should change the proto type if necessary
+    string inode = 1; // generated from path variable: inode. You should change the proto type if necessary.
 }
-message UnifiedFileTreeNodeCopyResponse {
-    optional google.protobuf.Value data = 1;
+message AUTOTESTS_SCENES_CANCEL_Request {
+    string sceneID = 1; // generated from path variable: sceneID. You should change the proto type if necessary.
 }
-message UnifiedFileTreeNodeFuzzySearchResponse {
-    repeated google.protobuf.Value data = 1;
+message AUTOTESTS_SCENES_EXECUTE_Request {
+    string sceneID = 1; // generated from path variable: sceneID. You should change the proto type if necessary.
 }
-message UnifiedFileTreeNodeGetRequest {
+message AutoTestCaseSavePipelineRequest {
     string inode = 1;
-    string scope = 2;
-    string scopeID = 3;
+    string pipelineYml = 2;
+    repeated google.protobuf.Value runParams = 3;
 }
-message CreateTestReportRecordResponse {
-    uint64 id = 1;
-}
-message AutoTestSpaceExportResponse {
-    uint64 data = 1;
-}
-message ACTION_LOG_DOWNLOAD_Request {
-    string inode = 1; // generated from path variable: inode. You should change the proto type if necessary
-}
-message PipelineRunParam {
-    string name = 1;
-    google.protobuf.Value value = 2;
-}
-message AutoTestSceneSetImportRequest {
-    uint64 projectID = 1;
-    uint64 spaceID = 2;
-    string fileType = 3;
-}
-message AutoTestSpaceExportRequest {
-    uint64 ID = 1 [json_name = "id"];
-    string locale = 2;
-    bool isCopy = 3 [json_name = "-"];
-    string fileType = 4;
-    uint64 projectID = 5;
-    string spaceName = 6;
-}
-message UnifiedFileTreeNodeMoveResponse {
+message AutoTestCaseSavePipelineResponse {
     optional google.protobuf.Value data = 1;
 }
 message AutoTestGlobalConfig {
@@ -90,67 +49,30 @@ message AutoTestGlobalConfig {
     optional google.protobuf.Value aPIConfig = 10 [json_name = "apiConfig"];
     optional google.protobuf.Value uIConfig = 11 [json_name = "uiConfig"];
 }
-message AutoTestSpaceImportResponse {
-    uint64 data = 1;
+message AutoTestGlobalConfigCreateRequest {
+    string scope = 1;
+    string scopeID = 2;
+    string displayName = 3;
+    string desc = 4;
+    optional google.protobuf.Value aPIConfig = 5 [json_name = "apiConfig"];
+    optional google.protobuf.Value uIConfig = 6 [json_name = "uiConfig"];
+}
+message AutoTestGlobalConfigCreateResponse {
+    optional google.protobuf.Value data = 1;
 }
 message AutoTestGlobalConfigDeleteRequest {
     string pipelineCmsNs = 1 [json_name = "ns"];
-    string ns = 2; // generated from path variable: ns. You should change the proto type if necessary
+    string ns = 2; // generated from path variable: ns. You should change the proto type if necessary.
 }
-message GetTestReportRecordResponse {
-    google.protobuf.Value data = 1;
+message AutoTestGlobalConfigDeleteResponse {
+    optional google.protobuf.Value data = 1;
 }
-message AutoTestSpaceImportRequest {
-    uint64 projectID = 1;
-    string fileType = 2;
-}
-message UnifiedFileTreeNodeCopyRequest {
-    string inode = 1;
-    string pinode = 2;
-}
-message UnifiedFileTreeNodeDeleteRequest {
-    string inode = 1;
-    string scope = 2;
-    string scopeID = 3;
-}
-message UnifiedFileTreeNodeFuzzySearchRequest {
+message AutoTestGlobalConfigListRequest {
     string scope = 1;
     string scopeID = 2;
-    string fromPinode = 3;
-    bool recursive = 4;
-    string prefixFuzzy = 5;
-    string suffixFuzzy = 6;
-    string fuzzy = 7;
-    string creatorID = 8;
 }
-message UnifiedFileTreeNodeHistorySearchRequest {
-    string inode = 1;
-}
-message UnifiedFileTreeNodeFindAncestorsRequest {
-    string inode = 1;
-    string scope = 2;
-    string scopeID = 3;
-}
-message UnifiedFileTreeNodeFindAncestorsResponse {
+message AutoTestGlobalConfigListResponse {
     repeated google.protobuf.Value data = 1;
-}
-message TestReportData {
-    optional google.protobuf.Value issueDashboard = 1 [json_name = "issue-dashboard"];
-    optional google.protobuf.Value testDashboard = 2 [json_name = "test-dashboard"];
-}
-message AUTOTESTS_SCENES_CANCEL_Request {
-    string sceneID = 1; // generated from path variable: sceneID. You should change the proto type if necessary
-}
-message AUTOTESTS_SCENES_EXECUTE_Request {
-    string sceneID = 1; // generated from path variable: sceneID. You should change the proto type if necessary
-}
-message AutoTestCaseSavePipelineRequest {
-    string inode = 1;
-    string pipelineYml = 2;
-    repeated google.protobuf.Value runParams = 3;
-}
-message UnifiedFileTreeNodeDeleteResponse {
-    optional google.protobuf.Value data = 1;
 }
 message AutoTestGlobalConfigUpdateRequest {
     string pipelineCmsNs = 1 [json_name = "ns"];
@@ -158,30 +80,65 @@ message AutoTestGlobalConfigUpdateRequest {
     string desc = 3;
     optional google.protobuf.Value aPIConfig = 4 [json_name = "apiConfig"];
     optional google.protobuf.Value uIConfig = 5 [json_name = "uiConfig"];
-    string ns = 6; // generated from path variable: ns. You should change the proto type if necessary
+    string ns = 6; // generated from path variable: ns. You should change the proto type if necessary.
 }
-message QA_REPORTSETS_LIST_Request {
-    string pipelineID = 1; // generated from path variable: pipelineID. You should change the proto type if necessary
-}
-message UnifiedFileTreeNodeCreateRequest {
-    string type = 1;
-    string scope = 2;
-    string scopeID = 3;
-    string pinode = 4;
-    string name = 5;
-    string desc = 6;
-}
-message UnifiedFileTreeNodeGetResponse {
+message AutoTestGlobalConfigUpdateResponse {
     optional google.protobuf.Value data = 1;
 }
-message AutoTestCaseSavePipelineResponse {
-    optional google.protobuf.Value data = 1;
-}
-message AutoTestGlobalConfigDeleteResponse {
-    optional google.protobuf.Value data = 1;
+message AutoTestSceneSetImportRequest {
+    uint64 projectID = 1;
+    uint64 spaceID = 2;
+    string fileType = 3;
 }
 message AutoTestSceneSetImportResponse {
     uint64 data = 1;
+}
+message AutoTestSpaceExportRequest {
+    uint64 ID = 1 [json_name = "id"];
+    string locale = 2;
+    bool isCopy = 3 [json_name = "-"];
+    string fileType = 4;
+    uint64 projectID = 5;
+    string spaceName = 6;
+}
+message AutoTestSpaceExportResponse {
+    uint64 data = 1;
+}
+message AutoTestSpaceImportRequest {
+    uint64 projectID = 1;
+    string fileType = 2;
+}
+message AutoTestSpaceImportResponse {
+    uint64 data = 1;
+}
+message CreateTestReportRecordResponse {
+    uint64 id = 1;
+}
+message GetTestReportRecordResponse {
+    google.protobuf.Value data = 1;
+}
+message PipelineRunParam {
+    string name = 1;
+    google.protobuf.Value value = 2;
+}
+message QA_REPORTSETS_LIST_Request {
+    string pipelineID = 1; // generated from path variable: pipelineID. You should change the proto type if necessary.
+}
+message TestReportData {
+    optional google.protobuf.Value issueDashboard = 1 [json_name = "issue-dashboard"];
+    optional google.protobuf.Value testDashboard = 2 [json_name = "test-dashboard"];
+}
+message TestReportRecord {
+    uint64 ID = 1 [json_name = "id"];
+    uint64 projectID = 2;
+    uint64 iterationID = 3;
+    string creatorID = 4;
+    google.protobuf.Timestamp createdAt = 5;
+    google.protobuf.Timestamp updatedAt = 6;
+    string name = 7;
+    string summary = 8;
+    double qualityScore = 9;
+    google.protobuf.Value reportData = 10;
 }
 message UnifiedFileTreeNode {
     string type = 1;
@@ -197,44 +154,87 @@ message UnifiedFileTreeNode {
     google.protobuf.Timestamp updatedAt = 11;
     map<string, google.protobuf.Value> meta = 12;
 }
-message AutoTestGlobalConfigCreateResponse {
+message UnifiedFileTreeNodeCopyRequest {
+    string inode = 1;
+    string pinode = 2;
+}
+message UnifiedFileTreeNodeCopyResponse {
     optional google.protobuf.Value data = 1;
 }
-message AutoTestGlobalConfigListRequest {
-    string scope = 1;
-    string scopeID = 2;
-}
-message AutoTestGlobalConfigUpdateResponse {
-    optional google.protobuf.Value data = 1;
-}
-message TestReportRecord {
-    uint64 ID = 1 [json_name = "id"];
-    uint64 projectID = 2;
-    uint64 iterationID = 3;
-    string creatorID = 4;
-    google.protobuf.Timestamp createdAt = 5;
-    google.protobuf.Timestamp updatedAt = 6;
-    string name = 7;
-    string summary = 8;
-    double qualityScore = 9;
-    google.protobuf.Value reportData = 10;
+message UnifiedFileTreeNodeCreateRequest {
+    string type = 1;
+    string scope = 2;
+    string scopeID = 3;
+    string pinode = 4;
+    string name = 5;
+    string desc = 6;
 }
 message UnifiedFileTreeNodeCreateResponse {
     optional google.protobuf.Value data = 1;
 }
-message UnifiedFileTreeNodeUpdateBasicInfoResponse {
+message UnifiedFileTreeNodeDeleteRequest {
+    string inode = 1;
+    string scope = 2;
+    string scopeID = 3;
+}
+message UnifiedFileTreeNodeDeleteResponse {
     optional google.protobuf.Value data = 1;
 }
-message AutoTestGlobalConfigCreateRequest {
+message UnifiedFileTreeNodeFindAncestorsRequest {
+    string inode = 1;
+    string scope = 2;
+    string scopeID = 3;
+}
+message UnifiedFileTreeNodeFindAncestorsResponse {
+    repeated google.protobuf.Value data = 1;
+}
+message UnifiedFileTreeNodeFuzzySearchRequest {
     string scope = 1;
     string scopeID = 2;
-    string displayName = 3;
-    string desc = 4;
-    optional google.protobuf.Value aPIConfig = 5 [json_name = "apiConfig"];
-    optional google.protobuf.Value uIConfig = 6 [json_name = "uiConfig"];
+    string fromPinode = 3;
+    bool recursive = 4;
+    string prefixFuzzy = 5;
+    string suffixFuzzy = 6;
+    string fuzzy = 7;
+    string creatorID = 8;
 }
-message AutoTestGlobalConfigListResponse {
+message UnifiedFileTreeNodeFuzzySearchResponse {
     repeated google.protobuf.Value data = 1;
+}
+message UnifiedFileTreeNodeGetRequest {
+    string inode = 1;
+    string scope = 2;
+    string scopeID = 3;
+}
+message UnifiedFileTreeNodeGetResponse {
+    optional google.protobuf.Value data = 1;
+}
+message UnifiedFileTreeNodeHistorySearchRequest {
+    string inode = 1;
+}
+message UnifiedFileTreeNodeListRequest {
+    string scope = 1;
+    string scopeID = 2;
+    string pinode = 3;
+    string pipelineCategoryKey = 4;
+}
+message UnifiedFileTreeNodeListResponse {
+    repeated google.protobuf.Value data = 1;
+}
+message UnifiedFileTreeNodeMoveRequest {
+    string inode = 1;
+    string pinode = 2;
+}
+message UnifiedFileTreeNodeMoveResponse {
+    optional google.protobuf.Value data = 1;
+}
+message UnifiedFileTreeNodeUpdateBasicInfoRequest {
+    string inode = 1;
+    optional string name = 2;
+    optional string desc = 3;
+}
+message UnifiedFileTreeNodeUpdateBasicInfoResponse {
+    optional google.protobuf.Value data = 1;
 }
 // generate service from openapi spec: testplatform_autotest
 service testplatform_autotest {
