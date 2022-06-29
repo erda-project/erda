@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -191,7 +192,13 @@ func ensureVarName(varName string) string {
 }
 
 func writeMessages(w io.Writer, messages map[string]*messageV2) {
-	for _, msg := range messages {
+	var orderedMessageNames []string
+	for msgName := range messages {
+		orderedMessageNames = append(orderedMessageNames, msgName)
+	}
+	sort.Strings(orderedMessageNames)
+	for _, msgName := range orderedMessageNames {
+		msg := messages[msgName]
 		io.WriteString(w, fmt.Sprintf(`message %s {
 `, msg.Name))
 		for i, f := range msg.Fields {
