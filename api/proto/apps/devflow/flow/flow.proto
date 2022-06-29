@@ -3,6 +3,7 @@ syntax = "proto3";
 package erda.apps.devflow.flow;
 
 import "common/openapi.proto";
+import "openapiv1/gittar/gittar.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/wrappers.proto";
@@ -78,6 +79,7 @@ message DevFlowNode {
     Commit commit = 11;
     Commit baseCommit = 12;
     bool canJoin = 13;
+    openapiv1.gittar.MergeRequestInfo mergeRequestInfo = 14;
 }
 
 // CreateFlow
