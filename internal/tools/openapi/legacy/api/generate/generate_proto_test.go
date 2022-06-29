@@ -29,6 +29,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
 )
 
+// use this test function to generate openapiv1 protobuf files.
 func TestGenerateProto(t *testing.T) {
 	generateProto()
 }

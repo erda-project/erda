@@ -154,6 +154,7 @@ func postHandleMessages(messages map[string]*messageV2, wAPI *wrappedApiSpec) {
 				ProtoType:  "string",
 				IsRepeated: false,
 				JsonTag:    "",
+				Comment:    fmt.Sprintf("generated from path variable: %s. You should change the proto type if necessary.", varName),
 			})
 		}
 		msg := messageV2{Name: makeDefaultMsgRequestName(wAPI), Fields: fields}
@@ -173,6 +174,7 @@ func postHandleMessages(messages map[string]*messageV2, wAPI *wrappedApiSpec) {
 				ProtoType:  "string", // if use "google.protobuf.Value", will cause "--go-http_out: not support type "message" for query string"
 				IsRepeated: false,
 				JsonTag:    "",
+				Comment:    fmt.Sprintf("generated from path variable: %s. You should change the proto type if necessary.", varName),
 			})
 		}
 	}
@@ -207,8 +209,12 @@ func writeMessages(w io.Writer, messages map[string]*messageV2) {
 				jsonTagString = fmt.Sprintf(` [json_name = "%s"]`, f.JsonTag)
 			}
 			protoType := f.ProtoType
-			line := fmt.Sprintf(`    %s%s %s = %d%s;
-`, repeatedStr, protoType, f.Name, i+1, jsonTagString)
+			var commentStr string
+			if f.Comment != "" {
+				commentStr = " // " + f.Comment
+			}
+			line := fmt.Sprintf(`    %s%s %s = %d%s;%s
+`, repeatedStr, protoType, f.Name, i+1, jsonTagString, commentStr)
 			// cannot use repeated & optional together
 			line = strings.NewReplacer("repeated optional", "repeated").Replace(line)
 			// cannot use optional inside map
@@ -380,6 +386,7 @@ type messageFieldV2 struct {
 	ProtoType  string
 	IsRepeated bool
 	JsonTag    string
+	Comment    string
 }
 
 func createEmbedMessage(messages map[string]*messageV2, t reflect.Type) {
