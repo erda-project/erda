@@ -81,7 +81,7 @@ func TestParseType(t *testing.T) {
 }
 
 func TestCreateEmbedMessage(t *testing.T) {
-	messages := make(map[string]*messageV2)
+	messages := make(map[string]*Message)
 	createEmbedMessage(messages, reflect.TypeOf(apistructs.PipelineCreateRequestV2{}))
 	var buff bytes.Buffer
 	writeMessages(&buff, messages)
@@ -105,7 +105,7 @@ func TestKind(t *testing.T) {
 		Mode      TriggerMode
 		Data      Data `json:"data"`
 	}{}
-	messages := make(map[string]*messageV2)
+	messages := make(map[string]*Message)
 	rt := reflect.TypeOf(s)
 	fmt.Printf("%-15s %-30s %-15s %-15s\n", "f.name", "f.type", "f.kind", "proto.type")
 	fmt.Printf("%-15s %-30s %-15s %-15s\n", "------", "------", "------", "------")
@@ -119,9 +119,9 @@ func TestKind(t *testing.T) {
 
 	fmt.Printf("\npolished response:\n\n")
 
-	wAPI := wrappedApiSpec{API: apis.ApiSpec{ResponseType: s}}
+	wAPI := WrappedApiSpec{API: apis.ApiSpec{ResponseType: s}}
 	//polishResponseTypeBeforeParse(&wAPI)
-	messages = make(map[string]*messageV2)
+	messages = make(map[string]*Message)
 	rt = reflect.TypeOf(wAPI.API.ResponseType)
 	fmt.Printf("%-15s %-30s %-15s %-15s\n", "f.name", "f.type", "f.kind", "proto.type")
 	fmt.Printf("%-15s %-30s %-15s %-15s\n", "------", "------", "------", "------")
@@ -135,7 +135,7 @@ func TestKind(t *testing.T) {
 }
 
 func TestParse(t *testing.T) {
-	messages := make(map[string]*messageV2)
+	messages := make(map[string]*Message)
 	createEmbedMessage(messages, reflect.TypeOf(apistructs.PagingProjectDTO{}))
 	for k, v := range messages {
 		fmt.Println(k, v)
@@ -175,4 +175,31 @@ func TestRegexp(t *testing.T) {
 	pathVarReg := regexp.MustCompile(`{([^{}]+)}`)
 	s := "/app/{applicationId}/{workspace}"
 	fmt.Println(pathVarReg.FindAllStringSubmatch(s, -1))
+}
+
+func Test_getProtoPackageByAPIName(t *testing.T) {
+	pkg := getProtoPackageByAPIName("dop.TestAPI")
+	assert.Equal(t, "erda.openapiv1.dop", pkg)
+}
+
+func Test_getJsonTagValue(t *testing.T) {
+	s := struct {
+		A string `json:"a"`
+		B string `path:"b"`
+		C string `json:"cc" path:"c"`
+		D string `other:"d"`
+	}{}
+	rt := reflect.TypeOf(s)
+	fa, ok := rt.FieldByName("A")
+	assert.True(t, ok)
+	assert.Equal(t, "a", getJsonTagValue(fa.Tag))
+	fb, ok := rt.FieldByName("B")
+	assert.True(t, ok)
+	assert.Equal(t, "b", getJsonTagValue(fb.Tag))
+	fc, ok := rt.FieldByName("C")
+	assert.True(t, ok)
+	assert.Equal(t, "cc", getJsonTagValue(fc.Tag))
+	fd, ok := rt.FieldByName("D")
+	assert.True(t, ok)
+	assert.Equal(t, "", getJsonTagValue(fd.Tag))
 }
