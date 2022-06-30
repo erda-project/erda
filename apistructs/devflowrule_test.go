@@ -74,7 +74,7 @@ func TestDevFlowRule_MakeBranchRules(t *testing.T) {
 					{
 						Branch:     "feature/*,bugfix/*",
 						BranchType: "multi_branch",
-						Policy: &BPolicy{
+						Policy: &PolicyDetail{
 							SourceBranch:  "develop",
 							CurrentBranch: "feature/*,bugfix/*",
 							TempBranch:    "next/dev",
