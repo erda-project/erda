@@ -33,31 +33,9 @@ import (
 )
 
 const protoBaseDir = "openapiv1"
+const TAB = `    `
 
-type protoFile struct {
-	io.Writer
-}
-
-func (pf *protoFile) writeline(s string) {
-	if _, err := io.WriteString(pf, s+"\n"); err != nil {
-		panic(fmt.Errorf("failed to write string: %s, err: %v", s, err))
-	}
-}
-
-func (pf *protoFile) prefixWriteline(prefix string, s string) {
-	if _, err := io.WriteString(pf, prefix); err != nil {
-		panic(fmt.Errorf("failed to write string: %s, err: %v", s, err))
-	}
-	pf.writeline(s)
-}
-
-func (pf *protoFile) newline(n int) {
-	for i := 0; i < n; i++ {
-		pf.writeline("")
-	}
-}
-
-type wrappedApiSpec struct {
+type WrappedApiSpec struct {
 	FullAPIPath    string
 	APIVarName     string
 	API            apis.ApiSpec
@@ -67,16 +45,30 @@ type wrappedApiSpec struct {
 	ReqMissingVars []string // vars missing in request, but needed in http path
 }
 
+type (
+	Message struct {
+		Name   string
+		Fields []MessageField
+	}
+	MessageField struct {
+		Name       string
+		ProtoType  string
+		IsRepeated bool
+		JsonTag    string
+		Comment    string
+	}
+)
+
 func generateProto() {
 	// group by APIs
-	groupedAPIs := make(map[string][]*wrappedApiSpec) // key1: belongs, key2: apiName
+	groupedAPIs := make(map[string][]*WrappedApiSpec) // key1: belongs, key2: apiName
 	for i, apiName := range APINames {
 		if !strings.Contains(apiName, ".") {
 			continue
 		}
 		belongs := strings.SplitN(apiName, ".", 2)[0]
 		compName, subDirs := getCompAndSubDirsByAPIName(apiName)
-		groupedAPIs[belongs] = append(groupedAPIs[belongs], &wrappedApiSpec{
+		groupedAPIs[belongs] = append(groupedAPIs[belongs], &WrappedApiSpec{
 			APIVarName:  getAPIVarNameByAPIName(apiName),
 			FullAPIPath: apiName,
 			API:         APIs[i],
@@ -87,14 +79,12 @@ func generateProto() {
 	}
 
 	for belongs, wAPIs := range groupedAPIs {
-		groupMessages := make(map[string]*messageV2)
+		groupMessages := make(map[string]*Message)
 		for _, wAPI := range wAPIs {
 			logrus.Infof("API: %s, Request: %v", wAPI.FullAPIPath, reflect.TypeOf(wAPI.API.RequestType))
-			//polishRequestTypeBeforeParse(groupMessages, wAPI)
 			createEmbedMessage(groupMessages, reflect.TypeOf(wAPI.API.RequestType))
 
 			logrus.Infof("API: %s, Response: %v", wAPI.FullAPIPath, reflect.TypeOf(wAPI.API.ResponseType))
-			//polishResponseTypeBeforeParse(wAPI)
 			createEmbedMessage(groupMessages, reflect.TypeOf(wAPI.API.ResponseType))
 
 			postHandleMessages(groupMessages, wAPI)
@@ -117,21 +107,82 @@ func generateProto() {
 	}
 }
 
-//func polishResponseTypeBeforeParse(wAPI *wrappedApiSpec) {
-//	respType := reflect.TypeOf(wAPI.API.ResponseType)
-//	if respType != nil && respType.Kind() == reflect.Struct {
-//		for i := 0; i < respType.NumField(); i++ {
-//			f := respType.Field(i)
-//			if getJsonTagValue(f.Tag) == "data" {
-//				wAPI.API.ResponseType = reflect.Indirect(reflect.New(f.Type)).Interface()
-//				break
-//			}
-//		}
-//	}
-//}
+func createEmbedMessage(messages map[string]*Message, t reflect.Type) {
+	if t == nil {
+		return
+	}
+	// nested apistructs type doesn't have pkg path
+	switch t.Kind() {
+	case reflect.Slice:
+		t = t.Elem()
+	case reflect.Map:
+		createEmbedMessage(messages, t.Key())
+		createEmbedMessage(messages, t.Elem())
+	}
+	if !strutil.Contains(t.PkgPath(), "github.com/erda-project/erda") {
+		return
+	}
+	switch t.Kind() {
+	case reflect.Interface: // A interface{}
+		return
+	case reflect.Map: // A map[key]value
+		createEmbedMessage(messages, t.Key())
+		createEmbedMessage(messages, t.Elem())
+	case reflect.Ptr: // A *type
+		createEmbedMessage(messages, t.Elem())
+	case reflect.Slice:
+		createEmbedMessage(messages, t.Elem())
+	case reflect.Struct:
+		if _, ok := messages[t.Name()]; ok {
+			return
+		}
+		var fields []MessageField
+		for i := 0; i < t.NumField(); i++ {
+			rf := t.Field(i)
+			f := makeMessageField(messages, rf)
+			if f != nil {
+				fields = append(fields, *f)
+			}
+		}
+		messages[t.Name()] = &Message{
+			Name:   t.Name(),
+			Fields: fields,
+		}
+	default:
+		return
+	}
+}
 
-func postHandleMessages(messages map[string]*messageV2, wAPI *wrappedApiSpec) {
-	// add missing vars for message
+func makeMessageField(messages map[string]*Message, rf reflect.StructField) *MessageField {
+	if rf.PkgPath != "" {
+		return nil // ignore unexported field
+	}
+	// ignore some fields
+	switch rf.Type {
+	case reflect.TypeOf(apistructs.Header{}),
+		reflect.TypeOf(apistructs.UserInfoHeader{}),
+		reflect.TypeOf(apistructs.IdentityInfo{}):
+		return nil
+	}
+	createEmbedMessage(messages, rf.Type)
+	f := MessageField{
+		Name:       rf.Name,
+		IsRepeated: rf.Type.Kind() == reflect.Slice,
+		JsonTag:    getJsonTagValue(rf.Tag),
+	}
+	switch rf.Type.Kind() {
+	case reflect.Map:
+		f.ProtoType = fmt.Sprintf("map<%s, %s>", getProtoTypeByGoType(messages, rf.Type.Key()), getProtoTypeByGoType(messages, rf.Type.Elem()))
+	case reflect.Slice:
+		f.ProtoType = getProtoTypeByGoType(messages, rf.Type.Elem())
+	default:
+		f.ProtoType = getProtoTypeByGoType(messages, rf.Type)
+	}
+	return &f
+}
+
+func postHandleMessages(messages map[string]*Message, wAPI *WrappedApiSpec) {
+	// add missing vars for Message
 	pathVarReg := regexp.MustCompile(`<([^<>*]+)>`)
 	wAPI.API.Path = strutil.ReplaceAllStringSubmatchFunc(pathVarReg, wAPI.API.Path, func(ss []string) string {
 		return ensureVarName(ss[0])
@@ -141,16 +192,16 @@ func postHandleMessages(messages map[string]*messageV2, wAPI *wrappedApiSpec) {
 	})
 	allVars := pathVarReg.FindAllStringSubmatch(wAPI.API.Path, -1)
 	t := reflect.TypeOf(wAPI.API.RequestType)
-	var reqMsg *messageV2
+	var reqMsg *Message
 	if t != nil {
 		reqMsg = messages[t.Name()]
 	}
 	if t == nil || reqMsg == nil {
 		// create messages and add missing vars
-		var fields []messageFieldV2
+		var fields []MessageField
 		for _, vars := range allVars {
 			varName := ensureVarName(vars[1])
-			fields = append(fields, messageFieldV2{
+			fields = append(fields, MessageField{
 				Name:       varName,
 				ProtoType:  "string",
 				IsRepeated: false,
@@ -158,11 +209,11 @@ func postHandleMessages(messages map[string]*messageV2, wAPI *wrappedApiSpec) {
 				Comment:    fmt.Sprintf("generated from path variable: %s. You should change the proto type if necessary.", varName),
 			})
 		}
-		msg := messageV2{Name: makeDefaultMsgRequestName(wAPI), Fields: fields}
+		msg := Message{Name: makeDefaultMsgRequestName(wAPI), Fields: fields}
 		messages[msg.Name] = &msg
 		return
 	}
-	// add missing vars for message
+	// add missing vars for Message
 	reqMsgFields := make(map[string]struct{})
 	for _, f := range reqMsg.Fields {
 		reqMsgFields[strings.ToLower(f.Name)] = struct{}{}
@@ -170,9 +221,9 @@ func postHandleMessages(messages map[string]*messageV2, wAPI *wrappedApiSpec) {
 	for _, vars := range allVars {
 		varName := ensureVarName(vars[1])
 		if _, ok := reqMsgFields[strings.ToLower(varName)]; !ok {
-			reqMsg.Fields = append(reqMsg.Fields, messageFieldV2{
+			reqMsg.Fields = append(reqMsg.Fields, MessageField{
 				Name:       varName,
-				ProtoType:  "string", // if use "google.protobuf.Value", will cause "--go-http_out: not support type "message" for query string"
+				ProtoType:  "string", // if use "google.protobuf.Value", will cause "--go-http_out: not support type "Message" for query string"
 				IsRepeated: false,
 				JsonTag:    "",
 				Comment:    fmt.Sprintf("generated from path variable: %s. You should change the proto type if necessary.", varName),
@@ -181,17 +232,31 @@ func postHandleMessages(messages map[string]*messageV2, wAPI *wrappedApiSpec) {
 	}
 }
 
-func makeDefaultMsgRequestName(wAPI *wrappedApiSpec) string {
-	return wAPI.APIVarName + "_Request"
-}
-func makeDefaultMsgResponseName(wAPI *wrappedApiSpec) string {
-	return wAPI.APIVarName + "_Response"
-}
-func ensureVarName(varName string) string {
-	return strings.NewReplacer(" ", "_", "-", "_", "_", "").Replace(varName)
-}
+func (pf *protoFile) writeProtoHeader(apiName string) {
+	pf.writeline("// generated by openapi-gen-protobuf")
+	pf.newline(1)
 
-func writeMessages(w io.Writer, messages map[string]*messageV2) {
+	pf.writeline(`syntax = "proto3";`)
+	pf.newline(1)
+
+	pf.writeline("package " + getProtoPackageByAPIName(apiName) + ";" + ` // remove 'openapiv1.' when you make this proto file effective`)
+	pf.newline(1)
+
+	pf.writeline(`option go_package = "` + getProtoGoPackageByAPIName(apiName) + `";`)
+	pf.newline(1)
+
+	pf.writeline(`import "google/api/annotations.proto";`)
+	pf.writeline(`import "google/protobuf/empty.proto";`)
+	pf.writeline(`import "google/protobuf/struct.proto";`)
+	pf.writeline(`import "google/protobuf/timestamp.proto";`)
+	pf.writeline(`import "google/protobuf/duration.proto";`)
+	pf.writeline(`import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";`)
+	pf.newline(1)
+	pf.writeline(`import "common/openapi.proto";`)
+	pf.writeline(`import "common/identity.proto";`)
+	pf.newline(1)
+}
+func writeMessages(w io.Writer, messages map[string]*Message) {
 	var orderedMessageNames []string
 	for msgName := range messages {
 		orderedMessageNames = append(orderedMessageNames, msgName)
@@ -235,9 +300,7 @@ func writeMessages(w io.Writer, messages map[string]*messageV2) {
 	}
 }
 
-const TAB = `    `
-
-func (pf *protoFile) writeProtoServices(messages map[string]*messageV2, belongs string, wAPIs []*wrappedApiSpec) {
+func (pf *protoFile) writeProtoServices(messages map[string]*Message, belongs string, wAPIs []*WrappedApiSpec) {
 	if len(wAPIs) == 0 {
 		return
 	}
@@ -286,10 +349,28 @@ func (pf *protoFile) writeProtoServices(messages map[string]*messageV2, belongs 
 	pf.writeline(`}`)
 }
 
-func getRpcRequestName(messages map[string]*messageV2, wAPI *wrappedApiSpec) string {
+func getJsonTagValue(tag reflect.StructTag) string {
+	v := tag.Get("json")
+	if v == "" {
+		v = tag.Get("path")
+	}
+	return strings.SplitN(v, ",", 2)[0]
+}
+
+func makeDefaultMsgRequestName(wAPI *WrappedApiSpec) string {
+	return wAPI.APIVarName + "_Request"
+}
+func makeDefaultMsgResponseName(wAPI *WrappedApiSpec) string {
+	return wAPI.APIVarName + "_Response"
+}
+func ensureVarName(varName string) string {
+	return strings.NewReplacer(" ", "_", "-", "_", "_", "").Replace(varName)
+}
+
+func getRpcRequestName(messages map[string]*Message, wAPI *WrappedApiSpec) string {
 	var reqMessageName string
 	if wAPI.API.RequestType == nil {
-		// try message type
+		// try Message type
 		reqMessageName = makeDefaultMsgRequestName(wAPI)
 	} else {
 		reqMessageName = reflect.TypeOf(wAPI.API.RequestType).Name()
@@ -299,10 +380,10 @@ func getRpcRequestName(messages map[string]*messageV2, wAPI *wrappedApiSpec) str
 	}
 	return "google.protobuf.Empty"
 }
-func getRpcResponseName(messages map[string]*messageV2, wAPI *wrappedApiSpec) string {
+func getRpcResponseName(messages map[string]*Message, wAPI *WrappedApiSpec) string {
 	var respMessageName string
 	if wAPI.API.ResponseType == nil {
-		// try message type
+		// try Message type
 		respMessageName = makeDefaultMsgResponseName(wAPI)
 	} else {
 		respMessageName = reflect.TypeOf(wAPI.API.ResponseType).Name()
@@ -325,38 +406,11 @@ func getAPIVarNameByAPIName(apiName string) string {
 	varName := ss[len(ss)-1]
 	return varName
 }
-
-func (pf *protoFile) writeProtoHeader(apiName string) {
-	pf.writeline("// generated by openapi-gen-protobuf")
-	pf.newline(1)
-
-	pf.writeline(`syntax = "proto3";`)
-	pf.newline(1)
-
-	pf.writeline("package " + getProtoPackageByAPIName(apiName) + ";" + ` // remove 'openapiv1.' when you make this proto file effective`)
-	pf.newline(1)
-
-	pf.writeline(`option go_package = "` + getProtoGoPackageByAPIName(apiName) + `";`)
-	pf.newline(1)
-
-	pf.writeline(`import "google/api/annotations.proto";`)
-	pf.writeline(`import "google/protobuf/empty.proto";`)
-	pf.writeline(`import "google/protobuf/struct.proto";`)
-	pf.writeline(`import "google/protobuf/timestamp.proto";`)
-	pf.writeline(`import "google/protobuf/duration.proto";`)
-	pf.writeline(`import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";`)
-	pf.newline(1)
-	pf.writeline(`import "common/openapi.proto";`)
-	pf.writeline(`import "common/identity.proto";`)
-	pf.newline(1)
-}
-
 func getCompNameByAPIName(apiName string) string {
 	compName, _ := getCompAndSubDirsByAPIName(apiName)
 	// TODO mapping
 	return compName
 }
-
 func getCompAndSubDirsByAPIName(apiName string) (compName string, subDirs []string) {
 	compWithSubDirs := strings.SplitN(apiName, ".", 2)[0]
 	ss := strings.Split(compWithSubDirs, "_")
@@ -366,10 +420,9 @@ func getCompAndSubDirsByAPIName(apiName string) (compName string, subDirs []stri
 	}
 	return
 }
-
 func getProtoPackageByAPIName(apiName string) string {
 	compName := getCompNameByAPIName(apiName)
-	return "erda.openapiv1." + compName
+	return "erda." + protoBaseDir + "." + compName
 }
 
 func getProtoGoPackageByAPIName(apiName string) string {
@@ -383,102 +436,7 @@ func replaceOpenapiV1Path(path string) string {
 	return newPath
 }
 
-type messageV2 struct {
-	Name   string
-	Fields []messageFieldV2
-}
-
-type messageFieldV2 struct {
-	Name       string
-	ProtoType  string
-	IsRepeated bool
-	JsonTag    string
-	Comment    string
-}
-
-func createEmbedMessage(messages map[string]*messageV2, t reflect.Type) {
-	if t == nil {
-		return
-	}
-	// nested apistructs type doesn't have pkg path
-	switch t.Kind() {
-	case reflect.Slice:
-		t = t.Elem()
-	case reflect.Map:
-		createEmbedMessage(messages, t.Key())
-		createEmbedMessage(messages, t.Elem())
-	}
-	if !strutil.Contains(t.PkgPath(), "github.com/erda-project/erda") {
-		return
-	}
-	switch t.Kind() {
-	case reflect.Interface: // A interface{}
-		return
-	case reflect.Map: // A map[key]value
-		createEmbedMessage(messages, t.Key())
-		createEmbedMessage(messages, t.Elem())
-	case reflect.Ptr: // A *type
-		createEmbedMessage(messages, t.Elem())
-	case reflect.Slice:
-		createEmbedMessage(messages, t.Elem())
-	case reflect.Struct:
-		if _, ok := messages[t.Name()]; ok {
-			return
-		}
-		var fields []messageFieldV2
-		for i := 0; i < t.NumField(); i++ {
-			rf := t.Field(i)
-			f := makeMessageField(messages, rf)
-			if f != nil {
-				fields = append(fields, *f)
-			}
-		}
-		messages[t.Name()] = &messageV2{
-			Name:   t.Name(),
-			Fields: fields,
-		}
-	default:
-		return
-	}
-}
-
-func makeMessageField(messages map[string]*messageV2, rf reflect.StructField) *messageFieldV2 {
-	if rf.PkgPath != "" {
-		return nil // ignore unexported field
-	}
-	// ignore some fields
-	switch rf.Type {
-	case reflect.TypeOf(apistructs.Header{}),
-		reflect.TypeOf(apistructs.UserInfoHeader{}),
-		reflect.TypeOf(apistructs.IdentityInfo{}):
-		return nil
-	}
-	createEmbedMessage(messages, rf.Type)
-	f := messageFieldV2{
-		Name:       rf.Name,
-		IsRepeated: rf.Type.Kind() == reflect.Slice,
-		JsonTag:    getJsonTagValue(rf.Tag),
-	}
-	switch rf.Type.Kind() {
-	case reflect.Map:
-		f.ProtoType = fmt.Sprintf("map<%s, %s>", getProtoTypeByGoType(messages, rf.Type.Key()), getProtoTypeByGoType(messages, rf.Type.Elem()))
-	case reflect.Slice:
-		f.ProtoType = getProtoTypeByGoType(messages, rf.Type.Elem())
-	default:
-		f.ProtoType = getProtoTypeByGoType(messages, rf.Type)
-	}
-	return &f
-}
-
-func getJsonTagValue(tag reflect.StructTag) string {
-	v := tag.Get("json")
-	if v == "" {
-		v = tag.Get("path")
-	}
-	return strings.SplitN(v, ",", 2)[0]
-}
-
-func getProtoTypeByGoType(messages map[string]*messageV2, t reflect.Type) string {
+func getProtoTypeByGoType(messages map[string]*Message, t reflect.Type) string {
 	goTypeStr := t.String()
 	optional := false
 	if strings.HasPrefix(goTypeStr, "*") {
@@ -493,7 +451,7 @@ func getProtoTypeByGoType(messages map[string]*messageV2, t reflect.Type) string
 		if ok {
 			protoTypeStr = aliasProtoTypeStr
 		} else {
-			// if exist in messages, use message type
+			// if exist in messages, use Message type
 			if _, ok := messages[t.String()]; ok {
 				protoTypeStr = t.Name()
 			}
@@ -531,4 +489,25 @@ var goType2ProtoTypeMapping = map[string]string{
 	"time.Duration": "google.protobuf.Duration",
 	"map":           "map",
 	"interface {}":  "google.protobuf.Value",
+}
+
+type protoFile struct {
+	io.Writer
+}
+
+func (pf *protoFile) writeline(s string) {
+	if _, err := io.WriteString(pf, s+"\n"); err != nil {
+		panic(fmt.Errorf("failed to write string: %s, err: %v", s, err))
+	}
+}
+func (pf *protoFile) prefixWriteline(prefix string, s string) {
+	if _, err := io.WriteString(pf, prefix); err != nil {
+		panic(fmt.Errorf("failed to write string: %s, err: %v", s, err))
+	}
+	pf.writeline(s)
+}
+func (pf *protoFile) newline(n int) {
+	for i := 0; i < n; i++ {
+		pf.writeline("")
+	}
 }
