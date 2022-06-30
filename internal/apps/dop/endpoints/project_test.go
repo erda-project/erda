@@ -26,13 +26,13 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 
+	defpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
+	sourcepd "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/bdl"
 	"github.com/erda-project/erda/internal/apps/dop/services/project"
-
-	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/pkg/user"
-
-	"github.com/erda-project/erda/apistructs"
 )
 
 func TestAddOnsFilterIn(t *testing.T) {
@@ -122,4 +122,165 @@ func Test_getOrgID(t *testing.T) {
 	orgID, err := ep.getOrgID(vars)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(1), orgID)
+}
+
+type MockPipelineSource struct{}
+
+func (m MockPipelineSource) Create(ctx context.Context, request *sourcepd.PipelineSourceCreateRequest) (*sourcepd.PipelineSourceCreateResponse, error) {
+	panic("implement me")
+}
+
+func (m MockPipelineSource) Update(ctx context.Context, request *sourcepd.PipelineSourceUpdateRequest) (*sourcepd.PipelineSourceUpdateResponse, error) {
+	panic("implement me")
+}
+
+func (m MockPipelineSource) Delete(ctx context.Context, request *sourcepd.PipelineSourceDeleteRequest) (*sourcepd.PipelineSourceDeleteResponse, error) {
+	panic("implement me")
+}
+
+func (m MockPipelineSource) Get(ctx context.Context, request *sourcepd.PipelineSourceGetRequest) (*sourcepd.PipelineSourceGetResponse, error) {
+	panic("implement me")
+}
+
+func (m MockPipelineSource) List(ctx context.Context, request *sourcepd.PipelineSourceListRequest) (*sourcepd.PipelineSourceListResponse, error) {
+	panic("implement me")
+}
+
+func (m MockPipelineSource) DeleteByRemote(ctx context.Context, request *sourcepd.PipelineSourceDeleteByRemoteRequest) (*sourcepd.PipelineSourceDeleteResponse, error) {
+	return nil, nil
+}
+
+type MockPipelineDefinition struct{}
+
+func (m MockPipelineDefinition) Create(ctx context.Context, request *defpb.PipelineDefinitionCreateRequest) (*defpb.PipelineDefinitionCreateResponse, error) {
+	panic("implement me")
+}
+
+func (m MockPipelineDefinition) Update(ctx context.Context, request *defpb.PipelineDefinitionUpdateRequest) (*defpb.PipelineDefinitionUpdateResponse, error) {
+	panic("implement me")
+}
+
+func (m MockPipelineDefinition) Delete(ctx context.Context, request *defpb.PipelineDefinitionDeleteRequest) (*defpb.PipelineDefinitionDeleteResponse, error) {
+	panic("implement me")
+}
+
+func (m MockPipelineDefinition) DeleteByRemote(ctx context.Context, request *defpb.PipelineDefinitionDeleteByRemoteRequest) (*defpb.PipelineDefinitionDeleteResponse, error) {
+	return nil, nil
+}
+
+func (m MockPipelineDefinition) Get(ctx context.Context, request *defpb.PipelineDefinitionGetRequest) (*defpb.PipelineDefinitionGetResponse, error) {
+	panic("implement me")
+}
+
+func (m MockPipelineDefinition) List(ctx context.Context, request *defpb.PipelineDefinitionListRequest) (*defpb.PipelineDefinitionListResponse, error) {
+	panic("implement me")
+}
+
+func (m MockPipelineDefinition) StatisticsGroupByRemote(ctx context.Context, request *defpb.PipelineDefinitionStatisticsRequest) (*defpb.PipelineDefinitionStatisticsResponse, error) {
+	panic("implement me")
+}
+
+func (m MockPipelineDefinition) ListUsedRefs(ctx context.Context, request *defpb.PipelineDefinitionUsedRefListRequest) (*defpb.PipelineDefinitionUsedRefListResponse, error) {
+	panic("implement me")
+}
+
+func (m MockPipelineDefinition) StatisticsGroupByFilePath(ctx context.Context, request *defpb.PipelineDefinitionStatisticsRequest) (*defpb.PipelineDefinitionStatisticsResponse, error) {
+	panic("implement me")
+}
+
+func (m MockPipelineDefinition) UpdateExtra(ctx context.Context, request *defpb.PipelineDefinitionExtraUpdateRequest) (*defpb.PipelineDefinitionExtraUpdateResponse, error) {
+	panic("implement me")
+}
+
+func TestEndpoints_deletePipelineSourceAndDefinition(t *testing.T) {
+	type fields struct {
+		bdl                *bundle.Bundle
+		PipelineSource     sourcepd.SourceServiceServer
+		PipelineDefinition defpb.DefinitionServiceServer
+	}
+	type args struct {
+		ctx     context.Context
+		project *apistructs.ProjectDTO
+		app     *apistructs.ApplicationDTO
+	}
+	source := MockPipelineSource{}
+	definition := MockPipelineDefinition{}
+
+	bdl := &bundle.Bundle{}
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetOrg", func(*bundle.Bundle, interface{}) (*apistructs.OrgDTO, error) {
+		return &apistructs.OrgDTO{
+			ID:   1,
+			Name: "erda",
+		}, nil
+	})
+
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "test with error",
+			fields: fields{
+				bdl:                bdl,
+				PipelineSource:     source,
+				PipelineDefinition: definition,
+			},
+			args: args{
+				ctx:     context.Background(),
+				project: nil,
+				app:     nil,
+			},
+			wantErr: true,
+		},
+		{
+			name: "test with delete app",
+			fields: fields{
+				bdl:                bdl,
+				PipelineSource:     source,
+				PipelineDefinition: definition,
+			},
+			args: args{
+				ctx:     context.Background(),
+				project: nil,
+				app: &apistructs.ApplicationDTO{
+					ID:          1,
+					Name:        "app",
+					OrgName:     "project",
+					ProjectName: "erda",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "test with delete project",
+			fields: fields{
+				bdl:                bdl,
+				PipelineSource:     source,
+				PipelineDefinition: definition,
+			},
+			args: args{
+				ctx: context.Background(),
+				project: &apistructs.ProjectDTO{
+					ID:   1,
+					Name: "project",
+				},
+				app: nil,
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := &Endpoints{
+				bdl:                tt.fields.bdl,
+				PipelineSource:     tt.fields.PipelineSource,
+				PipelineDefinition: tt.fields.PipelineDefinition,
+			}
+			if err := e.deletePipelineSourceAndDefinition(tt.args.ctx, tt.args.project, tt.args.app); (err != nil) != tt.wantErr {
+				t.Errorf("deletePipelineSourceAndDefinition() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
 }
