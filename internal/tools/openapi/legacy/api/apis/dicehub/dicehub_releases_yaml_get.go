@@ -20,8 +20,8 @@ import (
 )
 
 var DICEHUB_RELEASES_YAML_GET = apis.ApiSpec{
-	Path:        "/api/releases/<releaseId>/actions/get-dice",
-	BackendPath: "/api/releases/<releaseId>/actions/get-dice",
+	Path:        "/api/releases/<releaseID>/actions/get-dice",
+	BackendPath: "/api/releases/<releaseID>/actions/get-dice",
 	Host:        "dicehub.marathon.l4lb.thisdcos.directory:10000",
 	Scheme:      "http",
 	Method:      "GET",

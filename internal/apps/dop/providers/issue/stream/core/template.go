@@ -72,7 +72,7 @@ func getIssueStreamTemplateForMsgSending(locale string, ist string) (string, err
 // getDefaultContent get rendered msg
 func (p *provider) GetDefaultContent(req StreamTemplateRequest) (string, error) {
 	locale := req.Locale
-	if strings.Contains(locale, "zh") {
+	if locale == "" || strings.Contains(locale, "zh") {
 		locale = "zh"
 	}
 	if strings.Contains(locale, "en") {

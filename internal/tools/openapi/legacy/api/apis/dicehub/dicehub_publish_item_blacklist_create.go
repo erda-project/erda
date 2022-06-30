@@ -21,8 +21,8 @@ import (
 )
 
 var DICEHUB_PUBLISH_ITEM_BLACKLIST_CREATE = apis.ApiSpec{
-	Path:         "/api/publish-items/<publishItemId>/blacklist",
-	BackendPath:  "/api/publish-items/<publishItemId>/blacklist",
+	Path:         "/api/publish-items/<publishItemID>/blacklist",
+	BackendPath:  "/api/publish-items/<publishItemID>/blacklist",
 	Host:         "dicehub.marathon.l4lb.thisdcos.directory:10000",
 	Scheme:       "http",
 	Method:       "POST",

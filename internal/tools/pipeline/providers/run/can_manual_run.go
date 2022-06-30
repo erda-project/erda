@@ -25,12 +25,12 @@ import (
 func (s *provider) CanManualRun(ctx context.Context, p *spec.Pipeline) (reason string, can bool) {
 	can = false
 
-	if p.Status != apistructs.PipelineStatusAnalyzed {
-		reason = fmt.Sprintf("pipeline already begin run")
-		return
-	}
 	if p.Extra.ShowMessage != nil && p.Extra.ShowMessage.AbortRun {
 		reason = "abort run, please check PreCheck result"
+		return
+	}
+	if p.Status != apistructs.PipelineStatusAnalyzed {
+		reason = fmt.Sprintf("pipeline already begin run")
 		return
 	}
 	if p.Type == apistructs.PipelineTypeRerunFailed && p.Extra.RerunFailedDetail != nil {

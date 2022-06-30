@@ -22,13 +22,13 @@ import (
 )
 
 var ADAPTOR_CICD_FILETREE_CREATE = apis.ApiSpec{
-	Path:         "/api/cicd-pipeline/filetree",
-	BackendPath:  "/api/cicd-pipeline/filetree",
-	Host:         "dop.marathon.l4lb.thisdcos.directory:9527",
-	Scheme:       "http",
-	Method:       http.MethodPost,
-	IsOpenAPI:    true,
-	CheckLogin:   true,
-	ResponseType: apistructs.UnifiedFileTreeNodeCreateRequest{},
-	Doc:          "summary: 创建节点",
+	Path:        "/api/cicd-pipeline/filetree",
+	BackendPath: "/api/cicd-pipeline/filetree",
+	Host:        "dop.marathon.l4lb.thisdcos.directory:9527",
+	Scheme:      "http",
+	Method:      http.MethodPost,
+	IsOpenAPI:   true,
+	CheckLogin:  true,
+	RequestType: apistructs.UnifiedFileTreeNodeCreateRequest{},
+	Doc:         "summary: 创建节点",
 }

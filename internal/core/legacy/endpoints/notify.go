@@ -24,8 +24,10 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/core/legacy/services/apierrors"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 
@@ -335,8 +337,10 @@ func (e *Endpoints) QueryNotifiesBySource(ctx context.Context, r *http.Request, 
 		return apierrors.ErrQueryNotify.InternalError(err).ToResp(), nil
 	}
 	localeName := ""
-	orgInfo, err := e.org.Get(orgId)
+	var orgInfo *orgpb.Org
+	orgResp, err := e.org.GetOrg(apis.WithInternalClientContext(ctx, "legacy"), &orgpb.GetOrgRequest{IdOrName: orgIdStr})
 	if err == nil {
+		orgInfo = orgResp.Data
 		localeName = orgInfo.Locale
 	}
 	locale := e.bdl.GetLocale(localeName)
@@ -357,8 +361,10 @@ func (e *Endpoints) FuzzyQueryNotifiesBySource(ctx context.Context, r *http.Requ
 		return apierrors.ErrQueryNotify.InternalError(err).ToResp(), nil
 	}
 	localeName := ""
-	orgInfo, err := e.org.Get(orgID)
+	var orgInfo *orgpb.Org
+	orgResp, err := e.org.GetOrg(apis.WithInternalClientContext(ctx, "legacy"), &orgpb.GetOrgRequest{IdOrName: orgIDStr})
 	if err == nil {
+		orgInfo = orgResp.Data
 		localeName = orgInfo.Locale
 	}
 	locale := e.bdl.GetLocale(localeName)
