@@ -26,8 +26,38 @@ import (
 	"github.com/labstack/echo"
 
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/protoparser/rawparser"
 )
 
+const (
+	headerCollectorFormat       = "x-erda-collector-format"
+	headerContentEncoding       = "Content-Encoding"
+	headerCustomContentEncoding = "Custom-Content-Encoding"
+)
+
+// Collect internal logs from outside
+func (p *provider) collectLogs(ctx echo.Context) error {
+	source := ctx.Param("source")
+	if source == "" {
+		return ctx.NoContent(http.StatusBadRequest)
+	}
+	name := source + "_log"
+	req := ctx.Request()
+
+	err := rawparser.ParseStream(
+		req.Body,
+		req.Header.Get(headerContentEncoding),
+		req.Header.Get(headerCustomContentEncoding),
+		req.Header.Get(headerCollectorFormat), func(buf []byte) error {
+			return p.sendRaw(name, buf)
+		})
+	if err != nil {
+		return fmt.Errorf("parse stream: %w", err)
+	}
+	return ctx.NoContent(http.StatusNoContent)
+}
+
+// Collect internal metrics from outside
 func (p *provider) collectMetric(ctx echo.Context) error {
 	contentType := ctx.Request().Header.Get("Content-Type")
 	if strings.Contains(contentType, "application/json") {
