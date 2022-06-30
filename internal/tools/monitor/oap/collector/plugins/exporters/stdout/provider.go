@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model/odata"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 var providerName = plugins.WithPrefixExporter("stdout")
@@ -87,7 +88,12 @@ func (p *provider) ExportSpan(items ...*trace.Span) error {
 	return nil
 }
 
-func (p *provider) ExportRaw(items ...*odata.Raw) error { return nil }
+func (p *provider) ExportRaw(items ...*odata.Raw) error {
+	for _, item := range items {
+		fmt.Printf("meta: %+v; data: %s\n", item.Meta, strutil.NoCopyBytesToString(item.Data))
+	}
+	return nil
+}
 
 // Run this is optional
 func (p *provider) Init(ctx servicehub.Context) error {
