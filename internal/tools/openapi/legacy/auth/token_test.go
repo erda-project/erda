@@ -22,6 +22,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
+	"github.com/erda-project/erda/internal/tools/openapi/legacy/api/spec"
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
@@ -69,5 +70,37 @@ func TestVerifyAccessKey(t *testing.T) {
 				t.Errorf("internal client header = %v, want %v", got, "2")
 			}
 		})
+	}
+}
+
+func TestMatchPath(t *testing.T) {
+	tests := []struct {
+		name     string
+		specPath string
+		path     string
+		want     bool
+	}{
+		{
+			name:     "same path",
+			specPath: "/api/publish-items/<publishItemId>/versions",
+			path:     "/api/publish-items/<publishItemId>/versions",
+			want:     true,
+		},
+		{
+			name:     "one lower case",
+			specPath: "/api/publish-items/<publishItemId>/versions",
+			path:     "/api/publish-items/<publishItemID>/versions",
+			want:     true,
+		},
+	}
+	for _, tt := range tests {
+		s := &OpenapiSpec{
+			Spec: &spec.Spec{
+				Path: spec.NewPath(tt.specPath),
+			},
+		}
+		if got := s.MatchPath(tt.path); got != tt.want {
+			t.Errorf("%s: MatchPath() = %v, want %v", tt.name, got, tt.want)
+		}
 	}
 }

@@ -92,7 +92,7 @@ type OpenapiSpec struct {
 }
 
 func (s *OpenapiSpec) MatchPath(path string) bool {
-	return s.Spec.Path.String() == path
+	return strings.EqualFold(s.Spec.Path.String(), path)
 }
 
 func (s *OpenapiSpec) Method() string {
