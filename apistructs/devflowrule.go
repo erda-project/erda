@@ -46,11 +46,11 @@ type Flow struct {
 
 type (
 	BranchPolicy struct {
-		Branch     string   `json:"branch"`
-		BranchType string   `json:"branchType"`
-		Policy     *BPolicy `json:"policy"`
+		Branch     string        `json:"branch"`
+		BranchType string        `json:"branchType"`
+		Policy     *PolicyDetail `json:"policy"`
 	}
-	BPolicy struct {
+	PolicyDetail struct {
 		SourceBranch  string        `json:"sourceBranch"`
 		CurrentBranch string        `json:"currentBranch"`
 		TempBranch    string        `json:"tempBranch"`

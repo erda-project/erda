@@ -104,7 +104,7 @@ func (branchRule *BranchRule) GetBranchRuleFromDevFlowRule(projectID uint64) ([]
 	}
 	for _, v := range devFlowRuleRsp.Data.BranchPolicies {
 		var (
-			policy       *apistructs.BPolicy
+			policy       *apistructs.PolicyDetail
 			targetBranch *apistructs.TargetBranch
 		)
 		if v.Policy != nil && v.Policy.TargetBranch != nil {
@@ -114,7 +114,7 @@ func (branchRule *BranchRule) GetBranchRuleFromDevFlowRule(projectID uint64) ([]
 			}
 		}
 		if v.Policy != nil {
-			policy = &apistructs.BPolicy{
+			policy = &apistructs.PolicyDetail{
 				SourceBranch:  v.Policy.SourceBranch,
 				CurrentBranch: v.Policy.CurrentBranch,
 				TempBranch:    v.Policy.TempBranch,

@@ -83,16 +83,15 @@ message GetDevFlowRuleResponse {
 message DevFlowRule {
     string ID = 1 [json_name = "id"];
     repeated Flow flows = 2 ;
-    repeated BranchPolicy branchPolicies = 3;
-    uint64 orgID = 4;
-    string orgName = 5;
-    uint64 projectID = 6;
-    string projectName = 7;
-    google.protobuf.Timestamp timeCreated = 8;
-    google.protobuf.Timestamp timeUpdated = 9;
-    string creator = 10;
-    string updater = 11;
-
+    uint64 orgID = 3;
+    string orgName = 4;
+    uint64 projectID = 5;
+    string projectName = 6;
+    google.protobuf.Timestamp timeCreated = 7;
+    google.protobuf.Timestamp timeUpdated = 8;
+    string creator = 9;
+    string updater = 10;
+    repeated BranchPolicy branchPolicies = 11;
 }
 
 message FlowWithBranchPolicy {
