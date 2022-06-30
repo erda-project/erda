@@ -22,8 +22,8 @@ import (
 )
 
 var REPORT_GET = apis.ApiSpec{
-	Path:         "/api/projects/<projectID>/test-reports/<id>",
-	BackendPath:  "/api/projects/<projectID>/test-reports/<id>",
+	Path:         "/api/projects/<projectID>/test-reports/<ID>",
+	BackendPath:  "/api/projects/<projectID>/test-reports/<ID>",
 	Host:         "dop.marathon.l4lb.thisdcos.directory:9527",
 	Scheme:       "http",
 	Method:       http.MethodGet,

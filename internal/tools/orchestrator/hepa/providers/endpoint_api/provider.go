@@ -15,11 +15,18 @@
 package endpoint_api
 
 import (
+	"github.com/pkg/errors"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-proto-go/core/hepa/endpoint_api/pb"
+	_ "github.com/erda-project/erda-proto-go/core/project/client"
+	projPb "github.com/erda-project/erda-proto-go/core/project/pb"
+	_ "github.com/erda-project/erda-proto-go/orchestrator/runtime/client"
+	runtimePb "github.com/erda-project/erda-proto-go/orchestrator/runtime/pb"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common"
+	repositoryService "github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/service"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/endpoint_api/impl"
 	zoneI "github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/zone/impl"
 	"github.com/erda-project/erda/pkg/common/apis"
@@ -35,12 +42,38 @@ type provider struct {
 	Log                logs.Logger
 	Register           transport.Register
 	endpointApiService *endpointApiService
-	Perm               perm.Interface `autowired:"permission"`
+	Perm               perm.Interface                 `autowired:"permission"`
+	ProjCli            projPb.ProjectServer           `autowired:"erda.core.project.Project"`
+	RuntimeCli         runtimePb.RuntimeServiceServer `autowired:"erda.orchestrator.runtime.RuntimeService"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.endpointApiService = &endpointApiService{p}
-	err := zoneI.NewGatewayZoneServiceImpl()
+	gatewayApiService, err := repositoryService.NewGatewayApiServiceImpl()
+	if err != nil {
+		return errors.Wrap(err, "failed to NewGatewayApiServiceImpl")
+	}
+	upstreamApiService, err := repositoryService.NewGatewayUpstreamApiServiceImpl()
+	if err != nil {
+		return errors.Wrap(err, "failed to NewGatewayUpstreamApiServiceImpl")
+	}
+	upstreamService, err := repositoryService.NewGatewayUpstreamServiceImpl()
+	if err != nil {
+		return errors.Wrap(err, "failed to NewGatewayUpstreamServiceImpl")
+	}
+	if p.ProjCli == nil {
+		p.Log.Fatal("projCli is nil")
+	}
+	if p.RuntimeCli == nil {
+		p.Log.Fatal("runtimeCli is nil")
+	}
+	p.endpointApiService = &endpointApiService{
+		projCli:            p.ProjCli,
+		runtimeCli:         p.RuntimeCli,
+		gatewayApiService:  gatewayApiService,
+		upstreamApiService: upstreamApiService,
+		upstreamService:    upstreamService,
+	}
+	err = zoneI.NewGatewayZoneServiceImpl()
 	if err != nil {
 		return err
 	}
@@ -62,10 +95,20 @@ func (p *provider) Init(ctx servicehub.Context) error {
 			perm.Method(apiService.GetEndpointsName, perm.ScopeProject, "project", perm.ActionGet, perm.FieldValue("ProjectId")),
 			perm.Method(apiService.UpdateEndpoint, perm.ScopeOrg, "org", perm.ActionGet, perm.OrgIDValue()),
 			perm.Method(apiService.UpdateEndpointApi, perm.ScopeOrg, "org", perm.ActionGet, perm.OrgIDValue()),
+			perm.Method(apiService.ListInvalidEndpointApi, perm.ScopeOrg, "org", perm.ActionGet, perm.OrgIDValue()),
+			perm.Method(apiService.ClearInvalidEndpointApi, perm.ScopeOrg, "org", perm.ActionGet, perm.OrgIDValue()),
 		), common.AccessLogWrap(common.AccessLog))
 	}
 	return nil
 }
+
+//func (p *provider) Run(ctx context.Context) error {
+//	go ticker.New(time.Hour*24, func() (bool, error) {
+//		_, err := p.endpointApiService.ClearInvalidEndpointApi(ctx, new(commonPb.VoidRequest))
+//		return false, err
+//	}).Run()
+//	return nil
+//}
 
 func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
 	switch {
@@ -88,6 +131,8 @@ func init() {
 			"erda.core.hepa.api_policy.ApiPolicyService",
 			"erda.core.hepa.domain.DomainService",
 			"erda.core.hepa.global.GlobalService",
+			"erda.core.project.Project",
+			"erda.orchestrator.runtime.RuntimeService",
 		},
 		Description: "",
 		ConfigFunc: func() interface{} {

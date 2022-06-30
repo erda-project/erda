@@ -30,6 +30,6 @@ var UpdateClient = apis.ApiSpec{
 	CheckLogin:   true,
 	CheckToken:   true,
 	RequestType:  apistructs.UpdateClientReq{},
-	ResponseType: map[string]interface{}{"client": "", "sk": ""},
+	ResponseType: map[string]interface{}{"client": "", "sk": 1},
 	Doc:          "get client",
 }

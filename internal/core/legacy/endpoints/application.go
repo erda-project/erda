@@ -25,6 +25,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/core/legacy/conf"
@@ -32,6 +33,7 @@ import (
 	"github.com/erda-project/erda/internal/core/legacy/model"
 	"github.com/erda-project/erda/internal/core/legacy/services/apierrors"
 	"github.com/erda-project/erda/internal/pkg/user"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/filehelper"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httputil"
@@ -405,7 +407,7 @@ func (e *Endpoints) listApplications(ctx context.Context, r *http.Request, isMin
 	}
 
 	// 转换成所需格式
-	applicationDTOs, err := e.transferAppsToApplicationDTOS(params.IsSimple, applications, blockStatusMap, memberMap)
+	applicationDTOs, err := e.transferAppsToApplicationDTOS(ctx, params.IsSimple, applications, blockStatusMap, memberMap)
 	if err != nil {
 		return apierrors.ErrInitApplication.InternalError(err).ToResp(), nil
 	}
@@ -413,7 +415,7 @@ func (e *Endpoints) listApplications(ctx context.Context, r *http.Request, isMin
 	return httpserver.OkResp(apistructs.ApplicationListResponseData{Total: total, List: applicationDTOs})
 }
 
-func (e Endpoints) transferAppsToApplicationDTOS(isSimple bool, applications []model.Application, blockStatusMap map[uint64]string, memberMap map[int64][]string) ([]apistructs.ApplicationDTO, error) {
+func (e Endpoints) transferAppsToApplicationDTOS(ctx context.Context, isSimple bool, applications []model.Application, blockStatusMap map[uint64]string, memberMap map[int64][]string) ([]apistructs.ApplicationDTO, error) {
 	projectIDs := make([]uint64, 0, len(applications))
 	appIDS := make([]int64, 0)
 	orgSet := make(map[int64]struct{})
@@ -427,13 +429,13 @@ func (e Endpoints) transferAppsToApplicationDTOS(isSimple bool, applications []m
 		orgIDS = append(orgIDS, orgID)
 	}
 
-	_, orgs, err := e.org.ListOrgs(orgIDS, &apistructs.OrgSearchRequest{PageSize: 999, PageNo: 1}, false)
+	_, orgs, err := e.org.ListOrgs(ctx, orgIDS, &orgpb.ListOrgRequest{PageSize: 999, PageNo: 1}, false)
 	if err != nil {
 		return nil, err
 	}
-	orgMap := make(map[int64]model.Org, len(orgs))
+	orgMap := make(map[int64]*orgpb.Org, len(orgs))
 	for _, org := range orgs {
-		orgMap[org.ID] = org
+		orgMap[int64(org.ID)] = org
 	}
 
 	projectMap, err := e.project.GetModelProjectsMap(projectIDs, false)
@@ -527,8 +529,8 @@ func (e Endpoints) transferAppsToApplicationDTOS(isSimple bool, applications []m
 
 		isOrgBlocked := false
 		blockStatus := ""
-		if org.BlockoutConfig.BlockDEV ||
-			org.BlockoutConfig.BlockTEST ||
+		if org.BlockoutConfig.BlockDev ||
+			org.BlockoutConfig.BlockTest ||
 			org.BlockoutConfig.BlockStage ||
 			org.BlockoutConfig.BlockProd {
 			isOrgBlocked = true
@@ -889,14 +891,17 @@ func (e *Endpoints) convertToApplicationDTO(ctx context.Context, application mod
 	}
 
 	// TODO ApplicationDTO 去除orgName，暂时兼容添加
-	var orgName string
-	var orgDisplayName string
-	org, err := e.org.Get(application.OrgID)
-	if err == nil {
+	var (
+		orgName        string
+		orgDisplayName string
+		org            *orgpb.Org
+	)
+	org, err = e.getOrg(apis.WithInternalClientContext(ctx, "legacy"), application.OrgID)
+	if err != nil {
+		logrus.Error(err)
+	} else {
 		orgName = org.Name
 		orgDisplayName = org.DisplayName
-	} else {
-		logrus.Error(err)
 	}
 
 	// TODO 应用表新增reference字段，提供API供orchestrator调用
@@ -916,8 +921,8 @@ func (e *Endpoints) convertToApplicationDTO(ctx context.Context, application mod
 
 	isOrgBlocked := false
 	blockStatus := ""
-	if org != nil && (org.BlockoutConfig.BlockDEV ||
-		org.BlockoutConfig.BlockTEST ||
+	if org != nil && (org.BlockoutConfig.BlockDev ||
+		org.BlockoutConfig.BlockTest ||
 		org.BlockoutConfig.BlockStage ||
 		org.BlockoutConfig.BlockProd) {
 		isOrgBlocked = true
@@ -974,6 +979,14 @@ func (e *Endpoints) convertToApplicationDTO(ctx context.Context, application mod
 		UpdatedAt:      application.UpdatedAt,
 		Extra:          application.Extra,
 	}
+}
+
+func (e Endpoints) getOrg(ctx context.Context, orgID int64) (*orgpb.Org, error) {
+	orgResp, err := e.org.GetOrg(ctx, &orgpb.GetOrgRequest{IdOrName: strconv.FormatInt(orgID, 10)})
+	if err != nil {
+		return nil, err
+	}
+	return orgResp.Data, nil
 }
 
 // CountAppByProID count app by proID
