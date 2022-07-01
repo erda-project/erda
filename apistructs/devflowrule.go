@@ -24,68 +24,75 @@ type DevFlowRuleResponse struct {
 }
 
 type DevFlowRule struct {
-	ID          string    `json:"id"`
-	Flows       []Flow    `json:"flows"`
-	OrgID       uint64    `json:"orgID"`
-	OrgName     string    `json:"orgName"`
-	ProjectID   uint64    `json:"projectID"`
-	ProjectName string    `json:"projectName"`
-	TimeCreated time.Time `json:"timeCreated"`
-	TimeUpdated time.Time `json:"timeUpdated"`
-	Creator     string    `json:"creator"`
-	Updater     string    `json:"updater"`
+	ID             string         `json:"id"`
+	Flows          []Flow         `json:"flows"`
+	BranchPolicies []BranchPolicy `json:"branchPolicies"`
+	OrgID          uint64         `json:"orgID"`
+	OrgName        string         `json:"orgName"`
+	ProjectID      uint64         `json:"projectID"`
+	ProjectName    string         `json:"projectName"`
+	TimeCreated    time.Time      `json:"timeCreated"`
+	TimeUpdated    time.Time      `json:"timeUpdated"`
+	Creator        string         `json:"creator"`
+	Updater        string         `json:"updater"`
 }
 
 type Flow struct {
-	Name               string              `json:"name"`
-	FlowType           string              `json:"flowType"`
-	TargetBranch       string              `json:"targetBranch"`
-	ChangeFromBranch   string              `json:"changeFromBranch"`
-	ChangeBranch       string              `json:"changeBranch"`
-	EnableAutoMerge    bool                `json:"enableAutoMerge"`
-	AutoMergeBranch    string              `json:"autoMergeBranch"`
-	Artifact           string              `json:"artifact"`
-	Environment        string              `json:"environment"`
-	StartWorkflowHints []StartWorkflowHint `json:"startWorkflowHints"`
+	Name         string `json:"name"`
+	TargetBranch string `json:"targetBranch"`
+	Artifact     string `json:"artifact"`
+	Environment  string `json:"environment"`
 }
 
-type StartWorkflowHint struct {
-	Place            string
-	ChangeBranchRule string
-}
+type (
+	BranchPolicy struct {
+		Branch     string        `json:"branch"`
+		BranchType string        `json:"branchType"`
+		Policy     *PolicyDetail `json:"policy"`
+	}
+	PolicyDetail struct {
+		SourceBranch  string        `json:"sourceBranch"`
+		CurrentBranch string        `json:"currentBranch"`
+		TempBranch    string        `json:"tempBranch"`
+		TargetBranch  *TargetBranch `json:"targetBranch"`
+	}
+	TargetBranch struct {
+		MergeRequest string `json:"mergeRequest"`
+		CherryPick   string `json:"cherryPick"`
+	}
+)
 
 func (f *DevFlowRule) MakeBranchRules() ([]*BranchRule, error) {
 	if len(f.Flows) == 0 {
 		return nil, nil
 	}
 	rules := make([]*BranchRule, 0, len(f.Flows))
+	branchWorkspaceMap := make(map[string]string, 0)
 	for _, v := range f.Flows {
-		var rule string
-		if v.FlowType == "single_branch" {
-			rule = v.TargetBranch
-		} else if v.FlowType == "multi_branch" {
-			rule = v.ChangeBranch
-		}
 		rules = append(rules, &BranchRule{
 			ScopeType:         "project",
 			ScopeID:           int64(f.ProjectID),
 			Desc:              "",
-			Rule:              rule,
+			Rule:              v.TargetBranch,
 			IsProtect:         false,
 			IsTriggerPipeline: false,
 			NeedApproval:      false,
 			Workspace:         v.Environment,
-			ArtifactWorkspace: "",
 		})
-		if v.AutoMergeBranch != "" {
+		branchWorkspaceMap[v.TargetBranch] = v.Environment
+	}
+
+	for _, policy := range f.BranchPolicies {
+		if policy.Policy != nil && policy.Policy.TempBranch != "" {
 			rules = append(rules, &BranchRule{
 				ScopeType:         "project",
 				ScopeID:           int64(f.ProjectID),
-				Rule:              v.AutoMergeBranch,
+				Desc:              "",
+				Rule:              policy.Policy.TempBranch,
 				IsProtect:         false,
 				IsTriggerPipeline: false,
 				NeedApproval:      false,
-				Workspace:         v.Environment,
+				Workspace:         branchWorkspaceMap[policy.Branch],
 			})
 		}
 	}

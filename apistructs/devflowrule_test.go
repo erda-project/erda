@@ -22,16 +22,17 @@ import (
 
 func TestDevFlowRule_MakeBranchRules(t *testing.T) {
 	type fields struct {
-		ID          string
-		Flows       []Flow
-		OrgID       uint64
-		OrgName     string
-		ProjectID   uint64
-		ProjectName string
-		TimeCreated time.Time
-		TimeUpdated time.Time
-		Creator     string
-		Updater     string
+		ID             string
+		Flows          []Flow
+		BranchPolicies []BranchPolicy
+		OrgID          uint64
+		OrgName        string
+		ProjectID      uint64
+		ProjectName    string
+		TimeCreated    time.Time
+		TimeUpdated    time.Time
+		Creator        string
+		Updater        string
 	}
 	tests := []struct {
 		name    string
@@ -45,61 +46,40 @@ func TestDevFlowRule_MakeBranchRules(t *testing.T) {
 				ID: "228667a3-5a32-42a7-9d0f-995e339e52a1",
 				Flows: []Flow{
 					{
-						Name:             "DEV",
-						FlowType:         "multi_branch",
-						TargetBranch:     "develop",
-						ChangeFromBranch: "develop",
-						ChangeBranch:     "feature/*,bugfix/*",
-						EnableAutoMerge:  true,
-						AutoMergeBranch:  "next_dev",
-						Artifact:         "alpha",
-						Environment:      "DEV",
-						StartWorkflowHints: []StartWorkflowHint{
-							{
-								Place:            "TASK",
-								ChangeBranchRule: "feature/*",
-							},
-							{
-								Place:            "BUG",
-								ChangeBranchRule: "bugfix/*",
-							},
+						Name:         "DEV",
+						TargetBranch: "feature/*,bugfix/*",
+						Artifact:     "alpha",
+						Environment:  "DEV",
+					},
+					{
+						Name:         "TEST",
+						TargetBranch: "develop",
+						Artifact:     "beta",
+						Environment:  "TEST",
+					},
+					{
+						Name:         "STAGING",
+						TargetBranch: "release/*",
+						Artifact:     "rc",
+						Environment:  "STAGING",
+					},
+					{
+						Name:         "PROD",
+						TargetBranch: "master",
+						Artifact:     "stable",
+						Environment:  "PROD",
+					},
+				},
+				BranchPolicies: []BranchPolicy{
+					{
+						Branch:     "feature/*,bugfix/*",
+						BranchType: "multi_branch",
+						Policy: &PolicyDetail{
+							SourceBranch:  "develop",
+							CurrentBranch: "feature/*,bugfix/*",
+							TempBranch:    "next/dev",
+							TargetBranch:  nil,
 						},
-					},
-					{
-						Name:               "TEST",
-						FlowType:           "single_branch",
-						TargetBranch:       "develop",
-						ChangeFromBranch:   "",
-						ChangeBranch:       "",
-						EnableAutoMerge:    false,
-						AutoMergeBranch:    "",
-						Artifact:           "beta",
-						Environment:        "TEST",
-						StartWorkflowHints: nil,
-					},
-					{
-						Name:               "STAGING",
-						FlowType:           "multi_branch",
-						TargetBranch:       "master",
-						ChangeFromBranch:   "develop",
-						ChangeBranch:       "release/*",
-						EnableAutoMerge:    false,
-						AutoMergeBranch:    "",
-						Artifact:           "rc",
-						Environment:        "STAGING",
-						StartWorkflowHints: nil,
-					},
-					{
-						Name:               "PROD",
-						FlowType:           "single_branch",
-						TargetBranch:       "master",
-						ChangeFromBranch:   "",
-						ChangeBranch:       "",
-						EnableAutoMerge:    false,
-						AutoMergeBranch:    "",
-						Artifact:           "stable",
-						Environment:        "PROD",
-						StartWorkflowHints: nil,
 					},
 				},
 				OrgID:       1,
@@ -114,18 +94,6 @@ func TestDevFlowRule_MakeBranchRules(t *testing.T) {
 					ScopeID:           1,
 					Desc:              "",
 					Rule:              "feature/*,bugfix/*",
-					IsProtect:         false,
-					IsTriggerPipeline: false,
-					NeedApproval:      false,
-					Workspace:         "DEV",
-					ArtifactWorkspace: "",
-				},
-				{
-					ID:                0,
-					ScopeType:         "project",
-					ScopeID:           1,
-					Desc:              "",
-					Rule:              "next_dev",
 					IsProtect:         false,
 					IsTriggerPipeline: false,
 					NeedApproval:      false,
@@ -168,6 +136,18 @@ func TestDevFlowRule_MakeBranchRules(t *testing.T) {
 					Workspace:         "PROD",
 					ArtifactWorkspace: "",
 				},
+				{
+					ID:                0,
+					ScopeType:         "project",
+					ScopeID:           1,
+					Desc:              "",
+					Rule:              "next/dev",
+					IsProtect:         false,
+					IsTriggerPipeline: false,
+					NeedApproval:      false,
+					Workspace:         "DEV",
+					ArtifactWorkspace: "",
+				},
 			},
 			wantErr: false,
 		},
@@ -184,16 +164,17 @@ func TestDevFlowRule_MakeBranchRules(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			f := &DevFlowRule{
-				ID:          tt.fields.ID,
-				Flows:       tt.fields.Flows,
-				OrgID:       tt.fields.OrgID,
-				OrgName:     tt.fields.OrgName,
-				ProjectID:   tt.fields.ProjectID,
-				ProjectName: tt.fields.ProjectName,
-				TimeCreated: tt.fields.TimeCreated,
-				TimeUpdated: tt.fields.TimeUpdated,
-				Creator:     tt.fields.Creator,
-				Updater:     tt.fields.Updater,
+				ID:             tt.fields.ID,
+				Flows:          tt.fields.Flows,
+				BranchPolicies: tt.fields.BranchPolicies,
+				OrgID:          tt.fields.OrgID,
+				OrgName:        tt.fields.OrgName,
+				ProjectID:      tt.fields.ProjectID,
+				ProjectName:    tt.fields.ProjectName,
+				TimeCreated:    tt.fields.TimeCreated,
+				TimeUpdated:    tt.fields.TimeUpdated,
+				Creator:        tt.fields.Creator,
+				Updater:        tt.fields.Updater,
 			}
 			got, err := f.MakeBranchRules()
 			if (err != nil) != tt.wantErr {

@@ -52,7 +52,8 @@ type DevFlowRule struct {
 	Scope
 	Operator
 
-	Flows JSON
+	Flows          JSON
+	BranchPolicies JSON
 }
 
 func (DevFlowRule) TableName() string {
@@ -65,6 +66,9 @@ func (j *JSON) Scan(value interface{}) error {
 	bytes, ok := value.([]byte)
 	if !ok {
 		return errors.New(fmt.Sprint("Failed to unmarshal JSONB value:", value))
+	}
+	if len(bytes) == 0 {
+		return nil
 	}
 
 	result := json.RawMessage{}
@@ -87,60 +91,96 @@ func (j JSON) String() string {
 type Flows []Flow
 
 type Flow struct {
-	Name               string              `json:"name"`
-	FlowType           string              `json:"flowType"`
-	TargetBranch       string              `json:"targetBranch"`
-	ChangeFromBranch   string              `json:"changeFromBranch"`
-	ChangeBranch       string              `json:"changeBranch"`
-	EnableAutoMerge    bool                `json:"enableAutoMerge"`
-	AutoMergeBranch    string              `json:"autoMergeBranch"`
-	Artifact           string              `json:"artifact"`
-	Environment        string              `json:"environment"`
-	StartWorkflowHints []StartWorkflowHint `json:"startWorkflowHints"`
-}
-
-type StartWorkflowHint struct {
-	Place            string `json:"place"`
-	ChangeBranchRule string `json:"changeBranchRule"`
+	Name         string `json:"name"`
+	TargetBranch string `json:"targetBranch"`
+	Artifact     string `json:"artifact"`
+	Environment  string `json:"environment"`
 }
 
 func (f *Flow) Convert() *pb.Flow {
-	hints := make([]*pb.StartWorkflowHint, 0, len(f.StartWorkflowHints))
-	for _, v := range f.StartWorkflowHints {
-		hints = append(hints, &pb.StartWorkflowHint{
-			Place:            v.Place,
-			ChangeBranchRule: v.ChangeBranchRule,
-		})
-	}
 	return &pb.Flow{
-		Name:               f.Name,
-		FlowType:           f.FlowType,
-		TargetBranch:       f.TargetBranch,
-		ChangeFromBranch:   f.ChangeFromBranch,
-		ChangeBranch:       f.ChangeBranch,
-		EnableAutoMerge:    f.EnableAutoMerge,
-		AutoMergeBranch:    f.AutoMergeBranch,
-		Artifact:           f.Artifact,
-		Environment:        f.Environment,
-		StartWorkflowHints: hints,
+		Name:         f.Name,
+		TargetBranch: f.TargetBranch,
+		Artifact:     f.Artifact,
+		Environment:  f.Environment,
 	}
 }
 
-func (r *DevFlowRule) Convert() *pb.DevFlowRule {
-	flows := make([]*pb.Flow, 0)
-	_ = json.Unmarshal(r.Flows, &flows)
-	return &pb.DevFlowRule{
-		ID:          r.ID.String,
-		OrgID:       r.OrgID,
-		OrgName:     r.OrgName,
-		ProjectID:   r.ProjectID,
-		ProjectName: r.ProjectName,
-		TimeCreated: timestamppb.New(r.CreatedAt),
-		TimeUpdated: timestamppb.New(r.UpdatedAt),
-		Creator:     r.Creator,
-		Updater:     r.Updater,
-		Flows:       flows,
+type BranchPolicies []BranchPolicy
+
+type (
+	BranchPolicy struct {
+		Branch     string  `json:"branch"`
+		BranchType string  `json:"branchType"`
+		Policy     *Policy `json:"policy"`
 	}
+	Policy struct {
+		SourceBranch  string        `json:"sourceBranch"`
+		CurrentBranch string        `json:"currentBranch"`
+		TempBranch    string        `json:"tempBranch"`
+		TargetBranch  *TargetBranch `json:"targetBranch"`
+	}
+	TargetBranch struct {
+		MergeRequest string `json:"mergeRequest"`
+		CherryPick   string `json:"cherryPick"`
+	}
+)
+
+func (b *BranchPolicy) Convert() *pb.BranchPolicy {
+	var (
+		policy       *pb.Policy
+		targetBranch *pb.TargetBranch
+	)
+	if b.Policy != nil && b.Policy.TargetBranch != nil {
+		targetBranch = &pb.TargetBranch{
+			MergeRequest: b.Policy.TargetBranch.MergeRequest,
+			CherryPick:   b.Policy.TargetBranch.CherryPick,
+		}
+	}
+	if b.Policy != nil {
+		policy = &pb.Policy{
+			SourceBranch:  b.Policy.SourceBranch,
+			CurrentBranch: b.Policy.CurrentBranch,
+			TempBranch:    b.Policy.TempBranch,
+			TargetBranch:  targetBranch,
+		}
+	}
+
+	return &pb.BranchPolicy{
+		Branch:     b.Branch,
+		BranchType: b.BranchType,
+		Policy:     policy,
+	}
+}
+
+func (r *DevFlowRule) Convert() (*pb.DevFlowRule, error) {
+	flows := make([]*pb.Flow, 0)
+	branchPolicies := make([]*pb.BranchPolicy, 0)
+	if r.Flows != nil {
+		if err := json.Unmarshal(r.Flows, &flows); err != nil {
+			return nil, err
+		}
+	}
+
+	if r.BranchPolicies != nil {
+		if err := json.Unmarshal(r.BranchPolicies, &branchPolicies); err != nil {
+			return nil, err
+		}
+	}
+
+	return &pb.DevFlowRule{
+		ID:             r.ID.String,
+		OrgID:          r.OrgID,
+		OrgName:        r.OrgName,
+		ProjectID:      r.ProjectID,
+		ProjectName:    r.ProjectName,
+		TimeCreated:    timestamppb.New(r.CreatedAt),
+		TimeUpdated:    timestamppb.New(r.UpdatedAt),
+		Creator:        r.Creator,
+		Updater:        r.Updater,
+		Flows:          flows,
+		BranchPolicies: branchPolicies,
+	}, nil
 }
 
 func (db *Client) CreateDevFlowRule(f *DevFlowRule) error {
