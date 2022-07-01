@@ -881,7 +881,7 @@ func (client *DBClient) CountBugBySeverity(projectID uint64, iterationIDs []uint
 	}
 	var results []Line
 
-	sql := client.Model(&Issue{}).Select("COUNT(*) as `total`, `severity`").Where("`type` = ?", apistructs.IssueTypeBug)
+	sql := client.Model(&Issue{}).Select("COUNT(*) as `total`, `severity`").Where("`deleted` = 0").Where("`type` = ?", apistructs.IssueTypeBug)
 	if projectID > 0 {
 		sql = sql.Where("project_id = ?", projectID)
 	}

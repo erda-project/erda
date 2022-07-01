@@ -136,7 +136,7 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 	p.Protocol.WithContextValue(types.ManualTestCaseService, ep.ManualTestCaseService())
 	p.Protocol.WithContextValue(types.ManualTestPlanService, ep.ManualTestPlanService())
 	p.Protocol.WithContextValue(types.AutoTestPlanService, ep.AutoTestPlanService())
-	p.Protocol.WithContextValue(types.DBClient, ep.DBClient())
+	p.Protocol.WithContextValue(types.IssueDBClient, p.IssueCoreSvc.DBClient())
 	p.Protocol.WithContextValue(types.ProjectPipelineService, p.ProjectPipelineSvc)
 	p.Protocol.WithContextValue(types.PipelineCronService, p.PipelineCron)
 	p.Protocol.WithContextValue(types.GuideService, p.GuideSvc)
