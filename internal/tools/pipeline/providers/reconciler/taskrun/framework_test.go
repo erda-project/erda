@@ -134,6 +134,15 @@ func Test_waitOpForLoopNetWorkError(t *testing.T) {
 			expectedStatus: apistructs.PipelineStatusRunning,
 			wantErr:        true,
 		},
+		{
+			name: "stopByUser task with network error ,no loop",
+			args: args{
+				op:         "wait",
+				taskStatus: apistructs.PipelineStatusStopByUser,
+			},
+			expectedStatus: apistructs.PipelineStatusStopByUser,
+			wantErr:        false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
