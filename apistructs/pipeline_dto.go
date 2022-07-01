@@ -143,6 +143,9 @@ type PipelineParamDTO struct {
 }
 
 type PipelineTaskActionDetail struct {
+	Name        string `json:"name"`
+	Version     string `json:"version"`
+	Type        string `json:"type""`
 	LogoUrl     string `json:"logoUrl"`
 	DisplayName string `json:"displayName"`
 	Description string `json:"description"`
