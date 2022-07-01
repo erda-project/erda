@@ -4,6 +4,7 @@ zh:
   FailedTodDeployAddon: "addon %s 部署失败"
   FailedToUpdateService: "服务 %s 更新失败"
   FailedToScaleService: "服务 %s 扩容失败"
+  AutoScaleService: "服务 %s 自动扩缩容事件: %s"
   CPURequiredMoreThanRemaining: "请求 CPU 新增 %s 核，大于当前剩余 CPU %s 核"
   MemRequiredMoreThanRemaining: "请求内存新增 %s，大于当前环境剩余内存 %s"
   PodRestartManyTimes: |-
@@ -21,6 +22,7 @@ en:
   FailedTodDeployAddon: "Failed to deploy the addon %s"
   FailedToUpdateService: "Failed to update the service %s"
   FailedToScaleService: "Failed to scale the service %s"
+  AutoScaleService: "Get pod autoscaling event for service %s: %s"
   CPURequiredMoreThanRemaining: "Additional %s core CPU required, larger than current remaining %s core"
   MemRequiredMoreThanRemaining: "Additional %s Memory required, larger than current remaining %s"
   PodRestartManyTimes: |-
