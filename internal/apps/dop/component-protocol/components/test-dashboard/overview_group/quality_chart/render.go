@@ -31,7 +31,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/test-dashboard/common"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/test-dashboard/common/gshelper"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/types"
-	"github.com/erda-project/erda/internal/apps/dop/dao"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	"github.com/erda-project/erda/internal/apps/dop/services/code_coverage"
 	"github.com/erda-project/erda/pkg/numeral"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -87,7 +87,7 @@ func (q *Q) Render(ctx context.Context, c *cptype.Component, scenario cptype.Sce
 
 	h := gshelper.NewGSHelper(gs)
 	q.projectID, _ = strconv.ParseUint(cputil.GetInParamByKey(ctx, "projectId").(string), 10, 64)
-	q.dbClient = ctx.Value(types.DBClient).(*dao.DBClient)
+	q.dbClient = ctx.Value(types.IssueDBClient).(*dao.DBClient)
 	q.coco = ctx.Value(types.CodeCoverageService).(*code_coverage.CodeCoverage)
 
 	// calc score

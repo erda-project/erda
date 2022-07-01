@@ -25,7 +25,7 @@ const (
 	ManualTestPlanService  = "manual_test_plan"
 	AutoTestPlanService    = "auto_test_plan"
 	AddonMySQLService      = "addon_mysql"
-	DBClient               = "db_client"
+	IssueDBClient          = "issue_db_client"
 	DicehubReleaseService  = "dicehub_release"
 	ProjectPipelineService = "project_pipeline"
 	PipelineCronService    = "pipeline_cron"
