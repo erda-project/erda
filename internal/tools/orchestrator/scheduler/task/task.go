@@ -40,6 +40,10 @@ const (
 	TaskJobVolumeCreate
 	TaskKillPod
 	TaskScale
+	TaskKedaScaledObjectCreate
+	TaskKedaScaledObjectApply
+	TaskKedaScaledObjectCancel
+	TaskKedaScaledObjectReApply
 )
 
 var (
@@ -224,7 +228,7 @@ func (t *Task) Run(ctx context.Context) TaskResponse {
 		return TaskResponse{
 			err: err,
 		}
-	case TaskScale:
+	case TaskScale, TaskKedaScaledObjectCreate, TaskKedaScaledObjectApply, TaskKedaScaledObjectCancel, TaskKedaScaledObjectReApply:
 		r, err := executor.Scale(ctx, t.Spec)
 		return TaskResponse{
 			err:   err,
@@ -292,6 +296,8 @@ func (a *Action) String() string {
 		return "TaskKillPod"
 	case TaskScale:
 		return "TaskScale"
+	case TaskKedaScaledObjectCreate:
+		return "TaskKedaScaledObjectCreate"
 	}
 	panic("unreachable")
 }

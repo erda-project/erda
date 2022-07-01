@@ -33,6 +33,7 @@ import (
 )
 
 ////go:generate mockgen -destination=./mock/mock_sg.go -package mock github.com/erda-project/erda/internal/tools/orchestrator/scheduler/impl/servicegroup ServiceGroup
+////go:generate mockgen -destination=./mock/mock.go -package mock github.com/erda-project/erda/internal/tools/orchestrator/components/runtime DBService,BundleService,EventManagerService
 
 type fakeClusterServiceServer struct {
 	clusterpb.ClusterServiceServer
@@ -113,6 +114,15 @@ func TestService_GetRuntime(t *testing.T) {
 			},
 		}, nil).MinTimes(1)
 
+	dbSvc.
+		EXPECT().
+		GetRuntimeHPARulesByRuntimeId(gomock.Eq(uint64(1))).
+		Return([]dbclient.RuntimeHPA{
+			{
+				ServiceName: "sa",
+				IsApplied:   "Y",
+			},
+		}, nil).MinTimes(1)
 	//bdlSvc.
 	//	EXPECT().
 	//	GetCluster(gomock.Eq("foo")).

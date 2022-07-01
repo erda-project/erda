@@ -114,7 +114,7 @@ func (h *HTTPEndpoints) ServiceGroupDelete(ctx context.Context, r *http.Request,
 			}})
 	}
 
-	if err := h.ServiceGroupImpl.Delete(namespace, name, force); err != nil {
+	if err := h.ServiceGroupImpl.Delete(namespace, name, force, nil); err != nil {
 		errstr := fmt.Sprintf("delete servicegroup fail: %v", err)
 		//h.metric.ErrorCounter.WithLabelValues(metric.ServiceRemoveError).Add(1)
 		if err.Error() == servicegroup.DeleteNotFound.Error() {

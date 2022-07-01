@@ -21,12 +21,18 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/cache"
+	watchtools "k8s.io/client-go/tools/watch"
 
-	"github.com/erda-project/erda/pkg/clientgo/kubernetes"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -35,7 +41,7 @@ import (
 type Event struct {
 	addr      string
 	client    *httpclient.HTTPClient
-	k8sClient *kubernetes.Clientset
+	k8sClient kubernetes.Interface
 }
 
 // Option configures an Event
@@ -60,7 +66,7 @@ func WithCompleteParams(addr string, client *httpclient.HTTPClient) Option {
 	}
 }
 
-func WithKubernetesClient(client *kubernetes.Clientset) Option {
+func WithKubernetesClient(client kubernetes.Interface) Option {
 	return func(event *Event) {
 		event.k8sClient = client
 	}
@@ -115,6 +121,7 @@ func (e *Event) WatchPodEventsAllNamespaces(ctx context.Context, callback func(*
 			return errors.New(errMsg)
 		}
 
+		logrus.Info("get resp from k8s events watcher POD OK")
 		decoder := json.NewDecoder(body)
 		for {
 			select {
@@ -199,4 +206,56 @@ func (e *Event) ListByNamespace(namespace string) (*apiv1.EventList, error) {
 		return &eventlist, nil
 	}
 	return &eventlist, nil
+}
+
+func (e *Event) WatchHPAEventsAllNamespaces(ctx context.Context, callback func(*apiv1.Event)) error {
+	eventSelector, _ := fields.ParseSelector("involvedObject.kind=HorizontalPodAutoscaler")
+	events, err := e.k8sClient.CoreV1().Events("").List(ctx, metav1.ListOptions{
+		FieldSelector: eventSelector.String(),
+	})
+	if err != nil {
+		return err
+	}
+
+	// record events in 2 minutes before orchestrator running, in case lost events between orchestrator restart
+	now := time.Now().Add(-2 * time.Minute)
+	for _, ev := range events.Items {
+		if ev.LastTimestamp.After(now) {
+			callback(&ev)
+		}
+	}
+
+	lastResourceVersion := events.ListMeta.ResourceVersion
+
+	// create retry watcher
+	retryWatcher, err := watchtools.NewRetryWatcher(lastResourceVersion, &cache.ListWatch{
+		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
+			options.FieldSelector = eventSelector.String()
+			return e.k8sClient.CoreV1().Events("").Watch(context.Background(), options)
+		},
+	})
+
+	if err != nil {
+		return fmt.Errorf("create retry watcher error: %v", err)
+	}
+
+	defer retryWatcher.Stop()
+	logrus.Infof("Start watching HPA events ......")
+
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case eventEvent, ok := <-retryWatcher.ResultChan():
+			logrus.Infof("HPA EVENT Watch An HPA Events with type %v", eventEvent.Type)
+			if !ok {
+				return nil
+			}
+			switch hpaEvent := eventEvent.Object.(type) {
+			case *apiv1.Event:
+				callback(hpaEvent)
+			default:
+			}
+		}
+	}
 }

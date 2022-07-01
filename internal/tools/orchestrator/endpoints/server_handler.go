@@ -162,6 +162,16 @@ func (s *Endpoints) processRuntimeScaleRecord(rsc apistructs.RuntimeScaleRecord,
 	}
 	logrus.Errorf("process runtime scale for runtime %#v", uniqueId)
 
+	appliedScaledObjects, err := s.runtime.AppliedScaledObjects(uniqueId)
+	if err != nil {
+		logrus.Warnf("get applied hpa rules for RuntimeUniqueId %#v failed: %v", uniqueId, err)
+	}
+	if len(appliedScaledObjects) > 0 {
+		logrus.Errorf("hpa rules has applied for RuntimeUniqueId %#v, can not do this scale action, please delete or canel the applied rules first", uniqueId)
+		errMsg := fmt.Sprintf("hpa rules has applied for RuntimeUniqueId %#v, can not do this scale action, please delete or canel the applied rules first", uniqueId)
+		return apistructs.PreDiceDTO{}, errors.Errorf("hpa rules has applied for RuntimeUniqueId %#v, can not do this scale action, please delete or canel the applied rules first", uniqueId), errMsg
+	}
+
 	pre, err := s.db.FindPreDeployment(uniqueId)
 	if err != nil {
 		logrus.Errorf("process runtime scale failed, find PreDeployment record in table ps_v2_pre_builds failed for runtime %#v, err: %v", uniqueId, err)

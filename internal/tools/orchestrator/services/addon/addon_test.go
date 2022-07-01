@@ -473,7 +473,7 @@ func TestAddon_doAddonScale(t *testing.T) {
 	)
 
 	monkey.PatchInstanceMethod(reflect.TypeOf(serviceGroupImpl), "Scale",
-		func(_ *servicegroup.ServiceGroupImpl, sg *apistructs.ServiceGroup) (apistructs.ServiceGroup, error) {
+		func(_ *servicegroup.ServiceGroupImpl, sg *apistructs.ServiceGroup) (interface{}, error) {
 			return apistructs.ServiceGroup{}, nil
 		},
 	)

@@ -353,7 +353,7 @@ func TestHTTPEndpoints_ServiceGroupDelete(t *testing.T) {
 				Cap:               tt.fields.Cap,
 			}
 
-			patch1 := monkey.PatchInstanceMethod(reflect.TypeOf(tt.fields.serviceGroupImpl), "Delete", func(_ *servicegroup.ServiceGroupImpl, namespace string, name, force string) error {
+			patch1 := monkey.PatchInstanceMethod(reflect.TypeOf(tt.fields.serviceGroupImpl), "Delete", func(_ *servicegroup.ServiceGroupImpl, namespace string, name, force string, extra map[string]string) error {
 				if tt.name == "Test_01" || tt.name == "Test_02" {
 					return nil
 				}

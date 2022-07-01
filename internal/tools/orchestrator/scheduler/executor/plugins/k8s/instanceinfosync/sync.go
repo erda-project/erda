@@ -16,14 +16,19 @@ package instanceinfosync
 
 import (
 	"context"
+	"fmt"
 	"math/rand"
 	"time"
 
 	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
+	autoscalingv2beta2 "k8s.io/api/autoscaling/v2beta2"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/erda-project/erda/bundle"
+	hpatypes "github.com/erda-project/erda/internal/tools/orchestrator/components/horizontalpodscaler/types"
+	"github.com/erda-project/erda/internal/tools/orchestrator/i18n"
+	orgCache "github.com/erda-project/erda/internal/tools/orchestrator/scheduler/cache/org"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/util"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/instanceinfo"
 )
@@ -56,9 +61,14 @@ type statefulSetUtils interface {
 	LimitedListAllNamespace(limit int, cont *string) (*appsv1.StatefulSetList, *string, error)
 }
 
+type hpaUtils interface {
+	Get(namespace, name string) (*autoscalingv2beta2.HorizontalPodAutoscaler, error)
+}
+
 type eventUtils interface {
 	// watch pod events in all namespaces, use ctx to cancel
 	WatchPodEventsAllNamespaces(ctx context.Context, callback func(*corev1.Event)) error
+	WatchHPAEventsAllNamespaces(ctx context.Context, callback func(*corev1.Event)) error
 }
 
 type Syncer struct {
@@ -68,13 +78,14 @@ type Syncer struct {
 	pod         podUtils
 	sts         statefulSetUtils
 	event       eventUtils
+	hpa         hpaUtils
 	dbupdater   *instanceinfo.Client
 	bdl         *bundle.Bundle
 }
 
 func NewSyncer(clustername, addr string, db *instanceinfo.Client, bdl *bundle.Bundle,
-	podutils podUtils, stsutils statefulSetUtils, deployutils deploymentUtils, eventutils eventUtils) *Syncer {
-	return &Syncer{clustername, addr, deployutils, podutils, stsutils, eventutils, db, bdl}
+	podutils podUtils, stsutils statefulSetUtils, deployutils deploymentUtils, eventutils eventUtils, hpautils hpaUtils) *Syncer {
+	return &Syncer{clustername, addr, deployutils, podutils, stsutils, eventutils, hpautils, db, bdl}
 }
 
 func (s *Syncer) Sync(ctx context.Context) {
@@ -91,6 +102,7 @@ func (s *Syncer) listSync(ctx context.Context) {
 func (s *Syncer) watchSync(ctx context.Context) {
 	go s.watchSyncPod(ctx)
 	go s.watchSyncEvent(ctx)
+	go s.watchSyncHPAEvent(ctx)
 }
 
 func (s *Syncer) gc(ctx context.Context) {
@@ -309,4 +321,102 @@ func waitSeconds(cont *string) time.Duration {
 		wait = time.Duration(60+randsec) * time.Second
 	}
 	return wait
+}
+
+func (s *Syncer) watchSyncHPAEvent(ctx context.Context) {
+	callback := func(e *corev1.Event) {
+
+		logrus.Infof("Begin process event Type: %v  Reason: %v  InvolvedObject.Kind:  %v, InvolvedObject.Name: %v", e.Type, e.Reason, e.InvolvedObject.Kind, e.InvolvedObject.Name)
+
+		ns := e.InvolvedObject.Namespace
+		name := e.InvolvedObject.Name
+		hpa, err := s.hpa.Get(ns, name)
+		if err != nil {
+			if !util.IsNotFound(err) {
+				logrus.Errorf("failed to get hpa %s/%s for event %s, err: %v", ns, name, e.Name, err)
+			}
+			return
+		}
+
+		if hpa.Labels == nil {
+			logrus.Errorf("hpa %s/%s not create by erda, skip hpa event create", ns, name)
+			return
+		}
+
+		_, ok := hpa.Labels[hpatypes.ErdaHPAObjectRuntimeIDLabel]
+		if !ok {
+			logrus.Errorf("failed to get hpa %s/%s runtime info: label %s not set", ns, name, hpatypes.ErdaHPAObjectRuntimeIDLabel)
+			return
+		}
+		_, ok = hpa.Labels[hpatypes.ErdaHPAObjectRuntimeServiceNameLabel]
+		if !ok {
+			logrus.Errorf("failed to get hpa %s/%s serviceName info: label %s not set", ns, name, hpatypes.ErdaHPAObjectRuntimeServiceNameLabel)
+			return
+		}
+		_, ok = hpa.Labels[hpatypes.ErdaHPAObjectRuleIDLabel]
+		if !ok {
+			logrus.Errorf("failed to get hpa %s/%s ruleId info: label %s not set", ns, name, hpatypes.ErdaHPAObjectRuleIDLabel)
+			return
+		}
+		if !ok {
+			logrus.Errorf("failed to get hpa %s/%s ruleId info: label %s not set", ns, name, hpatypes.ErdaHPAObjectOrgIDLabel)
+			return
+		}
+
+		org, _ := orgCache.GetOrgByOrgID(hpa.Labels[hpatypes.ErdaHPAObjectOrgIDLabel])
+		buildHPAEventInfo(s.bdl, *hpa,
+			fmt.Sprintf("Service %s HorizontalPodAutoscaler event Type: %s, Reason:%s, Message:%s",
+				hpa.Labels[hpatypes.ErdaHPAObjectRuntimeServiceNameLabel], e.Type, e.Reason, e.Message),
+			i18n.Sprintf(org.Locale, "AutoScaleService", hpa.Labels[hpatypes.ErdaHPAObjectRuntimeServiceNameLabel], e.Message),
+			"podautoscaled")
+
+		// TODO: may save hpa events in mysql
+		/*
+			runtimeId, err := strconv.ParseUint(hpa.Labels[hpatypes.ErdaHPAObjectRuntimeIDLabel], 10, 64)
+			if err != nil {
+				logrus.Errorf("failed to MarShall hpa event for %s/%s, parse runtimeId err: %v", ns, name, err)
+				return
+			}
+
+			eventDetail := dbclient.EventDetail{
+				//eventDetail := instanceinfo.EventDetail{
+				LastTimestamp: e.LastTimestamp,
+				Type:          e.Type,
+				Reason:        e.Reason,
+				Message:       e.Message,
+			}
+
+			eventBytes, err := json.Marshal(eventDetail)
+			if err != nil {
+				logrus.Errorf("failed to MarShall hpa event for %s/%s, err: %v", ns, name, err)
+				return
+			}
+
+			hpaEvent := dbclient.HPAEventInfo{
+				ID:          hpa.Labels[hpatypes.ErdaHPAObjectRuleIDLabel],
+				RuntimeID:   runtimeId,
+				OrgID:       org.ID,
+				OrgName:     org.Name,
+				ServiceName: hpa.Labels[hpatypes.ErdaHPAObjectRuntimeServiceNameLabel],
+				Event:       string(eventBytes),
+			}
+
+			err = s.dbupdater.CreateHPAEventInfo(hpaEvent)
+			if err != nil {
+				logrus.Errorf("failed to create hpa event: %v", err)
+				return
+			}
+		*/
+		logrus.Infof("Send erda hpa event successfully. Type: %v  Name:%s  Reason: %v  InvolvedObject.Kind:  %v, InvolvedObject.Name: %v   ResourceVersion: %v ", e.Type, e.Name, e.Reason, e.InvolvedObject.Kind, e.InvolvedObject.Name, e.ResourceVersion)
+	}
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(10 * time.Second):
+		}
+		if err := s.event.WatchHPAEventsAllNamespaces(ctx, callback); err != nil {
+			logrus.Errorf("failed to watch event: %v, addr: %s", err, s.addr)
+		}
+	}
 }

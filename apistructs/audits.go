@@ -182,6 +182,10 @@ const (
 	RedeployRuntimeTemplate TemplateName = "redeployRuntime"
 	RollbackRuntimeTemplate TemplateName = "rollbackRuntime"
 	DeployRuntimeTemplate   TemplateName = "deployRuntime"
+	CreateAndApplyHPARule   TemplateName = "createAndApplyHPARule"
+	ApplyOrCancelHPARule    TemplateName = "applyOrCancelHPARule"
+	UpdateHPARule           TemplateName = "updateHPARule"
+	DeleteHPARule           TemplateName = "deleteHPARule"
 
 	// =====================NotifyGroup============================
 	UpdateNotifyGroup        TemplateName = "updateNotifyGroup"

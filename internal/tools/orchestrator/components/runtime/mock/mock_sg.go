@@ -5,12 +5,12 @@
 package mock
 
 import (
-	"context"
-	"reflect"
+	context "context"
+	reflect "reflect"
 
-	"github.com/golang/mock/gomock"
+	gomock "github.com/golang/mock/gomock"
 
-	"github.com/erda-project/erda/apistructs"
+	apistructs "github.com/erda-project/erda/apistructs"
 )
 
 // MockServiceGroup is a mock of ServiceGroup interface.
@@ -80,17 +80,17 @@ func (mr *MockServiceGroupMockRecorder) Create(arg0 interface{}) *gomock.Call {
 }
 
 // Delete mocks base method.
-func (m *MockServiceGroup) Delete(arg0, arg1, arg2 string) error {
+func (m *MockServiceGroup) Delete(arg0, arg1, arg2 string, arg3 map[string]string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Delete", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "Delete", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Delete indicates an expected call of Delete.
-func (mr *MockServiceGroupMockRecorder) Delete(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockServiceGroupMockRecorder) Delete(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockServiceGroup)(nil).Delete), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockServiceGroup)(nil).Delete), arg0, arg1, arg2, arg3)
 }
 
 // Info mocks base method.
@@ -167,10 +167,10 @@ func (mr *MockServiceGroupMockRecorder) Restart(arg0, arg1 interface{}) *gomock.
 }
 
 // Scale mocks base method.
-func (m *MockServiceGroup) Scale(arg0 *apistructs.ServiceGroup) (apistructs.ServiceGroup, error) {
+func (m *MockServiceGroup) Scale(arg0 *apistructs.ServiceGroup) (interface{}, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Scale", arg0)
-	ret0, _ := ret[0].(apistructs.ServiceGroup)
+	ret0, _ := ret[0].(interface{})
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

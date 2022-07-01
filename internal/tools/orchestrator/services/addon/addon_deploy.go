@@ -656,7 +656,7 @@ func (a *Addon) FailAndDelete(addonIns *dbclient.AddonInstance) error {
 		}
 	}
 	// schedule删除
-	if err := a.serviceGroupImpl.Delete(addonIns.Namespace, addonIns.ScheduleName, "false"); err != nil {
+	if err := a.serviceGroupImpl.Delete(addonIns.Namespace, addonIns.ScheduleName, "false", nil); err != nil {
 		logrus.Errorf("failed to delete addon: %s/%s", addonIns.Namespace, addonIns.ScheduleName)
 		return err
 	}
@@ -828,7 +828,7 @@ func (a *Addon) retrieveInsideAddon(addonIns *dbclient.AddonInstance) error {
 		}
 		//如果引用数量为0，则执行删除
 		if count == 0 {
-			if err := a.serviceGroupImpl.Delete(instance.Namespace, instance.ScheduleName, "false"); err != nil {
+			if err := a.serviceGroupImpl.Delete(instance.Namespace, instance.ScheduleName, "false", nil); err != nil {
 				logrus.Errorf("[alert] failed to delete addon: %v from scheduler, :%v", addonIns.ID, err)
 				continue
 			}

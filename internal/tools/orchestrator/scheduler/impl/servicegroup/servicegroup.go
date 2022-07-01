@@ -54,12 +54,12 @@ type ServiceGroup interface {
 	Update(sg apistructs.ServiceGroupUpdateV2Request) (apistructs.ServiceGroup, error)
 	Restart(namespace string, name string) error
 	Cancel(namespace string, name string) error
-	Delete(namespace string, name, force string) error
+	Delete(namespace string, name, force string, extra map[string]string) error
 	Info(ctx context.Context, namespace string, name string) (apistructs.ServiceGroup, error)
 	Precheck(sg apistructs.ServiceGroupPrecheckRequest) (apistructs.ServiceGroupPrecheckData, error)
 	ConfigUpdate(sg apistructs.ServiceGroup) error
 	KillPod(ctx context.Context, namespace string, name string, podname string) error
-	Scale(sg *apistructs.ServiceGroup) (apistructs.ServiceGroup, error)
+	Scale(sg *apistructs.ServiceGroup) (interface{}, error)
 	InspectServiceGroupWithTimeout(namespace, name string) (*apistructs.ServiceGroup, error)
 }
 

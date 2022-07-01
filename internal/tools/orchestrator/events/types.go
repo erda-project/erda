@@ -16,6 +16,7 @@ package events
 
 import (
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/tools/orchestrator/components/horizontalpodscaler/types"
 )
 
 type EventName string
@@ -59,5 +60,23 @@ type RuntimeEvent struct {
 	// only used for RuntimeService* events
 	Service *apistructs.RuntimeServiceDTO `json:"service,omitempty"`
 	// only used for RuntimeDeploy* events
-	Deployment *apistructs.Deployment `json:"deployment,omitempty"`
+	Deployment     *apistructs.Deployment   `json:"deployment,omitempty"`
+	RuntimeHPARule *types.RuntimeHPARuleDTO `json:"runtimeHPARules,omitempty"`
 }
+
+const (
+	// create
+	RuntimeHPARuleCreated      EventName = "RuntimeHPARuleCreatedOK"
+	RuntimeHPARuleCreateFailed EventName = "RuntimeHPARuleCreateFailed"
+	// delete
+	RuntimeHPADeleted      EventName = "RuntimeHPARuleDeletedOK"
+	RuntimeHPADeleteFailed EventName = "RuntimeHPARuleDeleteFailed"
+	// update
+	RuntimeHPAUpdated      EventName = "RuntimeHPAUpdatedOK"
+	RuntimeHPAUpdateFailed EventName = "RuntimeHPAUpdateFailed"
+	// action
+	RuntimeHPARuleApplyFailed  EventName = "RuntimeHPARuleApplyFailed"
+	RuntimeHPARuleApplyOK      EventName = "RuntimeHPARuleApplyOK"
+	RuntimeHPARuleCancelFailed EventName = "untimeHPARuleCancelFailed"
+	RuntimeHPARuleCancelOK     EventName = "RuntimeHPARuleCancelOK"
+)
