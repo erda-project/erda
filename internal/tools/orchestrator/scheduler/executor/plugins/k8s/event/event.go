@@ -16,16 +16,12 @@
 package event
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	apiv1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/watch"
@@ -33,14 +29,12 @@ import (
 	"k8s.io/client-go/tools/cache"
 	watchtools "k8s.io/client-go/tools/watch"
 
-	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
 // Event is the object to encapsulate docker
 type Event struct {
 	addr      string
-	client    *httpclient.HTTPClient
 	k8sClient kubernetes.Interface
 }
 
@@ -50,20 +44,11 @@ type Option func(*Event)
 // New news an Event
 func New(options ...Option) *Event {
 	ns := &Event{}
-
 	for _, op := range options {
 		op(ns)
 	}
 
 	return ns
-}
-
-// WithCompleteParams provides an Option
-func WithCompleteParams(addr string, client *httpclient.HTTPClient) Option {
-	return func(e *Event) {
-		e.addr = addr
-		e.client = client
-	}
 }
 
 func WithKubernetesClient(client kubernetes.Interface) Option {
@@ -72,145 +57,70 @@ func WithKubernetesClient(client kubernetes.Interface) Option {
 	}
 }
 
-type rawevent struct {
-	Type   string          `json:"type"`
-	Object json.RawMessage `json:"object"`
-}
+func (e *Event) WatchPodEventsAllNamespaces(ctx context.Context, callback func(*corev1.Event)) error {
+	selector := strutil.Join([]string{
+		fmt.Sprintf("metadata.namespace!=%s", metav1.NamespaceSystem),
+		fmt.Sprintf("metadata.namespace!=%s", metav1.NamespacePublic),
+		"involvedObject.kind=Pod",
+	}, ",")
+	podSelector, err := fields.ParseSelector(selector)
+	if err != nil {
+		return err
+	}
 
-func (e *Event) WatchPodEventsAllNamespaces(ctx context.Context, callback func(*apiv1.Event)) error {
+	eventList, err := e.k8sClient.CoreV1().Events(corev1.NamespaceAll).List(context.Background(), metav1.ListOptions{
+		FieldSelector: podSelector.String(),
+		Limit:         10,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	retryWatcher, err := watchtools.NewRetryWatcher(eventList.ResourceVersion, &cache.ListWatch{
+		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
+			options.FieldSelector = podSelector.String()
+			return e.k8sClient.CoreV1().Events(metav1.NamespaceAll).Watch(context.Background(), options)
+		},
+	})
+
+	defer retryWatcher.Stop()
+	logrus.Infof("start watching pod events ......")
+
 	for {
-		var b bytes.Buffer
-		resp, err := e.client.Get(e.addr).
-			Path("/api/v1/events").
-			Param("limit", "10").
-			Do().Body(&b)
-		if err != nil {
-			return err
-		}
-		if !resp.IsOK() {
-			content, _ := ioutil.ReadAll(&b)
-			errMsg := fmt.Sprintf("failed to get resp from k8s pods watcher, resp is not OK, body: %v",
-				string(content))
-			logrus.Errorf(errMsg)
-			return errors.New(errMsg)
-		}
-		eventlist := apiv1.EventList{}
-		if err := json.NewDecoder(&b).Decode(&eventlist); err != nil {
-			return err
-		}
-		lastResourceVersion := eventlist.ListMeta.ResourceVersion
-		body, resp, err := e.client.Get(e.addr).
-			Path("/api/v1/watch/events").
-			Header("Portal-SSE", "on").
-			Param("fieldSelector", strutil.Join([]string{
-				"metadata.namespace!=kube-system",
-				"metadata.namespace!=kube-public",
-				"involvedObject.kind=Pod",
-			}, ",")).
-			Param("resourceVersion", lastResourceVersion).
-			Do().
-			StreamBody()
-
-		if err != nil {
-			logrus.Errorf("failed to get resp from k8s events watcher, (%v)", err)
-			return err
-		}
-		if !resp.IsOK() {
-			errMsg := fmt.Sprintf("failed to get resp from k8s events watcher, resp is not OK")
-			logrus.Errorf(errMsg)
-			return errors.New(errMsg)
-		}
-
-		logrus.Info("get resp from k8s events watcher POD OK")
-		decoder := json.NewDecoder(body)
-		for {
-			select {
-			case <-ctx.Done():
+		select {
+		case <-ctx.Done():
+			logrus.Infof("context done, stop watching pod events")
+			return nil
+		case eventEvent, ok := <-retryWatcher.ResultChan():
+			if !ok {
+				logrus.Warnf("pod event retry watcher is closed")
 				return nil
+			}
+			switch podEvent := eventEvent.Object.(type) {
+			case *corev1.Event:
+				callback(podEvent)
 			default:
 			}
-			raw := rawevent{}
-			if err := decoder.Decode(&raw); err != nil {
-				logrus.Errorf("failed to decode k8s event: %v", err)
-				body.Close()
-				break
-			}
-			ke := apiv1.Event{}
-			if err := json.Unmarshal(raw.Object, &ke); err != nil {
-				logrus.Errorf("failed to unmarshal k8s event obj, err: %v, raw: %s", err, string(raw.Object))
-				body.Close()
-				continue
-			}
-			callback(&ke)
-
-		}
-		if body != nil {
-			body.Close()
 		}
 	}
-}
-
-// LimitedListAllNamespace limit list event all namespaces
-func (e *Event) LimitedListAllNamespace(limit int, cont *string) (*apiv1.EventList, *string, error) {
-	var eventlist apiv1.EventList
-	var b bytes.Buffer
-	req := e.client.Get(e.addr).
-		Path("/api/v1/events")
-	if cont != nil {
-		req = req.Param("continue", *cont)
-	}
-	resp, err := req.Param("fieldSelector", strutil.Join([]string{
-		"metadata.namespace!=default",
-		"metadata.namespace!=kube-system",
-		"metadata.namespace!=kube-public",
-	}, ",")).
-		Param("limit", fmt.Sprintf("%d", limit)).
-		Do().Body(&b)
-	if err != nil {
-		return &eventlist, nil, err
-	}
-	if !resp.IsOK() {
-		return &eventlist, nil, fmt.Errorf("failed to list k8s events, statuscode: %v, body: %v",
-			resp.StatusCode(), b.String())
-	}
-	if err := json.NewDecoder(&b).Decode(&eventlist); err != nil {
-		return &eventlist, nil, err
-	}
-
-	if eventlist.ListMeta.Continue != "" {
-		return &eventlist, &eventlist.ListMeta.Continue, nil
-	}
-	return &eventlist, nil, nil
 }
 
 // ListByNamespace list event by namespace
-func (e *Event) ListByNamespace(namespace string) (*apiv1.EventList, error) {
-	var eventlist apiv1.EventList
-	var b bytes.Buffer
-	resp, err := e.client.Get(e.addr).
-		Path("/api/v1/namespaces/" + namespace + "/events").
-		Do().
-		Body(&b)
+func (e *Event) ListByNamespace(namespace string) (*corev1.EventList, error) {
+	eventList, err := e.k8sClient.CoreV1().Events(namespace).List(context.Background(), metav1.ListOptions{})
 	if err != nil {
-		return &eventlist, err
+		return nil, fmt.Errorf("failed to list events: %w", err)
 	}
-	if !resp.IsOK() {
-		return &eventlist, fmt.Errorf("failed to list k8s events, namespace: %s, statuscode: %v, body: %v",
-			namespace, resp.StatusCode(), b.String())
-	}
-	if err := json.NewDecoder(&b).Decode(&eventlist); err != nil {
-		return &eventlist, err
-	}
-
-	if eventlist.ListMeta.Continue != "" {
-		return &eventlist, nil
-	}
-	return &eventlist, nil
+	return eventList, nil
 }
 
-func (e *Event) WatchHPAEventsAllNamespaces(ctx context.Context, callback func(*apiv1.Event)) error {
-	eventSelector, _ := fields.ParseSelector("involvedObject.kind=HorizontalPodAutoscaler")
-	events, err := e.k8sClient.CoreV1().Events("").List(ctx, metav1.ListOptions{
+func (e *Event) WatchHPAEventsAllNamespaces(ctx context.Context, callback func(*corev1.Event)) error {
+	eventSelector, err := fields.ParseSelector("involvedObject.kind=HorizontalPodAutoscaler")
+	if err != nil {
+		return err
+	}
+	events, err := e.k8sClient.CoreV1().Events(metav1.NamespaceAll).List(ctx, metav1.ListOptions{
 		FieldSelector: eventSelector.String(),
 	})
 	if err != nil {
@@ -231,7 +141,7 @@ func (e *Event) WatchHPAEventsAllNamespaces(ctx context.Context, callback func(*
 	retryWatcher, err := watchtools.NewRetryWatcher(lastResourceVersion, &cache.ListWatch{
 		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
 			options.FieldSelector = eventSelector.String()
-			return e.k8sClient.CoreV1().Events("").Watch(context.Background(), options)
+			return e.k8sClient.CoreV1().Events(metav1.NamespaceAll).Watch(context.Background(), options)
 		},
 	})
 
@@ -240,7 +150,7 @@ func (e *Event) WatchHPAEventsAllNamespaces(ctx context.Context, callback func(*
 	}
 
 	defer retryWatcher.Stop()
-	logrus.Infof("Start watching HPA events ......")
+	logrus.Infof("start watching hpa events ......")
 
 	for {
 		select {
@@ -249,10 +159,11 @@ func (e *Event) WatchHPAEventsAllNamespaces(ctx context.Context, callback func(*
 		case eventEvent, ok := <-retryWatcher.ResultChan():
 			logrus.Infof("HPA EVENT Watch An HPA Events with type %v", eventEvent.Type)
 			if !ok {
+				logrus.Warnf("HPA event retry watcher is closed")
 				return nil
 			}
 			switch hpaEvent := eventEvent.Object.(type) {
-			case *apiv1.Event:
+			case *corev1.Event:
 				callback(hpaEvent)
 			default:
 			}
