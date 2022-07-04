@@ -97,26 +97,9 @@ func (s *logService) GetFieldSettings(ctx context.Context, req *pb.GetFieldSetti
 }
 
 func (s *logService) ParseRegexp(ctx context.Context, req *pb.ParseRegexpRequest) (*pb.ParseRegexpResponse, error) {
-	reg, err := regexp2.Compile(regexpForRegexp, regexp2.None)
+	groups, err := parseRegexp(req.Pattern)
 	if err != nil {
 		return nil, err
-	}
-
-	var groups []*pb.RegexpGroup
-	for match, _ := reg.FindStringMatch(req.Pattern); match != nil; {
-		gps := match.Groups()
-		var pattern, name string
-		if len(gps) >= 1 {
-			pattern = gps[0].String()
-		}
-		if len(gps) >= 3 {
-			name = gps[2].String()
-		}
-		groups = append(groups, &pb.RegexpGroup{
-			Pattern: pattern,
-			Name:    name,
-		})
-		match, _ = reg.FindNextMatch(match)
 	}
 	return &pb.ParseRegexpResponse{Groups: groups}, nil
 }
@@ -178,4 +161,28 @@ func (s *logService) getLogKeys(logKey string) (LogKeyGroup, error) {
 		return nil, fmt.Errorf("no storage located")
 	}
 	return ids.Group(), nil
+}
+
+func parseRegexp(content string) ([]*pb.RegexpGroup, error) {
+	reg, err := regexp2.Compile(regexpForRegexp, regexp2.None)
+	if err != nil {
+		return nil, err
+	}
+	var groups []*pb.RegexpGroup
+	for match, _ := reg.FindStringMatch(content); match != nil; {
+		gps := match.Groups()
+		var pattern, name string
+		if len(gps) >= 1 {
+			pattern = gps[0].String()
+		}
+		if len(gps) >= 3 {
+			name = gps[2].String()
+		}
+		groups = append(groups, &pb.RegexpGroup{
+			Pattern: pattern,
+			Name:    name,
+		})
+		match, _ = reg.FindNextMatch(match)
+	}
+	return groups, nil
 }
