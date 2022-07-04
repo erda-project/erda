@@ -375,7 +375,7 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 	k8sstorageclass := storageclass.New(storageclass.WithCompleteParams(addr, client))
 	sa := serviceaccount.New(serviceaccount.WithCompleteParams(addr, client))
 	nodeLabel := nodelabel.New(addr, client)
-	event := event.New(event.WithCompleteParams(addr, client), event.WithKubernetesClient(k8sClient.ClientSet))
+	event := event.New(event.WithKubernetesClient(k8sClient.ClientSet))
 	dbclient := instanceinfo.New(dbengine.MustOpen())
 
 	clusterInfo, err := clusterinfo.New(clusterName, clusterinfo.WithCompleteParams(addr, client), clusterinfo.WithDB(dbclient))
