@@ -26,11 +26,8 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
-	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/internal/core/org"
-	"github.com/erda-project/erda/pkg/common/apis"
 )
 
 // ScopeType .
@@ -64,7 +61,7 @@ type (
 	ValueFetcherWithContext func(ctx context.Context) (interface{}, error)
 	// ScopeQueryer .
 	ScopeQueryer interface {
-		GetOrg(id interface{}) (*orgpb.Org, error)
+		GetOrg(id interface{}) (*apistructs.OrgDTO, error)
 		GetProject(id interface{}) (*apistructs.ProjectDTO, error)
 		GetApp(idObject interface{}) (*apistructs.ApplicationDTO, error)
 	}
@@ -99,7 +96,6 @@ type (
 		Log   logs.Logger
 		bdl   *bundle.Bundle
 		cache gcache.Cache
-		Org   org.ClientInterface
 	}
 )
 
@@ -109,12 +105,7 @@ func (p *provider) Init(ctx servicehub.Context) (err error) {
 		if k, ok := key.(cacheKey); ok {
 			switch k.scope {
 			case OrgScope:
-				orgResp, err := p.Org.GetOrg(apis.WithInternalClientContext(context.Background(), "audit"),
-					&orgpb.GetOrgRequest{IdOrName: k.id.(string)})
-				if err != nil {
-					return nil, err
-				}
-				return orgResp.Data, nil
+				return p.bdl.GetOrg(k.id)
 			case ProjectScope:
 				return p.bdl.GetProject(getUint64(k.id))
 			case AppScope:
@@ -146,7 +137,7 @@ type cacheKey struct {
 	id    interface{}
 }
 
-func (p *provider) GetOrg(id interface{}) (*orgpb.Org, error) {
+func (p *provider) GetOrg(id interface{}) (*apistructs.OrgDTO, error) {
 	val, err := p.cache.Get(cacheKey{
 		scope: OrgScope,
 		id:    id,
@@ -154,7 +145,7 @@ func (p *provider) GetOrg(id interface{}) (*orgpb.Org, error) {
 	if err != nil || val == nil {
 		return nil, err
 	}
-	return val.(*orgpb.Org), nil
+	return val.(*apistructs.OrgDTO), nil
 }
 
 func (p *provider) GetProject(id interface{}) (*apistructs.ProjectDTO, error) {

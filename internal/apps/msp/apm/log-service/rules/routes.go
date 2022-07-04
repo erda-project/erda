@@ -60,7 +60,7 @@ func (p *provider) getTemplates(r *http.Request, params struct {
 }
 
 func (p *provider) getOrgName(id int64) (string, error) {
-	orgResp, err := p.Org.GetOrg(apis.WithInternalClientContext(context.Background(), "cmp"),
+	orgResp, err := p.Org.GetOrg(apis.WithInternalClientContext(context.Background(), "msp"),
 		&orgpb.GetOrgRequest{IdOrName: strconv.FormatInt(id, 10)})
 	if err != nil {
 		return "", err

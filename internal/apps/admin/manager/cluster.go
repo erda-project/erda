@@ -90,7 +90,7 @@ func (am *AdminManager) ListCluster(ctx context.Context, req *http.Request, reso
 		clusters := resp.Data
 		for _, cluster := range clusters {
 			for _, relate := range clusterRelation {
-				if relate.ClusterID == uint64(cluster.Id) && relate.OrgId == orgID {
+				if relate.ClusterID == uint64(cluster.Id) && relate.OrgID == orgID {
 					cluster.IsRelation = "Y"
 					newClusters = append(newClusters, cluster)
 				}

@@ -15,6 +15,7 @@
 package testplan
 
 import (
+	"context"
 	"reflect"
 	"sort"
 	"testing"
@@ -25,14 +26,24 @@ import (
 	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda-proto-go/core/dop/autotest/testplan/pb"
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/dao"
 	"github.com/erda-project/erda/internal/apps/dop/providers/autotest/testplan/db"
 	autotestv2 "github.com/erda-project/erda/internal/apps/dop/services/autotest_v2"
+	"github.com/erda-project/erda/internal/pkg/mock"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
+
+type TestPlanOrgMock struct {
+	mock.OrgMock
+}
+
+func (m TestPlanOrgMock) GetOrg(ctx context.Context, request *orgpb.GetOrgRequest) (*orgpb.GetOrgResponse, error) {
+	return &orgpb.GetOrgResponse{Data: &orgpb.Org{Name: "org"}}, nil
+}
 
 func Test_convertTime(t *testing.T) {
 	time, err := convertUTCTime("2020-01-02 04:00:00")
@@ -48,6 +59,7 @@ func Test_processEvent(t *testing.T) {
 	p := &TestPlanService{
 		bdl:         bdl,
 		autoTestSvc: svc,
+		org:         TestPlanOrgMock{},
 	}
 	monkey.PatchInstanceMethod(reflect.TypeOf(svc), "GetTestPlanV2",
 		func(svc *autotestv2.Service, testPlanID uint64, identityInfo apistructs.IdentityInfo) (*apistructs.TestPlanV2, error) {
@@ -99,13 +111,6 @@ func Test_processEvent(t *testing.T) {
 			}, nil
 		},
 	)
-
-	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetOrg",
-		func(b *bundle.Bundle, idOrName interface{}) (*apistructs.OrgDTO, error) {
-			return &apistructs.OrgDTO{
-				Name: "org",
-			}, nil
-		})
 
 	err := p.ProcessEvent(&pb.Content{
 		TestPlanID:  1,

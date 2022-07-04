@@ -24,10 +24,24 @@ import (
 	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
 
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/cmp/dbclient"
+	"github.com/erda-project/erda/internal/pkg/mock"
 )
+
+type OfflineOrgMock struct {
+	mock.OrgMock
+}
+
+func (m OfflineOrgMock) DereferenceCluster(ctx context.Context, request *orgpb.DereferenceClusterRequest) (*orgpb.DereferenceClusterResponse, error) {
+	return &orgpb.DereferenceClusterResponse{}, nil
+}
+
+func (m OfflineOrgMock) ListOrgClusterRelation(ctx context.Context, request *orgpb.ListOrgClusterRelationRequest) (*orgpb.ListOrgClusterRelationResponse, error) {
+	return &orgpb.ListOrgClusterRelationResponse{}, nil
+}
 
 func TestOfflineEdgeCluster(t *testing.T) {
 	var bdl *bundle.Bundle
@@ -42,6 +56,8 @@ func TestOfflineEdgeCluster(t *testing.T) {
 	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "QueryClusterInfo", func(_ *bundle.Bundle, _ string) (apistructs.ClusterInfoData, error) {
 		return apistructs.ClusterInfoData{apistructs.DICE_IS_EDGE: "true"}, nil
 	})
+	defer monkey.UnpatchAll()
+
 	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "DereferenceCluster", func(_ *bundle.Bundle, _ uint64, _, _ string, _ bool) (string, error) {
 		return "", nil
 	})
@@ -49,8 +65,11 @@ func TestOfflineEdgeCluster(t *testing.T) {
 		return nil
 	})
 
-	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "ListOrgClusterRelation", func(_ *bundle.Bundle, _, _ string) ([]apistructs.OrgClusterRelationDTO, error) {
-		return []apistructs.OrgClusterRelationDTO{}, nil
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "FindClusterResource", func(_ *bundle.Bundle, _, _ string) (*apistructs.ResourceReferenceData, error) {
+		return &apistructs.ResourceReferenceData{
+			AddonReference:   0,
+			ServiceReference: 0,
+		}, nil
 	})
 
 	// monkey record delete func
@@ -58,7 +77,7 @@ func TestOfflineEdgeCluster(t *testing.T) {
 		return 0, nil
 	})
 
-	c := New(db, bdl, nil, &fakeClusterServiceServer{}, nil)
+	c := New(db, bdl, nil, &fakeClusterServiceServer{}, OfflineOrgMock{})
 
 	// monkey patch Credential with core services
 	monkey.PatchInstanceMethod(reflect.TypeOf(c), "DeleteAccessKey", func(*Clusters, string) error {
@@ -89,21 +108,25 @@ func TestOfflineWithDeleteClusterFailed(t *testing.T) {
 		return fmt.Errorf("fake error")
 	})
 
-	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "ListOrgClusterRelation", func(_ *bundle.Bundle, _, _ string) ([]apistructs.OrgClusterRelationDTO, error) {
-		return []apistructs.OrgClusterRelationDTO{}, nil
-	})
-
 	// monkey record delete func
 	monkey.Patch(createRecord, func(_ *dbclient.DBClient, _ dbclient.Record) (uint64, error) {
 		return 0, nil
 	})
 
-	c := New(db, bdl, nil, &fakeClusterServiceServer{}, nil)
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "FindClusterResource", func(_ *bundle.Bundle, _, _ string) (*apistructs.ResourceReferenceData, error) {
+		return &apistructs.ResourceReferenceData{
+			AddonReference:   0,
+			ServiceReference: 0,
+		}, nil
+	})
+
+	c := New(db, bdl, nil, &fakeClusterServiceServer{}, OfflineOrgMock{})
 
 	// monkey patch Credential with core services
 	monkey.PatchInstanceMethod(reflect.TypeOf(c), "DeleteAccessKey", func(*Clusters, string) error {
 		return nil
 	})
+	defer monkey.UnpatchAll()
 
 	_, _, err := c.OfflineEdgeCluster(context.Background(), req, "", "")
 	assert.NoError(t, err)
@@ -129,8 +152,11 @@ func TestOfflineWithDeleteAKFailed(t *testing.T) {
 		return nil
 	})
 
-	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "ListOrgClusterRelation", func(_ *bundle.Bundle, _, _ string) ([]apistructs.OrgClusterRelationDTO, error) {
-		return []apistructs.OrgClusterRelationDTO{}, nil
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "FindClusterResource", func(_ *bundle.Bundle, _, _ string) (*apistructs.ResourceReferenceData, error) {
+		return &apistructs.ResourceReferenceData{
+			AddonReference:   0,
+			ServiceReference: 0,
+		}, nil
 	})
 
 	// monkey record delete func
@@ -138,7 +164,7 @@ func TestOfflineWithDeleteAKFailed(t *testing.T) {
 		return 0, nil
 	})
 
-	c := New(db, bdl, nil, &fakeClusterServiceServer{}, nil)
+	c := New(db, bdl, nil, &fakeClusterServiceServer{}, OfflineOrgMock{})
 
 	// monkey patch Credential with core services
 	monkey.PatchInstanceMethod(reflect.TypeOf(c), "DeleteAccessKey", func(*Clusters, string) error {
@@ -169,8 +195,11 @@ func TestBatchOfflineEdgeCluster(t *testing.T) {
 		return nil
 	})
 
-	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "ListOrgClusterRelation", func(_ *bundle.Bundle, _, _ string) ([]apistructs.OrgClusterRelationDTO, error) {
-		return []apistructs.OrgClusterRelationDTO{}, fmt.Errorf("fake error")
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "FindClusterResource", func(_ *bundle.Bundle, _, _ string) (*apistructs.ResourceReferenceData, error) {
+		return &apistructs.ResourceReferenceData{
+			AddonReference:   1,
+			ServiceReference: 0,
+		}, nil
 	})
 
 	// monkey record delete func
@@ -178,7 +207,7 @@ func TestBatchOfflineEdgeCluster(t *testing.T) {
 		return 0, nil
 	})
 
-	c := New(db, bdl, nil, &fakeClusterServiceServer{}, nil)
+	c := New(db, bdl, nil, &fakeClusterServiceServer{}, OfflineOrgMock{})
 
 	// monkey patch Credential with core services
 	monkey.PatchInstanceMethod(reflect.TypeOf(c), "DeleteAccessKey", func(*Clusters, string) error {

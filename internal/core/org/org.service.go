@@ -607,7 +607,7 @@ func (p *provider) DereferenceCluster(ctx context.Context, req *pb.DereferenceCl
 func convertToOrgClusterRelationDTO(rel db.OrgClusterRelation) *pb.OrgClusterRelation {
 	return &pb.OrgClusterRelation{
 		ID:          uint64(rel.ID),
-		OrgId:       rel.OrgID,
+		OrgID:       rel.OrgID,
 		OrgName:     rel.OrgName,
 		ClusterID:   rel.ClusterID,
 		ClusterName: rel.ClusterName,
