@@ -1,0 +1,356 @@
+syntax = "proto3";
+
+package erda.orchestrator.horizontalpodscaler;
+option go_package = "github.com/erda-project/erda-proto-go/orchestrator/horizontalpodscaler/pb";
+
+import "google/api/annotations.proto";
+import "google/protobuf/any.proto";
+import "google/protobuf/timestamp.proto";
+import "common/openapi.proto";
+
+
+service HPScalerService {
+  option (erda.common.openapi_service) = {
+    service: "orchestrator",
+    auth: {
+      check_login: true,
+      check_token: true,
+    }
+  };
+
+  rpc CreateRuntimeHPARules (HPARuleCreateRequest) returns (HPACommonResponse) {
+    option (google.api.http) = {
+      post: "/api/runtimes/autoscaler/hpa"
+      body: "*"
+    };
+    option (erda.common.openapi) = {
+      path: "/api/runtimes/autoscaler/hpa"
+    };
+  }
+  rpc ListRuntimeHPARules (ListRequest) returns (ErdaRuntimeHPARules) {
+    option (google.api.http) = {
+      get: "/api/runtimes/autoscaler/hpa?runtimeId={runtimeId}&services={services}"
+      body: "*"
+    };
+    option (erda.common.openapi) = {
+      path: "/api/runtimes/autoscaler/hpa"
+    };
+  }
+  rpc UpdateRuntimeHPARules (ErdaRuntimeHPARules) returns (HPACommonResponse) {
+    option (google.api.http) = {
+      put: "/api/runtimes/autoscaler/hpa"
+      body: "*"
+    };
+    option (erda.common.openapi) = {
+      path: "/api/runtimes/autoscaler/hpa"
+    };
+  }
+  rpc DeleteHPARulesByIds (DeleteRuntimeHPARulesRequest) returns (HPACommonResponse) {
+    option (google.api.http) = {
+      delete: "/api/runtimes/autoscaler/hpa"
+      body: "*"
+    };
+    option (erda.common.openapi) = {
+      path: "/api/runtimes/autoscaler/hpa"
+    };
+  }
+  rpc ApplyOrCancelHPARulesByIds (ApplyOrCancelHPARulesRequest) returns (HPACommonResponse) {
+    option (google.api.http) = {
+      // action = apply/cancel
+      post: "/api/runtimes/autoscaler/hpa-rules-action"
+      body: "*"
+    };
+    option (erda.common.openapi) = {
+      path: "/api/runtimes/autoscaler/hpa-rules-action"
+    };
+  }
+  rpc GetRuntimeBaseInfo (ListRequest) returns (RuntimeServiceBaseInfos) {
+    option (google.api.http) = {
+      // action = apply/cancel
+      get: "/api/runtimes/baseinfo/{runtimeId}"
+      body: "*"
+    };
+    option (erda.common.openapi) = {
+      path: "/api/runtimes/baseinfo/{runtimeId}"
+    };
+  }
+
+  rpc ListRuntimeHPAEvents (ListRequest) returns (ErdaRuntimeHPAEvents) {
+    option (google.api.http) = {
+      get: "/api/runtimes/autoscaler/hpa-event?runtimeId={runtimeId}&services={services}"
+      body: "*"
+    };
+    option (erda.common.openapi) = {
+      path: "/api/runtimes/autoscaler/hpa-event"
+    };
+  }
+
+  /*
+  rpc HPScaleManual (ManualHPRequest) returns (HPManualResponse) {
+    option (google.api.http) = {
+      put: "/api/runtimes/actions/update-pre-overlay"
+      body: "*"
+    };
+  }
+  rpc BatchHPScaleManual (BatchManualHPRequest) returns (HPManualResponse) {
+    option (google.api.http) = {
+      put: "/api/runtimes/actions/batch-update-pre-overlay?scale_action={action}"
+      body: "*"
+    };
+  }
+  */
+}
+
+message RuntimeServiceBaseInfos {
+  uint64 runtimeID = 1 [json_name = "runtimeId"] ;
+  //RuntimeInfo runtimeInfo = 1 [json_name = "runtimeInfo"] ;
+  repeated ServiceBaseInfo serviceBaseInfos = 2 [json_name = "serviceBaseInfos"] ;
+}
+
+
+message ServiceBaseInfo {
+  string serviceName = 1 [json_name = "serviceName"] ;
+  Deployments deployments = 2 [json_name = "deployments"] ;
+  Resources resources = 3 [json_name = "resources"] ;
+}
+
+message HPARuleCreateRequest {
+  uint64 runtimeID = 1 [json_name = "runtimeId"] ;
+  repeated RuntimeServiceHPAConfig services = 2 [json_name = "services"] ;
+}
+
+message ListRequest {
+  string runtimeId = 1 [json_name = "runtimeId"] ;
+  string services = 2 [json_name = "services"] ;
+  //RuntimeInfo runtimeInfo = 1 [json_name = "runtimeInfo"] ;
+  //UserInfo userInfo = 2 [json_name = "userInfo"] ;
+  //repeated string serviceNames = 3 [json_name = "services"] ;
+}
+
+
+message DeleteRuntimeHPARulesRequest {
+  uint64 runtimeID = 1 [json_name = "runtimeId"] ;
+  //RuntimeInfo runtimeInfo = 1 [json_name = "runtimeInfo"] ;
+  //UserInfo userInfo = 2 [json_name = "userInfo"] ;
+  repeated string rules = 2 [json_name = "rules"] ;
+}
+
+message ApplyOrCancelHPARulesRequest {
+  uint64 runtimeID = 1 [json_name = "runtimeId"] ;
+  //RuntimeInfo runtimeInfo = 1 [json_name = "runtimeInfo"] ;
+  //UserInfo userInfo = 2 [json_name = "userInfo"] ;
+  repeated RuleAction ruleAction = 2 [json_name = "actions"] ;
+}
+
+message RuleAction {
+  string ruleId = 1 [json_name = "ruleId"] ;
+  string action = 2 [json_name = "action"] ;
+}
+
+message HPACommonResponse {
+}
+
+message ErrorResponse {
+  string code = 1 [json_name = "code"] ;
+  string msg = 2 [json_name = "msg"] ;
+  google.protobuf.Any ctx = 3 [json_name = "ctx"] ;;
+}
+
+message ScaleTargetRef {
+  // +optional
+  string apiVersion = 1 [json_name = "apiVersion"] ;
+  // +optional
+  string kind = 2 [json_name = "kind"] ;
+  string name = 3 [json_name = "name"] ;
+  // +optional
+  string envSourceContainerName = 4 [json_name = "envSourceContainerName"] ;
+}
+
+message HPAAdvanced {
+  bool restoreToOriginalReplicaCount = 1 [json_name = "restoreToOriginalReplicaCount"] ;
+  HorizontalPodAutoscalerConfig horizontalPodAutoscalerConfig = 2 [json_name = "horizontalPodAutoscalerConfig"] ;
+}
+
+message HorizontalPodAutoscalerConfig {
+  HorizontalPodAutoscalerBehavior behavior = 1 [json_name = "behavior"] ;
+}
+
+message HorizontalPodAutoscalerBehavior {
+  HPAScalingRules scaleUp = 1 [json_name = "scaleUp"] ;
+  HPAScalingRules scaleDown = 2 [json_name = "scaleDown"] ;
+}
+
+message HPAScalingRules {
+  int32 stabilizationWindowSeconds = 1 [json_name = "stabilizationWindowSeconds"] ;
+  string selectPolicy = 2 [json_name = "selectPolicy"] ;
+  repeated HPAScalingPolicy policies = 3 [json_name = "policies"] ;
+}
+
+message HPAScalingPolicy {
+  string type = 1 [json_name = "type"] ;
+  int32 value = 2 [json_name = "value"] ;
+  int32 periodSeconds = 3 [json_name = "periodSeconds"] ;
+}
+
+message FallBack {
+  int32 failureThreshold = 1 [json_name = "failureThreshold"] ;
+  int32 replicas = 2 [json_name = "replicas"] ;
+}
+
+message ScaledObjectAuthRef {
+  string name = 1 [json_name = "name"] ;
+  // Kind of the resource being referred to. Defaults to TriggerAuthentication.
+  // +optional
+  string kind =2 [json_name = "kind"] ;
+}
+
+message ScaleTriggers {
+  string type = 1 [json_name = "type"] ;
+  // +optional
+  string name = 2 [json_name = "name"] ;
+  map<string, string> metadata = 3 [json_name = "metadata"] ;
+  // +optional
+  ScaledObjectAuthRef authenticationRef= 4 [json_name = "authenticationRef"] ;
+  // +optional
+  string metricType = 5 [json_name = "metricType"] ;
+}
+
+message ScaledConfig {
+  string ruleName = 1 [json_name = "ruleName"] ;
+  string ruleID = 2 [json_name = "ruleId"] ;
+  uint64 runtimeID = 3 [json_name = "runtimeId"] ;
+  uint64 applicationID = 4 [json_name = "applicationId"] ;
+  uint64 orgID = 5 [json_name = "orgId"] ;
+  string serviceName = 6 [json_name = "serviceName"] ;
+  string ruleNameSpace = 7 [json_name = "ruleNameSpace"] ;
+  ScaleTargetRef scaleTargetRef = 8 [json_name = "scaleTargetRef"] ;
+  int32  pollingInterval = 9 [json_name = "pollingInterval"] ;
+  int32  cooldownPeriod = 10 [json_name = "cooldownPeriod"] ;
+  int32  minReplicaCount = 11 [json_name = "minReplicaCount"] ;
+  int32  maxReplicaCount = 12 [json_name = "maxReplicaCount"] ;
+  HPAAdvanced advanced = 13 [json_name = "advanced"] ;
+  repeated ScaleTriggers triggers = 14 [json_name = "triggers"] ;
+  FallBack fallback = 15 [json_name = "fallback"] ;
+}
+
+message RuntimeServiceHPAConfig {
+  string status = 1 [json_name = "status"] ;
+  string type = 2 [json_name = "type"] ;
+  string serviceName = 3 [json_name = "serviceName"] ;
+  string ruleName = 4 [json_name = "ruleName"] ;
+  Deployments deployments = 5 [json_name = "deployments"] ;
+  Resources resources = 6 [json_name = "resources"] ;
+  ScaledConfig scaledConfig = 7 [json_name = "scaledConfig"] ;
+}
+
+message ErdaRuntimeHPARules {
+  //RuntimeInfo runtimeInfo = 1 [json_name = "runtimeInfo"] ;
+  uint64 runtimeID = 1 [json_name = "runtimeId"] ;
+  repeated ErdaRuntimeHPARule rules = 2 [json_name = "rules"] ;
+}
+
+message ErdaRuntimeHPARule {
+  string ruleID = 1  [json_name = "ruleId"] ;
+  google.protobuf.Timestamp createAt = 2 [json_name = "createAt"] ;
+  google.protobuf.Timestamp updateAt = 3 [json_name = "updateAt"] ;
+  string serviceName = 4 [json_name = "serviceName"] ;
+  string ruleName = 5 [json_name = "ruleName"] ;
+  UserInfo userInfo = 6 [json_name = "userInfo"] ;
+  ScaledConfig  scaledConfig = 7 [json_name = "scaledConfig"] ;
+  string isApplied = 8 [json_name = "isApplied"] ;
+}
+
+message UserInfo {
+  uint64 userID = 1 [json_name = "userId"] ;
+  string userName = 2 [json_name = "userName"] ;
+  string userNickName = 3 [json_name = "nickName"] ;
+}
+
+message RuntimeInfo {
+  uint64 orgID = 1 [json_name = "orgId"] ;
+  string orgName = 2 [json_name = "orgName"] ;
+  uint64 projectID = 3 [json_name = "projectId"] ;
+  string projectName = 4 [json_name = "projectName"] ;
+  uint64 applicationID = 5 [json_name = "applicationId"] ;
+  string applicationName = 6 [json_name = "applicationName"] ;
+  string workspace = 7 [json_name = "workspace"] ;
+  uint64 runtimeID = 8 [json_name = "runtimeId"] ;
+  string runtimeName = 9 [json_name = "runtimeName"] ;
+  uint64 clusterID = 10 [json_name = "clusterId"] ;
+  string clusterName = 11 [json_name = "clusterName"] ;
+  string clusterType = 12 [json_name = "clusterType"] ;
+}
+
+message BatchManualHPRequest {
+  string action = 1 [json_name = "action"] ;
+  // 除了 BatchHPScaleManualScaleRandom 接口外的 4 个接口，都使用 ids (runtime 的 id 列表)
+  repeated uint64 ids = 2 [json_name = "ids"] ;
+  // BatchHPScaleManualScaleRandom 接口都使用
+  repeated RuntimeScaleRecord runtimeRecords = 3 [json_name = "runtimeRecords"] ;
+}
+
+message RuntimeScaleRecord {
+  uint64 applicationId = 1 [json_name = "applicationId"] ;
+  string workspace = 2 [json_name = "workspace"] ;
+  string name = 3 [json_name = "name"] ;
+  uint64 runtimeId = 4 [json_name = "runtimeId"] ;
+  PreDiceDTO payload = 5 [json_name = "payLoad"] ;
+  string errorMsg = 6 [json_name = "errorMsg"] ;
+}
+
+message PreDiceDTO {
+  string name = 1 [json_name = "name"] ;
+  map<string, string> envs = 2 [json_name = "envs"] ;
+  map<string, RuntimeInspectServiceDTO> services = 3 [json_name = "services"] ;
+}
+
+message ManualHPRequest {
+  string name = 1 [json_name = "name"] ;
+  map<string, string> envs = 2 [json_name = "envs"] ;
+  map<string, RuntimeInspectServiceDTO> services = 3 [json_name = "services"] ;
+}
+
+message RuntimeInspectServiceDTO {
+  string status = 1 [json_name = "status"] ;
+  string type = 2 [json_name = "type"] ;
+  Deployments deployments = 3 [json_name = "deployments"] ;
+  Resources resources = 4 [json_name = "resources"] ;
+  map<string, string> envs = 5 [json_name = "envs"] ;
+  repeated string addrs = 6 [json_name = "addrs"] ;
+  repeated string expose = 7 [json_name = "expose"] ;
+  repeated ErrorResponse errors = 8 [json_name = "errors"] ;
+}
+
+message HPManualResponse {
+  bool success = 1 [json_name = "success"] ;
+  google.protobuf.Any data = 2 [json_name = "data"] ;;
+  repeated ErrorResponse err = 3 [json_name = "err"] ;
+}
+
+message Resources {
+  double cpu = 1 [json_name = "cpu"] ;
+  int64 mem = 2 [json_name = "mem"] ;
+  int64 disk = 3 [json_name = "disk"] ;
+}
+
+message Deployments {
+  uint64 replicas = 1 [json_name = "replicas"] ;
+}
+
+message ErdaRuntimeHPAEvents {
+  repeated ErdaRuntimeHPAEvent events = 1 [json_name = "events"] ;
+}
+
+message ErdaRuntimeHPAEvent {
+  string  serviceName = 1 [json_name = "serviceName"] ;
+  string  ruleId = 2 [json_name = "ruleId"] ;
+  HPAEventDetail event = 3 [json_name = "event"] ;
+}
+
+
+message HPAEventDetail {
+  google.protobuf.Timestamp createAt = 1 [json_name = "createAt"] ;
+  string type = 2 [json_name = "type"] ;
+  string reason = 3 [json_name = "reason"] ;
+  string eventMessage = 4 [json_name = "message"] ;
+}

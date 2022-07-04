@@ -22,14 +22,14 @@ import (
 )
 
 var ADAPTOR_CICD_FILETREE_FIND_ANCESTORS = apis.ApiSpec{
-	Path:         "/api/cicd-pipeline/filetree/<inode>/actions/find-ancestors",
-	BackendPath:  "/api/cicd-pipeline/filetree/<inode>/actions/find-ancestors",
-	Host:         "dop.marathon.l4lb.thisdcos.directory:9527",
-	Scheme:       "http",
-	Method:       http.MethodGet,
-	IsOpenAPI:    true,
-	CheckLogin:   true,
-	CheckToken:   true,
-	ResponseType: apistructs.UnifiedFileTreeNodeFindAncestorsRequest{},
-	Doc:          "summary: 查询所有父节点",
+	Path:        "/api/cicd-pipeline/filetree/<inode>/actions/find-ancestors",
+	BackendPath: "/api/cicd-pipeline/filetree/<inode>/actions/find-ancestors",
+	Host:        "dop.marathon.l4lb.thisdcos.directory:9527",
+	Scheme:      "http",
+	Method:      http.MethodGet,
+	IsOpenAPI:   true,
+	CheckLogin:  true,
+	CheckToken:  true,
+	RequestType: apistructs.UnifiedFileTreeNodeFindAncestorsRequest{},
+	Doc:         "summary: 查询所有父节点",
 }

@@ -718,3 +718,24 @@ func (k *Kubernetes) scaleStatefulSet(ctx context.Context, sg *apistructs.Servic
 	}
 	return nil
 }
+
+func (k *Kubernetes) getStatefulSetAbstract(sg *apistructs.ServiceGroup) (*appsv1.StatefulSet, error) {
+	// only support scale the first one service
+	ns := sg.Services[0].Namespace
+	if ns == "" {
+		ns = MakeNamespace(sg)
+	}
+
+	statefulSetName, ok := getGroupID(&sg.Services[0])
+	if !ok {
+		statefulSetName = sg.ID
+	}
+
+	logrus.Infof("scaleStatefulSet for name %s in namespace: %s sg.ID: %s sg %#v", statefulSetName, ns, sg.ID, *sg)
+	sts, err := k.sts.Get(ns, statefulSetName)
+	if err != nil {
+		getErr := fmt.Errorf("failed to get the statefulset %s in namespace %s, err is: %s", statefulSetName, ns, err.Error())
+		return nil, getErr
+	}
+	return sts, nil
+}

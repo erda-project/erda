@@ -114,6 +114,9 @@ func (s *PipelineSvc) PreCheck(p *spec.Pipeline, stages []spec.PipelineStage, us
 		}
 	}
 	if abort {
+		if err := s.dbClient.UpdatePipelineBaseStatus(p.PipelineID, apistructs.PipelineStatusAnalyzeFailed); err != nil {
+			return apierrors.ErrPreCheckPipeline.InternalError(err)
+		}
 		return apierrors.ErrPreCheckPipeline.InvalidParameter("precheck failed")
 	}
 

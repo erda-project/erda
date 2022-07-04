@@ -45,7 +45,6 @@ const (
 	shardDirSuffix          = "-shard-dir"
 	sidecarNamePrefix       = "sidecar-"
 	EnableServiceLinks      = "ENABLE_SERVICE_LINKS"
-	RegistrySecretName      = "REGISTRY_SECRET_NAME"
 
 	LabelKeyPrefix          = "annotations/"
 	ECIPodSidecarConfigPath = "/etc/sidecarconf"
@@ -1741,4 +1740,21 @@ func getEnvFromName(envName string) string {
 		return value
 	}
 	return ""
+}
+
+func (k *Kubernetes) getDeploymentAbstract(sg *apistructs.ServiceGroup, serviceIndex int) (*appsv1.Deployment, error) {
+	// only support scale the first one service
+	ns := sg.ProjectNamespace
+	if ns == "" {
+		ns = MakeNamespace(sg)
+	}
+
+	scalingService := sg.Services[serviceIndex]
+	deploymentName := getDeployName(&scalingService)
+	deploy, err := k.getDeployment(ns, deploymentName)
+	if err != nil {
+		getErr := fmt.Errorf("failed to get the deployment %s in namespace %s, err is: %s", deploymentName, ns, err.Error())
+		return nil, getErr
+	}
+	return deploy, nil
 }

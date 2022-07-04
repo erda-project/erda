@@ -6,6 +6,7 @@ import "google/protobuf/struct.proto";
 import "google/protobuf/any.proto";
 import "google/protobuf/timestamp.proto";
 import "common/http.proto";
+import "common/status.proto";
 
 option go_package = "github.com/erda-project/erda-proto-go/orchestrator/runtime/pb";
 
@@ -34,6 +35,7 @@ message Service {
   repeated string expose = 6;
   repeated ErrorResponse errors = 7;
   string type = 8;
+  string autoscalerEnabled =9 [json_name ="autoscalerEnabled"];
 }
 
 message StatusMap {
@@ -98,12 +100,23 @@ message Runtime {
   repeated ErrorResponse errors = 13;
 }
 
+message CheckRuntimeExistReq {
+  uint64 id = 1;
+}
+
+message CheckRuntimeExistResp {
+  bool ok = 1;
+}
+
 service RuntimeService {
   rpc GetRuntime (GetRuntimeRequest) returns (RuntimeInspect) {
     option (google.api.http) = {
       get: "/api/runtimes/{nameOrID}?applicationId={appID}&workspace={workspace}",
     };
   }
+
+  rpc CheckRuntimeExist (CheckRuntimeExistReq) returns (CheckRuntimeExistResp) {}
+
   rpc DelRuntime (DelRuntimeRequest) returns (Runtime) {
     option (google.api.http) = {
       delete: "/api/runtimes/{id}",

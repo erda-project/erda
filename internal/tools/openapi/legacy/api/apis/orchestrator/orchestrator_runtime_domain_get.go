@@ -20,8 +20,8 @@ import (
 )
 
 var ORCHESTRATOR_RUNTIME_DOMAIN_GET = apis.ApiSpec{
-	Path:         "/api/runtimes/<runtimeId>/domains",
-	BackendPath:  "/api/runtimes/<runtimeId>/domains",
+	Path:         "/api/runtimes/<runtimeID>/domains",
+	BackendPath:  "/api/runtimes/<runtimeID>/domains",
 	Host:         "orchestrator.marathon.l4lb.thisdcos.directory:8081",
 	Scheme:       "http",
 	Method:       "GET",

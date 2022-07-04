@@ -28,7 +28,7 @@ import (
 
 	"github.com/erda-project/erda-proto-go/apps/devflow/flow/pb"
 	issuerelationpb "github.com/erda-project/erda-proto-go/apps/devflow/issuerelation/pb"
-	rulepb "github.com/erda-project/erda-proto-go/dop/devflowrule/pb"
+	gittarpb "github.com/erda-project/erda-proto-go/openapiv1/gittar/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/providers/devflowrule"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
@@ -37,14 +37,15 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/services/permission"
 	"github.com/erda-project/erda/internal/pkg/diceworkspace"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/common/pbutil"
 	"github.com/erda-project/erda/pkg/encoding/jsonparse"
 	"github.com/erda-project/erda/pkg/limit_sync_group"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
 const (
-	MultiBranchFlowType  = "multi_branch"
-	SingleBranchFlowType = "single_branch"
+	MultiBranchBranchType  = "multi_branch"
+	SingleBranchBranchType = "single_branch"
 )
 
 type Service struct {
@@ -230,32 +231,17 @@ func (s *Service) OperationMerge(ctx context.Context, req *pb.OperationMergeRequ
 
 func (s *Service) getTempBranchFromFlowRule(ctx context.Context, projectID uint64, mrInfo *apistructs.MergeRequestInfo) (string, error) {
 	flowRule, err := s.p.DevFlowRule.GetFlowByRule(ctx, devflowrule.GetFlowByRuleRequest{
-		ProjectID:    projectID,
-		FlowType:     MultiBranchFlowType,
-		TargetBranch: mrInfo.TargetBranch,
-		ChangeBranch: mrInfo.SourceBranch,
+		ProjectID:     projectID,
+		BranchType:    MultiBranchBranchType,
+		SourceBranch:  mrInfo.TargetBranch,
+		CurrentBranch: mrInfo.SourceBranch,
 	})
 	if err != nil {
 		return "", err
 	}
 
-	if flowRule != nil {
-		return flowRule.AutoMergeBranch, nil
-	}
-	return "", nil
-}
-
-func (s *Service) GetTempBranchFromDevFlowRules(ctx context.Context, targetBranch string, projectID uint64) (string, error) {
-	result, err := s.p.DevFlowRule.GetDevFlowRulesByProjectID(ctx, &rulepb.GetDevFlowRuleRequest{
-		ProjectID: projectID,
-	})
-	if err != nil {
-		return "", err
-	}
-	for _, v := range result.Data.Flows {
-		if targetBranch == v.TargetBranch {
-			return v.AutoMergeBranch, nil
-		}
+	if flowRule != nil && flowRule.BranchPolicy != nil && flowRule.BranchPolicy.Policy != nil {
+		return flowRule.BranchPolicy.Policy.TempBranch, nil
 	}
 	return "", nil
 }
@@ -667,6 +653,17 @@ func (s *Service) GetDevFlowInfo(ctx context.Context, req *pb.GetDevFlowInfoRequ
 				Commit:               CommitConvert(branchDetail.Commit),
 				BaseCommit:           CommitConvert(sourceBranchBaseCommitMap[fmt.Sprintf("%d%s", extra.AppID, mrInfo.SourceBranch)]),
 				CanJoin:              canJoin(branchDetail.Commit, sourceBranchBaseCommitMap[fmt.Sprintf("%d%s", extra.AppID, mrInfo.SourceBranch)]),
+				MergeRequestInfo: &gittarpb.MergeRequestInfo{
+					Id:          mrInfo.Id,
+					RepoMergeId: int64(mrInfo.RepoMergeId),
+					Title:       mrInfo.Title,
+					State:       mrInfo.State,
+					AuthorId:    mrInfo.AuthorId,
+					CloseAt:     pbutil.GetTimestamp(mrInfo.CloseAt),
+					CloseUserId: mrInfo.CloseUserId,
+					MergeAt:     pbutil.GetTimestamp(mrInfo.MergeAt),
+					MergeUserId: mrInfo.MergeUserId,
+				},
 			}
 
 			locker.Lock()

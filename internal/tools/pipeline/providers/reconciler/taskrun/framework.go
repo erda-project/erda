@@ -107,8 +107,7 @@ func (tr *TaskRun) waitOp(itr TaskOp, o *Elem) (result error) {
 		if len(errs) > 0 {
 			result = errors.Errorf("failed to %s task, err: %s", itr.Op(), strutil.Join(errs, "\n", true))
 		}
-		isExceed, _ := tr.Task.Inspect.IsErrorsExceed()
-		if result != nil && !errorsx.IsContainUserError(result) && !isExceed {
+		if tr.isTaskStatusShouldBeRestored(result) {
 			tr.Task.Status = oldStatus
 		} else {
 			// loop
@@ -196,4 +195,12 @@ func (tr *TaskRun) waitOp(itr TaskOp, o *Elem) (result error) {
 func (tr *TaskRun) LogStep(taskOp Op, step string) {
 	logrus.Debugf("reconciler: pipelineID: %d, taskID: %d, taskName: %s, taskOp: %s, step: %s",
 		tr.P.ID, tr.Task.ID, tr.Task.Name, string(taskOp), step)
+}
+
+func (tr *TaskRun) isTaskStatusShouldBeRestored(err error) bool {
+	if tr.Task.Status.IsStopByUser() {
+		return false
+	}
+	isExceed, _ := tr.Task.Inspect.IsErrorsExceed()
+	return err != nil && !errorsx.IsContainUserError(err) && !isExceed
 }

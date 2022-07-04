@@ -93,25 +93,38 @@ func (branchRule *BranchRule) GetBranchRuleFromDevFlowRule(projectID uint64) ([]
 		return nil, err
 	}
 	flows := make([]apistructs.Flow, 0, len(devFlowRuleRsp.Data.Flows))
+	branchPolicies := make([]apistructs.BranchPolicy, 0, len(devFlowRuleRsp.Data.BranchPolicies))
 	for _, v := range devFlowRuleRsp.Data.Flows {
-		hints := make([]apistructs.StartWorkflowHint, 0, len(v.StartWorkflowHints))
-		for _, hint := range v.StartWorkflowHints {
-			hints = append(hints, apistructs.StartWorkflowHint{
-				Place:            hint.Place,
-				ChangeBranchRule: hint.ChangeBranchRule,
-			})
-		}
 		flows = append(flows, apistructs.Flow{
-			Name:               v.Name,
-			FlowType:           v.FlowType,
-			TargetBranch:       v.TargetBranch,
-			ChangeFromBranch:   v.ChangeFromBranch,
-			ChangeBranch:       v.ChangeBranch,
-			EnableAutoMerge:    v.EnableAutoMerge,
-			AutoMergeBranch:    v.AutoMergeBranch,
-			Artifact:           v.Artifact,
-			Environment:        v.Environment,
-			StartWorkflowHints: hints,
+			Name:         v.Name,
+			TargetBranch: v.TargetBranch,
+			Artifact:     v.Artifact,
+			Environment:  v.Environment,
+		})
+	}
+	for _, v := range devFlowRuleRsp.Data.BranchPolicies {
+		var (
+			policy       *apistructs.PolicyDetail
+			targetBranch *apistructs.TargetBranch
+		)
+		if v.Policy != nil && v.Policy.TargetBranch != nil {
+			targetBranch = &apistructs.TargetBranch{
+				MergeRequest: v.Policy.TargetBranch.MergeRequest,
+				CherryPick:   v.Policy.TargetBranch.CherryPick,
+			}
+		}
+		if v.Policy != nil {
+			policy = &apistructs.PolicyDetail{
+				SourceBranch:  v.Policy.SourceBranch,
+				CurrentBranch: v.Policy.CurrentBranch,
+				TempBranch:    v.Policy.TempBranch,
+				TargetBranch:  targetBranch,
+			}
+		}
+		branchPolicies = append(branchPolicies, apistructs.BranchPolicy{
+			Branch:     v.Branch,
+			BranchType: v.BranchType,
+			Policy:     policy,
 		})
 	}
 	devFlowRule := apistructs.DevFlowRule{

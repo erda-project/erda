@@ -66,6 +66,7 @@ func (uw *unmarshalWork) Unmarshal() {
 		Tags:          data.Attributes,
 	}
 
+	span.Tags["operation_name"] = data.Name
 	if v, ok := span.Tags[lib.OrgNameKey]; ok {
 		span.OrgName = v
 	} else {

@@ -1591,7 +1591,7 @@ func (a *Addon) Delete(userID, routingInstanceID string) error {
 						if force {
 							forceDelete = "true"
 						}
-						if err := a.serviceGroupImpl.Delete(req.Namespace, req.Name, forceDelete); err != nil {
+						if err := a.serviceGroupImpl.Delete(req.Namespace, req.Name, forceDelete, nil); err != nil {
 							logrus.Errorf("delete service group failed, request: %v, error: %v", req, err)
 							return err
 						}
@@ -1621,7 +1621,7 @@ func (a *Addon) Delete(userID, routingInstanceID string) error {
 				if force {
 					forceDelete = "true"
 				}
-				if err := a.serviceGroupImpl.Delete(req.Namespace, req.Name, forceDelete); err != nil {
+				if err := a.serviceGroupImpl.Delete(req.Namespace, req.Name, forceDelete, nil); err != nil {
 					logrus.Errorf("delete service group failed, request: %+v, error: %+v", req, err)
 					return err
 				}

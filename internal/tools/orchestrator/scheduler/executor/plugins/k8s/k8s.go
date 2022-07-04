@@ -17,8 +17,8 @@ package k8s
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -27,11 +27,15 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
+	autoscalingv2beta2 "k8s.io/api/autoscaling/v2beta2"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	hpapb "github.com/erda-project/erda-proto-go/orchestrator/horizontalpodscaler/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	hpatypes "github.com/erda-project/erda/internal/tools/orchestrator/components/horizontalpodscaler/types"
 	"github.com/erda-project/erda/internal/tools/orchestrator/conf"
 	eventboxapi "github.com/erda-project/erda/internal/tools/orchestrator/scheduler/events"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/events/eventtypes"
@@ -46,6 +50,7 @@ import (
 	ds "github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/daemonset"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/deployment"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/event"
+	erdahpa "github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/hpa"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/ingress"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/instanceinfosync"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/job"
@@ -57,6 +62,8 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/persistentvolumeclaim"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/pod"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/resourceinfo"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/scaledobject"
+	kedav1alpha1 "github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/scaledobject/keda/v1alpha1"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/secret"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/serviceaccount"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/statefulset"
@@ -134,7 +141,7 @@ func init() {
 		// Synchronize instance status
 		dbclient := instanceinfo.New(dbengine.MustOpen())
 		bdl := bundle.New(bundle.WithCoreServices())
-		syncer := instanceinfosync.NewSyncer(clustername, k.addr, dbclient, bdl, k.pod, k.sts, k.deploy, k.event)
+		syncer := instanceinfosync.NewSyncer(clustername, k.addr, dbclient, bdl, k.pod, k.sts, k.deploy, k.event, k.hpa)
 
 		parentctx, cancelSyncInstanceinfo := context.WithCancel(context.Background())
 		k.instanceinfoSyncCancelFunc = cancelSyncInstanceinfo
@@ -190,6 +197,8 @@ type Kubernetes struct {
 	service      *k8sservice.Service
 	pvc          *persistentvolumeclaim.PersistentVolumeClaim
 	pv           *persistentvolume.PersistentVolume
+	scaledObject *scaledobject.ErdaScaledObject
+	hpa          *erdahpa.ErdaHPA
 	sts          *statefulset.StatefulSet
 	pod          *pod.Pod
 	secret       *secret.Secret
@@ -358,13 +367,15 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 	svc := k8sservice.New(k8sservice.WithCompleteParams(addr, client))
 	pvc := persistentvolumeclaim.New(persistentvolumeclaim.WithCompleteParams(addr, client))
 	pv := persistentvolume.New(persistentvolume.WithCompleteParams(addr, client))
+	scaleObj := scaledobject.New(scaledobject.WithCompleteParams(addr, client))
+	hpa := erdahpa.New(erdahpa.WithCompleteParams(addr, client))
 	sts := statefulset.New(statefulset.WithCompleteParams(addr, client))
 	k8spod := pod.New(pod.WithCompleteParams(addr, client))
 	k8ssecret := secret.New(secret.WithCompleteParams(addr, client))
 	k8sstorageclass := storageclass.New(storageclass.WithCompleteParams(addr, client))
 	sa := serviceaccount.New(serviceaccount.WithCompleteParams(addr, client))
 	nodeLabel := nodelabel.New(addr, client)
-	event := event.New(event.WithCompleteParams(addr, client))
+	event := event.New(event.WithCompleteParams(addr, client), event.WithKubernetesClient(k8sClient.ClientSet))
 	dbclient := instanceinfo.New(dbengine.MustOpen())
 
 	clusterInfo, err := clusterinfo.New(clusterName, clusterinfo.WithCompleteParams(addr, client), clusterinfo.WithDB(dbclient))
@@ -413,6 +424,8 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 		service:                  svc,
 		pvc:                      pvc,
 		pv:                       pv,
+		scaledObject:             scaleObj,
+		hpa:                      hpa,
 		sts:                      sts,
 		pod:                      k8spod,
 		secret:                   k8ssecret,
@@ -556,6 +569,15 @@ func (k *Kubernetes) Destroy(ctx context.Context, specObj interface{}) error {
 		}
 		return nil
 	} else {
+		if value, ok := runtime.Labels[hpatypes.ErdaPALabelKey]; ok && value == hpatypes.ErdaHPALabelValueCancel {
+			logrus.Infof("delete keda scaledObject in runtime %s on namespace %s", runtime.ID, runtime.ProjectNamespace)
+			_, err = k.cancelErdaHPARules(*runtime)
+			if err != nil {
+				logrus.Errorf("failed to delete runtime resource, delete runtime's keda scaledObjects error: %v", err)
+				return err
+			}
+		}
+
 		logrus.Infof("delete runtime %s on namespace %s", runtime.ID, runtime.ProjectNamespace)
 		err = k.destroyRuntimeByProjectNamespace(ns, runtime)
 		if err != nil {
@@ -847,11 +869,15 @@ func (k *Kubernetes) updateOneByOne(ctx context.Context, sg *apistructs.ServiceG
 		return fmt.Errorf(errMsg)
 	}
 
+	if err := k.createImageSecretIfNotExist(ns); err != nil {
+		return fmt.Errorf("create image secret when update one by one, err %v", err)
+	}
+
 	registryInfos := k.composeRegistryInfos(sg)
 	if len(registryInfos) > 0 {
 		err = k.UpdateImageSecret(ns, registryInfos)
 		if err != nil {
-			errMsg := fmt.Sprintf("failed to update secret %s on namespace %s, err: %v", AliyunRegistry, ns, err)
+			errMsg := fmt.Sprintf("failed to update secret %s on namespace %s, err: %v", conf.CustomRegCredSecret(), ns, err)
 			logrus.Errorf(errMsg)
 			return fmt.Errorf(errMsg)
 		}
@@ -1242,6 +1268,205 @@ func (k *Kubernetes) composeNewKey(keys []string) string {
 
 // Scale implements update the replica and resources for one service
 func (k *Kubernetes) Scale(ctx context.Context, spec interface{}) (interface{}, error) {
+	sg, ok := spec.(apistructs.ServiceGroup)
+	if !ok {
+		return nil, errors.Errorf("invalid servicegroup spec: %#v", spec)
+	}
+
+	value, ok := sg.Labels[hpatypes.ErdaPALabelKey]
+	if !ok {
+		return k.manualScale(ctx, spec)
+	}
+
+	switch value {
+	case hpatypes.ErdaHPALabelValueCreate:
+		return k.createErdaHPARules(spec)
+	case hpatypes.ErdaHPALabelValueApply:
+		return k.applyErdaHPARules(sg)
+	case hpatypes.ErdaHPALabelValueCancel:
+		return k.cancelErdaHPARules(sg)
+	case hpatypes.ErdaHPALabelValueReApply:
+		return k.reApplylErdaHPARules(sg)
+	default:
+		return nil, errors.Errorf("unknown task scale action")
+	}
+}
+
+func (k *Kubernetes) applyErdaHPARules(sg apistructs.ServiceGroup) (interface{}, error) {
+	for svc, sc := range sg.Extra {
+		scaledObject := hpapb.ScaledConfig{}
+		err := json.Unmarshal([]byte(sc), &scaledObject)
+		if err != nil {
+			return sg, errors.Errorf("apply hpa for serviceGroup service %s failed: %v", svc, err)
+		}
+
+		if scaledObject.RuleName == "" || scaledObject.RuleNameSpace == "" || scaledObject.ScaleTargetRef.Name == "" {
+			return sg, errors.Errorf("apply hpa for serviceGroup service %s failed: [rule name: %s] or [namespace: %s] or [targetRef.Name:%s] not set ", svc, scaledObject.RuleName, scaledObject.RuleNameSpace, scaledObject.ScaleTargetRef.Name)
+		}
+
+		scaledObj := convertToKedaScaledObject(scaledObject)
+		if err = k.scaledObject.Create(scaledObj); err != nil {
+			return sg, err
+		}
+	}
+
+	return sg, nil
+}
+
+func convertToKedaScaledObject(scaledObject hpapb.ScaledConfig) *kedav1alpha1.ScaledObject {
+	var stabilizationWindowSeconds int32 = 300
+	selectPolicy := autoscalingv2beta2.MaxPolicySelect
+
+	orgID := fmt.Sprintf("%d", scaledObject.OrgID)
+	triggers := make([]kedav1alpha1.ScaleTriggers, 0)
+	for _, trigger := range scaledObject.Triggers {
+		triggers = append(triggers, kedav1alpha1.ScaleTriggers{
+			Type: trigger.Type,
+			//Name:     "",
+			Metadata: trigger.Metadata,
+			// TODO: Retains for Authentication
+			/*
+				AuthenticationRef: &kedav1alpha1.ScaledObjectAuthRef{
+					Name: "",
+					Kind: "",
+				},
+				MetricType: "",
+			*/
+		})
+	}
+
+	return &kedav1alpha1.ScaledObject{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ScaledObject",
+			APIVersion: "keda.sh/v1alpha1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      scaledObject.RuleName + "-" + strutil.ToLower(scaledObject.ScaleTargetRef.Kind) + "-" + scaledObject.ScaleTargetRef.Name,
+			Namespace: scaledObject.RuleNameSpace,
+			Labels: map[string]string{
+				hpatypes.ErdaHPAObjectRuntimeServiceNameLabel: scaledObject.ServiceName,
+				hpatypes.ErdaHPAObjectRuntimeIDLabel:          fmt.Sprintf("%d", scaledObject.RuntimeID),
+				hpatypes.ErdaHPAObjectRuleIDLabel:             scaledObject.RuleID,
+				hpatypes.ErdaHPAObjectOrgIDLabel:              orgID,
+				hpatypes.ErdaPALabelKey:                       "yes",
+			},
+		},
+		Spec: kedav1alpha1.ScaledObjectSpec{
+			ScaleTargetRef: &kedav1alpha1.ScaleTarget{
+				Name:       scaledObject.ScaleTargetRef.Name,
+				APIVersion: scaledObject.ScaleTargetRef.ApiVersion,
+				Kind:       scaledObject.ScaleTargetRef.Kind,
+				//EnvSourceContainerName:  "containerName",
+			},
+			// +optional
+			PollingInterval: &scaledObject.PollingInterval,
+			// +optional
+			CooldownPeriod: &scaledObject.CooldownPeriod,
+			// +optional
+			//IdleReplicaCount: &scaledObject.PollingInterval,
+			MinReplicaCount: &scaledObject.MinReplicaCount,
+			MaxReplicaCount: &scaledObject.MaxReplicaCount,
+			Advanced: &kedav1alpha1.AdvancedConfig{
+				// +optional
+				HorizontalPodAutoscalerConfig: &kedav1alpha1.HorizontalPodAutoscalerConfig{
+					Behavior: &autoscalingv2beta2.HorizontalPodAutoscalerBehavior{
+						ScaleUp: &autoscalingv2beta2.HPAScalingRules{
+							StabilizationWindowSeconds: &stabilizationWindowSeconds,
+							SelectPolicy:               &selectPolicy,
+							Policies: []autoscalingv2beta2.HPAScalingPolicy{
+								{
+									Type:          autoscalingv2beta2.PodsScalingPolicy,
+									Value:         2,
+									PeriodSeconds: 30,
+								},
+								{
+									Type:          autoscalingv2beta2.PercentScalingPolicy,
+									Value:         50,
+									PeriodSeconds: 30,
+								},
+							},
+						},
+						ScaleDown: &autoscalingv2beta2.HPAScalingRules{
+							StabilizationWindowSeconds: &stabilizationWindowSeconds,
+							SelectPolicy:               &selectPolicy,
+							Policies: []autoscalingv2beta2.HPAScalingPolicy{
+								{
+									Type:          autoscalingv2beta2.PodsScalingPolicy,
+									Value:         2,
+									PeriodSeconds: 30,
+								},
+								{
+									Type:          autoscalingv2beta2.PercentScalingPolicy,
+									Value:         50,
+									PeriodSeconds: 30,
+								},
+							},
+						},
+					},
+				},
+				// +optional
+				RestoreToOriginalReplicaCount: scaledObject.Advanced.RestoreToOriginalReplicaCount,
+			},
+
+			Triggers: triggers,
+			Fallback: &kedav1alpha1.Fallback{
+				FailureThreshold: 3,
+				Replicas:         scaledObject.Fallback.Replicas,
+			},
+		},
+	}
+}
+
+func (k *Kubernetes) cancelErdaHPARules(sg apistructs.ServiceGroup) (interface{}, error) {
+	for svc, sc := range sg.Extra {
+		scaledObject := hpapb.ScaledConfig{}
+		err := json.Unmarshal([]byte(sc), &scaledObject)
+		if err != nil {
+			return sg, errors.Errorf("cancel hpa for serviceGroup service %s failed: %v", svc, err)
+		}
+
+		if scaledObject.RuleName == "" || scaledObject.RuleNameSpace == "" {
+			return sg, errors.Errorf("cancel hpa for sg %#v service %s failed: [name: %s] or [namespace: %s] not set ", sg, svc, scaledObject.RuleName, scaledObject.RuleNameSpace)
+		}
+
+		_, err = k.scaledObject.Get(scaledObject.RuleNameSpace, scaledObject.RuleName+"-"+strutil.ToLower(scaledObject.ScaleTargetRef.Kind)+"-"+scaledObject.ScaleTargetRef.Name)
+		if err == k8serror.ErrNotFound {
+			logrus.Warnf("No need to cancel hpa rule for svc %s, not found scaledObjects for this service", svc)
+			continue
+		}
+
+		if err = k.scaledObject.Delete(scaledObject.RuleNameSpace, scaledObject.RuleName+"-"+strutil.ToLower(scaledObject.ScaleTargetRef.Kind)+"-"+scaledObject.ScaleTargetRef.Name); err != nil {
+			return sg, err
+		}
+	}
+
+	return sg, nil
+}
+
+func (k *Kubernetes) reApplylErdaHPARules(sg apistructs.ServiceGroup) (interface{}, error) {
+	for svc, sc := range sg.Extra {
+		scaledObject := hpapb.ScaledConfig{}
+		err := json.Unmarshal([]byte(sc), &scaledObject)
+		if err != nil {
+			return sg, errors.Errorf("reapply hpa for sg %#v service %s failed: %v", sg, svc, err)
+		}
+
+		if scaledObject.RuleName == "" || scaledObject.RuleNameSpace == "" {
+			return sg, errors.Errorf("reapply hpa for sg %#v service %s failed: [name: %s] or [namespace: %s] not set ", sg, svc, scaledObject.RuleName, scaledObject.RuleNameSpace)
+		}
+
+		scaledObj := convertToKedaScaledObject(scaledObject)
+
+		err = k.scaledObject.Patch(scaledObj.Namespace, scaledObj.Name, scaledObj)
+		if err != nil {
+			return sg, err
+		}
+	}
+
+	return sg, nil
+}
+
+func (k *Kubernetes) manualScale(ctx context.Context, spec interface{}) (interface{}, error) {
 	sg, err := ValidateRuntime(spec, "TaskScale")
 
 	if err != nil {
@@ -1304,6 +1529,79 @@ func (k *Kubernetes) Scale(ctx context.Context, spec interface{}) (interface{}, 
 	}
 
 	return sg, nil
+}
+
+func (k *Kubernetes) createErdaHPARules(spec interface{}) (interface{}, error) {
+	hpaObjects := make(map[string]hpatypes.ErdaHPAObject)
+	sg, err := ValidateRuntime(spec, "TaskScale")
+
+	if err != nil {
+		return nil, err
+	}
+
+	if !IsGroupStateful(sg) && sg.ProjectNamespace != "" {
+		k.setProjectServiceName(sg)
+	}
+
+	if IsGroupStateful(sg) {
+		// statefulset application
+		// Judge the group from the label, each group is a statefulset
+		groups, err := groupStatefulset(sg)
+		if err != nil {
+			logrus.Infof(err.Error())
+			return nil, err
+		}
+
+		for _, groupedSG := range groups {
+			// 每个  groupedSG 对应一个 statefulSet，其中 Services 数量表示副本数
+			// Scale statefulset
+			sts, err := k.getStatefulSetAbstract(groupedSG)
+			if err != nil {
+				logrus.Error(err)
+				return nil, err
+			}
+			hpaObjects[groupedSG.Services[0].Name] = hpatypes.ErdaHPAObject{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: sts.APIVersion,
+					Kind:       sts.Kind,
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: sts.Namespace,
+					Name:      sts.Name,
+				},
+			}
+		}
+	} else {
+		// stateless application
+		for index, svc := range sg.Services {
+			switch svc.WorkLoad {
+			case ServicePerNode:
+				logrus.Errorf("svc %s in sg %+v is daemonset, can not scale", svc.Name, sg)
+				errs := fmt.Errorf("svc %s in sg %+v is daemonset, can not scale", svc.Name, sg)
+				logrus.Error(errs)
+				return nil, errs
+			default:
+				// Scale deployment
+				dp, err := k.getDeploymentAbstract(sg, index)
+				if err != nil {
+					logrus.Error(err)
+					return nil, err
+				}
+				hpaObjects[sg.Services[index].Name] = hpatypes.ErdaHPAObject{
+					TypeMeta: metav1.TypeMeta{
+						APIVersion: dp.APIVersion,
+						Kind:       dp.Kind,
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: dp.Namespace,
+						Name:      dp.Name,
+					},
+				}
+			}
+		}
+	}
+
+	return hpaObjects, nil
 }
 
 func (k *Kubernetes) composeNodeAntiAffinityPreferredWithWorkspace(workspace string) []apiv1.PreferredSchedulingTerm {
@@ -1382,23 +1680,18 @@ func (k *Kubernetes) composeRegistryInfos(sg *apistructs.ServiceGroup) []apistru
 }
 
 func (k *Kubernetes) setImagePullSecrets(namespace string) ([]apiv1.LocalObjectReference, error) {
-	secrets := []apiv1.LocalObjectReference{}
+	secrets := make([]apiv1.LocalObjectReference, 0, 1)
+	secretName := conf.CustomRegCredSecret()
 
-	// need to set the secret in default namespace which named with REGISTRY_SECRET_NAME env
-	registryName := os.Getenv(RegistrySecretName)
-	if registryName == "" {
-		registryName = AliyunRegistry
-	}
-
-	_, err := k.secret.Get(namespace, registryName)
+	_, err := k.secret.Get(namespace, secretName)
 	if err == nil {
 		secrets = append(secrets,
 			apiv1.LocalObjectReference{
-				Name: registryName,
+				Name: secretName,
 			})
 	} else {
 		if !k8serror.NotFound(err) {
-			return nil, fmt.Errorf("get secret %s in namespace %s err: %v", registryName, namespace, err)
+			return nil, fmt.Errorf("get secret %s in namespace %s err: %v", secretName, namespace, err)
 		}
 	}
 	return secrets, nil

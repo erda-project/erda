@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"bou.ke/monkey"
+	"github.com/alecthomas/assert"
 
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -124,4 +125,10 @@ func Test_getStage(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestIssueService_DBClient(t *testing.T) {
+	db := &dao.DBClient{}
+	i := IssueService{db: db}
+	assert.Equal(t, db, i.DBClient())
 }
