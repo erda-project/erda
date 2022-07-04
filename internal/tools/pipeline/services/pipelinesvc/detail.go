@@ -140,6 +140,7 @@ func (s *PipelineSvc) Detail(pipelineID uint64) (*apistructs.PipelineDetailDTO, 
 					if err := yaml.Unmarshal([]byte(specYmlStr), &actionSpec); err != nil {
 						logrus.Errorf("unmarshal action spec error: %v, continue merge task param", err)
 					}
+					taskDTO.Extra.Action = actionSpec.ConvertToDetail()
 				}
 			}
 			for _, actionTask := range actionTasks {

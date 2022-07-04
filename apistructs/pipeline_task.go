@@ -70,10 +70,11 @@ type PipelineTaskDTO struct {
 }
 
 type PipelineTaskExtra struct {
-	UUID           string             `json:"uuid"`
-	AllowFailure   bool               `json:"allowFailure"`
-	TaskContainers []TaskContainer    `json:"taskContainers"`
-	Params         []*TaskParamDetail `json:"params"`
+	UUID           string                   `json:"uuid"`
+	AllowFailure   bool                     `json:"allowFailure"`
+	TaskContainers []TaskContainer          `json:"taskContainers"`
+	Params         []*TaskParamDetail       `json:"params"`
+	Action         PipelineTaskActionDetail `json:"action"`
 }
 
 type TaskContainer struct {

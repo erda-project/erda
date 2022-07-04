@@ -313,6 +313,17 @@ type ActionSpec struct {
 	Executor          *ActionExecutor     `json:"executor" yaml:"executor"`
 }
 
+func (s *ActionSpec) ConvertToDetail() PipelineTaskActionDetail {
+	return PipelineTaskActionDetail{
+		Name:        s.Name,
+		Version:     s.Version,
+		Type:        s.Type,
+		LogoUrl:     s.LogoUrl,
+		DisplayName: s.GetLocaleDisplayName(i18n.GetGoroutineBindLang()),
+		Description: s.GetLocaleDesc(i18n.GetGoroutineBindLang()),
+	}
+}
+
 type ActionExecutor struct {
 	Kind string `json:"kind" yaml:"kind"`
 	Name string `json:"name" yaml:"name"`
