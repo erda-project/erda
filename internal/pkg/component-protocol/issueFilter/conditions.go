@@ -194,7 +194,7 @@ func (f *IssueFilter) ConditionRetriever() ([]interface{}, error) {
 	}
 
 	conditions := Zigzag(leftGroup, rightGroup)
-	conditions = append(conditions, condition.ExternalInputCondition("title", "title", cputil.I18n(f.sdk.Ctx, "searchByName")))
+	conditions = append(conditions, condition.ExternalInputCondition("title", "title", cputil.I18n(f.sdk.Ctx, "searchByNameAndId")))
 	return conditions, nil
 }
 
