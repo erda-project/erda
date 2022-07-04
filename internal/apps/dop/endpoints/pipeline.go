@@ -395,9 +395,9 @@ func (e *Endpoints) pipelineRun(ctx context.Context, r *http.Request, vars map[s
 		ConfigManageNamespaces: []string{utils.MakeUserOrgPipelineCmsNs(identityInfo.UserID, p.OrgID)},
 		Secrets:                utils.GetGittarSecrets(p.ClusterName, p.Branch, p.CommitDetail),
 	}); err != nil {
-		runningPipelineLink, ok := e.ProjectPipelineSvc.TryGenRunningPipelineLinkFromErr(p.PipelineDTO.OrgName, p.PipelineDTO.ProjectID, p.PipelineDTO.ApplicationID, err)
+		runningPipelineErr, ok := e.ProjectPipelineSvc.TryAddRunningPipelineLinkToErr(p.PipelineDTO.OrgName, p.PipelineDTO.ProjectID, p.PipelineDTO.ApplicationID, err)
 		if ok {
-			return errorresp.ErrResp(apierrors.ErrParallelRunPipeline.InvalidState(fmt.Sprintf("failed to run pipeline, there is already running: %s", runningPipelineLink)))
+			return errorresp.ErrResp(runningPipelineErr)
 		}
 		return errorresp.ErrResp(err)
 	}
