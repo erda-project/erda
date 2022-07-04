@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda/internal/apps/msp/apm/trace"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/exporters/clickhouse/builder"
 )
 
 func TestBuilder_buildBatches(t *testing.T) {
@@ -71,6 +72,7 @@ func TestBuilder_buildBatches(t *testing.T) {
 						StartTime:     1652421595810000000,
 						EndTime:       1652421595810843400,
 						OrgName:       "erda",
+						TenantId:      "c75de7278874f37d9f1bc818b473fc23",
 						TraceId:       "bac6e329-4be5-4ed5-b364-c0fc305b4f8e",
 						SpanId:        "4e4a3048-7ac0-4233-a133-c63cb3293e39",
 						ParentSpanId:  "411d3049-0053-44c4-a96b-997e277fd08e",
@@ -85,6 +87,7 @@ func TestBuilder_buildBatches(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			bu := &Builder{
+				cfg:     &builder.BuilderConfig{TenantIdKey: "terminus_key"},
 				Creator: &mockCreator{},
 				client:  &mockConn{},
 			}

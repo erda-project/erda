@@ -16,7 +16,6 @@ package clickhouse
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"

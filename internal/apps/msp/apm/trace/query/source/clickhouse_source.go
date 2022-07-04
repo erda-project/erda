@@ -22,6 +22,7 @@ import (
 
 	"github.com/doug-martin/goqu/v9"
 	"github.com/doug-martin/goqu/v9/exp"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/providers/clickhouse"
 	"github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
@@ -322,7 +323,7 @@ func (chs *ClickhouseSource) GetSpans(ctx context.Context, req *pb.GetSpansReque
 		"tag_keys",
 		"tag_values",
 	).Where(goqu.Ex{
-		"org_name":   req.OrgName,
+		"org_name":   orgName,
 		"tenant_id":  req.ScopeID,
 		"trace_id":   req.TraceID,
 		"start_time": goqu.Op{"gte": req.StartTime * 1000000},

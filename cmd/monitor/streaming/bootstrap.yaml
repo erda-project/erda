@@ -536,8 +536,6 @@ erda.oap.collector.core:
     metrics:
       - receivers:
           - "erda.oap.collector.receiver.kafka@spotmetric"
-        processors:
-          - "erda.oap.collector.processor.modifier@metric"
         exporters:
           - "erda.oap.collector.exporter.clickhouse@metric"
         batch_size: ${EXPORTER_CLICKHOUSE_METRIC_BATCH_SIZE:81920}
@@ -589,7 +587,6 @@ clickhouse.table.initializer@span:
   _enable: ${WRITE_SPAN_TO_CLICKHOUSE_ENABLE:false}
   table_prefix: "spans"
   ttl_sync_interval: "${CLICKHOUSE_TABLE_TTL_SYNC_INTERVAL:24h}"
-  database: jwmdebug
   default_ddl_files:
     - path: "conf/clickhouse/spans/ddl_create_db.sql.tpl"
       ignore_err: "false"
@@ -598,13 +595,11 @@ clickhouse.table.initializer@span:
 
 clickhouse.table.loader@span:
   _enable: ${WRITE_SPAN_TO_CLICKHOUSE_ENABLE:false}
-  database: jwmdebug
   table_prefix: "spans"
   default_search_table: "spans_all"
 
 clickhouse.table.creator@span:
   _enable: ${WRITE_SPAN_TO_CLICKHOUSE_ENABLE:false}
-  database: jwmdebug
   default_write_table: "spans"
   table_prefix: "spans"
 

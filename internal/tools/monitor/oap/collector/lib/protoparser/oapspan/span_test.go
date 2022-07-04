@@ -14,74 +14,83 @@
 
 package oapspan
 
-// func Test_unmarshalWork_Unmarshal(t *testing.T) {
-// 	type fields struct {
-// 		buf []byte
-// 		err error
-// 	}
-//
-// 	tests := []struct {
-// 		name    string
-// 		fields  fields
-// 		want    *trace.Span
-// 		wantErr bool
-// 	}{
-// 		{
-// 			fields: fields{
-// 				buf: []byte(`{"traceID":"bbb","spanID":"aaa","parentSpanID":"","startTimeUnixNano":1652756014793553000,"endTimeUnixNano":1652756014793553000,"name":"GET /","relations":null,"attributes":{"operation_name":"GET /","org_name":"erda"}}`),
-// 			},
-// 			want: &trace.Span{
-// 				SpanId:       "aaa",
-// 				TraceId:      "bbb",
-// 				ParentSpanId: "",
-// 				OrgName:      "erda",
-// 				StartTime:    int64(1652756014793553000),
-// 				EndTime:      int64(1652756014793553000),
-// 				Tags: map[string]string{
-// 					"operation_name": "GET /",
-// 					"org_name":       "erda",
-// 				},
-// 			},
-// 			wantErr: false,
-// 		},
-// 		{
-// 			name: "parser error",
-// 			fields: fields{
-// 				buf: []byte(`"traceID":"bbb","spanID":"aaa","parentSpanID":"","startTimeUnixNano":1652756014793553000,"endTimeUnixNano":1652756014793553000,"name":"GET /","relations":null,"attributes":{"operation_name":"GET /","org_name":"erda"}}`),
-// 			},
-// 			want: &trace.Span{
-// 				SpanId:       "aaa",
-// 				TraceId:      "bbb",
-// 				ParentSpanId: "",
-// 				OrgName:      "erda",
-// 				StartTime:    int64(1652756014793553000),
-// 				EndTime:      int64(1652756014793553000),
-// 				Tags: map[string]string{
-// 					"operation_name": "GET /",
-// 					"org_name":       "erda",
-// 				},
-// 			},
-// 			wantErr: true,
-// 		},
-// 	}
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			uw := &unmarshalWork{
-// 				buf: tt.fields.buf,
-// 				err: tt.fields.err,
-// 				callback: func(span *trace.Span) error {
-// 					assert.Equal(t, tt.want, span)
-// 					return nil
-// 				},
-// 			}
-// 			uw.wg.Add(1)
-// 			uw.Unmarshal()
-// 			uw.wg.Wait()
-// 			if !tt.wantErr {
-// 				assert.Nil(t, uw.err)
-// 			} else {
-// 				assert.NotNil(t, uw.err)
-// 			}
-// 		})
-// 	}
-// }
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/erda-project/erda/internal/apps/msp/apm/trace"
+)
+
+func Test_unmarshalWork_Unmarshal(t *testing.T) {
+	type fields struct {
+		buf []byte
+		err error
+	}
+
+	tests := []struct {
+		name    string
+		fields  fields
+		want    *trace.Span
+		wantErr bool
+	}{
+		{
+			fields: fields{
+				buf: []byte(`{"traceID":"bbb","spanID":"aaa","parentSpanID":"","startTimeUnixNano":1652756014793553000,"endTimeUnixNano":1652756014793553000,"name":"GET /","relations":null,"attributes":{"hello":"world","org_name":"erda"}}`),
+			},
+			want: &trace.Span{
+				SpanId:        "aaa",
+				TraceId:       "bbb",
+				ParentSpanId:  "",
+				OperationName: "GET /",
+				OrgName:       "erda",
+				StartTime:     int64(1652756014793553000),
+				EndTime:       int64(1652756014793553000),
+				Tags: map[string]string{
+					"hello":    "world",
+					"org_name": "erda",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "parser error",
+			fields: fields{
+				buf: []byte(`"traceID":"bbb","spanID":"aaa","parentSpanID":"","startTimeUnixNano":1652756014793553000,"endTimeUnixNano":1652756014793553000,"name":"GET /","relations":null,"attributes":{"hello":"world","org_name":"erda"}}`),
+			},
+			want: &trace.Span{
+				SpanId:        "aaa",
+				TraceId:       "bbb",
+				ParentSpanId:  "",
+				OperationName: "GET /",
+				OrgName:       "erda",
+				StartTime:     int64(1652756014793553000),
+				EndTime:       int64(1652756014793553000),
+				Tags: map[string]string{
+					"org_name": "erda",
+				},
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			uw := &unmarshalWork{
+				buf: tt.fields.buf,
+				err: tt.fields.err,
+				callback: func(span *trace.Span) error {
+					assert.Equal(t, tt.want, span)
+					return nil
+				},
+			}
+			uw.wg.Add(1)
+			uw.Unmarshal()
+			uw.wg.Wait()
+			if !tt.wantErr {
+				assert.Nil(t, uw.err)
+			} else {
+				assert.NotNil(t, uw.err)
+			}
+		})
+	}
+}
