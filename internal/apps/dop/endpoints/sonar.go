@@ -26,12 +26,15 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/conf"
 	"github.com/erda-project/erda/internal/apps/dop/dbclient"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/pkg/user"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/database/cimysql"
 	"github.com/erda-project/erda/pkg/http/httpclientutil"
@@ -108,7 +111,7 @@ func (e *Endpoints) SonarIssuesStore(ctx context.Context, r *http.Request, vars 
 		}
 	}()
 
-	resp, err := storeIssues(&req, e.bdl)
+	resp, err := storeIssues(&req, e.bdl, e.orgClient)
 	if err != nil {
 		return apierrors.ErrStoreSonarIssue.InternalError(err).ToResp(), nil
 	}
@@ -166,7 +169,7 @@ func (e *Endpoints) SonarIssues(ctx context.Context, r *http.Request, vars map[s
 	return httpserver.OkResp(data)
 }
 
-func storeIssues(sonarStore *apistructs.SonarStoreRequest, bdl *bundle.Bundle) (dbclient.QASonar, error) {
+func storeIssues(sonarStore *apistructs.SonarStoreRequest, bdl *bundle.Bundle, org org.ClientInterface) (dbclient.QASonar, error) {
 	sonar := dbclient.QASonar{
 		Key: sonarStore.Key,
 	}
@@ -241,19 +244,19 @@ func storeIssues(sonarStore *apistructs.SonarStoreRequest, bdl *bundle.Bundle) (
 		}
 	}
 
-	go MetricsSonar(sonarStore, bdl)
+	go MetricsSonar(sonarStore, bdl, org)
 
 	return sonar, nil
 }
 
-func MetricsSonar(sonarStore *apistructs.SonarStoreRequest, bdl *bundle.Bundle) {
+func MetricsSonar(sonarStore *apistructs.SonarStoreRequest, bdl *bundle.Bundle, org org.ClientInterface) {
 	if sonarStore == nil || bdl == nil {
 		return
 	}
 
 	var metrics []apistructs.Metric
 	var metric = &apistructs.Metric{}
-	addDefaultTagAndField(sonarStore, metric, bdl)
+	addDefaultTagAndField(sonarStore, metric, bdl, org)
 	bugs, _ := strconv.ParseFloat(sonarStore.IssuesStatistics.Bugs, 64)
 	coverage, _ := strconv.ParseFloat(sonarStore.IssuesStatistics.Coverage, 64)
 	vulnerabilities, _ := strconv.ParseFloat(sonarStore.IssuesStatistics.Vulnerabilities, 64)
@@ -266,10 +269,10 @@ func MetricsSonar(sonarStore *apistructs.SonarStoreRequest, bdl *bundle.Bundle) 
 	metric.Fields["duplications"] = duplications
 	metrics = append(metrics, *metric)
 
-	doMetrics(metrics, bdl)
+	doMetrics(metrics, bdl, org)
 }
 
-func addDefaultTagAndField(sonarStore *apistructs.SonarStoreRequest, metric *apistructs.Metric, bdl *bundle.Bundle) {
+func addDefaultTagAndField(sonarStore *apistructs.SonarStoreRequest, metric *apistructs.Metric, bdl *bundle.Bundle, orgClient org.ClientInterface) {
 	metric.Timestamp = time.Now().UnixNano()
 	metric.Name = SonarMetricsName
 	metric.Fields = map[string]interface{}{}
@@ -293,16 +296,20 @@ func addDefaultTagAndField(sonarStore *apistructs.SonarStoreRequest, metric *api
 		logrus.Errorf("addDefaultTagAndField get project err: %v", err)
 		return
 	}
-	org, err := bdl.GetOrg(project.OrgID)
+
+	orgResp, err := orgClient.GetOrg(apis.WithInternalClientContext(context.Background(), "dop"),
+		&orgpb.GetOrgRequest{IdOrName: strconv.FormatUint(project.OrgID, 10)})
 	if err != nil {
 		logrus.Errorf("addDefaultTagAndField get org err: %v", err)
 		return
 	}
+	org := orgResp.Data
+
 	metric.Tags["_metric_scope_id"] = org.Name
 	metric.Tags["org_name"] = org.Name
 }
 
-func doMetrics(metric []apistructs.Metric, bdl *bundle.Bundle) {
+func doMetrics(metric []apistructs.Metric, bdl *bundle.Bundle, org org.ClientInterface) {
 	logrus.Info(" doMetrics CollectMetrics start ")
 	metricsObject := apistructs.Metrics{}
 	metricsObject.Metric = metric

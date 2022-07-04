@@ -58,7 +58,7 @@ func TestOfflineEdgeCluster(t *testing.T) {
 		return 0, nil
 	})
 
-	c := New(db, bdl, nil, &fakeClusterServiceServer{})
+	c := New(db, bdl, nil, &fakeClusterServiceServer{}, nil)
 
 	// monkey patch Credential with core services
 	monkey.PatchInstanceMethod(reflect.TypeOf(c), "DeleteAccessKey", func(*Clusters, string) error {
@@ -98,7 +98,7 @@ func TestOfflineWithDeleteClusterFailed(t *testing.T) {
 		return 0, nil
 	})
 
-	c := New(db, bdl, nil, &fakeClusterServiceServer{})
+	c := New(db, bdl, nil, &fakeClusterServiceServer{}, nil)
 
 	// monkey patch Credential with core services
 	monkey.PatchInstanceMethod(reflect.TypeOf(c), "DeleteAccessKey", func(*Clusters, string) error {
@@ -138,7 +138,7 @@ func TestOfflineWithDeleteAKFailed(t *testing.T) {
 		return 0, nil
 	})
 
-	c := New(db, bdl, nil, &fakeClusterServiceServer{})
+	c := New(db, bdl, nil, &fakeClusterServiceServer{}, nil)
 
 	// monkey patch Credential with core services
 	monkey.PatchInstanceMethod(reflect.TypeOf(c), "DeleteAccessKey", func(*Clusters, string) error {
@@ -178,7 +178,7 @@ func TestBatchOfflineEdgeCluster(t *testing.T) {
 		return 0, nil
 	})
 
-	c := New(db, bdl, nil, &fakeClusterServiceServer{})
+	c := New(db, bdl, nil, &fakeClusterServiceServer{}, nil)
 
 	// monkey patch Credential with core services
 	monkey.PatchInstanceMethod(reflect.TypeOf(c), "DeleteAccessKey", func(*Clusters, string) error {
@@ -273,7 +273,7 @@ func TestOfflineEdgeClusters(t *testing.T) {
 				return 0, nil
 			})
 
-			c := New(db, bdl, nil, &fakeClusterServiceServer{})
+			c := New(db, bdl, nil, &fakeClusterServiceServer{}, nil)
 
 			_, hint, err := c.OfflineEdgeCluster(ctx, req, "", "")
 

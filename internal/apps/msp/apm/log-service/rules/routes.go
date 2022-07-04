@@ -15,6 +15,7 @@
 package rules
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -23,10 +24,12 @@ import (
 
 	"github.com/erda-project/erda-infra/pkg/strutil"
 	"github.com/erda-project/erda-infra/providers/httpserver"
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/msp/apm/log-service/analysis/processors"
 	_ "github.com/erda-project/erda/internal/apps/msp/apm/log-service/analysis/processors/regex" //
 	metrics "github.com/erda-project/erda/internal/tools/monitor/core/metric"
+	"github.com/erda-project/erda/pkg/common/apis"
 	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
 
@@ -57,10 +60,12 @@ func (p *provider) getTemplates(r *http.Request, params struct {
 }
 
 func (p *provider) getOrgName(id int64) (string, error) {
-	info, err := p.bdl.GetOrg(id)
+	orgResp, err := p.Org.GetOrg(apis.WithInternalClientContext(context.Background(), "cmp"),
+		&orgpb.GetOrgRequest{IdOrName: strconv.FormatInt(id, 10)})
 	if err != nil {
 		return "", err
 	}
+	info := orgResp.Data
 	return info.Name, nil
 }
 

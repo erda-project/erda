@@ -15,8 +15,10 @@
 package sms
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk"
@@ -24,10 +26,13 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-proto-go/core/messenger/notify/pb"
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/core/messenger/eventbox/subscriber"
 	"github.com/erda-project/erda/internal/core/messenger/eventbox/types"
+	"github.com/erda-project/erda/internal/core/org"
+	"github.com/erda-project/erda/pkg/common/apis"
 )
 
 type MobileSubscriber struct {
@@ -37,6 +42,7 @@ type MobileSubscriber struct {
 	monitorTemplateCode string
 	bundle              *bundle.Bundle
 	messenger           pb.NotifyServiceServer
+	org                 org.Interface
 }
 
 type MobileData struct {
@@ -47,7 +53,7 @@ type MobileData struct {
 
 type Option func(*MobileSubscriber)
 
-func New(accessKeyId, accessKeySecret, signName, monitorTemplateCode string, bundle *bundle.Bundle, messenger pb.NotifyServiceServer) subscriber.Subscriber {
+func New(accessKeyId, accessKeySecret, signName, monitorTemplateCode string, bundle *bundle.Bundle, messenger pb.NotifyServiceServer, org org.Interface) subscriber.Subscriber {
 	subscriber := &MobileSubscriber{
 		accessKeyId:         accessKeyId,
 		accessSecret:        accessKeySecret,
@@ -55,6 +61,7 @@ func New(accessKeyId, accessKeySecret, signName, monitorTemplateCode string, bun
 		bundle:              bundle,
 		messenger:           messenger,
 		monitorTemplateCode: monitorTemplateCode,
+		org:                 org,
 	}
 	return subscriber
 }
@@ -76,10 +83,12 @@ func (d *MobileSubscriber) Publish(dest string, content string, time int64, msg 
 		return []error{err}
 	}
 
-	org, err := d.bundle.GetOrg(mobileData.OrgID)
+	orgResp, err := d.org.GetOrg(apis.WithInternalClientContext(context.Background(), "eventbox"),
+		&orgpb.GetOrgRequest{IdOrName: strconv.FormatInt(mobileData.OrgID, 10)})
 	if err != nil {
 		logrus.Errorf("failed to get org info err:%s", err)
 	}
+	org := orgResp.Data
 
 	notifyChannel, err := d.bundle.GetEnabledNotifyChannelByType(mobileData.OrgID, apistructs.NOTIFY_CHANNEL_TYPE_SMS)
 	if err != nil {
@@ -105,8 +114,8 @@ func (d *MobileSubscriber) Publish(dest string, content string, time int64, msg 
 	// 通知组的短信模版存在notifyitem里
 	var templateCode string
 	templateCode = d.monitorTemplateCode
-	if err == nil && org.Config != nil && org.Config.SMSMonitorTemplateCode != "" {
-		templateCode = org.Config.SMSMonitorTemplateCode
+	if err == nil && org.Config != nil && org.Config.SmsMonitorTemplateCode != "" {
+		templateCode = org.Config.SmsMonitorTemplateCode
 	}
 	if err == nil && notifyChannel.Config != nil && notifyChannel.Config.TemplateCode != "" {
 		templateCode = notifyChannel.Config.TemplateCode

@@ -22,9 +22,11 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/dicehub/service/apierrors"
 	"github.com/erda-project/erda/internal/pkg/user"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 )
@@ -159,10 +161,13 @@ func (e *Endpoints) releaseRuleAuth(info *userInfo, ctx *context.Context, r *htt
 func (e *Endpoints) releaseRuleAudit(r *http.Request, vars map[string]string, info *userInfo,
 	releaseRule *apistructs.BranchReleaseRuleModel) error {
 
-	org, err := e.bdl.GetOrg(info.orgID)
+	orgResp, err := e.org.GetOrg(apis.WithInternalClientContext(context.Background(), "dicehub"),
+		&orgpb.GetOrgRequest{IdOrName: strconv.FormatUint(info.orgID, 10)})
 	if err != nil {
 		return err
 	}
+	org := orgResp.Data
+
 	project, err := e.bdl.GetProject(info.projectID)
 	if err != nil {
 		return err

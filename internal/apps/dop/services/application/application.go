@@ -24,6 +24,7 @@ import (
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -31,6 +32,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/conf"
 	"github.com/erda-project/erda/internal/apps/dop/dao"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/oauth2/tokenstore/mysqltokenstore"
 )
@@ -40,6 +42,7 @@ type Application struct {
 	bdl          *bundle.Bundle
 	cms          cmspb.CmsServiceServer
 	tokenService tokenpb.TokenServiceServer
+	org          org.ClientInterface
 }
 
 type Option func(*Application)
@@ -73,6 +76,12 @@ func WithPipelineCms(cms cmspb.CmsServiceServer) Option {
 func WithTokenSvc(tokenService tokenpb.TokenServiceServer) Option {
 	return func(a *Application) {
 		a.tokenService = tokenService
+	}
+}
+
+func WithOrg(org org.ClientInterface) Option {
+	return func(a *Application) {
+		a.org = org
 	}
 }
 
@@ -126,10 +135,13 @@ func (a *Application) Init(initReq *apistructs.ApplicationInitRequest) (uint64, 
 	}
 	token = res.Data[0].AccessKey
 
-	org, err := a.bdl.GetOrg(app.OrgID)
+	orgResp, err := a.org.GetOrg(apis.WithInternalClientContext(context.Background(), "dop"),
+		&orgpb.GetOrgRequest{IdOrName: strconv.FormatUint(app.OrgID, 10)})
 	if err != nil {
 		return 0, err
 	}
+	org := orgResp.Data
+
 	u, _ := url.Parse(conf.UIPublicURL())
 	remoteUrl := fmt.Sprintf("%s://git:%s@%s/%s/dop/%s/%s", u.Scheme, token, conf.UIDomain(), org.Name, app.ProjectName, app.Name)
 

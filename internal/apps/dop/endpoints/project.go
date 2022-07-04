@@ -27,11 +27,13 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	dwfpb "github.com/erda-project/erda-proto-go/dop/devflowrule/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/conf"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	"github.com/erda-project/erda/internal/pkg/user"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/cron"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
@@ -86,10 +88,12 @@ func (e *Endpoints) CreateProject(ctx context.Context, r *http.Request, vars map
 	}
 
 	// get org locale
-	org, err := e.bdl.GetOrg(projectCreateReq.OrgID)
+	orgResp, err := e.orgClient.GetOrg(apis.WithInternalClientContext(context.Background(), "dop"),
+		&orgpb.GetOrgRequest{IdOrName: strconv.FormatUint(projectCreateReq.OrgID, 10)})
 	if err != nil {
 		return apierrors.ErrCreateProject.InternalError(err).ToResp(), nil
 	}
+	org := orgResp.Data
 
 	// create project
 	projectID, err := e.bdl.CreateProject(projectCreateReq, identity.UserID)
@@ -787,10 +791,13 @@ func (e *Endpoints) ConstructProjectPackgeRequset(r *http.Request, vars map[stri
 		}
 	}
 
-	org, err := e.bdl.GetOrg(orgID)
+	orgResp, err := e.orgClient.GetOrg(apis.WithInternalClientContext(context.Background(), "dop"),
+		&orgpb.GetOrgRequest{IdOrName: strconv.FormatInt(orgID, 10)})
 	if err != nil {
 		return nil, apiErr.InternalError(err)
 	}
+	org := orgResp.Data
+
 	project, err := e.bdl.GetProject(projectID)
 	if err != nil {
 		return nil, apiErr.InternalError(err)

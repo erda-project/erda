@@ -25,9 +25,11 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/cmp/services/apierrors"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/loop"
@@ -180,20 +182,18 @@ func (e *Endpoints) DealTaskEvent(ctx context.Context, r *http.Request, vars map
 }
 
 // getOrgByRequest get org info
-func (e *Endpoints) getOrgByRequest(r *http.Request) (*apistructs.OrgDTO, error) {
+func (e *Endpoints) getOrgByRequest(r *http.Request) (*orgpb.Org, error) {
 	orgIDStr := r.Header.Get(httputil.OrgHeader)
 	if orgIDStr == "" {
 		return nil, errors.Errorf("missing org id header")
 	}
-	orgID, err := strutil.Atoi64(orgIDStr)
-	if err != nil {
-		return nil, errors.Errorf("invalid org id")
-	}
-	org, err := e.bdl.GetOrg(orgID)
+
+	orgResp, err := e.org.GetOrg(apis.WithInternalClientContext(context.Background(), "cmp"),
+		&orgpb.GetOrgRequest{IdOrName: orgIDStr})
 	if err != nil {
 		return nil, err
 	}
-	return org, nil
+	return orgResp.Data, nil
 }
 
 // SyncTaskStatus sync task status

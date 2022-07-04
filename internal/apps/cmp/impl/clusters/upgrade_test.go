@@ -82,7 +82,7 @@ func TestUpgradeEdgeCluster(t *testing.T) {
 	var bdl *bundle.Bundle
 	var db *dbclient.DBClient
 	db = &dbclient.DBClient{}
-	c := New(db, bdl, nil, &fakeClusterServiceServer{})
+	c := New(db, bdl, nil, &fakeClusterServiceServer{}, nil)
 
 	patch(bdl, c)
 
@@ -99,7 +99,7 @@ func TestEmptyCluster(t *testing.T) {
 	var bdl *bundle.Bundle
 	var db *dbclient.DBClient
 	db = &dbclient.DBClient{}
-	c := New(db, bdl, nil, &fakeClusterServiceServer{})
+	c := New(db, bdl, nil, &fakeClusterServiceServer{}, nil)
 
 	patch(bdl, c)
 
@@ -114,7 +114,7 @@ func TestEmptyCluster(t *testing.T) {
 func TestEmptyDBClient(t *testing.T) {
 	var bdl *bundle.Bundle
 	var db *dbclient.DBClient
-	c := New(db, bdl, nil, &fakeClusterServiceServer{})
+	c := New(db, bdl, nil, &fakeClusterServiceServer{}, nil)
 
 	patch(bdl, c)
 
@@ -131,7 +131,7 @@ func TestClusterWithoutAccessKey(t *testing.T) {
 	var bdl *bundle.Bundle
 	var db *dbclient.DBClient
 	db = &dbclient.DBClient{}
-	c := New(db, bdl, nil, &fakeClusterServiceServer{})
+	c := New(db, bdl, nil, &fakeClusterServiceServer{}, nil)
 
 	patch(bdl, c)
 
@@ -148,7 +148,7 @@ func TestClusterWithoutUserID(t *testing.T) {
 	var bdl *bundle.Bundle
 	var db *dbclient.DBClient
 	db = &dbclient.DBClient{}
-	c := New(db, bdl, nil, &fakeClusterServiceServer{})
+	c := New(db, bdl, nil, &fakeClusterServiceServer{}, nil)
 
 	patch(bdl, c)
 

@@ -136,6 +136,7 @@ func initEndpoints(p *provider) (*endpoints.Endpoints, error) {
 		endpoints.WithPipelineTemplate(pipelineTemplate),
 		endpoints.WithReleaseRule(releaseRule),
 		endpoints.WithQueryStringDecoder(queryStringDecoder),
+		endpoints.WithOrg(p.Org),
 	)
 
 	return ep, nil

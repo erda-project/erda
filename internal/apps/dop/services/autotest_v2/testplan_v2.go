@@ -15,14 +15,17 @@
 package autotestv2
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"strconv"
 
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/dao"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/expression"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -484,10 +487,13 @@ func (svc *Service) ExecuteDiceAutotestTestPlan(req apistructs.AutotestExecuteTe
 	if err != nil {
 		return nil, err
 	}
-	org, err := svc.bdl.GetOrg(project.OrgID)
+
+	orgResp, err := svc.org.GetOrg(apis.WithInternalClientContext(context.Background(), "dop"),
+		&orgpb.GetOrgRequest{IdOrName: strconv.FormatUint(project.OrgID, 10)})
 	if err != nil {
 		return nil, err
 	}
+	org := orgResp.Data
 
 	var reqPipeline = apistructs.PipelineCreateRequestV2{
 		PipelineYmlName: apistructs.PipelineSourceAutoTestPlan.String() + "-" + strconv.Itoa(int(req.TestPlan.ID)),

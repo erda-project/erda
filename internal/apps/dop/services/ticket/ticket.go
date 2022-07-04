@@ -16,6 +16,7 @@
 package ticket
 
 import (
+	"context"
 	"encoding/json"
 	"strconv"
 	"strings"
@@ -24,13 +25,16 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/dao"
 	"github.com/erda-project/erda/internal/apps/dop/model"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	"github.com/erda-project/erda/internal/apps/dop/services/permission"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/pkg/user"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/i18n"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -39,6 +43,7 @@ import (
 type Ticket struct {
 	db  *dao.DBClient
 	bdl *bundle.Bundle
+	org org.ClientInterface
 }
 
 // Option 定义 Ticket 配置选项
@@ -64,6 +69,12 @@ func WithDBClient(db *dao.DBClient) Option {
 func WithBundle(bdl *bundle.Bundle) Option {
 	return func(t *Ticket) {
 		t.bdl = bdl
+	}
+}
+
+func WithOrg(org org.ClientInterface) Option {
+	return func(t *Ticket) {
+		t.org = org
 	}
 }
 
@@ -301,7 +312,9 @@ func (t *Ticket) List(param *apistructs.TicketListRequest) (int64, []apistructs.
 		targetIDs := strings.Split(param.TargetID, ",")
 		db = db.Where("target_id in (?)", targetIDs)
 	} else if param.OrgID != 0 {
-		relations, _ := t.bdl.GetOrgClusterRelationsByOrg(uint64(param.OrgID))
+		orgResp, _ := t.org.GetOrgClusterRelationsByOrg(apis.WithInternalClientContext(context.Background(), "dop"),
+			&orgpb.GetOrgClusterRelationsByOrgRequest{OrgID: strconv.FormatInt(param.OrgID, 10)})
+		relations := orgResp.Data
 		clusterNames := make([]string, 0, len(relations))
 		for _, v := range relations {
 			clusterNames = append(clusterNames, v.ClusterName)

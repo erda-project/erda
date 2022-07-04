@@ -21,6 +21,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/dao"
 	"github.com/erda-project/erda/internal/apps/dop/services/autotest"
 	"github.com/erda-project/erda/internal/apps/dop/services/sceneset"
+	"github.com/erda-project/erda/internal/core/org"
 )
 
 // Service autotestv2 实例对象封装
@@ -30,6 +31,7 @@ type Service struct {
 	sceneset    *sceneset.Service
 	autotestSvc *autotest.Service
 	cms         cmspb.CmsServiceServer
+	org         org.ClientInterface
 
 	CreateFileRecord func(req apistructs.TestFileRecordRequest) (uint64, error)
 	UpdateFileRecord func(req apistructs.TestFileRecordRequest) error
@@ -75,5 +77,11 @@ func WithAutotestSvc(svc *autotest.Service) Option {
 func WithPipelineCms(cms cmspb.CmsServiceServer) Option {
 	return func(e *Service) {
 		e.cms = cms
+	}
+}
+
+func WithOrg(org org.ClientInterface) Option {
+	return func(e *Service) {
+		e.org = org
 	}
 }

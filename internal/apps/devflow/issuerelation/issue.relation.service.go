@@ -20,7 +20,9 @@ import (
 	"time"
 
 	"github.com/erda-project/erda-proto-go/apps/devflow/issuerelation/pb"
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/internal/apps/devflow/issuerelation/db"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 )
@@ -28,6 +30,7 @@ import (
 type issueRelationService struct {
 	p        *provider
 	dbClient *db.Client
+	org      org.ClientInterface
 }
 
 func (s *issueRelationService) Create(ctx context.Context, req *pb.CreateIssueRelationRequest) (*pb.CreateIssueRelationResponse, error) {
@@ -42,10 +45,12 @@ func (s *issueRelationService) Create(ctx context.Context, req *pb.CreateIssueRe
 	}
 
 	orgID := apis.GetOrgID(ctx)
-	org, err := s.p.bdl.GetOrg(orgID)
+	orgResp, err := s.org.GetOrg(apis.WithInternalClientContext(context.Background(), "cmp"),
+		&orgpb.GetOrgRequest{IdOrName: orgID})
 	if err != nil {
 		return nil, err
 	}
+	org := orgResp.Data
 
 	relations, err := s.dbClient.ListIssueRelation(&pb.ListIssueRelationRequest{
 		Type:      req.Type,

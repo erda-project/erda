@@ -34,6 +34,14 @@ import (
 	"github.com/erda-project/erda/pkg/ucauth"
 )
 
+type ClientInterface interface {
+	pb.OrgServiceServer
+}
+
+type WrapClient struct {
+	pb.OrgServiceServer
+}
+
 type Interface interface {
 	pb.OrgServiceServer
 	WithUc(uc *ucauth.UCClient)

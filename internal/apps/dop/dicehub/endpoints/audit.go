@@ -15,11 +15,14 @@
 package endpoints
 
 import (
+	"context"
 	"net/http"
 	"strconv"
 	"time"
 
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/pkg/common/apis"
 )
 
 type auditParams struct {
@@ -31,10 +34,12 @@ type auditParams struct {
 }
 
 func (e *Endpoints) audit(req *http.Request, params auditParams) error {
-	org, err := e.bdl.GetOrg(params.orgID)
+	orgResp, err := e.org.GetOrg(apis.WithInternalClientContext(context.Background(), "dicehub"),
+		&orgpb.GetOrgRequest{IdOrName: strconv.FormatInt(params.orgID, 10)})
 	if err != nil {
 		return err
 	}
+	org := orgResp.Data
 
 	project, err := e.bdl.GetProject(uint64(params.projectID))
 	if err != nil {

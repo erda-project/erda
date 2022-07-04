@@ -22,8 +22,10 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
-	"github.com/erda-project/erda/bundle"
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/types"
+	"github.com/erda-project/erda/internal/core/org"
+	"github.com/erda-project/erda/pkg/common/apis"
 )
 
 type ComponentAction struct {
@@ -31,13 +33,15 @@ type ComponentAction struct {
 
 func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	sdk := cputil.SDK(ctx)
-	bdl := ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
-	orgID := sdk.Identity.OrgID
-	org, err := bdl.GetOrg(orgID)
+	orgSvc := ctx.Value(types.OrgService).(org.ClientInterface)
+
+	orgResp, err := orgSvc.GetOrg(apis.WithInternalClientContext(ctx, "dop"), &orgpb.GetOrgRequest{IdOrName: sdk.Identity.OrgID})
 	if err != nil {
 		return err
 	}
-	if org.BlockoutConfig.BlockDEV || org.BlockoutConfig.BlockProd || org.BlockoutConfig.BlockStage || org.BlockoutConfig.BlockTEST {
+
+	org := orgResp.Data
+	if org.BlockoutConfig.BlockDev || org.BlockoutConfig.BlockProd || org.BlockoutConfig.BlockStage || org.BlockoutConfig.BlockTest {
 		return json.Unmarshal([]byte(`{ "visible": true, "message": "`+cputil.I18n(ctx, "blockMessage")+`", "type": "warning" }`), &c.Props)
 	}
 	return json.Unmarshal([]byte(`{ "visible": false }`), &c.Props)

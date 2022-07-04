@@ -19,12 +19,14 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/services/branchrule"
+	"github.com/erda-project/erda/internal/core/org"
 )
 
 type Service struct {
 	trans         i18n.Translator
 	branchRuleSvc *branchrule.BranchRule
 	bdl           *bundle.Bundle
+	org           org.ClientInterface
 }
 
 type Option func(*Service)
@@ -54,5 +56,11 @@ func WithBranchRuleSvc(branchRule *branchrule.BranchRule) Option {
 func WithBundle(bdl *bundle.Bundle) Option {
 	return func(svc *Service) {
 		svc.bdl = bdl
+	}
+}
+
+func WithOrg(org org.ClientInterface) Option {
+	return func(svc *Service) {
+		svc.org = org
 	}
 }

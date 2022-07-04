@@ -31,10 +31,13 @@ import (
 
 	"github.com/erda-project/erda-infra/pkg/transport"
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/cmp/dbclient"
+	"github.com/erda-project/erda/internal/core/org"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
@@ -43,10 +46,11 @@ type Clusters struct {
 	bdl        *bundle.Bundle
 	credential tokenpb.TokenServiceServer
 	clusterSvc clusterpb.ClusterServiceServer
+	org        org.ClientInterface
 }
 
-func New(db *dbclient.DBClient, bdl *bundle.Bundle, c tokenpb.TokenServiceServer, clusterSvc clusterpb.ClusterServiceServer) *Clusters {
-	return &Clusters{db: db, bdl: bdl, credential: c, clusterSvc: clusterSvc}
+func New(db *dbclient.DBClient, bdl *bundle.Bundle, c tokenpb.TokenServiceServer, clusterSvc clusterpb.ClusterServiceServer, org org.ClientInterface) *Clusters {
+	return &Clusters{db: db, bdl: bdl, credential: c, clusterSvc: clusterSvc, org: org}
 }
 
 // status:
@@ -217,23 +221,24 @@ func (c *Clusters) BatchUpgradeEdgeCluster(ctx context.Context, req apistructs.B
 	}
 }
 
-func (c *Clusters) GetOrgInfo(req *apistructs.OrgSearchRequest) (map[uint64]apistructs.OrgDTO, error) {
-	orgs, err := c.bdl.ListOrgs(req, "")
+func (c *Clusters) GetOrgInfo(req *orgpb.ListOrgRequest) (map[uint64]*orgpb.Org, error) {
+	listOrg, err := c.org.ListOrg(apis.WithInternalClientContext(context.Background(), "cmp"), req)
 	if err != nil {
 		return nil, err
 	}
-	result := make(map[uint64]apistructs.OrgDTO, len(orgs.List))
-	for _, v := range orgs.List {
+
+	result := make(map[uint64]*orgpb.Org, len(listOrg.List))
+	for _, v := range listOrg.List {
 		result[v.ID] = v
 	}
 	return result, nil
 }
 
 func (c *Clusters) ListClusters(ctx context.Context, req apistructs.OrgClusterInfoRequest) (result []apistructs.OrgClusterInfoBasicData, err error) {
-	orgsInfo := make(map[uint64]apistructs.OrgDTO)
+	orgsInfo := make(map[uint64]*orgpb.Org)
 	result = make([]apistructs.OrgClusterInfoBasicData, 0)
 	// get org info
-	orgsInfo, err = c.GetOrgInfo(&apistructs.OrgSearchRequest{
+	orgsInfo, err = c.GetOrgInfo(&orgpb.ListOrgRequest{
 		Q:        req.OrgName,
 		PageNo:   1,
 		PageSize: 100,

@@ -15,14 +15,18 @@
 package project
 
 import (
+	"context"
 	"strconv"
 
 	"github.com/sirupsen/logrus"
 
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/dao"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
+	"github.com/erda-project/erda/internal/core/org"
+	"github.com/erda-project/erda/pkg/common/apis"
 )
 
 type TemplateDB struct {
@@ -31,6 +35,7 @@ type TemplateDB struct {
 	OrgID       int64  `json:"orgID"`
 	Data        *apistructs.ProjectTemplateData
 	bdl         *bundle.Bundle
+	org         org.ClientInterface
 	packageName string
 	apistructs.IdentityInfo
 }
@@ -54,10 +59,12 @@ func (t *TemplateDB) SetApplications() error {
 }
 
 func (t *TemplateDB) SetMeta() error {
-	org, err := t.bdl.GetOrg(t.OrgID)
+	orgResp, err := t.org.GetOrg(apis.WithInternalClientContext(context.Background(), "dop"),
+		&orgpb.GetOrgRequest{IdOrName: strconv.FormatInt(t.OrgID, 10)})
 	if err != nil {
 		return err
 	}
+	org := orgResp.Data
 	t.Data.Meta.ProjectName = t.ProjectName
 	t.Data.Meta.OrgName = org.Name
 	t.Data.Meta.Source = "erda"
@@ -100,6 +107,7 @@ func (p *Project) ExportTemplatePackage(record *dao.TestFileRecord) {
 		IdentityInfo: req.IdentityInfo,
 		bdl:          p.bdl,
 		packageName:  record.FileName,
+		org:          p.org,
 	}
 	tempDirector := TemplateDataDirector{}
 	tempDirector.New(&tempDB, p.bdl, p.namespace)

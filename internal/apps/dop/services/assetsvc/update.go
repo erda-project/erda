@@ -26,10 +26,12 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/bdl"
 	"github.com/erda-project/erda/internal/apps/dop/dbclient"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -395,10 +397,12 @@ func (svc *Service) UpdateContract(ctx context.Context, req *apistructs.UpdateCo
 // the manager modifies the contract status (approve the contract)
 func (svc *Service) updateContractStatus(ctx context.Context, req *apistructs.UpdateContractReq, client *apistructs.ClientModel, access *apistructs.APIAccessesModel,
 	contract *apistructs.ContractModel) error {
-	org, err := svc.bdl.GetOrg(req.OrgID)
+	orgResp, err := svc.org.GetOrg(apis.WithInternalClientContext(context.Background(), "dop"),
+		&orgpb.GetOrgRequest{IdOrName: strconv.FormatUint(req.OrgID, 10)})
 	if err != nil {
 		return errors.Wrap(err, "failed to GetOrg")
 	}
+	org := orgResp.Data
 
 	if req.Body.Status == nil {
 		return nil
@@ -460,10 +464,12 @@ func (svc *Service) updateContractStatus(ctx context.Context, req *apistructs.Up
 // 管理人员修改合约的 SLA
 func (svc *Service) updateContractCurSLA(ctx context.Context, req *apistructs.UpdateContractReq, contract *apistructs.ContractModel, client *apistructs.ClientModel,
 	access *apistructs.APIAccessesModel) error {
-	org, err := svc.bdl.GetOrg(req.OrgID)
+	orgResp, err := svc.org.GetOrg(apis.WithInternalClientContext(context.Background(), "dop"),
+		&orgpb.GetOrgRequest{IdOrName: strconv.FormatUint(req.OrgID, 10)})
 	if err != nil {
 		return errors.Wrap(err, "failed to GetOrg")
 	}
+	org := orgResp.Data
 
 	if req.Body.CurSLAID == nil {
 		return nil
@@ -523,10 +529,12 @@ func (svc *Service) updateContractCurSLA(ctx context.Context, req *apistructs.Up
 
 func (svc *Service) updateContractRequestSLA(ctx context.Context, req *apistructs.UpdateContractReq, contract *apistructs.ContractModel, access *apistructs.APIAccessesModel,
 	asset *apistructs.APIAssetsModel) error {
-	org, err := svc.bdl.GetOrg(req.OrgID)
+	orgResp, err := svc.org.GetOrg(apis.WithInternalClientContext(context.Background(), "dop"),
+		&orgpb.GetOrgRequest{IdOrName: strconv.FormatUint(req.OrgID, 10)})
 	if err != nil {
 		return errors.Wrap(err, "failed to GetOrg")
 	}
+	org := orgResp.Data
 
 	// 如果申请的是本来就在申请中(页面逻辑不会出现这种情况), 直接返回
 	if contract.RequestSLAID != nil {
@@ -785,10 +793,12 @@ func (svc *Service) UpdateSLA(ctx context.Context, req *apistructs.UpdateSLAReq)
 		return apierrors.UpdateSLA.InvalidParameter("invalid time unit")
 	}
 
-	org, err := svc.bdl.GetOrg(req.OrgID)
+	orgResp, err := svc.org.GetOrg(apis.WithInternalClientContext(context.Background(), "dop"),
+		&orgpb.GetOrgRequest{IdOrName: strconv.FormatUint(req.OrgID, 10)})
 	if err != nil {
 		return apierrors.UpdateSLA.InternalError(errors.Wrap(err, "failed to GetOrg"))
 	}
+	org := orgResp.Data
 
 	var (
 		sla    apistructs.SLAModel

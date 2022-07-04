@@ -15,6 +15,7 @@
 package core
 
 import (
+	"context"
 	"strconv"
 	"strings"
 	"time"
@@ -22,9 +23,11 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/stream/common"
+	"github.com/erda-project/erda/pkg/common/apis"
 )
 
 func (p *provider) CreateIssueEvent(req *common.IssueStreamCreateRequest) error {
@@ -47,10 +50,14 @@ func (p *provider) CreateIssueEvent(req *common.IssueStreamCreateRequest) error 
 	if err != nil {
 		return err
 	}
-	orgModel, err := p.bdl.GetOrg(int64(projectModel.OrgID))
+
+	orgResp, err := p.Org.GetOrg(apis.WithInternalClientContext(context.Background(), "dop"),
+		&orgpb.GetOrgRequest{IdOrName: strconv.FormatUint(projectModel.OrgID, 10)})
 	if err != nil {
 		return err
 	}
+	orgModel := orgResp.Data
+
 	operator, err := p.bdl.GetCurrentUser(req.Operator)
 	if err != nil {
 		return err

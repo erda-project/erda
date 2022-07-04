@@ -23,10 +23,12 @@ import (
 	"unicode/utf8"
 
 	"github.com/erda-project/erda-proto-go/core/messenger/notifygroup/pb"
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/core/legacy/services/notify"
 	"github.com/erda-project/erda/internal/core/legacy/services/permission"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/pkg/audit"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
@@ -36,6 +38,7 @@ type notifyGroupService struct {
 	Permission  *permission.Permission
 	NotifyGroup *notify.NotifyGroup
 	bdl         *bundle.Bundle
+	org         org.Interface
 }
 
 func (n *notifyGroupService) BatchGetNotifyGroup(ctx context.Context, request *pb.BatchGetNotifyGroupRequest) (*pb.BatchGetNotifyGroupResponse, error) {
@@ -71,10 +74,14 @@ func (n *notifyGroupService) CreateNotifyGroup(ctx context.Context, request *pb.
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	org, err := n.bdl.GetOrg(orgIdStr)
+
+	orgResp, err := n.org.GetOrg(apis.WithInternalClientContext(context.Background(), "eventbox"),
+		&orgpb.GetOrgRequest{IdOrName: orgIdStr})
 	if err != nil {
 		return nil, errors.NewInvalidParameterError("orgId", "orgId is invalidate")
 	}
+	org := orgResp.Data
+
 	if strings.TrimSpace(request.Name) == "" {
 		return nil, errors.NewInvalidParameterError(request.Name, "name is empty")
 	}
@@ -221,10 +228,14 @@ func (n *notifyGroupService) UpdateNotifyGroup(ctx context.Context, request *pb.
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	org, err := n.bdl.GetOrg(orgIdStr)
+
+	orgResp, err := n.org.GetOrg(apis.WithInternalClientContext(context.Background(), "eventbox"),
+		&orgpb.GetOrgRequest{IdOrName: orgIdStr})
 	if err != nil {
 		return nil, errors.NewInvalidParameterError("orgId", "orgId is invalidate")
 	}
+	org := orgResp.Data
+
 	//notifyGroup, err := n.DB.GetNotifyGroupByID(request.GroupID, orgId)
 	notifyGroup, err := n.NotifyGroup.Get(request.GroupID, orgId)
 	if err != nil {
@@ -305,10 +316,14 @@ func (n *notifyGroupService) DeleteNotifyGroup(ctx context.Context, request *pb.
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	org, err := n.bdl.GetOrg(orgIdStr)
+
+	orgResp, err := n.org.GetOrg(apis.WithInternalClientContext(context.Background(), "eventbox"),
+		&orgpb.GetOrgRequest{IdOrName: orgIdStr})
 	if err != nil {
 		return nil, errors.NewInvalidParameterError("orgId", "orgId is invalidate")
 	}
+	org := orgResp.Data
+
 	notifyGroup, err := n.NotifyGroup.Get(request.GroupID, orgId)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)

@@ -33,10 +33,13 @@ import (
 
 	"github.com/erda-project/erda-infra/pkg/transport"
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/cmp/dbclient"
 	"github.com/erda-project/erda/internal/apps/cmp/impl/nodes"
+	"github.com/erda-project/erda/internal/core/org"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/crypto/encrypt"
 	"github.com/erda-project/erda/pkg/dlock"
 	"github.com/erda-project/erda/pkg/http/httputil"
@@ -64,6 +67,7 @@ type Mns struct {
 	js         jsonstore.JsonStore
 	Config     *Config
 	ClusterSvc clusterpb.ClusterServiceServer
+	org        org.ClientInterface
 }
 
 type Config struct {
@@ -79,8 +83,8 @@ type Config struct {
 	BathSize        int32
 }
 
-func New(db *dbclient.DBClient, bdl *bundle.Bundle, n *nodes.Nodes, js jsonstore.JsonStore, clusterSvc clusterpb.ClusterServiceServer) *Mns {
-	return &Mns{db: db, bdl: bdl, nodes: n, js: js, ClusterSvc: clusterSvc}
+func New(db *dbclient.DBClient, bdl *bundle.Bundle, n *nodes.Nodes, js jsonstore.JsonStore, clusterSvc clusterpb.ClusterServiceServer, org org.ClientInterface) *Mns {
+	return &Mns{db: db, bdl: bdl, nodes: n, js: js, ClusterSvc: clusterSvc, org: org}
 }
 
 func (m *Mns) GetAccountID(req apistructs.BasicCloudConf) (string, error) {
@@ -405,11 +409,14 @@ func (m *Mns) Consume(clusterInfo *clusterpb.ClusterInfo) {
 	}
 
 	// custom label1: dice/org-{orgName}; custom label2: dice/ess-autoscale
-	o, err := m.bdl.GetOrg(clusterInfo.OrgID)
+	orgResp, err := m.org.GetOrg(apis.WithInternalClientContext(context.Background(), "cmp"),
+		&orgpb.GetOrgRequest{IdOrName: strconv.FormatUint(uint64(clusterInfo.OrgID), 10)})
 	if err != nil {
 		logrus.Errorf("failed to get org name, cluster: %s, org id: %d", clusterInfo.Name, clusterInfo.OrgID)
 		return
 	}
+	o := orgResp.Data
+
 	addNodeReq, err := m.getAddNodesReq(clusterInfo, info.Instances)
 	if err != nil {
 		logrus.Errorf("get add nodes request failed, error: %v", err)

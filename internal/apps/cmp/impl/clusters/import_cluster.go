@@ -40,9 +40,11 @@ import (
 
 	"github.com/erda-project/erda-infra/pkg/transport"
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/cmp/conf"
 	"github.com/erda-project/erda/internal/apps/cmp/dbclient"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/k8sclient"
 )
@@ -124,11 +126,13 @@ func (c *Clusters) importCluster(ctx context.Context, userID string, req *apistr
 			return err
 		}
 
-		orgDTO, err := c.bdl.GetOrg(req.OrgID)
+		orgResp, err := c.org.GetOrg(apis.WithInternalClientContext(context.Background(), "cmp"),
+			&orgpb.GetOrgRequest{IdOrName: strconv.FormatUint(req.OrgID, 10)})
 		if err != nil {
 			logrus.Errorf("get org info error: %v", err)
 			return err
 		}
+		orgDTO := orgResp.Data
 
 		for _, node := range nodes.Items {
 			node.Labels[fmt.Sprintf(ErdaOrgLabel, orgDTO.Name)] = "true"
@@ -585,10 +589,12 @@ func (c *Clusters) generateClusterInitJob(ctx context.Context, orgID uint64, clu
 		jobName      = generateInitJobName(orgID, clusterName)
 	)
 
-	orgDto, err := c.bdl.GetOrg(orgID)
+	orgResp, err := c.org.GetOrg(apis.WithInternalClientContext(context.Background(), "cmp"),
+		&orgpb.GetOrgRequest{IdOrName: strconv.FormatUint(orgID, 10)})
 	if err != nil {
 		return nil, err
 	}
+	orgDto := orgResp.Data
 
 	rd, err := c.renderCommonDeployConfig(ctx, orgDto.Name, clusterName)
 	if err != nil {

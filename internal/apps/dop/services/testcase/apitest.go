@@ -15,6 +15,7 @@
 package testcase
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strconv"
@@ -23,9 +24,11 @@ import (
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/dbclient"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
+	"github.com/erda-project/erda/pkg/common/apis"
 )
 
 func (svc *Service) createOrUpdateAPIs(caseID, projectID uint64, apis []*apistructs.ApiTestInfo) error {
@@ -243,10 +246,12 @@ func (svc *Service) getClusterNameAndOrgNameFromCmdb(projectID int64) (string, s
 	}
 
 	// get orgName by orgID
-	orgInfo, err := svc.bdl.GetOrg(projectInfo.OrgID)
+	orgResp, err := svc.org.GetOrg(apis.WithInternalClientContext(context.Background(), "dop"),
+		&orgpb.GetOrgRequest{IdOrName: strconv.FormatUint(projectInfo.OrgID, 10)})
 	if err != nil {
 		return "", "", err
 	}
+	orgInfo := orgResp.Data
 
 	// get cluster name
 	if v, ok := projectInfo.ClusterConfig[string(apistructs.TestWorkspace)]; ok {
