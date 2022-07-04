@@ -1,6 +1,7 @@
 CREATE TABLE IF NOT EXISTS <database>.metrics ON CLUSTER '{cluster}'
 (
     `org_name`            LowCardinality(String),
+    `tenant_id`           LowCardinality(String),
     `metric_group`        LowCardinality(String),
     `timestamp`           DateTime64(9,'Asia/Shanghai') CODEC (DoubleDelta),
     `number_field_keys`   Array(LowCardinality(String)),
@@ -12,7 +13,7 @@ CREATE TABLE IF NOT EXISTS <database>.metrics ON CLUSTER '{cluster}'
 )
 ENGINE = ReplicatedMergeTree('/clickhouse/tables/{cluster}-{shard}/{database}/metrics', '{replica}')
 PARTITION BY toYYYYMMDD(timestamp)
-ORDER BY (org_name, metric_group, timestamp)
+ORDER BY (org_name, tenant_id, metric_group, timestamp)
 TTL toDateTime(timestamp) + INTERVAL <ttl_in_days> DAY;
 
 // create distributed table

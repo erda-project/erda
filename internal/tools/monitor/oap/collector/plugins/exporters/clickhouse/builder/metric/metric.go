@@ -90,10 +90,6 @@ func NewBuilder(ctx servicehub.Context, logger logs.Logger, cfg *builder.Builder
 	return bu, nil
 }
 
-func (bu *Builder) Start(_ context.Context) error {
-	return nil
-}
-
 func (bu *Builder) buildBatches(ctx context.Context, items []*metric.Metric) ([]driver.Batch, error) {
 	tablebatch := make(map[string]driver.Batch)
 	for _, data := range items {
@@ -159,6 +155,7 @@ func (bu *Builder) buildBatches(ctx context.Context, items []*metric.Metric) ([]
 
 		err = batch.AppendStruct(&metric.TableMetrics{
 			OrgName:           data.OrgName,
+			TenantId:          data.Tags[bu.cfg.TenantIdKey],
 			MetricGroup:       data.Name,
 			Timestamp:         data.Timestamp,
 			NumberFieldKeys:   numFieldKeys,
