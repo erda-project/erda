@@ -61,7 +61,7 @@ func (b *Bundle) CreatePipeline(req interface{}) (*apistructs.PipelineDTO, error
 		return nil, apierrors.ErrInvoke.InternalError(err)
 	}
 	if !resp.IsOK() || !createResp.Success {
-		return nil, toAPIError(resp.StatusCode(), createResp.Error)
+		return nil, toAPIError(resp.StatusCode(), createResp.Error).SetCtx(createResp.Error.Ctx)
 	}
 
 	return createResp.Data, nil

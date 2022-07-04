@@ -36,6 +36,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/providers/projectpipeline/deftype"
 	"github.com/erda-project/erda/internal/pkg/mock"
+	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -1140,6 +1141,53 @@ func Test_makePipelinePageListRequest(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := makePipelinePageListRequest(tt.args.params, tt.args.jsonValue); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("makePipelinePageListRequest() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestTryGenRunningPipelineLinkFromErr(t *testing.T) {
+	orgName := "erda"
+	var projectID uint64 = 1
+	var appID uint64 = 1
+	tests := []struct {
+		name     string
+		err      error
+		wantLink string
+		wantOK   bool
+	}{
+		{
+			name: "already running",
+			err: apierrors.ErrParallelRunPipeline.InvalidState("ErrParallelRunPipeline").SetCtx(map[string]interface{}{
+				apierrors.ErrParallelRunPipeline.Error(): fmt.Sprintf("%d", 123),
+			}),
+			wantLink: "/erda/dop/projects/1/apps/1/pipeline?pipelineID=123",
+			wantOK:   true,
+		},
+		{
+			name:     "normal error",
+			err:      apierrors.ErrRunPipeline,
+			wantLink: "",
+			wantOK:   false,
+		},
+		{
+			name:     "empty error",
+			err:      nil,
+			wantLink: "",
+			wantOK:   false,
+		},
+	}
+	p := ProjectPipelineService{
+		cfg: &config{},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotLink, gotOK := p.TryGenRunningPipelineLinkFromErr(orgName, projectID, appID, tt.err)
+			if gotLink != tt.wantLink {
+				t.Errorf("tryGenRunningPipelineLinkFromErr() gotLink = %v, want %v", gotLink, tt.wantLink)
+			}
+			if gotOK != tt.wantOK {
+				t.Errorf("tryGenRunningPipelineLinkFromErr() gotOK = %v, want %v", gotOK, tt.wantOK)
 			}
 		})
 	}

@@ -38,6 +38,7 @@ import (
 )
 
 type config struct {
+	UIPublicURL string `env:"UI_PUBLIC_URL" required:"true"`
 }
 
 type provider struct {
@@ -68,6 +69,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 			},
 		},
 		bundle:             p.bundle,
+		cfg:                p.Cfg,
 		PipelineSource:     p.PipelineSource,
 		PipelineDefinition: p.PipelineDefinition,
 		PipelineCms:        p.PipelineCms,

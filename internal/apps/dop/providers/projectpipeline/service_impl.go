@@ -1356,6 +1356,12 @@ func (p *ProjectPipelineService) autoRunPipeline(identityInfo apistructs.Identit
 	if err != nil {
 		return nil, err
 	}
+	projectIDStr := createV2.Labels[apistructs.LabelProjectID]
+	projectID, err := strconv.ParseUint(projectIDStr, 10, 64)
+	if err != nil {
+		return nil, err
+	}
+	orgName := createV2.NormalLabels[apistructs.LabelOrgName]
 
 	// If source type is erda，should sync pipelineYml file
 	pipelineYml := params.source.PipelineYml
@@ -1441,6 +1447,10 @@ func (p *ProjectPipelineService) autoRunPipeline(identityInfo apistructs.Identit
 
 	value, err := p.bundle.CreatePipeline(createV2)
 	if err != nil {
+		runningPipelineLink, ok := p.TryGenRunningPipelineLinkFromErr(orgName, projectID, appID, err)
+		if ok {
+			return nil, apierrors.ErrParallelRunPipeline.InvalidState(fmt.Sprintf("failed to run pipeline, there is already running: %s", runningPipelineLink))
+		}
 		return nil, apierrors.ErrRunProjectPipeline.InternalError(err)
 	}
 	return value, nil
@@ -1935,4 +1945,26 @@ func pipelineYmlsFilterIn(ymls []string, fn func(yml string) bool) (newYmls []st
 		}
 	}
 	return
+}
+
+func (p *ProjectPipelineService) TryGenRunningPipelineLinkFromErr(orgName string, projectID uint64, appID uint64, err error) (string, bool) {
+	apiError, ok := err.(*errorresp.APIError)
+	if !ok {
+		return "", false
+	}
+
+	ctxMap, ok := apiError.Ctx().(map[string]interface{})
+	if !ok {
+		return "", false
+	}
+	var runningPipelineID string
+	for key, value := range ctxMap {
+		if key == apierrors.ErrParallelRunPipeline.Error() {
+			runningPipelineID, _ = value.(string)
+		}
+	}
+	if runningPipelineID == "" {
+		return "", false
+	}
+	return fmt.Sprintf("%s/%s/dop/projects/%d/apps/%d/pipeline?pipelineID=%s", p.cfg.UIPublicURL, orgName, projectID, appID, runningPipelineID), true
 }

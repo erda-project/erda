@@ -34,6 +34,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/dao"
 	"github.com/erda-project/erda/internal/apps/dop/event"
+	"github.com/erda-project/erda/internal/apps/dop/providers/projectpipeline"
 	"github.com/erda-project/erda/internal/apps/dop/services/apidocsvc"
 	"github.com/erda-project/erda/internal/apps/dop/services/appcertificate"
 	"github.com/erda-project/erda/internal/apps/dop/services/application"
@@ -684,6 +685,7 @@ type Endpoints struct {
 	PipelineSource     sourcepb.SourceServiceServer
 	PipelineDefinition dpb.DefinitionServiceServer
 	DevFlowRule        dwfpb.DevFlowRuleServiceServer
+	ProjectPipelineSvc *projectpipeline.ProjectPipelineService
 
 	ImportChannel chan uint64
 	ExportChannel chan uint64
@@ -1055,6 +1057,12 @@ func WithPipelineDefinition(svc dpb.DefinitionServiceServer) Option {
 func WithDevFlowRule(svc dwfpb.DevFlowRuleServiceServer) Option {
 	return func(e *Endpoints) {
 		e.DevFlowRule = svc
+	}
+}
+
+func WithProjectPipelineSvc(svc *projectpipeline.ProjectPipelineService) Option {
+	return func(e *Endpoints) {
+		e.ProjectPipelineSvc = svc
 	}
 }
 
