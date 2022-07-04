@@ -5,6 +5,7 @@ Please implement the function entry, and add it to the list entries.
 import json
 
 import django.db.models
+from django.db import transaction
 
 
 class ErdaDevFlowRule(django.db.models.Model):
@@ -29,6 +30,18 @@ class ErdaDevFlowRule(django.db.models.Model):
         db_table = "erda_dev_flow_rule"
 
 
+def defer_commit(f):
+    def inner():
+        autocommit = transaction.get_autocommit()
+        transaction.set_autocommit(False)
+        f()
+        if autocommit:
+            transaction.commit()
+        transaction.set_autocommit(autocommit)
+    return inner
+
+
+@defer_commit
 def entry():
     """
     please implement this and add it to the list entries
@@ -38,13 +51,18 @@ def entry():
         if rule.flows == "":
             continue
         flows = json.loads(rule.flows)
+        if flows is None:
+            continue
         new_flows = list()
         policies = list()
         for flow in flows:
+            if flow is None:
+                continue
+            if 'flowType' not in flow:
+                continue
             branchType = "single_branch"
             if flow['flowType'] == "multi_branch":
                 branchType = "multi_branch"
-
             if flow['flowType'] == "single_branch":
                 branch = flow['targetBranch']
             else:
@@ -73,10 +91,10 @@ def entry():
                     },
                 })
 
-        rule.branch_policies = json.dumps(policies)
-        rule.flows = json.dumps(new_flows)
-        rule.save()
-    pass
+        if new_flows:
+            rule.branch_policies = json.dumps(policies)
+            rule.flows = json.dumps(new_flows)
+            rule.save()
 
 
 entries: [callable] = [
