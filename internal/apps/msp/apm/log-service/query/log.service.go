@@ -22,10 +22,14 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/dlclark/regexp2"
+
 	"github.com/erda-project/erda-proto-go/msp/apm/log-service/pb"
 	"github.com/erda-project/erda/internal/apps/msp/instance/db"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
+
+const regexpForRegexp = "\\((?!(\\?\\:|\\?\\!|\\?\\<\\=|\\?\\<\\!))\\??P?(?:\\<([^\\<\\>]*)\\>)?[^\\)]*\\)"
 
 type logService struct {
 	p               *provider
@@ -90,6 +94,31 @@ func (s *logService) GetFieldSettings(ctx context.Context, req *pb.GetFieldSetti
 	return &pb.GetFieldSettingsResponse{
 		Data: defaultFields,
 	}, nil
+}
+
+func (s *logService) ParseRegexp(ctx context.Context, req *pb.ParseRegexpRequest) (*pb.ParseRegexpResponse, error) {
+	reg, err := regexp2.Compile(regexpForRegexp, regexp2.None)
+	if err != nil {
+		return nil, err
+	}
+
+	var groups []*pb.RegexpGroup
+	for match, _ := reg.FindStringMatch(req.Pattern); match != nil; {
+		gps := match.Groups()
+		var pattern, name string
+		if len(gps) >= 1 {
+			pattern = gps[0].String()
+		}
+		if len(gps) >= 3 {
+			name = gps[2].String()
+		}
+		groups = append(groups, &pb.RegexpGroup{
+			Pattern: pattern,
+			Name:    name,
+		})
+		match, _ = reg.FindNextMatch(match)
+	}
+	return &pb.ParseRegexpResponse{Groups: groups}, nil
 }
 
 func (s *logService) listDefaultFields() []*pb.LogField {
