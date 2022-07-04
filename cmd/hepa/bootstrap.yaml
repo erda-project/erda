@@ -38,7 +38,7 @@ grpc-client@erda.core.clustermanager.cluster:
 erda.core.clustermanager.cluster-client: {}
 
 grpc-client@erda.core.project:
-  addr: "${CORE_SERVICES_GRPC_ADDR:core-services:9537}"
+  addr: "${ERDA_SERVER_GRPC_ADDR:erda-server:8096}"
 erda.core.project-client: {}
 
 grpc-client@erda.orchestrator.runtime:

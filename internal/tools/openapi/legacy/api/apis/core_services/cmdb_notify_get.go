@@ -19,7 +19,7 @@ import "github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
 var CMDB_NOTIFY_GET = apis.ApiSpec{
 	Path:        "/api/notifies/<notifyID>",
 	BackendPath: "/api/notifies/<notifyID>",
-	Host:        "core-services.marathon.l4lb.thisdcos.directory:9526",
+	Host:        "erda-server.marathon.l4lb.thisdcos.directory:9095",
 	Scheme:      "http",
 	Method:      "GET",
 	CheckLogin:  true,

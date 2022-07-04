@@ -29,7 +29,7 @@ import (
 // GetProjectWorkSpaceAbilities 获取项目对应环境的集群能力
 func (b *Bundle) GetProjectWorkSpaceAbilities(projectID uint64, workspace string, orgID uint64, userID string) (map[string]string, error) {
 	abilities := make(map[string]string)
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +58,7 @@ func (b *Bundle) GetProjectWorkSpaceAbilities(projectID uint64, workspace string
 
 // CreateProjectWorkSpaceAbilities 创建项目对应环境的集群能力
 func (b *Bundle) CreateProjectWorkSpaceAbilities(req apistructs.ProjectWorkSpaceAbility, orgID uint64, userID string) error {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return err
 	}
@@ -83,7 +83,7 @@ func (b *Bundle) CreateProjectWorkSpaceAbilities(req apistructs.ProjectWorkSpace
 
 // UpdateProjectWorkSpaceAbilities 更新项目对应环境的集群能力
 func (b *Bundle) UpdateProjectWorkSpaceAbilities(req apistructs.ProjectWorkSpaceAbility, orgID uint64, userID string) error {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return err
 	}
@@ -108,7 +108,7 @@ func (b *Bundle) UpdateProjectWorkSpaceAbilities(req apistructs.ProjectWorkSpace
 
 // DeleteProjectWorkSpaceAbilities 删除项目对应环境的集群能力
 func (b *Bundle) DeleteProjectWorkSpaceAbilities(projectID uint64, workspace string, orgID uint64, userID string) error {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return err
 	}

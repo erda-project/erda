@@ -26,7 +26,7 @@ import (
 )
 
 func (b *Bundle) CreateApprove(req *apistructs.ApproveCreateRequest, userID string) (*apistructs.ApproveDTO, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -48,7 +48,7 @@ func (b *Bundle) CreateApprove(req *apistructs.ApproveCreateRequest, userID stri
 }
 
 func (b *Bundle) ListApprove(orgID uint64, userID string, params url.Values) (*apistructs.ApproveListResponse, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +76,7 @@ func (b *Bundle) ListApprove(orgID uint64, userID string, params url.Values) (*a
 }
 
 func (b *Bundle) GetApprove(orgID, userID string, approveID int64) (*apistructs.ApproveDetailResponse, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +105,7 @@ func (b *Bundle) GetApprove(orgID, userID string, approveID int64) (*apistructs.
 
 func (b *Bundle) UpdateApprove(orgID uint64, userID string, approveID int64, body io.Reader) (
 	*apistructs.ApproveUpdateResponse, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}

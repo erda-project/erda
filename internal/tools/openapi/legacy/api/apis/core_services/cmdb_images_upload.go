@@ -19,7 +19,7 @@ import "github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
 var CMDB_IMAGE_UPLOAD = apis.ApiSpec{
 	Path:        "/api/images/actions/upload",
 	BackendPath: "/api/images/actions/upload",
-	Host:        "core-services.marathon.l4lb.thisdcos.directory:9526",
+	Host:        "erda-server.marathon.l4lb.thisdcos.directory:9095",
 	Scheme:      "http",
 	Method:      "POST",
 	CheckLogin:  true,

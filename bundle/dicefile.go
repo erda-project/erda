@@ -30,7 +30,7 @@ import (
 
 // DownloadDiceFile 根据 uuid 返回文件流
 func (b *Bundle) DownloadDiceFile(uuid string) (io.ReadCloser, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +56,7 @@ func (b *Bundle) DownloadDiceFile(uuid string) (io.ReadCloser, error) {
 
 // DeleteDiceFile 根据 uuid 删除文件
 func (b *Bundle) DeleteDiceFile(uuid string) error {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return err
 	}
@@ -81,7 +81,7 @@ func (b *Bundle) DeleteDiceFile(uuid string) error {
 
 // UploadFile 上传文件
 func (b *Bundle) UploadFile(req apistructs.FileUploadRequest, clientTimeout ...int64) (*apistructs.File, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}

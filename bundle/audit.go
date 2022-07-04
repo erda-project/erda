@@ -30,7 +30,7 @@ import (
 
 // CreateAuditEvent 创建审计事件
 func (b *Bundle) CreateAuditEvent(audits *apistructs.AuditCreateRequest) error {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return err
 	}
@@ -54,7 +54,7 @@ func (b *Bundle) CreateAuditEvent(audits *apistructs.AuditCreateRequest) error {
 
 // BatchCreateAuditEvent 批量创建审计事件
 func (b *Bundle) BatchCreateAuditEvent(audits *apistructs.AuditBatchCreateRequest) error {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return err
 	}
@@ -77,7 +77,7 @@ func (b *Bundle) BatchCreateAuditEvent(audits *apistructs.AuditBatchCreateReques
 }
 
 func (b *Bundle) ListAuditEvent(orgID string, userID string, params url.Values) (*apistructs.AuditsListResponse, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +108,7 @@ func (b *Bundle) ListAuditEvent(orgID string, userID string, params url.Values) 
 }
 
 func (b *Bundle) ExportAuditExcel(orgID, userID, lang string, params url.Values) (io.ReadCloser, *httpclient.Response, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, nil, err
 	}

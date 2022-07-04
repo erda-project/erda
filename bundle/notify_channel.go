@@ -24,7 +24,7 @@ import (
 
 // GetEnabledNotifyChannelByType get enabled notify channel of specific from core-service.
 func (b *Bundle) GetEnabledNotifyChannelByType(orgID interface{}, channelType apistructs.NotifyChannelType) (*apistructs.NotifyChannelDTO, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
