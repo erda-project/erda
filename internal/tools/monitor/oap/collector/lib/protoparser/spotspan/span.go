@@ -61,6 +61,13 @@ func metricToSpan(metric *metric.Metric) (*trace.Span, error) {
 	span.ParentSpanId = parentSpanID
 	delete(metric.Tags, "parent_span_id")
 
+	opName, ok := metric.Tags["operation_name"]
+	if !ok {
+		return nil, errors.New("operation_name cannot be null")
+	}
+	span.OperationName = opName
+	delete(metric.Tags, "operation_name")
+
 	value, ok := metric.Fields["start_time"]
 	if !ok {
 		return nil, errors.New("start_time cannot be null")

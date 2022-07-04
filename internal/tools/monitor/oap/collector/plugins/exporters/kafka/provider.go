@@ -58,7 +58,7 @@ func (p *provider) ExportMetric(items ...*metric.Metric) error {
 			p.Log.Errorf("serialize err: %s", err)
 			continue
 		}
-		err = p.writer.Write(&kafkav2.Message{
+		err = p.writer.Write(kafkav2.Message{
 			Data: data,
 		})
 		if err != nil {

@@ -36,18 +36,19 @@ func Test_unmarshalWork_Unmarshal(t *testing.T) {
 	}{
 		{
 			fields: fields{
-				buf: []byte(`{"traceID":"bbb","spanID":"aaa","parentSpanID":"","startTimeUnixNano":1652756014793553000,"endTimeUnixNano":1652756014793553000,"name":"GET /","relations":null,"attributes":{"operation_name":"GET /","org_name":"erda"}}`),
+				buf: []byte(`{"traceID":"bbb","spanID":"aaa","parentSpanID":"","startTimeUnixNano":1652756014793553000,"endTimeUnixNano":1652756014793553000,"name":"GET /","relations":null,"attributes":{"hello":"world","org_name":"erda"}}`),
 			},
 			want: &trace.Span{
-				SpanId:       "aaa",
-				TraceId:      "bbb",
-				ParentSpanId: "",
-				OrgName:      "erda",
-				StartTime:    int64(1652756014793553000),
-				EndTime:      int64(1652756014793553000),
+				SpanId:        "aaa",
+				TraceId:       "bbb",
+				ParentSpanId:  "",
+				OperationName: "GET /",
+				OrgName:       "erda",
+				StartTime:     int64(1652756014793553000),
+				EndTime:       int64(1652756014793553000),
 				Tags: map[string]string{
-					"operation_name": "GET /",
-					"org_name":       "erda",
+					"hello":    "world",
+					"org_name": "erda",
 				},
 			},
 			wantErr: false,
@@ -55,18 +56,18 @@ func Test_unmarshalWork_Unmarshal(t *testing.T) {
 		{
 			name: "parser error",
 			fields: fields{
-				buf: []byte(`"traceID":"bbb","spanID":"aaa","parentSpanID":"","startTimeUnixNano":1652756014793553000,"endTimeUnixNano":1652756014793553000,"name":"GET /","relations":null,"attributes":{"operation_name":"GET /","org_name":"erda"}}`),
+				buf: []byte(`"traceID":"bbb","spanID":"aaa","parentSpanID":"","startTimeUnixNano":1652756014793553000,"endTimeUnixNano":1652756014793553000,"name":"GET /","relations":null,"attributes":{"hello":"world","org_name":"erda"}}`),
 			},
 			want: &trace.Span{
-				SpanId:       "aaa",
-				TraceId:      "bbb",
-				ParentSpanId: "",
-				OrgName:      "erda",
-				StartTime:    int64(1652756014793553000),
-				EndTime:      int64(1652756014793553000),
+				SpanId:        "aaa",
+				TraceId:       "bbb",
+				ParentSpanId:  "",
+				OperationName: "GET /",
+				OrgName:       "erda",
+				StartTime:     int64(1652756014793553000),
+				EndTime:       int64(1652756014793553000),
 				Tags: map[string]string{
-					"operation_name": "GET /",
-					"org_name":       "erda",
+					"org_name": "erda",
 				},
 			},
 			wantErr: true,

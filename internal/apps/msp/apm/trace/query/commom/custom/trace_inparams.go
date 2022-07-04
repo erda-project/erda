@@ -25,8 +25,8 @@ type Model struct {
 	ServiceName string `json:"serviceName"`
 	TenantId    string `json:"tenantId"`
 	TraceId     string `json:"traceId"`
-	StartTime   int64  `json:"startTime"`
-	EndTime     int64  `json:"endTime"`
+	StartTime   int64  `json:"startTime"` // ms
+	EndTime     int64  `json:"endTime"`   // ms
 	RpcMethod   string `json:"rpcMethod"`
 	HttpPath    string `json:"httpPath"`
 	Status      string `json:"status"`

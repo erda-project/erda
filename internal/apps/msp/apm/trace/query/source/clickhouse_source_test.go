@@ -16,76 +16,19 @@ package source
 
 import (
 	"context"
-	"reflect"
 	"testing"
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/clickhouse/table/loader"
+
 	"github.com/erda-project/erda-infra/providers/clickhouse"
 	"github.com/erda-project/erda/internal/apps/msp/apm/trace/query/commom/custom"
 
 	"github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
-	"github.com/erda-project/erda/internal/apps/msp/apm/trace"
 )
-
-func Test_mergeAsSpan(t *testing.T) {
-	type args struct {
-		cs  trace.Series
-		sms []trace.Meta
-	}
-	tests := []struct {
-		name string
-		args args
-		want *pb.Span
-	}{
-		{
-			args: args{
-				cs: trace.Series{
-					SpanId:       "aaa",
-					TraceId:      "bbb",
-					StartTime:    2,
-					EndTime:      2,
-					ParentSpanId: "ppp",
-					Tags: map[string]string{
-						"db_statement": "select * from abc where id=aaa",
-					},
-				},
-				sms: []trace.Meta{
-					{
-						Key:   "operation_name",
-						Value: "query",
-					},
-					{
-						Key:   "org_name",
-						Value: "erda",
-					},
-				},
-			},
-			want: &pb.Span{
-				Id:            "aaa",
-				TraceId:       "bbb",
-				ParentSpanId:  "ppp",
-				StartTime:     2,
-				EndTime:       2,
-				OperationName: "query",
-				Tags: map[string]string{
-					"db_statement":   "select * from abc where id=aaa",
-					"org_name":       "erda",
-					"operation_name": "query",
-				},
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := mergeAsSpan(tt.args.cs, tt.args.sms); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("mergeAsSpan() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
 
 func Test_GetInterval(t *testing.T) {
 	type args struct {
@@ -145,28 +88,6 @@ func TestClickhouseSource_sortConditionStrategy(t *testing.T) {
 	}
 }
 
-func TestClickhouseSource_composeFilter(t *testing.T) {
-	type args struct {
-		req *pb.GetTracesRequest
-	}
-	tests := []struct {
-		name string
-		args args
-		want string
-	}{
-		{"case1", args{req: &pb.GetTracesRequest{TenantID: "test_tenant"}}, "SELECT distinct(series_id) FROM monitor.spans_meta_all WHERE (series_id in (select distinct(series_id) from monitor.spans_meta where (key = 'terminus_key' AND value = 'test_tenant'))) "},
-		{"case2", args{req: &pb.GetTracesRequest{TenantID: "test_tenant", ServiceName: "test_service_name"}}, "SELECT distinct(series_id) FROM monitor.spans_meta_all WHERE (series_id in (select distinct(series_id) from monitor.spans_meta where (key = 'terminus_key' AND value = 'test_tenant'))) AND (series_id in (select distinct(series_id) from monitor.spans_meta where (key='service_name' AND value LIKE concat('%','test_service_name','%')))) "},
-		{"case3", args{req: &pb.GetTracesRequest{TenantID: "test_tenant", RpcMethod: "hello()"}}, "SELECT distinct(series_id) FROM monitor.spans_meta_all WHERE (series_id in (select distinct(series_id) from monitor.spans_meta where (key = 'terminus_key' AND value = 'test_tenant'))) AND (series_id in (select distinct(series_id) from monitor.spans_meta where (key='rpc_method' AND value LIKE concat('%','hello()','%')))) "},
-		// {"case4", args{req: &pb.GetTracesRequest{TenantID: "test_tenant", HttpPath: "/hello"}}, "SELECT distinct(series_id) FROM monitor.spans_meta_all WHERE (series_id in (select distinct(series_id) from monitor.spans_meta where (key = 'terminus_key' AND value = 'test_tenant'))) AND (series_id in (select distinct(series_id) from monitor.spans_meta where (key='http_path' AND value LIKE concat('%','/hello','%')))) "},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			chs := &ClickhouseSource{}
-			assert.Equal(t, tt.want, chs.composeFilter(tt.args.req))
-		})
-	}
-}
-
 func TestClickhouseSource_sortConditionStrategy1(t *testing.T) {
 	type args struct {
 		sort string
@@ -213,45 +134,10 @@ func TestClickhouseSource_sortConditionStrategy1(t *testing.T) {
 	}
 }
 
-func Test_convertToMetas(t *testing.T) {
-	type args struct {
-		kvs keysValues
-	}
-	tests := []struct {
-		name string
-		args args
-		want []trace.Meta
-	}{
-		{
-			args: args{kvs: keysValues{
-				Keys:     []string{"hello", "hello2"},
-				Values:   []string{"world", "world2"},
-				SeriesID: 1024,
-			}},
-			want: []trace.Meta{
-				{
-					Key:   "hello",
-					Value: "world",
-				},
-				{
-					Key:   "hello2",
-					Value: "world2",
-				},
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := convertToMetas(tt.args.kvs); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("convertToMetas() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func TestClickhouseSource_GetSpans(t *testing.T) {
 	chs := ClickhouseSource{
 		CompatibleSource: &mockCS{},
+		Loader:           &mockLoader{},
 		Clickhouse:       &mockclickhouseInf{cli: &mockconn{}},
 	}
 	spans := chs.GetSpans(context.TODO(), &pb.GetSpansRequest{})
@@ -259,10 +145,38 @@ func TestClickhouseSource_GetSpans(t *testing.T) {
 	ass.Equal(1, len(spans))
 
 	chs = ClickhouseSource{
+		Loader:     &mockLoader{},
 		Clickhouse: &mockclickhouseInf{cli: &mockconn{}},
 	}
 	spans = chs.GetSpans(context.TODO(), &pb.GetSpansRequest{})
 	ass.Equal(0, len(spans))
+}
+
+type mockLoader struct {
+}
+
+func (m *mockLoader) ExistsWriteTable(tenant, key string) (ok bool, writeTableName string) {
+	panic("implement me")
+}
+
+func (m *mockLoader) GetSearchTable(tenant string) (string, *loader.TableMeta) {
+	return "spans_all", nil
+}
+
+func (m *mockLoader) ReloadTables() chan error {
+	panic("implement me")
+}
+
+func (m *mockLoader) WatchLoadEvent(listener func(map[string]*loader.TableMeta)) {
+	panic("implement me")
+}
+
+func (m *mockLoader) WaitAndGetTables(ctx context.Context) map[string]*loader.TableMeta {
+	panic("implement me")
+}
+
+func (m *mockLoader) Database() string {
+	panic("implement me")
 }
 
 type mockCS struct {
