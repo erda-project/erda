@@ -44,9 +44,8 @@ type config struct {
 
 // +provider
 type provider struct {
-	Cfg *config
-	Log logs.Logger
-
+	Cfg     *config
+	Log     logs.Logger
 	KafkaV2 kafkav2.Interface `autowired:"kafka-v2"`
 	writer  writer.Writer
 }
