@@ -567,12 +567,12 @@ func (s *hpscalerService) updateHPARules(userInfo *apistructs.UserInfo, appInfo 
 		newRule := newRulesBase[rule.RuleID]
 		needUpdate := false
 
-		if rule.ScaledConfig.MinReplicaCount != 0 && newRule.MinReplicaCount != rule.ScaledConfig.MinReplicaCount {
+		if rule.ScaledConfig.MinReplicaCount >= 0 && newRule.MinReplicaCount != rule.ScaledConfig.MinReplicaCount {
 			needUpdate = true
 			newRule.MinReplicaCount = rule.ScaledConfig.MinReplicaCount
 		}
 
-		if rule.ScaledConfig.MaxReplicaCount != 0 && newRule.MaxReplicaCount != rule.ScaledConfig.MaxReplicaCount {
+		if rule.ScaledConfig.MaxReplicaCount > 0 && newRule.MaxReplicaCount != rule.ScaledConfig.MaxReplicaCount {
 			needUpdate = true
 			newRule.MaxReplicaCount = rule.ScaledConfig.MaxReplicaCount
 		}
@@ -989,7 +989,7 @@ func validateHPARuleConfigCustom(serviceName string, maxReplicas int32, scaledCo
 		return errors.Errorf("service %s not set scaledConfig", serviceName)
 	}
 
-	if scaledConf.MinReplicaCount <= 0 {
+	if scaledConf.MinReplicaCount < 0 {
 		return errors.Errorf("service %s not set scaledConfig.minReplicaCount", serviceName)
 	}
 
