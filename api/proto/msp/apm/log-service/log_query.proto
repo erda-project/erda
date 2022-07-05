@@ -3,6 +3,7 @@ package erda.msp.apm.log_service;
 option go_package = "github.com/erda-project/erda-proto-go/msp/apm/log-service/pb";
 import "google/api/annotations.proto";
 import "google/protobuf/struct.proto";
+import "common/openapi.proto";
 
 service LogService {
   rpc HistogramAggregation(HistogramAggregationRequest) returns(HistogramAggregationResponse) {
@@ -35,10 +36,31 @@ service LogService {
     };
   }
 
+  rpc ParseRegexp(ParseRegexpRequest) returns(ParseRegexpResponse) {
+    option (google.api.http) = {
+      get: "/api/log-service/action/parse-regexp"
+    };
+    option (common.openapi) = {
+      path: "/api/log-service/action/parse-regexp"
+    };
+  }
   // download api cannot exposed by grpc
 }
 
 // for get field settings request
+
+message ParseRegexpRequest {
+  string pattern = 1;
+}
+
+message RegexpGroup {
+  string pattern = 1;
+  string name = 2;
+}
+
+message ParseRegexpResponse {
+  repeated RegexpGroup groups = 1;
+}
 
 message GetFieldSettingsRequest {
   string addon = 1;

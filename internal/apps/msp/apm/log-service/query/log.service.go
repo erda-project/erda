@@ -22,10 +22,14 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/dlclark/regexp2"
+
 	"github.com/erda-project/erda-proto-go/msp/apm/log-service/pb"
 	"github.com/erda-project/erda/internal/apps/msp/instance/db"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
+
+const regexpForRegexp = "\\((?!(\\?\\:|\\?\\!|\\?\\<\\=|\\?\\<\\!))\\??P?(?:\\<([^\\<\\>]*)\\>)?[^\\)]*\\)"
 
 type logService struct {
 	p               *provider
@@ -92,6 +96,14 @@ func (s *logService) GetFieldSettings(ctx context.Context, req *pb.GetFieldSetti
 	}, nil
 }
 
+func (s *logService) ParseRegexp(ctx context.Context, req *pb.ParseRegexpRequest) (*pb.ParseRegexpResponse, error) {
+	groups, err := parseRegexp(req.Pattern)
+	if err != nil {
+		return nil, err
+	}
+	return &pb.ParseRegexpResponse{Groups: groups}, nil
+}
+
 func (s *logService) listDefaultFields() []*pb.LogField {
 	var list []*pb.LogField
 	if len(s.p.Cfg.IndexFieldSettings.DefaultSettings.Fields) == 0 {
@@ -149,4 +161,28 @@ func (s *logService) getLogKeys(logKey string) (LogKeyGroup, error) {
 		return nil, fmt.Errorf("no storage located")
 	}
 	return ids.Group(), nil
+}
+
+func parseRegexp(content string) ([]*pb.RegexpGroup, error) {
+	reg, err := regexp2.Compile(regexpForRegexp, regexp2.None)
+	if err != nil {
+		return nil, err
+	}
+	var groups []*pb.RegexpGroup
+	for match, _ := reg.FindStringMatch(content); match != nil; {
+		gps := match.Groups()
+		var pattern, name string
+		if len(gps) >= 1 {
+			pattern = gps[0].String()
+		}
+		if len(gps) >= 3 {
+			name = gps[2].String()
+		}
+		groups = append(groups, &pb.RegexpGroup{
+			Pattern: pattern,
+			Name:    name,
+		})
+		match, _ = reg.FindNextMatch(match)
+	}
+	return groups, nil
 }
