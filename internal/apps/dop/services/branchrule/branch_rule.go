@@ -129,12 +129,13 @@ func (branchRule *BranchRule) GetBranchRuleFromDevFlowRule(projectID uint64) ([]
 		})
 	}
 	devFlowRule := apistructs.DevFlowRule{
-		ID:          devFlowRuleRsp.Data.ID,
-		Flows:       flows,
-		OrgID:       devFlowRuleRsp.Data.OrgID,
-		OrgName:     devFlowRuleRsp.Data.OrgName,
-		ProjectID:   devFlowRuleRsp.Data.ProjectID,
-		ProjectName: devFlowRuleRsp.Data.ProjectName,
+		ID:             devFlowRuleRsp.Data.ID,
+		Flows:          flows,
+		OrgID:          devFlowRuleRsp.Data.OrgID,
+		OrgName:        devFlowRuleRsp.Data.OrgName,
+		ProjectID:      devFlowRuleRsp.Data.ProjectID,
+		ProjectName:    devFlowRuleRsp.Data.ProjectName,
+		BranchPolicies: branchPolicies,
 	}
 	return devFlowRule.MakeBranchRules()
 }

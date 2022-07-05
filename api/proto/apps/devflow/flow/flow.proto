@@ -3,10 +3,10 @@ syntax = "proto3";
 package erda.apps.devflow.flow;
 
 import "common/openapi.proto";
-import "openapiv1/gittar/gittar.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/wrappers.proto";
+import "openapiv1/gittar/gittar.proto";
 
 option go_package = "github.com/erda-project/erda-proto-go/apps/devflow/flow/pb";
 
@@ -149,6 +149,7 @@ message DevFlowInfo {
     string inode = 6;
     string pInode = 7;
     bool hasOnPushBranch = 8;
+    string devFlowRuleName = 9;
 }
 
 message GetDevFlowInfoResponse {
