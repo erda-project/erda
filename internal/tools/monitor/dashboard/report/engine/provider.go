@@ -44,7 +44,7 @@ type config struct {
 	DomainAddr       string `file:"domain_addr" env:"ACTION_DOMAIN_ADDR" validate:"required"`
 	ReportID         string `file:"report_id" env:"ACTION_REPORT_ID" validate:"required"`
 	OrgName          string `file:"org_name" env:"ACTION_ORG_NAME" validate:"required"`
-	CoreServicesAddr string `file:"core_services_addr" env:"ACTION_CORE_SERVICES_ADDR" validate:"required"` // use db migration to handle change
+	CoreServicesAddr string `file:"core_services_addr" env:"ACTION_CORE_SERVICES_ADDR" validate:"required"` // use db migration to handle change, see 20220705-pipeline-crons-reportengine.sql
 }
 
 type provider struct {
