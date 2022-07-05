@@ -26,7 +26,7 @@ import (
 )
 
 func (b *Bundle) GetOAuth2Token(req apistructs.OAuth2TokenGetRequest) (*apistructs.OAuth2Token, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +55,7 @@ func (b *Bundle) GetOAuth2Token(req apistructs.OAuth2TokenGetRequest) (*apistruc
 }
 
 func (b *Bundle) InvalidateOAuth2Token(req apistructs.OAuth2TokenInvalidateRequest) (*apistructs.OAuth2Token, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}

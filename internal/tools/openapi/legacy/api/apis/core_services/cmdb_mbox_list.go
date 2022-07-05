@@ -22,7 +22,7 @@ import (
 var CMDB_MBOX_LIST = apis.ApiSpec{
 	Path:         "/api/mboxs",
 	BackendPath:  "/api/mboxs",
-	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
+	Host:         "erda-server.marathon.l4lb.thisdcos.directory:9095",
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,

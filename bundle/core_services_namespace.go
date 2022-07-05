@@ -23,7 +23,7 @@ import (
 )
 
 func (b *Bundle) GetWorkspaceNamespaces(req *apistructs.GetWorkspaceNamespaceRequest) ([]string, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}

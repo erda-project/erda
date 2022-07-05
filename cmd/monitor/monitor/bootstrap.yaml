@@ -367,7 +367,7 @@ monitor-monitoring:
     metric: ${MONITOR_MONITORING_METRIC_SYNC_INTERVAL}
 
 grpc-client@erda.core.messenger.notifychannel:
-  addr: "${CORE_SERVICES_GRPC_ADDR:core-services:9537}"
+  addr: "${ERDA_SERVER_GRPC_ADDR:erda-server:8096}"
 erda.core.messenger.notifychannel-client:
 
 erda.core.monitor.expression:
@@ -398,5 +398,5 @@ grpc-client@erda.core.clustermanager.cluster:
 erda.core.clustermanager.cluster-client: {}
 
 grpc-client@erda.core.messenger.notifygroup:
-  addr: "${CORE_SERVICES_GRPC_ADDR:core-services:9537}"
+  addr: "${ERDA_SERVER_GRPC_ADDR:erda-server:8096}"
 erda.core.messenger.notifygroup-client:

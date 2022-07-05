@@ -1,0 +1,1 @@
+update pipeline_crons set `extra`=REPLACE(extra,'core_services_addr: core-services', 'core_services_addr: erda-server'), `extra`=replace(extra,':9526',':9095') where `extra` like '%type: reportengine%';

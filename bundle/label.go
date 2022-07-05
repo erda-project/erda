@@ -25,7 +25,7 @@ import (
 
 // GetLabel 通过id获取label
 func (b *Bundle) GetLabel(id uint64) (*apistructs.ProjectLabel, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +46,7 @@ func (b *Bundle) GetLabel(id uint64) (*apistructs.ProjectLabel, error) {
 
 // ListLabelByNameAndProjectID list label by names and projectID
 func (b *Bundle) ListLabelByNameAndProjectID(projectID uint64, names []string) ([]apistructs.ProjectLabel, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +70,7 @@ func (b *Bundle) ListLabelByNameAndProjectID(projectID uint64, names []string) (
 
 // ListLabel list label
 func (b *Bundle) ListLabel(req apistructs.ProjectLabelListRequest) (*apistructs.ProjectLabelListResponseData, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +97,7 @@ func (b *Bundle) ListLabel(req apistructs.ProjectLabelListRequest) (*apistructs.
 
 // ListLabelByIDs list label by ids
 func (b *Bundle) ListLabelByIDs(ids []uint64) ([]apistructs.ProjectLabel, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}

@@ -79,13 +79,12 @@ func (p *provider) Initialize() error {
 
 	go ep.UserSvc().UcUserMigration()
 
-	server := httpserver.New(conf.ListenAddr())
+	server := httpserver.NewSingleton("")
 	server.RegisterEndpoint(ep.Routes())
 	server.WithLocaleLoader(bdl.GetLocaleLoader())
 	// Add auth middleware
 	// server.Router().Path("/metrics").Methods(http.MethodGet).Handler(promxp.Handler("cmdb"))
 	server.Router().Path("/api/images/{imageName}").Methods(http.MethodGet).HandlerFunc(endpoints.GetImage)
-	logrus.Infof("start the service and listen on address: \"%s\"", conf.ListenAddr())
 
 	wsi, err := websocket.New()
 	go func() {
@@ -93,7 +92,7 @@ func (p *provider) Initialize() error {
 	}()
 	server.Router().PathPrefix("/api/dice/eventbox").Path("/ws/{any:.*}").
 		Handler(sockjs.NewHandler("/api/dice/eventbox/ws", sockjs.DefaultOptions, wsi.HTTPHandle))
-	p.Router.Any("/**", server.Router().ServeHTTP)
+	server.RegisterToNewHttpServerRouter(p.Router)
 	return nil
 }
 

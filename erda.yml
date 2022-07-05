@@ -24,7 +24,6 @@ envs:
   ERDA_SERVER_ADDR: erda-server:9095
   MSP_ADDR: msp:8080
   DOP_ADDR: dop:9527
-  CORE_SERVICES_ADDR: core-services:9526
   OPENAPI_ADDR: openapi:9529
   CMP_ADDR: cmp:9027
   ORCHESTRATOR_ADDR: orchestrator:8081
@@ -72,6 +71,15 @@ services:
     cmd: /erda/cmd/erda-server/bin
     envs:
       DEBUG: "false"
+      AVATAR_STORAGE_URL: "file:///avatars"
+      CMDB_CONTAINER_TOPIC: "spot-metaserver_container"
+      CMDB_GROUP: "spot_cmdb_group"
+      CMDB_HOST_TOPIC: "spot-metaserver_host"
+      LICENSE_KEY: "XWoPm8I3FZuDclhuOhZ+qRPVHjXKCwSgZEOTyrMgtJg6f0Kz7QR0CyVN1ZWgbiou/OyABe7HyK1yVxDdeP1JuXcfOoGOdChTyiQfP5sdXUbferq5UkK7S44lMjNmzURlbdX8smSa13+8FQyDqz2BpDcBKMRfn2kKuF4n6n9Ls7HyVV7oWSKreEyIH3991Ug2grNEpcKip3ISVY7eGJ3uoahC9zs4fla1dzR47e5dgppHtf5WBjFgiSS+5qRi2mYa"
+      LISTEN_ADDR: ":9526"
+      UC_CLIENT_ID: "dice"
+      UC_CLIENT_SECRET: "secret"
+      CREATE_ORG_ENABLED: "false"
     ports:
       - port: 9095
         protocol: TCP
@@ -83,46 +91,8 @@ services:
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-ca.pem:/certs/etcd-ca.pem:ro"
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client.pem:/certs/etcd-client.pem:ro"
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client-key.pem:/certs/etcd-client-key.pem:ro"
-    resources:
-      cpu: ${request_cpu:0.2}
-      max_cpu: 0.2
-      mem: ${request_mem:128}
-      max_mem: 256
-      network:
-        mode: "container"
-    deployments:
-      replicas: 1
-      labels:
-        GROUP: "dice"
-    health_check:
-      http:
-        port: 9095
-        path: "/api/healthy"
-        duration: 120
-      exec: { }
-  core-services:
-    cmd: /erda/cmd/core-services/bin
-    ports:
-      - port: 9526
-        protocol: "TCP"
-        l4_protocol: "TCP"
-      - port: 9536 # new http port
-        protocol: "TCP"
-        l4_protocol: "TCP"
-      - port: 9537 # new grpc port
-        protocol: "TCP"
-        l4_protocol: "TCP"
-    envs:
-      AVATAR_STORAGE_URL: "file:///avatars"
-      CMDB_CONTAINER_TOPIC: "spot-metaserver_container"
-      CMDB_GROUP: "spot_cmdb_group"
-      CMDB_HOST_TOPIC: "spot-metaserver_host"
-      DEBUG: "false"
-      LICENSE_KEY: "XWoPm8I3FZuDclhuOhZ+qRPVHjXKCwSgZEOTyrMgtJg6f0Kz7QR0CyVN1ZWgbiou/OyABe7HyK1yVxDdeP1JuXcfOoGOdChTyiQfP5sdXUbferq5UkK7S44lMjNmzURlbdX8smSa13+8FQyDqz2BpDcBKMRfn2kKuF4n6n9Ls7HyVV7oWSKreEyIH3991Ug2grNEpcKip3ISVY7eGJ3uoahC9zs4fla1dzR47e5dgppHtf5WBjFgiSS+5qRi2mYa"
-      LISTEN_ADDR: ":9526"
-      UC_CLIENT_ID: "dice"
-      UC_CLIENT_SECRET: "secret"
-      CREATE_ORG_ENABLED: "false"
+      - "${nfs_root:/netdata}/avatars:/avatars:rw"
+      - "${nfs_root:/netdata}/dice/cmdb/files:/files:rw"
     resources:
       cpu: ${request_cpu:1}
       max_cpu: 1
@@ -130,20 +100,14 @@ services:
       max_mem: 2048
       network:
         mode: "container"
-    binds:
-      - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-ca.pem:/certs/etcd-ca.pem:ro"
-      - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client.pem:/certs/etcd-client.pem:ro"
-      - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client-key.pem:/certs/etcd-client-key.pem:ro"
-      - "${nfs_root:/netdata}/avatars:/avatars:rw"
-      - "${nfs_root:/netdata}/dice/cmdb/files:/files:rw"
     deployments:
-      replicas: 1
+      replicas: ${replicas:2}
       labels:
         GROUP: "dice"
     health_check:
       http:
-        port: 9526
-        path: "/_api/health"
+        port: 9095
+        path: "/api/healthy"
         duration: 120
       exec: { }
   cluster-manager:

@@ -26,7 +26,7 @@ import (
 var CMDB_CLUSTER_DEREFERENCE = apis.ApiSpec{
 	Path:         "/api/clusters/actions/dereference",
 	BackendPath:  "/api/clusters/actions/dereference",
-	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
+	Host:         "erda-server.marathon.l4lb.thisdcos.directory:9095",
 	Scheme:       "http",
 	Method:       "PUT",
 	CheckLogin:   true,

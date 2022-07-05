@@ -22,7 +22,7 @@ import (
 var CMDB_LICENSE = apis.ApiSpec{
 	Path:         "/api/license",
 	BackendPath:  "/api/license",
-	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
+	Host:         "erda-server.marathon.l4lb.thisdcos.directory:9095",
 	Scheme:       "http",
 	Method:       "GET",
 	Doc:          "summary: 查询license信息",

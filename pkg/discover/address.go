@@ -45,7 +45,6 @@ const (
 	EnvECP            = "ECP_ADDR"
 	EnvClusterManager = "CLUSTER_MANAGER_ADDR"
 	EnvClusterDialer  = "CLUSTER_DIALER_ADDR"
-	EnvCoreServices   = "CORE_SERVICES_ADDR"
 	EnvFDPMaster      = "FDP_MASTER_ADDR"
 	EnvErdaServer     = "ERDA_SERVER_ADDR"
 )
@@ -77,7 +76,6 @@ const (
 	SvcECP            = "ecp"
 	SvcClusterManager = "cluster-manager"
 	SvcClusterDialer  = "cluster-dialer"
-	SvcCoreServices   = "core-services"
 	SvcFDPMaster      = "fdp-master"
 	SvcErdaServer     = "erda-server"
 	SvcAdmin          = "admin"
@@ -109,7 +107,6 @@ var ServicesEnvKeys = map[string]string{
 	SvcECP:            EnvECP,
 	SvcClusterManager: EnvClusterManager,
 	SvcClusterDialer:  EnvClusterDialer,
-	SvcCoreServices:   EnvCoreServices,
 	SvcFDPMaster:      EnvFDPMaster,
 	SvcErdaServer:     EnvErdaServer,
 }
@@ -145,7 +142,7 @@ func QA() string             { return getURL(SvcQA) }
 func APIM() string           { return getURL(SvcAPIM) }
 func UC() string             { return getURL(SvcUC) }
 func DOP() string            { return getURL(SvcDOP) }
-func CoreServices() string   { return getURL(SvcCoreServices) }
+func ErdaServer() string     { return getURL(SvcErdaServer) }
 func ClusterManager() string { return getURL(SvcClusterManager) }
 func ClusterDialer() string  { return getURL(SvcClusterDialer) }
 

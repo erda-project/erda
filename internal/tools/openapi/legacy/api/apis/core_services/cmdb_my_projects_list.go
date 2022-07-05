@@ -25,7 +25,7 @@ add for standard
 var CMDB_MY_PROJECTS_LIST = apis.ApiSpec{
 	Path:         "/api/projects/actions/list-my-projects",
 	BackendPath:  "/api/projects/actions/list-my-projects",
-	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
+	Host:         "erda-server.marathon.l4lb.thisdcos.directory:9095",
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,

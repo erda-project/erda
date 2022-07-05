@@ -19,7 +19,7 @@ import "github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
 var CMDB_MBOX_GET = apis.ApiSpec{
 	Path:        "/api/mboxs/<mboxID>",
 	BackendPath: "/api/mboxs/<mboxID>",
-	Host:        "core-services.marathon.l4lb.thisdcos.directory:9526",
+	Host:        "erda-server.marathon.l4lb.thisdcos.directory:9095",
 	Scheme:      "http",
 	Method:      "GET",
 	CheckLogin:  true,

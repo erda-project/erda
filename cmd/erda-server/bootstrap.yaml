@@ -27,6 +27,9 @@ component-protocol:
 i18n@personal-workbench:
 
 i18n:
+  common: # core-services
+    - conf/i18n/cs-i18n.yml # core-services
+    - conf/i18n/i18n.yaml # core-services
   files:
     - conf/i18n/gallery.yaml
 
@@ -55,3 +58,25 @@ erda.msp.tenant.project-client: {}
 grpc-client@erda.msp.menu:
   addr: "${MSP_GRPC_ADDR:msp:7080}"
 erda.msp.menu-client: {}
+
+############# core-services
+core-services: {}
+permission: {}
+redis:
+  addr: "${REDIS_ADDR}"
+  password: "${REDIS_PASSWORD}"
+  db: ${REDIS_DB:0}
+  master_name: "${REDIS_MASTER_NAME}"
+  sentinels_addr: "${REDIS_SENTINELS_ADDR}"
+http-server@admin:
+  addr: ":7098"
+pprof:
+dingtalk.api: {}
+audit: {}
+erda.core.services.errorbox: {}
+erda.core.messenger.notify: {}
+erda.core.messenger.eventbox: {}
+erda.core.messenger.notifygroup: {}
+erda.core.messenger.notifychannel: {}
+erda.core.token: {}
+erda.core.org: {}

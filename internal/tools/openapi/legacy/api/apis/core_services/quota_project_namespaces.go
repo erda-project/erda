@@ -21,7 +21,7 @@ import (
 var QUOTA_GET_PROJECT_NAMESPACES = apis.ApiSpec{
 	Path:         "/api/projects-namespaces",
 	BackendPath:  "/api/projects-namespaces",
-	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
+	Host:         "erda-server.marathon.l4lb.thisdcos.directory:9095",
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,

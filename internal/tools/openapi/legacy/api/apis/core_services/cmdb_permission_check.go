@@ -22,7 +22,7 @@ import (
 var CMDB_PERMISSION_CHECK = apis.ApiSpec{
 	Path:         "/api/permissions/actions/check",
 	BackendPath:  "/api/permissions/actions/check",
-	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
+	Host:         "erda-server.marathon.l4lb.thisdcos.directory:9095",
 	Scheme:       "http",
 	Method:       "POST",
 	CheckLogin:   true,

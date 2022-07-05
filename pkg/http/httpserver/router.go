@@ -15,9 +15,13 @@
 package httpserver
 
 import (
+	"sync"
+
 	"github.com/erda-project/erda-infra/providers/httpserver"
 )
 
+var registerOnce sync.Once
+
 func (s *Server) RegisterToNewHttpServerRouter(newRouter httpserver.Router) {
-	newRouter.Any("/**", s.router)
+	registerOnce.Do(func() { newRouter.Any("/*", s.router) })
 }

@@ -24,7 +24,7 @@ import (
 var CMDB_MEMBER_ADD = apis.ApiSpec{
 	Path:         "/api/members",
 	BackendPath:  "/api/members",
-	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
+	Host:         "erda-server.marathon.l4lb.thisdcos.directory:9095",
 	Scheme:       "http",
 	Method:       "POST",
 	CheckLogin:   true,

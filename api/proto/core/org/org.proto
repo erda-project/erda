@@ -10,7 +10,7 @@ option go_package = "github.com/erda-project/erda-proto-go/core/org/pb";
 
 service OrgService {
     option(erda.common.openapi_service) = {
-        service: "core-services",
+        service: "erda-server",
         auth: {
             check_login: true,
             check_token: true,

@@ -22,7 +22,7 @@ import (
 var CMDB_MEMBER_ADD_BY_INVITECODE = apis.ApiSpec{
 	Path:          "/api/members/actions/create-by-invitecode",
 	BackendPath:   "/api/members/actions/create-by-invitecode",
-	Host:          "core-services.marathon.l4lb.thisdcos.directory:9526",
+	Host:          "erda-server.marathon.l4lb.thisdcos.directory:9095",
 	Scheme:        "http",
 	Method:        "POST",
 	TryCheckLogin: true,

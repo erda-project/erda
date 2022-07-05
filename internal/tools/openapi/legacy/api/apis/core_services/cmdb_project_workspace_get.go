@@ -22,7 +22,7 @@ import (
 var CMDB_PROJECT_WORKSPACE_ABILITIES_GET = apis.ApiSpec{
 	Path:         "/api/project-workspace-abilities/<projectID>/<workspace>",
 	BackendPath:  "/api/project-workspace-abilities/<projectID>/<workspace>",
-	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
+	Host:         "erda-server.marathon.l4lb.thisdcos.directory:9095",
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,

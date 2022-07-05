@@ -24,7 +24,7 @@ import (
 var CMDB_LABEL_LIST = apis.ApiSpec{
 	Path:         "/api/labels",
 	BackendPath:  "/api/labels",
-	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
+	Host:         "erda-server.marathon.l4lb.thisdcos.directory:9095",
 	Scheme:       "http",
 	Method:       http.MethodGet,
 	CheckLogin:   true,

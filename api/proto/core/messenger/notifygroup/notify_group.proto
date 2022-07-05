@@ -12,7 +12,7 @@ import "common/openapi.proto";
 
 service NotifyGroupService {
   option(erda.common.openapi_service) = {
-    service: "core-services"
+    service: "erda-server"
     auth: {
       check_login: true,
       check_token: true,

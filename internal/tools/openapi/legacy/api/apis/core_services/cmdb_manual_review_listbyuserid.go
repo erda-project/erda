@@ -22,7 +22,7 @@ import (
 var CMDB_MANUAL_REVIEW_LISTBYUserID = apis.ApiSpec{
 	Path:         "/api/reviews/actions/list-approved",
 	BackendPath:  "/api/reviews/actions/list-approved",
-	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
+	Host:         "erda-server.marathon.l4lb.thisdcos.directory:9095",
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,

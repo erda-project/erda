@@ -897,7 +897,7 @@ func (e *Endpoints) convertToApplicationDTO(ctx context.Context, application mod
 		orgDisplayName string
 		org            *orgpb.Org
 	)
-	org, err = e.getOrg(apis.WithInternalClientContext(ctx, discover.SvcCoreServices), application.OrgID)
+	org, err = e.getOrg(apis.WithInternalClientContext(ctx, discover.SvcErdaServer), application.OrgID)
 	if err != nil {
 		logrus.Error(err)
 	} else {

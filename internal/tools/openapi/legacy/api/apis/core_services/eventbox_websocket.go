@@ -19,7 +19,7 @@ import "github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
 var EVENTBOX_WEBSOCKET = apis.ApiSpec{
 	Path:        "/api/websocket/<a>/<b>/websocket",
 	BackendPath: "/api/dice/eventbox/ws/<a>/<b>/websocket",
-	Host:        "core-services.marathon.l4lb.thisdcos.directory:9526",
+	Host:        "erda-server.marathon.l4lb.thisdcos.directory:9095",
 	Scheme:      "ws",
 	Method:      "GET",
 	CheckLogin:  true,

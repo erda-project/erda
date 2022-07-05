@@ -25,7 +25,7 @@ import (
 
 func (b *Bundle) ListSubscribes(userID, orgID string, req apistructs.GetSubscribeReq) (data *apistructs.SubscribeDTO, err error) {
 	data = &apistructs.SubscribeDTO{}
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return
 	}
@@ -52,7 +52,7 @@ func (b *Bundle) ListSubscribes(userID, orgID string, req apistructs.GetSubscrib
 }
 
 func (b *Bundle) CreateSubscribe(userID, orgID string, req apistructs.CreateSubscribeReq) (string, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return "", err
 	}
@@ -75,7 +75,7 @@ func (b *Bundle) CreateSubscribe(userID, orgID string, req apistructs.CreateSubs
 }
 
 func (b *Bundle) DeleteSubscribe(userID, orgID string, req apistructs.UnSubscribeReq) error {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return err
 	}

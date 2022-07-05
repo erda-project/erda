@@ -27,7 +27,6 @@ import (
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/internal/apps/admin/dao"
 	"github.com/erda-project/erda/internal/apps/admin/manager"
-	"github.com/erda-project/erda/internal/apps/dop/conf"
 	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/http/httpserver"
@@ -75,10 +74,10 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		manager.WithClusterSvc(p.ClusterSvc),
 		manager.WithOrg(p.Org),
 	)
-	server := httpserver.New(conf.ListenAddr())
+	server := httpserver.NewSingleton("")
 	server.Router().UseEncodedPath()
 	server.RegisterEndpoint(admin.Routers())
-	p.Router.Any("/**", server.Router())
+	server.RegisterToNewHttpServerRouter(p.Router)
 	return nil
 }
 

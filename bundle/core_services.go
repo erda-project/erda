@@ -22,7 +22,7 @@ import (
 )
 
 func (b *Bundle) ProjectClusterReferred(userID, orgID, clusterName string) (referred bool, err error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return
 	}

@@ -136,7 +136,7 @@ func (b *Bundle) GetAllGroups(scope, scopeId, orgId, userId string) ([]apistruct
 }
 
 func (b *Bundle) GetNotifyConfigMS(userId, orgId string) (bool, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return false, err
 	}

@@ -28,7 +28,7 @@ import (
 
 // GetMemberByToken get member by token
 func (b *Bundle) GetMemberByToken(request *apistructs.GetMemberByTokenRequest) (*apistructs.Member, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +57,7 @@ func (b *Bundle) ListMembers(req apistructs.MemberListRequest) ([]apistructs.Mem
 }
 
 func (b *Bundle) GetMembers(req apistructs.MemberListRequest) (*apistructs.MemberList, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +96,7 @@ func (b *Bundle) ListMembersAndTotal(req apistructs.MemberListRequest) (*apistru
 
 // UpdateMemberUserInfo 更新成员的用户信息
 func (b *Bundle) UpdateMemberUserInfo(req apistructs.MemberUserInfoUpdateRequest) error {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return err
 	}
@@ -120,7 +120,7 @@ func (b *Bundle) UpdateMemberUserInfo(req apistructs.MemberUserInfoUpdateRequest
 
 // DeleteMember 移除成员
 func (b *Bundle) DeleteMember(req apistructs.MemberRemoveRequest) error {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return err
 	}
@@ -144,7 +144,7 @@ func (b *Bundle) DeleteMember(req apistructs.MemberRemoveRequest) error {
 
 // DestroyUsers 删除用户一切成员信息
 func (b *Bundle) DestroyUsers(req apistructs.MemberDestroyRequest) error {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return err
 	}
@@ -169,7 +169,7 @@ func (b *Bundle) DestroyUsers(req apistructs.MemberDestroyRequest) error {
 // ListMemberRolesByUser 查看某个用户在一个scope下的权限
 func (b *Bundle) ListMemberRolesByUser(req apistructs.ListMemberRolesByUserRequest) (
 	*apistructs.UserRoleListResponseData, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -201,7 +201,7 @@ func (b *Bundle) ListMemberRolesByUser(req apistructs.ListMemberRolesByUserReque
 
 // GetAllOrganizational 获取所有的组织架构
 func (b *Bundle) GetAllOrganizational() (*apistructs.GetAllOrganizationalData, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -229,7 +229,7 @@ func (b *Bundle) GetAllOrganizational() (*apistructs.GetAllOrganizationalData, e
 // ListScopeManagersByScopeID list manages by scopeID
 func (b *Bundle) ListScopeManagersByScopeID(req apistructs.ListScopeManagersByScopeIDRequest) (
 	[]apistructs.Member, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -257,7 +257,7 @@ func (b *Bundle) ListScopeManagersByScopeID(req apistructs.ListScopeManagersBySc
 
 // ListMemberRoles list member roles
 func (b *Bundle) ListMemberRoles(req apistructs.ListScopeManagersByScopeIDRequest, orgID int64, locale string) (*apistructs.RoleList, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -286,7 +286,7 @@ func (b *Bundle) ListMemberRoles(req apistructs.ListScopeManagersByScopeIDReques
 }
 
 func (b *Bundle) AddMember(req apistructs.MemberAddRequest, userID string) error {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return err
 	}
@@ -308,7 +308,7 @@ func (b *Bundle) AddMember(req apistructs.MemberAddRequest, userID string) error
 
 // CountMembersWithoutExtraByScope count member
 func (b *Bundle) CountMembersWithoutExtraByScope(scopeType string, scopeID uint64) (int, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return 0, err
 	}
@@ -336,7 +336,7 @@ func (b *Bundle) CountMembersWithoutExtraByScope(scopeType string, scopeID uint6
 
 // GetMemberByUserAndScope get member by user and scope
 func (b *Bundle) GetMemberByUserAndScope(scopeType apistructs.ScopeType, userID string, scopeID uint64) ([]apistructs.Member, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}

@@ -432,7 +432,7 @@ func (p *provider) generatePipelineYml(r *reportTask) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	eaddr, err := p.createFQDN(discover.CoreServices())
+	eaddr, err := p.createFQDN(discover.ErdaServer())
 	if err != nil {
 		return "", err
 	}

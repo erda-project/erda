@@ -103,7 +103,7 @@ func init() {
 		Description:          "",
 		Types:                eventpb.Types(),
 		ConfigFunc: func() interface{} {
-			return config{}
+			return &config{}
 		},
 	})
 }

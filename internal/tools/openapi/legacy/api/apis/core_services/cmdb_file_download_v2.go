@@ -23,7 +23,7 @@ import (
 var CMDB_FILE_DOWNLOAD_V2 = apis.ApiSpec{
 	Path:          "/api/files/<uuid>",
 	BackendPath:   "/api/files/<uuid>",
-	Host:          "core-services.marathon.l4lb.thisdcos.directory:9526",
+	Host:          "erda-server.marathon.l4lb.thisdcos.directory:9095",
 	Scheme:        "http",
 	Method:        http.MethodGet,
 	CheckLogin:    false,

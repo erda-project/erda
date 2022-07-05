@@ -24,7 +24,7 @@ import (
 var CMDB_NOTIFY_ENABLE = apis.ApiSpec{
 	Path:        "/api/notifies/<notifyID>/actions/enable",
 	BackendPath: "/api/notifies/<notifyID>/actions/enable",
-	Host:        "core-services.marathon.l4lb.thisdcos.directory:9526",
+	Host:        "erda-server.marathon.l4lb.thisdcos.directory:9095",
 	Scheme:      "http",
 	Method:      "PUT",
 	CheckLogin:  true,
