@@ -46,7 +46,7 @@ func Query(text string, params map[string]interface{}) error {
 	fmt.Println(text)
 	end := time.Now().Add(-5 * time.Minute)
 	start := end.Add(-1 * time.Hour)
-	parser := tsql.New(start.UnixNano(), end.UnixNano(), "influxql", text).SetParams(params) //.SetTimeKey("@timestamp").SetOriginalTimeUnit(tsql.Millisecond).SetTargetTimeUnit(tsql.Nanosecond)
+	parser := tsql.New(start.UnixNano(), end.UnixNano(), "influxql", text, false).SetParams(params) //.SetTimeKey("@timestamp").SetOriginalTimeUnit(tsql.Millisecond).SetTargetTimeUnit(tsql.Nanosecond)
 	querys, err := parser.ParseQuery()
 	if err != nil {
 		return err

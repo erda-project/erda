@@ -25,6 +25,7 @@ import (
 	"github.com/olivere/elastic"
 	"github.com/recallsong/go-utils/encoding/md5x"
 
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/model"
 	tsql "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql"
 )
 
@@ -438,9 +439,9 @@ var AggFunctions = map[string]*AggFuncDefine{
 			},
 		),
 	},
-	"first": newSourceFieldAggFunction("first", tsql.TimestampKey, true),
-	"last":  newSourceFieldAggFunction("last", tsql.TimestampKey, false),
-	"value": newSourceFieldAggFunction("value", tsql.TimestampKey, false),
+	"first": newSourceFieldAggFunction("first", model.TimestampKey, true),
+	"last":  newSourceFieldAggFunction("last", model.TimestampKey, false),
+	"value": newSourceFieldAggFunction("value", model.TimestampKey, false),
 }
 
 func newSourceFieldAggFunction(name, sort string, ascending bool) *AggFuncDefine {
@@ -452,8 +453,8 @@ func newSourceFieldAggFunction(name, sort string, ascending bool) *AggFuncDefine
 				if script != nil {
 					return nil, fmt.Errorf("not support script")
 				}
-				key := tsql.TimestampKey
-				if sort == tsql.TimestampKey {
+				key := model.TimestampKey
+				if sort == model.TimestampKey {
 					key = ctx.TimeKey()
 				}
 				return elastic.NewTopHitsAggregation().Size(1).Sort(key, ascending).

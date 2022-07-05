@@ -24,26 +24,30 @@ import (
 	"github.com/influxdata/influxql"
 	"github.com/olivere/elastic"
 
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/model"
 	tsql "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql"
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/query"
 )
 
 // Parser .
 type Parser struct {
+	debug  bool
 	ql     *influxql.Parser
-	filter *elastic.BoolQuery
 	ctx    *Context
+	filter *elastic.BoolQuery
 }
 
 // New start and end always nanosecond
-func New(start, end int64, stmt string) tsql.Parser {
+func New(start, end int64, stmt string, debug bool) tsql.Parser {
 	return &Parser{
-		ql: influxql.NewParser(strings.NewReader(stmt)),
+		ql:    influxql.NewParser(strings.NewReader(stmt)),
+		debug: debug,
 		ctx: &Context{
 			start:            start,
 			end:              end,
 			originalTimeUnit: tsql.Nanosecond,
 			targetTimeUnit:   tsql.UnsetTimeUnit,
-			timeKey:          tsql.TimestampKey,
+			timeKey:          model.TimestampKey,
 			maxTimePoints:    512,
 		},
 	}
@@ -54,9 +58,16 @@ func init() {
 }
 
 // SetFilter .
-func (p *Parser) SetFilter(filter *elastic.BoolQuery) tsql.Parser {
-	p.filter = filter
-	return p
+func (p *Parser) SetFilter(filters []*model.Filter) (tsql.Parser, error) {
+	var boolQuery *elastic.BoolQuery
+	if len(filters) > 0 {
+		boolQuery = elastic.NewBoolQuery()
+		err := query.BuildBoolQuery(filters, boolQuery)
+		return nil, err
+	}
+
+	p.filter = boolQuery
+	return p, nil
 }
 
 // SetParams .
@@ -143,7 +154,7 @@ func (p *Parser) parseSelectStatement(s *influxql.SelectStatement) (*Query, erro
 	}
 	columns := make(map[string]bool)
 	if s.Limit <= 0 {
-		s.Limit = tsql.DefaultLimtSize
+		s.Limit = model.DefaultLimtSize
 	}
 	if s.Offset <= 0 {
 		s.Offset = 0
@@ -176,9 +187,9 @@ func (p *Parser) parseSelectStatement(s *influxql.SelectStatement) (*Query, erro
 		}
 		addAgg(name, dim)
 		addAgg = addAggFn
-		if f&tsql.ColumnFlagGroupByInterval == tsql.ColumnFlagGroupByInterval {
+		if f&model.ColumnFlagGroupByInterval == model.ColumnFlagGroupByInterval {
 			flag |= queryFlagGroupByTime
-		} else if f&tsql.ColumnFlagGroupByRange == tsql.ColumnFlagGroupByRange {
+		} else if f&model.ColumnFlagGroupByRange == model.ColumnFlagGroupByRange {
 			flag |= queryFlagGroupByRange
 		}
 		globalAgg = make(map[string]elastic.Aggregation)
@@ -213,9 +224,9 @@ func (p *Parser) parseSelectStatement(s *influxql.SelectStatement) (*Query, erro
 	if flag&queryFlagGroupByTime == queryFlagGroupByTime {
 		handlers = append([]*columnHandler{
 			{
-				col: &tsql.Column{
+				col: &model.Column{
 					Name: "time",
-					Flag: tsql.ColumnFlagGroupBy | tsql.ColumnFlagGroupByInterval,
+					Flag: model.ColumnFlagGroupBy | model.ColumnFlagGroupByInterval,
 				},
 				ctx: p.ctx,
 			},
@@ -223,9 +234,9 @@ func (p *Parser) parseSelectStatement(s *influxql.SelectStatement) (*Query, erro
 	} else if flag&queryFlagGroupByRange == queryFlagGroupByRange {
 		handlers = append([]*columnHandler{
 			{
-				col: &tsql.Column{
+				col: &model.Column{
 					Name: "range",
-					Flag: tsql.ColumnFlagGroupBy | tsql.ColumnFlagGroupByRange,
+					Flag: model.ColumnFlagGroupBy | model.ColumnFlagGroupByRange,
 				},
 				ctx: p.ctx,
 			},
@@ -289,10 +300,13 @@ func (p *Parser) parseSelectStatement(s *influxql.SelectStatement) (*Query, erro
 		flag:         flag,
 		aggs:         aggs,
 		ctx:          p.ctx,
+		start:        start,
+		end:          end,
+		debug:        p.debug,
 	}, nil
 }
 
-func (p *Parser) parseQuerySources(sources influxql.Sources) (list []*tsql.Source, err error) {
+func (p *Parser) parseQuerySources(sources influxql.Sources) (list []*model.Source, err error) {
 	for _, source := range sources {
 		switch s := source.(type) {
 		case *influxql.Measurement:
@@ -303,7 +317,7 @@ func (p *Parser) parseQuerySources(sources influxql.Sources) (list []*tsql.Sourc
 			if len(db) <= 0 {
 				db = s.RetentionPolicy
 			}
-			list = append(list, &tsql.Source{
+			list = append(list, &model.Source{
 				Database: db,
 				Name:     s.Name,
 			})
@@ -324,22 +338,22 @@ func getKeyName(ref *influxql.VarRef, deftyp influxql.DataType) string {
 	return name
 }
 
-const nameKey = "_" + tsql.NameKey
+const nameKey = "_" + model.NameKey
 
-func getKeyNameAndFlag(ref *influxql.VarRef, deftyp influxql.DataType) (string, tsql.ColumnFlag) {
+func getKeyNameAndFlag(ref *influxql.VarRef, deftyp influxql.DataType) (string, model.ColumnFlag) {
 	if ref.Type == influxql.Unknown {
-		if ref.Val == tsql.TimestampKey || ref.Val == tsql.TimeKey {
-			return tsql.TimestampKey, tsql.ColumnFlagTimestamp
-		} else if ref.Val == tsql.NameKey || ref.Val == nameKey {
-			return tsql.NameKey, tsql.ColumnFlagName
+		if ref.Val == model.TimestampKey || ref.Val == model.TimeKey {
+			return model.TimestampKey, model.ColumnFlagTimestamp
+		} else if ref.Val == model.NameKey || ref.Val == nameKey {
+			return model.NameKey, model.ColumnFlagName
 		}
 		if deftyp == influxql.Tag {
-			return tsql.TagsKey + ref.Val, tsql.ColumnFlagTag
+			return model.TagsKey + ref.Val, model.ColumnFlagTag
 		}
 	} else if ref.Type == influxql.Tag {
-		return tsql.TagsKey + ref.Val, tsql.ColumnFlagTag
+		return model.TagsKey + ref.Val, model.ColumnFlagTag
 	}
-	return tsql.FieldsKey + ref.Val, tsql.ColumnFlagField
+	return model.FieldsKey + ref.Val, model.ColumnFlagField
 }
 
 func (p *Parser) parseQueryCondition(cond influxql.Expr, query *elastic.BoolQuery) (err error) {
@@ -595,7 +609,7 @@ func (p *Parser) parseScopeAgg(call *influxql.Call) error {
 func (p *Parser) parseQueryDimensions(dimensions influxql.Dimensions,
 	sorts influxql.SortFields, offset, limit int,
 	columns map[string]bool, aggs map[string]elastic.Aggregation,
-) (string, elastic.Aggregation, func(name string, agg elastic.Aggregation), tsql.ColumnFlag, error) {
+) (string, elastic.Aggregation, func(name string, agg elastic.Aggregation), model.ColumnFlag, error) {
 	var histogram *elastic.HistogramAggregation
 	var rng *elastic.RangeAggregation
 	var scripts []string
@@ -604,17 +618,17 @@ func (p *Parser) parseQueryDimensions(dimensions influxql.Dimensions,
 		case *influxql.Call:
 			if expr.Name == "time" {
 				if histogram != nil {
-					return "", nil, nil, tsql.ColumnFlagNone, fmt.Errorf("not support multi 'time' function in group by")
+					return "", nil, nil, model.ColumnFlagNone, fmt.Errorf("not support multi 'time' function in group by")
 				}
 				if rng != nil {
-					return "", nil, nil, tsql.ColumnFlagNone, fmt.Errorf("'time' and 'range' function conflict in group by")
+					return "", nil, nil, model.ColumnFlagNone, fmt.Errorf("'time' and 'range' function conflict in group by")
 				}
 				var interval int64
 				if len(expr.Args) == 1 {
 					arg := expr.Args[0]
 					d, ok := arg.(*influxql.DurationLiteral)
 					if !ok || d.Val < time.Second {
-						return "", nil, nil, tsql.ColumnFlagNone, fmt.Errorf("invalid arg '%s' in function '%s'", arg.String(), expr.Name)
+						return "", nil, nil, model.ColumnFlagNone, fmt.Errorf("invalid arg '%s' in function '%s'", arg.String(), expr.Name)
 					}
 					interval = int64(d.Val)
 				}
@@ -633,18 +647,18 @@ func (p *Parser) parseQueryDimensions(dimensions influxql.Dimensions,
 				continue
 			} else if expr.Name == "range" {
 				if rng != nil {
-					return "", nil, nil, tsql.ColumnFlagNone, fmt.Errorf("not support multi 'range' function in group by")
+					return "", nil, nil, model.ColumnFlagNone, fmt.Errorf("not support multi 'range' function in group by")
 				}
 				if histogram != nil {
-					return "", nil, nil, tsql.ColumnFlagNone, fmt.Errorf("'time' and 'range' function conflict in group by")
+					return "", nil, nil, model.ColumnFlagNone, fmt.Errorf("'time' and 'range' function conflict in group by")
 				}
 				err := mustCallArgsMinNum(expr, 2)
 				if err != nil {
-					return "", nil, nil, tsql.ColumnFlagNone, err
+					return "", nil, nil, model.ColumnFlagNone, err
 				}
 				arg0, ok := expr.Args[0].(*influxql.VarRef)
 				if !ok {
-					return "", nil, nil, tsql.ColumnFlagNone, fmt.Errorf("args[0] is not reference in 'range' function")
+					return "", nil, nil, model.ColumnFlagNone, fmt.Errorf("args[0] is not reference in 'range' function")
 				}
 
 				key := getKeyName(arg0, influxql.AnyField)
@@ -653,10 +667,10 @@ func (p *Parser) parseQueryDimensions(dimensions influxql.Dimensions,
 				for i, item := range expr.Args[1:] {
 					val, ok, err := getLiteralValue(p.ctx, item)
 					if err != nil {
-						return "", nil, nil, tsql.ColumnFlagNone, err
+						return "", nil, nil, model.ColumnFlagNone, err
 					}
 					if !ok {
-						return "", nil, nil, tsql.ColumnFlagNone, fmt.Errorf("args[%d] is literal in 'range' function", i)
+						return "", nil, nil, model.ColumnFlagNone, fmt.Errorf("args[%d] is literal in 'range' function", i)
 					}
 					if i%2 == 0 {
 						from = val
@@ -674,7 +688,7 @@ func (p *Parser) parseQueryDimensions(dimensions influxql.Dimensions,
 		}
 		script, err := getScriptExpression(p.ctx, dim.Expr, influxql.Tag, nil)
 		if err != nil {
-			return "", nil, nil, tsql.ColumnFlagNone, err
+			return "", nil, nil, model.ColumnFlagNone, err
 		}
 		scripts = append(scripts, script)
 		//  Mark that the expression is used for grouping
@@ -700,7 +714,7 @@ func (p *Parser) parseQueryDimensions(dimensions influxql.Dimensions,
 		for _, sort := range sorts {
 			err := setupTermsOrderAgg(p.ctx, sort.Expr, aggs, terms, sort)
 			if err != nil {
-				return "", nil, nil, tsql.ColumnFlagNone, err
+				return "", nil, nil, model.ColumnFlagNone, err
 			}
 		}
 		if histogram != nil || rng != nil {
@@ -711,33 +725,33 @@ func (p *Parser) parseQueryDimensions(dimensions influxql.Dimensions,
 	}
 
 	if terms == nil && (histogram != nil || rng != nil) && len(sorts) > 0 {
-		return "", nil, nil, tsql.ColumnFlagNone, fmt.Errorf("not support order by in this case")
+		return "", nil, nil, model.ColumnFlagNone, fmt.Errorf("not support order by in this case")
 	}
 	if terms != nil {
 		if histogram != nil {
 			terms.SubAggregation("histogram", histogram)
 			return "term", terms, func(name string, agg elastic.Aggregation) {
 				histogram.SubAggregation(name, agg)
-			}, tsql.ColumnFlagGroupBy | tsql.ColumnFlagGroupByInterval, nil
+			}, model.ColumnFlagGroupBy | model.ColumnFlagGroupByInterval, nil
 		} else if rng != nil {
 			terms.SubAggregation("range", rng) //.Size(5000)
 			return "term", terms, func(name string, agg elastic.Aggregation) {
 				rng.SubAggregation(name, agg)
-			}, tsql.ColumnFlagGroupBy | tsql.ColumnFlagGroupByRange, nil
+			}, model.ColumnFlagGroupBy | model.ColumnFlagGroupByRange, nil
 		}
 		return "term", terms, func(name string, agg elastic.Aggregation) {
 			terms.SubAggregation(name, agg)
-		}, tsql.ColumnFlagGroupBy, nil
+		}, model.ColumnFlagGroupBy, nil
 	} else if histogram != nil {
 		return "histogram", histogram, func(name string, agg elastic.Aggregation) {
 			histogram.SubAggregation(name, agg)
-		}, tsql.ColumnFlagGroupBy | tsql.ColumnFlagGroupByInterval, nil
+		}, model.ColumnFlagGroupBy | model.ColumnFlagGroupByInterval, nil
 	} else if rng != nil {
 		return "range", rng, func(name string, agg elastic.Aggregation) {
 			rng.SubAggregation(name, agg)
-		}, tsql.ColumnFlagGroupBy | tsql.ColumnFlagGroupByRange, nil
+		}, model.ColumnFlagGroupBy | model.ColumnFlagGroupByRange, nil
 	}
-	return "", nil, nil, tsql.ColumnFlagNone, nil
+	return "", nil, nil, model.ColumnFlagNone, nil
 }
 
 func adjustInterval(start, end, interval, points int64) int64 {
@@ -1021,9 +1035,9 @@ func getScriptExpression(ctx *Context, expr influxql.Expr, deftyp influxql.DataT
 	return "", fmt.Errorf("invalid expression")
 }
 
-func getExprStringAndFlag(expr influxql.Expr, deftyp influxql.DataType) (key string, flag tsql.ColumnFlag) {
+func getExprStringAndFlag(expr influxql.Expr, deftyp influxql.DataType) (key string, flag model.ColumnFlag) {
 	if expr == nil {
-		return "", tsql.ColumnFlagNone
+		return "", model.ColumnFlagNone
 	}
 	switch expr := expr.(type) {
 	case *influxql.BinaryExpr:
@@ -1031,11 +1045,11 @@ func getExprStringAndFlag(expr influxql.Expr, deftyp influxql.DataType) (key str
 		right, rf := getExprStringAndFlag(expr.RHS, deftyp)
 		return left + expr.Op.String() + right, lf | rf
 	case *influxql.Call:
-		flag |= tsql.ColumnFlagFunc
+		flag |= model.ColumnFlagFunc
 		if expr.Name == "time" || expr.Name == "timestamp" {
-			flag |= tsql.ColumnFlagGroupByInterval
+			flag |= model.ColumnFlagGroupByInterval
 		} else if expr.Name == "range" {
-			flag |= tsql.ColumnFlagGroupByRange
+			flag |= model.ColumnFlagGroupByRange
 		}
 		var args []string
 		for _, arg := range expr.Args {
@@ -1048,23 +1062,23 @@ func getExprStringAndFlag(expr influxql.Expr, deftyp influxql.DataType) (key str
 		key, flag = getExprStringAndFlag(expr.Expr, deftyp)
 		return key, flag
 	case *influxql.IntegerLiteral:
-		return strconv.FormatInt(expr.Val, 10), tsql.ColumnFlagLiteral
+		return strconv.FormatInt(expr.Val, 10), model.ColumnFlagLiteral
 	case *influxql.NumberLiteral:
-		return strconv.FormatFloat(expr.Val, 'f', -1, 64), tsql.ColumnFlagLiteral
+		return strconv.FormatFloat(expr.Val, 'f', -1, 64), model.ColumnFlagLiteral
 	case *influxql.BooleanLiteral:
-		return strconv.FormatBool(expr.Val), tsql.ColumnFlagLiteral
+		return strconv.FormatBool(expr.Val), model.ColumnFlagLiteral
 	case *influxql.UnsignedLiteral:
-		return strconv.FormatUint(expr.Val, 10), tsql.ColumnFlagLiteral
+		return strconv.FormatUint(expr.Val, 10), model.ColumnFlagLiteral
 	case *influxql.StringLiteral, *influxql.NilLiteral, *influxql.TimeLiteral, *influxql.DurationLiteral, *influxql.RegexLiteral, *influxql.ListLiteral:
-		return expr.String(), tsql.ColumnFlagLiteral
+		return expr.String(), model.ColumnFlagLiteral
 	case *influxql.VarRef:
 		return getKeyNameAndFlag(expr, deftyp)
 	}
-	return expr.String(), tsql.ColumnFlagNone
+	return expr.String(), model.ColumnFlagNone
 }
 
 // ParseRawQuery .
-func (p *Parser) ParseRawQuery() ([]*tsql.Source, *elastic.BoolQuery, *elastic.SearchSource, error) {
+func (p *Parser) ParseRawQuery() ([]*model.Source, *elastic.BoolQuery, *elastic.SearchSource, error) {
 	q, err := p.ql.ParseQuery()
 	if err != nil {
 		return nil, nil, nil, err
@@ -1084,7 +1098,7 @@ func (p *Parser) ParseRawQuery() ([]*tsql.Source, *elastic.BoolQuery, *elastic.S
 }
 
 // parseRawSelectStatement only handle from、where、sort.
-func (p *Parser) parseRawSelectStatement(s *influxql.SelectStatement) ([]*tsql.Source, *elastic.BoolQuery, *elastic.SearchSource, error) {
+func (p *Parser) parseRawSelectStatement(s *influxql.SelectStatement) ([]*model.Source, *elastic.BoolQuery, *elastic.SearchSource, error) {
 	// from
 	sources, err := p.parseQuerySources(s.Sources)
 	if err != nil {
@@ -1108,7 +1122,7 @@ func (p *Parser) parseRawSelectStatement(s *influxql.SelectStatement) ([]*tsql.S
 	}
 	searchSource.Query(query)
 	if s.Limit <= 0 {
-		s.Limit = tsql.DefaultLimtSize
+		s.Limit = model.DefaultLimtSize
 	}
 	if s.Offset <= 0 {
 		s.Offset = 0

@@ -400,3 +400,9 @@ erda.core.clustermanager.cluster-client: {}
 grpc-client@erda.core.messenger.notifygroup:
   addr: "${CORE_SERVICES_GRPC_ADDR:core-services:9537}"
 erda.core.messenger.notifygroup-client:
+
+metric-storage-elasticsearch:
+  read_timeout: "1m"
+  write_timeout: "1m"
+  index_type: "spot"
+  dummy_index: "spot-empty"
