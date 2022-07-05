@@ -21,6 +21,7 @@ import (
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/services/namespace"
+	"github.com/erda-project/erda/internal/core/org"
 )
 
 // Option the is fun to set *Project property
@@ -63,5 +64,11 @@ func WithTokenSvc(tokenService tokenpb.TokenServiceServer) Option {
 func WithClusterSvc(clusterSvc clusterpb.ClusterServiceServer) Option {
 	return func(p *Project) {
 		p.clusterSvc = clusterSvc
+	}
+}
+
+func WithOrg(org org.ClientInterface) Option {
+	return func(p *Project) {
+		p.org = org
 	}
 }

@@ -31,6 +31,7 @@ import (
 	_ "github.com/erda-project/erda-proto-go/core/monitor/event/client"
 	_ "github.com/erda-project/erda-proto-go/core/monitor/log/query/client"
 	_ "github.com/erda-project/erda-proto-go/core/monitor/metric/client"
+	_ "github.com/erda-project/erda-proto-go/core/org/client"
 	_ "github.com/erda-project/erda-proto-go/oap/entity/client"
 
 	_ "github.com/erda-project/erda-infra/providers/grpcclient"

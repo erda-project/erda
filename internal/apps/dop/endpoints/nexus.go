@@ -17,15 +17,16 @@ package endpoints
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
-	"strconv"
 
 	"github.com/sirupsen/logrus"
 
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	"github.com/erda-project/erda/internal/pkg/user"
+	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 )
@@ -42,14 +43,12 @@ func (e *Endpoints) GetOrgNexus(ctx context.Context, r *http.Request, vars map[s
 	if !ok {
 		return apierrors.ErrGetOrgNexus.MissingParameter("orgID").ToResp(), nil
 	}
-	orgID, err := strconv.ParseInt(orgIDStr, 10, 64)
-	if err != nil {
-		return apierrors.ErrGetOrgNexus.InvalidParameter(fmt.Errorf("invalid orgID: %s", orgIDStr)).ToResp(), nil
-	}
-	org, err := e.bdl.GetOrg(orgID)
+	orgResp, err := e.orgClient.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcDOP),
+		&orgpb.GetOrgRequest{IdOrName: orgIDStr})
 	if err != nil {
 		return apierrors.ErrGetOrgNexus.InvalidParameter(err).ToResp(), nil
 	}
+	org := orgResp.Data
 
 	var req apistructs.OrgNexusGetRequest
 	if r.ContentLength != 0 {
@@ -126,15 +125,12 @@ func (e *Endpoints) GetNexusOrgDockerCredentialByImage(ctx context.Context, r *h
 		return apierrors.ErrGetNexusDockerCredentialByImage.AccessDenied().ToResp(), nil
 	}
 
-	// check org
-	orgID, err := strconv.ParseInt(vars["orgID"], 10, 64)
-	if err != nil {
-		return apierrors.ErrGetOrg.InvalidParameter(fmt.Errorf("invalid orgID: %s", vars["orgID"])).ToResp(), nil
-	}
-	org, err := e.bdl.GetOrg(orgID)
+	orgResp, err := e.orgClient.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcDOP),
+		&orgpb.GetOrgRequest{IdOrName: vars["orgID"]})
 	if err != nil {
 		return apierrors.ErrGetOrg.InvalidParameter(err).ToResp(), nil
 	}
+	org := orgResp.Data
 
 	dockerPullUser, err := e.org.GetNexusOrgDockerCredential(uint64(org.ID), r.URL.Query().Get("image"))
 	if err != nil {

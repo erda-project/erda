@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package assetsvc
+package autotestv2
 
 import (
 	"context"
@@ -21,25 +21,15 @@ import (
 	"testing"
 
 	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
-	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/pkg/mock"
 )
 
-func TestNew(t *testing.T) {
-	var (
-		bdl = bundle.New()
-	)
-	New(
-		WithBundle(bdl),
-	)
-}
-
-type assetOrgMock struct {
+type autoTestOrgMock struct {
 	mock.OrgMock
 }
 
-func (m assetOrgMock) GetOrg(ctx context.Context, request *orgpb.GetOrgRequest) (*orgpb.GetOrgResponse, error) {
+func (m autoTestOrgMock) GetOrg(ctx context.Context, request *orgpb.GetOrgRequest) (*orgpb.GetOrgResponse, error) {
 	if request.IdOrName == "1" {
 		return nil, fmt.Errorf("error")
 	}
@@ -64,7 +54,7 @@ func TestService_getOrg(t *testing.T) {
 		{
 			name: "test with error",
 			fields: fields{
-				org: assetOrgMock{},
+				org: autoTestOrgMock{},
 			},
 			args:    args{orgID: 1, ctx: context.Background()},
 			want:    nil,
@@ -73,7 +63,7 @@ func TestService_getOrg(t *testing.T) {
 		{
 			name: "test with no error",
 			fields: fields{
-				org: assetOrgMock{},
+				org: autoTestOrgMock{},
 			},
 			args:    args{orgID: 2, ctx: context.Background()},
 			want:    &orgpb.Org{Name: "erda"},

@@ -15,12 +15,17 @@
 package org
 
 import (
+	"context"
 	"strconv"
 	"time"
 
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/pkg/cache"
+	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 )
 
 var (
@@ -28,14 +33,14 @@ var (
 	projectID2Org *cache.Cache
 )
 
-func init() {
+func Init(org org.Interface) {
 	bdl := bundle.New(bundle.WithCoreServices())
 	orgID2Org = cache.New("dop-org-id-for-org", time.Minute, func(i interface{}) (interface{}, bool) {
-		orgDTO, err := bdl.GetOrg(i.(string))
+		orgResp, err := org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcDOP), &orgpb.GetOrgRequest{IdOrName: i.(string)})
 		if err != nil {
 			return nil, false
 		}
-		return orgDTO, true
+		return orgResp.Data, true
 	})
 	projectID2Org = cache.New("dop-project-id-for-org", time.Minute, func(i interface{}) (interface{}, bool) {
 		projectID, err := strconv.ParseUint(i.(string), 10, 32)
@@ -55,12 +60,12 @@ func init() {
 }
 
 // GetOrgByOrgID gets the *apistructs.OrgDTO by orgID from the newest cache
-func GetOrgByOrgID(orgID string) (*apistructs.OrgDTO, bool) {
+func GetOrgByOrgID(orgID string) (*orgpb.Org, bool) {
 	item, ok := orgID2Org.LoadWithUpdate(orgID)
 	if !ok {
 		return nil, false
 	}
-	return item.(*apistructs.OrgDTO), true
+	return item.(*orgpb.Org), true
 }
 
 // GetOrgByProjectID gets the *apistructs.OrgDTO by projectID from the newest cache

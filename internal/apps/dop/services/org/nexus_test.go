@@ -17,12 +17,12 @@ package org
 import (
 	"testing"
 
-	"github.com/erda-project/erda/apistructs"
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 )
 
 func Test_needEnableNexusOrgGroupRepos(t *testing.T) {
 	type args struct {
-		org       *apistructs.OrgDTO
+		org       *orgpb.Org
 		nexusAddr string
 	}
 	tests := []struct {
@@ -40,7 +40,7 @@ func Test_needEnableNexusOrgGroupRepos(t *testing.T) {
 		{
 			name: "crossCluster but not publisher",
 			args: args{
-				org:       &apistructs.OrgDTO{EnableReleaseCrossCluster: true, PublisherID: 0},
+				org:       &orgpb.Org{EnableReleaseCrossCluster: true, PublisherID: 0},
 				nexusAddr: "mock",
 			},
 			want: true,
@@ -48,7 +48,7 @@ func Test_needEnableNexusOrgGroupRepos(t *testing.T) {
 		{
 			name: "is publisher but not crossCluster",
 			args: args{
-				org:       &apistructs.OrgDTO{EnableReleaseCrossCluster: false, PublisherID: 1},
+				org:       &orgpb.Org{EnableReleaseCrossCluster: false, PublisherID: 1},
 				nexusAddr: "mock",
 			},
 			want: true,
@@ -56,7 +56,7 @@ func Test_needEnableNexusOrgGroupRepos(t *testing.T) {
 		{
 			name: "crossCluster and is publisher",
 			args: args{
-				org:       &apistructs.OrgDTO{EnableReleaseCrossCluster: true, PublisherID: 1},
+				org:       &orgpb.Org{EnableReleaseCrossCluster: true, PublisherID: 1},
 				nexusAddr: "mock",
 			},
 			want: true,
@@ -64,7 +64,7 @@ func Test_needEnableNexusOrgGroupRepos(t *testing.T) {
 		{
 			name: "neither crossCluster nor publisher",
 			args: args{
-				org:       &apistructs.OrgDTO{EnableReleaseCrossCluster: false, PublisherID: 0},
+				org:       &orgpb.Org{EnableReleaseCrossCluster: false, PublisherID: 0},
 				nexusAddr: "mock",
 			},
 			want: false,

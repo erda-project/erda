@@ -29,6 +29,7 @@ import (
 	orgCache "github.com/erda-project/erda/internal/apps/dop/cache/org"
 	"github.com/erda-project/erda/internal/apps/dop/providers/api-management/apierr"
 	"github.com/erda-project/erda/internal/apps/dop/providers/api-management/model"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 
@@ -57,6 +58,8 @@ type provider struct {
 	l        *logrus.Entry
 	Register transport.Register `autowired:"service-register" required:"true"`
 	DB       *gorm.DB           `autowired:"mysql-gorm.v2-client"`
+
+	Org org.Interface
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -66,6 +69,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		p.l.Infoln("register self")
 		pb.RegisterExportRecordsImp(p.Register, p, apis.Options())
 	}
+	orgCache.Init(p.Org)
 	return nil
 }
 

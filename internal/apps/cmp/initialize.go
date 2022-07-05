@@ -214,6 +214,7 @@ func (p *provider) initEndpoints(ctx context.Context, db *dbclient.DBClient, js,
 		endpoints.WithResourceTable(rt),
 		endpoints.WithCronServiceServer(p.CronService),
 		endpoints.WithClusterServiceServer(p.ClusterSvc),
+		endpoints.WithOrg(p.Org),
 	)
 
 	// Sync org resource task status

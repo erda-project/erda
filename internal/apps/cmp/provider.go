@@ -40,6 +40,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/cmp/metrics"
 	"github.com/erda-project/erda/internal/apps/cmp/resource"
 	"github.com/erda-project/erda/internal/apps/cmp/steve"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
@@ -61,6 +62,7 @@ type provider struct {
 	CPTran          i18n.I18n       `autowired:"i18n@cp"`
 	Tran            i18n.Translator `translator:"common"`
 	SteveAggregator *steve.Aggregator
+	Org             org.ClientInterface
 }
 
 // Run Run the provider

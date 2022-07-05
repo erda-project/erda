@@ -140,6 +140,7 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 	p.Protocol.WithContextValue(types.ProjectPipelineService, p.ProjectPipelineSvc)
 	p.Protocol.WithContextValue(types.PipelineCronService, p.PipelineCron)
 	p.Protocol.WithContextValue(types.GuideService, p.GuideSvc)
+	p.Protocol.WithContextValue(types.OrgService, p.Org)
 
 	// This server will never be started. Only the routes and locale loader are used by new http server
 	server := httpserver.New(":0")
@@ -340,7 +341,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		return nil, err
 	}
 
-	c := cdp.New(cdp.WithBundle(bdl.Bdl), cdp.WithResourceTranslator(p.ResourceTrans))
+	c := cdp.New(cdp.WithBundle(bdl.Bdl), cdp.WithResourceTranslator(p.ResourceTrans), cdp.WithOrg(p.Org))
 
 	// init event
 	e := event.New(event.WithBundle(bdl.Bdl))
@@ -352,6 +353,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 	testCaseSvc := testcase.New(
 		testcase.WithDBClient(db),
 		testcase.WithBundle(bdl.Bdl),
+		testcase.WithOrg(p.Org),
 	)
 	testSetSvc := testset.New(
 		testset.WithDBClient(db),
@@ -376,6 +378,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		atv2.WithSceneSet(sceneset),
 		atv2.WithAutotestSvc(autotest),
 		atv2.WithPipelineCms(p.PipelineCms),
+		atv2.WithOrg(p.Org),
 	)
 
 	autotestV2.UpdateFileRecord = testCaseSvc.UpdateFileRecord
@@ -406,6 +409,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 	// init ticket service
 	t := ticket.New(ticket.WithDBClient(db),
 		ticket.WithBundle(bdl.Bdl),
+		ticket.WithOrg(p.Org),
 	)
 
 	// init comment service
@@ -542,6 +546,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		project.WithNamespace(ns),
 		project.WithTokenSvc(p.TokenService),
 		project.WithClusterSvc(p.ClusterSvc),
+		project.WithOrg(p.Org),
 	)
 	proj.UpdateFileRecord = testCaseSvc.UpdateFileRecord
 	proj.CreateFileRecord = testCaseSvc.CreateFileRecord
@@ -551,6 +556,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		application.WithDBClient(db),
 		application.WithPipelineCms(p.PipelineCms),
 		application.WithTokenSvc(p.TokenService),
+		application.WithOrg(p.Org),
 	)
 
 	codeCvc := code_coverage.New(
@@ -605,6 +611,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 			assetsvc.WithBranchRuleSvc(branchRule),
 			assetsvc.WithI18n(p.APIMTrans),
 			assetsvc.WithBundle(bdl.Bdl),
+			assetsvc.WithOrg(p.Org),
 		)),
 		endpoints.WithFileTreeSvc(filetreeSvc),
 		endpoints.WithProject(proj),
@@ -646,6 +653,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		endpoints.WithPublishItem(publishItem),
 		endpoints.WithDevFlowRule(p.DevFlowRule),
 		endpoints.WithTokenSvc(p.TokenService),
+		endpoints.WithOrgClient(p.Org),
 	)
 
 	ep.ImportChannel = make(chan uint64)

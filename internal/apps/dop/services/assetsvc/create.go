@@ -725,7 +725,7 @@ func (svc *Service) createContractIfExists(ctx context.Context, tx *dbclient.TX,
 		sla apistructs.SLAModel
 	)
 
-	org, err := svc.bdl.GetOrg(req.OrgID)
+	org, err := svc.getOrg(context.Background(), req.OrgID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to GetOrg")
 	}
@@ -868,7 +868,7 @@ func (svc *Service) createContractFirstTime(ctx context.Context, tx *dbclient.TX
 		}
 	)
 
-	org, err := svc.bdl.GetOrg(req.OrgID)
+	org, err := svc.getOrg(context.Background(), req.OrgID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to GetOrg")
 	}

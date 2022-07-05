@@ -15,6 +15,7 @@
 package email
 
 import (
+	"context"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
@@ -28,10 +29,14 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-proto-go/core/messenger/notify/pb"
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/core/messenger/eventbox/subscriber"
 	"github.com/erda-project/erda/internal/core/messenger/eventbox/types"
+	"github.com/erda-project/erda/internal/core/org"
+	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/template"
 )
 
@@ -46,6 +51,7 @@ type MailSubscriber struct {
 	insecureSkipVerify bool
 	bundle             *bundle.Bundle
 	messenger          pb.NotifyServiceServer
+	org                org.Interface
 }
 
 type MailSubscriberInfo struct {
@@ -83,7 +89,7 @@ func NewMailSubscriberInfo(host, port, user, password, displayUser, isSSLStr, in
 	return subscriber
 }
 
-func New(host, port, user, password, displayUser, isSSLStr, insecureSkipVerify string, bundle *bundle.Bundle, messenger pb.NotifyServiceServer) subscriber.Subscriber {
+func New(host, port, user, password, displayUser, isSSLStr, insecureSkipVerify string, bundle *bundle.Bundle, messenger pb.NotifyServiceServer, org org.Interface) subscriber.Subscriber {
 	subscriber := &MailSubscriber{
 		host:        host,
 		port:        port,
@@ -93,6 +99,7 @@ func New(host, port, user, password, displayUser, isSSLStr, insecureSkipVerify s
 		isSSLStr:    isSSLStr,
 		bundle:      bundle,
 		messenger:   messenger,
+		org:         org,
 	}
 	isSSL, _ := strconv.ParseBool(isSSLStr)
 	subscriber.isSSL = isSSL
@@ -171,17 +178,20 @@ func (d *MailSubscriber) sendToMail(mails []string, mailData *MailData) error {
 		smtpPort = strconv.Itoa(int(notifyChannel.Config.SMTPPort))
 		isSSL = notifyChannel.Config.SMTPIsSSL
 	} else {
-		org, err := d.bundle.GetOrg(mailData.OrgID)
+		orgResp, err := d.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcEventBox),
+			&orgpb.GetOrgRequest{IdOrName: strconv.FormatInt(mailData.OrgID, 10)})
 		if err != nil {
 			logrus.Errorf("failed to get org info err:%s", err)
 		}
-		if org.Config.SMTPUser != "" && org.Config.SMTPPassword != "" {
+		org := orgResp.Data
+
+		if org.Config.SmtpUser != "" && org.Config.SmtpPassword != "" {
 			orgConfig := org.Config
-			smtpHost = orgConfig.SMTPHost
-			smtpUser = orgConfig.SMTPUser
-			smtpPassword = orgConfig.SMTPPassword
-			smtpPort = strconv.FormatInt(orgConfig.SMTPPort, 10)
-			isSSL = orgConfig.SMTPIsSSL
+			smtpHost = orgConfig.SmtpHost
+			smtpUser = orgConfig.SmtpUser
+			smtpPassword = orgConfig.SmtpPassword
+			smtpPort = strconv.FormatInt(orgConfig.SmtpPort, 10)
+			isSSL = orgConfig.SmtpIsSSL
 		}
 	}
 

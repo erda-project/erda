@@ -33,6 +33,11 @@ grpc-client@erda.core.token:
   addr: "${CORE_SERVICES_GRPC_ADDR:core-services:9537}"
 erda.core.token-client: {}
 
+grpc-client@erda.core.org:
+  addr: "${CORE_SERVICES_GRPC_ADDR:core-services:9537}"
+erda.core.org-client: {}
+erda.core.org: {}
+
 etcd:
   endpoints: "${ETCD_ENDPOINTS:https://localhost:2379}"
   tls:

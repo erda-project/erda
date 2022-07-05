@@ -15,6 +15,7 @@
 package release
 
 import (
+	"context"
 	"strconv"
 	"time"
 
@@ -30,7 +31,7 @@ type auditParams struct {
 }
 
 func (s *ReleaseService) audit(params auditParams) error {
-	org, err := s.bdl.GetOrg(params.orgID)
+	org, err := s.getOrg(context.Background(), uint64(params.orgID))
 	if err != nil {
 		return err
 	}

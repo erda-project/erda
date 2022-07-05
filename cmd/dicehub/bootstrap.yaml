@@ -31,6 +31,11 @@ grpc-client@erda.apps.gallery:
   addr: "${ERDA_SERVER_GRPC_ADDR:erda-server:8096}"
 erda.apps.gallery-client:
 
+grpc-client@erda.core.org:
+  addr: "${CORE_SERVICES_GRPC_ADDR:core-services:9537}"
+erda.core.org-client: {}
+erda.core.org: {}
+
 mysql:
   host: "${MYSQL_HOST:localhost}"
   port: "${MYSQL_PORT:3306}"

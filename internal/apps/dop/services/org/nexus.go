@@ -17,6 +17,7 @@ package org
 import (
 	"fmt"
 
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/conf"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
@@ -25,7 +26,7 @@ import (
 
 // needEnableNexusOrgGroupRepos judge if need enable nexus org group repos
 // TODO: maybe use org-level nexus config in the future. Now org does not have nexus config yet.
-func needEnableNexusOrgGroupRepos(nexusAddr string, org *apistructs.OrgDTO) bool {
+func needEnableNexusOrgGroupRepos(nexusAddr string, org *orgpb.Org) bool {
 	// disable if no nexus
 	if len(nexusAddr) == 0 {
 		return false
@@ -33,7 +34,7 @@ func needEnableNexusOrgGroupRepos(nexusAddr string, org *apistructs.OrgDTO) bool
 	return org.EnableReleaseCrossCluster || org.PublisherID > 0
 }
 
-func (o *Org) EnsureNexusOrgGroupRepos(org *apistructs.OrgDTO) error {
+func (o *Org) EnsureNexusOrgGroupRepos(org *orgpb.Org) error {
 	// judge if need enable nexus org group repos
 	if !needEnableNexusOrgGroupRepos(conf.NexusAddr(), org) {
 		return nil

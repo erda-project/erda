@@ -30,4 +30,5 @@ const (
 	ProjectPipelineService = "project_pipeline"
 	PipelineCronService    = "pipeline_cron"
 	GuideService           = "guide"
+	OrgService             = "org"
 )

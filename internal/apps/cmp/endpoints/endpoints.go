@@ -34,6 +34,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/cmp/metrics"
 	"github.com/erda-project/erda/internal/apps/cmp/resource"
 	"github.com/erda-project/erda/internal/apps/cmp/steve"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/jsonstore"
 )
@@ -60,6 +61,7 @@ type Endpoints struct {
 
 	reportTable *resource.ReportTable
 	CronService cronpb.CronServiceServer
+	org         org.ClientInterface
 }
 
 type Option func(*Endpoints)
@@ -73,8 +75,8 @@ func New(ctx context.Context, db *dbclient.DBClient, js jsonstore.JsonStore, cac
 	e.dbclient = db
 	e.labels = labels.New(db, e.bdl)
 	e.nodes = nodes.New(db, e.bdl, e.ClusterSvc)
-	e.clusters = clusters.New(db, e.bdl, e.Credential, e.ClusterSvc)
-	e.Mns = mns.New(db, e.bdl, e.nodes, js, e.ClusterSvc)
+	e.clusters = clusters.New(db, e.bdl, e.Credential, e.ClusterSvc, e.org)
+	e.Mns = mns.New(db, e.bdl, e.nodes, js, e.ClusterSvc, e.org)
 	e.Ess = ess.New(e.bdl, e.Mns, e.nodes, e.labels, e.ClusterSvc)
 	e.CloudAccount = cloud_account.New(db, cachedJS)
 	e.Addons = addons.New(db, e.bdl)
@@ -125,6 +127,12 @@ func WithCronServiceServer(cronService cronpb.CronServiceServer) Option {
 func WithClusterServiceServer(clusterSvc clusterpb.ClusterServiceServer) Option {
 	return func(e *Endpoints) {
 		e.ClusterSvc = clusterSvc
+	}
+}
+
+func WithOrg(org org.ClientInterface) Option {
+	return func(e *Endpoints) {
+		e.org = org
 	}
 }
 

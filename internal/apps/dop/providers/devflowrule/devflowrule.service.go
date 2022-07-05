@@ -18,14 +18,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda-proto-go/dop/devflowrule/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/providers/devflowrule/db"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	"github.com/erda-project/erda/internal/pkg/diceworkspace"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 )
 
 const (
@@ -60,10 +63,12 @@ func (p *provider) CreateDevFlowRule(ctx context.Context, request *pb.CreateDevF
 	if err != nil {
 		return nil, apierrors.ErrCreateDevFlowRule.InternalError(err)
 	}
-	org, err := p.bundle.GetOrg(project.OrgID)
+	orgResp, err := p.Org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcDOP),
+		&orgpb.GetOrgRequest{IdOrName: strconv.FormatUint(project.OrgID, 10)})
 	if err != nil {
 		return nil, apierrors.ErrCreateDevFlowRule.InternalError(err)
 	}
+	org := orgResp.Data
 
 	flows := p.InitFlows()
 	b, err := json.Marshal(&flows)

@@ -27,6 +27,7 @@ import (
 	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 )
 
 //func Test_transferAppsToApplicationDTOS(t *testing.T) {
@@ -116,7 +117,7 @@ func TestEndpoints_getOrg(t *testing.T) {
 				org: mockOrg,
 			},
 			args: args{
-				ctx:   apis.WithInternalClientContext(context.Background(), "legacy"),
+				ctx:   apis.WithInternalClientContext(context.Background(), discover.SvcCoreServices),
 				orgID: 1,
 			},
 			want:    &orgpb.Org{},

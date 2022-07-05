@@ -16,15 +16,23 @@
 package assetsvc
 
 import (
+	"context"
+	"strconv"
+
 	"github.com/erda-project/erda-infra/providers/i18n"
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/services/branchrule"
+	"github.com/erda-project/erda/internal/core/org"
+	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 )
 
 type Service struct {
 	trans         i18n.Translator
 	branchRuleSvc *branchrule.BranchRule
 	bdl           *bundle.Bundle
+	org           org.ClientInterface
 }
 
 type Option func(*Service)
@@ -55,4 +63,19 @@ func WithBundle(bdl *bundle.Bundle) Option {
 	return func(svc *Service) {
 		svc.bdl = bdl
 	}
+}
+
+func WithOrg(org org.ClientInterface) Option {
+	return func(svc *Service) {
+		svc.org = org
+	}
+}
+
+func (svc *Service) getOrg(ctx context.Context, orgID uint64) (*orgpb.Org, error) {
+	orgResp, err := svc.org.GetOrg(apis.WithInternalClientContext(ctx, discover.SvcDOP),
+		&orgpb.GetOrgRequest{IdOrName: strconv.FormatUint(orgID, 10)})
+	if err != nil {
+		return nil, err
+	}
+	return orgResp.Data, nil
 }

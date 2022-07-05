@@ -24,9 +24,12 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/conf"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
+	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 
@@ -127,10 +130,13 @@ func (e *Endpoints) sendIssueEventToSpecificRecipient(req apistructs.IssueEvent)
 	mboxTemplateName := fmt.Sprintf("notify.issue_%s.personal_message.markdown", strings.ToLower(req.Action))
 	dingTalkTemplateName := fmt.Sprintf("notify.issue.issue_%s.ding_talk.markdown_template", strings.ToLower(req.Action))
 
-	org, err := e.bdl.GetOrg(req.OrgID)
+	orgResp, err := e.orgClient.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcDOP),
+		&orgpb.GetOrgRequest{IdOrName: req.OrgID})
 	if err != nil {
 		return err
 	}
+	org := orgResp.Data
+
 	if org.Locale == "" {
 		org.Locale = "zh-CN"
 	}

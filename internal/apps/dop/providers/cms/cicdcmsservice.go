@@ -30,6 +30,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/cms"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/cms/db"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 )
 
 type CICDCmsService struct {
@@ -145,7 +146,7 @@ func (s *CICDCmsService) CICDCmsCreateOrUpdate(ctx context.Context, req *CICDCms
 
 func (s *CICDCmsService) deleteNotNeedKeys(ctx context.Context, pipelineSource string, ns string, keys []string) error {
 	// get pre configs
-	newContext := apis.WithInternalClientContext(ctx, "dop")
+	newContext := apis.WithInternalClientContext(ctx, discover.SvcDOP)
 	preCMS, err := s.p.PipelineCms.GetCmsNsConfigs(newContext, &cmspb.CmsNsConfigsGetRequest{
 		PipelineSource: pipelineSource,
 		Ns:             ns,

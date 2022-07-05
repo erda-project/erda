@@ -45,6 +45,7 @@ import (
 	vmssubscriber "github.com/erda-project/erda/internal/core/messenger/eventbox/subscriber/vms"
 	"github.com/erda-project/erda/internal/core/messenger/eventbox/webhook"
 	"github.com/erda-project/erda/internal/core/messenger/eventbox/websocket"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/pkg/user"
 	"github.com/erda-project/erda/pkg/goroutinepool"
 )
@@ -69,7 +70,7 @@ type DispatcherImpl struct {
 
 func New(dingtalk interfaces.DingTalkApiClientFactory, messenger pb.NotifyServiceServer, httpi *inputhttp.HttpInput,
 	mon *monitor.MonitorHTTP, wh *webhook.WebHookHTTP,
-	registerHttp *register.RegisterHTTP) (Dispatcher, error) {
+	registerHttp *register.RegisterHTTP, org org.Interface) (Dispatcher, error) {
 	dispatcher := DispatcherImpl{
 		subscribers:     make(map[string]subscriber.Subscriber),
 		subscriberspool: make(map[string]*goroutinepool.GoroutinePool),
@@ -89,14 +90,14 @@ func New(dingtalk interfaces.DingTalkApiClientFactory, messenger pb.NotifyServic
 	dingdingWorknoticeS := dingdingworknoticesubscriber.New(conf.Proxy(), messenger)
 	mboxS := mbox.New(bundle.New(bundle.WithCoreServices()), messenger)
 	emailS := emailsubscriber.New(conf.SmtpHost(), conf.SmtpPort(), conf.SmtpUser(), conf.SmtpPassword(),
-		conf.SmtpDisplayUser(), conf.SmtpIsSSL(), conf.SMTPInsecureSkipVerify(), bundleS, messenger)
+		conf.SmtpDisplayUser(), conf.SmtpIsSSL(), conf.SMTPInsecureSkipVerify(), bundleS, messenger, org)
 	smsS := smssubscriber.New(
 		conf.AliyunAccessKeyID(),
 		conf.AliyunAccessKeySecret(),
 		conf.AliyunSmsSignName(),
-		conf.AliyunSmsMonitorTemplateCode(), bundleS, messenger)
+		conf.AliyunSmsMonitorTemplateCode(), bundleS, messenger, org)
 	vmsS := vmssubscriber.New(conf.AliyunAccessKeyID(), conf.AliyunAccessKeySecret(), conf.AliyunVmsMonitorTtsCode(),
-		conf.AliyunVmsMonitorCalledShowNumber(), bundleS, messenger)
+		conf.AliyunVmsMonitorCalledShowNumber(), bundleS, messenger, org)
 	dingWorkNotice := dingtalk_worknotice.New(bundleS, dingtalk, messenger)
 	groupS := groupsubscriber.New(bundleS)
 	if err != nil {

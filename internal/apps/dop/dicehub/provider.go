@@ -23,6 +23,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	image "github.com/erda-project/erda/internal/apps/dop/dicehub/image/db"
+	"github.com/erda-project/erda/internal/core/org"
 )
 
 type provider struct {
@@ -30,6 +31,7 @@ type provider struct {
 	DB      *gorm.DB          `autowired:"mysql-client"`
 	Router  httpserver.Router `autowired:"http-router"`
 	ImageDB *image.ImageConfigDB
+	Org     org.ClientInterface
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {

@@ -17,12 +17,14 @@ package manager
 import (
 	"context"
 	"net/http"
-	"strconv"
 	"strings"
 
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/admin/apierrors"
 	"github.com/erda-project/erda/internal/apps/admin/model"
+	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
@@ -38,20 +40,18 @@ func (am *AdminManager) GetHost(ctx context.Context, r *http.Request, vars map[s
 	if orgIDStr == "" {
 		return apierrors.ErrGetHost.NotLogin().ToResp(), nil
 	}
-	orgID, err := strconv.ParseUint(orgIDStr, 10, 64)
-	if err != nil {
-		return apierrors.ErrGetHost.InvalidParameter(err).ToResp(), nil
-	}
 
 	clusterName := r.URL.Query().Get("clusterName")
 	if clusterName == "" {
 		return apierrors.ErrGetHost.MissingParameter("clusterName").ToResp(), nil
 	}
 
-	orgObj, err := am.bundle.GetOrg(orgID)
+	orgResp, err := am.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcAdmin),
+		&orgpb.GetOrgRequest{IdOrName: orgIDStr})
 	if err != nil {
 		return apierrors.ErrGetOrg.InternalError(err).ToResp(), nil
 	}
+	orgObj := orgResp.Data
 
 	addr := vars["host"]
 	if addr == "" {

@@ -18,6 +18,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/dao"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
@@ -26,6 +27,7 @@ type Service struct {
 	db  *dao.DBClient
 	bdl *bundle.Bundle
 	hc  *httpclient.HTTPClient
+	org org.ClientInterface
 
 	CreateTestSetFn func(apistructs.TestSetCreateRequest) (*apistructs.TestSet, error)
 }
@@ -53,5 +55,11 @@ func WithDBClient(db *dao.DBClient) Option {
 func WithBundle(bdl *bundle.Bundle) Option {
 	return func(svc *Service) {
 		svc.bdl = bdl
+	}
+}
+
+func WithOrg(org org.ClientInterface) Option {
+	return func(svc *Service) {
+		svc.org = org
 	}
 }

@@ -15,18 +15,24 @@
 package vms
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"sync"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/dyvmsapi"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-proto-go/core/messenger/notify/pb"
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/core/messenger/eventbox/subscriber"
 	"github.com/erda-project/erda/internal/core/messenger/eventbox/types"
+	"github.com/erda-project/erda/internal/core/org"
+	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 )
 
 // VoiceSubscriber 语音通知分发
@@ -37,6 +43,7 @@ type VoiceSubscriber struct {
 	monitorCalledShowNumber string
 	bundle                  *bundle.Bundle
 	messenger               pb.NotifyServiceServer
+	org                     org.Interface
 }
 
 // VoiceData 语音通知数据
@@ -50,7 +57,7 @@ type VoiceData struct {
 type Option func(*VoiceSubscriber)
 
 // New 新建一个语音通知分发的实例
-func New(accessKeyID, accessKeySecret, monitorTtsCode, monitorCalledShowNumber string, bundle *bundle.Bundle, messenger pb.NotifyServiceServer) subscriber.Subscriber {
+func New(accessKeyID, accessKeySecret, monitorTtsCode, monitorCalledShowNumber string, bundle *bundle.Bundle, messenger pb.NotifyServiceServer, org org.Interface) subscriber.Subscriber {
 	subscriber := &VoiceSubscriber{
 		accessKeyID:             accessKeyID,
 		accessSecret:            accessKeySecret,
@@ -58,6 +65,7 @@ func New(accessKeyID, accessKeySecret, monitorTtsCode, monitorCalledShowNumber s
 		monitorCalledShowNumber: monitorCalledShowNumber,
 		bundle:                  bundle,
 		messenger:               messenger,
+		org:                     org,
 	}
 	return subscriber
 }
@@ -80,10 +88,12 @@ func (d *VoiceSubscriber) Publish(dest string, content string, time int64, msg *
 		return []error{err}
 	}
 
-	org, err := d.bundle.GetOrg(voiceData.OrgID)
+	orgResp, err := d.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcEventBox),
+		&orgpb.GetOrgRequest{IdOrName: strconv.FormatInt(voiceData.OrgID, 10)})
 	if err != nil {
 		logrus.Errorf("failed to get org info err:%s", err)
 	}
+	org := orgResp.Data
 
 	notifyChannel, err := d.bundle.GetEnabledNotifyChannelByType(voiceData.OrgID, apistructs.NOTIFY_CHANNEL_TYPE_VMS)
 	if err != nil {
@@ -91,9 +101,9 @@ func (d *VoiceSubscriber) Publish(dest string, content string, time int64, msg *
 	}
 
 	accessKeyID, accessSecret := d.accessKeyID, d.accessSecret
-	if org.Config != nil && org.Config.VMSKeyID != "" && org.Config.VMSKeySecret != "" {
-		accessKeyID = org.Config.VMSKeyID
-		accessSecret = org.Config.VMSKeySecret
+	if org.Config != nil && org.Config.VmsKeyID != "" && org.Config.VmsKeySecret != "" {
+		accessKeyID = org.Config.VmsKeyID
+		accessSecret = org.Config.VmsKeySecret
 	}
 	if notifyChannel.Config != nil && notifyChannel.Config.AccessKeyId != "" && notifyChannel.Config.AccessKeySecret != "" {
 		accessKeyID = notifyChannel.Config.AccessKeyId

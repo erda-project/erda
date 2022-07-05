@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/dbclient"
 	"github.com/erda-project/erda/internal/apps/dop/services/namespace"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/pkg/cache"
 )
 
@@ -40,6 +41,7 @@ type Project struct {
 	CreateFileRecord func(req apistructs.TestFileRecordRequest) (uint64, error)
 	UpdateFileRecord func(req apistructs.TestFileRecordRequest) error
 	tokenService     tokenpb.TokenServiceServer
+	org              org.ClientInterface
 }
 
 func New(options ...Option) *Project {

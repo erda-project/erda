@@ -29,6 +29,7 @@ import (
 	_ "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/client"
 	_ "github.com/erda-project/erda-proto-go/core/monitor/alert/client"
 	_ "github.com/erda-project/erda-proto-go/core/monitor/metric/client"
+	_ "github.com/erda-project/erda-proto-go/core/org/client"
 	_ "github.com/erda-project/erda-proto-go/core/pipeline/cron/client"
 	_ "github.com/erda-project/erda-proto-go/core/token/client"
 

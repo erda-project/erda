@@ -69,6 +69,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/services/testset"
 	"github.com/erda-project/erda/internal/apps/dop/services/ticket"
 	"github.com/erda-project/erda/internal/apps/dop/services/workbench"
+	orgclient "github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/i18n"
@@ -689,6 +690,7 @@ type Endpoints struct {
 	CopyChannel   chan uint64
 
 	tokenService tokenpb.TokenServiceServer
+	orgClient    orgclient.ClientInterface
 }
 
 type Option func(*Endpoints)
@@ -789,6 +791,12 @@ func WithApplication(app *application.Application) Option {
 func WithPublishItem(publishItem *publish_item.PublishItem) Option {
 	return func(e *Endpoints) {
 		e.publishItem = publishItem
+	}
+}
+
+func WithOrgClient(org orgclient.ClientInterface) Option {
+	return func(e *Endpoints) {
+		e.orgClient = org
 	}
 }
 

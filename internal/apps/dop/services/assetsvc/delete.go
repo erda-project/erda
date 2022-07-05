@@ -447,7 +447,7 @@ func (svc *Service) DeleteSLA(ctx context.Context, req *apistructs.DeleteSLAReq)
 
 func (svc *Service) deleteContract(ctx context.Context, tx *gorm.DB, orgID uint64, userID string, contract *apistructs.ContractModel,
 	client *apistructs.ClientModel, asset *apistructs.APIAssetsModel, access *apistructs.APIAccessesModel) *errorresp.APIError {
-	org, err := svc.bdl.GetOrg(orgID)
+	org, err := svc.getOrg(context.Background(), orgID)
 	if err != nil {
 		return apierrors.DeleteContract.InternalError(errors.Wrap(err, "failed to GetOrg"))
 	}

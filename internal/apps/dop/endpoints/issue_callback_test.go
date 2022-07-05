@@ -15,25 +15,30 @@
 package endpoints
 
 import (
+	"context"
 	"reflect"
 	"testing"
 
 	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
 
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/conf"
+	"github.com/erda-project/erda/internal/pkg/mock"
 )
+
+type IssueOrgMock struct {
+	mock.OrgMock
+}
+
+func (m IssueOrgMock) GetOrg(ctx context.Context, request *orgpb.GetOrgRequest) (*orgpb.GetOrgResponse, error) {
+	return &orgpb.GetOrgResponse{Data: &orgpb.Org{ID: 1, Config: &orgpb.OrgConfig{}}}, nil
+}
 
 func Test_sendIssueEventToSpecificRecipient(t *testing.T) {
 	var bdl *bundle.Bundle
-	pm1 := monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetOrg",
-		func(*bundle.Bundle, interface{}) (*apistructs.OrgDTO, error) {
-			return &apistructs.OrgDTO{ID: 1, Config: &apistructs.OrgConfig{}}, nil
-		})
-	defer pm1.Unpatch()
-
 	pm2 := monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "ListUsers",
 		func(b *bundle.Bundle, req apistructs.UserListRequest) (*apistructs.UserListResponseData, error) {
 			return &apistructs.UserListResponseData{Users: []apistructs.UserInfo{
@@ -74,18 +79,13 @@ func Test_sendIssueEventToSpecificRecipient(t *testing.T) {
 		},
 	}
 
-	ep := Endpoints{bdl: bdl}
+	ep := Endpoints{bdl: bdl, orgClient: IssueOrgMock{}}
 	err := ep.sendIssueEventToSpecificRecipient(req)
 	assert.NoError(t, err)
 }
 
 func Test_processIssueEvent(t *testing.T) {
 	var bdl *bundle.Bundle
-	pm1 := monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetOrg",
-		func(*bundle.Bundle, interface{}) (*apistructs.OrgDTO, error) {
-			return &apistructs.OrgDTO{ID: 1, Config: &apistructs.OrgConfig{}}, nil
-		})
-	defer pm1.Unpatch()
 
 	pm2 := monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "ListUsers",
 		func(b *bundle.Bundle, req apistructs.UserListRequest) (*apistructs.UserListResponseData, error) {
@@ -146,7 +146,7 @@ func Test_processIssueEvent(t *testing.T) {
 		},
 	}
 
-	ep := Endpoints{bdl: bdl}
+	ep := Endpoints{bdl: bdl, orgClient: IssueOrgMock{}}
 	err := ep.processIssueEvent(req)
 	assert.NoError(t, err)
 }

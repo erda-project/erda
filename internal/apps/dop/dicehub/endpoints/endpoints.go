@@ -26,6 +26,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/dicehub/service/release"
 	"github.com/erda-project/erda/internal/apps/dop/dicehub/service/release_rule"
 	"github.com/erda-project/erda/internal/apps/dop/dicehub/service/template"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 
@@ -38,6 +39,7 @@ type Endpoints struct {
 	pipelineTemplate   *template.PipelineTemplate
 	releaseRule        *release_rule.ReleaseRule
 	queryStringDecoder *schema.Decoder
+	org                org.ClientInterface
 }
 
 type Option func(*Endpoints)
@@ -97,6 +99,12 @@ func WithReleaseRule(rule *release_rule.ReleaseRule) Option {
 func WithQueryStringDecoder(decoder *schema.Decoder) Option {
 	return func(e *Endpoints) {
 		e.queryStringDecoder = decoder
+	}
+}
+
+func WithOrg(org org.ClientInterface) Option {
+	return func(e *Endpoints) {
+		e.org = org
 	}
 }
 
