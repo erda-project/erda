@@ -3,10 +3,11 @@ syntax = "proto3";
 package erda.apps.devflow.flow;
 
 import "common/openapi.proto";
-import "openapiv1/gittar/gittar.proto";
+import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/wrappers.proto";
+import "openapiv1/gittar/gittar.proto";
 
 option go_package = "github.com/erda-project/erda-proto-go/apps/devflow/flow/pb";
 
@@ -84,10 +85,11 @@ message DevFlowNode {
 
 // CreateFlow
 message CreateFlowNodeRequest {
-    uint64 issueID = 1;
-    uint64 appID = 2;
-    string sourceBranch = 3;
-    string targetBranch = 4;
+    uint64 issueID = 1 [(validate.rules).uint64.gt = 0];
+    uint64 appID = 2 [(validate.rules).uint64.gt = 0];
+    string sourceBranch = 3 [(validate.rules).string.min_len = 1];
+    string targetBranch = 4 [(validate.rules).string.min_len = 1];
+    string currentBranch = 5 [(validate.rules).string.min_len = 1];
 }
 
 message CreateFlowNodeResponse {

@@ -82,22 +82,27 @@ const gittarPrefixOpenApi = "/wb/"
 const mrOpenState = "open"
 const mrMergedState = "merged"
 
+// CreateFlowNode currentBranch checkout from sourceBranch and merge to targetBranch
 func (s *Service) CreateFlowNode(ctx context.Context, req *pb.CreateFlowNodeRequest) (*pb.CreateFlowNodeResponse, error) {
+	if err := req.Validate(); err != nil {
+		return nil, err
+	}
+
 	app, err := s.p.bdl.GetApp(req.AppID)
 	if err != nil {
 		return nil, err
 	}
 
 	var repoPath = gittarPrefixOpenApi + app.ProjectName + "/" + app.Name
-	exists, err := s.JudgeBranchIsExists(ctx, repoPath, req.SourceBranch)
+	exists, err := s.JudgeBranchIsExists(ctx, repoPath, req.CurrentBranch)
 	if err != nil {
 		return nil, err
 	}
-	// auto create sourceBranch
+	// auto create currentBranch
 	if !exists {
 		err := s.p.bdl.CreateGittarBranch(repoPath, apistructs.GittarCreateBranchRequest{
 			Name: req.SourceBranch,
-			Ref:  req.TargetBranch,
+			Ref:  req.CurrentBranch,
 		}, apis.GetOrgID(ctx), apis.GetUserID(ctx))
 		if err != nil {
 			return nil, err
@@ -107,7 +112,7 @@ func (s *Service) CreateFlowNode(ctx context.Context, req *pb.CreateFlowNodeRequ
 	// find branch merge
 	result, err := s.p.bdl.ListMergeRequest(req.AppID, apis.GetUserID(ctx), apistructs.GittarQueryMrRequest{
 		TargetBranch: req.TargetBranch,
-		SourceBranch: req.SourceBranch,
+		SourceBranch: req.CurrentBranch,
 		Page:         1,
 		Size:         999,
 	})
@@ -130,7 +135,7 @@ func (s *Service) CreateFlowNode(ctx context.Context, req *pb.CreateFlowNodeRequ
 		// auto create merge
 		mergeInfo, err := s.p.bdl.CreateMergeRequest(req.AppID, apis.GetUserID(ctx), apistructs.GittarCreateMergeRequest{
 			TargetBranch:       req.TargetBranch,
-			SourceBranch:       req.SourceBranch,
+			SourceBranch:       req.CurrentBranch,
 			Title:              "auto create devflow merge",
 			Description:        "auto create devflow merge",
 			RemoveSourceBranch: false,
@@ -233,7 +238,7 @@ func (s *Service) getTempBranchFromFlowRule(ctx context.Context, projectID uint6
 	flowRule, err := s.p.DevFlowRule.GetFlowByRule(ctx, devflowrule.GetFlowByRuleRequest{
 		ProjectID:     projectID,
 		BranchType:    MultiBranchBranchType,
-		SourceBranch:  mrInfo.TargetBranch,
+		TargetBranch:  mrInfo.TargetBranch,
 		CurrentBranch: mrInfo.SourceBranch,
 	})
 	if err != nil {
