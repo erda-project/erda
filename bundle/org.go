@@ -27,7 +27,7 @@ import (
 
 // GetOrg get org by id from core-service.
 func (b *Bundle) GetOrg(idOrName interface{}) (*apistructs.OrgDTO, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +67,7 @@ func (b *Bundle) GetDopOrg(idOrName interface{}) (*apistructs.OrgDTO, error) {
 
 // ListOrgs 分页查询企业
 func (b *Bundle) ListOrgs(req *apistructs.OrgSearchRequest, orgID string) (*apistructs.PagingOrgDTO, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +121,7 @@ func (b *Bundle) ListDopOrgs(req *apistructs.OrgSearchRequest) (*apistructs.Pagi
 
 // ListPublicOrgs get list of public orgs
 func (b *Bundle) ListPublicOrgs(req *apistructs.OrgSearchRequest) (*apistructs.PagingOrgDTO, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -174,7 +174,7 @@ func (b *Bundle) ListDopPublicOrgs(req *apistructs.OrgSearchRequest) (*apistruct
 // GetOrgByDomain 通过域名获取企业
 func (b *Bundle) GetOrgByDomain(domain, orgName, userID string) (*apistructs.OrgDTO, error) {
 	// TODO: userID should be deprecated
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -224,7 +224,7 @@ func (b *Bundle) GetDopOrgByDomain(domain string, userID string) (*apistructs.Or
 
 // CreateOrg create org
 func (b *Bundle) CreateOrg(userID string, req *apistructs.OrgCreateRequest) (*apistructs.OrgDTO, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -268,7 +268,7 @@ func (b *Bundle) CreateDopOrg(userID string, req *apistructs.OrgCreateRequest) (
 
 // UpdateOrg update org
 func (b *Bundle) UpdateOrg(userID string, orgID int64, req *apistructs.OrgUpdateRequestBody) (*apistructs.OrgDTO, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -290,7 +290,7 @@ func (b *Bundle) UpdateOrg(userID string, orgID int64, req *apistructs.OrgUpdate
 
 // DeleteOrg delete org by id from core-service.
 func (b *Bundle) DeleteOrg(idOrName interface{}) (*apistructs.OrgDTO, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -311,7 +311,7 @@ func (b *Bundle) DeleteOrg(idOrName interface{}) (*apistructs.OrgDTO, error) {
 
 // GetOrgClusterRelationsByOrg get orgClusters relation by orgID
 func (b *Bundle) GetOrgClusterRelationsByOrg(orgID uint64) ([]apistructs.OrgClusterRelationDTO, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -332,7 +332,7 @@ func (b *Bundle) GetOrgClusterRelationsByOrg(orgID uint64) ([]apistructs.OrgClus
 
 // ListOrgClusterRelation list all relations if cluster is empty, else list all relation related to this cluster
 func (b *Bundle) ListOrgClusterRelation(userID, clusterName string) ([]apistructs.OrgClusterRelationDTO, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -363,7 +363,7 @@ func (b *Bundle) DereferenceCluster(orgID uint64, clusterName, userID string, fo
 		return "", errors.Errorf("集群中存在未清理的Addon或Service，请清理后再执行.")
 	}
 
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return "", err
 	}
@@ -388,7 +388,7 @@ func (b *Bundle) DereferenceCluster(orgID uint64, clusterName, userID string, fo
 
 // CreateOrgClusterRelationsByOrg create orgClusters relation by orgID
 func (b *Bundle) CreateOrgClusterRelationsByOrg(clusterName string, userID string, orgID uint64) error {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return err
 	}

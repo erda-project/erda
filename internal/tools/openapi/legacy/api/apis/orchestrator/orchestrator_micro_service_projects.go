@@ -47,7 +47,7 @@ func attachProjectParams(w http.ResponseWriter, r *http.Request) {
 	// get permissions
 	client := httpclient.New()
 	var perms apistructs.ScopeRoleList
-	cr := client.Get(discover.CoreServices()).
+	cr := client.Get(discover.ErdaServer()).
 		Path("/api/permissions").
 		Header("User-ID", userID).
 		Header("Org-ID", orgID)

@@ -130,8 +130,8 @@ func (u urls) DOP() (string, error) {
 	return u.getURL(discover.EnvDOP, discover.SvcDOP)
 }
 
-func (u urls) CoreServices() (string, error) {
-	return u.getURL(discover.EnvCoreServices, discover.SvcCoreServices)
+func (u urls) ErdaServer() (string, error) {
+	return u.getURL(discover.EnvErdaServer, discover.SvcErdaServer)
 }
 
 func (u urls) ClusterManager() (string, error) {

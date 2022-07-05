@@ -21,7 +21,7 @@ import (
 var CMDB_PROJECT_WORKSPACE_ABILITIES_DELETE = apis.ApiSpec{
 	Path:        "/api/project-workspace-abilities",
 	BackendPath: "/api/project-workspace-abilities",
-	Host:        "core-services.marathon.l4lb.thisdcos.directory:9526",
+	Host:        "erda-server.marathon.l4lb.thisdcos.directory:9095",
 	Scheme:      "http",
 	Method:      "DELETE",
 	CheckLogin:  true,

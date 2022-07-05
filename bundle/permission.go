@@ -22,7 +22,7 @@ import (
 
 // CheckPermission 鉴权
 func (b *Bundle) CheckPermission(req *apistructs.PermissionCheckRequest) (*apistructs.PermissionCheckResponseData, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +44,7 @@ func (b *Bundle) CheckPermission(req *apistructs.PermissionCheckRequest) (*apist
 
 // StateCheckPermission 鉴权
 func (b *Bundle) StateCheckPermission(req *apistructs.PermissionCheckRequest) (*apistructs.StatePermissionCheckResponseData, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +66,7 @@ func (b *Bundle) StateCheckPermission(req *apistructs.PermissionCheckRequest) (*
 
 // ScopeRoleAccess 查询给定用户是否有相应权限
 func (b *Bundle) ScopeRoleAccess(userID string, req *apistructs.ScopeRoleAccessRequest) (*apistructs.ScopeRole, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +88,7 @@ func (b *Bundle) ScopeRoleAccess(userID string, req *apistructs.ScopeRoleAccessR
 }
 
 func (b *Bundle) ScopeRoleAccessList(userID string, req *apistructs.ScopeRoleAccessRequest) (*apistructs.PermissionList, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +109,7 @@ func (b *Bundle) ScopeRoleAccessList(userID string, req *apistructs.ScopeRoleAcc
 
 // ListScopeRole 获取给定用户所有角色权限
 func (b *Bundle) ListScopeRole(userID, orgID string) (*apistructs.ScopeRoleList, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}

@@ -22,7 +22,7 @@ import (
 var CMDB_NOTIFYITEM_QUERY = apis.ApiSpec{
 	Path:         "/api/notify-items",
 	BackendPath:  "/api/notify-items",
-	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
+	Host:         "erda-server.marathon.l4lb.thisdcos.directory:9095",
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,

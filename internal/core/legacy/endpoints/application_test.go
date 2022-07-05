@@ -117,7 +117,7 @@ func TestEndpoints_getOrg(t *testing.T) {
 				org: mockOrg,
 			},
 			args: args{
-				ctx:   apis.WithInternalClientContext(context.Background(), discover.SvcCoreServices),
+				ctx:   apis.WithInternalClientContext(context.Background(), discover.SvcErdaServer),
 				orgID: 1,
 			},
 			want:    &orgpb.Org{},

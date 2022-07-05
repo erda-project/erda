@@ -15,8 +15,6 @@
 package legacy
 
 import (
-	"context"
-
 	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -53,10 +51,8 @@ func (p *provider) Init(ctx servicehub.Context) (err error) {
 	router.Any("/oauth2/token", p.oauth2server.Token)
 	router.Any("/oauth2/invalidate_token", p.oauth2server.InvalidateToken)
 	router.Any("/oauth2/validate_token", p.oauth2server.ValidateToken)
-	return nil
+	return p.Initialize()
 }
-
-func (p *provider) Run(ctx context.Context) error { return p.Initialize() }
 
 func init() {
 	servicehub.Register("core-services", &servicehub.Spec{

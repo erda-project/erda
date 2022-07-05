@@ -184,7 +184,7 @@ msp.permission:
 audit:
 
 grpc-client@erda.core.token:
-  addr: "${CORE_SERVICES_GRPC_ADDR:core-services:9537}"
+  addr: "${ERDA_SERVER_GRPC_ADDR:erda-server:8096}"
 erda.core.token-client:
 erda.msp.credential:
 
@@ -341,11 +341,11 @@ msp-alert-components:
 msp-alert-overview.unRecoverAlertChart.provider:
 
 grpc-client@erda.core.messenger.notify:
-  addr: "${CORE_SERVICES_GRPC_ADDR:core-services:9537}"
+  addr: "${ERDA_SERVER_GRPC_ADDR:erda-server:8096}"
 erda.core.messenger.notify-client:
 
 grpc-client@erda.core.messenger.notifygroup:
-  addr: "${CORE_SERVICES_GRPC_ADDR:core-services:9537}"
+  addr: "${ERDA_SERVER_GRPC_ADDR:erda-server:8096}"
 erda.core.messenger.notifygroup-client:
 
 grpc-client@erda.core.monitor.settings:

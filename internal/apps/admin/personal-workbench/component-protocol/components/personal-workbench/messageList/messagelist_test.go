@@ -22,7 +22,7 @@ import (
 )
 
 func initBundle() *bundle.Bundle {
-	os.Setenv("CORE_SERVICES_ADDR", "http://core-services.project-387-dev.svc.cluster.local:9526")
+	os.Setenv("ERDA_SERVER_ADDR", "http://erda-server.project-387-dev.svc.cluster.local:9095")
 	os.Setenv("MSP_ADDR", "http://msp.project-387-dev.svc.cluster.local:8080")
 	os.Setenv("DOP_ADDR", "http://dop.project-387-dev.svc.cluster.local:9527")
 	os.Setenv("ORCHESTRATOR_ADDR", "http://orchestrator.project-387-dev.svc.cluster.local:8081")

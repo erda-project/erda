@@ -22,7 +22,7 @@ import (
 var CMDB_MANUAL_REVIEW_ADDUSER = apis.ApiSpec{
 	Path:        "/api/reviews/actions/user/create",
 	BackendPath: "/api/reviews/actions/user/create",
-	Host:        "core-services.marathon.l4lb.thisdcos.directory:9526",
+	Host:        "erda-server.marathon.l4lb.thisdcos.directory:9095",
 	Scheme:      "http",
 	Method:      "POST",
 	CheckLogin:  true,
