@@ -26,6 +26,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/types"
 	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 )
 
 type ComponentAction struct {
@@ -35,7 +36,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 	sdk := cputil.SDK(ctx)
 	orgSvc := ctx.Value(types.OrgService).(org.ClientInterface)
 
-	orgResp, err := orgSvc.GetOrg(apis.WithInternalClientContext(ctx, "dop"), &orgpb.GetOrgRequest{IdOrName: sdk.Identity.OrgID})
+	orgResp, err := orgSvc.GetOrg(apis.WithInternalClientContext(ctx, discover.SvcDOP), &orgpb.GetOrgRequest{IdOrName: sdk.Identity.OrgID})
 	if err != nil {
 		return err
 	}

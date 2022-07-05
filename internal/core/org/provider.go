@@ -45,7 +45,7 @@ type provider struct {
 	Cfg      *config
 	Log      logs.Logger
 	Register transport.Register
-	DB       *gorm.DB `autowired:"mysql-client"`
+	DB       *gorm.DB `autowired:"mysql-client" optional:"true"`
 	RedisCli redis.Interface
 	bdl      *bundle.Bundle
 	dbClient *db.DBClient

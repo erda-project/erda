@@ -35,6 +35,7 @@ import (
 	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/pkg/user"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/i18n"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -312,7 +313,7 @@ func (t *Ticket) List(param *apistructs.TicketListRequest) (int64, []apistructs.
 		targetIDs := strings.Split(param.TargetID, ",")
 		db = db.Where("target_id in (?)", targetIDs)
 	} else if param.OrgID != 0 {
-		orgResp, _ := t.org.GetOrgClusterRelationsByOrg(apis.WithInternalClientContext(context.Background(), "dop"),
+		orgResp, _ := t.org.GetOrgClusterRelationsByOrg(apis.WithInternalClientContext(context.Background(), discover.SvcDOP),
 			&orgpb.GetOrgClusterRelationsByOrgRequest{OrgID: strconv.FormatInt(param.OrgID, 10)})
 		relations := orgResp.Data
 		clusterNames := make([]string, 0, len(relations))

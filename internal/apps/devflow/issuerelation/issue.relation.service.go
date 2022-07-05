@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
+	"github.com/erda-project/erda/pkg/discover"
 )
 
 type issueRelationService struct {
@@ -45,7 +46,7 @@ func (s *issueRelationService) Create(ctx context.Context, req *pb.CreateIssueRe
 	}
 
 	orgID := apis.GetOrgID(ctx)
-	orgResp, err := s.org.GetOrg(apis.WithInternalClientContext(context.Background(), "cmp"),
+	orgResp, err := s.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcDOP),
 		&orgpb.GetOrgRequest{IdOrName: orgID})
 	if err != nil {
 		return nil, err

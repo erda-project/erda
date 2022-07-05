@@ -37,6 +37,7 @@ import (
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/database/cimysql"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpclientutil"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 )
@@ -297,7 +298,7 @@ func addDefaultTagAndField(sonarStore *apistructs.SonarStoreRequest, metric *api
 		return
 	}
 
-	orgResp, err := orgClient.GetOrg(apis.WithInternalClientContext(context.Background(), "dop"),
+	orgResp, err := orgClient.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcDOP),
 		&orgpb.GetOrgRequest{IdOrName: strconv.FormatUint(project.OrgID, 10)})
 	if err != nil {
 		logrus.Errorf("addDefaultTagAndField get org err: %v", err)

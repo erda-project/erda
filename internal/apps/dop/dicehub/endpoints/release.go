@@ -42,6 +42,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/dicehub/service/apierrors"
 	"github.com/erda-project/erda/internal/pkg/user"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
@@ -165,7 +166,7 @@ func (e *Endpoints) DownloadRelease(ctx context.Context, w http.ResponseWriter, 
 		return apierrors.ErrDownloadRelease.InternalError(err)
 	}
 
-	orgResp, err := e.org.GetOrg(apis.WithInternalClientContext(context.Background(), "dicehub"),
+	orgResp, err := e.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcDiceHub),
 		&orgpb.GetOrgRequest{IdOrName: strconv.FormatInt(orgID, 10)})
 	if err != nil {
 		return apierrors.ErrDownloadRelease.InternalError(err)

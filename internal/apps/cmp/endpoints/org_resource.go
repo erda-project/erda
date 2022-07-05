@@ -30,6 +30,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/cmp/services/apierrors"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/loop"
@@ -188,7 +189,7 @@ func (e *Endpoints) getOrgByRequest(r *http.Request) (*orgpb.Org, error) {
 		return nil, errors.Errorf("missing org id header")
 	}
 
-	orgResp, err := e.org.GetOrg(apis.WithInternalClientContext(context.Background(), "cmp"),
+	orgResp, err := e.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcCMP),
 		&orgpb.GetOrgRequest{IdOrName: orgIDStr})
 	if err != nil {
 		return nil, err

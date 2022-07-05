@@ -30,6 +30,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/admin/apierrors"
 	"github.com/erda-project/erda/internal/pkg/user"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
@@ -77,7 +78,7 @@ func (am *AdminManager) ListCluster(ctx context.Context, req *http.Request, reso
 		}
 		newClusters = resp.Data
 	} else {
-		orgResp, err := am.org.GetOrgClusterRelationsByOrg(apis.WithInternalClientContext(ctx, "admin"), &orgpb.GetOrgClusterRelationsByOrgRequest{OrgID: orgIDStr})
+		orgResp, err := am.org.GetOrgClusterRelationsByOrg(apis.WithInternalClientContext(ctx, discover.SvcAdmin), &orgpb.GetOrgClusterRelationsByOrgRequest{OrgID: orgIDStr})
 		if err != nil {
 			return apierrors.ErrListCluster.InternalError(err).ToResp(), nil
 		}
@@ -166,7 +167,7 @@ func (am *AdminManager) DereferenceCluster(ctx context.Context, r *http.Request,
 		return apierrors.ErrDereferenceCluster.InternalError(errors.Errorf("集群中存在未清理的Addon或Service，请清理后再执行")).ToResp(), nil
 	}
 
-	clusterResp, err := am.org.DereferenceCluster(apis.WithUserIDContext(apis.WithInternalClientContext(ctx, "admin"), userID.String()), &orgpb.DereferenceClusterRequest{
+	clusterResp, err := am.org.DereferenceCluster(apis.WithUserIDContext(apis.WithInternalClientContext(ctx, discover.SvcAdmin), userID.String()), &orgpb.DereferenceClusterRequest{
 		OrgID:       orgID,
 		ClusterName: clusterName,
 	})

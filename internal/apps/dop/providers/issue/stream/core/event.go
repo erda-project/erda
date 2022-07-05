@@ -28,6 +28,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/stream/common"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 )
 
 func (p *provider) CreateIssueEvent(req *common.IssueStreamCreateRequest) error {
@@ -51,7 +52,7 @@ func (p *provider) CreateIssueEvent(req *common.IssueStreamCreateRequest) error 
 		return err
 	}
 
-	orgResp, err := p.Org.GetOrg(apis.WithInternalClientContext(context.Background(), "dop"),
+	orgResp, err := p.Org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcDOP),
 		&orgpb.GetOrgRequest{IdOrName: strconv.FormatUint(projectModel.OrgID, 10)})
 	if err != nil {
 		return err

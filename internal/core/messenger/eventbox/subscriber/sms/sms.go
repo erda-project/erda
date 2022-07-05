@@ -33,6 +33,7 @@ import (
 	"github.com/erda-project/erda/internal/core/messenger/eventbox/types"
 	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 )
 
 type MobileSubscriber struct {
@@ -83,7 +84,7 @@ func (d *MobileSubscriber) Publish(dest string, content string, time int64, msg 
 		return []error{err}
 	}
 
-	orgResp, err := d.org.GetOrg(apis.WithInternalClientContext(context.Background(), "eventbox"),
+	orgResp, err := d.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcEventBox),
 		&orgpb.GetOrgRequest{IdOrName: strconv.FormatInt(mobileData.OrgID, 10)})
 	if err != nil {
 		logrus.Errorf("failed to get org info err:%s", err)

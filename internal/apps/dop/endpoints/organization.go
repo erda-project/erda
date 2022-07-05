@@ -30,6 +30,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	"github.com/erda-project/erda/internal/pkg/user"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -56,7 +57,7 @@ func (e *Endpoints) CreateOrg(ctx context.Context, r *http.Request, vars map[str
 	logrus.Infof("request body: %+v", orgCreateReq)
 
 	// create org
-	orgResp, err := e.orgClient.CreateOrg(apis.WithUserIDContext(apis.WithInternalClientContext(ctx, "dop"), identityInfo.UserID),
+	orgResp, err := e.orgClient.CreateOrg(apis.WithUserIDContext(apis.WithInternalClientContext(ctx, discover.SvcDOP), identityInfo.UserID),
 		orgCreateReq)
 	if err != nil {
 		return apierrors.ErrCreateOrg.InternalError(err).ToResp(), nil
@@ -162,7 +163,7 @@ func (e *Endpoints) UpdateOrg(ctx context.Context, r *http.Request, vars map[str
 		return apierrors.ErrUpdateOrg.AccessDenied().ToResp(), nil
 	}
 	// update org
-	orgResp, err := e.orgClient.UpdateOrg(apis.WithUserIDContext(apis.WithInternalClientContext(ctx, "dop"), identityInfo.UserID), orgUpdateReq)
+	orgResp, err := e.orgClient.UpdateOrg(apis.WithUserIDContext(apis.WithInternalClientContext(ctx, discover.SvcDOP), identityInfo.UserID), orgUpdateReq)
 	if err != nil {
 		return apierrors.ErrUpdateOrg.InternalError(err).ToResp(), nil
 	}
@@ -228,7 +229,7 @@ func (e *Endpoints) DeleteOrg(ctx context.Context, r *http.Request, vars map[str
 	org := orgResp.Data
 	org.PublisherID = e.org.GetPublisherID(int64(org.ID))
 
-	_, err = e.orgClient.DeleteOrg(apis.WithInternalClientContext(ctx, "dop"), &orgpb.DeleteOrgRequest{IdOrName: orgStr})
+	_, err = e.orgClient.DeleteOrg(apis.WithInternalClientContext(ctx, discover.SvcDOP), &orgpb.DeleteOrgRequest{IdOrName: orgStr})
 	if err != nil {
 		return apierrors.ErrDeleteOrg.InternalError(err).ToResp(), nil
 	}
@@ -248,7 +249,7 @@ func (e *Endpoints) ListOrg(ctx context.Context, r *http.Request, vars map[strin
 	if err != nil {
 		return apierrors.ErrListOrg.InvalidParameter(err).ToResp(), nil
 	}
-	orgResp, err := e.orgClient.ListOrg(apis.WithInternalClientContext(ctx, "dop"), req)
+	orgResp, err := e.orgClient.ListOrg(apis.WithInternalClientContext(ctx, discover.SvcDOP), req)
 	if err != nil {
 		return apierrors.ErrListOrg.InternalError(err).ToResp(), nil
 	}
@@ -272,7 +273,7 @@ func (e *Endpoints) ListPublicOrg(ctx context.Context, r *http.Request, vars map
 		return apierrors.ErrListPublicOrg.InvalidParameter(err).ToResp(), nil
 	}
 
-	orgResp, err := e.orgClient.ListPublicOrg(apis.WithInternalClientContext(ctx, "dop"), req)
+	orgResp, err := e.orgClient.ListPublicOrg(apis.WithInternalClientContext(ctx, discover.SvcDOP), req)
 	if err != nil {
 		return apierrors.ErrListOrg.InternalError(err).ToResp(), nil
 	}
@@ -298,7 +299,7 @@ func (e *Endpoints) GetOrgByDomain(ctx context.Context, r *http.Request, vars ma
 		return apierrors.ErrGetOrg.MissingParameter("domain").ToResp(), nil
 	}
 
-	orgResp, err := e.orgClient.GetOrgByDomain(apis.WithUserIDContext(apis.WithInternalClientContext(ctx, "dop"), identity.UserID), &orgpb.GetOrgByDomainRequest{
+	orgResp, err := e.orgClient.GetOrgByDomain(apis.WithUserIDContext(apis.WithInternalClientContext(ctx, discover.SvcDOP), identity.UserID), &orgpb.GetOrgByDomainRequest{
 		Domain:  domain,
 		OrgName: orgName,
 	})

@@ -38,6 +38,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/cmp/dbclient"
 	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
@@ -222,7 +223,7 @@ func (c *Clusters) BatchUpgradeEdgeCluster(ctx context.Context, req apistructs.B
 }
 
 func (c *Clusters) GetOrgInfo(req *orgpb.ListOrgRequest) (map[uint64]*orgpb.Org, error) {
-	listOrg, err := c.org.ListOrg(apis.WithInternalClientContext(context.Background(), "cmp"), req)
+	listOrg, err := c.org.ListOrg(apis.WithInternalClientContext(context.Background(), discover.SvcCMP), req)
 	if err != nil {
 		return nil, err
 	}

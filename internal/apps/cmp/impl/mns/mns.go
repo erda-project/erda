@@ -41,6 +41,7 @@ import (
 	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/crypto/encrypt"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/dlock"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/jsonstore"
@@ -409,7 +410,7 @@ func (m *Mns) Consume(clusterInfo *clusterpb.ClusterInfo) {
 	}
 
 	// custom label1: dice/org-{orgName}; custom label2: dice/ess-autoscale
-	orgResp, err := m.org.GetOrg(apis.WithInternalClientContext(context.Background(), "cmp"),
+	orgResp, err := m.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcCMP),
 		&orgpb.GetOrgRequest{IdOrName: strconv.FormatUint(uint64(clusterInfo.OrgID), 10)})
 	if err != nil {
 		logrus.Errorf("failed to get org name, cluster: %s, org id: %d", clusterInfo.Name, clusterInfo.OrgID)

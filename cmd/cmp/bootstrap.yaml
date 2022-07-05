@@ -50,10 +50,3 @@ grpc-server:
 pprof:
 http-server@admin:
   addr: ":9030"
-
-mysql:
-  host: "${MYSQL_HOST}"
-  port: "${MYSQL_PORT}"
-  username: "${MYSQL_USERNAME}"
-  password: "${MYSQL_PASSWORD}"
-  database: "${MYSQL_DATABASE}"

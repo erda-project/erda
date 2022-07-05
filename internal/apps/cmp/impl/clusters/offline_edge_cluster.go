@@ -29,6 +29,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/cmp/dbclient"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
@@ -122,7 +123,7 @@ func (c *Clusters) OfflineEdgeCluster(ctx context.Context, req apistructs.Offlin
 		if referenceResp.AddonReference > 0 || referenceResp.ServiceReference > 0 && !req.Force {
 			return 0, "", fmt.Errorf("集群中存在未清理的Addon或Service，请清理后再执行")
 		}
-		_, err = c.org.DereferenceCluster(apis.WithUserIDContext(apis.WithInternalClientContext(ctx, "cmp"), userid), &orgpb.DereferenceClusterRequest{
+		_, err = c.org.DereferenceCluster(apis.WithUserIDContext(apis.WithInternalClientContext(ctx, discover.SvcCMP), userid), &orgpb.DereferenceClusterRequest{
 			OrgID:       strconv.FormatUint(req.OrgID, 10),
 			ClusterName: req.ClusterName,
 		})
@@ -131,7 +132,7 @@ func (c *Clusters) OfflineEdgeCluster(ctx context.Context, req apistructs.Offlin
 		}
 
 		var relationResp *orgpb.ListOrgClusterRelationResponse
-		relationResp, err = c.org.ListOrgClusterRelation(apis.WithInternalClientContext(ctx, "cmp"),
+		relationResp, err = c.org.ListOrgClusterRelation(apis.WithInternalClientContext(ctx, discover.SvcCMP),
 			&orgpb.ListOrgClusterRelationRequest{Cluster: req.ClusterName})
 		if err != nil {
 			logrus.Errorf("list org cluster relation failed, cluster: %s, error: %v", req.ClusterName, err)

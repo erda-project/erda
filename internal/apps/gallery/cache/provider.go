@@ -27,6 +27,7 @@ import (
 	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/pkg/cache"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 )
 
 var (
@@ -59,7 +60,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	}
 	bdl := bundle.New(bundle.WithCoreServices())
 	orgID2Org = cache.New("dop-org-id-for-org", time.Hour*24, func(i interface{}) (interface{}, bool) {
-		orgResp, err := p.Org.GetOrg(apis.WithInternalClientContext(ctx, "gallery"),
+		orgResp, err := p.Org.GetOrg(apis.WithInternalClientContext(ctx, discover.SvcGallery),
 			&orgpb.GetOrgRequest{IdOrName: i.(string)})
 		if err != nil {
 			return nil, false

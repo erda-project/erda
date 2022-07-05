@@ -32,6 +32,7 @@ import (
 	"github.com/erda-project/erda/internal/pkg/audit"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
+	"github.com/erda-project/erda/pkg/discover"
 )
 
 type notifyGroupService struct {
@@ -75,7 +76,7 @@ func (n *notifyGroupService) CreateNotifyGroup(ctx context.Context, request *pb.
 		return nil, errors.NewInternalServerError(err)
 	}
 
-	orgResp, err := n.org.GetOrg(apis.WithInternalClientContext(context.Background(), "eventbox"),
+	orgResp, err := n.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcEventBox),
 		&orgpb.GetOrgRequest{IdOrName: orgIdStr})
 	if err != nil {
 		return nil, errors.NewInvalidParameterError("orgId", "orgId is invalidate")
@@ -229,7 +230,7 @@ func (n *notifyGroupService) UpdateNotifyGroup(ctx context.Context, request *pb.
 		return nil, errors.NewInternalServerError(err)
 	}
 
-	orgResp, err := n.org.GetOrg(apis.WithInternalClientContext(context.Background(), "eventbox"),
+	orgResp, err := n.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcEventBox),
 		&orgpb.GetOrgRequest{IdOrName: orgIdStr})
 	if err != nil {
 		return nil, errors.NewInvalidParameterError("orgId", "orgId is invalidate")
@@ -317,7 +318,7 @@ func (n *notifyGroupService) DeleteNotifyGroup(ctx context.Context, request *pb.
 		return nil, errors.NewInternalServerError(err)
 	}
 
-	orgResp, err := n.org.GetOrg(apis.WithInternalClientContext(context.Background(), "eventbox"),
+	orgResp, err := n.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcEventBox),
 		&orgpb.GetOrgRequest{IdOrName: orgIdStr})
 	if err != nil {
 		return nil, errors.NewInvalidParameterError("orgId", "orgId is invalidate")

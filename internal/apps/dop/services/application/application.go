@@ -34,6 +34,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/oauth2/tokenstore/mysqltokenstore"
 )
 
@@ -135,7 +136,7 @@ func (a *Application) Init(initReq *apistructs.ApplicationInitRequest) (uint64, 
 	}
 	token = res.Data[0].AccessKey
 
-	orgResp, err := a.org.GetOrg(apis.WithInternalClientContext(context.Background(), "dop"),
+	orgResp, err := a.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcDOP),
 		&orgpb.GetOrgRequest{IdOrName: strconv.FormatUint(app.OrgID, 10)})
 	if err != nil {
 		return 0, err
@@ -277,7 +278,7 @@ func (a *Application) UpdatePublishItemRelations(request *apistructs.UpdateAppPu
 func (a *Application) PipelineCmsConfigRequest(request *apistructs.UpdateAppPublishItemRelationRequest) error {
 	for workspace, mk := range request.AKAIMap {
 		// bundle req
-		if _, err := a.cms.UpdateCmsNsConfigs(apis.WithInternalClientContext(context.Background(), "dop"),
+		if _, err := a.cms.UpdateCmsNsConfigs(apis.WithInternalClientContext(context.Background(), discover.SvcDOP),
 			&cmspb.CmsNsConfigsUpdateRequest{
 				Ns:             a.BuildItemMonitorPipelineCmsNs(request.AppID, workspace.String()),
 				PipelineSource: apistructs.PipelineSourceDice.String(),

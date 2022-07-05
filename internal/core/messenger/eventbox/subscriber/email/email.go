@@ -36,6 +36,7 @@ import (
 	"github.com/erda-project/erda/internal/core/messenger/eventbox/types"
 	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/template"
 )
 
@@ -177,7 +178,7 @@ func (d *MailSubscriber) sendToMail(mails []string, mailData *MailData) error {
 		smtpPort = strconv.Itoa(int(notifyChannel.Config.SMTPPort))
 		isSSL = notifyChannel.Config.SMTPIsSSL
 	} else {
-		orgResp, err := d.org.GetOrg(apis.WithInternalClientContext(context.Background(), "eventbox"),
+		orgResp, err := d.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcEventBox),
 			&orgpb.GetOrgRequest{IdOrName: strconv.FormatInt(mailData.OrgID, 10)})
 		if err != nil {
 			logrus.Errorf("failed to get org info err:%s", err)

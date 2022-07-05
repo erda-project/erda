@@ -31,6 +31,7 @@ import (
 	metrics "github.com/erda-project/erda/internal/tools/monitor/core/metric"
 	"github.com/erda-project/erda/pkg/common/apis"
 	api "github.com/erda-project/erda/pkg/common/httpapi"
+	"github.com/erda-project/erda/pkg/discover"
 )
 
 func (p *provider) intRoutes(routes httpserver.Router) error {
@@ -60,7 +61,7 @@ func (p *provider) getTemplates(r *http.Request, params struct {
 }
 
 func (p *provider) getOrgName(id int64) (string, error) {
-	orgResp, err := p.Org.GetOrg(apis.WithInternalClientContext(context.Background(), "msp"),
+	orgResp, err := p.Org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcMSP),
 		&orgpb.GetOrgRequest{IdOrName: strconv.FormatInt(id, 10)})
 	if err != nil {
 		return "", err

@@ -29,6 +29,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/dbclient"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 )
 
 func (svc *Service) createOrUpdateAPIs(caseID, projectID uint64, apis []*apistructs.ApiTestInfo) error {
@@ -246,7 +247,7 @@ func (svc *Service) getClusterNameAndOrgNameFromCmdb(projectID int64) (string, s
 	}
 
 	// get orgName by orgID
-	orgResp, err := svc.org.GetOrg(apis.WithInternalClientContext(context.Background(), "dop"),
+	orgResp, err := svc.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcDOP),
 		&orgpb.GetOrgRequest{IdOrName: strconv.FormatUint(projectInfo.OrgID, 10)})
 	if err != nil {
 		return "", "", err

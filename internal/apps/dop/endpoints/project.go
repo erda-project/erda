@@ -35,6 +35,7 @@ import (
 	"github.com/erda-project/erda/internal/pkg/user"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/cron"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/http/httputil"
@@ -88,7 +89,7 @@ func (e *Endpoints) CreateProject(ctx context.Context, r *http.Request, vars map
 	}
 
 	// get org locale
-	orgResp, err := e.orgClient.GetOrg(apis.WithInternalClientContext(context.Background(), "dop"),
+	orgResp, err := e.orgClient.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcDOP),
 		&orgpb.GetOrgRequest{IdOrName: strconv.FormatUint(projectCreateReq.OrgID, 10)})
 	if err != nil {
 		return apierrors.ErrCreateProject.InternalError(err).ToResp(), nil
@@ -791,7 +792,7 @@ func (e *Endpoints) ConstructProjectPackgeRequset(r *http.Request, vars map[stri
 		}
 	}
 
-	orgResp, err := e.orgClient.GetOrg(apis.WithInternalClientContext(context.Background(), "dop"),
+	orgResp, err := e.orgClient.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcDOP),
 		&orgpb.GetOrgRequest{IdOrName: strconv.FormatInt(orgID, 10)})
 	if err != nil {
 		return nil, apiErr.InternalError(err)

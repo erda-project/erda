@@ -26,6 +26,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	"github.com/erda-project/erda/internal/pkg/user"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 )
@@ -42,7 +43,7 @@ func (e *Endpoints) GetOrgNexus(ctx context.Context, r *http.Request, vars map[s
 	if !ok {
 		return apierrors.ErrGetOrgNexus.MissingParameter("orgID").ToResp(), nil
 	}
-	orgResp, err := e.orgClient.GetOrg(apis.WithInternalClientContext(context.Background(), "dop"),
+	orgResp, err := e.orgClient.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcDOP),
 		&orgpb.GetOrgRequest{IdOrName: orgIDStr})
 	if err != nil {
 		return apierrors.ErrGetOrgNexus.InvalidParameter(err).ToResp(), nil
@@ -124,7 +125,7 @@ func (e *Endpoints) GetNexusOrgDockerCredentialByImage(ctx context.Context, r *h
 		return apierrors.ErrGetNexusDockerCredentialByImage.AccessDenied().ToResp(), nil
 	}
 
-	orgResp, err := e.orgClient.GetOrg(apis.WithInternalClientContext(context.Background(), "dop"),
+	orgResp, err := e.orgClient.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcDOP),
 		&orgpb.GetOrgRequest{IdOrName: vars["orgID"]})
 	if err != nil {
 		return apierrors.ErrGetOrg.InvalidParameter(err).ToResp(), nil

@@ -24,6 +24,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/admin/apierrors"
 	"github.com/erda-project/erda/internal/apps/admin/model"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
@@ -45,7 +46,7 @@ func (am *AdminManager) GetHost(ctx context.Context, r *http.Request, vars map[s
 		return apierrors.ErrGetHost.MissingParameter("clusterName").ToResp(), nil
 	}
 
-	orgResp, err := am.org.GetOrg(apis.WithInternalClientContext(context.Background(), "admin"),
+	orgResp, err := am.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcAdmin),
 		&orgpb.GetOrgRequest{IdOrName: orgIDStr})
 	if err != nil {
 		return apierrors.ErrGetOrg.InternalError(err).ToResp(), nil

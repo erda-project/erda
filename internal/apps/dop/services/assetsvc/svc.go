@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/services/branchrule"
 	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 )
 
 type Service struct {
@@ -71,7 +72,7 @@ func WithOrg(org org.ClientInterface) Option {
 }
 
 func (svc *Service) getOrg(ctx context.Context, orgID uint64) (*orgpb.Org, error) {
-	orgResp, err := svc.org.GetOrg(apis.WithInternalClientContext(ctx, "dop"),
+	orgResp, err := svc.org.GetOrg(apis.WithInternalClientContext(ctx, discover.SvcDOP),
 		&orgpb.GetOrgRequest{IdOrName: strconv.FormatUint(orgID, 10)})
 	if err != nil {
 		return nil, err

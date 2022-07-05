@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/pkg/cache"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 )
 
 var (
@@ -35,7 +36,7 @@ var (
 func Init(org org.Interface) {
 	bdl := bundle.New(bundle.WithCoreServices())
 	orgID2Org = cache.New("dop-org-id-for-org", time.Minute, func(i interface{}) (interface{}, bool) {
-		orgResp, err := org.GetOrg(apis.WithInternalClientContext(context.Background(), "dop"), &orgpb.GetOrgRequest{IdOrName: i.(string)})
+		orgResp, err := org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcDOP), &orgpb.GetOrgRequest{IdOrName: i.(string)})
 		if err != nil {
 			return nil, false
 		}

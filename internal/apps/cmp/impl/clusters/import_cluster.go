@@ -45,6 +45,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/cmp/conf"
 	"github.com/erda-project/erda/internal/apps/cmp/dbclient"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/k8sclient"
 )
@@ -126,7 +127,7 @@ func (c *Clusters) importCluster(ctx context.Context, userID string, req *apistr
 			return err
 		}
 
-		orgResp, err := c.org.GetOrg(apis.WithInternalClientContext(context.Background(), "cmp"),
+		orgResp, err := c.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcCMP),
 			&orgpb.GetOrgRequest{IdOrName: strconv.FormatUint(req.OrgID, 10)})
 		if err != nil {
 			logrus.Errorf("get org info error: %v", err)
@@ -589,7 +590,7 @@ func (c *Clusters) generateClusterInitJob(ctx context.Context, orgID uint64, clu
 		jobName      = generateInitJobName(orgID, clusterName)
 	)
 
-	orgResp, err := c.org.GetOrg(apis.WithInternalClientContext(context.Background(), "cmp"),
+	orgResp, err := c.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcCMP),
 		&orgpb.GetOrgRequest{IdOrName: strconv.FormatUint(orgID, 10)})
 	if err != nil {
 		return nil, err

@@ -26,6 +26,7 @@ import (
 	"github.com/erda-project/erda/internal/core/cluster-manager/cluster/db"
 	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -147,7 +148,7 @@ func (c *ClusterService) CreateCluster(ctx context.Context, req *pb.CreateCluste
 		return nil, ErrCreateCluster.InternalError(err)
 	}
 
-	orgResp, err := c.org.GetOrg(apis.WithInternalClientContext(ctx, "cluster-manager"),
+	orgResp, err := c.org.GetOrg(apis.WithInternalClientContext(ctx, discover.SvcClusterManager),
 		&orgpb.GetOrgRequest{IdOrName: strconv.Itoa(int(req.OrgID))})
 	if err != nil {
 		return nil, ErrCreateCluster.InternalError(err)
@@ -159,7 +160,7 @@ func (c *ClusterService) CreateCluster(ctx context.Context, req *pb.CreateCluste
 		OrgName:     org.Name,
 		ClusterName: req.Name,
 	}
-	_, err = c.org.CreateOrgClusterRelation(apis.WithInternalClientContext(ctx, "cluster-manager"), createOrgClusterReq)
+	_, err = c.org.CreateOrgClusterRelation(apis.WithInternalClientContext(ctx, discover.SvcClusterManager), createOrgClusterReq)
 	if err != nil {
 		return nil, ErrCreateCluster.InternalError(err)
 	}

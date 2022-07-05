@@ -32,6 +32,7 @@ import (
 	autotestv2 "github.com/erda-project/erda/internal/apps/dop/services/autotest_v2"
 	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/time/mysql_time"
 )
 
@@ -254,7 +255,7 @@ func (s *TestPlanService) ProcessEvent(req *pb.Content) error {
 		return err
 	}
 
-	orgResp, err := s.org.GetOrg(apis.WithInternalClientContext(context.Background(), "dop"),
+	orgResp, err := s.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcDOP),
 		&orgpb.GetOrgRequest{IdOrName: strconv.FormatUint(project.OrgID, 10)})
 	if err != nil {
 		return err

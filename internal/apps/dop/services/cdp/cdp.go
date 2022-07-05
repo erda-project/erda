@@ -31,6 +31,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/conf"
 	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 )
 
 var (
@@ -83,7 +84,7 @@ func (cdp *CDP) CdpNotifyProcess(pipelineEvent *apistructs.PipelineInstanceEvent
 		return err
 	}
 
-	orgResp, err := cdp.org.GetOrg(apis.WithInternalClientContext(context.Background(), "dop"),
+	orgResp, err := cdp.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcDOP),
 		&orgpb.GetOrgRequest{IdOrName: pipelineEvent.OrgID})
 	if err != nil {
 		logrus.Errorf("failed to get org info err: %s", err)

@@ -46,6 +46,7 @@ import (
 	"github.com/erda-project/erda/internal/pkg/diceworkspace"
 	def "github.com/erda-project/erda/internal/tools/pipeline/providers/definition"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/encoding/jsonparse"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/limit_sync_group"
@@ -436,7 +437,7 @@ func (p *ProjectPipelineService) checkDefinitionRemoteSameName(projectID uint64,
 		return false, err
 	}
 
-	orgResp, err := p.org.GetOrg(apis.WithInternalClientContext(context.Background(), "dop"),
+	orgResp, err := p.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcDOP),
 		&orgpb.GetOrgRequest{IdOrName: strconv.FormatUint(projectDto.OrgID, 10)})
 	if err != nil {
 		return false, err
@@ -486,7 +487,7 @@ func (p *ProjectPipelineService) List(ctx context.Context, params deftype.Projec
 		return nil, 0, apierrors.ErrListProjectPipeline.InternalError(err)
 	}
 
-	orgResp, err := p.org.GetOrg(apis.WithInternalClientContext(context.Background(), "dop"),
+	orgResp, err := p.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcDOP),
 		&orgpb.GetOrgRequest{IdOrName: strconv.FormatUint(project.OrgID, 10)})
 	if err != nil {
 		return nil, 0, apierrors.ErrListProjectPipeline.InternalError(err)
@@ -806,7 +807,7 @@ func (p *ProjectPipelineService) ListExecHistory(ctx context.Context, params *pb
 		return nil, apierrors.ErrListExecHistoryProjectPipeline.InternalError(err)
 	}
 
-	orgResp, err := p.org.GetOrg(apis.WithInternalClientContext(context.Background(), "dop"),
+	orgResp, err := p.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcDOP),
 		&orgpb.GetOrgRequest{IdOrName: strconv.FormatUint(projectDto.OrgID, 10)})
 	if err != nil {
 		return nil, apierrors.ErrListExecHistoryProjectPipeline.InternalError(err)
@@ -936,7 +937,7 @@ func (p *ProjectPipelineService) BatchRun(ctx context.Context, params deftype.Pr
 		return nil, apierrors.ErrRunProjectPipeline.InternalError(err)
 	}
 
-	orgResp, err := p.org.GetOrg(apis.WithInternalClientContext(context.Background(), "dop"),
+	orgResp, err := p.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcDOP),
 		&orgpb.GetOrgRequest{IdOrName: strconv.FormatUint(project.OrgID, 10)})
 	if err != nil {
 		return nil, apierrors.ErrCreateDevFlowRule.InternalError(err)
@@ -1455,7 +1456,7 @@ func (p *ProjectPipelineService) ListApp(ctx context.Context, params *pb.ListApp
 		return nil, apierrors.ErrListAppProjectPipeline.InternalError(err)
 	}
 
-	orgResp, err := p.org.GetOrg(apis.WithInternalClientContext(context.Background(), "dop"),
+	orgResp, err := p.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcDOP),
 		&orgpb.GetOrgRequest{IdOrName: strconv.FormatUint(project.OrgID, 10)})
 	if err != nil {
 		return nil, apierrors.ErrListAppProjectPipeline.InternalError(err)
@@ -1563,7 +1564,7 @@ func (p *ProjectPipelineService) checkDataPermissionByProjectID(projectID uint64
 		return err
 	}
 
-	orgResp, err := p.org.GetOrg(apis.WithInternalClientContext(context.Background(), "dop"),
+	orgResp, err := p.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcDOP),
 		&orgpb.GetOrgRequest{IdOrName: strconv.FormatUint(project.OrgID, 10)})
 	if err != nil {
 		return err
@@ -1589,7 +1590,7 @@ func (e *ProjectPipelineService) UpdateCmsNsConfigs(userID string, orgID uint64)
 		return errors.New("the member is not exist")
 	}
 
-	_, err = e.PipelineCms.UpdateCmsNsConfigs(apis.WithInternalClientContext(context.Background(), "dop"),
+	_, err = e.PipelineCms.UpdateCmsNsConfigs(apis.WithInternalClientContext(context.Background(), discover.SvcDOP),
 		&cmspb.CmsNsConfigsUpdateRequest{
 			Ns:             utils.MakeUserOrgPipelineCmsNs(userID, orgID),
 			PipelineSource: apistructs.PipelineSourceDice.String(),
@@ -1607,7 +1608,7 @@ func (p *ProjectPipelineService) makeLocationByProjectID(projectID uint64) (stri
 		return "", err
 	}
 
-	orgResp, err := p.org.GetOrg(apis.WithInternalClientContext(context.Background(), "dop"),
+	orgResp, err := p.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcDOP),
 		&orgpb.GetOrgRequest{IdOrName: strconv.FormatUint(projectDto.OrgID, 10)})
 	if err != nil {
 		return "", err
@@ -1665,7 +1666,7 @@ func (p *ProjectPipelineService) ListUsedRefs(ctx context.Context, params deftyp
 		return nil, apierrors.ErrListProjectPipelineRef.InternalError(err)
 	}
 
-	orgResp, err := p.org.GetOrg(apis.WithInternalClientContext(context.Background(), "dop"),
+	orgResp, err := p.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcDOP),
 		&orgpb.GetOrgRequest{IdOrName: strconv.FormatUint(project.OrgID, 10)})
 	if err != nil {
 		return nil, apierrors.ErrListProjectPipelineRef.InternalError(err)
@@ -1752,7 +1753,7 @@ func (p *ProjectPipelineService) ListPipelineCategory(ctx context.Context, param
 		return nil, apierrors.ErrListProjectPipelineCategory.InternalError(err)
 	}
 
-	orgResp, err := p.org.GetOrg(apis.WithInternalClientContext(context.Background(), "dop"),
+	orgResp, err := p.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcDOP),
 		&orgpb.GetOrgRequest{IdOrName: strconv.FormatUint(project.OrgID, 10)})
 	if err != nil {
 		return nil, apierrors.ErrListProjectPipelineCategory.InternalError(err)

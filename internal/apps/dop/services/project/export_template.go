@@ -27,6 +27,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 )
 
 type TemplateDB struct {
@@ -59,7 +60,7 @@ func (t *TemplateDB) SetApplications() error {
 }
 
 func (t *TemplateDB) SetMeta() error {
-	orgResp, err := t.org.GetOrg(apis.WithInternalClientContext(context.Background(), "dop"),
+	orgResp, err := t.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcDOP),
 		&orgpb.GetOrgRequest{IdOrName: strconv.FormatInt(t.OrgID, 10)})
 	if err != nil {
 		return err
