@@ -25,10 +25,12 @@ import (
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/httpserver/interceptors"
 	"github.com/erda-project/erda-infra/providers/i18n"
+
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/chartmeta"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/metricmeta"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/query"
 	queryv1 "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/query/v1"
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/storage"
 	indexloader "github.com/erda-project/erda/internal/tools/monitor/core/storekit/elasticsearch/index/loader"
 
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/query/v1/formats/chart"   //
@@ -43,6 +45,8 @@ type config struct {
 		Path           string        `file:"path"`
 		ReloadInterval time.Duration `file:"reload_interval"`
 	} `file:"chart_meta"`
+
+	Keypass map[string][]string `file:"keypass"`
 }
 
 type provider struct {
@@ -53,6 +57,10 @@ type provider struct {
 	DB         *gorm.DB              `autowired:"mysql-client"`
 	ChartTrans i18n.Translator       `autowired:"i18n" translator:"charts"`
 	q          *Metricq
+
+	Storage storage.Storage `autowired:"metric-storage"`
+
+	CkStorageReader storage.Storage `autowired:"metric-storage-clickhouse" optional:"true"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -63,7 +71,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	}
 
 	p.q = &Metricq{
-		Queryer:   query.New(&query.MetricIndexLoader{Interface: p.Index}),
+		Queryer:   query.New(p.C.Keypass, p.Storage, p.CkStorageReader),
 		queryv1:   queryv1.New(&query.MetricIndexLoader{Interface: p.Index}, charts, p.Meta, p.ChartTrans),
 		index:     p.Index,
 		meta:      p.Meta,

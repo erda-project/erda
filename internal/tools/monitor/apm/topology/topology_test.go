@@ -34,10 +34,10 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/i18n"
+
 	"github.com/erda-project/erda/internal/tools/monitor/common/db"
-	tsql "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql"
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/model"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/metricq"
-	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/query"
 	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
 
@@ -558,8 +558,8 @@ func Test_provider_slowTranslationTrace(t *testing.T) {
 				return i18n.LanguageCodes{{Code: "zh"}}
 			})
 			var m *metricq.Metricq
-			monkey.PatchInstanceMethod(reflect.TypeOf(m), "Query", func(m *metricq.Metricq, ql, statement string, params map[string]interface{}, options url.Values) (*query.ResultSet, error) {
-				return &query.ResultSet{ResultSet: &tsql.ResultSet{Rows: [][]interface{}{}}}, nil
+			monkey.PatchInstanceMethod(reflect.TypeOf(m), "Query", func(m *metricq.Metricq, ql, statement string, params map[string]interface{}, options url.Values) (*model.ResultSet, error) {
+				return &model.ResultSet{Data: &model.Data{Rows: [][]interface{}{}}}, nil
 			})
 			topology.slowTranslationTrace(tt.args.r, tt.args.params)
 		})
@@ -576,18 +576,18 @@ func (m *MockTran) Text(lang i18n.LanguageCodes, key string) string {
 
 func Test_provider_handleInstanceInfo(t *testing.T) {
 	type args struct {
-		response *query.ResultSet
+		response *model.ResultSet
 	}
 	tests := []struct {
 		name string
 		args args
 		want []*InstanceInfo
 	}{
-		{"case1", args{response: &query.ResultSet{
-			ResultSet: &tsql.ResultSet{Rows: [][]interface{}{{"id", "172.0.0.0", "true", "127.0.0.1"}}},
+		{"case1", args{response: &model.ResultSet{
+			Data: &model.Data{Rows: [][]interface{}{{"id", "172.0.0.0", "true", "127.0.0.1"}}},
 		}}, []*InstanceInfo{{Id: "id", Ip: "172.0.0.0", Status: true, HostIP: "127.0.0.1"}}},
-		{"case2", args{response: &query.ResultSet{
-			ResultSet: &tsql.ResultSet{Rows: [][]interface{}{{"id", "172.0.0.0", "xxx", "127.0.0.1"}}},
+		{"case2", args{response: &model.ResultSet{
+			Data: &model.Data{Rows: [][]interface{}{{"id", "172.0.0.0", "xxx", "127.0.0.1"}}},
 		}}, []*InstanceInfo{{Id: "id", Ip: "172.0.0.0", Status: false, HostIP: "127.0.0.1"}}},
 	}
 	for _, tt := range tests {

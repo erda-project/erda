@@ -36,11 +36,12 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/i18n"
+
 	apm "github.com/erda-project/erda/internal/tools/monitor/apm/common"
 	"github.com/erda-project/erda/internal/tools/monitor/common/db"
 	"github.com/erda-project/erda/internal/tools/monitor/common/permission"
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/model"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/metricq"
-	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/query"
 	api "github.com/erda-project/erda/pkg/common/httpapi"
 	pkgmath "github.com/erda-project/erda/pkg/math"
 )
@@ -722,7 +723,7 @@ func (topology *provider) GetProcessDiskIo(language i18n.LanguageCodes, params S
 	if err != nil {
 		return nil, err
 	}
-	rows := response.ResultSet.Rows
+	rows := response.Data.Rows
 	itemResultSpeed := handleSpeed(rows)
 	return itemResultSpeed, nil
 }
@@ -746,7 +747,7 @@ func (topology *provider) GetProcessNetIo(language i18n.LanguageCodes, params Se
 	if err != nil {
 		return nil, err
 	}
-	rows := response.ResultSet.Rows
+	rows := response.Data.Rows
 	itemResultSpeed := handleSpeed(rows)
 
 	return itemResultSpeed, nil
@@ -859,7 +860,7 @@ func (topology *provider) GetExceptionDescription(language i18n.LanguageCodes, p
 
 	var exceptionDescriptions []ExceptionDescription
 
-	for _, detail := range source.ResultSet.Rows {
+	for _, detail := range source.Data.Rows {
 		var exceptionDescription ExceptionDescription
 		exceptionDescription.InstanceId = conv.ToString(detail[0])
 		exceptionDescription.Method = conv.ToString(detail[1])
@@ -922,8 +923,8 @@ func filterInstance(instanceList []*InstanceInfo, instanceListForStatus []*Insta
 	}
 }
 
-func (topology *provider) handleInstanceInfo(response *query.ResultSet) []*InstanceInfo {
-	rows := response.ResultSet.Rows
+func (topology *provider) handleInstanceInfo(response *model.ResultSet) []*InstanceInfo {
+	rows := response.Data.Rows
 	instanceIds := []*InstanceInfo{}
 	for _, row := range rows {
 
@@ -957,7 +958,7 @@ func (topology *provider) GetServiceInstances(language i18n.LanguageCodes, param
 	if err != nil {
 		return nil, err
 	}
-	rows := response.ResultSet.Rows
+	rows := response.Data.Rows
 	var result []*ServiceInstance
 	for _, row := range rows {
 		instance := ServiceInstance{
@@ -976,7 +977,7 @@ func (topology *provider) GetServiceInstances(language i18n.LanguageCodes, param
 	if err != nil {
 		return nil, err
 	}
-	rows = response.ResultSet.Rows
+	rows = response.Data.Rows
 	for _, instance := range result {
 		for i, row := range rows {
 			if conv.ToString(row[0]) == instance.ServiceInstanceId {
@@ -1035,7 +1036,7 @@ func (topology *provider) GetServiceOverview(language i18n.LanguageCodes, params
 	if err != nil {
 		return nil, err
 	}
-	rows := response.ResultSet.Rows
+	rows := response.Data.Rows
 	var result []ServiceInstance
 	for _, row := range rows {
 		instance := ServiceInstance{
@@ -1075,7 +1076,7 @@ func (topology *provider) GetServiceOverview(language i18n.LanguageCodes, params
 	if err != nil {
 		return nil, err
 	}
-	rows = response.ResultSet.Rows
+	rows = response.Data.Rows
 	expCount := rows[0][0]
 
 	serviceOverviewMap["service_exception_count"] = expCount
@@ -1090,7 +1091,7 @@ func (topology *provider) GetServiceOverview(language i18n.LanguageCodes, params
 	if err != nil {
 		return nil, err
 	}
-	rows = response.ResultSet.Rows
+	rows = response.Data.Rows
 	alertCount := rows[0][0]
 
 	serviceOverviewMap["alert_count"] = alertCount
@@ -1116,7 +1117,7 @@ func (topology *provider) GetOverview(language i18n.LanguageCodes, params Global
 	if err != nil {
 		return nil, err
 	}
-	rows := response.ResultSet.Rows
+	rows := response.Data.Rows
 	serviceCount := float64(0)
 	for _, row := range rows {
 		count := conv.ToFloat64(row[0], 0)
@@ -1136,7 +1137,7 @@ func (topology *provider) GetOverview(language i18n.LanguageCodes, params Global
 	if err != nil {
 		return nil, err
 	}
-	rows = response.ResultSet.Rows
+	rows = response.Data.Rows
 	serviceRunningInstanceCount := float64(0)
 	for _, row := range rows {
 		if row[1] == "running" {
@@ -1165,7 +1166,7 @@ func (topology *provider) GetOverview(language i18n.LanguageCodes, params Global
 	if err != nil {
 		return nil, err
 	}
-	rows = response.ResultSet.Rows
+	rows = response.Data.Rows
 	expCount := rows[0][0]
 	overviewMap["service_exception_count"] = expCount
 
@@ -1178,7 +1179,7 @@ func (topology *provider) GetOverview(language i18n.LanguageCodes, params Global
 	if err != nil {
 		return nil, err
 	}
-	rows = response.ResultSet.Rows
+	rows = response.Data.Rows
 	alertCount := rows[0][0]
 	overviewMap["alert_count"] = alertCount
 	dashboardData = append(dashboardData, overviewMap)
@@ -1198,7 +1199,7 @@ func (topology *provider) globalReqCount(metricScopeName string, params GlobalPa
 	if err != nil {
 		return 0, err
 	}
-	rows := conv.ToFloat64(response.ResultSet.Rows[0][0], 0)
+	rows := conv.ToFloat64(response.Data.Rows[0][0], 0)
 	return rows, nil
 }
 
@@ -1233,7 +1234,7 @@ func (topology *provider) serviceReqInfo(metricScopeName, metricScopeNameDesc st
 		return nil, err
 	}
 
-	row := response.ResultSet.Rows
+	row := response.Data.Rows
 	requestTransaction.RequestCount = conv.ToFloat64(row[0][0], 0)
 	if row[0][1] != nil {
 		requestTransaction.RequestAvgTime = toTwoDecimalPlaces(conv.ToFloat64(row[0][1], 0) / 1e6)
@@ -1269,7 +1270,7 @@ func (topology *provider) serviceReqErrorCount(metricScopeName string, params Se
 	if err != nil {
 		return 0, err
 	}
-	rows := conv.ToFloat64(response.ResultSet.Rows[0][0], 0)
+	rows := conv.ToFloat64(response.Data.Rows[0][0], 0)
 	return rows, nil
 }
 
@@ -1296,7 +1297,7 @@ func searchApplicationTag(topology *provider, scopeId string, startTime, endTime
 	if err != nil {
 		return nil, err
 	}
-	rows := response.ResultSet.Rows
+	rows := response.Data.Rows
 	var itemResult []string
 	for _, name := range rows {
 		itemResult = append(itemResult, conv.ToString(name[0]))
@@ -1382,7 +1383,7 @@ func (topology *provider) GetInstances(language i18n.LanguageCodes, params Vo) (
 	if err != nil {
 		return nil, err
 	}
-	rows := response.ResultSet.Rows
+	rows := response.Data.Rows
 	var result []ServiceInstance
 	for _, row := range rows {
 		instance := ServiceInstance{
@@ -1913,7 +1914,7 @@ func (topology *provider) translation(r *http.Request, params translation) inter
 	}
 	result["cols"] = cols
 	data := make([]map[string]interface{}, 0)
-	for _, r := range source.ResultSet.Rows {
+	for _, r := range source.Data.Rows {
 		itemResult := make(map[string]interface{})
 		itemResult["translation_name"] = r[0]
 		itemResult["elapsed_count"] = r[1]
@@ -1934,7 +1935,7 @@ func (topology *provider) translation(r *http.Request, params translation) inter
 		if err != nil {
 			return api.Errors.Internal(err)
 		}
-		for _, item := range slowElapsedCount.ResultSet.Rows {
+		for _, item := range slowElapsedCount.Data.Rows {
 			itemResult["slow_elapsed_count"] = item[0]
 		}
 		data = append(data, itemResult)
@@ -2050,7 +2051,7 @@ func (topology *provider) dbOrCacheTranslation(lang i18n.LanguageCodes, params t
 	}
 	result["cols"] = cols
 	data := make([]map[string]interface{}, 0)
-	for _, r := range source.ResultSet.Rows {
+	for _, r := range source.Data.Rows {
 		itemResult := make(map[string]interface{})
 		itemResult["operation"] = r[0]
 		itemResult["db_system"] = r[1]
@@ -2072,7 +2073,7 @@ func (topology *provider) dbOrCacheTranslation(lang i18n.LanguageCodes, params t
 		if err != nil {
 			return nil, err
 		}
-		for _, item := range slowElapsedCount.ResultSet.Rows {
+		for _, item := range slowElapsedCount.Data.Rows {
 			itemResult["slow_elapsed_count"] = item[0]
 		}
 		data = append(data, itemResult)
@@ -2131,12 +2132,12 @@ func (topology *provider) composeMqTranslationCondition(params translation) (url
 	return options, param, sql
 }
 
-func (topology *provider) handleMQTranslationResponse(lang i18n.LanguageCodes, params translation, result *query.ResultSet, options url.Values) ([]map[string]interface{}, error) {
+func (topology *provider) handleMQTranslationResponse(lang i18n.LanguageCodes, params translation, result *model.ResultSet, options url.Values) ([]map[string]interface{}, error) {
 	data := make([]map[string]interface{}, 0)
-	if result.ResultSet == nil {
+	if result.Data == nil {
 		return []map[string]interface{}{}, nil
 	}
-	for _, r := range result.ResultSet.Rows {
+	for _, r := range result.Data.Rows {
 		sqlProducer := fmt.Sprintf("SELECT sum(elapsed_count::field) FROM application_%s_slow WHERE source_service_id::tag=$serviceId "+
 			"AND message_bus_destination::tag=$field AND span_kind::tag='producer' AND source_terminus_key::tag=$terminusKey", params.Layer)
 		sqlConsumer := fmt.Sprintf("SELECT sum(elapsed_count::field) FROM application_%s_slow WHERE target_service_id::tag=$serviceId "+
@@ -2153,8 +2154,8 @@ func (topology *provider) handleMQTranslationResponse(lang i18n.LanguageCodes, p
 		if err != nil {
 			return nil, err
 		}
-		cCount := slowElapsedCountProducer.ResultSet.Rows[0][0].(float64)
-		pCount := slowElapsedCountConsumer.ResultSet.Rows[0][0].(float64)
+		cCount := slowElapsedCountProducer.Data.Rows[0][0].(float64)
+		pCount := slowElapsedCountConsumer.Data.Rows[0][0].(float64)
 		slowCount = int(cCount + pCount)
 		itemResult := topology.handleResult(lang, r, slowCount)
 		data = append(data, itemResult)
@@ -2224,7 +2225,7 @@ func (topology *provider) slowTranslationTrace(r *http.Request, params struct {
 		return api.Errors.Internal(err)
 	}
 	var data []map[string]interface{}
-	for _, detail := range details.ResultSet.Rows {
+	for _, detail := range details.Data.Rows {
 		detailMap := make(map[string]interface{})
 		detailMap["requestId"] = detail[0]
 		detailMap["time"] = detail[1]

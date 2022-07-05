@@ -22,7 +22,7 @@ import (
 
 	"github.com/olivere/elastic"
 
-	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/query"
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/model"
 	"github.com/erda-project/erda/internal/tools/monitor/utils"
 )
 
@@ -56,11 +56,11 @@ type PodInfo struct {
 
 func (p *provider) getPodInfo(clusterName, podName string, start, end int64) (*PodInfo, error) {
 	boolQuery := elastic.NewBoolQuery().
-		Filter(elastic.NewRangeQuery(query.TimestampKey).Gte(start * 1000000).Lte(end * 1000000)).
-		Filter(elastic.NewTermQuery(query.ClusterNameKey, clusterName)).
-		Filter(elastic.NewTermQuery(query.TagKey+".pod_name", podName))
+		Filter(elastic.NewRangeQuery(model.TimestampKey).Gte(start * 1000000).Lte(end * 1000000)).
+		Filter(elastic.NewTermQuery(model.ClusterNameKey, clusterName)).
+		Filter(elastic.NewTermQuery(model.TagKey+".pod_name", podName))
 	searchSource := elastic.NewSearchSource().Query(boolQuery).Size(0)
-	searchSource = searchSource.Aggregation("pod", elastic.NewTopHitsAggregation().Size(1).Sort(query.TimestampKey, false))
+	searchSource = searchSource.Aggregation("pod", elastic.NewTopHitsAggregation().Size(1).Sort(model.TimestampKey, false))
 
 	resp, err := p.metricq.QueryRaw([]string{"kubernetes_pod_container"},
 		[]string{clusterName}, start, end, searchSource)
@@ -81,14 +81,14 @@ func (p *provider) getPodInfo(clusterName, podName string, start, end int64) (*P
 		var source map[string]interface{}
 		err := json.Unmarshal([]byte(*topHis.Hits.Hits[0].Source), &source)
 		if err == nil {
-			info.Summary.ClusterName = utils.GetMapValue(query.TagKey+".cluster_name", source)
-			info.Summary.NodeName = utils.GetMapValue(query.TagKey+".node_name", source)
-			info.Summary.HostIP = utils.GetMapValue(query.TagKey+".host_ip", source)
-			info.Summary.Namespace = utils.GetMapValue(query.TagKey+".namespace", source)
-			info.Summary.PodName = utils.GetMapValue(query.TagKey+".pod_name", source)
-			info.Summary.StateCode = utils.GetMapValue(query.FieldKey+".state_code", source)
-			info.Summary.RestartTotal = utils.GetMapValue(query.FieldKey+".restarts_total", source)
-			info.Summary.TerminatedReason = utils.GetMapValue(query.FieldKey+".terminated_reason", source)
+			info.Summary.ClusterName = utils.GetMapValue(model.TagKey+".cluster_name", source)
+			info.Summary.NodeName = utils.GetMapValue(model.TagKey+".node_name", source)
+			info.Summary.HostIP = utils.GetMapValue(model.TagKey+".host_ip", source)
+			info.Summary.Namespace = utils.GetMapValue(model.TagKey+".namespace", source)
+			info.Summary.PodName = utils.GetMapValue(model.TagKey+".pod_name", source)
+			info.Summary.StateCode = utils.GetMapValue(model.FieldKey+".state_code", source)
+			info.Summary.RestartTotal = utils.GetMapValue(model.FieldKey+".restarts_total", source)
+			info.Summary.TerminatedReason = utils.GetMapValue(model.FieldKey+".terminated_reason", source)
 		}
 	}
 	err = p.getContainers(clusterName, podName, start, end, &info)
@@ -100,15 +100,15 @@ func (p *provider) getPodInfo(clusterName, podName string, start, end int64) (*P
 
 func (p *provider) getContainers(clusterName, podName string, start, end int64, info *PodInfo) error {
 	boolQuery := elastic.NewBoolQuery().
-		Filter(elastic.NewRangeQuery(query.TimestampKey).Gte(start * 1000000).Lte(end * 1000000)).
-		Filter(elastic.NewTermQuery(query.ClusterNameKey, clusterName)).
-		Filter(elastic.NewTermQuery(query.TagKey+".pod_name", podName)).
-		MustNot(elastic.NewTermQuery(query.TagKey+".podsandbox", "true"))
+		Filter(elastic.NewRangeQuery(model.TimestampKey).Gte(start * 1000000).Lte(end * 1000000)).
+		Filter(elastic.NewTermQuery(model.ClusterNameKey, clusterName)).
+		Filter(elastic.NewTermQuery(model.TagKey+".pod_name", podName)).
+		MustNot(elastic.NewTermQuery(model.TagKey+".podsandbox", "true"))
 	searchSource := elastic.NewSearchSource().Query(boolQuery).Size(0)
 
-	const containerIDKey = query.TagKey + ".container_id"
+	const containerIDKey = model.TagKey + ".container_id"
 	searchSource.Aggregation(containerIDKey, elastic.NewTermsAggregation().Field(containerIDKey).
-		SubAggregation("container", elastic.NewTopHitsAggregation().Size(1).Sort(query.TimestampKey, false).Sort(query.FieldKey+".finished_at", false)))
+		SubAggregation("container", elastic.NewTopHitsAggregation().Size(1).Sort(model.TimestampKey, false).Sort(model.FieldKey+".finished_at", false)))
 	resp, err := p.metricq.QueryRaw([]string{"docker_container_summary"},
 		[]string{clusterName}, start, end, searchSource)
 	if err != nil {
@@ -135,11 +135,11 @@ func (p *provider) getContainers(clusterName, podName string, start, end int64, 
 				if err == nil {
 					inst := &PodInfoInstanse{
 						ContainerID: b.Key,
-						HostIP:      utils.GetMapValue(query.TagKey+".host_ip", source),
-						StartedAt:   formatDate(utils.GetMapValue(query.FieldKey+".started_at", source)),
-						FinishedAt:  formatDate(utils.GetMapValue(query.FieldKey+".finished_at", source)),
-						ExitCode:    utils.GetMapValue(query.FieldKey+".exitcode", source),
-						OomKilled:   utils.GetMapValue(query.FieldKey+".oomkilled", source),
+						HostIP:      utils.GetMapValue(model.TagKey+".host_ip", source),
+						StartedAt:   formatDate(utils.GetMapValue(model.FieldKey+".started_at", source)),
+						FinishedAt:  formatDate(utils.GetMapValue(model.FieldKey+".finished_at", source)),
+						ExitCode:    utils.GetMapValue(model.FieldKey+".exitcode", source),
+						OomKilled:   utils.GetMapValue(model.FieldKey+".oomkilled", source),
 					}
 					info.Instances = append(info.Instances, inst)
 				}

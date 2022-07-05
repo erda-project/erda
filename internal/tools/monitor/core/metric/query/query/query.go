@@ -21,34 +21,17 @@ import (
 
 	"github.com/olivere/elastic"
 
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/model"
+
 	"github.com/erda-project/erda-infra/providers/i18n"
-	tsql "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql"
+
 	indexloader "github.com/erda-project/erda/internal/tools/monitor/core/storekit/elasticsearch/index/loader"
 )
 
-// metric keys
-const (
-	TimestampKey   = tsql.TimestampKey
-	NameKey        = tsql.NameKey
-	TagKey         = "tags"
-	FieldKey       = "fields"
-	ClusterNameKey = TagKey + ".cluster_name"
-)
-
-// ResultSet .
-type ResultSet struct {
-	*tsql.ResultSet
-	Details interface{}
-	Elapsed struct {
-		Search time.Duration `json:"search"`
-	} `json:"elapsed"`
-}
-
 // Queryer .
 type Queryer interface {
-	Query(tsql, statement string, params map[string]interface{}, options url.Values) (*ResultSet, error)
-	QueryWithFormat(tsql, statement, format string, langCodes i18n.LanguageCodes, params map[string]interface{}, filters []*Filter, options url.Values) (*ResultSet, interface{}, error)
-	Export(tsql, statement string, params map[string]interface{}, options url.Values, handle func(id string, source []byte) error) error // 暂时没用到, 待移除
+	Query(tsql, statement string, params map[string]interface{}, options url.Values) (*model.ResultSet, error)
+	QueryWithFormat(tsql, statement, format string, langCodes i18n.LanguageCodes, params map[string]interface{}, filters []*model.Filter, options url.Values) (*model.ResultSet, interface{}, error)
 
 	QueryRaw(metrics, clusters []string, start, end int64, searchSource *elastic.SearchSource) (*elastic.SearchResult, error)
 	SearchRaw(indices []string, searchSource *elastic.SearchSource) (*elastic.SearchResult, error)

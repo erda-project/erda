@@ -29,18 +29,18 @@ import (
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 	"github.com/erda-project/erda-infra/pkg/transport/http/encoding"
 	"github.com/erda-project/erda-infra/providers/i18n"
+
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
-	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/metricmeta"
-	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/query"
-	indexloader "github.com/erda-project/erda/internal/tools/monitor/core/storekit/elasticsearch/index/loader"
-
-	"github.com/erda-project/erda/pkg/common/apis"
-	"github.com/erda-project/erda/pkg/common/errors"
-
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql/formats/chartv2"  //
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql/formats/dict"     //
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql/formats/influxdb" //
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql/influxql"         //
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/metricmeta"
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/query"
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/storage"
+	indexloader "github.com/erda-project/erda/internal/tools/monitor/core/storekit/elasticsearch/index/loader"
+	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/common/errors"
 )
 
 type config struct {
@@ -49,6 +49,8 @@ type config struct {
 		GroupFiles     []string `file:"group_files"`
 		MetricMetaPath string   `file:"metric_meta_path"`
 	} `file:"metric_meta"`
+
+	Keypass map[string][]string `file:"keypass"`
 }
 
 // +provider
@@ -63,6 +65,9 @@ type provider struct {
 	meta              *metricmeta.Manager
 	metricService     *metricService
 	metricMetaService *metricMetaService
+
+	Storage         storage.Storage `autowired:"metric-storage"`
+	CkStorageReader storage.Storage `autowired:"metric-storage-clickhouse" optional:"true"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -87,7 +92,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	}
 	p.metricService = &metricService{
 		p:     p,
-		query: query.New(&query.MetricIndexLoader{Interface: p.Index}),
+		query: query.New(p.Cfg.Keypass, p.Storage, p.CkStorageReader),
 	}
 	if p.Register != nil {
 		pb.RegisterMetricServiceImp(p.Register, p.metricService, apis.Options(),

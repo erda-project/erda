@@ -21,45 +21,51 @@ import (
 	"strings"
 	"time"
 
-	"github.com/olivere/elastic"
-	"github.com/recallsong/go-utils/encoding/jsonx"
-
 	"github.com/erda-project/erda-infra/providers/i18n"
+	"github.com/olivere/elastic"
+
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/model"
 	tsql "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql/formats"
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/storage"
 )
 
 type queryer struct {
-	index IndexLoader
+	storage   storage.Storage `autowired:"metric-storage"`
+	ckStorage storage.Storage `autowired:"metric-storage-clickhouse"`
+
+	keypass map[string][]string `file:"keypass"`
 }
 
 // New .
-func New(index IndexLoader) Queryer {
+func New(keyPass map[string][]string, esStorage storage.Storage, ckStorage storage.Storage) Queryer {
 	return &queryer{
-		index: index,
+		storage:   esStorage,
+		ckStorage: ckStorage,
+		keypass:   keyPass,
 	}
 }
 
 const hourms = int64(time.Hour) / int64(time.Millisecond)
 
-func (q *queryer) buildTSQLParser(ql, statement string, params map[string]interface{}, filters []*Filter, options url.Values) (
-	parser tsql.Parser, start, end int64, others map[string]interface{}, err error) {
+func (q *queryer) buildTSQLParser(ql, statement string, params map[string]interface{}, filters []*model.Filter, options url.Values) (
+	parser tsql.Parser, others map[string]interface{}, err error) {
 	idx := strings.Index(ql, ":")
 	if idx > 0 {
 		if ql[idx+1:] == "ast" && ql[0:idx] == "influxql" {
 			statement, err = ConvertAstToStatement(statement)
 			if err != nil {
-				return nil, 0, 0, nil, err
+				return nil, nil, err
 			}
 		}
 		ql = ql[0:idx]
 	}
 	if ql != "influxql" {
-		return nil, 0, 0, nil, fmt.Errorf("not support tsql '%s'", ql)
+		return nil, nil, fmt.Errorf("not support tsql '%s'", ql)
 	}
-	start, end, err = ParseTimeRange(options.Get("start"), options.Get("end"), options.Get("timestamp"), options.Get("latest"))
+	start, end, err := ParseTimeRange(options.Get("start"), options.Get("end"), options.Get("timestamp"), options.Get("latest"))
 	if err != nil {
-		return nil, 0, 0, nil, err
+		return nil, nil, err
 	}
 	if end < hourms {
 		end = hourms
@@ -69,19 +75,19 @@ func (q *queryer) buildTSQLParser(ql, statement string, params map[string]interf
 	}
 	fs, others := ParseFilters(options)
 	filters = append(fs, filters...)
-	var boolQuery *elastic.BoolQuery
-	if len(filters) > 0 {
-		boolQuery = elastic.NewBoolQuery()
-		err := BuildBoolQuery(filters, boolQuery)
-		if err != nil {
-			return nil, 0, 0, nil, err
-		}
-	}
-	parser = tsql.New(start*int64(time.Millisecond), end*int64(time.Millisecond), ql, statement)
+
+	_, debug := options["debug"]
+
+	parser = tsql.New(start*int64(time.Millisecond), end*int64(time.Millisecond), ql, statement, debug)
+
 	if parser == nil {
-		return nil, 0, 0, nil, fmt.Errorf("not support tsql '%s'", ql)
+		return nil, nil, fmt.Errorf("not support tsql '%s'", ql)
 	}
-	parser = parser.SetFilter(boolQuery)
+
+	parser, err = parser.SetFilter(filters)
+	if err != nil {
+		return nil, nil, fmt.Errorf("invalid filter on parse filter: %s", err)
+	}
 	if params == nil {
 		params = others
 	}
@@ -90,7 +96,7 @@ func (q *queryer) buildTSQLParser(ql, statement string, params map[string]interf
 	if len(unit) > 0 {
 		unit, err := tsql.ParseTimeUnit(unit)
 		if err != nil {
-			return nil, 0, 0, nil, err
+			return nil, nil, err
 		}
 		parser.SetTargetTimeUnit(unit)
 	}
@@ -101,114 +107,77 @@ func (q *queryer) buildTSQLParser(ql, statement string, params map[string]interf
 	}
 	if len(tf) > 0 {
 		parser.SetTimeKey(tf)
-		if tf == tsql.TimestampKey {
+		if tf == model.TimestampKey {
 			parser.SetOriginalTimeUnit(tsql.Nanosecond)
 		} else {
 			tu := options.Get("time_unit")
 			if len(tu) > 0 {
 				unit, err := tsql.ParseTimeUnit(tu)
 				if err != nil {
-					return nil, 0, 0, nil, err
+					return nil, nil, err
 				}
 				parser.SetOriginalTimeUnit(unit)
 			}
 		}
 	}
-	return parser, start, end, others, nil
+	return parser, others, nil
 }
 
-func (q *queryer) doQuery(ql, statement string, params map[string]interface{}, filters []*Filter, options url.Values) (*ResultSet, tsql.Query, map[string]interface{}, error) {
-	parser, start, end, others, err := q.buildTSQLParser(ql, statement, params, filters, options)
+func (q *queryer) doQuery(ql, statement string, params map[string]interface{}, filters []*model.Filter, options url.Values) (*model.ResultSet, tsql.Query, map[string]interface{}, error) {
+	parser, others, err := q.buildTSQLParser(ql, statement, params, filters, options)
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	querys, err := parser.ParseQuery()
+
+	err = parser.Build()
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	if len(querys) != 1 {
-		return nil, nil, nil, fmt.Errorf("only support one statement")
-	}
-	query := querys[0]
-	metrics, clusters := getMetricsAndClustersFromSources(query.Sources())
-	indices := q.index.GetIndices(metrics, clusters, start, end)
-	for _, c := range clusters {
-		query.BoolQuery().Filter(elastic.NewTermQuery(TagKey+".cluster_name", c))
-	}
-	if len(indices) == 1 {
-		if strings.HasSuffix(indices[0], "-empty") {
-			query.BoolQuery().Filter(elastic.NewTermQuery(TagKey+".not_exist", "_not_exist"))
-		}
-	}
-	searchSource := query.SearchSource()
-	result := &ResultSet{}
-	if _, ok := options["debug"]; ok {
-		var source interface{}
-		if searchSource != nil {
-			source, err = searchSource.Source()
-			if err != nil {
-				return nil, nil, nil, fmt.Errorf("invalid search source: %s", err)
+
+	result, query, err := q.GetResult(parser)
+	return result, query, others, err
+}
+
+func (q *queryer) GetResult(parser tsql.Parser) (*model.ResultSet, tsql.Query, error) {
+	var query tsql.Query
+	if q.ckStorage != nil {
+		metrics, err := parser.Metrics()
+		if err == nil {
+			if len(q.keypass) > 0 {
+				for _, m := range metrics {
+					if _, ok := q.keypass[m]; ok {
+						queries, err := parser.ParseQuery("Clickhouse")
+						if err != nil {
+							return nil, nil, err
+						}
+						query = queries[0]
+						result, err := q.ckStorage.Query(context.Background(), query)
+						return result, query, err
+					}
+				}
 			}
 		}
-		result.Details = ElasticSearchCURL(q.index.URLs(), indices, source)
-		fmt.Println(result.Details)
-		return result, query, nil, nil
 	}
-	var resp *elastic.SearchResult
-	if searchSource != nil {
-		now := time.Now()
-		resp, err = q.esRequest(indices, searchSource)
-		if err != nil {
-			return nil, nil, nil, err
-		}
-		result.Elapsed.Search = time.Now().Sub(now)
-	}
-	rs, err := query.ParseResult(resp)
+	queries, err := parser.ParseQuery("Elasticsearch")
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, err
 	}
-	result.ResultSet = rs
-	return result, query, others, nil
-}
-
-func getMetricsAndClustersFromSources(sources []*tsql.Source) (metrics []string, clusters []string) {
-	for _, source := range sources {
-		if len(source.Name) > 0 {
-			metrics = append(metrics, source.Name)
-		}
-		if len(source.Database) > 0 {
-			clusters = append(clusters, source.Database)
-		}
+	if len(queries) != 1 {
+		return nil, nil, fmt.Errorf("only support one statement")
 	}
-	return metrics, clusters
-}
-
-func (q *queryer) esRequest(indices []string, searchSource *elastic.SearchSource) (*elastic.SearchResult, error) {
-	context, cancel := context.WithTimeout(context.Background(), q.index.RequestTimeout())
-	defer cancel()
-	resp, err := q.index.Client().Search(indices...).
-		IgnoreUnavailable(true).AllowNoIndices(true).
-		SearchSource(searchSource).Do(context)
-	if err != nil || (resp != nil && resp.Error != nil) {
-		if len(indices) <= 0 || (len(indices) == 1 && strings.HasSuffix(indices[0], "-empty")) {
-			return nil, nil
-		}
-		if resp != nil && resp.Error != nil {
-			return nil, fmt.Errorf("fail to request storage: %s", jsonx.MarshalAndIndent(resp.Error))
-		}
-		return nil, fmt.Errorf("fail to request storage: %s", err)
-	}
-	return resp, nil
+	query = queries[0]
+	result, err := q.storage.Query(context.Background(), query)
+	return result, query, err
 }
 
 // Query .
-func (q *queryer) Query(tsql, statement string, params map[string]interface{}, options url.Values) (*ResultSet, error) {
+func (q *queryer) Query(tsql, statement string, params map[string]interface{}, options url.Values) (*model.ResultSet, error) {
 	rs, _, _, err := q.doQuery(tsql, statement, params, nil, options)
 	return rs, err
 }
 
 // QueryWithFormat .
-func (q *queryer) QueryWithFormat(tsql, statement, format string, langCode i18n.LanguageCodes, params map[string]interface{}, filters []*Filter, options url.Values) (*ResultSet, interface{}, error) {
+func (q *queryer) QueryWithFormat(tsql, statement, format string, langCode i18n.LanguageCodes, params map[string]interface{}, filters []*model.Filter, options url.Values) (*model.ResultSet, interface{}, error) {
 	rs, query, opts, err := q.doQuery(tsql, statement, params, filters, options)
 	if err != nil {
 		return nil, nil, err
@@ -216,21 +185,23 @@ func (q *queryer) QueryWithFormat(tsql, statement, format string, langCode i18n.
 	if rs.Details != nil {
 		return rs, nil, err
 	}
-	data, err := formats.Format(format, query, rs.ResultSet, opts)
+	data, err := formats.Format(format, query, rs.Data, opts)
 	return rs, data, err
 }
 
 // QueryRaw .
 func (q *queryer) QueryRaw(metrics, clusters []string, start, end int64, searchSource *elastic.SearchSource) (*elastic.SearchResult, error) {
-	indices := q.index.GetIndices(metrics, clusters, start, end)
-	return q.SearchRaw(indices, searchSource)
+	//indices := q.index.GetIndices(metrics, clusters, start, end)
+	//return q.SearchRaw(indices, searchSource)
+	panic("not implement")
 }
 
 // SearchRaw .
 func (q *queryer) SearchRaw(indices []string, searchSource *elastic.SearchSource) (*elastic.SearchResult, error) {
-	context, cancel := context.WithTimeout(context.Background(), q.index.RequestTimeout())
-	defer cancel()
-	return q.index.Client().Search(indices...).
-		IgnoreUnavailable(true).AllowNoIndices(true).
-		SearchSource(searchSource).Do(context)
+	//context, cancel := context.WithTimeout(context.Background(), q.index.RequestTimeout())
+	//defer cancel()
+	//return q.index.Client().Search(indices...).
+	//	IgnoreUnavailable(true).AllowNoIndices(true).
+	//	SearchSource(searchSource).Do(context)
+	panic("not implement")
 }

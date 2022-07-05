@@ -20,8 +20,9 @@ import (
 
 	"google.golang.org/protobuf/types/known/structpb"
 
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/model"
+
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
-	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/query"
 )
 
 func convertOptions(start, end string, options map[string]string) url.Values {
@@ -52,13 +53,13 @@ func convertParams(pvalues map[string]*structpb.Value) map[string]interface{} {
 	return nil
 }
 
-func convertFilters(filters []*pb.Filter) []*query.Filter {
-	var list []*query.Filter
+func convertFilters(filters []*pb.Filter) []*model.Filter {
+	var list []*model.Filter
 	for _, f := range filters {
 		if f == nil {
 			continue
 		}
-		filter := &query.Filter{
+		filter := &model.Filter{
 			Key:      f.Key,
 			Operator: f.Op,
 		}
@@ -70,7 +71,7 @@ func convertFilters(filters []*pb.Filter) []*query.Filter {
 	return list
 }
 
-func parseFilters(filters []*query.Filter) (list []*pb.Filter, err error) {
+func parseFilters(filters []*model.Filter) (list []*pb.Filter, err error) {
 	for _, item := range filters {
 		value, err := structpb.NewValue(item.Value)
 		if err != nil {

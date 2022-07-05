@@ -12,24 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package chartv2
+package model
 
-import (
-	"github.com/erda-project/erda/internal/tools/monitor/core/metric/model"
-	tsql "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql"
+const (
+	TimestampKey   = "timestamp"
+	NameKey        = "name"
+	TagKey         = "tags"
+	FieldKey       = "fields"
+	ClusterNameKey = TagKey + ".cluster_name"
 )
 
-func (f *Formater) formatCardChart(q tsql.Query, rs *model.Data, params map[string]interface{}) (interface{}, error) {
-	var list []map[string]interface{}
-	if len(rs.Columns) <= 0 {
-		return list, nil
-	}
-	for _, row := range rs.Rows {
-		data := map[string]interface{}{
-			"name":  rs.Columns[0].Name,
-			"value": row[0],
-		}
-		list = append(list, data)
-	}
-	return list, nil
-}
+// keys define
+const (
+	TagsKey         = "tags."
+	FieldsKey       = "fields."
+	TimeKey         = "time"
+	DefaultLimtSize = 100
+)

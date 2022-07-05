@@ -61,6 +61,16 @@ var BuildInFunctions = map[string]func(ctx Context, args ...interface{}) (interf
 					return time.Unix(t/int64(time.Second), t%int64(time.Second)).Format("2006-01-02T15:04:05Z"), nil
 				}
 				return ConvertTimestamp(t, ctx.OriginalTimeUnit(), unit), nil
+			} else if v, ok := arg.(float64); ok {
+				t := int64(v)
+				unit := ctx.TargetTimeUnit()
+				if unit == UnsetTimeUnit {
+					if ctx.OriginalTimeUnit() != UnsetTimeUnit {
+						t *= int64(ctx.OriginalTimeUnit())
+					}
+					return time.Unix(t/int64(time.Second), t%int64(time.Second)).Format("2006-01-02T15:04:05Z"), nil
+				}
+				return ConvertTimestamp(t, ctx.OriginalTimeUnit(), unit), nil
 			}
 		}
 		return 0, fmt.Errorf("function 'time' not in group or not found time bucket")
@@ -69,6 +79,8 @@ var BuildInFunctions = map[string]func(ctx Context, args ...interface{}) (interf
 		for _, arg := range args {
 			if b, ok := arg.(*elastic.AggregationBucketHistogramItem); ok {
 				return ConvertTimestamp(int64(b.Key), ctx.OriginalTimeUnit(), ctx.TargetTimeUnit()), nil
+			} else if v, ok := arg.(float64); ok {
+				return ConvertTimestamp(int64(v), ctx.OriginalTimeUnit(), ctx.TargetTimeUnit()), nil
 			}
 		}
 		return 0, fmt.Errorf("function 'timestamp' not in group or not found time bucket")
