@@ -41,6 +41,7 @@ service LogService {
       get: "/api/log-service/action/parse-regexp"
     };
     option (common.openapi) = {
+      service: "msp"
       path: "/api/log-service/action/parse-regexp"
     };
   }
