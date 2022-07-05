@@ -16,8 +16,6 @@ http-server:
   addr: ":9095"
   allow_cors: true
 
-grpc-server:
-  addr: ":8096"
 
 health:
 
@@ -33,15 +31,6 @@ i18n:
   files:
     - conf/i18n/gallery.yaml
 
-grpc-client@erda.core.clustermanager.cluster:
-  addr: "${CLUSTER_MANAGER_GRPC_ADDR:cluster-manager:9095}"
-erda.core.clustermanager.cluster-client: {}
-
-grpc-client@erda.core.org:
-  addr: "${CORE_SERVICES_GRPC_ADDR:core-services:9537}"
-erda.core.org-client: {}
-erda.core.org: {}
-
 gorm.v2:
   host: "${MYSQL_HOST}"
   port: "${MYSQL_PORT}"
@@ -51,21 +40,13 @@ gorm.v2:
 
 erda.apps.gallery.easy-memory-cache:
 
-grpc-client@erda.msp.tanant.project:
-  addr: "${MSP_GRPC_ADDR:msp:7080}"
-erda.msp.tenant.project-client: {}
-
-grpc-client@erda.msp.menu:
-  addr: "${MSP_GRPC_ADDR:msp:7080}"
-erda.msp.menu-client: {}
-
 ############# core-services
 core-services: {}
 permission: {}
 redis:
   addr: "${REDIS_ADDR}"
   password: "${REDIS_PASSWORD}"
-  db: ${REDIS_DB:0}
+  db: "${REDIS_DB:0}"
   master_name: "${REDIS_MASTER_NAME}"
   sentinels_addr: "${REDIS_SENTINELS_ADDR}"
 http-server@admin:
@@ -80,3 +61,20 @@ erda.core.messenger.notifygroup: {}
 erda.core.messenger.notifychannel: {}
 erda.core.token: {}
 erda.core.org: {}
+
+## grpc
+grpc-server:
+  addr: ":8096"
+grpc-client@erda.core.clustermanager.cluster:
+  addr: "${CLUSTER_MANAGER_GRPC_ADDR:cluster-manager:9095}"
+  block: false
+erda.core.clustermanager.cluster-client: {}
+grpc-client@erda.msp.tanant.project:
+  addr: "${MSP_GRPC_ADDR:msp:7080}"
+  block: false
+erda.msp.tenant.project-client: {}
+grpc-client@erda.msp.menu:
+  addr: "${MSP_GRPC_ADDR:msp:7080}"
+  block: false
+erda.msp.menu-client: {}
+
