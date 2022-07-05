@@ -151,6 +151,7 @@ message DevFlowInfo {
     string inode = 6;
     string pInode = 7;
     bool hasOnPushBranch = 8;
+    string devFlowRuleName = 9;
 }
 
 message GetDevFlowInfoResponse {

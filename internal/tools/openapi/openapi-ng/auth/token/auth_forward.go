@@ -41,11 +41,11 @@ func forwardCoreService(w http.ResponseWriter, r *http.Request, path string) {
 	var host string
 	var err error
 
-	host = os.Getenv(discover.EnvCoreServices)
+	host = os.Getenv(discover.EnvErdaServer)
 	if host == "" {
-		host, err = discover.GetEndpoint(discover.SvcCoreServices)
+		host, err = discover.GetEndpoint(discover.SvcErdaServer)
 		if err != nil {
-			logrus.Errorf("forwardCoreService failed to get core-service GetEndpoint，error %v", err)
+			logrus.Errorf("forwardErdaServer failed to get erda-server GetEndpoint，error %v", err)
 			return
 		}
 	}

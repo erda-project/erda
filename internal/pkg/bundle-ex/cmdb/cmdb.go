@@ -36,7 +36,7 @@ type Option func(cmdb *Cmdb)
 
 // New .
 func New(options ...Option) *Cmdb {
-	addr := strings.TrimRight(discover.CoreServices(), "/")
+	addr := strings.TrimRight(discover.ErdaServer(), "/")
 	opid := os.Getenv("DICE_OPERATOR_ID")
 	if len(opid) <= 0 {
 		opid = "1100"

@@ -193,7 +193,7 @@ func (s *Service) OperationMerge(ctx context.Context, req *pb.OperationMergeRequ
 		return nil, err
 	}
 
-	tempBranch, err := s.getTempBranchFromFlowRule(ctx, appDto.ProjectID, mrInfo)
+	tempBranch, _, err := s.getTempBranchAndRuleNameFromFlowRule(ctx, appDto.ProjectID, mrInfo)
 	if err != nil {
 		return nil, err
 	}
@@ -234,7 +234,7 @@ func (s *Service) OperationMerge(ctx context.Context, req *pb.OperationMergeRequ
 	return &pb.OperationMergeResponse{}, nil
 }
 
-func (s *Service) getTempBranchFromFlowRule(ctx context.Context, projectID uint64, mrInfo *apistructs.MergeRequestInfo) (string, error) {
+func (s *Service) getTempBranchAndRuleNameFromFlowRule(ctx context.Context, projectID uint64, mrInfo *apistructs.MergeRequestInfo) (string, string, error) {
 	flowRule, err := s.p.DevFlowRule.GetFlowByRule(ctx, devflowrule.GetFlowByRuleRequest{
 		ProjectID:     projectID,
 		BranchType:    MultiBranchBranchType,
@@ -242,13 +242,13 @@ func (s *Service) getTempBranchFromFlowRule(ctx context.Context, projectID uint6
 		CurrentBranch: mrInfo.SourceBranch,
 	})
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	if flowRule != nil && flowRule.BranchPolicy != nil && flowRule.BranchPolicy.Policy != nil {
-		return flowRule.BranchPolicy.Policy.TempBranch, nil
+		return flowRule.BranchPolicy.Policy.TempBranch, flowRule.Flow.Name, nil
 	}
-	return "", nil
+	return "", "", nil
 }
 
 func (s *Service) JoinTempBranch(ctx context.Context, tempBranch string, appDto *apistructs.ApplicationDTO, mrInfo *apistructs.MergeRequestInfo) error {
@@ -534,6 +534,7 @@ func (s *Service) GetDevFlowInfo(ctx context.Context, req *pb.GetDevFlowInfoRequ
 		appTempBranchCommitMap           = map[string]*apistructs.Commit{}
 		sourceBranchBaseCommitMap        = make(map[string]*apistructs.Commit)
 		mrTempBranchMap                  = make(map[int64]string)
+		mrFlowRuleNameMap                = make(map[int64]string)
 	)
 	for _, appID := range needQueryTempBranchAppMap {
 		work.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
@@ -541,7 +542,7 @@ func (s *Service) GetDevFlowInfo(ctx context.Context, req *pb.GetDevFlowInfoRequ
 			appDto := appInfoMap[appID]
 			for _, v := range appMergeInfoMap[appID] {
 				repoPath := filepath.Join(gittarPrefixOpenApi, appDto.ProjectName, appDto.Name)
-				tempBranch, err := s.getTempBranchFromFlowRule(ctx, appDto.ProjectID, &v)
+				tempBranch, flowRuleName, err := s.getTempBranchAndRuleNameFromFlowRule(ctx, appDto.ProjectID, &v)
 				if err != nil {
 					return err
 				}
@@ -577,6 +578,7 @@ func (s *Service) GetDevFlowInfo(ctx context.Context, req *pb.GetDevFlowInfoRequ
 				}
 
 				locker.Lock()
+				mrFlowRuleNameMap[v.Id] = flowRuleName
 				mrTempBranchMap[v.Id] = tempBranch
 				sourceBranchBaseCommitMap[fmt.Sprintf("%d%s", appID, v.SourceBranch)] = baseCommit
 				if tempBranch != "" && v.IsJoinTempBranch {
@@ -643,6 +645,7 @@ func (s *Service) GetDevFlowInfo(ctx context.Context, req *pb.GetDevFlowInfoRequ
 				devFlowInfo.Inode = node.Inode
 			}
 			devFlowInfo.HasOnPushBranch = hasOnPushBranch
+			devFlowInfo.DevFlowRuleName = mrFlowRuleNameMap[mrInfo.Id]
 
 			devFlowInfo.DevFlowNode = &pb.DevFlowNode{
 				RepoMergeID:          extra.RepoMergeID,
