@@ -29,6 +29,7 @@ import (
 	"github.com/erda-project/erda/internal/core/messenger/eventbox/monitor"
 	"github.com/erda-project/erda/internal/core/messenger/eventbox/register"
 	"github.com/erda-project/erda/internal/core/messenger/eventbox/webhook"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/pkg/common/apis"
 	perm "github.com/erda-project/erda/pkg/common/permission"
 )
@@ -44,6 +45,7 @@ type provider struct {
 	eventBoxService *eventBoxService
 	Perm            perm.Interface          `autowired:"permission"`
 	CoreService     legacy.ExposedInterface `autowired:"core-services"`
+	Org             org.Interface
 }
 
 func (p *provider) Run(ctx context.Context) error {

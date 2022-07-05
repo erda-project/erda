@@ -34,6 +34,11 @@ grpc-client@erda.core.clustermanager.cluster:
   addr: "${CLUSTER_MANAGER_GRPC_ADDR:cluster-manager:9095}"
 erda.core.clustermanager.cluster-client: {}
 
+grpc-client@erda.core.org:
+  addr: "${CORE_SERVICES_GRPC_ADDR:core-services:9537}"
+erda.core.org-client: {}
+erda.core.org: {}
+
 gorm.v2:
   host: "${MYSQL_HOST}"
   port: "${MYSQL_PORT}"

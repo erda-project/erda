@@ -227,7 +227,7 @@ message ListOrgClusterRelationResponse {
 
 message OrgClusterRelation {
     uint64 ID = 1 [json_name = "id"];
-    uint64 orgId = 2;
+    uint64 orgID = 2 [json_name = "orgId"];
     string orgName = 3;
     uint64 clusterID = 4 [json_name = "clusterId"];
     string clusterName = 5;

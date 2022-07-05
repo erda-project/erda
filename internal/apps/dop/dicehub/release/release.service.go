@@ -35,6 +35,7 @@ import (
 
 	gallerypb "github.com/erda-project/erda-proto-go/apps/gallery/pb"
 	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	extensiondb "github.com/erda-project/erda/internal/apps/dop/dicehub/extension/db"
@@ -43,8 +44,10 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/dicehub/release/db"
 	"github.com/erda-project/erda/internal/apps/dop/dicehub/service/apierrors"
 	"github.com/erda-project/erda/internal/apps/dop/dicehub/service/release_rule"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -63,6 +66,7 @@ type ReleaseService struct {
 	Etcd            *clientv3.Client
 	Config          *releaseConfig
 	ReleaseRule     *release_rule.ReleaseRule
+	org             org.ClientInterface
 }
 
 // CreateRelease POST /api/releases release create release
@@ -911,10 +915,11 @@ func (s *ReleaseService) PutOnRelease(ctx context.Context, req *pb.ReleasePutOnR
 		return nil, apierrors.ErrPutOnRelease.InternalError(err)
 	}
 
-	org, err := s.bdl.GetOrg(req.Req.OrgID)
+	org, err := s.getOrg(context.Background(), uint64(req.Req.OrgID))
 	if err != nil {
 		return nil, apierrors.ErrPutOnRelease.InternalError(err)
 	}
+
 	_, err = s.opus.PutOnArtifacts(ctx, &pb.PutOnArtifactsReq{
 		OrgID:         req.Req.OrgID,
 		OrgName:       org.Name,
@@ -1649,4 +1654,13 @@ func parseMetadata(file io.ReadCloser) (*apistructs.ReleaseMetadata, error) {
 		return nil, errors.New("invalid file, metadata.yml not found")
 	}
 	return &metadata, nil
+}
+
+func (s *ReleaseService) getOrg(ctx context.Context, orgID uint64) (*orgpb.Org, error) {
+	orgResp, err := s.org.GetOrg(apis.WithInternalClientContext(ctx, discover.SvcDiceHub),
+		&orgpb.GetOrgRequest{IdOrName: strconv.FormatUint(orgID, 10)})
+	if err != nil {
+		return nil, err
+	}
+	return orgResp.Data, nil
 }

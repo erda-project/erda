@@ -15,12 +15,19 @@
 package autotestv2
 
 import (
+	"context"
+	"strconv"
+
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/dao"
 	"github.com/erda-project/erda/internal/apps/dop/services/autotest"
 	"github.com/erda-project/erda/internal/apps/dop/services/sceneset"
+	"github.com/erda-project/erda/internal/core/org"
+	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 )
 
 // Service autotestv2 实例对象封装
@@ -30,6 +37,7 @@ type Service struct {
 	sceneset    *sceneset.Service
 	autotestSvc *autotest.Service
 	cms         cmspb.CmsServiceServer
+	org         org.ClientInterface
 
 	CreateFileRecord func(req apistructs.TestFileRecordRequest) (uint64, error)
 	UpdateFileRecord func(req apistructs.TestFileRecordRequest) error
@@ -76,4 +84,19 @@ func WithPipelineCms(cms cmspb.CmsServiceServer) Option {
 	return func(e *Service) {
 		e.cms = cms
 	}
+}
+
+func WithOrg(org org.ClientInterface) Option {
+	return func(e *Service) {
+		e.org = org
+	}
+}
+
+func (svc *Service) getOrg(ctx context.Context, orgID uint64) (*orgpb.Org, error) {
+	orgResp, err := svc.org.GetOrg(apis.WithInternalClientContext(ctx, discover.SvcDOP),
+		&orgpb.GetOrgRequest{IdOrName: strconv.FormatUint(orgID, 10)})
+	if err != nil {
+		return nil, err
+	}
+	return orgResp.Data, nil
 }

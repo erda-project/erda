@@ -15,6 +15,7 @@
 package autotestv2
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -240,7 +241,7 @@ func (svc *Service) ExecuteAutotestSceneSet(req apistructs.AutotestExecuteSceneS
 	if err != nil {
 		return nil, err
 	}
-	org, err := svc.bdl.GetOrg(project.OrgID)
+	org, err := svc.getOrg(context.Background(), project.OrgID)
 	if err != nil {
 		return nil, err
 	}

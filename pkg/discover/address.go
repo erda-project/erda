@@ -80,6 +80,8 @@ const (
 	SvcCoreServices   = "core-services"
 	SvcFDPMaster      = "fdp-master"
 	SvcErdaServer     = "erda-server"
+	SvcAdmin          = "admin"
+	SvcGallery        = "gallery"
 )
 
 var ServicesEnvKeys = map[string]string{

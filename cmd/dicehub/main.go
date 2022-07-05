@@ -24,6 +24,7 @@ import (
 	_ "github.com/erda-project/erda-infra/providers"
 	_ "github.com/erda-project/erda-infra/providers/grpcclient"
 	_ "github.com/erda-project/erda-proto-go/apps/gallery/client"
+	_ "github.com/erda-project/erda-proto-go/core/org/client"
 	_ "github.com/erda-project/erda/internal/apps/dop/dicehub"
 	_ "github.com/erda-project/erda/internal/apps/dop/dicehub/extension"
 	_ "github.com/erda-project/erda/internal/apps/dop/dicehub/image"

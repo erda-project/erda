@@ -15,6 +15,7 @@
 package core
 
 import (
+	"context"
 	"reflect"
 	"testing"
 
@@ -22,12 +23,22 @@ import (
 	"github.com/alecthomas/assert"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/stream/common"
+	"github.com/erda-project/erda/internal/pkg/mock"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 )
+
+type EventOrgMock struct {
+	mock.OrgMock
+}
+
+func (m EventOrgMock) GetOrg(ctx context.Context, request *orgpb.GetOrgRequest) (*orgpb.GetOrgResponse, error) {
+	return &orgpb.GetOrgResponse{Data: &orgpb.Org{ID: 1}}, nil
+}
 
 func Test_filterReceiversByOperatorID(t *testing.T) {
 	type args struct {
@@ -93,15 +104,6 @@ func Test_provider_CreateIssueEvent(t *testing.T) {
 	)
 	defer p3.Unpatch()
 
-	p4 := monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetOrg",
-		func(d *bundle.Bundle, idOrName interface{}) (*apistructs.OrgDTO, error) {
-			return &apistructs.OrgDTO{
-				ID: 1,
-			}, nil
-		},
-	)
-	defer p4.Unpatch()
-
 	p5 := monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetCurrentUser",
 		func(d *bundle.Bundle, userID string) (*apistructs.UserInfo, error) {
 			return &apistructs.UserInfo{
@@ -125,7 +127,7 @@ func Test_provider_CreateIssueEvent(t *testing.T) {
 	)
 	defer p7.Unpatch()
 
-	p := &provider{db: db, bdl: bdl}
+	p := &provider{db: db, bdl: bdl, Org: EventOrgMock{}}
 	err := p.CreateIssueEvent(&common.IssueStreamCreateRequest{
 		IssueID: 1,
 	})

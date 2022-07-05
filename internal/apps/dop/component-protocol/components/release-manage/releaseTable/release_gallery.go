@@ -24,6 +24,7 @@ import (
 	"github.com/erda-project/erda-infra/pkg/transport"
 	gallerypb "github.com/erda-project/erda-proto-go/apps/gallery/pb"
 	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/internal/apps/gallery/types"
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
@@ -33,10 +34,11 @@ func (r *ComponentReleaseTable) putOnRelease(ctx context.Context, releaseID stri
 	orgID := r.sdk.Identity.OrgID
 	projectID := r.State.ProjectID
 
-	org, err := r.bdl.GetOrg(orgID)
+	orgResp, err := r.org.GetOrg(ctx, &orgpb.GetOrgRequest{IdOrName: orgID})
 	if err != nil {
 		return err
 	}
+	org := orgResp.Data
 	project, err := r.bdl.GetProject(uint64(projectID))
 	if err != nil {
 		return err

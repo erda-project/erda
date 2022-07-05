@@ -126,6 +126,11 @@ grpc-client@erda.core.monitor.diagnotor:
   addr: "${MONITOR_GRPC_ADDR:monitor:7080}"
 erda.core.monitor.diagnotor-client:
 
+grpc-client@erda.core.org:
+  addr: "${CORE_SERVICES_GRPC_ADDR:core-services:9537}"
+erda.core.org-client: {}
+erda.core.org: {}
+
 erda.msp.apm.diagnotor:
 
 i18n:

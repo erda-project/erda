@@ -26,6 +26,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/model"
 	"github.com/erda-project/erda/internal/pkg/diceworkspace"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/ucauth"
 )
 
@@ -88,7 +89,7 @@ func (branchRule *BranchRule) Query(scopeType apistructs.ScopeType, scopeID int6
 }
 
 func (branchRule *BranchRule) GetBranchRuleFromDevFlowRule(projectID uint64) ([]*apistructs.BranchRule, error) {
-	devFlowRuleRsp, err := branchRule.devFlowRule.GetDevFlowRulesByProjectID(apis.WithInternalClientContext(context.Background(), "bundle"), &dfrpb.GetDevFlowRuleRequest{ProjectID: projectID})
+	devFlowRuleRsp, err := branchRule.devFlowRule.GetDevFlowRulesByProjectID(apis.WithInternalClientContext(context.Background(), discover.SvcDOP), &dfrpb.GetDevFlowRuleRequest{ProjectID: projectID})
 	if err != nil {
 		return nil, err
 	}

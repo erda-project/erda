@@ -28,6 +28,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/admin/dao"
 	"github.com/erda-project/erda/internal/apps/admin/manager"
 	"github.com/erda-project/erda/internal/apps/dop/conf"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 )
@@ -45,6 +46,7 @@ type provider struct {
 
 	DB         *gorm.DB                       `autowired:"mysql-client"`
 	ClusterSvc clusterpb.ClusterServiceServer `autowired:"erda.core.clustermanager.cluster.ClusterService"`
+	Org        org.ClientInterface
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -71,6 +73,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		manager.WithDB(db),
 		manager.WithBundle(manager.NewBundle()),
 		manager.WithClusterSvc(p.ClusterSvc),
+		manager.WithOrg(p.Org),
 	)
 	server := httpserver.New(conf.ListenAddr())
 	server.Router().UseEncodedPath()

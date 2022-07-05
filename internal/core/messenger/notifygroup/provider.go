@@ -28,6 +28,7 @@ import (
 	"github.com/erda-project/erda/internal/core/legacy/dao"
 	"github.com/erda-project/erda/internal/core/legacy/services/notify"
 	"github.com/erda-project/erda/internal/core/legacy/services/permission"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/pkg/audit"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/i18n"
@@ -42,6 +43,7 @@ type provider struct {
 	DB                 *gorm.DB           `autowired:"mysql-client"`
 	notifyGroupService *notifyGroupService
 	audit              audit.Auditor
+	Org                org.Interface
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -54,6 +56,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.notifyGroupService.NotifyGroup = notify.New(notify.WithDBClient(&dao.DBClient{
 		p.DB,
 	}))
+	p.notifyGroupService.org = p.Org
 	p.notifyGroupService.bdl = bundle.New(bundle.WithI18nLoader(&i18n.LocaleResourceLoader{}))
 	if p.Register != nil {
 		type NotifyGroupService = pb.NotifyGroupServiceServer

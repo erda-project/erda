@@ -25,7 +25,7 @@ import (
 func Initialize(p *provider) error {
 	dp, err := dispatcher.New(p.DingtalkApiClient, p.Messenger,
 		p.eventBoxService.HttpI, p.eventBoxService.MonitorHTTP,
-		p.eventBoxService.WebHookHTTP, p.eventBoxService.RegisterHTTP)
+		p.eventBoxService.WebHookHTTP, p.eventBoxService.RegisterHTTP, p.Org)
 	if err != nil {
 		panic(err)
 	}

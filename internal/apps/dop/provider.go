@@ -57,6 +57,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/providers/projectpipeline"
 	"github.com/erda-project/erda/internal/apps/dop/providers/qa/unittest"
 	"github.com/erda-project/erda/internal/apps/dop/providers/taskerror"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/pkg/metrics/query"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/dumpstack"
@@ -92,6 +93,7 @@ type provider struct {
 	DevFlowSvc            *flow.Service                  `autowired:"erda.apps.devflow.flow.FlowService"`
 	IssueCoreSvc          *core.IssueService             `autowired:"erda.dop.issue.core.IssueCoreService"`
 	Query                 issuequery.Interface
+	Org                   org.ClientInterface `required:"true"`
 
 	Protocol      componentprotocol.Interface
 	CPTran        i18n.I18n        `autowired:"i18n@cp"`
