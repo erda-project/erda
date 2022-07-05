@@ -15,6 +15,10 @@
 package autotestv2
 
 import (
+	"context"
+	"strconv"
+
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
@@ -22,6 +26,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/services/autotest"
 	"github.com/erda-project/erda/internal/apps/dop/services/sceneset"
 	"github.com/erda-project/erda/internal/core/org"
+	"github.com/erda-project/erda/pkg/common/apis"
 )
 
 // Service autotestv2 实例对象封装
@@ -84,4 +89,13 @@ func WithOrg(org org.ClientInterface) Option {
 	return func(e *Service) {
 		e.org = org
 	}
+}
+
+func (svc *Service) getOrg(ctx context.Context, orgID uint64) (*orgpb.Org, error) {
+	orgResp, err := svc.org.GetOrg(apis.WithInternalClientContext(ctx, "dop"),
+		&orgpb.GetOrgRequest{IdOrName: strconv.FormatUint(orgID, 10)})
+	if err != nil {
+		return nil, err
+	}
+	return orgResp.Data, nil
 }

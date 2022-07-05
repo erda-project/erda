@@ -31,7 +31,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/publicsuffix"
 
-	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/dao"
@@ -39,7 +38,6 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/services/autotest"
 	"github.com/erda-project/erda/internal/apps/dop/utils"
 	"github.com/erda-project/erda/pkg/apitestsv2"
-	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/expression"
 	"github.com/erda-project/erda/pkg/http/customhttp"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
@@ -625,12 +623,10 @@ func (svc *Service) ExecuteDiceAutotestScene(req apistructs.AutotestExecuteScene
 	if err != nil {
 		return nil, err
 	}
-	orgResp, err := svc.org.GetOrg(apis.WithInternalClientContext(context.Background(), "dop"),
-		&orgpb.GetOrgRequest{IdOrName: strconv.FormatUint(project.OrgID, 10)})
+	org, err := svc.getOrg(context.Background(), project.OrgID)
 	if err != nil {
 		return nil, err
 	}
-	org := orgResp.Data
 
 	var reqPipeline = apistructs.PipelineCreateRequestV2{
 		PipelineYmlName: strconv.Itoa(int(scene.ID)),

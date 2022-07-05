@@ -914,12 +914,10 @@ func (s *ReleaseService) PutOnRelease(ctx context.Context, req *pb.ReleasePutOnR
 		return nil, apierrors.ErrPutOnRelease.InternalError(err)
 	}
 
-	orgResp, err := s.org.GetOrg(apis.WithInternalClientContext(context.Background(), "dicehub"),
-		&orgpb.GetOrgRequest{IdOrName: strconv.Itoa(int(req.Req.OrgID))})
+	org, err := s.getOrg(context.Background(), uint64(req.Req.OrgID))
 	if err != nil {
 		return nil, apierrors.ErrPutOnRelease.InternalError(err)
 	}
-	org := orgResp.Data
 
 	_, err = s.opus.PutOnArtifacts(ctx, &pb.PutOnArtifactsReq{
 		OrgID:         req.Req.OrgID,
@@ -1655,4 +1653,13 @@ func parseMetadata(file io.ReadCloser) (*apistructs.ReleaseMetadata, error) {
 		return nil, errors.New("invalid file, metadata.yml not found")
 	}
 	return &metadata, nil
+}
+
+func (s *ReleaseService) getOrg(ctx context.Context, orgID uint64) (*orgpb.Org, error) {
+	orgResp, err := s.org.GetOrg(apis.WithInternalClientContext(ctx, "dicehub"),
+		&orgpb.GetOrgRequest{IdOrName: strconv.FormatUint(orgID, 10)})
+	if err != nil {
+		return nil, err
+	}
+	return orgResp.Data, nil
 }

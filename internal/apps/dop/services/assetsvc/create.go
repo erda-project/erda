@@ -32,14 +32,12 @@ import (
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 
-	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/bdl"
 	"github.com/erda-project/erda/internal/apps/dop/dbclient"
 	"github.com/erda-project/erda/internal/apps/dop/services/apidocsvc"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
-	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -727,12 +725,10 @@ func (svc *Service) createContractIfExists(ctx context.Context, tx *dbclient.TX,
 		sla apistructs.SLAModel
 	)
 
-	orgResp, err := svc.org.GetOrg(apis.WithInternalClientContext(context.Background(), "dop"),
-		&orgpb.GetOrgRequest{IdOrName: strconv.FormatUint(req.OrgID, 10)})
+	org, err := svc.getOrg(context.Background(), req.OrgID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to GetOrg")
 	}
-	org := orgResp.Data
 
 	// 如果合约处于 "等待授权" 和 "已授权" 以外的情形, 则修改为 "等待授权"
 	if exContract.Status.ToLower() != apistructs.ContractApproving &&
@@ -872,12 +868,10 @@ func (svc *Service) createContractFirstTime(ctx context.Context, tx *dbclient.TX
 		}
 	)
 
-	orgResp, err := svc.org.GetOrg(apis.WithInternalClientContext(context.Background(), "dop"),
-		&orgpb.GetOrgRequest{IdOrName: strconv.FormatUint(req.OrgID, 10)})
+	org, err := svc.getOrg(context.Background(), req.OrgID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to GetOrg")
 	}
-	org := orgResp.Data
 
 	// 如果 access 下有 sla, 但没有申请 SLA, 则不允许申请
 	var count uint64

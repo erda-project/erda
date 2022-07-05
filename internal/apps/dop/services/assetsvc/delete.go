@@ -22,12 +22,10 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/bdl"
 	"github.com/erda-project/erda/internal/apps/dop/dbclient"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
-	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 )
 
@@ -449,12 +447,10 @@ func (svc *Service) DeleteSLA(ctx context.Context, req *apistructs.DeleteSLAReq)
 
 func (svc *Service) deleteContract(ctx context.Context, tx *gorm.DB, orgID uint64, userID string, contract *apistructs.ContractModel,
 	client *apistructs.ClientModel, asset *apistructs.APIAssetsModel, access *apistructs.APIAccessesModel) *errorresp.APIError {
-	orgResp, err := svc.org.GetOrg(apis.WithInternalClientContext(context.Background(), "dop"),
-		&orgpb.GetOrgRequest{IdOrName: strconv.FormatUint(orgID, 10)})
+	org, err := svc.getOrg(context.Background(), orgID)
 	if err != nil {
 		return apierrors.DeleteContract.InternalError(errors.Wrap(err, "failed to GetOrg"))
 	}
-	org := orgResp.Data
 
 	sq := tx
 	if sq == nil {

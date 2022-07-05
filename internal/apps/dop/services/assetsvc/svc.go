@@ -16,10 +16,15 @@
 package assetsvc
 
 import (
+	"context"
+	"strconv"
+
 	"github.com/erda-project/erda-infra/providers/i18n"
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/services/branchrule"
 	"github.com/erda-project/erda/internal/core/org"
+	"github.com/erda-project/erda/pkg/common/apis"
 )
 
 type Service struct {
@@ -63,4 +68,13 @@ func WithOrg(org org.ClientInterface) Option {
 	return func(svc *Service) {
 		svc.org = org
 	}
+}
+
+func (svc *Service) getOrg(ctx context.Context, orgID uint64) (*orgpb.Org, error) {
+	orgResp, err := svc.org.GetOrg(apis.WithInternalClientContext(ctx, "dop"),
+		&orgpb.GetOrgRequest{IdOrName: strconv.FormatUint(orgID, 10)})
+	if err != nil {
+		return nil, err
+	}
+	return orgResp.Data, nil
 }
