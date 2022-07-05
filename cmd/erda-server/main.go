@@ -43,6 +43,7 @@ import (
 	_ "github.com/erda-project/erda-infra/providers/component-protocol"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
 	_ "github.com/erda-project/erda-infra/providers/grpcserver"
+	_ "github.com/erda-project/erda-infra/providers/health"
 	_ "github.com/erda-project/erda-infra/providers/httpserver"
 	_ "github.com/erda-project/erda-infra/providers/mysql"
 	_ "github.com/erda-project/erda-infra/providers/serviceregister"
