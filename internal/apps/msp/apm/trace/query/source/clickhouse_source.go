@@ -26,7 +26,6 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/providers/clickhouse"
 	"github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
-	"github.com/erda-project/erda/internal/apps/msp/apm/trace"
 	"github.com/erda-project/erda/internal/apps/msp/apm/trace/query/commom/custom"
 	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/clickhouse/table/loader"
 	"github.com/erda-project/erda/pkg/math"
@@ -54,10 +53,17 @@ type (
 		Count       uint64    `ch:"trace_count"`
 		Date        time.Time `ch:"date"`
 	}
-	keysValues struct {
-		Keys     []string `ch:"keys"`
-		Values   []string `ch:"values"`
-		SeriesID uint64   `ch:"series_id"`
+	spanItem struct {
+		StartTime     int64    `ch:"st_nano"` // timestamp nano
+		EndTime       int64    `ch:"et_nano"` // timestamp nano
+		OrgName       string   `ch:"org_name"`
+		TenantId      string   `ch:"tenant_id"`
+		TraceId       string   `ch:"trace_id"`
+		SpanId        string   `ch:"span_id"`
+		ParentSpanId  string   `ch:"parent_span_id"`
+		OperationName string   `ch:"operation_name" `
+		TagKeys       []string `ch:"tag_keys"`
+		TagValues     []string `ch:"tag_values"`
 	}
 )
 
@@ -72,87 +78,6 @@ const (
 	Month  = 30 * Day // just 30 day
 	Month3 = 3 * Month
 )
-
-func GetInterval(duration int64) (int64, string, int64) {
-	count := int64(60) * time.Second.Milliseconds()
-	if duration > 0 && duration <= Hour.Milliseconds() {
-		interval := Hour.Milliseconds() / count
-		return 1, "minute", interval
-	} else if duration > Hour.Milliseconds() && duration <= Hour3.Milliseconds() {
-		interval := Hour3.Milliseconds() / count
-		return 3, "minute", interval
-	} else if duration > Hour3.Milliseconds() && duration <= Hour6.Milliseconds() {
-		interval := 6 * time.Hour.Milliseconds() / count
-		return 6, "minute", interval
-	} else if duration > Hour6.Milliseconds() && duration <= Hour12.Milliseconds() {
-		interval := 12 * time.Hour.Milliseconds() / count
-		return 12, "minute", interval
-	} else if duration > Hour12.Milliseconds() && duration <= Day.Milliseconds() {
-		interval := Day.Milliseconds() / count
-		return 24, "minute", interval
-	} else if duration > Day.Milliseconds() && duration <= Day3.Milliseconds() {
-		interval := Day3.Milliseconds() / count
-		return 72, "minute", interval
-	} else if duration > Day3.Milliseconds() && duration <= Day7.Milliseconds() {
-		interval := Day7.Milliseconds() / count
-		return 168, "minute", interval
-	} else if duration > Day7.Milliseconds() && duration <= Month.Milliseconds() {
-		interval := Month.Milliseconds() / count
-		return 12, "hour", interval
-	} else {
-		interval := Month3.Milliseconds() / count
-		return 36, "hour", interval
-	}
-}
-
-func fromTimestampMilli(ts int64) exp.SQLFunctionExpression {
-	return goqu.Func("fromUnixTimestamp64Milli", goqu.Func("toInt64", ts))
-}
-
-type filter struct {
-	StartTime, EndTime                                           int64 // ms
-	DurationMin, DurationMax                                     int64 // nano
-	OrgName, TenantID, TraceID, HttpPath, ServiceName, RpcMethod string
-}
-
-func buildFilter(sel *goqu.SelectDataset, f filter) *goqu.SelectDataset {
-	// force condition
-	sel = sel.Where(goqu.Ex{
-		"org_name":   f.OrgName,
-		"tenant_id":  f.TenantID,
-		"start_time": goqu.Op{"gte": fromTimestampMilli(f.StartTime)},
-		"end_time":   goqu.Op{"lte": fromTimestampMilli(f.EndTime)},
-	})
-
-	// optional condition
-	if f.TraceID != "" {
-		sel = sel.Where(goqu.Ex{"trace_id": goqu.Op{"LIKE": "%" + f.TraceID + "%"}})
-	}
-
-	if f.DurationMin > 0 && f.DurationMax > 0 && f.DurationMin < f.DurationMax {
-		sel = sel.Where(goqu.Ex{
-			"((toUnixTimestamp64Nano(end_time) - toUnixTimestamp64Nano(start_time))": goqu.Op{"gte": f.DurationMin},
-			"(toUnixTimestamp64Nano(end_time) - toUnixTimestamp64Nano(start_time))":  goqu.Op{"lte": f.DurationMax},
-		})
-	}
-
-	if f.HttpPath != "" {
-		sel = sel.Where(goqu.Ex{
-			"tag_values[indexOf(tag_keys, 'http_path')": goqu.Op{"LIKE": "%" + f.HttpPath + "%"},
-		})
-	}
-	if f.ServiceName != "" {
-		sel = sel.Where(goqu.Ex{
-			"tag_values[indexOf(tag_keys, 'service_name')": goqu.Op{"LIKE": "%" + f.ServiceName + "%"},
-		})
-	}
-	if f.RpcMethod != "" {
-		sel = sel.Where(goqu.Ex{
-			"tag_values[indexOf(tag_keys, 'rpc_method')": goqu.Op{"LIKE": "%" + f.RpcMethod + "%"},
-		})
-	}
-	return sel
-}
 
 func (chs *ClickhouseSource) GetTraceReqDistribution(ctx context.Context, model custom.Model) ([]*TraceDistributionItem, error) {
 	items := make([]*TraceDistributionItem, 0, 10)
@@ -179,6 +104,7 @@ func (chs *ClickhouseSource) GetTraceReqDistribution(ctx context.Context, model 
 		EndTime:     model.EndTime,
 		DurationMin: model.DurationMin,
 		DurationMax: model.DurationMax,
+		Status:      model.Status,
 		TraceID:     model.TraceId,
 		HttpPath:    model.HttpPath,
 		ServiceName: model.ServiceName,
@@ -246,12 +172,13 @@ func (chs *ClickhouseSource) GetTraces(ctx context.Context, req *pb.GetTracesReq
 		EndTime:     req.EndTime,
 		DurationMin: req.DurationMin,
 		DurationMax: req.DurationMax,
+		Status:      req.Status,
 		TraceID:     req.TraceID,
 		HttpPath:    req.HttpPath,
 		ServiceName: req.ServiceName,
 		RpcMethod:   req.RpcMethod,
 	}
-	sel = buildFilter(sel, f).GroupBy("trace_id").Order(goqu.C("min_start_time").Desc()).
+	sel = buildFilter(sel, f).GroupBy("trace_id").Order(chs.sortConditionStrategy(req.Sort)).
 		Limit(uint(req.PageSize)).Offset(uint((req.PageNo - 1) * req.PageSize))
 
 	sqlstr, err := chs.toSQL(sel)
@@ -284,25 +211,6 @@ func (chs *ClickhouseSource) GetTraces(ctx context.Context, req *pb.GetTracesReq
 	return &pb.GetTracesResponse{PageNo: req.PageNo, PageSize: req.PageSize, Data: traces, Total: count}, nil
 }
 
-func (chs *ClickhouseSource) sortConditionStrategy(sort string) string {
-	switch strings.ToLower(sort) {
-	case strings.ToLower(pb.SortCondition_TRACE_TIME_DESC.String()):
-		return "ORDER BY min_start_time DESC"
-	case strings.ToLower(pb.SortCondition_TRACE_TIME_ASC.String()):
-		return "ORDER BY min_start_time ASC"
-	case strings.ToLower(pb.SortCondition_TRACE_DURATION_DESC.String()):
-		return "ORDER BY duration DESC"
-	case strings.ToLower(pb.SortCondition_TRACE_DURATION_ASC.String()):
-		return "ORDER BY duration ASC"
-	case strings.ToLower(pb.SortCondition_SPAN_COUNT_DESC.String()):
-		return "ORDER BY span_count DESC"
-	case strings.ToLower(pb.SortCondition_SPAN_COUNT_ASC.String()):
-		return "ORDER BY span_count ASC"
-	default:
-		return "ORDER BY min_start_time DESC"
-	}
-}
-
 func (chs *ClickhouseSource) GetSpans(ctx context.Context, req *pb.GetSpansRequest) []*pb.Span {
 	if chs.CompatibleSource != nil {
 		getSpans := chs.CompatibleSource.GetSpans(ctx, req)
@@ -318,15 +226,15 @@ func (chs *ClickhouseSource) GetSpans(ctx context.Context, req *pb.GetSpansReque
 		"span_id",
 		"parent_span_id",
 		"operation_name",
-		goqu.L("toUnixTimestamp64Nano(start_time) AS start_time"),
-		goqu.L("toUnixTimestamp64Nano(end_time)   AS end_time"),
+		goqu.L("toUnixTimestamp64Nano(start_time) AS st_nano"),
+		goqu.L("toUnixTimestamp64Nano(end_time)   AS et_nano"),
 		"tag_keys",
 		"tag_values",
 	).Where(goqu.Ex{
 		"org_name":   orgName,
 		"tenant_id":  req.ScopeID,
 		"trace_id":   req.TraceID,
-		"start_time": goqu.Op{"gte": req.StartTime * 1000000},
+		"start_time": goqu.Op{"gte": fromTimestampMilli(req.StartTime)},
 	}).Order(goqu.C("start_time").Asc()).Limit(uint(req.Limit))
 
 	sqlstr, err := chs.toSQL(sql)
@@ -343,7 +251,7 @@ func (chs *ClickhouseSource) GetSpans(ctx context.Context, req *pb.GetSpansReque
 
 	spans := make([]*pb.Span, 0, 10)
 	for rows.Next() {
-		var span trace.TableSpan
+		var span spanItem
 		if err := rows.ScanStruct(&span); err != nil {
 			chs.Log.Errorf("scan: %s", err)
 			return nil
@@ -386,8 +294,8 @@ func (chs *ClickhouseSource) GetTraceCount(ctx context.Context, f filter) int64 
 	var count uint64
 	orgName := getOrgName(ctx)
 	table, _ := chs.Loader.GetSearchTable(orgName)
-	sql := goqu.From(table).Select(goqu.Func("COUNT", "trace_id"))
-	sql = buildFilter(sql, f)
+	sql := goqu.From(table).Select(goqu.L("count(distinct(trace_id))"))
+	sql = buildFilter(sql, f).GroupBy("tenant_id")
 	sqlstr, err := chs.toSQL(sql)
 	if err != nil {
 		chs.Log.Errorf("GetTraceCount: %s", err)
@@ -398,6 +306,121 @@ func (chs *ClickhouseSource) GetTraceCount(ctx context.Context, f filter) int64 
 		return 0
 	}
 	return int64(count)
+}
+
+func (chs *ClickhouseSource) sortConditionStrategy(sort string) exp.OrderedExpression {
+	switch strings.ToLower(sort) {
+	case strings.ToLower(pb.SortCondition_TRACE_TIME_DESC.String()):
+		return goqu.C("min_start_time").Desc()
+	case strings.ToLower(pb.SortCondition_TRACE_TIME_ASC.String()):
+		return goqu.C("min_start_time").Asc()
+	case strings.ToLower(pb.SortCondition_TRACE_DURATION_DESC.String()):
+		return goqu.C("duration").Desc()
+	case strings.ToLower(pb.SortCondition_TRACE_DURATION_ASC.String()):
+		return goqu.C("duration").Asc()
+	case strings.ToLower(pb.SortCondition_SPAN_COUNT_DESC.String()):
+		return goqu.C("span_count").Desc()
+	case strings.ToLower(pb.SortCondition_SPAN_COUNT_ASC.String()):
+		return goqu.C("span_count").Asc()
+	default:
+		return goqu.C("min_start_time").Desc()
+	}
+}
+
+func (chs *ClickhouseSource) traceStatusConditionStrategy(traceStatus string) string {
+	switch traceStatus {
+	case strings.ToLower(pb.TraceStatusCondition_TRACE_SUCCESS.String()):
+		return "errors_sum::field=0 AND"
+	case strings.ToLower(pb.TraceStatusCondition_TRACE_ALL.String()):
+		return "errors_sum::field>=0 AND"
+	case strings.ToLower(pb.TraceStatusCondition_TRACE_ERROR.String()):
+		return "errors_sum::field>0 AND"
+	default:
+		return "errors_sum::field>=0 AND"
+	}
+}
+
+func GetInterval(duration int64) (int64, string, int64) {
+	count := int64(60) * time.Second.Milliseconds()
+	if duration > 0 && duration <= Hour.Milliseconds() {
+		interval := Hour.Milliseconds() / count
+		return 1, "minute", interval
+	} else if duration > Hour.Milliseconds() && duration <= Hour3.Milliseconds() {
+		interval := Hour3.Milliseconds() / count
+		return 3, "minute", interval
+	} else if duration > Hour3.Milliseconds() && duration <= Hour6.Milliseconds() {
+		interval := 6 * time.Hour.Milliseconds() / count
+		return 6, "minute", interval
+	} else if duration > Hour6.Milliseconds() && duration <= Hour12.Milliseconds() {
+		interval := 12 * time.Hour.Milliseconds() / count
+		return 12, "minute", interval
+	} else if duration > Hour12.Milliseconds() && duration <= Day.Milliseconds() {
+		interval := Day.Milliseconds() / count
+		return 24, "minute", interval
+	} else if duration > Day.Milliseconds() && duration <= Day3.Milliseconds() {
+		interval := Day3.Milliseconds() / count
+		return 72, "minute", interval
+	} else if duration > Day3.Milliseconds() && duration <= Day7.Milliseconds() {
+		interval := Day7.Milliseconds() / count
+		return 168, "minute", interval
+	} else if duration > Day7.Milliseconds() && duration <= Month.Milliseconds() {
+		interval := Month.Milliseconds() / count
+		return 12, "hour", interval
+	} else {
+		interval := Month3.Milliseconds() / count
+		return 36, "hour", interval
+	}
+}
+
+func fromTimestampMilli(ts int64) exp.SQLFunctionExpression {
+	return goqu.Func("fromUnixTimestamp64Milli", goqu.Func("toInt64", ts))
+}
+
+type filter struct {
+	StartTime, EndTime                                                   int64 // ms
+	DurationMin, DurationMax                                             int64 // nano
+	OrgName, TenantID, TraceID, HttpPath, ServiceName, RpcMethod, Status string
+}
+
+func buildFilter(sel *goqu.SelectDataset, f filter) *goqu.SelectDataset {
+	// force condition
+	sel = sel.Where(goqu.Ex{
+		"org_name":   f.OrgName,
+		"tenant_id":  f.TenantID,
+		"start_time": goqu.Op{"gte": fromTimestampMilli(f.StartTime)},
+		"end_time":   goqu.Op{"lte": fromTimestampMilli(f.EndTime)},
+	})
+
+	// optional condition
+	if f.TraceID != "" {
+		sel = sel.Where(goqu.Ex{"trace_id": goqu.Op{"LIKE": "%" + f.TraceID + "%"}})
+	}
+
+	if f.DurationMin > 0 && f.DurationMax > 0 && f.DurationMin < f.DurationMax {
+		sel = sel.Where(
+			goqu.L("(toUnixTimestamp64Nano(end_time) - toUnixTimestamp64Nano(start_time))").Gte(f.DurationMin),
+			goqu.L("(toUnixTimestamp64Nano(end_time) - toUnixTimestamp64Nano(start_time))").Lte(f.DurationMax),
+		)
+	}
+
+	switch f.Status {
+	case strings.ToLower(pb.TraceStatusCondition_TRACE_SUCCESS.String()):
+		sel = sel.Where(goqu.L("tag_values[indexOf(tag_keys,'error')]").Neq("true"))
+	case strings.ToLower(pb.TraceStatusCondition_TRACE_ERROR.String()):
+		sel = sel.Where(goqu.L("tag_values[indexOf(tag_keys,'error')]").Eq("true"))
+	default:
+	}
+
+	if f.HttpPath != "" {
+		sel = sel.Where(goqu.L("tag_values[indexOf(tag_keys, 'http_path')]").Like(f.HttpPath))
+	}
+	if f.ServiceName != "" {
+		sel = sel.Where(goqu.L("tag_values[indexOf(tag_keys, 'service_name')]").Like(f.ServiceName))
+	}
+	if f.RpcMethod != "" {
+		sel = sel.Where(goqu.L("tag_values[indexOf(tag_keys, 'rpc_method')]").Like(f.RpcMethod))
+	}
+	return sel
 }
 
 func (chs *ClickhouseSource) toSQL(sql *goqu.SelectDataset) (string, error) {

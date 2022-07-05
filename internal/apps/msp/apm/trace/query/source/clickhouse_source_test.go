@@ -20,6 +20,8 @@ import (
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
+	"github.com/doug-martin/goqu/v9"
+	"github.com/doug-martin/goqu/v9/exp"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/clickhouse/table/loader"
@@ -68,15 +70,15 @@ func TestClickhouseSource_sortConditionStrategy(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want string
+		want exp.OrderedExpression
 	}{
-		{"case1", args{sort: ""}, "ORDER BY min_start_time DESC"},
-		{"case2", args{sort: "TRACE_TIME_DESC"}, "ORDER BY min_start_time DESC"},
-		{"case3", args{sort: "TRACE_TIME_ASC"}, "ORDER BY min_start_time ASC"},
-		{"case4", args{sort: "TRACE_DURATION_DESC"}, "ORDER BY duration DESC"},
-		{"case5", args{sort: "TRACE_DURATION_ASC"}, "ORDER BY duration ASC"},
-		{"case6", args{sort: "SPAN_COUNT_DESC"}, "ORDER BY span_count DESC"},
-		{"case7", args{sort: "SPAN_COUNT_ASC"}, "ORDER BY span_count ASC"},
+		{"case1", args{sort: ""}, goqu.C("min_start_time").Desc()},
+		{"case2", args{sort: "TRACE_TIME_DESC"}, goqu.C("min_start_time").Desc()},
+		{"case3", args{sort: "TRACE_TIME_ASC"}, goqu.C("min_start_time").Asc()},
+		{"case4", args{sort: "TRACE_DURATION_DESC"}, goqu.C("duration").Desc()},
+		{"case5", args{sort: "TRACE_DURATION_ASC"}, goqu.C("duration").Asc()},
+		{"case6", args{sort: "SPAN_COUNT_DESC"}, goqu.C("span_count").Desc()},
+		{"case7", args{sort: "SPAN_COUNT_ASC"}, goqu.C("span_count").Asc()},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -84,52 +86,6 @@ func TestClickhouseSource_sortConditionStrategy(t *testing.T) {
 			if got := chs.sortConditionStrategy(tt.args.sort); got != tt.want {
 				t.Errorf("sortConditionStrategy() = %v, want %v", got, tt.want)
 			}
-		})
-	}
-}
-
-func TestClickhouseSource_sortConditionStrategy1(t *testing.T) {
-	type args struct {
-		sort string
-	}
-	tests := []struct {
-		name string
-		args args
-		want string
-	}{
-		{
-			args: args{sort: "span_count_desc"},
-			want: "ORDER BY span_count DESC",
-		},
-		{
-			args: args{sort: "span_count_asc"},
-			want: "ORDER BY span_count ASC",
-		},
-		{
-			args: args{sort: "trace_duration_desc"},
-			want: "ORDER BY duration DESC",
-		},
-		{
-			args: args{sort: "trace_duration_asc"},
-			want: "ORDER BY duration ASC",
-		},
-		{
-			args: args{sort: "trace_time_desc"},
-			want: "ORDER BY min_start_time DESC",
-		},
-		{
-			args: args{sort: "trace_time_asc"},
-			want: "ORDER BY min_start_time ASC",
-		},
-		{
-			args: args{sort: "xxx"},
-			want: "ORDER BY min_start_time DESC",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			chs := &ClickhouseSource{}
-			assert.Equal(t, tt.want, chs.sortConditionStrategy(tt.args.sort))
 		})
 	}
 }
