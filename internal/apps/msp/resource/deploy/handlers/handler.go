@@ -243,7 +243,6 @@ func NewDefaultHandler(dbClient *gorm.DB, logger logs.Logger) *DefaultDeployHand
 		TmcIniDb:             &db.TmcIniDB{DB: dbClient},
 		Bdl: bundle.New(bundle.WithScheduler(),
 			bundle.WithOrchestrator(),
-			bundle.WithErdaServer(),
 			bundle.WithHepa(),
 			bundle.WithCMDB(),
 			bundle.WithErdaServer(),

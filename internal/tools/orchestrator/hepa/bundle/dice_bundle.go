@@ -30,7 +30,6 @@ func init() {
 		bundle.WithMSP(),
 		bundle.WithScheduler(),
 		bundle.WithErdaServer(),
-		bundle.WithErdaServer(),
 		bundle.WithClusterManager(),
 		bundle.WithHTTPClient(httpclient.New(
 			httpclient.WithTimeout(time.Second*10, time.Second*60),

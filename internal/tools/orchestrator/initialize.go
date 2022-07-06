@@ -120,7 +120,6 @@ func (p *provider) initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, e
 				httpclient.WithTimeout(time.Second, time.Second*60),
 			)),
 		bundle.WithErdaServer(),
-		bundle.WithErdaServer(),
 		bundle.WithScheduler(),
 		bundle.WithCollector(),
 		bundle.WithMonitor(),

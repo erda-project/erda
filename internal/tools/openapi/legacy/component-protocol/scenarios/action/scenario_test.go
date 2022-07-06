@@ -32,7 +32,7 @@ import (
 
 func rend(req *apistructs.ComponentProtocolRequest) (cont *apistructs.ComponentProtocolRequest, err error) {
 	// bundle
-	os.Setenv("DICEHUB_ADDR", "dicehub.default.svc.cluster.local:10000")
+	os.Setenv("ERDA_SERVER_ADDR", "erda-server.default.svc.cluster.local:9095")
 	bundleOpts := []bundle.Option{
 		bundle.WithHTTPClient(
 			httpclient.New(
