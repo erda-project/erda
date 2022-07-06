@@ -43,6 +43,10 @@ service LogService {
     option (common.openapi) = {
       service: "msp"
       path: "/api/log-service/action/parse-regexp"
+      auth: {
+        check_login: true,
+        check_token: true,
+      }
     };
   }
   // download api cannot exposed by grpc
