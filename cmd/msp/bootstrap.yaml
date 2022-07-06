@@ -232,8 +232,8 @@ erda.msp.apm.checker.task:
 erda.msp.apm.trace.query:
   debug_sql: ${TRACE_QUERY_DEBUG_SQL:true}
   query_source:
-    elasticsearch: "${QUERY_SPAN_FROM_ES_ENABLE:true}"
-    cassandra: "${QUERY_SPAN_FROM_CASSANDRA_ENABLE:false}"
+    elasticsearch: "${QUERY_SPAN_FROM_ES_ENABLE:false}"
+    cassandra: "${QUERY_SPAN_FROM_CASSANDRA_ENABLE:true}"
     clickhouse: "${QUERY_SPAN_FROM_CLICKHOUSE_ENABLE:false}"
   compatible_enable: "${QUERY_SPAN_COMPATIBLE_ENABLE:true}"
   cassandra:
