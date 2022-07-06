@@ -20,6 +20,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"github.com/doug-martin/goqu/v9"
 	"github.com/doug-martin/goqu/v9/exp"
 
@@ -42,11 +43,12 @@ type ClickhouseSource struct {
 
 type (
 	tracing struct {
-		TraceId   string   `ch:"trace_id"`
-		StartTime int64    `ch:"min_start_time"`
-		SpanCount uint64   `ch:"span_count"`
-		Duration  int64    `ch:"duration"`
-		Services  []string `ch:"services"`
+		TraceId    string   `ch:"trace_id"`
+		TraceCount uint64   `ch:"trace_count"`
+		StartTime  int64    `ch:"min_start_time"`
+		SpanCount  uint64   `ch:"span_count"`
+		Duration   int64    `ch:"duration"`
+		Services   []string `ch:"services"`
 	}
 	distributionItem struct {
 		AvgDuration float64   `ch:"avg_duration"`
@@ -160,6 +162,7 @@ func (chs *ClickhouseSource) GetTraces(ctx context.Context, req *pb.GetTracesReq
 	sel := goqu.From(table)
 	sel = sel.Select(
 		goqu.L("distinct(trace_id)").As("trace_id"),
+		goqu.L("count(distinct(trace_id))").As("trace_count"),
 		goqu.L("toUnixTimestamp64Nano(min(start_time))").As("min_start_time"),
 		goqu.L("count(span_id)").As("span_count"),
 		goqu.L("(toUnixTimestamp64Nano(max(end_time)) - toUnixTimestamp64Nano(min(start_time)))").As("duration"),
@@ -178,7 +181,7 @@ func (chs *ClickhouseSource) GetTraces(ctx context.Context, req *pb.GetTracesReq
 		ServiceName: req.ServiceName,
 		RpcMethod:   req.RpcMethod,
 	}
-	sel = buildFilter(sel, f).GroupBy("trace_id").Order(chs.sortConditionStrategy(req.Sort)).
+	sel = buildFilter(sel, f).GroupBy(goqu.L(`"trace_id" WITH TOTALS`)).Order(chs.sortConditionStrategy(req.Sort)).
 		Limit(uint(req.PageSize)).Offset(uint((req.PageNo - 1) * req.PageSize))
 
 	sqlstr, err := chs.toSQL(sel)
@@ -207,8 +210,21 @@ func (chs *ClickhouseSource) GetTraces(ctx context.Context, req *pb.GetTracesReq
 		traces = append(traces, tracing)
 	}
 
-	count := chs.GetTraceCount(ctx, f)
-	return &pb.GetTracesResponse{PageNo: req.PageNo, PageSize: req.PageSize, Data: traces, Total: count}, nil
+	totals, err := getTraceTotals(rows)
+	if err != nil {
+		return &pb.GetTracesResponse{}, err
+	}
+
+	return &pb.GetTracesResponse{PageNo: req.PageNo, PageSize: req.PageSize, Data: traces, Total: totals}, nil
+}
+
+func getTraceTotals(rows driver.Rows) (int64, error) {
+	obj := tracing{}
+	err := rows.Totals(&obj.TraceId, &obj.TraceCount, &obj.StartTime, &obj.SpanCount, &obj.Duration, &obj.Services)
+	if err != nil {
+		return 0, fmt.Errorf("cannot get totals: %w", err)
+	}
+	return int64(obj.TraceCount), nil
 }
 
 func (chs *ClickhouseSource) GetSpans(ctx context.Context, req *pb.GetSpansRequest) []*pb.Span {
@@ -285,24 +301,6 @@ func (chs *ClickhouseSource) GetSpanCount(ctx context.Context, traceID string) i
 		return 0
 	}
 	if err := chs.Clickhouse.Client().QueryRow(ctx, sqlstr).Scan(&count); err != nil {
-		return 0
-	}
-	return int64(count)
-}
-
-func (chs *ClickhouseSource) GetTraceCount(ctx context.Context, f filter) int64 {
-	var count uint64
-	orgName := getOrgName(ctx)
-	table, _ := chs.Loader.GetSearchTable(orgName)
-	sql := goqu.From(table).Select(goqu.L("count(distinct(trace_id))"))
-	sql = buildFilter(sql, f).GroupBy("tenant_id")
-	sqlstr, err := chs.toSQL(sql)
-	if err != nil {
-		chs.Log.Errorf("GetTraceCount: %s", err)
-		return 0
-	}
-	if err := chs.Clickhouse.Client().QueryRow(ctx, sqlstr).Scan(&count); err != nil {
-		chs.Log.Errorf("GetTraceCount query: %s", err)
 		return 0
 	}
 	return int64(count)
@@ -393,14 +391,11 @@ func buildFilter(sel *goqu.SelectDataset, f filter) *goqu.SelectDataset {
 
 	// optional condition
 	if f.TraceID != "" {
-		sel = sel.Where(goqu.Ex{"trace_id": goqu.Op{"LIKE": "%" + f.TraceID + "%"}})
+		sel = sel.Where(goqu.C("trace_id").Like("%" + f.TraceID + "%"))
 	}
 
 	if f.DurationMin > 0 && f.DurationMax > 0 && f.DurationMin < f.DurationMax {
-		sel = sel.Where(
-			goqu.L("(toUnixTimestamp64Nano(end_time) - toUnixTimestamp64Nano(start_time))").Gte(f.DurationMin),
-			goqu.L("(toUnixTimestamp64Nano(end_time) - toUnixTimestamp64Nano(start_time))").Lte(f.DurationMax),
-		)
+		sel = sel.Having(goqu.C("duration").Gte(f.DurationMin), goqu.C("duration").Lte(f.DurationMax))
 	}
 
 	switch f.Status {
@@ -412,13 +407,13 @@ func buildFilter(sel *goqu.SelectDataset, f filter) *goqu.SelectDataset {
 	}
 
 	if f.HttpPath != "" {
-		sel = sel.Where(goqu.L("tag_values[indexOf(tag_keys, 'http_path')]").Like(f.HttpPath))
+		sel = sel.Where(goqu.L("tag_values[indexOf(tag_keys, 'http_path')]").Like("%" + f.HttpPath + "%"))
 	}
 	if f.ServiceName != "" {
-		sel = sel.Where(goqu.L("tag_values[indexOf(tag_keys, 'service_name')]").Like(f.ServiceName))
+		sel = sel.Where(goqu.L("tag_values[indexOf(tag_keys, 'service_name')]").Like("%" + f.ServiceName + "%"))
 	}
 	if f.RpcMethod != "" {
-		sel = sel.Where(goqu.L("tag_values[indexOf(tag_keys, 'rpc_method')]").Like(f.RpcMethod))
+		sel = sel.Where(goqu.L("tag_values[indexOf(tag_keys, 'rpc_method')]").Like("%" + f.RpcMethod + "%"))
 	}
 	return sel
 }

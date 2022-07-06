@@ -108,6 +108,155 @@ func TestClickhouseSource_GetSpans(t *testing.T) {
 	ass.Equal(0, len(spans))
 }
 
+func Test_buildFilter(t *testing.T) {
+	type args struct {
+		f filter
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "basic",
+			args: args{f: filter{
+				StartTime: 1652419305504,
+				EndTime:   1652508045504,
+				OrgName:   "erda",
+				TenantID:  "t1",
+			}},
+			want: `SELECT distinct(trace_id) AS "trace_id", (toUnixTimestamp64Nano(max(end_time)) - toUnixTimestamp64Nano(min(start_time))) AS "duration", min(start_time) AS "min_start_time" FROM "spans_all" WHERE (("end_time" <= fromUnixTimestamp64Milli(toInt64(1652508045504))) AND ("org_name" = 'erda') AND ("start_time" >= fromUnixTimestamp64Milli(toInt64(1652419305504))) AND ("tenant_id" = 't1')) GROUP BY "trace_id"`,
+		},
+		{
+			name: "traceID",
+			args: args{f: filter{
+				StartTime: 1652419305504,
+				EndTime:   1652508045504,
+				OrgName:   "erda",
+				TenantID:  "t1",
+				TraceID:   "972f7ef5-ccc4-4f1a-a0c4-3d60c3dea5cf",
+			}},
+			want: `SELECT distinct(trace_id) AS "trace_id", (toUnixTimestamp64Nano(max(end_time)) - toUnixTimestamp64Nano(min(start_time))) AS "duration", min(start_time) AS "min_start_time" FROM "spans_all" WHERE ((("end_time" <= fromUnixTimestamp64Milli(toInt64(1652508045504))) AND ("org_name" = 'erda') AND ("start_time" >= fromUnixTimestamp64Milli(toInt64(1652419305504))) AND ("tenant_id" = 't1')) AND ("trace_id" LIKE '%972f7ef5-ccc4-4f1a-a0c4-3d60c3dea5cf%')) GROUP BY "trace_id"`,
+		},
+		{
+			name: "traceID,duration",
+			args: args{f: filter{
+				StartTime:   1652419305504,
+				EndTime:     1652508045504,
+				OrgName:     "erda",
+				TenantID:    "t1",
+				TraceID:     "972f7ef5-ccc4-4f1a-a0c4-3d60c3dea5cf",
+				DurationMin: 10000000,
+				DurationMax: 20000000,
+			}},
+			want: `SELECT distinct(trace_id) AS "trace_id", (toUnixTimestamp64Nano(max(end_time)) - toUnixTimestamp64Nano(min(start_time))) AS "duration", min(start_time) AS "min_start_time" FROM "spans_all" WHERE ((("end_time" <= fromUnixTimestamp64Milli(toInt64(1652508045504))) AND ("org_name" = 'erda') AND ("start_time" >= fromUnixTimestamp64Milli(toInt64(1652419305504))) AND ("tenant_id" = 't1')) AND ("trace_id" LIKE '%972f7ef5-ccc4-4f1a-a0c4-3d60c3dea5cf%')) GROUP BY "trace_id" HAVING (("duration" >= 10000000) AND ("duration" <= 20000000))`,
+		},
+		{
+			name: "traceID,duration,status",
+			args: args{f: filter{
+				StartTime:   1652419305504,
+				EndTime:     1652508045504,
+				OrgName:     "erda",
+				TenantID:    "t1",
+				TraceID:     "972f7ef5-ccc4-4f1a-a0c4-3d60c3dea5cf",
+				DurationMin: 10000000,
+				DurationMax: 20000000,
+				Status:      "trace_all",
+			}},
+			want: `SELECT distinct(trace_id) AS "trace_id", (toUnixTimestamp64Nano(max(end_time)) - toUnixTimestamp64Nano(min(start_time))) AS "duration", min(start_time) AS "min_start_time" FROM "spans_all" WHERE ((("end_time" <= fromUnixTimestamp64Milli(toInt64(1652508045504))) AND ("org_name" = 'erda') AND ("start_time" >= fromUnixTimestamp64Milli(toInt64(1652419305504))) AND ("tenant_id" = 't1')) AND ("trace_id" LIKE '%972f7ef5-ccc4-4f1a-a0c4-3d60c3dea5cf%')) GROUP BY "trace_id" HAVING (("duration" >= 10000000) AND ("duration" <= 20000000))`,
+		},
+		{
+			name: "traceID,duration,status",
+			args: args{f: filter{
+				StartTime:   1652419305504,
+				EndTime:     1652508045504,
+				OrgName:     "erda",
+				TenantID:    "t1",
+				TraceID:     "972f7ef5-ccc4-4f1a-a0c4-3d60c3dea5cf",
+				DurationMin: 10000000,
+				DurationMax: 20000000,
+				Status:      "trace_error",
+			}},
+			want: `SELECT distinct(trace_id) AS "trace_id", (toUnixTimestamp64Nano(max(end_time)) - toUnixTimestamp64Nano(min(start_time))) AS "duration", min(start_time) AS "min_start_time" FROM "spans_all" WHERE ((("end_time" <= fromUnixTimestamp64Milli(toInt64(1652508045504))) AND ("org_name" = 'erda') AND ("start_time" >= fromUnixTimestamp64Milli(toInt64(1652419305504))) AND ("tenant_id" = 't1')) AND ("trace_id" LIKE '%972f7ef5-ccc4-4f1a-a0c4-3d60c3dea5cf%') AND (tag_values[indexOf(tag_keys,'error')] = 'true')) GROUP BY "trace_id" HAVING (("duration" >= 10000000) AND ("duration" <= 20000000))`,
+		},
+		{
+			name: "traceID,duration,status",
+			args: args{f: filter{
+				StartTime:   1652419305504,
+				EndTime:     1652508045504,
+				OrgName:     "erda",
+				TenantID:    "t1",
+				TraceID:     "972f7ef5-ccc4-4f1a-a0c4-3d60c3dea5cf",
+				DurationMin: 10000000,
+				DurationMax: 20000000,
+				Status:      "trace_success",
+			}},
+			want: `SELECT distinct(trace_id) AS "trace_id", (toUnixTimestamp64Nano(max(end_time)) - toUnixTimestamp64Nano(min(start_time))) AS "duration", min(start_time) AS "min_start_time" FROM "spans_all" WHERE ((("end_time" <= fromUnixTimestamp64Milli(toInt64(1652508045504))) AND ("org_name" = 'erda') AND ("start_time" >= fromUnixTimestamp64Milli(toInt64(1652419305504))) AND ("tenant_id" = 't1')) AND ("trace_id" LIKE '%972f7ef5-ccc4-4f1a-a0c4-3d60c3dea5cf%') AND (tag_values[indexOf(tag_keys,'error')] != 'true')) GROUP BY "trace_id" HAVING (("duration" >= 10000000) AND ("duration" <= 20000000))`,
+		},
+		{
+			name: "traceID,duration,status,httpPath",
+			args: args{f: filter{
+				StartTime:   1652419305504,
+				EndTime:     1652508045504,
+				OrgName:     "erda",
+				TenantID:    "t1",
+				TraceID:     "972f7ef5-ccc4-4f1a-a0c4-3d60c3dea5cf",
+				DurationMin: 10000000,
+				DurationMax: 20000000,
+				Status:      "trace_success",
+				HttpPath:    "/users",
+			}},
+			want: `SELECT distinct(trace_id) AS "trace_id", (toUnixTimestamp64Nano(max(end_time)) - toUnixTimestamp64Nano(min(start_time))) AS "duration", min(start_time) AS "min_start_time" FROM "spans_all" WHERE ((("end_time" <= fromUnixTimestamp64Milli(toInt64(1652508045504))) AND ("org_name" = 'erda') AND ("start_time" >= fromUnixTimestamp64Milli(toInt64(1652419305504))) AND ("tenant_id" = 't1')) AND ("trace_id" LIKE '%972f7ef5-ccc4-4f1a-a0c4-3d60c3dea5cf%') AND (tag_values[indexOf(tag_keys,'error')] != 'true') AND (tag_values[indexOf(tag_keys, 'http_path')] LIKE '%/users%')) GROUP BY "trace_id" HAVING (("duration" >= 10000000) AND ("duration" <= 20000000))`,
+		},
+		{
+			name: "traceID,duration,status,httpPath,serviceName",
+			args: args{f: filter{
+				StartTime:   1652419305504,
+				EndTime:     1652508045504,
+				OrgName:     "erda",
+				TenantID:    "t1",
+				TraceID:     "972f7ef5-ccc4-4f1a-a0c4-3d60c3dea5cf",
+				DurationMin: 10000000,
+				DurationMax: 20000000,
+				Status:      "trace_success",
+				HttpPath:    "/users",
+				ServiceName: "msp",
+			}},
+			want: `SELECT distinct(trace_id) AS "trace_id", (toUnixTimestamp64Nano(max(end_time)) - toUnixTimestamp64Nano(min(start_time))) AS "duration", min(start_time) AS "min_start_time" FROM "spans_all" WHERE ((("end_time" <= fromUnixTimestamp64Milli(toInt64(1652508045504))) AND ("org_name" = 'erda') AND ("start_time" >= fromUnixTimestamp64Milli(toInt64(1652419305504))) AND ("tenant_id" = 't1')) AND ("trace_id" LIKE '%972f7ef5-ccc4-4f1a-a0c4-3d60c3dea5cf%') AND (tag_values[indexOf(tag_keys,'error')] != 'true') AND (tag_values[indexOf(tag_keys, 'http_path')] LIKE '%/users%') AND (tag_values[indexOf(tag_keys, 'service_name')] LIKE '%msp%')) GROUP BY "trace_id" HAVING (("duration" >= 10000000) AND ("duration" <= 20000000))`,
+		},
+		{
+			name: "traceID,duration,status,httpPath,serviceName,rpcMethod",
+			args: args{f: filter{
+				StartTime:   1652419305504,
+				EndTime:     1652508045504,
+				OrgName:     "erda",
+				TenantID:    "t1",
+				TraceID:     "972f7ef5-ccc4-4f1a-a0c4-3d60c3dea5cf",
+				DurationMin: 10000000,
+				DurationMax: 20000000,
+				Status:      "trace_success",
+				HttpPath:    "/users",
+				ServiceName: "msp",
+				RpcMethod:   "GetUsers",
+			}},
+			want: `SELECT distinct(trace_id) AS "trace_id", (toUnixTimestamp64Nano(max(end_time)) - toUnixTimestamp64Nano(min(start_time))) AS "duration", min(start_time) AS "min_start_time" FROM "spans_all" WHERE ((("end_time" <= fromUnixTimestamp64Milli(toInt64(1652508045504))) AND ("org_name" = 'erda') AND ("start_time" >= fromUnixTimestamp64Milli(toInt64(1652419305504))) AND ("tenant_id" = 't1')) AND ("trace_id" LIKE '%972f7ef5-ccc4-4f1a-a0c4-3d60c3dea5cf%') AND (tag_values[indexOf(tag_keys,'error')] != 'true') AND (tag_values[indexOf(tag_keys, 'http_path')] LIKE '%/users%') AND (tag_values[indexOf(tag_keys, 'service_name')] LIKE '%msp%') AND (tag_values[indexOf(tag_keys, 'rpc_method')] LIKE '%GetUsers%')) GROUP BY "trace_id" HAVING (("duration" >= 10000000) AND ("duration" <= 20000000))`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sel := goqu.From("spans_all").Select(
+				goqu.L("distinct(trace_id)").As("trace_id"),
+				goqu.L("(toUnixTimestamp64Nano(max(end_time)) - toUnixTimestamp64Nano(min(start_time)))").As("duration"),
+				goqu.L("min(start_time)").As("min_start_time"),
+			)
+			got := buildFilter(sel, tt.args.f).GroupBy("trace_id")
+			sqlstr, _, err := got.ToSQL()
+			assert.Nil(t, err)
+			assert.Equal(t, tt.want, sqlstr)
+		})
+	}
+}
+
 type mockLoader struct {
 }
 
