@@ -19,8 +19,10 @@ import (
 	"encoding/json"
 
 	"github.com/sirupsen/logrus"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-proto-go/core/pipeline/report/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/aop"
 	"github.com/erda-project/erda/internal/tools/pipeline/aop/aoptypes"
@@ -181,20 +183,37 @@ func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 		ApiRefSuccessNum: apiRefSuccessNum,
 		ApiRefFailedNum:  apiRefFailedNum,
 	}
-	var reqMeta map[string]interface{}
-	b, _ := json.Marshal(reportMeta)
-	_ = json.Unmarshal(b, &reqMeta)
+	pbMeta, err := ctx.SDK.Report.MakePBMeta(reportMeta)
+	if err != nil {
+		return err
+	}
 
 	// result 信息
-	_, err = ctx.SDK.Report.Create(apistructs.PipelineReportCreateRequest{
+	_, err = ctx.SDK.Report.Create(&pb.PipelineReportCreateRequest{
 		PipelineID: ctx.SDK.Pipeline.ID,
 		Type:       actionTypeAPITest,
-		Meta:       reqMeta,
+		Meta:       pbMeta,
 	})
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+func (p *provider) makePBMeta(reportMeta ApiReportMeta) (*structpb.Struct, error) {
+	var reqMeta map[string]interface{}
+	b, err := json.Marshal(reportMeta)
+	if err != nil {
+		return nil, err
+	}
+	if err := json.Unmarshal(b, &reqMeta); err != nil {
+		return nil, err
+	}
+	pbMeta, err := structpb.NewStruct(reqMeta)
+	if err != nil {
+		return nil, err
+	}
+	return pbMeta, nil
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {

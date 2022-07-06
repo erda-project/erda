@@ -18,6 +18,12 @@ import (
 	"testing"
 
 	"github.com/alecthomas/assert"
+
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/apps/dop/services/autotest"
+	"github.com/erda-project/erda/internal/tools/pipeline/aop/aoptypes"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/report"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 func Test_checkPipelineYmlName(t *testing.T) {
@@ -26,4 +32,28 @@ func Test_checkPipelineYmlName(t *testing.T) {
 
 	isTestPlan = checkPipelineYmlName("autotest-plan-12")
 	assert.True(t, isTestPlan)
+}
+
+func TestHandle(t *testing.T) {
+	p := &provider{}
+	ctx := &aoptypes.TuneContext{
+		SDK: aoptypes.SDK{
+			Pipeline: spec.Pipeline{
+				PipelineBase: spec.PipelineBase{
+					PipelineSource:  apistructs.PipelineSourceAutoTest,
+					PipelineYmlName: "autotest-plan-1",
+				},
+				PipelineExtra: spec.PipelineExtra{
+					Snapshot: spec.Snapshot{
+						Secrets: map[string]string{
+							autotest.CmsCfgKeyAPIGlobalConfig: "config",
+						},
+					},
+				},
+			},
+			Report: &report.MockReport{},
+		},
+	}
+	err := p.Handle(ctx)
+	assert.NoError(t, err)
 }

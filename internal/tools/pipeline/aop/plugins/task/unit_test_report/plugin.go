@@ -18,7 +18,10 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"google.golang.org/protobuf/types/known/structpb"
+
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-proto-go/core/pipeline/report/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/aop"
 	"github.com/erda-project/erda/internal/tools/pipeline/aop/aoptypes"
@@ -69,10 +72,11 @@ func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 
 	meta["taskId"] = ctx.SDK.Task.ID
 
-	_, err := ctx.SDK.Report.Create(apistructs.PipelineReportCreateRequest{
+	pbMeta, _ := structpb.NewStruct(meta)
+	_, err := ctx.SDK.Report.Create(&pb.PipelineReportCreateRequest{
 		PipelineID: ctx.SDK.Pipeline.ID,
 		Type:       actionTypeUnitTest,
-		Meta:       meta,
+		Meta:       pbMeta,
 	})
 	if err != nil {
 		return err

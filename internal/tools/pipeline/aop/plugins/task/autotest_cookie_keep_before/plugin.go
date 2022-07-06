@@ -22,6 +22,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-proto-go/core/pipeline/report/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/aop"
 	"github.com/erda-project/erda/internal/tools/pipeline/aop/aoptypes"
@@ -48,17 +49,24 @@ func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 	// search from report
 	// depends on creation time in reverse order
 	// will only fetch the latest one
-	reportSets, err := ctx.SDK.Report.GetPipelineReportSet(ctx.SDK.Pipeline.ID, autotest_cookie_keep_after.ReportTypeAutotestSetCookie)
+	reportSets, err := ctx.SDK.Report.QueryPipelineReportSet(ctx.Context, &pb.PipelineReportSetQueryRequest{
+		PipelineID: ctx.SDK.Pipeline.ID,
+		Types:      []string{autotest_cookie_keep_after.ReportTypeAutotestSetCookie},
+	})
 	if err != nil {
 		rlog.TErrorf(ctx.SDK.Pipeline.ID, ctx.SDK.Task.ID, "failed to get pipeline reports, err: %", err)
 		return err
 	}
 	var setCookieJSON string
-	for _, v := range reportSets.Reports {
-		if v.Meta == nil || v.Meta[apitestsv2.HeaderSetCookie] == nil {
+	for _, v := range reportSets.Data.Reports {
+		if v.Meta == nil {
 			continue
 		}
-		setCookieJSON = v.Meta[apitestsv2.HeaderSetCookie].(string)
+		meta := v.Meta.AsMap()
+		if meta[apitestsv2.HeaderSetCookie] == nil {
+			continue
+		}
+		setCookieJSON = meta[apitestsv2.HeaderSetCookie].(string)
 		break
 	}
 	rlog.TDebugf(ctx.SDK.Pipeline.ID, ctx.SDK.Task.ID, "setCookieJSON: %s", setCookieJSON)
