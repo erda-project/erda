@@ -74,7 +74,6 @@ service HPScalerService {
       path: "/api/runtimes/baseinfo/{runtimeId}"
     };
   }
-
   rpc ListRuntimeHPAEvents (ListRequest) returns (ErdaRuntimeHPAEvents) {
     option (google.api.http) = {
       get: "/api/runtimes/autoscaler/hpa-event?runtimeId={runtimeId}&services={services}"
@@ -84,18 +83,23 @@ service HPScalerService {
       path: "/api/runtimes/autoscaler/hpa-event"
     };
   }
-
-  /*
   rpc HPScaleManual (ManualHPRequest) returns (HPManualResponse) {
     option (google.api.http) = {
       put: "/api/runtimes/actions/update-pre-overlay"
       body: "*"
     };
+    option (erda.common.openapi) = {
+      path: "/api/runtimes/actions/update-pre-overlay"
+    };
   }
-  rpc BatchHPScaleManual (BatchManualHPRequest) returns (HPManualResponse) {
+  /*
+  rpc BatchHPScaleManual (BatchManualHPRequest) returns (BatchManualResponse) {
     option (google.api.http) = {
       put: "/api/runtimes/actions/batch-update-pre-overlay?scale_action={action}"
       body: "*"
+    };
+    option (erda.common.openapi) = {
+      path: "/api/runtimes/actions/batch-update-pre-overlay"
     };
   }
   */
@@ -305,27 +309,81 @@ message PreDiceDTO {
 }
 
 message ManualHPRequest {
+  string applicationId = 1 [json_name = "applicationId"] ;
+  string workspace = 2 [json_name = "workspace"] ;
+  string runtimeName = 3 [json_name = "runtimeName"] ;
+  string name = 4 [json_name = "name"] ;
+  map<string, string> envs = 5 [json_name = "envs"] ;
+  map<string, RuntimeInspectServiceDTO> services = 6 [json_name = "services"] ;
+}
+
+message RuntimeInspectServiceDTO {
+  string status = 1 [json_name = "status"] ;
+  string autoscalerEnabled = 2 [json_name = "autoscalerEnabled"] ;
+  string type = 3 [json_name = "type"] ;
+  Deployments deployments = 4 [json_name = "deployments"] ;
+  Resources resources = 5 [json_name = "resources"] ;
+  map<string, string> envs = 6 [json_name = "envs"] ;
+  repeated string addrs = 7 [json_name = "addrs"] ;
+  repeated string expose = 8 [json_name = "expose"] ;
+  repeated ErrorResponse errors = 9 [json_name = "errors"] ;
+}
+
+message HPManualResponse {
   string name = 1 [json_name = "name"] ;
   map<string, string> envs = 2 [json_name = "envs"] ;
   map<string, RuntimeInspectServiceDTO> services = 3 [json_name = "services"] ;
 }
 
-message RuntimeInspectServiceDTO {
-  string status = 1 [json_name = "status"] ;
-  string type = 2 [json_name = "type"] ;
-  Deployments deployments = 3 [json_name = "deployments"] ;
-  Resources resources = 4 [json_name = "resources"] ;
-  map<string, string> envs = 5 [json_name = "envs"] ;
-  repeated string addrs = 6 [json_name = "addrs"] ;
-  repeated string expose = 7 [json_name = "expose"] ;
-  repeated ErrorResponse errors = 8 [json_name = "errors"] ;
+
+message BatchManualResponse {
+  int32  total = 1 [json_name = "total"] ;
+  int32  success = 2 [json_name = "success"] ;
+  int32  failed = 3 [json_name = "failed"] ;
+  repeated RuntimeDeployDTO reDeployed = 4 [json_name = "reDeployed"] ;
+  repeated uint64 reDeployedIds = 5 [json_name = "reDeployedIds"] ;
+  repeated RuntimeDTO unReDeployed = 6 [json_name = "reDeployedFailed"] ;
+  repeated uint64 unReDeployedIds = 7 [json_name = "reDeployedFailedIds"] ;
+  repeated RuntimeDTO deleted = 8 [json_name = "deleted"] ;
+  repeated uint64 deletedIds = 9 [json_name = "deletedIds"] ;
+  repeated RuntimeDTO unDeleted = 10 [json_name = "deletedFailed"] ;
+  repeated uint64 unDeletedIds = 11 [json_name = "deletedFailedIds"] ;
+  repeated PreDiceDTO successedScales= 12 [json_name = "successedRuntimeScales"] ;
+  repeated uint64 successedIds = 13 [json_name = "successedIds"] ;
+  repeated RuntimeScaleRecord failedScales = 14 [json_name = "failedRuntimeScales"] ;
+  repeated uint64 failedIds = 15 [json_name = "failedIds"] ;
+  repeated string errMsg = 16 [json_name = "errorMsgs"] ;
 }
 
-message HPManualResponse {
-  bool success = 1 [json_name = "success"] ;
-  google.protobuf.Any data = 2 [json_name = "data"] ;;
-  repeated ErrorResponse err = 3 [json_name = "err"] ;
+message RuntimeDeployDTO {
+  uint64 pipelineID = 1 [json_name = "pipelineId"] ;
+  string workspace = 2 [json_name = "workspace"] ;
+  string clusterName = 3 [json_name = "clusterName"] ;
+  uint64 applicationID = 4 [json_name = "applicationId"] ;
+  string applicationName = 5 [json_name = "applicationName"] ;
+  uint64 projectID = 6 [json_name = "projectId"] ;
+  string projectName = 7 [json_name = "projectName"] ;
+  uint64 orgID = 8 [json_name = "orgId"] ;
+  string orgName = 9 [json_name = "orgName"] ;
+  repeated string servicesNames = 10  [json_name = "servicesNames"] ;
 }
+
+message RuntimeDTO {
+  uint64 id = 1 [json_name = "id"] ;
+  string name = 2 [json_name = "name"] ;
+  string gitBranch = 3 [json_name = "gitBranch"] ;
+  string workspace = 4 [json_name = "workspace"] ;
+  string clusterName = 5 [json_name = "clusterName"] ;
+  uint64 clusterId = 6 [json_name = "clusterId"] ;
+  string status = 7 [json_name = "status"] ;
+  uint64 applicationID = 8 [json_name = "applicationId"] ;
+  string applicationName = 9 [json_name = "applicationName"] ;
+  uint64 projectID = 10 [json_name = "projectId"] ;
+  string projectName = 11 [json_name = "projectName"] ;
+  uint64 orgID = 12 [json_name = "orgId"] ;
+  repeated ErrorResponse  errors = 13 [json_name = "errors"] ;
+}
+
 
 message Resources {
   double cpu = 1 [json_name = "cpu"] ;

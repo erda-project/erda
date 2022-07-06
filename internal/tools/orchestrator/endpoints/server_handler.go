@@ -71,58 +71,6 @@ func (s *Endpoints) epBulkGetRuntimeStatusDetail(ctx context.Context, r *http.Re
 	return httpserver.OkResp(data)
 }
 
-// Deprecated
-func (s *Endpoints) epUpdateOverlay(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
-	appId_ := r.URL.Query().Get("applicationId")
-	appId, err := strconv.Atoi(appId_)
-	if err != nil {
-		return utils.ErrRespIllegalParam(err, fmt.Sprintf("failed to update Overlay, appId invalid: %v", appId_))
-	}
-	workspace := r.URL.Query().Get("workspace")
-	if len(workspace) == 0 {
-		return utils.ErrRespIllegalParam(errors.Errorf("workspace invalid: %v", workspace), "failed to update Overlay")
-	}
-	userID, err := user.GetUserID(r)
-	if err != nil {
-		return apierrors.ErrUpdateRuntime.NotLogin().ToResp(), nil
-	}
-	perm, err := s.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
-		UserID:   userID.String(),
-		Scope:    apistructs.AppScope,
-		ScopeID:  uint64(appId),
-		Resource: "runtime-" + strutil.ToLower(workspace),
-		Action:   apistructs.OperateAction,
-	})
-	if err != nil {
-		return apierrors.ErrUpdateRuntime.InternalError(err).ToResp(), nil
-	}
-	if !perm.Access {
-		return apierrors.ErrUpdateRuntime.AccessDenied().ToResp(), nil
-	}
-	runtimeName := r.URL.Query().Get("runtimeName")
-	if len(runtimeName) == 0 {
-		return utils.ErrRespIllegalParam(errors.Errorf("runtimeName invalid: %v", runtimeName), "failed to update Overlay")
-	}
-	var overlay apistructs.PreDiceDTO
-	if err := json.NewDecoder(r.Body).Decode(&overlay); err != nil {
-		return utils.ErrRespIllegalParam(err, "failed to update Overlay, failed to parse req")
-	}
-
-	rsr := apistructs.RuntimeScaleRecord{
-		ApplicationId: uint64(appId),
-		Workspace:     workspace,
-		Name:          runtimeName,
-		PayLoad:       overlay,
-	}
-
-	oldOverlayDataForAudit, err, errMsg := s.processRuntimeScaleRecord(rsr, "")
-	if err != nil {
-		return utils.ErrResp0101(err, errMsg)
-	}
-
-	return httpserver.OkResp(oldOverlayDataForAudit)
-}
-
 func getPreDeploymentDiceOverlay(pre *dbclient.PreDeployment) (diceyml.Object, error) {
 	var oldOverlay diceyml.Object
 	if pre.DiceOverlay != "" {
@@ -530,16 +478,9 @@ func (s *Endpoints) BatchUpdateOverlay(ctx context.Context, r *http.Request, var
 		logrus.Infof("[batch delete] delete all runtimes successfully")
 		return httpserver.OkResp(batchRuntimeDeleteResult)
 
-	// 批量非停止/启动方式的扩缩容
-	case "":
-		logrus.Infof("[batch scale] do batch runtime scales based http request payLoad, no need adjust")
-		if len(runtimeScaleRecords.IDs) > 0 {
-			return utils.ErrRespIllegalParam(err, "failed to do specifical batch scale, only runtimeRecords wtih non-empty values in request body is needed")
-		}
-		s.batchRuntimeScaleAddRuntimeIDs(&runtimeScaleRecords, "")
 	// 请求字符串指定 scale_action	参数,但对应的值为无效值
 	default:
-		return apierrors.ErrUpdateRuntime.InvalidParameter("invalid parameter value for parameter " + apistructs.ScaleAction + ", valid value is [scaleUp] [scaleDown] [delete] [reDeploy] []").ToResp(), nil
+		return apierrors.ErrUpdateRuntime.InvalidParameter("invalid parameter value for parameter " + apistructs.ScaleAction + ", valid value is [scaleUp] [scaleDown] [delete] [reDeploy]").ToResp(), nil
 	}
 
 	// scale runtime

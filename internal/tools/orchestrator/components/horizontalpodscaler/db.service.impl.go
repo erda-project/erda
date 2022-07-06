@@ -65,6 +65,30 @@ func (d *dbServiceImpl) GetRuntime(id uint64) (*dbclient.Runtime, error) {
 	return d.db.GetRuntime(id)
 }
 
+func (d *dbServiceImpl) GetRuntimeByUniqueID(id spec.RuntimeUniqueId) (*dbclient.Runtime, error) {
+	return d.db.FindRuntime(id)
+}
+
+func (d *dbServiceImpl) UpdateRuntime(runtime *dbclient.Runtime) error {
+	return d.db.UpdateRuntime(runtime)
+}
+
+func (d *dbServiceImpl) GetInstanceRouting(id string) (*dbclient.AddonInstanceRouting, error) {
+	return d.db.GetInstanceRouting(id)
+}
+
+func (d *dbServiceImpl) UpdateAttachment(addonAttachment *dbclient.AddonAttachment) error {
+	return d.db.UpdateAttachment(addonAttachment)
+}
+
+func (d *dbServiceImpl) UpdatePreDeployment(pre *dbclient.PreDeployment) error {
+	return d.db.UpdatePreDeployment(pre)
+}
+
+func (d *dbServiceImpl) FindRuntimesByIds(ids []uint64) ([]dbclient.Runtime, error) {
+	return d.db.FindRuntimesByIds(ids)
+}
+
 func (d *dbServiceImpl) GetPreDeployment(uniqueId spec.RuntimeUniqueId) (*dbclient.PreDeployment, error) {
 	return d.db.FindPreDeployment(uniqueId)
 }
@@ -78,6 +102,10 @@ func (d *dbServiceImpl) DeleteRuntimeHPAEventsByRuleId(ruleId string) error {
 		return err
 	}
 	return nil
+}
+
+func (d *dbServiceImpl) GetUnDeletableAttachMentsByRuntimeID(runtimeID uint64) (*[]dbclient.AddonAttachment, error) {
+	return d.db.GetUnDeletableAttachMentsByRuntimeID(runtimeID)
 }
 
 func newDBService(db *dbclient.DBClient) DBService {
