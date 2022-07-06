@@ -39,6 +39,7 @@ type ProjectPipelineService struct {
 	logger logs.Logger
 	db     *dao.DBClient
 	bundle *bundle.Bundle
+	cfg    *config
 
 	pipelineSvc        *pipeline.Pipeline
 	PipelineSource     sourcepb.SourceServiceServer
