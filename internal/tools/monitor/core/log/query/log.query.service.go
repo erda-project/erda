@@ -134,11 +134,11 @@ func (s *logQueryService) GetLogByOrganization(ctx context.Context, req *pb.GetL
 		return nil, errors.NewMissingParameterError("clusterName")
 	}
 	items, _, err := s.queryLogItems(ctx, req, func(sel *storage.Selector) *storage.Selector {
-		sel.Filters = append(sel.Filters, &storage.Filter{
-			Key:   "tags.dice_cluster_name",
-			Op:    storage.EQ,
-			Value: req.ClusterName,
-		})
+		//sel.Filters = append(sel.Filters, &storage.Filter{
+		//	Key:   "tags.dice_cluster_name",
+		//	Op:    storage.EQ,
+		//	Value: req.ClusterName,
+		//})
 		sel.Meta.PreferredReturnFields = storage.OnlyIdContent
 		s.tryFillQueryMeta(ctx, sel)
 		return sel
