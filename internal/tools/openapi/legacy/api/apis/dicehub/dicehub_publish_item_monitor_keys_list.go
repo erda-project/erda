@@ -21,7 +21,7 @@ import (
 var DICEHUB_PUBLISH_ITEM_MONITOR_KEYS_LIST = apis.ApiSpec{
 	Path:        "/api/publish-items/<publishItemId>/list-monitor-keys",
 	BackendPath: "/api/publish-items/<publishItemId>/list-monitor-keys",
-	Host:        "dicehub.marathon.l4lb.thisdcos.directory:10000",
+	Host:        "erda-server.marathon.l4lb.thisdcos.directory:9095",
 	Scheme:      "http",
 	Method:      "GET",
 	IsOpenAPI:   true,

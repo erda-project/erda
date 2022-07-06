@@ -28,7 +28,7 @@ func initBundle() *bundle.Bundle {
 	os.Setenv("ORCHESTRATOR_ADDR", "http://orchestrator.project-387-dev.svc.cluster.local:8081")
 	os.Setenv("GITTAR_ADDR", "http://gittar.project-387-dev.svc.cluster.local:5566")
 	bdl := bundle.New(
-		bundle.WithCoreServices(),
+		bundle.WithErdaServer(),
 		bundle.WithMSP(),
 		bundle.WithDOP(),
 		bundle.WithGittar(),

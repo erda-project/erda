@@ -5,6 +5,7 @@ on:
     branches:
       - master
       - release/*
+      - next-master
     tags:
       - v*
 
@@ -66,6 +67,8 @@ stages:
             - mkdir -p extensions
             - cp -r ${{ dirs.erda-actions }} extensions
             - cp -r ${{ dirs.erda-addons }} extensions
+            - cp -r ${{ dirs.erda-actions-enterprise }} extensions
+            - cp -r ${{ dirs.erda-addons-enterprise }} extensions
             - export ERDA_VERSION=${{ outputs.extract-repo-version.major_minor_version }}
             - make prepare
             - make build-push-all
@@ -86,28 +89,6 @@ stages:
             - export ERDA_VERSION=${{ outputs.extract-repo-version.major_minor_version }}
             - make prepare-cli
             - make build-push-image MODULE_PATH=cli
-          loop:
-            break: task_status == 'Success'
-            strategy:
-              max_times: 5
-              decline_ratio: 2
-              decline_limit_sec: 60
-              interval_sec: 5
-          resources:
-            cpu: 1
-            mem: 2048
-      - custom-script:
-          alias: build-erda-dicehub-ee
-          commands:
-            - cd ${{ dirs.erda }}
-            - mkdir -p extensions
-            - cp -r ${{ dirs.erda-actions }} extensions
-            - cp -r ${{ dirs.erda-addons }} extensions
-            - cp -r ${{ dirs.erda-actions-enterprise }} extensions
-            - cp -r ${{ dirs.erda-addons-enterprise }} extensions
-            - export ERDA_VERSION=${{ outputs.extract-repo-version.major_minor_version }}
-            - make prepare
-            - make build-push-image MODULE_PATH=dicehub
           loop:
             break: task_status == 'Success'
             strategy:
@@ -257,7 +238,6 @@ stages:
               cluster-manager: ${{ outputs.build-erda.image }}
               cmp: ${{ outputs.build-erda.image }}
               collector: ${{ outputs.build-erda.image }}
-              dicehub: ${{ outputs.build-erda-dicehub-ee.image }}
               dop: ${{ outputs.build-erda.image }}
               ecp: ${{ outputs.build-erda.image }}
               eventbox: ${{ outputs.build-erda.image }}

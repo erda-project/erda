@@ -22,7 +22,7 @@ import (
 var IMAGEHUB_IMAGE_LIST = apis.ApiSpec{
 	Path:         "/api/images",
 	BackendPath:  "/api/images",
-	Host:         "dicehub.marathon.l4lb.thisdcos.directory:10000",
+	Host:         "erda-server.marathon.l4lb.thisdcos.directory:9095",
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,

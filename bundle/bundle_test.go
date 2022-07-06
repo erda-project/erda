@@ -25,7 +25,7 @@ import (
 
 func TestBundleOption(t *testing.T) {
 	os.Setenv("CMDB_ADDR", "http://a.com")
-	os.Setenv("DICEHUB_ADDR", "http://a.com")
+	os.Setenv("ERDA_SERVER_ADDR", "http://a.com")
 	os.Setenv("CMP_ADDR", "http://a.com")
 	os.Setenv("ORCHESTRATOR_ADDR", "http://a.com")
 	os.Setenv("SCHEDULER_ADDR", "http://a.com")
@@ -33,7 +33,7 @@ func TestBundleOption(t *testing.T) {
 
 	defer func() {
 		os.Unsetenv("CMDB_ADDR")
-		os.Unsetenv("DICEHUB_ADDR")
+		os.Unsetenv("ERDA_SERVER_ADDR")
 		os.Unsetenv("EVENTBOX_ADDR")
 		os.Unsetenv("CMP_ADDR")
 		os.Unsetenv("ORCHESTRATOR_ADDR")
@@ -46,8 +46,7 @@ func TestBundleOption(t *testing.T) {
 	options := []Option{
 		WithCMDB(),
 		WithAddOnPlatform(),
-		WithDiceHub(),
-		WithCoreServices(),
+		WithErdaServer(),
 		WithCMP(),
 		WithOrchestrator(),
 		WithScheduler(),
@@ -65,7 +64,7 @@ func TestBundleOption(t *testing.T) {
 	assert.Equal(t, v, "http://a.com")
 	assert.Nil(t, err)
 
-	v, err = b.urls.DiceHub()
+	v, err = b.urls.ErdaServer()
 	assert.Equal(t, v, "http://a.com")
 	assert.Nil(t, err)
 

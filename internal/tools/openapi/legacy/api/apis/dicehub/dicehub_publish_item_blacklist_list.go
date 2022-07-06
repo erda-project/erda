@@ -19,7 +19,7 @@ import "github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
 var DICEHUB_PUBLISH_ITEM_BLACKLIST_GET = apis.ApiSpec{
 	Path:        "/api/publish-items/<publishItemId>/blacklist",
 	BackendPath: "/api/publish-items/<publishItemId>/blacklist",
-	Host:        "dicehub.marathon.l4lb.thisdcos.directory:10000",
+	Host:        "erda-server.marathon.l4lb.thisdcos.directory:9095",
 	Scheme:      "http",
 	Method:      "GET",
 	IsOpenAPI:   true,

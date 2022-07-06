@@ -71,7 +71,7 @@ func (p *provider) WithPermission(permission *permission.Permission) {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.bdl = bundle.New(bundle.WithCoreServices(), bundle.WithClusterManager(), bundle.WithOrchestrator())
+	p.bdl = bundle.New(bundle.WithErdaServer(), bundle.WithClusterManager(), bundle.WithOrchestrator())
 	p.dbClient = &db.DBClient{DBClient: &dao.DBClient{DB: p.DB}}
 	if p.Client == nil && p.Register != nil {
 		pb.RegisterOrgServiceImp(p.Register, p, apis.Options())

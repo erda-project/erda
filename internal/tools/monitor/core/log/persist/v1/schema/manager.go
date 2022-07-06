@@ -31,7 +31,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 )
 
-var bdl = bundle.New(bundle.WithCoreServices(), bundle.WithDOP())
+var bdl = bundle.New(bundle.WithErdaServer(), bundle.WithDOP())
 
 type LogSchema interface {
 	RunDaemon(ctx context.Context, interval time.Duration, mutex mutex.Interface)

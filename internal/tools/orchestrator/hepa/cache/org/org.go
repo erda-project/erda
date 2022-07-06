@@ -35,7 +35,7 @@ var (
 )
 
 func init() {
-	bdl := bundle.New(bundle.WithCoreServices())
+	bdl := bundle.New(bundle.WithErdaServer())
 	orgID2Org = cache.New(orgID2OrgName, time.Minute, func(i interface{}) (interface{}, bool) {
 		orgDTO, err := bdl.GetOrg(i.(string))
 		if err != nil {

@@ -148,7 +148,7 @@ func (p *provider) initBundle() {
 	hc := httpclient.New(httpclient.WithTimeout(time.Second, time.Second*60))
 	p.bdl = bundle.New(
 		bundle.WithHTTPClient(hc),
-		bundle.WithCoreServices(),
+		bundle.WithErdaServer(),
 	)
 	p.cmdb = bundlecmdb.New(bundlecmdb.WithHTTPClient(hc))
 }
