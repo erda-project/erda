@@ -250,7 +250,7 @@ func (e *Endpoints) ListOrg(ctx context.Context, r *http.Request, vars map[strin
 	if err != nil {
 		return apierrors.ErrListOrg.InvalidParameter(err).ToResp(), nil
 	}
-	orgResp, err := e.orgClient.ListOrg(apis.WithUserIDContext(apis.WithInternalClientContext(ctx, discover.SvcDOP), identityInfo.UserID), req)
+	orgResp, err := e.listOrg(ctx, identityInfo.UserID, req)
 	if err != nil {
 		return apierrors.ErrListOrg.InternalError(err).ToResp(), nil
 	}
@@ -260,6 +260,10 @@ func (e *Endpoints) ListOrg(ctx context.Context, r *http.Request, vars map[strin
 	// 	orgResp.List[i].PublisherID = e.org.GetPublisherID(int64(orgResp.List[i].ID))
 	// }
 	return httpserver.OkResp(orgResp)
+}
+
+func (e *Endpoints) listOrg(ctx context.Context, userID string, req *orgpb.ListOrgRequest) (*orgpb.ListOrgResponse, error) {
+	return e.orgClient.ListOrg(apis.WithUserIDContext(apis.WithInternalClientContext(ctx, discover.SvcDOP), userID), req)
 }
 
 // ListPublicOrg list public org
@@ -274,7 +278,7 @@ func (e *Endpoints) ListPublicOrg(ctx context.Context, r *http.Request, vars map
 		return apierrors.ErrListPublicOrg.InvalidParameter(err).ToResp(), nil
 	}
 
-	orgResp, err := e.orgClient.ListPublicOrg(apis.WithUserIDContext(apis.WithInternalClientContext(ctx, discover.SvcDOP), identityInfo.UserID), req)
+	orgResp, err := e.listPublicOrg(ctx, identityInfo.UserID, req)
 	if err != nil {
 		return apierrors.ErrListOrg.InternalError(err).ToResp(), nil
 	}
@@ -285,6 +289,10 @@ func (e *Endpoints) ListPublicOrg(ctx context.Context, r *http.Request, vars map
 	// }
 
 	return httpserver.OkResp(orgResp)
+}
+
+func (e *Endpoints) listPublicOrg(ctx context.Context, userID string, req *orgpb.ListOrgRequest) (*orgpb.ListOrgResponse, error) {
+	return e.orgClient.ListPublicOrg(apis.WithUserIDContext(apis.WithInternalClientContext(ctx, discover.SvcDOP), userID), req)
 }
 
 // GetOrgByDomain 通过域名查询企业
