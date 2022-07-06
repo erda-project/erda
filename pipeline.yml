@@ -5,6 +5,7 @@ on:
     branches:
       - master
       - release/*
+      - next-master
     tags:
       - v*
 
