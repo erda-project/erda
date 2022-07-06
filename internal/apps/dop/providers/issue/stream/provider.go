@@ -45,7 +45,7 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.bundle = bundle.New(bundle.WithCoreServices())
+	p.bundle = bundle.New(bundle.WithErdaServer())
 	p.commentIssueStreamService = &CommentIssueStreamService{
 		db: &dao.DBClient{
 			DBEngine: &dbengine.DBEngine{
@@ -53,7 +53,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 			},
 		},
 		logger: p.Log,
-		bdl:    bundle.New(bundle.WithCoreServices()),
+		bdl:    bundle.New(bundle.WithErdaServer()),
 		stream: p.Stream,
 		query:  p.Query,
 	}

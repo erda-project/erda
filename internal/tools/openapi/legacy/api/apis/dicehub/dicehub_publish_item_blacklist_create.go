@@ -23,7 +23,7 @@ import (
 var DICEHUB_PUBLISH_ITEM_BLACKLIST_CREATE = apis.ApiSpec{
 	Path:         "/api/publish-items/<publishItemID>/blacklist",
 	BackendPath:  "/api/publish-items/<publishItemID>/blacklist",
-	Host:         "dicehub.marathon.l4lb.thisdcos.directory:10000",
+	Host:         "erda-server.marathon.l4lb.thisdcos.directory:9095",
 	Scheme:       "http",
 	Method:       "POST",
 	IsOpenAPI:    true,

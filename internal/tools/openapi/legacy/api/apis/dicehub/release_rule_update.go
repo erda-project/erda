@@ -23,7 +23,7 @@ import (
 var RELEASE_RULE_UPDATE = apis.ApiSpec{
 	Path:        "/api/release-rules/<id>",
 	BackendPath: "/api/release-rules/<id>",
-	Host:        "dicehub.marathon.l4lb.thisdcos.directory:10000",
+	Host:        "erda-server.marathon.l4lb.thisdcos.directory:9095",
 	Scheme:      "http",
 	Method:      http.MethodPut,
 	CheckLogin:  true,

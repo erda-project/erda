@@ -40,7 +40,7 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.cicdCmsService = &CICDCmsService{p, New(WithCoreServices()), nil}
+	p.cicdCmsService = &CICDCmsService{p, New(WithErdaServer()), nil}
 	p.audit = audit.GetAuditor(ctx)
 	if p.Register != nil {
 		pb.RegisterCICDCmsServiceImp(p.Register, p.cicdCmsService, apis.Options())

@@ -69,7 +69,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 			httpclient.WithTimeout(time.Second*15, time.Duration(conf.BundleTimeoutSecond())*time.Second), // bundle 默认 (time.Second, time.Second*3)
 		)),
 		bundle.WithKMS(),
-		bundle.WithCoreServices(),
+		bundle.WithErdaServer(),
 		bundle.WithHTTPClient(
 			httpclient.New(
 				httpclient.WithTimeout(time.Second, time.Second*90),

@@ -38,7 +38,7 @@ func (b *bundleServiceImpl) GetCurrentUser(userID string) (*apistructs.UserInfo,
 func NewBundleService() BundleService {
 	return &bundleServiceImpl{
 		bdl: bundle.New(
-			bundle.WithCoreServices(),
+			bundle.WithErdaServer(),
 			bundle.WithClusterManager(),
 			bundle.WithScheduler(),
 		),

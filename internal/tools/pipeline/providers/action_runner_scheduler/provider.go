@@ -47,7 +47,7 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	bdl := bundle.New(bundle.WithCollector(), bundle.WithCoreServices(), bundle.WithOpenapi())
+	bdl := bundle.New(bundle.WithCollector(), bundle.WithErdaServer(), bundle.WithOpenapi())
 	p.bdl = bdl
 	p.runnerTaskService = &runnerTaskService{
 		p:        p,

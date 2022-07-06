@@ -68,7 +68,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 			},
 		},
 		logger: p.Log,
-		bdl:    bundle.New(bundle.WithCoreServices()),
+		bdl:    bundle.New(bundle.WithErdaServer()),
 		stream: p.Stream,
 		query:  p.Query,
 	}

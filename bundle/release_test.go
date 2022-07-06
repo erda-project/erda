@@ -31,9 +31,9 @@ package bundle
 //)
 //
 //func TestBundle_PullDiceYAML(t *testing.T) {
-//	os.Setenv("DICEHUB_ADDR", "http://fake")
+//	os.Setenv("ERDA_SERVER_ADDR", "http://fake")
 //	defer func() {
-//		os.Unsetenv("DICEHUB_ADDR")
+//		os.Unsetenv("ERDA_SERVER_ADDR")
 //	}()
 //	// fake bundle
 //	bdl := New(WithDiceHub())
@@ -75,9 +75,9 @@ package bundle
 //}
 //
 //func TestBundle_UpdateReference(t *testing.T) {
-//	os.Setenv("DICEHUB_ADDR", "http://fake")
+//	os.Setenv("ERDA_SERVER_ADDR", "http://fake")
 //	defer func() {
-//		os.Unsetenv("DICEHUB_ADDR")
+//		os.Unsetenv("ERDA_SERVER_ADDR")
 //	}()
 //	// fake bundle
 //	bdl := New(WithDiceHub())

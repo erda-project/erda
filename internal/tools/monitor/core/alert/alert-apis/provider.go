@@ -144,7 +144,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.metricq = ctx.Service("metrics-query").(metricq.Queryer)
 	hc := httpclient.New(httpclient.WithTimeout(time.Second, time.Second*60))
 	p.cmdb = cmdb.New(cmdb.WithHTTPClient(hc))
-	p.bdl = bundle.New(bundle.WithScheduler(), bundle.WithCoreServices())
+	p.bdl = bundle.New(bundle.WithScheduler(), bundle.WithErdaServer())
 
 	dashapi := ctx.Service("chart-block").(block.DashboardAPI)
 	p.a = adapt.New(p.L, p.metricq, p.EventStorage, p.t, p.db, p.cql, p.bdl, p.cmdb, dashapi, p.orgFilterTags, p.microServiceFilterTags, p.microServiceOtherFilterTags, p.silencePolicies)

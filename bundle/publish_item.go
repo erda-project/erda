@@ -25,7 +25,7 @@ import (
 
 // QueryPublishItems queries publish items from dicehub
 func (b *Bundle) QueryPublishItems(req *apistructs.QueryPublishItemRequest) (*apistructs.QueryPublishItemData, error) {
-	host, err := b.urls.DiceHub()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -53,7 +53,7 @@ func (b *Bundle) QueryPublishItems(req *apistructs.QueryPublishItemRequest) (*ap
 
 // QueryMyPublishItem queries my publishing items from dicehub
 func (b *Bundle) QueryMyPublishItem(userID string, req *apistructs.QueryPublishItemRequest) (*apistructs.QueryPublishItemData, error) {
-	host, err := b.urls.DiceHub()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}

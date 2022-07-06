@@ -9,7 +9,7 @@ import "common/openapi.proto";
 
 service ExtensionService {
     option (erda.common.openapi_service) = {
-        service: "dicehub",
+        service: "erda-server",
     };
 
     rpc SearchExtensions (ExtensionSearchRequest) returns (ExtensionSearchResponse)  {

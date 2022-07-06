@@ -35,7 +35,7 @@ type auditParams struct {
 }
 
 func (e *Endpoints) audit(req *http.Request, params auditParams) error {
-	orgResp, err := e.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcDiceHub),
+	orgResp, err := e.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcErdaServer),
 		&orgpb.GetOrgRequest{IdOrName: strconv.FormatInt(params.orgID, 10)})
 	if err != nil {
 		return err

@@ -23,7 +23,7 @@ import (
 )
 
 func (b *Bundle) GetExtensionVersion(req apistructs.ExtensionVersionGetRequest) (*apistructs.ExtensionVersion, error) {
-	host, err := b.urls.DiceHub()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +44,7 @@ func (b *Bundle) GetExtensionVersion(req apistructs.ExtensionVersionGetRequest) 
 }
 
 func (b *Bundle) QueryExtensionVersions(req apistructs.ExtensionVersionQueryRequest) ([]apistructs.ExtensionVersion, error) {
-	host, err := b.urls.DiceHub()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +67,7 @@ func (b *Bundle) QueryExtensionVersions(req apistructs.ExtensionVersionQueryRequ
 }
 
 func (b *Bundle) QueryExtensions(req apistructs.ExtensionQueryRequest) ([]apistructs.Extension, error) {
-	host, err := b.urls.DiceHub()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +89,7 @@ func (b *Bundle) QueryExtensions(req apistructs.ExtensionQueryRequest) ([]apistr
 }
 
 func (b *Bundle) SearchExtensions(req apistructs.ExtensionSearchRequest) (map[string]apistructs.ExtensionVersion, error) {
-	host, err := b.urls.DiceHub()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +110,7 @@ func (b *Bundle) SearchExtensions(req apistructs.ExtensionSearchRequest) (map[st
 }
 
 func (b *Bundle) GetPublishItem(publishItemID int64) (*apistructs.PublishItem, error) {
-	host, err := b.urls.DiceHub()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -131,7 +131,7 @@ func (b *Bundle) GetPublishItem(publishItemID int64) (*apistructs.PublishItem, e
 
 func (b *Bundle) RenderPipelineTemplate(request *apistructs.PipelineTemplateRenderRequest) (*apistructs.PipelineTemplateRender, error) {
 
-	host, err := b.urls.DiceHub()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -154,7 +154,7 @@ func (b *Bundle) RenderPipelineTemplate(request *apistructs.PipelineTemplateRend
 
 func (b *Bundle) RenderPipelineTemplateBySpec(request *apistructs.PipelineTemplateRenderSpecRequest) (*apistructs.PipelineTemplateRender, error) {
 
-	host, err := b.urls.DiceHub()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -177,7 +177,7 @@ func (b *Bundle) RenderPipelineTemplateBySpec(request *apistructs.PipelineTempla
 
 func (b *Bundle) GetPipelineTemplateVersion(request *apistructs.PipelineTemplateVersionGetRequest) (*apistructs.PipelineTemplateVersion, error) {
 
-	host, err := b.urls.DiceHub()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}

@@ -96,9 +96,8 @@ func TestChain(t *testing.T) {
 		bundle.WithPipeline(),
 		bundle.WithScheduler(),
 		bundle.WithMonitor(),
-		bundle.WithCoreServices(),
 		bundle.WithOrchestrator(),
-		bundle.WithDiceHub(),
+		bundle.WithErdaServer(),
 		bundle.WithClusterManager(),
 	}
 	bdl := bundle.New(bundleOpts...)
@@ -147,9 +146,8 @@ func TestAudit(t *testing.T) {
 		bundle.WithPipeline(),
 		bundle.WithScheduler(),
 		bundle.WithMonitor(),
-		bundle.WithCoreServices(),
 		bundle.WithOrchestrator(),
-		bundle.WithDiceHub(),
+		bundle.WithErdaServer(),
 		bundle.WithClusterManager(),
 	}
 	bdl := bundle.New(bundleOpts...)

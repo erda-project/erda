@@ -29,8 +29,7 @@ func init() {
 		bundle.WithCMP(),
 		bundle.WithMSP(),
 		bundle.WithScheduler(),
-		bundle.WithCoreServices(),
-		bundle.WithDiceHub(),
+		bundle.WithErdaServer(),
 		bundle.WithClusterManager(),
 		bundle.WithHTTPClient(httpclient.New(
 			httpclient.WithTimeout(time.Second*10, time.Second*60),

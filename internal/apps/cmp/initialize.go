@@ -133,9 +133,8 @@ func (p *provider) do(ctx context.Context) (*httpserver.Server, error) {
 		bundle.WithPipeline(),
 		bundle.WithScheduler(),
 		bundle.WithMonitor(),
-		bundle.WithCoreServices(),
 		bundle.WithOrchestrator(),
-		bundle.WithDiceHub(),
+		bundle.WithErdaServer(),
 		bundle.WithClusterManager(),
 	}
 	bdl := bundle.New(bundleOpts...)
@@ -265,7 +264,7 @@ func registerWebHook(bdl *bundle.Bundle) {
 
 // registerClusterHook register cluster webhook in eventBox
 func registerClusterHook() error {
-	bdl := bundle.New(bundle.WithCoreServices())
+	bdl := bundle.New(bundle.WithErdaServer())
 
 	ev := apistructs.CreateHookRequest{
 		Name:   "cmp-clusterhook",

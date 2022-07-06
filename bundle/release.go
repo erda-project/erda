@@ -34,7 +34,7 @@ import (
 
 // GetDiceYAML 拉取 dice.yml
 func (b *Bundle) GetDiceYAML(releaseID string, workspace ...string) (*diceyml.DiceYaml, error) {
-	host, err := b.urls.DiceHub()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +68,7 @@ func (b *Bundle) GetDiceYAML(releaseID string, workspace ...string) (*diceyml.Di
 
 // GetRelease 获取release信息
 func (b *Bundle) GetRelease(releaseID string) (*apistructs.ReleaseGetResponseData, error) {
-	host, err := b.urls.DiceHub()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +92,7 @@ func (b *Bundle) GetRelease(releaseID string) (*apistructs.ReleaseGetResponseDat
 }
 
 func (b *Bundle) ListReleases(req apistructs.ReleaseListRequest) (*apistructs.ReleaseListResponseData, error) {
-	host, err := b.urls.DiceHub()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +113,7 @@ func (b *Bundle) ListReleases(req apistructs.ReleaseListRequest) (*apistructs.Re
 }
 
 func (b *Bundle) DownloadRelease(orgID uint64, userID, releaseId, distDir string) (string, error) {
-	host, err := b.urls.DiceHub()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return "", err
 	}
@@ -157,7 +157,7 @@ func (b *Bundle) DownloadRelease(orgID uint64, userID, releaseId, distDir string
 }
 
 func (b *Bundle) UploadRelease(req apistructs.ReleaseUploadRequest) error {
-	host, err := b.urls.DiceHub()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return err
 	}
@@ -179,7 +179,7 @@ func (b *Bundle) UploadRelease(req apistructs.ReleaseUploadRequest) error {
 
 // UpdateReference 更新 release 引用
 func (b *Bundle) UpdateReference(releaseID string, increase ...bool) error {
-	host, err := b.urls.DiceHub()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return err
 	}
@@ -217,7 +217,7 @@ func (b *Bundle) DecreaseReference(releaseID string) error {
 }
 
 func (b *Bundle) CreateRelease(req apistructs.ReleaseCreateRequest, orgID uint64, userID string) (string, error) {
-	host, err := b.urls.DiceHub()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return "", err
 	}
@@ -240,7 +240,7 @@ func (b *Bundle) CreateRelease(req apistructs.ReleaseCreateRequest, orgID uint64
 }
 
 func (b *Bundle) DeleteReleases(orgID uint64, userID string, req apistructs.ReleasesDeleteRequest) error {
-	host, err := b.urls.DiceHub()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return err
 	}
@@ -262,7 +262,7 @@ func (b *Bundle) DeleteReleases(orgID uint64, userID string, req apistructs.Rele
 }
 
 func (b *Bundle) UpdateRelease(orgID uint64, userID string, req apistructs.ReleaseUpdateRequest) error {
-	host, err := b.urls.DiceHub()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return err
 	}
@@ -285,7 +285,7 @@ func (b *Bundle) UpdateRelease(orgID uint64, userID string, req apistructs.Relea
 }
 
 func (b *Bundle) ToFormalReleases(orgID uint64, userID string, req apistructs.ReleasesToFormalRequest) error {
-	host, err := b.urls.DiceHub()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return err
 	}

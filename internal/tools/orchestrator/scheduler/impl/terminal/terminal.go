@@ -127,7 +127,7 @@ func Terminal(clusterSvc clusterpb.ClusterServiceServer, w http.ResponseWriter, 
 			logrus.Errorf("failed to parse orgid for instance: %v, %v", instance.ContainerID, err)
 			return
 		}
-		p, err := bundle.New(bundle.WithCoreServices()).CheckPermission(&apistructs.PermissionCheckRequest{
+		p, err := bundle.New(bundle.WithErdaServer()).CheckPermission(&apistructs.PermissionCheckRequest{
 			UserID:   r.Header.Get("User-ID"),
 			Scope:    apistructs.OrgScope,
 			ScopeID:  orgid,
@@ -148,7 +148,7 @@ func Terminal(clusterSvc clusterpb.ClusterServiceServer, w http.ResponseWriter, 
 			logrus.Errorf("failed to parse applicationid for instance: %v, %v", instance.ContainerID, err)
 			return
 		}
-		p, err := bundle.New(bundle.WithCoreServices()).CheckPermission(&apistructs.PermissionCheckRequest{
+		p, err := bundle.New(bundle.WithErdaServer()).CheckPermission(&apistructs.PermissionCheckRequest{
 			UserID:   r.Header.Get("User-ID"),
 			Scope:    apistructs.AppScope,
 			ScopeID:  appid,

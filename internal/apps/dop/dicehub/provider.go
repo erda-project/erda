@@ -15,8 +15,6 @@
 package dicehub
 
 import (
-	"context"
-
 	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -36,10 +34,8 @@ type provider struct {
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.ImageDB = &image.ImageConfigDB{DB: p.DB}
-	return nil
+	return Initialize(p)
 }
-
-func (p *provider) Run(ctx context.Context) error { return Initialize(p) }
 
 func init() {
 	servicehub.Register("dicehub", &servicehub.Spec{

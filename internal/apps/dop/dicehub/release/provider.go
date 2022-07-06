@@ -72,7 +72,7 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.bdl = bundle.New(bundle.WithScheduler(), bundle.WithCoreServices())
+	p.bdl = bundle.New(bundle.WithScheduler(), bundle.WithErdaServer())
 
 	p.opusService = &opus{d: &db.OpusDB{DB: p.DBv2}}
 	p.releaseService = &ReleaseService{

@@ -47,7 +47,7 @@ type provider struct {
 func (p *provider) Init(ctx servicehub.Context) error {
 	bundle := bundle.New(
 		bundle.WithHTTPClient(httpclient.New(httpclient.WithTimeout(time.Second, time.Second*60))),
-		bundle.WithCoreServices(),
+		bundle.WithErdaServer(),
 	)
 
 	p.settingsService = &settingsService{p: p, db: p.DB, bundle: bundle, t: p.Trans}

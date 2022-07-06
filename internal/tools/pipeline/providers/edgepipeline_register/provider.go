@@ -82,7 +82,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	if err := p.checkEtcdPrefixKey(p.Cfg.EtcdPrefixOfClusterAccessKey); err != nil {
 		return err
 	}
-	p.bdl = bundle.New(bundle.WithClusterManager(), bundle.WithCoreServices())
+	p.bdl = bundle.New(bundle.WithClusterManager(), bundle.WithErdaServer())
 	p.bdl = bundle.New(bundle.WithClusterManager())
 	p.queryStringDecoder = schema.NewDecoder()
 	webHookHTTP, err := webhook.NewWebHookHTTP()

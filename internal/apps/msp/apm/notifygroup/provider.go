@@ -53,7 +53,7 @@ type provider struct {
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.audit = audit.GetAuditor(ctx)
 	p.notifyGroupService = &notifyGroupService{p}
-	p.bdl = bundle.New(bundle.WithScheduler(), bundle.WithCoreServices())
+	p.bdl = bundle.New(bundle.WithScheduler(), bundle.WithErdaServer())
 	p.instanceDB = &instancedb.InstanceTenantDB{DB: p.DB}
 	p.mspTenantDB = &db.MSPTenantDB{DB: p.DB}
 	p.monitorDB = &db2.MonitorDb{DB: p.DB}

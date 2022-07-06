@@ -50,7 +50,7 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.bdl = bundle.New(bundle.WithScheduler(), bundle.WithCoreServices())
+	p.bdl = bundle.New(bundle.WithScheduler(), bundle.WithErdaServer())
 
 	p.fileManagerService = &fileManagerService{p}
 	if p.Register != nil {

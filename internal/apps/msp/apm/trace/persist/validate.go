@@ -35,7 +35,7 @@ var NopValidator Validator = &nopValidator{}
 
 func newValidator(cfg *config) Validator {
 	return &validator{
-		bdl: bundle.New(bundle.WithCoreServices(), bundle.WithDOP()),
+		bdl: bundle.New(bundle.WithErdaServer(), bundle.WithDOP()),
 	}
 }
 

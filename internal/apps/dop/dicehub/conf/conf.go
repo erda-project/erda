@@ -23,7 +23,6 @@ var cfg Conf
 
 // Conf DiceHub 环境变量配置项
 type Conf struct {
-	ListenAddr      string              `env:"LISTEN_ADDR" default:":10000"`
 	MonitorAddr     string              `env:"MONITOR_ADDR" default:"monitor.default.svc.cluster.local:7096"`
 	Debug           bool                `env:"DEBUG" default:"false"`
 	OpsAddr         string              `env:"OPS_ADDR"`
@@ -37,11 +36,6 @@ type Conf struct {
 // Load 加载环境变量配置.
 func Load() {
 	envconf.MustLoad(&cfg)
-}
-
-// ListenAddr 返回 ListenAddr 选项.
-func ListenAddr() string {
-	return cfg.ListenAddr
 }
 
 // Debug 是否处于调试模式

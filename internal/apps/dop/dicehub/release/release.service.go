@@ -1657,7 +1657,7 @@ func parseMetadata(file io.ReadCloser) (*apistructs.ReleaseMetadata, error) {
 }
 
 func (s *ReleaseService) getOrg(ctx context.Context, orgID uint64) (*orgpb.Org, error) {
-	orgResp, err := s.org.GetOrg(apis.WithInternalClientContext(ctx, discover.SvcDiceHub),
+	orgResp, err := s.org.GetOrg(apis.WithInternalClientContext(ctx, discover.SvcErdaServer),
 		&orgpb.GetOrgRequest{IdOrName: strconv.FormatUint(orgID, 10)})
 	if err != nil {
 		return nil, err

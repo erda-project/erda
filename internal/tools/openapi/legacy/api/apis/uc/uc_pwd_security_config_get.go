@@ -106,7 +106,7 @@ func handleGetPwdSecurityConfig(token ucauth.OAuthToken) (*apistructs.PwdSecurit
 
 // checkPermission 检查权限
 func checkPermission(userID user.ID, action string) error {
-	permissionResult, err := bundle.New(bundle.WithCoreServices()).CheckPermission(&apistructs.PermissionCheckRequest{
+	permissionResult, err := bundle.New(bundle.WithErdaServer()).CheckPermission(&apistructs.PermissionCheckRequest{
 		UserID:   userID.String(),
 		Scope:    apistructs.SysScope,
 		ScopeID:  1,

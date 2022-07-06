@@ -19,7 +19,7 @@ import "github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
 var DICEHUB_PIPELINE_TEMPLATE_VERSION_GET = apis.ApiSpec{
 	Path:        "/api/pipeline-templates/<name>/actions/query-version",
 	BackendPath: "/api/pipeline-templates/<name>/actions/query-version",
-	Host:        "dicehub.marathon.l4lb.thisdcos.directory:10000",
+	Host:        "erda-server.marathon.l4lb.thisdcos.directory:9095",
 	Scheme:      "http",
 	Method:      "GET",
 	IsOpenAPI:   true,

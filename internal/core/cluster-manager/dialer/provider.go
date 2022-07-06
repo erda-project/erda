@@ -45,7 +45,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		logrus.SetLevel(logrus.DebugLevel)
 		remotedialer.PrintTunnelData = true
 	}
-	p.Bdl = bundle.New(bundle.WithCoreServices())
+	p.Bdl = bundle.New(bundle.WithErdaServer())
 	return nil
 }
 

@@ -60,7 +60,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.Protocol.WithContextValue(common.ContextKeyServiceMonitorMetricService, p.Metric)
 	p.Protocol.WithContextValue(common.ContextKeyServiceMonitorAlertService, p.MonitorAlertService)
 	p.Protocol.WithContextValue(common.ContextKeyServiceMessengerService, p.Messenger)
-	p.bdl = bundle.New(bundle.WithScheduler(), bundle.WithCoreServices())
+	p.bdl = bundle.New(bundle.WithScheduler(), bundle.WithErdaServer())
 	p.Protocol.WithContextValue(common.ContextKeyCoreServicesUrl, p.bdl)
 	protocol.MustRegisterProtocolsFromFS(scenarioFS)
 	return nil

@@ -52,7 +52,7 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.bdl = bundle.New(bundle.WithCoreServices())
+	p.bdl = bundle.New(bundle.WithErdaServer())
 	p.db = &dao.DBClient{
 		DBEngine: &dbengine.DBEngine{
 			DB: p.DB,

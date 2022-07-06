@@ -52,7 +52,6 @@ type Conf struct {
 	GittarAddr         string `env:"GITTAR_ADDR" required:"false"`
 	OpenAPIAddr        string `env:"OPENAPI_ADDR" required:"false"`
 	EventboxAddr       string `env:"EVENTBOX_ADDR" required:"false"`
-	DiceHubAddr        string `env:"DICEHUB_ADDR" required:"false"`
 	SchedulerAddr      string `env:"SCHEDULER_ADDR" required:"false"`
 	HepaAddr           string `env:"HEPA_ADDR" required:"false"`
 	CollectorAddr      string `env:"COLLECTOR_ADDR" required:"false"`
@@ -239,11 +238,6 @@ func HepaAddr() string {
 // EventboxAddr 返回 eventbox 的集群内部地址.
 func EventboxAddr() string {
 	return cfg.EventboxAddr
-}
-
-// DiceHubAddr 返回 dicehub 的集群内部地址.
-func DiceHubAddr() string {
-	return cfg.DiceHubAddr
 }
 
 // SchedulerAddr 返回 scheduler 的集群内部地址.

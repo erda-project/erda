@@ -11,7 +11,7 @@ import "apps/gallery/gallery.proto";
 
 service ReleaseService {
   option (erda.common.openapi_service) = {
-    service: "dicehub",
+    service: "erda-server",
     auth: {
       check_login: true,
       check_token: true,

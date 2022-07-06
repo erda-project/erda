@@ -15,10 +15,10 @@
 package taskerror
 
 import (
-	logs "github.com/erda-project/erda-infra/base/logs"
-	servicehub "github.com/erda-project/erda-infra/base/servicehub"
-	transport "github.com/erda-project/erda-infra/pkg/transport"
-	pb "github.com/erda-project/erda-proto-go/core/dop/taskerror/pb"
+	"github.com/erda-project/erda-infra/base/logs"
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/pkg/transport"
+	"github.com/erda-project/erda-proto-go/core/dop/taskerror/pb"
 	"github.com/erda-project/erda/bundle"
 )
 
@@ -35,7 +35,7 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.bundle = bundle.New(bundle.WithCoreServices())
+	p.bundle = bundle.New(bundle.WithErdaServer())
 	p.taskErrorService = &TaskErrorService{
 		p:   p,
 		bdl: p.bundle,

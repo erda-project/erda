@@ -55,7 +55,7 @@ type provider struct {
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.audit = audit.GetAuditor(ctx)
 	p.memberService = &memberService{p}
-	p.bdl = bundle.New(bundle.WithScheduler(), bundle.WithCoreServices())
+	p.bdl = bundle.New(bundle.WithScheduler(), bundle.WithErdaServer())
 	if p.Register != nil {
 		type MemberService = pb.MemberServiceServer
 		pb.RegisterMemberServiceImp(p.Register, p.memberService, apis.Options(),

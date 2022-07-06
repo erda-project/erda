@@ -144,7 +144,7 @@ func (s *Scheduler) clearMap() {
 
 // registerClusterHook register cluster webhook in eventBox
 func registerClusterHook() error {
-	bdl := bundle.New(bundle.WithCoreServices())
+	bdl := bundle.New(bundle.WithErdaServer())
 
 	ev := apistructs.CreateHookRequest{
 		Name:   "scheduler-clusterhook",

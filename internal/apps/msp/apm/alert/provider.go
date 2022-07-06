@@ -68,7 +68,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	}
 	p.authDb = db.New(ctx.Service("mysql").(mysql.Interface).DB())
 	p.mspDb = db2.New(ctx.Service("mysql").(mysql.Interface).DB())
-	p.bdl = bundle.New(bundle.WithScheduler(), bundle.WithCoreServices())
+	p.bdl = bundle.New(bundle.WithScheduler(), bundle.WithErdaServer())
 	p.alertService = &alertService{
 		p: p,
 	}

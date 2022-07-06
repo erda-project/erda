@@ -58,7 +58,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	if c == nil {
 		c = new(Cache)
 	}
-	bdl := bundle.New(bundle.WithCoreServices())
+	bdl := bundle.New(bundle.WithErdaServer())
 	orgID2Org = cache.New("dop-org-id-for-org", time.Hour*24, func(i interface{}) (interface{}, bool) {
 		orgResp, err := p.Org.GetOrg(apis.WithInternalClientContext(ctx, discover.SvcGallery),
 			&orgpb.GetOrgRequest{IdOrName: i.(string)})

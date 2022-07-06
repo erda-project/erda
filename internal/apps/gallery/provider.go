@@ -66,6 +66,8 @@ type provider struct {
 	Cfg *config
 
 	l *logrus.Entry
+
+	*handler.GalleryHandler
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -79,6 +81,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	if p.R != nil {
 		p.l.Infoln("register GalleryServer")
 		h := &handler.GalleryHandler{C: p.C, L: p.l.WithField("handler", "GalleryHandler"), Tran: p.Tran}
+		p.GalleryHandler = h
 		pb.RegisterGalleryImp(p.R, h, apis.Options())
 	}
 

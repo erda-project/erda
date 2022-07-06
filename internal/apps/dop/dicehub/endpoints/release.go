@@ -166,7 +166,7 @@ func (e *Endpoints) DownloadRelease(ctx context.Context, w http.ResponseWriter, 
 		return apierrors.ErrDownloadRelease.InternalError(err)
 	}
 
-	orgResp, err := e.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcDiceHub),
+	orgResp, err := e.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcErdaServer),
 		&orgpb.GetOrgRequest{IdOrName: strconv.FormatInt(orgID, 10)})
 	if err != nil {
 		return apierrors.ErrDownloadRelease.InternalError(err)

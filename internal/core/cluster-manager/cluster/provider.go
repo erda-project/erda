@@ -34,7 +34,7 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.bdl = bundle.New(bundle.WithCoreServices())
+	p.bdl = bundle.New(bundle.WithErdaServer())
 	p.clusterService = NewClusterService(WithDB(&db.ClusterDB{DB: p.DB}), WithBundle(p.bdl), WithOrg(p.Org))
 	if p.Register != nil {
 		pb.RegisterClusterServiceImp(p.Register, p.clusterService)

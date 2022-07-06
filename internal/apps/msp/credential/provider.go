@@ -46,7 +46,7 @@ type provider struct {
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.audit = audit.GetAuditor(ctx)
-	p.bdl = bundle.New(bundle.WithScheduler(), bundle.WithCoreServices())
+	p.bdl = bundle.New(bundle.WithScheduler(), bundle.WithErdaServer())
 	p.credentialKeyService = &accessKeyService{
 		p: p,
 	}

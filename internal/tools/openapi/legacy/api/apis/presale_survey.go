@@ -62,7 +62,7 @@ var PRESALE_SURVEY = ApiSpec{
 			},
 			Content: makeDingdingMessage(d),
 		}
-		bdl := bundle.New(bundle.WithCoreServices())
+		bdl := bundle.New(bundle.WithErdaServer())
 		if err := bdl.CreateMessage(&msg); err != nil {
 			logrus.Warnf("failed to POST survey, err: %v", err)
 			errorResp(rw)

@@ -47,7 +47,7 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.bdl = bundle.New(bundle.WithKMS(), bundle.WithCoreServices())
+	p.bdl = bundle.New(bundle.WithKMS(), bundle.WithErdaServer())
 	ucClientId := os.Getenv("UC_CLIENT_ID")
 	ucClientSecret := os.Getenv("UC_CLIENT_SECRET")
 	p.uc = ucauth.NewUCClient(discover.UC(), ucClientId, ucClientSecret)

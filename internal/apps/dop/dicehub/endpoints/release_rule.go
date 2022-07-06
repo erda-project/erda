@@ -162,7 +162,7 @@ func (e *Endpoints) releaseRuleAuth(info *userInfo, ctx *context.Context, r *htt
 func (e *Endpoints) releaseRuleAudit(r *http.Request, vars map[string]string, info *userInfo,
 	releaseRule *apistructs.BranchReleaseRuleModel) error {
 
-	orgResp, err := e.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcDiceHub),
+	orgResp, err := e.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcErdaServer),
 		&orgpb.GetOrgRequest{IdOrName: strconv.FormatUint(info.orgID, 10)})
 	if err != nil {
 		return err
