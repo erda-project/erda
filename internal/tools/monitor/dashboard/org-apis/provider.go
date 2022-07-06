@@ -50,7 +50,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	hc := httpclient.New(httpclient.WithTimeout(time.Second, time.Second*60))
 	p.bundle = bundle.New(
 		bundle.WithHTTPClient(hc),
-		bundle.WithCoreServices(),
+		bundle.WithErdaServer(),
 		bundle.WithClusterManager(),
 	)
 	p.cmdb = cmdb.New(cmdb.WithHTTPClient(hc))

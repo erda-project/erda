@@ -119,8 +119,8 @@ func (p *provider) initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, e
 			httpclient.New(
 				httpclient.WithTimeout(time.Second, time.Second*60),
 			)),
-		bundle.WithCoreServices(),
-		bundle.WithDiceHub(),
+		bundle.WithErdaServer(),
+		bundle.WithErdaServer(),
 		bundle.WithScheduler(),
 		bundle.WithCollector(),
 		bundle.WithMonitor(),

@@ -23,7 +23,7 @@ import (
 var PUBLISH_ITEM_CREATE_OFFLINE_VERSION = apis.ApiSpec{
 	Path:        "/api/publish-items/<publishItemId>/versions/create-offline-version",
 	BackendPath: "/api/publish-items/<publishItemId>/versions/create-offline-version",
-	Host:        "dicehub.marathon.l4lb.thisdcos.directory:10000",
+	Host:        "erda-server.marathon.l4lb.thisdcos.directory:9095",
 	Scheme:      "http",
 	Method:      http.MethodPost,
 	CheckLogin:  true,

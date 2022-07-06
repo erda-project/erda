@@ -123,7 +123,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		bundle.WithMonitor(),
 		bundle.WithCollector(),
 		bundle.WithKMS(),
-		bundle.WithCoreServices(),
+		bundle.WithErdaServer(),
 		bundle.WithHTTPClient(
 			httpclient.New(
 				httpclient.WithTimeout(time.Second, time.Duration(conf.BundleTimeoutSecond())*time.Second),

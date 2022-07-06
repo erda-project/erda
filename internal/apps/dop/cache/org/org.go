@@ -34,7 +34,7 @@ var (
 )
 
 func Init(org org.Interface) {
-	bdl := bundle.New(bundle.WithCoreServices())
+	bdl := bundle.New(bundle.WithErdaServer())
 	orgID2Org = cache.New("dop-org-id-for-org", time.Minute, func(i interface{}) (interface{}, bool) {
 		orgResp, err := org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcDOP), &orgpb.GetOrgRequest{IdOrName: i.(string)})
 		if err != nil {

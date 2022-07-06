@@ -30,7 +30,7 @@ import (
 //			httpclient.New(
 //				httpclient.WithTimeout(time.Second, time.Second*60),
 //			)),
-//		bundle.WithDiceHub(),
+//		bundle.WithErdaServer(),
 //	}
 //	bdl := bundle.New(bundleOpts...)
 //	comp := ComponentAction{

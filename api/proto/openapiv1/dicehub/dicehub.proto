@@ -405,7 +405,7 @@ message VersionInfo {
 // generate service from openapi spec: dicehub
 service dicehub {
     option (erda.common.openapi_service) = {
-        service: "dicehub",
+        service: "erda-server",
     };
 
     rpc DICEHUB_PIPELINE_TEMPLATE_APPLY (DICEHUB_PIPELINE_TEMPLATE_APPLY_Request) returns (google.protobuf.Empty) {

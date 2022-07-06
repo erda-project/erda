@@ -23,7 +23,6 @@ const (
 	EnvEventBox       = "EVENTBOX_ADDR"
 	EnvCMDB           = "CMDB_ADDR"
 	EnvScheduler      = "SCHEDULER_ADDR"
-	EnvDiceHub        = "DICEHUB_ADDR"
 	EnvSoldier        = "SOLDIER_ADDR"
 	EnvOrchestrator   = "ORCHESTRATOR_ADDR"
 	EnvAddOnPlatform  = "ADDON_PLATFORM_ADDR"
@@ -54,7 +53,6 @@ const (
 	SvcEventBox       = "eventbox"
 	SvcCMDB           = "cmdb"
 	SvcScheduler      = "scheduler"
-	SvcDiceHub        = "dicehub"
 	SvcSoldier        = "soldier"
 	SvcOrchestrator   = "orchestrator"
 	SvcAddOnPlatform  = "addon-platform"
@@ -85,7 +83,6 @@ const (
 var ServicesEnvKeys = map[string]string{
 	SvcCMDB:           EnvCMDB,
 	SvcScheduler:      EnvScheduler,
-	SvcDiceHub:        EnvDiceHub,
 	SvcSoldier:        EnvSoldier,
 	SvcOrchestrator:   EnvOrchestrator,
 	SvcAddOnPlatform:  EnvAddOnPlatform,
@@ -123,7 +120,6 @@ func Services() []string {
 func EventBox() string       { return getURL(SvcEventBox) }
 func CMDB() string           { return getURL(SvcCMDB) }
 func Scheduler() string      { return getURL(SvcScheduler) }
-func DiceHub() string        { return getURL(SvcDiceHub) }
 func Soldier() string        { return getURL(SvcSoldier) }
 func Orchestrator() string   { return getURL(SvcOrchestrator) }
 func AddOnPlatform() string  { return getURL(SvcAddOnPlatform) }

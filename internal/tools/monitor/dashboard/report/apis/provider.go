@@ -76,7 +76,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	bundleOpts := []bundle.Option{
 		bundle.WithHTTPClient(hc),
 		bundle.WithPipeline(),
-		bundle.WithCoreServices(),
+		bundle.WithErdaServer(),
 	}
 
 	p.bdl = bundle.New(bundleOpts...)

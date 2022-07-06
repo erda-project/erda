@@ -46,8 +46,7 @@ func TestBundleOption(t *testing.T) {
 	options := []Option{
 		WithCMDB(),
 		WithAddOnPlatform(),
-		WithDiceHub(),
-		WithCoreServices(),
+		WithErdaServer(),
 		WithCMP(),
 		WithOrchestrator(),
 		WithScheduler(),
@@ -65,7 +64,7 @@ func TestBundleOption(t *testing.T) {
 	assert.Equal(t, v, "http://a.com")
 	assert.Nil(t, err)
 
-	v, err = b.urls.DiceHub()
+	v, err = b.urls.ErdaServer()
 	assert.Equal(t, v, "http://a.com")
 	assert.Nil(t, err)
 

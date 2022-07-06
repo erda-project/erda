@@ -42,7 +42,7 @@ func (b *bundleServiceImpl) CheckPermission(req *apistructs.PermissionCheckReque
 func NewBundleService() BundleService {
 	return &bundleServiceImpl{
 		bdl: bundle.New(
-			bundle.WithCoreServices(),
+			bundle.WithErdaServer(),
 			bundle.WithClusterManager(),
 			bundle.WithScheduler(),
 		),

@@ -87,7 +87,7 @@ func TestAuditOperateMicroserviceAlert(t *testing.T) {
 	}
 	service := &alertService{
 		p: &provider{
-			bdl: bundle.New(bundle.WithScheduler(), bundle.WithCoreServices()),
+			bdl: bundle.New(bundle.WithScheduler(), bundle.WithErdaServer()),
 		},
 	}
 	mockProject()
@@ -167,7 +167,7 @@ func TestAuditOperateMicroserviceCustomAlert(t *testing.T) {
 	}
 	service := &alertService{
 		p: &provider{
-			bdl: bundle.New(bundle.WithScheduler(), bundle.WithCoreServices()),
+			bdl: bundle.New(bundle.WithScheduler(), bundle.WithErdaServer()),
 		},
 	}
 	mockProject()

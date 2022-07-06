@@ -140,7 +140,7 @@ func init() {
 		}
 		// Synchronize instance status
 		dbclient := instanceinfo.New(dbengine.MustOpen())
-		bdl := bundle.New(bundle.WithCoreServices())
+		bdl := bundle.New(bundle.WithErdaServer())
 		syncer := instanceinfosync.NewSyncer(clustername, k.addr, dbclient, bdl, k.pod, k.sts, k.deploy, k.event, k.hpa)
 
 		parentctx, cancelSyncInstanceinfo := context.WithCancel(context.Background())
@@ -302,7 +302,7 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 	// get cluster from cluster manager
 	bdl := bundle.New(
 		bundle.WithClusterManager(),
-		bundle.WithCoreServices(),
+		bundle.WithErdaServer(),
 	)
 	cluster, err := bdl.GetCluster(clusterName)
 	if err != nil {

@@ -38,7 +38,7 @@ func rend(req *apistructs.ComponentProtocolRequest) (cont *apistructs.ComponentP
 			httpclient.New(
 				httpclient.WithTimeout(time.Second, time.Second*60),
 			)),
-		bundle.WithDiceHub(),
+		bundle.WithErdaServer(),
 	}
 	bdl := bundle.New(bundleOpts...)
 	r := http.Request{}

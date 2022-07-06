@@ -75,7 +75,7 @@ type User struct {
 	bundle *bundle.Bundle
 }
 
-var client = bundle.New(bundle.WithCoreServices(), bundle.WithDOP())
+var client = bundle.New(bundle.WithErdaServer(), bundle.WithDOP())
 
 func NewUser(redisCli *redis.Client) *User {
 	ucUserAuth := ucauth.NewUCUserAuth(conf.UCAddrFront(), discover.UC(), "http://"+conf.UCRedirectHost()+"/logincb", conf.UCClientID(), conf.UCClientSecret())

@@ -25,7 +25,7 @@ import (
 
 var (
 	rc  *reqCli
-	bdl = bundle.New(bundle.WithCoreServices(), bundle.WithCMP())
+	bdl = bundle.New(bundle.WithErdaServer(), bundle.WithCMP())
 )
 
 func init() {

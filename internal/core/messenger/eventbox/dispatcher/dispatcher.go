@@ -85,10 +85,10 @@ func New(dingtalk interfaces.DingTalkApiClientFactory, messenger pb.NotifyServic
 		return nil, err
 	}
 	httpS := httpsubscriber.New()
-	bundleS := bundle.New(bundle.WithCoreServices())
+	bundleS := bundle.New(bundle.WithErdaServer())
 	dingdingS := dingdingsubscriber.New(conf.Proxy(), messenger)
 	dingdingWorknoticeS := dingdingworknoticesubscriber.New(conf.Proxy(), messenger)
-	mboxS := mbox.New(bundle.New(bundle.WithCoreServices()), messenger)
+	mboxS := mbox.New(bundle.New(bundle.WithErdaServer()), messenger)
 	emailS := emailsubscriber.New(conf.SmtpHost(), conf.SmtpPort(), conf.SmtpUser(), conf.SmtpPassword(),
 		conf.SmtpDisplayUser(), conf.SmtpIsSSL(), conf.SMTPInsecureSkipVerify(), bundleS, messenger, org)
 	smsS := smssubscriber.New(

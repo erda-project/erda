@@ -44,7 +44,7 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.Bdl = bundle.New(bundle.WithKMS(), bundle.WithCoreServices())
+	p.Bdl = bundle.New(bundle.WithKMS(), bundle.WithErdaServer())
 	p.addonMySQLService = &mysqlService{
 		logger: p.Logger,
 		kms:    NewKMSWrapper(p.Bdl),

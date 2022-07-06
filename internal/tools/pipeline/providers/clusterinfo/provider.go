@@ -47,7 +47,7 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.bdl = bundle.New(bundle.WithClusterManager(), bundle.WithCoreServices())
+	p.bdl = bundle.New(bundle.WithClusterManager(), bundle.WithErdaServer())
 	p.cache = NewClusterInfoCache()
 	p.notifier = NewClusterInfoNotifier()
 	pd = p

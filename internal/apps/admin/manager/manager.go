@@ -90,7 +90,7 @@ func (am *AdminManager) Routers() []httpserver.Endpoint {
 
 func NewBundle() *bundle.Bundle {
 	bundleOpts := []bundle.Option{
-		bundle.WithCoreServices(),
+		bundle.WithErdaServer(),
 		bundle.WithClusterManager(),
 		bundle.WithHTTPClient(httpclient.New(
 			httpclient.WithTimeout(time.Second, time.Second*30),

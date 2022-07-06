@@ -45,7 +45,7 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) (err error) {
-	p.bdl = bundle.New(bundle.WithScheduler(), bundle.WithCoreServices())
+	p.bdl = bundle.New(bundle.WithScheduler(), bundle.WithErdaServer())
 	p.db = &monitordb.MonitorDB{DB: p.DB}
 	err = p.loadCompatibleTKs()
 	if err != nil {

@@ -52,10 +52,10 @@ func NewLoginServer(token tokenpb.TokenServiceServer) (*LoginServer, error) {
 		return nil, err
 	}
 	bdl := bundle.New(
-		bundle.WithCoreServices(),
+		bundle.WithErdaServer(),
 		bundle.WithDOP(),
 		bundle.WithPipeline(),
-		bundle.WithDiceHub(),
+		bundle.WithErdaServer(),
 		bundle.WithMonitor(),
 		bundle.WithTMC(),
 	)

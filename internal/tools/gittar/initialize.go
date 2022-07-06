@@ -66,7 +66,7 @@ func (p *provider) Initialize() error {
 		ucUserAuth.UCHost = conf.OryKratosAddr()
 	}
 	diceBundle := bundle.New(
-		bundle.WithCoreServices(),
+		bundle.WithErdaServer(),
 	)
 
 	dbClient, err := models.OpenDB()

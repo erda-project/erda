@@ -29,6 +29,10 @@ import (
 	// core
 	_ "github.com/erda-project/erda-infra/providers/pprof"
 	_ "github.com/erda-project/erda-infra/providers/redis"
+	_ "github.com/erda-project/erda/internal/apps/dop/dicehub"
+	_ "github.com/erda-project/erda/internal/apps/dop/dicehub/extension"
+	_ "github.com/erda-project/erda/internal/apps/dop/dicehub/image"
+	_ "github.com/erda-project/erda/internal/apps/dop/dicehub/release"
 	_ "github.com/erda-project/erda/internal/core/legacy"
 	_ "github.com/erda-project/erda/internal/core/legacy/providers/token"
 	_ "github.com/erda-project/erda/internal/core/legacy/services/dingtalk/api"
@@ -42,6 +46,8 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	_ "github.com/erda-project/erda-infra/providers/component-protocol"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
+	_ "github.com/erda-project/erda-infra/providers/etcd"
+	_ "github.com/erda-project/erda-infra/providers/etcd-election"
 	_ "github.com/erda-project/erda-infra/providers/grpcserver"
 	_ "github.com/erda-project/erda-infra/providers/health"
 	_ "github.com/erda-project/erda-infra/providers/httpserver"
@@ -50,6 +56,7 @@ import (
 
 	// grpc
 	_ "github.com/erda-project/erda-infra/providers/grpcclient"
+	_ "github.com/erda-project/erda-proto-go/apps/gallery/client"
 	_ "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/client"
 	_ "github.com/erda-project/erda-proto-go/core/org/client"
 	_ "github.com/erda-project/erda-proto-go/core/pipeline/cms/client"

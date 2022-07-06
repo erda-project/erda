@@ -55,7 +55,7 @@ func Initialize() error {
 func initEndpoints() (*endpoints.Endpoints, error) {
 	// init bundle
 	bdl := bundle.New(
-		bundle.WithCoreServices(),
+		bundle.WithErdaServer(),
 	)
 
 	// init uc client

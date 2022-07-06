@@ -109,7 +109,7 @@ func (p *provider) newExtensionService() {
 	p.extensionService = &extensionService{
 		p:             p,
 		db:            &db.ExtensionConfigDB{DB: p.DB},
-		bdl:           bundle.New(bundle.WithCoreServices()),
+		bdl:           bundle.New(bundle.WithErdaServer()),
 		extensionMenu: p.Cfg.ExtensionMenu,
 	}
 }

@@ -47,7 +47,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	hc := httpclient.New(httpclient.WithTimeout(time.Second, time.Second*60))
 	p.bdl = bundle.New(
 		bundle.WithHTTPClient(hc),
-		bundle.WithCoreServices(),
+		bundle.WithErdaServer(),
 	)
 	p.t = ctx.Service("i18n").(i18n.I18n).Translator("log-metrics")
 	p.db = db.New(ctx.Service("mysql").(mysql.Interface).DB())

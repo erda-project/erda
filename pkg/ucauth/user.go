@@ -98,7 +98,7 @@ func (a *UCUserAuth) oryKratosAddr() string {
 }
 
 func NewUCUserAuth(UCHostFront, UCHost, RedirectURI, ClientID, ClientSecret string) *UCUserAuth {
-	bdl := bundle.New(bundle.WithCoreServices(), bundle.WithDOP())
+	bdl := bundle.New(bundle.WithErdaServer(), bundle.WithDOP())
 	return &UCUserAuth{UCHostFront, UCHost, RedirectURI, ClientID, ClientSecret, bdl}
 }
 
