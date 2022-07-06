@@ -40,6 +40,7 @@ import (
 	"github.com/erda-project/erda/internal/pkg/user"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/http/httputil"
@@ -435,7 +436,7 @@ func (e *Endpoints) UpdateCmsNsConfigs(userID string, orgID uint64) error {
 		return errors.New("the member is not exist")
 	}
 	// TODO: gittar token in pipeline may not use PAT
-	_, err = e.pipelineCms.UpdateCmsNsConfigs(apis.WithInternalClientContext(context.Background(), "dop"),
+	_, err = e.pipelineCms.UpdateCmsNsConfigs(apis.WithInternalClientContext(context.Background(), discover.SvcDOP),
 		&cmspb.CmsNsConfigsUpdateRequest{
 			Ns:             utils.MakeUserOrgPipelineCmsNs(userID, orgID),
 			PipelineSource: apistructs.PipelineSourceDice.String(),

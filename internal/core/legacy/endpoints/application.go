@@ -34,6 +34,7 @@ import (
 	"github.com/erda-project/erda/internal/core/legacy/services/apierrors"
 	"github.com/erda-project/erda/internal/pkg/user"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/filehelper"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httputil"
@@ -896,7 +897,7 @@ func (e *Endpoints) convertToApplicationDTO(ctx context.Context, application mod
 		orgDisplayName string
 		org            *orgpb.Org
 	)
-	org, err = e.getOrg(apis.WithInternalClientContext(ctx, "legacy"), application.OrgID)
+	org, err = e.getOrg(apis.WithInternalClientContext(ctx, discover.SvcErdaServer), application.OrgID)
 	if err != nil {
 		logrus.Error(err)
 	} else {

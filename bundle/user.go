@@ -24,7 +24,7 @@ import (
 )
 
 func (b *Bundle) GetCurrentUser(userID string) (*apistructs.UserInfo, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +45,7 @@ func (b *Bundle) GetCurrentUser(userID string) (*apistructs.UserInfo, error) {
 }
 
 func (b *Bundle) ListUsers(req apistructs.UserListRequest) (*apistructs.UserListResponseData, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +68,7 @@ func (b *Bundle) ListUsers(req apistructs.UserListRequest) (*apistructs.UserList
 }
 
 func (b *Bundle) GetUcUserID(uuid string) (string, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return "", err
 	}
@@ -89,7 +89,7 @@ func (b *Bundle) GetUcUserID(uuid string) (string, error) {
 }
 
 func (b *Bundle) SearchUser(params url.Values) (*apistructs.UserListResponseData, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}

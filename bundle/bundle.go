@@ -105,7 +105,7 @@ func WithCMDB() Option {
 
 func WithCoreServices() Option {
 	return func(b *Bundle) {
-		k := discover.EnvCoreServices
+		k := discover.EnvErdaServer
 		v := os.Getenv(k)
 		b.urls.Put(k, v)
 	}

@@ -45,6 +45,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/cms"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -700,14 +701,14 @@ func (p *Pipeline) createCron(appDto *apistructs.ApplicationDTO, ymlPathName str
 		return filepath.Dir(ymlPathName)
 	}()
 	req.Name = strings.Replace(ymlPathName, req.Path+"/", "", 1)
-	result, err := p.pipelineSource.List(apis.WithInternalClientContext(context.Background(), "dop"), req)
+	result, err := p.pipelineSource.List(apis.WithInternalClientContext(context.Background(), discover.SvcDOP), req)
 	if err != nil {
 		return fmt.Errorf("list pipelineSource error %v", err)
 	}
 	if len(result.Data) == 0 {
 		return fmt.Errorf("list pipelineSource not find sources")
 	}
-	definitionList, err := p.pipelineDefinition.List(apis.WithInternalClientContext(context.Background(), "dop"), &definitionpb.PipelineDefinitionListRequest{
+	definitionList, err := p.pipelineDefinition.List(apis.WithInternalClientContext(context.Background(), discover.SvcDOP), &definitionpb.PipelineDefinitionListRequest{
 		SourceIDList: []string{result.Data[0].ID},
 		Location:     apistructs.MakeLocation(appDto, apistructs.PipelineTypeCICD),
 	})

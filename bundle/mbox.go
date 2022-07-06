@@ -24,7 +24,7 @@ import (
 
 // CreateMBox 创建站内信记录
 func (b *Bundle) CreateMBox(request *apistructs.CreateMBoxRequest) error {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return err
 	}
@@ -43,7 +43,7 @@ func (b *Bundle) CreateMBox(request *apistructs.CreateMBoxRequest) error {
 }
 
 func (b *Bundle) GetMboxStats(identity apistructs.Identity) (int64, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return 0, err
 	}
@@ -66,7 +66,7 @@ func (b *Bundle) GetMboxStats(identity apistructs.Identity) (int64, error) {
 
 func (b *Bundle) ListMbox(identity apistructs.Identity, req apistructs.QueryMBoxRequest) (apistructs.QueryMBoxData, error) {
 	data := apistructs.QueryMBoxData{}
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return data, err
 	}
@@ -93,7 +93,7 @@ func (b *Bundle) ListMbox(identity apistructs.Identity, req apistructs.QueryMBox
 
 // SetMBoxReadStatus 设置站内信为已读
 func (b *Bundle) SetMBoxReadStatus(identity apistructs.Identity, request *apistructs.SetMBoxReadStatusRequest) error {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return err
 	}

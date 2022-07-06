@@ -16,6 +16,7 @@
 package cdp
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -24,9 +25,13 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/conf"
+	"github.com/erda-project/erda/internal/core/org"
+	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 )
 
 var (
@@ -38,6 +43,7 @@ var (
 type CDP struct {
 	bdl           *bundle.Bundle
 	resourceTrans i18n.Translator
+	org           org.ClientInterface
 }
 
 // Option CDP 配置选项
@@ -65,17 +71,27 @@ func WithResourceTranslator(resourceTrans i18n.Translator) Option {
 	}
 }
 
+func WithOrg(org org.ClientInterface) Option {
+	return func(f *CDP) {
+		f.org = org
+	}
+}
+
 func (cdp *CDP) CdpNotifyProcess(pipelineEvent *apistructs.PipelineInstanceEvent) error {
 	pipelineData := pipelineEvent.Content
 	orgID, err := strconv.ParseInt(pipelineEvent.OrgID, 10, 64)
 	if err != nil {
 		return err
 	}
-	org, err := cdp.bdl.GetOrg(orgID)
+
+	orgResp, err := cdp.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcDOP),
+		&orgpb.GetOrgRequest{IdOrName: pipelineEvent.OrgID})
 	if err != nil {
 		logrus.Errorf("failed to get org info err: %s", err)
 		return err
 	}
+	org := orgResp.Data
+
 	pipelineDetail, err := cdp.bdl.GetPipeline(pipelineData.PipelineID)
 	if err != nil {
 		return err

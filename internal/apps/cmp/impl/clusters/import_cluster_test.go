@@ -38,7 +38,7 @@ const (
 func Test_ImportCluster(t *testing.T) {
 	var bdl *bundle.Bundle
 	var db *dbclient.DBClient
-	c := New(db, bdl, nil, &fakeClusterServiceServer{})
+	c := New(db, bdl, nil, &fakeClusterServiceServer{}, nil)
 
 	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "CreateClusterWithOrg", func(bundle *bundle.Bundle, userID string, orgID uint64, req *apistructs.ClusterCreateRequest, header ...http.Header) error {
 		return nil

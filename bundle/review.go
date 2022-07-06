@@ -25,7 +25,7 @@ import (
 )
 
 func (b *Bundle) ListManualApproval(orgID string, userID string, params url.Values) (*apistructs.GetReviewListResponse, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -53,7 +53,7 @@ func (b *Bundle) ListManualApproval(orgID string, userID string, params url.Valu
 }
 
 func (b *Bundle) UpdateManualApproval(orgID string, req *apistructs.UpdateApproval) error {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return err
 	}

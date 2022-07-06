@@ -43,6 +43,7 @@ import (
 	imagedb "github.com/erda-project/erda/internal/apps/dop/dicehub/image/db"
 	"github.com/erda-project/erda/internal/apps/dop/dicehub/release/db"
 	"github.com/erda-project/erda/internal/apps/dop/dicehub/service/release_rule"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
@@ -67,6 +68,7 @@ type provider struct {
 	releaseGetDiceService *releaseGetDiceService
 	opusService           pb.OpusServer
 	bdl                   *bundle.Bundle
+	Org                   org.ClientInterface
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -89,6 +91,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		})),
 		opus:    p.opusService,
 		gallery: p.GallerySvc,
+		org:     p.Org,
 	}
 	p.releaseGetDiceService = &releaseGetDiceService{
 		p:  p,

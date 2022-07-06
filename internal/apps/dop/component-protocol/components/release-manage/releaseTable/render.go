@@ -31,11 +31,13 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	dicehubpb "github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	cmpTypes "github.com/erda-project/erda/internal/apps/cmp/component-protocol/types"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/release-manage/access"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/types"
+	"github.com/erda-project/erda/internal/core/org"
 )
 
 func init() {
@@ -121,6 +123,7 @@ func (r *ComponentReleaseTable) InitComponent(ctx context.Context) {
 	r.bdl = bdl
 	svc := ctx.Value(types.DicehubReleaseService).(dicehubpb.ReleaseServiceServer)
 	r.svc = svc
+	r.org = ctx.Value(types.OrgService).(org.ClientInterface)
 }
 
 func (r *ComponentReleaseTable) GenComponentState(component *cptype.Component) error {
@@ -241,7 +244,12 @@ func (r *ComponentReleaseTable) RenderTable(ctx context.Context, gs *cptype.Glob
 	r.State.Total = releaseResp.Data.Total
 
 	logrus.Debugf("[DEBUG] start get org")
-	org, err := r.bdl.GetOrg(orgID)
+
+	orgResp, err := r.org.GetOrg(ctx, &orgpb.GetOrgRequest{IdOrName: orgID})
+	if err != nil {
+		return errors.Errorf("failed to get org, %v", err)
+	}
+	org := orgResp.Data
 	logrus.Debugf("[DEBUG] end get org")
 	if err != nil {
 		return errors.Errorf("failed to get org, %v", err)

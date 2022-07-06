@@ -27,6 +27,7 @@ import (
 	"github.com/erda-project/erda-proto-go/dop/devflowrule/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/providers/devflowrule/db"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 
@@ -39,6 +40,7 @@ type provider struct {
 	DB       *gorm.DB           `autowired:"mysql-gorm.v2-client"`
 	Register transport.Register `autowired:"service-register" required:"true"`
 	Trans    i18n.Translator    `translator:"project-pipeline" required:"true"`
+	Org      org.ClientInterface
 
 	dbClient *db.Client
 }

@@ -22,7 +22,7 @@ import (
 var CMDB_PROJECT_FUNCTIONS_SET = apis.ApiSpec{
 	Path:         "/api/projects/actions/set-project-functions",
 	BackendPath:  "/api/projects/actions/set-project-functions",
-	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
+	Host:         "erda-server.marathon.l4lb.thisdcos.directory:9095",
 	Scheme:       "http",
 	Method:       "POST",
 	CheckLogin:   true,

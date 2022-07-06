@@ -29,7 +29,7 @@ import (
 // FetchQuotaOnClusters
 // orgID if is 0, fetch from all organizations. // todo:
 func (b *Bundle) FetchQuotaOnClusters(orgID uint64, clusterNames []string) (*apistructs.GetQuotaOnClustersResponse, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +64,7 @@ func (b *Bundle) FetchQuotaOnClusters(orgID uint64, clusterNames []string) (*api
 // if orgID == 0, query from all scope.
 // namespaces: the key is cluster name, the value is the namespaces list in the cluster.
 func (b *Bundle) FetchNamespacesBelongsTo(ctx context.Context, orgID uint64, clusters []string) (*apistructs.GetProjectsNamesapcesResponseData, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -101,7 +101,7 @@ func (b *Bundle) FetchNamespacesBelongsTo(ctx context.Context, orgID uint64, clu
 }
 
 func (b *Bundle) ListQuotaRecords() ([]*apistructs.ProjectQuota, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}

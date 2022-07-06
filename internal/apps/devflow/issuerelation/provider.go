@@ -23,6 +23,7 @@ import (
 	"github.com/erda-project/erda-proto-go/apps/devflow/issuerelation/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/devflow/issuerelation/db"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 )
 
@@ -36,6 +37,7 @@ type provider struct {
 	Register             transport.Register
 	issueRelationService *issueRelationService
 	DB                   *gorm.DB `autowired:"mysql-client"`
+	Org                  org.ClientInterface
 
 	bdl *bundle.Bundle
 }
@@ -43,8 +45,7 @@ type provider struct {
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.bdl = bundle.New(bundle.WithAllAvailableClients())
 	p.issueRelationService = &issueRelationService{p, &db.Client{DBEngine: &dbengine.DBEngine{
-		DB: p.DB,
-	}}}
+		DB: p.DB}}, p.Org}
 	if p.Register != nil {
 		pb.RegisterIssueRelationServiceImp(p.Register, p.issueRelationService)
 	}

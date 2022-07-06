@@ -17,15 +17,44 @@ package main
 import (
 	_ "embed"
 
+	// apps
+	_ "github.com/erda-project/erda/internal/apps/admin"
+	_ "github.com/erda-project/erda/internal/apps/admin/personal-workbench"
+	_ "github.com/erda-project/erda/internal/apps/gallery"
+
+	// pkg
+	_ "github.com/erda-project/erda/internal/pkg/dingtalktest"
+	"github.com/erda-project/erda/pkg/common"
+
+	// core
+	_ "github.com/erda-project/erda-infra/providers/pprof"
+	_ "github.com/erda-project/erda-infra/providers/redis"
+	_ "github.com/erda-project/erda/internal/core/legacy"
+	_ "github.com/erda-project/erda/internal/core/legacy/providers/token"
+	_ "github.com/erda-project/erda/internal/core/legacy/services/dingtalk/api"
+	_ "github.com/erda-project/erda/internal/core/messenger/eventbox"
+	_ "github.com/erda-project/erda/internal/core/messenger/notify"
+	_ "github.com/erda-project/erda/internal/core/messenger/notify-channel"
+	_ "github.com/erda-project/erda/internal/core/messenger/notifygroup"
+	_ "github.com/erda-project/erda/internal/core/project"
+
+	// infra
 	"github.com/erda-project/erda-infra/base/servicehub"
-	_ "github.com/erda-project/erda-infra/providers"
 	_ "github.com/erda-project/erda-infra/providers/component-protocol"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
+	_ "github.com/erda-project/erda-infra/providers/grpcserver"
+	_ "github.com/erda-project/erda-infra/providers/health"
+	_ "github.com/erda-project/erda-infra/providers/httpserver"
+	_ "github.com/erda-project/erda-infra/providers/mysql"
+	_ "github.com/erda-project/erda-infra/providers/serviceregister"
+
+	// grpc
 	_ "github.com/erda-project/erda-infra/providers/grpcclient"
 	_ "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/client"
+	_ "github.com/erda-project/erda-proto-go/core/org/client"
+	_ "github.com/erda-project/erda-proto-go/core/pipeline/cms/client"
 	_ "github.com/erda-project/erda-proto-go/msp/menu/client"
 	_ "github.com/erda-project/erda-proto-go/msp/tenant/project/client"
-	"github.com/erda-project/erda/pkg/common"
 )
 
 //go:embed bootstrap.yaml

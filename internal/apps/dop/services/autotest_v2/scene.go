@@ -26,11 +26,10 @@ import (
 	"strings"
 	"time"
 
-	"golang.org/x/net/publicsuffix"
-
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/net/publicsuffix"
 
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -624,7 +623,7 @@ func (svc *Service) ExecuteDiceAutotestScene(req apistructs.AutotestExecuteScene
 	if err != nil {
 		return nil, err
 	}
-	org, err := svc.bdl.GetOrg(project.OrgID)
+	org, err := svc.getOrg(context.Background(), project.OrgID)
 	if err != nil {
 		return nil, err
 	}

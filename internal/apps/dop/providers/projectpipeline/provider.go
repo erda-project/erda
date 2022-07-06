@@ -32,6 +32,7 @@ import (
 	"github.com/erda-project/erda-proto-go/dop/projectpipeline/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/dao"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 )
@@ -54,6 +55,7 @@ type provider struct {
 	GuideSvc           guidepb.GuideServiceServer   `autowired:"erda.dop.guide.GuideService" required:"true"`
 	PipelineCron       cronpb.CronServiceServer     `autowired:"erda.core.pipeline.cron.CronService" required:"true"`
 	TokenService       tokenpb.TokenServiceServer   `autowired:"erda.core.token.TokenService"`
+	Org                org.ClientInterface
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -73,6 +75,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		GuideSvc:           p.GuideSvc,
 		PipelineCron:       p.PipelineCron,
 		tokenService:       p.TokenService,
+		org:                p.Org,
 	}
 	if p.Register != nil {
 		pb.RegisterProjectPipelineServiceImp(p.Register, p.projectPipelineSvc, apis.Options())

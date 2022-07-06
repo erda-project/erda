@@ -27,6 +27,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/conf"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/stream/common"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/ucauth"
@@ -48,6 +49,7 @@ type provider struct {
 	CPTran     i18n.I18n       `autowired:"i18n@cp"`
 	commonTran i18n.Translator
 	uc         *ucauth.UCClient
+	Org        org.ClientInterface
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {

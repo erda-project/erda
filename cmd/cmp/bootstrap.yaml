@@ -25,7 +25,7 @@ erda.core.monitor.alert-client: {}
 
 # core service credential
 grpc-client@erda.core.token:
-  addr: "${CORE_SERVICES_GRPC_ADDR:core-services:9537}"
+  addr: "${ERDA_SERVER_GRPC_ADDR:erda-server:8096}"
 erda.core.token-client: {}
 
 grpc-client@erda.core.pipeline.cron:
@@ -35,6 +35,11 @@ erda.core.pipeline.cron-client: {}
 grpc-client@erda.core.clustermanager.cluster:
   addr: "${CLUSTER_MANAGER_GRPC_ADDR:cluster-manager:9095}"
 erda.core.clustermanager.cluster-client: {}
+
+grpc-client@erda.core.org:
+  addr: "${ERDA_SERVER_GRPC_ADDR:erda-server:8096}"
+erda.core.org-client: {}
+erda.core.org: {}
 
 http-server:
   addr: ":9028"

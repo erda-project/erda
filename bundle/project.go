@@ -38,7 +38,7 @@ func (b *Bundle) GetProject(id uint64) (*apistructs.ProjectDTO, error) {
 
 // GetProjectWithSetter get project by id from core-services.
 func (b *Bundle) GetProjectWithSetter(id uint64, requestSetter ...httpclient.RequestSetter) (*apistructs.ProjectDTO, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +65,7 @@ func (b *Bundle) GetProjectWithSetter(id uint64, requestSetter ...httpclient.Req
 
 // GetProjectByOrgIdAndName get project by orgId and name from cmdb.
 func (b *Bundle) GetProjectByOrgIdAndName(orgId uint64, name string, userID string) (*apistructs.ProjectDTO, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +87,7 @@ func (b *Bundle) GetProjectByOrgIdAndName(orgId uint64, name string, userID stri
 }
 
 func (b *Bundle) ListProject(userID string, req apistructs.ProjectListRequest) (*apistructs.PagingProjectDTO, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -152,7 +152,7 @@ func (b *Bundle) ListDopProject(userID string, req apistructs.ProjectListRequest
 
 // ListMyProject 获取用户加入的项目
 func (b *Bundle) ListMyProject(userID string, req apistructs.ProjectListRequest) (*apistructs.PagingProjectDTO, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -187,7 +187,7 @@ func (b *Bundle) ListMyProject(userID string, req apistructs.ProjectListRequest)
 
 // ListPublicProject 获取公开项目列表
 func (b *Bundle) ListPublicProject(userID string, req apistructs.ProjectListRequest) (*apistructs.PagingProjectDTO, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -243,7 +243,7 @@ func (b *Bundle) ListProjectsEnvAndTenantId(userID, orgID, tenantId, Type string
 
 // UpdateProjectActiveTime 更新项目活跃时间
 func (b *Bundle) UpdateProjectActiveTime(req apistructs.ProjectActiveTimeUpdateRequest) error {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return err
 	}
@@ -302,7 +302,7 @@ func (b *Bundle) GetWorkspaceClusterByAppBranch(appID uint64, gitRef string) (
 
 // GetProjectNamespaceInfo 获取项目级命名空间信息
 func (b *Bundle) GetProjectNamespaceInfo(projectID uint64) (*apistructs.ProjectNameSpaceInfo, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -378,7 +378,7 @@ func (b *Bundle) GetMSProjects(orgID, userID string, params url.Values) ([]apist
 
 // GetMyProjectIDs get projectIDs by orgID adn userID from core-services.
 func (b *Bundle) GetMyProjectIDs(orgID uint64, userID string) ([]uint64, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -402,7 +402,7 @@ func (b *Bundle) GetMyProjectIDs(orgID uint64, userID string) ([]uint64, error) 
 
 // GetProjectListByStates list projects by states
 func (b *Bundle) GetProjectListByStates(req apistructs.GetProjectIDListByStatesRequest) (*apistructs.GetProjectIDListByStatesData, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -423,7 +423,7 @@ func (b *Bundle) GetProjectListByStates(req apistructs.GetProjectIDListByStatesR
 
 // GetAllProjects get all projects
 func (b *Bundle) GetAllProjects() ([]apistructs.ProjectDTO, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -444,7 +444,7 @@ func (b *Bundle) GetAllProjects() ([]apistructs.ProjectDTO, error) {
 
 // CreateProject create project
 func (b *Bundle) CreateProject(req apistructs.ProjectCreateRequest, userID string) (uint64, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return 0, err
 	}
@@ -467,7 +467,7 @@ func (b *Bundle) CreateProject(req apistructs.ProjectCreateRequest, userID strin
 
 // DeleteProject delete project
 func (b *Bundle) DeleteProject(id, orgID uint64, userID string) (*apistructs.ProjectDTO, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -490,7 +490,7 @@ func (b *Bundle) DeleteProject(id, orgID uint64, userID string) (*apistructs.Pro
 }
 
 func (b *Bundle) UpdateProject(req apistructs.ProjectUpdateRequest, orgID uint64, userID string) error {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return err
 	}
@@ -514,7 +514,7 @@ func (b *Bundle) UpdateProject(req apistructs.ProjectUpdateRequest, orgID uint64
 
 // Get projects map
 func (b *Bundle) GetProjectsMap(req apistructs.GetModelProjectsMapRequest) (map[uint64]apistructs.ProjectDTO, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}

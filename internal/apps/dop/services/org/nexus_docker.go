@@ -17,6 +17,7 @@ package org
 import (
 	"strings"
 
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/conf"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
@@ -27,14 +28,14 @@ import (
 
 // ensureNexusDockerGroupOrgRepos
 // 1. docker hosted org repo
-func (o *Org) ensureNexusDockerGroupOrgRepos(org *apistructs.OrgDTO) error {
+func (o *Org) ensureNexusDockerGroupOrgRepos(org *orgpb.Org) error {
 
 	// 1. docker hosted org repo
 	_, err := o.ensureNexusDockerHostedOrgRepo(org)
 	return err
 }
 
-func (o *Org) ensureNexusDockerHostedOrgRepo(org *apistructs.OrgDTO) (*apistructs.NexusRepository, error) {
+func (o *Org) ensureNexusDockerHostedOrgRepo(org *orgpb.Org) (*apistructs.NexusRepository, error) {
 	n := nexus.Server{
 		Addr:     conf.CentralNexusAddr(),
 		Username: conf.CentralNexusUsername(),

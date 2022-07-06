@@ -9,7 +9,7 @@ import "common/openapi.proto";
 
 service TokenService {
   option (erda.common.openapi_service) = {
-    service: "core-services",
+    service: "erda-server",
   };
 
   rpc GetToken(GetTokenRequest) returns (GetTokenResponse) {

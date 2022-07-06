@@ -26,7 +26,7 @@ import (
 )
 
 func (b *Bundle) CreateNoticeRequest(userID string, orgID uint64, body io.Reader) (*apistructs.NoticeCreateResponse, error) {
-	csURL, err := b.urls.CoreServices()
+	csURL, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)
 	}
@@ -55,7 +55,7 @@ func (b *Bundle) CreateNoticeRequest(userID string, orgID uint64, body io.Reader
 
 func (b *Bundle) UpdateNotice(noticeID, orgID uint64, userID string, body io.Reader) (
 	*apistructs.NoticeUpdateResponse, error) {
-	csURL, err := b.urls.CoreServices()
+	csURL, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)
 	}
@@ -85,7 +85,7 @@ func (b *Bundle) UpdateNotice(noticeID, orgID uint64, userID string, body io.Rea
 }
 
 func (b *Bundle) DeleteNotice(noticeID, orgID uint64, userID string) (*apistructs.NoticeDeleteResponse, error) {
-	csURL, err := b.urls.CoreServices()
+	csURL, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)
 	}
@@ -114,7 +114,7 @@ func (b *Bundle) DeleteNotice(noticeID, orgID uint64, userID string) (*apistruct
 }
 
 func (b *Bundle) PublishORUnPublishNotice(orgID uint64, noticeID uint64, userID, publishType string) error {
-	csURL, err := b.urls.CoreServices()
+	csURL, err := b.urls.ErdaServer()
 	if err != nil {
 		return apierrors.ErrInvoke.InternalError(err)
 	}
@@ -142,7 +142,7 @@ func (b *Bundle) PublishORUnPublishNotice(orgID uint64, noticeID uint64, userID,
 }
 
 func (b *Bundle) ListNoticeByOrgID(orgID uint64, userID string, params url.Values) (*apistructs.NoticeListResponse, error) {
-	csURL, err := b.urls.CoreServices()
+	csURL, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)
 	}
