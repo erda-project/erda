@@ -20,5 +20,5 @@ import (
 )
 
 func toAPIError(statusCode int, err apistructs.ErrorResponse) *errorresp.APIError {
-	return errorresp.New(errorresp.WithCode(statusCode, err.Code), errorresp.WithMessage(err.Msg))
+	return errorresp.New(errorresp.WithCode(statusCode, err.Code), errorresp.WithMessage(err.Msg), errorresp.WithCtx(err.Ctx))
 }

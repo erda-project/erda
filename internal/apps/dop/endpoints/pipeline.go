@@ -395,26 +395,11 @@ func (e *Endpoints) pipelineRun(ctx context.Context, r *http.Request, vars map[s
 		ConfigManageNamespaces: []string{utils.MakeUserOrgPipelineCmsNs(identityInfo.UserID, p.OrgID)},
 		Secrets:                utils.GetGittarSecrets(p.ClusterName, p.Branch, p.CommitDetail),
 	}); err != nil {
-		var apiError, ok = err.(*errorresp.APIError)
-		if !ok {
-			// Failed to convert to apiError type, return the error passed by the pipeline component
-			return errorresp.ErrResp(err)
+		runningPipelineErr, ok := e.ProjectPipelineSvc.TryAddRunningPipelineLinkToErr(p.PipelineDTO.OrgName, p.PipelineDTO.ProjectID, p.PipelineDTO.ApplicationID, err)
+		if ok {
+			return errorresp.ErrResp(runningPipelineErr)
 		}
-
-		ctxMap, ok := apiError.Ctx().(map[string]interface{})
-		if !ok {
-			// Interface converted to map[string]interface{} fails and returns the error passed by the pipeline component
-			return errorresp.ErrResp(err)
-		}
-
-		// Get the link to the running pipeline
-		link, ok := GetPipelineLink(p.PipelineDTO, ctxMap)
-		if !ok {
-			// Failed to get the pipeline information and return an error
-			return errorresp.ErrResp(fmt.Errorf("failed to get the running pipeline"))
-		}
-
-		return errorresp.ErrResp(apierrors.ErrParallelRunPipeline.InvalidState(fmt.Sprintf("failed to run pipeline, there is already running: %s", link)))
+		return errorresp.ErrResp(err)
 	}
 
 	return httpserver.OkResp(nil)

@@ -31,6 +31,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/pkg/common"
 	"github.com/erda-project/erda/pkg/common/errors"
+	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 )
 
 // Response .
@@ -77,14 +78,17 @@ func init() {
 
 func encodeError(w http.ResponseWriter, r *http.Request, err error) {
 	var status int
-	if e, ok := err.(transhttp.Error); ok {
-		status = e.HTTPStatus()
-	} else {
-		if _, ok := err.(ValidationError); ok {
-			status = http.StatusBadRequest
-		} else {
-			status = http.StatusInternalServerError
-		}
+	switch err.(type) {
+	case transhttp.Error:
+		status = err.(transhttp.Error).HTTPStatus()
+	case *errorresp.APIError:
+		apiErr := err.(*errorresp.APIError)
+		apiErr.Write(w)
+		return
+	case ValidationError:
+		status = http.StatusBadRequest
+	default:
+		status = http.StatusInternalServerError
 	}
 	var msg string
 	if e, ok := err.(i18n.Internationalizable); I18n != nil && ok {
