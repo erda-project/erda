@@ -34,7 +34,7 @@ type AdminManager struct {
 	bundle     *bundle.Bundle
 	etcdStore  *etcd.Store
 	clusterSvc clusterpb.ClusterServiceServer
-	org        org.ClientInterface
+	org        org.Interface
 }
 
 type Option func(am *AdminManager)
@@ -65,7 +65,7 @@ func WithETCDStore(etcdStore *etcd.Store) Option {
 	}
 }
 
-func WithOrg(org org.ClientInterface) Option {
+func WithOrg(org org.Interface) Option {
 	return func(am *AdminManager) {
 		am.org = org
 	}

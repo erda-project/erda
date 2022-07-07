@@ -18,6 +18,9 @@ import (
 	"context"
 
 	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
+	"github.com/erda-project/erda/internal/core/legacy/services/member"
+	"github.com/erda-project/erda/internal/core/legacy/services/permission"
+	"github.com/erda-project/erda/internal/core/user"
 )
 
 type OrgMock struct {
@@ -84,5 +87,25 @@ func (m OrgMock) GetOrgClusterRelationsByOrg(ctx context.Context, request *orgpb
 }
 
 func (m OrgMock) DereferenceCluster(ctx context.Context, request *orgpb.DereferenceClusterRequest) (*orgpb.DereferenceClusterResponse, error) {
+	panic("implement me")
+}
+
+func (m OrgMock) WithUc(uc user.Interface) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (m OrgMock) WithMember(member *member.Member) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (m OrgMock) WithPermission(permission *permission.Permission) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (m OrgMock) ListOrgs(ctx context.Context, orgIDs []int64, req *orgpb.ListOrgRequest, all bool) (int, []*orgpb.Org, error) {
+	//TODO implement me
 	panic("implement me")
 }

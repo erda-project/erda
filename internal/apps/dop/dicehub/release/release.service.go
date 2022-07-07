@@ -66,7 +66,7 @@ type ReleaseService struct {
 	Etcd            *clientv3.Client
 	Config          *releaseConfig
 	ReleaseRule     *release_rule.ReleaseRule
-	org             org.ClientInterface
+	org             org.Interface
 }
 
 // CreateRelease POST /api/releases release create release
