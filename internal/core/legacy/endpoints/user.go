@@ -23,12 +23,12 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/core/legacy/services/apierrors"
+	identity "github.com/erda-project/erda/internal/core/user/common"
 	"github.com/erda-project/erda/internal/pkg/user"
 	"github.com/erda-project/erda/pkg/desensitize"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/strutil"
-	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 // 限制批量查询最大用户数
@@ -38,7 +38,7 @@ const maxUserSize = 100
 func (e *Endpoints) ListUser(ctx context.Context, r *http.Request, vars map[string]string) (
 	httpserver.Responser, error) {
 	var (
-		users []ucauth.User
+		users []identity.User
 		err   error
 	)
 
@@ -138,7 +138,7 @@ func (e *Endpoints) GetUcUserID(ctx context.Context, r *http.Request, vars map[s
 	return httpserver.OkResp(userID)
 }
 
-func convertToUserInfo(user *ucauth.User, plaintext bool) *apistructs.UserInfo {
+func convertToUserInfo(user *identity.User, plaintext bool) *apistructs.UserInfo {
 	if !plaintext {
 		user.Phone = desensitize.Mobile(user.Phone)
 		user.Email = desensitize.Email(user.Email)
@@ -155,7 +155,7 @@ func convertToUserInfo(user *ucauth.User, plaintext bool) *apistructs.UserInfo {
 
 func (e *Endpoints) SearchUser(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	var (
-		users []ucauth.User
+		users []identity.User
 		err   error
 	)
 

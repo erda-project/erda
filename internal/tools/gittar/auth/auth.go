@@ -33,6 +33,7 @@ import (
 
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
+	identity "github.com/erda-project/erda/internal/core/user/common"
 	"github.com/erda-project/erda/internal/tools/gittar/conf"
 	"github.com/erda-project/erda/internal/tools/gittar/models"
 	"github.com/erda-project/erda/internal/tools/gittar/pkg/gitmodule"
@@ -40,7 +41,6 @@ import (
 	"github.com/erda-project/erda/internal/tools/gittar/webcontext"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/oauth2/tokenstore/mysqltokenstore"
-	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 var (
@@ -197,7 +197,7 @@ func doAuth(c *webcontext.Context, repo *models.Repo, repoName string) {
 
 	var gitRepository = &gitmodule.Repository{}
 	var err error
-	var userInfo *ucauth.UserInfo
+	var userInfo *identity.UserInfo
 
 	userIdStr := c.GetHeader(httputil.UserHeader)
 	if userIdStr != "" {
@@ -272,8 +272,8 @@ type ErrorData struct {
 	Msg  string `json:"msg"`
 }
 
-func GetUserInfoByTokenOrBasicAuth(c *webcontext.Context, projectID int64) (*ucauth.UserInfo, error) {
-	var userInfo = &ucauth.UserInfo{}
+func GetUserInfoByTokenOrBasicAuth(c *webcontext.Context, projectID int64) (*identity.UserInfo, error) {
+	var userInfo = &identity.UserInfo{}
 	var err error
 
 	org := c.Param("org")
@@ -292,8 +292,8 @@ func GetUserInfoByTokenOrBasicAuth(c *webcontext.Context, projectID int64) (*uca
 				userID := res.Data[0].CreatorId
 				userInfo, err := uc.FindUserById(userID)
 				if err == nil {
-					return &ucauth.UserInfo{
-						ID:        ucauth.USERID(userID),
+					return &identity.UserInfo{
+						ID:        identity.USERID(userID),
 						Email:     userInfo.Email,
 						Phone:     userInfo.Phone,
 						AvatarUrl: userInfo.AvatarURL,
@@ -320,7 +320,7 @@ func GetUserInfoByTokenOrBasicAuth(c *webcontext.Context, projectID int64) (*uca
 	}
 
 }
-func GetUserByBasicAuth(c *webcontext.Context, username string, passwd string) (*ucauth.UserInfo, error) {
+func GetUserByBasicAuth(c *webcontext.Context, username string, passwd string) (*identity.UserInfo, error) {
 	token, err := c.UCAuth.PwdAuth(username, passwd)
 	if err != nil {
 		return nil, err

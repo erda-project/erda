@@ -22,6 +22,8 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/core/user/impl/kratos"
+	"github.com/erda-project/erda/internal/core/user/impl/uc"
 	"github.com/erda-project/erda/internal/pkg/user"
 	"github.com/erda-project/erda/internal/tools/openapi/legacy/api/apierrors"
 	"github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
@@ -31,7 +33,6 @@ import (
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/strutil"
-	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 var UC_USER_FREEZE = apis.ApiSpec{
@@ -85,9 +86,9 @@ func freezeUser(w http.ResponseWriter, r *http.Request) {
 	httpserver.WriteData(w, nil)
 }
 
-func handleFreezeUser(userID, operatorID string, token ucauth.OAuthToken) error {
-	if token.TokenType == ucauth.OryCompatibleClientId {
-		return ucauth.ChangeUserState(token.AccessToken, userID, ucauth.UserInActive)
+func handleFreezeUser(userID, operatorID string, token uc.OAuthToken) error {
+	if token.TokenType == uc.OryCompatibleClientId {
+		return kratos.ChangeUserState(token.AccessToken, userID, kratos.UserInActive)
 	}
 
 	var resp struct {

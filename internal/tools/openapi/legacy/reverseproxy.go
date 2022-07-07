@@ -35,7 +35,6 @@ import (
 	apispec "github.com/erda-project/erda/internal/tools/openapi/legacy/api/spec"
 	"github.com/erda-project/erda/internal/tools/openapi/legacy/auth"
 	"github.com/erda-project/erda/internal/tools/openapi/legacy/hooks"
-	"github.com/erda-project/erda/internal/tools/openapi/legacy/hooks/posthandle"
 	"github.com/erda-project/erda/internal/tools/openapi/legacy/monitor"
 	"github.com/erda-project/erda/internal/tools/openapi/legacy/proxy"
 	phttp "github.com/erda-project/erda/internal/tools/openapi/legacy/proxy/http"
@@ -145,10 +144,10 @@ func modifyResponse(res *http.Response) error {
 	}
 	if !spec.ChunkAPI {
 		if hooks.Enable {
-			if err = posthandle.InjectUserInfo(res, spec.NeedDesensitize); err != nil {
-				logrus.Errorf("failed to inject userinfo: %v", err)
-				return err
-			}
+			// if err = posthandle.InjectUserInfo(res, spec.NeedDesensitize); err != nil {
+			// 	logrus.Errorf("failed to inject userinfo: %v", err)
+			// 	return err
+			// }
 		}
 	}
 

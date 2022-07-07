@@ -10,3 +10,14 @@ etcd:
 grpc-client@erda.core.token:
   addr: "${ERDA_SERVER_GRPC_ADDR:erda-server:8096}"
 erda.core.token-client: {}
+
+mysql:
+  host: "${MYSQL_HOST}"
+  port: "${MYSQL_PORT}"
+  username: "${MYSQL_USERNAME}"
+  password: "${MYSQL_PASSWORD}"
+  database: "${MYSQL_DATABASE}"
+
+erda.core.user: {}
+erda.core.user.kratos: {}
+erda.core.user.uc: {}

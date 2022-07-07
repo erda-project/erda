@@ -30,8 +30,8 @@ import (
 	"github.com/erda-project/erda/internal/core/legacy/services/member"
 	"github.com/erda-project/erda/internal/core/legacy/services/permission"
 	"github.com/erda-project/erda/internal/core/org/db"
+	"github.com/erda-project/erda/internal/core/user"
 	"github.com/erda-project/erda/pkg/common/apis"
-	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 type config struct {
@@ -51,7 +51,7 @@ type provider struct {
 	dbClient *db.DBClient
 
 	member     *member.Member
-	uc         *ucauth.UCClient
+	uc         user.Interface
 	permission *permission.Permission
 
 	TokenService tokenpb.TokenServiceServer
@@ -62,7 +62,7 @@ func (p *provider) WithMember(member *member.Member) {
 	p.member = member
 }
 
-func (p *provider) WithUc(uc *ucauth.UCClient) {
+func (p *provider) WithUc(uc user.Interface) {
 	p.uc = uc
 }
 

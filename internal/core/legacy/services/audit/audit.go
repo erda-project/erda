@@ -30,15 +30,15 @@ import (
 	"github.com/erda-project/erda/internal/core/legacy/conf"
 	"github.com/erda-project/erda/internal/core/legacy/dao"
 	"github.com/erda-project/erda/internal/core/legacy/model"
+	"github.com/erda-project/erda/internal/core/user"
 	"github.com/erda-project/erda/pkg/cron"
 	"github.com/erda-project/erda/pkg/excel"
-	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 // Audit 成员操作封装
 type Audit struct {
 	db    *dao.DBClient
-	uc    *ucauth.UCClient
+	uc    user.Interface
 	cron  *cron.Cron
 	trans i18n.Translator
 }
@@ -67,7 +67,7 @@ func WithDBClient(db *dao.DBClient) Option {
 }
 
 // WithUCClient 配置 uc client
-func WithUCClient(uc *ucauth.UCClient) Option {
+func WithUCClient(uc user.Interface) Option {
 	return func(a *Audit) {
 		a.uc = uc
 	}

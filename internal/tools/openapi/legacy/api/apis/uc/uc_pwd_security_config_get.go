@@ -23,6 +23,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/core/user/impl/uc"
 	"github.com/erda-project/erda/internal/pkg/user"
 	"github.com/erda-project/erda/internal/tools/openapi/legacy/api/apierrors"
 	"github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
@@ -32,7 +33,6 @@ import (
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/strutil"
-	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 var UC_PWD_SECURITY_CONFIG_GET = apis.ApiSpec{
@@ -82,7 +82,7 @@ func getPwdSecurityConfig(w http.ResponseWriter, r *http.Request) {
 	httpserver.WriteData(w, config)
 }
 
-func handleGetPwdSecurityConfig(token ucauth.OAuthToken) (*apistructs.PwdSecurityConfig, error) {
+func handleGetPwdSecurityConfig(token uc.OAuthToken) (*apistructs.PwdSecurityConfig, error) {
 	var resp struct {
 		Success bool                          `json:"success"`
 		Result  *apistructs.PwdSecurityConfig `json:"result"`

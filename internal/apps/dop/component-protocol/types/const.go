@@ -31,4 +31,5 @@ const (
 	PipelineCronService    = "pipeline_cron"
 	GuideService           = "guide"
 	OrgService             = "org"
+	IdentitiyService       = "identity"
 )

@@ -25,9 +25,9 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
+	identity "github.com/erda-project/erda/internal/core/user/common"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/strutil"
-	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 // TestCase 测试用例
@@ -429,5 +429,5 @@ func setDefaultForTestCasePagingRequest(req *apistructs.TestCasePagingRequest) {
 	}
 
 	// set unassigned ids
-	req.UpdaterIDs = ucauth.PolishUnassignedAsEmptyStr(req.UpdaterIDs)
+	req.UpdaterIDs = identity.PolishUnassignedAsEmptyStr(req.UpdaterIDs)
 }

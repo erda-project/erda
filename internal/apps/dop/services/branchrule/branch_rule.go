@@ -27,12 +27,10 @@ import (
 	"github.com/erda-project/erda/internal/pkg/diceworkspace"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/discover"
-	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 type BranchRule struct {
 	db  *dao.DBClient
-	uc  *ucauth.UCClient
 	bdl *bundle.Bundle
 
 	devFlowRule dfrpb.DevFlowRuleServiceServer

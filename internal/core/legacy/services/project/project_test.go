@@ -29,7 +29,6 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/core/legacy/dao"
 	"github.com/erda-project/erda/internal/core/legacy/model"
-	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 func TestClass_genProjectNamespace(t *testing.T) {
@@ -119,10 +118,6 @@ func TestWtihI18n(t *testing.T) {
 
 func TestWithDBClient(t *testing.T) {
 	New(WithDBClient(new(dao.DBClient)))
-}
-
-func TestWithUCClient(t *testing.T) {
-	New(WithUCClient(new(ucauth.UCClient)))
 }
 
 func TestWithBundle(t *testing.T) {

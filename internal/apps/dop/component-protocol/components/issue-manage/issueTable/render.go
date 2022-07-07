@@ -39,9 +39,9 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/issue-manage/common/gshelper"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/types"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query"
+	"github.com/erda-project/erda/internal/core/user"
 	"github.com/erda-project/erda/internal/pkg/component-protocol/issueFilter"
 	protocol "github.com/erda-project/erda/internal/tools/openapi/legacy/component-protocol"
-	"github.com/erda-project/erda/internal/tools/openapi/legacy/hooks/posthandle"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -241,6 +241,7 @@ var (
 func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	sdk := cputil.SDK(ctx)
 	issueSvc := ctx.Value(types.IssueService).(query.Interface)
+	identity := ctx.Value(types.IdentitiyService).(user.Interface)
 	isGuest, err := ca.CheckUserPermission(ctx)
 	if err != nil {
 		return err
@@ -338,11 +339,11 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 	}
 
 	for _, p := range issues {
-		userids = append(userids, p.Assignee)
+		userids = append(userids, p.Creator, p.Assignee, p.Owner)
 	}
 	// 获取全部用户
 	userids = strutil.DedupSlice(userids, true)
-	uInfo, err := posthandle.GetUsers(userids, false)
+	uInfo, err := identity.GetUsers(userids, false)
 	if err != nil {
 		return err
 	}

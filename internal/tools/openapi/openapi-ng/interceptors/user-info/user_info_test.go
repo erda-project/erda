@@ -16,26 +16,23 @@ package userinfo
 
 import (
 	"net/http"
-	"reflect"
 	"strings"
 	"testing"
 
-	"bou.ke/monkey"
 	"github.com/alecthomas/assert"
+	gomock "github.com/golang/mock/gomock"
 
+	apistructs "github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/http/httputil"
-	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 func Test_provider_userInfoRetriever(t *testing.T) {
-	uc := &ucauth.UCClient{}
-	m := monkey.PatchInstanceMethod(reflect.TypeOf(uc), "FindUsers",
-		func(uc *ucauth.UCClient, ids []string) ([]ucauth.User, error) {
-			return []ucauth.User{{ID: "1"}}, nil
-		})
-	defer m.Unpatch()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	identitySvc := NewMockInterface(ctrl)
+	identitySvc.EXPECT().GetUsers(gomock.Any(), gomock.Any()).AnyTimes().Return(map[string]apistructs.UserInfo{"1": {ID: "1"}}, nil)
 
-	p := &provider{uc: uc}
+	p := &provider{Identity: identitySvc}
 	type args struct {
 		r       *http.Request
 		data    map[string]interface{}
@@ -71,7 +68,7 @@ func Test_provider_userInfoRetriever(t *testing.T) {
 			},
 		},
 	}
-	expected := []string{`"id":""`, `"id":"1"`}
+	expected := []string{`"id":"1"`, `"id":"1"`}
 	for i, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			body := p.userInfoRetriever(tt.args.r, tt.args.data, tt.args.userIDs)

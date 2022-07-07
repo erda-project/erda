@@ -23,9 +23,9 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/apistructs"
+	identity "github.com/erda-project/erda/internal/core/user/common"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/strutil"
-	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 // TestPlan 测试计划
@@ -123,9 +123,9 @@ func (client *DBClient) PagingTestPlan(req apistructs.TestPlanPagingRequest) (ui
 		testPlans []TestPlan
 	)
 	// set unassigned ids
-	req.OwnerIDs = ucauth.PolishUnassignedAsEmptyStr(req.OwnerIDs)
-	req.PartnerIDs = ucauth.PolishUnassignedAsEmptyStr(req.PartnerIDs)
-	req.UserIDs = ucauth.PolishUnassignedAsEmptyStr(req.UserIDs)
+	req.OwnerIDs = identity.PolishUnassignedAsEmptyStr(req.OwnerIDs)
+	req.PartnerIDs = identity.PolishUnassignedAsEmptyStr(req.PartnerIDs)
+	req.UserIDs = identity.PolishUnassignedAsEmptyStr(req.UserIDs)
 
 	var tpIDs []uint64
 	var tpIDsAssigned = false

@@ -25,11 +25,11 @@ import (
 	"github.com/pkg/errors"
 
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
+	identity "github.com/erda-project/erda/internal/core/user/common"
 	"github.com/erda-project/erda/internal/tools/openapi/legacy/api/spec"
 	"github.com/erda-project/erda/internal/tools/openapi/legacy/conf"
 	"github.com/erda-project/erda/internal/tools/openapi/legacy/monitor"
 	"github.com/erda-project/erda/pkg/oauth2"
-	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 type AuthResult struct {
@@ -131,7 +131,7 @@ func (a *Auth) Auth(spec *spec.Spec, req *http.Request) AuthResult {
 }
 
 func setUserInfoHeaders(req *http.Request, user *User) AuthResult {
-	var userinfo ucauth.UserInfo
+	var userinfo identity.UserInfo
 	r := AuthResult{AuthSucc, ""}
 	userinfo, r = user.GetInfo(req)
 	if r.Code != AuthSucc {

@@ -51,13 +51,11 @@ import (
 	"github.com/erda-project/erda/internal/core/legacy/services/user"
 	"github.com/erda-project/erda/internal/core/legacy/utils"
 	"github.com/erda-project/erda/internal/core/messenger/eventbox/websocket"
-	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/jsonstore"
 	"github.com/erda-project/erda/pkg/jsonstore/etcd"
 	"github.com/erda-project/erda/pkg/license"
-	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 // Initialize 初始化应用启动服务.
@@ -150,13 +148,6 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 		return nil, err
 	}
 
-	// 初始化UC Client
-	uc := ucauth.NewUCClient(discover.UC(), conf.UCClientID(), conf.UCClientSecret())
-	if conf.OryEnabled() {
-		uc = ucauth.NewUCClient(conf.OryKratosPrivateAddr(), conf.OryCompatibleClientID(), conf.OryCompatibleClientSecret())
-		uc.SetDBClient(db.DB)
-	}
-
 	// init bundle
 	bundleOpts := []bundle.Option{
 		bundle.WithAddOnPlatform(),
@@ -181,7 +172,7 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 	// init project service
 	proj := project.New(
 		project.WithDBClient(db),
-		project.WithUCClient(uc),
+		project.WithUCClient(p.Identity),
 		project.WithBundle(bdl),
 		project.WithI18n(p.Tran),
 	)
@@ -189,14 +180,14 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 	// init app service
 	app := application.New(
 		application.WithDBClient(db),
-		application.WithUCClient(uc),
+		application.WithUCClient(p.Identity),
 		application.WithBundle(bdl),
 	)
 
 	// init member service
 	m := member.New(
 		member.WithDBClient(db),
-		member.WithUCClient(uc),
+		member.WithUCClient(p.Identity),
 		member.WithRedisClient(redisCli),
 		member.WithTranslator(p.Tran),
 		member.WithTokenSvc(p.TokenService),
@@ -226,7 +217,7 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 	approve := approve.New(
 		approve.WithDBClient(db),
 		approve.WithBundle(bdl),
-		approve.WithUCClient(uc),
+		approve.WithUCClient(p.Identity),
 		approve.WithMember(m),
 	)
 
@@ -244,7 +235,7 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 
 	audit := audit.New(
 		audit.WithDBClient(db),
-		audit.WithUCClient(uc),
+		audit.WithUCClient(p.Identity),
 		audit.WithTrans(p.Tran),
 	)
 
@@ -260,7 +251,7 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 
 	user := user.New(
 		user.WithDBClient(db),
-		user.WithUCClient(uc),
+		user.WithUCClient(p.Identity),
 	)
 
 	sub := subscribe.New(
@@ -275,7 +266,7 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 	projectCache.New(db)
 
 	p.Org.WithMember(m)
-	p.Org.WithUc(uc)
+	p.Org.WithUc(p.Identity)
 	p.Org.WithPermission(pm)
 
 	// compose endpoints
@@ -284,7 +275,7 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 		endpoints.WithEtcdStore(etcdStore),
 		endpoints.WithOSSClient(ossClient),
 		endpoints.WithDBClient(db),
-		endpoints.WithUCClient(uc),
+		endpoints.WithUCClient(p.Identity),
 		endpoints.WithBundle(bdl),
 		endpoints.WithManualReview(mr),
 		endpoints.WithProject(proj),

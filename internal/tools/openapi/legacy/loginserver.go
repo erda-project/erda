@@ -28,6 +28,7 @@ import (
 
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/bundle"
+	identity "github.com/erda-project/erda/internal/core/user/common"
 	"github.com/erda-project/erda/internal/tools/openapi/legacy/auth"
 	"github.com/erda-project/erda/internal/tools/openapi/legacy/component-protocol/generate/auto_register"
 	"github.com/erda-project/erda/internal/tools/openapi/legacy/conf"
@@ -35,7 +36,6 @@ import (
 	"github.com/erda-project/erda/internal/tools/openapi/legacy/hooks/prehandle"
 	"github.com/erda-project/erda/pkg/oauth2"
 	"github.com/erda-project/erda/pkg/strutil"
-	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 type LoginServer struct {
@@ -191,7 +191,7 @@ type PwdLoginRequest struct {
 
 type PwdLoginResponse struct {
 	SessionID string `json:"sessionid"`
-	ucauth.UserInfo
+	identity.UserInfo
 }
 
 func (s *LoginServer) PwdLogin(rw http.ResponseWriter, req *http.Request) {

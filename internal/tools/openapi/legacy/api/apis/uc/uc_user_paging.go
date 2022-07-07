@@ -21,13 +21,13 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/core/user/util"
 	"github.com/erda-project/erda/internal/pkg/user"
 	"github.com/erda-project/erda/internal/tools/openapi/legacy/api/apierrors"
 	"github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
 	"github.com/erda-project/erda/internal/tools/openapi/legacy/auth"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
-	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 var UC_USER_PAGING = apis.ApiSpec{
@@ -77,13 +77,12 @@ func pagingUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data, err := ucauth.HandlePagingUsers(req, token)
+	data, err := util.HandlePagingUsers(req, token)
 	if err != nil {
 		errorresp.ErrWrite(err, w)
 		return
 	}
-
-	httpserver.WriteData(w, ucauth.ConvertToUserInfoExt(data))
+	httpserver.WriteData(w, util.ConvertToUserInfoExt(data))
 }
 
 func getPagingUsersReq(r *http.Request) (*apistructs.UserPagingRequest, error) {

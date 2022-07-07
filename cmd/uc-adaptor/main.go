@@ -21,7 +21,7 @@ import (
 	"github.com/erda-project/erda/pkg/common"
 
 	// providers and modules
-	_ "github.com/erda-project/erda/internal/core/user/uc-adaptor"
+	_ "github.com/erda-project/erda/internal/core/user/impl/uc/uc-adaptor"
 )
 
 //go:embed bootstrap.yaml

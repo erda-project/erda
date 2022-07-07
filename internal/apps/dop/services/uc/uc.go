@@ -25,10 +25,10 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/internal/apps/dop/conf"
+	"github.com/erda-project/erda/internal/core/user/impl/uc"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/strutil"
-	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 const (
@@ -37,7 +37,7 @@ const (
 
 var (
 	once      sync.Once
-	tokenAuth *ucauth.UCTokenAuth
+	tokenAuth *uc.UCTokenAuth
 	client    *httpclient.HTTPClient
 )
 
@@ -51,7 +51,7 @@ type User struct {
 func GetUsers(userIDs []string) (map[string]*User, error) {
 	once.Do(func() {
 		var err error
-		tokenAuth, err = ucauth.NewUCTokenAuth(discover.UC(), conf.UCClientID(), conf.UCClientSecret())
+		tokenAuth, err = uc.NewUCTokenAuth(discover.UC(), conf.UCClientID(), conf.UCClientSecret())
 		if err != nil {
 			logrus.Fatal("failed to NewUCTokenAuth", err)
 		}
@@ -60,7 +60,7 @@ func GetUsers(userIDs []string) (map[string]*User, error) {
 
 	var (
 		err   error
-		token ucauth.OAuthToken
+		token uc.OAuthToken
 	)
 	if token, err = tokenAuth.GetServerToken(false); err != nil {
 		return nil, err

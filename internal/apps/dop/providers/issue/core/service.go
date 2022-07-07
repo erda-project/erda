@@ -38,9 +38,9 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	"github.com/erda-project/erda/internal/apps/dop/services/testcase"
 	mttestplan "github.com/erda-project/erda/internal/apps/dop/services/testplan"
+	"github.com/erda-project/erda/internal/core/user"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/strutil"
-	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 type IssueService struct {
@@ -48,17 +48,13 @@ type IssueService struct {
 
 	db            *dao.DBClient
 	bdl           *bundle.Bundle
-	uc            *ucauth.UCClient
 	stream        core.Interface
 	query         query.Interface
 	mttestPlan    *mttestplan.TestPlan
 	testcase      *testcase.Service
 	ExportChannel chan uint64
 	ImportChannel chan uint64
-}
-
-func (i *IssueService) WithUc(uc *ucauth.UCClient) {
-	i.uc = uc
+	identity      user.Interface
 }
 
 func (i *IssueService) WithTestplan(testPlan *mttestplan.TestPlan) {
@@ -158,7 +154,7 @@ func (i *IssueService) CreateIssue(ctx context.Context, req *pb.IssueCreateReque
 	}
 
 	// 生成活动记录
-	users, err := i.uc.FindUsers([]string{req.IdentityInfo.UserID})
+	users, err := i.identity.FindUsers([]string{req.IdentityInfo.UserID})
 	if err != nil {
 		return nil, err
 	}

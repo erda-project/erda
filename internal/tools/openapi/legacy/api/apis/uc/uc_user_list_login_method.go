@@ -22,6 +22,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/core/user/impl/uc"
 	"github.com/erda-project/erda/internal/pkg/user"
 	"github.com/erda-project/erda/internal/tools/openapi/legacy/api/apierrors"
 	"github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
@@ -32,7 +33,6 @@ import (
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/i18n"
 	"github.com/erda-project/erda/pkg/strutil"
-	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 var UC_USER_LIST_LOGIN_METHOD = apis.ApiSpec{
@@ -122,9 +122,9 @@ type listLoginTypeResult struct {
 	RegistryType []string `json:"registryType"`
 }
 
-func handleListLoginMethod(token ucauth.OAuthToken) (*listLoginTypeResult, error) {
+func handleListLoginMethod(token uc.OAuthToken) (*listLoginTypeResult, error) {
 	// TODO: password oidc
-	if token.TokenType == ucauth.OryCompatibleClientId {
+	if token.TokenType == uc.OryCompatibleClientId {
 		return &listLoginTypeResult{
 			RegistryType: []string{"email"},
 		}, nil

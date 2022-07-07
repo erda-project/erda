@@ -21,9 +21,9 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda/internal/core/user/impl/uc"
 	"github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
 	"github.com/erda-project/erda/internal/tools/openapi/legacy/auth"
-	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 var OPENAPI_NEW_CLIENT = apis.ApiSpec{
@@ -31,7 +31,7 @@ var OPENAPI_NEW_CLIENT = apis.ApiSpec{
 	Scheme: "http",
 	Method: "POST",
 	Custom: func(rw http.ResponseWriter, req *http.Request) {
-		var newClientReq ucauth.NewClientRequest
+		var newClientReq uc.NewClientRequest
 		d := json.NewDecoder(req.Body)
 		if err := d.Decode(&newClientReq); err != nil {
 			errStr := fmt.Sprintf("new client fail: %v, buffered: %v", err, d.Buffered())

@@ -77,7 +77,6 @@ import (
 	"github.com/erda-project/erda/pkg/jsonstore"
 	"github.com/erda-project/erda/pkg/jsonstore/etcd"
 	"github.com/erda-project/erda/pkg/strutil"
-	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 const (
@@ -667,7 +666,6 @@ type Endpoints struct {
 	issue           *issue.Issue
 	issueState      *issuestate.IssueState
 	workBench       *workbench.Workbench
-	uc              *ucauth.UCClient
 	iteration       *iteration.Iteration
 	publisher       *publisher.Publisher
 	certificate     *certificate.Certificate
@@ -805,10 +803,6 @@ func WithOrgClient(org orgclient.ClientInterface) Option {
 // DBClient 获取db client
 func (e *Endpoints) DBClient() *dao.DBClient {
 	return e.db
-}
-
-func (e *Endpoints) UCClient() *ucauth.UCClient {
-	return e.uc
 }
 
 // GetLocale 获取本地化资源
@@ -951,13 +945,6 @@ func WithIssue(issue *issue.Issue) Option {
 func WithIssueState(state *issuestate.IssueState) Option {
 	return func(e *Endpoints) {
 		e.issueState = state
-	}
-}
-
-// WithUCClient 配置 UC Client
-func WithUCClient(uc *ucauth.UCClient) Option {
-	return func(e *Endpoints) {
-		e.uc = uc
 	}
 }
 
