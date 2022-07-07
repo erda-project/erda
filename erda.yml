@@ -239,6 +239,44 @@ services:
       exec: { }
     hosts: [ ]
     binds: [ ]
+  # deploy on edge cluster with different config
+  collector-agent:
+    labels:
+      cpu_bound: "true"
+    cmd: /erda/cmd/monitor/collector/bin
+    ports:
+      - port: 7076
+        protocol: "TCP"
+        l4_protocol: "TCP"
+        expose: true
+      - port: 7098
+        protocol: "TCP"
+        l4_protocol: "TCP"
+    envs:
+      GOLANG_PROTOBUF_REGISTRATION_CONFLICT: "ignore"
+      COLLECTOR_BROWSER_SAMPLING_RATE: "100"
+      COLLECTOR_ENABLE: "true"
+    resources:
+      cpu: ${request_cpu:0.5}
+      mem: ${request_mem:512}
+      max_cpu: 1
+      max_mem: 1024
+      network:
+        mode: "container"
+    deployments:
+      replicas: ${replicas:1}
+      labels:
+        GROUP: "spot-v2"
+    expose:
+      - 7076
+    health_check:
+      http:
+        port: 7076
+        path: "/api/health"
+        duration: 120
+      exec: { }
+    hosts: [ ]
+    binds: [ ]
   gittar:
     cmd: /erda/cmd/gittar/bin
     ports:
