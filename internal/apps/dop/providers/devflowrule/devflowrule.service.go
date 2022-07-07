@@ -50,7 +50,7 @@ type GetFlowByRuleRequest struct {
 	ProjectID     uint64
 	BranchType    string
 	CurrentBranch string
-	SourceBranch  string
+	TargetBranch  string
 }
 
 type Interface interface {
@@ -291,9 +291,10 @@ func (p *provider) GetFlowByRule(ctx context.Context, request GetFlowByRuleReque
 		return nil, nil
 	}
 	for _, policy := range branchPolicies {
-		if findBranch == policy.Branch && request.BranchType == policy.BranchType && policy.Policy != nil {
-			sourceBranches := strings.Split(policy.Policy.SourceBranch, ",")
-			if diceworkspace.IsRefPatternMatch(request.SourceBranch, sourceBranches) {
+		if findBranch == policy.Branch && request.BranchType == policy.BranchType &&
+			policy.Policy != nil && policy.Policy.TargetBranch != nil {
+			targetBranches := strings.Split(policy.Policy.TargetBranch.MergeRequest, ",")
+			if diceworkspace.IsRefPatternMatch(request.TargetBranch, targetBranches) {
 				return &pb.FlowWithBranchPolicy{
 					Flow:         findFlow.Convert(),
 					BranchPolicy: policy.Convert(),
@@ -301,5 +302,7 @@ func (p *provider) GetFlowByRule(ctx context.Context, request GetFlowByRuleReque
 			}
 		}
 	}
-	return nil, nil
+	return &pb.FlowWithBranchPolicy{
+		Flow: findFlow.Convert(),
+	}, nil
 }
