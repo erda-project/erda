@@ -14,9 +14,11 @@
 
 package queue
 
-import "github.com/erda-project/erda/apistructs"
+import (
+	"github.com/erda-project/erda-proto-go/core/pipeline/queue/pb"
+)
 
-func (q *defaultQueue) Update(pq *apistructs.PipelineQueue) {
+func (q *defaultQueue) Update(pq *pb.Queue) {
 	q.pq = pq
 	q.eq.SetProcessingWindow(pq.Concurrency)
 }

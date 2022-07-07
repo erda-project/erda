@@ -22,7 +22,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda-proto-go/core/pipeline/queue/pb"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/queuemanager/queue"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/queuemanager/types"
 	"github.com/erda-project/erda/pkg/jsonstore/storetypes"
@@ -41,7 +41,7 @@ var (
 )
 
 // IdempotentAddQueue add to to manager idempotent.
-func (mgr *defaultManager) IdempotentAddQueue(pq *apistructs.PipelineQueue) types.Queue {
+func (mgr *defaultManager) IdempotentAddQueue(pq *pb.Queue) types.Queue {
 	mgr.qLock.Lock()
 	defer mgr.qLock.Unlock()
 
