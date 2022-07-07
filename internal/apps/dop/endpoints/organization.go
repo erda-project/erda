@@ -150,6 +150,7 @@ func (e *Endpoints) UpdateOrg(ctx context.Context, r *http.Request, vars map[str
 	if err := json.NewDecoder(r.Body).Decode(&orgUpdateReq); err != nil {
 		return apierrors.ErrUpdateOrg.InvalidParameter(err).ToResp(), nil
 	}
+	orgUpdateReq.OrgID = vars["orgID"]
 	logrus.Infof("request body: %+v", orgUpdateReq)
 	// 操作鉴权
 	req := apistructs.PermissionCheckRequest{
@@ -240,7 +241,7 @@ func (e *Endpoints) DeleteOrg(ctx context.Context, r *http.Request, vars map[str
 
 // ListOrg list org
 func (e *Endpoints) ListOrg(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
-	_, err := user.GetIdentityInfo(r)
+	identityInfo, err := user.GetIdentityInfo(r)
 	if err != nil {
 		return apierrors.ErrListOrg.NotLogin().ToResp(), nil
 	}
@@ -249,7 +250,7 @@ func (e *Endpoints) ListOrg(ctx context.Context, r *http.Request, vars map[strin
 	if err != nil {
 		return apierrors.ErrListOrg.InvalidParameter(err).ToResp(), nil
 	}
-	orgResp, err := e.orgClient.ListOrg(apis.WithInternalClientContext(ctx, discover.SvcDOP), req)
+	orgResp, err := e.listOrg(ctx, identityInfo.UserID, req)
 	if err != nil {
 		return apierrors.ErrListOrg.InternalError(err).ToResp(), nil
 	}
@@ -261,9 +262,13 @@ func (e *Endpoints) ListOrg(ctx context.Context, r *http.Request, vars map[strin
 	return httpserver.OkResp(orgResp)
 }
 
+func (e *Endpoints) listOrg(ctx context.Context, userID string, req *orgpb.ListOrgRequest) (*orgpb.ListOrgResponse, error) {
+	return e.orgClient.ListOrg(apis.WithUserIDContext(apis.WithInternalClientContext(ctx, discover.SvcDOP), userID), req)
+}
+
 // ListPublicOrg list public org
 func (e *Endpoints) ListPublicOrg(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
-	_, err := user.GetIdentityInfo(r)
+	identityInfo, err := user.GetIdentityInfo(r)
 	if err != nil {
 		return apierrors.ErrListPublicOrg.NotLogin().ToResp(), nil
 	}
@@ -273,7 +278,7 @@ func (e *Endpoints) ListPublicOrg(ctx context.Context, r *http.Request, vars map
 		return apierrors.ErrListPublicOrg.InvalidParameter(err).ToResp(), nil
 	}
 
-	orgResp, err := e.orgClient.ListPublicOrg(apis.WithInternalClientContext(ctx, discover.SvcDOP), req)
+	orgResp, err := e.listPublicOrg(ctx, identityInfo.UserID, req)
 	if err != nil {
 		return apierrors.ErrListOrg.InternalError(err).ToResp(), nil
 	}
@@ -284,6 +289,10 @@ func (e *Endpoints) ListPublicOrg(ctx context.Context, r *http.Request, vars map
 	// }
 
 	return httpserver.OkResp(orgResp)
+}
+
+func (e *Endpoints) listPublicOrg(ctx context.Context, userID string, req *orgpb.ListOrgRequest) (*orgpb.ListOrgResponse, error) {
+	return e.orgClient.ListPublicOrg(apis.WithUserIDContext(apis.WithInternalClientContext(ctx, discover.SvcDOP), userID), req)
 }
 
 // GetOrgByDomain 通过域名查询企业
