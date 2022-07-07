@@ -40,21 +40,15 @@ func (s *Server) RegisterToNewHttpServerRouter(newRouter httpserver.Router) erro
 	return nil
 }
 
+// CheckDuplicateRoutes return duplicate items and true if there is no duplicate.
 func (s *Server) CheckDuplicateRoutes() ([]string, bool) {
-	pathParamRegex := regexp.MustCompile(`{([^{}]*)}`)
-	genKey := func(method, path string) string {
-		path = strutil.ReplaceAllStringSubmatchFunc(pathParamRegex, path, func(i []string) string {
-			return "{}"
-		})
-		return strings.ToLower(method) + ":" + path
-	}
 	// get all routes
 	routeMap := make(map[string]int) // key: method + path
 	_ = s.router.Walk(func(route *mux.Route, _ *mux.Router, _ []*mux.Route) error {
 		path, _ := route.GetPathTemplate()
 		methods, _ := route.GetMethods()
 		for _, method := range methods {
-			key := genKey(method, path)
+			key := genMapKeyForCompare(method, path)
 			routeMap[key]++
 		}
 		return nil
@@ -67,4 +61,17 @@ func (s *Server) CheckDuplicateRoutes() ([]string, bool) {
 		}
 	}
 	return duplicateRoutes, len(duplicateRoutes) == 0
+}
+
+var pathParamRegex = regexp.MustCompile(`{([^{}]*)}`)
+
+func normalizePath(path string) string {
+	return strutil.ReplaceAllStringSubmatchFunc(pathParamRegex, path, func(i []string) string {
+		return "{}"
+	})
+}
+
+func genMapKeyForCompare(method, path string) string {
+	path = normalizePath(path)
+	return strings.ToLower(method) + ":" + path
 }
