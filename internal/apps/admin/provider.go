@@ -77,8 +77,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	server := httpserver.NewSingleton("")
 	server.Router().UseEncodedPath()
 	server.RegisterEndpoint(admin.Routers())
-	server.RegisterToNewHttpServerRouter(p.Router)
-	return nil
+	return server.RegisterToNewHttpServerRouter(p.Router)
 }
 
 func init() {

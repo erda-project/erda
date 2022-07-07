@@ -333,12 +333,12 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/applications/actions/get-id-by-names", Method: http.MethodGet, Handler: e.GetAppIDByNames},
 
 		// the interface of notice
-		{Path: "/api/notices", Method: http.MethodPost, Handler: e.CreateNotice},
-		{Path: "/api/notices/{id}", Method: http.MethodPut, Handler: e.UpdateNotice},
-		{Path: "/api/notices/{id}/actions/publish", Method: http.MethodPut, Handler: e.PublishNotice},
-		{Path: "/api/notices/{id}/actions/unpublish", Method: http.MethodPut, Handler: e.UnpublishNotice},
-		{Path: "/api/notices/{id}", Method: http.MethodDelete, Handler: e.DeleteNotice},
-		{Path: "/api/notices", Method: http.MethodGet, Handler: e.ListNotice},
+		{Path: "/core/api/notices", Method: http.MethodPost, Handler: e.CreateNotice},
+		{Path: "/core/api/notices/{id}", Method: http.MethodPut, Handler: e.UpdateNotice},
+		{Path: "/core/api/notices/{id}/actions/publish", Method: http.MethodPut, Handler: e.PublishNotice},
+		{Path: "/core/api/notices/{id}/actions/unpublish", Method: http.MethodPut, Handler: e.UnpublishNotice},
+		{Path: "/core/api/notices/{id}", Method: http.MethodDelete, Handler: e.DeleteNotice},
+		{Path: "/core/api/notices", Method: http.MethodGet, Handler: e.ListNotice},
 
 		// the interface of member
 		{Path: "/api/members", Method: http.MethodPost, Handler: e.CreateOrUpdateMember},
@@ -416,16 +416,16 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		// the interface of audit
 		{Path: "/api/audits/actions/create", Method: http.MethodPost, Handler: e.CreateAudits},
 		{Path: "/api/audits/actions/batch-create", Method: http.MethodPost, Handler: e.BatchCreateAudits},
-		{Path: "/api/audits/actions/list", Method: http.MethodGet, Handler: e.ListAudits},
+		{Path: "/core/api/audits/actions/list", Method: http.MethodGet, Handler: e.ListAudits},
 		{Path: "/api/audits/actions/setting", Method: http.MethodPut, Handler: e.PutAuditsSettings},
 		{Path: "/api/audits/actions/setting", Method: http.MethodGet, Handler: e.GetAuditsSettings},
-		{Path: "/api/audits/actions/export-excel", Method: http.MethodGet, WriterHandler: e.ExportExcelAudit},
+		{Path: "/core/api/audits/actions/export-excel", Method: http.MethodGet, WriterHandler: e.ExportExcelAudit},
 
 		// the interface of approval
 		{Path: "/api/approves", Method: http.MethodPost, Handler: e.CreateApprove},
-		{Path: "/api/approves/{approveId}", Method: http.MethodPut, Handler: e.UpdateApprove},
-		{Path: "/api/approves/{approveId}", Method: http.MethodGet, Handler: e.GetApprove},
-		{Path: "/api/approves/actions/list-approves", Method: http.MethodGet, Handler: e.ListApproves},
+		{Path: "/core/api/approves/{approveId}", Method: http.MethodPut, Handler: e.UpdateApprove},
+		{Path: "/core/api/approves/{approveId}", Method: http.MethodGet, Handler: e.GetApprove},
+		{Path: "/core/api/approves/actions/list-approves", Method: http.MethodGet, Handler: e.ListApproves},
 
 		// the interface of file
 		{Path: "/api/files", Method: http.MethodPost, Handler: e.UploadFile},
@@ -436,9 +436,9 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/images/actions/upload", Method: http.MethodPost, Handler: e.UploadImage},
 
 		// the interface of user
-		{Path: "/api/users", Method: http.MethodGet, Handler: e.ListUser},
+		{Path: "/core/api/users", Method: http.MethodGet, Handler: e.ListUser},
 		{Path: "/api/users/current", Method: http.MethodGet, Handler: e.GetCurrentUser},
-		{Path: "/api/users/actions/search", Method: http.MethodGet, Handler: e.SearchUser},
+		{Path: "/core/api/users/actions/search", Method: http.MethodGet, Handler: e.SearchUser},
 		{Path: "/api/users/actions/get-uc-user-id", Method: http.MethodGet, Handler: e.GetUcUserID},
 
 		// the interface of subscribe
