@@ -68,9 +68,7 @@ func Initialize(p *provider) error {
 	server.Router().Path("/api/releases/{releaseId}/actions/pull").Methods(http.MethodGet).HandlerFunc(ep.GetDiceYAML)
 	server.Router().Path("/api/releases/{releaseId}/actions/get-dice").Methods(http.MethodGet).HandlerFunc(ep.GetDiceYAML)
 
-	server.RegisterToNewHttpServerRouter(p.Router)
-	// return server.ListenAndServe()
-	return nil
+	return server.RegisterToNewHttpServerRouter(p.Router)
 }
 
 // ReleaseGC 启动release gc定时任务

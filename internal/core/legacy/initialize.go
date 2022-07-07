@@ -90,8 +90,7 @@ func (p *provider) Initialize() error {
 	}()
 	server.Router().PathPrefix("/api/dice/eventbox").Path("/ws/{any:.*}").
 		Handler(sockjs.NewHandler("/api/dice/eventbox/ws", sockjs.DefaultOptions, wsi.HTTPHandle))
-	server.RegisterToNewHttpServerRouter(p.Router)
-	return nil
+	return server.RegisterToNewHttpServerRouter(p.Router)
 }
 
 // 初始化 Endpoints
