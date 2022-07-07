@@ -25,7 +25,7 @@ import (
 
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/internal/core/user/uc"
+	"github.com/erda-project/erda/internal/core/user/impl/uc"
 	"github.com/erda-project/erda/internal/tools/openapi/legacy/api/spec"
 	"github.com/erda-project/erda/internal/tools/openapi/legacy/conf"
 	"github.com/erda-project/erda/pkg/discover"

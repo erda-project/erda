@@ -22,8 +22,8 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/internal/core/user/handler"
-	"github.com/erda-project/erda/internal/core/user/uc"
+	"github.com/erda-project/erda/internal/core/user/impl/uc"
+	"github.com/erda-project/erda/internal/core/user/util"
 	"github.com/erda-project/erda/internal/pkg/user"
 	"github.com/erda-project/erda/internal/tools/openapi/legacy/api/apierrors"
 	"github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
@@ -85,12 +85,12 @@ func exportUsers(w http.ResponseWriter, r *http.Request) {
 
 	var users []apistructs.UserInfoExt
 	for i := 0; i < 100; i++ {
-		data, err := handler.HandlePagingUsers(req, token)
+		data, err := util.HandlePagingUsers(req, token)
 		if err != nil {
 			errorresp.ErrWrite(err, w)
 			return
 		}
-		u := handler.ConvertToUserInfoExt(data)
+		u := util.ConvertToUserInfoExt(data)
 		users = append(users, u.List...)
 		if len(u.List) < 1024 {
 			break

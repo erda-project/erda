@@ -29,7 +29,7 @@ import (
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/internal/core/user/uc"
+	"github.com/erda-project/erda/internal/core/user/impl/uc"
 	"github.com/erda-project/erda/internal/tools/gittar/models"
 	"github.com/erda-project/erda/internal/tools/gittar/pkg/errorx"
 	"github.com/erda-project/erda/internal/tools/gittar/pkg/gitmodule"

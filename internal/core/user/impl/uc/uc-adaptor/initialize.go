@@ -19,11 +19,11 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/internal/core/user/uc-adaptor/conf"
-	"github.com/erda-project/erda/internal/core/user/uc-adaptor/dao"
-	"github.com/erda-project/erda/internal/core/user/uc-adaptor/endpoints"
-	"github.com/erda-project/erda/internal/core/user/uc-adaptor/service/adaptor"
-	"github.com/erda-project/erda/internal/core/user/uc-adaptor/ucclient"
+	"github.com/erda-project/erda/internal/core/user/impl/uc/uc-adaptor/conf"
+	"github.com/erda-project/erda/internal/core/user/impl/uc/uc-adaptor/dao"
+	"github.com/erda-project/erda/internal/core/user/impl/uc/uc-adaptor/endpoints"
+	"github.com/erda-project/erda/internal/core/user/impl/uc/uc-adaptor/service/adaptor"
+	"github.com/erda-project/erda/internal/core/user/impl/uc/uc-adaptor/ucclient"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	// "terminus.io/dice/telemetry/promxp"
 )

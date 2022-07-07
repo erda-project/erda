@@ -28,7 +28,7 @@ import (
 
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/core/user/common"
-	"github.com/erda-project/erda/internal/core/user/kratos"
+	"github.com/erda-project/erda/internal/core/user/impl/kratos"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 

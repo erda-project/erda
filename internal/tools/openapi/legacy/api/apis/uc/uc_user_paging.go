@@ -21,7 +21,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/internal/core/user/handler"
+	"github.com/erda-project/erda/internal/core/user/util"
 	"github.com/erda-project/erda/internal/pkg/user"
 	"github.com/erda-project/erda/internal/tools/openapi/legacy/api/apierrors"
 	"github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
@@ -77,12 +77,12 @@ func pagingUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data, err := handler.HandlePagingUsers(req, token)
+	data, err := util.HandlePagingUsers(req, token)
 	if err != nil {
 		errorresp.ErrWrite(err, w)
 		return
 	}
-	httpserver.WriteData(w, handler.ConvertToUserInfoExt(data))
+	httpserver.WriteData(w, util.ConvertToUserInfoExt(data))
 }
 
 func getPagingUsersReq(r *http.Request) (*apistructs.UserPagingRequest, error) {

@@ -29,7 +29,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	identity "github.com/erda-project/erda/internal/core/user/common"
-	"github.com/erda-project/erda/internal/core/user/uc"
+	"github.com/erda-project/erda/internal/core/user/impl/uc"
 	"github.com/erda-project/erda/internal/tools/openapi/legacy/conf"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/strutil"

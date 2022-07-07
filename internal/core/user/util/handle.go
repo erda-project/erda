@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package handler
+package util
 
 import (
 	"errors"
@@ -22,8 +22,8 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/core/user/common"
-	"github.com/erda-project/erda/internal/core/user/kratos"
-	"github.com/erda-project/erda/internal/core/user/uc"
+	"github.com/erda-project/erda/internal/core/user/impl/kratos"
+	"github.com/erda-project/erda/internal/core/user/impl/uc"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/strutil"

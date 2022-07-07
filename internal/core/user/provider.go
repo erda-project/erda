@@ -20,8 +20,8 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/internal/core/user/common"
-	"github.com/erda-project/erda/internal/core/user/kratos"
-	"github.com/erda-project/erda/internal/core/user/uc"
+	"github.com/erda-project/erda/internal/core/user/impl/kratos"
+	"github.com/erda-project/erda/internal/core/user/impl/uc"
 )
 
 type config struct {

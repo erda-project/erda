@@ -22,7 +22,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/bundle"
-	ucidentity "github.com/erda-project/erda/internal/core/user/uc"
+	ucidentity "github.com/erda-project/erda/internal/core/user/impl/uc"
 	"github.com/erda-project/erda/internal/tools/gittar/api"
 	"github.com/erda-project/erda/internal/tools/gittar/auth"
 	"github.com/erda-project/erda/internal/tools/gittar/cache"

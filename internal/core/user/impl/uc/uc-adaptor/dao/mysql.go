@@ -16,7 +16,7 @@
 package dao
 
 import (
-	"github.com/erda-project/erda/internal/core/user/uc-adaptor/conf"
+	"github.com/erda-project/erda/internal/core/user/impl/uc/uc-adaptor/conf"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 )
 

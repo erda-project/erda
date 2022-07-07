@@ -21,7 +21,7 @@ import (
 	"github.com/pkg/errors"
 
 	identity "github.com/erda-project/erda/internal/core/user/common"
-	"github.com/erda-project/erda/internal/core/user/kratos"
+	"github.com/erda-project/erda/internal/core/user/impl/kratos"
 	"github.com/erda-project/erda/internal/tools/openapi/openapi-ng"
 	"github.com/erda-project/erda/internal/tools/openapi/openapi-ng/common"
 	"github.com/erda-project/erda/pkg/http/httpclient"

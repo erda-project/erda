@@ -24,7 +24,7 @@ import (
 	"github.com/erda-project/erda/internal/core/legacy/conf"
 	"github.com/erda-project/erda/internal/core/legacy/dao"
 	"github.com/erda-project/erda/internal/core/user"
-	"github.com/erda-project/erda/internal/core/user/kratos"
+	"github.com/erda-project/erda/internal/core/user/impl/kratos"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
