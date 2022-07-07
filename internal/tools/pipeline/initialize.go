@@ -43,7 +43,6 @@ import (
 	"github.com/erda-project/erda/internal/tools/pipeline/services/permissionsvc"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/pipelinesvc"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/queuemanage"
-	"github.com/erda-project/erda/internal/tools/pipeline/services/reportsvc"
 	"github.com/erda-project/erda/pkg/dumpstack"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/jsonstore"
@@ -117,7 +116,6 @@ func (p *provider) do() error {
 	appSvc := appsvc.New(bdl)
 	permissionSvc := permissionsvc.New(bdl)
 	actionAgentSvc := actionagentsvc.New(dbClient, bdl, js, etcdctl)
-	reportSvc := reportsvc.New(reportsvc.WithDBClient(dbClient))
 	queueManage := queuemanage.New(queuemanage.WithDBClient(dbClient))
 
 	// init services
@@ -161,7 +159,6 @@ func (p *provider) do() error {
 		endpoints.WithCrondSvc(p.CronDaemon),
 		endpoints.WithActionAgentSvc(actionAgentSvc),
 		endpoints.WithPipelineSvc(pipelineSvc),
-		endpoints.WithReportSvc(reportSvc),
 		endpoints.WithQueueManage(queueManage),
 		endpoints.WithQueueManager(p.QueueManager),
 		endpoints.WithEngine(p.Engine),
@@ -185,7 +182,7 @@ func (p *provider) do() error {
 	events.Initialize(bdl, publisher, dbClient, p.EdgeRegister)
 
 	// aop
-	aop.Initialize(bdl, dbClient, reportSvc)
+	aop.Initialize(bdl, dbClient, p.ReportSvc)
 
 	return nil
 }

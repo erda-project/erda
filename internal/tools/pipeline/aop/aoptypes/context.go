@@ -19,7 +19,7 @@ import (
 
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
-	"github.com/erda-project/erda/internal/tools/pipeline/services/reportsvc"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/report"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
@@ -31,7 +31,7 @@ type TuneContext struct {
 type SDK struct {
 	Bundle   *bundle.Bundle
 	DBClient *dbclient.Client
-	Report   *reportsvc.ReportSvc
+	Report   report.Interface
 
 	TuneType    TuneType
 	TuneTrigger TuneTrigger

@@ -19,6 +19,7 @@ import (
 	"strings"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-proto-go/core/pipeline/report/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/services/autotest"
 	"github.com/erda-project/erda/internal/tools/pipeline/aop"
@@ -54,10 +55,14 @@ func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 	meta[autotest.CmsCfgKeyDisplayName] = ctx.SDK.Pipeline.Snapshot.Secrets[autotest.CmsCfgKeyDisplayName]
 
 	// report
-	_, err := ctx.SDK.Report.Create(apistructs.PipelineReportCreateRequest{
+	pbMeta, err := ctx.SDK.Report.MakePBMeta(meta)
+	if err != nil {
+		return err
+	}
+	_, err = ctx.SDK.Report.Create(&pb.PipelineReportCreateRequest{
 		PipelineID: ctx.SDK.Pipeline.ID,
-		Type:       apistructs.PipelineReportTypeAutotestPlan,
-		Meta:       meta,
+		Type:       string(apistructs.PipelineReportTypeAutotestPlan),
+		Meta:       pbMeta,
 	})
 	if err != nil {
 		return err

@@ -12,30 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package reportsvc
+package report
 
 import (
-	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-type ReportSvc struct {
-	dbClient *dbclient.Client
-}
-
-func New(ops ...Option) *ReportSvc {
-	var svc ReportSvc
-
-	for _, op := range ops {
-		op(&svc)
+func TestMakePBMeta(t *testing.T) {
+	s := &reportService{}
+	meta := map[string]interface{}{
+		"key": "value",
 	}
-
-	return &svc
-}
-
-type Option func(*ReportSvc)
-
-func WithDBClient(dbClient *dbclient.Client) Option {
-	return func(svc *ReportSvc) {
-		svc.dbClient = dbClient
-	}
+	pbMeta, err := s.MakePBMeta(meta)
+	assert.NoError(t, err)
+	assert.Equal(t, "value", pbMeta.AsMap()["key"])
 }

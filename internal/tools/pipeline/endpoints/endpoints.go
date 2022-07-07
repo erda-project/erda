@@ -35,7 +35,6 @@ import (
 	"github.com/erda-project/erda/internal/tools/pipeline/services/permissionsvc"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/pipelinesvc"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/queuemanage"
-	"github.com/erda-project/erda/internal/tools/pipeline/services/reportsvc"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 
@@ -46,7 +45,6 @@ type Endpoints struct {
 	pipelineSvc    *pipelinesvc.PipelineSvc
 	crondSvc       daemon.Interface
 	actionAgentSvc *actionagentsvc.ActionAgentSvc
-	reportSvc      *reportsvc.ReportSvc
 	queueManage    *queuemanage.QueueManage
 
 	dbClient           *dbclient.Client
@@ -108,12 +106,6 @@ func WithActionAgentSvc(svc *actionagentsvc.ActionAgentSvc) Option {
 func WithPipelineSvc(svc *pipelinesvc.PipelineSvc) Option {
 	return func(e *Endpoints) {
 		e.pipelineSvc = svc
-	}
-}
-
-func WithReportSvc(svc *reportsvc.ReportSvc) Option {
-	return func(e *Endpoints) {
-		e.reportSvc = svc
 	}
 }
 
@@ -231,10 +223,6 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/_daemon/crond/actions/snapshot", Method: http.MethodGet, Handler: e.crondSnapshot},
 
 		{Path: "/api/pipeline-snippets/actions/query-details", Method: http.MethodPost, Handler: e.querySnippetDetails},
-
-		// reports
-		{Path: "/api/pipeline-reportsets/{pipelineID}", Method: http.MethodGet, Handler: e.queryPipelineReportSet},
-		{Path: "/api/pipeline-reportsets", Method: http.MethodGet, Handler: e.pagingPipelineReportSets},
 
 		// cluster info
 		// TODO: clusterinfo provider provide this api directly, remove explicit declaration in endpoint.
