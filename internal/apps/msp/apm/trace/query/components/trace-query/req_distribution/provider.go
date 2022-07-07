@@ -15,8 +15,6 @@
 package req_distribution
 
 import (
-	"context"
-
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/bubblegraph"
@@ -48,8 +46,8 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			return nil
 		}
 
-		//lang := sdk.Lang
-		response, err := p.TraceService.GetTraceReqDistribution(context.Background(), *p.TraceInParams.InParamsPtr)
+		// lang := sdk.Lang
+		response, err := p.TraceService.GetTraceReqDistribution(sdk.Ctx, *p.TraceInParams.InParamsPtr)
 
 		if err != nil {
 			p.Log.Error(err)

@@ -64,7 +64,7 @@ type provider struct {
 	DB               *gorm.DB                     `autowired:"mysql-client"`
 	Cassandra        cassandra.Interface          `autowired:"cassandra" optional:"true"`
 	Clickhouse       clickhouse.Interface         `autowired:"clickhouse" optional:"true"`
-	Loader           loader.Interface             `autowired:"clickhouse.table.loader@span"`
+	Loader           loader.Interface             `autowired:"clickhouse.table.loader@span" optional:"true"`
 	StorageReader    storage.Storage              `autowired:"span-storage-elasticsearch-reader" optional:"true"`
 	Source           source.TraceSource
 	CompatibleSource source.TraceSource // version 2.x
