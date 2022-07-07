@@ -45,7 +45,7 @@ type provider struct {
 
 	DB         *gorm.DB                       `autowired:"mysql-client"`
 	ClusterSvc clusterpb.ClusterServiceServer `autowired:"erda.core.clustermanager.cluster.ClusterService"`
-	Org        org.ClientInterface
+	Org        org.Interface
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {

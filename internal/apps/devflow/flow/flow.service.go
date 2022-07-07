@@ -82,32 +82,27 @@ const gittarPrefixOpenApi = "/wb/"
 const mrOpenState = "open"
 const mrMergedState = "merged"
 
+// CreateFlowNode currentBranch checkout from sourceBranch and merge to targetBranch
 func (s *Service) CreateFlowNode(ctx context.Context, req *pb.CreateFlowNodeRequest) (*pb.CreateFlowNodeResponse, error) {
+	if err := req.Validate(); err != nil {
+		return nil, err
+	}
+
 	app, err := s.p.bdl.GetApp(req.AppID)
 	if err != nil {
 		return nil, err
 	}
 
 	var repoPath = gittarPrefixOpenApi + app.ProjectName + "/" + app.Name
-	exists, err := s.JudgeBranchIsExists(ctx, repoPath, req.SourceBranch)
-	if err != nil {
+	// auto create currentBranch
+	if err = s.IdempotentCreateBranch(ctx, repoPath, req.SourceBranch, req.CurrentBranch); err != nil {
 		return nil, err
-	}
-	// auto create sourceBranch
-	if !exists {
-		err := s.p.bdl.CreateGittarBranch(repoPath, apistructs.GittarCreateBranchRequest{
-			Name: req.SourceBranch,
-			Ref:  req.TargetBranch,
-		}, apis.GetOrgID(ctx), apis.GetUserID(ctx))
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	// find branch merge
 	result, err := s.p.bdl.ListMergeRequest(req.AppID, apis.GetUserID(ctx), apistructs.GittarQueryMrRequest{
 		TargetBranch: req.TargetBranch,
-		SourceBranch: req.SourceBranch,
+		SourceBranch: req.CurrentBranch,
 		Page:         1,
 		Size:         999,
 	})
@@ -130,7 +125,7 @@ func (s *Service) CreateFlowNode(ctx context.Context, req *pb.CreateFlowNodeRequ
 		// auto create merge
 		mergeInfo, err := s.p.bdl.CreateMergeRequest(req.AppID, apis.GetUserID(ctx), apistructs.GittarCreateMergeRequest{
 			TargetBranch:       req.TargetBranch,
-			SourceBranch:       req.SourceBranch,
+			SourceBranch:       req.CurrentBranch,
 			Title:              "auto create devflow merge",
 			Description:        "auto create devflow merge",
 			RemoveSourceBranch: false,
@@ -233,7 +228,7 @@ func (s *Service) getTempBranchAndRuleNameFromFlowRule(ctx context.Context, proj
 	flowRule, err := s.p.DevFlowRule.GetFlowByRule(ctx, devflowrule.GetFlowByRuleRequest{
 		ProjectID:     projectID,
 		BranchType:    MultiBranchBranchType,
-		SourceBranch:  mrInfo.TargetBranch,
+		TargetBranch:  mrInfo.TargetBranch,
 		CurrentBranch: mrInfo.SourceBranch,
 	})
 	if err != nil {
@@ -542,16 +537,18 @@ func (s *Service) GetDevFlowInfo(ctx context.Context, req *pb.GetDevFlowInfoRequ
 				if err != nil {
 					return err
 				}
-				var baseCommit *apistructs.Commit
+				var (
+					baseCommit *apistructs.Commit
+					exists     bool
+				)
 				if tempBranch != "" {
 					if err = s.IdempotentCreateBranch(ctx, repoPath, v.TargetBranch, tempBranch); err != nil {
 						return err
 					}
-					exists, err := s.JudgeBranchIsExists(ctx, repoPath, v.SourceBranch)
+					exists, err = s.JudgeBranchIsExists(ctx, repoPath, v.SourceBranch)
 					if err != nil {
 						return err
 					}
-					sourceBranchExistMap[fmt.Sprintf("%d%s", appID, v.SourceBranch)] = exists
 					if v.IsJoinTempBranch && exists {
 						baseCommit, err = s.p.bdl.GetMergeBase(apis.GetUserID(ctx), apistructs.GittarMergeBaseRequest{
 							SourceBranch: v.SourceBranch,
@@ -581,6 +578,7 @@ func (s *Service) GetDevFlowInfo(ctx context.Context, req *pb.GetDevFlowInfoRequ
 				locker.Lock()
 				mrFlowRuleNameMap[v.Id] = flowRuleName
 				mrTempBranchMap[v.Id] = tempBranch
+				sourceBranchExistMap[fmt.Sprintf("%d%s", appID, v.SourceBranch)] = exists
 				sourceBranchBaseCommitMap[fmt.Sprintf("%d%s", appID, v.SourceBranch)] = baseCommit
 				if tempBranch != "" && v.IsJoinTempBranch {
 					appTempBranchChangeBranchListMap[fmt.Sprintf("%d%s", appID, tempBranch)] = append(appTempBranchChangeBranchListMap[fmt.Sprintf("%d%s", appID, tempBranch)], &pb.ChangeBranch{
@@ -629,13 +627,13 @@ func (s *Service) GetDevFlowInfo(ctx context.Context, req *pb.GetDevFlowInfoRequ
 					}
 				}
 			}
-			var sourcBranchCommit *apistructs.Commit
+			var sourceBranchCommit *apistructs.Commit
 			if sourceBranchExistMap[fmt.Sprintf("%d%s", appDto.ID, mrInfo.SourceBranch)] {
 				branchDetail, err := s.p.bdl.GetGittarBranchDetail(repoPath, apis.GetOrgID(ctx), mrInfo.SourceBranch, apis.GetUserID(ctx))
 				if err != nil {
 					return err
 				}
-				sourcBranchCommit = branchDetail.Commit
+				sourceBranchCommit = branchDetail.Commit
 			}
 
 			var devFlowInfo = &pb.DevFlowInfo{}
@@ -663,9 +661,9 @@ func (s *Service) GetDevFlowInfo(ctx context.Context, req *pb.GetDevFlowInfoRequ
 				TempBranch:           tempBranch,
 				IssueID:              relation.IssueID,
 				IsJoinTempBranch:     mrInfo.IsJoinTempBranch,
-				Commit:               CommitConvert(sourcBranchCommit),
+				Commit:               CommitConvert(sourceBranchCommit),
 				BaseCommit:           CommitConvert(sourceBranchBaseCommitMap[fmt.Sprintf("%d%s", extra.AppID, mrInfo.SourceBranch)]),
-				CanJoin:              canJoin(sourcBranchCommit, sourceBranchBaseCommitMap[fmt.Sprintf("%d%s", extra.AppID, mrInfo.SourceBranch)]),
+				CanJoin:              canJoin(sourceBranchCommit, sourceBranchBaseCommitMap[fmt.Sprintf("%d%s", extra.AppID, mrInfo.SourceBranch)]),
 				MergeRequestInfo: &gittarpb.MergeRequestInfo{
 					Id:          mrInfo.Id,
 					RepoMergeId: int64(mrInfo.RepoMergeId),

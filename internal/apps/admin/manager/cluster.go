@@ -78,6 +78,11 @@ func (am *AdminManager) ListCluster(ctx context.Context, req *http.Request, reso
 		}
 		newClusters = resp.Data
 	} else {
+		orgID, err = GetOrgID(req)
+		if err != nil {
+			return apierrors.ErrListCluster.InvalidParameter(err).ToResp(), nil
+		}
+
 		orgResp, err := am.org.GetOrgClusterRelationsByOrg(apis.WithInternalClientContext(ctx, discover.SvcAdmin), &orgpb.GetOrgClusterRelationsByOrgRequest{OrgID: orgIDStr})
 		if err != nil {
 			return apierrors.ErrListCluster.InternalError(err).ToResp(), nil
