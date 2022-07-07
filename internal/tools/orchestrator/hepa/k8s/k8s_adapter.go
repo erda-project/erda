@@ -86,6 +86,7 @@ type K8SAdapter interface {
 	CheckIngressExist(namespace, name string) (bool, error)
 	UpdateIngressAnnotaion(namespace, name string, annotaion map[string]*string, snippet *string) error
 	UpdateIngressConroller(options map[string]*string, mainSnippet, httpSnippet, serverSnippet *string) error
+	ListAllServices(namespace string) ([]v1.Service, error)
 }
 
 type K8SAdapterImpl struct {
@@ -580,6 +581,14 @@ func (impl *K8SAdapterImpl) UpdateIngressConroller(options map[string]*string, m
 		err = impl.updateIngressConroller(SYSTEM_NS, INGRESS_CONFIG_NAME, options, mainSnippet, httpSnippet, serverSnippet)
 	}
 	return
+}
+
+func (impl *K8SAdapterImpl) ListAllServices(namespace string) ([]v1.Service, error) {
+	services, err := impl.client.CoreV1().Services(namespace).List(context.Background(), metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+	return services.Items, nil
 }
 
 func (impl *K8SAdapterImpl) updateIngressConroller(namespace, cmName string, options map[string]*string, mainSnippet, httpSnippet, serverSnippet *string) error {

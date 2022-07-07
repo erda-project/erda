@@ -1155,7 +1155,7 @@ func (impl GatewayOpenapiServiceImpl) deleteKongRoute(adapter kong.KongAdapter, 
 	return nil
 }
 
-func (impl GatewayOpenapiServiceImpl) deleteKongApi(adapter kong.KongAdapter, apiId string) error {
+func (impl GatewayOpenapiServiceImpl) DeleteKongApi(adapter kong.KongAdapter, apiId string) error {
 	err := impl.deleteKongRoute(adapter, apiId)
 	if err != nil {
 		return err
@@ -1863,7 +1863,7 @@ func (impl GatewayOpenapiServiceImpl) UpdatePackageApi(packageId, apiId string, 
 		} else if updateDao.RedirectType == gw.RT_SERVICE {
 			var runtimeService *orm.GatewayRuntimeService
 			if dao.RedirectType == gw.RT_URL {
-				err = impl.deleteKongApi(kongAdapter, apiId)
+				err = impl.DeleteKongApi(kongAdapter, apiId)
 				if err != nil {
 					return
 				}
@@ -2028,7 +2028,7 @@ func (impl *GatewayOpenapiServiceImpl) DeletePackageApi(packageId, apiId string)
 		}
 
 	} else if dao.Origin == string(gw.FROM_CUSTOM) || dao.Origin == string(gw.FROM_DICEYML) {
-		err = impl.deleteKongApi(kongAdapter, apiId)
+		err = impl.DeleteKongApi(kongAdapter, apiId)
 		if err != nil {
 			return
 		}

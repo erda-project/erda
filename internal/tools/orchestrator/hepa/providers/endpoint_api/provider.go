@@ -48,17 +48,21 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	gatewayApiService, err := repositoryService.NewGatewayApiServiceImpl()
+	runtimeService, err := repositoryService.NewGatewayRuntimeServiceServiceImpl()
 	if err != nil {
-		return errors.Wrap(err, "failed to NewGatewayApiServiceImpl")
+		return errors.Wrap(err, "failed to NewGatewayRuntimeServiceServiceImpl")
 	}
-	upstreamApiService, err := repositoryService.NewGatewayUpstreamApiServiceImpl()
+	gatewayRouteService, err := repositoryService.NewGatewayRouteServiceImpl()
 	if err != nil {
-		return errors.Wrap(err, "failed to NewGatewayUpstreamApiServiceImpl")
+		return errors.Wrap(err, "failed to NewGatewayRouteServiceImpl")
 	}
-	upstreamService, err := repositoryService.NewGatewayUpstreamServiceImpl()
+	gatewayServiceService, err := repositoryService.NewGatewayServiceServiceImpl()
 	if err != nil {
-		return errors.Wrap(err, "failed to NewGatewayUpstreamServiceImpl")
+		return errors.Wrap(err, "failed to NewGatewayServiceServiceImpl")
+	}
+	kongInfoService, err := repositoryService.NewGatewayKongInfoServiceImpl()
+	if err != nil {
+		return errors.Wrap(err, "failed to NewGatewayKongInfoServiceImpl")
 	}
 	if p.ProjCli == nil {
 		p.Log.Fatal("projCli is nil")
@@ -67,11 +71,12 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		p.Log.Fatal("runtimeCli is nil")
 	}
 	p.endpointApiService = &endpointApiService{
-		projCli:            p.ProjCli,
-		runtimeCli:         p.RuntimeCli,
-		gatewayApiService:  gatewayApiService,
-		upstreamApiService: upstreamApiService,
-		upstreamService:    upstreamService,
+		projCli:               p.ProjCli,
+		runtimeCli:            p.RuntimeCli,
+		runtimeService:        runtimeService,
+		gatewayRouteService:   gatewayRouteService,
+		gatewayServiceService: gatewayServiceService,
+		kongInfoService:       kongInfoService,
 	}
 	err = zoneI.NewGatewayZoneServiceImpl()
 	if err != nil {

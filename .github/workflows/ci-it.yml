@@ -135,7 +135,7 @@ jobs:
       - name: Run Go Lint
         uses: golangci/golangci-lint-action@v2.5.2
         with:
-          version: v1.29
+          version: v1.46
           args: --timeout=10m
           skip-go-installation: true
           skip-pkg-cache: false
