@@ -10,6 +10,8 @@ values:
     request_cpu: 0.1
     request_mem: 128
     log_service_replicas: 1
+    erda_server_request_cpu: 1
+    erda_server_request_mem: 2048
   production:
     nfs_root: "<%$.Storage.MountPoint%>"
     gittar_root: "<%$.Storage.GittarDataPath%>"
@@ -96,9 +98,9 @@ services:
       - "${nfs_root:/netdata}/avatars:/avatars:rw"
       - "${nfs_root:/netdata}/dice/cmdb/files:/files:rw"
     resources:
-      cpu: ${request_cpu:1}
+      cpu: ${erda_server_request_cpu:1}
       max_cpu: 1
-      mem: ${request_mem:2048}
+      mem: ${erda_server_request_mem:2048}
       max_mem: 2048
       network:
         mode: "container"
