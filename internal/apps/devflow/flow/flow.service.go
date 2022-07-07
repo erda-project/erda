@@ -530,6 +530,7 @@ func (s *Service) GetDevFlowInfo(ctx context.Context, req *pb.GetDevFlowInfoRequ
 		sourceBranchBaseCommitMap        = make(map[string]*apistructs.Commit)
 		mrTempBranchMap                  = make(map[int64]string)
 		mrFlowRuleNameMap                = make(map[int64]string)
+		sourceBranchExistMap             = make(map[string]bool)
 	)
 	for _, appID := range needQueryTempBranchAppMap {
 		work.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
@@ -546,7 +547,12 @@ func (s *Service) GetDevFlowInfo(ctx context.Context, req *pb.GetDevFlowInfoRequ
 					if err = s.IdempotentCreateBranch(ctx, repoPath, v.TargetBranch, tempBranch); err != nil {
 						return err
 					}
-					if v.IsJoinTempBranch {
+					exists, err := s.JudgeBranchIsExists(ctx, repoPath, v.SourceBranch)
+					if err != nil {
+						return err
+					}
+					sourceBranchExistMap[fmt.Sprintf("%d%s", appID, v.SourceBranch)] = exists
+					if v.IsJoinTempBranch && exists {
 						baseCommit, err = s.p.bdl.GetMergeBase(apis.GetUserID(ctx), apistructs.GittarMergeBaseRequest{
 							SourceBranch: v.SourceBranch,
 							TargetBranch: tempBranch,
@@ -623,9 +629,13 @@ func (s *Service) GetDevFlowInfo(ctx context.Context, req *pb.GetDevFlowInfoRequ
 					}
 				}
 			}
-			branchDetail, err := s.p.bdl.GetGittarBranchDetail(repoPath, apis.GetOrgID(ctx), mrInfo.SourceBranch, apis.GetUserID(ctx))
-			if err != nil {
-				return err
+			var sourcBranchCommit *apistructs.Commit
+			if sourceBranchExistMap[fmt.Sprintf("%d%s", appDto.ID, mrInfo.SourceBranch)] {
+				branchDetail, err := s.p.bdl.GetGittarBranchDetail(repoPath, apis.GetOrgID(ctx), mrInfo.SourceBranch, apis.GetUserID(ctx))
+				if err != nil {
+					return err
+				}
+				sourcBranchCommit = branchDetail.Commit
 			}
 
 			var devFlowInfo = &pb.DevFlowInfo{}
@@ -653,9 +663,9 @@ func (s *Service) GetDevFlowInfo(ctx context.Context, req *pb.GetDevFlowInfoRequ
 				TempBranch:           tempBranch,
 				IssueID:              relation.IssueID,
 				IsJoinTempBranch:     mrInfo.IsJoinTempBranch,
-				Commit:               CommitConvert(branchDetail.Commit),
+				Commit:               CommitConvert(sourcBranchCommit),
 				BaseCommit:           CommitConvert(sourceBranchBaseCommitMap[fmt.Sprintf("%d%s", extra.AppID, mrInfo.SourceBranch)]),
-				CanJoin:              canJoin(branchDetail.Commit, sourceBranchBaseCommitMap[fmt.Sprintf("%d%s", extra.AppID, mrInfo.SourceBranch)]),
+				CanJoin:              canJoin(sourcBranchCommit, sourceBranchBaseCommitMap[fmt.Sprintf("%d%s", extra.AppID, mrInfo.SourceBranch)]),
 				MergeRequestInfo: &gittarpb.MergeRequestInfo{
 					Id:          mrInfo.Id,
 					RepoMergeId: int64(mrInfo.RepoMergeId),
