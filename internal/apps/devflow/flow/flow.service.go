@@ -94,19 +94,9 @@ func (s *Service) CreateFlowNode(ctx context.Context, req *pb.CreateFlowNodeRequ
 	}
 
 	var repoPath = gittarPrefixOpenApi + app.ProjectName + "/" + app.Name
-	exists, err := s.JudgeBranchIsExists(ctx, repoPath, req.CurrentBranch)
-	if err != nil {
-		return nil, err
-	}
 	// auto create currentBranch
-	if !exists {
-		err := s.p.bdl.CreateGittarBranch(repoPath, apistructs.GittarCreateBranchRequest{
-			Name: req.SourceBranch,
-			Ref:  req.CurrentBranch,
-		}, apis.GetOrgID(ctx), apis.GetUserID(ctx))
-		if err != nil {
-			return nil, err
-		}
+	if err = s.IdempotentCreateBranch(ctx, repoPath, req.SourceBranch, req.CurrentBranch); err != nil {
+		return nil, err
 	}
 
 	// find branch merge
@@ -535,6 +525,7 @@ func (s *Service) GetDevFlowInfo(ctx context.Context, req *pb.GetDevFlowInfoRequ
 		sourceBranchBaseCommitMap        = make(map[string]*apistructs.Commit)
 		mrTempBranchMap                  = make(map[int64]string)
 		mrFlowRuleNameMap                = make(map[int64]string)
+		sourceBranchExistMap             = make(map[string]bool)
 	)
 	for _, appID := range needQueryTempBranchAppMap {
 		work.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
@@ -546,12 +537,19 @@ func (s *Service) GetDevFlowInfo(ctx context.Context, req *pb.GetDevFlowInfoRequ
 				if err != nil {
 					return err
 				}
-				var baseCommit *apistructs.Commit
+				var (
+					baseCommit *apistructs.Commit
+					exists     bool
+				)
 				if tempBranch != "" {
 					if err = s.IdempotentCreateBranch(ctx, repoPath, v.TargetBranch, tempBranch); err != nil {
 						return err
 					}
-					if v.IsJoinTempBranch {
+					exists, err = s.JudgeBranchIsExists(ctx, repoPath, v.SourceBranch)
+					if err != nil {
+						return err
+					}
+					if v.IsJoinTempBranch && exists {
 						baseCommit, err = s.p.bdl.GetMergeBase(apis.GetUserID(ctx), apistructs.GittarMergeBaseRequest{
 							SourceBranch: v.SourceBranch,
 							TargetBranch: tempBranch,
@@ -580,6 +578,7 @@ func (s *Service) GetDevFlowInfo(ctx context.Context, req *pb.GetDevFlowInfoRequ
 				locker.Lock()
 				mrFlowRuleNameMap[v.Id] = flowRuleName
 				mrTempBranchMap[v.Id] = tempBranch
+				sourceBranchExistMap[fmt.Sprintf("%d%s", appID, v.SourceBranch)] = exists
 				sourceBranchBaseCommitMap[fmt.Sprintf("%d%s", appID, v.SourceBranch)] = baseCommit
 				if tempBranch != "" && v.IsJoinTempBranch {
 					appTempBranchChangeBranchListMap[fmt.Sprintf("%d%s", appID, tempBranch)] = append(appTempBranchChangeBranchListMap[fmt.Sprintf("%d%s", appID, tempBranch)], &pb.ChangeBranch{
@@ -628,9 +627,13 @@ func (s *Service) GetDevFlowInfo(ctx context.Context, req *pb.GetDevFlowInfoRequ
 					}
 				}
 			}
-			branchDetail, err := s.p.bdl.GetGittarBranchDetail(repoPath, apis.GetOrgID(ctx), mrInfo.SourceBranch, apis.GetUserID(ctx))
-			if err != nil {
-				return err
+			var sourceBranchCommit *apistructs.Commit
+			if sourceBranchExistMap[fmt.Sprintf("%d%s", appDto.ID, mrInfo.SourceBranch)] {
+				branchDetail, err := s.p.bdl.GetGittarBranchDetail(repoPath, apis.GetOrgID(ctx), mrInfo.SourceBranch, apis.GetUserID(ctx))
+				if err != nil {
+					return err
+				}
+				sourceBranchCommit = branchDetail.Commit
 			}
 
 			var devFlowInfo = &pb.DevFlowInfo{}
@@ -658,9 +661,9 @@ func (s *Service) GetDevFlowInfo(ctx context.Context, req *pb.GetDevFlowInfoRequ
 				TempBranch:           tempBranch,
 				IssueID:              relation.IssueID,
 				IsJoinTempBranch:     mrInfo.IsJoinTempBranch,
-				Commit:               CommitConvert(branchDetail.Commit),
+				Commit:               CommitConvert(sourceBranchCommit),
 				BaseCommit:           CommitConvert(sourceBranchBaseCommitMap[fmt.Sprintf("%d%s", extra.AppID, mrInfo.SourceBranch)]),
-				CanJoin:              canJoin(branchDetail.Commit, sourceBranchBaseCommitMap[fmt.Sprintf("%d%s", extra.AppID, mrInfo.SourceBranch)]),
+				CanJoin:              canJoin(sourceBranchCommit, sourceBranchBaseCommitMap[fmt.Sprintf("%d%s", extra.AppID, mrInfo.SourceBranch)]),
 				MergeRequestInfo: &gittarpb.MergeRequestInfo{
 					Id:          mrInfo.Id,
 					RepoMergeId: int64(mrInfo.RepoMergeId),
