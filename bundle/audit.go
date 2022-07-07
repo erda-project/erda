@@ -86,7 +86,7 @@ func (b *Bundle) ListAuditEvent(orgID string, userID string, params url.Values) 
 	var listAudit apistructs.AuditsListResponse
 	resp, err := hc.
 		Get(host).
-		Path("/api/audits/actions/list").
+		Path("/core/api/audits/actions/list").
 		Header(httputil.InternalHeader, "bundle").
 		Header(httputil.OrgHeader, orgID).
 		Header(httputil.UserHeader, userID).
@@ -119,7 +119,7 @@ func (b *Bundle) ExportAuditExcel(orgID, userID, lang string, params url.Values)
 	}
 	respBody, resp, err := hc.
 		Get(host).
-		Path("/api/audits/actions/export-excel").
+		Path("/core/api/audits/actions/export-excel").
 		Header(httputil.InternalHeader, "bundle").
 		Header(httputil.OrgHeader, orgID).
 		Header(httputil.UserHeader, userID).
