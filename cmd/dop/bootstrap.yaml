@@ -115,3 +115,8 @@ metricq-client:
   endpoint: "http://${MONITOR_ADDR:monitor.default.svc.cluster.local:7096}"
 
 audit:
+
+erda.core.user: {}
+erda.core.user.kratos: {}
+erda.core.user.uc: {}
+ 

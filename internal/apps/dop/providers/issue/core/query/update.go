@@ -490,7 +490,7 @@ func (p *provider) batchCreateAssignChaningStream(req *pb.BatchUpdateIssueReques
 	}
 	userIds = append(userIds, req.Assignee)
 
-	users, err := p.uc.FindUsers(userIds)
+	users, err := p.Identity.FindUsers(userIds)
 	if err != nil {
 		return err
 	}

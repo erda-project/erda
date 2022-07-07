@@ -29,11 +29,11 @@ import (
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/core/user/impl/uc"
 	"github.com/erda-project/erda/internal/tools/gittar/models"
 	"github.com/erda-project/erda/internal/tools/gittar/pkg/errorx"
 	"github.com/erda-project/erda/internal/tools/gittar/pkg/gitmodule"
 	"github.com/erda-project/erda/pkg/strutil"
-	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 type Context struct {
@@ -43,7 +43,7 @@ type Context struct {
 	Service      *models.Service
 	DBClient     *models.DBClient
 	Bundle       *bundle.Bundle
-	UCAuth       *ucauth.UCUserAuth
+	UCAuth       *uc.UCUserAuth
 	next         bool
 	EtcdClient   *clientv3.Client
 	TokenService tokenpb.TokenServiceServer
@@ -53,7 +53,7 @@ type ContextHandlerFunc func(*Context)
 
 var dbClientInstance *models.DBClient
 var diceBundleInstance *bundle.Bundle
-var ucAuthInstance *ucauth.UCUserAuth
+var ucAuthInstance *uc.UCUserAuth
 var etcdClientInstance *clientv3.Client
 var tokenServiceInstance *tokenpb.TokenServiceServer
 
@@ -65,7 +65,7 @@ func WithBundle(diceBundle *bundle.Bundle) {
 	diceBundleInstance = diceBundle
 }
 
-func WithUCAuth(ucAuth *ucauth.UCUserAuth) {
+func WithUCAuth(ucAuth *uc.UCUserAuth) {
 	ucAuthInstance = ucAuth
 }
 

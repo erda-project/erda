@@ -18,9 +18,9 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/erda-project/erda/internal/core/user/impl/uc"
 	"github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
 	"github.com/erda-project/erda/pkg/discover"
-	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 var OPENAPI_GEN_CLIENT_TOKEN = apis.ApiSpec{
@@ -35,7 +35,7 @@ var OPENAPI_GEN_CLIENT_TOKEN = apis.ApiSpec{
 			return
 		}
 
-		oauthToken, err := ucauth.GenClientToken(discover.UC(), basic)
+		oauthToken, err := uc.GenClientToken(discover.UC(), basic)
 		if err != nil {
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return

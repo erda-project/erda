@@ -21,12 +21,10 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/core/legacy/dao"
 	"github.com/erda-project/erda/internal/core/legacy/model"
-	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 type MBox struct {
 	db  *dao.DBClient
-	uc  *ucauth.UCClient
 	bdl *bundle.Bundle
 }
 

@@ -86,7 +86,6 @@ import (
 	"github.com/erda-project/erda/pkg/jsonstore"
 	"github.com/erda-project/erda/pkg/jsonstore/etcd"
 	"github.com/erda-project/erda/pkg/strutil"
-	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 const (
@@ -141,6 +140,7 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 	p.Protocol.WithContextValue(types.PipelineCronService, p.PipelineCron)
 	p.Protocol.WithContextValue(types.GuideService, p.GuideSvc)
 	p.Protocol.WithContextValue(types.OrgService, p.Org)
+	p.Protocol.WithContextValue(types.IdentitiyService, p.Identity)
 
 	// This server will never be started. Only the routes and locale loader are used by new http server
 	server := httpserver.New(":0")
@@ -397,15 +397,6 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 
 	migrateSvc := migrate.New(migrate.WithDBClient(db))
 
-	// 初始化UC Client
-	uc := ucauth.NewUCClient(discover.UC(), conf.UCClientID(), conf.UCClientSecret())
-	if conf.OryEnabled() {
-		uc = ucauth.NewUCClient(conf.OryKratosPrivateAddr(), conf.OryCompatibleClientID(), conf.OryCompatibleClientSecret())
-		uc.SetDBClient(db.DB)
-	}
-
-	p.IssueCoreSvc.WithUc(uc)
-
 	// init ticket service
 	t := ticket.New(ticket.WithDBClient(db),
 		ticket.WithBundle(bdl.Bdl),
@@ -503,7 +494,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 	// init publisher service
 	pub := publisher.New(
 		publisher.WithDBClient(db),
-		publisher.WithUCClient(uc),
+		publisher.WithUCClient(p.Identity),
 		publisher.WithBundle(bdl.Bdl),
 		publisher.WithNexusSvc(nexusSvc),
 	)
@@ -530,7 +521,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 	// init org service
 	o := org.New(
 		org.WithDBClient(db),
-		org.WithUCClient(uc),
+		org.WithUCClient(p.Identity),
 		org.WithBundle(bdl.Bdl),
 		org.WithPublisher(pub),
 		org.WithNexusSvc(nexusSvc),

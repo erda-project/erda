@@ -31,16 +31,16 @@ import (
 	"github.com/erda-project/erda/internal/core/legacy/dao"
 	"github.com/erda-project/erda/internal/core/legacy/model"
 	"github.com/erda-project/erda/internal/core/legacy/types"
+	"github.com/erda-project/erda/internal/core/user"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/gittarutil"
 	"github.com/erda-project/erda/pkg/strutil"
-	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 // Application 应用操作封装
 type Application struct {
 	db  *dao.DBClient
-	uc  *ucauth.UCClient
+	uc  user.Interface
 	bdl *bundle.Bundle
 	cms cmspb.CmsServiceServer
 }
@@ -65,7 +65,7 @@ func WithDBClient(db *dao.DBClient) Option {
 }
 
 // WithUCClient 配置 uc client
-func WithUCClient(uc *ucauth.UCClient) Option {
+func WithUCClient(uc user.Interface) Option {
 	return func(a *Application) {
 		a.uc = uc
 	}
