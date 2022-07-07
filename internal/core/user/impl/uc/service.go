@@ -26,7 +26,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/core/user/common"
-	"github.com/erda-project/erda/pkg/desensitize"
+	"github.com/erda-project/erda/internal/core/user/util"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -178,47 +178,9 @@ func (p *provider) getUser(userID string) (*common.User, error) {
 }
 
 func (p *provider) GetUsers(IDs []string, needDesensitize bool) (map[string]apistructs.UserInfo, error) {
-	b, err := p.FindUsers(IDs)
+	users, err := p.FindUsers(IDs)
 	if err != nil {
 		return nil, err
 	}
-
-	users := make(map[string]apistructs.UserInfo, len(b))
-	if needDesensitize {
-		for i := range b {
-			users[string(b[i].ID)] = apistructs.UserInfo{
-				ID:     "",
-				Email:  desensitize.Email(b[i].Email),
-				Phone:  desensitize.Mobile(b[i].Phone),
-				Avatar: b[i].AvatarURL,
-				Name:   desensitize.Name(b[i].Name),
-				Nick:   desensitize.Name(b[i].Nick),
-			}
-		}
-	} else {
-		for i := range b {
-			users[string(b[i].ID)] = apistructs.UserInfo{
-				ID:     string(b[i].ID),
-				Email:  b[i].Email,
-				Phone:  b[i].Phone,
-				Avatar: b[i].AvatarURL,
-				Name:   b[i].Name,
-				Nick:   b[i].Nick,
-			}
-		}
-	}
-	for _, userID := range IDs {
-		_, exist := users[userID]
-		if !exist {
-			users[userID] = apistructs.UserInfo{
-				ID:     userID,
-				Email:  "",
-				Phone:  "",
-				Avatar: "",
-				Name:   "用户已注销",
-				Nick:   "用户已注销",
-			}
-		}
-	}
-	return users, nil
+	return util.Densensitize(IDs, users, needDesensitize), nil
 }

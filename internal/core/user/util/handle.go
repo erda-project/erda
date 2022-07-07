@@ -15,68 +15,12 @@
 package util
 
 import (
-	"errors"
-	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/core/user/common"
-	"github.com/erda-project/erda/internal/core/user/impl/kratos"
-	"github.com/erda-project/erda/internal/core/user/impl/uc"
-	"github.com/erda-project/erda/pkg/discover"
-	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/strutil"
 )
-
-func HandlePagingUsers(req *apistructs.UserPagingRequest, token uc.OAuthToken) (*common.UserPaging, error) {
-	if token.TokenType == uc.OryCompatibleClientId {
-		return kratos.HandlePagingUsers(req, token.AccessToken)
-	}
-	v := httpclient.New().Get(discover.UC()).Path("/api/user/admin/paging").
-		Header("Authorization", strutil.Concat("Bearer ", token.AccessToken))
-	if req.Name != "" {
-		v.Param("username", req.Name)
-	}
-	if req.Nick != "" {
-		v.Param("nickname", req.Nick)
-	}
-	if req.Phone != "" {
-		v.Param("mobile", req.Phone)
-	}
-	if req.Email != "" {
-		v.Param("email", req.Email)
-	}
-	if req.Locked != nil {
-		v.Param("locked", strconv.Itoa(*req.Locked))
-	}
-	if req.Source != "" {
-		v.Param("source", req.Source)
-	}
-	if req.PageNo > 0 {
-		v.Param("pageNo", strconv.Itoa(req.PageNo))
-	}
-	if req.PageSize > 0 {
-		v.Param("pageSize", strconv.Itoa(req.PageSize))
-	}
-	// 批量查询用户
-	var resp struct {
-		Success bool               `json:"success"`
-		Result  *common.UserPaging `json:"result"`
-		Error   string             `json:"error"`
-	}
-	r, err := v.Do().JSON(&resp)
-	if err != nil {
-		return nil, err
-	}
-	if !r.IsOK() {
-		return nil, fmt.Errorf("internal status code: %v", r.StatusCode())
-	}
-	if !resp.Success {
-		return nil, errors.New(resp.Error)
-	}
-	return resp.Result, nil
-}
 
 func ConvertToUserInfoExt(user *common.UserPaging) *apistructs.UserPagingData {
 	var ret apistructs.UserPagingData

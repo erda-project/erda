@@ -85,7 +85,7 @@ func exportUsers(w http.ResponseWriter, r *http.Request) {
 
 	var users []apistructs.UserInfoExt
 	for i := 0; i < 100; i++ {
-		data, err := util.HandlePagingUsers(req, token)
+		data, err := uc.HandlePagingUsers(req, token)
 		if err != nil {
 			errorresp.ErrWrite(err, w)
 			return

@@ -144,7 +144,7 @@ func Test_provider_GetUsers(t *testing.T) {
 			want: map[string]apistructs.UserInfo{
 				"1": {
 					ID:    "1",
-					Email: "test@test.com",
+					Email: "te*t@test.com",
 				},
 				"2": {
 					ID:   "2",
