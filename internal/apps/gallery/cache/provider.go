@@ -49,7 +49,7 @@ func init() {
 
 // +provider
 type provider struct {
-	Org org.ClientInterface
+	Org org.Interface
 }
 
 // Init .
