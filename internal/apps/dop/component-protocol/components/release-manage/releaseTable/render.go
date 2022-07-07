@@ -38,6 +38,8 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/release-manage/access"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/types"
 	"github.com/erda-project/erda/internal/core/org"
+	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 )
 
 func init() {
@@ -244,16 +246,11 @@ func (r *ComponentReleaseTable) RenderTable(ctx context.Context, gs *cptype.Glob
 	r.State.Total = releaseResp.Data.Total
 
 	logrus.Debugf("[DEBUG] start get org")
-
-	orgResp, err := r.org.GetOrg(ctx, &orgpb.GetOrgRequest{IdOrName: orgID})
+	org, err := r.getOrg(ctx, orgID)
 	if err != nil {
 		return errors.Errorf("failed to get org, %v", err)
 	}
-	org := orgResp.Data
 	logrus.Debugf("[DEBUG] end get org")
-	if err != nil {
-		return errors.Errorf("failed to get org, %v", err)
-	}
 
 	// pre check access
 	hasWriteAccess := true
@@ -671,4 +668,12 @@ func getReleaseID(operationData map[string]interface{}) (string, error) {
 		return "", errors.New("invalid release id in event.operationData")
 	}
 	return id, nil
+}
+
+func (r *ComponentReleaseTable) getOrg(ctx context.Context, orgID string) (*orgpb.Org, error) {
+	orgResp, err := r.org.GetOrg(apis.WithInternalClientContext(ctx, discover.SvcDOP), &orgpb.GetOrgRequest{IdOrName: orgID})
+	if err != nil {
+		return nil, err
+	}
+	return orgResp.Data, nil
 }

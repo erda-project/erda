@@ -15,13 +15,21 @@
 package releaseTable
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
+	"reflect"
 	"testing"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/i18n"
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/util"
+	"github.com/erda-project/erda/internal/core/org"
+	"github.com/erda-project/erda/internal/pkg/mock"
+	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 )
 
 func TestComponentReleaseTable_GenComponentState(t *testing.T) {
@@ -248,5 +256,69 @@ func TestComponentReleaseTable_Transfer(t *testing.T) {
 	}
 	if !isEqual {
 		t.Errorf("test failed, component is not expected after transfer")
+	}
+}
+
+type orgMock struct {
+	mock.OrgMock
+}
+
+func (m orgMock) GetOrg(ctx context.Context, request *orgpb.GetOrgRequest) (*orgpb.GetOrgResponse, error) {
+	if request.IdOrName == "" {
+		return nil, fmt.Errorf("the IdOrName is empty")
+	}
+	return &orgpb.GetOrgResponse{Data: &orgpb.Org{}}, nil
+}
+
+func TestComponentReleaseTable_getOrg(t *testing.T) {
+	type fields struct {
+		org org.ClientInterface
+	}
+	type args struct {
+		ctx   context.Context
+		orgID string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    *orgpb.Org
+		wantErr bool
+	}{
+		{
+			name:   "test with no orgID",
+			fields: fields{org: orgMock{}},
+			args: args{
+				ctx:   apis.WithInternalClientContext(context.Background(), discover.SvcDOP),
+				orgID: "",
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name:   "test with no error",
+			fields: fields{org: orgMock{}},
+			args: args{
+				ctx:   apis.WithInternalClientContext(context.Background(), discover.SvcDOP),
+				orgID: "1",
+			},
+			want:    &orgpb.Org{},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &ComponentReleaseTable{
+				org: tt.fields.org,
+			}
+			got, err := r.getOrg(tt.args.ctx, tt.args.orgID)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("getOrg() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("getOrg() got = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }
