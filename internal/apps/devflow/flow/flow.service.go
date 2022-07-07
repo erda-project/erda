@@ -28,6 +28,7 @@ import (
 
 	"github.com/erda-project/erda-proto-go/apps/devflow/flow/pb"
 	issuerelationpb "github.com/erda-project/erda-proto-go/apps/devflow/issuerelation/pb"
+	flowrulepb "github.com/erda-project/erda-proto-go/dop/devflowrule/pb"
 	gittarpb "github.com/erda-project/erda-proto-go/openapiv1/gittar/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/providers/devflowrule"
@@ -183,12 +184,18 @@ func (s *Service) OperationMerge(ctx context.Context, req *pb.OperationMergeRequ
 		return nil, err
 	}
 
-	tempBranch, _, err := s.getTempBranchAndRuleNameFromFlowRule(ctx, appDto.ProjectID, mrInfo)
+	flowRule, err := s.getFlowRule(ctx, appDto.ProjectID, mrInfo)
 	if err != nil {
 		return nil, err
 	}
+	tempBranch := getTempBranchFromFlowRule(flowRule)
 	if tempBranch == "" {
 		return nil, fmt.Errorf("tempBranch can not empty")
+	}
+
+	sourceBranch := getSourceBranchFromFlowRule(flowRule)
+	if tempBranch == "" {
+		return nil, fmt.Errorf("sourceBranch can not empty")
 	}
 
 	operationReq := apistructs.GittarMergeOperationTempBranchRequest{
@@ -205,7 +212,7 @@ func (s *Service) OperationMerge(ctx context.Context, req *pb.OperationMergeRequ
 	}
 
 	if req.Enable.Value {
-		err = s.JoinTempBranch(ctx, tempBranch, appDto, mrInfo)
+		err = s.JoinTempBranch(ctx, tempBranch, sourceBranch, appDto, mrInfo)
 		if err != nil {
 			return nil, err
 		}
@@ -216,7 +223,7 @@ func (s *Service) OperationMerge(ctx context.Context, req *pb.OperationMergeRequ
 	if !mrInfo.IsJoinTempBranch {
 		return &pb.OperationMergeResponse{}, nil
 	}
-	err = s.RejoinTempBranch(ctx, tempBranch, mrInfo.TargetBranch, appDto)
+	err = s.RejoinTempBranch(ctx, tempBranch, mrInfo.TargetBranch, sourceBranch, appDto)
 	if err != nil {
 		return nil, err
 	}
@@ -224,28 +231,41 @@ func (s *Service) OperationMerge(ctx context.Context, req *pb.OperationMergeRequ
 	return &pb.OperationMergeResponse{}, nil
 }
 
-func (s *Service) getTempBranchAndRuleNameFromFlowRule(ctx context.Context, projectID uint64, mrInfo *apistructs.MergeRequestInfo) (string, string, error) {
-	flowRule, err := s.p.DevFlowRule.GetFlowByRule(ctx, devflowrule.GetFlowByRuleRequest{
+func (s *Service) getFlowRule(ctx context.Context, projectID uint64, mrInfo *apistructs.MergeRequestInfo) (*flowrulepb.FlowWithBranchPolicy, error) {
+	return s.p.DevFlowRule.GetFlowByRule(ctx, devflowrule.GetFlowByRuleRequest{
 		ProjectID:     projectID,
 		BranchType:    MultiBranchBranchType,
 		TargetBranch:  mrInfo.TargetBranch,
 		CurrentBranch: mrInfo.SourceBranch,
 	})
-	if err != nil {
-		return "", "", err
-	}
-
-	if flowRule != nil && flowRule.BranchPolicy != nil && flowRule.BranchPolicy.Policy != nil {
-		return flowRule.BranchPolicy.Policy.TempBranch, flowRule.Flow.Name, nil
-	}
-	return "", "", nil
 }
 
-func (s *Service) JoinTempBranch(ctx context.Context, tempBranch string, appDto *apistructs.ApplicationDTO, mrInfo *apistructs.MergeRequestInfo) error {
+func getTempBranchFromFlowRule(flowRule *flowrulepb.FlowWithBranchPolicy) string {
+	if flowRule != nil && flowRule.BranchPolicy != nil && flowRule.BranchPolicy.Policy != nil {
+		return flowRule.BranchPolicy.Policy.TempBranch
+	}
+	return ""
+}
+
+func getFlowNameFromFlowRule(flowRule *flowrulepb.FlowWithBranchPolicy) string {
+	if flowRule != nil && flowRule.Flow != nil {
+		return flowRule.Flow.Name
+	}
+	return ""
+}
+
+func getSourceBranchFromFlowRule(flowRule *flowrulepb.FlowWithBranchPolicy) string {
+	if flowRule != nil && flowRule.BranchPolicy != nil && flowRule.BranchPolicy.Policy != nil {
+		return flowRule.BranchPolicy.Policy.SourceBranch
+	}
+	return ""
+}
+
+func (s *Service) JoinTempBranch(ctx context.Context, tempBranch, sourceBranch string, appDto *apistructs.ApplicationDTO, mrInfo *apistructs.MergeRequestInfo) error {
 	repoPath := gittarPrefixOpenApi + appDto.ProjectName + "/" + appDto.Name
 
 	// Idempotent create tempBranch
-	if err := s.IdempotentCreateBranch(ctx, repoPath, mrInfo.TargetBranch, tempBranch); err != nil {
+	if err := s.IdempotentCreateBranch(ctx, repoPath, sourceBranch, tempBranch); err != nil {
 		return err
 	}
 
@@ -253,7 +273,7 @@ func (s *Service) JoinTempBranch(ctx context.Context, tempBranch string, appDto 
 	return s.MergeToTempBranch(ctx, tempBranch, appDto.ID, mrInfo)
 }
 
-func (s *Service) RejoinTempBranch(ctx context.Context, tempBranch, targetBranch string, appDto *apistructs.ApplicationDTO) error {
+func (s *Service) RejoinTempBranch(ctx context.Context, tempBranch, targetBranch, sourceBranch string, appDto *apistructs.ApplicationDTO) error {
 	// List merge requests to find the joined mr
 	result, err := s.p.bdl.ListMergeRequest(appDto.ID, apis.GetUserID(ctx), apistructs.GittarQueryMrRequest{
 		TargetBranch: targetBranch,
@@ -272,7 +292,7 @@ func (s *Service) RejoinTempBranch(ctx context.Context, tempBranch, targetBranch
 	}
 
 	// Idempotent create tempBranch
-	if err = s.IdempotentCreateBranch(ctx, repoPath, targetBranch, tempBranch); err != nil {
+	if err = s.IdempotentCreateBranch(ctx, repoPath, sourceBranch, tempBranch); err != nil {
 		return err
 	}
 
@@ -533,16 +553,19 @@ func (s *Service) GetDevFlowInfo(ctx context.Context, req *pb.GetDevFlowInfoRequ
 			appDto := appInfoMap[appID]
 			for _, v := range appMergeInfoMap[appID] {
 				repoPath := filepath.Join(gittarPrefixOpenApi, appDto.ProjectName, appDto.Name)
-				tempBranch, flowRuleName, err := s.getTempBranchAndRuleNameFromFlowRule(ctx, appDto.ProjectID, &v)
+				flowRule, err := s.getFlowRule(ctx, appDto.ProjectID, &v)
 				if err != nil {
 					return err
 				}
 				var (
-					baseCommit *apistructs.Commit
-					exists     bool
+					baseCommit   *apistructs.Commit
+					exists       bool
+					tempBranch   = getTempBranchFromFlowRule(flowRule)
+					flowRuleName = getFlowNameFromFlowRule(flowRule)
+					sourceBranch = getSourceBranchFromFlowRule(flowRule)
 				)
 				if tempBranch != "" {
-					if err = s.IdempotentCreateBranch(ctx, repoPath, v.TargetBranch, tempBranch); err != nil {
+					if err = s.IdempotentCreateBranch(ctx, repoPath, sourceBranch, tempBranch); err != nil {
 						return err
 					}
 					exists, err = s.JudgeBranchIsExists(ctx, repoPath, v.SourceBranch)
