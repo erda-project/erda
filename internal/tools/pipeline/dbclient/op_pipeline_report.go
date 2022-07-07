@@ -19,6 +19,7 @@ import (
 	"sort"
 	"strconv"
 
+	"github.com/erda-project/erda-proto-go/core/pipeline/report/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
@@ -46,13 +47,17 @@ func (client *Client) UpdatePipelineReport(report *spec.PipelineReport, ops ...S
 	return err
 }
 
-func (client *Client) PagingPipelineReportSets(req apistructs.PipelineReportSetPagingRequest, ops ...SessionOption) ([]apistructs.PipelineReportSet, int, error) {
+func (client *Client) PagingPipelineReportSets(req *pb.PipelineReportSetPagingRequest, ops ...SessionOption) ([]*pb.PipelineReportSet, int, error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
 	// 预处理
 	if len(req.Types) == 0 {
-		req.Types = append(req.Types, apistructs.PipelineReportTypeBasic)
+		req.Types = append(req.Types, string(apistructs.PipelineReportTypeBasic))
+	}
+	sources := make([]apistructs.PipelineSource, 0)
+	for _, source := range req.Sources {
+		sources = append(sources, apistructs.PipelineSource(source))
 	}
 
 	// 先查询流水线 ID 列表
@@ -60,19 +65,19 @@ func (client *Client) PagingPipelineReportSets(req apistructs.PipelineReportSetP
 	if len(req.PipelineIDs) == 0 {
 		// 报告类型，转换为 mustMatchLabels
 		for _, typ := range req.Types {
-			reportLabelKey, reportLabelValue := client.MakePipelineReportTypeLabelKey(typ)
+			reportLabelKey, reportLabelValue := client.MakePipelineReportTypeLabelKey(apistructs.PipelineReportType(typ))
 			req.MustMatchLabelsQueryParams = append(req.MustMatchLabelsQueryParams, fmt.Sprintf("%s=%s", reportLabelKey, reportLabelValue))
 		}
 		pipelinePagingReq := &apistructs.PipelinePageListRequest{
-			Sources:                    req.Sources,
+			Sources:                    sources,
 			AllSources:                 false,
 			StartTimeBeginTimestamp:    req.StartTimeBeginTimestamp,
 			EndTimeBeginTimestamp:      req.EndTimeBeginTimestamp,
 			StartTimeCreatedTimestamp:  req.StartTimeBeginTimestamp,
 			EndTimeCreatedTimestamp:    req.EndTimeCreatedTimestamp,
 			MustMatchLabelsQueryParams: req.MustMatchLabelsQueryParams,
-			PageNum:                    req.PageNum,
-			PageSize:                   req.PageSize,
+			PageNum:                    int(req.PageNum),
+			PageSize:                   int(req.PageSize),
 			CountOnly:                  true,
 		}
 		if err := pipelinePagingReq.PostHandleQueryString(); err != nil {
@@ -100,17 +105,22 @@ func (client *Client) PagingPipelineReportSets(req apistructs.PipelineReportSetP
 	}
 
 	// 转换报告集
-	reportSetMap := make(map[uint64]apistructs.PipelineReportSet)
+	reportSetMap := make(map[uint64]pb.PipelineReportSet)
 	for _, report := range reports {
 		set := reportSetMap[report.PipelineID]
 		set.PipelineID = report.PipelineID
-		set.Reports = append(set.Reports, client.ConvertPipelineReport(report))
+		pbReport, err := report.ConvertToPB()
+		if err != nil {
+			return nil, 0, err
+		}
+		set.Reports = append(set.Reports, pbReport)
 		reportSetMap[report.PipelineID] = set
 	}
 	// 按照 pipelineID 倒序
-	var sets []apistructs.PipelineReportSet
-	for _, set := range reportSetMap {
-		sets = append(sets, set)
+	var sets []*pb.PipelineReportSet
+	for pipelineID := range reportSetMap {
+		set := reportSetMap[pipelineID]
+		sets = append(sets, &set)
 	}
 	sort.Slice(sets, func(i, j int) bool {
 		// pipelineID 大的排在前面

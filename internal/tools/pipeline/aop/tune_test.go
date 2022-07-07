@@ -23,16 +23,14 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/tools/pipeline/aop/aoptypes"
 	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
-	"github.com/erda-project/erda/internal/tools/pipeline/services/reportsvc"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 func init() {
 	bdl := bundle.New(bundle.WithAllAvailableClients())
 	dbClient, _ := dbclient.New()
-	report := reportsvc.New(reportsvc.WithDBClient(dbClient))
 
-	Initialize(bdl, dbClient, report)
+	Initialize(bdl, dbClient, nil)
 }
 
 func TestHandlePipeline(t *testing.T) {

@@ -20,7 +20,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/tools/pipeline/aop/aoptypes"
 	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
-	"github.com/erda-project/erda/internal/tools/pipeline/services/reportsvc"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/report"
 )
 
 // tuneGroup 保存所有 tune chain
@@ -30,7 +30,7 @@ var once sync.Once
 var initialized bool
 var globalSDK aoptypes.SDK
 
-func Initialize(bdl *bundle.Bundle, dbClient *dbclient.Client, report *reportsvc.ReportSvc) {
+func Initialize(bdl *bundle.Bundle, dbClient *dbclient.Client, report report.Interface) {
 	once.Do(func() {
 		initialized = true
 

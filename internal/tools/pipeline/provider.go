@@ -42,6 +42,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/leaderworker"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/queuemanager"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/reconciler"
+	reportsvc "github.com/erda-project/erda/internal/tools/pipeline/providers/report"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/resource"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/resourcegc"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/run"
@@ -54,6 +55,7 @@ type provider struct {
 	MetricReport   report.MetricReport      `autowired:"metric-report-client" optional:"true"`
 	Router         httpserver.Router        `autowired:"http-router"`
 	CronService    cronpb.CronServiceServer `autowired:"erda.core.pipeline.cron.CronService" required:"true"`
+	ReportSvc      reportsvc.Interface
 	CronDaemon     daemon.Interface
 	CronCompensate compensator.Interface
 	MySQL          mysqlxorm.Interface `autowired:"mysql-xorm"`

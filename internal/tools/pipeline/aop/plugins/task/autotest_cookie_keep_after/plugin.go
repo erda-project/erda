@@ -16,7 +16,7 @@ package autotest_cookie_keep_after
 
 import (
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda-proto-go/core/pipeline/report/pb"
 	"github.com/erda-project/erda/internal/tools/pipeline/aop"
 	"github.com/erda-project/erda/internal/tools/pipeline/aop/aoptypes"
 	"github.com/erda-project/erda/pkg/apitestsv2"
@@ -61,12 +61,16 @@ func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 	}
 
 	// report cookieJar
-	_, err := ctx.SDK.Report.Create(apistructs.PipelineReportCreateRequest{
+	var pbMeta, err = ctx.SDK.Report.MakePBMeta(map[string]interface{}{
+		apitestsv2.HeaderSetCookie: setCookieJSON,
+	})
+	if err != nil {
+		return err
+	}
+	_, err = ctx.SDK.Report.Create(&pb.PipelineReportCreateRequest{
 		PipelineID: ctx.SDK.Pipeline.ID,
 		Type:       ReportTypeAutotestSetCookie,
-		Meta: map[string]interface{}{
-			apitestsv2.HeaderSetCookie: setCookieJSON,
-		},
+		Meta:       pbMeta,
 	})
 	return err
 }
