@@ -17,10 +17,11 @@ package collector
 import (
 	"testing"
 
-	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/labstack/echo"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/httpserver"
 )
 
 func Test_provider_Init(t *testing.T) {
@@ -46,10 +47,6 @@ func (m *mockRouter) GET(path string, handler interface{}, options ...interface{
 }
 
 func (m *mockRouter) POST(path string, handler interface{}, options ...interface{}) {
-	_, ok := options[0].(echo.MiddlewareFunc)
-	if !ok {
-		m.t.Fatal("must")
-	}
 	assert.IsType(m.t, echo.MiddlewareFunc(nil), options[0])
 	return
 }
