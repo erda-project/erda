@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package appsvc
+package app
 
 import (
 	"fmt"
@@ -24,6 +24,10 @@ import (
 	"github.com/erda-project/erda/internal/pkg/diceworkspace"
 	"github.com/erda-project/erda/pkg/strutil"
 )
+
+type Interface interface {
+	GetWorkspaceApp(uint64, string) (*WorkspaceApp, error)
+}
 
 // WorkspaceApp 包括所有 pipeline 创建需要的应用信息
 type WorkspaceApp struct {
@@ -40,7 +44,7 @@ type WorkspaceApp struct {
 	ClusterName   string                   `json:"clusterName"`
 }
 
-func (s *AppSvc) GetWorkspaceApp(appID uint64, branch string) (*WorkspaceApp, error) {
+func (s *provider) GetWorkspaceApp(appID uint64, branch string) (*WorkspaceApp, error) {
 	var result = WorkspaceApp{ID: appID}
 
 	// get app

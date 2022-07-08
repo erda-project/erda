@@ -31,7 +31,6 @@ import (
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/queuemanager"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/run"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/actionagentsvc"
-	"github.com/erda-project/erda/internal/tools/pipeline/services/appsvc"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/permissionsvc"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/pipelinesvc"
 	"github.com/erda-project/erda/pkg/http/httpserver"
@@ -39,7 +38,6 @@ import (
 
 // Endpoints 定义 endpoint 方法
 type Endpoints struct {
-	appSvc         *appsvc.AppSvc
 	permissionSvc  *permissionsvc.PermissionSvc
 	pipelineSvc    *pipelinesvc.PipelineSvc
 	crondSvc       daemon.Interface
@@ -74,12 +72,6 @@ func New(options ...Option) *Endpoints {
 func WithDBClient(dbClient *dbclient.Client) Option {
 	return func(e *Endpoints) {
 		e.dbClient = dbClient
-	}
-}
-
-func WithAppSvc(svc *appsvc.AppSvc) Option {
-	return func(e *Endpoints) {
-		e.appSvc = svc
 	}
 }
 

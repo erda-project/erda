@@ -28,6 +28,7 @@ import (
 	"github.com/erda-project/erda/internal/pkg/metrics/report"
 	_ "github.com/erda-project/erda/internal/tools/pipeline/aop/plugins"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/actionmgr"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/app"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/cache"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/cancel"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/clusterinfo"
@@ -74,6 +75,7 @@ type provider struct {
 	PipelineRun  run.Interface
 	Cancel       cancel.Interface
 	User         user.Interface
+	App          app.Interface
 	Secret       secret.Interface
 	ActionMgr    actionmgr.Interface
 	Resource     resource.Interface
