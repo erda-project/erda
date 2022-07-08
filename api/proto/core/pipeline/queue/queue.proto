@@ -7,33 +7,56 @@ import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/any.proto";
 import "common/identity.proto";
+import "common/openapi.proto";
 
 option go_package = "github.com/erda-project/erda-proto-go/core/pipeline/queue/pb";
 
 service QueueService {
+  option (erda.common.openapi_service) = {
+    service: "pipeline",
+    auth: {
+      check_token: true,
+    }
+  };
+
   rpc CreateQueue (QueueCreateRequest) returns (QueueCreateResponse) {
     option (google.api.http) = {
       post: "/api/pipeline-queues",
+    };
+    option(erda.common.openapi) = {
+      path: "/api/pipeline-queues",
     };
   }
   rpc GetQueue (QueueGetRequest) returns (QueueGetResponse) {
     option (google.api.http) = {
       get: "/api/pipeline-queues/{queueID}",
     };
+    option(erda.common.openapi) = {
+      path: "/api/pipeline-queues/{queueID}",
+    };
   }
   rpc PagingQueue (QueuePagingRequest) returns (QueuePagingResponse) {
     option (google.api.http) = {
       get: "/api/pipeline-queues",
+    };
+    option(erda.common.openapi) = {
+      path: "/api/pipeline-queues",
     };
   }
   rpc UpdateQueue (QueueUpdateRequest) returns (QueueUpdateResponse) {
     option (google.api.http) = {
       put: "/api/pipeline-queues/{queueID}",
     };
+    option(erda.common.openapi) = {
+      path: "/api/pipeline-queues/{queueID}",
+    };
   }
   rpc DeleteQueue (QueueDeleteRequest) returns (QueueDeleteResponse) {
     option (google.api.http) = {
       delete: "/api/pipeline-queues/{queueID}",
+    };
+    option(erda.common.openapi) = {
+      path: "/api/pipeline-queues/{queueID}",
     };
   }
 }

@@ -25,9 +25,10 @@ import (
 )
 
 type Interface interface {
+	pb.QueueServiceServer
 	DistributedHandleIncomingPipeline(ctx context.Context, pipelineID uint64)
 	DistributedStopPipeline(ctx context.Context, pipelineID uint64)
-	DistributedQueryQueueUsage(ctx context.Context, queue *apistructs.PipelineQueue) *pb.QueueUsage
+	DistributedQueryQueueUsage(ctx context.Context, queue *pb.Queue) *pb.QueueUsage
 	DistributedUpdateQueue(ctx context.Context, queueID uint64)
 	DistributedBatchUpdatePipelinePriority(ctx context.Context, queueID uint64, pipelineIDsOrderByPriorityFromHighToLow []uint64)
 }
@@ -96,7 +97,7 @@ func (q *provider) DistributedStopPipeline(ctx context.Context, pipelineID uint6
 	q.QueueManager.SendPopOutPipelineIDToEtcd(pipelineID)
 }
 
-func (q *provider) DistributedQueryQueueUsage(ctx context.Context, pq *apistructs.PipelineQueue) *pb.QueueUsage {
+func (q *provider) DistributedQueryQueueUsage(ctx context.Context, pq *pb.Queue) *pb.QueueUsage {
 	return q.QueueManager.QueryQueueUsage(pq)
 }
 

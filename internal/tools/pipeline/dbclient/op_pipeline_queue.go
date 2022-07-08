@@ -21,6 +21,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/erda-project/erda/pkg/common/pbutil"
+
+	"github.com/erda-project/erda-proto-go/core/pipeline/queue/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/apierrors"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
@@ -41,7 +44,7 @@ const (
 )
 
 // CreatePipelineQueue
-func (client *Client) CreatePipelineQueue(req apistructs.PipelineQueueCreateRequest, ops ...SessionOption) (*apistructs.PipelineQueue, error) {
+func (client *Client) CreatePipelineQueue(req *pb.QueueCreateRequest, ops ...SessionOption) (*pb.Queue, error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
@@ -49,7 +52,7 @@ func (client *Client) CreatePipelineQueue(req apistructs.PipelineQueueCreateRequ
 	queueIDLabel := spec.PipelineLabel{
 		Type:           apistructs.PipelineLabelTypeQueue,
 		TargetID:       0,
-		PipelineSource: req.PipelineSource,
+		PipelineSource: apistructs.PipelineSource(req.PipelineSource),
 		Key:            queueLabelKeyID,
 		Value:          "see db id",
 		ID:             uuid.SnowFlakeIDUint64(),
@@ -75,20 +78,20 @@ func (client *Client) CreatePipelineQueue(req apistructs.PipelineQueueCreateRequ
 }
 
 // createPipelineQueueFields create queue's other fields after queue id label created.
-func (client *Client) createPipelineQueueFields(req apistructs.PipelineQueueCreateRequest, queueIDLabel spec.PipelineLabel, ops ...SessionOption) (*apistructs.PipelineQueue, error) {
+func (client *Client) createPipelineQueueFields(req *pb.QueueCreateRequest, queueIDLabel spec.PipelineLabel, ops ...SessionOption) (*pb.Queue, error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
 	// store all fields as labels who's target_id is queue
 	queueID := queueIDLabel.ID
-	nameLabel := genMetaLabelFunc(queueID, req.PipelineSource, queueLabelKeyName, req.Name)
-	clusterNameLabel := genMetaLabelFunc(queueID, req.PipelineSource, queueLabelKeyClusterName, req.ClusterName)
-	scheduleStrategyLabel := genMetaLabelFunc(queueID, req.PipelineSource, queueLabelKeyScheduleStrategy, req.ScheduleStrategy.String())
-	modeLabel := genMetaLabelFunc(queueID, req.PipelineSource, queueLabelKeyMode, req.Mode.String())
-	priorityLabel := genMetaLabelFunc(queueID, req.PipelineSource, queueLabelKeyPriority, strutil.String(req.Priority))
-	concurrencyLabel := genMetaLabelFunc(queueID, req.PipelineSource, queueLabelKeyConcurrency, strutil.String(req.Concurrency))
-	maxCPULabel := genMetaLabelFunc(queueID, req.PipelineSource, queueLabelKeyMaxCPU, strutil.String(req.MaxCPU))
-	maxMemoryMBLabel := genMetaLabelFunc(queueID, req.PipelineSource, queueLabelKeyMaxMemoryMB, strutil.String(req.MaxMemoryMB))
+	nameLabel := genMetaLabelFunc(queueID, apistructs.PipelineSource(req.PipelineSource), queueLabelKeyName, req.Name)
+	clusterNameLabel := genMetaLabelFunc(queueID, apistructs.PipelineSource(req.PipelineSource), queueLabelKeyClusterName, req.ClusterName)
+	scheduleStrategyLabel := genMetaLabelFunc(queueID, apistructs.PipelineSource(req.PipelineSource), queueLabelKeyScheduleStrategy, req.ScheduleStrategy)
+	modeLabel := genMetaLabelFunc(queueID, apistructs.PipelineSource(req.PipelineSource), queueLabelKeyMode, req.Mode)
+	priorityLabel := genMetaLabelFunc(queueID, apistructs.PipelineSource(req.PipelineSource), queueLabelKeyPriority, strutil.String(req.Priority))
+	concurrencyLabel := genMetaLabelFunc(queueID, apistructs.PipelineSource(req.PipelineSource), queueLabelKeyConcurrency, strutil.String(req.Concurrency))
+	maxCPULabel := genMetaLabelFunc(queueID, apistructs.PipelineSource(req.PipelineSource), queueLabelKeyMaxCPU, strutil.String(req.MaxCPU))
+	maxMemoryMBLabel := genMetaLabelFunc(queueID, apistructs.PipelineSource(req.PipelineSource), queueLabelKeyMaxMemoryMB, strutil.String(req.MaxMemoryMB))
 	queueMetaLabels := []spec.PipelineLabel{
 		nameLabel,
 		clusterNameLabel,
@@ -100,7 +103,7 @@ func (client *Client) createPipelineQueueFields(req apistructs.PipelineQueueCrea
 		maxMemoryMBLabel,
 	}
 	for k, v := range req.Labels {
-		queueMetaLabels = append(queueMetaLabels, genMetaLabelFunc(queueID, req.PipelineSource, k, v))
+		queueMetaLabels = append(queueMetaLabels, genMetaLabelFunc(queueID, apistructs.PipelineSource(req.PipelineSource), k, v))
 	}
 	if _, err := session.InsertMulti(queueMetaLabels); err != nil {
 		return nil, fmt.Errorf("failed to insert queue fields to db, queueID: %d, err: %v", queueID, err)
@@ -121,8 +124,8 @@ var genMetaLabelFunc = func(queueID uint64, source apistructs.PipelineSource, ke
 	}
 }
 
-func constructQueueByLabels(labels []spec.PipelineLabel) (*apistructs.PipelineQueue, error) {
-	var q apistructs.PipelineQueue
+func constructQueueByLabels(labels []spec.PipelineLabel) (*pb.Queue, error) {
+	var q pb.Queue
 
 	// parse id first
 	for _, label := range labels {
@@ -130,8 +133,8 @@ func constructQueueByLabels(labels []spec.PipelineLabel) (*apistructs.PipelineQu
 			continue
 		}
 		q.ID = label.ID
-		q.PipelineSource = label.PipelineSource
-		q.TimeCreated = &label.TimeCreated
+		q.PipelineSource = label.PipelineSource.String()
+		q.TimeCreated = pbutil.GetTimestamp(&label.TimeCreated)
 	}
 	if q.ID == 0 {
 		return nil, fmt.Errorf("failed to construct queue, not found key id")
@@ -147,9 +150,9 @@ func constructQueueByLabels(labels []spec.PipelineLabel) (*apistructs.PipelineQu
 		case queueLabelKeyClusterName:
 			q.ClusterName = label.Value
 		case queueLabelKeyScheduleStrategy:
-			q.ScheduleStrategy = apistructs.ScheduleStrategyInsidePipelineQueue(label.Value)
+			q.ScheduleStrategy = label.Value
 		case queueLabelKeyMode:
-			q.Mode = apistructs.PipelineQueueMode(label.Value)
+			q.Mode = label.Value
 		case queueLabelKeyPriority:
 			priority, err := strconv.ParseInt(label.Value, 10, 64)
 			if err != nil {
@@ -195,13 +198,13 @@ func constructQueueByLabels(labels []spec.PipelineLabel) (*apistructs.PipelineQu
 			timeUpdated = label.TimeUpdated
 		}
 	}
-	q.TimeUpdated = &timeUpdated
+	q.TimeUpdated = pbutil.GetTimestamp(&timeUpdated)
 
 	return &q, nil
 }
 
 // GetPipelineQueue
-func (client *Client) GetPipelineQueue(queueID uint64, ops ...SessionOption) (*apistructs.PipelineQueue, bool, error) {
+func (client *Client) GetPipelineQueue(queueID uint64, ops ...SessionOption) (*pb.Queue, bool, error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
@@ -230,7 +233,7 @@ func (client *Client) GetPipelineQueue(queueID uint64, ops ...SessionOption) (*a
 }
 
 // transferQueuePagingRequestToMustMatchLabels transfer field to label key, just like: name => __queue_name
-func transferQueuePagingRequestToMustMatchLabels(req *apistructs.PipelineQueuePagingRequest) {
+func transferQueuePagingRequestToMustMatchLabels(req *pb.QueuePagingRequest) {
 	genMatchLabelFunc := func(k, v string) string { return fmt.Sprintf("%s=%s", k, v) }
 	// name
 	if req.Name != "" {
@@ -242,7 +245,7 @@ func transferQueuePagingRequestToMustMatchLabels(req *apistructs.PipelineQueuePa
 	}
 	// scheduleStrategy
 	if req.ScheduleStrategy != "" {
-		req.MustMatchLabels = append(req.MustMatchLabels, genMatchLabelFunc(queueLabelKeyScheduleStrategy, req.ScheduleStrategy.String()))
+		req.MustMatchLabels = append(req.MustMatchLabels, genMatchLabelFunc(queueLabelKeyScheduleStrategy, req.ScheduleStrategy))
 	}
 	// priority
 	if req.Priority != 0 {
@@ -254,7 +257,7 @@ func transferQueuePagingRequestToMustMatchLabels(req *apistructs.PipelineQueuePa
 	}
 }
 
-func (client *Client) PagingPipelineQueues(req apistructs.PipelineQueuePagingRequest, ops ...SessionOption) (*apistructs.PipelineQueuePagingData, error) {
+func (client *Client) PagingPipelineQueues(req *pb.QueuePagingRequest, ops ...SessionOption) (*pb.QueuePagingResponse, error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
@@ -267,7 +270,7 @@ func (client *Client) PagingPipelineQueues(req apistructs.PipelineQueuePagingReq
 	}
 
 	// transfer req meta to labels
-	transferQueuePagingRequestToMustMatchLabels(&req)
+	transferQueuePagingRequestToMustMatchLabels(req)
 
 	// validate
 	if !req.AllowNoPipelineSources && len(req.PipelineSources) == 0 {
@@ -295,9 +298,13 @@ func (client *Client) PagingPipelineQueues(req apistructs.PipelineQueuePagingReq
 		// select by labels
 		if len(req.MustMatchLabels) > 0 || len(req.AnyMatchLabels) > 0 {
 			needFilterByLabel = true
+			sources := make([]apistructs.PipelineSource, 0)
+			for _, source := range req.PipelineSources {
+				sources = append(sources, apistructs.PipelineSource(source))
+			}
 			labelRequest := apistructs.TargetIDSelectByLabelRequest{
 				Type:                   apistructs.PipelineLabelTypeQueue,
-				PipelineSources:        req.PipelineSources,
+				PipelineSources:        sources,
 				AllowNoMatchLabels:     true,
 				MustMatchLabels:        mustMatchLabelMap,
 				AnyMatchLabels:         anyMatchLabelMap,
@@ -348,7 +355,7 @@ func (client *Client) PagingPipelineQueues(req apistructs.PipelineQueuePagingReq
 	}
 
 	// paging queueIDs in memory
-	pagingQueueIDs := paging(queueIDs, req.PageNo, req.PageSize)
+	pagingQueueIDs := paging(queueIDs, int(req.PageNo), int(req.PageSize))
 	total := int64(len(queueIDs))
 
 	// list queue details
@@ -356,7 +363,7 @@ func (client *Client) PagingPipelineQueues(req apistructs.PipelineQueuePagingReq
 	if err != nil {
 		return nil, apierrors.ErrPagingPipelineQueues.InternalError(fmt.Errorf("failed to list queue details by ids, err: %v", err))
 	}
-	var queues []*apistructs.PipelineQueue
+	var queues []*pb.Queue
 	for _, queueID := range pagingQueueIDs {
 		queue, err := constructQueueByLabels(labelMap[queueID])
 		if err != nil {
@@ -365,7 +372,7 @@ func (client *Client) PagingPipelineQueues(req apistructs.PipelineQueuePagingReq
 		queues = append(queues, queue)
 	}
 
-	pagingResult := apistructs.PipelineQueuePagingData{
+	pagingResult := pb.QueuePagingResponse{
 		Queues: queues,
 		Total:  total,
 	}
@@ -386,31 +393,43 @@ func transferMustMatchLabelsToMap(ss []string) (map[string][]string, error) {
 }
 
 // UpdatePipelineQueue
-func (client *Client) UpdatePipelineQueue(req apistructs.PipelineQueueUpdateRequest, ops ...SessionOption) (*apistructs.PipelineQueue, error) {
+func (client *Client) UpdatePipelineQueue(req *pb.QueueUpdateRequest, ops ...SessionOption) (*pb.Queue, error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
 	// query queue id label
 	var queueIDLabel spec.PipelineLabel
-	exist, err := session.ID(req.ID).Get(&queueIDLabel)
+	exist, err := session.ID(req.QueueID).Get(&queueIDLabel)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get queue id label, err: %v", err)
 	}
 	if !exist {
 		return nil, fmt.Errorf("queue not found")
 	}
-	req.PipelineSource = queueIDLabel.PipelineSource
+	req.PipelineSource = queueIDLabel.PipelineSource.String()
 
 	// delete old fields except __queue_id
-	_, err = session.Where("`target_id` = ?", req.ID).Where("`key` != ?", queueLabelKeyID).Delete(&spec.PipelineLabel{})
+	_, err = session.Where("`target_id` = ?", req.QueueID).Where("`key` != ?", queueLabelKeyID).Delete(&spec.PipelineLabel{})
 	if err != nil {
-		return nil, fmt.Errorf("failed to delete queue fields, queueID: %d, err: %v", req.ID, err)
+		return nil, fmt.Errorf("failed to delete queue fields, queueID: %d, err: %v", req.QueueID, err)
 	}
 
 	// insert new one
-	updatedQueue, err := client.createPipelineQueueFields(req.PipelineQueueCreateRequest, queueIDLabel, ops...)
+	updatedQueue, err := client.createPipelineQueueFields(&pb.QueueCreateRequest{
+		Name:             req.Name,
+		PipelineSource:   req.PipelineSource,
+		ClusterName:      req.ClusterName,
+		ScheduleStrategy: req.ScheduleStrategy,
+		Mode:             req.Mode,
+		Priority:         req.Priority,
+		Concurrency:      req.Concurrency,
+		MaxCPU:           req.MaxCPU,
+		MaxMemoryMB:      req.MaxMemoryMB,
+		Labels:           req.Labels,
+		IdentityInfo:     req.IdentityInfo,
+	}, queueIDLabel, ops...)
 	if err != nil {
-		return nil, fmt.Errorf("failed to update queue fields, queueID: %d, err: %v", req.ID, err)
+		return nil, fmt.Errorf("failed to update queue fields, queueID: %d, err: %v", req.QueueID, err)
 	}
 
 	return updatedQueue, nil

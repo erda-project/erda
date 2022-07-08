@@ -20,5 +20,5 @@ func (q *defaultQueue) IsStrictMode() bool {
 	q.lock.Lock()
 	defer q.lock.Unlock()
 
-	return q.pq.Mode == apistructs.PipelineQueueModeStrict
+	return q.pq.Mode == apistructs.PipelineQueueModeStrict.String()
 }

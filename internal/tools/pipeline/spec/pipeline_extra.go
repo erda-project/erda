@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/erda-project/erda-proto-go/core/pipeline/queue/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/metadata"
 )
@@ -143,7 +144,7 @@ type Snapshot struct {
 	AppliedResources apistructs.PipelineAppliedResources `json:"appliedResources,omitempty"`
 
 	// BindQueue stores the binding queue info if have.
-	BindQueue *apistructs.PipelineQueue `json:"bindQueue,omitempty"`
+	BindQueue *pb.Queue `json:"bindQueue,omitempty"`
 
 	// Events stores pipeline level k8s-like events
 	Events []*apistructs.PipelineEvent `json:"events,omitempty"`

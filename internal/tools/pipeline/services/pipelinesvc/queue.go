@@ -15,13 +15,15 @@
 package pipelinesvc
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 
+	"github.com/erda-project/erda-proto-go/core/pipeline/queue/pb"
 	"github.com/erda-project/erda/apistructs"
 )
 
-func (s *PipelineSvc) validateQueueFromLabels(req *apistructs.PipelineCreateRequestV2) (*apistructs.PipelineQueue, error) {
+func (s *PipelineSvc) validateQueueFromLabels(req *apistructs.PipelineCreateRequestV2) (*pb.Queue, error) {
 	var foundBindQueueID bool
 	var bindQueueIDStr string
 	for k, v := range req.Labels {
@@ -40,22 +42,22 @@ func (s *PipelineSvc) validateQueueFromLabels(req *apistructs.PipelineCreateRequ
 		return nil, fmt.Errorf("failed to parse bindQueueID: %s, err: %v", bindQueueIDStr, err)
 	}
 	// query queue
-	queue, err := s.queueManage.GetPipelineQueue(queueID)
+	queueRes, err := s.queueManage.GetQueue(context.Background(), &pb.QueueGetRequest{QueueID: queueID})
 	if err != nil {
 		return nil, err
 	}
 	// check queue is matchable
-	if err := checkQueueValidateWithPipelineCreateReq(req, queue); err != nil {
+	if err := checkQueueValidateWithPipelineCreateReq(req, queueRes.Data); err != nil {
 		return nil, err
 	}
-	req.BindQueue = queue
+	req.BindQueue = queueRes.Data
 
-	return queue, nil
+	return queueRes.Data, nil
 }
 
-func checkQueueValidateWithPipelineCreateReq(req *apistructs.PipelineCreateRequestV2, queue *apistructs.PipelineQueue) error {
+func checkQueueValidateWithPipelineCreateReq(req *apistructs.PipelineCreateRequestV2, queue *pb.Queue) error {
 	// pipeline source
-	if queue.PipelineSource != req.PipelineSource {
+	if queue.PipelineSource != req.PipelineSource.String() {
 		return fmt.Errorf("invalid queue: pipeline source not match: %s(req) vs %s(queue)", req.PipelineSource, queue.PipelineSource)
 	}
 	// cluster name

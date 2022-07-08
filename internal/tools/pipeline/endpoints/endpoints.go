@@ -34,7 +34,6 @@ import (
 	"github.com/erda-project/erda/internal/tools/pipeline/services/appsvc"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/permissionsvc"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/pipelinesvc"
-	"github.com/erda-project/erda/internal/tools/pipeline/services/queuemanage"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 
@@ -45,7 +44,6 @@ type Endpoints struct {
 	pipelineSvc    *pipelinesvc.PipelineSvc
 	crondSvc       daemon.Interface
 	actionAgentSvc *actionagentsvc.ActionAgentSvc
-	queueManage    *queuemanage.QueueManage
 
 	dbClient           *dbclient.Client
 	queryStringDecoder *schema.Decoder
@@ -106,12 +104,6 @@ func WithActionAgentSvc(svc *actionagentsvc.ActionAgentSvc) Option {
 func WithPipelineSvc(svc *pipelinesvc.PipelineSvc) Option {
 	return func(e *Endpoints) {
 		e.pipelineSvc = svc
-	}
-}
-
-func WithQueueManage(qm *queuemanage.QueueManage) Option {
-	return func(e *Endpoints) {
-		e.queueManage = qm
 	}
 }
 
@@ -205,14 +197,6 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/pipelines/actions/pipeline-yml-graph", Method: http.MethodPost, Handler: e.pipelineYmlGraph},
 		{Path: "/api/pipelines/actions/statistics", Method: http.MethodGet, Handler: e.pipelineStatistic},
 		{Path: "/api/pipelines/actions/task-view", Method: http.MethodGet, Handler: e.pipelineTaskView},
-
-		// pipeline queue management
-		{Path: "/api/pipeline-queues", Method: http.MethodPost, Handler: e.createPipelineQueue},
-		{Path: "/api/pipeline-queues/{queueID}", Method: http.MethodGet, Handler: e.getPipelineQueue},
-		{Path: "/api/pipeline-queues", Method: http.MethodGet, Handler: e.pagingPipelineQueues},
-		{Path: "/api/pipeline-queues/{queueID}", Method: http.MethodPut, Handler: e.updatePipelineQueue},
-		{Path: "/api/pipeline-queues/{queueID}", Method: http.MethodDelete, Handler: e.deletePipelineQueue},
-		{Path: "/api/pipeline-queues/actions/batch-upgrade-pipeline-priority", Method: http.MethodPut, Handler: e.batchUpgradePipelinePriority},
 
 		// platform callback
 		{Path: "/api/pipelines/actions/callback", Method: http.MethodPost, Handler: e.pipelineCallback},
