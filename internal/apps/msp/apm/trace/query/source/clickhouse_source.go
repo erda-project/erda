@@ -247,10 +247,11 @@ func (chs *ClickhouseSource) GetSpans(ctx context.Context, req *pb.GetSpansReque
 		"tag_keys",
 		"tag_values",
 	).Where(goqu.Ex{
-		"org_name":   orgName,
-		"tenant_id":  req.ScopeID,
-		"trace_id":   req.TraceID,
-		"start_time": goqu.Op{"gte": fromTimestampMilli(req.StartTime)},
+		"org_name":  orgName,
+		"tenant_id": req.ScopeID,
+		"trace_id":  req.TraceID,
+		// there may be some timing skewing between different data source
+		"start_time": goqu.Op{"gte": fromTimestampMilli(req.StartTime - (15 * time.Minute).Milliseconds())},
 	}).Order(goqu.C("start_time").Asc()).Limit(uint(req.Limit))
 
 	sqlstr, err := chs.toSQL(sql)
