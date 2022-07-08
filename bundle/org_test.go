@@ -14,22 +14,31 @@
 
 package bundle
 
-//import (
-//	"fmt"
-//	"os"
-//	"testing"
-//
-//	"github.com/stretchr/testify/require"
-//)
-//
-//func TestBundle_GetOrg(t *testing.T) {
-//	os.Setenv("CMDB_ADDR", "cmdb.default.svc.cluster.local:9093")
-//	defer func() {
-//		os.Unsetenv("CMDB_ADDR")
-//	}()
-//	b := New(WithCMDB())
-//	org, err := b.GetOrg(1)
-//	require.NoError(t, err)
-//	fmt.Println(org.Domain)
-//
-//}
+import (
+	"os"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/erda-project/erda/pkg/discover"
+)
+
+func TestBundle_GetOrg(t *testing.T) {
+	os.Setenv(discover.EnvErdaServer, "mock_addr")
+	defer os.Unsetenv(discover.EnvErdaServer)
+	b := New(WithErdaServer())
+	_, err := b.GetOrg("")
+	assert.Error(t, err)
+	_, err = b.GetOrg(0)
+	assert.Error(t, err)
+}
+
+func TestBundle_GetDopOrg(t *testing.T) {
+	os.Setenv(discover.EnvDOP, "mock_addr")
+	defer os.Unsetenv(discover.EnvDOP)
+	b := New(WithErdaServer())
+	_, err := b.GetDopOrg("")
+	assert.Error(t, err)
+	_, err = b.GetDopOrg(0)
+	assert.Error(t, err)
+}

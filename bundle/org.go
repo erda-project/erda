@@ -16,6 +16,7 @@ package bundle
 
 import (
 	"fmt"
+	"reflect"
 	"strconv"
 
 	"github.com/pkg/errors"
@@ -33,6 +34,9 @@ func (b *Bundle) GetOrg(idOrName interface{}) (*apistructs.OrgDTO, error) {
 	}
 	hc := b.hc
 
+	if reflect.ValueOf(idOrName).IsZero() {
+		return nil, fmt.Errorf("idOrName is empty")
+	}
 	var fetchResp apistructs.OrgFetchResponse
 	resp, err := hc.Get(host).Path(fmt.Sprintf("/api/orgs/%v", idOrName)).Header(httputil.InternalHeader, "bundle").Do().JSON(&fetchResp)
 	if err != nil {
@@ -53,6 +57,9 @@ func (b *Bundle) GetDopOrg(idOrName interface{}) (*apistructs.OrgDTO, error) {
 	}
 	hc := b.hc
 
+	if reflect.ValueOf(idOrName).IsZero() {
+		return nil, fmt.Errorf("idOrName is empty")
+	}
 	var fetchResp apistructs.OrgFetchResponse
 	resp, err := hc.Get(host).Path(fmt.Sprintf("/api/orgs/%v", idOrName)).Header(httputil.InternalHeader, "bundle").Do().JSON(&fetchResp)
 	if err != nil {
