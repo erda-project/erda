@@ -27,7 +27,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/apps/gallery/pb"
 	commonPb "github.com/erda-project/erda-proto-go/common/pb"
-	"github.com/erda-project/erda/apistructs"
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/internal/apps/gallery/apierr"
 	"github.com/erda-project/erda/internal/apps/gallery/cache"
 	"github.com/erda-project/erda/internal/apps/gallery/dao"
@@ -370,7 +370,7 @@ func (p *GalleryHandler) PutOnExtensions(ctx context.Context, req *pb.PutOnExten
 	return p.updateExtension(ctx, l, userID, opus, version, req)
 }
 
-func (p *GalleryHandler) putOnArtifactsPreCheck(ctx context.Context, req *pb.PutOnArtifactsReq) (orgDto *apistructs.OrgDTO, userID string, err error) {
+func (p *GalleryHandler) putOnArtifactsPreCheck(ctx context.Context, req *pb.PutOnArtifactsReq) (orgDto *orgpb.Org, userID string, err error) {
 	orgID, err := apis.GetIntOrgID(ctx)
 	if err != nil {
 		orgID = int64(req.GetOrgID())
