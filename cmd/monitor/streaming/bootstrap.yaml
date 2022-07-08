@@ -95,6 +95,7 @@ clickhouse.table.loader@log:
   _enable: ${WRITE_LOG_TO_CLICKHOUSE_ENABLE:false}
   table_prefix: "logs"
   default_search_table: "logs_all"
+  cache_key_prefix: "clickhouse-table-log"
 
 log-storage-clickhouse:
   _enable: ${WRITE_LOG_TO_CLICKHOUSE_ENABLE:false}
@@ -597,6 +598,7 @@ clickhouse.table.loader@span:
   _enable: ${WRITE_SPAN_TO_CLICKHOUSE_ENABLE:false}
   table_prefix: "spans"
   default_search_table: "spans_all"
+  cache_key_prefix: "clickhouse-table-span"
 
 clickhouse.table.creator@span:
   _enable: ${WRITE_SPAN_TO_CLICKHOUSE_ENABLE:false}
@@ -651,6 +653,7 @@ clickhouse.table.loader@metric:
   _enable: ${WRITE_METRIC_TO_CLICKHOUSE_ENABLE:false}
   table_prefix: "metrics"
   default_search_table: "metrics_all"
+  cache_key_prefix: "clickhouse-table-metric"
 # --- metric to clickhouse block ---
 
 i18n@metric:

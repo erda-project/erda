@@ -245,6 +245,7 @@ clickhouse.table.loader@span:
   _enable: ${QUERY_SPAN_FROM_CLICKHOUSE_ENABLE:false}
   table_prefix: "spans"
   default_search_table: "spans_all"
+  cache_key_prefix: "clickhouse-table-span"
 
 etcd-election@table-loader:
   _enable: ${QUERY_SPAN_FROM_CLICKHOUSE_ENABLE:false}
