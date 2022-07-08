@@ -57,6 +57,7 @@ cache: {}
 secret: {}
 run: {}
 user: {}
+app: {}
 cancel: {}
 resource: {}
 edge-reporter:
