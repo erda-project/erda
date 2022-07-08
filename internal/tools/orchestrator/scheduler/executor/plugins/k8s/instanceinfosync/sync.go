@@ -363,11 +363,14 @@ func (s *Syncer) watchSyncHPAEvent(ctx context.Context) {
 			return
 		}
 
-		org, _ := orgCache.GetOrgByOrgID(hpa.Labels[hpatypes.ErdaHPAObjectOrgIDLabel])
+		var locale string
+		if org, ok := orgCache.GetOrgByOrgID(hpa.Labels[hpatypes.ErdaHPAObjectOrgIDLabel]); ok {
+			locale = org.Locale
+		}
 		buildHPAEventInfo(s.bdl, *hpa,
 			fmt.Sprintf("Service %s HorizontalPodAutoscaler event Type: %s, Reason:%s, Message:%s",
 				hpa.Labels[hpatypes.ErdaHPAObjectRuntimeServiceNameLabel], e.Type, e.Reason, e.Message),
-			i18n.Sprintf(org.Locale, "AutoScaleService", hpa.Labels[hpatypes.ErdaHPAObjectRuntimeServiceNameLabel], e.Message),
+			i18n.Sprintf(locale, "AutoScaleService", hpa.Labels[hpatypes.ErdaHPAObjectRuntimeServiceNameLabel], e.Message),
 			"podautoscaled")
 
 		// TODO: may save hpa events in mysql
