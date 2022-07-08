@@ -433,10 +433,67 @@ func (s *hpscalerService) ListRuntimeHPAEvents(ctx context.Context, req *pb.List
 }
 
 func (s *hpscalerService) HPScaleManual(ctx context.Context, req *pb.ManualHPRequest) (*pb.HPManualResponse, error) {
-	// TODO .
-	return nil, status.Errorf(codes.Unimplemented, "method HPScaleManual not implemented")
+	appId_ := req.ApplicationId
+	appId, err := strconv.Atoi(appId_)
+	if err != nil {
+		return nil, errors.Errorf("[HPScaleManual] failed to update Overlay, appId invalid: %v", appId_)
+	}
+
+	workspace := req.Workspace
+	if workspace == "" {
+		return nil, errors.Errorf("[HPScaleManual] workspace not set")
+	}
+
+	userID, _, err := s.GetUserAndOrgID(ctx)
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("[HPScaleManual] get userID and orgID failed: %v", err))
+	}
+
+	perm, err := s.bundle.CheckPermission(&apistructs.PermissionCheckRequest{
+		UserID:   userID.String(),
+		Scope:    apistructs.AppScope,
+		ScopeID:  uint64(appId),
+		Resource: "runtime-" + strutil.ToLower(workspace),
+		Action:   apistructs.OperateAction,
+	})
+
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("[HPScaleManual] check application permission for userID %s error: %v", userID.String(), err))
+	}
+
+	if !perm.Access {
+		return nil, errors.New(fmt.Sprintf("[HPScaleManual] no permission for userID %s", userID.String()))
+	}
+
+	runtimeName := req.RuntimeName
+	if runtimeName == "" {
+		return nil, errors.Errorf("[HPScaleManual] runtimeName invalid: not set runtimeName")
+	}
+
+	rsr := pb.RuntimeScaleRecord{
+		ApplicationId: uint64(appId),
+		Workspace:     workspace,
+		Name:          runtimeName,
+		Payload: &pb.PreDiceDTO{
+			Name:     req.Name,
+			Envs:     req.Envs,
+			Services: req.Services,
+		},
+	}
+
+	oldOverlayDataForAudit, err := s.processRuntimeScaleRecord(rsr, "")
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("[HPScaleManual] process runtime scale record failed: %v", err))
+	}
+
+	return &pb.HPManualResponse{
+		Name:     oldOverlayDataForAudit.Name,
+		Envs:     oldOverlayDataForAudit.Envs,
+		Services: oldOverlayDataForAudit.Services,
+	}, nil
 }
-func (s *hpscalerService) BatchHPScaleManual(ctx context.Context, req *pb.BatchManualHPRequest) (*pb.HPManualResponse, error) {
+
+func (s *hpscalerService) BatchHPScaleManual(ctx context.Context, req *pb.BatchManualHPRequest) (*pb.BatchManualResponse, error) {
 	// TODO .
 	return nil, status.Errorf(codes.Unimplemented, "method BatchHPScaleManual not implemented")
 }
