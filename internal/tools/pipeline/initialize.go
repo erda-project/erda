@@ -39,7 +39,6 @@ import (
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/cron/compensator"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/reconciler"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/actionagentsvc"
-	"github.com/erda-project/erda/internal/tools/pipeline/services/appsvc"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/permissionsvc"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/pipelinesvc"
 	"github.com/erda-project/erda/pkg/dumpstack"
@@ -112,12 +111,11 @@ func (p *provider) do() error {
 	bdl := bundle.New(bundle.WithAllAvailableClients())
 
 	// init services
-	appSvc := appsvc.New(bdl)
 	permissionSvc := permissionsvc.New(bdl)
 	actionAgentSvc := actionagentsvc.New(dbClient, bdl, js, etcdctl)
 
 	// init services
-	pipelineSvc := pipelinesvc.New(appSvc, p.CronDaemon, actionAgentSvc, p.CronService,
+	pipelineSvc := pipelinesvc.New(p.App, p.CronDaemon, actionAgentSvc, p.CronService,
 		permissionSvc, p.QueueManager, dbClient, bdl, publisher, p.Engine, js, etcdctl, p.ClusterInfo, p.EdgeRegister, p.Cache, p.Resource)
 	pipelineSvc.WithCmsService(p.CmsService)
 	pipelineSvc.WithSecret(p.Secret)
@@ -152,7 +150,6 @@ func (p *provider) do() error {
 	ep := endpoints.New(
 		endpoints.WithDBClient(dbClient),
 		endpoints.WithQueryStringDecoder(queryStringDecoder),
-		endpoints.WithAppSvc(appSvc),
 		endpoints.WithPermissionSvc(permissionSvc),
 		endpoints.WithCrondSvc(p.CronDaemon),
 		endpoints.WithActionAgentSvc(actionAgentSvc),
