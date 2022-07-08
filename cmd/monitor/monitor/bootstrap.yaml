@@ -69,6 +69,7 @@ clickhouse.table.loader@log:
   _enable: ${QUERY_LOG_FROM_CLICKHOUSE_ENABLE:false}
   table_prefix: "logs"
   default_search_table: "logs_all"
+  cache_key_prefix: "clickhouse-table-log"
 
 log-storage-clickhouse:
   _enable: ${QUERY_LOG_FROM_CLICKHOUSE_ENABLE:false}
