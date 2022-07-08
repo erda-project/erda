@@ -82,6 +82,7 @@ clickhouse.table.loader@span:
   _enable: ${WRITE_SPAN_TO_CLICKHOUSE_ENABLE:false}
   table_prefix: "spans"
   default_search_table: "spans_all"
+  cache_key_prefix: "clickhouse-table-span"
 
 storage-retention-strategy@span:
   default_ttl: "${SPAN_TTL:168h}"
@@ -109,6 +110,7 @@ clickhouse.table.loader@log:
   _enable: ${WRITE_LOG_TO_CLICKHOUSE_ENABLE:false}
   table_prefix: "logs"
   default_search_table: "logs_all"
+  cache_key_prefix: "clickhouse-table-log"
 
 log-storage-clickhouse:
   _enable: ${WRITE_LOG_TO_CLICKHOUSE_ENABLE:false}
