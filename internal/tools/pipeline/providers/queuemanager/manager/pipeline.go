@@ -20,6 +20,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-proto-go/core/pipeline/queue/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/events"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/queuemanager/queue"
@@ -97,7 +98,7 @@ func (mgr *defaultManager) ensureQueryPipelineDetail(pipelineID uint64) *spec.Pi
 
 // ensureQueryPipelineQueueDetail
 // return: queue or nil
-func (mgr *defaultManager) ensureQueryPipelineQueueDetail(p *spec.Pipeline) *apistructs.PipelineQueue {
+func (mgr *defaultManager) ensureQueryPipelineQueueDetail(p *spec.Pipeline) *pb.Queue {
 	// get queue id
 	queueID, exist := p.GetPipelineQueueID()
 	if !exist {
@@ -105,7 +106,7 @@ func (mgr *defaultManager) ensureQueryPipelineQueueDetail(p *spec.Pipeline) *api
 	}
 
 	// query from db
-	var pq *apistructs.PipelineQueue
+	var pq *pb.Queue
 	_ = loop.New(loop.WithDeclineLimit(time.Second*10), loop.WithDeclineRatio(2)).Do(func() (abort bool, err error) {
 		_pq, exist, err := mgr.dbClient.GetPipelineQueue(queueID)
 		if err != nil {
@@ -149,7 +150,7 @@ func (mgr *defaultManager) ensureQueryPipelineQueueDetail(p *spec.Pipeline) *api
 	return pq
 }
 
-func (mgr *defaultManager) BatchUpdatePipelinePriorityInQueue(pq *apistructs.PipelineQueue, pipelineIDs []uint64) error {
+func (mgr *defaultManager) BatchUpdatePipelinePriorityInQueue(pq *pb.Queue, pipelineIDs []uint64) error {
 	mgr.qLock.RLock()
 	defer mgr.qLock.RUnlock()
 

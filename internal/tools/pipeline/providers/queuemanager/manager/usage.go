@@ -22,7 +22,6 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-proto-go/core/pipeline/queue/pb"
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/queuemanager/queue"
 )
 
@@ -30,7 +29,7 @@ func MakeQueueUsageBackupKey(qID string) string {
 	return fmt.Sprintf("/devops/pipeline/queue_manager/actions/usage/%s", qID)
 }
 
-func (mgr *defaultManager) QueryQueueUsage(pq *apistructs.PipelineQueue) *pb.QueueUsage {
+func (mgr *defaultManager) QueryQueueUsage(pq *pb.Queue) *pb.QueueUsage {
 	mgr.qLock.RLock()
 	defer mgr.qLock.RUnlock()
 	usage := pb.QueueUsage{}
