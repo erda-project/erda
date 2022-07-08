@@ -56,7 +56,10 @@ erda.oap.collector.receiver.opentelemetry:
 erda.oap.collector.receiver.collector:
   metadata_key_of_topic: "KAFKA-TOPIC"
   auth:
-    skip: ${RECEIVER_COLLECTOR_AUTH_SKIP:false}
+    username: "${COLLECTOR_AUTH_USERNAME:collector}"
+    password: "${COLLECTOR_AUTH_PASSWORD:G$9767bP32drYFPWrK4XMLRMTatiM6cU}"
+    force: ${COLLECTOR_AUTH_FORCE:false}
+    skip: ${COLLECTOR_AUTH_SKIP:false}
 
 # ************* receivers *************
 
