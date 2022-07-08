@@ -28,7 +28,7 @@ Authorization: Bearer {{token}}
 ###
 POST http://{{collector_addr}}/collect/logs/container
 Content-Type: application/json
-Authorization: Basic {basic}
+Authorization: Basic {{basic}}
 
 [
   {

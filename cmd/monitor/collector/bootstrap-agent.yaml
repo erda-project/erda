@@ -7,19 +7,20 @@ health:
 
 erda.oap.collector.core:
   pipelines:
-    - receivers:
-        #- "erda.oap.collector.receiver.dummy"
-        - "erda.oap.collector.receiver.prometheus-remote-write"
-      processors:
-        - "erda.oap.collector.processor.k8s-tagger@prw"
-        - "erda.oap.collector.processor.modifier"
-        - "erda.oap.collector.processor.modifier@addmeta"
-        - "erda.oap.collector.processor.modifier@docker_container_summary"
-        - "erda.oap.collector.processor.aggregator@cpu-usage"
-        - "erda.oap.collector.processor.aggregator@mem-percent"
-      exporters:
-        #- "erda.oap.collector.exporter.stdout"
-        - "erda.oap.collector.exporter.collector"
+    metrics:
+      - receivers:
+          #- "erda.oap.collector.receiver.dummy"
+          - "erda.oap.collector.receiver.prometheus-remote-write"
+        processors:
+          - "erda.oap.collector.processor.k8s-tagger@prw"
+          - "erda.oap.collector.processor.modifier"
+          - "erda.oap.collector.processor.modifier@addmeta"
+          - "erda.oap.collector.processor.modifier@docker_container_summary"
+          - "erda.oap.collector.processor.aggregator@cpu-usage"
+          - "erda.oap.collector.processor.aggregator@mem-percent"
+        exporters:
+          #- "erda.oap.collector.exporter.stdout"
+          - "erda.oap.collector.exporter.collector"
 
 # ************* receivers *************
 #erda.oap.collector.receiver.dummy:
