@@ -27,7 +27,14 @@ type DBService interface {
 	GetRuntimeHPARulesByRuntimeId(runtimeID uint64) ([]dbclient.RuntimeHPA, error)
 	DeleteRuntimeHPARulesByRuleId(ruleId string) error
 	GetRuntime(id uint64) (*dbclient.Runtime, error)
+	UpdateRuntime(runtime *dbclient.Runtime) error
+	GetRuntimeByUniqueID(id spec.RuntimeUniqueId) (*dbclient.Runtime, error)
+	FindRuntimesByIds(ids []uint64) ([]dbclient.Runtime, error)
+	GetUnDeletableAttachMentsByRuntimeID(runtimeID uint64) (*[]dbclient.AddonAttachment, error)
+	GetInstanceRouting(id string) (*dbclient.AddonInstanceRouting, error)
+	UpdateAttachment(addonAttachment *dbclient.AddonAttachment) error
 	GetPreDeployment(uniqueId spec.RuntimeUniqueId) (*dbclient.PreDeployment, error)
+	UpdatePreDeployment(pre *dbclient.PreDeployment) error
 	GetRuntimeHPAEventsByServices(runtimeId uint64, services []string) ([]dbclient.HPAEventInfo, error)
 	DeleteRuntimeHPAEventsByRuleId(ruleId string) error
 }
