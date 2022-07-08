@@ -59,7 +59,7 @@ type provider struct {
 	Register transport.Register `autowired:"service-register" required:"true"`
 	DB       *gorm.DB           `autowired:"mysql-gorm.v2-client"`
 
-	Org org.Interface
+	Org org.ClientInterface
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
