@@ -235,7 +235,7 @@ func (r AfterDo) JSON(o interface{}) (*Response, error) {
 
 // 适用于a) 如果成功，不关心body内容及其结构体；
 //   并且b) 如果失败，需要把body内容封装进error里返回给上层定位错误
-func (r AfterDo) Body(b *bytes.Buffer) (*Response, error) {
+func (r AfterDo) Body(b io.Writer) (*Response, error) {
 	resp, err := doRequest(r)
 	if err != nil {
 		return nil, err
