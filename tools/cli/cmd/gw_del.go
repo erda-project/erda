@@ -31,17 +31,11 @@ import (
 )
 
 var GwDel = command.Command{
-	ParentName:                 "Gw",
-	Name:                       "del",
-	ShortHelp:                  "Erda Gateway delete invalid endpoints",
-	LongHelp:                   "Erda Gateway delete invalid endpoints",
-	Example:                    "erda-cli gw del -i erda.cloud.invalid-endpoints.json --kong-admin inet://terminus-captain/api-gateway.api-gateway-xxx.svc.cluster.local=>https://kong-admin.erda.cloud -y",
-	Hidden:                     false,
-	DontHideCursor:             false,
-	Args:                       nil,
-	MarkFlagRequired:           nil,
-	RegisterFlagCompletionFunc: nil,
-	ValidArgsFunction:          nil,
+	ParentName: "Gw",
+	Name:       "del",
+	ShortHelp:  "Erda Gateway delete invalid endpoints",
+	LongHelp:   "Erda Gateway delete invalid endpoints",
+	Example:    "erda-cli gw del -i erda.cloud.invalid-endpoints.json --kong-admin https://your-admin-host --cluster your-cluster",
 	Flags: []command.Flag{
 		command.StringFlag{
 			Short:        "i",

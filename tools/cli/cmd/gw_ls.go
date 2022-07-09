@@ -28,17 +28,11 @@ import (
 )
 
 var GwLs = command.Command{
-	ParentName:                 "Gw",
-	Name:                       "ls",
-	ShortHelp:                  "Erda Gateway list all invalid endpoints",
-	LongHelp:                   "Erda Gateway list all invalid endpoints",
-	Example:                    "erda-cli gw ls --invalid-only --cluster erda-cloud -o erda-cloud.invalid-endpoints.json",
-	Hidden:                     false,
-	DontHideCursor:             false,
-	Args:                       nil,
-	MarkFlagRequired:           nil,
-	RegisterFlagCompletionFunc: nil,
-	ValidArgsFunction:          nil,
+	ParentName: "Gw",
+	Name:       "ls",
+	ShortHelp:  "Erda Gateway list all invalid endpoints",
+	LongHelp:   "Erda Gateway list all invalid endpoints",
+	Example:    "erda-cli gw ls --invalid-only --cluster erda-cloud -o erda-cloud.invalid-endpoints.json",
 	Flags: []command.Flag{
 		command.BoolFlag{
 			Short:        "",
