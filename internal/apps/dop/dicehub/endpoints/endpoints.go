@@ -39,7 +39,7 @@ type Endpoints struct {
 	pipelineTemplate   *template.PipelineTemplate
 	releaseRule        *release_rule.ReleaseRule
 	queryStringDecoder *schema.Decoder
-	org                org.ClientInterface
+	org                org.Interface
 }
 
 type Option func(*Endpoints)
@@ -102,7 +102,7 @@ func WithQueryStringDecoder(decoder *schema.Decoder) Option {
 	}
 }
 
-func WithOrg(org org.ClientInterface) Option {
+func WithOrg(org org.Interface) Option {
 	return func(e *Endpoints) {
 		e.org = org
 	}
