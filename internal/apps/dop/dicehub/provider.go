@@ -29,7 +29,7 @@ type provider struct {
 	DB      *gorm.DB          `autowired:"mysql-client"`
 	Router  httpserver.Router `autowired:"http-router"`
 	ImageDB *image.ImageConfigDB
-	Org     org.ClientInterface
+	Org     org.Interface
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
