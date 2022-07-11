@@ -12,7 +12,7 @@ ARG DOCKER_IMAGE
 ARG MAKE_BUILD_CMD
 RUN --mount=type=cache,target=/root/.cache/go-build\
     --mount=type=cache,target=/go/pkg/mod \
-    make ${MAKE_BUILD_CMD} MODULE_PATH=${MODULE_PATH} DOCKER_IMAGE=${DOCKER_IMAGE} GO_BUILD_OPTIONS="-tags musl"
+    make ${MAKE_BUILD_CMD} MODULE_PATH=${MODULE_PATH} DOCKER_IMAGE=${DOCKER_IMAGE}
 
 ARG BASE_DOCKER_IMAGE
 FROM ${BASE_DOCKER_IMAGE}

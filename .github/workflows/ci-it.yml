@@ -68,12 +68,10 @@ jobs:
   CI:
     runs-on: ubuntu-latest
     container:
-      image: letmein7788/letmein:golangci-lint
+      image: registry.erda.cloud/erda/erda-base:20220711
     needs:
       - PREPARE
     steps:
-      - name: Install Tools
-        run: apk add tar
       - name: Clone repo
         uses: actions/checkout@v3
       - name: Fetch proto-go
@@ -100,12 +98,10 @@ jobs:
   CODE-CHECK:
     runs-on: ubuntu-latest
     container:
-      image: letmein7788/letmein:golangci-lint
+      image: registry.erda.cloud/erda/erda-base:20220711
     needs:
       - PREPARE
     steps:
-      - name: Install Tools
-        run: apk add tar
       - name: Clone repo
         uses: actions/checkout@v3
       - name: Fetch proto-go
@@ -144,7 +140,7 @@ jobs:
   CODE-TEST:
     runs-on: ubuntu-latest
     container:
-      image: letmein7788/letmein:golangci-lint
+      image: registry.erda.cloud/erda/erda-base:20220711
     needs:
       - PREPARE
     strategy:
@@ -166,8 +162,6 @@ jobs:
           - ./internal/apps/msp/...
           - ./internal/apps/cmp/...
     steps:
-      - name: Install Tools
-        run: apk add tar
       - name: Clone repo
         uses: actions/checkout@v3
       - name: Fetch proto-go
