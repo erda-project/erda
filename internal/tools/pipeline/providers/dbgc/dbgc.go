@@ -45,12 +45,12 @@ const (
 func (p *provider) PipelineDatabaseGC(ctx context.Context) {
 	rutil.ContinueWorking(ctx, p.Log, func(ctx context.Context) rutil.WaitDuration {
 		// analyzed snippet and non-snippet pipeline database gc
-		p.doAnalyzedPipelineDatabaseGC(true)
-		p.doAnalyzedPipelineDatabaseGC(false)
+		p.doAnalyzedPipelineDatabaseGC(ctx, true)
+		p.doAnalyzedPipelineDatabaseGC(ctx, false)
 
 		// not analyzed snippet and non-snippet pipeline database gc
-		p.doNotAnalyzedPipelineDatabaseGC(true)
-		p.doNotAnalyzedPipelineDatabaseGC(false)
+		p.doNotAnalyzedPipelineDatabaseGC(ctx, true)
+		p.doNotAnalyzedPipelineDatabaseGC(ctx, false)
 
 		// pipeline archive database clean up
 		p.doAnalyzedPipelineArchiveGC()
@@ -61,33 +61,30 @@ func (p *provider) PipelineDatabaseGC(ctx context.Context) {
 }
 
 // doPipelineDatabaseGC query the data in the database according to req paging to perform gc
-func (p *provider) doPipelineDatabaseGC(req apistructs.PipelinePageListRequest) {
-	var pageNum = req.PageNum
-	pipelines := make([]spec.Pipeline, 0)
-	for {
-		req.PageNum = pageNum
+func (p *provider) doPipelineDatabaseGC(ctx context.Context, req apistructs.PipelinePageListRequest) {
+	rutil.ContinueWorking(ctx, p.Log, func(ctx context.Context) rutil.WaitDuration {
 		result, err := p.dbClient.PageListPipelines(req)
-		pageNum += 1
 		if err != nil {
 			p.Log.Errorf("failed to compensate pipeline req: %v, err: %v", req, err)
-			continue
+			return rutil.ContinueWorkingWithDefaultInterval
 		}
 		pipelineResults := result.Pipelines
 		if len(pipelineResults) <= 0 {
-			break
+			return rutil.ContinueWorkingAbort
 		}
-		pipelines = append(pipelines, pipelineResults...)
-	}
-	for _, pipeline := range pipelines {
-		if !pipeline.Status.CanDelete() {
-			continue
+		req.EndIDLt = result.GetMinPipelineID()
+		for _, pipeline := range pipelineResults {
+			if !pipeline.Status.CanDelete() {
+				continue
+			}
+			// gc logic
+			if err := p.DoDBGC(pipeline.PipelineID, apistructs.PipelineGCDBOption{NeedArchive: needArchive(pipeline)}); err != nil {
+				p.Log.Errorf("failed to do gc logic, pipelineID: %d, err: %v", pipeline.PipelineID, err)
+				continue
+			}
 		}
-		// gc logic
-		if err := p.DoDBGC(pipeline.PipelineID, apistructs.PipelineGCDBOption{NeedArchive: needArchive(pipeline)}); err != nil {
-			p.Log.Errorf("failed to do gc logic, pipelineID: %d, err: %v", pipeline.PipelineID, err)
-			continue
-		}
-	}
+		return rutil.ContinueWorkingWithDefaultInterval
+	})
 }
 
 func needArchive(p spec.Pipeline) bool {
@@ -104,7 +101,7 @@ func needArchive(p spec.Pipeline) bool {
 }
 
 // doAnalyzedPipelineDatabaseGC gc Analyzed status pipeline
-func (p *provider) doAnalyzedPipelineDatabaseGC(isSnippetPipeline bool) {
+func (p *provider) doAnalyzedPipelineDatabaseGC(ctx context.Context, isSnippetPipeline bool) {
 	var req apistructs.PipelinePageListRequest
 	req.Statuses = []string{apistructs.PipelineStatusAnalyzed.String()}
 	req.IncludeSnippet = isSnippetPipeline
@@ -115,11 +112,11 @@ func (p *provider) doAnalyzedPipelineDatabaseGC(isSnippetPipeline bool) {
 	req.PageNum = 1
 	req.AllSources = true
 
-	p.doPipelineDatabaseGC(req)
+	p.doPipelineDatabaseGC(ctx, req)
 }
 
 // doNotAnalyzedPipelineDatabaseGC gc other status pipeline
-func (p *provider) doNotAnalyzedPipelineDatabaseGC(isSnippetPipeline bool) {
+func (p *provider) doNotAnalyzedPipelineDatabaseGC(ctx context.Context, isSnippetPipeline bool) {
 	var req apistructs.PipelinePageListRequest
 	req.NotStatuses = []string{apistructs.PipelineStatusAnalyzed.String()}
 	req.IncludeSnippet = isSnippetPipeline
@@ -130,7 +127,7 @@ func (p *provider) doNotAnalyzedPipelineDatabaseGC(isSnippetPipeline bool) {
 	req.PageNum = 1
 	req.AllSources = true
 
-	p.doPipelineDatabaseGC(req)
+	p.doPipelineDatabaseGC(ctx, req)
 }
 
 func (p *provider) doAnalyzedPipelineArchiveGC() {

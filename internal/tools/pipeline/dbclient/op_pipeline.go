@@ -228,6 +228,19 @@ type PageListPipelinesResult struct {
 	CurrentPageSize   int64
 }
 
+func (p *PageListPipelinesResult) GetMinPipelineID() uint64 {
+	if len(p.PagingPipelineIDs) == 0 {
+		return 0
+	}
+	minID := p.PagingPipelineIDs[0]
+	for _, id := range p.PagingPipelineIDs {
+		if id < minID {
+			minID = id
+		}
+	}
+	return minID
+}
+
 // PageListPipelines return pagingPipelines, pagingPipelineIDs, total, currentPageSize, error
 func (client *Client) PageListPipelines(req apistructs.PipelinePageListRequest, ops ...SessionOption) (*PageListPipelinesResult, error) {
 
@@ -368,6 +381,12 @@ func (client *Client) PageListPipelines(req apistructs.PipelinePageListRequest, 
 	}
 	if !req.EndTimeCreated.IsZero() {
 		baseSQL.Where(tableFieldName((&spec.PipelineBase{}).TableName(), "time_created")+" <= ?", req.EndTimeCreated)
+	}
+	if req.StartIDGt != 0 {
+		baseSQL.Where(tableFieldName((&spec.PipelineBase{}).TableName(), "id")+" > ?", req.StartIDGt)
+	}
+	if req.EndIDLt != 0 {
+		baseSQL.Where(tableFieldName((&spec.PipelineBase{}).TableName(), "id")+" < ?", req.EndIDLt)
 	}
 	if len(req.AscCols) == 0 && len(req.DescCols) == 0 {
 		baseSQL.Desc(tableFieldName((&spec.PipelineBase{}).TableName(), "id"))
