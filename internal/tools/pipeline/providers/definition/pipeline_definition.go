@@ -63,7 +63,6 @@ func (p pipelineDefinition) Create(ctx context.Context, request *pb.PipelineDefi
 	pipelineDefinition.EndedAt = *mysql_time.GetMysqlDefaultTime()
 	pipelineDefinition.CostTime = -1
 	pipelineDefinition.Ref = request.Ref
-	pipelineDefinition.Remote = request.Remote
 	err := p.dbClient.CreatePipelineDefinition(&pipelineDefinition)
 	if err != nil {
 		return nil, err
@@ -78,7 +77,6 @@ func (p pipelineDefinition) Create(ctx context.Context, request *pb.PipelineDefi
 	}
 	pipelineDefinitionExtra.PipelineDefinitionID = pipelineDefinition.ID
 	pipelineDefinitionExtra.Extra = extra
-	pipelineDefinitionExtra.Remote = request.Remote
 	err = p.dbClient.CreatePipelineDefinitionExtra(&pipelineDefinitionExtra)
 	if err != nil {
 		return nil, err

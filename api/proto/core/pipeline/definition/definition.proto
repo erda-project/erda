@@ -121,7 +121,6 @@ message PipelineDefinitionCreateRequest {
     int64 totalActionNum = 8;
     int64 ExecutedActionNum = 9;
     string ref = 10;
-    string remote = 11;
 }
 
 message PipelineDefinitionCreateResponse {
