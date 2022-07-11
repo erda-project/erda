@@ -1,4 +1,4 @@
-FROM --platform=linux/amd64 golang:1.17-bullseye
+FROM --platform=$TARGETPLATFORM golang:1.17-bullseye
 
 # set timezone to CST
 RUN cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
