@@ -64,7 +64,10 @@ type provider struct {
 }
 
 func (p *provider) ExportMetric(items ...*metric.Metric) error {
-	buf, err := json.Marshal(items)
+	obj := map[string][]*metric.Metric{
+		"metrics": items,
+	}
+	buf, err := json.Marshal(&obj)
 	if err != nil {
 		return fmt.Errorf("serialize err: %w", err)
 	}

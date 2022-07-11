@@ -295,7 +295,7 @@ func (chs *ClickhouseSource) GetSpanCount(ctx context.Context, traceID string) i
 	var count uint64
 	orgName := getOrgName(ctx)
 	table, _ := chs.Loader.GetSearchTable(orgName)
-	sql := goqu.From(table).Select("COUNT(span_id)").Where(goqu.Ex{"trace_id": traceID})
+	sql := goqu.From(table).Select(goqu.L("COUNT(span_id)")).Where(goqu.Ex{"trace_id": traceID})
 	sqlstr, err := chs.toSQL(sql)
 	if err != nil {
 		chs.Log.Errorf("GetSpanCount: %s", err)

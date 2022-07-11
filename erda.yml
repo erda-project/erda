@@ -264,19 +264,15 @@ services:
       network:
         mode: "container"
     deployments:
-      replicas: ${replicas:1}
+      replicas: ${replicas:0}
       labels:
         GROUP: "spot-v2"
-    expose:
-      - 7076
     health_check:
       http:
         port: 7076
         path: "/api/health"
         duration: 120
       exec: { }
-    hosts: [ ]
-    binds: [ ]
   gittar:
     cmd: /erda/cmd/gittar/bin
     ports:
