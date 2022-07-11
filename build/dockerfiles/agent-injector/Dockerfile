@@ -31,7 +31,6 @@ RUN ./build/scripts/build_all/app_handler.sh /erda "${MODULE_PATH}" /erda-handle
 FROM ${BASE_DOCKER_IMAGE}
 
 ARG MODULE_PATH
-ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib:/usr/local/lib64:/lib:/lib64
 
 COPY --from=app-handler /erda-handled /erda
 COPY --from=build "$GOPATH/src/github.com/erda-project/erda/build/java-agent" "/opt/spot-original/java-agent"

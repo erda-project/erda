@@ -1,6 +1,5 @@
 # syntax = docker/dockerfile:1.2
-ARG BASE_DOCKER_IMAGE
-FROM ${BASE_DOCKER_IMAGE} as build
+FROM registry.erda.cloud/erda/golang-base:210416 as build
 
 RUN mkdir -p "$GOPATH/src/github.com/erda-project/erda/"
 COPY . "$GOPATH/src/github.com/erda-project/erda/"
@@ -18,8 +17,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build\
 
 
 
-ARG BASE_DOCKER_IMAGE
-FROM ${BASE_DOCKER_IMAGE} as app-handler
+FROM registry.erda.cloud/erda/golang-base:210416 as app-handler
 ARG MODULE_PATH
 ENV PROJ_ROOT="/go/src/github.com/erda-project/erda"
 COPY --from=build "${PROJ_ROOT}" /erda
@@ -35,11 +33,7 @@ FROM ${BASE_DOCKER_IMAGE}
 ENV KUBECTL_VERSION v1.19.7
 ARG ARCH=amd64
 
-RUN apk add --no-cache jq py3-pip && \
-    apk add --update nodejs nodejs-npm && \
-    npm i -g jackson-converter@1.0.10 && \
-    pip3 install dicttoxml xmindparser && \
-    apk add shadow && \
+RUN apk add shadow && \
     curl -sLf https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/${ARCH}/kubectl > /usr/bin/kubectl && \
     chmod +x /usr/bin/kubectl
 
