@@ -126,6 +126,11 @@ grpc-client@erda.core.monitor.diagnotor:
   addr: "${MONITOR_GRPC_ADDR:monitor:7080}"
 erda.core.monitor.diagnotor-client:
 
+grpc-client@erda.core.org:
+  addr: "${ERDA_SERVER_GRPC_ADDR:erda-server:8096}"
+erda.core.org-client: {}
+erda.core.org: {}
+
 erda.msp.apm.diagnotor:
 
 i18n:
@@ -166,7 +171,7 @@ grpc-client@erda.oap.entity:
 erda.oap.entity-client:
 
 #grpc-client@erda.core.dicehub.release:
-#  addr: "${DICEHUB_GRPC_ADDR:dicehub:7080}"
+#  addr: "${ERDA_SERVER_GRPC_ADDR:erda-server:8096}"
 #erda.core.dicehub.release-client:
 
 erda.msp.apm.alert:
@@ -179,7 +184,7 @@ msp.permission:
 audit:
 
 grpc-client@erda.core.token:
-  addr: "${CORE_SERVICES_GRPC_ADDR:core-services:9537}"
+  addr: "${ERDA_SERVER_GRPC_ADDR:erda-server:8096}"
 erda.core.token-client:
 erda.msp.credential:
 
@@ -225,16 +230,27 @@ erda.msp.apm.checker.task:
   default_periodic_worker_interval: "30s"
 
 erda.msp.apm.trace.query:
-  debug_sql: ${TRACE_QUERY_DEBUG_SQL:false}
+  debug_sql: ${TRACE_QUERY_DEBUG_SQL:true}
   query_source:
-    elasticsearch: "${QUERY_SPAN_FROM_ES_ENABLE:true}"
-    cassandra: "${QUERY_SPAN_FROM_CASSANDRA_ENABLE:false}"
+    elasticsearch: "${QUERY_SPAN_FROM_ES_ENABLE:false}"
+    cassandra: "${QUERY_SPAN_FROM_CASSANDRA_ENABLE:true}"
     clickhouse: "${QUERY_SPAN_FROM_CLICKHOUSE_ENABLE:false}"
   compatible_enable: "${QUERY_SPAN_COMPATIBLE_ENABLE:true}"
   cassandra:
     keyspace:
       name: "spot_prod"
       auto: false # auto generate keyspace
+
+clickhouse.table.loader@span:
+  _enable: ${QUERY_SPAN_FROM_CLICKHOUSE_ENABLE:false}
+  table_prefix: "spans"
+  default_search_table: "spans_all"
+  cache_key_prefix: "clickhouse-table-span"
+
+etcd-election@table-loader:
+  _enable: ${QUERY_SPAN_FROM_CLICKHOUSE_ENABLE:false}
+  root_path: "/erda/monitor-ck-table-loader-election"
+
 
 erda.msp.apm.exception.query:
   query_source:
@@ -326,11 +342,11 @@ msp-alert-components:
 msp-alert-overview.unRecoverAlertChart.provider:
 
 grpc-client@erda.core.messenger.notify:
-  addr: "${CORE_SERVICES_GRPC_ADDR:core-services:9537}"
+  addr: "${ERDA_SERVER_GRPC_ADDR:erda-server:8096}"
 erda.core.messenger.notify-client:
 
 grpc-client@erda.core.messenger.notifygroup:
-  addr: "${CORE_SERVICES_GRPC_ADDR:core-services:9537}"
+  addr: "${ERDA_SERVER_GRPC_ADDR:erda-server:8096}"
 erda.core.messenger.notifygroup-client:
 
 grpc-client@erda.core.monitor.settings:

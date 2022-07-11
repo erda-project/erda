@@ -26,7 +26,7 @@ already migration
 var CMDB_PROJECT_GET_NSINFO = apis.ApiSpec{
 	Path:         "/api/projects/<projectID>/actions/get-ns-info",
 	BackendPath:  "/api/projects/<projectID>/actions/get-ns-info",
-	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
+	Host:         "erda-server.marathon.l4lb.thisdcos.directory:9095",
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,

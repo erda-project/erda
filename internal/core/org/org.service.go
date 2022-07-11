@@ -29,14 +29,22 @@ import (
 	"github.com/erda-project/erda/internal/core/legacy/services/permission"
 	"github.com/erda-project/erda/internal/core/legacy/utils"
 	"github.com/erda-project/erda/internal/core/org/db"
+	"github.com/erda-project/erda/internal/core/user"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/strutil"
-	"github.com/erda-project/erda/pkg/ucauth"
 )
+
+type ClientInterface interface {
+	pb.OrgServiceServer
+}
+
+type WrapClient struct {
+	pb.OrgServiceServer
+}
 
 type Interface interface {
 	pb.OrgServiceServer
-	WithUc(uc *ucauth.UCClient)
+	WithUc(uc user.Interface)
 	WithMember(member *member.Member)
 	WithPermission(permission *permission.Permission)
 	ListOrgs(ctx context.Context, orgIDs []int64, req *pb.ListOrgRequest, all bool) (int, []*pb.Org, error)
@@ -599,7 +607,7 @@ func (p *provider) DereferenceCluster(ctx context.Context, req *pb.DereferenceCl
 func convertToOrgClusterRelationDTO(rel db.OrgClusterRelation) *pb.OrgClusterRelation {
 	return &pb.OrgClusterRelation{
 		ID:          uint64(rel.ID),
-		OrgId:       rel.OrgID,
+		OrgID:       rel.OrgID,
 		OrgName:     rel.OrgName,
 		ClusterID:   rel.ClusterID,
 		ClusterName: rel.ClusterName,

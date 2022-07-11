@@ -20,8 +20,8 @@ import (
 )
 
 var ORCHESTRATOR_RUNTIME_INSPECT = apis.ApiSpec{
-	Path:         "/api/runtimes/<idOrName>",
-	BackendPath:  "/api/runtimes/<idOrName>",
+	Path:         "/api/runtimes/<IDOrName>",
+	BackendPath:  "/api/runtimes/<IDOrName>",
 	Host:         "orchestrator.marathon.l4lb.thisdcos.directory:8081",
 	Scheme:       "http",
 	Method:       "GET",

@@ -41,7 +41,7 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.bundle = bundle.New(bundle.WithCoreServices())
+	p.bundle = bundle.New(bundle.WithErdaServer())
 
 	p.projectHomeService = &projectHomeService{
 		db: &dao.DBClient{

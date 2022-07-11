@@ -20,7 +20,7 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	writer "github.com/erda-project/erda-infra/pkg/parallel-writer"
-	"github.com/erda-project/erda-infra/providers/kafka"
+	"github.com/erda-project/erda-infra/providers/kafkav2"
 	"github.com/erda-project/erda/internal/apps/msp/apm/trace"
 	"github.com/erda-project/erda/internal/tools/monitor/core/log"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric"
@@ -31,29 +31,33 @@ import (
 var providerName = plugins.WithPrefixExporter("kafka")
 
 type config struct {
-	MetadataKeyOfTopic string               `file:"metadata_key_of_topic"`
-	Producer           kafka.ProducerConfig `file:"producer"`
+	Keypass    map[string][]string `file:"keypass"`
+	Keydrop    map[string][]string `file:"keydrop"`
+	Keyinclude []string            `file:"keyinclude"`
+	Keyexclude []string            `file:"keyexclude"`
+
+	MetadataKeyOfTopic string                 `file:"metadata_key_of_topic"`
+	Producer           kafkav2.ProducerConfig `file:"producer"`
 	// capability of old data format
 	Compatibility bool `file:"compatibility" default:"true"`
 }
 
 // +provider
 type provider struct {
-	Cfg *config
-	Log logs.Logger
-
-	Kafka  kafka.Interface `autowired:"kafka"`
-	writer writer.Writer
+	Cfg     *config
+	Log     logs.Logger
+	KafkaV2 kafkav2.Interface `autowired:"kafka-v2"`
+	writer  writer.Writer
 }
 
 func (p *provider) ExportMetric(items ...*metric.Metric) error {
 	for _, item := range items {
-		data, err := json.Marshal(item) // TODO. Parallelism
+		data, err := json.Marshal(item)
 		if err != nil {
 			p.Log.Errorf("serialize err: %s", err)
 			continue
 		}
-		err = p.writer.Write(&kafka.Message{
+		err = p.writer.Write(kafkav2.Message{
 			Data: data,
 		})
 		if err != nil {
@@ -75,8 +79,8 @@ func (p *provider) ExportRaw(items ...*odata.Raw) error {
 				continue
 			}
 
-			if err := p.writer.Write(&kafka.Message{
-				Topic: &tmp,
+			if err := p.writer.Write(kafkav2.Message{
+				Topic: tmp,
 				Data:  item.Data,
 			}); err != nil {
 				p.Log.Errorf("write data to %s err: %s", tmp, err)
@@ -100,7 +104,7 @@ func (p *provider) Connect() error {
 
 // Run this is optional
 func (p *provider) Init(ctx servicehub.Context) error {
-	producer, err := p.Kafka.NewProducer(&p.Cfg.Producer)
+	producer, err := p.KafkaV2.NewProducer(p.Cfg.Producer)
 	if err != nil {
 		return err
 	}

@@ -18,28 +18,44 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda-proto-go/dop/devflowrule/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/providers/devflowrule/db"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	"github.com/erda-project/erda/internal/pkg/diceworkspace"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 )
 
-const resource = "devFlowRule"
+const (
+	resource = "devFlowRule"
+)
+
+type BranchType string
+
+const (
+	MultiBranchType  BranchType = "multi_branch"
+	SingleBranchType BranchType = "single_branch"
+)
+
+func (b BranchType) String() string {
+	return string(b)
+}
 
 type GetFlowByRuleRequest struct {
-	ProjectID    uint64
-	FlowType     string
-	ChangeBranch string
-	TargetBranch string
+	ProjectID     uint64
+	BranchType    string
+	CurrentBranch string
+	TargetBranch  string
 }
 
 type Interface interface {
 	pb.DevFlowRuleServiceServer
-	GetFlowByRule(context.Context, GetFlowByRuleRequest) (*pb.Flow, error)
+	GetFlowByRule(context.Context, GetFlowByRuleRequest) (*pb.FlowWithBranchPolicy, error)
 }
 
 func (p *provider) CreateDevFlowRule(ctx context.Context, request *pb.CreateDevFlowRuleRequest) (*pb.CreateDevFlowRuleResponse, error) {
@@ -47,16 +63,25 @@ func (p *provider) CreateDevFlowRule(ctx context.Context, request *pb.CreateDevF
 	if err != nil {
 		return nil, apierrors.ErrCreateDevFlowRule.InternalError(err)
 	}
-	org, err := p.bundle.GetOrg(project.OrgID)
+	orgResp, err := p.Org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcDOP),
+		&orgpb.GetOrgRequest{IdOrName: strconv.FormatUint(project.OrgID, 10)})
 	if err != nil {
 		return nil, apierrors.ErrCreateDevFlowRule.InternalError(err)
 	}
+	org := orgResp.Data
 
 	flows := p.InitFlows()
 	b, err := json.Marshal(&flows)
 	if err != nil {
 		return nil, apierrors.ErrCreateDevFlowRule.InternalError(err)
 	}
+
+	policies := p.InitBranchPolicies()
+	policiesByte, err := json.Marshal(&policies)
+	if err != nil {
+		return nil, apierrors.ErrCreateDevFlowRule.InternalError(err)
+	}
+
 	devFlow := db.DevFlowRule{
 		Scope: db.Scope{
 			OrgID:       org.ID,
@@ -68,76 +93,72 @@ func (p *provider) CreateDevFlowRule(ctx context.Context, request *pb.CreateDevF
 			Creator: request.UserID,
 			Updater: request.UserID,
 		},
-		Flows: b,
+		Flows:          b,
+		BranchPolicies: policiesByte,
 	}
 	err = p.dbClient.CreateDevFlowRule(&devFlow)
 	if err != nil {
 		return nil, apierrors.ErrCreateDevFlowRule.InternalError(err)
 	}
-	return &pb.CreateDevFlowRuleResponse{Data: devFlow.Convert()}, nil
+	data, err := devFlow.Convert()
+	if err != nil {
+		return nil, apierrors.ErrCreateDevFlowRule.InternalError(err)
+	}
+	return &pb.CreateDevFlowRuleResponse{Data: data}, nil
 }
 
 func (p *provider) InitFlows() db.Flows {
 	return db.Flows{
 		{
-			Name:             "DEV",
-			FlowType:         "multi_branch",
-			TargetBranch:     "develop",
-			ChangeFromBranch: "develop",
-			ChangeBranch:     "feature/*,bugfix/*",
-			EnableAutoMerge:  false,
-			AutoMergeBranch:  "next/develop",
-			Artifact:         "alpha",
-			Environment:      "DEV",
-			StartWorkflowHints: []db.StartWorkflowHint{
-				{
-					Place:            "TASK",
-					ChangeBranchRule: "feature/*",
-				},
-				{
-					Place:            "BUG",
-					ChangeBranchRule: "bugfix/*",
-				},
-			},
+			Name:         "DEV",
+			TargetBranch: "feature/*",
+			Artifact:     "alpha",
+			Environment:  "DEV",
 		},
 		{
-			Name:               "TEST",
-			FlowType:           "single_branch",
-			TargetBranch:       "develop",
-			ChangeFromBranch:   "",
-			ChangeBranch:       "",
-			EnableAutoMerge:    false,
-			AutoMergeBranch:    "",
-			Artifact:           "beta",
-			Environment:        "TEST",
-			StartWorkflowHints: nil,
+			Name:         "TEST",
+			TargetBranch: "develop",
+			Artifact:     "beta",
+			Environment:  "TEST",
 		},
 		{
-			Name:               "STAGING",
-			FlowType:           "multi_branch",
-			TargetBranch:       "master",
-			ChangeFromBranch:   "develop",
-			ChangeBranch:       "release/*",
-			EnableAutoMerge:    false,
-			AutoMergeBranch:    "",
-			Artifact:           "rc",
-			Environment:        "STAGING",
-			StartWorkflowHints: nil,
+			Name:         "STAGING",
+			TargetBranch: "release/*",
+			Artifact:     "rc",
+			Environment:  "STAGING",
 		},
 		{
-			Name:               "PROD",
-			FlowType:           "single_branch",
-			TargetBranch:       "master",
-			ChangeFromBranch:   "",
-			ChangeBranch:       "",
-			EnableAutoMerge:    false,
-			AutoMergeBranch:    "",
-			Artifact:           "stable",
-			Environment:        "PROD",
-			StartWorkflowHints: nil,
+			Name:         "PROD",
+			TargetBranch: "master",
+			Artifact:     "stable",
+			Environment:  "PROD",
 		},
 	}
+}
 
+func (p *provider) InitBranchPolicies() db.BranchPolicies {
+	return db.BranchPolicies{
+		{
+			Branch:     "feature/*",
+			BranchType: SingleBranchType.String(),
+			Policy:     nil,
+		},
+		{
+			Branch:     "develop",
+			BranchType: SingleBranchType.String(),
+			Policy:     nil,
+		},
+		{
+			Branch:     "release/*",
+			BranchType: SingleBranchType.String(),
+			Policy:     nil,
+		},
+		{
+			Branch:     "master",
+			BranchType: SingleBranchType.String(),
+			Policy:     nil,
+		},
+	}
 }
 
 func (p *provider) UpdateDevFlowRule(ctx context.Context, request *pb.UpdateDevFlowRuleRequest) (*pb.UpdateDevFlowRuleResponse, error) {
@@ -167,18 +188,28 @@ func (p *provider) UpdateDevFlowRule(ctx context.Context, request *pb.UpdateDevF
 	if err = p.CheckFlow(request.Flows); err != nil {
 		return nil, apierrors.ErrUpdateDevFlowRule.InternalError(err)
 	}
-
-	b, err := json.Marshal(request.Flows)
+	flowsByte, err := json.Marshal(request.Flows)
 	if err != nil {
 		return nil, apierrors.ErrUpdateDevFlowRule.InternalError(err)
 	}
-	devFlow.Flows = b
+
+	policesByte, err := json.Marshal(request.BranchPolicies)
+	if err != nil {
+		return nil, apierrors.ErrUpdateDevFlowRule.InternalError(err)
+	}
+
+	devFlow.Flows = flowsByte
+	devFlow.BranchPolicies = policesByte
 	devFlow.Operator.Updater = apis.GetUserID(ctx)
 	if err = p.dbClient.UpdateDevFlowRule(devFlow); err != nil {
 		return nil, apierrors.ErrUpdateDevFlowRule.InternalError(err)
 	}
 
-	return &pb.UpdateDevFlowRuleResponse{Data: devFlow.Convert()}, nil
+	data, err := devFlow.Convert()
+	if err != nil {
+		return nil, apierrors.ErrUpdateDevFlowRule.InternalError(err)
+	}
+	return &pb.UpdateDevFlowRuleResponse{Data: data}, nil
 }
 
 func (p *provider) CheckFlow(flows []*pb.Flow) error {
@@ -214,8 +245,11 @@ func (p *provider) GetDevFlowRulesByProjectID(ctx context.Context, request *pb.G
 	if err != nil {
 		return nil, apierrors.ErrGetDevFlowRule.InternalError(err)
 	}
-
-	return &pb.GetDevFlowRuleResponse{Data: wfs.Convert()}, nil
+	data, err := wfs.Convert()
+	if err != nil {
+		return nil, apierrors.ErrGetDevFlowRule.InternalError(err)
+	}
+	return &pb.GetDevFlowRuleResponse{Data: data}, nil
 }
 
 func (p *provider) DeleteDevFlowRule(ctx context.Context, request *pb.DeleteDevFlowRuleRequest) (*pb.DeleteDevFlowRuleResponse, error) {
@@ -225,23 +259,50 @@ func (p *provider) DeleteDevFlowRule(ctx context.Context, request *pb.DeleteDevF
 	return &pb.DeleteDevFlowRuleResponse{}, nil
 }
 
-func (p *provider) GetFlowByRule(ctx context.Context, request GetFlowByRuleRequest) (*pb.Flow, error) {
+func (p *provider) GetFlowByRule(ctx context.Context, request GetFlowByRuleRequest) (*pb.FlowWithBranchPolicy, error) {
 	wfs, err := p.dbClient.GetDevFlowRuleByProjectID(request.ProjectID)
 	if err != nil {
 		return nil, err
 	}
-	flows := make([]db.Flow, 0)
+	flows := make(db.Flows, 0)
 	if err = json.Unmarshal(wfs.Flows, &flows); err != nil {
 		return nil, err
 	}
-	for _, v := range flows {
-		targetBranches := strings.Split(v.TargetBranch, ",")
-		changeBranches := strings.Split(v.ChangeBranch, ",")
-		if request.FlowType == v.FlowType &&
-			diceworkspace.IsRefPatternMatch(request.TargetBranch, targetBranches) &&
-			diceworkspace.IsRefPatternMatch(request.ChangeBranch, changeBranches) {
-			return v.Convert(), nil
+	branchPolicies := make(db.BranchPolicies, 0)
+	if err = json.Unmarshal(wfs.BranchPolicies, &branchPolicies); err != nil {
+		return nil, err
+	}
+
+	var (
+		findBranch string
+		findFlow   db.Flow
+	)
+	for _, flow := range flows {
+		targetBranches := strings.Split(flow.TargetBranch, ",")
+		for _, branch := range targetBranches {
+			if diceworkspace.IsRefPatternMatch(request.CurrentBranch, []string{branch}) {
+				findBranch = flow.TargetBranch
+				findFlow = flow
+				break
+			}
 		}
 	}
-	return nil, nil
+	if findBranch == "" {
+		return nil, nil
+	}
+	for _, policy := range branchPolicies {
+		if findBranch == policy.Branch && request.BranchType == policy.BranchType &&
+			policy.Policy != nil && policy.Policy.TargetBranch != nil {
+			targetBranches := strings.Split(policy.Policy.TargetBranch.MergeRequest, ",")
+			if diceworkspace.IsRefPatternMatch(request.TargetBranch, targetBranches) {
+				return &pb.FlowWithBranchPolicy{
+					Flow:         findFlow.Convert(),
+					BranchPolicy: policy.Convert(),
+				}, nil
+			}
+		}
+	}
+	return &pb.FlowWithBranchPolicy{
+		Flow: findFlow.Convert(),
+	}, nil
 }

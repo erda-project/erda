@@ -23,7 +23,6 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/internal/apps/dop/bdl"
 	"github.com/erda-project/erda/internal/apps/dop/conf"
 	"github.com/erda-project/erda/internal/apps/dop/services/uc"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -223,7 +222,7 @@ func (svc *Service) contractMsgToManager(ctx context.Context, orgID uint64, cont
 		username = user.Nick
 	}
 
-	org, err := bdl.Bdl.GetOrg(orgID)
+	org, err := svc.getOrg(context.Background(), orgID)
 	if err != nil {
 		logrus.Errorf("failed to GetOrg, err: %v", err)
 		return
@@ -280,7 +279,7 @@ func (svc *Service) contractMsgToManager(ctx context.Context, orgID uint64, cont
 
 // 异步发送站内信和邮件, 通知调用申请人
 func (svc *Service) contractMsgToUser(orgID uint64, contractUserID, assetName string, client *apistructs.ClientModel, result ApprovalResult) {
-	org, err := bdl.Bdl.GetOrg(orgID)
+	org, err := svc.getOrg(context.Background(), orgID)
 	if err != nil {
 		logrus.Errorf("failed to GetOrg, err: %v", err)
 		return
@@ -333,7 +332,7 @@ func (svc *Service) contractMsgToUser(orgID uint64, contractUserID, assetName st
 
 func (svc *Service) updateVersionMsgToUser(orgID uint64, contractUserID, assetName string,
 	version *apistructs.APIAssetVersionsModel, client *apistructs.ClientModel) {
-	org, err := bdl.Bdl.GetOrg(orgID)
+	org, err := svc.getOrg(context.Background(), orgID)
 	if err != nil {
 		logrus.Errorf("failed to GetOrg, err: %v", err)
 		return

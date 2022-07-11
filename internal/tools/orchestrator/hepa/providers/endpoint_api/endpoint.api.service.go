@@ -16,9 +16,10 @@ package endpoint_api
 
 import (
 	"context"
-	"path/filepath"
+	"net/url"
+	"regexp"
 	"strconv"
-	"time"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -29,26 +30,39 @@ import (
 	runtimePb "github.com/erda-project/erda-proto-go/orchestrator/runtime/pb"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/vars"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/k8s"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/kong"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
 	repositoryService "github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/service"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/endpoint_api"
+	endpointApiImpl "github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/endpoint_api/impl"
 	"github.com/erda-project/erda/pkg/common/apis"
 	erdaErr "github.com/erda-project/erda/pkg/common/errors"
 )
 
+const (
+	invalidReasonProjectIsInvalid           = "package's project is invalid"
+	invalidReasonPackageRuntimeIsInvalid    = "package's runtime is invalid"
+	invalidReasonPackageAPIRuntimeIsInvalid = "package_api's runtime is invalid"
+	invalidReasonInnerAddrIsInvalid         = "package_api's redirect inner address is invalid"
+
+	invalidTypePackage    = "package"
+	invalidTypePackageAPI = "package_api"
+)
+
 var (
-	invalidProject = "project not found"
-	invalidRuntime = "runtime not found"
-	clearC         = make(chan struct{}, 1)
+	innerAddrRegexp, _ = regexp.Compile(`^.+\..+\.svc\.cluster\.local$`)
+	innerAddrSuffix    = ".svc.cluster.local"
 )
 
 // endpointApiService implements pb.EndpointApiServiceServer
 type endpointApiService struct {
-	projCli            projPb.ProjectServer
-	runtimeCli         runtimePb.RuntimeServiceServer
-	gatewayApiService  repositoryService.GatewayApiService
-	upstreamApiService repositoryService.GatewayUpstreamApiService
-	upstreamService    repositoryService.GatewayUpstreamService
+	projCli               projPb.ProjectServer
+	runtimeCli            runtimePb.RuntimeServiceServer
+	runtimeService        repositoryService.GatewayRuntimeServiceService
+	gatewayRouteService   repositoryService.GatewayRouteService
+	gatewayServiceService repositoryService.GatewayServiceService
+	kongInfoService       repositoryService.GatewayKongInfoService
 }
 
 func (s *endpointApiService) GetEndpointsName(ctx context.Context, req *pb.GetEndpointsNameRequest) (resp *pb.GetEndpointsNameResponse, err error) {
@@ -271,158 +285,49 @@ func (s *endpointApiService) ChangeEndpointRoot(ctx context.Context, req *pb.Cha
 	return
 }
 
-func (s *endpointApiService) ListInvalidEndpointApi(ctx context.Context, _ *commonPb.VoidRequest) (*pb.ListInvalidEndpointApiResp, error) {
-	l := logrus.WithField("func", "ListInvalidEndpointApi")
-	// list all packages
-	eas := endpoint_api.Service.Clone(ctx)
-	packages, err := eas.ListAllPackages()
+func (s *endpointApiService) ListInvalidEndpointApi(ctx context.Context, req *pb.ListInvalidEndpointApiReq) (*pb.ListInvalidEndpointApiResp, error) {
+	var result pb.ListInvalidEndpointApiResp
+	kongInfo, err := s.kongInfoService.GetKongInfo(&orm.GatewayKongInfo{Az: req.ClusterName})
 	if err != nil {
-		l.Warnln("failed to ListAllPackages")
 		return nil, err
 	}
-	if len(packages) == 0 {
-		l.Warnln("no packages found")
-		return new(pb.ListInvalidEndpointApiResp), nil
-	}
-
-	var result pb.ListInvalidEndpointApiResp
-	var projectPackages = make(map[string][]orm.GatewayPackage)
-	for _, package_ := range packages {
-		if package_.DiceProjectId != "" {
-			projectPackages[package_.DiceProjectId] = append(projectPackages[package_.DiceProjectId], package_)
-		}
-	}
-	for projectID := range projectPackages {
-		l = l.WithField("projectID", projectID)
-		id, err := strconv.ParseUint(projectID, 10, 32)
-		if err != nil {
-			l.WithError(err).Warnln("projectI can not be parsed to uint")
-			continue
-		}
-
-		packages := projectPackages[projectID]
-		// collect the package if it's project is invalid
-		resp, err := s.projCli.CheckProjectExist(ctx, &projPb.CheckProjectExistReq{Id: id})
-		if err == nil && !resp.GetOk() {
-			for _, package_ := range packages {
-				item := &pb.ListInvalidEndpointApiItem{
-					InvalidReason: invalidProject,
-					Type:          "package",
-					ProjectID:     projectID,
-					PackageID:     package_.Id,
-				}
-				result.List = append(result.List, item)
+	err = s.rangeInvalidEndpointApi(ctx, req.GetClusterName(), func(item *pb.ListInvalidEndpointApiItem) {
+		if item.GetType() == invalidTypePackageAPI && kongInfo != nil && kongInfo.KongAddr != "" {
+			if item.GetKongRouteID() != "" {
+				item.RouteDeleting = "curl -sIL -w '%{http_code}\n' -X DELETE " + kongInfo.KongAddr + "/routes/" + item.GetKongRouteID()
 			}
-			continue
-		}
-
-		// collect the package_api if it's relation runtime is invalid
-		//
-		// join on tb_gateway_package_api.dice_api_id = tb_gateway_api.id
-		//         tb_gateway_api.upstream_api_id = tb_gateway_upstream_api.id
-		//         tb_gateway_upstream_api.upstream_id = tb_gateway_upstream.id
-		//         runtimeID = filepath.base(tb_gateway_api.upstream_name)
-		for _, package_ := range packages {
-			l := l.WithField("tb_gateway_package_api.id", package_.Id)
-			packageApis, err := eas.ListPackageAllApis(package_.Id)
-			if err != nil {
-				l.WithError(err).Warnln("failed to ListPackageAllApis")
-				continue
-			}
-			for _, packageApi := range packageApis {
-				l := l.WithField("tb_gateway_package_api.dice_api_id", packageApi.DiceApiId)
-				if packageApi.DiceApiId == "" {
-					l.Warnln("packageApi.DiceApiId is empty")
-					continue
-				}
-				l = l.WithField("tb_gateway_api.id", packageApi.DiceApiId)
-				gatewayApi, err := s.gatewayApiService.GetById(packageApi.DiceApiId)
-				if err != nil {
-					l.WithError(err).Warnf("failed to gatewayApiService.GetById(%s)", packageApi.DiceApiId)
-					continue
-				}
-				// todo: if gatewayApi.redirect_addr is invalid inner address, collect the package_api
-				if gatewayApi.UpstreamApiId == "" {
-					l.Warnln("gatewayApi.UpstreamApiID is empty")
-					continue
-				}
-				l = l.WithField("tb_gateway_upstream_api.id", gatewayApi.UpstreamApiId)
-				upstreamApi, err := s.upstreamApiService.GetById(gatewayApi.UpstreamApiId)
-				if err != nil {
-					l.WithError(err).Warnln("failed to upstreamApiService.GetById")
-					continue
-				}
-				l = l.WithField("tb_gateway_upstream.id", upstreamApi.UpstreamId)
-				var cond orm.GatewayUpstream
-				cond.Id = upstreamApi.UpstreamId
-				upstreams, err := s.upstreamService.SelectByAny(&cond)
-				if err != nil {
-					l.WithError(err).Warnf("failed to upstreamService.SelectByAny(%+v)", cond)
-					continue
-				}
-				if len(upstreams) == 0 {
-					l.Warnln("not found any upstreams")
-					continue
-				}
-				for _, upstream := range upstreams {
-					l := l.WithField("upstreamName", upstream.UpstreamName)
-					runtimeID, err := strconv.ParseUint(filepath.Base(upstream.UpstreamName), 10, 32)
-					if err != nil {
-						l.WithError(err).Warnln("failed to parse runtime id from upstream name")
-						continue
-					}
-					if runtimeID == 0 {
-						l.Warnln("runtime id is 0 parsed from upstream name")
-						continue
-					}
-					l = l.WithField("runtimeID", runtimeID)
-					resp, err := s.runtimeCli.CheckRuntimeExist(ctx, &runtimePb.CheckRuntimeExistReq{Id: runtimeID})
-					if err == nil && !resp.GetOk() {
-						item := &pb.ListInvalidEndpointApiItem{
-							InvalidReason: invalidRuntime,
-							Type:          "package_api",
-							ProjectID:     projectID,
-							PackageID:     package_.Id,
-							PackageApiID:  packageApi.Id,
-							UpstreamApiID: upstreamApi.Id,
-							UpstreamID:    upstream.Id,
-							UpstreamName:  upstream.UpstreamName,
-							RuntimeID:     filepath.Base(upstream.UpstreamName),
-						}
-						result.List = append(result.List, item)
-					}
-				}
+			if item.GetKongServiceID() != "" {
+				item.ServiceDeleting = "curl -sIL -w '%{http_code}\n' -X DELETE " + kongInfo.KongAddr + "/routes/" + item.GetKongServiceID()
 			}
 		}
+		result.Total += 1
+		switch item.GetInvalidReason() {
+		case invalidReasonProjectIsInvalid:
+			result.TotalProjectIsInvalid += 1
+		case invalidReasonPackageRuntimeIsInvalid, invalidReasonPackageAPIRuntimeIsInvalid:
+			result.TotalRuntimeIsInvalid += 1
+		case invalidReasonInnerAddrIsInvalid:
+			result.TotalInnerAddrIsInvalid += 1
+		}
+		result.List = append(result.List, item)
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	return &result, nil
 }
 
-func (s *endpointApiService) ClearInvalidEndpointApi(ctx context.Context, req *commonPb.VoidRequest) (*commonPb.VoidResponse, error) {
-	timer := time.NewTimer(time.Second * 2)
-	defer timer.Stop()
-	select {
-	case <-timer.C:
-		return nil, errors.New("task in process")
-	case clearC <- struct{}{}:
-		go func() {
-			s.clearInvalidEndpointApi(ctx, req)
-			<-clearC
-		}()
-
-	}
-	return new(commonPb.VoidResponse), nil
-}
-
-func (s *endpointApiService) clearInvalidEndpointApi(ctx context.Context, _ *commonPb.VoidRequest) (*commonPb.VoidResponse, error) {
-	l := logrus.WithField("func", "*endpointApiService.ClearInvalidEndpointApi")
-	resp, err := s.ListInvalidEndpointApi(ctx, nil)
+func (s *endpointApiService) ClearInvalidEndpointApi(ctx context.Context, req *pb.ListInvalidEndpointApiReq) (*commonPb.VoidResponse, error) {
+	l := logrus.WithField("func", "clearInvalidEndpointApi")
+	service := endpoint_api.Service.Clone(ctx)
+	kongInfo, err := s.kongInfoService.GetKongInfo(&orm.GatewayKongInfo{Az: req.ClusterName})
 	if err != nil {
 		return nil, err
 	}
-	for _, item := range resp.List {
-		if item.GetType() == "package" {
+	kongAdapter := kong.NewKongAdapter(kongInfo.KongAddr)
+	err = s.rangeInvalidEndpointApi(ctx, req.GetClusterName(), func(item *pb.ListInvalidEndpointApiItem) {
+		if item.GetType() == invalidTypePackage {
 			l.Infof("delete package: %+v", item)
 			if _, err := s.DeleteEndpoint(ctx, &pb.DeleteEndpointRequest{
 				PackageId: item.GetPackageID(),
@@ -430,7 +335,7 @@ func (s *endpointApiService) clearInvalidEndpointApi(ctx context.Context, _ *com
 				l.WithError(err).WithField("package id", item.GetPackageID()).Warnln("failed to DeleteEndpoint")
 			}
 		}
-		if item.GetType() == "package_api" {
+		if item.GetType() == invalidTypePackageAPI {
 			l.Infof("delete package api: %+v", item)
 			if _, err := s.DeleteEndpointApi(ctx, &pb.DeleteEndpointApiRequest{
 				PackageId: item.GetPackageID(),
@@ -441,8 +346,180 @@ func (s *endpointApiService) clearInvalidEndpointApi(ctx context.Context, _ *com
 					WithField("package api id", item.GetPackageApiID()).
 					Warnln("failed to DeleteEndpointApi")
 			}
+			if item.GetKongRouteID() != "" || item.GetKongServiceID() != "" {
+				if err := service.(*endpointApiImpl.GatewayOpenapiServiceImpl).DeleteKongApi(kongAdapter, item.GetPackageApiID()); err != nil {
+					l.WithError(err).WithField("packageAPIID", item.GetPackageApiID()).Warnln("failed to DeleteKongApi")
+				}
+			}
 		}
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	return new(commonPb.VoidResponse), nil
+}
+
+func (s *endpointApiService) rangeInvalidEndpointApi(ctx context.Context, clusterName string, f func(item *pb.ListInvalidEndpointApiItem)) error {
+	l := logrus.WithField("func", "rangeInvalidEndpointApi")
+	if clusterName == "" {
+		return errors.New("invalid clusterName")
+	}
+
+	k8SAdapter, err := k8s.NewAdapter(clusterName)
+	if err != nil {
+		return errors.Wrap(err, "failed to k8s.NewAdapter")
+	}
+	k8SServices, err := k8SAdapter.ListAllServices("")
+	if err != nil {
+		return errors.Wrap(err, "failed to k8SAdapter.ListAllServices")
+	}
+	var k8SServicesAddresses = make(map[string]struct{})
+	for _, service := range k8SServices {
+		k8SServicesAddresses[service.Name+"."+service.Namespace] = struct{}{}
+	}
+
+	// list all packages
+	eas := endpoint_api.Service.Clone(ctx)
+	packages, err := eas.ListAllPackages()
+	if err != nil {
+		l.WithError(err).Errorln("failed to ListAllPackages")
+		return err
+	}
+	if len(packages) == 0 {
+		l.Warnln("no packages found")
+		return nil
+	}
+
+	var projectPackages = make(map[string][]orm.GatewayPackage)
+	for _, pkg := range packages {
+		if pkg.DiceClusterName == clusterName && pkg.DiceProjectId != "" {
+			projectPackages[pkg.DiceProjectId] = append(projectPackages[pkg.DiceProjectId], pkg)
+		}
+	}
+	for projectID := range projectPackages {
+		l = l.WithField("projectID", projectID)
+		id, err := strconv.ParseUint(projectID, 10, 32)
+		if err != nil {
+			l.WithError(err).Warnln("projectID can not be parsed to uint")
+			continue
+		}
+
+		packages := projectPackages[projectID]
+		// collect the package if it's project is invalid
+		resp, err := s.projCli.CheckProjectExist(ctx, &projPb.CheckProjectExistReq{Id: id})
+		if err == nil && !resp.GetOk() {
+			for _, pkg := range packages {
+				packageApis, _ := eas.ListPackageAllApis(pkg.Id)
+				for _, packageApi := range packageApis {
+					item := s.adjustInvalidPackageAPIItem(pkg, packageApi, invalidReasonProjectIsInvalid)
+					f(item)
+				}
+
+				item := &pb.ListInvalidEndpointApiItem{
+					InvalidReason: invalidReasonProjectIsInvalid,
+					Type:          invalidTypePackage,
+					ProjectID:     projectID,
+					PackageID:     pkg.Id,
+				}
+				f(item)
+			}
+			continue
+		}
+
+		for _, pkg := range packages {
+			l := l.WithField("tb_gateway_package_api.id", pkg.Id)
+			if pkg.RuntimeServiceId != "" {
+				l := l.WithField("runtimeServiceID", pkg.RuntimeServiceId)
+				runtimeService, err := s.runtimeService.Get(pkg.RuntimeServiceId)
+				if err != nil {
+					l.WithError(err).Errorln("failed to runtimeService.Get")
+					return err
+				}
+				if runtimeService != nil {
+					if runtimeID, err := strconv.ParseUint(runtimeService.RuntimeId, 10, 32); err == nil && runtimeID != 0 {
+						if resp, err := s.runtimeCli.CheckRuntimeExist(ctx, &runtimePb.CheckRuntimeExistReq{Id: runtimeID}); err != nil && resp != nil && !resp.GetOk() {
+							item := &pb.ListInvalidEndpointApiItem{
+								InvalidReason: invalidReasonPackageRuntimeIsInvalid,
+								Type:          invalidTypePackage,
+								ProjectID:     pkg.DiceProjectId,
+								PackageID:     pkg.Id,
+								PackageApiID:  "",
+								RuntimeID:     runtimeService.RuntimeId,
+							}
+							f(item)
+						}
+					}
+				}
+			}
+
+			packageApis, err := eas.ListPackageAllApis(pkg.Id)
+			if err != nil {
+				l.WithError(err).Warnln("failed to ListPackageAllApis")
+				continue
+			}
+			for _, packageApi := range packageApis {
+				if packageApi.RuntimeServiceId != "" {
+					l := l.WithField("packageApi.RuntimeServiceId", packageApi.RuntimeServiceId)
+					runtimeService, err := s.runtimeService.Get(packageApi.RuntimeServiceId)
+					if err != nil {
+						l.WithError(err).Errorln("failed to runtimeService.Get")
+						return err
+					}
+					if runtimeService != nil {
+						if runtimeID, err := strconv.ParseUint(runtimeService.RuntimeId, 10, 32); err == nil && runtimeID != 0 {
+							if resp, err := s.runtimeCli.CheckRuntimeExist(ctx, &runtimePb.CheckRuntimeExistReq{Id: runtimeID}); err != nil && resp != nil && !resp.GetOk() {
+								item := s.adjustInvalidPackageAPIItem(pkg, packageApi, invalidReasonPackageAPIRuntimeIsInvalid)
+								f(item)
+							}
+						}
+					}
+				}
+
+				// if redirect address is inner host, check if it is invalid
+				if redirectAddr, err := url.Parse(packageApi.RedirectAddr); err == nil {
+					if ok := innerAddrRegexp.MatchString(redirectAddr.Hostname()); ok {
+						if _, ok := k8SServicesAddresses[strings.TrimSuffix(redirectAddr.Hostname(), innerAddrSuffix)]; !ok {
+							item := s.adjustInvalidPackageAPIItem(pkg, packageApi, invalidReasonInnerAddrIsInvalid)
+							f(item)
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+func (s *endpointApiService) adjustInvalidPackageAPIItem(pkg orm.GatewayPackage, packageApi orm.GatewayPackageApi, reason string) *pb.ListInvalidEndpointApiItem {
+	item := &pb.ListInvalidEndpointApiItem{
+		InvalidReason: reason,
+		Type:          invalidTypePackageAPI,
+		ProjectID:     pkg.DiceProjectId,
+		PackageID:     pkg.Id,
+		PackageApiID:  packageApi.Id,
+		InnerHostname: "",
+		KongRouteID:   "",
+		KongServiceID: "",
+		ClusterName:   pkg.DiceClusterName,
+	}
+	if redirectAddr, _ := url.Parse(packageApi.RedirectAddr); redirectAddr != nil {
+		item.InnerHostname = redirectAddr.Hostname()
+	}
+	kongRoute, _ := s.gatewayRouteService.GetByApiId(packageApi.Id)
+	if kongRoute == nil {
+		kongRoute, _ = s.gatewayRouteService.GetByApiId(packageApi.DiceApiId)
+	}
+	kongService, _ := s.gatewayServiceService.GetByApiId(packageApi.Id)
+	if kongService == nil {
+		kongService, _ = s.gatewayServiceService.GetByApiId(packageApi.DiceApiId)
+	}
+	if kongRoute != nil {
+		item.KongRouteID = kongRoute.RouteId
+	}
+	if kongService != nil {
+		item.KongServiceID = kongService.ServiceId
+	}
+	return item
 }

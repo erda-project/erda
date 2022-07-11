@@ -33,7 +33,7 @@ func (r *ComponentReleaseTable) putOnRelease(ctx context.Context, releaseID stri
 	orgID := r.sdk.Identity.OrgID
 	projectID := r.State.ProjectID
 
-	org, err := r.bdl.GetOrg(orgID)
+	org, err := r.getOrg(ctx, orgID)
 	if err != nil {
 		return err
 	}

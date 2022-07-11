@@ -24,9 +24,9 @@ import (
 )
 
 var CMDB_LABEL_UPDATE = apis.ApiSpec{
-	Path:        "/api/labels/<id>",
-	BackendPath: "/api/labels/<id>",
-	Host:        "core-services.marathon.l4lb.thisdcos.directory:9526",
+	Path:        "/api/labels/<ID>",
+	BackendPath: "/api/labels/<ID>",
+	Host:        "erda-server.marathon.l4lb.thisdcos.directory:9095",
 	Scheme:      "http",
 	Method:      http.MethodPut,
 	CheckLogin:  true,

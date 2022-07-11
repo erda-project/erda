@@ -23,6 +23,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	queuepb "github.com/erda-project/erda-proto-go/core/pipeline/queue/pb"
 	"github.com/erda-project/erda-proto-go/dop/projectpipeline/pb"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -178,7 +179,7 @@ type PipelineCreateRequestV2 struct {
 	// Internal-Use below
 
 	// BindQueue represents the queue pipeline binds, internal use only, parsed from Labels: LabelBindPipelineQueueID
-	BindQueue *PipelineQueue `json:"-"`
+	BindQueue *queuepb.Queue `json:"-"`
 
 	// DefinitionID pipeline definition id
 	// +optional

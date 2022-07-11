@@ -15,8 +15,6 @@
 package legacy
 
 import (
-	"context"
-
 	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -27,6 +25,7 @@ import (
 	"github.com/erda-project/erda/internal/core/legacy/providers/errorbox"
 	"github.com/erda-project/erda/internal/core/legacy/services/permission"
 	"github.com/erda-project/erda/internal/core/org"
+	"github.com/erda-project/erda/internal/core/user"
 	"github.com/erda-project/erda/pkg/oauth2"
 )
 
@@ -40,6 +39,7 @@ type provider struct {
 	DB            *gorm.DB                   `autowired:"mysql-client"`
 	TokenService  tokenpb.TokenServiceServer `autowired:"erda.core.token.TokenService"`
 	Org           org.Interface
+	Identity      user.Interface
 }
 
 func (p *provider) Init(ctx servicehub.Context) (err error) {
@@ -53,10 +53,8 @@ func (p *provider) Init(ctx servicehub.Context) (err error) {
 	router.Any("/oauth2/token", p.oauth2server.Token)
 	router.Any("/oauth2/invalidate_token", p.oauth2server.InvalidateToken)
 	router.Any("/oauth2/validate_token", p.oauth2server.ValidateToken)
-	return nil
+	return p.Initialize()
 }
-
-func (p *provider) Run(ctx context.Context) error { return p.Initialize() }
 
 func init() {
 	servicehub.Register("core-services", &servicehub.Spec{

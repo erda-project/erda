@@ -16,13 +16,17 @@ package cluster
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/core/cluster-manager/cluster/db"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -30,6 +34,7 @@ import (
 type ClusterService struct {
 	db  *db.ClusterDB
 	bdl *bundle.Bundle
+	org org.ClientInterface
 }
 
 type Option = func(c *ClusterService)
@@ -51,6 +56,12 @@ func WithDB(db *db.ClusterDB) Option {
 func WithBundle(bdl *bundle.Bundle) Option {
 	return func(c *ClusterService) {
 		c.bdl = bdl
+	}
+}
+
+func WithOrg(org org.ClientInterface) Option {
+	return func(c *ClusterService) {
+		c.org = org
 	}
 }
 
@@ -80,10 +91,12 @@ func (c *ClusterService) ListCluster(ctx context.Context, req *pb.ListClusterReq
 		}, nil
 	}
 
-	clusterRelation, err := c.bdl.GetOrgClusterRelationsByOrg(uint64(req.OrgID))
+	orgResp, err := c.org.GetOrgClusterRelationsByOrg(apis.WithInternalClientContext(ctx, discover.SvcClusterManager),
+		&orgpb.GetOrgClusterRelationsByOrgRequest{OrgID: strconv.Itoa(int(req.OrgID))})
 	if err != nil {
 		return nil, ErrListCluster.InternalError(err)
 	}
+	clusterRelation := orgResp.Data
 
 	inOrgIDMap := make(map[uint64]struct{})
 	for i := 0; i < len(clusterRelation); i++ {
@@ -135,7 +148,20 @@ func (c *ClusterService) CreateCluster(ctx context.Context, req *pb.CreateCluste
 		return nil, ErrCreateCluster.InternalError(err)
 	}
 
-	if err := c.bdl.CreateOrgClusterRelationsByOrg(req.Name, req.UserID, uint64(req.OrgID)); err != nil {
+	orgResp, err := c.org.GetOrg(apis.WithInternalClientContext(ctx, discover.SvcClusterManager),
+		&orgpb.GetOrgRequest{IdOrName: strconv.Itoa(int(req.OrgID))})
+	if err != nil {
+		return nil, ErrCreateCluster.InternalError(err)
+	}
+	org := orgResp.Data
+
+	createOrgClusterReq := &orgpb.OrgClusterRelationCreateRequest{
+		OrgID:       org.ID,
+		OrgName:     org.Name,
+		ClusterName: req.Name,
+	}
+	_, err = c.org.CreateOrgClusterRelation(apis.WithUserIDContext(ctx, req.UserID), createOrgClusterReq)
+	if err != nil {
 		return nil, ErrCreateCluster.InternalError(err)
 	}
 	return &pb.CreateClusterResponse{Success: true}, nil

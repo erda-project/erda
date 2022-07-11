@@ -17,6 +17,7 @@ package org
 import (
 	"fmt"
 
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/conf"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
@@ -29,7 +30,7 @@ import (
 // 3. maven proxy official publisher repo
 // 4. maven proxy thirdparty repos
 // 5. one maven group org repo
-func (o *Org) ensureNexusOrgMavenGroupRepos(org *apistructs.OrgDTO) error {
+func (o *Org) ensureNexusOrgMavenGroupRepos(org *orgpb.Org) error {
 	var mavenMemberRepos []*apistructs.NexusRepository
 
 	// 1. maven hosted org snapshot repo
@@ -79,7 +80,7 @@ func (o *Org) ensureNexusOrgMavenGroupRepos(org *apistructs.OrgDTO) error {
 	return err
 }
 
-func (o *Org) ensureNexusMavenHostedOrgSnapshotRepo(org *apistructs.OrgDTO) (*apistructs.NexusRepository, error) {
+func (o *Org) ensureNexusMavenHostedOrgSnapshotRepo(org *orgpb.Org) (*apistructs.NexusRepository, error) {
 	nexusServer := nexus.Server{
 		Addr:     conf.CentralNexusAddr(),
 		Username: conf.CentralNexusUsername(),
@@ -133,7 +134,7 @@ func (o *Org) ensureNexusMavenHostedOrgSnapshotRepo(org *apistructs.OrgDTO) (*ap
 	return repo, nil
 }
 
-func (o *Org) ensureNexusMavenGroupOrgRepo(org *apistructs.OrgDTO, mavenMemberRepos []*apistructs.NexusRepository) (*apistructs.NexusRepository, error) {
+func (o *Org) ensureNexusMavenGroupOrgRepo(org *orgpb.Org, mavenMemberRepos []*apistructs.NexusRepository) (*apistructs.NexusRepository, error) {
 	mavenGroupOrgRepoName := nexus.MakeOrgRepoName(nexus.RepositoryFormatMaven, nexus.RepositoryTypeGroup, uint64(org.ID))
 	repo, err := o.nexusSvc.EnsureRepository(apistructs.NexusRepositoryEnsureRequest{
 		OrgID:       &[]uint64{uint64(org.ID)}[0],
@@ -191,7 +192,7 @@ func (o *Org) ensureNexusMavenGroupOrgRepo(org *apistructs.OrgDTO, mavenMemberRe
 }
 
 func (o *Org) ensureNexusMavenGroupOrgReadonlyUser(
-	org *apistructs.OrgDTO,
+	org *orgpb.Org,
 	groupRepo *apistructs.NexusRepository,
 	syncCM apistructs.NexusSyncConfigToPipelineCM,
 ) (*apistructs.NexusUser, error) {
@@ -217,7 +218,7 @@ func (o *Org) ensureNexusMavenGroupOrgReadonlyUser(
 }
 
 func (o *Org) ensureNexusHostedOrgDeploymentUser(
-	org *apistructs.OrgDTO,
+	org *orgpb.Org,
 	repo *apistructs.NexusRepository,
 	syncCM apistructs.NexusSyncConfigToPipelineCM,
 ) (*apistructs.NexusUser, error) {

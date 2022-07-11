@@ -20,6 +20,7 @@ import (
 
 	oap "github.com/erda-project/erda-proto-go/oap/trace/pb"
 	"github.com/erda-project/erda/internal/apps/msp/apm/trace"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/common"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/common/unmarshalwork"
 )
@@ -56,18 +57,19 @@ func (uw *unmarshalWork) Unmarshal() {
 	}
 
 	span := &trace.Span{
-		StartTime:    int64(data.StartTimeUnixNano),
-		EndTime:      int64(data.EndTimeUnixNano),
-		TraceId:      data.TraceID,
-		SpanId:       data.SpanID,
-		ParentSpanId: data.ParentSpanID,
-		Tags:         data.Attributes,
+		StartTime:     int64(data.StartTimeUnixNano),
+		EndTime:       int64(data.EndTimeUnixNano),
+		TraceId:       data.TraceID,
+		SpanId:        data.SpanID,
+		ParentSpanId:  data.ParentSpanID,
+		OperationName: data.Name,
+		Tags:          data.Attributes,
 	}
-	span.Tags["operation_name"] = data.Name
-	if v, ok := span.Tags[trace.OrgNameKey]; ok {
+
+	if v, ok := span.Tags[lib.OrgNameKey]; ok {
 		span.OrgName = v
 	} else {
-		uw.err = fmt.Errorf("must have %q", trace.OrgNameKey)
+		uw.err = fmt.Errorf("must have %q", lib.OrgNameKey)
 		return
 	}
 

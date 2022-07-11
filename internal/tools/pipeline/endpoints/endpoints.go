@@ -31,23 +31,17 @@ import (
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/queuemanager"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/run"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/actionagentsvc"
-	"github.com/erda-project/erda/internal/tools/pipeline/services/appsvc"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/permissionsvc"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/pipelinesvc"
-	"github.com/erda-project/erda/internal/tools/pipeline/services/queuemanage"
-	"github.com/erda-project/erda/internal/tools/pipeline/services/reportsvc"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 
 // Endpoints 定义 endpoint 方法
 type Endpoints struct {
-	appSvc         *appsvc.AppSvc
 	permissionSvc  *permissionsvc.PermissionSvc
 	pipelineSvc    *pipelinesvc.PipelineSvc
 	crondSvc       daemon.Interface
 	actionAgentSvc *actionagentsvc.ActionAgentSvc
-	reportSvc      *reportsvc.ReportSvc
-	queueManage    *queuemanage.QueueManage
 
 	dbClient           *dbclient.Client
 	queryStringDecoder *schema.Decoder
@@ -81,12 +75,6 @@ func WithDBClient(dbClient *dbclient.Client) Option {
 	}
 }
 
-func WithAppSvc(svc *appsvc.AppSvc) Option {
-	return func(e *Endpoints) {
-		e.appSvc = svc
-	}
-}
-
 func WithPermissionSvc(svc *permissionsvc.PermissionSvc) Option {
 	return func(e *Endpoints) {
 		e.permissionSvc = svc
@@ -108,18 +96,6 @@ func WithActionAgentSvc(svc *actionagentsvc.ActionAgentSvc) Option {
 func WithPipelineSvc(svc *pipelinesvc.PipelineSvc) Option {
 	return func(e *Endpoints) {
 		e.pipelineSvc = svc
-	}
-}
-
-func WithReportSvc(svc *reportsvc.ReportSvc) Option {
-	return func(e *Endpoints) {
-		e.reportSvc = svc
-	}
-}
-
-func WithQueueManage(qm *queuemanage.QueueManage) Option {
-	return func(e *Endpoints) {
-		e.queueManage = qm
 	}
 }
 
@@ -214,14 +190,6 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/pipelines/actions/statistics", Method: http.MethodGet, Handler: e.pipelineStatistic},
 		{Path: "/api/pipelines/actions/task-view", Method: http.MethodGet, Handler: e.pipelineTaskView},
 
-		// pipeline queue management
-		{Path: "/api/pipeline-queues", Method: http.MethodPost, Handler: e.createPipelineQueue},
-		{Path: "/api/pipeline-queues/{queueID}", Method: http.MethodGet, Handler: e.getPipelineQueue},
-		{Path: "/api/pipeline-queues", Method: http.MethodGet, Handler: e.pagingPipelineQueues},
-		{Path: "/api/pipeline-queues/{queueID}", Method: http.MethodPut, Handler: e.updatePipelineQueue},
-		{Path: "/api/pipeline-queues/{queueID}", Method: http.MethodDelete, Handler: e.deletePipelineQueue},
-		{Path: "/api/pipeline-queues/actions/batch-upgrade-pipeline-priority", Method: http.MethodPut, Handler: e.batchUpgradePipelinePriority},
-
 		// platform callback
 		{Path: "/api/pipelines/actions/callback", Method: http.MethodPost, Handler: e.pipelineCallback},
 
@@ -231,10 +199,6 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/_daemon/crond/actions/snapshot", Method: http.MethodGet, Handler: e.crondSnapshot},
 
 		{Path: "/api/pipeline-snippets/actions/query-details", Method: http.MethodPost, Handler: e.querySnippetDetails},
-
-		// reports
-		{Path: "/api/pipeline-reportsets/{pipelineID}", Method: http.MethodGet, Handler: e.queryPipelineReportSet},
-		{Path: "/api/pipeline-reportsets", Method: http.MethodGet, Handler: e.pagingPipelineReportSets},
 
 		// cluster info
 		// TODO: clusterinfo provider provide this api directly, remove explicit declaration in endpoint.

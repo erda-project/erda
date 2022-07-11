@@ -24,11 +24,15 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-proto-go/core/dop/autotest/testplan/pb"
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/providers/autotest/testplan/db"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	autotestv2 "github.com/erda-project/erda/internal/apps/dop/services/autotest_v2"
+	"github.com/erda-project/erda/internal/core/org"
+	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/time/mysql_time"
 )
 
@@ -38,6 +42,7 @@ type TestPlanService struct {
 	bdl *bundle.Bundle
 
 	autoTestSvc *autotestv2.Service
+	org         org.ClientInterface
 }
 
 func (s *TestPlanService) WithAutoTestSvc(sv *autotestv2.Service) {
@@ -249,10 +254,14 @@ func (s *TestPlanService) ProcessEvent(req *pb.Content) error {
 	if err != nil {
 		return err
 	}
-	org, err := s.bdl.GetOrg(project.OrgID)
+
+	orgResp, err := s.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcDOP),
+		&orgpb.GetOrgRequest{IdOrName: strconv.FormatUint(project.OrgID, 10)})
 	if err != nil {
 		return err
 	}
+	org := orgResp.Data
+
 	orgID := strconv.FormatUint(project.OrgID, 10)
 	projectID := strconv.FormatUint(project.ID, 10)
 	notifyDetails, err := s.bdl.QueryNotifiesBySource(orgID, "project", projectID, eventName, "")

@@ -65,7 +65,7 @@ grpc-client@erda.cmp.dashboard.resource:
 erda.cmp.dashboard.resource-client: {}
 
 grpc-client@erda.core.dicehub.release:
-  addr: "${DICEHUB_GRPC_ADDR:dicehub:7080}"
+  addr: "${ERDA_SERVER_GRPC_ADDR:erda-server:8096}"
 erda.core.dicehub.release-client: {}
 
 ## orchestrator addon mysql
@@ -74,16 +74,21 @@ grpc-client@erda.orchestrator.addon.mysql:
 erda.orchestrator.addon.mysql-client: {}
 
 grpc-client@erda.core.services.errorbox:
-  addr: "${CORE_SERVICES_GRPC_ADDR:core-services:9537}"
+  addr: "${ERDA_SERVER_GRPC_ADDR:erda-server:8096}"
 erda.core.services.errorbox-client: {}
 
 grpc-client@erda.core.token:
-  addr: "${CORE_SERVICES_GRPC_ADDR:core-services:9537}"
+  addr: "${ERDA_SERVER_GRPC_ADDR:erda-server:8096}"
 erda.core.token-client: {}
 
 grpc-client@erda.core.clustermanager.cluster:
   addr: "${CLUSTER_MANAGER_GRPC_ADDR:cluster-manager:9095}"
 erda.core.clustermanager.cluster-client: {}
+
+grpc-client@erda.core.org:
+  addr: "${ERDA_SERVER_GRPC_ADDR:erda-server:8096}"
+erda.core.org-client: {}
+erda.core.org: {}
 
 erda.core.dop.autotest.testplan: {}
 erda.dop.projecthome: {}
@@ -110,3 +115,8 @@ metricq-client:
   endpoint: "http://${MONITOR_ADDR:monitor.default.svc.cluster.local:7096}"
 
 audit:
+
+erda.core.user: {}
+erda.core.user.kratos: {}
+erda.core.user.uc: {}
+ 

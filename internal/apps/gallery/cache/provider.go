@@ -22,8 +22,12 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/pkg/cache"
+	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 )
 
 var (
@@ -44,7 +48,9 @@ func init() {
 }
 
 // +provider
-type provider struct{}
+type provider struct {
+	Org org.Interface
+}
 
 // Init .
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -52,12 +58,14 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	if c == nil {
 		c = new(Cache)
 	}
-	bdl := bundle.New(bundle.WithCoreServices())
+	bdl := bundle.New(bundle.WithErdaServer())
 	orgID2Org = cache.New("dop-org-id-for-org", time.Hour*24, func(i interface{}) (interface{}, bool) {
-		orgDTO, err := bdl.GetOrg(i.(string))
+		orgResp, err := p.Org.GetOrg(apis.WithInternalClientContext(ctx, discover.SvcGallery),
+			&orgpb.GetOrgRequest{IdOrName: i.(string)})
 		if err != nil {
 			return nil, false
 		}
+		orgDTO := orgResp.Data
 		return orgDTO, true
 	})
 	projID2Org = cache.New("dop-project-id-for-org", time.Minute*30, func(i interface{}) (interface{}, bool) {

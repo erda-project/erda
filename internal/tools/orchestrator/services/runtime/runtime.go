@@ -41,6 +41,7 @@ import (
 	"github.com/erda-project/erda/internal/pkg/diceworkspace"
 	"github.com/erda-project/erda/internal/pkg/gitflowutil"
 	"github.com/erda-project/erda/internal/pkg/user"
+	patypes "github.com/erda-project/erda/internal/tools/orchestrator/components/horizontalpodscaler/types"
 	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/internal/tools/orchestrator/events"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/impl/clusterinfo"
@@ -1256,11 +1257,22 @@ func (r *Runtime) Destroy(runtimeID uint64) error {
 		if req.Force {
 			forceDelete = "true"
 		}
-		if err := r.serviceGroupImpl.Delete(req.Namespace, req.Name, forceDelete); err != nil {
+		delObjects, err := r.AppliedScaledObjects(uniqueID)
+		if err != nil {
+			logrus.Warnf("[alert] failed delete group, error in get runtime hpa rules: %v, (%v)",
+				runtime.ScheduleName, err)
+		}
+		if err := r.serviceGroupImpl.Delete(req.Namespace, req.Name, forceDelete, delObjects); err != nil {
 			// TODO: we should return err if delete failed (even if err is group not exist?)
 			logrus.Errorf("[alert] failed delete group in scheduler: %v, (%v)",
 				runtime.ScheduleName, err)
 			return err
+		}
+
+		// delete runtime hpa rule
+		if err := r.deleteRuntimeHPA(uniqueID); err != nil {
+			logrus.Errorf("[alert] failed delete group, error in delete runtime hpa rules: %v, (%v)",
+				runtime.ScheduleName, err)
 		}
 	}
 	// TODO: delete services & instances table
@@ -1457,6 +1469,11 @@ func (r *Runtime) GetServiceByRuntime(runtimeIDs []uint64) (map[uint64]*apistruc
 				Warnln("failed to build summary item, failed to get last deployment")
 			continue
 		}
+		runtimeHPARules, err := r.db.GetRuntimeHPARulesByRuntimeId(runtime.ID)
+		if err != nil {
+			l.WithError(err).WithField("runtime.ID", runtime.ID).
+				Warnln("failed to build summary item, failed to get runtime hpa rules")
+		}
 		if deployment == nil {
 			// make a fake deployment
 			deployment = &dbclient.Deployment{
@@ -1472,7 +1489,7 @@ func (r *Runtime) GetServiceByRuntime(runtimeIDs []uint64) (map[uint64]*apistruc
 			go func(rt dbclient.Runtime, wg *sync.WaitGroup, servicesMap *struct {
 				sync.RWMutex
 				m map[uint64]*apistructs.RuntimeSummaryDTO
-			}, deployment *dbclient.Deployment) {
+			}, deployment *dbclient.Deployment, runtimeHPARules []dbclient.RuntimeHPA) {
 				d := apistructs.RuntimeSummaryDTO{}
 				sg, err := r.serviceGroupImpl.InspectServiceGroupWithTimeout(rt.ScheduleName.Namespace, rt.ScheduleName.Name)
 				if err != nil {
@@ -1488,11 +1505,12 @@ func (r *Runtime) GetServiceByRuntime(runtimeIDs []uint64) (map[uint64]*apistruc
 				}
 				d.Services = make(map[string]*apistructs.RuntimeInspectServiceDTO)
 				fillRuntimeDataWithServiceGroup(&d.RuntimeInspectDTO, dice.Services, dice.Jobs, sg, nil, string(deployment.Status))
+				updateHPARuleEnabledStatusToDisplay(runtimeHPARules, &d.RuntimeInspectDTO)
 				servicesMap.Lock()
 				servicesMap.m[rt.ID] = &d
 				servicesMap.Unlock()
 				wg.Done()
-			}(runtime, &wg, &servicesMap, deployment)
+			}(runtime, &wg, &servicesMap, deployment, runtimeHPARules)
 		}
 	}
 	wg.Wait()
@@ -1611,6 +1629,10 @@ func (r *Runtime) Get(ctx context.Context, userID user.ID, orgID uint64, idOrNam
 	if err != nil {
 		return nil, apierrors.ErrGetRuntime.InternalError(err)
 	}
+	runtimeHPARules, err := r.db.GetRuntimeHPARulesByRuntimeId(runtime.ID)
+	if err != nil {
+		return nil, apierrors.ErrGetRuntime.InternalError(err)
+	}
 	domainMap := make(map[string][]string)
 	for _, d := range domains {
 		if domainMap[d.EndpointName] == nil {
@@ -1683,7 +1705,7 @@ func (r *Runtime) Get(ctx context.Context, userID user.ID, orgID uint64, idOrNam
 	if deployment.Status == apistructs.DeploymentStatusDeploying {
 		updateStatusWhenDeploying(&data)
 	}
-
+	updateHPARuleEnabledStatusToDisplay(runtimeHPARules, &data)
 	return &data, nil
 }
 
@@ -2215,5 +2237,52 @@ func IsDeploying(status apistructs.DeploymentStatus) bool {
 		return true
 	default:
 		return false
+	}
+}
+
+// get keda scaledobjects in k8s
+func (r *Runtime) AppliedScaledObjects(uniqueID spec.RuntimeUniqueId) (map[string]string, error) {
+	rules, err := r.db.GetRuntimeHPAByServices(uniqueID, nil)
+	if err != nil {
+		return nil, errors.Errorf("get runtime hpa rules by RuntimeUniqueId %#v failed: %v", uniqueID, err)
+	}
+	scaledRules := make(map[string]string)
+	for _, rule := range rules {
+		// only applied rules need to delete
+		if rule.IsApplied == patypes.RuntimeHPARuleApplied {
+			scaledRules[rule.ServiceName] = rule.Rules
+		}
+	}
+	return scaledRules, nil
+}
+
+func (r *Runtime) deleteRuntimeHPA(uniqueID spec.RuntimeUniqueId) error {
+	rules, err := r.db.GetRuntimeHPAByServices(uniqueID, nil)
+	if err != nil {
+		return err
+	}
+	for _, rule := range rules {
+		// only applied rules need to delete
+		if err = r.db.DeleteRuntimeHPAByRuleId(rule.ID); err != nil {
+			return errors.Errorf("delete runtime hpa rule by rule_id %s failed: %v", rule.ID, err)
+		}
+	}
+	return nil
+}
+
+// 显示 service 对应是否开启 HPA
+func updateHPARuleEnabledStatusToDisplay(hpaRules []dbclient.RuntimeHPA, runtime *apistructs.RuntimeInspectDTO) {
+	if runtime == nil {
+		return
+	}
+
+	for svc := range runtime.Services {
+		runtime.Services[svc].AutoscalerEnabled = patypes.RuntimeHPARuleCanceled
+	}
+
+	for _, rule := range hpaRules {
+		if rule.IsApplied == patypes.RuntimeHPARuleApplied {
+			runtime.Services[rule.ServiceName].AutoscalerEnabled = patypes.RuntimeHPARuleApplied
+		}
 	}
 }

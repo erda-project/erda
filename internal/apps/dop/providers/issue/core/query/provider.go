@@ -27,43 +27,32 @@ import (
 	syncpb "github.com/erda-project/erda-proto-go/dop/issue/sync/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/internal/apps/dop/conf"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	stream "github.com/erda-project/erda/internal/apps/dop/providers/issue/stream/core"
+	"github.com/erda-project/erda/internal/core/user"
 	"github.com/erda-project/erda/pkg/database/dbengine"
-	"github.com/erda-project/erda/pkg/discover"
-	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 type config struct {
-	UCClientID           string `default:"dice" file:"UC_CLIENT_ID"`
-	UCClientSecret       string `default:"secret" file:"UC_CLIENT_SECRET"`
-	OryKratosPrivateAddr string `default:"kratos-admin" file:"ORY_KRATOS_ADMIN_ADDR"`
 }
 
 type provider struct {
-	Cfg    *config
-	Log    logs.Logger
-	DB     *gorm.DB `autowired:"mysql-client"`
-	bdl    *bundle.Bundle
-	db     *dao.DBClient
-	Stream stream.Interface
-	uc     *ucauth.UCClient
+	Cfg      *config
+	Log      logs.Logger
+	DB       *gorm.DB `autowired:"mysql-client"`
+	bdl      *bundle.Bundle
+	db       *dao.DBClient
+	Stream   stream.Interface
+	Identity user.Interface
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.bdl = bundle.New(bundle.WithCoreServices())
+	p.bdl = bundle.New(bundle.WithErdaServer())
 	p.db = &dao.DBClient{
 		DBEngine: &dbengine.DBEngine{
 			DB: p.DB,
 		},
 	}
-	uc := ucauth.NewUCClient(discover.UC(), p.Cfg.UCClientID, p.Cfg.UCClientSecret)
-	if conf.OryEnabled() {
-		uc = ucauth.NewUCClient(p.Cfg.OryKratosPrivateAddr, conf.OryCompatibleClientID(), conf.OryCompatibleClientSecret())
-		uc.SetDBClient(p.DB)
-	}
-	p.uc = uc
 	return nil
 }
 

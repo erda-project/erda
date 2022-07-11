@@ -23,7 +23,7 @@ import (
 var DICEHUB_PUBLISH_ITEM_BLACKLIST_DELETE = apis.ApiSpec{
 	Path:         "/api/publish-items/<publishItemId>/blacklist/<blacklistId>",
 	BackendPath:  "/api/publish-items/<publishItemId>/blacklist/<blacklistId>",
-	Host:         "dicehub.marathon.l4lb.thisdcos.directory:10000",
+	Host:         "erda-server.marathon.l4lb.thisdcos.directory:9095",
 	Scheme:       "http",
 	Method:       "DELETE",
 	IsOpenAPI:    true,

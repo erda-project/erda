@@ -55,7 +55,7 @@ func TestAuditOperateOrgAlert(t *testing.T) {
 	}
 	service := &alertService{
 		p: &provider{
-			bdl: bundle.New(bundle.WithScheduler(), bundle.WithCoreServices()),
+			bdl: bundle.New(bundle.WithScheduler(), bundle.WithErdaServer()),
 		},
 	}
 
@@ -122,7 +122,7 @@ func TestAuditOperateOrgCustomAlert(t *testing.T) {
 	}
 	service := &alertService{
 		p: &provider{
-			bdl: bundle.New(bundle.WithScheduler(), bundle.WithCoreServices()),
+			bdl: bundle.New(bundle.WithScheduler(), bundle.WithErdaServer()),
 		},
 	}
 

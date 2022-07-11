@@ -40,6 +40,7 @@ import (
 	"github.com/erda-project/erda/internal/pkg/user"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/http/httputil"
@@ -394,26 +395,11 @@ func (e *Endpoints) pipelineRun(ctx context.Context, r *http.Request, vars map[s
 		ConfigManageNamespaces: []string{utils.MakeUserOrgPipelineCmsNs(identityInfo.UserID, p.OrgID)},
 		Secrets:                utils.GetGittarSecrets(p.ClusterName, p.Branch, p.CommitDetail),
 	}); err != nil {
-		var apiError, ok = err.(*errorresp.APIError)
-		if !ok {
-			// Failed to convert to apiError type, return the error passed by the pipeline component
-			return errorresp.ErrResp(err)
+		runningPipelineErr, ok := e.ProjectPipelineSvc.TryAddRunningPipelineLinkToErr(p.PipelineDTO.OrgName, p.PipelineDTO.ProjectID, p.PipelineDTO.ApplicationID, err)
+		if ok {
+			return errorresp.ErrResp(runningPipelineErr)
 		}
-
-		ctxMap, ok := apiError.Ctx().(map[string]interface{})
-		if !ok {
-			// Interface converted to map[string]interface{} fails and returns the error passed by the pipeline component
-			return errorresp.ErrResp(err)
-		}
-
-		// Get the link to the running pipeline
-		link, ok := GetPipelineLink(p.PipelineDTO, ctxMap)
-		if !ok {
-			// Failed to get the pipeline information and return an error
-			return errorresp.ErrResp(fmt.Errorf("failed to get the running pipeline"))
-		}
-
-		return errorresp.ErrResp(apierrors.ErrParallelRunPipeline.InvalidState(fmt.Sprintf("failed to run pipeline, there is already running: %s", link)))
+		return errorresp.ErrResp(err)
 	}
 
 	return httpserver.OkResp(nil)
@@ -435,7 +421,7 @@ func (e *Endpoints) UpdateCmsNsConfigs(userID string, orgID uint64) error {
 		return errors.New("the member is not exist")
 	}
 	// TODO: gittar token in pipeline may not use PAT
-	_, err = e.pipelineCms.UpdateCmsNsConfigs(apis.WithInternalClientContext(context.Background(), "dop"),
+	_, err = e.pipelineCms.UpdateCmsNsConfigs(apis.WithInternalClientContext(context.Background(), discover.SvcDOP),
 		&cmspb.CmsNsConfigsUpdateRequest{
 			Ns:             utils.MakeUserOrgPipelineCmsNs(userID, orgID),
 			PipelineSource: apistructs.PipelineSourceDice.String(),

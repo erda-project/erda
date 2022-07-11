@@ -23,7 +23,7 @@ import (
 var DICEHUB_RELEASES_DOWNLOAD = apis.ApiSpec{
 	Path:        "/api/releases/<releaseId>/actions/download",
 	BackendPath: "/api/releases/<releaseId>/actions/download",
-	Host:        "dicehub.marathon.l4lb.thisdcos.directory:10000",
+	Host:        "erda-server.marathon.l4lb.thisdcos.directory:9095",
 	Scheme:      "http",
 	Method:      http.MethodGet,
 	IsOpenAPI:   true,

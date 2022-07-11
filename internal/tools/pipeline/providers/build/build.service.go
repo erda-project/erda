@@ -51,7 +51,7 @@ func (s *buildService) QueryBuildArtifact(ctx context.Context, req *pb.BuildArti
 		}
 		for _, image := range images {
 			var body apistructs.ImageGetResponse
-			r, err := httpclient.New().Get(discover.DiceHub()).Path("/api/images/" + url.PathEscape(image)).Do().JSON(&body)
+			r, err := httpclient.New().Get(discover.ErdaServer()).Path("/api/images/" + url.PathEscape(image)).Do().JSON(&body)
 			if err != nil {
 				return nil, apierrors.ErrQueryDicehub.InternalError(err)
 			}

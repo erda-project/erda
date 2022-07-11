@@ -25,6 +25,7 @@ import (
 
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/core/user/impl/uc"
 	"github.com/erda-project/erda/internal/tools/openapi/legacy/api/spec"
 	"github.com/erda-project/erda/internal/tools/openapi/legacy/conf"
 	"github.com/erda-project/erda/pkg/discover"
@@ -32,48 +33,47 @@ import (
 	"github.com/erda-project/erda/pkg/oauth2"
 	"github.com/erda-project/erda/pkg/oauth2/tokenstore/mysqltokenstore"
 	"github.com/erda-project/erda/pkg/strutil"
-	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 const (
 	CtxKeyOauth2JwtKeyPayload = "oauth2-jwt-token-payload"
 )
 
-var ucTokenAuth *ucauth.UCTokenAuth
+var ucTokenAuth *uc.UCTokenAuth
 var once sync.Once
 
 // 获取 dice 自己的token
-func GetDiceClientToken() (ucauth.OAuthToken, error) {
+func GetDiceClientToken() (uc.OAuthToken, error) {
 	// TODO kratos will not use it
 	if conf.OryEnabled() {
-		return ucauth.OAuthToken{
+		return uc.OAuthToken{
 			AccessToken: conf.OryKratosPrivateAddr(),
 			TokenType:   conf.OryCompatibleClientID(),
 		}, nil
 	}
 	once.Do(func() {
-		ucTokenAuth, _ = ucauth.NewUCTokenAuth(discover.UC(), conf.UCClientID(), conf.UCClientSecret())
+		ucTokenAuth, _ = uc.NewUCTokenAuth(discover.UC(), conf.UCClientID(), conf.UCClientSecret())
 	})
 	otoken, err := ucTokenAuth.GetServerToken(false)
 	if err != nil {
 		logrus.Error(err)
-		return ucauth.OAuthToken{}, err
+		return uc.OAuthToken{}, err
 	}
 	return otoken, nil
 }
 
 // @return example:
 // {"id":7,"userId":null,"clientId":"dice-test","clientName":"dice测试应用","clientLogoUrl":null,"clientSecret":null,"autoApprove":false,"scope":["public_profile","email"],"resourceIds":["shinda-maru"],"authorizedGrantTypes":["client_credentials"],"registeredRedirectUris":[],"autoApproveScopes":[],"authorities":["ROLE_CLIENT"],"accessTokenValiditySeconds":433200,"refreshTokenValiditySeconds":433200,"additionalInformation":{}}
-func VerifyUCClientToken(token string) (ucauth.TokenClient, error) {
+func VerifyUCClientToken(token string) (uc.TokenClient, error) {
 	once.Do(func() {
-		ucTokenAuth, _ = ucauth.NewUCTokenAuth(discover.UC(), conf.UCClientID(), conf.UCClientSecret())
+		ucTokenAuth, _ = uc.NewUCTokenAuth(discover.UC(), conf.UCClientID(), conf.UCClientSecret())
 	})
 	return ucTokenAuth.Auth(token)
 }
 
-func NewUCTokenClient(req *ucauth.NewClientRequest) (*ucauth.NewClientResponse, error) {
+func NewUCTokenClient(req *uc.NewClientRequest) (*uc.NewClientResponse, error) {
 	once.Do(func() {
-		ucTokenAuth, _ = ucauth.NewUCTokenAuth(discover.UC(), conf.UCClientID(), conf.UCClientSecret())
+		ucTokenAuth, _ = uc.NewUCTokenAuth(discover.UC(), conf.UCClientID(), conf.UCClientSecret())
 	})
 	return ucTokenAuth.NewClient(req)
 }
@@ -92,7 +92,7 @@ type OpenapiSpec struct {
 }
 
 func (s *OpenapiSpec) MatchPath(path string) bool {
-	return s.Spec.Path.String() == path
+	return strings.EqualFold(s.Spec.Path.String(), path)
 }
 
 func (s *OpenapiSpec) Method() string {

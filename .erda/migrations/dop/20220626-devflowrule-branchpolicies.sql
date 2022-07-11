@@ -1,0 +1,1 @@
+ALTER TABLE `erda_dev_flow_rule` ADD COLUMN `branch_policies` mediumtext NOT NULL COMMENT 'branch policy';

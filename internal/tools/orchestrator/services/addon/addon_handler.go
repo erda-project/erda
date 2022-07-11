@@ -162,7 +162,7 @@ func (a *Addon) AddonDelete(req apistructs.AddonDirectDeleteRequest) error {
 			return err
 		}
 	} else {
-		if err := a.serviceGroupImpl.Delete(addonIns.Namespace, addonIns.ScheduleName, "false"); err != nil {
+		if err := a.serviceGroupImpl.Delete(addonIns.Namespace, addonIns.ScheduleName, "false", nil); err != nil {
 			logrus.Errorf("failed to delete addon: %s/%s", addonIns.Namespace, addonIns.ScheduleName)
 			return err
 		}

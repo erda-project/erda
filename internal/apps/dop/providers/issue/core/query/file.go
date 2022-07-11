@@ -52,7 +52,7 @@ func (p *provider) ExportExcel(issues []*pb.Issue, properties []*pb.IssuePropert
 		}
 	}
 	userids = strutil.DedupSlice(userids, true)
-	users, err := p.uc.FindUsers(userids)
+	users, err := p.Identity.FindUsers(userids)
 	if err != nil {
 		return nil, "", err
 	}

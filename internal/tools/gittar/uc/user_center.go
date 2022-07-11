@@ -19,17 +19,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jinzhu/gorm"
 	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/core/user"
 	"github.com/erda-project/erda/internal/tools/gittar/conf"
 	"github.com/erda-project/erda/pkg/desensitize"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpclient"
-	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 type Token struct {
@@ -42,11 +41,10 @@ var tokenValue *Token
 
 var userCache = cache.New(12*time.Hour, 1*time.Hour)
 
-var uc *ucauth.UCClient
+var uc user.Interface
 
-func InitializeUcClient(db *gorm.DB) {
-	uc = ucauth.NewUCClient(conf.OryKratosPrivateAddr(), conf.OryCompatibleClientID(), conf.OryCompatibleClientSecret())
-	uc.SetDBClient(db)
+func InitializeUcClient(identity user.Interface) {
+	uc = identity
 	logrus.Infof("gittar uc client set up")
 }
 

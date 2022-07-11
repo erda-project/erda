@@ -24,11 +24,12 @@ import (
 
 // Conf 定义配置对象.
 type Conf struct {
-	ListenAddr      string `env:"LISTEN_ADDR" default:":3081"`
-	Debug           bool   `env:"DEBUG" default:"false"`
-	DiceClusterName string `env:"DICE_CLUSTER_NAME" default:"local"` // 服务所在集群
-	DiceIsEdge      bool   `env:"DICE_IS_EDGE" default:"false"`      // is edge cluster
-	ErdaNamespace   string `env:"DICE_NAMESPACE" default:"default"`  // erda installed namespace
+	ListenAddr          string `env:"LISTEN_ADDR" default:":3081"`
+	Debug               bool   `env:"DEBUG" default:"false"`
+	DiceClusterName     string `env:"DICE_CLUSTER_NAME" default:"local"` // 服务所在集群
+	DiceIsEdge          bool   `env:"DICE_IS_EDGE" default:"false"`      // is edge cluster
+	ErdaNamespace       string `env:"DICE_NAMESPACE" default:"default"`  // erda installed namespace
+	CustomRegCredSecret string `env:"CUSTOM_REGCRED_SECRET" default:"regcred"`
 
 	// task level
 	TaskDefaultCPU             float64       `env:"TASK_DEFAULT_CPU" default:"0.5"`
@@ -51,7 +52,6 @@ type Conf struct {
 	GittarAddr         string `env:"GITTAR_ADDR" required:"false"`
 	OpenAPIAddr        string `env:"OPENAPI_ADDR" required:"false"`
 	EventboxAddr       string `env:"EVENTBOX_ADDR" required:"false"`
-	DiceHubAddr        string `env:"DICEHUB_ADDR" required:"false"`
 	SchedulerAddr      string `env:"SCHEDULER_ADDR" required:"false"`
 	HepaAddr           string `env:"HEPA_ADDR" required:"false"`
 	CollectorAddr      string `env:"COLLECTOR_ADDR" required:"false"`
@@ -148,6 +148,10 @@ func ErdaNamespace() string {
 	return cfg.ErdaNamespace
 }
 
+func CustomRegCredSecret() string {
+	return cfg.CustomRegCredSecret
+}
+
 // DiceIsEdge return if the cluster is edge
 func DiceIsEdge() bool {
 	return cfg.DiceIsEdge
@@ -234,11 +238,6 @@ func HepaAddr() string {
 // EventboxAddr 返回 eventbox 的集群内部地址.
 func EventboxAddr() string {
 	return cfg.EventboxAddr
-}
-
-// DiceHubAddr 返回 dicehub 的集群内部地址.
-func DiceHubAddr() string {
-	return cfg.DiceHubAddr
 }
 
 // SchedulerAddr 返回 scheduler 的集群内部地址.

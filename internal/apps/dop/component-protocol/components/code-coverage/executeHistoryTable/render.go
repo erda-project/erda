@@ -27,7 +27,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/types"
 	"github.com/erda-project/erda/internal/apps/dop/services/code_coverage"
-	"github.com/erda-project/erda/internal/tools/openapi/legacy/hooks/posthandle"
+	"github.com/erda-project/erda/internal/core/user"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -38,6 +38,7 @@ type ComponentAction struct {
 	Props           map[string]interface{}      `json:"props"`
 	State           State                       `json:"state"`
 	Operations      Operations                  `json:"operations"`
+	identity        user.Interface
 }
 
 type Data struct {
@@ -131,7 +132,7 @@ func (ca *ComponentAction) getStatusValueMap(ctx context.Context) map[string]str
 func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 
 	ca.CodeCoverageSvc = ctx.Value(types.CodeCoverageService).(*code_coverage.CodeCoverage)
-
+	ca.identity = ctx.Value(types.IdentitiyService).(user.Interface)
 	if err := ca.SetState(c); err != nil {
 		return err
 	}
@@ -245,7 +246,7 @@ func (ca *ComponentAction) setData(ctx context.Context, gs *cptype.GlobalStateDa
 		})
 	}
 	userIDs = strutil.DedupSlice(userIDs, true)
-	uInfo, err := posthandle.GetUsers(userIDs, false)
+	uInfo, err := ca.identity.GetUsers(userIDs, false)
 	if err != nil {
 		return err
 	}

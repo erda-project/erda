@@ -32,9 +32,6 @@ const (
 	groupNum2 = "SERVICE_GROUPS"
 	groupID2  = "SERVICE_GROUP_ID"
 
-	// aliyun registry
-	AliyunRegistry = "aliyun-registry"
-	CustomRegistry = "custom-registry"
 	// local volume storageclass name
 	localStorage = "dice-local-volume"
 

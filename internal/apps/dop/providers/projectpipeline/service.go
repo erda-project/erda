@@ -32,12 +32,14 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/services/branchrule"
 	"github.com/erda-project/erda/internal/apps/dop/services/permission"
 	"github.com/erda-project/erda/internal/apps/dop/services/pipeline"
+	"github.com/erda-project/erda/internal/core/org"
 )
 
 type ProjectPipelineService struct {
 	logger logs.Logger
 	db     *dao.DBClient
 	bundle *bundle.Bundle
+	cfg    *config
 
 	pipelineSvc        *pipeline.Pipeline
 	PipelineSource     sourcepb.SourceServiceServer
@@ -49,6 +51,7 @@ type ProjectPipelineService struct {
 	PipelineCron       cronpb.CronServiceServer
 	tokenService       tokenpb.TokenServiceServer
 	branchRuleSve      *branchrule.BranchRule
+	org                org.ClientInterface
 }
 
 func (p *ProjectPipelineService) WithPipelineSvc(svc *pipeline.Pipeline) {

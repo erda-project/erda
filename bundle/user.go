@@ -24,7 +24,7 @@ import (
 )
 
 func (b *Bundle) GetCurrentUser(userID string) (*apistructs.UserInfo, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -45,14 +45,14 @@ func (b *Bundle) GetCurrentUser(userID string) (*apistructs.UserInfo, error) {
 }
 
 func (b *Bundle) ListUsers(req apistructs.UserListRequest) (*apistructs.UserListResponseData, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
 	hc := b.hc
 
 	var userResp apistructs.UserListResponse
-	resp, err := hc.Get(host).Path("/api/users").
+	resp, err := hc.Get(host).Path("/core/api/users").
 		Header(httputil.InternalHeader, "bundle").
 		Param("q", req.Query).
 		Param("plaintext", strconv.FormatBool(req.Plaintext)).
@@ -68,7 +68,7 @@ func (b *Bundle) ListUsers(req apistructs.UserListRequest) (*apistructs.UserList
 }
 
 func (b *Bundle) GetUcUserID(uuid string) (string, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return "", err
 	}
@@ -89,7 +89,7 @@ func (b *Bundle) GetUcUserID(uuid string) (string, error) {
 }
 
 func (b *Bundle) SearchUser(params url.Values) (*apistructs.UserListResponseData, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +97,7 @@ func (b *Bundle) SearchUser(params url.Values) (*apistructs.UserListResponseData
 
 	var userResp apistructs.UserListResponse
 	resp, err := hc.Get(host).
-		Path("/api/users/actions/search").
+		Path("/core/api/users/actions/search").
 		Header(httputil.InternalHeader, "bundle").
 		Params(params).
 		Do().JSON(&userResp)

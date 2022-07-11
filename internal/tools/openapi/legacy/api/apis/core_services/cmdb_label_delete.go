@@ -25,7 +25,7 @@ import (
 var CMDB_LABEL_DELETE = apis.ApiSpec{
 	Path:        "/api/labels/<id>",
 	BackendPath: "/api/labels/<id>",
-	Host:        "core-services.marathon.l4lb.thisdcos.directory:9526",
+	Host:        "erda-server.marathon.l4lb.thisdcos.directory:9095",
 	Scheme:      "http",
 	Method:      http.MethodDelete,
 	CheckLogin:  true,

@@ -37,72 +37,63 @@ func Test_provider_GetFlowByRule(t *testing.T) {
 		return &db.DevFlowRule{
 			Flows: db.JSON(`[
     {
-        "name":"PROD",
-        "flowType":"single_branch",
-        "targetBranch":"master,support/*",
-        "changeFromBranch":"",
-        "changeBranch":"",
-        "enableAutoMerge":false,
-        "autoMergeBranch":"",
-        "artifact":"stable",
-        "environment":"PROD",
-        "startWorkflowHints":[
-
-        ]
+        "name": "PROD",
+        "targetBranch": "master,support/*",
+        "artifact": "stable",
+        "environment": "PROD"
     },
     {
-        "name":"STAGING",
-        "flowType":"single_branch",
-        "targetBranch":"release/*,hotfix/*",
-        "changeFromBranch":"",
-        "changeBranch":"",
-        "enableAutoMerge":false,
-        "autoMergeBranch":"",
-        "artifact":"rc",
-        "environment":"STAGING",
-        "startWorkflowHints":[
-
-        ]
+        "name": "STAGING",
+        "targetBranch": "release/*,hotfix/*",
+        "artifact": "rc",
+        "environment": "STAGING"
     },
     {
-        "name":"DEV",
-        "flowType":"multi_branch",
-        "targetBranch":"develop",
-        "changeFromBranch":"develop",
-        "changeBranch":"feat/*",
-        "enableAutoMerge":false,
-        "autoMergeBranch":"next_dev",
-        "artifact":"alpha",
-        "environment":"DEV",
-        "startWorkflowHints":[
-            {
-                "place":"TASK",
-                "changeBranchRule":"feat/*"
-            }
-        ]
+        "name": "DEV",
+        "targetBranch": "feature/*",
+        "artifact": "alpha",
+        "environment": "DEV"
     },
     {
-        "name":"TEST",
-        "flowType":"multi_branch",
-        "targetBranch":"develop",
-        "changeFromBranch":"develop",
-        "changeBranch":"feature/*,bugfix/*",
-        "enableAutoMerge":false,
-        "autoMergeBranch":"next_test",
-        "artifact":"alpha",
-        "environment":"DEV",
-        "startWorkflowHints":[
-            {
-                "place":"TASK",
-                "changeBranchRule":"feature/*"
-            },
-            {
-                "place":"BUG",
-                "changeBranchRule":"bugfix/*"
-            }
-        ]
+        "name": "TEST",
+        "targetBranch": "develop",
+        "artifact": "alpha",
+        "environment": "DEV"
     }
 ]`),
+			BranchPolicies: db.JSON(
+				`[
+    {
+        "branch": "feature/*",
+        "branchType": "multi_branch",
+        "policy": {
+            "sourceBranch": "develop",
+            "currentBranch": "feature/*",
+            "tempBranch": "next/develop",
+            "branchType": "",
+            "targetBranch": {
+                "mergeRequest": "develop",
+                "cherryPick": ""
+            }
+        }
+    },
+    {
+        "branch": "master,support/*",
+        "branchType": "single_branch",
+        "policy": null
+    },
+    {
+        "branch": "develop",
+        "branchType": "single_branch",
+        "policy": null
+    },
+    {
+        "branch": "release/*,hotfix/*",
+        "branchType": "single_branch",
+        "policy": null
+    }
+]`,
+			),
 		}, nil
 	})
 	defer monkey.UnpatchAll()
@@ -114,48 +105,18 @@ func Test_provider_GetFlowByRule(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:   "test with GetFlowByRule1",
+			name:   "test with GetFlowByRule",
 			fields: fields{dbClient: dbClient},
 			args: args{
 				ctx: context.Background(),
 				request: GetFlowByRuleRequest{
-					ProjectID:    1,
-					FlowType:     "multi_branch",
-					ChangeBranch: "feature/123",
-					TargetBranch: "develop",
+					ProjectID:     1,
+					BranchType:    "multi_branch",
+					CurrentBranch: "feature/123",
+					TargetBranch:  "develop",
 				},
 			},
-			want:    "next_test",
-			wantErr: false,
-		},
-		{
-			name:   "test with GetFlowByRule2",
-			fields: fields{dbClient: dbClient},
-			args: args{
-				ctx: context.Background(),
-				request: GetFlowByRuleRequest{
-					ProjectID:    1,
-					FlowType:     "multi_branch",
-					ChangeBranch: "bugfix/123",
-					TargetBranch: "develop",
-				},
-			},
-			want:    "next_test",
-			wantErr: false,
-		},
-		{
-			name:   "test with GetFlowByRule3",
-			fields: fields{dbClient: dbClient},
-			args: args{
-				ctx: context.Background(),
-				request: GetFlowByRuleRequest{
-					ProjectID:    1,
-					FlowType:     "multi_branch",
-					ChangeBranch: "feat/123",
-					TargetBranch: "develop",
-				},
-			},
-			want:    "next_dev",
+			want:    "next/develop",
 			wantErr: false,
 		},
 		{
@@ -164,10 +125,10 @@ func Test_provider_GetFlowByRule(t *testing.T) {
 			args: args{
 				ctx: context.Background(),
 				request: GetFlowByRuleRequest{
-					ProjectID:    1,
-					FlowType:     "multi_branch",
-					ChangeBranch: "feat/123",
-					TargetBranch: "master",
+					ProjectID:     1,
+					BranchType:    "multi_branch",
+					CurrentBranch: "feat/123",
+					TargetBranch:  "master",
 				},
 			},
 			want:    nil,
@@ -179,10 +140,10 @@ func Test_provider_GetFlowByRule(t *testing.T) {
 			args: args{
 				ctx: context.Background(),
 				request: GetFlowByRuleRequest{
-					ProjectID:    1,
-					FlowType:     "single_branch",
-					ChangeBranch: "feat/123",
-					TargetBranch: "master",
+					ProjectID:     1,
+					BranchType:    "single_branch",
+					CurrentBranch: "feat/123",
+					TargetBranch:  "master",
 				},
 			},
 			want:    nil,
@@ -204,8 +165,8 @@ func Test_provider_GetFlowByRule(t *testing.T) {
 				if tt.want != nil {
 					t.Errorf("fail")
 				}
-			} else if got.AutoMergeBranch != tt.want.(string) {
-				t.Errorf("GetFlowByRule() got = %v, want %v", got.AutoMergeBranch, tt.want)
+			} else if got.BranchPolicy.Policy.TempBranch != tt.want.(string) {
+				t.Errorf("GetFlowByRule() got = %v, want %v", got.BranchPolicy.Policy.TempBranch, tt.want)
 			}
 		})
 	}

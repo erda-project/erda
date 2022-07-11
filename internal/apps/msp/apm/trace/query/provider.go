@@ -33,6 +33,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/msp/apm/trace/db"
 	"github.com/erda-project/erda/internal/apps/msp/apm/trace/query/source"
 	"github.com/erda-project/erda/internal/apps/msp/apm/trace/storage"
+	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/clickhouse/table/loader"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 
@@ -63,6 +64,7 @@ type provider struct {
 	DB               *gorm.DB                     `autowired:"mysql-client"`
 	Cassandra        cassandra.Interface          `autowired:"cassandra" optional:"true"`
 	Clickhouse       clickhouse.Interface         `autowired:"clickhouse" optional:"true"`
+	Loader           loader.Interface             `autowired:"clickhouse.table.loader@span" optional:"true"`
 	StorageReader    storage.Storage              `autowired:"span-storage-elasticsearch-reader" optional:"true"`
 	Source           source.TraceSource
 	CompatibleSource source.TraceSource // version 2.x
@@ -106,7 +108,13 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		if p.Clickhouse == nil {
 			panic("clickhouse provider autowired failed.")
 		}
-		p.Source = &source.ClickhouseSource{Clickhouse: p.Clickhouse, Log: p.Log, CompatibleSource: p.CompatibleSource, DebugSQL: p.Cfg.DebugSQL}
+		p.Source = &source.ClickhouseSource{
+			Clickhouse:       p.Clickhouse,
+			Log:              p.Log,
+			CompatibleSource: p.CompatibleSource,
+			DebugSQL:         p.Cfg.DebugSQL,
+			Loader:           p.Loader,
+		}
 	}
 
 	p.traceService = &TraceService{

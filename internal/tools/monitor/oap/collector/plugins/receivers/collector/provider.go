@@ -15,16 +15,9 @@
 package collector
 
 import (
-	"strings"
-
-	"github.com/labstack/echo"
-	"github.com/labstack/echo/middleware"
-
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/httpserver"
-	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/authentication"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins"
@@ -35,8 +28,11 @@ var providerName = plugins.WithPrefixReceiver("collector")
 type config struct {
 	MetadataKeyOfTopic string `file:"metadata_key_of_topic"`
 	Auth               struct {
-		Skip bool `file:"skip"`
-	} `file:"auth"`
+		Username string `file:"username"`
+		Password string `file:"password"`
+		Force    bool   `file:"force"`
+		Skip     bool   `file:"skip"`
+	}
 }
 
 // +provider
@@ -46,6 +42,7 @@ type provider struct {
 	Router    httpserver.Router        `autowired:"http-router"`
 	Validator authentication.Validator `autowired:"erda.oap.collector.authentication.Validator"`
 
+	auth     *Authenticator
 	consumer model.ObservableDataConsumerFunc
 }
 
@@ -57,35 +54,19 @@ func (p *provider) RegisterConsumer(consumer model.ObservableDataConsumerFunc) {
 	p.consumer = consumer
 }
 
-func (p *provider) tokenAuth() interface{} {
-	return middleware.KeyAuthWithConfig(middleware.KeyAuthConfig{
-		Validator: func(s string, context echo.Context) (bool, error) {
-			clusterName := context.Request().Header.Get(apistructs.AuthClusterKeyHeader)
-			if clusterName == "" {
-				return false, nil
-			}
-
-			if p.Validator.Validate(strings.ToLower(tokenpb.ScopeEnum_CMP_CLUSTER.String()), clusterName, s) {
-				return true, nil
-			}
-
-			return false, nil
-		},
-		Skipper: func(context echo.Context) bool {
-			if p.Cfg.Auth.Skip {
-				return true
-			}
-			return false
-		},
-	})
-}
-
 // Run this is optional
 func (p *provider) Init(ctx servicehub.Context) error {
-	// old
-	p.Router.POST("/api/v1/collect/logs/:source", p.collectLogs, p.tokenAuth())
-	p.Router.POST("/api/v1/collect/:metric", p.collectMetric, p.tokenAuth())
+	p.auth = NewAuthenticator(
+		WithLogger(p.Log),
+		WithValidator(p.Validator),
+		WithConfig(p.Cfg),
+	)
 
+	p.Router.POST("/api/v1/collect/logs/:source", p.collectLogs, p.auth.keyAuth())
+	p.Router.POST("/api/v1/collect/:metric", p.collectMetric, p.auth.keyAuth())
+
+	p.Router.POST("/collect/:metric", p.collectMetric, p.auth.basicAuth())
+	p.Router.POST("/collect/logs/:source", p.collectLogs, p.auth.basicAuth())
 	return nil
 }
 

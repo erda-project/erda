@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda-infra/base/logs"
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	dpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
 	ppb "github.com/erda-project/erda-proto-go/core/pipeline/pb"
@@ -34,8 +35,18 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/providers/projectpipeline/deftype"
+	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
+	"github.com/erda-project/erda/internal/pkg/mock"
 	"github.com/erda-project/erda/pkg/strutil"
 )
+
+type ProjectPipelineOrgMock struct {
+	mock.OrgMock
+}
+
+func (m ProjectPipelineOrgMock) GetOrg(ctx context.Context, request *orgpb.GetOrgRequest) (*orgpb.GetOrgResponse, error) {
+	return &orgpb.GetOrgResponse{Data: &orgpb.Org{ID: 1, Name: "org"}}, nil
+}
 
 func TestGetRulesByCategoryKey(t *testing.T) {
 	tt := []struct {
@@ -373,19 +384,11 @@ func TestProjectPipelineService_makeLocationByProjectID(t *testing.T) {
 		})
 	defer pm.Unpatch()
 
-	pm2 := monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetOrg",
-		func(bdl *bundle.Bundle, id interface{}) (*apistructs.OrgDTO, error) {
-			return &apistructs.OrgDTO{
-				ID:   1,
-				Name: "org",
-			}, nil
-		})
-	defer pm2.Unpatch()
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &ProjectPipelineService{
 				bundle: bdl,
+				org:    ProjectPipelineOrgMock{},
 			}
 			got, err := p.makeLocationByProjectID(tt.args.projectID)
 			if (err != nil) != tt.wantErr {
@@ -405,7 +408,7 @@ func TestProjectPipelineService_checkDataPermission(t *testing.T) {
 	}
 	type args struct {
 		project *apistructs.ProjectDTO
-		org     *apistructs.OrgDTO
+		org     *orgpb.Org
 		source  *spb.PipelineSource
 	}
 	tests := []struct {
@@ -419,7 +422,7 @@ func TestProjectPipelineService_checkDataPermission(t *testing.T) {
 			fields: fields{},
 			args: args{
 				project: &apistructs.ProjectDTO{Name: "erda"},
-				org:     &apistructs.OrgDTO{Name: "org"},
+				org:     &orgpb.Org{Name: "org"},
 				source:  &spb.PipelineSource{Remote: "org/erda/erda-release"},
 			},
 			wantErr: false,
@@ -429,7 +432,7 @@ func TestProjectPipelineService_checkDataPermission(t *testing.T) {
 			fields: fields{},
 			args: args{
 				project: &apistructs.ProjectDTO{Name: "dice"},
-				org:     &apistructs.OrgDTO{Name: "org"},
+				org:     &orgpb.Org{Name: "org"},
 				source:  &spb.PipelineSource{Remote: "org/erda/erda-release"},
 			},
 			wantErr: true,
@@ -1138,6 +1141,53 @@ func Test_makePipelinePageListRequest(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := makePipelinePageListRequest(tt.args.params, tt.args.jsonValue); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("makePipelinePageListRequest() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestTryGenRunningPipelineLinkFromErr(t *testing.T) {
+	orgName := "erda"
+	var projectID uint64 = 1
+	var appID uint64 = 1
+	tests := []struct {
+		name    string
+		err     error
+		wantErr string
+		wantOK  bool
+	}{
+		{
+			name: "already running",
+			err: apierrors.ErrParallelRunPipeline.InvalidState("ErrParallelRunPipeline").SetCtx(map[string]interface{}{
+				apierrors.ErrParallelRunPipeline.Error(): fmt.Sprintf("%d", 123),
+			}),
+			wantErr: "已有流水线正在运行中",
+			wantOK:  true,
+		},
+		{
+			name:    "normal error",
+			err:     apierrors.ErrRunPipeline,
+			wantErr: "启动流水线失败",
+			wantOK:  false,
+		},
+		{
+			name:    "empty error",
+			err:     fmt.Errorf(""),
+			wantErr: "",
+			wantOK:  false,
+		},
+	}
+	p := ProjectPipelineService{
+		cfg: &config{},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotErr, gotOK := p.TryAddRunningPipelineLinkToErr(orgName, projectID, appID, tt.err)
+			if gotErr.Error() != tt.wantErr {
+				t.Errorf("tryGenRunningPipelineLinkFromErr() gotLink = %v, want %v", gotErr, tt.wantErr)
+			}
+			if gotOK != tt.wantOK {
+				t.Errorf("tryGenRunningPipelineLinkFromErr() gotOK = %v, want %v", gotOK, tt.wantOK)
 			}
 		})
 	}

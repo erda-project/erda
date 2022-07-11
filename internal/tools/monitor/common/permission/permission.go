@@ -73,7 +73,7 @@ var (
 func initBundle() {
 	bdl = bundle.New(
 		bundle.WithHTTPClient(hc),
-		bundle.WithCoreServices(),
+		bundle.WithErdaServer(),
 	)
 	cmdb = bundlecmdb.New(bundlecmdb.WithHTTPClient(hc))
 }

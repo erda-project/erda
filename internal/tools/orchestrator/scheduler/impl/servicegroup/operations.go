@@ -23,6 +23,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
+	hpatypes "github.com/erda-project/erda/internal/tools/orchestrator/components/horizontalpodscaler/types"
 	"github.com/erda-project/erda/internal/tools/orchestrator/conf"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/impl/clusterinfo"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/task"
@@ -92,7 +93,7 @@ func convertServiceGroupCreateV2Request(req apistructs.ServiceGroupCreateV2Reque
 	return sg, nil
 }
 
-func (s ServiceGroupImpl) Delete(namespace string, name, force string) error {
+func (s ServiceGroupImpl) Delete(namespace string, name, force string, sgExtra map[string]string) error {
 	sg := apistructs.ServiceGroup{}
 	// force offline, first time not set status offline, delete etcd data; after set status, get and delete again, not return error
 	if err := s.Js.Get(context.Background(), mkServiceGroupKey(namespace, name), &sg); err != nil {
@@ -108,6 +109,18 @@ func (s ServiceGroupImpl) Delete(namespace string, name, force string) error {
 	ns := sg.ProjectNamespace
 	if ns == "" {
 		ns = sg.Type
+	}
+	if sgExtra != nil {
+		if sg.Labels == nil {
+			sg.Labels = make(map[string]string)
+		}
+		sg.Labels[hpatypes.ErdaPALabelKey] = hpatypes.ErdaHPALabelValueCancel
+		if sg.Extra == nil {
+			sg.Extra = make(map[string]string)
+		}
+		for k, v := range sgExtra {
+			sg.Extra[k] = v
+		}
 	}
 	logrus.Infof("start to delete service group %s on namespace %s", sg.ID, ns)
 	if _, err := s.handleServiceGroup(context.Background(), &sg, task.TaskDestroy); err != nil {
@@ -190,7 +203,7 @@ func (s ServiceGroupImpl) Restart(namespace string, name string) error {
 	return nil
 }
 
-func (s *ServiceGroupImpl) Scale(sg *apistructs.ServiceGroup) (apistructs.ServiceGroup, error) {
+func (s *ServiceGroupImpl) Scale(sg *apistructs.ServiceGroup) (interface{}, error) {
 	oldSg := apistructs.ServiceGroup{}
 	if err := s.Js.Get(context.Background(), mkServiceGroupKey(sg.Type, sg.ID), &oldSg); err != nil {
 		return apistructs.ServiceGroup{}, fmt.Errorf("Cannot get servicegroup(%s/%s) from etcd, err: %v", sg.Type, sg.ID, err)
@@ -202,42 +215,86 @@ func (s *ServiceGroupImpl) Scale(sg *apistructs.ServiceGroup) (apistructs.Servic
 		sg.ProjectNamespace = oldSg.ProjectNamespace
 	}
 
-	//newService := sg.Services[0]
-	oldServiceReplicas := make(map[string]int)
-	for index, svc := range oldSg.Services {
-		for newIndex, newSvc := range sg.Services {
-			if svc.Name == newSvc.Name {
-				if svc.Scale != newSvc.Scale {
-					if newSvc.Scale == 0 {
-						oldServiceReplicas[svc.Name] = svc.Scale
+	value, ok := sg.Labels[hpatypes.ErdaPALabelKey]
+	switch ok {
+	// auto scale
+	case true:
+		switch value {
+		case hpatypes.ErdaHPALabelValueCreate:
+			sgHPAObjects, err := s.handleServiceGroup(context.Background(), sg, task.TaskKedaScaledObjectCreate)
+			if err != nil {
+				logrus.Errorf("create erda hpa scale rules for serviceGroup failed, error: %v", err)
+				return *sg, err
+			}
+			return sgHPAObjects.Extra, nil
+		case hpatypes.ErdaHPALabelValueApply:
+			sgHPAObjects, err := s.handleServiceGroup(context.Background(), sg, task.TaskKedaScaledObjectApply)
+			if err != nil {
+				logrus.Errorf("apply erda hpa scale rules for serviceGroup failed, error: %v", err)
+				return *sg, err
+			}
+			return sgHPAObjects.Extra, nil
+		case hpatypes.ErdaHPALabelValueCancel:
+			sgHPAObjects, err := s.handleServiceGroup(context.Background(), sg, task.TaskKedaScaledObjectCancel)
+			if err != nil {
+				logrus.Errorf("cancel erda hpa scale rules for serviceGroup failed, error: %v", err)
+				return *sg, err
+			}
+			return sgHPAObjects.Extra, nil
+		case hpatypes.ErdaHPALabelValueReApply:
+			sgHPAObjects, err := s.handleServiceGroup(context.Background(), sg, task.TaskKedaScaledObjectReApply)
+			if err != nil {
+				logrus.Errorf("cancel erda hpa scale rules for serviceGroup failed, error: %v", err)
+				return *sg, err
+			}
+			return sgHPAObjects.Extra, nil
+		default:
+			logrus.Errorf("processing erda hpa scale rules for sg %#v failed, invalid value [%s] for set sg label for autoscaler, valid value:[%s, %s]", *sg, value, hpatypes.ErdaHPALabelValue, hpatypes.ErdaVPALabelValue)
+			err := errors.Errorf("processing erda hpa scale rules for serviceGroup failed, invalid value [%s] for set sg label for autoscaler, valid value:[%s, %s]", value, hpatypes.ErdaHPALabelValue, hpatypes.ErdaVPALabelValue)
+			return *sg, err
+		}
+
+	// manual scale
+	default:
+		//newService := sg.Services[0]
+		oldServiceReplicas := make(map[string]int)
+		for index, svc := range oldSg.Services {
+			for newIndex, newSvc := range sg.Services {
+				if svc.Name == newSvc.Name {
+					if svc.Scale != newSvc.Scale {
+						if newSvc.Scale == 0 {
+							oldServiceReplicas[svc.Name] = svc.Scale
+						}
+						svc.Scale = newSvc.Scale
 					}
-					svc.Scale = newSvc.Scale
+					if svc.Resources.Cpu != newSvc.Resources.Cpu || svc.Resources.Mem != newSvc.Resources.Mem {
+						svc.Resources = newSvc.Resources
+					}
+					oldSg.Services[index] = svc
+					sg.Services[newIndex] = oldSg.Services[index]
+					break
 				}
-				if svc.Resources.Cpu != newSvc.Resources.Cpu || svc.Resources.Mem != newSvc.Resources.Mem {
-					svc.Resources = newSvc.Resources
-				}
-				oldSg.Services[index] = svc
-				sg.Services[newIndex] = oldSg.Services[index]
-				break
 			}
 		}
-	}
-	_, err := s.handleServiceGroup(context.Background(), sg, task.TaskScale)
-	if err != nil {
-		logrus.Errorf("scale service %s err: %v", sg.ID, err)
-		return *sg, err
-	}
 
-	// 如果目前操作是停止(副本数为0)，为了后续恢复，需要保留停止操作前的副本数
-	for index, oldSvc := range oldSg.Services {
-		if replicas, ok := oldServiceReplicas[oldSvc.Name]; ok {
-			oldSg.Services[index].Scale = replicas
+		_, err := s.handleServiceGroup(context.Background(), sg, task.TaskScale)
+		if err != nil {
+			logrus.Errorf("scale service %s err: %v", sg.ID, err)
+			return *sg, err
+		}
+
+		// 如果目前操作是停止(副本数为0)，为了后续恢复，需要保留停止操作前的副本数
+		for index, oldSvc := range oldSg.Services {
+			if replicas, ok := oldServiceReplicas[oldSvc.Name]; ok {
+				oldSg.Services[index].Scale = replicas
+			}
+		}
+
+		if err := s.Js.Put(context.Background(), mkServiceGroupKey(sg.Type, sg.ID), &oldSg); err != nil {
+			return apistructs.ServiceGroup{}, err
 		}
 	}
 
-	if err := s.Js.Put(context.Background(), mkServiceGroupKey(sg.Type, sg.ID), &oldSg); err != nil {
-		return apistructs.ServiceGroup{}, err
-	}
 	return *sg, nil
 }
 

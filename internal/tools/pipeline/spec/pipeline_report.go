@@ -17,6 +17,10 @@ package spec
 import (
 	"time"
 
+	"google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/erda-project/erda-proto-go/core/pipeline/report/pb"
 	"github.com/erda-project/erda/apistructs"
 )
 
@@ -34,4 +38,21 @@ type PipelineReport struct {
 
 func (*PipelineReport) TableName() string {
 	return "dice_pipeline_reports"
+}
+
+func (p *PipelineReport) ConvertToPB() (*pb.PipelineReport, error) {
+	meta, err := structpb.NewStruct(p.Meta)
+	if err != nil {
+		return nil, err
+	}
+	return &pb.PipelineReport{
+		ID:         p.ID,
+		PipelineID: p.PipelineID,
+		Type:       string(p.Type),
+		Meta:       meta,
+		CreatorID:  p.CreatorID,
+		UpdaterID:  p.UpdaterID,
+		CreatedAt:  timestamppb.New(p.CreatedAt),
+		UpdatedAt:  timestamppb.New(p.UpdatedAt),
+	}, nil
 }

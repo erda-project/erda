@@ -21,8 +21,6 @@ func (sc Sysconf) DependsOn(k string) map[string]string {
 		"headless":       {"HEADLESS_ADDR": sc.Cluster.Host("headless") + ":9222"},
 		"monitor":        {"MONITOR_ADDR": sc.Cluster.Host("monitor") + ":7096"},
 		"addon-platform": {"ADDON_PLATFORM_ADDR": sc.Cluster.Host("addon-platform") + ":8080"},
-		"dicehub":        {"DICEHUB_ADDR": sc.Cluster.Host("dicehub") + ":10000"},
-		"eventbox":       {"EVENTBOX_ADDR": sc.Cluster.Host("eventbox") + ":9528"},
 		"gittar": {
 			"GITTAR_ADDR":        sc.Cluster.Host("gittar") + ":5566",
 			"GITTAR_PUBLIC_ADDR": sc.Platform.Domain("gittar"),

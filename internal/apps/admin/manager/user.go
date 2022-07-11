@@ -17,12 +17,15 @@ package manager
 import (
 	"context"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/schema"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/core/legacy/services/apierrors"
+	"github.com/erda-project/erda/internal/pkg/user"
 	"github.com/erda-project/erda/pkg/http/httpserver"
+	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 func (am *AdminManager) AppendUserEndpoint() {
@@ -40,6 +43,34 @@ func (am *AdminManager) ListUser(ctx context.Context, req *http.Request, resourc
 	if err := queryDecoder.Decode(&listReq, req.URL.Query()); err != nil {
 		return apierrors.ErrListUser.InvalidParameter(err).ToResp(), nil
 	}
+
+	identityInfo, err := user.GetIdentityInfo(req)
+	if err != nil {
+		return apierrors.ErrListUser.NotLogin().ToResp(), nil
+	}
+	var orgID uint64
+	orgIDStr := req.Header.Get(httputil.OrgHeader)
+	if orgIDStr != "" {
+		orgID, err = strconv.ParseUint(orgIDStr, 10, 64)
+		if err != nil {
+			return apierrors.ErrListUser.InvalidParameter("orgId is invalid").ToResp(), nil
+		}
+	}
+
+	res, err := am.bundle.CheckPermission(&apistructs.PermissionCheckRequest{
+		UserID:   identityInfo.UserID,
+		Scope:    apistructs.OrgScope,
+		ScopeID:  orgID,
+		Resource: apistructs.MemberResource,
+		Action:   apistructs.CreateAction,
+	})
+	if err != nil {
+		return apierrors.ErrListUser.InternalError(err).ToResp(), nil
+	}
+	if !res.Access {
+		return apierrors.ErrListUser.AccessDenied().ToResp(), nil
+	}
+
 	resp, err := am.bundle.ListUsers(listReq)
 	if err != nil {
 		return apierrors.ErrListUser.InternalError(err).ToResp(), nil
@@ -50,6 +81,33 @@ func (am *AdminManager) ListUser(ctx context.Context, req *http.Request, resourc
 func (am *AdminManager) SearchUser(ctx context.Context, req *http.Request, resources map[string]string) (httpserver.Responser, error) {
 	queryDecoder := schema.NewDecoder()
 	queryDecoder.IgnoreUnknownKeys(true)
+
+	identityInfo, err := user.GetIdentityInfo(req)
+	if err != nil {
+		return apierrors.ErrListUser.NotLogin().ToResp(), nil
+	}
+	var orgID uint64
+	orgIDStr := req.Header.Get(httputil.OrgHeader)
+	if orgIDStr != "" {
+		orgID, err = strconv.ParseUint(orgIDStr, 10, 64)
+		if err != nil {
+			return apierrors.ErrListUser.InvalidParameter("orgId is invalid").ToResp(), nil
+		}
+	}
+
+	res, err := am.bundle.CheckPermission(&apistructs.PermissionCheckRequest{
+		UserID:   identityInfo.UserID,
+		Scope:    apistructs.OrgScope,
+		ScopeID:  orgID,
+		Resource: apistructs.MemberResource,
+		Action:   apistructs.CreateAction,
+	})
+	if err != nil {
+		return apierrors.ErrListUser.InternalError(err).ToResp(), nil
+	}
+	if !res.Access {
+		return apierrors.ErrListUser.AccessDenied().ToResp(), nil
+	}
 
 	resp, err := am.bundle.SearchUser(req.URL.Query())
 	if err != nil {

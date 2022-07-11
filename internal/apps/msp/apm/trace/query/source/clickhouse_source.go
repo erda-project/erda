@@ -15,19 +15,20 @@
 package source
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
+	"github.com/doug-martin/goqu/v9"
+	"github.com/doug-martin/goqu/v9/exp"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/providers/clickhouse"
 	"github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
-	"github.com/erda-project/erda/internal/apps/msp/apm/trace"
 	"github.com/erda-project/erda/internal/apps/msp/apm/trace/query/commom/custom"
+	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/clickhouse/table/loader"
 	"github.com/erda-project/erda/pkg/math"
 )
 
@@ -35,34 +36,37 @@ type ClickhouseSource struct {
 	Clickhouse clickhouse.Interface
 	Log        logs.Logger
 	DebugSQL   bool
+	Loader     loader.Interface
 
 	CompatibleSource TraceSource
 }
 
 type (
 	tracing struct {
-		TraceId   string   `ch:"trace_id"`
-		StartTime int64    `ch:"min_start_time"`
-		SpanCount uint64   `ch:"span_count"`
-		Duration  int64    `ch:"duration"`
-		Services  []string `ch:"services"`
+		TraceId    string   `ch:"trace_id"`
+		TraceCount uint64   `ch:"trace_count"`
+		StartTime  int64    `ch:"min_start_time"`
+		SpanCount  uint64   `ch:"span_count"`
+		Duration   int64    `ch:"duration"`
+		Services   []string `ch:"services"`
 	}
 	distributionItem struct {
 		AvgDuration float64   `ch:"avg_duration"`
 		Count       uint64    `ch:"trace_count"`
 		Date        time.Time `ch:"date"`
 	}
-	keysValues struct {
-		Keys     []string `ch:"keys"`
-		Values   []string `ch:"values"`
-		SeriesID uint64   `ch:"series_id"`
+	spanItem struct {
+		StartTime     int64    `ch:"st_nano"` // timestamp nano
+		EndTime       int64    `ch:"et_nano"` // timestamp nano
+		OrgName       string   `ch:"org_name"`
+		TenantId      string   `ch:"tenant_id"`
+		TraceId       string   `ch:"trace_id"`
+		SpanId        string   `ch:"span_id"`
+		ParentSpanId  string   `ch:"parent_span_id"`
+		OperationName string   `ch:"operation_name" `
+		TagKeys       []string `ch:"tag_keys"`
+		TagValues     []string `ch:"tag_values"`
 	}
-)
-
-const (
-	SpanSeriesTable    = "monitor.spans_series_all"
-	SpanMetaTable      = "monitor.spans_meta_all"
-	SpanMetaTableLocal = "monitor.spans_meta"
 )
 
 const (
@@ -76,6 +80,264 @@ const (
 	Month  = 30 * Day // just 30 day
 	Month3 = 3 * Month
 )
+
+func (chs *ClickhouseSource) GetTraceReqDistribution(ctx context.Context, model custom.Model) ([]*TraceDistributionItem, error) {
+	items := make([]*TraceDistributionItem, 0, 10)
+	if chs.CompatibleSource != nil {
+		result, err := chs.CompatibleSource.GetTraceReqDistribution(ctx, model)
+		if err != nil {
+			chs.Log.Error("compatible source query error.")
+		}
+		items = result
+	}
+
+	orgName := getOrgName(ctx)
+	table, _ := chs.Loader.GetSearchTable(orgName)
+	subSQL := goqu.From(table)
+	subSQL = subSQL.Select(
+		goqu.L("distinct(trace_id)").As("trace_id"),
+		goqu.L("(toUnixTimestamp64Nano(max(end_time)) - toUnixTimestamp64Nano(min(start_time)))").As("duration"),
+		goqu.L("min(start_time)").As("min_start_time"),
+	)
+	subSQL = buildFilter(subSQL, filter{
+		OrgName:     orgName,
+		TenantID:    model.TenantId,
+		StartTime:   model.StartTime,
+		EndTime:     model.EndTime,
+		DurationMin: model.DurationMin,
+		DurationMax: model.DurationMax,
+		Status:      model.Status,
+		TraceID:     model.TraceId,
+		HttpPath:    model.HttpPath,
+		ServiceName: model.ServiceName,
+		RpcMethod:   model.RpcMethod,
+	})
+	subSQL = subSQL.GroupBy("trace_id")
+
+	n, unit, interval := GetInterval(model.EndTime - model.StartTime)
+	sql := goqu.From(subSQL).Select(
+		goqu.L(fmt.Sprintf("toStartOfInterval(min_start_time, INTERVAL %d %s)", n, unit)).As("date"),
+		goqu.L("count(trace_id)").As("trace_count"),
+		goqu.L("avg(duration)").As("avg_duration"),
+	).GroupBy("date").Order(goqu.C("date").Asc())
+
+	sqlstr, err := chs.toSQL(sql)
+	if err != nil {
+		return nil, fmt.Errorf("sql convert: %w", err)
+	}
+
+	sqlstr += fmt.Sprintf(" WITH FILL STEP %d", interval)
+	rows, err := chs.Clickhouse.Client().Query(ctx, sqlstr)
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		item := &TraceDistributionItem{}
+		var i distributionItem
+		if err := rows.ScanStruct(&i); err != nil {
+			chs.Log.Error(err)
+			continue
+		}
+		item.Date = i.Date.Format("2006-01-02 15:04:05")
+		item.Count = i.Count
+		item.AvgDuration = math.DecimalPlacesWithDigitsNumber(i.AvgDuration, 2)
+		items = append(items, item)
+	}
+	return items, nil
+}
+
+func (chs *ClickhouseSource) GetTraces(ctx context.Context, req *pb.GetTracesRequest) (*pb.GetTracesResponse, error) {
+	traces := make([]*pb.Trace, 0, 10)
+	if chs.CompatibleSource != nil {
+		compatibleTraces, err := chs.CompatibleSource.GetTraces(ctx, req)
+		if err != nil {
+			chs.Log.Errorf("compatible query error. err: %v", err)
+		} else if compatibleTraces.Total > req.PageSize {
+			return compatibleTraces, nil
+		}
+	}
+
+	orgName := getOrgName(ctx)
+	table, _ := chs.Loader.GetSearchTable(orgName)
+	sel := goqu.From(table)
+	sel = sel.Select(
+		goqu.L("distinct(trace_id)").As("trace_id"),
+		goqu.L("count(distinct(trace_id))").As("trace_count"),
+		goqu.L("toUnixTimestamp64Nano(min(start_time))").As("min_start_time"),
+		goqu.L("count(span_id)").As("span_count"),
+		goqu.L("(toUnixTimestamp64Nano(max(end_time)) - toUnixTimestamp64Nano(min(start_time)))").As("duration"),
+		goqu.L("groupUniqArrayIf( tag_values[indexOf(tag_keys, 'service_name')], has(tag_keys, 'service_name'))").As("services"),
+	)
+	f := filter{
+		OrgName:     orgName,
+		TenantID:    req.TenantID,
+		StartTime:   req.StartTime,
+		EndTime:     req.EndTime,
+		DurationMin: req.DurationMin,
+		DurationMax: req.DurationMax,
+		Status:      req.Status,
+		TraceID:     req.TraceID,
+		HttpPath:    req.HttpPath,
+		ServiceName: req.ServiceName,
+		RpcMethod:   req.RpcMethod,
+	}
+	sel = buildFilter(sel, f).GroupBy(goqu.L(`"trace_id" WITH TOTALS`)).Order(chs.sortConditionStrategy(req.Sort)).
+		Limit(uint(req.PageSize)).Offset(uint((req.PageNo - 1) * req.PageSize))
+
+	sqlstr, err := chs.toSQL(sel)
+	if err != nil {
+		return nil, fmt.Errorf("sql convert: %w", err)
+	}
+
+	rows, err := chs.Clickhouse.Client().Query(ctx, sqlstr)
+	if err != nil {
+		return &pb.GetTracesResponse{}, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var t tracing
+		tracing := &pb.Trace{}
+		if err := rows.ScanStruct(&t); err != nil {
+			chs.Log.Error(err)
+			continue
+		}
+		tracing.Id = t.TraceId
+		tracing.Duration = float64(t.Duration)
+		tracing.StartTime = t.StartTime
+		tracing.SpanCount = int64(t.SpanCount)
+		tracing.Services = t.Services
+		traces = append(traces, tracing)
+	}
+
+	totals, err := getTraceTotals(rows)
+	if err != nil {
+		return &pb.GetTracesResponse{}, err
+	}
+
+	return &pb.GetTracesResponse{PageNo: req.PageNo, PageSize: req.PageSize, Data: traces, Total: totals}, nil
+}
+
+func getTraceTotals(rows driver.Rows) (int64, error) {
+	obj := tracing{}
+	err := rows.Totals(&obj.TraceId, &obj.TraceCount, &obj.StartTime, &obj.SpanCount, &obj.Duration, &obj.Services)
+	if err != nil {
+		return 0, fmt.Errorf("cannot get totals: %w", err)
+	}
+	return int64(obj.TraceCount), nil
+}
+
+func (chs *ClickhouseSource) GetSpans(ctx context.Context, req *pb.GetSpansRequest) []*pb.Span {
+	if chs.CompatibleSource != nil {
+		getSpans := chs.CompatibleSource.GetSpans(ctx, req)
+		if getSpans != nil && len(getSpans) > 0 {
+			return getSpans
+		}
+	}
+
+	orgName := getOrgName(ctx)
+	table, _ := chs.Loader.GetSearchTable(orgName)
+	sql := goqu.From(table).Select(
+		"trace_id",
+		"span_id",
+		"parent_span_id",
+		"operation_name",
+		goqu.L("toUnixTimestamp64Nano(start_time) AS st_nano"),
+		goqu.L("toUnixTimestamp64Nano(end_time)   AS et_nano"),
+		"tag_keys",
+		"tag_values",
+	).Where(goqu.Ex{
+		"org_name":  orgName,
+		"tenant_id": req.ScopeID,
+		"trace_id":  req.TraceID,
+		// there may be some timing skewing between different data source
+		"start_time": goqu.Op{"gte": fromTimestampMilli(req.StartTime - (15 * time.Minute).Milliseconds())},
+	}).Order(goqu.C("start_time").Asc()).Limit(uint(req.Limit))
+
+	sqlstr, err := chs.toSQL(sql)
+	if err != nil {
+		chs.Log.Errorf("ToSQL: %s", err)
+		return nil
+	}
+	rows, err := chs.Clickhouse.Client().Query(ctx, sqlstr)
+	if err != nil {
+		chs.Log.Errorf("querySQL: %s", err)
+		return nil
+	}
+	defer rows.Close()
+
+	spans := make([]*pb.Span, 0, 10)
+	for rows.Next() {
+		var span spanItem
+		if err := rows.ScanStruct(&span); err != nil {
+			chs.Log.Errorf("scan: %s", err)
+			return nil
+		}
+		tags := make(map[string]string, len(span.TagKeys))
+		for i := 0; i < len(span.TagKeys); i++ {
+			tags[span.TagKeys[i]] = span.TagValues[i]
+		}
+		spans = append(spans, &pb.Span{
+			Id:            span.SpanId,
+			TraceId:       span.TraceId,
+			OperationName: span.OperationName,
+			StartTime:     span.StartTime,
+			EndTime:       span.EndTime,
+			ParentSpanId:  span.ParentSpanId,
+			Tags:          tags,
+		})
+	}
+
+	return spans
+}
+
+func (chs *ClickhouseSource) GetSpanCount(ctx context.Context, traceID string) int64 {
+	var count uint64
+	orgName := getOrgName(ctx)
+	table, _ := chs.Loader.GetSearchTable(orgName)
+	sql := goqu.From(table).Select("COUNT(span_id)").Where(goqu.Ex{"trace_id": traceID})
+	sqlstr, err := chs.toSQL(sql)
+	if err != nil {
+		chs.Log.Errorf("GetSpanCount: %s", err)
+		return 0
+	}
+	if err := chs.Clickhouse.Client().QueryRow(ctx, sqlstr).Scan(&count); err != nil {
+		return 0
+	}
+	return int64(count)
+}
+
+func (chs *ClickhouseSource) sortConditionStrategy(sort string) exp.OrderedExpression {
+	switch strings.ToLower(sort) {
+	case strings.ToLower(pb.SortCondition_TRACE_TIME_DESC.String()):
+		return goqu.C("min_start_time").Desc()
+	case strings.ToLower(pb.SortCondition_TRACE_TIME_ASC.String()):
+		return goqu.C("min_start_time").Asc()
+	case strings.ToLower(pb.SortCondition_TRACE_DURATION_DESC.String()):
+		return goqu.C("duration").Desc()
+	case strings.ToLower(pb.SortCondition_TRACE_DURATION_ASC.String()):
+		return goqu.C("duration").Asc()
+	case strings.ToLower(pb.SortCondition_SPAN_COUNT_DESC.String()):
+		return goqu.C("span_count").Desc()
+	case strings.ToLower(pb.SortCondition_SPAN_COUNT_ASC.String()):
+		return goqu.C("span_count").Asc()
+	default:
+		return goqu.C("min_start_time").Desc()
+	}
+}
+
+func (chs *ClickhouseSource) traceStatusConditionStrategy(traceStatus string) string {
+	switch traceStatus {
+	case strings.ToLower(pb.TraceStatusCondition_TRACE_SUCCESS.String()):
+		return "errors_sum::field=0 AND"
+	case strings.ToLower(pb.TraceStatusCondition_TRACE_ALL.String()):
+		return "errors_sum::field>=0 AND"
+	case strings.ToLower(pb.TraceStatusCondition_TRACE_ERROR.String()):
+		return "errors_sum::field>0 AND"
+	default:
+		return "errors_sum::field>=0 AND"
+	}
+}
 
 func GetInterval(duration int64) (int64, string, int64) {
 	count := int64(60) * time.Second.Milliseconds()
@@ -109,316 +371,61 @@ func GetInterval(duration int64) (int64, string, int64) {
 	}
 }
 
-func (chs *ClickhouseSource) GetTraceReqDistribution(ctx context.Context, model custom.Model) ([]*TraceDistributionItem, error) {
-	items := make([]*TraceDistributionItem, 0, 10)
-	if chs.CompatibleSource != nil {
-		result, err := chs.CompatibleSource.GetTraceReqDistribution(ctx, model)
-		if err != nil {
-			chs.Log.Error("compatible source query error.")
-		}
-		items = result
-	}
-
-	n, unit, interval := GetInterval(model.EndTime - model.StartTime)
-	specSql := "SELECT toStartOfInterval(min_start_time, INTERVAL %v %s) AS date,count(trace_id) AS trace_count, " +
-		"avg(duration) AS avg_duration FROM (%s) GROUP BY date ORDER BY date WITH FILL STEP %v ;"
-
-	tracingSql := "SELECT distinct(trace_id) AS trace_id,(toUnixTimestamp64Nano(max(end_time)) - toUnixTimestamp64Nano(min(start_time))) AS duration, min(start_time) AS min_start_time FROM %s %s GROUP BY trace_id"
-
-	var where bytes.Buffer
-	// trace id condition
-	where.WriteString(fmt.Sprintf("WHERE start_time >= fromUnixTimestamp64Milli(toInt64(%d)) AND end_time <= fromUnixTimestamp64Milli(toInt64(%d)) ", model.StartTime, model.EndTime))
-	if v := getOrgName(ctx); v != "" {
-		where.WriteString(fmt.Sprintf("AND org_name='%s' ", v))
-	}
-
-	if model.TraceId != "" {
-		where.WriteString("AND trace_id LIKE concat('%','" + model.TraceId + "','%') ")
-	}
-	if model.DurationMin > 0 && model.DurationMax > 0 && model.DurationMin < model.DurationMax {
-		where.WriteString(fmt.Sprintf("AND ((toUnixTimestamp64Nano(end_time) - toUnixTimestamp64Nano(start_time)) >= %v "+
-			"AND (toUnixTimestamp64Nano(end_time) - toUnixTimestamp64Nano(start_time)) <= %v)", model.DurationMin, model.DurationMax))
-	}
-	// http_path filter. TODO. need a more common query
-	if model.HttpPath != "" {
-		where.WriteString("AND tags.http_path LIKE concat('%','" + model.HttpPath + "','%') ")
-	}
-
-	where.WriteString(fmt.Sprintf("AND series_id GLOBAL IN (%s)", chs.composeFilter(&pb.GetTracesRequest{TenantID: model.TenantId, ServiceName: model.ServiceName, RpcMethod: model.RpcMethod, HttpPath: model.HttpPath})))
-
-	tracingSql = fmt.Sprintf(tracingSql, SpanSeriesTable, where.String())
-	sql := fmt.Sprintf(specSql, n, unit, tracingSql, interval)
-	rows, err := chs.querySQL(ctx, sql)
-	if err != nil {
-		chs.Log.Error(err)
-		return []*TraceDistributionItem{}, err
-	}
-
-	for rows.Next() {
-		item := &TraceDistributionItem{}
-		var i distributionItem
-		if err := rows.ScanStruct(&i); err != nil {
-			chs.Log.Error(err)
-			continue
-		}
-		item.Date = i.Date.Format("2006-01-02 15:04:05")
-		item.Count = i.Count
-		item.AvgDuration = math.DecimalPlacesWithDigitsNumber(i.AvgDuration, 2)
-		items = append(items, item)
-	}
-	return items, nil
+func fromTimestampMilli(ts int64) exp.SQLFunctionExpression {
+	return goqu.Func("fromUnixTimestamp64Milli", goqu.Func("toInt64", ts))
 }
 
-func (chs *ClickhouseSource) GetTraces(ctx context.Context, req *pb.GetTracesRequest) (*pb.GetTracesResponse, error) {
-	traces := make([]*pb.Trace, 0, 10)
-	if chs.CompatibleSource != nil {
-		compatibleTraces, err := chs.CompatibleSource.GetTraces(ctx, req)
-		if err != nil {
-			chs.Log.Errorf("compatible query error. err: %v", err)
-		} else if compatibleTraces.Total > req.PageSize {
-			return compatibleTraces, nil
-		}
-	}
-
-	specSql := "SELECT distinct(trace_id) AS trace_id,toUnixTimestamp64Nano(min(start_time)) AS min_start_time,count(span_id) AS span_count," +
-		"(toUnixTimestamp64Nano(max(end_time)) - toUnixTimestamp64Nano(min(start_time))) AS duration FROM %s %s " +
-		"GROUP BY trace_id %s LIMIT %v OFFSET %v"
-	var where bytes.Buffer
-	// trace id condition
-	where.WriteString(fmt.Sprintf("WHERE start_time >= fromUnixTimestamp64Milli(toInt64(%d)) AND end_time <= fromUnixTimestamp64Milli(toInt64(%d)) ", req.StartTime, req.EndTime))
-
-	if v := getOrgName(ctx); v != "" {
-		where.WriteString(fmt.Sprintf("AND org_name='%s' ", v))
-	}
-
-	if req.TraceID != "" {
-		where.WriteString("AND trace_id LIKE concat('%','" + req.TraceID + "','%') ")
-	}
-	if req.DurationMin > 0 && req.DurationMax > 0 && req.DurationMin < req.DurationMax {
-		where.WriteString(fmt.Sprintf("AND ((toUnixTimestamp64Nano(end_time) - toUnixTimestamp64Nano(start_time)) >= %v "+
-			"AND (toUnixTimestamp64Nano(end_time) - toUnixTimestamp64Nano(start_time)) <= %v)", req.DurationMin, req.DurationMax))
-	}
-	if req.HttpPath != "" {
-		where.WriteString("AND tags.http_path LIKE concat('%','" + req.HttpPath + "','%') ")
-	}
-
-	where.WriteString(fmt.Sprintf("AND series_id GLOBAL IN (%s)", chs.composeFilter(req)))
-
-	sql := fmt.Sprintf(specSql, SpanSeriesTable, where.String(), chs.sortConditionStrategy(req.Sort), req.PageSize, (req.PageNo-1)*req.PageSize)
-
-	rows, err := chs.querySQL(ctx, sql)
-	if err != nil {
-		return &pb.GetTracesResponse{}, err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var t tracing
-		tracing := &pb.Trace{}
-		if err := rows.ScanStruct(&t); err != nil {
-			chs.Log.Error(err)
-			continue
-		}
-		tracing.Id = t.TraceId
-		tracing.Duration = float64(t.Duration)
-		tracing.StartTime = t.StartTime
-		tracing.SpanCount = int64(t.SpanCount)
-		serviceNames, _ := chs.selectKeyByTraceId(ctx, tracing.Id, "service_name")
-		tracing.Services = serviceNames
-		traces = append(traces, tracing)
-	}
-	count := chs.GetTraceCount(ctx, where.String())
-	return &pb.GetTracesResponse{PageNo: req.PageNo, PageSize: req.PageSize, Data: traces, Total: count}, nil
+type filter struct {
+	StartTime, EndTime                                                   int64 // ms
+	DurationMin, DurationMax                                             int64 // nano
+	OrgName, TenantID, TraceID, HttpPath, ServiceName, RpcMethod, Status string
 }
 
-func (chs *ClickhouseSource) composeFilter(req *pb.GetTracesRequest) string {
-	var subSqlBuf bytes.Buffer
-	subSqlBuf.WriteString(fmt.Sprintf("SELECT distinct(series_id) FROM %s WHERE (series_id in (select distinct(series_id) from %s where (key = 'terminus_key' AND value = '%s'))) AND ", SpanMetaTable, SpanMetaTableLocal, req.TenantID))
+func buildFilter(sel *goqu.SelectDataset, f filter) *goqu.SelectDataset {
+	// force condition
+	sel = sel.Where(goqu.Ex{
+		"org_name":   f.OrgName,
+		"tenant_id":  f.TenantID,
+		"start_time": goqu.Op{"gte": fromTimestampMilli(f.StartTime)},
+		"end_time":   goqu.Op{"lte": fromTimestampMilli(f.EndTime)},
+	})
 
-	if req.ServiceName != "" {
-		subSqlBuf.WriteString("(series_id in (select distinct(series_id) from " + SpanMetaTableLocal + " where (key='service_name' AND value LIKE concat('%','" + req.ServiceName + "','%')))) AND ")
+	// optional condition
+	if f.TraceID != "" {
+		sel = sel.Where(goqu.C("trace_id").Like("%" + f.TraceID + "%"))
 	}
 
-	if req.RpcMethod != "" {
-		subSqlBuf.WriteString("(series_id in (select distinct(series_id) from " + SpanMetaTableLocal + " where (key='rpc_method' AND value LIKE concat('%','" + req.RpcMethod + "','%')))) AND ")
+	if f.DurationMin > 0 && f.DurationMax > 0 && f.DurationMin < f.DurationMax {
+		sel = sel.Having(goqu.C("duration").Gte(f.DurationMin), goqu.C("duration").Lte(f.DurationMax))
 	}
 
-	subSql := subSqlBuf.String()
-	if strings.HasSuffix(subSql, "AND ") {
-		subSql = subSql[:len(subSql)-4]
-	}
-	return subSql
-}
-
-func (chs *ClickhouseSource) selectKeyByTraceId(ctx context.Context, traceId, key string) ([]string, error) {
-	keyMap := make(map[string]struct{}, 10)
-	keys := make([]string, 0, 10)
-	sql := fmt.Sprintf("SELECT value FROM %s WHERE series_id IN (SELECT series_id FROM %s WHERE trace_id = $1) AND key = $2", SpanMetaTable, SpanSeriesTable)
-	rows, err := chs.Clickhouse.Client().Query(ctx, sql, traceId, key)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var keyRealValue string
-		if err := rows.Scan(&keyRealValue); err != nil {
-			continue
-		}
-		keyMap[keyRealValue] = struct{}{}
-	}
-	for k := range keyMap {
-		keys = append(keys, k)
-	}
-	return keys, nil
-}
-
-func (chs *ClickhouseSource) sortConditionStrategy(sort string) string {
-	switch strings.ToLower(sort) {
-	case strings.ToLower(pb.SortCondition_TRACE_TIME_DESC.String()):
-		return "ORDER BY min_start_time DESC"
-	case strings.ToLower(pb.SortCondition_TRACE_TIME_ASC.String()):
-		return "ORDER BY min_start_time ASC"
-	case strings.ToLower(pb.SortCondition_TRACE_DURATION_DESC.String()):
-		return "ORDER BY duration DESC"
-	case strings.ToLower(pb.SortCondition_TRACE_DURATION_ASC.String()):
-		return "ORDER BY duration ASC"
-	case strings.ToLower(pb.SortCondition_SPAN_COUNT_DESC.String()):
-		return "ORDER BY span_count DESC"
-	case strings.ToLower(pb.SortCondition_SPAN_COUNT_ASC.String()):
-		return "ORDER BY span_count ASC"
+	switch f.Status {
+	case strings.ToLower(pb.TraceStatusCondition_TRACE_SUCCESS.String()):
+		sel = sel.Where(goqu.L("tag_values[indexOf(tag_keys,'error')]").Neq("true"))
+	case strings.ToLower(pb.TraceStatusCondition_TRACE_ERROR.String()):
+		sel = sel.Where(goqu.L("tag_values[indexOf(tag_keys,'error')]").Eq("true"))
 	default:
-		return "ORDER BY min_start_time DESC"
 	}
+
+	if f.HttpPath != "" {
+		sel = sel.Where(goqu.L("tag_values[indexOf(tag_keys, 'http_path')]").Like("%" + f.HttpPath + "%"))
+	}
+	if f.ServiceName != "" {
+		sel = sel.Where(goqu.L("tag_values[indexOf(tag_keys, 'service_name')]").Like("%" + f.ServiceName + "%"))
+	}
+	if f.RpcMethod != "" {
+		sel = sel.Where(goqu.L("tag_values[indexOf(tag_keys, 'rpc_method')]").Like("%" + f.RpcMethod + "%"))
+	}
+	return sel
 }
 
-func (chs *ClickhouseSource) GetSpans(ctx context.Context, req *pb.GetSpansRequest) []*pb.Span {
-	spans := make([]*pb.Span, 0, 10)
-
-	if chs.CompatibleSource != nil {
-		getSpans := chs.CompatibleSource.GetSpans(ctx, req)
-		if getSpans != nil && len(getSpans) > 0 {
-			return getSpans
-		}
-	}
-
-	// series block
-	seriesSQL := fmt.Sprintf(`
-SELECT org_name,
-       series_id,
-       trace_id,
-       span_id,
-       parent_span_id,
-       toUnixTimestamp64Nano(start_time) AS start_time,
-       toUnixTimestamp64Nano(end_time)   AS end_time,
-       tags
-FROM %s
-WHERE trace_id = $1
-ORDER BY %s LIMIT %v`, SpanSeriesTable, "start_time", req.Limit)
-	rows, err := chs.querySQL(ctx, seriesSQL, req.TraceID)
+func (chs *ClickhouseSource) toSQL(sql *goqu.SelectDataset) (string, error) {
+	sqlstr, _, err := sql.ToSQL()
 	if err != nil {
-		chs.Log.Errorf("querySQL: %s", err)
-		return nil
+		return "", fmt.Errorf("tosql err: %w", err)
 	}
-	defer rows.Close()
-	metaCache := make(map[uint64][]trace.Meta, 3)
-	series := make([]trace.Series, 0, 10)
-	for rows.Next() {
-		var cs trace.Series
-		if err := rows.ScanStruct(&cs); err != nil {
-			chs.Log.Errorf("scan series: %s", err)
-			return nil
-		}
-		series = append(series, cs)
-		metaCache[cs.SeriesID] = nil
-	}
-
-	// meta block
-	metaSQL := fmt.Sprintf(`
-select groupArray(key) as keys, groupArray(value) as values, series_id
-from %s 
-where series_id in
-      ($1)
-group by series_id`, SpanMetaTable)
-
-	sids := make([]uint64, 0, len(metaCache))
-	for k := range metaCache {
-		sids = append(sids, k)
-	}
-	metarows, err := chs.querySQL(ctx, metaSQL, sids)
-	if err != nil {
-		chs.Log.Errorf("query meta: %s", err)
-		return nil
-	}
-	defer metarows.Close()
-
-	for metarows.Next() {
-		var kvs keysValues
-		if err := metarows.ScanStruct(&kvs); err != nil {
-			continue
-		}
-		metaCache[kvs.SeriesID] = convertToMetas(kvs)
-	}
-
-	for _, s := range series {
-		spans = append(spans, mergeAsSpan(s, metaCache[s.SeriesID]))
-	}
-
-	return spans
-}
-
-func convertToMetas(kvs keysValues) []trace.Meta {
-	sms := make([]trace.Meta, len(kvs.Keys))
-	for i := range sms {
-		sms[i] = trace.Meta{
-			Key:   kvs.Keys[i],
-			Value: kvs.Values[i],
-		}
-	}
-	return sms
-}
-
-func mergeAsSpan(cs trace.Series, sms []trace.Meta) *pb.Span {
-	span := &pb.Span{}
-	tags := make(map[string]string, 10)
-	for _, sm := range sms {
-		tags[sm.Key] = sm.Value
-	}
-	// merge high cardinality tag
-	for k, v := range cs.Tags {
-		tags[k] = v
-	}
-	span.OperationName = tags["operation_name"]
-
-	span.Id = cs.SpanId
-	span.TraceId = cs.TraceId
-	span.ParentSpanId = cs.ParentSpanId
-	span.StartTime = cs.StartTime
-	span.EndTime = cs.EndTime
-	span.Tags = tags
-	return span
-}
-
-func (chs *ClickhouseSource) GetSpanCount(ctx context.Context, traceID string) int64 {
-	var count uint64
-	sql := fmt.Sprintf("SELECT COUNT(span_id) FROM %s WHERE trace_id = $1", SpanSeriesTable)
-	if err := chs.Clickhouse.Client().QueryRow(ctx, sql, traceID).Scan(&count); err != nil {
-		return 0
-	}
-	return int64(count)
-}
-
-func (chs *ClickhouseSource) GetTraceCount(ctx context.Context, where string) int64 {
-	var count uint64
-	sql := fmt.Sprintf("SELECT COUNT(trace_id) FROM %s %s", SpanSeriesTable, where)
-	if err := chs.Clickhouse.Client().QueryRow(ctx, sql).Scan(&count); err != nil {
-		return 0
-	}
-	return int64(count)
-}
-
-func (chs *ClickhouseSource) querySQL(ctx context.Context, sql string, args ...interface{}) (driver.Rows, error) {
 	if chs.DebugSQL {
-		fmt.Printf("===Tracing Clickhouse SQL:\n%s\n%+v\n===Tracing Clickhouse SQL\n", sql, args)
+		fmt.Printf("===Tracing Clickhouse SQL:\n%s\n===Tracing Clickhouse SQL\n", sqlstr)
 	}
-	return chs.Clickhouse.Client().Query(ctx, sql, args...)
+	return sqlstr, nil
 }

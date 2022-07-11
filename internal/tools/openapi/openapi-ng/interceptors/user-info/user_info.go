@@ -26,13 +26,9 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/internal/tools/openapi/legacy/conf"
+	"github.com/erda-project/erda/internal/core/user"
 	"github.com/erda-project/erda/internal/tools/openapi/openapi-ng/interceptors"
-	"github.com/erda-project/erda/pkg/desensitize"
-	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httputil"
-	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 type config struct {
@@ -41,21 +37,12 @@ type config struct {
 
 // +provider
 type provider struct {
-	Cfg *config
-	Log logs.Logger
-	uc  *ucauth.UCClient
+	Cfg      *config
+	Log      logs.Logger
+	Identity user.Interface
 }
 
 func (p *provider) Init(ctx servicehub.Context) (err error) {
-	p.uc = ucauth.NewUCClient(discover.UC(), conf.UCClientID(), conf.UCClientSecret())
-	if conf.OryEnabled() {
-		p.uc = ucauth.NewUCClient(conf.OryKratosPrivateAddr(), conf.OryCompatibleClientID(), conf.OryCompatibleClientSecret())
-		db, err := ucauth.NewDB()
-		if err != nil {
-			return err
-		}
-		p.uc.SetDBClient(db)
-	}
 	return nil
 }
 
@@ -166,7 +153,7 @@ func (p *provider) Interceptor(h http.HandlerFunc) http.HandlerFunc {
 
 func (p *provider) userInfoRetriever(r *http.Request, data map[string]interface{}, userIDs []string) []byte {
 	desensitized, _ := strconv.ParseBool(r.Header.Get(httputil.UserInfoDesensitizedHeader))
-	user, err := p.getUsers(userIDs, desensitized)
+	user, err := p.Identity.GetUsers(userIDs, desensitized)
 	if err != nil {
 		p.Log.Error(err)
 	} else {
@@ -198,52 +185,6 @@ func getUserIDs(body map[string]interface{}) []string {
 		return v
 	}
 	return nil
-}
-
-func (p *provider) getUsers(IDs []string, needDesensitize bool) (map[string]apistructs.UserInfo, error) {
-	b, err := p.uc.FindUsers(IDs)
-	if err != nil {
-		return nil, err
-	}
-
-	users := make(map[string]apistructs.UserInfo, len(b))
-	if needDesensitize {
-		for i := range b {
-			users[string(b[i].ID)] = apistructs.UserInfo{
-				ID:     "",
-				Email:  desensitize.Email(b[i].Email),
-				Phone:  desensitize.Mobile(b[i].Phone),
-				Avatar: b[i].AvatarURL,
-				Name:   desensitize.Name(b[i].Name),
-				Nick:   desensitize.Name(b[i].Nick),
-			}
-		}
-	} else {
-		for i := range b {
-			users[string(b[i].ID)] = apistructs.UserInfo{
-				ID:     string(b[i].ID),
-				Email:  b[i].Email,
-				Phone:  b[i].Phone,
-				Avatar: b[i].AvatarURL,
-				Name:   b[i].Name,
-				Nick:   b[i].Nick,
-			}
-		}
-	}
-	for _, userID := range IDs {
-		_, exist := users[userID]
-		if !exist {
-			users[userID] = apistructs.UserInfo{
-				ID:     userID,
-				Email:  "",
-				Phone:  "",
-				Avatar: "",
-				Name:   "用户已注销",
-				Nick:   "用户已注销",
-			}
-		}
-	}
-	return users, nil
 }
 
 func init() {

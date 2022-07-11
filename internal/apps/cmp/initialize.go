@@ -133,9 +133,8 @@ func (p *provider) do(ctx context.Context) (*httpserver.Server, error) {
 		bundle.WithPipeline(),
 		bundle.WithScheduler(),
 		bundle.WithMonitor(),
-		bundle.WithCoreServices(),
 		bundle.WithOrchestrator(),
-		bundle.WithDiceHub(),
+		bundle.WithErdaServer(),
 		bundle.WithClusterManager(),
 	}
 	bdl := bundle.New(bundleOpts...)
@@ -214,6 +213,7 @@ func (p *provider) initEndpoints(ctx context.Context, db *dbclient.DBClient, js,
 		endpoints.WithResourceTable(rt),
 		endpoints.WithCronServiceServer(p.CronService),
 		endpoints.WithClusterServiceServer(p.ClusterSvc),
+		endpoints.WithOrg(p.Org),
 	)
 
 	// Sync org resource task status
@@ -264,7 +264,7 @@ func registerWebHook(bdl *bundle.Bundle) {
 
 // registerClusterHook register cluster webhook in eventBox
 func registerClusterHook() error {
-	bdl := bundle.New(bundle.WithCoreServices())
+	bdl := bundle.New(bundle.WithErdaServer())
 
 	ev := apistructs.CreateHookRequest{
 		Name:   "cmp-clusterhook",

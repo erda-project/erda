@@ -17,6 +17,7 @@ package org
 import (
 	"fmt"
 
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/conf"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
@@ -29,7 +30,7 @@ import (
 // 3. npm proxy official publisher repo
 // 4. npm proxy thirdparty repos
 // 5. one npm group org repo
-func (o *Org) ensureNexusNpmGroupOrgRepos(org *apistructs.OrgDTO) error {
+func (o *Org) ensureNexusNpmGroupOrgRepos(org *orgpb.Org) error {
 	var npmMemberRepos []*apistructs.NexusRepository
 
 	// 1. npm hosted org snapshot repo
@@ -79,7 +80,7 @@ func (o *Org) ensureNexusNpmGroupOrgRepos(org *apistructs.OrgDTO) error {
 	return err
 }
 
-func (o *Org) ensureNexusNpmHostedOrgSnapshotRepo(org *apistructs.OrgDTO) (*apistructs.NexusRepository, error) {
+func (o *Org) ensureNexusNpmHostedOrgSnapshotRepo(org *orgpb.Org) (*apistructs.NexusRepository, error) {
 	nexusServer := nexus.Server{
 		Addr:     conf.CentralNexusAddr(),
 		Username: conf.CentralNexusUsername(),
@@ -130,7 +131,7 @@ func (o *Org) ensureNexusNpmHostedOrgSnapshotRepo(org *apistructs.OrgDTO) (*apis
 	return repo, nil
 }
 
-func (o *Org) ensureNexusNpmGroupOrgRepo(org *apistructs.OrgDTO, npmMemberRepos []*apistructs.NexusRepository) (*apistructs.NexusRepository, error) {
+func (o *Org) ensureNexusNpmGroupOrgRepo(org *orgpb.Org, npmMemberRepos []*apistructs.NexusRepository) (*apistructs.NexusRepository, error) {
 	npmGroupOrgRepoName := nexus.MakeOrgRepoName(nexus.RepositoryFormatNpm, nexus.RepositoryTypeGroup, uint64(org.ID))
 	repo, err := o.nexusSvc.EnsureRepository(apistructs.NexusRepositoryEnsureRequest{
 		OrgID:       &[]uint64{org.ID}[0],
@@ -190,7 +191,7 @@ func (o *Org) ensureNexusNpmGroupOrgRepo(org *apistructs.OrgDTO, npmMemberRepos 
 }
 
 func (o *Org) ensureNexusNpmGroupOrgReadonlyUser(
-	org *apistructs.OrgDTO,
+	org *orgpb.Org,
 	groupRepo *apistructs.NexusRepository,
 	syncCM apistructs.NexusSyncConfigToPipelineCM,
 ) (*apistructs.NexusUser, error) {

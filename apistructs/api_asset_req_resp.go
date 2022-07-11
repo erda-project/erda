@@ -600,6 +600,14 @@ type ListAPIGatewaysReq struct {
 	Identity  *IdentityInfo
 	URIParams *ListAPIGatewaysURIParams
 }
+type ListAPIGatewaysResp struct {
+	Header
+	Data ListAPIGatewayRespData `json:"data"`
+}
+type ListAPIGatewayRespData struct {
+	Total int                 `json:"total"`
+	List  []map[string]string `json:"list"`
+}
 
 type ListProjectAPIGatewaysReq struct {
 	OrgID     uint64

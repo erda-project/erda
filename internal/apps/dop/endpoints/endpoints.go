@@ -34,6 +34,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/dao"
 	"github.com/erda-project/erda/internal/apps/dop/event"
+	"github.com/erda-project/erda/internal/apps/dop/providers/projectpipeline"
 	"github.com/erda-project/erda/internal/apps/dop/services/apidocsvc"
 	"github.com/erda-project/erda/internal/apps/dop/services/appcertificate"
 	"github.com/erda-project/erda/internal/apps/dop/services/application"
@@ -69,13 +70,13 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/services/testset"
 	"github.com/erda-project/erda/internal/apps/dop/services/ticket"
 	"github.com/erda-project/erda/internal/apps/dop/services/workbench"
+	orgclient "github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/i18n"
 	"github.com/erda-project/erda/pkg/jsonstore"
 	"github.com/erda-project/erda/pkg/jsonstore/etcd"
 	"github.com/erda-project/erda/pkg/strutil"
-	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 const (
@@ -665,7 +666,6 @@ type Endpoints struct {
 	issue           *issue.Issue
 	issueState      *issuestate.IssueState
 	workBench       *workbench.Workbench
-	uc              *ucauth.UCClient
 	iteration       *iteration.Iteration
 	publisher       *publisher.Publisher
 	certificate     *certificate.Certificate
@@ -683,12 +683,14 @@ type Endpoints struct {
 	PipelineSource     sourcepb.SourceServiceServer
 	PipelineDefinition dpb.DefinitionServiceServer
 	DevFlowRule        dwfpb.DevFlowRuleServiceServer
+	ProjectPipelineSvc *projectpipeline.ProjectPipelineService
 
 	ImportChannel chan uint64
 	ExportChannel chan uint64
 	CopyChannel   chan uint64
 
 	tokenService tokenpb.TokenServiceServer
+	orgClient    orgclient.ClientInterface
 }
 
 type Option func(*Endpoints)
@@ -792,13 +794,15 @@ func WithPublishItem(publishItem *publish_item.PublishItem) Option {
 	}
 }
 
+func WithOrgClient(org orgclient.ClientInterface) Option {
+	return func(e *Endpoints) {
+		e.orgClient = org
+	}
+}
+
 // DBClient 获取db client
 func (e *Endpoints) DBClient() *dao.DBClient {
 	return e.db
-}
-
-func (e *Endpoints) UCClient() *ucauth.UCClient {
-	return e.uc
 }
 
 // GetLocale 获取本地化资源
@@ -944,13 +948,6 @@ func WithIssueState(state *issuestate.IssueState) Option {
 	}
 }
 
-// WithUCClient 配置 UC Client
-func WithUCClient(uc *ucauth.UCClient) Option {
-	return func(e *Endpoints) {
-		e.uc = uc
-	}
-}
-
 // WithIteration 配置 iteration
 func WithIteration(itr *iteration.Iteration) Option {
 	return func(e *Endpoints) {
@@ -1047,6 +1044,12 @@ func WithPipelineDefinition(svc dpb.DefinitionServiceServer) Option {
 func WithDevFlowRule(svc dwfpb.DevFlowRuleServiceServer) Option {
 	return func(e *Endpoints) {
 		e.DevFlowRule = svc
+	}
+}
+
+func WithProjectPipelineSvc(svc *projectpipeline.ProjectPipelineService) Option {
+	return func(e *Endpoints) {
+		e.ProjectPipelineSvc = svc
 	}
 }
 

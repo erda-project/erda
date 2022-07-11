@@ -23,7 +23,6 @@ const (
 	EnvEventBox       = "EVENTBOX_ADDR"
 	EnvCMDB           = "CMDB_ADDR"
 	EnvScheduler      = "SCHEDULER_ADDR"
-	EnvDiceHub        = "DICEHUB_ADDR"
 	EnvSoldier        = "SOLDIER_ADDR"
 	EnvOrchestrator   = "ORCHESTRATOR_ADDR"
 	EnvAddOnPlatform  = "ADDON_PLATFORM_ADDR"
@@ -45,7 +44,6 @@ const (
 	EnvECP            = "ECP_ADDR"
 	EnvClusterManager = "CLUSTER_MANAGER_ADDR"
 	EnvClusterDialer  = "CLUSTER_DIALER_ADDR"
-	EnvCoreServices   = "CORE_SERVICES_ADDR"
 	EnvFDPMaster      = "FDP_MASTER_ADDR"
 	EnvErdaServer     = "ERDA_SERVER_ADDR"
 )
@@ -55,7 +53,6 @@ const (
 	SvcEventBox       = "eventbox"
 	SvcCMDB           = "cmdb"
 	SvcScheduler      = "scheduler"
-	SvcDiceHub        = "dicehub"
 	SvcSoldier        = "soldier"
 	SvcOrchestrator   = "orchestrator"
 	SvcAddOnPlatform  = "addon-platform"
@@ -77,15 +74,15 @@ const (
 	SvcECP            = "ecp"
 	SvcClusterManager = "cluster-manager"
 	SvcClusterDialer  = "cluster-dialer"
-	SvcCoreServices   = "core-services"
 	SvcFDPMaster      = "fdp-master"
 	SvcErdaServer     = "erda-server"
+	SvcAdmin          = "admin"
+	SvcGallery        = "gallery"
 )
 
 var ServicesEnvKeys = map[string]string{
 	SvcCMDB:           EnvCMDB,
 	SvcScheduler:      EnvScheduler,
-	SvcDiceHub:        EnvDiceHub,
 	SvcSoldier:        EnvSoldier,
 	SvcOrchestrator:   EnvOrchestrator,
 	SvcAddOnPlatform:  EnvAddOnPlatform,
@@ -107,7 +104,6 @@ var ServicesEnvKeys = map[string]string{
 	SvcECP:            EnvECP,
 	SvcClusterManager: EnvClusterManager,
 	SvcClusterDialer:  EnvClusterDialer,
-	SvcCoreServices:   EnvCoreServices,
 	SvcFDPMaster:      EnvFDPMaster,
 	SvcErdaServer:     EnvErdaServer,
 }
@@ -124,7 +120,6 @@ func Services() []string {
 func EventBox() string       { return getURL(SvcEventBox) }
 func CMDB() string           { return getURL(SvcCMDB) }
 func Scheduler() string      { return getURL(SvcScheduler) }
-func DiceHub() string        { return getURL(SvcDiceHub) }
 func Soldier() string        { return getURL(SvcSoldier) }
 func Orchestrator() string   { return getURL(SvcOrchestrator) }
 func AddOnPlatform() string  { return getURL(SvcAddOnPlatform) }
@@ -143,7 +138,7 @@ func QA() string             { return getURL(SvcQA) }
 func APIM() string           { return getURL(SvcAPIM) }
 func UC() string             { return getURL(SvcUC) }
 func DOP() string            { return getURL(SvcDOP) }
-func CoreServices() string   { return getURL(SvcCoreServices) }
+func ErdaServer() string     { return getURL(SvcErdaServer) }
 func ClusterManager() string { return getURL(SvcClusterManager) }
 func ClusterDialer() string  { return getURL(SvcClusterDialer) }
 

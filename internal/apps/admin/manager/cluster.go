@@ -19,14 +19,18 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/metadata"
 
 	"github.com/erda-project/erda-infra/pkg/transport"
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/admin/apierrors"
 	"github.com/erda-project/erda/internal/pkg/user"
+	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
@@ -79,10 +83,11 @@ func (am *AdminManager) ListCluster(ctx context.Context, req *http.Request, reso
 			return apierrors.ErrListCluster.InvalidParameter(err).ToResp(), nil
 		}
 
-		clusterRelation, err := am.bundle.GetOrgClusterRelationsByOrg(orgID)
+		orgResp, err := am.org.GetOrgClusterRelationsByOrg(apis.WithInternalClientContext(ctx, discover.SvcAdmin), &orgpb.GetOrgClusterRelationsByOrgRequest{OrgID: orgIDStr})
 		if err != nil {
 			return apierrors.ErrListCluster.InternalError(err).ToResp(), nil
 		}
+		clusterRelation := orgResp.Data
 		resp, err := am.clusterSvc.ListCluster(ctx, &clusterpb.ListClusterRequest{ClusterType: clusterType})
 		if err != nil {
 			return apierrors.ErrListCluster.InternalError(err).ToResp(), nil
@@ -149,7 +154,7 @@ func (am *AdminManager) DereferenceCluster(ctx context.Context, r *http.Request,
 		return apierrors.ErrDereferenceCluster.NotLogin().ToResp(), nil
 	}
 
-	orgID, err := GetOrgID(r)
+	orgID, err := GetOrgIDStr(r)
 	if err != nil {
 		return apierrors.ErrListCluster.InvalidParameter(err).ToResp(), nil
 	}
@@ -159,12 +164,22 @@ func (am *AdminManager) DereferenceCluster(ctx context.Context, r *http.Request,
 		return apierrors.ErrDereferenceCluster.MissingParameter("clusterName").ToResp(), nil
 	}
 
-	resp, err := am.bundle.DereferenceCluster(orgID, clusterName, userID.String(), false)
+	referenceResp, err := am.bundle.FindClusterResource(clusterName, orgID)
 	if err != nil {
 		return apierrors.ErrDereferenceCluster.InternalError(err).ToResp(), nil
 	}
+	if referenceResp.AddonReference > 0 || referenceResp.ServiceReference > 0 {
+		return apierrors.ErrDereferenceCluster.InternalError(errors.Errorf("集群中存在未清理的Addon或Service，请清理后再执行")).ToResp(), nil
+	}
 
-	return httpserver.OkResp(resp)
+	clusterResp, err := am.org.DereferenceCluster(apis.WithUserIDContext(apis.WithInternalClientContext(ctx, discover.SvcAdmin), userID.String()), &orgpb.DereferenceClusterRequest{
+		OrgID:       orgID,
+		ClusterName: clusterName,
+	})
+	if err != nil {
+		return apierrors.ErrDereferenceCluster.InternalError(err).ToResp(), nil
+	}
+	return httpserver.OkResp(clusterResp.Data)
 }
 
 func (am *AdminManager) InspectCluster(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {

@@ -16,14 +16,17 @@ package k8s
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
+	apiCorev1 "k8s.io/api/core/v1"
 	"k8s.io/api/networking/v1beta1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
+	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/util"
 	"github.com/erda-project/erda/pkg/k8s/union_interface"
@@ -90,6 +93,35 @@ func (ingressInterface) Apply(ctx context.Context, ingress interface{}, opts v1.
 }
 func (ingressInterface) ApplyStatus(ctx context.Context, ingress interface{}, opts v1.ApplyOptions) (interface{}, error) {
 	return nil, nil
+}
+
+type mockK8sClient struct {
+	kubernetes.Interface
+}
+
+func (m mockK8sClient) CoreV1() corev1.CoreV1Interface {
+	return mockCoreV1Interface{}
+}
+
+type mockCoreV1Interface struct {
+	corev1.CoreV1Interface
+}
+
+func (m mockCoreV1Interface) Services(namespace string) corev1.ServiceInterface {
+	return mockServiceInterface{namespace: namespace}
+}
+
+type mockServiceInterface struct {
+	corev1.ServiceInterface
+
+	namespace string
+}
+
+func (m mockServiceInterface) List(ctx context.Context, opts v1.ListOptions) (*apiCorev1.ServiceList, error) {
+	if m.namespace == "" {
+		return nil, fmt.Errorf("invalid namespace")
+	}
+	return &apiCorev1.ServiceList{Items: []apiCorev1.Service{}}, nil
 }
 
 func TestK8SAdapterImpl_DeleteIngress(t *testing.T) {
@@ -187,4 +219,10 @@ func TestK8SAdapterImpl_CreateOrUpdateIngress(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestK8SAdapterImpl_ListAllServices(t *testing.T) {
+	impl := &K8SAdapterImpl{client: mockK8sClient{}}
+	_, _ = impl.ListAllServices("")
+	_, _ = impl.ListAllServices("xxx")
 }

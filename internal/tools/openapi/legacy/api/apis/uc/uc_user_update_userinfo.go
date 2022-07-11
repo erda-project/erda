@@ -27,6 +27,8 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/core/user/impl/kratos"
+	"github.com/erda-project/erda/internal/core/user/impl/uc"
 	"github.com/erda-project/erda/internal/pkg/user"
 	"github.com/erda-project/erda/internal/tools/openapi/legacy/api/apierrors"
 	"github.com/erda-project/erda/internal/tools/openapi/legacy/api/apis"
@@ -37,7 +39,6 @@ import (
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/strutil"
-	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 var UC_USER_UPDATE_USERINFO = apis.ApiSpec{
@@ -53,7 +54,7 @@ var UC_USER_UPDATE_USERINFO = apis.ApiSpec{
 	Doc:          "summary: 更新用户信息",
 }
 
-var bdl = bundle.New(bundle.WithCoreServices())
+var bdl = bundle.New(bundle.WithErdaServer())
 
 func updateUserInfo(w http.ResponseWriter, r *http.Request) {
 	operatorID, err := user.GetUserID(r)
@@ -127,18 +128,18 @@ type ucUpdateUserInfoReq struct {
 	Email    string `json:"email,omitempty"`
 }
 
-func handleUpdateUserInfo(req *apistructs.UserUpdateInfoRequset, operatorID string, token ucauth.OAuthToken) error {
-	if token.TokenType == ucauth.OryCompatibleClientId {
-		updateReq := ucauth.OryKratosUpdateIdentitiyRequest{
+func handleUpdateUserInfo(req *apistructs.UserUpdateInfoRequset, operatorID string, token uc.OAuthToken) error {
+	if token.TokenType == uc.OryCompatibleClientId {
+		updateReq := kratos.OryKratosUpdateIdentitiyRequest{
 			State: "active",
-			Traits: ucauth.OryKratosIdentityTraits{
+			Traits: kratos.OryKratosIdentityTraits{
 				Email: req.Email,
 				Nick:  req.Nick,
 				Name:  req.Name,
 				Phone: req.Mobile,
 			},
 		}
-		if err := ucauth.UpdateIdentity(token.AccessToken, req.UserID, updateReq); err != nil {
+		if err := kratos.UpdateIdentity(token.AccessToken, req.UserID, updateReq); err != nil {
 			return err
 		}
 		return nil

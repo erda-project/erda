@@ -26,6 +26,32 @@ Authorization: Bearer {{token}}
 ]
 
 ###
+POST http://{{collector_addr}}/collect/logs/container
+Content-Type: application/json
+Authorization: Basic {{basic}}
+
+[
+  {
+    "source": "container",
+    "id": "3bdcc48e7222be90b889fffba685c762da74b61be8528605ecb2decaab4933f3",
+    "stream": "stdout",
+    "content": "hello world",
+    "offset": 0,
+    "timestamp": 1640796626617075700,
+    "tags": {
+      "application_id": "60",
+      "application_name": "log-service",
+      "cluster_name": "terminus-dev",
+      "container_name": "nginx",
+      "dice_application_id": "60",
+      "dice_application_name": "log-service",
+      "level": "INFO",
+      "workspace": "staging"
+    }
+  }
+]
+
+###
 
 # json array
 POST http://{{collector_addr}}/api/v1/collect/metrics

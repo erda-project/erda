@@ -22,7 +22,7 @@ import (
 var PUBLISH_ITEM_QUERY = apis.ApiSpec{
 	Path:          "/api/publish-items",
 	BackendPath:   "/api/publish-items",
-	Host:          "dicehub.marathon.l4lb.thisdcos.directory:10000",
+	Host:          "erda-server.marathon.l4lb.thisdcos.directory:9095",
 	Scheme:        "http",
 	Method:        "GET",
 	TryCheckLogin: true,

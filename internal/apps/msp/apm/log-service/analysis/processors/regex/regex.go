@@ -49,7 +49,7 @@ func New(metric string, cfg []byte) (processors.Processor, error) {
 	if err != nil {
 		return nil, fmt.Errorf("fail to unmarshal regexp config: %s", err)
 	}
-	reg, err := regexp2.Compile(c.Pattern, 0)
+	reg, err := regexp2.Compile(c.Pattern, regexp2.RE2)
 	if err != nil {
 		return nil, fmt.Errorf("fail to compile regexp pattern: %s", err)
 	}

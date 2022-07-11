@@ -22,6 +22,7 @@ import (
 	"github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/core/cluster-manager/cluster/db"
+	"github.com/erda-project/erda/internal/core/org"
 )
 
 type provider struct {
@@ -29,11 +30,12 @@ type provider struct {
 	DB             *gorm.DB           `autowired:"mysql-client"`
 	clusterService *ClusterService
 	bdl            *bundle.Bundle
+	Org            org.ClientInterface
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.bdl = bundle.New(bundle.WithCoreServices())
-	p.clusterService = NewClusterService(WithDB(&db.ClusterDB{DB: p.DB}), WithBundle(p.bdl))
+	p.bdl = bundle.New(bundle.WithErdaServer())
+	p.clusterService = NewClusterService(WithDB(&db.ClusterDB{DB: p.DB}), WithBundle(p.bdl), WithOrg(p.Org))
 	if p.Register != nil {
 		pb.RegisterClusterServiceImp(p.Register, p.clusterService)
 	}

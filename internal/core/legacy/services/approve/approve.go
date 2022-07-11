@@ -32,15 +32,15 @@ import (
 	"github.com/erda-project/erda/internal/core/legacy/model"
 	"github.com/erda-project/erda/internal/core/legacy/services/member"
 	"github.com/erda-project/erda/internal/core/legacy/utils"
+	"github.com/erda-project/erda/internal/core/user"
 	"github.com/erda-project/erda/pkg/strutil"
-	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 // Approve 资源对象操作封装
 type Approve struct {
 	db     *dao.DBClient
 	bdl    *bundle.Bundle
-	uc     *ucauth.UCClient
+	uc     user.Interface
 	member *member.Member
 }
 
@@ -64,7 +64,7 @@ func WithDBClient(db *dao.DBClient) Option {
 }
 
 // WithUCClient 配置 uc client
-func WithUCClient(uc *ucauth.UCClient) Option {
+func WithUCClient(uc user.Interface) Option {
 	return func(p *Approve) {
 		p.uc = uc
 	}

@@ -22,12 +22,19 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
+const (
+	// distributed table
+	CH_TABLE_ALL = "metrics_all"
+	CH_TABLE     = "metrics"
+)
+
 // Metric .
 type Metric struct {
 	Name      string                 `json:"name"`
 	Timestamp int64                  `json:"timestamp"`
 	Tags      map[string]string      `json:"tags"`
 	Fields    map[string]interface{} `json:"fields"`
+	OrgName   string                 `json:"-"`
 }
 
 func (m *Metric) Hash() uint64 {
@@ -85,10 +92,15 @@ func (m *Metric) Copy() *Metric {
 	return copied
 }
 
-// New .
-func New() *Metric {
-	return &Metric{
-		Tags:   make(map[string]string),
-		Fields: make(map[string]interface{}),
-	}
+type TableMetrics struct {
+	OrgName           string    `ch:"org_name"`
+	TenantId          string    `ch:"tenant_id"`
+	MetricGroup       string    `ch:"metric_group"`
+	Timestamp         int64     `ch:"timestamp"`
+	NumberFieldKeys   []string  `ch:"number_field_keys"`
+	NumberFieldValues []float64 `ch:"number_field_values"`
+	StringFieldKeys   []string  `ch:"string_field_keys"`
+	StringFieldValues []string  `ch:"string_field_values"`
+	TagKeys           []string  `ch:"tag_keys"`
+	TagValues         []string  `ch:"tag_values"`
 }

@@ -50,6 +50,10 @@ func (d *dbServiceImpl) GetRuntimeAllowNil(id uint64) (*dbclient.Runtime, error)
 	return d.db.GetRuntimeAllowNil(id)
 }
 
+func (d *dbServiceImpl) GetRuntimeHPARulesByRuntimeId(runtimeID uint64) ([]dbclient.RuntimeHPA, error) {
+	return d.db.GetRuntimeHPARulesByRuntimeId(runtimeID)
+}
+
 func newDBService(db *dbclient.DBClient) DBService {
 	return &dbServiceImpl{db: db}
 }

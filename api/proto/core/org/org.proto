@@ -10,7 +10,7 @@ option go_package = "github.com/erda-project/erda-proto-go/core/org/pb";
 
 service OrgService {
     option(erda.common.openapi_service) = {
-        service: "core-services",
+        service: "erda-server",
         auth: {
             check_login: true,
             check_token: true,
@@ -227,7 +227,7 @@ message ListOrgClusterRelationResponse {
 
 message OrgClusterRelation {
     uint64 ID = 1 [json_name = "id"];
-    uint64 orgId = 2;
+    uint64 orgID = 2 [json_name = "orgId"];
     string orgName = 3;
     uint64 clusterID = 4 [json_name = "clusterId"];
     string clusterName = 5;

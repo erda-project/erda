@@ -36,6 +36,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	stream "github.com/erda-project/erda/internal/apps/dop/providers/issue/stream/core"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
+	"github.com/erda-project/erda/internal/core/user"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
 	perm "github.com/erda-project/erda/pkg/common/permission"
@@ -56,6 +57,7 @@ type provider struct {
 	issueService *IssueService
 	Stream       stream.Interface
 	Query        query.Interface
+	Identity     user.Interface
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -67,10 +69,11 @@ func (p *provider) Init(ctx servicehub.Context) error {
 				DB: p.DB,
 			},
 		},
-		logger: p.Log,
-		bdl:    bundle.New(bundle.WithCoreServices()),
-		stream: p.Stream,
-		query:  p.Query,
+		logger:   p.Log,
+		bdl:      bundle.New(bundle.WithErdaServer()),
+		stream:   p.Stream,
+		query:    p.Query,
+		identity: p.Identity,
 	}
 
 	if p.Register != nil {

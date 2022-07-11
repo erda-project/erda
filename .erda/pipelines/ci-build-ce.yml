@@ -85,8 +85,6 @@ stages:
               cluster-manager: ${{ outputs.build-erda.image }}
               cmp: ${{ outputs.build-erda.image }}
               collector: ${{ outputs.build-erda.image }}
-              core-services: ${{ outputs.build-erda.image }}
-              dicehub: ${{ outputs.build-erda.image }}
               dop: ${{ outputs.build-erda.image }}
               ecp: ${{ outputs.build-erda.image }}
               eventbox: ${{ outputs.build-erda.image }}

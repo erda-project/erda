@@ -26,7 +26,7 @@ import (
 )
 
 func (b *Bundle) CreateApprove(req *apistructs.ApproveCreateRequest, userID string) (*apistructs.ApproveDTO, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -48,14 +48,14 @@ func (b *Bundle) CreateApprove(req *apistructs.ApproveCreateRequest, userID stri
 }
 
 func (b *Bundle) ListApprove(orgID uint64, userID string, params url.Values) (*apistructs.ApproveListResponse, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
 
 	hc := b.hc
 	var approveList apistructs.ApproveListResponse
-	resp, err := hc.Get(host).Path("/api/approves/actions/list-approves").
+	resp, err := hc.Get(host).Path("/core/api/approves/actions/list-approves").
 		Header(httputil.InternalHeader, "bundle").
 		Header(httputil.OrgHeader, fmt.Sprintf("%d", orgID)).
 		Header(httputil.UserHeader, userID).
@@ -76,14 +76,14 @@ func (b *Bundle) ListApprove(orgID uint64, userID string, params url.Values) (*a
 }
 
 func (b *Bundle) GetApprove(orgID, userID string, approveID int64) (*apistructs.ApproveDetailResponse, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
 	hc := b.hc
 
 	var approve apistructs.ApproveDetailResponse
-	resp, err := hc.Get(host).Path(fmt.Sprintf("/api/approves/%d", approveID)).
+	resp, err := hc.Get(host).Path(fmt.Sprintf("/core/api/approves/%d", approveID)).
 		Header(httputil.InternalHeader, "bundle").
 		Header(httputil.OrgHeader, orgID).
 		Header(httputil.UserHeader, userID).
@@ -105,14 +105,14 @@ func (b *Bundle) GetApprove(orgID, userID string, approveID int64) (*apistructs.
 
 func (b *Bundle) UpdateApprove(orgID uint64, userID string, approveID int64, body io.Reader) (
 	*apistructs.ApproveUpdateResponse, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
 	hc := b.hc
 
 	var updateApprove apistructs.ApproveUpdateResponse
-	resp, err := hc.Put(host).Path(fmt.Sprintf("/api/approves/%d", approveID)).
+	resp, err := hc.Put(host).Path(fmt.Sprintf("/core/api/approves/%d", approveID)).
 		Header(httputil.InternalHeader, "bundle").
 		Header(httputil.OrgHeader, strconv.Itoa(int(orgID))).
 		Header(httputil.UserHeader, userID).

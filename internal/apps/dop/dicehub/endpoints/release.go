@@ -33,6 +33,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/erda-project/erda-infra/pkg/strutil"
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/dicehub/dbclient"
@@ -40,6 +41,8 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/dicehub/response"
 	"github.com/erda-project/erda/internal/apps/dop/dicehub/service/apierrors"
 	"github.com/erda-project/erda/internal/pkg/user"
+	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
@@ -162,10 +165,14 @@ func (e *Endpoints) DownloadRelease(ctx context.Context, w http.ResponseWriter, 
 	if err != nil {
 		return apierrors.ErrDownloadRelease.InternalError(err)
 	}
-	org, err := e.bdl.GetOrg(orgID)
+
+	orgResp, err := e.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcErdaServer),
+		&orgpb.GetOrgRequest{IdOrName: strconv.FormatInt(orgID, 10)})
 	if err != nil {
 		return apierrors.ErrDownloadRelease.InternalError(err)
 	}
+	org := orgResp.Data
+
 	metadata, err := makeMetadata(r, org.DisplayName, u.Nick, project.Name, int64(project.ID), release, appReleases)
 	if err != nil {
 		return apierrors.ErrDownloadRelease.InternalError(err)

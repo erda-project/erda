@@ -16,76 +16,21 @@ package source
 
 import (
 	"context"
-	"reflect"
 	"testing"
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
+	"github.com/doug-martin/goqu/v9"
+	"github.com/doug-martin/goqu/v9/exp"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/clickhouse/table/loader"
 
 	"github.com/erda-project/erda-infra/providers/clickhouse"
 	"github.com/erda-project/erda/internal/apps/msp/apm/trace/query/commom/custom"
 
 	"github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
-	"github.com/erda-project/erda/internal/apps/msp/apm/trace"
 )
-
-func Test_mergeAsSpan(t *testing.T) {
-	type args struct {
-		cs  trace.Series
-		sms []trace.Meta
-	}
-	tests := []struct {
-		name string
-		args args
-		want *pb.Span
-	}{
-		{
-			args: args{
-				cs: trace.Series{
-					SpanId:       "aaa",
-					TraceId:      "bbb",
-					StartTime:    2,
-					EndTime:      2,
-					ParentSpanId: "ppp",
-					Tags: map[string]string{
-						"db_statement": "select * from abc where id=aaa",
-					},
-				},
-				sms: []trace.Meta{
-					{
-						Key:   "operation_name",
-						Value: "query",
-					},
-					{
-						Key:   "org_name",
-						Value: "erda",
-					},
-				},
-			},
-			want: &pb.Span{
-				Id:            "aaa",
-				TraceId:       "bbb",
-				ParentSpanId:  "ppp",
-				StartTime:     2,
-				EndTime:       2,
-				OperationName: "query",
-				Tags: map[string]string{
-					"db_statement":   "select * from abc where id=aaa",
-					"org_name":       "erda",
-					"operation_name": "query",
-				},
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := mergeAsSpan(tt.args.cs, tt.args.sms); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("mergeAsSpan() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
 
 func Test_GetInterval(t *testing.T) {
 	type args struct {
@@ -125,15 +70,15 @@ func TestClickhouseSource_sortConditionStrategy(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want string
+		want exp.OrderedExpression
 	}{
-		{"case1", args{sort: ""}, "ORDER BY min_start_time DESC"},
-		{"case2", args{sort: "TRACE_TIME_DESC"}, "ORDER BY min_start_time DESC"},
-		{"case3", args{sort: "TRACE_TIME_ASC"}, "ORDER BY min_start_time ASC"},
-		{"case4", args{sort: "TRACE_DURATION_DESC"}, "ORDER BY duration DESC"},
-		{"case5", args{sort: "TRACE_DURATION_ASC"}, "ORDER BY duration ASC"},
-		{"case6", args{sort: "SPAN_COUNT_DESC"}, "ORDER BY span_count DESC"},
-		{"case7", args{sort: "SPAN_COUNT_ASC"}, "ORDER BY span_count ASC"},
+		{"case1", args{sort: ""}, goqu.C("min_start_time").Desc()},
+		{"case2", args{sort: "TRACE_TIME_DESC"}, goqu.C("min_start_time").Desc()},
+		{"case3", args{sort: "TRACE_TIME_ASC"}, goqu.C("min_start_time").Asc()},
+		{"case4", args{sort: "TRACE_DURATION_DESC"}, goqu.C("duration").Desc()},
+		{"case5", args{sort: "TRACE_DURATION_ASC"}, goqu.C("duration").Asc()},
+		{"case6", args{sort: "SPAN_COUNT_DESC"}, goqu.C("span_count").Desc()},
+		{"case7", args{sort: "SPAN_COUNT_ASC"}, goqu.C("span_count").Asc()},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -145,113 +90,10 @@ func TestClickhouseSource_sortConditionStrategy(t *testing.T) {
 	}
 }
 
-func TestClickhouseSource_composeFilter(t *testing.T) {
-	type args struct {
-		req *pb.GetTracesRequest
-	}
-	tests := []struct {
-		name string
-		args args
-		want string
-	}{
-		{"case1", args{req: &pb.GetTracesRequest{TenantID: "test_tenant"}}, "SELECT distinct(series_id) FROM monitor.spans_meta_all WHERE (series_id in (select distinct(series_id) from monitor.spans_meta where (key = 'terminus_key' AND value = 'test_tenant'))) "},
-		{"case2", args{req: &pb.GetTracesRequest{TenantID: "test_tenant", ServiceName: "test_service_name"}}, "SELECT distinct(series_id) FROM monitor.spans_meta_all WHERE (series_id in (select distinct(series_id) from monitor.spans_meta where (key = 'terminus_key' AND value = 'test_tenant'))) AND (series_id in (select distinct(series_id) from monitor.spans_meta where (key='service_name' AND value LIKE concat('%','test_service_name','%')))) "},
-		{"case3", args{req: &pb.GetTracesRequest{TenantID: "test_tenant", RpcMethod: "hello()"}}, "SELECT distinct(series_id) FROM monitor.spans_meta_all WHERE (series_id in (select distinct(series_id) from monitor.spans_meta where (key = 'terminus_key' AND value = 'test_tenant'))) AND (series_id in (select distinct(series_id) from monitor.spans_meta where (key='rpc_method' AND value LIKE concat('%','hello()','%')))) "},
-		// {"case4", args{req: &pb.GetTracesRequest{TenantID: "test_tenant", HttpPath: "/hello"}}, "SELECT distinct(series_id) FROM monitor.spans_meta_all WHERE (series_id in (select distinct(series_id) from monitor.spans_meta where (key = 'terminus_key' AND value = 'test_tenant'))) AND (series_id in (select distinct(series_id) from monitor.spans_meta where (key='http_path' AND value LIKE concat('%','/hello','%')))) "},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			chs := &ClickhouseSource{}
-			assert.Equal(t, tt.want, chs.composeFilter(tt.args.req))
-		})
-	}
-}
-
-func TestClickhouseSource_sortConditionStrategy1(t *testing.T) {
-	type args struct {
-		sort string
-	}
-	tests := []struct {
-		name string
-		args args
-		want string
-	}{
-		{
-			args: args{sort: "span_count_desc"},
-			want: "ORDER BY span_count DESC",
-		},
-		{
-			args: args{sort: "span_count_asc"},
-			want: "ORDER BY span_count ASC",
-		},
-		{
-			args: args{sort: "trace_duration_desc"},
-			want: "ORDER BY duration DESC",
-		},
-		{
-			args: args{sort: "trace_duration_asc"},
-			want: "ORDER BY duration ASC",
-		},
-		{
-			args: args{sort: "trace_time_desc"},
-			want: "ORDER BY min_start_time DESC",
-		},
-		{
-			args: args{sort: "trace_time_asc"},
-			want: "ORDER BY min_start_time ASC",
-		},
-		{
-			args: args{sort: "xxx"},
-			want: "ORDER BY min_start_time DESC",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			chs := &ClickhouseSource{}
-			assert.Equal(t, tt.want, chs.sortConditionStrategy(tt.args.sort))
-		})
-	}
-}
-
-func Test_convertToMetas(t *testing.T) {
-	type args struct {
-		kvs keysValues
-	}
-	tests := []struct {
-		name string
-		args args
-		want []trace.Meta
-	}{
-		{
-			args: args{kvs: keysValues{
-				Keys:     []string{"hello", "hello2"},
-				Values:   []string{"world", "world2"},
-				SeriesID: 1024,
-			}},
-			want: []trace.Meta{
-				{
-					Key:   "hello",
-					Value: "world",
-				},
-				{
-					Key:   "hello2",
-					Value: "world2",
-				},
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := convertToMetas(tt.args.kvs); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("convertToMetas() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func TestClickhouseSource_GetSpans(t *testing.T) {
 	chs := ClickhouseSource{
 		CompatibleSource: &mockCS{},
+		Loader:           &mockLoader{},
 		Clickhouse:       &mockclickhouseInf{cli: &mockconn{}},
 	}
 	spans := chs.GetSpans(context.TODO(), &pb.GetSpansRequest{})
@@ -259,10 +101,187 @@ func TestClickhouseSource_GetSpans(t *testing.T) {
 	ass.Equal(1, len(spans))
 
 	chs = ClickhouseSource{
+		Loader:     &mockLoader{},
 		Clickhouse: &mockclickhouseInf{cli: &mockconn{}},
 	}
 	spans = chs.GetSpans(context.TODO(), &pb.GetSpansRequest{})
 	ass.Equal(0, len(spans))
+}
+
+func Test_buildFilter(t *testing.T) {
+	type args struct {
+		f filter
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "basic",
+			args: args{f: filter{
+				StartTime: 1652419305504,
+				EndTime:   1652508045504,
+				OrgName:   "erda",
+				TenantID:  "t1",
+			}},
+			want: `SELECT distinct(trace_id) AS "trace_id", (toUnixTimestamp64Nano(max(end_time)) - toUnixTimestamp64Nano(min(start_time))) AS "duration", min(start_time) AS "min_start_time" FROM "spans_all" WHERE (("end_time" <= fromUnixTimestamp64Milli(toInt64(1652508045504))) AND ("org_name" = 'erda') AND ("start_time" >= fromUnixTimestamp64Milli(toInt64(1652419305504))) AND ("tenant_id" = 't1')) GROUP BY "trace_id"`,
+		},
+		{
+			name: "traceID",
+			args: args{f: filter{
+				StartTime: 1652419305504,
+				EndTime:   1652508045504,
+				OrgName:   "erda",
+				TenantID:  "t1",
+				TraceID:   "972f7ef5-ccc4-4f1a-a0c4-3d60c3dea5cf",
+			}},
+			want: `SELECT distinct(trace_id) AS "trace_id", (toUnixTimestamp64Nano(max(end_time)) - toUnixTimestamp64Nano(min(start_time))) AS "duration", min(start_time) AS "min_start_time" FROM "spans_all" WHERE ((("end_time" <= fromUnixTimestamp64Milli(toInt64(1652508045504))) AND ("org_name" = 'erda') AND ("start_time" >= fromUnixTimestamp64Milli(toInt64(1652419305504))) AND ("tenant_id" = 't1')) AND ("trace_id" LIKE '%972f7ef5-ccc4-4f1a-a0c4-3d60c3dea5cf%')) GROUP BY "trace_id"`,
+		},
+		{
+			name: "traceID,duration",
+			args: args{f: filter{
+				StartTime:   1652419305504,
+				EndTime:     1652508045504,
+				OrgName:     "erda",
+				TenantID:    "t1",
+				TraceID:     "972f7ef5-ccc4-4f1a-a0c4-3d60c3dea5cf",
+				DurationMin: 10000000,
+				DurationMax: 20000000,
+			}},
+			want: `SELECT distinct(trace_id) AS "trace_id", (toUnixTimestamp64Nano(max(end_time)) - toUnixTimestamp64Nano(min(start_time))) AS "duration", min(start_time) AS "min_start_time" FROM "spans_all" WHERE ((("end_time" <= fromUnixTimestamp64Milli(toInt64(1652508045504))) AND ("org_name" = 'erda') AND ("start_time" >= fromUnixTimestamp64Milli(toInt64(1652419305504))) AND ("tenant_id" = 't1')) AND ("trace_id" LIKE '%972f7ef5-ccc4-4f1a-a0c4-3d60c3dea5cf%')) GROUP BY "trace_id" HAVING (("duration" >= 10000000) AND ("duration" <= 20000000))`,
+		},
+		{
+			name: "traceID,duration,status",
+			args: args{f: filter{
+				StartTime:   1652419305504,
+				EndTime:     1652508045504,
+				OrgName:     "erda",
+				TenantID:    "t1",
+				TraceID:     "972f7ef5-ccc4-4f1a-a0c4-3d60c3dea5cf",
+				DurationMin: 10000000,
+				DurationMax: 20000000,
+				Status:      "trace_all",
+			}},
+			want: `SELECT distinct(trace_id) AS "trace_id", (toUnixTimestamp64Nano(max(end_time)) - toUnixTimestamp64Nano(min(start_time))) AS "duration", min(start_time) AS "min_start_time" FROM "spans_all" WHERE ((("end_time" <= fromUnixTimestamp64Milli(toInt64(1652508045504))) AND ("org_name" = 'erda') AND ("start_time" >= fromUnixTimestamp64Milli(toInt64(1652419305504))) AND ("tenant_id" = 't1')) AND ("trace_id" LIKE '%972f7ef5-ccc4-4f1a-a0c4-3d60c3dea5cf%')) GROUP BY "trace_id" HAVING (("duration" >= 10000000) AND ("duration" <= 20000000))`,
+		},
+		{
+			name: "traceID,duration,status",
+			args: args{f: filter{
+				StartTime:   1652419305504,
+				EndTime:     1652508045504,
+				OrgName:     "erda",
+				TenantID:    "t1",
+				TraceID:     "972f7ef5-ccc4-4f1a-a0c4-3d60c3dea5cf",
+				DurationMin: 10000000,
+				DurationMax: 20000000,
+				Status:      "trace_error",
+			}},
+			want: `SELECT distinct(trace_id) AS "trace_id", (toUnixTimestamp64Nano(max(end_time)) - toUnixTimestamp64Nano(min(start_time))) AS "duration", min(start_time) AS "min_start_time" FROM "spans_all" WHERE ((("end_time" <= fromUnixTimestamp64Milli(toInt64(1652508045504))) AND ("org_name" = 'erda') AND ("start_time" >= fromUnixTimestamp64Milli(toInt64(1652419305504))) AND ("tenant_id" = 't1')) AND ("trace_id" LIKE '%972f7ef5-ccc4-4f1a-a0c4-3d60c3dea5cf%') AND (tag_values[indexOf(tag_keys,'error')] = 'true')) GROUP BY "trace_id" HAVING (("duration" >= 10000000) AND ("duration" <= 20000000))`,
+		},
+		{
+			name: "traceID,duration,status",
+			args: args{f: filter{
+				StartTime:   1652419305504,
+				EndTime:     1652508045504,
+				OrgName:     "erda",
+				TenantID:    "t1",
+				TraceID:     "972f7ef5-ccc4-4f1a-a0c4-3d60c3dea5cf",
+				DurationMin: 10000000,
+				DurationMax: 20000000,
+				Status:      "trace_success",
+			}},
+			want: `SELECT distinct(trace_id) AS "trace_id", (toUnixTimestamp64Nano(max(end_time)) - toUnixTimestamp64Nano(min(start_time))) AS "duration", min(start_time) AS "min_start_time" FROM "spans_all" WHERE ((("end_time" <= fromUnixTimestamp64Milli(toInt64(1652508045504))) AND ("org_name" = 'erda') AND ("start_time" >= fromUnixTimestamp64Milli(toInt64(1652419305504))) AND ("tenant_id" = 't1')) AND ("trace_id" LIKE '%972f7ef5-ccc4-4f1a-a0c4-3d60c3dea5cf%') AND (tag_values[indexOf(tag_keys,'error')] != 'true')) GROUP BY "trace_id" HAVING (("duration" >= 10000000) AND ("duration" <= 20000000))`,
+		},
+		{
+			name: "traceID,duration,status,httpPath",
+			args: args{f: filter{
+				StartTime:   1652419305504,
+				EndTime:     1652508045504,
+				OrgName:     "erda",
+				TenantID:    "t1",
+				TraceID:     "972f7ef5-ccc4-4f1a-a0c4-3d60c3dea5cf",
+				DurationMin: 10000000,
+				DurationMax: 20000000,
+				Status:      "trace_success",
+				HttpPath:    "/users",
+			}},
+			want: `SELECT distinct(trace_id) AS "trace_id", (toUnixTimestamp64Nano(max(end_time)) - toUnixTimestamp64Nano(min(start_time))) AS "duration", min(start_time) AS "min_start_time" FROM "spans_all" WHERE ((("end_time" <= fromUnixTimestamp64Milli(toInt64(1652508045504))) AND ("org_name" = 'erda') AND ("start_time" >= fromUnixTimestamp64Milli(toInt64(1652419305504))) AND ("tenant_id" = 't1')) AND ("trace_id" LIKE '%972f7ef5-ccc4-4f1a-a0c4-3d60c3dea5cf%') AND (tag_values[indexOf(tag_keys,'error')] != 'true') AND (tag_values[indexOf(tag_keys, 'http_path')] LIKE '%/users%')) GROUP BY "trace_id" HAVING (("duration" >= 10000000) AND ("duration" <= 20000000))`,
+		},
+		{
+			name: "traceID,duration,status,httpPath,serviceName",
+			args: args{f: filter{
+				StartTime:   1652419305504,
+				EndTime:     1652508045504,
+				OrgName:     "erda",
+				TenantID:    "t1",
+				TraceID:     "972f7ef5-ccc4-4f1a-a0c4-3d60c3dea5cf",
+				DurationMin: 10000000,
+				DurationMax: 20000000,
+				Status:      "trace_success",
+				HttpPath:    "/users",
+				ServiceName: "msp",
+			}},
+			want: `SELECT distinct(trace_id) AS "trace_id", (toUnixTimestamp64Nano(max(end_time)) - toUnixTimestamp64Nano(min(start_time))) AS "duration", min(start_time) AS "min_start_time" FROM "spans_all" WHERE ((("end_time" <= fromUnixTimestamp64Milli(toInt64(1652508045504))) AND ("org_name" = 'erda') AND ("start_time" >= fromUnixTimestamp64Milli(toInt64(1652419305504))) AND ("tenant_id" = 't1')) AND ("trace_id" LIKE '%972f7ef5-ccc4-4f1a-a0c4-3d60c3dea5cf%') AND (tag_values[indexOf(tag_keys,'error')] != 'true') AND (tag_values[indexOf(tag_keys, 'http_path')] LIKE '%/users%') AND (tag_values[indexOf(tag_keys, 'service_name')] LIKE '%msp%')) GROUP BY "trace_id" HAVING (("duration" >= 10000000) AND ("duration" <= 20000000))`,
+		},
+		{
+			name: "traceID,duration,status,httpPath,serviceName,rpcMethod",
+			args: args{f: filter{
+				StartTime:   1652419305504,
+				EndTime:     1652508045504,
+				OrgName:     "erda",
+				TenantID:    "t1",
+				TraceID:     "972f7ef5-ccc4-4f1a-a0c4-3d60c3dea5cf",
+				DurationMin: 10000000,
+				DurationMax: 20000000,
+				Status:      "trace_success",
+				HttpPath:    "/users",
+				ServiceName: "msp",
+				RpcMethod:   "GetUsers",
+			}},
+			want: `SELECT distinct(trace_id) AS "trace_id", (toUnixTimestamp64Nano(max(end_time)) - toUnixTimestamp64Nano(min(start_time))) AS "duration", min(start_time) AS "min_start_time" FROM "spans_all" WHERE ((("end_time" <= fromUnixTimestamp64Milli(toInt64(1652508045504))) AND ("org_name" = 'erda') AND ("start_time" >= fromUnixTimestamp64Milli(toInt64(1652419305504))) AND ("tenant_id" = 't1')) AND ("trace_id" LIKE '%972f7ef5-ccc4-4f1a-a0c4-3d60c3dea5cf%') AND (tag_values[indexOf(tag_keys,'error')] != 'true') AND (tag_values[indexOf(tag_keys, 'http_path')] LIKE '%/users%') AND (tag_values[indexOf(tag_keys, 'service_name')] LIKE '%msp%') AND (tag_values[indexOf(tag_keys, 'rpc_method')] LIKE '%GetUsers%')) GROUP BY "trace_id" HAVING (("duration" >= 10000000) AND ("duration" <= 20000000))`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sel := goqu.From("spans_all").Select(
+				goqu.L("distinct(trace_id)").As("trace_id"),
+				goqu.L("(toUnixTimestamp64Nano(max(end_time)) - toUnixTimestamp64Nano(min(start_time)))").As("duration"),
+				goqu.L("min(start_time)").As("min_start_time"),
+			)
+			got := buildFilter(sel, tt.args.f).GroupBy("trace_id")
+			sqlstr, _, err := got.ToSQL()
+			assert.Nil(t, err)
+			assert.Equal(t, tt.want, sqlstr)
+		})
+	}
+}
+
+type mockLoader struct {
+}
+
+func (m *mockLoader) ExistsWriteTable(tenant, key string) (ok bool, writeTableName string) {
+	panic("implement me")
+}
+
+func (m *mockLoader) GetSearchTable(tenant string) (string, *loader.TableMeta) {
+	return "spans_all", nil
+}
+
+func (m *mockLoader) ReloadTables() chan error {
+	panic("implement me")
+}
+
+func (m *mockLoader) WatchLoadEvent(listener func(map[string]*loader.TableMeta)) {
+	panic("implement me")
+}
+
+func (m *mockLoader) WaitAndGetTables(ctx context.Context) map[string]*loader.TableMeta {
+	panic("implement me")
+}
+
+func (m *mockLoader) Database() string {
+	panic("implement me")
 }
 
 type mockCS struct {

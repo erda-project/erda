@@ -5,14 +5,14 @@
 package mock
 
 import (
-	"reflect"
+	reflect "reflect"
 
-	"github.com/erda-project/erda/apistructs"
+	gomock "github.com/golang/mock/gomock"
+
+	apistructs "github.com/erda-project/erda/apistructs"
 	dbclient "github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
-	"github.com/erda-project/erda/internal/tools/orchestrator/events"
-	"github.com/erda-project/erda/internal/tools/orchestrator/spec"
-
-	"github.com/golang/mock/gomock"
+	events "github.com/erda-project/erda/internal/tools/orchestrator/events"
+	spec "github.com/erda-project/erda/internal/tools/orchestrator/spec"
 )
 
 // MockDBService is a mock of DBService interface.
@@ -111,6 +111,21 @@ func (m *MockDBService) GetRuntimeAllowNil(arg0 uint64) (*dbclient.Runtime, erro
 func (mr *MockDBServiceMockRecorder) GetRuntimeAllowNil(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRuntimeAllowNil", reflect.TypeOf((*MockDBService)(nil).GetRuntimeAllowNil), arg0)
+}
+
+// GetRuntimeHPARulesByRuntimeId mocks base method.
+func (m *MockDBService) GetRuntimeHPARulesByRuntimeId(arg0 uint64) ([]dbclient.RuntimeHPA, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRuntimeHPARulesByRuntimeId", arg0)
+	ret0, _ := ret[0].([]dbclient.RuntimeHPA)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRuntimeHPARulesByRuntimeId indicates an expected call of GetRuntimeHPARulesByRuntimeId.
+func (mr *MockDBServiceMockRecorder) GetRuntimeHPARulesByRuntimeId(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRuntimeHPARulesByRuntimeId", reflect.TypeOf((*MockDBService)(nil).GetRuntimeHPARulesByRuntimeId), arg0)
 }
 
 // UpdateRuntime mocks base method.

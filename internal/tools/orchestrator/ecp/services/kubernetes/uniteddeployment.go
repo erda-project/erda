@@ -272,9 +272,9 @@ func (k *Kubernetes) GenerateEdgeServiceSpec(req *apistructs.GenerateEdgeService
 			Namespace: req.Namespace,
 		},
 		Spec: v1.ServiceSpec{
-			Ports:        svcPortList,
-			Selector:     labels,
-			TopologyKeys: []string{ServiceTopologyKeys},
+			Ports:    svcPortList,
+			Selector: labels,
+			//TopologyKeys: []string{ServiceTopologyKeys},
 		},
 	}
 	return svc, nil

@@ -24,7 +24,7 @@ package bundle
 //)
 //
 //func TestBundle_QueryExtensionVersions(t *testing.T) {
-//	os.Setenv("DICEHUB_ADDR", "http://127.0.0.1:10000")
+//	os.Setenv("ERDA_SERVER_ADDR", "http://127.0.0.1:10000")
 //	bdl := New(WithDiceHub())
 //
 //	result, err := bdl.QueryExtensionVersions(apistructs.ExtensionVersionQueryRequest{
@@ -33,11 +33,11 @@ package bundle
 //	assert.Nil(t, err)
 //	t.Log(result)
 //
-//	os.Unsetenv("DICEHUB_ADDR")
+//	os.Unsetenv("ERDA_SERVER_ADDR")
 //}
 //
 //func TestBundle_GetExtensionVersion(t *testing.T) {
-//	os.Setenv("DICEHUB_ADDR", "http://127.0.0.1:10000")
+//	os.Setenv("ERDA_SERVER_ADDR", "http://127.0.0.1:10000")
 //	bdl := New(WithDiceHub())
 //
 //	result, err := bdl.GetExtensionVersion(apistructs.ExtensionVersionGetRequest{
@@ -47,11 +47,11 @@ package bundle
 //	assert.Nil(t, err)
 //	t.Log(result)
 //
-//	os.Unsetenv("DICEHUB_ADDR")
+//	os.Unsetenv("ERDA_SERVER_ADDR")
 //}
 //
 //func TestBundle_SearchExtensions(t *testing.T) {
-//	os.Setenv("DICEHUB_ADDR", "dicehub.default.svc.cluster.local:10000")
+//	os.Setenv("ERDA_SERVER_ADDR", "erda-server.default.svc.cluster.local:9095")
 //	bdl := New(WithDiceHub())
 //
 //	result, err := bdl.SearchExtensions(apistructs.ExtensionSearchRequest{
@@ -60,5 +60,5 @@ package bundle
 //	assert.Nil(t, err)
 //	t.Log(result)
 //
-//	os.Unsetenv("DICEHUB_ADDR")
+//	os.Unsetenv("ERDA_SERVER_ADDR")
 //}

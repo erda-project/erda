@@ -15,7 +15,7 @@
 package cache
 
 import (
-	"github.com/erda-project/erda/apistructs"
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/pkg/cache"
 )
 
@@ -29,19 +29,19 @@ var (
 type Cache struct{}
 
 // GetOrgByOrgID gets the *apistructs.OrgDTO by orgID from the newest cache
-func (c *Cache) GetOrgByOrgID(orgID string) (*apistructs.OrgDTO, bool) {
+func (c *Cache) GetOrgByOrgID(orgID string) (*orgpb.Org, bool) {
 	item, ok := orgID2Org.LoadWithUpdate(orgID)
 	if !ok {
 		return nil, false
 	}
-	return item.(*apistructs.OrgDTO), true
+	return item.(*orgpb.Org), true
 }
 
 // GetOrgByProjectID gets the *apistructs.OrgDTO by projectID from the newest cache
-func (c *Cache) GetOrgByProjectID(projectID string) (*apistructs.OrgDTO, bool) {
+func (c *Cache) GetOrgByProjectID(projectID string) (*orgpb.Org, bool) {
 	item, ok := projID2Org.LoadWithUpdate(projectID)
 	if !ok {
 		return nil, false
 	}
-	return item.(*apistructs.OrgDTO), true
+	return item.(*orgpb.Org), true
 }

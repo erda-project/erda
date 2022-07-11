@@ -205,10 +205,6 @@ func (k *K8sJob) Start(ctx context.Context, task *spec.PipelineTask) (data inter
 	}
 	container_provider.DealJobAndClusterInfo(&job, clusterCM)
 
-	if err := k.createInnerSecretIfNotExist(job.Namespace, apistructs.AliyunRegistry); err != nil {
-		return nil, err
-	}
-
 	if len(job.Volumes) != 0 {
 		_, _, pvcs := logic.GenerateK8SVolumes(&job, clusterCM)
 		for _, pvc := range pvcs {
@@ -513,9 +509,8 @@ func (k *K8sJob) generateKubeJob(specObj interface{}, clusterInfo apistructs.Clu
 					Labels:    jobLabels(),
 				},
 				Spec: corev1.PodSpec{
-					Tolerations:      logic.GenTolerations(),
-					ImagePullSecrets: []corev1.LocalObjectReference{{Name: apistructs.AliyunRegistry}},
-					Affinity:         &constraintbuilders.K8S(&scheduleInfo2, nil, nil, nil).Affinity,
+					Tolerations: logic.GenTolerations(),
+					Affinity:    &constraintbuilders.K8S(&scheduleInfo2, nil, nil, nil).Affinity,
 					Containers: []corev1.Container{
 						{
 							Name:  job.Name,
@@ -548,6 +543,16 @@ func (k *K8sJob) generateKubeJob(specObj interface{}, clusterInfo apistructs.Clu
 	pod := &kubeJob.Spec.Template
 	// According to the current business, only one Pod and one Container are supported
 	container := &pod.Spec.Containers[0]
+
+	isMount, err := logic.CreateInnerSecretIfNotExist(k.client.ClientSet, conf.ErdaNamespace(), job.Namespace,
+		conf.CustomRegCredSecret())
+	if err != nil {
+		return nil, fmt.Errorf("failed to create inner secret: %v", err)
+	}
+
+	if isMount {
+		pod.Spec.ImagePullSecrets = []corev1.LocalObjectReference{{Name: conf.CustomRegCredSecret()}}
+	}
 
 	// cmd
 	if job.Cmd != "" {
@@ -587,9 +592,11 @@ func (k *K8sJob) generateKubeJob(specObj interface{}, clusterInfo apistructs.Clu
 
 		if isRateHit(hitRate) {
 			//create buildkit client secret
-			if err := k.createInnerSecretIfNotExist(job.Namespace, apistructs.BuildkitClientSecret); err != nil {
+			if _, err := logic.CreateInnerSecretIfNotExist(k.client.ClientSet, conf.ErdaNamespace(), job.Namespace,
+				apistructs.BuildkitClientSecret); err != nil {
 				return nil, err
 			}
+
 			//Inject buildkit switch variables
 			container.Env = append(container.Env, corev1.EnvVar{
 				Name:  apistructs.BuildkitEnable,
@@ -890,48 +897,6 @@ func parseFailedReason(message string) (string, error) {
 		// TODO: Analyze the reason for the failure
 		return "", errors.New("unexpected")
 	}
-}
-
-func (k *K8sJob) createInnerSecretIfNotExist(namespace, secretName string) error {
-	var err error
-
-	if _, err = k.client.ClientSet.CoreV1().Secrets(namespace).Get(context.Background(), secretName, metav1.GetOptions{}); err == nil {
-		return nil
-	}
-
-	if !k8serrors.IsNotFound(err) {
-		return err
-	}
-
-	// When the cluster is initialized, a secret to pull the mirror will be created in the default namespace
-	s, err := k.client.ClientSet.CoreV1().Secrets(conf.ErdaNamespace()).Get(context.Background(), secretName, metav1.GetOptions{})
-	if err != nil {
-		if !k8serrors.IsNotFound(err) {
-			return nil
-		}
-		return err
-	}
-	mysecret := &corev1.Secret{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v1",
-			Kind:       "Secret",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      s.Name,
-			Namespace: namespace,
-		},
-		Data:       s.Data,
-		StringData: s.StringData,
-		Type:       s.Type,
-	}
-
-	if _, err = k.client.ClientSet.CoreV1().Secrets(namespace).Create(context.Background(), mysecret, metav1.CreateOptions{}); err != nil {
-		if strutil.Contains(err.Error(), "already exists") {
-			return nil
-		}
-		return err
-	}
-	return nil
 }
 
 func generatePipelineStatus(job *batchv1.Job, jobPods *corev1.PodList) (status apistructs.PipelineStatus) {

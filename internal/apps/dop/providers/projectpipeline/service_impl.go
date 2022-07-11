@@ -30,6 +30,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	dpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
@@ -45,6 +46,7 @@ import (
 	"github.com/erda-project/erda/internal/pkg/diceworkspace"
 	def "github.com/erda-project/erda/internal/tools/pipeline/providers/definition"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/encoding/jsonparse"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/limit_sync_group"
@@ -436,10 +438,12 @@ func (p *ProjectPipelineService) checkDefinitionRemoteSameName(projectID uint64,
 		return false, err
 	}
 
-	orgDto, err := p.bundle.GetOrg(projectDto.OrgID)
+	orgResp, err := p.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcDOP),
+		&orgpb.GetOrgRequest{IdOrName: strconv.FormatUint(projectDto.OrgID, 10)})
 	if err != nil {
 		return false, err
 	}
+	orgDto := orgResp.Data
 
 	location := apistructs.MakeLocation(&apistructs.ApplicationDTO{
 		OrgName:     orgDto.Name,
@@ -484,10 +488,12 @@ func (p *ProjectPipelineService) List(ctx context.Context, params deftype.Projec
 		return nil, 0, apierrors.ErrListProjectPipeline.InternalError(err)
 	}
 
-	org, err := p.bundle.GetOrg(project.OrgID)
+	orgResp, err := p.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcDOP),
+		&orgpb.GetOrgRequest{IdOrName: strconv.FormatUint(project.OrgID, 10)})
 	if err != nil {
 		return nil, 0, apierrors.ErrListProjectPipeline.InternalError(err)
 	}
+	org := orgResp.Data
 
 	list, err := p.PipelineDefinition.List(ctx, &dpb.PipelineDefinitionListRequest{
 		PageSize: int64(params.PageSize),
@@ -802,10 +808,12 @@ func (p *ProjectPipelineService) ListExecHistory(ctx context.Context, params *pb
 		return nil, apierrors.ErrListExecHistoryProjectPipeline.InternalError(err)
 	}
 
-	orgDto, err := p.bundle.GetOrg(projectDto.OrgID)
+	orgResp, err := p.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcDOP),
+		&orgpb.GetOrgRequest{IdOrName: strconv.FormatUint(projectDto.OrgID, 10)})
 	if err != nil {
 		return nil, apierrors.ErrListExecHistoryProjectPipeline.InternalError(err)
 	}
+	orgDto := orgResp.Data
 
 	pipelineDefinition.Location = apistructs.MakeLocation(&apistructs.ApplicationDTO{
 		OrgName:     orgDto.Name,
@@ -929,10 +937,14 @@ func (p *ProjectPipelineService) BatchRun(ctx context.Context, params deftype.Pr
 	if err != nil {
 		return nil, apierrors.ErrRunProjectPipeline.InternalError(err)
 	}
-	org, err := p.bundle.GetOrg(project.OrgID)
+
+	orgResp, err := p.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcDOP),
+		&orgpb.GetOrgRequest{IdOrName: strconv.FormatUint(project.OrgID, 10)})
 	if err != nil {
-		return nil, apierrors.ErrRunProjectPipeline.InternalError(err)
+		return nil, apierrors.ErrCreateDevFlowRule.InternalError(err)
 	}
+	org := orgResp.Data
+
 	for _, source := range sourceMap {
 		err := p.checkDataPermission(project, org, source)
 		if err != nil {
@@ -1345,6 +1357,12 @@ func (p *ProjectPipelineService) autoRunPipeline(identityInfo apistructs.Identit
 	if err != nil {
 		return nil, err
 	}
+	projectIDStr := createV2.Labels[apistructs.LabelProjectID]
+	projectID, err := strconv.ParseUint(projectIDStr, 10, 64)
+	if err != nil {
+		return nil, err
+	}
+	orgName := createV2.NormalLabels[apistructs.LabelOrgName]
 
 	// If source type is erda，should sync pipelineYml file
 	pipelineYml := params.source.PipelineYml
@@ -1430,6 +1448,10 @@ func (p *ProjectPipelineService) autoRunPipeline(identityInfo apistructs.Identit
 
 	value, err := p.bundle.CreatePipeline(createV2)
 	if err != nil {
+		runningPipelineErr, ok := p.TryAddRunningPipelineLinkToErr(orgName, projectID, appID, err)
+		if ok {
+			return nil, runningPipelineErr
+		}
 		return nil, apierrors.ErrRunProjectPipeline.InternalError(err)
 	}
 	return value, nil
@@ -1445,10 +1467,12 @@ func (p *ProjectPipelineService) ListApp(ctx context.Context, params *pb.ListApp
 		return nil, apierrors.ErrListAppProjectPipeline.InternalError(err)
 	}
 
-	org, err := p.bundle.GetOrg(project.OrgID)
+	orgResp, err := p.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcDOP),
+		&orgpb.GetOrgRequest{IdOrName: strconv.FormatUint(project.OrgID, 10)})
 	if err != nil {
 		return nil, apierrors.ErrListAppProjectPipeline.InternalError(err)
 	}
+	org := orgResp.Data
 
 	appResp, err := p.bundle.GetMyAppsByProject(apis.GetUserID(ctx), project.OrgID, project.ID, params.Name)
 	if err != nil {
@@ -1538,7 +1562,7 @@ func (p *ProjectPipelineService) checkRolePermission(identityInfo apistructs.Ide
 	return nil
 }
 
-func (p *ProjectPipelineService) checkDataPermission(project *apistructs.ProjectDTO, org *apistructs.OrgDTO, source *spb.PipelineSource) error {
+func (p *ProjectPipelineService) checkDataPermission(project *apistructs.ProjectDTO, org *orgpb.Org, source *spb.PipelineSource) error {
 	if !strings.HasPrefix(source.Remote, filepath.Join(org.Name, project.Name)) {
 		return fmt.Errorf("no permission")
 	}
@@ -1551,10 +1575,12 @@ func (p *ProjectPipelineService) checkDataPermissionByProjectID(projectID uint64
 		return err
 	}
 
-	org, err := p.bundle.GetOrg(project.OrgID)
+	orgResp, err := p.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcDOP),
+		&orgpb.GetOrgRequest{IdOrName: strconv.FormatUint(project.OrgID, 10)})
 	if err != nil {
 		return err
 	}
+	org := orgResp.Data
 
 	return p.checkDataPermission(project, org, source)
 }
@@ -1575,7 +1601,7 @@ func (e *ProjectPipelineService) UpdateCmsNsConfigs(userID string, orgID uint64)
 		return errors.New("the member is not exist")
 	}
 
-	_, err = e.PipelineCms.UpdateCmsNsConfigs(apis.WithInternalClientContext(context.Background(), "dop"),
+	_, err = e.PipelineCms.UpdateCmsNsConfigs(apis.WithInternalClientContext(context.Background(), discover.SvcDOP),
 		&cmspb.CmsNsConfigsUpdateRequest{
 			Ns:             utils.MakeUserOrgPipelineCmsNs(userID, orgID),
 			PipelineSource: apistructs.PipelineSourceDice.String(),
@@ -1592,10 +1618,13 @@ func (p *ProjectPipelineService) makeLocationByProjectID(projectID uint64) (stri
 	if err != nil {
 		return "", err
 	}
-	orgDto, err := p.bundle.GetOrg(projectDto.OrgID)
+
+	orgResp, err := p.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcDOP),
+		&orgpb.GetOrgRequest{IdOrName: strconv.FormatUint(projectDto.OrgID, 10)})
 	if err != nil {
 		return "", err
 	}
+	orgDto := orgResp.Data
 
 	return apistructs.MakeLocation(&apistructs.ApplicationDTO{
 		OrgName:     orgDto.Name,
@@ -1648,10 +1677,12 @@ func (p *ProjectPipelineService) ListUsedRefs(ctx context.Context, params deftyp
 		return nil, apierrors.ErrListProjectPipelineRef.InternalError(err)
 	}
 
-	org, err := p.bundle.GetOrg(project.OrgID)
+	orgResp, err := p.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcDOP),
+		&orgpb.GetOrgRequest{IdOrName: strconv.FormatUint(project.OrgID, 10)})
 	if err != nil {
 		return nil, apierrors.ErrListProjectPipelineRef.InternalError(err)
 	}
+	org := orgResp.Data
 
 	remotes, err := p.GetRemotesByAppID(params.AppID, org.Name, project.Name)
 	if err != nil {
@@ -1733,10 +1764,12 @@ func (p *ProjectPipelineService) ListPipelineCategory(ctx context.Context, param
 		return nil, apierrors.ErrListProjectPipelineCategory.InternalError(err)
 	}
 
-	org, err := p.bundle.GetOrg(project.OrgID)
+	orgResp, err := p.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcDOP),
+		&orgpb.GetOrgRequest{IdOrName: strconv.FormatUint(project.OrgID, 10)})
 	if err != nil {
 		return nil, apierrors.ErrListProjectPipelineCategory.InternalError(err)
 	}
+	org := orgResp.Data
 
 	remotes, err := p.GetRemotesByAppID(params.AppID, org.Name, project.Name)
 	if err != nil {
@@ -1913,4 +1946,27 @@ func pipelineYmlsFilterIn(ymls []string, fn func(yml string) bool) (newYmls []st
 		}
 	}
 	return
+}
+
+func (p *ProjectPipelineService) TryAddRunningPipelineLinkToErr(orgName string, projectID uint64, appID uint64, err error) (error, bool) {
+	apiError, ok := err.(*errorresp.APIError)
+	if !ok {
+		return err, false
+	}
+
+	ctxMap, ok := apiError.Ctx().(map[string]interface{})
+	if !ok {
+		return err, false
+	}
+	var runningPipelineID string
+	for key, value := range ctxMap {
+		if key == apierrors.ErrParallelRunPipeline.Error() {
+			runningPipelineID, _ = value.(string)
+		}
+	}
+	if runningPipelineID == "" {
+		return err, false
+	}
+	runningPipelineLink := fmt.Sprintf("%s/%s/dop/projects/%d/apps/%d/pipeline?pipelineID=%s", p.cfg.UIPublicURL, orgName, projectID, appID, runningPipelineID)
+	return apierrors.ErrParallelRunPipeline.InvalidState(fmt.Sprintf("failed to run pipeline, already running link: %s", runningPipelineLink)), true
 }

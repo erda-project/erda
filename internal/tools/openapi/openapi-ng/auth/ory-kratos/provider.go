@@ -38,7 +38,7 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) (err error) {
-	p.bundle = bundle.New(bundle.WithCoreServices(), bundle.WithDOP())
+	p.bundle = bundle.New(bundle.WithErdaServer(), bundle.WithDOP())
 
 	router := p.Router
 	router.Add(http.MethodGet, "/api/openapi/login", p.LoginURL)

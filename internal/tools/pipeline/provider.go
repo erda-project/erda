@@ -28,6 +28,7 @@ import (
 	"github.com/erda-project/erda/internal/pkg/metrics/report"
 	_ "github.com/erda-project/erda/internal/tools/pipeline/aop/plugins"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/actionmgr"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/app"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/cache"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/cancel"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/clusterinfo"
@@ -42,6 +43,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/leaderworker"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/queuemanager"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/reconciler"
+	reportsvc "github.com/erda-project/erda/internal/tools/pipeline/providers/report"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/resource"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/resourcegc"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/run"
@@ -54,6 +56,7 @@ type provider struct {
 	MetricReport   report.MetricReport      `autowired:"metric-report-client" optional:"true"`
 	Router         httpserver.Router        `autowired:"http-router"`
 	CronService    cronpb.CronServiceServer `autowired:"erda.core.pipeline.cron.CronService" required:"true"`
+	ReportSvc      reportsvc.Interface
 	CronDaemon     daemon.Interface
 	CronCompensate compensator.Interface
 	MySQL          mysqlxorm.Interface `autowired:"mysql-xorm"`
@@ -72,6 +75,7 @@ type provider struct {
 	PipelineRun  run.Interface
 	Cancel       cancel.Interface
 	User         user.Interface
+	App          app.Interface
 	Secret       secret.Interface
 	ActionMgr    actionmgr.Interface
 	Resource     resource.Interface

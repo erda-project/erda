@@ -26,14 +26,14 @@ import (
 )
 
 func (b *Bundle) CreateNoticeRequest(userID string, orgID uint64, body io.Reader) (*apistructs.NoticeCreateResponse, error) {
-	csURL, err := b.urls.CoreServices()
+	csURL, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)
 	}
 
 	var ncresp apistructs.NoticeCreateResponse
 	httpClient := b.hc
-	resp, err := httpClient.Post(csURL).Path("/api/notices").
+	resp, err := httpClient.Post(csURL).Path("/core/api/notices").
 		Header(httputil.InternalHeader, "bundle").
 		Header(httputil.OrgHeader, fmt.Sprintf("%d", orgID)).
 		Header(httputil.UserHeader, userID).
@@ -55,14 +55,14 @@ func (b *Bundle) CreateNoticeRequest(userID string, orgID uint64, body io.Reader
 
 func (b *Bundle) UpdateNotice(noticeID, orgID uint64, userID string, body io.Reader) (
 	*apistructs.NoticeUpdateResponse, error) {
-	csURL, err := b.urls.CoreServices()
+	csURL, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)
 	}
 	httpClient := b.hc
 
 	var ncresp apistructs.NoticeUpdateResponse
-	resp, err := httpClient.Put(csURL).Path(fmt.Sprintf("/api/notices/%d", noticeID)).
+	resp, err := httpClient.Put(csURL).Path(fmt.Sprintf("/core/api/notices/%d", noticeID)).
 		Header(httputil.InternalHeader, "bundle").
 		Header(httputil.OrgHeader, fmt.Sprintf("%d", orgID)).
 		Header(httputil.UserHeader, userID).
@@ -85,14 +85,14 @@ func (b *Bundle) UpdateNotice(noticeID, orgID uint64, userID string, body io.Rea
 }
 
 func (b *Bundle) DeleteNotice(noticeID, orgID uint64, userID string) (*apistructs.NoticeDeleteResponse, error) {
-	csURL, err := b.urls.CoreServices()
+	csURL, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)
 	}
 	httpClient := b.hc
 
 	var ncresp apistructs.NoticeDeleteResponse
-	resp, err := httpClient.Delete(csURL).Path(fmt.Sprintf("/api/notices/%d", noticeID)).
+	resp, err := httpClient.Delete(csURL).Path(fmt.Sprintf("/core/api/notices/%d", noticeID)).
 		Header(httputil.InternalHeader, "bundle").
 		Header(httputil.OrgHeader, fmt.Sprintf("%d", orgID)).
 		Header(httputil.UserHeader, userID).
@@ -114,13 +114,13 @@ func (b *Bundle) DeleteNotice(noticeID, orgID uint64, userID string) (*apistruct
 }
 
 func (b *Bundle) PublishORUnPublishNotice(orgID uint64, noticeID uint64, userID, publishType string) error {
-	csURL, err := b.urls.CoreServices()
+	csURL, err := b.urls.ErdaServer()
 	if err != nil {
 		return apierrors.ErrInvoke.InternalError(err)
 	}
 
 	var buf bytes.Buffer
-	resp, err := b.hc.Put(csURL).Path(fmt.Sprintf("/api/notices/%d/actions/%s", noticeID, publishType)).
+	resp, err := b.hc.Put(csURL).Path(fmt.Sprintf("/core/api/notices/%d/actions/%s", noticeID, publishType)).
 		Header(httputil.InternalHeader, "bundle").
 		Header(httputil.OrgHeader, fmt.Sprintf("%d", orgID)).
 		Header(httputil.UserHeader, userID).
@@ -142,13 +142,13 @@ func (b *Bundle) PublishORUnPublishNotice(orgID uint64, noticeID uint64, userID,
 }
 
 func (b *Bundle) ListNoticeByOrgID(orgID uint64, userID string, params url.Values) (*apistructs.NoticeListResponse, error) {
-	csURL, err := b.urls.CoreServices()
+	csURL, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)
 	}
 
 	var noteList apistructs.NoticeListResponse
-	resp, err := b.hc.Get(csURL).Path("/api/notices").
+	resp, err := b.hc.Get(csURL).Path("/core/api/notices").
 		Header(httputil.InternalHeader, "bundle").
 		Header(httputil.OrgHeader, fmt.Sprintf("%d", orgID)).
 		Header(httputil.UserHeader, userID).

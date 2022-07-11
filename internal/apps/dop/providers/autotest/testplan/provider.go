@@ -24,6 +24,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/dao"
 	"github.com/erda-project/erda/internal/apps/dop/providers/autotest/testplan/db"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 )
 
@@ -39,10 +40,11 @@ type provider struct {
 	bundle   *bundle.Bundle
 
 	TestPlanService *TestPlanService
+	Org             org.ClientInterface
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.bundle = bundle.New(bundle.WithCoreServices())
+	p.bundle = bundle.New(bundle.WithErdaServer())
 
 	p.TestPlanService = &TestPlanService{
 		p: p,
@@ -54,6 +56,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 			},
 		},
 		bdl: p.bundle,
+		org: p.Org,
 	}
 
 	if p.Register != nil {

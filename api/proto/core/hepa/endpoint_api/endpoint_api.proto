@@ -92,20 +92,22 @@ service EndpointApiService {
     };
   }
 
-  rpc ListInvalidEndpointApi(common.VoidRequest) returns(ListInvalidEndpointApiResp) {
+  rpc ListInvalidEndpointApi(ListInvalidEndpointApiReq) returns(ListInvalidEndpointApiResp) {
     option(google.api.http) = {
       get: "/api/gateway/openapi/invalid-endpoints",
     };
     option(erda.common.openapi) = {
+      service: "hepa",
       path: "/api/gateway/openapi/invalid-endpoints",
     };
   }
 
-  rpc ClearInvalidEndpointApi(common.VoidRequest) returns (common.VoidResponse) {
+  rpc ClearInvalidEndpointApi(ListInvalidEndpointApiReq) returns (common.VoidResponse) {
     option(google.api.http) = {
       delete: "/api/gateway/openapi/invalid-endpoints",
     };
     option(erda.common.openapi) = {
+      service: "hepa",
       path: "/api/gateway/openapi/invalid-endpoints",
     };
   }
@@ -255,8 +257,16 @@ message GetEndpointResponse {
   Endpoint data = 1;
 }
 
+message ListInvalidEndpointApiReq {
+  string clusterName = 1;
+}
+
 message ListInvalidEndpointApiResp {
-  repeated ListInvalidEndpointApiItem list = 1;
+  uint64 total = 1;
+  uint64 totalProjectIsInvalid = 2;
+  uint64 totalRuntimeIsInvalid = 3;
+  uint64 totalInnerAddrIsInvalid = 4;
+  repeated ListInvalidEndpointApiItem list = 5;
 }
 
 message ListInvalidEndpointApiItem {
@@ -265,8 +275,11 @@ message ListInvalidEndpointApiItem {
   string projectID = 3;
   string packageID = 4;
   string packageApiID = 5;
-  string upstreamApiID = 6;
-  string upstreamID = 7;
-  string upstreamName = 8;
   string runtimeID = 9;
+  string innerHostname = 10;
+  string kongRouteID = 11;
+  string kongServiceID = 12;
+  string clusterName = 13;
+  string routeDeleting = 15;
+  string serviceDeleting = 16;
 }

@@ -395,7 +395,7 @@ func (svc *Service) UpdateContract(ctx context.Context, req *apistructs.UpdateCo
 // the manager modifies the contract status (approve the contract)
 func (svc *Service) updateContractStatus(ctx context.Context, req *apistructs.UpdateContractReq, client *apistructs.ClientModel, access *apistructs.APIAccessesModel,
 	contract *apistructs.ContractModel) error {
-	org, err := svc.bdl.GetOrg(req.OrgID)
+	org, err := svc.getOrg(context.Background(), req.OrgID)
 	if err != nil {
 		return errors.Wrap(err, "failed to GetOrg")
 	}
@@ -460,7 +460,7 @@ func (svc *Service) updateContractStatus(ctx context.Context, req *apistructs.Up
 // 管理人员修改合约的 SLA
 func (svc *Service) updateContractCurSLA(ctx context.Context, req *apistructs.UpdateContractReq, contract *apistructs.ContractModel, client *apistructs.ClientModel,
 	access *apistructs.APIAccessesModel) error {
-	org, err := svc.bdl.GetOrg(req.OrgID)
+	org, err := svc.getOrg(context.Background(), req.OrgID)
 	if err != nil {
 		return errors.Wrap(err, "failed to GetOrg")
 	}
@@ -523,7 +523,8 @@ func (svc *Service) updateContractCurSLA(ctx context.Context, req *apistructs.Up
 
 func (svc *Service) updateContractRequestSLA(ctx context.Context, req *apistructs.UpdateContractReq, contract *apistructs.ContractModel, access *apistructs.APIAccessesModel,
 	asset *apistructs.APIAssetsModel) error {
-	org, err := svc.bdl.GetOrg(req.OrgID)
+
+	org, err := svc.getOrg(context.Background(), req.OrgID)
 	if err != nil {
 		return errors.Wrap(err, "failed to GetOrg")
 	}
@@ -785,7 +786,7 @@ func (svc *Service) UpdateSLA(ctx context.Context, req *apistructs.UpdateSLAReq)
 		return apierrors.UpdateSLA.InvalidParameter("invalid time unit")
 	}
 
-	org, err := svc.bdl.GetOrg(req.OrgID)
+	org, err := svc.getOrg(context.Background(), req.OrgID)
 	if err != nil {
 		return apierrors.UpdateSLA.InternalError(errors.Wrap(err, "failed to GetOrg"))
 	}

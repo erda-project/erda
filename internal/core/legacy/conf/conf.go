@@ -35,7 +35,6 @@ import (
 type Conf struct {
 	LocalMode             bool   `env:"LOCAL_MODE" default:"false"`
 	Debug                 bool   `env:"DEBUG" default:"false"`
-	ListenAddr            string `env:"LISTEN_ADDR" default:":9526"`
 	MySQLHost             string `env:"MYSQL_HOST"`
 	MySQLPort             string `env:"MYSQL_PORT"`
 	MySQLUsername         string `env:"MYSQL_USERNAME"`
@@ -252,11 +251,6 @@ func RolePermissions(roles []string) (map[string]model.RolePermission, []model.R
 		}
 	}
 	return pm, resourceRoles
-}
-
-// ListenAddr 返回 ListenAddr 选项.
-func ListenAddr() string {
-	return cfg.ListenAddr
 }
 
 // LocalMode 本地调试模式

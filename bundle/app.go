@@ -30,7 +30,7 @@ import (
 
 // GetApp get app by id from core-service.
 func (b *Bundle) GetApp(id uint64) (*apistructs.ApplicationDTO, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +49,7 @@ func (b *Bundle) GetApp(id uint64) (*apistructs.ApplicationDTO, error) {
 }
 
 func (b *Bundle) GetMyApps(userid string, orgid uint64) (*apistructs.ApplicationListResponseData, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +72,7 @@ func (b *Bundle) GetMyApps(userid string, orgid uint64) (*apistructs.Application
 }
 
 func (b *Bundle) GetMyAppsByProject(userid string, orgid, projectID uint64, appName string) (*apistructs.ApplicationListResponseData, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +98,7 @@ func (b *Bundle) GetMyAppsByProject(userid string, orgid, projectID uint64, appN
 
 // GetAppsByProject 根据 projectID 获取应用列表
 func (b *Bundle) GetAppsByProject(projectID, orgID uint64, userID string) (*apistructs.ApplicationListResponseData, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -124,7 +124,7 @@ func (b *Bundle) GetAppsByProject(projectID, orgID uint64, userID string) (*apis
 }
 
 func (b *Bundle) GetAppList(orgID, userID string, req apistructs.ApplicationListRequest) (*apistructs.ApplicationListResponseData, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -163,7 +163,7 @@ func (b *Bundle) GetAppList(orgID, userID string, req apistructs.ApplicationList
 
 // get applications by projectID and app name
 func (b *Bundle) GetAppsByProjectAndAppName(projectID, orgID uint64, userID string, appName string, header ...http.Header) (*apistructs.ApplicationListResponseData, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -196,7 +196,7 @@ func (b *Bundle) GetAppsByProjectAndAppName(projectID, orgID uint64, userID stri
 
 // GetAppsByProjectSimple 根据 projectID 获取应用列表简单信息
 func (b *Bundle) GetAppsByProjectSimple(projectID, orgID uint64, userID string) (*apistructs.ApplicationListResponseData, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -233,7 +233,7 @@ type AbilityAppReq struct {
 
 // GetAppPublishItemRelationsGroupByENV 根据 appID 获取应用关联的发布内容
 func (b *Bundle) GetAppPublishItemRelationsGroupByENV(appID uint64) (*apistructs.QueryAppPublishItemRelationGroupByENVResponse, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -306,7 +306,7 @@ func (b *Bundle) RemoveAppPublishItemRelations(publishItemID int64) error {
 
 // get my apps by paging
 func (b *Bundle) GetAllMyApps(userid string, orgid uint64, req apistructs.ApplicationListRequest) (*apistructs.ApplicationListResponseData, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -345,7 +345,7 @@ func (b *Bundle) GetAllMyApps(userid string, orgid uint64, req apistructs.Applic
 // CreateApp create app
 // This will no longer create gittar repo
 func (b *Bundle) CreateApp(req apistructs.ApplicationCreateRequest, userID string) (*apistructs.ApplicationDTO, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -411,7 +411,7 @@ func (b *Bundle) CreateAppWithRepo(req apistructs.ApplicationCreateRequest, user
 
 // UpdateApp update app
 func (b *Bundle) UpdateApp(req apistructs.ApplicationUpdateRequestBody, appID uint64, userID string) (interface{}, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -434,7 +434,7 @@ func (b *Bundle) UpdateApp(req apistructs.ApplicationUpdateRequestBody, appID ui
 
 // DeleteApp delete app
 func (b *Bundle) DeleteApp(appID uint64, userID string) (*apistructs.ApplicationDTO, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}
@@ -457,7 +457,7 @@ func (b *Bundle) DeleteApp(appID uint64, userID string) (*apistructs.Application
 
 // CountAppByProID count app by proID
 func (b *Bundle) CountAppByProID(proID uint64) (int64, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return 0, err
 	}
@@ -479,7 +479,7 @@ func (b *Bundle) CountAppByProID(proID uint64) (int64, error) {
 }
 
 func (b *Bundle) GetAppIDByNames(projectID uint64, userID string, names []string) (*apistructs.GetAppIDByNamesResponseData, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.ErdaServer()
 	if err != nil {
 		return nil, err
 	}

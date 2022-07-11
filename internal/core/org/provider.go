@@ -30,8 +30,8 @@ import (
 	"github.com/erda-project/erda/internal/core/legacy/services/member"
 	"github.com/erda-project/erda/internal/core/legacy/services/permission"
 	"github.com/erda-project/erda/internal/core/org/db"
+	"github.com/erda-project/erda/internal/core/user"
 	"github.com/erda-project/erda/pkg/common/apis"
-	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 type config struct {
@@ -45,23 +45,24 @@ type provider struct {
 	Cfg      *config
 	Log      logs.Logger
 	Register transport.Register
-	DB       *gorm.DB `autowired:"mysql-client"`
+	DB       *gorm.DB `autowired:"mysql-client" optional:"true"`
 	RedisCli redis.Interface
 	bdl      *bundle.Bundle
 	dbClient *db.DBClient
 
 	member     *member.Member
-	uc         *ucauth.UCClient
+	uc         user.Interface
 	permission *permission.Permission
 
 	TokenService tokenpb.TokenServiceServer
+	Client       pb.OrgServiceServer
 }
 
 func (p *provider) WithMember(member *member.Member) {
 	p.member = member
 }
 
-func (p *provider) WithUc(uc *ucauth.UCClient) {
+func (p *provider) WithUc(uc user.Interface) {
 	p.uc = uc
 }
 
@@ -70,9 +71,9 @@ func (p *provider) WithPermission(permission *permission.Permission) {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.bdl = bundle.New(bundle.WithCoreServices(), bundle.WithClusterManager(), bundle.WithOrchestrator())
+	p.bdl = bundle.New(bundle.WithErdaServer(), bundle.WithClusterManager(), bundle.WithOrchestrator())
 	p.dbClient = &db.DBClient{DBClient: &dao.DBClient{DB: p.DB}}
-	if p.Register != nil {
+	if p.Client == nil && p.Register != nil {
 		pb.RegisterOrgServiceImp(p.Register, p, apis.Options())
 	}
 	return nil
@@ -80,6 +81,8 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
 	switch {
+	case ctx.Type() == reflect.TypeOf((*ClientInterface)(nil)).Elem():
+		return &WrapClient{p.Client}
 	case ctx.Service() == "erda.core.org.OrgService" || ctx.Type() == pb.OrgServiceServerType() || ctx.Type() == pb.OrgServiceHandlerType():
 		return p
 	}
@@ -88,8 +91,7 @@ func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}
 
 func init() {
 	servicehub.Register("erda.core.org", &servicehub.Spec{
-		Services:             pb.ServiceNames(),
-		Types:                []reflect.Type{reflect.TypeOf((*Interface)(nil)).Elem()},
+		Types:                []reflect.Type{reflect.TypeOf((*Interface)(nil)).Elem(), reflect.TypeOf((*ClientInterface)(nil)).Elem()},
 		OptionalDependencies: []string{"service-register"},
 		Description:          "org",
 		ConfigFunc: func() interface{} {

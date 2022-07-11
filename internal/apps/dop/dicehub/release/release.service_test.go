@@ -16,11 +16,15 @@ package release
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"testing"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
+	"github.com/erda-project/erda/internal/core/org"
+	"github.com/erda-project/erda/internal/pkg/mock"
 )
 
 func Test_releaseService_CreateRelease(t *testing.T) {
@@ -588,6 +592,69 @@ func Test_releaseService_ReleaseGC(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.wantResp) {
 				t.Errorf("ReleaseService.ReleaseGC() = %v, want %v", got, tt.wantResp)
+			}
+		})
+	}
+}
+
+type releaseOrgMock struct {
+	mock.OrgMock
+}
+
+func (m releaseOrgMock) GetOrg(ctx context.Context, request *orgpb.GetOrgRequest) (*orgpb.GetOrgResponse, error) {
+	if request.IdOrName == "1" {
+		return nil, fmt.Errorf("error")
+	}
+	return &orgpb.GetOrgResponse{Data: &orgpb.Org{Name: "erda"}}, nil
+}
+
+func TestService_getOrg(t *testing.T) {
+	type fields struct {
+		org org.Interface
+	}
+	type args struct {
+		ctx   context.Context
+		orgID uint64
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    *orgpb.Org
+		wantErr bool
+	}{
+		{
+			name: "test with error",
+			fields: fields{
+				org: releaseOrgMock{},
+			},
+			args:    args{orgID: 1, ctx: context.Background()},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "test with no error",
+			fields: fields{
+				org: releaseOrgMock{},
+			},
+			args:    args{orgID: 2, ctx: context.Background()},
+			want:    &orgpb.Org{Name: "erda"},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			svc := &ReleaseService{
+				org: tt.fields.org,
+			}
+			got, err := svc.getOrg(tt.args.ctx, tt.args.orgID)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("getOrg() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("getOrg() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

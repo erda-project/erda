@@ -18,12 +18,14 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	dicehubpb "github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/core/org"
 )
 
 type ComponentReleaseTable struct {
 	sdk *cptype.SDK
 	bdl *bundle.Bundle
 	svc dicehubpb.ReleaseServiceServer
+	org org.ClientInterface
 
 	Type       string                 `json:"type,omitempty"`
 	Data       Data                   `json:"data"`

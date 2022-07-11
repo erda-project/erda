@@ -18,6 +18,7 @@ import (
 	"time"
 
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
+	"github.com/erda-project/erda/internal/core/org"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -39,13 +40,14 @@ type provider struct {
 	bdl        *bundle.Bundle
 	MetricMeta metricpb.MetricMetaServiceServer `autowired:"erda.core.monitor.metric.MetricMetaService"`
 	t          i18n.Translator
+	Org        org.ClientInterface
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	hc := httpclient.New(httpclient.WithTimeout(time.Second, time.Second*60))
 	p.bdl = bundle.New(
 		bundle.WithHTTPClient(hc),
-		bundle.WithCoreServices(),
+		bundle.WithErdaServer(),
 	)
 	p.t = ctx.Service("i18n").(i18n.I18n).Translator("log-metrics")
 	p.db = db.New(ctx.Service("mysql").(mysql.Interface).DB())

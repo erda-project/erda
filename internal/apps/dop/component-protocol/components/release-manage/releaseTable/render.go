@@ -31,11 +31,15 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	dicehubpb "github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	cmpTypes "github.com/erda-project/erda/internal/apps/cmp/component-protocol/types"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/release-manage/access"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/types"
+	"github.com/erda-project/erda/internal/core/org"
+	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 )
 
 func init() {
@@ -121,6 +125,7 @@ func (r *ComponentReleaseTable) InitComponent(ctx context.Context) {
 	r.bdl = bdl
 	svc := ctx.Value(types.DicehubReleaseService).(dicehubpb.ReleaseServiceServer)
 	r.svc = svc
+	r.org = ctx.Value(types.OrgService).(org.ClientInterface)
 }
 
 func (r *ComponentReleaseTable) GenComponentState(component *cptype.Component) error {
@@ -241,11 +246,11 @@ func (r *ComponentReleaseTable) RenderTable(ctx context.Context, gs *cptype.Glob
 	r.State.Total = releaseResp.Data.Total
 
 	logrus.Debugf("[DEBUG] start get org")
-	org, err := r.bdl.GetOrg(orgID)
-	logrus.Debugf("[DEBUG] end get org")
+	org, err := r.getOrg(ctx, orgID)
 	if err != nil {
 		return errors.Errorf("failed to get org, %v", err)
 	}
+	logrus.Debugf("[DEBUG] end get org")
 
 	// pre check access
 	hasWriteAccess := true
@@ -663,4 +668,12 @@ func getReleaseID(operationData map[string]interface{}) (string, error) {
 		return "", errors.New("invalid release id in event.operationData")
 	}
 	return id, nil
+}
+
+func (r *ComponentReleaseTable) getOrg(ctx context.Context, orgID string) (*orgpb.Org, error) {
+	orgResp, err := r.org.GetOrg(apis.WithInternalClientContext(ctx, discover.SvcDOP), &orgpb.GetOrgRequest{IdOrName: orgID})
+	if err != nil {
+		return nil, err
+	}
+	return orgResp.Data, nil
 }

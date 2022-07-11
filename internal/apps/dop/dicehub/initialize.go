@@ -59,7 +59,7 @@ func Initialize(p *provider) error {
 		return err
 	}
 
-	server := httpserver.New(conf.ListenAddr())
+	server := httpserver.NewSingleton("")
 	// server.Router().Path("/metrics").Methods(http.MethodGet).Handler(promxp.Handler("dicehub"))
 	server.Router().UseEncodedPath()
 	server.RegisterEndpoint(ep.Routes())
@@ -68,9 +68,7 @@ func Initialize(p *provider) error {
 	server.Router().Path("/api/releases/{releaseId}/actions/pull").Methods(http.MethodGet).HandlerFunc(ep.GetDiceYAML)
 	server.Router().Path("/api/releases/{releaseId}/actions/get-dice").Methods(http.MethodGet).HandlerFunc(ep.GetDiceYAML)
 
-	p.Router.Any("/**", server.Router().ServeHTTP)
-	// return server.ListenAndServe()
-	return nil
+	return server.RegisterToNewHttpServerRouter(p.Router)
 }
 
 // ReleaseGC 启动release gc定时任务
@@ -96,7 +94,7 @@ func initEndpoints(p *provider) (*endpoints.Endpoints, error) {
 
 	// init bundle
 	bundleOpts := []bundle.Option{
-		bundle.WithCoreServices(),
+		bundle.WithErdaServer(),
 		bundle.WithCMP(),
 		bundle.WithMonitor(),
 		bundle.WithPipeline(),
@@ -136,6 +134,7 @@ func initEndpoints(p *provider) (*endpoints.Endpoints, error) {
 		endpoints.WithPipelineTemplate(pipelineTemplate),
 		endpoints.WithReleaseRule(releaseRule),
 		endpoints.WithQueryStringDecoder(queryStringDecoder),
+		endpoints.WithOrg(p.Org),
 	)
 
 	return ep, nil

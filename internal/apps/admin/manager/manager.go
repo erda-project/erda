@@ -22,6 +22,7 @@ import (
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/admin/dao"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/jsonstore/etcd"
@@ -33,6 +34,7 @@ type AdminManager struct {
 	bundle     *bundle.Bundle
 	etcdStore  *etcd.Store
 	clusterSvc clusterpb.ClusterServiceServer
+	org        org.Interface
 }
 
 type Option func(am *AdminManager)
@@ -63,6 +65,12 @@ func WithETCDStore(etcdStore *etcd.Store) Option {
 	}
 }
 
+func WithOrg(org org.Interface) Option {
+	return func(am *AdminManager) {
+		am.org = org
+	}
+}
+
 func WithClusterSvc(clusterSvc clusterpb.ClusterServiceServer) Option {
 	return func(am *AdminManager) {
 		am.clusterSvc = clusterSvc
@@ -82,7 +90,7 @@ func (am *AdminManager) Routers() []httpserver.Endpoint {
 
 func NewBundle() *bundle.Bundle {
 	bundleOpts := []bundle.Option{
-		bundle.WithCoreServices(),
+		bundle.WithErdaServer(),
 		bundle.WithClusterManager(),
 		bundle.WithHTTPClient(httpclient.New(
 			httpclient.WithTimeout(time.Second, time.Second*30),

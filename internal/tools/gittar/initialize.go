@@ -22,6 +22,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/bundle"
+	ucidentity "github.com/erda-project/erda/internal/core/user/impl/uc"
 	"github.com/erda-project/erda/internal/tools/gittar/api"
 	"github.com/erda-project/erda/internal/tools/gittar/auth"
 	"github.com/erda-project/erda/internal/tools/gittar/cache"
@@ -33,7 +34,6 @@ import (
 	"github.com/erda-project/erda/internal/tools/gittar/uc"
 	"github.com/erda-project/erda/internal/tools/gittar/webcontext"
 	"github.com/erda-project/erda/pkg/discover"
-	"github.com/erda-project/erda/pkg/ucauth"
 	// "terminus.io/dice/telemetry/promxp"
 )
 
@@ -60,20 +60,20 @@ func (p *provider) Initialize() error {
 	gitmodule.Setting.MaxGitDiffFiles = conf.GitMaxDiffFiles()
 	gitmodule.Setting.MaxGitDiffLines = conf.GitMaxDiffLines()
 
-	ucUserAuth := ucauth.NewUCUserAuth("", discover.UC(), "", conf.UCClientID(), conf.UCClientSecret())
+	ucUserAuth := ucidentity.NewUCUserAuth("", discover.UC(), "", conf.UCClientID(), conf.UCClientSecret())
 	if conf.OryEnabled() {
 		ucUserAuth.ClientID = conf.OryCompatibleClientID()
 		ucUserAuth.UCHost = conf.OryKratosAddr()
 	}
 	diceBundle := bundle.New(
-		bundle.WithCoreServices(),
+		bundle.WithErdaServer(),
 	)
 
 	dbClient, err := models.OpenDB()
 	if err != nil {
 		panic(err)
 	}
-	uc.InitializeUcClient(dbClient.DBEngine.DB)
+	uc.InitializeUcClient(p.Identity)
 
 	webcontext.WithDB(dbClient)
 	webcontext.WithBundle(diceBundle)

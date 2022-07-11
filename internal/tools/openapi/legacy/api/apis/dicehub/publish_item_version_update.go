@@ -22,7 +22,7 @@ import (
 var PUBLISH_ITEM_VERSION_UPDATE = apis.ApiSpec{
 	Path:        "/api/publish-items/versions/actions/<action>",
 	BackendPath: "/api/publish-items/versions/actions/<action>",
-	Host:        "dicehub.marathon.l4lb.thisdcos.directory:10000",
+	Host:        "erda-server.marathon.l4lb.thisdcos.directory:9095",
 	Scheme:      "http",
 	Method:      "POST",
 	CheckLogin:  true,

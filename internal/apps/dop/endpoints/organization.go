@@ -24,10 +24,13 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/providers/legacy/httpendpoints/i18n"
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/dao"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	"github.com/erda-project/erda/internal/pkg/user"
+	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -46,7 +49,7 @@ func (e *Endpoints) CreateOrg(ctx context.Context, r *http.Request, vars map[str
 		return apierrors.ErrCreateOrg.MissingParameter("body").ToResp(), nil
 	}
 
-	var orgCreateReq apistructs.OrgCreateRequest
+	var orgCreateReq *orgpb.CreateOrgRequest
 	if err := json.NewDecoder(r.Body).Decode(&orgCreateReq); err != nil {
 		return apierrors.ErrCreateOrg.InvalidParameter(err).ToResp(), nil
 	}
@@ -54,10 +57,12 @@ func (e *Endpoints) CreateOrg(ctx context.Context, r *http.Request, vars map[str
 	logrus.Infof("request body: %+v", orgCreateReq)
 
 	// create org
-	org, err := e.bdl.CreateOrg(identityInfo.UserID, &orgCreateReq)
+	orgResp, err := e.orgClient.CreateOrg(apis.WithUserIDContext(apis.WithInternalClientContext(ctx, discover.SvcDOP), identityInfo.UserID),
+		orgCreateReq)
 	if err != nil {
 		return apierrors.ErrCreateOrg.InternalError(err).ToResp(), nil
 	}
+	org := orgResp.Data
 
 	// create publisher
 	if orgCreateReq.PublisherName != "" {
@@ -141,10 +146,11 @@ func (e *Endpoints) UpdateOrg(ctx context.Context, r *http.Request, vars map[str
 	if r.Body == nil {
 		return apierrors.ErrUpdateOrg.MissingParameter("body").ToResp(), nil
 	}
-	var orgUpdateReq apistructs.OrgUpdateRequestBody
+	var orgUpdateReq *orgpb.UpdateOrgRequest
 	if err := json.NewDecoder(r.Body).Decode(&orgUpdateReq); err != nil {
 		return apierrors.ErrUpdateOrg.InvalidParameter(err).ToResp(), nil
 	}
+	orgUpdateReq.OrgID = vars["orgID"]
 	logrus.Infof("request body: %+v", orgUpdateReq)
 	// 操作鉴权
 	req := apistructs.PermissionCheckRequest{
@@ -158,10 +164,11 @@ func (e *Endpoints) UpdateOrg(ctx context.Context, r *http.Request, vars map[str
 		return apierrors.ErrUpdateOrg.AccessDenied().ToResp(), nil
 	}
 	// update org
-	org, err := e.bdl.UpdateOrg(identityInfo.UserID, orgID, &orgUpdateReq)
+	orgResp, err := e.orgClient.UpdateOrg(apis.WithUserIDContext(apis.WithInternalClientContext(ctx, discover.SvcDOP), identityInfo.UserID), orgUpdateReq)
 	if err != nil {
 		return apierrors.ErrUpdateOrg.InternalError(err).ToResp(), nil
 	}
+	org := orgResp.Data
 	org.PublisherID = e.org.GetPublisherID(int64(org.ID))
 	// 传递了publisherName并且当前org没有publisher才创建
 	if orgUpdateReq.PublisherName != "" && org.PublisherID == 0 {
@@ -196,10 +203,12 @@ func (e *Endpoints) GetOrg(ctx context.Context, r *http.Request, vars map[string
 	}
 
 	orgStr := vars["idOrName"]
-	org, err := e.bdl.GetOrg(orgStr)
+
+	orgResp, err := e.orgClient.GetOrg(apis.WithInternalClientContext(ctx, discover.SvcDOP), &orgpb.GetOrgRequest{IdOrName: orgStr})
 	if err != nil {
 		return apierrors.ErrGetOrg.InternalError(err).ToResp(), nil
 	}
+	org := orgResp.Data
 	org.PublisherID = e.org.GetPublisherID(int64(org.ID))
 
 	return httpserver.OkResp(org)
@@ -213,13 +222,15 @@ func (e *Endpoints) DeleteOrg(ctx context.Context, r *http.Request, vars map[str
 	}
 	orgStr := vars["idOrName"]
 
-	org, err := e.bdl.GetOrg(orgStr)
+	orgResp, err := e.orgClient.GetOrg(apis.WithInternalClientContext(context.Background(), "dop"),
+		&orgpb.GetOrgRequest{IdOrName: orgStr})
 	if err != nil {
 		return apierrors.ErrDeleteOrg.InternalError(err).ToResp(), nil
 	}
+	org := orgResp.Data
 	org.PublisherID = e.org.GetPublisherID(int64(org.ID))
 
-	_, err = e.bdl.DeleteOrg(orgStr)
+	_, err = e.orgClient.DeleteOrg(apis.WithInternalClientContext(ctx, discover.SvcDOP), &orgpb.DeleteOrgRequest{IdOrName: orgStr})
 	if err != nil {
 		return apierrors.ErrDeleteOrg.InternalError(err).ToResp(), nil
 	}
@@ -230,7 +241,7 @@ func (e *Endpoints) DeleteOrg(ctx context.Context, r *http.Request, vars map[str
 
 // ListOrg list org
 func (e *Endpoints) ListOrg(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
-	_, err := user.GetIdentityInfo(r)
+	identityInfo, err := user.GetIdentityInfo(r)
 	if err != nil {
 		return apierrors.ErrListOrg.NotLogin().ToResp(), nil
 	}
@@ -239,7 +250,7 @@ func (e *Endpoints) ListOrg(ctx context.Context, r *http.Request, vars map[strin
 	if err != nil {
 		return apierrors.ErrListOrg.InvalidParameter(err).ToResp(), nil
 	}
-	orgResp, err := e.bdl.ListOrgs(req, r.Header.Get(httputil.OrgHeader))
+	orgResp, err := e.listOrg(ctx, identityInfo.UserID, req)
 	if err != nil {
 		return apierrors.ErrListOrg.InternalError(err).ToResp(), nil
 	}
@@ -251,9 +262,13 @@ func (e *Endpoints) ListOrg(ctx context.Context, r *http.Request, vars map[strin
 	return httpserver.OkResp(orgResp)
 }
 
+func (e *Endpoints) listOrg(ctx context.Context, userID string, req *orgpb.ListOrgRequest) (*orgpb.ListOrgResponse, error) {
+	return e.orgClient.ListOrg(apis.WithUserIDContext(apis.WithInternalClientContext(ctx, discover.SvcDOP), userID), req)
+}
+
 // ListPublicOrg list public org
 func (e *Endpoints) ListPublicOrg(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
-	_, err := user.GetIdentityInfo(r)
+	identityInfo, err := user.GetIdentityInfo(r)
 	if err != nil {
 		return apierrors.ErrListPublicOrg.NotLogin().ToResp(), nil
 	}
@@ -263,7 +278,7 @@ func (e *Endpoints) ListPublicOrg(ctx context.Context, r *http.Request, vars map
 		return apierrors.ErrListPublicOrg.InvalidParameter(err).ToResp(), nil
 	}
 
-	orgResp, err := e.bdl.ListPublicOrgs(req)
+	orgResp, err := e.listPublicOrg(ctx, identityInfo.UserID, req)
 	if err != nil {
 		return apierrors.ErrListOrg.InternalError(err).ToResp(), nil
 	}
@@ -274,6 +289,10 @@ func (e *Endpoints) ListPublicOrg(ctx context.Context, r *http.Request, vars map
 	// }
 
 	return httpserver.OkResp(orgResp)
+}
+
+func (e *Endpoints) listPublicOrg(ctx context.Context, userID string, req *orgpb.ListOrgRequest) (*orgpb.ListOrgResponse, error) {
+	return e.orgClient.ListPublicOrg(apis.WithUserIDContext(apis.WithInternalClientContext(ctx, discover.SvcDOP), userID), req)
 }
 
 // GetOrgByDomain 通过域名查询企业
@@ -289,10 +308,14 @@ func (e *Endpoints) GetOrgByDomain(ctx context.Context, r *http.Request, vars ma
 		return apierrors.ErrGetOrg.MissingParameter("domain").ToResp(), nil
 	}
 
-	org, err := e.bdl.GetOrgByDomain(domain, orgName, identity.UserID)
+	orgResp, err := e.orgClient.GetOrgByDomain(apis.WithUserIDContext(apis.WithInternalClientContext(ctx, discover.SvcDOP), identity.UserID), &orgpb.GetOrgByDomainRequest{
+		Domain:  domain,
+		OrgName: orgName,
+	})
 	if err != nil {
 		return apierrors.ErrGetOrg.InternalError(err).ToResp(), nil
 	}
+	org := orgResp.Data
 	if org == nil {
 		return httpserver.OkResp(nil)
 	}
@@ -400,7 +423,7 @@ func (e *Endpoints) FetchOrgResources(ctx context.Context, r *http.Request, vars
 }
 
 // getOrgListParam get org params
-func getOrgListParam(r *http.Request) (*apistructs.OrgSearchRequest, error) {
+func getOrgListParam(r *http.Request) (*orgpb.ListOrgRequest, error) {
 	q := r.URL.Query().Get("q")
 	if q == "" {
 		// Deprecated: TODO: remove it
@@ -429,13 +452,10 @@ func getOrgListParam(r *http.Request) (*apistructs.OrgSearchRequest, error) {
 	if size <= 0 {
 		size = 20
 	}
-	return &apistructs.OrgSearchRequest{
+	return &orgpb.ListOrgRequest{
 		Q:        q,
-		PageNo:   num,
-		PageSize: size,
+		PageNo:   int64(num),
+		PageSize: int64(size),
 		Org:      r.Header.Get("org"),
-		IdentityInfo: apistructs.IdentityInfo{
-			UserID: r.Header.Get(httputil.UserHeader),
-		},
 	}, nil
 }
