@@ -16,7 +16,6 @@ package autotest_cookie_keep_before
 
 import (
 	"encoding/json"
-	"fmt"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -57,28 +56,20 @@ func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 		rlog.TErrorf(ctx.SDK.Pipeline.ID, ctx.SDK.Task.ID, "failed to get pipeline reports, err: %", err)
 		return err
 	}
-	var setCookieJSON string
+	var setCookies []string
 	for _, v := range reportSets.Data.Reports {
 		if v.Meta == nil {
 			continue
 		}
-		meta := v.Meta.AsMap()
-		if meta[apitestsv2.HeaderSetCookie] == nil {
+		cookies, err := p.getCookiesFromMeta(v.Meta)
+		if err != nil {
+			rlog.TErrorf(ctx.SDK.Pipeline.ID, ctx.SDK.Task.ID, "failed to get cookies from meta(continue next report), err: %, meta: %v", err, v.Meta)
 			continue
 		}
-		setCookieJSON = meta[apitestsv2.HeaderSetCookie].(string)
-		break
-	}
-	rlog.TDebugf(ctx.SDK.Pipeline.ID, ctx.SDK.Task.ID, "setCookieJSON: %s", setCookieJSON)
-	if setCookieJSON == "" {
-		return nil
+		setCookies = append(setCookies, cookies...)
 	}
 	// parse Set-Cookie-JSON to Cookie
 	// header key `set-cookie` can have many values
-	var setCookies []string
-	if err := json.Unmarshal([]byte(setCookieJSON), &setCookies); err != nil {
-		return fmt.Errorf("failed to parse Set-Cookie: %s, err: %v", setCookieJSON, err)
-	}
 	if len(setCookies) == 0 {
 		return nil
 	}
