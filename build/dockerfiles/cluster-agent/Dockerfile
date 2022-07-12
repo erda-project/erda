@@ -1,5 +1,6 @@
 # syntax = docker/dockerfile:1.2
-FROM registry.erda.cloud/erda/golang-base:210416 as build
+ARG BASE_DOCKER_IMAGE
+FROM ${BASE_DOCKER_IMAGE} as build
 
 RUN mkdir -p "$GOPATH/src/github.com/erda-project/erda/"
 COPY . "$GOPATH/src/github.com/erda-project/erda/"
@@ -17,7 +18,8 @@ RUN --mount=type=cache,target=/root/.cache/go-build\
 
 
 
-FROM registry.erda.cloud/erda/golang-base:210416 as app-handler
+ARG BASE_DOCKER_IMAGE
+FROM ${BASE_DOCKER_IMAGE} as app-handler
 ARG MODULE_PATH
 ENV PROJ_ROOT="/go/src/github.com/erda-project/erda"
 COPY --from=build "${PROJ_ROOT}" /erda
@@ -33,8 +35,7 @@ FROM ${BASE_DOCKER_IMAGE}
 ENV KUBECTL_VERSION v1.19.7
 ARG ARCH=amd64
 
-RUN apk add shadow && \
-    curl -sLf https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/${ARCH}/kubectl > /usr/bin/kubectl && \
+RUN curl -sLf https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/${ARCH}/kubectl > /usr/bin/kubectl && \
     chmod +x /usr/bin/kubectl
 
 WORKDIR /app
@@ -42,7 +43,6 @@ WORKDIR /app
 ARG APP_NAME
 ARG CONFIG_PATH
 ENV APP_NAME=${APP_NAME}
-ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib:/usr/local/lib64:/lib:/lib64
 
 COPY --from=app-handler /erda-handled /erda
 

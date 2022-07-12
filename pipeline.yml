@@ -100,7 +100,7 @@ stages:
             cpu: 1
             mem: 2048
       - custom-script:
-          alias: build-agent
+          alias: build-cluster-agent
           commands:
             - cd ${{ dirs.erda }}
             - export ERDA_VERSION=${{ outputs.extract-repo-version.major_minor_version }}
@@ -234,7 +234,7 @@ stages:
             image:
               action-runner-scheduler: ${{ outputs.build-erda.image }}
               erda-server: ${{ outputs.build-erda.image }}
-              cluster-agent: ${{ outputs.build-agent.image }}
+              cluster-agent: ${{ outputs.build-cluster-agent.image }}
               cluster-manager: ${{ outputs.build-erda.image }}
               cmp: ${{ outputs.build-erda.image }}
               collector: ${{ outputs.build-erda.image }}
