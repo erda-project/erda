@@ -15,13 +15,8 @@
 package autotest_cookie_keep_before
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
-
-	"google.golang.org/protobuf/types/known/structpb"
-
-	"github.com/erda-project/erda/pkg/apitestsv2"
 )
 
 // appendOrReplaceSetCookiesToCookie
@@ -80,20 +75,4 @@ func appendOrReplaceSetCookiesToCookie(setCookies []string, originCookie string)
 	newCookieStr := strings.Join(newCookieItems, "; ")
 
 	return newCookieStr
-}
-
-func (p *provider) getCookiesFromMeta(meta *structpb.Struct) ([]string, error) {
-	var cookies []string
-	for field, value := range meta.Fields {
-		if field == apitestsv2.HeaderSetCookie {
-			cookieJsonStr := value.GetStringValue()
-			if len(cookieJsonStr) == 0 {
-				return cookies, nil
-			}
-			if err := json.Unmarshal([]byte(cookieJsonStr), &cookies); err != nil {
-				return nil, err
-			}
-		}
-	}
-	return cookies, nil
 }
