@@ -14,8 +14,8 @@ run:
   skip-files:
     - apistructs/generated_desc.go
     - internal/tools/openapi/legacy/api/api.go
-  build-tags:
-    - musl
+#  build-tags:
+#    - musl
 
 linters-settings:
   goimports:

@@ -26,7 +26,7 @@ import (
 
 	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/mvcc/mvccpb"
-	git "github.com/libgit2/git2go/v30"
+	git "github.com/libgit2/git2go/v33"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/internal/tools/gittar/conf"

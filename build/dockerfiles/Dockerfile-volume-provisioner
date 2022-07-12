@@ -1,5 +1,4 @@
-ARG BASE_DOCKER_IMAGE
-FROM ${BASE_DOCKER_IMAGE} as build
+FROM registry.erda.cloud/erda/golang-base:210416 as build
 
 RUN mkdir -p "$GOPATH/src/github.com/erda-project/erda/"
 COPY . "$GOPATH/src/github.com/erda-project/erda/"
@@ -12,9 +11,7 @@ ARG DOCKER_IMAGE
 RUN make build APP_NAME=${APP_NAME} MODULE_PATH=${MODULE_PATH} DOCKER_IMAGE=${DOCKER_IMAGE} \
     && ln -s $GOPATH/src/github.com/erda-project/erda /tmp/erda
 
-ARG BASE_DOCKER_IMAGE
 FROM alpine:3.12
-
 
 RUN echo "http://mirrors.aliyun.com/alpine/v3.9/main/" > /etc/apk/repositories \
     && echo "http://mirrors.aliyun.com/alpine/v3.9/community/" >> /etc/apk/repositories \

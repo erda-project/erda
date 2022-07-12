@@ -24,7 +24,7 @@ import (
 	"regexp"
 	"strings"
 
-	git "github.com/libgit2/git2go/v30"
+	git "github.com/libgit2/git2go/v33"
 )
 
 // Tree represents a flat directory listing.
@@ -183,7 +183,7 @@ func (t *Tree) innerListEntries() (Entries, error) {
 		return nil, err
 	}
 
-	tree.Walk(func(s string, entry *git.TreeEntry) int {
+	tree.Walk(func(s string, entry *git.TreeEntry) error {
 		var mode EntryMode
 		switch entry.Filemode {
 		case git.FilemodeTree:
@@ -206,7 +206,7 @@ func (t *Tree) innerListEntries() (Entries, error) {
 		treeEntry.repo = t.Repo
 		treeEntry.Size()
 		entries = append(entries, treeEntry)
-		return 1
+		return git.TreeWalkSkip
 	})
 
 	t.entries = entries

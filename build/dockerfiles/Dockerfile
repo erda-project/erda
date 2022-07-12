@@ -14,7 +14,7 @@ ARG MAKE_BUILD_CMD
 ARG GOPROXY
 RUN --mount=type=cache,target=/root/.cache/go-build\
     --mount=type=cache,target=/go/pkg/mod \
-    make ${MAKE_BUILD_CMD} MODULE_PATH=${MODULE_PATH} DOCKER_IMAGE=${DOCKER_IMAGE} GO_BUILD_OPTIONS="-tags musl" GOPROXY=${GOPROXY}
+    make ${MAKE_BUILD_CMD} MODULE_PATH=${MODULE_PATH} DOCKER_IMAGE=${DOCKER_IMAGE} GOPROXY=${GOPROXY}
 
 
 
@@ -33,14 +33,11 @@ FROM ${BASE_DOCKER_IMAGE}
 ARG MODULE_PATH
 ENV MODULE_PATH=${MODULE_PATH}
 
-ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib:/usr/local/lib64:/lib:/lib64
-
 # use for ops
 RUN curl -o /usr/bin/orgalorg https://terminus-dice.oss.aliyuncs.com/installer/orgalorg && \
     chmod 755 /usr/bin/orgalorg
 
-RUN apk add --no-cache jq py3-pip && \
-    apk add --update nodejs nodejs-npm && \
+RUN \
     npm i -g jackson-converter@1.0.10 && \
     pip3 install dicttoxml xmindparser
 

@@ -105,7 +105,7 @@ require (
 	github.com/lestrrat/go-envload v0.0.0-20180220120943-6ed08b54a570 // indirect
 	github.com/lestrrat/go-file-rotatelogs v0.0.0-20180223000712-d3151e2a480f
 	github.com/lestrrat/go-strftime v0.0.0-20180220042222-ba3bf9c1d042 // indirect
-	github.com/libgit2/git2go/v30 v30.0.5
+	github.com/libgit2/git2go/v33 v33.0.9
 	github.com/magiconair/properties v1.8.5
 	github.com/mcuadros/go-version v0.0.0-20190830083331-035f6764e8d2
 	github.com/mholt/archiver v2.1.0+incompatible
