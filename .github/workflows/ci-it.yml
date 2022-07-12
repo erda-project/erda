@@ -68,12 +68,10 @@ jobs:
   CI:
     runs-on: ubuntu-latest
     container:
-      image: letmein7788/letmein:golangci-lint
+      image: registry.erda.cloud/erda/erda-base:20220711
     needs:
       - PREPARE
     steps:
-      - name: Install Tools
-        run: apk add tar
       - name: Clone repo
         uses: actions/checkout@v3
       - name: Fetch proto-go
@@ -95,17 +93,15 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
       - name: Run Build
-        run: GO_BUILD_OPTIONS="-tags=musl" make build-all
+        run: make build-all
 
   CODE-CHECK:
     runs-on: ubuntu-latest
     container:
-      image: letmein7788/letmein:golangci-lint
+      image: registry.erda.cloud/erda/erda-base:20220711
     needs:
       - PREPARE
     steps:
-      - name: Install Tools
-        run: apk add tar
       - name: Clone repo
         uses: actions/checkout@v3
       - name: Fetch proto-go
@@ -144,7 +140,7 @@ jobs:
   CODE-TEST:
     runs-on: ubuntu-latest
     container:
-      image: letmein7788/letmein:golangci-lint
+      image: registry.erda.cloud/erda/erda-base:20220711
     needs:
       - PREPARE
     strategy:
@@ -166,8 +162,6 @@ jobs:
           - ./internal/apps/msp/...
           - ./internal/apps/cmp/...
     steps:
-      - name: Install Tools
-        run: apk add tar
       - name: Clone repo
         uses: actions/checkout@v3
       - name: Fetch proto-go
@@ -204,7 +198,7 @@ jobs:
           GOLANG_PROTOBUF_REGISTRATION_CONFLICT: ignore
         run: |
           mkdir -p ./coverage
-          go test -tags=musl -work -timeout=10s -failfast -race -cover -coverprofile=./coverage/${{ steps.cov-report-name.outputs.path }} -covermode=atomic -gcflags='-l -N' ${{ matrix.package-paths }}
+          go test -work -timeout=10s -failfast -race -cover -coverprofile=./coverage/${{ steps.cov-report-name.outputs.path }} -covermode=atomic -gcflags='-l -N' ${{ matrix.package-paths }}
       - name: Upload coverage As Artifact
         uses: actions/upload-artifact@v3
         with:

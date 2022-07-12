@@ -32,7 +32,7 @@ cd $(git rev-parse --show-toplevel)
 VERSION="$(build/scripts/make-version.sh)"
 IMAGE_TAG="${IMAGE_TAG:-$(build/scripts/make-version.sh tag)}"
 DOCKERFILE_DEFAULT="build/dockerfiles/Dockerfile"
-BASE_DOCKER_IMAGE="$(build/scripts/base_image.sh image)"
+BASE_DOCKER_IMAGE="registry.erda.cloud/erda/erda-base:20220711"
 DOCKERFILE=${DOCKERFILE_DEFAULT}
 
 # setup single module envionment variables
