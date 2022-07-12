@@ -358,3 +358,19 @@ func (p pipelineDefinition) UpdateExtra(ctx context.Context, request *pb.Pipelin
 		Extra: PipelineDefinitionExtraToPb(dbExtra),
 	}, nil
 }
+
+func (p pipelineDefinition) ListByRemote(ctx context.Context, req *pb.PipelineDefinitionListByRemoteRequest) (*pb.PipelineDefinitionListResponse, error) {
+	definitions, err := p.dbClient.ListPipelineDefinitionByRemote(req.Remote)
+	if err != nil {
+		return nil, err
+	}
+
+	data := make([]*pb.PipelineDefinition, 0, len(definitions))
+	for _, v := range definitions {
+		data = append(data, v.Convert())
+	}
+	return &pb.PipelineDefinitionListResponse{
+		Data:  data,
+		Total: int64(len(data)),
+	}, nil
+}

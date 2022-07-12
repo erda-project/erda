@@ -25,8 +25,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	defpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
-	sourcepd "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
+	propipelinepb "github.com/erda-project/erda-proto-go/dop/projectpipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	"github.com/erda-project/erda/internal/apps/dop/types"
@@ -170,6 +169,12 @@ func (e *Endpoints) DeleteApplication(ctx context.Context, r *http.Request, vars
 		return apierrors.ErrDeleteApplication.InternalError(err).ToResp(), nil
 	}
 
+	// delete project pipeline
+	_, err = e.ProjectPipelineSvc.DeleteByApp(ctx, &propipelinepb.DeleteByAppRequest{AppID: appDto.ID})
+	if err != nil {
+		logrus.Errorf("failed to delete projectPipeline by app, err: %v", err)
+	}
+
 	// Delete app
 	_, err = e.bdl.DeleteApp(uint64(applicationID), identity.UserID)
 	if err != nil {
@@ -189,38 +194,7 @@ func (e *Endpoints) DeleteApplication(ctx context.Context, r *http.Request, vars
 		logrus.Warnf("failed to delete app branch rules, (%v)", err)
 	}
 
-	// delete pipeline source and definition
-	if err = e.deletePipelineSourceAndDefinition(ctx, nil, appDto); err != nil {
-		logrus.Errorf("failed to deletePipelineSourceAndDefinition, err: %v", err)
-	}
-
 	return httpserver.OkResp(appDto)
-}
-
-func (e *Endpoints) deletePipelineSourceAndDefinition(ctx context.Context, project *apistructs.ProjectDTO, app *apistructs.ApplicationDTO) error {
-	var remote string
-	if project != nil {
-		org, err := e.bdl.GetOrg(project.OrgID)
-		if err != nil {
-			return err
-		}
-		remote = fmt.Sprintf("%s/%s", org.Name, project.Name)
-	} else if app != nil {
-		remote = fmt.Sprintf("%s/%s/%s", app.OrgName, app.ProjectName, app.Name)
-	}
-	if remote == "" {
-		return fmt.Errorf("the remote is empty")
-	}
-
-	_, err := e.PipelineSource.DeleteByRemote(ctx, &sourcepd.PipelineSourceDeleteByRemoteRequest{Remote: remote})
-	if err != nil {
-		return err
-	}
-	_, err = e.PipelineDefinition.DeleteByRemote(ctx, &defpb.PipelineDefinitionDeleteByRemoteRequest{Remote: remote})
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func (e *Endpoints) deleteGittarRepo(appDto *apistructs.ApplicationDTO) (err error) {

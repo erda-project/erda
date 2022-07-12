@@ -62,6 +62,11 @@ service DefinitionService {
             put: "/api/pipeline-definitions/{pipelineDefinitionID}/actions/update-extra",
         };
     }
+    rpc ListByRemote(PipelineDefinitionListByRemoteRequest) returns (PipelineDefinitionListResponse) {
+        option (google.api.http) = {
+            get: "/api/pipeline-definitions/actions/list-by-remote",
+        };
+    }
 }
 
 // update extra
@@ -220,4 +225,8 @@ message PipelineDefinitionUsedRefListRequest {
 
 message PipelineDefinitionUsedRefListResponse {
     repeated string ref = 1;
+}
+
+message PipelineDefinitionListByRemoteRequest {
+    string remote = 1;
 }
