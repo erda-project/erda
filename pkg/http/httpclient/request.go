@@ -241,12 +241,17 @@ func (r AfterDo) Body(b io.Writer) (*Response, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	if _, err = io.Copy(b, resp.Body); err != nil {
+	if err = writeBody(b, resp); err != nil {
 		return nil, err
 	}
 	return &Response{
 		internal: resp,
 	}, nil
+}
+
+func writeBody(writer io.Writer, resp *http.Response) error {
+	_, err := io.Copy(writer, resp.Body)
+	return err
 }
 
 // StreamBody 返回 response body, 用于流式读取。

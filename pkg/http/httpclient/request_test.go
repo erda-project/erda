@@ -14,6 +14,13 @@
 
 package httpclient
 
+import (
+	"bytes"
+	"io/ioutil"
+	"net/http"
+	"testing"
+)
+
 //import (
 //	"net/http"
 //	"net/url"
@@ -153,3 +160,27 @@ package httpclient
 ////	fmt.Println(body.String())
 ////	_ = resp
 ////}
+
+type buffer struct {
+	*bytes.Buffer
+}
+
+func (b buffer) Close() error {
+	return nil
+}
+
+func TestWriteBody(t *testing.T) {
+	buff := []byte("buffer")
+	resp := http.Response{Body: buffer{bytes.NewBuffer(buff)}}
+	w := bytes.NewBuffer(nil)
+	if err := writeBody(w, &resp); err != nil {
+		t.Fatal(err)
+	}
+	data, err := ioutil.ReadAll(w)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(buff, data) {
+		t.Fatal("buff != data")
+	}
+}
