@@ -99,40 +99,16 @@ func RunGwLs(context *command.Context, invalidOnly bool, cluster, output, hepa s
 	var ctx = *context
 	// to find an org
 	if ctx.CurrentOrg.Name == "" {
-		var orgResp BaseResponse
-		response, err := ctx.Get().
-			Path("/api/orgs").
-			Do().
-			JSON(&orgResp)
-		if err != nil {
+		if err := FindAnaOrg(&ctx); err != nil {
 			return err
 		}
-		if !response.IsOK() {
-			return errors.New(string(response.Body()))
-		}
-
-		var orgData BaseResponseData
-		if err = json.Unmarshal(orgResp.Data, &orgData); err != nil {
-			return err
-		}
-		if len(orgData.List) == 0 {
-			return errors.Errorf("no org found for the user: %s", ctx.GetUserID())
-		}
-
-		ctx.CurrentOrg = orgData.List[0]
 	}
 	ctx.Info("Org-ID: %v, Org-Name: %v, User-ID: %v", ctx.CurrentOrg.ID, ctx.CurrentOrg.Name, ctx.GetUserID())
 
 	// generate hepa host
-	if hepa == "" {
-		host, err := url.Parse(ctx.CurrentOpenApiHost)
-		if err != nil {
-			return err
-		}
-		host.Host = "hepa." + strings.TrimPrefix(host.Host, "openapi.")
-		hepa = host.String()
+	if err := HepaHostFromOpenapi(&ctx, hepa); err != nil {
+		return err
 	}
-	ctx.CurrentOpenApiHost = hepa
 	ctx.Info("HEPA host: %s", ctx.CurrentOpenApiHost)
 
 	// get invalid endpoints
@@ -151,5 +127,40 @@ func RunGwLs(context *command.Context, invalidOnly bool, cluster, output, hepa s
 		return errors.Errorf("success: %v, status: %v, message: %v", response.IsOK(), response.StatusCode(), string(response.Body()))
 	}
 	ctx.Info("result is writen into %s", output)
+	return nil
+}
+
+func FindAnaOrg(ctx *command.Context) error {
+	var resp BaseResponse
+	response, err := ctx.Get().Path("/apis/orgs").Do().JSON(&resp)
+	if err != nil {
+		return err
+	}
+	if !response.IsOK() {
+		return errors.New(string(response.Body()))
+	}
+
+	var org BaseResponseData
+	if err := json.Unmarshal(resp.Data, &org); err != nil {
+		return err
+	}
+	if len(org.List) == 0 {
+		return errors.Errorf("no org found for the user: %s", ctx.GetUserID())
+	}
+	ctx.CurrentOrg = org.List[0]
+	return nil
+}
+
+func HepaHostFromOpenapi(ctx *command.Context, hepa string) error {
+	if hepa != "" {
+		ctx.CurrentOpenApiHost = hepa
+		return nil
+	}
+	host, err := url.Parse(ctx.CurrentOpenApiHost)
+	if err != nil {
+		return err
+	}
+	host.Host = "hepa." + strings.TrimPrefix(host.Host, "openapi.")
+	ctx.CurrentOpenApiHost = host.String()
 	return nil
 }

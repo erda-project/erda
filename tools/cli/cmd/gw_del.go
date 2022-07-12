@@ -108,31 +108,15 @@ type InvalidEndpointsItem struct {
 func RunGwDel(context *command.Context, input, output, cluster, kongAdmin string, yes, deleteFromErda bool) error {
 	var ctx = *context
 
-	// check --input
-	if input == "" {
-		return errors.New("the endpoints input file must be specified")
+	if err := GwDelPreCheck(input, &output, cluster, kongAdmin, deleteFromErda); err != nil {
+		return err
 	}
 
-	// check --output
-	if output == "" {
-		output = "result." + input
-	}
 	out, err := os.OpenFile(output, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0644)
 	if err != nil {
 		return err
 	}
 	defer out.Close()
-
-	// check --kong-admin
-	kongAdmin = strings.TrimSuffix(kongAdmin, "/")
-	if _, err := url.Parse(kongAdmin); err != nil {
-		return err
-	}
-
-	// check --delete-from
-	if deleteFromErda {
-		return errors.New("the flag --delete-from-erda is not supported yet")
-	}
 
 	// read from file
 	in, err := ioutil.ReadFile(input)
@@ -150,11 +134,6 @@ func RunGwDel(context *command.Context, input, output, cluster, kongAdmin string
 		ctx.Warn("exit: %s", "endpoints total is 0")
 		return nil
 	}
-
-	// check the cluster
-	if cluster == "" {
-		return errors.New("--cluster must be specified")
-	}
 	for _, item := range endpoints.Data.List {
 		if item.ClusterName != cluster {
 			return errors.Errorf("the item's cluster %s dose not equals with %s that you specified. api: %s/%s", item.ClusterName, cluster, item.PackageID, item.PackageApiID)
@@ -168,6 +147,31 @@ func RunGwDel(context *command.Context, input, output, cluster, kongAdmin string
 		}
 	}
 
+	return nil
+}
+
+func GwDelPreCheck(input string, output *string, cluster, kongAdmin string, deleteFromErda bool) error {
+	// check --input
+	if input == "" {
+		return errors.New("the endpoints input file must be specified")
+	}
+	// check --output
+	if *output == "" {
+		*output = "result." + input
+	}
+	// check the cluster
+	if cluster == "" {
+		return errors.New("--cluster must be specified")
+	}
+	// check --kong-admin
+	kongAdmin = strings.TrimSuffix(kongAdmin, "/")
+	if _, err := url.Parse(kongAdmin); err != nil {
+		return err
+	}
+	// check --delete-from
+	if deleteFromErda {
+		return errors.New("the flag --delete-from-erda is not supported yet")
+	}
 	return nil
 }
 
