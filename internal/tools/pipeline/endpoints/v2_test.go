@@ -16,6 +16,8 @@ package endpoints
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -35,6 +37,16 @@ type benchmarkPipelineCreateRes struct {
 	StatusCode int    `json:"statusCode"`
 	Body       string `json:"body"`
 	err        error  `json:"err"`
+}
+
+type benchmarkQueueCreateRes struct {
+	Name       string `json:"name"`
+	QueueID    int    `json:"queueID"`
+	StatusCode int    `json:"statusCode"`
+	err        error  `json:"err"`
+	Data       struct {
+		ID int `json:"id"`
+	}
 }
 
 func createV2(url string) (result benchmarkPipelineCreateRes) {
@@ -148,4 +160,116 @@ func newCreateV2Work(workerID int) (count int) {
 //		}(i)
 //	}
 //	wait.Wait()
+//}
+
+func createFDPPipelineAutoRun(idx int, url string) (result benchmarkPipelineCreateRes) {
+	if len(url) == 0 {
+		return
+	}
+	method := "POST"
+
+	payload := `{
+    "pipelineYml": "version: \"1.1\"\nname: \"\"\nstages:\n  - stage:\n      - custom-script:\n          alias: custom-script\n          version: \"1.0\"\n          commands:\n            - sleep 600\n          resources:\n            cpu: 0.5\n            mem: 1024\nlifecycle:\n  - hook: before-run-check\n    client: FDP\n    labels:\n      clusterName: dy-prod\n      dependWorkflowIds:\n        - dy-prod-10\n      workflowId: dy-prod-143",
+    "clusterName": "csi-dev",
+	"autoRunAtOnce": true,
+    "pipelineYmlName": "enqueue-custom-%d",
+    "pipelineSource": "cdp-dev",
+    "labels": {
+        "appID": "3",
+        "orgID": "1",
+        "projectID": "3"
+    },
+    "normalLabels": {
+        "appName": "benchmark",
+        "orgName": "benchmark",
+        "projectName": "benchmark"
+    }
+}`
+	payload = fmt.Sprintf(payload, idx)
+
+	client := &http.Client{Timeout: 5 * time.Second}
+	req, err := http.NewRequest(method, fmt.Sprintf("%s/api/v2/pipelines", url), strings.NewReader(payload))
+
+	if err != nil {
+		result.err = err
+		return
+	}
+	req.Header.Add("Internal-Client", "bundle")
+	req.Header.Add("Content-Type", "application/json")
+
+	timeStart := time.Now()
+	res, err := client.Do(req)
+	if err != nil {
+		result.err = err
+		return
+	}
+	defer res.Body.Close()
+
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		result.err = err
+		return
+	}
+	timeEnd := time.Now()
+	result.CostTime = timeEnd.Sub(timeStart).Milliseconds()
+	result.StatusCode = res.StatusCode
+	result.Body = string(body)
+	result.Name = "createV2"
+	return
+}
+
+func createQueue(idx int, url string) (result benchmarkQueueCreateRes) {
+	method := "POST"
+
+	payload := `{
+    "name": "enqueue-test-%d",
+    "pipelineSource": "cdp-dev",
+    "clusterName":"csi-dev",
+    "concurrency": 1000,
+    "maxCPU": 3000,
+    "maxMemoryMB": 40960000
+}`
+	payload = fmt.Sprintf(payload, idx)
+
+	client := &http.Client{Timeout: 5 * time.Second}
+	req, err := http.NewRequest(method, fmt.Sprintf("%s/api/pipeline-queues", url), strings.NewReader(payload))
+
+	if err != nil {
+		result.err = err
+		return
+	}
+	req.Header.Add("Internal-Client", "bundle")
+	req.Header.Add("Content-Type", "application/json")
+
+	res, err := client.Do(req)
+	if err != nil {
+		result.err = err
+		return
+	}
+	defer res.Body.Close()
+
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		result.err = err
+		return
+	}
+	if err := json.Unmarshal(body, &result); err != nil {
+		result.err = err
+		return
+	}
+	result.StatusCode = res.StatusCode
+	result.Name = "createQueue"
+	result.QueueID = result.Data.ID
+	return
+}
+
+//func Test_benchmarkCreateAndRunPipelineInQueue(t *testing.T) {
+//	for i := 0; i < 1; i++ {
+//		res := createFDPPipelineAutoRun(i, "http://localhost:3081")
+//		if res.err != nil {
+//			t.Errorf("failed to create queue pipeline, err: %v", res.err)
+//		}
+//		t.Logf("create queue pipeline %d, statusCode: %d, costTime: %dms", i, res.StatusCode, res.CostTime)
+//		time.Sleep(time.Second)
+//	}
 //}

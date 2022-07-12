@@ -21,6 +21,8 @@ import (
 
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	"github.com/erda-project/erda-proto-go/core/pipeline/pb"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/edgepipeline_register"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/edgereporter"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
@@ -67,6 +69,7 @@ func TestPipelineSvc_UpdatePipelineCron(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
+		isEdge  bool
 		wantErr bool
 	}{
 		{
@@ -97,6 +100,38 @@ func TestPipelineSvc_UpdatePipelineCron(t *testing.T) {
 				configManageNamespaces: nil,
 				cronCompensator:        nil,
 			},
+			isEdge:  false,
+			wantErr: false,
+		},
+		{
+			name: "test edge cron",
+			args: args{
+				p: &spec.Pipeline{
+					PipelineBase: spec.PipelineBase{
+						PipelineSource:  "test",
+						PipelineYmlName: "test",
+						ClusterName:     "test",
+					},
+					PipelineExtra: spec.PipelineExtra{
+						Extra: spec.PipelineExtraInfo{
+							CronExpr: "test",
+						},
+						PipelineYml: "test",
+						Snapshot: spec.Snapshot{
+							Envs: map[string]string{
+								"test": "test",
+							},
+						},
+					},
+					Labels: map[string]string{
+						"test": "test",
+					},
+				},
+				cronStartFrom:          nil,
+				configManageNamespaces: nil,
+				cronCompensator:        nil,
+			},
+			isEdge:  true,
 			wantErr: false,
 		},
 	}
@@ -111,6 +146,10 @@ func TestPipelineSvc_UpdatePipelineCron(t *testing.T) {
 				},
 			}
 			s.pipelineCronSvc = impl
+			if tt.isEdge {
+				s.edgeRegister = &edgepipeline_register.MockEdgeRegister{}
+				s.edgeReporter = &edgereporter.MockEdgeReporter{}
+			}
 
 			if err := s.UpdatePipelineCron(tt.args.p, tt.args.cronStartFrom, tt.args.configManageNamespaces, tt.args.cronCompensator); (err != nil) != tt.wantErr {
 				t.Errorf("UpdatePipelineCron() error = %v, wantErr %v", err, tt.wantErr)

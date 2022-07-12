@@ -381,7 +381,7 @@ func (s *PipelineSvc) UpdatePipelineCron(p *spec.Pipeline, cronStartFrom *time.T
 
 	// report
 	if s.edgeRegister != nil {
-		if s.edgeRegister.IsEdge() {
+		if s.edgeRegister.IsEdge() && p.CronID != nil {
 			s.edgeReporter.TriggerOnceCronReport(*p.CronID)
 		}
 	}
