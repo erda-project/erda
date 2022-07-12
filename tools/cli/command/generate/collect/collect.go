@@ -41,6 +41,9 @@ func main() {
 	cmds := []string{}
 	for _, pkg := range pkgs {
 		for fname, f := range pkg.Files {
+			if strings.HasSuffix(fname, "_test.go") {
+				continue
+			}
 			cmd := parseFile(fname, f)
 			cmds = append(cmds, cmd)
 		}
