@@ -91,7 +91,7 @@ func (c *ClusterService) ListCluster(ctx context.Context, req *pb.ListClusterReq
 		}, nil
 	}
 
-	orgResp, err := c.org.GetOrgClusterRelationsByOrg(apis.WithInternalClientContext(ctx, "cluster-manager"),
+	orgResp, err := c.org.GetOrgClusterRelationsByOrg(apis.WithInternalClientContext(ctx, discover.SvcClusterManager),
 		&orgpb.GetOrgClusterRelationsByOrgRequest{OrgID: strconv.Itoa(int(req.OrgID))})
 	if err != nil {
 		return nil, ErrListCluster.InternalError(err)
@@ -160,7 +160,7 @@ func (c *ClusterService) CreateCluster(ctx context.Context, req *pb.CreateCluste
 		OrgName:     org.Name,
 		ClusterName: req.Name,
 	}
-	_, err = c.org.CreateOrgClusterRelation(apis.WithInternalClientContext(ctx, discover.SvcClusterManager), createOrgClusterReq)
+	_, err = c.org.CreateOrgClusterRelation(apis.WithUserIDContext(ctx, req.UserID), createOrgClusterReq)
 	if err != nil {
 		return nil, ErrCreateCluster.InternalError(err)
 	}

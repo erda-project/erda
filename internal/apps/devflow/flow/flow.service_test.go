@@ -234,7 +234,7 @@ func (i issueForMakeMrDescMock) GetIssue(id int64, identityInfo *commonpb.Identi
 	return &issuepb.Issue{Title: "New issue to Erda", Id: 100001}, nil
 }
 
-var mRDesc = "[Task-100001] New issue to Erda"
+var mRDesc = "Task: #100001 New issue to Erda"
 
 func TestService_makeMrDesc(t *testing.T) {
 	type fields struct {

@@ -29,6 +29,7 @@ import (
 	_ "github.com/erda-project/erda/internal/tools/pipeline/aop"
 	_ "github.com/erda-project/erda/internal/tools/pipeline/providers/action_runner_scheduler"
 	_ "github.com/erda-project/erda/internal/tools/pipeline/providers/actionmgr"
+	_ "github.com/erda-project/erda/internal/tools/pipeline/providers/app"
 	_ "github.com/erda-project/erda/internal/tools/pipeline/providers/build"
 	_ "github.com/erda-project/erda/internal/tools/pipeline/providers/clusterinfo"
 	_ "github.com/erda-project/erda/internal/tools/pipeline/providers/cms"

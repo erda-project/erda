@@ -22,31 +22,31 @@ import (
 	"github.com/erda-project/erda/internal/pkg/websocket"
 	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/actionmgr"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/app"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/cache"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/clusterinfo"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/cron/daemon"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/edgepipeline_register"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/edgereporter"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/engine"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/queuemanager"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/resource"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/run"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/secret"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/user"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/actionagentsvc"
-	"github.com/erda-project/erda/internal/tools/pipeline/services/appsvc"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/permissionsvc"
-	"github.com/erda-project/erda/internal/tools/pipeline/services/queuemanage"
 	"github.com/erda-project/erda/pkg/jsonstore"
 	"github.com/erda-project/erda/pkg/jsonstore/etcd"
 )
 
 type PipelineSvc struct {
-	appSvc          *appsvc.AppSvc
+	appSvc          app.Interface
 	crondSvc        daemon.Interface
 	actionAgentSvc  *actionagentsvc.ActionAgentSvc
 	pipelineCronSvc cronpb.CronServiceServer
 	permissionSvc   *permissionsvc.PermissionSvc
-	queueManage     *queuemanage.QueueManage
+	queueManage     queuemanager.Interface
 	cache           cache.Interface
 
 	dbClient  *dbclient.Client
@@ -71,10 +71,10 @@ type PipelineSvc struct {
 	resource     resource.Interface
 }
 
-func New(appSvc *appsvc.AppSvc, crondSvc daemon.Interface,
+func New(appSvc app.Interface, crondSvc daemon.Interface,
 	actionAgentSvc *actionagentsvc.ActionAgentSvc,
 	pipelineCronSvc cronpb.CronServiceServer, permissionSvc *permissionsvc.PermissionSvc,
-	queueManage *queuemanage.QueueManage,
+	queueManage queuemanager.Interface,
 	dbClient *dbclient.Client, bdl *bundle.Bundle, publisher *websocket.Publisher,
 	engine engine.Interface, js jsonstore.JsonStore, etcd *etcd.Store, clusterInfo clusterinfo.Interface,
 	edgeRegister edgepipeline_register.Interface, cache cache.Interface, resource resource.Interface) *PipelineSvc {

@@ -12,34 +12,45 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dicehub
+package app
 
 import (
-	"github.com/jinzhu/gorm"
+	"context"
+	"reflect"
 
-	"github.com/erda-project/erda-infra/base/logs"
+	"github.com/recallsong/go-utils/logs"
+
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda-infra/providers/httpserver"
-	image "github.com/erda-project/erda/internal/apps/dop/dicehub/image/db"
-	"github.com/erda-project/erda/internal/core/org"
+	"github.com/erda-project/erda/bundle"
 )
 
+type config struct {
+}
+
 type provider struct {
-	Log     logs.Logger
-	DB      *gorm.DB          `autowired:"mysql-client"`
-	Router  httpserver.Router `autowired:"http-router"`
-	ImageDB *image.ImageConfigDB
-	Org     org.Interface
+	Log logs.Logger
+	Cfg *config
+
+	bdl *bundle.Bundle
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.ImageDB = &image.ImageConfigDB{DB: p.DB}
-	return Initialize(p)
+	p.bdl = bundle.New(bundle.WithErdaServer())
+	return nil
+}
+
+func (p *provider) Run(ctx context.Context) error {
+	return nil
 }
 
 func init() {
-	servicehub.Register("dicehub", &servicehub.Spec{
-		Services: []string{"dicehub"},
-		Creator:  func() servicehub.Provider { return &provider{} },
+	interfaceType := reflect.TypeOf((*Interface)(nil)).Elem()
+	servicehub.Register("app", &servicehub.Spec{
+		Services:     []string{"app"},
+		Types:        []reflect.Type{interfaceType},
+		Dependencies: nil,
+		Description:  "pipeline app",
+		ConfigFunc:   func() interface{} { return &config{} },
+		Creator:      func() servicehub.Provider { return &provider{} },
 	})
 }

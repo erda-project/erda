@@ -159,8 +159,10 @@ func (l *List) doFilterApp() (data *list.Data) {
 		}
 	}
 	var appIDs []uint64
+	appPublicMap := make(map[uint64]bool)
 	for i := range apps.List {
 		appIDs = append(appIDs, apps.List[i].ID)
+		appPublicMap[apps.List[i].ID] = apps.List[i].IsPublic
 	}
 
 	mrResult, err := l.bdl.MergeRequestCount(l.identity.UserID, apistructs.MergeRequestCountRequest{
@@ -174,7 +176,8 @@ func (l *List) doFilterApp() (data *list.Data) {
 
 	for _, p := range apps.List {
 		_, ok := myAppMap[p.ID]
-		authorized := selectedOption == "my" || ok
+		_, public := appPublicMap[p.ID]
+		authorized := appAuthrized(selectedOption, ok, public)
 		item := list.Item{
 			ID:          strconv.FormatUint(p.ID, 10),
 			Icon:        &commodel.Icon{URL: p.Logo},
@@ -205,6 +208,10 @@ func (l *List) doFilterApp() (data *list.Data) {
 		data.List = append(data.List, item)
 	}
 	return
+}
+
+func appAuthrized(selectedOption string, isMyapp, isPublic bool) bool {
+	return selectedOption == "my" || isMyapp || isPublic
 }
 
 func (l *List) appDescription(desc string) string {

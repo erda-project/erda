@@ -179,7 +179,7 @@ func (s *Service) makeMrDesc(ctx context.Context, issueID uint64) (string, error
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("[%s-%d] %s", s.p.Trans.Text(apis.Language(ctx), "task"), issue.Id, issue.Title), nil
+	return fmt.Sprintf("%s: #%d %s", s.p.Trans.Text(apis.Language(ctx), issue.Type.String()), issue.Id, issue.Title), nil
 }
 
 func (s *Service) OperationMerge(ctx context.Context, req *pb.OperationMergeRequest) (*pb.OperationMergeResponse, error) {

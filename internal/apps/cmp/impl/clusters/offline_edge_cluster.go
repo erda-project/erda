@@ -132,7 +132,7 @@ func (c *Clusters) OfflineEdgeCluster(ctx context.Context, req apistructs.Offlin
 		}
 
 		var relationResp *orgpb.ListOrgClusterRelationResponse
-		relationResp, err = c.org.ListOrgClusterRelation(apis.WithInternalClientContext(ctx, discover.SvcCMP),
+		relationResp, err = c.org.ListOrgClusterRelation(apis.WithUserIDContext(ctx, userid),
 			&orgpb.ListOrgClusterRelationRequest{Cluster: req.ClusterName})
 		if err != nil {
 			logrus.Errorf("list org cluster relation failed, cluster: %s, error: %v", req.ClusterName, err)

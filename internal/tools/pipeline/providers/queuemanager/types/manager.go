@@ -18,17 +18,16 @@ import (
 	"context"
 
 	"github.com/erda-project/erda-proto-go/core/pipeline/queue/pb"
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/queuemanager/pkg/queue/snapshot"
 )
 
 // QueueManager manage all queues and related pipelines.
 type QueueManager interface {
-	IdempotentAddQueue(pq *apistructs.PipelineQueue) Queue
-	QueryQueueUsage(pq *apistructs.PipelineQueue) *pb.QueueUsage
+	IdempotentAddQueue(pq *pb.Queue) Queue
+	QueryQueueUsage(pq *pb.Queue) *pb.QueueUsage
 	PutPipelineIntoQueue(pipelineID uint64) (popCh <-chan struct{}, needRetryIfErr bool, err error)
 	PopOutPipelineFromQueue(pipelineID uint64)
-	BatchUpdatePipelinePriorityInQueue(pq *apistructs.PipelineQueue, pipelineIDs []uint64) error
+	BatchUpdatePipelinePriorityInQueue(pq *pb.Queue, pipelineIDs []uint64) error
 	Stop()
 	SendQueueToEtcd(queueID uint64)
 	ListenInputQueueFromEtcd(ctx context.Context)

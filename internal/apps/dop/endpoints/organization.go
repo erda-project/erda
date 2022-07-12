@@ -204,7 +204,7 @@ func (e *Endpoints) GetOrg(ctx context.Context, r *http.Request, vars map[string
 
 	orgStr := vars["idOrName"]
 
-	orgResp, err := e.orgClient.GetOrg(apis.WithUserIDContext(ctx, "2"), &orgpb.GetOrgRequest{IdOrName: orgStr})
+	orgResp, err := e.orgClient.GetOrg(apis.WithInternalClientContext(ctx, discover.SvcDOP), &orgpb.GetOrgRequest{IdOrName: orgStr})
 	if err != nil {
 		return apierrors.ErrGetOrg.InternalError(err).ToResp(), nil
 	}

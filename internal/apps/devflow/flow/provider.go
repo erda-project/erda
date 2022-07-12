@@ -34,7 +34,7 @@ type provider struct {
 	Cfg      *config
 	Log      logs.Logger
 	Register transport.Register
-	Trans    i18n.Translator `translator:"project-pipeline" required:"true"`
+	Trans    i18n.Translator `translator:"common" required:"true"`
 
 	devFlowService *Service
 	IssueRelation  issuerelationpb.IssueRelationServiceServer `autowired:"erda.apps.devflow.issuerelation.IssueRelationService"`
