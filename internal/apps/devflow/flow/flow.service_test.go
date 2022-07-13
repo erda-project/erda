@@ -209,7 +209,7 @@ func Test_getSourceBranchFromFlowRule(t *testing.T) {
 }
 
 type issueForMakeMrDescMock struct {
-	issueMock
+	IssueMock
 }
 
 type transForMakeMrDescMock struct {
