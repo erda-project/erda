@@ -22,6 +22,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
@@ -77,6 +78,7 @@ func (p pipelineDefinition) Create(ctx context.Context, request *pb.PipelineDefi
 	}
 	pipelineDefinitionExtra.PipelineDefinitionID = pipelineDefinition.ID
 	pipelineDefinitionExtra.Extra = extra
+	pipelineDefinitionExtra.PipelineSourceID = request.PipelineSourceID
 	err = p.dbClient.CreatePipelineDefinitionExtra(&pipelineDefinitionExtra)
 	if err != nil {
 		return nil, err
@@ -176,23 +178,35 @@ func (p pipelineDefinition) DeleteByRemote(ctx context.Context, request *pb.Pipe
 	if request.Remote == "" {
 		return nil, fmt.Errorf("the remote is empty")
 	}
+	var err error
 
 	session := p.dbClient.NewSession()
 	defer session.Close()
-	session.Begin()
+	if err = session.Begin(); err != nil {
+		return nil, err
+	}
 
-	err := p.dbClient.DeletePipelineDefinitionByRemote(request.Remote, mysqlxorm.WithSession(session))
+	defer func() {
+		if err != nil {
+			if rbErr := session.Rollback(); rbErr != nil {
+				logrus.Errorf("failed to rollback when delete by remote, remote: %s, rollbackErr: %v",
+					request.Remote, rbErr)
+			}
+			return
+		}
+		if cmErr := session.Commit(); cmErr != nil {
+			logrus.Errorf("failed to commit when delete by remote, remote: %s, rollbackErr: %v",
+				request.Remote, cmErr)
+		}
+	}()
+	err = p.dbClient.DeletePipelineDefinitionByRemote(request.Remote, mysqlxorm.WithSession(session))
 	if err != nil {
-		session.Rollback()
 		return nil, err
 	}
 	err = p.dbClient.DeletePipelineDefinitionExtraByRemote(request.Remote, mysqlxorm.WithSession(session))
 	if err != nil {
-		session.Rollback()
 		return nil, err
 	}
-	session.Commit()
-
 	return &pb.PipelineDefinitionDeleteResponse{}, nil
 }
 

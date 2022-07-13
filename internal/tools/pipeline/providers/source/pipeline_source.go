@@ -19,6 +19,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	"github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/source/db"
@@ -108,17 +110,31 @@ func (p pipelineSource) DeleteByRemote(ctx context.Context, request *pb.Pipeline
 	}
 	session := p.dbClient.NewSession()
 	defer session.Close()
-	session.Begin()
+
+	if err = session.Begin(); err != nil {
+		return nil, err
+	}
+	defer func() {
+		if err != nil {
+			if rbErr := session.Rollback(); rbErr != nil {
+				logrus.Errorf("failed to rollback when delete by remote, remote: %s, rollbackErr: %v",
+					request.Remote, rbErr)
+			}
+			return
+		}
+		if cmErr := session.Commit(); cmErr != nil {
+			logrus.Errorf("failed to commit when delete by remote, remote: %s, rollbackErr: %v",
+				request.Remote, cmErr)
+		}
+	}()
 
 	for _, v := range sources {
 		v.SoftDeletedAt = uint64(time.Now().UnixNano() / 1e6)
 		err = p.dbClient.DeletePipelineSource(v.ID, &v, mysqlxorm.WithSession(session))
 		if err != nil {
-			session.Rollback()
 			return nil, err
 		}
 	}
-	session.Commit()
 
 	return &pb.PipelineSourceDeleteResponse{}, nil
 }

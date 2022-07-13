@@ -135,7 +135,7 @@ func (client *Client) ListPipelineSourceByRemote(remote string, ops ...mysqlxorm
 	defer session.Close()
 
 	var pipelineSource []PipelineSource
-	if err := session.Where("remote LIKE ?", remote+"%").
+	if err := session.Where("remote = ?", remote).
 		Where("soft_deleted_at = 0").
 		Find(&pipelineSource); err != nil {
 		return nil, err

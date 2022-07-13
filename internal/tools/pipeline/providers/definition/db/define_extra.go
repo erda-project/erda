@@ -62,8 +62,8 @@ func (client *Client) DeletePipelineDefinitionExtraByRemote(remote string, ops .
 	session := client.NewSession(ops...)
 	defer session.Close()
 
-	_, err := session.Table("pipeline_definition_extra").
-		Where("pipeline_source_id IN (SELECT id FROM pipeline_source WHERE remote LIKE ?)", remote+"%").Where("soft_deleted_at = 0").
+	_, err := session.Table(PipelineDefinitionExtra{}.TableName()).
+		Where("pipeline_source_id IN (SELECT id FROM pipeline_source WHERE remote = ?)", remote).Where("soft_deleted_at = 0").
 		Update(map[string]interface{}{"soft_deleted_at": time.Now().UnixNano() / 1e6})
 	return err
 }

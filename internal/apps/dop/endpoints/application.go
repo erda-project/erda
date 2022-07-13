@@ -173,6 +173,7 @@ func (e *Endpoints) DeleteApplication(ctx context.Context, r *http.Request, vars
 	_, err = e.ProjectPipelineSvc.DeleteByApp(ctx, &propipelinepb.DeleteByAppRequest{AppID: appDto.ID})
 	if err != nil {
 		logrus.Errorf("failed to delete projectPipeline by app, err: %v", err)
+		return apierrors.ErrDeleteApplication.InternalError(err).ToResp(), nil
 	}
 
 	// Delete app

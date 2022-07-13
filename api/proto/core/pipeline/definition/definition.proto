@@ -102,7 +102,7 @@ message PipelineDefinition {
     string status = 20;
     int64 pipelineID = 21;
     int64 totalActionNum = 22;
-    int64 ExecutedActionNum = 23;
+    int64 executedActionNum = 23;
 }
 
 message PipelineDefinitionExtra {
@@ -124,7 +124,7 @@ message PipelineDefinitionCreateRequest {
     string category = 6;
     PipelineDefinitionExtra extra = 7;
     int64 totalActionNum = 8;
-    int64 ExecutedActionNum = 9;
+    int64 executedActionNum = 9;
     string ref = 10;
 }
 
@@ -145,7 +145,7 @@ message PipelineDefinitionUpdateRequest {
     string status = 9;
     int64 pipelineID = 10;
     int64 totalActionNum = 11;
-    int64 ExecutedActionNum = 12;
+    int64 executedActionNum = 12;
 }
 
 message PipelineDefinitionUpdateResponse {
@@ -191,7 +191,7 @@ message PipelineDefinitionListRequest {
     repeated string ascCols = 15;
     repeated string descCols = 16;
     int64 totalActionNum = 17;
-    int64 ExecutedActionNum = 18;
+    int64 executedActionNum = 18;
     repeated string sourceIDList = 19;
     repeated string filePathWithNames = 20;
     bool isOthers = 21;

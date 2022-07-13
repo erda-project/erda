@@ -81,7 +81,7 @@ func (client *Client) DeletePipelineDefinitionByRemote(remote string, ops ...mys
 	session := client.NewSession(ops...)
 	defer session.Close()
 
-	_, err := session.Table("pipeline_definition").
+	_, err := session.Table(PipelineDefinition{}.TableName()).
 		Where("pipeline_source_id IN (SELECT id FROM pipeline_source WHERE remote = ?)", remote).
 		Where("soft_deleted_at = 0").
 		Update(map[string]interface{}{"soft_deleted_at": time.Now().UnixNano() / 1e6})
@@ -93,7 +93,7 @@ func (client *Client) ListPipelineDefinitionByRemote(remote string, ops ...mysql
 	defer session.Close()
 
 	var list []PipelineDefinitionSource
-	err := session.Table("pipeline_definition").Alias("d").
+	err := session.Table(PipelineDefinition{}.TableName()).Alias("d").
 		Select("d.*,s.source_type,s.remote,s.ref,s.path,s.name AS file_name").
 		Join("LEFT", []string{"pipeline_source", "s"}, "d.pipeline_source_id = s.id AND s.soft_deleted_at = 0").
 		Where("d.soft_deleted_at = 0").Where("s.remote = ?", remote).Find(&list)
@@ -136,7 +136,7 @@ func (client *Client) ListPipelineDefinition(req *pb.PipelineDefinitionListReque
 		pipelineDefinitionSources []PipelineDefinitionSource
 		err                       error
 	)
-	engine := session.Table("pipeline_definition").Alias("d").
+	engine := session.Table(PipelineDefinition{}.TableName()).Alias("d").
 		Select("d.*,s.source_type,s.remote,s.ref,s.path,s.name AS file_name").
 		Join("LEFT", []string{"pipeline_source", "s"}, "d.pipeline_source_id = s.id AND s.soft_deleted_at = 0").
 		Where("d.soft_deleted_at = 0")
@@ -260,7 +260,7 @@ func (client *Client) StatisticsGroupByRemote(req *pb.PipelineDefinitionStatisti
 		list []PipelineDefinitionStatistics
 		err  error
 	)
-	err = session.Table("pipeline_definition").Alias("d").
+	err = session.Table(PipelineDefinition{}.TableName()).Alias("d").
 		Select(fmt.Sprintf("s.remote AS `group`,COUNT(*) AS total_num,COUNT( IF ( d.`status` = '%s' , 1, NULL) ) AS running_num,"+
 			"COUNT(IF(DATE_SUB(CURDATE(), INTERVAL 1 DAY) <= d.started_at AND d.`status` = '%s',1,NULL)) AS failed_num",
 			apistructs.PipelineStatusRunning, apistructs.PipelineStatusFailed)).
@@ -280,7 +280,7 @@ func (client *Client) StatisticsGroupByFilePath(req *pb.PipelineDefinitionStatis
 		list []PipelineDefinitionStatistics
 		err  error
 	)
-	engine := session.Table("pipeline_definition").Alias("d").
+	engine := session.Table(PipelineDefinition{}.TableName()).Alias("d").
 		Select(fmt.Sprintf("CONCAT(s.path,'/',s.`name`) AS `group`,COUNT(*) AS total_num,COUNT( IF ( d.`status` = '%s' , 1, NULL) ) AS running_num,"+
 			"COUNT(IF(DATE_SUB(CURDATE(), INTERVAL 1 DAY) <= d.started_at AND d.`status` = '%s',1,NULL)) AS failed_num",
 			apistructs.PipelineStatusRunning, apistructs.PipelineStatusFailed)).
