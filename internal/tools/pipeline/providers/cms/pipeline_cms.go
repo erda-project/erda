@@ -352,7 +352,26 @@ func (c *pipelineCm) BatchGetConfigs(ctx context.Context, req *pb.CmsNsConfigsBa
 		}(config)
 	}
 	wait.Wait()
-	return newConfigs, nil
+	orderedConfigs := getOrderedCmsConfigs(newConfigs, cmsNsList)
+	return orderedConfigs, nil
+}
+
+// getOrderedCmsConfigs Sort by namespace
+// the final results are sorted by namespace
+// every namespace config list sort by creation time
+func getOrderedCmsConfigs(configs []*pb.PipelineCmsConfig, cmsNsList []db.PipelineCmsNs) []*pb.PipelineCmsConfig {
+	var orderedConfigs []*pb.PipelineCmsConfig
+	for _, ns := range cmsNsList {
+		var tmpConfigs []*pb.PipelineCmsConfig
+		for _, config := range configs {
+			if config.Ns.Ns == ns.Ns {
+				tmpConfigs = append(tmpConfigs, config)
+			}
+		}
+		sortResult(tmpConfigs)
+		orderedConfigs = append(orderedConfigs, tmpConfigs...)
+	}
+	return orderedConfigs
 }
 
 func getPbTimestamp(t *time.Time) *timestamppb.Timestamp {

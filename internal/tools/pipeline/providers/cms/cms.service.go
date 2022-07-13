@@ -154,8 +154,6 @@ func (s *cmsService) BatchGetCmsNsConfigs(ctx context.Context, req *pb.CmsNsConf
 		return nil, err
 	}
 
-	sortResult(result)
-
 	return &pb.CmsNsConfigsBatchGetResponse{Configs: result}, nil
 }
 
