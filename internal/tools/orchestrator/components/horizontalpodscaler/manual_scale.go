@@ -49,9 +49,10 @@ func (s *hpscalerService) processRuntimeScaleRecord(rsc pb.RuntimeScaleRecord, a
 		}
 	}
 
-	if len(appliedScaledObjects) > 0 {
-		logrus.Errorf("[processRuntimeScaleRecord] hpa rules has applied for RuntimeUniqueId %#v, can not do this scale action, please delete or canel the applied rules first", uniqueId)
-		return nil, errors.Errorf("[processRuntimeScaleRecord] hpa rules has applied for RuntimeUniqueId %#v, can not do this scale action, please delete or canel the applied rules first", uniqueId)
+	for svcName := range rsc.Payload.Services {
+		if _, ok := appliedScaledObjects[svcName]; ok {
+			return nil, errors.Errorf("[processRuntimeScaleRecord] hpa rules has applied for RuntimeUniqueId %#v, can not do this scale action, please delete or canel the applied rules first", uniqueId)
+		}
 	}
 
 	pre, err := s.db.GetPreDeployment(uniqueId)

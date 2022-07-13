@@ -121,6 +121,31 @@ func Test_hpscalerService_processRuntimeScaleRecord(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "Test_02",
+			fields: fields{
+				bundle:           &bundle.Bundle{},
+				db:               &dbServiceImpl{},
+				serviceGroupImpl: &servicegroup.ServiceGroupImpl{},
+			},
+			args: args{
+				rsc: pb.RuntimeScaleRecord{
+					ApplicationId: 1,
+					Workspace:     "prod",
+					Name:          "master",
+					RuntimeId:     1,
+					Payload: &pb.PreDiceDTO{
+						Name:     "master",
+						Envs:     nil,
+						Services: services,
+					},
+					ErrorMsg: "",
+				},
+				action: "",
+			},
+			want:    nil,
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -135,6 +160,9 @@ func Test_hpscalerService_processRuntimeScaleRecord(t *testing.T) {
 					rules := make([]dbclient.RuntimeHPA, 0)
 					rule := generateRuntimeHPA(tTime)
 					rule.IsApplied = "N"
+					if tt.name == "Test_02" {
+						rule.IsApplied = "Y"
+					}
 					rule.ServiceName = "test"
 					rule.Rules = "{\"ruleName\":\"test\",\"ruleNameSpace\":\"project-3-prod\",\"scaleTargetRef\":{\"apiVersion\":\"apps/v1\",\"kind\":\"Deployment\",\"name\":\"test-cdd1a9f7c4\",\"envSourceContainerName\":\"\"},\"pollingInterval\":0,\"cooldownPeriod\":0,\"minReplicaCount\":1,\"maxReplicaCount\":3,\"advanced\":{\"restoreToOriginalReplicaCount\":true,\"horizontalPodAutoscalerConfig\":null},\"triggers\":[{\"type\":\"memory\",\"name\":\"\",\"metadata\":{\"type\":\"Utilization\",\"value\":\"20\"},\"authenticationRef\":null,\"metricType\":\"\"}],\"fallback\":{\"failureThreshold\":0,\"replicas\":1}}"
 					rules = append(rules, rule)
