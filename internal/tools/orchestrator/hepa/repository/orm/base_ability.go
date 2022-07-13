@@ -56,6 +56,7 @@ type OptionType int
 const (
 	FuzzyMatch OptionType = iota
 	ExactMatch
+	NotMatch
 	PrefixMatch
 	Contains
 	DescOrder
@@ -278,6 +279,15 @@ func ParseSelectOptions(options []SelectOption, engine xorm.Interface) xorm.Inte
 			}
 		case ExactMatch:
 			engine = engine.Where(option.Column+" = ?", option.Value)
+		case NotMatch:
+			switch option.Value {
+			case nil:
+				engine = engine.Where(option.Column + " IS NOT NULL")
+			case "":
+				engine = engine.Where(option.Column + " != ''")
+			default:
+				engine = engine.Where(option.Column+" != ?", option.Value)
+			}
 		case Contains:
 			values, err := interfaceSlice(option.Value)
 			if err != nil {

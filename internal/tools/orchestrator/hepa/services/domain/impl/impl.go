@@ -1104,18 +1104,21 @@ func (impl GatewayDomainServiceImpl) UpdateRuntimeServiceDomain(orgId, runtimeId
 	if err != nil {
 		return
 	}
-	runtimeService, err = impl.runtimeDb.GetByAny(&orm.GatewayRuntimeService{
-		RuntimeId:   runtimeId,
-		ServiceName: serviceName,
-		IsEndpoint:  1,
+	runtimeServices, err := impl.runtimeDb.SelectByOptions([]orm.SelectOption{
+		{Column: "runtime_id", Type: orm.ExactMatch, Value: runtimeId},
+		{Column: "service_name", Type: orm.ExactMatch, Value: serviceName},
+		{Column: "is_endpoint", Type: orm.ExactMatch, Value: 1},
+		{Column: "inner_address", Type: orm.NotMatch, Value: ""},
 	})
 	if err != nil {
 		return
 	}
-	if runtimeService == nil {
+	if len(runtimeServices) == 0 {
 		err = errors.Errorf("endpoint service %s may not ready", serviceName)
 		return
 	}
+	runtimeService = &runtimeServices[0]
+
 	// acquire root domain
 	{
 		var azInfo *orm.GatewayAzInfo

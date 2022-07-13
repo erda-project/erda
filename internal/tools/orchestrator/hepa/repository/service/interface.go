@@ -367,6 +367,7 @@ type GatewayRuntimeServiceService interface {
 	Delete(string) error
 	Get(string) (*GatewayRuntimeService, error)
 	SelectByAny(*GatewayRuntimeService) ([]GatewayRuntimeService, error)
+	SelectByOptions([]orm.SelectOption) ([]orm.GatewayRuntimeService, error)
 	GetByAny(*GatewayRuntimeService) (*GatewayRuntimeService, error)
 }
 

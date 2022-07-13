@@ -119,6 +119,14 @@ func (impl *GatewayRuntimeServiceServiceImpl) SelectByAny(cond *orm.GatewayRunti
 	return result, nil
 }
 
+func (impl *GatewayRuntimeServiceServiceImpl) SelectByOptions(options []orm.SelectOption) ([]orm.GatewayRuntimeService, error) {
+	var result []orm.GatewayRuntimeService
+	if err := orm.SelectWithOption(options, impl.engine, &result); err != nil {
+		return nil, errors.Wrap(err, ERR_SQL_FAIL)
+	}
+	return result, nil
+}
+
 func (impl *GatewayRuntimeServiceServiceImpl) Get(id string) (*orm.GatewayRuntimeService, error) {
 	if len(id) == 0 {
 		return nil, errors.New(ERR_INVALID_ARG)
