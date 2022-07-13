@@ -23,8 +23,8 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/erda-project/erda/internal/core/openapi/legacy/conf"
 	"github.com/erda-project/erda/internal/core/user/common"
-	"github.com/erda-project/erda/internal/tools/openapi/legacy/conf"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
