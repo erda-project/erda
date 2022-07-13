@@ -68,16 +68,6 @@ func (r *Linter) Input(moduleName, scriptName string, scriptData []byte) error {
 		if cfg.DoNotLintOn(moduleName, scriptName) {
 			continue
 		}
-		rule, err := factory(s, cfg)
-		if err != nil {
-			return errors.Wrapf(err, "failed to generate the lint rule, lint alias: %s", cfg.Alias)
-		}
-		if rule == nil {
-			return errors.Errorf("failed to generate the lint rule, lint name: %s", cfg.Name)
-		}
-		if scriptRule, ok := rule.(ScriptRule); ok {
-			scriptRule.LintOnScript()
-		}
 
 		// lint on every node in the script
 	ForNode:
