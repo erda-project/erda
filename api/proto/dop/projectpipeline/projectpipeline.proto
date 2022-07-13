@@ -157,6 +157,13 @@ service ProjectPipelineService {
 
         };
     }
+
+    rpc DeleteByApp(DeleteByAppRequest)
+            returns (DeleteByAppResponse) {
+        option(google.api.http) = {
+            delete: "/api/project-pipeline/actions/delete-by-app",
+        };
+    }
 }
 
 message PipelineRunParam {
@@ -403,4 +410,11 @@ message PipelineExecHistory {
     string executor = 6;
     google.protobuf.Timestamp timeBegin = 7;
     uint64 pipelineID = 8;
+}
+
+message DeleteByAppRequest {
+    uint64 appID = 1;
+}
+
+message DeleteByAppResponse {
 }
