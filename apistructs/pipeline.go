@@ -378,6 +378,7 @@ type PipelineDefinitionRequest struct {
 	Creators      []string `json:"creators"`
 	SourceRemotes []string `json:"sourceRemotes"`
 	Location      string   `json:"location"`
+	DefinitionID  string   `json:"definitionID"`
 }
 
 func (definition *PipelineDefinitionRequest) IsEmptyValue() bool {

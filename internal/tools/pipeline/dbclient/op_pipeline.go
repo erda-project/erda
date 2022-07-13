@@ -335,6 +335,9 @@ func (client *Client) PageListPipelines(req apistructs.PipelinePageListRequest, 
 			if len(definitionReq.Creators) > 0 {
 				baseSQL.In(tableFieldName(definitiondb.PipelineDefinition{}.TableName(), "creator"), definitionReq.Creators)
 			}
+			if definitionReq.DefinitionID != "" {
+				baseSQL.Where(fmt.Sprintf("%s.id = ?", definitiondb.PipelineDefinition{}.TableName()), definitionReq.DefinitionID)
+			}
 		}
 	}
 

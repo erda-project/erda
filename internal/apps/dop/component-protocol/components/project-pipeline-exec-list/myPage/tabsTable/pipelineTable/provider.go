@@ -20,6 +20,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/sirupsen/logrus"
@@ -242,7 +243,7 @@ func (p *provider) pipelineToRow(exec *pb.PipelineExecHistory) table.Row {
 				if exec.TimeBegin == nil || exec.TimeBegin.AsTime().Unix() <= 0 {
 					return "-"
 				}
-				return exec.TimeBegin.AsTime().Format("2006-01-02 15:04:05")
+				return exec.TimeBegin.AsTime().Format(time.RFC3339)
 			}()).Build(),
 		},
 		Operations: map[cptype.OperationKey]cptype.Operation{
