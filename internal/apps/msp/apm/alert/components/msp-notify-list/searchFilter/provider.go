@@ -26,7 +26,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/internal/apps/msp/apm/alert/components/msp-notify-list/common"
-	"github.com/erda-project/erda/internal/tools/openapi/legacy/component-protocol/components/filter"
+	"github.com/erda-project/erda/internal/core/openapi/legacy/component-protocol/components/filter"
 )
 
 type ComponentFilter struct {

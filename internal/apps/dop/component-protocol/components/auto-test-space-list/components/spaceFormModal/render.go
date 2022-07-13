@@ -28,7 +28,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/auto-test-space-list/i18n"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/types"
-	spec "github.com/erda-project/erda/internal/tools/openapi/legacy/component-protocol/component_spec/form_modal"
+	spec "github.com/erda-project/erda/internal/core/openapi/legacy/component-protocol/component_spec/form_modal"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 

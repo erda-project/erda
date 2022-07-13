@@ -19,7 +19,7 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/internal/tools/openapi/legacy/component-protocol/pkg/autotest/step"
+	"github.com/erda-project/erda/internal/core/openapi/legacy/component-protocol/pkg/autotest/step"
 )
 
 func (i *ComponentOutPutForm) SetProps(gs *cptype.GlobalStateData) error {

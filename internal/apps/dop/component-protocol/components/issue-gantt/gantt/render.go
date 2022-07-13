@@ -34,7 +34,7 @@ import (
 	issuecommon "github.com/erda-project/erda/internal/apps/dop/providers/issue/core/common"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
-	protocol "github.com/erda-project/erda/internal/tools/openapi/legacy/component-protocol"
+	protocol "github.com/erda-project/erda/internal/core/openapi/legacy/component-protocol"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 

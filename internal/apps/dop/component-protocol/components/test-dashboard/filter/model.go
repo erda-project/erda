@@ -26,7 +26,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/services/iteration"
 	"github.com/erda-project/erda/internal/apps/dop/services/testcase"
 	mttestplan "github.com/erda-project/erda/internal/apps/dop/services/testplan"
-	"github.com/erda-project/erda/internal/tools/openapi/legacy/component-protocol/components/filter"
+	"github.com/erda-project/erda/internal/core/openapi/legacy/component-protocol/components/filter"
 )
 
 type Filter struct {

@@ -21,7 +21,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/issue-dashboard/common/model"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
-	"github.com/erda-project/erda/internal/tools/openapi/legacy/component-protocol/components/filter"
+	"github.com/erda-project/erda/internal/core/openapi/legacy/component-protocol/components/filter"
 )
 
 type SeverityStackHandler struct {

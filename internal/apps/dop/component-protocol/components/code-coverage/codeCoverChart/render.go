@@ -31,7 +31,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/code-coverage/common"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/types"
 	"github.com/erda-project/erda/internal/apps/dop/services/code_coverage"
-	protocol "github.com/erda-project/erda/internal/tools/openapi/legacy/component-protocol"
+	protocol "github.com/erda-project/erda/internal/core/openapi/legacy/component-protocol"
 )
 
 const (

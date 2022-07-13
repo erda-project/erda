@@ -7,13 +7,13 @@ run:
   skip-dirs:
     - tools/cli/generated_cmd
     - tools/cli/command/generate
-    - internal/tools/openapi/legacy/api/generate
+    - internal/core/openapi/legacy/api/generate
     - pkg/parser/pipelineyml/pipelineymlv1
     - third_party
     - pkg/mock
   skip-files:
     - apistructs/generated_desc.go
-    - internal/tools/openapi/legacy/api/api.go
+    - internal/core/openapi/legacy/api/api.go
 #  build-tags:
 #    - musl
 
