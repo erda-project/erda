@@ -821,6 +821,7 @@ func (p *ProjectPipelineService) ListExecHistory(ctx context.Context, params *pb
 		ProjectName: projectDto.Name,
 	}, apistructs.PipelineTypeCICD)
 	pipelineDefinition.SourceRemotes = getRemotes(params.AppNames, orgDto.Name, projectDto.Name)
+	pipelineDefinition.DefinitionID = params.DefinitionID
 
 	jsonValue, err := json.Marshal(pipelineDefinition)
 	if err != nil {

@@ -393,6 +393,7 @@ message ListPipelineExecHistoryRequest {
     repeated string ascCols = 10;
     uint64 projectID = 11;
     repeated string branches = 12;
+    string definitionID = 13;
 }
 
 message ListPipelineExecHistoryResponse {
