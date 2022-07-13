@@ -600,7 +600,9 @@
     patterns:
       - ^202([0-9]{5})-.+(\.sql|\.py)$
 
-# 文件 checksum 校验
+# 文件 checksum 校验 锁定列表中的文件 checksum 以防篡改
+# 执行 select concat('- scriptName: ', filename, '\n', '  checksum: ', checksum) record from schema_migration_history where created_at < '2022-07-01 00:00:00';
+# 获取要锁定修改的 scriptName 及其对应的 checksum
 - name: ScriptChecksumLinter
   meta:
     - scriptName: 20210528-ops-base.sql
