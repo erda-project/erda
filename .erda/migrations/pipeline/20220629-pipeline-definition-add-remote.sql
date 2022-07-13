@@ -1,0 +1,2 @@
+ALTER TABLE `pipeline_definition_extra` ADD COLUMN  `pipeline_source_id` varchar(36) NOT NULL DEFAULT '' COMMENT 'pipeline 来源id';
+UPDATE `pipeline_definition_extra` pde SET `pipeline_source_id` = IFNULL((SELECT `pipeline_source_id` FROM pipeline_definition pd WHERE pde.pipeline_definition_id = pd.id),"");

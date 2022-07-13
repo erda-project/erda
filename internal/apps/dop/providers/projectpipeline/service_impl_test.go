@@ -29,6 +29,7 @@ import (
 	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	dpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pb"
 	ppb "github.com/erda-project/erda-proto-go/core/pipeline/pb"
 	spb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
 	"github.com/erda-project/erda-proto-go/dop/projectpipeline/pb"
@@ -1188,6 +1189,68 @@ func TestTryGenRunningPipelineLinkFromErr(t *testing.T) {
 			}
 			if gotOK != tt.wantOK {
 				t.Errorf("tryGenRunningPipelineLinkFromErr() gotOK = %v, want %v", gotOK, tt.wantOK)
+			}
+		})
+	}
+}
+
+type cronMock struct {
+	mock.CronMock
+}
+
+func (c cronMock) CronPaging(ctx context.Context, request *cronpb.CronPagingRequest) (*cronpb.CronPagingResponse, error) {
+	crons := make([]*pipelinepb.Cron, len(request.PipelineDefinitionID))
+	return &cronpb.CronPagingResponse{Data: crons}, nil
+}
+
+func TestProjectPipelineService_cronList(t *testing.T) {
+	type fields struct {
+		PipelineCron cronpb.CronServiceServer
+	}
+	type args struct {
+		ctx           context.Context
+		definitionIDs []string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    int
+		wantErr bool
+	}{
+		{
+			name:   "test with cron list",
+			fields: fields{PipelineCron: cronMock{}},
+			args: args{
+				ctx:           context.Background(),
+				definitionIDs: make([]string, 365),
+			},
+			want:    365,
+			wantErr: false,
+		},
+		{
+			name:   "test with cron list",
+			fields: fields{PipelineCron: cronMock{}},
+			args: args{
+				ctx:           context.Background(),
+				definitionIDs: make([]string, 300),
+			},
+			want:    300,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &ProjectPipelineService{
+				PipelineCron: tt.fields.PipelineCron,
+			}
+			got, err := p.cronList(tt.args.ctx, tt.args.definitionIDs)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("cronList() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if len(got) != tt.want {
+				t.Errorf("cronList() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

@@ -26,13 +26,11 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/bdl"
 	"github.com/erda-project/erda/internal/apps/dop/services/project"
-
-	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/pkg/user"
-
-	"github.com/erda-project/erda/apistructs"
 )
 
 func TestAddOnsFilterIn(t *testing.T) {
