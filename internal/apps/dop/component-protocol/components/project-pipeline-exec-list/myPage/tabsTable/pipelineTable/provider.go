@@ -239,17 +239,19 @@ func (p *provider) pipelineToRow(exec *pb.PipelineExecHistory) table.Row {
 			ColumnApplicationName: table.NewTextCell(exec.AppName).Build(),
 			ColumnBranch:          table.NewTextCell(exec.Branch).Build(),
 			ColumnExecutor:        table.NewUserCell(commodel.User{ID: exec.Executor}).Build(),
-			ColumnStartTimeOrder: table.NewTextCell(func() string {
-				if exec.TimeBegin == nil || exec.TimeBegin.AsTime().Unix() <= 0 {
-					return "-"
-				}
-				return exec.TimeBegin.AsTime().Format(time.RFC3339)
-			}()).Build(),
+			ColumnStartTimeOrder:  table.NewTextCell(timeFormatFromProtobuf(exec.TimeBegin)).Build(),
 		},
 		Operations: map[cptype.OperationKey]cptype.Operation{
 			table.OpRowSelect{}.OpKey(): cputil.NewOpBuilder().Build(),
 		},
 	}
+}
+
+func timeFormatFromProtobuf(t *timestamppb.Timestamp) string {
+	if t == nil || t.AsTime().Unix() <= 0 {
+		return "-"
+	}
+	return t.AsTime().Format(time.RFC3339)
 }
 
 func getApplicationNameFromDefinitionRemote(remote string) string {
