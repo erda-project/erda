@@ -125,3 +125,11 @@ func TestPageListPipelines(t *testing.T) {
 		})
 	}
 }
+
+func TestGetMinPipelineID(t *testing.T) {
+	res := &PageListPipelinesResult{
+		PagingPipelineIDs: []uint64{11918341, 11918330, 11918310, 11918308, 11918303, 11918291, 11918283, 11917574},
+	}
+	minID := res.GetMinPipelineID()
+	assert.Equal(t, uint64(11917574), minID)
+}

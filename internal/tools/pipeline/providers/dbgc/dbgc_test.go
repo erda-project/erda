@@ -33,9 +33,9 @@ import (
 
 func TestReconciler_doPipelineDatabaseGC(t *testing.T) {
 
-	var pipelineMaps = map[uint64]spec.Pipeline{
-		1: {
-			PipelineBase: spec.PipelineBase{ID: 1},
+	var pipelines = []spec.Pipeline{
+		{
+			PipelineBase: spec.PipelineBase{ID: 1, Status: apistructs.PipelineStatusAnalyzed},
 			PipelineExtra: spec.PipelineExtra{Extra: spec.PipelineExtraInfo{
 				GC: apistructs.PipelineGC{
 					DatabaseGC: apistructs.PipelineDatabaseGC{
@@ -51,8 +51,25 @@ func TestReconciler_doPipelineDatabaseGC(t *testing.T) {
 				},
 			}},
 		},
-		2: {
-			PipelineBase: spec.PipelineBase{ID: 2},
+		{
+			PipelineBase: spec.PipelineBase{ID: 2, Status: apistructs.PipelineStatusAnalyzed},
+			PipelineExtra: spec.PipelineExtra{Extra: spec.PipelineExtraInfo{
+				GC: apistructs.PipelineGC{
+					DatabaseGC: apistructs.PipelineDatabaseGC{
+						Analyzed: apistructs.PipelineDBGCItem{
+							NeedArchive: &[]bool{true}[0],
+							TTLSecond:   &[]uint64{100}[0],
+						},
+						Finished: apistructs.PipelineDBGCItem{
+							NeedArchive: &[]bool{true}[0],
+							TTLSecond:   &[]uint64{100}[0],
+						},
+					},
+				},
+			}},
+		},
+		{
+			PipelineBase: spec.PipelineBase{ID: 3, Status: apistructs.PipelineStatusRunning},
 			PipelineExtra: spec.PipelineExtra{Extra: spec.PipelineExtraInfo{
 				GC: apistructs.PipelineGC{
 					DatabaseGC: apistructs.PipelineDatabaseGC{
@@ -73,22 +90,18 @@ func TestReconciler_doPipelineDatabaseGC(t *testing.T) {
 	DB := &dbclient.Client{}
 
 	pm := monkey.PatchInstanceMethod(reflect.TypeOf(DB), "PageListPipelines", func(client *dbclient.Client, req apistructs.PipelinePageListRequest, ops ...dbclient.SessionOption) (*dbclient.PageListPipelinesResult, error) {
-		assert.True(t, req.PageNum <= 2, "PageNum > 2")
-		if req.PageNum == 1 {
-			return &dbclient.PageListPipelinesResult{
-				Pipelines:         []spec.Pipeline{pipelineMaps[1], pipelineMaps[0]},
-				PagingPipelineIDs: nil,
-				Total:             2,
-				CurrentPageSize:   2,
-			}, nil
-		} else {
-			return &dbclient.PageListPipelinesResult{
-				Pipelines:         nil,
-				PagingPipelineIDs: nil,
-				Total:             0,
-				CurrentPageSize:   0,
-			}, nil
+		assert.True(t, req.PageNum <= 3, "PageNum > 3")
+		if len(pipelines) == 0 {
+			return &dbclient.PageListPipelinesResult{}, nil
 		}
+		res := &dbclient.PageListPipelinesResult{
+			Pipelines:         pipelines[req.PageSize*(req.PageNum-1) : req.PageSize*req.PageNum],
+			PagingPipelineIDs: nil,
+			Total:             2,
+			CurrentPageSize:   2,
+		}
+		pipelines = pipelines[req.PageSize*req.PageNum:]
+		return res, nil
 	})
 	defer pm.Unpatch()
 
@@ -101,14 +114,18 @@ func TestReconciler_doPipelineDatabaseGC(t *testing.T) {
 	}
 
 	monkey.PatchInstanceMethod(reflect.TypeOf(&r), "DoDBGC", func(r *provider, pipelineID uint64, gcOption apistructs.PipelineGCDBOption) error {
-		assert.True(t, gcNum < 3, "DoDBGC times >= 3")
+		assert.True(t, gcNum < 4, "DoDBGC times >= 4")
 		addCountNum()
 		return nil
 	})
+	pm1 := monkey.Patch(time.Sleep, func(d time.Duration) {
+		return
+	})
+	defer pm1.Unpatch()
 
-	r.doPipelineDatabaseGC(apistructs.PipelinePageListRequest{
+	r.doPipelineDatabaseGC(context.Background(), apistructs.PipelinePageListRequest{
 		PageNum:  1,
-		PageSize: 10,
+		PageSize: 1,
 	})
 }
 
@@ -208,6 +225,6 @@ func TestReconciler_doPipelineDatabaseGC1(t *testing.T) {
 		})
 		defer patch1.Unpatch()
 
-		r.doPipelineDatabaseGC(apistructs.PipelinePageListRequest{PageNum: 1})
+		r.doPipelineDatabaseGC(context.Background(), apistructs.PipelinePageListRequest{PageNum: 1})
 	})
 }
