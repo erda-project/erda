@@ -29,12 +29,14 @@ import (
 	"github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	dpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
 	common "github.com/erda-project/erda-proto-go/core/pipeline/pb"
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pb"
 	spb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	guidepb "github.com/erda-project/erda-proto-go/dop/guide/pb"
@@ -819,6 +821,7 @@ func (p *ProjectPipelineService) ListExecHistory(ctx context.Context, params *pb
 		ProjectName: projectDto.Name,
 	}, apistructs.PipelineTypeCICD)
 	pipelineDefinition.SourceRemotes = getRemotes(params.AppNames, orgDto.Name, projectDto.Name)
+	pipelineDefinition.DefinitionID = params.DefinitionID
 
 	jsonValue, err := json.Marshal(pipelineDefinition)
 	if err != nil {
@@ -1968,4 +1971,78 @@ func (p *ProjectPipelineService) TryAddRunningPipelineLinkToErr(orgName string, 
 	}
 	runningPipelineLink := fmt.Sprintf("%s/%s/dop/projects/%d/apps/%d/pipeline?pipelineID=%s", p.cfg.UIPublicURL, orgName, projectID, appID, runningPipelineID)
 	return apierrors.ErrParallelRunPipeline.InvalidState(fmt.Sprintf("failed to run pipeline, already running link: %s", runningPipelineLink)), true
+}
+
+func (p *ProjectPipelineService) DeleteByApp(ctx context.Context, params *pb.DeleteByAppRequest) (*pb.DeleteByAppResponse, error) {
+	app, err := p.bundle.GetApp(params.AppID)
+	if err != nil {
+		return nil, err
+	}
+	remote := makeRemote(app)
+	definitionResp, err := p.PipelineDefinition.ListByRemote(ctx, &dpb.PipelineDefinitionListByRemoteRequest{
+		Remote: remote},
+	)
+	if err != nil {
+		return nil, err
+	}
+	definitionIDs := make([]string, 0, len(definitionResp.Data))
+	for _, v := range definitionResp.Data {
+		definitionIDs = append(definitionIDs, v.ID)
+	}
+
+	cronList, err := p.cronList(ctx, definitionIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, v := range cronList {
+		_, err = p.PipelineCron.CronDelete(ctx, &cronpb.CronDeleteRequest{CronID: v.ID})
+		if err != nil {
+			return nil, err
+		}
+	}
+	_, err = p.PipelineSource.DeleteByRemote(ctx, &spb.PipelineSourceDeleteByRemoteRequest{
+		Remote: remote,
+	})
+	if err != nil {
+		return nil, err
+	}
+	_, err = p.PipelineDefinition.DeleteByRemote(ctx, &dpb.PipelineDefinitionDeleteByRemoteRequest{
+		Remote: remote,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &pb.DeleteByAppResponse{}, nil
+}
+
+func (p *ProjectPipelineService) cronList(ctx context.Context, definitionIDs []string) ([]*pipelinepb.Cron, error) {
+	const limit = 100
+	l := len(definitionIDs)
+	cronList := make([]*pipelinepb.Cron, 0)
+	count := l / limit
+	if l%limit != 0 {
+		count++
+	}
+	for i := 0; i < count; i++ {
+		left := limit * i
+		right := left + limit
+		if right > l {
+			right = l
+		}
+		ids := definitionIDs[left:right]
+		cronResp, err := p.PipelineCron.CronPaging(ctx, &cronpb.CronPagingRequest{
+			Sources:              []string{apistructs.PipelineSourceDice.String()},
+			Enable:               wrapperspb.Bool(true),
+			PipelineDefinitionID: ids,
+			GetAll:               true,
+		})
+		if err != nil {
+			return nil, err
+		}
+		for _, v := range cronResp.Data {
+			cronList = append(cronList, v)
+		}
+	}
+	return cronList, nil
 }

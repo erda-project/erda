@@ -17,12 +17,15 @@ package definition
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 	"unicode/utf8"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	"github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/definition/db"
@@ -75,6 +78,7 @@ func (p pipelineDefinition) Create(ctx context.Context, request *pb.PipelineDefi
 	}
 	pipelineDefinitionExtra.PipelineDefinitionID = pipelineDefinition.ID
 	pipelineDefinitionExtra.Extra = extra
+	pipelineDefinitionExtra.PipelineSourceID = request.PipelineSourceID
 	err = p.dbClient.CreatePipelineDefinitionExtra(&pipelineDefinitionExtra)
 	if err != nil {
 		return nil, err
@@ -167,6 +171,42 @@ func (p pipelineDefinition) Delete(ctx context.Context, request *pb.PipelineDefi
 		return nil, err
 	}
 
+	return &pb.PipelineDefinitionDeleteResponse{}, nil
+}
+
+func (p pipelineDefinition) DeleteByRemote(ctx context.Context, request *pb.PipelineDefinitionDeleteByRemoteRequest) (*pb.PipelineDefinitionDeleteResponse, error) {
+	if request.Remote == "" {
+		return nil, fmt.Errorf("the remote is empty")
+	}
+	var err error
+
+	session := p.dbClient.NewSession()
+	defer session.Close()
+	if err = session.Begin(); err != nil {
+		return nil, err
+	}
+
+	defer func() {
+		if err != nil {
+			if rbErr := session.Rollback(); rbErr != nil {
+				logrus.Errorf("failed to rollback when delete by remote, remote: %s, rollbackErr: %v",
+					request.Remote, rbErr)
+			}
+			return
+		}
+		if cmErr := session.Commit(); cmErr != nil {
+			logrus.Errorf("failed to commit when delete by remote, remote: %s, rollbackErr: %v",
+				request.Remote, cmErr)
+		}
+	}()
+	err = p.dbClient.DeletePipelineDefinitionByRemote(request.Remote, mysqlxorm.WithSession(session))
+	if err != nil {
+		return nil, err
+	}
+	err = p.dbClient.DeletePipelineDefinitionExtraByRemote(request.Remote, mysqlxorm.WithSession(session))
+	if err != nil {
+		return nil, err
+	}
 	return &pb.PipelineDefinitionDeleteResponse{}, nil
 }
 
@@ -330,5 +370,21 @@ func (p pipelineDefinition) UpdateExtra(ctx context.Context, request *pb.Pipelin
 
 	return &pb.PipelineDefinitionExtraUpdateResponse{
 		Extra: PipelineDefinitionExtraToPb(dbExtra),
+	}, nil
+}
+
+func (p pipelineDefinition) ListByRemote(ctx context.Context, req *pb.PipelineDefinitionListByRemoteRequest) (*pb.PipelineDefinitionListResponse, error) {
+	definitions, err := p.dbClient.ListPipelineDefinitionByRemote(req.Remote)
+	if err != nil {
+		return nil, err
+	}
+
+	data := make([]*pb.PipelineDefinition, 0, len(definitions))
+	for _, v := range definitions {
+		data = append(data, v.Convert())
+	}
+	return &pb.PipelineDefinitionListResponse{
+		Data:  data,
+		Total: int64(len(data)),
 	}, nil
 }

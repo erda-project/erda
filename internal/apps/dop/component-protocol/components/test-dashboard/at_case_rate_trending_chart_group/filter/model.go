@@ -24,7 +24,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/test-dashboard/common"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/types"
 	autotestv2 "github.com/erda-project/erda/internal/apps/dop/services/autotest_v2"
-	"github.com/erda-project/erda/internal/tools/openapi/legacy/component-protocol/components/filter"
+	"github.com/erda-project/erda/internal/core/openapi/legacy/component-protocol/components/filter"
 )
 
 type Filter struct {

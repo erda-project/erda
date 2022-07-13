@@ -6,7 +6,7 @@ set -o errexit -o pipefail
 cd "$(dirname "$0")/../dockerfiles/base";
 
 # setup base image
-DOCKER_IMAGE=golang-base:210416
+DOCKER_IMAGE=golang-base:20220711
 
 if [ -n "${DOCKER_REGISTRY}" ]; then
     DOCKER_IMAGE=${DOCKER_REGISTRY}/${DOCKER_IMAGE}

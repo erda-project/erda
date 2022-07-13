@@ -32,7 +32,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/issue-dashboard/common/gshelper"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/types"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query"
-	"github.com/erda-project/erda/internal/tools/openapi/legacy/component-protocol/components/filter"
+	"github.com/erda-project/erda/internal/core/openapi/legacy/component-protocol/components/filter"
 )
 
 func init() {

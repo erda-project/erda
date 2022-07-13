@@ -46,3 +46,4 @@ ignore:
   - "api/proto-go"
   - "internal/tools/openapi/legacy/api/apis/**/*.go"
   - "**/*_mock.go"
+  - "internal/**/openapi/legacy/api/apis/**/*.go"

@@ -130,6 +130,20 @@ func (client *Client) ListPipelineSource(idList []string, ops ...mysqlxorm.Sessi
 	return pipelineSource, nil
 }
 
+func (client *Client) ListPipelineSourceByRemote(remote string, ops ...mysqlxorm.SessionOption) ([]PipelineSource, error) {
+	session := client.NewSession(ops...)
+	defer session.Close()
+
+	var pipelineSource []PipelineSource
+	if err := session.Where("remote = ?", remote).
+		Where("soft_deleted_at = 0").
+		Find(&pipelineSource); err != nil {
+		return nil, err
+	}
+
+	return pipelineSource, nil
+}
+
 func (p *PipelineSource) Convert() *pb.PipelineSource {
 	return &pb.PipelineSource{
 		ID:          p.ID,

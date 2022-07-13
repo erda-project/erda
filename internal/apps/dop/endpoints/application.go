@@ -25,6 +25,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	propipelinepb "github.com/erda-project/erda-proto-go/dop/projectpipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	"github.com/erda-project/erda/internal/apps/dop/types"
@@ -165,6 +166,13 @@ func (e *Endpoints) DeleteApplication(ctx context.Context, r *http.Request, vars
 	}
 	// Delete repo
 	if err = e.deleteGittarRepo(appDto); err != nil {
+		return apierrors.ErrDeleteApplication.InternalError(err).ToResp(), nil
+	}
+
+	// delete project pipeline
+	_, err = e.ProjectPipelineSvc.DeleteByApp(ctx, &propipelinepb.DeleteByAppRequest{AppID: appDto.ID})
+	if err != nil {
+		logrus.Errorf("failed to delete projectPipeline by app, err: %v", err)
 		return apierrors.ErrDeleteApplication.InternalError(err).ToResp(), nil
 	}
 

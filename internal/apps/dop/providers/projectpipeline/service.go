@@ -89,4 +89,5 @@ type Service interface {
 	StartCron(ctx context.Context, params deftype.ProjectPipelineStartCron) (*deftype.ProjectPipelineStartCronResult, error)
 	EndCron(ctx context.Context, params deftype.ProjectPipelineEndCron) (*deftype.ProjectPipelineEndCronResult, error)
 	ListExecHistory(ctx context.Context, params *pb.ListPipelineExecHistoryRequest) (*pb.ListPipelineExecHistoryResponse, error)
+	DeleteByApp(ctx context.Context, params *pb.DeleteByAppRequest) (*pb.DeleteByAppResponse, error)
 }
