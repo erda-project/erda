@@ -194,8 +194,8 @@ prepare:
 ifeq "$(SKIP_PREPARE)" ""
 	cd "${PROJ_PATH}" && \
 	${GO_BUILD_ENV} go generate ./apistructs && \
-	${GO_BUILD_ENV} go generate ./internal/tools/openapi/legacy/api/generate && \
-	${GO_BUILD_ENV} go generate ./internal/tools/openapi/legacy/component-protocol/generate
+	${GO_BUILD_ENV} go generate ./internal/core/openapi/legacy/api/generate && \
+	${GO_BUILD_ENV} go generate ./internal/core/openapi/legacy/component-protocol/generate
 	make prepare-cli
 endif
 

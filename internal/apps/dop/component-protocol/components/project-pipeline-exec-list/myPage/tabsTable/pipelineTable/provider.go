@@ -42,7 +42,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/util"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/types"
 	"github.com/erda-project/erda/internal/apps/dop/providers/projectpipeline"
-	protocol "github.com/erda-project/erda/internal/tools/openapi/legacy/component-protocol"
+	protocol "github.com/erda-project/erda/internal/core/openapi/legacy/component-protocol"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/strutil"
 )
