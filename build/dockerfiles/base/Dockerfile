@@ -10,7 +10,8 @@ RUN apt update && \
     # for libgit2
     cmake libssl-dev libgit2-1.3 libgit2-dev \
     jq python3-pip \
-    nodejs && \
+    nodejs \
+    vim && \
     rm -fr /var/cache/apk
 
 RUN apt install -y libgit2-1.3
