@@ -36,17 +36,16 @@ import (
 )
 
 var UC_USER_EXPORT = apis.ApiSpec{
-	Path:          "/api/users/actions/export",
-	Scheme:        "http",
-	Method:        "GET",
-	Custom:        exportUsers,
-	RequestType:   apistructs.UserPagingRequest{},
-	CheckLogin:    false,
-	TryCheckLogin: true,
-	CheckToken:    true,
-	IsOpenAPI:     true,
-	ChunkAPI:      true,
-	Doc:           "summary: 导出用户",
+	Path:        "/api/users/actions/export",
+	Scheme:      "http",
+	Method:      "GET",
+	Custom:      exportUsers,
+	RequestType: apistructs.UserPagingRequest{},
+	CheckLogin:  true,
+	CheckToken:  true,
+	IsOpenAPI:   true,
+	ChunkAPI:    true,
+	Doc:         "summary: 导出用户",
 }
 
 func exportUsers(w http.ResponseWriter, r *http.Request) {
