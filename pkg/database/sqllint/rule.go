@@ -18,10 +18,19 @@ import (
 	"github.com/pingcap/parser/ast"
 )
 
-// Rule is an Error and SQL ast visitor,
-// can accept a SQL stmt and lint it.
 type Rule interface {
-	ast.Visitor
-
 	Error() error
+}
+
+// NodeRule is an Error and SQL ast visitor,
+// can accept a SQL stmt and lint it.
+type NodeRule interface {
+	Rule
+	ast.Visitor
+}
+
+type ScriptRule interface {
+	Rule
+
+	LintOnScript()
 }
