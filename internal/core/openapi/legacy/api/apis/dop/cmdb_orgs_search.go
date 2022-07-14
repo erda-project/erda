@@ -20,15 +20,15 @@ import (
 )
 
 var CMDB_ORG_SEARCH = apis.ApiSpec{
-	Path:          "/api/orgs",
-	BackendPath:   "/api/orgs",
-	Host:          "dop.marathon.l4lb.thisdcos.directory:9527",
-	Scheme:        "http",
-	Method:        "GET",
-	TryCheckLogin: true,
-	CheckToken:    true,
-	IsOpenAPI:     true,
-	RequestType:   apistructs.OrgSearchRequest{},
-	ResponseType:  apistructs.OrgSearchResponse{},
-	Doc:           "summary: 查询组织",
+	Path:         "/api/orgs",
+	BackendPath:  "/api/orgs",
+	Host:         "dop.marathon.l4lb.thisdcos.directory:9527",
+	Scheme:       "http",
+	Method:       "GET",
+	CheckLogin:   true,
+	CheckToken:   true,
+	IsOpenAPI:    true,
+	RequestType:  apistructs.OrgSearchRequest{},
+	ResponseType: apistructs.OrgSearchResponse{},
+	Doc:          "summary: 查询组织",
 }
