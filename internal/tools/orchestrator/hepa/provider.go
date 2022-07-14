@@ -26,7 +26,9 @@ import (
 	_ "github.com/erda-project/erda-infra/providers/health"
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/i18n"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/tools/monitor/common/permission"
+	orgCache "github.com/erda-project/erda/internal/tools/orchestrator/hepa/cache/org"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/util"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/config"
@@ -45,6 +47,7 @@ type provider struct {
 	Log        logs.Logger       // auto inject this field
 	HttpServer httpserver.Router `autowired:"http-server"`
 	LogTrans   i18n.Translator   `translator:"log-trans"`
+	Org        org.ClientInterface
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -55,6 +58,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	logrus.Info(version.String())
 	logrus.Infof("server conf: %+v", config.ServerConf)
 	logrus.Infof("log conf: %+v", config.LogConf)
+	orgCache.CacheInit(p.Org)
 	p.HttpServer.GET("/api/gateway/openapi/metrics/*", func(resp http.ResponseWriter, req *http.Request) {
 		path := strings.Replace(req.URL.Path, "/api/gateway/openapi/metrics/charts", "/api/metrics", 1)
 		path += "?" + req.URL.RawQuery

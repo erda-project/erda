@@ -24,6 +24,7 @@ import (
 	_ "github.com/erda-project/erda-infra/providers"
 	_ "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/client"
 	_ "github.com/erda-project/erda-proto-go/core/dicehub/release/client"
+	_ "github.com/erda-project/erda-proto-go/core/org/client"
 	_ "github.com/erda-project/erda-proto-go/msp/tenant/client"
 	_ "github.com/erda-project/erda/internal/tools/orchestrator"
 	_ "github.com/erda-project/erda/internal/tools/orchestrator/components"
