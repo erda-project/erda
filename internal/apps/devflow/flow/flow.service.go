@@ -28,6 +28,7 @@ import (
 
 	"github.com/erda-project/erda-proto-go/apps/devflow/flow/pb"
 	issuerelationpb "github.com/erda-project/erda-proto-go/apps/devflow/issuerelation/pb"
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	flowrulepb "github.com/erda-project/erda-proto-go/dop/devflowrule/pb"
 	gittarpb "github.com/erda-project/erda-proto-go/openapiv1/gittar/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -124,11 +125,16 @@ func (s *Service) CreateFlowNode(ctx context.Context, req *pb.CreateFlowNodeRequ
 	var repoMergeID int
 	if mergeResult == nil {
 		// auto create merge
+		desc, err := s.makeMrDesc(ctx, req.IssueID)
+		if err != nil {
+			return nil, err
+		}
+		title := s.makeMrTitle(ctx)
 		mergeInfo, err := s.p.bdl.CreateMergeRequest(req.AppID, apis.GetUserID(ctx), apistructs.GittarCreateMergeRequest{
 			TargetBranch:       req.TargetBranch,
 			SourceBranch:       req.CurrentBranch,
-			Title:              "auto create devflow merge",
-			Description:        "auto create devflow merge",
+			Title:              title,
+			Description:        desc,
 			RemoveSourceBranch: false,
 			AssigneeID:         apis.GetUserID(ctx),
 		})
@@ -162,6 +168,18 @@ func (s *Service) CreateFlowNode(ctx context.Context, req *pb.CreateFlowNodeRequ
 		RepoMergeID: uint64(repoMergeID),
 		MergeID:     uint64(mergeID),
 	}, nil
+}
+
+func (s *Service) makeMrTitle(ctx context.Context) string {
+	return "auto create devflow merge"
+}
+
+func (s *Service) makeMrDesc(ctx context.Context, issueID uint64) (string, error) {
+	issue, err := s.p.Issue.GetIssue(int64(issueID), &commonpb.IdentityInfo{UserID: apis.GetUserID(ctx)})
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%s: #%d %s", s.p.Trans.Text(apis.Language(ctx), issue.Type.String()), issue.Id, issue.Title), nil
 }
 
 func (s *Service) OperationMerge(ctx context.Context, req *pb.OperationMergeRequest) (*pb.OperationMergeResponse, error) {
