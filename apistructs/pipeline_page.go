@@ -62,6 +62,9 @@ type DefinitionPageInfo struct {
 }
 
 func (p *PagePipeline) GetUserID() string {
+	if p.Extra.OwnerUser != nil && p.Extra.OwnerUser.ID != nil {
+		return fmt.Sprintf("%v", p.Extra.OwnerUser.ID)
+	}
 	if p.Extra.RunUser != nil && p.Extra.RunUser.ID != nil {
 		return fmt.Sprintf("%v", p.Extra.RunUser.ID)
 	}
@@ -74,6 +77,13 @@ func (p *PagePipeline) GetUserID() string {
 func (p *PagePipeline) GetRunUserID() string {
 	if p.Extra.RunUser != nil && p.Extra.RunUser.ID != nil {
 		return fmt.Sprintf("%v", p.Extra.RunUser.ID)
+	}
+	return ""
+}
+
+func (p *PagePipeline) GetOwnerUserID() string {
+	if p.Extra.OwnerUser != nil && p.Extra.OwnerUser.ID != nil {
+		return fmt.Sprintf("%v", p.Extra.OwnerUser.ID)
 	}
 	return ""
 }

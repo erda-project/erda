@@ -410,6 +410,8 @@ func (p *Pipeline) ConvertPipelineToV2(pv1 *apistructs.PipelineCreateRequest) (*
 		}
 	}
 	pv2.Secrets = utils.GetGittarSecrets(pv2.ClusterName, pv1.Branch, detail)
+	// the person who made the last modification is currently the owner of yaml,
+	// because the modification may not be an erda user, so errors should be ignored
 	ownerUser, err := p.getPipelineOwnerUser(app, pv1)
 	if err != nil {
 		logrus.Errorf("get pipeline owner user error: %s", err.Error())
