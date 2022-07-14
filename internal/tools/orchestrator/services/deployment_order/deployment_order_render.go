@@ -36,7 +36,6 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/utils"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
-	"github.com/erda-project/erda/pkg/strutil"
 )
 
 const (
@@ -46,8 +45,8 @@ const (
 	I18nCustomAddonNotReady   = "CustomAddonNotReady"
 	I18nAddonDoesNotExist     = "AddonDoesNotExist"
 	I18nApplicationDeploying  = "ApplicationDeploying"
-
-	AddonCustomCategory = "custom"
+	I18nAddonPlanIllegal      = "AddonPlanIllegal"
+	I18nAddonFormatIllegal    = "AddonFormatIllegal"
 )
 
 var (
@@ -216,24 +215,36 @@ func (d *DeploymentOrder) staticPreCheck(langCodes infrai18n.LanguageCodes, user
 
 	// check addon
 	for instanceName, addOn := range dy.Obj().AddOns {
-		plan := strutil.Split(addOn.Plan, ":", true)
-		if len(plan) < 2 {
-			plan = append(plan, apistructs.AddonDefaultPlan)
+		addonName, addonPlan, err := d.addon.ParseAddonFullPlan(addOn.Plan)
+		if err != nil {
+			failReasons = append(failReasons, i18n.LangCodesSprintf(langCodes, I18nAddonFormatIllegal, addonName))
+			continue
 		}
 
-		extensionI, ok := addon.AddonInfos.Load(plan[0])
+		ok, err := d.addon.CheckDeployCondition(addonName, addonPlan, workspace)
+		if err != nil {
+			failReasons = append(failReasons, i18n.LangCodesSprintf(langCodes, I18nAddonFormatIllegal, addonName))
+			continue
+		}
+
+		if !ok {
+			failReasons = append(failReasons, i18n.LangCodesSprintf(langCodes, I18nAddonPlanIllegal, instanceName))
+			continue
+		}
+
+		extensionI, ok := addon.AddonInfos.Load(addonName)
 		if !ok {
 			// addon doesn't support
-			failReasons = append(failReasons, i18n.LangCodesSprintf(langCodes, I18nAddonDoesNotExist, instanceName, plan[0]))
+			failReasons = append(failReasons, i18n.LangCodesSprintf(langCodes, I18nAddonDoesNotExist, instanceName, addonName))
 			continue
 		}
 
 		extension, ok := extensionI.(apistructs.Extension)
 		if !ok {
-			return nil, fmt.Errorf("failed to assert extension (%s) to Extension", plan[0])
+			return nil, fmt.Errorf("failed to assert extension (%s) to Extension", addonName)
 		}
 
-		if extension.Category == AddonCustomCategory {
+		if extension.Category == apistructs.AddonCustomCategory {
 			_, ok := customAddonsMap[instanceName]
 			if !ok {
 				failReasons = append(failReasons, i18n.LangCodesSprintf(langCodes, I18nCustomAddonNotReady, instanceName))

@@ -14,6 +14,8 @@ zh:
   NotEnoughQuotaToDeploy: 资源配额不足无法部署
   FailedToSchedule.NoNodeToDeploy: 调度失败，失败原因：没有匹配的节点能部署, 请检查节点标签是否正确
   InvalidServiceName: "不合法的服务名称: %s"
+  AddonPlanIllegal: "Addon %s 规格不合法, Basic 规格 Addon 无法在生产环境使用"
+  AddonFormatIllegal: "Addon %s 格式不合法, 请检查 dice.yml 中 addon 部分是否正确"
 
 en:
   WaitingForAddonTimeOut: "Waiting for the addon (%s)(%s) to be healthy timeout (%d min)"
@@ -31,3 +33,5 @@ en:
   NotEnoughQuotaToDeploy: Not enough resource quota to deploy
   FailedToSchedule.NoNodeToDeploy: Failed to schedule：no matching node. Please check nodes labels in the Cloud Management Platform
   InvalidServiceName: "Invalid service name: %s"
+  AddonPlanIllegal: "Addon %s plan is illegal, Basic plan addon cannot be used in production environment"
+  AddonFormatIllegal: "Addon %s format is illegal, please check the dice.yml addon section"

@@ -228,6 +228,7 @@ func (p *provider) initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, e
 		deployment_order.WithQueue(p.PusherQueue),
 		deployment_order.WithReleaseSvc(p.DicehubReleaseSvc),
 		deployment_order.WithEnvConfig(envConfig),
+		deployment_order.WithAddon(a),
 	)
 
 	// compose endpoints

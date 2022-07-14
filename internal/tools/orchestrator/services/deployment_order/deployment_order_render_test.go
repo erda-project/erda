@@ -29,6 +29,7 @@ import (
 	release2 "github.com/erda-project/erda/internal/apps/dop/dicehub/release"
 	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/internal/tools/orchestrator/i18n"
+	"github.com/erda-project/erda/internal/tools/orchestrator/services/addon"
 )
 
 func getFakeErdaYaml() []byte {
@@ -89,6 +90,7 @@ func TestPreCheck(t *testing.T) {
 func TestRenderDetail(t *testing.T) {
 	order := New()
 	bdl := bundle.New()
+	a := addon.New()
 	releaseSvc := &release2.ReleaseService{}
 	order.releaseSvc = releaseSvc
 
@@ -125,6 +127,9 @@ func TestRenderDetail(t *testing.T) {
 
 	monkey.Patch(i18n.LangCodesSprintf, func(infrai18n.LanguageCodes, string, ...interface{}) string {
 		return ""
+	})
+	monkey.PatchInstanceMethod(reflect.TypeOf(a), "CheckDeployCondition", func(a *addon.Addon, _, _, _ string) (bool, error) {
+		return true, nil
 	})
 
 	_, err := order.RenderDetail(context.Background(), "", "1", "dd11727fc60945c998c2fcdf6487e9b0", "PROD", []string{"default"})

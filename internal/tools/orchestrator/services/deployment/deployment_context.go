@@ -782,7 +782,7 @@ func (fsm *DeployFSMContext) failDeploy(oriErr error) error {
 	deployment := fsm.Deployment
 	runtime := fsm.Runtime
 	app := fsm.App
-	fsm.pushLog(fmt.Sprintf("deployment is fail, status: %v, phrase: %v, (%v)",
+	fsm.pushLog(fmt.Sprintf("deployment is fail, status: %v, phase: %v, (%v)",
 		deployment.Status, deployment.Phase, oriErr))
 	deployment.FailCause = oriErr.Error()
 	deployment.Status = apistructs.DeploymentStatusFailed

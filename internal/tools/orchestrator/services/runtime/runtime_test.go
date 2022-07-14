@@ -17,18 +17,24 @@ package runtime
 
 import (
 	"encoding/json"
+	"fmt"
+	"math/rand"
 	"reflect"
+	"strings"
 	"sync"
 	"testing"
 
 	"bou.ke/monkey"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
+	"gopkg.in/yaml.v3"
 
 	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/impl/clusterinfo"
+	"github.com/erda-project/erda/internal/tools/orchestrator/services/addon"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
@@ -336,4 +342,165 @@ func Test_listGroupByApps(t *testing.T) {
 	runtime := New(WithBundle(bdl), WithDBClient(db))
 	result, _ := runtime.ListGroupByApps([]uint64{1}, "DEV")
 	assert.Equal(t, apistructs.DeploymentStatus("OK"), result[1][0].DeployStatus)
+}
+
+func TestPreCheck(t *testing.T) {
+	r := New()
+	a := addon.New()
+	type args struct {
+		diceYaml  string
+		workspace string
+	}
+
+	defer monkey.UnpatchAll()
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(a), "GetAddonExtention", func(a *addon.Addon, params *apistructs.AddonHandlerCreateItem) (*apistructs.AddonExtension, *diceyml.Object, error) {
+		addonName := params.AddonName
+		if strings.Contains(addonName, "nonExistAddon") {
+			return nil, nil, errors.New("not found")
+		}
+
+		if addonName == apistructs.AddonCustomCategory {
+			return &apistructs.AddonExtension{
+				SubCategory: apistructs.BasicAddon,
+				Category:    apistructs.AddonCustomCategory,
+			}, nil, nil
+		}
+
+		return &apistructs.AddonExtension{
+			SubCategory: apistructs.BasicAddon,
+		}, nil, nil
+	})
+
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "basic addon deploy to no-prod environment",
+			args: args{
+				diceYaml: `
+version: 2
+addons:
+  rds:
+    plan: custom:basic
+    options:
+      version: 1.0.0
+  addon-1:
+    plan: redis:basic
+    options:
+      version: 3.2.12
+`,
+				workspace: apistructs.WORKSPACE_TEST,
+			},
+			wantErr: false,
+		},
+		{
+			name: "basic addon deploy to prod environment",
+			args: args{
+				diceYaml: `
+version: 2
+addons:
+  rds:
+    plan: custom:basic
+    options:
+      version: 1.0.0
+  addon-1:
+    plan: redis:basic
+    options:
+      version: 3.2.12
+`,
+				workspace: apistructs.WORKSPACE_PROD,
+			},
+			wantErr: true,
+		},
+		{
+			name: "professional addon deploy to prod environment",
+			args: args{
+				diceYaml: `
+version: 2
+addons:
+  rds:
+    plan: custom
+    options:
+      version: 1.0.0
+  addon-1:
+    plan: redis:professional
+    options:
+      version: 3.2.12
+`,
+				workspace: apistructs.WORKSPACE_PROD,
+			},
+			wantErr: false,
+		},
+		{
+			name: "multi addons deploy to prod environment, had non-exist addon and plan error addon",
+			args: args{
+				diceYaml:  generateMultiAddons(t),
+				workspace: apistructs.WORKSPACE_PROD,
+			},
+			wantErr: true,
+		},
+		{
+			name: "illegal addon plan format",
+			args: args{
+				diceYaml: `
+version: 2
+addons:
+  rds:
+    plan: custom:basic:err
+    options:
+      version: 1.0.0
+`,
+				workspace: apistructs.WORKSPACE_PROD,
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			dice, err := diceyml.New([]byte(test.args.diceYaml), false)
+			if err != nil {
+				assert.NoError(t, err)
+			}
+
+			if err := r.PreCheck(dice, test.args.workspace); (err != nil) != test.wantErr {
+				t.Errorf("PreCheck error = %v, wantErr %v", err, test.wantErr)
+			}
+		})
+	}
+}
+
+func generateMultiAddons(t *testing.T) string {
+	addonsCount := rand.Intn(50)
+	addons := make(diceyml.AddOns)
+	for i := 0; i < addonsCount; i++ {
+		name := fmt.Sprintf("existAddon%d", i)
+		plan := fmt.Sprintf("existAddon%d:%s", i, apistructs.AddonUltimate)
+		addons[name] = &diceyml.AddOn{
+			Plan: plan,
+			Options: map[string]string{
+				"version": "1.0.0",
+			},
+		}
+	}
+
+	addons["nonExistAddon1"] = &diceyml.AddOn{
+		Plan: fmt.Sprintf("nonExistAddon1:%s", apistructs.AddonBasic),
+		Options: map[string]string{
+			"version": "1.0.0",
+		},
+	}
+
+	diceObj := diceyml.Object{
+		Version: "2.0",
+		AddOns:  addons,
+	}
+
+	diceYaml, err := yaml.Marshal(diceObj)
+	assert.NoError(t, err)
+
+	return string(diceYaml)
 }

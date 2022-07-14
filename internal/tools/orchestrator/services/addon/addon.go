@@ -408,13 +408,12 @@ func (a *Addon) transPlan(addons []apistructs.AddonCreateItem) {
 // an error will only be returned when the status is 0
 func (a *Addon) RuntimeAddonStatus(runtimeID string) (uint8, error) {
 	if runtimeID == "" {
-		return 0, errors.New("runtimeId 不能为空")
+		return 0, errors.New("runtimeId must not be empty")
 	}
 	runtimeIDUint, err := strconv.ParseUint(runtimeID, 10, 64)
 	if err != nil {
-		return 0, errors.New("runtimeId必须为int类型")
+		return 0, errors.New("runtimeId must be a integer")
 	}
-	// 查询prebuild信息
 	addonPrebuildData, err := a.db.GetPreBuildsByRuntimeID(runtimeIDUint)
 	if err != nil {
 		return 0, err
@@ -422,7 +421,6 @@ func (a *Addon) RuntimeAddonStatus(runtimeID string) (uint8, error) {
 	if len(*addonPrebuildData) == 0 {
 		return 1, nil
 	}
-	// 查询实例信息
 	addonListData, err := a.db.GetAttachMentsByRuntimeID(runtimeIDUint)
 	//addonListData, err := a.ListByRuntime(runtimeIDUint, "", "")
 	if addonListData == nil || len(*addonListData) == 0 {
@@ -460,8 +458,7 @@ func (a *Addon) RuntimeAddonStatus(runtimeID string) (uint8, error) {
 		}
 		if _, ok := insMap[prebuild.RoutingInstanceID]; !ok {
 			fmt.Printf("RuntimeAddonStatus error, routingId not found: %v\n", prebuild.RoutingInstanceID)
-			return 0, fmt.Errorf("addon: %s 部署失败，请查看日志详情获知错误原因，并尝试重新部署，若还无法解决请联系系统管理员",
-				prebuild.AddonName)
+			return 0, fmt.Errorf("addon: %s deploy failed, please view deployment log", prebuild.AddonName)
 		}
 	}
 
@@ -471,14 +468,14 @@ func (a *Addon) RuntimeAddonStatus(runtimeID string) (uint8, error) {
 // RuntimeAddonRemove runtime addon删除
 func (a *Addon) RuntimeAddonRemove(runtimeID, env, operatorId string, projectId uint64) error {
 	if runtimeID == "" {
-		return errors.New("runtimeId 不能为空")
+		return errors.New("runtimeId is not be empty")
 	}
 	if err := a.db.DestroyPrebuildByRuntimeID(runtimeID); err != nil {
 		return err
 	}
 	runtimeIDUint, err := strconv.ParseUint(runtimeID, 10, 64)
 	if err != nil {
-		return errors.New("runtimeId必须为int类型")
+		return errors.New("runtimeId must be a integer")
 	}
 
 	addons, err := a.db.GetAttachMentsByRuntimeID(runtimeIDUint)
@@ -3770,4 +3767,39 @@ func (a *Addon) ListAddonInstanceByOrg(orgid uint64) ([]dbclient.AddonInstance, 
 		return nil, err
 	}
 	return *addons, nil
+}
+
+func (a *Addon) ParseAddonFullPlan(fullPlan string) (string, string, error) {
+	var (
+		addonName string
+		addonPlan = apistructs.AddonDefaultPlan
+	)
+
+	plan := strutil.Split(fullPlan, ":", true)
+	if len(plan) == 0 || len(plan) > 2 {
+		return addonName, addonPlan, errors.Errorf("invalid full plan %s", fullPlan)
+	}
+
+	addonName = plan[0]
+	if len(plan) == 2 {
+		addonPlan = plan[1]
+	}
+
+	return addonName, addonPlan, nil
+}
+
+func (a *Addon) CheckDeployCondition(addonName, addonPlan, workspace string) (bool, error) {
+	if addonPlan == apistructs.AddonBasic && workspace == apistructs.WORKSPACE_PROD {
+		addonExt, _, err := a.GetAddonExtention(&apistructs.AddonHandlerCreateItem{
+			AddonName: addonName,
+		})
+		if err != nil {
+			return false, err
+		}
+
+		if addonExt.Category != apistructs.AddonCustomCategory && addonExt.SubCategory == apistructs.BasicAddon {
+			return false, nil
+		}
+	}
+	return true, nil
 }
