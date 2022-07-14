@@ -46,6 +46,17 @@ func (r *Linter) Input(moduleName, scriptName string, scriptData []byte) error {
 	s := script.New(scriptName, scriptData)
 	r.reports[scriptName] = make(map[string][]string)
 	var errs []error
+	var handleErr = func(err error) {
+		if err == nil {
+			return
+		}
+		errs = append(errs, err)
+		lintErr, ok := err.(linterror.LintError)
+		if !ok || lintErr.StmtName() == "" {
+			return
+		}
+		r.reports[scriptName][lintErr.StmtName()] = append(r.reports[scriptName][lintErr.StmtName()], lintErr.Lint)
+	}
 	for _, cfg := range r.configs {
 		// retrieve factory method
 		factory, ok := Get().Load(cfg.Name)
@@ -59,6 +70,7 @@ func (r *Linter) Input(moduleName, scriptName string, scriptData []byte) error {
 		}
 
 		// lint on every node in the script
+	ForNode:
 		for _, node := range nodes {
 			// generate the lint rule
 			rule, err := factory(s, cfg)
@@ -68,22 +80,17 @@ func (r *Linter) Input(moduleName, scriptName string, scriptData []byte) error {
 			if rule == nil {
 				return errors.Errorf("failed to generate the lint rule, lint name: %s", cfg.Name)
 			}
-
-			// node accept the rule
-			node.Accept(rule)
-			err = rule.Error()
-			if err == nil {
-				continue
+			switch realRule := rule.(type) {
+			case ScriptRule:
+				realRule.LintOnScript()
+				handleErr(rule.Error())
+				break ForNode
+			case NodeRule:
+				node.Accept(realRule)
+				handleErr(rule.Error())
+			default:
+				return errors.New("invalid rule type")
 			}
-			errs = append(errs, err)
-			lintErr, ok := err.(linterror.LintError)
-			if !ok {
-				continue
-			}
-			if stmtName := lintErr.StmtName(); stmtName != "" {
-				r.reports[scriptName][stmtName] = append(r.reports[scriptName][stmtName], lintErr.Lint)
-			}
-
 		}
 	}
 

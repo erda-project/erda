@@ -594,6 +594,582 @@
   meta:
     columnName: id
 
+# 文件名称校验
+- name: ScriptNameLinter
+  meta:
+    patterns:
+      - ^202([0-9]{5})-.+(\.sql|\.py)$
+
+# 文件 checksum 校验 锁定列表中的文件 checksum 以防篡改
+# 执行 select concat('- scriptName: ', filename, '\n', '  checksum: ', checksum) record from schema_migration_history where created_at < '2022-07-01 00:00:00';
+# 获取要锁定修改的 scriptName 及其对应的 checksum
+- name: ScriptChecksumLinter
+  meta:
+    - scriptName: 20210528-ops-base.sql
+      checksum: bafd2a37dd694fe2a6934263b70b0ee91ca1195c9a5d7231a326fc28c79fe2d4
+    - scriptName: 20210528-scheduler-base.sql
+      checksum: bca49ba06c9bac8493de5a18fad452c75aca4e750f1d9899f7f0665de6253523
+    - scriptName: 20210729-scheduler-index-update.sql
+      checksum: 00ec238f4b6abeff58191b1e04854d9289b9a6074783ffb715ad24c7e254c70a
+    - scriptName: 20210528-dicehub-base.sql
+      checksum: d95c185592436d81e73db3a4e8c23d50d14ae4f83f07191e4b8700f4ba871119
+    - scriptName: 20210707-update-pipeline-template.sql
+      checksum: 1bfb771816a8dd1159302b5491e5e130ce467767064b13b2ef971cf6a34528d3
+    - scriptName: 20210528-gittar-base.sql
+      checksum: 9f7f5352958aa35c3175a8b593417b8456f455ad59f4cdb33e8d091cbbdf2dd3
+    - scriptName: 20200528-tmc-base.sql
+      checksum: 9dd96fc65ad236173c7185f2ca08cc43f40fe1595da332b9c57f41fd389ac23a
+    - scriptName: 20210713-menu.sql
+      checksum: eeed1a5714bc6e15e23127fe5ef228a42c70dea43966932aad4e992676183476
+    - scriptName: 20210728-project.sql
+      checksum: 3e3717d9e0e747deec1de1ca524e42f3d2ef6deed08e7d9b2afc6279345f95ed
+    - scriptName: 20210728-tenant.sql
+      checksum: 482300c89bc5b912ffd4d705a0028856587c713f5f88aa6db608ff6cf0832eeb
+    - scriptName: 20210528-uc-adaptor-base.sql
+      checksum: fdd89fee746130ca9032874c3f08890ea72a67a474fcdc9d911fb3d6ce1593f8
+    - scriptName: 20210528-apim-base.sql
+      checksum: bf015f1e6324764962aa43b5f0b61120120f2e71895cc4dea272dc0bd225cd91
+    - scriptName: 20210621-create-erda_access_key.sql
+      checksum: a89627620d39e1990f4c2507ecb9b077ef7bbff1a14b81a2cf866286100c9648
+    - scriptName: 20210528-hepa-base.sql
+      checksum: 2ff628e0cce5924a3fa969a67e31b3e2e7e6ab48ed47e2f473c522b5e83b3605
+    - scriptName: 20210528-qa-base.sql
+      checksum: d631f36002157ecaa58ccddf7a74da49d75c22a47c82311598d65616e8df75b9
+    - scriptName: 20210608-qa-base.sql
+      checksum: d8beb03a26542c6c19530ee2c73cb77fb6dd35ee30e7096cb7e5ce101359867b
+    - scriptName: 20210625-test-file-records.sql
+      checksum: 7a9633f2e504241e2b1510b00f93a4052cfebebe23a120532752214c339c615c
+    - scriptName: 20210528-dashboard-base.sql
+      checksum: d4e3d53da5a744349310498a47e5139c5f9b2b9375b6fa7a6deef043f46ded96
+    - scriptName: 20210528-monitor-base.sql
+      checksum: d416f1386aca1e583c12a907acccf7b72afff5731362b9b55075a84c34e23a69
+    - scriptName: 20210528-spot-dashboard-base.sql
+      checksum: bee47ee31c30ec4b037cbb3fa124e873e408061e0a7503d186afa1716dc1d506
+    - scriptName: 20210531-01-monitor-base.sql
+      checksum: 82fdf3197ac7566f28a93c6a4e5eeb39a4eb87a8091b5d5a151067c7f8f25073
+    - scriptName: 20210602-01-monitor-base.sql
+      checksum: d000cf02fbdd90dd732c68e75248d660c6ec686e7131344e6aeb5fab8231ea65
+    - scriptName: 20210602-02-monitor-base.sql
+      checksum: 8c4be91c82826c4645716ec7ce716ff735ff81b7d6a7b76999bf11a9cad9fe4a
+    - scriptName: 20210607-01-monitor-base.sql
+      checksum: b9acda2324306d11d9d2ee1aa1907ae9a79edd25e3caef656123ada655fab65a
+    - scriptName: 20210607-02-monitor-base.sql
+      checksum: 557619d9259e08f5f93bae13198c6293d1c9f67961398113f69cc7ff10a9b045
+    - scriptName: 20210610-01-monitor-base.sql
+      checksum: 5514879f4068e36d1c420e015f1bb5d319a8421c770a42e951fdd002d6caf5e8
+    - scriptName: 20210713-01-monitor-base.sql
+      checksum: 2f277ce603dfcd1f40d928c56d22f088e162968f74cc6c1469cca17a843eeb4e
+    - scriptName: 20210721-monitor-rules-name.sql
+      checksum: 6b613aad38e6b1970302862f7d5987ffe8831b643dd6ebd575778c652be364b3
+    - scriptName: 20210804-1930-dashboard.sql
+      checksum: da1906e3cb23a50d8b7acf6cc36a935669b366695a177541fea5a16d7e5c9f0f
+    - scriptName: 20210804-2123-dashboard.sql
+      checksum: 24a7b83540a2081714c0e9042656b9fd17203037333bf0109b697b4928d52d77
+    - scriptName: 20210804-dashboard.sql
+      checksum: 716a806ba7f1561b4bf951e85e7fefdaeece07babe2a101e8e3ab754fc1cb3ca
+    - scriptName: 20210805-2109-dashboard.sql
+      checksum: d1415337de2916a9f76135fa45eb73e60a6b2ded45a39623ce29146968aad486
+    - scriptName: 20210812-monitor-rules-recover.sql
+      checksum: 86e037ab4838c451e6efb87f573daf57ae55302baa631b2425014ceb3af79f83
+    - scriptName: 20210813-monitor-project-dashboard.sql
+      checksum: 9bf72f21beca7553fb5bd1299441bd44a2cf33b256c7aa7f893a4dd807afec10
+    - scriptName: 20210528-addon-platform-base.sql
+      checksum: b9cc3c85abfe1bcf509167b58ad7f27685862bbe4dbc62f84dded8ba86aea032
+    - scriptName: 20210528-orchestrator-base.sql
+      checksum: 515b8b9e8b8944546559f590e9faff0da2762b005cd311ec62fe6bac01e1497d
+    - scriptName: 20210604-orchestrator-base.sql
+      checksum: 71f1cf7089f0344e9b78f4caca46e03fad2cd05c79f79121f9646c8c42244cf8
+    - scriptName: 20210528-pipeline-base.sql
+      checksum: afefee51c41cf369fb913ad7ed0d1a6d3f202772244dc83cf6fc26e69b260550
+    - scriptName: 20210528-runner-scheduler-base.sql
+      checksum: a95cbff74fb97fce771c4c3403902350639af36666787a6815da43ff79ed7940
+    - scriptName: 20210707-update-snippet-client-config.sql
+      checksum: cef297ac3464dfa2403f695c4df3c63f282ec4293af96b9de79222a49c0bae57
+    - scriptName: 20210714-update-report-meta-type.sql
+      checksum: 7dd1b507fb6d1f2767e8d9dc52677b8ffa99e3ee4825ef47982870d1032c4c5a
+    - scriptName: 20210528-cmdb-base.sql
+      checksum: 1d1ca5cbc04e0ba0fb0f2c3864147cf4ab024d21b704e61624ce2bd1ab26ad5d
+    - scriptName: 20210610-addIssueSubscriber.sql
+      checksum: c5bfeed8273576b913edc7a94c1d10b7b4a4c37cb8555b7375a08294cd2edbc5
+    - scriptName: 20210702-updateMbox.sql
+      checksum: 9350d1471f41fbd3b586074d6094b153fd1f1ea6abb36db53d32ed60ab29e0c7
+    - scriptName: 20210708-add-manageconfig.sql
+      checksum: 921ac537a70d5204a8a93720f09d1e0ee7d1bee7aa47ba531ec0c9c4cd0169de
+    - scriptName: 20210721-fixAuditHistory.sql
+      checksum: f60138297638cea3543591791407c6495c2b6ec6f0e21269cc803f5467fa3090
+    - scriptName: 20210727-add-field-type-ps_group_projects.sql
+      checksum: 0ea1f5e42bd3ad7461eb548636e4cff48e5695be079ac194c24f5fe3e0526daa
+    - scriptName: 20210528-openapi-base.sql
+      checksum: b372cb5dd8a6b147c5e7dfa1ed1bdb802dc3f040c96d9283832c7ad972647f03
+    - scriptName: 20210528-uc-base.sql
+      checksum: 4fa48681ad0523d3525eb73fd1bb3f5b314f800fb41adccf6831908a5255e937
+    - scriptName: 20210818-sp_trace_request_history.sql
+      checksum: eee277228609b5c560b93868dd960b72fdcb7857b9ae05dac54eefe69d235fc3
+    - scriptName: 20210826-update-dice-pipeline-lifecycle-hook-clients.sql
+      checksum: 0da0c140347422e986a19a26f7245d4c180c23825e2e4f2b387a3f0a50f0b138
+    - scriptName: 20210823-project-charset-utf8mb4.sql
+      checksum: af22c54e3cfad95aeb5ba565b415fb2147f0d4f086444a58d1d2d37cee199770
+    - scriptName: 20210821-adjust-access_key.sql
+      checksum: b8feca972e9df268e1370100dc1da255c7463efec434dc4422616277241e0a01
+    - scriptName: 20210831-sp_metric_expression.sql
+      checksum: 4e7f228bd2455742702d5b7ca3896de106438c7154f4b578fb331f306f21334f
+    - scriptName: 20210830-test-plan-isarchived.sql
+      checksum: 7156de42660e48ed90206dd29eda37be5e4911e031235f79a65e6739dd284132
+    - scriptName: 20210901-sp_metric_expression.sql
+      checksum: 742b9731c3b558d7c62199eaaae6c1542fbb2debe66a3a73f52068d997a3af27
+    - scriptName: 20210823-log-service.sql
+      checksum: 99bb3383f3bf8b0119df04581f789baac860cfe9ede02b5b4a3481217271c598
+    - scriptName: 20210903-create-pipeline-definitions.sql
+      checksum: cd8a3d58f54a88c6bef6fc33e941d3bb08ebc3916ea8ebed15405215ed2d5e41
+    - scriptName: 20210902-sys-manager.py
+      checksum: 1a2020b0b335e44129263b595381f77239013a5b2d28a5ab7b8f355fb6ee1fb8
+    - scriptName: 20210901-menu.sql
+      checksum: e0a04367f9e87da62ea5bd714a13492c17110d702086965bf2f6e4d8dcc7e5f2
+    - scriptName: 20210903-auto-test-plan-isarchived.sql
+      checksum: c400d4f635ceef8687138cbe4c076c0d78eaa7a21df81109b44f29f2180563c5
+    - scriptName: 20210906-auto-test-plan-execute.sql
+      checksum: 3f0c7379da5ae58e670fca23ddfe73d1b957107a9db177d4c079d18538dc75f9
+    - scriptName: 20210907-menu.sql
+      checksum: 1b617ec77afb1ddc1fd7bd1aec9aacda46019763c7aaaffb19b424cc1d0961f7
+    - scriptName: 20210831-compatibility-erda_access_key.sql
+      checksum: fca2bdc580b057f9606384c6be7fcd2e8ca2ed04364062b45bcd0207f6b2017c
+    - scriptName: 20210907-add-notify-item.sql
+      checksum: 520975f799b0c6ace5fa1628f5b361e850424293d6200d20d784bd61abd9964e
+    - scriptName: 20210908-update-notify-item.sql
+      checksum: 4035ecc37d7d49d05fba907ab94346008d808b2ac9ccc9cfeb4a2ab7d15cb3c3
+    - scriptName: 20210831-issue-expiry-status.sql
+      checksum: d945160f0e61a964c0fdde192cc679c042a661686c66f2b1b3766e0f50cf5e9f
+    - scriptName: 20210908-create-pipeline-triggers.sql
+      checksum: 5919580930487d44020845c32146b56a6658037c744917f9b83f0c889ca81cb1
+    - scriptName: 20210906-issue-filter.sql
+      checksum: 8269d00ceb0b5871f2e4e2c453ce38ad24eddedab3064304db51d7f05f53a77c
+    - scriptName: 20210913-issue-subscriber-index.sql
+      checksum: 8d85ddcd3bd4ea63989de1f9d7bcbc5d604d0f326d8e57efaae09ded43088f7f
+    - scriptName: 20210914-auto-test-plan-execute-api-num.sql
+      checksum: bda9fed2141cf58c5a3a4fc8d830898f9b4b3eb1aaa1969585cc216b94d206bc
+    - scriptName: 20210902-sp_metric_expression.sql
+      checksum: b7dc09e9e52570a191cfb2fee4845fcf6d4ebcff14137914bcb52d939de031ac
+    - scriptName: 20210918-menu.sql
+      checksum: 303730725eae78b36c2224a253831a7b4e611f453569611469cccba6d8c6f21d
+    - scriptName: 20210917-update-system-notice.sql
+      checksum: 1c7b50e2f4998f18c7e4adaa15f75529319a0496b93874e6559ba4d8776ab68c
+    - scriptName: 20210922-menu.sql
+      checksum: 0fa5c8ad5814567a863eddc8b23d62d81099db471373db962546f88c45158d41
+    - scriptName: 20210914-kratos-uc-id.sql
+      checksum: 20f7053ffab777d9adc30281bfa7f69ce758d085795bec1edbaee95c88e1fad9
+    - scriptName: 20210923-sp_metric_expression.sql
+      checksum: b990df2b7626c00a41c2c9bb7d6e584c5bcdcb0eae04f47be66ac5908bfd414f
+    - scriptName: 20210924-sp_metric_expression.sql
+      checksum: 5a2147cfeee42f1d914d1dce5a7aaa07f59cbc956a4a9567453e13a2d8798e26
+    - scriptName: 20210926-sp_metric_expression.sql
+      checksum: 11986ce15cbbf5ef1830fc0550541b5a8c6ed3cd88cf5af8a468b52316861249
+    - scriptName: 20210927-hepa-optimize-runtime.sql
+      checksum: 58c5b5ad5db977fcca46d560c1c8291ff3b200a9ddf5b3595ee03f7e1c5668f9
+    - scriptName: 20210927-sp_metric_expression.sql
+      checksum: 75419a09a766a5c538ed93ecffb2b5572d71b883e0789c3481af325a62ac91ab
+    - scriptName: 20210923-sp_metric_expression2.sql
+      checksum: cea0f6174fa827a7fdec0cd78247f1795784ed99a6d5ca4c3e99e584e9a2f5f6
+    - scriptName: 20210928-01-sp_metric_expression.sql
+      checksum: c67af458188905d48a099e43158d5de23fe0e6ecc5100fd9eb2da99c47d25fc4
+    - scriptName: 20210930-issue-filter-enlarge.sql
+      checksum: e41b9270d290520e071155492918823032d5ef3e52c9b2594d0206b9be99a275
+    - scriptName: 20211012-menu.sql
+      checksum: 49fd823c7d035b65049cd2c0e6303f1b7dec02cf9e7b646f56280d1a95e9e71f
+    - scriptName: 20211008-code-coverage-exec-record.sql
+      checksum: a735705b4cdb8e8b5458aa03399699078f58ef63f9c88b6642edbfe99d4d5d26
+    - scriptName: 20211009-issue-reopen-count.sql
+      checksum: 99204e51597694404b35b2d17bcaed5a36a38931a1a28906eedaa1507f141826
+    - scriptName: 20211009-01-sp_metric.sql
+      checksum: b92d525ef48f42db7302a65398ae5366aa7cc438f36521dc0b2193329c89990b
+    - scriptName: 20210928-auto-test-plan-step-groupID.sql
+      checksum: 51243a189d3cfe7ad63209ccd08069fbb780d9bfb60eaf5af63fcb17d999baab
+    - scriptName: 20211014-auto-test-plan-iteration.sql
+      checksum: 641c8ab63eaba98c32c69e43d8e7b85294c6d427af9d96c30caba0b053c6b0b2
+    - scriptName: 20211014-test-plan-iteration.sql
+      checksum: 4c5a69635a992e19d88dc7f2ceb3dd060a2712bb0682ad74b828242f75c0bd47
+    - scriptName: 20211015-auto-test-plan-member-userID.sql
+      checksum: e8d5301fad1da2678ae878353664626edd759be7a387cc055b7a72dd9758eb07
+    - scriptName: 20211015-test-plan-member-userID.sql
+      checksum: 94cf80ce9d57696e3fb21be2e5d97982499c6e410caf144a78925d7a214925ab
+    - scriptName: 20211009-project-quota.sql
+      checksum: dd90653fabd478d0bacd6b791897ff23036b5475863088e0846587ca66c01b26
+    - scriptName: 20211014-project-quota.py
+      checksum: a36cb4cebc5fadf0cdfeb8608132529c6966269cccc72f2b7282d19a6921b79a
+    - scriptName: 20211019-auto-test-exec-history.sql
+      checksum: 806e2661c58e78bfe2a412485178a50b4b2120f0b3b18acbc452ee2d46696b7c
+    - scriptName: 20211019-auto-test-plan-num.sql
+      checksum: 48269a2855b46cdb7563fcf78eb4793ec683aa8f581dbad2536da834cc991b15
+    - scriptName: 20211015-auto-test-step-disable.sql
+      checksum: 493f2e9037fa5a9ccc3b52a8a2667f31d655c28f6a7dc3419c21e37575633ab6
+    - scriptName: 20211019-auto-test-exec-history_update.sql
+      checksum: 10c1fc9c16ed22811bf02aedd3fb27cf5ccef038a6ba278c9bb9ac510ad9d6c2
+    - scriptName: 20211021-auto-test-file-record-space-id.sql
+      checksum: 02fee9a2289202ec4c3335b78f45b78c28cf7374303e8ddafd78d57a32d6c2f4
+    - scriptName: 20211019-auto-test-exec-history_pipelineID.sql
+      checksum: 7f14db62fd6062e70c937cd128b4d522a3fcb1618e87db7e9179f669c521faf5
+    - scriptName: 20211022-issue-response-completion-time.sql
+      checksum: d718942444441efb54bc3506694a6953146051e29602c6fcfc27537ebe16ee3c
+    - scriptName: 20211022-test-report-records.sql
+      checksum: 30e64ea6f7ebdf09b78faf49fabdfcf92b613eef9b89d38efbefe58346f8c6e3
+    - scriptName: 20211025-code-coverage-setting.sql
+      checksum: ac2ecd177739097ac9124d93d2ded1cd67b884c5ad7cd1c8632424af8b117bad
+    - scriptName: 20211009-resource-daily.sql
+      checksum: 9d6aa5e5b0c15390ae1ba1d6a6f5d52d8183b7741294fc40f978d5f5edcd9a49
+    - scriptName: 20211021-project-namespaces.sql
+      checksum: ae1b5983c8325cccc5a2db373b8e73d3a94542e0740bafdec2a1611f2d16d996
+    - scriptName: 20211027-app-projectID-name-index.sql
+      checksum: a4ed753b5679859539ee33680c7d71dfeaa50ed3964004084d45b8aa168c0e13
+    - scriptName: 20211027-manual-test-case-add-index.sql
+      checksum: 6888714a3c7f90c2f086f9dccb3e431b2dabab69610217176386f050d3a432d2
+    - scriptName: 20211027-pipeline-cron-add-index.sql
+      checksum: 6e117cee9d47174839d66b16a771c27421093d7012d0136d9886024282e62cb4
+    - scriptName: 20211028-delete-quota-without-project.sql
+      checksum: e738e7b97142f912e3d07acfe5bb237fddf9f3ee243881021b705e74f1250096
+    - scriptName: 20211014-01-erda_notify_channel.sql
+      checksum: da2cafdca4801cd7dfac5d87b060dc1b1e43d6ec76233ae723277a28ebdd2330
+    - scriptName: 20211101-update-project-quota.sql
+      checksum: 990d3745baae8a4d0917a88b4ad09b0b760cc25a42b4deb22c7d84d62c4403b2
+    - scriptName: 20211101-sp_alert_notify_template.sql
+      checksum: 136e36eb570205b2679385f8babf6ce9018f88ce9397ae1e1e69df916100d8d7
+    - scriptName: 20211101-sp_alert_rules.sql
+      checksum: 1fb7e84146844998a44eb4a775d5e427fcbc629aa130615d4df0f49d876ee40b
+    - scriptName: 20211102-menu.sql
+      checksum: 4d2b23162e72284a9103559b9863d59d9572ff649e7fa99bab40f626b7ca32c8
+    - scriptName: 20211103-mbox-index.sql
+      checksum: f5df19fb2980fd13f5a7f39ddff16a75223bc355b5108c81e0e518d786a597da
+    - scriptName: 20211103-menu.sql
+      checksum: 80a418d8a6003a4e5c2be637bb747de2fedc7aeb1582365788b214d5ef59c215
+    - scriptName: 20211102-cluster-scheduler-cover-tag.py
+      checksum: 56af1fcc72cb770635c4f5c3a8fa6cc9d2750dee16e81af0298e8262b3059d1b
+    - scriptName: 20211031-mysql-account.sql
+      checksum: 443458ef00824234cfba64a7d073fa41c3b110f507d2d281058fc2c90cfc006b
+    - scriptName: 20211102-mbox-deduplicateid-length.sql
+      checksum: b960e49329887770c46e36f1af2c910ae6d5c176219a63087ebd08afaa8f7117
+    - scriptName: 20211026-pipeline-cron-row-format.sql
+      checksum: 54e79cbe71ee9bcbaec7b12e2153ff327461e457150a64b90a8196057064b128
+    - scriptName: 20211029-auto-test-space-archive-status.sql
+      checksum: 8031295eee799a4392f4d628c2e1e8adfb2b03ebe7b6b6aefa8f5bc7c94c70a2
+    - scriptName: 20211109-fix-sys-role.sql
+      checksum: e8bcf02f94d4cb02dca149a38641d0362e9c44792b9262c6b69178ae742a7a5b
+    - scriptName: 20211110-fix-slow-audit-and-ticket.sql
+      checksum: ccda1ef316a69d11e31577c00e99c2b0f2dec35315db4d2b8fe5597869b22c25
+    - scriptName: 20211109-manual-test-fix-slow-sql.sql
+      checksum: ae51eae46bcda2880814f7ed0bd8d5d62736979c91b63e1a4a9c46a701b227a0
+    - scriptName: 20211110-auto-test-fix-slow-sql.sql
+      checksum: 7d808459805aedbece148aad06f84fffc8678d2b2354820441cc3f4d6092b579
+    - scriptName: 20211110-auto-test-plan-update-data.sql
+      checksum: aed9a3a31bc50ca2cc4cb4bd8f1faebb15f9b8f8d85b5c4b6966327bebdeb880
+    - scriptName: 20211111-01-sp_metric.sql
+      checksum: 19fef20a8b8fbccb0153f380c89bc2ec6df4d8fa2b377863167c47f23ba00185
+    - scriptName: 20211115-hepa-domain-add-org-1.sql
+      checksum: 53cf1a2ba24c7287be195cef3c0be84ec70b0f5d388169cc2313ff6875ff12c8
+    - scriptName: 20211115-hepa-domain-add-org-2.sql
+      checksum: 70e39abb2d329fb83f2c19c08e2582cc0b01edff18e278ad11d348b0b88c13b7
+    - scriptName: 20211117-menu.sql
+      checksum: eff9e55bb4af2a6e0b46f271030ee992af8b5dde23edc0935a5c767d5092d50d
+    - scriptName: 20211116-resource-daily.sql
+      checksum: ab340ac658c5743a5ffbd72867a0493885a32fbdfbb393ac35f36567269fd16a
+    - scriptName: 20211119-menu.sql
+      checksum: cac9d96e8862bd424be0685cc6fdd222c5f07e2c6800f628878dd13f62747be3
+    - scriptName: 20211112-pipeline-task-metadata-inspect.sql
+      checksum: 19899945ee24f4a137bdf5dbdab6ee29b373985a50e8cf063a3d1f6d32fbe7cb
+    - scriptName: 20211117-auto-test-scene-policy.sql
+      checksum: c899a4440f427dc8cdd9ae853246a03e6d65decf022ebfb0ee5eae24a7a9611a
+    - scriptName: 20211118-auto-test-scene-groupID.sql
+      checksum: 489739347c2e47413c73971331248d746081b21ad66f109935b78b2404f9d229
+    - scriptName: 20211123-sp_alert_notify_template.sql
+      checksum: 4bdc66586ce5e24ff29e4fe6701e8b3b05a64b8372d52c735180e969d32af9ba
+    - scriptName: 20211123-sp_alert_rules.sql
+      checksum: 0b15d2003b34c4ab5538b62318364883a908ad3373cbb445fae8fd0fc9a8fbfb
+    - scriptName: 20211110-test-file-record-err-info.sql
+      checksum: 7f4826e3e2179ddb1cdf6fc0d541ab986a13ba137d6ac11527b6c940d0914f58
+    - scriptName: 20211202-dice-audit-add-deleted-index.sql
+      checksum: 658223d6bad7837cb50388395f8d620521800ace0cd351e6eb5436f15cf29715
+    - scriptName: 20211201-auto-test-exec-history-index.sql
+      checksum: e7b48fe4b4bf3f27d2d35059b562ce46a0b3e5600d6092035ed8d1dde3c45163
+    - scriptName: 20211129-issue-relation-type.sql
+      checksum: 10ece774a155eb0ac1f5b9c23bee191d65a2a96ec24b437bcde151f9bfd7f0d2
+    - scriptName: 20211206-resource-daily.sql
+      checksum: a94a00e59d8cab04aba1d3614a44b1a450b929eb8ac833d24342d3867422e02d
+    - scriptName: 20211207-issue-plan-start-time.sql
+      checksum: 3c54c7b632299891465c817a199647fad6a9b96a52148dd9f93b5e84b3efbf1c
+    - scriptName: 20211207-erda_notify_channel.sql
+      checksum: bc75001a67ee1bd7d1ac88b3388d3510fe1bbddaf1866360e4bf7c3c9c1204f9
+    - scriptName: 20211208-sp_alert_rules.sql
+      checksum: 9e721a436cc3f5a72cdf98be2e9dc10fff2fea5dfd4e1c4cd8a81f0dea227d07
+    - scriptName: 20211210-issue-expiry-status-update-index.sql
+      checksum: ee15ce57b133e419217910857c1f1fc52cefeb9f232dcaa31bb3088969e564c1
+    - scriptName: 20211210-sp_alert_notify_template.sql
+      checksum: 38e2c8537aa2bef6c2716582a7337e5e074175f40df367032e3aaa5efdfaf1b6
+    - scriptName: 20211210-menu.sql
+      checksum: c7f1c3116cb2411801ce233384199d8caf9a964c93cdb73e88857bcd2787e13f
+    - scriptName: 20211214-issue-state-circulation.sql
+      checksum: e9c7305daa8ca75fdc2e7b5f2bcf83a0049fa21fc771d827cdfae34c4b64b8bd
+    - scriptName: 20211217-sp_metric_expression.sql
+      checksum: ce3231c5afb76c8f254ddf880ce00a8eca98c063699d26f3005393514e9b5e05
+    - scriptName: 20211222-dice-member-character.sql
+      checksum: 07582b3282207fd93998058586025df3bb8e4b2d0ca8b86f29544b62fecadbcf
+    - scriptName: 20211221-dice-member-userID-varchar.sql
+      checksum: af49cd080c5cc801d1c6e4c11667e348ad77ed6979be1a0515ab105c44ff6a34
+    - scriptName: 20211228-sp_metric_expression.sql
+      checksum: ce53e43f08bfdde4af92d931b509cbd8fc718845c6ed531b665bba6bdc13b3af
+    - scriptName: 21211228-project-home.sql
+      checksum: c7b93444b3a7ea65e50395dfa970b3817814fe23645d90751a815a4be1d13060
+    - scriptName: 20211220-erda_subscribe_management.sql
+      checksum: 05695abb17796b685e9da6088a6ffd0ec881d644b4e4e2aace4e68a92e8a5389
+    - scriptName: 20211229-branch-release-rule.sql
+      checksum: 60105cbdba40ce78b7b22b5288ba6cbc2d7479001179ff04e4becc75852f848d
+    - scriptName: 20211228-project-home.sql
+      checksum: ad3a7d8297b35cc2a00624011010e0eda2309108f81b358cbcbff6ef99a3cecb
+    - scriptName: 20211229-member-active-rank.sql
+      checksum: d9e5a2a59c8620c66f5c3dd3dbf3f53d6a9480e43f060a2eac608578666445ac
+    - scriptName: 20211220-decehub.sql
+      checksum: 9be3ae2bd8319a15c8502401437581e7113bc8cf781cf9f06a5dde3c9886b3c7
+    - scriptName: 20211227-project-soft-delete.sql
+      checksum: cab8ebf23b6fbe47d56f5223312d3253e2d94b9b739ceae822fd1c8b2a04ca82
+    - scriptName: 20220104-deployment-order.sql
+      checksum: ad5442fa3df2163b4a98bfcfaa4d0a369936b162cf8b181667291ea45fe6ff62
+    - scriptName: 20220112-set-org-private.sql
+      checksum: 2b644fec8bd634289336213845d298e263701a3d637fab642b298bcf301bdeb6
+    - scriptName: 20220110-sp_customize_alert.sql
+      checksum: a1d26fc214b80135c618d37bc0a2fb9f05ee0bccc6824c8dac514e22afd28690
+    - scriptName: 20220112-sp_alert.sql
+      checksum: 4682734a1dc4634337036fbe9fcb09f51da725dc9ad3010f93eb54b3576f0882
+    - scriptName: 20220112-sp_dashboard_block.sql
+      checksum: f9e4622012fa3728705bd5c7ca1f0b946a36bc62526d89b687a66047f4e823dd
+    - scriptName: 20220112-sp_log_metric_config.sql
+      checksum: 016d5ec7a1fe18df96a3b7b00d1dda979d87c7cdc1f62f17cfce243922f9c034
+    - scriptName: 20220110-file-record-soft-delete.sql
+      checksum: cddcee241fa6f54f89a570066bdd0bde5fc7e9a00b926b4539b1b603db28e024
+    - scriptName: 20220112-erda_access_key.sql
+      checksum: 4ddf30ee0b8d40d86e3442b4e2d16bf7ef6be9da21ab245d761a938d11add2a0
+    - scriptName: 20220112-pipeline-definition-and-source.sql
+      checksum: 16eaf16a5464bbb9944e5731870a5b4c913ae6e0f8a9d7dfae68201326cbf109
+    - scriptName: 20220113-pipeline-definition-change-field.sql
+      checksum: fb378042a2ddc40a5c457c353e406f3bf36d39213678845cf1fcf2c7d79c1742
+    - scriptName: 20211220-add-sla-name.sql
+      checksum: 8bc13b3766eaabd0b03ef6f82cfc3a806f0ae3f60f7be0c6ce7d1c3fae73fdd8
+    - scriptName: 20220119-pipeline-definition-add-remote.sql
+      checksum: 0aff2c40cdf50750739caa74419e6149666e45dc88150989e59649683ed820b9
+    - scriptName: 20220120-pipeline-definition-actionNum.sql
+      checksum: e5313b3b54a24c5f82d6a8e75ab97408010261e8f9d51230ecaefe53fde2a4b6
+    - scriptName: 20220120-sp_metric_expression.sql
+      checksum: b3a3a4f6a32110cd6b114cc01c10c240a5e38723dde5026be53e28658a183620
+    - scriptName: 20220121-sp_dashboard_blocks_system.sql
+      checksum: b3c2ed3a53320e1b0369186670691b5059c0bb2483a6678aa3eccb3a34f401f1
+    - scriptName: 20220124-menu.sql
+      checksum: f90269292c7859925c8d3bc0bec7cf400f3705c54c5d1d9e0b7644e9b2cfecb8
+    - scriptName: 20220125-release-branch.sql
+      checksum: 64dcbf359017ad6a0b8b6478684f41e88b24c06253589bd7fcb2f64db5d516be
+    - scriptName: 20220126-release-branch.py
+      checksum: 299c86bce2519c0fff022a85791a9259723c8b2b9c706457182581ba28f9a232
+    - scriptName: 20220211-release-list-group.py
+      checksum: 5fdece2e4e9db7a850f51d04857d45c4804378029f306547f3116f7ff3db5a82
+    - scriptName: 20220211-alert_notify_index.sql
+      checksum: b5372ce4a4ac102c4dfc010397db2f10776294bfb46813aa7b77c08309faf08b
+    - scriptName: 20220209-alert_event.sql
+      checksum: d8d1678f7f25f9a0393adb2b9bea887ad45376cd7370620fd994825dadd5284c
+    - scriptName: 20220210-menu.sql
+      checksum: 5ba754f546e97a50dac083f7df2b3a3731bac6ba9df271414ea97581f1c983a2
+    - scriptName: 20220211-deployment-order-batches.sql
+      checksum: 1e1817a52dd97e947174c16405e5f41cd090915bdf882137e975486dbb5335b7
+    - scriptName: 20220216-menu.sql
+      checksum: c6f7176a4445bb6c7f827676a9dbe78410c2fdd8db8117e1e1ac1d1d32b75d86
+    - scriptName: 20220217-alert_notify_index.sql
+      checksum: 77175a6c7441ddc136a3c5939a4a18b0c218961b5553c5af9c24e34f609b13a2
+    - scriptName: 20220217-menu.sql
+      checksum: 97f6ce7a0de3c870875490422f24d2626a52da943c3130e0093ba089ad2fa7ae
+    - scriptName: 20220215-01-sp_metric_expression.sql
+      checksum: 6c565904bfabd80a3c336908bc7099a8f2e7efb9fe26f3f394ab9c807f4859a7
+    - scriptName: 20220217-pipeline-task-add-index.sql
+      checksum: 15dccc0658faca8c2207ffa648fc7c00e0ebeded1a9fc09d992c0a6c40f41a7d
+    - scriptName: 20220217-alert_event_suppress.sql
+      checksum: 114879cc2697f1af76f26c701db647851dc5da63a7d0245e908b43e1660c610d
+    - scriptName: 20220218-alert_event_suppress.sql
+      checksum: ee6146ef154369fc97af7c15ac3019d705ff3bf27576df627199e19628e1b70d
+    - scriptName: 20220214-delete-empty-userid-member.sql
+      checksum: c31085d7cf49bee19132ef54c5c904db0fbdfa1df722f2016dea8194a1240773
+    - scriptName: 20220223-release-latest-1.sql
+      checksum: ef87ef2d65fdd4a0df1e46955f2ca6c85776bf1e3217baaa223af3053cd8a7f1
+    - scriptName: 20220223-release-latest-2.py
+      checksum: 0ae1ab84404e903e93e856f918d77497e87639485049b749cb3cc043b2556fbe
+    - scriptName: 20220301-sonar-config.sql
+      checksum: b6bef6202de71c7194d1c5788533b80e3bc3f83aa5bee58e76e5859ce8f05edc
+    - scriptName: 20220305-testcase-desc-length.sql
+      checksum: abcc52e82c4de98341ad9989239695816a1f640987143e4ca170d84f860e29ff
+    - scriptName: 20220303-erda-workspace.sql
+      checksum: 939d04e781962d6ea888e19eac66f3d3fb4e20f3d69f7a022dd46eb9067a339d
+    - scriptName: 20220307-cluster.sql
+      checksum: c30673dbbaa7c4575d82c23dd55f214715d599991ea0433485ca19f16bb675a0
+    - scriptName: 20220314-add-runtime-filetoken.sql
+      checksum: 321074202111f0ba30126850b82052f3d5a0da3c9f36b8eb583a96de1bac2255
+    - scriptName: 20220311-pipeline-delete-scheduler-config.sql
+      checksum: 4408a12006f986c59ee35c5980930621612d93239c84e4c496bb1bb306dc906c
+    - scriptName: 20220307-quota-user-id.sql
+      checksum: 9989ca8b1b515fa2b8b0db8cad43ea38ad1ea7e5fa7d52b0bcb5e2efd5772165
+    - scriptName: 20220318-pipeline-definition-add-ref.sql
+      checksum: ca97d0cf7cf8a5053ea8bd4700279b82f162fa12e9689784abdb2fc8860e4b51
+    - scriptName: 20220317-export-records.sql
+      checksum: 792c196201c854fefe311afa12e365092af3a57f0db83743a30e9f379081c411
+    - scriptName: 20220302-guide.sql
+      checksum: 15a5f0c247b621bfc44b76148711a3109777aa941e14376e8b10ffca3164162e
+    - scriptName: 20220322-pipeline-archive-add-index.sql
+      checksum: 54cb20754cf4c460bfe11af13cb33f7f93a0c22af90056b4c912dd00d1e00079
+    - scriptName: 20220316-deployment-order-1.sql
+      checksum: 29673c4bf1086b665e88f5aceed222312c3eb0801f1dff901e2772209bbe19ec
+    - scriptName: 20220316-deployment-order-2.py
+      checksum: 564bfdc3691c75c64c56c7bd3c8e1094ffe59b8b54c2c56be7f40dbadc085ba7
+    - scriptName: 20220317-release-model-1.sql
+      checksum: 593d9dc4ab9f4f9d3c629234fd1fb68393ea8ce24c65d46d9a2b94791d9af6b0
+    - scriptName: 20220317-release-model-2.py
+      checksum: 2308f36f81e36f10bf67829d31813bb0a991c89f1d0e1ecebbffaf861b2a3991
+    - scriptName: 20220326-pipeline-crons.sql
+      checksum: 7f494802bac528ba0913275a65ba95ed5725c3bcf129a4a42c562591bce85f28
+    - scriptName: 20220329-dice_member_extra-charset-collate.sql
+      checksum: f10c404279b70ea1f7cfc45ba3aa9b6c7960765982f64afeb14b306ccfde7d4f
+    - scriptName: 20200528-fdp-agent-base.sql
+      checksum: 66166b700dd0ca076289d9251ab9bf7531aa55bb64b35ec7597746b9f1380a96
+    - scriptName: 20200528-fdp-base.sql
+      checksum: b85f52bb09def1dc01932a564a578acae264f85f305c3805c243309ac4eeeff7
+    - scriptName: 20210624-01-fdp-agent-base.sql
+      checksum: d447d5e66d444482e7780d0867d653d1e256e351abc44b3bc6822af4d4b39cf5
+    - scriptName: 20210705-01-fdp-agent-base.sql
+      checksum: 356a7b98cce807d458302e8d90b97d43887da65c5cd54c3b36b868d59ca00a88
+    - scriptName: 20210825-fdp-base.sql
+      checksum: 352f0d9f425cf3c3b4b12c9477ed862de941da340d8b8acd0b6d7be9a5784a08
+    - scriptName: 20210702-4.1-02-fdp-agent.sql
+      checksum: f6e2ef57eaab832637559246603472059e4841c59bee238043053aa2d5362cd0
+    - scriptName: 20210702-4.1-03-fdp-agent.sql
+      checksum: 542f3d08acb3865a2c497f44289d49837654ce480d517b5d31f7a9319af74216
+    - scriptName: 20210722-1.2-01-fdp-agent.sql
+      checksum: 83d489d2ce5a631de7fc9faabbe9df416d15e1a086df88ff197eadcff4ba8815
+    - scriptName: 20210722-1.2-02-fdp-agent.sql
+      checksum: 712fbfe1177c2fb14ad21ab440b522183e0c266ce52f5c61d74f1738b55e9903
+    - scriptName: 20210730-1.2-03-fdp-agent.sql
+      checksum: 599f6f58a6026ec9e74d6a7f7e41e39ac1742c794b264394d6c7f3bd155c32e6
+    - scriptName: 20210813-1.2-04-fdp-agent.sql
+      checksum: c34037944f6bb7be4d2aa5cf44f9b343d07a8d0a0e2c4c993082e0cd03fadcc8
+    - scriptName: 20210818-1.2-05-fdp-agent.sql
+      checksum: 997ed11ddcfd82268ef523997ac51cdfec5226ff42f1939e90495050b9a235df
+    - scriptName: 20210819-1.3-01-fdp-agent.sql
+      checksum: f1e07dacda1d71807a5c93b9a9ee7add7bb2391114f13c2326fdbafb938f6780
+    - scriptName: 20210917-1.4-01-fdp-agent.sql
+      checksum: ac28a2a53ab5ea619f35e1667942704e226c7e86c61b828832915bfecbcd47d9
+    - scriptName: 20210923-1.4-02-fdp-agent.sql
+      checksum: 68201274a1d4033113271f606d52029b7977c6a02c3362828e7238087e923706
+    - scriptName: 20210927-1.4-03-fdp-agent.sql
+      checksum: dc6752df3e96aa8865d086c99dfc28063793ff1ab991b44446ec91fdee3073d2
+    - scriptName: 20211013-1.4-04-fdp-agent.sql
+      checksum: 7e5fa03d8794440d2849a241dc956fd2461d94ccc4e7f7b9f642dc35d393cb26
+    - scriptName: 20211018-1.4-05-fdp-agent.sql
+      checksum: a4e4528d42fbcbe86c0f8c5b9b852fdb5d11576b814b6b7a95b19072017c290b
+    - scriptName: 20211022-1.4-06-fdp-agent.sql
+      checksum: ca255fc87c42880332aad1ffaefd2312d99055532419fff23a2dae329da0d478
+    - scriptName: 20211025-1.4-07-fdp-agent.sql
+      checksum: 39a3fbfa33c20c614ca62a1ff46cb1b5e7d69b800f58edc0d422d3001e53c38a
+    - scriptName: 20211027-1.4-08-fdp-agent.sql
+      checksum: 094c1643b1e3f7d5ec87803752e2cbbd836c1bfd548065b74fd4a783f167b769
+    - scriptName: 20211102-1.4-09-fdp-agent.sql
+      checksum: 7a7d31bafe65acaefe164892819d171b0f30d956ee3ed7831e4c2ac441c3d734
+    - scriptName: 20211104-1.4.1-01-fdp-agent.sql
+      checksum: 87ab09d770ea4fd8eb409a79589c70cb12f16f967de5d419d6160422377aa902
+    - scriptName: 20211116-1.4.1-02-fdp-agent.sql
+      checksum: 4f3de04d26f1e87cefb22bc963a715002a666e96127fa7949febfa5ee6a277a0
+    - scriptName: 20211116-1.4.1-03-fdp-agent.sql
+      checksum: a5f094d5628dca6ac09a02c8bb257ef3d66e66950d87439f61306dc147422ae4
+    - scriptName: 20211116-1.4.1-04-fdp-agent.sql
+      checksum: 2ba926dd44fbb04ec08e7cf7aaaee232ad112156f1df47f250e92f11caa4bfbd
+    - scriptName: 20211202-1.5.0-01-fdp-agent.sql
+      checksum: a5e94b28c5a601cfd4386f625a25118657280982f454d02887d1ee961e2e8abe
+    - scriptName: 20211202-1.5.0-01-fdp-workflow.sql
+      checksum: b23fa94e1e2566e263d31ae76a62f3b1ce74d19cd210b1b7ff1bf9ca9be0ef80
+    - scriptName: 20211202-1.5.0-02-fdp-agent.sql
+      checksum: a6ebdbc785178f40922735029fe0c629ec3cfea3aaee04d2cc78f281e7389cfd
+    - scriptName: 20220118-1.6.0-01-fdp-agent.sql
+      checksum: 23614e9ada8363315fffb48de7ed07f2393824d01d3822b6bb9cf9f3be197e63
+    - scriptName: 20220118-1.6.0-02-fdp-agent.sql
+      checksum: b2487d69fec9a6a698404c884353b1c0ef60920ba325b1e86cb124292704aea7
+    - scriptName: 20220216-1.6.0-03-fdp-agent.sql
+      checksum: 2d283828bf1b0f80de4f8f5567a644eeb949803137f7d5964fae9f055eb0ac0f
+    - scriptName: 20220216-1.6.0-04-fdp-agent.sql
+      checksum: 3582359b9a8509ddd42fd88ae524746b1c93fc8dcd707f7065340c1d804d105a
+    - scriptName: 20220216-1.6.1-01-fdp-agent.sql
+      checksum: 1497eed91ec3a7068b67858debc63b7d25966721a4e87471c9d4d4f504603185
+    - scriptName: 20220401-01-erda_dashboard_history.sql
+      checksum: dcbe49aff201e4d5556f2c9e1be6cdee30fab22e92fcb5e4ed6f3ee2144e9f46
+    - scriptName: 20220331-label-relation.sql
+      checksum: de7a1086369ab35c1d8e5a66def8d56ee4cdb50e9ce48e2e021a5b3b7ff5815b
+    - scriptName: 20220412-modes-env.sql
+      checksum: 6fd03904d2c2c2dbcb1d42ae206006717882a4e4f44b2099a303578bc100d11b
+    - scriptName: 20220412-guide-add-pipelineymls.sql
+      checksum: 028c84e7ae5a9539e6a3f04a2dbf1d9dca1590b46b34f018401159aac9a4413a
+    - scriptName: 20220413-pipeline-definition-drop-index.sql
+      checksum: 5c83ce7c2976de8307df9564877477fe9f594aaa5627fe8207192520dfdc2720
+    - scriptName: 20220412-pipeline-action.sql
+      checksum: ec1e42141cbb9dbe3b2feb97b9ae64b6be0e7a3c048e3e4b2f4313d222812eb5
+    - scriptName: 20220419-menu.sql
+      checksum: 4e2404fd60ca7b86beba76680d6a68ff04451198874d8394185df3b5a8fdca6d
+    - scriptName: 20220414-create-erda_token-base.sql
+      checksum: 09405bf2ce36e4162e10390e41db3807b0b78f98c71a0a94079bf881f44fa4bc
+    - scriptName: 20220414-rename-oauth2-client-table.sql
+      checksum: f86914a056a6be7ae7cec9181ce6b76dea10a86d45471b79fa44a8c4f55dfed1
+    - scriptName: 20220415-migrate-oauth2-token-base.sql
+      checksum: 0c712db504194af552f6be40d176b8bb26b84993c4e64bfecfba7d3eefe6c6da
+    - scriptName: 20220426-menu.sql
+      checksum: 2c21dd9f44c6171e6538937aad436f61430f754c2e77fbd7010523a7d248b89b
+    - scriptName: 20220427-label-unique-key.sql
+      checksum: bf31fb8af0822660c4cc3b30450a1ce9d676ec381352bdab04f1312ad5ec5581
+    - scriptName: 20220421-pipeline-edge-report-status.sql
+      checksum: ea06c48393761fac0de591f399aa28dddf79bdaff2d4ca7dd2f600b159b7ba6e
+    - scriptName: 20220427-pipeline-edge-cron.sql
+      checksum: 897d855e8d949f6db47fae3fcdb2a7d20382e557ef6dec9dcf85507c2d808fef
+    - scriptName: 20220428-pipeline-edge-base.sql
+      checksum: 38bb709f3e6c9f7afbccdaa1b96378773a7f27c797d29f6e139fcb6d63c36932
+    - scriptName: 20220429-migrate-member-org-token.sql
+      checksum: af8c67a2fe7f55a529d33e920b260973da6c3bcfe94081256001ec1326fecf81
+    - scriptName: 20220428-devflowrule.sql
+      checksum: 373c72503708e44f2e25b9aae94771f664a462b8920901f21ab74d12a70a9c0f
+    - scriptName: 20220509-devflowrule-migrations.py
+      checksum: 5ef370073d5a1031a0f38a69bcdd26bcf24be366e191d5eaa4a8f0655ef26cd8
+    - scriptName: 20220511-add-index-for-instance-table.sql
+      checksum: b13e66f3219d26c88eab864da5ca91403fe911825f3f23659c7192def27f9e37
+    - scriptName: 20220519-qa-test-record-report.sql
+      checksum: c8a3a39cf284831f05f28d4555de5b8f3569de5b55a628c5101a01a58c2e29e8
+    - scriptName: 20220517-notify-histories-add-index.sql
+      checksum: 3cf9f242e0a7dad6bb99e7b91bcbf7260f98990184bc464ff7461af8155ed5ff
+    - scriptName: 20220511-issue-relation.sql
+      checksum: 723f6db4cc99675ef0c6e9e172e366203261b5946dfc51eaf684e35b0bc6a0fd
+    - scriptName: 20220517-audit-deleted-at.sql
+      checksum: 9fbc564ffda2919b3c6594ae4201b73a79700d11cb9103cb047d0accfeca771c
+    - scriptName: 20220518-gittar-merge-join-branch-status.sql
+      checksum: 971111a91578a73529e2dc3bcdccd1e6abb5dbb76ddd7c79235c32da141d5929
+    - scriptName: 20220424-gallery.sql
+      checksum: 221fc17bf4f7ce98dd48ac1920662f6a8751485a5f654247c24e42aaf1fb349b
+    - scriptName: 20220510-opus.sql
+      checksum: 41bf9d430d4bc57edab05ca30bccbdd1727dab8f8d8ceb7d66d56241a36fb990
+    - scriptName: 20220519-cluster-scheduler.py
+      checksum: 4d935c477bb4b39475d3c2717d9fcf33e5b859c0dec44f111fcfa307be5b433b
+    - scriptName: 20220518-pipeline-lifecycle-client-add-unique-key.sql
+      checksum: 9532ee411c36ae4dce23b517047247a4156325ba77d098dd20f1f239762e3bdf
+    - scriptName: 20220520-file-record-name-length.sql
+      checksum: d2db21d377950a95b7c97f018b61ba5bf877d7fdb40ff967e806322a92c081ec
+    - scriptName: 20220516-menu.sql
+      checksum: 2a65ed2d1ae2e6159fd758d99d58dc763b625d403fa1e446d0b9e9964b6755be
+    - scriptName: 20220525-pipeline-cron-add-cluster-name.sql
+      checksum: 88cd7a5a2f1b1228951bf3134e63413577e924caa84ba1744362b31f375dadb0
+    - scriptName: 20220526-fill-cluster-name-for-cron.py
+      checksum: 01f74f2f7adbe579c50bb1c8a575a8ba88f93e9c985f0d90f9b7cafc664a6425
+    - scriptName: 20220525-gittar-merge-is-join-temp-branch.sql
+      checksum: a6187f74a28d8ee8462b3e0e3b438304440ba10b85e0928b59f782015be53104
+    - scriptName: 20220228-1.0-01-fdp-metrics.sql
+      checksum: e85763213df88ab1fe41b4198e86c5fe8a531f19178cf40392fa1b673eb34cc8
+    - scriptName: 20220304-1.0-02-fdp-metrics.sql
+      checksum: 8a47c857c1c96d98209d99bf67dc5710419f595bcff4102344dd8941ef81c85b
+    - scriptName: 20220315-1.0-03-fdp-metrics.sql
+      checksum: 2ccf94c55ae7bd4e34762d4b3eef7a3e38b2a4ad584ef5d6cd9e91e21dcddefe
+    - scriptName: 20220627-opus-name.sql
+      checksum: 6151443700efb4531da7cf49c4f36f69e23ea8bd33ac0205afec069b8ed3c51d
+
 # 表名称校验 表名应当以 erda 开头
 - name: TableNameLinter
   alias: "TableNameLinter: 以 erda_ 开头仅包含小写英文字母数字下划线"
