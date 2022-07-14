@@ -20,7 +20,10 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/erda-project/erda-infra/providers/i18n"
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	flowrulepb "github.com/erda-project/erda-proto-go/dop/devflowrule/pb"
+	issuepb "github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/providers/devflowrule"
 )
@@ -200,6 +203,87 @@ func Test_getSourceBranchFromFlowRule(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := getSourceBranchFromFlowRule(tt.args.flowRule); got != tt.want {
 				t.Errorf("getSourceBranchFromFlowRule() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+type issueForMakeMrDescMock struct {
+	IssueMock
+}
+
+type transForMakeMrDescMock struct {
+}
+
+func (t transForMakeMrDescMock) Get(lang i18n.LanguageCodes, key, def string) string {
+	panic("implement me")
+}
+
+func (t transForMakeMrDescMock) Text(lang i18n.LanguageCodes, key string) string {
+	return "Task"
+}
+
+func (t transForMakeMrDescMock) Sprintf(lang i18n.LanguageCodes, key string, args ...interface{}) string {
+	panic("implement me")
+}
+
+func (i issueForMakeMrDescMock) GetIssue(id int64, identityInfo *commonpb.IdentityInfo) (*issuepb.Issue, error) {
+	if id == 0 {
+		return nil, fmt.Errorf("error")
+	}
+	return &issuepb.Issue{Title: "New issue to Erda", Id: 100001}, nil
+}
+
+var mRDesc = "Task: #100001 New issue to Erda"
+
+func TestService_makeMrDesc(t *testing.T) {
+	type fields struct {
+		p *provider
+	}
+	type args struct {
+		ctx     context.Context
+		issueID uint64
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    string
+		wantErr bool
+	}{
+		{
+			name:   "test with error",
+			fields: fields{p: &provider{Trans: transForMakeMrDescMock{}, Issue: issueForMakeMrDescMock{}}},
+			args: args{
+				ctx:     context.Background(),
+				issueID: 0,
+			},
+			want:    "",
+			wantErr: true,
+		},
+		{
+			name:   "test with no error",
+			fields: fields{p: &provider{Trans: transForMakeMrDescMock{}, Issue: issueForMakeMrDescMock{}}},
+			args: args{
+				ctx:     context.Background(),
+				issueID: 1,
+			},
+			want:    mRDesc,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &Service{
+				p: tt.fields.p,
+			}
+			got, err := s.makeMrDesc(tt.args.ctx, tt.args.issueID)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("makeMrDesc() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("makeMrDesc() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

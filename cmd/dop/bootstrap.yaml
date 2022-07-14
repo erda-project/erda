@@ -14,6 +14,9 @@ i18n@cp:
   files:
     - conf/i18n/cp/scenarios/
 i18n:
+  common:
+    - conf/i18n/cp/common.yaml
+    - common-conf/i18n/common.yml
   files:
     - conf/i18n/resource-trans.yaml
     - conf/i18n/issue-manage.yaml
