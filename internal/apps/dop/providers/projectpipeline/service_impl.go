@@ -894,11 +894,13 @@ func makeListPipelineExecHistoryResponse(data *apistructs.PipelinePageListData) 
 				}
 				return pipeline.CostTimeSec
 			}(),
-			AppName:    getApplicationNameFromDefinitionRemote(pipeline.DefinitionPageInfo.SourceRemote),
-			Branch:     pipeline.DefinitionPageInfo.SourceRef,
-			Executor:   pipeline.GetRunUserID(),
-			TimeBegin:  timeBegin,
-			PipelineID: pipeline.ID,
+			AppName:     getApplicationNameFromDefinitionRemote(pipeline.DefinitionPageInfo.SourceRemote),
+			Branch:      pipeline.DefinitionPageInfo.SourceRef,
+			Executor:    pipeline.GetRunUserID(),
+			Owner:       pipeline.GetUserID(),
+			TimeBegin:   timeBegin,
+			PipelineID:  pipeline.ID,
+			TriggerMode: pipeline.TriggerMode,
 		})
 	}
 	return &pb.ListPipelineExecHistoryResponse{

@@ -411,6 +411,8 @@ message PipelineExecHistory {
     string executor = 6;
     google.protobuf.Timestamp timeBegin = 7;
     uint64 pipelineID = 8;
+    string owner = 9;
+    string triggerMode = 10;
 }
 
 message DeleteByAppRequest {
