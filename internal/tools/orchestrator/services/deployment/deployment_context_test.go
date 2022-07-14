@@ -140,7 +140,7 @@ func TestFSMFailDeploy(t *testing.T) {
 
 		logging := collectDLog(loggingC)
 		assert.Equal(t, []string{
-			`deployment is fail, status: WAITING, phrase: INIT, (fake error)`,
+			`deployment is fail, status: WAITING, phase: INIT, (fake error)`,
 		}, logging)
 	}
 }
