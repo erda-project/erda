@@ -173,7 +173,7 @@ func (p *provider) do() error {
 	p.Router.Any("/**", server.Router())
 
 	// 加载 event manager
-	events.Initialize(bdl, publisher, dbClient, p.EdgeRegister)
+	events.Initialize(bdl, publisher, dbClient, p.EdgeRegister, p.Org)
 
 	// aop
 	aop.Initialize(bdl, dbClient, p.ReportSvc)

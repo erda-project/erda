@@ -22,6 +22,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/core/org"
 )
 
 type config struct {
@@ -32,6 +33,7 @@ type provider struct {
 	Cfg *config
 
 	bdl *bundle.Bundle
+	Org org.ClientInterface
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {

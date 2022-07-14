@@ -21,10 +21,12 @@ import (
 	"github.com/erda-project/erda/internal/tools/pipeline/conf"
 	"github.com/erda-project/erda/pkg/common"
 
+	_ "github.com/erda-project/erda-infra/providers/grpcclient"
 	// providers and modules
 	_ "github.com/erda-project/erda-infra/providers/mysqlxorm"
 	_ "github.com/erda-project/erda-infra/providers/prometheus"
 	_ "github.com/erda-project/erda-infra/providers/serviceregister"
+	_ "github.com/erda-project/erda-proto-go/core/org/client"
 	_ "github.com/erda-project/erda/internal/tools/pipeline"
 	_ "github.com/erda-project/erda/internal/tools/pipeline/aop"
 	_ "github.com/erda-project/erda/internal/tools/pipeline/providers/action_runner_scheduler"

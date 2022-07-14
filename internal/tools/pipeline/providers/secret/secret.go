@@ -20,11 +20,13 @@ import (
 	"strconv"
 
 	"github.com/erda-project/erda-infra/pkg/strutil"
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/cms"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpclientutil"
 	"github.com/erda-project/erda/pkg/nexus"
 )
@@ -46,10 +48,13 @@ func (s *provider) FetchSecrets(ctx context.Context, p *spec.Pipeline) (secrets,
 			if err != nil {
 				return nil, nil, nil, nil, fmt.Errorf("invalid org id from label %q, err: %v", apistructs.LabelOrgID, err)
 			}
-			org, err := s.bdl.GetOrg(orgID)
+			orgResp, err := s.Org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.Pipeline()), &orgpb.GetOrgRequest{
+				IdOrName: strconv.FormatUint(orgID, 10),
+			})
 			if err != nil {
 				return nil, nil, nil, nil, err
 			}
+			org := orgResp.Data
 			if org.EnableReleaseCrossCluster {
 				namespaces = append(namespaces, nexus.MakeOrgPipelineCmsNs(orgID))
 			}

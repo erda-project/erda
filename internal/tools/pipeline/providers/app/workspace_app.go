@@ -15,13 +15,17 @@
 package app
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 
 	"github.com/pkg/errors"
 
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/pkg/diceworkspace"
+	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -60,10 +64,13 @@ func (s *provider) GetWorkspaceApp(appID uint64, branch string) (*WorkspaceApp, 
 	result.Branch = branch
 
 	// get org
-	org, err := s.bdl.GetOrg(app.OrgID)
+	orgResp, err := s.Org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.Pipeline()), &orgpb.GetOrgRequest{
+		IdOrName: strconv.FormatUint(app.OrgID, 10),
+	})
 	if err != nil {
 		return nil, err
 	}
+	org := orgResp.Data
 	result.OrgName = org.Name
 
 	// get project
