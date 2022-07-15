@@ -12,29 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package actionagentsvc
+package actionagent
 
 import (
 	"os"
+	"reflect"
 	"testing"
 
+	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/clusterinfo"
 	"github.com/erda-project/erda/pkg/jsonstore"
 	"github.com/erda-project/erda/pkg/jsonstore/etcd"
 )
 
-var s *ActionAgentSvc
+var s *provider
 
 func init() {
-	// db client
-	dbClient, err := dbclient.New()
-	if err != nil {
-		panic(err)
-	}
 	// etcd
 	js, err := jsonstore.New()
 	if err != nil {
@@ -51,7 +48,7 @@ func init() {
 		bundle.WithCMDB(),
 		bundle.WithCMP(),
 	)
-	s = New(dbClient, bdl, js, etcdClient)
+	s = &provider{accessibleCache: js, etcdctl: etcdClient, bdl: bdl}
 }
 
 func TestActionAgentSvc_Ensure(t *testing.T) {
@@ -61,5 +58,33 @@ func TestActionAgentSvc_Ensure(t *testing.T) {
 		"DICE_CLUSTER_TYPE": "k8s",
 	}
 	err := s.Ensure(cluster, agentImage, agentMD5)
+	assert.NoError(t, err)
+}
+
+func TestRunScript(t *testing.T) {
+	eadaCluster1 := apistructs.ClusterInfoData{
+		apistructs.DICE_CLUSTER_TYPE:    "edas",
+		apistructs.EDASJOB_CLUSTER_NAME: "cluster2",
+	}
+	k8sCluster2 := apistructs.ClusterInfoData{
+		apistructs.DICE_CLUSTER_TYPE: "edas",
+		apistructs.DICE_ROOT_DOMAIN:  "openapi.dice.io",
+		apistructs.DICE_PROTOCOL:     "https",
+		apistructs.DICE_HTTPS_PORT:   "443",
+	}
+	pm1 := monkey.Patch(clusterinfo.GetClusterInfoByName, func(name string) (apistructs.ClusterInfo, error) {
+		return apistructs.ClusterInfo{CM: k8sCluster2}, nil
+	})
+	defer pm1.Unpatch()
+	bdl := bundle.New()
+	pm2 := monkey.Patch(bundle.New, func(options ...bundle.Option) *bundle.Bundle {
+		return bdl
+	})
+	defer pm2.Unpatch()
+	pm3 := monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "RunSoldierScript", func(bdl *bundle.Bundle, scriptName string, params map[string]string) error {
+		return nil
+	})
+	defer pm3.Unpatch()
+	err := RunScript(eadaCluster1, "download_file_from_image", map[string]string{})
 	assert.NoError(t, err)
 }

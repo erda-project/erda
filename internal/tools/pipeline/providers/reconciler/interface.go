@@ -19,7 +19,6 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/action_info"
-	"github.com/erda-project/erda/internal/tools/pipeline/services/actionagentsvc"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
@@ -28,7 +27,7 @@ type Interface interface {
 	ReconcileOnePipeline(ctx context.Context, pipelineID uint64)
 
 	// InjectLegacyFields TODO decouple it
-	InjectLegacyFields(f *PipelineSvcFuncs, actionAgentSvc *actionagentsvc.ActionAgentSvc)
+	InjectLegacyFields(f *PipelineSvcFuncs)
 }
 
 type PipelineSvcFuncs struct {
@@ -40,7 +39,6 @@ type PipelineSvcFuncs struct {
 	PreCheck                                func(p *spec.Pipeline, stages []spec.PipelineStage, userID string, autoRun bool) error
 }
 
-func (r *provider) InjectLegacyFields(f *PipelineSvcFuncs, actionAgentSvc *actionagentsvc.ActionAgentSvc) {
+func (r *provider) InjectLegacyFields(f *PipelineSvcFuncs) {
 	r.pipelineSvcFuncs = f
-	r.actionAgentSvc = actionAgentSvc
 }

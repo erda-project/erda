@@ -27,6 +27,7 @@ import (
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	"github.com/erda-project/erda/internal/pkg/metrics/report"
 	_ "github.com/erda-project/erda/internal/tools/pipeline/aop/plugins"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/actionagent"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/actionmgr"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/app"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/cache"
@@ -41,6 +42,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/edgereporter"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/engine"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/leaderworker"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/permission"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/queuemanager"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/reconciler"
 	reportsvc "github.com/erda-project/erda/internal/tools/pipeline/providers/report"
@@ -79,6 +81,8 @@ type provider struct {
 	Secret       secret.Interface
 	ActionMgr    actionmgr.Interface
 	Resource     resource.Interface
+	ActionAgent  actionagent.Interface
+	Permission   permission.Interface
 }
 
 func (p *provider) Run(ctx context.Context) error {

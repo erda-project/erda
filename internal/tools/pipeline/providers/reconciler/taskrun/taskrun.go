@@ -24,10 +24,10 @@ import (
 	"github.com/erda-project/erda/internal/tools/pipeline/commonutil/costtimeutil"
 	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
 	"github.com/erda-project/erda/internal/tools/pipeline/pipengine/actionexecutor/types"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/actionagent"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/actionmgr"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/clusterinfo"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/edgepipeline_register"
-	"github.com/erda-project/erda/internal/tools/pipeline/services/actionagentsvc"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
@@ -56,7 +56,7 @@ type TaskRun struct {
 	FakeTimeout bool
 
 	// svc
-	ActionAgentSvc *actionagentsvc.ActionAgentSvc
+	ActionAgentSvc actionagent.Interface
 	ActionMgr      actionmgr.Interface
 
 	RetryInterval time.Duration
@@ -66,7 +66,7 @@ type TaskRun struct {
 // TODO refactored into task reconciler.
 func New(ctx context.Context, task *spec.PipelineTask,
 	executor types.ActionExecutor, p *spec.Pipeline, bdl *bundle.Bundle, dbClient *dbclient.Client,
-	actionAgentSvc *actionagentsvc.ActionAgentSvc,
+	actionAgentSvc actionagent.Interface,
 	actionMgr actionmgr.Interface, clusterInfo clusterinfo.Interface, edgeRegister edgepipeline_register.Interface,
 	retryInterval time.Duration,
 ) *TaskRun {
