@@ -15,6 +15,7 @@
 package auth
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/textproto"
@@ -26,11 +27,14 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
 
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/core/org"
 	identity "github.com/erda-project/erda/internal/core/user/common"
 	"github.com/erda-project/erda/internal/core/user/impl/uc"
 	"github.com/erda-project/erda/internal/tools/openapi/legacy/conf"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -74,17 +78,18 @@ type User struct {
 	ucUserAuth *uc.UCUserAuth
 
 	bundle *bundle.Bundle
+	org    org.ClientInterface
 }
 
 var client = bundle.New(bundle.WithErdaServer(), bundle.WithDOP())
 
-func NewUser(redisCli *redis.Client) *User {
+func NewUser(redisCli *redis.Client, org org.ClientInterface) *User {
 	ucUserAuth := uc.NewUCUserAuth(conf.UCAddrFront(), discover.UC(), "http://"+conf.UCRedirectHost()+"/logincb", conf.UCClientID(), conf.UCClientSecret())
 	if conf.OryEnabled() {
 		ucUserAuth.ClientID = conf.OryCompatibleClientID()
 		ucUserAuth.UCHost = conf.OryKratosAddr()
 	}
-	return &User{state: GetInit, redisCli: redisCli, ucUserAuth: ucUserAuth, bundle: client}
+	return &User{state: GetInit, redisCli: redisCli, ucUserAuth: ucUserAuth, bundle: client, org: org}
 }
 
 func (u *User) get(req *http.Request, state GetUserState) (interface{}, AuthResult) {
@@ -146,11 +151,13 @@ func (u *User) get(req *http.Request, state GetUserState) (interface{}, AuthResu
 		var orgID uint64
 		var noOrgID bool
 		if orgHeader != "" && orgHeader != "-" {
-			org, err := u.bundle.GetOrg(orgHeader)
+			orgResp, err := u.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcOpenapi), &orgpb.GetOrgRequest{
+				IdOrName: orgHeader,
+			})
 			if err != nil {
 				return nil, AuthResult{InternalAuthErr, err.Error()}
 			}
-			orgID = org.ID
+			orgID = orgResp.Data.ID
 		} else {
 			domain := strutil.Split(req.Host, ":")[0]
 			org, err := u.bundle.GetDopOrgByDomain(domain, string(u.info.ID))

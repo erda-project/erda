@@ -22,6 +22,7 @@ import (
 
 	// providers and modules
 	_ "github.com/erda-project/erda-infra/providers"
+	_ "github.com/erda-project/erda-proto-go/core/org/client"
 	_ "github.com/erda-project/erda-proto-go/core/token/client"
 	_ "github.com/erda-project/erda/internal/pkg/audit"
 	_ "github.com/erda-project/erda/internal/pkg/service-discover/erda-discover"

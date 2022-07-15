@@ -29,6 +29,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/core/org"
 )
 
 type APIs []Spec
@@ -230,6 +231,7 @@ type AuditContext struct {
 	ClientIP  string
 	UserAgent string
 	Cache     *sync.Map
+	Org       org.ClientInterface
 }
 
 func (ctx *AuditContext) GetParamInt64(key string) (int64, error) {

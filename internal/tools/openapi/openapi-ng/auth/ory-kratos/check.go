@@ -15,14 +15,18 @@
 package orykratos
 
 import (
+	"context"
 	"fmt"
 	"math"
 	"net"
 	"net/http"
 	"strconv"
 
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	openapiauth "github.com/erda-project/erda/internal/tools/openapi/openapi-ng/auth"
+	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 )
 
 type loginChecker struct {
@@ -98,11 +102,13 @@ func (p *provider) getScope(r *http.Request, userID string) (uint64, error) {
 	orgName := r.Header.Get("ORG")
 	var orgID uint64
 	if orgName != "" && orgName != "-" {
-		org, err := p.bundle.GetOrg(orgName)
+		orgResp, err := p.Org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcOpenapi), &orgpb.GetOrgRequest{
+			IdOrName: orgName,
+		})
 		if err != nil {
 			return 0, err
 		}
-		orgID = org.ID
+		orgID = orgResp.Data.ID
 	} else {
 		domain := r.Host
 		if host, _, err := net.SplitHostPort(domain); err == nil {

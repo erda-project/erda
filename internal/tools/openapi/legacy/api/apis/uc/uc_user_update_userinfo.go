@@ -27,6 +27,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/core/user/impl/kratos"
 	"github.com/erda-project/erda/internal/core/user/impl/uc"
 	"github.com/erda-project/erda/internal/pkg/user"
@@ -91,6 +92,7 @@ func updateUserInfo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	orgClient := r.Context().Value("org").(org.ClientInterface)
 	ctx := &spec.AuditContext{
 		UserID:    operatorID.String(),
 		Bundle:    bdl,
@@ -99,6 +101,7 @@ func updateUserInfo(w http.ResponseWriter, r *http.Request) {
 		UserAgent: r.Header.Get("User-Agent"),
 		ClientIP:  GetRealIP(r),
 		Request:   r,
+		Org:       orgClient,
 	}
 	oldUser, err := ctx.Bundle.ListUsers(apistructs.UserListRequest{UserIDs: []string{req.UserID}, Plaintext: true})
 	if err != nil {

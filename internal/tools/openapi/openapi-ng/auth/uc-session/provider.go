@@ -22,6 +22,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/tools/openapi/openapi-ng"
 	openapiauth "github.com/erda-project/erda/internal/tools/openapi/openapi-ng/auth"
 )
@@ -42,6 +43,7 @@ type provider struct {
 	Log    logs.Logger
 	Router openapi.Interface `autowired:"openapi-router"`
 	Redis  *redis.Client     `autowired:"redis-client"`
+	Org    org.ClientInterface
 }
 
 func (p *provider) Init(ctx servicehub.Context) (err error) {

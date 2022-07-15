@@ -22,6 +22,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/core/user"
 	discover "github.com/erda-project/erda/internal/pkg/service-discover"
 	openapiv1 "github.com/erda-project/erda/internal/tools/openapi/legacy"
@@ -47,6 +48,7 @@ type provider struct {
 	handler      http.Handler
 	TokenService tokenpb.TokenServiceServer `autowired:"erda.core.token.TokenService"`
 	Identity     user.Interface
+	org          org.ClientInterface
 }
 
 func (p *provider) Init(ctx servicehub.Context) (err error) {
@@ -54,7 +56,7 @@ func (p *provider) Init(ctx servicehub.Context) (err error) {
 	p.proxy.Discover = p.Discover
 	hooks.Enable = false
 	conf.Load()
-	srv, err := openapiv1.NewServer(p.TokenService)
+	srv, err := openapiv1.NewServer(p.TokenService, p.org)
 	if err != nil {
 		return err
 	}

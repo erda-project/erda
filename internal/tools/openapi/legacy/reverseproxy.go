@@ -31,6 +31,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/tools/openapi/legacy/api"
 	apispec "github.com/erda-project/erda/internal/tools/openapi/legacy/api/spec"
 	"github.com/erda-project/erda/internal/tools/openapi/legacy/auth"
@@ -47,13 +48,14 @@ type ReverseProxyWithAuth struct {
 	auth      *auth.Auth
 	bundle    *bundle.Bundle
 	cache     *sync.Map
+	org       org.ClientInterface
 }
 
-func NewReverseProxyWithAuth(auth *auth.Auth, bundle *bundle.Bundle) (http.Handler, error) {
+func NewReverseProxyWithAuth(auth *auth.Auth, bundle *bundle.Bundle, org org.ClientInterface) (http.Handler, error) {
 	director := proxy.NewDirector()
-	httpProxy := phttp.NewReverseProxyWithCustom(director, modifyResponse)
-	wsProxy := ws.NewReverseProxyWithCustom(director)
-	return &ReverseProxyWithAuth{httpProxy: httpProxy, wsProxy: wsProxy, auth: auth, bundle: bundle, cache: &sync.Map{}}, nil
+	httpProxy := phttp.NewReverseProxyWithCustom(director, modifyResponse,org)
+	wsProxy := ws.NewReverseProxyWithCustom(director,org)
+	return &ReverseProxyWithAuth{httpProxy: httpProxy, wsProxy: wsProxy, auth: auth, bundle: bundle, cache: &sync.Map{}, org: org}, nil
 }
 
 func (r *ReverseProxyWithAuth) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
@@ -91,6 +93,7 @@ func (r *ReverseProxyWithAuth) ServeHTTP(rw http.ResponseWriter, req *http.Reque
 			c = context.WithValue(c, "bundle", r.bundle)
 			c = context.WithValue(c, "beginTime", time.Now())
 			c = context.WithValue(c, "cache", r.cache)
+			c = context.WithValue(c, "org", r.org)
 			req = req.WithContext(c)
 			req.Body = ioutil.NopCloser(bytes.NewReader(reqBody))
 			r.httpProxy.ServeHTTP(rw, req)
@@ -157,6 +160,7 @@ func modifyResponse(res *http.Response) error {
 		bdl := request.Context().Value("bundle").(*bundle.Bundle)
 		beginTime := request.Context().Value("beginTime").(time.Time)
 		cache := request.Context().Value("cache").(*sync.Map)
+		orgClient := request.Context().Value("org").(org.ClientInterface)
 		request.Body = reqBody
 		resBody, err := ioutil.ReadAll(res.Body)
 		if err != nil {
@@ -178,6 +182,7 @@ func modifyResponse(res *http.Response) error {
 			UserAgent: request.Header.Get("User-Agent"),
 			ClientIP:  GetRealIP(request),
 			Cache:     cache,
+			Org:       orgClient,
 		}
 
 		go func() {

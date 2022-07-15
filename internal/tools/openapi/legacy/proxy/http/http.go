@@ -15,6 +15,7 @@
 package http
 
 import (
+	"context"
 	"net/http"
 	"net/http/httputil"
 	"runtime/debug"
@@ -22,6 +23,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/tools/openapi/legacy/api"
 	util "github.com/erda-project/erda/pkg/http/httputil"
 )
@@ -37,12 +39,13 @@ func NewReverseProxy(director func(*http.Request),
 
 type ReverseProxyWithCustom struct {
 	reverseProxy http.Handler
+	org          org.ClientInterface
 }
 
 func NewReverseProxyWithCustom(director func(*http.Request),
-	modifyResponse func(*http.Response) error) http.Handler {
+	modifyResponse func(*http.Response) error, org org.ClientInterface) http.Handler {
 	r := NewReverseProxy(director, modifyResponse)
-	return &ReverseProxyWithCustom{reverseProxy: r}
+	return &ReverseProxyWithCustom{reverseProxy: r, org: org}
 }
 
 func (r *ReverseProxyWithCustom) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
@@ -54,6 +57,7 @@ func (r *ReverseProxyWithCustom) ServeHTTP(rw http.ResponseWriter, req *http.Req
 	}()
 	spec := api.API.Find(req)
 	req.Header.Add(util.UserInfoDesensitizedHeader, strconv.FormatBool(spec.NeedDesensitize))
+	req = req.WithContext(context.WithValue(req.Context(), "org", r.org))
 	if spec != nil && spec.Custom != nil {
 		spec.Custom(rw, req)
 		return
