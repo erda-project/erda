@@ -24,6 +24,7 @@ envs:
   COLLECTOR_ADDR: collector:7076
   PIPELINE_ADDR: pipeline:3081
   ERDA_SERVER_ADDR: erda-server:9095
+  OPENAPI_ADDR: erda-server:9529
   MSP_ADDR: msp:8080
   DOP_ADDR: dop:9527
   CMP_ADDR: cmp:9027
