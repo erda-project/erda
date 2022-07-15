@@ -26,6 +26,7 @@ import (
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	"github.com/erda-project/erda-proto-go/tools/monitor/dashboard/report/pb"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/pkg/bundle-ex/cmdb"
 	"github.com/erda-project/erda/pkg/common/apis"
 	perm "github.com/erda-project/erda/pkg/common/permission"
@@ -61,6 +62,7 @@ type provider struct {
 	CronService        cronpb.CronServiceServer               `autowired:"erda.core.pipeline.cron.CronService" required:"true"`
 	NotifyGroupService notifyGrouppb.NotifyGroupServiceServer `autowired:"erda.core.messenger.notifygroup.NotifyGroupService" required:"true"`
 	reportService      *reportService
+	Org                org.ClientInterface
 }
 
 // Run this is optional

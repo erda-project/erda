@@ -42,7 +42,7 @@ func (p *provider) initRoutes(routes httpserver.Router) error {
 			"filter_tk", "filter_terminus_key",
 			"filter_target_terminus_key", "filter_source_terminus_key", "filter__metric_scope_id", "filter_fields.terminus_keys",
 		),
-		permissionResource, permission.ActionGet,
+		permissionResource, permission.ActionGet, p.Org,
 	)
 	routes.GET(apiPathPrefix+"/metrics-query", p.metricQueryByQL, checkByTerminusKeys)
 	routes.POST(apiPathPrefix+"/metrics-query", p.metricQueryByQL, checkByTerminusKeys)
@@ -54,7 +54,7 @@ func (p *provider) initRoutes(routes httpserver.Router) error {
 
 	checkByScopeID := permission.Intercepter(
 		permission.ScopeProject, p.MPerm.TerminusKeyToProjectIDForHTTP("scopeId"),
-		permissionResource, permission.ActionGet,
+		permissionResource, permission.ActionGet, p.Org,
 	)
 	routes.GET(apiPathPrefix+"/metric/groups", p.listGroups, checkByScopeID)
 	routes.GET(apiPathPrefix+"/metric/groups/:id", p.getGroup, checkByScopeID)

@@ -78,7 +78,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		resp.Write(body)
 	}, permission.Intercepter(
 		permission.ScopeOrg, permission.OrgIDFromHeader(),
-		"org", permission.ActionGet,
+		"org", permission.ActionGet, p.Org,
 	))
 	hepaI18n.SetSingle(ctx.Service("i18n").(i18n.I18n).Translator("log-trans"))
 	return nil

@@ -34,7 +34,7 @@ func (p *provider) intRoutes(routes httpserver.Router) error {
 	checkOrgID := permission.QueryValue("scopeId")
 	routes.GET("/api/org/report/tasks", p.listOrgReportTasks, permission.Intercepter(
 		permission.ScopeOrg, checkOrgID,
-		common.ResourceOrgCenter, permission.ActionList,
+		common.ResourceOrgCenter, permission.ActionList, p.Org,
 	))
 	routes.POST("/api/org/report/tasks", p.creatOrgReportTask)
 	routes.PUT("/api/org/report/tasks/:id", p.updateOrgReportTask)

@@ -36,6 +36,7 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/i18n"
+	"github.com/erda-project/erda/internal/core/org"
 	apm "github.com/erda-project/erda/internal/tools/monitor/apm/common"
 	"github.com/erda-project/erda/internal/tools/monitor/common/db"
 	"github.com/erda-project/erda/internal/tools/monitor/common/permission"
@@ -57,10 +58,10 @@ type Response struct {
 	Nodes []*Node `json:"nodes"`
 }
 
-func GetTopologyPermission(db *db.DB) httpserver.Interceptor {
+func GetTopologyPermission(db *db.DB, org org.ClientInterface) httpserver.Interceptor {
 	return permission.Intercepter(
 		permission.ScopeProject, permission.TkFromParams(db),
-		apm.MonitorTopology, permission.ActionGet,
+		apm.MonitorTopology, permission.ActionGet, org,
 	)
 }
 
