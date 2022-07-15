@@ -17,6 +17,8 @@ package endpoints
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"net/url"
 	"reflect"
 	"testing"
 
@@ -38,9 +40,6 @@ func (m orgMock) ListOrg(ctx context.Context, request *orgpb.ListOrgRequest) (*o
 }
 
 func (m orgMock) ListPublicOrg(ctx context.Context, request *orgpb.ListOrgRequest) (*orgpb.ListOrgResponse, error) {
-	if request.Org == "" {
-		return nil, fmt.Errorf("error")
-	}
 	return &orgpb.ListOrgResponse{}, nil
 }
 
@@ -122,10 +121,9 @@ func TestEndpoints_listPublicOrg(t *testing.T) {
 			args: args{
 				ctx:    context.Background(),
 				userID: "1",
-				req:    &orgpb.ListOrgRequest{Org: ""},
+				req:    &orgpb.ListOrgRequest{},
 			},
-			want:    nil,
-			wantErr: true,
+			want: &orgpb.ListOrgResponse{},
 		},
 		{
 			name:   "test with no err",
@@ -133,7 +131,7 @@ func TestEndpoints_listPublicOrg(t *testing.T) {
 			args: args{
 				ctx:    context.Background(),
 				userID: "1",
-				req:    &orgpb.ListOrgRequest{Org: "erda"},
+				req:    &orgpb.ListOrgRequest{},
 			},
 			want:    &orgpb.ListOrgResponse{},
 			wantErr: false,
@@ -151,6 +149,44 @@ func TestEndpoints_listPublicOrg(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("listPublicOrg() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_getOrgListParam(t *testing.T) {
+	type args struct {
+		r *http.Request
+	}
+	req := &http.Request{
+		URL: &url.URL{
+			RawQuery: "joined=true&pageNo=1&pageSize=20",
+		},
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    *orgpb.ListOrgRequest
+		wantErr bool
+	}{
+		{
+			args: args{req},
+			want: &orgpb.ListOrgRequest{
+				PageNo:   1,
+				PageSize: 20,
+				Joined:   true,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := getOrgListParam(tt.args.r)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("getOrgListParam() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("getOrgListParam() = %v, want %v", got, tt.want)
 			}
 		})
 	}

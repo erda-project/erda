@@ -286,7 +286,7 @@ func (p *provider) getOrgPermissions(ctx context.Context, req *pb.ListOrgRequest
 	}
 	// 操作鉴权, 系统管理员可查询企业
 	// Found that org is passed in the request header, even admin does not query all organizations
-	if p.member.IsAdmin(userID) && (req.Org == "" || req.Org == "-") { // 系统管理员可查看所有企业列表
+	if p.member.IsAdmin(userID) && !req.Joined { // 系统管理员可查看所有企业列表
 		return true, nil, nil
 	} else { // 非系统管理员只能查看有权限的企业列表
 		members, err := p.member.ListByScopeTypeAndUser(apistructs.OrgScope, userID)
