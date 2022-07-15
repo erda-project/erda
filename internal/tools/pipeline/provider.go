@@ -42,6 +42,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/edgereporter"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/engine"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/leaderworker"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/permission"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/queuemanager"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/reconciler"
 	reportsvc "github.com/erda-project/erda/internal/tools/pipeline/providers/report"
@@ -81,6 +82,7 @@ type provider struct {
 	ActionMgr    actionmgr.Interface
 	Resource     resource.Interface
 	ActionAgent  actionagent.Interface
+	Permission   permission.Interface
 }
 
 func (p *provider) Run(ctx context.Context) error {

@@ -12,13 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package actionagent
+package permission
 
 import "github.com/erda-project/erda/apistructs"
 
 type Interface interface {
-	// Ensure ensures that the agent is available:
-	// 1. When the cluster type is k8s, download through initContainer
-	// 2. When the cluster type is non-k8s, call the solderer through the existing path to download
-	Ensure(clusterInfo apistructs.ClusterInfoData, agentImage string, agentMD5 string) error
+	CheckInternalClient(apistructs.IdentityInfo) error
+	CheckApp(apistructs.IdentityInfo, uint64, string) error
 }

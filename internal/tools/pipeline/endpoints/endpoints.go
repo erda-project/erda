@@ -28,16 +28,16 @@ import (
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/edgepipeline"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/edgepipeline_register"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/engine"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/permission"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/queuemanager"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/run"
-	"github.com/erda-project/erda/internal/tools/pipeline/services/permissionsvc"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/pipelinesvc"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 
 // Endpoints 定义 endpoint 方法
 type Endpoints struct {
-	permissionSvc *permissionsvc.PermissionSvc
+	permissionSvc permission.Interface
 	pipelineSvc   *pipelinesvc.PipelineSvc
 	crondSvc      daemon.Interface
 
@@ -73,7 +73,7 @@ func WithDBClient(dbClient *dbclient.Client) Option {
 	}
 }
 
-func WithPermissionSvc(svc *permissionsvc.PermissionSvc) Option {
+func WithPermissionSvc(svc permission.Interface) Option {
 	return func(e *Endpoints) {
 		e.permissionSvc = svc
 	}

@@ -50,13 +50,13 @@ type provider struct {
 	CronCompensator compensator.Interface
 	EdgeReporter    edgereporter.Interface
 	ActionMgr       actionmgr.Interface
+	ActionAgentSvc  actionagent.Interface
 
 	dbClient *dbclient.Client
 	bdl      *bundle.Bundle
 
 	// legacy fields
 	pipelineSvcFuncs *PipelineSvcFuncs
-	actionAgentSvc   actionagent.Interface
 }
 
 type config struct {

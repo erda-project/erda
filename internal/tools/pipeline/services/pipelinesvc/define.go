@@ -30,12 +30,12 @@ import (
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/edgepipeline_register"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/edgereporter"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/engine"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/permission"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/queuemanager"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/resource"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/run"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/secret"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/user"
-	"github.com/erda-project/erda/internal/tools/pipeline/services/permissionsvc"
 	"github.com/erda-project/erda/pkg/jsonstore"
 	"github.com/erda-project/erda/pkg/jsonstore/etcd"
 )
@@ -45,7 +45,7 @@ type PipelineSvc struct {
 	crondSvc        daemon.Interface
 	actionAgentSvc  actionagent.Interface
 	pipelineCronSvc cronpb.CronServiceServer
-	permissionSvc   *permissionsvc.PermissionSvc
+	permissionSvc   permission.Interface
 	queueManage     queuemanager.Interface
 	cache           cache.Interface
 
@@ -73,7 +73,7 @@ type PipelineSvc struct {
 
 func New(appSvc app.Interface, crondSvc daemon.Interface,
 	actionAgentSvc actionagent.Interface,
-	pipelineCronSvc cronpb.CronServiceServer, permissionSvc *permissionsvc.PermissionSvc,
+	pipelineCronSvc cronpb.CronServiceServer, permissionSvc permission.Interface,
 	queueManage queuemanager.Interface,
 	dbClient *dbclient.Client, bdl *bundle.Bundle, publisher *websocket.Publisher,
 	engine engine.Interface, js jsonstore.JsonStore, etcd *etcd.Store, clusterInfo clusterinfo.Interface,
