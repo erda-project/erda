@@ -206,7 +206,7 @@ func (pr *defaultPipelineReconciler) ReconcileOneSchedulableTask(ctx context.Con
 		bdl:                  pr.r.bdl,
 		defaultRetryInterval: pr.r.Cfg.RetryInterval,
 		pipelineSvcFuncs:     pr.r.pipelineSvcFuncs,
-		actionAgentSvc:       pr.r.actionAgentSvc,
+		actionAgentSvc:       pr.r.ActionAgentSvc,
 		edgeReporter:         pr.r.EdgeReporter,
 		actionMgr:            pr.r.ActionMgr,
 	}

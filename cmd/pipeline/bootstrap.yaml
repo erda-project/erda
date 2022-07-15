@@ -66,6 +66,8 @@ edge-reporter:
     auth_token: "${OPENAPI_TOKEN}"
 
 actionmgr: {}
+actionagent: {}
+permission: {}
 
 etcd-election@leader-worker:
   root_path: "${LW_ETCD_ELECTION_ROOT_PATH:erda/component-leader/pipeline/leader-worker}"
