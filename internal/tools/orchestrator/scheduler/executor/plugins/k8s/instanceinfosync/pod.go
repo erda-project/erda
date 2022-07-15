@@ -126,9 +126,7 @@ func pp_image(pod corev1.Pod) string {
 }
 
 func buildErrorInfo(bdl *bundle.Bundle, pod corev1.Pod, errorinfo string, errorinfo_human string, tp string) {
-	addonID, pipelineID, _, _, _, _, _, _,
-	_, _, runtimeID, serviceName, _, _, _,
-	_, _, _, _ := extractEnvs(pod)
+	addonID, pipelineID, _, _, _, _, _, _, _, _, runtimeID, serviceName, _, _, _, _, _, _, _ := extractEnvs(pod)
 	if addonID != "" {
 		//////////////////////
 		// addon error info //
