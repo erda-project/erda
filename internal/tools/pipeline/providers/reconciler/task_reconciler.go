@@ -29,6 +29,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/pipeline/pipengine/actionexecutor/types"
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/errorsx"
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/taskerror"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/actionagent"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/actionmgr"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/cache"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/clusterinfo"
@@ -38,7 +39,6 @@ import (
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/reconciler/taskpolicy"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/reconciler/taskrun"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/reconciler/taskrun/taskop"
-	"github.com/erda-project/erda/internal/tools/pipeline/services/actionagentsvc"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/loop"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -75,7 +75,7 @@ type defaultTaskReconciler struct {
 
 	// legacy fields TODO decouple it
 	pipelineSvcFuncs *PipelineSvcFuncs
-	actionAgentSvc   *actionagentsvc.ActionAgentSvc
+	actionAgentSvc   actionagent.Interface
 	actionMgr        actionmgr.Interface
 }
 
