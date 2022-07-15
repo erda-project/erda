@@ -452,10 +452,18 @@ func getOrgListParam(r *http.Request) (*orgpb.ListOrgRequest, error) {
 	if size <= 0 {
 		size = 20
 	}
-	return &orgpb.ListOrgRequest{
+
+	req := &orgpb.ListOrgRequest{
 		Q:        q,
 		PageNo:   int64(num),
 		PageSize: int64(size),
-		Org:      r.Header.Get("org"),
-	}, nil
+	}
+	if joinedStr := r.URL.Query().Get("joined"); joinedStr != "" {
+		joined, err := strconv.ParseBool(joinedStr)
+		if err != nil {
+			return nil, apierrors.ErrListOrg.InvalidParameter("joined")
+		}
+		req.Joined = joined
+	}
+	return req, nil
 }
