@@ -18,6 +18,9 @@ import (
 	"reflect"
 	"sort"
 	"testing"
+	"time"
+
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/project-pipeline-exec-list/common"
@@ -120,6 +123,46 @@ func TestGetAppNames(t *testing.T) {
 			sort.Strings(got)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("GetAppNames() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_timeFormatFromProtobuf(t *testing.T) {
+	type args struct {
+		time *timestamppb.Timestamp
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "test with nil",
+			args: args{
+				time: nil,
+			},
+			want: "-",
+		},
+		{
+			name: "test with before 1970",
+			args: args{
+				time: timestamppb.New(time.Date(1, 1, 1, 0, 0, 0, 0, time.UTC)),
+			},
+			want: "-",
+		},
+		{
+			name: "test with after 1970",
+			args: args{
+				time: timestamppb.New(time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)),
+			},
+			want: "2022-01-01T00:00:00Z",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := timeFormatFromProtobuf(tt.args.time); got != tt.want {
+				t.Errorf("timeFormatFromProtobuf() = %v, want %v", got, tt.want)
 			}
 		})
 	}

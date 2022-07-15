@@ -45,7 +45,7 @@ reconciler: {}
 clusterinfo:
   refresh_clusters_interval: "${REFRESH_CLUSTERS_INTERVAL:5m}"
 edgepipeline_register:
-  cluster_manager_endpoint: "${CLUSTER_MANAGER_PUBLIC_URL}/clusteragent/connect"
+  cluster_manager_endpoint: "${OPENAPI_PUBLIC_URL}/clusteragent/connect"
   cluster_access_key: "${CLUSTER_ACCESS_KEY}"
   allowed_sources: "cdp-,fdp-"
   cluster_access_key_etcd_prefix: "${EDGE_PIPELINE_CLUSTER_ACCESS_KEY_ETCD_PREFIX:/devops/pipeline/v2/edge/cluster-access-key}"

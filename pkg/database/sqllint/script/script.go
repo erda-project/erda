@@ -14,6 +14,12 @@
 
 package script
 
+import (
+	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
+)
+
 // Script represents a script file
 type Script struct {
 	// data is script file content
@@ -38,4 +44,14 @@ func (s *Script) Name() string {
 // Data returns script file content
 func (s *Script) Data() []byte {
 	return s.data
+}
+
+// Checksum returns the script checksum with sha-256
+func (s *Script) Checksum() string {
+	data := bytes.TrimLeftFunc(s.Data(), func(r rune) bool {
+		return r == ' ' || r == '\n' || r == '\t' || r == '\r'
+	})
+	hash := sha256.New()
+	hash.Write(data)
+	return hex.EncodeToString(hash.Sum(nil))
 }

@@ -14,7 +14,7 @@ ARG MAKE_BUILD_CMD
 ARG GOPROXY
 RUN --mount=type=cache,target=/root/.cache/go-build\
     --mount=type=cache,target=/go/pkg/mod \
-    make ${MAKE_BUILD_CMD} MODULE_PATH=${MODULE_PATH} DOCKER_IMAGE=${DOCKER_IMAGE} GO_BUILD_OPTIONS="-tags musl" GOPROXY=${GOPROXY}
+    make ${MAKE_BUILD_CMD} MODULE_PATH=${MODULE_PATH} DOCKER_IMAGE=${DOCKER_IMAGE} GOPROXY=${GOPROXY}
 
 
 
@@ -35,12 +35,7 @@ FROM ${BASE_DOCKER_IMAGE}
 ENV KUBECTL_VERSION v1.19.7
 ARG ARCH=amd64
 
-RUN apk add --no-cache jq py3-pip && \
-    apk add --update nodejs nodejs-npm && \
-    npm i -g jackson-converter@1.0.10 && \
-    pip3 install dicttoxml xmindparser && \
-    apk add shadow && \
-    curl -sLf https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/${ARCH}/kubectl > /usr/bin/kubectl && \
+RUN curl -sLf https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/${ARCH}/kubectl > /usr/bin/kubectl && \
     chmod +x /usr/bin/kubectl
 
 WORKDIR /app
@@ -48,7 +43,6 @@ WORKDIR /app
 ARG APP_NAME
 ARG CONFIG_PATH
 ENV APP_NAME=${APP_NAME}
-ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib:/usr/local/lib64:/lib:/lib64
 
 COPY --from=app-handler /erda-handled /erda
 

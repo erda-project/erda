@@ -22,7 +22,7 @@ import (
 	"strconv"
 	"strings"
 
-	git "github.com/libgit2/git2go/v30"
+	git "github.com/libgit2/git2go/v33"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"

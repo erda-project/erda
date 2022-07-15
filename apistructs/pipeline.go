@@ -367,6 +367,8 @@ type PipelinePageListRequest struct {
 	SelectCols []string `schema:"-" ` // 需要赋值的字段列表，若不声明，则全赋值
 	AscCols    []string `schema:"ascCol"`
 	DescCols   []string `schema:"descCol"`
+	StartIDGt  uint64   `schema:"-"` // query pipelines with a greater than current ID
+	EndIDLt    uint64   `schema:"-"` // query pipelines with a less than current ID
 
 	// pipeline definition search
 	PipelineDefinitionRequest           *PipelineDefinitionRequest
@@ -378,6 +380,7 @@ type PipelineDefinitionRequest struct {
 	Creators      []string `json:"creators"`
 	SourceRemotes []string `json:"sourceRemotes"`
 	Location      string   `json:"location"`
+	DefinitionID  string   `json:"definitionID"`
 }
 
 func (definition *PipelineDefinitionRequest) IsEmptyValue() bool {

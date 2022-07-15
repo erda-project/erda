@@ -598,6 +598,12 @@ func (r *Runtime) doDeployRuntime(ctx *DeployContext) (*apistructs.DeploymentCre
 		return nil, err
 	}
 
+	// pre check
+	if err := r.PreCheck(dice, ctx.Runtime.Workspace); err != nil {
+		logrus.Errorf("deploy runtime pre check failed, error: %v", err)
+		return nil, err
+	}
+
 	// build runtimeUniqueId
 	uniqueID := spec.RuntimeUniqueId{
 		ApplicationId: ctx.Runtime.ApplicationID,
@@ -2304,4 +2310,63 @@ func updateHPARuleEnabledStatusToDisplay(hpaRules []dbclient.RuntimeHPA, runtime
 			runtime.Services[rule.ServiceName].AutoscalerEnabled = patypes.RuntimeHPARuleApplied
 		}
 	}
+}
+
+func (r *Runtime) PreCheck(dice *diceyml.DiceYaml, workspace string) error {
+	defaultGroup := 10
+
+	addonLi := make([]*diceyml.AddOn, 0, len(dice.Obj().AddOns))
+	for _, a := range dice.Obj().AddOns {
+		addonLi = append(addonLi, a)
+	}
+
+	errCh := make(chan error, len(addonLi))
+
+	for i := 0; i < len(addonLi); i += defaultGroup {
+		group := make([]*diceyml.AddOn, 0, defaultGroup)
+		if len(addonLi)-i < defaultGroup {
+			group = addonLi[i:]
+		} else {
+			group = addonLi[i : i+defaultGroup]
+		}
+
+		logrus.Debugf("current to check addon group: %+v, count: %d", group, len(group))
+
+		wg := sync.WaitGroup{}
+		wg.Add(len(group))
+		for _, addOn := range group {
+			go func(addOn *diceyml.AddOn) {
+				defer wg.Done()
+				addonName, addonPlan, err := r.addon.ParseAddonFullPlan(addOn.Plan)
+				if err != nil {
+					errCh <- errors.Errorf("addon %s: %v", addonName, err)
+					return
+				}
+				ok, err := r.addon.CheckDeployCondition(addonName, addonPlan, workspace)
+				if err != nil {
+					errCh <- errors.Errorf("addon %s: %s", addonName, err)
+					return
+				}
+				if !ok {
+					errCh <- errors.Errorf("addon %s: basic plan addon cannot be used in production environment", addonName)
+					return
+				}
+			}(addOn)
+		}
+		wg.Wait()
+	}
+
+	close(errCh)
+
+	errs := make([]string, 0)
+	for err := range errCh {
+		errs = append(errs, err.Error())
+	}
+
+	if len(errs) != 0 {
+		logrus.Errorf("do deploy runtime static precheck errors: %+v", errs)
+		return errors.New(strings.Join(errs, "\n"))
+	}
+
+	return nil
 }

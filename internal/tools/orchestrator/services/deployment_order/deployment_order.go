@@ -23,6 +23,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/internal/tools/orchestrator/queue"
+	"github.com/erda-project/erda/internal/tools/orchestrator/services/addon"
 	"github.com/erda-project/erda/internal/tools/orchestrator/services/deployment"
 	"github.com/erda-project/erda/internal/tools/orchestrator/services/environment"
 	"github.com/erda-project/erda/internal/tools/orchestrator/services/runtime"
@@ -37,6 +38,7 @@ type DeploymentOrder struct {
 	db         *dbclient.DBClient
 	bdl        *bundle.Bundle
 	rt         *runtime.Runtime
+	addon      *addon.Addon
 	deploy     *deployment.Deployment
 	queue      *queue.PusherQueue
 	releaseSvc pb.ReleaseServiceServer
@@ -99,6 +101,12 @@ func WithReleaseSvc(svc pb.ReleaseServiceServer) Option {
 func WithEnvConfig(envConfig *environment.EnvConfig) Option {
 	return func(d *DeploymentOrder) {
 		d.envConfig = envConfig
+	}
+}
+
+func WithAddon(a *addon.Addon) Option {
+	return func(d *DeploymentOrder) {
+		d.addon = a
 	}
 }
 

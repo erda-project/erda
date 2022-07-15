@@ -35,6 +35,7 @@ func (s *hpscalerService) processRuntimeScaleRecord(rsc pb.RuntimeScaleRecord, a
 		Workspace:     rsc.Workspace,
 		Name:          rsc.Name,
 	}
+	serviceManualScale := false
 	logrus.Infof("[processRuntimeScaleRecord] process runtime scale for runtime %#v", uniqueId)
 
 	hpaRules, err := s.db.GetRuntimeHPARulesByServices(uniqueId, nil)
@@ -49,9 +50,10 @@ func (s *hpscalerService) processRuntimeScaleRecord(rsc pb.RuntimeScaleRecord, a
 		}
 	}
 
-	if len(appliedScaledObjects) > 0 {
-		logrus.Errorf("[processRuntimeScaleRecord] hpa rules has applied for RuntimeUniqueId %#v, can not do this scale action, please delete or canel the applied rules first", uniqueId)
-		return nil, errors.Errorf("[processRuntimeScaleRecord] hpa rules has applied for RuntimeUniqueId %#v, can not do this scale action, please delete or canel the applied rules first", uniqueId)
+	for svcName := range rsc.Payload.Services {
+		if _, ok := appliedScaledObjects[svcName]; ok {
+			return nil, errors.Errorf("[processRuntimeScaleRecord] hpa rules has applied for RuntimeUniqueId %#v, can not do this scale action, please delete or canel the applied rules first", uniqueId)
+		}
 	}
 
 	pre, err := s.db.GetPreDeployment(uniqueId)
@@ -147,6 +149,7 @@ func (s *hpscalerService) processRuntimeScaleRecord(rsc pb.RuntimeScaleRecord, a
 
 		// 未设置 action，则需要自行判断用于执行 scale 操作之后的 runtime 状态更新
 		if action == "" {
+			serviceManualScale = true
 			// 如果所有的 serice 的副本数都调整为0，则是停止操作，Runtime 状态应该为 Stopped，否则不是停止操作，Runtime 状态应该为 Healthy
 			action = apistructs.ScaleActionDown
 			for _, svc := range sg.Services {
@@ -165,7 +168,7 @@ func (s *hpscalerService) processRuntimeScaleRecord(rsc pb.RuntimeScaleRecord, a
 			return nil, err
 		}
 
-		if action == apistructs.ScaleActionDown || action == apistructs.ScaleActionUp {
+		if (action == apistructs.ScaleActionDown || action == apistructs.ScaleActionUp) && !serviceManualScale {
 			addons, err := s.db.GetUnDeletableAttachMentsByRuntimeID(runtime.ID)
 			if err != nil {
 				logrus.Warnf("[processRuntimeScaleRecord] process runtime scale successed, but update runtime referenced addon attact_count for runtime %#v failed, err: %v", uniqueId, err)
@@ -218,7 +221,6 @@ func (s *hpscalerService) processRuntimeScaleRecord(rsc pb.RuntimeScaleRecord, a
 				}
 			}
 		}
-		s.db.UpdateRuntime(runtime)
 	}
 
 	// 保留非停止状态下的副本数

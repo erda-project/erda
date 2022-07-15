@@ -108,16 +108,19 @@ func (s *Endpoints) processRuntimeScaleRecord(rsc apistructs.RuntimeScaleRecord,
 		Workspace:     rsc.Workspace,
 		Name:          rsc.Name,
 	}
+	serviceManualScale := false
 	logrus.Errorf("process runtime scale for runtime %#v", uniqueId)
 
 	appliedScaledObjects, err := s.runtime.AppliedScaledObjects(uniqueId)
 	if err != nil {
 		logrus.Warnf("get applied hpa rules for RuntimeUniqueId %#v failed: %v", uniqueId, err)
 	}
-	if len(appliedScaledObjects) > 0 {
-		logrus.Errorf("hpa rules has applied for RuntimeUniqueId %#v, can not do this scale action, please delete or canel the applied rules first", uniqueId)
-		errMsg := fmt.Sprintf("hpa rules has applied for RuntimeUniqueId %#v, can not do this scale action, please delete or canel the applied rules first", uniqueId)
-		return apistructs.PreDiceDTO{}, errors.Errorf("hpa rules has applied for RuntimeUniqueId %#v, can not do this scale action, please delete or canel the applied rules first", uniqueId), errMsg
+
+	for svcName := range rsc.PayLoad.Services {
+		if _, ok := appliedScaledObjects[svcName]; ok {
+			errMsg := fmt.Sprintf("hpa rules has applied for RuntimeUniqueId %#v, can not do this scale action, please delete or canel the applied rules first", uniqueId)
+			return apistructs.PreDiceDTO{}, errors.Errorf("hpa rules has applied for RuntimeUniqueId %#v, can not do this scale action, please delete or canel the applied rules first", uniqueId), errMsg
+		}
 	}
 
 	pre, err := s.db.FindPreDeployment(uniqueId)
@@ -220,6 +223,7 @@ func (s *Endpoints) processRuntimeScaleRecord(rsc apistructs.RuntimeScaleRecord,
 
 		// 未设置 action，则需要自行判断用于执行 scale 操作之后的 runtime 状态更新
 		if action == "" {
+			serviceManualScale = true
 			// 如果所有的 serice 的副本数都调整为0，则是停止操作，Runtime 状态应该为 Stopped，否则不是停止操作，Runtime 状态应该为 Healthy
 			action = apistructs.ScaleActionDown
 			for _, svc := range sg.Services {
@@ -239,7 +243,7 @@ func (s *Endpoints) processRuntimeScaleRecord(rsc apistructs.RuntimeScaleRecord,
 			return apistructs.PreDiceDTO{}, err, errMsg
 		}
 
-		if action == apistructs.ScaleActionDown || action == apistructs.ScaleActionUp {
+		if (action == apistructs.ScaleActionDown || action == apistructs.ScaleActionUp) && !serviceManualScale {
 			addons, err := s.db.GetUnDeletableAttachMentsByRuntimeID(runtime.ID)
 			if err != nil {
 				logrus.Warnf("process runtime scale successed, but update runtime referenced addon attact_count for runtime %#v failed, err: %v", uniqueId, err)
@@ -288,7 +292,6 @@ func (s *Endpoints) processRuntimeScaleRecord(rsc apistructs.RuntimeScaleRecord,
 				}
 			}
 		}
-		s.db.UpdateRuntime(runtime)
 	}
 
 	// 保留非停止状态下的副本数

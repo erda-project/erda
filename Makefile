@@ -11,6 +11,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+SHELL := /bin/bash
 # project info
 PROJ_PATH := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
 BUILD_PATH ?= ${PROJ_PATH}/cmd/${MODULE_PATH}
@@ -128,7 +129,7 @@ run-test:
 	go run tools/gotools/go-test-sum/main.go
 
 full-test:
-	docker run --rm -ti -v $$(pwd):/go/src/output letmein7788/letmein:golangci-lint \
+	docker run --rm -ti -v $$(pwd):/go/src/output registry.erda.cloud/erda/erda-base:20220713 \
 		bash -c 'cd /go/src/output && build/scripts/test_in_container.sh'
 
 # docker image
@@ -193,8 +194,8 @@ prepare:
 ifeq "$(SKIP_PREPARE)" ""
 	cd "${PROJ_PATH}" && \
 	${GO_BUILD_ENV} go generate ./apistructs && \
-	${GO_BUILD_ENV} go generate ./internal/tools/openapi/legacy/api/generate && \
-	${GO_BUILD_ENV} go generate ./internal/tools/openapi/legacy/component-protocol/generate
+	${GO_BUILD_ENV} go generate ./internal/core/openapi/legacy/api/generate && \
+	${GO_BUILD_ENV} go generate ./internal/core/openapi/legacy/component-protocol/generate
 	make prepare-cli
 endif
 

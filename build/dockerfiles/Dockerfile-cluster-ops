@@ -1,6 +1,7 @@
+### This Dockerfile not used yet @iutx
+
 # syntax = docker/dockerfile:1.2
-ARG BASE_DOCKER_IMAGE
-FROM ${BASE_DOCKER_IMAGE} as build
+FROM registry.erda.cloud/erda/golang-base:210416 as build
 
 RUN mkdir -p "$GOPATH/src/github.com/erda-project/erda/"
 COPY . "$GOPATH/src/github.com/erda-project/erda/"
@@ -12,10 +13,9 @@ ARG DOCKER_IMAGE
 ARG MAKE_BUILD_CMD
 RUN --mount=type=cache,target=/root/.cache/go-build\
     --mount=type=cache,target=/go/pkg/mod \
-    make ${MAKE_BUILD_CMD} MODULE_PATH=${MODULE_PATH} DOCKER_IMAGE=${DOCKER_IMAGE} GO_BUILD_OPTIONS="-tags musl" \
+    make ${MAKE_BUILD_CMD} MODULE_PATH=${MODULE_PATH} DOCKER_IMAGE=${DOCKER_IMAGE} \
     && ln -s $GOPATH/src/github.com/erda-project/erda /tmp/erda
 
-ARG BASE_DOCKER_IMAGE
 FROM alpine:3.12
 
 WORKDIR /app

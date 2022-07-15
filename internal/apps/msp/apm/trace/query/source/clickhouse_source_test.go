@@ -108,6 +108,16 @@ func TestClickhouseSource_GetSpans(t *testing.T) {
 	ass.Equal(0, len(spans))
 }
 
+func TestClickhouseSource_GetSpanCount(t *testing.T) {
+	chs := &ClickhouseSource{
+		Loader: &mockLoader{},
+		Clickhouse: &mockclickhouseInf{
+			cli: &mockconn{},
+		},
+	}
+	assert.Equal(t, int64(0), chs.GetSpanCount(context.TODO(), "123"))
+}
+
 func Test_buildFilter(t *testing.T) {
 	type args struct {
 		f filter
@@ -311,88 +321,103 @@ func (m *mockclickhouseInf) Client() driver.Conn {
 	return m.cli
 }
 
-func (m mockclickhouseInf) NewWriter(opts *clickhouse.WriterOptions) *clickhouse.Writer {
+func (m *mockclickhouseInf) NewWriter(opts *clickhouse.WriterOptions) *clickhouse.Writer {
 	return nil
 }
 
 type mockconn struct {
 }
 
-func (m mockconn) Contributors() []string {
+func (m *mockconn) Contributors() []string {
 	return nil
 }
 
-func (m mockconn) ServerVersion() (*driver.ServerVersion, error) {
+func (m *mockconn) ServerVersion() (*driver.ServerVersion, error) {
 	return nil, nil
 }
 
-func (m mockconn) Select(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
+func (m *mockconn) Select(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
 	return nil
+}
+
+func (m *mockconn) Query(ctx context.Context, query string, args ...interface{}) (driver.Rows, error) {
+	return &mockRows{}, nil
+}
+
+func (m *mockconn) QueryRow(ctx context.Context, query string, args ...interface{}) driver.Row {
+	return &mockRow{}
+}
+
+func (m *mockconn) PrepareBatch(ctx context.Context, query string) (driver.Batch, error) {
+	return nil, nil
+}
+
+func (m *mockconn) Exec(ctx context.Context, query string, args ...interface{}) error {
+	return nil
+}
+
+func (m *mockconn) AsyncInsert(ctx context.Context, query string, wait bool) error {
+	return nil
+}
+
+func (m *mockconn) Ping(ctx context.Context) error {
+	return nil
+}
+
+func (m *mockconn) Stats() driver.Stats {
+	return driver.Stats{}
+}
+
+func (m *mockconn) Close() error {
+	return nil
+}
+
+type mockRow struct {
+}
+
+func (m *mockRow) Err() error {
+	panic("implement me")
+}
+
+func (m *mockRow) Scan(dest ...interface{}) error {
+	return nil
+}
+
+func (m *mockRow) ScanStruct(dest interface{}) error {
+	panic("implement me")
 }
 
 type mockRows struct {
 }
 
-func (m mockRows) Next() bool {
+func (m *mockRows) Next() bool {
 	return false
 }
 
-func (m mockRows) Scan(dest ...interface{}) error {
+func (m *mockRows) Scan(dest ...interface{}) error {
 	return nil
 }
 
-func (m mockRows) ScanStruct(dest interface{}) error {
+func (m *mockRows) ScanStruct(dest interface{}) error {
 	return nil
 }
 
-func (m mockRows) ColumnTypes() []driver.ColumnType {
+func (m *mockRows) ColumnTypes() []driver.ColumnType {
 	return nil
 }
 
-func (m mockRows) Totals(dest ...interface{}) error {
+func (m *mockRows) Totals(dest ...interface{}) error {
 	return nil
 }
 
-func (m mockRows) Columns() []string {
+func (m *mockRows) Columns() []string {
 	return nil
 }
 
-func (m mockRows) Close() error {
+func (m *mockRows) Close() error {
 	return nil
 }
 
-func (m mockRows) Err() error {
-	return nil
-}
-
-func (m mockconn) Query(ctx context.Context, query string, args ...interface{}) (driver.Rows, error) {
-	return &mockRows{}, nil
-}
-
-func (m mockconn) QueryRow(ctx context.Context, query string, args ...interface{}) driver.Row {
-	return nil
-}
-
-func (m mockconn) PrepareBatch(ctx context.Context, query string) (driver.Batch, error) {
-	return nil, nil
-}
-
-func (m mockconn) Exec(ctx context.Context, query string, args ...interface{}) error {
-	return nil
-}
-
-func (m mockconn) AsyncInsert(ctx context.Context, query string, wait bool) error {
-	return nil
-}
-
-func (m mockconn) Ping(ctx context.Context) error {
-	return nil
-}
-
-func (m mockconn) Stats() driver.Stats {
-	return driver.Stats{}
-}
-
-func (m mockconn) Close() error {
+func (m *mockRows) Err() error {
 	return nil
 }

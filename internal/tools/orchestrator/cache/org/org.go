@@ -35,7 +35,11 @@ var (
 func InitCache(org org.ClientInterface) {
 	bdl := bundle.New(bundle.WithErdaServer())
 	orgID2Org = cache.New("orchestrator-org-id-for-org", time.Minute, func(i interface{}) (interface{}, bool) {
-		orgResp, err := org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcOrchestrator), &orgpb.GetOrgRequest{IdOrName: i.(string)})
+		id := i.(string)
+		if id == "" {
+			return nil, false
+		}
+		orgResp, err := org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcOrchestrator), &orgpb.GetOrgRequest{IdOrName: id})
 		if err != nil {
 			return nil, false
 		}
