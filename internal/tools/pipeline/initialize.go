@@ -38,7 +38,6 @@ import (
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/pipelinefunc"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/cron/compensator"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/reconciler"
-	"github.com/erda-project/erda/internal/tools/pipeline/services/actionagentsvc"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/permissionsvc"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/pipelinesvc"
 	"github.com/erda-project/erda/pkg/dumpstack"
@@ -112,10 +111,9 @@ func (p *provider) do() error {
 
 	// init services
 	permissionSvc := permissionsvc.New(bdl)
-	actionAgentSvc := actionagentsvc.New(dbClient, bdl, js, etcdctl)
 
 	// init services
-	pipelineSvc := pipelinesvc.New(p.App, p.CronDaemon, actionAgentSvc, p.CronService,
+	pipelineSvc := pipelinesvc.New(p.App, p.CronDaemon, p.ActionAgent, p.CronService,
 		permissionSvc, p.QueueManager, dbClient, bdl, publisher, p.Engine, js, etcdctl, p.ClusterInfo, p.EdgeRegister, p.Cache, p.Resource)
 	pipelineSvc.WithCmsService(p.CmsService)
 	pipelineSvc.WithSecret(p.Secret)
@@ -136,7 +134,7 @@ func (p *provider) do() error {
 	// init CallbackActionFunc
 	pipelinefunc.CallbackActionFunc = pipelineSvc.DealPipelineCallbackOfAction
 
-	p.Reconciler.InjectLegacyFields(&pipelineFuncs, actionAgentSvc)
+	p.Reconciler.InjectLegacyFields(&pipelineFuncs)
 	p.EdgePipeline.InjectLegacyFields(pipelineSvc)
 
 	if err := registerSnippetClient(dbClient); err != nil {
@@ -152,7 +150,6 @@ func (p *provider) do() error {
 		endpoints.WithQueryStringDecoder(queryStringDecoder),
 		endpoints.WithPermissionSvc(permissionSvc),
 		endpoints.WithCrondSvc(p.CronDaemon),
-		endpoints.WithActionAgentSvc(actionAgentSvc),
 		endpoints.WithPipelineSvc(pipelineSvc),
 		endpoints.WithQueueManager(p.QueueManager),
 		endpoints.WithEngine(p.Engine),

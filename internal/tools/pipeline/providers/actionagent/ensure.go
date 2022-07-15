@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package actionagentsvc
+package actionagent
 
 import (
 	"context"
@@ -41,7 +41,7 @@ type AgentAccessible struct {
 // Ensure 保证 agent 可用:
 // 1. 当集群类型为 k8s 时，通过 initContainer 进行下载
 // 2. 当集群类型为非 k8s 时，通过现有路径调用 soldier 进行下载
-func (s *ActionAgentSvc) Ensure(clusterInfo apistructs.ClusterInfoData, agentImage string, agentMD5 string) error {
+func (s *provider) Ensure(clusterInfo apistructs.ClusterInfoData, agentImage string, agentMD5 string) error {
 	// edas same with k8s cluster
 	if clusterInfo.IsK8S() || clusterInfo.IsEDAS() {
 		return nil
@@ -108,7 +108,7 @@ func (s *ActionAgentSvc) Ensure(clusterInfo apistructs.ClusterInfoData, agentIma
 	return nil
 }
 
-func (s *ActionAgentSvc) accessible(clusterInfo apistructs.ClusterInfoData, agentImage, agentMD5 string) (bool, error) {
+func (s *provider) accessible(clusterInfo apistructs.ClusterInfoData, agentImage, agentMD5 string) (bool, error) {
 	// 查询缓存 agent 是否已经可用
 	accessibleKey := fmt.Sprintf(etcdClusterAgentAccessibleKeyTemplate, clusterInfo.MustGet(apistructs.DICE_CLUSTER_NAME))
 	var accessible AgentAccessible

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package actionagentsvc
+package actionagent
 
 import (
 	"github.com/sirupsen/logrus"
@@ -23,7 +23,7 @@ import (
 
 const agentDownloadScript = "download_file_from_image"
 
-func (s *ActionAgentSvc) downloadAgent(clusterInfo apistructs.ClusterInfoData, agentImage string, agentMD5 string) error {
+func (s *provider) downloadAgent(clusterInfo apistructs.ClusterInfoData, agentImage string, agentMD5 string) error {
 	scriptParams := map[string]string{
 		"IMAGE_NAME":      agentImage,
 		"IMAGE_FILE_PATH": "/opt/action/agent",

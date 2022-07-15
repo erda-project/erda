@@ -27,6 +27,7 @@ import (
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	"github.com/erda-project/erda/internal/pkg/metrics/report"
 	_ "github.com/erda-project/erda/internal/tools/pipeline/aop/plugins"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/actionagent"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/actionmgr"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/app"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/cache"
@@ -79,6 +80,7 @@ type provider struct {
 	Secret       secret.Interface
 	ActionMgr    actionmgr.Interface
 	Resource     resource.Interface
+	ActionAgent  actionagent.Interface
 }
 
 func (p *provider) Run(ctx context.Context) error {

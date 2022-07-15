@@ -24,6 +24,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/actionagent"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/actionmgr"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/cache"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/clusterinfo"
@@ -33,7 +34,6 @@ import (
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/leaderworker"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/reconciler/taskpolicy"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/resourcegc"
-	"github.com/erda-project/erda/internal/tools/pipeline/services/actionagentsvc"
 )
 
 type provider struct {
@@ -56,7 +56,7 @@ type provider struct {
 
 	// legacy fields
 	pipelineSvcFuncs *PipelineSvcFuncs
-	actionAgentSvc   *actionagentsvc.ActionAgentSvc
+	actionAgentSvc   actionagent.Interface
 }
 
 type config struct {

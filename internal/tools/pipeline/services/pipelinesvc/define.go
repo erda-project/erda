@@ -21,6 +21,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/pkg/websocket"
 	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/actionagent"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/actionmgr"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/app"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/cache"
@@ -34,7 +35,6 @@ import (
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/run"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/secret"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/user"
-	"github.com/erda-project/erda/internal/tools/pipeline/services/actionagentsvc"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/permissionsvc"
 	"github.com/erda-project/erda/pkg/jsonstore"
 	"github.com/erda-project/erda/pkg/jsonstore/etcd"
@@ -43,7 +43,7 @@ import (
 type PipelineSvc struct {
 	appSvc          app.Interface
 	crondSvc        daemon.Interface
-	actionAgentSvc  *actionagentsvc.ActionAgentSvc
+	actionAgentSvc  actionagent.Interface
 	pipelineCronSvc cronpb.CronServiceServer
 	permissionSvc   *permissionsvc.PermissionSvc
 	queueManage     queuemanager.Interface
@@ -72,7 +72,7 @@ type PipelineSvc struct {
 }
 
 func New(appSvc app.Interface, crondSvc daemon.Interface,
-	actionAgentSvc *actionagentsvc.ActionAgentSvc,
+	actionAgentSvc actionagent.Interface,
 	pipelineCronSvc cronpb.CronServiceServer, permissionSvc *permissionsvc.PermissionSvc,
 	queueManage queuemanager.Interface,
 	dbClient *dbclient.Client, bdl *bundle.Bundle, publisher *websocket.Publisher,

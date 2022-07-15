@@ -30,7 +30,6 @@ import (
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/engine"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/queuemanager"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/run"
-	"github.com/erda-project/erda/internal/tools/pipeline/services/actionagentsvc"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/permissionsvc"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/pipelinesvc"
 	"github.com/erda-project/erda/pkg/http/httpserver"
@@ -38,10 +37,9 @@ import (
 
 // Endpoints 定义 endpoint 方法
 type Endpoints struct {
-	permissionSvc  *permissionsvc.PermissionSvc
-	pipelineSvc    *pipelinesvc.PipelineSvc
-	crondSvc       daemon.Interface
-	actionAgentSvc *actionagentsvc.ActionAgentSvc
+	permissionSvc *permissionsvc.PermissionSvc
+	pipelineSvc   *pipelinesvc.PipelineSvc
+	crondSvc      daemon.Interface
 
 	dbClient           *dbclient.Client
 	queryStringDecoder *schema.Decoder
@@ -84,12 +82,6 @@ func WithPermissionSvc(svc *permissionsvc.PermissionSvc) Option {
 func WithCrondSvc(svc daemon.Interface) Option {
 	return func(e *Endpoints) {
 		e.crondSvc = svc
-	}
-}
-
-func WithActionAgentSvc(svc *actionagentsvc.ActionAgentSvc) Option {
-	return func(e *Endpoints) {
-		e.actionAgentSvc = svc
 	}
 }
 
