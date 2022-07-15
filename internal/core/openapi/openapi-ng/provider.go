@@ -16,7 +16,6 @@ package openapi
 
 import (
 	"fmt"
-	"reflect"
 	"sort"
 	"strings"
 
@@ -44,7 +43,7 @@ type (
 	provider struct {
 		Cfg           *config
 		Log           logs.Logger
-		RouterManager httpserver.RouterManager `autowired:"http-router-manager"`
+		RouterManager httpserver.RouterManager `autowired:"http-router-manager@openapi"`
 		interceptors  interceptors.Interceptors
 		routes        []route
 		sources       []RouteSource
@@ -165,7 +164,7 @@ func init() {
 			})
 			return list
 		},
-		Types:      []reflect.Type{reflect.TypeOf((*transhttp.Router)(nil)).Elem()},
+		//Types:      []reflect.Type{reflect.TypeOf((*transhttp.Router)(nil)).Elem()},
 		ConfigFunc: func() interface{} { return &config{} },
 		Creator:    func() servicehub.Provider { return &provider{} },
 	})
