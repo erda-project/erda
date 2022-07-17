@@ -1,0 +1,215 @@
+syntax = "proto3";
+
+package erda.core.rule;
+option go_package = "github.com/erda-project/erda-proto-go/core/rule/pb";
+import "google/api/annotations.proto";
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+import "common/openapi.proto";
+
+service RuleService {
+  option (erda.common.openapi_service) = {
+    service: "erda-server",
+    auth: {
+      check_login: true,
+      check_token: true,
+    }
+  };
+
+  rpc Fire(FireRequest) returns (FireResponse) {
+    option (google.api.http) = {
+      post: "/api/rulesets/actions/fire",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/rulesets/actions/fire",
+    };
+  };
+
+  rpc CreateRuleSet(CreateRuleSetRequest) returns (CreateRuleSetResponse) {
+    option (google.api.http) = {
+      post: "/api/rulesets",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/rulesets",
+    };
+  };
+
+  rpc GetRuleSet(GetRuleSetRequest) returns (GetRuleSetResponse) {
+    option (google.api.http) = {
+      get: "/api/rulesets/{id}",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/rulesets/{id}",
+    };
+  };
+
+  rpc UpdateRuleSet(UpdateRuleSetRequest) returns (UpdateRuleSetResponse) {
+    option (google.api.http) = {
+      put: "/api/rulesets/{id}",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/rulesets/{id}",
+    };
+  };
+
+  rpc ListRuleSets(ListRuleSetsRequest) returns (ListRuleSetsResponse) {
+    option (google.api.http) = {
+      get: "/api/rulesets",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/rulesets",
+    };
+  };
+
+  rpc DeleteRuleSet(DeleteRuleSetRequest) returns (DeleteRuleSetResponse) {
+    option (google.api.http) = {
+      delete: "/api/rulesets/{id}",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/rulesets/{id}",
+    };
+  };
+
+  rpc ListRuleSetExecHistory(ListRuleSetExecHistoryRequest) returns (ListRuleSetExecHistoryResponse) {
+    option (google.api.http) = {
+      get: "/api/rulesets/actions/list-exec-history",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/rulesets/actions/list-exec-history",
+    };
+  };
+}
+
+message FireRequest {
+  string scope = 1;
+  string scopeID = 2;
+  string eventType = 3;
+  map<string, google.protobuf.Value> env = 4;
+}
+
+message Config {
+  optional string code = 2;
+  map<string, google.protobuf.Value> env = 4;
+  map<string, google.protobuf.Value> params = 5;
+}
+
+message FireResponse {
+  repeated bool output = 1;
+}
+
+message CreateRuleSetRequest {
+  string scope = 1;
+  string scopeID = 2;
+  string eventType = 3;
+  optional string code = 4;
+  string name = 5;
+  ActionParams params = 6;
+  bool enabled = 7;
+} 
+
+message CreateRuleSetResponse {}
+
+message GetRuleSetRequest {
+  string id = 1;
+}
+
+message GetRuleSetResponse {
+  RuleSet data = 1;
+  repeated string userIDs = 2;
+}
+
+message RuleSet {
+  string id = 1;
+  string name = 2;
+  string scope = 3;
+  string scopeID = 4;
+  string eventType = 5;
+  string code = 6;
+  ActionParams params = 7;
+  bool enabled = 8;
+  string updator = 9;
+  google.protobuf.Timestamp createdAt = 10;
+  google.protobuf.Timestamp updatedAt = 11;
+}
+
+message ActionParams {
+  DingTalkConfig dingTalk = 1;
+  string snippet = 2;
+}
+
+message DingTalkConfig {
+  string webhook = 1;
+  string signature = 2;
+}
+
+message UpdateRuleSetRequest {
+  string id = 1;
+  string scope = 2;
+  string scopeID = 3;
+  string code = 4;
+  string eventType = 5;
+  bool enabled = 6;
+  string name = 7;
+  ActionParams params = 8;
+}
+
+message UpdateRuleSetResponse {}
+
+message ListRuleSetsRequest {
+  string scope = 1;
+  string scopeID = 2;
+  string eventType = 3;
+  optional bool enabled = 4;
+  string name = 5;
+  string updator = 6;
+  int64 pageNo = 7;
+  int64 pageSize = 8;
+}
+
+message ListRuleSetsResponse {
+  ListRuleSetsResponseData data = 1;
+  repeated string userIDs = 2;
+}
+
+message ListRuleSetsResponseData {
+  int64 total = 1;
+  repeated RuleSet list = 2;
+}
+
+message DeleteRuleSetRequest {
+  string id = 1;
+}
+
+message DeleteRuleSetResponse {}
+
+message ListRuleSetExecHistoryRequest {
+  string scope = 1;
+  string scopeID = 2;
+  string eventType = 3;
+  int64 pageNo = 4;
+  int64 pageSize = 5;
+  string ruleSetID = 6;
+  optional bool succeed = 7;
+}
+
+message ListRuleSetExecHistoryResponse {
+  ListRuleSetExecHistoryResponseData data = 1;
+  repeated string userIDs = 2;
+}
+
+message ListRuleSetExecHistoryResponseData {
+  int64 total = 1;
+  repeated RuleSetExecHistory list = 2;
+}
+
+message RuleSetExecHistory {
+  string id = 1;
+  google.protobuf.Timestamp createdAt = 11;
+  string scope = 3;
+  string scopeID = 4;
+  string ruleSetID = 5;
+  string code = 6;
+  google.protobuf.Value env = 7;
+  bool succeed = 8;
+  string actionOutput = 9;
+}

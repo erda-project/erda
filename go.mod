@@ -24,6 +24,7 @@ require (
 	github.com/aliyun/aliyun-oss-go-sdk v2.1.4+incompatible
 	github.com/andrianbdn/iospng v0.0.0-20180730113000-dccef1992541
 	github.com/antlr/antlr4/runtime/Go/antlr v0.0.0-20220314183648-97c793e446ba
+	github.com/antonmedv/expr v1.9.0
 	github.com/apache/thrift v0.14.2
 	github.com/appscode/go v0.0.0-20191119085241-0887d8ec2ecc
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
@@ -84,6 +85,7 @@ require (
 	github.com/golang/protobuf v1.5.2
 	github.com/golang/snappy v0.0.4
 	github.com/google/btree v1.0.1 // indirect
+	github.com/google/go-jsonnet v0.18.0
 	github.com/google/uuid v1.3.0
 	github.com/googlecloudplatform/flink-operator v0.0.0-00010101000000-000000000000
 	github.com/gorilla/mux v1.8.0

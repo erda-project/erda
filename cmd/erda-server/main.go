@@ -44,6 +44,7 @@ import (
 	_ "github.com/erda-project/erda/internal/core/messenger/notify-channel"
 	_ "github.com/erda-project/erda/internal/core/messenger/notifygroup"
 	_ "github.com/erda-project/erda/internal/core/project"
+	_ "github.com/erda-project/erda/internal/core/rule"
 
 	// infra
 	"github.com/erda-project/erda-infra/base/servicehub"
