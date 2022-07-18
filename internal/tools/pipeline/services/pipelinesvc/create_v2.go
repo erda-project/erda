@@ -518,7 +518,7 @@ func (s *PipelineSvc) makeRemoteAndLocationByApp(appIDStr string) (string, strin
 
 func makePipelineName(pipelineYml string, fileName string) string {
 	yml, err := pipelineyml.GetNameByPipelineYml(pipelineYml)
-	if err == nil {
+	if err == nil && yml != "" {
 		return yml
 	}
 	return filepath.Base(fileName)
