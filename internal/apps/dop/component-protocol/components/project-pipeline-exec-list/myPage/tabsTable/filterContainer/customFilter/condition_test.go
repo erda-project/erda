@@ -169,12 +169,13 @@ func TestCustomFilter_ConditionRetriever(t *testing.T) {
 					AppIDInt: 1,
 				},
 				sdk: &cptype.SDK{
-					Ctx:  ctx,
-					Tran: &MockTran{},
+					Ctx:      ctx,
+					Tran:     &MockTran{},
+					Identity: &pb.IdentityInfo{},
 				},
 				gsHelper: gsHelper,
 			},
-			want:    4,
+			want:    6,
 			wantErr: false,
 		},
 		{
@@ -182,16 +183,18 @@ func TestCustomFilter_ConditionRetriever(t *testing.T) {
 			fields: fields{
 				InParams: &InParams{},
 				sdk: &cptype.SDK{
-					Ctx:  ctx,
-					Tran: &MockTran{},
+					Ctx:      ctx,
+					Tran:     &MockTran{},
+					Identity: &pb.IdentityInfo{},
 				},
 				gsHelper: gsHelper,
 			},
-			want:    5,
+			want:    7,
 			wantErr: false,
 		},
 	}
 	var p *CustomFilter
+	bdl := bundle.New()
 	monkey.PatchInstanceMethod(reflect.TypeOf(p), "AppConditionWithInParamsAppID", func(*CustomFilter) (*model.SelectCondition, error) {
 		return &model.SelectCondition{}, nil
 	})
@@ -199,8 +202,8 @@ func TestCustomFilter_ConditionRetriever(t *testing.T) {
 	monkey.PatchInstanceMethod(reflect.TypeOf(p), "AppConditionWithNoInParamsAppID", func(*CustomFilter) (*model.SelectCondition, error) {
 		return &model.SelectCondition{}, nil
 	})
-	monkey.PatchInstanceMethod(reflect.TypeOf(p), "MemberCondition", func(*CustomFilter) (*model.SelectCondition, error) {
-		return &model.SelectCondition{}, nil
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "ListMembers", func(_ *bundle.Bundle, req apistructs.MemberListRequest) ([]apistructs.Member, error) {
+		return []apistructs.Member{}, nil
 	})
 	monkey.PatchInstanceMethod(reflect.TypeOf(p), "StatusCondition", func(*CustomFilter) *model.SelectCondition {
 		return &model.SelectCondition{}
@@ -212,6 +215,7 @@ func TestCustomFilter_ConditionRetriever(t *testing.T) {
 				sdk:      tt.fields.sdk,
 				InParams: tt.fields.InParams,
 				gsHelper: tt.fields.gsHelper,
+				bdl:      bdl,
 			}
 			got, err := p.ConditionRetriever()
 			if (err != nil) != tt.wantErr {

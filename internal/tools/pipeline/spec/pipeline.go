@@ -198,6 +198,9 @@ func (p *Pipeline) GenerateNormalLabelsForCreateV2() map[string]string {
 		cronTriggerTimeStr = strconv.FormatInt(p.Extra.CronTriggerTime.UnixNano(), 10)
 	}
 	labels[apistructs.LabelPipelineCronTriggerTime] = cronTriggerTimeStr
+	if p.GetOwnerUserID() != "" {
+		labels[apistructs.LabelOwnerUserID] = p.GetOwnerUserID()
+	}
 	if p.CronID != nil {
 		labels[apistructs.LabelPipelineCronID] = strconv.FormatUint(*p.CronID, 10)
 	}

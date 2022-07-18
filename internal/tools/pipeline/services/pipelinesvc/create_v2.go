@@ -191,6 +191,9 @@ func (s *PipelineSvc) makePipelineFromRequestV2(req *apistructs.PipelineCreateRe
 	p.Extra.OwnerUser = req.OwnerUser
 	p.Extra.InternalClient = req.InternalClient
 	p.Snapshot.IdentityInfo = req.IdentityInfo
+	if p.GetOwnerUserID() != "" {
+		p.Labels[apistructs.LabelOwnerUserID] = p.GetOwnerUserID()
+	}
 
 	// namespace
 	// if upper layer customize namespace, use custom namespace

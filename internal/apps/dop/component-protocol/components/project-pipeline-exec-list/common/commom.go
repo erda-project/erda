@@ -15,9 +15,10 @@
 package common
 
 const (
-	DefaultPageSize      = 10
-	ColumnPipelineStatus = "pipelineStatus"
-	Participated         = 0
+	DefaultPageSize       = 10
+	ColumnPipelineStatus  = "pipelineStatus"
+	ColumnPipelineTrigger = "pipelineTriggerMode"
+	Participated          = 0
 )
 
 type Sort struct {

@@ -394,6 +394,8 @@ message ListPipelineExecHistoryRequest {
     uint64 projectID = 11;
     repeated string branches = 12;
     string definitionID = 13;
+    repeated string owners = 14;
+    repeated string triggerModes = 15;
 }
 
 message ListPipelineExecHistoryResponse {
