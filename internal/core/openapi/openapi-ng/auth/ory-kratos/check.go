@@ -102,13 +102,11 @@ func (p *provider) getScope(r *http.Request, userID string) (uint64, error) {
 	orgName := r.Header.Get("ORG")
 	var orgID uint64
 	if orgName != "" && orgName != "-" {
-		orgResp, err := p.Org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcOpenapi), &orgpb.GetOrgRequest{
-			IdOrName: orgName,
-		})
+		org, err := p.GetOrg(orgName)
 		if err != nil {
 			return 0, err
 		}
-		orgID = orgResp.Data.ID
+		orgID = org.ID
 	} else {
 		domain := r.Host
 		if host, _, err := net.SplitHostPort(domain); err == nil {
@@ -136,4 +134,17 @@ func (p *provider) getScope(r *http.Request, userID string) (uint64, error) {
 		return 0, fmt.Errorf("permission denied for user:%s org:%d", userID, orgID)
 	}
 	return orgID, nil
+}
+
+func (p *provider) GetOrg(IdOrName string) (*orgpb.Org, error) {
+	if IdOrName == "" {
+		return nil, fmt.Errorf("the IdOrName is empty")
+	}
+	orgResp, err := p.Org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.Pipeline()), &orgpb.GetOrgRequest{
+		IdOrName: IdOrName,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return orgResp.Data, nil
 }

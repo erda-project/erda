@@ -64,13 +64,10 @@ func (s *provider) GetWorkspaceApp(appID uint64, branch string) (*WorkspaceApp, 
 	result.Branch = branch
 
 	// get org
-	orgResp, err := s.Org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.Pipeline()), &orgpb.GetOrgRequest{
-		IdOrName: strconv.FormatUint(app.OrgID, 10),
-	})
+	org, err := s.GetOrg(app.OrgID)
 	if err != nil {
 		return nil, err
 	}
-	org := orgResp.Data
 	result.OrgName = org.Name
 
 	// get project
@@ -146,4 +143,17 @@ func (app *WorkspaceApp) GenerateV1UniquePipelineYmlName(originPipelineYmlPath s
 		}
 	}
 	return fmt.Sprintf("%d/%s/%s/%s", app.ID, app.Workspace.String(), app.Branch, originPipelineYmlPath)
+}
+
+func (s *provider) GetOrg(orgID uint64) (*orgpb.Org, error) {
+	if orgID == 0 {
+		return nil, fmt.Errorf("the orgID is 0")
+	}
+	orgResp, err := s.Org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.Pipeline()), &orgpb.GetOrgRequest{
+		IdOrName: strconv.FormatUint(orgID, 10),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return orgResp.Data, nil
 }

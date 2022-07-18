@@ -765,15 +765,12 @@ func (r *Runtime) doDeployRuntime(ctx *DeployContext) (*apistructs.DeploymentCre
 				protocol = protocols[0]
 			}
 			domain := d.Get(apistructs.DICE_ROOT_DOMAIN)
-			orgResp, err := r.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcOrchestrator), &orgpb.GetOrgRequest{
-				IdOrName: strconv.FormatUint(ctx.Runtime.OrgID, 10),
-			})
+			org, err := r.GetOrg(ctx.Runtime.OrgID)
 			if err != nil {
 				logrus.Errorf("failed to getorg(%v):%v", ctx.Runtime.OrgID, err)
 				break
 			}
 
-			org := orgResp.Data
 			url := fmt.Sprintf("%s://%s-org.%s/workBench/approval/my-approve/pending?id=%d",
 				protocol, org.Name, domain, deployment.ID)
 			if err := r.bdl.CreateMboxNotify("notify.deployapproval.launch.markdown_template",
@@ -819,13 +816,10 @@ func (r *Runtime) doDeployRuntime(ctx *DeployContext) (*apistructs.DeploymentCre
 }
 
 func (r *Runtime) checkOrgDeployBlocked(orgID uint64, runtime *dbclient.Runtime) (bool, error) {
-	orgResp, err := r.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcOrchestrator), &orgpb.GetOrgRequest{
-		IdOrName: strconv.FormatUint(orgID, 10),
-	})
+	org, err := r.GetOrg(orgID)
 	if err != nil {
 		return false, err
 	}
-	org := orgResp.Data
 	blocked := false
 	switch runtime.Workspace {
 	case "DEV":
@@ -1103,14 +1097,11 @@ func (r *Runtime) Rollback(operator user.ID, orgID uint64, runtimeID uint64, dep
 				protocol = protocols[0]
 			}
 			domain := d.Get(apistructs.DICE_ROOT_DOMAIN)
-			orgResp, err := r.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcOrchestrator), &orgpb.GetOrgRequest{
-				IdOrName: strconv.FormatUint(runtime.OrgID, 10),
-			})
+			org, err := r.GetOrg(runtime.OrgID)
 			if err != nil {
 				logrus.Errorf("failed to getorg(%v):%v", runtime.OrgID, err)
 				break
 			}
-			org := orgResp.Data
 			url := fmt.Sprintf("%s://%s-org.%s/workBench/approval/my-approve/pending?id=%d",
 				protocol, org.Name, domain, deployment.ID)
 			if err := r.bdl.CreateMboxNotify("notify.deployapproval.launch.markdown_template",
@@ -2369,4 +2360,17 @@ func (r *Runtime) PreCheck(dice *diceyml.DiceYaml, workspace string) error {
 	}
 
 	return nil
+}
+
+func (r *Runtime) GetOrg(orgID uint64) (*orgpb.Org, error) {
+	if orgID == 0 {
+		return nil, fmt.Errorf("the orgID is 0")
+	}
+	orgResp, err := r.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcOrchestrator), &orgpb.GetOrgRequest{
+		IdOrName: strconv.FormatUint(orgID, 10),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return orgResp.Data, nil
 }

@@ -48,13 +48,10 @@ func (s *provider) FetchSecrets(ctx context.Context, p *spec.Pipeline) (secrets,
 			if err != nil {
 				return nil, nil, nil, nil, fmt.Errorf("invalid org id from label %q, err: %v", apistructs.LabelOrgID, err)
 			}
-			orgResp, err := s.Org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.Pipeline()), &orgpb.GetOrgRequest{
-				IdOrName: strconv.FormatUint(orgID, 10),
-			})
+			org, err := s.GetOrg(orgID)
 			if err != nil {
 				return nil, nil, nil, nil, err
 			}
-			org := orgResp.Data
 			if org.EnableReleaseCrossCluster {
 				namespaces = append(namespaces, nexus.MakeOrgPipelineCmsNs(orgID))
 			}
@@ -98,4 +95,17 @@ func (s *provider) FetchSecrets(ctx context.Context, p *spec.Pipeline) (secrets,
 	}
 
 	return secrets, cmsDiceFiles, holdOnKeys, encryptSecretKeys, nil
+}
+
+func (s *provider) GetOrg(orgID uint64) (*orgpb.Org, error) {
+	if orgID == 0 {
+		return nil, fmt.Errorf("the orgID is 0")
+	}
+	orgResp, err := s.Org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.Pipeline()), &orgpb.GetOrgRequest{
+		IdOrName: strconv.FormatUint(orgID, 10),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return orgResp.Data, nil
 }

@@ -70,34 +70,6 @@ func (b *Bundle) GetDopOrg(idOrName interface{}) (*apistructs.OrgDTO, error) {
 	return &fetchResp.Data, nil
 }
 
-// ListOrgs 分页查询企业
-func (b *Bundle) ListOrgs(req *apistructs.OrgSearchRequest, orgID string) (*apistructs.PagingOrgDTO, error) {
-	host, err := b.urls.ErdaServer()
-	if err != nil {
-		return nil, err
-	}
-	hc := b.hc
-
-	var resp apistructs.OrgSearchResponse
-	r, err := hc.Get(host).Path("/api/orgs").
-		Header(httputil.InternalHeader, "bundle").
-		Header(httputil.UserHeader, req.UserID).
-		Header(httputil.OrgHeader, orgID).
-		Param("q", req.Q).
-		Param("org", req.Org).
-		Param("pageNo", strconv.Itoa(req.PageNo)).
-		Param("pageSize", strconv.Itoa(req.PageSize)).
-		Do().
-		JSON(&resp)
-	if err != nil {
-		return nil, apierrors.ErrInvoke.InternalError(err)
-	}
-	if !r.IsOK() || !resp.Success {
-		return nil, toAPIError(r.StatusCode(), resp.Error)
-	}
-	return &resp.Data, nil
-}
-
 // ListDopOrgs 分页查询企业
 func (b *Bundle) ListDopOrgs(req *apistructs.OrgSearchRequest) (*apistructs.PagingOrgDTO, error) {
 	host, err := b.urls.DOP()
