@@ -18,6 +18,8 @@ import (
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	"github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
+	dpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
+	sourcepb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/pkg/websocket"
 	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
@@ -69,6 +71,9 @@ type PipelineSvc struct {
 	actionMgr    actionmgr.Interface
 	mysql        mysqlxorm.Interface
 	resource     resource.Interface
+
+	pipelineSource     sourcepb.SourceServiceServer
+	pipelineDefinition dpb.DefinitionServiceServer
 }
 
 func New(appSvc app.Interface, crondSvc daemon.Interface,
@@ -125,4 +130,12 @@ func (s *PipelineSvc) WithMySQL(mysql mysqlxorm.Interface) {
 
 func (s *PipelineSvc) WithEdgeReporter(r edgereporter.Interface) {
 	s.edgeReporter = r
+}
+
+func (s *PipelineSvc) WithPipelineSource(pipelineSource sourcepb.SourceServiceServer) {
+	s.pipelineSource = pipelineSource
+}
+
+func (s *PipelineSvc) WithPipelineDefinition(pipelineDefinition dpb.DefinitionServiceServer) {
+	s.pipelineDefinition = pipelineDefinition
 }

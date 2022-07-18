@@ -17,7 +17,9 @@ package pipelinesvc
 import (
 	"context"
 	"encoding/json"
+	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -26,6 +28,8 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
+	dpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
+	sourcepb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/conf"
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/container_provider"
@@ -165,7 +169,12 @@ func (s *PipelineSvc) makePipelineFromRequestV2(req *apistructs.PipelineCreateRe
 	p.PipelineYmlName = req.PipelineYmlName
 	p.PipelineSource = req.PipelineSource
 	p.ClusterName = req.ClusterName
-	p.PipelineDefinitionID = req.DefinitionID
+
+	definitionID, err := s.GetDefinitionID(req)
+	if err != nil {
+		return nil, err
+	}
+	p.PipelineDefinitionID = definitionID
 	// labels
 	p.NormalLabels = req.NormalLabels
 	if p.NormalLabels == nil {
@@ -410,4 +419,107 @@ func constructToCreateCronRequest(p *spec.Pipeline, cronStartFrom *time.Time, co
 		PipelineDefinitionID: p.PipelineDefinitionID,
 	}
 	return createReq
+}
+
+func (s *PipelineSvc) GetDefinitionID(req *apistructs.PipelineCreateRequestV2) (string, error) {
+	if req.DefinitionID != "" {
+		return req.DefinitionID, nil
+	}
+	if req.PipelineSource != apistructs.PipelineSourceDice {
+		return "", nil
+	}
+	return s.CreatePipelineSourceAndDefinition(context.Background(), req)
+}
+
+func (s *PipelineSvc) CreatePipelineSourceAndDefinition(ctx context.Context, req *apistructs.PipelineCreateRequestV2) (string, error) {
+	const (
+		sourceType = "erda"
+		category   = "default"
+	)
+	ymlName := parseSourceDicePipelineYmlName(req.PipelineYmlName, req.Labels[apistructs.LabelBranch])
+
+	remote, location, err := s.makeRemoteAndLocationByApp(ymlName.appID)
+	if err != nil {
+		return "", err
+	}
+	sourceResp, err := s.pipelineSource.Create(ctx, &sourcepb.PipelineSourceCreateRequest{
+		SourceType:  sourceType,
+		Remote:      remote,
+		Ref:         ymlName.branch,
+		Path:        getFilePath(ymlName.fileName),
+		Name:        filepath.Base(ymlName.fileName),
+		PipelineYml: req.PipelineYml,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	b, err := json.Marshal(req)
+	if err != nil {
+		return "", err
+	}
+
+	definitionResp, err := s.pipelineDefinition.Create(ctx, &dpb.PipelineDefinitionCreateRequest{
+		Location:         location,
+		Name:             makePipelineName(req.PipelineYml, ymlName.fileName),
+		Creator:          req.UserID,
+		PipelineSourceID: sourceResp.PipelineSource.ID,
+		Category:         category,
+		Extra: &dpb.PipelineDefinitionExtra{
+			Extra: string(b),
+		},
+		Ref: ymlName.branch,
+	})
+	if err != nil {
+		return "", err
+	}
+	return definitionResp.PipelineDefinition.ID, nil
+}
+
+type pipelineYmlName struct {
+	appID     string
+	workspace string
+	branch    string
+	fileName  string
+}
+
+func parseSourceDicePipelineYmlName(ymlName string, branch string) *pipelineYmlName {
+	splits := strings.Split(ymlName, string(filepath.Separator))
+	if len(splits) < 4 {
+		return nil
+	}
+	return &pipelineYmlName{
+		appID:     splits[0],
+		workspace: splits[1],
+		branch:    branch,
+		fileName:  ymlName[len(splits[0])+len(splits[1])+len(branch)+3:],
+	}
+}
+
+func getFilePath(path string) string {
+	dir := filepath.Dir(path)
+	if dir == "." {
+		return ""
+	}
+	return dir
+}
+
+func (s *PipelineSvc) makeRemoteAndLocationByApp(appIDStr string) (string, string, error) {
+	appID, err := strconv.ParseUint(appIDStr, 10, 64)
+	if err != nil {
+		return "", "", err
+	}
+	app, err := s.bdl.GetApp(appID)
+	if err != nil {
+		return "", "", err
+	}
+	return apistructs.MakeRemote(app), apistructs.MakeLocation(app, apistructs.PipelineTypeCICD), nil
+}
+
+func makePipelineName(pipelineYml string, fileName string) string {
+	yml, err := pipelineyml.GetNameByPipelineYml(pipelineYml)
+	if err == nil {
+		return yml
+	}
+	return filepath.Base(fileName)
 }
