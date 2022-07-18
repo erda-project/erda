@@ -1491,7 +1491,7 @@ func (impl GatewayApiServiceImpl) deleteApi(apiId string) (StandardErrorCode, er
 		goto errorHappened
 	}
 	if kongAdapter == nil {
-		return ret, errors.New("kongAdapter is nil")
+		return ret, errors.Errorf("kongAdapter is nil")
 	}
 	if gatewayRoute, err = impl.routeDb.GetByApiId(apiId); err == nil && gatewayRoute != nil {
 		err = kongAdapter.DeleteRoute(gatewayRoute.RouteId)

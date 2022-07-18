@@ -27,6 +27,9 @@ erda.core.hepa.openapi_consumer:
 erda.core.hepa.api_policy:  
 erda.core.hepa.org_client:
 erda.core.hepa.endpoint_api:
+  clearEndpointsCronExpr: "0 0 1 * * ? *"
+  clearEndpointsClusters:
+    "terminus-captain": true
 erda.core.hepa.runtime_service:
 
 i18n:
@@ -48,3 +51,5 @@ erda.orchestrator.runtime-client: {}
 grpc-client@erda.msp.tenant:
   addr: "${MSP_GRPC_ADDR:msp:7080}"
 erda.msp.tenant-client: {}
+
+easy-cron: {}
