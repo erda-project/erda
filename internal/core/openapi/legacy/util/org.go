@@ -15,22 +15,38 @@
 package util
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/erda-project/erda/internal/core/openapi/legacy/conf"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-func GetOrgByDomain(domain string) string {
+func GetOrgByDomain(domain string) (string, error) {
+	valid := false
 	for _, rootDomain := range conf.RootDomainList() {
-		if orgName := orgNameRetriever(domain, rootDomain); orgName != "" {
-			return orgName
+		if strings.HasSuffix(domain, rootDomain) {
+			valid = true
+			break
 		}
 	}
-	return ""
+	if !valid {
+		return "", fmt.Errorf("invalid domain")
+	}
+	for _, rootDomain := range conf.RootDomainList() {
+		if orgName := orgNameRetriever(domain, rootDomain); orgName != "" {
+			return orgName, nil
+		}
+	}
+	return "", nil
 }
 
 func orgNameRetriever(domain, rootDomain string) string {
 	suf := strutil.Concat(".", rootDomain)
 	domain_and_port := strutil.Split(domain, ":", true)
+	if len(domain_and_port) == 0 {
+		return ""
+	}
 	domain = domain_and_port[0]
 	if strutil.HasSuffixes(domain, suf) {
 		orgName := strutil.TrimSuffixes(domain, suf)

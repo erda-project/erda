@@ -41,45 +41,40 @@ func TestUser_GetOrgInfo(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    bool
-		want1   uint64
+		want    uint64
 		wantErr bool
 	}{
 		{
 			args: args{
 				orgHeader: "erda",
 			},
-			want:  false,
-			want1: 1,
+			want: 1,
 		},
 		{
 			args: args{
 				orgHeader:    "-",
 				domainHeader: "erda.cloud",
 			},
-			want: true,
+			want: 0,
 		},
 		{
 			args: args{
 				orgHeader:    "",
 				domainHeader: "erda.cloud",
 			},
-			want: true,
+			want: 0,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			u := &User{}
-			got, got1, err := u.GetOrgInfo(tt.args.orgHeader, tt.args.domainHeader)
+			got, err := u.GetOrgInfo(tt.args.orgHeader, tt.args.domainHeader)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("User.GetOrgInfo() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.want {
 				t.Errorf("User.GetOrgInfo() got = %v, want %v", got, tt.want)
-			}
-			if got1 != tt.want1 {
-				t.Errorf("User.GetOrgInfo() got1 = %v, want %v", got1, tt.want1)
 			}
 		})
 	}

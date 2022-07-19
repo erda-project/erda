@@ -140,13 +140,13 @@ func (u *User) get(req *http.Request, state GetUserState) (interface{}, AuthResu
 		if state == GotInfo {
 			return u.info, AuthResult{AuthSucc, ""}
 		}
-		orgHeader := req.Header.Get("ORG")
+		orgHeader := req.Header.Get("org")
 		domainHeader := req.Header.Get("domain")
-		noOrgID, orgID, err := u.GetOrgInfo(orgHeader, domainHeader)
+		orgID, err := u.GetOrgInfo(orgHeader, domainHeader)
 		if err != nil {
 			return nil, AuthResult{InternalAuthErr, err.Error()}
 		}
-		if !noOrgID {
+		if orgID > 0 {
 			role, err := u.bundle.ScopeRoleAccess(string(u.info.ID), &apistructs.ScopeRoleAccessRequest{
 				Scope: apistructs.Scope{
 					Type: apistructs.OrgScope,
@@ -173,26 +173,28 @@ func (u *User) get(req *http.Request, state GetUserState) (interface{}, AuthResu
 	panic("unreachable")
 }
 
-func (u *User) GetOrgInfo(orgHeader, domainHeader string) (bool, uint64, error) {
-	var orgID uint64
-	var noOrgID bool
-	var orgName string
+func (u *User) GetOrgInfo(orgHeader, domainHeader string) (orgID uint64, err error) {
 	logrus.Debugf("org: %v, domain: %v.", orgHeader, domainHeader)
+	var orgName string
+	// get from header firstly
 	if orgHeader != "" && orgHeader != "-" {
 		orgName = orgHeader
-	} else {
-		orgName = util.GetOrgByDomain(domainHeader)
-		if orgName == "" {
-			noOrgID = true
-			return noOrgID, 0, nil
+	}
+	// try get from domain
+	if orgName == "" {
+		orgName, err = util.GetOrgByDomain(domainHeader)
+		if err != nil {
+			return 0, err
 		}
+	}
+	if orgName == "" {
+		return 0, nil
 	}
 	org, err := u.bundle.GetOrg(orgName)
 	if err != nil {
-		return false, 0, err
+		return 0, err
 	}
-	orgID = org.ID
-	return noOrgID, orgID, nil
+	return org.ID, nil
 }
 
 func (u *User) IsLogin(req *http.Request) AuthResult {
