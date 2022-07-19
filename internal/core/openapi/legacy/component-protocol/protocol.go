@@ -54,6 +54,8 @@ const (
 
 	// Rendering 从 InParams 绑定
 	InParamsStateBindingKey = "__InParams__"
+
+	OrgClientSvc GlobalInnerKey = "org"
 )
 
 type ContextBundle struct {

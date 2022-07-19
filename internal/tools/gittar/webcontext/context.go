@@ -358,3 +358,16 @@ func (c *Context) GetOrg(orgID interface{}) (*orgpb.Org, error) {
 	}
 	return orgResp.Data, nil
 }
+
+func (c *Context) GetOrgByDomain(domain, userID string) (*orgpb.Org, error) {
+	if domain == "" {
+		return nil, fmt.Errorf("the domain is empty")
+	}
+	orgResp, err := c.orgClient.GetOrgByDomain(apis.WithUserIDContext(apis.WithInternalClientContext(context.Background(), discover.SvcGittar), userID), &orgpb.GetOrgByDomainRequest{
+		Domain: domain,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return orgResp.Data, nil
+}

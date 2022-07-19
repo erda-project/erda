@@ -15,12 +15,16 @@
 package addon
 
 import (
+	"context"
 	"strconv"
 
 	"github.com/sirupsen/logrus"
 
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
+	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 )
 
 func (a *Addon) SyncAddonResources() {
@@ -50,7 +54,9 @@ func (a *Addon) SyncAddonResources() {
 }
 
 func (a *Addon) getAllOrgIDs() []uint64 {
-	orgs, err := a.bdl.ListDopOrgs(&apistructs.OrgSearchRequest{PageSize: 99999})
+	orgs, err := a.org.ListOrg(apis.WithInternalClientContext(context.Background(), discover.SvcOrchestrator), &orgpb.ListOrgRequest{
+		PageSize: 99999,
+	})
 	if err != nil {
 		return nil
 	}

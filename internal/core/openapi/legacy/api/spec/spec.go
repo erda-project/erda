@@ -15,6 +15,7 @@
 package spec
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -27,9 +28,12 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/core/org"
+	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 )
 
 type APIs []Spec
@@ -258,24 +262,23 @@ func (ctx *AuditContext) GetParamString(key string) (string, error) {
 	return value, nil
 }
 
-func (ctx *AuditContext) GetOrg(idObject interface{}) (*apistructs.OrgDTO, error) {
+func (ctx *AuditContext) GetOrg(idObject interface{}) (*orgpb.Org, error) {
 	idStr := fmt.Sprintf("%v", idObject)
 	cacheKey := "org-" + idStr
-	var result *apistructs.OrgDTO
+	var result *orgpb.Org
 	cacheObject, ok := ctx.Cache.Load(cacheKey)
 	if !ok {
-		id, err := strconv.ParseUint(idStr, 10, 64)
+		orgResp, err := ctx.Org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcOpenapi), &orgpb.GetOrgRequest{
+			IdOrName: idStr,
+		})
 		if err != nil {
 			return nil, err
 		}
-		orgDTO, err := ctx.Bundle.GetDopOrg(id)
-		if err != nil {
-			return nil, err
-		}
+		orgDTO := orgResp.Data
 		result = orgDTO
 		ctx.Cache.Store(cacheKey, orgDTO)
 	} else {
-		result = cacheObject.(*apistructs.OrgDTO)
+		result = cacheObject.(*orgpb.Org)
 	}
 	return result, nil
 }

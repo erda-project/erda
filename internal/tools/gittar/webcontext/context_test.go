@@ -36,6 +36,13 @@ func (m orgMock) GetOrg(ctx context.Context, request *orgpb.GetOrgRequest) (*org
 	return &orgpb.GetOrgResponse{Data: &orgpb.Org{}}, nil
 }
 
+func (m orgMock) GetOrgByDomain(ctx context.Context, request *orgpb.GetOrgByDomainRequest) (*orgpb.GetOrgByDomainResponse, error) {
+	if request.Domain == "" {
+		return nil, fmt.Errorf("error")
+	}
+	return &orgpb.GetOrgByDomainResponse{Data: &orgpb.Org{}}, nil
+}
+
 func TestContext_GetOrg(t *testing.T) {
 	type fields struct {
 		orgClient org.ClientInterface
@@ -96,6 +103,61 @@ func TestContext_GetOrg(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("GetOrg() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestContext_GetOrgByDomain(t *testing.T) {
+	type fields struct {
+		orgClient org.ClientInterface
+	}
+	type args struct {
+		domain string
+		userID string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    *orgpb.Org
+		wantErr bool
+	}{
+		{
+			name: "test with error",
+			fields: fields{
+				orgClient: orgMock{},
+			},
+			args: args{
+				domain: "",
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "test with no error",
+			fields: fields{
+				orgClient: orgMock{},
+			},
+			args: args{
+				domain: "erda",
+			},
+			want:    &orgpb.Org{},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := &Context{
+				orgClient: tt.fields.orgClient,
+			}
+			got, err := c.GetOrgByDomain(tt.args.domain, tt.args.userID)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetOrgByDomain() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GetOrgByDomain() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

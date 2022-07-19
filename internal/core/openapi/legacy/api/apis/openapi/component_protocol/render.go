@@ -33,6 +33,7 @@ import (
 	_ "github.com/erda-project/erda/internal/core/openapi/legacy/component-protocol/scenarios/action/components/actionForm"
 	"github.com/erda-project/erda/internal/core/openapi/legacy/component-protocol/types"
 	"github.com/erda-project/erda/internal/core/openapi/legacy/i18n"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/http/httpserver"
@@ -143,6 +144,9 @@ func legacyProtocolRender(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx := context.Background()
 	ctx1 := context.WithValue(ctx, protocol.GlobalInnerKeyCtxBundle.String(), ctxBdl)
+
+	orgClient := r.Context().Value("org").(org.ClientInterface)
+	ctx1 = context.WithValue(ctx1, protocol.OrgClientSvc.String(), orgClient)
 
 	err := protocol.RunScenarioRender(ctx1, &req)
 	if err != nil {

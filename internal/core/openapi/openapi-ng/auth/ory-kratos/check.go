@@ -112,10 +112,13 @@ func (p *provider) getScope(r *http.Request, userID string) (uint64, error) {
 		if host, _, err := net.SplitHostPort(domain); err == nil {
 			domain = host
 		}
-		org, err := p.bundle.GetDopOrgByDomain(domain, userID)
+		orgResp, err := p.Org.GetOrgByDomain(apis.WithUserIDContext(apis.WithInternalClientContext(context.Background(), discover.SvcOpenapi), userID), &orgpb.GetOrgByDomainRequest{
+			Domain: domain,
+		})
 		if err != nil {
 			return 0, err
 		}
+		org := orgResp.Data
 		if org == nil {
 			return 0, nil
 		}

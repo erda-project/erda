@@ -22,7 +22,11 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/core/org"
+	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 
 	protocol "github.com/erda-project/erda/internal/core/openapi/legacy/component-protocol"
 )
@@ -73,6 +77,10 @@ func (i *ComponentList) SetCtxBundle(b protocol.ContextBundle) error {
 	return nil
 }
 
+func (i *ComponentList) SetOrg(org org.ClientInterface) {
+	i.Org = org
+}
+
 func (i *ComponentList) Render(ctx context.Context, c *apistructs.Component, _ apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) (err error) {
 	if event.Operation != apistructs.InitializeOperation {
 		err = i.unmarshal(c)
@@ -89,9 +97,12 @@ func (i *ComponentList) Render(ctx context.Context, c *apistructs.Component, _ a
 	}()
 
 	bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
+	org := ctx.Value(protocol.OrgClientSvc.String()).(org.ClientInterface)
+
 	if err := i.SetCtxBundle(bdl); err != nil {
 		return err
 	}
+	i.SetOrg(org)
 
 	i.initProperty()
 	switch event.Operation {
@@ -118,12 +129,11 @@ func (i *ComponentList) RenderMyOrgs() error {
 	if i.State.SearchRefresh {
 		i.State.PageNo = 1
 	}
-	req := apistructs.OrgSearchRequest{
-		PageNo:   i.State.PageNo,
-		PageSize: i.State.PageSize,
+	req := orgpb.ListOrgRequest{
+		PageNo:   int64(i.State.PageNo),
+		PageSize: int64(i.State.PageSize),
 	}
-	req.UserID = i.CtxBdl.Identity.UserID
-	orgs, err := i.CtxBdl.Bdl.ListDopOrgs(&req)
+	orgs, err := i.Org.ListOrg(apis.WithUserIDContext(apis.WithInternalClientContext(context.Background(), discover.SvcOpenapi), i.CtxBdl.Identity.UserID), &req)
 	if err != nil {
 		return err
 	}
@@ -134,13 +144,13 @@ func (i *ComponentList) RenderMyOrgs() error {
 
 	if i.State.SearchEntry != "" {
 		req.Q = i.State.SearchEntry
-		orgs, err = i.CtxBdl.Bdl.ListDopOrgs(&req)
+		orgs, err = i.Org.ListOrg(apis.WithUserIDContext(apis.WithInternalClientContext(context.Background(), discover.SvcOpenapi), i.CtxBdl.Identity.UserID), &req)
 		if err != nil {
 			return err
 		}
 	}
 
-	i.State.Total = orgs.Total
+	i.State.Total = int(orgs.Total)
 	id, err := strconv.Atoi(i.CtxBdl.Identity.OrgID)
 	if err != nil {
 		id = 0

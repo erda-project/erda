@@ -160,10 +160,14 @@ func (u *User) get(req *http.Request, state GetUserState) (interface{}, AuthResu
 			orgID = orgResp.Data.ID
 		} else {
 			domain := strutil.Split(req.Host, ":")[0]
-			org, err := u.bundle.GetDopOrgByDomain(domain, string(u.info.ID))
+			orgResp, err := u.org.GetOrgByDomain(apis.WithUserIDContext(apis.WithInternalClientContext(context.Background(), discover.SvcOpenapi), string(u.info.ID)), &orgpb.GetOrgByDomainRequest{
+				Domain: domain,
+			})
 			if err != nil {
 				return nil, AuthResult{InternalAuthErr, err.Error()}
-			} else if org == nil {
+			}
+			org := orgResp.Data
+			if org == nil {
 				noOrgID = true
 			} else {
 				orgID = org.ID
