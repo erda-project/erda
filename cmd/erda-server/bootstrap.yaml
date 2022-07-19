@@ -112,6 +112,9 @@ http-server@openapi:
   addr: ":9529"
   reloadable: ${OPENAPI_DEV_MODE:false}
   allow_cors: true
+  debug: ${OPENAPI_DEBUG:false}
+  log:
+    max_body_size_bytes: 1024
 http-server@openapi-admin:
   addr: ":9432"
 ### openapi-interceptor
