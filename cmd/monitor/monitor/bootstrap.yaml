@@ -79,6 +79,17 @@ log-storage-clickhouse:
   field_name_mapper:
     tags.request_id: tags.trace_id
 
+metric-storage-clickhouse:
+  _enable: ${QUERY_METRIC_FROM_CLICKHOUSE_ENABLE:false}
+  keypass:
+    name: ["kubernetes_*", "etcd"]
+
+clickhouse.table.loader@metric:
+  _enable: ${QUERY_METRIC_FROM_CLICKHOUSE_ENABLE:false}
+  table_prefix: "metrics"
+  default_search_table: "metrics_all"
+  cache_key_prefix: "clickhouse-table-metric"
+
 elasticsearch@log:
   _enable: ${LOG_ELASTICSEARCH_ENABLE:false}
   urls: "${LOG_ELASTICSEARCH_URL:http://localhost:9200}"

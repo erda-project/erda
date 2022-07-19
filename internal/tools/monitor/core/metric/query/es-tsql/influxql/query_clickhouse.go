@@ -16,6 +16,7 @@ package esinfluxql
 
 import (
 	"reflect"
+	"time"
 
 	ckdriver "github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"github.com/doug-martin/goqu/v9"
@@ -66,15 +67,11 @@ func (q QueryClickhouse) ParseResult(resp interface{}) (*model.Data, error) {
 		columnTypes = rows.ColumnTypes()
 		vars        = make([]interface{}, len(columnTypes))
 		columns     = rows.Columns()
+		err         error
 	)
 
 	for i := range columnTypes {
 		vars[i] = reflect.New(columnTypes[i].ScanType()).Interface()
-	}
-
-	err := rows.Totals(&rs.Total)
-	if err != nil {
-		return nil, err
 	}
 
 	for _, c := range q.column {
@@ -85,9 +82,6 @@ func (q QueryClickhouse) ParseResult(resp interface{}) (*model.Data, error) {
 			rs.Columns = append(rs.Columns, c.col)
 		}
 	}
-
-	cur := make(map[string]interface{})
-	next := make(map[string]interface{})
 
 	getData = func(row ckdriver.Rows) (map[string]interface{}, error) {
 		if err := rows.Scan(vars...); err != nil {
@@ -102,11 +96,23 @@ func (q QueryClickhouse) ParseResult(resp interface{}) (*model.Data, error) {
 		return data, nil
 	}
 
+	cur := make(map[string]interface{})
+	next := make(map[string]interface{})
+
+	q.ctx.AttributesCache()
+
+	// first read
+	rows.Next()
+	cur, err = getData(rows)
+	if err != nil {
+		return nil, err
+	}
 	for {
-		if !rows.Next() {
+		if cur == nil && next == nil {
 			break
 		}
-		if cur == nil {
+
+		if len(cur) <= 0 {
 			cur, err = getData(rows)
 			if err != nil {
 				return nil, err
@@ -124,17 +130,46 @@ func (q QueryClickhouse) ParseResult(resp interface{}) (*model.Data, error) {
 			if err != nil {
 				return nil, err
 			}
-			row = append(row, v)
+			row = append(row, pretty(v))
 		}
 		rs.Rows = append(rs.Rows, row)
 
 		cur = next
 		next = nil
 	}
-
-	// todo need implement
-	// Interval
+	rs.Total = int64(len(rs.Rows))
+	rs.Interval = q.ctx.Interval()
 	return rs, nil
+}
+
+func pretty(data interface{}) interface{} {
+	if data == nil {
+		return ""
+	}
+	switch v := data.(type) {
+	case *float64:
+		return *v
+	case *float32:
+		return *v
+	case *int32:
+		return *v
+	case *int64:
+		return *v
+	case *int:
+		return *v
+	case *uint:
+		return *v
+	case *uint32:
+		return *v
+	case *uint64:
+		return *v
+	case *string:
+		return *v
+	case *time.Time:
+		return v.Format("2006-01-02T15:04:05Z")
+	}
+
+	return data
 }
 
 func (q QueryClickhouse) Context() tsql.Context {

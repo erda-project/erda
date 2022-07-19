@@ -42,7 +42,7 @@ type config struct{}
 type provider struct {
 	C           *config
 	L           logs.Logger
-	esSearchRaw elasticsearch.Interface `autowired:"metric-storage"`
+	EsSearchRaw elasticsearch.Interface `autowired:"metric-storage"`
 	t           i18n.Translator
 }
 

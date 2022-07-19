@@ -146,7 +146,7 @@ func (p *Parser) ParseQuery(kind string) ([]tsql.Query, error) {
 		}
 		var q tsql.Query
 		var err error
-		if kind == ClickhouseKind {
+		if kind == model.ClickhouseKind {
 			q, err = p.ParseClickhouse(s)
 		} else {
 			q, err = p.ParseElasticsearch(s)

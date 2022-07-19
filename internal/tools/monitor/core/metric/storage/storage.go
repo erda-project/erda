@@ -24,6 +24,8 @@ import (
 
 // Storage .
 type Storage interface {
+	//Select compatible, metric gradually replace storage tiers
+	Select(metric []string) bool
 	NewWriter(ctx context.Context) (storekit.BatchWriter, error)
 	Query(ctx context.Context, query tsql.Query) (*model.ResultSet, error)
 }

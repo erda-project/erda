@@ -30,17 +30,15 @@ import (
 )
 
 type queryer struct {
-	storage   storage.Storage     `autowired:"metric-storage"`
-	ckStorage storage.Storage     `autowired:"metric-storage-clickhouse"`
-	keypass   map[string][]string `file:"keypass"`
+	storage   storage.Storage `autowired:"metric-storage"`
+	ckStorage storage.Storage `autowired:"metric-storage-clickhouse"`
 }
 
 // New .
-func New(keyPass map[string][]string, esStorage storage.Storage, ckStorage storage.Storage) Queryer {
+func New(esStorage storage.Storage, ckStorage storage.Storage) Queryer {
 	return &queryer{
 		storage:   esStorage,
 		ckStorage: ckStorage,
-		keypass:   keyPass,
 	}
 }
 
@@ -141,22 +139,18 @@ func (q *queryer) GetResult(parser tsql.Parser) (*model.ResultSet, tsql.Query, e
 	if q.ckStorage != nil {
 		metrics, err := parser.Metrics()
 		if err == nil {
-			if len(q.keypass) > 0 {
-				for _, m := range metrics {
-					if _, ok := q.keypass[m]; ok {
-						queries, err := parser.ParseQuery("Clickhouse")
-						if err != nil {
-							return nil, nil, err
-						}
-						query = queries[0]
-						result, err := q.ckStorage.Query(context.Background(), query)
-						return result, query, err
-					}
+			if q.ckStorage.Select(metrics) {
+				queries, err := parser.ParseQuery(model.ClickhouseKind)
+				if err != nil {
+					return nil, nil, err
 				}
+				query = queries[0]
+				result, err := q.ckStorage.Query(context.Background(), query)
+				return result, query, err
 			}
 		}
 	}
-	queries, err := parser.ParseQuery("Elasticsearch")
+	queries, err := parser.ParseQuery("")
 	if err != nil {
 		return nil, nil, err
 	}

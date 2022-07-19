@@ -104,7 +104,7 @@ func (p *provider) queryContainers(cluster string, hostIPs []string, instanceTyp
 		SubAggregation(topHits, topHitsAgg)
 
 	searchSource := elastic.NewSearchSource().Query(query).Size(0).Aggregation(tagsContainerID, containerIDAgg)
-	resp, apiErr := p.esSearchRaw.QueryRaw([]string{nameContainerSummary, nameDockerContainerSummary}, []string{cluster}, start, end, searchSource)
+	resp, apiErr := p.EsSearchRaw.QueryRaw([]string{nameContainerSummary, nameDockerContainerSummary}, []string{cluster}, start, end, searchSource)
 	if apiErr != nil {
 		return nil
 	} else if resp == nil {

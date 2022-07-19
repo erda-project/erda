@@ -45,8 +45,8 @@ func (c *SQLColumnHandler) getValue(currentRow map[string]interface{}) (interfac
 	return c.getAggFieldExprValue(currentRow, c.field.Expr)
 }
 
-func (c *SQLColumnHandler) getAggFieldExprValue(row map[string]interface{}, expr influxql.Expr) (interface{}, error) {
-	switch expr := expr.(type) {
+func (c *SQLColumnHandler) getAggFieldExprValue(row map[string]interface{}, exprr influxql.Expr) (interface{}, error) {
+	switch expr := exprr.(type) {
 	case *influxql.Call:
 		if fn, ok := tsql.LiteralFunctions[expr.Name]; ok {
 			c.col.Flag |= model.ColumnFlagFunc | model.ColumnFlagLiteral
@@ -63,7 +63,11 @@ func (c *SQLColumnHandler) getAggFieldExprValue(row map[string]interface{}, expr
 				return nil, err
 			}
 			return v, nil
-		} else if fn, ok := tsql.BuildInFunctions[expr.Name]; ok {
+		} else if fn, ok := tsql.CkBuildInFunctions[expr.Name]; ok {
+			if expr.Name == "time" || expr.Name == "timestamp" {
+				v := getGetValueFromFlatMap(row, "bucket_timestamp", ".")
+				return fn(c.ctx, v)
+			}
 			c.col.Flag |= model.ColumnFlagFunc
 			var args []interface{}
 			for _, arg := range expr.Args {
@@ -111,11 +115,12 @@ func (c *SQLColumnHandler) getAggFieldExprValue(row map[string]interface{}, expr
 	case *influxql.ParenExpr:
 		return c.getAggFieldExprValue(row, expr.Expr)
 	case *influxql.VarRef:
-		key, flag := getKeyNameAndFlag(expr, influxql.AnyField)
+		key := expr.Val
+
 		if expr == c.field.Expr {
-			c.col.Key = key
+			v := c.field.Expr.(*influxql.VarRef)
+			key = v.Val
 		}
-		c.col.Flag |= flag
 		return getGetValueFromFlatMap(row, key, "."), nil
 	default:
 		v, ok, err := getLiteralValue(c.ctx, expr)

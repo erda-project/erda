@@ -38,7 +38,7 @@ type config struct {
 type provider struct {
 	L           logs.Logger
 	metricq     metricq.Queryer
-	esSearchRaw elasticsearch.Interface `autowired:"metric-storage"`
+	EsSearchRaw elasticsearch.Interface `autowired:"metric-storage"`
 	//metricq  metricpb.MetricServiceServer `autowired:"erda.core.monitor.metric.MetricService"`
 	cmdb *cmdb.Cmdb
 

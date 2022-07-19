@@ -76,7 +76,7 @@ var CkAggFunctions = map[string]*SQlAggFuncDefine{
 				return goqu.AVG(goqu.L(field)).As(id), nil
 			},
 			func(ctx *Context, id, field string, call *influxql.Call, v interface{}) (interface{}, bool) {
-				return true, true
+				return v, true
 			},
 		),
 	},
@@ -201,6 +201,22 @@ var CkAggFunctions = map[string]*SQlAggFuncDefine{
 					return currentV / seconds, true
 				}
 				return nil, false
+			},
+		),
+	},
+	"value": {
+		// last value
+		Flag: FuncFlagSelect,
+		New: newCkUnaryFunction(
+			"value",
+			func(ctx *Context, id, field string, lit exp.Expression, flags ...FuncFlag) (exp.Expression, error) {
+				if lit != nil {
+					return goqu.MAX(lit).As(id), nil
+				}
+				return goqu.MAX(goqu.L(field)).As(id), nil
+			},
+			func(ctx *Context, id, field string, call *influxql.Call, v interface{}) (interface{}, bool) {
+				return v, true
 			},
 		),
 	},

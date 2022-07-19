@@ -45,8 +45,6 @@ type config struct {
 		Path           string        `file:"path"`
 		ReloadInterval time.Duration `file:"reload_interval"`
 	} `file:"chart_meta"`
-
-	Keypass map[string][]string `file:"keypass"`
 }
 
 type provider struct {
@@ -71,7 +69,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	}
 
 	p.q = &Metricq{
-		Queryer:   query.New(p.C.Keypass, p.Storage, p.CkStorageReader),
+		Queryer:   query.New(p.Storage, p.CkStorageReader),
 		queryv1:   queryv1.New(&query.MetricIndexLoader{Interface: p.Index}, charts, p.Meta, p.ChartTrans),
 		index:     p.Index,
 		meta:      p.Meta,

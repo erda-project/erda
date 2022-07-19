@@ -50,7 +50,7 @@ func TestClickhouse(t *testing.T) {
 			}
 			err := p.Build()
 			require.NoError(t, err)
-			queries, err := p.ParseQuery(ClickhouseKind)
+			queries, err := p.ParseQuery(model.ClickhouseKind)
 			require.NoError(t, err)
 			test.require(t, queries)
 		})
@@ -88,7 +88,7 @@ func TestFilterToExpr(t *testing.T) {
 					Operator: "",
 				},
 			},
-			want: "SELECT * FROM \"table\" WHERE ((\"column\" = '123') AND (\"column\" = '123') AND (\"column\" = '123'))",
+			want: "SELECT * FROM \"table\" WHERE ((column = '123') AND (column = '123') AND (column = '123'))",
 		},
 		{
 			name: "neq",
@@ -104,7 +104,7 @@ func TestFilterToExpr(t *testing.T) {
 					Operator: "!=",
 				},
 			},
-			want: "SELECT * FROM \"table\" WHERE ((\"column\" != '123') AND (\"column\" != '123'))",
+			want: "SELECT * FROM \"table\" WHERE ((column != '123') AND (column != '123'))",
 		},
 		{
 			name: "gt",
@@ -120,7 +120,7 @@ func TestFilterToExpr(t *testing.T) {
 					Operator: ">",
 				},
 			},
-			want: "SELECT * FROM \"table\" WHERE ((\"column\" > '123') AND (\"column\" > '123'))",
+			want: "SELECT * FROM \"table\" WHERE ((column > '123') AND (column > '123'))",
 		},
 		{
 			name: "gte",
@@ -136,7 +136,7 @@ func TestFilterToExpr(t *testing.T) {
 					Operator: ">=",
 				},
 			},
-			want: "SELECT * FROM \"table\" WHERE ((\"column\" >= '123') AND (\"column\" >= '123'))",
+			want: "SELECT * FROM \"table\" WHERE ((column >= '123') AND (column >= '123'))",
 		},
 		{
 			name: "lt",
@@ -152,7 +152,7 @@ func TestFilterToExpr(t *testing.T) {
 					Operator: "<",
 				},
 			},
-			want: "SELECT * FROM \"table\" WHERE ((\"column\" < '123') AND (\"column\" < '123'))",
+			want: "SELECT * FROM \"table\" WHERE ((column < '123') AND (column < '123'))",
 		},
 		{
 			name: "lte",
@@ -168,7 +168,7 @@ func TestFilterToExpr(t *testing.T) {
 					Operator: "<=",
 				},
 			},
-			want: "SELECT * FROM \"table\" WHERE ((\"column\" <= '123') AND (\"column\" <= '123'))",
+			want: "SELECT * FROM \"table\" WHERE ((column <= '123') AND (column <= '123'))",
 		},
 		{
 			name: "in",
@@ -184,7 +184,7 @@ func TestFilterToExpr(t *testing.T) {
 					Operator: "in",
 				},
 			},
-			want: "SELECT * FROM \"table\" WHERE (\"column\" IN ('1111', '2222', '3333'))",
+			want: "SELECT * FROM \"table\" WHERE (column IN ('1111', '2222', '3333'))",
 		},
 		{
 			name: "match",
@@ -195,7 +195,7 @@ func TestFilterToExpr(t *testing.T) {
 					Operator: "match",
 				},
 			},
-			want: "SELECT * FROM \"table\" WHERE (\"column\" LIKE '%12313%')",
+			want: "SELECT * FROM \"table\" WHERE (column LIKE '%12313%')",
 		},
 		{
 			name: "nmatch",
@@ -206,7 +206,7 @@ func TestFilterToExpr(t *testing.T) {
 					Operator: "nmatch",
 				},
 			},
-			want: "SELECT * FROM \"table\" WHERE (\"column\" NOT LIKE '%12313%')",
+			want: "SELECT * FROM \"table\" WHERE (column NOT LIKE '%12313%')",
 		},
 		{
 			name: "or eq",
@@ -222,7 +222,7 @@ func TestFilterToExpr(t *testing.T) {
 					Operator: "or_eq",
 				},
 			},
-			want: "SELECT * FROM \"table\" WHERE ((\"column\" = '12313') OR (\"column\" = '12313'))",
+			want: "SELECT * FROM \"table\" WHERE ((column = '12313') OR (column = '12313'))",
 		},
 		{
 			name: "or in",
@@ -238,7 +238,7 @@ func TestFilterToExpr(t *testing.T) {
 					Operator: "in",
 				},
 			},
-			want: "SELECT * FROM \"table\" WHERE ((\"column\" IN ('111', '222', '3333')) OR (\"column\" IN ('111', '222', '3333')))",
+			want: "SELECT * FROM \"table\" WHERE ((column IN ('111', '222', '3333')) OR (column IN ('111', '222', '3333')))",
 		},
 		{
 			name: "and or and or",
@@ -264,7 +264,23 @@ func TestFilterToExpr(t *testing.T) {
 					Operator: "or_eq",
 				},
 			},
-			want: "SELECT * FROM \"table\" WHERE (((\"column\" = '12313') AND (\"column\" = '12313')) OR ((\"column\" = '12313') OR (\"column\" = '12313')))",
+			want: "SELECT * FROM \"table\" WHERE (((column = '12313') AND (column = '12313')) OR ((column = '12313') OR (column = '12313')))",
+		},
+		{
+			name: "tags filter",
+			args: []*model.Filter{
+				{
+					Key:      "tags.cluster_name",
+					Value:    "123",
+					Operator: "eq",
+				},
+				{
+					Key:      "tags.org_name",
+					Value:    "123",
+					Operator: "eq",
+				},
+			},
+			want: "SELECT * FROM \"table\" WHERE ((tag_values[indexOf(tag_keys,'cluster_name')] = '123') AND (tag_values[indexOf(tag_keys,'org_name')] = '123'))",
 		},
 	}
 
@@ -291,22 +307,22 @@ func TestConditionToExpr(t *testing.T) {
 	}{
 		{
 			name:      "all and",
-			originSql: "select * from table where column::tag = 1 and column::tag = 2 and column = 3",
+			originSql: "select * from table where column::tag = 1 and column::tag = 2 and column::tag = 3",
 			want:      "SELECT * FROM \"table\" WHERE (((tag_values[indexOf(tag_keys,'column')] = 1) AND (tag_values[indexOf(tag_keys,'column')] = 2)) AND (tag_values[indexOf(tag_keys,'column')] = 3))",
 		},
 		{
 			name:      "all or",
-			originSql: "select * from table where column = 1 or column = 2 or column = 3",
+			originSql: "select * from table where column::tag = 1 or column::tag = 2 or column::tag = 3",
 			want:      "SELECT * FROM \"table\" WHERE (((tag_values[indexOf(tag_keys,'column')] = 1) OR (tag_values[indexOf(tag_keys,'column')] = 2)) OR (tag_values[indexOf(tag_keys,'column')] = 3))",
 		},
 		{
 			name:      "and or (and)or",
-			originSql: "select * from table where (column = 1 and column = 2) or column = 3",
+			originSql: "select * from table where (column::tag = 1 and column::tag = 2) or column::tag = 3",
 			want:      "SELECT * FROM \"table\" WHERE (((tag_values[indexOf(tag_keys,'column')] = 1) AND (tag_values[indexOf(tag_keys,'column')] = 2)) OR (tag_values[indexOf(tag_keys,'column')] = 3))",
 		},
 		{
 			name:      "and or and(or)",
-			originSql: "select * from table where column = 1 and (column = 2 or column = 3)",
+			originSql: "select * from table where column::tag = 1 and (column::tag = 2 or column::tag = 3)",
 			want:      "SELECT * FROM \"table\" WHERE ((tag_values[indexOf(tag_keys,'column')] = 1) AND ((tag_values[indexOf(tag_keys,'column')] = 2) OR (tag_values[indexOf(tag_keys,'column')] = 3)))",
 		},
 		{
@@ -410,11 +426,6 @@ func TestSelect(t *testing.T) {
 			want: "SELECT SUM(if(((tag_values[indexOf(tag_keys,'error')])!=('11') and (tag_values[indexOf(tag_keys,'error')])!=('22') and (tag_values[indexOf(tag_keys,'error')])!=('33')),number_field_values[indexOf(number_field_keys,'elapsed_count')],0)) AS \"c489eef269fb2d01\" FROM \"table\"",
 		},
 		{
-			name: "select sum(if:eq) / sum",
-			sql:  "select sum(if(eq(error::tag, 'true'),elapsed_count::field,0)) / sum(elapsed_count::field) from table",
-			want: "SELECT SUM(if(tag_values[indexOf(tag_keys,'error')]='true',number_field_values[indexOf(number_field_keys,'elapsed_count')],0)) AS \"72e4961c054d5bb4\", SUM(number_field_values[indexOf(number_field_keys,'elapsed_count')]) AS \"30c5a29cb248b5d9\" FROM \"table\"",
-		},
-		{
 			name: "select round_float(avg)",
 			sql:  "select round_float(avg(committed::field), 2) from table",
 			want: "SELECT AVG(number_field_values[indexOf(number_field_keys,'committed')]) AS \"cd848468318e898b\" FROM \"table\"",
@@ -462,32 +473,32 @@ func TestGroupBy(t *testing.T) {
 		{
 			name: "count,column",
 			sql:  "select column,count(1) from table group by column",
-			want: "SELECT COUNT(1) AS \"1c2fcd7a03c386f7\", number_field_values[indexOf(number_field_keys,'column')] AS \"column\" FROM \"table\" GROUP BY \"tag_values[indexOf(tag_keys,'column')]\"",
+			want: "SELECT COUNT(1) AS \"1c2fcd7a03c386f7\", number_field_values[indexOf(number_field_keys,'column')] AS \"column\" FROM \"table\" GROUP BY \"column\"",
 		},
 		{
 			name: "time(),max(column)",
 			sql:  "select max(column) from table group by time()",
-			want: "SELECT MAX(number_field_values[indexOf(number_field_keys,'column')]) AS \"322cc30ad1d92b84\", toInt64(toStartOfInterval(timestamp, toIntervalSecond(60))) AS \"timestamp\" FROM \"table\" GROUP BY \"timestamp\"",
+			want: "SELECT MAX(number_field_values[indexOf(number_field_keys,'column')]) AS \"322cc30ad1d92b84\", toDateTime64(toStartOfInterval(timestamp, toIntervalSecond(60),'UTC'),9) AS \"bucket_timestamp\" FROM \"table\" GROUP BY bucket_timestamp",
 		},
 		{
-			name: "time(2m0s)",
+			name: "time(2h)",
 			sql:  "select column from table group by time(2h)",
-			want: "SELECT number_field_values[indexOf(number_field_keys,'column')] AS \"column\", toInt64(toStartOfInterval(timestamp, toIntervalSecond(7200))) AS \"timestamp\" FROM \"table\" GROUP BY \"timestamp\"",
+			want: "SELECT number_field_values[indexOf(number_field_keys,'column')] AS \"column\", toDateTime64(toStartOfInterval(timestamp, toIntervalSecond(7200),'UTC'),9) AS \"bucket_timestamp\" FROM \"table\" GROUP BY \"column\", bucket_timestamp",
 		},
 		{
-			name: "range(0,2000,8000,2000)",
-			sql:  "select column from table group by range(plt::field, 0, 8000, 2000)",
-			want: "SELECT number_field_values[indexOf(number_field_keys,'column')] AS \"column\", intDiv(number_field_values[indexOf(number_field_keys,'plt')],2000) * 2000 AS \"range\" FROM \"table\" GROUP BY \"range\"",
-		},
-		{
-			name: "count,range(0,8000,2000)",
-			sql:  "select count(plt::field) from table GROUP BY range(plt::field, 0, 8000, 2000)",
-			want: "SELECT COUNT(number_field_values[indexOf(number_field_keys,'plt')]) AS \"6b5762ef4e456f8a\", intDiv(number_field_values[indexOf(number_field_keys,'plt')],2000) * 2000 AS \"range\" FROM \"table\" GROUP BY \"range\"",
-		},
-		{
-			name: "time(2m0s)",
+			name: "groupby,time()",
 			sql:  "select sum(http_status_code_count::field),http_status_code::tag from table GROUP BY time(),http_status_code::tag",
-			want: "SELECT SUM(number_field_values[indexOf(number_field_keys,'http_status_code_count')]) AS \"339c9df3d700c4f0\", tag_values[indexOf(tag_keys,'http_status_code')] AS \"http_status_code\", toInt64(toStartOfInterval(timestamp, toIntervalSecond(60))) AS \"timestamp\" FROM \"table\" GROUP BY \"timestamp\", \"http_status_code\"",
+			want: "SELECT SUM(number_field_values[indexOf(number_field_keys,'http_status_code_count')]) AS \"339c9df3d700c4f0\", tag_values[indexOf(tag_keys,'http_status_code')] AS \"http_status_code\", toDateTime64(toStartOfInterval(timestamp, toIntervalSecond(60),'UTC'),9) AS \"bucket_timestamp\" FROM \"table\" GROUP BY \"http_status_code\", bucket_timestamp",
+		},
+		{
+			name: "time(),column",
+			sql:  "select http_status_code::tag from table GROUP BY time()",
+			want: "SELECT tag_values[indexOf(tag_keys,'http_status_code')] AS \"http_status_code\", toDateTime64(toStartOfInterval(timestamp, toIntervalSecond(60),'UTC'),9) AS \"bucket_timestamp\" FROM \"table\" GROUP BY \"http_status_code\", bucket_timestamp",
+		},
+		{
+			name: "no group",
+			sql:  "select max(http_status_code::tag) from table",
+			want: "SELECT MAX(tag_values[indexOf(tag_keys,'http_status_code')]) AS \"61421335fd474c8e\" FROM \"table\"",
 		},
 	}
 
@@ -495,7 +506,8 @@ func TestGroupBy(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			p := Parser{
 				ctx: &Context{
-					originalTimeUnit: tsql.Second,
+					originalTimeUnit: tsql.Nanosecond,
+					targetTimeUnit:   tsql.Millisecond,
 				},
 			}
 			parse := influxql.NewParser(strings.NewReader(test.sql))
@@ -510,16 +522,25 @@ func TestGroupBy(t *testing.T) {
 			expr := goqu.From("table")
 			require.Truef(t, ok, "parse query is not select statement")
 
-			expr, _, columns, err := p.parseQueryOnExpr(selectStmt.Fields, expr)
+			expr, handler, columns, err := p.parseQueryOnExpr(selectStmt.Fields, expr)
 
-			expr, _, err = p.ParseGroupByOnExpr(selectStmt.Dimensions, expr, nil, columns)
+			expr, _, err = p.ParseGroupByOnExpr(selectStmt.Dimensions, expr, &handler, columns)
 
 			require.NoError(t, err)
 
 			sql, _, err := expr.ToSQL()
-
 			require.NoError(t, err)
-			require.Equal(t, test.want, sql)
+
+			t.Log(sql)
+			if strings.Index(test.want, strings.ToUpper("group by")) <= 0 {
+				require.Equal(t, test.want, sql)
+				return
+			}
+			sqlGroup := strings.Split(sql, strings.ToUpper("group by"))[1]
+			wantGroup := strings.Split(test.want, strings.ToUpper("group by"))[1]
+
+			require.ElementsMatch(t, strings.Split(wantGroup, ","), strings.Split(sqlGroup, ","))
+			//require.Equal(t, test.want, sql)
 		})
 	}
 }
@@ -538,8 +559,8 @@ func TestOffsetLimit(t *testing.T) {
 		},
 		{
 			name: "offset",
-			sql:  "select * from table offset 0",
-			want: "SELECT * FROM \"table\" LIMIT 100", // offset zero is ignore, limit model.DefaultLimtSize
+			sql:  "select * from table offset 100",
+			want: "SELECT * FROM \"table\" OFFSET 100", // offset zero is ignore, limit model.DefaultLimtSize
 		},
 		{
 			name: "limit,offset",
@@ -549,7 +570,7 @@ func TestOffsetLimit(t *testing.T) {
 		{
 			name: "none",
 			sql:  "SELECT * FROM table",
-			want: "SELECT * FROM \"table\" LIMIT 100",
+			want: "SELECT * FROM \"table\"",
 		},
 	}
 
@@ -601,14 +622,19 @@ func TestOrderBy(t *testing.T) {
 			want: "SELECT number_field_values[indexOf(number_field_keys,'column1')] AS \"column1\" FROM \"table\"",
 		},
 		{
-			name: "asc, desc",
-			sql:  "select column1,column2 from table order by column1 asc,column2 desc",
-			want: "SELECT number_field_values[indexOf(number_field_keys,'column1')] AS \"column1\", number_field_values[indexOf(number_field_keys,'column2')] AS \"column2\" FROM \"table\" ORDER BY \"column1\" ASC, \"column2\" DESC",
+			name: "asc",
+			sql:  "select column1 from table order by column1 asc",
+			want: "SELECT number_field_values[indexOf(number_field_keys,'column1')] AS \"column1\" FROM \"table\" ORDER BY \"column1\" ASC",
+		},
+		{
+			name: "desc",
+			sql:  "select column1 from table order by column1 desc",
+			want: "SELECT number_field_values[indexOf(number_field_keys,'column1')] AS \"column1\" FROM \"table\" ORDER BY \"column1\" DESC",
 		},
 		{
 			name: "max",
-			sql:  "select service_id::tag,service_name::tag,service_agent_platform::tag,max(timestamp) from table GROUP BY service_id::tag ORDER BY max(timestamp) DESC",
-			want: "SELECT MAX(timestamp) AS \"1362043e612fc3f5\", tag_values[indexOf(tag_keys,'service_id')] AS \"service_id\", tag_values[indexOf(tag_keys,'service_name')] AS \"service_name\", tag_values[indexOf(tag_keys,'service_agent_platform')] AS \"service_agent_platform\" FROM \"table\" ORDER BY \"1362043e612fc3f5\" DESC",
+			sql:  "select service_id::tag,max(timestamp) from table GROUP BY service_id::tag ORDER BY max(timestamp) DESC",
+			want: "SELECT MAX(timestamp) AS \"1362043e612fc3f5\", tag_values[indexOf(tag_keys,'service_id')] AS \"service_id\" FROM \"table\" ORDER BY \"1362043e612fc3f5\" DESC",
 		},
 	}
 	for _, test := range tests {

@@ -30,49 +30,51 @@ import (
 	tsql "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql"
 )
 
-const ClickhouseKind = "Clickhouse"
-
 func (p *Parser) ParseClickhouse(s *influxql.SelectStatement) (tsql.Query, error) {
 
 	sources, err := p.from(s.Sources)
 
 	if err != nil {
-		return nil, fmt.Errorf("select stmt parse to from is error: %v", err)
+		return nil, errors.Wrap(err, "select stmt parse to from is error")
 	}
 
 	expr := goqu.From("metric") // metric is fake, in execution layer it's real table
-	p.appendTimeKeyByExpr(expr)
+
+	expr = p.appendTimeKeyByExpr(expr)
 
 	// add parser filter to expr
 	expr, err = p.filterOnExpr(expr)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "select stmt parse to filter is error")
 	}
 
 	expr, err = p.conditionOnExpr(expr, s)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "select stmt parse to condition is error")
 	}
 
 	// select
 	expr, handlers, columns, err := p.parseQueryOnExpr(s.Fields, expr)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "select stmt parse to select is error")
 	}
 
-	expr, tailLiters, err := p.ParseGroupByOnExpr(s.Dimensions, expr, handlers, columns)
+	expr, tailLiters, err := p.ParseGroupByOnExpr(s.Dimensions, expr, &handlers, columns)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "select stmt parse to group by is error")
 	}
 
 	expr, err = p.ParseOrderByOnExpr(s.SortFields, expr, columns)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "select stmt parse to order by is error")
 	}
 
+	if len(tailLiters) > 0 {
+		expr = expr.OrderAppend(goqu.I("%s").Asc()) //Placeholder!!!
+	}
 	expr, err = p.ParseOffsetAndLimitOnExpr(s, expr)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "select stmt parse to offset and limit is error")
 	}
 	return QueryClickhouse{
 		sources:   sources,
@@ -80,8 +82,10 @@ func (p *Parser) ParseClickhouse(s *influxql.SelectStatement) (tsql.Query, error
 		column:    handlers,
 		start:     p.ctx.start,
 		end:       p.ctx.end,
-		kind:      ClickhouseKind,
+		kind:      model.ClickhouseKind,
 		ctx:       p.ctx,
+		expr:      expr,
+		debug:     p.debug,
 	}, nil
 }
 
@@ -146,18 +150,17 @@ func getAggsOrderScript(ctx *Context, expr influxql.Expr) (string, error) {
 }
 
 func (p *Parser) ParseOffsetAndLimitOnExpr(s *influxql.SelectStatement, expr *goqu.SelectDataset) (*goqu.SelectDataset, error) {
-	if s.Limit <= 0 {
-		s.Limit = model.DefaultLimtSize
+	if s.Limit > 0 {
+		expr = expr.Limit(uint(s.Limit))
 	}
 	if s.Offset <= 0 {
 		s.Offset = 0
 	}
 	expr = expr.Offset(uint(s.Offset))
-	expr = expr.Limit(uint(s.Limit))
 	return expr, nil
 }
 
-func (p *Parser) ParseGroupByOnExpr(dimensions influxql.Dimensions, expr *goqu.SelectDataset, handlers []*SQLColumnHandler, columns map[string]string) (*goqu.SelectDataset, map[string]string, error) {
+func (p *Parser) ParseGroupByOnExpr(dimensions influxql.Dimensions, expr *goqu.SelectDataset, handlers *[]*SQLColumnHandler, columns map[string]string) (*goqu.SelectDataset, map[string]string, error) {
 	if len(dimensions) <= 0 {
 		return expr, nil, nil
 	}
@@ -166,16 +169,20 @@ func (p *Parser) ParseGroupByOnExpr(dimensions influxql.Dimensions, expr *goqu.S
 		return nil, nil, err
 	}
 
-	for _, script := range liters {
-		c := script
-		if newName, ok := columns[script]; ok {
-			c = newName
+	groupExpress := make(map[string]goqu.Expression)
+	if len(liters) > 0 {
+		for script, columnName := range columns {
+			groupExpress[script] = goqu.C(columnName)
 		}
-		// simple column
-		expr = expr.GroupByAppend(goqu.C(c))
-		continue
+		for _, liter := range liters {
+			if _, ok := groupExpress[liter]; !ok {
+				groupExpress[liter] = goqu.L(liter)
+			}
+		}
 	}
-
+	for _, express := range groupExpress {
+		expr = expr.GroupByAppend(express)
+	}
 	return expr, tailLiters, nil
 }
 func (p *Parser) parseQueryOnExpr(fields influxql.Fields, expr *goqu.SelectDataset) (*goqu.SelectDataset, []*SQLColumnHandler, map[string]string, error) {
@@ -195,7 +202,7 @@ func (p *Parser) parseQueryOnExpr(fields influxql.Fields, expr *goqu.SelectDatas
 	}
 	return expr, handlers, columns, nil
 }
-func (p *Parser) parseQueryDimensionsByExpr(exprSelect *goqu.SelectDataset, dimensions influxql.Dimensions, handler []*SQLColumnHandler) (*goqu.SelectDataset, []string, map[string]string, error) {
+func (p *Parser) parseQueryDimensionsByExpr(exprSelect *goqu.SelectDataset, dimensions influxql.Dimensions, handler *[]*SQLColumnHandler) (*goqu.SelectDataset, []string, map[string]string, error) {
 	var exprList []string
 
 	tailExpr := make(map[string]string)
@@ -230,84 +237,73 @@ func (p *Parser) parseQueryDimensionsByExpr(exprSelect *goqu.SelectDataset, dime
 				if len(p.ctx.TimeKey()) <= 0 {
 					p.ctx.timeKey = model.TimestampKey
 				}
-				exprSelect = exprSelect.SelectAppend(goqu.L(fmt.Sprintf("toInt64(toStartOfInterval(timestamp, toIntervalSecond(%v)))", interval)).As(p.ctx.TimeKey()))
 
-				// ORDER BY timestamp with fill from 0 to 0 step 0
+				timeBucketColumn := fmt.Sprintf("bucket_%s", p.ctx.TimeKey())
+				intervalSeconds := interval / int64(tsql.Second)
+
+				bucketStartTime := (start / interval) * interval
+				bucketEndTime := (end / interval) * interval
+
+				exprSelect = exprSelect.SelectAppend(goqu.L(fmt.Sprintf("toDateTime64(toStartOfInterval(timestamp, toIntervalSecond(%v),'UTC'),9)", intervalSeconds)).As(timeBucketColumn))
+
 				// todo goqu order statement should be literal + asc, but with fill is order by `column` [asc/desc] with fill from %left to %right step %interval
-				tailExpr[p.ctx.TimeKey()] = fmt.Sprintf("%s with fill from %v to %v step %v", p.ctx.TimeKey(), start, end, interval)
+				// buck_timestamp with fill from  fromUnixTimestamp64Nano(cast(1657584000000000000, 'Int64')) to fromUnixTimestamp64Nano(cast(1657756800000000000, 'Int64')) step toDateTime64(86400,9)
+				tailExpr[timeBucketColumn] = fmt.Sprintf("%s with fill from fromUnixTimestamp64Nano(cast(%v, 'Int64')) to fromUnixTimestamp64Nano(cast(%v, 'Int64')) step  toDateTime64(%v,9,'UTC')", timeBucketColumn, bucketStartTime, bucketEndTime, intervalSeconds)
 
-				exprList = append(exprList, p.ctx.TimeKey())
+				exprList = append(exprList, timeBucketColumn)
 
-				handler = append(handler, &SQLColumnHandler{
+				*(handler) = append(*(handler), &SQLColumnHandler{
 					field: &influxql.Field{
 						Expr:  expr,
-						Alias: p.ctx.TimeKey(),
+						Alias: "time",
 					},
+					ctx: p.ctx,
 				})
-
 				continue
 			} else if expr.Name == "range" {
-				if len(tailExpr) > 0 {
-					return nil, nil, nil, fmt.Errorf("with fill statement should be one function")
-				}
-
-				// GROUP BY range(plt::field, 0,8000,1000) field, min, max, step
-				err := mustCallArgsMinNum(expr, 3)
-				if err != nil {
-					return exprSelect, nil, nil, err
-				}
-
-				field, ok := expr.Args[0].(*influxql.VarRef)
-				if !ok {
-					return exprSelect, nil, nil, fmt.Errorf("args[0] is not reference in 'range' function")
-				}
-
-				//
-				min, ok := expr.Args[1].(*influxql.IntegerLiteral)
-				if !ok {
-					return exprSelect, nil, nil, fmt.Errorf("args[1] is not reference in 'range' function")
-				}
-
-				max, ok := expr.Args[2].(*influxql.IntegerLiteral)
-				if !ok {
-					return exprSelect, nil, nil, fmt.Errorf("args[2] is not reference in 'range' function")
-				}
-
-				step, ok := expr.Args[3].(*influxql.IntegerLiteral)
-				if !ok {
-					return exprSelect, nil, nil, fmt.Errorf("args[3] is not reference in 'range' function")
-				}
-
-				tailExpr["range"] = fmt.Sprintf("order by %v with fill from %v to %v step %v",
-					ckGetKeyName(field, influxql.AnyField), min.Val, max.Val, step.Val)
-
-				// add select
-				exprSelect = exprSelect.SelectAppend(goqu.L(fmt.Sprintf("intDiv(%s,%v) * %v", ckGetKeyName(field, influxql.AnyField), step, step)).As("range"))
-
-				// add group by
-				exprList = append(exprList, "range")
-
-				// add select handler
-				handler = append(handler, &SQLColumnHandler{
-					field: &influxql.Field{
-						Expr:  expr,
-						Alias: "range",
-					},
-				})
-
 				continue
 			}
 
-			script, err := getScriptExpression(p.ctx, dim.Expr, influxql.Tag, nil)
+			script, err := getScriptExpressionOnCk(p.ctx, dim.Expr, influxql.AnyField, nil)
 			if err != nil {
 				return exprSelect, nil, nil, nil
 			}
 			exprList = append(exprList, script)
 		}
-		script := getExprStringAndFlagByExpr(dim.Expr, influxql.Tag)
+		script := getExprStringAndFlagByExpr(dim.Expr, influxql.AnyField)
 		exprList = append(exprList, script)
 	}
 	return exprSelect, exprList, tailExpr, nil
+}
+
+func (p *Parser) getExprArgsOnRange(expr *influxql.Call) ([][]int64, error) {
+	var arr [][]int64
+	var from interface{}
+	for i, item := range expr.Args[1:] {
+		val, ok, err := getLiteralValue(p.ctx, item)
+		if err != nil {
+			return nil, err
+		}
+		if !ok {
+			return nil, fmt.Errorf("args[%d] is literal in 'range' function", i)
+		}
+		if i%2 == 0 {
+			from = val
+			continue
+		}
+		var rang []int64
+		rang = append(rang, from.(int64))
+		rang = append(rang, val.(int64))
+		arr = append(arr, rang)
+		from = nil
+	}
+	if from != nil {
+		var rang []int64
+		rang = append(rang, from.(int64))
+		arr = append(arr, rang)
+		from = nil
+	}
+	return arr, nil
 }
 
 func getExprStringAndFlagByExpr(expr influxql.Expr, deftyp influxql.DataType) (key string) {
@@ -451,12 +447,13 @@ func (p *Parser) parseFiledRefByExpr(expr influxql.Expr, cols map[string]string)
 	return nil
 }
 
-func (p *Parser) appendTimeKeyByExpr(expr *goqu.SelectDataset) {
+func (p *Parser) appendTimeKeyByExpr(expr *goqu.SelectDataset) *goqu.SelectDataset {
 	start, end := p.ctx.Range(true)
 	expr = expr.Where(
-		goqu.C(p.ctx.timeKey).Gte(start),
-		goqu.C(p.ctx.timeKey).Lt(end),
+		goqu.C(p.ctx.timeKey).Gte(goqu.L("fromUnixTimestamp64Nano(cast(?,'Int64'))", start)),
+		goqu.C(p.ctx.timeKey).Lt(goqu.L("fromUnixTimestamp64Nano(cast(?,'Int64'))", end)),
 	)
+	return expr
 }
 
 func (p *Parser) from(sources influxql.Sources) ([]*model.Source, error) {
@@ -481,32 +478,37 @@ func (p *Parser) from(sources influxql.Sources) ([]*model.Source, error) {
 func filterToExpr(filters []*model.Filter, expr *goqu.SelectDataset) (*goqu.SelectDataset, error) {
 	or := goqu.Or()
 	expressionList := goqu.And()
-
 	for _, item := range filters {
+		key := item.Key
+		keyArr := strings.Split(key, ".")
+		if len(keyArr) > 1 && keyArr[0] == "tags" {
+			key = ckTagKey(keyArr[1])
+		}
+
 		switch item.Operator {
 		case "eq", "=", "":
-			expressionList = expressionList.Append(goqu.C(item.Key).Eq(item.Value))
+			expressionList = expressionList.Append(goqu.L(key).Eq(item.Value))
 		case "neq", "!=":
-			expressionList = expressionList.Append(goqu.C(item.Key).Neq(item.Value))
+			expressionList = expressionList.Append(goqu.L(key).Neq(item.Value))
 		case "gt", ">":
-			expressionList = expressionList.Append(goqu.C(item.Key).Gt(item.Value))
+			expressionList = expressionList.Append(goqu.L(key).Gt(item.Value))
 		case "gte", ">=":
-			expressionList = expressionList.Append(goqu.C(item.Key).Gte(item.Value))
+			expressionList = expressionList.Append(goqu.L(key).Gte(item.Value))
 		case "lt", "<":
-			expressionList = expressionList.Append(goqu.C(item.Key).Lt(item.Value))
+			expressionList = expressionList.Append(goqu.L(key).Lt(item.Value))
 		case "lte", "<=":
-			expressionList = expressionList.Append(goqu.C(item.Key).Lte(item.Value))
+			expressionList = expressionList.Append(goqu.L(key).Lte(item.Value))
 		case "in":
 			if values, ok := item.Value.([]interface{}); ok {
-				expressionList = expressionList.Append(goqu.C(item.Key).In(values))
+				expressionList = expressionList.Append(goqu.L(key).In(values))
 			}
 		case "match":
-			expressionList = expressionList.Append(goqu.C(item.Key).Like(fmt.Sprintf("%%%v%%", item.Value)))
+			expressionList = expressionList.Append(goqu.L(key).Like(fmt.Sprintf("%%%v%%", item.Value)))
 		case "nmatch":
-			expressionList = expressionList.Append(goqu.C(item.Key).NotLike(fmt.Sprintf("%%%v%%", item.Value)))
+			expressionList = expressionList.Append(goqu.L(key).NotLike(fmt.Sprintf("%%%v%%", item.Value)))
 
 		case "or_eq":
-			orExpr := goqu.C(item.Key).Eq(item.Value)
+			orExpr := goqu.L(key).Eq(item.Value)
 
 			if or.IsEmpty() {
 				or = goqu.Or(orExpr)
@@ -516,7 +518,7 @@ func filterToExpr(filters []*model.Filter, expr *goqu.SelectDataset) (*goqu.Sele
 
 		case "or_in":
 			if values, ok := item.Value.([]interface{}); ok {
-				orExpr := goqu.C(item.Key).In(values)
+				orExpr := goqu.L(key).In(values)
 				if or.IsEmpty() {
 					or = goqu.Or(orExpr)
 				} else {
@@ -633,7 +635,7 @@ func (p *Parser) parseKeyConditionOnExpr(ref *influxql.VarRef, op influxql.Token
 	if !ok {
 		return nil, false, nil
 	}
-	keyLiteral := GetColumnLiteral(ckGetKeyName(ref, influxql.Tag))
+	keyLiteral := GetColumnLiteral(ckGetKeyName(ref, influxql.AnyField))
 
 	switch op {
 	case influxql.EQ:
@@ -697,7 +699,7 @@ func ckTagKey(key string) string {
 
 func (p *Parser) parseScriptConditionOnExpr(cond influxql.Expr, exprList exp.ExpressionList) (exp.ExpressionList, error) {
 	fields := make(map[string]bool)
-	s, err := getScriptExpressionOnCk(p.ctx, cond, influxql.Tag, fields)
+	s, err := getScriptExpressionOnCk(p.ctx, cond, influxql.AnyField, fields)
 	if err != nil {
 		return exprList, err
 	}
@@ -747,7 +749,7 @@ func getScriptExpressionOnCk(ctx *Context, expr influxql.Expr, deftyp influxql.D
 		}
 		return "", fmt.Errorf("not support function '%s' in script expression", expr.Name)
 	case *influxql.ParenExpr:
-		s, err := getScriptExpression(ctx, expr.Expr, deftyp, fields)
+		s, err := getScriptExpressionOnCk(ctx, expr.Expr, deftyp, fields)
 		if err != nil {
 			return "", err
 		}

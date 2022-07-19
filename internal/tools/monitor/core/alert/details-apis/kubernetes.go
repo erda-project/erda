@@ -62,7 +62,7 @@ func (p *provider) getPodInfo(clusterName, podName string, start, end int64) (*P
 	searchSource := elastic.NewSearchSource().Query(boolQuery).Size(0)
 	searchSource = searchSource.Aggregation("pod", elastic.NewTopHitsAggregation().Size(1).Sort(model.TimestampKey, false))
 
-	resp, err := p.esSearchRaw.QueryRaw([]string{"kubernetes_pod_container"},
+	resp, err := p.EsSearchRaw.QueryRaw([]string{"kubernetes_pod_container"},
 		[]string{clusterName}, start, end, searchSource)
 	if err != nil {
 		if esErr, ok := err.(*elastic.Error); ok {
@@ -109,7 +109,7 @@ func (p *provider) getContainers(clusterName, podName string, start, end int64, 
 	const containerIDKey = model.TagKey + ".container_id"
 	searchSource.Aggregation(containerIDKey, elastic.NewTermsAggregation().Field(containerIDKey).
 		SubAggregation("container", elastic.NewTopHitsAggregation().Size(1).Sort(model.TimestampKey, false).Sort(model.FieldKey+".finished_at", false)))
-	resp, err := p.esSearchRaw.QueryRaw([]string{"docker_container_summary"},
+	resp, err := p.EsSearchRaw.QueryRaw([]string{"docker_container_summary"},
 		[]string{clusterName}, start, end, searchSource)
 	if err != nil {
 		if esErr, ok := err.(*elastic.Error); ok {

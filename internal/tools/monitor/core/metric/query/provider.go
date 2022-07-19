@@ -49,8 +49,6 @@ type config struct {
 		GroupFiles     []string `file:"group_files"`
 		MetricMetaPath string   `file:"metric_meta_path"`
 	} `file:"metric_meta"`
-
-	Keypass map[string][]string `file:"keypass"`
 }
 
 // +provider
@@ -92,7 +90,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	}
 	p.metricService = &metricService{
 		p:     p,
-		query: query.New(p.Cfg.Keypass, p.Storage, p.CkStorageReader),
+		query: query.New(p.Storage, p.CkStorageReader),
 	}
 	if p.Register != nil {
 		pb.RegisterMetricServiceImp(p.Register, p.metricService, apis.Options(),

@@ -23,6 +23,7 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/kv"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/pkg/common/errors"
 	"github.com/erda-project/erda/pkg/math"
@@ -72,32 +73,24 @@ func (p *provider) getUv(sdk *cptype.SDK) (*kv.KV, error) {
 
 func (p *provider) getApdex(sdk *cptype.SDK) (*kv.KV, error) {
 	// Satisfied*1 + Tolerating*0.5 + Frustrated*0）/ Total
-	statement := fmt.Sprintf("SELECT count(plt::field) " +
+	stmt := "SELECT count(plt::field) " +
 		"FROM ta_timing " +
 		"WHERE tk::tag=$terminus_key " +
-		"GROUP BY range(plt::field, 0, 2000, 2000, 8000, 8000)")
+		"%s" +
+		"GROUP BY range(pt::field, 0, 2000, 2000, 8000, 8000)"
 
-	params := map[string]*structpb.Value{
-		"terminus_key": structpb.NewStringValue(p.InParamsPtr.TenantId),
-	}
-
-	request := &metricpb.QueryWithInfluxFormatRequest{
-		Start:     strconv.FormatInt(p.InParamsPtr.StartTime, 10),
-		End:       strconv.FormatInt(p.InParamsPtr.EndTime, 10),
-		Statement: statement,
-		Params:    params,
-	}
-	response, err := p.Metric.QueryWithInfluxFormat(sdk.Ctx, request)
+	satisfiedCount, err := p.GetData(sdk, fmt.Sprintf(stmt, "AND plt::field >= 0 and  plt::field < 2000"))
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	rows := response.Results[0].Series[0].Rows
-	if len(rows) != 3 {
-		return nil, errors.NewInternalServerErrorMessage("unexpected query result")
+	toleratingCount, err := p.GetData(sdk, fmt.Sprintf(stmt, "AND plt::field >= 2000 and  plt::field < 8000"))
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
 	}
-	satisfiedCount := rows[0].Values[1].GetNumberValue()
-	toleratingCount := rows[1].Values[1].GetNumberValue()
-	frustratedCount := rows[2].Values[1].GetNumberValue()
+	frustratedCount, err := p.GetData(sdk, fmt.Sprintf(stmt, "AND plt::field >= 8000"))
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
 	totalCount := satisfiedCount + toleratingCount + frustratedCount
 	card := &kv.KV{Key: sdk.I18n(apdex)}
 
@@ -111,6 +104,27 @@ func (p *provider) getApdex(sdk *cptype.SDK) (*kv.KV, error) {
 	return card, nil
 }
 
+func (p *provider) GetData(sdk *cptype.SDK, stmt string) (float64, error) {
+	params := map[string]*structpb.Value{
+		"terminus_key": structpb.NewStringValue(p.InParamsPtr.TenantId),
+	}
+
+	request := &metricpb.QueryWithInfluxFormatRequest{
+		Start:     strconv.FormatInt(p.InParamsPtr.StartTime, 10),
+		End:       strconv.FormatInt(p.InParamsPtr.EndTime, 10),
+		Statement: stmt,
+		Params:    params,
+	}
+	response, err := p.Metric.QueryWithInfluxFormat(sdk.Ctx, request)
+	if err != nil {
+		return 0, err
+	}
+	rows := response.Results[0].Series[0].Rows
+	if rows == nil || len(rows) == 0 {
+		return 0, errors.NewInternalServerErrorMessage("unexpected query result")
+	}
+	return rows[0].Values[0].GetNumberValue(), nil
+}
 func (p *provider) getAvgPageLoadDuration(sdk *cptype.SDK) (*kv.KV, error) {
 	statement := fmt.Sprintf("SELECT avg(plt::field) " +
 		"FROM ta_timing " +

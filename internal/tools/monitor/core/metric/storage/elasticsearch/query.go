@@ -149,3 +149,7 @@ func getMetricsAndClustersFromSources(sources []*model.Source) (metrics []string
 	}
 	return metrics, clusters
 }
+
+func (p *provider) Select(metric []string) bool {
+	return true
+}

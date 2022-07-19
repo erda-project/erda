@@ -42,7 +42,7 @@ type provider struct {
 	bundle      *bundle.Bundle
 	cmdb        *cmdb.Cmdb
 	metricq     metricq.Queryer
-	esSearchRaw elasticsearch.Interface `autowired:"metric-storage"`
+	EsSearchRaw elasticsearch.Interface `autowired:"metric-storage"`
 	service     queryServiceImpl
 	t           i18n.Translator
 	ClusterSvc  clusterpb.ClusterServiceServer `autowired:"erda.core.clustermanager.cluster.ClusterService"`
