@@ -29,10 +29,10 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/core/openapi/legacy/conf"
+	"github.com/erda-project/erda/internal/core/openapi/legacy/util"
 	identity "github.com/erda-project/erda/internal/core/user/common"
 	"github.com/erda-project/erda/internal/core/user/impl/uc"
 	"github.com/erda-project/erda/pkg/discover"
-	"github.com/erda-project/erda/pkg/strutil"
 )
 
 type GetUserState int
@@ -142,7 +142,7 @@ func (u *User) get(req *http.Request, state GetUserState) (interface{}, AuthResu
 		}
 		orgHeader := req.Header.Get("ORG")
 		domainHeader := req.Header.Get("domain")
-		noOrgID, orgID, err := u.GetOrgInfo(orgHeader, domainHeader, req.Host)
+		noOrgID, orgID, err := u.GetOrgInfo(orgHeader, domainHeader)
 		if err != nil {
 			return nil, AuthResult{InternalAuthErr, err.Error()}
 		}
@@ -173,37 +173,25 @@ func (u *User) get(req *http.Request, state GetUserState) (interface{}, AuthResu
 	panic("unreachable")
 }
 
-// 1. if org exists in req.Header, use it as org-id
-// 2. if domain exists in req.Header, use it to get org info
-// 3. use req.Host whatever it is to get org info
-func (u *User) GetOrgInfo(orgHeader, domainHeader, host string) (bool, uint64, error) {
+func (u *User) GetOrgInfo(orgHeader, domainHeader string) (bool, uint64, error) {
 	var orgID uint64
 	var noOrgID bool
-	logrus.Infof("org: %v, domain: %v, host: %v", orgHeader, domainHeader, host)
+	var orgName string
+	logrus.Debugf("org: %v, domain: %v.", orgHeader, domainHeader)
 	if orgHeader != "" && orgHeader != "-" {
-		org, err := u.bundle.GetOrg(orgHeader)
-		if err != nil {
-			return false, 0, err
-		}
-		orgID = org.ID
-		return noOrgID, orgID, err
-	}
-
-	var domainStr string
-	if domainHeader != "" {
-		domainStr = domainHeader
+		orgName = orgHeader
 	} else {
-		domainStr = host
+		orgName = util.GetOrgByDomain(domainHeader)
+		if orgName == "" {
+			noOrgID = true
+			return noOrgID, 0, nil
+		}
 	}
-	domain := strutil.Split(domainStr, ":")[0]
-	org, err := u.bundle.GetDopOrgByDomain(domain, string(u.info.ID))
+	org, err := u.bundle.GetOrg(orgName)
 	if err != nil {
 		return false, 0, err
-	} else if org == nil {
-		noOrgID = true
-	} else {
-		orgID = org.ID
 	}
+	orgID = org.ID
 	return noOrgID, orgID, nil
 }
 

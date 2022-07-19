@@ -32,18 +32,11 @@ func TestUser_GetOrgInfo(t *testing.T) {
 		}, nil
 	})
 
-	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetDopOrgByDomain", func(b *bundle.Bundle, domain string, userID string) (*apistructs.OrgDTO, error) {
-		return &apistructs.OrgDTO{
-			ID: 1,
-		}, nil
-	})
-
 	defer monkey.UnpatchAll()
 
 	type args struct {
 		orgHeader    string
 		domainHeader string
-		host         string
 	}
 	tests := []struct {
 		name    string
@@ -64,22 +57,20 @@ func TestUser_GetOrgInfo(t *testing.T) {
 				orgHeader:    "-",
 				domainHeader: "erda.cloud",
 			},
-			want:  false,
-			want1: 1,
+			want: true,
 		},
 		{
 			args: args{
-				orgHeader: "-",
-				host:      "erda.cloud",
+				orgHeader:    "",
+				domainHeader: "erda.cloud",
 			},
-			want:  false,
-			want1: 1,
+			want: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			u := &User{}
-			got, got1, err := u.GetOrgInfo(tt.args.orgHeader, tt.args.domainHeader, tt.args.host)
+			got, got1, err := u.GetOrgInfo(tt.args.orgHeader, tt.args.domainHeader)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("User.GetOrgInfo() error = %v, wantErr %v", err, tt.wantErr)
 				return
