@@ -157,7 +157,7 @@ func (u *User) get(req *http.Request, state GetUserState) (interface{}, AuthResu
 				return nil, AuthResult{InternalAuthErr, err.Error()}
 			}
 			if !role.Access {
-				return nil, AuthResult{AuthFail, fmt.Sprintf("access denied: userID: %v, orgID: %v", u.info.ID, orgID)}
+				return nil, AuthResult{AuthFail, fmt.Sprintf("org access denied: userID: %v, orgID: %v", u.info.ID, orgID)}
 			}
 			var scopeinfo ScopeInfo
 			scopeinfo.OrgID = orgID
@@ -174,22 +174,24 @@ func (u *User) get(req *http.Request, state GetUserState) (interface{}, AuthResu
 }
 
 func (u *User) GetOrgInfo(orgHeader, domainHeader string) (orgID uint64, err error) {
-	logrus.Debugf("org: %v, domain: %v.", orgHeader, domainHeader)
+	logrus.Debugf("orgHeader: %v, domainHeader: %v", orgHeader, domainHeader)
 	var orgName string
-	// get from header firstly
+	// try to get from org header firstly
 	if orgHeader != "" && orgHeader != "-" {
 		orgName = orgHeader
 	}
-	// try get from domain
+	// try to get from domain header
 	if orgName == "" {
 		orgName, err = util.GetOrgByDomain(domainHeader)
 		if err != nil {
 			return 0, err
 		}
 	}
+	// if cannot get orgName, just return
 	if orgName == "" {
 		return 0, nil
 	}
+	// query org info
 	org, err := u.bundle.GetOrg(orgName)
 	if err != nil {
 		return 0, err
