@@ -140,27 +140,11 @@ func (u *User) get(req *http.Request, state GetUserState) (interface{}, AuthResu
 		if state == GotInfo {
 			return u.info, AuthResult{AuthSucc, ""}
 		}
-		// 1. 如果 request.Header 中存在 'ORG', 直接使用它作为 OrgID
-		// 2. 否则 使用 request.Host 来查询 OrgID
 		orgHeader := req.Header.Get("ORG")
-		var orgID uint64
-		var noOrgID bool
-		if orgHeader != "" && orgHeader != "-" {
-			org, err := u.bundle.GetOrg(orgHeader)
-			if err != nil {
-				return nil, AuthResult{InternalAuthErr, err.Error()}
-			}
-			orgID = org.ID
-		} else {
-			domain := strutil.Split(req.Host, ":")[0]
-			org, err := u.bundle.GetDopOrgByDomain(domain, string(u.info.ID))
-			if err != nil {
-				return nil, AuthResult{InternalAuthErr, err.Error()}
-			} else if org == nil {
-				noOrgID = true
-			} else {
-				orgID = org.ID
-			}
+		domainHeader := req.Header.Get("domain")
+		noOrgID, orgID, err := u.GetOrgInfo(orgHeader, domainHeader, req.Host)
+		if err != nil {
+			return nil, AuthResult{InternalAuthErr, err.Error()}
 		}
 		if !noOrgID {
 			role, err := u.bundle.ScopeRoleAccess(string(u.info.ID), &apistructs.ScopeRoleAccessRequest{
@@ -187,6 +171,40 @@ func (u *User) get(req *http.Request, state GetUserState) (interface{}, AuthResu
 		}
 	}
 	panic("unreachable")
+}
+
+// 1. if org exists in req.Header, use it as org-id
+// 2. if domain exists in req.Header, use it to get org info
+// 3. use req.Host whatever it is to get org info
+func (u *User) GetOrgInfo(orgHeader, domainHeader, host string) (bool, uint64, error) {
+	var orgID uint64
+	var noOrgID bool
+	logrus.Infof("org: %v, domain: %v, host: %v", orgHeader, domainHeader, host)
+	if orgHeader != "" && orgHeader != "-" {
+		org, err := u.bundle.GetOrg(orgHeader)
+		if err != nil {
+			return false, 0, err
+		}
+		orgID = org.ID
+		return noOrgID, orgID, err
+	}
+
+	var domainStr string
+	if domainHeader != "" {
+		domainStr = domainHeader
+	} else {
+		domainStr = host
+	}
+	domain := strutil.Split(domainStr, ":")[0]
+	org, err := u.bundle.GetDopOrgByDomain(domain, string(u.info.ID))
+	if err != nil {
+		return false, 0, err
+	} else if org == nil {
+		noOrgID = true
+	} else {
+		orgID = org.ID
+	}
+	return noOrgID, orgID, nil
 }
 
 func (u *User) IsLogin(req *http.Request) AuthResult {
