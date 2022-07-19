@@ -31,7 +31,7 @@ func GetOrgByDomain(domain string) (string, error) {
 		}
 	}
 	if !valid {
-		return "", fmt.Errorf("invalid domain")
+		return "", fmt.Errorf("invalid domain: %s", domain)
 	}
 	for _, rootDomain := range conf.RootDomainList() {
 		if orgName := orgNameRetriever(domain, rootDomain); orgName != "" {
@@ -41,19 +41,13 @@ func GetOrgByDomain(domain string) (string, error) {
 	return "", nil
 }
 
-func orgNameRetriever(domain, rootDomain string) string {
-	suf := strutil.Concat(".", rootDomain)
-	domain_and_port := strutil.Split(domain, ":", true)
-	if len(domain_and_port) == 0 {
-		return ""
-	}
-	domain = domain_and_port[0]
-	if strutil.HasSuffixes(domain, suf) {
-		orgName := strutil.TrimSuffixes(domain, suf)
-		if strutil.HasSuffixes(orgName, "-org") {
-			orgName = strutil.TrimSuffixes(orgName, "-org")
-		}
-		return orgName
+func orgNameRetriever(domainWithoutPort, rootDomain string) string {
+	// trim port if have
+	domainWithoutPort = strutil.Split(domainWithoutPort, ":", true)[0]
+	// remove suffix '-org.${rootDomain}' to get org
+	orgSuffix := strutil.Concat("-org.", rootDomain)
+	if strutil.HasSuffixes(domainWithoutPort, orgSuffix) {
+		return strutil.TrimSuffixes(domainWithoutPort, orgSuffix)
 	}
 	return ""
 }
