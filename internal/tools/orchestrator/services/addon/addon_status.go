@@ -102,7 +102,63 @@ func (a *Addon) MySQLDeployStatus(addonIns *dbclient.AddonInstance, serviceGroup
 		return nil, err
 	}
 
-	if !capacity.MysqlOperator {
+	if capacity.MysqlOperator {
+		configMap[apistructs.AddonMysqlUserName] = apistructs.AddonMysqlUser
+		configMap[apistructs.AddonMysqlPasswordName] = password.Value
+		configMap[apistructs.AddonPasswordHasEncripy] = "YES"
+
+		for _, valueItem := range serviceGroup.Dice.Services {
+			if valueItem.Name == masterName.Value {
+				configMap[apistructs.AddonMysqlHostName] = valueItem.Vip
+				configMap[apistructs.AddonMysqlPortName] = apistructs.AddonMysqlDefaultPort
+				break
+			}
+		}
+
+		clusterKey := ""
+		if clusterInfo != nil {
+			clusterKey = (*clusterInfo)[apistructs.DICE_CLUSTER_NAME]
+		}
+
+		writeHost := configMap[apistructs.AddonMysqlHostName]
+		if writeHost == "" {
+			return nil, errors.New("mysql-operator: no write host")
+		}
+
+		createDBs, initSQL, err := a.getCreateDBsAndInitSQL(addonIns.Options)
+		if err != nil {
+			logrus.Errorf("mysql-operator: getCreateDBsAndInitSQL: %s", err.Error())
+			return nil, err
+		}
+
+		if initSQL != "" {
+			defer os.Remove(initSQL)
+		}
+
+		if len(createDBs) > 0 {
+			for _, db := range createDBs {
+				err = createUserDB(apistructs.AddonMysqlUser, decPwd, db, writeHost, clusterKey)
+				if err != nil {
+					logrus.Errorf("mysql-operator: createUserDB: %s", err.Error())
+					return nil, err
+				}
+			}
+
+			if initSQL != "" {
+				err = runSQL(apistructs.AddonMysqlUser, decPwd, createDBs[0], initSQL, writeHost, clusterKey)
+				if err != nil {
+					logrus.Errorf("mysql-operator: runSQL: %s", err.Error())
+					return nil, err
+				}
+			}
+		} else {
+			err = createUserDB(apistructs.AddonMysqlUser, decPwd, "", writeHost, clusterKey)
+			if err != nil {
+				logrus.Errorf("mysql-operator: createUserDB: %s", err.Error())
+				return nil, err
+			}
+		}
+	} else {
 		logrus.Info("mysql operator switch is off")
 		// 执行mysql主从初始化
 		if err := a.initMsAfterStart(serviceGroup, masterName.Value, decPwd, clusterInfo); err != nil {
@@ -120,37 +176,38 @@ func (a *Addon) MySQLDeployStatus(addonIns *dbclient.AddonInstance, serviceGroup
 		logrus.Infof("checked mysql %s ha status", addonIns.ID)
 		// sleep 10秒，继续请求
 		time.Sleep(time.Duration(1) * time.Second)
-	}
 
-	// create_dbs操作
-	createDbs, err := a.createDBs(serviceGroup, &apistructs.ExistsMysqlExec{}, addonIns, masterName.Value, decPwd, clusterInfo)
-	if err != nil {
-		logrus.Errorf("mysql createDbs 报错, %v", err)
-		return nil, err
-	}
-	logrus.Infof("created db for mysql: %s", addonIns.ID)
-	if len(createDbs) > 0 {
-		// init.sql操作
-		if err := a.initSqlFile(serviceGroup, &apistructs.ExistsMysqlExec{}, addonIns, createDbs, masterName.Value, decPwd, clusterInfo); err != nil {
-			logrus.Errorf("mysql initSqlFile 报错, %v", err)
+		// create_dbs操作
+		createDbs, err := a.createDBs(serviceGroup, &apistructs.ExistsMysqlExec{}, addonIns, masterName.Value, decPwd, clusterInfo)
+		if err != nil {
+			logrus.Errorf("mysql createDbs 报错, %v", err)
 			return nil, err
 		}
-		logrus.Infof("executed init.sql for mysql: %s", addonIns.ID)
-	}
+		logrus.Infof("created db for mysql: %s", addonIns.ID)
 
-	// config环境变量配置
-	for _, valueItem := range serviceGroup.Dice.Services {
-		if valueItem.Name == masterName.Value {
-			configMap[apistructs.AddonMysqlHostName] = valueItem.Vip
-			configMap[apistructs.AddonMysqlPortName] = apistructs.AddonMysqlDefaultPort
-			continue
+		if len(createDbs) > 0 {
+			// init.sql操作
+			if err := a.initSqlFile(serviceGroup, &apistructs.ExistsMysqlExec{}, addonIns, createDbs, masterName.Value, decPwd, clusterInfo); err != nil {
+				logrus.Errorf("mysql initSqlFile 报错, %v", err)
+				return nil, err
+			}
+			logrus.Infof("executed init.sql for mysql: %s", addonIns.ID)
 		}
-		configMap[apistructs.AddonMysqlSlaveHostName] = valueItem.Vip
-		configMap[apistructs.AddonMysqlSlavePortName] = apistructs.AddonMysqlDefaultPort
+
+		// config环境变量配置
+		for _, valueItem := range serviceGroup.Dice.Services {
+			if valueItem.Name == masterName.Value {
+				configMap[apistructs.AddonMysqlHostName] = valueItem.Vip
+				configMap[apistructs.AddonMysqlPortName] = apistructs.AddonMysqlDefaultPort
+				continue
+			}
+			configMap[apistructs.AddonMysqlSlaveHostName] = valueItem.Vip
+			configMap[apistructs.AddonMysqlSlavePortName] = apistructs.AddonMysqlDefaultPort
+		}
+		configMap[apistructs.AddonMysqlUserName] = apistructs.AddonMysqlUser
+		configMap[apistructs.AddonMysqlPasswordName] = password.Value
+		configMap[apistructs.AddonPasswordHasEncripy] = "YES"
 	}
-	configMap[apistructs.AddonMysqlUserName] = apistructs.AddonMysqlUser
-	configMap[apistructs.AddonMysqlPasswordName] = password.Value
-	configMap[apistructs.AddonPasswordHasEncripy] = "YES"
 
 	return configMap, nil
 }
@@ -1033,45 +1090,81 @@ func (a *Addon) BuildESOperatorServiceItem(options map[string]string, addonIns *
 }
 
 // buildMysqlOperatorServiceItem 生成operator发布的格式
-func (a *Addon) BuildMysqlOperatorServiceItem(options map[string]string, addonIns *dbclient.AddonInstance, addonDice *diceyml.Object, clusterInfo *apistructs.ClusterInfoData) error {
-	// 设置密码
+func (a *Addon) BuildMysqlOperatorServiceItem(params *apistructs.AddonHandlerCreateItem, addonIns *dbclient.AddonInstance, addonSpec *apistructs.AddonExtension, addonDice *diceyml.Object, clusterInfo *apistructs.ClusterInfoData) error {
 	password, err := a.savePassword(addonIns, apistructs.AddonMysqlPasswordKey)
 	if err != nil {
 		return err
 	}
-	// 设置meta
+
 	addonDice.Meta = map[string]string{
 		"USE_OPERATOR": apistructs.AddonMySQL,
 	}
-	//设置环境变量
-	for k, v := range addonDice.Services {
-		v.Envs = map[string]string{
-			"ADDON_ID":            addonIns.ID,
-			"ADDON_NODE_ID":       a.getRandomId(),
-			"MYSQL_ROOT_PASSWORD": password,
-		}
 
-		if len(v.Labels) == 0 {
-			v.Labels = make(map[string]string)
-		}
-		SetlabelsFromOptions(options, v.Labels)
+	addonDeployPlan := addonSpec.Plan[params.Plan]
+	serviceMap := diceyml.Services{}
+	serviceBase := *addonDice.Services[params.AddonName]
 
-		//  主要目的是传递 PVC 相关信息
-		vol01 := SetAddonVolumes(options, "/for-operator", false)
-		v.Volumes = diceyml.Volumes{vol01}
+	addonNodeId := a.getRandomId()
 
-		addonInstanceExtra := dbclient.AddonInstanceExtra{
-			ID:         a.getRandomId(),
-			InstanceID: addonIns.ID,
-			Field:      apistructs.AddonMysqlMasterKey,
-			Value:      k,
-			Deleted:    apistructs.AddonNotDeleted,
-		}
-		err := a.db.CreateAddonInstanceExtra(&addonInstanceExtra)
-		if err != nil {
-			return err
-		}
+	// TODO deepCopy，序列化反序列化，不优雅
+	var serviceItem diceyml.Service
+	if err := a.deepCopy(&serviceItem, &serviceBase); err != nil {
+		logrus.Errorf("deep copy error, %v", err)
 	}
+
+	serviceItem.Deployments.Replicas = 2
+	serviceItem.Resources = diceyml.Resources{
+		CPU:    addonDeployPlan.CPU,
+		MaxCPU: addonDeployPlan.MaxCPU,
+		Mem:    addonDeployPlan.Mem,
+		MaxMem: addonDeployPlan.MaxMem,
+	}
+
+	if len(serviceItem.Labels) == 0 {
+		serviceItem.Labels = map[string]string{}
+	}
+	SetlabelsFromOptions(params.Options, serviceItem.Labels)
+
+	// Use volumes 代替 Binds
+	//  /var/backup/mysql volume
+	vol01 := SetAddonVolumes(params.Options, "/var/backup/mysql", false)
+
+	//  /var/lib/mysql volume
+	vol02 := SetAddonVolumes(params.Options, "/var/lib/mysql", false)
+
+	serviceItem.Volumes = diceyml.Volumes{vol01, vol02}
+
+	// health check
+	execHealth := diceyml.ExecCheck{Cmd: fmt.Sprintf("mysql -uroot -p%s  -e 'select 1'", password)}
+	health := diceyml.HealthCheck{Exec: &execHealth}
+	serviceItem.HealthCheck = health
+	// envs
+	serviceItem.Envs = map[string]string{
+		"ADDON_ID":            addonIns.ID,
+		"ADDON_NODE_ID":       addonNodeId,
+		"MYSQL_ROOT_PASSWORD": password,
+	}
+
+	// 保存mysql的master节点信息
+	addonInstanceExtra := dbclient.AddonInstanceExtra{
+		ID:         a.getRandomId(),
+		InstanceID: addonIns.ID,
+		Field:      apistructs.AddonMysqlMasterKey,
+		Value:      params.AddonName,
+		Deleted:    apistructs.AddonNotDeleted,
+	}
+
+	serviceItem.Labels["ADDON_GROUP_ID"] = addonSpec.Name + "-" + apistructs.AddonMysqlMasterKey
+	err = a.db.CreateAddonInstanceExtra(&addonInstanceExtra)
+	if err != nil {
+		return err
+	}
+
+	// 设置service
+	serviceMap[params.AddonName] = &serviceItem
+
+	addonDice.Services = serviceMap
+
 	return nil
 }
 

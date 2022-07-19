@@ -50,6 +50,7 @@ require (
 	github.com/elastic/cloud-on-k8s v0.0.0-20210205172912-5ce0eca90c60
 	github.com/elazarl/goproxy v0.0.0-20200421181703-e76ad31c14f6
 	github.com/erda-project/erda-infra v1.0.8-0.20220708110412-6dbe90314b3d
+	github.com/erda-project/erda-infra/tools v0.0.0-20220725034747-0975600a898e // indirect
 	github.com/erda-project/erda-oap-thirdparty-protocol v0.0.0-20210907135609-15886a136d5b
 	github.com/erda-project/erda-proto-go v0.0.0
 	github.com/erda-project/erda-sourcecov v0.1.0
@@ -148,7 +149,7 @@ require (
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/afero v1.6.0
 	github.com/spf13/cast v1.3.1
-	github.com/spf13/cobra v1.4.0
+	github.com/spf13/cobra v1.5.0
 	github.com/stretchr/testify v1.7.1
 	github.com/t-tiger/gorm-bulk-insert v1.3.0
 	github.com/tealeg/xlsx v1.0.5
@@ -206,6 +207,7 @@ require (
 	k8s.io/kube-aggregator v0.20.0
 	k8s.io/kubectl v0.21.0
 	k8s.io/kubernetes v1.21.0
+	k8s.io/utils v0.0.0-20220713171938-56c0de1e6f5e // indirect
 	kmodules.xyz/monitoring-agent-api v0.0.0-20200125202117-d3b3e33ce41f
 	kmodules.xyz/objectstore-api v0.0.0-20200214040336-fe8f39a4210d
 	kmodules.xyz/offshoot-api v0.0.0-20200216080509-45ee6418d1c1
