@@ -225,3 +225,122 @@ func Test_canDelete(t *testing.T) {
 		})
 	}
 }
+
+func TestGetOwnerUserID(t *testing.T) {
+	type args struct {
+		extra PipelineExtra
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "test with empty owner user",
+			args: args{
+				extra: PipelineExtra{},
+			},
+			want: "",
+		},
+		{
+			name: "with owner user",
+			args: args{
+				extra: PipelineExtra{
+					Extra: PipelineExtraInfo{
+						OwnerUser: &apistructs.PipelineUser{
+							ID: "1",
+						},
+					},
+				},
+			},
+			want: "1",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &Pipeline{
+				PipelineExtra: tt.args.extra,
+			}
+			if got := p.GetOwnerUserID(); got != tt.want {
+				t.Errorf("GetOwnerUserID() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGetUserID(t *testing.T) {
+	type args struct {
+		extra PipelineExtra
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "test with empty owner user",
+			args: args{
+				extra: PipelineExtra{},
+			},
+			want: "",
+		},
+		{
+			name: "with submit user",
+			args: args{
+				extra: PipelineExtra{
+					Extra: PipelineExtraInfo{
+						SubmitUser: &apistructs.PipelineUser{
+							ID: "1",
+						},
+					},
+				},
+			},
+			want: "1",
+		},
+		{
+			name: "with run user",
+			args: args{
+				extra: PipelineExtra{
+					Extra: PipelineExtraInfo{
+						SubmitUser: &apistructs.PipelineUser{
+							ID: "1",
+						},
+						RunUser: &apistructs.PipelineUser{
+							ID: "2",
+						},
+					},
+				},
+			},
+			want: "2",
+		},
+		{
+			name: "with owner user",
+			args: args{
+				extra: PipelineExtra{
+					Extra: PipelineExtraInfo{
+						SubmitUser: &apistructs.PipelineUser{
+							ID: "1",
+						},
+						RunUser: &apistructs.PipelineUser{
+							ID: "2",
+						},
+						OwnerUser: &apistructs.PipelineUser{
+							ID: "3",
+						},
+					},
+				},
+			},
+			want: "3",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &Pipeline{
+				PipelineExtra: tt.args.extra,
+			}
+			if got := p.GetUserID(); got != tt.want {
+				t.Errorf("GetOwnerUserID() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

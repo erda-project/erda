@@ -47,6 +47,7 @@ const (
 
 	LabelRunUserID    = "runUserID"
 	LabelCreateUserID = "createUserID"
+	LabelOwnerUserID  = "ownerUserID"
 
 	// ---------------------- snippet some global labels
 	// action

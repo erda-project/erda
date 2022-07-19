@@ -190,6 +190,10 @@ type PipelineCreateRequestV2 struct {
 	// +optional
 	Secrets map[string]string `json:"secrets"`
 
+	// OwnerUser pipeline owner user
+	// +optional
+	OwnerUser *PipelineUser `json:"ownerUser,omitempty"`
+
 	IdentityInfo
 }
 

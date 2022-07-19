@@ -22,6 +22,7 @@ import (
 )
 
 const ColumnPipelineStatus = "pipelineStatus"
+const ColumnPipelineTriggerMode = "pipelineTriggerMode"
 
 var PipelineDefinitionStatus = []apistructs.PipelineStatus{
 	apistructs.PipelineStatusAnalyzed,
@@ -70,6 +71,11 @@ var PipelineDefinitionStatusMapList = func() map[apistructs.PipelineStatus][]api
 	return mapList
 }()
 
+var PipelineDefinitionTriggers = []apistructs.PipelineTriggerMode{
+	apistructs.PipelineTriggerModeCron,
+	apistructs.PipelineTriggerModeManual,
+}
+
 func TransferStatus(status string) []string {
 	var statusString []string
 	for _, v := range PipelineDefinitionStatusMapList[apistructs.PipelineStatus(status)] {
@@ -86,4 +92,11 @@ func DisplayStatusText(ctx context.Context, status string) string {
 		return "-"
 	}
 	return cputil.I18n(ctx, ColumnPipelineStatus+PipelineDefinitionStatusMap[apistructs.PipelineStatus(status)].String())
+}
+
+func DisplayTriggerModeText(ctx context.Context, triggerMode string) string {
+	if triggerMode == "" {
+		return cputil.I18n(ctx, ColumnPipelineTriggerMode+apistructs.PipelineTriggerModeManual.String())
+	}
+	return cputil.I18n(ctx, ColumnPipelineTriggerMode+triggerMode)
 }

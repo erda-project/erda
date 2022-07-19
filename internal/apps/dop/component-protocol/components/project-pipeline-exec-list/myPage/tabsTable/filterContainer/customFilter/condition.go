@@ -15,6 +15,7 @@
 package customFilter
 
 import (
+	"fmt"
 	"strconv"
 
 	model "github.com/erda-project/erda-infra/providers/component-protocol/components/filter/models"
@@ -26,12 +27,19 @@ import (
 	"github.com/erda-project/erda/pkg/limit_sync_group"
 )
 
+type UserType string
+
+const (
+	ExecutorUser UserType = "executor"
+	OwnerUser    UserType = "owner"
+)
+
 func (p *CustomFilter) ConditionRetriever() ([]interface{}, error) {
 	conditions := make([]interface{}, 0)
 	conditions = append(conditions, p.StatusCondition())
 
 	var (
-		appCondition, executorCondition *model.SelectCondition
+		appCondition, executorCondition, ownerCondition *model.SelectCondition
 	)
 	worker := limit_sync_group.NewWorker(2)
 	worker.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
@@ -41,7 +49,19 @@ func (p *CustomFilter) ConditionRetriever() ([]interface{}, error) {
 	})
 	worker.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
 		var err error
-		executorCondition, err = p.MemberCondition()
+		members, err := p.getMembers()
+		if err != nil {
+			return err
+		}
+		executorCondition, err = p.MemberCondition(ExecutorUser, members)
+		if err != nil {
+			return err
+		}
+		ownerCondition, err = p.MemberCondition(OwnerUser, members)
+		if err != nil {
+			return err
+		}
+
 		return err
 	})
 	if err := worker.Do().Error(); err != nil {
@@ -51,9 +71,11 @@ func (p *CustomFilter) ConditionRetriever() ([]interface{}, error) {
 	if p.InParams.AppIDInt == 0 {
 		conditions = append(conditions, appCondition)
 	}
-	conditions = append(conditions, executorCondition)
+	conditions = append(conditions, p.TriggerModeCondition())
 
 	conditions = append(conditions, model.NewDateRangeCondition("startedAtStartEnd", cputil.I18n(p.sdk.Ctx, "start-time")))
+	conditions = append(conditions, executorCondition)
+	conditions = append(conditions, ownerCondition)
 	conditions = append(conditions, condition.ExternalInputCondition("title", "title", cputil.I18n(p.sdk.Ctx, "searchByPipelineName")))
 	return conditions, nil
 }
@@ -69,7 +91,18 @@ func (p *CustomFilter) StatusCondition() *model.SelectCondition {
 	return condition
 }
 
-func (p *CustomFilter) MemberCondition() (*model.SelectCondition, error) {
+func (p *CustomFilter) TriggerModeCondition() *model.SelectCondition {
+	triggerModes := util.PipelineDefinitionTriggers
+	var opts []model.SelectOption
+	for _, triggerMode := range triggerModes {
+		opts = append(opts, *model.NewSelectOption(cputil.I18n(p.sdk.Ctx, common.ColumnPipelineTrigger+triggerMode.String()), triggerMode.String()))
+	}
+	condition := model.NewSelectCondition("triggerMode", cputil.I18n(p.sdk.Ctx, "triggerMode"), opts)
+	condition.ConditionBase.Placeholder = cputil.I18n(p.sdk.Ctx, "please-choose-triggerMode")
+	return condition
+}
+
+func (p *CustomFilter) getMembers() ([]apistructs.Member, error) {
 	members, err := p.bdl.ListMembers(apistructs.MemberListRequest{
 		ScopeType: apistructs.ProjectScope,
 		ScopeID:   int64(p.InParams.ProjectIDInt),
@@ -79,8 +112,12 @@ func (p *CustomFilter) MemberCondition() (*model.SelectCondition, error) {
 	if err != nil {
 		return nil, err
 	}
+	return members, nil
+}
 
-	executorCondition := model.NewSelectCondition("executor", cputil.I18n(p.sdk.Ctx, "executor"), func() []model.SelectOption {
+func (p *CustomFilter) MemberCondition(userType UserType, members []apistructs.Member) (*model.SelectCondition, error) {
+	var condition *model.SelectCondition
+	selectOptionFunc := func() []model.SelectOption {
 		selectOptions := make([]model.SelectOption, 0, len(members)+1)
 		for _, v := range members {
 			selectOptions = append(selectOptions, *model.NewSelectOption(
@@ -90,10 +127,19 @@ func (p *CustomFilter) MemberCondition() (*model.SelectCondition, error) {
 		}
 		selectOptions = append(selectOptions, *model.NewSelectOption(cputil.I18n(p.sdk.Ctx, "choose-yourself"), p.sdk.Identity.UserID).WithFix(true))
 		return selectOptions
-	}())
-	executorCondition.ConditionBase.Placeholder = cputil.I18n(p.sdk.Ctx, "please-choose-executor")
+	}
+	switch userType {
+	case ExecutorUser:
+		condition = model.NewSelectCondition("executor", cputil.I18n(p.sdk.Ctx, "executor"), selectOptionFunc())
+		condition.ConditionBase.Placeholder = cputil.I18n(p.sdk.Ctx, "please-choose-executor")
+	case OwnerUser:
+		condition = model.NewSelectCondition("owner", cputil.I18n(p.sdk.Ctx, "owner"), selectOptionFunc())
+		condition.ConditionBase.Placeholder = cputil.I18n(p.sdk.Ctx, "please-choose-owner")
+	default:
+		return nil, fmt.Errorf("unknown user type: %s", userType)
+	}
 
-	return executorCondition, nil
+	return condition, nil
 }
 
 func (p *CustomFilter) AppCondition() (*model.SelectCondition, error) {

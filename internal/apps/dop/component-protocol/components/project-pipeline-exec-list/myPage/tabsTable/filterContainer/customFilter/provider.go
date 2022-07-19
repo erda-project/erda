@@ -51,6 +51,8 @@ type FrontendConditions struct {
 	Status            []string `json:"status,omitempty"`
 	AppList           []uint64 `json:"appList,omitempty"`
 	Executor          []string `json:"executor,omitempty"`
+	Owner             []string `json:"owner,omitempty"`
+	TriggerMode       []string `json:"triggerMode,omitempty"`
 	StartedAtStartEnd []int64  `json:"startedAtStartEnd,omitempty"`
 	Title             string   `json:"title,omitempty"`
 }
@@ -109,6 +111,8 @@ func (p *CustomFilter) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 		p.gsHelper.SetAppsFilter(p.State.FrontendConditionValues.AppList)
 		p.gsHelper.SetExecutorsFilter(p.State.FrontendConditionValues.Executor)
 		p.gsHelper.SetPipelineNameFilter(p.State.FrontendConditionValues.Title)
+		p.gsHelper.SetOwnersFilter(p.State.FrontendConditionValues.Owner)
+		p.gsHelper.SetTriggerModesFilter(p.State.FrontendConditionValues.TriggerMode)
 
 		if len(p.State.FrontendConditionValues.StartedAtStartEnd) > 0 {
 			p.gsHelper.SetBeginTimeStartFilter(p.State.FrontendConditionValues.StartedAtStartEnd[0])
@@ -137,6 +141,8 @@ func (p *CustomFilter) RegisterFilterOp(opData filter.OpFilter) (opFunc cptype.O
 		p.gsHelper.SetAppsFilter(state.AppList)
 		p.gsHelper.SetExecutorsFilter(state.Executor)
 		p.gsHelper.SetPipelineNameFilter(state.Title)
+		p.gsHelper.SetOwnersFilter(p.State.FrontendConditionValues.Owner)
+		p.gsHelper.SetTriggerModesFilter(p.State.FrontendConditionValues.TriggerMode)
 
 		if len(state.StartedAtStartEnd) > 0 {
 			p.gsHelper.SetBeginTimeStartFilter(state.StartedAtStartEnd[0])

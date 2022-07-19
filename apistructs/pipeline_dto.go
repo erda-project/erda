@@ -78,6 +78,7 @@ type (
 		SubmitUser             *PipelineUser `json:"submitUser,omitempty"`
 		RunUser                *PipelineUser `json:"runUser,omitempty"`
 		CancelUser             *PipelineUser `json:"cancelUser,omitempty"`
+		OwnerUser              *PipelineUser `json:"ownerUser,omitempty"`
 		CronExpr               string        `json:"cronExpr,omitempty"`
 		CronTriggerTime        *time.Time    `json:"cronTriggerTime,omitempty"` // 秒级精确，毫秒级误差请忽略，cron expr 精确度同样为秒级
 		ShowMessage            *ShowMessage  `json:"showMessage,omitempty"`

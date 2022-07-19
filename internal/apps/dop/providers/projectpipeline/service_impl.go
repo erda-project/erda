@@ -862,6 +862,20 @@ func makePipelinePageListRequest(params *pb.ListPipelineExecHistoryRequest, json
 			pipelinePageListRequest.MustMatchLabelsQueryParams = append(pipelinePageListRequest.MustMatchLabelsQueryParams, fmt.Sprintf("%v=%v", apistructs.LabelRunUserID, v))
 		}
 	}
+	if len(params.Owners) > 0 {
+		for _, v := range params.Owners {
+			pipelinePageListRequest.MustMatchLabelsQueryParams = append(pipelinePageListRequest.MustMatchLabelsQueryParams, fmt.Sprintf("%v=%v", apistructs.LabelOwnerUserID, v))
+		}
+	}
+	if len(params.TriggerModes) > 0 {
+		for _, v := range params.TriggerModes {
+			// treat empty string as manual trigger mode
+			if v == apistructs.PipelineTriggerModeManual.String() {
+				pipelinePageListRequest.TriggerModes = append(pipelinePageListRequest.TriggerModes, "")
+			}
+			pipelinePageListRequest.TriggerModes = append(pipelinePageListRequest.TriggerModes, apistructs.PipelineTriggerMode(v))
+		}
+	}
 	if len(params.Branches) > 0 {
 		for _, v := range params.Branches {
 			pipelinePageListRequest.MustMatchLabelsQueryParams = append(pipelinePageListRequest.MustMatchLabelsQueryParams, fmt.Sprintf("%v=%v", apistructs.LabelBranch, v))
@@ -894,11 +908,13 @@ func makeListPipelineExecHistoryResponse(data *apistructs.PipelinePageListData) 
 				}
 				return pipeline.CostTimeSec
 			}(),
-			AppName:    getApplicationNameFromDefinitionRemote(pipeline.DefinitionPageInfo.SourceRemote),
-			Branch:     pipeline.DefinitionPageInfo.SourceRef,
-			Executor:   pipeline.GetRunUserID(),
-			TimeBegin:  timeBegin,
-			PipelineID: pipeline.ID,
+			AppName:     getApplicationNameFromDefinitionRemote(pipeline.DefinitionPageInfo.SourceRemote),
+			Branch:      pipeline.DefinitionPageInfo.SourceRef,
+			Executor:    pipeline.GetRunUserID(),
+			Owner:       pipeline.GetUserID(),
+			TimeBegin:   timeBegin,
+			PipelineID:  pipeline.ID,
+			TriggerMode: pipeline.TriggerMode,
 		})
 	}
 	return &pb.ListPipelineExecHistoryResponse{

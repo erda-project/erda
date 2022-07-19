@@ -878,6 +878,9 @@ func Test_makeListPipelineExecHistoryResponse(t *testing.T) {
 								RunUser: &apistructs.PipelineUser{
 									ID: 1,
 								},
+								OwnerUser: &apistructs.PipelineUser{
+									ID: 2,
+								},
 							},
 						},
 					},
@@ -896,6 +899,7 @@ func Test_makeListPipelineExecHistoryResponse(t *testing.T) {
 						AppName:        "ui",
 						Branch:         "master",
 						Executor:       "1",
+						Owner:          "2",
 						TimeBegin:      nil,
 						PipelineID:     10001,
 					},

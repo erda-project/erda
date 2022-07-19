@@ -394,6 +394,8 @@ message ListPipelineExecHistoryRequest {
     uint64 projectID = 11;
     repeated string branches = 12;
     string definitionID = 13;
+    repeated string owners = 14;
+    repeated string triggerModes = 15;
 }
 
 message ListPipelineExecHistoryResponse {
@@ -411,6 +413,8 @@ message PipelineExecHistory {
     string executor = 6;
     google.protobuf.Timestamp timeBegin = 7;
     uint64 pipelineID = 8;
+    string owner = 9;
+    string triggerMode = 10;
 }
 
 message DeleteByAppRequest {

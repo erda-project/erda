@@ -65,6 +65,8 @@ const (
 	ColumnBranch          table.ColumnKey = "branch"
 	ColumnExecutor        table.ColumnKey = "executor"
 	ColumnStartTime       table.ColumnKey = "startTime"
+	ColumnOwner           table.ColumnKey = "owner"
+	ColumnTriggerMode     table.ColumnKey = "triggerMode"
 
 	ColumnCostTimeOrder  = "cost_time_sec"
 	ColumnStartTimeOrder = "time_begin"
@@ -119,6 +121,12 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 		req.AppNames = GetAppNames(helper)
 		if helper.GetExecutorsFilter() != nil {
 			req.Executors = helper.GetExecutorsFilter()
+		}
+		if helper.GetOwnersFilter() != nil {
+			req.Owners = helper.GetOwnersFilter()
+		}
+		if helper.GetTriggerModesFilter() != nil {
+			req.TriggerModes = helper.GetTriggerModesFilter()
 		}
 		if helper.GetPipelineNameFilter() != "" {
 			req.Name = helper.GetPipelineNameFilter()
@@ -240,6 +248,8 @@ func (p *provider) pipelineToRow(exec *pb.PipelineExecHistory) table.Row {
 			ColumnBranch:          table.NewTextCell(exec.Branch).Build(),
 			ColumnExecutor:        table.NewUserCell(commodel.User{ID: exec.Executor}).Build(),
 			ColumnStartTimeOrder:  table.NewTextCell(timeFormatFromProtobuf(exec.TimeBegin)).Build(),
+			ColumnOwner:           table.NewUserCell(commodel.User{ID: exec.Owner}).Build(),
+			ColumnTriggerMode:     table.NewTextCell(util.DisplayTriggerModeText(p.sdk.Ctx, exec.TriggerMode)).Build(),
 		},
 		Operations: map[cptype.OperationKey]cptype.Operation{
 			table.OpRowSelect{}.OpKey(): cputil.NewOpBuilder().Build(),
@@ -265,7 +275,7 @@ func getApplicationNameFromDefinitionRemote(remote string) string {
 func (p *provider) InitTable() table.Table {
 	return table.Table{
 		Columns: table.ColumnsInfo{
-			Orders: []table.ColumnKey{ColumnPipelineName, ColumnPipelineStatus, ColumnCostTimeOrder, ColumnApplicationName, ColumnBranch, ColumnExecutor, ColumnStartTimeOrder},
+			Orders: []table.ColumnKey{ColumnPipelineName, ColumnPipelineStatus, ColumnCostTimeOrder, ColumnApplicationName, ColumnBranch, ColumnTriggerMode, ColumnExecutor, ColumnOwner, ColumnStartTimeOrder},
 			ColumnsMap: map[table.ColumnKey]table.Column{
 				ColumnPipelineName:    {Title: cputil.I18n(p.sdk.Ctx, string(ColumnPipelineName)), EnableSort: false},
 				ColumnPipelineStatus:  {Title: cputil.I18n(p.sdk.Ctx, string(ColumnPipelineStatus)), EnableSort: false},
@@ -274,6 +284,8 @@ func (p *provider) InitTable() table.Table {
 				ColumnBranch:          {Title: cputil.I18n(p.sdk.Ctx, string(ColumnBranch)), EnableSort: false},
 				ColumnExecutor:        {Title: cputil.I18n(p.sdk.Ctx, string(ColumnExecutor)), EnableSort: false},
 				ColumnStartTimeOrder:  {Title: cputil.I18n(p.sdk.Ctx, string(ColumnStartTime)), EnableSort: true, FieldBindToOrder: ColumnStartTimeOrder},
+				ColumnOwner:           {Title: cputil.I18n(p.sdk.Ctx, string(ColumnOwner)), EnableSort: false},
+				ColumnTriggerMode:     {Title: cputil.I18n(p.sdk.Ctx, string(ColumnTriggerMode)), EnableSort: false},
 			},
 		},
 	}
