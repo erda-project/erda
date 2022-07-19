@@ -76,6 +76,8 @@ type Conf struct {
 	MySQLDatabase string `env:"MYSQL_DATABASE"`
 	MySQLLoc      string `env:"MYSQL_LOC" default:"Local"`
 	Debug         bool   `env:"DEBUG" default:"false"`
+
+	RootDomain string `env:"DICE_ROOT_DOMAIN"`
 }
 
 var cfg Conf
@@ -243,6 +245,10 @@ func MySQLLoc() string {
 
 func Debug() bool {
 	return cfg.Debug
+}
+
+func RootDomainList() []string {
+	return strutil.Split(cfg.RootDomain, ",")
 }
 
 // GetDomain get a domain by request host
