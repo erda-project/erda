@@ -57,7 +57,7 @@ func (p *provider) getHostTypes(req *http.Request, params struct {
 	for _, v := range []string{tagsClusterName, tagsCPUs, tagsMem, tagsHostIP, fieldsLabels} {
 		searchSource.Aggregation(v, elastic.NewTermsAggregation().Field(v).Size(500))
 	}
-	result, err := p.metricq.SearchRaw(indexHostSummary, searchSource)
+	result, err := p.esSearchRaw.SearchRaw(indexHostSummary, searchSource)
 	if err != nil {
 		return api.Errors.Internal(err)
 	}
@@ -321,7 +321,7 @@ func (p *provider) getGroupHosts(req *http.Request, params struct {
 		Query(query).Size(0).
 		Aggregation(createGroupHostAgg(res.Groups, 0))
 
-	result, err := p.metricq.SearchRaw(indexHostSummary, searchSource)
+	result, err := p.esSearchRaw.SearchRaw(indexHostSummary, searchSource)
 	if err != nil {
 		return api.Errors.Internal(err)
 	}
@@ -667,7 +667,7 @@ func (p *provider) doOfflineHost(query elastic.Query) {
 	timeout := fmt.Sprintf("%dms", p.C.OfflineTimeout.Milliseconds())
 	for i := 0; i < 5; i++ {
 		searchSource := elastic.NewSearchSource().Query(query).Size(100)
-		resp, apiErr := p.metricq.SearchRaw(indexHostSummary, searchSource)
+		resp, apiErr := p.esSearchRaw.SearchRaw(indexHostSummary, searchSource)
 		if apiErr != nil {
 			p.L.Errorf("offline host: Search error: %s\n", apiErr)
 			return

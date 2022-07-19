@@ -21,8 +21,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/olivere/elastic"
-
 	"github.com/erda-project/erda-infra/providers/i18n"
 
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/model"
@@ -32,10 +30,9 @@ import (
 )
 
 type queryer struct {
-	storage   storage.Storage `autowired:"metric-storage"`
-	ckStorage storage.Storage `autowired:"metric-storage-clickhouse"`
-
-	keypass map[string][]string `file:"keypass"`
+	storage   storage.Storage     `autowired:"metric-storage"`
+	ckStorage storage.Storage     `autowired:"metric-storage-clickhouse"`
+	keypass   map[string][]string `file:"keypass"`
 }
 
 // New .
@@ -188,21 +185,4 @@ func (q *queryer) QueryWithFormat(tsql, statement, format string, langCode i18n.
 	}
 	data, err := formats.Format(format, query, rs.Data, opts)
 	return rs, data, err
-}
-
-// QueryRaw .
-func (q *queryer) QueryRaw(metrics, clusters []string, start, end int64, searchSource *elastic.SearchSource) (*elastic.SearchResult, error) {
-	//indices := q.index.GetIndices(metrics, clusters, start, end)
-	//return q.SearchRaw(indices, searchSource)
-	panic("not implement")
-}
-
-// SearchRaw .
-func (q *queryer) SearchRaw(indices []string, searchSource *elastic.SearchSource) (*elastic.SearchResult, error) {
-	//context, cancel := context.WithTimeout(context.Background(), q.index.RequestTimeout())
-	//defer cancel()
-	//return q.index.Client().Search(indices...).
-	//	IgnoreUnavailable(true).AllowNoIndices(true).
-	//	SearchSource(searchSource).Do(context)
-	panic("not implement")
 }

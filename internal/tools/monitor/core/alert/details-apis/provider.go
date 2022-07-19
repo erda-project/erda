@@ -22,9 +22,11 @@ import (
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/httpserver/interceptors"
+
 	"github.com/erda-project/erda-proto-go/core/monitor/alertdetail/pb"
 	"github.com/erda-project/erda/internal/pkg/bundle-ex/cmdb"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/metricq"
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/storage/elasticsearch"
 	"github.com/erda-project/erda/pkg/common/apis"
 	perm "github.com/erda-project/erda/pkg/common/permission"
 	"github.com/erda-project/erda/pkg/http/httpclient"
@@ -34,8 +36,9 @@ type config struct {
 }
 
 type provider struct {
-	L       logs.Logger
-	metricq metricq.Queryer
+	L           logs.Logger
+	metricq     metricq.Queryer
+	esSearchRaw elasticsearch.Interface `autowired:"metric-storage"`
 	//metricq  metricpb.MetricServiceServer `autowired:"erda.core.monitor.metric.MetricService"`
 	cmdb *cmdb.Cmdb
 

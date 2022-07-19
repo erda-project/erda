@@ -22,10 +22,12 @@ import (
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/httpserver/interceptors"
 	"github.com/erda-project/erda-infra/providers/i18n"
+
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/pkg/bundle-ex/cmdb"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/metricq"
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/storage/elasticsearch"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
@@ -35,14 +37,15 @@ type config struct {
 }
 
 type provider struct {
-	C          *config
-	L          logs.Logger
-	bundle     *bundle.Bundle
-	cmdb       *cmdb.Cmdb
-	metricq    metricq.Queryer
-	service    queryServiceImpl
-	t          i18n.Translator
-	ClusterSvc clusterpb.ClusterServiceServer `autowired:"erda.core.clustermanager.cluster.ClusterService"`
+	C           *config
+	L           logs.Logger
+	bundle      *bundle.Bundle
+	cmdb        *cmdb.Cmdb
+	metricq     metricq.Queryer
+	esSearchRaw elasticsearch.Interface `autowired:"metric-storage"`
+	service     queryServiceImpl
+	t           i18n.Translator
+	ClusterSvc  clusterpb.ClusterServiceServer `autowired:"erda.core.clustermanager.cluster.ClusterService"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {

@@ -19,8 +19,6 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/olivere/elastic"
-
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/model"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
@@ -32,9 +30,6 @@ import (
 type Queryer interface {
 	Query(tsql, statement string, params map[string]interface{}, options url.Values) (*model.ResultSet, error)
 	QueryWithFormat(tsql, statement, format string, langCodes i18n.LanguageCodes, params map[string]interface{}, filters []*model.Filter, options url.Values) (*model.ResultSet, interface{}, error)
-
-	QueryRaw(metrics, clusters []string, start, end int64, searchSource *elastic.SearchSource) (*elastic.SearchResult, error)
-	SearchRaw(indices []string, searchSource *elastic.SearchSource) (*elastic.SearchResult, error)
 }
 
 // IndexLoader .

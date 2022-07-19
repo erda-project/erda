@@ -29,6 +29,12 @@ import (
 	indexloader "github.com/erda-project/erda/internal/tools/monitor/core/storekit/elasticsearch/index/loader"
 )
 
+// Interface .
+type Interface interface {
+	SearchRaw(indices []string, searchSource *elastic.SearchSource) (*elastic.SearchResult, error)
+	QueryRaw(metrics, clusters []string, start, end int64, searchSource *elastic.SearchSource) (*elastic.SearchResult, error)
+}
+
 func (p *provider) Query(ctx context.Context, q tsql.Query) (*model.ResultSet, error) {
 	var err error
 	metrics, clusters := getMetricsAndClustersFromSources(q.Sources())
@@ -80,6 +86,19 @@ func (p *provider) Query(ctx context.Context, q tsql.Query) (*model.ResultSet, e
 	}
 	return result, nil
 
+}
+
+func (p *provider) SearchRaw(indices []string, searchSource *elastic.SearchSource) (*elastic.SearchResult, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), p.Loader.RequestTimeout())
+	defer cancel()
+	return p.Loader.Client().Search(indices...).
+		IgnoreUnavailable(true).AllowNoIndices(true).
+		SearchSource(searchSource).Do(ctx)
+}
+
+func (p *provider) QueryRaw(metrics, clusters []string, start, end int64, searchSource *elastic.SearchSource) (*elastic.SearchResult, error) {
+	indices := p.getIndices(metrics, start, end)
+	return p.SearchRaw(indices, searchSource)
 }
 
 func (p *provider) search(ctx context.Context, indices []string, searchSource *elastic.SearchSource) (*elastic.SearchResult, error) {
