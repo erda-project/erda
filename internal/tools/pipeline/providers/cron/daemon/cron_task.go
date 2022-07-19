@@ -91,6 +91,10 @@ func (d *provider) runCronPipelineFunc(ctx context.Context, id uint64) {
 	if _, ok := pc.Extra.FilterLabels[apistructs.LabelPipelineTriggerMode]; ok {
 		pc.Extra.FilterLabels[apistructs.LabelPipelineTriggerMode] = apistructs.PipelineTriggerModeCron.String()
 	}
+	var ownerUser *apistructs.PipelineUser
+	if ownerUserID, ok := pc.Extra.NormalLabels[apistructs.LabelOwnerUserID]; ok {
+		ownerUser = &apistructs.PipelineUser{ID: ownerUserID}
+	}
 
 	pc.Extra.NormalLabels[apistructs.LabelPipelineTriggerMode] = apistructs.PipelineTriggerModeCron.String()
 	pc.Extra.NormalLabels[apistructs.LabelPipelineType] = apistructs.PipelineTypeNormal.String()
@@ -114,6 +118,7 @@ func (d *provider) runCronPipelineFunc(ctx context.Context, id uint64) {
 			UserID:         pc.Extra.NormalLabels[apistructs.LabelUserID],
 			InternalClient: "system-cron",
 		},
+		OwnerUser:    ownerUser,
 		DefinitionID: pc.PipelineDefinitionID,
 	})
 }

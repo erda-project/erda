@@ -410,6 +410,14 @@ func (p *Pipeline) ConvertPipelineToV2(pv1 *apistructs.PipelineCreateRequest) (*
 		}
 	}
 	pv2.Secrets = utils.GetGittarSecrets(pv2.ClusterName, pv1.Branch, detail)
+	// the person who made the last modification is currently the owner of yaml,
+	// because the modification may not be an erda user, so errors should be ignored
+	ownerUser, err := p.getPipelineOwnerUser(app, pv1)
+	if err != nil {
+		logrus.Errorf("get pipeline owner user error: %s", err.Error())
+	} else {
+		pv2.OwnerUser = ownerUser
+	}
 
 	// temporary comment out
 	// check dice yml
@@ -422,6 +430,34 @@ func (p *Pipeline) ConvertPipelineToV2(pv1 *apistructs.PipelineCreateRequest) (*
 		strconv.FormatUint(app.ID, 10), pv1.Branch, workspace)
 
 	return pv2, nil
+}
+
+func (p *Pipeline) getPipelineOwnerUser(app *apistructs.ApplicationDTO, pv1 *apistructs.PipelineCreateRequest) (*apistructs.PipelineUser, error) {
+	ymlCommit, err := p.bdl.GetGittarTree(fmt.Sprintf("/%s/tree/%s/%s", app.GitRepoAbbrev, pv1.Branch, pv1.PipelineYmlName), strconv.FormatUint(app.OrgID, 10), pv1.UserID)
+	if err != nil {
+		return nil, err
+	}
+	if ymlCommit.Commit.Committer == nil || ymlCommit.Commit.Committer.Name == "" {
+		return nil, fmt.Errorf("pipeline yml commit committer is empty")
+	}
+	authorEmail := ymlCommit.Commit.Committer.Email
+	users, err := p.bdl.ListUsers(apistructs.UserListRequest{
+		Query:     authorEmail,
+		Plaintext: true,
+	})
+	if err != nil {
+		return nil, err
+	}
+	for _, user := range users.Users {
+		if user.Email == authorEmail {
+			return &apistructs.PipelineUser{
+				ID:     user.ID,
+				Name:   user.Name,
+				Avatar: user.Avatar,
+			}, nil
+		}
+	}
+	return nil, fmt.Errorf("pipeline yml commit committer %s not found", authorEmail)
 }
 
 // DiceYmlCheck check dice yml
