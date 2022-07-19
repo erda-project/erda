@@ -106,10 +106,6 @@ func (u urls) CMP() (string, error) {
 	return u.getURL(discover.EnvCMP, discover.SvcCMP)
 }
 
-func (u urls) Openapi() (string, error) {
-	return u.getURL(discover.EnvOpenapi, discover.SvcOpenapi)
-}
-
 func (u urls) KMS() (string, error) {
 	return u.getURL(discover.EnvKMS, discover.SvcKMS)
 }

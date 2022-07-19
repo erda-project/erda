@@ -93,7 +93,6 @@ var ServicesEnvKeys = map[string]string{
 	SvcPipeline:       EnvPipeline,
 	SvcHepa:           EnvHepa,
 	SvcCMP:            EnvCMP,
-	SvcOpenapi:        EnvOpenapi,
 	SvcKMS:            EnvKMS,
 	SvcQA:             EnvQA,
 	SvcAPIM:           EnvAPIM,

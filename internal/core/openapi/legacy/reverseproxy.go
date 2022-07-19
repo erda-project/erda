@@ -57,8 +57,6 @@ func NewReverseProxyWithAuth(auth *auth.Auth, bundle *bundle.Bundle) (http.Handl
 }
 
 func (r *ReverseProxyWithAuth) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
-	logrus.Infof("handle request: %v", req.URL)
-
 	spec := api.API.Find(req)
 	if spec == nil {
 		errStr := fmt.Sprintf("not found path: %v", req.URL)
