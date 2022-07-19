@@ -207,6 +207,7 @@ stages:
             retry_timeout: 150
             skip_migration: "true"
             skip_pre_migration: true
+            skip_lint: true
             workdir: ${{ dirs.erda }}
       - erda-mysql-migration:
           alias: dryrun-on-mysql56
@@ -222,6 +223,7 @@ stages:
             retry_timeout: 150
             skip_migration: "true"
             skip_pre_migration: true
+            skip_lint: true
             workdir: ${{ dirs.erda }}
   - stage:
       - release:
