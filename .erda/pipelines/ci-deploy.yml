@@ -245,7 +245,6 @@ stages:
               monitor-agent-injector: ${build-monitor-injector:OUTPUT:image}
               monitor: ${{ outputs.build-erda.image }}
               msp: ${{ outputs.build-erda.image }}
-              openapi: ${{ outputs.build-erda.image }}
               orchestrator: ${{ outputs.build-erda.image }}
               pipeline: ${{ outputs.build-erda.image }}
               scheduler: ${{ outputs.build-erda.image }}
