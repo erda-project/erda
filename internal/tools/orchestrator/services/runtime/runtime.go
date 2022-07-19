@@ -1593,8 +1593,11 @@ func (r *Runtime) convertRuntimeSummaryDTOFromRuntimeModel(d *apistructs.Runtime
 		updateStatusWhenDeploying(&d.RuntimeInspectDTO)
 	}
 	d.LastOperator = deployment.Operator
-	d.LastOperateTime = deployment.UpdatedAt // TODO: use a standalone OperateTime
 	d.LastOperatorId = deployment.ID
+	d.LastOperateTime = deployment.UpdatedAt // TODO: use a standalone OperateTime
+	if d.LastOperator == "" {
+		d.LastOperateTime = runtime.UpdatedAt
+	}
 	return nil
 }
 
