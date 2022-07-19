@@ -102,6 +102,8 @@ services:
       - port: 9431
         protocol: "TCP"
         l4_protocol: "TCP"
+    expose:
+      - 9529
     binds:
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-ca.pem:/certs/etcd-ca.pem:ro"
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client.pem:/certs/etcd-client.pem:ro"
