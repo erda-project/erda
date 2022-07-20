@@ -28,7 +28,6 @@ import (
 	"github.com/erda-project/erda/internal/core/openapi/legacy/api/spec"
 	"github.com/erda-project/erda/internal/core/openapi/legacy/conf"
 	"github.com/erda-project/erda/internal/core/openapi/legacy/monitor"
-	"github.com/erda-project/erda/internal/core/org"
 	identity "github.com/erda-project/erda/internal/core/user/common"
 	"github.com/erda-project/erda/pkg/oauth2"
 )
@@ -59,10 +58,9 @@ type Auth struct {
 	RedisCli     *redis.Client
 	OAuth2Server *oauth2.OAuth2Server
 	TokenService tokenpb.TokenServiceServer
-	org          org.Interface
 }
 
-func NewAuth(oauth2server *oauth2.OAuth2Server, token tokenpb.TokenServiceServer, org org.Interface) (*Auth, error) {
+func NewAuth(oauth2server *oauth2.OAuth2Server, token tokenpb.TokenServiceServer) (*Auth, error) {
 	sentinelAddrs := strings.Split(conf.RedisSentinelAddrs(), ",")
 	RedisCli := redis.NewFailoverClient(&redis.FailoverOptions{
 		MasterName:    conf.RedisMasterName(),
@@ -72,7 +70,7 @@ func NewAuth(oauth2server *oauth2.OAuth2Server, token tokenpb.TokenServiceServer
 	if _, err := RedisCli.Ping().Result(); err != nil {
 		return nil, err
 	}
-	return &Auth{RedisCli: RedisCli, OAuth2Server: oauth2server, TokenService: token, org: org}, nil
+	return &Auth{RedisCli: RedisCli, OAuth2Server: oauth2server, TokenService: token}, nil
 }
 
 func (a *Auth) Auth(spec *spec.Spec, req *http.Request) AuthResult {
@@ -96,7 +94,7 @@ func (a *Auth) Auth(spec *spec.Spec, req *http.Request) AuthResult {
 	case NONE:
 		break
 	case LOGIN:
-		user := NewUser(a.RedisCli, a.org)
+		user := NewUser(a.RedisCli)
 		if r = a.checkLogin(req, user, spec); r.Code != AuthSucc {
 			return r
 		}
@@ -104,7 +102,7 @@ func (a *Auth) Auth(spec *spec.Spec, req *http.Request) AuthResult {
 			return r
 		}
 	case TRY_LOGIN:
-		user := NewUser(a.RedisCli, a.org)
+		user := NewUser(a.RedisCli)
 		if r := a.checkLogin(req, user, spec); r.Code != AuthSucc {
 			break
 		}
@@ -112,7 +110,7 @@ func (a *Auth) Auth(spec *spec.Spec, req *http.Request) AuthResult {
 			break
 		}
 	case BASICAUTH:
-		user := NewUser(a.RedisCli, a.org)
+		user := NewUser(a.RedisCli)
 		if r = a.checkBasicAuth(req, user); r.Code != AuthSucc {
 			return r
 		}

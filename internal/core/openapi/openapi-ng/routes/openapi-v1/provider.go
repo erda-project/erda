@@ -56,7 +56,7 @@ func (p *provider) Init(ctx servicehub.Context) (err error) {
 	p.proxy.Discover = p.Discover
 	hooks.Enable = false
 	conf.Load()
-	srv, err := openapiv1.NewServer(p.TokenService, p.Org)
+	srv, err := openapiv1.NewServer(p.TokenService)
 	if err != nil {
 		return err
 	}

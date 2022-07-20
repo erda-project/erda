@@ -58,6 +58,15 @@ type provider struct {
 	Client       pb.OrgServiceServer
 }
 
+var _org Interface
+
+func MustGetOrg() Interface {
+	if _org == nil {
+		panic("the org interface is nil")
+	}
+	return _org
+}
+
 func (p *provider) WithMember(member *member.Member) {
 	p.member = member
 }
@@ -76,6 +85,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	if p.Client == nil && p.Register != nil {
 		pb.RegisterOrgServiceImp(p.Register, p, apis.Options())
 	}
+	_org = p
 	return nil
 }
 

@@ -77,10 +77,6 @@ func (i *ComponentList) SetCtxBundle(b protocol.ContextBundle) error {
 	return nil
 }
 
-func (i *ComponentList) SetOrg(org org.Interface) {
-	i.Org = org
-}
-
 func (i *ComponentList) Render(ctx context.Context, c *apistructs.Component, _ apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) (err error) {
 	if event.Operation != apistructs.InitializeOperation {
 		err = i.unmarshal(c)
@@ -97,12 +93,10 @@ func (i *ComponentList) Render(ctx context.Context, c *apistructs.Component, _ a
 	}()
 
 	bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
-	org := ctx.Value(protocol.OrgClientSvc.String()).(org.Interface)
 
 	if err := i.SetCtxBundle(bdl); err != nil {
 		return err
 	}
-	i.SetOrg(org)
 
 	i.initProperty()
 	switch event.Operation {
@@ -133,7 +127,7 @@ func (i *ComponentList) RenderMyOrgs() error {
 		PageNo:   int64(i.State.PageNo),
 		PageSize: int64(i.State.PageSize),
 	}
-	orgs, err := i.Org.ListOrg(apis.WithUserIDContext(apis.WithInternalClientContext(context.Background(), discover.SvcOpenapi), i.CtxBdl.Identity.UserID), &req)
+	orgs, err := org.MustGetOrg().ListOrg(apis.WithUserIDContext(apis.WithInternalClientContext(context.Background(), discover.SvcOpenapi), i.CtxBdl.Identity.UserID), &req)
 	if err != nil {
 		return err
 	}
@@ -144,7 +138,7 @@ func (i *ComponentList) RenderMyOrgs() error {
 
 	if i.State.SearchEntry != "" {
 		req.Q = i.State.SearchEntry
-		orgs, err = i.Org.ListOrg(apis.WithUserIDContext(apis.WithInternalClientContext(context.Background(), discover.SvcOpenapi), i.CtxBdl.Identity.UserID), &req)
+		orgs, err = org.MustGetOrg().ListOrg(apis.WithUserIDContext(apis.WithInternalClientContext(context.Background(), discover.SvcOpenapi), i.CtxBdl.Identity.UserID), &req)
 		if err != nil {
 			return err
 		}

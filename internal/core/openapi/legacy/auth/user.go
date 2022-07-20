@@ -78,18 +78,17 @@ type User struct {
 	ucUserAuth *uc.UCUserAuth
 
 	bundle *bundle.Bundle
-	org    org.Interface
 }
 
 var client = bundle.New(bundle.WithErdaServer(), bundle.WithDOP())
 
-func NewUser(redisCli *redis.Client, org org.Interface) *User {
+func NewUser(redisCli *redis.Client) *User {
 	ucUserAuth := uc.NewUCUserAuth(conf.UCAddrFront(), discover.UC(), "http://"+conf.UCRedirectHost()+"/logincb", conf.UCClientID(), conf.UCClientSecret())
 	if conf.OryEnabled() {
 		ucUserAuth.ClientID = conf.OryCompatibleClientID()
 		ucUserAuth.UCHost = conf.OryKratosAddr()
 	}
-	return &User{state: GetInit, redisCli: redisCli, ucUserAuth: ucUserAuth, bundle: client, org: org}
+	return &User{state: GetInit, redisCli: redisCli, ucUserAuth: ucUserAuth, bundle: client}
 }
 
 func (u *User) get(req *http.Request, state GetUserState) (interface{}, AuthResult) {
@@ -197,8 +196,7 @@ func (u *User) GetOrgInfo(orgHeader, domainHeader string) (orgID uint64, err err
 		return 0, nil
 	}
 	// query org info
-	// query org info
-	orgResp, err := u.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcOpenapi), &orgpb.GetOrgRequest{
+	orgResp, err := org.MustGetOrg().GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcOpenapi), &orgpb.GetOrgRequest{
 		IdOrName: orgName,
 	})
 	if err != nil {

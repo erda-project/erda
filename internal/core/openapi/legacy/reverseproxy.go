@@ -39,7 +39,6 @@ import (
 	"github.com/erda-project/erda/internal/core/openapi/legacy/proxy"
 	phttp "github.com/erda-project/erda/internal/core/openapi/legacy/proxy/http"
 	"github.com/erda-project/erda/internal/core/openapi/legacy/proxy/ws"
-	"github.com/erda-project/erda/internal/core/org"
 )
 
 type ReverseProxyWithAuth struct {
@@ -48,14 +47,13 @@ type ReverseProxyWithAuth struct {
 	auth      *auth.Auth
 	bundle    *bundle.Bundle
 	cache     *sync.Map
-	org       org.Interface
 }
 
-func NewReverseProxyWithAuth(auth *auth.Auth, bundle *bundle.Bundle, org org.Interface) (http.Handler, error) {
+func NewReverseProxyWithAuth(auth *auth.Auth, bundle *bundle.Bundle) (http.Handler, error) {
 	director := proxy.NewDirector()
-	httpProxy := phttp.NewReverseProxyWithCustom(director, modifyResponse, org)
-	wsProxy := ws.NewReverseProxyWithCustom(director, org)
-	return &ReverseProxyWithAuth{httpProxy: httpProxy, wsProxy: wsProxy, auth: auth, bundle: bundle, cache: &sync.Map{}, org: org}, nil
+	httpProxy := phttp.NewReverseProxyWithCustom(director, modifyResponse)
+	wsProxy := ws.NewReverseProxyWithCustom(director)
+	return &ReverseProxyWithAuth{httpProxy: httpProxy, wsProxy: wsProxy, auth: auth, bundle: bundle, cache: &sync.Map{}}, nil
 }
 
 func (r *ReverseProxyWithAuth) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
@@ -91,7 +89,6 @@ func (r *ReverseProxyWithAuth) ServeHTTP(rw http.ResponseWriter, req *http.Reque
 			c = context.WithValue(c, "bundle", r.bundle)
 			c = context.WithValue(c, "beginTime", time.Now())
 			c = context.WithValue(c, "cache", r.cache)
-			c = context.WithValue(c, "org", r.org)
 			req = req.WithContext(c)
 			req.Body = ioutil.NopCloser(bytes.NewReader(reqBody))
 			r.httpProxy.ServeHTTP(rw, req)
@@ -158,7 +155,6 @@ func modifyResponse(res *http.Response) error {
 		bdl := request.Context().Value("bundle").(*bundle.Bundle)
 		beginTime := request.Context().Value("beginTime").(time.Time)
 		cache := request.Context().Value("cache").(*sync.Map)
-		orgClient := request.Context().Value("org").(org.Interface)
 		request.Body = reqBody
 		resBody, err := ioutil.ReadAll(res.Body)
 		if err != nil {
@@ -180,7 +176,6 @@ func modifyResponse(res *http.Response) error {
 			UserAgent: request.Header.Get("User-Agent"),
 			ClientIP:  GetRealIP(request),
 			Cache:     cache,
-			Org:       orgClient,
 		}
 
 		go func() {

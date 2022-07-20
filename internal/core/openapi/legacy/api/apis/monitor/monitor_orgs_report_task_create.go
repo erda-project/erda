@@ -22,6 +22,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/core/openapi/legacy/api/apis"
 	"github.com/erda-project/erda/internal/core/openapi/legacy/api/spec"
+	"github.com/erda-project/erda/internal/core/org"
 	comapis "github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/discover"
 )
@@ -47,7 +48,7 @@ func auditCreateOrgReportTask(tmp apistructs.TemplateName) func(ctx *spec.AuditC
 			return err
 		}
 
-		orgResp, err := ctx.Org.GetOrg(comapis.WithInternalClientContext(context.Background(), discover.SvcOpenapi), &orgpb.GetOrgRequest{
+		orgResp, err := org.MustGetOrg().GetOrg(comapis.WithInternalClientContext(context.Background(), discover.SvcOpenapi), &orgpb.GetOrgRequest{
 			IdOrName: strconv.FormatInt(ctx.OrgID, 10),
 		})
 		if err != nil {

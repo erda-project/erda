@@ -143,7 +143,7 @@ func (p *provider) GetOrg(IdOrName string) (*orgpb.Org, error) {
 	if IdOrName == "" {
 		return nil, fmt.Errorf("the IdOrName is empty")
 	}
-	orgResp, err := p.Org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.Pipeline()), &orgpb.GetOrgRequest{
+	orgResp, err := p.Org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcOpenapi), &orgpb.GetOrgRequest{
 		IdOrName: IdOrName,
 	})
 	if err != nil {

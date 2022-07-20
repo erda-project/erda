@@ -16,7 +16,6 @@ package list
 
 import (
 	protocol "github.com/erda-project/erda/internal/core/openapi/legacy/component-protocol"
-	"github.com/erda-project/erda/internal/core/org"
 )
 
 type ComponentList struct {
@@ -25,7 +24,6 @@ type ComponentList struct {
 	State      State                  `json:"state"`
 	Props      Props                  `json:"props"`
 	Data       []Org                  `json:"data"`
-	Org        org.Interface
 }
 
 type State struct {

@@ -235,7 +235,6 @@ type AuditContext struct {
 	ClientIP  string
 	UserAgent string
 	Cache     *sync.Map
-	Org       org.Interface
 }
 
 func (ctx *AuditContext) GetParamInt64(key string) (int64, error) {
@@ -268,7 +267,7 @@ func (ctx *AuditContext) GetOrg(idObject interface{}) (*orgpb.Org, error) {
 	var result *orgpb.Org
 	cacheObject, ok := ctx.Cache.Load(cacheKey)
 	if !ok {
-		orgResp, err := ctx.Org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcOpenapi), &orgpb.GetOrgRequest{
+		orgResp, err := org.MustGetOrg().GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcOpenapi), &orgpb.GetOrgRequest{
 			IdOrName: idStr,
 		})
 		if err != nil {
