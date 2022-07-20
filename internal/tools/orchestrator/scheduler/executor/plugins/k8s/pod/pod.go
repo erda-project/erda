@@ -16,32 +16,37 @@
 package pod
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"strings"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	apiv1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/cache"
+	watchtools "k8s.io/client-go/tools/watch"
 
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8serror"
-	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/strutil"
+)
+
+const (
+	defaultPodLimit = 10
 )
 
 // Pod is the object to encapsulate docker
 type Pod struct {
-	addr   string
-	client *httpclient.HTTPClient
+	k8sClient kubernetes.Interface
 }
 
-// Option configures an Pod
+// Option configures a Pod
 type Option func(*Pod)
 
-// New news an Pod
+// New news a Pod
 func New(options ...Option) *Pod {
 	ns := &Pod{}
 
@@ -52,253 +57,101 @@ func New(options ...Option) *Pod {
 	return ns
 }
 
-// WithCompleteParams provides an Option
-func WithCompleteParams(addr string, client *httpclient.HTTPClient) Option {
+func WithK8sClient(k8sClient kubernetes.Interface) Option {
 	return func(p *Pod) {
-		p.addr = addr
-		p.client = client
+		p.k8sClient = k8sClient
 	}
 }
 
 // Get gets a k8s pod
-func (p *Pod) Get(namespace, name string) (*apiv1.Pod, error) {
-	var b bytes.Buffer
-	path := strutil.Concat("/api/v1/namespaces/", namespace, "/pods/", name)
-
-	resp, err := p.client.Get(p.addr).
-		Path(path).
-		Do().
-		Body(&b)
-
+func (p *Pod) Get(namespace, name string) (*corev1.Pod, error) {
+	pod, err := p.k8sClient.CoreV1().Pods(namespace).Get(context.Background(), name, metav1.GetOptions{})
 	if err != nil {
-		return nil, errors.Errorf("failed to get pod, namespace: %s, name: %s, (%v)", namespace, name, err)
-	}
-	if !resp.IsOK() {
-		if resp.IsNotfound() {
+		if k8serrors.IsNotFound(err) {
 			return nil, k8serror.ErrNotFound
 		}
-		return nil, errors.Errorf("failed to get pod, namespace: %s, name: %s, statuscode: %v, body: %v",
-			namespace, name, resp.StatusCode(), b.String())
-	}
-	pod := &apiv1.Pod{}
-	if err := json.NewDecoder(&b).Decode(pod); err != nil {
 		return nil, err
 	}
+
 	return pod, nil
 }
 
-func (p *Pod) Delete(namespace, podname string) error {
-	var b bytes.Buffer
-	path := strutil.Concat("/api/v1/namespaces/", namespace, "/pods/", podname)
-	resp, err := p.client.Delete(p.addr).
-		Path(path).
-		Do().
-		Body(&b)
-	if err != nil {
+func (p *Pod) Delete(namespace, name string) error {
+	err := p.k8sClient.CoreV1().Pods(namespace).Delete(context.Background(), name, metav1.DeleteOptions{})
+	if err != nil && !k8serrors.IsNotFound(err) {
 		return err
-	}
-	if !resp.IsOK() {
-		if resp.IsNotfound() {
-			return nil
-		}
-		return errors.Errorf("failed to get pod, namespace: %s, podname: %s, statuscode: %v, body: %v",
-			namespace, podname, resp.StatusCode(), b.String())
 	}
 	return nil
 }
 
-type rawevent struct {
-	Type   string          `json:"type"`
-	Object json.RawMessage `json:"object"`
-}
+func (p *Pod) WatchAllNamespace(ctx context.Context, addFunc, modifyFunc, delFunc func(*corev1.Pod)) error {
+	fieldSelector, err := fields.ParseSelector(fmt.Sprintf("metadata.namespace!=%s", metav1.NamespaceSystem))
+	pods, err := p.k8sClient.CoreV1().Pods(metav1.NamespaceAll).List(ctx, metav1.ListOptions{
+		Limit: defaultPodLimit,
+	})
+	if err != nil {
+		return err
+	}
 
-func (p *Pod) WatchAllNamespace(ctx context.Context, addfunc, updatefunc, deletefunc func(*apiv1.Pod)) error {
+	retryWatcher, err := watchtools.NewRetryWatcher(pods.ResourceVersion, &cache.ListWatch{
+		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
+			options.FieldSelector = fieldSelector.String()
+			return p.k8sClient.CoreV1().Pods(metav1.NamespaceAll).Watch(ctx, options)
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("create retry watcher error: %v", err)
+	}
+
+	defer retryWatcher.Stop()
+	logrus.Infof("start watching pods ......")
+
 	for {
-		var b bytes.Buffer
-		resp, err := p.client.Get(p.addr).
-			Path("/api/v1/pods").
-			Param("limit", "10").
-			Do().Body(&b)
-		if err != nil {
-			return err
-		}
-		if !resp.IsOK() {
-			content, _ := ioutil.ReadAll(&b)
-			errMsg := fmt.Sprintf("failed to get resp from k8s pods watcher, resp is not OK, body: %v",
-				string(content))
-			logrus.Errorf(errMsg)
-			return errors.New(errMsg)
-		}
-		podlist := apiv1.PodList{}
-		if err := json.NewDecoder(&b).Decode(&podlist); err != nil {
-			return err
-		}
-		lastResourceVersion := podlist.ListMeta.ResourceVersion
-		body, resp, err := p.client.Get(p.addr).
-			Path("/api/v1/watch/pods").
-			Header("Portal-SSE", "on").
-			Param("fieldSelector", strutil.Join([]string{
-				"metadata.namespace!=kube-system",
-			}, ",")).
-			Param("resourceVersion", lastResourceVersion).
-			Do().
-			StreamBody()
-		if err != nil {
-			logrus.Errorf("failed to get resp from k8s pods watcher, (%v)", err)
-			return err
-		}
-
-		if !resp.IsOK() {
-			errMsg := fmt.Sprintf("failed to get resp from k8s pods watcher, resp is not OK")
-			logrus.Errorf(errMsg)
-			return errors.New(errMsg)
-		}
-
-		decoder := json.NewDecoder(body)
-		for {
-			select {
-			case <-ctx.Done():
+		select {
+		case <-ctx.Done():
+			logrus.Infof("context done, stop watching pods")
+			return nil
+		case e, ok := <-retryWatcher.ResultChan():
+			if !ok {
+				logrus.Warnf("pods retry watcher is closed")
 				return nil
-			default:
 			}
-			e := rawevent{}
-			if err := decoder.Decode(&e); err != nil {
-				logrus.Errorf("failed to decode event: %v", err)
-				body.Close()
-				break
+
+			pod, ok := e.Object.(*corev1.Pod)
+			if !ok {
+				logrus.Warnf("object is not a pod")
+				continue
 			}
-			switch strutil.ToUpper(e.Type) {
-			case "ADDED":
-				pod := apiv1.Pod{}
-				if err := json.Unmarshal(e.Object, &pod); err != nil {
-					logrus.Errorf("failed to unmarshal event obj, err: %v, raw: %s", err, string(e.Object))
-					body.Close()
-					continue
-				}
-				addfunc(&pod)
-			case "MODIFIED":
-				pod := apiv1.Pod{}
-				if err := json.Unmarshal(e.Object, &pod); err != nil {
-					logrus.Errorf("failed to unmarshal event obj, err: %v, raw: %s", err, string(e.Object))
-					body.Close()
-					continue
-				}
-				updatefunc(&pod)
-			case "DELETED":
-				pod := apiv1.Pod{}
-				if err := json.Unmarshal(e.Object, &pod); err != nil {
-					logrus.Errorf("failed to unmarshal event obj, err: %v, raw: %s", err, string(e.Object))
-					body.Close()
-					continue
-				}
-				deletefunc(&pod)
-			case "ERROR", "BOOKMARK":
-				logrus.Infof("ignore ERROR or BOOKMARK event: %v", string(e.Object))
+
+			logrus.Debugf("watch pod event %s, object: %+v", e.Type, pod)
+
+			switch e.Type {
+			case watch.Added:
+				addFunc(pod)
+			case watch.Modified:
+				modifyFunc(pod)
+			case watch.Deleted:
+				delFunc(pod)
+			case watch.Bookmark, watch.Error:
+				logrus.Debugf("ignore event %s, name: %s", e.Type, pod.Name)
 			}
 		}
-		if body != nil {
-			body.Close()
-		}
 	}
-	panic("unreachable")
 }
 
-func (p *Pod) LimitedListAllNamespace(limit int, cont *string) (*apiv1.PodList, *string, error) {
-	var podlist apiv1.PodList
-	var b bytes.Buffer
-	req := p.client.Get(p.addr).
-		Path("/api/v1/pods")
-	if cont != nil {
-		req = req.Param("continue", *cont)
-	}
-	resp, err := req.Param("fieldSelector", strutil.Join([]string{
-		"metadata.namespace!=default",
-		"metadata.namespace!=kube-system"}, ",")).
-		Param("limit", fmt.Sprintf("%d", limit)).
-		Do().Body(&b)
-	if err != nil {
-		return &podlist, nil, err
-	}
-	if !resp.IsOK() {
-		return &podlist, nil, fmt.Errorf("failed to list pods, statuscode: %v, addr: %s, body: %v",
-			resp.StatusCode(), p.addr, b.String())
-	}
-	if err := json.Unmarshal(b.Bytes(), &podlist); err != nil {
-		return &podlist, nil, err
-	}
-	if podlist.ListMeta.Continue != "" {
-		return &podlist, &podlist.ListMeta.Continue, nil
-	}
-	return &podlist, nil, nil
-}
-
-func (p *Pod) ListAllNamespace(fieldSelectors []string) (*apiv1.PodList, error) {
-	var podlist apiv1.PodList
-	var b bytes.Buffer
-	req := p.client.Get(p.addr, httpclient.RetryOption{}).
-		Path("/api/v1/pods")
-	body, resp, err := req.Param("fieldSelector", strutil.Join(fieldSelectors, ",")).
-		Do().StreamBody()
-	if err != nil {
-		return &podlist, err
-	}
-	defer func() {
-		if body != nil {
-			body.Close()
-		}
-	}()
-	if !resp.IsOK() {
-		return &podlist, fmt.Errorf("failed to list pods, statuscode: %v, addr: %s, body: %v",
-			resp.StatusCode(), p.addr, b.String())
-	}
-	d := json.NewDecoder(body)
-	for {
-		t, err := d.Token()
-		if err != nil {
-			return nil, err
-		}
-		v, ok := t.(string)
-		if !ok {
-			continue
-		}
-		if v == "items" {
-			break
-		}
-	}
-	if _, err := d.Token(); err != nil {
-		return nil, err
-	}
-	pods := []apiv1.Pod{}
-	for d.More() {
-		pod := apiv1.Pod{}
-		if err := d.Decode(&pod); err != nil {
-			r, _ := ioutil.ReadAll(d.Buffered())
-			logrus.Infof("failed to decode pod: buffered string: %s", string(r[:200]))
-			return nil, err
-		}
-		pods = append(pods, pod)
-	}
-	podlist.Items = pods
-	return &podlist, nil
-}
-
-func (p *Pod) ListNamespacePods(namespace string) (*apiv1.PodList, error) {
-	var podlist apiv1.PodList
-	var b bytes.Buffer
-	resp, err := p.client.Get(p.addr).
-		Path(fmt.Sprintf("/api/v1/namespaces/%s/pods", namespace)).
-		Do().Body(&b)
+func (p *Pod) ListAllNamespace(fieldSelectors []string) (*corev1.PodList, error) {
+	selector, err := fields.ParseSelector(strutil.Join(fieldSelectors, ","))
 	if err != nil {
 		return nil, err
 	}
-	if !resp.IsOK() {
-		return nil, fmt.Errorf("failed to list pods, statuscode: %v, addr: %s, body: %v",
-			resp.StatusCode(), p.addr, b.String())
-	}
-	if err := json.Unmarshal(b.Bytes(), &podlist); err != nil {
-		return nil, err
-	}
-	return &podlist, nil
+
+	return p.k8sClient.CoreV1().Pods(metav1.NamespaceAll).List(context.Background(), metav1.ListOptions{
+		FieldSelector: selector.String(),
+	})
+}
+
+func (p *Pod) ListNamespacePods(namespace string) (*corev1.PodList, error) {
+	return p.k8sClient.CoreV1().Pods(namespace).List(context.Background(), metav1.ListOptions{})
 }
 
 type UnreadyReason string
@@ -312,7 +165,7 @@ const (
 	ContainerCannotRun    UnreadyReason = "ContainerCannotRun"
 )
 
-func (p *Pod) UnreadyPodReason(pod *apiv1.Pod) (UnreadyReason, string) {
+func (p *Pod) UnreadyPodReason(pod *corev1.Pod) (UnreadyReason, string) {
 	// image pull failed
 	for _, container := range pod.Status.ContainerStatuses {
 		if container.State.Waiting != nil && container.State.Waiting.Reason == "ImagePullBackOff" {
@@ -323,7 +176,7 @@ func (p *Pod) UnreadyPodReason(pod *apiv1.Pod) (UnreadyReason, string) {
 	// insufficient resources
 	for _, cond := range pod.Status.Conditions {
 		if cond.Type == "PodScheduled" &&
-			cond.Status == apiv1.ConditionFalse &&
+			cond.Status == corev1.ConditionFalse &&
 			cond.Reason == "Unschedulable" &&
 			strutil.Contains(cond.Message, "nodes are available") &&
 			strutil.Contains(cond.Message, "Insufficient memory", "Insufficient cpu") {
@@ -333,7 +186,7 @@ func (p *Pod) UnreadyPodReason(pod *apiv1.Pod) (UnreadyReason, string) {
 
 	// other unschedule reasons
 	for _, cond := range pod.Status.Conditions {
-		if cond.Type == "PodScheduled" && cond.Status == apiv1.ConditionFalse && cond.Reason == "Unschedulable" {
+		if cond.Type == "PodScheduled" && cond.Status == corev1.ConditionFalse && cond.Reason == "Unschedulable" {
 			return Unschedulable, cond.Message
 		}
 	}
@@ -341,7 +194,7 @@ func (p *Pod) UnreadyPodReason(pod *apiv1.Pod) (UnreadyReason, string) {
 	// container cannot run
 	if pod.Status.Phase == "Running" {
 		for _, cond := range pod.Status.Conditions {
-			if cond.Type == "ContainersReady" && cond.Status == apiv1.ConditionFalse && cond.Reason == "ContainersNotReady" {
+			if cond.Type == "ContainersReady" && cond.Status == corev1.ConditionFalse && cond.Reason == "ContainersNotReady" {
 				for _, container := range pod.Status.ContainerStatuses {
 					if container.Ready == false &&
 						container.Started != nil &&
@@ -357,7 +210,7 @@ func (p *Pod) UnreadyPodReason(pod *apiv1.Pod) (UnreadyReason, string) {
 	// probe failed
 	if pod.Status.Phase == "Running" {
 		for _, cond := range pod.Status.Conditions {
-			if cond.Type == "ContainersReady" && cond.Status == apiv1.ConditionFalse && cond.Reason == "ContainersNotReady" {
+			if cond.Type == "ContainersReady" && cond.Status == corev1.ConditionFalse && cond.Reason == "ContainersNotReady" {
 				return ProbeFailed, cond.Message
 			}
 		}
@@ -371,9 +224,8 @@ type PodStatus struct {
 	Message string
 }
 
-func (p *Pod) GetNamespacedPodsStatus(pods []apiv1.Pod, serviceName string) ([]PodStatus, error) {
-
-	r := []PodStatus{}
+func (p *Pod) GetNamespacedPodsStatus(pods []corev1.Pod, serviceName string) ([]PodStatus, error) {
+	r := make([]PodStatus, 0, len(pods))
 	for _, pod := range pods {
 		if serviceName == "" || !strings.Contains(pod.Name, serviceName) {
 			continue

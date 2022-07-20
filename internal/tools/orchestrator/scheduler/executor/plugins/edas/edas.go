@@ -50,6 +50,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/resourceinfo"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/util"
 	"github.com/erda-project/erda/pkg/http/httpclient"
+	"github.com/erda-project/erda/pkg/k8sclient"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -134,6 +135,11 @@ func init() {
 			return nil, errors.Errorf("get http client err %v", err)
 		}
 
+		k8sClient, err := k8sclient.New(clustername)
+		if err != nil {
+			return nil, errors.Errorf("get k8s client err %v", err)
+		}
+
 		regAddr, ok := options["REGADDR"]
 		if !ok {
 			return nil, errors.Errorf("not found dice registry addr in env variables")
@@ -146,7 +152,7 @@ func init() {
 			logrus.Errorf("executor(%s) call eventbox new api error: %v", name, err)
 			return nil, err
 		}
-		resourceInfo := resourceinfo.New(kubeAddr, kubeClient)
+		resourceInfo := resourceinfo.New(kubeAddr, kubeClient, k8sClient.ClientSet)
 
 		edas := &EDAS{
 			name:            name,
