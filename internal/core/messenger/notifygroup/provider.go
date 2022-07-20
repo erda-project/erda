@@ -95,7 +95,8 @@ func init() {
 	servicehub.Register("erda.core.messenger.notifygroup", &servicehub.Spec{
 		Services:             pb.ServiceNames(),
 		Types:                pb.Types(),
-		OptionalDependencies: []string{"service-register", "audit"},
+		OptionalDependencies: []string{"service-register"},
+		Dependencies:         []string{"audit"},
 		Description:          "",
 		ConfigFunc: func() interface{} {
 			return &config{}
