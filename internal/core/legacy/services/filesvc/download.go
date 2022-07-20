@@ -17,12 +17,13 @@ package filesvc
 import (
 	"bytes"
 	"encoding/base64"
+	"encoding/hex"
 	"io"
 	"io/ioutil"
-	"mime"
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/erda-project/erda/apistructs"
@@ -37,6 +38,20 @@ const (
 	headerContentType        = "Content-Type"
 	headerContentDisposition = "Content-Disposition"
 	HeaderContentLength      = "Content-Length" // The Content-Length entity header indicates the size of the entity-body, in bytes, sent to the recipient.
+
+	headerContentTypePng = "image/png"
+)
+
+var (
+	// allowedContentTypes is a map of allowed file code(key) and content type(value).
+	// reference link: https://www.garykessler.net/library/file_sigs.html
+	allowedContentTypes = map[string]string{
+		"FFD8FFE0":    headerContentTypePng, // jpg
+		"FFD8FFE1":    headerContentTypePng, // jpg
+		"FFD8FFE8":    headerContentTypePng, // jpg
+		"47494638PNG": headerContentTypePng, // gif
+		"89504E47":    headerContentTypePng, // png
+	}
 )
 
 // DownloadFile write file to writer `w`,  return corresponding file http response headers.
@@ -92,8 +107,9 @@ func (svc *FileService) DownloadFile(w io.Writer, file dao.File) (headers map[st
 		headerContentDisposition: headerValueDispositionInline(file.Ext, file.DisplayName),
 		HeaderContentLength:      strconv.FormatInt(file.ByteSize, 10),
 	}
-
-	contentType := mime.TypeByExtension(file.Ext)
+	var buf bytes.Buffer
+	tee := io.TeeReader(reader, &buf)
+	contentType := GetFileContentType(tee)
 	if contentType != "" {
 		headers[headerContentType] = contentType
 	}
@@ -105,9 +121,54 @@ func (svc *FileService) DownloadFile(w io.Writer, file dao.File) (headers map[st
 		}
 	}
 
+	if _, err := io.Copy(w, &buf); err != nil {
+		return nil, apierrors.ErrDownloadFile.InternalError(err)
+	}
 	if _, err := io.Copy(w, reader); err != nil {
 		return nil, apierrors.ErrDownloadFile.InternalError(err)
 	}
 
 	return
+}
+
+// GetFileContentType judge file content type by file header.
+// If file header is found in allowedContentTypes, return content type, otherwise return application/octet-stream.
+func GetFileContentType(r io.Reader) string {
+	contentType := "application/octet-stream"
+	var buf bytes.Buffer
+	tee := io.TeeReader(r, &buf)
+	headerBuf := make([]byte, 20)
+	n, err := tee.Read(headerBuf)
+	if err != nil {
+		return contentType
+	}
+	fileCode := bytesToHexString(headerBuf[:n])
+	for k, v := range allowedContentTypes {
+		if strings.HasPrefix(strings.ToLower(fileCode), strings.ToLower(k)) {
+			return v
+		}
+	}
+
+	return contentType
+}
+
+func bytesToHexString(src []byte) string {
+	res := bytes.Buffer{}
+	if src == nil || len(src) <= 0 {
+		return ""
+	}
+	temp := make([]byte, 0)
+	i, length := 100, len(src)
+	if length < i {
+		i = length
+	}
+	for j := 0; j < i; j++ {
+		sub := src[j] & 0xFF
+		hv := hex.EncodeToString(append(temp, sub))
+		if len(hv) < 2 {
+			res.WriteString(strconv.FormatInt(int64(0), 10))
+		}
+		res.WriteString(hv)
+	}
+	return res.String()
 }
