@@ -15,7 +15,6 @@
 package executor
 
 import (
-	"encoding/json"
 	"errors"
 
 	"github.com/erda-project/erda-proto-go/core/rule/pb"
@@ -52,7 +51,7 @@ func (e Executor) Fire(req *pb.FireRequest) ([]bool, error) {
 			continue
 		}
 		var output string
-		actionRes, err := e.Action(req.EventType, ruleEnv.Env, v.Action)
+		actionRes, err := e.DingTalkAction(ruleEnv.Env, v.Action)
 		if err != nil {
 			output = err.Error()
 		} else {
@@ -77,35 +76,23 @@ func (e Executor) Fire(req *pb.FireRequest) ([]bool, error) {
 	return results, nil
 }
 
-// Outgoing API:  dingtalk config is available now
-func (e Executor) Action(eventType string, content map[string]interface{}, params dao.ActionParams) (string, error) {
-	if d := params.DingTalk; d != nil {
-		target := apistructs.Target{
-			Receiver: d.Webhook,
-			Secret:   d.Signature,
-		}
-		url, err := target.GetSignURL()
-		if err != nil {
-			return "", err
-		}
-		bytes, err := json.Marshal(content)
-		if err != nil {
-			return "", err
-		}
-		configs := make([]jsonnet.TLACodeConfig, 0)
-		configs = append(configs, jsonnet.TLACodeConfig{
-			Key:   "ctx",
-			Value: string(bytes),
-		})
-		b, err := e.TemplateParser.EvaluateBySnippet(params.Snippet, configs)
-		if err != nil {
-			return "", err
-		}
-		action := actions.APIConfig{
-			URL:  url,
-			Body: b,
-		}
-		return action.Send()
+func (e Executor) DingTalkAction(content map[string]interface{}, params dao.ActionParams) (string, error) {
+	d := params.DingTalk
+	if d == nil {
+		return "", nil
 	}
-	return "", nil
+	target := apistructs.Target{
+		Receiver: d.Webhook,
+		Secret:   d.Signature,
+	}
+	url, err := target.GetSignURL()
+	if err != nil {
+		return "", err
+	}
+	action := actions.APIConfig{
+		URL:            url,
+		TemplateParser: e.TemplateParser,
+		Snippet:        params.Snippet,
+	}
+	return action.Send(content)
 }

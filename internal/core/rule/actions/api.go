@@ -22,26 +22,42 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/erda-project/erda/internal/core/rule/jsonnet"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
-type Action interface {
-	Send() error
-}
-
 type APIConfig struct {
-	URL    string
-	Header Header
-	Body   string
+	TemplateParser jsonnet.Engine
+	URL            string
+	Header         Header
+	Body           string
+	Snippet        string
 }
 
 type Header struct {
+	Key   string
+	Value string
 }
 
 // outgoing API
-func (a *APIConfig) Send() (string, error) {
+func (a *APIConfig) Send(content map[string]interface{}) (string, error) {
+	b, err := json.Marshal(content)
+	if err != nil {
+		return "", err
+	}
+	configs := make([]jsonnet.TLACodeConfig, 0)
+	configs = append(configs, jsonnet.TLACodeConfig{
+		Key:   "ctx",
+		Value: string(b),
+	})
+
+	jsonStr, err := a.TemplateParser.EvaluateBySnippet(a.Snippet, configs)
+	if err != nil {
+		return "", err
+	}
+
 	res := make(map[string]interface{})
-	if err := json.Unmarshal([]byte(a.Body), &res); err != nil {
+	if err := json.Unmarshal([]byte(jsonStr), &res); err != nil {
 		return "", err
 	}
 	parsed, err := url.Parse(a.URL)
