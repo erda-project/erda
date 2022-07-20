@@ -457,8 +457,7 @@ func (s *PipelineSvc) CreatePipelineSourceAndDefinition(ctx context.Context, req
 	if err != nil {
 		return "", err
 	}
-
-	b, err := json.Marshal(req)
+	extra, err := getPipelineDefinitionExtra(req)
 	if err != nil {
 		return "", err
 	}
@@ -469,10 +468,8 @@ func (s *PipelineSvc) CreatePipelineSourceAndDefinition(ctx context.Context, req
 		Creator:          req.UserID,
 		PipelineSourceID: sourceResp.PipelineSource.ID,
 		Category:         category,
-		Extra: &dpb.PipelineDefinitionExtra{
-			Extra: string(b),
-		},
-		Ref: ymlName.branch,
+		Extra:            extra,
+		Ref:              ymlName.branch,
 	})
 	if err != nil {
 		return "", err
@@ -485,6 +482,19 @@ type pipelineYmlName struct {
 	workspace string
 	branch    string
 	fileName  string
+}
+
+func getPipelineDefinitionExtra(req *apistructs.PipelineCreateRequestV2) (*dpb.PipelineDefinitionExtra, error) {
+	var extra apistructs.PipelineDefinitionExtraValue
+	extra.CreateRequest = req
+
+	b, err := json.Marshal(extra)
+	if err != nil {
+		return nil, err
+	}
+	return &dpb.PipelineDefinitionExtra{
+		Extra: string(b),
+	}, nil
 }
 
 func parseSourceDicePipelineYmlName(ymlName string, branch string) *pipelineYmlName {

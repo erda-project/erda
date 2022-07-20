@@ -54,34 +54,51 @@ func (p pipelineDefinition) Create(ctx context.Context, request *pb.PipelineDefi
 	}
 
 	var pipelineDefinition db.PipelineDefinition
-	pipelineDefinition.Location = request.Location
-	pipelineDefinition.Name = request.Name
-	pipelineDefinition.PipelineSourceId = request.PipelineSourceID
-	pipelineDefinition.Category = request.Category
-	pipelineDefinition.Creator = request.Creator
-	pipelineDefinition.ID = uuid.New()
-	pipelineDefinition.StartedAt = *mysql_time.GetMysqlDefaultTime()
-	pipelineDefinition.EndedAt = *mysql_time.GetMysqlDefaultTime()
-	pipelineDefinition.CostTime = -1
-	pipelineDefinition.Ref = request.Ref
-	err := p.dbClient.CreatePipelineDefinition(&pipelineDefinition)
+
+	definitionInDB, has, err := p.dbClient.GetPipelineDefinitionBySourceID(request.PipelineSourceID)
 	if err != nil {
 		return nil, err
+	}
+	if has {
+		pipelineDefinition = *definitionInDB
+	} else {
+		pipelineDefinition.Location = request.Location
+		pipelineDefinition.Name = request.Name
+		pipelineDefinition.PipelineSourceId = request.PipelineSourceID
+		pipelineDefinition.Category = request.Category
+		pipelineDefinition.Creator = request.Creator
+		pipelineDefinition.ID = uuid.New()
+		pipelineDefinition.StartedAt = *mysql_time.GetMysqlDefaultTime()
+		pipelineDefinition.EndedAt = *mysql_time.GetMysqlDefaultTime()
+		pipelineDefinition.CostTime = -1
+		pipelineDefinition.Ref = request.Ref
+		err = p.dbClient.CreatePipelineDefinition(&pipelineDefinition)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	var pipelineDefinitionExtra db.PipelineDefinitionExtra
-	pipelineDefinitionExtra.ID = uuid.New()
-	var extra apistructs.PipelineDefinitionExtraValue
-	err = json.Unmarshal([]byte(request.Extra.Extra), &extra)
+	pipelineDefinitionExtraInDB, err := p.dbClient.GetPipelineDefinitionExtraByDefinitionID(pipelineDefinition.ID)
 	if err != nil {
 		return nil, err
 	}
-	pipelineDefinitionExtra.PipelineDefinitionID = pipelineDefinition.ID
-	pipelineDefinitionExtra.Extra = extra
-	pipelineDefinitionExtra.PipelineSourceID = request.PipelineSourceID
-	err = p.dbClient.CreatePipelineDefinitionExtra(&pipelineDefinitionExtra)
-	if err != nil {
-		return nil, err
+	if pipelineDefinitionExtraInDB != nil {
+		pipelineDefinitionExtra = *pipelineDefinitionExtraInDB
+	} else {
+		pipelineDefinitionExtra.ID = uuid.New()
+		var extra apistructs.PipelineDefinitionExtraValue
+		err = json.Unmarshal([]byte(request.Extra.Extra), &extra)
+		if err != nil {
+			return nil, err
+		}
+		pipelineDefinitionExtra.PipelineDefinitionID = pipelineDefinition.ID
+		pipelineDefinitionExtra.Extra = extra
+		pipelineDefinitionExtra.PipelineSourceID = request.PipelineSourceID
+		err = p.dbClient.CreatePipelineDefinitionExtra(&pipelineDefinitionExtra)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	pbPipelineDefinition := PipelineDefinitionToPb(&pipelineDefinition)
