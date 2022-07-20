@@ -96,6 +96,7 @@ func init() {
 		Services:             pb.ServiceNames(),
 		Types:                pb.Types(),
 		OptionalDependencies: []string{"service-register"},
+		Dependencies:         []string{"audit"},
 		Description:          "",
 		ConfigFunc: func() interface{} {
 			return &config{}

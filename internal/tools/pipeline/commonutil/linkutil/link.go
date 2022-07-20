@@ -15,16 +15,20 @@
 package linkutil
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/clusterinfo"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 )
 
-func GetPipelineLink(bdl *bundle.Bundle, p spec.Pipeline) (bool, string) {
+func GetPipelineLink(orgClient org.ClientInterface, p spec.Pipeline) (bool, string) {
 	// org id
 	orgID, err := strconv.ParseUint(p.Labels[apistructs.LabelOrgID], 10, 64)
 	if err != nil {
@@ -42,10 +46,13 @@ func GetPipelineLink(bdl *bundle.Bundle, p spec.Pipeline) (bool, string) {
 	}
 
 	// get org domain
-	org, err := bdl.GetOrg(orgID)
+	orgResp, err := orgClient.GetOrg(apis.WithInternalClientContext(context.Background(), discover.Pipeline()), &orgpb.GetOrgRequest{
+		IdOrName: strconv.FormatUint(orgID, 10),
+	})
 	if err != nil {
 		return false, ""
 	}
+	org := orgResp.Data
 
 	// get domain protocol
 	clusterInfo, err := clusterinfo.GetClusterInfoByName(p.ClusterName)

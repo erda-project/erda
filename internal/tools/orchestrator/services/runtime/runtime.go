@@ -36,8 +36,10 @@ import (
 	"github.com/erda-project/erda-infra/pkg/transport"
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/pkg/diceworkspace"
 	"github.com/erda-project/erda/internal/pkg/gitflowutil"
 	"github.com/erda-project/erda/internal/pkg/user"
@@ -50,7 +52,9 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/services/apierrors"
 	"github.com/erda-project/erda/internal/tools/orchestrator/spec"
 	"github.com/erda-project/erda/internal/tools/orchestrator/utils"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/database/dbengine"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -66,6 +70,7 @@ type Runtime struct {
 	serviceGroupImpl servicegroup.ServiceGroup
 	clusterinfoImpl  clusterinfo.ClusterInfo
 	clusterSvc       clusterpb.ClusterServiceServer
+	org              org.ClientInterface
 }
 
 // Option 应用实例对象配置选项
@@ -131,6 +136,12 @@ func WithClusterInfo(clusterinfo clusterinfo.ClusterInfo) Option {
 func WithClusterSvc(clusterSvc clusterpb.ClusterServiceServer) Option {
 	return func(r *Runtime) {
 		r.clusterSvc = clusterSvc
+	}
+}
+
+func WithOrg(org org.ClientInterface) Option {
+	return func(e *Runtime) {
+		e.org = org
 	}
 }
 
@@ -754,7 +765,7 @@ func (r *Runtime) doDeployRuntime(ctx *DeployContext) (*apistructs.DeploymentCre
 				protocol = protocols[0]
 			}
 			domain := d.Get(apistructs.DICE_ROOT_DOMAIN)
-			org, err := r.bdl.GetOrg(ctx.Runtime.OrgID)
+			org, err := r.GetOrg(ctx.Runtime.OrgID)
 			if err != nil {
 				logrus.Errorf("failed to getorg(%v):%v", ctx.Runtime.OrgID, err)
 				break
@@ -805,16 +816,16 @@ func (r *Runtime) doDeployRuntime(ctx *DeployContext) (*apistructs.DeploymentCre
 }
 
 func (r *Runtime) checkOrgDeployBlocked(orgID uint64, runtime *dbclient.Runtime) (bool, error) {
-	org, err := r.bdl.GetOrg(orgID)
+	org, err := r.GetOrg(orgID)
 	if err != nil {
 		return false, err
 	}
 	blocked := false
 	switch runtime.Workspace {
 	case "DEV":
-		blocked = org.BlockoutConfig.BlockDEV
+		blocked = org.BlockoutConfig.BlockDev
 	case "TEST":
-		blocked = org.BlockoutConfig.BlockTEST
+		blocked = org.BlockoutConfig.BlockTest
 	case "STAGING":
 		blocked = org.BlockoutConfig.BlockStage
 	case "PROD":
@@ -1086,12 +1097,11 @@ func (r *Runtime) Rollback(operator user.ID, orgID uint64, runtimeID uint64, dep
 				protocol = protocols[0]
 			}
 			domain := d.Get(apistructs.DICE_ROOT_DOMAIN)
-			org, err := r.bdl.GetOrg(runtime.OrgID)
+			org, err := r.GetOrg(runtime.OrgID)
 			if err != nil {
 				logrus.Errorf("failed to getorg(%v):%v", runtime.OrgID, err)
 				break
 			}
-
 			url := fmt.Sprintf("%s://%s-org.%s/workBench/approval/my-approve/pending?id=%d",
 				protocol, org.Name, domain, deployment.ID)
 			if err := r.bdl.CreateMboxNotify("notify.deployapproval.launch.markdown_template",
@@ -2353,4 +2363,17 @@ func (r *Runtime) PreCheck(dice *diceyml.DiceYaml, workspace string) error {
 	}
 
 	return nil
+}
+
+func (r *Runtime) GetOrg(orgID uint64) (*orgpb.Org, error) {
+	if orgID == 0 {
+		return nil, fmt.Errorf("the orgID is 0")
+	}
+	orgResp, err := r.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcOrchestrator), &orgpb.GetOrgRequest{
+		IdOrName: strconv.FormatUint(orgID, 10),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return orgResp.Data, nil
 }

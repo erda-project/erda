@@ -65,5 +65,5 @@ func TestAddonsFilterIn(t *testing.T) {
 }
 
 func Test_registerEcpEp(t *testing.T) {
-	registerEcpRouter(bundle.New(), &dbengine.DBEngine{}, nil)
+	registerEcpRouter(bundle.New(), &dbengine.DBEngine{}, nil, nil)
 }

@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	"github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/pkg/metrics/report"
 	_ "github.com/erda-project/erda/internal/tools/pipeline/aop/plugins"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/actionagent"
@@ -81,6 +82,7 @@ type provider struct {
 	Secret       secret.Interface
 	ActionMgr    actionmgr.Interface
 	Resource     resource.Interface
+	Org          org.ClientInterface
 	ActionAgent  actionagent.Interface
 	Permission   permission.Interface
 }

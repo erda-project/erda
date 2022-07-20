@@ -25,11 +25,15 @@ import (
 
 	"github.com/erda-project/erda-infra/pkg/transport"
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/tools/orchestrator/ecp/dbclient"
 	"github.com/erda-project/erda/internal/tools/orchestrator/ecp/services/kubernetes"
 	"github.com/erda-project/erda/pkg/clientgo/apis/openyurt/v1alpha1"
+	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
@@ -49,7 +53,7 @@ const (
 var (
 	// Cluster ID/Name/RequestAddress which fixed param will cache in memory.
 	clusterInfos = make(map[int64]*clusterpb.ClusterInfo, 0)
-	orgInfos     = make(map[int64]*apistructs.OrgDTO, 0)
+	orgInfos     = make(map[int64]*orgpb.Org, 0)
 )
 
 // NodePools clusterName: nodePools
@@ -60,6 +64,7 @@ type Edge struct {
 	bdl        *bundle.Bundle
 	k8s        *kubernetes.Kubernetes
 	clusterSvc clusterpb.ClusterServiceServer
+	org        org.ClientInterface
 }
 
 type Option func(*Edge)
@@ -100,6 +105,12 @@ func WithClusterSvc(clusterSvc clusterpb.ClusterServiceServer) Option {
 	}
 }
 
+func WithOrg(org org.ClientInterface) Option {
+	return func(e *Edge) {
+		e.org = org
+	}
+}
+
 // getClusterInfo Get or cache clusterInfo.
 func (e *Edge) getClusterInfo(ctx context.Context, clusterID int64) (*clusterpb.ClusterInfo, error) {
 	if clusterInfo, ok := clusterInfos[clusterID]; ok {
@@ -117,14 +128,15 @@ func (e *Edge) getClusterInfo(ctx context.Context, clusterID int64) (*clusterpb.
 }
 
 // getOrgInfo Get or cache orgInfo.
-func (e *Edge) getOrgInfo(orgID int64) (*apistructs.OrgDTO, error) {
+func (e *Edge) getOrgInfo(orgID int64) (*orgpb.Org, error) {
 	if orgInfo, ok := orgInfos[orgID]; ok {
 		return orgInfo, nil
 	}
-	orgInfo, err := e.bdl.GetOrg(strconv.FormatInt(orgID, 10))
+	orgResp, err := e.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcECP), &orgpb.GetOrgRequest{IdOrName: strconv.FormatInt(orgID, 10)})
 	if err != nil {
 		return nil, fmt.Errorf("query org info failed, org:%d, err:%v", orgID, err)
 	}
+	orgInfo := orgResp.Data
 	orgInfos[orgID] = orgInfo
 	return orgInfo, nil
 }

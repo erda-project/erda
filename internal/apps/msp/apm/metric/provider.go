@@ -24,6 +24,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	monitordb "github.com/erda-project/erda/internal/apps/msp/instance/db/monitor"
 	mperm "github.com/erda-project/erda/internal/apps/msp/instance/permission"
+	"github.com/erda-project/erda/internal/core/org"
 )
 
 type config struct {
@@ -42,6 +43,7 @@ type provider struct {
 
 	db            *monitordb.MonitorDB
 	compatibleTKs map[string][]string
+	Org           org.ClientInterface
 }
 
 func (p *provider) Init(ctx servicehub.Context) (err error) {

@@ -20,12 +20,13 @@ import (
 	"strconv"
 
 	"github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 
-var getOrg = func(m *alertService, idOrName interface{}) (*apistructs.OrgDTO, error) {
-	return m.p.bdl.GetOrg(idOrName)
+var getOrg = func(m *alertService, idOrName interface{}) (*orgpb.Org, error) {
+	return m.GetOrg(idOrName)
 }
 var getAlert = func(m *alertService, ctx context.Context, req *pb.GetAlertRequest) (*pb.GetAlertResponse, error) {
 	return m.p.alertService.GetAlert(ctx, req)

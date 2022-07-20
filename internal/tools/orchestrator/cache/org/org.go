@@ -15,12 +15,16 @@
 package org
 
 import (
+	"context"
 	"strconv"
 	"time"
 
-	"github.com/erda-project/erda/apistructs"
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/pkg/cache"
+	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 )
 
 var (
@@ -28,18 +32,18 @@ var (
 	projectID2Org *cache.Cache
 )
 
-func init() {
+func InitCache(org org.ClientInterface) {
 	bdl := bundle.New(bundle.WithErdaServer())
 	orgID2Org = cache.New("orchestrator-org-id-for-org", time.Minute, func(i interface{}) (interface{}, bool) {
 		id := i.(string)
 		if id == "" {
 			return nil, false
 		}
-		orgDTO, err := bdl.GetOrg(id)
+		orgResp, err := org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcOrchestrator), &orgpb.GetOrgRequest{IdOrName: id})
 		if err != nil {
 			return nil, false
 		}
-		return orgDTO, true
+		return orgResp.Data, true
 	})
 	projectID2Org = cache.New("orchestrator-project-id-for-org", time.Minute, func(i interface{}) (interface{}, bool) {
 		projectID, err := strconv.ParseUint(i.(string), 10, 32)
@@ -58,20 +62,20 @@ func init() {
 	})
 }
 
-// GetOrgByOrgID gets the *apistructs.OrgDTO by orgID from the newest cache
-func GetOrgByOrgID(orgID string) (*apistructs.OrgDTO, bool) {
+// GetOrgByOrgID gets the *orgpb.Org by orgID from the newest cache
+func GetOrgByOrgID(orgID string) (*orgpb.Org, bool) {
 	item, ok := orgID2Org.LoadWithUpdate(orgID)
 	if !ok {
 		return nil, false
 	}
-	return item.(*apistructs.OrgDTO), true
+	return item.(*orgpb.Org), true
 }
 
-// GetOrgByProjectID gets the *apistructs.OrgDTO by projectID from the newest cache
-func GetOrgByProjectID(projectID string) (*apistructs.OrgDTO, bool) {
+// GetOrgByProjectID gets the *orgpb.Org by projectID from the newest cache
+func GetOrgByProjectID(projectID string) (*orgpb.Org, bool) {
 	item, ok := projectID2Org.LoadWithUpdate(projectID)
 	if !ok {
 		return nil, false
 	}
-	return item.(*apistructs.OrgDTO), true
+	return item.(*orgpb.Org), true
 }

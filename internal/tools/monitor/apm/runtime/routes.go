@@ -21,9 +21,9 @@ import (
 
 func (runtime *provider) initRoutes(routes httpserver.Router) error {
 
-	routes.GET("/api/apm/runtime", runtime.runtime, getRuntimePermission(runtime.db))
-	routes.GET("/api/apm/tk", runtime.tkByProjectIdAndWorkspace, getProjectPermission())
-	routes.GET("/api/apm/instance", runtime.instanceByTk, getInstancePermission(runtime.db))
+	routes.GET("/api/apm/runtime", runtime.runtime, getRuntimePermission(runtime.db, runtime.Org))
+	routes.GET("/api/apm/tk", runtime.tkByProjectIdAndWorkspace, getProjectPermission(runtime.Org))
+	routes.GET("/api/apm/instance", runtime.instanceByTk, getInstancePermission(runtime.db, runtime.Org))
 
 	return nil
 }

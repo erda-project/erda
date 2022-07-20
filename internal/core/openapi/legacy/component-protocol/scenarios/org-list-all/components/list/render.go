@@ -21,9 +21,13 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/internal/core/openapi/legacy/component-protocol"
 	"github.com/erda-project/erda/internal/core/openapi/legacy/component-protocol/scenarios/org-list-all/i18n"
+	orgclient "github.com/erda-project/erda/internal/core/org"
+	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 )
 
 const defaultOrgImage = "frontImg_default_org_icon"
@@ -110,20 +114,17 @@ func (i *ComponentList) RenderPublicOrgs() error {
 	if i.State.SearchRefresh {
 		i.State.PageNo = 1
 	}
-	req := apistructs.OrgSearchRequest{
-		PageNo:   i.State.PageNo,
-		PageSize: i.State.PageSize,
+	req := orgpb.ListOrgRequest{
+		PageNo:   int64(i.State.PageNo),
+		PageSize: int64(i.State.PageSize),
 		Q:        i.State.SearchEntry,
 	}
-	req.UserID = i.CtxBdl.Identity.UserID
-	orgs, err := i.CtxBdl.Bdl.ListDopPublicOrgs(&req)
+	orgs, err := orgclient.MustGetOrg().ListPublicOrg(apis.WithUserIDContext(apis.WithInternalClientContext(context.Background(), discover.SvcOpenapi), i.CtxBdl.Identity.UserID), &req)
 	if err != nil {
 		return err
 	}
 
-	req = apistructs.OrgSearchRequest{}
-	req.UserID = i.CtxBdl.Identity.UserID
-	myOrgs, err := i.CtxBdl.Bdl.ListDopOrgs(&req)
+	myOrgs, err := orgclient.MustGetOrg().ListOrg(apis.WithUserIDContext(apis.WithInternalClientContext(context.Background(), discover.SvcOpenapi), i.CtxBdl.Identity.UserID), &req)
 	if err != nil {
 		return err
 	}
@@ -133,7 +134,7 @@ func (i *ComponentList) RenderPublicOrgs() error {
 	}
 
 	i18nLocale := i.CtxBdl.Bdl.GetLocale(i.CtxBdl.Locale)
-	i.State.Total = orgs.Total
+	i.State.Total = int(orgs.Total)
 	data := []Org{}
 	for _, org := range orgs.List {
 		item := Org{

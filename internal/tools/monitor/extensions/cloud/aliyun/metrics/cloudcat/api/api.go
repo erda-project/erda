@@ -15,6 +15,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -24,8 +25,12 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cms"
 	"github.com/pkg/errors"
 
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/core/org"
 	g "github.com/erda-project/erda/internal/tools/monitor/extensions/cloud/aliyun/metrics/cloudcat/globals"
+	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 )
 
 var (
@@ -126,19 +131,21 @@ func createLabels(product string) string {
 	return string(rv)
 }
 
-func ListOrgInfos() (res []OrgInfo, err error) {
-	var list []apistructs.OrgDTO
+func ListOrgInfos(orgClient org.ClientInterface) (res []OrgInfo, err error) {
+	var list []*orgpb.Org
 	if g.Cfg.OrgIds != "" {
 		for _, oid := range strings.Split(g.Cfg.OrgIds, ",") {
-			org, err := bdl.GetOrg(oid)
+			orgResp, err := orgClient.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcMonitor), &orgpb.GetOrgRequest{
+				IdOrName: oid,
+			})
 			if err != nil {
 				g.Log.Infof("failed to get org by orgid=%s", oid)
 				continue
 			}
-			list = append(list, *org)
+			list = append(list, orgResp.Data)
 		}
 	} else {
-		list, err = ListAllOrgs()
+		list, err = ListAllOrgs(orgClient)
 		if err != nil {
 			return nil, err
 		}
@@ -157,18 +164,18 @@ func ListOrgInfos() (res []OrgInfo, err error) {
 	return
 }
 
-func ListAllOrgs() (res []apistructs.OrgDTO, err error) {
-	req := &apistructs.OrgSearchRequest{
+func ListAllOrgs(orgClient org.ClientInterface) (res []*orgpb.Org, err error) {
+	req := &orgpb.ListOrgRequest{
 		Q:        "",
 		PageNo:   1,
 		PageSize: 1,
 	}
-	resp, err := bdl.ListDopOrgs(req)
+	resp, err := orgClient.ListOrg(apis.WithInternalClientContext(context.Background(), discover.SvcMonitor), req)
 	if err != nil {
 		return nil, errors.Wrap(err, "ListOrgs err")
 	}
 	req.PageSize = resp.Total
-	resp, err = bdl.ListDopOrgs(req)
+	resp, err = orgClient.ListOrg(apis.WithInternalClientContext(context.Background(), discover.SvcMonitor), req)
 	if err != nil {
 		return nil, errors.Wrap(err, "ListOrgs err")
 	}

@@ -26,9 +26,11 @@ import (
 	"gopkg.in/yaml.v2"
 
 	notifyGrouppb "github.com/erda-project/erda-proto-go/core/messenger/notifygroup/pb"
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	"github.com/erda-project/erda-proto-go/tools/monitor/dashboard/report/pb"
 	dicestructs "github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/discover"
 )
 
@@ -123,10 +125,13 @@ func (p *provider) generatePipelineYml(r *reportTask) (string, error) {
 	case daily:
 		pipelineYml.Cron = p.Cfg.ReportCron.DailyCron
 	}
-	org, err := p.bdl.GetOrg(r.ScopeID)
+	orgResp, err := p.Org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcMonitor), &orgpb.GetOrgRequest{
+		IdOrName: r.ScopeID,
+	})
 	if err != nil {
 		return "", fmt.Errorf("failed to generate pipeline yaml, can not get OrgName by OrgID:%v,(%+v)", r.ScopeID, err)
 	}
+	org := orgResp.Data
 
 	maddr, err := p.createFQDN(discover.Monitor())
 	if err != nil {

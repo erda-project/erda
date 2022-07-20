@@ -29,6 +29,7 @@ import (
 	"github.com/erda-project/erda/internal/core/openapi/legacy/hooks"
 	"github.com/erda-project/erda/internal/core/openapi/openapi-ng"
 	"github.com/erda-project/erda/internal/core/openapi/openapi-ng/proxy"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/core/user"
 	discover "github.com/erda-project/erda/internal/pkg/service-discover"
 )
@@ -47,6 +48,7 @@ type provider struct {
 	handler      http.Handler
 	TokenService tokenpb.TokenServiceServer `autowired:"erda.core.token.TokenService"`
 	Identity     user.Interface
+	Org          org.Interface
 }
 
 func (p *provider) Init(ctx servicehub.Context) (err error) {
