@@ -69,7 +69,7 @@ func (p *ActionParams) Scan(value interface{}) error {
 }
 
 func (RuleSet) TableName() string {
-	return "erda_rule_sets"
+	return "erda_rule_set"
 }
 
 func NotDeleted(db *gorm.DB) *gorm.DB {

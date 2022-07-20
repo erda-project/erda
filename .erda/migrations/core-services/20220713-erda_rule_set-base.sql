@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS `erda_rule_sets` (
+CREATE TABLE IF NOT EXISTS `erda_rule_set` (
   `id` varchar(36) NOT NULL COMMENT 'primary key',
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'created time',
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'updated time',
@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS `erda_rule_sets` (
   `soft_deleted_at` bigint(20) NOT NULL DEFAULT '0' COMMENT 'deleted at',
   PRIMARY KEY (`id`),
   KEY `idx_scope` (`scope`,`scope_id`, `event_type`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='erda rule sets';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='erda rule set';
 
 CREATE TABLE IF NOT EXISTS `erda_rule_set_exec_history` (
   `id` varchar(36) NOT NULL COMMENT 'primary key',

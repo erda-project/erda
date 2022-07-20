@@ -19,9 +19,10 @@ import (
 	"testing"
 
 	"bou.ke/monkey"
+	"google.golang.org/protobuf/types/known/structpb"
+
 	"github.com/erda-project/erda-proto-go/core/rule/pb"
 	"github.com/erda-project/erda/internal/core/rule/dao"
-	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func TestExprExecutor_Exec(t *testing.T) {
