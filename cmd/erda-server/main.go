@@ -23,7 +23,10 @@ import (
 	_ "github.com/erda-project/erda/internal/apps/gallery"
 
 	// pkg
+	_ "github.com/erda-project/erda/internal/pkg/audit"
 	_ "github.com/erda-project/erda/internal/pkg/dingtalktest"
+	_ "github.com/erda-project/erda/internal/pkg/service-discover/erda-discover"
+	_ "github.com/erda-project/erda/internal/pkg/service-discover/fixed-discover"
 	"github.com/erda-project/erda/pkg/common"
 
 	// core
@@ -62,6 +65,29 @@ import (
 	_ "github.com/erda-project/erda-proto-go/core/pipeline/cms/client"
 	_ "github.com/erda-project/erda-proto-go/msp/menu/client"
 	_ "github.com/erda-project/erda-proto-go/msp/tenant/project/client"
+
+	// openapi
+	_ "github.com/erda-project/erda/internal/core/openapi/legacy"
+	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng"
+	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/auth"
+	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/auth/compatibility"
+	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/auth/ory-kratos"
+	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/auth/password"
+	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/auth/token"
+	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/auth/uc-session"
+	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/example/backend"
+	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/example/custom-register"
+	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/example/custom-route-source"
+	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/example/publish"
+	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/interceptors/common"
+	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/interceptors/csrf"
+	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/interceptors/dump"
+	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/interceptors/user-info"
+	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/routes/custom"
+	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/routes/dynamic"
+	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/routes/dynamic/temporary"
+	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/routes/openapi-v1"
+	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/routes/proto"
 )
 
 //go:embed bootstrap.yaml

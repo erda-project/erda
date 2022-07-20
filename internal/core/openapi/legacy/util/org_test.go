@@ -12,16 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common
+package util
 
-const (
-	DefaultPageSize       = 10
-	ColumnPipelineStatus  = "pipelineStatus"
-	ColumnPipelineTrigger = "pipelineTriggerMode"
-	Participated          = 0
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-type Sort struct {
-	FieldKey  string
-	Ascending bool
+func Test_orgNameRetriever(t *testing.T) {
+	var domains = []string{"erda-org.erda.cloud", "buzz-org.app.terminus.io", "fuzz.com"}
+	var domainRoots = []string{"erda.cloud", "app.terminus.io"}
+	assert.Equal(t, "erda", orgNameRetriever(domains[0], domainRoots[0]))
+	assert.Equal(t, "buzz", orgNameRetriever(domains[1], domainRoots[1]))
+	assert.Equal(t, "", orgNameRetriever(domains[2], domainRoots[0]))
+
+	assert.Equal(t, "", orgNameRetriever("erda.daily.terminus.io", "daily.terminus.io"))
 }

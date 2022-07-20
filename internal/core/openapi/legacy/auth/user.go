@@ -29,10 +29,10 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/core/openapi/legacy/conf"
+	"github.com/erda-project/erda/internal/core/openapi/legacy/util"
 	identity "github.com/erda-project/erda/internal/core/user/common"
 	"github.com/erda-project/erda/internal/core/user/impl/uc"
 	"github.com/erda-project/erda/pkg/discover"
-	"github.com/erda-project/erda/pkg/strutil"
 )
 
 type GetUserState int
@@ -140,29 +140,13 @@ func (u *User) get(req *http.Request, state GetUserState) (interface{}, AuthResu
 		if state == GotInfo {
 			return u.info, AuthResult{AuthSucc, ""}
 		}
-		// 1. 如果 request.Header 中存在 'ORG', 直接使用它作为 OrgID
-		// 2. 否则 使用 request.Host 来查询 OrgID
-		orgHeader := req.Header.Get("ORG")
-		var orgID uint64
-		var noOrgID bool
-		if orgHeader != "" && orgHeader != "-" {
-			org, err := u.bundle.GetOrg(orgHeader)
-			if err != nil {
-				return nil, AuthResult{InternalAuthErr, err.Error()}
-			}
-			orgID = org.ID
-		} else {
-			domain := strutil.Split(req.Host, ":")[0]
-			org, err := u.bundle.GetDopOrgByDomain(domain, string(u.info.ID))
-			if err != nil {
-				return nil, AuthResult{InternalAuthErr, err.Error()}
-			} else if org == nil {
-				noOrgID = true
-			} else {
-				orgID = org.ID
-			}
+		orgHeader := req.Header.Get("org")
+		domainHeader := req.Header.Get("domain")
+		orgID, err := u.GetOrgInfo(orgHeader, domainHeader)
+		if err != nil {
+			return nil, AuthResult{InternalAuthErr, err.Error()}
 		}
-		if !noOrgID {
+		if orgID > 0 {
 			role, err := u.bundle.ScopeRoleAccess(string(u.info.ID), &apistructs.ScopeRoleAccessRequest{
 				Scope: apistructs.Scope{
 					Type: apistructs.OrgScope,
@@ -173,7 +157,7 @@ func (u *User) get(req *http.Request, state GetUserState) (interface{}, AuthResu
 				return nil, AuthResult{InternalAuthErr, err.Error()}
 			}
 			if !role.Access {
-				return nil, AuthResult{AuthFail, fmt.Sprintf("access denied: userID: %v, orgID: %v", u.info.ID, orgID)}
+				return nil, AuthResult{AuthFail, fmt.Sprintf("org access denied: userID: %v, orgID: %v", u.info.ID, orgID)}
 			}
 			var scopeinfo ScopeInfo
 			scopeinfo.OrgID = orgID
@@ -187,6 +171,32 @@ func (u *User) get(req *http.Request, state GetUserState) (interface{}, AuthResu
 		}
 	}
 	panic("unreachable")
+}
+
+func (u *User) GetOrgInfo(orgHeader, domainHeader string) (orgID uint64, err error) {
+	logrus.Debugf("orgHeader: %v, domainHeader: %v", orgHeader, domainHeader)
+	var orgName string
+	// try to get from org header firstly
+	if orgHeader != "" && orgHeader != "-" {
+		orgName = orgHeader
+	}
+	// try to get from domain header
+	if orgName == "" {
+		orgName, err = util.GetOrgByDomain(domainHeader)
+		if err != nil {
+			return 0, err
+		}
+	}
+	// if cannot get orgName, just return
+	if orgName == "" {
+		return 0, nil
+	}
+	// query org info
+	org, err := u.bundle.GetOrg(orgName)
+	if err != nil {
+		return 0, err
+	}
+	return org.ID, nil
 }
 
 func (u *User) IsLogin(req *http.Request) AuthResult {

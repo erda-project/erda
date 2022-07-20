@@ -50,7 +50,7 @@ func TestPagePipeline_GetRunUserID(t *testing.T) {
 		{
 			name: "test with correct",
 			fields: fields{
-				ID:    10001,
+				ID: 10001,
 				Extra: PipelineExtra{RunUser: &PipelineUser{
 					ID:   1,
 					Name: "erda",
@@ -67,6 +67,75 @@ func TestPagePipeline_GetRunUserID(t *testing.T) {
 			}
 			if got := p.GetRunUserID(); got != tt.want {
 				t.Errorf("GetRunUserID() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_PageGetUserID(t *testing.T) {
+	type fields struct {
+		ID    uint64
+		Extra PipelineExtra
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		want   string
+	}{
+		{
+			name: "test with empty users",
+			fields: fields{
+				ID:    10001,
+				Extra: PipelineExtra{},
+			},
+			want: "",
+		},
+		{
+			name: "test with run user",
+			fields: fields{
+				ID: 10001,
+				Extra: PipelineExtra{RunUser: &PipelineUser{
+					ID: 1,
+				}},
+			},
+			want: "1",
+		},
+		{
+			name: "test with owner user",
+			fields: fields{
+				ID: 10001,
+				Extra: PipelineExtra{
+					OwnerUser: &PipelineUser{
+						ID: 1,
+					},
+				},
+			},
+			want: "1",
+		},
+		{
+			name: "test with both runner and owner",
+			fields: fields{
+				ID: 10001,
+				Extra: PipelineExtra{
+					RunUser: &PipelineUser{
+						ID: 1,
+					},
+					OwnerUser: &PipelineUser{
+						ID: 2,
+					},
+				},
+			},
+			want: "2",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &PagePipeline{
+				ID:    tt.fields.ID,
+				Extra: tt.fields.Extra,
+			}
+			if got := p.GetUserID(); got != tt.want {
+				t.Errorf("GetUserID() = %v, want %v", got, tt.want)
 			}
 		})
 	}

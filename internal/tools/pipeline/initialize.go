@@ -88,6 +88,7 @@ func (p *provider) do() error {
 	// queryStringDecoder
 	queryStringDecoder := schema.NewDecoder()
 	queryStringDecoder.IgnoreUnknownKeys(true)
+	queryStringDecoder.ZeroEmpty(true)
 
 	// websocket publisher
 	publisher, err := websocket.NewPublisher()

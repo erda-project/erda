@@ -269,3 +269,35 @@ func Test_setClusterName(t *testing.T) {
 	pipelineSvc.setClusterName("erda-center", pv)
 	assert.Equal(t, "erda-center", pv.ClusterName)
 }
+
+func Test_getPipelineOwnerUser(t *testing.T) {
+	bdl := bundle.New()
+	pm1 := monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetGittarTree", func(_ *bundle.Bundle, repo string, orgID string, userID string) (*apistructs.GittarTreeData, error) {
+		return &apistructs.GittarTreeData{
+			Type: "blob",
+			Commit: apistructs.Commit{
+				Committer: &apistructs.Signature{
+					Name:  "erda",
+					Email: "erda@dice.io",
+				},
+			},
+		}, nil
+	})
+	defer pm1.Unpatch()
+	pm2 := monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "ListUsers", func(_ *bundle.Bundle, req apistructs.UserListRequest) (*apistructs.UserListResponseData, error) {
+		return &apistructs.UserListResponseData{
+			Users: []apistructs.UserInfo{
+				{
+					ID:    "1",
+					Name:  "erda",
+					Email: "erda@dice.io",
+				},
+			},
+		}, nil
+	})
+	defer pm2.Unpatch()
+	pipelineSvc := New(WithBundle(bdl))
+	owner, err := pipelineSvc.getPipelineOwnerUser(&apistructs.ApplicationDTO{ID: 1}, &apistructs.PipelineCreateRequest{Branch: "develop"})
+	assert.NoError(t, err)
+	assert.Equal(t, "1", owner.ID)
+}
