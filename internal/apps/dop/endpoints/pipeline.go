@@ -195,8 +195,6 @@ func (e *Endpoints) pipelineList(ctx context.Context, r *http.Request, vars map[
 		PageNum:                    oriReq.EnsurePageNo(),
 		PageSize:                   oriReq.PageSize,
 		YmlNames:                   make([]string, 0),
-		Sources:                    []apistructs.PipelineSource{apistructs.PipelineSource(oriReq.Sources)},
-		Statuses:                   []string{oriReq.Statuses},
 		MustMatchLabelsQueryParams: queryParams,
 	}
 
@@ -204,6 +202,12 @@ func (e *Endpoints) pipelineList(ctx context.Context, r *http.Request, vars map[
 		for _, yml := range strings.Split(oriReq.YmlNames, ",") {
 			req.YmlNames = append(req.YmlNames, yml)
 		}
+	}
+	if oriReq.Statuses != "" {
+		req.Statuses = []string{oriReq.Statuses}
+	}
+	if oriReq.Sources != "" {
+		req.Sources = []apistructs.PipelineSource{apistructs.PipelineSource(oriReq.Sources)}
 	}
 
 	pageResult, err := e.bdl.PageListPipeline(req)
