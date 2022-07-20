@@ -43,7 +43,7 @@ func GetOrgByDomain(domain string) (string, error) {
 
 func orgNameRetriever(domainWithoutPort, rootDomain string) string {
 	// trim port if have
-	domainWithoutPort = strutil.Split(domainWithoutPort, ":", true)[0]
+	domainWithoutPort = strutil.Split(domainWithoutPort, ":", false)[0]
 	// remove suffix '-org.${rootDomain}' to get org
 	orgSuffix := strutil.Concat("-org.", rootDomain)
 	if strutil.HasSuffixes(domainWithoutPort, orgSuffix) {

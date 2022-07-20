@@ -28,4 +28,5 @@ func Test_orgNameRetriever(t *testing.T) {
 	assert.Equal(t, "", orgNameRetriever(domains[2], domainRoots[0]))
 
 	assert.Equal(t, "", orgNameRetriever("erda.daily.terminus.io", "daily.terminus.io"))
+	assert.Equal(t, "", orgNameRetriever("", "daily.terminus.io"))
 }
