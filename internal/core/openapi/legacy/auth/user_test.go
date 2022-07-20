@@ -15,25 +15,22 @@
 package auth
 
 import (
-	reflect "reflect"
+	"context"
 	"testing"
 
-	"bou.ke/monkey"
-
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/bundle"
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
+	"github.com/erda-project/erda/internal/pkg/mock"
 )
 
+type orgMock struct {
+	mock.OrgMock
+}
+
+func (m orgMock) GetOrg(ctx context.Context, request *orgpb.GetOrgRequest) (*orgpb.GetOrgResponse, error) {
+	return &orgpb.GetOrgResponse{Data: &orgpb.Org{ID: 1}},nil
+}
+
 func TestUser_GetOrgInfo(t *testing.T) {
-	var bdl *bundle.Bundle
-	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetOrg", func(b *bundle.Bundle, idOrName interface{}) (*apistructs.OrgDTO, error) {
-		return &apistructs.OrgDTO{
-			ID: 1,
-		}, nil
-	})
-
-	defer monkey.UnpatchAll()
-
 	type args struct {
 		orgHeader    string
 		domainHeader string
@@ -67,7 +64,9 @@ func TestUser_GetOrgInfo(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			u := &User{}
+			u := &User{
+				org: orgMock{},
+			}
 			got, err := u.GetOrgInfo(tt.args.orgHeader, tt.args.domainHeader)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("User.GetOrgInfo() error = %v, wantErr %v", err, tt.wantErr)
