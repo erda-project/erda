@@ -38,7 +38,7 @@ func (m orgMock) GetOrg(ctx context.Context, request *orgpb.GetOrgRequest) (*org
 
 func Test_provider_GetOrg(t *testing.T) {
 	type fields struct {
-		Org org.ClientInterface
+		Org org.Interface
 	}
 	type args struct {
 		IdOrName string

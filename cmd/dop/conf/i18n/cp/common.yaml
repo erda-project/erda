@@ -125,6 +125,7 @@ zh:
   time: 时间
   desc: 描述
   status: 状态
+  triggerMode: 触发类型
   result: 结果
   auto-test-scene-num: 场景数
   auto-test-api-num: 接口数
@@ -252,15 +253,18 @@ zh:
   started-at: 开始日期
   please-choose-status: 请选择状态
   please-choose-executor: 请选择执行人
+  please-choose-owner: 请选择所有者
   please-choose-creator: 请选择创建人
   please-choose-application: 请选择应用
   please-choose-branch: 请选择分支
+  please-choose-triggerMode: 请选择触发类型
   pipeline: 流水线
   pipelineStatus: 状态
   costTime: 耗时
   applicationName: 应用
   branch: 分支
   executor: 执行者
+  owner: 所有者
   startTime: 开始时间
   participated: 已参与
 
@@ -289,6 +293,8 @@ zh:
   pipelineStatusWaitApprove: 等待审核
   pipelineStatusAccept: 人工审核通过
   pipelineStatusReject: 人工审核拒绝
+  pipelineTriggerModemanual: 手动触发
+  pipelineTriggerModecron: 定时触发
   setPrimary: 设为重要
   unsetPrimary: 取消重要
   run: 执行
@@ -428,6 +434,7 @@ en:
   time: Time
   desc: Description
   status: Status
+  triggerMode: Trigger Mode
   result: Result
   test-case-num-total: Total number of test cases
   test-case-num-succ: Passed
@@ -572,13 +579,16 @@ en:
   createPipeline: Create pipeline
   searchByPipelineName: Search by pipeline name
   executor: Executor
+  owner: Owner
   application: Application
   started-at: Started at
   please-choose-status: Please choose status
   please-choose-executor: Please choose executor
+  please-choose-owner: Please choose owner
   please-choose-creator: Please choose creator
   please-choose-application: Please choose application
   please-choose-branch: Please choose branch
+  please-choose-triggerMode: Please choose trigger mode
   pipeline: Pipeline
   pipelineStatus: Status
   costTime: Time
@@ -612,6 +622,8 @@ en:
   pipelineStatusWaitApproval: WaitApproval
   pipelineStatusApprovalSuccess: ApprovalSuccess
   pipelineStatusApprovalFail: ApprovalFail
+  pipelineTriggerModemanual: Manual
+  pipelineTriggerModecron: Cron
   setPrimary: Set primary
   unsetPrimary: Cancel primary
   run: Run

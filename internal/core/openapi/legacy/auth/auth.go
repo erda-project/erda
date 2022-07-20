@@ -59,10 +59,10 @@ type Auth struct {
 	RedisCli     *redis.Client
 	OAuth2Server *oauth2.OAuth2Server
 	TokenService tokenpb.TokenServiceServer
-	org          org.ClientInterface
+	org          org.Interface
 }
 
-func NewAuth(oauth2server *oauth2.OAuth2Server, token tokenpb.TokenServiceServer, org org.ClientInterface) (*Auth, error) {
+func NewAuth(oauth2server *oauth2.OAuth2Server, token tokenpb.TokenServiceServer, org org.Interface) (*Auth, error) {
 	sentinelAddrs := strings.Split(conf.RedisSentinelAddrs(), ",")
 	RedisCli := redis.NewFailoverClient(&redis.FailoverOptions{
 		MasterName:    conf.RedisMasterName(),

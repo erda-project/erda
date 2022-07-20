@@ -39,11 +39,11 @@ func NewReverseProxy(director func(*http.Request),
 
 type ReverseProxyWithCustom struct {
 	reverseProxy http.Handler
-	org          org.ClientInterface
+	org          org.Interface
 }
 
 func NewReverseProxyWithCustom(director func(*http.Request),
-	modifyResponse func(*http.Response) error, org org.ClientInterface) http.Handler {
+	modifyResponse func(*http.Response) error, org org.Interface) http.Handler {
 	r := NewReverseProxy(director, modifyResponse)
 	return &ReverseProxyWithCustom{reverseProxy: r, org: org}
 }

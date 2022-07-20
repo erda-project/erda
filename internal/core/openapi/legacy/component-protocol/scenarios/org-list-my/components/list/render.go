@@ -77,7 +77,7 @@ func (i *ComponentList) SetCtxBundle(b protocol.ContextBundle) error {
 	return nil
 }
 
-func (i *ComponentList) SetOrg(org org.ClientInterface) {
+func (i *ComponentList) SetOrg(org org.Interface) {
 	i.Org = org
 }
 
@@ -97,7 +97,7 @@ func (i *ComponentList) Render(ctx context.Context, c *apistructs.Component, _ a
 	}()
 
 	bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
-	org := ctx.Value(protocol.OrgClientSvc.String()).(org.ClientInterface)
+	org := ctx.Value(protocol.OrgClientSvc.String()).(org.Interface)
 
 	if err := i.SetCtxBundle(bdl); err != nil {
 		return err

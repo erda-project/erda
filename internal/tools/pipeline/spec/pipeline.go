@@ -105,9 +105,34 @@ func (p *Pipeline) GetRunUserID() string {
 	return mustUserID(userID)
 }
 
-// GetUserID first to get run userID,if not exists, to get submit userID
+func (p *Pipeline) GetOwnerUserID() string {
+	var userID string
+	if p.Extra.OwnerUser != nil && p.Extra.OwnerUser.ID != nil {
+		userID = fmt.Sprintf("%v", p.Extra.OwnerUser.ID)
+	}
+	return mustUserID(userID)
+}
+
+// GetOwnerOrRunUserID get userID to execute pipeline
+// permissions for the task belong to the executor userID
+// first to get owner userID,if not exists, to get run userID
+func (p *Pipeline) GetOwnerOrRunUserID() string {
+	if p.Extra.OwnerUser != nil && p.Extra.OwnerUser.ID != nil {
+		return fmt.Sprintf("%v", p.Extra.OwnerUser.ID)
+	}
+	if p.Extra.RunUser != nil && p.Extra.RunUser.ID != nil {
+		return fmt.Sprintf("%v", p.Extra.RunUser.ID)
+	}
+	return mustUserID("")
+}
+
+// GetUserID first to get owner userID,if not exists, to get run userID
+// if neither exists, submit userID is used
 // Not included internal UserID
 func (p *Pipeline) GetUserID() string {
+	if p.Extra.OwnerUser != nil && p.Extra.OwnerUser.ID != nil {
+		return fmt.Sprintf("%v", p.Extra.OwnerUser.ID)
+	}
 	if p.Extra.RunUser != nil && p.Extra.RunUser.ID != nil {
 		return fmt.Sprintf("%v", p.Extra.RunUser.ID)
 	}
@@ -173,6 +198,9 @@ func (p *Pipeline) GenerateNormalLabelsForCreateV2() map[string]string {
 		cronTriggerTimeStr = strconv.FormatInt(p.Extra.CronTriggerTime.UnixNano(), 10)
 	}
 	labels[apistructs.LabelPipelineCronTriggerTime] = cronTriggerTimeStr
+	if p.GetOwnerUserID() != "" {
+		labels[apistructs.LabelOwnerUserID] = p.GetOwnerUserID()
+	}
 	if p.CronID != nil {
 		labels[apistructs.LabelPipelineCronID] = strconv.FormatUint(*p.CronID, 10)
 	}

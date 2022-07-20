@@ -34,7 +34,7 @@ type config struct {
 type provider struct {
 	Cfg          *config
 	TokenService tokenpb.TokenServiceServer `autowired:"erda.core.token.TokenService"`
-	Org          org.ClientInterface
+	Org          org.Interface
 }
 
 func (p *provider) Run(ctx context.Context) error {

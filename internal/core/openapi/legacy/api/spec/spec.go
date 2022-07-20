@@ -235,7 +235,7 @@ type AuditContext struct {
 	ClientIP  string
 	UserAgent string
 	Cache     *sync.Map
-	Org       org.ClientInterface
+	Org       org.Interface
 }
 
 func (ctx *AuditContext) GetParamInt64(key string) (int64, error) {

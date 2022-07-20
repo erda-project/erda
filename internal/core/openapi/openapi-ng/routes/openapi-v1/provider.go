@@ -48,7 +48,7 @@ type provider struct {
 	handler      http.Handler
 	TokenService tokenpb.TokenServiceServer `autowired:"erda.core.token.TokenService"`
 	Identity     user.Interface
-	Org          org.ClientInterface
+	Org          org.Interface
 }
 
 func (p *provider) Init(ctx servicehub.Context) (err error) {

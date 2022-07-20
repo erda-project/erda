@@ -92,7 +92,7 @@ func updateUserInfo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	orgClient := r.Context().Value("org").(org.ClientInterface)
+	orgClient := r.Context().Value("org").(org.Interface)
 	ctx := &spec.AuditContext{
 		UserID:    operatorID.String(),
 		Bundle:    bdl,

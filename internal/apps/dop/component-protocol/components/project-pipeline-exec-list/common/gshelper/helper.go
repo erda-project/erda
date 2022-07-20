@@ -105,6 +105,38 @@ func (h *GSHelper) GetExecutorsFilter() []string {
 	return t
 }
 
+func (h *GSHelper) SetOwnersFilter(owners []string) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["GlobalOwnersFilter"] = owners
+}
+
+func (h *GSHelper) GetOwnersFilter() []string {
+	if h.gs == nil {
+		return nil
+	}
+	var t []string
+	_ = assign((*h.gs)["GlobalOwnersFilter"], &t)
+	return t
+}
+
+func (h *GSHelper) SetTriggerModesFilter(triggerModes []string) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["GlobalTriggerModesFilter"] = triggerModes
+}
+
+func (h *GSHelper) GetTriggerModesFilter() []string {
+	if h.gs == nil {
+		return nil
+	}
+	var t []string
+	_ = assign((*h.gs)["GlobalTriggerModesFilter"], &t)
+	return t
+}
+
 func (h *GSHelper) SetPipelineNameFilter(name string) {
 	if h.gs == nil {
 		return

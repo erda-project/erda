@@ -48,10 +48,10 @@ type ReverseProxyWithAuth struct {
 	auth      *auth.Auth
 	bundle    *bundle.Bundle
 	cache     *sync.Map
-	org       org.ClientInterface
+	org       org.Interface
 }
 
-func NewReverseProxyWithAuth(auth *auth.Auth, bundle *bundle.Bundle, org org.ClientInterface) (http.Handler, error) {
+func NewReverseProxyWithAuth(auth *auth.Auth, bundle *bundle.Bundle, org org.Interface) (http.Handler, error) {
 	director := proxy.NewDirector()
 	httpProxy := phttp.NewReverseProxyWithCustom(director, modifyResponse, org)
 	wsProxy := ws.NewReverseProxyWithCustom(director, org)
@@ -59,8 +59,6 @@ func NewReverseProxyWithAuth(auth *auth.Auth, bundle *bundle.Bundle, org org.Cli
 }
 
 func (r *ReverseProxyWithAuth) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
-	logrus.Infof("handle request: %v", req.URL)
-
 	spec := api.API.Find(req)
 	if spec == nil {
 		errStr := fmt.Sprintf("not found path: %v", req.URL)
@@ -160,7 +158,7 @@ func modifyResponse(res *http.Response) error {
 		bdl := request.Context().Value("bundle").(*bundle.Bundle)
 		beginTime := request.Context().Value("beginTime").(time.Time)
 		cache := request.Context().Value("cache").(*sync.Map)
-		orgClient := request.Context().Value("org").(org.ClientInterface)
+		orgClient := request.Context().Value("org").(org.Interface)
 		request.Body = reqBody
 		resBody, err := ioutil.ReadAll(res.Body)
 		if err != nil {

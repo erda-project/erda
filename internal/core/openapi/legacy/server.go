@@ -25,7 +25,7 @@ import (
 	"github.com/erda-project/erda/internal/core/org"
 )
 
-func NewServer(token tokenpb.TokenServiceServer, org org.ClientInterface) (*http.Server, error) {
+func NewServer(token tokenpb.TokenServiceServer, org org.Interface) (*http.Server, error) {
 	s, err := NewLoginServer(token, org)
 	if err != nil {
 		return nil, err

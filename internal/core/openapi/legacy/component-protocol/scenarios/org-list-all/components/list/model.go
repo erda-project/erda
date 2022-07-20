@@ -25,7 +25,7 @@ type ComponentList struct {
 	State      State                  `json:"state"`
 	Props      Props                  `json:"props"`
 	Data       []Org                  `json:"data"`
-	Org        org.ClientInterface
+	Org        org.Interface
 }
 
 type State struct {

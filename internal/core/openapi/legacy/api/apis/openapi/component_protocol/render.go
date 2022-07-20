@@ -145,7 +145,7 @@ func legacyProtocolRender(w http.ResponseWriter, r *http.Request) {
 	ctx := context.Background()
 	ctx1 := context.WithValue(ctx, protocol.GlobalInnerKeyCtxBundle.String(), ctxBdl)
 
-	orgClient := r.Context().Value("org").(org.ClientInterface)
+	orgClient := r.Context().Value("org").(org.Interface)
 	ctx1 = context.WithValue(ctx1, protocol.OrgClientSvc.String(), orgClient)
 
 	err := protocol.RunScenarioRender(ctx1, &req)

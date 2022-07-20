@@ -44,10 +44,10 @@ type LoginServer struct {
 	auth *auth.Auth
 
 	oauth2server *oauth2.OAuth2Server
-	org          org.ClientInterface
+	org          org.Interface
 }
 
-func NewLoginServer(token tokenpb.TokenServiceServer, org org.ClientInterface) (*LoginServer, error) {
+func NewLoginServer(token tokenpb.TokenServiceServer, org org.Interface) (*LoginServer, error) {
 	oauth2server := oauth2.NewOAuth2Server()
 	auth, err := auth.NewAuth(oauth2server, token, org)
 	if err != nil {

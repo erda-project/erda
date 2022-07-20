@@ -42,7 +42,7 @@ type provider struct {
 	Log    logs.Logger
 	Router openapi.Interface `autowired:"openapi-router"`
 	Redis  *redis.Client     `autowired:"redis-client"`
-	Org    org.ClientInterface
+	Org    org.Interface
 }
 
 func (p *provider) Init(ctx servicehub.Context) (err error) {
