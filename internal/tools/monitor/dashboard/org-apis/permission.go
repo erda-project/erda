@@ -28,8 +28,11 @@ import (
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/internal/tools/monitor/common/permission"
+	"github.com/erda-project/erda/pkg/common/apis"
 	api "github.com/erda-project/erda/pkg/common/httpapi"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
@@ -64,10 +67,13 @@ func (p *provider) checkOrgMetrics(ctx httpserver.Context) (string, error) {
 	} {
 		orgName := req.URL.Query().Get(key)
 		if orgName != "" {
-			info, err := p.bundle.GetOrg(orgID)
+			orgResp, err := p.Org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcMonitor), &orgpb.GetOrgRequest{
+				IdOrName: strconv.FormatUint(orgID, 10),
+			})
 			if err != nil {
 				return "", err
 			}
+			info := orgResp.Data
 			if info == nil {
 				return "", fmt.Errorf("not found org")
 			}
@@ -134,10 +140,13 @@ func (p *provider) checkOrgMetrics(ctx httpserver.Context) (string, error) {
 		}
 	}
 
-	info, err := p.bundle.GetOrg(orgID)
+	orgResp, err := p.Org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcMonitor), &orgpb.GetOrgRequest{
+		IdOrName: strconv.FormatUint(orgID, 10),
+	})
 	if err != nil {
 		return "", err
 	}
+	info := orgResp.Data
 	if info == nil {
 		return "", fmt.Errorf("not found org")
 	}
@@ -221,10 +230,13 @@ func (p *provider) getOrgIDNameFromBody(ctx httpserver.Context) (string, error) 
 	if err != nil {
 		return "", err
 	}
-	orgInfo, err := p.bundle.GetOrg(body.OrgName)
+	orgResp, err := p.Org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcMonitor), &orgpb.GetOrgRequest{
+		IdOrName: body.OrgName,
+	})
 	if err != nil {
 		return "", fmt.Errorf("fail to found org info: %s", err)
 	}
+	orgInfo := orgResp.Data
 	if orgInfo == nil {
 		return "", fmt.Errorf("fail to found org info")
 	}

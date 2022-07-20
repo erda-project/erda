@@ -23,16 +23,17 @@ import (
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	orgCache "github.com/erda-project/erda/internal/tools/orchestrator/cache/org"
 	"github.com/erda-project/erda/internal/tools/orchestrator/i18n"
-	orgCache "github.com/erda-project/erda/internal/tools/orchestrator/scheduler/cache/org"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/instanceinfo"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
 // exportPodErrInfo export pod error info
-func exportPodErrInfo(bdl *bundle.Bundle, podlist *corev1.PodList, orgs []*apistructs.OrgDTO) {
+func exportPodErrInfo(bdl *bundle.Bundle, podlist *corev1.PodList, orgs []*orgpb.Org) {
 	now := time.Now()
 	for i, pod := range podlist.Items {
 		var locale string
@@ -125,9 +126,7 @@ func pp_image(pod corev1.Pod) string {
 }
 
 func buildErrorInfo(bdl *bundle.Bundle, pod corev1.Pod, errorinfo string, errorinfo_human string, tp string) {
-	addonID, pipelineID, _, _, _, _, _, _,
-		_, _, runtimeID, serviceName, _, _, _,
-		_, _, _, _ := extractEnvs(pod)
+	addonID, pipelineID, _, _, _, _, _, _, _, _, runtimeID, serviceName, _, _, _, _, _, _, _ := extractEnvs(pod)
 	if addonID != "" {
 		//////////////////////
 		// addon error info //
@@ -241,12 +240,12 @@ func extractEnvs(pod corev1.Pod) (
 
 // updatePodInstance Update pod information to db
 func updatePodAndInstance(dbclient *instanceinfo.Client, podlist *corev1.PodList, delete bool,
-	eventmap map[string]*corev1.Event) ([]*apistructs.OrgDTO, error) {
+	eventmap map[string]*corev1.Event) ([]*orgpb.Org, error) {
 	r := dbclient.InstanceReader()
 	w := dbclient.InstanceWriter()
 	podr := dbclient.PodReader()
 	podw := dbclient.PodWriter()
-	var orgs = make([]*apistructs.OrgDTO, len(podlist.Items))
+	var orgs = make([]*orgpb.Org, len(podlist.Items))
 
 	for i, pod := range podlist.Items {
 		var (

@@ -15,6 +15,7 @@
 package webcontext
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -26,13 +27,17 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/core/user/impl/uc"
 	"github.com/erda-project/erda/internal/tools/gittar/models"
 	"github.com/erda-project/erda/internal/tools/gittar/pkg/errorx"
 	"github.com/erda-project/erda/internal/tools/gittar/pkg/gitmodule"
+	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -47,6 +52,7 @@ type Context struct {
 	next         bool
 	EtcdClient   *clientv3.Client
 	TokenService tokenpb.TokenServiceServer
+	orgClient    org.ClientInterface
 }
 
 type ContextHandlerFunc func(*Context)
@@ -56,6 +62,7 @@ var diceBundleInstance *bundle.Bundle
 var ucAuthInstance *uc.UCUserAuth
 var etcdClientInstance *clientv3.Client
 var tokenServiceInstance *tokenpb.TokenServiceServer
+var orgClient org.ClientInterface
 
 func WithDB(db *models.DBClient) {
 	dbClientInstance = db
@@ -75,6 +82,10 @@ func WithEtcdClient(client *clientv3.Client) {
 
 func WithTokenService(tokenService *tokenpb.TokenServiceServer) {
 	tokenServiceInstance = tokenService
+}
+
+func WithOrgClient(org org.ClientInterface) {
+	orgClient = org
 }
 
 func WrapHandler(handlerFunc ContextHandlerFunc) echo.HandlerFunc {
@@ -151,6 +162,7 @@ func NewEchoContext(c echo.Context, db *models.DBClient) *Context {
 		Bundle:       diceBundleInstance,
 		EtcdClient:   etcdClientInstance,
 		TokenService: *tokenServiceInstance,
+		orgClient:    orgClient,
 	}
 }
 
@@ -332,4 +344,30 @@ func (c *Context) CheckBranchOperatePermission(user *models.User, branch string)
 
 func (c *Context) CheckPermissionWithRole(permission models.Permission, resourceRoleList []string) error {
 	return c.Service.CheckPermission(c.Repository, c.User, permission, resourceRoleList)
+}
+
+func (c *Context) GetOrg(orgID interface{}) (*orgpb.Org, error) {
+	if orgID == nil {
+		return nil, fmt.Errorf("the orgID is empty")
+	}
+	orgResp, err := c.orgClient.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcGittar), &orgpb.GetOrgRequest{
+		IdOrName: fmt.Sprintf("%v", orgID),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return orgResp.Data, nil
+}
+
+func (c *Context) GetOrgByDomain(domain, userID string) (*orgpb.Org, error) {
+	if domain == "" {
+		return nil, fmt.Errorf("the domain is empty")
+	}
+	orgResp, err := c.orgClient.GetOrgByDomain(apis.WithUserIDContext(apis.WithInternalClientContext(context.Background(), discover.SvcGittar), userID), &orgpb.GetOrgByDomainRequest{
+		Domain: domain,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return orgResp.Data, nil
 }

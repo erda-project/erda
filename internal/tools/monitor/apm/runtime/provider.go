@@ -23,6 +23,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/httpserver/interceptors"
 	"github.com/erda-project/erda-infra/providers/mysql"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/tools/monitor/common/db"
 )
 
@@ -32,6 +33,8 @@ type provider struct {
 	db  *db.DB
 	es  *elastic.Client
 	ctx servicehub.Context
+
+	Org org.ClientInterface
 }
 
 type define struct{}

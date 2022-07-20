@@ -15,6 +15,7 @@
 package adapt
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -24,9 +25,12 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	block "github.com/erda-project/erda/internal/tools/monitor/core/dataview/v1-chart-block"
 	"github.com/erda-project/erda/internal/tools/monitor/utils"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
+	"github.com/erda-project/erda/pkg/discover"
 )
 
 func NewDashboard(a *Adapt) *dashgen {
@@ -146,11 +150,14 @@ func (d *dashgen) init(alertDetail *pb.CustomizeAlertDetail) {
 	d.scope = alertDetail.AlertScope
 
 	if d.scope == "org" {
-		org, err := d.a.bdl.GetOrg(d.scopeID)
+		orgResp, err := d.a.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcMonitor), &orgpb.GetOrgRequest{
+			IdOrName: d.scopeID,
+		})
 		if err != nil {
 			d.a.l.Infof("failed to get org by orgId=%s", d.scopeID)
+			return
 		}
-		d.scopeID = org.Name
+		d.scopeID = orgResp.Data.Name
 	}
 }
 

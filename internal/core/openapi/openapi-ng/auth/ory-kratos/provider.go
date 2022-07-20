@@ -22,6 +22,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/core/openapi/openapi-ng"
 	openapiauth "github.com/erda-project/erda/internal/core/openapi/openapi-ng/auth"
+	"github.com/erda-project/erda/internal/core/org"
 )
 
 type config struct {
@@ -35,6 +36,7 @@ type provider struct {
 	Log    logs.Logger
 	Router openapi.Interface `autowired:"openapi-router"`
 	bundle *bundle.Bundle
+	Org    org.Interface
 }
 
 func (p *provider) Init(ctx servicehub.Context) (err error) {

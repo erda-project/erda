@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	writer "github.com/erda-project/erda-infra/pkg/parallel-writer"
 	"github.com/erda-project/erda-infra/providers/kafka"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/tools/monitor/extensions/cloud/aliyun/metrics/cloudcat/api"
 	g "github.com/erda-project/erda/internal/tools/monitor/extensions/cloud/aliyun/metrics/cloudcat/globals"
 	"github.com/erda-project/erda/internal/tools/monitor/extensions/cloud/aliyun/metrics/cloudcat/scheduler"
@@ -54,6 +55,7 @@ type manager struct {
 	schedulerChangedSig chan int
 	done                chan struct{}
 	ctx                 servicehub.Context
+	Org                 org.ClientInterface
 }
 
 func (m *manager) Init(ctx servicehub.Context) error {
@@ -101,7 +103,7 @@ func (m *manager) sync() {
 		case <-timer.C:
 		}
 		g.Log.Infof("start reload account...")
-		meta, err := api.ListOrgInfos()
+		meta, err := api.ListOrgInfos(m.Org)
 		if err != nil {
 			g.Log.Errorf("list org cluster error: %s", err)
 			continue
@@ -210,7 +212,7 @@ func (m *manager) initScheduler() error {
 	m.done = make(chan struct{})
 	m.schedulerChangedSig = make(chan int)
 
-	meta, err := api.ListOrgInfos()
+	meta, err := api.ListOrgInfos(m.Org)
 	if err != nil {
 		g.Log.Infof("can not get org info: %s. will try again with %s interval", err, g.Cfg.AccountReload)
 	}

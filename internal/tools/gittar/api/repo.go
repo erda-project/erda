@@ -222,7 +222,7 @@ func DeleteRepoBranch(context *webcontext.Context) {
 			OperatorName: context.User.NickName,
 			EventName:    apistructs.GitDeleteBranchEvent,
 		}
-		org, err := context.Bundle.GetOrg(repo.OrgId)
+		org, err := context.GetOrg(repo.OrgId)
 		if err == nil {
 			result.Link = getRepoLink(org.Domain, org.Name, repo.ProjectId, repo.ApplicationId)
 		}
@@ -308,7 +308,7 @@ func DeleteRepoTag(context *webcontext.Context) {
 		result.OperatorName = context.User.NickName
 		result.OperatorID = context.User.Id
 		result.EventName = apistructs.GitDeleteTagEvent
-		org, err := context.Bundle.GetOrg(repo.OrgId)
+		org, err := context.GetOrg(repo.OrgId)
 		if err == nil {
 			result.Link = getRepoLink(org.Domain, org.Name, repo.ProjectId, repo.ApplicationId)
 		}

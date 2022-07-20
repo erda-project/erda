@@ -92,7 +92,7 @@ func (a *Addon) GetAddonResourceStatus(addonIns *dbclient.AddonInstance,
 			case apistructs.AddonConsul:
 				configMap, err = a.ConsulDeployStatus(addonIns, &serviceGroup)
 			case apistructs.AddonSourcecov:
-				asm := &SourcecovAddonManagement{bdl: a.bdl}
+				asm := &SourcecovAddonManagement{bdl: a.bdl, org: a.org}
 				configMap, err = asm.DeployStatus(addonIns, &serviceGroup)
 			default:
 				// 非基础addon，走通用的处理逻辑
@@ -533,7 +533,7 @@ func (a *Addon) BuildAddonRequestGroup(params *apistructs.AddonHandlerCreateItem
 		if !capacity.SourcecovOperator {
 			return nil, errors.New("sourcecov operator not installed")
 		}
-		sam := &SourcecovAddonManagement{bdl: a.bdl}
+		sam := &SourcecovAddonManagement{bdl: a.bdl, org: a.org}
 		buildErr = sam.BuildSourceCovServiceItem(params, addonIns, addonSpec, addonDice, &clusterInfo)
 	default: //default case
 		buildErr = a.BuildCommonServiceItem(params, addonIns, addonSpec, addonDice, &clusterInfo)

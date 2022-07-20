@@ -29,12 +29,14 @@ import (
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	dicestructs "github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/pkg/mysql"
 	block "github.com/erda-project/erda/internal/tools/monitor/core/dataview/v1-chart-block"
 	"github.com/erda-project/erda/internal/tools/monitor/utils"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/cron/crontypes"
+	"github.com/erda-project/erda/pkg/common/apis"
 	api "github.com/erda-project/erda/pkg/common/httpapi"
 	"github.com/erda-project/erda/pkg/discover"
 )
@@ -423,11 +425,14 @@ func (p *provider) generatePipelineYml(r *reportTask) (string, error) {
 	case daily:
 		pipelineYml.Cron = p.Cfg.ReportCron.DailyCron
 	}
-	org, err := p.bdl.GetOrg(r.ScopeID)
+	orgResp, err := p.Org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcMonitor), &orgpb.GetOrgRequest{
+		IdOrName: r.ScopeID,
+	})
 	if err != nil {
 		return "", errors.Errorf("failed to generate pipeline yaml, can not get OrgName by OrgID:%v,(%+v)", r.ScopeID, err)
 	}
 
+	org := orgResp.Data
 	maddr, err := p.createFQDN(discover.Monitor())
 	if err != nil {
 		return "", err

@@ -16,6 +16,7 @@
 package runtime
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"math/rand"
@@ -30,8 +31,11 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/core/org"
+	"github.com/erda-project/erda/internal/pkg/mock"
 	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/impl/clusterinfo"
 	"github.com/erda-project/erda/internal/tools/orchestrator/services/addon"
@@ -503,4 +507,65 @@ func generateMultiAddons(t *testing.T) string {
 	assert.NoError(t, err)
 
 	return string(diceYaml)
+}
+
+type orgMock struct {
+	mock.OrgMock
+}
+
+func (m orgMock) GetOrg(ctx context.Context, request *orgpb.GetOrgRequest) (*orgpb.GetOrgResponse, error) {
+	if request.IdOrName == "" {
+		return nil, fmt.Errorf("the IdOrName is empty")
+	}
+	return &orgpb.GetOrgResponse{Data: &orgpb.Org{}}, nil
+}
+
+func TestRuntime_GetOrg(t *testing.T) {
+	type fields struct {
+		org org.ClientInterface
+	}
+	type args struct {
+		orgID uint64
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    *orgpb.Org
+		wantErr bool
+	}{
+		{
+			name: "test with error",
+			fields: fields{
+				org: orgMock{},
+			},
+			args:    args{orgID: 0},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "test with no error",
+			fields: fields{
+				org: orgMock{},
+			},
+			args:    args{orgID: 1},
+			want:    &orgpb.Org{},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &Runtime{
+				org: tt.fields.org,
+			}
+			got, err := r.GetOrg(tt.args.orgID)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetOrg() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GetOrg() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }

@@ -401,3 +401,8 @@ erda.core.clustermanager.cluster-client: {}
 grpc-client@erda.core.messenger.notifygroup:
   addr: "${ERDA_SERVER_GRPC_ADDR:erda-server:8096}"
 erda.core.messenger.notifygroup-client:
+
+grpc-client@erda.core.org:
+  addr: "${ERDA_SERVER_GRPC_ADDR:erda-server:8096}"
+erda.core.org-client: {}
+erda.core.org: {}

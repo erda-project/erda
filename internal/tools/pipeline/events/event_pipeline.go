@@ -201,7 +201,7 @@ func makeDingDingMsg(e *PipelineEvent) (string, error) {
 		userName = user.Name
 	}
 
-	valid, link := linkutil.GetPipelineLink(e.bdl, *e.Pipeline)
+	valid, link := linkutil.GetPipelineLink(e.org, *e.Pipeline)
 	if !valid {
 		return "", nil
 	}

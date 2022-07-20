@@ -116,7 +116,7 @@ func CreateMergeRequest(ctx *webcontext.Context) {
 		}
 		request.TargetBranchRule = diceworkspace.GetValidBranchByGitReference(request.TargetBranch, rules)
 		repo := ctx.Repository
-		org, err := ctx.Bundle.GetOrg(repo.OrgId)
+		org, err := ctx.GetOrg(repo.OrgId)
 		if err == nil {
 			request.Link = getLink(org.Domain, org.Name, repo.ProjectId, repo.ApplicationId, repo.OrgId, int64(request.RepoMergeId))
 		}
@@ -228,7 +228,7 @@ func UpdateMergeRequest(ctx *webcontext.Context) {
 	}
 	go func() {
 		repo := ctx.Repository
-		org, err := ctx.Bundle.GetOrg(repo.OrgId)
+		org, err := ctx.GetOrg(repo.OrgId)
 		if err == nil {
 			result.Link = getLink(org.Domain, org.Name, repo.ProjectId, repo.ApplicationId, repo.OrgId, int64(result.RepoMergeId))
 		}
@@ -296,7 +296,7 @@ func Merge(ctx *webcontext.Context) {
 		request := mergeRequestInfo
 		request.TargetBranchRule = diceworkspace.GetValidBranchByGitReference(request.TargetBranch, rules)
 		repo := ctx.Repository
-		org, err := ctx.Bundle.GetOrg(repo.OrgId)
+		org, err := ctx.GetOrg(repo.OrgId)
 		if err == nil {
 			request.Link = getLink(org.Domain, org.Name, repo.ProjectId, repo.ApplicationId, repo.OrgId, int64(request.RepoMergeId))
 		}
@@ -326,7 +326,7 @@ func CloseMR(ctx *webcontext.Context) {
 		}
 		result.TargetBranchRule = diceworkspace.GetValidBranchByGitReference(result.TargetBranch, rules)
 		repo := ctx.Repository
-		org, err := ctx.Bundle.GetOrg(repo.OrgId)
+		org, err := ctx.GetOrg(repo.OrgId)
 		if err == nil {
 			result.Link = getLink(org.Domain, org.Name, repo.ProjectId, repo.ApplicationId, repo.OrgId, int64(result.RepoMergeId))
 		}
@@ -449,7 +449,7 @@ func CreateNotes(ctx *webcontext.Context) {
 		}
 		result.TargetBranchRule = diceworkspace.GetValidBranchByGitReference(result.TargetBranch, rules)
 		repo := ctx.Repository
-		org, err := ctx.Bundle.GetOrg(repo.OrgId)
+		org, err := ctx.GetOrg(repo.OrgId)
 		if err == nil {
 			result.Link = getLink(org.Domain, org.Name, repo.ProjectId, repo.ApplicationId, repo.OrgId, int64(id))
 		}

@@ -38,13 +38,13 @@ func (p *provider) initRoutes(routes httpserver.Router) {
 	// runtime
 	routes.GET("/api/runtime/logs/actions/download", p.downloadRuntimeLog, permission.Intercepter(
 		permission.ScopeApp, permission.QueryValue("applicationId"),
-		common.ResourceRuntime, permission.ActionGet,
+		common.ResourceRuntime, permission.ActionGet, p.Org,
 	))
 
 	// org
 	routes.GET("/api/orgCenter/logs/actions/download", p.downloadOrgLog, permission.Intercepter(
 		permission.ScopeOrg, permission.OrgIDByCluster("clusterName"),
-		common.ResourceOrgCenter, permission.ActionGet,
+		common.ResourceOrgCenter, permission.ActionGet, p.Org,
 	))
 }
 

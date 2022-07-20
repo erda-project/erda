@@ -36,25 +36,25 @@ func (p *provider) initRoutes(routes httpserver.Router) error {
 
 	routes.GET("/api/notify/templates", p.getNotifyTemplate, permission.Intercepter(
 		permission.ValueGetter(p.getScope), p.getScopeID,
-		common.ResourceNotify, permission.ActionCreate))
+		common.ResourceNotify, permission.ActionCreate, p.Org))
 	routes.POST("/api/notify/records", p.createNotify, permission.Intercepter(
 		permission.ValueGetter(p.getScope), p.getScopeID,
-		common.ResourceNotify, permission.ActionCreate))
+		common.ResourceNotify, permission.ActionCreate, p.Org))
 	routes.DELETE("/api/notify/records/:id", p.deleteNotify, permission.Intercepter(
 		permission.ValueGetter(p.getScope), p.getScopeID,
-		common.ResourceNotify, permission.ActionDelete))
+		common.ResourceNotify, permission.ActionDelete, p.Org))
 	routes.PUT("/api/notify/records/:id", p.updateNotify, permission.Intercepter(
 		permission.ValueGetter(p.getScope), p.getScopeID,
-		common.ResourceNotify, permission.ActionUpdate))
+		common.ResourceNotify, permission.ActionUpdate, p.Org))
 	routes.GET("/api/notify/records", p.getUserNotifyList, permission.Intercepter(
 		permission.ValueGetter(p.getScope), p.getScopeID,
-		common.ResourceNotify, permission.ActionGet))
+		common.ResourceNotify, permission.ActionGet, p.Org))
 	routes.PUT("/api/notify/:id/switch", p.notifyEnable, permission.Intercepter(
 		permission.ValueGetter(p.getScope), p.getScopeID,
-		common.ResourceNotify, permission.ActionUpdate))
+		common.ResourceNotify, permission.ActionUpdate, p.Org))
 	routes.POST("/api/notify/user-define/templates", p.createUserDefineNotifyTemplate, permission.Intercepter(
 		permission.ValueGetter(p.getScope), p.getScopeID,
-		common.ResourceNotify, permission.ActionCreate))
+		common.ResourceNotify, permission.ActionCreate, p.Org))
 	routes.GET("/api/notify/:id/detail", p.getNotifyDetail)
 	routes.GET("/api/notify/all-group", p.getAllGroups)
 	return nil

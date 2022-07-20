@@ -20,6 +20,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/httpserver/interceptors"
 	"github.com/erda-project/erda-infra/providers/mysql"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/tools/monitor/common/db"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/metricq"
 )
@@ -51,6 +52,7 @@ type provider struct {
 	db        *DB
 	authDb    *db.DB
 	presetMap map[string][]string
+	Org       org.ClientInterface
 }
 
 // Init .

@@ -23,6 +23,7 @@ import (
 
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 )
@@ -59,8 +60,8 @@ func TestAuditOperateOrgAlert(t *testing.T) {
 		},
 	}
 
-	getOrg = func(m *alertService, idOrName interface{}) (*apistructs.OrgDTO, error) {
-		return &apistructs.OrgDTO{
+	getOrg = func(m *alertService, idOrName interface{}) (*orgpb.Org, error) {
+		return &orgpb.Org{
 			ID:   123,
 			Name: "test-org",
 		}, nil
@@ -126,8 +127,8 @@ func TestAuditOperateOrgCustomAlert(t *testing.T) {
 		},
 	}
 
-	getOrg = func(m *alertService, idOrName interface{}) (*apistructs.OrgDTO, error) {
-		return &apistructs.OrgDTO{
+	getOrg = func(m *alertService, idOrName interface{}) (*orgpb.Org, error) {
+		return &orgpb.Org{
 			ID:   123,
 			Name: "test-org",
 		}, nil

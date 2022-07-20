@@ -15,14 +15,18 @@
 package orykratos
 
 import (
+	"context"
 	"fmt"
 	"math"
 	"net"
 	"net/http"
 	"strconv"
 
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	openapiauth "github.com/erda-project/erda/internal/core/openapi/openapi-ng/auth"
+	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 )
 
 type loginChecker struct {
@@ -98,7 +102,7 @@ func (p *provider) getScope(r *http.Request, userID string) (uint64, error) {
 	orgName := r.Header.Get("ORG")
 	var orgID uint64
 	if orgName != "" && orgName != "-" {
-		org, err := p.bundle.GetOrg(orgName)
+		org, err := p.GetOrg(orgName)
 		if err != nil {
 			return 0, err
 		}
@@ -108,10 +112,13 @@ func (p *provider) getScope(r *http.Request, userID string) (uint64, error) {
 		if host, _, err := net.SplitHostPort(domain); err == nil {
 			domain = host
 		}
-		org, err := p.bundle.GetDopOrgByDomain(domain, userID)
+		orgResp, err := p.Org.GetOrgByDomain(apis.WithUserIDContext(apis.WithInternalClientContext(context.Background(), discover.SvcOpenapi), userID), &orgpb.GetOrgByDomainRequest{
+			Domain: domain,
+		})
 		if err != nil {
 			return 0, err
 		}
+		org := orgResp.Data
 		if org == nil {
 			return 0, nil
 		}
@@ -130,4 +137,17 @@ func (p *provider) getScope(r *http.Request, userID string) (uint64, error) {
 		return 0, fmt.Errorf("permission denied for user:%s org:%d", userID, orgID)
 	}
 	return orgID, nil
+}
+
+func (p *provider) GetOrg(IdOrName string) (*orgpb.Org, error) {
+	if IdOrName == "" {
+		return nil, fmt.Errorf("the IdOrName is empty")
+	}
+	orgResp, err := p.Org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcOpenapi), &orgpb.GetOrgRequest{
+		IdOrName: IdOrName,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return orgResp.Data, nil
 }

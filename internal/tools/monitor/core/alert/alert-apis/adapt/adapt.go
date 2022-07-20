@@ -20,6 +20,7 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/pkg/bundle-ex/cmdb"
 	"github.com/erda-project/erda/internal/tools/monitor/core/alert/alert-apis/cql"
 	"github.com/erda-project/erda/internal/tools/monitor/core/alert/alert-apis/db"
@@ -78,6 +79,7 @@ type Adapt struct {
 	microServiceFilterTags      map[string]bool
 	microServiceOtherFilterTags map[string]bool
 	silencePolicies             map[string]bool
+	org                         org.ClientInterface
 }
 
 // New .
@@ -95,6 +97,7 @@ func New(
 	microServiceFilterTags map[string]bool,
 	microServiceOtherFilterTags map[string]bool,
 	silencePolicies map[string]bool,
+	org org.ClientInterface,
 ) *Adapt {
 	return &Adapt{
 		l:                           l,
@@ -110,5 +113,6 @@ func New(
 		microServiceOtherFilterTags: microServiceOtherFilterTags,
 		silencePolicies:             silencePolicies,
 		dashboardAPI:                dashapi,
+		org:                         org,
 	}
 }

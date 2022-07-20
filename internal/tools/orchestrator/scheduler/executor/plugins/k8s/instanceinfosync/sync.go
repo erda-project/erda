@@ -26,9 +26,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/erda-project/erda/bundle"
+	orgCache "github.com/erda-project/erda/internal/tools/orchestrator/cache/org"
 	hpatypes "github.com/erda-project/erda/internal/tools/orchestrator/components/horizontalpodscaler/types"
 	"github.com/erda-project/erda/internal/tools/orchestrator/i18n"
-	orgCache "github.com/erda-project/erda/internal/tools/orchestrator/scheduler/cache/org"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/util"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/instanceinfo"
 )

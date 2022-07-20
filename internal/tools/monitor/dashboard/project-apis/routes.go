@@ -25,19 +25,19 @@ func (p *provider) intRoutes(routes httpserver.Router) error {
 	checkProject := permission.QueryValue("filter_project_id")
 	routes.GET("/api/project/metrics/:scope", p.metricq.HandleV1, permission.Intercepter(
 		permission.ScopeProject, checkProject,
-		common.ResourceProject, permission.ActionGet,
+		common.ResourceProject, permission.ActionGet, p.Org,
 	))
 	routes.GET("/api/project/metrics/:scope/:aggregate", p.metricq.HandleV1, permission.Intercepter(
 		permission.ScopeProject, checkProject,
-		common.ResourceProject, permission.ActionGet,
+		common.ResourceProject, permission.ActionGet, p.Org,
 	))
 	routes.GET("/api/project/metrics/query", p.metricq.Handle, permission.Intercepter(
 		permission.ScopeProject, checkProject,
-		common.ResourceProject, permission.ActionGet,
+		common.ResourceProject, permission.ActionGet, p.Org,
 	))
 	routes.POST("/api/project/metrics/query", p.metricq.Handle, permission.Intercepter(
 		permission.ScopeProject, checkProject,
-		common.ResourceProject, permission.ActionGet,
+		common.ResourceProject, permission.ActionGet, p.Org,
 	))
 	return nil
 }

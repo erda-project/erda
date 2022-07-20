@@ -15,9 +15,12 @@
 package slsimport
 
 import (
+	"context"
 	"strconv"
 
-	"github.com/erda-project/erda/apistructs"
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
+	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 )
 
 // 1、调用ops的/api/cloud-account接口获取阿里云账号的ak+sk，查询数据库获取日志清洗的规则列表。
@@ -78,17 +81,17 @@ func (p *provider) getAccountInfo() (map[string]*AccountInfo, error) {
 	pageNo, pageSize := 1, 30
 	orgs := make(map[uint64]string)
 	for {
-		resp, err := p.bdl.ListOrgs(&apistructs.OrgSearchRequest{
-			PageNo:   pageNo,
-			PageSize: pageSize,
-		}, "")
+		resp, err := p.Org.ListOrg(apis.WithInternalClientContext(context.Background(), discover.SvcMonitor), &orgpb.ListOrgRequest{
+			PageNo:   int64(pageNo),
+			PageSize: int64(pageSize),
+		})
 		if err != nil {
 			return nil, err
 		}
 		for _, item := range resp.List {
 			orgs[item.ID] = item.Name
 		}
-		if len(orgs) >= resp.Total || pageNo > ((resp.Total+pageSize-1)/pageSize) {
+		if len(orgs) >= int(resp.Total) || pageNo > ((int(resp.Total)+pageSize-1)/pageSize) {
 			break
 		}
 		pageNo++

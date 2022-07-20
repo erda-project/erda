@@ -22,6 +22,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/etcd"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/core/user"
 )
 
@@ -30,6 +31,7 @@ type provider struct {
 	EtcdClient   *clientv3.Client           // autowired
 	TokenService tokenpb.TokenServiceServer `autowired:"erda.core.token.TokenService"`
 	Identity     user.Interface
+	Org          org.ClientInterface
 }
 
 func (p *provider) Run(ctx context.Context) error { return p.Initialize() }

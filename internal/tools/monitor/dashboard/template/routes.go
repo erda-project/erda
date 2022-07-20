@@ -38,6 +38,6 @@ func (p *provider) intRoutes(routes httpserver.Router) error {
 func (p *provider) getPermissionByScopeId(action permission.Action) httpserver.Interceptor {
 	return permission.Intercepter(
 		permission.ScopeProject, permission.ScopeIdFromParams(p.authDb),
-		common.ResourceMicroService, action,
+		common.ResourceMicroService, action, p.Org,
 	)
 }

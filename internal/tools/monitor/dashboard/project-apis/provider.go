@@ -19,12 +19,15 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/httpserver/interceptors"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/metricq"
 )
 
 type provider struct {
 	L       logs.Logger
 	metricq metricq.Queryer
+
+	Org org.ClientInterface
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {

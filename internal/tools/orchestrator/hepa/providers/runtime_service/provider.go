@@ -19,6 +19,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-proto-go/core/hepa/runtime_service/pb"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/runtime_service/impl"
 	"github.com/erda-project/erda/pkg/common/apis"
@@ -35,11 +36,12 @@ type provider struct {
 	Register       transport.Register
 	runtimeService *runtimeService
 	Perm           perm.Interface `autowired:"permission"`
+	Org            org.ClientInterface
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.runtimeService = &runtimeService{p}
-	err := impl.NewGatewayRuntimeServiceServiceImpl()
+	err := impl.NewGatewayRuntimeServiceServiceImpl(p.Org)
 	if err != nil {
 		return err
 	}

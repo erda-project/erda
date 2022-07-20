@@ -15,6 +15,7 @@
 package auth
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/textproto"
@@ -26,12 +27,15 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
 
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/core/openapi/legacy/conf"
 	"github.com/erda-project/erda/internal/core/openapi/legacy/util"
+	"github.com/erda-project/erda/internal/core/org"
 	identity "github.com/erda-project/erda/internal/core/user/common"
 	"github.com/erda-project/erda/internal/core/user/impl/uc"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/discover"
 )
 
@@ -192,11 +196,13 @@ func (u *User) GetOrgInfo(orgHeader, domainHeader string) (orgID uint64, err err
 		return 0, nil
 	}
 	// query org info
-	org, err := u.bundle.GetOrg(orgName)
+	orgResp, err := org.MustGetOrg().GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcOpenapi), &orgpb.GetOrgRequest{
+		IdOrName: orgName,
+	})
 	if err != nil {
 		return 0, err
 	}
-	return org.ID, nil
+	return orgResp.Data.ID, nil
 }
 
 func (u *User) IsLogin(req *http.Request) AuthResult {

@@ -28,6 +28,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/core/monitor/settings/pb"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
@@ -42,6 +43,7 @@ type provider struct {
 	DB              *gorm.DB           `autowired:"mysql-client"`
 	Trans           i18n.Translator    `autowired:"i18n" translator:"settings"`
 	settingsService *settingsService
+	Org             org.ClientInterface
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {

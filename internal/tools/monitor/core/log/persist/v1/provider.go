@@ -27,6 +27,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/cassandra"
 	mutex "github.com/erda-project/erda-infra/providers/etcd-mutex"
 	"github.com/erda-project/erda-infra/providers/kafka"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/tools/monitor/core/log/persist/v1/schema"
 	"github.com/erda-project/erda/internal/tools/monitor/core/settings/retention-strategy"
 )
@@ -54,6 +55,7 @@ type provider struct {
 	Cassandra cassandra.Interface `autowired:"cassandra"`
 	Retention retention.Interface `autowired:"storage-retention-strategy@log"`
 	Mutex     mutex.Interface     `autowired:"etcd-mutex"`
+	Org       org.ClientInterface
 
 	output writer.Writer
 	schema schema.LogSchema
@@ -67,7 +69,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	}
 	p.output = p.Cassandra.NewBatchWriter(session, &p.Cfg.Output.Cassandra.WriterConfig, p.createLogStatementBuilder)
 
-	p.schema, err = schema.NewCassandraSchema(p.Cassandra, p.Log.Sub("logSchema"))
+	p.schema, err = schema.NewCassandraSchema(p.Cassandra, p.Log.Sub("logSchema"), schema.WithOrg(p.Org))
 	if err != nil {
 		return err
 	}

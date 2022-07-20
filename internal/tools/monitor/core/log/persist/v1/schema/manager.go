@@ -27,8 +27,11 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/providers/cassandra"
 	mutex "github.com/erda-project/erda-infra/providers/etcd-mutex"
-	"github.com/erda-project/erda/apistructs"
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/core/org"
+	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 )
 
 var bdl = bundle.New(bundle.WithErdaServer(), bundle.WithDOP())
@@ -47,6 +50,7 @@ type CassandraSchema struct {
 	currentOrgList []string
 	currentOrgMap  map[string]struct{}
 	mutexKey       string
+	org            org.ClientInterface
 }
 
 type Option func(cs *CassandraSchema)
@@ -54,6 +58,12 @@ type Option func(cs *CassandraSchema)
 func WithMutexKey(key string) Option {
 	return func(cs *CassandraSchema) {
 		cs.mutexKey = key
+	}
+}
+
+func WithOrg(org org.ClientInterface) Option {
+	return func(cs *CassandraSchema) {
+		cs.org = org
 	}
 }
 
@@ -201,7 +211,11 @@ func (cs *CassandraSchema) existedCheck(keyspace string) (keyspaceExisted bool, 
 
 func (cs *CassandraSchema) listOrgNames() (res []string, err error) {
 	res = []string{}
-	resp, err := bdl.ListDopOrgs(&apistructs.OrgSearchRequest{PageNo: 1, PageSize: math.MaxInt64})
+
+	resp, err := cs.org.ListOrg(apis.WithInternalClientContext(context.Background(), discover.SvcMonitor), &orgpb.ListOrgRequest{
+		PageSize: math.MaxInt64,
+		PageNo:   1,
+	})
 	if err != nil {
 		// return res, nil
 		return nil, fmt.Errorf("get orglist failed. err: %s", err)

@@ -34,6 +34,7 @@ import (
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/pkg/audit"
 	"github.com/erda-project/erda/internal/pkg/bundle-ex/cmdb"
 	"github.com/erda-project/erda/internal/tools/monitor/core/alert/alert-apis/adapt"
@@ -83,6 +84,7 @@ type provider struct {
 	Perm          perm.Interface               `autowired:"permission"`
 	alertService  *alertService
 	NotifyChannel channelpb.NotifyChannelServiceServer `autowired:"erda.core.messenger.notifychannel.NotifyChannelService"`
+	Org           org.ClientInterface
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -147,7 +149,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.bdl = bundle.New(bundle.WithScheduler(), bundle.WithErdaServer())
 
 	dashapi := ctx.Service("chart-block").(block.DashboardAPI)
-	p.a = adapt.New(p.L, p.metricq, p.EventStorage, p.t, p.db, p.cql, p.bdl, p.cmdb, dashapi, p.orgFilterTags, p.microServiceFilterTags, p.microServiceOtherFilterTags, p.silencePolicies)
+	p.a = adapt.New(p.L, p.metricq, p.EventStorage, p.t, p.db, p.cql, p.bdl, p.cmdb, dashapi, p.orgFilterTags, p.microServiceFilterTags, p.microServiceOtherFilterTags, p.silencePolicies, p.Org)
 
 	p.alertService = &alertService{
 		p: p,

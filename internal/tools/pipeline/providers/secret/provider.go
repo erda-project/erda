@@ -23,6 +23,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/cache"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/cancel"
@@ -46,6 +47,7 @@ type provider struct {
 
 	dbClient *dbclient.Client
 	bdl      *bundle.Bundle
+	Org      org.ClientInterface
 }
 
 func (s *provider) Init(ctx servicehub.Context) error {

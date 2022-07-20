@@ -27,17 +27,17 @@ func (p *provider) intRoutes(routes httpserver.Router) error {
 	// metric for alert
 	routes.GET("/api/alert/metrics/:scope", p.metricq.HandleV1, permission.Intercepter(
 		permission.ScopeOrg, p.getOrgIDByClusters,
-		common.ResourceOrgCenter, permission.ActionGet,
+		common.ResourceOrgCenter, permission.ActionGet, p.Org,
 	))
 	routes.GET("/api/alert/metrics/:scope/:aggregate", p.metricq.HandleV1, permission.Intercepter(
 		permission.ScopeOrg, p.getOrgIDByClusters,
-		common.ResourceOrgCenter, permission.ActionGet,
+		common.ResourceOrgCenter, permission.ActionGet, p.Org,
 	))
 
 	// metrics for system
 	routes.GET("/api/system/addon/metrics/:scope/:aggregate", p.systemAddonMetrics, permission.Intercepter(
 		permission.ScopeOrg, permission.OrgIDByCluster("filter_cluster_name"),
-		common.ResourceOrgCenter, permission.ActionGet,
+		common.ResourceOrgCenter, permission.ActionGet, p.Org,
 	))
 	return nil
 }

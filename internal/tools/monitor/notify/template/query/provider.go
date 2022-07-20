@@ -24,6 +24,7 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/erda-project/erda-infra/providers/httpserver"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/tools/monitor/notify/template/db"
 	"github.com/erda-project/erda/internal/tools/monitor/notify/template/model"
 	"github.com/erda-project/erda/pkg/http/httpclient"
@@ -63,6 +64,8 @@ type provider struct {
 	t    i18n.Translator
 	bdl  *bundle.Bundle
 	cmdb *bundlecmdb.Cmdb
+
+	Org org.ClientInterface
 }
 
 func (p *provider) getUserDefineTemplate(scopeID, scope, name, nType string) ([]*model.GetNotifyRes, error) {

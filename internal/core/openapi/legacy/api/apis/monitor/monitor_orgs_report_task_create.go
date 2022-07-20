@@ -15,13 +15,16 @@
 package monitor
 
 import (
-	"fmt"
+	"context"
 	"strconv"
-	"strings"
 
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/core/openapi/legacy/api/apis"
 	"github.com/erda-project/erda/internal/core/openapi/legacy/api/spec"
+	"github.com/erda-project/erda/internal/core/org"
+	comapis "github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 )
 
 var MONITOR_ORG_REPORT_TASK_CREATE = apis.ApiSpec{
@@ -44,10 +47,14 @@ func auditCreateOrgReportTask(tmp apistructs.TemplateName) func(ctx *spec.AuditC
 		if err := ctx.BindRequestData(&requestBody); err != nil {
 			return err
 		}
-		org, err := ctx.Bundle.GetOrg(ctx.OrgID)
+
+		orgResp, err := org.MustGetOrg().GetOrg(comapis.WithInternalClientContext(context.Background(), discover.SvcOpenapi), &orgpb.GetOrgRequest{
+			IdOrName: strconv.FormatInt(ctx.OrgID, 10),
+		})
 		if err != nil {
 			return err
 		}
+		org := orgResp.Data
 		return ctx.CreateAudit(&apistructs.Audit{
 			ScopeType:    apistructs.OrgScope,
 			ScopeID:      uint64(ctx.OrgID),
@@ -55,58 +62,6 @@ func auditCreateOrgReportTask(tmp apistructs.TemplateName) func(ctx *spec.AuditC
 			Context: map[string]interface{}{
 				"reportName": requestBody.Name,
 				"orgName":    org.Name,
-			},
-		})
-	}
-}
-
-func auditOperateOrgReportTask(tmp apistructs.TemplateName, act string) func(ctx *spec.AuditContext) error {
-	return func(ctx *spec.AuditContext) error {
-		action := act
-		if action == "" {
-			enable := strings.ToLower(ctx.Request.URL.Query().Get("enable"))
-			if enable == "true" {
-				action = "enabled"
-			} else if enable == "false" {
-				action = "disabled"
-			}
-		}
-		org, err := ctx.Bundle.GetOrg(ctx.OrgID)
-		if err != nil {
-			return err
-		}
-		if org == nil {
-			return nil
-		}
-		id, err := strconv.ParseInt(ctx.UrlParams["id"], 10, 64)
-		if err != nil {
-			return err
-		}
-		name := ctx.UrlParams["id"]
-		if tmp == apistructs.DeleteOrgReportTasks {
-			var respBody struct {
-				apistructs.Header
-				Data map[string]interface{} `json:"data"`
-			}
-			err := ctx.BindResponseData(&respBody)
-			if err == nil && respBody.Data != nil && respBody.Data["name"] != nil {
-				name = fmt.Sprint(respBody.Data["name"])
-			}
-		} else {
-			data, err := ctx.Bundle.GetMonitorReportTasksByID(id)
-			if err == nil && data != nil {
-				name = data.Name
-			}
-		}
-		return ctx.CreateAudit(&apistructs.Audit{
-			ScopeType:    apistructs.OrgScope,
-			ScopeID:      uint64(ctx.OrgID),
-			TemplateName: tmp,
-			Context: map[string]interface{}{
-				"reportID":   id,
-				"reportName": name,
-				"orgName":    org.Name,
-				"action":     action,
 			},
 		})
 	}

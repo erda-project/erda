@@ -15,9 +15,7 @@
 package monitor
 
 import (
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/core/openapi/legacy/api/apis"
-	"github.com/erda-project/erda/internal/core/openapi/legacy/api/spec"
 )
 
 var MONITOR_ORGS_ALERT_CREATE = apis.ApiSpec{
@@ -29,28 +27,4 @@ var MONITOR_ORGS_ALERT_CREATE = apis.ApiSpec{
 	CheckLogin:  true,
 	CheckToken:  true,
 	Doc:         "summary: 创建企业告警",
-}
-
-func auditCreateOrgAlert(tmp apistructs.TemplateName) func(ctx *spec.AuditContext) error {
-	return func(ctx *spec.AuditContext) error {
-		var requestBody struct {
-			Name string `json:"name"`
-		}
-		if err := ctx.BindRequestData(&requestBody); err != nil {
-			return err
-		}
-		org, err := ctx.Bundle.GetOrg(ctx.OrgID)
-		if err != nil {
-			return err
-		}
-		return ctx.CreateAudit(&apistructs.Audit{
-			ScopeType:    apistructs.OrgScope,
-			ScopeID:      uint64(ctx.OrgID),
-			TemplateName: tmp,
-			Context: map[string]interface{}{
-				"alertName": requestBody.Name,
-				"orgName":   org.Name,
-			},
-		})
-	}
 }

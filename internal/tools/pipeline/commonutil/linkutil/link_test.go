@@ -20,12 +20,11 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/pkg/mock"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 func TestGetPipelineLink(t *testing.T) {
-	fakeBdl := bundle.New()
 
 	type invalidCase struct {
 		p    spec.Pipeline
@@ -63,7 +62,7 @@ func TestGetPipelineLink(t *testing.T) {
 	}
 
 	for _, c := range invalidCases {
-		valid, link := GetPipelineLink(fakeBdl, c.p)
+		valid, link := GetPipelineLink(mock.OrgMock{}, c.p)
 		assert.False(t, valid)
 		assert.Empty(t, link)
 	}
