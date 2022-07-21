@@ -466,10 +466,11 @@ func (p *Pipeline) getPipelineOwnerUser(app *apistructs.ApplicationDTO, pv1 *api
 // checkOwnerPermission checks if the user has permission to get app
 func (p *Pipeline) checkOwnerPermission(userID string, app *apistructs.ApplicationDTO) error {
 	access, err := p.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
-		UserID:  userID,
-		Scope:   apistructs.AppScope,
-		ScopeID: app.ID,
-		Action:  apistructs.GetAction,
+		UserID:   userID,
+		Scope:    apistructs.AppScope,
+		ScopeID:  app.ID,
+		Resource: apistructs.AppResource,
+		Action:   apistructs.GetAction,
 	})
 	if err != nil {
 		return err
