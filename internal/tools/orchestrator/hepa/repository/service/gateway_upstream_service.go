@@ -34,22 +34,27 @@ func NewGatewayUpstreamServiceImpl() (*GatewayUpstreamServiceImpl, error) {
 	return &GatewayUpstreamServiceImpl{engine}, nil
 }
 
+// UpdateRegister .
+// To find orm.GatewayUpstream by orgID,projectID,env,az,upstreamName,runtimeServiceID,
+// If find it, and LastRegisterId from req is same as the exists one, returns need not save and need not new create.
+// If find it, and LastRegisterId from req is not same as the exists one, update lastRegisterID and zoneID, returns need update and need not create.
+// If not find it, find it again with table lock, if not success, create it, returns need update and need create.
 func (impl *GatewayUpstreamServiceImpl) UpdateRegister(session *xorm.Session, dao *orm.GatewayUpstream) (bool, bool, string, error) {
 	needUpdate := false
 	if session == nil || dao == nil {
-		return needUpdate, false, "", errors.New(ERR_INVALID_ARG)
+		return false, false, "", errors.New(ERR_INVALID_ARG)
 	}
 	exist := &orm.GatewayUpstream{}
 	// check exist without lock
 	succ, err := orm.Get(session, exist, "org_id = ? and project_id = ? and env = ? and az = ? and upstream_name = ? and runtime_service_id = ?", dao.OrgId, dao.ProjectId, dao.Env, dao.Az, dao.UpstreamName, dao.RuntimeServiceId)
 	if err != nil {
-		return needUpdate, false, "", errors.WithStack(err)
+		return false, false, "", errors.WithStack(err)
 	}
 	if !succ {
 		// check exist with table lock
 		succ, err = orm.GetForUpdate(session, impl.engine, exist, "org_id = ? and project_id = ? and env = ? and az = ? and upstream_name = ? and runtime_service_id = ?", dao.OrgId, dao.ProjectId, dao.Env, dao.Az, dao.UpstreamName, dao.RuntimeServiceId)
 		if err != nil {
-			return needUpdate, false, "", errors.WithStack(err)
+			return false, false, "", errors.WithStack(err)
 		}
 		if !succ {
 			// create

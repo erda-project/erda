@@ -297,6 +297,11 @@ type IniService interface {
 }
 
 type GatewayUpstreamService interface {
+	// UpdateRegister .
+	// To find orm.GatewayUpstream by orgID,projectID,env,az,upstreamName,runtimeServiceID,
+	// If find it, and LastRegisterId from req is same as the exists one, returns need not save and need not new create.
+	// If find it, and LastRegisterId from req is not same as the exists one, update lastRegisterID and zoneID, returns need update and need not create.
+	// If not find it, find it again with table lock, if not success, create it, returns need update and need create.
 	UpdateRegister(*xorm.Session, *GatewayUpstream) (bool, bool, string, error)
 	GetValidIdForUpdate(string, *xorm.Session) (string, error)
 	UpdateValidId(*GatewayUpstream, ...*xorm.Session) error
