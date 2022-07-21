@@ -387,6 +387,54 @@ func (p *ProjectPipelineService) CreateOne(ctx context.Context, params *pb.Creat
 	}, nil
 }
 
+func (p *ProjectPipelineService) IdempotentCreateOne(ctx context.Context, params *pb.CreateProjectPipelineRequest) (*pb.ProjectPipeline, error) {
+	pipelineSourceType := NewProjectSourceType(params.SourceType)
+	sourceReq, err := pipelineSourceType.GenerateReq(ctx, p, params)
+	if err != nil {
+		return nil, err
+	}
+
+	sourceRsp, err := p.PipelineSource.Create(ctx, sourceReq)
+	if err != nil {
+		return nil, err
+	}
+
+	location, err := p.makeLocationByAppID(params.AppID)
+	if err != nil {
+		return nil, err
+	}
+
+	definitionRsp, err := p.PipelineDefinition.Create(ctx, &dpb.PipelineDefinitionCreateRequest{
+		Location:         location,
+		Name:             makePipelineName(params, sourceReq.PipelineYml),
+		Creator:          apis.GetUserID(ctx),
+		PipelineSourceID: sourceRsp.PipelineSource.ID,
+		Category:         DefaultCategory.String(),
+		Extra: &dpb.PipelineDefinitionExtra{
+			Extra: pipelineSourceType.GetPipelineCreateRequestV2(),
+		},
+		Ref: sourceRsp.PipelineSource.Ref,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.ProjectPipeline{
+		ID:               definitionRsp.PipelineDefinition.ID,
+		Name:             definitionRsp.PipelineDefinition.Name,
+		Creator:          definitionRsp.PipelineDefinition.Creator,
+		Category:         definitionRsp.PipelineDefinition.Category,
+		TimeCreated:      definitionRsp.PipelineDefinition.TimeCreated,
+		TimeUpdated:      definitionRsp.PipelineDefinition.TimeUpdated,
+		SourceType:       sourceRsp.PipelineSource.SourceType,
+		Remote:           sourceRsp.PipelineSource.Remote,
+		Ref:              sourceRsp.PipelineSource.Ref,
+		Path:             sourceRsp.PipelineSource.Path,
+		FileName:         sourceRsp.PipelineSource.Name,
+		PipelineSourceID: sourceRsp.PipelineSource.ID,
+	}, nil
+}
+
 func makePipelineName(params *pb.CreateProjectPipelineRequest, pipelineYml string) string {
 	if params.Name != "" {
 		return params.Name

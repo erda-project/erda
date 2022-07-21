@@ -74,7 +74,3 @@ func GetRuleCategoryKeyMap() map[string]PipelineCategory {
 	}
 	return m
 }
-
-func MakeRemote(app *ApplicationDTO) string {
-	return filepath.Join(app.OrgName, app.ProjectName, app.Name)
-}
