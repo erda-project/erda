@@ -17,8 +17,6 @@ package projectpipeline
 import (
 	"reflect"
 	"testing"
-
-	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pb"
 )
 
 func Test_parseSourceDicePipelineYmlName(t *testing.T) {
@@ -83,58 +81,6 @@ func Test_parseSourceDicePipelineYmlName(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := parseSourceDicePipelineYmlName(tt.args.ymlName, tt.args.branch); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("parseSourceDicePipelineYmlName() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func Test_cronsFilterIn(t *testing.T) {
-	type args struct {
-		list []*pipelinepb.Cron
-		fn   func(cron *pipelinepb.Cron) bool
-	}
-	tests := []struct {
-		name string
-		args args
-		want []*pipelinepb.Cron
-	}{
-		{
-			name: "test with filterIn",
-			args: args{
-				list: []*pipelinepb.Cron{
-					{
-						ID:                   1,
-						PipelineDefinitionID: "1",
-					},
-					{
-						ID:                   2,
-						PipelineDefinitionID: "",
-					},
-					{
-						ID:                   3,
-						PipelineDefinitionID: "",
-					},
-				},
-				fn: func(cron *pipelinepb.Cron) bool {
-					return cron.PipelineDefinitionID == ""
-				},
-			},
-			want: []*pipelinepb.Cron{
-				{
-					ID:                   2,
-					PipelineDefinitionID: "",
-				},
-				{
-					ID:                   3,
-					PipelineDefinitionID: "",
-				},
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := cronsFilterIn(tt.args.list, tt.args.fn); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("cronsFilterIn() = %v, want %v", got, tt.want)
 			}
 		})
 	}

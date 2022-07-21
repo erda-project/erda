@@ -25,8 +25,6 @@ import (
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	"github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
-	dpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
-	sourcepb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
 	"github.com/erda-project/erda/internal/pkg/metrics/report"
 	_ "github.com/erda-project/erda/internal/tools/pipeline/aop/plugins"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/actionagent"
@@ -85,9 +83,6 @@ type provider struct {
 	Resource     resource.Interface
 	ActionAgent  actionagent.Interface
 	Permission   permission.Interface
-
-	PipelineSource     sourcepb.SourceServiceServer `autowired:"erda.core.pipeline.source.SourceService" required:"true"`
-	PipelineDefinition dpb.DefinitionServiceServer  `autowired:"erda.core.pipeline.definition.DefinitionService" required:"true"`
 }
 
 func (p *provider) Run(ctx context.Context) error {

@@ -20,6 +20,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/jinzhu/gorm"
 
@@ -30,7 +31,6 @@ import (
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	dpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
-	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pb"
 	sourcepb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	guidepb "github.com/erda-project/erda-proto-go/dop/guide/pb"
@@ -94,6 +94,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 func (p *provider) Run(ctx context.Context) error {
 	go func() {
+		time.Sleep(1 * time.Minute)
 		if err := p.AddDefinitionToCronIfNeed(ctx); err != nil {
 			p.Log.Errorf("failed to add definition to cron, err: %v", err.Error())
 		}
@@ -103,20 +104,17 @@ func (p *provider) Run(ctx context.Context) error {
 
 func (p *provider) AddDefinitionToCronIfNeed(ctx context.Context) error {
 	cronResp, err := p.PipelineCron.CronPaging(ctx, &cronpb.CronPagingRequest{
-		Sources: []string{apistructs.PipelineSourceDice.String()},
-		GetAll:  true,
+		Sources:           []string{apistructs.PipelineSourceDice.String()},
+		GetAll:            true,
+		EmptyDefinitionID: true,
 	})
 	if err != nil {
 		return err
 	}
-	corns := cronsFilterIn(cronResp.Data, func(cron *pipelinepb.Cron) bool {
-		return cron.PipelineDefinitionID == ""
-	})
-
 	const (
 		sourceType = "erda"
 	)
-	for _, v := range corns {
+	for _, v := range cronResp.Data {
 		branch := v.Extra.Labels[apistructs.LabelBranch]
 		if branch == "" {
 			continue
@@ -130,12 +128,12 @@ func (p *provider) AddDefinitionToCronIfNeed(ctx context.Context) error {
 		}
 		appID, err := strconv.ParseUint(ymlName.appID, 10, 64)
 		if err != nil {
-			p.Log.Errorf("failed to parseUint, cronID: %d, appID: %s, err: %v", v.ID, appID, err)
+			p.Log.Errorf("failed to parseUint, cronID: %d, appID: %s, err: %v", v.ID, ymlName.appID, err)
 			continue
 		}
 		app, err := p.bundle.GetApp(appID)
 		if err != nil {
-			p.Log.Errorf("failed to get app, appID: %s, err: %v", appID, err)
+			p.Log.Errorf("failed to get app, appID: %d, err: %v", appID, err)
 			continue
 		}
 
@@ -194,16 +192,6 @@ func parseSourceDicePipelineYmlName(ymlName string, branch string) *pipelineYmlN
 		branch:    branch,
 		fileName:  ymlName[len(splits[0])+len(splits[1])+len(branch)+3:],
 	}
-}
-
-func cronsFilterIn(list []*pipelinepb.Cron, fn func(cron *pipelinepb.Cron) bool) []*pipelinepb.Cron {
-	newList := make([]*pipelinepb.Cron, 0)
-	for i := range list {
-		if fn(list[i]) {
-			newList = append(newList, list[i])
-		}
-	}
-	return newList
 }
 
 func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {

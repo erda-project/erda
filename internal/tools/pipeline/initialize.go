@@ -119,8 +119,6 @@ func (p *provider) do() error {
 	pipelineSvc.WithActionMgr(p.ActionMgr)
 	pipelineSvc.WithMySQL(p.MySQL)
 	pipelineSvc.WithEdgeReporter(p.EdgeReporter)
-	pipelineSvc.WithPipelineSource(p.PipelineSource)
-	pipelineSvc.WithPipelineDefinition(p.PipelineDefinition)
 
 	// todo resolve cycle import here through better module architecture
 	pipelineFuncs := reconciler.PipelineSvcFuncs{
