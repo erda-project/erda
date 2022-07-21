@@ -46,11 +46,6 @@ func FromUpstreamApi(api *pb.UpstreamApi) UpstreamApiDto {
 	}
 }
 
-// Init 对 *UpstreamApiDot 正规化.
-// *UpstreamApiDto.Path 要求以 "/" 开头;
-// *UpstreamApiDto.Address 要求以 "http" 开头;
-// 设置默认的 *UpstreamApiDto.Name;
-// 设置默认的 *UpstreamApiDto.GatewayPath.
 func (dto *UpstreamApiDto) Init() bool {
 	if len(dto.Path) == 0 || dto.Path[0] != '/' {
 		log.Errorf("invalid path:%+v", dto)

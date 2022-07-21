@@ -41,7 +41,6 @@ type UpstreamRegisterDto struct {
 	PathPrefix    *string          `json:"pathPrefix"`
 }
 
-// FromUpstream 转换结构
 func FromUpstream(u *pb.Upstream) *UpstreamRegisterDto {
 	dto := &UpstreamRegisterDto{
 		Az:           u.Az,
@@ -71,12 +70,6 @@ func FromUpstream(u *pb.Upstream) *UpstreamRegisterDto {
 	return dto
 }
 
-// Init .
-// concat *UpstreamRegisterDto.UpstreamName;
-// concat *UpstreamRegisterDto.PathPrefix;
-// generate *UpstreamRegisterDto.OldRegisterId;
-// trim UpstreamApiDto from *UpstreamRegisterDto.ApiList if !UpstreamApiDto.IsCustom;
-// set default UpstreamRegisterDto.ApiList if no custom UpstreamApiDto.
 func (dto *UpstreamRegisterDto) Init() bool {
 	if len(dto.AppName) == 0 || len(dto.OrgId) == 0 || len(dto.ProjectId) == 0 || len(dto.ApiList) == 0 ||
 		len(dto.Env) == 0 || (dto.OldRegisterId == nil && dto.RegisterId == "") {

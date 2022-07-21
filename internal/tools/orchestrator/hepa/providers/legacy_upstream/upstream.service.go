@@ -37,16 +37,12 @@ func (s *upstreamService) Register(ctx context.Context, req *pb.RegisterRequest)
 		err = erdaErr.NewInvalidParameterError(vars.TODO_PARAM, "invalid request")
 		return
 	}
-	// convert struct
 	reqDto := dto.FromUpstream(req.Upstream)
-	// adjust reqDto
 	if !reqDto.Init() {
 		logrus.Errorf("invalid dto:%+v", reqDto)
 		err = erdaErr.NewInvalidParameterError(vars.TODO_PARAM, "invalid request")
 		return
 	}
-
-	// adjust every api struct
 	for i := 0; i < len(reqDto.ApiList); i++ {
 		apiDto := &reqDto.ApiList[i]
 		if !apiDto.Init() {
@@ -55,8 +51,6 @@ func (s *upstreamService) Register(ctx context.Context, req *pb.RegisterRequest)
 			return
 		}
 	}
-
-	// do upstream register
 	result, err := service.UpstreamRegister(reqDto)
 	if err != nil {
 		err = erdaErr.NewInvalidParameterError(vars.TODO_PARAM, errors.Cause(err).Error())

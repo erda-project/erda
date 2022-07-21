@@ -477,7 +477,7 @@ func (impl GatewayUpstreamServiceImpl) saveUpstream(dao *orm.GatewayUpstream, dt
 	registerId := dto.RegisterId
 	transSucc := false
 	if dao == nil {
-		return false, errors.New(ERR_INVALID_ARG)
+		return transSucc, errors.New(ERR_INVALID_ARG)
 	}
 	session := impl.engine.NewSession()
 	defer func(session **xorm.Session) {
@@ -490,15 +490,15 @@ func (impl GatewayUpstreamServiceImpl) saveUpstream(dao *orm.GatewayUpstream, dt
 	}(&session)
 	err := session.Begin()
 	if err != nil {
-		return false, errors.WithStack(err)
+		return transSucc, errors.WithStack(err)
 	}
 	_, err = session.Exec("set innodb_lock_wait_timeout=600")
 	if err != nil {
-		return false, errors.WithStack(err)
+		return transSucc, errors.WithStack(err)
 	}
 	needSave, newCreated, upId, err := impl.upstreamDb.UpdateRegister(session, dao)
 	if err != nil {
-		return false, err
+		return transSucc, err
 	}
 	if newCreated {
 		// unlock table lock
@@ -507,12 +507,12 @@ func (impl GatewayUpstreamServiceImpl) saveUpstream(dao *orm.GatewayUpstream, dt
 		session = impl.engine.NewSession()
 		err := session.Begin()
 		if err != nil {
-			return false, errors.WithStack(err)
+			return transSucc, errors.WithStack(err)
 		}
 		// get row lock
 		_, _, _, err = impl.upstreamDb.UpdateRegister(session, dao)
 		if err != nil {
-			return false, err
+			return transSucc, err
 		}
 	}
 	if !needSave {
@@ -522,13 +522,13 @@ func (impl GatewayUpstreamServiceImpl) saveUpstream(dao *orm.GatewayUpstream, dt
 	for _, apiDto := range apiDtos {
 		upApiId, err := impl.saveUpstreamApi(session, &apiDto, registerId, upId)
 		if err != nil {
-			return false, err
+			return transSucc, err
 		}
 		upApiList = append(upApiList, upApiId)
 	}
 	apisJson, err := json.Marshal(upApiList)
 	if err != nil {
-		return false, errors.Wrapf(err, "json marshal [%+v] failed", upApiList)
+		return transSucc, errors.Wrapf(err, "json marshal [%+v] failed", upApiList)
 	}
 	err = impl.upstreamRecordDb.Insert(session, &orm.GatewayUpstreamRegisterRecord{
 		UpstreamId:   upId,
@@ -536,17 +536,12 @@ func (impl GatewayUpstreamServiceImpl) saveUpstream(dao *orm.GatewayUpstream, dt
 		UpstreamApis: apisJson,
 	})
 	if err != nil {
-		return false, err
+		return transSucc, err
 	}
 	transSucc = true
 	return transSucc, nil
 }
 
-// upstreamRegister .
-// retrieve default consumer by orgID, projectID, evn, az,
-// if there is no that default consumer, create it.
-//
-//
 func (impl GatewayUpstreamServiceImpl) upstreamRegister(dto *gw.UpstreamRegisterDto) (*orm.GatewayUpstream, *orm.GatewayConsumer, error) {
 	var err error
 	var az string
@@ -657,8 +652,6 @@ func (impl GatewayUpstreamServiceImpl) UpstreamRegister(dto *gw.UpstreamRegister
 			logrus.Errorf("error Happened: %+v", err)
 		}
 	}()
-
-	// do upstream register
 	dao, consumer, err := impl.upstreamRegister(dto)
 	if dao == nil || consumer == nil {
 		err = errors.New("invalid params")
