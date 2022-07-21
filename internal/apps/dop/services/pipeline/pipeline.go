@@ -450,6 +450,9 @@ func (p *Pipeline) getPipelineOwnerUser(app *apistructs.ApplicationDTO, pv1 *api
 	}
 	for _, user := range users.Users {
 		if user.Email == authorEmail {
+			if err := p.checkOwnerPermission(user.ID, app); err != nil {
+				return nil, err
+			}
 			return &apistructs.PipelineUser{
 				ID:     user.ID,
 				Name:   user.Name,
@@ -458,6 +461,23 @@ func (p *Pipeline) getPipelineOwnerUser(app *apistructs.ApplicationDTO, pv1 *api
 		}
 	}
 	return nil, fmt.Errorf("pipeline yml commit committer %s not found", authorEmail)
+}
+
+// checkOwnerPermission checks if the user has permission to get app
+func (p *Pipeline) checkOwnerPermission(userID string, app *apistructs.ApplicationDTO) error {
+	access, err := p.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+		UserID:  userID,
+		Scope:   apistructs.AppScope,
+		ScopeID: app.ID,
+		Action:  apistructs.GetAction,
+	})
+	if err != nil {
+		return err
+	}
+	if !access.Access {
+		return apierrors.ErrCheckPermission.InternalError(fmt.Errorf("owner user %s has no permission to get app %d", userID, app.ID))
+	}
+	return nil
 }
 
 // DiceYmlCheck check dice yml
