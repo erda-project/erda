@@ -54,9 +54,6 @@ func (p *Package) Make() (err error) {
 	if err = os.Mkdir(packageName, os.ModeSticky|os.ModePerm); err != nil {
 		return errors.Wrap(err, "failed to make temp python package for migration")
 	}
-	defer func() {
-		_ = p.Remove()
-	}()
 
 	msg := "failed to make python file for migration"
 
