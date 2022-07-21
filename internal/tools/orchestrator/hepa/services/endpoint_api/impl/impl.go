@@ -20,12 +20,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
 
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/apipolicy"
@@ -34,7 +35,9 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/util"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/config"
+	context1 "github.com/erda-project/erda/internal/tools/orchestrator/hepa/context"
 	gw "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/hepautils"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/i18n"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/k8s"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/kong"
@@ -66,6 +69,7 @@ type GatewayOpenapiServiceImpl struct {
 	upstreamApiDb   db.GatewayUpstreamApiService
 	azDb            db.GatewayAzInfoService
 	kongDb          db.GatewayKongInfoService
+	hubInfoDb       db.GatewayHubInfoService
 	apiBiz          *micro_api.GatewayApiService
 	zoneBiz         *zone.GatewayZoneService
 	ruleBiz         *openapi_rule.GatewayOpenapiRuleService
@@ -96,6 +100,7 @@ func NewGatewayOpenapiServiceImpl() error {
 			kongDb, _ := db.NewGatewayKongInfoServiceImpl()
 			azDb, _ := db.NewGatewayAzInfoServiceImpl()
 			runtimeDb, _ := db.NewGatewayRuntimeServiceServiceImpl()
+			hubInfoDb, _ := db.NewGatewayHubInfoServiceImpl()
 			endpoint_api.Service = &GatewayOpenapiServiceImpl{
 				packageDb:       packageDb,
 				packageApiDb:    packageApiDb,
@@ -109,6 +114,7 @@ func NewGatewayOpenapiServiceImpl() error {
 				upstreamApiDb:   upstreamApiDb,
 				kongDb:          kongDb,
 				azDb:            azDb,
+				hubInfoDb:       hubInfoDb,
 				zoneBiz:         &zone.Service,
 				apiBiz:          &micro_api.Service,
 				consumerBiz:     &openapi_consumer.Service,
@@ -237,18 +243,23 @@ func (impl GatewayOpenapiServiceImpl) createAuthRule(authType string, pack *orm.
 	return authRule, nil
 }
 
-func (impl GatewayOpenapiServiceImpl) CreatePackage(args *gw.DiceArgsDto, dto *gw.PackageDto) (result *gw.PackageInfoDto, existName string, err error) {
-	var diceInfo gw.DiceInfo
-	var helper *db.SessionHelper
-	var pack *orm.GatewayPackage
-	var aclRule, authRule *gw.OpenapiRule
-	var packSession db.GatewayPackageService
-	var z *orm.GatewayZone
-	var unique bool
-	var domains []string
+func (impl GatewayOpenapiServiceImpl) CreatePackage(ctx context.Context, args *gw.DiceArgsDto, dto *gw.PackageDto) (result *gw.PackageInfoDto, existName string, err error) {
+	ctx = context1.WithLoggerIfWithout(ctx, logrus.StandardLogger())
+	l := ctx.(*context1.LogContext).Entry()
+
+	var (
+		diceInfo          gw.DiceInfo
+		helper            *db.SessionHelper
+		pack              *orm.GatewayPackage
+		aclRule, authRule *gw.OpenapiRule
+		packSession       db.GatewayPackageService
+		z                 *orm.GatewayZone
+		unique            bool
+		domains           []string
+	)
 	defer func() {
 		if err != nil {
-			log.Errorf("error happened, err:%+v", err)
+			l.Errorf("error happened, err:%+v", err)
 			if helper != nil {
 				_ = helper.Rollback()
 				helper.Close()
@@ -264,18 +275,18 @@ func (impl GatewayOpenapiServiceImpl) CreatePackage(args *gw.DiceArgsDto, dto *g
 		dto.BindDomain[i] = strings.TrimSpace(dto.BindDomain[i])
 	}
 	dto.BindDomain = util.UniqStringSlice(dto.BindDomain)
-	auditCtx := map[string]interface{}{}
-	auditCtx["endpoint"] = dto.Name
-	auditCtx["domains"] = strings.Join(dto.BindDomain, ", ")
+	auditMeta := make(map[string]interface{})
+	auditMeta["endpoint"] = dto.Name
+	auditMeta["domains"] = strings.Join(dto.BindDomain, ", ")
 	defer func() {
 		audit := common.MakeAuditInfo(impl.reqCtx, common.ScopeInfo{
 			ProjectId: args.ProjectId,
 			Workspace: args.Env,
-		}, apistructs.CreateEndpointTemplate, err, auditCtx)
+		}, apistructs.CreateEndpointTemplate, err, auditMeta)
 		if audit != nil {
 			berr := bundle.Bundle.CreateAuditEvent(&apistructs.AuditCreateRequest{Audit: *audit})
 			if berr != nil {
-				log.Errorf("create audit failed, err:%+v", berr)
+				l.Errorf("create audit failed, err:%+v", berr)
 			}
 		}
 	}()
@@ -286,6 +297,10 @@ func (impl GatewayOpenapiServiceImpl) CreatePackage(args *gw.DiceArgsDto, dto *g
 	if err != nil {
 		return
 	}
+	if dto.Scene == orm.HubScene {
+		return impl.createHubPackage(ctx, args, dto, az)
+	}
+
 	err = dto.CheckValid()
 	if err != nil {
 		return
@@ -343,7 +358,7 @@ func (impl GatewayOpenapiServiceImpl) CreatePackage(args *gw.DiceArgsDto, dto *g
 	if err != nil {
 		return
 	}
-	if dto.Scene == orm.OPENAPI_SCENE {
+	if dto.Scene == orm.OpenapiScene {
 		// create auth, acl rule
 		authRule, err = impl.createAuthRule(dto.AuthType, pack)
 		if err != nil {
@@ -378,10 +393,79 @@ func (impl GatewayOpenapiServiceImpl) CreatePackage(args *gw.DiceArgsDto, dto *g
 	return
 }
 
+func (impl GatewayOpenapiServiceImpl) createHubPackage(ctx context.Context, args *gw.DiceArgsDto, dto *gw.PackageDto, az string) (result *gw.PackageInfoDto, existName string, err error) {
+	kongInfos, err := impl.kongDb.SelectByAny(&orm.GatewayKongInfo{Env: args.Env, Az: az})
+	if err != nil {
+		return nil, "", err
+	}
+	if len(kongInfos) == 0 {
+		return nil, "", errors.New("kong info not found")
+	}
+
+	helper, err := db.NewSessionHelper()
+	if err != nil {
+		return nil, "", err
+	}
+	hubInfoService, err := impl.hubInfoDb.NewSession(helper)
+	if err != nil {
+		return nil, "", err
+	}
+	hubInfos, err := hubInfoService.SelectByAny(&orm.GatewayHubInfo{
+		OrgId:           args.OrgId,
+		DiceEnv:         args.Env,
+		DiceClusterName: az,
+	})
+	if err != nil {
+		return nil, "", err
+	}
+	for i := range dto.BindDomain {
+		dto.BindDomain[i] = strings.TrimSpace(dto.BindDomain[i])
+	}
+	hepautils.SortDomains(dto.BindDomain)
+	hubInfo, ok := hubExists(hubInfos, dto.BindDomain)
+	if !ok {
+		hubInfo = &orm.GatewayHubInfo{
+			OrgId:           args.OrgId,
+			DiceEnv:         args.Env,
+			DiceClusterName: az,
+			BindDomain:      strings.Join(dto.BindDomain, ","),
+		}
+		if err = hubInfoService.Insert(hubInfo); err != nil {
+			return nil, "", err
+		}
+	}
+
+	var tenants = make(map[string]struct{})
+	for _, kongInfo := range kongInfos {
+		if _, ok := tenants[kongInfo.TenantId]; ok {
+			continue
+		}
+		tenants[kongInfo.TenantId] = struct{}{}
+		if orgID, _ := (*impl.globalBiz).GetOrgId(kongInfo.ProjectId); orgID != args.OrgId {
+			continue
+		}
+		if _, err = impl.createOrGetTenantHubPackage(ctx, hubInfo, args.OrgId, args.ProjectId, kongInfo.Env, kongInfo.Az, helper); err != nil {
+			return nil, "", err
+		}
+	}
+	pkg, err := impl.packageDb.GetByAny(&orm.GatewayPackage{
+		DiceProjectId:   args.ProjectId,
+		DiceEnv:         args.Env,
+		DiceClusterName: az,
+		Scene:           orm.HubScene,
+		BindDomain:      hubInfo.BindDomain,
+	})
+	if err != nil {
+		return nil, "", err
+	}
+	return impl.packageDto(pkg, dto.BindDomain), "", nil
+
+}
+
 func (impl GatewayOpenapiServiceImpl) GetPackage(id string) (dto *gw.PackageInfoDto, err error) {
 	defer func() {
 		if err != nil {
-			log.Errorf("error happened, err:%+v", err)
+			logrus.Errorf("error happened, err:%+v", err)
 		}
 	}()
 	if id == "" {
@@ -405,10 +489,10 @@ func (impl GatewayOpenapiServiceImpl) GetPackage(id string) (dto *gw.PackageInfo
 	return
 }
 
-func (impl GatewayOpenapiServiceImpl) GetPackages(args *gw.GetPackagesDto) (res common.NewPageQuery, err error) {
+func (impl GatewayOpenapiServiceImpl) GetPackages(ctx context.Context, args *gw.GetPackagesDto) (res common.NewPageQuery, err error) {
 	defer func() {
 		if err != nil {
-			log.Errorf("error happened: %+v", err)
+			logrus.Errorf("error happened: %+v", err)
 		}
 	}()
 	if args.ProjectId == "" || args.Env == "" {
@@ -473,7 +557,11 @@ func (impl GatewayOpenapiServiceImpl) ListAllPackages() ([]orm.GatewayPackage, e
 }
 
 func (impl GatewayOpenapiServiceImpl) packageDto(dao *orm.GatewayPackage, domains []string) *gw.PackageInfoDto {
-	res := &gw.PackageInfoDto{
+	var res gw.PackageInfoDto
+	if dao == nil {
+		return &res
+	}
+	res = gw.PackageInfoDto{
 		Id:       dao.Id,
 		CreateAt: dao.CreateTime.Format("2006-01-02T15:04:05"),
 		PackageDto: gw.PackageDto{
@@ -485,13 +573,13 @@ func (impl GatewayOpenapiServiceImpl) packageDto(dao *orm.GatewayPackage, domain
 			Scene:       dao.Scene,
 		},
 	}
-	return res
+	return &res
 }
 
 func (impl GatewayOpenapiServiceImpl) GetPackagesName(args *gw.GetPackagesDto) (list []gw.PackageInfoDto, err error) {
 	defer func() {
 		if err != nil {
-			log.Errorf("error happened, err:%+v", err)
+			logrus.Errorf("error happened, err:%+v", err)
 		}
 	}()
 	if args.ProjectId == "" || args.Env == "" {
@@ -583,7 +671,7 @@ func (impl GatewayOpenapiServiceImpl) UpdatePackage(orgId, id string, dto *gw.Pa
 	var session *db.SessionHelper
 	defer func() {
 		if err != nil {
-			log.Errorf("error happened, err:%+v", err)
+			logrus.Errorf("error happened, err:%+v", err)
 			if session != nil {
 				_ = session.Rollback()
 				session.Close()
@@ -606,7 +694,7 @@ func (impl GatewayOpenapiServiceImpl) UpdatePackage(orgId, id string, dto *gw.Pa
 		if audit != nil {
 			berr := bundle.Bundle.CreateAuditEvent(&apistructs.AuditCreateRequest{Audit: *audit})
 			if berr != nil {
-				log.Errorf("create audit failed, err:%+v", berr)
+				logrus.Errorf("create audit failed, err:%+v", berr)
 			}
 		}
 	}()
@@ -672,7 +760,7 @@ func (impl GatewayOpenapiServiceImpl) UpdatePackage(orgId, id string, dto *gw.Pa
 			wg.Add(1)
 			go func(apiRefer orm.GatewayPackageApi) {
 				defer util.DoRecover()
-				log.Debugf("begin touch pacakge api zone, api:%+v", apiRefer)
+				logrus.Debugf("begin touch pacakge api zone, api:%+v", apiRefer)
 				zoneId, aerr := impl.TouchPackageApiZone(endpoint_api.PackageApiInfo{&apiRefer, domains, dao.DiceProjectId, dao.DiceEnv, dao.DiceClusterName, false})
 				if aerr != nil {
 					err = aerr
@@ -685,7 +773,7 @@ func (impl GatewayOpenapiServiceImpl) UpdatePackage(orgId, id string, dto *gw.Pa
 					}
 				}
 				wg.Done()
-				log.Debugf("complete touch pacakge api zone, api:%+v", apiRefer)
+				logrus.Debugf("complete touch pacakge api zone, api:%+v", apiRefer)
 			}(api)
 		}
 		wg.Wait()
@@ -842,8 +930,8 @@ func (impl *GatewayOpenapiServiceImpl) deletePackage(id string, session *db.Sess
 	if dao == nil {
 		return nil
 	}
-	if dao.Scene == orm.UNITY_SCENE {
-		return errors.New("unity scene can't delete")
+	if dao.Scene == orm.UnityScene || dao.Scene == orm.HubScene {
+		return errors.Errorf("%s scene can't be deleted", dao.Scene)
 	}
 	// remove consumer check
 	// consumers, err = (*impl.consumerBiz).GetConsumersOfPackage(id)
@@ -900,7 +988,7 @@ func (impl GatewayOpenapiServiceImpl) DeletePackage(id string) (result bool, err
 	var session *db.SessionHelper
 	defer func() {
 		if err != nil {
-			log.Errorf("error happened, err:%+v", err)
+			logrus.Errorf("error happened, err:%+v", err)
 			if session != nil {
 				_ = session.Rollback()
 				session.Close()
@@ -919,7 +1007,7 @@ func (impl GatewayOpenapiServiceImpl) DeletePackage(id string) (result bool, err
 		if audit != nil {
 			berr := bundle.Bundle.CreateAuditEvent(&apistructs.AuditCreateRequest{Audit: *audit})
 			if berr != nil {
-				log.Errorf("create audit failed, err:%+v", berr)
+				logrus.Errorf("create audit failed, err:%+v", berr)
 			}
 		}
 	}()
@@ -1245,7 +1333,7 @@ func (impl GatewayOpenapiServiceImpl) SessionCreatePackageApi(id string, dto *gw
 	})
 	dto.ProjectId = pack.DiceProjectId
 	dto.Env = pack.DiceEnv
-	if pack.Scene == orm.UNITY_SCENE {
+	if pack.Scene == orm.UnityScene || pack.Scene == orm.HubScene {
 		defaultPath, err := (*impl.globalBiz).GenerateDefaultPath(pack.DiceProjectId)
 		if err != nil {
 			goto failed
@@ -1264,12 +1352,12 @@ func (impl GatewayOpenapiServiceImpl) SessionCreatePackageApi(id string, dto *gw
 		goto failed
 	}
 	dto.Hosts = domains
-	log.Debugf("api dto before adjust %+v", dto) // output for debug
+	logrus.Debugf("api dto before adjust %+v", dto) // output for debug
 	err = dto.Adjust()
 	if err != nil {
 		goto failed
 	}
-	log.Debugf("api dto after adjust %+v", dto) // output for debug
+	logrus.Debugf("api dto after adjust %+v", dto) // output for debug
 	dao = impl.packageApiDao(dto)
 	dao.PackageId = id
 	apiSession, err = impl.packageApiDb.NewSession(session)
@@ -1404,7 +1492,7 @@ failed:
 	if zoneId != "" {
 		zerr := (*impl.zoneBiz).DeleteZoneRoute(zoneId, session)
 		if zerr != nil {
-			log.Errorf("delete zone route failed, err:%+v", zerr)
+			logrus.Errorf("delete zone route failed, err:%+v", zerr)
 		}
 	}
 	return exist, "", audit, err
@@ -1542,7 +1630,7 @@ func (impl GatewayOpenapiServiceImpl) CreatePackageApi(id string, dto *gw.Openap
 				_ = helper.Rollback()
 				helper.Close()
 			}
-			log.Errorf("errorHappened, err:%+v", err)
+			logrus.Errorf("errorHappened, err:%+v", err)
 		}
 	}()
 	if id == "" || (dto.ApiPath == "" && dto.Method == "") {
@@ -1554,7 +1642,7 @@ func (impl GatewayOpenapiServiceImpl) CreatePackageApi(id string, dto *gw.Openap
 		if audit != nil && err == nil {
 			berr := bundle.Bundle.CreateAuditEvent(&apistructs.AuditCreateRequest{Audit: *audit})
 			if berr != nil {
-				log.Errorf("create audit failed, err:%+v", err)
+				logrus.Errorf("create audit failed, err:%+v", err)
 			}
 		}
 	}()
@@ -1596,7 +1684,7 @@ func (impl GatewayOpenapiServiceImpl) openapiDto(dao *orm.GatewayPackageApi) *gw
 		dto.RedirectPath = dao.RedirectPath
 		runtimeService, err := impl.runtimeDb.Get(dao.RuntimeServiceId)
 		if err != nil || runtimeService == nil {
-			log.Errorf("get runtimeservice failed, err:%+v", err)
+			logrus.Errorf("get runtimeservice failed, err:%+v", err)
 			return dto
 		}
 		dto.RedirectApp = runtimeService.AppName
@@ -1609,7 +1697,7 @@ func (impl GatewayOpenapiServiceImpl) openapiDto(dao *orm.GatewayPackageApi) *gw
 		dto.RedirectAddr = dao.RedirectAddr
 		scheme_find := strings.Index(dto.RedirectAddr, "://")
 		if scheme_find == -1 {
-			log.Errorf("invalide RedirectAddr %s", dto.RedirectAddr)
+			logrus.Errorf("invalide RedirectAddr %s", dto.RedirectAddr)
 			return dto
 		}
 		dto.RedirectPath = "/"
@@ -1674,10 +1762,10 @@ func (impl GatewayOpenapiServiceImpl) createApiPassAuthRules(pack *orm.GatewayPa
 	return nil
 }
 
-func (impl GatewayOpenapiServiceImpl) GetPackageApis(id string, args *gw.GetOpenapiDto) (result common.NewPageQuery, err error) {
+func (impl GatewayOpenapiServiceImpl) GetPackageApis(ctx context.Context, id string, args *gw.GetOpenapiDto) (result common.NewPageQuery, err error) {
 	defer func() {
 		if err != nil {
-			log.Errorf("error happened, err:%+v", err)
+			logrus.Errorf("error happened, err:%+v", err)
 		}
 	}()
 	pageInfo := common.NewPage2(args.PageSize, args.PageNo)
@@ -1723,7 +1811,7 @@ func (impl GatewayOpenapiServiceImpl) UpdatePackageApi(packageId, apiId string, 
 	auditCtx := map[string]interface{}{}
 	defer func() {
 		if err != nil {
-			log.Errorf("error happened, err:%+v", err)
+			logrus.Errorf("error happened, err:%+v", err)
 		}
 		if pack == nil {
 			return
@@ -1742,7 +1830,7 @@ func (impl GatewayOpenapiServiceImpl) UpdatePackageApi(packageId, apiId string, 
 		if audit != nil {
 			err = bundle.Bundle.CreateAuditEvent(&apistructs.AuditCreateRequest{Audit: *audit})
 			if err != nil {
-				log.Errorf("create audit failed, err:%+v", err)
+				logrus.Errorf("create audit failed, err:%+v", err)
 			}
 		}
 	}()
@@ -1781,7 +1869,7 @@ func (impl GatewayOpenapiServiceImpl) UpdatePackageApi(packageId, apiId string, 
 		return
 	}
 	auditCtx["endpoint"] = pack.PackageName
-	if pack.Scene == orm.UNITY_SCENE {
+	if pack.Scene == orm.UnityScene || pack.Scene == orm.HubScene {
 		var defaultPath string
 		defaultPath, err = (*impl.globalBiz).GenerateDefaultPath(pack.DiceProjectId)
 		if err != nil {
@@ -1942,7 +2030,7 @@ func (impl *GatewayOpenapiServiceImpl) DeletePackageApi(packageId, apiId string)
 	auditCtx := map[string]interface{}{}
 	defer func() {
 		if err != nil {
-			log.Errorf("error happened, err:%+v", err)
+			logrus.Errorf("error happened, err:%+v", err)
 		}
 		if pack == nil || dao == nil {
 			return
@@ -1961,7 +2049,7 @@ func (impl *GatewayOpenapiServiceImpl) DeletePackageApi(packageId, apiId string)
 		if audit != nil {
 			err = bundle.Bundle.CreateAuditEvent(&apistructs.AuditCreateRequest{Audit: *audit})
 			if err != nil {
-				log.Errorf("create audit failed, err:%+v", err)
+				logrus.Errorf("create audit failed, err:%+v", err)
 			}
 		}
 	}()
@@ -2077,7 +2165,7 @@ func (impl GatewayOpenapiServiceImpl) TouchRuntimePackageMeta(endpoint *orm.Gate
 		DiceEnv:          endpoint.Workspace,
 		DiceClusterName:  endpoint.ClusterName,
 		PackageName:      name,
-		Scene:            orm.WEBAPI_SCENE,
+		Scene:            orm.WebapiScene,
 		ZoneId:           z.Id,
 		RuntimeServiceId: endpoint.Id,
 	}
@@ -2284,7 +2372,7 @@ func (impl GatewayOpenapiServiceImpl) CreateTenantPackage(tenantId string, sessi
 		DiceEnv:         kongInfo.Env,
 		DiceClusterName: kongInfo.Az,
 		PackageName:     "unity",
-		Scene:           orm.UNITY_SCENE,
+		Scene:           orm.UnityScene,
 		ZoneId:          z.Id,
 	}
 	err = packageSession.Insert(pack)
@@ -2338,15 +2426,223 @@ func (impl GatewayOpenapiServiceImpl) CreateTenantPackage(tenantId string, sessi
 clear_route:
 	delErr := (*impl.zoneBiz).DeleteZoneRoute(z.Id, session)
 	if delErr != nil {
-		log.Errorf("delete zone failed, err:%+v", delErr)
+		logrus.Errorf("delete zone failed, err:%+v", delErr)
 	}
 	return err
+}
+
+func (impl GatewayOpenapiServiceImpl) CreateTenantHubPackages(ctx context.Context, tenantID string, session *db.SessionHelper) error {
+	ctx = context1.WithLoggerIfWithout(ctx, logrus.StandardLogger())
+	l := ctx.(*context1.LogContext).Entry().WithField("tenantID", tenantID)
+
+	kongSession, err := impl.kongDb.NewSession(session)
+	if err != nil {
+		l.WithError(err).Errorln("failed to kongDB.NewSession")
+		return err
+	}
+	kongInfo, err := kongSession.GetByAny(&orm.GatewayKongInfo{
+		TenantId: tenantID,
+	})
+	if err != nil {
+		l.WithError(err).Errorln("failed to kongSession.GetByAny")
+		return err
+	}
+	orgID, err := (*impl.globalBiz).GetOrgId(kongInfo.ProjectId)
+	if err != nil {
+		l.WithError(err).WithField("projectID", kongInfo.ProjectId).Errorln("failed to GetOrgId")
+		return err
+	}
+	return impl.createTenantHubPackages(ctx, orgID, kongInfo.ProjectId, kongInfo.Env, kongInfo.Az, session)
+}
+
+func (impl GatewayOpenapiServiceImpl) createTenantHubPackages(ctx context.Context, orgID, projectId, env, clusterName string, session *db.SessionHelper) error {
+	ctx = context1.WithLoggerIfWithout(ctx, logrus.StandardLogger())
+	l := ctx.(*context1.LogContext).Entry().WithFields(map[string]interface{}{
+		"orgID":       orgID,
+		"projectID":   projectId,
+		"env":         env,
+		"clusterName": clusterName,
+	})
+
+	// get tb_gateway_hub_info for this tenant
+	hubInfoSession, err := impl.hubInfoDb.NewSession(session)
+	if err != nil {
+		return err
+	}
+	hubInfos, err := hubInfoSession.SelectByAny(&orm.GatewayHubInfo{
+		OrgId:           orgID,
+		DiceEnv:         env,
+		DiceClusterName: clusterName,
+	})
+	if err != nil {
+		l.WithError(err).Errorln("failed to hubInfoSession.SelectByAny")
+		return err
+	}
+	if len(hubInfos) == 0 {
+		l.WithError(err).Warnln("hub info not found")
+		return nil
+	}
+	for _, hubInfo := range hubInfos {
+		if _, err := impl.createOrGetTenantHubPackage(ctx, &hubInfo, orgID, projectId, env, clusterName, session); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (impl GatewayOpenapiServiceImpl) createOrGetTenantHubPackage(ctx context.Context, hubInfo *orm.GatewayHubInfo, orgID, projectId, env,
+	clusterName string, session *db.SessionHelper) (*orm.GatewayPackage, error) {
+	ctx = context1.WithLoggerIfWithout(ctx, logrus.StandardLogger())
+	l := ctx.(*context1.LogContext).Entry().WithFields(map[string]interface{}{
+		"orgID":       orgID,
+		"projectID":   projectId,
+		"env":         env,
+		"clusterName": clusterName,
+	})
+
+	// check exist
+	packageSession, err := impl.packageDb.NewSession(session)
+	if err != nil {
+		l.WithError(err).Errorln("failed to packageDb.NewSession")
+		return nil, err
+	}
+	hubPkgs, err := impl.packageDb.SelectByAny(&orm.GatewayPackage{
+		DiceProjectId: projectId,
+		DiceEnv:       env,
+		Scene:         orm.HubScene,
+	})
+	if err != nil {
+		l.WithError(err).Errorln("failed to packageDb.SelectByAny")
+		return nil, err
+	}
+	sort.Slice(hubPkgs, func(i, j int) bool {
+		return hubPkgs[i].PackageName < hubPkgs[j].PackageName
+	})
+	for _, pkg := range hubPkgs {
+		pkgDomains := strings.Split(pkg.BindDomain, ",")
+		hubDomains := strings.Split(hubInfo.BindDomain, ",")
+		for _, pkgDomain := range pkgDomains {
+			for _, hubDomain := range hubDomains {
+				if pkgDomain == hubDomain {
+					l.WithField("current package domains", pkg.BindDomain).
+						WithField("hub bind domains", hubInfo.BindDomain).
+						Warnln("hub package with this domain exists")
+					return &pkg, nil
+				}
+			}
+		}
+	}
+
+	// get rewrite host for this tenant
+	diceInfo := gw.DiceInfo{
+		ProjectId: projectId,
+		Az:        clusterName,
+		Env:       env,
+	}
+	_, rewriteHost, err := (*impl.globalBiz).GenerateEndpoint(diceInfo, session)
+	if err != nil {
+		return nil, err
+	}
+
+	// construct zone route
+	defaultPath, err := (*impl.globalBiz).GenerateDefaultPath(projectId, session)
+	if err != nil {
+		l.WithError(err).Errorln("failed to GenerateDefaultPath")
+		return nil, err
+	}
+	route := zone.RouteConfig{
+		Hosts: strings.Split(hubInfo.BindDomain, ","),
+		Path:  defaultPath + "/*",
+		RouteOptions: k8s.RouteOptions{
+			BackendProtocol: &[]k8s.BackendProtocl{k8s.HTTPS}[0],
+		},
+	}
+	route.RewriteHost = &rewriteHost
+	route.UseRegex = true
+
+	// create zone
+	z, err := (*impl.zoneBiz).CreateZone(zone.ZoneConfig{
+		ZoneRoute: &zone.ZoneRoute{Route: route},
+		Name:      orm.HubScene,
+		ProjectId: projectId,
+		Env:       env,
+		Az:        clusterName,
+		Type:      db.ZONE_TYPE_UNITY,
+	})
+	if err != nil {
+		l.WithError(err).Errorln("failed to CreateZone")
+		return nil, err
+	}
+
+	pkg := &orm.GatewayPackage{
+		DiceOrgId:       orgID,
+		DiceProjectId:   projectId,
+		DiceEnv:         env,
+		DiceClusterName: clusterName,
+		ZoneId:          z.Id,
+		PackageName:     orm.HubScene + "-" + strconv.Itoa(len(hubPkgs)),
+		BindDomain:      hubInfo.BindDomain,
+		Scene:           orm.HubScene,
+	}
+	if err := packageSession.Insert(pkg); err != nil {
+		l.WithError(err).Errorln("failed to Insert package")
+		goto clear_route
+	}
+
+	if _, err = (*impl.domainBiz).TouchPackageDomain(orgID, pkg.Id, clusterName, route.Hosts, session); err != nil {
+		l.WithError(err).Errorln("failed to TouchPackageDomain")
+		goto clear_route
+	}
+	if _, _, err = (*impl.policyBiz).SetZonePolicyConfig(z, "built-in", nil, session); err != nil {
+		l.WithError(err).Errorln("failed to SetZonePolicyConfig")
+		goto clear_route
+	}
+
+	{
+		var policyEngine apipolicy.PolicyEngine
+		var corsConfig apipolicy.PolicyDto
+		var configByte []byte
+		var azInfo *orm.GatewayAzInfo
+		azInfo, err = impl.azDb.GetAzInfoByClusterName(clusterName)
+		if err != nil {
+			goto clear_route
+		}
+		if azInfo == nil {
+			err = errors.New("az not found")
+			goto clear_route
+		}
+		policyEngine, err = apipolicy.GetPolicyEngine("cors")
+		if err != nil {
+			goto clear_route
+		}
+		corsConfig = policyEngine.CreateDefaultConfig(nil)
+		corsConfig.SetEnable(true)
+		configByte, err = json.Marshal(corsConfig)
+		if err != nil {
+			err = errors.WithStack(err)
+			goto clear_route
+		}
+		//TODO
+		_ = session.Commit()
+		_, err = (*impl.policyBiz).SetPackageDefaultPolicyConfig("cors", pkg.Id, azInfo, configByte)
+		if err != nil {
+			goto clear_route
+		}
+	}
+
+	return pkg, nil
+
+clear_route:
+	if delErr := (*impl.zoneBiz).DeleteZoneRoute(z.Id, session); delErr != nil {
+		l.WithError(err).Errorln("failed to delete zone")
+	}
+	return nil, err
 }
 
 func (impl GatewayOpenapiServiceImpl) TouchPackageRootApi(packageId string, reqDto *gw.OpenapiDto) (result bool, err error) {
 	defer func() {
 		if err != nil {
-			log.Errorf("error happened: %+v", err)
+			logrus.Errorf("error happened: %+v", err)
 		}
 	}()
 	api, err := impl.packageApiDb.GetByAny(&orm.GatewayPackageApi{
@@ -2422,15 +2718,15 @@ func (impl GatewayOpenapiServiceImpl) getPackageIdByDomain(domain, projectId, wo
 	return
 }
 
-func (impl GatewayOpenapiServiceImpl) createRuntimeEndpointPackage(domain string, service *orm.GatewayRuntimeService) (id string, err error) {
+func (impl GatewayOpenapiServiceImpl) createRuntimeEndpointPackage(ctx context.Context, domain string, service *orm.GatewayRuntimeService) (id string, err error) {
 	packageName := domain
-	dto, _, err := impl.CreatePackage(&gw.DiceArgsDto{
+	dto, _, err := impl.CreatePackage(ctx, &gw.DiceArgsDto{
 		ProjectId: service.ProjectId,
 		Env:       service.Workspace,
 	}, &gw.PackageDto{
 		Name:       packageName,
 		BindDomain: []string{domain},
-		Scene:      gw.WEBAPI_SCENE,
+		Scene:      orm.WebapiScene,
 	})
 	if err != nil {
 		err = errors.Errorf("create package failed, err:%v", err)
@@ -2608,7 +2904,9 @@ type endpointInfo struct {
 	apiId string
 }
 
-func (impl GatewayOpenapiServiceImpl) SetRuntimeEndpoint(info runtime_service.RuntimeEndpointInfo) error {
+func (impl GatewayOpenapiServiceImpl) SetRuntimeEndpoint(ctx context.Context, info runtime_service.RuntimeEndpointInfo) error {
+	ctx = context1.WithLoggerIfWithout(ctx, logrus.StandardLogger())
+
 	// get org locale
 	var locale string
 	if orgDTO, ok := orgCache.GetOrgByProjectID(info.RuntimeService.ProjectId); ok {
@@ -2629,12 +2927,12 @@ func (impl GatewayOpenapiServiceImpl) SetRuntimeEndpoint(info runtime_service.Ru
 			rawLog := fmt.Sprintf("app:%s service:%s endpoint create failed,  domain:%s already used by other one",
 				info.RuntimeService.AppName, info.RuntimeService.ServiceName, endpoint.Domain)
 			humanLog := i18n.Sprintf(locale, "FailedToBindServiceDomain.Occupied", info.RuntimeService.ServiceName, endpoint.Domain)
-			log.Error(rawLog)
+			logrus.Error(rawLog)
 			go common.AsyncRuntimeError(info.RuntimeService.RuntimeId, humanLog, rawLog)
 			continue
 		}
 		if allowCreate {
-			packageId, err := impl.createRuntimeEndpointPackage(endpoint.Domain, info.RuntimeService)
+			packageId, err := impl.createRuntimeEndpointPackage(ctx, endpoint.Domain, info.RuntimeService)
 			if err != nil {
 				return err
 			}
@@ -2715,4 +3013,21 @@ func (impl GatewayOpenapiServiceImpl) ClearRuntimeRoute(id string) error {
 		}
 	}
 	return nil
+}
+
+func hubExists(hubInfos []orm.GatewayHubInfo, bindDomain []string) (*orm.GatewayHubInfo, bool) {
+	if len(hubInfos) == 0 {
+		return nil, false
+	}
+	for _, bindDomain := range bindDomain {
+		for _, hubInfo := range hubInfos {
+			hubInfoDomains := strings.Split(hubInfo.BindDomain, ",")
+			for _, hubDomain := range hubInfoDomains {
+				if bindDomain == hubDomain {
+					return &hubInfo, true
+				}
+			}
+		}
+	}
+	return nil, false
 }

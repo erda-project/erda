@@ -309,7 +309,7 @@ func (impl GatewayUpstreamLbServiceImpl) UpstreamTargetOnline(dto *gw.UpstreamLb
 		}
 	}()
 	if dto == nil {
-		errors.New("dto is nil")
+		err = errors.New("dto is nil")
 		return
 	}
 	lbName := dto.LbName

@@ -705,7 +705,7 @@ func (impl GatewayApiPolicyServiceImpl) SetPackageDefaultPolicyConfig(category, 
 	if err != nil {
 		return "", err
 	}
-	if pack.Scene == orm.UNITY_SCENE {
+	if pack.Scene == orm.UnityScene || pack.Scene == orm.HubScene {
 		zone, err := (*impl.zoneBiz).GetZone(pack.ZoneId, helper)
 		if err != nil {
 			return "", err

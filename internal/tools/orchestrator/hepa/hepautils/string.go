@@ -12,18 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package legacy_upstream
+package hepautils
 
 import (
-	"context"
-
-	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
-var Service GatewayUpstreamService
-
-type GatewayUpstreamService interface {
-	Clone(context.Context) GatewayUpstreamService
-	UpstreamRegister(context.Context, *dto.UpstreamRegisterDto) (bool, error)
-	UpstreamRegisterAsync(context.Context, *dto.UpstreamRegisterDto) (bool, error)
+func RenderKongUri(uri string) (string, error) {
+	for {
+		expr, start, end, err := strutil.FirstCustomPlaceholder(uri, "{", "}")
+		if err != nil {
+			return "", err
+		}
+		if start == end {
+			return uri, nil
+		}
+		uri = strutil.Replace(uri, "(?<"+expr+">\\S+)", start, end)
+	}
 }

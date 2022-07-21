@@ -23,6 +23,7 @@ import (
 
 	. "github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/vars"
 	gw "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/hepautils"
 	kong "github.com/erda-project/erda/internal/tools/orchestrator/hepa/kong/dto"
 	db "github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
 )
@@ -129,6 +130,9 @@ func (GatewayDbAssemblerImpl) BuildGatewayApi(reqDto gw.ApiDto, consumerId strin
 	res.DiceApp = reqDto.DiceApp
 	res.DiceService = reqDto.DiceService
 	res.RuntimeServiceId = reqDto.RuntimeServiceId
+	if len(reqDto.Hosts) > 0 {
+		res.Domains = hepautils.SortJoinDomains(reqDto.Hosts)
+	}
 	if reqDto.Swagger != nil {
 		swaggerJson, ok := reqDto.Swagger.([]byte)
 		if !ok {

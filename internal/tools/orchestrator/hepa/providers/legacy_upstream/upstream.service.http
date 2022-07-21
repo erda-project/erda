@@ -1,0 +1,11 @@
+### register trantor upstream apis
+PUT https://{{domain}}/api/gateway/register
+Content-Type: application/json
+
+{}
+
+### register unity upstream apis
+PUT https://{{domain}}/api/gateway/register
+Content-Type: application/json
+
+{}

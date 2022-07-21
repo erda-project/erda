@@ -24,6 +24,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	commonPb "github.com/erda-project/erda-proto-go/common/pb"
 	"github.com/erda-project/erda-proto-go/core/hepa/endpoint_api/pb"
@@ -31,6 +32,7 @@ import (
 	runtimePb "github.com/erda-project/erda-proto-go/orchestrator/runtime/pb"
 	"github.com/erda-project/erda/internal/pkg/cron"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/vars"
+	context1 "github.com/erda-project/erda/internal/tools/orchestrator/hepa/context"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/k8s"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/kong"
@@ -78,7 +80,7 @@ func (s *endpointApiService) GetEndpointsName(ctx context.Context, req *pb.GetEn
 		err = erdaErr.NewInvalidParameterError(vars.TODO_PARAM, errors.Cause(err).Error())
 		return
 	}
-	endpoints := []*pb.Endpoint{}
+	var endpoints []*pb.Endpoint
 	for _, ep := range endpointDtos {
 		endpoints = append(endpoints, &pb.Endpoint{
 			Id:          ep.Id,
@@ -116,7 +118,7 @@ func (s *endpointApiService) GetEndpoints(ctx context.Context, req *pb.GetEndpoi
 	if reqDto.PageNo == 0 {
 		reqDto.PageNo = 1
 	}
-	pageQuery, err := service.GetPackages(reqDto)
+	pageQuery, err := service.GetPackages(ctx, reqDto)
 	if err != nil {
 		err = erdaErr.NewInvalidParameterError(vars.TODO_PARAM, errors.Cause(err).Error())
 		return
@@ -140,16 +142,20 @@ func (s *endpointApiService) GetEndpoint(ctx context.Context, req *pb.GetEndpoin
 }
 
 func (s *endpointApiService) CreateEndpoint(ctx context.Context, req *pb.CreateEndpointRequest) (resp *pb.CreateEndpointResponse, err error) {
+	ctx = context1.WithLoggerIfWithout(ctx, logrus.StandardLogger())
+
 	service := endpoint_api.Service.Clone(ctx)
 	if req.Endpoint == nil {
 		err = erdaErr.NewInvalidParameterError(vars.TODO_PARAM, "endpoint is empty")
 		return
 	}
-	ep, existName, err := service.CreatePackage(&dto.DiceArgsDto{
+	diceArgsDot := dto.DiceArgsDto{
 		OrgId:     apis.GetOrgID(ctx),
 		ProjectId: req.ProjectId,
 		Env:       req.Env,
-	}, dto.FromEndpoint(req.Endpoint))
+	}
+	pkgDto := dto.FromEndpoint(req.Endpoint)
+	ep, existName, err := service.CreatePackage(ctx, &diceArgsDot, pkgDto)
 	if existName != "" {
 		err = erdaErr.NewAlreadyExistsError(existName)
 		return
@@ -163,6 +169,7 @@ func (s *endpointApiService) CreateEndpoint(ctx context.Context, req *pb.CreateE
 	}
 	return
 }
+
 func (s *endpointApiService) UpdateEndpoint(ctx context.Context, req *pb.UpdateEndpointRequest) (resp *pb.UpdateEndpointResponse, err error) {
 	service := endpoint_api.Service.Clone(ctx)
 	if req.Endpoint == nil {
@@ -209,7 +216,7 @@ func (s *endpointApiService) GetEndpointApis(ctx context.Context, req *pb.GetEnd
 	if reqDto.PageSize == 0 {
 		reqDto.PageSize = 20
 	}
-	pageQuery, err := service.GetPackageApis(req.PackageId, reqDto)
+	pageQuery, err := service.GetPackageApis(ctx, req.PackageId, reqDto)
 	if err != nil {
 		err = erdaErr.NewInvalidParameterError(vars.TODO_PARAM, errors.Cause(err).Error())
 		return
@@ -337,7 +344,9 @@ func (s *endpointApiService) ListInvalidEndpointApi(ctx context.Context, req *pb
 }
 
 func (s *endpointApiService) ClearInvalidEndpointApi(ctx context.Context, req *pb.ListInvalidEndpointApiReq) (*commonPb.VoidResponse, error) {
-	l := logrus.WithField("func", "clearInvalidEndpointApi")
+	ctx = context1.WithLoggerIfWithout(ctx, logrus.StandardLogger())
+	l := ctx.(*context1.LogContext).Entry()
+
 	service := endpoint_api.Service.Clone(ctx)
 	kongInfo, err := s.kongInfoService.GetKongInfo(&orm.GatewayKongInfo{Az: req.ClusterName})
 	if err != nil {
@@ -378,8 +387,129 @@ func (s *endpointApiService) ClearInvalidEndpointApi(ctx context.Context, req *p
 	return new(commonPb.VoidResponse), nil
 }
 
+func (s *endpointApiService) ListPackageApis(ctx context.Context, req *pb.ListPackageApisReq) (*pb.ListPackageApisResp, error) {
+	ctx = context1.WithLoggerIfWithout(ctx, logrus.StandardLogger())
+	l := ctx.(*context1.LogContext).Entry().
+		WithField("projectId", req.GetProjectId()).
+		WithField("env", req.GetEnv()).
+		WithField("domain", req.GetDomain())
+	service := endpoint_api.Service.Clone(ctx)
+	getPkgDto := &dto.GetPackagesDto{
+		DiceArgsDto: dto.DiceArgsDto{
+			ProjectId: req.GetProjectId(),
+			Env:       req.GetEnv(),
+			PageSize:  1,
+			PageNo:    1,
+		},
+		Domain: req.GetDomain(),
+	}
+	packages, err := service.GetPackages(ctx, getPkgDto)
+	if err != nil {
+		return nil, erdaErr.NewInvalidParameterError(vars.TODO_PARAM, errors.Cause(err).Error())
+	}
+	if packages.Total == 0 {
+		return nil, errors.New("package not found")
+	}
+	list, ok := packages.List.([]dto.PackageInfoDto)
+	if !ok {
+		return nil, errors.Errorf("package not found: %v", packages.List)
+	}
+	l.Infoln("len(packages)", len(list))
+	if len(list) == 0 {
+		return nil, errors.New("package not found")
+	}
+	item := list[0]
+	packageApis, err := service.GetPackageApis(ctx, item.Id, &dto.GetOpenapiDto{DiceArgsDto: dto.DiceArgsDto{
+		PageSize: 10240,
+		PageNo:   1,
+	}})
+	if err != nil {
+		l.WithField("packageId", item.Id).
+			Errorln("failed to GetPackageApis")
+		return nil, err
+	}
+	endpointApis := packageApis.List.([]dto.OpenapiInfoDto)
+	var result pb.ListPackageApisResp
+	result.Total = uint64(packageApis.Total)
+	result.PackageId = item.Id
+	var paths = make(map[string]struct{})
+	for _, path := range req.Paths {
+		paths[path] = struct{}{}
+	}
+	for _, endpointApi := range endpointApis {
+		// if no item in paths, append all
+		var ok = len(paths) == 0
+		// if exact match, append this item
+		if !ok {
+			_, ok = paths[endpointApi.ApiPath]
+		}
+		// if not exact match and match mode is "prefix", check if it is prefix matched
+		if !ok && strings.EqualFold(req.GetDeleteMode(), "prefix") {
+			for path := range paths {
+				if ok = strings.HasPrefix(endpointApi.ApiPath, path); ok {
+					break
+				}
+			}
+		}
+		if !ok {
+			continue
+		}
+		result.List = append(result.List, &pb.EndpointApi{
+			ApiPath:             endpointApi.ApiPath,
+			RedirectType:        endpointApi.RedirectType,
+			RedirectAddr:        endpointApi.RedirectAddr,
+			RedirectPath:        endpointApi.RedirectPath,
+			RedirectApp:         endpointApi.RedirectApp,
+			RedirectService:     endpointApi.RedirectService,
+			RedirectRuntimeId:   endpointApi.RedirectRuntimeId,
+			RedirectRuntimeName: endpointApi.RedirectRuntimeName,
+			Method:              structpb.NewStringValue(endpointApi.Method),
+			AllowPassAuth:       endpointApi.AllowPassAuth,
+			Description:         endpointApi.Description,
+			Hosts:               endpointApi.Hosts,
+			ApiId:               endpointApi.ApiId,
+			CreateAt:            endpointApi.CreateAt,
+			DiceApp:             endpointApi.DiceApp,
+			DiceService:         endpointApi.DiceService,
+			Origin:              string(endpointApi.Origin),
+			Mutable:             endpointApi.Mutable,
+		})
+	}
+	return &result, nil
+}
+
+func (s *endpointApiService) DeletePackageApis(ctx context.Context, req *pb.ListPackageApisReq) (*pb.DeletePackageApiResp, error) {
+	ctx = context1.WithLoggerIfWithout(ctx, logrus.StandardLogger())
+	l := ctx.(*context1.LogContext).Entry()
+
+	endpointApis, err := s.ListPackageApis(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	var result pb.DeletePackageApiResp
+	result.Total = endpointApis.GetTotal()
+	for _, endpointApi := range endpointApis.List {
+		if _, err := s.DeleteEndpointApi(ctx, &pb.DeleteEndpointApiRequest{
+			PackageId: endpointApis.GetPackageId(),
+			ApiId:     endpointApi.GetApiId(),
+		}); err != nil {
+			l.WithError(err).
+				WithField("packageId", endpointApis.GetPackageId()).
+				WithField("apiId", endpointApi.GetApiId()).
+				Errorln("failed to delete endpoint api")
+		}
+		result.List = append(result.List, &pb.DeletePackageApiRespPath{
+			Api:     endpointApi,
+			Success: err == nil,
+		})
+	}
+	return &result, nil
+}
+
 func (s *endpointApiService) rangeInvalidEndpointApi(ctx context.Context, clusterName string, f func(item *pb.ListInvalidEndpointApiItem)) error {
-	l := logrus.WithField("func", "rangeInvalidEndpointApi")
+	ctx = context1.WithLoggerIfWithout(ctx, logrus.StandardLogger())
+	l := ctx.(*context1.LogContext).Entry()
+
 	if clusterName == "" {
 		return errors.New("invalid clusterName")
 	}

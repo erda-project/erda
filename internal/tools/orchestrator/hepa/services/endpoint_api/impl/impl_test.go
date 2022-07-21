@@ -12,18 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package legacy_upstream
+package impl
 
 import (
-	"context"
-
-	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
+	"testing"
 )
 
-var Service GatewayUpstreamService
+func TesthubExists(t *testing.T) {
 
-type GatewayUpstreamService interface {
-	Clone(context.Context) GatewayUpstreamService
-	UpstreamRegister(context.Context, *dto.UpstreamRegisterDto) (bool, error)
-	UpstreamRegisterAsync(context.Context, *dto.UpstreamRegisterDto) (bool, error)
 }

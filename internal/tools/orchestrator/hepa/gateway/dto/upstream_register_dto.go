@@ -18,9 +18,12 @@ import (
 	"strconv"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda-proto-go/core/hepa/legacy_upstream/pb"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/hepautils"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 type UpstreamRegisterDto struct {
@@ -39,11 +42,14 @@ type UpstreamRegisterDto struct {
 	OldRegisterId *int             `json:"registerId"`
 	RegisterId    string           `json:"registerTag"`
 	PathPrefix    *string          `json:"pathPrefix"`
+	Scene         string           `json:"scene"`
 }
 
+// FromUpstream 转换结构
 func FromUpstream(u *pb.Upstream) *UpstreamRegisterDto {
 	dto := &UpstreamRegisterDto{
 		Az:           u.Az,
+		UpstreamName: "",
 		DiceAppId:    u.DiceAppId,
 		DiceService:  u.DiceService,
 		RuntimeName:  u.RuntimeName,
@@ -52,10 +58,16 @@ func FromUpstream(u *pb.Upstream) *UpstreamRegisterDto {
 		ServiceAlias: u.ServiceName,
 		OrgId:        u.OrgId,
 		ProjectId:    u.ProjectId,
-		Env:          u.Env,
+		Env:          strings.ToUpper(u.Env),
+		ApiList:      nil,
 		RegisterId:   u.RegisterTag,
+		PathPrefix:   nil,
+		Scene:        u.GetScene(),
 	}
-	apiList := []UpstreamApiDto{}
+	if dto.Scene == "" {
+		dto.Scene = orm.UnityScene
+	}
+	var apiList []UpstreamApiDto
 	for _, api := range u.ApiList {
 		apiList = append(apiList, FromUpstreamApi(api))
 	}
@@ -70,11 +82,15 @@ func FromUpstream(u *pb.Upstream) *UpstreamRegisterDto {
 	return dto
 }
 
-func (dto *UpstreamRegisterDto) Init() bool {
-	if len(dto.AppName) == 0 || len(dto.OrgId) == 0 || len(dto.ProjectId) == 0 || len(dto.ApiList) == 0 ||
-		len(dto.Env) == 0 || (dto.OldRegisterId == nil && dto.RegisterId == "") {
-		log.Errorf("invalid dto:%+v", dto)
-		return false
+// Init .
+// concat *UpstreamRegisterDto.UpstreamName;
+// concat *UpstreamRegisterDto.PathPrefix;
+// generate *UpstreamRegisterDto.OldRegisterId;
+// trim UpstreamApiDto from *UpstreamRegisterDto.ApiList if !UpstreamApiDto.IsCustom;
+// set default UpstreamRegisterDto.ApiList if no custom UpstreamApiDto.
+func (dto *UpstreamRegisterDto) Init() error {
+	if err := dto.preCheck(); err != nil {
+		return err
 	}
 	dto.UpstreamName = dto.AppName
 	if dto.DiceService == "" {
@@ -101,11 +117,19 @@ func (dto *UpstreamRegisterDto) Init() bool {
 	if dto.OldRegisterId != nil && dto.RegisterId == "" {
 		dto.RegisterId = strconv.Itoa(*dto.OldRegisterId)
 	}
+	if err := dto.AdjustAPIsDomains(); err != nil {
+		return err
+	}
+	if dto.Scene == orm.HubScene && len(dto.ApiList) > 0 && dto.ApiList[0].Domain != "" {
+		dto.UpstreamName = orm.HubSceneUpstreamNamePrefix + "/" + dto.UpstreamName
+	}
 	address := dto.ApiList[0].Address
+	var apisM = make(map[string]struct{})
 	for i := len(dto.ApiList) - 1; i >= 0; i-- {
-		if !dto.ApiList[i].IsCustom {
+		if _, ok := apisM[dto.ApiList[i].Path]; ok || !dto.ApiList[i].IsCustom {
 			dto.ApiList = append(dto.ApiList[:i], dto.ApiList[i+1:]...)
 		}
+		apisM[dto.ApiList[i].Path] = struct{}{}
 	}
 	if len(dto.ApiList) == 0 {
 		dto.ApiList = []UpstreamApiDto{
@@ -119,5 +143,63 @@ func (dto *UpstreamRegisterDto) Init() bool {
 			},
 		}
 	}
-	return true
+	return nil
+}
+
+func (dto *UpstreamRegisterDto) preCheck() error {
+	switch dto.Scene {
+	case "":
+		dto.Scene = orm.UnityScene
+	case orm.UnityScene, orm.HubScene:
+	default:
+		return errors.Errorf("you can only register routes to %s scene package", orm.UnityScene+"|"+orm.HubScene)
+	}
+	if dto.AppName == "" {
+		return errors.Errorf("invalid appName: %s", "appName is empty")
+	}
+	if dto.OrgId == "" {
+		return errors.Errorf("invalid orgID: %s", "orgID is empty")
+	}
+	if dto.ProjectId == "" {
+		return errors.Errorf("invalid projectID: %s", "projectID is empty")
+	}
+	if len(dto.ApiList) == 0 {
+		return errors.Errorf("invalid apiList: %s", "apiList is empty")
+	}
+	switch dto.Env {
+	case "PROD", "STAGING", "TEST", "DEV":
+	default:
+		return errors.Errorf("invalid env, expects PROD,STAGING,TEST,DEV, got %s", dto.Env)
+	}
+	if dto.OldRegisterId == nil && dto.RegisterId == "" {
+		return errors.New("invalid registerID")
+	}
+	return nil
+}
+
+func (dto *UpstreamRegisterDto) AdjustAPIsDomains() error {
+	if dto.Scene == "" || dto.Scene == orm.UnityScene {
+		for i := range dto.ApiList {
+			dto.ApiList[i].Domain = ""
+		}
+		return nil
+	}
+
+	var domain string
+	for i := range dto.ApiList {
+		if dto.ApiList[i].Domain == "" {
+			continue
+		}
+		domains := strings.Split(dto.ApiList[i].Domain, ",")
+		for i, domain := range domains {
+			domains[i] = strings.TrimSpace(domain)
+		}
+		domains = strutil.DedupSlice(domains)
+		dto.ApiList[i].Domain = hepautils.SortJoinDomains(domains)
+		if domain != "" && dto.ApiList[i].Domain != domain {
+			return errors.Errorf("different domains in api list: ApiList[%v] %s, ApiList[%v] %s", i-1, domain, i, dto.ApiList[i].Domain)
+		}
+		domain = dto.ApiList[i].Domain
+	}
+	return nil
 }

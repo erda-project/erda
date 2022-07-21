@@ -18,9 +18,11 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-proto-go/core/hepa/runtime_service/pb"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/vars"
+	context1 "github.com/erda-project/erda/internal/tools/orchestrator/hepa/context"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/runtime_service"
 	"github.com/erda-project/erda/pkg/common/apis"
@@ -32,6 +34,8 @@ type runtimeService struct {
 }
 
 func (s *runtimeService) ChangeRuntime(ctx context.Context, req *pb.ChangeRuntimeRequest) (resp *pb.ChangeRuntimeResponse, err error) {
+	ctx = context1.WithLoggerIfWithout(ctx, logrus.StandardLogger())
+
 	service := runtime_service.Service.Clone(ctx)
 	reqDto := &dto.RuntimeServiceReqDto{
 		OrgId:                 req.OrgId,
@@ -58,7 +62,7 @@ func (s *runtimeService) ChangeRuntime(ctx context.Context, req *pb.ChangeRuntim
 		}
 		reqDto.Services = append(reqDto.Services, serviceDto)
 	}
-	result, err := service.TouchRuntime(reqDto)
+	result, err := service.TouchRuntime(ctx, reqDto)
 	if err != nil {
 		err = erdaErr.NewInvalidParameterError(vars.TODO_PARAM, errors.Cause(err).Error())
 		return

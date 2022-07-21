@@ -25,5 +25,6 @@ type GatewayUpstreamApi struct {
 	Doc         []byte `json:"doc" xorm:"comment('api描述') BLOB"`
 	ApiId       string `json:"api_id" xorm:"default '' comment('api标识id') VARCHAR(32)"`
 	IsInner     int    `json:"is_inner" xorm:"not null default 0 comment('是否是内部api') TINYINT(1)"`
+	Domains     string `json:"domains" xorm:"not null default '' comment('gateway api 的域名列表, 逗号隔开') VARCHAR(1024)"`
 	BaseRow     `xorm:"extends"`
 }
