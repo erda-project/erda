@@ -38,15 +38,15 @@ func (e Executor) Fire(req *pb.FireRequest) ([]bool, error) {
 	}
 
 	configs := ruleEnv.Configs
-	results := make([]bool, 0, len(configs))
-	actionOutputs := make([]string, 0, len(configs))
-	for _, v := range configs {
+	results := make([]bool, len(configs))
+	actionOutputs := make([]string, len(configs))
+	for i, v := range configs {
 		res, err := e.Exec(v, ruleEnv.Env)
 		if err != nil {
 			return nil, err
 		}
 		if !res {
-			results = append(results, res)
+			results[i] = res
 			continue
 		}
 		var output string
@@ -56,8 +56,8 @@ func (e Executor) Fire(req *pb.FireRequest) ([]bool, error) {
 		} else {
 			output = actionRes
 		}
-		actionOutputs = append(actionOutputs, output)
-		results = append(results, res)
+		actionOutputs[i] = output
+		results[i] = res
 	}
 
 	err = e.AddExecutionRecords(&RecordConfig{
