@@ -19,18 +19,18 @@ import (
 
 	"github.com/antonmedv/expr"
 
-	rulepb "github.com/erda-project/erda-proto-go/core/rule/pb"
-	"github.com/erda-project/erda/internal/core/rule/dao"
+	rulepb "github.com/erda-project/erda-proto-go/dop/rule/pb"
+	"github.com/erda-project/erda/internal/apps/dop/providers/rule/db"
 )
 
-type RuleSetExecutor interface {
+type RuleExecutor interface {
 	Exec(r *RuleConfig, env map[string]interface{}) (bool, error)
 	BuildRuleEnv(req *rulepb.FireRequest) (*RuleEnv, error)
 	AddExecutionRecords(c *RecordConfig) error
 }
 
 type ExprExecutor struct {
-	DB *dao.DBClient
+	DB *db.DBClient
 }
 
 type RuleEnv struct {
@@ -39,9 +39,9 @@ type RuleEnv struct {
 }
 
 type RuleConfig struct {
-	RuleSetID string
-	Code      string
-	Action    dao.ActionParams
+	RuleID string
+	Code   string
+	Action db.ActionParams
 }
 
 func (e *ExprExecutor) Exec(r *RuleConfig, env map[string]interface{}) (bool, error) {
@@ -67,7 +67,7 @@ func (e *ExprExecutor) BuildRuleEnv(req *rulepb.FireRequest) (*RuleEnv, error) {
 	}
 
 	enabled := true
-	ruleSets, _, err := e.DB.ListRuleSets(&rulepb.ListRuleSetsRequest{
+	rules, _, err := e.DB.ListRules(&rulepb.ListRulesRequest{
 		Scope:     req.Scope,
 		ScopeID:   req.ScopeID,
 		EventType: req.EventType,
@@ -79,12 +79,12 @@ func (e *ExprExecutor) BuildRuleEnv(req *rulepb.FireRequest) (*RuleEnv, error) {
 		return nil, err
 	}
 
-	ruleConfigs := make([]*RuleConfig, 0, len(ruleSets))
-	for _, r := range ruleSets {
+	ruleConfigs := make([]*RuleConfig, 0, len(rules))
+	for _, r := range rules {
 		ruleConfigs = append(ruleConfigs, &RuleConfig{
-			RuleSetID: r.ID,
-			Code:      r.Code,
-			Action:    r.Params,
+			RuleID: r.ID,
+			Code:   r.Code,
+			Action: r.Params,
 		})
 	}
 
@@ -109,17 +109,17 @@ type RecordConfig struct {
 }
 
 func (e *ExprExecutor) AddExecutionRecords(r *RecordConfig) error {
-	records := make([]dao.RuleSetExecRecord, 0, len(r.RuleConfigs))
+	records := make([]db.RuleExecRecord, 0, len(r.RuleConfigs))
 	for i, c := range r.RuleConfigs {
-		records = append(records, dao.RuleSetExecRecord{
+		records = append(records, db.RuleExecRecord{
 			Scope:        r.Scope,
 			ScopeID:      r.ScopeID,
-			RuleSetID:    c.RuleSetID,
+			RuleID:       c.RuleID,
 			Code:         c.Code,
 			Env:          r.Env,
-			Succeed:      r.Results[i],
+			Succeed:      &r.Results[i],
 			ActionOutput: r.ActionOutputs[i],
 		})
 	}
-	return e.DB.BatchCreateRuleSetExecRecords(records)
+	return e.DB.BatchCreateRuleExecRecords(records)
 }

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dao
+package db
 
 import (
 	"database/sql/driver"
@@ -23,10 +23,10 @@ import (
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 
-	"github.com/erda-project/erda-proto-go/core/rule/pb"
+	"github.com/erda-project/erda-proto-go/dop/rule/pb"
 )
 
-type RuleSet struct {
+type Rule struct {
 	ID            string `gorm:"primary_key"`
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
@@ -34,7 +34,7 @@ type RuleSet struct {
 	Scope         string
 	ScopeID       string
 	EventType     string
-	Enabled       bool
+	Enabled       *bool
 	Code          string
 	Params        ActionParams
 	Updator       string
@@ -68,15 +68,15 @@ func (p *ActionParams) Scan(value interface{}) error {
 	return nil
 }
 
-func (RuleSet) TableName() string {
-	return "erda_rule_set"
+func (Rule) TableName() string {
+	return "erda_rule"
 }
 
 func NotDeleted(db *gorm.DB) *gorm.DB {
 	return db.Where("soft_deleted_at = ?", 0)
 }
 
-func (db *DBClient) CreateRuleSet(r *RuleSet) error {
+func (db *DBClient) CreateRule(r *Rule) error {
 	id, err := uuid.NewRandom()
 	if err != nil {
 		return err
@@ -85,45 +85,36 @@ func (db *DBClient) CreateRuleSet(r *RuleSet) error {
 	return db.Create(r).Error
 }
 
-func (db *DBClient) GetRuleSet(id string) (*RuleSet, error) {
-	var r RuleSet
-	err := db.Model(&RuleSet{}).Scopes(NotDeleted).Where("id = ?", id).First(&r).Error
+func (db *DBClient) GetRule(id string) (*Rule, error) {
+	var r Rule
+	err := db.Model(&Rule{}).Scopes(NotDeleted).Where("id = ?", id).First(&r).Error
 	return &r, err
 }
 
-func (db *DBClient) DeleteRuleSet(id string) error {
-	return db.Model(&RuleSet{}).Scopes(NotDeleted).Where(&RuleSet{ID: id}).
+func (db *DBClient) DeleteRule(id string) error {
+	return db.Model(&Rule{}).Scopes(NotDeleted).Where(&Rule{ID: id}).
 		Update(map[string]interface{}{"soft_deleted_at": time.Now().UnixNano() / 1e6}).Error
 }
 
-func (db *DBClient) UpdateRuleSet(r *RuleSet) error {
-	return db.Model(&RuleSet{}).Scopes(NotDeleted).Where(&RuleSet{ID: r.ID}).Update(r).Error
+func (db *DBClient) UpdateRule(r *Rule) error {
+	return db.Model(&Rule{}).Scopes(NotDeleted).Where(&Rule{ID: r.ID}).Update(r).Error
 }
 
-func (db *DBClient) ListRuleSets(req *pb.ListRuleSetsRequest) ([]RuleSet, int64, error) {
-	var res []RuleSet
-	where := make(map[string]interface{})
-	if req.Name != "" {
-		where["name"] = req.Name
-	}
-	if req.Scope != "" {
-		where["scope"] = req.Scope
-	}
-	if req.ScopeID != "" {
-		where["scope_id"] = req.ScopeID
-	}
-	if req.EventType != "" {
-		where["event_type"] = req.EventType
-	}
-	if req.Enabled != nil {
-		where["enabled"] = req.Enabled
-	}
-	if req.Updator != "" {
-		where["creator_id"] = req.Updator
+func (db *DBClient) ListRules(req *pb.ListRulesRequest) ([]Rule, int64, error) {
+	var res []Rule
+	r := &Rule{
+		Scope:     req.Scope,
+		ScopeID:   req.ScopeID,
+		EventType: req.EventType,
+		Enabled:   req.Enabled,
+		Updator:   req.Updator,
 	}
 	var total int64
 	offset := (req.PageNo - 1) * req.PageSize
-	q := db.Model(&RuleSet{}).Scopes(NotDeleted).Where(where).Order("updated_at desc")
+	q := db.Model(&Rule{}).Scopes(NotDeleted).Where(r).Order("updated_at desc")
+	if req.Name != "" {
+		q = q.Where("name LIKE ?", "%"+req.Name+"%")
+	}
 	if err := q.Offset(offset).Limit(req.PageSize).Find(&res).
 		Offset(0).Limit(-1).Count(&total).Error; err != nil {
 		return nil, 0, err

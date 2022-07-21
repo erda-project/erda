@@ -1,7 +1,7 @@
 syntax = "proto3";
 
-package erda.core.rule;
-option go_package = "github.com/erda-project/erda-proto-go/core/rule/pb";
+package erda.dop.rule;
+option go_package = "github.com/erda-project/erda-proto-go/dop/rule/pb";
 import "google/api/annotations.proto";
 import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
@@ -9,7 +9,7 @@ import "common/openapi.proto";
 
 service RuleService {
   option (erda.common.openapi_service) = {
-    service: "erda-server",
+    service: "dop",
     auth: {
       check_login: true,
       check_token: true,
@@ -18,64 +18,64 @@ service RuleService {
 
   rpc Fire(FireRequest) returns (FireResponse) {
     option (google.api.http) = {
-      post: "/api/rulesets/actions/fire",
+      post: "/api/rules/actions/fire",
     };
     option (erda.common.openapi) = {
-      path: "/api/rulesets/actions/fire",
+      path: "/api/rules/actions/fire",
     };
   };
 
-  rpc CreateRuleSet(CreateRuleSetRequest) returns (CreateRuleSetResponse) {
+  rpc CreateRule(CreateRuleRequest) returns (CreateRuleResponse) {
     option (google.api.http) = {
-      post: "/api/rulesets",
+      post: "/api/rules",
     };
     option (erda.common.openapi) = {
-      path: "/api/rulesets",
+      path: "/api/rules",
     };
   };
 
-  rpc GetRuleSet(GetRuleSetRequest) returns (GetRuleSetResponse) {
+  rpc GetRule(GetRuleRequest) returns (GetRuleResponse) {
     option (google.api.http) = {
-      get: "/api/rulesets/{id}",
+      get: "/api/rules/{id}",
     };
     option (erda.common.openapi) = {
-      path: "/api/rulesets/{id}",
+      path: "/api/rules/{id}",
     };
   };
 
-  rpc UpdateRuleSet(UpdateRuleSetRequest) returns (UpdateRuleSetResponse) {
+  rpc UpdateRule(UpdateRuleRequest) returns (UpdateRuleResponse) {
     option (google.api.http) = {
-      put: "/api/rulesets/{id}",
+      put: "/api/rules/{id}",
     };
     option (erda.common.openapi) = {
-      path: "/api/rulesets/{id}",
+      path: "/api/rules/{id}",
     };
   };
 
-  rpc ListRuleSets(ListRuleSetsRequest) returns (ListRuleSetsResponse) {
+  rpc ListRules(ListRulesRequest) returns (ListRulesResponse) {
     option (google.api.http) = {
-      get: "/api/rulesets",
+      get: "/api/rules",
     };
     option (erda.common.openapi) = {
-      path: "/api/rulesets",
+      path: "/api/rules",
     };
   };
 
-  rpc DeleteRuleSet(DeleteRuleSetRequest) returns (DeleteRuleSetResponse) {
+  rpc DeleteRule(DeleteRuleRequest) returns (DeleteRuleResponse) {
     option (google.api.http) = {
-      delete: "/api/rulesets/{id}",
+      delete: "/api/rules/{id}",
     };
     option (erda.common.openapi) = {
-      path: "/api/rulesets/{id}",
+      path: "/api/rules/{id}",
     };
   };
 
-  rpc ListRuleSetExecHistory(ListRuleSetExecHistoryRequest) returns (ListRuleSetExecHistoryResponse) {
+  rpc ListRuleExecHistory(ListRuleExecHistoryRequest) returns (ListRuleExecHistoryResponse) {
     option (google.api.http) = {
-      get: "/api/rulesets/actions/list-exec-history",
+      get: "/api/rules/actions/list-exec-history",
     };
     option (erda.common.openapi) = {
-      path: "/api/rulesets/actions/list-exec-history",
+      path: "/api/rules/actions/list-exec-history",
     };
   };
 }
@@ -97,7 +97,7 @@ message FireResponse {
   repeated bool output = 1;
 }
 
-message CreateRuleSetRequest {
+message CreateRuleRequest {
   string scope = 1;
   string scopeID = 2;
   string eventType = 3;
@@ -107,18 +107,18 @@ message CreateRuleSetRequest {
   bool enabled = 7;
 } 
 
-message CreateRuleSetResponse {}
+message CreateRuleResponse {}
 
-message GetRuleSetRequest {
+message GetRuleRequest {
   string id = 1;
 }
 
-message GetRuleSetResponse {
-  RuleSet data = 1;
+message GetRuleResponse {
+  Rule data = 1;
   repeated string userIDs = 2;
 }
 
-message RuleSet {
+message Rule {
   string id = 1;
   string name = 2;
   string scope = 3;
@@ -133,6 +133,10 @@ message RuleSet {
 }
 
 message ActionParams {
+  repeated ActionNode nodes = 1;
+}
+
+message ActionNode {
   DingTalkConfig dingTalk = 1;
   string snippet = 2;
 }
@@ -142,20 +146,20 @@ message DingTalkConfig {
   string signature = 2;
 }
 
-message UpdateRuleSetRequest {
+message UpdateRuleRequest {
   string id = 1;
   string scope = 2;
   string scopeID = 3;
   string code = 4;
   string eventType = 5;
-  bool enabled = 6;
+  optional bool enabled = 6;
   string name = 7;
   ActionParams params = 8;
 }
 
-message UpdateRuleSetResponse {}
+message UpdateRuleResponse {}
 
-message ListRuleSetsRequest {
+message ListRulesRequest {
   string scope = 1;
   string scopeID = 2;
   string eventType = 3;
@@ -166,48 +170,48 @@ message ListRuleSetsRequest {
   int64 pageSize = 8;
 }
 
-message ListRuleSetsResponse {
-  ListRuleSetsResponseData data = 1;
+message ListRulesResponse {
+  ListRulesResponseData data = 1;
   repeated string userIDs = 2;
 }
 
-message ListRuleSetsResponseData {
+message ListRulesResponseData {
   int64 total = 1;
-  repeated RuleSet list = 2;
+  repeated Rule list = 2;
 }
 
-message DeleteRuleSetRequest {
+message DeleteRuleRequest {
   string id = 1;
 }
 
-message DeleteRuleSetResponse {}
+message DeleteRuleResponse {}
 
-message ListRuleSetExecHistoryRequest {
+message ListRuleExecHistoryRequest {
   string scope = 1;
   string scopeID = 2;
   string eventType = 3;
   int64 pageNo = 4;
   int64 pageSize = 5;
-  string ruleSetID = 6;
+  string ruleID = 6;
   optional bool succeed = 7;
 }
 
-message ListRuleSetExecHistoryResponse {
-  ListRuleSetExecHistoryResponseData data = 1;
+message ListRuleExecHistoryResponse {
+  ListRuleExecHistoryResponseData data = 1;
   repeated string userIDs = 2;
 }
 
-message ListRuleSetExecHistoryResponseData {
+message ListRuleExecHistoryResponseData {
   int64 total = 1;
-  repeated RuleSetExecHistory list = 2;
+  repeated RuleExecHistory list = 2;
 }
 
-message RuleSetExecHistory {
+message RuleExecHistory {
   string id = 1;
   google.protobuf.Timestamp createdAt = 11;
   string scope = 3;
   string scopeID = 4;
-  string ruleSetID = 5;
+  string ruleID = 5;
   string code = 6;
   google.protobuf.Value env = 7;
   bool succeed = 8;

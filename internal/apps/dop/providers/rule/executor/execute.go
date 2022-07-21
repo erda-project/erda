@@ -17,16 +17,15 @@ package executor
 import (
 	"errors"
 
-	"github.com/erda-project/erda-proto-go/core/rule/pb"
+	"github.com/erda-project/erda-proto-go/dop/rule/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/internal/core/rule/actions"
-	"github.com/erda-project/erda/internal/core/rule/dao"
-	"github.com/erda-project/erda/internal/core/rule/jsonnet"
+	"github.com/erda-project/erda/internal/apps/dop/providers/rule/actions/api"
+	"github.com/erda-project/erda/internal/apps/dop/providers/rule/db"
 )
 
 type Executor struct {
-	RuleSetExecutor
-	TemplateParser jsonnet.Engine
+	RuleExecutor
+	API api.Interface
 }
 
 func (e Executor) Fire(req *pb.FireRequest) ([]bool, error) {
@@ -76,8 +75,13 @@ func (e Executor) Fire(req *pb.FireRequest) ([]bool, error) {
 	return results, nil
 }
 
-func (e Executor) DingTalkAction(content map[string]interface{}, params dao.ActionParams) (string, error) {
-	d := params.DingTalk
+func (e Executor) DingTalkAction(content map[string]interface{}, params db.ActionParams) (string, error) {
+	if len(params.Nodes) == 0 {
+		return "", nil
+	}
+	// TODO: multiple nodes concurrency
+	node := params.Nodes[0]
+	d := node.DingTalk
 	if d == nil {
 		return "", nil
 	}
@@ -89,10 +93,9 @@ func (e Executor) DingTalkAction(content map[string]interface{}, params dao.Acti
 	if err != nil {
 		return "", err
 	}
-	action := actions.APIConfig{
-		URL:            url,
-		TemplateParser: e.TemplateParser,
-		Snippet:        params.Snippet,
-	}
-	return action.Send(content)
+	return e.API.Send(&api.API{
+		URL:     url,
+		Snippet: node.Snippet,
+		TLARaw:  content,
+	})
 }

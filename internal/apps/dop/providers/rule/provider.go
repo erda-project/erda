@@ -15,17 +15,16 @@
 package rule
 
 import (
-	gojsonnet "github.com/google/go-jsonnet"
 	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
-	pb "github.com/erda-project/erda-proto-go/core/rule/pb"
+	"github.com/erda-project/erda-proto-go/dop/rule/pb"
+	"github.com/erda-project/erda/internal/apps/dop/providers/rule/actions/api"
+	"github.com/erda-project/erda/internal/apps/dop/providers/rule/db"
+	"github.com/erda-project/erda/internal/apps/dop/providers/rule/executor"
 	coredao "github.com/erda-project/erda/internal/core/legacy/dao"
-	"github.com/erda-project/erda/internal/core/rule/dao"
-	"github.com/erda-project/erda/internal/core/rule/executor"
-	"github.com/erda-project/erda/internal/core/rule/jsonnet"
 )
 
 type config struct {
@@ -37,25 +36,23 @@ type provider struct {
 	Register     transport.Register
 	DB           *gorm.DB `autowired:"mysql-client"`
 	ruleExecutor executor.Executor
-	db           *dao.DBClient
+	db           *db.DBClient
 
 	ruleService *ruleService
+	API         api.Interface
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	db := &dao.DBClient{DBClient: &coredao.DBClient{DB: p.DB}}
+	db := &db.DBClient{DBClient: &coredao.DBClient{DB: p.DB}}
 	p.db = db
 	e := &executor.ExprExecutor{
 		DB: db,
 	}
 	p.ruleExecutor = executor.Executor{
-		RuleSetExecutor: e,
-		TemplateParser: jsonnet.Engine{
-			JsonnetVM: gojsonnet.MakeVM(),
-		},
+		RuleExecutor: e,
+		API:          p.API,
 	}
 	p.ruleService = &ruleService{p}
-
 	if p.Register != nil {
 		pb.RegisterRuleServiceImp(p.Register, p.ruleService)
 	}
@@ -71,7 +68,7 @@ func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}
 }
 
 func init() {
-	servicehub.Register("erda.core.rule", &servicehub.Spec{
+	servicehub.Register("erda.dop.rule", &servicehub.Spec{
 		Services:             pb.ServiceNames(),
 		Types:                pb.Types(),
 		OptionalDependencies: []string{"service-register"},

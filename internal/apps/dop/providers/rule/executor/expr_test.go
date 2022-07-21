@@ -21,8 +21,8 @@ import (
 	"bou.ke/monkey"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	"github.com/erda-project/erda-proto-go/core/rule/pb"
-	"github.com/erda-project/erda/internal/core/rule/dao"
+	"github.com/erda-project/erda-proto-go/dop/rule/pb"
+	"github.com/erda-project/erda/internal/apps/dop/providers/rule/db"
 )
 
 func TestExprExecutor_Exec(t *testing.T) {
@@ -69,10 +69,10 @@ func TestExprExecutor_BuildRuleEnv(t *testing.T) {
 	type args struct {
 		req *pb.FireRequest
 	}
-	var db *dao.DBClient
-	p1 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "ListRuleSets",
-		func(d *dao.DBClient, req *pb.ListRuleSetsRequest) ([]dao.RuleSet, int64, error) {
-			return []dao.RuleSet{
+	var client *db.DBClient
+	p1 := monkey.PatchInstanceMethod(reflect.TypeOf(client), "ListRules",
+		func(d *db.DBClient, req *pb.ListRulesRequest) ([]db.Rule, int64, error) {
+			return []db.Rule{
 				{
 					ID:   "1",
 					Code: "len(issue.content) > 2",
@@ -103,8 +103,8 @@ func TestExprExecutor_BuildRuleEnv(t *testing.T) {
 			want: &RuleEnv{
 				Configs: []*RuleConfig{
 					{
-						RuleSetID: "1",
-						Code:      "len(issue.content) > 2",
+						RuleID: "1",
+						Code:   "len(issue.content) > 2",
 					},
 				},
 				Env: map[string]interface{}{
@@ -127,7 +127,7 @@ func TestExprExecutor_BuildRuleEnv(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			e := &ExprExecutor{
-				DB: db,
+				DB: client,
 			}
 			got, err := e.BuildRuleEnv(tt.args.req)
 			if (err != nil) != tt.wantErr {

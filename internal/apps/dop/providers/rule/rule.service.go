@@ -21,8 +21,8 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	pb "github.com/erda-project/erda-proto-go/core/rule/pb"
-	"github.com/erda-project/erda/internal/core/rule/dao"
+	"github.com/erda-project/erda-proto-go/dop/rule/pb"
+	"github.com/erda-project/erda/internal/apps/dop/providers/rule/db"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -39,7 +39,7 @@ func (s *ruleService) Fire(ctx context.Context, req *pb.FireRequest) (*pb.FireRe
 	}, err
 }
 
-func (s *ruleService) CreateRuleSet(ctx context.Context, req *pb.CreateRuleSetRequest) (*pb.CreateRuleSetResponse, error) {
+func (s *ruleService) CreateRule(ctx context.Context, req *pb.CreateRuleRequest) (*pb.CreateRuleResponse, error) {
 	userID := apis.GetUserID(ctx)
 	if userID == "" {
 		return nil, fmt.Errorf("not login")
@@ -48,42 +48,42 @@ func (s *ruleService) CreateRuleSet(ctx context.Context, req *pb.CreateRuleSetRe
 		return nil, errors.NewInvalidParameterError("req", "code and params required")
 	}
 
-	r := &dao.RuleSet{
+	r := &db.Rule{
 		Scope:     req.Scope,
 		ScopeID:   req.ScopeID,
-		Params:    dao.ActionParams(*req.Params),
+		Params:    db.ActionParams(*req.Params),
 		EventType: req.EventType,
-		Enabled:   req.Enabled,
+		Enabled:   &req.Enabled,
 		Updator:   userID,
 		Name:      req.Name,
 	}
 	if req.Code != nil {
 		r.Code = *req.Code
 	}
-	if err := s.p.db.CreateRuleSet(r); err != nil {
+	if err := s.p.db.CreateRule(r); err != nil {
 		return nil, err
 	}
-	return &pb.CreateRuleSetResponse{}, nil
+	return &pb.CreateRuleResponse{}, nil
 }
 
-func (s *ruleService) GetRuleSet(ctx context.Context, req *pb.GetRuleSetRequest) (*pb.GetRuleSetResponse, error) {
-	r, err := s.p.db.GetRuleSet(req.Id)
+func (s *ruleService) GetRule(ctx context.Context, req *pb.GetRuleRequest) (*pb.GetRuleResponse, error) {
+	r, err := s.p.db.GetRule(req.Id)
 	if err != nil {
 		return nil, err
 	}
-	return &pb.GetRuleSetResponse{
-		Data:    ToPbRuleSet(*r),
+	return &pb.GetRuleResponse{
+		Data:    ToPbRule(*r),
 		UserIDs: []string{r.Updator},
 	}, nil
 }
 
-func (s *ruleService) UpdateRuleSet(ctx context.Context, req *pb.UpdateRuleSetRequest) (*pb.UpdateRuleSetResponse, error) {
+func (s *ruleService) UpdateRule(ctx context.Context, req *pb.UpdateRuleRequest) (*pb.UpdateRuleResponse, error) {
 	userID := apis.GetUserID(ctx)
 	if userID == "" {
 		return nil, fmt.Errorf("not login")
 	}
 
-	r := &dao.RuleSet{
+	r := &db.Rule{
 		ID:        req.Id,
 		Scope:     req.Scope,
 		ScopeID:   req.ScopeID,
@@ -94,16 +94,16 @@ func (s *ruleService) UpdateRuleSet(ctx context.Context, req *pb.UpdateRuleSetRe
 		Updator:   userID,
 	}
 	if req.Params != nil {
-		r.Params = dao.ActionParams(*req.Params)
+		r.Params = db.ActionParams(*req.Params)
 	}
-	if err := s.p.db.UpdateRuleSet(r); err != nil {
+	if err := s.p.db.UpdateRule(r); err != nil {
 		return nil, err
 	}
-	return &pb.UpdateRuleSetResponse{}, nil
+	return &pb.UpdateRuleResponse{}, nil
 }
 
-func ToPbRuleSet(r dao.RuleSet) *pb.RuleSet {
-	return &pb.RuleSet{
+func ToPbRule(r db.Rule) *pb.Rule {
+	return &pb.Rule{
 		Id:        r.ID,
 		Name:      r.Name,
 		Scope:     r.Scope,
@@ -111,17 +111,16 @@ func ToPbRuleSet(r dao.RuleSet) *pb.RuleSet {
 		Code:      r.Code,
 		EventType: r.EventType,
 		Params: &pb.ActionParams{
-			DingTalk: r.Params.DingTalk,
-			Snippet:  r.Params.Snippet,
+			Nodes: r.Params.Nodes,
 		},
 		CreatedAt: timestamppb.New(r.CreatedAt),
 		UpdatedAt: timestamppb.New(r.UpdatedAt),
-		Enabled:   r.Enabled,
+		Enabled:   *r.Enabled,
 		Updator:   r.Updator,
 	}
 }
 
-func (s *ruleService) ListRuleSets(ctx context.Context, req *pb.ListRuleSetsRequest) (*pb.ListRuleSetsResponse, error) {
+func (s *ruleService) ListRules(ctx context.Context, req *pb.ListRulesRequest) (*pb.ListRulesResponse, error) {
 	userID := apis.GetUserID(ctx)
 	if userID == "" {
 		return nil, fmt.Errorf("not login")
@@ -133,19 +132,19 @@ func (s *ruleService) ListRuleSets(ctx context.Context, req *pb.ListRuleSetsRequ
 	if req.PageSize == 0 {
 		req.PageSize = 10
 	}
-	r, total, err := s.p.db.ListRuleSets(req)
+	r, total, err := s.p.db.ListRules(req)
 	if err != nil {
 		return nil, err
 	}
-	res := make([]*pb.RuleSet, len(r))
+	res := make([]*pb.Rule, len(r))
 	userIDs := make([]string, len(r))
 	for i, obj := range r {
-		res[i] = ToPbRuleSet(obj)
+		res[i] = ToPbRule(obj)
 		userIDs[i] = obj.Updator
 	}
 
-	return &pb.ListRuleSetsResponse{
-		Data: &pb.ListRuleSetsResponseData{
+	return &pb.ListRulesResponse{
+		Data: &pb.ListRulesResponseData{
 			Total: total,
 			List:  res,
 		},
@@ -153,17 +152,17 @@ func (s *ruleService) ListRuleSets(ctx context.Context, req *pb.ListRuleSetsRequ
 	}, nil
 }
 
-func (s *ruleService) DeleteRuleSet(ctx context.Context, req *pb.DeleteRuleSetRequest) (*pb.DeleteRuleSetResponse, error) {
+func (s *ruleService) DeleteRule(ctx context.Context, req *pb.DeleteRuleRequest) (*pb.DeleteRuleResponse, error) {
 	userID := apis.GetUserID(ctx)
 	if userID == "" {
 		return nil, fmt.Errorf("not login")
 	}
 
-	err := s.p.db.DeleteRuleSet(req.Id)
-	return &pb.DeleteRuleSetResponse{}, err
+	err := s.p.db.DeleteRule(req.Id)
+	return &pb.DeleteRuleResponse{}, err
 }
 
-func (s *ruleService) ListRuleSetExecHistory(ctx context.Context, req *pb.ListRuleSetExecHistoryRequest) (*pb.ListRuleSetExecHistoryResponse, error) {
+func (s *ruleService) ListRuleExecHistory(ctx context.Context, req *pb.ListRuleExecHistoryRequest) (*pb.ListRuleExecHistoryResponse, error) {
 	userID := apis.GetUserID(ctx)
 	if userID == "" {
 		return nil, fmt.Errorf("not login")
@@ -175,33 +174,33 @@ func (s *ruleService) ListRuleSetExecHistory(ctx context.Context, req *pb.ListRu
 	if req.PageSize == 0 {
 		req.PageSize = 10
 	}
-	r, total, err := s.p.db.ListRuleSetExecRecords(req)
+	r, total, err := s.p.db.ListRuleExecRecords(req)
 	if err != nil {
 		return nil, err
 	}
-	res := make([]*pb.RuleSetExecHistory, len(r))
+	res := make([]*pb.RuleExecHistory, len(r))
 	for i, obj := range r {
-		res[i] = ToPbRuleSetExecHistory(obj)
+		res[i] = ToPbRuleExecHistory(obj)
 	}
-	return &pb.ListRuleSetExecHistoryResponse{
-		Data: &pb.ListRuleSetExecHistoryResponseData{
+	return &pb.ListRuleExecHistoryResponse{
+		Data: &pb.ListRuleExecHistoryResponseData{
 			Total: total,
 			List:  res,
 		},
 	}, nil
 }
 
-func ToPbRuleSetExecHistory(r dao.RuleSetExecRecord) *pb.RuleSetExecHistory {
+func ToPbRuleExecHistory(r db.RuleExecRecord) *pb.RuleExecHistory {
 	env, _ := structpb.NewValue(map[string]interface{}(r.Env))
-	return &pb.RuleSetExecHistory{
+	return &pb.RuleExecHistory{
 		Id:           r.ID,
 		Scope:        r.Scope,
 		ScopeID:      r.ScopeID,
-		RuleSetID:    r.RuleSetID,
+		RuleID:       r.RuleID,
 		Code:         r.Code,
 		Env:          env,
 		CreatedAt:    timestamppb.New(r.CreatedAt),
-		Succeed:      r.Succeed,
+		Succeed:      *r.Succeed,
 		ActionOutput: r.ActionOutput,
 	}
 }
