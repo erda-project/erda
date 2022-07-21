@@ -120,6 +120,14 @@ func (e *Endpoints) pipelineCreate(ctx context.Context, r *http.Request, vars ma
 		}
 		reqPipeline.PipelineYml = string(convertedyml)
 	}
+	name, path := getYmlNameAndPath(createReq.PipelineYmlName)
+
+	definitionID, err := e.getOrCreateDefinitionID(apis.WithUserIDContext(ctx, identityInfo.UserID),
+		app, createReq.Branch, path, name, reqPipeline.PipelineYml)
+	if err != nil {
+		return errorresp.ErrResp(err)
+	}
+	reqPipeline.DefinitionID = definitionID
 
 	// update CmsNsConfigs
 	if err = e.UpdateCmsNsConfigs(identityInfo.UserID, app.OrgID); err != nil {
@@ -722,7 +730,7 @@ func (e *Endpoints) checkrunCreate(ctx context.Context, r *http.Request, vars ma
 
 		ymlName, path := getYmlNameAndPath(each)
 		if ymlName != "" {
-			definitionID, err := e.getDefinitionID(ctx, app, gitEvent.Content.SourceBranch, path, ymlName)
+			definitionID, err := e.getOrCreateDefinitionID(apis.WithUserIDContext(ctx, gitEvent.UserID), app, gitEvent.Content.SourceBranch, path, ymlName, strPipelineYml)
 			if err != nil {
 				logrus.Errorf("failed to bind definition %v", err)
 			}

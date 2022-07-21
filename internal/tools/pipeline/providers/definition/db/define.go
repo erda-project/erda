@@ -118,6 +118,22 @@ func (client *Client) GetPipelineDefinition(id string, ops ...mysqlxorm.SessionO
 	return &pipelineDefinition, nil
 }
 
+func (client *Client) GetPipelineDefinitionBySourceID(sourceID string, ops ...mysqlxorm.SessionOption) (*PipelineDefinition, bool, error) {
+	session := client.NewSession(ops...)
+	defer session.Close()
+
+	var (
+		pipelineDefinition PipelineDefinition
+		has                bool
+		err                error
+	)
+	if has, _, err = session.Where("pipeline_source_id = ? and soft_deleted_at = 0", sourceID).GetFirst(&pipelineDefinition).GetResult(); err != nil {
+		return nil, false, err
+	}
+
+	return &pipelineDefinition, has, nil
+}
+
 type PipelineDefinitionSource struct {
 	PipelineDefinition `xorm:"extends"`
 
