@@ -13,37 +13,3 @@
 // limitations under the License.
 
 package legacy
-
-import (
-	"net/http"
-	"testing"
-
-	"github.com/stretchr/testify/assert"
-)
-
-func TestGetRealIP(t *testing.T) {
-	tests := []struct {
-		name string
-		ip   string
-		want string
-	}{
-		{
-			name: "forwarded with space",
-			ip:   "42.120.75.131,::ffff:10.112.1.1, 10.112.3.224",
-			want: "42.120.75.131",
-		},
-		{
-			name: "forwarded with no space",
-			ip:   "42.120.75.131,::ffff:10.112.1.1,10.112.3.224",
-			want: "42.120.75.131",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			r := &http.Request{Header: map[string][]string{"X-Forwarded-For": {tt.ip}}}
-			if got := GetRealIP(r); got != tt.want {
-				assert.Equal(t, tt.want, got)
-			}
-		})
-	}
-}
