@@ -70,7 +70,7 @@ func (agent *Agent) prepare() {
 	}
 
 	// 2. create custom script
-	if len(agent.Arg.Commands) > 0 {
+	if agent.Arg.Commands != nil {
 		if err := agent.setupScript(); err != nil {
 			agent.AppendError(err)
 			return
@@ -132,9 +132,31 @@ func (agent *Agent) prepare() {
 	go agent.ListenSignal()
 }
 
+func (agent *Agent) convertCustomCommands() []string {
+	if agent.Arg.Commands == nil {
+		return nil
+	}
+	switch agent.Arg.Commands.(type) {
+	case string:
+		return []string{strings.TrimSuffix(agent.Arg.Commands.(string), "\n")}
+	case []string:
+		return agent.Arg.Commands.([]string)
+	case []interface{}:
+		cmds := agent.Arg.Commands.([]interface{})
+		var res []string
+		for _, cmd := range cmds {
+			res = append(res, fmt.Sprintf("%v", cmd))
+		}
+		return res
+	default:
+		return []string{fmt.Sprintf("%+v", agent.Arg.Commands)}
+	}
+}
+
 func (agent *Agent) setupScript() error {
 	var buf bytes.Buffer
-	for _, command := range agent.Arg.Commands {
+	commands := agent.convertCustomCommands()
+	for _, command := range commands {
 		escaped := fmt.Sprintf("%q", command)
 		escaped = strings.Replace(escaped, `$`, `\$`, -1)
 		buf.WriteString(fmt.Sprintf(

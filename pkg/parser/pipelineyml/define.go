@@ -15,6 +15,7 @@
 package pipelineyml
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/pkg/errors"
@@ -125,7 +126,7 @@ type Action struct {
 
 	Workspace string                       `yaml:"workspace,omitempty"`
 	Image     string                       `yaml:"image,omitempty"`
-	Commands  []string                     `yaml:"commands,omitempty"`
+	Commands  interface{}                  `yaml:"commands,omitempty"`
 	Loop      *apistructs.PipelineTaskLoop `yaml:"loop,omitempty"`
 
 	Timeout int64 `yaml:"timeout,omitempty"` // unit: second
@@ -228,6 +229,18 @@ func (action *Action) GetActionTypeVersion() string {
 		r = r + "@" + action.Version
 	}
 	return r
+}
+
+func (action *Action) GetSliceCommands() ([]string, error) {
+	cmdStr, err := json.Marshal(action.Commands)
+	if err != nil {
+		return nil, err
+	}
+	var cmds []string
+	if err := json.Unmarshal(cmdStr, &cmds); err != nil {
+		return nil, err
+	}
+	return cmds, nil
 }
 
 type Resources struct {

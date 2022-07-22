@@ -71,7 +71,7 @@ type Agent struct {
 type AgentArg struct {
 	PullBootstrapInfo bool `json:"pullBootstrapInfo"`
 
-	Commands []string                 `json:"commands,omitempty"` // custom action commands -> script -> run
+	Commands interface{}              `json:"commands,omitempty"` // custom action commands -> script -> run
 	Context  spec.PipelineTaskContext `json:"context,omitempty"`  // 上下文
 
 	PrivateEnvs map[string]string `json:"privateEnvs,omitempty"`
