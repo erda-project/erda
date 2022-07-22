@@ -21,10 +21,13 @@ import (
 	"strconv"
 	"testing"
 
+	"bou.ke/monkey"
 	"google.golang.org/protobuf/types/known/structpb"
 
+	alertpb "github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/internal/pkg/mock"
+	"github.com/erda-project/erda/internal/tools/monitor/core/alert/alert-apis/adapt"
 )
 
 type orgMock struct {
@@ -113,6 +116,88 @@ func Test_alertService_getOrg(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("getOrg() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_alertService_CreateAlert(t *testing.T) {
+	var a *adapt.Adapt
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(a), "CreateAlert", func(*adapt.Adapt, *alertpb.Alert) (alertID uint64, err error) {
+		return 1, err
+	})
+	defer monkey.UnpatchAll()
+
+	type fields struct {
+		p *provider
+	}
+	type args struct {
+		ctx     context.Context
+		request *alertpb.CreateAlertRequest
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    *alertpb.CreateAlertResponse
+		wantErr bool
+	}{
+		{
+			name: "test with create alert",
+			fields: fields{
+				p: &provider{
+					Org: orgMock{},
+					a:   a,
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				request: &alertpb.CreateAlertRequest{
+					Id:           1,
+					Name:         "test",
+					AlertScope:   "org",
+					AlertScopeId: "1",
+					Enable:       false,
+					Rules: []*alertpb.AlertExpression{
+						{
+							RuleId: 1,
+						},
+					},
+					Notifies: []*alertpb.AlertNotify{
+						{
+							Id: 1,
+						},
+					},
+					Filters: nil,
+					Attributes: map[string]*structpb.Value{
+						"dice_org_id": structpb.NewStringValue("1"),
+					},
+					ClusterNames:     nil,
+					Domain:           "",
+					CreateTime:       0,
+					UpdateTime:       0,
+					TriggerCondition: nil,
+				},
+			},
+			want: &alertpb.CreateAlertResponse{
+				Data: 1,
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &alertService{
+				p: tt.fields.p,
+			}
+			got, err := m.CreateAlert(tt.args.ctx, tt.args.request)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("CreateAlert() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("CreateAlert() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
