@@ -142,7 +142,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	log.Infof("load notify files: %v", p.C.Files)
 	p.N = db.New(ctx.Service("mysql").(mysql.Interface).DB())
 	p.t = ctx.Service("i18n").(i18n.I18n).Translator("notify")
-	routes := ctx.Service("http-server", interceptors.Recover(p.L), interceptors.CORS()).(httpserver.Router)
+	routes := ctx.Service("http-server", interceptors.Recover(p.L), interceptors.CORS(true)).(httpserver.Router)
 	p.initBundle()
 	return p.initRoutes(routes)
 }
