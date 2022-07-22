@@ -237,12 +237,18 @@ func (p *Pipeline) startReceivers(ctx context.Context, out chan<- odata2.Observa
 	}
 }
 
-func newConsumer(ctx context.Context, out chan<- odata2.ObservableData) model.ObservableDataConsumerFunc {
-	return func(od odata2.ObservableData) {
+func newConsumer(pctx context.Context, out chan<- odata2.ObservableData) model.ObservableDataConsumerFunc {
+	return func(d time.Duration, od odata2.ObservableData) error {
+		toctx, cancel := context.WithTimeout(context.Background(), d)
+		defer cancel()
 		select {
 		case out <- od:
-		case <-ctx.Done():
-			return
+		case <-pctx.Done():
+			return nil
+		case <-toctx.Done():
+			return fmt.Errorf("send message timeout: %w", toctx.Err())
 		}
+		return nil
 	}
+
 }

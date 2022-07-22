@@ -22,6 +22,7 @@ import (
 	common "github.com/erda-project/erda-proto-go/common/pb"
 	otppb "github.com/erda-project/erda-proto-go/oap/collector/receiver/opentelemetry/pb"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model/odata"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/protoparser/jsonmarshal"
 )
 
@@ -34,8 +35,7 @@ func (s *otlpService) Export(ctx context.Context, req *otppb.PostSpansRequest) (
 	if req.Spans != nil && s.p.consumer != nil {
 		for i := range req.Spans {
 			err := jsonmarshal.ParseInterface(req.Spans[i], func(buf []byte) error {
-				s.p.consumer(odata.NewRaw(buf))
-				return nil
+				return s.p.consumer(lib.ConsumerTimeout, odata.NewRaw(buf))
 			})
 			if err != nil {
 				return nil, fmt.Errorf("parse failed: %w", err)

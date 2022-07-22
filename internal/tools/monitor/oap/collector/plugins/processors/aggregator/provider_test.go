@@ -168,3 +168,7 @@ func Test_provider_add(t *testing.T) {
 		})
 	}
 }
+func TestName(t *testing.T) {
+	v := float64(0.0) == 0
+	t.Logf("%+v", v)
+}

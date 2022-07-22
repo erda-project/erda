@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/monitor/core/log"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins"
 )
 
@@ -90,7 +91,7 @@ func (p *provider) dummyMetrics(ctx context.Context) {
 		}
 		if p.consumerFunc != nil {
 			item.Timestamp = time.Now().UnixNano()
-			p.consumerFunc(&item)
+			p.consumerFunc(lib.ConsumerTimeout, &item)
 		}
 	}
 }
@@ -112,7 +113,7 @@ func (p *provider) dummySpans(ctx context.Context) {
 		if p.consumerFunc != nil {
 			item.StartTime = time.Now().UnixNano()
 			item.EndTime = time.Now().Add(time.Second * 10).UnixNano()
-			p.consumerFunc(&item)
+			p.consumerFunc(lib.ConsumerTimeout, &item)
 		}
 	}
 }
@@ -134,7 +135,7 @@ func (p *provider) dummyLogs(ctx context.Context) {
 
 		if p.consumerFunc != nil {
 			item.Timestamp = time.Now().UnixNano()
-			p.consumerFunc(&item)
+			p.consumerFunc(lib.ConsumerTimeout, &item)
 		}
 	}
 }

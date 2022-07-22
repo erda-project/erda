@@ -334,7 +334,7 @@ metric-persist:
   input:
     topics: "${METRIC_TOPICS:spot-metrics,erda-trace-metrics}"
     group: "${METRIC_GROUP_ID:spot-monitor-metrics-dev}"
-  read_timeout: "5s"
+  read_timeout: ${METRIC_PERSIST_READ_TIMEOUT:10s}
   buffer_size: ${METRIC_BATCH_SIZE:200}
   parallelism: ${MERTIC_PERSIST_PARALLELISM:3}
   features:

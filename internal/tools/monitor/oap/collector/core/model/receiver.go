@@ -15,10 +15,12 @@
 package model
 
 import (
+	"time"
+
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model/odata"
 )
 
-type ObservableDataConsumerFunc func(data odata.ObservableData)
+type ObservableDataConsumerFunc func(d time.Duration, data odata.ObservableData) error
 
 type RuntimeReceiver struct {
 	Name     string

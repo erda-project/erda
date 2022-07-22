@@ -19,6 +19,8 @@ import (
 
 	"github.com/go-errors/errors"
 
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib"
+
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model/odata"
 )
 
@@ -62,6 +64,5 @@ func (p *provider) sendRaw(name string, value []byte) error {
 		od.Meta[p.Cfg.MetadataKeyOfTopic] = topic
 	}
 
-	p.consumer(od)
-	return nil
+	return p.consumer(lib.ConsumerTimeout, od)
 }

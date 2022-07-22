@@ -161,6 +161,9 @@ func (r *ruler) rateCall(pre, cur *metric.Metric) *metric.Metric {
 	}
 
 	ds := curT.Sub(preT).Seconds()
+	if ds == 0 {
+		return cur
+	}
 	if curV < preV {
 		cur.Fields[r.Alias] = curV / ds
 	} else {
