@@ -107,7 +107,7 @@ func (m *alertService) CreateAlert(ctx context.Context, request *pb.CreateAlertR
 		return nil, res.Err
 	}
 	orgID := alert.Attributes["dice_org_id"]
-	org, err := m.GetOrg(orgID)
+	org, err := m.GetOrg(orgID.AsInterface())
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
