@@ -47,7 +47,7 @@ type provider struct {
 	service     queryServiceImpl
 	t           i18n.Translator
 	ClusterSvc  clusterpb.ClusterServiceServer `autowired:"erda.core.clustermanager.cluster.ClusterService"`
-  Org        org.ClientInterface
+	Org         org.ClientInterface
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
