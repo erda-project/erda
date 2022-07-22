@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -30,6 +29,7 @@ import (
 	sourcepb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
 	"github.com/erda-project/erda-proto-go/dop/projectpipeline/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/apps/dop/providers/projectpipeline"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	"github.com/erda-project/erda/internal/apps/dop/services/pipeline"
 	"github.com/erda-project/erda/internal/pkg/diceworkspace"
@@ -201,7 +201,7 @@ func (e *Endpoints) getOrCreateDefinitionID(ctx context.Context, app *apistructs
 	const sourceType = "erda"
 	projectPipeline, err := e.ProjectPipelineSvc.Create(ctx, &pb.CreateProjectPipelineRequest{
 		ProjectID:  app.ProjectID,
-		Name:       makePipelineName(strPipelineYml, name),
+		Name:       projectpipeline.MakeProjectPipelineName(strPipelineYml, name),
 		AppID:      app.ID,
 		SourceType: sourceType,
 		Ref:        branch,
@@ -212,12 +212,4 @@ func (e *Endpoints) getOrCreateDefinitionID(ctx context.Context, app *apistructs
 		return "", err
 	}
 	return projectPipeline.ProjectPipeline.ID, nil
-}
-
-func makePipelineName(pipelineYml string, fileName string) string {
-	yml, err := pipelineyml.GetNameByPipelineYml(pipelineYml)
-	if err == nil && yml != "" {
-		return yml
-	}
-	return filepath.Base(fileName)
 }
