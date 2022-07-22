@@ -327,8 +327,6 @@ erda.core.monitor.dataview:
 dataview-v1:
 template:
 
-erda.core.services.filemanager:
-
 #erda.core.monitor.diagnotor:
 #  agent_image: "${DIAGNOTOR_AGENT_IMAGE}"
 

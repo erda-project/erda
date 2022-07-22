@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package file_manager
+package containerfilemanager
 
 import (
 	"bytes"
@@ -27,7 +27,7 @@ import (
 	"time"
 
 	"github.com/erda-project/erda-infra/providers/httpserver"
-	"github.com/erda-project/erda-proto-go/core/services/filemanager/pb"
+	"github.com/erda-project/erda-proto-go/pkg/containerfilemanager/pb"
 	"github.com/erda-project/erda/pkg/common/errors"
 	httpapi "github.com/erda-project/erda/pkg/common/httpapi"
 	perm "github.com/erda-project/erda/pkg/common/permission"

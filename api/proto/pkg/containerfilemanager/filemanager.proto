@@ -1,7 +1,7 @@
 syntax = "proto3";
 
-package erda.core.services.filemanager;
-option go_package = "github.com/erda-project/erda-proto-go/core/services/filemanager/pb";
+package erda.pkg.containerfilemanager;
+option go_package = "github.com/erda-project/erda-proto-go/pkg/containerfilemanager/pb";
 import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 import "google/protobuf/descriptor.proto";
 import "google/api/annotations.proto";
@@ -9,7 +9,7 @@ import "common/openapi.proto";
 
 service FileManagerService {
   option (erda.common.openapi_service) = {
-    service: "monitor",
+    service: "erda-server", // TODO change to suitable service (dynamically)
     auth: {
       check_login: true,
       check_token: true,
