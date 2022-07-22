@@ -38,10 +38,10 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/dao"
+	"github.com/erda-project/erda/internal/apps/dop/utils"
 	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/database/dbengine"
-	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
 type config struct {
@@ -137,17 +137,9 @@ func (p *provider) AddDefinitionToCronIfNeed(ctx context.Context) error {
 			continue
 		}
 
-		pipelineName := func(pipelineYml string, fileName string) string {
-			yml, err := pipelineyml.GetNameByPipelineYml(pipelineYml)
-			if err == nil && yml != "" {
-				return yml
-			}
-			return filepath.Base(fileName)
-		}
-
 		projectPipeline, err := p.projectPipelineSvc.IdempotentCreateOne(apis.WithUserIDContext(ctx, v.UserID), &pb.CreateProjectPipelineRequest{
 			ProjectID:  app.ProjectID,
-			Name:       pipelineName(v.PipelineYml, filepath.Base(ymlName.fileName)),
+			Name:       utils.MakeProjectPipelineName(v.PipelineYml, filepath.Base(ymlName.fileName)),
 			AppID:      appID,
 			SourceType: sourceType,
 			Ref:        ymlName.branch,

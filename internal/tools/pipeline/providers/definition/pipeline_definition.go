@@ -110,8 +110,11 @@ func (p pipelineDefinition) Create(ctx context.Context, request *pb.PipelineDefi
 }
 
 func createPreCheck(request *pb.PipelineDefinitionCreateRequest) error {
-	if request.Name == "" || utf8.RuneCountInString(request.Name) > 30 {
-		return apierrors.ErrCreatePipelineDefinition.InvalidParameter(errors.Errorf("name: %s", request.Name))
+	if request.Name == "" {
+		return apierrors.ErrCreatePipelineDefinition.InvalidParameter(errors.Errorf("name is empty"))
+	}
+	if utf8.RuneCountInString(request.Name) > 30 {
+		return apierrors.ErrCreatePipelineDefinition.InvalidParameter(errors.Errorf("name: %s more than 30 characters", request.Name))
 	}
 	if request.Creator == "" {
 		return apierrors.ErrCreatePipelineDefinition.InvalidParameter(errors.Errorf("creator: %s", request.Creator))
