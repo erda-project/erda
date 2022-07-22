@@ -21,6 +21,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/jinzhu/gorm"
 
@@ -38,10 +39,10 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/dao"
-	"github.com/erda-project/erda/internal/apps/dop/utils"
 	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/database/dbengine"
+	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
 type config struct {
@@ -139,7 +140,7 @@ func (p *provider) AddDefinitionToCronIfNeed(ctx context.Context) error {
 
 		projectPipeline, err := p.projectPipelineSvc.IdempotentCreateOne(apis.WithUserIDContext(ctx, v.UserID), &pb.CreateProjectPipelineRequest{
 			ProjectID:  app.ProjectID,
-			Name:       utils.MakeProjectPipelineName(v.PipelineYml, filepath.Base(ymlName.fileName)),
+			Name:       MakeProjectPipelineName(v.PipelineYml, filepath.Base(ymlName.fileName)),
 			AppID:      appID,
 			SourceType: sourceType,
 			Ref:        ymlName.branch,
@@ -184,6 +185,18 @@ func parseSourceDicePipelineYmlName(ymlName string, branch string) *pipelineYmlN
 		branch:    branch,
 		fileName:  ymlName[len(splits[0])+len(splits[1])+len(branch)+3:],
 	}
+}
+
+func MakeProjectPipelineName(pipelineYml string, fileName string) string {
+	yml, err := pipelineyml.GetNameByPipelineYml(pipelineYml)
+	if err == nil && yml != "" {
+		return yml
+	}
+	name := filepath.Base(fileName)
+	if utf8.RuneCountInString(name) <= 30 {
+		return name
+	}
+	return "pipeline.yml"
 }
 
 func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {

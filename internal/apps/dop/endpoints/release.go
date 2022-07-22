@@ -29,9 +29,9 @@ import (
 	sourcepb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
 	"github.com/erda-project/erda-proto-go/dop/projectpipeline/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/apps/dop/providers/projectpipeline"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	"github.com/erda-project/erda/internal/apps/dop/services/pipeline"
-	"github.com/erda-project/erda/internal/apps/dop/utils"
 	"github.com/erda-project/erda/internal/pkg/diceworkspace"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/http/httpserver"
@@ -201,7 +201,7 @@ func (e *Endpoints) getOrCreateDefinitionID(ctx context.Context, app *apistructs
 	const sourceType = "erda"
 	projectPipeline, err := e.ProjectPipelineSvc.Create(ctx, &pb.CreateProjectPipelineRequest{
 		ProjectID:  app.ProjectID,
-		Name:       utils.MakeProjectPipelineName(strPipelineYml, name),
+		Name:       projectpipeline.MakeProjectPipelineName(strPipelineYml, name),
 		AppID:      app.ID,
 		SourceType: sourceType,
 		Ref:        branch,

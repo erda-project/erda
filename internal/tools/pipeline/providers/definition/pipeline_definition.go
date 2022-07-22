@@ -19,7 +19,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-	"unicode/utf8"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -49,7 +48,7 @@ func GetExtraValue(definition *pb.PipelineDefinition) (*apistructs.PipelineDefin
 }
 
 func (p pipelineDefinition) Create(ctx context.Context, request *pb.PipelineDefinitionCreateRequest) (*pb.PipelineDefinitionCreateResponse, error) {
-	if err := createPreCheck(request); err != nil {
+	if err := request.Validate(); err != nil {
 		return nil, err
 	}
 
@@ -107,28 +106,6 @@ func (p pipelineDefinition) Create(ctx context.Context, request *pb.PipelineDefi
 	return &pb.PipelineDefinitionCreateResponse{
 		PipelineDefinition: pbPipelineDefinition,
 	}, nil
-}
-
-func createPreCheck(request *pb.PipelineDefinitionCreateRequest) error {
-	if request.Name == "" {
-		return apierrors.ErrCreatePipelineDefinition.InvalidParameter(errors.Errorf("name is empty"))
-	}
-	if utf8.RuneCountInString(request.Name) > 30 {
-		return apierrors.ErrCreatePipelineDefinition.InvalidParameter(errors.Errorf("name: %s more than 30 characters", request.Name))
-	}
-	if request.Creator == "" {
-		return apierrors.ErrCreatePipelineDefinition.InvalidParameter(errors.Errorf("creator: %s", request.Creator))
-	}
-	if request.Category == "" {
-		return apierrors.ErrCreatePipelineDefinition.InvalidParameter(errors.Errorf("category: %s", request.Category))
-	}
-	if request.PipelineSourceID == "" {
-		return apierrors.ErrCreatePipelineDefinition.InvalidParameter(errors.Errorf("pipelineSourceId: %s", request.PipelineSourceID))
-	}
-	if request.Extra == nil || request.Extra.Extra == "" {
-		return apierrors.ErrCreatePipelineDefinition.InvalidParameter(errors.Errorf("extra: %s", request.Extra))
-	}
-	return nil
 }
 
 func (p pipelineDefinition) Update(ctx context.Context, request *pb.PipelineDefinitionUpdateRequest) (*pb.PipelineDefinitionUpdateResponse, error) {
