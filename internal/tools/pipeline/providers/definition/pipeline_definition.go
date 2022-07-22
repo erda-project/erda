@@ -48,10 +48,6 @@ func GetExtraValue(definition *pb.PipelineDefinition) (*apistructs.PipelineDefin
 }
 
 func (p pipelineDefinition) Create(ctx context.Context, request *pb.PipelineDefinitionCreateRequest) (*pb.PipelineDefinitionCreateResponse, error) {
-	if err := request.Validate(); err != nil {
-		return nil, err
-	}
-
 	var pipelineDefinition db.PipelineDefinition
 
 	definitionInDB, has, err := p.dbClient.GetPipelineDefinitionBySourceID(request.PipelineSourceID)
