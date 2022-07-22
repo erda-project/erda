@@ -3797,17 +3797,18 @@ func (a *Addon) ParseAddonFullPlan(fullPlan string) (string, string, error) {
 }
 
 func (a *Addon) CheckDeployCondition(addonName, addonPlan, workspace string) (bool, error) {
-	if addonPlan == apistructs.AddonBasic && workspace == apistructs.WORKSPACE_PROD {
-		addonExt, _, err := a.GetAddonExtention(&apistructs.AddonHandlerCreateItem{
-			AddonName: addonName,
-		})
-		if err != nil {
-			return false, err
-		}
-
-		if addonExt.Category != apistructs.AddonCustomCategory && addonExt.SubCategory == apistructs.BasicAddon {
-			return false, nil
-		}
-	}
+	// TODO: check deploy condition
+	//if addonPlan == apistructs.AddonBasic && workspace == apistructs.WORKSPACE_PROD {
+	//	addonExt, _, err := a.GetAddonExtention(&apistructs.AddonHandlerCreateItem{
+	//		AddonName: addonName,
+	//	})
+	//	if err != nil {
+	//		return false, err
+	//	}
+	//
+	//	if addonExt.Category != apistructs.AddonCustomCategory && addonExt.SubCategory == apistructs.BasicAddon {
+	//		return false, nil
+	//	}
+	//}
 	return true, nil
 }
