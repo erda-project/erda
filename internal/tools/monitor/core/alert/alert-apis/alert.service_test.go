@@ -18,7 +18,10 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"strconv"
 	"testing"
+
+	"google.golang.org/protobuf/types/known/structpb"
 
 	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/internal/pkg/mock"
@@ -31,6 +34,9 @@ type orgMock struct {
 func (m orgMock) GetOrg(ctx context.Context, request *orgpb.GetOrgRequest) (*orgpb.GetOrgResponse, error) {
 	if request.IdOrName == "" {
 		return nil, fmt.Errorf("the IdOrName is empty")
+	}
+	if request.IdOrName != "1" {
+		return nil, fmt.Errorf("org not found")
 	}
 	return &orgpb.GetOrgResponse{Data: &orgpb.Org{}}, nil
 }
@@ -73,6 +79,24 @@ func Test_alertService_getOrg(t *testing.T) {
 				p: &provider{Org: orgMock{}},
 			},
 			args:    args{orgIDOrName: "1"},
+			want:    &orgpb.Org{},
+			wantErr: false,
+		},
+		{
+			name: "test with StringValue",
+			fields: fields{
+				p: &provider{Org: orgMock{}},
+			},
+			args:    args{orgIDOrName: structpb.NewStringValue(strconv.Itoa(1))},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "test with StringValue2",
+			fields: fields{
+				p: &provider{Org: orgMock{}},
+			},
+			args:    args{orgIDOrName: structpb.NewStringValue(strconv.Itoa(1)).AsInterface()},
 			want:    &orgpb.Org{},
 			wantErr: false,
 		},
