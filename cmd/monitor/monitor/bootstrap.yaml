@@ -418,3 +418,8 @@ metric-storage-elasticsearch:
   write_timeout: "1m"
   index_type: "spot"
   dummy_index: "spot-empty"
+
+grpc-client@erda.core.org:
+  addr: "${ERDA_SERVER_GRPC_ADDR:erda-server:8096}"
+erda.core.org-client: {}
+erda.core.org: {}

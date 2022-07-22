@@ -48,11 +48,13 @@ func (s *provider) FetchPlatformSecrets(ctx context.Context, p *spec.Pipeline, i
 
 	var operatorID string
 	var operatorName string
+	var userID string
 
 	if p.Extra.RunUser != nil {
 		operatorID = p.GetRunUserID()
 		operatorName = p.Extra.RunUser.Name
 	}
+	userID = p.GetUserID()
 
 	var cronTriggerTime string
 	if p.Extra.CronTriggerTime != nil && !p.Extra.CronTriggerTime.IsZero() {
@@ -95,7 +97,7 @@ func (s *provider) FetchPlatformSecrets(ctx context.Context, p *spec.Pipeline, i
 		"dice.cluster.name":        p.ClusterName,
 		"dice.operator.id":         operatorID,
 		"dice.operator.name":       operatorName,
-		"dice.user.id":             operatorID,
+		"dice.user.id":             userID,
 		"dice.internal.client":     p.Extra.InternalClient,
 
 		// pipeline

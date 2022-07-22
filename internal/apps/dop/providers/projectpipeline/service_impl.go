@@ -387,6 +387,54 @@ func (p *ProjectPipelineService) CreateOne(ctx context.Context, params *pb.Creat
 	}, nil
 }
 
+func (p *ProjectPipelineService) IdempotentCreateOne(ctx context.Context, params *pb.CreateProjectPipelineRequest) (*pb.ProjectPipeline, error) {
+	pipelineSourceType := NewProjectSourceType(params.SourceType)
+	sourceReq, err := pipelineSourceType.GenerateReq(ctx, p, params)
+	if err != nil {
+		return nil, err
+	}
+
+	sourceRsp, err := p.PipelineSource.Create(ctx, sourceReq)
+	if err != nil {
+		return nil, err
+	}
+
+	location, err := p.makeLocationByAppID(params.AppID)
+	if err != nil {
+		return nil, err
+	}
+
+	definitionRsp, err := p.PipelineDefinition.Create(ctx, &dpb.PipelineDefinitionCreateRequest{
+		Location:         location,
+		Name:             makePipelineName(params, sourceReq.PipelineYml),
+		Creator:          apis.GetUserID(ctx),
+		PipelineSourceID: sourceRsp.PipelineSource.ID,
+		Category:         DefaultCategory.String(),
+		Extra: &dpb.PipelineDefinitionExtra{
+			Extra: pipelineSourceType.GetPipelineCreateRequestV2(),
+		},
+		Ref: sourceRsp.PipelineSource.Ref,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.ProjectPipeline{
+		ID:               definitionRsp.PipelineDefinition.ID,
+		Name:             definitionRsp.PipelineDefinition.Name,
+		Creator:          definitionRsp.PipelineDefinition.Creator,
+		Category:         definitionRsp.PipelineDefinition.Category,
+		TimeCreated:      definitionRsp.PipelineDefinition.TimeCreated,
+		TimeUpdated:      definitionRsp.PipelineDefinition.TimeUpdated,
+		SourceType:       sourceRsp.PipelineSource.SourceType,
+		Remote:           sourceRsp.PipelineSource.Remote,
+		Ref:              sourceRsp.PipelineSource.Ref,
+		Path:             sourceRsp.PipelineSource.Path,
+		FileName:         sourceRsp.PipelineSource.Name,
+		PipelineSourceID: sourceRsp.PipelineSource.ID,
+	}, nil
+}
+
 func makePipelineName(params *pb.CreateProjectPipelineRequest, pipelineYml string) string {
 	if params.Name != "" {
 		return params.Name
@@ -862,6 +910,20 @@ func makePipelinePageListRequest(params *pb.ListPipelineExecHistoryRequest, json
 			pipelinePageListRequest.MustMatchLabelsQueryParams = append(pipelinePageListRequest.MustMatchLabelsQueryParams, fmt.Sprintf("%v=%v", apistructs.LabelRunUserID, v))
 		}
 	}
+	if len(params.Owners) > 0 {
+		for _, v := range params.Owners {
+			pipelinePageListRequest.MustMatchLabelsQueryParams = append(pipelinePageListRequest.MustMatchLabelsQueryParams, fmt.Sprintf("%v=%v", apistructs.LabelOwnerUserID, v))
+		}
+	}
+	if len(params.TriggerModes) > 0 {
+		for _, v := range params.TriggerModes {
+			// treat empty string as manual trigger mode
+			if v == apistructs.PipelineTriggerModeManual.String() {
+				pipelinePageListRequest.TriggerModes = append(pipelinePageListRequest.TriggerModes, "")
+			}
+			pipelinePageListRequest.TriggerModes = append(pipelinePageListRequest.TriggerModes, apistructs.PipelineTriggerMode(v))
+		}
+	}
 	if len(params.Branches) > 0 {
 		for _, v := range params.Branches {
 			pipelinePageListRequest.MustMatchLabelsQueryParams = append(pipelinePageListRequest.MustMatchLabelsQueryParams, fmt.Sprintf("%v=%v", apistructs.LabelBranch, v))
@@ -894,11 +956,13 @@ func makeListPipelineExecHistoryResponse(data *apistructs.PipelinePageListData) 
 				}
 				return pipeline.CostTimeSec
 			}(),
-			AppName:    getApplicationNameFromDefinitionRemote(pipeline.DefinitionPageInfo.SourceRemote),
-			Branch:     pipeline.DefinitionPageInfo.SourceRef,
-			Executor:   pipeline.GetRunUserID(),
-			TimeBegin:  timeBegin,
-			PipelineID: pipeline.ID,
+			AppName:     getApplicationNameFromDefinitionRemote(pipeline.DefinitionPageInfo.SourceRemote),
+			Branch:      pipeline.DefinitionPageInfo.SourceRef,
+			Executor:    pipeline.GetRunUserID(),
+			Owner:       pipeline.GetUserID(),
+			TimeBegin:   timeBegin,
+			PipelineID:  pipeline.ID,
+			TriggerMode: pipeline.TriggerMode,
 		})
 	}
 	return &pb.ListPipelineExecHistoryResponse{

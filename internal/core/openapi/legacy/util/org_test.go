@@ -12,33 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package bundle
+package util
 
 import (
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	"github.com/erda-project/erda/pkg/discover"
 )
 
-func TestBundle_GetOrg(t *testing.T) {
-	os.Setenv(discover.EnvErdaServer, "mock_addr")
-	defer os.Unsetenv(discover.EnvErdaServer)
-	b := New(WithErdaServer())
-	_, err := b.GetOrg("")
-	assert.Error(t, err)
-	_, err = b.GetOrg(0)
-	assert.Error(t, err)
-}
+func Test_orgNameRetriever(t *testing.T) {
+	var domains = []string{"erda-org.erda.cloud", "buzz-org.app.terminus.io", "fuzz.com"}
+	var domainRoots = []string{"erda.cloud", "app.terminus.io"}
+	assert.Equal(t, "erda", orgNameRetriever(domains[0], domainRoots[0]))
+	assert.Equal(t, "buzz", orgNameRetriever(domains[1], domainRoots[1]))
+	assert.Equal(t, "", orgNameRetriever(domains[2], domainRoots[0]))
 
-func TestBundle_GetDopOrg(t *testing.T) {
-	os.Setenv(discover.EnvDOP, "mock_addr")
-	defer os.Unsetenv(discover.EnvDOP)
-	b := New(WithErdaServer())
-	_, err := b.GetDopOrg("")
-	assert.Error(t, err)
-	_, err = b.GetDopOrg(0)
-	assert.Error(t, err)
+	assert.Equal(t, "", orgNameRetriever("erda.daily.terminus.io", "daily.terminus.io"))
+	assert.Equal(t, "", orgNameRetriever("", "daily.terminus.io"))
+	assert.Equal(t, "erda", orgNameRetriever("erda-org.erda.cloud:443", "erda.cloud"))
 }

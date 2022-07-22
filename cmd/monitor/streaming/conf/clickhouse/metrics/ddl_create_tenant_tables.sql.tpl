@@ -1,6 +1,7 @@
 CREATE TABLE IF NOT EXISTS <database>.<table_name> ON CLUSTER '{cluster}'
 (
     `org_name`            LowCardinality(String),
+    `tenant_id`           LowCardinality(String),
     `metric_group`        LowCardinality(String),
     `timestamp`           DateTime64(9,'Asia/Shanghai') CODEC (DoubleDelta),
     `number_field_keys`   Array(LowCardinality(String)),

@@ -80,6 +80,7 @@ func (p *provider) Initialize() error {
 	webcontext.WithUCAuth(ucUserAuth)
 	webcontext.WithEtcdClient(p.EtcdClient)
 	webcontext.WithTokenService(&p.TokenService)
+	webcontext.WithOrgClient(p.Org)
 
 	e := echo.New()
 	systemGroup := e.Group("/_system")

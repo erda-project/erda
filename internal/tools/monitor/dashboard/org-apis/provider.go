@@ -25,6 +25,7 @@ import (
 
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/pkg/bundle-ex/cmdb"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/metricq"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/storage/elasticsearch"
@@ -46,6 +47,7 @@ type provider struct {
 	service     queryServiceImpl
 	t           i18n.Translator
 	ClusterSvc  clusterpb.ClusterServiceServer `autowired:"erda.core.clustermanager.cluster.ClusterService"`
+  Org        org.ClientInterface
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {

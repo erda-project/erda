@@ -24,6 +24,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/httpserver/interceptors"
 
 	"github.com/erda-project/erda-proto-go/core/monitor/alertdetail/pb"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/pkg/bundle-ex/cmdb"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/metricq"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/storage/elasticsearch"
@@ -45,6 +46,7 @@ type provider struct {
 	Register           transport.Register `autowired:"service-register"`
 	Perm               perm.Interface     `autowired:"permission"`
 	alertDetailService *alertDetailService
+	Org                org.ClientInterface
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {

@@ -71,6 +71,7 @@ func (s *PipelineSvc) ConvertPipeline(p *spec.Pipeline) *apistructs.PipelineDTO 
 	result.Extra.SubmitUser = p.Extra.SubmitUser
 	result.Extra.RunUser = p.Extra.RunUser
 	result.Extra.CancelUser = p.Extra.CancelUser
+	result.Extra.OwnerUser = p.Extra.OwnerUser
 	result.Extra.CronExpr = p.Extra.CronExpr
 	result.Extra.CronTriggerTime = p.Extra.CronTriggerTime
 	result.Extra.ShowMessage = p.Extra.ShowMessage
@@ -114,6 +115,7 @@ func (s *PipelineSvc) Convert2PagePipeline(p *spec.Pipeline) *apistructs.PagePip
 			SubmitUser:             p.Extra.SubmitUser,
 			RunUser:                p.Extra.RunUser,
 			CancelUser:             p.Extra.CancelUser,
+			OwnerUser:              p.Extra.OwnerUser,
 			CronExpr:               p.Extra.CronExpr,
 			CronTriggerTime:        p.Extra.CronTriggerTime,
 			ShowMessage:            p.Extra.ShowMessage,

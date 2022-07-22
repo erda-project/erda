@@ -22,6 +22,7 @@ import (
 	"github.com/olivere/elastic"
 
 	"github.com/erda-project/erda-infra/providers/httpserver"
+	"github.com/erda-project/erda/internal/core/org"
 	apm "github.com/erda-project/erda/internal/tools/monitor/apm/common"
 	"github.com/erda-project/erda/internal/tools/monitor/common/db"
 	"github.com/erda-project/erda/internal/tools/monitor/common/permission"
@@ -38,24 +39,24 @@ const (
 	ApplicationServiceNode = "application_service_node"
 )
 
-func getRuntimePermission(db *db.DB) httpserver.Interceptor {
+func getRuntimePermission(db *db.DB, org org.ClientInterface) httpserver.Interceptor {
 	return permission.Intercepter(
 		permission.ScopeProject, permission.TkFromParams(db),
-		apm.Monitor, permission.ActionGet,
+		apm.Monitor, permission.ActionGet, org,
 	)
 }
 
-func getProjectPermission() httpserver.Interceptor {
+func getProjectPermission(org org.ClientInterface) httpserver.Interceptor {
 	return permission.Intercepter(
 		permission.ScopeProject, permission.ProjectIdFromParams(),
-		apm.Monitor, permission.ActionGet,
+		apm.Monitor, permission.ActionGet, org,
 	)
 }
 
-func getInstancePermission(db *db.DB) httpserver.Interceptor {
+func getInstancePermission(db *db.DB, org org.ClientInterface) httpserver.Interceptor {
 	return permission.Intercepter(
 		permission.ScopeProject, permission.TkFromParams(db),
-		apm.Monitor, permission.ActionGet,
+		apm.Monitor, permission.ActionGet, org,
 	)
 }
 

@@ -15,7 +15,12 @@
 package projectpipeline
 
 import (
+	"context"
+	"path/filepath"
 	"reflect"
+	"strconv"
+	"strings"
+	"time"
 
 	"github.com/jinzhu/gorm"
 
@@ -30,11 +35,13 @@ import (
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	guidepb "github.com/erda-project/erda-proto-go/dop/guide/pb"
 	"github.com/erda-project/erda-proto-go/dop/projectpipeline/pb"
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/dao"
 	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/database/dbengine"
+	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
 type config struct {
@@ -83,6 +90,108 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		pb.RegisterProjectPipelineServiceImp(p.Register, p.projectPipelineSvc, apis.Options())
 	}
 	return nil
+}
+
+func (p *provider) Run(ctx context.Context) error {
+	go func() {
+		time.Sleep(1 * time.Minute)
+		if err := p.AddDefinitionToCronIfNeed(ctx); err != nil {
+			p.Log.Errorf("failed to add definition to cron, err: %v", err.Error())
+		}
+	}()
+	return nil
+}
+
+func (p *provider) AddDefinitionToCronIfNeed(ctx context.Context) error {
+	cronResp, err := p.PipelineCron.CronPaging(ctx, &cronpb.CronPagingRequest{
+		Sources:           []string{apistructs.PipelineSourceDice.String()},
+		GetAll:            true,
+		EmptyDefinitionID: true,
+	})
+	if err != nil {
+		return err
+	}
+	const (
+		sourceType = "erda"
+	)
+	for _, v := range cronResp.Data {
+		branch := v.Extra.Labels[apistructs.LabelBranch]
+		if branch == "" {
+			continue
+		}
+		ymlName := parseSourceDicePipelineYmlName(v.PipelineYmlName, branch)
+		if ymlName == nil {
+			continue
+		}
+		if ymlName.appID == "" {
+			continue
+		}
+		appID, err := strconv.ParseUint(ymlName.appID, 10, 64)
+		if err != nil {
+			p.Log.Errorf("failed to parseUint, cronID: %d, appID: %s, err: %v", v.ID, ymlName.appID, err)
+			continue
+		}
+		app, err := p.bundle.GetApp(appID)
+		if err != nil {
+			p.Log.Errorf("failed to get app, appID: %d, err: %v", appID, err)
+			continue
+		}
+
+		pipelineName := func(pipelineYml string, fileName string) string {
+			yml, err := pipelineyml.GetNameByPipelineYml(pipelineYml)
+			if err == nil && yml != "" {
+				return yml
+			}
+			return filepath.Base(fileName)
+		}
+
+		projectPipeline, err := p.projectPipelineSvc.IdempotentCreateOne(apis.WithUserIDContext(ctx, v.UserID), &pb.CreateProjectPipelineRequest{
+			ProjectID:  app.ProjectID,
+			Name:       pipelineName(v.PipelineYml, filepath.Base(ymlName.fileName)),
+			AppID:      appID,
+			SourceType: sourceType,
+			Ref:        ymlName.branch,
+			Path:       getFilePath(ymlName.fileName),
+			FileName:   filepath.Base(ymlName.fileName),
+		})
+		if err != nil {
+			p.Log.Errorf("failed to get idempotent Create project pipeline,cronID: %d, err: %v", v.ID, err)
+			continue
+		}
+
+		_, err = p.PipelineCron.CronUpdate(ctx, &cronpb.CronUpdateRequest{
+			CronID:                 v.ID,
+			PipelineYml:            v.PipelineYml,
+			CronExpr:               v.CronExpr,
+			ConfigManageNamespaces: v.ConfigManageNamespaces,
+			PipelineDefinitionID:   projectPipeline.ID,
+			Secrets:                v.Secrets,
+		})
+		if err != nil {
+			p.Log.Errorf("failed to update cron, cronID: %d, err: %v", v.ID, err)
+		}
+	}
+	return nil
+}
+
+type pipelineYmlName struct {
+	appID     string
+	workspace string
+	branch    string
+	fileName  string
+}
+
+func parseSourceDicePipelineYmlName(ymlName string, branch string) *pipelineYmlName {
+	splits := strings.Split(ymlName, string(filepath.Separator))
+	if len(splits) < 4 {
+		return nil
+	}
+	return &pipelineYmlName{
+		appID:     splits[0],
+		workspace: splits[1],
+		branch:    branch,
+		fileName:  ymlName[len(splits[0])+len(splits[1])+len(branch)+3:],
+	}
 }
 
 func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {

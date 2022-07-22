@@ -50,7 +50,7 @@ type (
 	provider struct {
 		Cfg           *config
 		Log           logs.Logger
-		Router        httpserver.Router  `autowired:"http-router@admin"`
+		Router        httpserver.Router  `autowired:"http-router@openapi-admin"`
 		Etcd          *clientv3.Client   `autowired:"etcd-client"`
 		Discover      discover.Interface `autowired:"discover"`
 		ForwardServer fserver.Interface  `autowired:"remote-forward-server"`

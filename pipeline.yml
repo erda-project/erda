@@ -207,6 +207,7 @@ stages:
             retry_timeout: 150
             skip_migration: "true"
             skip_pre_migration: true
+            skip_lint: true
             workdir: ${{ dirs.erda }}
       - erda-mysql-migration:
           alias: dryrun-on-mysql56
@@ -222,6 +223,7 @@ stages:
             retry_timeout: 150
             skip_migration: "true"
             skip_pre_migration: true
+            skip_lint: true
             workdir: ${{ dirs.erda }}
   - stage:
       - release:
@@ -248,7 +250,6 @@ stages:
               monitor-agent-injector: ${build-monitor-injector:OUTPUT:image}
               monitor: ${{ outputs.build-erda.image }}
               msp: ${{ outputs.build-erda.image }}
-              openapi: ${{ outputs.build-erda.image }}
               orchestrator: ${{ outputs.build-erda.image }}
               pipeline: ${{ outputs.build-erda.image }}
               scheduler: ${{ outputs.build-erda.image }}

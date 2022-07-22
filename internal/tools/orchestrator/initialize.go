@@ -26,6 +26,8 @@ import (
 	infrahttpserver "github.com/erda-project/erda-infra/providers/httpserver"
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/core/org"
+	orgCache "github.com/erda-project/erda/internal/tools/orchestrator/cache/org"
 	"github.com/erda-project/erda/internal/tools/orchestrator/components/addon/mysql"
 	"github.com/erda-project/erda/internal/tools/orchestrator/conf"
 	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
@@ -65,6 +67,8 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 		},
 	}
 
+	orgCache.InitCache(p.Org)
+
 	// init endpoints
 	ep, err := p.initEndpoints(db)
 	if err != nil {
@@ -79,7 +83,7 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 	server.RegisterEndpoint(ep.Routes())
 
 	// register ecp router
-	server.RegisterEndpoint(registerEcpRouter(bdl, db.DBEngine, p.ClusterSvc))
+	server.RegisterEndpoint(registerEcpRouter(bdl, db.DBEngine, p.ClusterSvc, p.Org))
 
 	ctx.Service("http-server").(infrahttpserver.Router).Any("/**", server.Router())
 
@@ -174,6 +178,7 @@ func (p *provider) initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, e
 		addon.WithClusterInfoImpl(scheduler.Httpendpoints.ClusterinfoImpl),
 		addon.WithClusterSvc(p.ClusterSvc),
 		addon.WithTenantSvc(p.TenantSvc),
+		addon.WithOrg(p.Org),
 	)
 
 	// init runtime service
@@ -186,6 +191,7 @@ func (p *provider) initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, e
 		runtime.WithServiceGroup(scheduler.Httpendpoints.ServiceGroupImpl),
 		runtime.WithClusterInfo(scheduler.Httpendpoints.ClusterinfoImpl),
 		runtime.WithClusterSvc(p.ClusterSvc),
+		runtime.WithOrg(p.Org),
 	)
 	envConfig := environment.New(
 		environment.WithDBClient(db),
@@ -370,9 +376,10 @@ func addonsFilterIn(addons []dbclient.AddonInstance, fn func(addon *dbclient.Add
 	return
 }
 
-func registerEcpRouter(bdl *bundle.Bundle, dbEngine *dbengine.DBEngine, clusterSvc clusterpb.ClusterServiceServer) []httpserver.Endpoint {
+func registerEcpRouter(bdl *bundle.Bundle, dbEngine *dbengine.DBEngine, clusterSvc clusterpb.ClusterServiceServer, org org.ClientInterface) []httpserver.Endpoint {
 	return ecpednpoints.New(
 		ecpednpoints.WithDBEngine(dbEngine),
 		ecpednpoints.WithBundle(bdl),
-		ecpednpoints.WithClusterSvc(clusterSvc)).Routes()
+		ecpednpoints.WithClusterSvc(clusterSvc),
+		ecpednpoints.WithOrg(org)).Routes()
 }

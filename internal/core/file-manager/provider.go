@@ -24,6 +24,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-proto-go/core/services/filemanager/pb"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/tools/monitor/common/permission"
 	"github.com/erda-project/erda/pkg/common/apis"
 	perm "github.com/erda-project/erda/pkg/common/permission"
@@ -47,6 +48,7 @@ type provider struct {
 
 	bdl                *bundle.Bundle
 	fileManagerService *fileManagerService
+	Org                org.ClientInterface
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -67,11 +69,11 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.Router.Static("/api/containers/files/upload", "/", httpserver.WithFileSystem(http.FS(webfs)))
 	p.Router.POST("/api/container/:containerID/files/upload", p.fileManagerService.UploadFile, permission.Intercepter(
 		p.getScopeByHTTPRequest, p.checkScopeIDByHTTPRequest,
-		"terminal", permission.ActionOperate,
+		"terminal", permission.ActionOperate, p.Org,
 	))
 	p.Router.GET("/api/container/:containerID/files/download", p.fileManagerService.DownloadFile, permission.Intercepter(
 		p.getScopeByHTTPRequest, p.checkScopeIDByHTTPRequest,
-		"terminal", permission.ActionOperate,
+		"terminal", permission.ActionOperate, p.Org,
 	))
 	return nil
 }

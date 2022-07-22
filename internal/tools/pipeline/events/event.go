@@ -17,6 +17,7 @@ package events
 import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/pkg/websocket"
 	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/edgepipeline_register"
@@ -37,6 +38,7 @@ type DefaultEvent struct {
 	wsClient *websocket.Publisher
 
 	edgeRegister edgepipeline_register.Interface
+	org          org.ClientInterface
 }
 
 type IdentityInfo struct {

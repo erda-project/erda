@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/mysql"
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/pkg/bundle-ex/cmdb"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
@@ -66,6 +67,7 @@ type provider struct {
 	t           i18n.Translator
 	db          *DB
 	CronService cronpb.CronServiceServer `autowired:"erda.core.pipeline.cron.CronService" required:"true"`
+	Org         org.ClientInterface
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {

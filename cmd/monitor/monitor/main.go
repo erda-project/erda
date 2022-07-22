@@ -28,6 +28,7 @@ import (
 	_ "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/client"
 	_ "github.com/erda-project/erda-proto-go/core/messenger/notifychannel/client"
 	_ "github.com/erda-project/erda-proto-go/core/messenger/notifygroup/client"
+	_ "github.com/erda-project/erda-proto-go/core/org/client"
 	_ "github.com/erda-project/erda-proto-go/core/pipeline/cron/client"
 	_ "github.com/erda-project/erda/internal/core/file-manager"
 	_ "github.com/erda-project/erda/internal/tools/monitor/apm/runtime"

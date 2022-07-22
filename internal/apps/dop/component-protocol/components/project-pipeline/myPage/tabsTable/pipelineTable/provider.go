@@ -248,6 +248,9 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 		if err != nil {
 			logrus.Errorf("failed to list Unmarshal Extra, err: %s", err.Error())
 		}
+		if extraValue.CreateRequest == nil {
+			continue
+		}
 		pipelineYmlNames = append(pipelineYmlNames, extraValue.CreateRequest.PipelineYmlName)
 		pipelineSources = append(pipelineSources, extraValue.CreateRequest.PipelineSource.String())
 		definitionYmlSourceMap[v.ID] = fmt.Sprintf("%s%s", extraValue.CreateRequest.PipelineYmlName, extraValue.CreateRequest.PipelineSource)
