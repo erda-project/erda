@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 package erda.pkg.containerfilemanager;
-option go_package = "github.com/erda-project/erda-proto-go/core/services/filemanager/pb";
+option go_package = "github.com/erda-project/erda-proto-go/pkg/containerfilemanager/pb";
 import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 import "google/protobuf/descriptor.proto";
 import "google/api/annotations.proto";
