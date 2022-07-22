@@ -39,18 +39,46 @@ const (
 	headerContentDisposition = "Content-Disposition"
 	HeaderContentLength      = "Content-Length" // The Content-Length entity header indicates the size of the entity-body, in bytes, sent to the recipient.
 
-	headerContentTypePng = "image/png"
+	headerContentTypePng       = "image/png"
+	headerContentDefaultExtKey = "default"
 )
 
 var (
-	// allowedContentTypes is a map of allowed file code(key) and content type(value).
+	// allowedContentTypes is a map of allowed file code(key), ext(key) and content type(value).
 	// reference link: https://www.garykessler.net/library/file_sigs.html
-	allowedContentTypes = map[string]string{
-		"FFD8FFE0":    headerContentTypePng, // jpg
-		"FFD8FFE1":    headerContentTypePng, // jpg
-		"FFD8FFE8":    headerContentTypePng, // jpg
-		"47494638PNG": headerContentTypePng, // gif
-		"89504E47":    headerContentTypePng, // png
+	allowedContentTypes = map[string]map[string]string{
+		"FFD8FFE0": {
+			".jpg":                     headerContentTypePng,
+			".jfif":                    headerContentTypePng,
+			".jpeg":                    headerContentTypePng,
+			".jpe":                     headerContentTypePng,
+			headerContentDefaultExtKey: headerContentTypePng,
+		}, // jpg
+		"FFD8FFE1": {
+			".jpg":                     headerContentTypePng,
+			headerContentDefaultExtKey: headerContentTypePng,
+		}, // jpg
+		"FFD8FFE8": {
+			".jpg":                     headerContentTypePng,
+			headerContentDefaultExtKey: headerContentTypePng,
+		}, // jpg
+		"47494638": {
+			".gif":                     headerContentTypePng,
+			headerContentDefaultExtKey: headerContentTypePng,
+		}, // gif
+		"89504E47": {
+			".png":                     headerContentTypePng,
+			headerContentDefaultExtKey: headerContentTypePng,
+		}, // png
+		"504B0304": {
+			".apk":                     "application/vnd.android.package-archive",
+			".zip":                     "application/zip",
+			".jar":                     "application/java-archive",
+			".kmz":                     "application/vnd.google-earth.kmz",
+			"kwd":                      "application/vnd.kde.kword",
+			"epub":                     "application/epub+zip",
+			headerContentDefaultExtKey: "application/octet-stream",
+		}, // apk, zip, jar, kmz, kwd, epub
 	}
 )
 
@@ -109,7 +137,7 @@ func (svc *FileService) DownloadFile(w io.Writer, file dao.File) (headers map[st
 	}
 	var buf bytes.Buffer
 	tee := io.TeeReader(reader, &buf)
-	contentType := GetFileContentType(tee)
+	contentType := GetFileContentType(tee, file.Ext)
 	if contentType != "" {
 		headers[headerContentType] = contentType
 	}
@@ -133,7 +161,7 @@ func (svc *FileService) DownloadFile(w io.Writer, file dao.File) (headers map[st
 
 // GetFileContentType judge file content type by file header.
 // If file header is found in allowedContentTypes, return content type, otherwise return application/octet-stream.
-func GetFileContentType(r io.Reader) string {
+func GetFileContentType(r io.Reader, ext string) string {
 	contentType := "application/octet-stream"
 	var buf bytes.Buffer
 	tee := io.TeeReader(r, &buf)
@@ -143,9 +171,12 @@ func GetFileContentType(r io.Reader) string {
 		return contentType
 	}
 	fileCode := bytesToHexString(headerBuf[:n])
-	for k, v := range allowedContentTypes {
+	for k, extData := range allowedContentTypes {
 		if strings.HasPrefix(strings.ToLower(fileCode), strings.ToLower(k)) {
-			return v
+			if contentType, ok := extData[ext]; ok {
+				return contentType
+			}
+			return extData[headerContentDefaultExtKey]
 		}
 	}
 
