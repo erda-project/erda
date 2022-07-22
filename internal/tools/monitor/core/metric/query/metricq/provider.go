@@ -73,7 +73,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	}
 	Q = p.q
 
-	routes := ctx.Service("http-server", interceptors.Recover(p.L), interceptors.CORS()).(httpserver.Router)
+	routes := ctx.Service("http-server", interceptors.Recover(p.L), interceptors.CORS(true)).(httpserver.Router)
 	err = p.initRoutes(routes)
 	if err != nil {
 		return fmt.Errorf("fail to init routes: %s", err)

@@ -15,38 +15,35 @@
 package http
 
 import (
-	"fmt"
-	"os/exec"
-	"strings"
-	"time"
+	"net/http"
+	"net/http/httputil"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-//func TestHTTP(t *testing.T) {
-//	kill, err := RunAHTTPServer(12345, "content")
-//	assert.Nil(t, err)
-//	defer kill()
-//	director := func(r *http.Request) {
-//		r.URL.Scheme = "http"
-//		r.URL.Host = "127.0.0.1:12345"
-//		r.Header.Set("Origin", "http://127.0.0.1:12345")
-//	}
-//	p := NewReverseProxy(director, nil)
-//	go http.ListenAndServe("127.0.0.1:6666", p)
-//	time.Sleep(1000 * time.Millisecond)
-//	r, err := http.Get("http://127.0.0.1:6666")
-//	assert.Nil(t, err)
-//	body, err := ioutil.ReadAll(r.Body)
-//	assert.Nil(t, err)
-//	assert.Equal(t, "content", string(body))
-//
-//}
+func TestReverseProxyWithCustom_setModifyResponse(t *testing.T) {
+	r := &ReverseProxyWithCustom{
+		reverseProxy: &httputil.ReverseProxy{
+			ModifyResponse: nil,
+		},
+	}
+	assert.Nil(t, r.reverseProxy.(*httputil.ReverseProxy).ModifyResponse)
+	r.setModifyResponse(func(resp *http.Response) error { return nil })
+	assert.NotNil(t, r.reverseProxy.(*httputil.ReverseProxy).ModifyResponse)
+}
 
-// return (kill_function, error)
-func RunAHTTPServer(port int, content string) (func() error, error) {
-	content_ := strings.Replace(content, "\"", "\\\"", -1)
-	socat := fmt.Sprintf("socat tcp-listen:%d,reuseaddr,fork \"exec:printf \\'HTTP/1.0 200 OK\\r\\nContent-Type\\:application/json\\r\\n\\r\\n%s\\'\"", port, content_)
-	cmd := exec.Command("sh", "-c", socat)
-	err := cmd.Start()
-	time.Sleep(500 * time.Millisecond)
-	return cmd.Process.Kill, err
+func TestNewReverseProxyWithCustom(t *testing.T) {
+	var validFlag bool
+	d := func(req *http.Request) { validFlag = true }
+	r := NewReverseProxyWithCustom(d)
+	rr, ok := r.(*ReverseProxyWithCustom)
+	assert.True(t, ok)
+	assert.NotNil(t, rr.reverseProxy)
+	proxy, ok := rr.reverseProxy.(*httputil.ReverseProxy)
+	assert.True(t, ok)
+	// set flag in director
+	assert.False(t, validFlag)
+	proxy.Director(nil)
+	assert.True(t, validFlag)
 }

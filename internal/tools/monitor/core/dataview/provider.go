@@ -111,7 +111,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 	p.ExportChannel = make(chan string, 1)
 	p.ExportTaskExecutor(time.Second * time.Duration(20))
-	routes := ctx.Service("http-server", interceptors.Recover(p.Log), interceptors.CORS()).(httpserver.Router)
+	routes := ctx.Service("http-server", interceptors.Recover(p.Log), interceptors.CORS(true)).(httpserver.Router)
 	return p.initRoutes(routes)
 }
 

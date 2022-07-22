@@ -18,23 +18,17 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io"
 	"io/ioutil"
-	"net"
 	"net/http"
-	"strconv"
-	"strings"
 	"sync"
 	"time"
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/core/openapi/legacy/api"
 	apispec "github.com/erda-project/erda/internal/core/openapi/legacy/api/spec"
 	"github.com/erda-project/erda/internal/core/openapi/legacy/auth"
-	"github.com/erda-project/erda/internal/core/openapi/legacy/hooks"
 	"github.com/erda-project/erda/internal/core/openapi/legacy/monitor"
 	"github.com/erda-project/erda/internal/core/openapi/legacy/proxy"
 	phttp "github.com/erda-project/erda/internal/core/openapi/legacy/proxy/http"
@@ -51,7 +45,7 @@ type ReverseProxyWithAuth struct {
 
 func NewReverseProxyWithAuth(auth *auth.Auth, bundle *bundle.Bundle) (http.Handler, error) {
 	director := proxy.NewDirector()
-	httpProxy := phttp.NewReverseProxyWithCustom(director, modifyResponse)
+	httpProxy := phttp.NewReverseProxyWithCustom(director)
 	wsProxy := ws.NewReverseProxyWithCustom(director)
 	return &ReverseProxyWithAuth{httpProxy: httpProxy, wsProxy: wsProxy, auth: auth, bundle: bundle, cache: &sync.Map{}}, nil
 }
@@ -110,103 +104,4 @@ func (r *ReverseProxyWithAuth) ServeHTTP(rw http.ResponseWriter, req *http.Reque
 		http.Error(rw, errStr, http.StatusBadRequest)
 		return
 	}
-}
-
-func modifyResponse(res *http.Response) error {
-	spec := api.API.FindOriginPath(res.Request)
-	if spec == nil {
-		// unreachable
-		logrus.Errorf("failed to modifyResponse: not found spec (unreachable):%v", res.Request.URL)
-		return nil
-	}
-	defer func() {
-		if res.StatusCode/100 == 5 {
-			monitor.Notify(monitor.Info{
-				Tp:     monitor.API50xCount,
-				Detail: spec.Path.String(),
-			})
-		} else if res.StatusCode/100 == 4 {
-			monitor.Notify(monitor.Info{
-				Tp:     monitor.API40xCount,
-				Detail: spec.Path.String(),
-			})
-		}
-	}()
-	var err error
-	if spec.CustomResponse != nil {
-		err = spec.CustomResponse(res)
-	}
-	if err != nil {
-		logrus.Errorf("failed to modifyResponse: %v", err)
-		return err
-	}
-	if !spec.ChunkAPI {
-		if hooks.Enable {
-			// if err = posthandle.InjectUserInfo(res, spec.NeedDesensitize); err != nil {
-			// 	logrus.Errorf("failed to inject userinfo: %v", err)
-			// 	return err
-			// }
-		}
-	}
-
-	if spec.Audit != nil && res.StatusCode/100 == 2 {
-		request := res.Request
-		reqBody := request.Context().Value("reqBody").(io.ReadCloser)
-		bdl := request.Context().Value("bundle").(*bundle.Bundle)
-		beginTime := request.Context().Value("beginTime").(time.Time)
-		cache := request.Context().Value("cache").(*sync.Map)
-		request.Body = reqBody
-		resBody, err := ioutil.ReadAll(res.Body)
-		if err != nil {
-			return err
-		}
-		res.Body = ioutil.NopCloser(bytes.NewReader(resBody))
-		orgIDStr := request.Header.Get("Org-ID")
-		orgID, _ := strconv.ParseInt(orgIDStr, 10, 64)
-		auditContext := &apispec.AuditContext{
-			UrlParams: spec.Path.Vars(request.RequestURI),
-			UserID:    request.Header.Get("User-ID"),
-			OrgID:     orgID,
-			Request:   request,
-			Response:  res,
-			Bundle:    bdl,
-			BeginTime: beginTime,
-			EndTime:   time.Now(),
-			Result:    apistructs.SuccessfulResult,
-			UserAgent: request.Header.Get("User-Agent"),
-			ClientIP:  GetRealIP(request),
-			Cache:     cache,
-		}
-
-		go func() {
-			defer func() {
-				if err := recover(); err != nil {
-					logrus.Errorf("audit panic url:%s , err:%s", request.RequestURI, err)
-				}
-			}()
-			auditContext.Response.Body = ioutil.NopCloser(bytes.NewReader(resBody))
-			err := spec.Audit(auditContext)
-			if err != nil {
-				logrus.Errorf("audit failed url:%s , err:%s", request.RequestURI, err)
-			}
-		}()
-	}
-
-	res.Header.Set("Access-Control-Allow-Origin", "*")
-	return err
-}
-
-// GetRealIP 获取真实ip
-func GetRealIP(request *http.Request) string {
-	ra := request.RemoteAddr
-	if ip := request.Header.Get("X-Forwarded-For"); ip != "" {
-		// filter space like '42.120.75.131,::ffff:10.112.1.1, 10.112.3.224'
-		forwardedFilterSpace := strings.ReplaceAll(ip, " ", "")
-		ra = strings.Split(forwardedFilterSpace, ",")[0]
-	} else if ip := request.Header.Get("X-Real-IP"); ip != "" {
-		ra = ip
-	} else {
-		ra, _, _ = net.SplitHostPort(ra)
-	}
-	return ra
 }

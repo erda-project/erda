@@ -74,7 +74,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 	r := ctx.Service("http-server",
 		// telemetry.HttpMetric(),
-		interceptors.CORS(),
+		interceptors.CORS(true),
 		interceptors.Recover(p.Logger),
 	).(httpserver.Router)
 	if err := p.intRoute(r); err != nil {

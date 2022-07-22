@@ -26,12 +26,12 @@ import (
 	util "github.com/erda-project/erda/pkg/http/httputil"
 )
 
-func NewReverseProxy(director func(*http.Request),
-	modifyResponse func(*http.Response) error) http.Handler {
-	return &httputil.ReverseProxy{
-		FlushInterval:  -1,
-		Director:       director,
-		ModifyResponse: modifyResponse,
+func NewReverseProxyWithCustom(director func(*http.Request)) http.Handler {
+	return &ReverseProxyWithCustom{
+		reverseProxy: &httputil.ReverseProxy{
+			FlushInterval: -1,
+			Director:      director,
+		},
 	}
 }
 
@@ -39,10 +39,8 @@ type ReverseProxyWithCustom struct {
 	reverseProxy http.Handler
 }
 
-func NewReverseProxyWithCustom(director func(*http.Request),
-	modifyResponse func(*http.Response) error) http.Handler {
-	r := NewReverseProxy(director, modifyResponse)
-	return &ReverseProxyWithCustom{reverseProxy: r}
+func (r *ReverseProxyWithCustom) setModifyResponse(m func(*http.Response) error) {
+	r.reverseProxy.(*httputil.ReverseProxy).ModifyResponse = m
 }
 
 func (r *ReverseProxyWithCustom) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
@@ -58,5 +56,6 @@ func (r *ReverseProxyWithCustom) ServeHTTP(rw http.ResponseWriter, req *http.Req
 		spec.Custom(rw, req)
 		return
 	}
+	r.setModifyResponse(getModifyResponse(rw))
 	r.reverseProxy.ServeHTTP(rw, req)
 }
