@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package file_manager
+package containerfilemanager
 
 import (
 	"embed"
@@ -22,7 +22,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/httpserver"
-	"github.com/erda-project/erda-proto-go/core/services/filemanager/pb"
+	"github.com/erda-project/erda-proto-go/pkg/containerfilemanager/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/tools/monitor/common/permission"
@@ -87,7 +87,7 @@ func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}
 }
 
 func init() {
-	servicehub.Register("erda.core.services.filemanager", &servicehub.Spec{
+	servicehub.Register("erda.pkg.containerfilemanager", &servicehub.Spec{
 		Services:             pb.ServiceNames(),
 		Types:                pb.Types(),
 		OptionalDependencies: []string{"service-register"},
