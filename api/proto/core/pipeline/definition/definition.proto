@@ -107,7 +107,7 @@ message PipelineDefinition {
 
 message PipelineDefinitionExtra {
     string ID = 1 [json_name = "id"];
-    string extra = 2;
+    string extra = 2 [(validate.rules).string = {min_len: 1}];
     google.protobuf.Timestamp timeCreated = 3;
     google.protobuf.Timestamp timeUpdated = 4;
     string pipelineDefinition = 5;
@@ -117,12 +117,12 @@ message PipelineDefinitionExtra {
 // create
 message PipelineDefinitionCreateRequest {
     string ID = 1 [json_name = "id"];
-    string location = 2;
-    string name = 3;
-    string creator = 4;
-    string pipelineSourceID = 5;
-    string category = 6;
-    PipelineDefinitionExtra extra = 7;
+    string location = 2 [(validate.rules).string = {min_len: 1}];
+    string name = 3 [(validate.rules).string = {min_len: 1,max_len: 30}];
+    string creator = 4 [(validate.rules).string = {min_len: 1}];
+    string pipelineSourceID = 5 [(validate.rules).string = {min_len: 1}];
+    string category = 6 [(validate.rules).string = {min_len: 1}];
+    PipelineDefinitionExtra extra = 7 [(validate.rules).message = {required: true}];
     int64 totalActionNum = 8;
     int64 executedActionNum = 9;
     string ref = 10;

@@ -85,3 +85,54 @@ func Test_parseSourceDicePipelineYmlName(t *testing.T) {
 		})
 	}
 }
+
+func TestMakeProjectPipelineName(t *testing.T) {
+	type args struct {
+		pipelineYml string
+		fileName    string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "test with from pipelineYml",
+			args: args{
+				pipelineYml: `version: "1.1"
+name: pipeline-deploy
+stages:
+`,
+				fileName: "pipeline.yml",
+			},
+			want: "pipeline-deploy",
+		},
+		{
+			name: "test with from fileName",
+			args: args{
+				pipelineYml: `version: "1.1"
+stages:
+`,
+				fileName: "erda-test-pipeline.yml",
+			},
+			want: "erda-test-pipeline.yml",
+		},
+		{
+			name: "test with from fileName2",
+			args: args{
+				pipelineYml: `version: "1.1"
+stages:
+`,
+				fileName: "erda-project-develop-test-pipeline.yml",
+			},
+			want: "pipeline.yml",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := MakeProjectPipelineName(tt.args.pipelineYml, tt.args.fileName); got != tt.want {
+				t.Errorf("MakeProjectPipelineName() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
