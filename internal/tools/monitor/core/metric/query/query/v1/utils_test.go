@@ -329,12 +329,6 @@ func TestNormalizeKey(t *testing.T) {
 }
 
 func TestNormalizeRequest(t *testing.T) {
-	clusterWhere := model.Filter{
-		Key:      model.ClusterNameKey,
-		Operator: "in",
-		Value:    []interface{}{"cluster1", "cluster2"},
-	}
-
 	standardTime := time.Now()
 	t.Logf("now, %v", standardTime.UnixNano())
 	tests := []struct {
@@ -454,6 +448,39 @@ func TestNormalizeRequest(t *testing.T) {
 				DefaultNullValue: nil,
 			},
 		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if test.mockNow != nil {
+				nowFunction = test.mockNow
+			}
+			err := NormalizeRequest(&test.req)
+			if test.wantErr {
+				require.Error(t, err)
+				return
+			} else {
+				require.NoError(t, err)
+			}
+			require.Equal(t, test.want, test.req)
+		})
+	}
+}
+func TestNormalizeWhere(t *testing.T) {
+	clusterWhere := model.Filter{
+		Key:      model.ClusterNameKey,
+		Operator: "in",
+		Value:    []interface{}{"cluster1", "cluster2"},
+	}
+
+	standardTime := time.Now()
+	tests := []struct {
+		name    string
+		req     Request
+		want    Request
+		wantErr bool
+		mockNow func() time.Time
+	}{
 		{
 			name: "cluster where",
 			mockNow: func() time.Time {
@@ -499,7 +526,6 @@ func TestNormalizeRequest(t *testing.T) {
 			},
 		},
 	}
-
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			if test.mockNow != nil {
@@ -512,8 +538,7 @@ func TestNormalizeRequest(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 			}
-			require.Equal(t, test.want, test.req)
+			require.ElementsMatchf(t, test.want.Where, test.req.Where, "%+v != %+v", test.want.Where, test.req.Where)
 		})
 	}
-
 }
