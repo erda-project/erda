@@ -58,7 +58,6 @@ stages:
             mem: 2048
       - custom-script:
           alias: build-agent
-          image: registry.erda.cloud/erda/erda-base:20220713
           commands:
             - cd ${{ dirs.erda }}
             - export ERDA_VERSION=${{ outputs.extract-repo-version.major_minor_version }}
