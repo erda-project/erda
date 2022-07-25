@@ -25,12 +25,16 @@ import (
 	"time"
 
 	"github.com/erda-project/erda-infra/providers/httpserver"
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/core/org"
 	bundlecmdb "github.com/erda-project/erda/internal/pkg/bundle-ex/cmdb"
 	table "github.com/erda-project/erda/internal/tools/monitor/common/db"
+	"github.com/erda-project/erda/pkg/common/apis"
 	api "github.com/erda-project/erda/pkg/common/httpapi"
 	"github.com/erda-project/erda/pkg/common/permission"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
@@ -64,10 +68,11 @@ const (
 type ValueGetter func(ctx httpserver.Context) (string, error)
 
 var (
-	hc   = httpclient.New(httpclient.WithTimeout(time.Second*10, time.Second*60))
-	bdl  *bundle.Bundle
-	once sync.Once
-	cmdb *bundlecmdb.Cmdb // 为了调用 /api/orgs/clusters/relations 接口
+	hc        = httpclient.New(httpclient.WithTimeout(time.Second*10, time.Second*60))
+	bdl       *bundle.Bundle
+	once      sync.Once
+	cmdb      *bundlecmdb.Cmdb // 为了调用 /api/orgs/clusters/relations 接口
+	orgClient org.ClientInterface
 )
 
 func initBundle() {
@@ -79,8 +84,9 @@ func initBundle() {
 }
 
 // Interceptor .
-func Intercepter(scope interface{}, id ValueGetter, resource interface{}, action Action) httpserver.Interceptor {
+func Intercepter(scope interface{}, id ValueGetter, resource interface{}, action Action, org org.ClientInterface) httpserver.Interceptor {
 	once.Do(initBundle)
+	orgClient = org
 	fmt.Printf("permission: scope = %v, resource = %v, action = %v\n", scope, resource, action)
 	switch res := resource.(type) {
 	case string:
@@ -370,10 +376,14 @@ func OrgIDByOrgName(key string) func(ctx httpserver.Context) (string, error) {
 		if len(name) <= 0 {
 			return "", fmt.Errorf("not found org name from key %s", key)
 		}
-		orgInfo, err := bdl.GetOrg(name)
+
+		orgResp, err := orgClient.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcMonitor), &orgpb.GetOrgRequest{
+			IdOrName: name,
+		})
 		if err != nil {
 			return "", fmt.Errorf("fail to found org info: %s", err)
 		}
+		orgInfo := orgResp.Data
 		if orgInfo == nil {
 			return "", fmt.Errorf("fail to found org info")
 		}

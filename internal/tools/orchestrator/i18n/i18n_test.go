@@ -15,10 +15,14 @@
 package i18n_test
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
 	providersI18n "github.com/erda-project/erda-infra/providers/i18n"
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
+	"github.com/erda-project/erda/internal/pkg/mock"
+	orgCache "github.com/erda-project/erda/internal/tools/orchestrator/cache/org"
 	"github.com/erda-project/erda/internal/tools/orchestrator/i18n"
 )
 
@@ -43,7 +47,16 @@ func TestSprintf(t *testing.T) {
 	i18n.Sprintf("", "hello %s", "erda")
 }
 
+type orgMock struct {
+	mock.OrgMock
+}
+
+func (m orgMock) GetOrg(ctx context.Context, request *orgpb.GetOrgRequest) (*orgpb.GetOrgResponse, error) {
+	return &orgpb.GetOrgResponse{Data: &orgpb.Org{}}, nil
+}
+
 func TestOrgSprintf(t *testing.T) {
+	orgCache.InitCache(orgMock{})
 	i18n.SetSingle(new(mockTranslator))
 	i18n.OrgSprintf("0", "hello erda")
 }

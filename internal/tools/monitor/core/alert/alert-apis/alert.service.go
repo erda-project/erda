@@ -30,6 +30,7 @@ import (
 	channelpb "github.com/erda-project/erda-proto-go/core/messenger/notifychannel/pb"
 	"github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/pkg/audit"
 	"github.com/erda-project/erda/internal/tools/monitor/core/alert/alert-apis/adapt"
@@ -38,6 +39,7 @@ import (
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
 	api "github.com/erda-project/erda/pkg/common/httpapi"
+	"github.com/erda-project/erda/pkg/discover"
 )
 
 type alertService struct {
@@ -59,7 +61,7 @@ func (m *alertService) QueryOrgDashboardByAlert(ctx context.Context, request *pb
 	if request.AlertType == "" {
 		request.AlertType = "org_customize"
 	}
-	_, err := m.p.bdl.GetOrg(orgID)
+	_, err := m.GetOrg(orgID)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -105,7 +107,7 @@ func (m *alertService) CreateAlert(ctx context.Context, request *pb.CreateAlertR
 		return nil, res.Err
 	}
 	orgID := alert.Attributes["dice_org_id"]
-	org, err := m.p.bdl.GetOrg(orgID.AsInterface())
+	org, err := m.GetOrg(orgID.AsInterface())
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -125,7 +127,7 @@ func (m *alertService) CreateAlert(ctx context.Context, request *pb.CreateAlertR
 func (m *alertService) CreateOrgAlert(ctx context.Context, request *pb.CreateOrgAlertRequest) (*pb.CreateOrgAlertResponse, error) {
 	orgID := apis.GetOrgID(ctx)
 	userID := apis.GetUserID(ctx)
-	org, err := m.p.bdl.GetOrg(orgID)
+	org, err := m.GetOrg(orgID)
 	if err != nil {
 		return nil, errors.NewInvalidParameterError("orgId", "orgId is invalidate")
 	}
@@ -366,7 +368,7 @@ func (m *alertService) DeleteCustomizeAlert(ctx context.Context, request *pb.Del
 
 func (m *alertService) QueryOrgCustomizeMetric(ctx context.Context, request *pb.QueryOrgCustomizeMetricRequest) (*pb.QueryOrgCustomizeMetricResponse, error) {
 	orgID := apis.GetOrgID(ctx)
-	org, err := m.p.bdl.GetOrg(orgID)
+	org, err := m.GetOrg(orgID)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -458,7 +460,7 @@ func (m *alertService) CreateOrgCustomizeAlert(ctx context.Context, request *pb.
 	if request.AlertType == "" {
 		request.AlertType = "org_customize"
 	}
-	org, err := m.p.bdl.GetOrg(orgID)
+	org, err := m.GetOrg(orgID)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -695,7 +697,7 @@ func (m *alertService) UpdateOrgCustomizeAlert(ctx context.Context, request *pb.
 	if request.AlertType == "" {
 		request.AlertType = "org_customize"
 	}
-	org, err := m.p.bdl.GetOrg(orgID)
+	org, err := m.GetOrg(orgID)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -789,7 +791,7 @@ func (m *alertService) DeleteOrgCustomizeAlert(ctx context.Context, request *pb.
 	result := &pb.DeleteOrgCustomizeAlertResponse{}
 	result.Data = structpb.NewBoolValue(true)
 	orgIdStr := apis.GetOrgID(ctx)
-	org, err := m.p.bdl.GetOrg(orgIdStr)
+	org, err := m.GetOrg(orgIdStr)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -915,7 +917,7 @@ func (m *alertService) UpdateAlert(ctx context.Context, request *pb.UpdateAlertR
 		return nil, fmt.Errorf("check alert is failed err is %s", err)
 	}
 	orgID := apis.GetHeader(ctx, "Org-ID")
-	org, err := m.p.bdl.GetOrg(orgID)
+	org, err := m.GetOrg(orgID)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -1032,7 +1034,7 @@ func (m *alertService) checkOrgClusterNames(orgID uint64, clusters []string) boo
 
 func (m *alertService) UpdateOrgAlert(ctx context.Context, request *pb.UpdateOrgAlertRequest) (*pb.UpdateOrgAlertResponse, error) {
 	orgID := apis.GetOrgID(ctx)
-	org, err := m.p.bdl.GetOrg(orgID)
+	org, err := m.GetOrg(orgID)
 	if err != nil {
 		return nil, errors.NewInvalidParameterError("orgId", "orgId is invalidate")
 	}
@@ -1086,7 +1088,7 @@ func (m *alertService) DeleteOrgAlert(ctx context.Context, request *pb.DeleteOrg
 	if len(orgID) <= 0 {
 		return nil, errors.NewInvalidParameterError("Org-ID", "Org-ID not exist")
 	}
-	org, err := m.p.bdl.GetOrg(orgID)
+	org, err := m.GetOrg(orgID)
 	if err != nil {
 		return nil, errors.NewInvalidParameterError("orgId", "orgId is invalidate")
 	}
@@ -1644,4 +1646,17 @@ func getResultValue(result []*metricpb.Result) []*structpb.Value {
 		}
 	}
 	return value
+}
+
+func (m *alertService) GetOrg(orgIDOrName interface{}) (*orgpb.Org, error) {
+	if orgIDOrName == nil {
+		return nil, fmt.Errorf("the orgIDOrName is empty")
+	}
+	orgResp, err := m.p.Org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcMonitor), &orgpb.GetOrgRequest{
+		IdOrName: fmt.Sprintf("%v", orgIDOrName),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return orgResp.Data, nil
 }

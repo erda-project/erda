@@ -16,7 +16,7 @@ package events
 
 import (
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/internal/tools/orchestrator/components/horizontalpodscaler/types"
+	"github.com/erda-project/erda/internal/tools/orchestrator/components/podscaler/types"
 )
 
 type EventName string

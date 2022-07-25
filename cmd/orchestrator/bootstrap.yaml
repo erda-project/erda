@@ -23,7 +23,7 @@ i18n:
 erda.orchestrator.runtime:
 erda.orchestrator.events:
 erda.orchestrator.addon.mysql:
-erda.orchestrator.horizontalpodscaler:
+erda.orchestrator.podscaler:
 
 mysql:
   host: "${MYSQL_HOST:localhost}"
@@ -43,3 +43,8 @@ erda.core.clustermanager.cluster-client: {}
 grpc-client@erda.msp.tenant:
   addr: "${MSP_GRPC_ADDR:msp:7080}"
 erda.msp.tenant-client: {}
+
+grpc-client@erda.core.org:
+  addr: "${ERDA_SERVER_GRPC_ADDR:erda-server:8096}"
+erda.core.org-client: {}
+erda.core.org: {}

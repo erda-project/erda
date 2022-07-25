@@ -26,6 +26,8 @@ import (
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/bundle"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/util"
@@ -39,6 +41,8 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/endpoint_api"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/micro_api"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/runtime_service"
+	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -51,11 +55,12 @@ type GatewayRuntimeServiceServiceImpl struct {
 	domainBiz  *domain.GatewayDomainService
 	apiBiz     *micro_api.GatewayApiService
 	reqCtx     context.Context
+	org        org.ClientInterface
 }
 
 var once sync.Once
 
-func NewGatewayRuntimeServiceServiceImpl() (e error) {
+func NewGatewayRuntimeServiceServiceImpl(org org.ClientInterface) (e error) {
 	once.Do(
 		func() {
 			runtimeDb, err := db.NewGatewayRuntimeServiceServiceImpl()
@@ -77,6 +82,7 @@ func NewGatewayRuntimeServiceServiceImpl() (e error) {
 				packageBiz: &endpoint_api.Service,
 				domainBiz:  &domain.Service,
 				apiBiz:     &micro_api.Service,
+				org:        org,
 			}
 		})
 	return
@@ -231,8 +237,10 @@ func (impl GatewayRuntimeServiceServiceImpl) TouchRuntime(reqDto *gw.RuntimeServ
 	if err != nil {
 		return
 	}
-	if org, err := bundle.Bundle.GetOrg(reqDto.OrgId); err == nil {
-		ctx["locale"] = org.Locale
+	orgResp, err := impl.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcHepa),
+		&orgpb.GetOrgRequest{IdOrName: reqDto.OrgId})
+	if err == nil {
+		ctx["locale"] = orgResp.Data.Locale
 	}
 	diceYaml, err = bundle.Bundle.GetDiceYAML(reqDto.ReleaseId, reqDto.Env)
 	if err != nil {

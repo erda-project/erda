@@ -22,6 +22,7 @@ import (
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-proto-go/core/monitor/log/query/pb"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/tools/monitor/common"
 	monitorperm "github.com/erda-project/erda/internal/tools/monitor/common/permission"
 	"github.com/erda-project/erda/internal/tools/monitor/core/log/storage"
@@ -50,6 +51,7 @@ type provider struct {
 	FrozenStorageReader storage.Storage    `autowired:"log-storage-cassandra-reader" optional:"true"`
 
 	logQueryService *logQueryService
+	Org             org.ClientInterface
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {

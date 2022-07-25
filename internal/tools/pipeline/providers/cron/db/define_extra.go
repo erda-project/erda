@@ -86,6 +86,9 @@ func (client *Client) PagingPipelineCron(req *pb.CronPagingRequest, ops ...mysql
 		limitSQL.Where("cluster_name = ?", req.ClusterName)
 	}
 
+	if req.EmptyDefinitionID {
+		limitSQL.Where("pipeline_definition_id = ''")
+	}
 	// LIMIT ${pageSize} OFFSET ${pageNo}
 	var err error
 	if req.GetAll {

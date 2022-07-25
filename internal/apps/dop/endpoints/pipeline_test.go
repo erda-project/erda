@@ -15,10 +15,13 @@
 package endpoints
 
 import (
+	"context"
+	"net/http"
 	"reflect"
 	"testing"
 
 	"bou.ke/monkey"
+	"github.com/gorilla/schema"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda/apistructs"
@@ -155,4 +158,27 @@ func Test_getPipelineDetailAndCheckPermission(t *testing.T) {
 			assert.Equal(t, got.ID, tt.args.result.ID)
 		})
 	}
+}
+
+func Test_pipelineList(t *testing.T) {
+	bdl := bundle.New()
+	pm1 := monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "PageListPipeline", func(bdl *bundle.Bundle, req apistructs.PipelinePageListRequest) (*apistructs.PipelinePageListData, error) {
+		return &apistructs.PipelinePageListData{
+			Pipelines: []apistructs.PagePipeline{
+				{
+					ID: 1,
+				},
+			},
+		}, nil
+	})
+	defer pm1.Unpatch()
+
+	e := &Endpoints{
+		bdl:                bdl,
+		queryStringDecoder: schema.NewDecoder(),
+	}
+	r, err := http.NewRequest("GET", "/api/pipelines?statuses=Running&sources=dice", nil)
+	assert.NoError(t, err)
+	_, err = e.pipelineList(context.Background(), r, nil)
+	assert.NoError(t, err)
 }

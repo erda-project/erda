@@ -269,3 +269,82 @@ func Test_setClusterName(t *testing.T) {
 	pipelineSvc.setClusterName("erda-center", pv)
 	assert.Equal(t, "erda-center", pv.ClusterName)
 }
+
+func Test_getPipelineOwnerUser(t *testing.T) {
+	bdl := bundle.New()
+	pm1 := monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetGittarTree", func(_ *bundle.Bundle, repo string, orgID string, userID string) (*apistructs.GittarTreeData, error) {
+		return &apistructs.GittarTreeData{
+			Type: "blob",
+			Commit: apistructs.Commit{
+				Committer: &apistructs.Signature{
+					Name:  "erda",
+					Email: "erda@dice.io",
+				},
+			},
+		}, nil
+	})
+	defer pm1.Unpatch()
+	pm2 := monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "ListUsers", func(_ *bundle.Bundle, req apistructs.UserListRequest) (*apistructs.UserListResponseData, error) {
+		return &apistructs.UserListResponseData{
+			Users: []apistructs.UserInfo{
+				{
+					ID:    "1",
+					Name:  "erda",
+					Email: "erda@dice.io",
+				},
+			},
+		}, nil
+	})
+	defer pm2.Unpatch()
+	pm3 := monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "CheckPermission", func(_ *bundle.Bundle, req *apistructs.PermissionCheckRequest) (*apistructs.PermissionCheckResponseData, error) {
+		return &apistructs.PermissionCheckResponseData{
+			Access: true,
+		}, nil
+	})
+	defer pm3.Unpatch()
+	pipelineSvc := New(WithBundle(bdl))
+	owner, err := pipelineSvc.getPipelineOwnerUser(&apistructs.ApplicationDTO{ID: 1}, &apistructs.PipelineCreateRequest{Branch: "develop"})
+	assert.NoError(t, err)
+	assert.Equal(t, "1", owner.ID)
+}
+
+func Test_checkOwnerPermission(t *testing.T) {
+	bdl := bundle.New()
+	pm1 := monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "CheckPermission", func(_ *bundle.Bundle, req *apistructs.PermissionCheckRequest) (*apistructs.PermissionCheckResponseData, error) {
+		access := true
+		if req.UserID == "1" {
+			access = false
+		}
+		return &apistructs.PermissionCheckResponseData{
+			Access: access,
+		}, nil
+	})
+	defer pm1.Unpatch()
+	tests := []struct {
+		name    string
+		userID  string
+		wantErr bool
+	}{
+		{
+			name:    "user 1 no permission",
+			userID:  "1",
+			wantErr: true,
+		},
+		{
+			name:    "user 2 has permission",
+			userID:  "2",
+			wantErr: false,
+		},
+	}
+	p := &Pipeline{bdl: bdl}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := p.checkOwnerPermission(tt.userID, &apistructs.ApplicationDTO{ID: 1})
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}

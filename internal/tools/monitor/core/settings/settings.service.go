@@ -27,9 +27,11 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/core/monitor/settings/pb"
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
+	"github.com/erda-project/erda/pkg/discover"
 )
 
 type globalSetting struct {
@@ -257,10 +259,13 @@ func getValue(typ string, value interface{}) *structpb.Value {
 }
 
 func (s *settingsService) getOrgName(id int64) (string, error) {
-	resp, err := s.bundle.GetOrg(int(id))
+	orgResp, err := s.p.Org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcMonitor), &orgpb.GetOrgRequest{
+		IdOrName: strconv.FormatInt(id, 10),
+	})
 	if err != nil {
 		return "", fmt.Errorf("fail to get orgName: %s", err)
 	}
+	resp := orgResp.Data
 	if resp == nil {
 		return "", fmt.Errorf("org %d not exist", id)
 	}

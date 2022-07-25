@@ -29,6 +29,7 @@ import (
 	"github.com/erda-project/erda-proto-go/core/monitor/dataview/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/pkg/audit"
 	"github.com/erda-project/erda/internal/tools/monitor/core/dataview/db"
 	"github.com/erda-project/erda/pkg/common/apis"
@@ -61,6 +62,7 @@ type provider struct {
 	sys             *db.SystemViewDB
 	custom          *db.CustomViewDB
 	history         *db.ErdaDashboardHistoryDB
+	Org             org.ClientInterface
 
 	ExportChannel chan string
 }
@@ -109,7 +111,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 	p.ExportChannel = make(chan string, 1)
 	p.ExportTaskExecutor(time.Second * time.Duration(20))
-	routes := ctx.Service("http-server", interceptors.Recover(p.Log), interceptors.CORS()).(httpserver.Router)
+	routes := ctx.Service("http-server", interceptors.Recover(p.Log), interceptors.CORS(true)).(httpserver.Router)
 	return p.initRoutes(routes)
 }
 

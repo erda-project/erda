@@ -24,17 +24,12 @@ import (
 	"unicode"
 
 	"github.com/olivere/elastic"
+
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/model"
 )
 
-// Filter .
-type Filter struct {
-	Key      string
-	Operator string
-	Value    interface{}
-}
-
 // BuildBoolQuery .
-func BuildBoolQuery(filters []*Filter, boolQuery *elastic.BoolQuery) error {
+func BuildBoolQuery(filters []*model.Filter, boolQuery *elastic.BoolQuery) error {
 	var or *elastic.BoolQuery
 	for _, item := range filters {
 		switch item.Operator {
@@ -81,7 +76,7 @@ func BuildBoolQuery(filters []*Filter, boolQuery *elastic.BoolQuery) error {
 }
 
 // ParseFilters .
-func ParseFilters(params url.Values) (filters []*Filter, ps map[string]interface{}) {
+func ParseFilters(params url.Values) (filters []*model.Filter, ps map[string]interface{}) {
 	ps = make(map[string]interface{})
 	for key, vals := range params {
 		switch {
@@ -113,8 +108,8 @@ func ParseFilters(params url.Values) (filters []*Filter, ps map[string]interface
 			key = key[len("in_"):]
 			if key != "" {
 				values := toInterfaceSlice(vals)
-				filters = append(filters, &Filter{
-					Key:      getKeyWithType(key, TagKey),
+				filters = append(filters, &model.Filter{
+					Key:      getKeyWithType(key, model.TagKey),
 					Operator: "in",
 					Value:    values,
 				})
@@ -125,24 +120,24 @@ func ParseFilters(params url.Values) (filters []*Filter, ps map[string]interface
 			key = key[len("or_in_"):]
 			if key != "" {
 				values := toInterfaceSlice(vals)
-				filters = append(filters, &Filter{
-					Key:      getKeyWithType(key, TagKey),
+				filters = append(filters, &model.Filter{
+					Key:      getKeyWithType(key, model.TagKey),
 					Operator: "or_in",
 					Value:    values,
 				})
 			}
 		case strings.HasPrefix(key, "lt_"):
 			key = key[len("lt_"):]
-			filters = append(filters, getFilters("", "<", getKeyWithType(key, FieldKey), vals, parseValue)...)
+			filters = append(filters, getFilters("", "<", getKeyWithType(key, model.FieldKey), vals, parseValue)...)
 		case strings.HasPrefix(key, "lte_"):
 			key = key[len("lte_"):]
-			filters = append(filters, getFilters("", "<=", getKeyWithType(key, FieldKey), vals, parseValue)...)
+			filters = append(filters, getFilters("", "<=", getKeyWithType(key, model.FieldKey), vals, parseValue)...)
 		case strings.HasPrefix(key, "gt_"):
 			key = key[len("gt_"):]
-			filters = append(filters, getFilters("", ">", getKeyWithType(key, FieldKey), vals, parseValue)...)
+			filters = append(filters, getFilters("", ">", getKeyWithType(key, model.FieldKey), vals, parseValue)...)
 		case strings.HasPrefix(key, "gte_"):
 			key = key[len("gte_"):]
-			filters = append(filters, getFilters("", ">=", getKeyWithType(key, FieldKey), vals, parseValue)...)
+			filters = append(filters, getFilters("", ">=", getKeyWithType(key, model.FieldKey), vals, parseValue)...)
 		case strings.HasPrefix(key, "field_"): // deprecated
 			key = key[len("field_"):]
 			if key != "" {
@@ -156,8 +151,8 @@ func ParseFilters(params url.Values) (filters []*Filter, ps map[string]interface
 						if idx := strings.LastIndex(val, ":"); idx > 0 && idx < len(val)-1 {
 							val = val[idx+1:]
 						}
-						filters = append(filters, &Filter{
-							Key:      getKeyWithType(field, FieldKey),
+						filters = append(filters, &model.Filter{
+							Key:      getKeyWithType(field, model.FieldKey),
 							Operator: key[:idx],
 							Value:    parseValue(val),
 						})
@@ -175,12 +170,12 @@ func ParseFilters(params url.Values) (filters []*Filter, ps map[string]interface
 	return filters, ps
 }
 
-func getFilters(prefix, op, key string, vals []string, fn func(string) interface{}) (filters []*Filter) {
+func getFilters(prefix, op, key string, vals []string, fn func(string) interface{}) (filters []*model.Filter) {
 	key = key[len(prefix):]
 	if key != "" {
 		for _, val := range vals {
-			f := &Filter{
-				Key:      getKeyWithType(key, TagKey),
+			f := &model.Filter{
+				Key:      getKeyWithType(key, model.TagKey),
 				Operator: op,
 				Value:    val,
 			}

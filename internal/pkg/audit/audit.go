@@ -23,6 +23,7 @@ import (
 
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/pkg/transport/interceptor"
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
@@ -44,7 +45,7 @@ func (a *NopAuditor) RecordError(ctx context.Context, scope ScopeType, scopeID i
 func (a *NopAuditor) Begin() Recorder { return a }
 
 // GetOrg .
-func (a *NopAuditor) GetOrg(id interface{}) (*apistructs.OrgDTO, error) { return nil, nil }
+func (a *NopAuditor) GetOrg(id interface{}) (*orgpb.Org, error) { return nil, nil }
 
 // GetProject .
 func (a *NopAuditor) GetProject(id interface{}) (*apistructs.ProjectDTO, error) { return nil, nil }

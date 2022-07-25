@@ -60,6 +60,7 @@ stages:
   - stage:
       - custom-script:
           alias: build-erda
+          image: registry.erda.cloud/erda/erda-base:20220713
           commands:
             - cd ${{ dirs.erda }}
             - mkdir -p extensions
@@ -82,6 +83,7 @@ stages:
             mem: 2048
       - custom-script:
           alias: build-erda-cli
+          image: registry.erda.cloud/erda/erda-base:20220713
           commands:
             - cd ${{ dirs.erda }}
             - export ERDA_VERSION=${{ outputs.extract-repo-version.major_minor_version }}
@@ -99,6 +101,7 @@ stages:
             mem: 2048
       - custom-script:
           alias: build-agent
+          image: registry.erda.cloud/erda/erda-base:20220713
           commands:
             - cd ${{ dirs.erda }}
             - export ERDA_VERSION=${{ outputs.extract-repo-version.major_minor_version }}
@@ -135,6 +138,7 @@ stages:
             mem: 1024
       - custom-script:
           alias: build-erda-cli-linux
+          image: registry.erda.cloud/erda/erda-base:20220713
           description: 运行自定义命令
           commands:
             - workDir=$(pwd)
@@ -152,6 +156,7 @@ stages:
             mem: 2048
       - custom-script:
           alias: build-erda-cli-mac
+          image: registry.erda.cloud/erda/erda-base:20220713
           description: 运行自定义命令
           commands:
             - workDir=$(pwd)
@@ -245,7 +250,6 @@ stages:
               monitor-agent-injector: ${build-monitor-injector:OUTPUT:image}
               monitor: ${{ outputs.build-erda.image }}
               msp: ${{ outputs.build-erda.image }}
-              openapi: ${{ outputs.build-erda.image }}
               orchestrator: ${{ outputs.build-erda.image }}
               pipeline: ${{ outputs.build-erda.image }}
               scheduler: ${{ outputs.build-erda.image }}

@@ -21,6 +21,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/pkg/websocket"
 	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/actionagent"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/actionmgr"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/app"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/cache"
@@ -29,13 +30,12 @@ import (
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/edgepipeline_register"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/edgereporter"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/engine"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/permission"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/queuemanager"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/resource"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/run"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/secret"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/user"
-	"github.com/erda-project/erda/internal/tools/pipeline/services/actionagentsvc"
-	"github.com/erda-project/erda/internal/tools/pipeline/services/permissionsvc"
 	"github.com/erda-project/erda/pkg/jsonstore"
 	"github.com/erda-project/erda/pkg/jsonstore/etcd"
 )
@@ -43,9 +43,9 @@ import (
 type PipelineSvc struct {
 	appSvc          app.Interface
 	crondSvc        daemon.Interface
-	actionAgentSvc  *actionagentsvc.ActionAgentSvc
+	actionAgentSvc  actionagent.Interface
 	pipelineCronSvc cronpb.CronServiceServer
-	permissionSvc   *permissionsvc.PermissionSvc
+	permissionSvc   permission.Interface
 	queueManage     queuemanager.Interface
 	cache           cache.Interface
 
@@ -72,8 +72,8 @@ type PipelineSvc struct {
 }
 
 func New(appSvc app.Interface, crondSvc daemon.Interface,
-	actionAgentSvc *actionagentsvc.ActionAgentSvc,
-	pipelineCronSvc cronpb.CronServiceServer, permissionSvc *permissionsvc.PermissionSvc,
+	actionAgentSvc actionagent.Interface,
+	pipelineCronSvc cronpb.CronServiceServer, permissionSvc permission.Interface,
 	queueManage queuemanager.Interface,
 	dbClient *dbclient.Client, bdl *bundle.Bundle, publisher *websocket.Publisher,
 	engine engine.Interface, js jsonstore.JsonStore, etcd *etcd.Store, clusterInfo clusterinfo.Interface,

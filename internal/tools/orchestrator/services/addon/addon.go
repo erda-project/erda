@@ -34,6 +34,7 @@ import (
 	tenantpb "github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/tools/orchestrator/components/addon/mysql"
 	"github.com/erda-project/erda/internal/tools/orchestrator/conf"
 	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
@@ -85,6 +86,7 @@ type Addon struct {
 	clusterinfoImpl  clusterinfo.ClusterInfo
 	clusterSvc       clusterpb.ClusterServiceServer
 	tenantSvc        tenantpb.TenantServiceServer
+	org              org.ClientInterface
 }
 
 // Option addon 实例对象配置选项
@@ -177,6 +179,12 @@ func WithClusterSvc(clusterSvc clusterpb.ClusterServiceServer) Option {
 func WithTenantSvc(tenantSvc tenantpb.TenantServiceServer) Option {
 	return func(a *Addon) {
 		a.tenantSvc = tenantSvc
+	}
+}
+
+func WithOrg(org org.ClientInterface) Option {
+	return func(e *Addon) {
+		e.org = org
 	}
 }
 
@@ -3789,17 +3797,18 @@ func (a *Addon) ParseAddonFullPlan(fullPlan string) (string, string, error) {
 }
 
 func (a *Addon) CheckDeployCondition(addonName, addonPlan, workspace string) (bool, error) {
-	if addonPlan == apistructs.AddonBasic && workspace == apistructs.WORKSPACE_PROD {
-		addonExt, _, err := a.GetAddonExtention(&apistructs.AddonHandlerCreateItem{
-			AddonName: addonName,
-		})
-		if err != nil {
-			return false, err
-		}
-
-		if addonExt.Category != apistructs.AddonCustomCategory && addonExt.SubCategory == apistructs.BasicAddon {
-			return false, nil
-		}
-	}
+	// TODO: check deploy condition
+	//if addonPlan == apistructs.AddonBasic && workspace == apistructs.WORKSPACE_PROD {
+	//	addonExt, _, err := a.GetAddonExtention(&apistructs.AddonHandlerCreateItem{
+	//		AddonName: addonName,
+	//	})
+	//	if err != nil {
+	//		return false, err
+	//	}
+	//
+	//	if addonExt.Category != apistructs.AddonCustomCategory && addonExt.SubCategory == apistructs.BasicAddon {
+	//		return false, nil
+	//	}
+	//}
 	return true, nil
 }

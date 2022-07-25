@@ -120,6 +120,14 @@ func (e *Endpoints) pipelineCreate(ctx context.Context, r *http.Request, vars ma
 		}
 		reqPipeline.PipelineYml = string(convertedyml)
 	}
+	name, path := getYmlNameAndPath(createReq.PipelineYmlName)
+
+	definitionID, err := e.getOrCreateDefinitionID(apis.WithUserIDContext(ctx, identityInfo.UserID),
+		app, createReq.Branch, path, name, reqPipeline.PipelineYml)
+	if err != nil {
+		return errorresp.ErrResp(err)
+	}
+	reqPipeline.DefinitionID = definitionID
 
 	// update CmsNsConfigs
 	if err = e.UpdateCmsNsConfigs(identityInfo.UserID, app.OrgID); err != nil {
@@ -195,8 +203,6 @@ func (e *Endpoints) pipelineList(ctx context.Context, r *http.Request, vars map[
 		PageNum:                    oriReq.EnsurePageNo(),
 		PageSize:                   oriReq.PageSize,
 		YmlNames:                   make([]string, 0),
-		Sources:                    []apistructs.PipelineSource{apistructs.PipelineSource(oriReq.Sources)},
-		Statuses:                   []string{oriReq.Statuses},
 		MustMatchLabelsQueryParams: queryParams,
 	}
 
@@ -204,6 +210,12 @@ func (e *Endpoints) pipelineList(ctx context.Context, r *http.Request, vars map[
 		for _, yml := range strings.Split(oriReq.YmlNames, ",") {
 			req.YmlNames = append(req.YmlNames, yml)
 		}
+	}
+	if oriReq.Statuses != "" {
+		req.Statuses = []string{oriReq.Statuses}
+	}
+	if oriReq.Sources != "" {
+		req.Sources = []apistructs.PipelineSource{apistructs.PipelineSource(oriReq.Sources)}
 	}
 
 	pageResult, err := e.bdl.PageListPipeline(req)
@@ -718,7 +730,7 @@ func (e *Endpoints) checkrunCreate(ctx context.Context, r *http.Request, vars ma
 
 		ymlName, path := getYmlNameAndPath(each)
 		if ymlName != "" {
-			definitionID, err := e.getDefinitionID(ctx, app, gitEvent.Content.SourceBranch, path, ymlName)
+			definitionID, err := e.getOrCreateDefinitionID(apis.WithUserIDContext(ctx, gitEvent.UserID), app, gitEvent.Content.SourceBranch, path, ymlName, strPipelineYml)
 			if err != nil {
 				logrus.Errorf("failed to bind definition %v", err)
 			}

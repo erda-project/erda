@@ -15,14 +15,19 @@
 package addon
 
 import (
+	"context"
 	"os"
 	"strconv"
 
 	"github.com/pkg/errors"
 
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/tools/orchestrator/conf"
 	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
+	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
@@ -35,6 +40,7 @@ type SourcecovAddonManagementDeps interface {
 
 type SourcecovAddonManagement struct {
 	bdl SourcecovAddonManagementDeps
+	org org.ClientInterface
 }
 
 func (sam *SourcecovAddonManagement) BuildSourceCovServiceItem(
@@ -45,7 +51,7 @@ func (sam *SourcecovAddonManagement) BuildSourceCovServiceItem(
 	_ *apistructs.ClusterInfoData) (err error) {
 	var (
 		projectID   int64
-		orgInfo     *apistructs.OrgDTO
+		orgInfo     *orgpb.Org
 		projectInfo *apistructs.ProjectNameSpaceInfo
 		token       string
 	)
@@ -61,9 +67,13 @@ func (sam *SourcecovAddonManagement) BuildSourceCovServiceItem(
 		return
 	}
 
-	if orgInfo, err = sam.bdl.GetOrg(addonIns.OrgID); err != nil {
+	orgResp, err := sam.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcScheduler), &orgpb.GetOrgRequest{
+		IdOrName: addonIns.OrgID,
+	})
+	if err != nil {
 		return
 	}
+	orgInfo = orgResp.Data
 
 	if token, err = sam.getSourcecovToken(addonIns.OrgID); err != nil {
 		return

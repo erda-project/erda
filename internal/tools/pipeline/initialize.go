@@ -38,8 +38,6 @@ import (
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/pipelinefunc"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/cron/compensator"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/reconciler"
-	"github.com/erda-project/erda/internal/tools/pipeline/services/actionagentsvc"
-	"github.com/erda-project/erda/internal/tools/pipeline/services/permissionsvc"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/pipelinesvc"
 	"github.com/erda-project/erda/pkg/dumpstack"
 	"github.com/erda-project/erda/pkg/http/httpserver"
@@ -90,6 +88,7 @@ func (p *provider) do() error {
 	// queryStringDecoder
 	queryStringDecoder := schema.NewDecoder()
 	queryStringDecoder.IgnoreUnknownKeys(true)
+	queryStringDecoder.ZeroEmpty(true)
 
 	// websocket publisher
 	publisher, err := websocket.NewPublisher()
@@ -111,12 +110,8 @@ func (p *provider) do() error {
 	bdl := bundle.New(bundle.WithAllAvailableClients())
 
 	// init services
-	permissionSvc := permissionsvc.New(bdl)
-	actionAgentSvc := actionagentsvc.New(dbClient, bdl, js, etcdctl)
-
-	// init services
-	pipelineSvc := pipelinesvc.New(p.App, p.CronDaemon, actionAgentSvc, p.CronService,
-		permissionSvc, p.QueueManager, dbClient, bdl, publisher, p.Engine, js, etcdctl, p.ClusterInfo, p.EdgeRegister, p.Cache, p.Resource)
+	pipelineSvc := pipelinesvc.New(p.App, p.CronDaemon, p.ActionAgent, p.CronService,
+		p.Permission, p.QueueManager, dbClient, bdl, publisher, p.Engine, js, etcdctl, p.ClusterInfo, p.EdgeRegister, p.Cache, p.Resource)
 	pipelineSvc.WithCmsService(p.CmsService)
 	pipelineSvc.WithSecret(p.Secret)
 	pipelineSvc.WithUser(p.User)
@@ -136,7 +131,7 @@ func (p *provider) do() error {
 	// init CallbackActionFunc
 	pipelinefunc.CallbackActionFunc = pipelineSvc.DealPipelineCallbackOfAction
 
-	p.Reconciler.InjectLegacyFields(&pipelineFuncs, actionAgentSvc)
+	p.Reconciler.InjectLegacyFields(&pipelineFuncs)
 	p.EdgePipeline.InjectLegacyFields(pipelineSvc)
 
 	if err := registerSnippetClient(dbClient); err != nil {
@@ -150,9 +145,8 @@ func (p *provider) do() error {
 	ep := endpoints.New(
 		endpoints.WithDBClient(dbClient),
 		endpoints.WithQueryStringDecoder(queryStringDecoder),
-		endpoints.WithPermissionSvc(permissionSvc),
+		endpoints.WithPermissionSvc(p.Permission),
 		endpoints.WithCrondSvc(p.CronDaemon),
-		endpoints.WithActionAgentSvc(actionAgentSvc),
 		endpoints.WithPipelineSvc(pipelineSvc),
 		endpoints.WithQueueManager(p.QueueManager),
 		endpoints.WithEngine(p.Engine),
@@ -173,7 +167,7 @@ func (p *provider) do() error {
 	p.Router.Any("/**", server.Router())
 
 	// 加载 event manager
-	events.Initialize(bdl, publisher, dbClient, p.EdgeRegister)
+	events.Initialize(bdl, publisher, dbClient, p.EdgeRegister, p.Org)
 
 	// aop
 	aop.Initialize(bdl, dbClient, p.ReportSvc)

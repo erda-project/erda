@@ -86,7 +86,7 @@ func Authenticate(c *webcontext.Context) {
 			"appId":     strconv.FormatInt(repo.AppID, 10),
 			"orgId":     strconv.FormatInt(repo.OrgID, 10),
 		}
-		orgDto, err := c.Bundle.GetOrg(repo.OrgID)
+		orgDto, err := c.GetOrg(repo.OrgID)
 		if err != nil {
 			c.AbortWithStatus(http.StatusNotFound, errors.New("org not found"))
 			return
@@ -123,7 +123,7 @@ func AuthenticateByApp(c *webcontext.Context) {
 func AuthenticateV2(c *webcontext.Context) {
 	host := c.EchoContext.Request().Host
 	// 优先域名 第二优先读取ORG-ID头
-	dto, err := c.Bundle.GetDopOrgByDomain(host, "x")
+	dto, err := c.GetOrgByDomain(host, "x")
 	var orgID int64
 	if err == nil {
 		orgID = int64(dto.ID)
@@ -437,7 +437,7 @@ func openRepository(ctx *webcontext.Context, repo *models.Repo) (*gitmodule.Repo
 
 // getOrgIDV3 get orgID v3
 func getOrgIDV3(c *webcontext.Context, orgName string) (int64, error) {
-	orgDto, err := c.Bundle.GetOrg(orgName)
+	orgDto, err := c.GetOrg(orgName)
 	if err == nil {
 		return int64(orgDto.ID), nil
 	}

@@ -24,7 +24,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	hpatypes "github.com/erda-project/erda/internal/tools/orchestrator/components/horizontalpodscaler/types"
+	hpatypes "github.com/erda-project/erda/internal/tools/orchestrator/components/podscaler/types"
 )
 
 func buildHPAEventInfo(bdl *bundle.Bundle, hpa autoscalingv2beta2.HorizontalPodAutoscaler, errorinfo string, errorinfo_human string, tp string) {

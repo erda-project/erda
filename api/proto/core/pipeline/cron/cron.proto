@@ -60,6 +60,7 @@ message CronPagingRequest {
   repeated string pipelineDefinitionID = 7;
   string clusterName = 8;
   bool getAll = 9;
+  bool emptyDefinitionID = 10;
 }
 
 message CronPagingResponse {

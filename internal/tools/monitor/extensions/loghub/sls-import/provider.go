@@ -28,6 +28,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/elasticsearch"
 	"github.com/erda-project/erda-infra/providers/kafka"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
@@ -70,6 +71,8 @@ type provider struct {
 	outputs   outputs
 	bdl       *bundle.Bundle
 	es        *elastic.Client
+
+	Org org.ClientInterface
 }
 
 type outputs struct {

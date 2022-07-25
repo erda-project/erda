@@ -27,10 +27,13 @@ import (
 
 	definitionpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
 	sourcepb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
+	"github.com/erda-project/erda-proto-go/dop/projectpipeline/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/apps/dop/providers/projectpipeline"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	"github.com/erda-project/erda/internal/apps/dop/services/pipeline"
 	"github.com/erda-project/erda/internal/pkg/diceworkspace"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
@@ -116,7 +119,7 @@ func (e *Endpoints) ReleaseCallback(ctx context.Context, r *http.Request, vars m
 		}
 
 		path, fileName := getSourcePathAndName(each)
-		definitionID, err := e.getDefinitionID(ctx, app, refName, path, fileName)
+		definitionID, err := e.getOrCreateDefinitionID(apis.WithUserIDContext(ctx, req.UserID), app, refName, path, fileName, strPipelineYml)
 		if err != nil {
 			logrus.Errorf("failed to bind definition %v", err)
 		}
@@ -161,7 +164,7 @@ func getSourcePathAndName(name string) (path, fileName string) {
 	return "", name
 }
 
-func (e *Endpoints) getDefinitionID(ctx context.Context, app *apistructs.ApplicationDTO, branch, path, name string) (definitionID string, err error) {
+func (e *Endpoints) getOrCreateDefinitionID(ctx context.Context, app *apistructs.ApplicationDTO, branch, path, name, strPipelineYml string) (definitionID string, err error) {
 	if app == nil {
 		return "", nil
 	}
@@ -181,20 +184,32 @@ func (e *Endpoints) getDefinitionID(ctx context.Context, app *apistructs.Applica
 		source = v
 		break
 	}
-	if source == nil {
-		return "", nil
+	if source != nil {
+		definitionList, err := e.PipelineDefinition.List(ctx, &definitionpb.PipelineDefinitionListRequest{
+			SourceIDList: []string{source.ID},
+			Location:     apistructs.MakeLocation(app, apistructs.PipelineTypeCICD),
+		})
+		if err != nil {
+			return "", nil
+		}
+
+		for _, definition := range definitionList.Data {
+			return definition.ID, nil
+		}
 	}
 
-	definitionList, err := e.PipelineDefinition.List(ctx, &definitionpb.PipelineDefinitionListRequest{
-		SourceIDList: []string{source.ID},
-		Location:     apistructs.MakeLocation(app, apistructs.PipelineTypeCICD),
+	const sourceType = "erda"
+	projectPipeline, err := e.ProjectPipelineSvc.Create(ctx, &pb.CreateProjectPipelineRequest{
+		ProjectID:  app.ProjectID,
+		Name:       projectpipeline.MakeProjectPipelineName(strPipelineYml, name),
+		AppID:      app.ID,
+		SourceType: sourceType,
+		Ref:        branch,
+		Path:       path,
+		FileName:   name,
 	})
 	if err != nil {
-		return "", nil
+		return "", err
 	}
-
-	for _, definition := range definitionList.Data {
-		return definition.ID, nil
-	}
-	return "", nil
+	return projectPipeline.ProjectPipeline.ID, nil
 }

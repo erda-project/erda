@@ -17,10 +17,11 @@ package chartv2
 import (
 	"strconv"
 
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/model"
 	tsql "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql"
 )
 
-func (f *Formater) formatBarChart(q tsql.Query, rs *tsql.ResultSet, params map[string]interface{}) (interface{}, error) {
+func (f *Formater) formatBarChart(q tsql.Query, rs *model.Data, params map[string]interface{}) (interface{}, error) {
 	timeIdx, _, dims, vals := getGroupColumns(rs.Columns)
 	if timeIdx >= 0 {
 		dims = append([]int{timeIdx}, dims...)

@@ -37,6 +37,7 @@ stages:
   - stage:
       - custom-script:
           alias: build-erda
+          image: registry.erda.cloud/erda/erda-base:20220713
           commands:
             - cd ${{ dirs.erda }}
             - mkdir -p extensions
@@ -93,7 +94,6 @@ stages:
               log-service: ${{ outputs.build-erda.image }}
               monitor: ${{ outputs.build-erda.image }}
               msp: ${{ outputs.build-erda.image }}
-              openapi: ${{ outputs.build-erda.image }}
               orchestrator: ${{ outputs.build-erda.image }}
               pipeline: ${{ outputs.build-erda.image }}
               scheduler: ${{ outputs.build-erda.image }}

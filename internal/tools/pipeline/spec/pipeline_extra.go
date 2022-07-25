@@ -64,6 +64,7 @@ type PipelineExtraInfo struct {
 	SubmitUser              *apistructs.PipelineUser     `json:"submitUser,omitempty"`
 	RunUser                 *apistructs.PipelineUser     `json:"runUser,omitempty"`
 	CancelUser              *apistructs.PipelineUser     `json:"cancelUser,omitempty"`
+	OwnerUser               *apistructs.PipelineUser     `json:"ownerUser,omitempty"`
 	InternalClient          string                       `json:"internalClient,omitempty"`
 	CronExpr                string                       `json:"cronExpr,omitempty"`
 	CronTriggerTime         *time.Time                   `json:"cronTriggerTime,omitempty"` // 秒级精确，毫秒级误差请忽略，cron expr 精确度同样为秒级

@@ -18,16 +18,16 @@ import (
 	_ "embed"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/internal/tools/pipeline/conf"
-	"github.com/erda-project/erda/pkg/common"
-
-	// providers and modules
+	_ "github.com/erda-project/erda-infra/providers/grpcclient"
 	_ "github.com/erda-project/erda-infra/providers/mysqlxorm"
 	_ "github.com/erda-project/erda-infra/providers/prometheus"
 	_ "github.com/erda-project/erda-infra/providers/serviceregister"
+	_ "github.com/erda-project/erda-proto-go/core/org/client"
 	_ "github.com/erda-project/erda/internal/tools/pipeline"
 	_ "github.com/erda-project/erda/internal/tools/pipeline/aop"
+	"github.com/erda-project/erda/internal/tools/pipeline/conf"
 	_ "github.com/erda-project/erda/internal/tools/pipeline/providers/action_runner_scheduler"
+	_ "github.com/erda-project/erda/internal/tools/pipeline/providers/actionagent"
 	_ "github.com/erda-project/erda/internal/tools/pipeline/providers/actionmgr"
 	_ "github.com/erda-project/erda/internal/tools/pipeline/providers/app"
 	_ "github.com/erda-project/erda/internal/tools/pipeline/providers/build"
@@ -41,10 +41,12 @@ import (
 	_ "github.com/erda-project/erda/internal/tools/pipeline/providers/edgepipeline"
 	_ "github.com/erda-project/erda/internal/tools/pipeline/providers/edgepipeline_register"
 	_ "github.com/erda-project/erda/internal/tools/pipeline/providers/lifecycle_hook_client"
+	_ "github.com/erda-project/erda/internal/tools/pipeline/providers/permission"
 	_ "github.com/erda-project/erda/internal/tools/pipeline/providers/report"
 	_ "github.com/erda-project/erda/internal/tools/pipeline/providers/resource"
 	_ "github.com/erda-project/erda/internal/tools/pipeline/providers/resourcegc"
 	_ "github.com/erda-project/erda/internal/tools/pipeline/providers/source"
+	"github.com/erda-project/erda/pkg/common"
 )
 
 //go:embed bootstrap.yaml

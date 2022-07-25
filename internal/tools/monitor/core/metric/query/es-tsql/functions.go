@@ -47,6 +47,75 @@ var timeLayouts = []string{
 	"2006-01-02",
 }
 
+var CkBuildInFunctions = map[string]func(ctx Context, args ...interface{}) (interface{}, error){
+	"time": func(ctx Context, args ...interface{}) (interface{}, error) {
+		if len(args) > 0 {
+
+			var timeStamp time.Time
+			var err error
+			switch arg := args[0].(type) {
+			case time.Time:
+				timeStamp = arg
+			case *time.Time:
+				timeStamp = *arg
+			case string:
+				timeStamp, err = time.Parse("2006-01-02T15:04:05Z", arg)
+				if err != nil {
+					return nil, err
+				}
+			default:
+				return 0, fmt.Errorf("function 'time' not in group or not found time bucket")
+			}
+
+			unit := ctx.TargetTimeUnit()
+			if unit == UnsetTimeUnit {
+				return timeStamp.Format("2006-01-02T15:04:05Z"), nil
+			}
+			return ConvertTimestamp(timeStamp.UnixNano(), ctx.OriginalTimeUnit(), unit), nil
+		}
+		return 0, fmt.Errorf("function 'time' not in group or not found time bucket")
+	},
+	"timestamp": func(ctx Context, args ...interface{}) (interface{}, error) {
+		if len(args) > 0 {
+
+			var timeStamp time.Time
+			var err error
+			switch arg := args[0].(type) {
+			case time.Time:
+				timeStamp = arg
+			case *time.Time:
+				timeStamp = *arg
+			case string:
+				timeStamp, err = time.Parse("2006-01-02T15:04:05Z", arg)
+				if err != nil {
+					return nil, err
+				}
+			default:
+				return 0, fmt.Errorf("function 'time' not in group or not found time bucket")
+			}
+			return ConvertTimestamp(timeStamp.UnixNano(), ctx.OriginalTimeUnit(), ctx.TargetTimeUnit()), nil
+		}
+		return 0, fmt.Errorf("function 'timestamp' not in group or not found time bucket")
+	},
+	"round_float": func(ctx Context, args ...interface{}) (interface{}, error) {
+		err := MustFuncArgsNum("round_float", len(args), 2)
+		if err != nil {
+			return nil, err
+		}
+		var v float64
+		switch val := args[0].(type) {
+		case float32:
+			v = float64(val)
+		case float64:
+			v = val
+		default:
+			return args[0], nil
+		}
+		v, _ = strconv.ParseFloat(fmt.Sprintf("%."+strconv.Itoa(conv.ToInt(args[1], 2))+"f", v), 64)
+		return v, nil
+	},
+}
+
 // BuildInFunctions is custom functions in SELECT
 var BuildInFunctions = map[string]func(ctx Context, args ...interface{}) (interface{}, error){
 	"time": func(ctx Context, args ...interface{}) (interface{}, error) {

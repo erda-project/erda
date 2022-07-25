@@ -61,7 +61,6 @@ func Test_provider_getOrgPermissions(t *testing.T) {
 					Key:      "",
 					PageNo:   0,
 					PageSize: 0,
-					Org:      "",
 				},
 			},
 			want:    true,

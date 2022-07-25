@@ -24,6 +24,7 @@ import (
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/internal/core/openapi/legacy/component-protocol/types"
 	"github.com/erda-project/erda/internal/core/openapi/legacy/conf"
+	"github.com/erda-project/erda/internal/core/org"
 )
 
 type config struct {
@@ -33,6 +34,7 @@ type config struct {
 type provider struct {
 	Cfg          *config
 	TokenService tokenpb.TokenServiceServer `autowired:"erda.core.token.TokenService"`
+	Org          org.Interface
 }
 
 func (p *provider) Run(ctx context.Context) error {
