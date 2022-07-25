@@ -93,6 +93,7 @@ services:
       - port: 9095
         protocol: TCP
         l4_protocol: TCP
+        default: true
       - port: 8096
         protocol: TCP
         l4_protocol: TCP
