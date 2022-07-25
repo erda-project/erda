@@ -109,7 +109,9 @@ func (s *provider) FetchPlatformSecrets(ctx context.Context, p *spec.Pipeline, i
 
 		// openApi
 		"dice.openapi.public.url": conf.OpenAPIPublicURL(),
-		"dice.openapi.addr":       discover.Openapi(),
+		// dice operator will inject FQDN, not simple openapi:9529.
+		// So jobs runs one central cluster in another k8s namespace can get correct OPENAPI_ADDR.
+		"dice.openapi.addr": discover.Openapi(),
 
 		// buildpack
 		"bp.repo.prefix":           "", // Compatible with ((bp.repo.prefix)) written in user pipeline.yml
