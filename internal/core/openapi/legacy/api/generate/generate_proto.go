@@ -92,7 +92,7 @@ func generateProto() {
 		for k := range groupMessages {
 			fmt.Println(k)
 		}
-		targetProtoPath := filepath.Join("../../../../../../api/proto", protoBaseDir, belongs, getCompNameByAPIName(belongs)+".proto")
+		targetProtoPath := filepath.Join("../../../../../../api/proto", protoBaseDir, strings.ReplaceAll(belongs, "_", "/"), belongs+".proto")
 		if err := os.MkdirAll(filepath.Dir(targetProtoPath), 0755); err != nil {
 			panic(fmt.Errorf("failed to create dir: %s, err: %v", targetProtoPath, err))
 		}

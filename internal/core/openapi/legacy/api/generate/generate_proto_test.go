@@ -203,3 +203,41 @@ func Test_getJsonTagValue(t *testing.T) {
 	assert.True(t, ok)
 	assert.Equal(t, "", getJsonTagValue(fd.Tag))
 }
+
+func Test_getCompAndSubDirsByAPIName1(t *testing.T) {
+	type args struct {
+		apiName string
+	}
+	tests := []struct {
+		name         string
+		args         args
+		wantCompName string
+		wantSubDirs  []string
+	}{
+		{
+			name:         "msp_apm",
+			args:         args{apiName: "msp_apm"},
+			wantCompName: "msp",
+			wantSubDirs:  []string{"apm"},
+		},
+		{
+			name:         "dop",
+			args:         args{apiName: "dop"},
+			wantCompName: "dop",
+			wantSubDirs:  nil,
+		},
+		{
+			name:         "openapi_component_protocol",
+			args:         args{apiName: "openapi_component_protocol"},
+			wantCompName: "openapi",
+			wantSubDirs:  []string{"component", "protocol"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotCompName, gotSubDirs := getCompAndSubDirsByAPIName(tt.args.apiName)
+			assert.Equalf(t, tt.wantCompName, gotCompName, "getCompAndSubDirsByAPIName(%v)", tt.args.apiName)
+			assert.Equalf(t, tt.wantSubDirs, gotSubDirs, "getCompAndSubDirsByAPIName(%v)", tt.args.apiName)
+		})
+	}
+}

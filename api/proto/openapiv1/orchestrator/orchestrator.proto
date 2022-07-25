@@ -389,8 +389,6 @@ message ORCHESTRATOR_MIGRATION_LOG_Request {
 }
 message ORCHESTRATOR_ORG_JOB_LOG_Request {
 }
-message ORCHESTRATOR_PRE_DICE_OVERLAY_UPDATE_Request {
-}
 message ORCHESTRATOR_PROJECT_RUNTIME_COUNT_Request {
 }
 message ORCHESTRATOR_RUNTIMES_BATCH_SCALE_Request {
@@ -1309,22 +1307,6 @@ service orchestrator {
                 check_basic_auth: false,
             },
             doc: "summary: orgcenter job logs'",
-        };
-    };
-    rpc ORCHESTRATOR_PRE_DICE_OVERLAY_UPDATE (ORCHESTRATOR_PRE_DICE_OVERLAY_UPDATE_Request) returns (google.protobuf.Empty) {
-        option (google.api.http) = {
-            put: "/api/runtimes/actions/update-pre-overlay",
-        };
-        option (erda.common.openapi) = {
-            path: "/api/runtimes/actions/update-pre-overlay",
-            auth: {
-                no_check: false,
-                check_login: true,
-                try_check_login: false,
-                check_token: false,
-                check_basic_auth: false,
-            },
-            doc: "summary: 更新 pre dice overlay",
         };
     };
     rpc ORCHESTRATOR_PROJECT_RUNTIME_COUNT (ORCHESTRATOR_PROJECT_RUNTIME_COUNT_Request) returns (google.protobuf.Empty) {

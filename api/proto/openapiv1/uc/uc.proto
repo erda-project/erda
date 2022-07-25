@@ -218,8 +218,8 @@ service uc {
             path: "/api/users/actions/export",
             auth: {
                 no_check: false,
-                check_login: false,
-                try_check_login: true,
+                check_login: true,
+                try_check_login: false,
                 check_token: true,
                 check_basic_auth: false,
             },
