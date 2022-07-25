@@ -97,6 +97,8 @@ type Query interface {
 	Debug() bool
 	Timestamp() (int64, int64)
 	Kind() string
+	OrgName() string
+	TerminusKey() string
 }
 
 // ErrNotSupportNonQueryStatement .
@@ -113,6 +115,8 @@ type Parser interface {
 	ParseQuery(kind string) ([]Query, error)
 	Build() error
 	Metrics() ([]string, error)
+	SetOrgName(org string) Parser
+	SetTerminusKey(terminusKey string) Parser
 }
 
 // Creator .

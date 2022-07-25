@@ -35,9 +35,13 @@ func (p *provider) Query(ctx context.Context, q tsql.Query) (*model.ResultSet, e
 	if len(q.Sources()) <= 0 {
 		return nil, errors.New("no source")
 	}
-	metric, cluster := q.Sources()[0].Name, q.Sources()[0].Database
+	metric, _ := q.Sources()[0].Name, q.Sources()[0].Database
 
-	table, _ := p.Loader.GetSearchTable(cluster)
+	table, _ := p.Loader.GetSearchTable(q.TerminusKey())
+
+	if len(q.OrgName()) > 0 {
+		expr = expr.Where(goqu.C("org_name").Eq(q.OrgName()))
+	}
 
 	expr = expr.Where(goqu.C("metric_group").Eq(metric))
 	expr = expr.From(table)

@@ -77,15 +77,17 @@ func (p *Parser) ParseClickhouse(s *influxql.SelectStatement) (tsql.Query, error
 		return nil, errors.Wrap(err, "select stmt parse to offset and limit is error")
 	}
 	return QueryClickhouse{
-		sources:   sources,
-		subLiters: tailLiters,
-		column:    handlers,
-		start:     p.ctx.start,
-		end:       p.ctx.end,
-		kind:      model.ClickhouseKind,
-		ctx:       p.ctx,
-		expr:      expr,
-		debug:     p.debug,
+		sources:     sources,
+		subLiters:   tailLiters,
+		column:      handlers,
+		start:       p.ctx.start,
+		end:         p.ctx.end,
+		kind:        model.ClickhouseKind,
+		ctx:         p.ctx,
+		expr:        expr,
+		debug:       p.debug,
+		orgName:     p.orgName,
+		terminusKey: p.terminusKey,
 	}, nil
 }
 

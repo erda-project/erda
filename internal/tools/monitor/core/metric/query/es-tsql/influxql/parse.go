@@ -33,6 +33,9 @@ type Parser struct {
 	ctx       *Context
 	filter    []*model.Filter
 	queryPlan *influxql.Query
+
+	orgName     string
+	terminusKey string
 }
 
 // New start and end always nanosecond
@@ -54,6 +57,15 @@ func New(start, end int64, stmt string, debug bool) tsql.Parser {
 
 func init() {
 	tsql.RegisterParser("influxql", New)
+}
+
+func (p *Parser) SetOrgName(org string) tsql.Parser {
+	p.orgName = org
+	return p
+}
+func (p *Parser) SetTerminusKey(terminusKey string) tsql.Parser {
+	p.terminusKey = terminusKey
+	return p
 }
 
 // SetFilter .

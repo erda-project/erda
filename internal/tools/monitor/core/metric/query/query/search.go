@@ -89,6 +89,14 @@ func (q *queryer) buildTSQLParser(ql, statement string, params map[string]interf
 		params = others
 	}
 	parser = parser.SetParams(params)
+
+	if terminusKey, ok := params["terminus_key"]; ok {
+		parser.SetTerminusKey(terminusKey.(string))
+	}
+	if orgName, ok := params["org_name"]; ok {
+		parser.SetTerminusKey(orgName.(string))
+	}
+
 	unit := options.Get("epoch") // Keep the same parameters as the influxdb.
 	if len(unit) > 0 {
 		unit, err := tsql.ParseTimeUnit(unit)

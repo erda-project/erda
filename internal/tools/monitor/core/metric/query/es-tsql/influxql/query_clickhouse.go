@@ -36,6 +36,9 @@ type QueryClickhouse struct {
 	ctx       *Context
 	expr      *goqu.SelectDataset
 	column    []*SQLColumnHandler
+
+	orgName     string
+	terminusKey string
 }
 
 func (q QueryClickhouse) Sources() []*model.Source {
@@ -197,4 +200,11 @@ func (q QueryClickhouse) Kind() string {
 
 func (q QueryClickhouse) SubSearchSource() interface{} {
 	return q.subLiters
+}
+
+func (q QueryClickhouse) OrgName() string {
+	return q.orgName
+}
+func (q QueryClickhouse) TerminusKey() string {
+	return q.terminusKey
 }
