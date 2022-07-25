@@ -39,11 +39,13 @@ var CkAggFunctions = map[string]*SQlAggFuncDefine{
 		Flag: FuncFlagSelect | FuncFlagOrderBy,
 		New: newCkUnaryFunction(
 			"max",
-			func(ctx *Context, id, field string, lit exp.Expression, flags ...FuncFlag) (exp.Expression, error) {
+			func(ctx *Context, id string, field *influxql.VarRef, lit exp.Expression, flags ...FuncFlag) (exp.Expression, error) {
 				if lit != nil {
 					return goqu.MAX(lit).As(id), nil
 				}
-				return goqu.MAX(goqu.L(field)).As(id), nil
+
+				f := ckGetKeyName(field, influxql.AnyField)
+				return goqu.MAX(goqu.L(f)).As(id), nil
 			},
 			func(ctx *Context, id, field string, call *influxql.Call, v interface{}) (interface{}, bool) {
 				return v, true
@@ -54,11 +56,12 @@ var CkAggFunctions = map[string]*SQlAggFuncDefine{
 		Flag: FuncFlagSelect | FuncFlagOrderBy,
 		New: newCkUnaryFunction(
 			"min",
-			func(ctx *Context, id, field string, lit exp.Expression, flags ...FuncFlag) (exp.Expression, error) {
+			func(ctx *Context, id string, field *influxql.VarRef, lit exp.Expression, flags ...FuncFlag) (exp.Expression, error) {
 				if lit != nil {
 					return goqu.MIN(lit).As(id), nil
 				}
-				return goqu.MIN(goqu.L(field)).As(id), nil
+				f := ckGetKeyName(field, influxql.AnyField)
+				return goqu.MIN(goqu.L(f)).As(id), nil
 			},
 			func(ctx *Context, id, field string, call *influxql.Call, v interface{}) (interface{}, bool) {
 				return v, true
@@ -69,11 +72,12 @@ var CkAggFunctions = map[string]*SQlAggFuncDefine{
 		Flag: FuncFlagSelect | FuncFlagOrderBy,
 		New: newCkUnaryFunction(
 			"avg",
-			func(ctx *Context, id, field string, lit exp.Expression, flags ...FuncFlag) (exp.Expression, error) {
+			func(ctx *Context, id string, field *influxql.VarRef, lit exp.Expression, flags ...FuncFlag) (exp.Expression, error) {
 				if lit != nil {
 					return goqu.AVG(lit).As(id), nil
 				}
-				return goqu.AVG(goqu.L(field)).As(id), nil
+				f := ckGetKeyName(field, influxql.AnyField)
+				return goqu.AVG(goqu.L(f)).As(id), nil
 			},
 			func(ctx *Context, id, field string, call *influxql.Call, v interface{}) (interface{}, bool) {
 				return v, true
@@ -84,11 +88,12 @@ var CkAggFunctions = map[string]*SQlAggFuncDefine{
 		Flag: FuncFlagSelect | FuncFlagOrderBy,
 		New: newCkUnaryFunction(
 			"sum",
-			func(ctx *Context, id, field string, lit exp.Expression, flags ...FuncFlag) (exp.Expression, error) {
+			func(ctx *Context, id string, field *influxql.VarRef, lit exp.Expression, flags ...FuncFlag) (exp.Expression, error) {
 				if lit != nil {
 					return goqu.SUM(lit).As(id), nil
 				}
-				return goqu.SUM(goqu.L(field)).As(id), nil
+				f := ckGetKeyName(field, influxql.AnyField)
+				return goqu.SUM(goqu.L(f)).As(id), nil
 			},
 			func(ctx *Context, id, field string, call *influxql.Call, v interface{}) (interface{}, bool) {
 				return v, true
@@ -99,11 +104,12 @@ var CkAggFunctions = map[string]*SQlAggFuncDefine{
 		Flag: FuncFlagSelect | FuncFlagOrderBy,
 		New: newCkUnaryFunction(
 			"count",
-			func(ctx *Context, id, field string, lit exp.Expression, flags ...FuncFlag) (exp.Expression, error) {
+			func(ctx *Context, id string, field *influxql.VarRef, lit exp.Expression, flags ...FuncFlag) (exp.Expression, error) {
 				if lit != nil {
 					return goqu.COUNT(lit).As(id), nil
 				}
-				return goqu.COUNT(goqu.L(field)).As(id), nil
+				// count(if(indexOf(number_field_keys, 'grpc_server_handled_total') = 1, 1, null))
+				return goqu.COUNT(goqu.L(fmt.Sprintf("if(%s = 1,1,null)", ckColumn(field)))).As(id), nil
 			},
 			func(ctx *Context, id, field string, call *influxql.Call, v interface{}) (interface{}, bool) {
 				return v, true
@@ -114,11 +120,12 @@ var CkAggFunctions = map[string]*SQlAggFuncDefine{
 		Flag: FuncFlagSelect | FuncFlagOrderBy,
 		New: newCkUnaryFunction(
 			"",
-			func(ctx *Context, id, field string, lit exp.Expression, flags ...FuncFlag) (exp.Expression, error) {
+			func(ctx *Context, id string, field *influxql.VarRef, lit exp.Expression, flags ...FuncFlag) (exp.Expression, error) {
 				if lit != nil {
 					return goqu.DISTINCT(lit).As(id), nil
 				}
-				return goqu.DISTINCT(goqu.L(field)).As(id), nil
+				f := ckGetKeyName(field, influxql.AnyField)
+				return goqu.DISTINCT(goqu.L(f)).As(id), nil
 			},
 			func(ctx *Context, id, field string, call *influxql.Call, v interface{}) (interface{}, bool) {
 				return v, true
@@ -129,11 +136,12 @@ var CkAggFunctions = map[string]*SQlAggFuncDefine{
 		Flag: FuncFlagSelect,
 		New: newCkUnaryFunction(
 			"diff",
-			func(ctx *Context, id, field string, lit exp.Expression, flags ...FuncFlag) (exp.Expression, error) {
+			func(ctx *Context, id string, field *influxql.VarRef, lit exp.Expression, flags ...FuncFlag) (exp.Expression, error) {
 				if lit != nil {
 					return goqu.MIN(lit).As(id), nil
 				}
-				return goqu.MIN(goqu.L(field)).As(id), nil
+				f := ckGetKeyName(field, influxql.AnyField)
+				return goqu.MIN(goqu.L(f)).As(id), nil
 			},
 			func(ctx *Context, id, field string, call *influxql.Call, v interface{}) (interface{}, bool) {
 				if next, ok := ctx.attributesCache["next"]; ok {
@@ -155,11 +163,12 @@ var CkAggFunctions = map[string]*SQlAggFuncDefine{
 		Flag: FuncFlagSelect,
 		New: newCkUnaryFunction(
 			"diffps",
-			func(ctx *Context, id, field string, lit exp.Expression, flags ...FuncFlag) (exp.Expression, error) {
+			func(ctx *Context, id string, field *influxql.VarRef, lit exp.Expression, flags ...FuncFlag) (exp.Expression, error) {
 				if lit != nil {
 					return goqu.MIN(field).As(id), nil
 				}
-				return goqu.MIN(goqu.L(field)).As(id), nil
+				f := ckGetKeyName(field, influxql.AnyField)
+				return goqu.MIN(goqu.L(f)).As(id), nil
 			},
 			func(ctx *Context, id, field string, call *influxql.Call, v interface{}) (interface{}, bool) {
 				//speed
@@ -186,11 +195,12 @@ var CkAggFunctions = map[string]*SQlAggFuncDefine{
 		Flag: FuncFlagSelect,
 		New: newCkUnaryFunction(
 			"rateps",
-			func(ctx *Context, id, field string, lit exp.Expression, flags ...FuncFlag) (exp.Expression, error) {
+			func(ctx *Context, id string, field *influxql.VarRef, lit exp.Expression, flags ...FuncFlag) (exp.Expression, error) {
 				if lit != nil {
 					return goqu.SUM(field).As(id), nil
 				}
-				return goqu.SUM(goqu.L(field)).As(id), nil
+				f := ckGetKeyName(field, influxql.AnyField)
+				return goqu.SUM(goqu.L(f)).As(id), nil
 			},
 			func(ctx *Context, id, field string, call *influxql.Call, v interface{}) (interface{}, bool) {
 				if currentV, ok := v.(float64); ok {
@@ -209,11 +219,12 @@ var CkAggFunctions = map[string]*SQlAggFuncDefine{
 		Flag: FuncFlagSelect,
 		New: newCkUnaryFunction(
 			"value",
-			func(ctx *Context, id, field string, lit exp.Expression, flags ...FuncFlag) (exp.Expression, error) {
+			func(ctx *Context, id string, field *influxql.VarRef, lit exp.Expression, flags ...FuncFlag) (exp.Expression, error) {
 				if lit != nil {
 					return goqu.MAX(lit).As(id), nil
 				}
-				return goqu.MAX(goqu.L(field)).As(id), nil
+				f := ckGetKeyName(field, influxql.AnyField)
+				return goqu.MAX(goqu.L(f)).As(id), nil
 			},
 			func(ctx *Context, id, field string, call *influxql.Call, v interface{}) (interface{}, bool) {
 				return v, true
@@ -228,13 +239,13 @@ type ckUnaryFunction struct {
 	field  string
 	call   *influxql.Call
 	ctx    *Context
-	agg    func(ctx *Context, id, field string, lit exp.Expression, flags ...FuncFlag) (exp.Expression, error)
+	agg    func(ctx *Context, id string, field *influxql.VarRef, lit exp.Expression, flags ...FuncFlag) (exp.Expression, error)
 	getter func(ctx *Context, id, field string, call *influxql.Call, v interface{}) (interface{}, bool)
 }
 
 func newCkUnaryFunction(
 	name string,
-	agg func(ctx *Context, id, field string, lit exp.Expression, flags ...FuncFlag) (exp.Expression, error),
+	agg func(ctx *Context, id string, field *influxql.VarRef, lit exp.Expression, flags ...FuncFlag) (exp.Expression, error),
 	getter func(ctx *Context, id, field string, call *influxql.Call, aggs interface{}) (interface{}, bool),
 ) func(ctx *Context, id string, call *influxql.Call) (SQLAggHandler, error) {
 	return func(ctx *Context, id string, call *influxql.Call) (SQLAggHandler, error) {
@@ -260,9 +271,9 @@ func (c ckUnaryFunction) Aggregations(aggs map[string]exp.Expression, flags ...F
 		return nil
 	}
 	if ref, ok := arg.(*influxql.VarRef); ok {
-		c.field = ckGetKeyName(ref, influxql.AnyField)
+		c.field = ref.Val
 		id := c.id
-		a, err := c.agg(c.ctx, id, c.field, nil, flags...)
+		a, err := c.agg(c.ctx, id, ref, nil, flags...)
 		if err != nil {
 			return err
 		}
@@ -272,7 +283,7 @@ func (c ckUnaryFunction) Aggregations(aggs map[string]exp.Expression, flags ...F
 		if err != nil {
 			return err
 		}
-		a, err := c.agg(c.ctx, c.id, "", goqu.L(script), flags...)
+		a, err := c.agg(c.ctx, c.id, nil, goqu.L(script), flags...)
 		if err != nil {
 			return err
 		}

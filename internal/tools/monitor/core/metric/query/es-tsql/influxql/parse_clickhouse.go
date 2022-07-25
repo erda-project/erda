@@ -688,13 +688,26 @@ func ckGetKeyNameAndFlag(ref *influxql.VarRef, deftyp influxql.DataType) (string
 	return ckFieldKey(ref.Val), model.ColumnFlagField
 }
 
+func ckColumn(ref *influxql.VarRef) string {
+	if ref.Type == influxql.Tag {
+		return ckTag(ref.Val)
+	}
+	return ckField(ref.Val)
+}
+
 func ckFieldKey(key string) string {
-	// 	return fmt.Sprintf("string_field_values[string_field_keys(tag_keys,'%s')]", key)
-	return fmt.Sprintf("number_field_values[indexOf(number_field_keys,'%s')]", key)
+	return fmt.Sprintf("number_field_values[%s]", ckField(key))
+}
+
+func ckField(key string) string {
+	return fmt.Sprintf("indexOf(number_field_keys,'%s')", key)
+}
+func ckTag(key string) string {
+	return fmt.Sprintf("indexOf(tag_keys,'%s')", key)
 }
 
 func ckTagKey(key string) string {
-	return fmt.Sprintf("tag_values[indexOf(tag_keys,'%s')]", key)
+	return fmt.Sprintf("tag_values[%s]", ckTag(key))
 }
 
 func (p *Parser) parseScriptConditionOnExpr(cond influxql.Expr, exprList exp.ExpressionList) (exp.ExpressionList, error) {
