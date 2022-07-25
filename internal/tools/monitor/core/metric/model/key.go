@@ -12,20 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package storage
+package model
 
-import (
-	"context"
-
-	"github.com/erda-project/erda/internal/tools/monitor/core/metric/model"
-	tsql "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql"
-	"github.com/erda-project/erda/internal/tools/monitor/core/storekit"
+const (
+	TimestampKey   = "timestamp"
+	NameKey        = "name"
+	TagKey         = "tags"
+	FieldKey       = "fields"
+	ClusterNameKey = TagKey + ".cluster_name"
 )
 
-// Storage .
-type Storage interface {
-	//Select compatible, metric gradually replace storage tiers
-	Select(metric []string) bool
-	NewWriter(ctx context.Context) (storekit.BatchWriter, error)
-	Query(ctx context.Context, query tsql.Query) (*model.ResultSet, error)
-}
+// keys define
+const (
+	TagsKey         = "tags."
+	FieldsKey       = "fields."
+	TimeKey         = "time"
+	DefaultLimtSize = 100
+)

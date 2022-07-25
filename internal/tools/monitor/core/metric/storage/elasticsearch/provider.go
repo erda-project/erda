@@ -24,6 +24,7 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/elasticsearch"
+
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/storage"
 	"github.com/erda-project/erda/internal/tools/monitor/core/settings/retention-strategy"
@@ -43,7 +44,7 @@ type (
 		Cfg       *config
 		Log       logs.Logger
 		ES        elasticsearch.Interface `autowired:"elasticsearch"`
-		Creator   creator.Interface       `autowired:"elasticsearch.index.creator@metric"`
+		Creator   creator.Interface       `autowired:"elasticsearch.index.creator@metric" optional:"true"`
 		Retention retention.Interface     `autowired:"storage-retention-strategy@metric" optional:"true"`
 		Loader    loader.Interface        `autowired:"elasticsearch.index.loader@metric" optional:"true"`
 	}
@@ -224,7 +225,7 @@ func processInvalidFields(m *metric.Metric) {
 
 func init() {
 	servicehub.Register("metric-storage-elasticsearch", &servicehub.Spec{
-		Services:   []string{"metric-storage-writer"},
+		Services:   []string{"metric-storage"},
 		ConfigFunc: func() interface{} { return &config{} },
 		Creator:    func() servicehub.Provider { return &provider{} },
 	})

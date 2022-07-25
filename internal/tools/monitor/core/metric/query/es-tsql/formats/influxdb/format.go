@@ -20,6 +20,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/model"
 	tsql "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql/formats"
 	"github.com/erda-project/erda/pkg/common/errors"
@@ -36,7 +37,7 @@ type Response struct {
 }
 
 // Format .
-func (f *Formater) Format(q tsql.Query, rs *tsql.ResultSet, params map[string]interface{}) (interface{}, error) {
+func (f *Formater) Format(q tsql.Query, rs *model.Data, params map[string]interface{}) (interface{}, error) {
 	var columns []string
 	for _, c := range rs.Columns {
 		columns = append(columns, c.Name)

@@ -21,10 +21,11 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/model"
 	tsql "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql"
 )
 
-func (f *Formater) formatTableChart(q tsql.Query, rs *tsql.ResultSet, params map[string]interface{}) (interface{}, error) {
+func (f *Formater) formatTableChart(q tsql.Query, rs *model.Data, params map[string]interface{}) (interface{}, error) {
 	headers := make([]map[string]interface{}, len(rs.Columns), len(rs.Columns))
 	for i, c := range rs.Columns {
 		headers[i] = map[string]interface{}{
@@ -46,7 +47,7 @@ func (f *Formater) formatTableChart(q tsql.Query, rs *tsql.ResultSet, params map
 	}, nil
 }
 
-func (f *Formater) formatTableChartV2(q tsql.Query, rs *tsql.ResultSet, params map[string]interface{}) (interface{}, error) {
+func (f *Formater) formatTableChartV2(q tsql.Query, rs *model.Data, params map[string]interface{}) (interface{}, error) {
 	if _, ok := params["protobuf"]; !ok {
 		headers := make([]map[string]interface{}, len(rs.Columns), len(rs.Columns))
 		for i, c := range rs.Columns {

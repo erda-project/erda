@@ -24,8 +24,9 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/model"
+
 	tsql "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql"
-	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/query"
 )
 
 // NormalizeColumn .
@@ -57,10 +58,14 @@ func MapToRawQuery(scope, agg string, params map[string]string) (string, error) 
 	return path, nil
 }
 
+var nowFunction = func() time.Time {
+	return time.Now()
+}
+
 // NormalizeRequest .
 func NormalizeRequest(req *Request) error {
 	if req.TimeAlign != TimeAlignNone {
-		now := time.Now()
+		now := nowFunction()
 		nowms := now.Add(-1*time.Minute).UnixNano() / int64(time.Millisecond)
 		if req.End > nowms {
 			offset := req.End - nowms
@@ -83,9 +88,9 @@ func NormalizeRequest(req *Request) error {
 		req.End = 1
 	}
 	if len(req.TimeKey) <= 0 {
-		req.TimeKey = tsql.TimestampKey
+		req.TimeKey = model.TimestampKey
 	}
-	if req.TimeKey == tsql.TimestampKey {
+	if req.TimeKey == model.TimestampKey {
 		req.OriginalTimeUnit = tsql.Nanosecond
 	} else if req.OriginalTimeUnit == tsql.UnsetTimeUnit {
 		req.OriginalTimeUnit = tsql.Millisecond
@@ -100,14 +105,14 @@ func NormalizeRequest(req *Request) error {
 	}
 
 	for _, col := range req.Select {
-		col.Property.Normalize(query.FieldKey)
+		col.Property.Normalize(model.FieldKey)
 		col.ID = NormalizeID(col.FuncName, &col.Property)
 		req.Columns[col.ID] = col
 		req.ExistKeys[col.Property.Key] = struct{}{}
 	}
 	clusters := make(map[string]struct{})
 	for _, filter := range req.Where {
-		if filter.Key == query.ClusterNameKey {
+		if filter.Key == model.ClusterNameKey {
 			if filter.Operator == "in" {
 				if values, ok := filter.Value.([]interface{}); ok {
 					for _, value := range values {
@@ -124,10 +129,10 @@ func NormalizeRequest(req *Request) error {
 	}
 
 	for _, group := range req.GroupBy {
-		group.Property.Normalize(query.TagKey)
+		group.Property.Normalize(model.TagKey)
 		group.ID = NormalizeID("groupby", &group.Property)
 		for _, filter := range group.Filters {
-			filter.Property.Normalize(query.FieldKey)
+			filter.Property.Normalize(model.FieldKey)
 			filter.ID = NormalizeID(filter.FuncName, &filter.Property)
 		}
 	}
@@ -142,7 +147,7 @@ func NormalizeRequest(req *Request) error {
 		if order.FuncName == "count" && len(order.Property.Name) <= 0 {
 			continue
 		}
-		order.Property.Normalize(query.FieldKey)
+		order.Property.Normalize(model.FieldKey)
 		if i < len(req.GroupBy)-1 && order.FuncName == "" {
 			return fmt.Errorf("invalid order by")
 		}
@@ -190,7 +195,7 @@ func NormalizeRequest(req *Request) error {
 			}
 			req.EndOffset = 2 * int64(time.Minute)
 		}
-		req.Aggregate.Property.Normalize(query.FieldKey)
+		req.Aggregate.Property.Normalize(model.FieldKey)
 		req.Aggregate.ID = NormalizeID(req.Aggregate.FuncName, &req.Aggregate.Property)
 	}
 	if req.Interval <= 0 {
