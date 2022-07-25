@@ -1319,8 +1319,10 @@ message PipelinePageListRequest {
     repeated string selectCols = 36;
     repeated string ascCols = 37;
     repeated string descCols = 38;
-    optional google.protobuf.Value pipelineDefinitionRequest = 39;
-    string pipelineDefinitionRequestJSONBase64 = 40;
+    uint64 startIDGt = 39;
+    uint64 endIDLt = 40;
+    optional google.protobuf.Value pipelineDefinitionRequest = 41;
+    string pipelineDefinitionRequestJSONBase64 = 42;
 }
 message PipelinePageListResponse {
     optional google.protobuf.Value data = 1;
@@ -3231,8 +3233,8 @@ service dop {
             path: "/api/orgs",
             auth: {
                 no_check: false,
-                check_login: false,
-                try_check_login: true,
+                check_login: true,
+                try_check_login: false,
                 check_token: true,
                 check_basic_auth: false,
             },

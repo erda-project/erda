@@ -87,12 +87,6 @@ message PIPELINE_PUBLIC_ACTION_UNSET_DEFAULT_Request {
     string name = 1; // generated from path variable: name. You should change the proto type if necessary.
     string version = 2; // generated from path variable: version. You should change the proto type if necessary.
 }
-message PIPELINE_QUEUE_DELETE_Request {
-    string queueID = 1; // generated from path variable: queueID. You should change the proto type if necessary.
-}
-message PIPELINE_QUEUE_GET_Request {
-    string queueID = 1; // generated from path variable: queueID. You should change the proto type if necessary.
-}
 message PIPELINE_RERUN_Request {
     string pipelineID = 1; // generated from path variable: pipelineID. You should change the proto type if necessary.
 }
@@ -163,6 +157,7 @@ message PipelineCreateRequestV2 {
     optional google.protobuf.Value bindQueue = 17 [json_name = "-"];
     string definitionID = 18;
     map<string, string> secrets = 19;
+    optional google.protobuf.Value ownerUser = 20;
 }
 message PipelineCreateResponse {
     optional google.protobuf.Value data = 1;
@@ -244,12 +239,13 @@ message PipelineExtra {
     optional google.protobuf.Value submitUser = 3;
     optional google.protobuf.Value runUser = 4;
     optional google.protobuf.Value cancelUser = 5;
-    string cronExpr = 6;
-    optional google.protobuf.Timestamp cronTriggerTime = 7;
-    optional google.protobuf.Value showMessage = 8;
-    repeated string configManageNamespaces = 9 [json_name = "configmanageNamespaces"];
-    bool isAutoRun = 10;
-    repeated string callbackURLs = 11;
+    optional google.protobuf.Value ownerUser = 6;
+    string cronExpr = 7;
+    optional google.protobuf.Timestamp cronTriggerTime = 8;
+    optional google.protobuf.Value showMessage = 9;
+    repeated string configManageNamespaces = 10 [json_name = "configmanageNamespaces"];
+    bool isAutoRun = 11;
+    repeated string callbackURLs = 12;
 }
 message PipelineGC {
     google.protobuf.Value resourceGC = 1;
@@ -322,8 +318,10 @@ message PipelinePageListRequest {
     repeated string selectCols = 36;
     repeated string ascCols = 37;
     repeated string descCols = 38;
-    optional google.protobuf.Value pipelineDefinitionRequest = 39;
-    string pipelineDefinitionRequestJSONBase64 = 40;
+    uint64 startIDGt = 39;
+    uint64 endIDLt = 40;
+    optional google.protobuf.Value pipelineDefinitionRequest = 41;
+    string pipelineDefinitionRequestJSONBase64 = 42;
 }
 message PipelinePageListResponse {
     optional google.protobuf.Value data = 1;
@@ -331,43 +329,6 @@ message PipelinePageListResponse {
 message PipelinePriorityBatchUpgradeRequest {
     repeated uint64 pipelineIDsOrderByPriorityFromHighToLow = 1;
     uint64 queueID = 2;
-}
-message PipelineQueueCreateRequest {
-    string name = 1;
-    string pipelineSource = 2;
-    string clusterName = 3;
-    string scheduleStrategy = 4;
-    string mode = 5;
-    int64 priority = 6;
-    int64 concurrency = 7;
-    double maxCPU = 8;
-    double maxMemoryMB = 9;
-    map<string, string> labels = 10;
-}
-message PipelineQueueCreateResponse {
-    optional google.protobuf.Value data = 1;
-}
-message PipelineQueueListResponse {
-    optional google.protobuf.Value data = 1;
-}
-message PipelineQueuePagingRequest {
-    string name = 1;
-    repeated string pipelineSources = 2;
-    string clusterName = 3;
-    string scheduleStrategy = 4;
-    int64 priority = 5;
-    int64 concurrency = 6;
-    repeated string mustMatchLabels = 7;
-    repeated string anyMatchLabels = 8;
-    bool allowNoPipelineSources = 9;
-    bool orderByTargetIDAsc = 10;
-    int64 pageNo = 11;
-    int64 pageSize = 12;
-}
-message PipelineQueueUpdateRequest {
-    uint64 ID = 1 [json_name = "-"];
-    google.protobuf.Value pipelineQueueCreateRequest = 2;
-    string queueID = 3; // generated from path variable: queueID. You should change the proto type if necessary.
 }
 message PipelineRerunFailedResponse {
     optional google.protobuf.Value data = 1;
@@ -780,86 +741,6 @@ service pipeline {
                 check_basic_auth: false,
             },
             doc: "summary: 批量更新 pipeline 队列优先级",
-        };
-    };
-    rpc PIPELINE_QUEUE_CREATE (PipelineQueueCreateRequest) returns (PipelineQueueCreateResponse) {
-        option (google.api.http) = {
-            post: "/api/pipeline-queues",
-        };
-        option (erda.common.openapi) = {
-            path: "/api/pipeline-queues",
-            auth: {
-                no_check: false,
-                check_login: false,
-                try_check_login: false,
-                check_token: true,
-                check_basic_auth: false,
-            },
-            doc: "summary: 创建 pipeline 队列",
-        };
-    };
-    rpc PIPELINE_QUEUE_DELETE (PIPELINE_QUEUE_DELETE_Request) returns (google.protobuf.Empty) {
-        option (google.api.http) = {
-            delete: "/api/pipeline-queues/{queueID}",
-        };
-        option (erda.common.openapi) = {
-            path: "/api/pipeline-queues/{queueID}",
-            auth: {
-                no_check: false,
-                check_login: false,
-                try_check_login: false,
-                check_token: true,
-                check_basic_auth: false,
-            },
-            doc: "summary: 删除 pipeline 队列",
-        };
-    };
-    rpc PIPELINE_QUEUE_GET (PIPELINE_QUEUE_GET_Request) returns (PipelineQueueCreateResponse) {
-        option (google.api.http) = {
-            get: "/api/pipeline-queues/{queueID}",
-        };
-        option (erda.common.openapi) = {
-            path: "/api/pipeline-queues/{queueID}",
-            auth: {
-                no_check: false,
-                check_login: false,
-                try_check_login: false,
-                check_token: true,
-                check_basic_auth: false,
-            },
-            doc: "summary: 获取 pipeline 队列",
-        };
-    };
-    rpc PIPELINE_QUEUE_LIST (PipelineQueuePagingRequest) returns (PipelineQueueListResponse) {
-        option (google.api.http) = {
-            get: "/api/pipeline-queues",
-        };
-        option (erda.common.openapi) = {
-            path: "/api/pipeline-queues",
-            auth: {
-                no_check: false,
-                check_login: false,
-                try_check_login: false,
-                check_token: true,
-                check_basic_auth: false,
-            },
-            doc: "summary: 分页获取 pipeline 队列",
-        };
-    };
-    rpc PIPELINE_QUEUE_UPDATE (PipelineQueueUpdateRequest) returns (PipelineQueueCreateResponse) {
-        option (google.api.http) = {
-            put: "/api/pipeline-queues/{queueID}",
-        };
-        option (erda.common.openapi) = {
-            path: "/api/pipeline-queues/{queueID}",
-            auth: {
-                no_check: false,
-                check_login: false,
-                try_check_login: false,
-                check_token: true,
-                check_basic_auth: false,
-            },
-            doc: "summary: 更新 pipeline 队列",
         };
     };
     rpc PIPELINE_RERUN (PIPELINE_RERUN_Request) returns (PipelineRerunResponse) {
