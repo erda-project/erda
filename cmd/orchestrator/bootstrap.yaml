@@ -23,7 +23,7 @@ i18n:
 erda.orchestrator.runtime:
 erda.orchestrator.events:
 erda.orchestrator.addon.mysql:
-erda.orchestrator.horizontalpodscaler:
+erda.orchestrator.podscaler:
 
 mysql:
   host: "${MYSQL_HOST:localhost}"

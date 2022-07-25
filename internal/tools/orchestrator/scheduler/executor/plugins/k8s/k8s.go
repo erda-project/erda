@@ -32,10 +32,10 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	hpapb "github.com/erda-project/erda-proto-go/orchestrator/horizontalpodscaler/pb"
+	papb "github.com/erda-project/erda-proto-go/orchestrator/podscaler/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	hpatypes "github.com/erda-project/erda/internal/tools/orchestrator/components/horizontalpodscaler/types"
+	hpatypes "github.com/erda-project/erda/internal/tools/orchestrator/components/podscaler/types"
 	"github.com/erda-project/erda/internal/tools/orchestrator/conf"
 	eventboxapi "github.com/erda-project/erda/internal/tools/orchestrator/scheduler/events"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/events/eventtypes"
@@ -1294,7 +1294,7 @@ func (k *Kubernetes) Scale(ctx context.Context, spec interface{}) (interface{}, 
 
 func (k *Kubernetes) applyErdaHPARules(sg apistructs.ServiceGroup) (interface{}, error) {
 	for svc, sc := range sg.Extra {
-		scaledObject := hpapb.ScaledConfig{}
+		scaledObject := papb.ScaledConfig{}
 		err := json.Unmarshal([]byte(sc), &scaledObject)
 		if err != nil {
 			return sg, errors.Errorf("apply hpa for serviceGroup service %s failed: %v", svc, err)
@@ -1313,7 +1313,7 @@ func (k *Kubernetes) applyErdaHPARules(sg apistructs.ServiceGroup) (interface{},
 	return sg, nil
 }
 
-func convertToKedaScaledObject(scaledObject hpapb.ScaledConfig) *kedav1alpha1.ScaledObject {
+func convertToKedaScaledObject(scaledObject papb.ScaledConfig) *kedav1alpha1.ScaledObject {
 	var stabilizationWindowSeconds int32 = 300
 	selectPolicy := autoscalingv2beta2.MaxPolicySelect
 
@@ -1419,7 +1419,7 @@ func convertToKedaScaledObject(scaledObject hpapb.ScaledConfig) *kedav1alpha1.Sc
 
 func (k *Kubernetes) cancelErdaHPARules(sg apistructs.ServiceGroup) (interface{}, error) {
 	for svc, sc := range sg.Extra {
-		scaledObject := hpapb.ScaledConfig{}
+		scaledObject := papb.ScaledConfig{}
 		err := json.Unmarshal([]byte(sc), &scaledObject)
 		if err != nil {
 			return sg, errors.Errorf("cancel hpa for serviceGroup service %s failed: %v", svc, err)
@@ -1445,7 +1445,7 @@ func (k *Kubernetes) cancelErdaHPARules(sg apistructs.ServiceGroup) (interface{}
 
 func (k *Kubernetes) reApplylErdaHPARules(sg apistructs.ServiceGroup) (interface{}, error) {
 	for svc, sc := range sg.Extra {
-		scaledObject := hpapb.ScaledConfig{}
+		scaledObject := papb.ScaledConfig{}
 		err := json.Unmarshal([]byte(sc), &scaledObject)
 		if err != nil {
 			return sg, errors.Errorf("reapply hpa for sg %#v service %s failed: %v", sg, svc, err)

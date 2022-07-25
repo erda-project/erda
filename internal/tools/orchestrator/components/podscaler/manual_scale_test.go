@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package horizontalpodscaler
+package podscaler
 
 import (
 	"reflect"
@@ -22,7 +22,7 @@ import (
 	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/erda-project/erda-proto-go/orchestrator/horizontalpodscaler/pb"
+	"github.com/erda-project/erda-proto-go/orchestrator/podscaler/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
@@ -51,7 +51,7 @@ func Test_genOverlayDataForAudit(t *testing.T) {
 	assert.Equal(t, uint64(1), auditData.Deployments.Replicas)
 }
 
-func Test_hpscalerService_processRuntimeScaleRecord(t *testing.T) {
+func Test_podScalerService_processRuntimeScaleRecord(t *testing.T) {
 	type fields struct {
 		bundle           BundleService
 		db               DBService
@@ -149,7 +149,7 @@ func Test_hpscalerService_processRuntimeScaleRecord(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := &hpscalerService{
+			s := &podscalerService{
 				bundle:           tt.fields.bundle,
 				db:               tt.fields.db,
 				serviceGroupImpl: tt.fields.serviceGroupImpl,

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package horizontalpodscaler
+package podscaler
 
 import (
 	"encoding/json"
@@ -20,16 +20,16 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda-proto-go/orchestrator/horizontalpodscaler/pb"
+	"github.com/erda-project/erda-proto-go/orchestrator/podscaler/pb"
 	"github.com/erda-project/erda/apistructs"
-	patypes "github.com/erda-project/erda/internal/tools/orchestrator/components/horizontalpodscaler/types"
+	patypes "github.com/erda-project/erda/internal/tools/orchestrator/components/podscaler/types"
 	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/internal/tools/orchestrator/spec"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
 
 // processRuntimeScaleRecord 处理单个 runtime 对应的 scale 操作
-func (s *hpscalerService) processRuntimeScaleRecord(rsc pb.RuntimeScaleRecord, action string) (*pb.PreDiceDTO, error) {
+func (s *podscalerService) processRuntimeScaleRecord(rsc pb.RuntimeScaleRecord, action string) (*pb.PreDiceDTO, error) {
 	uniqueId := spec.RuntimeUniqueId{
 		ApplicationId: rsc.ApplicationId,
 		Workspace:     rsc.Workspace,
