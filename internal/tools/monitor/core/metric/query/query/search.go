@@ -56,6 +56,7 @@ func (q *queryer) buildTSQLParser(ql, statement string, params map[string]interf
 		}
 		ql = ql[0:idx]
 	}
+	fmt.Println(fmt.Sprintf("[playback]%s, params:%s,filter:%s", statement, params, filters))
 	if ql != "influxql" {
 		return nil, nil, fmt.Errorf("not support tsql '%s'", ql)
 	}
