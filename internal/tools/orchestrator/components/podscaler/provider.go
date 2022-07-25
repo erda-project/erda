@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package horizontalpodscaler
+package podscaler
 
 import (
 	"context"
@@ -22,7 +22,7 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
-	"github.com/erda-project/erda-proto-go/orchestrator/horizontalpodscaler/pb"
+	"github.com/erda-project/erda-proto-go/orchestrator/podscaler/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/pkg/audit"
 	"github.com/erda-project/erda/internal/tools/orchestrator/events"
@@ -38,7 +38,7 @@ type provider struct {
 	Cfg             *config
 	Log             logs.Logger
 	Register        transport.Register
-	hpscalerService pb.HPScalerServiceServer //`autowired:"erda.orchestrator.horizontalpodscaler.HPScalerService"`
+	hpscalerService pb.PodScalerServiceServer //`autowired:"erda.orchestrator.podscaler.PodScalerService"`
 	audit           audit.Auditor
 
 	DB           *gorm.DB             `autowired:"mysql-client"`
@@ -54,8 +54,8 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	)
 
 	if p.Register != nil {
-		type HPScalerService = pb.HPScalerServiceServer
-		pb.RegisterHPScalerServiceImp(p.Register, p.hpscalerService, apis.Options(), p.audit.Audit(
+		type HPScalerService = pb.PodScalerServiceServer
+		pb.RegisterPodScalerServiceImp(p.Register, p.hpscalerService, apis.Options(), p.audit.Audit(
 			audit.Method(HPScalerService.CreateRuntimeHPARules, audit.AppScope, string(apistructs.CreateAndApplyHPARule),
 				func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
 					r := req.(*pb.HPARuleCreateRequest)
@@ -82,7 +82,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 				}),
 			audit.Method(HPScalerService.DeleteHPARulesByIds, audit.AppScope, string(apistructs.DeleteHPARule),
 				func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
-					r := req.(*pb.DeleteRuntimeHPARulesRequest)
+					r := req.(*pb.DeleteRuntimePARulesRequest)
 					rules := make([]string, 0)
 					for _, ruleId := range r.Rules {
 						rules = append(rules, ruleId)
@@ -93,7 +93,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 				}),
 			audit.Method(HPScalerService.ApplyOrCancelHPARulesByIds, audit.AppScope, string(apistructs.ApplyOrCancelHPARule),
 				func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
-					r := req.(*pb.ApplyOrCancelHPARulesRequest)
+					r := req.(*pb.ApplyOrCancelPARulesRequest)
 					rules := make([]string, 0)
 					serviceToRule := make(map[string]interface{})
 					serviceToRule["runtimeId"] = r.RuntimeID
@@ -111,14 +111,14 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
 	switch {
-	case ctx.Service() == "erda.orchestrator.horizontalpodscaler.HPScalerService" || ctx.Type() == pb.HPScalerServiceServerType() || ctx.Type() == pb.HPScalerServiceHandlerType():
+	case ctx.Service() == "erda.orchestrator.podscaler.HPScalerService" || ctx.Type() == pb.PodScalerServiceServerType() || ctx.Type() == pb.PodScalerServiceHandlerType():
 		return p.hpscalerService
 	}
 	return p
 }
 
 func init() {
-	servicehub.Register("erda.orchestrator.horizontalpodscaler", &servicehub.Spec{
+	servicehub.Register("erda.orchestrator.podscaler", &servicehub.Spec{
 		Services: pb.ServiceNames(),
 		Types:    pb.Types(),
 		OptionalDependencies: []string{

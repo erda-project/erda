@@ -12,14 +12,4 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package horizontalpodscaler
-
-import (
-	"github.com/erda-project/erda/apistructs"
-)
-
-type BundleService interface {
-	CheckPermission(req *apistructs.PermissionCheckRequest) (*apistructs.PermissionCheckResponseData, error)
-	GetCurrentUser(userID string) (*apistructs.UserInfo, error)
-	GetApp(id uint64) (*apistructs.ApplicationDTO, error)
-}
+package podscaler
