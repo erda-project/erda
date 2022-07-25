@@ -105,6 +105,7 @@ var ServicesEnvKeys = map[string]string{
 	SvcClusterDialer:  EnvClusterDialer,
 	SvcFDPMaster:      EnvFDPMaster,
 	SvcErdaServer:     EnvErdaServer,
+	SvcOpenapi:        EnvOpenapi,
 }
 
 func Services() []string {
