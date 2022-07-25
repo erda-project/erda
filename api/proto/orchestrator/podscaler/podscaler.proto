@@ -1,15 +1,14 @@
 syntax = "proto3";
 
-package erda.orchestrator.horizontalpodscaler;
-option go_package = "github.com/erda-project/erda-proto-go/orchestrator/horizontalpodscaler/pb";
+package erda.orchestrator.podscaler;
+option go_package = "github.com/erda-project/erda-proto-go/orchestrator/podscaler/pb";
 
 import "google/api/annotations.proto";
 import "google/protobuf/any.proto";
 import "google/protobuf/timestamp.proto";
 import "common/openapi.proto";
 
-
-service HPScalerService {
+service PodScalerService {
   option (erda.common.openapi_service) = {
     service: "orchestrator",
     auth: {
@@ -18,7 +17,7 @@ service HPScalerService {
     }
   };
 
-  rpc CreateRuntimeHPARules (HPARuleCreateRequest) returns (HPACommonResponse) {
+  rpc CreateRuntimeHPARules (HPARuleCreateRequest) returns (CommonResponse) {
     option (google.api.http) = {
       post: "/api/runtimes/autoscaler/hpa"
       body: "*"
@@ -36,7 +35,7 @@ service HPScalerService {
       path: "/api/runtimes/autoscaler/hpa"
     };
   }
-  rpc UpdateRuntimeHPARules (ErdaRuntimeHPARules) returns (HPACommonResponse) {
+  rpc UpdateRuntimeHPARules (ErdaRuntimeHPARules) returns (CommonResponse) {
     option (google.api.http) = {
       put: "/api/runtimes/autoscaler/hpa"
       body: "*"
@@ -45,7 +44,7 @@ service HPScalerService {
       path: "/api/runtimes/autoscaler/hpa"
     };
   }
-  rpc DeleteHPARulesByIds (DeleteRuntimeHPARulesRequest) returns (HPACommonResponse) {
+  rpc DeleteHPARulesByIds (DeleteRuntimePARulesRequest) returns (CommonResponse) {
     option (google.api.http) = {
       delete: "/api/runtimes/autoscaler/hpa"
       body: "*"
@@ -54,7 +53,7 @@ service HPScalerService {
       path: "/api/runtimes/autoscaler/hpa"
     };
   }
-  rpc ApplyOrCancelHPARulesByIds (ApplyOrCancelHPARulesRequest) returns (HPACommonResponse) {
+  rpc ApplyOrCancelHPARulesByIds (ApplyOrCancelPARulesRequest) returns (CommonResponse) {
     option (google.api.http) = {
       // action = apply/cancel
       post: "/api/runtimes/autoscaler/hpa-rules-action"
@@ -81,6 +80,61 @@ service HPScalerService {
     };
     option (erda.common.openapi) = {
       path: "/api/runtimes/autoscaler/hpa-event"
+    };
+  }
+  rpc CreateRuntimeVPARules (VPARuleCreateRequest) returns (CommonResponse) {
+    option (google.api.http) = {
+      post: "/api/runtimes/autoscaler/vpa"
+      body: "*"
+    };
+    option (erda.common.openapi) = {
+      path: "/api/runtimes/autoscaler/vpa"
+    };
+  }
+  rpc ListRuntimeVPARules (ListRequest) returns (ErdaRuntimeVPARules) {
+    option (google.api.http) = {
+      get: "/api/runtimes/autoscaler/vpa?runtimeId={runtimeId}&services={services}"
+      body: "*"
+    };
+    option (erda.common.openapi) = {
+      path: "/api/runtimes/autoscaler/vpa"
+    };
+  }
+  rpc UpdateRuntimeVPARules (ErdaRuntimeVPARules) returns (CommonResponse) {
+    option (google.api.http) = {
+      put: "/api/runtimes/autoscaler/vpa"
+      body: "*"
+    };
+    option (erda.common.openapi) = {
+      path: "/api/runtimes/autoscaler/vpa"
+    };
+  }
+  rpc DeleteVPARulesByIds (DeleteRuntimePARulesRequest) returns (CommonResponse) {
+    option (google.api.http) = {
+      delete: "/api/runtimes/autoscaler/vpa"
+      body: "*"
+    };
+    option (erda.common.openapi) = {
+      path: "/api/runtimes/autoscaler/vpa"
+    };
+  }
+  rpc ApplyOrCancelVPARulesByIds (ApplyOrCancelPARulesRequest) returns (CommonResponse) {
+    option (google.api.http) = {
+      // action = apply/cancel
+      post: "/api/runtimes/autoscaler/vpa-rules-action"
+      body: "*"
+    };
+    option (erda.common.openapi) = {
+      path: "/api/runtimes/autoscaler/vpa-rules-action"
+    };
+  }
+  rpc ListRuntimeVPARecommendations (ListRequest) returns (ErdaRuntimeVPARecommendations) {
+    option (google.api.http) = {
+      get: "/api/runtimes/autoscaler/vpa-recommendations?runtimeId={runtimeId}&services={services}"
+      body: "*"
+    };
+    option (erda.common.openapi) = {
+      path: "/api/runtimes/autoscaler/vpa-recommendations"
     };
   }
   rpc HPScaleManual (ManualHPRequest) returns (HPManualResponse) {
@@ -111,7 +165,6 @@ message RuntimeServiceBaseInfos {
   repeated ServiceBaseInfo serviceBaseInfos = 2 [json_name = "serviceBaseInfos"] ;
 }
 
-
 message ServiceBaseInfo {
   string serviceName = 1 [json_name = "serviceName"] ;
   Deployments deployments = 2 [json_name = "deployments"] ;
@@ -131,15 +184,14 @@ message ListRequest {
   //repeated string serviceNames = 3 [json_name = "services"] ;
 }
 
-
-message DeleteRuntimeHPARulesRequest {
+message DeleteRuntimePARulesRequest {
   uint64 runtimeID = 1 [json_name = "runtimeId"] ;
   //RuntimeInfo runtimeInfo = 1 [json_name = "runtimeInfo"] ;
   //UserInfo userInfo = 2 [json_name = "userInfo"] ;
   repeated string rules = 2 [json_name = "rules"] ;
 }
 
-message ApplyOrCancelHPARulesRequest {
+message ApplyOrCancelPARulesRequest {
   uint64 runtimeID = 1 [json_name = "runtimeId"] ;
   //RuntimeInfo runtimeInfo = 1 [json_name = "runtimeInfo"] ;
   //UserInfo userInfo = 2 [json_name = "userInfo"] ;
@@ -151,7 +203,7 @@ message RuleAction {
   string action = 2 [json_name = "action"] ;
 }
 
-message HPACommonResponse {
+message CommonResponse {
 }
 
 message ErrorResponse {
@@ -335,7 +387,6 @@ message HPManualResponse {
   map<string, RuntimeInspectServiceDTO> services = 3 [json_name = "services"] ;
 }
 
-
 message BatchManualResponse {
   int32  total = 1 [json_name = "total"] ;
   int32  success = 2 [json_name = "success"] ;
@@ -384,7 +435,6 @@ message RuntimeDTO {
   repeated ErrorResponse  errors = 13 [json_name = "errors"] ;
 }
 
-
 message Resources {
   double cpu = 1 [json_name = "cpu"] ;
   int64 mem = 2 [json_name = "mem"] ;
@@ -405,10 +455,62 @@ message ErdaRuntimeHPAEvent {
   HPAEventDetail event = 3 [json_name = "event"] ;
 }
 
-
 message HPAEventDetail {
   google.protobuf.Timestamp createAt = 1 [json_name = "createAt"] ;
   string type = 2 [json_name = "type"] ;
   string reason = 3 [json_name = "reason"] ;
   string eventMessage = 4 [json_name = "message"] ;
+}
+
+message VPARuleCreateRequest {
+  uint64 runtimeID = 1 [json_name = "runtimeId"] ;
+  repeated RuntimeServiceVPAConfig services = 2 [json_name = "services"] ;
+}
+
+message RuntimeServiceVPAConfig {
+  string ruleName = 1 [json_name = "ruleName"] ;
+  string ruleNameSpace = 2 [json_name = "ruleNameSpace"] ;
+  string serviceName = 3 [json_name = "serviceName"] ;
+  string updateMode = 4 [json_name = "updateMode"] ;
+  Resources resources = 5 [json_name = "resources"] ;
+  Resources maxresources = 6 [json_name = "maxResources"] ;
+}
+
+message ErdaRuntimeVPARules {
+  uint64 runtimeID = 1 [json_name = "runtimeId"] ;
+  repeated ErdaRuntimeVPARule rules = 2 [json_name = "rules"] ;
+}
+
+message ErdaRuntimeVPARule {
+  string ruleID = 1  [json_name = "ruleId"] ;
+  google.protobuf.Timestamp createAt = 2 [json_name = "createAt"] ;
+  google.protobuf.Timestamp updateAt = 3 [json_name = "updateAt"] ;
+  string serviceName = 4 [json_name = "serviceName"] ;
+  string ruleName = 5 [json_name = "ruleName"] ;
+  UserInfo userInfo = 6 [json_name = "userInfo"] ;
+  RuntimeServiceVPAConfig rule = 7 [json_name = "rule"] ;
+  string isApplied = 8 [json_name = "isApplied"] ;
+}
+
+message ErdaRuntimeVPARecommendations {
+  //RuntimeInfo runtimeInfo = 1 [json_name = "runtimeInfo"] ;
+  uint64 runtimeID = 1 [json_name = "runtimeId"] ;
+  repeated ErdaServiceRecommendation serviceRecommendations = 2 [json_name = "serviceRecommendations"] ;
+}
+
+message ErdaServiceRecommendation {
+  string id = 1 [json_name = "id"] ;
+  google.protobuf.Timestamp createAt = 2 [json_name = "createAt"] ;
+  string serviceName = 3 [json_name = "serviceName"] ;
+  string ruleID = 4 [json_name = "ruleId"] ;
+  string ruleName = 5 [json_name = "ruleName"] ;
+  repeated VPAContainerRecommendation containerRecommendations = 6 [json_name = "containerRecommendations"] ;
+}
+
+message VPAContainerRecommendation {
+  string containerName = 1 [json_name = "containerName"] ;
+  Resources lowerBound = 2 [json_name = "lowerBound"] ;
+  Resources upperBound = 3 [json_name = "upperBound"] ;
+  Resources target = 4 [json_name = "target"] ;
+  Resources uncappedTarget = 5 [json_name = "uncappedTarget"] ;
 }

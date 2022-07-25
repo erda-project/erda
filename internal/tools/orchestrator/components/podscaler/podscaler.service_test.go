@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package horizontalpodscaler
+package podscaler
 
 import (
 	"context"
@@ -26,18 +26,18 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/erda-project/erda-proto-go/orchestrator/horizontalpodscaler/pb"
+	"github.com/erda-project/erda-proto-go/orchestrator/podscaler/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/pkg/user"
-	patypes "github.com/erda-project/erda/internal/tools/orchestrator/components/horizontalpodscaler/types"
+	patypes "github.com/erda-project/erda/internal/tools/orchestrator/components/podscaler/types"
 	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/impl/servicegroup"
 	"github.com/erda-project/erda/internal/tools/orchestrator/spec"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 )
 
-func Test_hpscalerService_CreateRuntimeHPARules(t *testing.T) {
+func Test_podScalerService_CreateRuntimeHPARules(t *testing.T) {
 	type fields struct {
 		bundle           BundleService
 		db               DBService
@@ -144,7 +144,7 @@ func Test_hpscalerService_CreateRuntimeHPARules(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    *pb.HPACommonResponse
+		want    *pb.CommonResponse
 		wantErr bool
 	}{
 		{
@@ -204,14 +204,14 @@ func Test_hpscalerService_CreateRuntimeHPARules(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := &hpscalerService{
+			s := &podscalerService{
 				bundle:           tt.fields.bundle,
 				db:               tt.fields.db,
 				serviceGroupImpl: tt.fields.serviceGroupImpl,
 			}
 
 			m1 := monkey.PatchInstanceMethod(reflect.TypeOf(s), "GetUserAndOrgID",
-				func(_ *hpscalerService, ctx context.Context) (userID user.ID, orgID uint64, err error) {
+				func(_ *podscalerService, ctx context.Context) (userID user.ID, orgID uint64, err error) {
 					return user.ID("1"), 1, nil
 				})
 
@@ -300,7 +300,7 @@ func Test_hpscalerService_CreateRuntimeHPARules(t *testing.T) {
 	}
 }
 
-func Test_hpscalerService_ListRuntimeHPARules(t *testing.T) {
+func Test_podScalerService_ListRuntimeHPARules(t *testing.T) {
 	type fields struct {
 		bundle           BundleService
 		db               DBService
@@ -383,14 +383,14 @@ func Test_hpscalerService_ListRuntimeHPARules(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := &hpscalerService{
+			s := &podscalerService{
 				bundle:           tt.fields.bundle,
 				db:               tt.fields.db,
 				serviceGroupImpl: tt.fields.serviceGroupImpl,
 			}
 
 			m1 := monkey.PatchInstanceMethod(reflect.TypeOf(s), "GetUserAndOrgID",
-				func(_ *hpscalerService, ctx context.Context) (userID user.ID, orgID uint64, err error) {
+				func(_ *podscalerService, ctx context.Context) (userID user.ID, orgID uint64, err error) {
 					return user.ID("1"), 1, nil
 				})
 
@@ -434,7 +434,7 @@ func Test_hpscalerService_ListRuntimeHPARules(t *testing.T) {
 	}
 }
 
-func Test_hpscalerService_DeleteHPARulesByIds(t *testing.T) {
+func Test_podScalerService_DeleteHPARulesByIds(t *testing.T) {
 	type fields struct {
 		bundle           BundleService
 		db               DBService
@@ -442,7 +442,7 @@ func Test_hpscalerService_DeleteHPARulesByIds(t *testing.T) {
 	}
 	type args struct {
 		ctx context.Context
-		req *pb.DeleteRuntimeHPARulesRequest
+		req *pb.DeleteRuntimePARulesRequest
 	}
 
 	tTime := time.Now()
@@ -451,7 +451,7 @@ func Test_hpscalerService_DeleteHPARulesByIds(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    *pb.HPACommonResponse
+		want    *pb.CommonResponse
 		wantErr bool
 	}{
 		{
@@ -463,7 +463,7 @@ func Test_hpscalerService_DeleteHPARulesByIds(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				req: &pb.DeleteRuntimeHPARulesRequest{
+				req: &pb.DeleteRuntimePARulesRequest{
 					RuntimeID: 1,
 					//Rules:       nil,
 				},
@@ -474,14 +474,14 @@ func Test_hpscalerService_DeleteHPARulesByIds(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := &hpscalerService{
+			s := &podscalerService{
 				bundle:           tt.fields.bundle,
 				db:               tt.fields.db,
 				serviceGroupImpl: tt.fields.serviceGroupImpl,
 			}
 
 			m1 := monkey.PatchInstanceMethod(reflect.TypeOf(s), "GetUserAndOrgID",
-				func(_ *hpscalerService, ctx context.Context) (userID user.ID, orgID uint64, err error) {
+				func(_ *podscalerService, ctx context.Context) (userID user.ID, orgID uint64, err error) {
 					return user.ID("1"), 1, nil
 				})
 
@@ -543,7 +543,7 @@ func Test_hpscalerService_DeleteHPARulesByIds(t *testing.T) {
 	}
 }
 
-func Test_hpscalerService_UpdateRuntimeHPARules(t *testing.T) {
+func Test_podScalerService_UpdateRuntimeHPARules(t *testing.T) {
 	type fields struct {
 		bundle           BundleService
 		db               DBService
@@ -592,7 +592,7 @@ func Test_hpscalerService_UpdateRuntimeHPARules(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    *pb.HPACommonResponse
+		want    *pb.CommonResponse
 		wantErr bool
 	}{
 		{
@@ -615,14 +615,14 @@ func Test_hpscalerService_UpdateRuntimeHPARules(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := &hpscalerService{
+			s := &podscalerService{
 				bundle:           tt.fields.bundle,
 				db:               tt.fields.db,
 				serviceGroupImpl: tt.fields.serviceGroupImpl,
 			}
 
 			m1 := monkey.PatchInstanceMethod(reflect.TypeOf(s), "GetUserAndOrgID",
-				func(_ *hpscalerService, ctx context.Context) (userID user.ID, orgID uint64, err error) {
+				func(_ *podscalerService, ctx context.Context) (userID user.ID, orgID uint64, err error) {
 					return user.ID("1"), 1, nil
 				})
 
@@ -695,7 +695,7 @@ func Test_hpscalerService_UpdateRuntimeHPARules(t *testing.T) {
 	}
 }
 
-func Test_hpscalerService_ApplyOrCancelHPARulesByIds(t *testing.T) {
+func Test_podScalerService_ApplyOrCancelHPARulesByIds(t *testing.T) {
 	type fields struct {
 		bundle           BundleService
 		db               DBService
@@ -703,7 +703,7 @@ func Test_hpscalerService_ApplyOrCancelHPARulesByIds(t *testing.T) {
 	}
 	type args struct {
 		ctx context.Context
-		req *pb.ApplyOrCancelHPARulesRequest
+		req *pb.ApplyOrCancelPARulesRequest
 	}
 
 	tTime := time.Now()
@@ -721,7 +721,7 @@ func Test_hpscalerService_ApplyOrCancelHPARulesByIds(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    *pb.HPACommonResponse
+		want    *pb.CommonResponse
 		wantErr bool
 	}{
 		{
@@ -733,7 +733,7 @@ func Test_hpscalerService_ApplyOrCancelHPARulesByIds(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				req: &pb.ApplyOrCancelHPARulesRequest{
+				req: &pb.ApplyOrCancelPARulesRequest{
 					RuntimeID:  1,
 					RuleAction: actions1,
 				},
@@ -750,7 +750,7 @@ func Test_hpscalerService_ApplyOrCancelHPARulesByIds(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				req: &pb.ApplyOrCancelHPARulesRequest{
+				req: &pb.ApplyOrCancelPARulesRequest{
 					RuntimeID:  1,
 					RuleAction: actions2,
 				},
@@ -761,14 +761,14 @@ func Test_hpscalerService_ApplyOrCancelHPARulesByIds(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := &hpscalerService{
+			s := &podscalerService{
 				bundle:           tt.fields.bundle,
 				db:               tt.fields.db,
 				serviceGroupImpl: tt.fields.serviceGroupImpl,
 			}
 
 			m1 := monkey.PatchInstanceMethod(reflect.TypeOf(s), "GetUserAndOrgID",
-				func(_ *hpscalerService, ctx context.Context) (userID user.ID, orgID uint64, err error) {
+				func(_ *podscalerService, ctx context.Context) (userID user.ID, orgID uint64, err error) {
 					return user.ID("1"), 1, nil
 				})
 
@@ -917,7 +917,7 @@ func generatePreDeployment(tTime time.Time) *dbclient.PreDeployment {
 	}
 }
 
-func Test_hpscalerService_GetRuntimeBaseInfo(t *testing.T) {
+func Test_podScalerService_GetRuntimeBaseInfo(t *testing.T) {
 	type fields struct {
 		bundle           BundleService
 		db               DBService
@@ -972,14 +972,14 @@ func Test_hpscalerService_GetRuntimeBaseInfo(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := &hpscalerService{
+			s := &podscalerService{
 				bundle:           tt.fields.bundle,
 				db:               tt.fields.db,
 				serviceGroupImpl: tt.fields.serviceGroupImpl,
 			}
 
 			m1 := monkey.PatchInstanceMethod(reflect.TypeOf(s), "GetUserAndOrgID",
-				func(_ *hpscalerService, ctx context.Context) (userID user.ID, orgID uint64, err error) {
+				func(_ *podscalerService, ctx context.Context) (userID user.ID, orgID uint64, err error) {
 					return user.ID("1"), 1, nil
 				})
 
@@ -1030,7 +1030,7 @@ func generateRuntimeHPAEvents(tTime time.Time) []dbclient.HPAEventInfo {
 	return events
 }
 
-func Test_hpscalerService_ListRuntimeHPAEvents(t *testing.T) {
+func Test_podScalerService_ListRuntimeHPAEvents(t *testing.T) {
 	type fields struct {
 		bundle           BundleService
 		db               DBService
@@ -1083,14 +1083,14 @@ func Test_hpscalerService_ListRuntimeHPAEvents(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := &hpscalerService{
+			s := &podscalerService{
 				bundle:           tt.fields.bundle,
 				db:               tt.fields.db,
 				serviceGroupImpl: tt.fields.serviceGroupImpl,
 			}
 
 			m1 := monkey.PatchInstanceMethod(reflect.TypeOf(s), "GetUserAndOrgID",
-				func(_ *hpscalerService, ctx context.Context) (userID user.ID, orgID uint64, err error) {
+				func(_ *podscalerService, ctx context.Context) (userID user.ID, orgID uint64, err error) {
 					return user.ID("1"), 1, nil
 				})
 

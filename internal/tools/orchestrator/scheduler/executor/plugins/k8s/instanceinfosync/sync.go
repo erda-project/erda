@@ -27,7 +27,7 @@ import (
 
 	"github.com/erda-project/erda/bundle"
 	orgCache "github.com/erda-project/erda/internal/tools/orchestrator/cache/org"
-	hpatypes "github.com/erda-project/erda/internal/tools/orchestrator/components/horizontalpodscaler/types"
+	hpatypes "github.com/erda-project/erda/internal/tools/orchestrator/components/podscaler/types"
 	"github.com/erda-project/erda/internal/tools/orchestrator/i18n"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/util"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/instanceinfo"
