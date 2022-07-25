@@ -122,4 +122,7 @@ audit:
 erda.core.user: {}
 erda.core.user.kratos: {}
 erda.core.user.uc: {}
+
+erda.dop.rule: {}
+erda.dop.rule.action.api: {}
  
