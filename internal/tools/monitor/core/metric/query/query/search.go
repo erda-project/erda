@@ -26,17 +26,20 @@ import (
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/model"
 	tsql "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql/formats"
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/metricmeta"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/storage"
 )
 
 type queryer struct {
 	storage   storage.Storage `autowired:"metric-storage"`
 	ckStorage storage.Storage `autowired:"metric-storage-clickhouse"`
+	meta      *metricmeta.Manager
 }
 
 // New .
-func New(esStorage storage.Storage, ckStorage storage.Storage) Queryer {
+func New(meta *metricmeta.Manager, esStorage storage.Storage, ckStorage storage.Storage) Queryer {
 	return &queryer{
+		meta:      meta,
 		storage:   esStorage,
 		ckStorage: ckStorage,
 	}
@@ -56,7 +59,6 @@ func (q *queryer) buildTSQLParser(ql, statement string, params map[string]interf
 		}
 		ql = ql[0:idx]
 	}
-	fmt.Println(fmt.Sprintf("[playback]%s, params:%s,filter:%s", statement, params, filters))
 	if ql != "influxql" {
 		return nil, nil, fmt.Errorf("not support tsql '%s'", ql)
 	}
@@ -81,6 +83,7 @@ func (q *queryer) buildTSQLParser(ql, statement string, params map[string]interf
 		return nil, nil, fmt.Errorf("not support tsql '%s'", ql)
 	}
 
+	parser.SetMeta(q.meta)
 	parser, err = parser.SetFilter(filters)
 	if err != nil {
 		return nil, nil, fmt.Errorf("invalid filter on parse filter: %s", err)

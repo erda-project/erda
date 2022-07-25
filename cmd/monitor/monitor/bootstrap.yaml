@@ -249,6 +249,7 @@ erda.core.monitor.metric:
     path: conf/charts
     reload_interval: "30s"
   metric_meta:
+    metric_meta_cache_expiration: "${METRIC_META_CACHE_EXPIRATION:1h}"
     sources:
       - "index"
       - "file"

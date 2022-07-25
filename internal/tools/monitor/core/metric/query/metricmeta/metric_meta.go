@@ -15,10 +15,13 @@
 package metricmeta
 
 import (
+	"encoding/json"
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
+
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 )
 
@@ -72,6 +75,42 @@ func (m *Manager) GetSingleMetricsMeta(langCodes i18n.LanguageCodes, scope strin
 		return nil, fmt.Errorf("not found metric %q", metric)
 	}
 	return metricMeta, nil
+}
+
+func (m *Manager) GetMetricMetaByCache(scope, scopeID string, names ...string) ([]*pb.MetricMeta, error) {
+	key := fmt.Sprintf("%s_%s", scope, scopeID)
+
+	meta, err := m.redis.Get(key).Result()
+	if err != nil {
+		return nil, err
+	}
+
+	var result []*pb.MetricMeta
+	if len(meta) > 0 {
+		err := json.NewDecoder(strings.NewReader(meta)).Decode(&result)
+		if err == nil && len(result) > 0 {
+			return result, nil
+		}
+	}
+
+	metricMetas, err := m.getMetricMeta(nil, scope, scopeID, names...)
+	if err != nil {
+		return nil, err
+	}
+	for _, item := range metricMetas {
+		result = append(result, item)
+	}
+	sb := &strings.Builder{}
+	err = json.NewEncoder(sb).Encode(result)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = m.redis.SetNX(key, err, m.metricMetaCacheExpiration).Result()
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 func (m *Manager) getMetricMeta(langCodes i18n.LanguageCodes, scope, scopeID string, names ...string) (map[string]*pb.MetricMeta, error) {

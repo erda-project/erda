@@ -20,7 +20,9 @@ import (
 	"io/ioutil"
 	"net/http"
 	"reflect"
+	"time"
 
+	"github.com/go-redis/redis"
 	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -45,9 +47,10 @@ import (
 
 type config struct {
 	MetricMeta struct {
-		Sources        []string `file:"sources"`
-		GroupFiles     []string `file:"group_files"`
-		MetricMetaPath string   `file:"metric_meta_path"`
+		MetricMetaCacheExpiration time.Duration `file:"metric_meta_cache_expiration"`
+		Sources                   []string      `file:"sources"`
+		GroupFiles                []string      `file:"group_files"`
+		MetricMetaPath            string        `file:"metric_meta_path"`
 	} `file:"metric_meta"`
 }
 
@@ -59,6 +62,7 @@ type provider struct {
 	DB         *gorm.DB              `autowired:"mysql-client"`
 	MetricTran i18n.I18n             `autowired:"i18n@metric"`
 	Index      indexloader.Interface `autowired:"elasticsearch.index.loader@metric"`
+	Redis      *redis.Client         `autowired:"redis-client"`
 
 	meta              *metricmeta.Manager
 	metricService     *metricService
@@ -77,6 +81,8 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		p.Cfg.MetricMeta.GroupFiles,
 		p.MetricTran,
 		p.Log,
+		p.Redis,
+		p.Cfg.MetricMeta.MetricMetaCacheExpiration,
 	)
 	p.meta = meta
 	err := meta.Init()
@@ -90,7 +96,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	}
 	p.metricService = &metricService{
 		p:     p,
-		query: query.New(p.Storage, p.CkStorageReader),
+		query: query.New(meta, p.Storage, p.CkStorageReader),
 	}
 	if p.Register != nil {
 		pb.RegisterMetricServiceImp(p.Register, p.metricService, apis.Options(),

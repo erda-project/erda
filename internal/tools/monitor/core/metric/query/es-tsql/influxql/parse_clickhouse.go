@@ -107,7 +107,7 @@ func (p *Parser) ParseOrderByOnExpr(s influxql.SortFields, expr *goqu.SelectData
 			}
 
 			if v, ok := field.Expr.(*influxql.VarRef); ok {
-				sortFields[ckGetKeyName(v, influxql.AnyField)] = field.Ascending
+				sortFields[p.ckGetKeyName(v, influxql.AnyField)] = field.Ascending
 			} else {
 				script, err := getAggsOrderScript(p.ctx, field.Expr)
 				if err != nil {
@@ -266,13 +266,13 @@ func (p *Parser) parseQueryDimensionsByExpr(exprSelect *goqu.SelectDataset, dime
 				continue
 			}
 
-			script, err := getScriptExpressionOnCk(p.ctx, dim.Expr, influxql.AnyField, nil)
+			script, err := p.getScriptExpressionOnCk(p.ctx, dim.Expr, influxql.AnyField, nil)
 			if err != nil {
 				return exprSelect, nil, nil, nil
 			}
 			exprList = append(exprList, script)
 		}
-		script := getExprStringAndFlagByExpr(dim.Expr, influxql.AnyField)
+		script := p.getExprStringAndFlagByExpr(dim.Expr, influxql.AnyField)
 		exprList = append(exprList, script)
 	}
 	return exprSelect, exprList, tailExpr, nil
@@ -308,24 +308,24 @@ func (p *Parser) getExprArgsOnRange(expr *influxql.Call) ([][]int64, error) {
 	return arr, nil
 }
 
-func getExprStringAndFlagByExpr(expr influxql.Expr, deftyp influxql.DataType) (key string) {
+func (p *Parser) getExprStringAndFlagByExpr(expr influxql.Expr, deftyp influxql.DataType) (key string) {
 	if expr == nil {
 		return ""
 	}
 	switch expr := expr.(type) {
 	case *influxql.BinaryExpr:
-		left := getExprStringAndFlagByExpr(expr.LHS, deftyp)
-		right := getExprStringAndFlagByExpr(expr.RHS, deftyp)
+		left := p.getExprStringAndFlagByExpr(expr.LHS, deftyp)
+		right := p.getExprStringAndFlagByExpr(expr.RHS, deftyp)
 		return left + expr.Op.String() + right
 	case *influxql.Call:
 		var args []string
 		for _, arg := range expr.Args {
-			k := getExprStringAndFlagByExpr(arg, deftyp)
+			k := p.getExprStringAndFlagByExpr(arg, deftyp)
 			args = append(args, k)
 		}
 		return expr.Name + "(" + strings.Join(args, ",") + ")"
 	case *influxql.ParenExpr:
-		key = getExprStringAndFlagByExpr(expr.Expr, deftyp)
+		key = p.getExprStringAndFlagByExpr(expr.Expr, deftyp)
 		return key
 	case *influxql.IntegerLiteral:
 		return strconv.FormatInt(expr.Val, 10)
@@ -338,7 +338,7 @@ func getExprStringAndFlagByExpr(expr influxql.Expr, deftyp influxql.DataType) (k
 	case *influxql.StringLiteral, *influxql.NilLiteral, *influxql.TimeLiteral, *influxql.DurationLiteral, *influxql.RegexLiteral, *influxql.ListLiteral:
 		return expr.String()
 	case *influxql.VarRef:
-		key, _ = ckGetKeyNameAndFlag(expr, deftyp)
+		key, _ = p.ckGetKeyNameAndFlag(expr, deftyp)
 		return key
 	}
 	return expr.String()
@@ -394,7 +394,7 @@ func (p *Parser) parseFiledAggByExpr(expr influxql.Expr, aggs map[string]exp.Exp
 				if err != nil {
 					return err
 				}
-				err = fn.Aggregations(aggs, FuncFlagSelect)
+				err = fn.Aggregations(p, aggs, FuncFlagSelect)
 				if err != nil {
 					return err
 				}
@@ -444,7 +444,7 @@ func (p *Parser) parseFiledRefByExpr(expr influxql.Expr, cols map[string]string)
 	case *influxql.ParenExpr:
 		return p.parseFiledRefByExpr(expr.Expr, cols)
 	case *influxql.VarRef:
-		cols[ckGetKeyName(expr, influxql.AnyField)] = expr.Val
+		cols[p.ckGetKeyName(expr, influxql.AnyField)] = expr.Val
 	}
 	return nil
 }
@@ -637,7 +637,7 @@ func (p *Parser) parseKeyConditionOnExpr(ref *influxql.VarRef, op influxql.Token
 	if !ok {
 		return nil, false, nil
 	}
-	keyLiteral := GetColumnLiteral(ckGetKeyName(ref, influxql.AnyField))
+	keyLiteral := GetColumnLiteral(p.ckGetKeyName(ref, influxql.AnyField))
 
 	switch op {
 	case influxql.EQ:
@@ -669,12 +669,12 @@ func (p *Parser) parseKeyConditionOnExpr(ref *influxql.VarRef, op influxql.Token
 	return exprList, true, nil
 }
 
-func ckGetKeyName(ref *influxql.VarRef, deftyp influxql.DataType) string {
-	name, _ := ckGetKeyNameAndFlag(ref, deftyp)
+func (p *Parser) ckGetKeyName(ref *influxql.VarRef, deftyp influxql.DataType) string {
+	name, _ := p.ckGetKeyNameAndFlag(ref, deftyp)
 	return name
 }
 
-func ckGetKeyNameAndFlag(ref *influxql.VarRef, deftyp influxql.DataType) (string, model.ColumnFlag) {
+func (p *Parser) ckGetKeyNameAndFlag(ref *influxql.VarRef, deftyp influxql.DataType) (string, model.ColumnFlag) {
 	if ref.Type == influxql.Unknown {
 		if ref.Val == model.TimestampKey || ref.Val == model.TimeKey {
 			return model.TimestampKey, model.ColumnFlagTimestamp
@@ -687,23 +687,45 @@ func ckGetKeyNameAndFlag(ref *influxql.VarRef, deftyp influxql.DataType) (string
 	} else if ref.Type == influxql.Tag {
 		return ckTagKey(ref.Val), model.ColumnFlagTag
 	}
-	return ckFieldKey(ref.Val), model.ColumnFlagField
+	return p.ckFieldKey(ref.Val), model.ColumnFlagField
 }
 
-func ckColumn(ref *influxql.VarRef) string {
+func (p *Parser) ckColumn(ref *influxql.VarRef) string {
 	if ref.Type == influxql.Tag {
 		return ckTag(ref.Val)
 	}
-	return ckField(ref.Val)
+	column, _ := p.ckField(ref.Val)
+	return column
 }
 
-func ckFieldKey(key string) string {
-	return fmt.Sprintf("number_field_values[%s]", ckField(key))
+func (p *Parser) ckFieldKey(key string) string {
+	column, isNumber := p.ckField(key)
+	if !isNumber {
+		return fmt.Sprintf("string_field_values[%s]", column)
+	}
+	return fmt.Sprintf("number_field_values[%s]", column)
 }
 
-func ckField(key string) string {
-	return fmt.Sprintf("indexOf(number_field_keys,'%s')", key)
+// ckField return clickhouse column, and is number
+func (p *Parser) ckField(key string) (string, bool) {
+	metrics, err := p.Metrics()
+	if err != nil {
+		return "", false
+	}
+	metas, err := p.meta.GetMetricMetaByCache(p.orgName, p.terminusKey, metrics...)
+	if err != nil {
+		for _, meta := range metas {
+			if typ, ok := meta.Fields[key]; ok {
+				//Multiple metrics can be specified, there may be the same name and type conflict, Chart Query
+				if typ.Type == "string" {
+					return fmt.Sprintf("indexOf(string_field_values,'%s')", key), true
+				}
+			}
+		}
+	}
+	return fmt.Sprintf("indexOf(number_field_keys,'%s')", key), false
 }
+
 func ckTag(key string) string {
 	return fmt.Sprintf("indexOf(tag_keys,'%s')", key)
 }
@@ -714,7 +736,7 @@ func ckTagKey(key string) string {
 
 func (p *Parser) parseScriptConditionOnExpr(cond influxql.Expr, exprList exp.ExpressionList) (exp.ExpressionList, error) {
 	fields := make(map[string]bool)
-	s, err := getScriptExpressionOnCk(p.ctx, cond, influxql.AnyField, fields)
+	s, err := p.getScriptExpressionOnCk(p.ctx, cond, influxql.AnyField, fields)
 	if err != nil {
 		return exprList, err
 	}
@@ -722,17 +744,17 @@ func (p *Parser) parseScriptConditionOnExpr(cond influxql.Expr, exprList exp.Exp
 	return exprList, nil
 }
 
-func getScriptExpressionOnCk(ctx *Context, expr influxql.Expr, deftyp influxql.DataType, fields map[string]bool) (string, error) {
+func (p *Parser) getScriptExpressionOnCk(ctx *Context, expr influxql.Expr, deftyp influxql.DataType, fields map[string]bool) (string, error) {
 	if expr == nil {
 		return "", nil
 	}
 	switch expr := expr.(type) {
 	case *influxql.BinaryExpr:
-		left, err := getScriptExpressionOnCk(ctx, expr.LHS, deftyp, fields)
+		left, err := p.getScriptExpressionOnCk(ctx, expr.LHS, deftyp, fields)
 		if err != nil {
 			return "", err
 		}
-		right, err := getScriptExpressionOnCk(ctx, expr.RHS, deftyp, fields)
+		right, err := p.getScriptExpressionOnCk(ctx, expr.RHS, deftyp, fields)
 		if err != nil {
 			return "", err
 		}
@@ -755,7 +777,7 @@ func getScriptExpressionOnCk(ctx *Context, expr influxql.Expr, deftyp influxql.D
 			}
 			return fmt.Sprint(val), nil
 		}
-		s, ok, err := getClickhouseFuntion(ctx, expr, deftyp, fields)
+		s, ok, err := p.getClickhouseFunction(ctx, expr, deftyp, fields)
 		if err != nil {
 			return "", err
 		}
@@ -764,7 +786,7 @@ func getScriptExpressionOnCk(ctx *Context, expr influxql.Expr, deftyp influxql.D
 		}
 		return "", fmt.Errorf("not support function '%s' in script expression", expr.Name)
 	case *influxql.ParenExpr:
-		s, err := getScriptExpressionOnCk(ctx, expr.Expr, deftyp, fields)
+		s, err := p.getScriptExpressionOnCk(ctx, expr.Expr, deftyp, fields)
 		if err != nil {
 			return "", err
 		}
@@ -782,7 +804,7 @@ func getScriptExpressionOnCk(ctx *Context, expr influxql.Expr, deftyp influxql.D
 	case *influxql.NilLiteral:
 		return "null", nil
 	case *influxql.VarRef:
-		key := ckGetKeyName(expr, deftyp)
+		key := p.ckGetKeyName(expr, deftyp)
 		return key, nil
 	case *influxql.TimeLiteral:
 		return strconv.FormatInt(expr.Val.UnixNano(), 10), nil
@@ -796,13 +818,13 @@ func getScriptExpressionOnCk(ctx *Context, expr influxql.Expr, deftyp influxql.D
 	return "", fmt.Errorf("invalid expression")
 }
 
-func getClickhouseFuntion(ctx *Context, call *influxql.Call, deftyp influxql.DataType, fields map[string]bool) (string, bool, error) {
+func (p *Parser) getClickhouseFunction(ctx *Context, call *influxql.Call, deftyp influxql.DataType, fields map[string]bool) (string, bool, error) {
 	fn, ok := ClickHouseFunctions[call.Name]
 	if !ok {
 		return "", false, nil
 	}
 	if fn.Convert != nil {
-		s, err := fn.Convert(ctx, call, deftyp, fields)
+		s, err := fn.Convert(ctx, p, call, deftyp, fields)
 		if err != nil {
 			return "", false, err
 		}
@@ -813,7 +835,7 @@ func getClickhouseFuntion(ctx *Context, call *influxql.Call, deftyp influxql.Dat
 		if len(call.Args) < 1 {
 			return "", false, fmt.Errorf("invalid function")
 		}
-		obj, err := getScriptExpressionOnCk(ctx, call.Args[0], deftyp, fields)
+		obj, err := p.getScriptExpressionOnCk(ctx, call.Args[0], deftyp, fields)
 		if err != nil {
 			return "", false, err
 		}
@@ -821,7 +843,7 @@ func getClickhouseFuntion(ctx *Context, call *influxql.Call, deftyp influxql.Dat
 	}
 	var args []string
 	for _, arg := range exprs {
-		arg, err := getScriptExpressionOnCk(ctx, arg, deftyp, fields)
+		arg, err := p.getScriptExpressionOnCk(ctx, arg, deftyp, fields)
 		if err != nil {
 			return "", false, err
 		}

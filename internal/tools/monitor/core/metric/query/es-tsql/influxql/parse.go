@@ -23,10 +23,12 @@ import (
 
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/model"
 	tsql "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql"
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/metricmeta"
 )
 
 // Parser .
 type Parser struct {
+	meta      *metricmeta.Manager
 	debug     bool
 	stm       string
 	ql        *influxql.Parser
@@ -72,6 +74,10 @@ func (p *Parser) SetTerminusKey(terminusKey string) tsql.Parser {
 func (p *Parser) SetFilter(filters []*model.Filter) (tsql.Parser, error) {
 	p.filter = filters
 	return p, nil
+}
+
+func (p *Parser) SetMeta(meta *metricmeta.Manager) {
+	p.meta = meta
 }
 
 // SetParams .

@@ -33,6 +33,7 @@ import (
 	"time"
 
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/model"
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/metricmeta"
 )
 
 // TimeUnit .
@@ -117,6 +118,7 @@ type Parser interface {
 	Metrics() ([]string, error)
 	SetOrgName(org string) Parser
 	SetTerminusKey(terminusKey string) Parser
+	SetMeta(*metricmeta.Manager)
 }
 
 // Creator .
