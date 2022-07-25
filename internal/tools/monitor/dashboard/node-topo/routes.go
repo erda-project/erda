@@ -22,6 +22,7 @@ import (
 	"github.com/recallsong/go-utils/encoding/jsonx"
 
 	"github.com/erda-project/erda-infra/providers/httpserver"
+
 	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
 
@@ -96,8 +97,7 @@ func (p *provider) getNodeTopology(param struct {
 	src.SubAggregation("udp_bytes", elastic.NewSumAggregation().Field("fields.udp_bytes"))
 	src.SubAggregation("udp_packets", elastic.NewSumAggregation().Field("fields.udp_packets"))
 	// request
-	indices := p.metricq.Indices([]string{"net_packets"}, []string{param.ClusterName}, param.Start, param.End)
-	resp, err := p.esRequest(indices, searchSource)
+	resp, err := p.EsSearchRaw.QueryRaw([]string{"net_packets"}, []string{param.ClusterName}, param.Start, param.End, searchSource)
 	if err != nil {
 		return api.Errors.Internal(err)
 	}
@@ -172,7 +172,7 @@ func getSumAggMetricValue(aggs elastic.Aggregations, key string) int64 {
 }
 
 func (p *provider) esRequest(indices []string, searchSource *elastic.SearchSource) (*elastic.SearchResult, error) {
-	resp, err := p.metricq.SearchRaw(indices, searchSource)
+	resp, err := p.EsSearchRaw.SearchRaw(indices, searchSource)
 	if err != nil || (resp != nil && resp.Error != nil) {
 		if resp != nil {
 			if resp.Status == 404 {

@@ -19,6 +19,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/model"
 	tsql "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql"
 )
 
@@ -28,7 +29,7 @@ type aggData struct {
 	Data []interface{} `json:"data"`
 }
 
-func (f *Formater) formatLineChart(q tsql.Query, rs *tsql.ResultSet, params map[string]interface{}) (interface{}, error) {
+func (f *Formater) formatLineChart(q tsql.Query, rs *model.Data, params map[string]interface{}) (interface{}, error) {
 	timeIdx, _, dims, vals := getGroupColumns(rs.Columns)
 	var list []interface{}
 	var times []int64
@@ -91,13 +92,13 @@ func (f *Formater) getGroupKey(idxs []int, row []interface{}) string {
 	return strings.Join(group, ",")
 }
 
-func getGroupColumns(cols []*tsql.Column) (ti, rngs int, dims, vals []int) {
+func getGroupColumns(cols []*model.Column) (ti, rngs int, dims, vals []int) {
 	rngs, ti = -1, -1
 	for i, c := range cols {
-		if c.Flag&tsql.ColumnFlagGroupBy == tsql.ColumnFlagGroupBy {
-			if c.Flag&tsql.ColumnFlagGroupByInterval == tsql.ColumnFlagGroupByInterval {
+		if c.Flag&model.ColumnFlagGroupBy == model.ColumnFlagGroupBy {
+			if c.Flag&model.ColumnFlagGroupByInterval == model.ColumnFlagGroupByInterval {
 				ti = i
-			} else if c.Flag&tsql.ColumnFlagGroupByRange == tsql.ColumnFlagGroupByRange {
+			} else if c.Flag&model.ColumnFlagGroupByRange == model.ColumnFlagGroupByRange {
 				rngs = i
 			} else {
 				dims = append(dims, i)

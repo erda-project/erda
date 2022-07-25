@@ -22,6 +22,7 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/kafka"
+
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/storage"
 	"github.com/erda-project/erda/internal/tools/monitor/core/storekit"
 )
@@ -44,7 +45,7 @@ type provider struct {
 	Cfg           *config
 	Log           logs.Logger
 	Kafka         kafka.Interface `autowired:"kafka"`
-	StorageWriter storage.Storage `autowired:"metric-storage-writer"`
+	StorageWriter storage.Storage `autowired:"metric-storage"`
 
 	stats     Statistics
 	validator Validator

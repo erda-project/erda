@@ -46,8 +46,8 @@ func Query(text string, params map[string]interface{}) error {
 	fmt.Println(text)
 	end := time.Now().Add(-5 * time.Minute)
 	start := end.Add(-1 * time.Hour)
-	parser := tsql.New(start.UnixNano(), end.UnixNano(), "influxql", text).SetParams(params) //.SetTimeKey("@timestamp").SetOriginalTimeUnit(tsql.Millisecond).SetTargetTimeUnit(tsql.Nanosecond)
-	querys, err := parser.ParseQuery()
+	parser := tsql.New(start.UnixNano(), end.UnixNano(), "influxql", text, false).SetParams(params) //.SetTimeKey("@timestamp").SetOriginalTimeUnit(tsql.Millisecond).SetTargetTimeUnit(tsql.Nanosecond)
+	querys, err := parser.ParseQuery("")
 	if err != nil {
 		return err
 	}
@@ -63,7 +63,8 @@ func Query(text string, params map[string]interface{}) error {
 }
 
 func doQuery(client *elastic.Client, query tsql.Query) error {
-	searchSource := query.SearchSource()
+	sS := query.SearchSource()
+	searchSource := sS.(*elastic.SearchSource)
 	var resp *elastic.SearchResult
 	if searchSource != nil {
 		source, _ := searchSource.Source()

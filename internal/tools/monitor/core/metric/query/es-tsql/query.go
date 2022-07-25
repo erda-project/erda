@@ -29,22 +29,10 @@
 package tsql
 
 import (
-	"bytes"
 	"fmt"
-	"strings"
 	"time"
 
-	"github.com/olivere/elastic"
-)
-
-// keys define
-const (
-	TagsKey         = "tags."
-	FieldsKey       = "fields."
-	TimestampKey    = "timestamp"
-	TimeKey         = "time"
-	NameKey         = "name"
-	DefaultLimtSize = 100
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/model"
 )
 
 // TimeUnit .
@@ -98,108 +86,17 @@ func ConvertTimestamp(t int64, from, to TimeUnit) int64 {
 	return t * int64(from) / int64(to)
 }
 
-// ResultSet .
-type ResultSet struct {
-	Total    int64
-	Interval int64
-	Columns  []*Column
-	Rows     [][]interface{}
-}
-
-// Column .
-type Column struct {
-	Type  string
-	Name  string
-	Key   string
-	Flag  ColumnFlag
-	Extra interface{}
-}
-
-// ColumnFlag .
-type ColumnFlag int32
-
-// ColumnFlag values
-const (
-	ColumnFlagNone = ColumnFlag(0)
-	ColumnFlagHide = ColumnFlag(1 << (iota - 1))
-	ColumnFlagName
-	ColumnFlagTimestamp
-	ColumnFlagTag
-	ColumnFlagField
-	ColumnFlagLiteral
-	ColumnFlagFunc
-	ColumnFlagAgg
-	ColumnFlagGroupBy
-	ColumnFlagOrderBy
-
-	ColumnFlagGroupByInterval
-	ColumnFlagGroupByRange
-)
-
-func (f ColumnFlag) String() string {
-	if f == ColumnFlagNone {
-		return "node"
-	}
-	buf := &bytes.Buffer{}
-	if f&ColumnFlagHide != 0 {
-		buf.WriteString("hide|")
-	}
-	if f&ColumnFlagName != 0 {
-		buf.WriteString("name|")
-	}
-	if f&ColumnFlagTimestamp != 0 {
-		buf.WriteString("timestamp|")
-	}
-	if f&ColumnFlagTag != 0 {
-		buf.WriteString("tag|")
-	}
-	if f&ColumnFlagField != 0 {
-		buf.WriteString("field|")
-	}
-	if f&ColumnFlagLiteral != 0 {
-		buf.WriteString("literal|")
-	}
-	if f&ColumnFlagFunc != 0 {
-		buf.WriteString("func|")
-	}
-	if f&ColumnFlagAgg != 0 {
-		buf.WriteString("agg|")
-	}
-	if f&ColumnFlagGroupBy != 0 {
-		buf.WriteString("groupby")
-		if f&(ColumnFlagGroupByInterval|ColumnFlagGroupByRange) != 0 {
-			buf.WriteString(":")
-			var group []string
-			if f&ColumnFlagGroupByInterval != 0 {
-				group = append(group, "interval")
-			}
-			if f&ColumnFlagGroupByRange != 0 {
-				group = append(group, "range")
-			}
-			buf.WriteString(strings.Join(group, ","))
-		}
-		buf.WriteString("|")
-	}
-	if f&ColumnFlagOrderBy != 0 {
-		buf.WriteString("orderby|")
-	}
-	return string(buf.Bytes()[0 : buf.Len()-1])
-}
-
-// Source .
-type Source struct {
-	Database string
-	Name     string
-}
-
 // Query .
 type Query interface {
-	Sources() []*Source
-	SearchSource() *elastic.SearchSource
-	BoolQuery() *elastic.BoolQuery
-	SetAllColumnsCallback(fn func(start, end int64, sources []*Source) ([]*Column, error))
-	ParseResult(resp *elastic.SearchResult) (*ResultSet, error)
+	Sources() []*model.Source
+	SearchSource() interface{}
+	SubSearchSource() interface{}
+	AppendBoolFilter(key string, value interface{})
+	ParseResult(resp interface{}) (*model.Data, error)
 	Context() Context
+	Debug() bool
+	Timestamp() (int64, int64)
+	Kind() string
 }
 
 // ErrNotSupportNonQueryStatement .
@@ -208,17 +105,18 @@ var ErrNotSupportNonQueryStatement = fmt.Errorf("not support non query statement
 // Parser .
 type Parser interface {
 	SetParams(params map[string]interface{}) Parser
-	SetFilter(filter *elastic.BoolQuery) Parser
+	SetFilter(filter []*model.Filter) (Parser, error)
 	SetOriginalTimeUnit(unit TimeUnit) Parser
 	SetTargetTimeUnit(unit TimeUnit) Parser
 	SetTimeKey(key string) Parser
 	SetMaxTimePoints(points int64) Parser
-	ParseQuery() ([]Query, error)
-	ParseRawQuery() ([]*Source, *elastic.BoolQuery, *elastic.SearchSource, error)
+	ParseQuery(kind string) ([]Query, error)
+	Build() error
+	Metrics() ([]string, error)
 }
 
 // Creator .
-type Creator func(start, end int64, stmt string) Parser
+type Creator func(start, end int64, stmt string, debug bool) Parser
 
 // Parsers .
 var Parsers = map[string]Creator{}
@@ -229,10 +127,10 @@ func RegisterParser(name string, c Creator) {
 }
 
 // New .
-func New(start, end int64, ql, stmt string) Parser {
+func New(start, end int64, ql, stmt string, debug bool) Parser {
 	creator := Parsers[ql]
 	if creator != nil {
-		return creator(start, end, stmt)
+		return creator(start, end, stmt, debug)
 	}
 	return nil
 }

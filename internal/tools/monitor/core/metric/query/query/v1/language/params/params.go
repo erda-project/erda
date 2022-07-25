@@ -27,6 +27,7 @@ import (
 
 	"github.com/recallsong/go-utils/reflectx"
 
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/model"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/chartmeta"
 	tsql "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/query"
@@ -54,7 +55,7 @@ func (p *Parser) Parse(statement string) (*queryv1.Request, error) {
 		ExistKeys:        make(map[string]struct{}),
 		LegendMap:        make(map[string]*chartmeta.DataMeta),
 		ChartType:        params.Get("chartType"),
-		TimeKey:          tsql.TimestampKey,
+		TimeKey:          model.TimestampKey,
 		OriginalTimeUnit: tsql.Nanosecond,
 	}
 	err = req.InitTimestamp(params.Get("start"), params.Get("end"), params.Get("timestamp"), params.Get("latest"))
@@ -84,7 +85,7 @@ func (p *Parser) Parse(statement string) (*queryv1.Request, error) {
 			for _, val := range vals {
 				var script string
 				if val, ok := getScript(val); ok {
-					script, _, err = parseScript(val, query.TagKey)
+					script, _, err = parseScript(val, model.TagKey)
 					if err != nil {
 						return nil, fmt.Errorf("invalid script %s", val)
 					}
@@ -154,7 +155,7 @@ func (p *Parser) Parse(statement string) (*queryv1.Request, error) {
 				var script string
 				if s, ok := getScript(val); ok {
 					var keys map[string]struct{}
-					script, keys, err = parseScript(s, query.FieldKey)
+					script, keys, err = parseScript(s, model.FieldKey)
 					if err != nil {
 						return nil, fmt.Errorf("invalid script %s", val)
 					}
@@ -215,7 +216,7 @@ func (p *Parser) Parse(statement string) (*queryv1.Request, error) {
 					var script string
 					if s, ok := getScript(val); ok {
 						var keys map[string]struct{}
-						script, keys, err = parseScript(s, query.FieldKey)
+						script, keys, err = parseScript(s, model.FieldKey)
 						if err != nil {
 							return nil, fmt.Errorf("invalid script %s", val)
 						}
@@ -391,7 +392,7 @@ func getScript(script string) (string, bool) {
 
 func parseScript(script, keyType string) (string, map[string]struct{}, error) {
 	if strings.HasPrefix(script, "(") && strings.HasSuffix(script, ")") {
-		if keyType == query.TagKey {
+		if keyType == model.TagKey {
 			if match, _ := regexp.Match("doc\\[\\'[a-zA-Z0-9_.]+\\'\\]", reflectx.StringToBytes(script)); match {
 				// As the original es script
 				return script, nil, nil

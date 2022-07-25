@@ -24,7 +24,11 @@ import (
 	"github.com/olivere/elastic"
 	"github.com/recallsong/go-utils/encoding/jsonx"
 
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/model"
+	query2 "github.com/erda-project/erda/internal/tools/monitor/core/metric/query"
+
 	"github.com/erda-project/erda-infra/providers/i18n"
+
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/chartmeta"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/metricmeta"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/query"
@@ -241,7 +245,7 @@ func (q *queryer) doRequest(req *Request, format string, langCodes i18n.Language
 	indices := q.index.GetIndices(req.Metrics, req.ClusterNames, req.Start, req.End)
 	if len(indices) == 1 {
 		if strings.HasSuffix(indices[0], "-empty") {
-			boolQuery.Filter(elastic.NewTermQuery(query.TagKey+".not_exist", "_not_exist"))
+			boolQuery.Filter(elastic.NewTermQuery(model.TagKey+".not_exist", "_not_exist"))
 		}
 	}
 
@@ -255,7 +259,7 @@ func (q *queryer) doRequest(req *Request, format string, langCodes i18n.Language
 		if err != nil {
 			return nil, fmt.Errorf("invalid search source: %s", err)
 		}
-		result.details = query.ElasticSearchCURL(q.index.URLs(), indices, source)
+		result.details = query2.ElasticSearchCURL(q.index.URLs(), indices, source)
 		fmt.Println(result.details)
 		return result, nil
 	}

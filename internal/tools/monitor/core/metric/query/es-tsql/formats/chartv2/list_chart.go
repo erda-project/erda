@@ -19,10 +19,11 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/model"
 	tsql "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql"
 )
 
-func (f *Formater) formatListChart(q tsql.Query, rs *tsql.ResultSet, params map[string]interface{}) (interface{}, error) {
+func (f *Formater) formatListChart(q tsql.Query, rs *model.Data, params map[string]interface{}) (interface{}, error) {
 	list := make([]map[string]interface{}, 0)
 	var title map[string]bool
 	if val, ok := params["title"].(string); ok && len(val) > 0 {

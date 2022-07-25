@@ -17,12 +17,13 @@ package formats
 import (
 	"fmt"
 
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/model"
 	tsql "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql"
 )
 
 // Formater response formater
 type Formater interface {
-	Format(q tsql.Query, rs *tsql.ResultSet, params map[string]interface{}) (interface{}, error)
+	Format(q tsql.Query, rs *model.Data, params map[string]interface{}) (interface{}, error)
 }
 
 // Formats .
@@ -34,7 +35,7 @@ func RegisterFormater(name string, formater Formater) {
 }
 
 // Format .
-func Format(name string, q tsql.Query, rs *tsql.ResultSet, params map[string]interface{}) (interface{}, error) {
+func Format(name string, q tsql.Query, rs *model.Data, params map[string]interface{}) (interface{}, error) {
 	f, ok := Formats[name]
 	if !ok {
 		return nil, fmt.Errorf("invalid formater '%s'", name)

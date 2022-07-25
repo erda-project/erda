@@ -15,6 +15,7 @@
 package dict
 
 import (
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/model"
 	tsql "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql/formats"
 )
@@ -23,7 +24,7 @@ import (
 type Formater struct{}
 
 // Format .
-func (f *Formater) Format(q tsql.Query, rs *tsql.ResultSet, params map[string]interface{}) (interface{}, error) {
+func (f *Formater) Format(q tsql.Query, rs *model.Data, params map[string]interface{}) (interface{}, error) {
 	res := make([]map[string]interface{}, len(rs.Rows))
 	for i := 0; i < len(rs.Rows); i++ {
 		for j := 0; j < len(rs.Columns); j++ {

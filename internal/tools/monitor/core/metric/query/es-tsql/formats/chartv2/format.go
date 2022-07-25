@@ -15,6 +15,7 @@
 package chartv2
 
 import (
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/model"
 	tsql "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql/formats"
 )
@@ -23,7 +24,7 @@ import (
 type Formater struct{}
 
 // Format .
-func (f *Formater) Format(q tsql.Query, rs *tsql.ResultSet, params map[string]interface{}) (interface{}, error) {
+func (f *Formater) Format(q tsql.Query, rs *model.Data, params map[string]interface{}) (interface{}, error) {
 	typ := "table"
 	if t, ok := params["type"].(string); ok {
 		typ = t

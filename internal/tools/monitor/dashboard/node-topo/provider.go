@@ -20,7 +20,8 @@ import (
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/httpserver/interceptors"
 	"github.com/erda-project/erda-infra/providers/i18n"
-	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/metricq"
+
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/storage/elasticsearch"
 )
 
 type define struct{}
@@ -39,15 +40,14 @@ func (d *define) Creator() servicehub.Creator {
 type config struct{}
 
 type provider struct {
-	C       *config
-	L       logs.Logger
-	metricq metricq.Queryer
-	t       i18n.Translator
+	C           *config
+	L           logs.Logger
+	EsSearchRaw elasticsearch.Interface `autowired:"metric-storage"`
+	t           i18n.Translator
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.t = ctx.Service("i18n").(i18n.I18n).Translator("node-topo")
-	p.metricq = ctx.Service("metrics-query").(metricq.Queryer)
 	routes := ctx.Service("http-server", interceptors.Recover(p.L)).(httpserver.Router)
 	return p.intRoutes(routes)
 }

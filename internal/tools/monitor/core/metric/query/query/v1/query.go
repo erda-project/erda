@@ -22,6 +22,8 @@ import (
 	"github.com/olivere/elastic"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
+
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/model"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/chartmeta"
 	tsql "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/query"
@@ -67,7 +69,7 @@ type Request struct {
 	Start, End int64 // ms
 	TimeAlign  TimeAlign
 	Select     []*Column
-	Where      []*query.Filter
+	Where      []*model.Filter
 	GroupBy    []*Group
 	OrderBy    []*Order
 	Limit      []int

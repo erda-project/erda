@@ -12,20 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package storage
+package model
 
-import (
-	"context"
-
-	"github.com/erda-project/erda/internal/tools/monitor/core/metric/model"
-	tsql "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql"
-	"github.com/erda-project/erda/internal/tools/monitor/core/storekit"
-)
-
-// Storage .
-type Storage interface {
-	//Select compatible, metric gradually replace storage tiers
-	Select(metric []string) bool
-	NewWriter(ctx context.Context) (storekit.BatchWriter, error)
-	Query(ctx context.Context, query tsql.Query) (*model.ResultSet, error)
+// Filter .
+type Filter struct {
+	Key      string
+	Operator string
+	Value    interface{}
 }

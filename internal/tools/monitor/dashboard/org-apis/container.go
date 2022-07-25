@@ -26,6 +26,7 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/i18n"
+
 	queryv1 "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/query/v1"
 	"github.com/erda-project/erda/internal/tools/monitor/utils"
 	api "github.com/erda-project/erda/pkg/common/httpapi"
@@ -103,11 +104,7 @@ func (p *provider) queryContainers(cluster string, hostIPs []string, instanceTyp
 		SubAggregation(topHits, topHitsAgg)
 
 	searchSource := elastic.NewSearchSource().Query(query).Size(0).Aggregation(tagsContainerID, containerIDAgg)
-	indices := p.metricq.Indices([]string{nameContainerSummary, nameDockerContainerSummary}, []string{cluster}, start, end)
-	// TODO. debug
-	// ss, _ := searchSource.Source()
-	// fmt.Printf("curl: %s", qutils.ElasticSearchCURL(p.metricq.Client().String(), indices, ss))
-	resp, apiErr := p.metricq.SearchRaw(indices, searchSource)
+	resp, apiErr := p.EsSearchRaw.QueryRaw([]string{nameContainerSummary, nameDockerContainerSummary}, []string{cluster}, start, end, searchSource)
 	if apiErr != nil {
 		return nil
 	} else if resp == nil {

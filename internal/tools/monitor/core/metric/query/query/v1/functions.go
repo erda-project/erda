@@ -24,7 +24,8 @@ import (
 	"github.com/olivere/elastic"
 	"github.com/recallsong/go-utils/conv"
 
-	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/query"
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/model"
+
 	"github.com/erda-project/erda/internal/tools/monitor/utils"
 )
 
@@ -815,7 +816,7 @@ func (f *groupReduceFunction) Aggregations(ctx *Context, flags ...Flag) ([]*Aggr
 				Property: Property{Name: vals[0]},
 				FuncName: key,
 			}
-			col.Property.Normalize(query.FieldKey)
+			col.Property.Normalize(model.FieldKey)
 			col.ID = NormalizeID(col.FuncName, &col.Property)
 			fn := creator(col)
 			if !fn.SupportReduce() {
