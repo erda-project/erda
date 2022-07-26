@@ -710,7 +710,7 @@ func (p *Parser) ckFieldKey(key string) string {
 func (p *Parser) ckField(key string) (string, bool) {
 	metrics, err := p.Metrics()
 	if err != nil {
-		return "", false
+		return fmt.Sprintf("indexOf(number_field_keys,'%s')", key), true
 	}
 	metas, err := p.meta.GetMetricMetaByCache(p.orgName, p.terminusKey, metrics...)
 	if err != nil {
@@ -718,12 +718,12 @@ func (p *Parser) ckField(key string) (string, bool) {
 			if typ, ok := meta.Fields[key]; ok {
 				//Multiple metrics can be specified, there may be the same name and type conflict, Chart Query
 				if typ.Type == "string" {
-					return fmt.Sprintf("indexOf(string_field_values,'%s')", key), true
+					return fmt.Sprintf("indexOf(string_field_values,'%s')", key), false
 				}
 			}
 		}
 	}
-	return fmt.Sprintf("indexOf(number_field_keys,'%s')", key), false
+	return fmt.Sprintf("indexOf(number_field_keys,'%s')", key), true
 }
 
 func ckTag(key string) string {
