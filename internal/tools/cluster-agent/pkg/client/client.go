@@ -30,10 +30,22 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rancher/remotedialer"
 	"github.com/sirupsen/logrus"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/cluster-agent/config"
 	"github.com/erda-project/erda/pkg/discover"
+	"github.com/erda-project/erda/pkg/k8sclient"
+)
+
+const (
+	collectSourceSecret = "secret"
+	collectSourceFile   = "file"
+)
+
+const (
+	caCrtKey    = "ca.crt"
+	tokenSecKey = "token"
 )
 
 const (
@@ -80,7 +92,7 @@ func (c *Client) Start(ctx context.Context) error {
 	}
 
 	if c.cfg.CollectClusterInfo {
-		clusterInfo, err := getClusterInfo(c.cfg.K8SApiServerAddr)
+		clusterInfo, err := c.getClusterInfo()
 		if err != nil {
 			return err
 		}
@@ -167,18 +179,55 @@ func (c *Client) IsConnected() bool {
 	return c.connected
 }
 
-func getClusterInfo(apiServerAddr string) (map[string]interface{}, error) {
-	caData, err := ioutil.ReadFile(rootCAFile)
-	if err != nil {
-		return nil, errors.Wrapf(err, "reading %s", rootCAFile)
+func (c *Client) getClusterInfo() (map[string]interface{}, error) {
+	var (
+		caData, token []byte
+		err           error
+	)
+
+	switch c.cfg.CollectSource {
+	case collectSourceFile:
+		caData, err = ioutil.ReadFile(rootCAFile)
+		if err != nil {
+			return nil, errors.Wrapf(err, "reading %s", rootCAFile)
+		}
+
+		token, err = ioutil.ReadFile(tokenFile)
+		if err != nil {
+			return nil, errors.Wrapf(err, "reading %s", tokenFile)
+		}
+	case collectSourceSecret:
+		k, err := k8sclient.NewForInCluster()
+		if err != nil {
+			return nil, err
+		}
+		sa, err := k.ClientSet.CoreV1().ServiceAccounts(c.cfg.ErdaNamespace).Get(context.Background(),
+			c.cfg.ServiceAccountName, metav1.GetOptions{})
+		if err != nil {
+			return nil, err
+		}
+
+		if len(sa.Secrets) == 0 {
+			return nil, errors.Errorf("service account %s has non auth secret", c.cfg.ServiceAccountName)
+		}
+
+		saSecret, err := k.ClientSet.CoreV1().Secrets(c.cfg.ErdaNamespace).Get(context.Background(),
+			sa.Secrets[0].Name, metav1.GetOptions{})
+		if err != nil {
+			return nil, err
+		}
+
+		caData = saSecret.Data[caCrtKey]
+		token = saSecret.Data[tokenSecKey]
+	default:
+		return nil, errors.Errorf("collector source %s is illegal", c.cfg.CollectSource)
 	}
 
-	token, err := ioutil.ReadFile(tokenFile)
-	if err != nil {
-		return nil, errors.Wrapf(err, "reading %s", tokenFile)
-	}
+	logrus.Debugf("load cluster info, apiserver addr: %s, token: %s, cacert: %s", c.cfg.K8SApiServerAddr,
+		string(token), string(caData))
+
 	return map[string]interface{}{
-		"address": apiServerAddr,
+		"address": c.cfg.K8SApiServerAddr,
 		"token":   strings.TrimSpace(string(token)),
 		"caCert":  base64.StdEncoding.EncodeToString(caData),
 	}, nil
