@@ -51,3 +51,35 @@ func Test_bytesToHexString(t *testing.T) {
 		})
 	}
 }
+
+func TestGetFileContentType(t *testing.T) {
+	tests := []struct {
+		name string
+		path string
+		ext  string
+		want string
+	}{
+		{
+			name: "xss svg",
+			path: "./example/xss-svg.svg",
+			ext:  ".svg",
+			want: "application/octet-stream",
+		},
+		{
+			name: "normal png",
+			path: "./example/normal.png",
+			ext:  ".png",
+			want: headerContentTypePng,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			f, err := os.Open(tt.path)
+			assert.NoError(t, err)
+			defer f.Close()
+			if got := GetFileContentType(f, tt.ext); got != tt.want {
+				t.Errorf("bytesToHexString() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
