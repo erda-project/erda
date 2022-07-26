@@ -20,7 +20,8 @@ import (
 	"github.com/golang/mock/gomock"
 
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/model"
-	tsql "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql"
+	es_tsql "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql"
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/metricmeta"
 )
 
 // MockQuery is a mock of Query interface.
@@ -59,10 +60,10 @@ func (mr *MockQueryMockRecorder) AppendBoolFilter(key, value interface{}) *gomoc
 }
 
 // Context mocks base method.
-func (m *MockQuery) Context() tsql.Context {
+func (m *MockQuery) Context() es_tsql.Context {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Context")
-	ret0, _ := ret[0].(tsql.Context)
+	ret0, _ := ret[0].(es_tsql.Context)
 	return ret0
 }
 
@@ -98,6 +99,20 @@ func (m *MockQuery) Kind() string {
 func (mr *MockQueryMockRecorder) Kind() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Kind", reflect.TypeOf((*MockQuery)(nil).Kind))
+}
+
+// OrgName mocks base method.
+func (m *MockQuery) OrgName() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "OrgName")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// OrgName indicates an expected call of OrgName.
+func (mr *MockQueryMockRecorder) OrgName() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OrgName", reflect.TypeOf((*MockQuery)(nil).OrgName))
 }
 
 // ParseResult mocks base method.
@@ -155,6 +170,20 @@ func (m *MockQuery) SubSearchSource() interface{} {
 func (mr *MockQueryMockRecorder) SubSearchSource() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SubSearchSource", reflect.TypeOf((*MockQuery)(nil).SubSearchSource))
+}
+
+// TerminusKey mocks base method.
+func (m *MockQuery) TerminusKey() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TerminusKey")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// TerminusKey indicates an expected call of TerminusKey.
+func (mr *MockQueryMockRecorder) TerminusKey() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TerminusKey", reflect.TypeOf((*MockQuery)(nil).TerminusKey))
 }
 
 // Timestamp mocks base method.
@@ -225,10 +254,10 @@ func (mr *MockParserMockRecorder) Metrics() *gomock.Call {
 }
 
 // ParseQuery mocks base method.
-func (m *MockParser) ParseQuery(kind string) ([]tsql.Query, error) {
+func (m *MockParser) ParseQuery(kind string) ([]es_tsql.Query, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ParseQuery", kind)
-	ret0, _ := ret[0].([]tsql.Query)
+	ret0, _ := ret[0].([]es_tsql.Query)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -240,10 +269,10 @@ func (mr *MockParserMockRecorder) ParseQuery(kind interface{}) *gomock.Call {
 }
 
 // SetFilter mocks base method.
-func (m *MockParser) SetFilter(filter []*model.Filter) (tsql.Parser, error) {
+func (m *MockParser) SetFilter(filter []*model.Filter) (es_tsql.Parser, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SetFilter", filter)
-	ret0, _ := ret[0].(tsql.Parser)
+	ret0, _ := ret[0].(es_tsql.Parser)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -255,10 +284,10 @@ func (mr *MockParserMockRecorder) SetFilter(filter interface{}) *gomock.Call {
 }
 
 // SetMaxTimePoints mocks base method.
-func (m *MockParser) SetMaxTimePoints(points int64) tsql.Parser {
+func (m *MockParser) SetMaxTimePoints(points int64) es_tsql.Parser {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SetMaxTimePoints", points)
-	ret0, _ := ret[0].(tsql.Parser)
+	ret0, _ := ret[0].(es_tsql.Parser)
 	return ret0
 }
 
@@ -268,11 +297,37 @@ func (mr *MockParserMockRecorder) SetMaxTimePoints(points interface{}) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetMaxTimePoints", reflect.TypeOf((*MockParser)(nil).SetMaxTimePoints), points)
 }
 
+// SetMeta mocks base method.
+func (m *MockParser) SetMeta(arg0 *metricmeta.Manager) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetMeta", arg0)
+}
+
+// SetMeta indicates an expected call of SetMeta.
+func (mr *MockParserMockRecorder) SetMeta(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetMeta", reflect.TypeOf((*MockParser)(nil).SetMeta), arg0)
+}
+
+// SetOrgName mocks base method.
+func (m *MockParser) SetOrgName(org string) es_tsql.Parser {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetOrgName", org)
+	ret0, _ := ret[0].(es_tsql.Parser)
+	return ret0
+}
+
+// SetOrgName indicates an expected call of SetOrgName.
+func (mr *MockParserMockRecorder) SetOrgName(org interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetOrgName", reflect.TypeOf((*MockParser)(nil).SetOrgName), org)
+}
+
 // SetOriginalTimeUnit mocks base method.
-func (m *MockParser) SetOriginalTimeUnit(unit tsql.TimeUnit) tsql.Parser {
+func (m *MockParser) SetOriginalTimeUnit(unit es_tsql.TimeUnit) es_tsql.Parser {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SetOriginalTimeUnit", unit)
-	ret0, _ := ret[0].(tsql.Parser)
+	ret0, _ := ret[0].(es_tsql.Parser)
 	return ret0
 }
 
@@ -283,10 +338,10 @@ func (mr *MockParserMockRecorder) SetOriginalTimeUnit(unit interface{}) *gomock.
 }
 
 // SetParams mocks base method.
-func (m *MockParser) SetParams(params map[string]interface{}) tsql.Parser {
+func (m *MockParser) SetParams(params map[string]interface{}) es_tsql.Parser {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SetParams", params)
-	ret0, _ := ret[0].(tsql.Parser)
+	ret0, _ := ret[0].(es_tsql.Parser)
 	return ret0
 }
 
@@ -297,10 +352,10 @@ func (mr *MockParserMockRecorder) SetParams(params interface{}) *gomock.Call {
 }
 
 // SetTargetTimeUnit mocks base method.
-func (m *MockParser) SetTargetTimeUnit(unit tsql.TimeUnit) tsql.Parser {
+func (m *MockParser) SetTargetTimeUnit(unit es_tsql.TimeUnit) es_tsql.Parser {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SetTargetTimeUnit", unit)
-	ret0, _ := ret[0].(tsql.Parser)
+	ret0, _ := ret[0].(es_tsql.Parser)
 	return ret0
 }
 
@@ -310,11 +365,25 @@ func (mr *MockParserMockRecorder) SetTargetTimeUnit(unit interface{}) *gomock.Ca
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetTargetTimeUnit", reflect.TypeOf((*MockParser)(nil).SetTargetTimeUnit), unit)
 }
 
+// SetTerminusKey mocks base method.
+func (m *MockParser) SetTerminusKey(terminusKey string) es_tsql.Parser {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetTerminusKey", terminusKey)
+	ret0, _ := ret[0].(es_tsql.Parser)
+	return ret0
+}
+
+// SetTerminusKey indicates an expected call of SetTerminusKey.
+func (mr *MockParserMockRecorder) SetTerminusKey(terminusKey interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetTerminusKey", reflect.TypeOf((*MockParser)(nil).SetTerminusKey), terminusKey)
+}
+
 // SetTimeKey mocks base method.
-func (m *MockParser) SetTimeKey(key string) tsql.Parser {
+func (m *MockParser) SetTimeKey(key string) es_tsql.Parser {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SetTimeKey", key)
-	ret0, _ := ret[0].(tsql.Parser)
+	ret0, _ := ret[0].(es_tsql.Parser)
 	return ret0
 }
 

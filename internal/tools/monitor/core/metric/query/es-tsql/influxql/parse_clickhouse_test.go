@@ -403,7 +403,7 @@ func TestSelect(t *testing.T) {
 		{
 			name: "select count",
 			sql:  "select count(service_id::tag) from table",
-			want: "SELECT COUNT(tag_values[indexOf(tag_keys,'service_id')]) AS \"993567cffecb105e\" FROM \"table\"",
+			want: "SELECT COUNT(if(indexOf(tag_keys,'service_id') = 1,1,null)) AS \"993567cffecb105e\" FROM \"table\"",
 		},
 		{
 			name: "select sum(if:eq)",

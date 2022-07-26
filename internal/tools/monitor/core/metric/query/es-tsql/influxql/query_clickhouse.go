@@ -36,6 +36,9 @@ type QueryClickhouse struct {
 	ctx       *Context
 	expr      *goqu.SelectDataset
 	column    []*SQLColumnHandler
+
+	orgName     string
+	terminusKey string
 }
 
 func (q QueryClickhouse) Sources() []*model.Source {
@@ -104,11 +107,16 @@ func (q QueryClickhouse) ParseResult(resp interface{}) (*model.Data, error) {
 	// first read
 	rows.Next()
 	cur, err = getData(rows)
+	isTail := false
 	if err != nil {
 		return nil, err
 	}
 	for {
 		if cur == nil && next == nil {
+			break
+		}
+
+		if isTail {
 			break
 		}
 
@@ -122,6 +130,8 @@ func (q QueryClickhouse) ParseResult(resp interface{}) (*model.Data, error) {
 		if rows.Next() {
 			next, err = getData(rows)
 			q.ctx.attributesCache["next"] = next
+		} else {
+			isTail = true
 		}
 
 		var row []interface{}
@@ -190,4 +200,11 @@ func (q QueryClickhouse) Kind() string {
 
 func (q QueryClickhouse) SubSearchSource() interface{} {
 	return q.subLiters
+}
+
+func (q QueryClickhouse) OrgName() string {
+	return q.orgName
+}
+func (q QueryClickhouse) TerminusKey() string {
+	return q.terminusKey
 }

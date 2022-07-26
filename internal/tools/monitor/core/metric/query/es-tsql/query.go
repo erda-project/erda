@@ -33,6 +33,7 @@ import (
 	"time"
 
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/model"
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/metricmeta"
 )
 
 // TimeUnit .
@@ -97,6 +98,8 @@ type Query interface {
 	Debug() bool
 	Timestamp() (int64, int64)
 	Kind() string
+	OrgName() string
+	TerminusKey() string
 }
 
 // ErrNotSupportNonQueryStatement .
@@ -113,6 +116,9 @@ type Parser interface {
 	ParseQuery(kind string) ([]Query, error)
 	Build() error
 	Metrics() ([]string, error)
+	SetOrgName(org string) Parser
+	SetTerminusKey(terminusKey string) Parser
+	SetMeta(*metricmeta.Manager)
 }
 
 // Creator .

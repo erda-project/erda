@@ -26,17 +26,20 @@ import (
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/model"
 	tsql "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql/formats"
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/metricmeta"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/storage"
 )
 
 type queryer struct {
 	storage   storage.Storage `autowired:"metric-storage"`
 	ckStorage storage.Storage `autowired:"metric-storage-clickhouse"`
+	meta      *metricmeta.Manager
 }
 
 // New .
-func New(esStorage storage.Storage, ckStorage storage.Storage) Queryer {
+func New(meta *metricmeta.Manager, esStorage storage.Storage, ckStorage storage.Storage) Queryer {
 	return &queryer{
+		meta:      meta,
 		storage:   esStorage,
 		ckStorage: ckStorage,
 	}
@@ -80,6 +83,7 @@ func (q *queryer) buildTSQLParser(ql, statement string, params map[string]interf
 		return nil, nil, fmt.Errorf("not support tsql '%s'", ql)
 	}
 
+	parser.SetMeta(q.meta)
 	parser, err = parser.SetFilter(filters)
 	if err != nil {
 		return nil, nil, fmt.Errorf("invalid filter on parse filter: %s", err)
@@ -88,6 +92,14 @@ func (q *queryer) buildTSQLParser(ql, statement string, params map[string]interf
 		params = others
 	}
 	parser = parser.SetParams(params)
+
+	if terminusKey, ok := params["terminus_key"]; ok {
+		parser.SetTerminusKey(terminusKey.(string))
+	}
+	if orgName, ok := params["org_name"]; ok {
+		parser.SetTerminusKey(orgName.(string))
+	}
+
 	unit := options.Get("epoch") // Keep the same parameters as the influxdb.
 	if len(unit) > 0 {
 		unit, err := tsql.ParseTimeUnit(unit)

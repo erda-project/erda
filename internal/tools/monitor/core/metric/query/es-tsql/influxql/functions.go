@@ -648,10 +648,18 @@ type PainlessFunction struct {
 	Convert      func(ctx *Context, call *influxql.Call, deftyp influxql.DataType, fields map[string]bool) (string, error)
 }
 
+type PainlessFunctionCk struct {
+	Name         string
+	Objective    bool
+	ObjectType   string
+	DefaultValue string
+	Convert      func(ctx *Context, p *Parser, call *influxql.Call, deftyp influxql.DataType, fields map[string]bool) (string, error)
+}
+
 // PainlessFunctions .
 var PainlessFunctions map[string]*PainlessFunction
 
-var ClickHouseFunctions map[string]*PainlessFunction
+var ClickHouseFunctions map[string]*PainlessFunctionCk
 
 func init() {
 	PainlessFunctions = map[string]*PainlessFunction{
@@ -756,24 +764,24 @@ func init() {
 		},
 	}
 
-	ClickHouseFunctions = map[string]*PainlessFunction{
+	ClickHouseFunctions = map[string]*PainlessFunctionCk{
 		"substring": {Name: "substring", Objective: true, ObjectType: "string", DefaultValue: "''"},
 		"tostring":  {Name: "toString", Objective: true, ObjectType: "object", DefaultValue: "''"},
 		"if": {
-			Convert: func(ctx *Context, call *influxql.Call, deftyp influxql.DataType, fields map[string]bool) (string, error) {
+			Convert: func(ctx *Context, p *Parser, call *influxql.Call, deftyp influxql.DataType, fields map[string]bool) (string, error) {
 				err := mustCallArgsNum(call, 3)
 				if err != nil {
 					return "", err
 				}
-				cond, err := getScriptExpressionOnCk(ctx, call.Args[0], deftyp, fields)
+				cond, err := p.getScriptExpressionOnCk(ctx, call.Args[0], deftyp, fields)
 				if err != nil {
 					return "", err
 				}
-				trueExpr, err := getScriptExpressionOnCk(ctx, call.Args[1], deftyp, fields)
+				trueExpr, err := p.getScriptExpressionOnCk(ctx, call.Args[1], deftyp, fields)
 				if err != nil {
 					return "", err
 				}
-				falseExpr, err := getScriptExpressionOnCk(ctx, call.Args[2], deftyp, fields)
+				falseExpr, err := p.getScriptExpressionOnCk(ctx, call.Args[2], deftyp, fields)
 				if err != nil {
 					return "", err
 				}
@@ -781,16 +789,16 @@ func init() {
 			},
 		},
 		"eq": {
-			Convert: func(ctx *Context, call *influxql.Call, deftyp influxql.DataType, fields map[string]bool) (string, error) {
+			Convert: func(ctx *Context, p *Parser, call *influxql.Call, deftyp influxql.DataType, fields map[string]bool) (string, error) {
 				err := mustCallArgsNum(call, 2)
 				if err != nil {
 					return "", err
 				}
-				left, err := getScriptExpressionOnCk(ctx, call.Args[0], deftyp, fields)
+				left, err := p.getScriptExpressionOnCk(ctx, call.Args[0], deftyp, fields)
 				if err != nil {
 					return "", err
 				}
-				right, err := getScriptExpressionOnCk(ctx, call.Args[1], deftyp, fields)
+				right, err := p.getScriptExpressionOnCk(ctx, call.Args[1], deftyp, fields)
 				if err != nil {
 					return "", err
 				}
@@ -798,16 +806,16 @@ func init() {
 			},
 		},
 		"gt": {
-			Convert: func(ctx *Context, call *influxql.Call, deftyp influxql.DataType, fields map[string]bool) (string, error) {
+			Convert: func(ctx *Context, p *Parser, call *influxql.Call, deftyp influxql.DataType, fields map[string]bool) (string, error) {
 				err := mustCallArgsNum(call, 2)
 				if err != nil {
 					return "", err
 				}
-				left, err := getScriptExpressionOnCk(ctx, call.Args[0], deftyp, fields)
+				left, err := p.getScriptExpressionOnCk(ctx, call.Args[0], deftyp, fields)
 				if err != nil {
 					return "", err
 				}
-				right, err := getScriptExpressionOnCk(ctx, call.Args[1], deftyp, fields)
+				right, err := p.getScriptExpressionOnCk(ctx, call.Args[1], deftyp, fields)
 				if err != nil {
 					return "", err
 				}
@@ -815,18 +823,18 @@ func init() {
 			},
 		},
 		"include": {
-			Convert: func(ctx *Context, call *influxql.Call, deftyp influxql.DataType, fields map[string]bool) (string, error) {
+			Convert: func(ctx *Context, p *Parser, call *influxql.Call, deftyp influxql.DataType, fields map[string]bool) (string, error) {
 				err := mustCallArgsMinNum(call, 2)
 				if err != nil {
 					return "", err
 				}
-				val, err := getScriptExpressionOnCk(ctx, call.Args[0], deftyp, fields)
+				val, err := p.getScriptExpressionOnCk(ctx, call.Args[0], deftyp, fields)
 				if err != nil {
 					return "", err
 				}
 				var parts []string
 				for _, item := range call.Args[1:] {
-					s, err := getScriptExpressionOnCk(ctx, item, deftyp, fields)
+					s, err := p.getScriptExpressionOnCk(ctx, item, deftyp, fields)
 					if err != nil {
 						return "", err
 					}
@@ -836,18 +844,18 @@ func init() {
 			},
 		},
 		"not_include": {
-			Convert: func(ctx *Context, call *influxql.Call, deftyp influxql.DataType, fields map[string]bool) (string, error) {
+			Convert: func(ctx *Context, p *Parser, call *influxql.Call, deftyp influxql.DataType, fields map[string]bool) (string, error) {
 				err := mustCallArgsMinNum(call, 2)
 				if err != nil {
 					return "", err
 				}
-				val, err := getScriptExpressionOnCk(ctx, call.Args[0], deftyp, fields)
+				val, err := p.getScriptExpressionOnCk(ctx, call.Args[0], deftyp, fields)
 				if err != nil {
 					return "", err
 				}
 				var parts []string
 				for _, item := range call.Args[1:] {
-					s, err := getScriptExpressionOnCk(ctx, item, deftyp, fields)
+					s, err := p.getScriptExpressionOnCk(ctx, item, deftyp, fields)
 					if err != nil {
 						return "", err
 					}

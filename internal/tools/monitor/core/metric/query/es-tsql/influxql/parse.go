@@ -23,16 +23,21 @@ import (
 
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/model"
 	tsql "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql"
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/metricmeta"
 )
 
 // Parser .
 type Parser struct {
+	meta      *metricmeta.Manager
 	debug     bool
 	stm       string
 	ql        *influxql.Parser
 	ctx       *Context
 	filter    []*model.Filter
 	queryPlan *influxql.Query
+
+	orgName     string
+	terminusKey string
 }
 
 // New start and end always nanosecond
@@ -56,10 +61,23 @@ func init() {
 	tsql.RegisterParser("influxql", New)
 }
 
+func (p *Parser) SetOrgName(org string) tsql.Parser {
+	p.orgName = org
+	return p
+}
+func (p *Parser) SetTerminusKey(terminusKey string) tsql.Parser {
+	p.terminusKey = terminusKey
+	return p
+}
+
 // SetFilter .
 func (p *Parser) SetFilter(filters []*model.Filter) (tsql.Parser, error) {
 	p.filter = filters
 	return p, nil
+}
+
+func (p *Parser) SetMeta(meta *metricmeta.Manager) {
+	p.meta = meta
 }
 
 // SetParams .

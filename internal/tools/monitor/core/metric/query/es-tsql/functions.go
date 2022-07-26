@@ -108,6 +108,10 @@ var CkBuildInFunctions = map[string]func(ctx Context, args ...interface{}) (inte
 			v = float64(val)
 		case float64:
 			v = val
+		case *float64:
+			v = *val
+		case *uint64:
+			v = float64(*val)
 		default:
 			return args[0], nil
 		}
