@@ -111,6 +111,16 @@ service EndpointApiService {
       path: "/api/gateway/openapi/invalid-endpoints",
     };
   }
+
+  rpc ListAllCrontabs(common.VoidRequest) returns (ListAllCrontabsResp){
+    option(google.api.http) = {
+      get: "/api/gateway/openapi/crontabs",
+    };
+    option(erda.common.openapi) = {
+      service: "hepa",
+      path: "/api/gateway/openapi/crontabs",
+    };
+  }
 }
 
 message ChangeEndpointRootResponse {
@@ -282,4 +292,17 @@ message ListInvalidEndpointApiItem {
   string clusterName = 13;
   string routeDeleting = 15;
   string serviceDeleting = 16;
+}
+
+message ListAllCrontabsResp {
+  int64 Total = 1;
+  repeated ListAllCrontabsRespItem list = 2;
+}
+
+message ListAllCrontabsRespItem {
+  string name = 1;
+  bool running = 2;
+  string lastTime = 3;
+  string nextTime = 4;
+  uint64 execTimes = 5;
 }
