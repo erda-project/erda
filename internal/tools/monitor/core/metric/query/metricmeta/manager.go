@@ -15,10 +15,14 @@
 package metricmeta
 
 import (
+	"time"
+
+	"github.com/go-redis/redis"
 	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/providers/i18n"
+
 	indexloader "github.com/erda-project/erda/internal/tools/monitor/core/storekit/elasticsearch/index/loader"
 )
 
@@ -44,24 +48,29 @@ type Manager struct {
 	metaPath   string
 	groupFiles []string
 
-	i18n i18n.I18n
-	log  logs.Logger
+	i18n  i18n.I18n
+	log   logs.Logger
+	redis *redis.Client
+
+	metricMetaCacheExpiration time.Duration
 }
 
 // NewManager .
-func NewManager(ms []string, db *gorm.DB, index indexloader.Interface, metaPath string, groupFiles []string, i18n i18n.I18n, log logs.Logger) *Manager {
+func NewManager(ms []string, db *gorm.DB, index indexloader.Interface, metaPath string, groupFiles []string, i18n i18n.I18n, log logs.Logger, redis *redis.Client, metricMetaCacheExpiration time.Duration) *Manager {
 	sources := make(map[MetaSource]bool)
 	for _, item := range ms {
 		sources[MetaSource(item)] = true
 	}
 	return &Manager{
-		sources:    sources,
-		db:         db,
-		index:      index,
-		metaPath:   metaPath,
-		groupFiles: groupFiles,
-		i18n:       i18n,
-		log:        log,
+		sources:                   sources,
+		db:                        db,
+		index:                     index,
+		metaPath:                  metaPath,
+		groupFiles:                groupFiles,
+		i18n:                      i18n,
+		log:                       log,
+		redis:                     redis,
+		metricMetaCacheExpiration: metricMetaCacheExpiration,
 	}
 }
 
