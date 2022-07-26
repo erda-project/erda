@@ -37,7 +37,7 @@ func (p *provider) Query(ctx context.Context, q tsql.Query) (*model.ResultSet, e
 	}
 	metric, _ := q.Sources()[0].Name, q.Sources()[0].Database
 
-	table, _ := p.Loader.GetSearchTable(q.TerminusKey())
+	table, _ := p.Loader.GetSearchTable(q.OrgName())
 
 	if len(q.OrgName()) > 0 {
 		expr = expr.Where(goqu.C("org_name").Eq(q.OrgName()))
