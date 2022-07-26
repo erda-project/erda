@@ -31,7 +31,6 @@ import (
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 	"github.com/erda-project/erda-infra/pkg/transport/http/encoding"
 	"github.com/erda-project/erda-infra/providers/i18n"
-
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql/formats/chartv2"  //
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql/formats/dict"     //

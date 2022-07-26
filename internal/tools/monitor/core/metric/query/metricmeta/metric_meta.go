@@ -20,9 +20,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/go-redis/redis"
 
+	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 )
 
