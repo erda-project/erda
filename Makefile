@@ -129,7 +129,7 @@ run-test:
 	go run tools/gotools/go-test-sum/main.go
 
 full-test:
-	docker run --rm -ti -v $$(pwd):/go/src/output registry.erda.cloud/erda/erda-base:20220713 \
+	docker run --rm -ti -v $$(pwd):/go/src/output registry.erda.cloud/erda/erda-base:20220726 \
 		bash -c 'cd /go/src/output && build/scripts/test_in_container.sh'
 
 # docker image
