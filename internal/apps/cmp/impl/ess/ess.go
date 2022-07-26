@@ -259,7 +259,7 @@ func (e *Ess) EnsureScaleRuleExist(name string) (bool, error) {
 	request.Scheme = "https"
 
 	request.ScalingGroupId = e.Config.EssGroupID
-	request.ScalingRuleName1 = name
+	request.ScalingRuleName = &[]string{name}
 
 	response, err := e.Config.client.DescribeScalingRules(request)
 	if err != nil {
@@ -303,7 +303,7 @@ func (e *Ess) EnsureScheduledTasks(name string) (bool, error) {
 	request := api.CreateDescribeScheduledTasksRequest()
 	request.Scheme = "https"
 
-	request.ScheduledTaskName1 = name
+	request.ScheduledTaskName = &[]string{name}
 
 	response, err := e.Config.client.DescribeScheduledTasks(request)
 	if err != nil {
