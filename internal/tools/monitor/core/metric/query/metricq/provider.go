@@ -18,6 +18,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/erda-project/erda-infra/pkg/transport"
+	"github.com/go-redis/redis"
 	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -45,6 +47,13 @@ type config struct {
 		Path           string        `file:"path"`
 		ReloadInterval time.Duration `file:"reload_interval"`
 	} `file:"chart_meta"`
+
+	MetricMeta struct {
+		MetricMetaCacheExpiration time.Duration `file:"metric_meta_cache_expiration"`
+		Sources                   []string      `file:"sources"`
+		GroupFiles                []string      `file:"group_files"`
+		MetricMetaPath            string        `file:"metric_meta_path"`
+	} `file:"metric_meta"`
 }
 
 type provider struct {
@@ -55,6 +64,11 @@ type provider struct {
 	DB         *gorm.DB              `autowired:"mysql-client"`
 	ChartTrans i18n.Translator       `autowired:"i18n" translator:"charts"`
 	q          *Metricq
+
+	Log        logs.Logger
+	Register   transport.Register `autowired:"service-register" optional:"true"`
+	MetricTran i18n.I18n          `autowired:"i18n@metric"`
+	Redis      *redis.Client      `autowired:"redis-client"`
 
 	Storage storage.Storage `autowired:"metric-storage"`
 
@@ -68,8 +82,24 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		return fmt.Errorf("fail to start charts manager: %s", err)
 	}
 
+	meta := metricmeta.NewManager(
+		p.C.MetricMeta.Sources,
+		p.DB,
+		p.Index,
+		p.C.MetricMeta.MetricMetaPath,
+		p.C.MetricMeta.GroupFiles,
+		p.MetricTran,
+		p.Log,
+		p.Redis,
+		p.C.MetricMeta.MetricMetaCacheExpiration,
+	)
+	err = meta.Init()
+	if err != nil {
+		return err
+	}
+
 	p.q = &Metricq{
-		Queryer:   query.New(nil, p.Storage, p.CkStorageReader),
+		Queryer:   query.New(meta, p.Storage, p.CkStorageReader),
 		queryv1:   queryv1.New(&query.MetricIndexLoader{Interface: p.Index}, charts, p.Meta, p.ChartTrans),
 		index:     p.Index,
 		meta:      p.Meta,

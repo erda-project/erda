@@ -713,7 +713,7 @@ func (p *Parser) ckField(key string) (string, bool) {
 		return fmt.Sprintf("indexOf(number_field_keys,'%s')", key), true
 	}
 	metas, err := p.meta.GetMetricMetaByCache(p.orgName, p.terminusKey, metrics...)
-	if err != nil {
+	if err == nil {
 		for _, meta := range metas {
 			if typ, ok := meta.Fields[key]; ok {
 				//Multiple metrics can be specified, there may be the same name and type conflict, Chart Query

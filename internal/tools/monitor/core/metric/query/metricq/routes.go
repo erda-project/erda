@@ -19,6 +19,7 @@ import (
 	"net/http"
 
 	"github.com/erda-project/erda-infra/providers/httpserver"
+
 	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
 
@@ -36,6 +37,18 @@ func (p *provider) initRoutes(routes httpserver.Router) error {
 
 // queryMetrics .
 func (p *provider) queryMetrics(r *http.Request) interface{} {
+
+	params := make(map[string]interface{})
+
+	orgId := api.OrgID(r)
+	if len(orgId) > 0 {
+		params["terminus_key"] = api.OrgID(r)
+	}
+	orgName := api.OrgName(r)
+	if len(orgName) > 0 {
+		params["org_name"] = api.OrgName(r)
+	}
+
 	err := r.ParseForm()
 	if err != nil {
 		return api.Errors.InvalidParameter(err)
@@ -56,7 +69,7 @@ func (p *provider) queryMetrics(r *http.Request) interface{} {
 			q = string(byts)
 		}
 	}
-	resp, data, err := p.q.QueryWithFormat(ql, q, format, api.Language(r), nil, nil, r.Form)
+	resp, data, err := p.q.QueryWithFormat(ql, q, format, api.Language(r), params, nil, r.Form)
 	if err != nil {
 		return api.Errors.InvalidParameter(err)
 	}
