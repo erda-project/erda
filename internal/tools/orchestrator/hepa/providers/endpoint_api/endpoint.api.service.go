@@ -20,6 +20,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -28,6 +29,7 @@ import (
 	"github.com/erda-project/erda-proto-go/core/hepa/endpoint_api/pb"
 	projPb "github.com/erda-project/erda-proto-go/core/project/pb"
 	runtimePb "github.com/erda-project/erda-proto-go/orchestrator/runtime/pb"
+	"github.com/erda-project/erda/internal/pkg/cron"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/vars"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/k8s"
@@ -63,6 +65,7 @@ type endpointApiService struct {
 	gatewayRouteService   repositoryService.GatewayRouteService
 	gatewayServiceService repositoryService.GatewayServiceService
 	kongInfoService       repositoryService.GatewayKongInfoService
+	cron                  cron.Interface
 }
 
 func (s *endpointApiService) GetEndpointsName(ctx context.Context, req *pb.GetEndpointsNameRequest) (resp *pb.GetEndpointsNameResponse, err error) {
@@ -283,6 +286,21 @@ func (s *endpointApiService) ChangeEndpointRoot(ctx context.Context, req *pb.Cha
 		Data: result,
 	}
 	return
+}
+
+func (s *endpointApiService) ListAllCrontabs(ctx context.Context, req *commonPb.VoidRequest) (*pb.ListAllCrontabsResp, error) {
+	tasks := s.cron.GetTasks()
+	var result pb.ListAllCrontabsResp
+	for task, status := range tasks {
+		result.List = append(result.List, &pb.ListAllCrontabsRespItem{
+			Name:      task.Name(),
+			Running:   status.InRunning(),
+			LastTime:  status.LastTime().Format(time.RFC3339),
+			NextTime:  status.NextTime().Format(time.RFC3339),
+			ExecTimes: status.Count(),
+		})
+	}
+	return &result, nil
 }
 
 func (s *endpointApiService) ListInvalidEndpointApi(ctx context.Context, req *pb.ListInvalidEndpointApiReq) (*pb.ListInvalidEndpointApiResp, error) {

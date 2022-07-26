@@ -27,11 +27,16 @@ erda.core.hepa.openapi_consumer:
 erda.core.hepa.api_policy:  
 erda.core.hepa.org_client:
 erda.core.hepa.endpoint_api:
+  clearEndpointsCronExpr: "0 0 1 * * ? *"
+  clearEndpointsClusters:
+    "terminus-captain": true
 erda.core.hepa.runtime_service:
 
 i18n:
   files:
     - conf/i18n/log-trans.yaml
+
+easy-cron: {}
 
 grpc-client@erda.core.clustermanager.cluster:
   addr: "${CLUSTER_MANAGER_GRPC_ADDR:cluster-manager:9095}"
