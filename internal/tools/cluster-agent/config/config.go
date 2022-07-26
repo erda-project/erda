@@ -17,6 +17,8 @@ package config
 type Config struct {
 	Debug                  bool   `default:"false" desc:"enable debug logging"`
 	CollectClusterInfo     bool   `default:"true" desc:"enable collect cluster info"`
+	CollectSource          string `default:"secret" desc:"collect source, secret or file"`
+	ServiceAccountName     string `default:"cluster-agent" desc:"component service account name"`
 	LeaderElection         bool   `default:"true" desc:"leader election"`
 	LeaderElectionID       string `default:"cluster-agent.erda.cloud" desc:"leader election id"`
 	LeasesResourceLockType string `default:"leases" desc:"leases resource lock type"`
