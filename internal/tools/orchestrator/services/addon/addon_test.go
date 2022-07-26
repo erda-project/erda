@@ -667,16 +667,16 @@ func TestAddon(t *testing.T) {
 		apistructs.PodInfoData{},
 	})
 
-	monkey.PatchInstanceMethod(reflect.TypeOf(a.bdl), "ListDopOrgs",
-		func(bdl *bundle.Bundle, req *apistructs.OrgSearchRequest) (*apistructs.PagingOrgDTO, error) {
-			return &apistructs.PagingOrgDTO{
-				List: []apistructs.OrgDTO{
-					{ID: 123},
-				},
-			}, nil
-		},
-	)
-	a.getAllOrgIDs()
+	// monkey.PatchInstanceMethod(reflect.TypeOf(a.bdl), "ListDopOrgs",
+	// 	func(bdl *bundle.Bundle, req *apistructs.OrgSearchRequest) (*apistructs.PagingOrgDTO, error) {
+	// 		return &apistructs.PagingOrgDTO{
+	// 			List: []apistructs.OrgDTO{
+	// 				{ID: 123},
+	// 			},
+	// 		}, nil
+	// 	},
+	// )
+	// a.getAllOrgIDs()
 
 	monkey.PatchInstanceMethod(reflect.TypeOf(a.db), "ListAddonInstanceByOrg",
 		func(db *dbclient.DBClient, orgID uint64) (*[]dbclient.AddonInstance, error) {

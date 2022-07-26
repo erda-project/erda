@@ -17,10 +17,11 @@ package mysql
 import (
 	"testing"
 
+	"github.com/golang/mock/gomock"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/addon/sourcecov/mock"
 	"github.com/erda-project/erda/pkg/http/httpclient"
-	"github.com/golang/mock/gomock"
 )
 
 type k8s struct{}
