@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -30,6 +31,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/internal/tools/orchestrator/i18n"
 	"github.com/erda-project/erda/pkg/discover"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/mysqlhelper"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -401,6 +403,41 @@ func (a *Addon) initSqlFile(serviceGroup *apistructs.ServiceGroup, existsMysqlEx
 	return err
 }
 
+func (a *Addon) getCreateDBsAndInitSQL(addonOptions string) ([]string, string, error) {
+	var optionsMap map[string]string
+
+	if addonOptions != "" {
+		err := json.Unmarshal([]byte(addonOptions), &optionsMap)
+		if err != nil {
+			return nil, "", errors.Wrapf(err, "instance optiosn Unmarshal error, body %s", addonOptions)
+		}
+	}
+
+	createDBs := strings.Split(optionsMap["create_dbs"], ",")
+	if len(createDBs) == 0 || optionsMap["create_dbs"] == "" {
+		return nil, "", nil
+	}
+
+	initSql := optionsMap["init_sql"]
+	if initSql != "" {
+		f, err := os.CreateTemp("", "*.sql.gz")
+		if err == nil {
+			defer f.Close()
+			var res *httpclient.Response
+			res, err = a.hc.Get(initSql).Do().Body(f)
+			if err == nil && !res.IsOK() {
+				err = errors.Errorf("get init_sql status code: %d", res.StatusCode())
+			}
+		}
+		if err != nil {
+			return nil, "", err
+		}
+		initSql = f.Name()
+	}
+
+	return createDBs, initSql, nil
+}
+
 // BuildAddonRequestGroup build请求serviceGroup的body信息
 func (a *Addon) BuildAddonRequestGroup(params *apistructs.AddonHandlerCreateItem, addonIns *dbclient.AddonInstance, addonSpec *apistructs.AddonExtension, addonDice *diceyml.Object) (*apistructs.ServiceGroupCreateV2Request, error) {
 	addonDeployGroup := apistructs.ServiceGroupCreateV2Request{
@@ -456,6 +493,7 @@ func (a *Addon) BuildAddonRequestGroup(params *apistructs.AddonHandlerCreateItem
 	if err != nil {
 		return nil, err
 	}
+
 	var buildErr error
 	switch params.AddonName {
 	case apistructs.AddonZookeeper:
@@ -491,21 +529,30 @@ func (a *Addon) BuildAddonRequestGroup(params *apistructs.AddonHandlerCreateItem
 			buildErr = a.BuildRedisServiceItem(params, addonIns, addonSpec, addonDice)
 		}
 	case apistructs.AddonMySQL:
-		if !capacity.MysqlOperator {
-			addonDeployGroup.GroupLabels["ADDON_GROUPS"] = "2"
-
-			mysqlPreProcess(params, addonSpec, &addonDeployGroup)
-
-			buildErr = a.BuildMysqlServiceItem(params, addonIns, addonSpec, addonDice, &clusterInfo)
-		} else {
-			_, addonOperatorDice, err := a.GetAddonExtention(&apistructs.AddonHandlerCreateItem{
+		if capacity.MysqlOperator {
+			_, _, err = a.GetAddonExtention(&apistructs.AddonHandlerCreateItem{
 				AddonName: apistructs.AddonMySQL + "-operator",
 				Plan:      apistructs.AddonBasic,
 			})
 			if err != nil {
 				return nil, err
 			}
-			buildErr = a.BuildMysqlOperatorServiceItem(params.Options, addonIns, addonOperatorDice, &clusterInfo)
+
+			if addonDeployGroup.ProjectNamespace == "" {
+				addonDeployGroup.ProjectNamespace = fmt.Sprintf("project-%s-%s", addonIns.ProjectID, strings.ToLower(addonIns.Workspace))
+			}
+
+			addonDeployGroup.GroupLabels["ADDON_GROUPS"] = "1"
+
+			mysqlPreProcess(params, addonSpec, &addonDeployGroup)
+
+			buildErr = a.BuildMysqlOperatorServiceItem(params, addonIns, addonSpec, addonDice, &clusterInfo)
+		} else {
+			addonDeployGroup.GroupLabels["ADDON_GROUPS"] = "2"
+
+			mysqlPreProcess(params, addonSpec, &addonDeployGroup)
+
+			buildErr = a.BuildMysqlServiceItem(params, addonIns, addonSpec, addonDice, &clusterInfo)
 		}
 	case apistructs.AddonES:
 		// 6.8.9 or later version use operator.
@@ -571,6 +618,7 @@ func (a *Addon) BuildAddonRequestGroup(params *apistructs.AddonHandlerCreateItem
 		}
 	}
 	addonDeployGroup.DiceYml = *addonDice
+
 	return &addonDeployGroup, nil
 }
 

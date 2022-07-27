@@ -208,6 +208,7 @@ require (
 	k8s.io/kube-aggregator v0.20.0
 	k8s.io/kubectl v0.21.0
 	k8s.io/kubernetes v1.21.0
+	k8s.io/utils v0.0.0-20220725171434-9bab9ef40391 // indirect
 	kmodules.xyz/monitoring-agent-api v0.0.0-20200125202117-d3b3e33ce41f
 	kmodules.xyz/objectstore-api v0.0.0-20200214040336-fe8f39a4210d
 	kmodules.xyz/offshoot-api v0.0.0-20200216080509-45ee6418d1c1

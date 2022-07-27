@@ -26,6 +26,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/impl/cap"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/impl/clusterinfo"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
 
@@ -66,6 +67,9 @@ func TestBuildAddonRequestGroupForEsWithOperator(t *testing.T) {
 	})
 
 	_, err := addon.BuildAddonRequestGroup(&apistructs.AddonHandlerCreateItem{
+		Options: map[string]string{
+			"k": "v",
+		},
 		AddonName: apistructs.AddonES,
 	}, &dbclient.AddonInstance{
 		AddonID: "fake-addon-id",
@@ -80,4 +84,95 @@ func TestBuildAddonRequestGroupForEsWithOperator(t *testing.T) {
 	})
 
 	assert.NoError(t, err)
+}
+
+func Test_getCreateDBsAndInitSQL(t *testing.T) {
+	defer monkey.UnpatchAll()
+
+	bdl := bundle.New()
+	var capImpl *cap.CapImpl
+	var clusterinfoImpl *clusterinfo.ClusterInfoImpl
+
+	addon := New(WithBundle(bdl), WithCap(capImpl), WithClusterInfoImpl(clusterinfoImpl), WithHTTPClient(httpclient.New()))
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(clusterinfoImpl), "Info", func(bundle *clusterinfo.ClusterInfoImpl, name string) (apistructs.ClusterInfoData, error) {
+		return apistructs.ClusterInfoData{}, nil
+	})
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(capImpl), "CapacityInfo", func(_ *cap.CapImpl, clustername string) apistructs.CapacityInfoData {
+		return apistructs.CapacityInfoData{
+			ElasticsearchOperator: true,
+		}
+	})
+
+	_, _, err := addon.getCreateDBsAndInitSQL("")
+	assert.NoError(t, err)
+
+	_, _, err = addon.getCreateDBsAndInitSQL(`{"create_dbs":"test1,test2"}`)
+	assert.NoError(t, err)
+
+	_, _, err = addon.getCreateDBsAndInitSQL(`{"create_dbs":"test1,test2","init_sql":"http://www.baidu.com/"}`)
+	assert.NoError(t, err)
+}
+
+func TestMySQLDeployStatus(t *testing.T) {
+	defer monkey.UnpatchAll()
+
+	bdl := bundle.New()
+	var capImpl *cap.CapImpl
+	var clusterinfoImpl *clusterinfo.ClusterInfoImpl
+
+	addon := New(WithBundle(bdl), WithCap(capImpl), WithClusterInfoImpl(clusterinfoImpl))
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(clusterinfoImpl), "Info", func(bundle *clusterinfo.ClusterInfoImpl, name string) (apistructs.ClusterInfoData, error) {
+		return apistructs.ClusterInfoData{}, nil
+	})
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(capImpl), "CapacityInfo", func(_ *cap.CapImpl, clustername string) apistructs.CapacityInfoData {
+		return apistructs.CapacityInfoData{
+			MysqlOperator: true,
+		}
+	})
+
+	defer func() {
+		if err := recover(); err != nil {
+			t.Log(err)
+		}
+	}()
+
+	_, err := addon.MySQLDeployStatus(nil, nil, nil)
+	if err != nil {
+		t.Log(err)
+	}
+}
+
+func TestBuildMysqlOperatorServiceItem(t *testing.T) {
+	defer monkey.UnpatchAll()
+
+	bdl := bundle.New()
+	var capImpl *cap.CapImpl
+	var clusterinfoImpl *clusterinfo.ClusterInfoImpl
+
+	addon := New(WithBundle(bdl), WithCap(capImpl), WithClusterInfoImpl(clusterinfoImpl))
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(clusterinfoImpl), "Info", func(bundle *clusterinfo.ClusterInfoImpl, name string) (apistructs.ClusterInfoData, error) {
+		return apistructs.ClusterInfoData{}, nil
+	})
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(capImpl), "CapacityInfo", func(_ *cap.CapImpl, clustername string) apistructs.CapacityInfoData {
+		return apistructs.CapacityInfoData{
+			MysqlOperator: true,
+		}
+	})
+
+	defer func() {
+		if err := recover(); err != nil {
+			t.Log(err)
+		}
+	}()
+
+	err := addon.BuildMysqlOperatorServiceItem(nil, nil, nil, nil, nil)
+	if err != nil {
+		t.Log(err)
+	}
 }

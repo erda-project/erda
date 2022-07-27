@@ -16,20 +16,20 @@ package mysql
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
-	"time"
+	"strconv"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	store "kmodules.xyz/objectstore-api/api/v1"
-	ofst "kmodules.xyz/offshoot-api/api/v1"
+	"k8s.io/utils/pointer"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/addon"
+	mysqlv1 "github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/addon/mysql/v1"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders"
@@ -44,6 +44,16 @@ type MysqlOperator struct {
 	client *httpclient.HTTPClient
 }
 
+func (my *MysqlOperator) Name(sg *apistructs.ServiceGroup) string {
+	return "mysql-" + sg.ID[:10]
+}
+func (my *MysqlOperator) Namespace(sg *apistructs.ServiceGroup) string {
+	return sg.ProjectNamespace
+}
+func (my *MysqlOperator) NamespacedName(sg *apistructs.ServiceGroup) string {
+	return my.Namespace(sg) + "/" + my.Name(sg)
+}
+
 func New(k8s addon.K8SUtil, ns addon.NamespaceUtil, secret addon.SecretUtil, pvc addon.PVCUtil, client *httpclient.HTTPClient) *MysqlOperator {
 	return &MysqlOperator{
 		k8s:    k8s,
@@ -55,22 +65,19 @@ func New(k8s addon.K8SUtil, ns addon.NamespaceUtil, secret addon.SecretUtil, pvc
 }
 
 func (my *MysqlOperator) IsSupported() bool {
-	// At present, the mysql operator test is still a bit problematic, and it is temporarily set to not support
-	return false
-
-	// resp, err := my.client.Get(my.k8s.GetK8SAddr().Host).
-	// 	Path("/apis/kubedb.com").
-	// 	Do().
-	// 	DiscardBody()
-	// if err != nil {
-	// 	logrus.Errorf("failed to query /apis/kubedb.com, host: %v, err: %v",
-	// 		my.k8s.GetK8SAddr().Host, err)
-	// 	return false
-	// }
-	// if !resp.IsOK() {
-	// 	return false
-	// }
-	// return true
+	resp, err := my.client.Get(my.k8s.GetK8SAddr()).
+		Path("/apis/database.erda.cloud").
+		Do().
+		DiscardBody()
+	if err != nil {
+		logrus.Errorf("failed to query database.erda.cloud, host: %v, err: %v",
+			my.k8s.GetK8SAddr(), err)
+		return false
+	}
+	if !resp.IsOK() {
+		return false
+	}
+	return true
 }
 
 func (my *MysqlOperator) Validate(sg *apistructs.ServiceGroup) error {
@@ -78,7 +85,7 @@ func (my *MysqlOperator) Validate(sg *apistructs.ServiceGroup) error {
 	if !ok {
 		return fmt.Errorf("[BUG] sg need USE_OPERATOR label")
 	}
-	if strutil.ToLower(operator) != "mysql" {
+	if strings.ToLower(operator) != "mysql" {
 		return fmt.Errorf("[BUG] value of label USE_OPERATOR should be 'mysql'")
 	}
 	if len(sg.Services) != 1 {
@@ -93,16 +100,10 @@ func (my *MysqlOperator) Validate(sg *apistructs.ServiceGroup) error {
 	return nil
 }
 
-type mysqlSecretBackupPVC struct {
-	secret    *corev1.Secret
-	mysql     *MySQL
-	backuppvc *corev1.PersistentVolumeClaim
-}
-
 func (my *MysqlOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
 	mysql := sg.Services[0]
+
 	scname := "dice-local-volume"
-	nfsscname := "dice-nfs-volume"
 	capacity := "20Gi"
 
 	// volumes in an addon service has same storageclass
@@ -117,147 +118,98 @@ func (my *MysqlOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
 
 		if mysql.Volumes[0].SCVolume.StorageClassName != "" {
 			scname = mysql.Volumes[0].SCVolume.StorageClassName
-			nfsscname = mysql.Volumes[0].SCVolume.StorageClassName
 		}
 	}
 
-	replica := int32(mysql.Scale)
-	passwd := mysql.Env["MYSQL_ROOT_PASSWORD"]
-	secret := corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "mysql-root-password",
-			Namespace: genK8SNamespace(sg.Type, sg.ID),
-		},
-		Data: map[string][]byte{
-			"username": []byte("root"),
-			"password": []byte(passwd),
-		},
-	}
 	scheinfo := sg.ScheduleInfo2
 	scheinfo.Stateful = true
 	affinity := constraintbuilders.K8S(&scheinfo, nil, nil, nil).Affinity
-	backupPVC := corev1.PersistentVolumeClaim{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "backup-pvc",
-			Namespace: genK8SNamespace(sg.Type, sg.ID),
-		},
-		Spec: corev1.PersistentVolumeClaimSpec{
-			AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
-			Resources: corev1.ResourceRequirements{
-				Requests: corev1.ResourceList{
-					"storage": resource.MustParse(capacity),
-				},
-			},
-			StorageClassName: &nfsscname,
-		},
+
+	resources := corev1.ResourceRequirements{
+		Requests: corev1.ResourceList{},
+		Limits:   corev1.ResourceList{},
+	}
+	if mysql.Resources.Cpu != 0 {
+		cpu := resource.MustParse(strutil.Concat(strconv.Itoa(int(mysql.Resources.Cpu*1000)), "m"))
+		resources.Requests[corev1.ResourceCPU] = cpu
+	}
+	if mysql.Resources.MaxCPU != 0 {
+		maxCpu := resource.MustParse(strutil.Concat(strconv.Itoa(int(mysql.Resources.MaxCPU*1000)), "m"))
+		resources.Limits[corev1.ResourceCPU] = maxCpu
+	}
+	if mysql.Resources.Mem != 0 {
+		mem := resource.MustParse(strutil.Concat(strconv.Itoa(int(mysql.Resources.Mem)), "Mi"))
+		resources.Requests[corev1.ResourceMemory] = mem
+	}
+	if mysql.Resources.MaxMem != 0 {
+		maxMem := resource.MustParse(strutil.Concat(strconv.Itoa(int(mysql.Resources.MaxMem)), "Mi"))
+		resources.Limits[corev1.ResourceMemory] = maxMem
 	}
 
-	// set pvc annotations for snapshot
-	if len(mysql.Volumes) > 0 {
-		if mysql.Volumes[0].SCVolume.Snapshot.MaxHistory > 0 {
-			if scname == apistructs.AlibabaSSDSC {
-				backupPVC.Annotations = make(map[string]string)
-				vs := diceyml.VolumeSnapshot{
-					MaxHistory: mysql.Volumes[0].SCVolume.Snapshot.MaxHistory,
-				}
-				vsMap := map[string]diceyml.VolumeSnapshot{}
-				vsMap[scname] = vs
-				data, _ := json.Marshal(vsMap)
-				backupPVC.Annotations[apistructs.CSISnapshotMaxHistory] = string(data)
-			} else {
-				logrus.Warnf("Service %s pvc volume use storageclass %s, it do not support snapshot. Only volume.type SSD for Alibaba disk SSD support snapshot\n", mysql.Name, scname)
-			}
-		}
+	replicas := mysql.Scale - 1
+	if replicas < 0 {
+		replicas = 0
+	} else if replicas > 9 {
+		replicas = 9
 	}
 
-	mysqlstruct := MySQL{
+	obj := &mysqlv1.Mysql{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: "kubedb.com/v1alpha1",
-			Kind:       "MySQL",
+			APIVersion: "database.erda.cloud/v1",
+			Kind:       "Mysql",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      sg.ID,
-			Namespace: genK8SNamespace(sg.Type, sg.ID),
+			Name:      my.Name(sg),
+			Namespace: my.Namespace(sg),
 		},
-		Spec: MySQLSpec{
-			Version:  "5.7.25",
-			Replicas: &replica,
-			Storage: &corev1.PersistentVolumeClaimSpec{
-				StorageClassName: &scname,
-				AccessModes:      []corev1.PersistentVolumeAccessMode{"ReadWriteOnce"},
-				Resources: corev1.ResourceRequirements{
-					Requests: corev1.ResourceList{
-						"storage": resource.MustParse(capacity),
-					},
-				},
-			},
-			DatabaseSecret: &corev1.SecretVolumeSource{
-				SecretName: "mysql-root-password",
-			},
-			PodTemplate: ofst.PodTemplateSpec{
-				Spec: ofst.PodSpec{
-					Affinity: &affinity,
-				},
-			},
-			BackupSchedule: &BackupScheduleSpec{
-				CronExpression: "@every 1m",
-				Backend: store.Backend{
-					Local: &store.LocalSpec{
-						VolumeSource: corev1.VolumeSource{
-							PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-								ClaimName: "backup-pvc",
-							},
-						},
-						MountPath: "/backup",
-					},
-				},
-			},
+		Spec: mysqlv1.MysqlSpec{
+			Version: "v5.7",
+
+			PrimaryMode: mysqlv1.ModeClassic,
+			Primaries:   1,
+			Replicas:    pointer.Int(replicas),
+
+			LocalUsername: "root",
+			LocalPassword: mysql.Env["MYSQL_ROOT_PASSWORD"],
+
+			StorageClassName: scname,
+			StorageSize:      resource.MustParse(capacity),
+
+			Affinity:    &affinity,
+			Resources:   resources,
+			Labels:      make(map[string]string),
+			Annotations: make(map[string]string),
 		},
 	}
 
-	// set Labels and annotations
-	mysqlstruct.Labels = make(map[string]string)
-	mysqlstruct.Annotations = make(map[string]string)
-	addon.SetAddonLabelsAndAnnotations(mysql, mysqlstruct.Labels, mysqlstruct.Annotations)
+	addon.SetAddonLabelsAndAnnotations(mysql, obj.Spec.Labels, obj.Spec.Annotations)
 
-	return mysqlSecretBackupPVC{
-		secret:    &secret,
-		mysql:     &mysqlstruct,
-		backuppvc: &backupPVC,
-	}
+	return obj
 }
 
 func (my *MysqlOperator) Create(k8syml interface{}) error {
-	mysqlSecretBackupPVC, ok := k8syml.(mysqlSecretBackupPVC)
+	obj, ok := k8syml.(*mysqlv1.Mysql)
 	if !ok {
-		return fmt.Errorf("[BUG] this k8syml should be mysqlAndSecret")
+		return fmt.Errorf("[BUG] this k8syml should be *mysqlv1.Mysql")
 	}
-	mysql := mysqlSecretBackupPVC.mysql
-	secret := mysqlSecretBackupPVC.secret
-	backuppvc := mysqlSecretBackupPVC.backuppvc
-	if err := my.ns.Exists(mysql.Namespace); err != nil {
-		if err := my.ns.Create(mysql.Namespace, nil); err != nil {
+	if err := my.ns.Exists(obj.Namespace); err != nil {
+		if err := my.ns.Create(obj.Namespace, nil); err != nil {
 			return err
 		}
 	}
-	if err := my.secret.Create(secret); err != nil {
-		return fmt.Errorf("failed to create mysql secret, %s/%s, err: %v", mysql.Namespace, mysql.Name, err)
-	}
-	if err := my.pvc.Create(backuppvc); err != nil {
-		return fmt.Errorf("failed to create mysql backup pvc, %s/%s, err: %v", mysql.Namespace, mysql.Name, err)
-	}
 	var b bytes.Buffer
 	resp, err := my.client.Post(my.k8s.GetK8SAddr()).
-		Path(fmt.Sprintf("/apis/kubedb.com/v1alpha1/namespaces/%s/mysqls", mysql.Namespace)).
-		JSONBody(mysql).
+		Path(fmt.Sprintf("/apis/database.erda.cloud/v1/namespaces/%s/mysqls", obj.Namespace)).
+		JSONBody(obj).
 		Do().
 		Body(&b)
 	if err != nil {
-		return fmt.Errorf("failed to create mysql, %s/%s, err: %v", mysql.Namespace, mysql.Name, err)
+		return fmt.Errorf("failed to create mysql, %s/%s, err: %s, body: %s",
+			obj.Namespace, obj.Name, err.Error(), b.String())
 	}
 	if !resp.IsOK() {
-		return fmt.Errorf("failed to create mysql, %s/%s, statuscode: %v, body: %v",
-			mysql.Namespace, mysql.Name, resp.StatusCode(), b.String())
+		return fmt.Errorf("failed to create mysql, %s/%s, statuscode: %d, body: %s",
+			obj.Namespace, obj.Name, resp.StatusCode(), b.String())
 	}
 	return nil
 }
@@ -265,108 +217,63 @@ func (my *MysqlOperator) Create(k8syml interface{}) error {
 func (my *MysqlOperator) Inspect(sg *apistructs.ServiceGroup) (*apistructs.ServiceGroup, error) {
 	var b bytes.Buffer
 	resp, err := my.client.Get(my.k8s.GetK8SAddr()).
-		Path(fmt.Sprintf("/apis/kubedb.com/v1alpha1/namespaces/%s/mysqls/%s", genK8SNamespace(sg.Type, sg.ID), sg.ID)).
+		Path(fmt.Sprintf("/apis/database.erda.cloud/v1/namespaces/%s/mysqls/%s", my.Namespace(sg), my.Name(sg))).
 		Do().
 		Body(&b)
 	if err != nil {
-		return nil, fmt.Errorf("failed to inspect mysql, %s/%s, err: %v",
-			genK8SNamespace(sg.Type, sg.ID), sg.ID, err)
+		return nil, fmt.Errorf("failed to inspect mysql, %s, err: %s",
+			my.NamespacedName(sg), err.Error())
 	}
 	if !resp.IsOK() {
-		return nil, fmt.Errorf("failed to inspect mysql, %s/%s, statuscode: %d, body: %v",
-			genK8SNamespace(sg.Type, sg.ID), sg.ID, resp.StatusCode(), b.String())
+		return nil, fmt.Errorf("failed to inspect mysql, %s, statuscode: %d, body: %s",
+			my.NamespacedName(sg), resp.StatusCode(), b.String())
 	}
-	var mysql MySQL
-	if err := json.NewDecoder(&b).Decode(&mysql); err != nil {
+	obj := new(mysqlv1.Mysql)
+	if err := json.NewDecoder(&b).Decode(obj); err != nil {
 		return nil, err
 	}
 
-	status := map[DatabasePhase]apistructs.StatusCode{
-		DatabasePhaseRunning:      apistructs.StatusHealthy,
-		DatabasePhaseCreating:     apistructs.StatusProgressing,
-		DatabasePhaseInitializing: apistructs.StatusProgressing,
-		DatabasePhaseFailed:       apistructs.StatusFailed,
-		"":                        apistructs.StatusUnknown,
-	}[mysql.Status.Phase]
-
 	mysqlsvc := &(sg.Services[0])
-	mysqlsvc.Status = status
-	sg.Status = status
 
-	mysqlsvc.Vip = strutil.Join([]string{sg.ID + "-gvr", genK8SNamespace(sg.Type, sg.ID), "svc.cluster.local"}, ".")
-
-	secret, err := my.secret.Get(genK8SNamespace(sg.Type, sg.ID), "mysql-root-password")
-	if err != nil {
-		return nil, fmt.Errorf("failed to get secret: %s/%s, %v", genK8SNamespace(sg.Type, sg.ID), sg.ID, err)
+	if obj.Status.Color == mysqlv1.Green {
+		mysqlsvc.Status = apistructs.StatusHealthy
+		sg.Status = apistructs.StatusHealthy
+	} else {
+		mysqlsvc.Status = apistructs.StatusUnHealthy
+		sg.Status = apistructs.StatusUnHealthy
 	}
-	sg.Labels["PASSWORD"] = string(secret.Data["password"])
+
+	mysqlsvc.Vip = strings.Join([]string{
+		obj.BuildName("write"),
+		obj.Namespace,
+		"svc.cluster.local",
+	}, ".")
+
+	sg.Labels["PASSWORD"] = obj.Spec.LocalPassword
 
 	return sg, nil
 }
 
 func (my *MysqlOperator) Remove(sg *apistructs.ServiceGroup) error {
-	k8snamespace := genK8SNamespace(sg.Type, sg.ID)
 	var b bytes.Buffer
 	resp, err := my.client.Delete(my.k8s.GetK8SAddr()).
-		Path(fmt.Sprintf("/apis/kubedb.com/v1alpha1/namespaces/%s/mysqls/%s", k8snamespace, sg.ID)).
+		Path(fmt.Sprintf("/apis/database.erda.cloud/v1/namespaces/%s/mysqls/%s", my.Namespace(sg), my.Name(sg))).
 		Do().
 		Body(&b)
 	if err != nil {
-		return fmt.Errorf("failed to remove mysql, %s/%s, err: %v", k8snamespace, sg.ID, err)
+		return fmt.Errorf("failed to remove mysql, %s, err: %s", my.NamespacedName(sg), err.Error())
 	}
 	if !resp.IsOK() {
-		return fmt.Errorf("failed to remove mysql, %s/%s, statuscode: %v, body: %v",
-			k8snamespace, sg.ID, resp.StatusCode(), b.String())
-	}
-	// After mysql is deleted, drmn will be generated, and drmn needs to be deleted to completely delete mysql, otherwise pvc, secret, etc. are still there
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Minute)
-	if err := my.waitMysqlDeleted(ctx, k8snamespace, sg.ID); err != nil {
-		if err == ctx.Err() {
-			return fmt.Errorf("wait mysql deleted timeout(5min), %s/%s", k8snamespace, sg.ID)
-		}
-		return err
+		return fmt.Errorf("failed to remove mysql, %s, statuscode: %d, body: %s",
+			my.NamespacedName(sg), resp.StatusCode(), b.String())
 	}
 
-	if err := my.ns.Delete(k8snamespace); err != nil {
-		logrus.Errorf("failed to delete ns: %s, %v", k8snamespace, err)
-		return nil
-	}
+	//TODO remove pvc
 
 	return nil
 }
 
 func (my *MysqlOperator) Update(k8syml interface{}) error {
-	// TODO:
+	//TODO
 	return fmt.Errorf("mysqloperator not impl Update yet")
-}
-
-func (my *MysqlOperator) waitMysqlDeleted(ctx context.Context, namespace, name string) error {
-	for {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		default:
-		}
-		var b bytes.Buffer
-		resp, err := my.client.Get(my.k8s.GetK8SAddr()).
-			Path(fmt.Sprintf("/apis/kubedb.com/v1alpha1/namespaces/%s/mysqls/%s", namespace, name)).
-			Do().
-			Body(&b)
-		if err != nil {
-			return fmt.Errorf("failed to get mysql, %s/%s, %v", namespace, name, err)
-		}
-		if resp.StatusCode() == 404 { // 已经被删除
-			return nil
-		}
-		if !resp.IsOK() {
-			return fmt.Errorf("failed to get mysql, %s/%s, statuscode:%v, body: %v",
-				namespace, name, resp.StatusCode(), b.String())
-		}
-	}
-	return nil
-}
-
-// TODO: Put it in k8sutil
-func genK8SNamespace(namespace, name string) string {
-	return strutil.Concat(namespace, "--", name)
 }

@@ -20,6 +20,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
 )
 
@@ -75,7 +76,7 @@ func (a *Addon) InitMySQLAccount(addonIns *dbclient.AddonInstance, addonInsRouti
 func buildMySQLAccount(addonIns *dbclient.AddonInstance, addonInsRouting *dbclient.AddonInstanceRouting,
 	extra *dbclient.AddonInstanceExtra, operator string) *dbclient.MySQLAccount {
 	return &dbclient.MySQLAccount{
-		Username:          "mysql",
+		Username:          apistructs.AddonMysqlUser,
 		Password:          extra.Value,
 		KMSKey:            addonIns.KmsKey,
 		InstanceID:        addonIns.ID,

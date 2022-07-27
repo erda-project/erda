@@ -77,6 +77,7 @@ func (db *DBClient) UpdateAddonInstanceStatus(ID, status string) error {
 }
 
 // CreateAddonInstance 创建 addon instance
+//go:noinline
 func (db *DBClient) CreateAddonInstance(instance *AddonInstance) error {
 	return db.Create(instance).Error
 }
