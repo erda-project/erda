@@ -19,6 +19,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/clickhouse"
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/httpserver/interceptors"
 	"github.com/erda-project/erda-infra/providers/i18n"
@@ -29,25 +30,32 @@ import (
 	"github.com/erda-project/erda/internal/pkg/bundle-ex/cmdb"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/metricq"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/storage/elasticsearch"
+	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/clickhouse/table/loader"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
 type config struct {
-	OfflineTimeout time.Duration `file:"offline_timeout"`
-	OfflineSleep   time.Duration `file:"offline_sleep"`
+	OfflineTimeout     time.Duration `file:"offline_timeout"`
+	OfflineSleep       time.Duration `file:"offline_sleep"`
+	QueryMetricsFromCk bool          `file:"query_metric_from_clickhouse"`
+	DebugSQL           bool          `file:"debug_sql"`
 }
 
 type provider struct {
-	C           *config
-	L           logs.Logger
-	bundle      *bundle.Bundle
-	cmdb        *cmdb.Cmdb
-	metricq     metricq.Queryer
-	EsSearchRaw elasticsearch.Interface `autowired:"metric-storage"`
-	service     queryServiceImpl
-	t           i18n.Translator
+	C       *config
+	L       logs.Logger
+	bundle  *bundle.Bundle
+	cmdb    *cmdb.Cmdb
+	metricq metricq.Queryer
+	service queryServiceImpl
+	t       i18n.Translator
+
 	ClusterSvc  clusterpb.ClusterServiceServer `autowired:"erda.core.clustermanager.cluster.ClusterService"`
+	Clickhouse  clickhouse.Interface           `autowired:"clickhouse" optional:"true"`
+	Loader      loader.Interface               `autowired:"clickhouse.table.loader@metric" optional:"true"`
+	EsSearchRaw elasticsearch.Interface        `autowired:"metric-storage"`
 	Org         org.ClientInterface
+	Source      MetricSource
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -59,18 +67,40 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		bundle.WithClusterManager(),
 	)
 	p.cmdb = cmdb.New(cmdb.WithHTTPClient(hc))
+	routes := ctx.Service("http-server", interceptors.Recover(p.L)).(httpserver.Router)
+	//if !p.C.QueryMetricsFromCk {
+	//	p.metricq = ctx.Service("metrics-query").(metricq.Queryer)
+	//	p.service = &queryService{metricQ: p.metricq}
+	//	return p.intRoutes(routes)
+	//} else {
+	//	p.Source = &ClickhouseSource{
+	//		p:          p,
+	//		Clickhouse: p.Clickhouse,
+	//		Log:        p.L,
+	//		DebugSQL:   p.C.DebugSQL,
+	//		Loader:     p.Loader,
+	//	}
+	//	return p.initRoutesV2(routes)
+	//}
 	p.metricq = ctx.Service("metrics-query").(metricq.Queryer)
 	p.service = &queryService{metricQ: p.metricq}
-	routes := ctx.Service("http-server", interceptors.Recover(p.L)).(httpserver.Router)
+	p.Source = &ClickhouseSource{
+		p:          p,
+		Clickhouse: p.Clickhouse,
+		Log:        p.L,
+		DebugSQL:   p.C.DebugSQL,
+		Loader:     p.Loader,
+	}
 	return p.intRoutes(routes)
 }
 
 func init() {
 	servicehub.Register("org-apis", &servicehub.Spec{
-		Services:     []string{"org-apis"},
-		Dependencies: []string{"http-server", "metrics-query", "i18n"},
-		Description:  "org apis",
-		ConfigFunc:   func() interface{} { return &config{} },
+		Services:             []string{"org-apis"},
+		Dependencies:         []string{"http-server", "i18n"},
+		OptionalDependencies: []string{"metrics-query"},
+		Description:          "org apis",
+		ConfigFunc:           func() interface{} { return &config{} },
 		Creator: func() servicehub.Provider {
 			return &provider{}
 		},

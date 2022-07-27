@@ -284,6 +284,22 @@ type containerData struct {
 	PodNamespace    string  `json:"podNamespace"`
 }
 
+type containerRow struct {
+	ContainerID string   `ch:"containerID"`
+	TagKeys     []string `ch:"tagKeys"`
+	TagValues   []string `ch:"tagValues"`
+	CpuUsage    float64  `ch:"cpuUsage"`
+	CpuRequest  float64  `ch:"cpuRequest"`
+	CpuLimit    float64  `ch:"cpuLimit"`
+	CpuOrigin   float64  `ch:"cpuOrigin"`
+	MemUsage    float64  `ch:"memUsage"`
+	MemRequest  float64  `ch:"memRequest"`
+	MemLimit    float64  `ch:"memLimit"`
+	MemOrigin   float64  `ch:"memOrigin"`
+	DiskUsage   float64  `ch:"diskUsage"`
+	DiskLimit   float64  `ch:"diskLimit"`
+}
+
 type resourceChart struct {
 	Title   string                 `json:"title"`
 	Total   int64                  `json:"total"`

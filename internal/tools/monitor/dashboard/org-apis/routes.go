@@ -49,7 +49,7 @@ func (p *provider) intRoutes(routes httpserver.Router) error {
 		permission.ScopeOrg, checkOrgName,
 		common.ResourceOrgCenter, permission.ActionList, p.Org,
 	))
-	routes.POST("/api/resources/containers/:instance_type", p.getContainers, permission.Intercepter(
+	routes.POST("/api/resources/containers/:instance_type", p.Source.GetContainers, permission.Intercepter(
 		permission.ScopeOrg, permission.OrgIDFromHeader(),
 		common.ResourceOrgCenter, permission.ActionList, p.Org,
 	))
@@ -59,6 +59,14 @@ func (p *provider) intRoutes(routes httpserver.Router) error {
 	))
 	routes.POST("/api/resources/hosts/actions/offline", p.offlineHost)
 	routes.GET("/api/org/clusters/status", p.clusterStatus, permission.Intercepter(
+		permission.ScopeOrg, permission.OrgIDFromHeader(),
+		common.ResourceOrgCenter, permission.ActionList, p.Org,
+	))
+	return nil
+}
+
+func (p *provider) initRoutesV2(routes httpserver.Router) error {
+	routes.POST("/api/resources/containers/:instance_type", p.Source.GetContainers, permission.Intercepter(
 		permission.ScopeOrg, permission.OrgIDFromHeader(),
 		common.ResourceOrgCenter, permission.ActionList, p.Org,
 	))
