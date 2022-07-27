@@ -28,7 +28,7 @@ import (
 
 type DescribeESInstancesResponse struct {
 	aliyun_resources.ResponsePager
-	Instances []elasticsearch.Result
+	Instances []elasticsearch.ResultInDescribeInstance
 }
 
 func ListByCluster(ctx aliyun_resources.Context,
@@ -67,7 +67,7 @@ func ListByCluster(ctx aliyun_resources.Context,
 	for _, tg := range response.TagResources.TagResource {
 		ids = append(ids, tg.ResourceId)
 	}
-	instances := []elasticsearch.Result{}
+	instances := make([]elasticsearch.ResultInDescribeInstance, 0, len(ids))
 	for _, id := range ids {
 		req := elasticsearch.CreateDescribeInstanceRequest()
 		req.Scheme = "https"

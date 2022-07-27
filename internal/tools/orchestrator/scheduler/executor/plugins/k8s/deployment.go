@@ -33,6 +33,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8sapi"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/toleration"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/util"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders/constraints"
@@ -196,94 +197,8 @@ func SetPodAnnotationsBaseContainerEnvs(container apiv1.Container, podAnnotation
 	}
 
 	for _, env := range container.Env {
-		if env.Name == "DICE_ORG_NAME" || strings.HasSuffix(env.Name, "_DICE_ORG_NAME") {
-			podAnnotations["msp.erda.cloud/org_name"] = env.Value
-			continue
-		}
-
-		if env.Name == "DICE_CLUSTER_NAME" || strings.HasSuffix(env.Name, "_DICE_CLUSTER_NAME") {
-			podAnnotations["msp.erda.cloud/cluster_name"] = env.Value
-			continue
-		}
-
-		if env.Name == "DICE_PROJECT_NAME" || strings.HasSuffix(env.Name, "_DICE_PROJECT_NAME") {
-			podAnnotations["msp.erda.cloud/project_name"] = env.Value
-			continue
-		}
-
-		if env.Name == "DICE_SERVICE_NAME" || strings.HasSuffix(env.Name, "_DICE_SERVICE_NAME") {
-			podAnnotations["msp.erda.cloud/service_name"] = env.Value
-			continue
-		}
-
-		if env.Name == "DICE_APPLICATION_NAME" || strings.HasSuffix(env.Name, "_DICE_APPLICATION_NAME") {
-			podAnnotations["msp.erda.cloud/application_name"] = env.Value
-			continue
-		}
-
-		if env.Name == "DICE_WORKSPACE" || strings.HasSuffix(env.Name, "_DICE_WORKSPACE") {
-			podAnnotations["msp.erda.cloud/workspace"] = env.Value
-			continue
-		}
-
-		if env.Name == "DICE_RUNTIME_NAME" || strings.HasSuffix(env.Name, "_DICE_RUNTIME_NAME") {
-			podAnnotations["msp.erda.cloud/runtime_name"] = env.Value
-			continue
-		}
-
-		if env.Name == "DICE_RUNTIME_ID" || strings.HasSuffix(env.Name, "_DICE_RUNTIME_ID") {
-			podAnnotations["msp.erda.cloud/runtime_id"] = env.Value
-			continue
-		}
-
-		if env.Name == "DICE_APPLICATION_ID" || strings.HasSuffix(env.Name, "_DICE_APPLICATION_ID") {
-			podAnnotations["msp.erda.cloud/application_id"] = env.Value
-			continue
-		}
-
-		if env.Name == "DICE_ORG_ID" || strings.HasSuffix(env.Name, "_DICE_ORG_ID") {
-			podAnnotations["msp.erda.cloud/org_id"] = env.Value
-			continue
-		}
-
-		if env.Name == "DICE_PROJECT_ID" || strings.HasSuffix(env.Name, "_DICE_PROJECT_ID") {
-			podAnnotations["msp.erda.cloud/project_id"] = env.Value
-			continue
-		}
-
-		if env.Name == "DICE_DEPLOYMENT_ID" || strings.HasSuffix(env.Name, "_DICE_DEPLOYMENT_ID") {
-			podAnnotations["msp.erda.cloud/deployment_id"] = env.Value
-			continue
-		}
-
-		if env.Name == "TERMINUS_LOG_KEY" || strings.HasSuffix(env.Name, "_TERMINUS_LOG_KEY") {
-			podAnnotations["msp.erda.cloud/terminus_log_key"] = env.Value
-			continue
-		}
-
-		if env.Name == "MONITOR_LOG_KEY" || strings.HasSuffix(env.Name, "_MONITOR_LOG_KEY") {
-			podAnnotations["msp.erda.cloud/monitor_log_key"] = env.Value
-			continue
-		}
-
-		if env.Name == "MSP_ENV_ID" || strings.HasSuffix(env.Name, "_MSP_ENV_ID") {
-			podAnnotations["msp.erda.cloud/msp_env_id"] = env.Value
-			continue
-		}
-
-		if env.Name == "MSP_LOG_ATTACH" || strings.HasSuffix(env.Name, "_MSP_LOG_ATTACH") {
-			podAnnotations["msp.erda.cloud/msp_log_attach"] = env.Value
-			continue
-		}
-
-		if env.Name == "MONITOR_LOG_COLLECTOR" || strings.HasSuffix(env.Name, "_MONITOR_LOG_COLLECTOR") {
-			podAnnotations["msp.erda.cloud/monitor_log_collector"] = env.Value
-			continue
-		}
-
-		if env.Name == "TERMINUS_KEY" || strings.HasSuffix(env.Name, "_TERMINUS_KEY") {
-			podAnnotations["msp.erda.cloud/terminus_key"] = env.Value
-			continue
+		if annotationKey := util.ParseAnnotationFromEnv(env.Name); annotationKey != "" {
+			podAnnotations[annotationKey] = env.Value
 		}
 	}
 }
