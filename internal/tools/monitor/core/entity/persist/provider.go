@@ -22,7 +22,7 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/kafka"
-	"github.com/erda-project/erda/internal/tools/monitor/core/metric/storage"
+	"github.com/erda-project/erda/internal/tools/monitor/core/entity/storage"
 	"github.com/erda-project/erda/internal/tools/monitor/core/storekit"
 )
 

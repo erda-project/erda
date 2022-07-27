@@ -82,7 +82,7 @@ log-storage-clickhouse:
 metric-storage-clickhouse:
   _enable: ${QUERY_METRIC_FROM_CLICKHOUSE_ENABLE:false}
   keypass:
-    name: ["kubernetes_*", "etcd"]
+    name: ${QUERY_METRIC_FROM_CLICKHOUSE_KEY_PASS_NAME:["kubernetes_*", "etcd"]}
 
 clickhouse.table.loader@metric:
   _enable: ${QUERY_METRIC_FROM_CLICKHOUSE_ENABLE:false}
