@@ -546,7 +546,7 @@ func fmtAddonsResourceTable(ctx context.Context,
 		esData = append(esData, map[string]string{
 			"id":         es.InstanceId,
 			"name":       es.Description,
-			"version":    es.Version,
+			"version":    es.EsVersion,
 			"chargetype": i18n.Sprintf(es.PaymentType),
 			"nodespec":   es.NodeSpec.Spec,
 			"nodecount":  strconv.Itoa(es.NodeAmount),

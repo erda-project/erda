@@ -950,6 +950,7 @@ func (e *EDAS) insertApp(spec *ServiceSpec) (string, error) {
 	req.LocalVolume = spec.LocalVolume
 	req.Liveness = spec.Liveness
 	req.Readiness = spec.Readiness
+	req.Annotations = spec.Annotations
 	req.Replicas = requests.NewInteger(spec.Instances)
 	if e.unlimitCPU == "true" {
 		req.RequestsCpu = requests.NewInteger(spec.CPU)
@@ -1665,6 +1666,11 @@ func (e *EDAS) fillServiceSpec(s *apistructs.Service, runtime *apistructs.Servic
 		svcSpec.Envs = envString
 	}
 
+	// annotations: {"annotation-name-1":"annotation-value-1","annotation-name-2":"annotation-value-2"}
+	if err = setAnnotations(svcSpec, envs); err != nil {
+		return nil, errors.Wrapf(err, "failed to set annotations, service name: %s", appName)
+	}
+
 	if err = setHealthCheck(s, svcSpec); err != nil {
 		return nil, errors.Wrapf(err, "failed to set health check, service name: %s", appName)
 	}
@@ -1692,6 +1698,30 @@ func setHealthCheck(service *apistructs.Service, svcSpec *ServiceSpec) error {
 		svcSpec.Readiness = string(b)
 	}
 
+	return nil
+}
+
+func setAnnotations(svcSpec *ServiceSpec, envs map[string]string) error {
+	if svcSpec == nil {
+		return errors.New("service spec is nil")
+	}
+
+	annotations := make(map[string]string)
+	for k, v := range envs {
+		if annotationKey := util.ParseAnnotationFromEnv(k); annotationKey != "" {
+			annotations[annotationKey] = v
+		}
+	}
+
+	if len(annotations) == 0 {
+		return nil
+	}
+
+	ret, err := json.Marshal(annotations)
+	if err != nil {
+		return err
+	}
+	svcSpec.Annotations = string(ret)
 	return nil
 }
 
@@ -1806,6 +1836,7 @@ func (e *EDAS) deployApp(appID string, spec *ServiceSpec) error {
 	req.LocalVolume = spec.LocalVolume
 	req.Liveness = spec.Liveness
 	req.Readiness = spec.Readiness
+	req.Annotations = spec.Annotations
 	req.Replicas = requests.NewInteger(spec.Instances)
 	if e.unlimitCPU == "true" {
 		req.CpuRequest = requests.NewInteger(spec.CPU)

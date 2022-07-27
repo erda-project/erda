@@ -166,3 +166,46 @@ func TestGetClient(t *testing.T) {
 	_, _, err = GetClient(clusterName, m2)
 	assert.Equal(t, err, fmt.Errorf("cert or key is empty"))
 }
+
+func Test_ParseAnnotationFromEnv(t *testing.T) {
+	type args struct {
+		name string
+		key  string
+		want string
+	}
+
+	tests := []args{
+		{
+			name: "dice component env",
+			key:  "DICE_ORG_ID",
+			want: "msp.erda.cloud/org_id",
+		},
+		{
+			name: "dice addon env",
+			key:  "N0_DICE_ORG_ID",
+			want: "msp.erda.cloud/org_id",
+		},
+		{
+			name: "msp env",
+			key:  "MSP_LOG_ATTACH",
+			want: "msp.erda.cloud/msp_log_attach",
+		},
+		{
+			name: "other key",
+			key:  "TERMINUS_KEY",
+			want: "msp.erda.cloud/terminus_key",
+		},
+		{
+			name: "empty key",
+			key:  "HELLO_WORLD",
+			want: "",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got := ParseAnnotationFromEnv(test.key)
+			assert.Equal(t, got, test.want)
+		})
+	}
+}

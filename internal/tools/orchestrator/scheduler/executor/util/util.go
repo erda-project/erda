@@ -276,3 +276,81 @@ func GetClient(clusterName string, manageConfig *apistructs.ManageConfig) (strin
 		return "", nil, fmt.Errorf("manage type is not support")
 	}
 }
+
+// ParseAnnotationFromEnv TODO: get from service group
+func ParseAnnotationFromEnv(k string) string {
+	if k == "DICE_ORG_NAME" || strings.HasSuffix(k, "_DICE_ORG_NAME") {
+		return "msp.erda.cloud/org_name"
+	}
+
+	if k == "DICE_CLUSTER_NAME" || strings.HasSuffix(k, "_DICE_CLUSTER_NAME") {
+		return "msp.erda.cloud/cluster_name"
+	}
+
+	if k == "DICE_PROJECT_NAME" || strings.HasSuffix(k, "_DICE_PROJECT_NAME") {
+		return "msp.erda.cloud/project_name"
+	}
+
+	if k == "DICE_SERVICE_NAME" || strings.HasSuffix(k, "_DICE_SERVICE_NAME") {
+		return "msp.erda.cloud/service_name"
+
+	}
+
+	if k == "DICE_APPLICATION_NAME" || strings.HasSuffix(k, "_DICE_APPLICATION_NAME") {
+		return "msp.erda.cloud/application_name"
+	}
+
+	if k == "DICE_WORKSPACE" || strings.HasSuffix(k, "_DICE_WORKSPACE") {
+		return "msp.erda.cloud/workspace"
+	}
+
+	if k == "DICE_RUNTIME_NAME" || strings.HasSuffix(k, "_DICE_RUNTIME_NAME") {
+		return "msp.erda.cloud/runtime_name"
+	}
+
+	if k == "DICE_RUNTIME_ID" || strings.HasSuffix(k, "_DICE_RUNTIME_ID") {
+		return "msp.erda.cloud/runtime_id"
+	}
+
+	if k == "DICE_APPLICATION_ID" || strings.HasSuffix(k, "_DICE_APPLICATION_ID") {
+		return "msp.erda.cloud/application_id"
+	}
+
+	if k == "DICE_ORG_ID" || strings.HasSuffix(k, "_DICE_ORG_ID") {
+		return "msp.erda.cloud/org_id"
+	}
+
+	if k == "DICE_PROJECT_ID" || strings.HasSuffix(k, "_DICE_PROJECT_ID") {
+		return "msp.erda.cloud/project_id"
+	}
+
+	if k == "DICE_DEPLOYMENT_ID" || strings.HasSuffix(k, "_DICE_DEPLOYMENT_ID") {
+		return "msp.erda.cloud/deployment_id"
+	}
+
+	if k == "TERMINUS_LOG_KEY" || strings.HasSuffix(k, "_TERMINUS_LOG_KEY") {
+		return "msp.erda.cloud/terminus_log_key"
+	}
+
+	if k == "MONITOR_LOG_KEY" || strings.HasSuffix(k, "_MONITOR_LOG_KEY") {
+		return "msp.erda.cloud/monitor_log_key"
+	}
+
+	if k == "MSP_ENV_ID" || strings.HasSuffix(k, "_MSP_ENV_ID") {
+		return "msp.erda.cloud/msp_env_id"
+
+	}
+
+	if k == "MSP_LOG_ATTACH" || strings.HasSuffix(k, "_MSP_LOG_ATTACH") {
+		return "msp.erda.cloud/msp_log_attach"
+	}
+
+	if k == "MONITOR_LOG_COLLECTOR" || strings.HasSuffix(k, "_MONITOR_LOG_COLLECTOR") {
+		return "msp.erda.cloud/monitor_log_collector"
+	}
+
+	if k == "TERMINUS_KEY" || strings.HasSuffix(k, "_TERMINUS_KEY") {
+		return "msp.erda.cloud/terminus_key"
+	}
+	return ""
+}

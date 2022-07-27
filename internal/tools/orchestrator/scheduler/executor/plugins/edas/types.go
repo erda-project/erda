@@ -113,6 +113,8 @@ type ServiceSpec struct {
 	Liveness string `json:"liveness"`
 	// e.g. {"failureThreshold": 3,"initialDelaySeconds": 5,"successThreshold": 1,"timeoutSeconds": 1,"httpGet": {"path": "/consumer","port": 8080,"scheme": "HTTP","httpHeaders": [{"name": "test","value": "testvalue"}]}}
 	Readiness string `json:"readiness"`
+	// e.g. {"annotation-name-1":"annotation-value-1","annotation-name-2":"annotation-value-2"}
+	Annotations string `json:"annotations"`
 }
 
 // ByCreateTime change order for sort
