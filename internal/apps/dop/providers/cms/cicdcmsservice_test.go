@@ -23,6 +23,7 @@ import (
 	"github.com/alecthomas/assert"
 
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
+	"github.com/erda-project/erda-proto-go/dop/cms/pb"
 )
 
 type CmsServiceServerImpl struct {
@@ -135,6 +136,89 @@ func TestCICDCmsService_deleteNotNeedKeys(t *testing.T) {
 			}
 			if err := s.deleteNotNeedKeys(tt.args.ctx, tt.args.pipelineSource, tt.args.ns, tt.args.keys); (err != nil) != tt.wantErr {
 				t.Errorf("deleteNotNeedKeys() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestGetKeysAndValueMap(t *testing.T) {
+	type args struct {
+		req *CICDCmsCreateOrUpdateRequest
+	}
+	tests := []struct {
+		name         string
+		args         args
+		wantKeys     []string
+		wantValueMap map[string]*cmspb.PipelineCmsConfigValue
+	}{
+		{
+			name: "test with batch update kv",
+			args: args{
+				req: &CICDCmsCreateOrUpdateRequest{
+					Batch:         true,
+					NamespaceName: "test-ns",
+					AppID:         "1",
+					Encrypt:       false,
+					Configs: []*pb.Config{
+						{
+							Comment: "",
+							Encrypt: false,
+							Key:     "a",
+							Type:    "kv",
+							Value:   "a",
+						},
+						{
+							Comment: "",
+							Encrypt: true,
+							Key:     "b",
+							Type:    "kv",
+							Value:   "b",
+						},
+						{
+							Comment: "",
+							Encrypt: true,
+							Key:     "c",
+							Type:    "kv",
+							Value:   "",
+						},
+					},
+				},
+			},
+			wantKeys: []string{"a", "b", "c"},
+			wantValueMap: map[string]*cmspb.PipelineCmsConfigValue{
+				"a": {
+					Value:       "a",
+					EncryptInDB: false,
+					Type:        "kv",
+					Operations: &cmspb.PipelineCmsConfigOperations{
+						CanDownload: false,
+						CanEdit:     true,
+						CanDelete:   true,
+					},
+					Comment: "",
+				},
+				"b": {
+					Value:       "b",
+					EncryptInDB: true,
+					Type:        "kv",
+					Operations: &cmspb.PipelineCmsConfigOperations{
+						CanDownload: false,
+						CanEdit:     true,
+						CanDelete:   true,
+					},
+					Comment: "",
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotKeys, gotValueMap := GetKeysAndValueMap(tt.args.req)
+			if !reflect.DeepEqual(gotKeys, tt.wantKeys) {
+				t.Errorf("GetKeysAndValueMap() gotKeys = %v, want %v", gotKeys, tt.wantKeys)
+			}
+			if !reflect.DeepEqual(gotValueMap, tt.wantValueMap) {
+				t.Errorf("GetKeysAndValueMap() gotValueMap = %v, want %v", gotValueMap, tt.wantValueMap)
 			}
 		})
 	}
