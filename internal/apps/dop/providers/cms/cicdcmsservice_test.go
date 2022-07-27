@@ -213,7 +213,7 @@ func TestGetKeysAndValueMap(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotKeys, gotValueMap := GetKeysAndValueMap(tt.args.req)
+			gotKeys, gotValueMap := getKeysAndValueMap(tt.args.req)
 			if !reflect.DeepEqual(gotKeys, tt.wantKeys) {
 				t.Errorf("GetKeysAndValueMap() gotKeys = %v, want %v", gotKeys, tt.wantKeys)
 			}

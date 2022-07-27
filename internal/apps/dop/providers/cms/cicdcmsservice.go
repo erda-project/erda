@@ -73,7 +73,7 @@ func (s *CICDCmsService) CICDCmsCreateOrUpdate(ctx context.Context, req *CICDCms
 
 	var updateRequest = &cmspb.CmsNsConfigsUpdateRequest{Ns: req.NamespaceName}
 
-	keys, valueMap := GetKeysAndValueMap(req)
+	keys, valueMap := getKeysAndValueMap(req)
 
 	updateRequest.KVs = valueMap
 
@@ -118,7 +118,7 @@ func (s *CICDCmsService) CICDCmsCreateOrUpdate(ctx context.Context, req *CICDCms
 	return true, nil
 }
 
-func GetKeysAndValueMap(req *CICDCmsCreateOrUpdateRequest) (keys []string, valueMap map[string]*cmspb.PipelineCmsConfigValue) {
+func getKeysAndValueMap(req *CICDCmsCreateOrUpdateRequest) (keys []string, valueMap map[string]*cmspb.PipelineCmsConfigValue) {
 	valueMap = make(map[string]*cmspb.PipelineCmsConfigValue, len(req.Configs))
 	for _, config := range req.Configs {
 		if req.Batch && config.Type == db.ConfigTypeDiceFile {
