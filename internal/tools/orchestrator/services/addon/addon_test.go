@@ -1202,5 +1202,6 @@ func TestAddon2(t *testing.T) {
 	)
 
 	a.GetMiddleware(1, "1", "1")
+
 	a.InnerGetMiddleware("1")
 }
