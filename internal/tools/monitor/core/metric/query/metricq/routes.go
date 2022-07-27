@@ -35,17 +35,8 @@ func (p *provider) initRoutes(routes httpserver.Router) error {
 
 // queryMetrics .
 func (p *provider) queryMetrics(r *http.Request) interface{} {
-
 	params := make(map[string]interface{})
-
-	orgId := api.OrgID(r)
-	if len(orgId) > 0 {
-		params["terminus_key"] = api.OrgID(r)
-	}
-	orgName := api.OrgName(r)
-	if len(orgName) > 0 {
-		params["org_name"] = api.OrgName(r)
-	}
+	ctx := api.GetCtxHeader(r)
 
 	err := r.ParseForm()
 	if err != nil {
@@ -67,7 +58,7 @@ func (p *provider) queryMetrics(r *http.Request) interface{} {
 			q = string(byts)
 		}
 	}
-	resp, data, err := p.q.QueryWithFormat(ql, q, format, api.Language(r), params, nil, r.Form)
+	resp, data, err := p.q.QueryWithFormat(ctx, ql, q, format, api.Language(r), params, nil, r.Form)
 	if err != nil {
 		return api.Errors.InvalidParameter(err)
 	}

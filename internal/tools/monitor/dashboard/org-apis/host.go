@@ -329,16 +329,16 @@ func (p *provider) getGroupHosts(req *http.Request, params struct {
 		return api.Success(nil)
 	}
 	groups := parseGroupHost(result.Aggregations, res.Groups, 0, vfs)
-	p.updateClusterStatus(groups)
+	p.updateClusterStatus(api.GetCtxHeader(req), groups)
 	return api.Success(groups)
 }
 
-func (p *provider) updateClusterStatus(group *groupHostData) {
+func (p *provider) updateClusterStatus(ctx context.Context, group *groupHostData) {
 	if group == nil {
 		return
 	}
 	for _, g := range group.Groups {
-		s, _ := p.getComponentStatus(g.Name)
+		s, _ := p.getComponentStatus(ctx, g.Name)
 		status := p.createStatusResp(s)
 		g.ClusterStatus = status.Status
 	}

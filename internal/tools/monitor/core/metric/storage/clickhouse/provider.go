@@ -29,7 +29,8 @@ import (
 
 type (
 	config struct {
-		Keypass map[string][]string `file:"keypass"`
+		Keypass  map[string][]string `file:"keypass"`
+		PlayBack bool                `file:"play_back"`
 	}
 	provider struct {
 		Cfg    *config

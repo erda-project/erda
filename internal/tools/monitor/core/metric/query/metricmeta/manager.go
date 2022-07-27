@@ -22,7 +22,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/providers/i18n"
-
+	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/clickhouse"
 	indexloader "github.com/erda-project/erda/internal/tools/monitor/core/storekit/elasticsearch/index/loader"
 )
 
@@ -31,10 +31,11 @@ type MetaSource string
 
 // MetaSource values
 const (
-	MappingsMetaSource MetaSource = "mappings"
-	IndexMetaSource    MetaSource = "index"
-	FileMetaSource     MetaSource = "file"
-	DatabaseMetaSource MetaSource = "database"
+	MappingsMetaSource   MetaSource = "mappings"
+	IndexMetaSource      MetaSource = "index"
+	FileMetaSource       MetaSource = "file"
+	DatabaseMetaSource   MetaSource = "database"
+	ClickhouseMetaSource MetaSource = "clickhouse"
 )
 
 // Manager .
@@ -53,10 +54,11 @@ type Manager struct {
 	redis *redis.Client
 
 	metricMetaCacheExpiration time.Duration
+	ckRaw                     clickhouse.Query
 }
 
 // NewManager .
-func NewManager(ms []string, db *gorm.DB, index indexloader.Interface, metaPath string, groupFiles []string, i18n i18n.I18n, log logs.Logger, redis *redis.Client, metricMetaCacheExpiration time.Duration) *Manager {
+func NewManager(ms []string, db *gorm.DB, index indexloader.Interface, metaPath string, groupFiles []string, i18n i18n.I18n, log logs.Logger, redis *redis.Client, metricMetaCacheExpiration time.Duration, raw clickhouse.Query) *Manager {
 	sources := make(map[MetaSource]bool)
 	for _, item := range ms {
 		sources[MetaSource(item)] = true
@@ -71,6 +73,7 @@ func NewManager(ms []string, db *gorm.DB, index indexloader.Interface, metaPath 
 		log:                       log,
 		redis:                     redis,
 		metricMetaCacheExpiration: metricMetaCacheExpiration,
+		ckRaw:                     raw,
 	}
 }
 
@@ -119,6 +122,19 @@ func (m *Manager) Init() error {
 		}
 		m.groupProviders = append(m.groupProviders, func() GroupProvider { return gp })
 		mp, err := NewDatabaseMetaProvider(m.db, m.log)
+		if err != nil {
+			return err
+		}
+		m.metricProviders = append(m.metricProviders, func() MetricMetaProvider { return mp })
+	}
+
+	if m.sources[ClickhouseMetaSource] {
+		gp, err := NewMetaClickhouseGroupProvider(m.ckRaw)
+		if err != nil {
+			return err
+		}
+		m.groupProviders = append(m.groupProviders, func() GroupProvider { return gp })
+		mp, err := NewMetaClickhouseGroupProvider(m.ckRaw)
 		if err != nil {
 			return err
 		}

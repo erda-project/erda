@@ -81,8 +81,9 @@ log-storage-clickhouse:
 
 metric-storage-clickhouse:
   _enable: ${QUERY_METRIC_FROM_CLICKHOUSE_ENABLE:false}
+  play_back: ${QUERY_METRIC_FROM_CLICKHOUSE_PLAYBACK:false}
   keypass:
-    name: ${QUERY_METRIC_FROM_CLICKHOUSE_KEY_PASS_NAME:["kubernetes_*", "etcd"]}
+    name: ${QUERY_METRIC_FROM_CLICKHOUSE_KEY_PASS_NAME:[kubernetes_*, etcd]}
 
 clickhouse.table.loader@metric:
   _enable: ${QUERY_METRIC_FROM_CLICKHOUSE_ENABLE:false}
@@ -254,6 +255,7 @@ erda.core.monitor.metric:
       - "index"
       - "file"
       - "database"
+      - "clickhouse"
     group_files:
       - "conf/metricmeta/groups/org.yml"
       - "conf/metricmeta/groups/micro_service.yml"
@@ -271,6 +273,7 @@ metrics-query-compatibility:
       - "index"
       - "file"
       - "database"
+      - "clickhouse"
     group_files:
       - "conf/metricmeta/groups/org.yml"
       - "conf/metricmeta/groups/micro_service.yml"

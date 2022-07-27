@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"github.com/doug-martin/goqu/v9"
 	"github.com/pkg/errors"
 
@@ -35,15 +36,20 @@ func (p *provider) Query(ctx context.Context, q tsql.Query) (*model.ResultSet, e
 	if len(q.Sources()) <= 0 {
 		return nil, errors.New("no source")
 	}
-	metric, _ := q.Sources()[0].Name, q.Sources()[0].Database
-
 	table, _ := p.Loader.GetSearchTable(q.OrgName())
 
 	if len(q.OrgName()) > 0 {
 		expr = expr.Where(goqu.C("org_name").Eq(q.OrgName()))
 	}
+	if len(q.TerminusKey()) > 0 {
+		expr = expr.Where(goqu.C("tenant_id").Eq(q.TerminusKey()))
+	}
+	var metrics []string
+	for _, s := range q.Sources() {
+		metrics = append(metrics, s.Name)
+	}
+	expr = expr.Where(goqu.C("metric_group").In(metrics))
 
-	expr = expr.Where(goqu.C("metric_group").Eq(metric))
 	expr = expr.From(table)
 
 	sql, _, err := expr.ToSQL()
@@ -85,11 +91,26 @@ func (p *provider) Query(ctx context.Context, q tsql.Query) (*model.ResultSet, e
 	defer rows.Close()
 
 	result.Data, err = q.ParseResult(rows)
+	if p.Cfg.PlayBack {
+		fmt.Println(fmt.Sprintf("[ck_playback]sql:%s,result :%v ", sql, result.Data))
+	}
+
 	if err != nil {
+		p.Log.Error("clickhouse metric query is error ", sql, err)
 		return nil, err
 	}
 	return result, nil
 }
 func (p *provider) buildQueryContext(ctx context.Context) context.Context {
 	return ctx
+}
+
+func (p *provider) QueryRaw(orgName string, expr *goqu.SelectDataset) (driver.Rows, error) {
+	table, _ := p.Loader.GetSearchTable(orgName)
+	expr = expr.From(table)
+	sql, _, err := expr.ToSQL()
+	if err != nil {
+		return nil, err
+	}
+	return p.clickhouse.Client().Query(context.Background(), sql)
 }

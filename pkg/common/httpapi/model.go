@@ -16,6 +16,7 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -206,6 +207,9 @@ func UserID(r *http.Request) string {
 // OrgName .
 func OrgName(r *http.Request) string {
 	return r.Header.Get("org")
+}
+func GetCtxHeader(r *http.Request) context.Context {
+	return context.WithValue(context.Background(), "header", r.Header)
 }
 
 // OrgIDInt .

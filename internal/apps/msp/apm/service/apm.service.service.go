@@ -146,7 +146,10 @@ func (s *apmServiceService) GetServices(ctx context.Context, req *pb.GetServices
 	}
 
 	// service total Count
-	total := int64(countResponse.Results[0].Series[0].Rows[0].GetValues()[0].GetNumberValue())
+	var total int64
+	if countResponse != nil && len(countResponse.Results) > 0 && len(countResponse.Results[0].Series) > 0 && len(countResponse.Results[0].Series[0].Rows) > 0 {
+		total = int64(countResponse.Results[0].Series[0].Rows[0].GetValues()[0].GetNumberValue())
+	}
 
 	if rows == nil || len(rows) == 0 {
 		return &pb.GetServicesResponse{PageNo: req.PageNo, PageSize: req.PageSize, Total: total, List: services}, nil
@@ -421,17 +424,20 @@ func (s *apmServiceService) GetWithRequestService(ctx context.Context, tenantId 
 	}
 	countResponse, err := s.p.Metric.QueryWithInfluxFormat(ctx, countRequest)
 	if err != nil {
+		s.p.Log.Error("get with request service count is error %s", err)
 		return 0, nil, errors.NewInternalServerError(err)
 	}
 	withoutRequestCount := int64(0)
 	var serviceIds []string
 
-	rows := countResponse.Results[0].Series[0].Rows
-	for _, row := range rows {
-		if row.GetValues()[1].GetBoolValue() {
-			withoutRequestCount += 1
-			serviceId := row.GetValues()[0].GetStringValue()
-			serviceIds = append(serviceIds, serviceId)
+	if countResponse != nil && countResponse.Results != nil && len(countResponse.Results) > 0 && len(countResponse.Results[0].Series) > 0 {
+		rows := countResponse.Results[0].Series[0].Rows
+		for _, row := range rows {
+			if row.GetValues()[1].GetBoolValue() {
+				withoutRequestCount += 1
+				serviceId := row.GetValues()[0].GetStringValue()
+				serviceIds = append(serviceIds, serviceId)
+			}
 		}
 	}
 	return withoutRequestCount, serviceIds, nil
@@ -454,16 +460,20 @@ func (s *apmServiceService) GetHasErrorService(ctx context.Context, tenantId str
 	}
 	countResponse, err := s.p.Metric.QueryWithInfluxFormat(ctx, countRequest)
 	if err != nil {
+		s.p.Log.Error("get has error service error: %s", err)
 		return 0, nil, errors.NewInternalServerError(err)
 	}
 	hasErrorCount := int64(0)
 	var serviceIds []string
-	rows := countResponse.Results[0].Series[0].Rows
-	for _, row := range rows {
-		if row.GetValues()[1].GetBoolValue() {
-			hasErrorCount += 1
-			serviceId := row.GetValues()[0].GetStringValue()
-			serviceIds = append(serviceIds, serviceId)
+
+	if countResponse != nil && len(countResponse.Results) > 0 && len(countResponse.Results[0].Series) > 0 {
+		rows := countResponse.Results[0].Series[0].Rows
+		for _, row := range rows {
+			if row.GetValues()[1].GetBoolValue() {
+				hasErrorCount += 1
+				serviceId := row.GetValues()[0].GetStringValue()
+				serviceIds = append(serviceIds, serviceId)
+			}
 		}
 	}
 	return hasErrorCount, serviceIds, nil
@@ -485,8 +495,11 @@ func (s *apmServiceService) GetTotalCount(ctx context.Context, tenantId string, 
 	}
 	countResponse, err := s.p.Metric.QueryWithInfluxFormat(ctx, countRequest)
 	if err != nil {
+		s.p.Log.Error("get total count is error %s", err)
 		return 0, errors.NewInternalServerError(err)
 	}
-	total := int64(countResponse.Results[0].Series[0].Rows[0].GetValues()[0].GetNumberValue())
-	return total, nil
+	if countResponse != nil && len(countResponse.Results) > 0 && len(countResponse.Results[0].Series) > 0 && len(countResponse.Results[0].Series[0].Rows) > 0 {
+		return int64(len(countResponse.Results[0].Series[0].Rows)), nil
+	}
+	return 0, nil
 }

@@ -211,7 +211,11 @@ func getLiteralValue(ctx *Context, expr influxql.Expr) (interface{}, bool, error
 	case *influxql.UnsignedLiteral:
 		return val.Val, true, nil
 	case *influxql.BooleanLiteral:
-		return val.Val, true, nil
+		if val.Val {
+			return 1, true, nil
+		} else {
+			return 0, true, nil
+		}
 	case *influxql.StringLiteral:
 		return val.Val, true, nil
 	case *influxql.DurationLiteral:

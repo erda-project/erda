@@ -15,6 +15,7 @@
 package orgapis
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 
@@ -33,16 +34,16 @@ var (
 )
 
 type queryServiceImpl interface {
-	queryStatus(clusterName string) (statuses []*statusDTO, err error)
+	queryStatus(ctx context.Context, clusterName string) (statuses []*statusDTO, err error)
 }
 
 type queryService struct {
 	metricQ metricq.Queryer
 }
 
-func (mqs *queryService) queryStatus(clusterName string) (statuses []*statusDTO, err error) {
+func (mqs *queryService) queryStatus(ctx context.Context, clusterName string) (statuses []*statusDTO, err error) {
 	for _, name := range componentNames {
-		raws, err := mqs.queryStatusWithTSQL(fmt.Sprintf(tsqlComponentStatus, clusterName, name))
+		raws, err := mqs.queryStatusWithTSQL(ctx, fmt.Sprintf(tsqlComponentStatus, clusterName, name))
 		if err != nil {
 			return nil, err
 		}
@@ -105,9 +106,9 @@ type rawStatus struct {
 	ComponentName string `mapstructure:"component_name"`
 }
 
-func (mqs *queryService) queryStatusWithTSQL(statement string) ([]rawStatus, error) {
+func (mqs *queryService) queryStatusWithTSQL(ctx context.Context, statement string) ([]rawStatus, error) {
 	raws := []rawStatus{}
-	_, data, err := mqs.metricQ.QueryWithFormat(metricq.InfluxQL, statement, "dict", nil, nil, nil, defaultDuration())
+	_, data, err := mqs.metricQ.QueryWithFormat(ctx, metricq.InfluxQL, statement, "dict", nil, nil, nil, defaultDuration())
 	if err != nil {
 		return nil, errors.Wrap(err, "query inlfuxql failed")
 	}
