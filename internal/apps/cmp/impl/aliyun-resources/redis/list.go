@@ -30,8 +30,8 @@ import (
 // list instance
 func List(ctx aliyun_resources.Context, page aliyun_resources.PageOption,
 	regions []string,
-	cluster string) ([]kvstore.KVStoreInstance, error) {
-	instances := []kvstore.KVStoreInstance{}
+	cluster string) ([]kvstore.KVStoreInstanceInDescribeInstances, error) {
+	instances := []kvstore.KVStoreInstanceInDescribeInstances{}
 	for _, region := range regions {
 		ctx.Region = region
 		response, err := DescribeResource(ctx, page, cluster, []string{})
@@ -84,7 +84,7 @@ func DescribeResource(ctx aliyun_resources.Context, page aliyun_resources.PageOp
 	return response, nil
 }
 
-func Classify(ins []kvstore.KVStoreInstance) (runningCount, gonnaExpiredCount, expiredCount, stoppedCount,
+func Classify(ins []kvstore.KVStoreInstanceInDescribeInstances) (runningCount, gonnaExpiredCount, expiredCount, stoppedCount,
 	postpaidCount, prepaidCount int, err error) {
 	now := time.Now()
 	for _, i := range ins {

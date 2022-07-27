@@ -62,7 +62,7 @@ func ListByCluster(ctx aliyun_resources.Context, page aliyun_resources.PageOptio
 	}
 
 	// create request
-	request := cs.CreateDescribeClustersRequest()
+	request := &cs.DescribeClustersV1Request{}
 	request.Scheme = "https"
 	if page.PageNumber == nil || page.PageSize == nil || *page.PageSize <= 0 || *page.PageNumber <= 0 {
 		err := fmt.Errorf("invalid page parameters: %+v", page)
@@ -74,7 +74,7 @@ func ListByCluster(ctx aliyun_resources.Context, page aliyun_resources.PageOptio
 	// status:
 	// 	running
 	// 	stoped
-	response, err := client.DescribeClusters(request)
+	response, err := client.DescribeClustersV1(request)
 	if err != nil {
 		if response != nil && response.BaseResponse != nil && response.BaseResponse.GetHttpStatus() != 200 {
 			logrus.Errorf("describe vpc failed, error: %+v", err)

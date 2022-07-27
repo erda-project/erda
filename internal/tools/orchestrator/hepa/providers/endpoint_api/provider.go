@@ -15,16 +15,18 @@
 package endpoint_api
 
 import (
+	"os"
+	"strings"
+
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-proto-go/core/hepa/endpoint_api/pb"
-	_ "github.com/erda-project/erda-proto-go/core/project/client"
 	projPb "github.com/erda-project/erda-proto-go/core/project/pb"
-	_ "github.com/erda-project/erda-proto-go/orchestrator/runtime/client"
 	runtimePb "github.com/erda-project/erda-proto-go/orchestrator/runtime/pb"
+	"github.com/erda-project/erda/internal/pkg/cron"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common"
 	repositoryService "github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/service"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/endpoint_api/impl"
@@ -34,6 +36,8 @@ import (
 )
 
 type config struct {
+	ClearEndpointsCronExpr string          `json:"clearEndpointsCronExpr" yaml:"clearEndpointsCronExpr"`
+	ClearEndpointsClusters map[string]bool `json:"clearEndpointsClusters" yaml:"clearEndpointsClusters"`
 }
 
 // +provider
@@ -45,6 +49,7 @@ type provider struct {
 	Perm               perm.Interface                 `autowired:"permission"`
 	ProjCli            projPb.ProjectServer           `autowired:"erda.core.project.Project"`
 	RuntimeCli         runtimePb.RuntimeServiceServer `autowired:"erda.orchestrator.runtime.RuntimeService"`
+	Cron               cron.Interface                 `autowired:"easy-cron-client"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -77,6 +82,34 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		gatewayRouteService:   gatewayRouteService,
 		gatewayServiceService: gatewayServiceService,
 		kongInfoService:       kongInfoService,
+		cron:                  p.Cron,
+	}
+	if clearEndpointsCronExpr := os.Getenv("CLEAR_ENDPOINTS_CRON_EXPR"); clearEndpointsCronExpr != "" {
+		p.Cfg.ClearEndpointsCronExpr = clearEndpointsCronExpr
+	}
+	if clearEndpointsClusters := os.Getenv("CLEAR_ENDPOINTS_CLUSTERS"); clearEndpointsClusters != "" {
+		p.Cfg.ClearEndpointsClusters = make(map[string]bool)
+		clustersNames := strings.Split(clearEndpointsClusters, ",")
+		for _, clusterName := range clustersNames {
+			clusterName = strings.TrimLeft(clusterName, " ")
+			clusterName = strings.TrimRight(clusterName, " ")
+			p.Cfg.ClearEndpointsClusters[clusterName] = true
+		}
+	}
+	if len(p.Cfg.ClearEndpointsClusters) > 0 {
+		if _, err := p.Cron.AddFunc(p.Cfg.ClearEndpointsCronExpr, "ClearInvalidEndpointApi", func() bool {
+			for clusterName, ok := range p.Cfg.ClearEndpointsClusters {
+				if ok {
+					if _, err := p.endpointApiService.
+						ClearInvalidEndpointApi(ctx, &pb.ListInvalidEndpointApiReq{ClusterName: clusterName}); err != nil {
+						p.Log.Warnf("failed to ClearInvalidEndpointApi in the task: %v\n", err)
+					}
+				}
+			}
+			return false
+		}); err != nil {
+			p.Log.Fatal("failed to AddFunc to ClearInvalidEndpointApi")
+		}
 	}
 	err = zoneI.NewGatewayZoneServiceImpl()
 	if err != nil {
@@ -102,18 +135,11 @@ func (p *provider) Init(ctx servicehub.Context) error {
 			perm.Method(apiService.UpdateEndpointApi, perm.ScopeOrg, "org", perm.ActionGet, perm.OrgIDValue()),
 			perm.Method(apiService.ListInvalidEndpointApi, perm.ScopeOrg, "org", perm.ActionGet, perm.OrgIDValue()),
 			perm.Method(apiService.ClearInvalidEndpointApi, perm.ScopeOrg, "org", perm.ActionGet, perm.OrgIDValue()),
+			perm.Method(apiService.ListAllCrontabs, perm.ScopeOrg, "org", perm.ActionGet, perm.OrgIDValue()),
 		), common.AccessLogWrap(common.AccessLog))
 	}
 	return nil
 }
-
-//func (p *provider) Run(ctx context.Context) error {
-//	go ticker.New(time.Hour*24, func() (bool, error) {
-//		_, err := p.endpointApiService.ClearInvalidEndpointApi(ctx, new(commonPb.VoidRequest))
-//		return false, err
-//	}).Run()
-//	return nil
-//}
 
 func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
 	switch {

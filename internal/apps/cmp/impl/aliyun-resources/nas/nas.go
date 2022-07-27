@@ -26,7 +26,7 @@ import (
 
 type DescribeFileSystemResponse struct {
 	aliyun_resources.ResponsePager
-	FileSystems []nas.DescribeFileSystemsFileSystem1
+	FileSystems []nas.FileSystem
 }
 
 func ListByCluster(ctx aliyun_resources.Context,
@@ -67,7 +67,7 @@ func ListByCluster(ctx aliyun_resources.Context,
 	}
 	ids := response.Tags.Tag[0].FileSystemIds.FileSystemId
 
-	fslist := []nas.DescribeFileSystemsFileSystem1{}
+	fslist := make([]nas.FileSystem, 0, len(ids))
 
 	for _, id := range ids {
 		request := nas.CreateDescribeFileSystemsRequest()

@@ -18,12 +18,13 @@ require (
 	github.com/alibabacloud-go/darabonba-openapi v0.1.9
 	github.com/alibabacloud-go/dingtalk v1.2.1
 	github.com/alibabacloud-go/tea v1.1.17
-	github.com/aliyun/alibaba-cloud-sdk-go v1.61.426
+	github.com/aliyun/alibaba-cloud-sdk-go v1.61.1600
 	github.com/aliyun/aliyun-log-go-sdk v0.1.19
 	github.com/aliyun/aliyun-mns-go-sdk v0.0.0-20210305050620-d1b5875bda58
 	github.com/aliyun/aliyun-oss-go-sdk v2.1.4+incompatible
 	github.com/andrianbdn/iospng v0.0.0-20180730113000-dccef1992541
 	github.com/antlr/antlr4/runtime/Go/antlr v0.0.0-20220314183648-97c793e446ba
+	github.com/antonmedv/expr v1.9.0
 	github.com/apache/thrift v0.14.2
 	github.com/appscode/go v0.0.0-20191119085241-0887d8ec2ecc
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
@@ -49,7 +50,7 @@ require (
 	github.com/dustin/go-humanize v1.0.0
 	github.com/elastic/cloud-on-k8s v0.0.0-20210205172912-5ce0eca90c60
 	github.com/elazarl/goproxy v0.0.0-20200421181703-e76ad31c14f6
-	github.com/erda-project/erda-infra v1.0.8-0.20220719085140-e0758b0a6cf2
+	github.com/erda-project/erda-infra v1.0.8-0.20220722053635-e72a906c1619
 	github.com/erda-project/erda-oap-thirdparty-protocol v0.0.0-20210907135609-15886a136d5b
 	github.com/erda-project/erda-proto-go v0.0.0
 	github.com/erda-project/erda-sourcecov v0.1.0
@@ -84,6 +85,7 @@ require (
 	github.com/golang/protobuf v1.5.2
 	github.com/golang/snappy v0.0.4
 	github.com/google/btree v1.0.1 // indirect
+	github.com/google/go-jsonnet v0.18.0
 	github.com/google/uuid v1.3.0
 	github.com/googlecloudplatform/flink-operator v0.0.0-00010101000000-000000000000
 	github.com/gorilla/mux v1.8.0
@@ -148,7 +150,7 @@ require (
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/afero v1.6.0
 	github.com/spf13/cast v1.3.1
-	github.com/spf13/cobra v1.4.0
+	github.com/spf13/cobra v1.5.0
 	github.com/stretchr/testify v1.7.1
 	github.com/t-tiger/gorm-bulk-insert v1.3.0
 	github.com/tealeg/xlsx v1.0.5

@@ -56,6 +56,7 @@ import (
 	_ "github.com/erda-project/erda/internal/apps/dop/providers/issue/sync"
 	_ "github.com/erda-project/erda/internal/apps/dop/providers/project/home"
 	_ "github.com/erda-project/erda/internal/apps/dop/providers/projectpipeline"
+	_ "github.com/erda-project/erda/internal/apps/dop/providers/rule"
 	_ "github.com/erda-project/erda/internal/apps/dop/providers/taskerror"
 	_ "github.com/erda-project/erda/internal/pkg/audit"
 

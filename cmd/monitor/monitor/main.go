@@ -20,6 +20,7 @@ import (
 	"runtime"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+
 	"github.com/erda-project/erda/internal/tools/monitor/extensions/loghub"
 	"github.com/erda-project/erda/pkg/common"
 
@@ -29,7 +30,6 @@ import (
 	_ "github.com/erda-project/erda-proto-go/core/messenger/notifygroup/client"
 	_ "github.com/erda-project/erda-proto-go/core/org/client"
 	_ "github.com/erda-project/erda-proto-go/core/pipeline/cron/client"
-	_ "github.com/erda-project/erda/internal/core/file-manager"
 	_ "github.com/erda-project/erda/internal/tools/monitor/apm/runtime"
 	_ "github.com/erda-project/erda/internal/tools/monitor/apm/topology"
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/alert/alert-apis"
@@ -52,6 +52,8 @@ import (
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/metric/query"
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/metric/query-example"
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/metricq"
+	_ "github.com/erda-project/erda/internal/tools/monitor/core/metric/storage/clickhouse"
+	_ "github.com/erda-project/erda/internal/tools/monitor/core/metric/storage/elasticsearch"
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/settings"
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/settings/retention-strategy"
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/storekit/clickhouse/table/loader"

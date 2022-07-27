@@ -14,9 +14,12 @@
 
 package chartv2
 
-import tsql "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql"
+import (
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/model"
+	tsql "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql"
+)
 
-func (f *Formater) formatCardChart(q tsql.Query, rs *tsql.ResultSet, params map[string]interface{}) (interface{}, error) {
+func (f *Formater) formatCardChart(q tsql.Query, rs *model.Data, params map[string]interface{}) (interface{}, error) {
 	var list []map[string]interface{}
 	if len(rs.Columns) <= 0 {
 		return list, nil

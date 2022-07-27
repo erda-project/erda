@@ -79,6 +79,17 @@ log-storage-clickhouse:
   field_name_mapper:
     tags.request_id: tags.trace_id
 
+metric-storage-clickhouse:
+  _enable: ${QUERY_METRIC_FROM_CLICKHOUSE_ENABLE:false}
+  keypass:
+    name: ${QUERY_METRIC_FROM_CLICKHOUSE_KEY_PASS_NAME:["kubernetes_*", "etcd"]}
+
+clickhouse.table.loader@metric:
+  _enable: ${QUERY_METRIC_FROM_CLICKHOUSE_ENABLE:false}
+  table_prefix: "metrics"
+  default_search_table: "metrics_all"
+  cache_key_prefix: "clickhouse-table-metric"
+
 elasticsearch@log:
   _enable: ${LOG_ELASTICSEARCH_ENABLE:false}
   urls: "${LOG_ELASTICSEARCH_URL:http://localhost:9200}"
@@ -238,6 +249,7 @@ erda.core.monitor.metric:
     path: conf/charts
     reload_interval: "30s"
   metric_meta:
+    metric_meta_cache_expiration: "${METRIC_META_CACHE_EXPIRATION:1h}"
     sources:
       - "index"
       - "file"
@@ -253,6 +265,16 @@ metrics-query-compatibility:
   _enable: ${METRIC_QUERY_ENABLE:true}
   chart_meta:
     path: conf/charts
+  metric_meta:
+    metric_meta_cache_expiration: "${METRIC_META_CACHE_EXPIRATION:1h}"
+    sources:
+      - "index"
+      - "file"
+      - "database"
+    group_files:
+      - "conf/metricmeta/groups/org.yml"
+      - "conf/metricmeta/groups/micro_service.yml"
+    metric_meta_path: "conf/metricmeta/metrics"
 
 # entity
 elasticsearch@entity:
@@ -327,8 +349,6 @@ erda.core.monitor.dataview:
 dataview-v1:
 template:
 
-erda.core.services.filemanager:
-
 #erda.core.monitor.diagnotor:
 #  agent_image: "${DIAGNOTOR_AGENT_IMAGE}"
 
@@ -401,6 +421,12 @@ erda.core.clustermanager.cluster-client: {}
 grpc-client@erda.core.messenger.notifygroup:
   addr: "${ERDA_SERVER_GRPC_ADDR:erda-server:8096}"
 erda.core.messenger.notifygroup-client:
+
+metric-storage-elasticsearch:
+  read_timeout: "1m"
+  write_timeout: "1m"
+  index_type: "spot"
+  dummy_index: "spot-empty"
 
 grpc-client@erda.core.org:
   addr: "${ERDA_SERVER_GRPC_ADDR:erda-server:8096}"

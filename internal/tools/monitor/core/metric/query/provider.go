@@ -20,7 +20,9 @@ import (
 	"io/ioutil"
 	"net/http"
 	"reflect"
+	"time"
 
+	"github.com/go-redis/redis"
 	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -30,24 +32,24 @@ import (
 	"github.com/erda-project/erda-infra/pkg/transport/http/encoding"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
-	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/metricmeta"
-	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/query"
-	indexloader "github.com/erda-project/erda/internal/tools/monitor/core/storekit/elasticsearch/index/loader"
-
-	"github.com/erda-project/erda/pkg/common/apis"
-	"github.com/erda-project/erda/pkg/common/errors"
-
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql/formats/chartv2"  //
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql/formats/dict"     //
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql/formats/influxdb" //
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql/influxql"         //
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/metricmeta"
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/query"
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/storage"
+	indexloader "github.com/erda-project/erda/internal/tools/monitor/core/storekit/elasticsearch/index/loader"
+	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/common/errors"
 )
 
 type config struct {
 	MetricMeta struct {
-		Sources        []string `file:"sources"`
-		GroupFiles     []string `file:"group_files"`
-		MetricMetaPath string   `file:"metric_meta_path"`
+		MetricMetaCacheExpiration time.Duration `file:"metric_meta_cache_expiration"`
+		Sources                   []string      `file:"sources"`
+		GroupFiles                []string      `file:"group_files"`
+		MetricMetaPath            string        `file:"metric_meta_path"`
 	} `file:"metric_meta"`
 }
 
@@ -59,10 +61,14 @@ type provider struct {
 	DB         *gorm.DB              `autowired:"mysql-client"`
 	MetricTran i18n.I18n             `autowired:"i18n@metric"`
 	Index      indexloader.Interface `autowired:"elasticsearch.index.loader@metric"`
+	Redis      *redis.Client         `autowired:"redis-client"`
 
 	meta              *metricmeta.Manager
 	metricService     *metricService
 	metricMetaService *metricMetaService
+
+	Storage         storage.Storage `autowired:"metric-storage"`
+	CkStorageReader storage.Storage `autowired:"metric-storage-clickhouse" optional:"true"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -74,6 +80,8 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		p.Cfg.MetricMeta.GroupFiles,
 		p.MetricTran,
 		p.Log,
+		p.Redis,
+		p.Cfg.MetricMeta.MetricMetaCacheExpiration,
 	)
 	p.meta = meta
 	err := meta.Init()
@@ -87,7 +95,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	}
 	p.metricService = &metricService{
 		p:     p,
-		query: query.New(&query.MetricIndexLoader{Interface: p.Index}),
+		query: query.New(meta, p.Storage, p.CkStorageReader),
 	}
 	if p.Register != nil {
 		pb.RegisterMetricServiceImp(p.Register, p.metricService, apis.Options(),

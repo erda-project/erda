@@ -3,18 +3,36 @@ FROM --platform=$TARGETPLATFORM golang:1.17-bullseye
 # set timezone to CST
 RUN cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
 
-RUN echo "deb http://deb.debian.org/debian bookworm main" >> /etc/apt/sources.list # for libgit2-1.3
-RUN curl -sL https://deb.nodesource.com/setup_current.x | bash - && apt install -y nodejs
-RUN apt update && \
-    apt install -y --no-install-recommends --no-install-suggests \
+# libgit2-1.3
+RUN echo "deb http://deb.debian.org/debian bookworm main" >> /etc/apt/sources.list
+RUN apt update && apt install -y --no-install-recommends --no-install-suggests \
+    cmake \
+    gcc \
+    g++ \
+    ca-certificates \
+    curl \
+    gnupg \
+    lsb-release \
+    libssl-dev \
+    vim \
+    jq \
+    python3-pip \
     # for libgit2
-    cmake libssl-dev libgit2-1.3 libgit2-dev \
-    jq python3-pip \
-    nodejs \
-    vim && \
-    rm -fr /var/cache/apk
+    libgit2-1.3 libgit2-dev \
+ && rm -fr /var/lib/apt/lists/*
 
-RUN apt install -y libgit2-1.3
+# nodejs
+RUN curl -sL https://deb.nodesource.com/setup_lts.x | bash - && apt install -y nodejs && rm -fr /var/lib/apt/lists/*
+
+# docker-cli
+RUN mkdir -p /etc/apt/keyrings \
+ && curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg \
+ && echo \
+    "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian \
+    $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null \
+ && apt update && apt install -y --no-install-recommends --no-install-suggests \
+    docker-ce-cli \
+ && rm -fr /var/lib/apt/lists/*
 
 # librdkafka
 # doc: https://github.com/confluentinc/confluent-kafka-go#librdkafka

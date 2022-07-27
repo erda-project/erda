@@ -15,8 +15,12 @@
 package metricmeta
 
 import (
+	"encoding/json"
 	"fmt"
 	"sort"
+	"strings"
+
+	"github.com/go-redis/redis"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
@@ -72,6 +76,52 @@ func (m *Manager) GetSingleMetricsMeta(langCodes i18n.LanguageCodes, scope strin
 		return nil, fmt.Errorf("not found metric %q", metric)
 	}
 	return metricMeta, nil
+}
+
+func (m *Manager) GetMetricMetaByCache(scope, scopeID string, names ...string) ([]*pb.MetricMeta, error) {
+	var result []*pb.MetricMeta
+	for _, metric := range names {
+		key := fmt.Sprintf("metric_meta_%s_%s_%s", scope, scopeID, metric)
+		meta, err := m.redis.Get(key).Result()
+		if err != nil && err != redis.Nil {
+			return nil, err
+		}
+		var r []*pb.MetricMeta
+		if len(meta) > 0 {
+			err := json.NewDecoder(strings.NewReader(meta)).Decode(&r)
+			if err != nil {
+				return nil, err
+			}
+			if len(r) > 0 {
+				result = append(result, r...)
+				continue
+			}
+		}
+		metricMetas, err := m.getMetricMeta(nil, scope, scopeID, metric)
+		if err != nil {
+			return nil, err
+		}
+		for _, item := range metricMetas {
+			r = append(r, item)
+		}
+		if len(r) <= 0 {
+			continue
+		}
+
+		sb := &strings.Builder{}
+		err = json.NewEncoder(sb).Encode(r)
+		if err != nil {
+			return nil, err
+		}
+
+		_, err = m.redis.Set(key, sb.String(), m.metricMetaCacheExpiration).Result()
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, r...)
+	}
+
+	return result, nil
 }
 
 func (m *Manager) getMetricMeta(langCodes i18n.LanguageCodes, scope, scopeID string, names ...string) (map[string]*pb.MetricMeta, error) {
