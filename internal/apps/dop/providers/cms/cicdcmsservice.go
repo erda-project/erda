@@ -72,35 +72,9 @@ func (s *CICDCmsService) CICDCmsCreateOrUpdate(ctx context.Context, req *CICDCms
 	}
 
 	var updateRequest = &cmspb.CmsNsConfigsUpdateRequest{Ns: req.NamespaceName}
-	var valueMap = make(map[string]*cmspb.PipelineCmsConfigValue, len(req.Configs))
-	var keys []string
 
-	for _, config := range req.Configs {
-		if req.Batch && config.Type == db.ConfigTypeDiceFile {
-			continue
-		}
+	keys, valueMap := getKeysAndValueMap(req)
 
-		keys = append(keys, config.Key)
-
-		var operations = &cmspb.PipelineCmsConfigOperations{}
-		switch config.Type {
-		case cms.ConfigTypeDiceFile:
-			operations.CanDelete = true
-			operations.CanDownload = true
-			operations.CanEdit = true
-		default:
-			operations.CanDelete = true
-			operations.CanDownload = false
-			operations.CanEdit = true
-		}
-		valueMap[config.Key] = &cmspb.PipelineCmsConfigValue{
-			Value:       config.Value,
-			EncryptInDB: config.Encrypt,
-			Type:        config.Type,
-			Operations:  operations,
-			Comment:     config.Comment,
-		}
-	}
 	updateRequest.KVs = valueMap
 
 	appInfo, err := s.bdl.GetApp(appID)
@@ -142,6 +116,41 @@ func (s *CICDCmsService) CICDCmsCreateOrUpdate(ctx context.Context, req *CICDCms
 	}
 
 	return true, nil
+}
+
+func getKeysAndValueMap(req *CICDCmsCreateOrUpdateRequest) (keys []string, valueMap map[string]*cmspb.PipelineCmsConfigValue) {
+	valueMap = make(map[string]*cmspb.PipelineCmsConfigValue, len(req.Configs))
+	for _, config := range req.Configs {
+		if req.Batch && config.Type == db.ConfigTypeDiceFile {
+			continue
+		}
+		keys = append(keys, config.Key)
+
+		// Encrypted and empty, do not to modify
+		if config.Encrypt && config.Value == "" {
+			continue
+		}
+
+		var operations = &cmspb.PipelineCmsConfigOperations{}
+		switch config.Type {
+		case cms.ConfigTypeDiceFile:
+			operations.CanDelete = true
+			operations.CanDownload = true
+			operations.CanEdit = true
+		default:
+			operations.CanDelete = true
+			operations.CanDownload = false
+			operations.CanEdit = true
+		}
+		valueMap[config.Key] = &cmspb.PipelineCmsConfigValue{
+			Value:       config.Value,
+			EncryptInDB: config.Encrypt,
+			Type:        config.Type,
+			Operations:  operations,
+			Comment:     config.Comment,
+		}
+	}
+	return
 }
 
 func (s *CICDCmsService) deleteNotNeedKeys(ctx context.Context, pipelineSource string, ns string, keys []string) error {
