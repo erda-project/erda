@@ -18,11 +18,11 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/receivercurrentlimiter"
 	"github.com/labstack/echo"
 
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model"
-	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/protoparser/promremotewrite"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins"
 
@@ -52,13 +52,16 @@ func (p *provider) Init(ctx servicehub.Context) error {
 }
 
 func (p *provider) prwHandler(ctx echo.Context) error {
-	if err := promremotewrite.ParseStream(ctx.Request().Body, func(record *metric.Metric) error {
-		return p.consumerFunc(lib.ConsumerTimeout, record)
-	}); err != nil {
-		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("parse stream: %s", err))
-	}
+	err := receivercurrentlimiter.Do(func() error {
+		return promremotewrite.ParseStream(ctx.Request().Body, func(record *metric.Metric) error {
+			return p.consumerFunc(record)
+		})
+	})
 	defer ctx.Request().Body.Close()
 
+	if err != nil {
+		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("parse stream: %s", err))
+	}
 	return ctx.NoContent(http.StatusOK)
 }
 

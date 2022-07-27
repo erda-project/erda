@@ -24,7 +24,6 @@ import (
 	"github.com/erda-project/erda/internal/apps/msp/apm/trace"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model"
-	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/protoparser/oapspan"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/protoparser/spotmetric"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/protoparser/spotspan"
@@ -95,7 +94,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 func (p *provider) parseOapSpan() kafkaInf.ConsumerFunc {
 	return func(key []byte, value []byte, topic *string, timestamp time.Time) error {
 		return oapspan.ParseOapSpan(value, func(span *trace.Span) error {
-			p.consumer(lib.ConsumerTimeout, span)
+			p.consumer(span)
 			return nil
 		})
 	}
@@ -104,7 +103,7 @@ func (p *provider) parseOapSpan() kafkaInf.ConsumerFunc {
 func (p *provider) parseSpotSpan() kafkaInf.ConsumerFunc {
 	return func(key []byte, value []byte, topic *string, timestamp time.Time) error {
 		return spotspan.ParseSpotSpan(value, func(span *trace.Span) error {
-			p.consumer(lib.ConsumerTimeout, span)
+			p.consumer(span)
 			return nil
 		})
 	}
@@ -113,7 +112,7 @@ func (p *provider) parseSpotSpan() kafkaInf.ConsumerFunc {
 func (p *provider) parseSpotMetric() kafkaInf.ConsumerFunc {
 	return func(key []byte, value []byte, topic *string, timestamp time.Time) error {
 		return spotmetric.ParseSpotMetric(value, func(m *metric.Metric) error {
-			p.consumer(lib.ConsumerTimeout, m)
+			p.consumer(m)
 			return nil
 		})
 	}

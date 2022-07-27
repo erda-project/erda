@@ -28,6 +28,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model/odata"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/pipeline"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/common/unmarshalwork"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/receivercurrentlimiter"
 )
 
 func init() {
@@ -64,6 +65,7 @@ func (p *provider) Run(ctx context.Context) error {
 // TODO. smooth close channel
 func (p *provider) Start() error {
 	unmarshalwork.Start()
+	receivercurrentlimiter.Init()
 	return nil
 }
 
@@ -96,10 +98,12 @@ func (p *provider) initComponents() error {
 var (
 	defaultEnable      = true
 	defaultPipelineCfg = config.Pipeline{
-		BatchSize:     10,
+		BatchSize:     1000,
 		FlushInterval: time.Second,
 		FlushJitter:   time.Second,
 		Enable:        &defaultEnable,
+		RPChannelCap:  10000,
+		PEChannelCap:  10000,
 	}
 )
 
@@ -117,6 +121,12 @@ func (p *provider) createPipelines(cfgs []config.Pipeline, dtype odata.DataType)
 		}
 		if item.FlushJitter == 0 {
 			item.FlushJitter = defaultPipelineCfg.FlushJitter
+		}
+		if item.RPChannelCap == 0 {
+			item.RPChannelCap = defaultPipelineCfg.RPChannelCap
+		}
+		if item.PEChannelCap == 0 {
+			item.PEChannelCap = defaultPipelineCfg.PEChannelCap
 		}
 
 		if !(*item.Enable) {
@@ -137,7 +147,7 @@ func (p *provider) createPipelines(cfgs []config.Pipeline, dtype odata.DataType)
 		}
 
 		name := fmt.Sprintf("core-pipeline-%s-%d", dtype, idx)
-		pipe := pipeline.NewPipeline(p.Log.Sub(name), item, dtype)
+		pipe := pipeline.NewPipeline(name, p.Log.Sub(name), item, dtype)
 		err = pipe.InitComponents(rs, ps, es)
 		if err != nil {
 			return nil, fmt.Errorf("init components err: %w", err)

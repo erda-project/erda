@@ -41,7 +41,7 @@ erda.oap.collector.core:
       exporters:
         #- "erda.oap.collector.exporter.stdout"
         - "erda.oap.collector.exporter.kafka@spot-metrics"
-      batch_size: ${METRIC_PROMETHEUS_BATCH_SIZE:100}
+      batch_size: ${METRIC_PROMETHEUS_BATCH_SIZE:1024}
 
 # ************* receivers *************
 erda.oap.collector.receiver.dummy:
@@ -341,3 +341,4 @@ monitor-collector:
 pprof:
 http-server@admin:
   addr: ":7078"
+prometheus:

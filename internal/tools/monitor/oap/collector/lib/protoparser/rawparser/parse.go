@@ -15,7 +15,6 @@
 package rawparser
 
 import (
-	"bufio"
 	"encoding/base64"
 	"fmt"
 	"io"
@@ -36,10 +35,10 @@ func ParseStream(r io.Reader, contentEncoding, cusContentEncoding, format string
 		}
 		defer compressor.PutGzipReader(zr)
 		r = zr
-	case "snappy":
-		zr := compressor.GetSnappyReader(r)
-		defer compressor.PutSnappyReader(zr)
-		r = zr
+		// case "snappy":
+		// 	zr := compressor.GetSnappyReader(r)
+		// 	defer compressor.PutSnappyReader(zr)
+		// 	r = zr
 	}
 
 	switch cusContentEncoding {
@@ -48,17 +47,17 @@ func ParseStream(r io.Reader, contentEncoding, cusContentEncoding, format string
 	}
 
 	switch format {
-	case "jsonl":
-		scanner := bufio.NewScanner(r)
-		for scanner.Scan() {
-			buf := scanner.Bytes()
-			if lib.IsJSONArray(buf) {
-				return fmt.Errorf("is json array not json lines")
-			}
-			if err := callback(buf); err != nil {
-				return fmt.Errorf("callback json line: %w", err)
-			}
-		}
+	// case "jsonl":
+	// 	scanner := bufio.NewScanner(r)
+	// 	for scanner.Scan() {
+	// 		buf := scanner.Bytes()
+	// 		if lib.IsJSONArray(buf) {
+	// 			return fmt.Errorf("is json array not json lines")
+	// 		}
+	// 		if err := callback(buf); err != nil {
+	// 			return fmt.Errorf("callback json line: %w", err)
+	// 		}
+	// 	}
 	default:
 		data, err := io.ReadAll(r)
 		if err != nil {

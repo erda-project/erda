@@ -14,12 +14,6 @@
 
 package lib
 
-import (
-	"time"
-)
-
 const (
 	OrgNameKey = "org_name"
-
-	ConsumerTimeout = 10 * time.Second
 )

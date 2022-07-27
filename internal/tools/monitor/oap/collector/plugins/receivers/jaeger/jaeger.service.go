@@ -22,7 +22,6 @@ import (
 	common "github.com/erda-project/erda-proto-go/common/pb"
 	jaegerpb "github.com/erda-project/erda-proto-go/oap/collector/receiver/jaeger/pb"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model/odata"
-	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/protoparser/jsonmarshal"
 )
 
@@ -35,7 +34,7 @@ func (s *jaegerServiceImpl) SpansWithThrift(ctx context.Context, req *jaegerpb.P
 	if req.Spans != nil {
 		for i := range req.Spans {
 			err := jsonmarshal.ParseInterface(req.Spans[i], func(buf []byte) error {
-				return s.p.consumer(lib.ConsumerTimeout, odata.NewRaw(buf))
+				return s.p.consumer(odata.NewRaw(buf))
 			})
 			if err != nil {
 				return nil, fmt.Errorf("parse failed: %w", err)

@@ -12,31 +12,4 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package model
-
-import (
-	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model/odata"
-)
-
-type ObservableDataConsumerFunc func(data odata.ObservableData) error
-
-type RuntimeReceiver struct {
-	Name     string
-	Receiver Receiver
-	Filter   *DataFilter
-}
-
-type Receiver interface {
-	Component
-	// TODO
-	RegisterConsumer(consumer ObservableDataConsumerFunc)
-}
-
-type NoopReceiver struct {
-}
-
-func (n *NoopReceiver) ComponentConfig() interface{} {
-	return nil
-}
-
-func (n *NoopReceiver) RegisterConsumer(consumer ObservableDataConsumerFunc) {}
+package kafka
