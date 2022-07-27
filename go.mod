@@ -183,10 +183,7 @@ require (
 	k8s.io/kube-aggregator v0.20.0
 	k8s.io/kubectl v0.21.0
 	k8s.io/kubernetes v1.21.0
-	k8s.io/utils v0.0.0-20220725171434-9bab9ef40391 // indirect
-	kmodules.xyz/monitoring-agent-api v0.0.0-20200125202117-d3b3e33ce41f
-	kmodules.xyz/objectstore-api v0.0.0-20200214040336-fe8f39a4210d
-	kmodules.xyz/offshoot-api v0.0.0-20200216080509-45ee6418d1c1
+	k8s.io/utils v0.0.0-20220725171434-9bab9ef40391
 	modernc.org/mathutil v1.0.0
 	sigs.k8s.io/controller-runtime v0.9.2
 	sigs.k8s.io/sig-storage-lib-external-provisioner/v6 v6.3.0
@@ -245,7 +242,6 @@ require (
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/dsnet/compress v0.0.1 // indirect
 	github.com/elastic/go-ucfg v0.8.3 // indirect
-	github.com/emicklei/go-restful v2.9.5+incompatible // indirect
 	github.com/envoyproxy/protoc-gen-validate v0.1.0 // indirect
 	github.com/evanphx/json-patch v4.11.0+incompatible // indirect
 	github.com/exponent-io/jsonpath v0.0.0-20151013193312-d6023ce2651d // indirect
@@ -409,8 +405,6 @@ require (
 	k8s.io/cli-runtime v0.21.2 // indirect
 	k8s.io/component-base v0.21.2 // indirect
 	k8s.io/kube-openapi v0.0.0-20210305001622-591a79e4bda7 // indirect
-	k8s.io/utils v0.0.0-20210527160623-6fdb442a123b // indirect
-	kmodules.xyz/client-go v0.0.0-20191127054604-26981530831d // indirect
 	moul.io/http2curl v1.0.0 // indirect
 	rsc.io/letsencrypt v0.0.3 // indirect
 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.0.19 // indirect
