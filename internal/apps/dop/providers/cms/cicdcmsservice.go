@@ -79,8 +79,12 @@ func (s *CICDCmsService) CICDCmsCreateOrUpdate(ctx context.Context, req *CICDCms
 		if req.Batch && config.Type == db.ConfigTypeDiceFile {
 			continue
 		}
-
 		keys = append(keys, config.Key)
+
+		// Encrypted and empty, do not to modify
+		if config.Encrypt && config.Value == "" {
+			continue
+		}
 
 		var operations = &cmspb.PipelineCmsConfigOperations{}
 		switch config.Type {
