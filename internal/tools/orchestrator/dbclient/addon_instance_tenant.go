@@ -44,6 +44,7 @@ func (AddonInstanceTenant) TableName() string {
 	return "tb_addon_instance_tenant"
 }
 
+//go:noinline
 func (db *DBClient) CreateAddonInstanceTenant(tenant *AddonInstanceTenant) error {
 	return db.Create(tenant).Error
 }
