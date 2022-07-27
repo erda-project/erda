@@ -43,6 +43,10 @@ func ParseStream(r io.Reader, callback func(record *metric.Metric) error) error 
 		return fmt.Errorf("unmarshal WriteRequest: %w", err)
 	}
 
+	return parseWriteRequest(wr, callback)
+}
+
+func parseWriteRequest(wr *prompb.WriteRequest, callback func(record *metric.Metric) error) error {
 	now := time.Now() // receive time
 	for _, ts := range wr.Timeseries {
 		tags := map[string]string{}
