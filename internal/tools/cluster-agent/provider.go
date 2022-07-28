@@ -71,6 +71,7 @@ func (p *provider) Run(ctx context.Context) error {
 		OnStartedLeading: func(ctx context.Context) {
 			if err := c.Start(ctx); err != nil {
 				logrus.Errorf("failed to start cluster agent: %v", err)
+				os.Exit(1)
 			}
 		},
 		OnNewLeaderFun: func(newLeaderIdentity string) {
