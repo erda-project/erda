@@ -38,19 +38,6 @@ func TestParseStream(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "json lines",
-			args: args{
-				buf:                []byte("{\"time\":\"2021-12-01T17:55:56.027178579+08:00\",\"stream\":\"stderr\",\"_p\":\"F\",\"log\":\"2\"}\n{\"time\":\"2021-12-01T17:55:56.027178579+08:00\",\"stream\":\"stderr\",\"_p\":\"F\",\"log\":\"3\"}\n"),
-				contentEncoding:    "",
-				cusContentEncoding: "",
-				format:             "jsonl",
-				callback: func(buf []byte) error {
-					assert.Len(t, buf, 83)
-					return nil
-				},
-			},
-		},
-		{
 			name: "json array",
 			args: args{
 				buf:                []byte(`[{"time":"2021-12-01T17:55:56.027208973+08:00","stream":"stderr","log":"1"},{"time":"2021-12-01T17:55:56.027208973+08:00","stream":"stderr","log":"2"}]`),
@@ -62,19 +49,6 @@ func TestParseStream(t *testing.T) {
 					return nil
 				},
 			},
-		},
-		{
-			name: "json line err",
-			args: args{
-				buf:                []byte(`[{"time":"2021-12-01T17:55:56.027208973+08:00","stream":"stderr","log":"1"},{"time":"2021-12-01T17:55:56.027208973+08:00","stream":"stderr","log":"2"}]`),
-				contentEncoding:    "",
-				cusContentEncoding: "",
-				format:             "jsonl",
-				callback: func(buf []byte) error {
-					return nil
-				},
-			},
-			wantErr: true,
 		},
 	}
 	for _, tt := range tests {

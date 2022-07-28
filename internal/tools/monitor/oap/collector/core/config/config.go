@@ -34,6 +34,8 @@ type Pipeline struct {
 	Receivers     []string      `file:"receivers"`
 	Processors    []string      `file:"processors"`
 	Exporters     []string      `file:"exporters"`
+	RPChannelCap  int           `file:"rp_channel_cap"`
+	PEChannelCap  int           `file:"pe_channel_cap"`
 }
 
 type PipelineWrap struct {
