@@ -623,7 +623,7 @@ erda.oap.collector.receiver.kafka@spotmetric:
 erda.oap.collector.exporter.clickhouse@metric:
   _enable: ${WRITE_METRIC_TO_CLICKHOUSE_ENABLE:false}
   keypass:
-    name: ["kubernetes_*", "etcd"]
+    name: ${WRITE_METRIC_TO_CLICKHOUSE_KEY_PASS_NAME:["kubernetes_*", "etcd"]}
   storage:
     currency_num: ${EXPORTER_CH_METRIC_CURRENCY_NUM:2}
   builder:
