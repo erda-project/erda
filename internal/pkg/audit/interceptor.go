@@ -52,7 +52,7 @@ func (a *auditor) Audit(auditors ...*MethodAuditor) transport.ServiceOption {
 		methods[audit.method] = audit
 	}
 	return transport.WithInterceptors(func(h interceptor.Handler) interceptor.Handler {
-		if a.p.Cfg.Skip {
+		if a.p.Cfg != nil && a.p.Cfg.Skip {
 			return h
 		}
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
