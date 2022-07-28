@@ -29,6 +29,7 @@ import (
 
 	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	dwfpb "github.com/erda-project/erda-proto-go/dop/devflowrule/pb"
+	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/conf"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
@@ -184,7 +185,7 @@ func (e *Endpoints) DeleteProject(ctx context.Context, r *http.Request, vars map
 	}
 
 	// delete issue state
-	if err = e.db.DeleteIssuesStateByProjectID(projectID); err != nil {
+	if err = e.issueDBClient.DeleteIssuesStateByProjectID(projectID); err != nil {
 		logrus.Warnf("failed to delete project state, (%v)", err)
 		return apierrors.ErrDeleteProject.InternalError(err).ToResp(), nil
 	}
@@ -358,14 +359,12 @@ func (e *Endpoints) getProjectStats(projectID uint64) (*apistructs.ProjectStats,
 	}
 
 	var totalManHour, usedManHour, planningManHour, totalBug, doneBug int64
-	totalIssues, _, err := e.db.PagingIssues(apistructs.IssuePagingRequest{
-		IssueListRequest: apistructs.IssueListRequest{
-			ProjectID: projectID,
-			Type:      []apistructs.IssueType{apistructs.IssueTypeBug, apistructs.IssueTypeTask},
-			External:  true,
-		},
-		PageNo:   1,
-		PageSize: 99999,
+	totalIssues, _, err := e.issueDBClient.PagingIssues(pb.PagingIssueRequest{
+		ProjectID: projectID,
+		Type:      []string{pb.IssueTypeEnum_BUG.String(), pb.IssueTypeEnum_TASK.String()},
+		External:  true,
+		PageNo:    1,
+		PageSize:  99999,
 	}, false)
 	if err != nil {
 		return nil, errors.Errorf("get project states err: get issues err: %v", err)
@@ -373,7 +372,7 @@ func (e *Endpoints) getProjectStats(projectID uint64) (*apistructs.ProjectStats,
 
 	// 事件状态map
 	closedBugStatsMap := make(map[int64]struct{}, 0)
-	bugState, err := e.db.GetClosedBugState(int64(projectID))
+	bugState, err := e.issueDBClient.GetClosedBugState(int64(projectID))
 	if err != nil {
 		return nil, errors.Errorf("get project states err: get issues stats err: %v", err)
 	}
@@ -391,7 +390,7 @@ func (e *Endpoints) getProjectStats(projectID uint64) (*apistructs.ProjectStats,
 		if _, ok := planningIterations[v.IterationID]; ok {
 			planningManHour += manHour.EstimateTime
 		}
-		if v.Type == apistructs.IssueTypeBug {
+		if v.Type == pb.IssueTypeEnum_BUG.String() {
 			if _, ok := closedBugStatsMap[v.State]; ok {
 				doneBug++
 			}

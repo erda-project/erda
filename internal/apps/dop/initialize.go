@@ -39,6 +39,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/dbclient"
 	"github.com/erda-project/erda/internal/apps/dop/endpoints"
 	"github.com/erda-project/erda/internal/apps/dop/event"
+	issuedao "github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	"github.com/erda-project/erda/internal/apps/dop/services/apidocsvc"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	"github.com/erda-project/erda/internal/apps/dop/services/appcertificate"
@@ -115,6 +116,8 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 		return err
 	}
 
+	issueDB := p.IssueCoreSvc.DBClient()
+
 	registerWebHook(bdl.Bdl)
 
 	if err = deleteWebhook(bdl.Bdl); err != nil {
@@ -135,7 +138,7 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 	p.Protocol.WithContextValue(types.ManualTestCaseService, ep.ManualTestCaseService())
 	p.Protocol.WithContextValue(types.ManualTestPlanService, ep.ManualTestPlanService())
 	p.Protocol.WithContextValue(types.AutoTestPlanService, ep.AutoTestPlanService())
-	p.Protocol.WithContextValue(types.IssueDBClient, p.IssueCoreSvc.DBClient())
+	p.Protocol.WithContextValue(types.IssueDBClient, issueDB)
 	p.Protocol.WithContextValue(types.ProjectPipelineService, p.ProjectPipelineSvc)
 	p.Protocol.WithContextValue(types.PipelineCronService, p.PipelineCron)
 	p.Protocol.WithContextValue(types.GuideService, p.GuideSvc)
@@ -247,7 +250,7 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 				logrus.Error(err)
 			}
 			logrus.Infof("start compensate issue state transition")
-			if err = compensateIssueStateCirculation(ep); err != nil {
+			if err = compensateIssueStateCirculation(issueDB); err != nil {
 				logrus.Error(err)
 				_, err = p.EtcdClient.Delete(context.Background(), EtcdIssueStateCompensate)
 				if err != nil {
@@ -259,13 +262,13 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 	}()
 
 	// instantly run once
-	updateIssueExpiryStatus(ep)
+	updateIssueExpiryStatus(issueDB)
 
 	// daily issue expiry status update cron job
 	go func() {
 		cron := cron.New()
 		err := cron.AddFunc(conf.UpdateIssueExpiryStatusCron(), func() {
-			updateIssueExpiryStatus(ep)
+			updateIssueExpiryStatus(issueDB)
 		})
 		if err != nil {
 			panic(err)
@@ -303,9 +306,9 @@ func updateMemberContribution(db *dao.DBClient) error {
 	return db.QualityScore()
 }
 
-func updateIssueExpiryStatus(ep *endpoints.Endpoints) {
+func updateIssueExpiryStatus(db *issuedao.DBClient) {
 	start := time.Now()
-	if err := ep.DBClient().BatchUpdateIssueExpiryStatus(apistructs.StateBelongs); err != nil {
+	if err := db.BatchUpdateIssueExpiryStatus(apistructs.StateBelongs); err != nil {
 		logrus.Errorf("daily issue expiry status batch update err: %v", err)
 		return
 	}
@@ -350,10 +353,13 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 	queryStringDecoder := schema.NewDecoder()
 	queryStringDecoder.IgnoreUnknownKeys(true)
 
+	issueDB := p.IssueCoreSvc.DBClient()
+
 	testCaseSvc := testcase.New(
 		testcase.WithDBClient(db),
 		testcase.WithBundle(bdl.Bdl),
 		testcase.WithOrg(p.Org),
+		testcase.WithIssueDBClient(issueDB),
 	)
 	testSetSvc := testset.New(
 		testset.WithDBClient(db),
@@ -442,18 +448,18 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 	)
 
 	issue := issue.New(
-		issue.WithDBClient(db),
-		issue.WithBundle(bdl.Bdl),
+		issue.WithIssueDBClient(issueDB),
 	)
 
 	issueState := issuestate.New(
-		issuestate.WithDBClient(db),
+		issuestate.WithDBClient(issueDB),
 		issuestate.WithBundle(bdl.Bdl),
 	)
 
 	itr := iteration.New(
 		iteration.WithDBClient(db),
-		iteration.WithIssue(issue),
+		iteration.WithIssueQuery(p.Query),
+		iteration.WithIssueDBClient(issueDB),
 	)
 
 	testPlan := testplan.New(
@@ -462,9 +468,10 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		testplan.WithTestCase(testCaseSvc),
 		testplan.WithTestSet(testSetSvc),
 		testplan.WithAutoTest(autotest),
-		testplan.WithIssue(issue),
+		testplan.WithIssue(p.Query),
 		testplan.WithIssueState(issueState),
 		testplan.WithIterationSvc(itr),
+		testplan.WithIssueDBClient(issueDB),
 	)
 
 	p.IssueCoreSvc.WithTestplan(testPlan)
@@ -646,6 +653,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		endpoints.WithTokenSvc(p.TokenService),
 		endpoints.WithOrgClient(p.Org),
 		endpoints.WithProjectPipelineSvc(p.ProjectPipelineSvc),
+		endpoints.WithIssueDB(issueDB),
 	)
 
 	ep.ImportChannel = make(chan uint64)
@@ -882,24 +890,24 @@ func (p *provider) compensatePipelineCms(ep *endpoints.Endpoints) error {
 
 // compensateIssueStateCirculation compensate issue state transition
 // it will be deprecated in the later version
-func compensateIssueStateCirculation(ep *endpoints.Endpoints) error {
+func compensateIssueStateCirculation(db *issuedao.DBClient) error {
 	// get all issue stream
-	issueStreamExtras, err := ep.DBClient().ListIssueStreamExtraForIssueStateTransMigration()
+	issueStreamExtras, err := db.ListIssueStreamExtraForIssueStateTransMigration()
 	if err != nil {
 		return nil
 	}
-	proIssueStreamMap := make(map[uint64][]dao.IssueStreamExtra)
+	proIssueStreamMap := make(map[uint64][]issuedao.IssueStreamExtra)
 	for _, v := range issueStreamExtras {
 		proIssueStreamMap[v.ProjectID] = append(proIssueStreamMap[v.ProjectID], v)
 	}
 
-	statesTrans := make([]dao.IssueStateTransition, 0)
+	statesTrans := make([]issuedao.IssueStateTransition, 0)
 	for k, streams := range proIssueStreamMap {
-		states, err := ep.DBClient().GetIssuesStatesByProjectID(k, "")
+		states, err := db.GetIssuesStatesByProjectID(k, "")
 		if err != nil {
 			return err
 		}
-		stateMap := make(map[apistructs.IssueType]map[string]uint64)
+		stateMap := make(map[string]map[string]uint64)
 		for _, v := range states {
 			if _, ok := stateMap[v.IssueType]; !ok {
 				stateMap[v.IssueType] = make(map[string]uint64)
@@ -911,7 +919,7 @@ func compensateIssueStateCirculation(ep *endpoints.Endpoints) error {
 			if err != nil {
 				return err
 			}
-			statesTrans = append(statesTrans, dao.IssueStateTransition{
+			statesTrans = append(statesTrans, issuedao.IssueStateTransition{
 				ID:        id.String(),
 				CreatedAt: v.CreatedAt,
 				UpdatedAt: v.UpdatedAt,
@@ -923,7 +931,7 @@ func compensateIssueStateCirculation(ep *endpoints.Endpoints) error {
 			})
 		}
 	}
-	issues, err := ep.DBClient().ListIssueForIssueStateTransMigration()
+	issues, err := db.ListIssueForIssueStateTransMigration()
 	if err != nil {
 		return err
 	}
@@ -936,7 +944,7 @@ func compensateIssueStateCirculation(ep *endpoints.Endpoints) error {
 	}
 	for k := range proInitStateMap {
 		for _, v := range apistructs.IssueTypes {
-			states, err := ep.DBClient().GetIssuesStatesByProjectID(k, v)
+			states, err := db.GetIssuesStatesByProjectID(k, string(v))
 			if err != nil {
 				return err
 			}
@@ -951,7 +959,7 @@ func compensateIssueStateCirculation(ep *endpoints.Endpoints) error {
 		if err != nil {
 			return err
 		}
-		statesTrans = append(statesTrans, dao.IssueStateTransition{
+		statesTrans = append(statesTrans, issuedao.IssueStateTransition{
 			ID:        id.String(),
 			CreatedAt: v.CreatedAt,
 			UpdatedAt: v.UpdatedAt,
@@ -963,7 +971,7 @@ func compensateIssueStateCirculation(ep *endpoints.Endpoints) error {
 		})
 	}
 
-	return ep.DBClient().BatchCreateIssueTransition(statesTrans)
+	return db.BatchCreateIssueTransition(statesTrans)
 }
 
 func deleteWebhook(bdl *bundle.Bundle) error {

@@ -22,7 +22,6 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	"github.com/erda-project/erda/internal/pkg/user"
 	"github.com/erda-project/erda/pkg/http/httpserver"
-	"github.com/erda-project/erda/pkg/strutil"
 )
 
 func (e *Endpoints) GetWorkbenchData(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
@@ -49,45 +48,4 @@ func (e *Endpoints) GetWorkbenchData(ctx context.Context, r *http.Request, vars 
 		return apierrors.ErrGetWorkBenchData.InternalError(err).ToResp(), nil
 	}
 	return httpserver.OkResp(res.Data)
-}
-
-func (e *Endpoints) GetIssuesForWorkbench(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
-	var pageReq apistructs.IssuePagingRequest
-	if err := e.queryStringDecoder.Decode(&pageReq, r.URL.Query()); err != nil {
-		return apierrors.ErrPagingIssues.InvalidParameter(err).ToResp(), nil
-	}
-
-	switch pageReq.OrderBy {
-	case "":
-	case "planStartedAt":
-		pageReq.OrderBy = "plan_started_at"
-	case "planFinishedAt":
-		pageReq.OrderBy = "plan_finished_at"
-	case "assignee":
-		pageReq.OrderBy = "assignee"
-	default:
-		return apierrors.ErrPagingIssues.InvalidParameter("orderBy").ToResp(), nil
-	}
-
-	// Authentication
-	identityInfo, err := user.GetIdentityInfo(r)
-	if err != nil {
-		return apierrors.ErrPagingIssues.NotLogin().ToResp(), nil
-	}
-	pageReq.IdentityInfo = identityInfo
-	pageReq.External = true
-
-	issues, total, err := e.issue.PagingForWorkbench(pageReq)
-	if err != nil {
-		return apierrors.ErrPagingIssues.InternalError(err).ToResp(), nil
-	}
-	userIDs := pageReq.GetUserIDs()
-	for _, issue := range issues {
-		userIDs = append(userIDs, issue.Creator, issue.Assignee, issue.Owner)
-	}
-	userIDs = strutil.DedupSlice(userIDs, true)
-	return httpserver.OkResp(apistructs.IssuePagingResponseData{
-		Total: total,
-		List:  issues,
-	})
 }
