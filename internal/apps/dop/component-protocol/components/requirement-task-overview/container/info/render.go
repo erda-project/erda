@@ -30,10 +30,10 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/requirement-task-overview/common"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/requirement-task-overview/common/gshelper"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/requirement-task-overview/container/simpleChart"
+	"github.com/erda-project/erda/internal/apps/dop/component-protocol/standard-components/issueFilter"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/types"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
-	"github.com/erda-project/erda/internal/pkg/component-protocol/issueFilter"
 )
 
 func init() {
