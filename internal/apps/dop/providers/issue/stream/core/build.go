@@ -15,6 +15,7 @@
 package core
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"reflect"
@@ -24,6 +25,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
+	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
@@ -196,10 +198,11 @@ func (p *provider) CreateStream(updateReq *pb.UpdateIssueRequest, streamFields m
 			for _, uid := range v {
 				userIds = append(userIds, uid.(string))
 			}
-			users, err := p.Identity.FindUsers(userIds)
+			resp, err := p.Identity.FindUsers(context.Background(), &userpb.FindUsersRequest{Ids: userIds})
 			if err != nil {
 				return err
 			}
+			users := resp.Data
 			if len(users) != 2 {
 				return errors.Errorf("failed to fetch userInfo when create issue stream, %v", v)
 			}
@@ -273,10 +276,11 @@ func (p *provider) CreateStream(updateReq *pb.UpdateIssueRequest, streamFields m
 			for _, uid := range v {
 				userIds = append(userIds, uid.(string))
 			}
-			users, err := p.Identity.FindUsers(userIds)
+			resp, err := p.Identity.FindUsers(context.Background(), &userpb.FindUsersRequest{Ids: userIds})
 			if err != nil {
 				return err
 			}
+			users := resp.Data
 			if len(users) != 2 {
 				return errors.Errorf("failed to fetch userInfo when create issue stream, %v", v)
 			}

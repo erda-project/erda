@@ -28,6 +28,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
+	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	projectCache "github.com/erda-project/erda/internal/core/legacy/cache/project"
@@ -35,7 +36,6 @@ import (
 	"github.com/erda-project/erda/internal/core/legacy/dao"
 	"github.com/erda-project/erda/internal/core/legacy/model"
 	"github.com/erda-project/erda/internal/core/legacy/types"
-	"github.com/erda-project/erda/internal/core/user"
 	"github.com/erda-project/erda/pkg/filehelper"
 	local "github.com/erda-project/erda/pkg/i18n"
 	calcu "github.com/erda-project/erda/pkg/resourcecalculator"
@@ -44,7 +44,7 @@ import (
 // Project 资源对象操作封装
 type Project struct {
 	db    *dao.DBClient
-	uc    user.Interface
+	uc    userpb.UserServiceServer
 	bdl   *bundle.Bundle
 	trans i18n.Translator
 }
@@ -69,7 +69,7 @@ func WithDBClient(db *dao.DBClient) Option {
 }
 
 // WithUCClient 配置 uc client
-func WithUCClient(uc user.Interface) Option {
+func WithUCClient(uc userpb.UserServiceServer) Option {
 	return func(project *Project) {
 		project.uc = uc
 	}
@@ -232,10 +232,11 @@ func (p *Project) Create(userID string, createReq *apistructs.ProjectCreateReque
 	}
 
 	// 新增项目管理员至admin_members表
-	users, err := p.uc.FindUsers([]string{userID})
+	resp, err := p.uc.FindUsers(context.Background(), &userpb.FindUsersRequest{Ids: []string{userID}})
 	if err != nil {
 		logrus.Warnf("user query error: %v", err)
 	}
+	users := resp.Data
 	if len(users) > 0 {
 		member := model.Member{
 			ScopeType:  apistructs.ProjectScope,

@@ -16,8 +16,10 @@ package query
 
 import (
 	"bytes"
+	"context"
 	"io"
 
+	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	"github.com/erda-project/erda/internal/apps/dop/services/i18n"
@@ -52,7 +54,10 @@ func (p *provider) ExportExcel(issues []*pb.Issue, properties []*pb.IssuePropert
 		}
 	}
 	userids = strutil.DedupSlice(userids, true)
-	users, err := p.Identity.FindUsers(userids)
+	resp, err := p.Identity.FindUsers(context.Background(), &userpb.FindUsersRequest{
+		Ids: userids,
+	})
+	users := resp.Data
 	if err != nil {
 		return nil, "", err
 	}

@@ -15,12 +15,12 @@
 package util
 
 import (
+	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/internal/core/user/common"
 	"github.com/erda-project/erda/pkg/desensitize"
 )
 
-func Densensitize(IDs []string, b []common.User, needDesensitize bool) map[string]apistructs.UserInfo {
+func Densensitize(IDs []string, b []*userpb.User, needDesensitize bool) map[string]apistructs.UserInfo {
 	users := make(map[string]apistructs.UserInfo, len(b))
 	if needDesensitize {
 		for i := range b {

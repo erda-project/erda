@@ -21,9 +21,10 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/erda-project/erda-proto-go/core/user/pb"
+	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/core/legacy/services/apierrors"
-	identity "github.com/erda-project/erda/internal/core/user/common"
 	"github.com/erda-project/erda/internal/pkg/user"
 	"github.com/erda-project/erda/pkg/desensitize"
 	"github.com/erda-project/erda/pkg/http/httpserver"
@@ -38,7 +39,7 @@ const maxUserSize = 100
 func (e *Endpoints) ListUser(ctx context.Context, r *http.Request, vars map[string]string) (
 	httpserver.Responser, error) {
 	var (
-		users []identity.User
+		users []*userpb.User
 		err   error
 	)
 
@@ -75,10 +76,11 @@ func (e *Endpoints) ListUser(ctx context.Context, r *http.Request, vars map[stri
 
 	keyword := r.URL.Query().Get("q")
 	if keyword != "" { // search by keyword
-		users, err = e.uc.FindUsersByKey(keyword)
+		resp, err := e.uc.FindUsersByKey(ctx, &userpb.FindUsersByKeyRequest{Key: keyword})
 		if err != nil {
 			return apierrors.ErrListUser.InternalError(err).ToResp(), nil
 		}
+		users = resp.Data
 	} else if identityInfo.IsInternalClient() { // 按userID列表批量查找用户，这个接口不能暴露出去，以防通过暴力枚举userid获取userinfo
 		// 检查请求参数
 		params := r.URL.Query()
@@ -91,10 +93,11 @@ func (e *Endpoints) ListUser(ctx context.Context, r *http.Request, vars map[stri
 			return apierrors.ErrListUser.InvalidParameter("user id too much").ToResp(), nil
 		}
 
-		users, err = e.uc.FindUsers(userIDs)
+		resp, err := e.uc.FindUsers(ctx, &pb.FindUsersRequest{Ids: userIDs})
 		if err != nil {
 			return apierrors.ErrListUser.InternalError(err).ToResp(), nil
 		}
+		users = resp.Data
 	}
 
 	var plaintext bool
@@ -105,7 +108,7 @@ func (e *Endpoints) ListUser(ctx context.Context, r *http.Request, vars map[stri
 	// 用户信息转换
 	userInfos := make([]apistructs.UserInfo, 0, len(users))
 	for i := range users {
-		userInfos = append(userInfos, *convertToUserInfo(&users[i], plaintext))
+		userInfos = append(userInfos, *convertToUserInfo(users[i], plaintext))
 	}
 
 	return httpserver.OkResp(apistructs.UserListResponseData{Users: userInfos})
@@ -120,12 +123,12 @@ func (e *Endpoints) GetCurrentUser(ctx context.Context, r *http.Request, vars ma
 	}
 
 	// 获取用户详情
-	user, err := e.uc.GetUser(userID.String())
+	resp, err := e.uc.GetUser(ctx, &userpb.GetUserRequest{UserID: userID.String()})
 	if err != nil {
 		return apierrors.ErrGetUser.InternalError(err).ToResp(), nil
 	}
 
-	return httpserver.OkResp(*convertToUserInfo(user, false))
+	return httpserver.OkResp(*convertToUserInfo(resp.Data, false))
 }
 
 func (e *Endpoints) GetUcUserID(ctx context.Context, r *http.Request, vars map[string]string) (
@@ -138,7 +141,7 @@ func (e *Endpoints) GetUcUserID(ctx context.Context, r *http.Request, vars map[s
 	return httpserver.OkResp(userID)
 }
 
-func convertToUserInfo(user *identity.User, plaintext bool) *apistructs.UserInfo {
+func convertToUserInfo(user *userpb.User, plaintext bool) *apistructs.UserInfo {
 	if !plaintext {
 		user.Phone = desensitize.Mobile(user.Phone)
 		user.Email = desensitize.Email(user.Email)
@@ -155,8 +158,7 @@ func convertToUserInfo(user *identity.User, plaintext bool) *apistructs.UserInfo
 
 func (e *Endpoints) SearchUser(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	var (
-		users []identity.User
-		err   error
+		err error
 	)
 
 	identityInfo, err := user.GetIdentityInfo(r)
@@ -192,11 +194,11 @@ func (e *Endpoints) SearchUser(ctx context.Context, r *http.Request, vars map[st
 	if err != nil {
 		return apierrors.ErrListUser.InvalidParameter("pageSize").ToResp(), nil
 	}
-	users, err = e.uc.FindUsersByKey(req.Name)
+	resp, err := e.uc.FindUsersByKey(ctx, &userpb.FindUsersByKeyRequest{Key: req.Name})
 	if err != nil {
 		return apierrors.ErrListUser.InternalError(err).ToResp(), nil
 	}
-
+	users := resp.Data
 	var plaintext bool
 	plaintextStr := r.URL.Query().Get("plaintext")
 	if plaintextStr == "true" {
@@ -205,7 +207,7 @@ func (e *Endpoints) SearchUser(ctx context.Context, r *http.Request, vars map[st
 
 	userInfos := make([]apistructs.UserInfo, 0, len(users))
 	for i := range users {
-		userInfos = append(userInfos, *convertToUserInfo(&users[i], plaintext))
+		userInfos = append(userInfos, *convertToUserInfo(users[i], plaintext))
 	}
 
 	return httpserver.OkResp(apistructs.UserListResponseData{Users: userInfos})

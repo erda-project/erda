@@ -15,6 +15,7 @@
 package query
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -24,6 +25,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	commonpb "github.com/erda-project/erda-proto-go/common/pb"
+	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/common"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
@@ -490,10 +492,11 @@ func (p *provider) batchCreateAssignChaningStream(req *pb.BatchUpdateIssueReques
 	}
 	userIds = append(userIds, req.Assignee)
 
-	users, err := p.Identity.FindUsers(userIds)
+	resp, err := p.Identity.FindUsers(context.Background(), &userpb.FindUsersRequest{Ids: userIds})
 	if err != nil {
 		return err
 	}
+	users := resp.Data
 	userInfo := make(map[string]string, len(users))
 	for _, v := range users {
 		userInfo[v.ID] = v.Nick

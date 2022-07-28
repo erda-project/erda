@@ -32,6 +32,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	commonpb "github.com/erda-project/erda-proto-go/common/pb"
+	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/bdl"
@@ -41,7 +42,6 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/types"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query"
 	protocol "github.com/erda-project/erda/internal/core/openapi/legacy/component-protocol"
-	"github.com/erda-project/erda/internal/core/user"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -214,7 +214,7 @@ type AssigneeOperationData struct {
 type ComponentAction struct {
 	labels  []apistructs.ProjectLabel
 	isGuest bool
-	userMap map[string]apistructs.UserInfo
+	userMap map[string]string
 }
 
 var (
@@ -241,7 +241,7 @@ var (
 func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	sdk := cputil.SDK(ctx)
 	issueSvc := ctx.Value(types.IssueService).(query.Interface)
-	identity := ctx.Value(types.IdentitiyService).(user.Interface)
+	identity := ctx.Value(types.IdentitiyService).(userpb.UserServiceServer)
 	isGuest, err := ca.CheckUserPermission(ctx)
 	if err != nil {
 		return err
@@ -343,13 +343,13 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 	}
 	// 获取全部用户
 	userids = strutil.DedupSlice(userids, true)
-	uInfo, err := identity.GetUsers(userids, false)
+	resp, err := identity.FindUsers(ctx, &userpb.FindUsersRequest{Ids: userids})
 	if err != nil {
 		return err
 	}
-	ca.userMap = make(map[string]apistructs.UserInfo)
-	for _, v := range uInfo {
-		ca.userMap[v.ID] = v
+	ca.userMap = make(map[string]string, len(resp.Data))
+	for _, i := range resp.Data {
+		ca.userMap[i.ID] = i.Nick
 	}
 
 	labels, err := bdl.Bdl.Labels("issue", projectid, sdk.Identity.UserID)
@@ -505,7 +505,7 @@ func (ca *ComponentAction) buildTableItem(ctx context.Context, data *pb.Issue, i
 			"assignee": "",
 			"id":       strconv.FormatInt(data.Id, 10),
 		},
-		"text":     ca.userMap[data.Assignee].Nick,
+		"text":     ca.userMap[data.Assignee],
 		"reload":   true,
 		"key":      "updateAssignee",
 		"disabled": false,

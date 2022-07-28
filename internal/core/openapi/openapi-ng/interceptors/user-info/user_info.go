@@ -17,6 +17,7 @@ package userinfo
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net"
@@ -26,8 +27,9 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda/internal/core/openapi/openapi-ng/interceptors"
-	"github.com/erda-project/erda/internal/core/user"
+	"github.com/erda-project/erda/internal/core/user/util"
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
@@ -39,7 +41,7 @@ type config struct {
 type provider struct {
 	Cfg      *config
 	Log      logs.Logger
-	Identity user.Interface
+	Identity userpb.UserServiceServer
 }
 
 func (p *provider) Init(ctx servicehub.Context) (err error) {
@@ -153,10 +155,11 @@ func (p *provider) Interceptor(h http.HandlerFunc) http.HandlerFunc {
 
 func (p *provider) userInfoRetriever(r *http.Request, data map[string]interface{}, userIDs []string) []byte {
 	desensitized, _ := strconv.ParseBool(r.Header.Get(httputil.UserInfoDesensitizedHeader))
-	user, err := p.Identity.GetUsers(userIDs, desensitized)
+	resp, err := p.Identity.FindUsers(context.Background(), &userpb.FindUsersRequest{Ids: userIDs})
 	if err != nil {
 		p.Log.Error(err)
 	} else {
+		user := util.Densensitize(userIDs, resp.Data, desensitized)
 		data["userInfo"] = user
 		if newbody, err := json.Marshal(data); err == nil {
 			return newbody

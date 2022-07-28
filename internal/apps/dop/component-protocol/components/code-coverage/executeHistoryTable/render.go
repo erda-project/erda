@@ -24,10 +24,10 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/types"
 	"github.com/erda-project/erda/internal/apps/dop/services/code_coverage"
-	"github.com/erda-project/erda/internal/core/user"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -38,7 +38,7 @@ type ComponentAction struct {
 	Props           map[string]interface{}      `json:"props"`
 	State           State                       `json:"state"`
 	Operations      Operations                  `json:"operations"`
-	identity        user.Interface
+	identity        userpb.UserServiceServer
 }
 
 type Data struct {
@@ -132,7 +132,7 @@ func (ca *ComponentAction) getStatusValueMap(ctx context.Context) map[string]str
 func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 
 	ca.CodeCoverageSvc = ctx.Value(types.CodeCoverageService).(*code_coverage.CodeCoverage)
-	ca.identity = ctx.Value(types.IdentitiyService).(user.Interface)
+	ca.identity = ctx.Value(types.IdentitiyService).(userpb.UserServiceServer)
 	if err := ca.SetState(c); err != nil {
 		return err
 	}
@@ -246,13 +246,17 @@ func (ca *ComponentAction) setData(ctx context.Context, gs *cptype.GlobalStateDa
 		})
 	}
 	userIDs = strutil.DedupSlice(userIDs, true)
-	uInfo, err := ca.identity.GetUsers(userIDs, false)
+	resp, err := ca.identity.FindUsers(ctx, &userpb.FindUsersRequest{Ids: userIDs})
 	if err != nil {
 		return err
 	}
+	uInfo := make(map[string]string, len(resp.Data))
+	for _, i := range resp.Data {
+		uInfo[i.ID] = i.Nick
+	}
 	for i := range list {
-		list[i].Starter = uInfo[list[i].Starter].Nick
-		list[i].Ender = uInfo[list[i].Ender].Nick
+		list[i].Starter = uInfo[list[i].Starter]
+		list[i].Ender = uInfo[list[i].Ender]
 	}
 	ca.Data.List = list
 	return nil

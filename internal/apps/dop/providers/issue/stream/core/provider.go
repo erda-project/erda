@@ -22,12 +22,12 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/i18n"
+	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/stream/common"
 	"github.com/erda-project/erda/internal/core/org"
-	"github.com/erda-project/erda/internal/core/user"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 )
 
@@ -43,7 +43,7 @@ type provider struct {
 	I18n       i18n.Translator `translator:"issue-manage"`
 	CPTran     i18n.I18n       `autowired:"i18n@cp"`
 	commonTran i18n.Translator
-	Identity   user.Interface
+	Identity   userpb.UserServiceServer
 	Org        org.ClientInterface
 }
 

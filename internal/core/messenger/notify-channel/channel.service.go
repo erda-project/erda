@@ -28,6 +28,7 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/core/messenger/notifychannel/pb"
+	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/core/messenger/notify-channel/db"
 	"github.com/erda-project/erda/internal/core/messenger/notify-channel/kind"
@@ -91,10 +92,11 @@ func (s notifyChannelService) CreateNotifyChannel(ctx context.Context, req *pb.C
 		return nil, pkgerrors.NewAlreadyExistsError("Channel name")
 	}
 	creatorId := apis.GetUserID(ctx)
-	user, err := s.p.Identity.GetUser(creatorId)
+	resp, err := s.p.Identity.GetUser(ctx, &userpb.GetUserRequest{UserID: creatorId})
 	if err != nil {
 		return nil, pkgerrors.NewInternalServerError(err)
 	}
+	user := resp.Data
 	if user == nil || user.ID == "" {
 		return nil, pkgerrors.NewNotFoundError("User")
 	}
@@ -154,11 +156,14 @@ func (s *notifyChannelService) CovertToPbNotifyChannel(lang i18n.LanguageCodes, 
 		Name:        channel.ChannelProvider,
 		DisplayName: s.p.I18n.Text(lang, channel.ChannelProvider),
 	}
-	user, _ := s.p.Identity.GetUser(channel.CreatorId)
-	if user != nil && user.Name != "" {
-		ncpb.CreatorName = user.Name
-		if user.Nick != "" {
-			ncpb.CreatorName = user.Nick
+	resp, _ := s.p.Identity.GetUser(context.Background(), &userpb.GetUserRequest{UserID: channel.CreatorId})
+	if resp != nil {
+		user := resp.Data
+		if user != nil && user.Name != "" {
+			ncpb.CreatorName = user.Name
+			if user.Nick != "" {
+				ncpb.CreatorName = user.Nick
+			}
 		}
 	}
 	layout := "2006-01-02 15:04:05"

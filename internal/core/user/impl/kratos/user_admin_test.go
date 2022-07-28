@@ -21,8 +21,6 @@ import (
 	"bou.ke/monkey"
 	"github.com/jinzhu/gorm"
 
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/internal/core/user/common"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
@@ -110,72 +108,6 @@ func TestUCClient_ConvertUserIDs(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got1, tt.want1) {
 				t.Errorf("UCClient.ConvertUserIDs() got1 = %v, want %v", got1, tt.want1)
-			}
-		})
-	}
-}
-
-func Test_provider_GetUsers(t *testing.T) {
-	type args struct {
-		IDs             []string
-		needDesensitize bool
-	}
-	tests := []struct {
-		name    string
-		args    args
-		want    map[string]apistructs.UserInfo
-		wantErr bool
-	}{
-		{
-			args: args{
-				IDs:             []string{"1"},
-				needDesensitize: true,
-			},
-			want: map[string]apistructs.UserInfo{
-				"1": {
-					Email: "te*t@test.com",
-				},
-			},
-		},
-		{
-			args: args{
-				IDs: []string{"1", "2"},
-			},
-			want: map[string]apistructs.UserInfo{
-				"1": {
-					ID:    "1",
-					Email: "te*t@test.com",
-				},
-				"2": {
-					ID:   "2",
-					Name: "用户已注销",
-					Nick: "用户已注销",
-				},
-			},
-		},
-	}
-
-	p := &provider{}
-	monkey.PatchInstanceMethod(reflect.TypeOf(p), "FindUsers",
-		func(p *provider, ids []string) ([]common.User, error) {
-			return []common.User{
-				{
-					ID:    "1",
-					Email: "test@test.com",
-				},
-			}, nil
-		})
-	defer monkey.UnpatchAll()
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := p.GetUsers(tt.args.IDs, tt.args.needDesensitize)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("provider.GetUsers() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("provider.GetUsers() = %v, want %v", got, tt.want)
 			}
 		})
 	}

@@ -22,15 +22,15 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/etcd"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
+	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda/internal/core/org"
-	"github.com/erda-project/erda/internal/core/user"
 )
 
 type provider struct {
 	ETCD         etcd.Interface             // autowired
 	EtcdClient   *clientv3.Client           // autowired
 	TokenService tokenpb.TokenServiceServer `autowired:"erda.core.token.TokenService"`
-	Identity     user.Interface
+	Identity     userpb.UserServiceServer
 	Org          org.ClientInterface
 }
 
