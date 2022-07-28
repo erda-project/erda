@@ -17,7 +17,6 @@ package metricq
 //  Data export, a temporary scheme.
 
 import (
-	"io/ioutil"
 	"net/http"
 	"strings"
 
@@ -26,59 +25,6 @@ import (
 
 	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
-
-// exportMetrics .
-func (p *provider) exportMetrics(r *http.Request, w http.ResponseWriter, param *QueryParams) interface{} {
-	if len(param.Query) > 0 || strings.HasPrefix(param.QL, "influxql") {
-		// Compatible with old table SQL schema queries
-		err := r.ParseForm()
-		if err != nil {
-			return api.Errors.InvalidParameter(err)
-		}
-		ql, q, format := r.Form.Get("ql"), r.Form.Get("q"), r.Form.Get("format")
-		r.Form.Del("ql")
-		r.Form.Del("q")
-		r.Form.Del("format")
-		if len(format) == 0 {
-			format = "influxdb"
-		}
-		if len(ql) == 0 {
-			ql = "influxql"
-		}
-		if len(q) == 0 {
-			byts, err := ioutil.ReadAll(r.Body)
-			if err == nil {
-				q = string(byts)
-			}
-		}
-		_, data, err := p.q.QueryWithFormat(ql, q, format, api.Language(r), nil, nil, r.Form)
-		if err != nil {
-			return api.Errors.InvalidParameter(err)
-		}
-		return downloadExcelFile(w, data)
-	}
-	stmt := getQueryStatement(param.Scope, param.Aggregate, r)
-	qlang := "json"
-	if r.Method == http.MethodGet {
-		qlang = "params"
-	}
-	if len(param.Format) <= 0 {
-		param.Format = "chart"
-	}
-	resp, err := p.q.QueryWithFormatV1(qlang, stmt, param.Format, api.Language(r))
-	if err != nil {
-		return api.Errors.Internal(err, stmt)
-	}
-	data := resp.Data
-	if param.Format == "chartv2" {
-		if d, ok := data.(map[string]interface{}); ok {
-			if _, ok := d["metricData"]; ok {
-				return downloadExcelFile(w, data)
-			}
-		}
-	}
-	return api.Errors.InvalidParameter("not a table query")
-}
 
 func downloadExcelFile(w http.ResponseWriter, data interface{}) interface{} {
 	headers, keys, list := []interface{}{}, []string{}, []map[string]interface{}{}

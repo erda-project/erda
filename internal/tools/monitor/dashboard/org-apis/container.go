@@ -17,17 +17,13 @@ package orgapis
 import (
 	"encoding/json"
 	"net/http"
-	"net/url"
-	"strconv"
 	"sync"
 	"time"
 
 	"github.com/olivere/elastic"
 
 	"github.com/erda-project/erda-infra/providers/httpserver"
-	"github.com/erda-project/erda-infra/providers/i18n"
 
-	queryv1 "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/query/v1"
 	"github.com/erda-project/erda/internal/tools/monitor/utils"
 	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
@@ -233,185 +229,6 @@ func wrapContainerData(src *containerData, topHits *elastic.AggregationTopHitsMe
 		src.PodNamespace, _ = utils.GetMapValueString(tags, "pod_namespace")
 	}
 	return
-}
-
-func (p *provider) groupContainerAllocation(ctx httpserver.Context, params struct {
-	MetricType string `param:"metric_type" validate:"required"`
-	Start      int64  `query:"start"`
-	End        int64  `query:"end"`
-	Limit      int    `query:"limit"`
-	OrgName    string `query:"orgName"`
-}, res resourceRequest) interface{} {
-	err := p.checkOrgByClusters(ctx, res.Clusters)
-	if err != nil {
-		return nil
-	}
-	now, timeRange := time.Now().UnixNano()/int64(time.Millisecond), 5*int64(time.Minute)/int64(time.Millisecond)
-	if params.End < timeRange {
-		params.End = now
-	}
-	if params.Start <= 0 {
-		params.Start = params.End - timeRange
-	}
-	if params.Limit <= 0 {
-		params.Limit = 4
-	}
-
-	var (
-		lang   = api.Language(ctx.Request())
-		wg     sync.WaitGroup
-		lock   sync.RWMutex
-		result = make([]*resourceChart, 0, 16*len(res.Clusters))
-	)
-	wg.Add(len(res.Clusters))
-	for _, cluster := range res.Clusters {
-		go func(clusterName string, hostIPs []string) {
-			defer wg.Done()
-			chart := p.getContainerGroupAlloc(params.OrgName, clusterName, hostIPs, params.MetricType, params.Start, params.End, params.Limit, lang)
-			lock.Lock()
-			defer lock.Unlock()
-			result = append(result, chart)
-		}(cluster.ClusterName, cluster.HostIPs)
-	}
-	wg.Wait()
-
-	resp := p.mergeResourceChart(result)
-	return api.Success(resp)
-}
-
-func (p *provider) getContainerGroupAlloc(orgName, cluster string, hostIPs []string, metricType string, start, end int64, limit int, lang i18n.LanguageCodes) *resourceChart {
-	var hostIPFilter string
-	for _, hostIP := range hostIPs {
-		hostIPFilter += "&in_host_ip=" + hostIP
-	}
-	resp, err := p.metricq.QueryWithFormatV1("params", "ajs_alloc/histogram?"+
-		"start="+strconv.FormatInt(start, 10)+
-		"&end="+strconv.FormatInt(end, 10)+
-		"&filter_cluster_name="+cluster+
-		"&filter_org_name="+orgName+
-		hostIPFilter+
-		"&group_reduce="+url.QueryEscape("{group=tags."+addonID+"&avg=fields."+metricType+"_allocation&reduce=sum}")+
-		"&group_reduce="+url.QueryEscape("{group=tags."+serviceID+"&avg=fields."+metricType+"_allocation&reduce=sum}")+
-		"&group_reduce="+url.QueryEscape("{group=tags."+jobID+"&avg=fields."+metricType+"_allocation&reduce=sum}")+
-		"&in_instance_type=addon&in_instance_type=service&in_instance_type=job", "chart", lang)
-	if err != nil {
-		return nil
-	}
-	return p.parseContainerGroup(resp)
-}
-
-func (p *provider) groupContainerCount(ctx httpserver.Context, params struct {
-	Start   int64  `query:"start"`
-	End     int64  `query:"end"`
-	Limit   int    `query:"limit"`
-	OrgName string `query:"orgName"`
-}, res resourceRequest) interface{} {
-	err := p.checkOrgByClusters(ctx, res.Clusters)
-	if err != nil {
-		return nil
-	}
-	now, timeRange := time.Now().UnixNano()/int64(time.Millisecond), 5*int64(time.Minute)/int64(time.Millisecond)
-	if params.End < timeRange {
-		params.End = now
-	}
-	if params.Start <= 0 {
-		params.Start = params.End - timeRange
-	}
-	if params.Limit <= 0 {
-		params.Limit = 4
-	}
-
-	var (
-		lang   = api.Language(ctx.Request())
-		wg     sync.WaitGroup
-		lock   sync.RWMutex
-		result = make([]*resourceChart, 0, 16*len(res.Clusters))
-	)
-	wg.Add(len(res.Clusters))
-	for _, cluster := range res.Clusters {
-		go func(clusterName string, hostIPs []string) {
-			defer wg.Done()
-			chart := p.getContainerGroupCount(params.OrgName, clusterName, hostIPs, params.Start, params.End, params.Limit, lang)
-			lock.Lock()
-			defer lock.Unlock()
-			result = append(result, chart)
-		}(cluster.ClusterName, cluster.HostIPs)
-	}
-	wg.Wait()
-
-	resp := p.mergeResourceChart(result)
-	return api.Success(resp)
-}
-
-func (p *provider) getContainerGroupCount(orgName, cluster string, hostIPs []string, start, end int64, limit int, lang i18n.LanguageCodes) *resourceChart {
-	var hostIPFilter string
-	for _, hostIP := range hostIPs {
-		hostIPFilter += "&in_host_ip=" + hostIP
-	}
-	resp, err := p.metricq.QueryWithFormatV1("params", "ajs_count/histogram?"+
-		"start="+strconv.FormatInt(start, 10)+
-		"&end="+strconv.FormatInt(end, 10)+
-		"&filter_cluster_name="+cluster+
-		hostIPFilter+
-		"filter_org_name="+orgName+
-		"&cardinality="+tagsAddonID+
-		"&cardinality="+tagsServiceID+
-		"&cardinality="+tagsJobID+
-		"&in_instance_type=addon&in_instance_type=service&in_instance_type=job",
-		"chart", lang)
-	if err != nil {
-		return nil
-	}
-	return p.parseContainerGroup(resp)
-}
-
-func (p *provider) parseContainerGroup(resp *queryv1.Response) *resourceChart {
-	data, ok := resp.Data.(map[string]interface{})
-	if !ok {
-		return nil
-	}
-	val, ok := data["data"]
-	if !ok {
-		return nil
-	}
-
-	item, ok := val.(map[string]interface{})
-	if !ok {
-		return nil
-	}
-	t, ok := data["times"]
-	if !ok {
-		return nil
-	}
-	reduce := make([]map[string]*resourceChartData, 0)
-	for k, v := range item {
-		jsonStr, err := json.Marshal(v)
-		if err != nil {
-			return nil
-		}
-		var chart resourceChartData
-		err = json.Unmarshal(jsonStr, &chart)
-		if err != nil {
-			return nil
-		}
-		reduce = append(reduce, map[string]*resourceChartData{
-			k: &chart,
-		})
-	}
-
-	chart := &resourceChart{
-		Total: resp.Total,
-		Results: []*resourceChartResult{
-			{
-				Name: resp.Request().Name,
-				Data: reduce,
-			},
-		},
-	}
-
-	chart.Title, _ = utils.GetMapValueString(data, "title")
-	chart.Time, _ = t.([]int64)
-	return chart
 }
 
 func (p *provider) mergeResourceChart(list []*resourceChart) *resourceChart {
