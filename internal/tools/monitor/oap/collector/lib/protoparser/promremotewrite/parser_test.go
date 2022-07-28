@@ -18,10 +18,11 @@ import (
 	"math"
 	"testing"
 
-	"github.com/erda-project/erda/internal/tools/monitor/core/metric"
 	pmodel "github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric"
 )
 
 func Test_parseWriteRequest(t *testing.T) {

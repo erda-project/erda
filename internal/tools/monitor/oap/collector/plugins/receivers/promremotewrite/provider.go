@@ -18,8 +18,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/receivercurrentlimiter"
 	"github.com/labstack/echo"
+
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/receivercurrentlimiter"
 
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model"

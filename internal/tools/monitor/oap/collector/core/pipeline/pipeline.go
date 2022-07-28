@@ -20,6 +20,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda/internal/apps/msp/apm/trace"
 	"github.com/erda-project/erda/internal/tools/monitor/core/log"
@@ -28,7 +30,6 @@ import (
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model"
 	odata2 "github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model/odata"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib"
-	"github.com/prometheus/client_golang/prometheus"
 )
 
 type Pipeline struct {
