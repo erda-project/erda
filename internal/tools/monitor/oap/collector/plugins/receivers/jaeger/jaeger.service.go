@@ -34,8 +34,7 @@ func (s *jaegerServiceImpl) SpansWithThrift(ctx context.Context, req *jaegerpb.P
 	if req.Spans != nil {
 		for i := range req.Spans {
 			err := jsonmarshal.ParseInterface(req.Spans[i], func(buf []byte) error {
-				s.p.consumer(odata.NewRaw(buf))
-				return nil
+				return s.p.consumer(odata.NewRaw(buf))
 			})
 			if err != nil {
 				return nil, fmt.Errorf("parse failed: %w", err)

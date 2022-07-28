@@ -41,7 +41,7 @@ type config struct {
 	Keyexclude []string            `file:"keyexclude"`
 
 	URL             string        `file:"url"`
-	Timeout         time.Duration `file:"timeout" default:"3s"`
+	Timeout         time.Duration `file:"timeout" default:"10s"`
 	Serializer      string        `file:"serializer" default:"json"`
 	ContentEncoding string        `file:"content_encoding" default:"gzip"`
 	Authentication  *struct {

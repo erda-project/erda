@@ -16,18 +16,15 @@ package promremotewrite
 
 import (
 	"fmt"
-	"math"
 	"net/http"
-	"time"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/labstack/echo"
-	pmodel "github.com/prometheus/common/model"
-	"github.com/prometheus/prometheus/prompb"
+
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/receivercurrentlimiter"
 
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model"
-	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/protoparser/promremotewrite"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -56,62 +53,16 @@ func (p *provider) Init(ctx servicehub.Context) error {
 }
 
 func (p *provider) prwHandler(ctx echo.Context) error {
-	if p.consumerFunc == nil {
-		return ctx.NoContent(http.StatusOK)
-	}
-	req := ctx.Request()
-	buf, err := lib.ReadBody(req)
+	err := receivercurrentlimiter.Do(func() error {
+		return promremotewrite.ParseStream(ctx.Request().Body, func(record *metric.Metric) error {
+			return p.consumerFunc(record)
+		})
+	})
+	defer ctx.Request().Body.Close()
+
 	if err != nil {
-		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("read body err: %s", err))
+		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("parse stream: %s", err))
 	}
-
-	var wr prompb.WriteRequest
-	err = proto.Unmarshal(buf, &wr)
-	if err != nil {
-		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("unmarshal body err: %s", err))
-	}
-
-	now := time.Now() // receive time
-	for _, ts := range wr.Timeseries {
-		tags := map[string]string{}
-		for _, l := range ts.Labels {
-			tags[l.Name] = l.Value
-		}
-		metricName := tags[pmodel.MetricNameLabel]
-		if metricName == "" {
-			return fmt.Errorf("%q not found in tags or empty", pmodel.MetricNameLabel)
-		}
-		delete(tags, pmodel.MetricNameLabel)
-
-		// set pmodel.JobLabel as  name
-		job := tags[pmodel.JobLabel]
-		if job == "" {
-			return fmt.Errorf("%q not found in tags or empty", pmodel.JobLabel)
-		}
-		delete(tags, pmodel.JobLabel)
-
-		for _, s := range ts.Samples {
-			fields := make(map[string]interface{})
-			if math.IsNaN(s.Value) {
-				continue
-			}
-			fields[metricName] = s.Value
-
-			// converting to metric
-			t := now
-			if s.Timestamp > 0 {
-				t = time.Unix(0, s.Timestamp*1000000)
-			}
-			m := metric.Metric{
-				Name:      job,
-				Timestamp: t.UnixNano(),
-				Tags:      tags,
-				Fields:    fields,
-			}
-			p.consumerFunc(&m)
-		}
-	}
-
 	return ctx.NoContent(http.StatusOK)
 }
 

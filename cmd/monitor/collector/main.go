@@ -26,6 +26,7 @@ import (
 	_ "github.com/erda-project/erda-infra/providers/kafka"
 	_ "github.com/erda-project/erda-infra/providers/kubernetes"
 	_ "github.com/erda-project/erda-infra/providers/pprof"
+	_ "github.com/erda-project/erda-infra/providers/prometheus"
 	_ "github.com/erda-project/erda-infra/providers/serviceregister"
 
 	// providers

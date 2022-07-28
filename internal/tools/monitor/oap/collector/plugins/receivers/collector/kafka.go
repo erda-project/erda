@@ -62,6 +62,5 @@ func (p *provider) sendRaw(name string, value []byte) error {
 		od.Meta[p.Cfg.MetadataKeyOfTopic] = topic
 	}
 
-	p.consumer(od)
-	return nil
+	return p.consumer(od)
 }
