@@ -30,8 +30,6 @@ func (p *provider) initRoutes(routes httpserver.Router) error {
 	routes.POST("/api/query", p.queryMetrics) // for tsql
 
 	// Data export, temporary solution.
-	routes.GET("/api/metrics/:scope/export", p.exportMetrics)
-	routes.POST("/api/metrics/:scope/export", p.exportMetrics)
 	return nil
 }
 

@@ -60,7 +60,6 @@ import (
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/storekit/elasticsearch/index/cleaner"
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/storekit/elasticsearch/index/loader"
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/storekit/elasticsearch/index/retention-strategy"
-	_ "github.com/erda-project/erda/internal/tools/monitor/dashboard/node-topo"
 	_ "github.com/erda-project/erda/internal/tools/monitor/dashboard/org-apis"
 	_ "github.com/erda-project/erda/internal/tools/monitor/dashboard/project-apis"
 	_ "github.com/erda-project/erda/internal/tools/monitor/dashboard/report/apis"
