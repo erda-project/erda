@@ -23,6 +23,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"gopkg.in/flosch/pongo2.v3"
 
+	"github.com/erda-project/erda-proto-go/dop/pipelinetemplate/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/expression"
 )
@@ -74,19 +75,19 @@ func GetParamDefaultValue(paramType string) interface{} {
 	return ""
 }
 
-func DoRenderTemplateNotReplaceParamsValue(params map[string]interface{}, templateAction *apistructs.PipelineTemplateSpec, alias string, templateVersion apistructs.TemplateVersion) (string, []apistructs.SnippetFormatOutputs, error) {
+func DoRenderTemplateNotReplaceParamsValue(params map[string]interface{}, templateAction *pb.PipelineTemplateSpec, alias string, templateVersion apistructs.TemplateVersion) (string, []*pb.SnippetFormatOutputs, error) {
 	return DoRenderTemplateHandler(params, templateAction, alias, templateVersion, func(snippet string, params map[string]interface{}) (string, error) {
 		return snippet, nil
 	})
 }
 
-func DoRenderTemplateWithFormat(params map[string]interface{}, templateAction *apistructs.PipelineTemplateSpec, alias string, templateVersion apistructs.TemplateVersion) (string, []apistructs.SnippetFormatOutputs, error) {
+func DoRenderTemplateWithFormat(params map[string]interface{}, templateAction *pb.PipelineTemplateSpec, alias string, templateVersion apistructs.TemplateVersion) (string, []*pb.SnippetFormatOutputs, error) {
 	return DoRenderTemplateHandler(params, templateAction, alias, templateVersion, doFormatAndReplaceValue)
 }
 
-func DoRenderTemplateHandler(params map[string]interface{}, templateAction *apistructs.PipelineTemplateSpec,
+func DoRenderTemplateHandler(params map[string]interface{}, templateAction *pb.PipelineTemplateSpec,
 	alias string, templateVersion apistructs.TemplateVersion,
-	handler func(snippet string, params map[string]interface{}) (string, error)) (string, []apistructs.SnippetFormatOutputs, error) {
+	handler func(snippet string, params map[string]interface{}) (string, error)) (string, []*pb.SnippetFormatOutputs, error) {
 
 	if err := setDefaultValue(templateAction, params); err != nil {
 		return "", nil, err
@@ -144,7 +145,7 @@ func doFormatAndReplaceValue(snippet string, params map[string]interface{}) (str
 	return snippet, nil
 }
 
-func setDefaultValue(specYaml *apistructs.PipelineTemplateSpec, params map[string]interface{}) error {
+func setDefaultValue(specYaml *pb.PipelineTemplateSpec, params map[string]interface{}) error {
 	paramsList := specYaml.Params
 	for _, v := range paramsList {
 		runValue, ok := params[v.Name]
@@ -167,10 +168,10 @@ func setDefaultValue(specYaml *apistructs.PipelineTemplateSpec, params map[strin
 	return nil
 }
 
-func getTemplateOutputs(action *apistructs.PipelineTemplateSpec, alias string) ([]apistructs.SnippetFormatOutputs, error) {
+func getTemplateOutputs(action *pb.PipelineTemplateSpec, alias string) ([]*pb.SnippetFormatOutputs, error) {
 
 	outputs := action.Outputs
-	var result []apistructs.SnippetFormatOutputs
+	var result []*pb.SnippetFormatOutputs
 	for _, v := range outputs {
 		if v.Ref == "" {
 			return nil, errors.New(fmt.Sprintf(" error to format snippet output, output %s ref is empty", v.Name))
@@ -180,7 +181,7 @@ func getTemplateOutputs(action *apistructs.PipelineTemplateSpec, alias string) (
 		matchValues := expression.OldRe.FindStringSubmatch(v.Ref)
 		if len(matchValues) > 1 {
 			afterOutputMame := alias + SnippetActionNameLinkAddr + matchValues[1]
-			formatOutput := apistructs.SnippetFormatOutputs{
+			formatOutput := &pb.SnippetFormatOutputs{
 				PreOutputName:   fmt.Sprintf("%s%s:%s:%s%s", expression.OldLeftPlaceholder, alias, RefOpOutput, v.Name, expression.OldRightPlaceholder),
 				AfterOutputName: fmt.Sprintf("%s%s%s", expression.OldLeftPlaceholder, afterOutputMame, expression.OldRightPlaceholder),
 			}
@@ -199,7 +200,7 @@ func getTemplateOutputs(action *apistructs.PipelineTemplateSpec, alias string) (
 				return nil, fmt.Errorf("can not parsing this output ref %s", v.Ref)
 			}
 
-			newFormatOutput := apistructs.SnippetFormatOutputs{
+			newFormatOutput := &pb.SnippetFormatOutputs{
 				PreOutputName: fmt.Sprintf("%s %s.%s.%s %s", expression.LeftPlaceholder, expression.Outputs, alias, v.Name, expression.RightPlaceholder),
 				AfterOutputName: fmt.Sprintf("%s %s.%s.%s %s", expression.LeftPlaceholder, expression.Outputs,
 					alias+SnippetActionNameLinkAddr+splitNames[1], splitNames[2], expression.RightPlaceholder),
@@ -210,7 +211,7 @@ func getTemplateOutputs(action *apistructs.PipelineTemplateSpec, alias string) (
 	return result, nil
 }
 
-func checkParams(specYaml *apistructs.PipelineTemplateSpec, params map[string]interface{}) error {
+func checkParams(specYaml *pb.PipelineTemplateSpec, params map[string]interface{}) error {
 	paramsList := specYaml.Params
 	for _, v := range paramsList {
 		if v.Required == false {
@@ -229,7 +230,7 @@ func checkParams(specYaml *apistructs.PipelineTemplateSpec, params map[string]in
 			return errors.New(fmt.Sprintf(" param %s value type error ", name))
 		}
 		switch typ.Kind() {
-		case reflect.String, reflect.Int, reflect.Float32, reflect.Float64, reflect.Bool:
+		case reflect.String, reflect.Int, reflect.Float32, reflect.Float64, reflect.Bool, reflect.Ptr:
 			continue
 		default:
 			return errors.New(fmt.Sprintf(" param %s value type %v not support ", name, typ.Kind()))

@@ -12,18 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dicehub
+package pipelinetemplate
 
-import "github.com/erda-project/erda/internal/core/openapi/legacy/api/apis"
+import (
+	"github.com/erda-project/erda-infra/base/logs"
+	"github.com/erda-project/erda-proto-go/dop/pipelinetemplate/pb"
+	dbclient "github.com/erda-project/erda/internal/apps/dop/providers/pipelinetemplate/db"
+)
 
-var DICEHUB_PIPELINE_TEMPLATE_QUERY = apis.ApiSpec{
-	Path:        "/api/pipeline-templates",
-	BackendPath: "/api/pipeline-templates",
-	Host:        "erda-server.marathon.l4lb.thisdcos.directory:9095",
-	Scheme:      "http",
-	Method:      "GET",
-	IsOpenAPI:   true,
-	CheckLogin:  true,
-	CheckToken:  true,
-	Doc:         `summary: 查询模板列表`,
+type Interface interface {
+	pb.TemplateServiceServer
+}
+
+type ServiceImpl struct {
+	log logs.Logger
+	db  *dbclient.DBClient
 }
