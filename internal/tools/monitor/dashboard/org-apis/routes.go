@@ -41,7 +41,7 @@ func (p *provider) intRoutes(routes httpserver.Router) error {
 
 	// clusters resources for org center
 	checkOrgName := permission.OrgIDByOrgName("orgName")
-	routes.GET("/api/resources/types", p.getHostTypes, permission.Intercepter(
+	routes.GET("/api/resources/types", p.Source.GetHostTypes, permission.Intercepter(
 		permission.ScopeOrg, checkOrgName,
 		common.ResourceOrgCenter, permission.ActionList, p.Org,
 	))

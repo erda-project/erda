@@ -27,6 +27,8 @@ const (
 	// in-use
 	nameDockerContainerSummary = "docker_container_summary"
 
+	groupHostSummary = "host_summary"
+
 	timestamp       = "timestamp"
 	id              = "id"
 	labels          = "labels"

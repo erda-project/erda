@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -31,6 +32,8 @@ import (
 	"github.com/erda-project/erda/pkg/common/apis"
 	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
+
+const timeFormat = "2006-01-02 15:04:05"
 
 type ClickhouseSource struct {
 	p          *provider
@@ -105,12 +108,12 @@ func (chs *ClickhouseSource) queryContainers(ctx context.Context, orgName, clust
 		goqu.L("tag_values[indexOf(tag_keys,?)]", "podsandbox").Neq("true"),
 		goqu.L("tag_values[indexOf(tag_keys,?)]", hostIP).In(hostIPs),
 		goqu.L("tag_values[indexOf(tag_keys,?)]", clusterName).Eq(cluster),
-		goqu.L("toUnixTimestamp(timestamp)").Gte(start),
-		goqu.L("toUnixTimestamp(timestamp)").Lt(end),
+		goqu.L("timestamp").Gte(time.Unix(start, 0).Local().Format(timeFormat)),
+		goqu.L("timestamp").Lt(time.Unix(end, 0).Local().Format(timeFormat)),
 	)
 
 	if instanceType != instanceTypeAll {
-		sql = sql.Where(goqu.L("tag_values[indexOf(tag_keys,?)]", instanceType).Eq(instanceType))
+		sql = sql.Where(goqu.L("tag_values[indexOf(tag_keys,?)]", "instance_type").Eq(instanceType))
 	}
 	for _, filter := range filters {
 		key := convertKeyV2(filter.Key)
@@ -126,13 +129,13 @@ func (chs *ClickhouseSource) queryContainers(ctx context.Context, orgName, clust
 
 	sqlStr, err := chs.toSQL(sql)
 	if err != nil {
-		chs.Log.Error(err)
+		chs.Log.Errorf("failed to convert sql to string, %v", err)
 		return nil
 	}
 
 	rows, err := chs.Clickhouse.Client().Query(ctx, sqlStr)
 	if err != nil {
-		chs.Log.Error(err)
+		chs.Log.Errorf("failed to query clickhouse, %v", err)
 		return nil
 	}
 	defer rows.Close()
@@ -142,7 +145,7 @@ func (chs *ClickhouseSource) queryContainers(ctx context.Context, orgName, clust
 		row := containerRow{}
 		if err := rows.ScanStruct(&row); err != nil {
 			chs.Log.Errorf("failed to scan ch row, %v", err)
-			return nil
+			continue
 		}
 		cd := chs.convert(&row)
 		if cd != nil {
@@ -150,6 +153,145 @@ func (chs *ClickhouseSource) queryContainers(ctx context.Context, orgName, clust
 		}
 	}
 	return res
+}
+
+func (chs *ClickhouseSource) GetHostTypes(req *http.Request, params struct {
+	ClusterName string `query:"clusterName" validate:"required"`
+	OrgName     string `query:"orgName" validate:"required"`
+}) interface{} {
+	var clusterNames []interface{}
+	for _, v := range strings.Split(params.ClusterName, ",") {
+		clusterNames = append(clusterNames, v)
+	}
+
+	table, _ := chs.Loader.GetSearchTable(params.OrgName)
+	sql := goqu.From(table).Select(
+		goqu.L("tag_values[indexOf(tag_keys,?)]", clusterName).As("clusterName"),
+		goqu.L("tag_values[indexOf(tag_keys,?)]", "n_cpus").As("cpus"),
+		goqu.L("tag_values[indexOf(tag_keys,?)]", mem).As("mem"),
+		goqu.L("tag_values[indexOf(tag_keys,?)]", hostIP).As("hostIP"),
+		goqu.L("string_field_values[indexOf(string_field_keys,?)]", labels).As("labels"),
+	).Where(
+		goqu.L("metric_group").Eq(groupHostSummary),
+		goqu.L("org_name").Eq(params.OrgName),
+		goqu.L("tag_values[indexOf(tag_keys,?)]", clusterName).In(clusterNames),
+		goqu.L("string_field_values[indexOf(string_field_keys,?)]", labels).NotLike("%offline%")).Limit(500)
+
+	sqlStr, err := chs.toSQL(sql)
+	if err != nil {
+		chs.Log.Errorf("failed to convert sql to string, %v", err)
+		return nil
+	}
+
+	rows, err := chs.Clickhouse.Client().Query(req.Context(), sqlStr)
+	if err != nil {
+		chs.Log.Errorf("failed to query clickhouse, %v", err)
+		return nil
+	}
+
+	var hostTypes []*hostTypeRow
+	for rows.Next() {
+		var hostType hostTypeRow
+		if err = rows.ScanStruct(&hostType); err != nil {
+			chs.Log.Errorf("failed to scan ch row, %v", err)
+			continue
+		}
+		hostTypes = append(hostTypes, &hostType)
+	}
+
+	var (
+		cpuList         = make(map[string]struct{})
+		memList         = make(map[string]struct{})
+		clusterNameList = make(map[string]struct{})
+		hostIPList      = make(map[string]struct{})
+		labelList       = make(map[string]struct{})
+	)
+	for _, hostType := range hostTypes {
+		if _, ok := cpuList[hostType.CPUs]; !ok {
+			cpuList[hostType.CPUs] = struct{}{}
+		}
+		if _, ok := memList[hostType.Mem]; !ok {
+			memList[hostType.Mem] = struct{}{}
+		}
+		if _, ok := clusterNameList[hostType.ClusterName]; !ok {
+			clusterNameList[hostType.ClusterName] = struct{}{}
+		}
+		if _, ok := hostIPList[hostType.HostIP]; !ok {
+			hostIPList[hostType.HostIP] = struct{}{}
+		}
+		labels := strings.Split(hostType.Labels, ",")
+		for _, label := range labels {
+			if _, ok := labelList[label]; !ok {
+				labelList[label] = struct{}{}
+			}
+		}
+	}
+
+	res := []*groupHostTypeData{
+		{
+			Key:    cpus,
+			Values: mapToSlice(cpuList),
+		},
+		{
+			Key:    mem,
+			Values: mapToSlice(memList),
+		},
+		{
+			Key:    cluster,
+			Values: mapToSlice(clusterNameList),
+		},
+		{
+			Key:    hostIP,
+			Values: mapToSlice(hostIPList),
+		},
+		{
+			Key:    labels,
+			Values: mapToSlice(labelList),
+		},
+		{
+			Key:    cpuUsagePercent,
+			Name:   "cpu used",
+			Values: percents,
+			Prefix: "cpu used",
+		},
+		{
+			Key:    memUsagePercent,
+			Name:   "mem used",
+			Values: percents,
+			Prefix: "mem used",
+		},
+		{
+			Key:    diskUsagePercent,
+			Name:   "disk used",
+			Values: percents,
+			Prefix: "disk used",
+		},
+		{
+			Key:    cpuDispPercent,
+			Name:   "cpu dispatch",
+			Values: percents,
+			Prefix: "cpu dispatch",
+		},
+		{
+			Key:    memDispPercent,
+			Name:   "mem dispatch",
+			Values: percents,
+			Prefix: "mem dispatch",
+		},
+	}
+
+	lang := api.Language(req)
+	for _, typ := range res {
+		if len(typ.Name) <= 0 {
+			typ.Name = chs.p.t.Text(lang, typ.Key)
+		} else {
+			typ.Name = chs.p.t.Text(lang, typ.Name)
+		}
+		if len(typ.Prefix) >= 0 {
+			typ.Prefix = chs.p.t.Text(lang, typ.Prefix)
+		}
+	}
+	return api.Success(res)
 }
 
 func (chs *ClickhouseSource) toSQL(sql *goqu.SelectDataset) (string, error) {
@@ -229,4 +371,12 @@ func convertKeyV2(key string) string {
 		return clusterName
 	}
 	return key
+}
+
+func mapToSlice(mp map[string]struct{}) []string {
+	var res []string
+	for key, _ := range mp {
+		res = append(res, key)
+	}
+	return res
 }

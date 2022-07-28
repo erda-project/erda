@@ -300,6 +300,14 @@ type containerRow struct {
 	DiskLimit   float64  `ch:"diskLimit"`
 }
 
+type hostTypeRow struct {
+	ClusterName string `ch:"clusterName"`
+	CPUs        string `ch:"cpus"`
+	Mem         string `ch:"mem"`
+	HostIP      string `ch:"hostIP"`
+	Labels      string `ch:"labels"`
+}
+
 type resourceChart struct {
 	Title   string                 `json:"title"`
 	Total   int64                  `json:"total"`

@@ -75,7 +75,7 @@ clickhouse.table.loader@metric:
   _enable: ${QUERY_METRIC_FROM_CLICKHOUSE_ENABLE:false}
   table_prefix: "metrics"
   default_search_table: "metrics_all"
-  cache_key_prefix: "clickhouse-table-metrics"
+  cache_key_prefix: "clickhouse-table-metric"
 
 log-storage-clickhouse:
   _enable: ${QUERY_LOG_FROM_CLICKHOUSE_ENABLE:false}
