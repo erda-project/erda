@@ -50,77 +50,24 @@ func Test_getRealIP(t *testing.T) {
 		})
 	}
 }
-func Test_handleReverseRespHeader(t *testing.T) {
-	// 1. simple header with one value
+
+func Test_handleReverseRespHeader_ContentType(t *testing.T) {
+	// content-type
 	rw := mock.NewMockHTTPResponseWriter()
 	resp := &http.Response{Header: make(http.Header)}
 
 	// set rw header
-	// set cors
-	rw.Header().Set(echo.HeaderAccessControlAllowOrigin, "*")
-	// set rid
+	// set content-type
+	rw.Header().Set(echo.HeaderContentType, "application/json")
 	rw.Header().Set(echo.HeaderXRequestID, "1")
 
 	// set resp header mock after proxy
-	resp.Header.Set(echo.HeaderAccessControlAllowOrigin, "*")
+	resp.Header.Set(echo.HeaderContentType, "application/json")
 	resp.Header.Set(echo.HeaderXRequestID, "1")
 
 	handleReverseRespHeader(rw, resp)
 
 	assert.Equal(t, 2, len(rw.Header()))
-	assert.Equal(t, 0, len(resp.Header))
-
-	// 2. complex header with multiple values
-	// reset rw & resp
-	rw = mock.NewMockHTTPResponseWriter()
-	resp = &http.Response{Header: make(http.Header)}
-
-	// set rw header
-	// set cors
-	rw.Header().Set(echo.HeaderAccessControlAllowOrigin, "*")
-	// set rid
-	rw.Header().Set(echo.HeaderXRequestID, "1")
-	// set multiple value header
-	rw.Header().Set("mh", "1")
-	rw.Header().Add("mh", "2")
-
-	// set resp header mock after proxy
-	resp.Header.Set(echo.HeaderAccessControlAllowOrigin, "*")
-	resp.Header.Set(echo.HeaderXRequestID, "1")
-	resp.Header.Set("mh", "1") // just "1" exists in rw
-
-	handleReverseRespHeader(rw, resp)
-
-	assert.Equal(t, 3, len(rw.Header()))
-	assert.Equal(t, 0, len(resp.Header))
-
-	// set resp header mock after proxy
-	resp.Header = make(http.Header) // reset
-	resp.Header.Set(echo.HeaderAccessControlAllowOrigin, "*")
-	resp.Header.Set(echo.HeaderXRequestID, "1")
-	resp.Header.Set("mh", "3") // just "3" not exists in rw
-
-	handleReverseRespHeader(rw, resp)
-
-	assert.Equal(t, 3, len(rw.Header()))
-	assert.Equal(t, 1, len(resp.Header))
-	assert.Equal(t, 1, len(resp.Header.Values("mh")))
-	assert.Equal(t, "3", resp.Header.Get("mh"))
-
-	// set resp header mock after proxy
-	resp.Header = make(http.Header) // reset
-	resp.Header.Set(echo.HeaderAccessControlAllowOrigin, "*")
-	resp.Header.Set(echo.HeaderXRequestID, "1")
-	resp.Header.Set("mh", "1") // "1" exists in rw
-	resp.Header.Add("mh", "2") // "2" exists in rw
-	resp.Header.Add("mh", "3") // and "3" not exists in rw
-	resp.Header.Add("mh", "4") // and "4" not exists in rw
-
-	handleReverseRespHeader(rw, resp)
-
-	assert.Equal(t, 3, len(rw.Header()))
-	assert.Equal(t, 1, len(resp.Header))
-	assert.Equal(t, 2, len(resp.Header.Values("mh")))
-	assert.Equal(t, "3", resp.Header.Get("mh"))
-	assert.Equal(t, []string{"3", "4"}, resp.Header.Values("mh"))
+	// will add echo.HeaderAccessControlAllowOrigin
+	assert.Equal(t, 3, len(resp.Header))
 }

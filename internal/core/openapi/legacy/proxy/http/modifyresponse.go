@@ -34,7 +34,6 @@ import (
 	apispec "github.com/erda-project/erda/internal/core/openapi/legacy/api/spec"
 	"github.com/erda-project/erda/internal/core/openapi/legacy/hooks"
 	"github.com/erda-project/erda/internal/core/openapi/legacy/monitor"
-	"github.com/erda-project/erda/pkg/strutil"
 )
 
 func getModifyResponse(rw http.ResponseWriter) func(*http.Response) error {
@@ -128,18 +127,6 @@ func getModifyResponse(rw http.ResponseWriter) func(*http.Response) error {
 func handleReverseRespHeader(rw http.ResponseWriter, res *http.Response) {
 	// compatible original CORS
 	res.Header.Set(echo.HeaderAccessControlAllowOrigin, "*")
-
-	// res remove headers already exist in rw here, before do httputil.ReverseProxy.copyHeader(use add, not set)
-	// see issue: https://github.com/golang/go/issues/50730
-	newResHeader := make(http.Header)
-	for k, vv := range res.Header {
-		for _, v := range vv {
-			if !strutil.Exist(rw.Header().Values(k), v) {
-				newResHeader[k] = append(newResHeader[k], v)
-			}
-		}
-	}
-	res.Header = newResHeader
 }
 
 // getRealIP .
