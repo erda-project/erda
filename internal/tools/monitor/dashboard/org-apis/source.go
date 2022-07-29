@@ -21,13 +21,16 @@ import (
 )
 
 type MetricSource interface {
-	GetContainers(ctx httpserver.Context, r *http.Request, params struct {
+	GetContainers(httpserver.Context, *http.Request, struct {
 		InstanceType string `param:"instance_type" validate:"required"`
 		Start        int64  `query:"start"`
 		End          int64  `query:"end"`
-	}, res resourceRequest) interface{}
-	GetHostTypes(req *http.Request, params struct {
+	}, resourceRequest) interface{}
+	GetHostTypes(*http.Request, struct {
 		ClusterName string `query:"clusterName" validate:"required"`
 		OrgName     string `query:"orgName" validate:"required"`
 	}) interface{}
+	GetGroupHosts(*http.Request, struct {
+		OrgName string `query:"orgName" validate:"required" json:"-"`
+	}, resourceRequest) interface{}
 }

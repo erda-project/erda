@@ -45,7 +45,7 @@ func (p *provider) intRoutes(routes httpserver.Router) error {
 		permission.ScopeOrg, checkOrgName,
 		common.ResourceOrgCenter, permission.ActionList, p.Org,
 	))
-	routes.POST("/api/resources/group", p.getGroupHosts, permission.Intercepter(
+	routes.POST("/api/resources/group", p.Source.GetGroupHosts, permission.Intercepter(
 		permission.ScopeOrg, checkOrgName,
 		common.ResourceOrgCenter, permission.ActionList, p.Org,
 	))
