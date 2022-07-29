@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda/internal/apps/msp/apm/trace"
@@ -41,13 +42,31 @@ type Pipeline struct {
 	processors []*model.RuntimeProcessor
 	exporters  []*model.RuntimeExporter
 	rp, pe     chan odata2.ObservableData
-	stats      *stats
 }
 
-type stats struct {
-	dataReceived                 *prometheus.CounterVec
-	dataProcessed, dataExported  *prometheus.CounterVec
-	rpChannelUsed, peChannelUsed prometheus.GaugeFunc
+var (
+	dataReceived                *prometheus.CounterVec
+	dataProcessed, dataExported *prometheus.CounterVec
+)
+
+func init() {
+	dataReceived = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "data_pipeline",
+		Name:      "receiver_consumed",
+		Help:      "event count for certain receiver consumed",
+	}, []string{"pipeline", "dtype", "receiver"})
+
+	dataProcessed = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "data_pipeline",
+		Name:      "processor_consumed",
+		Help:      "event count for certain processor consumed",
+	}, []string{"pipeline", "dtype", "processor"})
+
+	dataExported = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "data_pipeline",
+		Name:      "exporter_consumed",
+		Help:      "event count for certain exporter consumed",
+	}, []string{"pipeline", "dtype", "exporter"})
 }
 
 func NewPipeline(name string, logger logs.Logger, cfg config.Pipeline, dtype odata2.DataType) *Pipeline {
@@ -64,51 +83,27 @@ func NewPipeline(name string, logger logs.Logger, cfg config.Pipeline, dtype oda
 }
 
 func (p *Pipeline) initStats() {
-	p.stats = &stats{
-		dataReceived: prometheus.NewCounterVec(prometheus.CounterOpts{
-			Namespace: "data_pipeline",
-			Name:      "receiver_consumed",
-			Help:      "event count for certain receiver consumed",
-		}, []string{"pipeline", "dtype", "receiver"}),
-		dataProcessed: prometheus.NewCounterVec(prometheus.CounterOpts{
-			Namespace: "data_pipeline",
-			Name:      "processor_consumed",
-			Help:      "event count for certain processor consumed",
-		}, []string{"pipeline", "dtype", "processor"}),
-		dataExported: prometheus.NewCounterVec(prometheus.CounterOpts{
-			Namespace: "data_pipeline",
-			Name:      "exporter_consumed",
-			Help:      "event count for certain exporter consumed",
-		}, []string{"pipeline", "dtype", "exporter"}),
-		rpChannelUsed: prometheus.NewGaugeFunc(prometheus.GaugeOpts{
-			Namespace: "data_pipeline",
-			Name:      "rp_channel_used",
-			Help:      "the current channel used of receiver to processor",
-			ConstLabels: prometheus.Labels{
-				"pipeline": p.name,
-			},
-		}, func() float64 {
-			return float64(len(p.rp))
-		}),
-		peChannelUsed: prometheus.NewGaugeFunc(prometheus.GaugeOpts{
-			Namespace: "data_pipeline",
-			Name:      "pe_channel_used",
-			Help:      "the current channel used of processor to exporter",
-			ConstLabels: prometheus.Labels{
-				"pipeline": p.name,
-			},
-		}, func() float64 {
-			return float64(len(p.pe))
-		}),
-	}
+	promauto.NewGaugeFunc(prometheus.GaugeOpts{
+		Namespace: "data_pipeline",
+		Name:      "rp_channel_used",
+		Help:      "the current channel used of receiver to processor",
+		ConstLabels: prometheus.Labels{
+			"pipeline": p.name,
+		},
+	}, func() float64 {
+		return float64(len(p.pe))
+	})
 
-	prometheus.MustRegister(
-		p.stats.dataReceived,
-		p.stats.dataProcessed,
-		p.stats.dataExported,
-		p.stats.rpChannelUsed,
-		p.stats.peChannelUsed,
-	)
+	promauto.NewGaugeFunc(prometheus.GaugeOpts{
+		Namespace: "data_pipeline",
+		Name:      "pe_channel_used",
+		Help:      "the current channel used of processor to exporter",
+		ConstLabels: prometheus.Labels{
+			"pipeline": p.name,
+		},
+	}, func() float64 {
+		return float64(len(p.pe))
+	})
 }
 
 func (p *Pipeline) InitComponents(receivers, processors, exporters []model.ComponentUnit) error {
@@ -201,7 +196,7 @@ func (p *Pipeline) StartExporters(ctx context.Context, out <-chan odata2.Observa
 			for _, e := range p.exporters {
 				go func(exp *model.RuntimeExporter, od odata2.ObservableData) {
 					defer wg.Done()
-					p.stats.dataExported.WithLabelValues(p.name, string(p.dtype), exp.Name).Inc()
+					dataExported.WithLabelValues(p.name, string(p.dtype), exp.Name).Inc()
 					exp.Add(od)
 				}(e, data)
 			}
@@ -234,7 +229,7 @@ func (p *Pipeline) startProcessors(ctx context.Context, in <-chan odata2.Observa
 				if !pr.Filter.Selected(data) {
 					continue
 				}
-				p.stats.dataProcessed.WithLabelValues(p.name, string(p.dtype), pr.Name).Inc()
+				dataProcessed.WithLabelValues(p.name, string(p.dtype), pr.Name).Inc()
 				switch p.dtype {
 				case odata2.MetricType:
 					tmp, err := pr.Processor.ProcessMetric(data.(*metric.Metric))
@@ -303,7 +298,7 @@ func (p *Pipeline) newConsumer(pctx context.Context, name string, out chan<- oda
 	return func(od odata2.ObservableData) error {
 		select {
 		case out <- od:
-			p.stats.dataReceived.WithLabelValues(p.name, string(p.dtype), name).Inc()
+			dataReceived.WithLabelValues(p.name, string(p.dtype), name).Inc()
 		case <-pctx.Done():
 			return nil
 		}
