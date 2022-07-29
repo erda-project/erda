@@ -468,12 +468,19 @@ message VPARuleCreateRequest {
 }
 
 message RuntimeServiceVPAConfig {
-  string ruleName = 1 [json_name = "ruleName"] ;
-  string ruleNameSpace = 2 [json_name = "ruleNameSpace"] ;
-  string serviceName = 3 [json_name = "serviceName"] ;
-  string updateMode = 4 [json_name = "updateMode"] ;
-  Resources resources = 5 [json_name = "resources"] ;
-  Resources maxresources = 6 [json_name = "maxResources"] ;
+  string ruleID = 1  [json_name = "ruleId"] ;
+  string ruleName = 2 [json_name = "ruleName"] ;
+  uint64 runtimeID = 3 [json_name = "runtimeId"] ;
+  uint64 applicationID = 4 [json_name = "applicationId"] ;
+  uint64 projectID = 5 [json_name = "projectId"] ;
+  uint64 orgID = 6 [json_name = "orgId"] ;
+  string serviceName = 7 [json_name = "serviceName"] ;
+  ScaleTargetRef scaleTargetRef = 8 [json_name = "scaleTargetRef"] ;
+  string ruleNameSpace = 9 [json_name = "ruleNameSpace"] ;
+  string updateMode = 10 [json_name = "updateMode"] ;
+  Deployments deployments = 11 [json_name = "deployments"] ;
+  Resources resources = 12 [json_name = "resources"] ;
+  Resources maxResources = 13 [json_name = "maxResources"] ;
 }
 
 message ErdaRuntimeVPARules {
@@ -482,14 +489,12 @@ message ErdaRuntimeVPARules {
 }
 
 message ErdaRuntimeVPARule {
-  string ruleID = 1  [json_name = "ruleId"] ;
-  google.protobuf.Timestamp createAt = 2 [json_name = "createAt"] ;
-  google.protobuf.Timestamp updateAt = 3 [json_name = "updateAt"] ;
-  string serviceName = 4 [json_name = "serviceName"] ;
-  string ruleName = 5 [json_name = "ruleName"] ;
-  UserInfo userInfo = 6 [json_name = "userInfo"] ;
-  RuntimeServiceVPAConfig rule = 7 [json_name = "rule"] ;
-  string isApplied = 8 [json_name = "isApplied"] ;
+  google.protobuf.Timestamp createAt = 1 [json_name = "createAt"] ;
+  google.protobuf.Timestamp updateAt = 2 [json_name = "updateAt"] ;
+  string serviceName = 3 [json_name = "serviceName"] ;
+  UserInfo userInfo = 4 [json_name = "userInfo"] ;
+  RuntimeServiceVPAConfig rule = 5 [json_name = "rule"] ;
+  string isApplied = 6 [json_name = "isApplied"] ;
 }
 
 message ErdaRuntimeVPARecommendations {
@@ -504,7 +509,7 @@ message ErdaServiceRecommendation {
   string serviceName = 3 [json_name = "serviceName"] ;
   string ruleID = 4 [json_name = "ruleId"] ;
   string ruleName = 5 [json_name = "ruleName"] ;
-  repeated VPAContainerRecommendation containerRecommendations = 6 [json_name = "containerRecommendations"] ;
+  VPAContainerRecommendation containerRecommendation = 6 [json_name = "containerRecommendation"] ;
 }
 
 message VPAContainerRecommendation {

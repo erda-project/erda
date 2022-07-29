@@ -18,17 +18,22 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
+	"strconv"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	autoscalingv2beta2 "k8s.io/api/autoscaling/v2beta2"
 	corev1 "k8s.io/api/core/v1"
+	vpatypes "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1"
 
 	"github.com/erda-project/erda/bundle"
 	orgCache "github.com/erda-project/erda/internal/tools/orchestrator/cache/org"
-	hpatypes "github.com/erda-project/erda/internal/tools/orchestrator/components/podscaler/types"
+	pstypes "github.com/erda-project/erda/internal/tools/orchestrator/components/podscaler/types"
+	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/internal/tools/orchestrator/i18n"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/scaledobject"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/util"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/instanceinfo"
 )
@@ -72,20 +77,21 @@ type eventUtils interface {
 }
 
 type Syncer struct {
-	clustername string
-	addr        string
-	deploy      deploymentUtils
-	pod         podUtils
-	sts         statefulSetUtils
-	event       eventUtils
-	hpa         hpaUtils
-	dbupdater   *instanceinfo.Client
-	bdl         *bundle.Bundle
+	clustername     string
+	addr            string
+	deploy          deploymentUtils
+	pod             podUtils
+	sts             statefulSetUtils
+	event           eventUtils
+	hpa             hpaUtils
+	dbupdater       *instanceinfo.Client
+	bdl             *bundle.Bundle
+	podScaledObject *scaledobject.ErdaScaledObject
 }
 
 func NewSyncer(clustername, addr string, db *instanceinfo.Client, bdl *bundle.Bundle,
-	podutils podUtils, stsutils statefulSetUtils, deployutils deploymentUtils, eventutils eventUtils, hpautils hpaUtils) *Syncer {
-	return &Syncer{clustername, addr, deployutils, podutils, stsutils, eventutils, hpautils, db, bdl}
+	podutils podUtils, stsutils statefulSetUtils, deployutils deploymentUtils, eventutils eventUtils, hpautils hpaUtils, podScaledObject *scaledobject.ErdaScaledObject) *Syncer {
+	return &Syncer{clustername, addr, deployutils, podutils, stsutils, eventutils, hpautils, db, bdl, podScaledObject}
 }
 
 func (s *Syncer) Sync(ctx context.Context) {
@@ -103,6 +109,7 @@ func (s *Syncer) watchSync(ctx context.Context) {
 	go s.watchSyncPod(ctx)
 	go s.watchSyncEvent(ctx)
 	go s.watchSyncHPAEvent(ctx)
+	go s.watchVPA(ctx)
 }
 
 func (s *Syncer) gc(ctx context.Context) {
@@ -252,7 +259,7 @@ func (s *Syncer) watchSyncPod(ctx context.Context) {
 
 func (s *Syncer) watchSyncEvent(ctx context.Context) {
 	callback := func(e *corev1.Event) {
-		if e.Type == "Normal" {
+		if e.Type == "Normal" && e.Reason != pstypes.ErdaVPAPodEvictEventReason {
 			return
 		}
 		ns := e.InvolvedObject.Namespace
@@ -263,6 +270,20 @@ func (s *Syncer) watchSyncEvent(ctx context.Context) {
 				logrus.Errorf("failed to get pod: %s/%s, err: %v", ns, name, err)
 			}
 			return
+		}
+
+		if e.Reason == pstypes.ErdaVPAPodEvictEventReason {
+			logrus.Infof("generate deployment log for VPA evict pod %s/%s", ns, name)
+			var locale string
+			if org, ok := orgCache.GetOrgByOrgID(pod.Labels["DICE_ORG_ID"]); ok {
+				locale = org.Locale
+			}
+			newMessage := fmt.Sprintf("Pod %s evicted by VPA Updater to apply resource recommendation.", name)
+			buildVPAEventInfo(s.bdl, pod,
+				fmt.Sprintf("Pod %s evicted by VPA for update. event Type: %s, Reason:%s, Message:%s",
+					name, e.Type, e.Reason, newMessage /* e.Message*/),
+				i18n.Sprintf(locale, "AutoScaleService", pod.Labels["DICE_SERVICE_NAME"], newMessage /*e.Message*/),
+				"podautoscaled")
 		}
 		if _, err := updatePodAndInstance(s.dbupdater, &corev1.PodList{Items: []corev1.Pod{*pod}}, false,
 			map[string]*corev1.Event{pod.Namespace + "/" + pod.Name: e}); err != nil {
@@ -343,39 +364,39 @@ func (s *Syncer) watchSyncHPAEvent(ctx context.Context) {
 			return
 		}
 
-		_, ok := hpa.Labels[hpatypes.ErdaHPAObjectRuntimeIDLabel]
+		_, ok := hpa.Labels[pstypes.ErdaPAObjectRuntimeIDLabel]
 		if !ok {
-			logrus.Errorf("failed to get hpa %s/%s runtime info: label %s not set", ns, name, hpatypes.ErdaHPAObjectRuntimeIDLabel)
+			logrus.Errorf("failed to get hpa %s/%s runtime info: label %s not set", ns, name, pstypes.ErdaPAObjectRuntimeIDLabel)
 			return
 		}
-		_, ok = hpa.Labels[hpatypes.ErdaHPAObjectRuntimeServiceNameLabel]
+		_, ok = hpa.Labels[pstypes.ErdaPAObjectRuntimeServiceNameLabel]
 		if !ok {
-			logrus.Errorf("failed to get hpa %s/%s serviceName info: label %s not set", ns, name, hpatypes.ErdaHPAObjectRuntimeServiceNameLabel)
+			logrus.Errorf("failed to get hpa %s/%s serviceName info: label %s not set", ns, name, pstypes.ErdaPAObjectRuntimeServiceNameLabel)
 			return
 		}
-		_, ok = hpa.Labels[hpatypes.ErdaHPAObjectRuleIDLabel]
+		_, ok = hpa.Labels[pstypes.ErdaPAObjectRuleIDLabel]
 		if !ok {
-			logrus.Errorf("failed to get hpa %s/%s ruleId info: label %s not set", ns, name, hpatypes.ErdaHPAObjectRuleIDLabel)
+			logrus.Errorf("failed to get hpa %s/%s ruleId info: label %s not set", ns, name, pstypes.ErdaPAObjectRuleIDLabel)
 			return
 		}
 		if !ok {
-			logrus.Errorf("failed to get hpa %s/%s ruleId info: label %s not set", ns, name, hpatypes.ErdaHPAObjectOrgIDLabel)
+			logrus.Errorf("failed to get hpa %s/%s ruleId info: label %s not set", ns, name, pstypes.ErdaPAObjectOrgIDLabel)
 			return
 		}
 
 		var locale string
-		if org, ok := orgCache.GetOrgByOrgID(hpa.Labels[hpatypes.ErdaHPAObjectOrgIDLabel]); ok {
+		if org, ok := orgCache.GetOrgByOrgID(hpa.Labels[pstypes.ErdaPAObjectOrgIDLabel]); ok {
 			locale = org.Locale
 		}
 		buildHPAEventInfo(s.bdl, *hpa,
 			fmt.Sprintf("Service %s HorizontalPodAutoscaler event Type: %s, Reason:%s, Message:%s",
-				hpa.Labels[hpatypes.ErdaHPAObjectRuntimeServiceNameLabel], e.Type, e.Reason, e.Message),
-			i18n.Sprintf(locale, "AutoScaleService", hpa.Labels[hpatypes.ErdaHPAObjectRuntimeServiceNameLabel], e.Message),
+				hpa.Labels[pstypes.ErdaPAObjectRuntimeServiceNameLabel], e.Type, e.Reason, e.Message),
+			i18n.Sprintf(locale, "AutoScaleService", hpa.Labels[pstypes.ErdaPAObjectRuntimeServiceNameLabel], e.Message),
 			"podautoscaled")
 
 		// TODO: may save hpa events in mysql
 		/*
-			runtimeId, err := strconv.ParseUint(hpa.Labels[hpatypes.ErdaHPAObjectRuntimeIDLabel], 10, 64)
+			runtimeId, err := strconv.ParseUint(hpa.Labels[pstypes.ErdaPAObjectRuntimeIDLabel], 10, 64)
 			if err != nil {
 				logrus.Errorf("failed to MarShall hpa event for %s/%s, parse runtimeId err: %v", ns, name, err)
 				return
@@ -396,11 +417,11 @@ func (s *Syncer) watchSyncHPAEvent(ctx context.Context) {
 			}
 
 			hpaEvent := dbclient.HPAEventInfo{
-				ID:          hpa.Labels[hpatypes.ErdaHPAObjectRuleIDLabel],
+				ID:          hpa.Labels[pstypes.ErdaHPAObjectRuleIDLabel],
 				RuntimeID:   runtimeId,
 				OrgID:       org.ID,
 				OrgName:     org.Name,
-				ServiceName: hpa.Labels[hpatypes.ErdaHPAObjectRuntimeServiceNameLabel],
+				ServiceName: hpa.Labels[pstypes.ErdaPAObjectRuntimeServiceNameLabel],
 				Event:       string(eventBytes),
 			}
 
@@ -420,6 +441,122 @@ func (s *Syncer) watchSyncHPAEvent(ctx context.Context) {
 		}
 		if err := s.event.WatchHPAEventsAllNamespaces(ctx, callback); err != nil {
 			logrus.Errorf("failed to watch event: %v, addr: %s", err, s.addr)
+		}
+	}
+}
+
+func (s *Syncer) watchVPA(ctx context.Context) {
+	callback := func(vpa *vpatypes.VerticalPodAutoscaler) {
+		logrus.Infof("Begin process VerticalPodAutoscaler object: %s/%s", vpa.Namespace, vpa.Name)
+
+		// delete old recommendations data which not in vpa recommender windows
+		s.dbupdater.DeletedOldVPARecommendations(pstypes.ErdaVPARecommendationsHistory)
+
+		if vpa.Labels == nil {
+			logrus.Errorf("vpa %s/%s not create by erda, skip hpa event create", vpa.Namespace, vpa.Name)
+			return
+		}
+
+		_, ok := vpa.Labels[pstypes.ErdaPAObjectRuntimeIDLabel]
+		if !ok {
+			logrus.Errorf("failed to get hpa %s/%s runtime info: label %s not set", vpa.Namespace, vpa.Name, pstypes.ErdaPAObjectRuntimeIDLabel)
+			return
+		}
+		_, ok = vpa.Labels[pstypes.ErdaPAObjectRuntimeServiceNameLabel]
+		if !ok {
+			logrus.Errorf("failed to get hpa %s/%s serviceName info: label %s not set", vpa.Namespace, vpa.Name, pstypes.ErdaPAObjectRuntimeServiceNameLabel)
+			return
+		}
+		_, ok = vpa.Labels[pstypes.ErdaPAObjectRuleIDLabel]
+		if !ok {
+			logrus.Errorf("failed to get hpa %s/%s ruleId info: label %s not set", vpa.Namespace, vpa.Name, pstypes.ErdaPAObjectRuleIDLabel)
+			return
+		}
+		if !ok {
+			logrus.Errorf("failed to get hpa %s/%s ruleId info: label %s not set", vpa.Namespace, vpa.Name, pstypes.ErdaPAObjectOrgIDLabel)
+			return
+		}
+
+		org, ok := orgCache.GetOrgByOrgID(vpa.Labels[pstypes.ErdaPAObjectOrgIDLabel])
+		if !ok {
+			// org = xxxx
+		}
+
+		runtimeId, err := strconv.ParseUint(vpa.Labels[pstypes.ErdaPAObjectRuntimeIDLabel], 10, 64)
+		if err != nil {
+			logrus.Errorf("failed to parse runtimeId from vpa %s/%s, parse runtimeId err: %v", vpa.Namespace, vpa.Name, err)
+			return
+		}
+
+		if vpa.Status.Recommendation != nil && len(vpa.Status.Recommendation.ContainerRecommendations) > 0 {
+			for _, cr := range vpa.Status.Recommendation.ContainerRecommendations {
+				needKeep := false
+				latestVcr, err := s.dbupdater.GetLatestVPARecommendation(runtimeId, vpa.Labels[pstypes.ErdaPAObjectRuleIDLabel], vpa.Labels[pstypes.ErdaPAObjectRuntimeServiceNameLabel], cr.ContainerName)
+				if err != nil {
+					logrus.Errorf("failed to get latet vpa container recommendation for vpa %s/%s, error: %v", vpa.Namespace, vpa.Name, err)
+					needKeep = true
+				} else {
+					logrus.Infof("get latet vpa container recommendation for vpa %s/%s, ID: %v", vpa.Namespace, vpa.Name, latestVcr.ID)
+					if latestVcr.LowerCPURequest != float64(int(cr.LowerBound.Cpu().AsApproximateFloat64()*100))/100 ||
+						latestVcr.LowerMemoryRequest != float64(cr.LowerBound.Memory().Value()/1024/1024) ||
+						latestVcr.UpperCPURequest != float64(int(cr.UpperBound.Cpu().AsApproximateFloat64()*100))/100 ||
+						latestVcr.UpperMemoryRequest != float64(cr.UpperBound.Memory().Value()/1024/1024) ||
+						latestVcr.TargetCPURequest != float64(int(cr.Target.Cpu().AsApproximateFloat64()*100))/100 ||
+						latestVcr.TargetMemoryRequest != float64(cr.Target.Memory().Value()/1024/1024) ||
+						latestVcr.UncappedCPURequest != float64(int(cr.UncappedTarget.Cpu().AsApproximateFloat64()*100))/100 ||
+						latestVcr.UncappedMemoryRequest != float64(cr.UncappedTarget.Memory().Value()/1024/1024) {
+						needKeep = true
+					}
+				}
+
+				if needKeep {
+					vpaRecommendation := dbclient.RuntimeVPAContainerRecommendation{
+						ID:                    uuid.NewString(),
+						RuleName:              "",
+						RuleID:                vpa.Labels[pstypes.ErdaPAObjectRuleIDLabel],
+						RuleNameSpace:         "",
+						OrgID:                 org.ID,
+						OrgName:               org.Name,
+						ProjectID:             0,
+						ProjectName:           "",
+						ApplicationID:         0,
+						ApplicationName:       "",
+						RuntimeID:             runtimeId,
+						RuntimeName:           "",
+						Workspace:             "",
+						ClusterName:           "",
+						ServiceName:           vpa.Labels[pstypes.ErdaPAObjectRuntimeServiceNameLabel],
+						ContainerName:         cr.ContainerName,
+						LowerCPURequest:       float64(int(cr.LowerBound.Cpu().AsApproximateFloat64()*100)) / 100,
+						LowerMemoryRequest:    float64(cr.LowerBound.Memory().Value() / 1024 / 1024),
+						UpperCPURequest:       float64(int(cr.UpperBound.Cpu().AsApproximateFloat64()*100)) / 100,
+						UpperMemoryRequest:    float64(cr.UpperBound.Memory().Value() / 1024 / 1024),
+						TargetCPURequest:      float64(int(cr.Target.Cpu().AsApproximateFloat64()*100)) / 100,
+						TargetMemoryRequest:   float64(cr.Target.Memory().Value() / 1024 / 1024),
+						UncappedCPURequest:    float64(int(cr.UncappedTarget.Cpu().AsApproximateFloat64()*100)) / 100,
+						UncappedMemoryRequest: float64(cr.UncappedTarget.Memory().Value() / 1024 / 1024),
+						SoftDeletedAt:         0,
+					}
+
+					err = s.dbupdater.CreateVPARecommendation(vpaRecommendation)
+					if err != nil {
+						logrus.Errorf("failed to create vpa container recommendation info: %v", err)
+						return
+					}
+				}
+			}
+			logrus.Infof("Send vpa recommendation successfully for vpa %s/%s.", vpa.Namespace, vpa.Name)
+		}
+
+	}
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(10 * time.Second):
+		}
+		if err := s.podScaledObject.WatchVPAsAllNamespaces(ctx, callback); err != nil {
+			logrus.Errorf("failed to watch vpa: %v, addr: %s", err, s.addr)
 		}
 	}
 }

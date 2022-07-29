@@ -37,4 +37,11 @@ type DBService interface {
 	UpdatePreDeployment(pre *dbclient.PreDeployment) error
 	GetRuntimeHPAEventsByServices(runtimeId uint64, services []string) ([]dbclient.HPAEventInfo, error)
 	DeleteRuntimeHPAEventsByRuleId(ruleId string) error
+	CreateVPARule(req *dbclient.RuntimeVPA) error
+	UpdateVPARule(req *dbclient.RuntimeVPA) error
+	GetRuntimeVPARulesByServices(id spec.RuntimeUniqueId, services []string) ([]dbclient.RuntimeVPA, error)
+	GetRuntimeVPARuleByRuleId(ruleId string) (dbclient.RuntimeVPA, error)
+	GetRuntimeVPARulesByRuntimeId(runtimeID uint64) ([]dbclient.RuntimeVPA, error)
+	DeleteRuntimeVPARulesByRuleId(ruleId string) error
+	GetRuntimeVPARecommendationsByServices(runtimeId uint64, services []string) ([]dbclient.RuntimeVPAContainerRecommendation, error)
 }

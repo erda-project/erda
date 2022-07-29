@@ -54,6 +54,10 @@ func (d *dbServiceImpl) GetRuntimeHPARulesByRuntimeId(runtimeID uint64) ([]dbcli
 	return d.db.GetRuntimeHPARulesByRuntimeId(runtimeID)
 }
 
+func (d *dbServiceImpl) GetRuntimeVPARulesByRuntimeId(runtimeID uint64) ([]dbclient.RuntimeVPA, error) {
+	return d.db.GetRuntimeVPARulesByRuntimeId(runtimeID)
+}
+
 func newDBService(db *dbclient.DBClient) DBService {
 	return &dbServiceImpl{db: db}
 }
