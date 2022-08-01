@@ -109,6 +109,12 @@ func (t *TransactionTableBuilder) GetTable(ctx context.Context) (*Table, error) 
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
+
+	if response != nil && len(response.Results) > 0 && len(response.Results) > 0 &&
+		len(response.Results[0].Series) > 0 && len(response.Results[0].Series[0].Rows) > 0 && len(response.Results[0].Series[0].Rows[0].Values) > 0 {
+		return table, nil
+	}
+
 	table.Total = response.Results[0].Series[0].Rows[0].Values[0].GetNumberValue()
 
 	// query list items
@@ -142,6 +148,10 @@ func (t *TransactionTableBuilder) GetTable(ctx context.Context) (*Table, error) 
 	response, err = t.Metric.QueryWithInfluxFormat(metricQueryCtx, request)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
+	}
+
+	if response == nil || len(response.Results) == 0 || len(response.Results[0].Series) == 0 {
+		return table, nil
 	}
 	for _, row := range response.Results[0].Series[0].Rows {
 		transRow := &TransactionTableRow{

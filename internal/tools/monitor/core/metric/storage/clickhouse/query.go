@@ -18,7 +18,9 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
+	cksdk "github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"github.com/doug-martin/goqu/v9"
 	"github.com/pkg/errors"
@@ -88,11 +90,14 @@ func (p *provider) Query(ctx context.Context, q tsql.Query) (*model.ResultSet, e
 	if err != nil {
 		return nil, errors.Wrap(err, fmt.Sprintf("failed to query: %s", sql))
 	}
+	if rows.Err() != nil {
+		return nil, errors.Wrap(err, fmt.Sprintf("failed to query: %s", sql))
+	}
 	defer rows.Close()
 
 	result.Data, err = q.ParseResult(rows)
 	if p.Cfg.PlayBack {
-		fmt.Println(fmt.Sprintf("[ck_playback]sql:%s,result :%v ", sql, result.Data))
+		fmt.Println(fmt.Sprintf("[ck_playback-%s]sql:%s,result :%v,origin:%v ", time.Now().Format("2006-01-02 15:04:05"), sql, result.Data, rows))
 	}
 
 	if err != nil {
@@ -102,6 +107,20 @@ func (p *provider) Query(ctx context.Context, q tsql.Query) (*model.ResultSet, e
 	return result, nil
 }
 func (p *provider) buildQueryContext(ctx context.Context) context.Context {
+	settings := map[string]interface{}{}
+	if p.Cfg.QueryTimeout > 0 {
+		settings["max_execution_time"] = int(p.Cfg.QueryTimeout.Seconds()) + 5
+	}
+	if p.Cfg.QueryMaxThreads > 0 {
+		settings["max_threads"] = p.Cfg.QueryMaxThreads
+	}
+	if p.Cfg.QueryMaxMemory > 0 {
+		settings["max_memory_usage"] = p.Cfg.QueryMaxMemory
+	}
+	if len(settings) == 0 {
+		return ctx
+	}
+	ctx = cksdk.Context(ctx, cksdk.WithSettings(settings))
 	return ctx
 }
 

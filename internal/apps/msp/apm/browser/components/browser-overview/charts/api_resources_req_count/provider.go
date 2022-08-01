@@ -69,7 +69,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			Params:    params,
 		}
 
-		ctx := apis.GetContext(s.sdk.Ctx, func(header *transport.Header) {
+		ctx := apis.GetContext(sdk.Ctx, func(header *transport.Header) {
 			header.Set("terminus_key", p.InParamsPtr.TenantId)
 		})
 

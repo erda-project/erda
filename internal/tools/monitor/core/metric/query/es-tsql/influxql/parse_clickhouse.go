@@ -247,11 +247,11 @@ func (p *Parser) parseQueryDimensionsByExpr(exprSelect *goqu.SelectDataset, dime
 				bucketStartTime := (start / interval) * interval
 				bucketEndTime := (end / interval) * interval
 
-				exprSelect = exprSelect.SelectAppend(goqu.L(fmt.Sprintf("toDateTime64(toStartOfInterval(timestamp, toIntervalSecond(%v),'UTC'),9)", intervalSeconds)).As(timeBucketColumn))
+				exprSelect = exprSelect.SelectAppend(goqu.L(fmt.Sprintf("toDateTime64(toStartOfInterval(timestamp, toIntervalSecond(%v)),9)", intervalSeconds)).As(timeBucketColumn))
 
 				// todo goqu order statement should be literal + asc, but with fill is order by `column` [asc/desc] with fill from %left to %right step %interval
 				// buck_timestamp with fill from  fromUnixTimestamp64Nano(cast(1657584000000000000, 'Int64')) to fromUnixTimestamp64Nano(cast(1657756800000000000, 'Int64')) step toDateTime64(86400,9)
-				tailExpr[timeBucketColumn] = fmt.Sprintf("%s with fill from fromUnixTimestamp64Nano(cast(%v, 'Int64')) to fromUnixTimestamp64Nano(cast(%v, 'Int64')) step  toDateTime64(%v,9,'UTC')", timeBucketColumn, bucketStartTime, bucketEndTime, intervalSeconds)
+				tailExpr[timeBucketColumn] = fmt.Sprintf("%s with fill from fromUnixTimestamp64Nano(cast(%v, 'Int64')) to fromUnixTimestamp64Nano(cast(%v, 'Int64')) step  toDateTime64(%v,9)", timeBucketColumn, bucketStartTime, bucketEndTime, intervalSeconds)
 
 				exprList = append(exprList, timeBucketColumn)
 

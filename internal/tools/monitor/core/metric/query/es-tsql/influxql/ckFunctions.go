@@ -16,6 +16,7 @@ package esinfluxql
 
 import (
 	"fmt"
+	"math"
 
 	"github.com/doug-martin/goqu/v9"
 	"github.com/doug-martin/goqu/v9/exp"
@@ -80,6 +81,10 @@ var CkAggFunctions = map[string]*SQlAggFuncDefine{
 				return goqu.AVG(goqu.L(f)).As(id), nil
 			},
 			func(ctx *Context, id, field string, call *influxql.Call, v interface{}) (interface{}, bool) {
+				float64V, ok := v.(float64)
+				if ok && math.IsNaN(float64V) {
+					return 0, true
+				}
 				return v, true
 			},
 		),
