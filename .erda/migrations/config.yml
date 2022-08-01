@@ -179,6 +179,8 @@
 - name: ColumnTypeLinter
   alias: "字段类型校验: id 应当为 varchar(36) 或 char(36)"
   white:
+    modules:
+      - uc
     patterns:
       - ".*-base$"
     committedAt:
@@ -261,6 +263,8 @@
 - name: DefaultValueLinter
   alias: "默认值校验: created_at 默认值为 CURRENT_TIMESTAMP"
   white:
+    modules:
+      - uc
     patterns:
       - ".*-base$"
   meta:
@@ -271,6 +275,8 @@
 - name: DefaultValueLinter
   alias: "默认值校验: updated_at 默认值为 CURRENT_TIMESTAMP"
   white:
+    modules:
+      - uc
     patterns:
       - ".*-base$"
   meta:
@@ -301,12 +307,16 @@
 # 索引长度校验
 - name: IndexLengthLinter
   white:
+    modules:
+      - uc
     patterns:
       - ".*-base$"
 
 # 索引名称校验
 - name: IndexNameLinter
   white:
+    modules:
+      - uc
     patterns:
       - ".*-base$"
   meta:
@@ -316,6 +326,8 @@
 # MySQL 关键字 保留字检查: 不能将关键字作为表名或字段名
 - name: KeywordsLinter
   white:
+    modules:
+      - uc
     patterns:
       - ".*-base$"
   meta:
@@ -449,6 +461,8 @@
 - name: ManualTimeSetterLinter
   alias: "禁止显示插入 created_at 的值"
   white:
+    modules:
+      - uc
     patterns:
       - ".*-base$"
   meta:
@@ -458,6 +472,8 @@
 - name: ManualTimeSetterLinter
   alias: "禁止显示插入 updated_at 的值"
   white:
+    modules:
+      - uc
     patterns:
       - ".*-base$"
   meta:
@@ -497,6 +513,8 @@
 - name: NecessaryColumnLinter
   alias: 必要字段.org_name
   white:
+    modules:
+      - uc
     patterns:
       - ".*-base$"
       - ".*-pipeline-action$"
@@ -510,6 +528,8 @@
 - name: NecessaryColumnLinter
   alias: 必要字段.org_id
   white:
+    modules:
+      - uc
     patterns:
       - ".*-base$"
       - ".*-pipeline-action$"
@@ -523,6 +543,8 @@
 - name: NecessaryColumnLinter
   alias: 必要字段.deleted_at或soft_deleted_at
   white:
+    modules:
+      - uc
     patterns:
       - ".*-base$"
     committedAt:
@@ -536,6 +558,8 @@
 - name: NecessaryColumnOptionLinter
   alias: "列应当有注释"
   white:
+    modules:
+      - uc
     patterns:
       - ".*-base$"
   meta:
@@ -546,6 +570,8 @@
 - name: NecessaryColumnOptionLinter
   alias: "列要么是主键要么是 not null 的"
   white:
+    modules:
+      - uc
     patterns:
       - ".*-base$"
   meta:
@@ -558,6 +584,8 @@
   alias: "updated_at 应当自动跟踪更新时间"
   switch: on
   white:
+    modules:
+      - uc
     patterns:
       - ".*-base$"
   meta:
@@ -569,6 +597,8 @@
 - name: NecessaryTableOptionLinter
   alias: "必要的 tableOption: 表应当有 comment"
   white:
+    modules:
+      - uc
     patterns:
       - ".*-base$"
   meta:
@@ -1174,6 +1204,8 @@
 - name: TableNameLinter
   alias: "TableNameLinter: 以 erda_ 开头仅包含小写英文字母数字下划线"
   white:
+    modules:
+      - uc
     patterns:
       - ".*-base$"
     committedAt:
@@ -1181,6 +1213,7 @@
   meta:
     patterns:
       - "^erda_[a-z0-9_]{1,59}"
+      - "^tb_gateway_[a-z0-9_]{1,59}"
 
 # varchar 长度校验
 - name: VarcharLengthLinter
