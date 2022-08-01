@@ -22,6 +22,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-infra/base/logs"
+	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/bubblegraph"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/bubblegraph/impl"
 	structure "github.com/erda-project/erda-infra/providers/component-protocol/components/commodel/data-structure"
@@ -30,6 +31,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/internal/apps/msp/apm/alert/components/msp-alert-overview/common"
+	"github.com/erda-project/erda/pkg/common/apis"
 )
 
 const parseLayout = "2006-01-02T15:04:05Z"
@@ -82,7 +84,10 @@ func (p *provider) getAlertDurationDistributionChart(sdk *cptype.SDK) (*bubblegr
 		Statement: statement,
 		Params:    params,
 	}
-	response, err := p.Metric.QueryWithInfluxFormat(sdk.Ctx, request)
+	ctx := apis.GetContext(sdk.Ctx, func(header *transport.Header) {
+		header.Set("terminus_key", inParams.ScopeId)
+	})
+	response, err := p.Metric.QueryWithInfluxFormat(ctx, request)
 	if err != nil {
 		p.Log.Errorf("failed to get %s, err: %s, statement:%s", sdk.Comp.Name, err, statement)
 		return nil, err

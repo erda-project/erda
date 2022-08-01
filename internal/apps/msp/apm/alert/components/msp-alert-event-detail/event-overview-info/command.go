@@ -22,13 +22,19 @@ import (
 
 	"google.golang.org/protobuf/types/known/structpb"
 
+	"github.com/erda-project/erda-infra/pkg/transport"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
+	"github.com/erda-project/erda/pkg/common/apis"
 )
 
 func (cp *ComponentEventOverviewInfo) countAlertEvents(ctx context.Context, eventId string) (int64, error) {
 	reqParams := map[string]*structpb.Value{
 		"eventId": structpb.NewStringValue(eventId),
 	}
+
+	ctx = apis.GetContext(ctx, func(header *transport.Header) {
+		header.Set("terminus_key", cp.sdk.InParams.String("scopeId"))
+	})
 
 	statement := fmt.Sprintf("SELECT count(timestamp) FROM analyzer_alert " +
 		"WHERE family_id::tag=$eventId AND alert_suppressed::tag='false' ")

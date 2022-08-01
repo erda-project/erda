@@ -21,8 +21,10 @@ import (
 
 	"google.golang.org/protobuf/types/known/structpb"
 
+	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/kv"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda/pkg/common/apis"
 
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/pkg/common/errors"
@@ -115,7 +117,12 @@ func (p *provider) GetData(sdk *cptype.SDK, stmt string) (float64, error) {
 		Statement: stmt,
 		Params:    params,
 	}
-	response, err := p.Metric.QueryWithInfluxFormat(sdk.Ctx, request)
+
+	ctx := apis.GetContext(sdk.Ctx, func(header *transport.Header) {
+		header.Set("terminus_key", p.InParamsPtr.TenantId)
+	})
+
+	response, err := p.Metric.QueryWithInfluxFormat(ctx, request)
 	if err != nil {
 		return 0, err
 	}
@@ -163,7 +170,12 @@ func (p *provider) getApiSuccessRate(sdk *cptype.SDK) (*kv.KV, error) {
 		Params:    params,
 	}
 
-	response, err := p.Metric.QueryWithInfluxFormat(sdk.Ctx, request)
+	ctx := apis.GetContext(sdk.Ctx, func(header *transport.Header) {
+		header.Set("terminus_key", p.InParamsPtr.TenantId)
+	})
+
+	response, err := p.Metric.QueryWithInfluxFormat(ctx, request)
+
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}

@@ -23,9 +23,11 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	"github.com/erda-project/erda/pkg/common/apis"
 
 	monitorpb "github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
@@ -94,7 +96,11 @@ func (s *SimpleChart) getUnRecoverAlertEventsChart() (*Chart, error) {
 		Params:    params,
 	}
 
-	response, err := s.Metric.QueryWithInfluxFormat(s.sdk.Ctx, request)
+	ctx := apis.GetContext(s.sdk.Ctx, func(header *transport.Header) {
+		header.Set("terminus_key", inParams.ScopeId)
+	})
+
+	response, err := s.Metric.QueryWithInfluxFormat(ctx, request)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}

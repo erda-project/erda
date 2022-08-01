@@ -61,6 +61,11 @@ func (s *apmServiceService) GetServiceLanguage(ctx context.Context, req *pb.GetS
 			Statement: statement,
 			Params:    queryParams,
 		}
+
+		ctx = apis.GetContext(ctx, func(header *transport.Header) {
+			header.Set("terminus_key", req.TenantId)
+		})
+
 		response, err := s.p.Metric.QueryWithInfluxFormat(ctx, request)
 		if err != nil {
 			return nil, errors.NewInternalServerError(err)
@@ -277,6 +282,7 @@ func (s *apmServiceService) aggregateMetric(serviceStatus, tenantId string, serv
 		Statement: statement,
 		Params:    queryParams,
 	}
+
 	response, err := s.p.Metric.QueryWithInfluxFormat(ctx, request)
 	if err != nil {
 		return "", err
@@ -412,10 +418,9 @@ func (s *apmServiceService) GetServiceCount(ctx context.Context, req *pb.GetServ
 		return nil, errors.NewMissingParameterError("tenantId")
 	}
 
-	header := transport.Header{}
-	header.Set("org", apis.GetHeader(ctx, "org"))
-	header.Set("terminus_key", req.TenantId)
-	ctx = transport.WithHeader(ctx, header)
+	ctx = apis.GetContext(ctx, func(header *transport.Header) {
+		header.Set("terminus_key", req.TenantId)
+	})
 
 	var ss = []string{pb.Status_all.String(), pb.Status_hasError.String(), pb.Status_withoutRequest.String()}
 	response := &pb.GetServiceCountResponse{}
@@ -475,6 +480,9 @@ func (s *apmServiceService) GetHasErrorService(ctx context.Context, tenantId str
 		Statement: statement,
 		Params:    queryParams,
 	}
+	ctx = apis.GetContext(ctx, func(header *transport.Header) {
+		header.Set("terminus_key", tenantId)
+	})
 	countResponse, err := s.p.Metric.QueryWithInfluxFormat(ctx, countRequest)
 	if err != nil {
 		s.p.Log.Error("get has error service error: %s", err)

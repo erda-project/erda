@@ -21,9 +21,11 @@ import (
 
 	"google.golang.org/protobuf/types/known/structpb"
 
+	"github.com/erda-project/erda-infra/pkg/transport"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/internal/apps/msp/apm/service/common/transaction"
 	"github.com/erda-project/erda/internal/apps/msp/apm/service/view/common"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
 )
 
@@ -98,7 +100,12 @@ func (t *TransactionTableBuilder) GetTable(ctx context.Context) (*Table, error) 
 		Statement: statement,
 		Params:    queryParams,
 	}
-	response, err := t.Metric.QueryWithInfluxFormat(ctx, request)
+
+	metricQueryCtx := apis.GetContext(t.SdkCtx, func(header *transport.Header) {
+		header.Set("terminus_key", t.TenantId)
+	})
+
+	response, err := t.Metric.QueryWithInfluxFormat(metricQueryCtx, request)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -132,7 +139,7 @@ func (t *TransactionTableBuilder) GetTable(ctx context.Context) (*Table, error) 
 		Statement: statement,
 		Params:    queryParams,
 	}
-	response, err = t.Metric.QueryWithInfluxFormat(ctx, request)
+	response, err = t.Metric.QueryWithInfluxFormat(metricQueryCtx, request)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}

@@ -100,7 +100,9 @@ func GetHeader(ctx context.Context, key string) string {
 func GetContext(ctx context.Context, setHeader func(header *transport.Header)) context.Context {
 	header := transport.Header{}
 	header.Set("org", GetHeader(ctx, "org"))
-	setHeader(&header)
+	if setHeader != nil {
+		setHeader(&header)
+	}
 	ctx = transport.WithHeader(ctx, header)
 	return ctx
 }
