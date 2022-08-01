@@ -303,7 +303,7 @@ func Test_provider_mqTranslation(t *testing.T) {
 				metricq: tt.fields.metricq,
 				t:       tt.fields.t,
 			}
-			got, err := topology.mqTranslation(tt.args.lang, tt.args.params)
+			got, err := topology.mqTranslation(nil, tt.args.lang, tt.args.params)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("mqTranslation() error = %v, wantErr %v", err, tt.wantErr)
 				return

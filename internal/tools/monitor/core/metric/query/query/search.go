@@ -189,8 +189,8 @@ func (q *queryer) GetResult(parser tsql.Parser) (*model.ResultSet, tsql.Query, e
 }
 
 // Query .
-func (q *queryer) Query(tsql, statement string, params map[string]interface{}, options url.Values) (*model.ResultSet, error) {
-	rs, _, _, err := q.doQuery(context.TODO(), tsql, statement, params, nil, options)
+func (q *queryer) Query(ctx context.Context, tsql, statement string, params map[string]interface{}, options url.Values) (*model.ResultSet, error) {
+	rs, _, _, err := q.doQuery(ctx, tsql, statement, params, nil, options)
 	if err != nil {
 		q.log.Error("query tsql is error:", err)
 	}

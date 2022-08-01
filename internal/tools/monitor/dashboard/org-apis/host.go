@@ -329,7 +329,7 @@ func (p *provider) getGroupHosts(req *http.Request, params struct {
 		return api.Success(nil)
 	}
 	groups := parseGroupHost(result.Aggregations, res.Groups, 0, vfs)
-	p.updateClusterStatus(api.GetCtxHeader(req), groups)
+	p.updateClusterStatus(api.GetContextHeader(req), groups)
 	return api.Success(groups)
 }
 

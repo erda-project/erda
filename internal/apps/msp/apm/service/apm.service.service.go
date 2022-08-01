@@ -24,12 +24,14 @@ import (
 
 	"google.golang.org/protobuf/types/known/structpb"
 
+	"github.com/erda-project/erda-infra/pkg/transport"
 	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda-proto-go/msp/apm/service/pb"
 	servicecommon "github.com/erda-project/erda/internal/apps/msp/apm/service/common"
 	"github.com/erda-project/erda/internal/apps/msp/apm/service/view/chart"
 	"github.com/erda-project/erda/internal/apps/msp/apm/service/view/common"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
 	"github.com/erda-project/erda/pkg/math"
 )
@@ -98,6 +100,10 @@ func (s *apmServiceService) GetServices(ctx context.Context, req *pb.GetServices
 	queryParams := map[string]*structpb.Value{
 		"terminus_key": structpb.NewStringValue(req.TenantId),
 	}
+
+	ctx = apis.GetContext(ctx, func(header *transport.Header) {
+		header.Set("terminus_key", req.TenantId)
+	})
 	condition, err := HandleCondition(ctx, req, s, condition)
 	if req.ServiceStatus == pb.Status_hasError.String() && !strings.Contains(condition, "include") {
 		return &pb.GetServicesResponse{PageNo: req.PageNo, PageSize: req.PageSize}, nil
@@ -113,6 +119,11 @@ func (s *apmServiceService) GetServices(ctx context.Context, req *pb.GetServices
 		Statement: statement,
 		Params:    queryParams,
 	}
+
+	ctx = apis.GetContext(ctx, func(header *transport.Header) {
+		header.Set("terminus_key", req.TenantId)
+	})
+
 	response, err := s.p.Metric.QueryWithInfluxFormat(ctx, request)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
@@ -400,6 +411,12 @@ func (s *apmServiceService) GetServiceCount(ctx context.Context, req *pb.GetServ
 	if req.TenantId == "" {
 		return nil, errors.NewMissingParameterError("tenantId")
 	}
+
+	header := transport.Header{}
+	header.Set("org", apis.GetHeader(ctx, "org"))
+	header.Set("terminus_key", req.TenantId)
+	ctx = transport.WithHeader(ctx, header)
+
 	var ss = []string{pb.Status_all.String(), pb.Status_hasError.String(), pb.Status_withoutRequest.String()}
 	response := &pb.GetServiceCountResponse{}
 	for _, status := range ss {
@@ -499,7 +516,7 @@ func (s *apmServiceService) GetTotalCount(ctx context.Context, tenantId string, 
 		return 0, errors.NewInternalServerError(err)
 	}
 	if countResponse != nil && len(countResponse.Results) > 0 && len(countResponse.Results[0].Series) > 0 && len(countResponse.Results[0].Series[0].Rows) > 0 {
-		return int64(len(countResponse.Results[0].Series[0].Rows)), nil
+		return int64(countResponse.Results[0].Series[0].Rows[0].GetValues()[0].GetNumberValue()), nil
 	}
 	return 0, nil
 }

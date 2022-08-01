@@ -36,7 +36,7 @@ func (p *provider) initRoutes(routes httpserver.Router) error {
 // queryMetrics .
 func (p *provider) queryMetrics(r *http.Request) interface{} {
 	params := make(map[string]interface{})
-	ctx := api.GetCtxHeader(r)
+	ctx := api.GetContextHeader(r)
 
 	err := r.ParseForm()
 	if err != nil {

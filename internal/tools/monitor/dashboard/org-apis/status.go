@@ -40,7 +40,7 @@ type statusDTO struct {
 }
 
 func (p *provider) clusterStatus(params *statusQuery, r *http.Request) interface{} {
-	componentStatus, err := p.getComponentStatus(api.GetCtxHeader(r), params.ClusterName)
+	componentStatus, err := p.getComponentStatus(api.GetContextHeader(r), params.ClusterName)
 	if err != nil {
 		return api.Errors.Internal(err)
 	}

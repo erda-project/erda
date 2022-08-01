@@ -208,8 +208,16 @@ func UserID(r *http.Request) string {
 func OrgName(r *http.Request) string {
 	return r.Header.Get("org")
 }
-func GetCtxHeader(r *http.Request) context.Context {
-	return context.WithValue(context.Background(), "header", r.Header)
+func GetContextHeader(r *http.Request) context.Context {
+	return GetContext(r, nil)
+}
+
+func GetContext(r *http.Request, append func(*http.Header)) context.Context {
+	header := r.Header
+	if append != nil {
+		append(&header)
+	}
+	return context.WithValue(context.Background(), "header", header)
 }
 
 // OrgIDInt .
