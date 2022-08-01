@@ -68,39 +68,26 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	)
 	p.cmdb = cmdb.New(cmdb.WithHTTPClient(hc))
 	routes := ctx.Service("http-server", interceptors.Recover(p.L)).(httpserver.Router)
-	//if !p.C.QueryMetricsFromCk {
-	//	p.metricq = ctx.Service("metrics-query").(metricq.Queryer)
-	//	p.service = &queryService{metricQ: p.metricq}
-	//	return p.intRoutes(routes)
-	//} else {
-	//	p.Source = &ClickhouseSource{
-	//		p:          p,
-	//		Clickhouse: p.Clickhouse,
-	//		Log:        p.L,
-	//		DebugSQL:   p.C.DebugSQL,
-	//		Loader:     p.Loader,
-	//	}
-	//	return p.initRoutesV2(routes)
-	//}
 	p.metricq = ctx.Service("metrics-query").(metricq.Queryer)
 	p.service = &queryService{metricQ: p.metricq}
-	p.Source = &ClickhouseSource{
-		p:          p,
-		Clickhouse: p.Clickhouse,
-		Log:        p.L,
-		DebugSQL:   p.C.DebugSQL,
-		Loader:     p.Loader,
+	if p.C.QueryMetricsFromCk {
+		p.Source = &ClickhouseSource{
+			p:          p,
+			Clickhouse: p.Clickhouse,
+			Log:        p.L,
+			DebugSQL:   p.C.DebugSQL,
+			Loader:     p.Loader,
+		}
 	}
 	return p.intRoutes(routes)
 }
 
 func init() {
 	servicehub.Register("org-apis", &servicehub.Spec{
-		Services:             []string{"org-apis"},
-		Dependencies:         []string{"http-server", "i18n"},
-		OptionalDependencies: []string{"metrics-query"},
-		Description:          "org apis",
-		ConfigFunc:           func() interface{} { return &config{} },
+		Services:     []string{"org-apis"},
+		Dependencies: []string{"http-server", "metrics-query", "i18n"},
+		Description:  "org apis",
+		ConfigFunc:   func() interface{} { return &config{} },
 		Creator: func() servicehub.Provider {
 			return &provider{}
 		},

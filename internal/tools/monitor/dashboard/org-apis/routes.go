@@ -15,6 +15,8 @@
 package orgapis
 
 import (
+	"net/http"
+
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda/internal/tools/monitor/common"
 	"github.com/erda-project/erda/internal/tools/monitor/common/permission"
@@ -41,15 +43,15 @@ func (p *provider) intRoutes(routes httpserver.Router) error {
 
 	// clusters resources for org center
 	checkOrgName := permission.OrgIDByOrgName("orgName")
-	routes.GET("/api/resources/types", p.Source.GetHostTypes, permission.Intercepter(
+	routes.GET("/api/resources/types", p.getHostTypesMethod(), permission.Intercepter(
 		permission.ScopeOrg, checkOrgName,
 		common.ResourceOrgCenter, permission.ActionList, p.Org,
 	))
-	routes.POST("/api/resources/group", p.Source.GetGroupHosts, permission.Intercepter(
+	routes.POST("/api/resources/group", p.getGroupHostsMethod(), permission.Intercepter(
 		permission.ScopeOrg, checkOrgName,
 		common.ResourceOrgCenter, permission.ActionList, p.Org,
 	))
-	routes.POST("/api/resources/containers/:instance_type", p.Source.GetContainers, permission.Intercepter(
+	routes.POST("/api/resources/containers/:instance_type", p.getContainersMethod(), permission.Intercepter(
 		permission.ScopeOrg, permission.OrgIDFromHeader(),
 		common.ResourceOrgCenter, permission.ActionList, p.Org,
 	))
@@ -65,10 +67,32 @@ func (p *provider) intRoutes(routes httpserver.Router) error {
 	return nil
 }
 
-func (p *provider) initRoutesV2(routes httpserver.Router) error {
-	routes.POST("/api/resources/containers/:instance_type", p.Source.GetContainers, permission.Intercepter(
-		permission.ScopeOrg, permission.OrgIDFromHeader(),
-		common.ResourceOrgCenter, permission.ActionList, p.Org,
-	))
-	return nil
+func (p *provider) getHostTypesMethod() func(*http.Request, struct {
+	ClusterName string `query:"clusterName" validate:"required"`
+	OrgName     string `query:"orgName" validate:"required"`
+}) interface{} {
+	if p.C.QueryMetricsFromCk {
+		return p.Source.GetHostTypes
+	}
+	return p.getHostTypes
+}
+
+func (p *provider) getGroupHostsMethod() func(*http.Request, struct {
+	OrgName string `query:"orgName" validate:"required" json:"-"`
+}, resourceRequest) interface{} {
+	if p.C.QueryMetricsFromCk {
+		return p.Source.GetGroupHosts
+	}
+	return p.getGroupHosts
+}
+
+func (p *provider) getContainersMethod() func(httpserver.Context, *http.Request, struct {
+	InstanceType string `param:"instance_type" validate:"required"`
+	Start        int64  `query:"start"`
+	End          int64  `query:"end"`
+}, resourceRequest) interface{} {
+	if p.C.QueryMetricsFromCk {
+		return p.Source.GetContainers
+	}
+	return p.getContainers
 }
