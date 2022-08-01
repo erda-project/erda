@@ -121,93 +121,6 @@ func TestService_getFlowRule(t *testing.T) {
 	}
 }
 
-func Test_getTempBranchFromFlowRule(t *testing.T) {
-	type args struct {
-		flowRule *flowrulepb.FlowWithBranchPolicy
-	}
-	tests := []struct {
-		name string
-		args args
-		want string
-	}{
-		{
-			name: "test with empty",
-			args: args{flowRule: nil},
-			want: "",
-		},
-		{
-			name: "test with not empty",
-			args: args{flowRule: flowRule},
-			want: "next/develop",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := getTempBranchFromFlowRule(tt.args.flowRule); got != tt.want {
-				t.Errorf("getTempBranchFromFlowRule() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func Test_getFlowNameFromFlowRule(t *testing.T) {
-	type args struct {
-		flowRule *flowrulepb.FlowWithBranchPolicy
-	}
-	tests := []struct {
-		name string
-		args args
-		want string
-	}{
-		{
-			name: "test with empty",
-			args: args{flowRule: nil},
-			want: "",
-		},
-		{
-			name: "test with not empty",
-			args: args{flowRule: flowRule},
-			want: "DEV",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := getFlowNameFromFlowRule(tt.args.flowRule); got != tt.want {
-				t.Errorf("getFlowNameFromFlowRule() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func Test_getSourceBranchFromFlowRule(t *testing.T) {
-	type args struct {
-		flowRule *flowrulepb.FlowWithBranchPolicy
-	}
-	tests := []struct {
-		name string
-		args args
-		want string
-	}{
-		{
-			name: "test with empty",
-			args: args{flowRule: nil},
-			want: "",
-		},
-		{
-			name: "test with not empty",
-			args: args{flowRule: flowRule},
-			want: "develop",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := getSourceBranchFromFlowRule(tt.args.flowRule); got != tt.want {
-				t.Errorf("getSourceBranchFromFlowRule() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 type issueForMakeMrDescMock struct {
 	IssueMock
 }
@@ -236,7 +149,7 @@ func (i issueForMakeMrDescMock) GetIssue(id int64, identityInfo *commonpb.Identi
 
 var mRDesc = "Task: #100001 New issue to Erda"
 
-func TestService_makeMrDesc(t *testing.T) {
+func TestService_makeMrDescByIssueID(t *testing.T) {
 	type fields struct {
 		p *provider
 	}
@@ -277,7 +190,7 @@ func TestService_makeMrDesc(t *testing.T) {
 			s := &Service{
 				p: tt.fields.p,
 			}
-			got, err := s.makeMrDesc(tt.args.ctx, tt.args.issueID)
+			got, err := s.makeMrDescByIssueID(tt.args.ctx, tt.args.issueID)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("makeMrDesc() error = %v, wantErr %v", err, tt.wantErr)
 				return
