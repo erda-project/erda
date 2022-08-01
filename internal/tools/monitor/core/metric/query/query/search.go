@@ -98,6 +98,9 @@ func (q *queryer) buildTSQLParser(ctx context.Context, ql, statement string, par
 	parser = parser.SetParams(params)
 
 	// process header
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	if head := transport.ContextHeader(ctx); head != nil {
 		if orgNames := head.Get("org"); len(orgNames) > 0 {
 			parser = parser.SetOrgName(orgNames[0])

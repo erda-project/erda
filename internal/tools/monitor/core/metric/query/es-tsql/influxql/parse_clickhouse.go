@@ -822,7 +822,10 @@ func (p *Parser) getScriptExpressionOnCk(ctx *Context, expr influxql.Expr, defty
 	case *influxql.NumberLiteral:
 		return strconv.FormatFloat(expr.Val, 'f', -1, 64), nil
 	case *influxql.BooleanLiteral:
-		return strconv.FormatBool(expr.Val), nil
+		if expr.Val {
+			return strconv.FormatInt(1, 10), nil
+		}
+		return strconv.FormatInt(0, 10), nil
 	case *influxql.UnsignedLiteral:
 		return strconv.FormatUint(expr.Val, 10), nil
 	case *influxql.StringLiteral:

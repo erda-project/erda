@@ -78,8 +78,7 @@ func (p *provider) getApdex(sdk *cptype.SDK) (*kv.KV, error) {
 	stmt := "SELECT count(plt::field) " +
 		"FROM ta_timing " +
 		"WHERE tk::tag=$terminus_key " +
-		"%s" +
-		"GROUP BY range(pt::field, 0, 2000, 2000, 8000, 8000)"
+		"%s"
 
 	satisfiedCount, err := p.GetData(sdk, fmt.Sprintf(stmt, "AND plt::field >= 0 and  plt::field < 2000"))
 	if err != nil {
