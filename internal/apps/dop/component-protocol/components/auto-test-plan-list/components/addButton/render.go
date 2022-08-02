@@ -31,6 +31,7 @@ func (tpm *TestPlanManageAddButton) Render(ctx context.Context, c *cptype.Compon
 			c.State = make(map[string]interface{}, 0)
 		}
 		c.State["addTest"] = true
+		c.State["isUpdate"] = false
 	}
 
 	return nil
