@@ -152,6 +152,8 @@
 # 布尔值命名与类型校验
 - name: BooleanFieldLinter
   white:
+    modules:
+      - uc
     patterns:
       - ".*-base$"
 
