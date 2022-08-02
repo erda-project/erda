@@ -553,6 +553,44 @@ var (
 	ErrRenderPipelineTemplate        = err("ErrQueryTemplateVersion", "模板渲染失败")
 
 	ErrGlobalSearch = err("ErrGlobalSearch", "全局搜索失败")
+
+	ErrGetIosPlist                     = err("ErrGetIosPlist", "获取Ios Plist文件失败")
+	ErrPutOnRelease                    = err("ErrPutOnRelease", "上架制品失败")
+	ErrPutOffRelease                   = err("ErrPutOffRelease", "下架制品失败")
+	ErrCreateImage                     = err("ErrCreateImage", "添加镜像失败")
+	ErrUpdateImage                     = err("ErrUpdateImage", "更新镜像失败")
+	ErrDeleteImage                     = err("ErrDeleteImage", "删除镜像失败")
+	ErrGetImage                        = err("ErrGetImage", "获取镜像失败")
+	ErrListImage                       = err("ErrListImage", "获取镜像列表失败")
+	ErrCreateExtension                 = err("ErrCreateExtension", "添加扩展失败")
+	ErrQueryExtension                  = err("ErrQueryExtension", "查询扩展失败")
+	ErrCreateExtensionVersion          = err("ErrCreateExtensionVersion", "添加扩展版本失败")
+	ErrQueryExtensionVersion           = err("ErrQueryExtensionVersion", "查询扩展版本失败")
+	ErrQueryPublishItem                = err("ErrQueryPublishItem", "查询发布内容失败")
+	ErrCreatePublishItem               = err("ErrCreatePublishItem", "创建发布内容失败")
+	ErrUpdatePublishItem               = err("ErrUpdatePublishItem", "更新发布内容失败")
+	ErrDeletePublishItem               = err("ErrDeletePublishItem", "删除发布内容失败")
+	ErrQueryPublishItemVersion         = err("ErrQueryPublishItemVersion", "查询发布版本失败")
+	ErrCreatePublishItemVersion        = err("ErrCreatePublishItemVersion", "创建发布版本失败")
+	ErrCreateOffLinePublishItemVersion = err("ErrCreateOffLinePublishItemVersion", "推送离线包失败")
+	ErrUpdatePublishItemVersion        = err("ErrUpdatePublishItemVersion", "更新发布版本失败")
+	ErrDeletePublishItemVersion        = err("ErrDeletePublishItemVersion", "删除发布版本失败")
+	ErrSetPublishItemVersionStatus     = err("ErrSetPublishItemVersionStatus", "更新版本状态失败")
+	ErrGetMonitorKeys                  = err("ErrGetMonitorKeys", "获取监控key失败")
+
+	ErrCreateBlacklist = err("ErrCreateBlacklist", "添加黑名单失败")
+	ErrGetBlacklist    = err("ErrCreateBlacklist", "查询黑名单失败")
+	ErrDeleteBlacklist = err("ErrDeleteBlacklist", "删除黑名单失败")
+
+	ErrCreateEraselist = err("ErrCreateEraselist", "添加数据擦除失败")
+
+	ErrSecurity    = err("ErrSecurity", "security error")
+	ErrUpdateErase = err("ErrUpdateErase", "request error")
+
+	ErrSratisticsErrTrend      = err("ErrSratisticsErrTrend", "获取错误趋势失败")
+	ErrSratisticsTotalTrend    = err("ErrSratisticsTotalTrend", "获取整体趋势失败")
+	ErrSratisticsVersionDetail = err("ErrSratisticsVersionDetail", "获取版本详情明细数据失败")
+	ErrSratisticsChannelDetail = err("ErrSratisticsChannelDetail", "获取渠道详情明细数据失败")
 )
 
 func err(template, defaultValue string) *errorresp.APIError {

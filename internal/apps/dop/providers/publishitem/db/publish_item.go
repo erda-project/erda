@@ -12,15 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dbclient
+package db
 
 import (
 	"strconv"
 	"strings"
 
 	uuid "github.com/satori/go.uuid"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda-proto-go/dop/publishitem/pb"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -54,8 +55,8 @@ func (PublishItem) TableName() string {
 	return "dice_publish_items"
 }
 
-func (publishItem *PublishItem) ToApiData() *apistructs.PublishItem {
-	return &apistructs.PublishItem{
+func (publishItem *PublishItem) ToApiData() *pb.PublishItem {
+	return &pb.PublishItem{
 		ID:               int64(publishItem.ID),
 		Name:             publishItem.Name,
 		DisplayName:      publishItem.DisplayName,
@@ -66,15 +67,15 @@ func (publishItem *PublishItem) ToApiData() *apistructs.PublishItem {
 		Desc:             publishItem.Desc,
 		Logo:             publishItem.Logo,
 		Creator:          publishItem.Creator,
-		CreatedAt:        publishItem.CreatedAt,
-		UpdatedAt:        publishItem.UpdatedAt,
+		CreatedAt:        timestamppb.New(publishItem.CreatedAt),
+		UpdatedAt:        timestamppb.New(publishItem.UpdatedAt),
 		AK:               publishItem.AK,
 		AI:               publishItem.AI,
 		NoJailbreak:      publishItem.NoJailbreak,
 		GeofenceLon:      publishItem.GeofenceLon,
 		GeofenceRadius:   publishItem.GeofenceRadius,
 		GeofenceLat:      publishItem.GeofenceLat,
-		GrayLevelPercent: publishItem.GrayLevelPercent,
+		GrayLevelPercent: int64(publishItem.GrayLevelPercent),
 		PreviewImages:    strutil.SplitIfEmptyString(publishItem.PreviewImages, ","),
 		BackgroundImage:  publishItem.BackgroundImage,
 	}
@@ -105,7 +106,7 @@ func (client *DBClient) DeletePublishItem(publishItem *PublishItem) error {
 	return client.Delete(publishItem).Error
 }
 
-func (client *DBClient) QueryPublishItem(request *apistructs.QueryPublishItemRequest) (*apistructs.QueryPublishItemData, error) {
+func (client *DBClient) QueryPublishItem(request *pb.QueryPublishItemRequest) (*pb.QueryPublishItemData, error) {
 	var publishItems []PublishItem
 	var count int
 	query := client.Model(&PublishItem{})
@@ -152,14 +153,14 @@ func (client *DBClient) QueryPublishItem(request *apistructs.QueryPublishItemReq
 		}
 	}
 
-	results := []*apistructs.PublishItem{}
+	results := make([]*pb.PublishItem, 0)
 	for _, item := range publishItems {
 		result := item.ToApiData()
 		results = append(results, result)
 	}
 
-	return &apistructs.QueryPublishItemData{
-		Total: count,
+	return &pb.QueryPublishItemData{
+		Total: int64(count),
 		List:  results,
 	}, nil
 }

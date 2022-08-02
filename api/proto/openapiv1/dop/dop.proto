@@ -1620,24 +1620,6 @@ message QueryBranchRuleRequest {
 message QueryBranchRuleResponse {
     repeated google.protobuf.Value data = 1;
 }
-message QueryPublishItemData {
-    repeated google.protobuf.Value list = 1;
-    int64 total = 2;
-}
-message QueryPublishItemRequest {
-    int64 pageNo = 1;
-    int64 pageSize = 2;
-    int64 publisherId = 3;
-    string name = 4;
-    string type = 5;
-    string public = 6;
-    string q = 7;
-    string ids = 8;
-    int64 orgID = 9 [json_name = "-"];
-}
-message QueryPublishItemResponse {
-    google.protobuf.Value data = 1;
-}
 message RoleInfo {
     string role = 1;
     string name = 2;
@@ -4375,22 +4357,6 @@ service dop {
                 check_basic_auth: false,
             },
             doc: "summary: 通用metrcis histogram接口，转发使用",
-        };
-    };
-    rpc PUBLISH_ITEM_QUERY_MY (QueryPublishItemRequest) returns (QueryPublishItemResponse) {
-        option (google.api.http) = {
-            get: "/api/my-publish-items",
-        };
-        option (erda.common.openapi) = {
-            path: "/api/my-publish-items",
-            auth: {
-                no_check: false,
-                check_login: false,
-                try_check_login: true,
-                check_token: false,
-                check_basic_auth: false,
-            },
-            doc: "summary: 查询我的发布",
         };
     };
     rpc PUBLISH_ITEM_STATISTICS_TREND (PUBLISH_ITEM_STATISTICS_TREND_Request) returns (PublishItemStatisticsTrendData) {
