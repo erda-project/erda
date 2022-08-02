@@ -65,7 +65,6 @@ func (q *queryer) buildTSQLParser(ctx context.Context, ql, statement string, par
 	if ql != "influxql" {
 		return nil, nil, fmt.Errorf("not support tsql '%s'", ql)
 	}
-	fmt.Println(fmt.Sprintf("[playback]%s, params:%s,filter:%s", statement, params, filters))
 	start, end, err := ParseTimeRange(options.Get("start"), options.Get("end"), options.Get("timestamp"), options.Get("latest"))
 	if err != nil {
 		return nil, nil, err
