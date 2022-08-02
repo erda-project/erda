@@ -41,7 +41,7 @@ func (svc *Service) BatchCleanFromRecycleBin(req apistructs.TestCaseBatchCleanFr
 	}
 
 	// 批量删除缺陷测试计划用例关联
-	if err := svc.db.DeleteIssueTestCaseRelationsByTestCaseIDs(req.TestCaseIDs); err != nil {
+	if err := svc.issueDBClient.DeleteIssueTestCaseRelationsByTestCaseIDs(req.TestCaseIDs); err != nil {
 		return apierrors.ErrBatchCleanTestCasesFromRecycleBin.InternalError(err)
 	}
 

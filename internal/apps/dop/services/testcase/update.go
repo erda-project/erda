@@ -146,7 +146,7 @@ func (svc *Service) BatchUpdateTestCases(req apistructs.TestCaseBatchUpdateReque
 
 	// 如果是移动到回收站,解除事件和执行计划关联
 	if req.Recycled != nil && *req.Recycled {
-		err = svc.db.DeleteIssueTestCaseRelationsByTestCaseIDs(req.TestCaseIDs)
+		err = svc.issueDBClient.DeleteIssueTestCaseRelationsByTestCaseIDs(req.TestCaseIDs)
 		if err != nil {
 			return apierrors.ErrBatchUpdateTestCases.InternalError(
 				fmt.Errorf("failed to delete issue case relation, caseIDs: %+v", req.TestCaseIDs))

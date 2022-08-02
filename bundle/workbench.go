@@ -53,24 +53,3 @@ func (b *Bundle) GetWorkbenchData(userID string, req apistructs.WorkbenchRequest
 
 	return &rsp, nil
 }
-
-func (b *Bundle) GetIssuesForWorkbench(req apistructs.IssuePagingRequest) (*apistructs.IssuePagingResponse, error) {
-	host, err := b.urls.DOP()
-	if err != nil {
-		return nil, err
-	}
-	hc := b.hc
-	var rsp apistructs.IssuePagingResponse
-	httpResp, err := hc.Get(host).Path(fmt.Sprintf("/api/workbench/issues/actions/list")).
-		Header(httputil.UserHeader, req.UserID).
-		Params(req.UrlQueryString()).
-		Do().JSON(&rsp)
-	if err != nil {
-		return nil, apierrors.ErrGetWorkBenchData.InternalError(err)
-	}
-	if !httpResp.IsOK() || !rsp.Success {
-		return nil, toAPIError(httpResp.StatusCode(), rsp.Error)
-	}
-
-	return &rsp, nil
-}

@@ -80,7 +80,7 @@ func (client *DBClient) FindIssueStream(issueId int) ([]IssueStream, error) {
 type IssueStreamExtra struct {
 	IssueStream
 	ProjectID uint64
-	IssueType apistructs.IssueType
+	IssueType string
 }
 
 func (client *DBClient) ListIssueStreamExtraForIssueStateTransMigration() ([]IssueStreamExtra, error) {

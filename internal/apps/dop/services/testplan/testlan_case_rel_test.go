@@ -12,19 +12,41 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package issue
+package testplan
 
 import (
+	"reflect"
 	"testing"
 
-	"gotest.tools/assert"
-
+	issuepb "github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/internal/apps/dop/dao"
 )
 
-func TestConvertWithoutButton(t *testing.T) {
-	svc := &Issue{}
-	i := svc.ConvertWithoutButton(dao.Issue{ManHour: "{\"estimateTime\": 3}"}, false, []uint64{}, false, map[uint64]apistructs.ProjectLabel{})
-	assert.Equal(t, i.ManHour.EstimateTime, int64(3))
+func TestToPbTestPlanCaseRel(t *testing.T) {
+	type args struct {
+		t apistructs.TestPlanCaseRel
+	}
+	tests := []struct {
+		name string
+		args args
+		want *issuepb.TestPlanCaseRel
+	}{
+		{
+			args: args{
+				t: apistructs.TestPlanCaseRel{
+					ID: 1,
+				},
+			},
+			want: &issuepb.TestPlanCaseRel{
+				Id: 1,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := ToPbTestPlanCaseRel(tt.args.t); !reflect.DeepEqual(got.Id, tt.want.Id) {
+				t.Errorf("ToPbTestPlanCaseRel() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
