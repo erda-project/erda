@@ -73,28 +73,42 @@ func (s *Endpoints) epBulkGetRuntimeStatusDetail(ctx context.Context, r *http.Re
 
 func getPreDeploymentDiceOverlay(pre *dbclient.PreDeployment) (diceyml.Object, error) {
 	var oldOverlay diceyml.Object
+	var diceObj diceyml.Object
+	// 没有 pre.DiceOverlay 信息表示部署之后还未进行过 scale 操作，因此如果当前这次 scale 操作是 scaleDown, 则按 pre.Dice 中的副本数设置 恢复时的副本数
+	if err := json.Unmarshal([]byte(pre.Dice), &diceObj); err != nil {
+		logrus.Errorf("Unmarshal PreDeployment record dice to diceyml.Object for runtime [application_id: %v workspace: %v name: %v ] failed, err: %v", pre.ApplicationId, pre.Workspace, pre.RuntimeName, err)
+		return oldOverlay, errors.Errorf("Unmarshal PreDeployment record dice to diceyml.Object for runtime [application_id: %v workspace: %v name: %v ] failed, err: %v", pre.ApplicationId, pre.Workspace, pre.RuntimeName, err)
+	}
+	oldOverlay.Services = make(map[string]*diceyml.Service)
+	for k, v := range diceObj.Services {
+		oldOverlay.Services[k] = &diceyml.Service{
+			Deployments: diceyml.Deployments{
+				Replicas: v.Deployments.Replicas,
+			},
+			Resources: diceyml.Resources{
+				CPU: v.Resources.CPU,
+				Mem: v.Resources.Mem,
+			},
+		}
+	}
+
 	if pre.DiceOverlay != "" {
+		var currentDiceObj diceyml.Object
 		if err := json.Unmarshal([]byte(pre.DiceOverlay), &oldOverlay); err != nil {
 			logrus.Errorf("Unmarshal PreDeployment record dice_overaly to diceyml.Object for runtime [application_id: %v workspace: %v name: %v ] failed, err: %v", pre.ApplicationId, pre.Workspace, pre.RuntimeName, err)
 			return oldOverlay, errors.Errorf("Unmarshal PreDeployment record dice_overaly to diceyml.Object for runtime [application_id: %v workspace: %v name: %v ] failed, err: %v", pre.ApplicationId, pre.Workspace, pre.RuntimeName, err)
 		}
-	} else {
-		var diceObj diceyml.Object
-		// 没有 pre.DiceOverlay 信息表示部署之后还未进行过 scale 操作，因此如果当前这次 scale 操作是 scaleDown, 则按 pre.Dice 中的副本数设置 恢复时的副本数
-		if err := json.Unmarshal([]byte(pre.Dice), &diceObj); err != nil {
-			logrus.Errorf("Unmarshal PreDeployment record dice to diceyml.Object for runtime [application_id: %v workspace: %v name: %v ] failed, err: %v", pre.ApplicationId, pre.Workspace, pre.RuntimeName, err)
-			return oldOverlay, errors.Errorf("Unmarshal PreDeployment record dice to diceyml.Object for runtime [application_id: %v workspace: %v name: %v ] failed, err: %v", pre.ApplicationId, pre.Workspace, pre.RuntimeName, err)
-		}
-		oldOverlay.Services = make(map[string]*diceyml.Service)
-		for k, v := range diceObj.Services {
-			oldOverlay.Services[k] = &diceyml.Service{
-				Deployments: diceyml.Deployments{
-					Replicas: v.Deployments.Replicas,
-				},
-				Resources: diceyml.Resources{
-					CPU: v.Resources.CPU,
-					Mem: v.Resources.Mem,
-				},
+		for k, v := range currentDiceObj.Services {
+			if _, ok := oldOverlay.Services[k]; ok {
+				if oldOverlay.Services[k].Deployments.Replicas != v.Deployments.Replicas {
+					oldOverlay.Services[k].Deployments.Replicas = v.Deployments.Replicas
+				}
+				if oldOverlay.Services[k].Resources.CPU != v.Resources.CPU {
+					oldOverlay.Services[k].Resources.CPU = v.Resources.CPU
+				}
+				if oldOverlay.Services[k].Resources.Mem != v.Resources.Mem {
+					oldOverlay.Services[k].Resources.Mem = v.Resources.Mem
+				}
 			}
 		}
 	}
@@ -153,40 +167,24 @@ func (s *Endpoints) processRuntimeScaleRecord(rsc apistructs.RuntimeScaleRecord,
 	for k, v := range rsc.PayLoad.Services {
 		oldService, exists := oldOverlay.Services[k]
 		if !exists || oldService == nil {
-			oldService = &diceyml.Service{}
-			if oldOverlay.Services == nil {
-				oldOverlay.Services = map[string]*diceyml.Service{}
-			}
-			oldOverlay.Services[k] = oldService
+			logrus.Errorf("process runtime scale failed, can not found service %s in table ps_v2_pre_builds in filed dice or dice_overlay", k)
+			errMsg := fmt.Sprintf("process runtime scale failed, can not found service %s in table ps_v2_pre_builds in filed dice or dice_overlay", k)
+			return apistructs.PreDiceDTO{}, err, errMsg
 		}
 		// Local Envs
 		if v.Envs != nil {
 			oldService.Envs = v.Envs
 		}
-		// record need update scale's service
-
-		if oldService.Resources.CPU != v.Resources.CPU || oldService.Resources.Mem != v.Resources.Mem ||
-			oldService.Resources.Disk != v.Resources.Disk || oldService.Deployments.Replicas != v.Deployments.Replicas {
-			needUpdateServices = append(needUpdateServices, k)
-			// record old service's scale for audit
-			oldOverlayDataForAudit.Services[k] = genOverlayDataForAudit(oldService)
-		} else if action == apistructs.ScaleActionUp {
-			// 由于 pre.DiceOverlay 保留了 scale 到 0 之前的副本数（比如2），因而 如果 从 0 恢复到之前非0 副本（2），实际上原来判断是否需要更新的逻辑就认为不需要更新
-			needUpdateServices = append(needUpdateServices, k)
-			// record old service's scale for audit
-			oldOverlayDataForAudit.Services[k] = genOverlayDataForAudit(oldService)
-		}
-
-		// 仅更新最新部署的副本数不为 0 的情况，如果，最新部署副本为 0，则保留上次部署时的副本数，用于启动恢复
-		if v.Deployments.Replicas == 0 {
-			oldServiceReplicas[k] = oldService.Deployments.Replicas
-		}
-
+		oldOverlayDataForAudit.Services[k] = genOverlayDataForAudit(oldService)
+		needUpdateServices = append(needUpdateServices, k)
 		// Replicas
 		oldService.Deployments.Replicas = v.Deployments.Replicas
+		oldOverlay.Services[k].Deployments.Replicas = v.Deployments.Replicas
 		// Resources
 		oldService.Resources.CPU = v.Resources.CPU
+		oldOverlay.Services[k].Resources.CPU = v.Resources.CPU
 		oldService.Resources.Mem = v.Resources.Mem
+		oldOverlay.Services[k].Resources.Mem = v.Resources.Mem
 		oldService.Resources.Disk = v.Resources.Disk
 	}
 

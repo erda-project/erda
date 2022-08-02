@@ -16,11 +16,15 @@ package endpoints
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/sirupsen/logrus"
+	apiv1 "k8s.io/api/core/v1"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/pkg/user"
@@ -88,9 +92,21 @@ func (e *Endpoints) ListServiceInstance(ctx context.Context, r *http.Request, va
 	default:
 		req.Phases = []string{status}
 	}
-	instanceList, err := e.instanceinfoImpl.GetInstanceInfo(req)
+
+	instances, err := e.getContainers(req)
 	if err != nil {
 		return apierrors.ErrListInstance.InternalError(err).ToResp(), nil
+	}
+
+	// 按时间降序排列
+	sort.Sort(sort.Reverse(&instances))
+	return httpserver.OkResp(instances)
+}
+
+func (e *Endpoints) getContainers(req apistructs.InstanceInfoRequest) (apistructs.Containers, error) {
+	instanceList, err := e.instanceinfoImpl.GetInstanceInfo(req)
+	if err != nil {
+		return nil, err
 	}
 	instances := make(apistructs.Containers, 0, len(instanceList))
 	for _, v := range instanceList {
@@ -112,10 +128,7 @@ func (e *Endpoints) ListServiceInstance(ctx context.Context, r *http.Request, va
 		}
 		instances = append(instances, instance)
 	}
-	// 按时间降序排列
-	sort.Sort(sort.Reverse(&instances))
-
-	return httpserver.OkResp(instances)
+	return instances, nil
 }
 
 func (e *Endpoints) ListServicePod(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
@@ -144,10 +157,37 @@ func (e *Endpoints) ListServicePod(ctx context.Context, r *http.Request, vars ma
 			return apierrors.ErrListInstance.MissingParameter("serviceName").ToResp(), nil
 		}
 	}
+
+	currPods, err := e.getPodStatusFromK8s(runtimeID, serviceName)
+	if err != nil {
+		logrus.Warnf("get runtimeId %s service %s current pods failed: %v", runtimeID, serviceName, err)
+	}
+
+	if len(currPods) > 0 {
+		cPods := make(apistructs.Pods, 0, len(currPods))
+		for idx := range currPods {
+			cPods = append(cPods, currPods[idx])
+		}
+		// 按时间降序排列
+		sort.Sort(sort.Reverse(&cPods))
+		return httpserver.OkResp(cPods)
+	}
+
 	req := apistructs.PodInfoRequest{
 		OrgID:       strconv.FormatUint(orgID, 10),
 		RuntimeID:   runtimeID,
 		ServiceName: serviceName,
+	}
+
+	containersReq := apistructs.InstanceInfoRequest{
+		RuntimeID:   runtimeID,
+		ServiceName: serviceName,
+		Phases:      []string{apistructs.InstanceStatusHealthy, apistructs.InstanceStatusUnHealthy, apistructs.InstanceStatusRunning},
+	}
+
+	instances, err := e.getContainers(containersReq)
+	if err != nil {
+		return apierrors.ErrListInstance.InternalError(err).ToResp(), nil
 	}
 
 	podList, err := e.instanceinfoImpl.GetPodInfo(req)
@@ -160,23 +200,123 @@ func (e *Endpoints) ListServicePod(ctx context.Context, r *http.Request, vars ma
 		if v.StartedAt != nil {
 			startat = v.StartedAt.Format(time.RFC3339Nano)
 		}
+		containersResource := make([]apistructs.PodContainer, 0)
+		for _, cInstance := range instances {
+			if cInstance.PodName == v.PodName && cInstance.PodNamespace == v.K8sNamespace {
+				containersResource = append(containersResource, apistructs.PodContainer{
+					ContainerID:   cInstance.ContainerID,
+					ContainerName: cInstance.ContainerName,
+					Image:         cInstance.Image,
+					Resource: apistructs.ContainerResource{
+						MemRequest: v.MemRequest,
+						MemLimit:   v.MemLimit,
+						CpuRequest: v.CpuRequest,
+						CpuLimit:   v.CpuLimit,
+					},
+				})
+				break
+			}
+		}
+
 		pod := apistructs.Pod{
-			Uid:          v.Uid,
-			IPAddress:    v.PodIP,
-			Host:         v.HostIP,
-			Phase:        v.Phase,
-			Message:      v.Message,
-			StartedAt:    startat,
-			Service:      v.ServiceName,
-			ClusterName:  v.Cluster,
-			PodName:      v.PodName,
-			K8sNamespace: v.K8sNamespace,
+			Uid:           v.Uid,
+			IPAddress:     v.PodIP,
+			Host:          v.HostIP,
+			Phase:         v.Phase,
+			Message:       v.Message,
+			StartedAt:     startat,
+			Service:       v.ServiceName,
+			ClusterName:   v.Cluster,
+			PodName:       v.PodName,
+			K8sNamespace:  v.K8sNamespace,
+			PodContainers: containersResource,
 		}
 		pods = append(pods, pod)
 	}
 	// 按时间降序排列
 	sort.Sort(sort.Reverse(&pods))
 	return httpserver.OkResp(pods)
+}
+
+func (e *Endpoints) getPodStatusFromK8s(runtimeID, serviceName string) ([]apistructs.Pod, error) {
+	currPods := make([]apistructs.Pod, 0)
+	runtimeId, _ := strconv.ParseUint(runtimeID, 10, 64)
+	sg, err := e.runtime.GetRuntimeServiceCurrentPods(runtimeId, serviceName)
+	if err != nil {
+		logrus.Warnf("get runtimeId %d service %s current pods failed: %v", runtimeId, serviceName, err)
+	}
+	if err == nil {
+		if _, ok := sg.Extra[serviceName]; ok {
+			var k8sPods []apiv1.Pod
+			if json.Unmarshal([]byte(sg.Extra[serviceName]), &k8sPods) == nil {
+				for _, pod := range k8sPods {
+					clusterName := ""
+					if _, ok := pod.Labels["DICE_CLUSTER_NAME"]; ok {
+						clusterName = pod.Labels["DICE_CLUSTER_NAME"]
+					}
+					message := "Ok"
+					if pod.Status.Message != "" {
+						message = pod.Status.Message
+					}
+
+					podRestartCount := int32(0)
+					containersResource := make([]apistructs.PodContainer, 0)
+					for _, podContainerStatus := range pod.Status.ContainerStatuses {
+						if podContainerStatus.RestartCount > podRestartCount {
+							podRestartCount = podContainerStatus.RestartCount
+						}
+
+						containerID := ""
+						if len(strings.Split(podContainerStatus.ContainerID, "://")) <= 1 {
+							containerID = strings.Split(podContainerStatus.ContainerID, "://")[1]
+						} else {
+							containerID = strings.Split(podContainerStatus.ContainerID, "://")[1]
+						}
+
+						containerResource := apistructs.ContainerResource{}
+
+						for _, container := range pod.Spec.Containers {
+							if container.Name == podContainerStatus.Name {
+								requestmem, _ := container.Resources.Requests.Memory().AsInt64()
+								limitmem, _ := container.Resources.Limits.Memory().AsInt64()
+								containerResource = apistructs.ContainerResource{
+									MemRequest: int(requestmem / 1024 / 1024),
+									MemLimit:   int(limitmem / 1024 / 1024),
+									CpuRequest: (container.Resources.Requests.Cpu().AsApproximateFloat64() * 1000) / 1000,
+									CpuLimit:   (container.Resources.Limits.Cpu().AsApproximateFloat64() * 1000) / 1000,
+								}
+								break
+							}
+						}
+
+						containersResource = append(containersResource, apistructs.PodContainer{
+							ContainerID:   containerID,
+							ContainerName: podContainerStatus.Name,
+							Image:         podContainerStatus.Image,
+							Resource:      containerResource,
+						})
+
+					}
+
+					currPods = append(currPods, apistructs.Pod{
+						Uid:           string(pod.UID),
+						IPAddress:     pod.Status.PodIP,
+						Host:          pod.Status.HostIP,
+						Phase:         string(pod.Status.Phase),
+						Message:       message,
+						StartedAt:     pod.Status.StartTime.Format(time.RFC3339Nano),
+						Service:       serviceName,
+						ClusterName:   clusterName,
+						PodName:       pod.Name,
+						K8sNamespace:  pod.Namespace,
+						RestartCount:  podRestartCount,
+						PodContainers: containersResource,
+					})
+				}
+			}
+		}
+	}
+	return currPods, nil
 }
 
 func buildInstanceUsageParams(instances apistructs.InstanceInfoDataList) (

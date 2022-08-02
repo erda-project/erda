@@ -497,6 +497,25 @@ func (e *EDAS) Inspect(ctx context.Context, specObj interface{}) (interface{}, e
 		return nil, errors.New("edas k8s inspect: invalid runtime spec")
 	}
 
+	if serviceName, ok := runtime.Labels["GET_RUNTIME_STATELESS_SERVICE_POD"]; ok && serviceName != "" {
+		ns := defaultNamespace
+		pods, err := e.getPods(ns, serviceName)
+		if err != nil {
+			return nil, fmt.Errorf("get pods for servicegroup %+v failed: %v", runtime, err)
+		}
+
+		if runtime.Extra == nil {
+			runtime.Extra = make(map[string]string)
+		}
+
+		podsBytes, err := json.Marshal(pods)
+		if err != nil {
+			return nil, fmt.Errorf("json marshall edas service pods in ns %s for service %s err: %v", ns, serviceName, err)
+		}
+		runtime.Extra[serviceName] = string(podsBytes)
+		return &runtime, nil
+	}
+
 	// Metadata information is passed in from the upper layer, here you only need to get the state of the runtime and assemble it into the runtime to return
 	status, err := e.Status(ctx, specObj)
 	if err != nil {
@@ -1400,6 +1419,8 @@ func (e *EDAS) getDeploymentStatus(group string, srv *apistructs.Service) (apist
 	}
 
 	dps := dep.Status
+	status.DesiredReplicas = dps.Replicas
+	status.ReadyReplicas = dps.ReadyReplicas
 	// this would not happen in theory
 	if len(dps.Conditions) == 0 {
 		status.Status = apistructs.StatusUnknown
@@ -2039,6 +2060,32 @@ func (e *EDAS) getPodsStatus(namespace string, label string) ([]k8sapi.PodItem, 
 		})
 	}
 	return pi, nil
+}
+
+func (e *EDAS) getPods(namespace string, label string) ([]apiv1.Pod, error) {
+	var b bytes.Buffer
+
+	resp, err := e.kubeClient.Get(e.kubeAddr).
+		Path("/api/v1/namespaces/"+namespace+"/pods").
+		Param("labelSelector", "app="+label).
+		JSONBody(&deleteOptions).
+		Do().
+		Body(&b)
+
+	if err != nil {
+		return nil, errors.Wrapf(err, "k8s get pods by label(%s) err: %v", err, label)
+	}
+
+	if !resp.IsOK() {
+		return nil, errors.Errorf("k8s get pods by label(%s) status code: %d, resp body: %v", label, resp.StatusCode(), b.String())
+	}
+
+	var pl apiv1.PodList
+	if err := json.Unmarshal(b.Bytes(), &pl); err != nil {
+		return nil, err
+	}
+
+	return pl.Items, nil
 }
 
 // Confirm whether to delete the service list

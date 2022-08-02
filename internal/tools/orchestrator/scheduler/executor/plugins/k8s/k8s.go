@@ -678,6 +678,13 @@ func (k *Kubernetes) Inspect(ctx context.Context, specObj interface{}) (interfac
 		return k.InspectStateful(runtime)
 	}
 
+	if serviceName, ok := runtime.Labels["GET_RUNTIME_STATELESS_SERVICE_POD"]; ok && serviceName != "" {
+		err = k.getStatelessPodsStatus(runtime, serviceName)
+		if err != nil {
+			return nil, fmt.Errorf("get pods for servicegroup %+v failed: %v", runtime, err)
+		}
+		return runtime, nil
+	}
 	// Metadata information is passed in from the upper layer, here you only need to get the state of the runtime and assemble it into the runtime to return
 	status, err := k.Status(ctx, specObj)
 	if err != nil {
@@ -1109,6 +1116,8 @@ func (k *Kubernetes) getStatelessStatus(ctx context.Context, sg *apistructs.Serv
 
 			return status, err
 		}
+		sg.Services[i].ReadyReplicas = status.ReadyReplicas
+		sg.Services[i].DesiredReplicas = status.DesiredReplicas
 		if status.Status == apistructs.StatusFailed {
 			isReady = false
 			isFailed = true
@@ -1143,6 +1152,66 @@ func (k *Kubernetes) getStatelessStatus(ctx context.Context, sg *apistructs.Serv
 		resultStatus.LastMessage = failedReason
 	}
 	return resultStatus, nil
+}
+
+func (k *Kubernetes) getStatelessPodsStatus(sg *apistructs.ServiceGroup, svcName string) error {
+
+	var ns = MakeNamespace(sg)
+	if sg.ProjectNamespace != "" {
+		ns = sg.ProjectNamespace
+		k.setProjectServiceName(sg)
+	}
+
+	pods, err := k.pod.ListNamespacePods(ns)
+	if err != nil {
+		return fmt.Errorf("list pods in ns %s err: %v", ns, err)
+	}
+
+	serviceToPods := make(map[string][]apiv1.Pod)
+	for i := range sg.Services {
+		if sg.Services[i].Name != svcName {
+			continue
+		}
+
+		for _, pod := range pods.Items {
+			if pod.Labels == nil {
+				continue
+			}
+
+			serviceName := ""
+			if _, ok := pod.Labels["DICE_SERVICE_NAME"]; !ok {
+				serviceName = pod.Labels["DICE_SERVICE"]
+			} else {
+				serviceName = pod.Labels["DICE_SERVICE_NAME"]
+			}
+			if serviceName == "" {
+				continue
+			}
+
+			if serviceName == sg.Services[i].Name {
+				if _, ok := serviceToPods[serviceName]; !ok {
+					serviceToPods[serviceName] = make([]apiv1.Pod, 0)
+				}
+				serviceToPods[serviceName] = append(serviceToPods[serviceName], pod)
+			}
+		}
+
+		if _, ok := serviceToPods[sg.Services[i].Name]; ok {
+			if sg.Extra == nil {
+				sg.Extra = make(map[string]string)
+			}
+			podsBytes, err := json.Marshal(serviceToPods[sg.Services[i].Name])
+			if err != nil {
+				return fmt.Errorf("json marshall service pods in ns %s for service %s err: %v", ns, sg.Services[i].Name, err)
+			}
+
+			sg.Extra[sg.Services[i].Name] = string(podsBytes)
+		}
+
+		break
+	}
+
+	return nil
 }
 
 func (k *Kubernetes) SetOverCommitMem(container *apiv1.Container, memSubscribeRatio float64) error {
