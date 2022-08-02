@@ -221,6 +221,8 @@ type hostData struct {
 	KernelVersion    string  `json:"kernelVersion"`
 	Labels           string  `json:"labels"`
 	Tasks            float64 `json:"tasks"`
+	CPU              string  `json:"cpu"`
+	Mem              string  `json:"mem"`
 	CPUUsage         float64 `json:"cpuUsage"`
 	CPURequest       float64 `json:"cpuRequest"`
 	CPULimit         float64 `json:"cpuLimit"`
@@ -282,6 +284,59 @@ type containerData struct {
 	PodUid          string  `json:"podUid"`
 	PodName         string  `json:"podName"`
 	PodNamespace    string  `json:"podNamespace"`
+}
+
+type containerRow struct {
+	ContainerID string   `ch:"containerID"`
+	TagKeys     []string `ch:"tagKeys"`
+	TagValues   []string `ch:"tagValues"`
+	CpuUsage    float64  `ch:"cpuUsage"`
+	CpuRequest  float64  `ch:"cpuRequest"`
+	CpuLimit    float64  `ch:"cpuLimit"`
+	CpuOrigin   float64  `ch:"cpuOrigin"`
+	MemUsage    float64  `ch:"memUsage"`
+	MemRequest  float64  `ch:"memRequest"`
+	MemLimit    float64  `ch:"memLimit"`
+	MemOrigin   float64  `ch:"memOrigin"`
+	DiskUsage   float64  `ch:"diskUsage"`
+	DiskLimit   float64  `ch:"diskLimit"`
+}
+
+type hostTypeRow struct {
+	ClusterName string `ch:"clusterName"`
+	CPUs        string `ch:"cpus"`
+	Mem         string `ch:"mem"`
+	HostIP      string `ch:"hostIP"`
+	Labels      string `ch:"labels"`
+}
+
+type hostRow struct {
+	TagKeys           []string `ch:"tagKeys"`
+	TagValues         []string `ch:"tagValues"`
+	Labels            string   `ch:"labels"`
+	TaskContainers    float64  `ch:"taskContainers"`
+	CPUCoresUsage     float64  `ch:"cpuCoresUsage"`
+	CPURequestTotal   float64  `ch:"cpuRequestTotal"`
+	CPULimitTotal     float64  `ch:"cpuLimitTotal"`
+	CPUOriginTotal    float64  `ch:"cpuOriginTotal"`
+	CPUTotal          float64  `ch:"cpuTotal"`
+	CPUAllocatable    float64  `ch:"cpuAllocatable"`
+	MemUsed           float64  `ch:"memUsed"`
+	MemRequestTotal   float64  `ch:"memRequestTotal"`
+	MemLimitTotal     float64  `ch:"memLimitTotal"`
+	MemOriginTotal    float64  `ch:"memOriginTotal"`
+	MemTotal          float64  `ch:"memTotal"`
+	MemAllocatable    float64  `ch:"memAllocatable"`
+	DiskUsed          float64  `ch:"diskUsed"`
+	DiskTotal         float64  `ch:"diskTotal"`
+	Load1             float64  `ch:"load1"`
+	Load5             float64  `ch:"load5"`
+	Load15            float64  `ch:"load15"`
+	CPUUsageActive    float64  `ch:"cpuUsageActive"`
+	MemUsedPercent    float64  `ch:"memUsedPercent"`
+	DiskUsedPercent   float64  `ch:"diskUsedPercent"`
+	CPURequestPercent float64  `ch:"cpuRequestPercent"`
+	MemRequestPercent float64  `ch:"memRequestPercent"`
 }
 
 type resourceChart struct {
