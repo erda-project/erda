@@ -32,10 +32,10 @@ import (
 
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/internal/core/cluster-manager/dialer/auth"
-	"github.com/erda-project/erda/internal/core/cluster-manager/dialer/config"
 	clientconfig "github.com/erda-project/erda/internal/tools/cluster-agent/config"
 	clusteragent "github.com/erda-project/erda/internal/tools/cluster-agent/pkg/client"
+	"github.com/erda-project/erda/internal/tools/cluster-manager/dialer/auth"
+	"github.com/erda-project/erda/internal/tools/cluster-manager/dialer/config"
 	"github.com/erda-project/erda/pkg/clusterdialer"
 	"github.com/erda-project/erda/pkg/discover"
 )
