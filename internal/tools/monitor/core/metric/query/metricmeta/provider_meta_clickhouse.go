@@ -97,11 +97,22 @@ func (m *MetaClickhouseGroupProvider) getDynamicGroupsMetrics(group string, ms m
 	return gm
 }
 
+type ckMeta struct {
+	MetricGroup string   `ch:"metric_group"`
+	StringKeys  []string `ch:"sk"`
+	NumberKeys  []string `ch:"nk"`
+	TagKeys     []string `ch:"tk"`
+}
+
+var now = func() time.Time {
+	return time.Now()
+}
+
 func (p MetaClickhouseGroupProvider) MetricMeta(langCodes i18n.LanguageCodes, i i18n.I18n, scope, scopeID string, names ...string) (map[string]*metricpb.MetricMeta, error) {
 	if p.clickhouse == nil {
 		return map[string]*metricpb.MetricMeta{}, nil
 	}
-	end := time.Now().UnixNano()
+	end := now().UnixNano()
 	start := end - 7*24*int64(time.Hour)
 
 	expr := goqu.From("meta") // fake table
@@ -124,13 +135,6 @@ func (p MetaClickhouseGroupProvider) MetricMeta(langCodes i18n.LanguageCodes, i 
 		goqu.C("timestamp").Lt(goqu.L("fromUnixTimestamp64Nano(cast(?,'Int64'))", end)),
 	)
 	expr = expr.GroupBy(goqu.C("metric_group"))
-
-	type ckMeta struct {
-		MetricGroup string   `ch:"metric_group"`
-		StringKeys  []string `ch:"sk"`
-		NumberKeys  []string `ch:"nk"`
-		TagKeys     []string `ch:"tk"`
-	}
 
 	rows, err := p.clickhouse.QueryRaw(scope, expr)
 	if err != nil {
