@@ -312,7 +312,7 @@ func (t *MockTran) Text(lang i18n.LanguageCodes, key string) string {
 type MockQueryServiceImpl struct {
 }
 
-func (q *MockQueryServiceImpl) queryStatus(clusterName string) (statuses []*statusDTO, err error) {
+func (q *MockQueryServiceImpl) queryStatus(ctx context.Context, clusterName string) (statuses []*statusDTO, err error) {
 	return []*statusDTO{{
 		Name:        "component1",
 		DisplayName: "component1",

@@ -372,7 +372,7 @@ func (chs *ClickhouseSource) GetGroupHosts(req *http.Request, params struct {
 	}
 
 	groups := chs.parseGroupHost(hosts, res.Groups, 0)
-	chs.p.updateClusterStatus(groups)
+	chs.p.updateClusterStatus(api.GetContextHeader(req), groups)
 	return api.Success(groups)
 }
 
