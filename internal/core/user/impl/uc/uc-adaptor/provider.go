@@ -20,13 +20,26 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 )
 
-type provider struct{}
+type config struct {
+	OryEnabled bool `default:"false" file:"ORY_ENABLED" env:"ORY_ENABLED"`
+}
 
-func (p *provider) Run(ctx context.Context) error { return Initialize() }
+type provider struct {
+	Cfg *config
+}
+
+func (p *provider) Run(ctx context.Context) error {
+	// only needed when uc is used.
+	if p.Cfg.OryEnabled {
+		return nil
+	}
+	return Initialize()
+}
 
 func init() {
 	servicehub.Register("uc-adaptor", &servicehub.Spec{
-		Services: []string{"uc-adaptor"},
-		Creator:  func() servicehub.Provider { return &provider{} },
+		Services:   []string{"uc-adaptor"},
+		Creator:    func() servicehub.Provider { return &provider{} },
+		ConfigFunc: func() interface{} { return &config{} },
 	})
 }

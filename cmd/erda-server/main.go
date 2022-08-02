@@ -88,6 +88,9 @@ import (
 	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/routes/dynamic/temporary"
 	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/routes/openapi-v1"
 	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/routes/proto"
+
+	// uc-adaptor
+	_ "github.com/erda-project/erda/internal/core/user/impl/uc/uc-adaptor"
 )
 
 //go:embed bootstrap.yaml

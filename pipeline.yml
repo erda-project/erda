@@ -258,5 +258,4 @@ stages:
               pipeline: ${{ outputs.build-erda.image }}
               scheduler: ${{ outputs.build-erda.image }}
               streaming: ${{ outputs.build-erda.image }}
-              uc-adaptor: ${{ outputs.build-erda.image }}
               erda-cli: ${{ outputs.build-erda-cli.image }}
