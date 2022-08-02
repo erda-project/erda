@@ -447,20 +447,6 @@ func TestGroups(t *testing.T) {
 }
 
 func TestMappingsByID(t *testing.T) {
-	/*
-		func (m *MetaClickhouseGroupProvider) MappingsByID(id, scope, scopeID string, names []string, ms map[string]*metricpb.MetricMeta) (gmm []*GroupMetricMap, err error) {
-			if id == "all" {
-				for _, name := range names {
-					if mm, ok := ms[name]; ok {
-						gmm = append(gmm, &GroupMetricMap{
-							Name: mm.Name.Key,
-						})
-					}
-				}
-			}
-			return gmm, nil
-
-	*/
 	mockClickhouse := &mockClickhouse{
 		mchRow: &mockClickhouseRow{},
 	}
@@ -484,8 +470,8 @@ func TestMappingsByID(t *testing.T) {
 		}, gmm)
 	})
 	t.Run("no all", func(t *testing.T) {
-		gmm, err := p.MappingsByID("all", "", "", names, ms)
+		gmm, err := p.MappingsByID("metric", "", "", names, ms)
 		require.NoError(t, err)
-		require.Equal(t, []*GroupMetricMap{}, gmm)
+		require.Nil(t, gmm)
 	})
 }
