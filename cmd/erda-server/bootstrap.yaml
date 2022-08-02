@@ -261,3 +261,5 @@ erda-discover:
   urls:
     example: "http://localhost:8080"
     erda.example: "http://localhost:8080"
+
+uc-adaptor:
