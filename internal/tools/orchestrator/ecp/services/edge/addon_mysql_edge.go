@@ -32,9 +32,9 @@ import (
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/orchestrator/ecp/dbclient"
-	"github.com/erda-project/erda/pkg/clientgo/apis/openyurt/v1alpha1"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/database/dbengine"
+	"github.com/erda-project/erda/pkg/k8sclient/apis/openyurt/v1alpha1"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
 

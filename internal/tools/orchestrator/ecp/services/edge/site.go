@@ -25,8 +25,8 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/orchestrator/ecp/dbclient"
-	"github.com/erda-project/erda/pkg/clientgo/apis/openyurt/v1alpha1"
 	"github.com/erda-project/erda/pkg/http/httpclient"
+	"github.com/erda-project/erda/pkg/k8sclient/apis/openyurt/v1alpha1"
 )
 
 // ListSite List edge site paging.
