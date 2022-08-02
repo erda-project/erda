@@ -106,6 +106,8 @@ func (chs *ClickhouseSource) queryContainers(ctx context.Context, orgName, clust
 		goqu.L("MAX(number_field_values[indexOf(number_field_keys,?)])", diskUsage).As("diskUsage"),
 		goqu.L("MAX(number_field_values[indexOf(number_field_keys,?)])", diskLimit).As("diskLimit"),
 	).Where(
+		goqu.L("org_name").Eq(orgName),
+		goqu.L("tenant_id").Eq(orgName),
 		goqu.L("metric_group").In([]string{nameContainerSummary, nameDockerContainerSummary}),
 		goqu.L("tag_values[indexOf(tag_keys,?)]", "container").Neq("POD"),
 		goqu.L("tag_values[indexOf(tag_keys,?)]", "podsandbox").Neq("true"),
@@ -173,6 +175,7 @@ func (chs *ClickhouseSource) GetHostTypes(req *http.Request, params struct {
 	).Where(
 		goqu.L("metric_group").Eq(groupHostSummary),
 		goqu.L("org_name").Eq(params.OrgName),
+		goqu.L("tenant_id").Eq(params.OrgName),
 		goqu.L("tag_values[indexOf(tag_keys,?)]", clusterName).In(clusterNames),
 		goqu.L("string_field_values[indexOf(string_field_keys,?)]", labels).NotLike("%offline%"),
 		goqu.L("timestamp").Between(goqu.Range(from, to)))
@@ -337,6 +340,7 @@ func (chs *ClickhouseSource) GetGroupHosts(req *http.Request, params struct {
 		goqu.L("metric_group").Eq("host_summary"),
 		goqu.L("tag_values[indexOf(tag_keys,?)]", clusterName).In(clusterNames),
 		goqu.L("org_name").Eq(params.OrgName),
+		goqu.L("tenant_id").Eq(params.OrgName),
 		goqu.L("string_field_values[indexOf(string_field_keys,?)]", labels).NotLike("%offline%"),
 		goqu.L("timestamp").Between(goqu.Range(from, to)),
 	).GroupBy(goqu.L("tag_values[indexOf(tag_keys,?)]", hostIP))
