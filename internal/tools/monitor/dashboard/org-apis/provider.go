@@ -73,6 +73,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	if p.C.QueryMetricsFromCk {
 		p.Source = &ClickhouseSource{
 			p:          p,
+			orgChecker: p,
 			Clickhouse: p.Clickhouse,
 			Log:        p.L,
 			DebugSQL:   p.C.DebugSQL,

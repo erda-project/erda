@@ -34,3 +34,7 @@ type MetricSource interface {
 		OrgName string `query:"orgName" validate:"required" json:"-"`
 	}, resourceRequest) interface{}
 }
+
+type orgChecker interface {
+	checkOrgByClusters(ctx httpserver.Context, clusters []*resourceCluster) error
+}

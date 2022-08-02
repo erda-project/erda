@@ -39,6 +39,7 @@ const timeFormat = "2006-01-02 15:04:05"
 
 type ClickhouseSource struct {
 	p          *provider
+	orgChecker orgChecker
 	Clickhouse clickhouse.Interface
 	Log        logs.Logger
 	DebugSQL   bool
@@ -50,7 +51,7 @@ func (chs *ClickhouseSource) GetContainers(ctx httpserver.Context, r *http.Reque
 	Start        int64  `query:"start"`
 	End          int64  `query:"end"`
 }, res resourceRequest) interface{} {
-	err := chs.p.checkOrgByClusters(ctx, res.Clusters)
+	err := chs.orgChecker.checkOrgByClusters(ctx, res.Clusters)
 	if err != nil {
 		return nil
 	}
@@ -583,7 +584,7 @@ func interfaceToString(obj interface{}) string {
 
 func mapToSlice(mp map[string]struct{}) []string {
 	var res []string
-	for key, _ := range mp {
+	for key := range mp {
 		res = append(res, key)
 	}
 	return res
