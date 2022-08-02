@@ -31,8 +31,8 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/project-runtime/common"
+	"github.com/erda-project/erda/internal/apps/dop/component-protocol/standard-components/condition"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/types"
-	"github.com/erda-project/erda/internal/pkg/component-protocol/condition"
 )
 
 // todo placeholder

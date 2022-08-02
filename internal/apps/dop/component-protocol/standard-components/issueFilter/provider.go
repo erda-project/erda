@@ -27,12 +27,12 @@ import (
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/apps/dop/component-protocol/standard-components/issueFilter/gshelper"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/types"
 	"github.com/erda-project/erda/internal/apps/dop/dao"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/common"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query"
 	"github.com/erda-project/erda/internal/apps/dop/services/issuefilterbm"
-	"github.com/erda-project/erda/internal/pkg/component-protocol/issueFilter/gshelper"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 

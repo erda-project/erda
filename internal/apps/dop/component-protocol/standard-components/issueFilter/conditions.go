@@ -22,8 +22,8 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/internal/pkg/component-protocol/condition"
-	"github.com/erda-project/erda/internal/pkg/component-protocol/issueFilter/gshelper"
+	"github.com/erda-project/erda/internal/apps/dop/component-protocol/standard-components/condition"
+	"github.com/erda-project/erda/internal/apps/dop/component-protocol/standard-components/issueFilter/gshelper"
 )
 
 const (

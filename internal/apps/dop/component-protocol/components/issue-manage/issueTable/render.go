@@ -37,11 +37,11 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/bdl"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/common"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/issue-manage/common/gshelper"
+	"github.com/erda-project/erda/internal/apps/dop/component-protocol/standard-components/issueFilter"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/types"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query"
 	protocol "github.com/erda-project/erda/internal/core/openapi/legacy/component-protocol"
 	"github.com/erda-project/erda/internal/core/user"
-	"github.com/erda-project/erda/internal/pkg/component-protocol/issueFilter"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
