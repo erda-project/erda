@@ -24,6 +24,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/topn"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/topn/impl"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
@@ -32,6 +33,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/internal/apps/msp/apm/service/common/custom"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/math"
 	pkgtime "github.com/erda-project/erda/pkg/time"
 )
@@ -125,6 +127,9 @@ func (p *provider) errorRateTop5(interval int64, tenantId interface{}, start int
 		Statement: statement,
 		Params:    queryParams,
 	}
+	ctx = apis.GetContext(ctx, func(header *transport.Header) {
+		header.Set("terminus_key", tenantId.(string))
+	})
 	response, err := p.Metric.QueryWithInfluxFormat(ctx, request)
 	if err != nil {
 		return nil, err
@@ -186,6 +191,9 @@ func (p *provider) avgDurationTop5(interval int64, tenantId interface{}, start i
 		Statement: statement,
 		Params:    queryParams,
 	}
+	ctx = apis.GetContext(ctx, func(header *transport.Header) {
+		header.Set("terminus_key", tenantId.(string))
+	})
 	response, err := p.Metric.QueryWithInfluxFormat(ctx, request)
 	if err != nil {
 		return nil, err
@@ -230,6 +238,11 @@ func (p *provider) rpsMinTop5(interval int64, tenantId interface{}, start int64,
 		Statement: statement,
 		Params:    queryParams,
 	}
+
+	ctx = apis.GetContext(ctx, func(header *transport.Header) {
+		header.Set("terminus_key", tenantId.(string))
+	})
+
 	response, err := p.Metric.QueryWithInfluxFormat(ctx, request)
 	if err != nil {
 		return nil, err
@@ -273,6 +286,10 @@ func (p *provider) rpsMaxTop5(interval int64, tenantId interface{}, start int64,
 		Statement: statement,
 		Params:    queryParams,
 	}
+	ctx = apis.GetContext(ctx, func(header *transport.Header) {
+		header.Set("terminus_key", tenantId.(string))
+	})
+
 	response, err := p.Metric.QueryWithInfluxFormat(ctx, request)
 	if err != nil {
 		return nil, err

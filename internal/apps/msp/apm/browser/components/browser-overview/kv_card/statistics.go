@@ -21,8 +21,10 @@ import (
 
 	"google.golang.org/protobuf/types/known/structpb"
 
+	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/kv"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda/pkg/common/apis"
 
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/pkg/common/errors"
@@ -76,8 +78,7 @@ func (p *provider) getApdex(sdk *cptype.SDK) (*kv.KV, error) {
 	stmt := "SELECT count(plt::field) " +
 		"FROM ta_timing " +
 		"WHERE tk::tag=$terminus_key " +
-		"%s" +
-		"GROUP BY range(pt::field, 0, 2000, 2000, 8000, 8000)"
+		"%s"
 
 	satisfiedCount, err := p.GetData(sdk, fmt.Sprintf(stmt, "AND plt::field >= 0 and  plt::field < 2000"))
 	if err != nil {
@@ -115,7 +116,12 @@ func (p *provider) GetData(sdk *cptype.SDK, stmt string) (float64, error) {
 		Statement: stmt,
 		Params:    params,
 	}
-	response, err := p.Metric.QueryWithInfluxFormat(sdk.Ctx, request)
+
+	ctx := apis.GetContext(sdk.Ctx, func(header *transport.Header) {
+		header.Set("terminus_key", p.InParamsPtr.TenantId)
+	})
+
+	response, err := p.Metric.QueryWithInfluxFormat(ctx, request)
 	if err != nil {
 		return 0, err
 	}
@@ -163,7 +169,12 @@ func (p *provider) getApiSuccessRate(sdk *cptype.SDK) (*kv.KV, error) {
 		Params:    params,
 	}
 
-	response, err := p.Metric.QueryWithInfluxFormat(sdk.Ctx, request)
+	ctx := apis.GetContext(sdk.Ctx, func(header *transport.Header) {
+		header.Set("terminus_key", p.InParamsPtr.TenantId)
+	})
+
+	response, err := p.Metric.QueryWithInfluxFormat(ctx, request)
+
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -229,11 +240,15 @@ func (p *provider) doQuerySql(ctx context.Context, statement string, params map[
 	if err != nil {
 		return 0, errors.NewInternalServerError(err)
 	}
-	rows := response.Results[0].Series[0].Rows
-	if len(rows) == 0 || len(rows[0].Values) == 0 {
-		return 0, errors.NewInternalServerErrorMessage("empty query result")
-	}
 
-	val := rows[0].Values[0].GetNumberValue()
-	return val, nil
+	if response != nil && len(response.Results) > 0 && len(response.Results[0].Series) > 0 {
+		rows := response.Results[0].Series[0].Rows
+		if len(rows) == 0 || len(rows[0].Values) == 0 {
+			return 0, errors.NewInternalServerErrorMessage("empty query result")
+		}
+
+		val := rows[0].Values[0].GetNumberValue()
+		return val, nil
+	}
+	return 0, errors.NewInternalServerErrorMessage("empty query result")
 }

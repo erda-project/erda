@@ -86,7 +86,10 @@ type translation struct {
 }
 
 func (topology *provider) exceptionTypes(r *http.Request, params ServiceParams) interface{} {
-	types, err := topology.GetExceptionTypes(api.Language(r), params)
+	ctx := api.GetContext(r, func(header *http.Header) {
+		header.Add("terminus_key", params.ScopeId)
+	})
+	types, err := topology.GetExceptionTypes(ctx, api.Language(r), params)
 	if err != nil {
 		return api.Errors.Internal(err)
 	}
@@ -97,7 +100,10 @@ func (topology *provider) exceptionTypes(r *http.Request, params ServiceParams) 
 }
 
 func (topology *provider) processDiskIo(r *http.Request, params ServiceParams) interface{} {
-	processDiskIo, err := topology.GetProcessDiskIo(api.Language(r), params)
+	ctx := api.GetContext(r, func(header *http.Header) {
+		header.Add("terminus_key", params.ScopeId)
+	})
+	processDiskIo, err := topology.GetProcessDiskIo(ctx, api.Language(r), params)
 	if err != nil {
 		return api.Errors.Internal(err)
 	}
@@ -108,7 +114,7 @@ func (topology *provider) processDiskIo(r *http.Request, params ServiceParams) i
 }
 
 func (topology *provider) processNetIo(r *http.Request, params ServiceParams) interface{} {
-	processNetIo, err := topology.GetProcessDiskIo(api.Language(r), params)
+	processNetIo, err := topology.GetProcessDiskIo(nil, api.Language(r), params)
 	if err != nil {
 		return api.Errors.Internal(err)
 	}
@@ -123,7 +129,10 @@ func (topology *provider) exceptionMessage(r *http.Request, params ServiceParams
 	Sort          string `query:"sort"`
 	ExceptionType string `query:"exceptionType"`
 }) interface{} {
-	exceptionMessages, err := topology.GetExceptionMessage(api.Language(r), params, exceptionParams.Limit, exceptionParams.Sort, exceptionParams.ExceptionType)
+	ctx := api.GetContext(r, func(header *http.Header) {
+		header.Add("terminus_key", params.ScopeId)
+	})
+	exceptionMessages, err := topology.GetExceptionMessage(ctx, api.Language(r), params, exceptionParams.Limit, exceptionParams.Sort, exceptionParams.ExceptionType)
 	if err != nil {
 		return api.Errors.Internal(err)
 	}
@@ -134,7 +143,12 @@ func (topology *provider) exceptionMessage(r *http.Request, params ServiceParams
 }
 
 func (topology *provider) serviceInstanceIds(r *http.Request, params ServiceParams) interface{} {
-	serviceInstanceIds, err := topology.GetServiceInstanceIds(api.Language(r), params)
+
+	ctx := api.GetContext(r, func(header *http.Header) {
+		header.Add("terminus_key", params.ScopeId)
+	})
+
+	serviceInstanceIds, err := topology.GetServiceInstanceIds(ctx, api.Language(r), params)
 	if err != nil {
 		return api.Errors.Internal(err)
 	}
@@ -144,7 +158,10 @@ func (topology *provider) serviceInstanceIds(r *http.Request, params ServicePara
 }
 
 func (topology *provider) serviceInstances(r *http.Request, params ServiceParams) interface{} {
-	reqTranslations, err := topology.GetServiceInstances(api.Language(r), params)
+	ctx := api.GetContext(r, func(header *http.Header) {
+		header.Add("terminus_key", params.ScopeId)
+	})
+	reqTranslations, err := topology.GetServiceInstances(ctx, api.Language(r), params)
 	if err != nil {
 		return api.Errors.Internal(err)
 	}
@@ -154,7 +171,10 @@ func (topology *provider) serviceInstances(r *http.Request, params ServiceParams
 }
 
 func (topology *provider) serviceRequest(r *http.Request, params ServiceParams) interface{} {
-	reqTranslations, err := topology.GetServiceRequest(api.Language(r), params)
+	ctx := api.GetContext(r, func(header *http.Header) {
+		header.Add("terminus_key", params.ScopeId)
+	})
+	reqTranslations, err := topology.GetServiceRequest(ctx, api.Language(r), params)
 	if err != nil {
 		return api.Errors.Internal(err)
 	}
@@ -164,7 +184,10 @@ func (topology *provider) serviceRequest(r *http.Request, params ServiceParams) 
 }
 
 func (topology *provider) serviceOverview(r *http.Request, params ServiceParams) interface{} {
-	overview, err := topology.GetServiceOverview(api.Language(r), params)
+	ctx := api.GetContext(r, func(header *http.Header) {
+		header.Add("terminus_key", params.ScopeId)
+	})
+	overview, err := topology.GetServiceOverview(ctx, api.Language(r), params)
 	if err != nil {
 		return api.Errors.Internal(err)
 	}
@@ -174,7 +197,10 @@ func (topology *provider) serviceOverview(r *http.Request, params ServiceParams)
 }
 
 func (topology *provider) overview(r *http.Request, params GlobalParams) interface{} {
-	overview, err := topology.GetOverview(api.Language(r), params)
+	ctx := api.GetContext(r, func(header *http.Header) {
+		header.Add("terminus_key", params.ScopeId)
+	})
+	overview, err := topology.GetOverview(ctx, api.Language(r), params)
 	if err != nil {
 		return api.Errors.Internal(err)
 	}

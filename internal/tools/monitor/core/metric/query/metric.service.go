@@ -38,7 +38,7 @@ func (s *metricService) QueryWithInfluxFormat(ctx context.Context, req *pb.Query
 	if len(req.Statement) <= 0 {
 		return &pb.QueryWithInfluxFormatResponse{}, nil
 	}
-	rs, data, err := s.query.QueryWithFormat("influxql", req.Statement, "influxdb", nil, convertParams(req.Params), convertFilters(req.Filters), convertOptions(req.Start, req.End, req.Options))
+	rs, data, err := s.query.QueryWithFormat(ctx, "influxql", req.Statement, "influxdb", nil, convertParams(req.Params), convertFilters(req.Filters), convertOptions(req.Start, req.End, req.Options))
 	if err != nil {
 		return nil, errors.NewServiceInvokingError("metric.query", err)
 	}
@@ -73,7 +73,7 @@ func (s *metricService) QueryWithTableFormat(ctx context.Context, req *pb.QueryW
 	opts := convertOptions(req.Start, req.End, req.Options)
 	opts.Set("type", "_")
 	opts.Set("protobuf", "true")
-	rs, data, err := s.query.QueryWithFormat("influxql", req.Statement, "chartv2", nil, convertParams(req.Params), convertFilters(req.Filters), opts)
+	rs, data, err := s.query.QueryWithFormat(ctx, "influxql", req.Statement, "chartv2", nil, convertParams(req.Params), convertFilters(req.Filters), opts)
 	if err != nil {
 		return nil, errors.NewServiceInvokingError("metric.query", err)
 	}
@@ -104,7 +104,7 @@ func (s *metricService) GeneralQuery(ctx context.Context, req *pb.GeneralQueryRe
 	if len(req.Ql) == 0 {
 		req.Ql = "influxql"
 	}
-	rs, data, err := s.query.QueryWithFormat(req.Ql, req.Statement, req.Format, nil, nil, nil, convertParamsToValues(req.Params))
+	rs, data, err := s.query.QueryWithFormat(ctx, req.Ql, req.Statement, req.Format, nil, nil, nil, convertParamsToValues(req.Params))
 	if err != nil {
 		return nil, errors.NewServiceInvokingError("metric.query", err)
 	}

@@ -23,6 +23,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/pkg/transport"
 	structure "github.com/erda-project/erda-infra/providers/component-protocol/components/commodel/data-structure"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/linegraph/impl"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
@@ -31,6 +32,7 @@ import (
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/internal/apps/msp/apm/service/common/custom"
 	"github.com/erda-project/erda/internal/apps/msp/apm/service/common/model"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/math"
 )
 
@@ -277,44 +279,49 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 		startTime := p.ServiceInParams.InParamsPtr.StartTime
 		endTime := p.ServiceInParams.InParamsPtr.EndTime
 		hostIp := p.ServiceInParams.InParamsPtr.HostIp
+
+		ctx := apis.GetContext(sdk.Ctx, func(header *transport.Header) {
+			header.Set("terminus_key", p.ServiceInParams.InParamsPtr.TenantId)
+		})
+
 		switch sdk.Comp.Name {
 		case cpu:
-			graph, err := p.getCpuLineGraph(sdk.Ctx, startTime, endTime, hostIp)
+			graph, err := p.getCpuLineGraph(ctx, startTime, endTime, hostIp)
 			if err != nil {
 				return nil
 			}
 			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, cpu, structure.String, "rateUnit", graph)
 			return &impl.StdStructuredPtr{StdDataPtr: line}
 		case memory:
-			graph, err := p.getMemoryLineGraph(sdk.Ctx, startTime, endTime, hostIp)
+			graph, err := p.getMemoryLineGraph(ctx, startTime, endTime, hostIp)
 			if err != nil {
 				return nil
 			}
 			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, memory, structure.String, "rateUnit", graph)
 			return &impl.StdStructuredPtr{StdDataPtr: line}
 		case load:
-			graph, err := p.getLoadLineGraph(sdk.Ctx, startTime, endTime, hostIp)
+			graph, err := p.getLoadLineGraph(ctx, startTime, endTime, hostIp)
 			if err != nil {
 				return nil
 			}
 			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, load, structure.String, "", graph)
 			return &impl.StdStructuredPtr{StdDataPtr: line}
 		case podCount:
-			graph, err := p.getPodCountLineGraph(sdk.Ctx, startTime, endTime, hostIp)
+			graph, err := p.getPodCountLineGraph(ctx, startTime, endTime, hostIp)
 			if err != nil {
 				return nil
 			}
 			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, podCount, structure.String, "pcsUnit", graph)
 			return &impl.StdStructuredPtr{StdDataPtr: line}
 		case disk:
-			graph, err := p.getDiskIoLineGraph(sdk.Ctx, startTime, endTime, hostIp)
+			graph, err := p.getDiskIoLineGraph(ctx, startTime, endTime, hostIp)
 			if err != nil {
 				return nil
 			}
 			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, disk, structure.TrafficRate, structure.KBSlashS, graph)
 			return &impl.StdStructuredPtr{StdDataPtr: line}
 		case network:
-			graph, err := p.getNetworkLineGraph(sdk.Ctx, startTime, endTime, hostIp)
+			graph, err := p.getNetworkLineGraph(ctx, startTime, endTime, hostIp)
 			if err != nil {
 				return nil
 			}

@@ -23,6 +23,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-infra/base/logs"
+	"github.com/erda-project/erda-infra/pkg/transport"
 	structure "github.com/erda-project/erda-infra/providers/component-protocol/components/commodel/data-structure"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/complexgraph"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/complexgraph/impl"
@@ -31,6 +32,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/internal/apps/msp/apm/alert/components/msp-alert-overview/common"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
 )
 
@@ -84,8 +86,10 @@ func (p *provider) getAlertEventChart(sdk *cptype.SDK) (*complexgraph.Data, erro
 		Statement: statement,
 		Params:    params,
 	}
-
-	response, err := p.Metric.QueryWithInfluxFormat(sdk.Ctx, request)
+	ctx := apis.GetContext(sdk.Ctx, func(header *transport.Header) {
+		header.Set("terminus_key", inParams.ScopeId)
+	})
+	response, err := p.Metric.QueryWithInfluxFormat(ctx, request)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}

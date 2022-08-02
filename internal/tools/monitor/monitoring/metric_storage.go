@@ -172,7 +172,7 @@ func (es *esStorageMetric) docCount(contField, metricName string) (map[string]ui
 	ret := make(map[string]uint64)
 	for end := time.Now(); ; {
 		start := end.Add(-6 * time.Hour)
-		rs, err := es.metricQ.Query(metricq.InfluxQL, stmt, nil, timeRange(start, end))
+		rs, err := es.metricQ.Query(context.Background(), metricq.InfluxQL, stmt, nil, timeRange(start, end))
 		if err != nil {
 			return nil, err
 		}

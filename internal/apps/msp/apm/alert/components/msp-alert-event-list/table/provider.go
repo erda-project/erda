@@ -25,6 +25,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/commodel"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/table"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/table/impl"
@@ -35,6 +36,7 @@ import (
 	monitorpb "github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/internal/apps/msp/apm/alert/components/msp-alert-event-list/common"
+	"github.com/erda-project/erda/pkg/common/apis"
 )
 
 type provider struct {
@@ -180,13 +182,17 @@ func (p *provider) queryAlertEvents(sdk *cptype.SDK, ctx context.Context, params
 		PageSize: uint64(pageSize),
 	}
 
+	metricQueryCtx := apis.GetContext(ctx, func(header *transport.Header) {
+		header.Set("terminus_key", params.ScopeId)
+	})
+
 	for _, item := range events.Items {
 		reqParams := map[string]*structpb.Value{
 			"eventId": structpb.NewStringValue(item.Id),
 		}
 		statement := fmt.Sprintf("SELECT count(timestamp) FROM analyzer_alert " +
 			"WHERE family_id::tag=$eventId AND alert_suppressed::tag='false' ")
-		resp, err := p.Metric.QueryWithInfluxFormat(ctx, &metricpb.QueryWithInfluxFormatRequest{
+		resp, err := p.Metric.QueryWithInfluxFormat(metricQueryCtx, &metricpb.QueryWithInfluxFormatRequest{
 			Start:     "0",
 			End:       strconv.FormatInt(time.Now().UnixNano()/1e6, 10),
 			Statement: statement,

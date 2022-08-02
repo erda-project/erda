@@ -20,7 +20,9 @@ import (
 
 	"google.golang.org/protobuf/types/known/structpb"
 
+	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda/internal/apps/msp/apm/service/view/common"
+	"github.com/erda-project/erda/pkg/common/apis"
 )
 
 type SlowCountCard struct {
@@ -49,6 +51,8 @@ func (r *SlowCountCard) GetCard(ctx context.Context) (*ServiceCard, error) {
 		"service_id":   structpb.NewStringValue(r.ServiceId),
 		"layer_path":   layerPathParam,
 	}
-
+	ctx = apis.GetContext(ctx, func(header *transport.Header) {
+		header.Set("terminus_key", r.TenantId)
+	})
 	return r.QueryAsServiceCard(ctx, statement, queryParams, string(CardTypeSlowCount), "", common.FormatFloatWith2Digits)
 }

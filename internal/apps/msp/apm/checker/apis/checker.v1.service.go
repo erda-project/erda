@@ -25,6 +25,7 @@ import (
 
 	"google.golang.org/protobuf/types/known/structpb"
 
+	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda-proto-go/msp/apm/checker/pb"
@@ -334,7 +335,10 @@ func (s *checkerV1Service) DescribeCheckersV1(ctx context.Context, req *pb.Descr
 		results[item.ID] = result
 	}
 	apis.Language(ctx)
-	err = s.QueryCheckersLatencySummaryByProject(apis.Language(ctx), req.ProjectID, results)
+	metricQueryCtx := apis.GetContext(ctx, func(header *transport.Header) {
+		header.Set("terminus_key", req.TenantId)
+	})
+	err = s.QueryCheckersLatencySummaryByProject(metricQueryCtx, apis.Language(ctx), req.ProjectID, results)
 	if err != nil {
 		return nil, errors.NewServiceInvokingError(fmt.Sprintf("status_page.project_id/%d", req.ProjectID), err)
 	}
@@ -491,10 +495,10 @@ func getTimeRange(unit string, num int, align bool) (start int64, end int64, int
 	return
 }
 
-func (s *checkerV1Service) QueryCheckersLatencySummaryByProject(lang i18n.LanguageCodes, projectID int64, metrics map[int64]*pb.DescribeItemV1) error {
+func (s *checkerV1Service) QueryCheckersLatencySummaryByProject(ctx context.Context, lang i18n.LanguageCodes, projectID int64, metrics map[int64]*pb.DescribeItemV1) error {
 	start, end, duration := getTimeRange("hour", 1, false)
 	interval, _ := structpb.NewValue(map[string]interface{}{"duration": duration})
-	return s.queryCheckerMetrics(lang, start, end, `
+	return s.queryCheckerMetrics(ctx, lang, start, end, `
 	SELECT timestamp(), metric::tag, status_name::tag, round_float(avg(latency),2), max(latency), min(latency), count(latency), sum(latency)
 	FROM status_page 
 	WHERE project_id=$projectID 
@@ -510,27 +514,25 @@ func (s *checkerV1Service) QueryCheckersLatencySummaryByProject(lang i18n.Langua
 func (s *checkerV1Service) QueryCheckersLatencySummary(lang i18n.LanguageCodes, metricID int64, timeUnit string, metrics map[int64]*pb.DescribeItemV1) error {
 	start, end, duration := getTimeRange(timeUnit, 1, false)
 	interval, _ := structpb.NewValue(map[string]interface{}{"duration": duration})
-	return s.queryCheckerMetrics(lang, start, end, `
+	return s.queryCheckerMetrics(context.Background(), lang, start, end, `
 	SELECT timestamp(), metric::tag, status_name::tag, round_float(avg(latency),2), max(latency), min(latency), count(latency), sum(latency)
 	FROM status_page 
 	WHERE metric=$metric 
 	GROUP BY time($interval), metric::tag, status_name::tag 
-	LIMIT 200`,
-		map[string]*structpb.Value{
-			"metric":   structpb.NewStringValue(strconv.FormatInt(metricID, 10)),
-			"interval": interval,
-		}, metrics,
-	)
+	LIMIT 200`, map[string]*structpb.Value{
+		"metric":   structpb.NewStringValue(strconv.FormatInt(metricID, 10)),
+		"interval": interval,
+	}, metrics)
 }
 
-func (s *checkerV1Service) queryCheckerMetrics(lang i18n.LanguageCodes, start, end int64, statement string, params map[string]*structpb.Value, metrics map[int64]*pb.DescribeItemV1) error {
+func (s *checkerV1Service) queryCheckerMetrics(ctx context.Context, lang i18n.LanguageCodes, start, end int64, statement string, params map[string]*structpb.Value, metrics map[int64]*pb.DescribeItemV1) error {
 	req := &metricpb.QueryWithInfluxFormatRequest{
 		Start:     strconv.FormatInt(start, 10),
 		End:       strconv.FormatInt(end, 10),
 		Statement: statement,
 		Params:    params,
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	ctx, cancel := context.WithTimeout(ctx, time.Minute)
 	defer cancel()
 	resp, err := s.metricq.QueryWithInfluxFormat(ctx, req)
 	if err != nil {
@@ -765,7 +767,11 @@ func (s *checkerV1Service) GetCheckerStatusV1(ctx context.Context, req *pb.GetCh
 			"interval": interval,
 		},
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	ctx = apis.GetContext(ctx, func(header *transport.Header) {
+		//header.Set("terminus_key", req.)
+	})
+
+	ctx, cancel := context.WithTimeout(ctx, time.Minute)
 	defer cancel()
 	resp, err := s.metricq.QueryWithInfluxFormat(ctx, mreq)
 	if err != nil {

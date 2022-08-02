@@ -15,6 +15,7 @@
 package orgapis
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/pkg/errors"
@@ -39,7 +40,7 @@ type statusDTO struct {
 }
 
 func (p *provider) clusterStatus(params *statusQuery, r *http.Request) interface{} {
-	componentStatus, err := p.getComponentStatus(params.ClusterName)
+	componentStatus, err := p.getComponentStatus(api.GetContextHeader(r), params.ClusterName)
 	if err != nil {
 		return api.Errors.Internal(err)
 	}
@@ -56,8 +57,8 @@ func (p *provider) translateStatus(resp *StatusResp, lang i18n.LanguageCodes) {
 	}
 }
 
-func (p *provider) getComponentStatus(clusterName string) (statuses []*statusDTO, err error) {
-	componentStatuses, err := p.service.queryStatus(clusterName)
+func (p *provider) getComponentStatus(ctx context.Context, clusterName string) (statuses []*statusDTO, err error) {
+	componentStatuses, err := p.service.queryStatus(ctx, clusterName)
 	if err != nil {
 		return nil, errors.Wrap(err, "query failed")
 	}

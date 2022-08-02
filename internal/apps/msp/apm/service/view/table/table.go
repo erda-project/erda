@@ -48,6 +48,7 @@ type Builder interface {
 }
 
 type BaseBuildParams struct {
+	SdkCtx    context.Context
 	StartTime int64
 	EndTime   int64
 	TenantId  string

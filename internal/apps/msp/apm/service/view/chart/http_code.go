@@ -23,9 +23,11 @@ import (
 	"github.com/ahmetb/go-linq/v3"
 	"google.golang.org/protobuf/types/known/structpb"
 
+	"github.com/erda-project/erda-infra/pkg/transport"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda-proto-go/msp/apm/service/pb"
 	"github.com/erda-project/erda/internal/apps/msp/apm/service/view/common"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
 )
 
@@ -72,6 +74,11 @@ func (httpCode *HttpCodeChart) GetChart(ctx context.Context) (*pb.ServiceChart, 
 		Statement: statement,
 		Params:    queryParams,
 	}
+
+	ctx = apis.GetContext(ctx, func(header *transport.Header) {
+		header.Set("terminus_key", httpCode.TenantId)
+	})
+
 	response, err := httpCode.Metric.QueryWithInfluxFormat(ctx, request)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)

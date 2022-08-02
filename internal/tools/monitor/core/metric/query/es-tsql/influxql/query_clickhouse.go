@@ -15,6 +15,7 @@
 package esinfluxql
 
 import (
+	"io"
 	"reflect"
 	"time"
 
@@ -94,7 +95,7 @@ func (q QueryClickhouse) ParseResult(resp interface{}) (*model.Data, error) {
 		data := make(map[string]interface{})
 		for i, v := range vars {
 			columnName := columns[i]
-			data[columnName] = v
+			data[columnName] = pretty(v)
 		}
 		return data, nil
 	}
@@ -109,8 +110,13 @@ func (q QueryClickhouse) ParseResult(resp interface{}) (*model.Data, error) {
 	cur, err = getData(rows)
 	isTail := false
 	if err != nil {
+		if err == io.EOF {
+			// The first item is empty
+			return rs, nil
+		}
 		return nil, err
 	}
+
 	for {
 		if cur == nil && next == nil {
 			break
@@ -140,7 +146,7 @@ func (q QueryClickhouse) ParseResult(resp interface{}) (*model.Data, error) {
 			if err != nil {
 				return nil, err
 			}
-			row = append(row, pretty(v))
+			row = append(row, v)
 		}
 		rs.Rows = append(rs.Rows, row)
 
@@ -176,7 +182,7 @@ func pretty(data interface{}) interface{} {
 	case *string:
 		return *v
 	case *time.Time:
-		return v.Format("2006-01-02T15:04:05Z")
+		return v.UnixNano()
 	}
 
 	return data

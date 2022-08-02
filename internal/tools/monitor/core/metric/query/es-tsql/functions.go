@@ -49,51 +49,25 @@ var timeLayouts = []string{
 
 var CkBuildInFunctions = map[string]func(ctx Context, args ...interface{}) (interface{}, error){
 	"time": func(ctx Context, args ...interface{}) (interface{}, error) {
-		if len(args) > 0 {
-
-			var timeStamp time.Time
-			var err error
-			switch arg := args[0].(type) {
-			case time.Time:
-				timeStamp = arg
-			case *time.Time:
-				timeStamp = *arg
-			case string:
-				timeStamp, err = time.Parse("2006-01-02T15:04:05Z", arg)
-				if err != nil {
-					return nil, err
+		for _, arg := range args {
+			if t, ok := arg.(int64); ok {
+				unit := ctx.TargetTimeUnit()
+				if unit == UnsetTimeUnit {
+					if ctx.OriginalTimeUnit() != UnsetTimeUnit {
+						t *= int64(ctx.OriginalTimeUnit())
+					}
+					return time.Unix(t/int64(time.Second), t%int64(time.Second)).Format("2006-01-02T15:04:05Z"), nil
 				}
-			default:
-				return 0, fmt.Errorf("function 'time' not in group or not found time bucket")
+				return ConvertTimestamp(t, ctx.OriginalTimeUnit(), unit), nil
 			}
-
-			unit := ctx.TargetTimeUnit()
-			if unit == UnsetTimeUnit {
-				return timeStamp.Format("2006-01-02T15:04:05Z"), nil
-			}
-			return ConvertTimestamp(timeStamp.UnixNano(), ctx.OriginalTimeUnit(), unit), nil
 		}
 		return 0, fmt.Errorf("function 'time' not in group or not found time bucket")
 	},
 	"timestamp": func(ctx Context, args ...interface{}) (interface{}, error) {
-		if len(args) > 0 {
-
-			var timeStamp time.Time
-			var err error
-			switch arg := args[0].(type) {
-			case time.Time:
-				timeStamp = arg
-			case *time.Time:
-				timeStamp = *arg
-			case string:
-				timeStamp, err = time.Parse("2006-01-02T15:04:05Z", arg)
-				if err != nil {
-					return nil, err
-				}
-			default:
-				return 0, fmt.Errorf("function 'time' not in group or not found time bucket")
+		for _, arg := range args {
+			if t, ok := arg.(int64); ok {
+				return ConvertTimestamp(int64(t), ctx.OriginalTimeUnit(), ctx.TargetTimeUnit()), nil
 			}
-			return ConvertTimestamp(timeStamp.UnixNano(), ctx.OriginalTimeUnit(), ctx.TargetTimeUnit()), nil
 		}
 		return 0, fmt.Errorf("function 'timestamp' not in group or not found time bucket")
 	},
@@ -117,6 +91,42 @@ var CkBuildInFunctions = map[string]func(ctx Context, args ...interface{}) (inte
 		}
 		v, _ = strconv.ParseFloat(fmt.Sprintf("%."+strconv.Itoa(conv.ToInt(args[1], 2))+"f", v), 64)
 		return v, nil
+	},
+	"if": func(ctx Context, args ...interface{}) (interface{}, error) {
+		err := MustFuncArgsNum("if", len(args), 3)
+		if err != nil {
+			return nil, err
+		}
+		b, ok := args[0].(bool)
+		if !ok {
+			return nil, fmt.Errorf("args[0] is not boolean")
+		}
+		if b {
+			return args[1], nil
+		}
+		return args[2], nil
+	},
+	"gt": func(ctx Context, args ...interface{}) (interface{}, error) {
+		err := MustFuncArgsNum("gt", len(args), 2)
+		if err != nil {
+			return nil, err
+		}
+		arrFloat, err := CheckNumerical(args)
+		if err != nil {
+			return nil, err
+		}
+		return arrFloat[0] > arrFloat[1], nil
+	},
+	"gte": func(ctx Context, args ...interface{}) (interface{}, error) {
+		err := MustFuncArgsNum("gte", len(args), 2)
+		if err != nil {
+			return nil, err
+		}
+		arrFloat, err := CheckNumerical(args)
+		if err != nil {
+			return nil, err
+		}
+		return arrFloat[0] >= arrFloat[1], nil
 	},
 }
 
@@ -1029,8 +1039,12 @@ func convertToFloat64(v interface{}) (float64, bool) {
 		return float64(val), true
 	case float32:
 		return float64(val), true
+	case *float32:
+		return float64(*val), true
 	case float64:
 		return val, true
+	case *float64:
+		return *val, true
 	case time.Duration:
 		return float64(val), true
 	}

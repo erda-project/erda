@@ -131,7 +131,7 @@ func Test_checkerV1Service_DescribeCheckersV1(t *testing.T) {
 				return ms, nil
 			})
 			var cv1s *checkerV1Service
-			monkey.PatchInstanceMethod(reflect.TypeOf(cv1s), "QueryCheckersLatencySummaryByProject", func(cv1s *checkerV1Service, lang i18n.LanguageCodes, projectID int64, metrics map[int64]*checkerpb.DescribeItemV1) error {
+			monkey.PatchInstanceMethod(reflect.TypeOf(cv1s), "QueryCheckersLatencySummaryByProject", func(cv1s *checkerV1Service, ctx context.Context, lang i18n.LanguageCodes, projectID int64, metrics map[int64]*checkerpb.DescribeItemV1) error {
 				if projectID == -2 || projectID == 2 {
 					return errors.New("no project")
 				}

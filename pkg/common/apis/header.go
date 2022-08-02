@@ -97,6 +97,19 @@ func GetHeader(ctx context.Context, key string) string {
 	return ""
 }
 
+func GetContext(ctx context.Context, setHeader func(header *transport.Header)) context.Context {
+	if ctx == nil {
+		return context.Background()
+	}
+	header := transport.Header{}
+	header.Set("org", GetHeader(ctx, "org"))
+	if setHeader != nil {
+		setHeader(&header)
+	}
+	ctx = transport.WithHeader(ctx, header)
+	return ctx
+}
+
 func GetInternalClient(ctx context.Context) string {
 	return GetHeader(ctx, headerInternalClient)
 }

@@ -24,12 +24,14 @@ import (
 
 	"google.golang.org/protobuf/types/known/structpb"
 
+	"github.com/erda-project/erda-infra/pkg/transport"
 	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda-proto-go/msp/apm/service/pb"
 	servicecommon "github.com/erda-project/erda/internal/apps/msp/apm/service/common"
 	"github.com/erda-project/erda/internal/apps/msp/apm/service/view/chart"
 	"github.com/erda-project/erda/internal/apps/msp/apm/service/view/common"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
 	"github.com/erda-project/erda/pkg/math"
 )
@@ -50,7 +52,7 @@ func (s *apmServiceService) GetServiceLanguage(ctx context.Context, req *pb.GetS
 		"terminus_key": structpb.NewStringValue(req.TenantId),
 		"service_id":   structpb.NewStringValue(req.ServiceId),
 	}
-	sql := "SELECT distinct(service_id::tag) FROM %s WHERE terminus_key=$terminus_key AND service_id=$service_id LIMIT 1"
+	sql := "SELECT distinct(service_id::tag) FROM %s WHERE terminus_key=$terminus_key AND service_id::tag=$service_id LIMIT 1"
 	for key, language := range servicecommon.ProcessTypes {
 		statement := fmt.Sprintf(sql, key)
 		request := &metricpb.QueryWithInfluxFormatRequest{
@@ -59,6 +61,11 @@ func (s *apmServiceService) GetServiceLanguage(ctx context.Context, req *pb.GetS
 			Statement: statement,
 			Params:    queryParams,
 		}
+
+		ctx = apis.GetContext(ctx, func(header *transport.Header) {
+			header.Set("terminus_key", req.TenantId)
+		})
+
 		response, err := s.p.Metric.QueryWithInfluxFormat(ctx, request)
 		if err != nil {
 			return nil, errors.NewInternalServerError(err)
@@ -98,6 +105,10 @@ func (s *apmServiceService) GetServices(ctx context.Context, req *pb.GetServices
 	queryParams := map[string]*structpb.Value{
 		"terminus_key": structpb.NewStringValue(req.TenantId),
 	}
+
+	ctx = apis.GetContext(ctx, func(header *transport.Header) {
+		header.Set("terminus_key", req.TenantId)
+	})
 	condition, err := HandleCondition(ctx, req, s, condition)
 	if req.ServiceStatus == pb.Status_hasError.String() && !strings.Contains(condition, "include") {
 		return &pb.GetServicesResponse{PageNo: req.PageNo, PageSize: req.PageSize}, nil
@@ -113,6 +124,11 @@ func (s *apmServiceService) GetServices(ctx context.Context, req *pb.GetServices
 		Statement: statement,
 		Params:    queryParams,
 	}
+
+	ctx = apis.GetContext(ctx, func(header *transport.Header) {
+		header.Set("terminus_key", req.TenantId)
+	})
+
 	response, err := s.p.Metric.QueryWithInfluxFormat(ctx, request)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
@@ -146,7 +162,10 @@ func (s *apmServiceService) GetServices(ctx context.Context, req *pb.GetServices
 	}
 
 	// service total Count
-	total := int64(countResponse.Results[0].Series[0].Rows[0].GetValues()[0].GetNumberValue())
+	var total int64
+	if countResponse != nil && len(countResponse.Results) > 0 && len(countResponse.Results[0].Series) > 0 && len(countResponse.Results[0].Series[0].Rows) > 0 {
+		total = int64(countResponse.Results[0].Series[0].Rows[0].GetValues()[0].GetNumberValue())
+	}
 
 	if rows == nil || len(rows) == 0 {
 		return &pb.GetServicesResponse{PageNo: req.PageNo, PageSize: req.PageSize, Total: total, List: services}, nil
@@ -263,6 +282,7 @@ func (s *apmServiceService) aggregateMetric(serviceStatus, tenantId string, serv
 		Statement: statement,
 		Params:    queryParams,
 	}
+
 	response, err := s.p.Metric.QueryWithInfluxFormat(ctx, request)
 	if err != nil {
 		return "", err
@@ -397,6 +417,11 @@ func (s *apmServiceService) GetServiceCount(ctx context.Context, req *pb.GetServ
 	if req.TenantId == "" {
 		return nil, errors.NewMissingParameterError("tenantId")
 	}
+
+	ctx = apis.GetContext(ctx, func(header *transport.Header) {
+		header.Set("terminus_key", req.TenantId)
+	})
+
 	var ss = []string{pb.Status_all.String(), pb.Status_hasError.String(), pb.Status_withoutRequest.String()}
 	response := &pb.GetServiceCountResponse{}
 	for _, status := range ss {
@@ -421,17 +446,20 @@ func (s *apmServiceService) GetWithRequestService(ctx context.Context, tenantId 
 	}
 	countResponse, err := s.p.Metric.QueryWithInfluxFormat(ctx, countRequest)
 	if err != nil {
+		s.p.Log.Error("get with request service count is error %s", err)
 		return 0, nil, errors.NewInternalServerError(err)
 	}
 	withoutRequestCount := int64(0)
 	var serviceIds []string
 
-	rows := countResponse.Results[0].Series[0].Rows
-	for _, row := range rows {
-		if row.GetValues()[1].GetBoolValue() {
-			withoutRequestCount += 1
-			serviceId := row.GetValues()[0].GetStringValue()
-			serviceIds = append(serviceIds, serviceId)
+	if countResponse != nil && countResponse.Results != nil && len(countResponse.Results) > 0 && len(countResponse.Results[0].Series) > 0 {
+		rows := countResponse.Results[0].Series[0].Rows
+		for _, row := range rows {
+			if row.GetValues()[1].GetBoolValue() {
+				withoutRequestCount += 1
+				serviceId := row.GetValues()[0].GetStringValue()
+				serviceIds = append(serviceIds, serviceId)
+			}
 		}
 	}
 	return withoutRequestCount, serviceIds, nil
@@ -452,18 +480,25 @@ func (s *apmServiceService) GetHasErrorService(ctx context.Context, tenantId str
 		Statement: statement,
 		Params:    queryParams,
 	}
+	ctx = apis.GetContext(ctx, func(header *transport.Header) {
+		header.Set("terminus_key", tenantId)
+	})
 	countResponse, err := s.p.Metric.QueryWithInfluxFormat(ctx, countRequest)
 	if err != nil {
+		s.p.Log.Error("get has error service error: %s", err)
 		return 0, nil, errors.NewInternalServerError(err)
 	}
 	hasErrorCount := int64(0)
 	var serviceIds []string
-	rows := countResponse.Results[0].Series[0].Rows
-	for _, row := range rows {
-		if row.GetValues()[1].GetBoolValue() {
-			hasErrorCount += 1
-			serviceId := row.GetValues()[0].GetStringValue()
-			serviceIds = append(serviceIds, serviceId)
+
+	if countResponse != nil && len(countResponse.Results) > 0 && len(countResponse.Results[0].Series) > 0 {
+		rows := countResponse.Results[0].Series[0].Rows
+		for _, row := range rows {
+			if row.GetValues()[1].GetBoolValue() {
+				hasErrorCount += 1
+				serviceId := row.GetValues()[0].GetStringValue()
+				serviceIds = append(serviceIds, serviceId)
+			}
 		}
 	}
 	return hasErrorCount, serviceIds, nil
@@ -485,8 +520,11 @@ func (s *apmServiceService) GetTotalCount(ctx context.Context, tenantId string, 
 	}
 	countResponse, err := s.p.Metric.QueryWithInfluxFormat(ctx, countRequest)
 	if err != nil {
+		s.p.Log.Error("get total count is error %s", err)
 		return 0, errors.NewInternalServerError(err)
 	}
-	total := int64(countResponse.Results[0].Series[0].Rows[0].GetValues()[0].GetNumberValue())
-	return total, nil
+	if countResponse != nil && len(countResponse.Results) > 0 && len(countResponse.Results[0].Series) > 0 && len(countResponse.Results[0].Series[0].Rows) > 0 {
+		return int64(countResponse.Results[0].Series[0].Rows[0].GetValues()[0].GetNumberValue()), nil
+	}
+	return 0, nil
 }

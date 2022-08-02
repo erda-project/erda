@@ -24,6 +24,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/bubblegraph"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/bubblegraph/impl"
 	structure "github.com/erda-project/erda-infra/providers/component-protocol/components/commodel/data-structure"
@@ -34,6 +35,7 @@ import (
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/internal/apps/msp/apm/browser/components/browser-overview/charts/utils"
 	"github.com/erda-project/erda/internal/apps/msp/apm/browser/components/browser-overview/models"
+	"github.com/erda-project/erda/pkg/common/apis"
 )
 
 const chartName = "pageReqDurationDistribution"
@@ -66,7 +68,10 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			Statement: statement,
 			Params:    params,
 		}
-		response, err := p.Metric.QueryWithInfluxFormat(sdk.Ctx, request)
+		ctx := apis.GetContext(sdk.Ctx, func(header *transport.Header) {
+			header.Set("terminus_key", p.InParamsPtr.TenantId)
+		})
+		response, err := p.Metric.QueryWithInfluxFormat(ctx, request)
 		if err != nil {
 			p.Log.Errorf("failed to get %s, err: %s, statement:%s", sdk.Comp.Name, err, statement)
 			(*sdk.GlobalState)[string(cptype.GlobalInnerKeyError)] = err.Error()

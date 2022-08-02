@@ -388,7 +388,7 @@ func TestSelect(t *testing.T) {
 		{
 			name: "select distinct",
 			sql:  "select DISTINCT(service_id::tag) from table",
-			want: "SELECT DISTINCT(tag_values[indexOf(tag_keys,'service_id')]) AS \"2e1cf76dc42cffe8\" FROM \"table\"",
+			want: "SELECT count(distinct(tag_values[indexOf(tag_keys,'service_id')])) AS \"2e1cf76dc42cffe8\" FROM \"table\"",
 		},
 		{
 			name: "select max",

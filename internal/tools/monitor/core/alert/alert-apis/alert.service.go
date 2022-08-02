@@ -27,6 +27,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/types/known/structpb"
 
+	"github.com/erda-project/erda-infra/pkg/transport"
 	channelpb "github.com/erda-project/erda-proto-go/core/messenger/notifychannel/pb"
 	"github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
@@ -1425,6 +1426,9 @@ func (m *alertService) GetAlertConditionsValue(ctx context.Context, request *pb.
 			req.Params[k] = structpb.NewStringValue(v)
 		}
 		req.Statement += fmt.Sprintf(` GROUP BY %s::tag`, conditions.Condition)
+		ctx = apis.GetContext(ctx, func(header *transport.Header) {
+			header.Set("terminus_key", conditions.Filters["terminus_key"])
+		})
 		resp, err := m.p.Metric.QueryWithInfluxFormat(ctx, req)
 		if err != nil {
 			return nil, errors.NewInternalServerError(err)
