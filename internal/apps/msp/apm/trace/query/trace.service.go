@@ -638,7 +638,7 @@ func (s *TraceService) convertToTraceDebugHistory(ctx context.Context, dbHistory
 func (s *TraceService) GetSpanEvents(ctx context.Context, req *pb.SpanEventRequest) (*pb.SpanEventResponse, error) {
 	startTime, endTime := s.getSpanEventQueryTime(req)
 	req.StartTime = req.StartTime - int64((time.Minute*15)/time.Millisecond)
-	statement := "select * from apm_span_event where span_id = $span_id order by timestamp asc limit 1000"
+	statement := "select * from apm_span_event where span_id::tag = $span_id order by timestamp asc limit 1000"
 	queryParams := map[string]*structpb.Value{
 		"span_id": structpb.NewStringValue(req.SpanID),
 	}

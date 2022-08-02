@@ -30,8 +30,7 @@ import (
 
 type (
 	config struct {
-		Keypass  map[string][]string `file:"keypass"`
-		PlayBack bool                `file:"play_back"`
+		Keypass map[string][]string `file:"keypass"`
 
 		QueryTimeout    time.Duration `file:"query_timeout" default:"1m"`
 		QueryMaxThreads int           `file:"query_max_threads" default:"0"`

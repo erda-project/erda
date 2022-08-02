@@ -15,6 +15,7 @@
 package esinfluxql
 
 import (
+	"context"
 	"io"
 	"reflect"
 	"time"
@@ -22,9 +23,13 @@ import (
 	ckdriver "github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"github.com/doug-martin/goqu/v9"
 	"github.com/pkg/errors"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/model"
 	tsql "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql"
+	erdatrace "github.com/erda-project/erda/pkg/common/trace"
 )
 
 type QueryClickhouse struct {
@@ -56,7 +61,10 @@ func (q QueryClickhouse) AppendBoolFilter(key string, value interface{}) {
 
 var getData func(row ckdriver.Rows) (map[string]interface{}, error)
 
-func (q QueryClickhouse) ParseResult(resp interface{}) (*model.Data, error) {
+func (q QueryClickhouse) ParseResult(ctx context.Context, resp interface{}) (*model.Data, error) {
+	_, span := otel.Tracer("parser").Start(ctx, "parser.result")
+	defer span.End()
+
 	if resp == nil {
 		return nil, nil
 	}
@@ -74,6 +82,8 @@ func (q QueryClickhouse) ParseResult(resp interface{}) (*model.Data, error) {
 		err         error
 	)
 
+	span.SetAttributes(attribute.StringSlice("origin.columns", columns))
+
 	for i := range columnTypes {
 		vars[i] = reflect.New(columnTypes[i].ScanType()).Interface()
 	}
@@ -82,6 +92,10 @@ func (q QueryClickhouse) ParseResult(resp interface{}) (*model.Data, error) {
 		if c.col == nil {
 			c.col = &model.Column{
 				Name: getColumnName(c.field),
+			}
+			// delete *
+			if c.AllColumns() {
+				continue
 			}
 			rs.Columns = append(rs.Columns, c.col)
 		}
@@ -97,6 +111,8 @@ func (q QueryClickhouse) ParseResult(resp interface{}) (*model.Data, error) {
 			columnName := columns[i]
 			data[columnName] = pretty(v)
 		}
+		// todo need thinks to do with data
+		span.AddEvent("get.data", trace.WithAttributes(erdatrace.BigStringAttribute("origin.data", data)))
 		return data, nil
 	}
 
@@ -142,11 +158,39 @@ func (q QueryClickhouse) ParseResult(resp interface{}) (*model.Data, error) {
 
 		var row []interface{}
 		for _, c := range q.column {
+			if c.AllColumns() {
+				allValue, err := c.getALLValue(cur)
+				if err != nil {
+					return nil, err
+				}
+				for k, v := range allValue {
+					var point int
+					rs.Columns, point = appendIfMissing(rs.Columns, &model.Column{
+						Name: k,
+					})
+					if cap(row) <= point || row == nil {
+						newRow := make([]interface{}, point+1)
+						copy(newRow, row)
+						row = newRow
+					}
+					row[point] = v
+				}
+				continue
+			}
+
 			v, err := c.getValue(cur)
 			if err != nil {
 				return nil, err
 			}
-			row = append(row, v)
+
+			var point int
+			rs.Columns, point = appendIfMissing(rs.Columns, c.col)
+			if cap(row) <= point || row == nil {
+				newRow := make([]interface{}, point+1)
+				copy(newRow, row)
+				row = newRow
+			}
+			row[point] = v
 		}
 		rs.Rows = append(rs.Rows, row)
 
@@ -158,6 +202,14 @@ func (q QueryClickhouse) ParseResult(resp interface{}) (*model.Data, error) {
 	return rs, nil
 }
 
+func appendIfMissing(slice []*model.Column, target *model.Column) ([]*model.Column, int) {
+	for i := 0; i < len(slice); i++ {
+		if slice[i].Name == target.Name {
+			return slice, i
+		}
+	}
+	return append(slice, target), len(slice)
+}
 func pretty(data interface{}) interface{} {
 	if data == nil {
 		return ""
@@ -183,8 +235,11 @@ func pretty(data interface{}) interface{} {
 		return *v
 	case *time.Time:
 		return v.UnixNano()
+	case *[]string:
+		return *v
+	case *[]float64:
+		return *v
 	}
-
 	return data
 }
 

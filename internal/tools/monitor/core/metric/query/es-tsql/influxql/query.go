@@ -15,6 +15,7 @@
 package esinfluxql
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"sort"
@@ -104,7 +105,7 @@ func (q *Query) TerminusKey() string {
 func (q *Query) Context() tsql.Context { return q.ctx }
 
 // ParseResult .
-func (q *Query) ParseResult(response interface{}) (*model.Data, error) {
+func (q *Query) ParseResult(ctx context.Context, response interface{}) (*model.Data, error) {
 
 	resp, ok := response.(*elastic.SearchResult)
 	if !ok {

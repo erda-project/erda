@@ -18,18 +18,23 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	cksdk "github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"github.com/doug-martin/goqu/v9"
 	"github.com/pkg/errors"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/model"
 	tsql "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql"
+	"github.com/erda-project/erda/pkg/common/trace"
 )
 
 func (p *provider) Query(ctx context.Context, q tsql.Query) (*model.ResultSet, error) {
+	newCtx, span := otel.Tracer("executive").Start(ctx, "metric.clickhouse")
+	defer span.End()
+
 	searchSource := q.SearchSource()
 	expr, ok := searchSource.(*goqu.SelectDataset)
 	if !ok || expr == nil {
@@ -46,10 +51,18 @@ func (p *provider) Query(ctx context.Context, q tsql.Query) (*model.ResultSet, e
 	if len(q.TerminusKey()) > 0 {
 		expr = expr.Where(goqu.C("tenant_id").Eq(q.TerminusKey()))
 	}
+
+	span.SetAttributes(attribute.String("org_name", q.OrgName()))
+	span.SetAttributes(attribute.String("tenant_id", q.TerminusKey()))
+	span.SetAttributes(attribute.String("table", table))
+
 	var metrics []string
 	for _, s := range q.Sources() {
 		metrics = append(metrics, s.Name)
 	}
+
+	span.SetAttributes(attribute.String("metrics", strings.Join(metrics, ",")))
+
 	expr = expr.Where(goqu.C("metric_group").In(metrics))
 
 	expr = expr.From(table)
@@ -80,13 +93,15 @@ func (p *provider) Query(ctx context.Context, q tsql.Query) (*model.ResultSet, e
 
 	result := &model.ResultSet{}
 
+	span.SetAttributes(attribute.String("sql", sql))
+
 	if q.Debug() {
 		result.Details = sql
 		fmt.Println(result.Details)
 		return result, nil
 	}
 
-	rows, err := p.clickhouse.Client().Query(p.buildQueryContext(ctx), sql)
+	rows, err := p.clickhouse.Client().Query(p.buildQueryContext(newCtx), sql)
 	if err != nil {
 		return nil, errors.Wrap(err, fmt.Sprintf("failed to query: %s", sql))
 	}
@@ -95,10 +110,10 @@ func (p *provider) Query(ctx context.Context, q tsql.Query) (*model.ResultSet, e
 	}
 	defer rows.Close()
 
-	result.Data, err = q.ParseResult(rows)
-	if p.Cfg.PlayBack {
-		fmt.Println(fmt.Sprintf("[ck_playback-%s]sql:%s,result :%v,origin:%v ", time.Now().Format("2006-01-02 15:04:05"), sql, result.Data, rows))
-	}
+	result.Data, err = q.ParseResult(newCtx, rows)
+
+	span.SetAttributes(attribute.Int("result_total", len(result.Data.Rows)))
+	span.SetAttributes(trace.BigStringAttribute("result", result))
 
 	if err != nil {
 		p.Log.Error("clickhouse metric query is error ", sql, err)
@@ -120,7 +135,11 @@ func (p *provider) buildQueryContext(ctx context.Context) context.Context {
 	if len(settings) == 0 {
 		return ctx
 	}
-	ctx = cksdk.Context(ctx, cksdk.WithSettings(settings))
+
+	newCtx, span := otel.Tracer("clickhouse").Start(ctx, "sdk.clickhouse")
+	defer span.End()
+
+	ctx = cksdk.Context(newCtx, cksdk.WithSettings(settings), cksdk.WithSpan(span.SpanContext()))
 	return ctx
 }
 

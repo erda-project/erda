@@ -201,6 +201,10 @@ func (p *Parser) parseQueryOnExpr(fields influxql.Fields, expr *goqu.SelectDatas
 	}
 
 	for column, asName := range columns {
+		if len(asName) <= 0 {
+			expr = expr.SelectAppend(goqu.L(column))
+			continue
+		}
 		expr = expr.SelectAppend(goqu.L(column).As(asName))
 	}
 	return expr, handlers, columns, nil
@@ -369,9 +373,6 @@ func (p *Parser) parseFieldByExpr(field *influxql.Field, aggs map[string]exp.Exp
 		field: field,
 		ctx:   p.ctx,
 	}
-	if ch.AllColumns() {
-		return ch, nil
-	}
 	ch.fns = make(map[string]SQLAggHandler)
 	err := p.parseFiledAggByExpr(field.Expr, aggs, ch.fns)
 	if err != nil {
@@ -452,6 +453,8 @@ func (p *Parser) parseFiledRefByExpr(expr influxql.Expr, cols map[string]string)
 	case *influxql.VarRef:
 		c, _ := p.ckGetKeyName(expr, influxql.AnyField)
 		cols[c] = expr.Val
+	case *influxql.Wildcard:
+		cols["*"] = ""
 	}
 	return nil
 }
