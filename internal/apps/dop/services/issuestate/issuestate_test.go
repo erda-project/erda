@@ -15,88 +15,10 @@
 package issuestate
 
 import (
-	"errors"
-	"reflect"
 	"testing"
 
-	"bou.ke/monkey"
 	"github.com/alecthomas/assert"
-	"github.com/golang/mock/gomock"
-
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/internal/apps/dop/dao"
 )
-
-func TestIssueState_GetIssueStateIDs(t *testing.T) {
-	db := &dao.DBClient{}
-	is := New(WithDBClient(db))
-	m := monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetIssuesStates",
-		func(db *dao.DBClient, req *apistructs.IssueStatesGetRequest) ([]dao.IssueState, error) {
-			return []dao.IssueState{
-				{
-					ProjectID: 1,
-				},
-			}, nil
-		})
-	defer m.Unpatch()
-
-	res, err := is.GetIssueStateIDs(&apistructs.IssueStatesGetRequest{
-		ProjectID: 1,
-	})
-	assert.NoError(t, err)
-	assert.Equal(t, 1, len(res))
-}
-
-func TestIssueState_GetIssueStatesMap(t *testing.T) {
-	db := &dao.DBClient{}
-	is := New(WithDBClient(db))
-	m := monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetIssuesStatesByProjectID",
-		func(db *dao.DBClient, projectID uint64, issuetype apistructs.IssueType) ([]dao.IssueState, error) {
-			return []dao.IssueState{
-				{
-					ProjectID: 1,
-					IssueType: apistructs.IssueTypeBug,
-				},
-				{
-					ProjectID: 1,
-					IssueType: apistructs.IssueTypeRequirement,
-				},
-				{
-					ProjectID: 1,
-					IssueType: apistructs.IssueTypeTask,
-				},
-			}, nil
-		})
-	defer m.Unpatch()
-
-	res, err := is.GetIssueStatesMap(&apistructs.IssueStatesGetRequest{
-		ProjectID: 1,
-	})
-	assert.NoError(t, err)
-	assert.Equal(t, 4, len(res))
-}
-
-func TestInitProjectState(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	m := NewMockIssueStater(ctrl)
-
-	m.EXPECT().CreateIssuesState(gomock.Any()).AnyTimes().Return(nil)
-	m.EXPECT().UpdateIssueStateRelations(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
-
-	is := New(WithDBClient(m))
-	if err := is.InitProjectState(1, ""); err != nil {
-		t.Error(err)
-	}
-
-	s := NewMockIssueStater(ctrl)
-	s.EXPECT().CreateIssuesState(gomock.Any()).AnyTimes().Return(errors.New("db error"))
-	is = New(WithDBClient(s))
-	if err := is.InitProjectState(1, ""); err != nil {
-		assert.Error(t, err)
-	}
-}
 
 func Test_getStateInitData(t *testing.T) {
 	is := New()

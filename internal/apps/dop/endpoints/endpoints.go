@@ -34,6 +34,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/dao"
 	"github.com/erda-project/erda/internal/apps/dop/event"
+	issuedao "github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	"github.com/erda-project/erda/internal/apps/dop/providers/projectpipeline"
 	"github.com/erda-project/erda/internal/apps/dop/services/apidocsvc"
 	"github.com/erda-project/erda/internal/apps/dop/services/appcertificate"
@@ -521,7 +522,6 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 
 		// user-workbench
 		{Path: "/api/workbench/actions/list", Method: http.MethodGet, Handler: e.GetWorkbenchData},
-		{Path: "/api/workbench/issues/actions/list", Method: http.MethodGet, Handler: e.GetIssuesForWorkbench},
 
 		{Path: "/api/lib-references", Method: http.MethodPost, Handler: e.CreateLibReference},
 		{Path: "/api/lib-references/{id}", Method: http.MethodDelete, Handler: e.DeleteLibReference},
@@ -689,8 +689,9 @@ type Endpoints struct {
 	ExportChannel chan uint64
 	CopyChannel   chan uint64
 
-	tokenService tokenpb.TokenServiceServer
-	orgClient    orgclient.ClientInterface
+	tokenService  tokenpb.TokenServiceServer
+	orgClient     orgclient.ClientInterface
+	issueDBClient *issuedao.DBClient
 }
 
 type Option func(*Endpoints)
@@ -1111,5 +1112,11 @@ func (e *Endpoints) PermissionService() *permission.Permission {
 func WithTokenSvc(tokenService tokenpb.TokenServiceServer) Option {
 	return func(e *Endpoints) {
 		e.tokenService = tokenService
+	}
+}
+
+func WithIssueDB(db *issuedao.DBClient) Option {
+	return func(e *Endpoints) {
+		e.issueDBClient = db
 	}
 }

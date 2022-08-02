@@ -26,9 +26,10 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/dao"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query"
+	issuedao "github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	"github.com/erda-project/erda/internal/apps/dop/services/autotest"
-	"github.com/erda-project/erda/internal/apps/dop/services/issue"
 	"github.com/erda-project/erda/internal/apps/dop/services/issuestate"
 	"github.com/erda-project/erda/internal/apps/dop/services/iteration"
 	"github.com/erda-project/erda/internal/apps/dop/services/testcase"
@@ -43,9 +44,10 @@ type TestPlan struct {
 	testCaseSvc   *testcase.Service
 	testSetSvc    *testset.Service
 	autotest      *autotest.Service
-	issueSvc      *issue.Issue
+	issueSvc      query.Interface
 	issueStateSvc *issuestate.IssueState
 	iterationSvc  *iteration.Iteration
+	issueDBClient *issuedao.DBClient
 }
 
 // Option
@@ -94,7 +96,7 @@ func WithAutoTest(autotest *autotest.Service) Option {
 	}
 }
 
-func WithIssue(issueSvc *issue.Issue) Option {
+func WithIssue(issueSvc query.Interface) Option {
 	return func(svc *TestPlan) {
 		svc.issueSvc = issueSvc
 	}
@@ -109,6 +111,12 @@ func WithIssueState(issueStateSvc *issuestate.IssueState) Option {
 func WithIterationSvc(iterationSvc *iteration.Iteration) Option {
 	return func(svc *TestPlan) {
 		svc.iterationSvc = iterationSvc
+	}
+}
+
+func WithIssueDBClient(db *issuedao.DBClient) Option {
+	return func(svc *TestPlan) {
+		svc.issueDBClient = db
 	}
 }
 

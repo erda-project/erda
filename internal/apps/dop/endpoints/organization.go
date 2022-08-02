@@ -26,7 +26,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/legacy/httpendpoints/i18n"
 	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/internal/apps/dop/dao"
+	issuedao "github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	"github.com/erda-project/erda/internal/pkg/user"
 	"github.com/erda-project/erda/pkg/common/apis"
@@ -103,25 +103,25 @@ func (e *Endpoints) CreateOrg(ctx context.Context, r *http.Request, vars map[str
 		"demandDesign", "architectureDesign", "codeDevelopment",
 	}
 	// stage
-	var stages []dao.IssueStage
+	var stages []issuedao.IssueStage
 	for i := 0; i < 9; i++ {
 		if i < 6 {
-			stages = append(stages, dao.IssueStage{
+			stages = append(stages, issuedao.IssueStage{
 				OrgID:     int64(org.ID),
-				IssueType: apistructs.IssueTypeTask,
+				IssueType: apistructs.IssueTypeTask.String(),
 				Name:      stageName[i],
 				Value:     stage[i],
 			})
 		} else {
-			stages = append(stages, dao.IssueStage{
+			stages = append(stages, issuedao.IssueStage{
 				OrgID:     int64(org.ID),
-				IssueType: apistructs.IssueTypeBug,
+				IssueType: apistructs.IssueTypeBug.String(),
 				Name:      stageName[i],
 				Value:     stage[i],
 			})
 		}
 	}
-	err = e.db.CreateIssueStage(stages)
+	err = e.issueDBClient.CreateIssueStage(stages)
 	if err != nil {
 		return apierrors.ErrCreateOrg.InternalError(err).ToResp(), nil
 	}

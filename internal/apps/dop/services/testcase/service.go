@@ -18,16 +18,18 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/dao"
+	issuedao "github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
 // Service testCase 实例对象封装
 type Service struct {
-	db  *dao.DBClient
-	bdl *bundle.Bundle
-	hc  *httpclient.HTTPClient
-	org org.ClientInterface
+	db            *dao.DBClient
+	bdl           *bundle.Bundle
+	hc            *httpclient.HTTPClient
+	org           org.ClientInterface
+	issueDBClient *issuedao.DBClient
 
 	CreateTestSetFn func(apistructs.TestSetCreateRequest) (*apistructs.TestSet, error)
 }
@@ -61,5 +63,11 @@ func WithBundle(bdl *bundle.Bundle) Option {
 func WithOrg(org org.ClientInterface) Option {
 	return func(svc *Service) {
 		svc.org = org
+	}
+}
+
+func WithIssueDBClient(db *issuedao.DBClient) Option {
+	return func(svc *Service) {
+		svc.issueDBClient = db
 	}
 }
