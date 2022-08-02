@@ -1,0 +1,1280 @@
+{
+  "id": "addon-redis",
+  "name": "Redis监控",
+  "version": "v2",
+  "desc": "",
+  "scope": "org",
+  "scopeId": "terminus",
+  "viewConfig": [{
+    "w": 8,
+    "h": 9,
+    "x": 0,
+    "y": 0,
+    "i": "view-7zIv6eMc",
+    "view": {
+      "title": "客户端连接数",
+      "i18n": {
+        "title": {
+          "zh": "客户端连接数",
+          "en": "Clients"
+        }
+      },
+      "description": "",
+      "chartType": "chart:line",
+      "dataSourceType": "api",
+      "staticData": {},
+      "config": {
+        "dataSourceConfig": {
+          "activedMetricGroups": ["project", "project_addon", "project_addon_redis", "project_addon_redis_metrics"],
+          "resultFilters": [{
+            "alias": "表达式-32",
+            "expr": "addon_id::tag='{{addonId}}'",
+            "key": "filtereuBKeFDE",
+            "type": "expr"
+          }],
+          "typeDimensions": [{
+            "alias": "时间",
+            "key": "typepZ4Mnbk2",
+            "type": "time"
+          }, {
+            "alias": "Server",
+            "field": "redis-server::tag",
+            "key": "typefUerJqor",
+            "resultType": "string",
+            "type": "field"
+          }],
+          "valueDimensions": [{
+            "alias": "表达式-31",
+            "expr": "clients::field",
+            "key": "valuegKpgtJp3",
+            "type": "expr"
+          }]
+        },
+        "optionProps": {
+          "isMoreThanOneDay": false
+        }
+      },
+      "api": {
+        "body": {
+          "from": ["redis"],
+          "groupby": ["time()", "server::tag"],
+          "select": [{
+            "alias": "typepZ4Mnbk2",
+            "expr": "time()"
+          }, {
+            "alias": "typefUerJqor",
+            "expr": "server::tag"
+          }, {
+            "alias": "valuegKpgtJp3",
+            "expr": "clients::field"
+          }],
+          "where": ["addon_id::tag='{{addonId}}'"]
+        },
+        "method": "post",
+        "query": {
+          "end": 1659412148548,
+          "epoch": "ms",
+          "format": "chartv2",
+          "match_project_id": "*",
+          "neq_addon_id": "redis",
+          "ql": "influxql:ast",
+          "start": 1659408548548,
+          "type": "_"
+        },
+        "url": "/api/orgCenter/metrics-query"
+      },
+      "controls": null
+    }
+  }, {
+    "w": 8,
+    "h": 9,
+    "x": 8,
+    "y": 0,
+    "i": "view-iZgjlmtw",
+    "view": {
+      "title": "命令运行频率",
+      "i18n": {
+        "title": {
+          "zh": "命令运行频率",
+          "en": "Instantaneous Ops Per Sec"
+        }
+      },
+      "description": "",
+      "chartType": "chart:line",
+      "dataSourceType": "api",
+      "staticData": {},
+      "config": {
+        "dataSourceConfig": {
+          "activedMetricGroups": ["project", "project_addon", "project_addon_redis", "project_addon_redis_metrics"],
+          "resultFilters": [{
+            "alias": "表达式-34",
+            "expr": "addon_id::tag='{{addonId}}' ",
+            "key": "filterrl7G4elo",
+            "type": "expr"
+          }],
+          "typeDimensions": [{
+            "alias": "时间",
+            "key": "typeOncJDJi6",
+            "type": "time"
+          }, {
+            "alias": "Server",
+            "field": "redis-server::tag",
+            "key": "typecq3BvmpU",
+            "resultType": "string",
+            "type": "field"
+          }],
+          "valueDimensions": [{
+            "alias": "表达式-33",
+            "expr": "instantaneous_ops_per_sec::field",
+            "key": "valuedYG7gXJx",
+            "type": "expr"
+          }]
+        },
+        "optionProps": {
+          "isMoreThanOneDay": false
+        }
+      },
+      "api": {
+        "body": {
+          "from": ["redis"],
+          "groupby": ["time()", "server::tag"],
+          "select": [{
+            "alias": "typeOncJDJi6",
+            "expr": "time()"
+          }, {
+            "alias": "typecq3BvmpU",
+            "expr": "server::tag"
+          }, {
+            "alias": "valuedYG7gXJx",
+            "expr": "instantaneous_ops_per_sec::field"
+          }],
+          "where": ["addon_id::tag='{{addonId}}' "]
+        },
+        "method": "post",
+        "query": {
+          "end": 1659412148548,
+          "epoch": "ms",
+          "format": "chartv2",
+          "match_project_id": "*",
+          "neq_addon_id": "redis",
+          "ql": "influxql:ast",
+          "start": 1659408548548,
+          "type": "_"
+        },
+        "url": "/api/orgCenter/metrics-query"
+      },
+      "controls": null
+    }
+  }, {
+    "w": 8,
+    "h": 9,
+    "x": 0,
+    "y": 9,
+    "i": "view-E7qCZxZj",
+    "view": {
+      "title": "发布/订阅频道个数",
+      "i18n": {
+        "title": {
+          "zh": "发布/订阅频道个数",
+          "en": "Pubsub Channels"
+        }
+      },
+      "description": "",
+      "chartType": "chart:line",
+      "dataSourceType": "api",
+      "staticData": {},
+      "config": {
+        "dataSourceConfig": {
+          "activedMetricGroups": ["project", "project_addon", "project_addon_redis", "project_addon_redis_metrics"],
+          "resultFilters": [{
+            "alias": "表达式-36",
+            "expr": "addon_id::tag='{{addonId}}'",
+            "key": "filter56H9sxiX",
+            "type": "expr"
+          }],
+          "typeDimensions": [{
+            "alias": "时间",
+            "key": "typeJCTYOzdy",
+            "type": "time"
+          }, {
+            "alias": "Server",
+            "field": "redis-server::tag",
+            "key": "typehgSWKgBK",
+            "resultType": "string",
+            "type": "field"
+          }],
+          "valueDimensions": [{
+            "alias": "表达式-35",
+            "expr": "pubsub_channels::field",
+            "key": "value4B2wh5Ne",
+            "type": "expr"
+          }]
+        },
+        "optionProps": {
+          "isMoreThanOneDay": false
+        }
+      },
+      "api": {
+        "body": {
+          "from": ["redis"],
+          "groupby": ["time()", "server::tag"],
+          "select": [{
+            "alias": "typeJCTYOzdy",
+            "expr": "time()"
+          }, {
+            "alias": "typehgSWKgBK",
+            "expr": "server::tag"
+          }, {
+            "alias": "value4B2wh5Ne",
+            "expr": "pubsub_channels::field"
+          }],
+          "where": ["addon_id::tag='{{addonId}}'"]
+        },
+        "method": "post",
+        "query": {
+          "end": 1659412148548,
+          "epoch": "ms",
+          "format": "chartv2",
+          "match_project_id": "*",
+          "neq_addon_id": "redis",
+          "ql": "influxql:ast",
+          "start": 1659408548548,
+          "type": "_"
+        },
+        "url": "/api/orgCenter/metrics-query"
+      },
+      "controls": null
+    }
+  }, {
+    "w": 8,
+    "h": 9,
+    "x": 8,
+    "y": 9,
+    "i": "view-Ubevq9pU",
+    "view": {
+      "title": "发布/订阅模式个数",
+      "i18n": {
+        "title": {
+          "zh": "发布/订阅模式个数",
+          "en": "Pubsub Patterns"
+        }
+      },
+      "description": "",
+      "chartType": "chart:line",
+      "dataSourceType": "api",
+      "staticData": {},
+      "config": {
+        "dataSourceConfig": {
+          "activedMetricGroups": ["project", "project_addon", "project_addon_redis", "project_addon_redis_metrics"],
+          "resultFilters": [{
+            "alias": "表达式-38",
+            "expr": "addon_id::tag='{{addonId}}' ",
+            "key": "filter4JO2i2aB",
+            "type": "expr"
+          }],
+          "typeDimensions": [{
+            "alias": "时间",
+            "key": "type7GxbhoqG",
+            "type": "time"
+          }, {
+            "alias": "Server",
+            "field": "redis-server::tag",
+            "key": "typektqFLc1J",
+            "resultType": "string",
+            "type": "field"
+          }],
+          "valueDimensions": [{
+            "alias": "表达式-37",
+            "expr": "pubsub_patterns::field",
+            "key": "valueTFlUEKAN",
+            "type": "expr"
+          }]
+        },
+        "optionProps": {
+          "isMoreThanOneDay": false
+        }
+      },
+      "api": {
+        "body": {
+          "from": ["redis"],
+          "groupby": ["time()", "server::tag"],
+          "select": [{
+            "alias": "type7GxbhoqG",
+            "expr": "time()"
+          }, {
+            "alias": "typektqFLc1J",
+            "expr": "server::tag"
+          }, {
+            "alias": "valueTFlUEKAN",
+            "expr": "pubsub_patterns::field"
+          }],
+          "where": ["addon_id::tag='{{addonId}}' "]
+        },
+        "method": "post",
+        "query": {
+          "end": 1659412148548,
+          "epoch": "ms",
+          "format": "chartv2",
+          "match_project_id": "*",
+          "neq_addon_id": "redis",
+          "ql": "influxql:ast",
+          "start": 1659408548548,
+          "type": "_"
+        },
+        "url": "/api/orgCenter/metrics-query"
+      },
+      "controls": null
+    }
+  }, {
+    "w": 8,
+    "h": 9,
+    "x": 0,
+    "y": 18,
+    "i": "view-DaPoGl2K",
+    "view": {
+      "title": "从库连接数",
+      "i18n": {
+        "title": {
+          "zh": "从库连接数",
+          "en": "Connected Slaves"
+        }
+      },
+      "description": "",
+      "chartType": "chart:line",
+      "dataSourceType": "api",
+      "staticData": {},
+      "config": {
+        "dataSourceConfig": {
+          "activedMetricGroups": ["project", "project_addon", "project_addon_redis", "project_addon_redis_metrics"],
+          "resultFilters": [{
+            "alias": "表达式-40",
+            "expr": "addon_id::tag='{{addonId}}'",
+            "key": "filterLiJ9jgMM",
+            "type": "expr"
+          }],
+          "typeDimensions": [{
+            "alias": "时间",
+            "key": "typetlaVIAFz",
+            "type": "time"
+          }, {
+            "alias": "Server",
+            "field": "redis-server::tag",
+            "key": "type516RFO0e",
+            "resultType": "string",
+            "type": "field"
+          }],
+          "valueDimensions": [{
+            "alias": "表达式-39",
+            "expr": "connected_slaves::field",
+            "key": "valueZ37Z5VWz",
+            "type": "expr"
+          }]
+        },
+        "optionProps": {
+          "isMoreThanOneDay": false
+        }
+      },
+      "api": {
+        "body": {
+          "from": ["redis"],
+          "groupby": ["time()", "server::tag"],
+          "select": [{
+            "alias": "typetlaVIAFz",
+            "expr": "time()"
+          }, {
+            "alias": "type516RFO0e",
+            "expr": "server::tag"
+          }, {
+            "alias": "valueZ37Z5VWz",
+            "expr": "connected_slaves::field"
+          }],
+          "where": ["addon_id::tag='{{addonId}}'"]
+        },
+        "method": "post",
+        "query": {
+          "end": 1659412148548,
+          "epoch": "ms",
+          "format": "chartv2",
+          "match_project_id": "*",
+          "neq_addon_id": "redis",
+          "ql": "influxql:ast",
+          "start": 1659408548548,
+          "type": "_"
+        },
+        "url": "/api/orgCenter/metrics-query"
+      },
+      "controls": null
+    }
+  }, {
+    "w": 8,
+    "h": 9,
+    "x": 8,
+    "y": 18,
+    "i": "view-obk0Sjzo",
+    "view": {
+      "title": "被阻塞的客户端数",
+      "i18n": {
+        "title": {
+          "zh": "被阻塞的客户端数",
+          "en": "Blocked Clients"
+        }
+      },
+      "description": "",
+      "chartType": "chart:line",
+      "dataSourceType": "api",
+      "staticData": {},
+      "config": {
+        "dataSourceConfig": {
+          "activedMetricGroups": ["project", "project_addon", "project_addon_redis", "project_addon_redis_metrics"],
+          "resultFilters": [{
+            "alias": "表达式-42",
+            "expr": "addon_id::tag='{{addonId}}'",
+            "key": "filteraOa0iZAD",
+            "type": "expr"
+          }],
+          "typeDimensions": [{
+            "alias": "时间",
+            "key": "typeo11R3602",
+            "type": "time"
+          }, {
+            "alias": "Server",
+            "field": "redis-server::tag",
+            "key": "typegzNktu6u",
+            "resultType": "string",
+            "type": "field"
+          }],
+          "valueDimensions": [{
+            "alias": "表达式-41",
+            "expr": "blocked_clients::field",
+            "key": "value23WTJOUQ",
+            "type": "expr"
+          }]
+        },
+        "optionProps": {
+          "isMoreThanOneDay": false
+        }
+      },
+      "api": {
+        "body": {
+          "from": ["redis"],
+          "groupby": ["time()", "server::tag"],
+          "select": [{
+            "alias": "typeo11R3602",
+            "expr": "time()"
+          }, {
+            "alias": "typegzNktu6u",
+            "expr": "server::tag"
+          }, {
+            "alias": "value23WTJOUQ",
+            "expr": "blocked_clients::field"
+          }],
+          "where": ["addon_id::tag='{{addonId}}'"]
+        },
+        "method": "post",
+        "query": {
+          "end": 1659412148548,
+          "epoch": "ms",
+          "format": "chartv2",
+          "match_project_id": "*",
+          "neq_addon_id": "redis",
+          "ql": "influxql:ast",
+          "start": 1659408548548,
+          "type": "_"
+        },
+        "url": "/api/orgCenter/metrics-query"
+      },
+      "controls": null
+    }
+  }, {
+    "w": 8,
+    "h": 9,
+    "x": 0,
+    "y": 27,
+    "i": "view-6oNwJbnN",
+    "view": {
+      "title": "AOF文件大小",
+      "i18n": {
+        "title": {
+          "zh": "AOF文件大小",
+          "en": "Aof Current Size"
+        }
+      },
+      "description": "",
+      "chartType": "chart:line",
+      "dataSourceType": "api",
+      "staticData": {},
+      "config": {
+        "dataSourceConfig": {
+          "activedMetricGroups": ["project", "project_addon", "project_addon_redis", "project_addon_redis_metrics"],
+          "resultFilters": [{
+            "alias": "表达式-44",
+            "expr": "addon_id::tag='{{addonId}}'",
+            "key": "filterRb7GMDCw",
+            "type": "expr"
+          }],
+          "typeDimensions": [{
+            "alias": "时间",
+            "key": "typenjhOg1ek",
+            "type": "time"
+          }, {
+            "alias": "Server",
+            "field": "redis-server::tag",
+            "key": "typeyLHdnLMv",
+            "resultType": "string",
+            "type": "field"
+          }],
+          "valueDimensions": [{
+            "alias": "表达式-43",
+            "expr": "aof_current_size::field",
+            "key": "value912NakV9",
+            "type": "expr"
+          }]
+        },
+        "optionProps": {
+          "isMoreThanOneDay": false
+        }
+      },
+      "api": {
+        "body": {
+          "from": ["redis"],
+          "groupby": ["time()", "server::tag"],
+          "select": [{
+            "alias": "typenjhOg1ek",
+            "expr": "time()"
+          }, {
+            "alias": "typeyLHdnLMv",
+            "expr": "server::tag"
+          }, {
+            "alias": "value912NakV9",
+            "expr": "aof_current_size::field"
+          }],
+          "where": ["addon_id::tag='{{addonId}}'"]
+        },
+        "method": "post",
+        "query": {
+          "end": 1659412148548,
+          "epoch": "ms",
+          "format": "chartv2",
+          "match_project_id": "*",
+          "neq_addon_id": "redis",
+          "ql": "influxql:ast",
+          "start": 1659408548548,
+          "type": "_"
+        },
+        "url": "/api/orgCenter/metrics-query"
+      },
+      "controls": null
+    }
+  }, {
+    "w": 8,
+    "h": 9,
+    "x": 8,
+    "y": 27,
+    "i": "view-K5w1SeiT",
+    "view": {
+      "title": "内存碎片率",
+      "i18n": {
+        "title": {
+          "zh": "内存碎片率",
+          "en": "Mem Fragmentation Ratio"
+        }
+      },
+      "description": "",
+      "chartType": "chart:line",
+      "dataSourceType": "api",
+      "staticData": {},
+      "config": {
+        "dataSourceConfig": {
+          "activedMetricGroups": ["project", "project_addon", "project_addon_redis", "project_addon_redis_metrics"],
+          "resultFilters": [{
+            "alias": "表达式-46",
+            "expr": "addon_id::tag='{{addonId}}' ",
+            "key": "filterL1lXub2V",
+            "type": "expr"
+          }],
+          "typeDimensions": [{
+            "alias": "时间",
+            "key": "typeoo2LnfmW",
+            "type": "time"
+          }, {
+            "alias": "Server",
+            "field": "redis-server::tag",
+            "key": "typeZ42LWpK1",
+            "resultType": "string",
+            "type": "field"
+          }],
+          "valueDimensions": [{
+            "alias": "表达式-45",
+            "expr": "mem_fragmentation_ratio::field",
+            "key": "valueVaXxbVI2",
+            "type": "expr"
+          }]
+        },
+        "optionProps": {
+          "isMoreThanOneDay": false
+        }
+      },
+      "api": {
+        "body": {
+          "from": ["redis"],
+          "groupby": ["time()", "server::tag"],
+          "select": [{
+            "alias": "typeoo2LnfmW",
+            "expr": "time()"
+          }, {
+            "alias": "typeZ42LWpK1",
+            "expr": "server::tag"
+          }, {
+            "alias": "valueVaXxbVI2",
+            "expr": "mem_fragmentation_ratio::field"
+          }],
+          "where": ["addon_id::tag='{{addonId}}' "]
+        },
+        "method": "post",
+        "query": {
+          "end": 1659412148548,
+          "epoch": "ms",
+          "format": "chartv2",
+          "match_project_id": "*",
+          "neq_addon_id": "redis",
+          "ql": "influxql:ast",
+          "start": 1659408548548,
+          "type": "_"
+        },
+        "url": "/api/orgCenter/metrics-query"
+      },
+      "controls": null
+    }
+  }, {
+    "w": 8,
+    "h": 9,
+    "x": 0,
+    "y": 36,
+    "i": "view-VB5GadW2",
+    "view": {
+      "title": "Redis管理的内存",
+      "i18n": {
+        "title": {
+          "zh": "Redis管理的内存",
+          "en": "Used Memory"
+        }
+      },
+      "description": "",
+      "chartType": "chart:line",
+      "dataSourceType": "api",
+      "staticData": {},
+      "config": {
+        "dataSourceConfig": {
+          "activedMetricGroups": ["project", "project_addon", "project_addon_redis", "project_addon_redis_metrics"],
+          "resultFilters": [{
+            "alias": "表达式-48",
+            "expr": "addon_id::tag='{{addonId}}'",
+            "key": "filterOGga0Kj8",
+            "type": "expr"
+          }],
+          "typeDimensions": [{
+            "alias": "时间",
+            "key": "typeKX23tDr0",
+            "type": "time"
+          }, {
+            "alias": "Server",
+            "field": "redis-server::tag",
+            "key": "typeScfpexfs",
+            "resultType": "string",
+            "type": "field"
+          }],
+          "valueDimensions": [{
+            "alias": "表达式-47",
+            "expr": "used_memory::field",
+            "key": "valueOm4AmSo5",
+            "type": "expr"
+          }]
+        },
+        "optionProps": {
+          "isMoreThanOneDay": false
+        }
+      },
+      "api": {
+        "body": {
+          "from": ["redis"],
+          "groupby": ["time()", "server::tag"],
+          "select": [{
+            "alias": "typeKX23tDr0",
+            "expr": "time()"
+          }, {
+            "alias": "typeScfpexfs",
+            "expr": "server::tag"
+          }, {
+            "alias": "valueOm4AmSo5",
+            "expr": "used_memory::field"
+          }],
+          "where": ["addon_id::tag='{{addonId}}'"]
+        },
+        "method": "post",
+        "query": {
+          "end": 1659412148548,
+          "epoch": "ms",
+          "format": "chartv2",
+          "match_project_id": "*",
+          "neq_addon_id": "redis",
+          "ql": "influxql:ast",
+          "start": 1659408548548,
+          "type": "_"
+        },
+        "url": "/api/orgCenter/metrics-query"
+      },
+      "controls": null
+    }
+  }, {
+    "w": 8,
+    "h": 9,
+    "x": 8,
+    "y": 36,
+    "i": "view-HPArsLy7",
+    "view": {
+      "title": "内存峰值",
+      "i18n": {
+        "title": {
+          "zh": "内存峰值",
+          "en": "Used Memory Peak"
+        }
+      },
+      "description": "",
+      "chartType": "chart:line",
+      "dataSourceType": "api",
+      "staticData": {},
+      "config": {
+        "dataSourceConfig": {
+          "activedMetricGroups": ["project", "project_addon", "project_addon_redis", "project_addon_redis_metrics"],
+          "resultFilters": [{
+            "alias": "表达式-50",
+            "expr": "addon_id::tag='{{addonId}}'",
+            "key": "filteroPGSgAuV",
+            "type": "expr"
+          }],
+          "typeDimensions": [{
+            "alias": "时间",
+            "key": "type3a6OvHqR",
+            "type": "time"
+          }, {
+            "alias": "Server",
+            "field": "redis-server::tag",
+            "key": "typeOmBUCEj8",
+            "resultType": "string",
+            "type": "field"
+          }],
+          "valueDimensions": [{
+            "alias": "表达式-49",
+            "expr": "used_memory_peak::field",
+            "key": "value2tXm5FFc",
+            "type": "expr"
+          }]
+        },
+        "optionProps": {
+          "isMoreThanOneDay": false
+        }
+      },
+      "api": {
+        "body": {
+          "from": ["redis"],
+          "groupby": ["time()", "server::tag"],
+          "select": [{
+            "alias": "type3a6OvHqR",
+            "expr": "time()"
+          }, {
+            "alias": "typeOmBUCEj8",
+            "expr": "server::tag"
+          }, {
+            "alias": "value2tXm5FFc",
+            "expr": "used_memory_peak::field"
+          }],
+          "where": ["addon_id::tag='{{addonId}}'"]
+        },
+        "method": "post",
+        "query": {
+          "end": 1659412148548,
+          "epoch": "ms",
+          "format": "chartv2",
+          "match_project_id": "*",
+          "neq_addon_id": "redis",
+          "ql": "influxql:ast",
+          "start": 1659408548548,
+          "type": "_"
+        },
+        "url": "/api/orgCenter/metrics-query"
+      },
+      "controls": null
+    }
+  }, {
+    "w": 8,
+    "h": 9,
+    "x": 0,
+    "y": 45,
+    "i": "view-wH6d7wnH",
+    "view": {
+      "title": "常驻内存",
+      "i18n": {
+        "title": {
+          "zh": "常驻内存",
+          "en": "Used Memory Rss"
+        }
+      },
+      "description": "",
+      "chartType": "chart:line",
+      "dataSourceType": "api",
+      "staticData": {},
+      "config": {
+        "dataSourceConfig": {
+          "activedMetricGroups": ["project", "project_addon", "project_addon_redis", "project_addon_redis_metrics"],
+          "resultFilters": [{
+            "alias": "表达式-52",
+            "expr": "addon_id::tag='{{addonId}}'",
+            "key": "filterxcqgmynh",
+            "type": "expr"
+          }],
+          "typeDimensions": [{
+            "alias": "时间",
+            "key": "typeuWEFZG6z",
+            "type": "time"
+          }, {
+            "alias": "Server",
+            "field": "redis-server::tag",
+            "key": "typeAHjxszrk",
+            "resultType": "string",
+            "type": "field"
+          }],
+          "valueDimensions": [{
+            "alias": "表达式-51",
+            "expr": "used_memory_rss::field",
+            "key": "valueGNomQaK8",
+            "type": "expr"
+          }]
+        },
+        "optionProps": {
+          "isMoreThanOneDay": false
+        }
+      },
+      "api": {
+        "body": {
+          "from": ["redis"],
+          "groupby": ["time()", "server::tag"],
+          "select": [{
+            "alias": "typeuWEFZG6z",
+            "expr": "time()"
+          }, {
+            "alias": "typeAHjxszrk",
+            "expr": "server::tag"
+          }, {
+            "alias": "valueGNomQaK8",
+            "expr": "used_memory_rss::field"
+          }],
+          "where": ["addon_id::tag='{{addonId}}'"]
+        },
+        "method": "post",
+        "query": {
+          "end": 1659412148548,
+          "epoch": "ms",
+          "format": "chartv2",
+          "match_project_id": "*",
+          "neq_addon_id": "redis",
+          "ql": "influxql:ast",
+          "start": 1659408548548,
+          "type": "_"
+        },
+        "url": "/api/orgCenter/metrics-query"
+      },
+      "controls": null
+    }
+  }, {
+    "w": 8,
+    "h": 9,
+    "x": 8,
+    "y": 45,
+    "i": "view-PdLGXruB",
+    "view": {
+      "title": "lua引擎内存使用量",
+      "i18n": {
+        "title": {
+          "zh": "lua引擎内存使用量",
+          "en": "Used Memory Lua"
+        }
+      },
+      "description": "",
+      "chartType": "chart:line",
+      "dataSourceType": "api",
+      "staticData": {},
+      "config": {
+        "dataSourceConfig": {
+          "activedMetricGroups": ["project", "project_addon", "project_addon_redis", "project_addon_redis_metrics"],
+          "resultFilters": [{
+            "alias": "表达式-54",
+            "expr": "addon_id::tag='{{addonId}}' ",
+            "key": "filterQSFy9Nmk",
+            "type": "expr"
+          }],
+          "typeDimensions": [{
+            "alias": "时间",
+            "key": "typeLzBkjlVE",
+            "type": "time"
+          }, {
+            "alias": "Server",
+            "field": "redis-server::tag",
+            "key": "typep8ohac6H",
+            "resultType": "string",
+            "type": "field"
+          }],
+          "valueDimensions": [{
+            "alias": "表达式-53",
+            "expr": "used_memory_lua::field",
+            "key": "valueLxX45TAa",
+            "type": "expr"
+          }]
+        },
+        "optionProps": {
+          "isMoreThanOneDay": false
+        }
+      },
+      "api": {
+        "body": {
+          "from": ["redis"],
+          "groupby": ["time()", "server::tag"],
+          "select": [{
+            "alias": "typeLzBkjlVE",
+            "expr": "time()"
+          }, {
+            "alias": "typep8ohac6H",
+            "expr": "server::tag"
+          }, {
+            "alias": "valueLxX45TAa",
+            "expr": "used_memory_lua::field"
+          }],
+          "where": ["addon_id::tag='{{addonId}}' "]
+        },
+        "method": "post",
+        "query": {
+          "end": 1659412148548,
+          "epoch": "ms",
+          "format": "chartv2",
+          "match_project_id": "*",
+          "neq_addon_id": "redis",
+          "ql": "influxql:ast",
+          "start": 1659408548548,
+          "type": "_"
+        },
+        "url": "/api/orgCenter/metrics-query"
+      },
+      "controls": null
+    }
+  }, {
+    "w": 8,
+    "h": 9,
+    "x": 0,
+    "y": 54,
+    "i": "view-kdxOOnEC",
+    "view": {
+      "title": "系统态CPU使用率",
+      "i18n": {
+        "title": {
+          "zh": "系统态CPU使用率",
+          "en": "Used Cpu Sys"
+        }
+      },
+      "description": "",
+      "chartType": "chart:line",
+      "dataSourceType": "api",
+      "staticData": {},
+      "config": {
+        "dataSourceConfig": {
+          "activedMetricGroups": ["project", "project_addon", "project_addon_redis", "project_addon_redis_metrics"],
+          "resultFilters": [{
+            "alias": "表达式-56",
+            "expr": "addon_id::tag='{{addonId}}'",
+            "key": "filterEiIFh4lu",
+            "type": "expr"
+          }],
+          "typeDimensions": [{
+            "alias": "时间",
+            "key": "type5NbzRcZy",
+            "type": "time"
+          }, {
+            "alias": "Server",
+            "field": "redis-server::tag",
+            "key": "typehClNScol",
+            "resultType": "string",
+            "type": "field"
+          }],
+          "valueDimensions": [{
+            "alias": "表达式-55",
+            "expr": "used_cpu_sys::field",
+            "key": "valuenTA396JL",
+            "type": "expr"
+          }]
+        },
+        "optionProps": {
+          "isMoreThanOneDay": false
+        }
+      },
+      "api": {
+        "body": {
+          "from": ["redis"],
+          "groupby": ["time()", "server::tag"],
+          "select": [{
+            "alias": "type5NbzRcZy",
+            "expr": "time()"
+          }, {
+            "alias": "typehClNScol",
+            "expr": "server::tag"
+          }, {
+            "alias": "valuenTA396JL",
+            "expr": "used_cpu_sys::field"
+          }],
+          "where": ["addon_id::tag='{{addonId}}'"]
+        },
+        "method": "post",
+        "query": {
+          "end": 1659412148548,
+          "epoch": "ms",
+          "format": "chartv2",
+          "match_project_id": "*",
+          "neq_addon_id": "redis",
+          "ql": "influxql:ast",
+          "start": 1659408548548,
+          "type": "_"
+        },
+        "url": "/api/orgCenter/metrics-query"
+      },
+      "controls": null
+    }
+  }, {
+    "w": 8,
+    "h": 9,
+    "x": 8,
+    "y": 54,
+    "i": "view-5528Asb0",
+    "view": {
+      "title": "用户态CPU使用率",
+      "i18n": {
+        "title": {
+          "zh": "用户态CPU使用率",
+          "en": "Used Cpu User"
+        }
+      },
+      "description": "",
+      "chartType": "chart:line",
+      "dataSourceType": "api",
+      "staticData": null,
+      "config": {
+        "dataSourceConfig": {
+          "activedMetricGroups": ["project", "project_addon", "project_addon_redis", "project_addon_redis_metrics"],
+          "resultFilters": [{
+            "alias": "表达式-58",
+            "expr": "addon_id::tag='{{addonId}}'",
+            "key": "filterMBpiHb6U",
+            "type": "expr"
+          }],
+          "typeDimensions": [{
+            "alias": "时间",
+            "key": "typerJL9LppM",
+            "type": "time"
+          }, {
+            "alias": "Server",
+            "field": "redis-server::tag",
+            "key": "type5qKqyCYx",
+            "resultType": "string",
+            "type": "field"
+          }],
+          "valueDimensions": [{
+            "alias": "表达式-57",
+            "expr": "used_cpu_user::field",
+            "key": "valueuA60fZei",
+            "type": "expr"
+          }]
+        }
+      },
+      "api": {
+        "body": {
+          "from": ["redis"],
+          "groupby": ["time()", "server::tag"],
+          "select": [{
+            "alias": "typerJL9LppM",
+            "expr": "time()"
+          }, {
+            "alias": "type5qKqyCYx",
+            "expr": "server::tag"
+          }, {
+            "alias": "valueuA60fZei",
+            "expr": "used_cpu_user::field"
+          }],
+          "where": ["addon_id::tag='{{addonId}}'"]
+        },
+        "method": "post",
+        "query": {
+          "end": 1659412148548,
+          "epoch": "ms",
+          "format": "chartv2",
+          "match_project_id": "*",
+          "neq_addon_id": "redis",
+          "ql": "influxql:ast",
+          "start": 1659408548548,
+          "type": "_"
+        },
+        "url": "/api/orgCenter/metrics-query"
+      },
+      "controls": null
+    }
+  }, {
+    "w": 8,
+    "h": 9,
+    "x": 0,
+    "y": 63,
+    "i": "view-rY5oHA3j",
+    "view": {
+      "title": "后台进程系统态CPU使用率",
+      "i18n": {
+        "title": {
+          "zh": "后台进程系统态CPU使用率",
+          "en": "Used Cpu Sys Children"
+        }
+      },
+      "description": "",
+      "chartType": "chart:line",
+      "dataSourceType": "api",
+      "staticData": null,
+      "config": {
+        "dataSourceConfig": {
+          "activedMetricGroups": ["project", "project_addon", "project_addon_redis", "project_addon_redis_metrics"],
+          "resultFilters": [{
+            "alias": "表达式-60",
+            "expr": "addon_id::tag='{{addonId}}'",
+            "key": "filterN7jRgjTL",
+            "type": "expr"
+          }],
+          "typeDimensions": [{
+            "alias": "时间",
+            "key": "typeHgRFj5iY",
+            "type": "time"
+          }, {
+            "alias": "Server",
+            "field": "redis-server::tag",
+            "key": "typeVSo1NPrm",
+            "resultType": "string",
+            "type": "field"
+          }],
+          "valueDimensions": [{
+            "alias": "表达式-59",
+            "expr": "used_cpu_sys_children::field",
+            "key": "valueWgfEtzem",
+            "type": "expr"
+          }]
+        }
+      },
+      "api": {
+        "body": {
+          "from": ["redis"],
+          "groupby": ["time()", "server::tag"],
+          "select": [{
+            "alias": "typeHgRFj5iY",
+            "expr": "time()"
+          }, {
+            "alias": "typeVSo1NPrm",
+            "expr": "server::tag"
+          }, {
+            "alias": "valueWgfEtzem",
+            "expr": "used_cpu_sys_children::field"
+          }],
+          "where": ["addon_id::tag='{{addonId}}'"]
+        },
+        "method": "post",
+        "query": {
+          "end": 1659412148548,
+          "epoch": "ms",
+          "format": "chartv2",
+          "match_project_id": "*",
+          "neq_addon_id": "redis",
+          "ql": "influxql:ast",
+          "start": 1659408548548,
+          "type": "_"
+        },
+        "url": "/api/orgCenter/metrics-query"
+      },
+      "controls": null
+    }
+  }, {
+    "w": 8,
+    "h": 9,
+    "x": 8,
+    "y": 63,
+    "i": "view-KIs967nJ",
+    "view": {
+      "title": "后台进程用户态CPU使用率",
+      "i18n": {
+        "title": {
+          "zh": "后台进程用户态CPU使用率",
+          "en": "Used Cpu User Children"
+        }
+      },
+      "description": "",
+      "chartType": "chart:line",
+      "dataSourceType": "api",
+      "staticData": null,
+      "config": {
+        "dataSourceConfig": {
+          "activedMetricGroups": ["project", "project_addon", "project_addon_redis", "project_addon_redis_metrics"],
+          "resultFilters": [{
+            "alias": "表达式-62",
+            "expr": "addon_id::tag='{{addonId}}'",
+            "key": "filterUgm9xgXd",
+            "type": "expr"
+          }],
+          "typeDimensions": [{
+            "alias": "时间",
+            "key": "typeixJchpGw",
+            "type": "time"
+          }, {
+            "alias": "Server",
+            "field": "redis-server::tag",
+            "key": "type4haMP6z1",
+            "resultType": "string",
+            "type": "field"
+          }],
+          "valueDimensions": [{
+            "alias": "表达式-61",
+            "expr": "used_cpu_user_children::field",
+            "key": "valueGgUZO3Aj",
+            "type": "expr"
+          }]
+        }
+      },
+      "api": {
+        "body": {
+          "from": ["redis"],
+          "groupby": ["time()", "server::tag"],
+          "select": [{
+            "alias": "typeixJchpGw",
+            "expr": "time()"
+          }, {
+            "alias": "type4haMP6z1",
+            "expr": "server::tag"
+          }, {
+            "alias": "valueGgUZO3Aj",
+            "expr": "used_cpu_user_children::field"
+          }],
+          "where": ["addon_id::tag='{{addonId}}'"]
+        },
+        "method": "post",
+        "query": {
+          "end": 1659412148548,
+          "epoch": "ms",
+          "format": "chartv2",
+          "match_project_id": "*",
+          "neq_addon_id": "redis",
+          "ql": "influxql:ast",
+          "start": 1659408548548,
+          "type": "_"
+        },
+        "url": "/api/orgCenter/metrics-query"
+      },
+      "controls": null
+    }
+  }]
+}
