@@ -645,3 +645,69 @@ func TestService_getMrInfo(t *testing.T) {
 		})
 	}
 }
+
+func Test_canJoin(t *testing.T) {
+	type args struct {
+		commit     *apistructs.Commit
+		baseCommit *apistructs.Commit
+		tempBranch string
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "test with nil commit",
+			args: args{
+				commit:     nil,
+				baseCommit: &apistructs.Commit{},
+				tempBranch: "next/dev",
+			},
+			want: false,
+		},
+		{
+			name: "test with empty tempBranch",
+			args: args{
+				commit:     &apistructs.Commit{},
+				baseCommit: &apistructs.Commit{},
+				tempBranch: "",
+			},
+			want: false,
+		},
+		{
+			name: "test with nil baseCommit",
+			args: args{
+				commit:     &apistructs.Commit{},
+				baseCommit: nil,
+				tempBranch: "next/dev",
+			},
+			want: true,
+		},
+		{
+			name: "test with equal commitID",
+			args: args{
+				commit:     &apistructs.Commit{ID: "1"},
+				baseCommit: &apistructs.Commit{ID: "1"},
+				tempBranch: "next/dev",
+			},
+			want: false,
+		},
+		{
+			name: "test with unequal commitID",
+			args: args{
+				commit:     &apistructs.Commit{ID: "1"},
+				baseCommit: &apistructs.Commit{ID: "2"},
+				tempBranch: "next/dev",
+			},
+			want: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := canJoin(tt.args.commit, tt.args.baseCommit, tt.args.tempBranch); got != tt.want {
+				t.Errorf("canJoin() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

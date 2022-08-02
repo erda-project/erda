@@ -616,7 +616,7 @@ func (s *Service) GetDevFlowInfo(ctx context.Context, req *pb.GetDevFlowInfoRequ
 				Commit:               commitConvert(currentBranchCommit),
 				IsJoinTempBranch:     devFlow.IsJoinTempBranch,
 				JoinTempBranchStatus: devFlow.JoinTempBranchStatus,
-				CanJoin:              canJoin(currentBranchCommit, baseCommit),
+				CanJoin:              canJoin(currentBranchCommit, baseCommit, tempBranch),
 				Exist:                currentBranchExists,
 				SourceBranch:         sourceBranch,
 			}
@@ -700,8 +700,11 @@ func (s *Service) getAllAppInfoMapByProjectID(ctx context.Context, projectID uin
 	return appInfoMap, nil
 }
 
-func canJoin(commit, baseCommit *apistructs.Commit) bool {
+func canJoin(commit, baseCommit *apistructs.Commit, tempBranch string) bool {
 	if commit == nil {
+		return false
+	}
+	if tempBranch == "" {
 		return false
 	}
 	if baseCommit == nil {
