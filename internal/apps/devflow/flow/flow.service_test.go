@@ -64,6 +64,9 @@ func (d devFlowRuleForGetMock) GetFlowByRule(ctx context.Context, request devflo
 }
 
 func (d devFlowRuleForGetMock) GetDevFlowRulesByProjectID(ctx context.Context, request *flowrulepb.GetDevFlowRuleRequest) (*flowrulepb.GetDevFlowRuleResponse, error) {
+	if request.ProjectID == 0 {
+		return nil, fmt.Errorf("error")
+	}
 	return &flowrulepb.GetDevFlowRuleResponse{
 		Data: &flowrulepb.DevFlowRule{
 			ID: "c1dcf304-0dd6-4e2c-b68a-2005d45e81fd",
@@ -295,7 +298,19 @@ func TestService_getFlowRuleNameBranchPolicyMap(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "test",
+			name: "test with err",
+			fields: fields{
+				p: &provider{DevFlowRule: devFlowRuleForGetMock{}},
+			},
+			args: args{
+				ctx:       context.Background(),
+				projectID: 0,
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "test with correct",
 			fields: fields{
 				p: &provider{DevFlowRule: devFlowRuleForGetMock{}},
 			},
@@ -362,7 +377,7 @@ func TestService_findBranchPolicyByName(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "test",
+			name: "test with correct",
 			fields: fields{
 				p: &provider{DevFlowRule: devFlowRuleForGetMock{}},
 			},
@@ -386,6 +401,19 @@ func TestService_findBranchPolicyByName(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "test with err",
+			fields: fields{
+				p: &provider{DevFlowRule: devFlowRuleForGetMock{}},
+			},
+			args: args{
+				ctx:          context.Background(),
+				projectID:    1,
+				flowRuleName: "DEV2",
+			},
+			want:    nil,
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -408,6 +436,9 @@ func TestService_isMROpenedOrNotCreated(t *testing.T) {
 	var bdl *bundle.Bundle
 	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "ListMergeRequest",
 		func(bdl *bundle.Bundle, appID uint64, userID string, req apistructs.GittarQueryMrRequest) (*apistructs.QueryMergeRequestsData, error) {
+			if appID == 0 {
+				return nil, fmt.Errorf("fail")
+			}
 			if appID == 1 {
 				return &apistructs.QueryMergeRequestsData{
 					List:  nil,
@@ -457,6 +488,20 @@ func TestService_isMROpenedOrNotCreated(t *testing.T) {
 		want    bool
 		wantErr bool
 	}{
+		{
+			name: "test with err",
+			fields: fields{
+				p: &provider{bdl: bdl},
+			},
+			args: args{
+				ctx:           context.Background(),
+				currentBranch: "feature/dop",
+				targetBranch:  "master",
+				appID:         0,
+			},
+			want:    false,
+			wantErr: true,
+		},
 		{
 			name: "test with not created",
 			fields: fields{
@@ -521,6 +566,9 @@ func TestService_getMrInfo(t *testing.T) {
 	var bdl *bundle.Bundle
 	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "ListMergeRequest",
 		func(bdl *bundle.Bundle, appID uint64, userID string, req apistructs.GittarQueryMrRequest) (*apistructs.QueryMergeRequestsData, error) {
+			if appID == 0 {
+				return nil, fmt.Errorf("fail")
+			}
 			return &apistructs.QueryMergeRequestsData{
 				List: []*apistructs.MergeRequestInfo{
 					{
@@ -554,7 +602,19 @@ func TestService_getMrInfo(t *testing.T) {
 		wantErr    bool
 	}{
 		{
-			name:   "test with get mr",
+			name:   "test with err",
+			fields: fields{p: &provider{bdl: bdl}},
+			args: args{
+				ctx:           context.Background(),
+				appID:         0,
+				currentBranch: "feature/dop",
+				targetBranch:  "master",
+			},
+			wantMrInfo: nil,
+			wantErr:    true,
+		},
+		{
+			name:   "test with correct",
 			fields: fields{p: &provider{bdl: bdl}},
 			args: args{
 				ctx:           context.Background(),
