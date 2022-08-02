@@ -214,6 +214,9 @@ func GetContextHeader(r *http.Request) context.Context {
 
 func GetContext(r *http.Request, append func(*http.Header)) context.Context {
 	header := r.Header
+	if header == nil {
+		return context.Background()
+	}
 	if append != nil {
 		append(&header)
 	}
