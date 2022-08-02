@@ -71,12 +71,6 @@ clickhouse.table.loader@log:
   default_search_table: "logs_all"
   cache_key_prefix: "clickhouse-table-log"
 
-clickhouse.table.loader@metric:
-  _enable: ${QUERY_METRIC_FROM_CLICKHOUSE_ENABLE:false}
-  table_prefix: "metrics"
-  default_search_table: "metrics_all"
-  cache_key_prefix: "clickhouse-table-metric"
-
 log-storage-clickhouse:
   _enable: ${QUERY_LOG_FROM_CLICKHOUSE_ENABLE:false}
   query_timeout: "${QUERY_LOG_FROM_CLICKHOUSE_TIMEOUT:1m}"
