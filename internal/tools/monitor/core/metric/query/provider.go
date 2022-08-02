@@ -39,6 +39,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/metricmeta"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/query"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/storage"
+	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/clickhouse"
 	indexloader "github.com/erda-project/erda/internal/tools/monitor/core/storekit/elasticsearch/index/loader"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
@@ -67,22 +68,13 @@ type provider struct {
 	metricService     *metricService
 	metricMetaService *metricMetaService
 
-	Storage         storage.Storage `autowired:"metric-storage"`
-	CkStorageReader storage.Storage `autowired:"metric-storage-clickhouse" optional:"true"`
+	Storage         storage.Storage  `autowired:"metric-storage"`
+	CkStorageReader storage.Storage  `autowired:"metric-storage-clickhouse" optional:"true"`
+	CkSearchRaw     clickhouse.Query `autowired:"metric-storage-clickhouse" optional:"true"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	meta := metricmeta.NewManager(
-		p.Cfg.MetricMeta.Sources,
-		p.DB,
-		p.Index,
-		p.Cfg.MetricMeta.MetricMetaPath,
-		p.Cfg.MetricMeta.GroupFiles,
-		p.MetricTran,
-		p.Log,
-		p.Redis,
-		p.Cfg.MetricMeta.MetricMetaCacheExpiration,
-	)
+	meta := metricmeta.NewManager(p.Cfg.MetricMeta.Sources, p.DB, p.Index, p.Cfg.MetricMeta.MetricMetaPath, p.Cfg.MetricMeta.GroupFiles, p.MetricTran, p.Log, p.Redis, p.Cfg.MetricMeta.MetricMetaCacheExpiration, p.CkSearchRaw)
 	p.meta = meta
 	err := meta.Init()
 	if err != nil {
@@ -95,7 +87,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	}
 	p.metricService = &metricService{
 		p:     p,
-		query: query.New(meta, p.Storage, p.CkStorageReader),
+		query: query.New(meta, p.Storage, p.CkStorageReader, p.Log),
 	}
 	if p.Register != nil {
 		pb.RegisterMetricServiceImp(p.Register, p.metricService, apis.Options(),

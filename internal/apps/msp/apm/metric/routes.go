@@ -117,6 +117,8 @@ func (p *provider) getMetricParams(metric string, r *http.Request) (url.Values, 
 	}
 	params[key] = nil
 
+	r.Header.Add("terminus_key", value)
+
 	tkeys := p.getRuntimeTerminusKeys(value)
 	appendTerminusKeys := func(prefix, key string) {
 		if len(tkeys) == 1 {

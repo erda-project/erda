@@ -24,12 +24,14 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/topn"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/topn/impl"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/math"
 	"github.com/erda-project/erda/pkg/time"
 )
@@ -147,6 +149,10 @@ func (p *provider) exceptionCountTop5(interval int64, tenantId, serviceId string
 		Statement: statement,
 		Params:    queryParams,
 	}
+	ctx = apis.GetContext(ctx, func(header *transport.Header) {
+		header.Set("terminus_key", tenantId)
+	})
+
 	response, err := p.Metric.QueryWithInfluxFormat(ctx, request)
 	if err != nil {
 		return nil, err
@@ -190,6 +196,11 @@ func (p *provider) sqlSlowTop5(interval int64, tenantId, serviceId string, start
 		Statement: statement,
 		Params:    queryParams,
 	}
+
+	ctx = apis.GetContext(ctx, func(header *transport.Header) {
+		header.Set("terminus_key", tenantId)
+	})
+
 	response, err := p.Metric.QueryWithInfluxFormat(ctx, request)
 	if err != nil {
 		return nil, err
@@ -239,6 +250,11 @@ func (p *provider) pathClientRpsMaxTop5(interval int64, tenantId, serviceId stri
 		Statement: statement,
 		Params:    queryParams,
 	}
+
+	ctx = apis.GetContext(ctx, func(header *transport.Header) {
+		header.Set("terminus_key", tenantId)
+	})
+
 	response, err := p.Metric.QueryWithInfluxFormat(ctx, request)
 	if err != nil {
 		return nil, err
@@ -280,6 +296,11 @@ func (p *provider) pathErrorRateTop5(interval int64, tenantId, serviceId string,
 		Statement: statement,
 		Params:    queryParams,
 	}
+
+	ctx = apis.GetContext(ctx, func(header *transport.Header) {
+		header.Set("terminus_key", tenantId)
+	})
+
 	response, err := p.Metric.QueryWithInfluxFormat(ctx, request)
 	if err != nil {
 		return nil, err
@@ -342,6 +363,11 @@ func (p *provider) pathSlowTop5(interval int64, tenantId, serviceId string, star
 		Statement: statement,
 		Params:    queryParams,
 	}
+
+	ctx = apis.GetContext(ctx, func(header *transport.Header) {
+		header.Set("terminus_key", tenantId)
+	})
+
 	response, err := p.Metric.QueryWithInfluxFormat(ctx, request)
 	if err != nil {
 		return nil, err
@@ -388,6 +414,11 @@ func (p *provider) pathRpsMaxTop5(interval int64, tenantId, serviceId string, st
 		Statement: statement,
 		Params:    queryParams,
 	}
+
+	ctx = apis.GetContext(ctx, func(header *transport.Header) {
+		header.Set("terminus_key", tenantId)
+	})
+
 	response, err := p.Metric.QueryWithInfluxFormat(ctx, request)
 	if err != nil {
 		return nil, err

@@ -17,6 +17,7 @@ package clickhouse
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -29,7 +30,12 @@ import (
 
 type (
 	config struct {
-		Keypass map[string][]string `file:"keypass"`
+		Keypass  map[string][]string `file:"keypass"`
+		PlayBack bool                `file:"play_back"`
+
+		QueryTimeout    time.Duration `file:"query_timeout" default:"1m"`
+		QueryMaxThreads int           `file:"query_max_threads" default:"0"`
+		QueryMaxMemory  int64         `file:"query_max_memory" default:"0"`
 	}
 	provider struct {
 		Cfg    *config

@@ -17,12 +17,14 @@ package query
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"net/url"
 	"strings"
 	"time"
 
+	"github.com/erda-project/erda-infra/base/logs"
+	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/i18n"
-
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/model"
 	tsql "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql/formats"
@@ -34,21 +36,22 @@ type queryer struct {
 	storage   storage.Storage `autowired:"metric-storage"`
 	ckStorage storage.Storage `autowired:"metric-storage-clickhouse"`
 	meta      *metricmeta.Manager
+	log       logs.Logger
 }
 
 // New .
-func New(meta *metricmeta.Manager, esStorage storage.Storage, ckStorage storage.Storage) Queryer {
+func New(meta *metricmeta.Manager, esStorage storage.Storage, ckStorage storage.Storage, log logs.Logger) Queryer {
 	return &queryer{
 		meta:      meta,
 		storage:   esStorage,
 		ckStorage: ckStorage,
+		log:       log,
 	}
 }
 
 const hourms = int64(time.Hour) / int64(time.Millisecond)
 
-func (q *queryer) buildTSQLParser(ql, statement string, params map[string]interface{}, filters []*model.Filter, options url.Values) (
-	parser tsql.Parser, others map[string]interface{}, err error) {
+func (q *queryer) buildTSQLParser(ctx context.Context, ql, statement string, params map[string]interface{}, filters []*model.Filter, options url.Values) (parser tsql.Parser, others map[string]interface{}, err error) {
 	idx := strings.Index(ql, ":")
 	if idx > 0 {
 		if ql[idx+1:] == "ast" && ql[0:idx] == "influxql" {
@@ -93,11 +96,24 @@ func (q *queryer) buildTSQLParser(ql, statement string, params map[string]interf
 	}
 	parser = parser.SetParams(params)
 
-	if terminusKey, ok := params["terminus_key"]; ok {
-		parser.SetTerminusKey(terminusKey.(string))
+	// process header
+	if ctx == nil {
+		ctx = context.Background()
 	}
-	if orgName, ok := params["org_name"]; ok {
-		parser.SetTerminusKey(orgName.(string))
+	if head := transport.ContextHeader(ctx); head != nil {
+		if orgNames := head.Get("org"); len(orgNames) > 0 {
+			parser = parser.SetOrgName(orgNames[0])
+		}
+		if tkeys := head.Get("terminus_key"); len(tkeys) > 0 {
+			parser = parser.SetTerminusKey(tkeys[0])
+		}
+
+	} else {
+		header := ctx.Value("header")
+		if v, ok := header.(http.Header); ok && v != nil {
+			parser = parser.SetOrgName(v.Get("org"))
+			parser = parser.SetTerminusKey(v.Get("terminus_key"))
+		}
 	}
 
 	unit := options.Get("epoch") // Keep the same parameters as the influxdb.
@@ -131,8 +147,8 @@ func (q *queryer) buildTSQLParser(ql, statement string, params map[string]interf
 	return parser, others, nil
 }
 
-func (q *queryer) doQuery(ql, statement string, params map[string]interface{}, filters []*model.Filter, options url.Values) (*model.ResultSet, tsql.Query, map[string]interface{}, error) {
-	parser, others, err := q.buildTSQLParser(ql, statement, params, filters, options)
+func (q *queryer) doQuery(ctx context.Context, ql, statement string, params map[string]interface{}, filters []*model.Filter, options url.Values) (*model.ResultSet, tsql.Query, map[string]interface{}, error) {
+	parser, others, err := q.buildTSQLParser(ctx, ql, statement, params, filters, options)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -175,20 +191,27 @@ func (q *queryer) GetResult(parser tsql.Parser) (*model.ResultSet, tsql.Query, e
 }
 
 // Query .
-func (q *queryer) Query(tsql, statement string, params map[string]interface{}, options url.Values) (*model.ResultSet, error) {
-	rs, _, _, err := q.doQuery(tsql, statement, params, nil, options)
+func (q *queryer) Query(ctx context.Context, tsql, statement string, params map[string]interface{}, options url.Values) (*model.ResultSet, error) {
+	rs, _, _, err := q.doQuery(ctx, tsql, statement, params, nil, options)
+	if err != nil {
+		q.log.Error("query tsql is error:", err)
+	}
 	return rs, err
 }
 
 // QueryWithFormat .
-func (q *queryer) QueryWithFormat(tsql, statement, format string, langCode i18n.LanguageCodes, params map[string]interface{}, filters []*model.Filter, options url.Values) (*model.ResultSet, interface{}, error) {
-	rs, query, opts, err := q.doQuery(tsql, statement, params, filters, options)
+func (q *queryer) QueryWithFormat(ctx context.Context, tsql, statement, format string, langCodes i18n.LanguageCodes, params map[string]interface{}, filters []*model.Filter, options url.Values) (*model.ResultSet, interface{}, error) {
+	rs, query, opts, err := q.doQuery(ctx, tsql, statement, params, filters, options)
 	if err != nil {
+		q.log.Error("query tsql is error:", err)
 		return nil, nil, err
 	}
 	if rs.Details != nil {
 		return rs, nil, err
 	}
 	data, err := formats.Format(format, query, rs.Data, opts)
+	if err != nil {
+		q.log.Error("parse query result is error:", err)
+	}
 	return rs, data, err
 }

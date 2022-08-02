@@ -912,7 +912,7 @@ func OperateValues(a interface{}, op Operator, b interface{}) (interface{}, erro
 				return av / float64(bv), nil
 			case float64:
 				if bv == 0 {
-					return nil, nil // ErrDivideByZero
+					return 0, nil // ErrDivideByZero
 				}
 				return av / bv, nil
 			case string:
