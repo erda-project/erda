@@ -618,6 +618,7 @@ func (s *Service) GetDevFlowInfo(ctx context.Context, req *pb.GetDevFlowInfoRequ
 				JoinTempBranchStatus: devFlow.JoinTempBranchStatus,
 				CanJoin:              canJoin(currentBranchCommit, baseCommit),
 				Exist:                currentBranchExists,
+				SourceBranch:         sourceBranch,
 			}
 			devFlowInfo.TempMergeNode = &pb.TempMergeNode{
 				TempBranch:   tempBranch,

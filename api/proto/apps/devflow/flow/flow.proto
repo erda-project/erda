@@ -172,6 +172,7 @@ message CodeNode {
     string joinTempBranchStatus = 4;
     bool canJoin = 5;
     bool exist = 6;
+    string sourceBranch = 7;
 }
 
 message TempMergeNode {
