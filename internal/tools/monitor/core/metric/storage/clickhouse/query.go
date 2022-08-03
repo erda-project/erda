@@ -112,7 +112,9 @@ func (p *provider) Query(ctx context.Context, q tsql.Query) (*model.ResultSet, e
 
 	result.Data, err = q.ParseResult(newCtx, rows)
 
-	span.SetAttributes(attribute.Int("result_total", len(result.Data.Rows)))
+	if result.Data != nil && result.Data.Rows != nil {
+		span.SetAttributes(attribute.Int("result_total", len(result.Data.Rows)))
+	}
 	span.SetAttributes(trace.BigStringAttribute("result", result))
 
 	if err != nil {

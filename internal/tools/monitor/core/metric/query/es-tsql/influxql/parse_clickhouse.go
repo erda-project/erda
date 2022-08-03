@@ -736,22 +736,6 @@ func (p *Parser) ckField(key string) (string, bool) {
 	if newColumn, ok := originColumn[key]; ok {
 		return fmt.Sprintf("indexOf(string_field_values,'%s')", newColumn), false
 	}
-	metrics, err := p.Metrics()
-	if err != nil {
-		return fmt.Sprintf("indexOf(number_field_keys,'%s')", key), true
-	}
-
-	metas, err := p.meta.GetMetricMetaByCache(p.orgName, p.terminusKey, metrics...)
-	if err == nil {
-		for _, meta := range metas {
-			if typ, ok := meta.Fields[key]; ok {
-				//Multiple metrics can be specified, there may be the same name and type conflict, Chart Query
-				if typ.Type == "string" {
-					return fmt.Sprintf("indexOf(string_field_values,'%s')", key), false
-				}
-			}
-		}
-	}
 	return fmt.Sprintf("indexOf(number_field_keys,'%s')", key), true
 }
 

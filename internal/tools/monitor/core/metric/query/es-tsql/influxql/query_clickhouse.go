@@ -18,6 +18,7 @@ import (
 	"context"
 	"io"
 	"reflect"
+	"strings"
 	"time"
 
 	ckdriver "github.com/ClickHouse/clickhouse-go/v2/lib/driver"
@@ -25,11 +26,11 @@ import (
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
+	oteltrace "go.opentelemetry.io/otel/trace"
 
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/model"
 	tsql "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql"
-	erdatrace "github.com/erda-project/erda/pkg/common/trace"
+	"github.com/erda-project/erda/pkg/common/trace"
 )
 
 type QueryClickhouse struct {
@@ -82,7 +83,8 @@ func (q QueryClickhouse) ParseResult(ctx context.Context, resp interface{}) (*mo
 		err         error
 	)
 
-	span.SetAttributes(attribute.StringSlice("origin.columns", columns))
+	span.SetAttributes(trace.BigStringAttribute("rows", rows))
+	span.SetAttributes(attribute.String("origin.columns", strings.Join(columns, ";")))
 
 	for i := range columnTypes {
 		vars[i] = reflect.New(columnTypes[i].ScanType()).Interface()
@@ -101,7 +103,12 @@ func (q QueryClickhouse) ParseResult(ctx context.Context, resp interface{}) (*mo
 		}
 	}
 
+	var dumpArr []map[string]interface{}
 	getData = func(row ckdriver.Rows) (map[string]interface{}, error) {
+		if row.Err() != nil {
+			return nil, errors.Wrap(row.Err(), "failed to get data")
+		}
+
 		if err := rows.Scan(vars...); err != nil {
 			return nil, err
 		}
@@ -111,8 +118,7 @@ func (q QueryClickhouse) ParseResult(ctx context.Context, resp interface{}) (*mo
 			columnName := columns[i]
 			data[columnName] = pretty(v)
 		}
-		// todo need thinks to do with data
-		span.AddEvent("get.data", trace.WithAttributes(erdatrace.BigStringAttribute("origin.data", data)))
+		dumpArr = append(dumpArr, data)
 		return data, nil
 	}
 
@@ -130,6 +136,8 @@ func (q QueryClickhouse) ParseResult(ctx context.Context, resp interface{}) (*mo
 			// The first item is empty
 			return rs, nil
 		}
+
+		span.RecordError(err, oteltrace.WithAttributes(attribute.String("comment", "first is error")))
 		return nil, err
 	}
 
@@ -145,12 +153,17 @@ func (q QueryClickhouse) ParseResult(ctx context.Context, resp interface{}) (*mo
 		if len(cur) <= 0 {
 			cur, err = getData(rows)
 			if err != nil {
+				span.RecordError(err)
 				return nil, err
 			}
 		}
 
 		if rows.Next() {
 			next, err = getData(rows)
+			if err != nil {
+				span.RecordError(err)
+				return nil, err
+			}
 			q.ctx.attributesCache["next"] = next
 		} else {
 			isTail = true
@@ -161,6 +174,7 @@ func (q QueryClickhouse) ParseResult(ctx context.Context, resp interface{}) (*mo
 			if c.AllColumns() {
 				allValue, err := c.getALLValue(cur)
 				if err != nil {
+					span.RecordError(err, oteltrace.WithAttributes(attribute.String("comment", "get all value error")))
 					return nil, err
 				}
 				for k, v := range allValue {
@@ -180,6 +194,10 @@ func (q QueryClickhouse) ParseResult(ctx context.Context, resp interface{}) (*mo
 
 			v, err := c.getValue(cur)
 			if err != nil {
+				span.RecordError(err, oteltrace.WithAttributes(
+					attribute.String("comment", "get column value error"),
+					trace.BigStringAttribute("data", cur),
+				))
 				return nil, err
 			}
 
@@ -199,6 +217,8 @@ func (q QueryClickhouse) ParseResult(ctx context.Context, resp interface{}) (*mo
 	}
 	rs.Total = int64(len(rs.Rows))
 	rs.Interval = q.ctx.Interval()
+	span.SetAttributes(trace.BigStringAttribute("result.total", len(rs.Rows)))
+	span.SetAttributes(trace.BigStringAttribute("dump", dumpArr))
 	return rs, nil
 }
 
