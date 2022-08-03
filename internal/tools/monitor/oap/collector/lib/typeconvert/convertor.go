@@ -81,6 +81,11 @@ func ToFloat64(obj interface{}) (float64, error) {
 		return float64(val), nil
 	case float64:
 		return val, nil
+	case bool:
+		if val {
+			return 1, nil
+		}
+		return 0, nil
 	case string:
 		v, err := strconv.ParseFloat(val, 64)
 		if err != nil {
