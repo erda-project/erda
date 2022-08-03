@@ -21,8 +21,8 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8serror"
-	kedav1alpha1 "github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/scaledobject/keda/v1alpha1"
 	"github.com/erda-project/erda/pkg/http/httpclient"
+	kedav1alpha1 "github.com/erda-project/erda/pkg/k8sclient/apis/keda/v1alpha1"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 

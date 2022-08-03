@@ -31,7 +31,6 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/events"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/configmap"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/instanceinfo"
-	"github.com/erda-project/erda/pkg/clientgo/kubernetes"
 	"github.com/erda-project/erda/pkg/dlock"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/jsonstore"
@@ -99,7 +98,6 @@ type ClusterInfo struct {
 	data                 map[string]string   // cluster info 数据
 	addr                 string              // k8s master address
 	client               httpclient.HTTPClient
-	k8sClient            *kubernetes.Clientset
 	db                   *instanceinfo.Client
 }
 
@@ -134,12 +132,6 @@ func New(clusterName string, options ...Option) (*ClusterInfo, error) {
 	return cm, nil
 }
 
-func WithKubernetesClient(client *kubernetes.Clientset) Option {
-	return func(info *ClusterInfo) {
-		info.k8sClient = client
-	}
-}
-
 // WithCompleteParams provides an Option
 func WithCompleteParams(addr string, client *httpclient.HTTPClient) Option {
 	return func(ci *ClusterInfo) {
@@ -169,15 +161,11 @@ func (ci *ClusterInfo) Load() error {
 		addonCM *corev1.ConfigMap
 		err     error
 	)
-	if ci.k8sClient != nil {
-		cm, err = ci.k8sClient.CoreV1().ConfigMaps(namespace).Get(context.Background(), apistructs.ConfigMapNameOfClusterInfo, metav1.GetOptions{})
-	} else {
-		if ci.ConfigMap == nil {
-			return errors.New("configMap is nil")
-		}
-		cm, err = ci.ConfigMap.Get(namespace, apistructs.ConfigMapNameOfClusterInfo)
-	}
 
+	if ci.ConfigMap == nil {
+		return errors.New("configMap is nil")
+	}
+	cm, err = ci.ConfigMap.Get(namespace, apistructs.ConfigMapNameOfClusterInfo)
 	if err != nil {
 		return errors.Errorf("failed to get %s configMap, clusterName: %s, (%v)",
 			apistructs.ConfigMapNameOfClusterInfo, ci.clusterName, err)
@@ -188,11 +176,7 @@ func (ci *ClusterInfo) Load() error {
 		delete(cm.Data, key)
 	}
 	ci.data = cm.Data
-	if ci.k8sClient != nil {
-		addonCM, err = ci.k8sClient.CoreV1().ConfigMaps(namespace).Get(context.Background(), apistructs.ConfigMapNameOfAddons, metav1.GetOptions{})
-	} else {
-		addonCM, err = ci.ConfigMap.Get(namespace, apistructs.ConfigMapNameOfAddons)
-	}
+	addonCM, err = ci.ConfigMap.Get(namespace, apistructs.ConfigMapNameOfAddons)
 	if err != nil {
 		return errors.Errorf("failed to get %s configMap, clusterName: %s, (%v)",
 			apistructs.ConfigMapNameOfAddons, ci.clusterName, err)

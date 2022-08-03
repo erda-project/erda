@@ -20,7 +20,7 @@ import (
 
 	crClient "sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/erda-project/erda/pkg/clientgo/apis/openyurt/v1alpha1"
+	"github.com/erda-project/erda/pkg/k8sclient/apis/openyurt/v1alpha1"
 )
 
 // ListNodePool List nodePool under the specified cluster.

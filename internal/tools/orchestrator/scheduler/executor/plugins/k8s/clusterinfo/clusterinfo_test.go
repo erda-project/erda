@@ -15,9 +15,16 @@
 package clusterinfo
 
 import (
+	"reflect"
 	"testing"
 
+	"bou.ke/monkey"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
+	corev1 "k8s.io/api/core/v1"
+
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/configmap"
 )
 
 func TestParseNetportalURL(t *testing.T) {
@@ -33,4 +40,34 @@ func TestParseNetportalURL(t *testing.T) {
 	netportal, err = parseNetportalURL(testURL2)
 	assert.Nil(t, err)
 	assert.Equal(t, "inet://127.0.0.2?ssl=on&direct=on", netportal)
+}
+
+func TestLoad(t *testing.T) {
+	cm := configmap.New()
+	ci := ClusterInfo{
+		ConfigMap: cm,
+	}
+
+	defer monkey.UnpatchAll()
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(cm), "Get", func(c *configmap.ConfigMap, namespace string, key string) (*corev1.ConfigMap, error) {
+		switch key {
+		case apistructs.ConfigMapNameOfClusterInfo:
+			return &corev1.ConfigMap{
+				Data: map[string]string{
+					"DICE_SSH_USER": "fake",
+				},
+			}, nil
+		case apistructs.ConfigMapNameOfAddons:
+			return &corev1.ConfigMap{
+				Data: map[string]string{
+					"REGISTRY_ADDR": "addon-registry.default.svc.cluster.local:5000",
+				},
+			}, nil
+		default:
+			return nil, errors.Errorf("configmap %s not found", key)
+		}
+	})
+
+	assert.NoError(t, ci.Load())
 }

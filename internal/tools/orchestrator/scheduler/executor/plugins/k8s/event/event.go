@@ -83,6 +83,9 @@ func (e *Event) WatchPodEventsAllNamespaces(ctx context.Context, callback func(*
 			return e.k8sClient.CoreV1().Events(metav1.NamespaceAll).Watch(context.Background(), options)
 		},
 	})
+	if err != nil {
+		return fmt.Errorf("create retry watcher error: %v", err)
+	}
 
 	defer retryWatcher.Stop()
 	logrus.Infof("start watching pod events ......")
