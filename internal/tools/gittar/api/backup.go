@@ -19,6 +19,7 @@ import (
 	"os"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/core/file/types"
 	"github.com/erda-project/erda/internal/tools/gittar/helper"
 	"github.com/erda-project/erda/internal/tools/gittar/webcontext"
 )
