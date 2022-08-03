@@ -34,6 +34,7 @@ import (
 
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-proto-go/core/monitor/dataview/pb"
+	"github.com/erda-project/erda/internal/core/file/filetypes"
 	"github.com/erda-project/erda/internal/tools/monitor/core/dataview/db"
 	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
@@ -308,7 +309,7 @@ func (p *provider) ExportTask(id string) {
 	// export to file
 	filename := dashboardFilename(history.Scope, history.ScopeId)
 	reader := strings.NewReader(history.File)
-	request := types.FileUploadRequest{
+	request := filetypes.FileUploadRequest{
 		FileNameWithExt: filename,
 		ByteSize:        int64(reader.Len()),
 		FileReader:      ioutil.NopCloser(reader),

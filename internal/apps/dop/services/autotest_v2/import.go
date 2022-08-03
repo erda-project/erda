@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/dao"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
+	"github.com/erda-project/erda/internal/core/file/filetypes"
 	"github.com/erda-project/erda/pkg/excel"
 )
 
@@ -377,7 +378,7 @@ func (svc *Service) Import(req apistructs.AutoTestSpaceImportRequest, r *http.Re
 	}
 	defer f.Close()
 
-	uploadReq := types.FileUploadRequest{
+	uploadReq := filetypes.FileUploadRequest{
 		FileNameWithExt: fileHeader.Filename,
 		FileReader:      f,
 		From:            "autotest-space",
@@ -504,7 +505,7 @@ func (svc *Service) ImportSceneSet(req apistructs.AutoTestSceneSetImportRequest,
 	}
 	defer f.Close()
 
-	uploadReq := types.FileUploadRequest{
+	uploadReq := filetypes.FileUploadRequest{
 		FileNameWithExt: fileHeader.Filename,
 		FileReader:      f,
 		From:            "autotest-scene-set",

@@ -27,7 +27,7 @@ import (
 	"github.com/erda-project/erda-proto-go/core/file/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/core/file/db"
-	"github.com/erda-project/erda/internal/core/file/types"
+	"github.com/erda-project/erda/internal/core/file/filetypes"
 	"github.com/erda-project/erda/internal/core/legacy/conf"
 	"github.com/erda-project/erda/internal/core/legacy/services/apierrors"
 	"github.com/erda-project/erda/pkg/common/pbutil"
@@ -45,7 +45,7 @@ func (s *fileService) headerValueDispositionInline(fileType, filename string) st
 	return fmt.Sprintf("inline; filename=%s", filename)
 }
 
-func (s *fileService) UploadFile(req types.FileUploadRequest) (*pb.File, error) {
+func (s *fileService) UploadFile(req filetypes.FileUploadRequest) (*pb.File, error) {
 	// 校验文件大小
 	if req.ByteSize > int64(s.p.Cfg.FileMaxUploadSize) {
 		return nil, apierrors.ErrUploadTooLargeFile.InvalidParameter(errors.Errorf("max file size: %s", s.p.Cfg.FileMaxUploadSize.String()))

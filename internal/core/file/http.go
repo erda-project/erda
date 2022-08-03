@@ -30,7 +30,7 @@ import (
 	infrahttpserver "github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-proto-go/core/file/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/internal/core/file/types"
+	"github.com/erda-project/erda/internal/core/file/filetypes"
 	"github.com/erda-project/erda/internal/core/legacy/services/apierrors"
 	"github.com/erda-project/erda/internal/pkg/user"
 	"github.com/erda-project/erda/pkg/http/httpserver"
@@ -110,7 +110,7 @@ func (p *provider) UploadFile(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	// 上传文件
-	file, err := p.fileService.UploadFile(types.FileUploadRequest{
+	file, err := p.fileService.UploadFile(filetypes.FileUploadRequest{
 		FileNameWithExt: fileHeader.Filename,
 		ByteSize:        fileHeader.Size,
 		FileReader:      formFile,

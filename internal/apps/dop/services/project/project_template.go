@@ -34,6 +34,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	"github.com/erda-project/erda/internal/apps/dop/services/namespace"
+	"github.com/erda-project/erda/internal/core/file/filetypes"
 	"github.com/erda-project/erda/pkg/filehelper"
 )
 
@@ -139,7 +140,7 @@ func (t *TemplateDataDirector) GenAndUploadZipPackage() (string, error) {
 	}
 	zipTmpFile.Seek(0, 0)
 	expiredAt := time.Now().Add(packageValidityPeriod)
-	uploadReq := types.FileUploadRequest{
+	uploadReq := filetypes.FileUploadRequest{
 		FileNameWithExt: t.Creator.GetPackageName(),
 		FileReader:      zipTmpFile,
 		From:            packageResource,
@@ -255,7 +256,7 @@ func (p *Project) ImportTemplate(req apistructs.ImportProjectTemplateRequest, r 
 		return 0, fmt.Errorf("project template file must be a zip package")
 	}
 	expiredAt := time.Now().Add(packageValidityPeriod)
-	uploadReq := types.FileUploadRequest{
+	uploadReq := filetypes.FileUploadRequest{
 		FileNameWithExt: fileHeader.Filename,
 		FileReader:      f,
 		From:            packageResource,

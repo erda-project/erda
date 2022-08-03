@@ -36,7 +36,7 @@ import (
 
 	"github.com/erda-project/erda-proto-go/core/file/pb"
 	"github.com/erda-project/erda/internal/apps/dop/dicehub/dbclient"
-	"github.com/erda-project/erda/internal/core/file/types"
+	"github.com/erda-project/erda/internal/core/file/filetypes"
 	"github.com/erda-project/erda/pkg/template"
 )
 
@@ -103,7 +103,7 @@ func (i *PublishItem) UploadFileFromReader(fileHeader *multipart.FileHeader) (*p
 		return nil, err
 	}
 	defer reader.Close()
-	resp, err := i.bdl.UploadFile(types.FileUploadRequest{
+	resp, err := i.bdl.UploadFile(filetypes.FileUploadRequest{
 		From:            "release",
 		IsPublic:        true,
 		FileReader:      reader,
@@ -128,7 +128,7 @@ func (i *PublishItem) UploadFileFromFile(filePath string) (*pb.File, error) {
 	}
 	defer f.Close()
 
-	resp, err := i.bdl.UploadFile(types.FileUploadRequest{
+	resp, err := i.bdl.UploadFile(filetypes.FileUploadRequest{
 		From:            "release",
 		IsPublic:        true,
 		FileReader:      f,

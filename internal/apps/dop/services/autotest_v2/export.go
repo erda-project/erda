@@ -26,6 +26,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/dao"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
+	"github.com/erda-project/erda/internal/core/file/filetypes"
 )
 
 type AutoTestSpaceDB struct {
@@ -227,7 +228,7 @@ func (svc *Service) ExportFile(record *dao.TestFileRecord) {
 		return
 	}
 
-	uploadReq := types.FileUploadRequest{
+	uploadReq := filetypes.FileUploadRequest{
 		FileNameWithExt: fileName,
 		ByteSize:        int64(w.Len()),
 		FileReader:      ioutil.NopCloser(&w),
@@ -321,7 +322,7 @@ func (svc *Service) ExportSceneSetFile(record *dao.TestFileRecord) {
 		}
 		return
 	}
-	uploadReq := types.FileUploadRequest{
+	uploadReq := filetypes.FileUploadRequest{
 		FileNameWithExt: fileName,
 		ByteSize:        int64(w.Len()),
 		FileReader:      ioutil.NopCloser(&w),

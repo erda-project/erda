@@ -24,8 +24,10 @@ import (
 	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/erda-project/erda-proto-go/core/file/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/core/file/filetypes"
 	"github.com/erda-project/erda/pkg/i18n"
 )
 
@@ -45,8 +47,8 @@ func TestImportSceneSet(t *testing.T) {
 	defer m1.Unpatch()
 
 	m2 := monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "UploadFile",
-		func(bdl *bundle.Bundle, req types.FileUploadRequest, clientTimeout ...int64) (*apistructs.File, error) {
-			return &apistructs.File{UUID: "123"}, nil
+		func(bdl *bundle.Bundle, req filetypes.FileUploadRequest, clientTimeout ...int64) (*pb.File, error) {
+			return &pb.File{UUID: "123"}, nil
 		})
 	defer m2.Unpatch()
 

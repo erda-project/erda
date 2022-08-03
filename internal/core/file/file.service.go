@@ -20,13 +20,13 @@ import (
 	"github.com/erda-project/erda-proto-go/core/file/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/core/file/db"
-	"github.com/erda-project/erda/internal/core/file/types"
+	"github.com/erda-project/erda/internal/core/file/filetypes"
 )
 
 // ServiceInterface define service methods like a grpc service.
 // For stream reason, we defined a non-methods file service in proto.
 type ServiceInterface interface {
-	UploadFile(req types.FileUploadRequest) (*pb.File, error)
+	UploadFile(req filetypes.FileUploadRequest) (*pb.File, error)
 	DownloadFile(w io.Writer, file db.File) (headers map[string]string, err error)
 	DeleteFile(file db.File) error
 }

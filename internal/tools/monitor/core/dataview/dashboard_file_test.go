@@ -24,8 +24,9 @@ import (
 
 	"bou.ke/monkey"
 
-	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda-proto-go/core/file/pb"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/core/file/filetypes"
 	"github.com/erda-project/erda/internal/tools/monitor/core/dataview/db"
 	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
@@ -43,10 +44,10 @@ func Test_dashboardFileName(t *testing.T) {
 	}{
 		{
 			"case1", args{
-			scope:   "org",
-			scopeId: "1",
-			viewIds: []string{"1"},
-		}, "b3JnLTEtMj",
+				scope:   "org",
+				scopeId: "1",
+				viewIds: []string{"1"},
+			}, "b3JnLTEtMj",
 		},
 	}
 	for _, tt := range tests {
@@ -111,8 +112,8 @@ func Test_provider_ExportTask(t *testing.T) {
 			})
 
 			var bdl bundle.Bundle
-			monkey.PatchInstanceMethod(reflect.TypeOf(&bdl), "UploadFile", func(bdl *bundle.Bundle, req types.FileUploadRequest, clientTimeout ...int64) (*apistructs.File, error) {
-				return &apistructs.File{}, nil
+			monkey.PatchInstanceMethod(reflect.TypeOf(&bdl), "UploadFile", func(bdl *bundle.Bundle, req filetypes.FileUploadRequest, clientTimeout ...int64) (*pb.File, error) {
+				return &pb.File{}, nil
 			})
 
 			p := &provider{}
