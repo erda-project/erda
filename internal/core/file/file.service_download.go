@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package filesvc
+package file
 
 import (
 	"bytes"
@@ -27,7 +27,7 @@ import (
 	"time"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/internal/core/legacy/dao"
+	"github.com/erda-project/erda/internal/core/file/db"
 	"github.com/erda-project/erda/internal/core/legacy/services/apierrors"
 	"github.com/erda-project/erda/pkg/kms/kmscrypto"
 	"github.com/erda-project/erda/pkg/kms/kmstypes"
@@ -83,7 +83,7 @@ var (
 )
 
 // DownloadFile write file to writer `w`,  return corresponding file http response headers.
-func (svc *FileService) DownloadFile(w io.Writer, file dao.File) (headers map[string]string, err error) {
+func (s *fileService) DownloadFile(w io.Writer, file db.File) (headers map[string]string, err error) {
 	// check path
 	if err := checkPath(file.FullRelativePath); err != nil {
 		return nil, apierrors.ErrDownloadFile.InvalidParameter(err)
@@ -95,7 +95,7 @@ func (svc *FileService) DownloadFile(w io.Writer, file dao.File) (headers map[st
 	}
 
 	// storager
-	storager := svc.GetStorage(file.StorageType)
+	storager := s.GetStorage(file.StorageType)
 	reader, err := storager.Read(file.FullRelativePath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -106,7 +106,7 @@ func (svc *FileService) DownloadFile(w io.Writer, file dao.File) (headers map[st
 	// 解密 信封加密 文件数据
 	if file.Extra.Encrypt {
 		// 调用 KMS 解密 DEK
-		dekDecryptResp, err := svc.bdl.KMSDecrypt(apistructs.KMSDecryptRequest{
+		dekDecryptResp, err := s.bdl.KMSDecrypt(apistructs.KMSDecryptRequest{
 			DecryptRequest: kmstypes.DecryptRequest{
 				KeyID:            file.Extra.KMSKeyID,
 				CiphertextBase64: file.Extra.DEKCiphertextBase64,
@@ -132,7 +132,7 @@ func (svc *FileService) DownloadFile(w io.Writer, file dao.File) (headers map[st
 	}
 
 	headers = map[string]string{
-		headerContentDisposition: headerValueDispositionInline(file.Ext, file.DisplayName),
+		headerContentDisposition: s.headerValueDispositionInline(file.Ext, file.DisplayName),
 		HeaderContentLength:      strconv.FormatInt(file.ByteSize, 10),
 	}
 	var buf bytes.Buffer

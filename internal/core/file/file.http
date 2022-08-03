@@ -1,0 +1,24 @@
+### Upload File
+
+POST {{erda-server}}/api/files?fileFrom=issue&public=false&encrypt=false&expiredIn=60s
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+User-ID: 2
+
+--WebAppBoundary
+Content-Disposition: form-data; name="file"; filename="selinux.png"
+
+< /Users/sfwn/Pictures/selinux.png
+--WebAppBoundary--
+
+### Download File
+GET {{erda-server}}/api/files?file=08dea1998d7541b587851fada3b3648c
+User-ID: 2
+
+### Download File
+GET {{erda-server}}/api/files/734c226a04e040d098400a186a33e333
+User-ID: 2
+
+### Head File
+HEAD {{erda-server}}/api/files/02671ea529104961ab8aeb7a22b50bf7
+User-ID: 2
+

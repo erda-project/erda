@@ -12,10 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package endpoints
+package file
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -24,51 +23,58 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 
+	infrahttpserver "github.com/erda-project/erda-infra/providers/httpserver"
+	"github.com/erda-project/erda-proto-go/core/file/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/internal/core/legacy/conf"
+	"github.com/erda-project/erda/internal/core/file/types"
 	"github.com/erda-project/erda/internal/core/legacy/services/apierrors"
-	"github.com/erda-project/erda/internal/core/legacy/services/filesvc"
 	"github.com/erda-project/erda/internal/pkg/user"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-const (
-	headerContentType          = "Content-Type"
-	headerValueApplicationJSON = "application/json"
-)
+type HTTPHandler interface {
+	UploadFile(rw http.ResponseWriter, r *http.Request)
+	DownloadFile(rw http.ResponseWriter, r *http.Request)
+	HeadFile(rw http.ResponseWriter, r *http.Request)
+	DeleteFile(rw http.ResponseWriter, r *http.Request)
+}
 
-// UploadFile 上传文件至存储
-func (e *Endpoints) UploadFile(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+func (p *provider) UploadFile(rw http.ResponseWriter, r *http.Request) {
 	// check the user login
 	identityInfo, err := user.GetIdentityInfo(r)
 	if err != nil {
-		return apierrors.ErrUploadFile.NotLogin().ToResp(), nil
+		errorresp.Error(rw, apierrors.ErrUploadFile.NotLogin())
+		return
 	}
 
 	// check the size
-	if r.ContentLength > int64(conf.FileMaxUploadSize()) {
-		return nil, apierrors.ErrUploadTooLargeFile.InvalidParameter(errors.Errorf("max file size: %s", conf.FileMaxUploadSize().String()))
+	if r.ContentLength > int64(p.Cfg.FileMaxUploadSize) {
+		errorresp.Error(rw, apierrors.ErrUploadTooLargeFile.InvalidParameter(errors.Errorf("max file size: %s", p.Cfg.FileMaxUploadSize.String())))
+		return
 	}
 
 	// get the file
-	if err := r.ParseMultipartForm(int64(conf.FileMaxMemorySize())); err != nil {
-		return nil, apierrors.ErrUploadFile.InvalidParameter(errors.Errorf("err: %s", err))
+	if err := r.ParseMultipartForm(int64(p.Cfg.FileMaxMemorySize)); err != nil {
+		errorresp.Error(rw, apierrors.ErrUploadFile.InvalidParameter(errors.Errorf("err: %s", err)))
+		return
 	}
 	formFile, fileHeader, err := r.FormFile("file")
 	if err != nil {
-		return nil, apierrors.ErrUploadFile.InternalError(err)
+		errorresp.Error(rw, apierrors.ErrUploadFile.InternalError(err))
+		return
 	}
 	defer formFile.Close()
 
 	fileExtension := filepath.Ext(fileHeader.Filename)
-	if !conf.FileTypeCarryActiveContentAllowed() && strutil.Exist(conf.FileTypesCanCarryActiveContent(), strutil.TrimPrefixes(fileExtension, ".")) {
-		return nil, apierrors.ErrUploadFile.InvalidParameter(errors.Errorf("cannot upload file with type: %s", fileExtension))
+	if !p.Cfg.FileTypeCarryActiveContentAllowed && strutil.Exist(p.Cfg.FileTypesCanCarryActiveContent, strutil.TrimPrefixes(fileExtension, ".")) {
+		errorresp.Error(rw, apierrors.ErrUploadFile.InvalidParameter(errors.Errorf("cannot upload file with type: %s", fileExtension)))
+		return
 	}
 	// get params
 	const (
@@ -89,7 +95,8 @@ func (e *Endpoints) UploadFile(ctx context.Context, r *http.Request, vars map[st
 	if expiredInStr != "" {
 		expiredIn, err := time.ParseDuration(expiredInStr)
 		if err != nil {
-			return nil, apierrors.ErrUploadFile.InvalidParameter(fmt.Sprintf("invalid expiredIn: %s", expiredIn))
+			errorresp.Error(rw, apierrors.ErrUploadFile.InvalidParameter(fmt.Sprintf("invalid expiredIn: %s", expiredIn)))
+			return
 		}
 		if expiredIn != 0 {
 			t := time.Now().Add(expiredIn)
@@ -103,7 +110,7 @@ func (e *Endpoints) UploadFile(ctx context.Context, r *http.Request, vars map[st
 	}
 
 	// 上传文件
-	file, err := e.fileSvc.UploadFile(apistructs.FileUploadRequest{
+	file, err := p.fileService.UploadFile(types.FileUploadRequest{
 		FileNameWithExt: fileHeader.Filename,
 		ByteSize:        fileHeader.Size,
 		FileReader:      formFile,
@@ -114,20 +121,26 @@ func (e *Endpoints) UploadFile(ctx context.Context, r *http.Request, vars map[st
 		ExpiredAt:       expiredAt,
 	})
 	if err != nil {
-		return errorresp.ErrResp(err)
+		errorresp.Error(rw, err)
+		return
 	}
-	return httpserver.OkResp(file, []string{file.Creator})
+	httpserver.WriteData(rw, file, []string{file.Creator})
+	return
 }
 
-// DownloadFile 根据文件链接返回文件内容
-func (e *Endpoints) DownloadFile(ctx context.Context, w http.ResponseWriter, r *http.Request, vars map[string]string) (err error) {
+const (
+	headerValueApplicationJSON = "application/json"
+)
+
+func (p *provider) DownloadFile(rw http.ResponseWriter, r *http.Request) {
+	var err error
 	statusCode := http.StatusInternalServerError
 	defer func() {
 		if err != nil {
 			// set Content-Type before statusCode, or we will get text/plain
-			w.Header().Set(headerContentType, headerValueApplicationJSON)
-			w.WriteHeader(statusCode)
-			var jsonResp apistructs.FileDownloadFailResponse
+			rw.Header().Set(headerContentType, headerValueApplicationJSON)
+			rw.WriteHeader(statusCode)
+			var jsonResp pb.FileDownloadFailResponse
 			jsonResp.Success = false
 			jsonResp.Error.Code = "ErrDownloadFile"
 			if apiErr, ok := err.(*errorresp.APIError); ok {
@@ -138,7 +151,7 @@ func (e *Endpoints) DownloadFile(ctx context.Context, w http.ResponseWriter, r *
 			} else {
 				jsonResp.Error.Msg = err.Error()
 			}
-			if wErr := json.NewEncoder(w).Encode(&jsonResp); wErr != nil {
+			if wErr := json.NewEncoder(rw).Encode(&jsonResp); wErr != nil {
 				logrus.Errorf("failed to write http response while download file failed, downloadErr: %v, writeRespErr: %v", err, wErr)
 			}
 			// err 已经在 response body 中返回，不需要 writerHandler 再次处理
@@ -147,104 +160,113 @@ func (e *Endpoints) DownloadFile(ctx context.Context, w http.ResponseWriter, r *
 	}()
 
 	// get from path variable
-	uuid := vars["uuid"]
+	uuid, _ := infrahttpserver.Var(r, "uuid")
 	if uuid == "" {
 		// get from query param
 		uuid = r.URL.Query().Get("file")
 		if uuid == "" {
 			statusCode = http.StatusBadRequest
-			return errors.Errorf("no file specified")
+			err = errors.Errorf("no file specified")
+			return
 		}
 	}
 
-	file, err := e.db.GetFileByUUID(uuid)
+	file, err := p.db.GetFileByUUID(uuid)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return apierrors.ErrDownloadFile.NotFound()
+			err = apierrors.ErrDownloadFile.NotFound()
+			return
 		}
-		return apierrors.ErrDownloadFile.InvalidParameter(uuid)
+		err = apierrors.ErrDownloadFile.InvalidParameter(uuid)
+		return
 	}
 
 	// 校验用户登录
-	if !file.Extra.IsPublic && !conf.DisableFileDownloadPermissionValidate() {
+	if !file.Extra.IsPublic && !p.Cfg.DisableFileDownloadPermissionValidate {
 		_, err = user.GetIdentityInfo(r)
 		if err != nil {
-			return apierrors.ErrDownloadFile.NotLogin()
+			err = apierrors.ErrDownloadFile.NotLogin()
+			return
 		}
 	}
 
-	if _, err := e.fileSvc.DownloadFile(w, file); err != nil {
-		return err
+	if _, err = p.fileService.DownloadFile(rw, file); err != nil {
+		return
 	}
 
-	return nil
+	return
 }
 
-// HeadFile 文件 HEAD 请求
-func (e *Endpoints) HeadFile(ctx context.Context, w http.ResponseWriter, r *http.Request, vars map[string]string) (err error) {
+func (p *provider) HeadFile(rw http.ResponseWriter, r *http.Request) {
 	// get from path variable
-	uuid := vars["uuid"]
+	uuid, _ := infrahttpserver.Var(r, "uuid")
 	if uuid == "" {
 		// get from query param
 		uuid = r.URL.Query().Get("file")
 		if uuid == "" {
-			w.WriteHeader(http.StatusBadRequest)
-			return nil
+			rw.WriteHeader(http.StatusBadRequest)
+			return
 		}
 	}
 
-	file, err := e.db.GetFileByUUID(uuid)
+	file, err := p.db.GetFileByUUID(uuid)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			w.WriteHeader(http.StatusNotFound)
-			return nil
+			rw.WriteHeader(http.StatusNotFound)
+			return
 		}
-		w.WriteHeader(http.StatusBadRequest)
-		return nil
+		rw.WriteHeader(http.StatusBadRequest)
+		return
 	}
 
 	// 校验用户登录
 	if file.Extra.IsPublic == false {
 		_, err = user.GetIdentityInfo(r)
 		if err != nil {
-			w.WriteHeader(http.StatusUnauthorized)
-			return nil
+			rw.WriteHeader(http.StatusUnauthorized)
+			return
 		}
 	}
 
-	w.Header().Set(filesvc.HeaderContentLength, strconv.FormatInt(file.ByteSize, 10))
+	rw.Header().Set(HeaderContentLength, strconv.FormatInt(file.ByteSize, 10))
 
-	return nil
+	return
 }
 
 // DeleteFile 删除文件
-func (e *Endpoints) DeleteFile(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+func (p *provider) DeleteFile(rw http.ResponseWriter, r *http.Request) {
 	// 鉴权
 	identityInfo, err := user.GetIdentityInfo(r)
 	if err != nil {
-		return apierrors.ErrDeleteFile.NotLogin().ToResp(), nil
+		errorresp.Error(rw, apierrors.ErrDeleteFile.NotLogin())
+		return
 	}
 	// 只有内部调用允许删除文件
 	if !CheckInternalPermission(identityInfo) {
-		return apierrors.ErrDeleteFile.AccessDenied().ToResp(), nil
+		errorresp.Error(rw, apierrors.ErrDeleteFile.AccessDenied())
+		return
 	}
 
 	// 获取文件
-	uuid := vars["uuid"]
-	file, err := e.db.GetFileByUUID(uuid)
+	uuid, _ := infrahttpserver.Var(r, "uuid")
+	file, err := p.db.GetFileByUUID(uuid)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return apierrors.ErrDeleteFile.NotFound().ToResp(), nil
+			errorresp.Error(rw, apierrors.ErrDeleteFile.NotFound())
+			return
 		}
-		return apierrors.ErrDeleteFile.InvalidParameter(err).ToResp(), nil
+		errorresp.Error(rw, apierrors.ErrDeleteFile.InvalidParameter(err))
+		return
 	}
 
 	// delete
-	if err := e.fileSvc.DeleteFile(file); err != nil {
-		return apierrors.ErrDeleteFile.InternalError(err).ToResp(), nil
+	if err := p.fileService.DeleteFile(file); err != nil {
+		errorresp.Error(rw, apierrors.ErrDeleteFile.InternalError(err))
+		return
 	}
 
-	return httpserver.OkResp(nil)
+	httpserver.WriteData(rw, nil)
+	return
 }
 
 func CheckInternalPermission(identityInfo apistructs.IdentityInfo) bool {

@@ -227,7 +227,7 @@ func (svc *Service) ExportFile(record *dao.TestFileRecord) {
 		return
 	}
 
-	uploadReq := apistructs.FileUploadRequest{
+	uploadReq := types.FileUploadRequest{
 		FileNameWithExt: fileName,
 		ByteSize:        int64(w.Len()),
 		FileReader:      ioutil.NopCloser(&w),
@@ -321,7 +321,7 @@ func (svc *Service) ExportSceneSetFile(record *dao.TestFileRecord) {
 		}
 		return
 	}
-	uploadReq := apistructs.FileUploadRequest{
+	uploadReq := types.FileUploadRequest{
 		FileNameWithExt: fileName,
 		ByteSize:        int64(w.Len()),
 		FileReader:      ioutil.NopCloser(&w),

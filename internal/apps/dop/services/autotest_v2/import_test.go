@@ -45,7 +45,7 @@ func TestImportSceneSet(t *testing.T) {
 	defer m1.Unpatch()
 
 	m2 := monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "UploadFile",
-		func(bdl *bundle.Bundle, req apistructs.FileUploadRequest, clientTimeout ...int64) (*apistructs.File, error) {
+		func(bdl *bundle.Bundle, req types.FileUploadRequest, clientTimeout ...int64) (*apistructs.File, error) {
 			return &apistructs.File{UUID: "123"}, nil
 		})
 	defer m2.Unpatch()

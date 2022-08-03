@@ -157,7 +157,7 @@ func (svc *Service) ExportTestCases(req *apistructs.TestCaseExportRequest, sheet
 	//Set offset for next read
 	f.Seek(0, 0)
 
-	uploadReq := apistructs.FileUploadRequest{
+	uploadReq := types.FileUploadRequest{
 		FileNameWithExt: sheetName,
 		FileReader:      f,
 		From:            defaultResource,

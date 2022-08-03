@@ -254,7 +254,7 @@ func (t *PackageDataDirector) GenAndUploadZipPackage() (string, error) {
 	}
 	zipTmpFile.Seek(0, 0)
 	expiredAt := time.Now().Add(packageValidityPeriod)
-	uploadReq := apistructs.FileUploadRequest{
+	uploadReq := types.FileUploadRequest{
 		FileNameWithExt: t.Creator.GetPackageName(),
 		FileReader:      zipTmpFile,
 		From:            projectPackageResource,
@@ -599,7 +599,7 @@ func (t *PackageDataDirector) uploadArtifacZipFile(artifact *apistructs.Artifact
 	defer f.Close()
 
 	expiredAt := time.Now().Add(projectPackageValidityPeriod)
-	req := apistructs.FileUploadRequest{
+	req := types.FileUploadRequest{
 		FileReader:      f,
 		FileNameWithExt: artifact.ZipFile,
 		Creator:         t.Creator.GetContext().UserID,
@@ -688,7 +688,7 @@ func (p *Project) ImportPackage(req apistructs.ImportProjectPackageRequest, r *h
 		return 0, fmt.Errorf("project template file must be a zip package")
 	}
 	expiredAt := time.Now().Add(projectPackageValidityPeriod)
-	uploadReq := apistructs.FileUploadRequest{
+	uploadReq := types.FileUploadRequest{
 		FileNameWithExt: fileHeader.Filename,
 		FileReader:      f,
 		From:            projectPackageResource,

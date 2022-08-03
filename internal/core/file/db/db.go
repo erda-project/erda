@@ -12,24 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package core_services
+package db
 
 import (
-	"net/http"
-
-	"github.com/erda-project/erda/internal/core/openapi/legacy/api/apis"
+	"github.com/jinzhu/gorm"
 )
 
-var CMDB_FILE_DOWNLOAD = apis.ApiSpec{
-	Path:          "/api/files",
-	BackendPath:   "/api/files",
-	Host:          "erda-server.marathon.l4lb.thisdcos.directory:9095",
-	Scheme:        "http",
-	Method:        http.MethodGet,
-	CheckLogin:    false,
-	TryCheckLogin: true,
-	CheckToken:    true,
-	IsOpenAPI:     true,
-	ChunkAPI:      true,
-	Doc:           "summary: 文件下载，在 query param 中通过 file=<uuid> 指定具体文件",
+type Client struct {
+	*gorm.DB
 }

@@ -126,7 +126,7 @@ func (c *Certificate) Create(userID string, createReq *apistructs.CertificateCre
 				return nil, errors.Errorf("failed to read debug.keystore file, (%+v)", err)
 			}
 
-			var uploadFileReq = apistructs.FileUploadRequest{
+			var uploadFileReq = types.FileUploadRequest{
 				FileNameWithExt: "debug.keystore",
 				Creator:         userID,
 				ByteSize:        int64(len(fileByte)),

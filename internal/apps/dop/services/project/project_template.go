@@ -139,7 +139,7 @@ func (t *TemplateDataDirector) GenAndUploadZipPackage() (string, error) {
 	}
 	zipTmpFile.Seek(0, 0)
 	expiredAt := time.Now().Add(packageValidityPeriod)
-	uploadReq := apistructs.FileUploadRequest{
+	uploadReq := types.FileUploadRequest{
 		FileNameWithExt: t.Creator.GetPackageName(),
 		FileReader:      zipTmpFile,
 		From:            packageResource,
@@ -255,7 +255,7 @@ func (p *Project) ImportTemplate(req apistructs.ImportProjectTemplateRequest, r 
 		return 0, fmt.Errorf("project template file must be a zip package")
 	}
 	expiredAt := time.Now().Add(packageValidityPeriod)
-	uploadReq := apistructs.FileUploadRequest{
+	uploadReq := types.FileUploadRequest{
 		FileNameWithExt: fileHeader.Filename,
 		FileReader:      f,
 		From:            packageResource,

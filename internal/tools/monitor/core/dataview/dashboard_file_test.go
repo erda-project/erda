@@ -43,10 +43,10 @@ func Test_dashboardFileName(t *testing.T) {
 	}{
 		{
 			"case1", args{
-				scope:   "org",
-				scopeId: "1",
-				viewIds: []string{"1"},
-			}, "b3JnLTEtMj",
+			scope:   "org",
+			scopeId: "1",
+			viewIds: []string{"1"},
+		}, "b3JnLTEtMj",
 		},
 	}
 	for _, tt := range tests {
@@ -111,7 +111,7 @@ func Test_provider_ExportTask(t *testing.T) {
 			})
 
 			var bdl bundle.Bundle
-			monkey.PatchInstanceMethod(reflect.TypeOf(&bdl), "UploadFile", func(bdl *bundle.Bundle, req apistructs.FileUploadRequest, clientTimeout ...int64) (*apistructs.File, error) {
+			monkey.PatchInstanceMethod(reflect.TypeOf(&bdl), "UploadFile", func(bdl *bundle.Bundle, req types.FileUploadRequest, clientTimeout ...int64) (*apistructs.File, error) {
 				return &apistructs.File{}, nil
 			})
 

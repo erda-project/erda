@@ -265,7 +265,7 @@ func (i *IssueService) ExportExcelAsync(record *legacydao.TestFileRecord) {
 	}
 	f.Seek(0, 0)
 	expiredAt := time.Now().Add(time.Duration(conf.ExportIssueFileStoreDay()) * 24 * time.Hour)
-	uploadReq := apistructs.FileUploadRequest{
+	uploadReq := types.FileUploadRequest{
 		FileNameWithExt: fmt.Sprintf("%s.xlsx", tableName),
 		FileReader:      f,
 		From:            issueService,
@@ -591,7 +591,7 @@ func (i *IssueService) ExportExcel2(data [][]string, sheetName string) (string, 
 	if err := file.Write(&buff); err != nil {
 		return "", errors.Errorf("failed to write content, sheetName: %s, err: %v", sheetName, err)
 	}
-	diceFile, err := i.bdl.UploadFile(apistructs.FileUploadRequest{
+	diceFile, err := i.bdl.UploadFile(types.FileUploadRequest{
 		FileNameWithExt: sheetName + ".xlsx",
 		ByteSize:        int64(buff.Len()),
 		FileReader:      ioutil.NopCloser(&buff),

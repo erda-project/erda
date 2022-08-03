@@ -49,7 +49,7 @@ func TestExportTemplatePackage(t *testing.T) {
 		return nil
 	}
 
-	pm4 := monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "UploadFile", func(b *bundle.Bundle, req apistructs.FileUploadRequest, clientTimeout ...int64) (*apistructs.File, error) {
+	pm4 := monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "UploadFile", func(b *bundle.Bundle, req types.FileUploadRequest, clientTimeout ...int64) (*apistructs.File, error) {
 		return &apistructs.File{}, nil
 	})
 	defer pm4.Unpatch()

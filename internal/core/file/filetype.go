@@ -12,25 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package core_services
+package file
 
 import (
-	"net/http"
-
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/internal/core/openapi/legacy/api/apis"
+	"github.com/erda-project/erda-proto-go/core/file/pb"
 )
 
-var CMDB_FILE_UPLOAD = apis.ApiSpec{
-	Path:         "/api/files",
-	BackendPath:  "/api/files",
-	Host:         "erda-server.marathon.l4lb.thisdcos.directory:9095",
-	Scheme:       "http",
-	Method:       http.MethodPost,
-	CheckLogin:   true,
-	CheckToken:   true,
-	IsOpenAPI:    true,
-	ChunkAPI:     true,
-	ResponseType: apistructs.FileUploadResponse{},
-	Doc:          "summary: 文件上传",
+// GetFileTypeByExt ext has dot
+func GetFileTypeByExt(ext string) pb.FileType {
+	switch ext {
+	case ".png", ".jpg", ".jpeg", ".bmp", ".gif":
+		return pb.FileType_picture
+	default:
+		return pb.FileType_other
+	}
 }

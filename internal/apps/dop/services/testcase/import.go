@@ -59,7 +59,7 @@ func (svc *Service) Import(req apistructs.TestCaseImportRequest, r *http.Request
 	}
 	defer f.Close()
 
-	uploadReq := apistructs.FileUploadRequest{
+	uploadReq := types.FileUploadRequest{
 		FileNameWithExt: fileHeader.Filename,
 		ByteSize:        fileHeader.Size,
 		FileReader:      f,

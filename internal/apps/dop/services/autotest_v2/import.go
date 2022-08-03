@@ -377,7 +377,7 @@ func (svc *Service) Import(req apistructs.AutoTestSpaceImportRequest, r *http.Re
 	}
 	defer f.Close()
 
-	uploadReq := apistructs.FileUploadRequest{
+	uploadReq := types.FileUploadRequest{
 		FileNameWithExt: fileHeader.Filename,
 		FileReader:      f,
 		From:            "autotest-space",
@@ -504,7 +504,7 @@ func (svc *Service) ImportSceneSet(req apistructs.AutoTestSceneSetImportRequest,
 	}
 	defer f.Close()
 
-	uploadReq := apistructs.FileUploadRequest{
+	uploadReq := types.FileUploadRequest{
 		FileNameWithExt: fileHeader.Filename,
 		FileReader:      f,
 		From:            "autotest-scene-set",

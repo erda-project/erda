@@ -12,24 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package core_services
+package file
 
 import (
-	"net/http"
-
-	"github.com/erda-project/erda/internal/core/openapi/legacy/api/apis"
+	"github.com/erda-project/erda/internal/core/file/db"
+	"github.com/erda-project/erda/internal/core/legacy/services/apierrors"
 )
 
-var CMDB_FILE_DOWNLOAD_V2 = apis.ApiSpec{
-	Path:          "/api/files/<uuid>",
-	BackendPath:   "/api/files/<uuid>",
-	Host:          "erda-server.marathon.l4lb.thisdcos.directory:9095",
-	Scheme:        "http",
-	Method:        http.MethodGet,
-	CheckLogin:    false,
-	TryCheckLogin: true,
-	CheckToken:    true,
-	IsOpenAPI:     true,
-	ChunkAPI:      true,
-	Doc:           "summary: 文件下载，在 path 中指定具体文件",
+func (s *fileService) DeleteFile(file db.File) error {
+	// delete db record
+	if err := s.db.DeleteFile(uint64(file.ID)); err != nil {
+		return apierrors.ErrDeleteFile.InternalError(err)
+	}
+
+	// delete file in storage
+	storager := s.GetStorage(file.StorageType)
+	if err := storager.Delete(file.FullRelativePath); err != nil {
+		return apierrors.ErrDeleteFile.InternalError(err)
+	}
+
+	return nil
 }

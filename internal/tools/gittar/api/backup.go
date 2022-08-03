@@ -56,7 +56,7 @@ func Backup(ctx *webcontext.Context) {
 		ctx.Abort(err)
 		return
 	}
-	req := apistructs.FileUploadRequest{
+	req := types.FileUploadRequest{
 		FileNameWithExt: branch + "." + format,
 		FileReader:      f,
 		From:            "backup",
