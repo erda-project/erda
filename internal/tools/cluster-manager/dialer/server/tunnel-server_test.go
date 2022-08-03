@@ -29,10 +29,10 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/internal/core/cluster-manager/dialer/auth"
-	"github.com/erda-project/erda/internal/core/cluster-manager/dialer/config"
 	clientconfig "github.com/erda-project/erda/internal/tools/cluster-agent/config"
 	clusteragent "github.com/erda-project/erda/internal/tools/cluster-agent/pkg/client"
+	"github.com/erda-project/erda/internal/tools/cluster-manager/dialer/auth"
+	"github.com/erda-project/erda/internal/tools/cluster-manager/dialer/config"
 )
 
 const (

@@ -15,6 +15,6 @@
 package main
 
 import (
-	_ "github.com/erda-project/erda/internal/core/cluster-manager/cluster"
-	_ "github.com/erda-project/erda/internal/core/cluster-manager/dialer"
+	_ "github.com/erda-project/erda/internal/tools/cluster-manager/cluster"
+	_ "github.com/erda-project/erda/internal/tools/cluster-manager/dialer"
 )
