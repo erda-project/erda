@@ -20,6 +20,9 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/apps/dop/providers/search/handlers"
+	"github.com/erda-project/erda/pkg/mock"
 )
 
 func Test_convertIssueToValue(t *testing.T) {
@@ -44,4 +47,14 @@ func Test_genIssueLink(t *testing.T) {
 		Type:      pb.IssueTypeEnum_BUG,
 	})
 	assert.Equal(t, "/erda/dop/projects/2/issues/all?id=1&type=BUG", link)
+}
+
+func TestWithOption(t *testing.T) {
+	query := &mock.MockIssueQuery{}
+	bdl := bundle.New()
+	search := &handlers.BaseSearch{}
+	handler := NewIssueHandler(WithQuery(query), WithBundle(bdl), WithNexts(search))
+	assert.Equal(t, true, handler.query != nil)
+	assert.Equal(t, true, handler.bdl != nil)
+	assert.Equal(t, true, len(handler.Nexts) == 1)
 }
