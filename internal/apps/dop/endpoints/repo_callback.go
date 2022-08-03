@@ -58,6 +58,16 @@ func (e *Endpoints) RepoMrEventCallback(ctx context.Context, r *http.Request, va
 	}
 
 	e.TriggerGitNotify(gitEvent.OrgID, gitEvent.ApplicationID, gitEvent.Content.EventName, params)
+	env := map[string]interface{}{
+		"content": gitEvent.Content,
+	}
+	if err := e.FireRule(ctx, env, EventInfo{
+		Scope:       "app",
+		ScopeID:     gitEvent.ApplicationID,
+		EventHeader: gitEvent.EventHeader,
+	}); err != nil {
+		logrus.Errorf("failed to fire rule event: %v, err, (%+v)", gitEvent.Event, err)
+	}
 	return httpserver.OkResp("")
 }
 

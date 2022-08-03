@@ -40,6 +40,7 @@ import (
 	errboxpb "github.com/erda-project/erda-proto-go/core/services/errorbox/pb"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
+	rulepb "github.com/erda-project/erda-proto-go/dop/rule/pb"
 	addonmysqlpb "github.com/erda-project/erda-proto-go/orchestrator/addon/mysql/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/devflow/flow"
@@ -96,6 +97,7 @@ type provider struct {
 	Query                 issuequery.Interface
 	Org                   org.ClientInterface `required:"true"`
 	Identity              userpb.UserServiceServer
+	RuleService           rulepb.RuleServiceServer
 
 	Protocol      componentprotocol.Interface
 	CPTran        i18n.I18n        `autowired:"i18n@cp"`

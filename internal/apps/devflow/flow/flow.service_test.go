@@ -23,6 +23,8 @@ import (
 	"bou.ke/monkey"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
+	"github.com/erda-project/erda-proto-go/apps/devflow/flow/pb"
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	flowrulepb "github.com/erda-project/erda-proto-go/dop/devflowrule/pb"
 	issuepb "github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -707,6 +709,66 @@ func Test_canJoin(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := canJoin(tt.args.commit, tt.args.baseCommit, tt.args.tempBranch); got != tt.want {
 				t.Errorf("canJoin() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+type issueForCreateEventMock struct {
+	IssueMock
+}
+
+func (i issueForCreateEventMock) GetIssue(id int64, identityInfo *commonpb.IdentityInfo) (*issuepb.Issue, error) {
+	if id == 0 {
+		return nil, fmt.Errorf("invalid id")
+	}
+	return &issuepb.Issue{Title: "New issue to Erda", Id: 100001}, nil
+}
+
+func TestService_CreateFlowEvent(t *testing.T) {
+	var bdl *bundle.Bundle
+	p1 := monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetProject",
+		func(d *bundle.Bundle, id uint64) (*apistructs.ProjectDTO, error) {
+			return &apistructs.ProjectDTO{
+				Name: "project",
+			}, nil
+		},
+	)
+	defer p1.Unpatch()
+
+	p2 := monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "CreateEvent",
+		func(d *bundle.Bundle, ev *apistructs.EventCreateRequest) error {
+			return nil
+		},
+	)
+	defer p2.Unpatch()
+
+	type args struct {
+		req *CreateFlowRequest
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			args: args{
+				req: &CreateFlowRequest{
+					ProjectID: 1,
+					AppID:     2,
+					OrgID:     3,
+					Data: &pb.FlowEventData{
+						IssueID: 1,
+					},
+				},
+			},
+		},
+	}
+	s := &Service{p: &provider{bdl: bdl, Issue: issueForCreateEventMock{}}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := s.CreateFlowEvent(tt.args.req); (err != nil) != tt.wantErr {
+				t.Errorf("Service.CreateFlowEvent() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

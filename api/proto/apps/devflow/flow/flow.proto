@@ -8,6 +8,7 @@ import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/wrappers.proto";
 import "openapiv1/gittar/gittar.proto";
+import "google/protobuf/struct.proto";
 
 option go_package = "github.com/erda-project/erda-proto-go/apps/devflow/flow/pb";
 
@@ -57,6 +58,11 @@ service FlowService {
         };
         option(erda.common.openapi) = {
             path: "/api/devflow/actions/info",
+        };
+    }
+    rpc FlowCallBack(FlowCallbackRequest) returns (FlowCallbackResponse) {
+        option(google.api.http) = {
+            post: "/api/devflow/actions/callback",
         };
     }
 }
@@ -210,3 +216,24 @@ message Signature {
     string name = 2;
     google.protobuf.Timestamp When = 3;
 }
+
+message FlowCallbackRequest {
+    FlowEventData content = 1;
+    string projectID = 2;
+    string orgID = 3;
+    string applicationID = 4;
+}
+
+message FlowEventData {
+    map<string, google.protobuf.Value> params = 1;
+    uint64 issueID = 2;
+    string operator = 3;
+    string tempBranch = 4;
+    string sourceBranch = 5;
+    string targetBranch = 6;
+    string appName = 7;
+    string projectName = 8;
+    string isJoinTempBranch = 9;
+}
+
+message FlowCallbackResponse {}

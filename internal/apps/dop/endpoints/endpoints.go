@@ -30,10 +30,12 @@ import (
 	sourcepb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	dwfpb "github.com/erda-project/erda-proto-go/dop/devflowrule/pb"
+	rulepb "github.com/erda-project/erda-proto-go/dop/rule/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/dao"
 	"github.com/erda-project/erda/internal/apps/dop/event"
+	issuequery "github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query"
 	issuedao "github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	"github.com/erda-project/erda/internal/apps/dop/providers/projectpipeline"
 	"github.com/erda-project/erda/internal/apps/dop/services/apidocsvc"
@@ -92,6 +94,7 @@ const (
 	GitDeleteTagCallback    = "/api/actions/git-tag-delete-callback"
 	IssueCallback           = "/api/actions/issue-callback"
 	MrCheckRunCallback      = "/api/actions/check-run-callback"
+	DevFlowCallback         = "/api/devflow/actions/callback"
 )
 
 type EventCallback struct {
@@ -112,6 +115,7 @@ var eventCallbacks = []EventCallback{
 	{Name: "issue", Path: IssueCallback, Events: []string{"issue"}},
 	{Name: "check-run", Path: MrCheckRunCallback, Events: []string{"check-run"}},
 	{Name: "qa_git_mr_create", Path: "/api/callbacks/git-mr-create", Events: []string{"git_create_mr"}},
+	{Name: "dev_flow", Path: DevFlowCallback, Events: []string{"dev_flow"}},
 }
 
 // Routes 返回 endpoints 的所有 endpoint 方法，也就是 route.
@@ -203,6 +207,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 
 		// cdp 事件回调
 		{Path: CDPCallbackPath, Method: http.MethodPost, Handler: e.CDPCallback},
+
 		{Path: GitCreateMrCallback, Method: http.MethodPost, Handler: e.RepoMrEventCallback},
 		{Path: GitMergeMrCallback, Method: http.MethodPost, Handler: e.RepoMrEventCallback},
 		{Path: GitCloseMrCallback, Method: http.MethodPost, Handler: e.RepoMrEventCallback},
@@ -692,6 +697,8 @@ type Endpoints struct {
 	tokenService  tokenpb.TokenServiceServer
 	orgClient     orgclient.ClientInterface
 	issueDBClient *issuedao.DBClient
+	ruleExecutor  rulepb.RuleServiceServer
+	issueQuery    issuequery.Interface
 }
 
 type Option func(*Endpoints)
@@ -1118,5 +1125,17 @@ func WithTokenSvc(tokenService tokenpb.TokenServiceServer) Option {
 func WithIssueDB(db *issuedao.DBClient) Option {
 	return func(e *Endpoints) {
 		e.issueDBClient = db
+	}
+}
+
+func WithRuleSvc(ruleService rulepb.RuleServiceServer) Option {
+	return func(e *Endpoints) {
+		e.ruleExecutor = ruleService
+	}
+}
+
+func WithIssueQuery(query issuequery.Interface) Option {
+	return func(e *Endpoints) {
+		e.issueQuery = query
 	}
 }

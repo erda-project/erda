@@ -23,6 +23,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	pb "github.com/erda-project/erda-proto-go/apps/devflow/flow/pb"
 	issuerelationpb "github.com/erda-project/erda-proto-go/apps/devflow/issuerelation/pb"
+	rulepb "github.com/erda-project/erda-proto-go/dop/rule/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/devflow/flow/db"
 	"github.com/erda-project/erda/internal/apps/dop/providers/devflowrule"
@@ -46,6 +47,7 @@ type provider struct {
 	DevFlowRule    devflowrule.Interface
 	bdl            *bundle.Bundle
 	Issue          query.Interface
+	RuleExecutor   rulepb.RuleServiceServer
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
