@@ -71,8 +71,10 @@ type Agent struct {
 type AgentArg struct {
 	PullBootstrapInfo bool `json:"pullBootstrapInfo"`
 
-	Commands interface{}              `json:"commands,omitempty"` // custom action commands -> script -> run
-	Context  spec.PipelineTaskContext `json:"context,omitempty"`  // 上下文
+	Shell     string                   `json:"shell,omitempty"`
+	ShellArgs []string                 `json:"shellArgs,omitempty"`
+	Commands  interface{}              `json:"commands,omitempty"` // custom action commands -> script -> run
+	Context   spec.PipelineTaskContext `json:"context,omitempty"`  // 上下文
 
 	PrivateEnvs map[string]string `json:"privateEnvs,omitempty"`
 
@@ -94,6 +96,7 @@ type EasyUse struct {
 	IsEdgePipeline bool // is running on edge pipeline
 
 	RunScript              string // run 文件
+	CommandScript          string // custom command script
 	RunProcess             *os.Process
 	RunMultiStdoutFilePath string   // multiWriter(os.Stdout) 的文件路径
 	RunMultiStdout         *os.File // multiWriter(os.Stdout) 的文件

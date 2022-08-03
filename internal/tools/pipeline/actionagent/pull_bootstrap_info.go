@@ -61,6 +61,7 @@ func (agent *Agent) pullBootstrapInfo() {
 		return
 	}
 
+	agent.Arg.Shell = bootstrapArg.Shell
 	agent.Arg.Commands = bootstrapArg.Commands
 	agent.Arg.Context = bootstrapArg.Context
 	agent.Arg.PrivateEnvs = bootstrapArg.PrivateEnvs

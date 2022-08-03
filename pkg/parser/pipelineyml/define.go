@@ -126,6 +126,7 @@ type Action struct {
 
 	Workspace string                       `yaml:"workspace,omitempty"`
 	Image     string                       `yaml:"image,omitempty"`
+	Shell     string                       `yaml:"shell,omitempty"`
 	Commands  interface{}                  `yaml:"commands,omitempty"`
 	Loop      *apistructs.PipelineTaskLoop `yaml:"loop,omitempty"`
 

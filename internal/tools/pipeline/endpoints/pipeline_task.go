@@ -106,6 +106,7 @@ func (e *Endpoints) taskBootstrapInfo(ctx context.Context, r *http.Request, vars
 	}
 	// bootstrapInfoData
 	bootstrapInfo := actionagent.AgentArg{
+		Shell:             task.Extra.Action.Shell,
 		Commands:          task.Extra.Action.Commands,
 		Context:           task.Context,
 		PrivateEnvs:       task.Extra.PrivateEnvs,

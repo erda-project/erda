@@ -56,9 +56,11 @@ func (agent *Agent) validate() {
 	agent.EasyUse.ContainerTempTarUploadDir = "/tmp/tar-upload"
 
 	agent.EasyUse.RunScript = "/opt/action/run"
+	agent.EasyUse.CommandScript = "/opt/action/command"
 
 	agent.EasyUse.RunMultiStdoutFilePath = "/tmp/stdout"
 	agent.EasyUse.RunMultiStderrFilePath = "/tmp/stderr"
+	agent.setShellAndArgs()
 
 	// validate envs
 
@@ -70,6 +72,21 @@ func (agent *Agent) validate() {
 
 	// report machine stat
 	agent.reportMachineStat()
+}
+
+func (agent *Agent) setShellAndArgs() {
+	shellArgs := agent.Arg.Shell
+	defaultShell := os.Getenv(EnvDefaultShell)
+	if shellArgs == "" {
+		shellArgs = defaultShell
+	}
+	if shellArgs == "" {
+		agent.AppendError(errors.Errorf("missing command shell"))
+		return
+	}
+	splitShellArgs := strings.Split(shellArgs, " ")
+	agent.Arg.Shell = splitShellArgs[0]
+	agent.Arg.ShellArgs = splitShellArgs[1:]
 }
 
 const (

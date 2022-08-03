@@ -32,32 +32,22 @@ func Test_setupScript(t *testing.T) {
 	}{
 		{
 			name:     "string slice commands",
-			commands: []string{"sleep 120"},
-			want: `#!/bin/sh
-set -e
-
-echo + "sleep 120"
-sleep 120 || ((echo "- FAIL! exit code: $?") && false)
-echo
-
+			commands: []string{"sleep 120", "cat /etc/hosts", "echo 'hello world'"},
+			want: `sleep 120
+cat /etc/hosts
+echo 'hello world'
 `,
 		},
 		{
 			name: "string commands",
 			commands: `npm i @terminus/trnw-cli -g
-            trnw-cli build apk -T -A -t assembleRelease \
-                        --proxy \
-                        --env-default mall-((PROJECT_TYPE))/.env.default`,
-			want: `#!/bin/sh
-set -e
-
-echo + "npm i @terminus/trnw-cli -g\n            trnw-cli build apk -T -A -t assembleRelease \\\n                        --proxy \\\n                        --env-default mall-((PROJECT_TYPE))/.env.default"
-npm i @terminus/trnw-cli -g
-            trnw-cli build apk -T -A -t assembleRelease \
-                        --proxy \
-                        --env-default mall-((PROJECT_TYPE))/.env.default || ((echo "- FAIL! exit code: $?") && false)
-echo
-
+trnw-cli build apk -T -A -t assembleRelease \
+    --proxy \
+    --env-default mall-((PROJECT_TYPE))/.env.default`,
+			want: `npm i @terminus/trnw-cli -g
+trnw-cli build apk -T -A -t assembleRelease \
+    --proxy \
+    --env-default mall-((PROJECT_TYPE))/.env.default
 `,
 		},
 		{
@@ -67,33 +57,15 @@ echo
 				"tail",
 				1,
 			},
-			want: `#!/bin/sh
-set -e
-
-echo + "sleep 120"
-sleep 120 || ((echo "- FAIL! exit code: $?") && false)
-echo
-
-echo + "tail"
-tail || ((echo "- FAIL! exit code: $?") && false)
-echo
-
-echo + "1"
-1 || ((echo "- FAIL! exit code: $?") && false)
-echo
-
+			want: `sleep 120
+tail
+1
 `,
 		},
 		{
 			name:     "invalid commands",
 			commands: 123,
-			want: `#!/bin/sh
-set -e
-
-echo + "123"
-123 || ((echo "- FAIL! exit code: $?") && false)
-echo
-
+			want: `123
 `,
 		},
 	}
@@ -107,9 +79,9 @@ echo
 			tt.got = content
 			return nil
 		})
-		agent.setupScript()
+		agent.setupCommandScript()
 		if tt.got != tt.want {
-			t.Errorf("%q. setupScript() = %v, want %v", tt.name, tt.got, tt.want)
+			t.Errorf("%q. setupCommandScript() = %v, want %v", tt.name, tt.got, tt.want)
 		}
 	}
 }
