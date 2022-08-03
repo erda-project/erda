@@ -652,6 +652,8 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		endpoints.WithOrgClient(p.Org),
 		endpoints.WithProjectPipelineSvc(p.ProjectPipelineSvc),
 		endpoints.WithIssueDB(issueDB),
+		endpoints.WithRuleSvc(p.RuleService),
+		endpoints.WithIssueQuery(p.Query),
 	)
 
 	ep.ImportChannel = make(chan uint64)

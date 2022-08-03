@@ -46,5 +46,16 @@ func (e *Endpoints) CDPCallback(ctx context.Context, r *http.Request, vars map[s
 			logrus.Errorf("failed to process cdp notify %s", err)
 		}
 	}()
+
+	env := map[string]interface{}{
+		"content": req.Content,
+	}
+	if err := e.FireRule(ctx, env, EventInfo{
+		Scope:       "app",
+		ScopeID:     req.ApplicationID,
+		EventHeader: req.EventHeader,
+	}); err != nil {
+		logrus.Errorf("failed to fire rule event: %v, err, (%+v)", req.Event, err)
+	}
 	return httpserver.OkResp(runningTaskID)
 }

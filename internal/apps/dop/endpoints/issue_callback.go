@@ -56,6 +56,16 @@ func (e *Endpoints) IssueCallback(ctx context.Context, r *http.Request, vars map
 		return apierrors.ErrIssueCallback.InvalidParameter(err).ToResp(), nil
 	}
 
+	env := map[string]interface{}{
+		"content": req.Content,
+	}
+	if err := e.FireRule(ctx, env, EventInfo{
+		Scope:       "project",
+		ScopeID:     req.ProjectID,
+		EventHeader: req.EventHeader,
+	}); err != nil {
+		logrus.Errorf("failed to fire rule event: %v, err, (%+v)", req.Event, err)
+	}
 	return httpserver.OkResp("")
 }
 
