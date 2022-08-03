@@ -83,7 +83,6 @@ func (q QueryClickhouse) ParseResult(ctx context.Context, resp interface{}) (*mo
 		err         error
 	)
 
-	span.SetAttributes(trace.BigStringAttribute("rows", rows))
 	span.SetAttributes(attribute.String("origin.columns", strings.Join(columns, ";")))
 
 	for i := range columnTypes {
