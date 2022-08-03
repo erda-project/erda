@@ -16,6 +16,7 @@
 package approve
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -25,6 +26,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/core/legacy/conf"
@@ -32,7 +34,6 @@ import (
 	"github.com/erda-project/erda/internal/core/legacy/model"
 	"github.com/erda-project/erda/internal/core/legacy/services/member"
 	"github.com/erda-project/erda/internal/core/legacy/utils"
-	"github.com/erda-project/erda/internal/core/user"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -40,7 +41,7 @@ import (
 type Approve struct {
 	db     *dao.DBClient
 	bdl    *bundle.Bundle
-	uc     user.Interface
+	uc     userpb.UserServiceServer
 	member *member.Member
 }
 
@@ -64,7 +65,7 @@ func WithDBClient(db *dao.DBClient) Option {
 }
 
 // WithUCClient 配置 uc client
-func WithUCClient(uc user.Interface) Option {
+func WithUCClient(uc userpb.UserServiceServer) Option {
 	return func(p *Approve) {
 		p.uc = uc
 	}
@@ -148,10 +149,11 @@ func (a *Approve) Create(userID string, createReq *apistructs.ApproveCreateReque
 		return nil, errors.Errorf("failed to insert approve to db")
 	}
 	if approve.Type == string(apistructs.ApproveUnblockAppication) {
-		memberlist, err := a.uc.FindUsers([]string{userID})
+		resp, err := a.uc.FindUsers(context.Background(), &userpb.FindUsersRequest{IDs: []string{userID}})
 		if err != nil {
 			return nil, errors.Errorf("failed to get user(%s): %v", userID, err)
 		}
+		memberlist := resp.Data
 		member := memberlist[0].Name
 		start, err := time.Parse(time.RFC3339, createReq.Extra["start"])
 		if err != nil {
@@ -289,10 +291,11 @@ func (a *Approve) Update(approveID int64, updateReq *apistructs.ApproveUpdateReq
 		if err := a.updateApplicationWhenUnblock(extra); err != nil {
 			logrus.Errorf("failed to updateApplicationWhenUnblock: %v", err)
 		}
-		memberlist, err := a.uc.FindUsers([]string{approve.Submitter})
+		resp, err := a.uc.FindUsers(context.Background(), &userpb.FindUsersRequest{IDs: []string{approve.Submitter}})
 		if err != nil {
 			return errors.Errorf("failed to get user(%s): %v", approve.Submitter, err)
 		}
+		memberlist := resp.Data
 		member := memberlist[0].Name
 		start, err := time.Parse(time.RFC3339, extra["start"])
 		if err != nil {

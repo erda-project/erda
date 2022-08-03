@@ -19,6 +19,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/erda-project/erda-proto-go/core/user/pb"
 )
 
 type User struct {
@@ -127,4 +129,16 @@ var SystemUser = User{
 	ID:   SystemOperator,
 	Name: SystemOperator,
 	Nick: SystemOperator,
+}
+
+func ToPbUser(user User) *pb.User {
+	return &pb.User{
+		ID:        user.ID,
+		Name:      user.Name,
+		Nick:      user.Nick,
+		AvatarURL: user.AvatarURL,
+		Phone:     user.Phone,
+		Email:     user.Email,
+		State:     user.State,
+	}
 }

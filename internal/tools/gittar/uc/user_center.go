@@ -15,6 +15,7 @@
 package uc
 
 import (
+	"context"
 	"net/url"
 	"strings"
 	"time"
@@ -23,8 +24,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/internal/core/user"
 	"github.com/erda-project/erda/internal/tools/gittar/conf"
 	"github.com/erda-project/erda/pkg/desensitize"
 	"github.com/erda-project/erda/pkg/discover"
@@ -41,9 +42,9 @@ var tokenValue *Token
 
 var userCache = cache.New(12*time.Hour, 1*time.Hour)
 
-var uc user.Interface
+var uc userpb.UserServiceServer
 
-func InitializeUcClient(identity user.Interface) {
+func InitializeUcClient(identity userpb.UserServiceServer) {
 	uc = identity
 	logrus.Infof("gittar uc client set up")
 }
@@ -81,10 +82,11 @@ func FindUserById(id string) (*apistructs.UserInfoDto, error) {
 		return nil, nil
 	}
 	if conf.OryEnabled() {
-		user, err := uc.GetUser(id)
+		resp, err := uc.GetUser(context.Background(), &userpb.GetUserRequest{UserID: id})
 		if err != nil {
 			return nil, err
 		}
+		user := resp.Data
 		userInfo := &apistructs.UserInfoDto{
 			AvatarURL: user.AvatarURL,
 			Email:     user.Email,

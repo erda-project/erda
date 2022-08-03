@@ -21,11 +21,11 @@ import (
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
+	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda/internal/core/legacy/dao"
 	"github.com/erda-project/erda/internal/core/legacy/providers/errorbox"
 	"github.com/erda-project/erda/internal/core/legacy/services/permission"
 	"github.com/erda-project/erda/internal/core/org"
-	"github.com/erda-project/erda/internal/core/user"
 	"github.com/erda-project/erda/pkg/oauth2"
 )
 
@@ -39,7 +39,7 @@ type provider struct {
 	DB            *gorm.DB                   `autowired:"mysql-client"`
 	TokenService  tokenpb.TokenServiceServer `autowired:"erda.core.token.TokenService"`
 	Org           org.Interface
-	Identity      user.Interface
+	Identity      userpb.UserServiceServer
 }
 
 func (p *provider) Init(ctx servicehub.Context) (err error) {

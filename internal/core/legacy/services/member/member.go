@@ -28,11 +28,12 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/i18n"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
+	"github.com/erda-project/erda-proto-go/core/user/pb"
+	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/core/legacy/dao"
 	"github.com/erda-project/erda/internal/core/legacy/model"
 	"github.com/erda-project/erda/internal/core/legacy/types"
-	"github.com/erda-project/erda/internal/core/user"
 	identity "github.com/erda-project/erda/internal/core/user/common"
 	locale "github.com/erda-project/erda/pkg/i18n"
 	"github.com/erda-project/erda/pkg/oauth2/tokenstore/mysqltokenstore"
@@ -42,7 +43,7 @@ import (
 // Member 成员操作封装
 type Member struct {
 	db           *dao.DBClient
-	uc           user.Interface
+	uc           userpb.UserServiceServer
 	redisCli     *redis.Client
 	tran         i18n.Translator
 	tokenService tokenpb.TokenServiceServer
@@ -68,7 +69,7 @@ func WithDBClient(db *dao.DBClient) Option {
 }
 
 // WithUCClient 配置 uc client
-func WithUCClient(uc user.Interface) Option {
+func WithUCClient(uc userpb.UserServiceServer) Option {
 	return func(m *Member) {
 		m.uc = uc
 	}
@@ -106,11 +107,12 @@ func (m *Member) CreateOrUpdate(userID string, req apistructs.MemberAddRequest) 
 		return errors.Errorf("failed to create permission(invalid scope id)")
 	}
 
-	users, err := m.uc.FindUsers(req.UserIDs)
+	resp, err := m.uc.FindUsers(context.Background(), &pb.FindUsersRequest{IDs: req.UserIDs})
 	if err != nil {
 		logrus.Warnf("failed to get user info, (%v)", err)
 		return errors.Errorf("failed to get user info")
 	}
+	users := resp.Data
 	if err := m.checkUCUserInfo(users); err != nil {
 		return err
 	}
@@ -573,7 +575,7 @@ func (m *Member) getMemberManagerCount(users []identity.User, scopeID int64, sco
 
 // 在判断最大管理员数量时，若是成员原本就有owner的角色，这次更新只是添加一个非owner的角色，
 // 则不应该算作占用最大所有者数量中的一个
-func (m *Member) getMemberOwnerCount(users []identity.User, scopeID int64, scopeType apistructs.ScopeType) (uint64, error) {
+func (m *Member) getMemberOwnerCount(users []*userpb.User, scopeID int64, scopeType apistructs.ScopeType) (uint64, error) {
 	var userIDs []string
 	for _, user := range users {
 		userIDs = append(userIDs, user.ID)
@@ -946,7 +948,7 @@ func (m *Member) getMember(scopeType apistructs.ScopeType, scopeID int64) (map[s
 	return members, nil
 }
 
-func (m *Member) checkUCUserInfo(users []identity.User) error {
+func (m *Member) checkUCUserInfo(users []*userpb.User) error {
 	for _, user := range users {
 		if user.ID == "" {
 			return errors.Errorf("failed to get user info")

@@ -22,6 +22,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
+	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	openapiv1 "github.com/erda-project/erda/internal/core/openapi/legacy"
 	apiv1 "github.com/erda-project/erda/internal/core/openapi/legacy/api"
 	"github.com/erda-project/erda/internal/core/openapi/legacy/component-protocol/types"
@@ -30,7 +31,6 @@ import (
 	"github.com/erda-project/erda/internal/core/openapi/openapi-ng"
 	"github.com/erda-project/erda/internal/core/openapi/openapi-ng/proxy"
 	"github.com/erda-project/erda/internal/core/org"
-	"github.com/erda-project/erda/internal/core/user"
 	discover "github.com/erda-project/erda/internal/pkg/service-discover"
 )
 
@@ -47,7 +47,7 @@ type provider struct {
 	proxy        proxy.Proxy
 	handler      http.Handler
 	TokenService tokenpb.TokenServiceServer `autowired:"erda.core.token.TokenService"`
-	Identity     user.Interface
+	Identity     userpb.UserServiceServer
 	Org          org.Interface
 }
 

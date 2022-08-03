@@ -24,12 +24,10 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/dao"
 	"github.com/erda-project/erda/internal/apps/dop/services/nexussvc"
 	"github.com/erda-project/erda/internal/apps/dop/services/publisher"
-	"github.com/erda-project/erda/internal/core/user"
 )
 
 type Org struct {
 	db        *dao.DBClient
-	uc        user.Interface
 	bdl       *bundle.Bundle
 	publisher *publisher.Publisher
 	nexusSvc  *nexussvc.NexusSvc
@@ -54,13 +52,6 @@ func New(options ...Option) *Org {
 func WithDBClient(dbClient *dao.DBClient) Option {
 	return func(o *Org) {
 		o.db = dbClient
-	}
-}
-
-// WithUCClient 配置 uc client
-func WithUCClient(ucClient user.Interface) Option {
-	return func(o *Org) {
-		o.uc = ucClient
 	}
 }
 

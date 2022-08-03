@@ -26,11 +26,11 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
+	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/core/legacy/conf"
 	"github.com/erda-project/erda/internal/core/legacy/dao"
 	"github.com/erda-project/erda/internal/core/legacy/model"
-	"github.com/erda-project/erda/internal/core/user"
 	"github.com/erda-project/erda/pkg/cron"
 	"github.com/erda-project/erda/pkg/excel"
 )
@@ -38,7 +38,7 @@ import (
 // Audit 成员操作封装
 type Audit struct {
 	db    *dao.DBClient
-	uc    user.Interface
+	uc    userpb.UserServiceServer
 	cron  *cron.Cron
 	trans i18n.Translator
 }
@@ -67,7 +67,7 @@ func WithDBClient(db *dao.DBClient) Option {
 }
 
 // WithUCClient 配置 uc client
-func WithUCClient(uc user.Interface) Option {
+func WithUCClient(uc userpb.UserServiceServer) Option {
 	return func(a *Audit) {
 		a.uc = uc
 	}
@@ -149,10 +149,11 @@ func (a *Audit) convertAuditsToExcelList(ctx context.Context, audits []model.Aud
 		userIDs = append(userIDs, k)
 	}
 
-	users, err := a.uc.FindUsers(userIDs)
+	resp, err := a.uc.FindUsers(ctx, &userpb.FindUsersRequest{IDs: userIDs})
 	if err != nil {
 		return nil, err
 	}
+	users := resp.Data
 	for _, u := range users {
 		userIDNameMap[u.ID] = u.Nick
 	}

@@ -25,12 +25,12 @@ import (
 	"github.com/erda-project/erda-infra/providers/redis"
 	"github.com/erda-project/erda-proto-go/core/org/pb"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
+	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/core/legacy/dao"
 	"github.com/erda-project/erda/internal/core/legacy/services/member"
 	"github.com/erda-project/erda/internal/core/legacy/services/permission"
 	"github.com/erda-project/erda/internal/core/org/db"
-	"github.com/erda-project/erda/internal/core/user"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 
@@ -51,11 +51,12 @@ type provider struct {
 	dbClient *db.DBClient
 
 	member     *member.Member
-	uc         user.Interface
+	uc         userpb.UserServiceServer
 	permission *permission.Permission
 
 	TokenService tokenpb.TokenServiceServer
 	Client       pb.OrgServiceServer
+	pb.OrgServiceServer
 }
 
 var _org Interface
@@ -71,7 +72,7 @@ func (p *provider) WithMember(member *member.Member) {
 	p.member = member
 }
 
-func (p *provider) WithUc(uc user.Interface) {
+func (p *provider) WithUc(uc userpb.UserServiceServer) {
 	p.uc = uc
 }
 

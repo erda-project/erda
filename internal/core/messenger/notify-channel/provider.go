@@ -22,9 +22,9 @@ import (
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/core/messenger/notifychannel/pb"
+	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/core/messenger/notify-channel/db"
-	"github.com/erda-project/erda/internal/core/user"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 
@@ -34,7 +34,7 @@ type provider struct {
 	Cfg                 *config
 	Log                 logs.Logger
 	Register            transport.Register
-	Identity            user.Interface
+	Identity            userpb.UserServiceServer
 	notifyChanelService *notifyChannelService
 	bdl                 *bundle.Bundle
 	DB                  *gorm.DB        `autowired:"mysql-client"`

@@ -22,15 +22,15 @@ import (
 	"github.com/alecthomas/assert"
 	gomock "github.com/golang/mock/gomock"
 
-	apistructs "github.com/erda-project/erda/apistructs"
+	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 func Test_provider_userInfoRetriever(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	identitySvc := NewMockInterface(ctrl)
-	identitySvc.EXPECT().GetUsers(gomock.Any(), gomock.Any()).AnyTimes().Return(map[string]apistructs.UserInfo{"1": {ID: "1"}}, nil)
+	identitySvc := NewMockUserServiceServer(ctrl)
+	identitySvc.EXPECT().FindUsers(gomock.Any(), gomock.Any()).AnyTimes().Return(&userpb.FindUsersResponse{Data: []*userpb.User{{ID: "1"}}}, nil)
 
 	p := &provider{Identity: identitySvc}
 	type args struct {
@@ -68,7 +68,7 @@ func Test_provider_userInfoRetriever(t *testing.T) {
 			},
 		},
 	}
-	expected := []string{`"id":"1"`, `"id":"1"`}
+	expected := []string{`"id":""`, `"id":"1"`}
 	for i, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			body := p.userInfoRetriever(tt.args.r, tt.args.data, tt.args.userIDs)

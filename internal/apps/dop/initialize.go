@@ -501,7 +501,6 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 	// init publisher service
 	pub := publisher.New(
 		publisher.WithDBClient(db),
-		publisher.WithUCClient(p.Identity),
 		publisher.WithBundle(bdl.Bdl),
 		publisher.WithNexusSvc(nexusSvc),
 	)
@@ -528,7 +527,6 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 	// init org service
 	o := org.New(
 		org.WithDBClient(db),
-		org.WithUCClient(p.Identity),
 		org.WithBundle(bdl.Bdl),
 		org.WithPublisher(pub),
 		org.WithNexusSvc(nexusSvc),
