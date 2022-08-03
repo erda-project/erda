@@ -15,6 +15,8 @@
 package flow
 
 import (
+	"gorm.io/gorm"
+
 	logs "github.com/erda-project/erda-infra/base/logs"
 	servicehub "github.com/erda-project/erda-infra/base/servicehub"
 	transport "github.com/erda-project/erda-infra/pkg/transport"
@@ -22,6 +24,7 @@ import (
 	pb "github.com/erda-project/erda-proto-go/apps/devflow/flow/pb"
 	issuerelationpb "github.com/erda-project/erda-proto-go/apps/devflow/issuerelation/pb"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/apps/devflow/flow/db"
 	"github.com/erda-project/erda/internal/apps/dop/providers/devflowrule"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query"
 	"github.com/erda-project/erda/pkg/common/apis"
@@ -35,6 +38,8 @@ type provider struct {
 	Log      logs.Logger
 	Register transport.Register
 	Trans    i18n.Translator `translator:"common" required:"true"`
+	DB       *gorm.DB        `autowired:"mysql-gorm.v2-client"`
+	dbClient *db.Client
 
 	devFlowService *Service
 	IssueRelation  issuerelationpb.IssueRelationServiceServer `autowired:"erda.apps.devflow.issuerelation.IssueRelationService"`
@@ -49,6 +54,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	service := &Service{}
 	service.p = p
 	p.devFlowService = service
+	p.dbClient = &db.Client{DB: p.DB}
 
 	if p.Register != nil {
 		pb.RegisterFlowServiceImp(p.Register, p.devFlowService, apis.Options())
