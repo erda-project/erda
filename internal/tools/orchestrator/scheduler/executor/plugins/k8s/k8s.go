@@ -374,7 +374,7 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 	scaleObj := scaledobject.New(scaledobject.WithCompleteParams(addr, client), scaledobject.WithVPAClient(vpaClient))
 	hpa := erdahpa.New(erdahpa.WithCompleteParams(addr, client))
 	sts := statefulset.New(statefulset.WithCompleteParams(addr, client))
-	k8spod := pod.New(pod.WithCompleteParams(addr, client))
+	k8spod := pod.New(pod.WithK8sClient(k8sClient.ClientSet))
 	k8ssecret := secret.New(secret.WithCompleteParams(addr, client))
 	k8sstorageclass := storageclass.New(storageclass.WithCompleteParams(addr, client))
 	sa := serviceaccount.New(serviceaccount.WithCompleteParams(addr, client))
@@ -387,7 +387,7 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 		return nil, errors.Errorf("failed to new cluster info, executorName: %s, clusterName: %s, (%v)",
 			name, clusterName, err)
 	}
-	resourceInfo := resourceinfo.New(addr, client)
+	resourceInfo := resourceinfo.New(addr, client, k8sClient.ClientSet)
 
 	var istioEngine istioctl.IstioEngine
 	rawData, err := clusterInfo.Get()

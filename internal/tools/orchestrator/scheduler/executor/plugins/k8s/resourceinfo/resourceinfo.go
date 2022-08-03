@@ -22,6 +22,7 @@ import (
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/client-go/kubernetes"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/node"
@@ -37,8 +38,8 @@ type ResourceInfo struct {
 	client   *httpclient.HTTPClient
 }
 
-func New(addr string, client *httpclient.HTTPClient) *ResourceInfo {
-	podutil := pod.New(pod.WithCompleteParams(addr, client))
+func New(addr string, client *httpclient.HTTPClient, k8sClient kubernetes.Interface) *ResourceInfo {
+	podutil := pod.New(pod.WithK8sClient(k8sClient))
 	nodeutil := node.New(addr, client)
 	return &ResourceInfo{addr: addr, client: client, podutil: podutil, nodeutil: nodeutil}
 }
