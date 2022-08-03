@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"gorm.io/gorm"
 
@@ -34,6 +35,7 @@ import (
 	issuepb "github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	gittarpb "github.com/erda-project/erda-proto-go/openapiv1/gittar/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/devflow/flow/db"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	"github.com/erda-project/erda/internal/apps/dop/services/branchrule"
@@ -286,19 +288,70 @@ func (s *Service) OperationMerge(ctx context.Context, req *pb.OperationMergeRequ
 		if err != nil {
 			return nil, err
 		}
-		return &pb.OperationMergeResponse{}, nil
+	} else {
+		// Is already removed
+		if !devFlow.IsJoinTempBranch {
+			return &pb.OperationMergeResponse{}, nil
+		}
+		err = s.RejoinTempBranch(ctx, tempBranch, sourceBranch, targetBranch, devFlow, app)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	// Is already removed
-	if !devFlow.IsJoinTempBranch {
-		return &pb.OperationMergeResponse{}, nil
-	}
-	err = s.RejoinTempBranch(ctx, tempBranch, sourceBranch, targetBranch, devFlow, app)
-	if err != nil {
-		return nil, err
+	userID := apis.GetUserID(ctx)
+	if err := s.CreateFlowEvent(&CreateFlowRequest{
+		ProjectID: app.ProjectID,
+		AppID:     app.ID,
+		OrgID:     app.OrgID,
+		Data: &pb.FlowEventData{
+			IssueID:          devFlow.IssueID,
+			Operator:         userID,
+			TempBranch:       tempBranch,
+			SourceBranch:     sourceBranch,
+			TargetBranch:     targetBranch,
+			AppName:          app.DisplayName,
+			IsJoinTempBranch: strconv.FormatBool(req.Enable.Value),
+		},
+	}); err != nil {
+		s.p.Log.Errorf("failed to create flow event, err: %v", err)
 	}
 
 	return &pb.OperationMergeResponse{}, nil
+}
+
+type CreateFlowRequest struct {
+	Data      *pb.FlowEventData
+	ProjectID uint64
+	AppID     uint64
+	OrgID     uint64
+}
+
+func (s *Service) CreateFlowEvent(req *CreateFlowRequest) error {
+	projectModel, err := s.p.bdl.GetProject(req.ProjectID)
+	if err != nil {
+		return err
+	}
+
+	issueModel, err := s.p.Issue.GetIssue(int64(req.Data.IssueID), &commonpb.IdentityInfo{UserID: req.Data.Operator})
+	if err != nil {
+		return err
+	}
+	req.Data.ProjectName = projectModel.Name
+	req.Data.Params = make(map[string]*structpb.Value)
+	req.Data.Params["title"] = structpb.NewStringValue(issueModel.Title)
+	eventReq := &apistructs.EventCreateRequest{
+		EventHeader: apistructs.EventHeader{
+			Event:         "dev_flow",
+			Action:        "update",
+			ProjectID:     strconv.FormatUint(req.ProjectID, 10),
+			ApplicationID: strconv.FormatUint(req.AppID, 10),
+			OrgID:         strconv.FormatUint(req.OrgID, 10),
+		},
+		Sender:  bundle.SenderDOP,
+		Content: req.Data,
+	}
+	return s.p.bdl.CreateEvent(eventReq)
 }
 
 func (s *Service) JoinTempBranch(ctx context.Context, tempBranch, sourceBranch string, appDto *apistructs.ApplicationDTO, devFlow *db.DevFlow) error {

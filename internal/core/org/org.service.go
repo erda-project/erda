@@ -23,13 +23,13 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/erda-project/erda-proto-go/core/org/pb"
+	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/core/legacy/services/apierrors"
 	"github.com/erda-project/erda/internal/core/legacy/services/member"
 	"github.com/erda-project/erda/internal/core/legacy/services/permission"
 	"github.com/erda-project/erda/internal/core/legacy/utils"
 	"github.com/erda-project/erda/internal/core/org/db"
-	"github.com/erda-project/erda/internal/core/user"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -44,7 +44,7 @@ type WrapClient struct {
 
 type Interface interface {
 	pb.OrgServiceServer
-	WithUc(uc user.Interface)
+	WithUc(uc userpb.UserServiceServer)
 	WithMember(member *member.Member)
 	WithPermission(permission *permission.Permission)
 	ListOrgs(ctx context.Context, orgIDs []int64, req *pb.ListOrgRequest, all bool) (int, []*pb.Org, error)

@@ -108,6 +108,7 @@ erda.dop.cms: {}
 erda.apps.devflow.flow: {}
 erda.apps.devflow.issuerelation: {}
 erda.dop.devFlowRule: {}
+erda.dop.pipelinetemplate: {}
 
 permission: {}
 
@@ -119,10 +120,9 @@ metricq-client:
 
 audit:
 
-erda.core.user: {}
-erda.core.user.kratos: {}
-erda.core.user.uc: {}
-
 erda.dop.rule: {}
 erda.dop.rule.action.api: {}
- 
+
+grpc-client@erda.core.user:
+  addr: "${ERDA_SERVER_GRPC_ADDR:erda-server:8096}"
+erda.core.user-client: {}

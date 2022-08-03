@@ -16,6 +16,7 @@ package uc
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -24,9 +25,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda/internal/core/user/common"
-	"github.com/erda-project/erda/internal/core/user/util"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -40,7 +40,8 @@ type UcUser struct {
 	Email     string `json:"email"`
 }
 
-func (p *provider) FindUsers(ids []string) ([]common.User, error) {
+func (p *provider) FindUsers(ctx context.Context, req *pb.FindUsersRequest) (*pb.FindUsersResponse, error) {
+	ids := req.IDs
 	if len(ids) == 0 {
 		return nil, nil
 	}
@@ -56,36 +57,52 @@ func (p *provider) FindUsers(ids []string) ([]common.User, error) {
 	query := strings.Join(parts, " OR ")
 	users, err := p.findUsersByQuery(query, ids...)
 	if err != nil {
-		return users, err
+		return nil, err
 	}
 	if sysOpExist {
 		users = append(users, common.SystemUser)
 	}
-	return users, nil
+	userList := make([]*pb.User, 0, len(users))
+	for _, i := range users {
+		userList = append(userList, common.ToPbUser(i))
+	}
+	return &pb.FindUsersResponse{Data: userList}, nil
 }
 
 // FindUsersByKey 根据key查找用户，key可匹配用户名/邮箱/手机号
-func (p *provider) FindUsersByKey(key string) ([]common.User, error) {
+func (p *provider) FindUsersByKey(ctx context.Context, req *pb.FindUsersByKeyRequest) (*pb.FindUsersByKeyResponse, error) {
+	key := req.Key
 	if key == "" {
 		return nil, nil
 	}
 	query := fmt.Sprintf("username:%s OR nickname:%s OR phone_number:%s OR email:%s", key, key, key, key)
-	return p.findUsersByQuery(query)
+	users, err := p.findUsersByQuery(query)
+	if err != nil {
+		return nil, err
+	}
+	userList := make([]*pb.User, 0, len(users))
+	for _, i := range users {
+		userList = append(userList, common.ToPbUser(i))
+	}
+	return &pb.FindUsersByKeyResponse{Data: userList}, nil
 }
 
 // GetUser 获取用户详情
-func (p *provider) GetUser(userID string) (*common.User, error) {
+func (p *provider) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.GetUserResponse, error) {
 	var (
 		user *common.User
 		err  error
 	)
+	userID := req.UserID
 	// 增加重试机制，防止因 uc 升级 serverToken 格式不兼容，无法获取用户信息
 	for i := 0; i < 3; i++ {
 		user, err = p.getUser(userID)
 		if err != nil {
 			continue
 		}
-		return user, nil
+		return &pb.GetUserResponse{
+			Data: common.ToPbUser(*user),
+		}, nil
 	}
 
 	return nil, err
@@ -175,12 +192,4 @@ func (p *provider) getUser(userID string) (*common.User, error) {
 	}
 
 	return userMapper(&user), nil
-}
-
-func (p *provider) GetUsers(IDs []string, needDesensitize bool) (map[string]apistructs.UserInfo, error) {
-	users, err := p.FindUsers(IDs)
-	if err != nil {
-		return nil, err
-	}
-	return util.Densensitize(IDs, users, needDesensitize), nil
 }

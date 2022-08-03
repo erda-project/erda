@@ -39,6 +39,8 @@ import (
 	sourcepb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
 	errboxpb "github.com/erda-project/erda-proto-go/core/services/errorbox/pb"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
+	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
+	rulepb "github.com/erda-project/erda-proto-go/dop/rule/pb"
 	addonmysqlpb "github.com/erda-project/erda-proto-go/orchestrator/addon/mysql/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/devflow/flow"
@@ -58,7 +60,6 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/providers/qa/unittest"
 	"github.com/erda-project/erda/internal/apps/dop/providers/taskerror"
 	"github.com/erda-project/erda/internal/core/org"
-	"github.com/erda-project/erda/internal/core/user"
 	"github.com/erda-project/erda/internal/pkg/metrics/query"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/dumpstack"
@@ -95,7 +96,8 @@ type provider struct {
 	IssueCoreSvc          *core.IssueService             `autowired:"erda.dop.issue.core.IssueCoreService"`
 	Query                 issuequery.Interface
 	Org                   org.ClientInterface `required:"true"`
-	Identity              user.Interface
+	Identity              userpb.UserServiceServer
+	RuleService           rulepb.RuleServiceServer
 
 	Protocol      componentprotocol.Interface
 	CPTran        i18n.I18n        `autowired:"i18n@cp"`

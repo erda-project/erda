@@ -12,62 +12,66 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package user
+package pipelinetemplate
 
 import (
+	"context"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
-	transport "github.com/erda-project/erda-infra/pkg/transport"
-	pb "github.com/erda-project/erda-proto-go/core/user/pb"
-	"github.com/erda-project/erda/internal/core/user/common"
-	"github.com/erda-project/erda/internal/core/user/impl/kratos"
-	"github.com/erda-project/erda/internal/core/user/impl/uc"
+	"github.com/erda-project/erda-infra/pkg/transport"
+	"github.com/erda-project/erda-infra/providers/mysql"
+	"github.com/erda-project/erda-proto-go/dop/pipelinetemplate/pb"
+	dbclient "github.com/erda-project/erda/internal/apps/dop/providers/pipelinetemplate/db"
+	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/database/dbengine"
 )
 
-type config struct {
-	OryEnabled bool `default:"false" file:"ORY_ENABLED" env:"ORY_ENABLED"`
-}
+type config struct{}
 
 type provider struct {
-	Cfg      *config
 	Log      logs.Logger
+	Cfg      *config
 	Register transport.Register
+	MySQL    mysql.Interface
 
-	Kratos kratos.Interface
-	Uc     uc.Interface
-
-	userService common.Interface
+	service *ServiceImpl
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	if p.Cfg.OryEnabled {
-		p.userService = p.Kratos
-		p.Log.Info("use kratos as user")
-	} else {
-		p.userService = p.Uc
-		p.Log.Info("use uc as user")
+	p.service = &ServiceImpl{
+		log: p.Log,
+		db: &dbclient.DBClient{DBEngine: &dbengine.DBEngine{
+			DB: p.MySQL.DB(),
+		}},
 	}
-
 	if p.Register != nil {
-		pb.RegisterUserServiceImp(p.Register, p.userService)
+		pb.RegisterTemplateServiceImp(p.Register, p.service, apis.Options())
 	}
 	return nil
 }
 
 func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
 	switch {
-	case ctx.Service() == "erda.core.user.UserService" || ctx.Type() == pb.UserServiceServerType() || ctx.Type() == pb.UserServiceHandlerType():
-		return p.userService
+	case ctx.Service() == "erda.dop.pipelinetemplate.TemplateService" || ctx.Type() == pb.TemplateServiceServerType() || ctx.Type() == pb.TemplateServiceHandlerType():
+		return p.service
 	}
 	return p
 }
 
+func (q *provider) Run(ctx context.Context) error {
+	return nil
+}
+
 func init() {
-	servicehub.Register("erda.core.user", &servicehub.Spec{
+	servicehub.Register("erda.dop.pipelinetemplate", &servicehub.Spec{
 		Services:             pb.ServiceNames(),
-		Types:                pb.Types(),
+		Types:                append(pb.Types()),
 		OptionalDependencies: []string{"service-register"},
-		ConfigFunc:           func() interface{} { return &config{} },
+		Description:          "",
+		ConfigFunc: func() interface{} {
+			return &config{}
+		},
 		Creator: func() servicehub.Provider {
 			return &provider{}
 		},

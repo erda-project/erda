@@ -70,21 +70,6 @@ message CreateUpdateDeleteReleaseRuleRequest {
     string ruleID = 4;
     optional google.protobuf.Value body = 5;
 }
-message DICEHUB_PIPELINE_TEMPLATE_APPLY_Request {
-}
-message DICEHUB_PIPELINE_TEMPLATE_QUERY_Request {
-}
-message DICEHUB_PIPELINE_TEMPLATE_VERSION_GET_Request {
-    string name = 1; // generated from path variable: name. You should change the proto type if necessary.
-}
-message DICEHUB_PIPELINE_TEMPLATE_VERSION_QUERY_Request {
-    string name = 1; // generated from path variable: name. You should change the proto type if necessary.
-}
-message DICEHUB_PIPELINE_TEMPLATE_VERSION_RENDER_Request {
-    string name = 1; // generated from path variable: name. You should change the proto type if necessary.
-}
-message DICEHUB_PIPELINE_TEMPLATE_VERSION_RENDER_SPEC_Request {
-}
 message DICEHUB_PUBLISH_ITEM_BLACKLIST_DELETE_Request {
     string publishItemId = 1; // generated from path variable: publishItemId. You should change the proto type if necessary.
     string blacklistId = 2; // generated from path variable: blacklistId. You should change the proto type if necessary.
@@ -408,102 +393,6 @@ service dicehub {
         service: "dicehub",
     };
 
-    rpc DICEHUB_PIPELINE_TEMPLATE_APPLY (DICEHUB_PIPELINE_TEMPLATE_APPLY_Request) returns (google.protobuf.Empty) {
-        option (google.api.http) = {
-            post: "/api/pipeline-templates/actions/apply",
-        };
-        option (erda.common.openapi) = {
-            path: "/api/pipeline-templates/actions/apply",
-            auth: {
-                no_check: false,
-                check_login: true,
-                try_check_login: false,
-                check_token: true,
-                check_basic_auth: false,
-            },
-            doc: "summary: 新增或修改模板",
-        };
-    };
-    rpc DICEHUB_PIPELINE_TEMPLATE_QUERY (DICEHUB_PIPELINE_TEMPLATE_QUERY_Request) returns (google.protobuf.Empty) {
-        option (google.api.http) = {
-            get: "/api/pipeline-templates",
-        };
-        option (erda.common.openapi) = {
-            path: "/api/pipeline-templates",
-            auth: {
-                no_check: false,
-                check_login: true,
-                try_check_login: false,
-                check_token: true,
-                check_basic_auth: false,
-            },
-            doc: "summary: 查询模板列表",
-        };
-    };
-    rpc DICEHUB_PIPELINE_TEMPLATE_VERSION_GET (DICEHUB_PIPELINE_TEMPLATE_VERSION_GET_Request) returns (google.protobuf.Empty) {
-        option (google.api.http) = {
-            get: "/api/pipeline-templates/{name}/actions/query-version",
-        };
-        option (erda.common.openapi) = {
-            path: "/api/pipeline-templates/{name}/actions/query-version",
-            auth: {
-                no_check: false,
-                check_login: true,
-                try_check_login: false,
-                check_token: true,
-                check_basic_auth: false,
-            },
-            doc: "summary: 获取模板版本详情",
-        };
-    };
-    rpc DICEHUB_PIPELINE_TEMPLATE_VERSION_QUERY (DICEHUB_PIPELINE_TEMPLATE_VERSION_QUERY_Request) returns (google.protobuf.Empty) {
-        option (google.api.http) = {
-            get: "/api/pipeline-templates/{name}/actions/query-versions",
-        };
-        option (erda.common.openapi) = {
-            path: "/api/pipeline-templates/{name}/actions/query-versions",
-            auth: {
-                no_check: false,
-                check_login: true,
-                try_check_login: false,
-                check_token: true,
-                check_basic_auth: false,
-            },
-            doc: "summary: 查询模板的版本列表",
-        };
-    };
-    rpc DICEHUB_PIPELINE_TEMPLATE_VERSION_RENDER (DICEHUB_PIPELINE_TEMPLATE_VERSION_RENDER_Request) returns (google.protobuf.Empty) {
-        option (google.api.http) = {
-            post: "/api/pipeline-templates/{name}/actions/render",
-        };
-        option (erda.common.openapi) = {
-            path: "/api/pipeline-templates/{name}/actions/render",
-            auth: {
-                no_check: false,
-                check_login: true,
-                try_check_login: false,
-                check_token: true,
-                check_basic_auth: false,
-            },
-            doc: "summary: 渲染模板对应版本的pipeline.yml",
-        };
-    };
-    rpc DICEHUB_PIPELINE_TEMPLATE_VERSION_RENDER_SPEC (DICEHUB_PIPELINE_TEMPLATE_VERSION_RENDER_SPEC_Request) returns (google.protobuf.Empty) {
-        option (google.api.http) = {
-            post: "/api/pipeline-templates/local/actions/render-spec",
-        };
-        option (erda.common.openapi) = {
-            path: "/api/pipeline-templates/local/actions/render-spec",
-            auth: {
-                no_check: false,
-                check_login: true,
-                try_check_login: false,
-                check_token: true,
-                check_basic_auth: false,
-            },
-            doc: "summary: 根据spec直接渲染模板",
-        };
-    };
     rpc DICEHUB_PUBLISH_ITEM_BLACKLIST_CREATE (PublishItemUserlistRequest) returns (PublishItemAddBlacklistResponse) {
         option (google.api.http) = {
             post: "/api/publish-items/{publishItemID}/blacklist",

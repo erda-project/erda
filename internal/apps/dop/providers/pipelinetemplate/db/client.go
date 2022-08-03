@@ -12,18 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dicehub
+package dbclient
 
-import "github.com/erda-project/erda/internal/core/openapi/legacy/api/apis"
+import (
+	"github.com/erda-project/erda/pkg/database/dbengine"
+)
 
-var DICEHUB_PIPELINE_TEMPLATE_VERSION_GET = apis.ApiSpec{
-	Path:        "/api/pipeline-templates/<name>/actions/query-version",
-	BackendPath: "/api/pipeline-templates/<name>/actions/query-version",
-	Host:        "erda-server.marathon.l4lb.thisdcos.directory:9095",
-	Scheme:      "http",
-	Method:      "GET",
-	IsOpenAPI:   true,
-	CheckLogin:  true,
-	CheckToken:  true,
-	Doc:         `summary: 获取模板版本详情`,
+type DBClient struct {
+	*dbengine.DBEngine
 }

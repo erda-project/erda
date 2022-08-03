@@ -22,6 +22,7 @@ import (
 	"github.com/gorilla/schema"
 
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
+	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/core/legacy/dao"
 	"github.com/erda-project/erda/internal/core/legacy/services/activity"
@@ -41,7 +42,6 @@ import (
 	"github.com/erda-project/erda/internal/core/legacy/services/subscribe"
 	"github.com/erda-project/erda/internal/core/legacy/services/user"
 	"github.com/erda-project/erda/internal/core/org"
-	identity "github.com/erda-project/erda/internal/core/user"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/i18n"
 	"github.com/erda-project/erda/pkg/jsonstore"
@@ -55,7 +55,7 @@ type Endpoints struct {
 	etcdStore          *etcd.Store
 	ossClient          *oss.Client
 	db                 *dao.DBClient
-	uc                 identity.Interface
+	uc                 userpb.UserServiceServer
 	bdl                *bundle.Bundle
 	project            *project.Project
 	approve            *approve.Approve
@@ -114,7 +114,7 @@ func WithBundle(bdl *bundle.Bundle) Option {
 }
 
 // WithUCClient 配置 UC Client
-func WithUCClient(uc identity.Interface) Option {
+func WithUCClient(uc userpb.UserServiceServer) Option {
 	return func(e *Endpoints) {
 		e.uc = uc
 	}

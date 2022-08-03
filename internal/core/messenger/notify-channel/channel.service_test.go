@@ -30,10 +30,10 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/core/messenger/notifychannel/pb"
+	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/core/messenger/notify-channel/db"
-	identity "github.com/erda-project/erda/internal/core/user/common"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/kms/kmstypes"
 )
@@ -58,8 +58,8 @@ func Test_notifyChannelService_CreateNotifyChannel(t *testing.T) {
 	}
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	identitySvc := NewMockInterface(ctrl)
-	identitySvc.EXPECT().GetUser(gomock.Any()).AnyTimes().Return(&identity.User{ID: "1", Name: "a", Nick: "a"}, nil)
+	identitySvc := NewMockUserServiceServer(ctrl)
+	identitySvc.EXPECT().GetUser(gomock.Any(), gomock.Any()).AnyTimes().Return(&userpb.GetUserResponse{Data: &userpb.User{ID: "1", Name: "a", Nick: "a"}}, nil)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -763,7 +763,7 @@ func Test_notifyChannelService_CovertToPbNotifyChannel(t *testing.T) {
 			want: &pb.NotifyChannel{
 				Id:                  "case",
 				Name:                "case",
-				CreatorName:         "test",
+				CreatorName:         "test_nick",
 				Type:                &pb.NotifyChannelType{},
 				ChannelProviderType: &pb.NotifyChannelProviderType{},
 				CreateAt:            "0001-01-01 00:00:00",
@@ -772,9 +772,8 @@ func Test_notifyChannelService_CovertToPbNotifyChannel(t *testing.T) {
 	}
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	identitySvc := NewMockInterface(ctrl)
-	identitySvc.EXPECT().GetUser(gomock.Eq("not_nick")).AnyTimes().Return(&identity.User{Name: "test"}, nil)
-	identitySvc.EXPECT().GetUser(gomock.Not("not_nick")).AnyTimes().Return(&identity.User{Name: "test", Nick: "test_nick"}, nil)
+	identitySvc := NewMockUserServiceServer(ctrl)
+	identitySvc.EXPECT().GetUser(gomock.Any(), gomock.Any()).AnyTimes().Return(&userpb.GetUserResponse{Data: &userpb.User{Name: "test", Nick: "test_nick"}}, nil)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

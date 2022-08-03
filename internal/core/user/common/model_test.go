@@ -12,18 +12,40 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dicehub
+package common
 
-import "github.com/erda-project/erda/internal/core/openapi/legacy/api/apis"
+import (
+	"reflect"
+	"testing"
 
-var DICEHUB_PIPELINE_TEMPLATE_VERSION_RENDER_SPEC = apis.ApiSpec{
-	Path:        "/api/pipeline-templates/local/actions/render-spec",
-	BackendPath: "/api/pipeline-templates/local/actions/render-spec",
-	Host:        "erda-server.marathon.l4lb.thisdcos.directory:9095",
-	Scheme:      "http",
-	Method:      "POST",
-	IsOpenAPI:   true,
-	CheckLogin:  true,
-	CheckToken:  true,
-	Doc:         `summary: 根据spec直接渲染模板`,
+	"github.com/erda-project/erda-proto-go/core/user/pb"
+)
+
+func TestToPbUser(t *testing.T) {
+	type args struct {
+		user User
+	}
+	tests := []struct {
+		name string
+		args args
+		want *pb.User
+	}{
+		{
+			args: args{
+				user: User{
+					ID: "1",
+				},
+			},
+			want: &pb.User{
+				ID: "1",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := ToPbUser(tt.args.user); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ToPbUser() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }

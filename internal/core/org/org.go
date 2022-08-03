@@ -29,6 +29,7 @@ import (
 	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	"github.com/erda-project/erda-proto-go/core/org/pb"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
+	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/core/legacy/conf"
@@ -120,10 +121,11 @@ func (p *provider) Create(createReq *pb.CreateOrgRequest) (*db.Org, error) {
 	}
 
 	// 新增企业权限记录
-	users, err := p.uc.FindUsers([]string{userID})
+	resp, err := p.uc.FindUsers(context.Background(), &userpb.FindUsersRequest{IDs: []string{userID}})
 	if err != nil {
 		logrus.Warnf("failed to query user info, (%v)", err)
 	}
+	users := resp.Data
 	if len(users) > 0 {
 		_, err := p.TokenService.CreateToken(context.Background(), &tokenpb.CreateTokenRequest{
 			Scope:     string(apistructs.OrgScope),
