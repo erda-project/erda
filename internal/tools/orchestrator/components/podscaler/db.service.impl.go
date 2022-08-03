@@ -108,6 +108,45 @@ func (d *dbServiceImpl) GetUnDeletableAttachMentsByRuntimeID(runtimeID uint64) (
 	return d.db.GetUnDeletableAttachMentsByRuntimeID(runtimeID)
 }
 
+func (d *dbServiceImpl) CreateVPARule(runtimeVPA *dbclient.RuntimeVPA) error {
+	return d.db.CreateRuntimeVPA(runtimeVPA)
+}
+
+func (d *dbServiceImpl) UpdateVPARule(runtimeVPA *dbclient.RuntimeVPA) error {
+	return d.db.UpdateRuntimeVPA(runtimeVPA)
+}
+
+func (d *dbServiceImpl) GetRuntimeVPARulesByServices(id spec.RuntimeUniqueId, services []string) ([]dbclient.RuntimeVPA, error) {
+	return d.db.GetRuntimeVPAByServices(id, services)
+}
+
+func (d *dbServiceImpl) DeleteRuntimeVPARulesByRuleId(ruleId string) error {
+	if err := d.db.DeleteRuntimeVPAByRuleId(ruleId); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (d *dbServiceImpl) GetRuntimeVPARuleByRuleId(ruleId string) (dbclient.RuntimeVPA, error) {
+	runtimeVPA, err := d.db.GetRuntimeVPARuleByRuleId(ruleId)
+	if err != nil {
+		return dbclient.RuntimeVPA{}, err
+	}
+	return *runtimeVPA, nil
+}
+
+func (d *dbServiceImpl) GetRuntimeVPARulesByRuntimeId(runtimeID uint64) ([]dbclient.RuntimeVPA, error) {
+	runtimeVPAs, err := d.db.GetRuntimeVPARulesByRuntimeId(runtimeID)
+	if err != nil {
+		return []dbclient.RuntimeVPA{}, err
+	}
+	return runtimeVPAs, nil
+}
+
+func (d *dbServiceImpl) GetRuntimeVPARecommendationsByServices(runtimeId uint64, services []string) ([]dbclient.RuntimeVPAContainerRecommendation, error) {
+	return d.db.GetRuntimeVPARecommendationsByServices(runtimeId, services)
+}
+
 func newDBService(db *dbclient.DBClient) DBService {
 	return &dbServiceImpl{db: db}
 }

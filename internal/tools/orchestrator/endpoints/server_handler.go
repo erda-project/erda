@@ -111,7 +111,7 @@ func (s *Endpoints) processRuntimeScaleRecord(rsc apistructs.RuntimeScaleRecord,
 	serviceManualScale := false
 	logrus.Errorf("process runtime scale for runtime %#v", uniqueId)
 
-	appliedScaledObjects, err := s.runtime.AppliedScaledObjects(uniqueId)
+	appliedScaledObjects, vpaObjects, err := s.runtime.AppliedScaledObjects(uniqueId)
 	if err != nil {
 		logrus.Warnf("get applied hpa rules for RuntimeUniqueId %#v failed: %v", uniqueId, err)
 	}
@@ -120,6 +120,10 @@ func (s *Endpoints) processRuntimeScaleRecord(rsc apistructs.RuntimeScaleRecord,
 		if _, ok := appliedScaledObjects[svcName]; ok {
 			errMsg := fmt.Sprintf("hpa rules has applied for RuntimeUniqueId %#v, can not do this scale action, please delete or canel the applied rules first", uniqueId)
 			return apistructs.PreDiceDTO{}, errors.Errorf("hpa rules has applied for RuntimeUniqueId %#v, can not do this scale action, please delete or canel the applied rules first", uniqueId), errMsg
+		}
+		if _, ok := vpaObjects[svcName]; ok {
+			errMsg := fmt.Sprintf("vpa rules has applied for RuntimeUniqueId %#v, can not do this scale action, please delete or canel the applied rules first", uniqueId)
+			return apistructs.PreDiceDTO{}, errors.Errorf("vpa rules has applied for RuntimeUniqueId %#v, can not do this scale action, please delete or canel the applied rules first", uniqueId), errMsg
 		}
 	}
 

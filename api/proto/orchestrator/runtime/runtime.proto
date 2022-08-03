@@ -35,7 +35,8 @@ message Service {
   repeated string expose = 6;
   repeated ErrorResponse errors = 7;
   string type = 8;
-  string autoscalerEnabled =9 [json_name ="autoscalerEnabled"];
+  string hpaEnabled = 9 [json_name ="hpaEnabled"];
+  string vpaEnabled = 10 [json_name ="vpaEnabled"];
 }
 
 message StatusMap {
