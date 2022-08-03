@@ -18,10 +18,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/stream/common"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -57,6 +60,7 @@ func (i *IssueService) AddIssueRelation(ctx context.Context, req *pb.AddIssueRel
 		return nil, err
 	}
 	issueRels := make([]dao.IssueRelation, 0, len(req.RelatedIssues))
+	issueIDs := make([]int64, 0, len(req.RelatedIssues))
 	for _, i := range req.RelatedIssues {
 		issueRels = append(issueRels, dao.IssueRelation{
 			IssueID:      req.IssueID,
@@ -64,6 +68,7 @@ func (i *IssueService) AddIssueRelation(ctx context.Context, req *pb.AddIssueRel
 			Comment:      req.Comment,
 			Type:         req.Type,
 		})
+		issueIDs = append(issueIDs, int64(i))
 	}
 
 	if err := i.db.BatchCreateIssueRelations(issueRels); err != nil {
@@ -75,6 +80,36 @@ func (i *IssueService) AddIssueRelation(ctx context.Context, req *pb.AddIssueRel
 			return nil, err
 		}
 	}
+	go func() {
+		issues, err := i.db.ListIssue(pb.IssueListRequest{IDs: issueIDs})
+		if err != nil {
+			i.logger.Errorf("list issue err: %v", err)
+			return
+		}
+
+		assignees := make([]string, 0, len(issues))
+		for _, i := range issues {
+			assignees = append(assignees, i.Assignee)
+		}
+		ev := &apistructs.EventCreateRequest{
+			EventHeader: apistructs.EventHeader{
+				Event:     bundle.IssueEvent,
+				ProjectID: strconv.FormatUint(issues[0].ProjectID, 10),
+				Action:    "update",
+			},
+			Sender: bundle.SenderDOP,
+			Content: common.IssueEventData{
+				Participants: assignees,
+				Params: map[string]string{
+					"parentID":     req.Id,
+					"relationType": req.Type,
+				},
+			},
+		}
+		if err := i.bdl.CreateEvent(ev); err != nil {
+			i.logger.Errorf("create issue relation event err: %v", err)
+		}
+	}()
 	return &pb.AddIssueRelationResponse{}, nil
 }
 

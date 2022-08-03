@@ -21,10 +21,11 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-proto-go/dop/rule/pb"
+	"github.com/erda-project/erda/internal/apps/dop/dao"
 	"github.com/erda-project/erda/internal/apps/dop/providers/rule/actions/api"
 	"github.com/erda-project/erda/internal/apps/dop/providers/rule/db"
 	"github.com/erda-project/erda/internal/apps/dop/providers/rule/executor"
-	coredao "github.com/erda-project/erda/internal/core/legacy/dao"
+	"github.com/erda-project/erda/pkg/database/dbengine"
 )
 
 type config struct {
@@ -43,14 +44,18 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	db := &db.DBClient{DBClient: &coredao.DBClient{DB: p.DB}}
-	p.db = db
-	e := &executor.ExprExecutor{
-		DB: db,
+	p.db = &db.DBClient{
+		DBClient: &dao.DBClient{
+			DBEngine: &dbengine.DBEngine{
+				DB: p.DB,
+			},
+		},
 	}
 	p.ruleExecutor = executor.Executor{
-		RuleExecutor: e,
-		API:          p.API,
+		RuleExecutor: &executor.ExprExecutor{
+			DB: p.db,
+		},
+		API: p.API,
 	}
 	p.ruleService = &ruleService{p}
 	if p.Register != nil {

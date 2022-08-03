@@ -52,6 +52,15 @@ func (p *provider) CreateIssueEvent(req *common.IssueStreamCreateRequest) error 
 		return err
 	}
 
+	parents, err := p.db.GetIssueParents(issue.ID, []string{apistructs.IssueRelationInclusion})
+	if err != nil {
+		return err
+	}
+	var parentID string
+	if len(parents) > 0 {
+		parentID = strconv.FormatUint(parents[0].ID, 10)
+	}
+
 	orgResp, err := p.Org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcDOP),
 		&orgpb.GetOrgRequest{IdOrName: strconv.FormatUint(projectModel.OrgID, 10)})
 	if err != nil {
@@ -71,7 +80,7 @@ func (p *provider) CreateIssueEvent(req *common.IssueStreamCreateRequest) error 
 	if err != nil {
 		logrus.Errorf("get issue %d content error: %v, content will be empty", req.IssueID, err)
 	}
-	logrus.Debugf("old issue content is: %s", content)
+
 	ev := &apistructs.EventCreateRequest{
 		EventHeader: apistructs.EventHeader{
 			Event:         bundle.IssueEvent,
@@ -91,11 +100,14 @@ func (p *provider) CreateIssueEvent(req *common.IssueStreamCreateRequest) error 
 			StreamTypes:  req.StreamTypes,
 			StreamParams: req.StreamParams,
 			Receivers:    receivers,
+			Participants: []string{issue.Assignee},
 			Params: map[string]string{
-				"orgName":     orgModel.Name,
-				"projectName": projectModel.Name,
-				"issueID":     strconv.FormatInt(req.IssueID, 10),
-				"operator":    operator.Nick,
+				"orgName":      orgModel.Name,
+				"projectName":  projectModel.Name,
+				"issueID":      strconv.FormatInt(req.IssueID, 10),
+				"operator":     operator.Nick,
+				"parentID":     parentID,
+				"relationType": apistructs.IssueRelationInclusion,
 			},
 		},
 	}

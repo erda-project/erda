@@ -19,6 +19,7 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/filter"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -51,6 +52,14 @@ func (f *IssueFilter) FilterSet() ([]filter.SetItem, error) {
 			Label:    f.sdk.I18n("unfinishedIssue"),
 			IsPreset: true,
 			Values:   map[string]interface{}{PropConditionKeyStates: f.State.DefaultStateValues},
+		})
+	}
+	if f.InParams.FrontendFixedIssueType == pb.IssueTypeEnum_REQUIREMENT.String() {
+		options = append(options, filter.SetItem{
+			ID:       "participation",
+			Label:    f.sdk.I18n("participation"),
+			IsPreset: true,
+			Values:   map[string]interface{}{PropConditionKeParticipantIDs: []string{f.sdk.Identity.UserID}},
 		})
 	}
 	for _, i := range f.Bms {

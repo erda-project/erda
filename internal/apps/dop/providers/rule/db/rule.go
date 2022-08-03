@@ -100,7 +100,7 @@ func (db *DBClient) UpdateRule(r *Rule) error {
 	return db.Model(&Rule{}).Scopes(NotDeleted).Where(&Rule{ID: r.ID}).Update(r).Error
 }
 
-func (db *DBClient) ListRules(req *pb.ListRulesRequest) ([]Rule, int64, error) {
+func (db *DBClient) ListRules(req *pb.ListRulesRequest, withSystem bool) ([]Rule, int64, error) {
 	var res []Rule
 	r := &Rule{
 		Scope:     req.Scope,
@@ -112,6 +112,14 @@ func (db *DBClient) ListRules(req *pb.ListRulesRequest) ([]Rule, int64, error) {
 	var total int64
 	offset := (req.PageNo - 1) * req.PageSize
 	q := db.Model(&Rule{}).Scopes(NotDeleted).Where(r).Order("updated_at desc")
+	if withSystem {
+		system := &Rule{
+			Scope:     "system",
+			EventType: req.EventType,
+			Enabled:   req.Enabled,
+		}
+		q = q.Or(system)
+	}
 	if req.Name != "" {
 		q = q.Where("name LIKE ?", "%"+req.Name+"%")
 	}
