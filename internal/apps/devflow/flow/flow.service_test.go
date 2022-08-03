@@ -720,7 +720,7 @@ type issueForCreateEventMock struct {
 
 func (i issueForCreateEventMock) GetIssue(id int64, identityInfo *commonpb.IdentityInfo) (*issuepb.Issue, error) {
 	if id == 0 {
-		return nil, fmt.Errorf("error")
+		return nil, fmt.Errorf("invalid id")
 	}
 	return &issuepb.Issue{Title: "New issue to Erda", Id: 100001}, nil
 }

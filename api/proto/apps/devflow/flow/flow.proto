@@ -62,7 +62,7 @@ service FlowService {
     }
     rpc FlowCallBack(FlowCallbackRequest) returns (FlowCallbackResponse) {
         option(google.api.http) = {
-            post: "/api/actions/flow-callback",
+            post: "/api/devflow/actions/callback",
         };
     }
 }

@@ -26,8 +26,11 @@ import (
 
 func (s *Service) FlowCallBack(ctx context.Context, req *pb.FlowCallbackRequest) (*pb.FlowCallbackResponse, error) {
 	params := req.Content.Params
-	s.p.Log.Infof("devflow callback content params %v, req %v", params, req)
-	marshal, _ := json.Marshal(req.Content)
+	s.p.Log.Debugf("devflow callback content params %v, req %v", params, req)
+	marshal, err := json.Marshal(req.Content)
+	if err != nil {
+		return nil, err
+	}
 	flowContent := make(map[string]interface{})
 	if err := json.Unmarshal(marshal, &flowContent); err != nil {
 		return nil, err

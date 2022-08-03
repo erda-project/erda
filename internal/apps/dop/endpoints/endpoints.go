@@ -94,7 +94,7 @@ const (
 	GitDeleteTagCallback    = "/api/actions/git-tag-delete-callback"
 	IssueCallback           = "/api/actions/issue-callback"
 	MrCheckRunCallback      = "/api/actions/check-run-callback"
-	DevFlowCallback         = "/api/actions/flow-callback"
+	DevFlowCallback         = "/api/devflow/actions/callback"
 )
 
 type EventCallback struct {
