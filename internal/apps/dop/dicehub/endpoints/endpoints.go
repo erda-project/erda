@@ -25,7 +25,6 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/dicehub/service/publish_item"
 	"github.com/erda-project/erda/internal/apps/dop/dicehub/service/release"
 	"github.com/erda-project/erda/internal/apps/dop/dicehub/service/release_rule"
-	"github.com/erda-project/erda/internal/apps/dop/dicehub/service/template"
 	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 )
@@ -36,7 +35,6 @@ type Endpoints struct {
 	bdl                *bundle.Bundle
 	release            *release.Release
 	publishItem        *publish_item.PublishItem
-	pipelineTemplate   *template.PipelineTemplate
 	releaseRule        *release_rule.ReleaseRule
 	queryStringDecoder *schema.Decoder
 	org                org.Interface
@@ -83,12 +81,6 @@ func WithPublishItem(publishItem *publish_item.PublishItem) Option {
 	}
 }
 
-func WithPipelineTemplate(pipelineTemplate *template.PipelineTemplate) Option {
-	return func(e *Endpoints) {
-		e.pipelineTemplate = pipelineTemplate
-	}
-}
-
 func WithReleaseRule(rule *release_rule.ReleaseRule) Option {
 	return func(e *Endpoints) {
 		e.releaseRule = rule
@@ -123,14 +115,6 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 
 		//模板市场
 		//{Path: "/api/pipeline-templates/{scopeType}/{scopeId}", Method: http.MethodPost, Handler: e.CreatePipelineTemplate},
-		{Path: "/api/pipeline-templates/actions/apply", Method: http.MethodPost, Handler: e.ApplyPipelineTemplate},
-		{Path: "/api/pipeline-templates", Method: http.MethodGet, Handler: e.QueryPipelineTemplates},
-		{Path: "/api/pipeline-templates/{name}/actions/render", Method: http.MethodPost, Handler: e.RenderPipelineTemplate},
-		{Path: "/api/pipeline-templates/local/actions/render-spec", Method: http.MethodPost, Handler: e.RenderPipelineTemplateBySpec},
-		{Path: "/api/pipeline-templates/{name}/actions/query-version", Method: http.MethodGet, Handler: e.GetPipelineTemplateVersion},
-		{Path: "/api/pipeline-templates/{name}/actions/query-versions", Method: http.MethodGet, Handler: e.QueryPipelineTemplateVersions},
-
-		{Path: "/api/pipeline-snippets/actions/query-snippet-yml", Method: http.MethodGet, Handler: e.querySnippetYml},
 
 		//发布管理
 		{Path: "/api/publish-items", Method: http.MethodPost, Handler: e.CreatePublishItem},
