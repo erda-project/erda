@@ -27,6 +27,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/erda-project/erda-infra/base/logs"
+	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
@@ -38,7 +39,6 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	"github.com/erda-project/erda/internal/apps/dop/services/testcase"
 	mttestplan "github.com/erda-project/erda/internal/apps/dop/services/testplan"
-	"github.com/erda-project/erda/internal/core/user"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -54,7 +54,7 @@ type IssueService struct {
 	testcase      *testcase.Service
 	ExportChannel chan uint64
 	ImportChannel chan uint64
-	identity      user.Interface
+	identity      userpb.UserServiceServer
 }
 
 func (i *IssueService) WithTestplan(testPlan *mttestplan.TestPlan) {
@@ -154,10 +154,11 @@ func (i *IssueService) CreateIssue(ctx context.Context, req *pb.IssueCreateReque
 	}
 
 	// 生成活动记录
-	users, err := i.identity.FindUsers([]string{req.IdentityInfo.UserID})
+	resp, err := i.identity.FindUsers(ctx, &userpb.FindUsersRequest{IDs: []string{req.IdentityInfo.UserID}})
 	if err != nil {
 		return nil, err
 	}
+	users := resp.Data
 	if len(users) != 1 {
 		return nil, errors.Errorf("not found user info")
 	}

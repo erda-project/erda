@@ -18,9 +18,9 @@ import (
 	"context"
 
 	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
+	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda/internal/core/legacy/services/member"
 	"github.com/erda-project/erda/internal/core/legacy/services/permission"
-	"github.com/erda-project/erda/internal/core/user"
 )
 
 type OrgMock struct {
@@ -90,7 +90,7 @@ func (m OrgMock) DereferenceCluster(ctx context.Context, request *orgpb.Derefere
 	panic("implement me")
 }
 
-func (m OrgMock) WithUc(uc user.Interface) {
+func (m OrgMock) WithUc(uc userpb.UserServiceServer) {
 	//TODO implement me
 	panic("implement me")
 }

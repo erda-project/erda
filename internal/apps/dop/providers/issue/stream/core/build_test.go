@@ -24,12 +24,12 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/i18n"
 	commonpb "github.com/erda-project/erda-proto-go/common/pb"
+	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/stream/common"
-	identity "github.com/erda-project/erda/internal/core/user/common"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -59,8 +59,8 @@ func Test_provider_CreateStream(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	identitySvc := NewMockInterface(ctrl)
-	identitySvc.EXPECT().FindUsers(gomock.Any()).AnyTimes().Return([]identity.User{{Name: "a", Nick: "a"}, {Name: "b", Nick: "b"}}, nil)
+	identitySvc := NewMockUserServiceServer(ctrl)
+	identitySvc.EXPECT().FindUsers(gomock.Any(), gomock.Any()).AnyTimes().Return(&userpb.FindUsersResponse{Data: []*userpb.User{{Name: "a", Nick: "a"}, {Name: "b", Nick: "b"}}}, nil)
 
 	pm3 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetIssue", func(client *dao.DBClient, id int64) (dao.Issue, error) {
 		return dao.Issue{Type: "TASK"}, nil

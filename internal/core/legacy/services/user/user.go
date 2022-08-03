@@ -21,16 +21,16 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda/internal/core/legacy/conf"
 	"github.com/erda-project/erda/internal/core/legacy/dao"
-	"github.com/erda-project/erda/internal/core/user"
 	"github.com/erda-project/erda/internal/core/user/impl/kratos"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
 type User struct {
 	db *dao.DBClient
-	uc user.Interface
+	uc userpb.UserServiceServer
 }
 
 type Option func(*User)
@@ -49,7 +49,7 @@ func WithDBClient(db *dao.DBClient) Option {
 	}
 }
 
-func WithUCClient(uc user.Interface) Option {
+func WithUCClient(uc userpb.UserServiceServer) Option {
 	return func(o *User) {
 		o.uc = uc
 	}

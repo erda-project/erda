@@ -23,13 +23,13 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	commonpb "github.com/erda-project/erda-proto-go/common/pb"
+	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	syncpb "github.com/erda-project/erda-proto-go/dop/issue/sync/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	stream "github.com/erda-project/erda/internal/apps/dop/providers/issue/stream/core"
-	"github.com/erda-project/erda/internal/core/user"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 )
 
@@ -43,7 +43,7 @@ type provider struct {
 	bdl      *bundle.Bundle
 	db       *dao.DBClient
 	Stream   stream.Interface
-	Identity user.Interface
+	Identity userpb.UserServiceServer
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {

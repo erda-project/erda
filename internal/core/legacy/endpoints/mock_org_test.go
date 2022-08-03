@@ -19,9 +19,9 @@ import (
 	"fmt"
 
 	"github.com/erda-project/erda-proto-go/core/org/pb"
+	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda/internal/core/legacy/services/member"
 	"github.com/erda-project/erda/internal/core/legacy/services/permission"
-	"github.com/erda-project/erda/internal/core/user"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 
@@ -95,7 +95,7 @@ func (m MockOrg) DereferenceCluster(ctx context.Context, request *pb.Dereference
 	panic("implement me")
 }
 
-func (m MockOrg) WithUc(uc user.Interface) {
+func (m MockOrg) WithUc(uc userpb.UserServiceServer) {
 	panic("implement me")
 }
 

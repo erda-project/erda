@@ -15,9 +15,37 @@
 package common
 
 import (
+	"reflect"
+	"testing"
+
 	"github.com/erda-project/erda-proto-go/core/user/pb"
 )
 
-type Interface interface {
-	pb.UserServiceServer
+func TestToPbUser(t *testing.T) {
+	type args struct {
+		user User
+	}
+	tests := []struct {
+		name string
+		args args
+		want *pb.User
+	}{
+		{
+			args: args{
+				user: User{
+					ID: "1",
+				},
+			},
+			want: &pb.User{
+				ID: "1",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := ToPbUser(tt.args.user); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ToPbUser() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
