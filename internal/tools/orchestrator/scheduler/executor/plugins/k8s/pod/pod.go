@@ -123,7 +123,7 @@ func (p *Pod) WatchAllNamespace(ctx context.Context, addFunc, modifyFunc, delFun
 				continue
 			}
 
-			logrus.Debugf("watch pod event %s, object: %+v", e.Type, pod)
+			logrus.Debugf("watch pod, type: %s, object: %+v", e.Type, pod)
 
 			switch e.Type {
 			case watch.Added:
