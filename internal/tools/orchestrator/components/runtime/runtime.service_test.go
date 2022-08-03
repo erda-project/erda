@@ -123,6 +123,16 @@ func TestService_GetRuntime(t *testing.T) {
 				IsApplied:   "Y",
 			},
 		}, nil).MinTimes(1)
+
+	dbSvc.
+		EXPECT().
+		GetRuntimeVPARulesByRuntimeId(gomock.Eq(uint64(1))).
+		Return([]dbclient.RuntimeVPA{
+			{
+				ServiceName: "sa",
+				IsApplied:   "Y",
+			},
+		}, nil).MinTimes(1)
 	//bdlSvc.
 	//	EXPECT().
 	//	GetCluster(gomock.Eq("foo")).

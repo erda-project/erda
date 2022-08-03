@@ -39,6 +39,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	pstypes "github.com/erda-project/erda/internal/tools/orchestrator/components/podscaler/types"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/events"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/events/eventtypes"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/executortypes"
@@ -2120,6 +2121,12 @@ func (e *EDAS) Scale(ctx context.Context, specObj interface{}) (interface{}, err
 	sg, ok := specObj.(apistructs.ServiceGroup)
 	if !ok {
 		errMsg := fmt.Sprintf("edas k8s scale: invalid service group spec")
+		logrus.Errorf(errMsg)
+		return nil, errors.New(errMsg)
+	}
+
+	if _, ok = sg.Labels[pstypes.ErdaPALabelKey]; ok {
+		errMsg := fmt.Sprintf("edas k8s scale: not support sg with label %s", pstypes.ErdaPALabelKey)
 		logrus.Errorf(errMsg)
 		return nil, errors.New(errMsg)
 	}

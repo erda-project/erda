@@ -30,7 +30,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/pkg/user"
-	patypes "github.com/erda-project/erda/internal/tools/orchestrator/components/podscaler/types"
+	pstypes "github.com/erda-project/erda/internal/tools/orchestrator/components/podscaler/types"
 	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/impl/servicegroup"
 	"github.com/erda-project/erda/internal/tools/orchestrator/spec"
@@ -159,7 +159,6 @@ func Test_podScalerService_CreateRuntimeHPARules(t *testing.T) {
 				req: &pb.HPARuleCreateRequest{
 					RuntimeID: 1,
 					Services:  services,
-					// TODO: setup fields
 				},
 			},
 			want:    nil,
@@ -254,8 +253,8 @@ func Test_podScalerService_CreateRuntimeHPARules(t *testing.T) {
 			m6 := monkey.PatchInstanceMethod(reflect.TypeOf(s.serviceGroupImpl), "Scale",
 				func(_ *servicegroup.ServiceGroupImpl, sg *apistructs.ServiceGroup) (interface{}, error) {
 
-					ret := make(map[string]patypes.ErdaHPAObject)
-					ret["test01"] = patypes.ErdaHPAObject{
+					ret := make(map[string]pstypes.ErdaHPAObject)
+					ret["test01"] = pstypes.ErdaHPAObject{
 						TypeMeta: metav1.TypeMeta{
 							Kind:       "Deployment",
 							APIVersion: "apps/v1",
@@ -674,6 +673,22 @@ func Test_podScalerService_UpdateRuntimeHPARules(t *testing.T) {
 						ProjectDisplayName: "test",
 					}, nil
 				})
+			m9 := monkey.PatchInstanceMethod(reflect.TypeOf(s.db), "GetRuntimeVPARulesByServices",
+				func(_ *dbServiceImpl, id spec.RuntimeUniqueId, services []string) ([]dbclient.RuntimeVPA, error) {
+					return nil, nil
+				})
+			m10 := monkey.PatchInstanceMethod(reflect.TypeOf(s.db), "GetRuntimeHPARulesByServices",
+				func(_ *dbServiceImpl, id spec.RuntimeUniqueId, services []string) ([]dbclient.RuntimeHPA, error) {
+					return nil, nil
+				})
+			m11 := monkey.PatchInstanceMethod(reflect.TypeOf(s.db), "GetRuntimeVPARuleByRuleId",
+				func(_ *dbServiceImpl, ruleId string) (dbclient.RuntimeVPA, error) {
+					return dbclient.RuntimeVPA{}, nil
+				})
+
+			defer m11.Unpatch()
+			defer m10.Unpatch()
+			defer m9.Unpatch()
 			defer m8.Unpatch()
 			defer m7.Unpatch()
 			defer m6.Unpatch()
@@ -811,7 +826,37 @@ func Test_podScalerService_ApplyOrCancelHPARulesByIds(t *testing.T) {
 				func(_ *dbServiceImpl, req *dbclient.RuntimeHPA) error {
 					return nil
 				})
+			m8 := monkey.PatchInstanceMethod(reflect.TypeOf(s.bundle), "GetApp",
+				func(_ *bundle.Bundle, id uint64) (*apistructs.ApplicationDTO, error) {
+					return &apistructs.ApplicationDTO{
+						ID:                 1,
+						Name:               "test",
+						DisplayName:        "test",
+						OrgID:              1,
+						OrgName:            "test",
+						OrgDisplayName:     "test",
+						ProjectID:          1,
+						ProjectName:        "test",
+						ProjectDisplayName: "test",
+					}, nil
+				})
+			m9 := monkey.PatchInstanceMethod(reflect.TypeOf(s.db), "GetRuntimeVPARulesByServices",
+				func(_ *dbServiceImpl, id spec.RuntimeUniqueId, services []string) ([]dbclient.RuntimeVPA, error) {
+					return nil, nil
+				})
+			m10 := monkey.PatchInstanceMethod(reflect.TypeOf(s.db), "GetRuntimeHPARulesByServices",
+				func(_ *dbServiceImpl, id spec.RuntimeUniqueId, services []string) ([]dbclient.RuntimeHPA, error) {
+					return nil, nil
+				})
+			m11 := monkey.PatchInstanceMethod(reflect.TypeOf(s.db), "GetRuntimeVPARuleByRuleId",
+				func(_ *dbServiceImpl, ruleId string) (dbclient.RuntimeVPA, error) {
+					return dbclient.RuntimeVPA{}, nil
+				})
 
+			defer m11.Unpatch()
+			defer m10.Unpatch()
+			defer m9.Unpatch()
+			defer m8.Unpatch()
 			defer m7.Unpatch()
 			defer m6.Unpatch()
 			defer m5.Unpatch()
@@ -1122,6 +1167,168 @@ func Test_podScalerService_ListRuntimeHPAEvents(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("ListRuntimeHPAEvents() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_podscalerService_CreateRuntimeVPARules(t *testing.T) {
+	type fields struct {
+		bundle           BundleService
+		db               DBService
+		serviceGroupImpl servicegroup.ServiceGroup
+	}
+	type args struct {
+		ctx context.Context
+		req *pb.VPARuleCreateRequest
+	}
+
+	tTime := time.Now()
+	services := make([]*pb.RuntimeServiceVPAConfig, 0)
+	services = append(services, &pb.RuntimeServiceVPAConfig{
+		ServiceName: "test",
+		UpdateMode:  "Auto",
+	})
+
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    *pb.CommonResponse
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+		{
+			name: "Test_01",
+			fields: fields{
+				bundle:           &bundle.Bundle{},
+				db:               &dbServiceImpl{},
+				serviceGroupImpl: &servicegroup.ServiceGroupImpl{},
+			},
+			args: args{
+				ctx: context.Background(),
+				req: &pb.VPARuleCreateRequest{
+					RuntimeID: 1,
+					Services:  services,
+				},
+			},
+			want:    nil,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &podscalerService{
+				bundle:           tt.fields.bundle,
+				db:               tt.fields.db,
+				serviceGroupImpl: tt.fields.serviceGroupImpl,
+			}
+
+			m1 := monkey.PatchInstanceMethod(reflect.TypeOf(s), "GetUserAndOrgID",
+				func(_ *podscalerService, ctx context.Context) (userID user.ID, orgID uint64, err error) {
+					return user.ID("1"), 1, nil
+				})
+
+			m2 := monkey.PatchInstanceMethod(reflect.TypeOf(s.db), "GetRuntime",
+				func(_ *dbServiceImpl, id uint64) (*dbclient.Runtime, error) {
+					return generateRuntime(), nil
+				})
+
+			m3 := monkey.PatchInstanceMethod(reflect.TypeOf(s.bundle), "CheckPermission",
+				func(_ *bundle.Bundle, req *apistructs.PermissionCheckRequest) (*apistructs.PermissionCheckResponseData, error) {
+					return &apistructs.PermissionCheckResponseData{
+						Access: true,
+					}, nil
+				})
+
+			m4 := monkey.PatchInstanceMethod(reflect.TypeOf(s.bundle), "GetCurrentUser",
+				func(_ *bundle.Bundle, userID string) (*apistructs.UserInfo, error) {
+					return &apistructs.UserInfo{
+						ID:   "1",
+						Name: "name",
+						Nick: "nick",
+					}, nil
+				})
+
+			m5 := monkey.PatchInstanceMethod(reflect.TypeOf(s.bundle), "GetApp",
+				func(_ *bundle.Bundle, id uint64) (*apistructs.ApplicationDTO, error) {
+					return &apistructs.ApplicationDTO{
+						ID:                 1,
+						Name:               "test",
+						DisplayName:        "test",
+						OrgID:              1,
+						OrgName:            "test",
+						OrgDisplayName:     "test",
+						ProjectID:          1,
+						ProjectName:        "test",
+						ProjectDisplayName: "test",
+					}, nil
+				})
+
+			m6 := monkey.PatchInstanceMethod(reflect.TypeOf(s.db), "GetPreDeployment",
+				func(_ *dbServiceImpl, uniqueId spec.RuntimeUniqueId) (*dbclient.PreDeployment, error) {
+					return generatePreDeployment(tTime), nil
+				})
+
+			m7 := monkey.PatchInstanceMethod(reflect.TypeOf(s.serviceGroupImpl), "Scale",
+				func(_ *servicegroup.ServiceGroupImpl, sg *apistructs.ServiceGroup) (interface{}, error) {
+
+					ret := make(map[string]pstypes.ErdaHPAObject)
+					ret["test"] = pstypes.ErdaHPAObject{
+						TypeMeta: metav1.TypeMeta{
+							Kind:       "Deployment",
+							APIVersion: "apps/v1",
+						},
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "test-9ddcc8b369",
+							Namespace: "project-1-prod",
+						},
+					}
+					return ret, nil
+				})
+			m8 := monkey.PatchInstanceMethod(reflect.TypeOf(s.db), "CreateVPARule",
+				func(_ *dbServiceImpl, req *dbclient.RuntimeVPA) error {
+					return nil
+				})
+
+			m9 := monkey.PatchInstanceMethod(reflect.TypeOf(s.db), "GetRuntimeHPARuleByRuleId",
+				func(_ *dbServiceImpl, ruleId string) (dbclient.RuntimeHPA, error) {
+					return generateRuntimeHPA(tTime), nil
+				})
+
+			m10 := monkey.PatchInstanceMethod(reflect.TypeOf(s.db), "GetRuntimeVPARulesByServices",
+				func(_ *dbServiceImpl, id spec.RuntimeUniqueId, services []string) ([]dbclient.RuntimeVPA, error) {
+					return nil, nil
+				})
+			m11 := monkey.PatchInstanceMethod(reflect.TypeOf(s.db), "GetRuntimeHPARulesByServices",
+				func(_ *dbServiceImpl, id spec.RuntimeUniqueId, services []string) ([]dbclient.RuntimeHPA, error) {
+					return nil, nil
+				})
+			m12 := monkey.PatchInstanceMethod(reflect.TypeOf(s.db), "GetRuntimeVPARuleByRuleId",
+				func(_ *dbServiceImpl, ruleId string) (dbclient.RuntimeVPA, error) {
+					return dbclient.RuntimeVPA{}, nil
+				})
+
+			defer m12.Unpatch()
+			defer m11.Unpatch()
+			defer m10.Unpatch()
+			defer m9.Unpatch()
+			defer m8.Unpatch()
+			defer m7.Unpatch()
+			defer m6.Unpatch()
+			defer m5.Unpatch()
+			defer m4.Unpatch()
+			defer m3.Unpatch()
+			defer m2.Unpatch()
+			defer m1.Unpatch()
+
+			got, err := s.CreateRuntimeVPARules(tt.args.ctx, tt.args.req)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("CreateRuntimeVPARules() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("CreateRuntimeVPARules() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

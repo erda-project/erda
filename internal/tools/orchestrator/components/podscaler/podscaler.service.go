@@ -45,11 +45,6 @@ type podscalerService struct {
 
 // CreateRuntimeHPARules create HPA rules, and apply them
 func (s *podscalerService) CreateRuntimeHPARules(ctx context.Context, req *pb.HPARuleCreateRequest) (*pb.CommonResponse, error) {
-	var (
-		userID user.ID
-		err    error
-	)
-
 	if req.RuntimeID <= 0 {
 		return nil, errors.New(fmt.Sprint("[CreateRuntimeHPARules] set invalid runtimeId, runtimeId must bigger than 0"))
 	}
@@ -58,68 +53,16 @@ func (s *podscalerService) CreateRuntimeHPARules(ctx context.Context, req *pb.HP
 		return nil, errors.New(fmt.Sprint("[CreateRuntimeHPARules] not set rules for any services"))
 	}
 
-	if userID, _, err = s.GetUserAndOrgID(ctx); err != nil {
-		return nil, errors.New(fmt.Sprintf("[CreateRuntimeHPARules] get userID failed, error: %v", err))
-	}
-
-	runtime, err := s.db.GetRuntime(req.RuntimeID)
+	runtime, userInfo, appInfo, err := s.getRuntimeDetails(ctx, req.RuntimeID)
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("[CreateRuntimeHPARules] get runtime failed, error: %v", err))
+		return nil, errors.New(fmt.Sprintf("[CreateRuntimeHPARules] %v", err))
 	}
 
-	err = s.checkRuntimeScopePermission(userID, runtime, apistructs.OperateAction)
-	if err != nil {
-		return nil, errors.New(fmt.Sprintf("[CreateRuntimeHPARules] check permission failed, error: %v", err))
-	}
-
-	userInfo, err := s.getUserInfo(userID.String())
-	if err != nil {
-		return nil, errors.New(fmt.Sprintf("[CreateRuntimeHPARules] get user detail info failed, error: %v", err))
-	}
-
-	appInfo, err := s.getAppInfo(runtime.ApplicationID)
-	if err != nil {
-		return nil, errors.New(fmt.Sprintf("[CreateRuntimeHPARules] get app detail info failed, error: %v", err))
-	}
-
-	if len(req.Services) <= 0 {
-		return nil, errors.New(fmt.Sprint("[CreateRuntimeHPARules] failed: not set service"))
-	} else {
-		if req.Services[0].Deployments == nil || req.Services[0].Deployments.Replicas == 0 {
-			uniqueId := spec.RuntimeUniqueId{
-				ApplicationId: runtime.ApplicationID,
-				Workspace:     runtime.Workspace,
-				Name:          runtime.Name,
-			}
-			preDeploy, err := s.db.GetPreDeployment(uniqueId)
-			if err != nil {
-				return nil, errors.New(fmt.Sprintf("[CreateRuntimeHPARules] get PreDeployment failed: %v", err))
-			}
-
-			var diceObj diceyml.Object
-			if preDeploy.DiceOverlay != "" {
-				if err = json.Unmarshal([]byte(preDeploy.DiceOverlay), &diceObj); err != nil {
-					return nil, errors.New(fmt.Sprintf("[CreateRuntimeHPARules] Unmarshall preDeploy.DiceOverlay failed: %v", err))
-				}
-			} else {
-				if err = json.Unmarshal([]byte(preDeploy.Dice), &diceObj); err != nil {
-					return nil, errors.New(fmt.Sprintf("[CreateRuntimeHPARules] Unmarshall preDeploy.Dice failed: %v", err))
-				}
-			}
-			for idx, svc := range req.Services {
-				if _, ok := diceObj.Services[svc.ServiceName]; ok {
-					req.Services[idx].Deployments = &pb.Deployments{
-						Replicas: uint64(diceObj.Services[svc.ServiceName].Deployments.Replicas),
-					}
-					req.Services[idx].Resources = &pb.Resources{
-						Cpu:  diceObj.Services[svc.ServiceName].Resources.CPU,
-						Mem:  int64(diceObj.Services[svc.ServiceName].Resources.Mem),
-						Disk: 0,
-					}
-				} else {
-					return nil, errors.New(fmt.Sprintf("[CreateRuntimeHPARules] error: service %s not found in PreDeployment", svc.ServiceName))
-				}
-			}
+	if req.Services[0].Deployments == nil || req.Services[0].Deployments.Replicas == 0 || req.Services[0].Resources == nil {
+		// not set resources for service, get from PreDeployment
+		err = s.initReplicasAndResources(runtime, req, nil, true)
+		if err != nil {
+			return nil, errors.Errorf("[CreateRuntimeHPARules] init replicas and resources error: %v", err)
 		}
 	}
 
@@ -133,11 +76,7 @@ func (s *podscalerService) CreateRuntimeHPARules(ctx context.Context, req *pb.HP
 
 // ListRuntimeHPARules list HPA rules for services in runtime, if no services in req, then list all HPA rules in the runtime
 func (s *podscalerService) ListRuntimeHPARules(ctx context.Context, req *pb.ListRequest) (*pb.ErdaRuntimeHPARules, error) {
-	var (
-		userID user.ID
-		err    error
-	)
-	logrus.Infof("grt runtime ID %s hpa rules for services = %s", req.RuntimeId, req.Services)
+	logrus.Infof("[ListRuntimeHPARules] get runtime ID %s hpa rules for services = %s", req.RuntimeId, req.Services)
 	if req.RuntimeId == "" {
 		return nil, errors.New(fmt.Sprint("[ListRuntimeHPARules] runtimeId not set"))
 	}
@@ -160,16 +99,7 @@ func (s *podscalerService) ListRuntimeHPARules(ctx context.Context, req *pb.List
 		return nil, errors.New(fmt.Sprint("[ListRuntimeHPARules] runtime not set or set invalid runtimeId, runtimeId must bigger than 0"))
 	}
 
-	if userID, _, err = s.GetUserAndOrgID(ctx); err != nil {
-		return nil, errors.New(fmt.Sprintf("[ListRuntimeHPARules] get userID and orgID failed: %v", err))
-	}
-
-	runtime, err := s.db.GetRuntime(runtimeID)
-	if err != nil {
-		return nil, errors.New(fmt.Sprintf("[ListRuntimeHPARules] getruntime failed: %v", err))
-	}
-
-	err = s.checkRuntimeScopePermission(userID, runtime, apistructs.GetAction)
+	runtime, err := s.checkPermission(ctx, runtimeID)
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("[ListRuntimeHPARules] check permission failed: %v", err))
 	}
@@ -179,11 +109,6 @@ func (s *podscalerService) ListRuntimeHPARules(ctx context.Context, req *pb.List
 
 // UpdateRuntimeHPARules update HPA rules with the target ruleIDs
 func (s *podscalerService) UpdateRuntimeHPARules(ctx context.Context, req *pb.ErdaRuntimeHPARules) (*pb.CommonResponse, error) {
-	var (
-		userID user.ID
-		err    error
-	)
-
 	if req.RuntimeID <= 0 {
 		return nil, errors.New(fmt.Sprint("[UpdateRuntimeHPARules] runtime not set or set invalid runtimeId, runtimeId must bigger than 0"))
 	}
@@ -192,28 +117,9 @@ func (s *podscalerService) UpdateRuntimeHPARules(ctx context.Context, req *pb.Er
 		return nil, errors.New(fmt.Sprint("[UpdateRuntimeHPARules] no rules set for update"))
 	}
 
-	if userID, _, err = s.GetUserAndOrgID(ctx); err != nil {
-		return nil, errors.New(fmt.Sprintf("[UpdateRuntimeHPARules] get userID and orgID failed: %v", err))
-	}
-
-	runtime, err := s.db.GetRuntime(req.RuntimeID)
+	runtime, userInfo, appInfo, err := s.getRuntimeDetails(ctx, req.RuntimeID)
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("[UpdateRuntimeHPARules] get runtime failed: %v", err))
-	}
-
-	err = s.checkRuntimeScopePermission(userID, runtime, apistructs.OperateAction)
-	if err != nil {
-		return nil, errors.New(fmt.Sprintf("[UpdateRuntimeHPARules] check permission failed: %v", err))
-	}
-
-	userInfo, err := s.getUserInfo(userID.String())
-	if err != nil {
-		return nil, errors.New(fmt.Sprintf("[UpdateRuntimeHPARules] get user info failed: %v", err))
-	}
-
-	appInfo, err := s.getAppInfo(runtime.ApplicationID)
-	if err != nil {
-		return nil, errors.New(fmt.Sprintf("[UpdateRuntimeHPARules] get app info failed: %v", err))
+		return nil, errors.New(fmt.Sprintf("[UpdateRuntimeHPARules] %v", err))
 	}
 
 	// map[id]dbclient.RuntimeHPA
@@ -258,16 +164,7 @@ func (s *podscalerService) DeleteHPARulesByIds(ctx context.Context, req *pb.Dele
 		return nil, errors.New(fmt.Sprint("[DeleteHPARulesByIds] set invalid runtimeId, runtimeId must bigger than 0"))
 	}
 
-	if userID, _, err = s.GetUserAndOrgID(ctx); err != nil {
-		return nil, errors.New(fmt.Sprintf("[DeleteHPARulesByIds] get userID and orgID failed: %v", err))
-	}
-
-	runtime, err := s.db.GetRuntime(req.RuntimeID)
-	if err != nil {
-		return nil, errors.New(fmt.Sprintf("[DeleteHPARulesByIds] get runtime failed: %v", err))
-	}
-
-	err = s.checkRuntimeScopePermission(userID, runtime, apistructs.OperateAction)
+	runtime, err := s.checkPermission(ctx, req.RuntimeID)
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("[DeleteHPARulesByIds] check permission failed: %v", err))
 	}
@@ -277,11 +174,6 @@ func (s *podscalerService) DeleteHPARulesByIds(ctx context.Context, req *pb.Dele
 
 // ApplyOrCancelHPARulesByIds apply or cancel HPA rules by target ruleIDs
 func (s *podscalerService) ApplyOrCancelHPARulesByIds(ctx context.Context, req *pb.ApplyOrCancelPARulesRequest) (*pb.CommonResponse, error) {
-	var (
-		userID user.ID
-		err    error
-	)
-
 	if req.RuntimeID <= 0 {
 		return nil, errors.New(fmt.Sprint("[ApplyOrCancelHPARulesByIds] runtime not set or set invalid runtimeId, runtimeId must bigger than 0"))
 	}
@@ -289,32 +181,16 @@ func (s *podscalerService) ApplyOrCancelHPARulesByIds(ctx context.Context, req *
 	if len(req.RuleAction) == 0 {
 		return nil, errors.New(fmt.Sprint("[ApplyOrCancelHPARulesByIds] actions not set in request"))
 	}
-	if userID, _, err = s.GetUserAndOrgID(ctx); err != nil {
-		return nil, errors.New(fmt.Sprintf("[ApplyOrCancelHPARulesByIds] get userID and orgID failed: %v", err))
+
+	runtime, userInfo, _, err := s.getRuntimeDetails(ctx, req.RuntimeID)
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("[ApplyOrCancelHPARulesByIds] %v", err))
 	}
 
-	runtime, err := s.db.GetRuntime(req.RuntimeID)
-	if err != nil {
-		return nil, errors.New(fmt.Sprintf("[ApplyOrCancelHPARulesByIds] get runtime failed: %v", err))
-	}
-
-	err = s.checkRuntimeScopePermission(userID, runtime, apistructs.OperateAction)
-	if err != nil {
-		return nil, errors.New(fmt.Sprintf("[ApplyOrCancelHPARulesByIds] check permission failed: %v", err))
-	}
-
-	userInfo, err := s.getUserInfo(userID.String())
-	if err != nil {
-		return nil, errors.New(fmt.Sprintf("[ApplyOrCancelHPARulesByIds] get user info failed: %v", err))
-	}
 	return s.applyOrCancelHPARule(userInfo, runtime, req.RuleAction)
 }
 
 func (s *podscalerService) GetRuntimeBaseInfo(ctx context.Context, req *pb.ListRequest) (*pb.RuntimeServiceBaseInfos, error) {
-	var (
-		err    error
-		userID user.ID
-	)
 	logrus.Infof("[GetRuntimeBaseInfo] get runtime ID %s hpa rules for services = %s", req.RuntimeId, req.Services)
 
 	if req.RuntimeId == "" {
@@ -330,16 +206,7 @@ func (s *podscalerService) GetRuntimeBaseInfo(ctx context.Context, req *pb.ListR
 		return nil, errors.New(fmt.Sprint("[GetRuntimeBaseInfo] runtime not set or set invalid runtimeId, runtimeId must bigger than 0"))
 	}
 
-	runtime, err := s.db.GetRuntime(runtimeID)
-	if err != nil {
-		return nil, errors.New(fmt.Sprintf("[GetRuntimeBaseInfo] get runtime failed: %v", err))
-	}
-
-	if userID, _, err = s.GetUserAndOrgID(ctx); err != nil {
-		return nil, errors.New(fmt.Sprintf("[GetRuntimeBaseInfo] get userID and OrgID failed: %v", err))
-	}
-
-	err = s.checkRuntimeScopePermission(userID, runtime, apistructs.GetAction)
+	runtime, err := s.checkPermission(ctx, runtimeID)
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("[GetRuntimeBaseInfo] check permission failed: %v", err))
 	}
@@ -380,10 +247,6 @@ func (s *podscalerService) GetRuntimeBaseInfo(ctx context.Context, req *pb.ListR
 }
 
 func (s *podscalerService) ListRuntimeHPAEvents(ctx context.Context, req *pb.ListRequest) (*pb.ErdaRuntimeHPAEvents, error) {
-	var (
-		userID user.ID
-		err    error
-	)
 	logrus.Infof("get runtime ID %s hpa rules for services = %s", req.RuntimeId, req.Services)
 	if req.RuntimeId == "" {
 		return nil, errors.New(fmt.Sprint("[ListRuntimeHPAEvents] runtimeId not set"))
@@ -407,16 +270,7 @@ func (s *podscalerService) ListRuntimeHPAEvents(ctx context.Context, req *pb.Lis
 		return nil, errors.New(fmt.Sprint("[ListRuntimeHPAEvents] runtime not set or set invalid runtimeId, runtimeId must bigger than 0"))
 	}
 
-	if userID, _, err = s.GetUserAndOrgID(ctx); err != nil {
-		return nil, errors.New(fmt.Sprintf("[ListRuntimeHPAEvents] get userID and orgID failed: %v", err))
-	}
-
-	runtime, err := s.db.GetRuntime(runtimeID)
-	if err != nil {
-		return nil, errors.New(fmt.Sprintf("[ListRuntimeHPAEvents] getruntime failed: %v", err))
-	}
-
-	err = s.checkRuntimeScopePermission(userID, runtime, apistructs.GetAction)
+	runtime, err := s.checkPermission(ctx, runtimeID)
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("[ListRuntimeHPAEvents] check permission failed: %v", err))
 	}
@@ -425,22 +279,183 @@ func (s *podscalerService) ListRuntimeHPAEvents(ctx context.Context, req *pb.Lis
 }
 
 func (s *podscalerService) CreateRuntimeVPARules(ctx context.Context, req *pb.VPARuleCreateRequest) (*pb.CommonResponse, error) {
-	return nil, nil
+	if req.RuntimeID <= 0 {
+		return nil, errors.New(fmt.Sprint("[CreateRuntimeVPARules] set invalid runtimeId, runtimeId must bigger than 0"))
+	}
+
+	if len(req.Services) == 0 {
+		return nil, errors.New(fmt.Sprint("[CreateRuntimeVPARules] not set rules for any services"))
+	}
+
+	runtime, userInfo, appInfo, err := s.getRuntimeDetails(ctx, req.RuntimeID)
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("[CreateRuntimeVPARules] %v", err))
+	}
+
+	if req.Services[0].Deployments == nil || req.Services[0].Deployments.Replicas == 0 || req.Services[0].Resources == nil {
+		// not set resources for service, get from PreDeployment
+		err = s.initReplicasAndResources(runtime, nil, req, false)
+		if err != nil {
+			return nil, errors.Errorf("[CreateRuntimeHPARules] init replicas and resources error: %v", err)
+		}
+	}
+
+	err = validateVPARuleCreateConfig(req.Services, false)
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("[CreateRuntimeVPARules] validate rules failed, error: %v", err))
+	}
+
+	return s.createVPARule(userInfo, appInfo, runtime, req.Services)
+
 }
+
 func (s *podscalerService) ListRuntimeVPARules(ctx context.Context, req *pb.ListRequest) (*pb.ErdaRuntimeVPARules, error) {
-	return nil, nil
+	logrus.Infof("[ListRuntimeVPARules] get runtime ID %s vpa rules for services = %s", req.RuntimeId, req.Services)
+	if req.RuntimeId == "" {
+		return nil, errors.New(fmt.Sprint("[ListRuntimeVPARules] runtimeId not set"))
+	}
+	reqServices := strings.Split(req.Services, ",")
+	//reqServices maybe length as 1 and with empty value
+	services := make([]string, 0)
+
+	for _, svc := range reqServices {
+		if svc != "" {
+			services = append(services, svc)
+		}
+	}
+
+	runtimeID, err := strconv.ParseUint(req.RuntimeId, 10, 64)
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("[ListRuntimeVPARules] parse runtimeID failed: %v", err))
+	}
+
+	if runtimeID <= 0 {
+		return nil, errors.New(fmt.Sprint("[ListRuntimeVPARules] runtime not set or set invalid runtimeId, runtimeId must bigger than 0"))
+	}
+
+	runtime, err := s.checkPermission(ctx, runtimeID)
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("[ListRuntimeVPARules] check permission failed: %v", err))
+	}
+
+	return s.listVPARules(runtime, services)
 }
+
 func (s *podscalerService) UpdateRuntimeVPARules(ctx context.Context, req *pb.ErdaRuntimeVPARules) (*pb.CommonResponse, error) {
-	return nil, nil
+	if req.RuntimeID <= 0 {
+		return nil, errors.New(fmt.Sprint("[UpdateRuntimeVPARules] runtime not set or set invalid runtimeId, runtimeId must bigger than 0"))
+	}
+
+	if len(req.Rules) == 0 {
+		return nil, errors.New(fmt.Sprint("[UpdateRuntimeVPARules] no rules set for update"))
+	}
+
+	runtime, userInfo, appInfo, err := s.getRuntimeDetails(ctx, req.RuntimeID)
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("[UpdateRuntimeVPARules] %v", err))
+	}
+
+	// map[id]dbclient.RuntimeHPA
+	oldVPAs := make(map[string]dbclient.RuntimeVPA)
+	oldRules := make(map[string]*pb.RuntimeServiceVPAConfig)
+	// map[id]*pb.ScaledConfig
+	newRules := make(map[string]*pb.RuntimeServiceVPAConfig)
+	updateRules := make([]*pb.RuntimeServiceVPAConfig, 0)
+	for _, rule := range req.Rules {
+		if rule.Rule == nil {
+			return nil, errors.Errorf("[UpdateRuntimeVPARules] update vpa rule failed: rule not set")
+		}
+
+		ruleVPA, err := s.db.GetRuntimeVPARuleByRuleId(rule.Rule.RuleID)
+		if err != nil {
+			return nil, errors.New(fmt.Sprintf("[UpdateRuntimeVPARules] update vpa rule failed: get rule by rule id %s with error: %v", rule.Rule.RuleID, err))
+		}
+
+		oldVPAs[ruleVPA.ID] = ruleVPA
+		oldRule := &pb.RuntimeServiceVPAConfig{}
+		err = json.Unmarshal([]byte(ruleVPA.Rules), oldRule)
+		if err != nil {
+			return nil, errors.New(fmt.Sprintf("[UpdateRuntimeVPARules] update vpa rule failed: Unmarshal rule by rule id %s with error: %v", rule.Rule.RuleID, err))
+		}
+		oldRules[ruleVPA.ID] = oldRule
+		newRules[ruleVPA.ID] = rule.Rule
+
+		updateRules = append(updateRules, rule.Rule)
+	}
+
+	err = validateVPARuleCreateConfig(updateRules, true)
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("[UpdateRuntimeVPARules] validate rules failed, error: %v", err))
+	}
+
+	return s.updateVPARules(userInfo, appInfo, runtime, newRules, oldRules, oldVPAs, nil)
 }
+
 func (s *podscalerService) DeleteVPARulesByIds(ctx context.Context, req *pb.DeleteRuntimePARulesRequest) (*pb.CommonResponse, error) {
-	return nil, nil
+
+	var (
+		userID user.ID
+		err    error
+	)
+
+	if req.RuntimeID <= 0 {
+		return nil, errors.New(fmt.Sprint("[DeleteVPARulesByIds] set invalid runtimeId, runtimeId must bigger than 0"))
+	}
+
+	runtime, err := s.checkPermission(ctx, req.RuntimeID)
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("[DeleteVPARulesByIds] check permission failed: %v", err))
+	}
+
+	return s.deleteVPARule(userID.String(), runtime, req.Rules)
 }
+
 func (s *podscalerService) ApplyOrCancelVPARulesByIds(ctx context.Context, req *pb.ApplyOrCancelPARulesRequest) (*pb.CommonResponse, error) {
-	return nil, nil
+	if req.RuntimeID <= 0 {
+		return nil, errors.New(fmt.Sprint("[ApplyOrCancelVPARulesByIds] runtime not set or set invalid runtimeId, runtimeId must bigger than 0"))
+	}
+
+	if len(req.RuleAction) == 0 {
+		return nil, errors.New(fmt.Sprint("[ApplyOrCancelVPARulesByIds] actions not set in request"))
+	}
+
+	runtime, userInfo, _, err := s.getRuntimeDetails(ctx, req.RuntimeID)
+	if err != nil {
+		return nil, errors.Errorf("[ApplyOrCancelVPARulesByIds] error: %v", err)
+	}
+
+	return s.applyOrCancelVPARule(userInfo, runtime, req.RuleAction)
 }
+
 func (s *podscalerService) ListRuntimeVPARecommendations(ctx context.Context, req *pb.ListRequest) (*pb.ErdaRuntimeVPARecommendations, error) {
-	return nil, nil
+	if req.RuntimeId == "" {
+		return nil, errors.New(fmt.Sprint("[ListRuntimeVPARecommendations] runtimeId not set"))
+	}
+	reqServices := strings.Split(req.Services, ",")
+	//reqServices maybe length as 1 and with empty value
+	services := make([]string, 0)
+
+	for _, svc := range reqServices {
+		if svc != "" {
+			services = append(services, svc)
+		}
+	}
+
+	runtimeID, err := strconv.ParseUint(req.RuntimeId, 10, 64)
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("[ListRuntimeVPARecommendations] parse runtimeID failed: %v", err))
+	}
+
+	if runtimeID <= 0 {
+		return nil, errors.New(fmt.Sprint("[ListRuntimeVPARecommendations]runtime not set or set invalid runtimeId, runtimeId must bigger than 0"))
+	}
+
+	runtime, err := s.checkPermission(ctx, runtimeID)
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("[ListRuntimeVPARecommendations] check permission failed: %v", err))
+	}
+
+	return s.listVPAServiceRecommendations(runtime.ID, services)
 }
 
 func (s *podscalerService) HPScaleManual(ctx context.Context, req *pb.ManualHPRequest) (*pb.HPManualResponse, error) {

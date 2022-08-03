@@ -128,6 +128,21 @@ func (mr *MockDBServiceMockRecorder) GetRuntimeHPARulesByRuntimeId(arg0 interfac
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRuntimeHPARulesByRuntimeId", reflect.TypeOf((*MockDBService)(nil).GetRuntimeHPARulesByRuntimeId), arg0)
 }
 
+// GetRuntimeVPARulesByRuntimeId mocks base method.
+func (m *MockDBService) GetRuntimeVPARulesByRuntimeId(arg0 uint64) ([]dbclient.RuntimeVPA, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRuntimeVPARulesByRuntimeId", arg0)
+	ret0, _ := ret[0].([]dbclient.RuntimeVPA)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRuntimeVPARulesByRuntimeId indicates an expected call of GetRuntimeVPARulesByRuntimeId.
+func (mr *MockDBServiceMockRecorder) GetRuntimeVPARulesByRuntimeId(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRuntimeVPARulesByRuntimeId", reflect.TypeOf((*MockDBService)(nil).GetRuntimeVPARulesByRuntimeId), arg0)
+}
+
 // UpdateRuntime mocks base method.
 func (m *MockDBService) UpdateRuntime(arg0 *dbclient.Runtime) error {
 	m.ctrl.T.Helper()

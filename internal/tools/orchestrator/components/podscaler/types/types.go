@@ -43,8 +43,8 @@ type ErdaHPAObject struct {
 }
 
 const (
-	RuntimeHPARuleApplied  string = "Y"
-	RuntimeHPARuleCanceled string = "N"
+	RuntimePARuleApplied  string = "Y"
+	RuntimePARuleCanceled string = "N"
 
 	// Labels for set sg Lables. if set, scaler is an autoscaler (HPA or VPA)
 	ErdaPALabelKey           string = "erdaPALabel"
@@ -53,10 +53,9 @@ const (
 	ErdaHPALabelValueApply   string = "erdaHPAApply"
 	ErdaHPALabelValueCancel  string = "erdaHPACancel"
 	ErdaHPALabelValueReApply string = "erdaHPAReApply"
-	ErdaVPALabelValue        string = "erdaVPA"
 
-	ErdaHPARuleActionApply  string = "apply"
-	ErdaHPARuleActionCancel string = "cancel"
+	ErdaPARuleActionApply  string = "apply"
+	ErdaPARuleActionCancel string = "cancel"
 	// ErdaHPADefaultMaxReplicaCount define max replicas for hpa rule
 	ErdaHPADefaultMaxReplicaCount int32 = 100
 
@@ -71,15 +70,40 @@ const (
 	ErdaHPATriggerCronMetaTimeZone        string = "timezone"
 	ErdaHPATriggerExternal                string = "external"
 
-	ErdaHPAObjectRuntimeIDLabel          string = "erdaRuntimeId"
-	ErdaHPAObjectRuleIDLabel             string = "erdaHPARuleId"
-	ErdaHPAObjectOrgIDLabel              string = "erdaHPAOrgId"
-	ErdaHPAObjectRuntimeServiceNameLabel string = "erdaRuntimeServiceName"
+	ErdaPAObjectRuntimeIDLabel          string = "erdaRuntimeId"
+	ErdaPAObjectRuleIDLabel             string = "erdaPARuleId"
+	ErdaPAObjectOrgIDLabel              string = "erdaPAOrgId"
+	ErdaPAObjectRuntimeServiceNameLabel string = "erdaRuntimeServiceName"
 
 	// ErdaHPARecentlyEventsMaxToListForRuntimeDefault define max hpa events for recently to list for runtime
 	ErdaHPARecentlyEventsMaxToListForRuntimeDefault int32 = 100
 	// ErdaHPARecentlyEventsMaxToListForServiceDefault define max hpa events for recently to list for service
 	ErdaHPARecentlyEventsMaxToListForServiceDefault int32 = 20
+
+	ErdaHPAPrefix        string = "erdaHPA_"
+	ErdaVPAPrefix        string = "erdaVPA_"
+	ErdaHPAServiceSepStr string = "HPA_"
+	ErdaVPAServiceSepStr string = "VPA_"
+
+	ErdaVPARecommendationsHistory   int     = 8
+	ErdaVPALabelValue               string  = "erdaVPA"
+	ErdaVPALabelValueCreate         string  = "erdaVPACreate"
+	ErdaVPALabelValueApply          string  = "erdaVPAApply"
+	ErdaVPALabelValueCancel         string  = "erdaVPACancel"
+	ErdaVPALabelValueReApply        string  = "erdaVPAReApply"
+	ErdaVPAMaxResourceCPU           float64 = 32
+	ErdaVPAMinResourceCPU           float64 = 0.005
+	ErdaVPAMaxResourceMemory        int64   = 65536
+	ErdaVPAMinResourceMemory        int64   = 32
+	ErdaVPADefaultMaxCPU            float64 = 2
+	ErdaVPADefaultMaxMemory         int64   = 4096
+	ErdaVPADefaultResourceMaxFactor         = 20
+	ErdaVPADefaultResourceMinFactor         = 4
+	ErdaVPAUpdaterModeAuto          string  = "Auto"
+	ErdaVPAUpdaterModeRecreate      string  = "Recreate"
+	ErdaVPAUpdaterModeInitial       string  = "Initial"
+	ErdaVPAUpdaterModeOff           string  = "Off"
+	ErdaVPAPodEvictEventReason      string  = "EvictedByVPA"
 )
 
 // HPA event details

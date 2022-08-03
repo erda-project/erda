@@ -30,58 +30,18 @@ import (
 
 	"github.com/erda-project/erda-proto-go/orchestrator/podscaler/pb"
 	"github.com/erda-project/erda/apistructs"
-	patypes "github.com/erda-project/erda/internal/tools/orchestrator/components/podscaler/types"
+	pstypes "github.com/erda-project/erda/internal/tools/orchestrator/components/podscaler/types"
 	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/internal/tools/orchestrator/spec"
 )
 
 func (s *podscalerService) createHPARule(userInfo *apistructs.UserInfo, appInfo *apistructs.ApplicationDTO, runtime *dbclient.Runtime, serviceRules []*pb.RuntimeServiceHPAConfig) (*pb.CommonResponse, error) {
-	uniqueId := spec.RuntimeUniqueId{
-		ApplicationId: runtime.ApplicationID,
-		Workspace:     runtime.Workspace,
-		Name:          runtime.Name,
-	}
-
-	namespace, name := runtime.ScheduleName.Args()
-	sg := &apistructs.ServiceGroup{
-		ClusterName: runtime.ClusterName,
-		Dice: apistructs.Dice{
-			ID:       name,
-			Type:     namespace,
-			Services: make([]apistructs.Service, 0),
-		},
-	}
-	sg.Labels = make(map[string]string)
-	sg.Labels[patypes.ErdaPALabelKey] = patypes.ErdaHPALabelValueCreate
-
-	mapSVCNameToIndx := make(map[string]int)
-	for idx, hpaRule := range serviceRules {
-		mapSVCNameToIndx[hpaRule.ServiceName] = idx
-		sg.Services = append(sg.Services, apistructs.Service{
-			Name:  hpaRule.ServiceName,
-			Scale: int(hpaRule.Deployments.Replicas),
-			Resources: apistructs.Resources{
-				Cpu:  hpaRule.Resources.Cpu,
-				Mem:  float64(hpaRule.Resources.Mem),
-				Disk: float64(hpaRule.Resources.Disk),
-			},
-		})
-	}
-
-	sgHPAObjects, err := s.serviceGroupImpl.Scale(sg)
+	mapSVCNameToIndx, sgSvcObject, err := s.getTargetMeta(runtime, serviceRules, nil, true)
 	if err != nil {
-		createErr := errors.Errorf("create hpa rule failed for service %s for runtime %s for runtime %#v failed for servicegroup, err: %v", sg.Services[0].Name, uniqueId.Name, uniqueId, err)
-		return nil, errors.New(fmt.Sprintf("[createHPARule] create hpa rule failed, error: %v", createErr))
+		return nil, errors.Errorf("[createHPARule] create hpa rule failed, error: %v", err)
 	}
 
-	sgSvcObject, ok := sgHPAObjects.(map[string]patypes.ErdaHPAObject)
-	if !ok {
-		logrus.Errorf("ErdaHPALabelValueCreate Scale return sgHPAObjects: %#v is not map", sgHPAObjects)
-		createErr := errors.Errorf("create hpa rule failed for service %s for runtime %s for runtimeUniqueId %#v failed for servicegroup, err: return is not an map[string]hpatypes.ErdaHPAObject object", sg.Services[0].Name, uniqueId.Name, uniqueId)
-		return nil, errors.New(fmt.Sprintf("[createHPARule] create hpa rule failed, error: %v", createErr))
-	}
-
-	logrus.Infof("ErdaHPALabelValueCreate Scale return sgHPAObjects: %#v", sgHPAObjects)
+	logrus.Infof("[createHPARule] ErdaHPALabelValueCreate Scale return sgHPAObjects: %#v", sgSvcObject)
 	for svc, obj := range sgSvcObject {
 		idx, ok := mapSVCNameToIndx[svc]
 		if !ok {
@@ -111,15 +71,15 @@ func (s *podscalerService) createHPARule(userInfo *apistructs.UserInfo, appInfo 
 		scb, _ := json.Marshal(&sc)
 		runtimeSvcHPA := convertRuntimeServiceHPA(userInfo, appInfo, runtime, svc, serviceRules[idx].RuleName, sc.RuleID, obj.Namespace, string(scb))
 
-		applyErr := s.applyOrCancelRule(runtime, runtimeSvcHPA, sc.RuleID, patypes.ErdaHPALabelValueApply)
+		applyErr := s.applyOrCancelRule(runtime, runtimeSvcHPA, nil, sc.RuleID, pstypes.ErdaHPALabelValueApply, true)
 		if applyErr != nil {
 			return nil, errors.Errorf("[applyOrCancelHPARule] applyOrCancelRule failed: %v", applyErr)
 		}
-		runtimeSvcHPA.IsApplied = patypes.RuntimeHPARuleApplied
+		runtimeSvcHPA.IsApplied = pstypes.RuntimePARuleApplied
 
-		err := s.db.CreateHPARule(runtimeSvcHPA)
+		err = s.db.CreateHPARule(runtimeSvcHPA)
 		if err != nil {
-			createErr := errors.Errorf("create hpa rule record failed for runtime %s for runtime %#v failed for service %s in servicegroup %#v, err: %v", uniqueId.Name, uniqueId, svc, *sg, err)
+			createErr := errors.Errorf("create hpa rule record failed for runtime %s for service %s, err: %v", runtime.Name, svc, err)
 			return nil, errors.New(fmt.Sprintf("[createHPARule] create hpa rule failed, error: %v", createErr))
 		}
 	}
@@ -134,7 +94,7 @@ func (s *podscalerService) listHPARules(runtime *dbclient.Runtime, services []st
 		Name:          runtime.Name,
 	}
 
-	logrus.Infof("get runtime hpa rules with spec.RuntimeUniqueId: %#v and services [%v]", id, services)
+	logrus.Infof("[listHPARules] get runtime hpa rules with spec.RuntimeUniqueId: %#v and services [%v]", id, services)
 	hpaRules, err := s.db.GetRuntimeHPARulesByServices(id, services)
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("[listHPARules] get hpa rule failed, error: %v", err))
@@ -229,9 +189,9 @@ func (s *podscalerService) updateHPARules(userInfo *apistructs.UserInfo, appInfo
 				IsApplied:              ruleHPA.IsApplied,
 			}
 
-			if ruleHPA.IsApplied == patypes.RuntimeHPARuleApplied {
+			if ruleHPA.IsApplied == pstypes.RuntimePARuleApplied {
 				// 已部署，需要删除，然后重新部署
-				reApplyErr := s.applyOrCancelRule(runtime, updatedRule, updatedRule.ID, patypes.ErdaHPALabelValueReApply)
+				reApplyErr := s.applyOrCancelRule(runtime, updatedRule, nil, updatedRule.ID, pstypes.ErdaHPALabelValueReApply, true)
 				if reApplyErr != nil {
 					return nil, errors.Errorf("[updateHPARules] applyOrCancelRule failed: %v", reApplyErr)
 				}
@@ -255,7 +215,7 @@ func (s *podscalerService) deleteHPARule(userID string, runtime *dbclient.Runtim
 		//delete all rules in a runtime
 		rules, err := s.db.GetRuntimeHPARulesByRuntimeId(runtime.ID)
 		if err != nil {
-			return nil, errors.Errorf("[deleteHPARule] GetErdaHRuntimePARulesByRuntimeId failed: %v", err)
+			return nil, errors.Errorf("[deleteHPARule] GetErdaRuntimeHPARulesByRuntimeId failed: %v", err)
 		}
 
 		for _, rule := range rules {
@@ -276,9 +236,9 @@ func (s *podscalerService) deleteHPARule(userID string, runtime *dbclient.Runtim
 			}
 		}
 
-		if runtimeHPA.IsApplied == patypes.RuntimeHPARuleApplied {
+		if runtimeHPA.IsApplied == pstypes.RuntimePARuleApplied {
 			// 已部署，需要删除
-			cancelErr := s.applyOrCancelRule(runtime, &runtimeHPA, runtimeHPA.ID, patypes.ErdaHPALabelValueCancel)
+			cancelErr := s.applyOrCancelRule(runtime, &runtimeHPA, nil, runtimeHPA.ID, pstypes.ErdaHPALabelValueCancel, true)
 			if cancelErr != nil {
 				return nil, errors.Errorf("[deleteHPARule] applyOrCancelRule failed: %v", cancelErr)
 			}
@@ -300,21 +260,21 @@ func (s *podscalerService) applyOrCancelHPARule(userInfo *apistructs.UserInfo, r
 	for idx := range RuleAction {
 		hpaRule, err := s.db.GetRuntimeHPARuleByRuleId(RuleAction[idx].RuleId)
 		if err != nil {
-			return nil, errors.Errorf("[applyOrCancelHPARule] GetErdaHRuntimePARuleByRuleId failed: %v", err)
+			return nil, errors.Errorf("[applyOrCancelHPARule] GetErdaRuntimeHPARuleByRuleId failed: %v", err)
 		}
 
 		switch RuleAction[idx].Action {
-		case patypes.ErdaHPARuleActionApply:
-			if hpaRule.IsApplied == patypes.RuntimeHPARuleCanceled {
+		case pstypes.ErdaPARuleActionApply:
+			if hpaRule.IsApplied == pstypes.RuntimePARuleCanceled {
 				// 未部署，需要部署
-				applyErr := s.applyOrCancelRule(runtime, &hpaRule, RuleAction[idx].RuleId, patypes.ErdaHPALabelValueApply)
+				applyErr := s.applyOrCancelRule(runtime, &hpaRule, nil, RuleAction[idx].RuleId, pstypes.ErdaHPALabelValueApply, true)
 				if applyErr != nil {
 					return nil, errors.Errorf("[applyOrCancelHPARule] applyOrCancelRule failed: %v", applyErr)
 				}
 				hpaRule.UserID = userInfo.ID
 				hpaRule.UserName = userInfo.Name
 				hpaRule.NickName = userInfo.Nick
-				hpaRule.IsApplied = patypes.RuntimeHPARuleApplied
+				hpaRule.IsApplied = pstypes.RuntimePARuleApplied
 				err = s.db.UpdateHPARule(&hpaRule)
 				if err != nil {
 					return nil, errors.Errorf("[applyOrCancelHPARule] update rule with ruleId %s error: %v", hpaRule.ID, err)
@@ -324,17 +284,17 @@ func (s *podscalerService) applyOrCancelHPARule(userInfo *apistructs.UserInfo, r
 				return nil, errors.Errorf("[applyOrCancelHPARule] hpa rule %v have applied, no need apply it again", hpaRule.ID)
 			}
 
-		case patypes.ErdaHPARuleActionCancel:
-			if hpaRule.IsApplied == patypes.RuntimeHPARuleApplied {
+		case pstypes.ErdaPARuleActionCancel:
+			if hpaRule.IsApplied == pstypes.RuntimePARuleApplied {
 				// 未删除，需要删除
-				cancelErr := s.applyOrCancelRule(runtime, nil, RuleAction[idx].RuleId, patypes.ErdaHPALabelValueCancel)
+				cancelErr := s.applyOrCancelRule(runtime, nil, nil, RuleAction[idx].RuleId, pstypes.ErdaHPALabelValueCancel, true)
 				if cancelErr != nil {
 					return nil, errors.Errorf("[applyOrCancelHPARule] update rule with ruleId %s for applyOrCancelRule error: %v", hpaRule.ID, cancelErr)
 				}
 				hpaRule.UserID = userInfo.ID
 				hpaRule.UserName = userInfo.Name
 				hpaRule.NickName = userInfo.Nick
-				hpaRule.IsApplied = patypes.RuntimeHPARuleCanceled
+				hpaRule.IsApplied = pstypes.RuntimePARuleCanceled
 				err = s.db.UpdateHPARule(&hpaRule)
 				if err != nil {
 					return nil, errors.Errorf("[applyOrCancelHPARule] UpdateErdaHPARule update rule with ruleId %s error: %v", hpaRule.ID, err)
@@ -350,40 +310,6 @@ func (s *podscalerService) applyOrCancelHPARule(userInfo *apistructs.UserInfo, r
 	}
 
 	return nil, nil
-}
-
-func (s *podscalerService) applyOrCancelRule(runtime *dbclient.Runtime, hpaRule *dbclient.RuntimeHPA, ruleId string, action string) error {
-	if hpaRule == nil {
-		rule, err := s.db.GetRuntimeHPARuleByRuleId(ruleId)
-		if err != nil {
-			return err
-		}
-		hpaRule = &rule
-	}
-
-	namespace, name := runtime.ScheduleName.Args()
-	sg := &apistructs.ServiceGroup{
-		ClusterName: runtime.ClusterName,
-		Dice: apistructs.Dice{
-			ID:       name,
-			Type:     namespace,
-			Services: make([]apistructs.Service, 0),
-		},
-		Extra: make(map[string]string),
-	}
-	sg.Labels = make(map[string]string)
-	sg.Labels[patypes.ErdaPALabelKey] = action
-
-	sg.Services = append(sg.Services, apistructs.Service{
-		Name: hpaRule.ServiceName,
-	})
-	sg.Extra[hpaRule.ServiceName] = hpaRule.Rules
-
-	_, err := s.serviceGroupImpl.Scale(sg)
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func (s *podscalerService) listHPAEvents(runtimeId uint64, services []string) (*pb.ErdaRuntimeHPAEvents, error) {
@@ -451,7 +377,7 @@ func convertRuntimeServiceHPA(userInfo *apistructs.UserInfo, appInfo *apistructs
 		NickName:               userInfo.Nick,
 		ServiceName:            serviceName,
 		Rules:                  rulesJson,
-		IsApplied:              patypes.RuntimeHPARuleCanceled,
+		IsApplied:              pstypes.RuntimePARuleCanceled,
 	}
 }
 
@@ -483,11 +409,11 @@ func validateHPARuleConfigCustom(serviceName string, maxReplicas int32, scaledCo
 	}
 
 	if scaledConf.MinReplicaCount < 0 {
-		return errors.Errorf("service %s not set scaledConfig.minReplicaCount", serviceName)
+		return errors.Errorf("service %s set invalid scaledConfig.minReplicaCount", serviceName)
 	}
 
 	if scaledConf.MaxReplicaCount <= 0 || scaledConf.MinReplicaCount > scaledConf.MaxReplicaCount {
-		return errors.Errorf("service %s not set scaledConfig.minReplicaCount", serviceName)
+		return errors.Errorf("service %s not set invalid scaledConfig.maxReplicaCount", serviceName)
 	}
 
 	if scaledConf.MaxReplicaCount > maxReplicas {
@@ -499,7 +425,7 @@ func validateHPARuleConfigCustom(serviceName string, maxReplicas int32, scaledCo
 	}
 
 	for idx, trigger := range scaledConf.Triggers {
-		if trigger.Type != patypes.ErdaHPATriggerCron && trigger.Type != patypes.ErdaHPATriggerCPU && trigger.Type != patypes.ErdaHPATriggerMemory && trigger.Type != patypes.ErdaHPATriggerExternal {
+		if trigger.Type != pstypes.ErdaHPATriggerCron && trigger.Type != pstypes.ErdaHPATriggerCPU && trigger.Type != pstypes.ErdaHPATriggerMemory && trigger.Type != pstypes.ErdaHPATriggerExternal {
 			return errors.Errorf("service %s with scaledConfig.triggers[%d] with unsupport trigger type %s", serviceName, idx, trigger.Type)
 		}
 		if len(trigger.Metadata) == 0 {
@@ -507,9 +433,9 @@ func validateHPARuleConfigCustom(serviceName string, maxReplicas int32, scaledCo
 		}
 
 		switch trigger.Type {
-		case patypes.ErdaHPATriggerCPU, patypes.ErdaHPATriggerMemory:
+		case pstypes.ErdaHPATriggerCPU, pstypes.ErdaHPATriggerMemory:
 			val, ok := trigger.Metadata["type"]
-			if !ok || val != patypes.ErdaHPATriggerCPUMetaType {
+			if !ok || val != pstypes.ErdaHPATriggerCPUMetaType {
 				return errors.Errorf("service %s with scaledConfig.triggers[%d] with trigger type %s not set medatdata type or invalid type value (need value 'Utilization')", serviceName, idx, trigger.Type)
 			}
 			_, ok = trigger.Metadata["value"]
@@ -522,16 +448,16 @@ func validateHPARuleConfigCustom(serviceName string, maxReplicas int32, scaledCo
 				return errors.Errorf("service %s with scaledConfig.triggers[%d] with trigger type %s not set medatdata value in range ( 0 < value < 100)", serviceName, idx, trigger.Type)
 			}
 
-		case patypes.ErdaHPATriggerCron:
-			val, ok := trigger.Metadata[patypes.ErdaHPATriggerCronMetaTimeZone]
+		case pstypes.ErdaHPATriggerCron:
+			val, ok := trigger.Metadata[pstypes.ErdaHPATriggerCronMetaTimeZone]
 			if !ok || val == "" {
-				return errors.Errorf("service %s with scaledConfig.triggers[%d] with trigger type %s not set medatdata %s or invalid value (need as cron express as 'Asia/Shanghai')", serviceName, idx, trigger.Type, patypes.ErdaHPATriggerCronMetaTimeZone)
+				return errors.Errorf("service %s with scaledConfig.triggers[%d] with trigger type %s not set medatdata %s or invalid value (need as cron express as 'Asia/Shanghai')", serviceName, idx, trigger.Type, pstypes.ErdaHPATriggerCronMetaTimeZone)
 			}
 
 			parser := cron.NewParser(cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow)
-			val, ok = trigger.Metadata[patypes.ErdaHPATriggerCronMetaStart]
+			val, ok = trigger.Metadata[pstypes.ErdaHPATriggerCronMetaStart]
 			if !ok || val == "" {
-				return errors.Errorf("service %s with scaledConfig.triggers[%d] with trigger type %s not set medatdata %s or invalid value (need as cron express as '30 * * * *')", serviceName, idx, trigger.Type, patypes.ErdaHPATriggerCronMetaStart)
+				return errors.Errorf("service %s with scaledConfig.triggers[%d] with trigger type %s not set medatdata %s or invalid value (need as cron express as '30 * * * *')", serviceName, idx, trigger.Type, pstypes.ErdaHPATriggerCronMetaStart)
 			}
 
 			_, err := parser.Parse(val)
@@ -539,9 +465,9 @@ func validateHPARuleConfigCustom(serviceName string, maxReplicas int32, scaledCo
 				return fmt.Errorf("service %s with scaledConfig.triggers[%d] with trigger type %s  error parsing start schedule value [%s]: %s", serviceName, idx, trigger.Type, val, err)
 			}
 
-			val, ok = trigger.Metadata[patypes.ErdaHPATriggerCronMetaEnd]
+			val, ok = trigger.Metadata[pstypes.ErdaHPATriggerCronMetaEnd]
 			if !ok || val == "" {
-				return errors.Errorf("service %s with scaledConfig.triggers[%d] with trigger type %s not set medatdata %s or invalid value (need as cron express as '30 * * * *')", serviceName, idx, trigger.Type, patypes.ErdaHPATriggerCronMetaEnd)
+				return errors.Errorf("service %s with scaledConfig.triggers[%d] with trigger type %s not set medatdata %s or invalid value (need as cron express as '30 * * * *')", serviceName, idx, trigger.Type, pstypes.ErdaHPATriggerCronMetaEnd)
 			}
 
 			_, err = parser.Parse(val)
@@ -549,17 +475,17 @@ func validateHPARuleConfigCustom(serviceName string, maxReplicas int32, scaledCo
 				return fmt.Errorf("service %s with scaledConfig.triggers[%d] with trigger type %s  error parsing end schedule value [%s]: %s", serviceName, idx, trigger.Type, val, err)
 			}
 
-			val, ok = trigger.Metadata[patypes.ErdaHPATriggerCronMetaDesiredReplicas]
+			val, ok = trigger.Metadata[pstypes.ErdaHPATriggerCronMetaDesiredReplicas]
 			if !ok || val == "" {
-				return errors.Errorf("service %s with scaledConfig.triggers[%d] with trigger type %s not set medatdata %s ", serviceName, idx, trigger.Type, patypes.ErdaHPATriggerCronMetaDesiredReplicas)
+				return errors.Errorf("service %s with scaledConfig.triggers[%d] with trigger type %s not set medatdata %s ", serviceName, idx, trigger.Type, pstypes.ErdaHPATriggerCronMetaDesiredReplicas)
 			}
 
 			replicas, err := strconv.Atoi(val)
 			if err != nil {
-				return errors.Errorf("service %s with scaledConfig.triggers[%d] with trigger type %s not set medatdata %s or invalid value (need as integer number)", serviceName, idx, trigger.Type, patypes.ErdaHPATriggerCronMetaDesiredReplicas)
+				return errors.Errorf("service %s with scaledConfig.triggers[%d] with trigger type %s not set medatdata %s or invalid value (need as integer number)", serviceName, idx, trigger.Type, pstypes.ErdaHPATriggerCronMetaDesiredReplicas)
 			}
 			if int32(replicas) > scaledConf.MaxReplicaCount {
-				return errors.Errorf("service %s with scaledConfig.triggers[%d] with trigger type %s set medatdata %s need <= maxReplicaCount(%d), ", serviceName, idx, trigger.Type, patypes.ErdaHPATriggerCronMetaDesiredReplicas, scaledConf.MaxReplicaCount)
+				return errors.Errorf("service %s with scaledConfig.triggers[%d] with trigger type %s set medatdata %s need <= maxReplicaCount(%d), ", serviceName, idx, trigger.Type, pstypes.ErdaHPATriggerCronMetaDesiredReplicas, scaledConf.MaxReplicaCount)
 			}
 
 		default:
@@ -581,7 +507,7 @@ func validateHPARuleConfig(serviceRules []*pb.RuntimeServiceHPAConfig) error {
 			return errors.Errorf("service %s with invalid setdeployments.replicas %v", rule.RuleName, rule.Deployments.Replicas)
 		}
 
-		maxReplicas := mathutil.MinInt32(10*int32(rule.Deployments.Replicas), patypes.ErdaHPADefaultMaxReplicaCount)
+		maxReplicas := mathutil.MinInt32(10*int32(rule.Deployments.Replicas), pstypes.ErdaHPADefaultMaxReplicaCount)
 
 		if rule.Resources == nil {
 			return errors.Errorf("service %s not set resources", rule.RuleName)
@@ -613,7 +539,7 @@ func convertHPAEventInfoToErdaRuntimeHPAEvent(hpaEvents []dbclient.HPAEventInfo)
 	result := make([]*pb.ErdaRuntimeHPAEvent, 0)
 	for _, ev := range hpaEvents {
 
-		evInfo := patypes.EventDetail{}
+		evInfo := pstypes.EventDetail{}
 		err := json.Unmarshal([]byte(ev.Event), &evInfo)
 		if err != nil {
 			return nil, errors.New(fmt.Sprintf("[listHPAEvents] Unmarshal hpa events for runtimeId [%d] for service [%v] error: %v", ev.RuntimeID, ev.ServiceName, err))

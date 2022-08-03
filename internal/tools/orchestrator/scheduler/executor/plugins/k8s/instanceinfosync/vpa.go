@@ -20,20 +20,19 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	autoscalingv2beta2 "k8s.io/api/autoscaling/v2beta2"
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	pstypes "github.com/erda-project/erda/internal/tools/orchestrator/components/podscaler/types"
 )
 
-func buildHPAEventInfo(bdl *bundle.Bundle, hpa autoscalingv2beta2.HorizontalPodAutoscaler, errorinfo string, errorinfo_human string, tp string) {
-	dedupid := fmt.Sprintf("%s-%s-%s", hpa.Labels[pstypes.ErdaPAObjectRuntimeIDLabel], hpa.Labels[pstypes.ErdaPAObjectRuntimeServiceNameLabel], tp)
+func buildVPAEventInfo(bdl *bundle.Bundle, pod *corev1.Pod, errorinfo string, errorinfo_human string, tp string) {
+	dedupid := fmt.Sprintf("%s-%s-%s", pod.Labels["DICE_RUNTIME_ID"], pod.Labels["DICE_SERVICE_NAME"], tp)
 	if err := bdl.CreateErrorLog(&apistructs.ErrorLogCreateRequest{
 		ErrorLog: apistructs.ErrorLog{
 			ResourceType:   apistructs.RuntimeError,
 			Level:          apistructs.ErrorLevel,
-			ResourceID:     hpa.Labels[pstypes.ErdaPAObjectRuntimeIDLabel],
+			ResourceID:     pod.Labels["DICE_RUNTIME_ID"],
 			OccurrenceTime: strconv.FormatInt(time.Now().Unix(), 10),
 			HumanLog:       errorinfo_human,
 			PrimevalLog:    errorinfo,

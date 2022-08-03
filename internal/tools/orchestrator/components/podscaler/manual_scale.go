@@ -22,7 +22,7 @@ import (
 
 	"github.com/erda-project/erda-proto-go/orchestrator/podscaler/pb"
 	"github.com/erda-project/erda/apistructs"
-	patypes "github.com/erda-project/erda/internal/tools/orchestrator/components/podscaler/types"
+	pstypes "github.com/erda-project/erda/internal/tools/orchestrator/components/podscaler/types"
 	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/internal/tools/orchestrator/spec"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
@@ -45,7 +45,7 @@ func (s *podscalerService) processRuntimeScaleRecord(rsc pb.RuntimeScaleRecord, 
 	appliedScaledObjects := make(map[string]string)
 	for _, rule := range hpaRules {
 		// only applied rules need to delete
-		if rule.IsApplied == patypes.RuntimeHPARuleApplied {
+		if rule.IsApplied == pstypes.RuntimePARuleApplied {
 			appliedScaledObjects[rule.ServiceName] = rule.Rules
 		}
 	}

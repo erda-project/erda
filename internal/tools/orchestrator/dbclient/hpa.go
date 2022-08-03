@@ -20,7 +20,7 @@ import (
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	hpatypes "github.com/erda-project/erda/internal/tools/orchestrator/components/podscaler/types"
+	pstypes "github.com/erda-project/erda/internal/tools/orchestrator/components/podscaler/types"
 	"github.com/erda-project/erda/internal/tools/orchestrator/spec"
 )
 
@@ -152,7 +152,7 @@ func (db *DBClient) GetRuntimeHPAEventsByServices(runtimeId uint64, services []s
 			var hpaEventsForService []HPAEventInfo
 			if svc != "" {
 				if err := db.
-					Where("runtime_id = ? AND service_name = ?", runtimeId, svc).Order("updated_at desc").Limit(hpatypes.ErdaHPARecentlyEventsMaxToListForServiceDefault).
+					Where("runtime_id = ? AND service_name = ?", runtimeId, svc).Order("updated_at desc").Limit(pstypes.ErdaHPARecentlyEventsMaxToListForServiceDefault).
 					Find(&hpaEventsForService).Error; err != nil {
 					return nil, errors.Wrapf(err, "failed to get runtime hpa events for runtimeId %+v for service: %v", runtimeId, svc)
 				}
@@ -161,7 +161,7 @@ func (db *DBClient) GetRuntimeHPAEventsByServices(runtimeId uint64, services []s
 		}
 	} else {
 		if err := db.
-			Where("runtime_id = ?", runtimeId).Order("updated_at desc").Limit(hpatypes.ErdaHPARecentlyEventsMaxToListForRuntimeDefault).
+			Where("runtime_id = ?", runtimeId).Order("updated_at desc").Limit(pstypes.ErdaHPARecentlyEventsMaxToListForRuntimeDefault).
 			Find(&hpaEvents).Error; err != nil {
 			return nil, errors.Wrapf(err, "failed to get runtime hpa events for runtimeId: %+v", runtimeId)
 		}

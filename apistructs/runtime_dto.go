@@ -55,15 +55,16 @@ type RuntimeInspectDTO struct {
 }
 
 type RuntimeInspectServiceDTO struct {
-	Status            string                       `json:"status"`
-	AutoscalerEnabled string                       `json:"autoscalerEnabled"`
-	Type              string                       `json:"type"`
-	Deployments       RuntimeServiceDeploymentsDTO `json:"deployments"`
-	Resources         RuntimeServiceResourceDTO    `json:"resources"`
-	Envs              map[string]string            `json:"envs"`
-	Addrs             []string                     `json:"addrs"` // TODO: better name?
-	Expose            []string                     `json:"expose"`
-	Errors            []ErrorResponse              `json:"errors"`
+	Status      string                       `json:"status"`
+	HPAEnabled  string                       `json:"hpaEnabled"`
+	VPAEnabled  string                       `json:"vpaEnabled"`
+	Type        string                       `json:"type"`
+	Deployments RuntimeServiceDeploymentsDTO `json:"deployments"`
+	Resources   RuntimeServiceResourceDTO    `json:"resources"`
+	Envs        map[string]string            `json:"envs"`
+	Addrs       []string                     `json:"addrs"` // TODO: better name?
+	Expose      []string                     `json:"expose"`
+	Errors      []ErrorResponse              `json:"errors"`
 }
 
 type RuntimeSummaryDTO struct {
