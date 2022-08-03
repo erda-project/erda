@@ -108,6 +108,7 @@ erda.dop.cms: {}
 erda.apps.devflow.flow: {}
 erda.apps.devflow.issuerelation: {}
 erda.dop.devFlowRule: {}
+erda.dop.pipelinetemplate: {}
 
 permission: {}
 

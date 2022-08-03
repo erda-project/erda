@@ -16,8 +16,9 @@ package dbclient
 
 import (
 	"github.com/jinzhu/gorm"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda-proto-go/dop/pipelinetemplate/pb"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 )
 
@@ -31,14 +32,14 @@ type DicePipelineTemplate struct {
 	DefaultVersion string `json:"default_version" gorm:"type:varchar(255)"`
 }
 
-func (ext *DicePipelineTemplate) ToApiData() *apistructs.PipelineTemplate {
-	return &apistructs.PipelineTemplate{
-		ID:        ext.ID,
+func (ext *DicePipelineTemplate) ToApiData() *pb.PipelineTemplate {
+	return &pb.PipelineTemplate{
+		Id:        ext.ID,
 		Name:      ext.Name,
 		Desc:      ext.Desc,
 		LogoUrl:   ext.LogoUrl,
-		CreatedAt: ext.CreatedAt,
-		UpdatedAt: ext.UpdatedAt,
+		CreatedAt: timestamppb.New(ext.CreatedAt),
+		UpdatedAt: timestamppb.New(ext.UpdatedAt),
 		ScopeID:   ext.ScopeId,
 		ScopeType: ext.ScopeType,
 		Version:   ext.DefaultVersion,
@@ -54,16 +55,16 @@ type DicePipelineTemplateVersion struct {
 	Readme     string `json:"readme" gorm:"type:longtext"`
 }
 
-func (ext *DicePipelineTemplateVersion) ToApiData() *apistructs.PipelineTemplateVersion {
-	return &apistructs.PipelineTemplateVersion{
-		ID:         ext.ID,
+func (ext *DicePipelineTemplateVersion) ToApiData() *pb.PipelineTemplateVersion {
+	return &pb.PipelineTemplateVersion{
+		Id:         ext.ID,
 		Name:       ext.Name,
 		TemplateId: ext.TemplateId,
 		Version:    ext.Version,
 		Spec:       ext.Spec,
 		Readme:     ext.Readme,
-		CreatedAt:  ext.CreatedAt,
-		UpdatedAt:  ext.UpdatedAt,
+		CreatedAt:  timestamppb.New(ext.CreatedAt),
+		UpdatedAt:  timestamppb.New(ext.UpdatedAt),
 	}
 }
 

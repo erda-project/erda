@@ -1,15 +1,27 @@
 syntax = "proto3";
 
-package erda.core.dicehub.template;
-option go_package = "github.com/erda-project/erda-proto-go/core/dicehub/template/pb";
+package erda.dop.pipelinetemplate;
+option go_package = "github.com/erda-project/erda-proto-go/dop/pipelinetemplate/pb";
 import "google/api/annotations.proto";
 import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
+import "common/openapi.proto";
 
 service TemplateService {
+    option (erda.common.openapi_service) = {
+        service: "dop",
+        auth: {
+            check_login: true,
+            check_token: true,
+        }
+    };
+
     rpc ApplyPipelineTemplate (PipelineTemplateApplyRequest) returns (PipelineTemplateCreateResponse)  {
         option (google.api.http) = {
             post: "/api/pipeline-templates/actions/apply",
+        };
+        option (erda.common.openapi) = {
+            path: "/api/pipeline-templates/actions/apply",
         };
     }
 
@@ -17,11 +29,17 @@ service TemplateService {
         option (google.api.http) = {
             get: "/api/pipeline-templates",
         };
+        option (erda.common.openapi) = {
+            path: "/api/pipeline-templates",
+        };
     }
 
     rpc RenderPipelineTemplate (PipelineTemplateRenderRequest) returns (PipelineTemplateRenderResponse)  {
         option (google.api.http) = {
             post: "/api/pipeline-templates/{name}/actions/render",
+        };
+        option (erda.common.openapi) = {
+            path: "/api/pipeline-templates/{name}/actions/render",
         };
     }
 
@@ -29,17 +47,26 @@ service TemplateService {
         option (google.api.http) = {
             post: "/api/pipeline-templates/local/actions/render-spec",
         };
+        option (erda.common.openapi) = {
+            path: "/api/pipeline-templates/local/actions/render-spec",
+        };
     }
 
     rpc GetPipelineTemplateVersion (PipelineTemplateVersionGetRequest) returns (PipelineTemplateVersionGetResponse)  {
         option (google.api.http) = {
             get: "/api/pipeline-templates/{name}/actions/query-version",
         };
+        option (erda.common.openapi) = {
+            path: "/api/pipeline-templates/{name}/actions/query-version",
+        };
     }
 
     rpc QueryPipelineTemplateVersions (PipelineTemplateVersionQueryRequest) returns (PipelineTemplateVersionQueryResponse)  {
         option (google.api.http) = {
             get: "/api/pipeline-templates/{name}/actions/query-versions",
+        };
+        option (erda.common.openapi) = {
+            path: "/api/pipeline-templates/{name}/actions/query-versions",
         };
     }
 

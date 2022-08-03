@@ -43,61 +43,11 @@ type SnippetDetailQuery struct {
 	Alias string `json:"alias,omitempty"` // 别名
 }
 
-type PipelineTemplateCreateRequest struct {
-	Name           string `json:"name"`
-	LogoUrl        string `json:"logoUrl"`
-	Desc           string `json:"desc"`
-	ScopeType      string `json:"scopeType"`
-	ScopeID        string `json:"scopeID"`
-	Spec           string `json:"spec"`
-	Version        string `json:"version"`
-	Readme         string `json:"readme"`
-	DefaultVersion string `json:"defaultVersion"`
-}
-
-type PipelineTemplateCreateResponse struct {
-	Header
-	Data PipelineTemplate `json:"data"`
-}
-
-type PipelineTemplateApplyRequest struct {
-	Spec      string `json:"spec"`
-	ScopeType string `json:"scopeType"`
-	ScopeID   string `json:"scopeID"`
-}
-
-type PipelineTemplateVersionCreateRequest struct {
-}
-
-type PipelineTemplateVersionCreateResponse struct {
-	Header
-	Data PipelineTemplateVersion `json:"data"`
-}
-
-type PipelineTemplateQueryRequest struct {
-	ScopeType string `json:"scopeType"`
-	ScopeID   string `json:"scopeID"`
-	PageNo    int    `json:"pageNo"`
-	PageSize  int    `json:"pageSize"`
-	Name      string `json:"name"`
-}
-
-type PipelineTemplateQueryResponse struct {
-	Data  []*PipelineTemplate `json:"data"`
-	Total int                 `json:"total"`
-}
-
 type PipelineTemplateVersionGetRequest struct {
 	ScopeType string `json:"scopeType"`
 	ScopeID   string `json:"scopeID"`
 	Name      string `json:"name"`
 	Version   string `json:"version"`
-}
-
-type PipelineTemplateVersionQueryRequest struct {
-	ScopeType string `json:"scopeType"`
-	ScopeID   string `json:"scopeID"`
-	Name      string `json:"name"`
 }
 
 type PipelineTemplateRenderRequest struct {
@@ -127,19 +77,6 @@ type PipelineTemplateVersionGetResponse struct {
 	Data PipelineTemplateVersion `json:"data"`
 }
 
-type PipelineTemplateVersionQueryResponse struct {
-	Header
-	Data []PipelineTemplateVersion `json:"data"`
-}
-
-type PipelineTemplateSearchRequest struct {
-}
-
-type PipelineTemplateSearchResponse struct {
-	Header
-	Data map[string]PipelineTemplateVersion `json:"data"`
-}
-
 type PipelineTemplateRender struct {
 	PipelineYaml string                   `json:"pipelineYaml"`
 	Version      *PipelineTemplateVersion `json:"pipelineTemplateVersion"`
@@ -149,18 +86,6 @@ type PipelineTemplateRender struct {
 type SnippetFormatOutputs struct {
 	PreOutputName   string `json:"PreOutputName"`
 	AfterOutputName string `json:"AfterOutputName"`
-}
-
-type PipelineTemplate struct {
-	ID        uint64    `json:"id"`
-	Name      string    `json:"name"`
-	Desc      string    `json:"desc"`
-	LogoUrl   string    `json:"logoUrl"`
-	ScopeType string    `json:"scopeType"`
-	ScopeID   string    `json:"scopeID"`
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
-	Version   string    `json:"version"`
 }
 
 type PipelineTemplateVersion struct {
@@ -217,15 +142,6 @@ func (p *PipelineTemplateSpec) Check() error {
 	return nil
 }
 
-type PipelineTemplateSpecParams struct {
-	Name     string            `json:"name" yaml:"name"`
-	Required bool              `json:"required" yaml:"required"`
-	Default  interface{}       `json:"default" yaml:"default"`
-	Desc     string            `json:"desc" yaml:"desc"`
-	Type     string            `json:"type" yaml:"type"`
-	Struct   []ActionSpecParam `json:"struct" yaml:"struct"`
-}
-
 func (params *PipelineParam) Check() error {
 
 	if params.Name == "" {
@@ -233,12 +149,6 @@ func (params *PipelineParam) Check() error {
 	}
 
 	return nil
-}
-
-type PipelineTemplateSpecOutput struct {
-	Name string `json:"name" yaml:"name"`
-	Desc string `json:"desc" yaml:"desc"`
-	Ref  string `json:"ref" yaml:"ref"`
 }
 
 func (output *PipelineOutput) Check() error {

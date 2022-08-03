@@ -555,6 +555,13 @@ var (
 	ErrDeleteDevFlowRule = err("ErrDeleteDevFlowRule", "删除研发工作流失败")
 
 	ErrNotFoundPipelineCron = err("ErrNotFoundPipelineCron", "未找到流水线定时配置")
+
+	// pipeline template
+	ErrCreatePipelineTemplate        = err("ErrCreateTemplate", "添加模板失败")
+	ErrQueryPipelineTemplate         = err("ErrQueryTemplate", "查询模板失败")
+	ErrCreatePipelineTemplateVersion = err("ErrCreateTemplateVersion", "添加模板版本失败")
+	ErrQueryPipelineTemplateVersion  = err("ErrQueryTemplateVersion", "查询模板版本失败")
+	ErrRenderPipelineTemplate        = err("ErrQueryTemplateVersion", "模板渲染失败")
 )
 
 func err(template, defaultValue string) *errorresp.APIError {

@@ -30,7 +30,6 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/dicehub/service/publish_item"
 	"github.com/erda-project/erda/internal/apps/dop/dicehub/service/release"
 	"github.com/erda-project/erda/internal/apps/dop/dicehub/service/release_rule"
-	"github.com/erda-project/erda/internal/apps/dop/dicehub/service/template"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/jsonstore/etcd"
 	// "terminus.io/dice/telemetry/promxp"
@@ -114,11 +113,6 @@ func initEndpoints(p *provider) (*endpoints.Endpoints, error) {
 	// 3.20 灰度逻辑迁移，3.21删除
 	// publishItem.Migration320()
 
-	pipelineTemplate := template.New(
-		template.WithBundle(bdl),
-		template.WithDBClient(db),
-	)
-
 	releaseRule := release_rule.New(release_rule.WithDBClient(db))
 
 	// queryStringDecoder
@@ -131,7 +125,6 @@ func initEndpoints(p *provider) (*endpoints.Endpoints, error) {
 		endpoints.WithBundle(bdl),
 		endpoints.WithRelease(rl),
 		endpoints.WithPublishItem(publishItem),
-		endpoints.WithPipelineTemplate(pipelineTemplate),
 		endpoints.WithReleaseRule(releaseRule),
 		endpoints.WithQueryStringDecoder(queryStringDecoder),
 		endpoints.WithOrg(p.Org),
