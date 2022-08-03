@@ -492,7 +492,7 @@ func (p *provider) batchCreateAssignChaningStream(req *pb.BatchUpdateIssueReques
 	}
 	userIds = append(userIds, req.Assignee)
 
-	resp, err := p.Identity.FindUsers(context.Background(), &userpb.FindUsersRequest{Ids: userIds})
+	resp, err := p.Identity.FindUsers(context.Background(), &userpb.FindUsersRequest{IDs: userIds})
 	if err != nil {
 		return err
 	}

@@ -343,7 +343,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 	}
 	// 获取全部用户
 	userids = strutil.DedupSlice(userids, true)
-	resp, err := identity.FindUsers(ctx, &userpb.FindUsersRequest{Ids: userids})
+	resp, err := identity.FindUsers(ctx, &userpb.FindUsersRequest{IDs: userids})
 	if err != nil {
 		return err
 	}

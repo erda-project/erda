@@ -27,7 +27,7 @@ func (p *provider) oryKratosPrivateAddr() string {
 }
 
 func (p *provider) FindUsers(ctx context.Context, req *pb.FindUsersRequest) (*pb.FindUsersResponse, error) {
-	ids := req.Ids
+	ids := req.IDs
 	if len(ids) == 0 {
 		return nil, nil
 	}

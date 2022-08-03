@@ -149,7 +149,7 @@ func (a *Approve) Create(userID string, createReq *apistructs.ApproveCreateReque
 		return nil, errors.Errorf("failed to insert approve to db")
 	}
 	if approve.Type == string(apistructs.ApproveUnblockAppication) {
-		resp, err := a.uc.FindUsers(context.Background(), &userpb.FindUsersRequest{Ids: []string{userID}})
+		resp, err := a.uc.FindUsers(context.Background(), &userpb.FindUsersRequest{IDs: []string{userID}})
 		if err != nil {
 			return nil, errors.Errorf("failed to get user(%s): %v", userID, err)
 		}
@@ -291,7 +291,7 @@ func (a *Approve) Update(approveID int64, updateReq *apistructs.ApproveUpdateReq
 		if err := a.updateApplicationWhenUnblock(extra); err != nil {
 			logrus.Errorf("failed to updateApplicationWhenUnblock: %v", err)
 		}
-		resp, err := a.uc.FindUsers(context.Background(), &userpb.FindUsersRequest{Ids: []string{approve.Submitter}})
+		resp, err := a.uc.FindUsers(context.Background(), &userpb.FindUsersRequest{IDs: []string{approve.Submitter}})
 		if err != nil {
 			return errors.Errorf("failed to get user(%s): %v", approve.Submitter, err)
 		}

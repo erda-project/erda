@@ -107,7 +107,7 @@ func (m *Member) CreateOrUpdate(userID string, req apistructs.MemberAddRequest) 
 		return errors.Errorf("failed to create permission(invalid scope id)")
 	}
 
-	resp, err := m.uc.FindUsers(context.Background(), &pb.FindUsersRequest{Ids: req.UserIDs})
+	resp, err := m.uc.FindUsers(context.Background(), &pb.FindUsersRequest{IDs: req.UserIDs})
 	if err != nil {
 		logrus.Warnf("failed to get user info, (%v)", err)
 		return errors.Errorf("failed to get user info")

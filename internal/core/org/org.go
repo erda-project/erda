@@ -121,7 +121,7 @@ func (p *provider) Create(createReq *pb.CreateOrgRequest) (*db.Org, error) {
 	}
 
 	// 新增企业权限记录
-	resp, err := p.uc.FindUsers(context.Background(), &userpb.FindUsersRequest{Ids: []string{userID}})
+	resp, err := p.uc.FindUsers(context.Background(), &userpb.FindUsersRequest{IDs: []string{userID}})
 	if err != nil {
 		logrus.Warnf("failed to query user info, (%v)", err)
 	}

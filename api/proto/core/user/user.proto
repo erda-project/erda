@@ -7,55 +7,55 @@ import "google/api/annotations.proto";
 option go_package = "github.com/erda-project/erda-proto-go/core/user/pb";
 
 service UserService {
-    rpc GetUser(GetUserRequest) returns (GetUserResponse) {
-        option(google.api.http) = {
-            get: "/api/internal-users/{userID}",
-        };
-    }
+  rpc GetUser(GetUserRequest) returns (GetUserResponse) {
+    option (google.api.http) = {
+      get: "/api/internal-users/{userID}",
+    };
+  }
 
-    rpc FindUsers(FindUsersRequest) returns (FindUsersResponse) {
-        option(google.api.http) = {
-            get: "/api/internal-users",
-        };
-    }
+  rpc FindUsers(FindUsersRequest) returns (FindUsersResponse) {
+    option (google.api.http) = {
+      get: "/api/internal-users",
+    };
+  }
 
-    rpc FindUsersByKey(FindUsersByKeyRequest) returns (FindUsersByKeyResponse) {
-        option(google.api.http) = {
-            get: "/api/internal-users/actions/find-users-by-key",
-        };
-    }
+  rpc FindUsersByKey(FindUsersByKeyRequest) returns (FindUsersByKeyResponse) {
+    option (google.api.http) = {
+      get: "/api/internal-users/actions/find-users-by-key",
+    };
+  }
 }
 
 message GetUserRequest {
-    string userID = 1;
+  string userID = 1;
 }
 
 message GetUserResponse {
-    User data = 1;
+  User data = 1;
 }
 
 message User {
-    string ID = 1 [json_name = "user_id"];
-	string name = 2 [json_name = "username"];
-	string nick = 3 [json_name = "nickname"];
-	string avatarURL = 4 [json_name = "avatar_url"];
-    string phone = 5 [json_name = "phone_number"];
-	string email = 6;
-	string state = 7;
+  string ID = 1 [json_name = "user_id"];
+  string name = 2 [json_name = "username"];
+  string nick = 3 [json_name = "nickname"];
+  string avatarURL = 4 [json_name = "avatar_url"];
+  string phone = 5 [json_name = "phone_number"];
+  string email = 6;
+  string state = 7;
 }
 
 message FindUsersRequest {
-    repeated string ids = 1;
+  repeated string IDs = 1 [json_name = "ids"];
 }
 
 message FindUsersResponse {
-    repeated User data = 1;
+  repeated User data = 1;
 }
 
 message FindUsersByKeyRequest {
-    string key = 1;
+  string key = 1;
 }
 
 message FindUsersByKeyResponse {
-    repeated User data = 1;
+  repeated User data = 1;
 }

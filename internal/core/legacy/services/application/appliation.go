@@ -173,7 +173,7 @@ func (a *Application) Create(userID string, createReq *apistructs.ApplicationCre
 	}
 
 	// 新增应用管理员至admin_members表
-	resp, err := a.uc.FindUsers(context.Background(), &userpb.FindUsersRequest{Ids: []string{userID}})
+	resp, err := a.uc.FindUsers(context.Background(), &userpb.FindUsersRequest{IDs: []string{userID}})
 	if err != nil {
 		logrus.Warnf("failed to get user info, (%v)", err)
 	}

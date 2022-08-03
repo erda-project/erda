@@ -154,7 +154,7 @@ func (i *IssueService) CreateIssue(ctx context.Context, req *pb.IssueCreateReque
 	}
 
 	// 生成活动记录
-	resp, err := i.identity.FindUsers(ctx, &userpb.FindUsersRequest{Ids: []string{req.IdentityInfo.UserID}})
+	resp, err := i.identity.FindUsers(ctx, &userpb.FindUsersRequest{IDs: []string{req.IdentityInfo.UserID}})
 	if err != nil {
 		return nil, err
 	}

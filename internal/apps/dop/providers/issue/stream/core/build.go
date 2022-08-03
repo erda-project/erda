@@ -198,7 +198,7 @@ func (p *provider) CreateStream(updateReq *pb.UpdateIssueRequest, streamFields m
 			for _, uid := range v {
 				userIds = append(userIds, uid.(string))
 			}
-			resp, err := p.Identity.FindUsers(context.Background(), &userpb.FindUsersRequest{Ids: userIds})
+			resp, err := p.Identity.FindUsers(context.Background(), &userpb.FindUsersRequest{IDs: userIds})
 			if err != nil {
 				return err
 			}
@@ -276,7 +276,7 @@ func (p *provider) CreateStream(updateReq *pb.UpdateIssueRequest, streamFields m
 			for _, uid := range v {
 				userIds = append(userIds, uid.(string))
 			}
-			resp, err := p.Identity.FindUsers(context.Background(), &userpb.FindUsersRequest{Ids: userIds})
+			resp, err := p.Identity.FindUsers(context.Background(), &userpb.FindUsersRequest{IDs: userIds})
 			if err != nil {
 				return err
 			}

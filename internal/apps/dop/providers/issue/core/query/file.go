@@ -55,7 +55,7 @@ func (p *provider) ExportExcel(issues []*pb.Issue, properties []*pb.IssuePropert
 	}
 	userids = strutil.DedupSlice(userids, true)
 	resp, err := p.Identity.FindUsers(context.Background(), &userpb.FindUsersRequest{
-		Ids: userids,
+		IDs: userids,
 	})
 	users := resp.Data
 	if err != nil {

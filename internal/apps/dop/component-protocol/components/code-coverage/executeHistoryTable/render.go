@@ -246,7 +246,7 @@ func (ca *ComponentAction) setData(ctx context.Context, gs *cptype.GlobalStateDa
 		})
 	}
 	userIDs = strutil.DedupSlice(userIDs, true)
-	resp, err := ca.identity.FindUsers(ctx, &userpb.FindUsersRequest{Ids: userIDs})
+	resp, err := ca.identity.FindUsers(ctx, &userpb.FindUsersRequest{IDs: userIDs})
 	if err != nil {
 		return err
 	}

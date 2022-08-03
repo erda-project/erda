@@ -232,7 +232,7 @@ func (p *Project) Create(userID string, createReq *apistructs.ProjectCreateReque
 	}
 
 	// 新增项目管理员至admin_members表
-	resp, err := p.uc.FindUsers(context.Background(), &userpb.FindUsersRequest{Ids: []string{userID}})
+	resp, err := p.uc.FindUsers(context.Background(), &userpb.FindUsersRequest{IDs: []string{userID}})
 	if err != nil {
 		logrus.Warnf("user query error: %v", err)
 	}

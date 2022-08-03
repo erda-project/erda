@@ -149,7 +149,7 @@ func (a *Audit) convertAuditsToExcelList(ctx context.Context, audits []model.Aud
 		userIDs = append(userIDs, k)
 	}
 
-	resp, err := a.uc.FindUsers(ctx, &userpb.FindUsersRequest{Ids: userIDs})
+	resp, err := a.uc.FindUsers(ctx, &userpb.FindUsersRequest{IDs: userIDs})
 	if err != nil {
 		return nil, err
 	}
