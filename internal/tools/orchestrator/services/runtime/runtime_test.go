@@ -442,10 +442,18 @@ addons:
 		{
 			name: "multi addons deploy to prod environment, had non-exist addon and plan error addon",
 			args: args{
-				diceYaml:  generateMultiAddons(t),
+				diceYaml:  generateMultiAddons(t, 200),
 				workspace: apistructs.WORKSPACE_PROD,
 			},
 			// TODO: precheck should return error
+			wantErr: false,
+		},
+		{
+			name: "non addons deploy to prod environment",
+			args: args{
+				diceYaml:  generateMultiAddons(t, 0),
+				workspace: apistructs.WORKSPACE_PROD,
+			},
 			wantErr: false,
 		},
 		{
@@ -479,8 +487,12 @@ addons:
 	}
 }
 
-func generateMultiAddons(t *testing.T) string {
-	addonsCount := rand.Intn(50)
+func generateMultiAddons(t *testing.T, randCount int) string {
+	var addonsCount int
+	if randCount != 0 {
+		addonsCount = rand.Intn(randCount)
+	}
+
 	addons := make(diceyml.AddOns)
 	for i := 0; i < addonsCount; i++ {
 		name := fmt.Sprintf("existAddon%d", i)
@@ -493,11 +505,13 @@ func generateMultiAddons(t *testing.T) string {
 		}
 	}
 
-	addons["nonExistAddon1"] = &diceyml.AddOn{
-		Plan: fmt.Sprintf("nonExistAddon1:%s", apistructs.AddonBasic),
-		Options: map[string]string{
-			"version": "1.0.0",
-		},
+	if addonsCount != 0 {
+		addons["nonExistAddon1"] = &diceyml.AddOn{
+			Plan: fmt.Sprintf("nonExistAddon1:%s", apistructs.AddonBasic),
+			Options: map[string]string{
+				"version": "1.0.0",
+			},
+		}
 	}
 
 	diceObj := diceyml.Object{

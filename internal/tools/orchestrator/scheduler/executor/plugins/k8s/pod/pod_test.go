@@ -21,6 +21,9 @@ import (
 	"gotest.tools/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	fakeclientset "k8s.io/client-go/kubernetes/fake"
+
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8serror"
 )
 
 func TestPod_GetNamespacedPodsStatus(t *testing.T) {
@@ -93,5 +96,29 @@ func TestPod_GetNamespacedPodsStatus(t *testing.T) {
 			Message: "Back-off pulling image \"test:v1\"",
 		},
 	})
+}
 
+func TestListAllNamespace(t *testing.T) {
+	p := New(WithK8sClient(fakeclientset.NewSimpleClientset(&corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "test-pod",
+			Labels: map[string]string{
+				"core.erda.cloud/component": "orchestrator",
+			},
+			Namespace: metav1.NamespaceDefault,
+		},
+	})))
+	pods, err := p.ListAllNamespace([]string{"core.erda.cloud/component=orchestrator"})
+	assert.NilError(t, err)
+	assert.Equal(t, len(pods.Items), 1)
+
+	_, err = p.ListNamespacePods(metav1.NamespaceDefault)
+	assert.NilError(t, err)
+	assert.Equal(t, len(pods.Items), 1)
+
+	err = p.Delete(metav1.NamespaceDefault, "test-pod")
+	assert.NilError(t, err)
+
+	_, err = p.Get(metav1.NamespaceDefault, "test-pod")
+	assert.Equal(t, err, k8serror.ErrNotFound)
 }
