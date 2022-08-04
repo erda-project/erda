@@ -20,9 +20,11 @@ import (
 
 	"bou.ke/monkey"
 
+	"github.com/erda-project/erda-proto-go/core/file/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/dao"
+	"github.com/erda-project/erda/internal/core/file/filetypes"
 )
 
 func TestExportTemplatePackage(t *testing.T) {
@@ -49,8 +51,8 @@ func TestExportTemplatePackage(t *testing.T) {
 		return nil
 	}
 
-	pm4 := monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "UploadFile", func(b *bundle.Bundle, req apistructs.FileUploadRequest, clientTimeout ...int64) (*apistructs.File, error) {
-		return &apistructs.File{}, nil
+	pm4 := monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "UploadFile", func(b *bundle.Bundle, req filetypes.FileUploadRequest, clientTimeout ...int64) (*pb.File, error) {
+		return &pb.File{}, nil
 	})
 	defer pm4.Unpatch()
 

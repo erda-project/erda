@@ -23,7 +23,7 @@ import (
 	"github.com/c2h5oh/datasize"
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda-proto-go/core/file/pb"
 	"github.com/erda-project/erda/internal/tools/pipeline/actionagent/agenttool"
 	"github.com/erda-project/erda/pkg/filehelper"
 	"github.com/erda-project/erda/pkg/metadata"
@@ -98,7 +98,7 @@ func (agent *Agent) uploadDir() {
 		totalFileSizeLimit  = datasize.MB * 50
 	)
 	var currentTotalFileSize datasize.ByteSize
-	var uploadedFiles []*apistructs.File
+	var uploadedFiles []*pb.File
 	for _, f := range needUploadFile {
 		// 判断单个文件大小
 		fileInfo, err := f.Stat()
@@ -142,8 +142,8 @@ func (agent *Agent) uploadDir() {
 	}
 }
 
-func (agent *Agent) uploadFile(file *os.File) (*apistructs.File, error) {
-	var uploadResp apistructs.FileUploadResponse
+func (agent *Agent) uploadFile(file *os.File) (*pb.File, error) {
+	var uploadResp *pb.FileUploadResponse
 
 	err := retry.DoWithInterval(func() error {
 		var err error

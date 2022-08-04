@@ -76,32 +76,6 @@ Content-Type: application/json
 GET {{coreservices}}/api/issues/25/streams?pageNo=1&pageSize=2
 User-ID: 2
 
-### 文件上传
-
-POST {{coreservices}}/api/files?fileFrom=issue&public=true&encrypt=true&expiredIn=60s
-Content-Type: multipart/form-data; boundary=WebAppBoundary
-User-ID: 2
-
---WebAppBoundary
-#Content-Disposition: form-data; name="file"; filename="%E6%88%91%E7%9A%84%E5%90%8D%E5%AD%97.jar"
-Content-Disposition: form-data; name="file"; filename="selinux.png"
-
-#< /Users/sfwn/Downloads/我的 名字.jar
-< /Users/sfwn/Pictures/selinux.png
---WebAppBoundary--
-
-### 文件下载
-GET {{coreservices}}/api/files?file=08dea1998d7541b587851fada3b3648c
-User-ID: 2
-
-### 文件下载2
-GET {{coreservices}}/api/files/811028d7aacc4bcca0dd6b4d17e4c87f
-User-ID: 2
-
-### 文件下载 HEAD
-HEAD {{coreservices}}/api/files/02671ea529104961ab8aeb7a22b50bf7
-User-ID: 2
-
 ### publisher 创建
 POST {{coreservices}}/api/publishers
 User-ID: 1

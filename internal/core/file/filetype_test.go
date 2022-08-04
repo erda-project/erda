@@ -12,25 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package core_services
+package file
 
 import (
-	"net/http"
+	"testing"
 
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/internal/core/openapi/legacy/api/apis"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/erda-project/erda-proto-go/core/file/pb"
 )
 
-var CMDB_FILE_UPLOAD = apis.ApiSpec{
-	Path:         "/api/files",
-	BackendPath:  "/api/files",
-	Host:         "erda-server.marathon.l4lb.thisdcos.directory:9095",
-	Scheme:       "http",
-	Method:       http.MethodPost,
-	CheckLogin:   true,
-	CheckToken:   true,
-	IsOpenAPI:    true,
-	ChunkAPI:     true,
-	ResponseType: apistructs.FileUploadResponse{},
-	Doc:          "summary: 文件上传",
+func TestGetFileTypeByExt(t *testing.T) {
+	assert.Equal(t, pb.FileType_picture, GetFileTypeByExt(".png"))
+	assert.Equal(t, pb.FileType_picture, GetFileTypeByExt(".jpg"))
+	assert.Equal(t, pb.FileType_picture, GetFileTypeByExt(".jpeg"))
+	assert.Equal(t, pb.FileType_picture, GetFileTypeByExt(".bmp"))
+	assert.Equal(t, pb.FileType_picture, GetFileTypeByExt(".gif"))
+	assert.Equal(t, pb.FileType_other, GetFileTypeByExt(".html"))
 }

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dao
+package db
 
 import (
 	"database/sql/driver"
@@ -23,6 +23,13 @@ import (
 
 	"github.com/erda-project/erda/pkg/storage"
 )
+
+// BaseModel common info for all models
+type BaseModel struct {
+	ID        int64     `json:"id" gorm:"primary_key"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
 
 type File struct {
 	BaseModel
@@ -82,27 +89,27 @@ func (ex *FileExtra) Scan(value interface{}) error {
 	return nil
 }
 
-func (client *DBClient) CreateFile(file *File) error {
+func (client *Client) CreateFile(file *File) error {
 	return client.Create(file).Error
 }
 
-func (client *DBClient) GetFile(id uint64) (File, error) {
+func (client *Client) GetFile(id uint64) (File, error) {
 	var file File
 	err := client.First(&file, id).Error
 	return file, err
 }
 
-func (client *DBClient) GetFileByUUID(uuid string) (File, error) {
+func (client *Client) GetFileByUUID(uuid string) (File, error) {
 	var file File
 	err := client.Where("uuid=?", uuid).First(&file).Error
 	return file, err
 }
 
-func (client *DBClient) DeleteFile(id uint64) error {
+func (client *Client) DeleteFile(id uint64) error {
 	return client.DB.Where("id = ?", id).Delete(&File{}).Error
 }
 
-func (client *DBClient) ListExpiredFiles(expiredAt time.Time) ([]File, error) {
+func (client *Client) ListExpiredFiles(expiredAt time.Time) ([]File, error) {
 	var files []File
 	err := client.DB.Where("expired_at is not null and expired_at <= ?", expiredAt).Find(&files).Error
 	if err != nil {

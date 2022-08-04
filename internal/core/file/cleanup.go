@@ -12,33 +12,44 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package filesvc
+package file
 
 import (
 	"time"
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-infra/pkg/safe"
 	"github.com/erda-project/erda/internal/core/legacy/services/apierrors"
 )
 
-func (svc *FileService) CleanExpiredFiles(_expiredAt ...time.Time) error {
-	// 获取过期时间
+func (p *provider) asyncCleanupExpiredFiles() {
+	// clean expired files
+	safe.Go(func() {
+		ticker := time.NewTicker(p.Cfg.Cleanup.ExpiredFilesInterval)
+		for range ticker.C {
+			_ = p.cleanExpiredFiles()
+		}
+	})
+}
+
+func (p *provider) cleanExpiredFiles(_expiredAt ...time.Time) error {
+	// fetch expired time
 	expiredAt := time.Unix(time.Now().Unix(), 0)
 	if len(_expiredAt) > 0 {
 		expiredAt = _expiredAt[0]
 	}
 
-	// 获取过期文件列表
-	files, err := svc.db.ListExpiredFiles(expiredAt)
+	// fetch expired files
+	files, err := p.db.ListExpiredFiles(expiredAt)
 	if err != nil {
 		logrus.Errorf("[alert] failed to list expired files, expiredBefore: %s, err: %v", expiredAt.Format(time.RFC3339), err)
 		return apierrors.ErrCleanExpiredFile.InternalError(err)
 	}
 
-	// 遍历删除文件
+	// iterate delete files
 	for _, file := range files {
-		if err := svc.DeleteFile(file); err != nil {
+		if err := p.fileService.DeleteFile(file); err != nil {
 			logrus.Errorf("[alert] failed to clean expired file, fileUUID: %s, err: %v", file.UUID, err)
 			continue
 		}

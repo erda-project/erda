@@ -36,6 +36,7 @@ import (
 	_ "github.com/erda-project/erda/internal/apps/dop/dicehub/extension"
 	_ "github.com/erda-project/erda/internal/apps/dop/dicehub/image"
 	_ "github.com/erda-project/erda/internal/apps/dop/dicehub/release"
+	_ "github.com/erda-project/erda/internal/core/file"
 	_ "github.com/erda-project/erda/internal/core/legacy"
 	_ "github.com/erda-project/erda/internal/core/legacy/providers/token"
 	_ "github.com/erda-project/erda/internal/core/legacy/services/dingtalk/api"

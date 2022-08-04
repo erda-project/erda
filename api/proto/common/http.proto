@@ -3,8 +3,21 @@ syntax = "proto3";
 package erda.common;
 option go_package = "github.com/erda-project/erda-proto-go/common/pb";
 
+import "google/protobuf/struct.proto";
+
 message VoidRequest {
 }
 
 message VoidResponse {
+}
+
+message ResponseHeader {
+    bool success = 1;
+    ResponseError error = 2 [json_name = "err"];
+}
+
+message ResponseError {
+    string code = 1;
+    string msg = 2;
+    google.protobuf.Value ctx = 3;
 }
