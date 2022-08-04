@@ -139,16 +139,6 @@ message CMDB_APPLICATION_UNPIN_Request {
 }
 message CMDB_APP_LIST_TEMPLATES_Request {
 }
-message CMDB_FILE_DOWNLOAD_Request {
-}
-message CMDB_FILE_DOWNLOAD_V2_Request {
-    string uuid = 1; // generated from path variable: uuid. You should change the proto type if necessary.
-}
-message CMDB_FILE_HEAD_Request {
-    string uuid = 1; // generated from path variable: uuid. You should change the proto type if necessary.
-}
-message CMDB_FILE_UPLOAD_Request {
-}
 message CMDB_IMAGE_FETCH_Request {
     string imageName = 1; // generated from path variable: imageName. You should change the proto type if necessary.
 }
@@ -257,9 +247,6 @@ message ErrorLogCreateRequest {
 }
 message ErrorLogCreateResponse {
     string data = 1;
-}
-message FileUploadResponse {
-    optional google.protobuf.Value data = 1;
 }
 message GetAuthorityByUserIdRequest {
     int64 operator = 1;
@@ -890,73 +877,6 @@ service core_services {
                 check_basic_auth: false,
             },
             doc: "summary: 上报错误日志",
-        };
-    };
-    rpc CMDB_FILE_DOWNLOAD (CMDB_FILE_DOWNLOAD_Request) returns (google.protobuf.Empty) {
-        option (google.api.http) = {
-            get: "/api/files",
-        };
-        option (erda.common.openapi) = {
-            path: "/api/files",
-            auth: {
-                no_check: false,
-                check_login: false,
-                try_check_login: true,
-                check_token: true,
-                check_basic_auth: false,
-            },
-            doc: "summary: 文件下载，在 query param 中通过 file=<uuid> 指定具体文件",
-        };
-    };
-    rpc CMDB_FILE_DOWNLOAD_V2 (CMDB_FILE_DOWNLOAD_V2_Request) returns (google.protobuf.Empty) {
-        option (google.api.http) = {
-            get: "/api/files/{uuid}",
-        };
-        option (erda.common.openapi) = {
-            path: "/api/files/{uuid}",
-            auth: {
-                no_check: false,
-                check_login: false,
-                try_check_login: true,
-                check_token: true,
-                check_basic_auth: false,
-            },
-            doc: "summary: 文件下载，在 path 中指定具体文件",
-        };
-    };
-    rpc CMDB_FILE_HEAD (CMDB_FILE_HEAD_Request) returns (google.protobuf.Empty) {
-        option (google.api.http) = {
-            custom: {
-                kind: "head",
-                path: "/api/files/{uuid}",
-            },
-        };
-        option (erda.common.openapi) = {
-            path: "/api/files/{uuid}",
-            auth: {
-                no_check: false,
-                check_login: false,
-                try_check_login: true,
-                check_token: true,
-                check_basic_auth: false,
-            },
-            doc: "summary: HEAD 请求，文件下载，在 path 中指定具体文件",
-        };
-    };
-    rpc CMDB_FILE_UPLOAD (CMDB_FILE_UPLOAD_Request) returns (FileUploadResponse) {
-        option (google.api.http) = {
-            post: "/api/files",
-        };
-        option (erda.common.openapi) = {
-            path: "/api/files",
-            auth: {
-                no_check: false,
-                check_login: true,
-                try_check_login: false,
-                check_token: true,
-                check_basic_auth: false,
-            },
-            doc: "summary: 文件上传",
         };
     };
     rpc CMDB_IMAGE_FETCH (CMDB_IMAGE_FETCH_Request) returns (google.protobuf.Empty) {

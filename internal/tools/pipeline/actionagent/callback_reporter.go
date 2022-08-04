@@ -25,6 +25,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-proto-go/core/file/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/filehelper"
 	"github.com/erda-project/erda/pkg/http/httpclient"
@@ -38,7 +39,7 @@ var (
 
 type CallbackReporter interface {
 	CallbackToPipelinePlatform(cbReq apistructs.PipelineCallbackRequest) error
-	UploadFile(pipelineID, taskID uint64, file *os.File) (apistructs.FileUploadResponse, error)
+	UploadFile(pipelineID, taskID uint64, file *os.File) (*pb.FileUploadResponse, error)
 	GetBootstrapInfo(pipelineID, taskID uint64) (apistructs.PipelineTaskGetBootstrapInfoResponse, error)
 	GetCmsFile(uuid string, absPath string) error
 	SetOpenApiToken(token string)
@@ -73,8 +74,8 @@ func (cr *CenterCallbackReporter) CallbackToPipelinePlatform(cbReq apistructs.Pi
 	return nil
 }
 
-func (cr *CenterCallbackReporter) UploadFile(pipelineID, taskID uint64, file *os.File) (apistructs.FileUploadResponse, error) {
-	var uploadResp apistructs.FileUploadResponse
+func (cr *CenterCallbackReporter) UploadFile(pipelineID, taskID uint64, file *os.File) (*pb.FileUploadResponse, error) {
+	var uploadResp pb.FileUploadResponse
 	resp, err := httpclient.New(httpclient.WithCompleteRedirect(), httpclient.WithTimeout(cr.FileStreamTimeoutSec, cr.FileStreamTimeoutSec)).
 		Post(cr.OpenAPIAddr).
 		Path("/api/files").
@@ -87,12 +88,12 @@ func (cr *CenterCallbackReporter) UploadFile(pipelineID, taskID uint64, file *os
 		Do().
 		JSON(&uploadResp)
 	if err != nil {
-		return uploadResp, err
+		return &uploadResp, err
 	}
 	if !resp.IsOK() || !uploadResp.Success {
-		return uploadResp, fmt.Errorf("statusCode: %d, respError: %s", resp.StatusCode(), uploadResp.Error)
+		return &uploadResp, fmt.Errorf("statusCode: %d, respError: %s", resp.StatusCode(), uploadResp.Error)
 	}
-	return uploadResp, nil
+	return &uploadResp, nil
 }
 
 func (cr *CenterCallbackReporter) GetBootstrapInfo(pipelineID, taskID uint64) (apistructs.PipelineTaskGetBootstrapInfoResponse, error) {
@@ -194,8 +195,8 @@ func (er *EdgeCallbackReporter) CallbackToPipelinePlatform(cbReq apistructs.Pipe
 	return nil
 }
 
-func (er *EdgeCallbackReporter) UploadFile(pipelineID, taskID uint64, file *os.File) (apistructs.FileUploadResponse, error) {
-	return apistructs.FileUploadResponse{}, fmt.Errorf("edge pipeline doesn't support upload file")
+func (er *EdgeCallbackReporter) UploadFile(pipelineID, taskID uint64, file *os.File) (*pb.FileUploadResponse, error) {
+	return nil, fmt.Errorf("edge pipeline doesn't support upload file")
 }
 
 func (er *EdgeCallbackReporter) GetBootstrapInfo(pipelineID, taskID uint64) (apistructs.PipelineTaskGetBootstrapInfoResponse, error) {

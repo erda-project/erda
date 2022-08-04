@@ -34,8 +34,9 @@ import (
 	"github.com/sirupsen/logrus"
 	"howett.net/plist"
 
-	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda-proto-go/core/file/pb"
 	"github.com/erda-project/erda/internal/apps/dop/dicehub/dbclient"
+	"github.com/erda-project/erda/internal/core/file/filetypes"
 	"github.com/erda-project/erda/pkg/template"
 )
 
@@ -92,7 +93,7 @@ func isOffLineVersion(version *dbclient.PublishItemVersion) bool {
 	return false
 }
 
-func (i *PublishItem) UploadFileFromReader(fileHeader *multipart.FileHeader) (*apistructs.File, error) {
+func (i *PublishItem) UploadFileFromReader(fileHeader *multipart.FileHeader) (*pb.File, error) {
 	fileName := fileHeader.Filename
 	if fileName == "" {
 		fileName = "file"
@@ -102,7 +103,7 @@ func (i *PublishItem) UploadFileFromReader(fileHeader *multipart.FileHeader) (*a
 		return nil, err
 	}
 	defer reader.Close()
-	resp, err := i.bdl.UploadFile(apistructs.FileUploadRequest{
+	resp, err := i.bdl.UploadFile(filetypes.FileUploadRequest{
 		From:            "release",
 		IsPublic:        true,
 		FileReader:      reader,
@@ -120,14 +121,14 @@ func (i *PublishItem) UploadFileFromReader(fileHeader *multipart.FileHeader) (*a
 	return resp, nil
 }
 
-func (i *PublishItem) UploadFileFromFile(filePath string) (*apistructs.File, error) {
+func (i *PublishItem) UploadFileFromFile(filePath string) (*pb.File, error) {
 	f, err := os.Open(filePath)
 	if err != nil {
 		return nil, err
 	}
 	defer f.Close()
 
-	resp, err := i.bdl.UploadFile(apistructs.FileUploadRequest{
+	resp, err := i.bdl.UploadFile(filetypes.FileUploadRequest{
 		From:            "release",
 		IsPublic:        true,
 		FileReader:      f,

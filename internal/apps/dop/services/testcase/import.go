@@ -24,6 +24,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/dao"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
+	"github.com/erda-project/erda/internal/core/file/filetypes"
 )
 
 // Import 导入测试用例
@@ -59,7 +60,7 @@ func (svc *Service) Import(req apistructs.TestCaseImportRequest, r *http.Request
 	}
 	defer f.Close()
 
-	uploadReq := apistructs.FileUploadRequest{
+	uploadReq := filetypes.FileUploadRequest{
 		FileNameWithExt: fileHeader.Filename,
 		ByteSize:        fileHeader.Size,
 		FileReader:      f,

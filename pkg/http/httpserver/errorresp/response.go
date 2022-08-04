@@ -16,6 +16,7 @@ package errorresp
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/erda-project/erda/apistructs"
@@ -71,5 +72,12 @@ func ErrWrite(e error, w http.ResponseWriter) error {
 	default:
 		_ = t
 		return New().InternalError(e).Write(w)
+	}
+}
+
+func Error(rw http.ResponseWriter, err error) {
+	writeErr := ErrWrite(err, rw)
+	if writeErr != nil {
+		panic(fmt.Errorf("write error: %v", writeErr))
 	}
 }

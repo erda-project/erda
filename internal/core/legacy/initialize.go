@@ -38,7 +38,6 @@ import (
 	"github.com/erda-project/erda/internal/core/legacy/services/approve"
 	"github.com/erda-project/erda/internal/core/legacy/services/audit"
 	"github.com/erda-project/erda/internal/core/legacy/services/errorbox"
-	"github.com/erda-project/erda/internal/core/legacy/services/filesvc"
 	"github.com/erda-project/erda/internal/core/legacy/services/label"
 	"github.com/erda-project/erda/internal/core/legacy/services/manual_review"
 	"github.com/erda-project/erda/internal/core/legacy/services/mbox"
@@ -242,12 +241,6 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 		errorbox.WithDBClient(db),
 	)
 
-	fileSvc := filesvc.New(
-		filesvc.WithDBClient(db),
-		filesvc.WithBundle(bdl),
-		filesvc.WithEtcdClient(etcdStore),
-	)
-
 	user := user.New(
 		user.WithDBClient(db),
 		user.WithUCClient(p.Identity),
@@ -291,7 +284,6 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 		endpoints.WithQueryStringDecoder(queryStringDecoder),
 		endpoints.WithAudit(audit),
 		endpoints.WithErrorBox(errorBox),
-		endpoints.WithFileSvc(fileSvc),
 		endpoints.WithUserSvc(user),
 		endpoints.WithSubscribe(sub),
 		endpoints.WithTokenSvc(p.TokenService),

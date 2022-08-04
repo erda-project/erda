@@ -22,6 +22,7 @@ import (
 	"io/ioutil"
 	"net/url"
 
+	"github.com/erda-project/erda-proto-go/core/file/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
 	"github.com/erda-project/erda/pkg/http/httpclient"
@@ -131,9 +132,9 @@ func (b *Bundle) ExportAuditExcel(orgID, userID, lang string, params url.Values)
 	}
 	if !resp.IsOK() {
 		bodyBytes, _ := ioutil.ReadAll(respBody)
-		var downloadResp apistructs.FileDownloadFailResponse
+		var downloadResp pb.FileDownloadFailResponse
 		if err := json.Unmarshal(bodyBytes, &downloadResp); err == nil {
-			return nil, nil, toAPIError(resp.StatusCode(), downloadResp.Error)
+			return nil, nil, toPbAPIError(resp.StatusCode(), downloadResp.Error)
 		}
 		return nil, nil, fmt.Errorf("failed to export audit excel, responseBody: %s", string(bodyBytes))
 	}

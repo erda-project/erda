@@ -19,6 +19,7 @@ import (
 	"os"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/core/file/filetypes"
 	"github.com/erda-project/erda/internal/tools/gittar/helper"
 	"github.com/erda-project/erda/internal/tools/gittar/webcontext"
 )
@@ -56,7 +57,7 @@ func Backup(ctx *webcontext.Context) {
 		ctx.Abort(err)
 		return
 	}
-	req := apistructs.FileUploadRequest{
+	req := filetypes.FileUploadRequest{
 		FileNameWithExt: branch + "." + format,
 		FileReader:      f,
 		From:            "backup",

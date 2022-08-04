@@ -26,6 +26,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/dao"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	"github.com/erda-project/erda/internal/apps/dop/services/i18n"
+	"github.com/erda-project/erda/internal/core/file/filetypes"
 	"github.com/erda-project/erda/pkg/excel"
 	"github.com/erda-project/erda/pkg/xmind"
 )
@@ -157,7 +158,7 @@ func (svc *Service) ExportTestCases(req *apistructs.TestCaseExportRequest, sheet
 	//Set offset for next read
 	f.Seek(0, 0)
 
-	uploadReq := apistructs.FileUploadRequest{
+	uploadReq := filetypes.FileUploadRequest{
 		FileNameWithExt: sheetName,
 		FileReader:      f,
 		From:            defaultResource,

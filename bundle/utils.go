@@ -15,10 +15,19 @@
 package bundle
 
 import (
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 )
 
 func toAPIError(statusCode int, err apistructs.ErrorResponse) *errorresp.APIError {
 	return errorresp.New(errorresp.WithCode(statusCode, err.Code), errorresp.WithMessage(err.Msg), errorresp.WithCtx(err.Ctx))
+}
+
+func toPbAPIError(statusCode int, err *commonpb.ResponseError) *errorresp.APIError {
+	return toAPIError(statusCode, apistructs.ErrorResponse{
+		Code: err.Code,
+		Msg:  err.Msg,
+		Ctx:  err.Ctx,
+	})
 }

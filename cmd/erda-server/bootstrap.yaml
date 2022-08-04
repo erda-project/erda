@@ -64,6 +64,7 @@ erda.core.org: { }
 erda.core.user: { }
 erda.core.user.kratos: { }
 erda.core.user.uc: { }
+erda.core.file: { }
 
 ############# dicehub
 dicehub: { }

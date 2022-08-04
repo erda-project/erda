@@ -17,6 +17,7 @@ package models
 import (
 	"fmt"
 
+	"github.com/erda-project/erda-proto-go/core/file/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/gittar/pkg/gitmodule"
 )
@@ -41,7 +42,7 @@ func (svc *Service) GetBackupList(pageNo, pageSize int, repo *gitmodule.Reposito
 
 // 添加备份记录
 func (svc *Service) AddBackupRecording(repo *gitmodule.Repository, commitID, remark string) (*apistructs.RepoFiles, error) {
-	var files apistructs.File
+	var files pb.File
 	err := svc.db.Table("dice_files").Last(&files).Error
 	if err != nil {
 		return nil, err

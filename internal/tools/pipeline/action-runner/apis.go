@@ -24,6 +24,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-proto-go/core/file/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
@@ -111,7 +112,7 @@ func (w *worker) uploadFile(filePath, token string) (string, error) {
 		Param("public", "true").
 		Header("Authorization", token).
 		MultipartFormDataBody(multiparts)
-	var resp apistructs.FileUploadResponse
+	var resp pb.FileUploadResponse
 	httpResp, err := request.Do().JSON(&resp)
 	if err != nil {
 		return "", err

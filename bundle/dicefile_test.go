@@ -43,7 +43,7 @@ package bundle
 //
 //	for i := 0; i < b.N; i++ {
 //		assert.NoError(b, err)
-//		r, err := bdl.UploadFile(apistructs.FileUploadRequest{
+//		r, err := bdl.UploadFile(types.FileUploadRequest{
 //			FileNameWithExt: "bug.log",
 //			ByteSize:        fi.Size(),
 //			FileReader:      f,
