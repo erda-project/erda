@@ -551,6 +551,8 @@ var (
 	ErrCreatePipelineTemplateVersion = err("ErrCreateTemplateVersion", "添加模板版本失败")
 	ErrQueryPipelineTemplateVersion  = err("ErrQueryTemplateVersion", "查询模板版本失败")
 	ErrRenderPipelineTemplate        = err("ErrQueryTemplateVersion", "模板渲染失败")
+
+	ErrGlobalSearch = err("ErrGlobalSearch", "全局搜索失败")
 )
 
 func err(template, defaultValue string) *errorresp.APIError {

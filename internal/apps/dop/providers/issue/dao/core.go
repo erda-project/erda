@@ -267,6 +267,9 @@ func (client *DBClient) PagingIssues(req pb.PagingIssueRequest, queryIDs bool) (
 	if len(req.IterationIDs) > 0 {
 		sql = sql.Where("iteration_id in (?)", req.IterationIDs)
 	}
+	if len(req.ProjectIDs) > 0 {
+		sql = sql.Where("project_id in (?)", req.ProjectIDs)
+	}
 	if len(req.Type) > 0 {
 		sql = sql.Where("dice_issues.type IN (?)", req.Type)
 	}
