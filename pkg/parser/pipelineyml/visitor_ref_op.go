@@ -218,9 +218,15 @@ func (v *RefOpVisitor) handleAction(action *indexedAction, handler func(ori stri
 	}
 
 	// commands
-	for i := range action.Commands {
-		replaced := handler(action.Commands[i])
-		action.Commands[i] = replaced
+	commandYamlBytes, err := yaml.Marshal(action.Commands)
+	if err != nil {
+		v.result.AppendError(err)
+		return
+	}
+	replaced := handler(string(commandYamlBytes))
+	if err := yaml.Unmarshal([]byte(replaced), &action.Commands); err != nil {
+		v.result.AppendError(err)
+		return
 	}
 
 	// caches, 将 caches 中的 ${git-checkout} 转化为实际地址

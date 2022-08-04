@@ -95,7 +95,7 @@ type PipelineYmlAction struct {
 	Version       string                 `json:"version,omitempty"`                                        // action 版本
 	Params        map[string]interface{} `json:"params,omitempty"`                                         // 参数
 	Image         string                 `json:"image,omitempty"`                                          // 镜像
-	Commands      []string               `json:"commands,omitempty"`                                       // 命令行
+	Commands      interface{}            `json:"commands,omitempty"`                                       // 命令行
 	Timeout       int64                  `json:"timeout,omitempty"`                                        // 超时设置，单位：秒
 	Namespaces    []string               `json:"namespaces,omitempty"`                                     // Action 输出的命名空间
 	Resources     Resources              `json:"resources,omitempty"`                                      // 资源

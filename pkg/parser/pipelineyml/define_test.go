@@ -14,7 +14,10 @@
 
 package pipelineyml
 
-import "testing"
+import (
+	"reflect"
+	"testing"
+)
 
 func TestCountEnabledActionNumByPipelineYml(t *testing.T) {
 	type args struct {
@@ -178,6 +181,36 @@ stages:
 			}
 			if got != tt.want {
 				t.Errorf("GetNameByPipelineYml() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGetSliceCommands(t *testing.T) {
+	tests := []struct {
+		name     string
+		commands interface{}
+		want     []string
+	}{
+		{
+			name:     "test with slice commands",
+			commands: []string{"echo hello", "echo world"},
+			want:     []string{"echo hello", "echo world"},
+		},
+		{
+			name:     "test with string commands",
+			commands: "echo hello",
+			want:     nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			action := &Action{
+				Commands: tt.commands,
+			}
+			got, _ := action.GetSliceCommands()
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GetSliceCommands() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
