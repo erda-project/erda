@@ -153,7 +153,7 @@ func (p *provider) buildQueryContext(ctx context.Context) context.Context {
 		cksdk.WithProfileEvents(func(event []cksdk.ProfileEvent) {
 			if event != nil {
 				for _, e := range event {
-					span.SetAttributes(attribute.Int64(fmt.Sprintf("profile_event_%s_%s", e.Name, e.ThreadID), e.Value))
+					span.SetAttributes(attribute.Int64(fmt.Sprintf("profile_event_%s_%v", e.Name, e.ThreadID), e.Value))
 				}
 			}
 			fmt.Println(event)
