@@ -134,8 +134,9 @@ jobs:
           version: v1.46
           args: --timeout=10m
           skip-go-installation: true
-          skip-pkg-cache: false
-          skip-build-cache: false
+          #skip-cache: true # not available in v2.5.2
+          skip-pkg-cache: true
+          skip-build-cache: true
 
   CODE-TEST:
     runs-on: ubuntu-latest
