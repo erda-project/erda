@@ -95,6 +95,11 @@ func (db *Client) ListDevFlowByIssueID(issueID uint64) (fs []DevFlow, err error)
 	return
 }
 
+func (db *Client) ListDevFlowByAppIDAndBranch(appID uint64, branch string) (fs []DevFlow, err error) {
+	err = db.Where("app_id = ?", appID).Where("branch = ?", branch).Find(&fs).Error
+	return
+}
+
 func (db *Client) ListDevFlowByFlowRuleName(flowRuleName string) (fs []DevFlow, err error) {
 	err = db.Where("flow_rule_name = ?", flowRuleName).Find(&fs).Error
 	return
