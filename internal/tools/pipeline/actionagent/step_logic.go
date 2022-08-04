@@ -60,6 +60,12 @@ func (agent *Agent) actionRun() {
 }
 
 func (agent *Agent) runCommands() {
+	// go to ${WORKDIR}
+	if err := os.Chdir(agent.EasyUse.ContainerWd); err != nil {
+		agent.AppendError(err)
+		return
+	}
+
 	args := make([]string, len(agent.Arg.ShellArgs))
 	copy(args, agent.Arg.ShellArgs)
 	args = append(args, agent.EasyUse.CommandScript)
