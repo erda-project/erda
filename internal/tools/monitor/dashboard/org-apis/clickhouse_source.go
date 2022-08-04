@@ -63,7 +63,7 @@ func (chs *ClickhouseSource) GetContainers(ctx httpserver.Context, r *http.Reque
 		params.Start = params.End - timeRange
 	}
 
-	org, err := chs.p.Org.GetOrg(apis.WithInternalClientContext(context.Background(), "monitor"),
+	org, err := chs.p.Org.GetOrg(apis.WithInternalClientContext(api.GetContextHeader(r), "monitor"),
 		&orgpb.GetOrgRequest{IdOrName: api.OrgID(ctx.Request())})
 	if err != nil {
 		chs.Log.Errorf("failed to get org, %v", err)

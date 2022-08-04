@@ -20,8 +20,10 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
+	"github.com/erda-project/erda-infra/providers/clickhouse"
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/httpserver/interceptors"
+	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/clickhouse/table/loader"
 
 	"github.com/erda-project/erda-proto-go/core/monitor/alertdetail/pb"
 	"github.com/erda-project/erda/internal/core/org"
@@ -34,9 +36,12 @@ import (
 )
 
 type config struct {
+	QueryMetricFromCk bool `file:"query_metric_from_clickhouse"`
+	DebugSQL          bool `file:"debug_sql"`
 }
 
 type provider struct {
+	C           *config
 	L           logs.Logger
 	metricq     metricq.Queryer
 	EsSearchRaw elasticsearch.Interface `autowired:"metric-storage"`
@@ -47,6 +52,8 @@ type provider struct {
 	Perm               perm.Interface     `autowired:"permission"`
 	alertDetailService *alertDetailService
 	Org                org.ClientInterface
+	Clickhouse         clickhouse.Interface `autowired:"clickhouse" optional:"true"`
+	Loader             loader.Interface     `autowired:"clickhouse.table.loader@metric" optional:"true"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -55,6 +62,13 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.metricq = ctx.Service("metrics-query").(metricq.Queryer)
 	p.alertDetailService = &alertDetailService{
 		p: p,
+		ClickhouseSource: ClickhouseSource{
+			Clickhouse: p.Clickhouse,
+			Log:        p.L,
+			DebugSQL:   p.C.DebugSQL,
+			Loader:     p.Loader,
+			Org:        p.Org,
+		},
 	}
 
 	if p.Register != nil {

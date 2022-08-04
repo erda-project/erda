@@ -296,6 +296,8 @@ entity-storage-elasticsearch:
 erda.oap.entity:
 
 erda.core.monitor.alertdetail:
+  query_metric_from_clickhouse: ${QUERY_METRIC_FROM_CLICKHOUSE_ENABLE:false}
+  debug_sql: ${DEBUG:false}
 
 #logs-index-query:
 #  query_back_es: ${LOGS_QUERY_BACK_ES:false}

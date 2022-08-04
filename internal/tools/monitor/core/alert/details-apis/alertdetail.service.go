@@ -17,19 +17,34 @@ package details_apis
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/erda-project/erda-proto-go/core/monitor/alertdetail/pb"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
 )
 
 type alertDetailService struct {
-	p *provider
+	p                *provider
+	ClickhouseSource ClickhouseSource
 }
 
 func (a *alertDetailService) QuerySystemPodMetrics(ctx context.Context, request *pb.QuerySystemPodMetricsRequest) (*pb.QuerySystemPodMetricsResponse, error) {
 	start := request.Timestamp - 30*60*1000
 	end := request.Timestamp + 30*60*1000
-	pod, err := a.p.getPodInfo(request.ClusterName, request.Name, start, end)
+	orgIDStr := apis.GetOrgID(ctx)
+	if orgIDStr == "" {
+		return nil, fmt.Errorf("orgID can not be empty")
+	}
+	var (
+		pod *PodInfo
+		err error
+	)
+	if !a.p.C.QueryMetricFromCk {
+		pod, err = a.p.getPodInfo(request.ClusterName, request.Name, start, end)
+	} else {
+		pod, err = a.ClickhouseSource.GetPodInfo(ctx, request.ClusterName, request.Name, start, end)
+	}
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
