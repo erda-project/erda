@@ -525,7 +525,7 @@ func (impl GatewayOpenapiServiceImpl) GetPackages(ctx context.Context, args *gw.
 		res = common.NewPages(nil, 0)
 		return
 	}
-	var list []gw.PackageInfoDto
+	var list gw.SortBySceneList
 	var daos []orm.GatewayPackage
 	var ok bool
 	page, err := impl.packageDb.GetPage(options, (*common.Page)(pageInfo))
@@ -548,6 +548,7 @@ func (impl GatewayOpenapiServiceImpl) GetPackages(ctx context.Context, args *gw.
 		dto = impl.packageDto(&dao, domains)
 		list = append(list, *dto)
 	}
+	sort.Sort(list)
 	res = common.NewPages(list, pageInfo.TotalNum)
 	return
 }
