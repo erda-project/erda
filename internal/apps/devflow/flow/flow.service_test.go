@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"bou.ke/monkey"
+	"gorm.io/gorm"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-infra/providers/mysql/v2/plugins/fields"
@@ -711,6 +712,138 @@ func Test_canJoin(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := canJoin(tt.args.commit, tt.args.baseCommit, tt.args.tempBranch); got != tt.want {
 				t.Errorf("canJoin() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestService_idemCreateDevFlow(t *testing.T) {
+	var dbClient *db.Client
+	monkey.PatchInstanceMethod(reflect.TypeOf(dbClient), "GetDevFlowByUnique", func(dbClient *db.Client, appID, issueID uint64, branch string) (f *db.DevFlow, err error) {
+		if appID == 0 || issueID == 0 || branch == "" {
+			return nil, gorm.ErrInvalidData
+		}
+		if appID == 1 && issueID == 1 && branch == "feature/erda" {
+			return &db.DevFlow{
+				Model: db.Model{
+					ID: fields.UUID{
+						String: "157c8320-3755-402b-81ab-01d8bdd99512",
+						Valid:  false,
+					},
+				},
+			}, nil
+		}
+		return nil, gorm.ErrRecordNotFound
+	})
+	defer monkey.UnpatchAll()
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(dbClient), "CreateDevFlow", func(dbClient *db.Client, f *db.DevFlow) (err error) {
+		f.ID = fields.UUID{
+			String: "1d2c6da1-f633-4ff2-8bba-0cdc7043664e",
+			Valid:  false,
+		}
+		return nil
+	})
+
+	type field struct {
+		p *provider
+	}
+	type args struct {
+		f *db.DevFlow
+	}
+	tests := []struct {
+		name    string
+		fields  field
+		args    args
+		want    *db.DevFlow
+		wantErr bool
+	}{
+		{
+			name: "test with err",
+			fields: field{
+				p: &provider{dbClient: dbClient},
+			},
+			args: args{
+				f: &db.DevFlow{
+					Model: db.Model{},
+					Scope: db.Scope{
+						AppID: 0,
+					},
+					Branch:  "",
+					IssueID: 0,
+				},
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "test with already exist",
+			fields: field{
+				p: &provider{dbClient: dbClient},
+			},
+			args: args{
+				f: &db.DevFlow{
+					Model: db.Model{},
+					Scope: db.Scope{
+						AppID: 1,
+					},
+					Branch:  "feature/erda",
+					IssueID: 1,
+				},
+			},
+			want: &db.DevFlow{
+				Model: db.Model{
+					ID: fields.UUID{
+						String: "157c8320-3755-402b-81ab-01d8bdd99512",
+						Valid:  false,
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "test with not exist",
+			fields: field{
+				p: &provider{dbClient: dbClient},
+			},
+			args: args{
+				f: &db.DevFlow{
+					Model: db.Model{},
+					Scope: db.Scope{
+						AppID: 1,
+					},
+					Branch:  "feature/erda2",
+					IssueID: 1,
+				},
+			},
+			want: &db.DevFlow{
+				Model: db.Model{
+					ID: fields.UUID{
+						String: "1d2c6da1-f633-4ff2-8bba-0cdc7043664e",
+						Valid:  false,
+					},
+				},
+				Scope: db.Scope{
+					AppID: 1,
+				},
+				Branch:  "feature/erda2",
+				IssueID: 1,
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &Service{
+				p: tt.fields.p,
+			}
+			got, err := s.idemCreateDevFlow(tt.args.f)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("idemCreateDevFlow() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("idemCreateDevFlow() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
