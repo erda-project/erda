@@ -85,6 +85,11 @@ func (db *Client) GetDevFlow(id string) (f *DevFlow, err error) {
 	return
 }
 
+func (db *Client) GetDevFlowByUnique(appID, issueID uint64, branch string) (f *DevFlow, err error) {
+	err = db.Where("app_id = ?", appID).Where("issue_id = ?", issueID).Where("branch = ?", branch).First(&f).Error
+	return
+}
+
 func (db *Client) ListDevFlowByIssueID(issueID uint64) (fs []DevFlow, err error) {
 	err = db.Where("issue_id = ?", issueID).Find(&fs).Error
 	return
