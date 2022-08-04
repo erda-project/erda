@@ -148,11 +148,11 @@ func WriteJSON(w http.ResponseWriter, v interface{}) {
 	}
 }
 
-func WriteData(w http.ResponseWriter, v interface{}, userIDs ...[]string) {
+func WriteData(w http.ResponseWriter, v interface{}, userIDs ...string) {
 	WriteJSON(w, Resp{
 		Success: true,
 		Data:    v,
-		UserIDs: strutil.DedupSlice(userIDs[0], true),
+		UserIDs: strutil.DedupSlice(userIDs, true),
 	})
 }
 
