@@ -40,6 +40,7 @@ const (
 	EnvFileStreamTimeoutSec = "ACTIONAGENT_FILE_STREAM_TIMEOUT_SEC"
 )
 
+// Callback .
 func (agent *Agent) Callback() {
 	cb := &Callback{}
 	defer func() {
