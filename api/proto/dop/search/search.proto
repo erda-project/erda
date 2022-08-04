@@ -1,0 +1,51 @@
+syntax = "proto3";
+
+package erda.dop.search;
+
+import "common/openapi.proto";
+import "common/identity.proto";
+import "google/api/annotations.proto";
+import "google/protobuf/struct.proto";
+import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
+
+option go_package = "github.com/erda-project/erda-proto-go/dop/search/pb";
+
+service SearchService {
+  option(erda.common.openapi_service) = {
+    service: "dop",
+    auth: {
+      check_login: true,
+      check_token: true,
+    }
+  };
+
+  rpc Search(SearchRequest) returns (SearchResponse) {
+    option(google.api.http) = {
+      post: "/api/search",
+    };
+    option(erda.common.openapi) = {
+      path: "/api/search",
+    };
+  }
+}
+
+message SearchRequest {
+  uint64 orgID = 1;
+  uint64 projectID = 2;
+  string query = 3;
+  common.IdentityInfo identityInfo = 4 [json_name = "-"];
+}
+
+message SearchResultItem {
+  google.protobuf.Value item = 1;
+  string link = 3;
+}
+
+message SearchResultContent {
+  string type = 1;
+  repeated SearchResultItem items = 2;
+}
+
+message SearchResponse {
+  repeated SearchResultContent data = 1;
+}

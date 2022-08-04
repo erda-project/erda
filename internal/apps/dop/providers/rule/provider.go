@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/providers/rule/actions/api"
 	"github.com/erda-project/erda/internal/apps/dop/providers/rule/db"
 	"github.com/erda-project/erda/internal/apps/dop/providers/rule/executor"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 )
 
@@ -59,7 +60,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	}
 	p.ruleService = &ruleService{p}
 	if p.Register != nil {
-		pb.RegisterRuleServiceImp(p.Register, p.ruleService)
+		pb.RegisterRuleServiceImp(p.Register, p.ruleService, apis.Options())
 	}
 	return nil
 }

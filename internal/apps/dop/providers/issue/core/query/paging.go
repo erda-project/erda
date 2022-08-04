@@ -27,7 +27,7 @@ import (
 
 func (p *provider) Paging(req pb.PagingIssueRequest) ([]*pb.Issue, uint64, error) {
 	// 请求校验
-	if req.ProjectID == 0 {
+	if req.ProjectID == 0 && len(req.ProjectIDs) == 0 {
 		return nil, 0, apierrors.ErrPagingIssues.MissingParameter("projectID")
 	}
 	// 待办事项允许迭代id为-1即只能看未纳入迭代的事项，默认按照优先级排序

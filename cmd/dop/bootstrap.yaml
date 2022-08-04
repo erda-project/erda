@@ -44,6 +44,7 @@ etcd:
 
 erda.core.dop.taskerror: {}
 erda.dop.qa.unittest: {}
+erda.dop.search: {}
 
 # pipeline cms
 grpc-client@erda.core.pipeline.cms:
