@@ -281,6 +281,7 @@ func (f *IssueFilter) generateIssuePagingRequest() pb.PagingIssueRequest {
 		IDs:                nil,
 		External:           true,
 		WithProcessSummary: f.InParams.FrontendFixedIssueType == apistructs.IssueTypeRequirement.String(),
+		Participant:        f.State.FrontendConditionValues.ParticipantIDs,
 	}
 	return req
 }

@@ -181,6 +181,7 @@ type IssueEventData struct {
 	StreamTypes  []IssueStreamType `json:"streamTypes"`
 	StreamType   IssueStreamType   `json:"streamType"`
 	StreamParams ISTParam          `json:"streamParams"`
+	Participants []string          `json:"participants"`
 	Params       map[string]string `json:"params"`
 }
 

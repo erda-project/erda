@@ -127,6 +127,20 @@ func Test_provider_CreateIssueEvent(t *testing.T) {
 	)
 	defer p7.Unpatch()
 
+	p8 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetIssueParents",
+		func(d *dao.DBClient, issueID uint64, relationType []string) ([]dao.IssueItem, error) {
+			return []dao.IssueItem{
+				{
+					BaseModel: dbengine.BaseModel{
+						ID: 1,
+					},
+					Type: "TASK",
+				},
+			}, nil
+		},
+	)
+	defer p8.Unpatch()
+
 	p := &provider{db: db, bdl: bdl, Org: EventOrgMock{}}
 	err := p.CreateIssueEvent(&common.IssueStreamCreateRequest{
 		IssueID: 1,

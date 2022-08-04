@@ -357,6 +357,10 @@ func (client *DBClient) PagingIssues(req pb.PagingIssueRequest, queryIDs bool) (
 		sql = sql.Order("dice_issues.id DESC")
 	}
 
+	if len(req.Participant) > 0 {
+		sql = sql.Joins(joinParticipant).Where("erda_issue_subscriber.user_id in (?)", req.Participant).Select("distinct dice_issues.*")
+	}
+
 	offset := (req.PageNo - 1) * req.PageSize
 	if err := sql.Offset(offset).Limit(req.PageSize).Find(&issues).
 		// reset offset & limit before count
@@ -702,6 +706,7 @@ func (client *DBClient) GetIssueNumByPros(projectIDS []uint64, req apistructs.Is
 }
 
 var joinState = "LEFT JOIN dice_issue_state ON dice_issues.state = dice_issue_state.id"
+var joinParticipant = "LEFT JOIN erda_issue_subscriber on dice_issues.id = erda_issue_subscriber.issue_id"
 
 type IssueExpiryStatus struct {
 	IssueNum     uint64

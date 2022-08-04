@@ -132,7 +132,7 @@ func (s *ruleService) ListRules(ctx context.Context, req *pb.ListRulesRequest) (
 	if req.PageSize == 0 {
 		req.PageSize = 10
 	}
-	r, total, err := s.p.db.ListRules(req)
+	r, total, err := s.p.db.ListRules(req, false)
 	if err != nil {
 		return nil, err
 	}

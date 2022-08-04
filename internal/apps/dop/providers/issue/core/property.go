@@ -118,7 +118,7 @@ func (i *IssueService) CreateIssueProperty(ctx context.Context, req *pb.CreateIs
 	// 如果不是创建公有字段,或者公有字段的类型不是单选、多选 则不需要向数据库添加枚举值
 	if issueProperty.PropertyIssueType != pb.PropertyIssueTypeEnum_COMMON.String() {
 		return &pb.CreateIssuePropertyResponse{Data: propertyIndex}, nil
-	} else if common.IsOptions(issueProperty.PropertyIssueType) == false {
+	} else if common.IsOptions(issueProperty.PropertyType) == false {
 		return &pb.CreateIssuePropertyResponse{Data: propertyIndex}, nil
 	}
 	// 添加字段枚举值数据

@@ -172,7 +172,7 @@ func (i *IssueService) BatchUpdateIssueSubscriber(ctx context.Context, req *pb.B
 		}
 	}
 
-	if len(needDeletedSubscribers) != 0 {
+	if len(needDeletedSubscribers) != 0 && !req.IsIncrementalUpdate {
 		if err := i.db.BatchDeleteIssueSubscribers(req.IssueID, needDeletedSubscribers); err != nil {
 			return nil, err
 		}

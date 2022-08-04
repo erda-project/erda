@@ -71,7 +71,7 @@ func TestExprExecutor_BuildRuleEnv(t *testing.T) {
 	}
 	var client *db.DBClient
 	p1 := monkey.PatchInstanceMethod(reflect.TypeOf(client), "ListRules",
-		func(d *db.DBClient, req *pb.ListRulesRequest) ([]db.Rule, int64, error) {
+		func(d *db.DBClient, req *pb.ListRulesRequest, withSystem bool) ([]db.Rule, int64, error) {
 			return []db.Rule{
 				{
 					ID:   "1",
