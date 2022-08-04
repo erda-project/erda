@@ -124,7 +124,7 @@ func (p *provider) UploadFile(rw http.ResponseWriter, r *http.Request) {
 		errorresp.Error(rw, err)
 		return
 	}
-	httpserver.WriteData(rw, file, []string{file.Creator})
+	httpserver.WriteData(rw, file, file.Creator)
 	return
 }
 
