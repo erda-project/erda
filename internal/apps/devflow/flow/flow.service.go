@@ -23,8 +23,10 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
+	"gorm.io/gorm"
 
 	"github.com/erda-project/erda-proto-go/apps/devflow/flow/pb"
 	issuerelationpb "github.com/erda-project/erda-proto-go/apps/devflow/issuerelation/pb"
@@ -132,11 +134,24 @@ func (s *Service) CreateFlowNode(ctx context.Context, req *pb.CreateFlowNodeRequ
 		IssueID:      req.IssueID,
 		FlowRuleName: req.FlowRuleName,
 	}
-	if err = s.p.dbClient.CreateDevFlow(&flow); err != nil {
+	devFlow, err := s.idemCreateDevFlow(&flow)
+	if err != nil {
 		return nil, err
 	}
 
-	return &pb.CreateFlowNodeResponse{Data: flow.Covert()}, nil
+	return &pb.CreateFlowNodeResponse{Data: devFlow.Covert()}, nil
+}
+
+func (s *Service) idemCreateDevFlow(f *db.DevFlow) (*db.DevFlow, error) {
+	devFlowInDB, err := s.p.dbClient.GetDevFlowByUnique(f.AppID, f.IssueID, f.Branch)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			err = s.p.dbClient.CreateDevFlow(f)
+			return f, err
+		}
+		return nil, err
+	}
+	return devFlowInDB, nil
 }
 
 func (s *Service) getFlowRuleNameBranchPolicyMap(ctx context.Context, projectID uint64) (map[string]branchPolicy, error) {
@@ -424,7 +439,11 @@ func (s *Service) MergeToTempBranch(ctx context.Context, tempBranch string, appI
 		devFlow.IsJoinTempBranch = true
 	}
 
-	return s.p.dbClient.UpdateDevFlow(devFlow)
+	if updateErr := s.p.dbClient.UpdateDevFlow(devFlow); updateErr != nil {
+		s.p.Log.Errorf("failed to update devFlow, err: %v", err)
+	}
+
+	return err
 }
 
 func (s *Service) IdempotentCreateBranch(ctx context.Context, repoPath, sourceBranch, newBranch string) error {
@@ -674,9 +693,8 @@ func (s *Service) GetDevFlowInfo(ctx context.Context, req *pb.GetDevFlowInfoRequ
 				SourceBranch:         sourceBranch,
 			}
 			devFlowInfo.TempMergeNode = &pb.TempMergeNode{
-				TempBranch:   tempBranch,
-				BaseCommit:   commitConvert(baseCommit),
-				ChangeBranch: appTempBranchChangeBranchListMap[fmt.Sprintf("%d%s", devFlow.AppID, tempBranch)],
+				TempBranch: tempBranch,
+				BaseCommit: commitConvert(baseCommit),
 			}
 			devFlowInfo.PipelineNode = &pb.PipelineNode{PipelineStepInfos: pipelineStepInfo}
 
@@ -709,6 +727,12 @@ func (s *Service) GetDevFlowInfo(ctx context.Context, req *pb.GetDevFlowInfoRequ
 	}
 	if work.Do().Error() != nil {
 		return nil, work.Error()
+	}
+
+	for _, v := range devFlowInfos {
+		if v.DevFlow != nil && v.TempMergeNode != nil {
+			v.TempMergeNode.ChangeBranch = appTempBranchChangeBranchListMap[fmt.Sprintf("%d%s", v.DevFlow.AppID, v.TempMergeNode.TempBranch)]
+		}
 	}
 
 	sort.Slice(devFlowInfos, func(i, j int) bool {
