@@ -475,7 +475,9 @@ func (impl GatewayApiServiceImpl) apiPathExist(ctx context.Context, consumer *or
 	for _, gatewayApi := range gatewayApis {
 		// case sensitive
 		if gatewayApi.ApiPath == path {
-			l.WithField("gatewayApi.Id", gatewayApi.Id).WithField("gatewayApi.Domains", gatewayApi.Domains).Infoln("gatewayApi.ApiPath == path")
+			l.WithField("gatewayApi.Id", gatewayApi.Id).WithField("gatewayApi.Domains", gatewayApi.Domains).
+				WithField("cond.domains", domains).
+				Infoln("gatewayApi.ApiPath == path")
 			if gatewayApi.Domains == "" {
 				return true, gatewayApi.Id, nil
 			}
@@ -487,7 +489,7 @@ func (impl GatewayApiServiceImpl) apiPathExist(ctx context.Context, consumer *or
 			}
 		}
 	}
-	l.Infoln("apiPath doesn't exist because ")
+	l.Infoln("apiPath doesn't exist because no domain and path matched")
 	return false, "", nil
 }
 

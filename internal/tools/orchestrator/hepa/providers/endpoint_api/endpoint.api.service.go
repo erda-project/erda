@@ -394,6 +394,13 @@ func (s *endpointApiService) ListPackageApis(ctx context.Context, req *pb.ListPa
 		WithField("env", req.GetEnv()).
 		WithField("domain", req.GetDomain())
 	service := endpoint_api.Service.Clone(ctx)
+
+	req.Env = strings.ToUpper(req.Env)
+	switch req.Env {
+	case "PROD", "STAGING", "TEST", "DEV":
+	default:
+		return nil, erdaErr.NewInvalidParameterError(vars.TODO_PARAM, "invalid env")
+	}
 	getPkgDto := &dto.GetPackagesDto{
 		DiceArgsDto: dto.DiceArgsDto{
 			ProjectId: req.GetProjectId(),
