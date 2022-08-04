@@ -31,7 +31,7 @@ var initKmsOnce sync.Once
 func (p *provider) applyKmsCmk() (err error) {
 	initKmsOnce.Do(func() {
 		// check etcd key
-		getResp, err := p.etcdClient.Get(context.Background(), p.Cfg.EtcdKeyOfKmsCmk)
+		getResp, err := p.etcdClient.Get(context.Background(), p.Cfg.Kms.CmkEtcdKey)
 		if err != nil {
 			err = fmt.Errorf("failed to get kms files cmk, err: %v", err)
 			return
@@ -93,8 +93,8 @@ func (p *provider) invokeKmsToApplyCmk() {
 		logrus.Infof("files kms cmk: %s", p.kmsKey)
 	}()
 	_, err = p.etcdClient.Txn(context.Background()).
-		If(clientv3.Compare(clientv3.Version(p.Cfg.EtcdKeyOfKmsCmk), "=", 0)).
-		Then(clientv3.OpPut(p.Cfg.EtcdKeyOfKmsCmk, keyID)).
+		If(clientv3.Compare(clientv3.Version(p.Cfg.Kms.CmkEtcdKey), "=", 0)).
+		Then(clientv3.OpPut(p.Cfg.Kms.CmkEtcdKey, keyID)).
 		Commit()
 	if err != nil {
 		panic(err)

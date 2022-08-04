@@ -28,7 +28,6 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/core/file/db"
 	"github.com/erda-project/erda/internal/core/file/filetypes"
-	"github.com/erda-project/erda/internal/core/legacy/conf"
 	"github.com/erda-project/erda/internal/core/legacy/services/apierrors"
 	"github.com/erda-project/erda/pkg/common/pbutil"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
@@ -38,17 +37,29 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-func (s *fileService) headerValueDispositionInline(fileType, filename string) string {
-	if !s.p.Cfg.FileTypeCarryActiveContentAllowed && strutil.Exist(s.p.Cfg.FileTypesCanCarryActiveContent, strutil.TrimPrefixes(fileType, ".")) {
-		return fmt.Sprintf("attachment; filename=%s", filename)
+func (s *fileService) ifDispositionInline(fileType string) bool {
+	sc := s.p.Cfg.Security
+	if sc.FileTypeCarryActiveContentAllowed {
+		return true
 	}
-	return fmt.Sprintf("inline; filename=%s", filename)
+	fileType = strutil.TrimPrefixes(fileType, ".")
+	if strutil.Exist(sc.FileTypesCanCarryActiveContent, fileType) {
+		return false
+	}
+	return true
+}
+
+func (s *fileService) headerValueDispositionInline(fileType, filename string) string {
+	if s.ifDispositionInline(fileType) {
+		return fmt.Sprintf("inline; filename=%s", filename)
+	}
+	return fmt.Sprintf("attachment; filename=%s", filename)
 }
 
 func (s *fileService) UploadFile(req filetypes.FileUploadRequest) (*pb.File, error) {
 	// 校验文件大小
-	if req.ByteSize > int64(s.p.Cfg.FileMaxUploadSize) {
-		return nil, apierrors.ErrUploadTooLargeFile.InvalidParameter(errors.Errorf("max file size: %s", s.p.Cfg.FileMaxUploadSize.String()))
+	if req.ByteSize > int64(s.p.Cfg.Limit.FileMaxUploadSize) {
+		return nil, apierrors.ErrUploadTooLargeFile.InvalidParameter(errors.Errorf("max file size: %s", s.p.Cfg.Limit.FileMaxUploadSize.String()))
 	}
 
 	// 处理文件元信息
@@ -120,7 +131,7 @@ func (s *fileService) UploadFile(req filetypes.FileUploadRequest) (*pb.File, err
 		return nil, apierrors.ErrUploadFile.InternalError(err)
 	}
 
-	return convertDBFile(&file), nil
+	return s.convertDBFile(&file), nil
 }
 
 func (s *fileService) GetStorage(typ ...storage.Type) storage.Storager {
@@ -135,7 +146,7 @@ func (s *fileService) GetStorage(typ ...storage.Type) storage.Storager {
 	case storage.TypeFileSystem:
 		goto createFS
 	default:
-		if s.p.Cfg.OSS.Endpoint != "" {
+		if s.p.Cfg.Storage.OSS.Endpoint != "" {
 			goto createOSS
 		}
 		goto createFS
@@ -146,7 +157,7 @@ createOSS:
 	// 有两个方案：
 	// 1. 数据迁移，将 oss 数据从老 bucket 移动到新 bucket
 	// 2. 环境变量维护多份 oss 配置，根据 file 记录里的 endpoint 和 bucket 查询正确的 oss 配置
-	return storage.NewOSS(s.p.Cfg.OSS.Endpoint, s.p.Cfg.OSS.AccessID, s.p.Cfg.OSS.AccessSecret, s.p.Cfg.OSS.Bucket, nil, nil)
+	return storage.NewOSS(s.p.Cfg.Storage.OSS.Endpoint, s.p.Cfg.Storage.OSS.AccessID, s.p.Cfg.Storage.OSS.AccessSecret, s.p.Cfg.Storage.OSS.Bucket, nil, nil)
 createFS:
 	return storage.NewFS()
 }
@@ -169,35 +180,35 @@ func (s *fileService) handleFilePath(path string) (string, error) {
 	// 加上指定前缀，限制文件访问路径
 	switch s.GetStorage().Type() {
 	case storage.TypeFileSystem:
-		path = filepath.Join(s.p.Cfg.StorageMountPointInContainer, path)
+		path = filepath.Join(s.p.Cfg.Storage.StorageMountPointInContainer, path)
 	case storage.TypeOSS:
-		path = filepath.Join(s.p.Cfg.OSS.PathPrefix, path)
+		path = filepath.Join(s.p.Cfg.Storage.OSS.PathPrefix, path)
 		path = strings.TrimPrefix(path, "/")
 	}
 
 	return path, nil
 }
 
-func getFileDownloadLink(uuid string) string {
-	return fmt.Sprintf("%s/api/files/%s", conf.UIPublicURL(), uuid)
+func (s *fileService) getFileDownloadLink(uuid string) string {
+	return fmt.Sprintf("%s/api/files/%s", s.p.Cfg.Link.UIPublicURL, uuid)
 }
 
 func (s *fileService) handleFileExtra(file db.File) db.FileExtra {
 	var extra db.FileExtra
 	if file.StorageType == storage.TypeOSS {
-		extra.OSSSnapshot.OSSEndpoint = s.p.Cfg.OSS.Endpoint
-		extra.OSSSnapshot.OSSBucket = s.p.Cfg.OSS.Bucket
+		extra.OSSSnapshot.OSSEndpoint = s.p.Cfg.Storage.OSS.Endpoint
+		extra.OSSSnapshot.OSSBucket = s.p.Cfg.Storage.OSS.Bucket
 	}
 	return extra
 }
 
-func convertDBFile(file *db.File) *pb.File {
+func (s *fileService) convertDBFile(file *db.File) *pb.File {
 	return &pb.File{
 		ID:          uint64(file.ID),
 		UUID:        file.UUID,
 		DisplayName: file.DisplayName,
 		ByteSize:    file.ByteSize,
-		DownloadURL: getFileDownloadLink(file.UUID),
+		DownloadURL: s.getFileDownloadLink(file.UUID),
 		FileType:    GetFileTypeByExt(file.Ext),
 		From:        file.From,
 		Creator:     file.Creator,

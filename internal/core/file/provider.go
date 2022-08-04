@@ -22,53 +22,73 @@ import (
 
 	"github.com/c2h5oh/datasize"
 	"github.com/coreos/etcd/clientv3"
-	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda-infra/pkg/safe"
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/etcd"
 	"github.com/erda-project/erda-infra/providers/mysql"
 	"github.com/erda-project/erda-proto-go/core/file/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/core/file/db"
-	"github.com/erda-project/erda/internal/core/legacy/services/apierrors"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 
-type config struct {
-	EtcdKeyOfKmsCmk           string        `file:"etcd_key_of_kms_cmk" env:"FILE_ETCD_KEY_OF_KMS_CMK" default:"/dice/cmdb/files/kms/key"`
-	cleanExpiredFilesInterval time.Duration `file:"clean_expired_files_interval" env:"FILE_CLEAN_EXPIRED_FILES_INTERVAL" default:"5m"`
+type (
+	config struct {
+		Kms      KmsConfig      `file:"kms"`
+		Cleanup  CleanupConfig  `file:"cleanup"`
+		Limit    LimitConfig    `file:"limit"`
+		Storage  StorageConfig  `file:"storage"`
+		Security SecurityConfig `file:"security"`
+		Link     LinkConfig     `file:"link"`
+	}
 
-	// 文件上传限制大小，默认 300MB
-	FileMaxUploadSize datasize.ByteSize `file:"file_max_upload_size" env:"FILE_MAX_UPLOAD_SIZE" default:"300MB"`
-	// the size of the file parts stored in memory, the default value 32M refer to https://github.com/golang/go/blob/5c489514bc5e61ad9b5b07bd7d8ec65d66a0512a/src/net/http/request.go
-	FileMaxMemorySize datasize.ByteSize `file:"file_max_memory_size" env:"FILE_MAX_MEMORY_SIZE" default:"32MB"`
+	KmsConfig struct {
+		CmkEtcdKey string `file:"cmk_etcd_key" env:"FILE_KMS_CMD_ETCD_KEY" default:"/dice/cmdb/files/kms/key"`
+	}
 
-	// disable file download permission validate temporarily for multi-domain
-	DisableFileDownloadPermissionValidate bool `file:"disable_file_download_permission_validate" env:"DISABLE_FILE_DOWNLOAD_PERMISSION_VALIDATE" default:"false"`
+	CleanupConfig struct {
+		ExpiredFilesInterval time.Duration `file:"expired_files_interval" env:"FILE_CLEANUP_EXPIRED_FILES_INTERVAL" default:"5m"`
+	}
 
-	// fs
-	// 修改该值的话，注意同步修改 dice.yml 中 '<%$.Storage.MountPoint%>/dice/cmdb/files:/files:rw' 容器内挂载点的值
-	StorageMountPointInContainer string `file:"storage_mount_point_in_container" env:"STORAGE_MOUNT_POINT_IN_CONTAINER" default:"/files"`
+	LimitConfig struct {
+		// file upload limit size, default 300MB
+		FileMaxUploadSize datasize.ByteSize `file:"file_max_upload_size" env:"FILE_MAX_UPLOAD_SIZE" default:"300MB"`
+		// the size of the file parts stored in memory, the default value 32M refer to https://github.com/golang/go/blob/5c489514bc5e61ad9b5b07bd7d8ec65d66a0512a/src/net/http/request.go
+		FileMaxMemorySize datasize.ByteSize `file:"file_max_memory_size" env:"FILE_MAX_MEMORY_SIZE" default:"32MB"`
+	}
 
-	// oss
-	OSS OssConfig `file:"oss"`
+	StorageConfig struct {
+		// fs
+		// pay attention to sync the value to dice.yml '<%$.Storage.MountPoint%>/dice/cmdb/files:/files:rw' if you change this value
+		StorageMountPointInContainer string `file:"storage_mount_point_in_container" env:"STORAGE_MOUNT_POINT_IN_CONTAINER" default:"/files"`
 
-	// If we allow uploaded file types that can carry active content
-	FileTypeCarryActiveContentAllowed bool `file:"file_type_carry_active_content_allowed" env:"FILETYPE_CARRY_ACTIVE_CONTENT_ALLOWED" default:"false"`
-	// File types can carry active content, separated by comma, can add more types like jsp
-	FileTypesCanCarryActiveContent []string `file:"file_types_can_carry_active_content" env:"FILETYPES_CAN_CARRY_ACTIVE_CONTENT" default:"html,js,xml,htm"`
-}
+		// oss
+		OSS OssConfig `file:"oss"`
+	}
+	OssConfig struct {
+		Endpoint     string `file:"endpoint" env:"OSS_ENDPOINT"`
+		AccessID     string `file:"access_id" env:"OSS_ACCESS_ID"`
+		AccessSecret string `file:"access_secret" env:"OSS_ACCESS_SECRET"`
+		Bucket       string `file:"bucket" env:"OSS_BUCKET"`
+		PathPrefix   string `file:"path_prefix" env:"OSS_PATH_PREFIX" default:"/dice/cmdb/files"`
+	}
 
-type OssConfig struct {
-	Endpoint     string `file:"endpoint" env:"OSS_ENDPOINT"`
-	AccessID     string `file:"access_id" env:"OSS_ACCESS_ID"`
-	AccessSecret string `file:"access_secret" env:"OSS_ACCESS_SECRET"`
-	Bucket       string `file:"bucket" env:"OSS_BUCKET"`
-	PathPrefix   string `file:"path_prefix" env:"OSS_PATH_PREFIX" default:"/dice/cmdb/files"`
-}
+	SecurityConfig struct {
+		// disable file download permission validate temporarily for multi-domain
+		DisableFileDownloadPermissionValidate bool `file:"disable_file_download_permission_validate" env:"DISABLE_FILE_DOWNLOAD_PERMISSION_VALIDATE" default:"false"`
+
+		// If we allow uploaded file types that can carry active content
+		FileTypeCarryActiveContentAllowed bool `file:"file_type_carry_active_content_allowed" env:"FILETYPE_CARRY_ACTIVE_CONTENT_ALLOWED" default:"false"`
+		// File types can carry active content, separated by comma, can add more types like jsp
+		FileTypesCanCarryActiveContent []string `file:"file_types_can_carry_active_content" env:"FILETYPES_CAN_CARRY_ACTIVE_CONTENT" default:"html,js,xml,htm"`
+	}
+
+	LinkConfig struct {
+		UIPublicURL string `file:"ui_public_url" env:"UI_PUBLIC_URL"`
+	}
+)
 
 // +provider
 type provider struct {
@@ -113,13 +133,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 }
 
 func (p *provider) Run(ctx context.Context) error {
-	// clean expired files
-	safe.Go(func() {
-		ticker := time.NewTicker(p.Cfg.cleanExpiredFilesInterval)
-		for range ticker.C {
-			_ = p.cleanExpiredFiles()
-		}
-	})
+	p.asyncCleanupExpiredFiles()
 	return nil
 }
 
@@ -129,31 +143,6 @@ func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}
 		return p.fileService
 	}
 	return p
-}
-
-func (p *provider) cleanExpiredFiles(_expiredAt ...time.Time) error {
-	// 获取过期时间
-	expiredAt := time.Unix(time.Now().Unix(), 0)
-	if len(_expiredAt) > 0 {
-		expiredAt = _expiredAt[0]
-	}
-
-	// 获取过期文件列表
-	files, err := p.db.ListExpiredFiles(expiredAt)
-	if err != nil {
-		logrus.Errorf("[alert] failed to list expired files, expiredBefore: %s, err: %v", expiredAt.Format(time.RFC3339), err)
-		return apierrors.ErrCleanExpiredFile.InternalError(err)
-	}
-
-	// 遍历删除文件
-	for _, file := range files {
-		if err := p.fileService.DeleteFile(file); err != nil {
-			logrus.Errorf("[alert] failed to clean expired file, fileUUID: %s, err: %v", file.UUID, err)
-			continue
-		}
-	}
-
-	return nil
 }
 
 func init() {

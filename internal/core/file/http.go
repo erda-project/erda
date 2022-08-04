@@ -54,13 +54,13 @@ func (p *provider) UploadFile(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	// check the size
-	if r.ContentLength > int64(p.Cfg.FileMaxUploadSize) {
-		errorresp.Error(rw, apierrors.ErrUploadTooLargeFile.InvalidParameter(errors.Errorf("max file size: %s", p.Cfg.FileMaxUploadSize.String())))
+	if r.ContentLength > int64(p.Cfg.Limit.FileMaxUploadSize) {
+		errorresp.Error(rw, apierrors.ErrUploadTooLargeFile.InvalidParameter(errors.Errorf("max file size: %s", p.Cfg.Limit.FileMaxUploadSize.String())))
 		return
 	}
 
 	// get the file
-	if err := r.ParseMultipartForm(int64(p.Cfg.FileMaxMemorySize)); err != nil {
+	if err := r.ParseMultipartForm(int64(p.Cfg.Limit.FileMaxMemorySize)); err != nil {
 		errorresp.Error(rw, apierrors.ErrUploadFile.InvalidParameter(errors.Errorf("err: %s", err)))
 		return
 	}
@@ -72,7 +72,7 @@ func (p *provider) UploadFile(rw http.ResponseWriter, r *http.Request) {
 	defer formFile.Close()
 
 	fileExtension := filepath.Ext(fileHeader.Filename)
-	if !p.Cfg.FileTypeCarryActiveContentAllowed && strutil.Exist(p.Cfg.FileTypesCanCarryActiveContent, strutil.TrimPrefixes(fileExtension, ".")) {
+	if !p.Cfg.Security.FileTypeCarryActiveContentAllowed && strutil.Exist(p.Cfg.Security.FileTypesCanCarryActiveContent, strutil.TrimPrefixes(fileExtension, ".")) {
 		errorresp.Error(rw, apierrors.ErrUploadFile.InvalidParameter(errors.Errorf("cannot upload file with type: %s", fileExtension)))
 		return
 	}
@@ -182,7 +182,7 @@ func (p *provider) DownloadFile(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	// 校验用户登录
-	if !file.Extra.IsPublic && !p.Cfg.DisableFileDownloadPermissionValidate {
+	if !file.Extra.IsPublic && !p.Cfg.Security.DisableFileDownloadPermissionValidate {
 		_, err = user.GetIdentityInfo(r)
 		if err != nil {
 			err = apierrors.ErrDownloadFile.NotLogin()
