@@ -130,3 +130,50 @@ func Test_validate(t *testing.T) {
 	assert.Equal(t, "metafile", agent.EasyUse.ContainerMetaFile)
 	assert.Equal(t, "uploaddir", agent.EasyUse.ContainerUploadDir)
 }
+
+func Test_setShellAndArgs(t *testing.T) {
+	type arg struct {
+		shell string
+	}
+	tests := []struct {
+		name      string
+		arg       arg
+		wantShell string
+		wantArgs  []string
+	}{
+		{
+			name: "sh shell",
+			arg: arg{
+				shell: "/bin/sh",
+			},
+			wantShell: "/bin/sh",
+			wantArgs:  []string{},
+		},
+		{
+			name: "sh shell with args",
+			arg: arg{
+				shell: "/bin/sh -c",
+			},
+			wantShell: "/bin/sh",
+			wantArgs:  []string{"-c"},
+		},
+		{
+			name: "python shell",
+			arg: arg{
+				shell: "python",
+			},
+			wantShell: "python",
+			wantArgs:  []string{},
+		},
+	}
+	for _, tt := range tests {
+		agent := &Agent{
+			Arg: &AgentArg{
+				Shell: tt.arg.shell,
+			},
+		}
+		agent.setShellAndArgs()
+		assert.Equal(t, tt.wantShell, agent.Arg.Shell)
+		assert.Equal(t, tt.wantArgs, agent.Arg.ShellArgs)
+	}
+}
