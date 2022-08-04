@@ -33,6 +33,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/devflow/flow/db"
 	"github.com/erda-project/erda/internal/apps/dop/providers/devflowrule"
+	"github.com/erda-project/erda/internal/apps/dop/services/permission"
 )
 
 type devFlowRuleForGetMock struct {
@@ -1021,6 +1022,74 @@ func TestService_listDevFlowByReq(t *testing.T) {
 			}
 			if !reflect.DeepEqual(gotDevFlows, tt.wantDevFlows) {
 				t.Errorf("listDevFlowByReq() gotDevFlows = %v, want %v", gotDevFlows, tt.wantDevFlows)
+			}
+		})
+	}
+}
+
+func TestService_getAppInIssuePermissionMap(t *testing.T) {
+	var perm *permission.Permission
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(perm), "CheckAppAction", func(perm *permission.Permission, identityInfo apistructs.IdentityInfo, appID uint64, action string) error {
+		if appID == 1 {
+			return nil
+		}
+		return fmt.Errorf("fail")
+	})
+	defer monkey.UnpatchAll()
+
+	type fields struct {
+		p *provider
+	}
+	type args struct {
+		ctx      context.Context
+		devFlows []db.DevFlow
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    map[uint64]bool
+		wantErr bool
+	}{
+		{
+			name: "test",
+			fields: fields{
+				p: &provider{
+					devFlowService: &Service{permission: perm},
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				devFlows: []db.DevFlow{
+					{
+						Scope: db.Scope{
+							AppID: 1,
+						},
+					},
+					{
+						Scope: db.Scope{
+							AppID: 2,
+						},
+					},
+				},
+			},
+			want:    map[uint64]bool{1: true, 2: false},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &Service{
+				p: tt.fields.p,
+			}
+			got, err := s.getAppInIssuePermissionMap(tt.args.ctx, tt.args.devFlows)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("getAppInIssuePermissionMap() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("getAppInIssuePermissionMap() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
