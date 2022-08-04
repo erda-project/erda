@@ -5,10 +5,10 @@ package erda.apps.devflow.flow;
 import "common/openapi.proto";
 import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 import "google/api/annotations.proto";
+import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/wrappers.proto";
 import "openapiv1/gittar/gittar.proto";
-import "google/protobuf/struct.proto";
 
 option go_package = "github.com/erda-project/erda-proto-go/apps/devflow/flow/pb";
 
@@ -154,6 +154,8 @@ message PipelineStepInfo {
 
 message GetDevFlowInfoRequest {
     uint64 issueID = 1;
+    uint64 appID = 2;
+    string branch = 3;
 }
 
 message ChangeBranch {

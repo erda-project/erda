@@ -23,12 +23,14 @@ import (
 	"bou.ke/monkey"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
+	"github.com/erda-project/erda-infra/providers/mysql/v2/plugins/fields"
 	"github.com/erda-project/erda-proto-go/apps/devflow/flow/pb"
 	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	flowrulepb "github.com/erda-project/erda-proto-go/dop/devflowrule/pb"
 	issuepb "github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/apps/devflow/flow/db"
 	"github.com/erda-project/erda/internal/apps/dop/providers/devflowrule"
 )
 
@@ -769,6 +771,123 @@ func TestService_CreateFlowEvent(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if err := s.CreateFlowEvent(tt.args.req); (err != nil) != tt.wantErr {
 				t.Errorf("Service.CreateFlowEvent() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestService_listDevFlowByReq(t *testing.T) {
+	var dbClient *db.Client
+	monkey.PatchInstanceMethod(reflect.TypeOf(dbClient), "ListDevFlowByIssueID", func(dbClient *db.Client, issueID uint64) (f []db.DevFlow, err error) {
+		return []db.DevFlow{{
+			Model: db.Model{
+				ID: fields.UUID{
+					String: "157c8320-3755-402b-81ab-01d8bdd99512",
+					Valid:  false,
+				},
+			},
+		}}, nil
+	})
+	defer monkey.UnpatchAll()
+	monkey.PatchInstanceMethod(reflect.TypeOf(dbClient), "ListDevFlowByAppIDAndBranch", func(dbClient *db.Client, appID uint64, branch string) (f []db.DevFlow, err error) {
+		if appID == 0 || branch == "" {
+			return nil, fmt.Errorf("fail")
+		}
+		return []db.DevFlow{{
+			Model: db.Model{
+				ID: fields.UUID{
+					String: "1d2c6da1-f633-4ff2-8bba-0cdc7043664e",
+					Valid:  false,
+				},
+			},
+		}}, nil
+	})
+
+	type field struct {
+		p *provider
+	}
+	type args struct {
+		req *pb.GetDevFlowInfoRequest
+	}
+	tests := []struct {
+		name         string
+		fields       field
+		args         args
+		wantDevFlows []db.DevFlow
+		wantErr      bool
+	}{
+		{
+			name: "test with zero issueID with error",
+			fields: field{
+				p: &provider{dbClient: dbClient},
+			},
+			args: args{
+				req: &pb.GetDevFlowInfoRequest{
+					IssueID: 0,
+					AppID:   0,
+					Branch:  "",
+				},
+			},
+			wantDevFlows: nil,
+			wantErr:      true,
+		},
+		{
+			name: "test with zero issueID",
+			fields: field{
+				p: &provider{dbClient: dbClient},
+			},
+			args: args{
+				req: &pb.GetDevFlowInfoRequest{
+					IssueID: 0,
+					AppID:   1,
+					Branch:  "feature/erda",
+				},
+			},
+			wantDevFlows: []db.DevFlow{{
+				Model: db.Model{
+					ID: fields.UUID{
+						String: "1d2c6da1-f633-4ff2-8bba-0cdc7043664e",
+						Valid:  false,
+					},
+				},
+			}},
+			wantErr: false,
+		},
+		{
+			name: "test with issueID",
+			fields: field{
+				p: &provider{dbClient: dbClient},
+			},
+			args: args{
+				req: &pb.GetDevFlowInfoRequest{
+					IssueID: 1,
+					AppID:   0,
+					Branch:  "",
+				},
+			},
+			wantDevFlows: []db.DevFlow{{
+				Model: db.Model{
+					ID: fields.UUID{
+						String: "157c8320-3755-402b-81ab-01d8bdd99512",
+						Valid:  false,
+					},
+				},
+			}},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &Service{
+				p: tt.fields.p,
+			}
+			gotDevFlows, err := s.listDevFlowByReq(tt.args.req)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("listDevFlowByReq() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(gotDevFlows, tt.wantDevFlows) {
+				t.Errorf("listDevFlowByReq() gotDevFlows = %v, want %v", gotDevFlows, tt.wantDevFlows)
 			}
 		})
 	}

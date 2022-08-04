@@ -534,11 +534,16 @@ type branchPolicy struct {
 }
 
 func (s *Service) GetDevFlowInfo(ctx context.Context, req *pb.GetDevFlowInfoRequest) (*pb.GetDevFlowInfoResponse, error) {
-	issue, err := s.p.Issue.GetIssue(int64(req.IssueID), &commonpb.IdentityInfo{UserID: apis.GetUserID(ctx)})
+	devFlows, err := s.listDevFlowByReq(req)
 	if err != nil {
 		return nil, err
 	}
-	devFlows, err := s.p.dbClient.ListDevFlowByIssueID(req.IssueID)
+	if len(devFlows) == 0 {
+		return &pb.GetDevFlowInfoResponse{}, nil
+	}
+	issueID := devFlows[0].IssueID
+
+	issue, err := s.p.Issue.GetIssue(int64(issueID), &commonpb.IdentityInfo{UserID: apis.GetUserID(ctx)})
 	if err != nil {
 		return nil, err
 	}
@@ -716,6 +721,13 @@ func (s *Service) GetDevFlowInfo(ctx context.Context, req *pb.GetDevFlowInfoRequ
 	})
 
 	return &pb.GetDevFlowInfoResponse{DevFlowInfos: devFlowInfos}, nil
+}
+
+func (s *Service) listDevFlowByReq(req *pb.GetDevFlowInfoRequest) (devFlows []db.DevFlow, err error) {
+	if req.IssueID == 0 {
+		return s.p.dbClient.ListDevFlowByAppIDAndBranch(req.AppID, req.Branch)
+	}
+	return s.p.dbClient.ListDevFlowByIssueID(req.IssueID)
 }
 
 func (s *Service) getMrInfo(ctx context.Context, appID uint64, currentBranch, targetBranch string) (mrInfo *apistructs.MergeRequestInfo, err error) {
