@@ -1094,3 +1094,185 @@ func TestService_getAppInIssuePermissionMap(t *testing.T) {
 		})
 	}
 }
+
+func TestService_getAppTempBranchCommitAndChangeBranchListMap(t *testing.T) {
+	var dbClient *db.Client
+	monkey.PatchInstanceMethod(reflect.TypeOf(dbClient), "ListDevFlowByFlowRuleName", func(dbClient *db.Client, ruleName string) (f []db.DevFlow, err error) {
+		if ruleName == "" {
+			return nil, fmt.Errorf("fail")
+		}
+		return []db.DevFlow{{
+			Model: db.Model{
+				ID: fields.UUID{
+					String: "157c8320-3755-402b-81ab-01d8bdd99512",
+					Valid:  false,
+				},
+			},
+			Scope: db.Scope{
+				AppID:   1,
+				AppName: "erda",
+			},
+			Branch:           "feature/dop",
+			IsJoinTempBranch: true,
+		}}, nil
+	})
+	defer monkey.UnpatchAll()
+
+	var service *Service
+	monkey.PatchInstanceMethod(reflect.TypeOf(service), "JudgeBranchIsExists", func(service *Service, ctx context.Context, repoPath, branch string) (has bool, err error) {
+		return true, nil
+	})
+	monkey.PatchInstanceMethod(reflect.TypeOf(service), "IdempotentCreateBranch", func(service *Service, ctx context.Context, repoPath, sourceBranch, newBranch string) error {
+		return nil
+	})
+
+	var bdl *bundle.Bundle
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetMergeBase", func(bdl *bundle.Bundle, userID string, req apistructs.GittarMergeBaseRequest) (*apistructs.Commit, error) {
+		return &apistructs.Commit{
+			ID: "1",
+		}, nil
+	})
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "ListGittarCommit", func(bdl *bundle.Bundle, repo, ref, userID string, orgID string) (*apistructs.Commit, error) {
+		return &apistructs.Commit{
+			ID: "2",
+		}, nil
+	})
+
+	type field struct {
+		p *provider
+	}
+	type args struct {
+		ctx                     context.Context
+		devFlows                []db.DevFlow
+		ruleNameBranchPolicyMap map[string]branchPolicy
+		appMap                  map[uint64]apistructs.ApplicationDTO
+		appInIssuePermissionMap map[uint64]bool
+	}
+	tests := []struct {
+		name    string
+		fields  field
+		args    args
+		want    map[string][]*pb.ChangeBranch
+		want1   map[string]*apistructs.Commit
+		wantErr bool
+	}{
+		{
+			name: "test with error",
+			fields: field{
+				p: &provider{
+					dbClient:       dbClient,
+					devFlowService: service,
+					bdl:            bdl,
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				devFlows: []db.DevFlow{
+					{
+						Model: db.Model{
+							ID: fields.UUID{
+								String: "157c8320-3755-402b-81ab-01d8bdd99512",
+								Valid:  false,
+							},
+						},
+						Scope:                db.Scope{},
+						Operator:             db.Operator{},
+						Branch:               "",
+						IssueID:              0,
+						FlowRuleName:         "",
+						JoinTempBranchStatus: "",
+						IsJoinTempBranch:     false,
+					},
+				},
+				ruleNameBranchPolicyMap: nil,
+				appMap:                  nil,
+				appInIssuePermissionMap: nil,
+			},
+			want:    nil,
+			want1:   nil,
+			wantErr: true,
+		},
+		{
+			name: "test with no error",
+			fields: field{
+				p: &provider{
+					dbClient:       dbClient,
+					devFlowService: service,
+					bdl:            bdl,
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				devFlows: []db.DevFlow{
+					{
+						Model: db.Model{
+							ID: fields.UUID{
+								String: "157c8320-3755-402b-81ab-01d8bdd99512",
+								Valid:  false,
+							},
+						},
+						Scope: db.Scope{
+							AppID:   1,
+							AppName: "erda",
+						},
+						Branch:               "feature/dop",
+						IssueID:              1,
+						FlowRuleName:         "DEV",
+						JoinTempBranchStatus: "",
+						IsJoinTempBranch:     true,
+					},
+				},
+				ruleNameBranchPolicyMap: map[string]branchPolicy{
+					"DEV": {
+						tempBranch:   "next/dev",
+						targetBranch: "master",
+						sourceBranch: "master",
+					},
+				},
+				appMap: map[uint64]apistructs.ApplicationDTO{
+					1: {
+						ID:          0,
+						Name:        "erda",
+						ProjectName: "erda",
+					},
+				},
+				appInIssuePermissionMap: map[uint64]bool{
+					1: true, 2: false,
+				},
+			},
+			want: map[string][]*pb.ChangeBranch{
+				"1next/dev": {
+					{
+						Commit: &pb.Commit{
+							ID: "1",
+						},
+						BranchName: "feature/dop",
+					},
+				},
+			},
+			want1: map[string]*apistructs.Commit{
+				"1next/dev": {
+					ID: "2"},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &Service{
+				p: tt.fields.p,
+			}
+			got, got1, err := s.getAppTempBranchCommitAndChangeBranchListMap(tt.args.ctx, tt.args.devFlows, tt.args.ruleNameBranchPolicyMap, tt.args.appMap, tt.args.appInIssuePermissionMap)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("getAppTempBranchCommitAndChangeBranchListMap() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("getAppTempBranchCommitAndChangeBranchListMap() got = %v, want %v", got, tt.want)
+			}
+			if !reflect.DeepEqual(got1, tt.want1) {
+				t.Errorf("getAppTempBranchCommitAndChangeBranchListMap() got1 = %v, want %v", got1, tt.want1)
+			}
+		})
+	}
+}
