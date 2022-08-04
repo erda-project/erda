@@ -103,7 +103,9 @@ func (q QueryClickhouse) ParseResult(ctx context.Context, resp interface{}) (*mo
 	}
 
 	var dumpArr []map[string]interface{}
-	defer span.SetAttributes(trace.BigStringAttribute("dump", dumpArr))
+	defer func() {
+		span.SetAttributes(trace.BigStringAttribute("dump", dumpArr))
+	}()
 
 	getData = func(row ckdriver.Rows) (map[string]interface{}, error) {
 		if row.Err() != nil {
@@ -264,8 +266,9 @@ func pretty(data interface{}) interface{} {
 		return *v
 	case *[]float64:
 		return *v
+	default:
+		return v
 	}
-	return data
 }
 
 func (q QueryClickhouse) Context() tsql.Context {

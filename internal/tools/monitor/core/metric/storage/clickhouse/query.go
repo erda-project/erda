@@ -110,14 +110,19 @@ func (p *provider) Query(ctx context.Context, q tsql.Query) (*model.ResultSet, e
 	if rows.Err() != nil {
 		return nil, errors.Wrap(err, fmt.Sprintf("failed to query: %s", sql))
 	}
+	if rows == nil {
+		return nil, errors.New("no error, but no value")
+	}
 	defer rows.Close()
 
 	result.Data, err = q.ParseResult(newCtx, rows)
 
-	if result.Data != nil && result.Data.Rows != nil {
-		span.SetAttributes(attribute.Int("result_total", len(result.Data.Rows)))
+	if result != nil && result.Data != nil {
+		if result.Rows != nil {
+			span.SetAttributes(attribute.Int("result_total", len(result.Rows)))
+		}
+		span.SetAttributes(trace.BigStringAttribute("result", result.String()))
 	}
-	span.SetAttributes(trace.BigStringAttribute("result", result.String()))
 
 	if err != nil {
 		p.Log.Error("clickhouse metric query is error ", sql, err)
