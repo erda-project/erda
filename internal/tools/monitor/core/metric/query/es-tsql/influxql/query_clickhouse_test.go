@@ -15,10 +15,15 @@
 package esinfluxql
 
 import (
+	"context"
+	"reflect"
 	"testing"
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"github.com/doug-martin/goqu/v9"
+	"github.com/stretchr/testify/require"
+
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/model"
 )
 
 type mockClickhouse struct {
@@ -27,10 +32,11 @@ type mockClickhouse struct {
 }
 
 type mockClickhouseRow struct {
-	column []string
-	err    error
-	data   [][]interface{}
-	point  int
+	column     []string
+	columnType []interface{}
+	err        error
+	data       [][]interface{}
+	point      int
 }
 
 func (m *mockClickhouseRow) Next() bool {
@@ -76,7 +82,41 @@ func (m *mockClickhouse) QueryRaw(orgName string, expr *goqu.SelectDataset) (dri
 	return m.mchRow, nil
 }
 
-func TestMock(t *testing.T) {
-	// TODO
+func Test(t *testing.T) {
+	q := QueryClickhouse{
+		column: []*SQLColumnHandler{
+			{
+				col: &model.Column{
+					Name: "service_id",
+				},
+			},
+		},
+		ctx: &Context{},
+	}
+	row := mockClickhouseRow{
+		column: []string{"service_id"},
+		columnType: []interface{}{
+			reflect.String,
+		},
+		data: [][]interface{}{
+			{
+				"111",
+			},
+			{
+				"222",
+			},
+			{
+				"333",
+			},
+		},
+	}
+	data, err := parse(q, &row)
+	require.NoError(t, err)
+	require.Equal(t, 3, len(data.Rows))
+	require.Equal(t, 1, len(data.Columns))
 
+}
+
+func parse(q QueryClickhouse, rows driver.Rows) (*model.Data, error) {
+	return q.ParseResult(context.Background(), rows)
 }
