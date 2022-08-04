@@ -444,14 +444,19 @@ func (impl GatewayApiServiceImpl) DeleteUpstreamBindApi(upstreamApi *orm.Gateway
 	return nil
 }
 
-func (impl GatewayApiServiceImpl) apiPathExist(consumer *orm.GatewayConsumer, path string, method string, domains []string) (bool, string, error) {
+func (impl GatewayApiServiceImpl) apiPathExist(ctx context.Context, consumer *orm.GatewayConsumer, path string, method string, domains []string) (bool, string, error) {
+	ctx = context1.WithLoggerIfWithout(ctx, logrus.StandardLogger())
+	l := ctx.(*context1.LogContext).Entry()
+
 	cond := &orm.GatewayApi{
 		ApiPath: path,
 		Method:  method,
 	}
+	l = l.WithField("cond.ApiPath", cond.ApiPath).WithField("cond.Method", cond.Method)
 	if consumer != nil {
 		cond.ConsumerId = consumer.Id
 		cond.SetMustCondCols("consumer_id", "api_path", "method")
+		l = l.WithField("cond.ConsumerId", cond.ConsumerId)
 	} else {
 		cond.SetMustCondCols("api_path", "method")
 	}
@@ -460,6 +465,7 @@ func (impl GatewayApiServiceImpl) apiPathExist(consumer *orm.GatewayConsumer, pa
 		return false, "", err
 	}
 	if len(gatewayApis) == 0 {
+		l.Infoln("apiPath doesn't exist because len(gatewayApis) == 0")
 		return false, "", nil
 	}
 	var domainsM = make(map[string]struct{})
@@ -469,17 +475,19 @@ func (impl GatewayApiServiceImpl) apiPathExist(consumer *orm.GatewayConsumer, pa
 	for _, gatewayApi := range gatewayApis {
 		// case sensitive
 		if gatewayApi.ApiPath == path {
+			l.WithField("gatewayApi.Id", gatewayApi.Id).WithField("gatewayApi.Domains", gatewayApi.Domains).Infoln("gatewayApi.ApiPath == path")
+			if gatewayApi.Domains == "" {
+				return true, gatewayApi.Id, nil
+			}
 			gatewayApiDomains := strings.Split(gatewayApi.Domains, ",")
 			for _, domain := range gatewayApiDomains {
 				if _, ok := domainsM[domain]; ok {
 					return true, gatewayApi.Id, nil
 				}
 			}
-			if gatewayApi.Domains == "" {
-				return true, gatewayApi.Id, nil
-			}
 		}
 	}
+	l.Infoln("apiPath doesn't exist because ")
 	return false, "", nil
 }
 
@@ -768,7 +776,7 @@ func (impl GatewayApiServiceImpl) CreateRuntimeApi(dto *gw.ApiDto, session ...*d
 	if err != nil {
 		return "", INVALID_PATH, err
 	}
-	exist, existId, err := impl.apiPathExist(nil, dto.Path, dto.Method, dto.Hosts)
+	exist, existId, err := impl.apiPathExist(context.Background(), nil, dto.Path, dto.Method, dto.Hosts)
 	if err != nil {
 		return "", PARAMS_IS_NULL, err
 	}
@@ -984,7 +992,7 @@ func (impl GatewayApiServiceImpl) createApi(ctx context.Context, consumer *orm.G
 	if err != nil {
 		return "", INVALID_PATH, err
 	}
-	exist, existId, err := impl.apiPathExist(consumer, dto.Path, dto.Method, dto.Hosts)
+	exist, existId, err := impl.apiPathExist(ctx, consumer, dto.Path, dto.Method, dto.Hosts)
 	if err != nil {
 		l.WithError(err).Errorln(PARAMS_IS_NULL)
 		return "", PARAMS_IS_NULL, err
@@ -2075,7 +2083,7 @@ func (impl GatewayApiServiceImpl) updateRuntimeApi(gatewayApi *orm.GatewayApi, d
 		return nil, INVALID_PATH, err
 	}
 	if dto.Path != gatewayApi.ApiPath || dto.Method != gatewayApi.Method {
-		exist, existId, err := impl.apiPathExist(nil, dto.Path, dto.Method, dto.Hosts)
+		exist, existId, err := impl.apiPathExist(context.Background(), nil, dto.Path, dto.Method, dto.Hosts)
 		if err != nil {
 			return nil, PARAMS_IS_NULL, err
 		}
@@ -2178,7 +2186,7 @@ func (impl GatewayApiServiceImpl) updateApi(gatewayApi *orm.GatewayApi, consumer
 		goto errorHappened
 	}
 	if dto.Path != gatewayApi.ApiPath || dto.Method != gatewayApi.Method {
-		exist, _, err := impl.apiPathExist(consumer, dto.Path, dto.Method, dto.Hosts)
+		exist, _, err := impl.apiPathExist(context.Background(), consumer, dto.Path, dto.Method, dto.Hosts)
 		if err != nil {
 			return nil, PARAMS_IS_NULL, err
 		}
