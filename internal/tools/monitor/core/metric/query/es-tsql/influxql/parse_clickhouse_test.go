@@ -15,6 +15,7 @@
 package esinfluxql
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -50,7 +51,7 @@ func TestClickhouse(t *testing.T) {
 			}
 			err := p.Build()
 			require.NoError(t, err)
-			queries, err := p.ParseQuery(model.ClickhouseKind)
+			queries, err := p.ParseQuery(context.Background(), model.ClickhouseKind)
 			require.NoError(t, err)
 			test.require(t, queries)
 		})

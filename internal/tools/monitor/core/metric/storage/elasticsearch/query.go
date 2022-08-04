@@ -80,7 +80,7 @@ func (p *provider) Query(ctx context.Context, q tsql.Query) (*model.ResultSet, e
 		result.Elapsed.Search = time.Now().Sub(now)
 	}
 
-	result.Data, err = q.ParseResult(resp)
+	result.Data, err = q.ParseResult(ctx, resp)
 	if err != nil {
 		return nil, err
 	}

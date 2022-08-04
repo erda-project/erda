@@ -15,6 +15,7 @@
 package esinfluxql
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 
@@ -202,7 +203,7 @@ func TestNormalSelectStmt(t *testing.T) {
 			}
 			err := p.Build()
 			require.NoError(t, err)
-			queries, err := p.ParseQuery(ElasticsearchKind)
+			queries, err := p.ParseQuery(context.Background(), ElasticsearchKind)
 			require.NoError(t, err)
 			test.require(t, queries)
 		})

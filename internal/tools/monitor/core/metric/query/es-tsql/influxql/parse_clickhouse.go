@@ -201,6 +201,10 @@ func (p *Parser) parseQueryOnExpr(fields influxql.Fields, expr *goqu.SelectDatas
 	}
 
 	for column, asName := range columns {
+		if len(asName) <= 0 {
+			expr = expr.SelectAppend(goqu.L(column))
+			continue
+		}
 		expr = expr.SelectAppend(goqu.L(column).As(asName))
 	}
 	return expr, handlers, columns, nil
@@ -369,9 +373,6 @@ func (p *Parser) parseFieldByExpr(field *influxql.Field, aggs map[string]exp.Exp
 		field: field,
 		ctx:   p.ctx,
 	}
-	if ch.AllColumns() {
-		return ch, nil
-	}
 	ch.fns = make(map[string]SQLAggHandler)
 	err := p.parseFiledAggByExpr(field.Expr, aggs, ch.fns)
 	if err != nil {
@@ -452,6 +453,8 @@ func (p *Parser) parseFiledRefByExpr(expr influxql.Expr, cols map[string]string)
 	case *influxql.VarRef:
 		c, _ := p.ckGetKeyName(expr, influxql.AnyField)
 		cols[c] = expr.Val
+	case *influxql.Wildcard:
+		cols["*"] = ""
 	}
 	return nil
 }
@@ -732,22 +735,6 @@ var originColumn = map[string]string{
 func (p *Parser) ckField(key string) (string, bool) {
 	if newColumn, ok := originColumn[key]; ok {
 		return fmt.Sprintf("indexOf(string_field_values,'%s')", newColumn), false
-	}
-	metrics, err := p.Metrics()
-	if err != nil {
-		return fmt.Sprintf("indexOf(number_field_keys,'%s')", key), true
-	}
-
-	metas, err := p.meta.GetMetricMetaByCache(p.orgName, p.terminusKey, metrics...)
-	if err == nil {
-		for _, meta := range metas {
-			if typ, ok := meta.Fields[key]; ok {
-				//Multiple metrics can be specified, there may be the same name and type conflict, Chart Query
-				if typ.Type == "string" {
-					return fmt.Sprintf("indexOf(string_field_values,'%s')", key), false
-				}
-			}
-		}
 	}
 	return fmt.Sprintf("indexOf(number_field_keys,'%s')", key), true
 }

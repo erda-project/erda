@@ -16,6 +16,7 @@ package model
 
 import (
 	"bytes"
+	"fmt"
 	"strings"
 	"time"
 )
@@ -26,6 +27,19 @@ type Data struct {
 	Interval int64
 	Columns  []*Column
 	Rows     [][]interface{}
+}
+
+func (d Data) String() string {
+	var column []string
+	for _, c := range d.Columns {
+		column = append(column, c.Name)
+	}
+	return fmt.Sprintf("total: %d, interval: %d, columns: %s, rows: %v",
+		d.Total,
+		d.Interval,
+		strings.Join(column, ","),
+		d.Columns,
+	)
 }
 
 // Column .

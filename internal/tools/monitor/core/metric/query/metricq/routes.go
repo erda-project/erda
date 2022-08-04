@@ -15,12 +15,16 @@
 package metricq
 
 import (
+	"context"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 
 	"github.com/erda-project/erda-infra/providers/httpserver"
-
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
+	"github.com/erda-project/erda/pkg/common/apis"
 	api "github.com/erda-project/erda/pkg/common/httpapi"
+	"github.com/erda-project/erda/pkg/discover"
 )
 
 func (p *provider) initRoutes(routes httpserver.Router) error {
@@ -36,7 +40,23 @@ func (p *provider) initRoutes(routes httpserver.Router) error {
 // queryMetrics .
 func (p *provider) queryMetrics(r *http.Request) interface{} {
 	params := make(map[string]interface{})
-	ctx := api.GetContextHeader(r)
+
+	//ctx := api.GetContextHeader(r)
+
+	ctx := api.GetContext(r, func(header *http.Header) {
+		if len(header.Get("org")) == 0 {
+			//org-apis
+			orgID := api.OrgID(r)
+			orgResp, err := p.Org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcMonitor), &orgpb.GetOrgRequest{
+				IdOrName: orgID,
+			})
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+			header.Set("org", orgResp.Data.Name)
+		}
+	})
 
 	err := r.ParseForm()
 	if err != nil {
