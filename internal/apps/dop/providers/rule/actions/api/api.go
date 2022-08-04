@@ -63,6 +63,7 @@ type APIConfig struct {
 	URL     string                 `json:"url"`
 	Headers http.Header            `json:"header"`
 	Body    map[string]interface{} `json:"body"`
+	IsHTTPS bool                   `json:"https"`
 }
 
 // outgoing API
@@ -78,8 +79,12 @@ func (a *provider) Send(api *API) (string, error) {
 	}
 
 	// call outgoing API
-	req := httpclient.New(httpclient.WithDialerKeepAlive(time.Duration(a.Cfg.DailerKeepAliveSeconds)*time.Second)).
-		Method(apiConfig.Method, parsed.Host).
+	keepalive := time.Duration(a.Cfg.DailerKeepAliveSeconds) * time.Second
+	req := httpclient.New(httpclient.WithDialerKeepAlive(keepalive)).Method(apiConfig.Method, parsed.Host)
+	if apiConfig.IsHTTPS {
+		req = httpclient.New(httpclient.WithHTTPS(), httpclient.WithDialerKeepAlive(keepalive)).Method(apiConfig.Method, parsed.Host)
+	}
+	req = req.
 		Path(parsed.Path).
 		Params(parsed.Query()).
 		Headers(apiConfig.Headers).
