@@ -29,6 +29,7 @@
 package tsql
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -93,7 +94,7 @@ type Query interface {
 	SearchSource() interface{}
 	SubSearchSource() interface{}
 	AppendBoolFilter(key string, value interface{})
-	ParseResult(resp interface{}) (*model.Data, error)
+	ParseResult(ctx context.Context, resp interface{}) (*model.Data, error)
 	Context() Context
 	Debug() bool
 	Timestamp() (int64, int64)
@@ -113,10 +114,12 @@ type Parser interface {
 	SetTargetTimeUnit(unit TimeUnit) Parser
 	SetTimeKey(key string) Parser
 	SetMaxTimePoints(points int64) Parser
-	ParseQuery(kind string) ([]Query, error)
+	ParseQuery(ctx context.Context, kind string) ([]Query, error)
 	Build() error
 	Metrics() ([]string, error)
 	SetOrgName(org string) Parser
+	GetOrgName() string
+	GetTerminusKey() string
 	SetTerminusKey(terminusKey string) Parser
 	SetMeta(*metricmeta.Manager)
 }

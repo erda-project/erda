@@ -57,7 +57,7 @@ func TestSearch(t *testing.T) {
 				expect.Debug().Return(false)
 				expect.SearchSource().Return(elastic.NewSearchSource().Query(
 					elastic.NewBoolQuery().Filter()))
-				expect.ParseResult(gomock.Any()).Return(&model.Data{}, nil)
+				expect.ParseResult(context.Background(), gomock.Any()).Return(&model.Data{}, nil)
 			},
 			mockExecution: func(ctx context.Context, client *elastic.Client, strings []string, source *elastic.SearchSource) (*elastic.SearchResult, error) {
 				return &elastic.SearchResult{}, nil

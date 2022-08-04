@@ -27,6 +27,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/httpserver/interceptors"
 	"github.com/erda-project/erda-infra/providers/i18n"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/chartmeta"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/metricmeta"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/query"
@@ -73,6 +74,8 @@ type provider struct {
 
 	CkSearchRaw     clickhouse.Query `autowired:"metric-storage-clickhouse" optional:"true"`
 	CkStorageReader storage.Storage  `autowired:"metric-storage-clickhouse" optional:"true"`
+
+	Org org.ClientInterface
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {

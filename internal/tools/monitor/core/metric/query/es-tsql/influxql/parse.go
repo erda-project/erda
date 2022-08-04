@@ -15,11 +15,13 @@
 package esinfluxql
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
 	"github.com/influxdata/influxql"
 	"github.com/pkg/errors"
+	"go.opentelemetry.io/otel"
 
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/model"
 	tsql "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql"
@@ -59,6 +61,13 @@ func New(start, end int64, stmt string, debug bool) tsql.Parser {
 
 func init() {
 	tsql.RegisterParser("influxql", New)
+}
+
+func (p *Parser) GetOrgName() string {
+	return p.orgName
+}
+func (p *Parser) GetTerminusKey() string {
+	return p.terminusKey
 }
 
 func (p *Parser) SetOrgName(org string) tsql.Parser {
@@ -149,7 +158,10 @@ func (p *Parser) Metrics() ([]string, error) {
 }
 
 // ParseQuery .
-func (p *Parser) ParseQuery(kind string) ([]tsql.Query, error) {
+func (p *Parser) ParseQuery(ctx context.Context, kind string) ([]tsql.Query, error) {
+	_, span := otel.Tracer("parse").Start(ctx, "parse.query")
+	defer span.End()
+
 	if p.queryPlan == nil {
 		return nil, errors.New("please call Build() first")
 	}
