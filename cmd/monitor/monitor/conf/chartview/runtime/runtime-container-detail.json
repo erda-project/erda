@@ -348,7 +348,7 @@
             "alias": "valueUMrSAbUJ",
             "expr": "diffps(tx_bytes::field)"
           }],
-          "where": ["pod_uid::tag::tag='{{pidUid}}'"]
+          "where": ["pod_uid::tag='{{podUid}}'"]
         },
         "method": "post",
         "query": {
