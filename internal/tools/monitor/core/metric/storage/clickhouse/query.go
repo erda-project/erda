@@ -26,6 +26,8 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 
+	oteltrace "go.opentelemetry.io/otel/trace"
+
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/model"
 	tsql "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql"
 	"github.com/erda-project/erda/pkg/common/trace"
@@ -101,7 +103,7 @@ func (p *provider) Query(ctx context.Context, q tsql.Query) (*model.ResultSet, e
 		return result, nil
 	}
 
-	rows, err := p.clickhouse.Client().Query(p.buildQueryContext(newCtx), sql)
+	rows, err := p.exec(newCtx, sql)
 	if err != nil {
 		return nil, errors.Wrap(err, fmt.Sprintf("failed to query: %s", sql))
 	}
@@ -115,7 +117,7 @@ func (p *provider) Query(ctx context.Context, q tsql.Query) (*model.ResultSet, e
 	if result.Data != nil && result.Data.Rows != nil {
 		span.SetAttributes(attribute.Int("result_total", len(result.Data.Rows)))
 	}
-	span.SetAttributes(trace.BigStringAttribute("result", result))
+	span.SetAttributes(trace.BigStringAttribute("result", result.String()))
 
 	if err != nil {
 		p.Log.Error("clickhouse metric query is error ", sql, err)
@@ -138,10 +140,26 @@ func (p *provider) buildQueryContext(ctx context.Context) context.Context {
 		return ctx
 	}
 
-	newCtx, span := otel.Tracer("clickhouse").Start(ctx, "sdk.clickhouse")
-	defer span.End()
+	span := oteltrace.SpanFromContext(ctx)
 
-	ctx = cksdk.Context(newCtx, cksdk.WithSettings(settings), cksdk.WithSpan(span.SpanContext()))
+	ctx = cksdk.Context(ctx,
+		cksdk.WithSettings(settings),
+		cksdk.WithProgress(func(progress *cksdk.Progress) {
+			span.AddEvent("once_progress", oteltrace.WithAttributes(attribute.String("progress", progress.String())))
+		}),
+		cksdk.WithProfileInfo(func(profile *cksdk.ProfileInfo) {
+			span.SetAttributes(attribute.String("profile", profile.String()))
+		}),
+		cksdk.WithProfileEvents(func(event []cksdk.ProfileEvent) {
+			if event != nil {
+				for _, e := range event {
+					span.SetAttributes(attribute.Int64(fmt.Sprintf("profile_event_%s_%s", e.Name, e.ThreadID), e.Value))
+				}
+			}
+			fmt.Println(event)
+		}),
+		cksdk.WithSpan(span.SpanContext()),
+		cksdk.WithQueryID(span.SpanContext().TraceID().String()))
 	return ctx
 }
 
@@ -153,4 +171,10 @@ func (p *provider) QueryRaw(orgName string, expr *goqu.SelectDataset) (driver.Ro
 		return nil, err
 	}
 	return p.clickhouse.Client().Query(context.Background(), sql)
+}
+
+func (p *provider) exec(ctx context.Context, sql string) (driver.Rows, error) {
+	newCtx, span := otel.Tracer("executive").Start(ctx, "exec.clickhouse")
+	defer span.End()
+	return p.clickhouse.Client().Query(p.buildQueryContext(newCtx), sql)
 }

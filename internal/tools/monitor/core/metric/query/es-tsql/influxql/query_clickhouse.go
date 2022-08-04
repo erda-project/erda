@@ -103,6 +103,8 @@ func (q QueryClickhouse) ParseResult(ctx context.Context, resp interface{}) (*mo
 	}
 
 	var dumpArr []map[string]interface{}
+	defer span.SetAttributes(trace.BigStringAttribute("dump", dumpArr))
+
 	getData = func(row ckdriver.Rows) (map[string]interface{}, error) {
 		if row.Err() != nil {
 			return nil, errors.Wrap(row.Err(), "failed to get data")
@@ -114,6 +116,9 @@ func (q QueryClickhouse) ParseResult(ctx context.Context, resp interface{}) (*mo
 
 		data := make(map[string]interface{})
 		for i, v := range vars {
+			if v == nil {
+				continue
+			}
 			columnName := columns[i]
 			data[columnName] = pretty(v)
 		}
@@ -209,7 +214,9 @@ func (q QueryClickhouse) ParseResult(ctx context.Context, resp interface{}) (*mo
 			}
 			row[point] = v
 		}
-		rs.Rows = append(rs.Rows, row)
+		if row != nil {
+			rs.Rows = append(rs.Rows, row)
+		}
 
 		cur = next
 		next = nil
@@ -217,7 +224,6 @@ func (q QueryClickhouse) ParseResult(ctx context.Context, resp interface{}) (*mo
 	rs.Total = int64(len(rs.Rows))
 	rs.Interval = q.ctx.Interval()
 	span.SetAttributes(trace.BigStringAttribute("result.total", len(rs.Rows)))
-	span.SetAttributes(trace.BigStringAttribute("dump", dumpArr))
 	return rs, nil
 }
 
