@@ -343,13 +343,15 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 	}
 	// 获取全部用户
 	userids = strutil.DedupSlice(userids, true)
-	resp, err := identity.FindUsers(ctx, &userpb.FindUsersRequest{IDs: userids})
-	if err != nil {
-		return err
-	}
-	ca.userMap = make(map[string]string, len(resp.Data))
-	for _, i := range resp.Data {
-		ca.userMap[i.ID] = i.Nick
+	if len(issues) > 0 {
+		resp, err := identity.FindUsers(ctx, &userpb.FindUsersRequest{IDs: userids})
+		if err != nil {
+			return err
+		}
+		ca.userMap = make(map[string]string, len(resp.Data))
+		for _, i := range resp.Data {
+			ca.userMap[i.ID] = i.Nick
+		}
 	}
 
 	labels, err := bdl.Bdl.Labels("issue", projectid, sdk.Identity.UserID)

@@ -43,6 +43,7 @@ const (
 	PropConditionKeyFinishedAtStartEnd string = "finishedAtStartEnd"
 	PropConditionKeyClosed             string = "closedAtStartEnd"
 	PropConditionKeyComplexity         string = "complexities"
+	PropConditionKeParticipantIDs      string = "participantIDs"
 )
 
 type FrontendConditions struct {
@@ -62,6 +63,7 @@ type FrontendConditions struct {
 	FinishedAtStartEnd []*int64 `json:"finishedAtStartEnd,omitempty"`
 	ClosedAtStartEnd   []*int64 `json:"closedAtStartEnd,omitempty"`
 	Complexities       []string `json:"complexities,omitempty"`
+	ParticipantIDs     []string `json:"participantIDs,omitempty"`
 }
 
 func (f *IssueFilter) ConditionRetriever() ([]interface{}, error) {
@@ -110,6 +112,7 @@ func (f *IssueFilter) ConditionRetriever() ([]interface{}, error) {
 	creator := model.NewSelectCondition(PropConditionKeyCreatorIDs, cputil.I18n(f.sdk.Ctx, "creator"), memberOptions)
 	assignee := model.NewSelectCondition(PropConditionKeyAssigneeIDs, cputil.I18n(f.sdk.Ctx, "assignee"), memberOptions)
 	owner := model.NewSelectCondition(PropConditionKeyOwnerIDs, cputil.I18n(f.sdk.Ctx, "responsible-person"), memberOptions)
+	participant := model.NewSelectCondition(PropConditionKeParticipantIDs, cputil.I18n(f.sdk.Ctx, "participant"), memberOptions)
 
 	stageOptions := []model.SelectOption{
 		*model.NewSelectOption(cputil.I18n(f.sdk.Ctx, "demand-design"), "demandDesign"),
@@ -182,6 +185,7 @@ func (f *IssueFilter) ConditionRetriever() ([]interface{}, error) {
 	rightGroup = []interface{}{assignee, finished, creator, created}
 	switch f.InParams.FrontendFixedIssueType {
 	case apistructs.IssueTypeRequirement.String():
+		rightGroup = append(rightGroup, participant)
 	case apistructs.IssueTypeTask.String():
 		leftGroup = append(leftGroup, stage)
 	case apistructs.IssueTypeBug.String():

@@ -328,6 +328,8 @@ zh:
   updateName: 编辑名称
   update: 编辑
   reopenCount: 重新打开次数
+  participant: 参与人
+  participation: 我参与的
 
 en:
   issue-manage: issue manage
@@ -666,3 +668,5 @@ en:
   deployTime: Deployment time
   restart: Restart
   reopenCount: Reopen count
+  participant: Participant
+  participation: Participation

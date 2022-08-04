@@ -74,7 +74,7 @@ func (e *ExprExecutor) BuildRuleEnv(req *rulepb.FireRequest) (*RuleEnv, error) {
 		Enabled:   &enabled,
 		PageNo:    1,
 		PageSize:  10,
-	})
+	}, true)
 	if err != nil {
 		return nil, err
 	}
