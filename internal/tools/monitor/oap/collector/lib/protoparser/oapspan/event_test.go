@@ -123,7 +123,7 @@ func Test_span_event_unmarshal(t *testing.T) {
 			if !tt.wantErr {
 				require.Nil(t, uw.err)
 			} else {
-				require.NoError(t, uw.err)
+				require.Error(t, uw.err)
 			}
 		})
 	}
