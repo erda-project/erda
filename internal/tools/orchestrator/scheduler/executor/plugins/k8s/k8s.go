@@ -367,7 +367,7 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 	job := job.New(job.WithCompleteParams(addr, client))
 	ds := ds.New(ds.WithCompleteParams(addr, client))
 	ing := ingress.New(ingress.WithCompleteParams(addr, client))
-	ns := namespace.New(namespace.WithCompleteParams(addr, client))
+	ns := namespace.New(namespace.WithKubernetesClient(k8sClient.ClientSet))
 	svc := k8sservice.New(k8sservice.WithCompleteParams(addr, client))
 	pvc := persistentvolumeclaim.New(persistentvolumeclaim.WithCompleteParams(addr, client))
 	pv := persistentvolume.New(persistentvolume.WithCompleteParams(addr, client))
@@ -387,7 +387,7 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 		return nil, errors.Errorf("failed to new cluster info, executorName: %s, clusterName: %s, (%v)",
 			name, clusterName, err)
 	}
-	resourceInfo := resourceinfo.New(addr, client, k8sClient.ClientSet)
+	resourceInfo := resourceinfo.New(k8sClient.ClientSet)
 
 	var istioEngine istioctl.IstioEngine
 	rawData, err := clusterInfo.Get()
