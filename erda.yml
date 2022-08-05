@@ -7,7 +7,7 @@ values:
     request_mem: 128
     replicas: 1
   test:
-    request_cpu: 0.1
+    request_cpu: 0.2
     request_mem: 128
     log_service_replicas: 1
     erda_server_request_cpu: 1
