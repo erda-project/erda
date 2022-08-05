@@ -222,6 +222,13 @@ func storeIssues(sonarStore *apistructs.SonarStoreRequest, bdl *bundle.Bundle, o
 		sonar.Duplications = string(duplications)
 	}
 
+	qualityGateResult, err := marshalQualityResult(sonarStore.QualityGateResult)
+	if err != nil {
+		logrus.Warningf("Marshal qualityGateResult:%v failed, err:%v", sonarStore.QualityGateResult, err)
+	} else {
+		sonar.QualityGateResult = qualityGateResult
+	}
+
 	sonar.CommitID = sonarStore.CommitID
 	sonar.OperatorID = sonarStore.OperatorID
 	sonar.ProjectID = sonarStore.ProjectID
@@ -308,6 +315,14 @@ func addDefaultTagAndField(sonarStore *apistructs.SonarStoreRequest, metric *api
 
 	metric.Tags["_metric_scope_id"] = org.Name
 	metric.Tags["org_name"] = org.Name
+}
+
+func marshalQualityResult(qualityGateResult apistructs.QualityGateResult) (string, error) {
+	qualityResult, err := json.Marshal(qualityGateResult)
+	if err != nil {
+		return "", err
+	}
+	return string(qualityResult), nil
 }
 
 func doMetrics(metric []apistructs.Metric, bdl *bundle.Bundle, org org.ClientInterface) {
