@@ -159,7 +159,6 @@ func (agent *Agent) setupCommandScript() error {
 	commands := agent.convertCustomCommands()
 	for _, command := range commands {
 		escaped := fmt.Sprintf("%s", command)
-		escaped = strings.Replace(escaped, `$`, `\$`, -1)
 		buf.WriteString(fmt.Sprintf(traceScript, escaped))
 	}
 	script := buf.String()
