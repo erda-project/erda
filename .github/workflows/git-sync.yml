@@ -1,10 +1,10 @@
 name: GIT SYNC
 
-on: [ push, delete, pull_request ]
+on: [ push, delete, pull_request_target ]
 
 jobs:
   build:
-    if: github.repository == 'erda-project/erda'
+    if: github.repository == 'erda-project/erda' &&  contains(github.event.pull_request.labels.*.name, 'safe to sync')
     runs-on: ubuntu-latest
     steps:
       - name: list open pull requests in last 24 hours
