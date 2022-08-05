@@ -534,9 +534,11 @@ erda.oap.collector.core:
           - "erda.oap.collector.exporter.clickhouse@span"
         batch_size: ${EXPORTER_CLICKHOUSE_SPAN_BATCH_SIZE:81920}
         _enable: ${WRITE_SPAN_TO_CLICKHOUSE_ENABLE:false}
+
     metrics:
       - receivers:
           - "erda.oap.collector.receiver.kafka@spotmetric"
+          - "erda.oap.collector.receiver.kafka@oapspanevent"
         exporters:
           - "erda.oap.collector.exporter.clickhouse@metric"
         batch_size: ${EXPORTER_CLICKHOUSE_METRIC_BATCH_SIZE:81920}
@@ -618,6 +620,17 @@ erda.oap.collector.receiver.kafka@spotmetric:
     parallelism: ${SPOT_METRICS_CONSUMERS:9}
     options:
       auto.offset.reset: "${KAFKA_AUTO_OFFSET_RESET:latest}"
+      auto.commit.interval.ms: "${KAFKA_AUTO_COMMIT_INTERVAL_MS:1000}"
+
+erda.oap.collector.receiver.kafka@oapspanevent:
+  _enable: ${WRITE_METRIC_TO_CLICKHOUSE_ENABLE:false}
+  proto_parser: oapspanevent
+  consumer:
+    topics: "${OAP_TRACE_EVENT_TOPICS:msp-jaeger-trace,erda-spans}"
+    group: "${OAP_TRACE_EVENT_GROUP_ID:spot-monitor-trace-event-dev}"
+    parallelism: ${SPOT_OAPSPAN_CONSUMERS:9}
+    options:
+      auto.offset.reset: "${KAFKA_AUTO_OFFSET_RESET:earliest}"
       auto.commit.interval.ms: "${KAFKA_AUTO_COMMIT_INTERVAL_MS:1000}"
 
 erda.oap.collector.exporter.clickhouse@metric:

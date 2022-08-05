@@ -94,6 +94,22 @@ func convertSpans(tracesData *otlpv1.TracesData) []*tracepb.Span {
 									attributes[attr.Key] = getStringValue(attr.Value)
 								}
 							}
+							var events []*tracepb.Span_Event
+							if len(otlpSpan.Events) > 0 {
+								for _, event := range otlpSpan.Events {
+									eventAttribute := make(map[string]string)
+									for _, attr := range event.Attributes {
+										eventAttribute[attr.Key] = getStringValue(attr.Value)
+									}
+
+									events = append(events, &tracepb.Span_Event{
+										TimeUnixNano:           event.TimeUnixNano,
+										Name:                   event.Name,
+										DroppedAttributesCount: event.DroppedAttributesCount,
+										Attributes:             eventAttribute,
+									})
+								}
+							}
 							span := &tracepb.Span{
 								TraceID:           hex.EncodeToString(otlpSpan.TraceId[:]),
 								SpanID:            hex.EncodeToString(otlpSpan.SpanId[:]),
@@ -101,6 +117,7 @@ func convertSpans(tracesData *otlpv1.TracesData) []*tracepb.Span {
 								EndTimeUnixNano:   otlpSpan.EndTimeUnixNano,
 								Name:              otlpSpan.Name,
 								Attributes:        attributes,
+								Events:            events,
 							}
 							if otlpSpan.ParentSpanId != nil {
 								span.ParentSpanID = hex.EncodeToString(otlpSpan.ParentSpanId[:])

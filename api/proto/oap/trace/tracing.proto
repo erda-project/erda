@@ -10,6 +10,8 @@ import "oap/common/common.proto";
 // The span data model 
 //   of the observability analysis platform.
 // Trace is calculated by span, stored as metric.
+
+// https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/trace/v1/trace.proto
 message Span {
 
     // A unique identifier for a trace. All spans from the same trace share
@@ -67,4 +69,25 @@ message Span {
 
     // Including label, attributes and resource 
     map<string, string> attributes = 8;
+
+    // events is a collection of Event items.
+    repeated Event events = 9;
+
+    message Event {
+        // time_unix_nano is the time the event occurred.
+        fixed64 time_unix_nano = 1;
+
+        // name of the event.
+        // This field is semantically required to be set to non-empty string.
+        string name = 2;
+
+        // attributes is a collection of attribute key/value pairs on the event.
+        // Attribute keys MUST be unique (it is not allowed to have more than one
+        // attribute with the same key).
+        map<string, string>  attributes = 3;
+
+        // dropped_attributes_count is the number of dropped attributes. If the value is 0,
+        // then no attributes were dropped.
+        uint32 dropped_attributes_count = 4;
+    }
 }
