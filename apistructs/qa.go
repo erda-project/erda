@@ -52,23 +52,24 @@ const (
 )
 
 type SonarStoreRequest struct {
-	ApplicationID    int64                `json:"applicationId"`
-	BuildID          int64                `json:"buildId"`
-	ProjectID        int64                `json:"projectId"`
-	ApplicationName  string               `json:"applicationName"`
-	Branch           string               `json:"branch"`
-	GitRepo          string               `json:"gitRepo"`
-	CommitID         string               `json:"commitId"`
-	ProjectName      string               `json:"projectName"`
-	OperatorID       string               `json:"operatorId"`
-	LogID            string               `json:"logId"`
-	Key              string               `json:"key"`
-	Bugs             []*TestIssues        `json:"bugs"`
-	CodeSmells       []*TestIssues        `json:"code_smells"`
-	Vulnerabilities  []*TestIssues        `json:"vulnerabilities"`
-	Coverage         []*TestIssuesTree    `json:"coverage"`
-	Duplications     []*TestIssuesTree    `json:"duplications"`
-	IssuesStatistics TestIssuesStatistics `json:"issues_statistics"`
+	ApplicationID     int64                `json:"applicationId"`
+	BuildID           int64                `json:"buildId"`
+	ProjectID         int64                `json:"projectId"`
+	ApplicationName   string               `json:"applicationName"`
+	Branch            string               `json:"branch"`
+	GitRepo           string               `json:"gitRepo"`
+	CommitID          string               `json:"commitId"`
+	ProjectName       string               `json:"projectName"`
+	OperatorID        string               `json:"operatorId"`
+	LogID             string               `json:"logId"`
+	Key               string               `json:"key"`
+	Bugs              []*TestIssues        `json:"bugs"`
+	CodeSmells        []*TestIssues        `json:"code_smells"`
+	Vulnerabilities   []*TestIssues        `json:"vulnerabilities"`
+	Coverage          []*TestIssuesTree    `json:"coverage"`
+	Duplications      []*TestIssuesTree    `json:"duplications"`
+	IssuesStatistics  TestIssuesStatistics `json:"issues_statistics"`
+	QualityGateResult QualityGateResult    `json:"qualityGateResult"`
 }
 
 type TextRange struct {
@@ -135,6 +136,20 @@ type TestIssueStatisticsRating struct {
 	Bugs            CodeQualityRatingLevel `json:"bugs"`
 	Vulnerabilities CodeQualityRatingLevel `json:"vulnerabilities"`
 	CodeSmells      CodeQualityRatingLevel `json:"codeSmells"`
+}
+
+// QualityGateConditionResult sonar quality gate condition result
+type QualityGateConditionResult struct {
+	Status         string `json:"status"`
+	MetricKey      string `json:"metricKey"`
+	Comparator     string `json:"comparator"`
+	ErrorThreshold string `json:"errorThreshold"`
+	ActualValue    string `json:"actualValue"`
+}
+
+type QualityGateResult struct {
+	Status     string                       `json:"status"`
+	Conditions []QualityGateConditionResult `json:"conditions"`
 }
 
 type SonarStoreResponse struct {
