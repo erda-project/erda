@@ -55,7 +55,7 @@ func (chs *ClickhouseSource) GetContainers(ctx httpserver.Context, r *http.Reque
 	if err != nil {
 		return nil
 	}
-	now, timeRange := time.Now().Unix(), 5*int64(time.Minute)/int64(time.Second)
+	now, timeRange := time.Now().Unix(), 10*int64(time.Minute)/int64(time.Second)
 	if params.End < timeRange {
 		params.End = now
 	}
@@ -63,7 +63,7 @@ func (chs *ClickhouseSource) GetContainers(ctx httpserver.Context, r *http.Reque
 		params.Start = params.End - timeRange
 	}
 
-	org, err := chs.p.Org.GetOrg(apis.WithInternalClientContext(context.Background(), "monitor"),
+	org, err := chs.p.Org.GetOrg(apis.WithInternalClientContext(api.GetContextHeader(r), "monitor"),
 		&orgpb.GetOrgRequest{IdOrName: api.OrgID(ctx.Request())})
 	if err != nil {
 		chs.Log.Errorf("failed to get org, %v", err)
@@ -164,7 +164,7 @@ func (chs *ClickhouseSource) GetHostTypes(req *http.Request, params struct {
 
 	table, _ := chs.Loader.GetSearchTable(params.OrgName)
 
-	from := time.Now().Add(-5 * time.Minute).Format(timeFormat)
+	from := time.Now().Add(-10 * time.Minute).Format(timeFormat)
 	to := time.Now().Format(timeFormat)
 	sql := goqu.From(table).Select(
 		goqu.L("tag_values[indexOf(tag_keys,?)]", clusterName).As("clusterName"),
@@ -307,7 +307,7 @@ func (chs *ClickhouseSource) GetGroupHosts(req *http.Request, params struct {
 
 	table, _ := chs.Loader.GetSearchTable(params.OrgName)
 
-	from := time.Now().Add(-5 * time.Minute).Format(timeFormat)
+	from := time.Now().Add(-10 * time.Minute).Format(timeFormat)
 	to := time.Now().Format(timeFormat)
 	sql := goqu.From(table).Select(
 		goqu.L("MAX(number_field_values[indexOf(number_field_keys, ?)])", cpuCoresUsage).As("cpuCoresUsage"),
@@ -333,7 +333,7 @@ func (chs *ClickhouseSource) GetGroupHosts(req *http.Request, params struct {
 		goqu.L("MAX(number_field_values[indexOf(number_field_keys, ?)])", cpuRequestPercent).As("cpuRequestPercent"),
 		goqu.L("MAX(number_field_values[indexOf(number_field_keys, ?)])", memRequestPercent).As("memRequestPercent"),
 		goqu.L("MAX(number_field_values[indexOf(number_field_keys, ?)])", taskContainers).As("taskContainers"),
-		goqu.L("any(string_field_values[indexOf(string_field_keys,?)])", labels).As("labels"),
+		goqu.L("any(string_field_values[indexOf(string_field_keys, ?)])", labels).As("labels"),
 		goqu.L("any(tag_keys)").As("tagKeys"),
 		goqu.L("any(tag_values)").As("tagValues"),
 	).Where(
