@@ -15,6 +15,7 @@
 package resourceinfo
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"strconv"
@@ -22,46 +23,47 @@ import (
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/node"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/pod"
-	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
 type ResourceInfo struct {
-	podutil  *pod.Pod
-	nodeutil *node.Node
-	addr     string
-	client   *httpclient.HTTPClient
+	podUtil *pod.Pod
+	cs      kubernetes.Interface
 }
 
-func New(addr string, client *httpclient.HTTPClient, k8sClient kubernetes.Interface) *ResourceInfo {
-	podutil := pod.New(pod.WithK8sClient(k8sClient))
-	nodeutil := node.New(addr, client)
-	return &ResourceInfo{addr: addr, client: client, podutil: podutil, nodeutil: nodeutil}
+func New(k8sClient kubernetes.Interface) *ResourceInfo {
+	return &ResourceInfo{
+		podUtil: pod.New(pod.WithK8sClient(k8sClient)),
+		cs:      k8sClient,
+	}
 }
 
-// PARAM brief: Does not provide cpuusage, memusage data, reducing the overhead of calling k8sapi
-func (ri *ResourceInfo) Get(brief bool) (apistructs.ClusterResourceInfoData, error) {
-	podlist := &v1.PodList{Items: nil}
+// Get PARAM brief: Does not provide cpuusage, memusage data, reducing the overhead of calling k8sapi
+func (r *ResourceInfo) Get(brief bool) (apistructs.ClusterResourceInfoData, error) {
+	podLi := &v1.PodList{Items: nil}
 	if !brief {
 		var err error
-		podlist, err = ri.podutil.ListAllNamespace([]string{"status.phase!=Succeeded", "status.phase!=Failed"})
+		podLi, err = r.podUtil.ListAllNamespace([]string{"status.phase!=Succeeded", "status.phase!=Failed"})
 		if err != nil {
 			return apistructs.ClusterResourceInfoData{}, nil
 		}
 	}
-	nodelist, err := ri.nodeutil.List()
+
+	nodeList, err := r.cs.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
 	if err != nil {
 		logrus.Errorf("failed to list nodes: %v", err)
 		return apistructs.ClusterResourceInfoData{}, nil
 	}
-	podmap := splitPodsByNodeName(podlist)
-	nodeResourceInfoMap := map[string]*apistructs.NodeResourceInfo{}
-	for _, node := range nodelist.Items {
+
+	podMap := splitPodsByNodeName(podLi)
+	nodeResourceInfoMap := make(map[string]*apistructs.NodeResourceInfo)
+
+	for _, node := range nodeList.Items {
 		var ip net.IP
 		for _, addr := range node.Status.Addresses {
 			if addr.Type == v1.NodeInternalIP {
@@ -83,7 +85,7 @@ func (ri *ResourceInfo) Get(brief bool) (apistructs.ClusterResourceInfoData, err
 		memAllocatable, _ := node.Status.Allocatable.Memory().AsInt64()
 		info.CPUAllocatable = cpuAllocatable
 		info.MemAllocatable = memAllocatable
-		pods := podmap[node.Name]
+		pods := podMap[node.Name]
 		podlist := &v1.PodList{Items: pods}
 		reqs, limits := getPodsTotalRequestsAndLimits(podlist)
 		cpuReqs, cpuLimit, memReqs, memLimit := reqs[v1.ResourceCPU], limits[v1.ResourceCPU], reqs[v1.ResourceMemory], limits[v1.ResourceMemory]
@@ -106,16 +108,16 @@ func (ri *ResourceInfo) Get(brief bool) (apistructs.ClusterResourceInfoData, err
 	return apistructs.ClusterResourceInfoData{Nodes: nodeResourceInfoMap}, nil
 }
 
-func splitPodsByNodeName(podlist *v1.PodList) map[string][]v1.Pod {
-	podmap := map[string][]v1.Pod{}
-	for i := range podlist.Items {
-		if _, ok := podmap[podlist.Items[i].Spec.NodeName]; ok {
-			podmap[podlist.Items[i].Spec.NodeName] = append(podmap[podlist.Items[i].Spec.NodeName], podlist.Items[i])
+func splitPodsByNodeName(podLi *v1.PodList) map[string][]v1.Pod {
+	podMap := make(map[string][]v1.Pod)
+	for i := range podLi.Items {
+		if _, ok := podMap[podLi.Items[i].Spec.NodeName]; ok {
+			podMap[podLi.Items[i].Spec.NodeName] = append(podMap[podLi.Items[i].Spec.NodeName], podLi.Items[i])
 		} else {
-			podmap[podlist.Items[i].Spec.NodeName] = []v1.Pod{podlist.Items[i]}
+			podMap[podLi.Items[i].Spec.NodeName] = []v1.Pod{podLi.Items[i]}
 		}
 	}
-	return podmap
+	return podMap
 }
 
 func nodeLabels(n *v1.Node) []string {

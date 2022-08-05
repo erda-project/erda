@@ -153,7 +153,7 @@ func init() {
 			logrus.Errorf("executor(%s) call eventbox new api error: %v", name, err)
 			return nil, err
 		}
-		resourceInfo := resourceinfo.New(kubeAddr, kubeClient, k8sClient.ClientSet)
+		resourceInfo := resourceinfo.New(k8sClient.ClientSet)
 
 		edas := &EDAS{
 			name:            name,

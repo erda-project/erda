@@ -20,6 +20,7 @@ import (
 	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -199,7 +200,7 @@ func (d *DaemonsetOperator) Create(k8syml interface{}) error {
 		return fmt.Errorf("[BUG] this k8syml should be DaemonSet")
 	}
 	if err := d.ns.Exists(ds.Namespace); err != nil {
-		if err := d.ns.Create(ds.Namespace, nil); err != nil && !strutil.Contains(err.Error(), "AlreadyExists") {
+		if err := d.ns.Create(ds.Namespace, nil); err != nil && !k8serrors.IsAlreadyExists(err) {
 			logrus.Errorf("failed to create ns: %s, %v", ds.Namespace, err)
 			return err
 		}
