@@ -1,0 +1,1 @@
+ALTER TABLE qa_sonar ADD COLUMN `quality_gate_result` text COMMENT '代码门禁检查结果';
