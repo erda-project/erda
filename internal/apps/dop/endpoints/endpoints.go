@@ -695,7 +695,7 @@ type Endpoints struct {
 	CopyChannel   chan uint64
 
 	tokenService  tokenpb.TokenServiceServer
-	orgClient     orgclient.ClientInterface
+	orgClient     orgclient.Interface
 	issueDBClient *issuedao.DBClient
 	ruleExecutor  rulepb.RuleServiceServer
 	issueQuery    issuequery.Interface
@@ -802,7 +802,7 @@ func WithPublishItem(publishItem *publish_item.PublishItem) Option {
 	}
 }
 
-func WithOrgClient(org orgclient.ClientInterface) Option {
+func WithOrgClient(org orgclient.Interface) Option {
 	return func(e *Endpoints) {
 		e.orgClient = org
 	}

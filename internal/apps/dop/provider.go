@@ -95,7 +95,7 @@ type provider struct {
 	DevFlowSvc            *flow.Service                  `autowired:"erda.apps.devflow.flow.FlowService"`
 	IssueCoreSvc          *core.IssueService             `autowired:"erda.dop.issue.core.IssueCoreService"`
 	Query                 issuequery.Interface
-	Org                   org.ClientInterface `required:"true"`
+	Org                   org.Interface `required:"true"`
 	Identity              userpb.UserServiceServer
 	RuleService           rulepb.RuleServiceServer
 

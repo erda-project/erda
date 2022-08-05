@@ -44,7 +44,7 @@ import (
 type Ticket struct {
 	db  *dao.DBClient
 	bdl *bundle.Bundle
-	org org.ClientInterface
+	org org.Interface
 }
 
 // Option 定义 Ticket 配置选项
@@ -73,7 +73,7 @@ func WithBundle(bdl *bundle.Bundle) Option {
 	}
 }
 
-func WithOrg(org org.ClientInterface) Option {
+func WithOrg(org org.Interface) Option {
 	return func(t *Ticket) {
 		t.org = org
 	}

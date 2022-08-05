@@ -43,7 +43,7 @@ type Application struct {
 	bdl          *bundle.Bundle
 	cms          cmspb.CmsServiceServer
 	tokenService tokenpb.TokenServiceServer
-	org          org.ClientInterface
+	org          org.Interface
 }
 
 type Option func(*Application)
@@ -80,7 +80,7 @@ func WithTokenSvc(tokenService tokenpb.TokenServiceServer) Option {
 	}
 }
 
-func WithOrg(org org.ClientInterface) Option {
+func WithOrg(org org.Interface) Option {
 	return func(a *Application) {
 		a.org = org
 	}

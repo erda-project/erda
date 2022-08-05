@@ -43,7 +43,7 @@ var (
 type CDP struct {
 	bdl           *bundle.Bundle
 	resourceTrans i18n.Translator
-	org           org.ClientInterface
+	org           org.Interface
 }
 
 // Option CDP 配置选项
@@ -71,7 +71,7 @@ func WithResourceTranslator(resourceTrans i18n.Translator) Option {
 	}
 }
 
-func WithOrg(org org.ClientInterface) Option {
+func WithOrg(org org.Interface) Option {
 	return func(f *CDP) {
 		f.org = org
 	}

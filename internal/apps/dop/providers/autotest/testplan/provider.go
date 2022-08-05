@@ -40,7 +40,7 @@ type provider struct {
 	bundle   *bundle.Bundle
 
 	TestPlanService *TestPlanService
-	Org             org.ClientInterface
+	Org             org.Interface
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {

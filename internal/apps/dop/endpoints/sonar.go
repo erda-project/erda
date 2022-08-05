@@ -170,7 +170,7 @@ func (e *Endpoints) SonarIssues(ctx context.Context, r *http.Request, vars map[s
 	return httpserver.OkResp(data)
 }
 
-func storeIssues(sonarStore *apistructs.SonarStoreRequest, bdl *bundle.Bundle, org org.ClientInterface) (dbclient.QASonar, error) {
+func storeIssues(sonarStore *apistructs.SonarStoreRequest, bdl *bundle.Bundle, org org.Interface) (dbclient.QASonar, error) {
 	sonar := dbclient.QASonar{
 		Key: sonarStore.Key,
 	}
@@ -257,7 +257,7 @@ func storeIssues(sonarStore *apistructs.SonarStoreRequest, bdl *bundle.Bundle, o
 	return sonar, nil
 }
 
-func MetricsSonar(sonarStore *apistructs.SonarStoreRequest, bdl *bundle.Bundle, org org.ClientInterface) {
+func MetricsSonar(sonarStore *apistructs.SonarStoreRequest, bdl *bundle.Bundle, org org.Interface) {
 	if sonarStore == nil || bdl == nil {
 		return
 	}
@@ -280,7 +280,7 @@ func MetricsSonar(sonarStore *apistructs.SonarStoreRequest, bdl *bundle.Bundle, 
 	doMetrics(metrics, bdl, org)
 }
 
-func addDefaultTagAndField(sonarStore *apistructs.SonarStoreRequest, metric *apistructs.Metric, bdl *bundle.Bundle, orgClient org.ClientInterface) {
+func addDefaultTagAndField(sonarStore *apistructs.SonarStoreRequest, metric *apistructs.Metric, bdl *bundle.Bundle, orgClient org.Interface) {
 	metric.Timestamp = time.Now().UnixNano()
 	metric.Name = SonarMetricsName
 	metric.Fields = map[string]interface{}{}
@@ -325,7 +325,7 @@ func marshalQualityResult(qualityGateResult apistructs.QualityGateResult) (strin
 	return string(qualityResult), nil
 }
 
-func doMetrics(metric []apistructs.Metric, bdl *bundle.Bundle, org org.ClientInterface) {
+func doMetrics(metric []apistructs.Metric, bdl *bundle.Bundle, org org.Interface) {
 	logrus.Info(" doMetrics CollectMetrics start ")
 	metricsObject := apistructs.Metrics{}
 	metricsObject.Metric = metric

@@ -40,7 +40,7 @@ type provider struct {
 	DB       *gorm.DB           `autowired:"mysql-gorm.v2-client"`
 	Register transport.Register `autowired:"service-register" required:"true"`
 	Trans    i18n.Translator    `translator:"project-pipeline" required:"true"`
-	Org      org.ClientInterface
+	Org      org.Interface
 
 	dbClient *db.Client
 }
