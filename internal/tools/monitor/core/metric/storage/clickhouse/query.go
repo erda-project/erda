@@ -105,9 +105,11 @@ func (p *provider) Query(ctx context.Context, q tsql.Query) (*model.ResultSet, e
 
 	rows, err := p.exec(newCtx, sql)
 	if err != nil {
+		span.RecordError(err, oteltrace.WithAttributes(attribute.String("error", err.Error())))
 		return nil, errors.Wrap(err, fmt.Sprintf("failed to query: %s", sql))
 	}
 	if rows.Err() != nil {
+		span.RecordError(err, oteltrace.WithAttributes(attribute.String("error", rows.Err().Error())))
 		return nil, errors.Wrap(err, fmt.Sprintf("failed to query: %s", sql))
 	}
 	defer rows.Close()
@@ -120,6 +122,7 @@ func (p *provider) Query(ctx context.Context, q tsql.Query) (*model.ResultSet, e
 	span.SetAttributes(trace.BigStringAttribute("result", result.String()))
 
 	if err != nil {
+		span.RecordError(err, oteltrace.WithAttributes(attribute.String("error", err.Error())))
 		p.Log.Error("clickhouse metric query is error ", sql, err)
 		return nil, err
 	}

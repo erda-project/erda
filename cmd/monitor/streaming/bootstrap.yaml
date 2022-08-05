@@ -626,9 +626,9 @@ erda.oap.collector.receiver.kafka@oapspanevent:
   _enable: ${WRITE_METRIC_TO_CLICKHOUSE_ENABLE:false}
   proto_parser: oapspanevent
   consumer:
-    topics: "${OAP_TRACE_EVENT_TOPICS:msp-jaeger-trace,erda-spans}"
-    group: "${OAP_TRACE_EVENT_GROUP_ID:spot-monitor-trace-event-dev}"
-    parallelism: ${SPOT_OAPSPAN_CONSUMERS:9}
+    topics: "${OAP_TRACE_EVENT_TOPICS:erda-spans}"
+    group: "${OAP_TRACE_EVENT_GROUP_ID:spot-monitor-trace-event}"
+    parallelism: ${SPOT_OAPSPAN_EVENT_CONSUMERS:9}
     options:
       auto.offset.reset: "${KAFKA_AUTO_OFFSET_RESET:earliest}"
       auto.commit.interval.ms: "${KAFKA_AUTO_COMMIT_INTERVAL_MS:1000}"

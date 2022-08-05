@@ -1,3 +1,17 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package oapspan
 
 import (
@@ -77,6 +91,8 @@ func Test_span_event_unmarshal(t *testing.T) {
 						"sql":                         "SELECT *, tag_values[indexOf(tag_keys,'event')] AS \"event\" FROM \"monitor\".\"metrics_all\" WHERE ((\"timestamp\" \u003e= fromUnixTimestamp64Nano(cast(0,'Int64'))) AND (\"timestamp\" \u003c fromUnixTimestamp64Nano(cast(1659682795020000000,'Int64'))) AND (tag_values[indexOf(tag_keys,'span_id')] = '4a15deb5-7231-4b64-905a-c772f6e2fe33') AND (\"metric_group\" IN ('apm_span_event'))) ORDER BY \"timestamp\" ASC LIMIT 10",
 						"table":                       "monitor.metrics_all",
 						"tenant_id":                   "",
+						"trace_id":                    "0ad6bfb29fb19c13a052c5d8f5f15cb6",
+						"span_id":                     "f7ae4819e2f9d85f",
 					},
 					Fields:  nil,
 					OrgName: "",
