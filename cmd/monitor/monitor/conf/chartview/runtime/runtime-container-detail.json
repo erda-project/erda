@@ -135,6 +135,12 @@
           }],
           "valueDimensions": [{
             "alias": "CPU使用率",
+            "i18n": {
+              "alias": {
+                "zh": "CPU使用率",
+                "en": "CPU Usage"
+              }
+            },
             "key": "value3cZg9kBI",
             "type": "expr",
             "expr": "max(cpu_usage_percent::field)",
@@ -217,6 +223,12 @@
           "valueDimensions": [{
             "aggregation": "avg",
             "alias": "磁盘读取速率",
+            "i18n": {
+              "alias": {
+                "zh": "磁盘读取速率",
+                "en": "Read"
+              }
+            },
             "key": "valuet3Ba41GI",
             "type": "expr",
             "expr": "diffps(blk_read_bytes::field)",
@@ -227,6 +239,12 @@
           }, {
             "aggregation": "avg",
             "alias": "磁盘写入速率",
+            "i18n": {
+              "alias": {
+                "zh": "磁盘写入速率",
+                "en": "Write"
+              }
+            },
             "key": "valueedfvbYOB",
             "type": "expr",
             "expr": "diffps(blk_write_bytes::field)",
@@ -310,6 +328,12 @@
           "valueDimensions": [{
             "aggregation": "count",
             "alias": "接收",
+            "i18n": {
+              "alias": {
+                "zh": "接收",
+                "en": "Accept"
+              }
+            },
             "key": "valueUMrSAbUI",
             "type": "expr",
             "expr": "diffps(rx_bytes::field)",
@@ -320,6 +344,12 @@
           },{
             "aggregation": "count",
             "alias": "发送",
+            "i18n": {
+              "alias": {
+                "zh": "发送",
+                "en": "Send"
+              }
+            },
             "key": "valueUMrSAbUJ",
             "type": "expr",
             "expr": "diffps(tx_bytes::field)",
