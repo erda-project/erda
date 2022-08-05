@@ -106,5 +106,5 @@ func (k *Kubernetes) NotfoundNamespace(ns string) (bool, error) {
 
 // DeleteNamespace delete namepsace
 func (k *Kubernetes) DeleteNamespace(ns string) error {
-	return k.namespace.Delete(ns)
+	return k.namespace.Delete(ns, true)
 }

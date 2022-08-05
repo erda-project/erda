@@ -16,23 +16,20 @@
 package namespace
 
 import (
-	"bytes"
+	"context"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	apiv1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 
-	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8sapi"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8serror"
-	"github.com/erda-project/erda/pkg/http/httpclient"
-	"github.com/erda-project/erda/pkg/strutil"
 )
 
 // Namespace is the object to manipulate k8s api of namespace
 type Namespace struct {
-	addr   string
-	client *httpclient.HTTPClient
+	cs kubernetes.Interface
 }
 
 // Option configures a Namespace
@@ -49,151 +46,69 @@ func New(options ...Option) *Namespace {
 	return ns
 }
 
-// WithCompleteParams provides an Option
-func WithCompleteParams(addr string, client *httpclient.HTTPClient) Option {
+// WithKubernetesClient provides an Option
+func WithKubernetesClient(k kubernetes.Interface) Option {
 	return func(n *Namespace) {
-		n.addr = addr
-		n.client = client
+		n.cs = k
 	}
 }
 
 // Create creates a k8s namespace
 // TODO: Need to pass in the namespace structure
 func (n *Namespace) Create(ns string, labels map[string]string) error {
-	namespace := &apiv1.Namespace{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v1",
-			Kind:       "Namespace",
-		},
+	if _, err := n.cs.CoreV1().Namespaces().Create(context.Background(), &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   ns,
 			Labels: labels,
 		},
+	}, metav1.CreateOptions{}); err != nil {
+		return err
 	}
-
-	var b bytes.Buffer
-	resp, err := n.client.Post(n.addr).
-		Path("/api/v1/namespaces").
-		JSONBody(namespace).
-		Do().
-		Body(&b)
-
-	if err != nil {
-		return errors.Wrapf(err, "failed to create namespace, ns: %s, (%v)", ns, err)
-	}
-
-	if !resp.IsOK() {
-		return errors.Errorf("failed to create namespace, ns: %s, statuscode: %v, body: %v", ns, resp.StatusCode(), b.String())
-	}
-	logrus.Infof("succeed to create namespace %s", ns)
+	logrus.Infof("succeed to create namespace %s, labels %+v", ns, labels)
 	return nil
 }
 
 func (n *Namespace) Update(ns string, labels map[string]string) error {
-	namespace := &apiv1.Namespace{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v1",
-			Kind:       "Namespace",
-		},
+	if _, err := n.cs.CoreV1().Namespaces().Update(context.Background(), &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   ns,
 			Labels: labels,
 		},
+	}, metav1.UpdateOptions{}); err != nil {
+		return err
 	}
 
-	var b bytes.Buffer
-	resp, err := n.client.Put(n.addr).
-		Path("/api/v1/namespaces/" + ns).
-		JSONBody(namespace).
-		Do().
-		Body(&b)
-
-	if err != nil {
-		return errors.Wrapf(err, "failed to update namespace, ns: %s, (%v)", ns, err)
-	}
-
-	if !resp.IsOK() {
-		return errors.Errorf("failed to update namespace, ns: %s, statuscode: %v, body: %v", ns, resp.StatusCode(), b.String())
-	}
-	logrus.Infof("succeed to update namespace, ns: %s", ns)
+	logrus.Infof("succeed to update namespace %s, labels: %+v", ns, labels)
 	return nil
 }
 
 // Exists decides whether a namespace exists
 func (n *Namespace) Exists(ns string) error {
-	path := strutil.Concat("/api/v1/namespaces/", ns)
-	resp, err := n.client.Get(n.addr).
-		Path(path).
-		Do().
-		DiscardBody()
-
+	_, err := n.cs.CoreV1().Namespaces().Get(context.Background(), ns, metav1.GetOptions{})
 	if err != nil {
-		return err
-	}
-
-	if !resp.IsOK() {
-		if resp.IsNotfound() {
+		if k8serrors.IsNotFound(err) {
 			return k8serror.ErrNotFound
 		}
-		return errors.Errorf("failed to get namespace, ns: %s, statuscode: %v", ns, resp.StatusCode())
-
+		return err
 	}
 	return nil
 }
 
 // Delete deletes a k8s namespace (deletes all dependents in the foreground)
-func (n *Namespace) Delete(ns string) error {
-	var b bytes.Buffer
-	path := strutil.Concat("/api/v1/namespaces/", ns)
-
-	resp, err := n.client.Delete(n.addr).
-		Path(path).
-		JSONBody(k8sapi.DeleteOptions).
-		Do().
-		Body(&b)
-
-	if err != nil {
-		return errors.Errorf("failed to delete namespace, ns: %s, (%v)", ns, err)
+func (n *Namespace) Delete(ns string, force ...bool) error {
+	deleteOptions := metav1.DeleteOptions{}
+	if len(force) != 0 && force[0] {
+		propagationPolicy := metav1.DeletePropagationForeground
+		deleteOptions.PropagationPolicy = &propagationPolicy
+		logrus.Debugf("force delete namespace %s", ns)
 	}
 
-	if !resp.IsOK() {
-		if resp.IsNotfound() {
-			logrus.Debugf("namespace not found, ns: %s", ns)
+	err := n.cs.CoreV1().Namespaces().Delete(context.Background(), ns, deleteOptions)
+	if err != nil {
+		if k8serrors.IsNotFound(err) {
 			return k8serror.ErrNotFound
 		}
-		//When the deletion fails, the namespace is forced to be deleted, and the spec is set to empty
-		if resp.StatusCode() == 409 {
-			return n.DeleteForce(ns)
-		}
-		return errors.Errorf("failed to delete namespace, ns: %s, statuscode: %v, body: %v",
-			ns, resp.StatusCode(), b.String())
-	}
-
-	return nil
-}
-
-// Delete deletes a k8s namespace with empty
-func (n *Namespace) DeleteForce(ns string) error {
-	namespace := &apiv1.Namespace{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v1",
-			Kind:       "Namespace",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name: ns,
-		},
-	}
-
-	var b bytes.Buffer
-	_, err := n.client.Put(n.addr).
-		Path("/api/v1/namespaces/" + ns + "/finalize").
-		JSONBody(namespace).
-		Do().
-		Body(&b)
-
-	if err != nil {
-		logrus.Errorf("failed to update(force delete finalize) namespace, ns: %s, (%v)", ns, err)
-		return errors.Wrapf(err, "failed to update(force delete finalize) namespace, ns: %s, (%v)", ns, err)
+		return err
 	}
 	return nil
 }

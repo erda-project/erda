@@ -28,6 +28,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8sapi"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders"
 	"github.com/erda-project/erda/pkg/strutil"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
 type DaemonsetOperator struct {
@@ -199,7 +200,7 @@ func (d *DaemonsetOperator) Create(k8syml interface{}) error {
 		return fmt.Errorf("[BUG] this k8syml should be DaemonSet")
 	}
 	if err := d.ns.Exists(ds.Namespace); err != nil {
-		if err := d.ns.Create(ds.Namespace, nil); err != nil && !strutil.Contains(err.Error(), "AlreadyExists") {
+		if err := d.ns.Create(ds.Namespace, nil); err != nil && !k8serrors.IsAlreadyExists(err) {
 			logrus.Errorf("failed to create ns: %s, %v", ds.Namespace, err)
 			return err
 		}
