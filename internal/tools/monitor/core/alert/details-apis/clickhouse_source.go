@@ -20,13 +20,16 @@ import (
 
 	"github.com/doug-martin/goqu/v9"
 	"github.com/pkg/errors"
+	"google.golang.org/grpc/metadata"
 
 	"github.com/erda-project/erda-infra/base/logs"
+	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/clickhouse"
 	"github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/clickhouse/table/loader"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 const timeFormat = "2006-01-02 15:04:05"
@@ -40,11 +43,11 @@ type ClickhouseSource struct {
 }
 
 type podRow struct {
-	TagKeys          []string `ch:"tagKeys"`
-	TagValues        []string `ch:"tagValues"`
-	RestartTotal     float64  `ch:"restartsTotal"`
-	StateCode        float64  `ch:"stateCode"`
-	TerminatedReason string   `ch:"terminatedReason"`
+	TagKeys           []string  `ch:"tagKeys"`
+	TagValues         []string  `ch:"tagValues"`
+	NumberFieldKeys   []string  `ch:"numberFieldKeys"`
+	NumberFieldValues []float64 `ch:"numberFieldValues"`
+	TerminatedReason  string    `ch:"terminatedReason"`
 }
 
 type containerRow struct {
@@ -57,14 +60,10 @@ func (chs *ClickhouseSource) GetPodInfo(ctx context.Context, clusterName, podNam
 	if orgID == "" {
 		return nil, errors.Errorf("orgID can not be empty")
 	}
+	ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "monitor"}))
 	org, err := chs.Org.GetOrg(ctx, &pb.GetOrgRequest{IdOrName: orgID})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get org")
-	}
-
-	if start == 0 || end == 0 {
-		start = time.Now().Add(-5 * time.Minute).Unix()
-		end = time.Now().Unix()
 	}
 
 	pod, err := chs.getPod(ctx, org.Data.Name, clusterName, podName, start, end)
@@ -81,9 +80,15 @@ func (chs *ClickhouseSource) GetPodInfo(ctx context.Context, clusterName, podNam
 
 func (chs *ClickhouseSource) getPod(ctx context.Context, orgName, clusterName, podName string, start, end int64) (*podRow, error) {
 	table, _ := chs.Loader.GetSearchTable(orgName)
-	from := time.Unix(start, 0).Local().Format(timeFormat)
-	to := time.Unix(end, 0).Local().Format(timeFormat)
-	subQuery := goqu.From(table).Select(goqu.L("*")).Where(
+	from := time.UnixMilli(start).Local().Format(timeFormat)
+	to := time.UnixMilli(end).Local().Format(timeFormat)
+	sql := goqu.From(table).Select(
+		goqu.L("argMax(tag_keys, timestamp)").As("tagKeys"),
+		goqu.L("argMax(tag_values, timestamp)").As("tagValues"),
+		goqu.L("argMax(number_field_keys, timestamp)").As("numberFieldKeys"),
+		goqu.L("argMax(number_field_values, timestamp)").As("numberFieldValues"),
+		goqu.L("argMax(string_field_values[indexOf(string_field_keys,?)], timestamp)", "terminated_reason").As("terminatedReason"),
+	).Where(
 		goqu.Ex{
 			"metric_group": "kubernetes_pod_container",
 			"org_name":     orgName,
@@ -91,13 +96,7 @@ func (chs *ClickhouseSource) getPod(ctx context.Context, orgName, clusterName, p
 		},
 		goqu.L("tag_values[indexOf(tag_keys,?)]", "pod_name").Eq(podName),
 		goqu.L("tag_values[indexOf(tag_keys,?)]", "cluster_name").Eq(clusterName),
-		goqu.L("timestamp").Between(goqu.Range(from, to))).Order(goqu.C("timestamp").Desc())
-	sql := goqu.From(subQuery).Select(
-		goqu.L("any(tag_keys)").As("tagKeys"),
-		goqu.L("any(tag_values").As("tagValues"),
-		goqu.L("groupArray(number_field_values[indexOf(number_field_keys,?)])[1]", "restart_total").As("restartTotal"),
-		goqu.L("groupArray(number_field_values[indexOf(number_field_keys,?)])[1]", "state_code").As("stateCode"),
-		goqu.L("groupArray(string_field_values[indexOf(string_field_keys,?)])[1]", "terminated_reason").As("terminatedReason"),
+		goqu.L("timestamp").Between(goqu.Range(from, to)),
 	).GroupBy(goqu.L("tag_values[indexOf(tag_keys,?)]", "pod_name"))
 
 	sqlStr, err := chs.toSQL(sql)
@@ -110,6 +109,7 @@ func (chs *ClickhouseSource) getPod(ctx context.Context, orgName, clusterName, p
 		return nil, errors.Wrapf(err, "failed to query pod row")
 	}
 
+	row.Next()
 	pod := podRow{}
 	if err := row.ScanStruct(&pod); err != nil {
 		return nil, errors.Wrapf(err, "failed to scan row to podRow")
@@ -119,11 +119,11 @@ func (chs *ClickhouseSource) getPod(ctx context.Context, orgName, clusterName, p
 
 func (chs *ClickhouseSource) getContainers(ctx context.Context, orgName, clusterName, podName string, start, end int64) ([]*containerRow, error) {
 	table, _ := chs.Loader.GetSearchTable(orgName)
-	from := time.Unix(start, 0).Local().Format(timeFormat)
-	to := time.Unix(end, 0).Local().Format(timeFormat)
+	from := time.UnixMilli(start).Local().Format(timeFormat)
+	to := time.UnixMilli(end).Local().Format(timeFormat)
 	sql := goqu.From(table).Select(
-		goqu.L("any(tag_values[indexOf(tag_keys,?)]", "container_id").As("containerID"),
-		goqu.L("any(tag_values[indexOf(tag_keys,?)]", "host_ip").As("hostIP"),
+		goqu.L("any(tag_values[indexOf(tag_keys,?)])", "container_id").As("containerID"),
+		goqu.L("any(tag_values[indexOf(tag_keys,?)])", "host_ip").As("hostIP"),
 	).Where(
 		goqu.Ex{
 			"metric_group": "docker_container_summary",
@@ -169,14 +169,18 @@ func (chs *ClickhouseSource) toSQL(sql *goqu.SelectDataset) (string, error) {
 }
 
 func (chs *ClickhouseSource) parsePodInfo(pod *podRow, containers []*containerRow) (*PodInfo, error) {
-	if len(pod.TagKeys) != len(pod.TagValues) {
-		return nil, errors.New("invalid pod tags")
+	if len(pod.TagKeys) != len(pod.TagValues) || len(pod.NumberFieldKeys) != len(pod.NumberFieldValues) {
+		return nil, errors.New("invalid pod")
 	}
 	tags := make(map[string]string)
 	for i := 0; i < len(pod.TagKeys); i++ {
 		tags[pod.TagKeys[i]] = pod.TagValues[i]
 	}
 
+	numbers := make(map[string]float64)
+	for i := 0; i < len(pod.NumberFieldKeys); i++ {
+		numbers[pod.NumberFieldKeys[i]] = pod.NumberFieldValues[i]
+	}
 	podInfo := &PodInfo{
 		Summary: PodInfoSummary{
 			ClusterName:      tags["cluster_name"],
@@ -184,8 +188,8 @@ func (chs *ClickhouseSource) parsePodInfo(pod *podRow, containers []*containerRo
 			HostIP:           tags["host_ip"],
 			Namespace:        tags["namespace"],
 			PodName:          tags["pod_name"],
-			RestartTotal:     pod.RestartTotal,
-			StateCode:        pod.StateCode,
+			RestartTotal:     numbers["restarts_total"],
+			StateCode:        numbers["state_code"],
 			TerminatedReason: pod.TerminatedReason,
 		},
 	}

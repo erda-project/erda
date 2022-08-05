@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/erda-project/erda-proto-go/core/monitor/alertdetail/pb"
 	"github.com/erda-project/erda/pkg/common/apis"
@@ -30,8 +31,12 @@ type alertDetailService struct {
 }
 
 func (a *alertDetailService) QuerySystemPodMetrics(ctx context.Context, request *pb.QuerySystemPodMetricsRequest) (*pb.QuerySystemPodMetricsResponse, error) {
-	start := request.Timestamp - 30*60*1000
-	end := request.Timestamp + 30*60*1000
+	start := time.Now().Add(-5 * time.Minute).UnixMilli()
+	end := time.Now().UnixMilli()
+	if request.Timestamp != 0 {
+		start = request.Timestamp - 30*60*1000
+		end = request.Timestamp + 30*60*1000
+	}
 	orgIDStr := apis.GetOrgID(ctx)
 	if orgIDStr == "" {
 		return nil, fmt.Errorf("orgID can not be empty")

@@ -78,11 +78,11 @@ func (conn *MockClickhouseConn) Query(ctx context.Context, query string, args ..
 		return &MockPodRow{
 			pods: []podRow{
 				{
-					TagKeys:          []string{"_meta", "_metric_scope", "_metric_scope_id", "cluster_name", "container_name", "host", "host_ip", "namespace", "node_name", "org_name", "pod_name", "state"},
-					TagValues:        []string{"true", "org", "demo", "erda-test", "demo-242891120181430", "test-6wmj8", "2.2.2.2", "test-242891097387190", "cn-hangzhou.2.2.2.2", "demo", "demo-xxxx", "terminated"},
-					RestartTotal:     2,
-					StateCode:        1,
-					TerminatedReason: "Completed",
+					TagKeys:           []string{"_meta", "_metric_scope", "_metric_scope_id", "cluster_name", "container_name", "host", "host_ip", "namespace", "node_name", "org_name", "pod_name", "state"},
+					TagValues:         []string{"true", "org", "demo", "erda-test", "demo-242891120181430", "test-6wmj8", "2.2.2.2", "test-242891097387190", "cn-hangzhou.2.2.2.2", "demo", "demo-xxxx", "terminated"},
+					NumberFieldKeys:   []string{"resource_limits_millicpu_units", "resource_requests_memory_bytes", "resource_requests_millicpu_units", "restarts_total", "state_code", "resource_limits_memory_bytes"},
+					NumberFieldValues: []float64{1000, 524288000, 100, 1, 0, 2147483648},
+					TerminatedReason:  "Completed",
 				},
 			},
 		}, nil
