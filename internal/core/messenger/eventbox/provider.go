@@ -49,7 +49,7 @@ type provider struct {
 }
 
 func (p *provider) Run(ctx context.Context) error {
-	return Initialize(p)
+	return Initialize(p, ctx)
 }
 
 func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {

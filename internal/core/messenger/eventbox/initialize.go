@@ -15,6 +15,7 @@
 package eventbox
 
 import (
+	"context"
 	"os"
 	"os/signal"
 	"syscall"
@@ -22,7 +23,7 @@ import (
 	"github.com/erda-project/erda/internal/core/messenger/eventbox/dispatcher"
 )
 
-func Initialize(p *provider) error {
+func Initialize(p *provider, ctx context.Context) error {
 	dp, err := dispatcher.New(p.DingtalkApiClient, p.Messenger,
 		p.eventBoxService.HttpI, p.eventBoxService.MonitorHTTP,
 		p.eventBoxService.WebHookHTTP, p.eventBoxService.RegisterHTTP, p.Org)
@@ -32,13 +33,25 @@ func Initialize(p *provider) error {
 
 	sig := make(chan os.Signal)
 	signal.Notify(sig, syscall.SIGTERM, syscall.SIGINT)
+	ch := make(chan error, 1)
 	go func() {
 		for range sig {
-			dp.Stop()
-			os.Exit(0)
+			ch <- dp.Stop()
+		}
+	}()
+	go func() {
+		select {
+		case <-ctx.Done():
+			ch <- dp.Stop()
 		}
 	}()
 
-	dp.Start()
+	go func() {
+		dp.Start(ctx)
+	}()
+
+	for err := range ch {
+		return err
+	}
 	return nil
 }
