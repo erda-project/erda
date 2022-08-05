@@ -69,12 +69,14 @@ func (n *Namespace) Create(ns string, labels map[string]string) error {
 }
 
 func (n *Namespace) Update(ns string, labels map[string]string) error {
-	if _, err := n.cs.CoreV1().Namespaces().Update(context.Background(), &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:   ns,
-			Labels: labels,
-		},
-	}, metav1.UpdateOptions{}); err != nil {
+	curNs, err := n.cs.CoreV1().Namespaces().Get(context.Background(), ns, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+
+	curNs.Labels = labels
+
+	if _, err := n.cs.CoreV1().Namespaces().Update(context.Background(), curNs, metav1.UpdateOptions{}); err != nil {
 		return err
 	}
 
