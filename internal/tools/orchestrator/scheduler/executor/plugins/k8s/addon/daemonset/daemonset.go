@@ -20,6 +20,7 @@ import (
 	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -28,7 +29,6 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8sapi"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders"
 	"github.com/erda-project/erda/pkg/strutil"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
 type DaemonsetOperator struct {
