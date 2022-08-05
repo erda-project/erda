@@ -15,6 +15,7 @@
 package dop
 
 import (
+	"context"
 	"embed"
 	"os"
 	"time"
@@ -71,6 +72,8 @@ var scenarioFS embed.FS
 
 type provider struct {
 	Log logs.Logger
+
+	bdl *bundle.Bundle
 
 	PipelineCms           cmspb.CmsServiceServer                  `autowired:"erda.core.pipeline.cms.CmsService" optional:"true"`
 	PipelineSource        sourcepb.SourceServiceServer            `autowired:"erda.core.pipeline.source.SourceService" required:"true"`
@@ -136,6 +139,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		// TODO remove it after internal bundle invoke inside cp issue-manage adjusted
 		bundle.WithCustom(discover.EnvDOP, "localhost:9527"),
 	)
+	p.bdl = bdl.Bdl
 	p.Protocol.WithContextValue(types.GlobalCtxKeyBundle, bdl.Bdl)
 	protocol.MustRegisterProtocolsFromFS(scenarioFS)
 	p.Log.Info("init component-protocol done")
@@ -156,10 +160,25 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	return p.Initialize(ctx)
 }
 
+func (p *provider) Run(ctx context.Context) error {
+	registerWebHook(bdl.Bdl)
+
+	if err := deleteWebhook(bdl.Bdl); err != nil {
+		logrus.Errorf("failed to delete webhook, err: %v", err)
+	}
+
+	// 注册 hook
+	if err := p.RegisterEvents(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func init() {
 	servicehub.Register("dop", &servicehub.Spec{
 		Services:     []string{"dop"},
-		Dependencies: []string{"etcd"},
+		Dependencies: []string{"etcd", "http-server"},
 		Creator:      func() servicehub.Provider { return &provider{} },
 	})
 }

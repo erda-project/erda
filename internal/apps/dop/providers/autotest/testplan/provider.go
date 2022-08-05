@@ -15,6 +15,8 @@
 package testplan
 
 import (
+	"context"
+
 	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -62,6 +64,10 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	if p.Register != nil {
 		pb.RegisterTestPlanServiceImp(p.Register, p.TestPlanService)
 	}
+	return nil
+}
+
+func (p *provider) Run(ctx context.Context) error {
 	if err := p.registerWebHook(); err != nil {
 		return err
 	}

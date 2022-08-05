@@ -78,6 +78,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/services/testset"
 	"github.com/erda-project/erda/internal/apps/dop/services/ticket"
 	"github.com/erda-project/erda/internal/apps/dop/services/workbench"
+	webhooktypes "github.com/erda-project/erda/internal/apps/dop/types"
 	"github.com/erda-project/erda/internal/apps/dop/utils"
 	"github.com/erda-project/erda/pkg/cron"
 	"github.com/erda-project/erda/pkg/crypto/encryption"
@@ -117,17 +118,6 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 	}
 
 	issueDB := p.IssueCoreSvc.DBClient()
-
-	registerWebHook(bdl.Bdl)
-
-	if err = deleteWebhook(bdl.Bdl); err != nil {
-		logrus.Errorf("failed to delete webhook, err: %v", err)
-	}
-
-	// 注册 hook
-	if err := ep.RegisterEvents(); err != nil {
-		return err
-	}
 
 	p.Protocol.WithContextValue(types.IssueFilterBmService, issuefilterbm.New(
 		issuefilterbm.WithDBClient(db),
@@ -290,6 +280,29 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 		cron.Start()
 	}()
 
+	return nil
+}
+
+func (p *provider) RegisterEvents() error {
+	fmt.Println(discover.DOP())
+	for _, callback := range webhooktypes.EventCallbacks {
+		ev := apistructs.CreateHookRequest{
+			Name:   callback.Name,
+			Events: callback.Events,
+			URL:    strutil.Concat("http://", discover.DOP(), callback.Path),
+			Active: true,
+			HookLocation: apistructs.HookLocation{
+				Org:         "-1",
+				Project:     "-1",
+				Application: "-1",
+			},
+		}
+		if err := p.bdl.CreateWebhook(ev); err != nil {
+			logrus.Errorf("failed to register %s event to eventbox, (%v)", callback.Name, err)
+			return err
+		}
+		logrus.Infof("register release event to eventbox, event:%+v", ev)
+	}
 	return nil
 }
 
