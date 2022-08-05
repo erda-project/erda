@@ -68,6 +68,12 @@ tail
 			want: `123
 `,
 		},
+		{
+			name:     "docker login commands",
+			commands: "docker login -u ${DOCKER_REGISTRY_USERNAME} -p ${DOCKER_REGISTRY_PASSWORD} ${DOCKER_REGISTRY}",
+			want: `docker login -u ${DOCKER_REGISTRY_USERNAME} -p ${DOCKER_REGISTRY_PASSWORD} ${DOCKER_REGISTRY}
+`,
+		},
 	}
 	for _, tt := range tests {
 		agent := &Agent{
