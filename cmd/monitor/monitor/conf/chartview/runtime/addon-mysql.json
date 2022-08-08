@@ -6,7 +6,7 @@
   "scope": "org",
   "scopeId": "terminus",
   "viewConfig": [{
-    "w": 8,
+    "w": 12,
     "h": 9,
     "x": 0,
     "y": 0,
@@ -20,7 +20,7 @@
         }
       },
       "description": "",
-      "chartType": "chart:line",
+      "chartType": "chart:area",
       "dataSourceType": "api",
       "staticData": {},
       "config": {
@@ -29,7 +29,7 @@
           "isSqlMode": false,
           "resultFilters": [{
             "alias": "表达式-6",
-            "expr": "addon_id::tag='{{addonId}}' and  threads_connected::field u003e 0",
+            "expr": "addon_id::tag='{{addonId}}'",
             "key": "filter2K5WXNP6",
             "type": "expr"
           }],
@@ -54,7 +54,7 @@
           }],
           "valueDimensions": [{
             "alias": "表达式-5",
-            "expr": "threads_connected::field",
+            "expr": "max(threads_connected::field)",
             "key": "valuelLnjsyoi",
             "type": "expr"
           }]
@@ -75,17 +75,17 @@
             "expr": "server::tag"
           }, {
             "alias": "valuelLnjsyoi",
-            "expr": "threads_connected::field"
+            "expr": "max(threads_connected::field)"
           }],
-          "where": ["addon_id::tag='{{addonId}}' and  threads_connected::field u003e 0"]
+          "where": ["addon_id::tag='{{addonId}}'"]
         },
         "method": "post",
         "query": {
-          "end": 1659412148548,
+          "end": "{{endTime}}",
           "epoch": "ms",
           "format": "chartv2",
           "ql": "influxql:ast",
-          "start": 1659408548548,
+          "start": "{{startTime}}",
           "type": "_"
         },
         "url": "/api/orgCenter/metrics-query"
@@ -93,9 +93,9 @@
       "controls": null
     }
   }, {
-    "w": 8,
+    "w": 12,
     "h": 9,
-    "x": 8,
+    "x": 12,
     "y": 0,
     "i": "view-mCxqAan4",
     "view": {
@@ -107,7 +107,7 @@
         }
       },
       "description": "",
-      "chartType": "chart:line",
+      "chartType": "chart:area",
       "dataSourceType": "api",
       "staticData": {},
       "config": {
@@ -116,7 +116,7 @@
           "isSqlMode": false,
           "resultFilters": [{
             "alias": "表达式-490",
-            "expr": "addon_id::tag='{{addonId}}' and  slow_queries::field u003e 0",
+            "expr": "addon_id::tag='{{addonId}}'",
             "key": "filterhIEJj11m",
             "type": "expr"
           }],
@@ -133,13 +133,9 @@
           }],
           "valueDimensions": [{
             "alias": "表达式-489",
-            "expr": "diffps(slow_queries)",
+            "expr": "diffps(slow_queries::field)",
             "key": "valuePHwj3IlY",
-            "type": "expr",
-            "unit": {
-              "type": "CUSTOM",
-              "unit": "次/s"
-            }
+            "type": "expr"
           }]
         },
         "optionProps": {
@@ -158,18 +154,17 @@
             "expr": "server::tag"
           }, {
             "alias": "valuePHwj3IlY",
-            "expr": "diffps(slow_queries)"
+            "expr": "diffps(slow_queries::field)"
           }],
-          "where": ["addon_id::tag='{{addonId}}' and  slow_queries::field u003e 0"]
+          "where": ["addon_id::tag='{{addonId}}'"]
         },
         "method": "post",
         "query": {
-          "end": 1659412148548,
+          "end": "{{endTime}}",
           "epoch": "ms",
-          "eq_addon_id": "mysql",
           "format": "chartv2",
           "ql": "influxql:ast",
-          "start": 1659408548548,
+          "start": "{{startTime}}",
           "type": "_"
         },
         "url": "/api/orgCenter/metrics-query"
@@ -177,7 +172,7 @@
       "controls": null
     }
   }, {
-    "w": 8,
+    "w": 12,
     "h": 9,
     "x": 0,
     "y": 9,
@@ -191,7 +186,7 @@
         }
       },
       "description": "",
-      "chartType": "chart:line",
+      "chartType": "chart:area",
       "dataSourceType": "api",
       "staticData": {},
       "config": {
@@ -199,7 +194,7 @@
           "activedMetricGroups": ["project", "project_addon", "project_addon_mysql", "project_addon_mysql_metrics"],
           "resultFilters": [{
             "alias": "表达式-2",
-            "expr": "addon_id::tag='{{addonId}}' and  queries::field u003e 0",
+            "expr": "addon_id::tag='{{addonId}}'",
             "key": "filterpfglN4DT",
             "type": "expr"
           }],
@@ -239,17 +234,15 @@
             "alias": "valueiQzTllJV",
             "expr": "diffps(queries::field)"
           }],
-          "where": ["addon_id::tag='{{addonId}}' and  queries::field u003e 0"]
+          "where": ["addon_id::tag='{{addonId}}'"]
         },
         "method": "post",
         "query": {
-          "end": 1659412148548,
+          "end": "{{endTime}}",
           "epoch": "ms",
           "format": "chartv2",
-          "match_project_id": "*",
-          "neq_addon_id": "mysql",
           "ql": "influxql:ast",
-          "start": 1659408548548,
+          "start": "{{startTime}}",
           "type": "_"
         },
         "url": "/api/orgCenter/metrics-query"
@@ -257,9 +250,9 @@
       "controls": null
     }
   }, {
-    "w": 8,
+    "w": 12,
     "h": 9,
-    "x": 8,
+    "x": 12,
     "y": 9,
     "i": "view-zVygT7LU",
     "view": {
@@ -271,7 +264,7 @@
         }
       },
       "description": "",
-      "chartType": "chart:line",
+      "chartType": "chart:area",
       "dataSourceType": "api",
       "staticData": {},
       "config": {
@@ -279,7 +272,7 @@
           "activedMetricGroups": ["project", "project_addon", "project_addon_mysql", "project_addon_mysql_metrics"],
           "resultFilters": [{
             "alias": "表达式-4",
-            "expr": "addon_id::tag='{{addonId}}' and  threads_connected::field u003e 0",
+            "expr": "addon_id::tag='{{addonId}}'",
             "key": "filter86lEgl1Q",
             "type": "expr"
           }],
@@ -319,16 +312,15 @@
             "alias": "valuel3XyepFD",
             "expr": "diffps(com_delete::field+com_insert::field+com_select::field+com_update::field)"
           }],
-          "where": ["addon_id::tag='{{addonId}}' and  threads_connected::field u003e 0"]
+          "where": ["addon_id::tag='{{addonId}}'"]
         },
         "method": "post",
         "query": {
-          "end": 1659412148548,
+          "end": "{{endTime}}",
           "epoch": "ms",
-          "eq_addon_id": "mysql",
           "format": "chartv2",
           "ql": "influxql:ast",
-          "start": 1659408548548,
+          "start": "{{startTime}}",
           "type": "_"
         },
         "url": "/api/orgCenter/metrics-query"
@@ -336,7 +328,7 @@
       "controls": null
     }
   }, {
-    "w": 8,
+    "w": 12,
     "h": 9,
     "x": 0,
     "y": 18,
@@ -350,7 +342,7 @@
         }
       },
       "description": "",
-      "chartType": "chart:line",
+      "chartType": "chart:area",
       "dataSourceType": "api",
       "staticData": {},
       "config": {
@@ -358,7 +350,7 @@
           "activedMetricGroups": ["project", "project_addon", "project_addon_mysql", "project_addon_mysql_metrics"],
           "resultFilters": [{
             "alias": "表达式-6",
-            "expr": "addon_id::tag='{{addonId}}' and  threads_connected::field u003e 0",
+            "expr": "addon_id::tag='{{addonId}}'",
             "key": "filterpQ7lmi27",
             "type": "expr"
           }],
@@ -398,16 +390,15 @@
             "alias": "valuenfG7vyLk",
             "expr": "diffps(com_commit::field+com_rollback::field)"
           }],
-          "where": ["addon_id::tag='{{addonId}}' and  threads_connected::field u003e 0"]
+          "where": ["addon_id::tag='{{addonId}}'"]
         },
         "method": "post",
         "query": {
-          "end": 1659412148548,
+          "end": "{{endTime}}",
           "epoch": "ms",
-          "eq_addon_id": "mysql",
           "format": "chartv2",
           "ql": "influxql:ast",
-          "start": 1659408548548,
+          "start": "{{startTime}}",
           "type": "_"
         },
         "url": "/api/orgCenter/metrics-query"
@@ -415,9 +406,9 @@
       "controls": null
     }
   }, {
-    "w": 8,
+    "w": 12,
     "h": 9,
-    "x": 8,
+    "x": 12,
     "y": 18,
     "i": "view-irBX1iID",
     "view": {
@@ -429,7 +420,7 @@
         }
       },
       "description": "",
-      "chartType": "chart:line",
+      "chartType": "chart:area",
       "dataSourceType": "api",
       "staticData": {},
       "config": {
@@ -437,7 +428,7 @@
           "activedMetricGroups": ["project", "project_addon", "project_addon_mysql", "project_addon_mysql_metrics"],
           "resultFilters": [{
             "alias": "表达式-8",
-            "expr": "addon_id::tag='{{addonId}}' and  threads_connected::field u003e 0",
+            "expr": "addon_id::tag='{{addonId}}'",
             "key": "filterJILzTL8o",
             "type": "expr"
           }],
@@ -456,7 +447,11 @@
             "alias": "表达式-7",
             "expr": "diffps(bytes_received::field)",
             "key": "valuel7mqB4aI",
-            "type": "expr"
+            "type": "expr",
+            "unit": {
+              "type": "TRAFFIC",
+              "unit": "B/S"
+            }
           }]
         },
         "optionProps": {
@@ -477,16 +472,15 @@
             "alias": "valuel7mqB4aI",
             "expr": "diffps(bytes_received::field)"
           }],
-          "where": ["addon_id::tag='{{addonId}}' and  threads_connected::field u003e 0"]
+          "where": ["addon_id::tag='{{addonId}}'"]
         },
         "method": "post",
         "query": {
-          "end": 1659412148548,
+          "end": "{{endTime}}",
           "epoch": "ms",
-          "eq_addon_id": "mysql",
           "format": "chartv2",
           "ql": "influxql:ast",
-          "start": 1659408548548,
+          "start": "{{startTime}}",
           "type": "_"
         },
         "url": "/api/orgCenter/metrics-query"
@@ -494,7 +488,7 @@
       "controls": null
     }
   }, {
-    "w": 8,
+    "w": 12,
     "h": 9,
     "x": 0,
     "y": 27,
@@ -508,7 +502,7 @@
         }
       },
       "description": "",
-      "chartType": "chart:line",
+      "chartType": "chart:area",
       "dataSourceType": "api",
       "staticData": {},
       "config": {
@@ -516,7 +510,7 @@
           "activedMetricGroups": ["project", "project_addon", "project_addon_mysql", "project_addon_mysql_metrics"],
           "resultFilters": [{
             "alias": "表达式-11",
-            "expr": "addon_id::tag='{{addonId}}' and  threads_connected::field u003e 0",
+            "expr": "addon_id::tag='{{addonId}}'",
             "key": "filterQ79kgrti",
             "type": "expr"
           }],
@@ -535,7 +529,11 @@
             "alias": "表达式-10",
             "expr": "diffps(bytes_sent::field)",
             "key": "valueSZaBwcTv",
-            "type": "expr"
+            "type": "expr",
+            "unit": {
+              "type": "TRAFFIC",
+              "unit": "B/S"
+            }
           }]
         },
         "optionProps": {
@@ -556,16 +554,15 @@
             "alias": "valueSZaBwcTv",
             "expr": "diffps(bytes_sent::field)"
           }],
-          "where": ["addon_id::tag='{{addonId}}' and  threads_connected::field u003e 0"]
+          "where": ["addon_id::tag='{{addonId}}'"]
         },
         "method": "post",
         "query": {
-          "end": 1659412148548,
+          "end": "{{endTime}}",
           "epoch": "ms",
-          "eq_addon_id": "mysql",
           "format": "chartv2",
           "ql": "influxql:ast",
-          "start": 1659408548548,
+          "start": "{{startTime}}",
           "type": "_"
         },
         "url": "/api/orgCenter/metrics-query"
@@ -573,9 +570,9 @@
       "controls": null
     }
   }, {
-    "w": 8,
+    "w": 12,
     "h": 9,
-    "x": 8,
+    "x": 12,
     "y": 27,
     "i": "view-DTIiYmkL",
     "view": {
@@ -587,7 +584,7 @@
         }
       },
       "description": "",
-      "chartType": "chart:line",
+      "chartType": "chart:area",
       "dataSourceType": "api",
       "staticData": {},
       "config": {
@@ -595,7 +592,7 @@
           "activedMetricGroups": ["project", "project_addon", "project_addon_mysql", "project_addon_mysql_metrics"],
           "resultFilters": [{
             "alias": "表达式-13",
-            "expr": "addon_id::tag='{{addonId}}' and  threads_connected::field u003e 0",
+            "expr": "addon_id::tag='{{addonId}}'",
             "key": "filterfpUBDsHh",
             "type": "expr"
           }],
@@ -612,7 +609,7 @@
           }],
           "valueDimensions": [{
             "alias": "表达式-12",
-            "expr": "open_tables::field",
+            "expr": "max(open_tables::field)",
             "key": "valuebQZdZW5I",
             "type": "expr"
           }]
@@ -633,18 +630,17 @@
             "expr": "server::tag"
           }, {
             "alias": "valuebQZdZW5I",
-            "expr": "open_tables::field"
+            "expr": "max(open_tables::field)"
           }],
-          "where": ["addon_id::tag='{{addonId}}' and  threads_connected::field u003e 0"]
+          "where": ["addon_id::tag='{{addonId}}'"]
         },
         "method": "post",
         "query": {
-          "end": 1659412148548,
+          "end": "{{endTime}}",
           "epoch": "ms",
-          "eq_addon_id": "mysql",
           "format": "chartv2",
           "ql": "influxql:ast",
-          "start": 1659408548548,
+          "start": "{{startTime}}",
           "type": "_"
         },
         "url": "/api/orgCenter/metrics-query"
@@ -652,7 +648,7 @@
       "controls": null
     }
   }, {
-    "w": 8,
+    "w": 12,
     "h": 9,
     "x": 0,
     "y": 36,
@@ -666,7 +662,7 @@
         }
       },
       "description": "",
-      "chartType": "chart:line",
+      "chartType": "chart:area",
       "dataSourceType": "api",
       "staticData": {},
       "config": {
@@ -674,7 +670,7 @@
           "activedMetricGroups": ["project", "project_addon", "project_addon_mysql", "project_addon_mysql_metrics"],
           "resultFilters": [{
             "alias": "表达式-15",
-            "expr": "addon_id::tag='{{addonId}}' and  threads_connected::field u003e 0",
+            "expr": "addon_id::tag='{{addonId}}'",
             "key": "filterkrtQlQSH",
             "type": "expr"
           }],
@@ -691,7 +687,7 @@
           }],
           "valueDimensions": [{
             "alias": "表达式-14",
-            "expr": "threads_running::field",
+            "expr": "max(threads_running::field)",
             "key": "valueqXkS8udi",
             "type": "expr"
           }]
@@ -712,19 +708,17 @@
             "expr": "server::tag"
           }, {
             "alias": "valueqXkS8udi",
-            "expr": "threads_running::field"
+            "expr": "max(threads_running::field)"
           }],
-          "where": ["addon_id::tag='{{addonId}}' and  threads_connected::field u003e 0"]
+          "where": ["addon_id::tag='{{addonId}}'"]
         },
         "method": "post",
         "query": {
-          "end": 1659412148548,
+          "end": "{{endTime}}",
           "epoch": "ms",
           "format": "chartv2",
-          "match_project_id": "*",
-          "neq_addon_id": "mysql",
           "ql": "influxql:ast",
-          "start": 1659408548548,
+          "start": "{{startTime}}",
           "type": "_"
         },
         "url": "/api/orgCenter/metrics-query"
@@ -732,9 +726,9 @@
       "controls": null
     }
   }, {
-    "w": 8,
+    "w": 12,
     "h": 9,
-    "x": 8,
+    "x": 12,
     "y": 36,
     "i": "view-5sfFEIsE",
     "view": {
@@ -746,7 +740,7 @@
         }
       },
       "description": "",
-      "chartType": "chart:line",
+      "chartType": "chart:area",
       "dataSourceType": "api",
       "staticData": {},
       "config": {
@@ -754,7 +748,7 @@
           "activedMetricGroups": ["project", "project_addon", "project_addon_mysql", "project_addon_mysql_metrics"],
           "resultFilters": [{
             "alias": "表达式-17",
-            "expr": "addon_id::tag='{{addonId}}' and  threads_connected::field u003e 0",
+            "expr": "addon_id::tag='{{addonId}}'",
             "key": "filterwfxHHZhU",
             "type": "expr"
           }],
@@ -773,7 +767,11 @@
             "alias": "表达式-16",
             "expr": "diffps(innodb_rows_deleted::field)",
             "key": "valuenEDyrXL5",
-            "type": "expr"
+            "type": "expr",
+            "unit": {
+              "type": "CUSTOM",
+              "unit": "Row/s"
+            }
           }]
         },
         "optionProps": {
@@ -794,17 +792,15 @@
             "alias": "valuenEDyrXL5",
             "expr": "diffps(innodb_rows_deleted::field)"
           }],
-          "where": ["addon_id::tag='{{addonId}}' and  threads_connected::field u003e 0"]
+          "where": ["addon_id::tag='{{addonId}}'"]
         },
         "method": "post",
         "query": {
-          "end": 1659412148548,
+          "end": "{{endTime}}",
           "epoch": "ms",
           "format": "chartv2",
-          "match_project_id": "*",
-          "neq_addon_id": "mysql",
           "ql": "influxql:ast",
-          "start": 1659408548548,
+          "start": "{{startTime}}",
           "type": "_"
         },
         "url": "/api/orgCenter/metrics-query"
@@ -812,7 +808,7 @@
       "controls": null
     }
   }, {
-    "w": 8,
+    "w": 12,
     "h": 9,
     "x": 0,
     "y": 45,
@@ -826,7 +822,7 @@
         }
       },
       "description": "",
-      "chartType": "chart:line",
+      "chartType": "chart:area",
       "dataSourceType": "api",
       "staticData": {},
       "config": {
@@ -834,7 +830,7 @@
           "activedMetricGroups": ["project", "project_addon", "project_addon_mysql", "project_addon_mysql_metrics"],
           "resultFilters": [{
             "alias": "表达式-19",
-            "expr": "addon_id::tag='{{addonId}}' and  threads_connected::field u003e 0",
+            "expr": "addon_id::tag='{{addonId}}'",
             "key": "filterZ6pfkFST",
             "type": "expr"
           }],
@@ -853,7 +849,11 @@
             "alias": "表达式-18",
             "expr": "diffps(innodb_rows_inserted::field)",
             "key": "valueh7gYoJ3m",
-            "type": "expr"
+            "type": "expr",
+            "unit": {
+              "type": "CUSTOM",
+              "unit": "Row/s"
+            }
           }]
         },
         "optionProps": {
@@ -874,17 +874,15 @@
             "alias": "valueh7gYoJ3m",
             "expr": "diffps(innodb_rows_inserted::field)"
           }],
-          "where": ["addon_id::tag='{{addonId}}' and  threads_connected::field u003e 0"]
+          "where": ["addon_id::tag='{{addonId}}'"]
         },
         "method": "post",
         "query": {
-          "end": 1659412148548,
+          "end": "{{endTime}}",
           "epoch": "ms",
           "format": "chartv2",
-          "match_project_id": "*",
-          "neq_addon_id": "mysql",
           "ql": "influxql:ast",
-          "start": 1659408548548,
+          "start": "{{startTime}}",
           "type": "_"
         },
         "url": "/api/orgCenter/metrics-query"
@@ -892,9 +890,9 @@
       "controls": null
     }
   }, {
-    "w": 8,
+    "w": 12,
     "h": 9,
-    "x": 8,
+    "x": 12,
     "y": 45,
     "i": "view-14eaHdpz",
     "view": {
@@ -906,7 +904,7 @@
         }
       },
       "description": "",
-      "chartType": "chart:line",
+      "chartType": "chart:area",
       "dataSourceType": "api",
       "staticData": {},
       "config": {
@@ -914,7 +912,7 @@
           "activedMetricGroups": ["project", "project_addon", "project_addon_mysql", "project_addon_mysql_metrics"],
           "resultFilters": [{
             "alias": "表达式-21",
-            "expr": "addon_id::tag='{{addonId}}' and  threads_connected::field u003e 0",
+            "expr": "addon_id::tag='{{addonId}}'",
             "key": "filteraNSFMdE7",
             "type": "expr"
           }],
@@ -933,7 +931,11 @@
             "alias": "表达式-20",
             "expr": "diffps(innodb_rows_updated::field)",
             "key": "valued3V5ZNHH",
-            "type": "expr"
+            "type": "expr",
+            "unit": {
+              "type": "CUSTOM",
+              "unit": "Row/s"
+            }
           }]
         },
         "optionProps": {
@@ -954,17 +956,15 @@
             "alias": "valued3V5ZNHH",
             "expr": "diffps(innodb_rows_updated::field)"
           }],
-          "where": ["addon_id::tag='{{addonId}}' and  threads_connected::field u003e 0"]
+          "where": ["addon_id::tag='{{addonId}}'"]
         },
         "method": "post",
         "query": {
-          "end": 1659412148548,
+          "end": "{{endTime}}",
           "epoch": "ms",
           "format": "chartv2",
-          "match_project_id": "*",
-          "neq_addon_id": "mysql",
           "ql": "influxql:ast",
-          "start": 1659408548548,
+          "start": "{{startTime}}",
           "type": "_"
         },
         "url": "/api/orgCenter/metrics-query"
@@ -972,7 +972,7 @@
       "controls": null
     }
   }, {
-    "w": 8,
+    "w": 12,
     "h": 9,
     "x": 0,
     "y": 54,
@@ -986,7 +986,7 @@
         }
       },
       "description": "",
-      "chartType": "chart:line",
+      "chartType": "chart:area",
       "dataSourceType": "api",
       "staticData": {},
       "config": {
@@ -994,7 +994,7 @@
           "activedMetricGroups": ["project", "project_addon", "project_addon_mysql", "project_addon_mysql_metrics"],
           "resultFilters": [{
             "alias": "表达式-23",
-            "expr": "addon_id::tag='{{addonId}}' and  threads_connected::field u003e 0",
+            "expr": "addon_id::tag='{{addonId}}'",
             "key": "filterKbRrkKnm",
             "type": "expr"
           }],
@@ -1013,7 +1013,11 @@
             "alias": "表达式-22",
             "expr": "diffps(innodb_rows_read::field)",
             "key": "value2F4UJ0uI",
-            "type": "expr"
+            "type": "expr",
+            "unit": {
+              "type": "CUSTOM",
+              "unit": "Row/s"
+            }
           }]
         },
         "optionProps": {
@@ -1034,17 +1038,15 @@
             "alias": "value2F4UJ0uI",
             "expr": "diffps(innodb_rows_read::field)"
           }],
-          "where": ["addon_id::tag='{{addonId}}' and  threads_connected::field u003e 0"]
+          "where": ["addon_id::tag='{{addonId}}'"]
         },
         "method": "post",
         "query": {
-          "end": 1659412148548,
+          "end": "{{endTime}}",
           "epoch": "ms",
           "format": "chartv2",
-          "match_project_id": "*",
-          "neq_addon_id": "mysql",
           "ql": "influxql:ast",
-          "start": 1659408548548,
+          "start": "{{startTime}}",
           "type": "_"
         },
         "url": "/api/orgCenter/metrics-query"
@@ -1052,9 +1054,9 @@
       "controls": null
     }
   }, {
-    "w": 8,
+    "w": 12,
     "h": 9,
-    "x": 8,
+    "x": 12,
     "y": 54,
     "i": "view-WtogQyAZ",
     "view": {
@@ -1066,7 +1068,7 @@
         }
       },
       "description": "",
-      "chartType": "chart:line",
+      "chartType": "chart:area",
       "dataSourceType": "api",
       "staticData": null,
       "config": {
@@ -1074,7 +1076,7 @@
           "activedMetricGroups": ["project", "project_addon", "project_addon_mysql", "project_addon_mysql_metrics"],
           "resultFilters": [{
             "alias": "表达式-26",
-            "expr": "addon_id::tag='{{addonId}}' and  threads_connected::field u003e 0",
+            "expr": "addon_id::tag='{{addonId}}'",
             "key": "filterrEJY4qMI",
             "type": "expr"
           }],
@@ -1093,7 +1095,11 @@
             "alias": "表达式-25",
             "expr": "diffps(innodb_data_read::field)",
             "key": "value0p63Twua",
-            "type": "expr"
+            "type": "expr",
+            "unit": {
+              "type": "CUSTOM",
+              "unit": "Row/s"
+            }
           }]
         }
       },
@@ -1111,17 +1117,15 @@
             "alias": "value0p63Twua",
             "expr": "diffps(innodb_data_read::field)"
           }],
-          "where": ["addon_id::tag='{{addonId}}' and  threads_connected::field u003e 0"]
+          "where": ["addon_id::tag='{{addonId}}'"]
         },
         "method": "post",
         "query": {
-          "end": 1659412148548,
+          "end": "{{endTime}}",
           "epoch": "ms",
           "format": "chartv2",
-          "match_project_id": "*",
-          "neq_addon_id": "mysql",
           "ql": "influxql:ast",
-          "start": 1659408548548,
+          "start": "{{startTime}}",
           "type": "_"
         },
         "url": "/api/orgCenter/metrics-query"
@@ -1129,7 +1133,7 @@
       "controls": null
     }
   }, {
-    "w": 8,
+    "w": 12,
     "h": 9,
     "x": 0,
     "y": 63,
@@ -1143,7 +1147,7 @@
         }
       },
       "description": "",
-      "chartType": "chart:line",
+      "chartType": "chart:area",
       "dataSourceType": "api",
       "staticData": null,
       "config": {
@@ -1151,7 +1155,7 @@
           "activedMetricGroups": ["project", "project_addon", "project_addon_mysql", "project_addon_mysql_metrics"],
           "resultFilters": [{
             "alias": "表达式-28",
-            "expr": "addon_id::tag='{{addonId}}' and  threads_connected::field u003e 0",
+            "expr": "addon_id::tag='{{addonId}}'",
             "key": "filterJg0LF2NU",
             "type": "expr"
           }],
@@ -1170,7 +1174,11 @@
             "alias": "表达式-27",
             "expr": "diffps(innodb_data_written::field)",
             "key": "valuepKc9YRcZ",
-            "type": "expr"
+            "type": "expr",
+            "unit": {
+              "type": "CUSTOM",
+              "unit": "Row/s"
+            }
           }]
         }
       },
@@ -1188,17 +1196,15 @@
             "alias": "valuepKc9YRcZ",
             "expr": "diffps(innodb_data_written::field)"
           }],
-          "where": ["addon_id::tag='{{addonId}}' and  threads_connected::field u003e 0"]
+          "where": ["addon_id::tag='{{addonId}}'"]
         },
         "method": "post",
         "query": {
-          "end": 1659412148548,
+          "end": "{{endTime}}",
           "epoch": "ms",
           "format": "chartv2",
-          "match_project_id": "*",
-          "neq_addon_id": "mysql",
           "ql": "influxql:ast",
-          "start": 1659408548548,
+          "start": "{{startTime}}",
           "type": "_"
         },
         "url": "/api/orgCenter/metrics-query"
@@ -1206,9 +1212,9 @@
       "controls": null
     }
   }, {
-    "w": 8,
+    "w": 12,
     "h": 9,
-    "x": 8,
+    "x": 12,
     "y": 63,
     "i": "view-aSeWx5cW",
     "view": {
@@ -1220,7 +1226,7 @@
         }
       },
       "description": "",
-      "chartType": "chart:line",
+      "chartType": "chart:area",
       "dataSourceType": "api",
       "staticData": null,
       "config": {
@@ -1228,7 +1234,7 @@
           "activedMetricGroups": ["project", "project_addon", "project_addon_mysql", "project_addon_mysql_metrics"],
           "resultFilters": [{
             "alias": "表达式-30",
-            "expr": "addon_id::tag='{{addonId}}' and  threads_connected::field u003e 0",
+            "expr": "addon_id::tag='{{addonId}}'",
             "key": "filterkEUDZ046",
             "type": "expr"
           }],
@@ -1265,17 +1271,15 @@
             "alias": "value2zn53n0Z",
             "expr": "diffps(table_locks_waited::field)"
           }],
-          "where": ["addon_id::tag='{{addonId}}' and  threads_connected::field u003e 0"]
+          "where": ["addon_id::tag='{{addonId}}'"]
         },
         "method": "post",
         "query": {
-          "end": 1659412148548,
+          "end": "{{endTime}}",
           "epoch": "ms",
           "format": "chartv2",
-          "match_project_id": "*",
-          "neq_addon_id": "mysql",
           "ql": "influxql:ast",
-          "start": 1659408548548,
+          "start": "{{startTime}}",
           "type": "_"
         },
         "url": "/api/orgCenter/metrics-query"
