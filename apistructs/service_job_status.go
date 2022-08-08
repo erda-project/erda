@@ -207,6 +207,8 @@ type StatusDesc struct {
 	Reason      string `json:"reason"`
 	// [DEPRECATED] UnScheduledReasons 描述具体资源不足的信息
 	UnScheduledReasons ResourceInsufficientInfo `json:"unScheduledReasons,omitempty"`
+	DesiredReplicas    int32                    `json:"desiredReplicas"`
+	ReadyReplicas      int32                    `json:"readyReplicas"`
 }
 
 // Bind 定义宿主机上的路径挂载到容器中

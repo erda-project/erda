@@ -383,3 +383,32 @@ func (s ServiceGroupImpl) InspectServiceGroupWithTimeout(namespace, name string)
 		return nil, fmt.Errorf("timeout for invoke getServiceGroup for namesapce %s name %s", namespace, name)
 	}
 }
+
+func (s ServiceGroupImpl) InspectRuntimeServicePods(namespace, name, serviceName string) (*apistructs.ServiceGroup, error) {
+	var (
+		sg  apistructs.ServiceGroup
+		err error
+	)
+
+	if err = s.Js.Get(context.Background(), mkServiceGroupKey(namespace, name), &sg); err != nil {
+		return &sg, err
+	}
+
+	if sg.Labels == nil {
+		sg.Labels = make(map[string]string)
+	}
+
+	sg.Labels["GET_RUNTIME_STATELESS_SERVICE_POD"] = serviceName
+	result, err := s.handleServiceGroup(context.Background(), &sg, task.TaskInspect)
+	if err != nil {
+		return &sg, err
+	}
+	if result.Extra == nil {
+		err = errors.Errorf("Cannot get servicegroup(%v/%v) pod info from TaskInspect", sg.Type, sg.ID)
+		logrus.Error(err.Error())
+		return &sg, err
+	}
+
+	newSG := result.Extra.(*apistructs.ServiceGroup)
+	return newSG, nil
+}

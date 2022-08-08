@@ -414,6 +414,8 @@ func (k *Kubernetes) getOneStatus(namespace, name string) (apistructs.StatusDesc
 	} else {
 		status.Status = apistructs.StatusProgressing
 	}
+	status.DesiredReplicas = set.Status.Replicas
+	status.ReadyReplicas = set.Status.ReadyReplicas
 
 	msgList, err := k.event.AnalyzePodEvents(namespace, name)
 	if err != nil {

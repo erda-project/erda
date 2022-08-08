@@ -146,16 +146,31 @@ type PodListResponse struct {
 }
 
 type Pod struct {
-	Uid          string `json:"uid"`
-	IPAddress    string `json:"ipAddress"`
-	Host         string `json:"host"`
-	Phase        string `json:"phase"`
-	Message      string `json:"message"`
-	StartedAt    string `json:"startedAt"`
-	Service      string `json:"service"`
-	ClusterName  string `json:"clusterName"`
-	PodName      string `json:"podName"`
-	K8sNamespace string `json:"k8sNamespace"`
+	Uid           string         `json:"uid"`
+	IPAddress     string         `json:"ipAddress"`
+	Host          string         `json:"host"`
+	Phase         string         `json:"phase"`
+	Message       string         `json:"message"`
+	StartedAt     string         `json:"startedAt"`
+	Service       string         `json:"service"`
+	ClusterName   string         `json:"clusterName"`
+	PodName       string         `json:"podName"`
+	K8sNamespace  string         `json:"k8sNamespace"`
+	RestartCount  int32          `json:"restartCount"`
+	PodContainers []PodContainer `json:"podContainers"`
+}
+
+type PodContainer struct {
+	ContainerID   string            `json:"containerId"`
+	ContainerName string            `json:"containerName"`
+	Image         string            `json:"image"`
+	Resource      ContainerResource `json:"resources"`
+}
+type ContainerResource struct {
+	MemRequest int     `json:"memRequest"`
+	MemLimit   int     `json:"memLimit"`
+	CpuRequest float64 `json:"cpuRequest"`
+	CpuLimit   float64 `json:"cpuLimit"`
 }
 
 type Pods []Pod

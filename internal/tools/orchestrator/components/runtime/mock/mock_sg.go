@@ -108,6 +108,21 @@ func (mr *MockServiceGroupMockRecorder) Info(arg0, arg1, arg2 interface{}) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Info", reflect.TypeOf((*MockServiceGroup)(nil).Info), arg0, arg1, arg2)
 }
 
+// InspectRuntimeServicePods mocks base method.
+func (m *MockServiceGroup) InspectRuntimeServicePods(arg0, arg1, arg2 string) (*apistructs.ServiceGroup, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "InspectRuntimeServicePods", arg0, arg1, arg2)
+	ret0, _ := ret[0].(*apistructs.ServiceGroup)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// InspectRuntimeServicePods indicates an expected call of InspectRuntimeServicePods.
+func (mr *MockServiceGroupMockRecorder) InspectRuntimeServicePods(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InspectRuntimeServicePods", reflect.TypeOf((*MockServiceGroup)(nil).InspectRuntimeServicePods), arg0, arg1, arg2)
+}
+
 // InspectServiceGroupWithTimeout mocks base method.
 func (m *MockServiceGroup) InspectServiceGroupWithTimeout(arg0, arg1 string) (*apistructs.ServiceGroup, error) {
 	m.ctrl.T.Helper()

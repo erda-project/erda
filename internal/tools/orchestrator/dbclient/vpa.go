@@ -167,3 +167,12 @@ func (db *DBClient) GetRuntimeVPARecommendationsByServices(runtimeId uint64, ser
 	}
 	return runtimeVPARecommendations, nil
 }
+
+func (db *DBClient) DeleteRuntimeVPARecommendationsByRuntimeId(runtimeId uint64) error {
+	if err := db.
+		Where("runtime_id = ?", runtimeId).
+		Delete(&RuntimeVPAContainerRecommendation{}).Error; err != nil {
+		return errors.Wrapf(err, "failed to delete runtime vpa recommendations for runtimeID %d: %v", runtimeId, err)
+	}
+	return nil
+}

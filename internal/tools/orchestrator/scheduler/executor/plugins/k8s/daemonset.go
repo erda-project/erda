@@ -58,6 +58,8 @@ func (k *Kubernetes) getDaemonSetStatusFromMap(service *apistructs.Service, daem
 		} else {
 			statusDesc.Status = apistructs.StatusUnHealthy
 		}
+		statusDesc.DesiredReplicas = status.DesiredNumberScheduled
+		statusDesc.ReadyReplicas = status.NumberReady
 	}
 
 	return statusDesc, nil

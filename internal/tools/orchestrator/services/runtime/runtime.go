@@ -1293,7 +1293,7 @@ func (r *Runtime) Destroy(runtimeID uint64) error {
 		}
 
 		// delete runtime hpa/vpa rule
-		if err := r.deleteRuntimePA(uniqueID); err != nil {
+		if err := r.deleteRuntimePA(uniqueID, runtimeID); err != nil {
 			logrus.Errorf("[alert] failed delete group, error in delete runtime hpa rules: %v, (%v)",
 				runtime.ScheduleName, err)
 		}
@@ -1873,6 +1873,19 @@ func (r *Runtime) KillPod(runtimeID uint64, podname string) error {
 	return r.serviceGroupImpl.KillPod(context.Background(), runtime.ScheduleName.Namespace, runtime.ScheduleName.Name, podname)
 }
 
+func (r *Runtime) GetRuntimeServiceCurrentPods(runtimeID uint64, serviceName string) (*apistructs.ServiceGroup, error) {
+	runtime, err := r.db.GetRuntime(runtimeID)
+	if err != nil {
+		return nil, err
+	}
+
+	if runtime.ScheduleName.Namespace == "" || runtime.ScheduleName.Name == "" || serviceName == "" {
+		return nil, errors.New("empty namespace or name or serviceName")
+	}
+
+	return r.serviceGroupImpl.InspectRuntimeServicePods(runtime.ScheduleName.Namespace, runtime.ScheduleName.Name, serviceName)
+}
+
 // TODO: this work is weird
 func (r *Runtime) findRuntimeByIDOrName(idOrName string, appIDStr string, workspace string) (*dbclient.Runtime, error) {
 	runtimeID, err := strconv.ParseUint(idOrName, 10, 64)
@@ -2304,7 +2317,7 @@ func (r *Runtime) AppliedScaledObjects(uniqueID spec.RuntimeUniqueId) (map[strin
 	return hpaScaledRules, vpaScaledRules, nil
 }
 
-func (r *Runtime) deleteRuntimePA(uniqueID spec.RuntimeUniqueId) error {
+func (r *Runtime) deleteRuntimePA(uniqueID spec.RuntimeUniqueId, runtimeId uint64) error {
 	hpaRules, err := r.db.GetRuntimeHPAByServices(uniqueID, nil)
 	if err != nil {
 		return err
@@ -2325,6 +2338,11 @@ func (r *Runtime) deleteRuntimePA(uniqueID spec.RuntimeUniqueId) error {
 		if err = r.db.DeleteRuntimeVPAByRuleId(rule.ID); err != nil {
 			return errors.Errorf("delete runtime hpa rule by rule_id %s failed: %v", rule.ID, err)
 		}
+	}
+
+	err = r.db.DeleteRuntimeVPARecommendationsByRuntimeId(runtimeId)
+	if err != nil {
+		return err
 	}
 
 	return nil
