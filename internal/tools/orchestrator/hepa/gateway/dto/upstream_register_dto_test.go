@@ -135,9 +135,10 @@ func TestUpstreamApiDto_Init2(t *testing.T) {
 		var d = getCase()
 		d.DiceService = ""
 		d.Scene = orm.HubScene
+		d.HubInfoID = "xxx-yyy-zzz"
 		_ = d.Init()
 		if expects := strings.Join([]string{
-			"custom-registered",
+			d.HubInfoID,
 			d.AppName,
 			d.ServiceAlias,
 			d.RuntimeId,
