@@ -96,10 +96,10 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 func (p *provider) parseOapSpanEvent() kafkaInf.ConsumerFunc {
 	return func(key []byte, value []byte, topic *string, timestamp time.Time) error {
-		return oapspan.ParseOapSpanEvent(value, func(m []metric.Metric) error {
+		return oapspan.ParseOapSpanEvent(value, func(m []*metric.Metric) error {
 			if len(m) > 0 {
-				for _, metric := range m {
-					p.consumer(&metric)
+				for i := 0; i < len(m); i++ {
+					p.consumer(m[i])
 				}
 			}
 			return nil

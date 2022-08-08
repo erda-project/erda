@@ -115,7 +115,12 @@ func (p *provider) Query(ctx context.Context, q tsql.Query) (*model.ResultSet, e
 	if rows == nil {
 		return nil, errors.New("no error, but no value")
 	}
-	defer rows.Close()
+	defer func() {
+		err := rows.Close()
+		if err != nil {
+			span.RecordError(err, oteltrace.WithAttributes(attribute.String("error", "closes rows is error: "+err.Error())))
+		}
+	}()
 
 	result.Data, err = q.ParseResult(newCtx, rows)
 
