@@ -6,7 +6,7 @@
   "scope": "org",
   "scopeId": "terminus",
   "viewConfig": [{
-    "w": 8,
+    "w": 12,
     "h": 9,
     "x": 0,
     "y": 0,
@@ -20,7 +20,7 @@
         }
       },
       "description": "",
-      "chartType": "chart:line",
+      "chartType": "chart:area",
       "dataSourceType": "api",
       "staticData": {},
       "config": {
@@ -45,7 +45,7 @@
           }],
           "valueDimensions": [{
             "alias": "表达式-31",
-            "expr": "clients::field",
+            "expr": "max(clients::field)",
             "key": "valuegKpgtJp3",
             "type": "expr"
           }]
@@ -66,19 +66,17 @@
             "expr": "server::tag"
           }, {
             "alias": "valuegKpgtJp3",
-            "expr": "clients::field"
+            "expr": "max(clients::field)"
           }],
           "where": ["addon_id::tag='{{addonId}}'"]
         },
         "method": "post",
         "query": {
-          "end": 1659412148548,
+          "end": "{{endTime}}",
           "epoch": "ms",
           "format": "chartv2",
-          "match_project_id": "*",
-          "neq_addon_id": "redis",
           "ql": "influxql:ast",
-          "start": 1659408548548,
+          "start": "{{startTime}}",
           "type": "_"
         },
         "url": "/api/orgCenter/metrics-query"
@@ -86,9 +84,9 @@
       "controls": null
     }
   }, {
-    "w": 8,
+    "w": 12,
     "h": 9,
-    "x": 8,
+    "x": 12,
     "y": 0,
     "i": "view-iZgjlmtw",
     "view": {
@@ -100,7 +98,7 @@
         }
       },
       "description": "",
-      "chartType": "chart:line",
+      "chartType": "chart:area",
       "dataSourceType": "api",
       "staticData": {},
       "config": {
@@ -125,7 +123,7 @@
           }],
           "valueDimensions": [{
             "alias": "表达式-33",
-            "expr": "instantaneous_ops_per_sec::field",
+            "expr": "max(instantaneous_ops_per_sec::field)",
             "key": "valuedYG7gXJx",
             "type": "expr"
           }]
@@ -146,19 +144,17 @@
             "expr": "server::tag"
           }, {
             "alias": "valuedYG7gXJx",
-            "expr": "instantaneous_ops_per_sec::field"
+            "expr": "max(instantaneous_ops_per_sec::field)"
           }],
           "where": ["addon_id::tag='{{addonId}}' "]
         },
         "method": "post",
         "query": {
-          "end": 1659412148548,
+          "end": "{{endTime}}",
           "epoch": "ms",
           "format": "chartv2",
-          "match_project_id": "*",
-          "neq_addon_id": "redis",
           "ql": "influxql:ast",
-          "start": 1659408548548,
+          "start": "{{startTime}}",
           "type": "_"
         },
         "url": "/api/orgCenter/metrics-query"
@@ -166,7 +162,7 @@
       "controls": null
     }
   }, {
-    "w": 8,
+    "w": 12,
     "h": 9,
     "x": 0,
     "y": 9,
@@ -180,7 +176,7 @@
         }
       },
       "description": "",
-      "chartType": "chart:line",
+      "chartType": "chart:area",
       "dataSourceType": "api",
       "staticData": {},
       "config": {
@@ -205,7 +201,7 @@
           }],
           "valueDimensions": [{
             "alias": "表达式-35",
-            "expr": "pubsub_channels::field",
+            "expr": "max(pubsub_channels::field)",
             "key": "value4B2wh5Ne",
             "type": "expr"
           }]
@@ -226,19 +222,17 @@
             "expr": "server::tag"
           }, {
             "alias": "value4B2wh5Ne",
-            "expr": "pubsub_channels::field"
+            "expr": "max(pubsub_channels::field)"
           }],
           "where": ["addon_id::tag='{{addonId}}'"]
         },
         "method": "post",
         "query": {
-          "end": 1659412148548,
+          "end": "{{endTime}}",
           "epoch": "ms",
           "format": "chartv2",
-          "match_project_id": "*",
-          "neq_addon_id": "redis",
           "ql": "influxql:ast",
-          "start": 1659408548548,
+          "start": "{{startTime}}",
           "type": "_"
         },
         "url": "/api/orgCenter/metrics-query"
@@ -246,9 +240,9 @@
       "controls": null
     }
   }, {
-    "w": 8,
+    "w": 12,
     "h": 9,
-    "x": 8,
+    "x": 12,
     "y": 9,
     "i": "view-Ubevq9pU",
     "view": {
@@ -260,7 +254,7 @@
         }
       },
       "description": "",
-      "chartType": "chart:line",
+      "chartType": "chart:area",
       "dataSourceType": "api",
       "staticData": {},
       "config": {
@@ -285,7 +279,7 @@
           }],
           "valueDimensions": [{
             "alias": "表达式-37",
-            "expr": "pubsub_patterns::field",
+            "expr": "max(pubsub_patterns::field)",
             "key": "valueTFlUEKAN",
             "type": "expr"
           }]
@@ -306,19 +300,17 @@
             "expr": "server::tag"
           }, {
             "alias": "valueTFlUEKAN",
-            "expr": "pubsub_patterns::field"
+            "expr": "max(pubsub_patterns::field)"
           }],
           "where": ["addon_id::tag='{{addonId}}' "]
         },
         "method": "post",
         "query": {
-          "end": 1659412148548,
+          "end": "{{endTime}}",
           "epoch": "ms",
           "format": "chartv2",
-          "match_project_id": "*",
-          "neq_addon_id": "redis",
           "ql": "influxql:ast",
-          "start": 1659408548548,
+          "start": "{{startTime}}",
           "type": "_"
         },
         "url": "/api/orgCenter/metrics-query"
@@ -326,7 +318,7 @@
       "controls": null
     }
   }, {
-    "w": 8,
+    "w": 12,
     "h": 9,
     "x": 0,
     "y": 18,
@@ -340,7 +332,7 @@
         }
       },
       "description": "",
-      "chartType": "chart:line",
+      "chartType": "chart:area",
       "dataSourceType": "api",
       "staticData": {},
       "config": {
@@ -365,7 +357,7 @@
           }],
           "valueDimensions": [{
             "alias": "表达式-39",
-            "expr": "connected_slaves::field",
+            "expr": "max(connected_slaves::field)",
             "key": "valueZ37Z5VWz",
             "type": "expr"
           }]
@@ -386,19 +378,17 @@
             "expr": "server::tag"
           }, {
             "alias": "valueZ37Z5VWz",
-            "expr": "connected_slaves::field"
+            "expr": "max(connected_slaves::field)"
           }],
           "where": ["addon_id::tag='{{addonId}}'"]
         },
         "method": "post",
         "query": {
-          "end": 1659412148548,
+          "end": "{{endTime}}",
           "epoch": "ms",
           "format": "chartv2",
-          "match_project_id": "*",
-          "neq_addon_id": "redis",
           "ql": "influxql:ast",
-          "start": 1659408548548,
+          "start": "{{startTime}}",
           "type": "_"
         },
         "url": "/api/orgCenter/metrics-query"
@@ -406,9 +396,9 @@
       "controls": null
     }
   }, {
-    "w": 8,
+    "w": 12,
     "h": 9,
-    "x": 8,
+    "x": 12,
     "y": 18,
     "i": "view-obk0Sjzo",
     "view": {
@@ -420,7 +410,7 @@
         }
       },
       "description": "",
-      "chartType": "chart:line",
+      "chartType": "chart:area",
       "dataSourceType": "api",
       "staticData": {},
       "config": {
@@ -445,7 +435,7 @@
           }],
           "valueDimensions": [{
             "alias": "表达式-41",
-            "expr": "blocked_clients::field",
+            "expr": "max(blocked_clients::field)",
             "key": "value23WTJOUQ",
             "type": "expr"
           }]
@@ -466,19 +456,17 @@
             "expr": "server::tag"
           }, {
             "alias": "value23WTJOUQ",
-            "expr": "blocked_clients::field"
+            "expr": "max(blocked_clients::field)"
           }],
           "where": ["addon_id::tag='{{addonId}}'"]
         },
         "method": "post",
         "query": {
-          "end": 1659412148548,
+          "end": "{{endTime}}",
           "epoch": "ms",
           "format": "chartv2",
-          "match_project_id": "*",
-          "neq_addon_id": "redis",
           "ql": "influxql:ast",
-          "start": 1659408548548,
+          "start": "{{startTime}}",
           "type": "_"
         },
         "url": "/api/orgCenter/metrics-query"
@@ -486,7 +474,7 @@
       "controls": null
     }
   }, {
-    "w": 8,
+    "w": 12,
     "h": 9,
     "x": 0,
     "y": 27,
@@ -500,7 +488,7 @@
         }
       },
       "description": "",
-      "chartType": "chart:line",
+      "chartType": "chart:area",
       "dataSourceType": "api",
       "staticData": {},
       "config": {
@@ -525,9 +513,13 @@
           }],
           "valueDimensions": [{
             "alias": "表达式-43",
-            "expr": "aof_current_size::field",
+            "expr": "max(aof_current_size::field)",
             "key": "value912NakV9",
-            "type": "expr"
+            "type": "expr",
+            "unit": {
+              "type": "CAPACITY",
+              "unit": "B"
+            }
           }]
         },
         "optionProps": {
@@ -546,19 +538,17 @@
             "expr": "server::tag"
           }, {
             "alias": "value912NakV9",
-            "expr": "aof_current_size::field"
+            "expr": "max(aof_current_size::field)"
           }],
           "where": ["addon_id::tag='{{addonId}}'"]
         },
         "method": "post",
         "query": {
-          "end": 1659412148548,
+          "end": "{{endTime}}",
           "epoch": "ms",
           "format": "chartv2",
-          "match_project_id": "*",
-          "neq_addon_id": "redis",
           "ql": "influxql:ast",
-          "start": 1659408548548,
+          "start": "{{startTime}}",
           "type": "_"
         },
         "url": "/api/orgCenter/metrics-query"
@@ -566,9 +556,9 @@
       "controls": null
     }
   }, {
-    "w": 8,
+    "w": 12,
     "h": 9,
-    "x": 8,
+    "x": 12,
     "y": 27,
     "i": "view-K5w1SeiT",
     "view": {
@@ -580,7 +570,7 @@
         }
       },
       "description": "",
-      "chartType": "chart:line",
+      "chartType": "chart:area",
       "dataSourceType": "api",
       "staticData": {},
       "config": {
@@ -605,9 +595,13 @@
           }],
           "valueDimensions": [{
             "alias": "表达式-45",
-            "expr": "mem_fragmentation_ratio::field",
+            "expr": "max(mem_fragmentation_ratio::field)",
             "key": "valueVaXxbVI2",
-            "type": "expr"
+            "type": "expr",
+            "unit": {
+              "type": "PERCENT",
+              "unit": "%"
+            }
           }]
         },
         "optionProps": {
@@ -626,19 +620,17 @@
             "expr": "server::tag"
           }, {
             "alias": "valueVaXxbVI2",
-            "expr": "mem_fragmentation_ratio::field"
+            "expr": "max(mem_fragmentation_ratio::field)"
           }],
           "where": ["addon_id::tag='{{addonId}}' "]
         },
         "method": "post",
         "query": {
-          "end": 1659412148548,
+          "end": "{{endTime}}",
           "epoch": "ms",
           "format": "chartv2",
-          "match_project_id": "*",
-          "neq_addon_id": "redis",
           "ql": "influxql:ast",
-          "start": 1659408548548,
+          "start": "{{startTime}}",
           "type": "_"
         },
         "url": "/api/orgCenter/metrics-query"
@@ -646,7 +638,7 @@
       "controls": null
     }
   }, {
-    "w": 8,
+    "w": 12,
     "h": 9,
     "x": 0,
     "y": 36,
@@ -660,7 +652,7 @@
         }
       },
       "description": "",
-      "chartType": "chart:line",
+      "chartType": "chart:area",
       "dataSourceType": "api",
       "staticData": {},
       "config": {
@@ -685,9 +677,13 @@
           }],
           "valueDimensions": [{
             "alias": "表达式-47",
-            "expr": "used_memory::field",
+            "expr": "max(used_memory::field)",
             "key": "valueOm4AmSo5",
-            "type": "expr"
+            "type": "expr",
+            "unit": {
+              "type": "CAPACITY",
+              "unit": "B"
+            }
           }]
         },
         "optionProps": {
@@ -706,19 +702,17 @@
             "expr": "server::tag"
           }, {
             "alias": "valueOm4AmSo5",
-            "expr": "used_memory::field"
+            "expr": "max(used_memory::field)"
           }],
           "where": ["addon_id::tag='{{addonId}}'"]
         },
         "method": "post",
         "query": {
-          "end": 1659412148548,
+          "end": "{{endTime}}",
           "epoch": "ms",
           "format": "chartv2",
-          "match_project_id": "*",
-          "neq_addon_id": "redis",
           "ql": "influxql:ast",
-          "start": 1659408548548,
+          "start": "{{startTime}}",
           "type": "_"
         },
         "url": "/api/orgCenter/metrics-query"
@@ -726,9 +720,9 @@
       "controls": null
     }
   }, {
-    "w": 8,
+    "w": 12,
     "h": 9,
-    "x": 8,
+    "x": 12,
     "y": 36,
     "i": "view-HPArsLy7",
     "view": {
@@ -740,7 +734,7 @@
         }
       },
       "description": "",
-      "chartType": "chart:line",
+      "chartType": "chart:area",
       "dataSourceType": "api",
       "staticData": {},
       "config": {
@@ -765,9 +759,13 @@
           }],
           "valueDimensions": [{
             "alias": "表达式-49",
-            "expr": "used_memory_peak::field",
+            "expr": "max(used_memory_peak::field)",
             "key": "value2tXm5FFc",
-            "type": "expr"
+            "type": "expr",
+            "unit": {
+              "type": "CAPACITY",
+              "unit": "B"
+            }
           }]
         },
         "optionProps": {
@@ -786,19 +784,17 @@
             "expr": "server::tag"
           }, {
             "alias": "value2tXm5FFc",
-            "expr": "used_memory_peak::field"
+            "expr": "max(used_memory_peak::field)"
           }],
           "where": ["addon_id::tag='{{addonId}}'"]
         },
         "method": "post",
         "query": {
-          "end": 1659412148548,
+          "end": "{{endTime}}",
           "epoch": "ms",
           "format": "chartv2",
-          "match_project_id": "*",
-          "neq_addon_id": "redis",
           "ql": "influxql:ast",
-          "start": 1659408548548,
+          "start": "{{startTime}}",
           "type": "_"
         },
         "url": "/api/orgCenter/metrics-query"
@@ -806,7 +802,7 @@
       "controls": null
     }
   }, {
-    "w": 8,
+    "w": 12,
     "h": 9,
     "x": 0,
     "y": 45,
@@ -820,7 +816,7 @@
         }
       },
       "description": "",
-      "chartType": "chart:line",
+      "chartType": "chart:area",
       "dataSourceType": "api",
       "staticData": {},
       "config": {
@@ -845,9 +841,13 @@
           }],
           "valueDimensions": [{
             "alias": "表达式-51",
-            "expr": "used_memory_rss::field",
+            "expr": "max(used_memory_rss::field)",
             "key": "valueGNomQaK8",
-            "type": "expr"
+            "type": "expr",
+            "unit": {
+              "type": "CAPACITY",
+              "unit": "B"
+            }
           }]
         },
         "optionProps": {
@@ -866,19 +866,17 @@
             "expr": "server::tag"
           }, {
             "alias": "valueGNomQaK8",
-            "expr": "used_memory_rss::field"
+            "expr": "max(used_memory_rss::field)"
           }],
           "where": ["addon_id::tag='{{addonId}}'"]
         },
         "method": "post",
         "query": {
-          "end": 1659412148548,
+          "end": "{{endTime}}",
           "epoch": "ms",
           "format": "chartv2",
-          "match_project_id": "*",
-          "neq_addon_id": "redis",
           "ql": "influxql:ast",
-          "start": 1659408548548,
+          "start": "{{startTime}}",
           "type": "_"
         },
         "url": "/api/orgCenter/metrics-query"
@@ -886,9 +884,9 @@
       "controls": null
     }
   }, {
-    "w": 8,
+    "w": 12,
     "h": 9,
-    "x": 8,
+    "x": 12,
     "y": 45,
     "i": "view-PdLGXruB",
     "view": {
@@ -900,7 +898,7 @@
         }
       },
       "description": "",
-      "chartType": "chart:line",
+      "chartType": "chart:area",
       "dataSourceType": "api",
       "staticData": {},
       "config": {
@@ -925,9 +923,13 @@
           }],
           "valueDimensions": [{
             "alias": "表达式-53",
-            "expr": "used_memory_lua::field",
+            "expr": "max(used_memory_lua::field)",
             "key": "valueLxX45TAa",
-            "type": "expr"
+            "type": "expr",
+            "unit": {
+              "type": "CAPACITY",
+              "unit": "B"
+            }
           }]
         },
         "optionProps": {
@@ -946,19 +948,17 @@
             "expr": "server::tag"
           }, {
             "alias": "valueLxX45TAa",
-            "expr": "used_memory_lua::field"
+            "expr": "max(used_memory_lua::field)"
           }],
           "where": ["addon_id::tag='{{addonId}}' "]
         },
         "method": "post",
         "query": {
-          "end": 1659412148548,
+          "end": "{{endTime}}",
           "epoch": "ms",
           "format": "chartv2",
-          "match_project_id": "*",
-          "neq_addon_id": "redis",
           "ql": "influxql:ast",
-          "start": 1659408548548,
+          "start": "{{startTime}}",
           "type": "_"
         },
         "url": "/api/orgCenter/metrics-query"
@@ -966,7 +966,7 @@
       "controls": null
     }
   }, {
-    "w": 8,
+    "w": 12,
     "h": 9,
     "x": 0,
     "y": 54,
@@ -980,7 +980,7 @@
         }
       },
       "description": "",
-      "chartType": "chart:line",
+      "chartType": "chart:area",
       "dataSourceType": "api",
       "staticData": {},
       "config": {
@@ -1005,9 +1005,13 @@
           }],
           "valueDimensions": [{
             "alias": "表达式-55",
-            "expr": "used_cpu_sys::field",
+            "expr": "max(used_cpu_sys::field)",
             "key": "valuenTA396JL",
-            "type": "expr"
+            "type": "expr",
+            "unit": {
+              "type": "PERCENT",
+              "unit": "%"
+            }
           }]
         },
         "optionProps": {
@@ -1026,19 +1030,17 @@
             "expr": "server::tag"
           }, {
             "alias": "valuenTA396JL",
-            "expr": "used_cpu_sys::field"
+            "expr": "max(used_cpu_sys::field)"
           }],
           "where": ["addon_id::tag='{{addonId}}'"]
         },
         "method": "post",
         "query": {
-          "end": 1659412148548,
+          "end": "{{endTime}}",
           "epoch": "ms",
           "format": "chartv2",
-          "match_project_id": "*",
-          "neq_addon_id": "redis",
           "ql": "influxql:ast",
-          "start": 1659408548548,
+          "start": "{{startTime}}",
           "type": "_"
         },
         "url": "/api/orgCenter/metrics-query"
@@ -1046,9 +1048,9 @@
       "controls": null
     }
   }, {
-    "w": 8,
+    "w": 12,
     "h": 9,
-    "x": 8,
+    "x": 12,
     "y": 54,
     "i": "view-5528Asb0",
     "view": {
@@ -1060,7 +1062,7 @@
         }
       },
       "description": "",
-      "chartType": "chart:line",
+      "chartType": "chart:area",
       "dataSourceType": "api",
       "staticData": null,
       "config": {
@@ -1085,9 +1087,13 @@
           }],
           "valueDimensions": [{
             "alias": "表达式-57",
-            "expr": "used_cpu_user::field",
+            "expr": "max(used_cpu_user::field)",
             "key": "valueuA60fZei",
-            "type": "expr"
+            "type": "expr",
+            "unit": {
+              "type": "PERCENT",
+              "unit": "%"
+            }
           }]
         }
       },
@@ -1103,19 +1109,17 @@
             "expr": "server::tag"
           }, {
             "alias": "valueuA60fZei",
-            "expr": "used_cpu_user::field"
+            "expr": "max(used_cpu_user::field)"
           }],
           "where": ["addon_id::tag='{{addonId}}'"]
         },
         "method": "post",
         "query": {
-          "end": 1659412148548,
+          "end": "{{endTime}}",
           "epoch": "ms",
           "format": "chartv2",
-          "match_project_id": "*",
-          "neq_addon_id": "redis",
           "ql": "influxql:ast",
-          "start": 1659408548548,
+          "start": "{{startTime}}",
           "type": "_"
         },
         "url": "/api/orgCenter/metrics-query"
@@ -1123,7 +1127,7 @@
       "controls": null
     }
   }, {
-    "w": 8,
+    "w": 12,
     "h": 9,
     "x": 0,
     "y": 63,
@@ -1137,7 +1141,7 @@
         }
       },
       "description": "",
-      "chartType": "chart:line",
+      "chartType": "chart:area",
       "dataSourceType": "api",
       "staticData": null,
       "config": {
@@ -1162,9 +1166,13 @@
           }],
           "valueDimensions": [{
             "alias": "表达式-59",
-            "expr": "used_cpu_sys_children::field",
+            "expr": "max(used_cpu_sys_children::field)",
             "key": "valueWgfEtzem",
-            "type": "expr"
+            "type": "expr",
+            "unit": {
+              "type": "PERCENT",
+              "unit": "%"
+            }
           }]
         }
       },
@@ -1180,19 +1188,17 @@
             "expr": "server::tag"
           }, {
             "alias": "valueWgfEtzem",
-            "expr": "used_cpu_sys_children::field"
+            "expr": "max(used_cpu_sys_children::field)"
           }],
           "where": ["addon_id::tag='{{addonId}}'"]
         },
         "method": "post",
         "query": {
-          "end": 1659412148548,
+          "end": "{{endTime}}",
           "epoch": "ms",
           "format": "chartv2",
-          "match_project_id": "*",
-          "neq_addon_id": "redis",
           "ql": "influxql:ast",
-          "start": 1659408548548,
+          "start": "{{startTime}}",
           "type": "_"
         },
         "url": "/api/orgCenter/metrics-query"
@@ -1200,9 +1206,9 @@
       "controls": null
     }
   }, {
-    "w": 8,
+    "w": 12,
     "h": 9,
-    "x": 8,
+    "x": 12,
     "y": 63,
     "i": "view-KIs967nJ",
     "view": {
@@ -1214,7 +1220,7 @@
         }
       },
       "description": "",
-      "chartType": "chart:line",
+      "chartType": "chart:area",
       "dataSourceType": "api",
       "staticData": null,
       "config": {
@@ -1239,9 +1245,13 @@
           }],
           "valueDimensions": [{
             "alias": "表达式-61",
-            "expr": "used_cpu_user_children::field",
+            "expr": "max(used_cpu_user_children::field)",
             "key": "valueGgUZO3Aj",
-            "type": "expr"
+            "type": "expr",
+            "unit": {
+              "type": "PERCENT",
+              "unit": "%"
+            }
           }]
         }
       },
@@ -1257,19 +1267,17 @@
             "expr": "server::tag"
           }, {
             "alias": "valueGgUZO3Aj",
-            "expr": "used_cpu_user_children::field"
+            "expr": "max(used_cpu_user_children::field)"
           }],
           "where": ["addon_id::tag='{{addonId}}'"]
         },
         "method": "post",
         "query": {
-          "end": 1659412148548,
+          "end": "{{endTime}}",
           "epoch": "ms",
           "format": "chartv2",
-          "match_project_id": "*",
-          "neq_addon_id": "redis",
           "ql": "influxql:ast",
-          "start": 1659408548548,
+          "start": "{{startTime}}",
           "type": "_"
         },
         "url": "/api/orgCenter/metrics-query"

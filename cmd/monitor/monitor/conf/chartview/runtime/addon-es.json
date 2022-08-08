@@ -6,7 +6,7 @@
   "scope": "org",
   "scopeId": "terminus",
   "viewConfig": [{
-    "w": 8,
+    "w": 12,
     "h": 9,
     "x": 0,
     "y": 0,
@@ -20,7 +20,7 @@
         }
       },
       "description": "",
-      "chartType": "chart:line",
+      "chartType": "chart:area",
       "dataSourceType": "api",
       "staticData": null,
       "config": {
@@ -45,9 +45,13 @@
           }],
           "valueDimensions": [{
             "alias": "表达式-63",
-            "expr": "store_size_in_bytes::field",
+            "expr": "max(store_size_in_bytes::field)",
             "key": "valuexKDDdnja",
-            "type": "expr"
+            "type": "expr",
+            "unit": {
+              "type": "CAPACITY",
+              "unit": "B"
+            }
           }]
         }
       },
@@ -63,19 +67,17 @@
             "expr": "node_name::tag"
           }, {
             "alias": "valuexKDDdnja",
-            "expr": "store_size_in_bytes::field"
+            "expr": "max(store_size_in_bytes::field)"
           }],
           "where": ["addon_id::tag='{{addonId}}'"]
         },
         "method": "post",
         "query": {
-          "end": 1659412148548,
+          "end": "{{endTime}}",
           "epoch": "ms",
-          "eq_addon_id": "elasticsearch",
           "format": "chartv2",
-          "match_project_id": "*",
           "ql": "influxql:ast",
-          "start": 1659408548548,
+          "start": "{{startTime}}",
           "type": "_"
         },
         "url": "/api/orgCenter/metrics-query"
@@ -83,9 +85,9 @@
       "controls": null
     }
   }, {
-    "w": 8,
+    "w": 12,
     "h": 9,
-    "x": 8,
+    "x": 12,
     "y": 0,
     "i": "view-KzNzNAoG",
     "view": {
@@ -97,7 +99,7 @@
         }
       },
       "description": "",
-      "chartType": "chart:line",
+      "chartType": "chart:area",
       "dataSourceType": "api",
       "staticData": null,
       "config": {
@@ -122,7 +124,7 @@
           }],
           "valueDimensions": [{
             "alias": "表达式-65",
-            "expr": "docs_count::field",
+            "expr": "max(docs_count::field)",
             "key": "valueg43UFBUZ",
             "type": "expr"
           }]
@@ -140,19 +142,17 @@
             "expr": "node_name::tag"
           }, {
             "alias": "valueg43UFBUZ",
-            "expr": "docs_count::field"
+            "expr": "max(docs_count::field)"
           }],
           "where": ["addon_id::tag='{{addonId}}'"]
         },
         "method": "post",
         "query": {
-          "end": 1659412148548,
+          "end": "{{endTime}}",
           "epoch": "ms",
-          "eq_addon_id": "elasticsearch",
           "format": "chartv2",
-          "match_project_id": "*",
           "ql": "influxql:ast",
-          "start": 1659408548548,
+          "start": "{{startTime}}",
           "type": "_"
         },
         "url": "/api/orgCenter/metrics-query"
@@ -160,7 +160,7 @@
       "controls": null
     }
   }, {
-    "w": 8,
+    "w": 12,
     "h": 9,
     "x": 0,
     "y": 9,
@@ -174,7 +174,7 @@
         }
       },
       "description": "",
-      "chartType": "chart:line",
+      "chartType": "chart:area",
       "dataSourceType": "api",
       "staticData": null,
       "config": {
@@ -199,7 +199,7 @@
           }],
           "valueDimensions": [{
             "alias": "表达式-68",
-            "expr": "segments_count::field",
+            "expr": "max(segments_count::field)",
             "key": "value8WjHWisL",
             "type": "expr"
           }]
@@ -217,19 +217,17 @@
             "expr": "node_name::tag"
           }, {
             "alias": "value8WjHWisL",
-            "expr": "segments_count::field"
+            "expr": "max(segments_count::field)"
           }],
           "where": ["addon_id::tag='{{addonId}}'"]
         },
         "method": "post",
         "query": {
-          "end": 1659412148548,
+          "end": "{{endTime}}",
           "epoch": "ms",
-          "eq_addon_id": "elasticsearch",
           "format": "chartv2",
-          "match_project_id": "*",
           "ql": "influxql:ast",
-          "start": 1659408548548,
+          "start": "{{startTime}}",
           "type": "_"
         },
         "url": "/api/orgCenter/metrics-query"
@@ -237,9 +235,9 @@
       "controls": null
     }
   }, {
-    "w": 8,
+    "w": 12,
     "h": 9,
-    "x": 8,
+    "x": 12,
     "y": 9,
     "i": "view-8XZORjFm",
     "view": {
@@ -251,7 +249,7 @@
         }
       },
       "description": "",
-      "chartType": "chart:line",
+      "chartType": "chart:area",
       "dataSourceType": "api",
       "staticData": null,
       "config": {
@@ -276,7 +274,7 @@
           }],
           "valueDimensions": [{
             "alias": "表达式-70",
-            "expr": "current_open::field",
+            "expr": "max(current_open::field)",
             "key": "value0rp3P2pl",
             "type": "expr"
           }]
@@ -294,19 +292,17 @@
             "expr": "node_name::tag"
           }, {
             "alias": "value0rp3P2pl",
-            "expr": "current_open::field"
+            "expr": "max(current_open::field)"
           }],
           "where": ["addon_id::tag='{{addonId}}'"]
         },
         "method": "post",
         "query": {
-          "end": 1659412148548,
+          "end": "{{endTime}}",
           "epoch": "ms",
-          "eq_addon_id": "elasticsearch",
           "format": "chartv2",
-          "match_project_id": "*",
           "ql": "influxql:ast",
-          "start": 1659408548548,
+          "start": "{{startTime}}",
           "type": "_"
         },
         "url": "/api/orgCenter/metrics-query"
@@ -314,7 +310,7 @@
       "controls": null
     }
   }, {
-    "w": 8,
+    "w": 12,
     "h": 9,
     "x": 0,
     "y": 18,
@@ -328,7 +324,7 @@
         }
       },
       "description": "",
-      "chartType": "chart:line",
+      "chartType": "chart:area",
       "dataSourceType": "api",
       "staticData": null,
       "config": {
@@ -353,7 +349,7 @@
           }],
           "valueDimensions": [{
             "alias": "表达式-72",
-            "expr": "server_open::field",
+            "expr": "max(server_open::field)",
             "key": "valueV4WcmVDe",
             "type": "expr"
           }]
@@ -371,19 +367,17 @@
             "expr": "node_name::tag"
           }, {
             "alias": "valueV4WcmVDe",
-            "expr": "server_open::field"
+            "expr": "max(server_open::field)"
           }],
           "where": ["addon_id::tag='{{addonId}}' "]
         },
         "method": "post",
         "query": {
-          "end": 1659412148548,
+          "end": "{{endTime}}",
           "epoch": "ms",
-          "eq_addon_id": "elasticsearch",
           "format": "chartv2",
-          "match_project_id": "*",
           "ql": "influxql:ast",
-          "start": 1659408548548,
+          "start": "{{startTime}}",
           "type": "_"
         },
         "url": "/api/orgCenter/metrics-query"
@@ -391,9 +385,9 @@
       "controls": null
     }
   }, {
-    "w": 8,
+    "w": 12,
     "h": 9,
-    "x": 8,
+    "x": 12,
     "y": 18,
     "i": "view-cGSQBqzD",
     "view": {
@@ -405,7 +399,7 @@
         }
       },
       "description": "",
-      "chartType": "chart:line",
+      "chartType": "chart:area",
       "dataSourceType": "api",
       "staticData": null,
       "config": {
@@ -430,9 +424,13 @@
           }],
           "valueDimensions": [{
             "alias": "表达式-74",
-            "expr": "mem_heap_used_in_bytes::field",
+            "expr": "max(mem_heap_used_in_bytes::field)",
             "key": "valueJxtXlDmf",
-            "type": "expr"
+            "type": "expr",
+            "unit": {
+              "type": "CAPACITY",
+              "unit": "B"
+            }
           }]
         }
       },
@@ -448,19 +446,17 @@
             "expr": "node_name::tag"
           }, {
             "alias": "valueJxtXlDmf",
-            "expr": "mem_heap_used_in_bytes::field"
+            "expr": "max(mem_heap_used_in_bytes::field)"
           }],
           "where": ["addon_id::tag='{{addonId}}'"]
         },
         "method": "post",
         "query": {
-          "end": 1659412148548,
+          "end": "{{endTime}}",
           "epoch": "ms",
-          "eq_addon_id": "elasticsearch",
           "format": "chartv2",
-          "match_project_id": "*",
           "ql": "influxql:ast",
-          "start": 1659408548548,
+          "start": "{{startTime}}",
           "type": "_"
         },
         "url": "/api/orgCenter/metrics-query"
@@ -468,7 +464,7 @@
       "controls": null
     }
   }, {
-    "w": 8,
+    "w": 12,
     "h": 9,
     "x": 0,
     "y": 27,
@@ -482,7 +478,7 @@
         }
       },
       "description": "",
-      "chartType": "chart:line",
+      "chartType": "chart:area",
       "dataSourceType": "api",
       "staticData": null,
       "config": {
@@ -509,7 +505,11 @@
             "alias": "表达式-76",
             "expr": "diffps(gc_collectors_old_collection_count::field)",
             "key": "valueyTFpiO4P",
-            "type": "expr"
+            "type": "expr",
+            "unit": {
+              "type": "CUSTOM",
+              "unit": " /s"
+            }
           }]
         }
       },
@@ -531,13 +531,11 @@
         },
         "method": "post",
         "query": {
-          "end": 1659412148548,
+          "end": "{{endTime}}",
           "epoch": "ms",
-          "eq_addon_id": "elasticsearch",
           "format": "chartv2",
-          "match_project_id": "*",
           "ql": "influxql:ast",
-          "start": 1659408548548,
+          "start": "{{startTime}}",
           "type": "_"
         },
         "url": "/api/orgCenter/metrics-query"
@@ -545,9 +543,9 @@
       "controls": null
     }
   }, {
-    "w": 8,
+    "w": 12,
     "h": 9,
-    "x": 8,
+    "x": 12,
     "y": 27,
     "i": "view-LLeipQYU",
     "view": {
@@ -559,7 +557,7 @@
         }
       },
       "description": "",
-      "chartType": "chart:line",
+      "chartType": "chart:area",
       "dataSourceType": "api",
       "staticData": null,
       "config": {
@@ -586,7 +584,11 @@
             "alias": "表达式-78",
             "expr": "diffps(gc_collectors_young_collection_count::field)",
             "key": "valueTbfrTe7W",
-            "type": "expr"
+            "type": "expr",
+            "unit": {
+              "type": "CUSTOM",
+              "unit": " /s"
+            }
           }]
         }
       },
@@ -608,13 +610,11 @@
         },
         "method": "post",
         "query": {
-          "end": 1659412148548,
+          "end": "{{endTime}}",
           "epoch": "ms",
-          "eq_addon_id": "elasticsearch",
           "format": "chartv2",
-          "match_project_id": "*",
           "ql": "influxql:ast",
-          "start": 1659408548548,
+          "start": "{{startTime}}",
           "type": "_"
         },
         "url": "/api/orgCenter/metrics-query"
@@ -622,7 +622,7 @@
       "controls": null
     }
   }, {
-    "w": 8,
+    "w": 12,
     "h": 9,
     "x": 0,
     "y": 36,
@@ -636,7 +636,7 @@
         }
       },
       "description": "",
-      "chartType": "chart:line",
+      "chartType": "chart:area",
       "dataSourceType": "api",
       "staticData": null,
       "config": {
@@ -663,7 +663,11 @@
             "alias": "表达式-80",
             "expr": "diffps(search_query_total::field)",
             "key": "valueYneI1kNy",
-            "type": "expr"
+            "type": "expr",
+            "unit": {
+              "type": "CUSTOM",
+              "unit": " /s"
+            }
           }]
         }
       },
@@ -685,13 +689,11 @@
         },
         "method": "post",
         "query": {
-          "end": 1659412148548,
+          "end": "{{endTime}}",
           "epoch": "ms",
-          "eq_addon_id": "elasticsearch",
           "format": "chartv2",
-          "match_project_id": "*",
           "ql": "influxql:ast",
-          "start": 1659408548548,
+          "start": "{{startTime}}",
           "type": "_"
         },
         "url": "/api/orgCenter/metrics-query"
@@ -699,9 +701,9 @@
       "controls": null
     }
   }, {
-    "w": 8,
+    "w": 12,
     "h": 9,
-    "x": 8,
+    "x": 12,
     "y": 36,
     "i": "view-tGgk0lwo",
     "view": {
@@ -713,7 +715,7 @@
         }
       },
       "description": "",
-      "chartType": "chart:line",
+      "chartType": "chart:area",
       "dataSourceType": "api",
       "staticData": null,
       "config": {
@@ -740,7 +742,11 @@
             "alias": "表达式-82",
             "expr": "diffps(indexing_index_total::field)",
             "key": "value23dNnvNz",
-            "type": "expr"
+            "type": "expr",
+            "unit": {
+              "type": "CUSTOM",
+              "unit": " /s"
+            }
           }]
         }
       },
@@ -762,13 +768,11 @@
         },
         "method": "post",
         "query": {
-          "end": 1659412148548,
+          "end": "{{endTime}}",
           "epoch": "ms",
-          "eq_addon_id": "elasticsearch",
           "format": "chartv2",
-          "match_project_id": "*",
           "ql": "influxql:ast",
-          "start": 1659408548548,
+          "start": "{{startTime}}",
           "type": "_"
         },
         "url": "/api/orgCenter/metrics-query"
@@ -776,7 +780,7 @@
       "controls": null
     }
   }, {
-    "w": 8,
+    "w": 12,
     "h": 9,
     "x": 0,
     "y": 45,
@@ -790,7 +794,7 @@
         }
       },
       "description": "",
-      "chartType": "chart:line",
+      "chartType": "chart:area",
       "dataSourceType": "api",
       "staticData": null,
       "config": {
@@ -817,7 +821,11 @@
             "alias": "表达式-84",
             "expr": "diffps(merges_total::field)",
             "key": "value9GJU2dSL",
-            "type": "expr"
+            "type": "expr",
+            "unit": {
+              "type": "CUSTOM",
+              "unit": " /s"
+            }
           }]
         }
       },
@@ -839,13 +847,11 @@
         },
         "method": "post",
         "query": {
-          "end": 1659412148548,
+          "end": "{{endTime}}",
           "epoch": "ms",
-          "eq_addon_id": "elasticsearch",
           "format": "chartv2",
-          "match_project_id": "*",
           "ql": "influxql:ast",
-          "start": 1659408548548,
+          "start": "{{startTime}}",
           "type": "_"
         },
         "url": "/api/orgCenter/metrics-query"
@@ -853,9 +859,9 @@
       "controls": null
     }
   }, {
-    "w": 8,
+    "w": 12,
     "h": 9,
-    "x": 8,
+    "x": 12,
     "y": 45,
     "i": "view-2VSw3oui",
     "view": {
@@ -867,7 +873,7 @@
         }
       },
       "description": "",
-      "chartType": "chart:line",
+      "chartType": "chart:area",
       "dataSourceType": "api",
       "staticData": null,
       "config": {
@@ -894,7 +900,11 @@
             "alias": "表达式-86",
             "expr": "diffps(refresh_total::field)",
             "key": "valueZmxxgV8B",
-            "type": "expr"
+            "type": "expr",
+            "unit": {
+              "type": "CUSTOM",
+              "unit": " /s"
+            }
           }]
         }
       },
@@ -916,13 +926,11 @@
         },
         "method": "post",
         "query": {
-          "end": 1659412148548,
+          "end": "{{endTime}}",
           "epoch": "ms",
-          "eq_addon_id": "elasticsearch",
           "format": "chartv2",
-          "match_project_id": "*",
           "ql": "influxql:ast",
-          "start": 1659408548548,
+          "start": "{{startTime}}",
           "type": "_"
         },
         "url": "/api/orgCenter/metrics-query"
