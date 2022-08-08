@@ -24,7 +24,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"google.golang.org/protobuf/types/known/structpb"
 
 	commonPb "github.com/erda-project/erda-proto-go/common/pb"
 	"github.com/erda-project/erda-proto-go/core/hepa/endpoint_api/pb"
@@ -401,6 +400,18 @@ func (s *endpointApiService) ListPackageApis(ctx context.Context, req *pb.ListPa
 	default:
 		return nil, erdaErr.NewInvalidParameterError(vars.TODO_PARAM, "invalid env")
 	}
+	for i := 0; i < len(req.Paths); i++ {
+		if req.Paths[i].GetPath() == "" {
+			return nil, erdaErr.NewInvalidParameterError(vars.TODO_PARAM, "emtpy path")
+		}
+		if req.Paths[i].GetAddress() == "" {
+			return nil, erdaErr.NewInvalidParameterError(vars.TODO_PARAM, "empty address")
+		}
+		_, err := url.Parse(req.Paths[i].GetAddress())
+		if err != nil {
+			return nil, erdaErr.NewInvalidParameterError(vars.TODO_PARAM, errors.Cause(err).Error())
+		}
+	}
 	getPkgDto := &dto.GetPackagesDto{
 		DiceArgsDto: dto.DiceArgsDto{
 			ProjectId: req.GetProjectId(),
@@ -417,7 +428,7 @@ func (s *endpointApiService) ListPackageApis(ctx context.Context, req *pb.ListPa
 	if packages.Total == 0 {
 		return nil, errors.New("package not found")
 	}
-	list, ok := packages.List.([]dto.PackageInfoDto)
+	list, ok := packages.List.(dto.SortBySceneList)
 	if !ok {
 		return nil, errors.Errorf("package not found: %v", packages.List)
 	}
@@ -435,52 +446,21 @@ func (s *endpointApiService) ListPackageApis(ctx context.Context, req *pb.ListPa
 			Errorln("failed to GetPackageApis")
 		return nil, err
 	}
-	endpointApis := packageApis.List.([]dto.OpenapiInfoDto)
+	endpointApis, ok := packageApis.List.([]dto.OpenapiInfoDto)
+	if !ok {
+		return nil, errors.Errorf("endpoint apis not found: %v", packageApis.List)
+	}
 	var result pb.ListPackageApisResp
 	result.Total = uint64(packageApis.Total)
 	result.PackageId = item.Id
-	var paths = make(map[string]struct{})
-	for _, path := range req.Paths {
-		paths[path] = struct{}{}
+	var paths = make(map[string]*pb.ListPackageApiItem)
+	for _, pth := range req.Paths {
+		paths[pth.GetPath()] = pth
 	}
 	for _, endpointApi := range endpointApis {
-		// if no item in paths, append all
-		var ok = len(paths) == 0
-		// if exact match, append this item
-		if !ok {
-			_, ok = paths[endpointApi.ApiPath]
+		if ok := matchEndpointApi(endpointApi, paths, req.GetDeleteMode()); ok {
+			result.List = append(result.List, endpointApi.ToEndpointApi())
 		}
-		// if not exact match and match mode is "prefix", check if it is prefix matched
-		if !ok && strings.EqualFold(req.GetDeleteMode(), "prefix") {
-			for path := range paths {
-				if ok = strings.HasPrefix(endpointApi.ApiPath, path); ok {
-					break
-				}
-			}
-		}
-		if !ok {
-			continue
-		}
-		result.List = append(result.List, &pb.EndpointApi{
-			ApiPath:             endpointApi.ApiPath,
-			RedirectType:        endpointApi.RedirectType,
-			RedirectAddr:        endpointApi.RedirectAddr,
-			RedirectPath:        endpointApi.RedirectPath,
-			RedirectApp:         endpointApi.RedirectApp,
-			RedirectService:     endpointApi.RedirectService,
-			RedirectRuntimeId:   endpointApi.RedirectRuntimeId,
-			RedirectRuntimeName: endpointApi.RedirectRuntimeName,
-			Method:              structpb.NewStringValue(endpointApi.Method),
-			AllowPassAuth:       endpointApi.AllowPassAuth,
-			Description:         endpointApi.Description,
-			Hosts:               endpointApi.Hosts,
-			ApiId:               endpointApi.ApiId,
-			CreateAt:            endpointApi.CreateAt,
-			DiceApp:             endpointApi.DiceApp,
-			DiceService:         endpointApi.DiceService,
-			Origin:              string(endpointApi.Origin),
-			Mutable:             endpointApi.Mutable,
-		})
 	}
 	return &result, nil
 }
@@ -677,4 +657,35 @@ func (s *endpointApiService) adjustInvalidPackageAPIItem(pkg orm.GatewayPackage,
 		item.KongServiceID = kongService.ServiceId
 	}
 	return item
+}
+
+func matchEndpointApi(endpointApi dto.OpenapiInfoDto, paths map[string]*pb.ListPackageApiItem, mode string) bool {
+	if endpointApi.RedirectType != dto.RT_URL {
+		return false
+	}
+	if len(paths) == 0 {
+		return false
+	}
+	endpointApiUrl, err := url.Parse(endpointApi.RedirectAddr)
+	if err != nil {
+		return false
+	}
+	item, ok := paths[endpointApi.ApiPath]
+	if ok {
+		if itemUrl, err := url.Parse(item.GetAddress()); err == nil && endpointApiUrl.Hostname() == itemUrl.Hostname() {
+			return true
+		}
+	}
+	if !strings.EqualFold(mode, "prefix") {
+		return false
+	}
+	for apiPath, item := range paths {
+		if strings.HasPrefix(endpointApi.ApiPath, apiPath) {
+			if itemUrl, err := url.Parse(item.GetAddress()); err == nil && endpointApiUrl.Hostname() == itemUrl.Hostname() {
+				return true
+			}
+		}
+	}
+
+	return false
 }

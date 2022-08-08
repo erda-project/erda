@@ -428,7 +428,7 @@ func (impl GatewayOpenapiServiceImpl) createHubPackage(ctx context.Context, args
 			OrgId:           args.OrgId,
 			DiceEnv:         args.Env,
 			DiceClusterName: az,
-			BindDomain:      strings.Join(dto.BindDomain, ","),
+			BindDomain:      hepautils.SortJoinDomains(dto.BindDomain),
 		}
 		if err = hubInfoService.Insert(hubInfo); err != nil {
 			return nil, "", err

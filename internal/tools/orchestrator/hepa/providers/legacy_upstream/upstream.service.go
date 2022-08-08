@@ -16,20 +16,24 @@ package legacy_upstream
 
 import (
 	"context"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	pb2 "github.com/erda-project/erda-proto-go/core/hepa/hub_info/pb"
 	"github.com/erda-project/erda-proto-go/core/hepa/legacy_upstream/pb"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/vars"
 	context1 "github.com/erda-project/erda/internal/tools/orchestrator/hepa/context"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/hub_info"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/legacy_upstream"
 	erdaErr "github.com/erda-project/erda/pkg/common/errors"
 )
 
 type upstreamService struct {
-	p *provider
+	hubInfoService hub_info.Interface
 }
 
 func (s *upstreamService) Register(ctx context.Context, req *pb.RegisterRequest) (resp *pb.RegisterResponse, err error) {
@@ -54,6 +58,11 @@ func (s *upstreamService) register(ctx context.Context, req *pb.RegisterRequest)
 
 	// convert struct and adjust it
 	reqDto := dto.FromUpstream(req.Upstream)
+	if req.GetUpstream().GetScene() == orm.HubScene {
+		if err := s.patchHubInfo(ctx, reqDto); err != nil {
+			return nil, err
+		}
+	}
 	if err = reqDto.Init(); err != nil {
 		err = erdaErr.NewInvalidParameterError(vars.TODO_PARAM, err.Error())
 		return
@@ -61,8 +70,7 @@ func (s *upstreamService) register(ctx context.Context, req *pb.RegisterRequest)
 
 	// adjust every api struct
 	for i := 0; i < len(reqDto.ApiList); i++ {
-		apiDto := &reqDto.ApiList[i]
-		if err = apiDto.Init(); err != nil {
+		if err = (&reqDto.ApiList[i]).Init(); err != nil {
 			err = erdaErr.NewInvalidParameterError(vars.TODO_PARAM, err.Error())
 			return
 		}
@@ -102,13 +110,17 @@ func (s *upstreamService) asyncRegister(ctx context.Context, req *pb.AsyncRegist
 	service := legacy_upstream.Service.Clone(ctx)
 
 	reqDto := dto.FromUpstream(req.Upstream)
+	if req.GetUpstream().GetScene() == orm.HubScene {
+		if err := s.patchHubInfo(ctx, reqDto); err != nil {
+			return nil, err
+		}
+	}
 	if err = reqDto.Init(); err != nil {
 		err = erdaErr.NewInvalidParameterError(vars.TODO_PARAM, err.Error())
 		return
 	}
 	for i := 0; i < len(reqDto.ApiList); i++ {
-		apiDto := &reqDto.ApiList[i]
-		if err = apiDto.Init(); err != nil {
+		if err = (&reqDto.ApiList[i]).Init(); err != nil {
 			err = erdaErr.NewInvalidParameterError(vars.TODO_PARAM, err.Error())
 			return
 		}
@@ -123,4 +135,25 @@ func (s *upstreamService) asyncRegister(ctx context.Context, req *pb.AsyncRegist
 	}
 	return
 
+}
+
+func (s *upstreamService) patchHubInfo(ctx context.Context, reqDto *dto.UpstreamRegisterDto) error {
+	if len(reqDto.ApiList) == 0 || reqDto.ApiList[0].Domain == "" {
+		return errors.New("no api in list")
+	}
+	hubInfo, err := s.hubInfoService.GetHubInfo(ctx, &pb2.GetHubInfoReq{
+		OrgID:        reqDto.OrgId,
+		ProjectID:    reqDto.ProjectId,
+		Env:          reqDto.Env,
+		Az:           reqDto.Az,
+		OneOfDomains: strings.Split(reqDto.ApiList[0].Domain, ",")[0],
+	})
+	if err != nil {
+		return err
+	}
+	if hubInfo == nil || !hubInfo.GetSuccess() {
+		return errors.New("hub info not found")
+	}
+	reqDto.HubInfoID = hubInfo.GetData().GetId()
+	return nil
 }

@@ -26,6 +26,11 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
+const (
+	OFlagAppend   = "append"
+	OFlagOverride = "override"
+)
+
 type UpstreamRegisterDto struct {
 	Az            string           `json:"az"`
 	UpstreamName  string           `json:"-"`
@@ -43,29 +48,37 @@ type UpstreamRegisterDto struct {
 	RegisterId    string           `json:"registerTag"`
 	PathPrefix    *string          `json:"pathPrefix"`
 	Scene         string           `json:"scene"`
+	OFlag         string           `json:"OFlag"`
+	HubInfoID     string           `json:"-"`
 }
 
 // FromUpstream 转换结构
 func FromUpstream(u *pb.Upstream) *UpstreamRegisterDto {
 	dto := &UpstreamRegisterDto{
-		Az:           u.Az,
-		UpstreamName: "",
-		DiceAppId:    u.DiceAppId,
-		DiceService:  u.DiceService,
-		RuntimeName:  u.RuntimeName,
-		RuntimeId:    u.RuntimeId,
-		AppName:      u.AppName,
-		ServiceAlias: u.ServiceName,
-		OrgId:        u.OrgId,
-		ProjectId:    u.ProjectId,
-		Env:          strings.ToUpper(u.Env),
-		ApiList:      nil,
-		RegisterId:   u.RegisterTag,
-		PathPrefix:   nil,
-		Scene:        u.GetScene(),
+		Az:            u.Az,
+		UpstreamName:  "",
+		DiceAppId:     u.DiceAppId,
+		DiceService:   u.DiceService,
+		RuntimeName:   u.RuntimeName,
+		RuntimeId:     u.RuntimeId,
+		AppName:       u.AppName,
+		ServiceAlias:  u.ServiceName,
+		OrgId:         u.OrgId,
+		ProjectId:     u.ProjectId,
+		Env:           strings.ToLower(u.Env),
+		ApiList:       nil,
+		OldRegisterId: nil,
+		RegisterId:    u.RegisterTag,
+		PathPrefix:    nil,
+		Scene:         u.GetScene(),
+		OFlag:         u.GetOFlag(),
+		HubInfoID:     "",
 	}
 	if dto.Scene == "" {
 		dto.Scene = orm.UnityScene
+	}
+	if dto.OFlag == "" {
+		dto.OFlag = OFlagOverride
 	}
 	var apiList []UpstreamApiDto
 	for _, api := range u.ApiList {
@@ -121,7 +134,10 @@ func (dto *UpstreamRegisterDto) Init() error {
 		return err
 	}
 	if dto.Scene == orm.HubScene && len(dto.ApiList) > 0 && dto.ApiList[0].Domain != "" {
-		dto.UpstreamName = orm.HubSceneUpstreamNamePrefix + "/" + dto.UpstreamName
+		if dto.HubInfoID == "" {
+			return errors.New("hub info not found")
+		}
+		dto.UpstreamName = dto.HubInfoID + "/" + dto.UpstreamName
 	}
 	address := dto.ApiList[0].Address
 	var apisM = make(map[string]struct{})
@@ -166,10 +182,11 @@ func (dto *UpstreamRegisterDto) preCheck() error {
 	if len(dto.ApiList) == 0 {
 		return errors.Errorf("invalid apiList: %s", "apiList is empty")
 	}
+	dto.Env = strings.ToLower(dto.Env)
 	switch dto.Env {
-	case "PROD", "STAGING", "TEST", "DEV":
+	case "prod", "staging", "test", "dev":
 	default:
-		return errors.Errorf("invalid env, expects PROD,STAGING,TEST,DEV, got %s", dto.Env)
+		return errors.Errorf("invalid env, expects prod,staging,test,dev, got %s", dto.Env)
 	}
 	if dto.OldRegisterId == nil && dto.RegisterId == "" {
 		return errors.New("invalid registerID")

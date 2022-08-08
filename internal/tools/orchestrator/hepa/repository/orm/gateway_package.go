@@ -21,10 +21,6 @@ const (
 	HubScene     = "hub"
 )
 
-const (
-	HubSceneUpstreamNamePrefix = "custom-registered"
-)
-
 type GatewayPackage struct {
 	DiceOrgId          string `json:"dice_org_id" xorm:"not null comment('dice企业标识id') VARCHAR(32)"`
 	DiceProjectId      string `json:"dice_project_id" xorm:"default '' comment('dice项目标识id') VARCHAR(32)"`

@@ -119,7 +119,7 @@ func (impl GatewayApiServiceImpl) verifyApiCreateParams(req *gw.ApiReqDto) *comm
 		logrus.Errorf("invalid req[%+v]", req.ApiDto)
 		return res.SetReturnCode(PARAMS_IS_NULL)
 	}
-	req.RegisterType = gw.RT_MANUAL
+	req.RegisterType = gw.RtManual
 	var consumer *orm.GatewayConsumer
 	var err error
 	if req.RuntimeId == "" {
@@ -304,7 +304,7 @@ func (impl GatewayApiServiceImpl) createUpstreamBindApiWithoutRuntimeService(ctx
 		ProjectId:      consumer.ProjectId,
 		IsInner:        upstreamApi.IsInner,
 		OuterNetEnable: true,
-		RegisterType:   gw.RT_AUTO,
+		RegisterType:   gw.RtAuto,
 		Hosts:          nil,
 	}
 	if upstreamApi.Domains != "" {
@@ -344,7 +344,7 @@ func (impl GatewayApiServiceImpl) createUpstreamBindApiWithRuntimeService(appNam
 		IsInner:          upstreamApi.IsInner,
 		OuterNetEnable:   true,
 		UpstreamApiId:    upstreamApi.Id,
-		RegisterType:     gw.RT_AUTO,
+		RegisterType:     gw.RtAuto,
 	})
 	return apiId, err
 }
@@ -394,7 +394,7 @@ func (impl GatewayApiServiceImpl) updateUpstreamBindApiWithoutRuntimeService(con
 		Path:           path,
 		Env:            consumer.Env,
 		Method:         gatewayApi.Method,
-		RegisterType:   gw.RT_AUTO,
+		RegisterType:   gw.RtAuto,
 		RedirectAddr:   upstreamApi.Address + upstreamApi.Path,
 		RedirectType:   gw.RT_URL,
 		OuterNetEnable: outerNetEnable,
@@ -421,7 +421,7 @@ func (impl GatewayApiServiceImpl) updateUpstreamBindApiWithRuntimeService(upstre
 	_, _, err := impl.updateRuntimeApi(gatewayApi, &gw.ApiDto{
 		Path:           upstreamApi.GatewayPath,
 		Method:         gatewayApi.Method,
-		RegisterType:   gw.RT_AUTO,
+		RegisterType:   gw.RtAuto,
 		RedirectAddr:   upstreamApi.Address + upstreamApi.Path,
 		RedirectType:   gw.RT_URL,
 		OuterNetEnable: outerNetEnable,
@@ -762,6 +762,7 @@ func (impl GatewayApiServiceImpl) CreateRuntimeApi(dto *gw.ApiDto, session ...*d
 		return "", PARAMS_IS_NULL, err
 	}
 	kongAdapter := kong.NewKongAdapter(kongInfo.KongAddr)
+	dto.KongInfoEndpoint = kongInfo.Endpoint
 	dto.Hosts = append(dto.Hosts, kong.InnerHost)
 	if dto.RedirectType == gw.RT_SERVICE {
 		dto.RedirectAddr = runtimeService.InnerAddress + dto.RedirectPath
@@ -980,6 +981,7 @@ func (impl GatewayApiServiceImpl) createApi(ctx context.Context, consumer *orm.G
 		l.WithError(err).Errorln("kongInfo not found")
 		return "", PARAMS_IS_NULL, err
 	}
+	dto.KongInfoEndpoint = kongInfo.Endpoint
 	kongAdapter := kong.NewKongAdapter(kongInfo.KongAddr)
 	if len(dto.Hosts) == 0 {
 		dto.Hosts = append(dto.Hosts, kong.InnerHost)
@@ -1000,8 +1002,7 @@ func (impl GatewayApiServiceImpl) createApi(ctx context.Context, consumer *orm.G
 		return "", PARAMS_IS_NULL, err
 	}
 	if exist {
-		return existId, API_EXIST, errors.Errorf("api path[%s] method[%s] conflict", dto.Path,
-			dto.Method)
+		return existId, API_EXIST, errors.Errorf("api path[%s] method[%s] conflict", dto.Path, dto.Method)
 	}
 	// 1 创建service
 	{
@@ -1322,8 +1323,8 @@ func (impl GatewayApiServiceImpl) buildApiInfoDto(gatewayApi *orm.GatewayApi) (*
 		Description:  gatewayApi.Description,
 		CreateAt:     gatewayApi.CreateTime.Format("2006-01-02T15:04:05"),
 	}
-	if gatewayApi.RegisterType == gw.RT_AUTO_REGISTER {
-		res.RegisterType = gw.RT_AUTO
+	if gatewayApi.RegisterType == gw.RtAutoRegister {
+		res.RegisterType = gw.RtAuto
 	} else {
 		res.RegisterType = gatewayApi.RegisterType
 	}
@@ -2067,6 +2068,7 @@ func (impl GatewayApiServiceImpl) updateRuntimeApi(gatewayApi *orm.GatewayApi, d
 		return nil, PARAMS_IS_NULL, err
 	}
 	kongAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
+	dto.KongInfoEndpoint = kongInfo.Endpoint
 	dto.Hosts = append(dto.Hosts, kong.InnerHost)
 	if dto.RedirectType == gw.RT_SERVICE {
 		dto.RedirectAddr = runtimeService.InnerAddress + dto.RedirectPath
@@ -2178,6 +2180,7 @@ func (impl GatewayApiServiceImpl) updateApi(gatewayApi *orm.GatewayApi, consumer
 		return nil, PARAMS_IS_NULL, err
 	}
 	kongAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
+	dto.KongInfoEndpoint = kongInfo.Endpoint
 	if len(dto.Hosts) == 0 {
 		dto.Hosts = append(dto.Hosts, kong.InnerHost, kongInfo.Endpoint)
 	}
@@ -2397,7 +2400,7 @@ func (impl GatewayApiServiceImpl) TouchRuntimeApi(dao *orm.GatewayRuntimeService
 			DiceService:      dao.ServiceName,
 			RuntimeServiceId: dao.Id,
 			OuterNetEnable:   true,
-			RegisterType:     gw.RT_AUTO,
+			RegisterType:     gw.RtAuto,
 		}, session)
 		if err != nil {
 			return err

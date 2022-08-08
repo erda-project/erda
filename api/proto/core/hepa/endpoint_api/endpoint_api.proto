@@ -324,7 +324,13 @@ message ListPackageApisReq {
   string env = 2;
   string domain = 3;
   string deleteMode = 4;
-  repeated string paths = 5;
+  repeated ListPackageApiItem paths = 5;
+  string address = 6;
+}
+
+message ListPackageApiItem {
+  string path = 1;
+  string address = 2;
 }
 
 message ListPackageApisResp {

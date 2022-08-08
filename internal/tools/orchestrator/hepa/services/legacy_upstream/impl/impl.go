@@ -100,8 +100,7 @@ func (impl GatewayUpstreamServiceImpl) getUpstreamApis(upstreamId string, regist
 	return impl.getUpstreamApisWithFunc(upstreamId, registerId, impl.upstreamApiDb.SelectInIds)
 }
 
-func (impl GatewayUpstreamServiceImpl) getUpstreamApisWithFunc(upstreamId, registerId string, f func([]string) (
-	[]orm.GatewayUpstreamApi, error)) (map[string]orm.GatewayUpstreamApi, error) {
+func (impl GatewayUpstreamServiceImpl) getUpstreamApisWithFunc(upstreamId, registerId string, f func([]string) ([]orm.GatewayUpstreamApi, error)) (map[string]orm.GatewayUpstreamApi, error) {
 	res := map[string]orm.GatewayUpstreamApi{}
 	record, err := impl.upstreamRecordDb.Get(upstreamId, registerId)
 	if err != nil {
@@ -192,7 +191,7 @@ func (impl GatewayUpstreamServiceImpl) UpstreamValid(ctx context.Context, consum
 	if dto.PathPrefix != nil {
 		prefix = *dto.PathPrefix
 	}
-	err = impl.upstreamValid(ctx, consumer, dao, dto.RegisterId, prefix)
+	err = impl.upstreamValid(ctx, consumer, dao, dto.RegisterId, prefix, dto.OFlag)
 	if err != nil {
 		return
 	}
@@ -204,7 +203,7 @@ func (impl GatewayUpstreamServiceImpl) apiNeedUpdate(old, new orm.GatewayUpstrea
 		old.GatewayPath != new.GatewayPath || old.Domains != new.Domains
 }
 
-func (impl GatewayUpstreamServiceImpl) upstreamValid(ctx context.Context, consumer *orm.GatewayConsumer, upstream *orm.GatewayUpstream, validId string, aliasPath string) error {
+func (impl GatewayUpstreamServiceImpl) upstreamValid(ctx context.Context, consumer *orm.GatewayConsumer, upstream *orm.GatewayUpstream, validId string, aliasPath, oFlag string) error {
 	ctx = context1.WithLoggerIfWithout(ctx, logrus.StandardLogger())
 	l := ctx.(*context1.LogContext).Entry()
 
@@ -242,16 +241,8 @@ func (impl GatewayUpstreamServiceImpl) upstreamValid(ctx context.Context, consum
 	l = l.WithField("upstream.id", upstream.Id).
 		WithField("oldValidId", oldValidId).
 		WithField("validId", validId)
-	// get the old api list last time registered if the registerId is new
-	if oldValidId != "" && oldValidId != validId {
-		oldApis, err = impl.getUpstreamApis(upstream.Id, oldValidId)
-		if err != nil {
-			return err
-		}
-		l.WithField("len(oldApis)", len(oldApis)).
-			Infoln("oldValidId != '' && oldValidId != validId, get oldApis")
-	}
 	// get the new api list this time registered if the registerId is new
+	// get the old api list last time registered if the registerId is new
 	if oldValidId != validId {
 		newApis, err = impl.getUpstreamApis(upstream.Id, validId)
 		if err != nil {
@@ -259,6 +250,21 @@ func (impl GatewayUpstreamServiceImpl) upstreamValid(ctx context.Context, consum
 		}
 		l.WithField("len(oldApis)", len(oldApis)).
 			Infoln("oldValidId != validId, get oldApis")
+		if oldValidId != "" {
+			oldApis, err = impl.getUpstreamApis(upstream.Id, oldValidId)
+			if err != nil {
+				return err
+			}
+			l.WithField("len(oldApis)", len(oldApis)).
+				Infoln("oldValidId != '' && oldValidId != validId, get oldApis")
+			if oFlag == gw.OFlagAppend {
+				for k := range oldApis {
+					if _, ok := newApis[k]; !ok {
+						newApis[k] = oldApis[k]
+					}
+				}
+			}
+		}
 	}
 	// get the apis for the deleted part for the registerId and defer recover them.
 	if oldValidId == validId {
@@ -580,7 +586,7 @@ func (impl GatewayUpstreamServiceImpl) upstreamRegister(ctx context.Context, dto
 	dao := &orm.GatewayUpstream{
 		OrgId:          dto.OrgId,
 		ProjectId:      dto.ProjectId,
-		Env:            dto.Env,
+		Env:            strings.ToLower(dto.Env),
 		Az:             az,
 		DiceApp:        dto.AppName,
 		DiceService:    dto.DiceService,

@@ -179,6 +179,9 @@ func (impl GatewayApiPolicyServiceImpl) GetPolicyConfig(category, packageId, pac
 	if err != nil {
 		return
 	}
+	if api == nil {
+		return nil, errors.Errorf("package api not found, packageID: %s, apiID: %s", packageId, packageApiId)
+	}
 	var zone *orm.GatewayZone
 	if api.ZoneId != "" {
 		zone, err = (*impl.zoneBiz).GetZone(api.ZoneId)
