@@ -34,6 +34,7 @@ envs:
   OTEL_TRACES_SAMPLER_ARG: 0.1
   CLUSTER_MANAGER_ADDR: cluster-manager:9094
   CLUSTER_DIALER_ADDR: cluster-manager:80
+  TRACE_HOOK_ENABLE: true
 services:
   dop:
     binds:
