@@ -12,18 +12,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package legacy_upstream
+package hepautils_test
 
 import (
-	"context"
+	"testing"
 
-	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/hepautils"
 )
 
-var Service GatewayUpstreamService
-
-type GatewayUpstreamService interface {
-	Clone(context.Context) GatewayUpstreamService
-	UpstreamRegister(context.Context, *dto.UpstreamRegisterDto) (bool, error)
-	UpstreamRegisterAsync(context.Context, *dto.UpstreamRegisterDto) (bool, error)
+func TestKongRender(t *testing.T) {
+	var cases = []string{
+		"/api/some",
+		"/api/{keyAction}",
+		"/api/{a}/{b}",
+	}
+	var results = []string{
+		`/api/(?<keyAction>\w)`,
+		`/api/(?<a>\w)/(?<b>\w)`,
+	}
+	_ = results
+	for _, c := range cases {
+		uri, err := hepautils.RenderKongUri(c)
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Log(c, "\t--> ", uri)
+	}
 }

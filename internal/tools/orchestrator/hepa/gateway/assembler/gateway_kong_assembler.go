@@ -71,7 +71,8 @@ func (GatewayKongAssemblerImpl) BuildKongRouteReq(routeId string, dto *gw.ApiDto
 		for i := 0; i < len(dto.Hosts); i++ {
 			if dto.Hosts[i] == kongConst.InnerHost {
 				dto.Hosts[i] = strings.ToLower(dto.Env + "." + dto.Hosts[i])
-			} else {
+			}
+			if dto.Hosts[i] == dto.KongInfoEndpoint {
 				dto.Hosts[i] = strings.ToLower(dto.Env + config.ServerConf.SubDomainSplit + dto.Hosts[i])
 			}
 		}

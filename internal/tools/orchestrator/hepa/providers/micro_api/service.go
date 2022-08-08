@@ -74,7 +74,7 @@ func (s *apiService) CreateApi(ctx context.Context, req *pb.CreateApiRequest) (r
 		ApiDto:          dto.MakeApiDto(req.ApiRequest),
 		ApiReqOptionDto: &dto.ApiReqOptionDto{},
 	}
-	apiId, err := service.CreateApi(reqDto)
+	apiId, err := service.CreateApi(ctx, reqDto)
 	if err != nil {
 		err = erdaErr.NewInvalidParameterError(vars.TODO_PARAM, errors.Cause(err).Error())
 		return

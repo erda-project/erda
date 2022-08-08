@@ -12,18 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package legacy_upstream
+package hub_info
 
 import (
-	"context"
-
-	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
+	"github.com/erda-project/erda-proto-go/core/hepa/hub_info/pb"
 )
 
-var Service GatewayUpstreamService
-
-type GatewayUpstreamService interface {
-	Clone(context.Context) GatewayUpstreamService
-	UpstreamRegister(context.Context, *dto.UpstreamRegisterDto) (bool, error)
-	UpstreamRegisterAsync(context.Context, *dto.UpstreamRegisterDto) (bool, error)
-}
+type Interface pb.HubInfoServiceServer

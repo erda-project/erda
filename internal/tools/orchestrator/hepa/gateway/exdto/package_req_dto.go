@@ -32,13 +32,6 @@ const (
 	ACL_OFF  = "off"
 )
 
-// Scene
-const (
-	OPENAPI_SCENE = "openapi"
-	WEBAPI_SCENE  = "webapi"
-	UNITY_SCENE   = "unity"
-)
-
 type PackageDto struct {
 	Name             string   `json:"name"`
 	BindDomain       []string `json:"bindDomain"`

@@ -136,6 +136,8 @@ func (p *provider) Init(ctx servicehub.Context) error {
 			perm.Method(apiService.ListInvalidEndpointApi, perm.ScopeOrg, "org", perm.ActionGet, perm.OrgIDValue()),
 			perm.Method(apiService.ClearInvalidEndpointApi, perm.ScopeOrg, "org", perm.ActionGet, perm.OrgIDValue()),
 			perm.Method(apiService.ListAllCrontabs, perm.ScopeOrg, "org", perm.ActionGet, perm.OrgIDValue()),
+			perm.NoPermMethod(apiService.ListPackageApis),
+			perm.NoPermMethod(apiService.DeletePackageApis),
 		), common.AccessLogWrap(common.AccessLog))
 	}
 	return nil

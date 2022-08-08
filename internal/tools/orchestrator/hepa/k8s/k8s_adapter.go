@@ -35,6 +35,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/util"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/vars"
 	kErrors "github.com/erda-project/erda/internal/tools/orchestrator/hepa/errors"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/hepautils"
 	"github.com/erda-project/erda/pkg/k8s/interface_factory"
 	"github.com/erda-project/erda/pkg/k8s/union_interface"
 	"github.com/erda-project/erda/pkg/k8sclient"
@@ -320,8 +321,14 @@ func (impl *K8SAdapterImpl) newIngress(ns, name string, routes []IngressRoute, b
 		Backend:   union_interface.IngressBackend(backend),
 		NeedTLS:   needTLS,
 	}
+	for i := 0; i < len(material.Routes); i++ {
+		pth, err := hepautils.RenderKongUri(material.Routes[i].Path)
+		if err != nil {
+			return errors.Wrap(err, "failed to render service path")
+		}
+		material.Routes[i].Path = pth
+	}
 	return impl.ingressesHelper.NewIngress(material)
-
 }
 
 func (impl *K8SAdapterImpl) setOptionAnnotations(ingress interface{}, options RouteOptions) error {
