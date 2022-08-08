@@ -40,6 +40,7 @@ func NewDirector() func(*http.Request) {
 			panic("should not be here")
 		}
 		r.URL.Scheme = spec.Scheme.String()
+		port := spec.Port
 		if conf.UseK8S() {
 			r.Host = spec.K8SHost
 			r.URL.Host = spec.K8SHost
@@ -51,10 +52,11 @@ func NewDirector() func(*http.Request) {
 				r.URL.Host = host
 			}
 			// set host according to customSvcHost secondly
-			customSvcHost, _, exist := conf.GetCustomSvcHostPort(getServiceName(spec.K8SHost))
+			customSvcHost, customSvcPort, exist := conf.GetCustomSvcHostPort(getServiceName(spec.K8SHost))
 			if exist {
 				r.Host = customSvcHost
 				r.URL.Host = customSvcHost
+				port = int(customSvcPort)
 			}
 		} else {
 			r.Host = spec.MarathonHost
@@ -65,8 +67,8 @@ func NewDirector() func(*http.Request) {
 			r.Host = spec.Host
 			r.URL.Host = spec.Host
 		} else {
-			r.Host = strutil.Concat(r.Host, ":", strconv.Itoa(spec.Port))
-			r.URL.Host = strutil.Concat(r.URL.Host, ":", strconv.Itoa(spec.Port))
+			r.Host = strutil.Concat(r.Host, ":", strconv.Itoa(port))
+			r.URL.Host = strutil.Concat(r.URL.Host, ":", strconv.Itoa(port))
 		}
 		r.Header.Set("Origin-Path", path)
 		r.URL.RawPath = spec.BackendPath.Fill(spec.Path.Vars(path))
