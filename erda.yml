@@ -26,7 +26,7 @@ envs:
   ERDA_SERVER_ADDR: erda-server:9095
   OPENAPI_ADDR: erda-server:9529
   MSP_ADDR: msp:8080
-  DOP_ADDR: dop:9527
+  DOP_ADDR: erda-server:9095
   CMP_ADDR: cmp:9027
   ORCHESTRATOR_ADDR: orchestrator:8081
   OTEL_TRACES_ENABLED: false
