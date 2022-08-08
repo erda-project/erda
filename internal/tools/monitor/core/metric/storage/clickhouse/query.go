@@ -105,9 +105,11 @@ func (p *provider) Query(ctx context.Context, q tsql.Query) (*model.ResultSet, e
 
 	rows, err := p.exec(newCtx, sql)
 	if err != nil {
+		span.RecordError(err, oteltrace.WithAttributes(attribute.String("error", err.Error())))
 		return nil, errors.Wrap(err, fmt.Sprintf("failed to query: %s", sql))
 	}
 	if rows.Err() != nil {
+		span.RecordError(err, oteltrace.WithAttributes(attribute.String("error", rows.Err().Error())))
 		return nil, errors.Wrap(err, fmt.Sprintf("failed to query: %s", sql))
 	}
 	if rows == nil {
@@ -125,43 +127,72 @@ func (p *provider) Query(ctx context.Context, q tsql.Query) (*model.ResultSet, e
 	}
 
 	if err != nil {
+		span.RecordError(err, oteltrace.WithAttributes(attribute.String("error", err.Error())))
 		p.Log.Error("clickhouse metric query is error ", sql, err)
 		return nil, err
 	}
 	return result, nil
 }
 func (p *provider) buildQueryContext(ctx context.Context) context.Context {
+	span := oteltrace.SpanFromContext(ctx)
+
 	settings := map[string]interface{}{}
 	if p.Cfg.QueryTimeout > 0 {
 		settings["max_execution_time"] = int(p.Cfg.QueryTimeout.Seconds()) + 5
+		span.SetAttributes(attribute.Int("settings.max_execution_time", settings["max_execution_time"].(int)))
 	}
 	if p.Cfg.QueryMaxThreads > 0 {
 		settings["max_threads"] = p.Cfg.QueryMaxThreads
+		span.SetAttributes(attribute.Int("settings.max_threads", p.Cfg.QueryMaxThreads))
 	}
 	if p.Cfg.QueryMaxMemory > 0 {
 		settings["max_memory_usage"] = p.Cfg.QueryMaxMemory
+		span.SetAttributes(attribute.Int64("settings.max_memory_usage", p.Cfg.QueryMaxMemory))
 	}
 	if len(settings) == 0 {
 		return ctx
 	}
 
-	span := oteltrace.SpanFromContext(ctx)
-
 	ctx = cksdk.Context(ctx,
 		cksdk.WithSettings(settings),
 		cksdk.WithProgress(func(progress *cksdk.Progress) {
-			span.AddEvent("once_progress", oteltrace.WithAttributes(attribute.String("progress", progress.String())))
+			span.AddEvent("progress",
+				oteltrace.WithAttributes(attribute.Int("rows", int(progress.Rows))),
+				oteltrace.WithAttributes(attribute.Int("total_rows", int(progress.TotalRows))),
+				oteltrace.WithAttributes(attribute.Int("bytes", int(progress.Bytes))),
+				oteltrace.WithAttributes(attribute.Int("wrote_bytes", int(progress.WroteBytes))),
+			)
 		}),
 		cksdk.WithProfileInfo(func(profile *cksdk.ProfileInfo) {
-			span.SetAttributes(attribute.String("profile", profile.String()))
+			span.AddEvent("profile_info",
+				oteltrace.WithAttributes(attribute.Int("rows", int(profile.Rows))),
+				oteltrace.WithAttributes(attribute.Int("blocks", int(profile.Blocks))),
+				oteltrace.WithAttributes(attribute.Int("bytes", int(profile.Bytes))),
+				oteltrace.WithAttributes(attribute.Int("rows.before.limit", int(profile.RowsBeforeLimit))),
+				oteltrace.WithAttributes(attribute.Bool("applied.limit", profile.AppliedLimit)),
+				oteltrace.WithAttributes(attribute.Bool("applied.limit", profile.CalculatedRowsBeforeLimit)),
+			)
 		}),
 		cksdk.WithProfileEvents(func(event []cksdk.ProfileEvent) {
 			if event != nil {
 				for _, e := range event {
-					span.SetAttributes(attribute.Int64(fmt.Sprintf("profile_event_%s_%v", e.Name, e.ThreadID), e.Value))
+					span.AddEvent(fmt.Sprintf("profile_event_%s", e.Name),
+						oteltrace.WithTimestamp(e.CurrentTime),
+						oteltrace.WithAttributes(attribute.Int64("value", e.Value)),
+						oteltrace.WithAttributes(attribute.Int64("thread.id", int64(e.ThreadID))),
+						oteltrace.WithAttributes(attribute.String("type", e.Type)),
+					)
 				}
 			}
-			fmt.Println(event)
+		}),
+		cksdk.WithLogs(func(log *cksdk.Log) {
+			span.AddEvent("log",
+				oteltrace.WithTimestamp(log.Time),
+				oteltrace.WithAttributes(attribute.Int("priority", int(log.Priority))),
+				oteltrace.WithAttributes(attribute.Int("thread.id", int(log.ThreadID))),
+				oteltrace.WithAttributes(attribute.String("source", log.Source)),
+				oteltrace.WithAttributes(attribute.String("text", log.Text)),
+			)
 		}),
 		cksdk.WithSpan(span.SpanContext()),
 		cksdk.WithQueryID(span.SpanContext().TraceID().String()))
@@ -179,7 +210,7 @@ func (p *provider) QueryRaw(orgName string, expr *goqu.SelectDataset) (driver.Ro
 }
 
 func (p *provider) exec(ctx context.Context, sql string) (driver.Rows, error) {
-	newCtx, span := otel.Tracer("executive").Start(ctx, "exec.clickhouse")
+	_, span := otel.Tracer("executive").Start(ctx, "exec.clickhouse")
 	defer span.End()
-	return p.clickhouse.Client().Query(p.buildQueryContext(newCtx), sql)
+	return p.clickhouse.Client().Query(p.buildQueryContext(ctx), sql)
 }

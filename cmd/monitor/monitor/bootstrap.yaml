@@ -90,6 +90,7 @@ metric-storage-clickhouse:
 clickhouse.table.loader@metric:
   _enable: ${QUERY_METRIC_FROM_CLICKHOUSE_ENABLE:false}
   table_prefix: "metrics"
+  load_mode: "${QUERY_METRIC_FROM_CLICKHOUSE_LOAD_MODE:LoadWithCache}"
   default_search_table: "metrics_all"
   cache_key_prefix: "clickhouse-table-metric"
 
