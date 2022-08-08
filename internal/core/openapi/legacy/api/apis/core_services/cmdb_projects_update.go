@@ -24,7 +24,7 @@ already migration
 */
 var CMDB_PROJECT_UPDATE = apis.ApiSpec{
 	Path:         "/api/projects/<projectID>",
-	BackendPath:  "/api/projects/<projectID>",
+	BackendPath:  "/core/api/projects/<projectID>",
 	Host:         "erda-server.marathon.l4lb.thisdcos.directory:9095",
 	Scheme:       "http",
 	Method:       "PUT",

@@ -27,7 +27,6 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
-	infrahttpserver "github.com/erda-project/erda-infra/providers/httpserver"
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	"github.com/erda-project/erda-proto-go/core/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -136,13 +135,15 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 	p.Protocol.WithContextValue(types.IdentitiyService, p.Identity)
 
 	// This server will never be started. Only the routes and locale loader are used by new http server
-	server := httpserver.New(":0")
+	server := httpserver.NewSingleton("")
 	server.Router().UseEncodedPath()
 	server.RegisterEndpoint(ep.Routes())
 	// server.Router().Path("/metrics").Methods(http.MethodGet).Handler(promxp.Handler("cmdb"))
 	server.WithLocaleLoader(bdl.Bdl.GetLocaleLoader())
 	server.Router().PathPrefix("/api/apim/metrics").Handler(endpoints.InternalReverseHandler(endpoints.ProxyMetrics))
-	ctx.Service("http-server").(infrahttpserver.Router).Any("/**", server.Router())
+	if err := server.RegisterToNewHttpServerRouter(p.Router); err != nil {
+		return err
+	}
 
 	loadMetricKeysFromDb(db)
 

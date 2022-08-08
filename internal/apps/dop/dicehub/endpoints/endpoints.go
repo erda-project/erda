@@ -119,7 +119,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		//发布管理
 		{Path: "/api/publish-items", Method: http.MethodPost, Handler: e.CreatePublishItem},
 		{Path: "/api/publish-items", Method: http.MethodGet, Handler: e.QueryPublishItem},
-		{Path: "/api/my-publish-items", Method: http.MethodGet, Handler: e.QueryMyPublishItem},
+		{Path: "/core/api/my-publish-items", Method: http.MethodGet, Handler: e.QueryMyPublishItem},
 		{Path: "/api/publish-items/{publishItemId}", Method: http.MethodGet, Handler: e.GetPublishItem},
 		{Path: "/api/publish-items/{publishItemId}/distribution", Method: http.MethodGet, Handler: e.GetPublishItemDistribution},
 		{Path: "/api/publish-items/{publishItemId}", Method: http.MethodPut, Handler: e.UpdatePublishItem},

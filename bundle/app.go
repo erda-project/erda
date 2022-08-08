@@ -352,7 +352,7 @@ func (b *Bundle) CreateApp(req apistructs.ApplicationCreateRequest, userID strin
 	hc := b.hc
 
 	var fetchResp apistructs.ApplicationCreateResponse
-	resp, err := hc.Post(host).Path("/api/applications").
+	resp, err := hc.Post(host).Path("/core/api/applications").
 		Header(httputil.InternalHeader, "bundle").
 		Header(httputil.UserHeader, userID).
 		JSONBody(&req).Do().JSON(&fetchResp)
@@ -418,7 +418,7 @@ func (b *Bundle) UpdateApp(req apistructs.ApplicationUpdateRequestBody, appID ui
 	hc := b.hc
 
 	var fetchResp apistructs.ApplicationUpdateResponse
-	resp, err := hc.Put(host).Path(fmt.Sprintf("/api/applications/%d", appID)).
+	resp, err := hc.Put(host).Path(fmt.Sprintf("/core/api/applications/%d", appID)).
 		Header(httputil.InternalHeader, "bundle").
 		Header(httputil.UserHeader, userID).
 		JSONBody(&req).Do().JSON(&fetchResp)
@@ -441,7 +441,7 @@ func (b *Bundle) DeleteApp(appID uint64, userID string) (*apistructs.Application
 	hc := b.hc
 
 	var fetchResp apistructs.ApplicationDeleteResponse
-	resp, err := hc.Delete(host).Path(fmt.Sprintf("/api/applications/%d", appID)).
+	resp, err := hc.Delete(host).Path(fmt.Sprintf("/core/api/applications/%d", appID)).
 		Header(httputil.InternalHeader, "bundle").
 		Header(httputil.UserHeader, userID).
 		Do().JSON(&fetchResp)
