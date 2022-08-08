@@ -26,7 +26,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/common/unmarshalwork"
 )
 
-func ParseOapSpanEvent(buf []byte, callback func(event []metric.Metric) error) error {
+func ParseOapSpanEvent(buf []byte, callback func(event []*metric.Metric) error) error {
 	uw := newUnmarshalEventWork(buf, callback)
 	uw.wg.Add(1)
 	unmarshalwork.Schedule(uw)
@@ -41,10 +41,10 @@ type unmarshalEventWork struct {
 	buf      []byte
 	err      error
 	wg       sync.WaitGroup
-	callback func(event []metric.Metric) error
+	callback func(event []*metric.Metric) error
 }
 
-func newUnmarshalEventWork(buf []byte, callback func(event []metric.Metric) error) *unmarshalEventWork {
+func newUnmarshalEventWork(buf []byte, callback func(event []*metric.Metric) error) *unmarshalEventWork {
 	return &unmarshalEventWork{buf: buf, callback: callback}
 }
 
@@ -60,21 +60,23 @@ func (uw *unmarshalEventWork) Unmarshal() {
 		return
 	}
 
-	eventMetric := metric.Metric{
-		Name:    "apm_span_event",
-		OrgName: data.Attributes[lib.OrgNameKey],
-		Tags:    data.Attributes,
-		Fields:  make(map[string]interface{}),
-	}
-	eventMetric.Tags["_metric_scope_id"] = data.Attributes["terminus_key"]
-	eventMetric.Fields["field_count"] = len(data.Events)
-
-	var metrics []metric.Metric
+	var metrics []*metric.Metric
 
 	for _, event := range data.Events {
 		if len(event.Attributes) <= 0 {
 			continue
 		}
+		eventMetric := metric.Metric{
+			Name:    "apm_span_event",
+			OrgName: data.Attributes[lib.OrgNameKey],
+			Tags:    make(map[string]string),
+			Fields:  make(map[string]interface{}),
+		}
+		eventMetric.Tags = copyMap(data.Attributes, eventMetric.Tags)
+
+		eventMetric.Tags["_metric_scope_id"] = data.Attributes["terminus_key"]
+		eventMetric.Fields["field_count"] = len(data.Events)
+
 		sb := strings.Builder{}
 		for k, v := range event.Attributes {
 			eventMetric.Tags[k] = v
@@ -86,10 +88,17 @@ func (uw *unmarshalEventWork) Unmarshal() {
 		eventMetric.Tags["event"] = event.Name
 		eventMetric.Tags["trace_id"] = data.TraceID
 		eventMetric.Tags["span_id"] = data.SpanID
-		metrics = append(metrics, eventMetric)
+		metrics = append(metrics, &eventMetric)
 	}
 
 	if err := uw.callback(metrics); err != nil {
 		uw.err = err
 	}
+}
+
+func copyMap(m map[string]string, target map[string]string) map[string]string {
+	for k, v := range m {
+		target[k] = v
+	}
+	return target
 }

@@ -55,7 +55,7 @@ func New(meta *metricmeta.Manager, esStorage storage.Storage, ckStorage storage.
 const hourms = int64(time.Hour) / int64(time.Millisecond)
 
 func (q *queryer) buildTSQLParser(ctx context.Context, ql, statement string, params map[string]interface{}, filters []*model.Filter, options url.Values) (parser tsql.Parser, others map[string]interface{}, err error) {
-	ctx, span := otel.Tracer("build").Start(ctx, "build.tsql.parser")
+	ctx, span := otel.Tracer("build").Start(ctx, "build.execute.plan")
 	defer span.End()
 
 	idx := strings.Index(ql, ":")
@@ -113,10 +113,6 @@ func (q *queryer) buildTSQLParser(ctx context.Context, ql, statement string, par
 	}
 	parser = parser.SetParams(params)
 
-	// process header
-	if ctx == nil {
-		ctx = context.Background()
-	}
 	if head := transport.ContextHeader(ctx); head != nil {
 		if orgNames := head.Get("org"); len(orgNames) > 0 {
 			parser = parser.SetOrgName(orgNames[0])

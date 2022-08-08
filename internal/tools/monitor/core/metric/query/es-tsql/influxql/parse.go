@@ -159,7 +159,7 @@ func (p *Parser) Metrics() ([]string, error) {
 
 // ParseQuery .
 func (p *Parser) ParseQuery(ctx context.Context, kind string) ([]tsql.Query, error) {
-	_, span := otel.Tracer("parse").Start(ctx, "parse.query")
+	ctx, span := otel.Tracer("get").Start(ctx, "get.plan.execute")
 	defer span.End()
 
 	if p.queryPlan == nil {

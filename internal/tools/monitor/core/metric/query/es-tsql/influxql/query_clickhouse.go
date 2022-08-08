@@ -60,33 +60,56 @@ func (q QueryClickhouse) AppendBoolFilter(key string, value interface{}) {
 	q.expr = q.expr.Where(goqu.L(key).Eq(value))
 }
 
-var getData func(row ckdriver.Rows) (map[string]interface{}, error)
-
-func (q QueryClickhouse) ParseResult(ctx context.Context, resp interface{}) (*model.Data, error) {
-	_, span := otel.Tracer("parser").Start(ctx, "parser.result")
+func iterate(ctx context.Context, row ckdriver.Rows) (map[string]interface{}, error) {
+	_, span := otel.Tracer("parser").Start(ctx, "parser.iterate")
 	defer span.End()
 
-	if resp == nil {
-		return nil, nil
-	}
-
-	rows, ok := resp.(ckdriver.Rows)
-	rs := &model.Data{}
-	if !ok {
-		return nil, errors.New("data should be ck driver.Rows")
-	}
-
 	var (
-		columnTypes = rows.ColumnTypes()
+		columnTypes = row.ColumnTypes()
 		vars        = make([]interface{}, len(columnTypes))
-		columns     = rows.Columns()
-		err         error
+		columns     = row.Columns()
 	)
 
 	span.SetAttributes(attribute.String("origin.columns", strings.Join(columns, ";")))
 
 	for i := range columnTypes {
 		vars[i] = reflect.New(columnTypes[i].ScanType()).Interface()
+	}
+
+	if row.Err() != nil {
+		return nil, errors.Wrap(row.Err(), "failed to get data")
+	}
+
+	if err := row.Scan(vars...); err != nil {
+		return nil, err
+	}
+
+	data := make(map[string]interface{})
+	for i, v := range vars {
+		if v == nil {
+			continue
+		}
+		columnName := columns[i]
+		data[columnName] = pretty(v)
+	}
+
+	span.AddEvent("dump", oteltrace.WithAttributes(trace.BigStringAttribute("data", data)))
+	return data, nil
+}
+func (q QueryClickhouse) ParseResult(ctx context.Context, resp interface{}) (*model.Data, error) {
+	newCtx, span := otel.Tracer("parser").Start(ctx, "parser.result")
+	defer span.End()
+
+	if resp == nil {
+		return nil, nil
+	}
+
+	var err error
+
+	rows, ok := resp.(ckdriver.Rows)
+	rs := &model.Data{}
+	if !ok {
+		return nil, errors.New("data should be ck driver.Rows")
 	}
 
 	for _, c := range q.column {
@@ -102,32 +125,6 @@ func (q QueryClickhouse) ParseResult(ctx context.Context, resp interface{}) (*mo
 		}
 	}
 
-	var dumpArr []map[string]interface{}
-	defer func() {
-		span.SetAttributes(trace.BigStringAttribute("dump", dumpArr))
-	}()
-
-	getData = func(row ckdriver.Rows) (map[string]interface{}, error) {
-		if row.Err() != nil {
-			return nil, errors.Wrap(row.Err(), "failed to get data")
-		}
-
-		if err := rows.Scan(vars...); err != nil {
-			return nil, err
-		}
-
-		data := make(map[string]interface{})
-		for i, v := range vars {
-			if v == nil {
-				continue
-			}
-			columnName := columns[i]
-			data[columnName] = pretty(v)
-		}
-		dumpArr = append(dumpArr, data)
-		return data, nil
-	}
-
 	cur := make(map[string]interface{})
 	next := make(map[string]interface{})
 
@@ -135,7 +132,7 @@ func (q QueryClickhouse) ParseResult(ctx context.Context, resp interface{}) (*mo
 
 	// first read
 	rows.Next()
-	cur, err = getData(rows)
+	cur, err = iterate(newCtx, rows)
 	isTail := false
 	if err != nil {
 		if err == io.EOF {
@@ -157,7 +154,7 @@ func (q QueryClickhouse) ParseResult(ctx context.Context, resp interface{}) (*mo
 		}
 
 		if len(cur) <= 0 {
-			cur, err = getData(rows)
+			cur, err = iterate(newCtx, rows)
 			if err != nil {
 				span.RecordError(err)
 				return nil, err
@@ -165,7 +162,7 @@ func (q QueryClickhouse) ParseResult(ctx context.Context, resp interface{}) (*mo
 		}
 
 		if rows.Next() {
-			next, err = getData(rows)
+			next, err = iterate(newCtx, rows)
 			if err != nil {
 				span.RecordError(err)
 				return nil, err
@@ -239,7 +236,7 @@ func appendIfMissing(slice []*model.Column, target *model.Column) ([]*model.Colu
 }
 func pretty(data interface{}) interface{} {
 	if data == nil {
-		return ""
+		return data
 	}
 	switch v := data.(type) {
 	case *float64:
