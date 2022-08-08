@@ -38,22 +38,23 @@ type PackageApiInfo struct {
 type GatewayOpenapiService interface {
 	Clone(context.Context) GatewayOpenapiService
 	ClearRuntimeRoute(id string) error
-	SetRuntimeEndpoint(runtime_service.RuntimeEndpointInfo) error
+	SetRuntimeEndpoint(context.Context, runtime_service.RuntimeEndpointInfo) error
 	TouchPackageRootApi(packageId string, reqDto *dto.OpenapiDto) (bool, error)
 	TryClearRuntimePackage(*orm.GatewayRuntimeService, *service.SessionHelper, ...bool) error
 	TouchRuntimePackageMeta(*orm.GatewayRuntimeService, *service.SessionHelper) (string, bool, error)
 	RefreshRuntimePackage(string, *orm.GatewayRuntimeService, *service.SessionHelper) error
 	CreateUnityPackageZone(string, *service.SessionHelper) (*orm.GatewayZone, error)
 	CreateTenantPackage(string, *service.SessionHelper) error
-	CreatePackage(*dto.DiceArgsDto, *dto.PackageDto) (*dto.PackageInfoDto, string, error)
-	GetPackages(*dto.GetPackagesDto) (common.NewPageQuery, error)
+	CreateTenantHubPackages(ctx context.Context, tenantID string, session *service.SessionHelper) error
+	CreatePackage(context.Context, *dto.DiceArgsDto, *dto.PackageDto) (*dto.PackageInfoDto, string, error)
+	GetPackages(context.Context, *dto.GetPackagesDto) (common.NewPageQuery, error)
 	ListAllPackages() ([]orm.GatewayPackage, error)
 	GetPackage(string) (*dto.PackageInfoDto, error)
 	GetPackagesName(*dto.GetPackagesDto) ([]dto.PackageInfoDto, error)
 	UpdatePackage(string, string, *dto.PackageDto) (*dto.PackageInfoDto, error)
 	DeletePackage(string) (bool, error)
 	CreatePackageApi(string, *dto.OpenapiDto) (string, bool, error)
-	GetPackageApis(string, *dto.GetOpenapiDto) (common.NewPageQuery, error)
+	GetPackageApis(context.Context, string, *dto.GetOpenapiDto) (common.NewPageQuery, error)
 	ListPackageAllApis(id string) ([]orm.GatewayPackageApi, error)
 	UpdatePackageApi(string, string, *dto.OpenapiDto) (*dto.OpenapiInfoDto, bool, error)
 	DeletePackageApi(string, string) (bool, error)

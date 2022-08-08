@@ -17,7 +17,7 @@ package dto
 import (
 	"strings"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda-proto-go/core/hepa/legacy_upstream/pb"
 )
@@ -31,6 +31,7 @@ type UpstreamApiDto struct {
 	IsCustom    bool        `json:"isCustom"`
 	Doc         interface{} `json:"doc"`
 	Name        string      `json:"name"`
+	Domain      string      `json:"domain"`
 }
 
 func FromUpstreamApi(api *pb.UpstreamApi) UpstreamApiDto {
@@ -41,19 +42,29 @@ func FromUpstreamApi(api *pb.UpstreamApi) UpstreamApiDto {
 		Address:     api.Address,
 		IsInner:     api.IsInner,
 		IsCustom:    api.IsCustom,
-		Name:        api.Name,
 		Doc:         api.Doc.AsInterface(),
+		Name:        api.Name,
+		Domain:      api.GetDomain(),
 	}
 }
 
-func (dto *UpstreamApiDto) Init() bool {
-	if len(dto.Path) == 0 || dto.Path[0] != '/' {
-		log.Errorf("invalid path:%+v", dto)
-		return false
+// Init adjusts *UpstreamApiDot.
+// *UpstreamApiDto.Path is required to prefix "/";
+// *UpstreamApiDto.Address is required to prefix "http";
+// To set default *UpstreamApiDto.Name;
+// To set default *UpstreamApiDto.GatewayPath.
+func (dto *UpstreamApiDto) Init() error {
+	if dto.Path == "" {
+		return errors.Errorf("invalid path: %s", "path is empty")
 	}
-	if len(dto.Address) == 0 || !strings.HasPrefix(dto.Address, "http") {
-		log.Errorf("invalid address:%+v", dto)
-		return false
+	if dto.Path[0] != '/' {
+		return errors.Errorf("invalid path: %s", "missing prefix '/'")
+	}
+	if dto.Address == "" {
+		return errors.Errorf("invalid address: %s", "address is empty")
+	}
+	if !strings.HasPrefix(dto.Address, "http") {
+		return errors.Errorf("invalid address: %s", "scheme should be http or https")
 	}
 	if len(dto.Name) == 0 {
 		dto.Name = dto.Method + dto.Path
@@ -61,5 +72,6 @@ func (dto *UpstreamApiDto) Init() bool {
 	if dto.GatewayPath == "" {
 		dto.GatewayPath = dto.Path
 	}
-	return true
+
+	return nil
 }

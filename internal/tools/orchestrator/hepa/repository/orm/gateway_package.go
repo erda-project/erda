@@ -15,9 +15,10 @@
 package orm
 
 const (
-	OPENAPI_SCENE = "openapi"
-	WEBAPI_SCENE  = "webapi"
-	UNITY_SCENE   = "unity"
+	OpenapiScene = "openapi"
+	WebapiScene  = "webapi"
+	UnityScene   = "unity"
+	HubScene     = "hub"
 )
 
 type GatewayPackage struct {

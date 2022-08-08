@@ -24,7 +24,7 @@ import (
 	"sync"
 
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 
 	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/internal/core/org"
@@ -32,6 +32,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/util"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/config"
+	context1 "github.com/erda-project/erda/internal/tools/orchestrator/hepa/context"
 	gw "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/i18n"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/k8s"
@@ -125,7 +126,9 @@ func (impl GatewayRuntimeServiceServiceImpl) Clone(ctx context.Context) runtime_
 	return &newService
 }
 
-func (impl GatewayRuntimeServiceServiceImpl) TouchRuntimeComplete(ctx map[string]interface{}, reqDto *gw.RuntimeServiceReqDto) *common.StandardResult {
+func (impl GatewayRuntimeServiceServiceImpl) TouchRuntimeComplete(ctx context.Context, meta map[string]interface{}, reqDto *gw.RuntimeServiceReqDto) *common.StandardResult {
+	ctx = context1.WithLoggerIfWithout(ctx, logrus.StandardLogger())
+
 	defer util.DoRecover()
 	res := &common.StandardResult{Success: false}
 	var err error
@@ -133,7 +136,7 @@ func (impl GatewayRuntimeServiceServiceImpl) TouchRuntimeComplete(ctx map[string
 	var sessionI, endpointsI interface{}
 	var session *db.SessionHelper
 	var package2Endpoint map[string]*orm.GatewayRuntimeService
-	sessionI, ok = ctx["dbsession"]
+	sessionI, ok = meta["dbsession"]
 	if !ok {
 		err = errors.New("can't find dbsession from context")
 		goto failed
@@ -143,7 +146,7 @@ func (impl GatewayRuntimeServiceServiceImpl) TouchRuntimeComplete(ctx map[string
 		err = errors.New("acquire sesion failed")
 		goto failed
 	}
-	endpointsI, ok = ctx["endpoints"]
+	endpointsI, ok = meta["endpoints"]
 	if !ok {
 		err = errors.New("can't find endpoints from context")
 		goto failed
@@ -171,25 +174,25 @@ func (impl GatewayRuntimeServiceServiceImpl) TouchRuntimeComplete(ctx map[string
 	session.Close()
 
 	func() {
-		runtimeEndpointsI, ok := ctx["runtime_endpoints"]
+		runtimeEndpointsI, ok := meta["runtime_endpoints"]
 		if !ok {
-			log.Errorf("can't find dice endpoints from context")
+			logrus.Errorf("can't find dice endpoints from context")
 			return
 		}
 		runtimeEndpoints, ok := runtimeEndpointsI.([]runtime_service.RuntimeEndpointInfo)
 		if !ok {
-			log.Errorf("acquire dice endpoints failed")
+			logrus.Errorf("acquire dice endpoints failed")
 			return
 		}
 		for _, runtimeEndpoint := range runtimeEndpoints {
 			// render platform placeholder
 			runtimeEndpoint.Endpoints, err = renderPlatformInfo(runtimeEndpoint.Endpoints, reqDto.ProjectId)
 			if err == nil {
-				err = (*impl.packageBiz).SetRuntimeEndpoint(runtimeEndpoint)
+				err = (*impl.packageBiz).SetRuntimeEndpoint(ctx, runtimeEndpoint)
 			}
 			if err != nil {
-				log.Errorf("set runtime endpoint failed, err:%+v, runtimeEndpoint:%+v", err, runtimeEndpoint)
-				humanLog := i18n.Sprintf(ctx["locale"].(string), "FailedToBindServiceEndpoint", runtimeEndpoint.RuntimeService.ServiceName)
+				logrus.Errorf("set runtime endpoint failed, err:%+v, runtimeEndpoint:%+v", err, runtimeEndpoint)
+				humanLog := i18n.Sprintf(meta["locale"].(string), "FailedToBindServiceEndpoint", runtimeEndpoint.RuntimeService.ServiceName)
 				detailLog := fmt.Sprintf("endpoint and service info: %+v, error:%s", runtimeEndpoint, errors.Cause(err).Error())
 				go common.AsyncRuntimeError(runtimeEndpoint.RuntimeService.RuntimeId, humanLog, detailLog)
 			}
@@ -198,7 +201,7 @@ func (impl GatewayRuntimeServiceServiceImpl) TouchRuntimeComplete(ctx map[string
 
 	return res.SetSuccessAndData(true)
 failed:
-	log.Errorf("error happened, err:%+v", err)
+	logrus.Errorf("error happened, err:%+v", err)
 	if session != nil {
 		_ = session.Rollback()
 		session.Close()
@@ -206,11 +209,13 @@ failed:
 	return res.SetErrorInfo(&common.ErrInfo{Msg: errors.Cause(err).Error()})
 }
 
-func (impl GatewayRuntimeServiceServiceImpl) TouchRuntime(reqDto *gw.RuntimeServiceReqDto) (res bool, err error) {
+func (impl GatewayRuntimeServiceServiceImpl) TouchRuntime(ctx context.Context, reqDto *gw.RuntimeServiceReqDto) (res bool, err error) {
+	ctx = context1.WithLoggerIfWithout(ctx, logrus.StandardLogger())
+
 	var session *db.SessionHelper
 	defer func() {
 		if err != nil {
-			log.Errorf("error happened, err:%+v", err)
+			logrus.Errorf("error happened, err:%+v", err)
 			if session != nil {
 				_ = session.Rollback()
 				session.Close()
@@ -231,7 +236,7 @@ func (impl GatewayRuntimeServiceServiceImpl) TouchRuntime(reqDto *gw.RuntimeServ
 	var runtimeEndpoints []runtime_service.RuntimeEndpointInfo
 	var diceYaml *diceyml.DiceYaml
 	var diceObj *diceyml.Object
-	ctx := map[string]interface{}{}
+	meta := map[string]interface{}{}
 	apiGatewayError := false
 	err = reqDto.CheckValid()
 	if err != nil {
@@ -240,7 +245,7 @@ func (impl GatewayRuntimeServiceServiceImpl) TouchRuntime(reqDto *gw.RuntimeServ
 	orgResp, err := impl.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcHepa),
 		&orgpb.GetOrgRequest{IdOrName: reqDto.OrgId})
 	if err == nil {
-		ctx["locale"] = orgResp.Data.Locale
+		meta["locale"] = orgResp.Data.Locale
 	}
 	diceYaml, err = bundle.Bundle.GetDiceYAML(reqDto.ReleaseId, reqDto.Env)
 	if err != nil {
@@ -390,7 +395,7 @@ func (impl GatewayRuntimeServiceServiceImpl) TouchRuntime(reqDto *gw.RuntimeServ
 			if err != nil {
 				_ = session.Rollback()
 				_ = session.Begin()
-				log.Errorf("touch runtime api failed, err:%+v", err)
+				logrus.Errorf("touch runtime api failed, err:%+v", err)
 				apiGatewayError = true
 			}
 		}
@@ -407,7 +412,7 @@ func (impl GatewayRuntimeServiceServiceImpl) TouchRuntime(reqDto *gw.RuntimeServ
 				if err != nil {
 					_ = session.Rollback()
 					_ = session.Begin()
-					log.Errorf("touch runtime package meta failed, err:%+v", err)
+					logrus.Errorf("touch runtime package meta failed, err:%+v", err)
 					apiGatewayError = true
 					break
 				}
@@ -418,7 +423,7 @@ func (impl GatewayRuntimeServiceServiceImpl) TouchRuntime(reqDto *gw.RuntimeServ
 				if err != nil {
 					_ = session.Rollback()
 					_ = session.Begin()
-					log.Errorf("try clear runtime package failed, err:%+v", err)
+					logrus.Errorf("try clear runtime package failed, err:%+v", err)
 					apiGatewayError = true
 					break
 				}
@@ -432,10 +437,10 @@ func (impl GatewayRuntimeServiceServiceImpl) TouchRuntime(reqDto *gw.RuntimeServ
 		}
 	}
 	if reqDto.UseApigw && !apiGatewayError {
-		ctx["dbsession"] = session
-		ctx["endpoints"] = package2Endpoint
-		ctx["runtime_endpoints"] = runtimeEndpoints
-		go impl.TouchRuntimeComplete(ctx, reqDto)
+		meta["dbsession"] = session
+		meta["endpoints"] = package2Endpoint
+		meta["runtime_endpoints"] = runtimeEndpoints
+		go impl.TouchRuntimeComplete(ctx, meta, reqDto)
 	} else {
 		err = session.Commit()
 		if err != nil {
@@ -453,7 +458,7 @@ func (impl GatewayRuntimeServiceServiceImpl) clearDomain(dao *orm.GatewayRuntime
 		return err
 	}
 	if material.ServiceGroupNamespace == "" || material.ServiceGroupName == "" {
-		log.Errorf("invalid material:%+v maybe old, ignored", material)
+		logrus.Errorf("invalid material:%+v maybe old, ignored", material)
 		return nil
 	}
 	_, err = (*impl.domainBiz).TouchRuntimeDomain("", dao, material, nil, nil, session)
@@ -495,7 +500,7 @@ func (impl GatewayRuntimeServiceServiceImpl) clearService(dao *orm.GatewayRuntim
 func (impl GatewayRuntimeServiceServiceImpl) DeleteRuntime(runtimeId string) (err error) {
 	defer func() {
 		if err != nil {
-			log.Errorf("error happened, err:%+v", err)
+			logrus.Errorf("error happened, err:%+v", err)
 		}
 	}()
 	if runtimeId == "" {
@@ -522,7 +527,7 @@ func (impl GatewayRuntimeServiceServiceImpl) DeleteRuntime(runtimeId string) (er
 func (impl GatewayRuntimeServiceServiceImpl) GetRegisterAppInfo(projectId, env string) (resDto gw.RegisterAppsDto, err error) {
 	defer func() {
 		if err != nil {
-			log.Errorf("error happened, err:%+v", err)
+			logrus.Errorf("error happened, err:%+v", err)
 		}
 	}()
 	if projectId == "" || env == "" {
@@ -586,7 +591,7 @@ func (impl GatewayRuntimeServiceServiceImpl) GetRegisterAppInfo(projectId, env s
 func (impl GatewayRuntimeServiceServiceImpl) GetServiceRuntimes(projectId, env, app, service string) (result []orm.GatewayRuntimeService, err error) {
 	defer func() {
 		if err != nil {
-			log.Errorf("error happened, err:%+v", err)
+			logrus.Errorf("error happened, err:%+v", err)
 		}
 	}()
 	if projectId == "" || env == "" || app == "" || service == "" {
@@ -627,7 +632,7 @@ func (impl GatewayRuntimeServiceServiceImpl) GetServiceRuntimes(projectId, env, 
 func (impl GatewayRuntimeServiceServiceImpl) GetServiceApiPrefix(req *gw.ApiPrefixReqDto) (prefixs []string, err error) {
 	defer func() {
 		if err != nil {
-			log.Errorf("error happened: %+v", err)
+			logrus.Errorf("error happened: %+v", err)
 		}
 	}()
 	dao, err := impl.runtimeDb.GetByAny(&orm.GatewayRuntimeService{
@@ -641,7 +646,7 @@ func (impl GatewayRuntimeServiceServiceImpl) GetServiceApiPrefix(req *gw.ApiPref
 		return
 	}
 	if dao == nil {
-		log.Errorf("runtime service not found, req:%+v", req)
+		logrus.Errorf("runtime service not found, req:%+v", req)
 		prefixs = []string{}
 		return
 	}

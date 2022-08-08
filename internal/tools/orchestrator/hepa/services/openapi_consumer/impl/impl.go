@@ -1197,7 +1197,7 @@ func (impl GatewayOpenapiConsumerServiceImpl) GetConsumerAcls(id string) (result
 		DiceProjectId:   consumer.ProjectId,
 		DiceEnv:         consumer.Env,
 		DiceClusterName: consumer.Az,
-		Scene:           orm.OPENAPI_SCENE,
+		Scene:           orm.OpenapiScene,
 	})
 	if err != nil {
 		return

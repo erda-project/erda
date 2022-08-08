@@ -47,6 +47,7 @@ message UpstreamApi {
   bool isCustom = 6;
   google.protobuf.Value doc = 7;
   string name = 8;
+  string domain = 9;
 }
 
 message Upstream {
@@ -64,4 +65,9 @@ message Upstream {
   int32 registerId = 12;
   string registerTag = 13;
   string pathPrefix = 14;
+
+  // unity, hub, default unity
+  string scene = 16;
+  bool onlyRuntimePath = 17;
+  string oflag = 18;
 }

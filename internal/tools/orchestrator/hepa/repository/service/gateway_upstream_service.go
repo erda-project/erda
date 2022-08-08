@@ -15,10 +15,14 @@
 package service
 
 import (
+	"context"
+
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"github.com/xormplus/xorm"
 
 	. "github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/vars"
+	context1 "github.com/erda-project/erda/internal/tools/orchestrator/hepa/context"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
 )
 
@@ -34,24 +38,44 @@ func NewGatewayUpstreamServiceImpl() (*GatewayUpstreamServiceImpl, error) {
 	return &GatewayUpstreamServiceImpl{engine}, nil
 }
 
-func (impl *GatewayUpstreamServiceImpl) UpdateRegister(session *xorm.Session, dao *orm.GatewayUpstream) (bool, bool, string, error) {
+// UpdateRegister .
+// To find orm.GatewayUpstream by orgID,projectID,env,az,upstreamName,runtimeServiceID,
+// If find it, and LastRegisterId from req is same as the exists one, returns need not save and need not new create.
+// If find it, and LastRegisterId from req is not same as the exists one, update lastRegisterID and zoneID, returns need update and need not create.
+// If not find it, find it again with table lock, if not success, create it, returns need update and need create.
+func (impl *GatewayUpstreamServiceImpl) UpdateRegister(ctx context.Context, session *xorm.Session, dao *orm.GatewayUpstream) (bool, bool, string, error) {
+	ctx = context1.WithLoggerIfWithout(ctx, logrus.StandardLogger())
+	l := ctx.(*context1.LogContext).Entry()
+
 	needUpdate := false
 	if session == nil || dao == nil {
-		return needUpdate, false, "", errors.New(ERR_INVALID_ARG)
+		return false, false, "", errors.New(ERR_INVALID_ARG)
 	}
 	exist := &orm.GatewayUpstream{}
 	// check exist without lock
-	succ, err := orm.Get(session, exist, "org_id = ? and project_id = ? and env = ? and az = ? and upstream_name = ? and runtime_service_id = ?", dao.OrgId, dao.ProjectId, dao.Env, dao.Az, dao.UpstreamName, dao.RuntimeServiceId)
+	succ, err := orm.Get(session, exist, "org_id = ? and project_id = ? and env = ? and az = ? and upstream_name = ? and runtime_service_id = ?",
+		dao.OrgId, dao.ProjectId, dao.Env, dao.Az, dao.UpstreamName, dao.RuntimeServiceId)
 	if err != nil {
-		return needUpdate, false, "", errors.WithStack(err)
+		return false, false, "", errors.WithStack(err)
 	}
 	if !succ {
+		l := l.WithFields(map[string]interface{}{
+			"orgId":            dao.OrgId,
+			"projectId":        dao.ProjectId,
+			"env":              dao.Env,
+			"az":               dao.Az,
+			"upstreamName":     dao.UpstreamName,
+			"runtimeServiceId": dao.RuntimeServiceId,
+		})
+		l.Infoln("not found the exist upstream, try check with table lock")
 		// check exist with table lock
-		succ, err = orm.GetForUpdate(session, impl.engine, exist, "org_id = ? and project_id = ? and env = ? and az = ? and upstream_name = ? and runtime_service_id = ?", dao.OrgId, dao.ProjectId, dao.Env, dao.Az, dao.UpstreamName, dao.RuntimeServiceId)
+		succ, err = orm.GetForUpdate(session, impl.engine, exist, "org_id = ? and project_id = ? and env = ? and az = ? and upstream_name = ? and runtime_service_id = ?",
+			dao.OrgId, dao.ProjectId, dao.Env, dao.Az, dao.UpstreamName, dao.RuntimeServiceId)
 		if err != nil {
-			return needUpdate, false, "", errors.WithStack(err)
+			return false, false, "", errors.WithStack(err)
 		}
 		if !succ {
+			l.Infoln("not found the exist upstream with table lock")
 			// create
 			// TODO: default 0 when ENV is staging or prod, depend on dice UI
 			needUpdate = true
@@ -60,8 +84,16 @@ func (impl *GatewayUpstreamServiceImpl) UpdateRegister(session *xorm.Session, da
 			if err != nil {
 				return needUpdate, false, "", errors.WithStack(err)
 			}
+			l.WithField("needUpdate", needUpdate).
+				WithField("newCreated", true).
+				WithField("upstream_api.id", dao.Id).
+				Infoln("create upstream")
 			return needUpdate, true, dao.Id, nil
 		}
+		l.WithField("needUpdate", false).
+			WithField("newCreated", false).
+			WithField("exist upstream_api.id", exist.Id).
+			Infoln("found the exist upstream with table lock, upstream created by other session")
 		return false, false, "", errors.New("upstream created by other session")
 	}
 	// get with row lock
@@ -73,12 +105,18 @@ func (impl *GatewayUpstreamServiceImpl) UpdateRegister(session *xorm.Session, da
 	dao.Id = exist.Id
 	// check registerId
 	if exist.LastRegisterId == dao.LastRegisterId {
+		l.WithField("needUpdate", false).
+			WithField("newCreated", false).
+			Infoln("exist.LastRegisterId == dao.LastRegisterId")
 		return false, false, exist.Id, nil
 	}
 	// update
 	needUpdate = true
 	_, err = orm.Update(session, dao, "last_register_id", "zone_id")
 	if err != nil {
+		l.WithField("needUpdate", needUpdate).
+			WithField("newCreated", false).
+			Infoln("update last_register_id and zone_id")
 		return needUpdate, false, "", errors.WithStack(err)
 	}
 	return needUpdate, false, dao.Id, nil

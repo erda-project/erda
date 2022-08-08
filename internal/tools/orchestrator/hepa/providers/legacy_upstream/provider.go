@@ -20,6 +20,7 @@ import (
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-proto-go/core/hepa/legacy_upstream/pb"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common"
+	impl2 "github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/hub_info/impl"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/legacy_upstream/impl"
 	zoneI "github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/zone/impl"
 	"github.com/erda-project/erda/pkg/common/apis"
@@ -37,13 +38,15 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.upstreamService = &upstreamService{p}
-	err := zoneI.NewGatewayZoneServiceImpl()
+	hubInfoService, err := impl2.NewHubInfoService()
 	if err != nil {
 		return err
 	}
-	err = impl.NewGatewayUpstreamServiceImpl()
-	if err != nil {
+	p.upstreamService = &upstreamService{hubInfoService: hubInfoService}
+	if err := zoneI.NewGatewayZoneServiceImpl(); err != nil {
+		return err
+	}
+	if err := impl.NewGatewayUpstreamServiceImpl(); err != nil {
 		return err
 	}
 	if p.Register != nil {

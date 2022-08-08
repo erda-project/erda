@@ -12,18 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package legacy_upstream
+package orm
 
-import (
-	"context"
-
-	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
-)
-
-var Service GatewayUpstreamService
-
-type GatewayUpstreamService interface {
-	Clone(context.Context) GatewayUpstreamService
-	UpstreamRegister(context.Context, *dto.UpstreamRegisterDto) (bool, error)
-	UpstreamRegisterAsync(context.Context, *dto.UpstreamRegisterDto) (bool, error)
+type GatewayHubInfo struct {
+	OrgId           string `json:"org_id" xorm:"not null comment('dice企业标识id') VARCHAR(32)"`
+	DiceEnv         string `json:"dice_env" xorm:"not null comment('dice环境') VARCHAR(32)"`
+	DiceClusterName string `json:"dice_cluster_name" xorm:"not null comment('dice集群名') VARCHAR(32)"`
+	BindDomain      string `json:"bind_domain" xorm:"comment('绑定的域名') VARCHAR(1024)"`
+	Description     string `json:"description" xorm:"comment('描述') VARCHAR(256)"`
+	BaseRow         `xorm:"extends"`
 }

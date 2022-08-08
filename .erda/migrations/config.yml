@@ -156,6 +156,7 @@
       - uc
     patterns:
       - ".*-base$"
+      - ".*-hepa.*"
 
 # 必须设置表 character set
 # 可以用 NecessaryTableOptionLinter 替代

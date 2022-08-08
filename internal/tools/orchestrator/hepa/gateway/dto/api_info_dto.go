@@ -21,13 +21,15 @@ import (
 )
 
 const (
-	RT_AUTO_REGISTER = "register"
-	RT_AUTO          = "auto"
-	RT_MANUAL        = "manual"
-	NT_IN            = "inner"
-	NT_OUT           = "outer"
-	ST_UP            = "asc"
-	ST_DOWN          = "desc"
+	RtAutoRegister  = "register"
+	RtAuto          = "auto"
+	RtManual        = "manual"
+	RrTrantorCosole = "t-console"
+
+	NT_IN   = "inner"
+	NT_OUT  = "outer"
+	ST_UP   = "asc"
+	ST_DOWN = "desc"
 )
 
 type GetApisDto struct {

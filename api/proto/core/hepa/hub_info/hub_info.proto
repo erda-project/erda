@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package erda.core.hepa.hub_info;
+
+option go_package = "github.com/erda-project/erda-proto-go/core/hepa/endpoint_api/pb";
+
+service HubInfoService {
+  rpc CreateOrGetHubInfo(CreateHubInfoReq) returns (GetHubInfoResp) {}
+  rpc GetHubInfo(GetHubInfoReq) returns (GetHubInfoResp) {}
+}
+
+message GetHubInfoReq {
+  string orgID = 1;
+  string projectID = 2;
+  string env = 3;
+  string az = 4;
+  string oneOfDomains = 5;
+}
+
+message CreateHubInfoReq {
+  string orgID = 1;
+  string projectID = 2;
+  string env = 3;
+  string az = 4;
+  repeated string domains = 5;
+}
+
+message GetHubInfoResp {
+  bool success = 1;
+  GetHubInfoItem data = 2;
+}
+
+message GetHubInfoItem {
+  string id = 1;
+  string orgID = 2;
+  string projectID = 3;
+  string env = 4;
+  string az = 5;
+  repeated string domains = 6;
+}

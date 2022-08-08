@@ -1,0 +1,13 @@
+POST http://{{domain}}/api/erda-demo/gateway/openapi/packages?orgId=?&projectId=&env=
+
+{}
+
+###
+
+### list package-apis by filter
+GET https://{{domain}}/api/gateway/openapi/package-apis?projectId=&env=&domain=&paths=&deleteMode=
+
+### delete package-apis by filter
+DELETE https://{{domain}}/api/gateway/openapi/package-apis?projectId=&env=&domain=&paths=
+
+### create package

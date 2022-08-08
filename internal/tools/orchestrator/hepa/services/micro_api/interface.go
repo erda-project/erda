@@ -30,12 +30,13 @@ type GatewayApiService interface {
 	Clone(context.Context) GatewayApiService
 	GetRuntimeApis(runtimeServiceId string, registerType ...string) ([]dto.ApiDto, error)
 	CreateRuntimeApi(dto *dto.ApiDto, session ...*service.SessionHelper) (string, vars.StandardErrorCode, error)
-	CreateApi(*dto.ApiReqDto) (string, error)
+	CreateApi(context.Context, *dto.ApiReqDto) (string, error)
 	GetApiInfos(*dto.GetApisDto) (*common.PageQuery, error)
 	DeleteApi(string) error
 	UpdateApi(string, *dto.ApiReqDto) (*dto.ApiInfoDto, error)
-	CreateUpstreamBindApi(*orm.GatewayConsumer, string, string, string, *orm.GatewayUpstreamApi, string) (string, error)
-	UpdateUpstreamBindApi(*orm.GatewayConsumer, string, string, *orm.GatewayUpstreamApi, string) error
+	CreateUpstreamBindApi(ctx context.Context, consumer *orm.GatewayConsumer, appName, srvName, runtimeServiceID string,
+		upstreamApi *orm.GatewayUpstreamApi, aliasPath string) (string, error)
+	UpdateUpstreamBindApi(context.Context, *orm.GatewayConsumer, string, string, *orm.GatewayUpstreamApi, string) error
 	DeleteUpstreamBindApi(*orm.GatewayUpstreamApi) error
 	TouchRuntimeApi(*orm.GatewayRuntimeService, *service.SessionHelper, bool) error
 	ClearRuntimeApi(*orm.GatewayRuntimeService) error

@@ -15,6 +15,8 @@
 package service
 
 import (
+	"context"
+
 	"github.com/xormplus/xorm"
 
 	. "github.com/erda-project/erda/internal/tools/orchestrator/hepa/common"
@@ -297,7 +299,12 @@ type IniService interface {
 }
 
 type GatewayUpstreamService interface {
-	UpdateRegister(*xorm.Session, *GatewayUpstream) (bool, bool, string, error)
+	// UpdateRegister .
+	// To find orm.GatewayUpstream by orgID,projectID,env,az,upstreamName,runtimeServiceID,
+	// If find it, and LastRegisterId from req is same as the exists one, returns need not save and need not new create.
+	// If find it, and LastRegisterId from req is not same as the exists one, update lastRegisterID and zoneID, returns need update and need not create.
+	// If not find it, find it again with table lock, if not success, create it, returns need update and need create.
+	UpdateRegister(context.Context, *xorm.Session, *GatewayUpstream) (bool, bool, string, error)
 	GetValidIdForUpdate(string, *xorm.Session) (string, error)
 	UpdateValidId(*GatewayUpstream, ...*xorm.Session) error
 	UpdateAutoBind(*GatewayUpstream) error
@@ -336,6 +343,7 @@ type GatewayKongInfoService interface {
 	Insert(*GatewayKongInfo) error
 	GetTenantId(projectId, env, az string) (string, error)
 	GetByAny(*GatewayKongInfo) (*GatewayKongInfo, error)
+	SelectByAny(cond *orm.GatewayKongInfo) ([]orm.GatewayKongInfo, error)
 	GetForUpdate(projectId, env, az string) (*GatewayKongInfo, error)
 	GenK8SInfo(kongInfo *orm.GatewayKongInfo) (string, string, error)
 	GetKongInfo(*GatewayKongInfo) (*GatewayKongInfo, error)
@@ -381,4 +389,11 @@ type GatewayDomainService interface {
 	GetByAny(*GatewayDomain) (*GatewayDomain, error)
 	GetPage(options []SelectOption, page *Page) (*PageQuery, error)
 	SelectByOptions(options []SelectOption) ([]GatewayDomain, error)
+}
+
+type GatewayHubInfoService interface {
+	NewSession(...*SessionHelper) (GatewayHubInfoService, error)
+	GetByAny(*GatewayHubInfo) (*GatewayHubInfo, bool, error)
+	SelectByAny(*GatewayHubInfo) ([]GatewayHubInfo, error)
+	Insert(*GatewayHubInfo) error
 }

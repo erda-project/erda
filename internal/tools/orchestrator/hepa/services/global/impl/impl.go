@@ -458,6 +458,9 @@ func (impl *GatewayGlobalServiceImpl) CreateTenant(tenant *gw.TenantDto) (result
 			if err != nil {
 				return
 			}
+			if err = (*impl.packageBiz).CreateTenantHubPackages(context.Background(), tenant.Id, session); err != nil {
+				return
+			}
 		}
 	}
 	err = session.Commit()

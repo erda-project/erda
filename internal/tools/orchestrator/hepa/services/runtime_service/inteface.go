@@ -35,7 +35,7 @@ var Service GatewayRuntimeServiceService
 type GatewayRuntimeServiceService interface {
 	Clone(context.Context) GatewayRuntimeServiceService
 	GetRegisterAppInfo(string, string) (dto.RegisterAppsDto, error)
-	TouchRuntime(*dto.RuntimeServiceReqDto) (bool, error)
+	TouchRuntime(context.Context, *dto.RuntimeServiceReqDto) (bool, error)
 	DeleteRuntime(string) error
 	GetServiceRuntimes(projectId, env, app, service string) ([]orm.GatewayRuntimeService, error)
 	// 获取指定服务的API前缀

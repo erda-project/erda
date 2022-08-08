@@ -12,18 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package legacy_upstream
+package hepautils
 
 import (
-	"context"
+	"sort"
 
-	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
-var Service GatewayUpstreamService
+func SortDomains(domains []string) {
+	sort.Slice(domains, func(i, j int) bool {
+		return strutil.ReverseString(domains[i]) < strutil.ReverseString(domains[j])
+	})
+}
 
-type GatewayUpstreamService interface {
-	Clone(context.Context) GatewayUpstreamService
-	UpstreamRegister(context.Context, *dto.UpstreamRegisterDto) (bool, error)
-	UpstreamRegisterAsync(context.Context, *dto.UpstreamRegisterDto) (bool, error)
+func SortJoinDomains(domains []string) string {
+	SortDomains(domains)
+	return strutil.Join(domains, ",")
 }

@@ -179,6 +179,9 @@ func (impl GatewayApiPolicyServiceImpl) GetPolicyConfig(category, packageId, pac
 	if err != nil {
 		return
 	}
+	if api == nil {
+		return nil, errors.Errorf("package api not found, packageID: %s, apiID: %s", packageId, packageApiId)
+	}
 	var zone *orm.GatewayZone
 	if api.ZoneId != "" {
 		zone, err = (*impl.zoneBiz).GetZone(api.ZoneId)
@@ -705,7 +708,7 @@ func (impl GatewayApiPolicyServiceImpl) SetPackageDefaultPolicyConfig(category, 
 	if err != nil {
 		return "", err
 	}
-	if pack.Scene == orm.UNITY_SCENE {
+	if pack.Scene == orm.UnityScene || pack.Scene == orm.HubScene {
 		zone, err := (*impl.zoneBiz).GetZone(pack.ZoneId, helper)
 		if err != nil {
 			return "", err

@@ -14,7 +14,11 @@
 
 package dto
 
-import "github.com/pkg/errors"
+import (
+	"github.com/pkg/errors"
+
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
+)
 
 // AuthType
 const (
@@ -33,13 +37,6 @@ const (
 	ACL_OFF  = "off"
 )
 
-// Scene
-const (
-	OPENAPI_SCENE = "openapi"
-	WEBAPI_SCENE  = "webapi"
-	UNITY_SCENE   = "unity"
-)
-
 type PackageDto struct {
 	Name             string   `json:"name"`
 	BindDomain       []string `json:"bindDomain"`
@@ -51,13 +48,19 @@ type PackageDto struct {
 }
 
 func (dto PackageDto) CheckValid() error {
-	if dto.Name == "" || len(dto.BindDomain) == 0 || dto.Scene == "" {
-		goto failed
+	switch dto.Scene {
+	case orm.UnityScene, orm.HubScene, orm.WebapiScene, orm.OpenapiScene:
+	default:
+		return errors.Errorf("invalid scene: %s", dto.Scene)
+	}
+	switch 0 {
+	case len(dto.Name):
+		return errors.Errorf("invalid name: %s", "empty")
+	case len(dto.BindDomain):
+		return errors.Errorf("invalid bind domain: %s", "no bind domain")
 	}
 	if !dto.NeedBindCloudapi && dto.AuthType == AT_ALIYUN_APP {
-		goto failed
+		return errors.Errorf("invalid parameter: %s", AT_ALIYUN_APP+" need bind cloud api")
 	}
 	return nil
-failed:
-	return errors.Errorf("invalid dto: %+v", dto)
 }

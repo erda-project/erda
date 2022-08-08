@@ -28,6 +28,7 @@ import (
 
 	. "github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/vars"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/config"
+	context1 "github.com/erda-project/erda/internal/tools/orchestrator/hepa/context"
 	gw "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/kong"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
@@ -91,38 +92,15 @@ func (impl GatewayUpstreamServiceImpl) Clone(ctx context.Context) legacy_upstrea
 }
 
 func (impl GatewayUpstreamServiceImpl) getUpstreamMissingApis(upstreamId string, registerId string) (map[string]orm.GatewayUpstreamApi, error) {
-	res := map[string]orm.GatewayUpstreamApi{}
-	record, err := impl.upstreamRecordDb.Get(upstreamId, registerId)
-	if err != nil {
-		return res, err
-	}
-	if record == nil {
-		return res, errors.Errorf("record of upstreamId[%s] and registerId[%s] not exists", upstreamId, registerId)
-	}
-	if len(record.UpstreamApis) == 0 {
-		return res, nil
-	}
-	apiIdList := []string{}
-	err = json.Unmarshal(record.UpstreamApis, &apiIdList)
-	if err != nil {
-		return res, errors.Wrapf(err, "json unmarshal [%s] failed", record.UpstreamApis)
-	}
-	apiList, err := impl.upstreamApiDb.SelectInIdsAndDeleted(apiIdList)
-	if err != nil {
-		return res, err
-	}
-	for _, api := range apiList {
-		// 兼容逻辑
-		if api.ApiName == "root" {
-			res["/"] = api
-		} else {
-			res[api.ApiName] = api
-		}
-	}
-	return res, nil
+	return impl.getUpstreamApisWithFunc(upstreamId, registerId, impl.upstreamApiDb.SelectInIdsAndDeleted)
 }
 
+// getUpstreamApis gets orm.GatewayUpstreamApi from records
 func (impl GatewayUpstreamServiceImpl) getUpstreamApis(upstreamId string, registerId string) (map[string]orm.GatewayUpstreamApi, error) {
+	return impl.getUpstreamApisWithFunc(upstreamId, registerId, impl.upstreamApiDb.SelectInIds)
+}
+
+func (impl GatewayUpstreamServiceImpl) getUpstreamApisWithFunc(upstreamId, registerId string, f func([]string) ([]orm.GatewayUpstreamApi, error)) (map[string]orm.GatewayUpstreamApi, error) {
 	res := map[string]orm.GatewayUpstreamApi{}
 	record, err := impl.upstreamRecordDb.Get(upstreamId, registerId)
 	if err != nil {
@@ -134,12 +112,12 @@ func (impl GatewayUpstreamServiceImpl) getUpstreamApis(upstreamId string, regist
 	if len(record.UpstreamApis) == 0 {
 		return res, nil
 	}
-	apiIdList := []string{}
+	var apiIdList []string
 	err = json.Unmarshal(record.UpstreamApis, &apiIdList)
 	if err != nil {
 		return res, errors.Wrapf(err, "json unmarshal [%s] failed", record.UpstreamApis)
 	}
-	apiList, err := impl.upstreamApiDb.SelectInIds(apiIdList)
+	apiList, err := f(apiIdList)
 	if err != nil {
 		return res, err
 	}
@@ -179,7 +157,9 @@ func safeChange(apis []orm.GatewayUpstreamApi, change func(orm.GatewayUpstreamAp
 	}
 }
 
-func (impl GatewayUpstreamServiceImpl) UpstreamValidAsync(context map[string]interface{}, dto *gw.UpstreamRegisterDto) (err error) {
+func (impl GatewayUpstreamServiceImpl) UpstreamValidAsync(ctx context.Context, context map[string]interface{}, dto *gw.UpstreamRegisterDto) (err error) {
+	ctx = context1.WithLoggerIfWithout(ctx, logrus.StandardLogger())
+
 	consumerI, ok := context["register_consumer"]
 	if !ok {
 		err = errors.New("can't find consumer from context")
@@ -200,16 +180,18 @@ func (impl GatewayUpstreamServiceImpl) UpstreamValidAsync(context map[string]int
 		err = errors.New("acquire dao failed")
 		return
 	}
-	return impl.UpstreamValid(consumer, dao, dto)
+	return impl.UpstreamValid(ctx, consumer, dao, dto)
 
 }
 
-func (impl GatewayUpstreamServiceImpl) UpstreamValid(consumer *orm.GatewayConsumer, dao *orm.GatewayUpstream, dto *gw.UpstreamRegisterDto) (err error) {
+func (impl GatewayUpstreamServiceImpl) UpstreamValid(ctx context.Context, consumer *orm.GatewayConsumer, dao *orm.GatewayUpstream, dto *gw.UpstreamRegisterDto) (err error) {
+	ctx = context1.WithLoggerIfWithout(ctx, logrus.StandardLogger())
+
 	prefix := ""
 	if dto.PathPrefix != nil {
 		prefix = *dto.PathPrefix
 	}
-	err = impl.upstreamValid(consumer, dao, dto.RegisterId, prefix)
+	err = impl.upstreamValid(ctx, consumer, dao, dto.RegisterId, prefix, dto.OFlag)
 	if err != nil {
 		return
 	}
@@ -217,15 +199,19 @@ func (impl GatewayUpstreamServiceImpl) UpstreamValid(consumer *orm.GatewayConsum
 }
 
 func (impl GatewayUpstreamServiceImpl) apiNeedUpdate(old, new orm.GatewayUpstreamApi) bool {
-	return old.Path != new.Path || old.Method != new.Method || old.Address != new.Address || old.GatewayPath != new.GatewayPath
+	return old.Path != new.Path || old.Method != new.Method || old.Address != new.Address ||
+		old.GatewayPath != new.GatewayPath || old.Domains != new.Domains
 }
 
-func (impl GatewayUpstreamServiceImpl) upstreamValid(consumer *orm.GatewayConsumer, upstream *orm.GatewayUpstream, validId string, aliasPath string) error {
+func (impl GatewayUpstreamServiceImpl) upstreamValid(ctx context.Context, consumer *orm.GatewayConsumer, upstream *orm.GatewayUpstream, validId string, aliasPath, oFlag string) error {
+	ctx = context1.WithLoggerIfWithout(ctx, logrus.StandardLogger())
+	l := ctx.(*context1.LogContext).Entry()
+
 	if consumer == nil || upstream == nil || len(upstream.Id) == 0 || validId == "" {
-		log.Debugf("consumer:%+v upstream:%+v validId:%s", consumer, upstream, validId) // output for debug
+		l.Debugf("consumer:%+v upstream:%+v validId:%s", consumer, upstream, validId) // output for debug
 		return errors.New(ERR_INVALID_ARG)
 	}
-	// upstream db transcation start: get old validId
+	// upstream db transaction start: get old validId
 	session := impl.engine.NewSession()
 	defer func() {
 		session.Close()
@@ -251,24 +237,45 @@ func (impl GatewayUpstreamServiceImpl) upstreamValid(consumer *orm.GatewayConsum
 	oldApis := map[string]orm.GatewayUpstreamApi{}
 	newApis := map[string]orm.GatewayUpstreamApi{}
 	backupApis := map[string]orm.GatewayUpstreamApi{}
-	if oldValidId != "" && oldValidId != validId {
-		oldApis, err = impl.getUpstreamApis(upstream.Id, oldValidId)
-		if err != nil {
-			return err
-		}
-	}
+
+	l = l.WithField("upstream.id", upstream.Id).
+		WithField("oldValidId", oldValidId).
+		WithField("validId", validId)
+	// get the new api list this time registered if the registerId is new
+	// get the old api list last time registered if the registerId is new
 	if oldValidId != validId {
 		newApis, err = impl.getUpstreamApis(upstream.Id, validId)
 		if err != nil {
 			return err
 		}
-	} else {
+		l.WithField("len(oldApis)", len(oldApis)).
+			Infoln("oldValidId != validId, get oldApis")
+		if oldValidId != "" {
+			oldApis, err = impl.getUpstreamApis(upstream.Id, oldValidId)
+			if err != nil {
+				return err
+			}
+			l.WithField("len(oldApis)", len(oldApis)).
+				Infoln("oldValidId != '' && oldValidId != validId, get oldApis")
+			if oFlag == gw.OFlagAppend {
+				for k := range oldApis {
+					if _, ok := newApis[k]; !ok {
+						newApis[k] = oldApis[k]
+					}
+				}
+			}
+		}
+	}
+	// get the apis for the deleted part for the registerId and defer recover them.
+	if oldValidId == validId {
 		newApis, err = impl.getUpstreamMissingApis(upstream.Id, validId)
 		if err != nil {
 			return err
 		}
+		l.WithField("len(newApis)", len(newApis)).
+			Infoln("oldValidId == validId, get the apis for the deleted part for the registerId and defer recover them")
 		if len(newApis) == 0 {
-			log.Infof("no need to update api, since valid id is latest, and no api missing")
+			l.Infof("no need to update api, since valid id %s is latest, and no api missing", validId)
 			return nil
 		}
 		defer func() {
@@ -276,14 +283,17 @@ func (impl GatewayUpstreamServiceImpl) upstreamValid(consumer *orm.GatewayConsum
 				for _, api := range newApis {
 					err = impl.upstreamApiDb.Recover(api.Id)
 					if err != nil {
-						log.Errorf("api recover failed, id:%s", api.Id)
+						l.Errorf("api recover failed, id:%s", api.Id)
 					} else {
-						log.Infof("api recover success, id:%s", api.Id)
+						l.Infof("api recover success, id:%s", api.Id)
 					}
 				}
 			}
 		}()
 	}
+	// to relate to a package_api for every upstream_api;
+	// if there is not that package_api, add the upstream_api to a list for creating it later.
+	// if the upstream_api need to update, add it to a list for updating later.
 	for name, upApi := range newApis {
 		var oldUpApi orm.GatewayUpstreamApi
 		exist := false
@@ -299,7 +309,7 @@ func (impl GatewayUpstreamServiceImpl) upstreamValid(consumer *orm.GatewayConsum
 			if upApi.ApiId == "" {
 				upApi.ApiId = impl.upstreamApiDb.GetLastApiId(&upApi)
 			}
-			// 二次补偿机制：如果找不到apiid，尝试创建
+			// 二次补偿机制：如果找不到apiid，加入待创建列表, 稍后尝试创建
 			if upApi.ApiId == "" {
 				adds = append(adds, upApi)
 				continue
@@ -310,7 +320,7 @@ func (impl GatewayUpstreamServiceImpl) upstreamValid(consumer *orm.GatewayConsum
 			} else {
 				err = impl.upstreamApiDb.UpdateApiId(&upApi)
 				if err != nil {
-					log.Errorf("upstream api update failed!: %+v", upApi)
+					l.WithError(err).Errorf("upstream api update failed!: %+v", upApi)
 				}
 			}
 			delete(oldApis, name)
@@ -318,14 +328,15 @@ func (impl GatewayUpstreamServiceImpl) upstreamValid(consumer *orm.GatewayConsum
 		}
 		adds = append(adds, upApi)
 	}
+	// for every old api, if it is related to a package_api, add it to a list for deleting later.
 	for _, upApi := range oldApis {
 		if upApi.ApiId != "" {
 			dels = append(dels, upApi)
 		}
 	}
-	log.Debugf(`upstream valid debug, upstreamId:%s, upstreamName:%s, oldValidId:%s, newValidId:%s, adds:%+v, updates:%+v, dels:%+v`,
+	l.Debugf(`upstream valid debug, upstreamId:%s, upstreamName:%s, oldValidId:%s, newValidId:%s, adds:%+v, updates:%+v, dels:%+v`,
 		upstream.Id, upstream.UpstreamName, oldValidId, validId, adds, updates, dels)
-	log.Infof("upstream valid info, upstreamId:%s, upstreamName:%s, validId:%s, adds:%d, updates:%d, dels:%d",
+	l.Infof("upstream valid info, upstreamId:%s, upstreamName:%s, validId:%s, adds:%d, updates:%d, dels:%d",
 		upstream.Id, upstream.UpstreamName, validId, len(adds), len(updates), len(dels))
 	var added, deled, updated []orm.GatewayUpstreamApi
 	errHappened := false
@@ -334,13 +345,13 @@ func (impl GatewayUpstreamServiceImpl) upstreamValid(consumer *orm.GatewayConsum
 		if errHappened {
 			return
 		}
-		apiId, err := (*impl.apiBiz).CreateUpstreamBindApi(consumer, upstream.DiceApp, upstream.DiceService, upstream.RuntimeServiceId, &upApi, aliasPath)
+		apiId, err := (*impl.apiBiz).CreateUpstreamBindApi(ctx, consumer, upstream.DiceApp, upstream.DiceService, upstream.RuntimeServiceId, &upApi, aliasPath)
 		if err == kong.ErrInvalidReq {
-			log.Errorf("invalid api ignored, upApi:%+v", upApi)
+			l.WithError(err).Errorf("invalid api ignored, upApi:%+v", upApi)
 			return
 		}
 		if err != nil {
-			log.Errorf("create upstream api failed: %+v, upApi:%+v, exist apiId:%s", err, upApi, apiId)
+			l.WithError(err).Errorf("create upstream api failed: %+v, upApi:%+v, exist apiId:%s", err, upApi, apiId)
 			errHappened = true
 			return
 		}
@@ -348,7 +359,7 @@ func (impl GatewayUpstreamServiceImpl) upstreamValid(consumer *orm.GatewayConsum
 		added = append(added, upApi)
 		err = impl.upstreamApiDb.UpdateApiId(&upApi)
 		if err != nil {
-			log.Errorf("upstream api update failed!: %+v", upApi)
+			l.WithError(err).Errorf("upstream api update failed!: %+v", upApi)
 			errHappened = true
 		}
 	}
@@ -358,20 +369,20 @@ func (impl GatewayUpstreamServiceImpl) upstreamValid(consumer *orm.GatewayConsum
 		if errHappened {
 			return
 		}
-		err = (*impl.apiBiz).UpdateUpstreamBindApi(consumer, upstream.DiceApp, upstream.DiceService, &upApi, aliasPath)
+		err = (*impl.apiBiz).UpdateUpstreamBindApi(ctx, consumer, upstream.DiceApp, upstream.DiceService, &upApi, aliasPath)
 		if err == kong.ErrInvalidReq {
-			log.Errorf("invalid api ignored, upApi:%+v", upApi)
+			l.WithError(err).Errorf("invalid api ignored, upApi:%+v", upApi)
 			return
 		}
 		if err != nil {
-			log.Errorf("update upstream api failed: %+v, upApi:%+v", err, upApi)
+			l.WithError(err).Errorf("update upstream api failed: %+v, upApi:%+v", err, upApi)
 			errHappened = true
 			return
 		}
 		updated = append(updated, upApi)
 		err = impl.upstreamApiDb.UpdateApiId(&upApi)
 		if err != nil {
-			log.Errorf("upstream api update failed!: %+v", upApi)
+			l.WithError(err).Errorf("upstream api update failed!: %+v", upApi)
 			errHappened = true
 		}
 	}
@@ -383,11 +394,11 @@ func (impl GatewayUpstreamServiceImpl) upstreamValid(consumer *orm.GatewayConsum
 		}
 		err = (*impl.apiBiz).DeleteUpstreamBindApi(&upApi)
 		if err == kong.ErrInvalidReq {
-			log.Errorf("invalid api ignored, upApi:%+v", upApi)
+			l.WithError(err).Errorf("invalid api ignored, upApi:%+v", upApi)
 			return
 		}
 		if err != nil {
-			log.Errorf("delete upstream api failed: %+v, upApi:%+v", err, upApi)
+			l.WithError(err).Errorf("delete upstream api failed: %+v, upApi:%+v", err, upApi)
 			errHappened = true
 			return
 		}
@@ -398,34 +409,32 @@ func (impl GatewayUpstreamServiceImpl) upstreamValid(consumer *orm.GatewayConsum
 		// recover:
 		for i := len(deled) - 1; i >= 0; i-- {
 			upApi := deled[i]
-			apiId, err := (*impl.apiBiz).CreateUpstreamBindApi(consumer, upstream.DiceApp, upstream.DiceService, upstream.RuntimeServiceId, &upApi, aliasPath)
+			apiId, err := (*impl.apiBiz).CreateUpstreamBindApi(ctx, consumer, upstream.DiceApp, upstream.DiceService, upstream.RuntimeServiceId, &upApi, aliasPath)
 			if err != nil {
-				log.Errorf("recover: create upstream api[%+v] failed: %+v",
-					upApi, err)
+				l.WithError(err).Errorf("recover: create upstream api[%+v] failed: %+v", upApi, err)
 				continue
 			}
 			upApi.ApiId = apiId
 			err = impl.upstreamApiDb.UpdateApiId(&upApi)
 			if err != nil {
-				log.Errorf("recover: upstream api[%+v] update failed!: %+v",
-					upApi, err)
+				l.WithError(err).Errorf("recover: upstream api[%+v] update failed!: %+v", upApi, err)
 			}
 			deled = append(deled[:i], deled[i+1:]...)
 		}
 		for i := len(updated) - 1; i >= 0; i-- {
 			upApi := updated[i]
 			if backupApi, ok := backupApis[upApi.ApiName]; ok {
-				err = (*impl.apiBiz).UpdateUpstreamBindApi(consumer, upstream.DiceApp, upstream.DiceService, &backupApi, aliasPath)
+				err = (*impl.apiBiz).UpdateUpstreamBindApi(ctx, consumer, upstream.DiceApp, upstream.DiceService, &backupApi, aliasPath)
 				if err != nil {
-					log.Errorf("recover: update upstream api[%+v] failed: %+v", backupApi, err)
+					l.WithError(err).Errorf("recover: update upstream api[%+v] failed: %+v", backupApi, err)
 					continue
 				}
 				err = impl.upstreamApiDb.UpdateApiId(&backupApi)
 				if err != nil {
-					log.Errorf("recover: upstream api[%+v] update failed!: %+v", backupApi, err)
+					l.WithError(err).Errorf("recover: upstream api[%+v] update failed!: %+v", backupApi, err)
 				}
 			} else {
-				log.Errorf("recover: can't find backup old api [%+v]", upApi)
+				l.WithError(err).Errorf("recover: can't find backup old api [%+v]", upApi)
 			}
 			updated = append(updated[:i], updated[i+1:]...)
 		}
@@ -433,8 +442,7 @@ func (impl GatewayUpstreamServiceImpl) upstreamValid(consumer *orm.GatewayConsum
 			upApi := added[i]
 			err = (*impl.apiBiz).DeleteUpstreamBindApi(&upApi)
 			if err != nil {
-				log.Errorf("recover: delete upstream api[%+v] failed: %+v",
-					upApi, err)
+				l.WithError(err).Errorf("recover: delete upstream api[%+v] failed: %+v", upApi, err)
 			}
 			added = append(added[:i], added[i+1:]...)
 		}
@@ -442,7 +450,7 @@ func (impl GatewayUpstreamServiceImpl) upstreamValid(consumer *orm.GatewayConsum
 	} else {
 		_ = session.Commit()
 	}
-	log.Infof("upstream valid done, errorHappened:%t upstreamId:%s, upstreamName:%s, validId:%s, added:%d, updated:%d, deled:%d",
+	l.WithError(err).Infof("upstream valid done, errorHappened:%t upstreamId:%s, upstreamName:%s, validId:%s, added:%d, updated:%d, deled:%d",
 		errHappened, upstream.Id, upstream.UpstreamName, validId, len(added), len(updated), len(deled))
 	return err
 }
@@ -465,19 +473,23 @@ func (impl GatewayUpstreamServiceImpl) saveUpstreamApi(session *xorm.Session, dt
 		Method:      dto.Method,
 		Address:     dto.Address,
 		Doc:         docJson,
+		Domains:     dto.Domain,
 	}
+	// deprecated:
 	if dto.IsInner {
 		dao.IsInner = 1
 	}
 	return impl.upstreamApiDb.Insert(session, dao)
 }
 
-func (impl GatewayUpstreamServiceImpl) saveUpstream(dao *orm.GatewayUpstream, dto *gw.UpstreamRegisterDto) (bool, error) {
+// saveUpstream .
+// to create or update the Upstream and record it.
+func (impl GatewayUpstreamServiceImpl) saveUpstream(ctx context.Context, dao *orm.GatewayUpstream, dto *gw.UpstreamRegisterDto) (bool, error) {
 	apiDtos := dto.ApiList
 	registerId := dto.RegisterId
 	transSucc := false
 	if dao == nil {
-		return transSucc, errors.New(ERR_INVALID_ARG)
+		return false, errors.New(ERR_INVALID_ARG)
 	}
 	session := impl.engine.NewSession()
 	defer func(session **xorm.Session) {
@@ -490,15 +502,15 @@ func (impl GatewayUpstreamServiceImpl) saveUpstream(dao *orm.GatewayUpstream, dt
 	}(&session)
 	err := session.Begin()
 	if err != nil {
-		return transSucc, errors.WithStack(err)
+		return false, errors.WithStack(err)
 	}
 	_, err = session.Exec("set innodb_lock_wait_timeout=600")
 	if err != nil {
-		return transSucc, errors.WithStack(err)
+		return false, errors.WithStack(err)
 	}
-	needSave, newCreated, upId, err := impl.upstreamDb.UpdateRegister(session, dao)
+	needSave, newCreated, upId, err := impl.upstreamDb.UpdateRegister(ctx, session, dao)
 	if err != nil {
-		return transSucc, err
+		return false, err
 	}
 	if newCreated {
 		// unlock table lock
@@ -507,12 +519,12 @@ func (impl GatewayUpstreamServiceImpl) saveUpstream(dao *orm.GatewayUpstream, dt
 		session = impl.engine.NewSession()
 		err := session.Begin()
 		if err != nil {
-			return transSucc, errors.WithStack(err)
+			return false, errors.WithStack(err)
 		}
 		// get row lock
-		_, _, _, err = impl.upstreamDb.UpdateRegister(session, dao)
+		_, _, _, err = impl.upstreamDb.UpdateRegister(ctx, session, dao)
 		if err != nil {
-			return transSucc, err
+			return false, err
 		}
 	}
 	if !needSave {
@@ -522,13 +534,13 @@ func (impl GatewayUpstreamServiceImpl) saveUpstream(dao *orm.GatewayUpstream, dt
 	for _, apiDto := range apiDtos {
 		upApiId, err := impl.saveUpstreamApi(session, &apiDto, registerId, upId)
 		if err != nil {
-			return transSucc, err
+			return false, err
 		}
 		upApiList = append(upApiList, upApiId)
 	}
 	apisJson, err := json.Marshal(upApiList)
 	if err != nil {
-		return transSucc, errors.Wrapf(err, "json marshal [%+v] failed", upApiList)
+		return false, errors.Wrapf(err, "json marshal [%+v] failed", upApiList)
 	}
 	err = impl.upstreamRecordDb.Insert(session, &orm.GatewayUpstreamRegisterRecord{
 		UpstreamId:   upId,
@@ -536,13 +548,22 @@ func (impl GatewayUpstreamServiceImpl) saveUpstream(dao *orm.GatewayUpstream, dt
 		UpstreamApis: apisJson,
 	})
 	if err != nil {
-		return transSucc, err
+		return false, err
 	}
 	transSucc = true
 	return transSucc, nil
 }
 
-func (impl GatewayUpstreamServiceImpl) upstreamRegister(dto *gw.UpstreamRegisterDto) (*orm.GatewayUpstream, *orm.GatewayConsumer, error) {
+// upstreamRegister .
+// retrieves default consumer by orgID, projectID, evn, az,
+// if there is no default consumer, creates it.
+//
+// If the RuntimeName is given, creates runtime service record if not exists, and make relation between the runtime service and the upstream.
+//
+// Saves the upstream with the request dto.
+func (impl GatewayUpstreamServiceImpl) upstreamRegister(ctx context.Context, dto *gw.UpstreamRegisterDto) (*orm.GatewayUpstream, *orm.GatewayConsumer, error) {
+	ctx = context1.WithLoggerIfWithout(ctx, logrus.StandardLogger())
+
 	var err error
 	var az string
 	if dto == nil {
@@ -565,7 +586,7 @@ func (impl GatewayUpstreamServiceImpl) upstreamRegister(dto *gw.UpstreamRegister
 	dao := &orm.GatewayUpstream{
 		OrgId:          dto.OrgId,
 		ProjectId:      dto.ProjectId,
-		Env:            dto.Env,
+		Env:            strings.ToLower(dto.Env),
 		Az:             az,
 		DiceApp:        dto.AppName,
 		DiceService:    dto.DiceService,
@@ -584,8 +605,7 @@ func (impl GatewayUpstreamServiceImpl) upstreamRegister(dto *gw.UpstreamRegister
 		return nil, nil, err
 	}
 	if consumer == nil {
-		consumer, _, _, err = (*impl.consumerBiz).CreateDefaultConsumer(dto.OrgId,
-			dto.ProjectId, dto.Env, az)
+		consumer, _, _, err = (*impl.consumerBiz).CreateDefaultConsumer(dto.OrgId, dto.ProjectId, dto.Env, az)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -615,20 +635,23 @@ func (impl GatewayUpstreamServiceImpl) upstreamRegister(dto *gw.UpstreamRegister
 		session.Close()
 		dao.RuntimeServiceId = runtimeService.Id
 	}
-	_, err = impl.saveUpstream(dao, dto)
+	_, err = impl.saveUpstream(ctx, dao, dto)
 	if err != nil {
 		return nil, nil, err
 	}
 	return dao, consumer, nil
 }
 
-func (impl GatewayUpstreamServiceImpl) UpstreamRegisterAsync(dto *gw.UpstreamRegisterDto) (result bool, err error) {
+func (impl GatewayUpstreamServiceImpl) UpstreamRegisterAsync(ctx context.Context, dto *gw.UpstreamRegisterDto) (result bool, err error) {
+	ctx = context1.WithLoggerIfWithout(ctx, logrus.StandardLogger())
+	l := ctx.(*context1.LogContext).Entry()
+
 	defer func() {
 		if err != nil {
 			logrus.Errorf("error Happened: %+v", err)
 		}
 	}()
-	dao, consumer, err := impl.upstreamRegister(dto)
+	dao, consumer, err := impl.upstreamRegister(ctx, dto)
 	if dao == nil || consumer == nil {
 		err = errors.New("invalid params")
 		return
@@ -638,32 +661,49 @@ func (impl GatewayUpstreamServiceImpl) UpstreamRegisterAsync(dto *gw.UpstreamReg
 		result = true
 		return
 	}
-	context := map[string]interface{}{}
-	context["register_consumer"] = consumer
-	context["register_dao"] = dao
-	go impl.UpstreamValidAsync(context, dto)
+	meta := make(map[string]interface{})
+	meta["register_consumer"] = consumer
+	meta["register_dao"] = dao
+	go func() {
+		if err := impl.UpstreamValidAsync(ctx, meta, dto); err != nil {
+			l.WithError(err).Errorln("failed to UpstreamValidAsync")
+		}
+	}()
 	result = true
 	return
 }
 
-func (impl GatewayUpstreamServiceImpl) UpstreamRegister(dto *gw.UpstreamRegisterDto) (result bool, err error) {
+func (impl GatewayUpstreamServiceImpl) UpstreamRegister(ctx context.Context, dto *gw.UpstreamRegisterDto) (result bool, err error) {
+	ctx = context1.WithLoggerIfWithout(ctx, logrus.StandardLogger())
+	l := ctx.(*context1.LogContext).Entry()
+
 	defer func() {
 		if err != nil {
 			logrus.Errorf("error Happened: %+v", err)
 		}
 	}()
-	dao, consumer, err := impl.upstreamRegister(dto)
-	if dao == nil || consumer == nil {
-		err = errors.New("invalid params")
+
+	// do upstream register
+	dao, consumer, err := impl.upstreamRegister(ctx, dto)
+	if err != nil {
+		err = errors.Wrap(err, "failed to upstreamRegister")
+		return
+	}
+	if dao == nil {
+		err = errors.Errorf("invalid params: %s", "invalid GatewayUpstream")
+		return
+	}
+	if consumer == nil {
+		err = errors.Errorf("invalid params: %s", "invalid consumer")
 		return
 	}
 	// check autoBind, return if false
 	if dao.AutoBind == 0 {
-		log.Infof("dto[%+v] registerd without bind", dto)
+		l.Infof("dto[%+v] registerd without bind", dto)
 		result = true
 		return
 	}
-	err = impl.UpstreamValid(consumer, dao, dto)
+	err = impl.UpstreamValid(ctx, consumer, dao, dto)
 	if err != nil {
 		return
 	}
