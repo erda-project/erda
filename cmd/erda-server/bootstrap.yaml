@@ -286,15 +286,19 @@ erda.dop.search: { }
 # pipeline cms
 grpc-client@erda.core.pipeline.cms:
   addr: "${PIPELINE_GRPC_ADDR:pipeline:30810}"
+  block: false
 erda.core.pipeline.cms-client: { }
 grpc-client@erda.core.pipeline.definition:
   addr: "${PIPELINE_GRPC_ADDR:pipeline:30810}"
+  block: false
 erda.core.pipeline.definition-client: { }
 grpc-client@erda.core.pipeline.source:
   addr: "${PIPELINE_GRPC_ADDR:pipeline:30810}"
+  block: false
 erda.core.pipeline.source-client: { }
 grpc-client@erda.core.pipeline.cron:
   addr: "${PIPELINE_GRPC_ADDR:pipeline:30810}"
+  block: false
 erda.core.pipeline.cron-client:
 grpc-client@erda.cmp.dashboard.resource:
   addr: "${CMP_GRPC_ADDR:cmp:9029}"
@@ -306,6 +310,7 @@ erda.cmp.dashboard.resource-client: { }
 ## orchestrator addon mysql
 grpc-client@erda.orchestrator.addon.mysql:
   addr: "${ORCHESTRATOR_GRPC_ADDR:orchestrator:7080}"
+  block: false
 erda.orchestrator.addon.mysql-client: { }
 #grpc-client@erda.core.services.errorbox:
 #  addr: "${ERDA_SERVER_GRPC_ADDR:erda-server:8096}"
