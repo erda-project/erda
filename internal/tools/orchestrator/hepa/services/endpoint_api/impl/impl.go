@@ -2523,9 +2523,9 @@ func (impl GatewayOpenapiServiceImpl) createOrGetTenantHubPackage(ctx context.Co
 	sort.Slice(hubPkgs, func(i, j int) bool {
 		return hubPkgs[i].PackageName < hubPkgs[j].PackageName
 	})
+	hubDomains := strings.Split(hubInfo.BindDomain, ",")
 	for _, pkg := range hubPkgs {
 		pkgDomains := strings.Split(pkg.BindDomain, ",")
-		hubDomains := strings.Split(hubInfo.BindDomain, ",")
 		for _, pkgDomain := range pkgDomains {
 			for _, hubDomain := range hubDomains {
 				if pkgDomain == hubDomain {
@@ -2536,17 +2536,6 @@ func (impl GatewayOpenapiServiceImpl) createOrGetTenantHubPackage(ctx context.Co
 				}
 			}
 		}
-	}
-
-	// get rewrite host for this tenant
-	diceInfo := gw.DiceInfo{
-		ProjectId: projectId,
-		Az:        clusterName,
-		Env:       env,
-	}
-	_, rewriteHost, err := (*impl.globalBiz).GenerateEndpoint(diceInfo, session)
-	if err != nil {
-		return nil, err
 	}
 
 	// construct zone route
@@ -2562,6 +2551,7 @@ func (impl GatewayOpenapiServiceImpl) createOrGetTenantHubPackage(ctx context.Co
 			BackendProtocol: &[]k8s.BackendProtocl{k8s.HTTPS}[0],
 		},
 	}
+	rewriteHost := hubDomains[0]
 	route.RewriteHost = &rewriteHost
 	route.UseRegex = true
 

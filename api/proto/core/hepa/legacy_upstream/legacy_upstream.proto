@@ -69,5 +69,5 @@ message Upstream {
   // unity, hub, default unity
   string scene = 16;
   bool onlyRuntimePath = 17;
-  string oFlag = 18;
+  string oflag = 18;
 }

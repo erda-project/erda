@@ -71,7 +71,7 @@ func FromUpstream(u *pb.Upstream) *UpstreamRegisterDto {
 		RegisterId:    u.RegisterTag,
 		PathPrefix:    nil,
 		Scene:         u.GetScene(),
-		OFlag:         u.GetOFlag(),
+		OFlag:         u.GetOflag(),
 		HubInfoID:     "",
 	}
 	if dto.Scene == "" {
