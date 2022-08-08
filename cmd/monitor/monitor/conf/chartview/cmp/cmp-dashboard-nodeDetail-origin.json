@@ -6,7 +6,7 @@
   "scope": "org",
   "scopeId": "erda",
   "viewConfig": [{
-    "w": 8,
+    "w": 12,
     "h": 9,
     "x": 0,
     "y": 0,
@@ -20,7 +20,7 @@
         }
       },
       "description": "",
-      "chartType": "chart:line",
+      "chartType": "chart:area",
       "dataSourceType": "api",
       "staticData": {},
       "config": {
@@ -54,10 +54,24 @@
           }],
           "valueDimensions": [{
             "alias": "CPU使用率",
-            "field": "host_summary-cpu_usage_active::field",
+            "i18n": {
+              "alias": {
+                "zh": "CPU使用率",
+                "en": "CPU Usage"
+              }
+            },
             "key": "valueaDR0UJMN",
             "resultType": "number",
-            "type": "field"
+            "expr": "max(cpu_usage_active::field)",
+            "type": "expr",
+            "unit": {
+              "type": "PERCENT",
+              "unit": "%"
+            },
+            "optionProps": {
+              "isConnectNulls": true,
+              "isMoreThanOneDay": false
+            }
           }]
         },
         "optionProps": {
@@ -73,7 +87,7 @@
             "expr": "time()"
           }, {
             "alias": "valueaDR0UJMN",
-            "expr": "round_float(cpu_usage_active::field, 2)"
+            "expr": "max(cpu_usage_active::field)"
           }],
           "where": [
             "cluster_name::tag='{{clusterName}}'",
@@ -82,11 +96,11 @@
         },
         "method": "post",
         "query": {
-          "end": 1659338952088,
+          "end": "{{endTime}}",
           "epoch": "ms",
           "format": "chartv2",
           "ql": "influxql:ast",
-          "start": 1659335352088,
+          "start": "{{startTime}}",
           "type": "_"
         },
         "url": "/api/orgCenter/metrics-query"
@@ -94,9 +108,9 @@
       "controls": null
     }
   }, {
-    "w": 8,
+    "w": 12,
     "h": 9,
-    "x": 8,
+    "x": 12,
     "y": 0,
     "i": "view-oNMEwT4Y",
     "view": {
@@ -108,7 +122,7 @@
         }
       },
       "description": "",
-      "chartType": "chart:line",
+      "chartType": "chart:area",
       "dataSourceType": "api",
       "staticData": {},
       "config": {
@@ -142,10 +156,24 @@
           }],
           "valueDimensions": [{
             "alias": "内存使用率",
-            "field": "host_summary-mem_used_percent::field",
+            "i18n": {
+              "alias": {
+                "zh": "内存使用率",
+                "en": "Memory Usage"
+              }
+            },
+            "expr": "max(mem_used_percent::field)",
             "key": "value1xPEiz2R",
             "resultType": "number",
-            "type": "field"
+            "type": "expr",
+            "unit": {
+              "type": "PERCENT",
+              "unit": "%"
+            },
+            "optionProps": {
+              "isConnectNulls": true,
+              "isMoreThanOneDay": false
+            }
           }]
         },
         "optionProps": {
@@ -161,7 +189,7 @@
             "expr": "time()"
           }, {
             "alias": "value1xPEiz2R",
-            "expr": "round_float(mem_used_percent::field, 2)"
+            "expr": "max(mem_used_percent::field)"
           }],
           "where": [
             "cluster_name::tag='{{clusterName}}'",
@@ -170,11 +198,11 @@
         },
         "method": "post",
         "query": {
-          "end": 1659338952088,
+          "end": "{{endTime}}",
           "epoch": "ms",
           "format": "chartv2",
           "ql": "influxql:ast",
-          "start": 1659335352088,
+          "start": "{{startTime}}",
           "type": "_"
         },
         "url": "/api/orgCenter/metrics-query"
@@ -182,7 +210,7 @@
       "controls": null
     }
   }, {
-    "w": 8,
+    "w": 12,
     "h": 9,
     "x": 0,
     "y": 9,
@@ -196,7 +224,7 @@
         }
       },
       "description": "",
-      "chartType": "chart:line",
+      "chartType": "chart:area",
       "dataSourceType": "api",
       "staticData": {},
       "config": {
@@ -229,23 +257,35 @@
             "type": "time"
           }],
           "valueDimensions": [{
-            "alias": "1分钟平均负载",
-            "field": "host_summary-load1::field",
+            "alias": "Load1",
+            "expr": "max(load1::field)",
             "key": "value0Q08Om4z",
             "resultType": "number",
-            "type": "field"
+            "type": "expr",
+            "optionProps": {
+              "isConnectNulls": true,
+              "isMoreThanOneDay": false
+            }
           }, {
-            "alias": "5分钟平均负载",
-            "field": "host_summary-load5::field",
+            "alias": "Load5",
+            "expr": "max(load5::field)",
             "key": "valueoFCGDC2z",
             "resultType": "number",
-            "type": "field"
+            "type": "expr",
+            "optionProps": {
+              "isConnectNulls": true,
+              "isMoreThanOneDay": false
+            }
           }, {
-            "alias": "15分钟平均负载",
-            "field": "host_summary-load15::field",
+            "alias": "Load15",
+            "expr": "max(load15::field)",
             "key": "valueIM4bbBPz",
             "resultType": "number",
-            "type": "field"
+            "type": "expr",
+            "optionProps": {
+              "isConnectNulls": true,
+              "isMoreThanOneDay": false
+            }
           }]
         },
         "optionProps": {
@@ -261,13 +301,13 @@
             "expr": "time()"
           }, {
             "alias": "value0Q08Om4z",
-            "expr": "round_float(load1::field, 2)"
+            "expr": "max(load1::field)"
           }, {
             "alias": "valueoFCGDC2z",
-            "expr": "round_float(load5::field, 2)"
+            "expr": "max(load5::field)"
           }, {
             "alias": "valueIM4bbBPz",
-            "expr": "round_float(load15::field, 2)"
+            "expr": "max(load15::field)"
           }],
           "where": [
             "cluster_name::tag='{{clusterName}}'",
@@ -276,11 +316,11 @@
         },
         "method": "post",
         "query": {
-          "end": 1659338952088,
+          "end": "{{endTime}}",
           "epoch": "ms",
           "format": "chartv2",
           "ql": "influxql:ast",
-          "start": 1659335352088,
+          "start": "{{startTime}}",
           "type": "_"
         },
         "url": "/api/orgCenter/metrics-query"
@@ -288,9 +328,9 @@
       "controls": null
     }
   }, {
-    "w": 8,
+    "w": 12,
     "h": 9,
-    "x": 8,
+    "x": 12,
     "y": 9,
     "i": "view-q3PVfrID",
     "view": {
@@ -302,7 +342,7 @@
         }
       },
       "description": "",
-      "chartType": "chart:line",
+      "chartType": "chart:area",
       "dataSourceType": "api",
       "staticData": {},
       "config": {
@@ -342,10 +382,18 @@
           }],
           "valueDimensions": [{
             "alias": "使用率",
-            "field": "disk-used_percent::field",
+            "expr": "max(used_percent::field)",
             "key": "valueaMRmaQ90",
             "resultType": "number",
-            "type": "field"
+            "type": "expr",
+            "unit": {
+              "type": "PERCENT",
+              "unit": "%"
+            },
+            "optionProps": {
+              "isConnectNulls": true,
+              "isMoreThanOneDay": false
+            }
           }]
         },
         "optionProps": {
@@ -366,7 +414,7 @@
             "expr": "device::tag"
           }, {
             "alias": "valueaMRmaQ90",
-            "expr": "round_float(used_percent::field, 2)"
+            "expr": "max(used_percent::field)"
           }],
           "where": [
             "cluster_name::tag='{{clusterName}}'",
@@ -375,12 +423,12 @@
         },
         "method": "post",
         "query": {
-          "end": 1659338952088,
+          "end": "{{endTime}}",
           "epoch": "ms",
           "format": "chartv2",
           "neq_type": "netdata",
           "ql": "influxql:ast",
-          "start": 1659335352088,
+          "start": "{{startTime}}",
           "type": "_"
         },
         "url": "/api/orgCenter/metrics-query"
@@ -388,9 +436,9 @@
       "controls": null
     }
   }, {
-    "w": 8,
+    "w": 12,
     "h": 9,
-    "x": 8,
+    "x": 0,
     "y": 18,
     "i": "view-TVGGcoqQ",
     "view": {
@@ -402,7 +450,7 @@
         }
       },
       "description": "",
-      "chartType": "chart:line",
+      "chartType": "chart:area",
       "dataSourceType": "api",
       "staticData": null,
       "config": {
@@ -436,10 +484,20 @@
           }],
           "valueDimensions": [{
             "alias": "读速率",
-            "field": "diskio-read_rate::field",
+            "i18n": {
+              "alias": {
+                "zh": "读速率",
+                "en": "Read Rate"
+              }
+            },
+            "expr": "max(read_rate::field)",
             "key": "valueatobTv1W",
             "resultType": "number",
-            "type": "field"
+            "type": "expr",
+            "unit": {
+              "type": "TRAFFIC",
+              "unit": "B/S"
+            }
           }]
         }
       },
@@ -452,7 +510,7 @@
             "expr": "time()"
           }, {
             "alias": "valueatobTv1W",
-            "expr": "round_float(read_rate::field, 2)"
+            "expr": "max(read_rate::field)"
           }],
           "where": [
             "cluster_name::tag='{{clusterName}}'",
@@ -461,11 +519,11 @@
         },
         "method": "post",
         "query": {
-          "end": 1659338952088,
+          "end": "{{endTime}}",
           "epoch": "ms",
           "format": "chartv2",
           "ql": "influxql:ast",
-          "start": 1659335352088,
+          "start": "{{startTime}}",
           "type": "_"
         },
         "url": "/api/orgCenter/metrics-query"
@@ -473,10 +531,10 @@
       "controls": null
     }
   }, {
-    "w": 8,
+    "w": 12,
     "h": 9,
-    "x": 0,
-    "y": 27,
+    "x": 12,
+    "y": 18,
     "i": "view-tEUEBO5Q",
     "view": {
       "title": "Disk Write",
@@ -487,7 +545,7 @@
         }
       },
       "description": "",
-      "chartType": "chart:line",
+      "chartType": "chart:area",
       "dataSourceType": "api",
       "staticData": null,
       "config": {
@@ -521,10 +579,20 @@
           }],
           "valueDimensions": [{
             "alias": "写速率",
-            "field": "diskio-write_rate::field",
+            "i18n": {
+              "alias": {
+                "zh": "写速率",
+                "en": "Write Rate"
+              }
+            },
+            "expr": "max(write_rate::field)",
             "key": "valuejCwcXZjY",
             "resultType": "number",
-            "type": "field"
+            "type": "expr",
+            "unit": {
+              "type": "TRAFFIC",
+              "unit": "B/S"
+            }
           }]
         }
       },
@@ -537,7 +605,7 @@
             "expr": "time()"
           }, {
             "alias": "valuejCwcXZjY",
-            "expr": "round_float(write_rate::field, 2)"
+            "expr": "max(write_rate::field)"
           }],
           "where": [
             "cluster_name::tag='{{clusterName}}'",
@@ -546,11 +614,11 @@
         },
         "method": "post",
         "query": {
-          "end": 1659338952088,
+          "end": "{{endTime}}",
           "epoch": "ms",
           "format": "chartv2",
           "ql": "influxql:ast",
-          "start": 1659335352088,
+          "start": "{{startTime}}",
           "type": "_"
         },
         "url": "/api/orgCenter/metrics-query"
@@ -558,10 +626,10 @@
       "controls": null
     }
   }, {
-    "w": 8,
+    "w": 12,
     "h": 9,
     "x": 0,
-    "y": 18,
+    "y": 27,
     "i": "view-zwC7uVgs",
     "view": {
       "title": "Disk Used",
@@ -572,7 +640,7 @@
         }
       },
       "description": "",
-      "chartType": "chart:line",
+      "chartType": "chart:area",
       "dataSourceType": "api",
       "staticData": null,
       "config": {
@@ -612,10 +680,14 @@
           }],
           "valueDimensions": [{
             "alias": "使用量",
-            "field": "disk-used::field",
+            "expr": "max(used::field)",
             "key": "valueaiAJjZ7a",
             "resultType": "number",
-            "type": "field"
+            "type": "expr",
+            "unit": {
+              "type": "CAPACITY",
+              "unit": "B"
+            }
           }]
         },
         "optionProps": {
@@ -634,7 +706,7 @@
             "expr": "device::tag"
           }, {
             "alias": "valueaiAJjZ7a",
-            "expr": "round_float(used::field, 2)"
+            "expr": "max(used::field)"
           }],
           "where": [
             "cluster_name::tag='{{clusterName}}'",
@@ -643,12 +715,12 @@
         },
         "method": "post",
         "query": {
-          "end": 1659338952088,
+          "end": "{{endTime}}",
           "epoch": "ms",
           "format": "chartv2",
           "neq_type": "netdata",
           "ql": "influxql:ast",
-          "start": 1659335352088,
+          "start": "{{startTime}}",
           "type": "_"
         },
         "url": "/api/orgCenter/metrics-query"
@@ -656,9 +728,9 @@
       "controls": null
     }
   }, {
-    "w": 8,
+    "w": 12,
     "h": 9,
-    "x": 8,
+    "x": 12,
     "y": 27,
     "i": "view-prc9Xfvt",
     "view": {
@@ -670,7 +742,7 @@
         }
       },
       "description": "",
-      "chartType": "chart:line",
+      "chartType": "chart:area",
       "dataSourceType": "api",
       "staticData": null,
       "config": {
@@ -720,10 +792,14 @@
           }],
           "valueDimensions": [{
             "alias": "Send Rate",
-            "field": "net-send_rate::field",
+            "expr": "max(send_rate::field)",
             "key": "valuevPkwhAiW",
             "resultType": "number",
-            "type": "field"
+            "type": "expr",
+            "unit": {
+              "type": "TRAFFIC",
+              "unit": "B/S"
+            }
           }]
         }
       },
@@ -739,7 +815,7 @@
             "expr": "interface::tag"
           }, {
             "alias": "valuevPkwhAiW",
-            "expr": "round_float(send_rate::field, 2)"
+            "expr": "max(send_rate::field)"
           }],
           "where": [
             "cluster_name::tag='{{clusterName}}'",
@@ -749,11 +825,11 @@
         },
         "method": "post",
         "query": {
-          "end": 1659338952088,
+          "end": "{{endTime}}",
           "epoch": "ms",
           "format": "chartv2",
           "ql": "influxql:ast",
-          "start": 1659335352088,
+          "start": "{{startTime}}",
           "type": "_"
         },
         "url": "/api/orgCenter/metrics-query"
@@ -761,7 +837,7 @@
       "controls": null
     }
   }, {
-    "w": 8,
+    "w": 12,
     "h": 9,
     "x": 0,
     "y": 36,
@@ -775,7 +851,7 @@
         }
       },
       "description": "",
-      "chartType": "chart:line",
+      "chartType": "chart:area",
       "dataSourceType": "api",
       "staticData": null,
       "config": {
@@ -815,10 +891,14 @@
           }],
           "valueDimensions": [{
             "alias": "Recv Rate",
-            "field": "net-recv_rate::field",
+            "expr": "max(recv_rate::field)",
             "key": "valuetNxGdnVd",
             "resultType": "number",
-            "type": "field"
+            "type": "expr",
+            "unit": {
+              "type": "TRAFFIC",
+              "unit": "B/S"
+            }
           }]
         }
       },
@@ -834,7 +914,7 @@
             "expr": "interface::tag"
           }, {
             "alias": "valuetNxGdnVd",
-            "expr": "round_float(recv_rate::field, 2)"
+            "expr": "max(recv_rate::field)"
           }],
           "where": [
             "cluster_name::tag='{{clusterName}}'",
@@ -843,11 +923,11 @@
         },
         "method": "post",
         "query": {
-          "end": 1659338952088,
+          "end": "{{endTime}}",
           "epoch": "ms",
           "format": "chartv2",
           "ql": "influxql:ast",
-          "start": 1659335352088,
+          "start": "{{startTime}}",
           "type": "_"
         },
         "url": "/api/orgCenter/metrics-query"
