@@ -88,6 +88,8 @@ services:
       GOLANG_PROTOBUF_REGISTRATION_CONFLICT: "ignore"
       UC_AUDITOR_CRON: "0 */1 * * * ?"
       UC_AUDITOR_PULL_SIZE: "30"
+      ERDA_SERVER_ADDR: "localhost:9095"
+      DOP_ADDR: "localhost:9095"
     ports:
       - port: 9529
         protocol: "TCP"
