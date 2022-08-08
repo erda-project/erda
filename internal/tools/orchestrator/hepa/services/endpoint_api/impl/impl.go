@@ -716,6 +716,10 @@ func (impl GatewayOpenapiServiceImpl) UpdatePackage(orgId, id string, dto *gw.Pa
 	if err != nil {
 		return
 	}
+	if dao.Scene == orm.UnityScene || dao.Scene == orm.HubScene {
+		err = errors.Errorf("%s scene package can not be updated", dao.Scene)
+		return
+	}
 	diceInfo = gw.DiceInfo{
 		ProjectId: dao.DiceProjectId,
 		Env:       dao.DiceEnv,
