@@ -28,6 +28,9 @@ import (
 func Test_provider_GetUser(t *testing.T) {
 	var p *provider
 	monkey.PatchInstanceMethod(reflect.TypeOf(p), "ConvertUserIDs", func(_ *provider, ids []string) ([]string, map[string]string, error) {
+		if len(ids) > 0 && ids[0] == "no" {
+			return []string{}, map[string]string{}, nil
+		}
 		return []string{"1"}, map[string]string{"1": "a"}, nil
 	})
 	monkey.Patch(getUserByID, func(kratosPrivateAddr string, userID string) (*common.User, error) {
@@ -56,6 +59,24 @@ func Test_provider_GetUser(t *testing.T) {
 					ID: "a",
 				},
 			},
+		},
+		{
+			args: args{
+				ctx: context.Background(),
+				req: &pb.GetUserRequest{
+					UserID: "no",
+				},
+			},
+			want: &pb.GetUserResponse{},
+		},
+		{
+			args: args{
+				ctx: context.Background(),
+				req: &pb.GetUserRequest{
+					UserID: "",
+				},
+			},
+			want: &pb.GetUserResponse{},
 		},
 	}
 	for _, tt := range tests {

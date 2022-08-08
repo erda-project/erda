@@ -43,7 +43,7 @@ type UcUser struct {
 func (p *provider) FindUsers(ctx context.Context, req *pb.FindUsersRequest) (*pb.FindUsersResponse, error) {
 	ids := req.IDs
 	if len(ids) == 0 {
-		return nil, nil
+		return &pb.FindUsersResponse{}, nil
 	}
 	sysOpExist := strutil.Exist(ids, common.SystemOperator)
 	if sysOpExist {
@@ -73,7 +73,7 @@ func (p *provider) FindUsers(ctx context.Context, req *pb.FindUsersRequest) (*pb
 func (p *provider) FindUsersByKey(ctx context.Context, req *pb.FindUsersByKeyRequest) (*pb.FindUsersByKeyResponse, error) {
 	key := req.Key
 	if key == "" {
-		return nil, nil
+		return &pb.FindUsersByKeyResponse{}, nil
 	}
 	query := fmt.Sprintf("username:%s OR nickname:%s OR phone_number:%s OR email:%s", key, key, key, key)
 	users, err := p.findUsersByQuery(query)

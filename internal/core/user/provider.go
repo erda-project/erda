@@ -22,6 +22,7 @@ import (
 	"github.com/erda-project/erda/internal/core/user/common"
 	"github.com/erda-project/erda/internal/core/user/impl/kratos"
 	"github.com/erda-project/erda/internal/core/user/impl/uc"
+	"github.com/erda-project/erda/pkg/common/apis"
 )
 
 type config struct {
@@ -49,7 +50,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	}
 
 	if p.Register != nil {
-		pb.RegisterUserServiceImp(p.Register, p.userService)
+		pb.RegisterUserServiceImp(p.Register, p.userService, apis.Options())
 	}
 	return nil
 }

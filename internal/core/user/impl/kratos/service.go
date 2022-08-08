@@ -29,7 +29,7 @@ func (p *provider) oryKratosPrivateAddr() string {
 func (p *provider) FindUsers(ctx context.Context, req *pb.FindUsersRequest) (*pb.FindUsersResponse, error) {
 	ids := req.IDs
 	if len(ids) == 0 {
-		return nil, nil
+		return &pb.FindUsersResponse{}, nil
 	}
 	sysOpExist := strutil.Exist(ids, common.SystemOperator)
 	if sysOpExist {
@@ -104,7 +104,7 @@ func (p *provider) GetUserIDMapping(ids []string) ([]UserIDModel, error) {
 func (p *provider) FindUsersByKey(ctx context.Context, req *pb.FindUsersByKeyRequest) (*pb.FindUsersByKeyResponse, error) {
 	key := req.Key
 	if key == "" {
-		return nil, nil
+		return &pb.FindUsersByKeyResponse{}, nil
 	}
 	users, err := getUserByKey(p.oryKratosPrivateAddr(), key)
 	if err != nil {
@@ -120,9 +120,15 @@ func (p *provider) FindUsersByKey(ctx context.Context, req *pb.FindUsersByKeyReq
 // GetUser 获取用户详情
 func (p *provider) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.GetUserResponse, error) {
 	userID := req.UserID
+	if userID == "" {
+		return &pb.GetUserResponse{}, nil
+	}
 	userIDs, userMap, err := p.ConvertUserIDs([]string{userID})
-	if err != nil || len(userIDs) == 0 {
+	if err != nil {
 		return nil, err
+	}
+	if len(userIDs) == 0 {
+		return &pb.GetUserResponse{}, nil
 	}
 	user, err := getUserByID(p.oryKratosPrivateAddr(), userIDs[0])
 	if err != nil {
