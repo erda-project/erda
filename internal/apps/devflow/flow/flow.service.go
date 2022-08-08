@@ -379,7 +379,7 @@ func (s *Service) RejoinTempBranch(ctx context.Context, tempBranch, sourceBranch
 		if !v.IsJoinTempBranch {
 			continue
 		}
-		isMROpenedOrNotCreated, err := s.isMROpenedOrNotCreated(ctx, v.Branch, targetBranch, app.ID)
+		isMROpenedOrNotCreated, err := s.IsMROpenedOrNotCreated(ctx, v.Branch, targetBranch, app.ID)
 		if err != nil {
 			return err
 		}
@@ -394,7 +394,7 @@ func (s *Service) RejoinTempBranch(ctx context.Context, tempBranch, sourceBranch
 	return nil
 }
 
-func (s *Service) isMROpenedOrNotCreated(ctx context.Context, currentBranch, targetBranch string, appID uint64) (bool, error) {
+func (s *Service) IsMROpenedOrNotCreated(ctx context.Context, currentBranch, targetBranch string, appID uint64) (bool, error) {
 	result, err := s.p.bdl.ListMergeRequest(appID, apis.GetUserID(ctx), apistructs.GittarQueryMrRequest{
 		TargetBranch: targetBranch,
 		SourceBranch: currentBranch,

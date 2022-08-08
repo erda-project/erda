@@ -557,7 +557,7 @@ func TestService_isMROpenedOrNotCreated(t *testing.T) {
 			s := &Service{
 				p: tt.fields.p,
 			}
-			got, err := s.isMROpenedOrNotCreated(tt.args.ctx, tt.args.currentBranch, tt.args.targetBranch, tt.args.appID)
+			got, err := s.IsMROpenedOrNotCreated(tt.args.ctx, tt.args.currentBranch, tt.args.targetBranch, tt.args.appID)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("isMROpenedOrNotCreated() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -1331,42 +1331,117 @@ func TestService_OperationMerge_Request_Validate(t *testing.T) {
 	}
 }
 
-func TestService_OperationMerge(t *testing.T) {
-	type fields struct {
-		p             *provider
+func TestService_RejoinTempBranch(t *testing.T) {
+	var dbClient *db.Client
+	monkey.PatchInstanceMethod(reflect.TypeOf(dbClient), "ListDevFlowByFlowRuleNameAndAppID", func(dbClient *db.Client, flowRuleName string, appID uint64) (fs []db.DevFlow, err error) {
+		return []db.DevFlow{
+			{
+				Model: db.Model{
+					ID: fields.UUID{
+						String: "1",
+					},
+				},
+				IsJoinTempBranch: false,
+			},
+			{
+				Model: db.Model{
+					ID: fields.UUID{
+						String: "2",
+					},
+				},
+				Branch:           "feature/dop",
+				IsJoinTempBranch: true,
+			},
+			{
+				Model: db.Model{
+					ID: fields.UUID{
+						String: "3",
+					},
+				},
+				Branch:           "feature/pr/1",
+				IsJoinTempBranch: true,
+			},
+		}, nil
+	})
+
+	defer monkey.UnpatchAll()
+
+	var svc *Service
+	monkey.PatchInstanceMethod(reflect.TypeOf(svc), "IdempotentDeleteBranch", func(svc *Service, ctx context.Context, repoPath, branch string) error {
+		return nil
+	})
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(svc), "IdempotentCreateBranch", func(svc *Service, ctx context.Context, repoPath, sourceBranch, newBranch string) error {
+		return nil
+	})
+	monkey.PatchInstanceMethod(reflect.TypeOf(svc), "MergeToTempBranch", func(svc *Service, ctx context.Context, tempBranch string, appID uint64, devFlow *db.DevFlow) error {
+		return nil
+	})
+	monkey.PatchInstanceMethod(reflect.TypeOf(svc), "IsMROpenedOrNotCreated", func(svc *Service, ctx context.Context, currentBranch, targetBranch string, appID uint64) (bool, error) {
+		if currentBranch == "feature/dop" {
+			return false, nil
+		}
+		if currentBranch == "feature/pr/1" {
+			return true, nil
+		}
+		return false, fmt.Errorf("fail")
+	})
+
+	type field struct {
+		p *provider
 	}
 	type args struct {
-		ctx context.Context
-		req *pb.OperationMergeRequest
+		ctx          context.Context
+		tempBranch   string
+		sourceBranch string
+		targetBranch string
+		devFlow      *db.DevFlow
+		app          *apistructs.ApplicationDTO
 	}
 	tests := []struct {
 		name    string
-		fields  fields
+		fields  field
 		args    args
-		want    *pb.OperationMergeResponse
 		wantErr bool
 	}{
 		{
-			name: "",
-			fields:  fields{},
-			args:    args{},
-			want:    nil,
+			name: "test with rejoin",
+			fields: field{
+				p: &provider{
+					dbClient:       dbClient,
+					devFlowService: svc,
+				},
+			},
+			args: args{
+				ctx:          context.Background(),
+				tempBranch:   "next/dev",
+				sourceBranch: "develop",
+				targetBranch: "master",
+				devFlow: &db.DevFlow{
+					Model:                db.Model{},
+					Scope:                db.Scope{},
+					Operator:             db.Operator{},
+					Branch:               "",
+					IssueID:              0,
+					FlowRuleName:         "",
+					JoinTempBranchStatus: "",
+					IsJoinTempBranch:     false,
+				},
+				app: &apistructs.ApplicationDTO{
+					ID:   1,
+					Name: "erda",
+				},
+			},
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := &Service{
-				p:             tt.fields.p,
-				
+				p: tt.fields.p,
 			}
-			got, err := s.OperationMerge(tt.args.ctx, tt.args.req)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("OperationMerge() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("OperationMerge() got = %v, want %v", got, tt.want)
+			if err := s.RejoinTempBranch(tt.args.ctx, tt.args.tempBranch, tt.args.sourceBranch, tt.args.targetBranch, tt.args.devFlow, tt.args.app); (err != nil) != tt.wantErr {
+				t.Errorf("RejoinTempBranch() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
