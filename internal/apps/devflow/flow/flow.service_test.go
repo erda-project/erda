@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"bou.ke/monkey"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 	"gorm.io/gorm"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
@@ -1272,6 +1273,100 @@ func TestService_getAppTempBranchCommitAndChangeBranchListMap(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got1, tt.want1) {
 				t.Errorf("getAppTempBranchCommitAndChangeBranchListMap() got1 = %v, want %v", got1, tt.want1)
+			}
+		})
+	}
+}
+
+func TestService_OperationMerge_Request_Validate(t *testing.T) {
+	type args struct {
+		req *pb.OperationMergeRequest
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "test with invalid parameter1",
+
+			args: args{
+				req: &pb.OperationMergeRequest{
+					DevFlowID: "24aed4b7-7c49-479f-af84-8e1c93b00f64",
+					Enable:    nil,
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "test with invalid parameter2",
+			args: args{
+				req: &pb.OperationMergeRequest{
+					DevFlowID: "",
+					Enable:    wrapperspb.Bool(true),
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "test with valid parameter",
+			args: args{
+				req: &pb.OperationMergeRequest{
+					DevFlowID: "24aed4b7-7c49-479f-af84-8e1c93b00f64",
+					Enable:    wrapperspb.Bool(true),
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.args.req.Validate()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("OperationMerge() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+		})
+	}
+}
+
+func TestService_OperationMerge(t *testing.T) {
+	type fields struct {
+		p             *provider
+	}
+	type args struct {
+		ctx context.Context
+		req *pb.OperationMergeRequest
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    *pb.OperationMergeResponse
+		wantErr bool
+	}{
+		{
+			name: "",
+			fields:  fields{},
+			args:    args{},
+			want:    nil,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &Service{
+				p:             tt.fields.p,
+				
+			}
+			got, err := s.OperationMerge(tt.args.ctx, tt.args.req)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("OperationMerge() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("OperationMerge() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
