@@ -226,7 +226,7 @@ func (q *queryer) Query(ctx context.Context, tsql, statement string, params map[
 
 // QueryWithFormat .
 func (q *queryer) QueryWithFormat(ctx context.Context, tsql, statement, format string, langCodes i18n.LanguageCodes, params map[string]interface{}, filters []*model.Filter, options url.Values) (*model.ResultSet, interface{}, error) {
-	newCtx, span := otel.Tracer("query").Start(ctx, "with.format")
+	newCtx, span := otel.Tracer("metric.query").Start(ctx, "metric.query.with.format")
 	defer span.End()
 
 	rs, query, opts, err := q.doQuery(newCtx, tsql, statement, params, filters, options)

@@ -642,7 +642,12 @@ func (s *TraceService) GetSpanEvents(ctx context.Context, req *pb.SpanEventReque
 	queryParams := map[string]*structpb.Value{
 		"span_id": structpb.NewStringValue(req.SpanID),
 	}
-	queryCtx, _ := context.WithTimeout(ctx, time.Minute)
+
+	ctx = apis.GetContext(ctx, func(header *transport.Header) {
+	})
+
+	queryCtx, cancel := context.WithTimeout(ctx, time.Minute)
+	defer cancel()
 	queryRequest := &metricpb.QueryWithTableFormatRequest{
 		Start:     strconv.FormatInt(startTime, 10),
 		End:       strconv.FormatInt(endTime, 10),
@@ -670,7 +675,7 @@ func (s *TraceService) handleSpanEventResponse(table *metricpb.TableResult) []*p
 	spanEvents := make([]*pb.SpanEvent, 0)
 	eventNames := make(map[string]string)
 	for _, col := range table.Cols {
-		if col.Flag == "tag" {
+		if strings.HasSuffix(col.Key, "::tag") {
 			key := strings.Replace(col.Key, "::tag", "", -1)
 			if EventFieldSet.Contains(key) {
 				eventNames[key] = col.Key
