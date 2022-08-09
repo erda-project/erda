@@ -133,8 +133,7 @@ func (p *provider) Query(ctx context.Context, q tsql.Query) (*model.ResultSet, e
 
 	if err != nil {
 		span.RecordError(err, oteltrace.WithAttributes(attribute.String("error", err.Error())))
-		p.Log.Error("clickhouse metric query is error ", sql, err)
-		return nil, err
+		return nil, errors.Wrap(err, fmt.Sprintf("failed to parse result: %s", sql))
 	}
 	return result, nil
 }

@@ -281,7 +281,7 @@ func TestFilterToExpr(t *testing.T) {
 					Operator: "eq",
 				},
 			},
-			want: "SELECT * FROM \"table\" WHERE ((tag_values[indexOf(tag_keys,'cluster_name')] = '123') AND (tag_values[indexOf(tag_keys,'org_name')] = '123'))",
+			want: "SELECT * FROM \"table\" WHERE ((tag_values[indexOf(tag_keys,'cluster_name')] = '123') AND (org_name = '123'))",
 		},
 	}
 
@@ -289,7 +289,9 @@ func TestFilterToExpr(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			expr := goqu.From("table")
 
-			expr, err := filterToExpr(test.args, expr)
+			p := Parser{}
+
+			expr, err := p.filterToExpr(test.args, expr)
 			require.NoError(t, err)
 			sql, _, err := expr.ToSQL()
 			require.NoError(t, err)
