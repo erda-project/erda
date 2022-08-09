@@ -1478,3 +1478,200 @@ func TestService_RejoinTempBranch(t *testing.T) {
 		})
 	}
 }
+
+func TestService_DeleteFlowNode(t *testing.T) {
+	var dbClient *db.Client
+	monkey.PatchInstanceMethod(reflect.TypeOf(dbClient), "GetDevFlow", func(dbClient *db.Client, devFlowID string) (f *db.DevFlow, err error) {
+		if devFlowID == "" {
+			return nil, fmt.Errorf("empty devFlowID")
+		}
+		if devFlowID == "1" {
+			return &db.DevFlow{
+				IsJoinTempBranch: true,
+				FlowRuleName:     "DEV",
+			}, nil
+		}
+		if devFlowID == "2" {
+			return &db.DevFlow{
+				IsJoinTempBranch: false,
+				FlowRuleName:     "DEV",
+			}, nil
+		}
+		return nil, fmt.Errorf("record not found")
+	})
+	defer monkey.UnpatchAll()
+	monkey.PatchInstanceMethod(reflect.TypeOf(dbClient), "UpdateDevFlow", func(dbClient *db.Client, f *db.DevFlow) error {
+		return nil
+	})
+	monkey.PatchInstanceMethod(reflect.TypeOf(dbClient), "DeleteDevFlow", func(dbClient *db.Client, devFlowID string) error {
+		return nil
+	})
+
+	var bdl *bundle.Bundle
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetApp", func(d *bundle.Bundle, id uint64) (*apistructs.ApplicationDTO, error) {
+		return &apistructs.ApplicationDTO{
+			Name:        "erda",
+			ProjectName: "erda-project",
+			ProjectID:   1,
+		}, nil
+	})
+
+	var svc *Service
+	monkey.PatchInstanceMethod(reflect.TypeOf(svc), "RejoinTempBranch", func(svc *Service, ctx context.Context, tempBranch, sourceBranch, targetBranch string, devFlow *db.DevFlow, app *apistructs.ApplicationDTO) error {
+		return nil
+	})
+	monkey.PatchInstanceMethod(reflect.TypeOf(svc), "IdempotentDeleteBranch", func(svc *Service, ctx context.Context, repoPath, branch string) error {
+		return nil
+	})
+
+	type fields struct {
+		p *provider
+	}
+	type args struct {
+		ctx context.Context
+		req *pb.DeleteFlowNodeRequest
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    *pb.DeleteFlowNodeResponse
+		wantErr bool
+	}{
+		{
+			name: "test with error1",
+			fields: fields{
+				p: &provider{
+					dbClient:       dbClient,
+					devFlowService: svc,
+					DevFlowRule:    devFlowRuleForGetMock{},
+					bdl:            bdl,
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				req: &pb.DeleteFlowNodeRequest{
+					DevFlowID:    "",
+					DeleteBranch: false,
+				},
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "test with error2",
+			fields: fields{
+				p: &provider{
+					dbClient:       dbClient,
+					devFlowService: svc,
+					DevFlowRule:    devFlowRuleForGetMock{},
+					bdl:            bdl,
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				req: &pb.DeleteFlowNodeRequest{
+					DevFlowID:    "3",
+					DeleteBranch: false,
+				},
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "test with isJoinTempBranch is false",
+			fields: fields{
+				p: &provider{
+					dbClient:       dbClient,
+					devFlowService: svc,
+					DevFlowRule:    devFlowRuleForGetMock{},
+					bdl:            bdl,
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				req: &pb.DeleteFlowNodeRequest{
+					DevFlowID:    "2",
+					DeleteBranch: false,
+				},
+			},
+			want:    &pb.DeleteFlowNodeResponse{},
+			wantErr: false,
+		},
+		{
+			name: "test with isJoinTempBranch is true",
+			fields: fields{
+				p: &provider{
+					dbClient:       dbClient,
+					devFlowService: svc,
+					DevFlowRule:    devFlowRuleForGetMock{},
+					bdl:            bdl,
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				req: &pb.DeleteFlowNodeRequest{
+					DevFlowID:    "1",
+					DeleteBranch: false,
+				},
+			},
+			want:    &pb.DeleteFlowNodeResponse{},
+			wantErr: false,
+		},
+		{
+			name: "test with delete branch1",
+			fields: fields{
+				p: &provider{
+					dbClient:       dbClient,
+					devFlowService: svc,
+					DevFlowRule:    devFlowRuleForGetMock{},
+					bdl:            bdl,
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				req: &pb.DeleteFlowNodeRequest{
+					DevFlowID:    "1",
+					DeleteBranch: true,
+				},
+			},
+			want:    &pb.DeleteFlowNodeResponse{},
+			wantErr: false,
+		},
+		{
+			name: "test with delete branch2",
+			fields: fields{
+				p: &provider{
+					dbClient:       dbClient,
+					devFlowService: svc,
+					DevFlowRule:    devFlowRuleForGetMock{},
+					bdl:            bdl,
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				req: &pb.DeleteFlowNodeRequest{
+					DevFlowID:    "2",
+					DeleteBranch: true,
+				},
+			},
+			want:    &pb.DeleteFlowNodeResponse{},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &Service{
+				p: tt.fields.p,
+			}
+			got, err := s.DeleteFlowNode(tt.args.ctx, tt.args.req)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("DeleteFlowNode() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("DeleteFlowNode() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
