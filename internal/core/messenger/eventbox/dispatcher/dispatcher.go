@@ -16,14 +16,12 @@ package dispatcher
 
 import (
 	"context"
-	"net/http"
 	"strings"
 	"sync"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda-infra/base/version"
 	"github.com/erda-project/erda-proto-go/core/messenger/notify/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/core/legacy/services/dingtalk/api/interfaces"
@@ -32,8 +30,6 @@ import (
 	inputhttp "github.com/erda-project/erda/internal/core/messenger/eventbox/input/http"
 	"github.com/erda-project/erda/internal/core/messenger/eventbox/monitor"
 	"github.com/erda-project/erda/internal/core/messenger/eventbox/register"
-	"github.com/erda-project/erda/internal/core/messenger/eventbox/server"
-	stypes "github.com/erda-project/erda/internal/core/messenger/eventbox/server/types"
 	"github.com/erda-project/erda/internal/core/messenger/eventbox/subscriber"
 	dingdingsubscriber "github.com/erda-project/erda/internal/core/messenger/eventbox/subscriber/dingding"
 	dingdingworknoticesubscriber "github.com/erda-project/erda/internal/core/messenger/eventbox/subscriber/dingding_worknotice"
@@ -48,7 +44,6 @@ import (
 	"github.com/erda-project/erda/internal/core/messenger/eventbox/webhook"
 	"github.com/erda-project/erda/internal/core/messenger/eventbox/websocket"
 	"github.com/erda-project/erda/internal/core/org"
-	"github.com/erda-project/erda/internal/pkg/user"
 	"github.com/erda-project/erda/pkg/goroutinepool"
 )
 
@@ -65,7 +60,6 @@ type DispatcherImpl struct {
 	router          *Router
 	register        register.Register
 	inputs          []input.Input
-	httpserver      *server.Server
 
 	runningWg sync.WaitGroup
 }
@@ -134,12 +128,6 @@ func New(dingtalk interfaces.DingTalkApiClientFactory, messenger pb.NotifyServic
 	// provider register init
 	registerHttp = register.NewHTTP(reg)
 
-	server, err := server.New()
-	if err != nil {
-		return nil, err
-	}
-	dispatcher.httpserver = server
-
 	router, err := NewRouter(&dispatcher)
 	if err != nil {
 		return nil, err
@@ -161,12 +149,6 @@ func NewImpl() (*DispatcherImpl, error) {
 		return nil, err
 	}
 	dispatcher.register = reg
-
-	server, err := server.New()
-	if err != nil {
-		return nil, err
-	}
-	dispatcher.httpserver = server
 
 	return dispatcher, nil
 }
@@ -227,11 +209,6 @@ func (d *DispatcherImpl) Stop() error {
 
 	var errMsgs []string
 
-	// stop httpserver first
-	if err := d.httpserver.Stop(); err != nil {
-		logrus.Errorf("dispatcher: stop httpserver: %v", err)
-		errMsgs = append(errMsgs, err.Error())
-	}
 	// stop inputs
 	for _, i := range d.inputs {
 		if err := i.Stop(); err != nil {
@@ -250,24 +227,4 @@ func (d *DispatcherImpl) Stop() error {
 	}
 
 	return nil
-}
-
-func getVersion(ctx context.Context, req *http.Request, vars map[string]string) (stypes.Responser, error) {
-	return stypes.HTTPResponse{Status: http.StatusOK, Content: version.String()}, nil
-}
-
-func getSMTPInfo(ctx context.Context, req *http.Request, vars map[string]string) (stypes.Responser, error) {
-	identityInfo, err := user.GetIdentityInfo(req)
-
-	if err != nil {
-		logrus.Errorf("getIdentityInfo error %v", err)
-		return stypes.HTTPResponse{Status: http.StatusUnauthorized, Content: "failed"}, nil
-	}
-
-	if !identityInfo.IsInternalClient() {
-		return stypes.HTTPResponse{Status: http.StatusUnauthorized, Content: "failed"}, nil
-	}
-
-	return stypes.HTTPResponse{Status: http.StatusOK, Content: emailsubscriber.NewMailSubscriberInfo(conf.SmtpHost(), conf.SmtpPort(), conf.SmtpUser(), conf.SmtpPassword(),
-		conf.SmtpDisplayUser(), conf.SmtpIsSSL(), conf.SMTPInsecureSkipVerify())}, nil
 }
