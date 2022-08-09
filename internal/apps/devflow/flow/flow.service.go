@@ -772,12 +772,12 @@ func (s *Service) getAppTempBranchCommitAndChangeBranchListMap(ctx context.Conte
 			work.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
 				index := i[0].(int)
 				devFlow := flows[index]
-				app := appMap[devFlow.AppID]
-				repoPath := makeGittarRepoPath(&app)
-
 				if !devFlow.IsJoinTempBranch {
 					return nil
 				}
+
+				app := appMap[devFlow.AppID]
+				repoPath := makeGittarRepoPath(&app)
 				currentBranchExists, err := s.JudgeBranchIsExists(ctx, repoPath, devFlow.Branch)
 				if err != nil {
 					return err
