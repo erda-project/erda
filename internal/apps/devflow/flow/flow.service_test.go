@@ -1098,24 +1098,40 @@ func TestService_getAppInIssuePermissionMap(t *testing.T) {
 
 func TestService_getAppTempBranchCommitAndChangeBranchListMap(t *testing.T) {
 	var dbClient *db.Client
-	monkey.PatchInstanceMethod(reflect.TypeOf(dbClient), "ListDevFlowByFlowRuleName", func(dbClient *db.Client, ruleName string) (f []db.DevFlow, err error) {
+	monkey.PatchInstanceMethod(reflect.TypeOf(dbClient), "ListDevFlowByFlowRuleNameAndAppIDs", func(dbClient *db.Client, ruleName string, appIDs ...uint64) (f []db.DevFlow, err error) {
 		if ruleName == "" {
 			return nil, fmt.Errorf("fail")
 		}
-		return []db.DevFlow{{
-			Model: db.Model{
-				ID: fields.UUID{
-					String: "157c8320-3755-402b-81ab-01d8bdd99512",
-					Valid:  false,
+		return []db.DevFlow{
+			{
+				Model: db.Model{
+					ID: fields.UUID{
+						String: "157c8320-3755-402b-81ab-01d8bdd99512",
+						Valid:  false,
+					},
 				},
+				Scope: db.Scope{
+					AppID:   1,
+					AppName: "erda",
+				},
+				Branch:           "feature/dop",
+				IsJoinTempBranch: true,
 			},
-			Scope: db.Scope{
-				AppID:   1,
-				AppName: "erda",
+			{
+				Model: db.Model{
+					ID: fields.UUID{
+						String: "157c8320-3755-402b-81ab-01d8bdd99666",
+						Valid:  false,
+					},
+				},
+				Scope: db.Scope{
+					AppID:   1,
+					AppName: "erda",
+				},
+				Branch:           "feature/dop-test",
+				IsJoinTempBranch: false,
 			},
-			Branch:           "feature/dop",
-			IsJoinTempBranch: true,
-		}}, nil
+		}, nil
 	})
 	defer monkey.UnpatchAll()
 
@@ -1222,6 +1238,23 @@ func TestService_getAppTempBranchCommitAndChangeBranchListMap(t *testing.T) {
 						JoinTempBranchStatus: "",
 						IsJoinTempBranch:     true,
 					},
+					{
+						Model: db.Model{
+							ID: fields.UUID{
+								String: "157c8320-3755-402b-81ab-01d8bdd99513",
+								Valid:  false,
+							},
+						},
+						Scope: db.Scope{
+							AppID:   1,
+							AppName: "erda",
+						},
+						Branch:               "feature/dop-test",
+						IssueID:              1,
+						FlowRuleName:         "TEST",
+						JoinTempBranchStatus: "",
+						IsJoinTempBranch:     true,
+					},
 				},
 				ruleNameBranchPolicyMap: map[string]branchPolicy{
 					"DEV": {
@@ -1252,8 +1285,7 @@ func TestService_getAppTempBranchCommitAndChangeBranchListMap(t *testing.T) {
 				},
 			},
 			want1: map[string]*apistructs.Commit{
-				"1next/dev": {
-					ID: "2"},
+				"1next/dev": {ID: "2"},
 			},
 			wantErr: false,
 		},
@@ -1333,7 +1365,7 @@ func TestService_OperationMerge_Request_Validate(t *testing.T) {
 
 func TestService_RejoinTempBranch(t *testing.T) {
 	var dbClient *db.Client
-	monkey.PatchInstanceMethod(reflect.TypeOf(dbClient), "ListDevFlowByFlowRuleNameAndAppID", func(dbClient *db.Client, flowRuleName string, appID uint64) (fs []db.DevFlow, err error) {
+	monkey.PatchInstanceMethod(reflect.TypeOf(dbClient), "ListDevFlowByFlowRuleNameAndAppIDs", func(dbClient *db.Client, flowRuleName string, appIDs ...uint64) (fs []db.DevFlow, err error) {
 		return []db.DevFlow{
 			{
 				Model: db.Model{

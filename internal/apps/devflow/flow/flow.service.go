@@ -370,7 +370,7 @@ func (s *Service) RejoinTempBranch(ctx context.Context, tempBranch, sourceBranch
 		return err
 	}
 
-	devFlows, err := s.p.dbClient.ListDevFlowByFlowRuleNameAndAppID(devFlow.FlowRuleName, devFlow.AppID)
+	devFlows, err := s.p.dbClient.ListDevFlowByFlowRuleNameAndAppIDs(devFlow.FlowRuleName, devFlow.AppID)
 	if err != nil {
 		return err
 	}
@@ -743,22 +743,36 @@ func (s *Service) getAppTempBranchCommitAndChangeBranchListMap(ctx context.Conte
 			appIDMap[devFlow.AppID] = struct{}{}
 		}
 	}
+
+	appIDs := make([]uint64, 0)
+	for appID := range appIDMap {
+		appIDs = append(appIDs, appID)
+	}
+
 	for flowRuleName := range flowRuleNameMap {
-		flows, err := s.p.dbClient.ListDevFlowByFlowRuleName(flowRuleName)
+		flows, err := s.p.dbClient.ListDevFlowByFlowRuleNameAndAppIDs(flowRuleName, appIDs...)
 		if err != nil {
 			return nil, nil, err
 		}
 		tempBranch := ruleNameBranchPolicyMap[flowRuleName].tempBranch
 		sourceBranch := ruleNameBranchPolicyMap[flowRuleName].sourceBranch
+		if tempBranch == "" || sourceBranch == "" {
+			continue
+		}
+		for appID := range appIDMap {
+			app := appMap[appID]
+			repoPath := makeGittarRepoPath(&app)
+			if err = s.IdempotentCreateBranch(ctx, repoPath, sourceBranch, tempBranch); err != nil {
+				return nil, nil, err
+			}
+		}
+
 		work := limit_sync_group.NewWorker(5)
 		for index := range flows {
 			work.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
 				index := i[0].(int)
 				devFlow := flows[index]
-				if !devFlow.IsJoinTempBranch || tempBranch == "" {
-					return nil
-				}
-				if _, ok := appIDMap[devFlow.AppID]; !ok {
+				if !devFlow.IsJoinTempBranch {
 					return nil
 				}
 
@@ -781,9 +795,6 @@ func (s *Service) getAppTempBranchCommitAndChangeBranchListMap(ctx context.Conte
 				}
 
 				locker.Lock()
-				if err = s.IdempotentCreateBranch(ctx, repoPath, sourceBranch, tempBranch); err != nil {
-					return err
-				}
 				if _, ok := appTempBranchCommitMap[fmt.Sprintf("%d%s", devFlow.AppID, tempBranch)]; !ok {
 					var commit *apistructs.Commit
 					if tempBranch != "" {
@@ -794,8 +805,6 @@ func (s *Service) getAppTempBranchCommitAndChangeBranchListMap(ctx context.Conte
 					}
 					appTempBranchCommitMap[fmt.Sprintf("%d%s", devFlow.AppID, tempBranch)] = commit
 				}
-				locker.Unlock()
-				locker.Lock()
 				appTempBranchChangeBranchListMap[fmt.Sprintf("%d%s", devFlow.AppID, tempBranch)] =
 					append(appTempBranchChangeBranchListMap[fmt.Sprintf("%d%s", devFlow.AppID, tempBranch)], &pb.ChangeBranch{
 						Commit:     commitConvert(baseCommit),
