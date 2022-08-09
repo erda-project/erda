@@ -22,6 +22,7 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
+	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-proto-go/core/dop/autotest/testplan/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/dao"
@@ -43,6 +44,7 @@ type provider struct {
 
 	TestPlanService *TestPlanService
 	Org             org.Interface
+	RouterManager   httpserver.RouterManager
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {

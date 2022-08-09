@@ -76,7 +76,8 @@ type provider struct {
 
 	bdl *bundle.Bundle
 
-	Router httpserver.Router
+	Router    httpserver.Router
+	RouterMgr httpserver.RouterManager
 
 	PipelineCms           cmspb.CmsServiceServer                  `autowired:"erda.core.pipeline.cms.CmsService" optional:"true"`
 	PipelineSource        sourcepb.SourceServiceServer            `autowired:"erda.core.pipeline.source.SourceService" required:"true"`
@@ -164,10 +165,14 @@ func (p *provider) Init(ctx servicehub.Context) error {
 }
 
 func (p *provider) Run(ctx context.Context) error {
-	registerWebHook(bdl.Bdl)
+	<-p.RouterMgr.Started()
+	if err := registerWebHook(bdl.Bdl); err != nil {
+		return err
+	}
 
 	if err := deleteWebhook(bdl.Bdl); err != nil {
 		logrus.Errorf("failed to delete webhook, err: %v", err)
+		return err
 	}
 
 	// 注册 hook

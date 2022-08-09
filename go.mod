@@ -416,6 +416,7 @@ require (
 )
 
 replace (
+	github.com/erda-project/erda-infra => ../erda-infra
 	github.com/coreos/bbolt => go.etcd.io/bbolt v1.3.5
 	github.com/docker/spdystream => github.com/docker/spdystream v0.0.0-20160310174837-449fdfce4d96
 	github.com/erda-project/erda-proto-go v0.0.0 => ./api/proto-go

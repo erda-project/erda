@@ -147,8 +147,6 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 
 	loadMetricKeysFromDb(db)
 
-	logrus.Infof("start the service and listen on address: \"%s\"", conf.ListenAddr())
-
 	interval := time.Duration(conf.TestFileIntervalSec())
 	purgeCycle := conf.TestFileRecordPurgeCycleDay()
 	if err := ep.TestCaseService().BatchClearProcessingRecords(); err != nil {
@@ -688,7 +686,7 @@ func loadMetricKeysFromDb(db *dao.DBClient) {
 	}
 }
 
-func registerWebHook(bdl *bundle.Bundle) {
+func registerWebHook(bdl *bundle.Bundle) error {
 	// 注册审批流状态变更监听
 	ev := apistructs.CreateHookRequest{
 		Name:   "dop_approve_status_changed",
@@ -702,7 +700,8 @@ func registerWebHook(bdl *bundle.Bundle) {
 		},
 	}
 	if err := bdl.CreateWebhook(ev); err != nil {
-		logrus.Warnf("failed to register approval status changed event, %v", err)
+		logrus.Errorf("failed to register approval status changed event, %v", err)
+		return err
 	}
 
 	ev = apistructs.CreateHookRequest{
@@ -717,7 +716,8 @@ func registerWebHook(bdl *bundle.Bundle) {
 		},
 	}
 	if err := bdl.CreateWebhook(ev); err != nil {
-		logrus.Warnf("failed to register pipeline yml event, %v", err)
+		logrus.Errorf("failed to register pipeline yml event, %v", err)
+		return err
 	}
 
 	ev = apistructs.CreateHookRequest{
@@ -732,7 +732,8 @@ func registerWebHook(bdl *bundle.Bundle) {
 		},
 	}
 	if err := bdl.CreateWebhook(ev); err != nil {
-		logrus.Warnf("failed to register pipeline_definition_update event, %v", err)
+		logrus.Errorf("failed to register pipeline_definition_update event, %v", err)
+		return err
 	}
 
 	ev = apistructs.CreateHookRequest{
@@ -747,8 +748,11 @@ func registerWebHook(bdl *bundle.Bundle) {
 		},
 	}
 	if err := bdl.CreateWebhook(ev); err != nil {
-		logrus.Warnf("failed to register project_pipeline_create event, %v", err)
+		logrus.Errorf("failed to register project_pipeline_create event, %v", err)
+		return err
 	}
+
+	return nil
 }
 
 func (p *provider) exportTestFileTask(ep *endpoints.Endpoints) {
