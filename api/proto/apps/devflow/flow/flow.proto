@@ -38,10 +38,10 @@ service FlowService {
     }
     rpc DeleteFlowNode(DeleteFlowNodeRequest) returns (DeleteFlowNodeResponse) {
         option(google.api.http) = {
-            delete: "/api/devflow/{mergeID}",
+            delete: "/api/devflow/{devFlowID}",
         };
         option(erda.common.openapi) = {
-            path: "/api/devflow/{mergeID}",
+            path: "/api/devflow/{devFlowID}",
         };
     }
     rpc Reconstruction(ReconstructionRequest) returns (ReconstructionResponse) {
@@ -128,8 +128,8 @@ message OperationMergeResponse {
 
 // DeleteFlowNode
 message DeleteFlowNodeRequest {
-    uint64 mergeID = 1;
-    uint64 issueID = 2;
+    string devFlowID = 1 [(validate.rules).string.min_len = 1];
+    bool deleteBranch = 2;
 }
 
 message DeleteFlowNodeResponse {

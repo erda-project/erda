@@ -29,7 +29,6 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/erda-project/erda-proto-go/apps/devflow/flow/pb"
-	issuerelationpb "github.com/erda-project/erda-proto-go/apps/devflow/issuerelation/pb"
 	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	flowrulepb "github.com/erda-project/erda-proto-go/dop/devflowrule/pb"
 	issuepb "github.com/erda-project/erda-proto-go/dop/issue/core/pb"
@@ -490,44 +489,52 @@ func (s *Service) JudgeBranchIsExists(ctx context.Context, repoPath, branch stri
 }
 
 func (s *Service) DeleteFlowNode(ctx context.Context, req *pb.DeleteFlowNodeRequest) (*pb.DeleteFlowNodeResponse, error) {
-	if req.MergeID <= 0 {
-		return nil, fmt.Errorf("mergeID can not empty")
-	}
-
-	if req.IssueID <= 0 {
-		return nil, fmt.Errorf("issueID can not empty")
-	}
-
-	issueRelations, err := s.p.IssueRelation.List(ctx, &issuerelationpb.ListIssueRelationRequest{
-		Type: issueRelationType,
-		Relations: []string{
-			strconv.FormatUint(req.MergeID, 10),
-		},
-		IssueIDs: []uint64{req.IssueID},
-	})
+	devFlow, err := s.p.dbClient.GetDevFlow(req.DevFlowID)
 	if err != nil {
 		return nil, err
 	}
 
-	data := issueRelations.Data
-	var relationID string
-	for _, relation := range data {
-		if relation.IssueID == req.IssueID && relation.Relation == strconv.FormatUint(req.MergeID, 10) {
-			relationID = relation.ID
+	app, err := s.p.bdl.GetApp(devFlow.AppID)
+	if err != nil {
+		return nil, err
+	}
+
+	if devFlow.IsJoinTempBranch {
+		devFlow.IsJoinTempBranch = false
+		if err = s.p.dbClient.UpdateDevFlow(devFlow); err != nil {
+			return nil, err
+		}
+
+		branchPolicy, err := s.findBranchPolicyByName(ctx, app.ProjectID, devFlow.FlowRuleName)
+		if err != nil {
+			return nil, err
+		}
+
+		var sourceBranch, tempBranch, targetBranch string
+		if branchPolicy.Policy != nil {
+			sourceBranch = branchPolicy.Policy.SourceBranch
+			tempBranch = branchPolicy.Policy.TempBranch
+			if branchPolicy.Policy.TargetBranch != nil {
+				targetBranch = branchPolicy.Policy.TargetBranch.MergeRequest
+			}
+		}
+		err = s.RejoinTempBranch(ctx, tempBranch, sourceBranch, targetBranch, devFlow, app)
+		if err != nil {
+			return nil, err
 		}
 	}
 
-	if relationID == "" {
-		return &pb.DeleteFlowNodeResponse{}, nil
+	if req.DeleteBranch {
+		repoPath := makeGittarRepoPath(app)
+		err = s.IdempotentDeleteBranch(ctx, repoPath, devFlow.Branch)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	_, err = s.p.IssueRelation.Delete(ctx, &issuerelationpb.DeleteIssueRelationRequest{
-		RelationID: relationID,
-	})
-	if err != nil {
+	if err = s.p.dbClient.DeleteDevFlow(req.DevFlowID); err != nil {
 		return nil, err
 	}
-
 	return &pb.DeleteFlowNodeResponse{}, nil
 }
 
