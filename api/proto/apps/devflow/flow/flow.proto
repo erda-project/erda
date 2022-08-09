@@ -119,8 +119,8 @@ message DevFlow {
 }
 
 message OperationMergeRequest {
-    string devFlowID = 1;
-    google.protobuf.BoolValue enable = 2;
+    string devFlowID = 1 [(validate.rules).string.min_len = 1];
+    google.protobuf.BoolValue enable = 2 [(validate.rules).message.required = true];
 }
 
 message OperationMergeResponse {
