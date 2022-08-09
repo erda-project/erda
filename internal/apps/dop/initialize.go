@@ -27,7 +27,6 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
-	infrahttpserver "github.com/erda-project/erda-infra/providers/httpserver"
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	"github.com/erda-project/erda-proto-go/core/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -78,6 +77,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/services/testset"
 	"github.com/erda-project/erda/internal/apps/dop/services/ticket"
 	"github.com/erda-project/erda/internal/apps/dop/services/workbench"
+	webhooktypes "github.com/erda-project/erda/internal/apps/dop/types"
 	"github.com/erda-project/erda/internal/apps/dop/utils"
 	"github.com/erda-project/erda/pkg/cron"
 	"github.com/erda-project/erda/pkg/crypto/encryption"
@@ -118,17 +118,6 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 
 	issueDB := p.IssueCoreSvc.DBClient()
 
-	registerWebHook(bdl.Bdl)
-
-	if err = deleteWebhook(bdl.Bdl); err != nil {
-		logrus.Errorf("failed to delete webhook, err: %v", err)
-	}
-
-	// 注册 hook
-	if err := ep.RegisterEvents(); err != nil {
-		return err
-	}
-
 	p.Protocol.WithContextValue(types.IssueFilterBmService, issuefilterbm.New(
 		issuefilterbm.WithDBClient(db),
 	))
@@ -146,17 +135,17 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 	p.Protocol.WithContextValue(types.IdentitiyService, p.Identity)
 
 	// This server will never be started. Only the routes and locale loader are used by new http server
-	server := httpserver.New(":0")
+	server := httpserver.NewSingleton("")
 	server.Router().UseEncodedPath()
 	server.RegisterEndpoint(ep.Routes())
 	// server.Router().Path("/metrics").Methods(http.MethodGet).Handler(promxp.Handler("cmdb"))
 	server.WithLocaleLoader(bdl.Bdl.GetLocaleLoader())
 	server.Router().PathPrefix("/api/apim/metrics").Handler(endpoints.InternalReverseHandler(endpoints.ProxyMetrics))
-	ctx.Service("http-server").(infrahttpserver.Router).Any("/**", server.Router())
+	if err := server.RegisterToNewHttpServerRouter(p.Router); err != nil {
+		return err
+	}
 
 	loadMetricKeysFromDb(db)
-
-	logrus.Infof("start the service and listen on address: \"%s\"", conf.ListenAddr())
 
 	interval := time.Duration(conf.TestFileIntervalSec())
 	purgeCycle := conf.TestFileRecordPurgeCycleDay()
@@ -290,6 +279,29 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 		cron.Start()
 	}()
 
+	return nil
+}
+
+func (p *provider) RegisterEvents() error {
+	fmt.Println(discover.DOP())
+	for _, callback := range webhooktypes.EventCallbacks {
+		ev := apistructs.CreateHookRequest{
+			Name:   callback.Name,
+			Events: callback.Events,
+			URL:    strutil.Concat("http://", discover.DOP(), callback.Path),
+			Active: true,
+			HookLocation: apistructs.HookLocation{
+				Org:         "-1",
+				Project:     "-1",
+				Application: "-1",
+			},
+		}
+		if err := p.bdl.CreateWebhook(ev); err != nil {
+			logrus.Errorf("failed to register %s event to eventbox, (%v)", callback.Name, err)
+			return err
+		}
+		logrus.Infof("register release event to eventbox, event:%+v", ev)
+	}
 	return nil
 }
 
@@ -674,7 +686,7 @@ func loadMetricKeysFromDb(db *dao.DBClient) {
 	}
 }
 
-func registerWebHook(bdl *bundle.Bundle) {
+func registerWebHook(bdl *bundle.Bundle) error {
 	// 注册审批流状态变更监听
 	ev := apistructs.CreateHookRequest{
 		Name:   "dop_approve_status_changed",
@@ -688,7 +700,8 @@ func registerWebHook(bdl *bundle.Bundle) {
 		},
 	}
 	if err := bdl.CreateWebhook(ev); err != nil {
-		logrus.Warnf("failed to register approval status changed event, %v", err)
+		logrus.Errorf("failed to register approval status changed event, %v", err)
+		return err
 	}
 
 	ev = apistructs.CreateHookRequest{
@@ -703,7 +716,8 @@ func registerWebHook(bdl *bundle.Bundle) {
 		},
 	}
 	if err := bdl.CreateWebhook(ev); err != nil {
-		logrus.Warnf("failed to register pipeline yml event, %v", err)
+		logrus.Errorf("failed to register pipeline yml event, %v", err)
+		return err
 	}
 
 	ev = apistructs.CreateHookRequest{
@@ -718,7 +732,8 @@ func registerWebHook(bdl *bundle.Bundle) {
 		},
 	}
 	if err := bdl.CreateWebhook(ev); err != nil {
-		logrus.Warnf("failed to register pipeline_definition_update event, %v", err)
+		logrus.Errorf("failed to register pipeline_definition_update event, %v", err)
+		return err
 	}
 
 	ev = apistructs.CreateHookRequest{
@@ -733,8 +748,11 @@ func registerWebHook(bdl *bundle.Bundle) {
 		},
 	}
 	if err := bdl.CreateWebhook(ev); err != nil {
-		logrus.Warnf("failed to register project_pipeline_create event, %v", err)
+		logrus.Errorf("failed to register project_pipeline_create event, %v", err)
+		return err
 	}
+
+	return nil
 }
 
 func (p *provider) exportTestFileTask(ep *endpoints.Endpoints) {

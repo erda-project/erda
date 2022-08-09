@@ -17,12 +17,10 @@ package endpoints
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/gorilla/schema"
-	"github.com/sirupsen/logrus"
 
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
@@ -31,7 +29,6 @@ import (
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	dwfpb "github.com/erda-project/erda-proto-go/dop/devflowrule/pb"
 	rulepb "github.com/erda-project/erda-proto-go/dop/rule/pb"
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/dao"
 	"github.com/erda-project/erda/internal/apps/dop/event"
@@ -73,50 +70,13 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/services/testset"
 	"github.com/erda-project/erda/internal/apps/dop/services/ticket"
 	"github.com/erda-project/erda/internal/apps/dop/services/workbench"
+	"github.com/erda-project/erda/internal/apps/dop/types"
 	orgclient "github.com/erda-project/erda/internal/core/org"
-	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/i18n"
 	"github.com/erda-project/erda/pkg/jsonstore"
 	"github.com/erda-project/erda/pkg/jsonstore/etcd"
-	"github.com/erda-project/erda/pkg/strutil"
 )
-
-const (
-	// ReleaseCallbackPath ReleaseCallback的路径
-	ReleaseCallbackPath     = "/api/actions/release-callback"
-	CDPCallbackPath         = "/api/actions/cdp-callback"
-	GitCreateMrCallback     = "/api/actions/git-mr-create-callback"
-	GitMergeMrCallback      = "/api/actions/git-mr-merge-callback"
-	GitCloseMrCallback      = "/api/actions/git-mr-close-callback"
-	GitCommentMrCallback    = "/api/actions/git-mr-comment-callback"
-	GitDeleteBranchCallback = "/api/actions/git-branch-delete-callback"
-	GitDeleteTagCallback    = "/api/actions/git-tag-delete-callback"
-	IssueCallback           = "/api/actions/issue-callback"
-	MrCheckRunCallback      = "/api/actions/check-run-callback"
-	DevFlowCallback         = "/api/devflow/actions/callback"
-)
-
-type EventCallback struct {
-	Name   string
-	Path   string
-	Events []string
-}
-
-var eventCallbacks = []EventCallback{
-	{Name: "git_push_release", Path: ReleaseCallbackPath, Events: []string{"git_push"}},
-	{Name: "cdp_pipeline", Path: CDPCallbackPath, Events: []string{"pipeline"}},
-	{Name: "git_create_mr", Path: GitCreateMrCallback, Events: []string{"git_create_mr"}},
-	{Name: "git_merge_mr", Path: GitMergeMrCallback, Events: []string{"git_merge_mr"}},
-	{Name: "git_close_mr", Path: GitCloseMrCallback, Events: []string{"git_close_mr"}},
-	{Name: "git_comment_mr", Path: GitCommentMrCallback, Events: []string{"git_comment_mr"}},
-	{Name: "git_delete_branch", Path: GitDeleteBranchCallback, Events: []string{"git_delete_branch"}},
-	{Name: "git_delete_tag", Path: GitDeleteTagCallback, Events: []string{"git_delete_tag"}},
-	{Name: "issue", Path: IssueCallback, Events: []string{"issue"}},
-	{Name: "check-run", Path: MrCheckRunCallback, Events: []string{"check-run"}},
-	{Name: "qa_git_mr_create", Path: "/api/callbacks/git-mr-create", Events: []string{"git_create_mr"}},
-	{Name: "dev_flow", Path: DevFlowCallback, Events: []string{"dev_flow"}},
-}
 
 // Routes 返回 endpoints 的所有 endpoint 方法，也就是 route.
 func (e *Endpoints) Routes() []httpserver.Endpoint {
@@ -202,20 +162,20 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/apim/validate-swagger", Method: http.MethodPost, Handler: httpserver.Wrap(e.ValidateSwagger, httpserver.WithI18nCodes)},
 
 		// gittar 事件回调
-		{Path: ReleaseCallbackPath, Method: http.MethodPost, Handler: e.ReleaseCallback},
-		{Path: MrCheckRunCallback, Method: http.MethodPost, Handler: e.checkrunCreate},
+		{Path: types.ReleaseCallbackPath, Method: http.MethodPost, Handler: e.ReleaseCallback},
+		{Path: types.MrCheckRunCallback, Method: http.MethodPost, Handler: e.checkrunCreate},
 
 		// cdp 事件回调
-		{Path: CDPCallbackPath, Method: http.MethodPost, Handler: e.CDPCallback},
+		{Path: types.CDPCallbackPath, Method: http.MethodPost, Handler: e.CDPCallback},
 
-		{Path: GitCreateMrCallback, Method: http.MethodPost, Handler: e.RepoMrEventCallback},
-		{Path: GitMergeMrCallback, Method: http.MethodPost, Handler: e.RepoMrEventCallback},
-		{Path: GitCloseMrCallback, Method: http.MethodPost, Handler: e.RepoMrEventCallback},
-		{Path: GitCommentMrCallback, Method: http.MethodPost, Handler: e.RepoMrEventCallback},
-		{Path: GitDeleteBranchCallback, Method: http.MethodPost, Handler: e.RepoBranchEventCallback},
-		{Path: GitDeleteTagCallback, Method: http.MethodPost, Handler: e.RepoTagEventCallback},
+		{Path: types.GitCreateMrCallback, Method: http.MethodPost, Handler: e.RepoMrEventCallback},
+		{Path: types.GitMergeMrCallback, Method: http.MethodPost, Handler: e.RepoMrEventCallback},
+		{Path: types.GitCloseMrCallback, Method: http.MethodPost, Handler: e.RepoMrEventCallback},
+		{Path: types.GitCommentMrCallback, Method: http.MethodPost, Handler: e.RepoMrEventCallback},
+		{Path: types.GitDeleteBranchCallback, Method: http.MethodPost, Handler: e.RepoBranchEventCallback},
+		{Path: types.GitDeleteTagCallback, Method: http.MethodPost, Handler: e.RepoTagEventCallback},
 
-		{Path: IssueCallback, Method: http.MethodPost, Handler: e.IssueCallback},
+		{Path: types.IssueCallback, Method: http.MethodPost, Handler: e.IssueCallback},
 
 		// cicd
 		{Path: "/api/cicd/{pipelineID}/tasks/{taskID}/logs", Method: http.MethodGet, Handler: e.CICDTaskLog},
@@ -695,7 +655,7 @@ type Endpoints struct {
 	CopyChannel   chan uint64
 
 	tokenService  tokenpb.TokenServiceServer
-	orgClient     orgclient.ClientInterface
+	orgClient     orgclient.Interface
 	issueDBClient *issuedao.DBClient
 	ruleExecutor  rulepb.RuleServiceServer
 	issueQuery    issuequery.Interface
@@ -802,7 +762,7 @@ func WithPublishItem(publishItem *publish_item.PublishItem) Option {
 	}
 }
 
-func WithOrgClient(org orgclient.ClientInterface) Option {
+func WithOrgClient(org orgclient.Interface) Option {
 	return func(e *Endpoints) {
 		e.orgClient = org
 	}
@@ -816,29 +776,6 @@ func (e *Endpoints) DBClient() *dao.DBClient {
 // GetLocale 获取本地化资源
 func (e *Endpoints) GetLocale(request *http.Request) *i18n.LocaleResource {
 	return e.bdl.GetLocaleByRequest(request)
-}
-
-func (e *Endpoints) RegisterEvents() error {
-	fmt.Println(discover.DOP())
-	for _, callback := range eventCallbacks {
-		ev := apistructs.CreateHookRequest{
-			Name:   callback.Name,
-			Events: callback.Events,
-			URL:    strutil.Concat("http://", discover.DOP(), callback.Path),
-			Active: true,
-			HookLocation: apistructs.HookLocation{
-				Org:         "-1",
-				Project:     "-1",
-				Application: "-1",
-			},
-		}
-		if err := e.bdl.CreateWebhook(ev); err != nil {
-			logrus.Errorf("failed to register %s event to eventbox, (%v)", callback.Name, err)
-			return err
-		}
-		logrus.Infof("register release event to eventbox, event:%+v", ev)
-	}
-	return nil
 }
 
 func WithDB(db *dao.DBClient) Option {

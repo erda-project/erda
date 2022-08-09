@@ -28,7 +28,7 @@ type Service struct {
 	db            *dao.DBClient
 	bdl           *bundle.Bundle
 	hc            *httpclient.HTTPClient
-	org           org.ClientInterface
+	org           org.Interface
 	issueDBClient *issuedao.DBClient
 
 	CreateTestSetFn func(apistructs.TestSetCreateRequest) (*apistructs.TestSet, error)
@@ -60,7 +60,7 @@ func WithBundle(bdl *bundle.Bundle) Option {
 	}
 }
 
-func WithOrg(org org.ClientInterface) Option {
+func WithOrg(org org.Interface) Option {
 	return func(svc *Service) {
 		svc.org = org
 	}

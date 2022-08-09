@@ -32,7 +32,7 @@ type Service struct {
 	trans         i18n.Translator
 	branchRuleSvc *branchrule.BranchRule
 	bdl           *bundle.Bundle
-	org           org.ClientInterface
+	org           org.Interface
 }
 
 type Option func(*Service)
@@ -65,7 +65,7 @@ func WithBundle(bdl *bundle.Bundle) Option {
 	}
 }
 
-func WithOrg(org org.ClientInterface) Option {
+func WithOrg(org org.Interface) Option {
 	return func(svc *Service) {
 		svc.org = org
 	}

@@ -125,7 +125,7 @@ func (r *ComponentReleaseTable) InitComponent(ctx context.Context) {
 	r.bdl = bdl
 	svc := ctx.Value(types.DicehubReleaseService).(dicehubpb.ReleaseServiceServer)
 	r.svc = svc
-	r.org = ctx.Value(types.OrgService).(org.ClientInterface)
+	r.org = ctx.Value(types.OrgService).(org.Interface)
 }
 
 func (r *ComponentReleaseTable) GenComponentState(component *cptype.Component) error {

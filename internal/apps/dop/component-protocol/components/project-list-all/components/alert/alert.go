@@ -34,7 +34,7 @@ type ComponentAction struct {
 
 func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	sdk := cputil.SDK(ctx)
-	orgSvc := ctx.Value(types.OrgService).(org.ClientInterface)
+	orgSvc := ctx.Value(types.OrgService).(org.Interface)
 
 	orgResp, err := orgSvc.GetOrg(apis.WithInternalClientContext(ctx, discover.SvcDOP), &orgpb.GetOrgRequest{IdOrName: sdk.Identity.OrgID})
 	if err != nil {

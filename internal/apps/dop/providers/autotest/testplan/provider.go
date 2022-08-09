@@ -15,11 +15,14 @@
 package testplan
 
 import (
+	"context"
+
 	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
+	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-proto-go/core/dop/autotest/testplan/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/dao"
@@ -40,7 +43,8 @@ type provider struct {
 	bundle   *bundle.Bundle
 
 	TestPlanService *TestPlanService
-	Org             org.ClientInterface
+	Org             org.Interface
+	RouterManager   httpserver.RouterManager
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -62,6 +66,11 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	if p.Register != nil {
 		pb.RegisterTestPlanServiceImp(p.Register, p.TestPlanService)
 	}
+	return nil
+}
+
+func (p *provider) Run(ctx context.Context) error {
+	<-p.RouterManager.Started()
 	if err := p.registerWebHook(); err != nil {
 		return err
 	}
