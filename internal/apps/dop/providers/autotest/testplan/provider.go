@@ -70,6 +70,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 }
 
 func (p *provider) Run(ctx context.Context) error {
+	<-p.RouterManager.Started()
 	if err := p.registerWebHook(); err != nil {
 		return err
 	}

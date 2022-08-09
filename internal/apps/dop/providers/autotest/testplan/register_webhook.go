@@ -26,7 +26,6 @@ import (
 const TestPlanExecuteCallback = "/api/autotests/actions/plan-execute-callback"
 
 func (p *provider) registerWebHook() error {
-	<-p.RouterManager.Started()
 	ev := apistructs.CreateHookRequest{
 		Name:   "auto_test_plan_update",
 		Events: []string{bundle.AutoTestPlanExecuteEvent},
