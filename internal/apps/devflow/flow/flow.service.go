@@ -241,10 +241,6 @@ func (s *Service) makeMrDesc(ctx context.Context, issue *issuepb.Issue) string {
 }
 
 func (s *Service) OperationMerge(ctx context.Context, req *pb.OperationMergeRequest) (*pb.OperationMergeResponse, error) {
-	if req.Enable == nil {
-		return nil, fmt.Errorf("enable can not empty")
-	}
-
 	devFlow, err := s.p.dbClient.GetDevFlow(req.DevFlowID)
 	if err != nil {
 		return nil, err
@@ -275,14 +271,6 @@ func (s *Service) OperationMerge(ctx context.Context, req *pb.OperationMergeRequ
 		return nil, fmt.Errorf("sourceBranch can not empty")
 	}
 
-	// Merged into tempBranch success will set isJoinTempBranch = true
-	if !req.Enable.Value {
-		devFlow.IsJoinTempBranch = req.Enable.Value
-		if err = s.p.dbClient.UpdateDevFlow(devFlow); err != nil {
-			return nil, err
-		}
-	}
-
 	if req.Enable.Value {
 		err = s.JoinTempBranch(ctx, tempBranch, sourceBranch, app, devFlow)
 		if err != nil {
@@ -292,6 +280,10 @@ func (s *Service) OperationMerge(ctx context.Context, req *pb.OperationMergeRequ
 		// Is already removed
 		if !devFlow.IsJoinTempBranch {
 			return &pb.OperationMergeResponse{}, nil
+		}
+		devFlow.IsJoinTempBranch = false
+		if err = s.p.dbClient.UpdateDevFlow(devFlow); err != nil {
+			return nil, err
 		}
 		err = s.RejoinTempBranch(ctx, tempBranch, sourceBranch, targetBranch, devFlow, app)
 		if err != nil {
@@ -367,28 +359,27 @@ func (s *Service) JoinTempBranch(ctx context.Context, tempBranch, sourceBranch s
 }
 
 func (s *Service) RejoinTempBranch(ctx context.Context, tempBranch, sourceBranch, targetBranch string, devFlow *db.DevFlow, app *apistructs.ApplicationDTO) error {
-	devFlows, err := s.p.dbClient.ListDevFlowByFlowRuleName(devFlow.FlowRuleName)
-	if err != nil {
-		return err
-	}
-
 	repoPath := makeGittarRepoPath(app)
 	// Delete tempBranch
-	if err = s.IdempotentDeleteBranch(ctx, repoPath, tempBranch); err != nil {
+	if err := s.IdempotentDeleteBranch(ctx, repoPath, tempBranch); err != nil {
 		return err
 	}
 
 	// Idempotent create tempBranch
-	if err = s.IdempotentCreateBranch(ctx, repoPath, sourceBranch, tempBranch); err != nil {
+	if err := s.IdempotentCreateBranch(ctx, repoPath, sourceBranch, tempBranch); err != nil {
 		return err
 	}
 
+	devFlows, err := s.p.dbClient.ListDevFlowByFlowRuleNameAndAppID(devFlow.FlowRuleName, devFlow.AppID)
+	if err != nil {
+		return err
+	}
 	// Merge the branch to tempBranch
 	for _, v := range devFlows {
 		if !v.IsJoinTempBranch {
 			continue
 		}
-		isMROpenedOrNotCreated, err := s.isMROpenedOrNotCreated(ctx, v.Branch, targetBranch, app.ID)
+		isMROpenedOrNotCreated, err := s.IsMROpenedOrNotCreated(ctx, v.Branch, targetBranch, app.ID)
 		if err != nil {
 			return err
 		}
@@ -403,7 +394,7 @@ func (s *Service) RejoinTempBranch(ctx context.Context, tempBranch, sourceBranch
 	return nil
 }
 
-func (s *Service) isMROpenedOrNotCreated(ctx context.Context, currentBranch, targetBranch string, appID uint64) (bool, error) {
+func (s *Service) IsMROpenedOrNotCreated(ctx context.Context, currentBranch, targetBranch string, appID uint64) (bool, error) {
 	result, err := s.p.bdl.ListMergeRequest(appID, apis.GetUserID(ctx), apistructs.GittarQueryMrRequest{
 		TargetBranch: targetBranch,
 		SourceBranch: currentBranch,
