@@ -176,7 +176,6 @@ openapi-v1-routes:
   component-protocol:
     scenario-proxy-binds:
       - app: dop
-        addr: ${DOP_COMPONENT_PROTOCOL_ADDR:dop:9527}
         scenarios:
           - issue-manage
           - issue-dashboard

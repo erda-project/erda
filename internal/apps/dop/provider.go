@@ -63,7 +63,6 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/providers/taskerror"
 	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/pkg/metrics/query"
-	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/dumpstack"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
@@ -140,8 +139,6 @@ func (p *provider) Init(ctx servicehub.Context) error {
 				httpclient.WithTimeout(time.Second, time.Duration(conf.BundleTimeoutSecond())*time.Second),
 				httpclient.WithEnableAutoRetry(false),
 			)),
-		// TODO remove it after internal bundle invoke inside cp issue-manage adjusted
-		bundle.WithCustom(discover.EnvDOP, "localhost:9527"),
 	)
 	p.bdl = bdl.Bdl
 	p.Protocol.WithContextValue(types.GlobalCtxKeyBundle, bdl.Bdl)
