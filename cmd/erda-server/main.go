@@ -56,17 +56,28 @@ import (
 	_ "github.com/erda-project/erda-infra/providers/grpcserver"
 	_ "github.com/erda-project/erda-infra/providers/health"
 	_ "github.com/erda-project/erda-infra/providers/httpserver"
+	_ "github.com/erda-project/erda-infra/providers/i18n"
 	_ "github.com/erda-project/erda-infra/providers/mysql"
+	_ "github.com/erda-project/erda-infra/providers/mysql/v2"
 	_ "github.com/erda-project/erda-infra/providers/serviceregister"
 
 	// grpc
 	_ "github.com/erda-project/erda-infra/providers/grpcclient"
 	_ "github.com/erda-project/erda-proto-go/apps/gallery/client"
+	_ "github.com/erda-project/erda-proto-go/cmp/dashboard/client"
 	_ "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/client"
+	_ "github.com/erda-project/erda-proto-go/core/dicehub/release/client"
 	_ "github.com/erda-project/erda-proto-go/core/org/client"
 	_ "github.com/erda-project/erda-proto-go/core/pipeline/cms/client"
+	_ "github.com/erda-project/erda-proto-go/core/pipeline/cron/client"
+	_ "github.com/erda-project/erda-proto-go/core/pipeline/definition/client"
+	_ "github.com/erda-project/erda-proto-go/core/pipeline/source/client"
+	_ "github.com/erda-project/erda-proto-go/core/services/errorbox/client"
+	_ "github.com/erda-project/erda-proto-go/core/token/client"
+	_ "github.com/erda-project/erda-proto-go/core/user/client"
 	_ "github.com/erda-project/erda-proto-go/msp/menu/client"
 	_ "github.com/erda-project/erda-proto-go/msp/tenant/project/client"
+	_ "github.com/erda-project/erda-proto-go/orchestrator/addon/mysql/client"
 
 	// openapi
 	_ "github.com/erda-project/erda/internal/core/openapi/legacy"
@@ -93,6 +104,29 @@ import (
 
 	// uc-adaptor
 	_ "github.com/erda-project/erda/internal/core/user/impl/uc/uc-adaptor"
+
+	// dop
+	_ "github.com/erda-project/erda/internal/apps/devflow/flow"
+	_ "github.com/erda-project/erda/internal/apps/devflow/issuerelation"
+	_ "github.com/erda-project/erda/internal/apps/dop"
+	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components"
+	_ "github.com/erda-project/erda/internal/apps/dop/providers/api-management"
+	_ "github.com/erda-project/erda/internal/apps/dop/providers/autotest/testplan"
+	_ "github.com/erda-project/erda/internal/apps/dop/providers/cms"
+	_ "github.com/erda-project/erda/internal/apps/dop/providers/contribution"
+	_ "github.com/erda-project/erda/internal/apps/dop/providers/devflowrule"
+	_ "github.com/erda-project/erda/internal/apps/dop/providers/guide"
+	_ "github.com/erda-project/erda/internal/apps/dop/providers/issue/core"
+	_ "github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query"
+	_ "github.com/erda-project/erda/internal/apps/dop/providers/issue/stream"
+	_ "github.com/erda-project/erda/internal/apps/dop/providers/issue/stream/core"
+	_ "github.com/erda-project/erda/internal/apps/dop/providers/issue/sync"
+	_ "github.com/erda-project/erda/internal/apps/dop/providers/pipelinetemplate"
+	_ "github.com/erda-project/erda/internal/apps/dop/providers/project/home"
+	_ "github.com/erda-project/erda/internal/apps/dop/providers/projectpipeline"
+	_ "github.com/erda-project/erda/internal/apps/dop/providers/rule"
+	_ "github.com/erda-project/erda/internal/apps/dop/providers/search"
+	_ "github.com/erda-project/erda/internal/apps/dop/providers/taskerror"
 )
 
 //go:embed bootstrap.yaml

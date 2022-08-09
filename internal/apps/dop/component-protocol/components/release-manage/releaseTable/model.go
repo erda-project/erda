@@ -25,7 +25,7 @@ type ComponentReleaseTable struct {
 	sdk *cptype.SDK
 	bdl *bundle.Bundle
 	svc dicehubpb.ReleaseServiceServer
-	org org.ClientInterface
+	org org.Interface
 
 	Type       string                 `json:"type,omitempty"`
 	Data       Data                   `json:"data"`

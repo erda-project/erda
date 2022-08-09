@@ -24,7 +24,6 @@ import (
 // Conf define envs
 type Conf struct {
 	Debug          bool   `env:"DEBUG" default:"false"`
-	ListenAddr     string `env:"LISTEN_ADDR" default:":9527"`
 	UCClientID     string `default:"dice" env:"UC_CLIENT_ID"`
 	UCClientSecret string `default:"secret" env:"UC_CLIENT_SECRET"`
 	WildDomain     string `default:"dev.terminus.io" env:"DICE_ROOT_DOMAIN"`
@@ -89,10 +88,6 @@ func Load() {
 
 func Debug() bool {
 	return cfg.Debug
-}
-
-func ListenAddr() string {
-	return cfg.ListenAddr
 }
 
 func UCClientID() string {

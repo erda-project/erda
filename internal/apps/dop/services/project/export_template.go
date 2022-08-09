@@ -36,7 +36,7 @@ type TemplateDB struct {
 	OrgID       int64  `json:"orgID"`
 	Data        *apistructs.ProjectTemplateData
 	bdl         *bundle.Bundle
-	org         org.ClientInterface
+	org         org.Interface
 	packageName string
 	apistructs.IdentityInfo
 }

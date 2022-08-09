@@ -26,7 +26,7 @@ envs:
   ERDA_SERVER_ADDR: erda-server:9095
   OPENAPI_ADDR: erda-server:9529
   MSP_ADDR: msp:8080
-  DOP_ADDR: dop:9527
+  DOP_ADDR: erda-server:9095
   CMP_ADDR: cmp:9027
   ORCHESTRATOR_ADDR: orchestrator:8081
   OTEL_TRACES_ENABLED: false
@@ -36,39 +36,6 @@ envs:
   CLUSTER_DIALER_ADDR: cluster-manager:80
   TRACE_HOOK_ENABLE: true
 services:
-  dop:
-    binds:
-      - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-ca.pem:/certs/etcd-ca.pem:ro"
-      - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client.pem:/certs/etcd-client.pem:ro"
-      - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client-key.pem:/certs/etcd-client-key.pem:ro"
-    cmd: /erda/cmd/dop/bin
-    deployments:
-      labels:
-        GROUP: "devops"
-      replicas: ${replicas:1}
-    envs:
-      DEBUG: "true"
-      GOLANG_PROTOBUF_REGISTRATION_CONFLICT: "ignore"
-    health_check:
-      exec: { }
-      http:
-        duration: 120
-        path: /_api/health
-        port: 9527
-    ports:
-      - port: 9527 # http port
-        protocol: "TCP"
-        l4_protocol: "TCP"
-      - port: 9529 # grpc port
-        protocol: "TCP"
-        l4_protocol: "TCP"
-    resources:
-      cpu: ${request_cpu:1}
-      max_cpu: 1
-      mem: ${request_mem:2048}
-      max_mem: 2048
-      network:
-        mode: container
   erda-server:
     cmd: /erda/cmd/erda-server/bin
     envs:
@@ -88,6 +55,8 @@ services:
       GOLANG_PROTOBUF_REGISTRATION_CONFLICT: "ignore"
       UC_AUDITOR_CRON: "0 */1 * * * ?"
       UC_AUDITOR_PULL_SIZE: "30"
+      ERDA_SERVER_ADDR: "localhost:9095"
+      DOP_ADDR: "localhost:9095"
     ports:
       - port: 9529
         protocol: "TCP"

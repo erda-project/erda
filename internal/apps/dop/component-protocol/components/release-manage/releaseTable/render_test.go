@@ -272,7 +272,7 @@ func (m orgMock) GetOrg(ctx context.Context, request *orgpb.GetOrgRequest) (*org
 
 func TestComponentReleaseTable_getOrg(t *testing.T) {
 	type fields struct {
-		org org.ClientInterface
+		org org.Interface
 	}
 	type args struct {
 		ctx   context.Context

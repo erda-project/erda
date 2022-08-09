@@ -15,6 +15,7 @@
 package dop
 
 import (
+	"context"
 	"embed"
 	"os"
 	"time"
@@ -29,6 +30,7 @@ import (
 	componentprotocol "github.com/erda-project/erda-infra/providers/component-protocol"
 	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
 	"github.com/erda-project/erda-infra/providers/etcd"
+	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	dashboardPb "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
@@ -61,7 +63,6 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/providers/taskerror"
 	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/pkg/metrics/query"
-	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/dumpstack"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
@@ -71,6 +72,11 @@ var scenarioFS embed.FS
 
 type provider struct {
 	Log logs.Logger
+
+	bdl *bundle.Bundle
+
+	Router    httpserver.Router
+	RouterMgr httpserver.RouterManager
 
 	PipelineCms           cmspb.CmsServiceServer                  `autowired:"erda.core.pipeline.cms.CmsService" optional:"true"`
 	PipelineSource        sourcepb.SourceServiceServer            `autowired:"erda.core.pipeline.source.SourceService" required:"true"`
@@ -95,7 +101,7 @@ type provider struct {
 	DevFlowSvc            *flow.Service                  `autowired:"erda.apps.devflow.flow.FlowService"`
 	IssueCoreSvc          *core.IssueService             `autowired:"erda.dop.issue.core.IssueCoreService"`
 	Query                 issuequery.Interface
-	Org                   org.ClientInterface `required:"true"`
+	Org                   org.Interface `required:"true"`
 	Identity              userpb.UserServiceServer
 	RuleService           rulepb.RuleServiceServer
 
@@ -133,9 +139,8 @@ func (p *provider) Init(ctx servicehub.Context) error {
 				httpclient.WithTimeout(time.Second, time.Duration(conf.BundleTimeoutSecond())*time.Second),
 				httpclient.WithEnableAutoRetry(false),
 			)),
-		// TODO remove it after internal bundle invoke inside cp issue-manage adjusted
-		bundle.WithCustom(discover.EnvDOP, "localhost:9527"),
 	)
+	p.bdl = bdl.Bdl
 	p.Protocol.WithContextValue(types.GlobalCtxKeyBundle, bdl.Bdl)
 	protocol.MustRegisterProtocolsFromFS(scenarioFS)
 	p.Log.Info("init component-protocol done")
@@ -156,10 +161,29 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	return p.Initialize(ctx)
 }
 
+func (p *provider) Run(ctx context.Context) error {
+	<-p.RouterMgr.Started()
+	if err := registerWebHook(bdl.Bdl); err != nil {
+		return err
+	}
+
+	if err := deleteWebhook(bdl.Bdl); err != nil {
+		logrus.Errorf("failed to delete webhook, err: %v", err)
+		return err
+	}
+
+	// 注册 hook
+	if err := p.RegisterEvents(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func init() {
 	servicehub.Register("dop", &servicehub.Spec{
 		Services:     []string{"dop"},
-		Dependencies: []string{"etcd"},
+		Dependencies: []string{"etcd", "http-server"},
 		Creator:      func() servicehub.Provider { return &provider{} },
 	})
 }

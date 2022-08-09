@@ -41,7 +41,7 @@ type Project struct {
 	CreateFileRecord func(req apistructs.TestFileRecordRequest) (uint64, error)
 	UpdateFileRecord func(req apistructs.TestFileRecordRequest) error
 	tokenService     tokenpb.TokenServiceServer
-	org              org.ClientInterface
+	org              org.Interface
 }
 
 func New(options ...Option) *Project {

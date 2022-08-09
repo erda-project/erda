@@ -64,7 +64,7 @@ type provider struct {
 	GuideSvc           guidepb.GuideServiceServer   `autowired:"erda.dop.guide.GuideService" required:"true"`
 	PipelineCron       cronpb.CronServiceServer     `autowired:"erda.core.pipeline.cron.CronService" required:"true"`
 	TokenService       tokenpb.TokenServiceServer   `autowired:"erda.core.token.TokenService"`
-	Org                org.ClientInterface
+	Org                org.Interface
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {

@@ -72,7 +72,9 @@ func (s *Server) Start() error {
 }
 
 func (s *Server) Stop() error {
-	s.srv.Shutdown(context.Background())
+	if s.srv != nil {
+		return s.srv.Shutdown(context.Background())
+	}
 	return nil
 }
 

@@ -17,8 +17,10 @@ package dispatcher
 import (
 	"context"
 	"net/http"
+	"strings"
 	"sync"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/version"
@@ -53,8 +55,8 @@ import (
 type Dispatcher interface {
 	RegisterSubscriber(s subscriber.Subscriber)
 	RegisterInput(input.Input)
-	Start() // block until stopped
-	Stop()  // block until stopped
+	Start(ctx context.Context) // block until stopped
+	Stop() error               // block until stopped
 }
 
 type DispatcherImpl struct {
@@ -196,7 +198,7 @@ func (d *DispatcherImpl) SetRouter(r *Router) {
 	d.router = r
 }
 
-func (d *DispatcherImpl) Start() {
+func (d *DispatcherImpl) Start(ctx context.Context) {
 	var err error
 	for _, pool := range d.subscriberspool {
 		pool.Start()
@@ -219,17 +221,22 @@ func (d *DispatcherImpl) Start() {
 // 2. 等待 pool 里的所有消息发送完
 // 3. 关闭 pool
 // 4. 关闭 register
-func (d *DispatcherImpl) Stop() {
+func (d *DispatcherImpl) Stop() error {
 	logrus.Info("Dispatcher: stopping")
 	defer logrus.Info("Dispatcher: stopped")
+
+	var errMsgs []string
+
 	// stop httpserver first
 	if err := d.httpserver.Stop(); err != nil {
 		logrus.Errorf("dispatcher: stop httpserver: %v", err)
+		errMsgs = append(errMsgs, err.Error())
 	}
 	// stop inputs
 	for _, i := range d.inputs {
 		if err := i.Stop(); err != nil {
 			logrus.Errorf("dispatcher: stop %s err:%v", i.Name(), err)
+			errMsgs = append(errMsgs, err.Error())
 		}
 	}
 
@@ -237,6 +244,12 @@ func (d *DispatcherImpl) Stop() {
 	for _, pool := range d.subscriberspool {
 		pool.Stop()
 	}
+
+	if len(errMsgs) > 0 {
+		return errors.New(strings.Join(errMsgs, ","))
+	}
+
+	return nil
 }
 
 func getVersion(ctx context.Context, req *http.Request, vars map[string]string) (stypes.Responser, error) {

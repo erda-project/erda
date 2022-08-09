@@ -67,7 +67,7 @@ func WithClusterSvc(clusterSvc clusterpb.ClusterServiceServer) Option {
 	}
 }
 
-func WithOrg(org org.ClientInterface) Option {
+func WithOrg(org org.Interface) Option {
 	return func(p *Project) {
 		p.org = org
 	}

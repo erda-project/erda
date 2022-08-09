@@ -171,7 +171,7 @@ func (p *provider) startEventDispatcher(ctx context.Context) {
 			}
 		}
 	}()
-	p.eventDispatcher.Start()
+	p.eventDispatcher.Start(ctx)
 }
 
 func (p *provider) CreateMessageEvent(event *apistructs.EventCreateRequest) error {

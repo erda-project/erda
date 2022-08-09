@@ -277,14 +277,14 @@ func (e *Endpoints) UserSvc() *user.User {
 func (e *Endpoints) Routes() []httpserver.Endpoint {
 	return []httpserver.Endpoint{
 		// health check
-		{Path: "/_api/health", Method: http.MethodGet, Handler: e.Health},
+		{Path: "/core/_api/health", Method: http.MethodGet, Handler: e.Health},
 
 		// the interface of project
-		{Path: "/api/projects", Method: http.MethodPost, Handler: e.CreateProject},
+		{Path: "/core/api/projects", Method: http.MethodPost, Handler: e.CreateProject},
 		{Path: "/api/projects/{projectID}", Method: http.MethodPut, Handler: e.UpdateProject},
-		{Path: "/api/projects/{projectID}", Method: http.MethodGet, Handler: e.GetProject},
-		{Path: "/api/projects/{projectID}", Method: http.MethodDelete, Handler: e.DeleteProject},
-		{Path: "/api/projects", Method: http.MethodGet, Handler: e.ListProject},
+		{Path: "/core/api/projects/{projectID}", Method: http.MethodGet, Handler: e.GetProject},
+		{Path: "/core/api/projects/{projectID}", Method: http.MethodDelete, Handler: e.DeleteProject},
+		{Path: "/core/api/projects", Method: http.MethodGet, Handler: e.ListProject},
 		{Path: "/api/projects/resource/{resourceType}/actions/list-usage-histogram", Method: http.MethodGet, Handler: e.ListProjectResourceUsage},
 		{Path: "/api/projects/actions/list-my-projects", Method: http.MethodGet, Handler: e.ListMyProject},
 		{Path: "/api/projects/actions/list-public-projects", Method: http.MethodGet, Handler: e.ListPublicProject},
@@ -312,10 +312,10 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/quota-records", Method: http.MethodGet, Handler: e.ListQuotaRecords},
 
 		// the interface of application
-		{Path: "/api/applications", Method: http.MethodPost, Handler: e.CreateApplication},
-		{Path: "/api/applications/{applicationID}", Method: http.MethodPut, Handler: e.UpdateApplication},
+		{Path: "/core/api/applications", Method: http.MethodPost, Handler: e.CreateApplication},
+		{Path: "/core/api/applications/{applicationID}", Method: http.MethodPut, Handler: e.UpdateApplication},
 		{Path: "/api/applications/{applicationID}", Method: http.MethodGet, Handler: e.GetApplication},
-		{Path: "/api/applications/{applicationID}", Method: http.MethodDelete, Handler: e.DeleteApplication},
+		{Path: "/core/api/applications/{applicationID}", Method: http.MethodDelete, Handler: e.DeleteApplication},
 		{Path: "/api/applications", Method: http.MethodGet, Handler: e.ListApplication},
 		{Path: "/api/applications/actions/list-my-applications", Method: http.MethodGet, Handler: e.ListMyApplication},
 		{Path: "/api/applications/{applicationID}/actions/pin", Method: http.MethodPut, Handler: e.PinApplication},
@@ -338,7 +338,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/members/actions/destroy", Method: http.MethodPost, Handler: e.DestroyMember},
 		{Path: "/api/members", Method: http.MethodGet, Handler: e.ListMember},
 		{Path: "/api/members/actions/get-by-token", Method: http.MethodGet, Handler: e.GetMemberByToken},
-		{Path: "/api/members/actions/list-roles", Method: http.MethodGet, Handler: e.ListMemberRoles},
+		{Path: "/core/api/members/actions/list-roles", Method: http.MethodGet, Handler: e.ListMemberRoles},
 		{Path: "/api/members/actions/list-user-roles", Method: http.MethodGet, Handler: e.ListMemberRolesByUser},
 		{Path: "/api/members/actions/get-all-organizational", Method: http.MethodGet, Handler: e.GetAllOrganizational},
 		{Path: "/api/members/actions/update-userinfo", Method: http.MethodPut, Handler: e.UpdateMemberUserInfo},

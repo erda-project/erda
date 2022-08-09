@@ -42,7 +42,7 @@ type TestPlanService struct {
 	bdl *bundle.Bundle
 
 	autoTestSvc *autotestv2.Service
-	org         org.ClientInterface
+	org         org.Interface
 }
 
 func (s *TestPlanService) WithAutoTestSvc(sv *autotestv2.Service) {

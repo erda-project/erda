@@ -51,7 +51,7 @@ type ProjectPipelineService struct {
 	PipelineCron       cronpb.CronServiceServer
 	tokenService       tokenpb.TokenServiceServer
 	branchRuleSve      *branchrule.BranchRule
-	org                org.ClientInterface
+	org                org.Interface
 }
 
 func (p *ProjectPipelineService) WithPipelineSvc(svc *pipeline.Pipeline) {

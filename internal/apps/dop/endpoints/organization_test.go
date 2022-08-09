@@ -45,7 +45,7 @@ func (m orgMock) ListPublicOrg(ctx context.Context, request *orgpb.ListOrgReques
 
 func TestEndpoints_listOrg(t *testing.T) {
 	type fields struct {
-		orgClient org.ClientInterface
+		orgClient org.Interface
 	}
 	type args struct {
 		ctx    context.Context
@@ -101,7 +101,7 @@ func TestEndpoints_listOrg(t *testing.T) {
 
 func TestEndpoints_listPublicOrg(t *testing.T) {
 	type fields struct {
-		orgClient org.ClientInterface
+		orgClient org.Interface
 	}
 	type args struct {
 		ctx    context.Context

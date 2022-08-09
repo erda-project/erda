@@ -37,7 +37,7 @@ type Service struct {
 	sceneset    *sceneset.Service
 	autotestSvc *autotest.Service
 	cms         cmspb.CmsServiceServer
-	org         org.ClientInterface
+	org         org.Interface
 
 	CreateFileRecord func(req apistructs.TestFileRecordRequest) (uint64, error)
 	UpdateFileRecord func(req apistructs.TestFileRecordRequest) error
@@ -86,7 +86,7 @@ func WithPipelineCms(cms cmspb.CmsServiceServer) Option {
 	}
 }
 
-func WithOrg(org org.ClientInterface) Option {
+func WithOrg(org org.Interface) Option {
 	return func(e *Service) {
 		e.org = org
 	}
