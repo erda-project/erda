@@ -23,6 +23,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 
@@ -268,7 +269,7 @@ func (e *Endpoints) getPodStatusFromK8s(runtimeID, serviceName string) ([]apistr
 
 						containerID := ""
 						if len(strings.Split(podContainerStatus.ContainerID, "://")) <= 1 {
-							containerID = strings.Split(podContainerStatus.ContainerID, "://")[1]
+							return currPods, errors.Errorf("Pod status containerStatuses no containerID, neew pod for service %s is creating, please wait", serviceName)
 						} else {
 							containerID = strings.Split(podContainerStatus.ContainerID, "://")[1]
 						}
@@ -295,7 +296,11 @@ func (e *Endpoints) getPodStatusFromK8s(runtimeID, serviceName string) ([]apistr
 							Image:         podContainerStatus.Image,
 							Resource:      containerResource,
 						})
+					}
 
+					if pod.UID == "" || pod.Status.PodIP == "" || pod.Status.HostIP == "" ||
+						pod.Status.Phase == "" || pod.Status.StartTime == nil || len(containersResource) == 0 {
+						return currPods, errors.Errorf("Pod status have no enough info for pod, pod for service %s is creating, please wait", serviceName)
 					}
 
 					currPods = append(currPods, apistructs.Pod{
@@ -315,6 +320,9 @@ func (e *Endpoints) getPodStatusFromK8s(runtimeID, serviceName string) ([]apistr
 				}
 			}
 		}
+	}
+	if len(currPods) == 0 {
+		return currPods, errors.Errorf("No pods get for service %s, pod may be is creating, please wait", serviceName)
 	}
 	return currPods, nil
 }
