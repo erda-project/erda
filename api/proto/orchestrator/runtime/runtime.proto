@@ -48,6 +48,8 @@ message Extra {
   uint64 applicationID = 1 [json_name = "applicationId"] ;
   uint64 buildID = 2 [json_name = "buildId"];
   string workspace = 3;
+  bool supportHPA = 4 [json_name ="isHPASupported"];
+  bool supportVPA = 5 [json_name ="isVPASupported"];
 }
 
 message ErrorResponse {

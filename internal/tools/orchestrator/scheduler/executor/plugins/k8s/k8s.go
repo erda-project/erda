@@ -665,6 +665,15 @@ func (k *Kubernetes) Inspect(ctx context.Context, specObj interface{}) (interfac
 		return nil, err
 	}
 
+	k8sServerVersion, err := k.k8sClient.ClientSet.Discovery().ServerVersion()
+	if err != nil {
+		return nil, err
+	}
+	if runtime.Extra == nil {
+		runtime.Extra = make(map[string]string)
+	}
+	runtime.Extra["K8S_SERVER_VERSION"] = fmt.Sprintf("%s.%s", k8sServerVersion.Major, k8sServerVersion.Minor)
+
 	operator, ok := runtime.Labels["USE_OPERATOR"]
 	if ok {
 		op, err := k.whichOperator(operator)

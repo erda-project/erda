@@ -154,6 +154,7 @@ func TestService_GetRuntime(t *testing.T) {
 			StatusDesc: apistructs.StatusDesc{
 				Status: apistructs.StatusFailed,
 			},
+			Extra: map[string]string{"K8S_SERVER_VERSION": "1.17"},
 			Dice: apistructs.Dice{
 				Services: []apistructs.Service{
 					{

@@ -55,6 +55,11 @@ type Service struct {
 	clusterSvc       clusterpb.ClusterServiceServer
 }
 
+const (
+	KEDASupportK8sMinVersion float64 = 1.17
+	VPASupportK8sMinVersion  float64 = 1.16
+)
+
 func convertRuntimeToPB(runtime *dbclient.Runtime, app *apistructs.ApplicationDTO) *pb.Runtime {
 	return &pb.Runtime{
 		Name:            runtime.Name,
@@ -396,6 +401,27 @@ func fillInspectDataWithServiceGroup(data *pb.RuntimeInspect, targetService dice
 		}
 
 		data.LastMessage = statusMap
+		if data.Extra == nil {
+			data.Extra = &pb.Extra{}
+		}
+
+		k8sServerVersionStr, ok := sg.Extra["K8S_SERVER_VERSION"]
+		if ok {
+			k8sServerVersion, err := strconv.ParseFloat(k8sServerVersionStr, 10)
+			if err == nil {
+				switch {
+				case k8sServerVersion >= KEDASupportK8sMinVersion:
+					data.Extra.SupportVPA = true
+					data.Extra.SupportHPA = true
+				case k8sServerVersion == VPASupportK8sMinVersion:
+					data.Extra.SupportVPA = true
+					data.Extra.SupportHPA = false
+				default:
+					data.Extra.SupportVPA = false
+					data.Extra.SupportHPA = false
+				}
+			}
+		}
 
 		for _, v := range sg.Services {
 			statusServiceMap[v.Name] = string(v.StatusDesc.Status)

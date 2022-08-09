@@ -29,6 +29,7 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	fakeclientset "k8s.io/client-go/kubernetes/fake"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/deployment"
@@ -40,6 +41,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/statefulset"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/toleration"
 	"github.com/erda-project/erda/pkg/http/httpclient"
+	"github.com/erda-project/erda/pkg/k8sclient"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -264,9 +266,12 @@ func TestStatefulset(t *testing.T) {
 	assert.NotNil(t, err)
 
 	kubernetes := &Kubernetes{
-		name:      "whatever",
-		addr:      "10.167.0.248:8080",
-		client:    httpclient.New(),
+		name:   "whatever",
+		addr:   "10.167.0.248:8080",
+		client: httpclient.New(),
+		k8sClient: &k8sclient.K8sClient{
+			ClientSet: fakeclientset.NewSimpleClientset(),
+		},
 		deploy:    deployment.New(deployment.WithCompleteParams("10.167.0.248:8080", httpclient.New())),
 		ingress:   ingress.New(ingress.WithCompleteParams("10.167.0.248:8080", httpclient.New())),
 		namespace: namespace.New(),
