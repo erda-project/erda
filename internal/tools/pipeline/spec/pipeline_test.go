@@ -344,3 +344,79 @@ func TestGetUserID(t *testing.T) {
 		})
 	}
 }
+
+func TestGetOwnerOrRunUserID(t *testing.T) {
+	type args struct {
+		extra       PipelineExtra
+		triggerMode apistructs.PipelineTriggerMode
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "test with empty owner user",
+			args: args{
+				extra: PipelineExtra{},
+			},
+			want: "",
+		},
+		{
+			name: "with owner user",
+			args: args{
+				extra: PipelineExtra{
+					Extra: PipelineExtraInfo{
+						OwnerUser: &apistructs.PipelineUser{
+							ID: "1",
+						},
+					},
+				},
+			},
+			want: "",
+		},
+		{
+			name: "with run user",
+			args: args{
+				extra: PipelineExtra{
+					Extra: PipelineExtraInfo{
+						RunUser: &apistructs.PipelineUser{
+							ID: "2",
+						},
+					},
+				},
+			},
+			want: "2",
+		},
+		{
+			name: "cron with owner user",
+			args: args{
+				extra: PipelineExtra{
+					Extra: PipelineExtraInfo{
+						RunUser: &apistructs.PipelineUser{
+							ID: "2",
+						},
+						OwnerUser: &apistructs.PipelineUser{
+							ID: "1",
+						},
+					},
+				},
+				triggerMode: apistructs.PipelineTriggerModeCron,
+			},
+			want: "1",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &Pipeline{
+				PipelineBase: PipelineBase{
+					TriggerMode: tt.args.triggerMode,
+				},
+				PipelineExtra: tt.args.extra,
+			}
+			if got := p.GetOwnerOrRunUserID(); got != tt.want {
+				t.Errorf("GetOwnerOrRunUserID() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

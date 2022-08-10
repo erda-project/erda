@@ -115,8 +115,13 @@ func (p *Pipeline) GetOwnerUserID() string {
 
 // GetOwnerOrRunUserID get userID to execute pipeline
 // permissions for the task belong to the executor userID
+// if it's triggered by manual, run user is used
 // first to get owner userID,if not exists, to get run userID
 func (p *Pipeline) GetOwnerOrRunUserID() string {
+	switch p.TriggerMode {
+	case apistructs.PipelineTriggerModeManual, "":
+		return p.GetRunUserID()
+	}
 	if p.Extra.OwnerUser != nil && p.Extra.OwnerUser.ID != nil {
 		return fmt.Sprintf("%v", p.Extra.OwnerUser.ID)
 	}
