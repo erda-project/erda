@@ -168,6 +168,18 @@ func TestEndpoints_getPodStatusFromK8s(t *testing.T) {
 			want:    pods,
 			wantErr: false,
 		},
+		{
+			name: "Test_02",
+			fields: fields{
+				runtime: &runtime.Runtime{},
+			},
+			args: args{
+				runtimeID:   "1",
+				serviceName: "test2",
+			},
+			want:    []apistructs.Pod{},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
