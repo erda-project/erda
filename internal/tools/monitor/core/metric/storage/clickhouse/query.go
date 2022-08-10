@@ -22,6 +22,7 @@ import (
 	cksdk "github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"github.com/doug-martin/goqu/v9"
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -170,6 +171,11 @@ func (p *provider) buildQueryContext(ctx context.Context) context.Context {
 		return ctx
 	}
 
+	queryUUID, _ := uuid.NewRandom()
+	queryId := queryUUID.String()
+
+	span.SetAttributes(attribute.String("query_id", queryId))
+
 	ctx = cksdk.Context(ctx,
 		cksdk.WithSettings(settings),
 		cksdk.WithProgress(func(progress *cksdk.Progress) {
@@ -212,7 +218,7 @@ func (p *provider) buildQueryContext(ctx context.Context) context.Context {
 			)
 		}),
 		cksdk.WithSpan(span.SpanContext()),
-		cksdk.WithQueryID(span.SpanContext().TraceID().String()))
+		cksdk.WithQueryID(queryId))
 	return ctx
 }
 
