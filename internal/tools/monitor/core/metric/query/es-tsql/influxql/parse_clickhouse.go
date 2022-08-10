@@ -42,12 +42,6 @@ func (p *Parser) ParseClickhouse(s *influxql.SelectStatement) (tsql.Query, error
 
 	expr = p.appendTimeKeyByExpr(expr)
 
-	// add parser filter to expr
-	expr, err = p.filterOnExpr(expr)
-	if err != nil {
-		return nil, errors.Wrap(err, "select stmt parse to filter is error")
-	}
-
 	expr, err = p.conditionOnExpr(expr, s)
 	if err != nil {
 		return nil, errors.Wrap(err, "select stmt parse to condition is error")
@@ -487,7 +481,7 @@ func (p *Parser) from(sources influxql.Sources) ([]*model.Source, error) {
 	return list, nil
 }
 
-func (p *Parser) filterToExpr(filters []*model.Filter, expr *goqu.SelectDataset) (*goqu.SelectDataset, error) {
+func (p *Parser) filterToExpr(filters []*model.Filter, expr exp.ExpressionList) (exp.ExpressionList, error) {
 	or := goqu.Or()
 	expressionList := goqu.And()
 	for _, item := range filters {
@@ -545,21 +539,18 @@ func (p *Parser) filterToExpr(filters []*model.Filter, expr *goqu.SelectDataset)
 		}
 	}
 
-	if !or.IsEmpty() {
-		expr = expr.Where(goqu.Or(
-			expressionList,
-			or,
-		))
-		return expr, nil
-	}
 	if !expressionList.IsEmpty() {
-		expr = expr.Where(expressionList)
+		expr = goqu.And(expr, expressionList)
+	}
+
+	if !or.IsEmpty() {
+		expr = goqu.Or(expr, or)
 	}
 
 	return expr, nil
 }
 
-func (p *Parser) filterOnExpr(expr *goqu.SelectDataset) (*goqu.SelectDataset, error) {
+func (p *Parser) filterOnExpr(expr exp.ExpressionList) (exp.ExpressionList, error) {
 	var err error
 	if len(p.filter) > 0 {
 		expr, err = p.filterToExpr(p.filter, expr)
@@ -578,6 +569,13 @@ func (p *Parser) conditionOnExpr(expr *goqu.SelectDataset, s *influxql.SelectSta
 		if err != nil {
 			return nil, err
 		}
+
+		// add parser filter to expr
+		exprList, err = p.filterOnExpr(exprList)
+		if err != nil {
+			return nil, errors.Wrap(err, "select stmt parse to filter is error")
+		}
+
 		expr = expr.Where(exprList)
 	}
 	return expr, nil

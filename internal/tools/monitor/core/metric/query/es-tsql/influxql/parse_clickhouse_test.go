@@ -291,8 +291,10 @@ func TestFilterToExpr(t *testing.T) {
 
 			p := Parser{}
 
-			expr, err := p.filterToExpr(test.args, expr)
+			exprList := goqu.And()
+			exprList, err := p.filterToExpr(test.args, exprList)
 			require.NoError(t, err)
+			expr = expr.Where(exprList)
 			sql, _, err := expr.ToSQL()
 			require.NoError(t, err)
 			require.Equal(t, test.want, sql)
