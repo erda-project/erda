@@ -34,7 +34,7 @@ func (d *DeploymentOrder) List(userId string, orgId uint64, conditions *apistruc
 		return nil, err
 	}
 
-	conditions.MyApplicationIds = make([]uint64, 0)
+	conditions.MyApplicationIds = make([]uint64, 0, len(apps.List))
 
 	for _, dto := range apps.List {
 		conditions.MyApplicationIds = append(conditions.MyApplicationIds, dto.ID)
@@ -65,7 +65,7 @@ func (d *DeploymentOrder) convertDeploymentOrderToResponseItem(orders []dbclient
 	for _, order := range orders {
 		setIds[order.ReleaseId] = 0
 	}
-	releasesId := make([]string, 0)
+	releasesId := make([]string, 0, len(setIds))
 	for id := range setIds {
 		releasesId = append(releasesId, id)
 	}

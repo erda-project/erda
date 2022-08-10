@@ -15,17 +15,27 @@
 package deployment_order
 
 import (
+	"context"
 	"encoding/json"
-	"fmt"
+	"strings"
+	"sync"
 
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc/metadata"
 
+	"github.com/erda-project/erda-infra/pkg/transport"
+	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/internal/tools/orchestrator/queue"
 	"github.com/erda-project/erda/internal/tools/orchestrator/utils"
+	"github.com/erda-project/erda/pkg/http/httputil"
+)
+
+var (
+	defaultGroup = 20
 )
 
 func (d *DeploymentOrder) PushOnDeploymentOrderPolling() (abort bool, err0 error) {
@@ -41,25 +51,31 @@ func (d *DeploymentOrder) PushOnDeploymentOrderPolling() (abort bool, err0 error
 		return
 	}
 
-	for _, order := range deploymentOrders {
+	fn := func(order dbclient.DeploymentOrder, wg *sync.WaitGroup) {
+		if wg == nil {
+			logrus.Errorf("wait group is nil")
+			return
+		}
+
+		defer wg.Done()
 		// current batch == 0 -> deployment order not stared
 		if order.CurrentBatch == 0 {
 			logrus.Debugf("deployment order %s is not stared, current batch: %d, batch size: %d", order.ID,
 				order.CurrentBatch, order.BatchSize)
-			continue
+			return
 		}
 
 		// compose current order status map
 		statusMap, err := d.composeDeploymentOrderStatusMap(order)
 		if err != nil {
 			logrus.Errorf("failed to compose deployment order status map, (%v)", err)
-			continue
+			return
 		}
 
 		// status update, only update status of current batch
 		if err := inspectDeploymentStatusDetail(&order, statusMap); err != nil {
 			logrus.Errorf("failed to inspect deployment status detail, (%v)", err)
-			continue
+			return
 		}
 
 		// if current batch is success and is not last batch, deploy next batch
@@ -71,7 +87,7 @@ func (d *DeploymentOrder) PushOnDeploymentOrderPolling() (abort bool, err0 error
 					logrus.Errorf("failed to update deployment order %s, (%v)", order.ID, err)
 				}
 				// finished or try update status again.
-				continue
+				return
 			}
 
 			order.CurrentBatch++
@@ -79,7 +95,7 @@ func (d *DeploymentOrder) PushOnDeploymentOrderPolling() (abort bool, err0 error
 			if err := d.db.UpdateDeploymentOrder(&order); err != nil {
 				logrus.Errorf("failed to update deployment order %s, (%v)", order.ID, err)
 				// try advance batch again
-				continue
+				return
 			}
 
 			// if event lost, reprocess will be triggered
@@ -87,72 +103,79 @@ func (d *DeploymentOrder) PushOnDeploymentOrderPolling() (abort bool, err0 error
 				order.BatchSize, order.CurrentBatch)
 			if err := d.queue.Push(queue.DEPLOYMENT_ORDER_BATCHES, order.ID); err != nil {
 				logrus.Errorf("failed to push on DEPLOYMENT_ORDER_BATCHES, deploymentOrderID: %s, (%v)", order.ID, err)
-				continue
+				return
 			}
 		} else {
 			order.Status = string(utils.ParseDeploymentOrderStatus(statusMap))
 			if err := d.db.UpdateDeploymentOrder(&order); err != nil {
 				logrus.Errorf("failed to update deployment order %s, (%v)", order.ID, err)
-				continue
+				return
 			}
 		}
+	}
+
+	for i := 0; i < len(deploymentOrders); i += defaultGroup {
+		group := make([]dbclient.DeploymentOrder, 0, defaultGroup)
+		if len(deploymentOrders)-i < defaultGroup {
+			group = deploymentOrders[i:]
+		} else {
+			group = deploymentOrders[i : i+defaultGroup]
+		}
+
+		wg := &sync.WaitGroup{}
+		wg.Add(len(group))
+
+		for _, order := range group {
+			go fn(order, wg)
+		}
+		wg.Wait()
 	}
 
 	return
 }
 
 func (d *DeploymentOrder) composeDeploymentOrderStatusMap(order dbclient.DeploymentOrder) (apistructs.DeploymentOrderStatusMap, error) {
-	var (
-		statusMap  = apistructs.DeploymentOrderStatusMap{}
-		releaseIds = make([]string, 0)
-		id2Release = make(map[string]*dbclient.Release)
-	)
+	statusMap := make(apistructs.DeploymentOrderStatusMap)
 
-	// unmarshal deployment list
-	deployList, err := unmarshalDeployList(order.DeployList)
+	ctx := transport.WithHeader(context.Background(), metadata.New(map[string]string{httputil.InternalHeader: "true"}))
+	releaseResp, err := d.releaseSvc.GetRelease(ctx, &pb.ReleaseGetRequest{ReleaseID: order.ReleaseId})
 	if err != nil {
-		return statusMap, errors.Errorf("failed to unmarshal deploy list, (%v)", err)
+		logrus.Errorf("failed to get release, err: %v", err)
+		return nil, err
+	}
+
+	// use for project release
+	deployList, err := d.renderDeployListWithCrossProject(strings.Split(order.Modes, ","), order.ProjectId,
+		order.Operator.String(), releaseResp.GetData())
+	if err != nil {
+		return nil, errors.Errorf("failed to render deploy list with cross project, err: %v", err)
 	}
 
 	if len(deployList) == 0 {
 		return statusMap, errors.Errorf("deployment order %s has invalid deploy list", order.ID)
 	}
 
-	for _, l := range deployList {
-		releaseIds = append(releaseIds, l...)
-	}
-
-	// list releases
-	releases, err := d.db.ListReleases(releaseIds)
-	if err != nil {
-		return statusMap, fmt.Errorf("failed to list releases for order %s, %v", order.ID, err)
-	}
-
-	for _, r := range releases {
-		id2Release[r.ReleaseId] = r
-	}
-
 	// get runtime status, and update
-	for _, id := range deployList[order.CurrentBatch-1] {
-		release, ok := id2Release[id]
-		if !ok || releases == nil {
+	for _, r := range deployList[order.CurrentBatch-1] {
+		if r == nil {
 			// reset deployment order status is failed
 			order.Status = string(apistructs.DeploymentStatusFailed)
 			if err := d.db.UpdateDeploymentOrder(&order); err != nil {
 				logrus.Errorf("failed to update deployment order %s, (%v)", order.ID, err)
 				return statusMap, err
 			}
-			return statusMap, fmt.Errorf("failed to find release %s", id)
+			return statusMap, errors.New("release is nil")
 		}
 
-		rt, errGetRuntime := d.db.GetRuntimeByAppName(order.Workspace, order.ProjectId, release.ApplicationName)
+		rt, errGetRuntime := d.db.GetRuntimeByAppName(order.Workspace, order.ProjectId, r.GetApplicationName())
 		if errGetRuntime != nil {
 			if !errors.Is(errGetRuntime, gorm.ErrRecordNotFound) {
-				return statusMap, errors.Errorf("failed to get runtime by app name %s, (%v)", release.ApplicationName, errGetRuntime)
+				return statusMap, errors.Errorf("failed to get runtime by app name %s, (%v)",
+					r.GetApplicationName(), errGetRuntime)
 			}
 
-			statusMap[release.ApplicationName] = apistructs.DeploymentOrderStatusItem{
-				AppID:            release.ApplicationId,
+			statusMap[r.ApplicationName] = apistructs.DeploymentOrderStatusItem{
+				AppID:            uint64(r.GetApplicationID()),
 				DeploymentStatus: apistructs.DeploymentStatusFailed,
 			}
 			continue
@@ -166,7 +189,7 @@ func (d *DeploymentOrder) composeDeploymentOrderStatusMap(order dbclient.Deploym
 			return statusMap, errors.Errorf("failed to find last deployment for runtime, last deployment is nil, runtime id: %d", rt.ID)
 		}
 
-		statusMap[release.ApplicationName] = apistructs.DeploymentOrderStatusItem{
+		statusMap[r.GetApplicationName()] = apistructs.DeploymentOrderStatusItem{
 			RuntimeID:        rt.ID,
 			AppID:            rt.ApplicationID,
 			DeploymentID:     lastDeployment.ID,

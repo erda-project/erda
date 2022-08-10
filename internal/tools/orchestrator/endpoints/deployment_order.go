@@ -17,6 +17,7 @@ package endpoints
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -82,7 +83,7 @@ func (e *Endpoints) GetDeploymentOrder(ctx context.Context, r *http.Request, var
 		return apierrors.ErrListDeployment.NotLogin().ToResp(), nil
 	}
 
-	orderDetail, err := e.deploymentOrder.Get(userID.String(), orderId)
+	orderDetail, err := e.deploymentOrder.Get(ctx, userID.String(), orderId)
 	if err != nil {
 		logrus.Errorf("failed to get deployment order detail, err: %v", err)
 		return errorresp.ErrResp(err)
@@ -215,10 +216,16 @@ func (e *Endpoints) RenderDeploymentOrderDetail(ctx context.Context, r *http.Req
 	workspace := r.URL.Query().Get("workspace")
 	modes := r.URL.Query()["mode"]
 	id := r.URL.Query().Get("id")
+	projectIdStr := r.URL.Query().Get("projectId")
 
 	userID, err := user.GetUserID(r)
 	if err != nil {
 		return apierrors.ErrRenderDeploymentOrderDetail.NotLogin().ToResp(), nil
+	}
+
+	projectId, err := strconv.ParseUint(projectIdStr, 10, 64)
+	if err != nil {
+		return apierrors.ErrRenderDeploymentOrderDetail.InvalidParameter(fmt.Sprintf("illegal project id %d", projectId)).ToResp(), nil
 	}
 
 	// verify params
@@ -226,7 +233,7 @@ func (e *Endpoints) RenderDeploymentOrderDetail(ctx context.Context, r *http.Req
 		return apierrors.ErrRenderDeploymentOrderDetail.InvalidParameter(strutil.Concat("illegal workspace ", workspace)).ToResp(), nil
 	}
 
-	ret, err := e.deploymentOrder.RenderDetail(ctx, id, userID.String(), v, workspace, modes)
+	ret, err := e.deploymentOrder.RenderDetail(ctx, id, userID.String(), v, workspace, projectId, modes)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}

@@ -20,19 +20,48 @@ import (
 	"testing"
 
 	"bou.ke/monkey"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 
+	releasepb "github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
 )
 
 func TestCancel(t *testing.T) {
-	order := New()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	rss := NewMockReleaseServiceServer(ctrl)
+
+	rss.EXPECT().GetRelease(gomock.Any(), gomock.Any()).AnyTimes().Return(&releasepb.ReleaseGetResponse{
+		Data: &releasepb.ReleaseGetResponseData{
+			ReleaseID: "202cb962ac59075b964b07152d234b70",
+			Modes: map[string]*releasepb.ModeSummary{
+				"default": {
+					ApplicationReleaseList: []*releasepb.ReleaseSummaryArray{
+						{
+							List: []*releasepb.ApplicationReleaseSummary{
+								{
+									ReleaseID:       "202cb962ac59075b964b07152d234b70",
+									ApplicationName: "app-demo",
+									ApplicationID:   1,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}, nil)
+
+	order := New(WithReleaseSvc(rss))
 
 	defer monkey.UnpatchAll()
 	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "GetDeploymentOrder", func(*dbclient.DBClient, string) (*dbclient.DeploymentOrder, error) {
-		return &dbclient.DeploymentOrder{}, nil
+		return &dbclient.DeploymentOrder{
+			Modes: DefaultMode,
+		}, nil
 	})
 	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "UpdateDeploymentOrder", func(*dbclient.DBClient, *dbclient.DeploymentOrder) error {
 		return nil
