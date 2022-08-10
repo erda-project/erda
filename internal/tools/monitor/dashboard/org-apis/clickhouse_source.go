@@ -164,7 +164,7 @@ func (chs *ClickhouseSource) GetHostTypes(req *http.Request, params struct {
 
 	table, _ := chs.Loader.GetSearchTable(params.OrgName)
 
-	from := time.Now().Add(-10 * time.Minute).Format(timeFormat)
+	from := time.Now().Add(-20 * time.Minute).Format(timeFormat)
 	to := time.Now().Format(timeFormat)
 	sql := goqu.From(table).Select(
 		goqu.L("tag_values[indexOf(tag_keys,?)]", clusterName).As("clusterName"),
@@ -307,7 +307,7 @@ func (chs *ClickhouseSource) GetGroupHosts(req *http.Request, params struct {
 
 	table, _ := chs.Loader.GetSearchTable(params.OrgName)
 
-	from := time.Now().Add(-10 * time.Minute).Format(timeFormat)
+	from := time.Now().Add(-20 * time.Minute).Format(timeFormat)
 	to := time.Now().Format(timeFormat)
 	sql := goqu.From(table).Select(
 		goqu.L("MAX(number_field_values[indexOf(number_field_keys, ?)])", cpuCoresUsage).As("cpuCoresUsage"),
