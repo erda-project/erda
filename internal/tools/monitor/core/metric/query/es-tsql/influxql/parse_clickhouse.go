@@ -196,10 +196,10 @@ func (p *Parser) parseQueryOnExpr(fields influxql.Fields, expr *goqu.SelectDatas
 
 	for column, asName := range columns {
 		if len(asName) <= 0 {
-			expr = expr.SelectAppend(goqu.L(column))
+			expr = expr.SelectAppend(goqu.L(fmt.Sprintf("toNullable(%s)", column)))
 			continue
 		}
-		expr = expr.SelectAppend(goqu.L(column).As(asName))
+		expr = expr.SelectAppend(goqu.L(fmt.Sprintf("toNullable(%s)", column)).As(asName))
 	}
 	return expr, handlers, columns, nil
 }
@@ -730,9 +730,9 @@ func (p *Parser) ckColumn(ref *influxql.VarRef) string {
 func (p *Parser) ckFieldKey(key string) (string, bool) {
 	column, isNumber := p.ckField(key)
 	if !isNumber {
-		return fmt.Sprintf("toNullable(string_field_values[%s])", column), isNumber
+		return fmt.Sprintf("string_field_values[%s]", column), isNumber
 	}
-	return fmt.Sprintf("toNullable(number_field_values[%s])", column), isNumber
+	return fmt.Sprintf("number_field_values[%s]", column), isNumber
 }
 
 var originColumn = map[string]string{
@@ -750,7 +750,7 @@ func ckTag(key string) string {
 }
 
 func ckTagKey(key string) string {
-	return fmt.Sprintf("toNullable(tag_values[%s])", ckTag(key))
+	return fmt.Sprintf("tag_values[%s]", ckTag(key))
 }
 
 func (p *Parser) parseScriptConditionOnExpr(cond influxql.Expr, exprList exp.ExpressionList) (exp.ExpressionList, error) {

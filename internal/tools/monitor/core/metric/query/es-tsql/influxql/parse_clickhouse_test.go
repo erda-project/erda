@@ -223,7 +223,7 @@ func TestFilterToExpr(t *testing.T) {
 					Operator: "or_eq",
 				},
 			},
-			want: "SELECT * FROM \"table\" WHERE ((column = '12313') OR (column = '12313'))",
+			want: "SELECT * FROM \"table\" WHERE ((column = '12313') AND (column = '12313'))",
 		},
 		{
 			name: "or in",
@@ -239,7 +239,7 @@ func TestFilterToExpr(t *testing.T) {
 					Operator: "in",
 				},
 			},
-			want: "SELECT * FROM \"table\" WHERE ((column IN ('111', '222', '3333')) OR (column IN ('111', '222', '3333')))",
+			want: "SELECT * FROM \"table\" WHERE ((column IN ('111', '222', '3333')) AND (column IN ('111', '222', '3333')))",
 		},
 		{
 			name: "and or and or",
@@ -265,7 +265,7 @@ func TestFilterToExpr(t *testing.T) {
 					Operator: "or_eq",
 				},
 			},
-			want: "SELECT * FROM \"table\" WHERE (((column = '12313') AND (column = '12313')) OR ((column = '12313') OR (column = '12313')))",
+			want: "SELECT * FROM \"table\" WHERE (((column = '12313') AND (column = '12313')) AND ((column = '12313') OR (column = '12313')))",
 		},
 		{
 			name: "tags filter",
@@ -378,7 +378,7 @@ func TestSelect(t *testing.T) {
 		{
 			name: "select column",
 			sql:  "select column from table",
-			want: "SELECT number_field_values[indexOf(number_field_keys,'column')] AS \"column\" FROM \"table\"",
+			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'column')]) AS \"column\" FROM \"table\"",
 		},
 		{
 			name: "select sum(column)",
@@ -493,12 +493,12 @@ func TestGroupBy(t *testing.T) {
 		{
 			name: "groupby,time()",
 			sql:  "select sum(http_status_code_count::field),http_status_code::tag from table GROUP BY time(),http_status_code::tag",
-			want: "SELECT SUM(number_field_values[indexOf(number_field_keys,'http_status_code_count')]) AS \"339c9df3d700c4f0\", tag_values[indexOf(tag_keys,'http_status_code')] AS \"http_status_code\", toDateTime64(toStartOfInterval(timestamp, toIntervalSecond(60),'UTC'),9) AS \"bucket_timestamp\" FROM \"table\" GROUP BY \"http_status_code\", bucket_timestamp",
+			want: "SELECT SUM(number_field_values[indexOf(number_field_keys,'http_status_code_count')]) AS \"339c9df3d700c4f0\", tag_values[indexOf(tag_keys,'http_status_code')] AS \"http_status_code:tag\", toDateTime64(toStartOfInterval(timestamp, toIntervalSecond(60),'UTC'),9) AS \"bucket_timestamp\" FROM \"table\" GROUP BY \"http_status_code::tag\", bucket_timestamp",
 		},
 		{
 			name: "time(),column",
 			sql:  "select http_status_code::tag from table GROUP BY time()",
-			want: "SELECT tag_values[indexOf(tag_keys,'http_status_code')] AS \"http_status_code\", toDateTime64(toStartOfInterval(timestamp, toIntervalSecond(60),'UTC'),9) AS \"bucket_timestamp\" FROM \"table\" GROUP BY \"http_status_code\", bucket_timestamp",
+			want: "SELECT tag_values[indexOf(tag_keys,'http_status_code')] AS \"http_status_code::tag\", toDateTime64(toStartOfInterval(timestamp, toIntervalSecond(60),'UTC'),9) AS \"bucket_timestamp\" FROM \"table\" GROUP BY \"http_status_code::tag\", bucket_timestamp",
 		},
 		{
 			name: "no group",
@@ -619,27 +619,27 @@ func TestOrderBy(t *testing.T) {
 		{
 			name: "order by column, default",
 			sql:  "select column1 from table order by column1",
-			want: "SELECT number_field_values[indexOf(number_field_keys,'column1')] AS \"column1\" FROM \"table\" ORDER BY \"column1\" ASC",
+			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'column1')]) AS \"column1\" FROM \"table\" ORDER BY \"column1\" ASC",
 		},
 		{
 			name: "none order by",
 			sql:  "select column1 from table",
-			want: "SELECT number_field_values[indexOf(number_field_keys,'column1')] AS \"column1\" FROM \"table\"",
+			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'column1')]) AS \"column1\" FROM \"table\"",
 		},
 		{
 			name: "asc",
 			sql:  "select column1 from table order by column1 asc",
-			want: "SELECT number_field_values[indexOf(number_field_keys,'column1')] AS \"column1\" FROM \"table\" ORDER BY \"column1\" ASC",
+			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'column1')]) AS \"column1\" FROM \"table\" ORDER BY \"column1\" ASC",
 		},
 		{
 			name: "desc",
 			sql:  "select column1 from table order by column1 desc",
-			want: "SELECT number_field_values[indexOf(number_field_keys,'column1')] AS \"column1\" FROM \"table\" ORDER BY \"column1\" DESC",
+			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'column1')]) AS \"column1\" FROM \"table\" ORDER BY \"column1\" DESC",
 		},
 		{
 			name: "max",
 			sql:  "select service_id::tag,max(timestamp) from table GROUP BY service_id::tag ORDER BY max(timestamp) DESC",
-			want: "SELECT MAX(timestamp) AS \"1362043e612fc3f5\", tag_values[indexOf(tag_keys,'service_id')] AS \"service_id\" FROM \"table\" ORDER BY \"1362043e612fc3f5\" DESC",
+			want: "SELECT MAX(timestamp) AS \"1362043e612fc3f5\", toNullable(tag_values[indexOf(tag_keys,'service_id')]) AS \"service_id::tag\" FROM \"table\" ORDER BY \"1362043e612fc3f5\" DESC",
 		},
 	}
 	for _, test := range tests {

@@ -153,6 +153,9 @@ var CkAggFunctions = map[string]*SQlAggFuncDefine{
 				return goqu.L(fmt.Sprintf("argMin(%s,%s)", f, ctx.TimeKey())).As(id), nil
 			},
 			func(ctx *Context, id, field string, call *influxql.Call, v interface{}) (interface{}, bool) {
+				if v == nil {
+					v = float64(0)
+				}
 				if next, ok := ctx.attributesCache["next"]; ok {
 					currentV, ok := v.(float64)
 					if !ok {
@@ -220,6 +223,9 @@ var CkAggFunctions = map[string]*SQlAggFuncDefine{
 				return goqu.SUM(goqu.L(f)).As(id), nil
 			},
 			func(ctx *Context, id, field string, call *influxql.Call, v interface{}) (interface{}, bool) {
+				if v == nil {
+					v = float64(0)
+				}
 				if currentV, ok := v.(float64); ok {
 					if ctx.targetTimeUnit == tsql.UnsetTimeUnit {
 						ctx.targetTimeUnit = tsql.Nanosecond

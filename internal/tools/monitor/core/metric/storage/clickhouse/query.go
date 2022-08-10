@@ -49,7 +49,7 @@ func (p *provider) Query(ctx context.Context, q tsql.Query) (*model.ResultSet, e
 	table, _ := p.Loader.GetSearchTable(q.OrgName())
 
 	if len(q.OrgName()) > 0 {
-		expr = expr.Where(goqu.C("org_name").Eq(q.OrgName()))
+		expr = expr.Where(goqu.C("org_name").In(q.OrgName(), "erda"))
 	}
 	if len(q.TerminusKey()) > 0 {
 		expr = expr.Where(goqu.C("tenant_id").Eq(q.TerminusKey()))
