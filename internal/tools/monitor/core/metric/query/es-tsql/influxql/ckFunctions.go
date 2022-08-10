@@ -180,11 +180,14 @@ var CkAggFunctions = map[string]*SQlAggFuncDefine{
 					f = field.Val
 				} else {
 					f, _ = p.ckGetKeyName(field, influxql.AnyField)
-					f = fmt.Sprintf("if(%s == 0,null,%s)", f, f)
+					f = fmt.Sprintf("if(%s == 0,null,%s)", p.ckColumn(field), f)
 				}
 				return goqu.L(fmt.Sprintf("argMin(%s,%s)", f, ctx.TimeKey())).As(id), nil
 			},
 			func(ctx *Context, id, field string, call *influxql.Call, v interface{}) (interface{}, bool) {
+				if v == nil {
+					v = float64(0)
+				}
 				if next, ok := ctx.attributesCache["next"]; ok {
 					currentV, ok := v.(float64)
 					if !ok {

@@ -243,7 +243,7 @@ func pretty(data interface{}) interface{} {
 		return *v
 	case **float64:
 		if *v == nil {
-			return float64(0)
+			return nil
 		}
 		return **v
 	case *float32:
@@ -262,6 +262,11 @@ func pretty(data interface{}) interface{} {
 		return *v
 	case *string:
 		return *v
+	case **string:
+		if *v == nil {
+			return nil
+		}
+		return **v
 	case *time.Time:
 		return v.UnixNano()
 	case *[]string:

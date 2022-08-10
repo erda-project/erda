@@ -446,7 +446,7 @@ func (p *Parser) parseFiledRefByExpr(expr influxql.Expr, cols map[string]string)
 		return p.parseFiledRefByExpr(expr.Expr, cols)
 	case *influxql.VarRef:
 		c, _ := p.ckGetKeyName(expr, influxql.AnyField)
-		cols[c] = expr.Val
+		cols[c] = expr.String()
 	case *influxql.Wildcard:
 		cols["*"] = ""
 	}
@@ -544,7 +544,7 @@ func (p *Parser) filterToExpr(filters []*model.Filter, expr exp.ExpressionList) 
 	}
 
 	if !or.IsEmpty() {
-		expr = goqu.Or(expr, or)
+		expr = goqu.And(expr, or)
 	}
 
 	return expr, nil
@@ -730,9 +730,9 @@ func (p *Parser) ckColumn(ref *influxql.VarRef) string {
 func (p *Parser) ckFieldKey(key string) (string, bool) {
 	column, isNumber := p.ckField(key)
 	if !isNumber {
-		return fmt.Sprintf("string_field_values[%s]", column), isNumber
+		return fmt.Sprintf("toNullable(string_field_values[%s])", column), isNumber
 	}
-	return fmt.Sprintf("number_field_values[%s]", column), isNumber
+	return fmt.Sprintf("toNullable(number_field_values[%s])", column), isNumber
 }
 
 var originColumn = map[string]string{
@@ -750,7 +750,7 @@ func ckTag(key string) string {
 }
 
 func ckTagKey(key string) string {
-	return fmt.Sprintf("tag_values[%s]", ckTag(key))
+	return fmt.Sprintf("toNullable(tag_values[%s])", ckTag(key))
 }
 
 func (p *Parser) parseScriptConditionOnExpr(cond influxql.Expr, exprList exp.ExpressionList) (exp.ExpressionList, error) {
