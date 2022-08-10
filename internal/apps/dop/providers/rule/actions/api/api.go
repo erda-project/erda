@@ -28,6 +28,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/internal/apps/dop/providers/rule/jsonnet"
 	"github.com/erda-project/erda/pkg/http/httpclient"
+	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 type config struct {
@@ -49,6 +50,8 @@ type API struct {
 	Snippet string
 	// request jsonnet top level arguments, key: TLA key, value: TLA value
 	TLARaw map[string]interface{}
+	// API identity info
+	Actor string
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -128,7 +131,15 @@ func (a *provider) getAPIConfig(api *API) (*APIConfig, error) {
 	if apiConfig.URL == "" {
 		apiConfig.URL = api.URL
 	}
+
+	resetHeaders(&apiConfig, api.Actor)
 	return &apiConfig, nil
+}
+
+// reset headers for security
+func resetHeaders(config *APIConfig, actor string) {
+	delete(config.Headers, httputil.InternalHeader)
+	config.Headers[httputil.UserHeader] = []string{actor}
 }
 
 func init() {

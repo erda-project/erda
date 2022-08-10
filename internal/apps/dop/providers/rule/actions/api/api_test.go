@@ -15,10 +15,12 @@
 package api
 
 import (
+	"net/http"
 	"reflect"
 	"testing"
 
 	"bou.ke/monkey"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda/internal/apps/dop/providers/rule/jsonnet"
 )
@@ -61,6 +63,45 @@ func Test_provider_getAPIConfig(t *testing.T) {
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("provider.getAPIConfig() = %v, want %v", got, tt.want)
 			}
+		})
+	}
+}
+
+func Test_resetHeaders(t *testing.T) {
+	type args struct {
+		config *APIConfig
+		actor  string
+	}
+	tests := []struct {
+		name string
+		args args
+	}{
+		{
+			args: args{
+				config: &APIConfig{
+					Headers: http.Header{
+						"Internal-Client": {"bundle"},
+						"User-ID":         {"2"},
+					},
+				},
+				actor: "1",
+			},
+		},
+		{
+			args: args{
+				config: &APIConfig{
+					Headers: http.Header{},
+				},
+				actor: "1",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resetHeaders(tt.args.config, tt.args.actor)
+			assert.Equal(t, http.Header{
+				"User-ID": {"1"},
+			}, tt.args.config.Headers)
 		})
 	}
 }

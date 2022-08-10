@@ -53,7 +53,6 @@ func (e *Endpoints) IssueCallback(ctx context.Context, r *http.Request, vars map
 	err := e.processIssueEvent(req)
 	if err != nil {
 		logrus.Errorf("failed to process issue event, (%+v)", err)
-		return apierrors.ErrIssueCallback.InvalidParameter(err).ToResp(), nil
 	}
 
 	env := map[string]interface{}{

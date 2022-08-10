@@ -67,6 +67,7 @@
           - "20220211-deployment-order-batches.sql"
           - "20220317-release-model-1.sql"
           - "20220517-audit-deleted-at.sql"
+          - "20220808-erda_rule_actor.sql"
     - stmtType: AlterTableStmt.AlterTableRenameColumn
       forbidden: true
     - stmtType: AlterTableStmt.AlterTableRenameTable
