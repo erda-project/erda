@@ -152,7 +152,7 @@ var CkAggFunctions = map[string]*SQlAggFuncDefine{
 					}
 				} else {
 					f, _ = p.ckGetKeyName(field, influxql.AnyField)
-					f = fmt.Sprintf("if(%s == 0,null,%s)", f, f)
+					f = fmt.Sprintf("if(%s == 0,null,%s)", p.ckColumn(field), f)
 				}
 				return goqu.L(fmt.Sprintf("Min(%s)", f)).As(id), nil
 			},
