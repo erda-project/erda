@@ -27,7 +27,7 @@ import (
 	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	release2 "github.com/erda-project/erda/internal/apps/dop/dicehub/release"
+	dicehubRelease "github.com/erda-project/erda/internal/apps/dop/dicehub/release"
 	"github.com/erda-project/erda/internal/pkg/user"
 	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/internal/tools/orchestrator/services/runtime"
@@ -35,23 +35,38 @@ import (
 )
 
 var ProjectReleaseResp = &pb.ReleaseGetResponseData{
+	ReleaseID:        "202cb962ac59075b964b07152d234b70",
 	IsProjectRelease: true,
 	Labels:           map[string]string{gitBranchLabel: "master"},
 	Modes: map[string]*pb.ModeSummary{
-		"testMode": {
+		DefaultMode: {
 			Expose:   true,
-			DependOn: []string{"xxx"},
+			DependOn: []string{},
 			ApplicationReleaseList: []*pb.ReleaseSummaryArray{
 				{
 					List: []*pb.ApplicationReleaseSummary{
 						{
-							ReleaseID:   "0856df7931494d239abf07a145ade6e9",
-							ReleaseName: "release/1.0.1",
-							Version:     "1.0.1+20220210153458",
+							ApplicationID:   1,
+							ApplicationName: "app-demo",
+							ReleaseID:       "0856df7931494d239abf07a145ade6e9",
+							ReleaseName:     "release/1.0.1",
+							Version:         "1.0.1+20220210153458",
 						},
 					},
 				},
 			},
+		},
+	},
+}
+
+var ProjectReleaseASum = [][]*pb.ApplicationReleaseSummary{
+	{
+		{
+			ApplicationID:   1,
+			ApplicationName: "test",
+			ReleaseID:       "0856df7931494d239abf07a145ade6e9",
+			ReleaseName:     "release/1.0.1",
+			Version:         "1.0.1+20220210153458",
 		},
 	},
 }
@@ -90,17 +105,17 @@ func TestComposeRuntimeCreateRequests(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err = do.composeRuntimeCreateRequests(&dbclient.DeploymentOrder{
+	_, err = do.composeRtReqWithDeployList(&dbclient.DeploymentOrder{
 		BatchSize:    10,
 		CurrentBatch: 1,
 		Type:         apistructs.TypeProjectRelease,
 		Params:       string(paramsJson),
 		Workspace:    apistructs.WORKSPACE_PROD,
 		DeployList:   string(data),
-	}, ProjectReleaseResp, apistructs.SourceDeployCenter, false)
+	}, ProjectReleaseASum, apistructs.SourceDeployCenter)
 	assert.NoError(t, err)
 
-	_, err = do.composeRuntimeCreateRequests(&dbclient.DeploymentOrder{
+	_, err = do.composeRtReqWithRelease(&dbclient.DeploymentOrder{
 		BatchSize:    1,
 		CurrentBatch: 1,
 		Type:         apistructs.TypeApplicationRelease,
@@ -157,28 +172,7 @@ func TestParseShowParams(t *testing.T) {
 }
 
 func TestParseAppsInfoWithOrder(t *testing.T) {
-	order := New()
-	deployList := [][]string{{"id1"}, {"id2"}}
-	data, err := json.Marshal(deployList)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	defer monkey.UnpatchAll()
-	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "ListReleases", func(*dbclient.DBClient, []string) ([]*dbclient.Release, error) {
-		return []*dbclient.Release{
-			{ReleaseId: "id1"},
-			{ReleaseId: "id2"},
-		}, nil
-	})
-
-	got, err := order.parseAppsInfoWithOrder(&dbclient.DeploymentOrder{
-		ApplicationName: "test",
-		ApplicationId:   1,
-		Type:            apistructs.TypeApplicationRelease,
-		DeployList:      string(data),
-	})
-	assert.NoError(t, err)
+	got := New().parseAppsInfoWithDeployList(ProjectReleaseASum)
 	assert.Equal(t, got, map[int64]string{1: "test"})
 }
 
@@ -197,7 +191,7 @@ func TestContinueDeployOrder(t *testing.T) {
 	order := New()
 	bdl := bundle.New()
 	rt := runtime.New()
-	releaseSvc := &release2.ReleaseService{}
+	releaseSvc := &dicehubRelease.ReleaseService{}
 	order.releaseSvc = releaseSvc
 
 	params := map[string]*apistructs.DeploymentOrderParam{}
@@ -205,7 +199,7 @@ func TestContinueDeployOrder(t *testing.T) {
 	paramsJson, err := json.Marshal(params)
 	assert.NoError(t, err)
 
-	deployList := [][]string{{"id1"}, {"id2"}}
+	deployList := [][]string{{"0856df7931494d239abf07a145ade6e9"}}
 	data, err := json.Marshal(deployList)
 	if err != nil {
 		t.Fatal(err)
@@ -214,24 +208,23 @@ func TestContinueDeployOrder(t *testing.T) {
 	defer monkey.UnpatchAll()
 	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "GetDeploymentOrder", func(*dbclient.DBClient, string) (*dbclient.DeploymentOrder, error) {
 		return &dbclient.DeploymentOrder{
+			ID:           "d9f06aaf-e3b7-4e05-9433-7742162e98f9",
+			Modes:        DefaultMode,
 			CurrentBatch: 1,
 			BatchSize:    3,
+			ProjectId:    1,
 			Workspace:    apistructs.WORKSPACE_PROD,
 			Params:       string(paramsJson),
+			Type:         apistructs.TypeProjectRelease,
 			DeployList:   string(data),
+			ReleaseId:    "202cb962ac59075b964b07152d234b70",
 		}, nil
 	})
 	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "UpdateDeploymentOrder", func(*dbclient.DBClient, *dbclient.DeploymentOrder) error {
 		return nil
 	})
-	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "ListReleases", func(*dbclient.DBClient, []string) ([]*dbclient.Release, error) {
-		return []*dbclient.Release{
-			{ReleaseId: "id1"},
-			{ReleaseId: "id2"},
-		}, nil
-	})
 	monkey.PatchInstanceMethod(reflect.TypeOf(releaseSvc), "GetRelease",
-		func(*release2.ReleaseService, context.Context, *pb.ReleaseGetRequest) (*pb.ReleaseGetResponse, error) {
+		func(*dicehubRelease.ReleaseService, context.Context, *pb.ReleaseGetRequest) (*pb.ReleaseGetResponse, error) {
 			return &pb.ReleaseGetResponse{Data: ProjectReleaseResp}, nil
 		},
 	)
@@ -242,6 +235,13 @@ func TestContinueDeployOrder(t *testing.T) {
 	)
 	monkey.PatchInstanceMethod(reflect.TypeOf(rt), "Create", func(*runtime.Runtime, user.ID, *apistructs.RuntimeCreateRequest) (*apistructs.DeploymentCreateResponseDTO, error) {
 		return &apistructs.DeploymentCreateResponseDTO{}, nil
+	})
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetAppIDByNames", func(*bundle.Bundle, uint64, string, []string) (*apistructs.GetAppIDByNamesResponseData, error) {
+		return &apistructs.GetAppIDByNamesResponseData{
+			AppNameToID: map[string]int64{
+				"app-demo": 1,
+			},
+		}, nil
 	})
 
 	err = order.ContinueDeployOrder("d9f06aaf-e3b7-4e05-9433-7742162e98f9")

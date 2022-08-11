@@ -93,12 +93,12 @@ func TestPushOnDeploymentOrderPolling(t *testing.T) {
 		Data: &releasepb.ReleaseGetResponseData{
 			ReleaseID: "202cb962ac59075b964b07152d234b70",
 			Modes: map[string]*releasepb.ModeSummary{
-				"default": {
+				DefaultMode: {
 					ApplicationReleaseList: []*releasepb.ReleaseSummaryArray{
 						{
 							List: []*releasepb.ApplicationReleaseSummary{
 								{
-									ReleaseID:       "202cb962ac59075b964b07152d234b70",
+									ReleaseID:       "202cb962ac59075b964b07152d234b71",
 									ApplicationName: "app-demo",
 								},
 							},
@@ -124,6 +124,7 @@ func TestPushOnDeploymentOrderPolling(t *testing.T) {
 				Workspace:    apistructs.WORKSPACE_PROD,
 				Status:       string(apistructs.DeploymentStatusDeploying),
 				DeployList:   string(data),
+				Modes:        DefaultMode,
 			},
 		}, nil
 	})
@@ -133,12 +134,6 @@ func TestPushOnDeploymentOrderPolling(t *testing.T) {
 	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "FindLastDeployment", func(*dbclient.DBClient, uint64) (*dbclient.Deployment, error) {
 		// if record not found, will return nil
 		return nil, nil
-	})
-	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "ListReleases", func(*dbclient.DBClient, []string) ([]*dbclient.Release, error) {
-		return []*dbclient.Release{
-			{ReleaseId: "id1"},
-			{ReleaseId: "id2"},
-		}, nil
 	})
 
 	defer monkey.UnpatchAll()

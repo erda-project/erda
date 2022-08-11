@@ -17,12 +17,18 @@ package deployment_order
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"strings"
 
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc/metadata"
 
+	"github.com/erda-project/erda-infra/pkg/transport"
+	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/internal/tools/orchestrator/services/apierrors"
+	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 func (d *DeploymentOrder) Cancel(ctx context.Context, req *apistructs.DeploymentOrderCancelRequest) (*dbclient.DeploymentOrder, error) {
@@ -32,10 +38,27 @@ func (d *DeploymentOrder) Cancel(ctx context.Context, req *apistructs.Deployment
 		return nil, err
 	}
 
-	appsInfo, err := d.parseAppsInfoWithOrder(order)
+	// get release info
+	ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "true"}))
+	releaseResp, err := d.releaseSvc.GetRelease(ctx, &pb.ReleaseGetRequest{ReleaseID: order.ReleaseId})
 	if err != nil {
-		logrus.Errorf("failed to get applications info, err: %v", err)
+		logrus.Errorf("failed to get release %s, err: %v", order.ReleaseId, err)
 		return nil, err
+	}
+
+	releaseData := releaseResp.GetData()
+
+	appsInfo := make(map[int64]string)
+	switch order.Type {
+	case apistructs.TypeProjectRelease:
+		deployList, err := d.renderDeployListWithCrossProject(strings.Split(order.Modes, ","), order.ProjectId,
+			req.Operator, releaseData)
+		if err != nil {
+			return nil, fmt.Errorf("failed to render deploy list with cross project, err: %v", err)
+		}
+		appsInfo = d.parseAppsInfoWithDeployList(deployList)
+	case apistructs.TypeApplicationRelease:
+		appsInfo[releaseData.ApplicationID] = releaseData.ApplicationName
 	}
 
 	if err := d.batchCheckExecutePermission(req.Operator, order.Workspace, appsInfo); err != nil {

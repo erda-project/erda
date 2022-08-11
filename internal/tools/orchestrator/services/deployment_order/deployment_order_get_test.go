@@ -15,12 +15,14 @@
 package deployment_order
 
 import (
+	"context"
 	"reflect"
 	"testing"
 
 	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
@@ -29,9 +31,9 @@ import (
 
 func TestComposeApplicationsInfo(t *testing.T) {
 	type args struct {
-		Releases   [][]*dbclient.Release
-		Params     map[string]apistructs.DeploymentOrderParam
-		AppsStatus apistructs.DeploymentOrderStatusMap
+		AppReleases [][]*pb.ApplicationReleaseSummary
+		Params      map[string]apistructs.DeploymentOrderParam
+		AppsStatus  apistructs.DeploymentOrderStatusMap
 	}
 
 	appStatus := apistructs.DeploymentOrderStatusMap{
@@ -56,11 +58,10 @@ func TestComposeApplicationsInfo(t *testing.T) {
 		{
 			name: "pipeline",
 			args: args{
-				Releases: [][]*dbclient.Release{
+				AppReleases: [][]*pb.ApplicationReleaseSummary{
 					{
 						{
-							ReleaseId:       "8d2385a088df415decdf6357147ed4a2",
-							Labels:          "{\n    \"gitCommitId\": \"27504bb7cb788bee08a50612b97faea201c0efed\",\n    \"gitBranch\": \"master\"\n}",
+							ReleaseID:       "8d2385a088df415decdf6357147ed4a2",
 							ApplicationName: "app1",
 						},
 					},
@@ -89,9 +90,7 @@ func TestComposeApplicationsInfo(t *testing.T) {
 								Comment: "test2",
 							},
 						},
-						Branch:   "master",
-						CommitId: "27504bb7cb788bee08a50612b97faea201c0efed",
-						Status:   apistructs.DeploymentStatusDeploying,
+						Status: apistructs.DeploymentStatusDeploying,
 					},
 				},
 			},
@@ -100,7 +99,7 @@ func TestComposeApplicationsInfo(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := composeApplicationsInfo(tt.args.Releases, tt.args.Params, tt.args.AppsStatus)
+			got, err := composeApplicationsInfo(tt.args.AppReleases, tt.args.Params, tt.args.AppsStatus)
 			assert.NoError(t, err)
 			assert.Equal(t, got, tt.want)
 		})
@@ -120,6 +119,6 @@ func TestGetDeploymentOrderAccessDenied(t *testing.T) {
 		}, nil
 	})
 
-	_, err := order.Get("100000", "789418c6-0bd4-4186-bd41-45372984621f")
+	_, err := order.Get(context.Background(), "100000", "789418c6-0bd4-4186-bd41-45372984621f")
 	assert.Equal(t, err, apierrors.ErrListDeploymentOrder.AccessDenied())
 }
