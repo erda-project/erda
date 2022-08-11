@@ -22,7 +22,6 @@ import (
 	transport "github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	pb "github.com/erda-project/erda-proto-go/apps/devflow/flow/pb"
-	issuerelationpb "github.com/erda-project/erda-proto-go/apps/devflow/issuerelation/pb"
 	rulepb "github.com/erda-project/erda-proto-go/dop/rule/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/devflow/flow/db"
@@ -43,7 +42,6 @@ type provider struct {
 	dbClient *db.Client
 
 	devFlowService *Service
-	IssueRelation  issuerelationpb.IssueRelationServiceServer `autowired:"erda.apps.devflow.issuerelation.IssueRelationService"`
 	DevFlowRule    devflowrule.Interface
 	bdl            *bundle.Bundle
 	Issue          query.Interface

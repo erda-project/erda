@@ -1500,9 +1500,6 @@ func TestService_DeleteFlowNode(t *testing.T) {
 		return nil, fmt.Errorf("record not found")
 	})
 	defer monkey.UnpatchAll()
-	monkey.PatchInstanceMethod(reflect.TypeOf(dbClient), "UpdateDevFlow", func(dbClient *db.Client, f *db.DevFlow) error {
-		return nil
-	})
 	monkey.PatchInstanceMethod(reflect.TypeOf(dbClient), "DeleteDevFlow", func(dbClient *db.Client, devFlowID string) error {
 		return nil
 	})
@@ -1521,6 +1518,9 @@ func TestService_DeleteFlowNode(t *testing.T) {
 		return nil
 	})
 	monkey.PatchInstanceMethod(reflect.TypeOf(svc), "IdempotentDeleteBranch", func(svc *Service, ctx context.Context, repoPath, branch string) error {
+		return nil
+	})
+	monkey.PatchInstanceMethod(reflect.TypeOf(svc), "UpdateDevFlowAndDoRejoin", func(svc *Service, ctx context.Context, devFlow *db.DevFlow, app *apistructs.ApplicationDTO) error {
 		return nil
 	})
 
