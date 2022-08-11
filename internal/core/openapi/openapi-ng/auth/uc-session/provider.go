@@ -15,6 +15,7 @@
 package ucoauth
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -56,6 +57,10 @@ func (p *provider) Init(ctx servicehub.Context) (err error) {
 	router.Add(http.MethodPost, "/api/openapi/logout", p.Logout)
 	router.Add(http.MethodPost, "/logout", p.Logout)
 	p.addUserInfoAPI(router)
+
+	if p.Redis == nil {
+		return fmt.Errorf("redis-client cannot be empty")
+	}
 	return nil
 }
 
