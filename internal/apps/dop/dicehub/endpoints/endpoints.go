@@ -108,7 +108,7 @@ func (e *Endpoints) Release() *release.Release {
 // Routes 返回 endpoints 的所有 endpoint 方法，也就是 route.
 func (e *Endpoints) Routes() []httpserver.Endpoint {
 	return []httpserver.Endpoint{
-		{Path: "/healthz", Method: http.MethodGet, Handler: e.Info},
+		//{Path: "/healthz", Method: http.MethodGet, Handler: e.Info},
 
 		// Release相关
 		{Path: "/api/releases/{releaseId}/actions/download", Method: http.MethodGet, WriterHandler: e.DownloadRelease},

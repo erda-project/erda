@@ -15,6 +15,7 @@ service-register:
 http-server:
   addr: ":9095"
   allow_cors: true
+  print_routes: false
 
 
 health:

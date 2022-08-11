@@ -135,13 +135,14 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 	p.Protocol.WithContextValue(types.IdentitiyService, p.Identity)
 
 	// This server will never be started. Only the routes and locale loader are used by new http server
-	server := httpserver.NewSingleton("")
+	server := httpserver.New("")
 	server.Router().UseEncodedPath()
 	server.RegisterEndpoint(ep.Routes())
 	// server.Router().Path("/metrics").Methods(http.MethodGet).Handler(promxp.Handler("cmdb"))
 	server.WithLocaleLoader(bdl.Bdl.GetLocaleLoader())
 	server.Router().PathPrefix("/api/apim/metrics").Handler(endpoints.InternalReverseHandler(endpoints.ProxyMetrics))
-	if err := server.RegisterToNewHttpServerRouter(p.Router); err != nil {
+	err = server.RegisterToNewHttpServerRouter(p.Router)
+	if err != nil {
 		return err
 	}
 
