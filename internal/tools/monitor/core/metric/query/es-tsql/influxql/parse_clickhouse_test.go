@@ -403,7 +403,7 @@ func TestSelect(t *testing.T) {
 		{
 			name: "select min",
 			sql:  "select min(service_id::tag) from table",
-			want: "SELECT MIN(tag_values[indexOf(tag_keys,'service_id')]) AS \"b784dcb694669c75\" FROM \"table\"",
+			want: "SELECT MIN(if(indexOf(tag_keys,'service_id') == 0,null,tag_values[indexOf(tag_keys,'service_id')])) AS \"b784dcb694669c75\" FROM \"table\"",
 		},
 		{
 			name: "select count",
@@ -433,7 +433,7 @@ func TestSelect(t *testing.T) {
 		{
 			name: "select round_float(avg)",
 			sql:  "select round_float(avg(committed::field), 2) from table",
-			want: "SELECT AVG(number_field_values[indexOf(number_field_keys,'committed')]) AS \"cd848468318e898b\" FROM \"table\"",
+			want: "SELECT AVG(if(indexOf(number_field_keys,'committed') == 0,null,number_field_values[indexOf(number_field_keys,'committed')])) AS \"cd848468318e898b\" FROM \"table\"",
 		},
 	}
 
