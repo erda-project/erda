@@ -53,7 +53,8 @@ var (
 	lang struct{ Lang string }
 )
 
-func (d *DeploymentOrder) RenderDetail(ctx context.Context, id, userId, releaseId, workspace string, modes []string) (*apistructs.DeploymentOrderDetail, error) {
+func (d *DeploymentOrder) RenderDetail(ctx context.Context, id, userId, releaseId, workspace string,
+	projectId uint64, modes []string) (*apistructs.DeploymentOrderDetail, error) {
 	ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "true"}))
 	langCodes, _ := ctx.Value(lang).(infrai18n.LanguageCodes)
 
@@ -65,19 +66,19 @@ func (d *DeploymentOrder) RenderDetail(ctx context.Context, id, userId, releaseI
 	if access, err := d.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
 		UserID:   userId,
 		Scope:    apistructs.ProjectScope,
-		ScopeID:  uint64(releaseResp.Data.ProjectID),
+		ScopeID:  projectId,
 		Resource: apistructs.ProjectResource,
 		Action:   apistructs.GetAction,
 	}); err != nil || !access.Access {
 		return nil, apierrors.ErrRenderDeploymentOrderDetail.AccessDenied()
 	}
 
-	asi, err := d.composeAppsInfoByReleaseResp(releaseResp.Data, workspace, modes)
+	asi, err := d.composeAppsInfoByReleaseResp(projectId, userId, releaseResp.Data, workspace, modes)
 	if err != nil {
 		return nil, err
 	}
 
-	err = d.renderAppsPreCheckResult(langCodes, releaseResp.Data.ProjectID, userId, workspace, &asi)
+	err = d.renderAppsPreCheckResult(langCodes, projectId, userId, workspace, &asi)
 	if err != nil {
 		return nil, fmt.Errorf("failed to render application precheck result, err: %v", err)
 	}
@@ -87,26 +88,28 @@ func (d *DeploymentOrder) RenderDetail(ctx context.Context, id, userId, releaseI
 		orderId = uuid.NewString()
 	}
 
+	releaseData := releaseResp.GetData()
+
 	return &apistructs.DeploymentOrderDetail{
 		DeploymentOrderItem: apistructs.DeploymentOrderItem{
 			ID:   orderId,
 			Name: utils.ParseOrderName(orderId),
 			ReleaseInfo: &apistructs.ReleaseInfo{
-				Id:        releaseResp.Data.ReleaseID,
-				Version:   releaseResp.Data.Version,
-				Type:      convertReleaseType(releaseResp.Data.IsProjectRelease),
-				Creator:   releaseResp.Data.UserID,
-				CreatedAt: releaseResp.Data.CreatedAt.AsTime(),
-				UpdatedAt: releaseResp.Data.UpdatedAt.AsTime(),
+				Id:        releaseData.GetReleaseID(),
+				Version:   releaseData.GetVersion(),
+				Type:      convertReleaseType(releaseData.GetIsProjectRelease()),
+				Creator:   releaseData.GetUserID(),
+				CreatedAt: releaseData.GetCreatedAt().AsTime(),
+				UpdatedAt: releaseData.GetUpdatedAt().AsTime(),
 			},
-			Type:      parseOrderType(releaseResp.Data.IsProjectRelease),
+			Type:      parseOrderType(releaseData.GetIsProjectRelease()),
 			Workspace: workspace,
 		},
 		ApplicationsInfo: asi,
 	}, nil
 }
 
-func (d *DeploymentOrder) renderAppsPreCheckResult(langCodes infrai18n.LanguageCodes, projectId int64, userId, workspace string, asi *[][]*apistructs.ApplicationInfo) error {
+func (d *DeploymentOrder) renderAppsPreCheckResult(langCodes infrai18n.LanguageCodes, projectId uint64, userId, workspace string, asi *[][]*apistructs.ApplicationInfo) error {
 	if asi == nil {
 		return nil
 	}
@@ -118,7 +121,7 @@ func (d *DeploymentOrder) renderAppsPreCheckResult(langCodes infrai18n.LanguageC
 		}
 	}
 
-	appStatus, err := d.getDeploymentsStatus(workspace, uint64(projectId), appList)
+	appStatus, err := d.getDeploymentsStatus(workspace, projectId, appList)
 	if err != nil {
 		return err
 	}
@@ -179,7 +182,8 @@ func (d *DeploymentOrder) getDeploymentsStatus(workspace string, projectId uint6
 	return ret, nil
 }
 
-func (d *DeploymentOrder) staticPreCheck(langCodes infrai18n.LanguageCodes, userId, workspace string, projectId int64, appId uint64, erdaYaml []byte) ([]string, error) {
+func (d *DeploymentOrder) staticPreCheck(langCodes infrai18n.LanguageCodes, userId, workspace string,
+	projectId, appId uint64, diceYml []byte) ([]string, error) {
 	failReasons := make([]string, 0)
 
 	// check execute permission
@@ -191,13 +195,13 @@ func (d *DeploymentOrder) staticPreCheck(langCodes infrai18n.LanguageCodes, user
 		failReasons = append(failReasons, i18n.LangCodesSprintf(langCodes, I18nPermissionDeniedKey))
 	}
 
-	if len(erdaYaml) == 0 {
+	if len(diceYml) == 0 {
 		failReasons = append(failReasons, i18n.LangCodesSprintf(langCodes, I18nEmptyErdaYaml))
 		return failReasons, nil
 	}
 
 	// parse erda yaml
-	dy, err := diceyml.New(erdaYaml, true)
+	dy, err := diceyml.New(diceYml, true)
 	if err != nil {
 		failReasons = append(failReasons, i18n.LangCodesSprintf(langCodes, I18nFailedToParseErdaYaml))
 		return failReasons, nil
@@ -256,49 +260,59 @@ func (d *DeploymentOrder) staticPreCheck(langCodes infrai18n.LanguageCodes, user
 	return failReasons, nil
 }
 
-func (d *DeploymentOrder) composeAppsInfoByReleaseResp(releaseResp *pb.ReleaseGetResponseData, workspace string, modes []string) (
-	[][]*apistructs.ApplicationInfo, error) {
+func (d *DeploymentOrder) composeAppsInfoByReleaseResp(projectId uint64, userId string, releaseResp *pb.ReleaseGetResponseData,
+	workspace string, modes []string) ([][]*apistructs.ApplicationInfo, error) {
 
 	asi := make([][]*apistructs.ApplicationInfo, 0)
-	if releaseResp.IsProjectRelease {
+
+	switch parseOrderType(releaseResp.IsProjectRelease) {
+	case apistructs.TypeProjectRelease:
+		// mode exist check
 		for _, mode := range modes {
 			if _, ok := releaseResp.Modes[mode]; !ok {
 				return nil, errors.Errorf("mode %s does not exist in release modes list", mode)
 			}
 		}
-		deployList := renderDeployList(modes, releaseResp.Modes)
+		// render deploy list with cross project
+		deployList, err := d.renderDeployListWithCrossProject(modes, projectId, userId, releaseResp)
+		if err != nil {
+			return nil, err
+		}
+
 		params, err := d.fetchApplicationsParams(releaseResp, deployList, workspace)
 		if err != nil {
 			return nil, fmt.Errorf("failed to fetch deployment params, err: %v", err)
 		}
 
 		for _, batch := range deployList {
-			ai := make([]*apistructs.ApplicationInfo, 0)
+			ai := make([]*apistructs.ApplicationInfo, 0, len(batch))
 			for _, r := range batch {
-
+				appName := r.GetApplicationName()
 				ai = append(ai, &apistructs.ApplicationInfo{
-					Id:       uint64(r.ApplicationID),
-					Name:     r.ApplicationName,
-					Params:   covertParamsType(params[r.ApplicationName]),
-					DiceYaml: r.DiceYml,
+					Id:       uint64(r.GetApplicationID()),
+					Name:     appName,
+					Params:   covertParamsType(params[appName]),
+					DiceYaml: r.GetDiceYml(),
 				})
 			}
 			asi = append(asi, ai)
 		}
-	} else {
-		params, err := d.fetchDeploymentParams(releaseResp.ApplicationID, workspace)
+	case apistructs.TypeApplicationRelease:
+		// APPLICATION_RELEASE, application info from release
+		params, err := d.fetchDeploymentParams(releaseResp.GetApplicationID(), workspace)
 		if err != nil {
 			return nil, fmt.Errorf("failed to fetch deployment params, err: %v", err)
 		}
 
 		asi = append(asi, []*apistructs.ApplicationInfo{
 			{
-				Id:       uint64(releaseResp.ApplicationID),
-				Name:     releaseResp.ApplicationName,
+				Id:       uint64(releaseResp.GetApplicationID()),
+				Name:     releaseResp.GetApplicationName(),
 				Params:   covertParamsType(params),
-				DiceYaml: releaseResp.Diceyml,
+				DiceYaml: releaseResp.GetDiceyml(),
 			},
 		})
+	default:
 	}
 
 	return asi, nil

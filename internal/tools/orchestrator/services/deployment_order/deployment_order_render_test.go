@@ -67,7 +67,7 @@ func TestPreCheck(t *testing.T) {
 	defer monkey.UnpatchAll()
 
 	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "ListCustomInstancesByProjectAndEnv",
-		func(*dbclient.DBClient, int64, string) ([]dbclient.AddonInstance, error) {
+		func(*dbclient.DBClient, uint64, string) ([]dbclient.AddonInstance, error) {
 			return []dbclient.AddonInstance{}, nil
 		},
 	)
@@ -106,7 +106,7 @@ func TestRenderDetail(t *testing.T) {
 		return nil, nil, nil
 	})
 	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "ListCustomInstancesByProjectAndEnv",
-		func(*dbclient.DBClient, int64, string) ([]dbclient.AddonInstance, error) {
+		func(*dbclient.DBClient, uint64, string) ([]dbclient.AddonInstance, error) {
 			return []dbclient.AddonInstance{}, nil
 		},
 	)
@@ -132,6 +132,6 @@ func TestRenderDetail(t *testing.T) {
 		return true, nil
 	})
 
-	_, err := order.RenderDetail(context.Background(), "", "1", "dd11727fc60945c998c2fcdf6487e9b0", "PROD", []string{"default"})
+	_, err := order.RenderDetail(context.Background(), "", "1", "dd11727fc60945c998c2fcdf6487e9b0", "PROD", 1, []string{"default"})
 	assert.NoError(t, err)
 }
