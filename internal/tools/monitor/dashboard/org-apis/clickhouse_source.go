@@ -55,7 +55,7 @@ func (chs *ClickhouseSource) GetContainers(ctx httpserver.Context, r *http.Reque
 	if err != nil {
 		return nil
 	}
-	now, timeRange := time.Now().Unix(), 10*int64(time.Minute)/int64(time.Second)
+	now, timeRange := time.Now().Unix(), 5*int64(time.Minute)/int64(time.Second)
 	if params.End < timeRange {
 		params.End = now
 	}
@@ -106,8 +106,6 @@ func (chs *ClickhouseSource) queryContainers(ctx context.Context, orgName, clust
 		goqu.L("MAX(number_field_values[indexOf(number_field_keys,?)])", diskUsage).As("diskUsage"),
 		goqu.L("MAX(number_field_values[indexOf(number_field_keys,?)])", diskLimit).As("diskLimit"),
 	).Where(
-		goqu.L("org_name").Eq(orgName),
-		goqu.L("tenant_id").Eq(orgName),
 		goqu.L("metric_group").In([]string{nameContainerSummary, nameDockerContainerSummary}),
 		goqu.L("tag_values[indexOf(tag_keys,?)]", "container").Neq("POD"),
 		goqu.L("tag_values[indexOf(tag_keys,?)]", "podsandbox").Neq("true"),
@@ -164,7 +162,7 @@ func (chs *ClickhouseSource) GetHostTypes(req *http.Request, params struct {
 
 	table, _ := chs.Loader.GetSearchTable(params.OrgName)
 
-	from := time.Now().Add(-20 * time.Minute).Format(timeFormat)
+	from := time.Now().Add(-5 * time.Minute).Format(timeFormat)
 	to := time.Now().Format(timeFormat)
 	sql := goqu.From(table).Select(
 		goqu.L("tag_values[indexOf(tag_keys,?)]", clusterName).As("clusterName"),
@@ -174,8 +172,6 @@ func (chs *ClickhouseSource) GetHostTypes(req *http.Request, params struct {
 		goqu.L("string_field_values[indexOf(string_field_keys,?)]", labels).As("labels"),
 	).Where(
 		goqu.L("metric_group").Eq(groupHostSummary),
-		goqu.L("org_name").Eq(params.OrgName),
-		goqu.L("tenant_id").Eq(params.OrgName),
 		goqu.L("tag_values[indexOf(tag_keys,?)]", clusterName).In(clusterNames),
 		goqu.L("string_field_values[indexOf(string_field_keys,?)]", labels).NotLike("%offline%"),
 		goqu.L("timestamp").Between(goqu.Range(from, to)))
@@ -307,7 +303,7 @@ func (chs *ClickhouseSource) GetGroupHosts(req *http.Request, params struct {
 
 	table, _ := chs.Loader.GetSearchTable(params.OrgName)
 
-	from := time.Now().Add(-20 * time.Minute).Format(timeFormat)
+	from := time.Now().Add(-5 * time.Minute).Format(timeFormat)
 	to := time.Now().Format(timeFormat)
 	sql := goqu.From(table).Select(
 		goqu.L("MAX(number_field_values[indexOf(number_field_keys, ?)])", cpuCoresUsage).As("cpuCoresUsage"),
@@ -339,8 +335,6 @@ func (chs *ClickhouseSource) GetGroupHosts(req *http.Request, params struct {
 	).Where(
 		goqu.L("metric_group").Eq("host_summary"),
 		goqu.L("tag_values[indexOf(tag_keys,?)]", clusterName).In(clusterNames),
-		goqu.L("org_name").Eq(params.OrgName),
-		goqu.L("tenant_id").Eq(params.OrgName),
 		goqu.L("string_field_values[indexOf(string_field_keys,?)]", labels).NotLike("%offline%"),
 		goqu.L("timestamp").Between(goqu.Range(from, to)),
 	).GroupBy(goqu.L("tag_values[indexOf(tag_keys,?)]", hostIP))
