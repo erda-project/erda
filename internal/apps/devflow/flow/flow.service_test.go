@@ -16,6 +16,7 @@ package flow
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"reflect"
 	"testing"
@@ -1671,6 +1672,151 @@ func TestService_DeleteFlowNode(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("DeleteFlowNode() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestService_UpdateDevFlowAndDoRejoin(t *testing.T) {
+	var gormDB *gorm.DB
+	monkey.PatchInstanceMethod(reflect.TypeOf(gormDB), "Transaction", func(gormDB *gorm.DB, fc func(tx *gorm.DB) error, opts ...*sql.TxOptions) (err error) {
+		return nil
+	})
+	defer monkey.UnpatchAll()
+
+	type fields struct {
+		p *provider
+	}
+	type args struct {
+		ctx     context.Context
+		devFlow *db.DevFlow
+		app     *apistructs.ApplicationDTO
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "test",
+			fields: fields{
+				p: &provider{
+					dbClient: &db.Client{DB: gormDB},
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				devFlow: &db.DevFlow{
+					IsJoinTempBranch: true,
+				},
+				app: nil,
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &Service{
+				p: tt.fields.p,
+			}
+			if err := s.UpdateDevFlowAndDoRejoin(tt.args.ctx, tt.args.devFlow, tt.args.app); (err != nil) != tt.wantErr {
+				t.Errorf("UpdateDevFlowAndDoRejoin() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestService_updateDevFlowAndDoRejoin(t *testing.T) {
+	var dbClient *db.Client
+	monkey.PatchInstanceMethod(reflect.TypeOf(dbClient), "UpdateDevFlow", func(dbClient *db.Client, devFlow *db.DevFlow) error {
+		if devFlow == nil {
+			return fmt.Errorf("devFlow is nil")
+		}
+		return nil
+	})
+	defer monkey.UnpatchAll()
+	var svc *Service
+	monkey.PatchInstanceMethod(reflect.TypeOf(svc), "RejoinTempBranch", func(svc *Service, ctx context.Context, tempBranch, sourceBranch, targetBranch string, devFlow *db.DevFlow, app *apistructs.ApplicationDTO) error {
+		return nil
+	})
+
+	type fields struct {
+		p *provider
+	}
+	type args struct {
+		ctx      context.Context
+		dbClient *db.Client
+		devFlow  *db.DevFlow
+		app      *apistructs.ApplicationDTO
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "test with error1",
+			fields: fields{
+				p: &provider{
+					devFlowService: svc,
+					DevFlowRule:    devFlowRuleForGetMock{},
+				},
+			},
+			args: args{
+				ctx:      context.Background(),
+				dbClient: dbClient,
+				devFlow:  nil,
+				app:      nil,
+			},
+			wantErr: true,
+		},
+		{
+			name: "test with error2",
+			fields: fields{
+				p: &provider{
+					devFlowService: svc,
+					DevFlowRule:    devFlowRuleForGetMock{},
+				},
+			},
+			args: args{
+				ctx:      context.Background(),
+				dbClient: dbClient,
+				devFlow: &db.DevFlow{
+					IsJoinTempBranch: true,
+				},
+				app: &apistructs.ApplicationDTO{},
+			},
+			wantErr: true,
+		},
+		{
+			name: "test with no error",
+			fields: fields{
+				p: &provider{
+					devFlowService: svc,
+					DevFlowRule:    devFlowRuleForGetMock{},
+				},
+			},
+			args: args{
+				ctx:      context.Background(),
+				dbClient: dbClient,
+				devFlow: &db.DevFlow{
+					IsJoinTempBranch: true,
+					FlowRuleName:     "DEV",
+				},
+				app: &apistructs.ApplicationDTO{ProjectID: 1},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &Service{
+				p: tt.fields.p,
+			}
+			if err := s.updateDevFlowAndDoRejoin(tt.args.ctx, tt.args.dbClient, tt.args.devFlow, tt.args.app); (err != nil) != tt.wantErr {
+				t.Errorf("updateDevFlowAndDoRejoinInTx() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

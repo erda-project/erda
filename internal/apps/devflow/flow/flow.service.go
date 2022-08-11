@@ -187,6 +187,7 @@ func (s *Service) findBranchPolicyByName(ctx context.Context, projectID uint64, 
 	for _, v := range devFlowRule.Data.Flows {
 		if v.Name == flowRuleName {
 			findBranch = v.TargetBranch
+			break
 		}
 	}
 	if findBranch == "" {
@@ -520,29 +521,35 @@ func (s *Service) DeleteFlowNode(ctx context.Context, req *pb.DeleteFlowNodeRequ
 }
 
 func (s *Service) UpdateDevFlowAndDoRejoin(ctx context.Context, devFlow *db.DevFlow, app *apistructs.ApplicationDTO) error {
+	if !devFlow.IsJoinTempBranch {
+		return nil
+	}
 	devFlow.IsJoinTempBranch = false
 	err := s.p.dbClient.Transaction(func(tx *gorm.DB) error {
-		dbClient := db.Client{DB: tx}
-		if err := dbClient.UpdateDevFlow(devFlow); err != nil {
-			return err
-		}
-
-		branchPolicy, err := s.findBranchPolicyByName(ctx, app.ProjectID, devFlow.FlowRuleName)
-		if err != nil {
-			return err
-		}
-
-		var sourceBranch, tempBranch, targetBranch string
-		if branchPolicy.Policy != nil {
-			sourceBranch = branchPolicy.Policy.SourceBranch
-			tempBranch = branchPolicy.Policy.TempBranch
-			if branchPolicy.Policy.TargetBranch != nil {
-				targetBranch = branchPolicy.Policy.TargetBranch.MergeRequest
-			}
-		}
-		return s.RejoinTempBranch(ctx, tempBranch, sourceBranch, targetBranch, devFlow, app)
+		return s.updateDevFlowAndDoRejoin(ctx, &db.Client{DB: tx}, devFlow, app)
 	})
 	return err
+}
+
+func (s *Service) updateDevFlowAndDoRejoin(ctx context.Context, dbClient *db.Client, devFlow *db.DevFlow, app *apistructs.ApplicationDTO) error {
+	if err := dbClient.UpdateDevFlow(devFlow); err != nil {
+		return err
+	}
+
+	branchPolicy, err := s.findBranchPolicyByName(ctx, app.ProjectID, devFlow.FlowRuleName)
+	if err != nil {
+		return err
+	}
+
+	var sourceBranch, tempBranch, targetBranch string
+	if branchPolicy.Policy != nil {
+		sourceBranch = branchPolicy.Policy.SourceBranch
+		tempBranch = branchPolicy.Policy.TempBranch
+		if branchPolicy.Policy.TargetBranch != nil {
+			targetBranch = branchPolicy.Policy.TargetBranch.MergeRequest
+		}
+	}
+	return s.RejoinTempBranch(ctx, tempBranch, sourceBranch, targetBranch, devFlow, app)
 }
 
 // Reconstruction todo impl
