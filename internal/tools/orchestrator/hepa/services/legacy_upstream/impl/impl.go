@@ -233,12 +233,13 @@ func (impl GatewayUpstreamServiceImpl) upstreamValid(ctx context.Context, consum
 		return err
 	}
 	// extract diff: updates, adds, dels
-	var updates, adds, dels []orm.GatewayUpstreamApi
-	oldApis := map[string]orm.GatewayUpstreamApi{}
-	newApis := map[string]orm.GatewayUpstreamApi{}
-	missingApis := make(map[string]orm.GatewayUpstreamApi)
-	backupApis := map[string]orm.GatewayUpstreamApi{}
-
+	var (
+		updates, adds, dels []orm.GatewayUpstreamApi
+		oldApis             = make(map[string]orm.GatewayUpstreamApi)
+		newApis             = make(map[string]orm.GatewayUpstreamApi)
+		missingApis         = make(map[string]orm.GatewayUpstreamApi)
+		backupApis          = make(map[string]orm.GatewayUpstreamApi)
+	)
 	l = l.WithField("upstream.id", upstream.Id).
 		WithField("oldValidId", oldValidId).
 		WithField("validId", validId)
