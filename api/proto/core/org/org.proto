@@ -18,42 +18,42 @@ service OrgService {
     };
     rpc CreateOrg(CreateOrgRequest) returns (CreateOrgResponse) {
         option(google.api.http) = {
-            post: "/api/orgs",
+            post: "/core/api/orgs",
         };
     }
     rpc UpdateOrg(UpdateOrgRequest) returns (UpdateOrgResponse) {
         option(google.api.http) = {
-            put: "/api/orgs/{orgID}",
+            put: "/core/api/orgs/{orgID}",
         };
     }
     rpc GetOrg(GetOrgRequest) returns (GetOrgResponse) {
         option(google.api.http) = {
-            get: "/api/orgs/{idOrName}",
+            get: "/core/api/orgs/{idOrName}",
         };
     }
     rpc DeleteOrg(DeleteOrgRequest) returns (DeleteOrgResponse) {
         option(google.api.http) = {
-            delete: "/api/orgs/{idOrName}",
+            delete: "/core/api/orgs/{idOrName}",
         };
     }
     rpc ListOrg(ListOrgRequest) returns (ListOrgResponse) {
         option(google.api.http) = {
-            get: "/api/orgs",
+            get: "/core/api/orgs",
         };
     }
     rpc ListPublicOrg(ListOrgRequest) returns (ListOrgResponse) {
         option(google.api.http) = {
-            get: "/api/orgs/actions/list-public",
+            get: "/core/api/orgs/actions/list-public",
         };
     }
     rpc GetOrgByDomain(GetOrgByDomainRequest) returns (GetOrgByDomainResponse) {
         option(google.api.http) = {
-            get: "/api/orgs/actions/get-by-domain",
+            get: "/core/api/orgs/actions/get-by-domain",
         };
     }
     rpc ChangeCurrentOrg(ChangeCurrentOrgRequest) returns (ChangeCurrentOrgResponse) {
         option(google.api.http) = {
-            post: "/api/orgs/actions/switch",
+            post: "/core/api/orgs/actions/switch",
         };
         option(erda.common.openapi) = {
             path: "/api/orgs/actions/switch",
@@ -61,7 +61,7 @@ service OrgService {
     }
     rpc CreateOrgClusterRelation(OrgClusterRelationCreateRequest) returns (OrgClusterRelationCreateResponse) {
         option(google.api.http) = {
-            post: "/api/orgs/actions/relate-cluster",
+            post: "/core/api/orgs/actions/relate-cluster",
         };
         option(erda.common.openapi) = {
             path: "/api/orgs/actions/relate-cluster",
@@ -69,7 +69,7 @@ service OrgService {
     }
     rpc ListOrgClusterRelation(ListOrgClusterRelationRequest) returns (ListOrgClusterRelationResponse) {
         option(google.api.http) = {
-            get: "/api/orgs/clusters/relations",
+            get: "/core/api/orgs/clusters/relations",
         };
         option(erda.common.openapi) = {
             path: "/api/orgs/clusters/relations",
@@ -77,7 +77,7 @@ service OrgService {
     }
     rpc SetReleaseCrossCluster(SetReleaseCrossClusterRequest) returns (SetReleaseCrossClusterResponse) {
         option(google.api.http) = {
-            post: "/api/orgs/{orgID}/actions/set-release-cross-cluster",
+            post: "/core/api/orgs/{orgID}/actions/set-release-cross-cluster",
         };
         option(erda.common.openapi) = {
             path: "/api/orgs/{orgID}/actions/set-release-cross-cluster",
@@ -85,7 +85,7 @@ service OrgService {
     }
     rpc GenVerifyCode(GenVerifyCodeRequest) returns (GenVerifyCodeResponse) {
         option(google.api.http) = {
-            post: "/api/orgs/actions/gen-verify-code",
+            post: "/core/api/orgs/actions/gen-verify-code",
         };
         option(erda.common.openapi) = {
             path: "/api/orgs/actions/gen-verify-code",
@@ -93,7 +93,7 @@ service OrgService {
     }
     rpc SetNotifyConfig(SetNotifyConfigRequest) returns (SetNotifyConfigResponse) {
         option(google.api.http) = {
-            post: "/api/orgs/{orgID}/actions/set-notify-config",
+            post: "/core/api/orgs/{orgID}/actions/set-notify-config",
         };
         option(erda.common.openapi) = {
             path: "/api/orgs/{orgID}/actions/set-notify-config",
@@ -101,7 +101,7 @@ service OrgService {
     }
     rpc GetNotifyConfig(GetNotifyConfigRequest) returns (GetNotifyConfigResponse) {
         option(google.api.http) = {
-            get: "/api/orgs/{orgID}/actions/get-notify-config",
+            get: "/core/api/orgs/{orgID}/actions/get-notify-config",
         };
         option(erda.common.openapi) = {
             path: "/api/orgs/{orgID}/actions/get-notify-config",
@@ -109,7 +109,7 @@ service OrgService {
     }
     rpc GetOrgClusterRelationsByOrg(GetOrgClusterRelationsByOrgRequest) returns (GetOrgClusterRelationsByOrgResponse) {
         option(google.api.http) = {
-            get: "/api/orgs/clusters/relations/{orgID}",
+            get: "/core/api/orgs/clusters/relations/{orgID}",
         };
         option(erda.common.openapi) = {
             path: "/api/orgs/clusters/relations/{orgID}",
@@ -117,7 +117,7 @@ service OrgService {
     }
     rpc DereferenceCluster(DereferenceClusterRequest) returns (DereferenceClusterResponse) {
         option(google.api.http) = {
-            put: "/api/clusters/actions/dereference",
+            put: "/core/api/clusters/actions/dereference",
         };
     }
 }
