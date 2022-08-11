@@ -241,6 +241,11 @@ func pretty(data interface{}) interface{} {
 	switch v := data.(type) {
 	case *float64:
 		return *v
+	case **float64:
+		if *v == nil {
+			return nil
+		}
+		return **v
 	case *float32:
 		return *v
 	case *int32:
@@ -257,6 +262,11 @@ func pretty(data interface{}) interface{} {
 		return *v
 	case *string:
 		return *v
+	case **string:
+		if *v == nil {
+			return nil
+		}
+		return **v
 	case *time.Time:
 		return v.UnixNano()
 	case *[]string:
