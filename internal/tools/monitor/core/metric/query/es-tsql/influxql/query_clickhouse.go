@@ -271,7 +271,7 @@ func pretty(data interface{}) interface{} {
 		return *v
 	case **string:
 		if *v == nil {
-			return nil
+			return ""
 		}
 		return **v
 	case *time.Time:
